@@ -3,11 +3,14 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "homepage": "https://jigglypop.github.io/gaesup-world/",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@dimforge/rapier3d": "^0.11.2",
@@ -33,6 +36,7 @@
     "@vanilla-extract/sprinkles": "^1.6.1",
     "@zeit/next-bundle-analyzer": "0.1.2",
     "css-loader": "^6.8.1",
+    "gh-pages": "^6.1.0",
     "jotai": "^2.5.0",
     "jotai-devtools": "^0.7.0",
     "lamina": "^1.1.23",
