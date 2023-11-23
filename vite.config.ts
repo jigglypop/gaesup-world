@@ -5,7 +5,7 @@ import { defineConfig } from "vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: "/gaesup-world.git/",
+  base: "/gaesup-world/",
   plugins: [react(), vanillaExtractPlugin()],
   resolve: {
     alias: {
