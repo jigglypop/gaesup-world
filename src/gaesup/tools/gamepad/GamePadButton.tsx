@@ -35,8 +35,8 @@ export default function GamePadButton({ tag, value }: gamePadButtonType) {
         e.preventDefault();
         onMouseLeave();
       }}
-      onPointerDown={() => onMouseDown()}
-      onPointerUp={() => onMouseLeave()}
+      onPointerDown={(e) => onMouseDown()}
+      onPointerUp={(e) => onMouseLeave()}
     >
       {value}
     </button>
