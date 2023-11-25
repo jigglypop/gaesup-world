@@ -1,4 +1,4 @@
-import { mainButton } from "@/components/main/style.css";
+import { mobileButton } from "@styles/recipe/button.css";
 import { fixed, flex } from "@styles/recipe/index.css";
 import { style } from "@vanilla-extract/css";
 
@@ -14,7 +14,7 @@ export const jumpPoints = style([
 ]);
 
 export const jumpPoint = style([
-  mainButton({}),
+  mobileButton({}),
   flex({}),
   {
     margin: "1rem",

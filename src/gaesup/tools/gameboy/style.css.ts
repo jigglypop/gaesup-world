@@ -42,8 +42,8 @@ export const gameBoyButtonRecipe = recipe({
     glass({}),
     {
       all: "unset",
-      width: "3.5rem",
-      height: "3.5rem",
+      width: "3rem",
+      height: "3rem",
       margin: "0.3rem",
       borderRadius: "50%",
       background: vars.gradient.green,
@@ -53,7 +53,6 @@ export const gameBoyButtonRecipe = recipe({
       textShadow: "0 0 10px black",
       cursor: "pointer",
       transition: "all 0.3s ease-in",
-      // animation: `0.3s ${keyFramesClickHello} infinite`
     },
   ],
   variants: {

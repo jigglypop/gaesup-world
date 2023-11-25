@@ -1,14 +1,9 @@
 import { controlAtom } from "@gaesup/stores/control";
-import { useAtom } from "jotai";
+import { useSetAtom } from "jotai";
 import * as style from "./style.css";
 
-export type gamePadButtonType = {
-  tag: string;
-  value: string;
-};
-
-export default function GamePadButton({ tag, value }: gamePadButtonType) {
-  const [control, setControl] = useAtom(controlAtom);
+export default function GamePadButton({ value }: { value: string }) {
+  const setControl = useSetAtom(controlAtom);
 
   const pushKey = (key: string, value: boolean) => {
     setControl((control) => ({
@@ -35,8 +30,8 @@ export default function GamePadButton({ tag, value }: gamePadButtonType) {
         e.preventDefault();
         onMouseLeave();
       }}
-      onPointerDown={(e) => onMouseDown()}
-      onPointerUp={(e) => onMouseLeave()}
+      onPointerDown={() => onMouseDown()}
+      onPointerUp={() => onMouseLeave()}
     >
       {value}
     </button>

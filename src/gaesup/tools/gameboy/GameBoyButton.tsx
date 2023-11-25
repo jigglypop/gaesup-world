@@ -36,10 +36,9 @@ export default function GameBoyButton({ tag, value, icon }: gameBoyButtonType) {
       onMouseLeave={() => onMouseLeave()}
       onContextMenu={(e) => {
         e.preventDefault();
-        onMouseLeave();
       }}
-      onPointerDown={(e) => onMouseDown()}
-      onPointerUp={(e) => onMouseLeave()}
+      onPointerDown={() => onMouseDown()}
+      onPointerUp={() => onMouseLeave()}
     >
       {icon}
     </button>

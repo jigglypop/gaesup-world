@@ -36,7 +36,7 @@ export default function Main() {
     <>
       <div className={style.mainButtonContainer}>
         <button
-          className={style.mainButton({})}
+          className={style.button}
           onClick={() =>
             setOptions((options) => ({
               ...options,
@@ -50,7 +50,7 @@ export default function Main() {
           NORMAL
         </button>
         <button
-          className={style.mainButton({})}
+          className={style.button}
           onClick={() =>
             setOptions((options) => ({
               ...options,
@@ -64,7 +64,7 @@ export default function Main() {
           ORBIT
         </button>
         <button
-          className={style.mainButton({})}
+          className={style.button}
           onClick={() => {
             setOptions((options) => ({
               ...options,
@@ -78,7 +78,7 @@ export default function Main() {
           MAP
         </button>
         <button
-          className={style.mainButton({})}
+          className={style.button}
           onClick={() => {
             setOptions((options) => ({
               ...options,
@@ -89,7 +89,7 @@ export default function Main() {
           키보드
         </button>
         <button
-          className={style.mainButton({})}
+          className={style.button}
           onClick={() => {
             setOptions((options) => ({
               ...options,
@@ -100,7 +100,7 @@ export default function Main() {
           조이스틱
         </button>
         <button
-          className={style.mainButton({})}
+          className={style.button}
           onClick={() => {
             setOptions((options) => ({
               ...options,

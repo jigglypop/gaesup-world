@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { currentAtom } from '@gaesup/stores/current';
-import { minimapAtom } from '@gaesup/stores/minimap';
-import { optionsAtom } from '@gaesup/stores/options';
-import { assignInlineVars } from '@vanilla-extract/dynamic';
-import { useAtomValue } from 'jotai';
-import * as style from './style.css';
+import { currentAtom } from "@gaesup/stores/current";
+import { minimapAtom } from "@gaesup/stores/minimap";
+import { optionsAtom } from "@gaesup/stores/options";
+import { assignInlineVars } from "@vanilla-extract/dynamic";
+import { useAtomValue } from "jotai";
+import * as style from "./style.css";
 
 export function MiniMapInner() {
   const minimap = useAtomValue(minimapAtom);
@@ -28,7 +28,7 @@ export function MiniMapInner() {
                   -obj.center.x + current.position.x * options.minimapRatio
                 }rem, ${
                   -obj.center.z + current.position.z * options.minimapRatio
-                }rem)`
+                }rem)`,
               })}
             >
               <div className={style.text}>{obj.text}</div>
