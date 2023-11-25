@@ -1,10 +1,24 @@
-import { flex } from "@styles/recipe/index.css";
+import { sprinkles } from "@/styles/sprinkles/index.css";
+import { fixed, flex } from "@styles/recipe/index.css";
 import { style } from "@vanilla-extract/css";
 
 export const keyBoardToolTip = style([
-  flex({}),
+  fixed({
+    south: true,
+  }),
+  sprinkles({
+    display: {
+      mobile: "none",
+      tablet: "none",
+      laptop: "flex",
+      desktop: "flex",
+    },
+  }),
+  flex({
+    column: "6",
+  }),
   {
-    gridColumn: "1/3",
+    width: "100vw",
   },
 ]);
 

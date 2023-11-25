@@ -1,12 +1,6 @@
 import { fixed, flex } from "@styles/recipe/index.css";
 import { style } from "@vanilla-extract/css";
 
-export const joyStickOuter = style([
-  {
-    gridColumn: "2/3",
-  },
-]);
-
 export const joyStick = style([
   fixed({
     south: true,

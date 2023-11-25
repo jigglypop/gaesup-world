@@ -6,7 +6,9 @@ export const jumpPoints = style([
   fixed({
     north_east: true,
   }),
-  flex({}),
+  flex({
+    column: "center",
+  }),
   {
     margin: "1rem",
     zIndex: 1000,
