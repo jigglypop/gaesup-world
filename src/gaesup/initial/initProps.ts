@@ -1,23 +1,22 @@
-import { colliderAtom } from '@gaesup/stores/collider';
-import { optionsAtom } from '@gaesup/stores/options';
-import { useKeyboardControls } from '@react-three/drei';
-import { useThree } from '@react-three/fiber';
-import { useRapier, vec3 } from '@react-three/rapier';
-import { useAtom } from 'jotai';
-import { useCallback, useEffect, useMemo } from 'react';
-import * as THREE from 'three';
+import { colliderAtom } from "@gaesup/stores/collider";
+import { optionsAtom } from "@gaesup/stores/options";
+import { useKeyboardControls } from "@react-three/drei";
+import { useRapier, vec3 } from "@react-three/rapier";
+import { useAtom } from "jotai";
+import { useCallback, useEffect, useMemo } from "react";
+import * as THREE from "three";
 import {
   constantType,
   controllerType,
   groundRayType,
   refsType,
-  slopeRayType
-} from '../type';
-import initDebug from './initDebug';
+  slopeRayType,
+} from "../type";
+import initDebug from "./initDebug";
 
 export default function initProps({
   props,
-  refs
+  refs,
 }: {
   props: controllerType;
   refs: refsType;
@@ -39,7 +38,7 @@ export default function initProps({
       hit: null,
       parent: null,
       rayCast: null,
-      length: colliderAtom.init.radius + 2
+      length: colliderAtom.init.radius + 2,
     };
   }, []);
 
@@ -64,7 +63,7 @@ export default function initProps({
       dir: vec3({ x: 0, y: -1, z: 0 }),
       offset: vec3({ x: 0, y: 0, z: colliderAtom.init.radius - 0.03 }),
       length: colliderAtom.init.radius + 3,
-      angle: 0
+      angle: 0,
     };
   }, []);
   slopeRay.rayCast = new rapier.Ray(slopeRay.origin, slopeRay.dir);
@@ -72,7 +71,7 @@ export default function initProps({
   const jump = useMemo(() => {
     return {
       velocity: vec3(),
-      direction: vec3()
+      direction: vec3(),
     };
   }, []);
 
@@ -96,7 +95,7 @@ export default function initProps({
       cameraInitDirection: 0,
       cameraCollisionOff: 0.7,
       cameraDistance: -1,
-      cameraCamFollow: 11
+      cameraCamFollow: 11,
     };
   }, []);
 
@@ -111,8 +110,8 @@ export default function initProps({
       dragDamping: vec3({
         x: 0.15,
         y: 0.08,
-        z: 0.15
-      })
+        z: 0.15,
+      }),
     };
   }, []);
 
@@ -130,7 +129,7 @@ export default function initProps({
       intersetesAndTransParented: [],
       intersects: [],
       intersectObjects: [],
-      intersectObjectMap: {}
+      intersectObjectMap: {},
     };
   }, []);
   cameraRay.rayCast = new THREE.Raycaster(
@@ -139,39 +138,39 @@ export default function initProps({
     0,
     -constant.cameraMaxDistance
   );
-  const { scene, camera } = useThree();
-  const intersectObjectMap: { [uuid: string]: THREE.Object3D } = {};
-  const getMeshs = (object: THREE.Object3D) => {
-    if (object.userData && object.userData.intangible) return;
-    if (
-      object instanceof THREE.Mesh &&
-      object.geometry.type !== 'InstancedBufferGeometry'
-    ) {
-      intersectObjectMap[object.uuid] = object;
-    }
-    object.children.forEach((child) => {
-      getMeshs(child);
-    });
-  };
+  // const { scene, camera } = useThree();
+  // const intersectObjectMap: { [uuid: string]: THREE.Object3D } = {};
+  // const getMeshs = (object: THREE.Object3D) => {
+  //   if (object.userData && object.userData.intangible) return;
+  //   if (
+  //     object instanceof THREE.Mesh &&
+  //     object.geometry.type !== "InstancedBufferGeometry"
+  //   ) {
+  //     intersectObjectMap[object.uuid] = object;
+  //   }
+  //   object.children.forEach((child) => {
+  //     getMeshs(child);
+  //   });
+  // };
 
-  useEffect(() => {
-    scene.children.forEach((child) => getMeshs(child));
-    cameraRay.intersectObjectMap = intersectObjectMap;
-    cameraRay.followCamera.add(camera);
-    cameraRay.pivot.add(cameraRay.followCamera);
-  });
+  // useEffect(() => {
+  //   scene.children.forEach((child) => getMeshs(child));
+  //   cameraRay.intersectObjectMap = intersectObjectMap;
+  //   cameraRay.followCamera.add(camera);
+  //   cameraRay.pivot.add(cameraRay.followCamera);
+  // });
 
   useEffect(() => {
     if (props.options) {
       setOptions((options) => ({
         ...options,
-        ...Object.assign(options, props.options)
+        ...Object.assign(options, props.options),
       }));
     }
     if (props.constant) {
       constant = {
         ...constant,
-        ...Object.assign(constant, props.constant)
+        ...Object.assign(constant, props.constant),
       };
     }
   }, []);
@@ -188,6 +187,6 @@ export default function initProps({
     rigidBodyRef: refs.rigidBodyRef,
     outerGroupRef: refs.outerGroupRef,
     slopeRayOriginRef: refs.slopeRayOriginRef,
-    keyControl
+    keyControl,
   });
 }

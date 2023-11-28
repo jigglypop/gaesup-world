@@ -1,23 +1,23 @@
-'use client';
+"use client";
 
-import { Collider } from '@dimforge/rapier3d-compat';
-import { RapierRigidBody } from '@react-three/rapier';
-import { useRef } from 'react';
-import * as THREE from 'three';
-import Camera from './camera';
-import check from './check';
-import initProps from './initial/initProps';
-import initSetting from './initial/initSetting';
-import calculation from './physics';
+import { Collider } from "@dimforge/rapier3d-compat";
+import { RapierRigidBody } from "@react-three/rapier";
+import { useRef } from "react";
+import * as THREE from "three";
+import Camera from "./camera";
+import check from "./check";
+import initProps from "./initial/initProps";
+import initSetting from "./initial/initSetting";
+import calculation from "./physics";
 import {
   GaesupCapsuleCollider,
   GaesupGroup,
   GaesupRigidBody,
-  GaesupSlopeRay
-} from './ref';
-import { callbackType, controllerType, refsType } from './type';
-import CharacterGltf from './utils/CharacterGltf';
-import VehicleGltf from './utils/VehicleGltf';
+  GaesupSlopeRay,
+} from "./ref";
+import { callbackType, controllerType, refsType } from "./type";
+import CharacterGltf from "./utils/CharacterGltf";
+import VehicleGltf from "./utils/VehicleGltf";
 
 export default function Controller(props: controllerType) {
   const capsuleColliderRef = useRef<Collider>(null);
@@ -29,22 +29,22 @@ export default function Controller(props: controllerType) {
     capsuleColliderRef,
     rigidBodyRef,
     outerGroupRef,
-    slopeRayOriginRef
+    slopeRayOriginRef,
   };
 
   const prop = {
     ...initProps({
       props,
-      refs
+      refs,
     }),
-    ...refs
+    ...refs,
   };
 
   const callbacks: callbackType = {
     onReady: props.onReady,
     onFrame: props.onFrame,
     onDestory: props.onDestory,
-    onAnimate: props.onAnimate
+    onAnimate: props.onAnimate,
   };
 
   initSetting(prop);
@@ -67,7 +67,7 @@ export default function Controller(props: controllerType) {
             ref={slopeRayOriginRef}
           />
           {props.children}
-          {props.options?.mode === 'normal' && (
+          {props.options?.mode === "normal" && (
             <CharacterGltf
               prop={prop}
               url={props.url}
@@ -78,7 +78,16 @@ export default function Controller(props: controllerType) {
             />
           )}
           {/* {props.options?.mode === 'airplane' && <CharacterGltf {...props} />} */}
-          {props.options?.mode === 'vehicle' && <VehicleGltf {...props} />}
+          {props.options?.mode === "vehicle" && (
+            <VehicleGltf
+              prop={prop}
+              url={props.url}
+              character={props.character}
+              groundRay={prop.groundRay}
+              refs={refs}
+              callbacks={callbacks}
+            />
+          )}
         </GaesupGroup>
       </GaesupRigidBody>
     </>

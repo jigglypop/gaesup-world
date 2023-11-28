@@ -1,18 +1,18 @@
-import { currentAtom } from '@gaesup/stores/current';
-import { optionsAtom } from '@gaesup/stores/options';
-import { propType } from '@gaesup/type';
-import { V3 } from '@gaesup/utils/vector';
+import { currentAtom } from "@gaesup/stores/current";
+import { optionsAtom } from "@gaesup/stores/options";
+import { propType } from "@gaesup/type";
+import { V3 } from "@gaesup/utils/vector";
 import {
   OrbitControls,
   OrthographicCamera,
-  PerspectiveCamera
-} from '@react-three/drei';
-import { useFrame, useThree } from '@react-three/fiber';
-import { quat, vec3 } from '@react-three/rapier';
-import { useAtomValue } from 'jotai';
-import { useEffect } from 'react';
-import * as THREE from 'three';
-import cameraCollisionDetector from './cameraCollisionDetecter';
+  PerspectiveCamera,
+} from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
+import { quat, vec3 } from "@react-three/rapier";
+import { useAtomValue } from "jotai";
+import { useEffect } from "react";
+import * as THREE from "three";
+import cameraCollisionDetector from "./cameraCollisionDetecter";
 /**
  * Follow camera initial setups from props
  * Load camera pivot and character move preset
@@ -22,13 +22,39 @@ export default function Camera({ prop }: { prop: propType }) {
   const { rigidBodyRef, outerGroupRef, cameraRay, constant } = prop;
   const current = useAtomValue(currentAtom);
   const { checkCollision } = cameraCollisionDetector(prop);
-  const { camera } = useThree();
+
+  const { scene, camera } = useThree();
+  const intersectObjectMap: { [uuid: string]: THREE.Object3D } = {};
+  const getMeshs = (object: THREE.Object3D) => {
+    if (object.userData && object.userData.intangible) return;
+    if (
+      object instanceof THREE.Mesh &&
+      object.geometry.type !== "InstancedBufferGeometry"
+    ) {
+      intersectObjectMap[object.uuid] = object;
+    }
+    object.children.forEach((child) => {
+      getMeshs(child);
+    });
+  };
 
   useEffect(() => {
-    const origin = new THREE.Object3D();
-    origin.position.set(0, 0, constant.cameraInitDirection);
-    cameraRay.followCamera = origin;
-  }, []);
+    if (
+      options.camera.type === "perspective" &&
+      options.camera.control === "normal"
+    ) {
+      scene.children.forEach((child) => getMeshs(child));
+      cameraRay.intersectObjectMap = intersectObjectMap;
+      cameraRay.followCamera.add(camera);
+      cameraRay.pivot.add(cameraRay.followCamera);
+    }
+  });
+
+  // useEffect(() => {
+  //   const origin = new THREE.Object3D();
+  //   origin.position.set(0, 0, constant.cameraInitDirection);
+  //   cameraRay.followCamera = origin;
+  // }, []);
   useFrame((state, delta) => {
     if (
       !rigidBodyRef ||
@@ -37,8 +63,8 @@ export default function Camera({ prop }: { prop: propType }) {
       !outerGroupRef.current
     )
       return null;
-    if (options.camera.type === 'perspective') {
-      if (options.camera.control === 'orbit') {
+    if (options.camera.type === "perspective") {
+      if (options.camera.control === "orbit") {
         const dir = V3(
           Math.sin(current.euler.y),
           0,
@@ -65,7 +91,7 @@ export default function Camera({ prop }: { prop: propType }) {
             )
         );
         state.camera.lookAt(vec3(rigidBodyRef.current.translation()));
-      } else if (options.camera.control === 'normal') {
+      } else if (options.camera.control === "normal") {
         cameraRay.pivot.position.lerp(
           current.position,
           1 - Math.exp(-constant.cameraCamFollow * delta)
@@ -77,7 +103,7 @@ export default function Camera({ prop }: { prop: propType }) {
          */
         checkCollision(delta);
       }
-    } else if (options.camera.type === 'orthographic') {
+    } else if (options.camera.type === "orthographic") {
       camera.position
         .set(-10, 10, -10)
         .add(vec3(rigidBodyRef.current.translation()));
@@ -85,12 +111,12 @@ export default function Camera({ prop }: { prop: propType }) {
   });
   return (
     <>
-      {options.camera.type === 'perspective' && (
+      {options.camera.type === "perspective" && (
         <>
           <PerspectiveCamera makeDefault {...options.perspectiveCamera} />
         </>
       )}
-      {options.camera.type === 'orthographic' && (
+      {options.camera.type === "orthographic" && (
         <>
           <OrbitControls
             target={current.position}

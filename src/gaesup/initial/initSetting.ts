@@ -23,5 +23,5 @@ export default function initSetting(prop: propType) {
       cameraRay.followCamera = origin;
       camera.position.set(0, 0, 0);
     }
-  }, []);
+  }, [options.camera.type]);
 }
