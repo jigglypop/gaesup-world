@@ -138,27 +138,6 @@ export default function initProps({
     0,
     -constant.cameraMaxDistance
   );
-  // const { scene, camera } = useThree();
-  // const intersectObjectMap: { [uuid: string]: THREE.Object3D } = {};
-  // const getMeshs = (object: THREE.Object3D) => {
-  //   if (object.userData && object.userData.intangible) return;
-  //   if (
-  //     object instanceof THREE.Mesh &&
-  //     object.geometry.type !== "InstancedBufferGeometry"
-  //   ) {
-  //     intersectObjectMap[object.uuid] = object;
-  //   }
-  //   object.children.forEach((child) => {
-  //     getMeshs(child);
-  //   });
-  // };
-
-  // useEffect(() => {
-  //   scene.children.forEach((child) => getMeshs(child));
-  //   cameraRay.intersectObjectMap = intersectObjectMap;
-  //   cameraRay.followCamera.add(camera);
-  //   cameraRay.pivot.add(cameraRay.followCamera);
-  // });
 
   useEffect(() => {
     if (props.options) {

@@ -6,10 +6,7 @@ import { Environment, KeyboardControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 
-import FloatMove from "@components/platform/FloatMove";
 import Floor from "@components/platform/Floor";
-import RigidObjects from "@components/platform/RigidObjects";
-import RoughPlane from "@components/platform/RoughPlane";
 import { optionsAtom } from "@gaesup/stores/options";
 import { useSetAtom } from "jotai";
 import * as style from "./style.css";
@@ -27,8 +24,8 @@ export default function Main() {
     { name: "greet", keys: ["KeyZ"] },
   ];
 
-  const URL = S3 + "/gaesup.glb";
-  // const URL = './kart.glb';
+  // const URL = S3 + "/gaesup.glb";
+  const URL = S3 + "/kart2.glb";
 
   const setOptions = useSetAtom(optionsAtom);
 
@@ -134,7 +131,7 @@ export default function Main() {
               options={{
                 debug: false,
                 controllerType: "keyboard",
-                mode: "normal",
+                mode: "vehicle",
                 camera: {
                   type: "perspective",
                   control: "orbit",
@@ -162,9 +159,9 @@ export default function Main() {
               }}
             />
           </KeyboardControls>
-          <RoughPlane />
+          {/* <RoughPlane />
           <RigidObjects />
-          <FloatMove />
+          <FloatMove /> */}
           <Floor />
         </Physics>
       </Canvas>

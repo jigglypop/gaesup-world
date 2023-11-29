@@ -50,11 +50,6 @@ export default function Camera({ prop }: { prop: propType }) {
     }
   });
 
-  // useEffect(() => {
-  //   const origin = new THREE.Object3D();
-  //   origin.position.set(0, 0, constant.cameraInitDirection);
-  //   cameraRay.followCamera = origin;
-  // }, []);
   useFrame((state, delta) => {
     if (
       !rigidBodyRef ||
@@ -98,9 +93,6 @@ export default function Camera({ prop }: { prop: propType }) {
         );
         state.camera.position.set(0, 0, 0);
         state.camera.lookAt(cameraRay.pivot.position);
-        /**
-         * Camera collision detect
-         */
         checkCollision(delta);
       }
     } else if (options.camera.type === "orthographic") {

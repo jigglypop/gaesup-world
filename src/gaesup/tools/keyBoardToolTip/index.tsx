@@ -2,7 +2,6 @@ import { animationAtom } from "@gaesup/stores/animation";
 import { vars } from "@styles/theme.css";
 import { assignInlineVars } from "@vanilla-extract/dynamic";
 import { useAtomValue } from "jotai";
-import { useEffect } from "react";
 import { KeyBoardAll, keyArrayItemType } from "./constant";
 import * as style from "./style.css";
 
@@ -14,10 +13,6 @@ export default function KeyBoardToolTip({
     keys: string[];
   }[];
 }) {
-  useEffect(() => {
-    console.log(navigator.userAgent);
-  }, []);
-
   const animation = useAtomValue(animationAtom);
   const keyArray = Object.entries(KeyBoardAll).reduce<keyArrayItemType[]>(
     (keyArray, cur) => {

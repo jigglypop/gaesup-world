@@ -1,6 +1,6 @@
-import { currentType } from '@gaesup/type';
-import { euler, quat, vec3 } from '@react-three/rapier';
-import { atom } from 'jotai';
+import { currentType } from "@gaesup/type";
+import { euler, quat, vec3 } from "@react-three/rapier";
+import { atom } from "jotai";
 
 export const currentAtom = atom<currentType>({
   position: vec3(),
@@ -11,7 +11,7 @@ export const currentAtom = atom<currentType>({
   euler: euler(),
   dir: vec3(),
   direction: vec3(),
-  refs: {}
+  refs: {},
 });
 
 currentAtom.debugPrivate = true;

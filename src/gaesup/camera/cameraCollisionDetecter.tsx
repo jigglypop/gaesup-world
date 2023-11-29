@@ -1,5 +1,5 @@
-import { propType } from '@gaesup/type';
-import { useThree } from '@react-three/fiber';
+import { propType } from "@gaesup/type";
+import { useThree } from "@react-three/fiber";
 
 export default function cameraCollisionDetector(prop: propType) {
   const { cameraRay, constant, options } = prop;
@@ -15,7 +15,7 @@ export default function cameraCollisionDetector(prop: propType) {
       cameraRay.intersects.length &&
       cameraRay.intersects[0].distance <= -constant.cameraInitDistance
     ) {
-      if (options.cameraCollisionType === 'transparent') {
+      if (options.cameraCollisionType === "transparent") {
         cameraRay.intersetesAndTransParented = [...cameraRay.intersects];
         cameraRay.intersetesAndTransParented.map((intersect) => {
           const mesh = intersect.object as THREE.Mesh;
@@ -23,14 +23,14 @@ export default function cameraCollisionDetector(prop: propType) {
           material.opacity = 0.2;
           material.transparent = true;
         });
-      } else if (options.cameraCollisionType === 'closeUp') {
+      } else if (options.cameraCollisionType === "closeUp") {
         constant.cameraMinDistance =
           -cameraRay.intersects[0].distance * constant.cameraCollisionOff < -0.7
             ? -cameraRay.intersects[0].distance * constant.cameraCollisionOff
             : -0.7;
       }
     } else {
-      if (options.cameraCollisionType === 'transparent') {
+      if (options.cameraCollisionType === "transparent") {
         cameraRay.intersetesAndTransParented.map((intersect) => {
           const mesh = intersect.object as THREE.Mesh;
           const material = mesh.material as THREE.MeshStandardMaterial;
@@ -47,7 +47,7 @@ export default function cameraCollisionDetector(prop: propType) {
       constant.cameraMinDistance * Math.cos(-cameraRay.followCamera.rotation.x)
     );
 
-    cameraRay.followCamera.position.lerp(cameraRay.lerpingPoint, delta * 4); // delta * 2 for rapier ray setup
+    cameraRay.followCamera.position.lerp(cameraRay.lerpingPoint, delta * 4);
   };
 
   return { checkCollision };
