@@ -96,6 +96,14 @@ export default function VehicleGltf({
           key={index}
           ref={wheelRefs.current[index]}
         >
+          {/* <Cylinder
+            rotation={[Math.PI / 2, 0, 0]}
+            args={[1, 1, 1, 32]}
+            castShadow
+            receiveShadow
+          >
+            <meshStandardMaterial color={"grey"} />
+          </Cylinder> */}
           <Gltf src={wheelsUrl || S3 + "/wheel.glb"} />
         </RigidBody>
       ))}
@@ -109,6 +117,32 @@ export default function VehicleGltf({
           rotationAxis={[1, 0, 0]}
         />
       ))}
+      {/* <Gltf src={url} />
+
+      {wheelPositions.map((wheelPosition, index) => (
+        <RigidBody
+          position={wheelPosition}
+          colliders="hull"
+          type="dynamic"
+          key={index}
+          ref={wheelRefs.current[index]}
+        >
+          <Gltf src={wheelsUrl || S3 + "/wheel.glb"} />
+        </RigidBody>
+      ))}
+      {wheelPositions.map((wheelPosition, index) => (
+        <WheelJoint
+          key={index}
+          jointRefs={refs.jointRefs}
+          refs={rigidBodyRef}
+          wheel={wheelRefs.current[index]}
+          bodyAnchor={wheelPosition}
+          wheelAnchor={[0, 0, 0]}
+          rotationAxis={[0, 0, 1]}
+        />
+      ))} */}
     </>
   );
 }
+
+// useLoader.preload(GLTFLoader, preloadUrl);

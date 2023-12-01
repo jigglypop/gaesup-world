@@ -1,7 +1,8 @@
 "use client";
 
-import { Collider } from "@dimforge/rapier3d-compat";
+import { Collider, RevoluteImpulseJoint } from "@dimforge/rapier3d-compat";
 import { RapierRigidBody } from "@react-three/rapier";
+import { useAtomValue } from "jotai";
 import { useRef } from "react";
 import * as THREE from "three";
 import Camera from "./camera";
@@ -9,14 +10,8 @@ import check from "./check";
 import initProps from "./initial/initProps";
 import initSetting from "./initial/initSetting";
 import calculation from "./physics";
-import {
-  GaesupCapsuleCollider,
-  GaesupGroup,
-  GaesupRigidBody,
-  GaesupSlopeRay,
-} from "./ref";
+import { optionsAtom } from "./stores/options";
 import { callbackType, controllerType, refsType } from "./type";
-import CharacterGltf from "./utils/CharacterGltf";
 import VehicleGltf from "./utils/VehicleGltf";
 
 export default function Controller(props: controllerType) {
@@ -24,12 +19,14 @@ export default function Controller(props: controllerType) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const outerGroupRef = useRef<THREE.Group>(null);
   const slopeRayOriginRef = useRef<THREE.Mesh>(null);
+  const jointRefs = useRef<RevoluteImpulseJoint>(null);
 
   const refs: refsType = {
     capsuleColliderRef,
     rigidBodyRef,
     outerGroupRef,
     slopeRayOriginRef,
+    jointRefs,
   };
 
   const prop = {
@@ -49,47 +46,21 @@ export default function Controller(props: controllerType) {
 
   initSetting(prop);
   check(prop);
-  calculation(prop);
+  calculation(prop, refs);
+  const options = useAtomValue(optionsAtom);
 
   return (
     <>
       <Camera prop={prop} />
-      <GaesupRigidBody
-        ref={rigidBodyRef}
+
+      <VehicleGltf
+        prop={prop}
+        url={props.url}
+        character={props.character}
         groundRay={prop.groundRay}
-        controllerProps={props}
-      >
-        <GaesupCapsuleCollider ref={capsuleColliderRef} />
-        <GaesupGroup ref={outerGroupRef}>
-          <GaesupSlopeRay
-            slopeRay={prop.slopeRay}
-            groundRay={prop.groundRay}
-            ref={slopeRayOriginRef}
-          />
-          {props.children}
-          {props.options?.mode === "normal" && (
-            <CharacterGltf
-              prop={prop}
-              url={props.url}
-              character={props.character}
-              groundRay={prop.groundRay}
-              refs={refs}
-              callbacks={callbacks}
-            />
-          )}
-          {/* {props.options?.mode === 'airplane' && <CharacterGltf {...props} />} */}
-          {props.options?.mode === "vehicle" && (
-            <VehicleGltf
-              prop={prop}
-              url={props.url}
-              character={props.character}
-              groundRay={prop.groundRay}
-              refs={refs}
-              callbacks={callbacks}
-            />
-          )}
-        </GaesupGroup>
-      </GaesupRigidBody>
+        refs={refs}
+        callbacks={callbacks}
+      />
     </>
   );
 }

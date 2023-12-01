@@ -1,21 +1,33 @@
-import { GroupProps } from '@react-three/fiber';
-import { vec3 } from '@react-three/rapier';
-import { atom, useAtom } from 'jotai';
-import * as THREE from 'three';
+import { GroupProps } from "@react-three/fiber";
+import { vec3 } from "@react-three/rapier";
+import { atom, useAtom } from "jotai";
+import * as THREE from "three";
 export type colliderAtomType = {
   halfHeight: number;
   height: number;
   radius: number;
   diameter: number;
+  sizeX?: number;
+  sizeY?: number;
+  sizeZ?: number;
+  x?: number;
+  y?: number;
+  z?: number;
 };
 
 export const colliderAtom = atom<colliderAtomType>({
   height: 0.7,
   halfHeight: 0.35,
   radius: 0.3,
-  diameter: 0.6
+  diameter: 0.6,
+  sizeX: 1,
+  sizeY: 1,
+  sizeZ: 1,
+  x: 1,
+  y: 1,
+  z: 1,
 });
-colliderAtom.debugLabel = 'collider';
+colliderAtom.debugLabel = "collider";
 
 export function useColliderInit(scene: THREE.Object3D, character?: GroupProps) {
   const [collider, setcollider] = useAtom(colliderAtom);
@@ -25,7 +37,7 @@ export function useColliderInit(scene: THREE.Object3D, character?: GroupProps) {
   const size = box.getSize(new THREE.Vector3());
   if (Array.isArray(scale)) {
     size.multiply(vec3({ x: scale[0], y: scale[1], z: scale[2] }));
-  } else if (typeof scale === 'number') {
+  } else if (typeof scale === "number") {
     size.multiplyScalar(scale);
   } else {
     size.multiplyScalar(1);
@@ -41,7 +53,7 @@ export function useColliderInit(scene: THREE.Object3D, character?: GroupProps) {
       height: height - diameter / 2,
       halfHeight: halfHeight - radius / 2,
       diameter,
-      radius
+      radius,
     });
   }
   return { collider, setcollider };

@@ -1,21 +1,22 @@
-import { Collider } from '@dimforge/rapier3d-compat';
-import { colliderAtom } from '@gaesup/stores/collider';
-import { optionsAtom } from '@gaesup/stores/options';
-import { controllerType, groundRayType, slopeRayType } from '@gaesup/type';
+import { Collider } from "@dimforge/rapier3d-compat";
+import { colliderAtom } from "@gaesup/stores/collider";
+import { optionsAtom } from "@gaesup/stores/options";
+import { controllerType, groundRayType, slopeRayType } from "@gaesup/type";
 import {
   CapsuleCollider,
+  CuboidCollider,
   RapierRigidBody,
-  RigidBody
-} from '@react-three/rapier';
-import { useAtomValue } from 'jotai';
-import { ReactNode, Ref, forwardRef } from 'react';
+  RigidBody,
+} from "@react-three/rapier";
+import { useAtomValue } from "jotai";
+import { ReactNode, Ref, forwardRef } from "react";
 
 export const GaesupRigidBody = forwardRef(
   (
     {
       controllerProps,
       groundRay,
-      children
+      children,
     }: {
       controllerProps: controllerType;
       groundRay: groundRayType;
@@ -51,10 +52,17 @@ export const GaesupCapsuleCollider = forwardRef((_, ref: Ref<Collider>) => {
   );
 });
 
+export const GaesupCuboidCollider = forwardRef((_, ref: Ref<Collider>) => {
+  const collider = useAtomValue(colliderAtom);
+  return (
+    <CuboidCollider ref={ref} args={[collider.x, collider.y, collider.z]} />
+  );
+});
+
 export const GaesupGroup = forwardRef(
   (
     {
-      children
+      children,
     }: {
       children: ReactNode;
     },
@@ -72,7 +80,7 @@ export const GaesupSlopeRay = forwardRef(
   (
     {
       groundRay,
-      slopeRay
+      slopeRay,
     }: {
       groundRay: groundRayType;
       slopeRay: slopeRayType;
@@ -85,7 +93,7 @@ export const GaesupSlopeRay = forwardRef(
         position={[
           groundRay.offset.x,
           groundRay.offset.y,
-          groundRay.offset.z + slopeRay.offset.z
+          groundRay.offset.z + slopeRay.offset.z,
         ]}
         ref={ref}
         visible={false}
@@ -94,7 +102,7 @@ export const GaesupSlopeRay = forwardRef(
         {options.debug && (
           <mesh>
             <arrowHelper
-              args={[slopeRay.dir, slopeRay.origin, slopeRay.length, '#ff0000']}
+              args={[slopeRay.dir, slopeRay.origin, slopeRay.length, "#ff0000"]}
             />
           </mesh>
         )}

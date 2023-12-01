@@ -1,14 +1,19 @@
-import { Collider, Ray, RayColliderToi } from '@dimforge/rapier3d-compat';
+import {
+  Collider,
+  Ray,
+  RayColliderToi,
+  RevoluteImpulseJoint,
+} from "@dimforge/rapier3d-compat";
 import {
   GroupProps,
   OrthographicCameraProps,
-  RootState
-} from '@react-three/fiber';
-import { RapierRigidBody, RigidBodyProps } from '@react-three/rapier';
-import { ReactNode, RefObject } from 'react';
-import * as THREE from 'three';
-import { animationPropType } from './stores/animation';
-import { statesType } from './stores/states';
+  RootState,
+} from "@react-three/fiber";
+import { RapierRigidBody, RigidBodyProps } from "@react-three/rapier";
+import { ReactNode, RefObject } from "react";
+import * as THREE from "three";
+import { animationPropType } from "./stores/animation";
+import { statesType } from "./stores/states";
 
 export type cameraRayType = {
   origin: THREE.Vector3;
@@ -88,12 +93,12 @@ export type constantType = {
 
 export type optionsType = {
   debug: boolean;
-  mode: 'normal' | 'vehicle' | 'airplane';
-  controllerType: 'none' | 'gameboy' | 'joystick' | 'keyboard';
-  cameraCollisionType: 'transparent' | 'closeUp';
+  mode: "normal" | "vehicle" | "airplane";
+  controllerType: "none" | "gameboy" | "joystick" | "keyboard";
+  cameraCollisionType: "transparent" | "closeUp";
   camera: {
-    type: 'perspective' | 'orthographic';
-    control: 'orbit' | 'normal';
+    type: "perspective" | "orthographic";
+    control: "orbit" | "normal";
   };
   perspectiveCamera: {
     isFront: boolean;
@@ -153,6 +158,7 @@ export type propType = {
   rigidBodyRef: RefObject<RapierRigidBody>;
   outerGroupRef: RefObject<THREE.Group>;
   slopeRayOriginRef: RefObject<THREE.Mesh>;
+  jointRefs: RefObject<RevoluteImpulseJoint>;
   keyControl: {
     [key: string]: boolean;
   };
@@ -218,6 +224,7 @@ export type refsType = {
   rigidBodyRef: RefObject<RapierRigidBody>;
   outerGroupRef: RefObject<THREE.Group>;
   slopeRayOriginRef: RefObject<THREE.Mesh>;
+  jointRefs: RefObject<RevoluteImpulseJoint>;
 };
 
 export type controllerType = controllerPropType & {
