@@ -1,10 +1,9 @@
-import { refsType } from "@gaesup/type";
 import { RapierRigidBody, useRevoluteJoint } from "@react-three/rapier";
 import { RefObject } from "react";
 import * as THREE from "three";
 
 export type wheelJointType = {
-  refs: refsType;
+  bodyRef: RefObject<RapierRigidBody>;
   wheel: RefObject<RapierRigidBody>;
   bodyAnchor: THREE.Vector3Tuple;
   wheelAnchor: THREE.Vector3Tuple;
@@ -12,13 +11,13 @@ export type wheelJointType = {
 };
 
 export default function WheelJoint({
-  refs,
+  bodyRef,
   wheel,
   bodyAnchor,
   wheelAnchor,
   rotationAxis,
 }: wheelJointType) {
-  refs.jointRefs = useRevoluteJoint(refs.rigidBodyRef, wheel, [
+  const jointRefs = useRevoluteJoint(bodyRef, wheel, [
     bodyAnchor,
     wheelAnchor,
     rotationAxis,

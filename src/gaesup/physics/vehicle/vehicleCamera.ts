@@ -8,7 +8,7 @@ export default function vehicleCamera(prop: propType) {
   const { rigidBodyRef, outerGroupRef } = prop;
   const current = useAtomValue(currentAtom);
 
-  useFrame((state) => {
+  useFrame(({ camera }) => {
     if (
       !rigidBodyRef ||
       !rigidBodyRef.current ||
@@ -16,7 +16,7 @@ export default function vehicleCamera(prop: propType) {
       !outerGroupRef.current
     )
       return null;
-    state.camera.quaternion.copy(current.quat);
-    state.camera.lookAt(vec3(rigidBodyRef.current.translation()));
+    camera.quaternion.copy(current.quat);
+    camera.lookAt(vec3(rigidBodyRef.current.translation()));
   });
 }

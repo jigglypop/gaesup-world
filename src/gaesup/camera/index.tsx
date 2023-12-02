@@ -105,6 +105,7 @@ export default function Camera({ prop }: { prop: propType }) {
     <>
       {options.camera.type === "perspective" && (
         <>
+          <OrbitControls />
           <PerspectiveCamera makeDefault {...options.perspectiveCamera} />
         </>
       )}

@@ -5,7 +5,6 @@ import { RapierRigidBody } from "@react-three/rapier";
 import { useAtomValue } from "jotai";
 import { useRef } from "react";
 import * as THREE from "three";
-import Camera from "./camera";
 import check from "./check";
 import initProps from "./initial/initProps";
 import initSetting from "./initial/initSetting";
@@ -51,7 +50,7 @@ export default function Controller(props: controllerType) {
 
   return (
     <>
-      <Camera prop={prop} />
+      {/* <Camera prop={prop} /> */}
 
       <VehicleGltf
         prop={prop}
