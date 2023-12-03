@@ -1,37 +1,36 @@
+import { S3 } from "@/components/main";
 import { Collider } from "@dimforge/rapier3d-compat";
 import { colliderAtom } from "@gaesup/stores/collider";
 import { optionsAtom } from "@gaesup/stores/options";
-import { controllerType, groundRayType, slopeRayType } from "@gaesup/type";
+import { Gltf } from "@react-three/drei";
 import {
-  CapsuleCollider,
   CuboidCollider,
+  CylinderCollider,
   RapierRigidBody,
   RigidBody,
+  useRevoluteJoint,
 } from "@react-three/rapier";
-import { useAtomValue } from "jotai";
-import { ReactNode, Ref, forwardRef } from "react";
+import { useAtom, useAtomValue } from "jotai";
+import { ReactNode, Ref, RefObject, forwardRef, useEffect } from "react";
+import * as THREE from "three";
+import { GLTFResult, groundRayType } from "../type";
 
-export const GaesupRigidBody = forwardRef(
+export const VehicleRigidBody = forwardRef(
   (
     {
-      controllerProps,
       groundRay,
       children,
     }: {
-      controllerProps: controllerType;
       groundRay: groundRayType;
       children: ReactNode;
     },
     ref: Ref<RapierRigidBody>
   ) => {
     const options = useAtomValue(optionsAtom);
+    console.log("vehicle");
+
     return (
-      <RigidBody
-        colliders={false}
-        canSleep={false}
-        ref={ref}
-        {...controllerProps}
-      >
+      <RigidBody colliders={false} ref={ref}>
         {options.debug && (
           <mesh visible={options.debug}>
             <arrowHelper
@@ -45,21 +44,62 @@ export const GaesupRigidBody = forwardRef(
   }
 );
 
-export const GaesupCapsuleCollider = forwardRef((_, ref: Ref<Collider>) => {
-  const collider = useAtomValue(colliderAtom);
-  return (
-    <CapsuleCollider ref={ref} args={[collider.height, collider.radius]} />
-  );
-});
+export const VehicleCollider = forwardRef(
+  (
+    {
+      gltf,
+      wheelGltf,
+    }: {
+      gltf: GLTFResult;
+      wheelGltf: GLTFResult;
+    },
+    ref: Ref<Collider>
+  ) => {
+    const { scene } = gltf;
+    const { scene: wheelScene } = wheelGltf;
+    const [collider, setCollider] = useAtom(colliderAtom);
+    const { sizeX, sizeY, sizeZ } = collider;
+    const box = new THREE.Box3().setFromObject(scene);
+    const wheelBox = new THREE.Box3().setFromObject(wheelScene);
 
-export const GaesupCuboidCollider = forwardRef((_, ref: Ref<Collider>) => {
-  const collider = useAtomValue(colliderAtom);
-  return (
-    <CuboidCollider ref={ref} args={[collider.x, collider.y, collider.z]} />
-  );
-});
+    const size = box.getSize(new THREE.Vector3());
+    const wheelsize = wheelBox.getSize(new THREE.Vector3());
 
-export const GaesupGroup = forwardRef(
+    useEffect(() => {
+      if (
+        size.x !== 0 &&
+        size.y !== 0 &&
+        size.z !== 0 &&
+        wheelsize.x !== 0 &&
+        wheelsize.y !== 0 &&
+        wheelsize.z !== 0
+      ) {
+        setCollider({
+          ...collider,
+          sizeX: size.x,
+          sizeY: wheelsize.y,
+          sizeZ: size.z,
+          wheelSizeX: wheelsize.x,
+          wheelSizeY: wheelsize.y,
+          wheelSizeZ: wheelsize.z,
+          x: size.x / 2,
+          y: wheelsize.y / 2,
+          z: size.z / 2,
+        });
+      }
+    }, [size.x, size.y, size.z]);
+
+    return (
+      <CuboidCollider
+        ref={ref}
+        args={[sizeX / 2, sizeY / 2, sizeZ / 2]}
+        position={[0, sizeY / 2, 0]}
+      />
+    );
+  }
+);
+
+export const VehicleGroup = forwardRef(
   (
     {
       children,
@@ -76,38 +116,77 @@ export const GaesupGroup = forwardRef(
   }
 );
 
-export const GaesupSlopeRay = forwardRef(
+export type wheelRegidBodyType = {
+  wheelPosition: [number, number, number];
+  wheelsUrl?: string;
+  bodyRef: RefObject<RapierRigidBody>;
+  wheel: RefObject<RapierRigidBody>;
+  bodyAnchor: THREE.Vector3Tuple;
+  wheelAnchor: THREE.Vector3Tuple;
+  rotationAxis: THREE.Vector3Tuple;
+};
+
+export const WheelRegidBodyRef = forwardRef(
   (
     {
-      groundRay,
-      slopeRay,
-    }: {
-      groundRay: groundRayType;
-      slopeRay: slopeRayType;
-    },
-    ref: Ref<THREE.Mesh>
+      wheelPosition,
+      wheelsUrl,
+      bodyRef,
+      wheel,
+      bodyAnchor,
+      wheelAnchor,
+      rotationAxis,
+    }: wheelRegidBodyType,
+    ref: Ref<RapierRigidBody>
   ) => {
-    const options = useAtomValue(optionsAtom);
+    const { wheelSizeX, wheelSizeY } = useAtomValue(colliderAtom);
+    useRevoluteJoint(bodyRef, wheel, [bodyAnchor, wheelAnchor, rotationAxis]);
+
     return (
-      <mesh
-        position={[
-          groundRay.offset.x,
-          groundRay.offset.y,
-          groundRay.offset.z + slopeRay.offset.z,
-        ]}
-        ref={ref}
-        visible={false}
-        userData={{ intangible: true }}
-      >
-        {options.debug && (
-          <mesh>
-            <arrowHelper
-              args={[slopeRay.dir, slopeRay.origin, slopeRay.length, "#ff0000"]}
-            />
-          </mesh>
-        )}
-        <boxGeometry args={[0.15, 0.15, 0.15]} />
-      </mesh>
+      <RigidBody position={wheelPosition} colliders={false} ref={ref}>
+        <CylinderCollider
+          args={[wheelSizeX / 2, wheelSizeY / 2]}
+          rotation={[0, 0, Math.PI / 2]}
+        />
+        <Gltf src={wheelsUrl || S3 + "/wheel.glb"} />
+      </RigidBody>
     );
   }
 );
+
+//
+// export const GaesupSlopeRay = forwardRef(
+//   (
+//     {
+//       groundRay,
+//       slopeRay,
+//     }: {
+//       groundRay: groundRayType;
+//       slopeRay: slopeRayType;
+//     },
+//     ref: Ref<THREE.Mesh>
+//   ) => {
+//     const options = useAtomValue(optionsAtom);
+//     return (
+//       <mesh
+//         position={[
+//           groundRay.offset.x,
+//           groundRay.offset.y,
+//           groundRay.offset.z + slopeRay.offset.z,
+//         ]}
+//         ref={ref}
+//         visible={false}
+//         userData={{ intangible: true }}
+//       >
+//         {options.debug && (
+//           <mesh>
+//             <arrowHelper
+//               args={[slopeRay.dir, slopeRay.origin, slopeRay.length, "#ff0000"]}
+//             />
+//           </mesh>
+//         )}
+//         <boxGeometry args={[0.15, 0.15, 0.15]} />
+//       </mesh>
+//     );
+//   }
+// );

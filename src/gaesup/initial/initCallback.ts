@@ -1,17 +1,17 @@
-import { animationAtom } from '@gaesup/stores/animation';
-import useCalcControl from '@gaesup/stores/control';
-import { currentAtom } from '@gaesup/stores/current';
-import { statesAtom } from '@gaesup/stores/states';
+import { animationAtom } from "@gaesup/stores/animation";
+import useCalcControl from "@gaesup/stores/control";
+import { currentAtom } from "@gaesup/stores/current";
+import { statesAtom } from "@gaesup/stores/states";
 import {
   animationTagType,
   callbackPropType,
   callbackType,
-  propType
-} from '@gaesup/type';
-import { useAnimations } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
-import { useAtom, useAtomValue } from 'jotai';
-import { useEffect } from 'react';
+  propType,
+} from "@gaesup/type";
+import { useAnimations } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useAtom, useAtomValue } from "jotai";
+import { useEffect } from "react";
 
 export type initCallbackType = {
   prop: propType;
@@ -22,7 +22,7 @@ export type initCallbackType = {
 export default function initCallback({
   prop,
   callbacks,
-  animations
+  animations,
 }: initCallbackType) {
   const { outerGroupRef, rigidBodyRef, slopeRayOriginRef, capsuleColliderRef } =
     prop;
@@ -34,7 +34,7 @@ export default function initCallback({
   const playAnimation = (tag: keyof animationTagType) => {
     setAnimation((animation) => ({
       ...animation,
-      current: tag
+      current: tag,
     }));
   };
 
@@ -43,7 +43,7 @@ export default function initCallback({
     ...prop,
     keyControl,
     current,
-    states
+    states,
   };
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export default function initCallback({
         ...prop,
         actions,
         animation,
-        playAnimation
+        playAnimation,
       });
     }
   });

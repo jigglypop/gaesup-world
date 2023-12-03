@@ -3,7 +3,7 @@ import { atom } from "jotai";
 
 export const optionsAtom = atom<optionsType>({
   debug: false,
-  mode: "normal",
+  mode: null,
   controllerType: "none",
   cameraCollisionType: "transparent",
   camera: {
@@ -17,6 +17,8 @@ export const optionsAtom = atom<optionsType>({
     XZDistance: 8,
     YDistance: 1,
   },
+  kartUrl: null,
+  characterUrl: null,
   orthographicCamera: {
     zoom: 1,
     near: 0.1,

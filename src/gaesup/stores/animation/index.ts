@@ -1,9 +1,9 @@
-import { RefObject, useCallback, useEffect } from 'react';
+import { RefObject, useCallback, useEffect } from "react";
 
-import { actionsType, animationTagType } from '@gaesup/type';
-import { useAnimations, useKeyboardControls } from '@react-three/drei';
-import { atom, useAtom } from 'jotai';
-import * as THREE from 'three';
+import { actionsType, animationTagType } from "@gaesup/type";
+import { useAnimations, useKeyboardControls } from "@react-three/drei";
+import { atom, useAtom } from "jotai";
+import * as THREE from "three";
 
 export type animationPropType = {
   current: keyof animationTagType;
@@ -14,24 +14,27 @@ export type animationPropType = {
 };
 
 export const animationAtom = atom<animationPropType>({
-  current: 'idle',
+  current: "idle",
   animationNames: {
-    idle: 'idle',
-    walk: 'walk',
-    run: 'run',
-    jump: 'jump',
-    jumpIdle: 'jumpIdle',
-    jumpLand: 'jumpLand',
-    fall: 'fall'
+    idle: "idle",
+    walk: "walk",
+    run: "run",
+    accel: "accel",
+    break: "break",
+    ride: "ride",
+    jump: "jump",
+    jumpIdle: "jumpIdle",
+    jumpLand: "jumpLand",
+    fall: "fall",
   },
-  keyControl: {}
+  keyControl: {},
 });
 
-animationAtom.debugLabel = 'animation';
+animationAtom.debugLabel = "animation";
 
 export default function usePlay({
   outerGroupRef,
-  animations
+  animations,
 }: {
   outerGroupRef?: RefObject<THREE.Group>;
   animations: THREE.AnimationClip[];
@@ -44,7 +47,7 @@ export default function usePlay({
   useEffect(() => {
     setAnimation((animation) => ({
       ...animation,
-      keyControl: keys
+      keyControl: keys,
     }));
   }, [keys]);
   // Animation set state
@@ -52,7 +55,7 @@ export default function usePlay({
     (tag: keyof animationTagType) => {
       setAnimation((animation) => ({
         ...animation,
-        current: tag
+        current: tag,
       }));
     },
     [setAnimation, animation, animation.current]
@@ -68,21 +71,21 @@ export default function usePlay({
         Object.keys(actions).reduce((acc, cur) => {
           return {
             ...acc,
-            [cur]: cur
+            [cur]: cur,
           };
         }, {})
-      )
+      ),
     }));
   };
 
-  const resetAni = () => playAnimation('idle');
-  const playIdle = () => playAnimation('idle');
-  const playWalk = () => playAnimation('walk');
-  const playRun = () => playAnimation('run');
-  const playJump = () => playAnimation('jump');
-  const playJumpIdle = () => playAnimation('jumpIdle');
-  const playJumpLand = () => playAnimation('jumpLand');
-  const playFall = () => playAnimation('fall');
+  const resetAni = () => playAnimation("idle");
+  const playIdle = () => playAnimation("idle");
+  const playWalk = () => playAnimation("walk");
+  const playRun = () => playAnimation("run");
+  const playJump = () => playAnimation("jump");
+  const playJumpIdle = () => playAnimation("jumpIdle");
+  const playJumpLand = () => playAnimation("jumpLand");
+  const playFall = () => playAnimation("fall");
 
   useEffect(() => {
     return () => {
@@ -109,6 +112,6 @@ export default function usePlay({
     playJump,
     playJumpIdle,
     playJumpLand,
-    playFall
+    playFall,
   };
 }

@@ -12,6 +12,7 @@ import {
 import { RapierRigidBody, RigidBodyProps } from "@react-three/rapier";
 import { ReactNode, RefObject } from "react";
 import * as THREE from "three";
+import { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { animationPropType } from "./stores/animation";
 import { statesType } from "./stores/states";
 
@@ -76,6 +77,10 @@ export type constantType = {
   rejectSpeed: number;
   splintSpeed: number;
   runRate: number;
+  accelRate: number;
+  splintRate: number;
+  brakeRate: number;
+  wheelOffset: number;
   dT: number;
   reconsil: number;
   rotational: number;
@@ -93,7 +98,7 @@ export type constantType = {
 
 export type optionsType = {
   debug: boolean;
-  mode: "normal" | "vehicle" | "airplane";
+  mode?: "normal" | "vehicle" | "airplane";
   controllerType: "none" | "gameboy" | "joystick" | "keyboard";
   cameraCollisionType: "transparent" | "closeUp";
   camera: {
@@ -108,6 +113,8 @@ export type optionsType = {
   orthographicCamera?: OrthographicCameraProps;
   minimap: boolean;
   minimapRatio: number;
+  kartUrl: string;
+  characterUrl: string;
 };
 
 export type partialOptionsType = Partial<optionsType>;
@@ -158,10 +165,11 @@ export type propType = {
   rigidBodyRef: RefObject<RapierRigidBody>;
   outerGroupRef: RefObject<THREE.Group>;
   slopeRayOriginRef: RefObject<THREE.Mesh>;
-  jointRefs: RefObject<RevoluteImpulseJoint>;
   keyControl: {
     [key: string]: boolean;
   };
+  characterUrl?: string;
+  kartUrl?: string;
 };
 
 export type animationTagType = {
@@ -201,6 +209,7 @@ export type callbackPropType = {
   current: currentType;
   states: statesType;
   options: optionsType;
+  settings: optionsType;
   slopeRay: slopeRayType;
   groundRay: groundRayType;
   cameraRay: cameraRayType;
@@ -229,5 +238,12 @@ export type refsType = {
 
 export type controllerType = controllerPropType & {
   url: string;
+  characterUrl?: string;
+  kartUrl?: string;
   wheelsUrl?: string;
 } & callbackType;
+
+export type GLTFResult = GLTF & {
+  nodes: { [name: string]: THREE.Mesh };
+  materials: { [name: string]: THREE.Material | THREE.MeshStandardMaterial };
+};

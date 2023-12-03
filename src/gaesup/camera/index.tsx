@@ -1,30 +1,40 @@
+import orbit from "@camera/control/orbit";
 import { currentAtom } from "@gaesup/stores/current";
 import { optionsAtom } from "@gaesup/stores/options";
 import { propType } from "@gaesup/type";
-import { V3 } from "@gaesup/utils/vector";
 import {
   OrbitControls,
   OrthographicCamera,
   PerspectiveCamera,
 } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { quat, vec3 } from "@react-three/rapier";
-import { useAtomValue } from "jotai";
-import { useEffect } from "react";
+import { vec3 } from "@react-three/rapier";
+import refCheck from "@utils/refCheck";
+import { useAtom } from "jotai";
 import * as THREE from "three";
+import { cameraPropType } from "../physics";
+import useCalcControl from "../stores/control";
 import cameraCollisionDetector from "./cameraCollisionDetecter";
-/**
- * Follow camera initial setups from props
- * Load camera pivot and character move preset
- */
+import normal from "./control/normal";
+
 export default function Camera({ prop }: { prop: propType }) {
-  const options = useAtomValue(optionsAtom);
+  const option = useAtom(optionsAtom);
+  const [options] = option;
   const { rigidBodyRef, outerGroupRef, cameraRay, constant } = prop;
-  const current = useAtomValue(currentAtom);
+  const currents = useAtom(currentAtom);
   const { checkCollision } = cameraCollisionDetector(prop);
 
   const { scene, camera } = useThree();
   const intersectObjectMap: { [uuid: string]: THREE.Object3D } = {};
+  const control = useCalcControl(prop);
+  const cameraProp: cameraPropType = {
+    ...prop,
+    current: currents,
+    checkCollision,
+    control,
+    option,
+  };
+
   const getMeshs = (object: THREE.Object3D) => {
     if (object.userData && object.userData.intangible) return;
     if (
@@ -38,7 +48,27 @@ export default function Camera({ prop }: { prop: propType }) {
     });
   };
 
-  useEffect(() => {
+  // useEffect(() => {
+  //   if (
+  //     options.camera.type === "perspective" &&
+  //     options.camera.control === "normal"
+  //   ) {
+  //     scene.children.forEach((child) => getMeshs(child));
+  //     cameraRay.intersectObjectMap = intersectObjectMap;
+  //     cameraRay.followCamera.add(camera);
+  //     cameraRay.pivot.add(cameraRay.followCamera);
+  //   }
+  // });
+
+  // useEffect(() => {
+  //   refCheck(prop);
+  //   cameraSetting(cameraProp);
+  // }, []);
+
+  useFrame((state, delta) => {
+    refCheck(prop);
+    cameraProp.state = state;
+    cameraProp.delta = delta;
     if (
       options.camera.type === "perspective" &&
       options.camera.control === "normal"
@@ -48,52 +78,11 @@ export default function Camera({ prop }: { prop: propType }) {
       cameraRay.followCamera.add(camera);
       cameraRay.pivot.add(cameraRay.followCamera);
     }
-  });
-
-  useFrame((state, delta) => {
-    if (
-      !rigidBodyRef ||
-      !rigidBodyRef.current ||
-      !outerGroupRef ||
-      !outerGroupRef.current
-    )
-      return null;
     if (options.camera.type === "perspective") {
       if (options.camera.control === "orbit") {
-        const dir = V3(
-          Math.sin(current.euler.y),
-          0,
-          Math.cos(current.euler.y)
-        ).normalize();
-        let cameraPosition = vec3(rigidBodyRef.current.translation())
-          .clone()
-          .add(
-            dir
-              .clone()
-              .multiplyScalar(options.perspectiveCamera.XZDistance)
-              .multiplyScalar(options.perspectiveCamera.isFront ? -1 : 1)
-              .add(V3(0, options.perspectiveCamera.YDistance, 0))
-          );
-
-        state.camera.position.lerp(cameraPosition, 0.2);
-        state.camera.quaternion.copy(
-          current.quat
-            .clone()
-            .multiply(
-              options.perspectiveCamera.isFront
-                ? quat().setFromAxisAngle(V3(0, 1, 0), Math.PI)
-                : quat()
-            )
-        );
-        state.camera.lookAt(vec3(rigidBodyRef.current.translation()));
+        orbit(cameraProp);
       } else if (options.camera.control === "normal") {
-        cameraRay.pivot.position.lerp(
-          current.position,
-          1 - Math.exp(-constant.cameraCamFollow * delta)
-        );
-        state.camera.position.set(0, 0, 0);
-        state.camera.lookAt(cameraRay.pivot.position);
-        checkCollision(delta);
+        normal(cameraProp);
       }
     } else if (options.camera.type === "orthographic") {
       camera.position
@@ -112,7 +101,7 @@ export default function Camera({ prop }: { prop: propType }) {
       {options.camera.type === "orthographic" && (
         <>
           <OrbitControls
-            target={current.position}
+            target={currents[0].position}
             enableZoom={false}
             enablePan={true}
             zoomSpeed={0.3}

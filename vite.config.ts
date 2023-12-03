@@ -14,6 +14,9 @@ export default defineConfig({
       "@styles": path.resolve(__dirname, "./src/styles"),
       "@stores": path.resolve(__dirname, "./src/gaesup/stores"),
       "@gaesup": path.resolve(__dirname, "./src/gaesup"),
+      "@utils": path.resolve(__dirname, "./src/gaesup/utils"),
+      "@physics": path.resolve(__dirname, "./src/gaesup/physics"),
+      "@camera": path.resolve(__dirname, "./src/gaesup/camera"),
     },
   },
 });

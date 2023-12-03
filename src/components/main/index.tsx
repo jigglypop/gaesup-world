@@ -9,23 +9,26 @@ import { Physics } from "@react-three/rapier";
 import Floor from "@components/platform/Floor";
 import { optionsAtom } from "@gaesup/stores/options";
 import { useSetAtom } from "jotai";
+import FloatMove from "../platform/FloatMove";
+import RigidObjects from "../platform/RigidObjects";
+import RoughPlane from "../platform/RoughPlane";
+import { vehicleKeyboardMap } from "./keyboardMap/vehicle";
 import * as style from "./style.css";
 
 export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
 
-export default function Main() {
-  const keyboardMap = [
-    { name: "forward", keys: ["ArrowUp", "KeyW"] },
-    { name: "backward", keys: ["ArrowDown", "KeyS"] },
-    { name: "leftward", keys: ["ArrowLeft", "KeyA"] },
-    { name: "rightward", keys: ["ArrowRight", "KeyD"] },
-    { name: "jump", keys: ["Space"] },
-    { name: "run", keys: ["Shift"] },
-    { name: "greet", keys: ["KeyZ"] },
-  ];
+// const keyMap = () => {
+//   const options = useAtomValue(optionsAtom);
+//   if (options.mode === "normal") {
+//     return characterKeyboardMap;
+//   } else if (options.mode === "vehicle") {
+//     return vehicleKeyboardMap;
+//   }
+// };
 
-  // const URL = S3 + "/gaesup.glb";
-  const URL = S3 + "/kart2.glb";
+export default function Main() {
+  const CHARACTER_URL = S3 + "/gaesup.glb";
+  const KART_URL = S3 + "/kart2.glb";
 
   const setOptions = useSetAtom(optionsAtom);
 
@@ -125,13 +128,17 @@ export default function Main() {
         />
         <ambientLight intensity={0.5} />
         <Physics debug>
-          <KeyboardControls map={keyboardMap}>
+          <KeyboardControls map={vehicleKeyboardMap}>
             <Controller
-              url={URL}
+              url={CHARACTER_URL}
+              characterUrl={CHARACTER_URL}
+              kartUrl={KART_URL}
               options={{
                 debug: false,
                 controllerType: "keyboard",
                 mode: "vehicle",
+                kartUrl: KART_URL,
+                characterUrl: CHARACTER_URL,
                 camera: {
                   type: "perspective",
                   control: "orbit",
@@ -139,11 +146,6 @@ export default function Main() {
                 orthographicCamera: {
                   zoom: 80,
                 },
-                // perspectiveCamera: {
-                //   XZDistance: 2,
-                //   YDistance: 1.5,
-                //   isFront: true
-                // }
               }}
               character={{
                 rotation: [0, Math.PI, 0],
@@ -159,13 +161,13 @@ export default function Main() {
               }}
             />
           </KeyboardControls>
-          {/* <RoughPlane />
+          <RoughPlane />
           <RigidObjects />
-          <FloatMove /> */}
+          <FloatMove />
           <Floor />
         </Physics>
       </Canvas>
-      <GaeSupTools keyboardMap={keyboardMap} />
+      <GaeSupTools keyboardMap={vehicleKeyboardMap} />
     </>
   );
 }

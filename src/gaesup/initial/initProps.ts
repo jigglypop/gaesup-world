@@ -28,7 +28,7 @@ export default function initProps({
   } = useCallback(() => {
     return getKeys();
   }, [getKeys])();
-  const [options, setOptions] = useAtom(optionsAtom);
+  const [options] = useAtom(optionsAtom);
 
   const groundRay: groundRayType = useMemo(() => {
     return {
@@ -83,6 +83,10 @@ export default function initProps({
       rejectSpeed: 4,
       splintSpeed: 3,
       runRate: 2,
+      accelRate: 5,
+      splintRate: 2,
+      brakeRate: 5,
+      wheelOffset: 0.1,
       dT: 10,
       reconsil: 0.3,
       rotational: 0.03,
@@ -140,12 +144,16 @@ export default function initProps({
   );
 
   useEffect(() => {
-    if (props.options) {
-      setOptions((options) => ({
-        ...options,
-        ...Object.assign(options, props.options),
-      }));
-    }
+    // if (props.options) {
+    //   setOptions((options) => ({
+    //     ...options,
+    //     ...Object.assign(options, props.options),
+    //   }));c
+    // }
+    optionsAtom.init = Object.assign(optionsAtom.init, {
+      ...props.options,
+    });
+
     if (props.constant) {
       constant = {
         ...constant,

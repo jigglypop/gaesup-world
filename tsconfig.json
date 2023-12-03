@@ -27,7 +27,10 @@
       "@components/*": ["components/*"],
       "@styles/*": ["styles/*"],
       "@stores/*": ["gaesup/stores/*"],
-      "@gaesup/*": ["gaesup/*"]
+      "@gaesup/*": ["gaesup/*"],
+      "@utils/*": ["gaesup/utils/*"],
+      "@physics/*": ["gaesup/physics/*"],
+      "@camera/*": ["gaesup/camera/*"]
     }
   },
   "include": ["src"],

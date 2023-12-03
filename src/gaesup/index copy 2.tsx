@@ -1,21 +1,39 @@
 "use client";
 
+import { S3 } from "@/components/main";
 import { Collider, RevoluteImpulseJoint } from "@dimforge/rapier3d-compat";
+import { useLoader } from "@react-three/fiber";
 import { RapierRigidBody } from "@react-three/rapier";
 import { useAtomValue } from "jotai";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import Camera from "./camera";
 import check from "./check";
+import CharacterGltf from "./gltf/CharacterGltf";
+import VehicleGltf from "./gltf/VehicleGltf";
+import { Wheels } from "./gltf/WheelJoint";
 import initProps from "./initial/initProps";
 import initSetting from "./initial/initSetting";
 import calculation from "./physics";
-import { GaesupGroup, GaesupRigidBody, GaesupSlopeRay } from "./ref";
+import {
+  GaesupCapsuleCollider,
+  GaesupGroup,
+  GaesupRigidBody,
+  GaesupSlopeRay,
+} from "./ref/character";
+import { VehicleCollider, VehicleGroup, VehicleRigidBody } from "./ref/vehicle";
 import { optionsAtom } from "./stores/options";
-import { callbackType, controllerType, refsType } from "./type";
-import VehicleGltf from "./utils/VehicleGltf";
+import { GLTFResult, callbackType, controllerType, refsType } from "./type";
 
 export default function Controller(props: controllerType) {
+  const options = useAtomValue(optionsAtom);
+  useEffect(() => {
+    optionsAtom.init = Object.assign(optionsAtom.init, {
+      ...props.options,
+    });
+  }, []);
+
   const capsuleColliderRef = useRef<Collider>(null);
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const outerGroupRef = useRef<THREE.Group>(null);
@@ -36,6 +54,8 @@ export default function Controller(props: controllerType) {
       refs,
     }),
     ...refs,
+    characterUrl: props.characterUrl,
+    kartUrl: props.kartUrl,
   };
 
   const callbacks: callbackType = {
@@ -47,39 +67,25 @@ export default function Controller(props: controllerType) {
 
   initSetting(prop);
   check(prop);
-  calculation(prop, refs);
-  const options = useAtomValue(optionsAtom);
+  calculation(prop);
+
+  const gltf: GLTFResult = useLoader(GLTFLoader, props.kartUrl || props.url);
+  const wheelGltf: GLTFResult = useLoader(
+    GLTFLoader,
+    props.wheelsUrl || S3 + "/wheel.glb"
+  );
 
   return (
     <>
       <Camera prop={prop} />
-
-      {options.mode === "vehicle" && (
-        <GaesupGroup ref={outerGroupRef}>
-          {/* <GaesupCuboidCollider ref={capsuleColliderRef} /> */}
-          <GaesupSlopeRay
-            slopeRay={prop.slopeRay}
-            groundRay={prop.groundRay}
-            ref={slopeRayOriginRef}
-          />
-          {props.children}
-          <GaesupRigidBody
-            ref={rigidBodyRef}
-            groundRay={prop.groundRay}
-            controllerProps={props}
-          >
-            <VehicleGltf
-              prop={prop}
-              url={props.url}
-              character={props.character}
-              groundRay={prop.groundRay}
-              refs={refs}
-              callbacks={callbacks}
-            />
-          </GaesupRigidBody>
-        </GaesupGroup>
-      )}
-      {/* {options.mode === "normal" && (
+      {/* <VehicleGroup ref={outerGroupRef}>
+        <VehicleRigidBody ref={rigidBodyRef} groundRay={prop.groundRay}>
+          <VehicleCollider gltf={gltf} wheelGltf={wheelGltf} />
+          <VehicleGltf gltf={gltf} />
+        </VehicleRigidBody>
+        <Wheels prop={prop} />
+      </VehicleGroup> */}
+      {options.mode === "normal" && (
         <GaesupRigidBody
           ref={rigidBodyRef}
           groundRay={prop.groundRay}
@@ -103,7 +109,16 @@ export default function Controller(props: controllerType) {
             />
           </GaesupGroup>
         </GaesupRigidBody>
-      )} */}
+      )}
+      {options.mode === "vehicle" && (
+        <VehicleGroup ref={outerGroupRef}>
+          <VehicleRigidBody ref={rigidBodyRef} groundRay={prop.groundRay}>
+            <VehicleCollider gltf={gltf} wheelGltf={wheelGltf} />
+            <VehicleGltf gltf={gltf} />
+          </VehicleRigidBody>
+          <Wheels prop={prop} />
+        </VehicleGroup>
+      )}
     </>
   );
 }
