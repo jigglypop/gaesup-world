@@ -8,7 +8,7 @@ import { Physics } from "@react-three/rapier";
 
 import Floor from "@components/platform/Floor";
 import { optionsAtom } from "@gaesup/stores/options";
-import { useSetAtom } from "jotai";
+import { useAtom } from "jotai";
 import FloatMove from "../platform/FloatMove";
 import RigidObjects from "../platform/RigidObjects";
 import RoughPlane from "../platform/RoughPlane";
@@ -30,11 +30,22 @@ export default function Main() {
   const CHARACTER_URL = S3 + "/gaesup.glb";
   const KART_URL = S3 + "/kart2.glb";
 
-  const setOptions = useSetAtom(optionsAtom);
+  const [options, setOptions] = useAtom(optionsAtom);
 
   return (
     <>
       <div className={style.mainButtonContainer}>
+        <button
+          className={style.button}
+          onClick={() =>
+            setOptions((options) => ({
+              ...options,
+              mode: options.mode === "normal" ? "vehicle" : "normal",
+            }))
+          }
+        >
+          {options.mode}
+        </button>
         <button
           className={style.button}
           onClick={() =>

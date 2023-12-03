@@ -9,7 +9,6 @@ import {
 } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { vec3 } from "@react-three/rapier";
-import refCheck from "@utils/refCheck";
 import { useAtom } from "jotai";
 import * as THREE from "three";
 import { cameraPropType } from "../physics";
@@ -66,7 +65,13 @@ export default function Camera({ prop }: { prop: propType }) {
   // }, []);
 
   useFrame((state, delta) => {
-    refCheck(prop);
+    if (
+      !rigidBodyRef ||
+      !rigidBodyRef.current ||
+      !outerGroupRef ||
+      !outerGroupRef.current
+    )
+      return null;
     cameraProp.state = state;
     cameraProp.delta = delta;
     if (

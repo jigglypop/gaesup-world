@@ -1,10 +1,16 @@
-import playActions from "@gaesup/animation/actions";
-import initCallback from "@gaesup/initial/initCallback";
-import { colliderAtom, useColliderInit } from "@gaesup/stores/collider";
-import { callbackType, groundRayType, propType, refsType } from "@gaesup/type";
+import {
+  GLTFResult,
+  callbackType,
+  groundRayType,
+  propType,
+  refsType,
+} from "@gaesup/type";
 import { GroupProps, useLoader } from "@react-three/fiber";
 import { useAtomValue } from "jotai";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import playActions from "../animation/actions";
+import initCallback from "../initial/initCallback";
+import { colliderAtom } from "../stores/collider";
 
 let preloadUrl = "";
 
@@ -15,9 +21,11 @@ export type characterGltfType = {
   groundRay: groundRayType;
   refs: refsType;
   callbacks?: callbackType;
+  gltf: GLTFResult;
 };
 
 export default function CharacterGltf({
+  gltf,
   prop,
   url,
   character,
@@ -26,11 +34,9 @@ export default function CharacterGltf({
   callbacks,
 }: characterGltfType) {
   preloadUrl = url;
-  const gltf = useLoader(GLTFLoader, prop.characterUrl || url);
-  const { materials, nodes, scene, animations } = gltf;
+  const { materials, nodes, animations } = gltf;
   const collider = useAtomValue(colliderAtom);
 
-  useColliderInit(scene, character);
   initCallback({
     prop,
     callbacks,
@@ -61,9 +67,9 @@ export default function CharacterGltf({
             <skinnedMesh
               castShadow
               receiveShadow
-              material={materials!![name]}
-              geometry={nodes![name].geometry}
-              skeleton={nodes![name].skeleton}
+              material={materials[name]}
+              geometry={nodes[name].geometry}
+              skeleton={(nodes[name] as THREE.SkinnedMesh).skeleton}
               key={key}
             />
           );

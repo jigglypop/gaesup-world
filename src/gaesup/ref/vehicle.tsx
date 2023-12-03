@@ -11,7 +11,7 @@ import {
   useRevoluteJoint,
 } from "@react-three/rapier";
 import { useAtom, useAtomValue } from "jotai";
-import { ReactNode, Ref, RefObject, forwardRef, useEffect } from "react";
+import { ReactNode, Ref, RefObject, forwardRef } from "react";
 import * as THREE from "three";
 import { GLTFResult, groundRayType } from "../type";
 
@@ -27,8 +27,6 @@ export const VehicleRigidBody = forwardRef(
     ref: Ref<RapierRigidBody>
   ) => {
     const options = useAtomValue(optionsAtom);
-    console.log("vehicle");
-
     return (
       <RigidBody colliders={false} ref={ref}>
         {options.debug && (
@@ -47,47 +45,18 @@ export const VehicleRigidBody = forwardRef(
 export const VehicleCollider = forwardRef(
   (
     {
+      url,
       gltf,
       wheelGltf,
     }: {
+      url: string;
       gltf: GLTFResult;
       wheelGltf: GLTFResult;
     },
     ref: Ref<Collider>
   ) => {
-    const { scene } = gltf;
-    const { scene: wheelScene } = wheelGltf;
     const [collider, setCollider] = useAtom(colliderAtom);
     const { sizeX, sizeY, sizeZ } = collider;
-    const box = new THREE.Box3().setFromObject(scene);
-    const wheelBox = new THREE.Box3().setFromObject(wheelScene);
-
-    const size = box.getSize(new THREE.Vector3());
-    const wheelsize = wheelBox.getSize(new THREE.Vector3());
-
-    useEffect(() => {
-      if (
-        size.x !== 0 &&
-        size.y !== 0 &&
-        size.z !== 0 &&
-        wheelsize.x !== 0 &&
-        wheelsize.y !== 0 &&
-        wheelsize.z !== 0
-      ) {
-        setCollider({
-          ...collider,
-          sizeX: size.x,
-          sizeY: wheelsize.y,
-          sizeZ: size.z,
-          wheelSizeX: wheelsize.x,
-          wheelSizeY: wheelsize.y,
-          wheelSizeZ: wheelsize.z,
-          x: size.x / 2,
-          y: wheelsize.y / 2,
-          z: size.z / 2,
-        });
-      }
-    }, [size.x, size.y, size.z]);
 
     return (
       <CuboidCollider

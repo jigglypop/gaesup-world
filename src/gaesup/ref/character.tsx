@@ -1,17 +1,24 @@
 import { Collider } from "@dimforge/rapier3d-compat";
-import { colliderAtom } from "@gaesup/stores/collider";
-import { optionsAtom } from "@gaesup/stores/options";
-import { controllerType, groundRayType, slopeRayType } from "@gaesup/type";
+
 import {
   CapsuleCollider,
   CuboidCollider,
   RapierRigidBody,
   RigidBody,
 } from "@react-three/rapier";
-import { useAtomValue } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { ReactNode, Ref, forwardRef } from "react";
+import * as THREE from "three";
+import { colliderAtom } from "../stores/collider";
+import { optionsAtom } from "../stores/options";
+import {
+  GLTFResult,
+  controllerType,
+  groundRayType,
+  slopeRayType,
+} from "../type";
 
-export const GaesupRigidBody = forwardRef(
+export const CharacterRigidBody = forwardRef(
   (
     {
       controllerProps,
@@ -46,21 +53,24 @@ export const GaesupRigidBody = forwardRef(
   }
 );
 
-export const GaesupCapsuleCollider = forwardRef((_, ref: Ref<Collider>) => {
-  const collider = useAtomValue(colliderAtom);
-  return (
-    <CapsuleCollider ref={ref} args={[collider.height, collider.radius]} />
-  );
-});
+export const CharacterCapsuleCollider = forwardRef(
+  ({ url, gltf }: { url: string; gltf: GLTFResult }, ref: Ref<Collider>) => {
+    const [collider, setCollider] = useAtom(colliderAtom);
 
-export const GaesupCuboidCollider = forwardRef((_, ref: Ref<Collider>) => {
+    return (
+      <CapsuleCollider ref={ref} args={[collider.height, collider.radius]} />
+    );
+  }
+);
+
+export const CharacterCuboidCollider = forwardRef((_, ref: Ref<Collider>) => {
   const collider = useAtomValue(colliderAtom);
   return (
     <CuboidCollider ref={ref} args={[collider.x, collider.y, collider.z]} />
   );
 });
 
-export const GaesupGroup = forwardRef(
+export const CharacterGroup = forwardRef(
   (
     {
       children,
@@ -77,7 +87,7 @@ export const GaesupGroup = forwardRef(
   }
 );
 
-export const GaesupSlopeRay = forwardRef(
+export const CharacterSlopeRay = forwardRef(
   (
     {
       groundRay,

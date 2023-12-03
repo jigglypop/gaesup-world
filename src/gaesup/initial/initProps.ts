@@ -144,16 +144,6 @@ export default function initProps({
   );
 
   useEffect(() => {
-    // if (props.options) {
-    //   setOptions((options) => ({
-    //     ...options,
-    //     ...Object.assign(options, props.options),
-    //   }));c
-    // }
-    optionsAtom.init = Object.assign(optionsAtom.init, {
-      ...props.options,
-    });
-
     if (props.constant) {
       constant = {
         ...constant,

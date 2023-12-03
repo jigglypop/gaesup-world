@@ -1,6 +1,4 @@
-import { GroupProps } from "@react-three/fiber";
-import { atom, useAtom } from "jotai";
-import * as THREE from "three";
+import { atom } from "jotai";
 export type colliderAtomType = {
   halfHeight: number;
   height: number;
@@ -33,22 +31,3 @@ export const colliderAtom = atom<colliderAtomType>({
   z: 1,
 });
 colliderAtom.debugLabel = "collider";
-
-export function useColliderInit(scene: THREE.Object3D, character?: GroupProps) {
-  const [collider, setcollider] = useAtom(colliderAtom);
-  const box = new THREE.Box3().setFromObject(scene);
-  const size = box.getSize(new THREE.Vector3());
-  if (size.x !== 0 && size.y !== 0 && size.z !== 0) {
-    const height = size.y / 2;
-    const halfHeight = height / 2;
-    const diameter = Math.max(size.x, size.z);
-    const radius = diameter / 2;
-    setcollider({
-      height: height - diameter / 2,
-      halfHeight: halfHeight - radius / 2,
-      diameter,
-      radius,
-    });
-  }
-  return { collider, setcollider };
-}

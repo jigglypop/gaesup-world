@@ -9,9 +9,9 @@ export function Wheels({ prop }: { prop: propType }) {
   const { rigidBodyRef, constant } = prop;
   const { wheelOffset } = constant;
   const collider = useAtomValue(colliderAtom);
-  const { sizeX, sizeZ } = collider;
-  const _sizeX = sizeX + wheelOffset;
-  const _sizeZ = sizeZ + wheelOffset;
+  const { sizeX, sizeZ, wheelSizeX, wheelSizeZ } = collider;
+  const _sizeX = (sizeX + wheelSizeX) / 2 + wheelOffset;
+  const _sizeZ = (sizeZ + wheelSizeZ) / 2 + wheelOffset;
   const wheelPositions: [number, number, number][] = [
     [-_sizeX, 0, _sizeZ],
     [-_sizeX, 0, -_sizeZ],

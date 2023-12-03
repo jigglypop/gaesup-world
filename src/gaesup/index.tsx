@@ -17,12 +17,13 @@ import initProps from "./initial/initProps";
 import initSetting from "./initial/initSetting";
 import calculation from "./physics";
 import {
-  GaesupCapsuleCollider,
-  GaesupGroup,
-  GaesupRigidBody,
-  GaesupSlopeRay,
+  CharacterCapsuleCollider,
+  CharacterGroup,
+  CharacterRigidBody,
+  CharacterSlopeRay,
 } from "./ref/character";
 import { VehicleCollider, VehicleGroup, VehicleRigidBody } from "./ref/vehicle";
+import { colliderAtom } from "./stores/collider";
 import { optionsAtom } from "./stores/options";
 import { GLTFResult, callbackType, controllerType, refsType } from "./type";
 
@@ -35,6 +36,109 @@ export default function Controller(props: controllerType) {
     }));
   }, []);
 
+  const vehicleGltf: GLTFResult = useLoader(
+    GLTFLoader,
+    props.kartUrl || props.url
+  );
+  const wheelGltf: GLTFResult = useLoader(
+    GLTFLoader,
+    props.wheelsUrl || S3 + "/wheel.glb"
+  );
+  const characterGltf: GLTFResult = useLoader(
+    GLTFLoader,
+    props.characterUrl || props.url
+  );
+
+  const { scene: characterScene } = characterGltf;
+  const [collider, setCollider] = useAtom(colliderAtom);
+  const characterSize = new THREE.Box3()
+    .setFromObject(characterScene)
+    .getSize(new THREE.Vector3());
+
+  useEffect(() => {
+    if (
+      characterSize.x !== 0 &&
+      characterSize.y !== 0 &&
+      characterSize.z !== 0
+    ) {
+      const height = characterSize.y / 2;
+      const halfHeight = height / 2;
+      const diameter = Math.max(characterSize.x, characterSize.z);
+      const radius = diameter / 2;
+      setCollider((collider) => ({
+        ...collider,
+        height: height - diameter / 2,
+        halfHeight: halfHeight - radius / 2,
+        diameter,
+        radius,
+      }));
+    }
+  }, [characterSize.x, characterSize.y, characterSize.z]);
+
+  const { scene: vehicleScene } = vehicleGltf;
+  const { scene: wheelScene } = wheelGltf;
+
+  const vehicleSize = new THREE.Box3()
+    .setFromObject(vehicleScene)
+    .getSize(new THREE.Vector3());
+  const wheelsize = new THREE.Box3()
+    .setFromObject(wheelScene)
+    .getSize(new THREE.Vector3());
+
+  useEffect(() => {
+    if (
+      vehicleSize.x !== 0 &&
+      vehicleSize.y !== 0 &&
+      vehicleSize.z !== 0 &&
+      wheelsize.x !== 0 &&
+      wheelsize.y !== 0 &&
+      wheelsize.z !== 0
+    ) {
+      setCollider((collider) => ({
+        ...collider,
+        sizeX: vehicleSize.x,
+        sizeY: wheelsize.y,
+        sizeZ: vehicleSize.z,
+        wheelSizeX: wheelsize.x,
+        wheelSizeY: wheelsize.y,
+        wheelSizeZ: wheelsize.z,
+        x: vehicleSize.x / 2,
+        y: wheelsize.y / 2,
+        z: vehicleSize.z / 2,
+      }));
+    }
+  }, [
+    vehicleSize.x,
+    vehicleSize.y,
+    vehicleSize.z,
+    wheelsize.x,
+    wheelsize.y,
+    wheelsize.z,
+  ]);
+
+  return (
+    <>
+      {options.mode === "normal" && (
+        <Character props={props} characterGltf={characterGltf} />
+      )}
+      {options.mode === "vehicle" && (
+        <Vehicle
+          props={props}
+          vehicleGltf={vehicleGltf}
+          wheelGltf={wheelGltf}
+        />
+      )}
+    </>
+  );
+}
+
+export function Character({
+  props,
+  characterGltf,
+}: {
+  props: controllerType;
+  characterGltf: GLTFResult;
+}) {
   const capsuleColliderRef = useRef<Collider>(null);
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const outerGroupRef = useRef<THREE.Group>(null);
@@ -70,61 +174,99 @@ export default function Controller(props: controllerType) {
   check(prop);
   calculation(prop);
 
-  const gltf: GLTFResult = useLoader(GLTFLoader, props.kartUrl || props.url);
-  const wheelGltf: GLTFResult = useLoader(
-    GLTFLoader,
-    props.wheelsUrl || S3 + "/wheel.glb"
+  return (
+    <>
+      <Camera prop={prop} />
+      <CharacterRigidBody
+        ref={rigidBodyRef}
+        groundRay={prop.groundRay}
+        controllerProps={props}
+      >
+        <CharacterCapsuleCollider
+          url={props.characterUrl || props.url}
+          ref={capsuleColliderRef}
+          gltf={characterGltf}
+        />
+        <CharacterGroup ref={outerGroupRef}>
+          <CharacterSlopeRay
+            slopeRay={prop.slopeRay}
+            groundRay={prop.groundRay}
+            ref={slopeRayOriginRef}
+          />
+          {props.children}
+          <CharacterGltf
+            gltf={characterGltf}
+            prop={prop}
+            url={props.url}
+            character={props.character}
+            groundRay={prop.groundRay}
+            refs={refs}
+            callbacks={callbacks}
+          />
+        </CharacterGroup>
+      </CharacterRigidBody>
+    </>
   );
+}
+
+export function Vehicle({
+  props,
+  vehicleGltf,
+  wheelGltf,
+}: {
+  props: controllerType;
+  vehicleGltf: GLTFResult;
+  wheelGltf: GLTFResult;
+}) {
+  const capsuleColliderRef = useRef<Collider>(null);
+  const rigidBodyRef = useRef<RapierRigidBody>(null);
+  const outerGroupRef = useRef<THREE.Group>(null);
+  const slopeRayOriginRef = useRef<THREE.Mesh>(null);
+  const jointRefs = useRef<RevoluteImpulseJoint>(null);
+
+  const refs: refsType = {
+    capsuleColliderRef,
+    rigidBodyRef,
+    outerGroupRef,
+    slopeRayOriginRef,
+    jointRefs,
+  };
+
+  const prop = {
+    ...initProps({
+      props,
+      refs,
+    }),
+    ...refs,
+    characterUrl: props.characterUrl,
+    kartUrl: props.kartUrl,
+  };
+
+  const callbacks: callbackType = {
+    onReady: props.onReady,
+    onFrame: props.onFrame,
+    onDestory: props.onDestory,
+    onAnimate: props.onAnimate,
+  };
+
+  initSetting(prop);
+  check(prop);
+  calculation(prop);
 
   return (
     <>
-      {/* <VehicleGroup ref={outerGroupRef}>
+      <Camera prop={prop} />
+      <VehicleGroup ref={outerGroupRef}>
         <VehicleRigidBody ref={rigidBodyRef} groundRay={prop.groundRay}>
-          <VehicleCollider gltf={gltf} wheelGltf={wheelGltf} />
-          <VehicleGltf gltf={gltf} />
+          <VehicleCollider
+            url={props.kartUrl || props.url}
+            gltf={vehicleGltf}
+            wheelGltf={wheelGltf}
+          />
+          <VehicleGltf gltf={vehicleGltf} />
         </VehicleRigidBody>
         <Wheels prop={prop} />
-      </VehicleGroup> */}
-      {options.mode === "normal" && (
-        <>
-          <Camera prop={prop} />
-          <GaesupRigidBody
-            ref={rigidBodyRef}
-            groundRay={prop.groundRay}
-            controllerProps={props}
-          >
-            <GaesupCapsuleCollider ref={capsuleColliderRef} />
-            <GaesupGroup ref={outerGroupRef}>
-              <GaesupSlopeRay
-                slopeRay={prop.slopeRay}
-                groundRay={prop.groundRay}
-                ref={slopeRayOriginRef}
-              />
-              {props.children}
-              <CharacterGltf
-                prop={prop}
-                url={props.url}
-                character={props.character}
-                groundRay={prop.groundRay}
-                refs={refs}
-                callbacks={callbacks}
-              />
-            </GaesupGroup>
-          </GaesupRigidBody>
-        </>
-      )}
-      {options.mode === "vehicle" && (
-        <>
-          <Camera prop={prop} />
-          <VehicleGroup ref={outerGroupRef}>
-            <VehicleRigidBody ref={rigidBodyRef} groundRay={prop.groundRay}>
-              <VehicleCollider gltf={gltf} wheelGltf={wheelGltf} />
-              <VehicleGltf gltf={gltf} />
-            </VehicleRigidBody>
-            <Wheels prop={prop} />
-          </VehicleGroup>
-        </>
-      )}
+      </VehicleGroup>
     </>
   );
 }
