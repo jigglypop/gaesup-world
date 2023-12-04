@@ -12,22 +12,23 @@ import { useAtom } from "jotai";
 import FloatMove from "../platform/FloatMove";
 import RigidObjects from "../platform/RigidObjects";
 import RoughPlane from "../platform/RoughPlane";
-import { vehicleKeyboardMap } from "./keyboardMap/vehicle";
 import * as style from "./style.css";
 
 export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
 
-// const keyMap = () => {
-//   const options = useAtomValue(optionsAtom);
-//   if (options.mode === "normal") {
-//     return characterKeyboardMap;
-//   } else if (options.mode === "vehicle") {
-//     return vehicleKeyboardMap;
-//   }
-// };
+export const keyboardMap = [
+  { name: "forward", keys: ["ArrowUp", "KeyW"] },
+  { name: "backward", keys: ["ArrowDown", "KeyS"] },
+  { name: "leftward", keys: ["ArrowLeft", "KeyA"] },
+  { name: "rightward", keys: ["ArrowRight", "KeyD"] },
+  { name: "space", keys: ["Space"] },
+  { name: "shift", keys: ["Shift"] },
+  { name: "keyZ", keys: ["KeyZ"] },
+  { name: "control", keys: ["ControlLeft", "ControlRight"] },
+];
 
 export default function Main() {
-  const CHARACTER_URL = S3 + "/gaesup.glb";
+  const CHARACTER_URL = "./gaesupyee.glb";
   const KART_URL = S3 + "/kart2.glb";
 
   const [options, setOptions] = useAtom(optionsAtom);
@@ -139,7 +140,7 @@ export default function Main() {
         />
         <ambientLight intensity={0.5} />
         <Physics debug>
-          <KeyboardControls map={vehicleKeyboardMap}>
+          <KeyboardControls map={keyboardMap}>
             <Controller
               url={CHARACTER_URL}
               characterUrl={CHARACTER_URL}
@@ -178,7 +179,7 @@ export default function Main() {
           <Floor />
         </Physics>
       </Canvas>
-      <GaeSupTools keyboardMap={vehicleKeyboardMap} />
+      <GaeSupTools keyboardMap={keyboardMap} />
     </>
   );
 }

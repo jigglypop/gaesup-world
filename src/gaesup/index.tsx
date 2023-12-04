@@ -123,6 +123,7 @@ export default function Controller(props: controllerType) {
       )}
       {options.mode === "vehicle" && (
         <Vehicle
+          characterGltf={characterGltf}
           props={props}
           vehicleGltf={vehicleGltf}
           wheelGltf={wheelGltf}
@@ -211,10 +212,12 @@ export function Character({
 
 export function Vehicle({
   props,
+  characterGltf,
   vehicleGltf,
   wheelGltf,
 }: {
   props: controllerType;
+  characterGltf: GLTFResult;
   vehicleGltf: GLTFResult;
   wheelGltf: GLTFResult;
 }) {
@@ -262,6 +265,16 @@ export function Vehicle({
             url={props.kartUrl || props.url}
             gltf={vehicleGltf}
             wheelGltf={wheelGltf}
+          />
+          <CharacterGltf
+            gltf={characterGltf}
+            prop={prop}
+            url={props.url}
+            character={props.character}
+            groundRay={prop.groundRay}
+            refs={refs}
+            callbacks={callbacks}
+            isRider={true}
           />
           <VehicleGltf gltf={vehicleGltf} />
         </VehicleRigidBody>

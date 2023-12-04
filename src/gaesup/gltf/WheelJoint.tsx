@@ -35,15 +35,6 @@ export function Wheels({ prop }: { prop: propType }) {
           rotationAxis={[1, 0, 0]}
         />
       ))}
-      {/* {wheelPositions.map((wheelPosition, index) => (
-        <WheelJoint
-          bodyRef={rigidBodyRef}
-          wheel={wheelRefs.current[index]}
-          bodyAnchor={wheelPosition}
-          wheelAnchor={[0, 0, 0]}
-          rotationAxis={[1, 0, 0]}
-        />
-      ))} */}
     </>
   );
 }

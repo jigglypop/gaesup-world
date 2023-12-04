@@ -9,7 +9,7 @@ export default function VehicleGltf({ gltf }: VehicleGltfType) {
   return (
     <>
       {nodes && materials && (
-        <group receiveShadow castShadow>
+        <group receiveShadow castShadow rotation={[0, Math.PI, 0]}>
           {Object.keys(nodes).map((name: string, key: number) => {
             if (
               nodes[name].type === "Mesh" ||

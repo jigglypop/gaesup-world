@@ -22,6 +22,7 @@ export type characterGltfType = {
   refs: refsType;
   callbacks?: callbackType;
   gltf: GLTFResult;
+  isRider?: boolean;
 };
 
 export default function CharacterGltf({
@@ -32,6 +33,7 @@ export default function CharacterGltf({
   groundRay,
   refs,
   callbacks,
+  isRider,
 }: characterGltfType) {
   preloadUrl = url;
   const { materials, nodes, animations } = gltf;
@@ -42,10 +44,11 @@ export default function CharacterGltf({
     callbacks,
     animations,
   });
+
   playActions({
     outerGroupRef: refs.outerGroupRef,
     groundRay: groundRay,
-    animations,
+    isRider,
   });
 
   return (
@@ -53,7 +56,7 @@ export default function CharacterGltf({
       receiveShadow
       castShadow
       {...character}
-      position={[0, -collider.height, 0]}
+      position={[0, isRider ? collider.sizeY / 2 : -collider.height, 0]}
     >
       <primitive
         object={nodes!.walk}

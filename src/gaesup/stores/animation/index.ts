@@ -35,9 +35,11 @@ animationAtom.debugLabel = "animation";
 export default function usePlay({
   outerGroupRef,
   animations,
+  defaultAnimation,
 }: {
   outerGroupRef?: RefObject<THREE.Group>;
   animations: THREE.AnimationClip[];
+  defaultAnimation?: string;
 }) {
   const [_, getKeys] = useKeyboardControls();
   const keys = getKeys();
@@ -86,6 +88,7 @@ export default function usePlay({
   const playJumpIdle = () => playAnimation("jumpIdle");
   const playJumpLand = () => playAnimation("jumpLand");
   const playFall = () => playAnimation("fall");
+  const playRide = () => playAnimation("ride");
 
   useEffect(() => {
     return () => {
@@ -95,7 +98,9 @@ export default function usePlay({
 
   useEffect(() => {
     // Play animation
-    const action = actions[animation.current]?.reset().fadeIn(0.2).play();
+    const action = actions[defaultAnimation || animation.current]!.reset()
+      .fadeIn(0.2)
+      .play();
     setAnimationName(actions);
     return () => {
       action?.fadeOut(0.2);
@@ -113,5 +118,6 @@ export default function usePlay({
     playJumpIdle,
     playJumpLand,
     playFall,
+    playRide,
   };
 }

@@ -5,8 +5,8 @@ export default function impulse(prop: calcPropType) {
   const { rigidBodyRef, constant, control } = prop;
   const [current, setCurrent] = prop.current;
   const { accelRate } = constant;
-  const { accel } = control;
-  current.direction.multiplyScalar(accel ? accelRate : 1);
+  const { shift } = control;
+  current.direction.multiplyScalar(shift ? accelRate : 1);
   rigidBodyRef.current.applyImpulse(
     vec3({
       x: current.direction.x,

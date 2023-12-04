@@ -180,6 +180,7 @@ export type animationTagType = {
   jumpIdle: string;
   jumpLand: string;
   fall: string;
+  ride: string;
 };
 
 export type actionsType = animationTagType & {
