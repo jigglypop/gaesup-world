@@ -1,22 +1,16 @@
 import { propType } from "@gaesup/type";
+import { useAtomValue } from "jotai";
+import { useEffect } from "react";
+import { currentAtom } from "../stores/current";
+import { optionsAtom } from "../stores/options";
 
-/**
- * Follow camera initial setups from props
- * Load camera pivot and character move preset
- * 카메라 초기 설정
- * 카메라 피벗과 캐릭터 이동 설정
- */
 export default function initSetting(prop: propType) {
-  // const options = useAtomValue(optionsAtom);
-  // const { camera } = useThree();
-  // const { constant, cameraRay } = prop;
-  // useEffect(() => {
-  //   // Initialize camera facing direction
-  //   if (options.camera.type === "perspective") {
-  //     const origin = new THREE.Object3D();
-  //     origin.position.set(0, 0, constant.cameraInitDirection);
-  //     cameraRay.followCamera = origin;
-  //     camera.position.set(0, 0, 0);
-  //   }
-  // }, [options.camera.type, options.camera.control]);
+  const options = useAtomValue(optionsAtom);
+  const current = useAtomValue(currentAtom);
+  const { rigidBodyRef } = prop;
+  useEffect(() => {
+    if (options.mode === "airplane") {
+      rigidBodyRef.current.setTranslation(current.position.setY(5), false);
+    }
+  }, [options.mode]);
 }

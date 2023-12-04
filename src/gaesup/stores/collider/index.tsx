@@ -13,6 +13,12 @@ export type colliderAtomType = {
   x?: number;
   y?: number;
   z?: number;
+  airplaneSizeX?: number;
+  airplaneSizeY?: number;
+  airplaneSizeZ?: number;
+  airplaneX?: number;
+  airplaneY?: number;
+  airplaneZ?: number;
 };
 
 export const colliderAtom = atom<colliderAtomType>({
@@ -29,5 +35,11 @@ export const colliderAtom = atom<colliderAtomType>({
   x: 1,
   y: 1,
   z: 1,
+  airplaneSizeX: 1,
+  airplaneSizeY: 1,
+  airplaneSizeZ: 1,
+  airplaneX: 1,
+  airplaneY: 1,
+  airplaneZ: 1,
 });
 colliderAtom.debugLabel = "collider";

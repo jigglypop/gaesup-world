@@ -1,4 +1,3 @@
-import { S3 } from "@/components/main";
 import { Collider } from "@dimforge/rapier3d-compat";
 import { colliderAtom } from "@gaesup/stores/collider";
 import { optionsAtom } from "@gaesup/stores/options";
@@ -14,6 +13,7 @@ import { useAtom, useAtomValue } from "jotai";
 import { ReactNode, Ref, RefObject, forwardRef } from "react";
 import * as THREE from "three";
 import { GLTFResult, groundRayType } from "../type";
+import { S3 } from "../utils/constant";
 
 export const VehicleRigidBody = forwardRef(
   (
@@ -55,7 +55,7 @@ export const VehicleCollider = forwardRef(
     },
     ref: Ref<Collider>
   ) => {
-    const [collider, setCollider] = useAtom(colliderAtom);
+    const [collider] = useAtom(colliderAtom);
     const { sizeX, sizeY, sizeZ } = collider;
 
     return (

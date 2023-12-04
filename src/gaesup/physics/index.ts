@@ -8,6 +8,7 @@ import { joyStickOriginAtom, joyStickOriginType } from "@stores/joystick";
 import { optionsAtom } from "@stores/options";
 import { statesAtom, statesType } from "@stores/states";
 import { SetStateAction, useAtom, useAtomValue } from "jotai";
+import airplaneCalculation from "./airplane";
 import characterCalculation from "./character";
 import vehicleCalculation from "./vehicle";
 
@@ -75,5 +76,6 @@ export default function calculation(prop: propType) {
     };
     if (options.mode === "vehicle") vehicleCalculation(calcProp);
     else if (options.mode === "normal") characterCalculation(calcProp);
+    else if (options.mode === "airplane") airplaneCalculation(calcProp);
   });
 }

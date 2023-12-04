@@ -6,6 +6,7 @@ import { Environment, KeyboardControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 
+import { S3 } from "@/gaesup/utils/constant";
 import Floor from "@components/platform/Floor";
 import { optionsAtom } from "@gaesup/stores/options";
 import { useAtom } from "jotai";
@@ -13,8 +14,6 @@ import FloatMove from "../platform/FloatMove";
 import RigidObjects from "../platform/RigidObjects";
 import RoughPlane from "../platform/RoughPlane";
 import * as style from "./style.css";
-
-export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
 
 export const keyboardMap = [
   { name: "forward", keys: ["ArrowUp", "KeyW"] },
@@ -29,6 +28,7 @@ export const keyboardMap = [
 
 export default function Main() {
   const CHARACTER_URL = "./gaesupyee.glb";
+  const AIRPLANE_URL = "./airplane.glb";
   const KART_URL = S3 + "/kart2.glb";
 
   const [options, setOptions] = useAtom(optionsAtom);
@@ -145,12 +145,14 @@ export default function Main() {
               url={CHARACTER_URL}
               characterUrl={CHARACTER_URL}
               kartUrl={KART_URL}
+              airplaneUrl={AIRPLANE_URL}
               options={{
                 debug: false,
                 controllerType: "keyboard",
-                mode: "vehicle",
+                mode: "airplane",
                 kartUrl: KART_URL,
                 characterUrl: CHARACTER_URL,
+                airplaneUrl: AIRPLANE_URL,
                 camera: {
                   type: "perspective",
                   control: "orbit",

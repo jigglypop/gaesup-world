@@ -19,6 +19,7 @@ export const optionsAtom = atom<optionsType>({
   },
   kartUrl: null,
   characterUrl: null,
+  airplaneUrl: null,
   orthographicCamera: {
     zoom: 1,
     near: 0.1,

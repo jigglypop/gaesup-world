@@ -1,6 +1,6 @@
 "use client";
 
-import { S3 } from "@components/main";
+import { S3 } from "@/gaesup/utils/constant";
 import GaeSupProps from "@gaesup/stores/gaesupProps";
 import { useGLTF } from "@react-three/drei";
 import { RigidBody } from "@react-three/rapier";

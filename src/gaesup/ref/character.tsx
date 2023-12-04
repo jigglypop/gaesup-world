@@ -32,7 +32,6 @@ export const CharacterRigidBody = forwardRef(
     ref: Ref<RapierRigidBody>
   ) => {
     // const options = useAtomValue(optionsAtom);
-    console.log("character");
     return (
       <RigidBody
         colliders={false}

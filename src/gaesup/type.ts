@@ -115,6 +115,7 @@ export type optionsType = {
   minimapRatio: number;
   kartUrl: string;
   characterUrl: string;
+  airplaneUrl: string;
 };
 
 export type partialOptionsType = Partial<optionsType>;
@@ -241,6 +242,7 @@ export type controllerType = controllerPropType & {
   url: string;
   characterUrl?: string;
   kartUrl?: string;
+  airplaneUrl?: string;
   wheelsUrl?: string;
 } & callbackType;
 

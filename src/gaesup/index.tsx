@@ -1,6 +1,5 @@
 "use client";
 
-import { S3 } from "@/components/main";
 import { Collider, RevoluteImpulseJoint } from "@dimforge/rapier3d-compat";
 import { useLoader } from "@react-three/fiber";
 import { RapierRigidBody } from "@react-three/rapier";
@@ -10,12 +9,17 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import Camera from "./camera";
 import check from "./check";
+import AirplaneGltf from "./gltf/AirplaneGltf";
 import CharacterGltf from "./gltf/CharacterGltf";
 import VehicleGltf from "./gltf/VehicleGltf";
 import { Wheels } from "./gltf/WheelJoint";
 import initProps from "./initial/initProps";
-import initSetting from "./initial/initSetting";
 import calculation from "./physics";
+import {
+  AirplaneCollider,
+  AirplaneGroup,
+  AirplaneRigidBody,
+} from "./ref/airplane";
 import {
   CharacterCapsuleCollider,
   CharacterGroup,
@@ -26,6 +30,7 @@ import { VehicleCollider, VehicleGroup, VehicleRigidBody } from "./ref/vehicle";
 import { colliderAtom } from "./stores/collider";
 import { optionsAtom } from "./stores/options";
 import { GLTFResult, callbackType, controllerType, refsType } from "./type";
+import { S3 } from "./utils/constant";
 
 export default function Controller(props: controllerType) {
   const [options, setOptions] = useAtom(optionsAtom);
@@ -48,6 +53,13 @@ export default function Controller(props: controllerType) {
     GLTFLoader,
     props.characterUrl || props.url
   );
+
+  const airplaneGltf: GLTFResult = useLoader(
+    GLTFLoader,
+    props.airplaneUrl || props.url
+  );
+
+  console.log("airplaneGltf", airplaneGltf);
 
   const { scene: characterScene } = characterGltf;
   const [collider, setCollider] = useAtom(colliderAtom);
@@ -116,6 +128,26 @@ export default function Controller(props: controllerType) {
     wheelsize.z,
   ]);
 
+  const { scene: airplaneScene } = airplaneGltf;
+
+  const airplaneSize = new THREE.Box3()
+    .setFromObject(airplaneScene)
+    .getSize(new THREE.Vector3());
+
+  useEffect(() => {
+    if (airplaneSize.x !== 0 && airplaneSize.y !== 0 && airplaneSize.z !== 0) {
+      setCollider((collider) => ({
+        ...collider,
+        airplaneSizeX: airplaneSize.x,
+        airplaneSizeY: airplaneSize.y,
+        airplaneSizeZ: airplaneSize.z,
+        airplaneX: airplaneSize.x / 2,
+        airplaneY: airplaneSize.y / 2,
+        airplaneZ: airplaneSize.z / 2,
+      }));
+    }
+  }, [airplaneSize.x, airplaneSize.y, airplaneSize.z]);
+
   return (
     <>
       {options.mode === "normal" && (
@@ -128,6 +160,10 @@ export default function Controller(props: controllerType) {
           vehicleGltf={vehicleGltf}
           wheelGltf={wheelGltf}
         />
+      )}
+
+      {options.mode === "airplane" && (
+        <Airplane props={props} airplaneGltf={airplaneGltf} />
       )}
     </>
   );
@@ -162,6 +198,7 @@ export function Character({
     ...refs,
     characterUrl: props.characterUrl,
     kartUrl: props.kartUrl,
+    airplaneUrl: props.airplaneUrl,
   };
 
   const callbacks: callbackType = {
@@ -171,7 +208,6 @@ export function Character({
     onAnimate: props.onAnimate,
   };
 
-  initSetting(prop);
   check(prop);
   calculation(prop);
 
@@ -252,7 +288,6 @@ export function Vehicle({
     onAnimate: props.onAnimate,
   };
 
-  initSetting(prop);
   check(prop);
   calculation(prop);
 
@@ -280,6 +315,71 @@ export function Vehicle({
         </VehicleRigidBody>
         <Wheels prop={prop} />
       </VehicleGroup>
+    </>
+  );
+}
+
+export function Airplane({
+  props,
+  airplaneGltf,
+}: {
+  props: controllerType;
+  airplaneGltf: GLTFResult;
+}) {
+  const capsuleColliderRef = useRef<Collider>(null);
+  const rigidBodyRef = useRef<RapierRigidBody>(null);
+  const outerGroupRef = useRef<THREE.Group>(null);
+  const slopeRayOriginRef = useRef<THREE.Mesh>(null);
+  const jointRefs = useRef<RevoluteImpulseJoint>(null);
+
+  const refs: refsType = {
+    capsuleColliderRef,
+    rigidBodyRef,
+    outerGroupRef,
+    slopeRayOriginRef,
+    jointRefs,
+  };
+
+  const prop = {
+    ...initProps({
+      props,
+      refs,
+    }),
+    ...refs,
+    characterUrl: props.characterUrl,
+    kartUrl: props.kartUrl,
+    airplaneUrl: props.airplaneUrl,
+  };
+
+  const callbacks: callbackType = {
+    onReady: props.onReady,
+    onFrame: props.onFrame,
+    onDestory: props.onDestory,
+    onAnimate: props.onAnimate,
+  };
+
+  check(prop);
+  calculation(prop);
+
+  return (
+    <>
+      <Camera prop={prop} />
+      <AirplaneGroup ref={outerGroupRef}>
+        <AirplaneRigidBody ref={rigidBodyRef} groundRay={prop.groundRay}>
+          <AirplaneCollider />
+          {/* <CharacterGltf
+            gltf={characterGltf}
+            prop={prop}
+            url={props.url}
+            character={props.character}
+            groundRay={prop.groundRay}
+            refs={refs}
+            callbacks={callbacks}
+            isRider={true}
+          /> */}
+          <AirplaneGltf gltf={airplaneGltf} />
+        </AirplaneRigidBody>
+      </AirplaneGroup>
     </>
   );
 }
