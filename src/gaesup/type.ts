@@ -49,6 +49,12 @@ export type currentType = {
     outerGroupRef?: RefObject<THREE.Group>;
     slopeRayOriginRef?: RefObject<THREE.Mesh>;
   };
+  axisX: THREE.Vector3;
+  axisY: THREE.Vector3;
+  axisZ: THREE.Vector3;
+  yaw: number;
+  pitch: number;
+  roll: number;
 };
 
 export type moveType = {
