@@ -2,21 +2,15 @@ import { Collider } from "@dimforge/rapier3d-compat";
 
 import {
   CapsuleCollider,
-  CuboidCollider,
   RapierRigidBody,
   RigidBody,
 } from "@react-three/rapier";
-import { useAtom, useAtomValue } from "jotai";
-import { ReactNode, Ref, forwardRef } from "react";
+import { useAtomValue } from "jotai";
+import { ReactNode, Ref, forwardRef, useContext } from "react";
 import * as THREE from "three";
-import { colliderAtom } from "../stores/collider";
+import { GaesupWorldContext } from "../stores/context";
 import { optionsAtom } from "../stores/options";
-import {
-  GLTFResult,
-  controllerType,
-  groundRayType,
-  slopeRayType,
-} from "../type";
+import { controllerType, groundRayType, slopeRayType } from "../type";
 
 export const CharacterRigidBody = forwardRef(
   (
@@ -31,7 +25,7 @@ export const CharacterRigidBody = forwardRef(
     },
     ref: Ref<RapierRigidBody>
   ) => {
-    // const options = useAtomValue(optionsAtom);
+    const options = useAtomValue(optionsAtom);
     return (
       <RigidBody
         colliders={false}
@@ -39,33 +33,28 @@ export const CharacterRigidBody = forwardRef(
         ref={ref}
         {...controllerProps}
       >
-        {/* {options.debug && (
-          <mesh visible={options.debug}>
+        {options.debug && (
+          <mesh
+            visible={options.debug}
+            userData={{
+              intangible: true,
+            }}
+          >
             <arrowHelper
               args={[groundRay.dir, groundRay.origin, groundRay.length]}
             />
           </mesh>
-        )} */}
+        )}
         {children}
       </RigidBody>
     );
   }
 );
 
-export const CharacterCapsuleCollider = forwardRef(
-  ({ url, gltf }: { url: string; gltf: GLTFResult }, ref: Ref<Collider>) => {
-    const [collider, setCollider] = useAtom(colliderAtom);
-
-    return (
-      <CapsuleCollider ref={ref} args={[collider.height, collider.radius]} />
-    );
-  }
-);
-
-export const CharacterCuboidCollider = forwardRef((_, ref: Ref<Collider>) => {
-  const collider = useAtomValue(colliderAtom);
+export const CharacterCapsuleCollider = forwardRef((_, ref: Ref<Collider>) => {
+  const { characterCollider: collider } = useContext(GaesupWorldContext);
   return (
-    <CuboidCollider ref={ref} args={[collider.x, collider.y, collider.z]} />
+    <CapsuleCollider ref={ref} args={[collider.height, collider.radius]} />
   );
 });
 
@@ -106,11 +95,11 @@ export const CharacterSlopeRay = forwardRef(
           groundRay.offset.z + slopeRay.offset.z,
         ]}
         ref={ref}
-        visible={false}
+        visible={options.debug}
         userData={{ intangible: true }}
       >
         {options.debug && (
-          <mesh>
+          <mesh userData={{ intangible: true }}>
             <arrowHelper
               args={[slopeRay.dir, slopeRay.origin, slopeRay.length, "#ff0000"]}
             />

@@ -98,9 +98,7 @@ export default function usePlay({
 
   useEffect(() => {
     // Play animation
-    const action = actions[defaultAnimation || animation.current]!.reset()
-      .fadeIn(0.2)
-      .play();
+    const action = actions[animation.current]?.reset().fadeIn(0.2).play();
     setAnimationName(actions);
     return () => {
       action?.fadeOut(0.2);

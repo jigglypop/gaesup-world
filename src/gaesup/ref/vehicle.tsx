@@ -1,5 +1,4 @@
 import { Collider } from "@dimforge/rapier3d-compat";
-import { colliderAtom } from "@gaesup/stores/collider";
 import { optionsAtom } from "@gaesup/stores/options";
 import { Gltf } from "@react-three/drei";
 import {
@@ -9,10 +8,11 @@ import {
   RigidBody,
   useRevoluteJoint,
 } from "@react-three/rapier";
-import { useAtom, useAtomValue } from "jotai";
-import { ReactNode, Ref, RefObject, forwardRef } from "react";
+import { useAtomValue } from "jotai";
+import { ReactNode, Ref, RefObject, forwardRef, useContext } from "react";
 import * as THREE from "three";
-import { GLTFResult, groundRayType } from "../type";
+import { GaesupWorldContext } from "../stores/context";
+import { groundRayType } from "../type";
 import { S3 } from "../utils/constant";
 
 export const VehicleRigidBody = forwardRef(
@@ -42,31 +42,17 @@ export const VehicleRigidBody = forwardRef(
   }
 );
 
-export const VehicleCollider = forwardRef(
-  (
-    {
-      url,
-      gltf,
-      wheelGltf,
-    }: {
-      url: string;
-      gltf: GLTFResult;
-      wheelGltf: GLTFResult;
-    },
-    ref: Ref<Collider>
-  ) => {
-    const [collider] = useAtom(colliderAtom);
-    const { sizeX, sizeY, sizeZ } = collider;
-
-    return (
-      <CuboidCollider
-        ref={ref}
-        args={[sizeX / 2, sizeY / 2, sizeZ / 2]}
-        position={[0, sizeY / 2, 0]}
-      />
-    );
-  }
-);
+export const VehicleCollider = forwardRef((_, ref: Ref<Collider>) => {
+  const { vehicleCollider: collider } = useContext(GaesupWorldContext);
+  const { vehicleSizeX, vehicleSizeY, vehicleSizeZ } = collider;
+  return (
+    <CuboidCollider
+      ref={ref}
+      args={[vehicleSizeX / 2, vehicleSizeY / 2, vehicleSizeZ / 2]}
+      position={[0, vehicleSizeY / 2, 0]}
+    />
+  );
+});
 
 export const VehicleGroup = forwardRef(
   (
@@ -108,7 +94,8 @@ export const WheelRegidBodyRef = forwardRef(
     }: wheelRegidBodyType,
     ref: Ref<RapierRigidBody>
   ) => {
-    const { wheelSizeX, wheelSizeY } = useAtomValue(colliderAtom);
+    const { vehicleCollider: collider } = useContext(GaesupWorldContext);
+    const { wheelSizeX, wheelSizeY } = collider;
     useRevoluteJoint(bodyRef, wheel, [bodyAnchor, wheelAnchor, rotationAxis]);
 
     return (

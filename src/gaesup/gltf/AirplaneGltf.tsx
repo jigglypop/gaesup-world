@@ -1,10 +1,9 @@
-import { GLTFResult } from "@gaesup/type";
+import { useContext } from "react";
+import { GaesupWorldContext, gaesupWorldPropType } from "../stores/context";
 
-export type GltfType = {
-  gltf: GLTFResult;
-};
-
-export default function AirplaneGltf({ gltf }: GltfType) {
+export default function AirplaneGltf() {
+  const { airplaneGltf: gltf } =
+    useContext<gaesupWorldPropType>(GaesupWorldContext);
   const { materials, nodes } = gltf;
   return (
     <>

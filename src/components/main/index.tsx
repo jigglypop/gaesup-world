@@ -7,6 +7,7 @@ import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 
 import { S3 } from "@/gaesup/utils/constant";
+import GaesupWorld from "@/gaesup/world";
 import Floor from "@components/platform/Floor";
 import { optionsAtom } from "@gaesup/stores/options";
 import { useAtom } from "jotai";
@@ -30,22 +31,51 @@ export default function Main() {
   const CHARACTER_URL = "./gaesupyee.glb";
   const AIRPLANE_URL = "./airplane.glb";
   const KART_URL = S3 + "/kart2.glb";
+  const VEHICLE_URL = S3 + "/kart2.glb";
 
   const [options, setOptions] = useAtom(optionsAtom);
 
   return (
-    <>
+    <GaesupWorld
+      url={{
+        characterUrl: CHARACTER_URL,
+        vehicleUrl: VEHICLE_URL,
+        airplaneUrl: AIRPLANE_URL,
+      }}
+    >
       <div className={style.mainButtonContainer}>
         <button
           className={style.button}
           onClick={() =>
             setOptions((options) => ({
               ...options,
-              mode: options.mode === "normal" ? "vehicle" : "normal",
+              mode: "normal",
             }))
           }
         >
-          {options.mode}
+          CHARACTER
+        </button>
+        <button
+          className={style.button}
+          onClick={() =>
+            setOptions((options) => ({
+              ...options,
+              mode: "vehicle",
+            }))
+          }
+        >
+          VEHICLE
+        </button>
+        <button
+          className={style.button}
+          onClick={() =>
+            setOptions((options) => ({
+              ...options,
+              mode: "airplane",
+            }))
+          }
+        >
+          AIRPLANE
         </button>
         <button
           className={style.button}
@@ -147,9 +177,9 @@ export default function Main() {
               kartUrl={KART_URL}
               airplaneUrl={AIRPLANE_URL}
               options={{
-                debug: false,
+                debug: true,
                 controllerType: "keyboard",
-                mode: "airplane",
+                mode: "normal",
                 kartUrl: KART_URL,
                 characterUrl: CHARACTER_URL,
                 airplaneUrl: AIRPLANE_URL,
@@ -182,6 +212,6 @@ export default function Main() {
         </Physics>
       </Canvas>
       <GaeSupTools keyboardMap={keyboardMap} />
-    </>
+    </GaesupWorld>
   );
 }

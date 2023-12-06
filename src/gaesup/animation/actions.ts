@@ -8,10 +8,6 @@ import { useAtomValue } from "jotai";
 import { RefObject } from "react";
 import { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-/**
- * Actions for managing animations
- */
-
 export type playActionsType = {
   outerGroupRef: RefObject<THREE.Group>;
   groundRay: groundRayType;

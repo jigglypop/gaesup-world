@@ -3,8 +3,9 @@ import { optionsAtom } from "@gaesup/stores/options";
 import { useKeyboardControls } from "@react-three/drei";
 import { useRapier, vec3 } from "@react-three/rapier";
 import { useAtom } from "jotai";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useContext, useEffect, useMemo } from "react";
 import * as THREE from "three";
+import { GaesupWorldContext } from "../stores/context";
 import {
   constantType,
   controllerType,
@@ -21,6 +22,7 @@ export default function initProps({
   props: controllerType;
   refs: refsType;
 }) {
+  const context = useContext(GaesupWorldContext);
   const { rapier, world } = useRapier();
   const [_, getKeys] = useKeyboardControls();
   const keyControl: {
@@ -34,11 +36,11 @@ export default function initProps({
     return {
       origin: vec3(),
       dir: vec3({ x: 0, y: -1, z: 0 }),
-      offset: vec3({ x: 0, y: -colliderAtom.init.halfHeight, z: 0 }),
+      offset: vec3({ x: 0, y: -context.characterCollider.halfHeight, z: 0 }),
       hit: null,
       parent: null,
       rayCast: null,
-      length: colliderAtom.init.radius + 2,
+      length: context.characterCollider.radius + 2,
     };
   }, []);
 
@@ -67,13 +69,6 @@ export default function initProps({
     };
   }, []);
   slopeRay.rayCast = new rapier.Ray(slopeRay.origin, slopeRay.dir);
-
-  const jump = useMemo(() => {
-    return {
-      velocity: vec3(),
-      direction: vec3(),
-    };
-  }, []);
 
   let constant: constantType = useMemo(() => {
     return {
@@ -156,7 +151,6 @@ export default function initProps({
     options,
     slopeRay,
     groundRay,
-    jump,
     move,
     constant,
     cameraRay,

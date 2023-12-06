@@ -165,7 +165,6 @@ export type propType = {
   slopeRay: slopeRayType;
   groundRay: groundRayType;
   cameraRay: cameraRayType;
-  jump: jumpInnerType;
   move: moveType;
   constant: constantType;
   capsuleColliderRef: RefObject<Collider>;

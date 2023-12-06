@@ -14,8 +14,8 @@ export default function direction(prop: calcPropType) {
 
   if (Math.abs(current.pitch) > maxVelocity)
     current.pitch = Math.sign(current.pitch) * maxVelocity;
-  current.yaw += ((Number(rightward) - Number(leftward)) * Math.PI) / 256;
-  current.pitch += ((Number(backward) - Number(forward)) * Math.PI) / 256;
+  current.yaw += (Number(rightward) - Number(leftward)) * 0.0025;
+  current.pitch += (Number(backward) - Number(forward)) * 0.0025;
 
   current.axisX.applyAxisAngle(current.axisZ, current.yaw);
   current.axisY.applyAxisAngle(current.axisX, current.pitch);

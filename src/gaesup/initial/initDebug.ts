@@ -2,9 +2,6 @@ import { propType } from "@gaesup/type";
 import { useControls } from "leva";
 
 export default function initDebug(prop: propType) {
-  /**
-   * Debug settings
-   */
   const debugProps = { ...prop };
   // Character jumpConst
   if (prop.options.debug) {

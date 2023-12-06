@@ -1,43 +1,31 @@
-import {
-  GLTFResult,
-  callbackType,
-  groundRayType,
-  propType,
-  refsType,
-} from "@gaesup/type";
-import { GroupProps, useLoader } from "@react-three/fiber";
-import { useAtomValue } from "jotai";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { callbackType, groundRayType, propType, refsType } from "@gaesup/type";
+import { GroupProps } from "@react-three/fiber";
+import { useContext } from "react";
 import playActions from "../animation/actions";
 import initCallback from "../initial/initCallback";
-import { colliderAtom } from "../stores/collider";
-
-let preloadUrl = "";
+import { GaesupWorldContext, gaesupWorldPropType } from "../stores/context";
 
 export type characterGltfType = {
   prop: propType;
-  url: string;
   character?: GroupProps;
   groundRay: groundRayType;
   refs: refsType;
   callbacks?: callbackType;
-  gltf: GLTFResult;
   isRider?: boolean;
 };
 
 export default function CharacterGltf({
-  gltf,
   prop,
-  url,
   character,
   groundRay,
   refs,
   callbacks,
   isRider,
 }: characterGltfType) {
-  preloadUrl = url;
+  const { characterGltf: gltf } =
+    useContext<gaesupWorldPropType>(GaesupWorldContext);
   const { materials, nodes, animations } = gltf;
-  const collider = useAtomValue(colliderAtom);
+  const { characterCollider, vehicleCollider } = useContext(GaesupWorldContext);
 
   initCallback({
     prop,
@@ -56,30 +44,38 @@ export default function CharacterGltf({
       receiveShadow
       castShadow
       {...character}
-      position={[0, isRider ? collider.sizeY / 2 : -collider.height, 0]}
+      position={[
+        0,
+        isRider ? vehicleCollider.vehicleSizeY / 2 : -characterCollider.height,
+        0,
+      ]}
     >
-      <primitive
-        object={nodes!.walk}
-        visible={false}
-        receiveShadow
-        castShadow
-      />
-      {Object.keys(nodes!).map((name: string, key: number) => {
-        if (nodes[name].type === "SkinnedMesh") {
-          return (
-            <skinnedMesh
-              castShadow
-              receiveShadow
-              material={materials[name]}
-              geometry={nodes[name].geometry}
-              skeleton={(nodes[name] as THREE.SkinnedMesh).skeleton}
-              key={key}
-            />
-          );
-        }
-      })}
+      {nodes &&
+        Object.values(nodes).find((node) => node.type === "Object3D") && (
+          <primitive
+            object={Object.values(nodes).find(
+              (node) => node.type === "Object3D"
+            )}
+            visible={false}
+            receiveShadow
+            castShadow
+          />
+        )}
+      {nodes &&
+        Object.keys(nodes).map((name: string, key: number) => {
+          if (nodes[name].type === "SkinnedMesh") {
+            return (
+              <skinnedMesh
+                castShadow
+                receiveShadow
+                material={materials[name]}
+                geometry={nodes[name].geometry}
+                skeleton={(nodes[name] as THREE.SkinnedMesh).skeleton}
+                key={key}
+              />
+            );
+          }
+        })}
     </group>
   );
 }
-
-useLoader.preload(GLTFLoader, preloadUrl);
