@@ -1,7 +1,3 @@
-import orbit from "@camera/control/orbit";
-import { currentAtom } from "@gaesup/stores/current";
-import { optionsAtom } from "@gaesup/stores/options";
-import { propType } from "@gaesup/type";
 import {
   OrbitControls,
   OrthographicCamera,
@@ -13,8 +9,12 @@ import { useAtom } from "jotai";
 import * as THREE from "three";
 import { cameraPropType } from "../physics";
 import useCalcControl from "../stores/control";
+import { currentAtom } from "../stores/current";
+import { optionsAtom } from "../stores/options";
+import { propType } from "../type";
 import cameraCollisionDetector from "./cameraCollisionDetecter";
 import normal from "./control/normal";
+import orbit from "./control/orbit";
 
 export default function Camera({ prop }: { prop: propType }) {
   const option = useAtom(optionsAtom);
@@ -80,8 +80,8 @@ export default function Camera({ prop }: { prop: propType }) {
     ) {
       scene.children.forEach((child) => getMeshs(child));
       cameraRay.intersectObjectMap = intersectObjectMap;
-      cameraRay.followCamera.add(camera);
-      cameraRay.pivot.add(cameraRay.followCamera);
+      // cameraRay.followCamera.add(camera);
+      // cameraRay.pivot.add(cameraRay.followCamera);
     }
     if (options.camera.type === "perspective") {
       if (options.camera.control === "orbit") {

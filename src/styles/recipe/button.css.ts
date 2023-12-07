@@ -1,9 +1,9 @@
-import { boxShadowHover } from "@styles/constants/boxshadow.css";
-import { palette } from "@styles/constants/palette.css";
-import { flex_relative } from "@styles/recipe/index.css";
-import { sprinkles } from "@styles/sprinkles/index.css";
-import { vars } from "@styles/theme.css";
 import { recipe } from "@vanilla-extract/recipes";
+import { boxShadowHover } from "../constants/boxshadow.css";
+import { palette } from "../constants/palette.css";
+import { sprinkles } from "../sprinkles/index.css";
+import { vars } from "../theme.css";
+import { flex_relative } from "./index.css";
 
 export const button = recipe({
   base: [
@@ -14,7 +14,6 @@ export const button = recipe({
       borderRadius: "1rem",
       margin: "0.5rem",
       width: "100%",
-      height: "4rem",
       transition: "all 0.3s ease-in",
       cursor: "pointer",
     },
@@ -73,9 +72,9 @@ export const button = recipe({
 export const mobileButton = recipe({
   base: [
     {
-      width: "5rem",
-      height: "5rem",
-      borderRadius: "50%",
+      width: "7.5rem",
+      height: "4rem",
+      borderRadius: "1rem",
       fontSize: "1rem",
       backgroundColor: "rgba(0, 0, 0, 0.5)",
       color: "white",
@@ -83,12 +82,6 @@ export const mobileButton = recipe({
       cursor: "pointer",
       transition: "all 0.3s ease-in",
       margin: "0.5rem",
-      // fontFamily: blackHanSans,
-      // fontWeight: "700",
-      // ":hover": {
-      //   background: "rgba(0, 0, 0, 0.8)",
-      //   boxShadow: "0 0 2rem rgba(0, 0, 0, 0.5)",
-      // },
     },
   ],
   variants: {

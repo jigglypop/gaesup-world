@@ -1,11 +1,11 @@
 "use client";
 
-import { S3 } from "@/gaesup/utils/constant";
-import GaeSupProps from "@gaesup/stores/gaesupProps";
 import { useGLTF } from "@react-three/drei";
 import { RigidBody } from "@react-three/rapier";
 import { useEffect } from "react";
 import * as THREE from "three";
+import GaeSupProps from "../../gaesup/stores/gaesupProps";
+import { S3 } from "../../gaesup/utils/constant";
 
 export default function RoughPlane() {
   const roughPlane = useGLTF(S3 + "/roughPlane.glb");

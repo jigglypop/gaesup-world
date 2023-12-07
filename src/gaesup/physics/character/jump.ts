@@ -1,5 +1,5 @@
-import { V3 } from "@/gaesup/utils/vector";
 import { calcPropType } from "..";
+import { V3 } from "../../utils/vector";
 
 export default function jump(prop: calcPropType) {
   const { rigidBodyRef, slopeRay, groundRay, move, constant } = prop;

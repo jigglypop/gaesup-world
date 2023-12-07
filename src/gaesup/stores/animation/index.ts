@@ -1,9 +1,9 @@
 import { RefObject, useCallback, useEffect } from "react";
 
-import { actionsType, animationTagType } from "@gaesup/type";
 import { useAnimations, useKeyboardControls } from "@react-three/drei";
 import { atom, useAtom } from "jotai";
 import * as THREE from "three";
+import { actionsType, animationTagType } from "../../type";
 
 export type animationPropType = {
   current: keyof animationTagType;

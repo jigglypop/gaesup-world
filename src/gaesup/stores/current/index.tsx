@@ -1,7 +1,7 @@
-import { V3 } from "@/gaesup/utils/vector";
-import { currentType } from "@gaesup/type";
 import { euler, quat, vec3 } from "@react-three/rapier";
 import { atom } from "jotai";
+import { currentType } from "../../type";
+import { V3 } from "../../utils/vector";
 
 export const currentAtom = atom<currentType>({
   position: V3(0, 2, 5),

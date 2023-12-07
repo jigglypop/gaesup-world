@@ -1,5 +1,5 @@
-import { propType } from "@gaesup/type";
 import { useControls } from "leva";
+import { propType } from "../type";
 
 export default function initDebug(prop: propType) {
   const debugProps = { ...prop };

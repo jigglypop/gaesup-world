@@ -1,8 +1,9 @@
 "use client";
-import { controlAtom } from "@gaesup/stores/control";
-import { optionsAtom } from "@gaesup/stores/options";
+
 import { useAtom, useAtomValue } from "jotai";
 import { useEffect } from "react";
+import { controlAtom } from "../stores/control";
+import { optionsAtom } from "../stores/options";
 import GameBoy from "./gameboy";
 import GamePad from "./gamepad";
 import JoyStick from "./joystick";

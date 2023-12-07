@@ -1,6 +1,6 @@
-import { fixed } from "@styles/recipe/index.css";
-import { vars } from "@styles/theme.css";
 import { style } from "@vanilla-extract/css";
+import { fixed } from "../styles/recipe/index.css";
+import { vars } from "../styles/theme.css";
 
 export const debug = style([
   fixed({

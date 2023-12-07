@@ -1,13 +1,13 @@
+import { style } from "@vanilla-extract/css";
+import { recipe } from "@vanilla-extract/recipes";
 import {
   fixed,
   flex,
   flex_relative,
   glass,
   grid,
-} from "@styles/recipe/index.css";
-import { vars } from "@styles/theme.css";
-import { style } from "@vanilla-extract/css";
-import { recipe } from "@vanilla-extract/recipes";
+} from "../../../styles/recipe/index.css";
+import { vars } from "../../../styles/theme.css";
 
 export const gameBoy = style([
   fixed({

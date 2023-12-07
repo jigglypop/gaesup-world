@@ -3,6 +3,7 @@ import accelaration from "./accelaration";
 import direction from "./direction";
 import impulse from "./impulse";
 import jump from "./jump";
+import onTheObject from "./onTheObject";
 import stabilizing from "./stabilizing";
 import turn from "./turn";
 
@@ -13,4 +14,5 @@ export default function characterCalculation(calcProp: calcPropType) {
   jump(calcProp);
   accelaration(calcProp);
   impulse(calcProp);
+  onTheObject(calcProp);
 }

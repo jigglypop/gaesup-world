@@ -1,12 +1,12 @@
-import usePlay from "@gaesup/stores/animation";
-import { currentAtom } from "@gaesup/stores/current";
-import { statesAtom } from "@gaesup/stores/states";
-import { groundRayType } from "@gaesup/type";
 import { useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useAtomValue } from "jotai";
 import { RefObject } from "react";
 import { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
+import usePlay from "../stores/animation";
+import { currentAtom } from "../stores/current";
+import { statesAtom } from "../stores/states";
+import { groundRayType } from "../type";
 
 export type playActionsType = {
   outerGroupRef: RefObject<THREE.Group>;

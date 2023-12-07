@@ -1,8 +1,7 @@
-import damping from "@physics/vehicle/damping";
-import direction from "@physics/vehicle/direction";
-import impulse from "@physics/vehicle/impulse";
-
 import { calcPropType } from "..";
+import damping from "./damping";
+import direction from "./direction";
+import impulse from "./impulse";
 import turn from "./turn";
 
 export default function vehicleCalculation(calcProp: calcPropType) {

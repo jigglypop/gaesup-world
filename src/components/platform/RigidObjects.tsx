@@ -1,12 +1,12 @@
 "use client";
 
-import GaeSupProps from "@gaesup/stores/gaesupProps";
 import {
   BallCollider,
   CuboidCollider,
   CylinderCollider,
   RigidBody,
 } from "@react-three/rapier";
+import GaeSupProps from "../../gaesup/stores/gaesupProps";
 
 export default function RigidObjects() {
   return (

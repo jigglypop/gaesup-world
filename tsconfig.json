@@ -12,7 +12,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
+    "jsx": "react-jsx"
 
     /* Linting */
     // "strict": true,
@@ -21,17 +21,6 @@
     // "noFallthroughCasesInSwitch": true,
 
     /* Other */
-    "baseUrl": "./src",
-    "paths": {
-      "@/*": ["*"],
-      "@components/*": ["components/*"],
-      "@styles/*": ["styles/*"],
-      "@stores/*": ["gaesup/stores/*"],
-      "@gaesup/*": ["gaesup/*"],
-      "@utils/*": ["gaesup/utils/*"],
-      "@physics/*": ["gaesup/physics/*"],
-      "@camera/*": ["gaesup/camera/*"]
-    }
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]

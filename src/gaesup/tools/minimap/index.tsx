@@ -1,10 +1,10 @@
 "use client";
 
-import { currentAtom } from "@gaesup/stores/current";
-import { minimapAtom } from "@gaesup/stores/minimap";
-import { optionsAtom } from "@gaesup/stores/options";
 import { assignInlineVars } from "@vanilla-extract/dynamic";
 import { useAtomValue } from "jotai";
+import { currentAtom } from "../../stores/current";
+import { minimapAtom } from "../../stores/minimap";
+import { optionsAtom } from "../../stores/options";
 import * as style from "./style.css";
 
 export function MiniMapInner() {

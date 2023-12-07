@@ -1,17 +1,17 @@
-import { animationAtom } from "@gaesup/stores/animation";
-import useCalcControl from "@gaesup/stores/control";
-import { currentAtom } from "@gaesup/stores/current";
-import { statesAtom } from "@gaesup/stores/states";
+import { useAnimations } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useAtom, useAtomValue } from "jotai";
+import { useEffect } from "react";
+import { animationAtom } from "../stores/animation";
+import useCalcControl from "../stores/control";
+import { currentAtom } from "../stores/current";
+import { statesAtom } from "../stores/states";
 import {
   animationTagType,
   callbackPropType,
   callbackType,
   propType,
-} from "@gaesup/type";
-import { useAnimations } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
-import { useAtom, useAtomValue } from "jotai";
-import { useEffect } from "react";
+} from "../type";
 
 export type initCallbackType = {
   prop: propType;

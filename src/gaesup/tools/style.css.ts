@@ -1,5 +1,5 @@
-import { fixed } from "@/styles/recipe/index.css";
 import { style } from "@vanilla-extract/css";
+import { fixed } from "../../styles/recipe/index.css";
 
 export const footer = style([
   fixed({

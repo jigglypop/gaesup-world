@@ -1,5 +1,5 @@
-import { gaesupWorldPropType } from "@/gaesup/stores/context";
 import { Dispatch, useEffect } from "react";
+import { gaesupWorldPropType } from "../../../stores/context";
 import { getGltfResultType } from "./gltf";
 
 export function vehicle(

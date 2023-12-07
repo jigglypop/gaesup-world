@@ -1,5 +1,3 @@
-import useJoyStick from "@gaesup/stores/joystick";
-import { vars } from "@styles/theme.css";
 import {
   MouseEventHandler,
   TouchEventHandler,
@@ -7,6 +5,8 @@ import {
   useRef,
   useState,
 } from "react";
+import { vars } from "../../../styles/theme.css";
+import useJoyStick from "../../stores/joystick";
 import * as style from "./style.css";
 
 export default function JoyStick() {

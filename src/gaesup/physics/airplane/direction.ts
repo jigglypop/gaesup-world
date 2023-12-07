@@ -4,7 +4,7 @@ import { calcPropType } from "..";
 
 export default function direction(prop: calcPropType) {
   const [current] = prop.current;
-  const { rigidBodyRef, outerGroupRef } = prop;
+  const { rigidBodyRef } = prop;
   const { forward, backward, leftward, rightward } = prop.control;
   const maxVelocity = 0.04;
   current.yaw *= 0.95;
@@ -40,19 +40,12 @@ export default function direction(prop: calcPropType) {
     )
     .multiply(rotMatrix);
 
-  // outerGroupRef.current.matrixAutoUpdate = false;
-  // outerGroupRef.current.matrix.copy(matrix);
-  // outerGroupRef.current.matrixWorldNeedsUpdate = true;
   rigidBodyRef.current.setTranslation(
     vec3().setFromMatrixPosition(matrix),
-    false
+    true
   );
   rigidBodyRef.current.setRotation(
     new THREE.Quaternion().setFromRotationMatrix(matrix),
-    false
+    true
   );
-  // outerGroupRef.current.matrixAutoUpdate = false;
-  // outerGroupRef.current.matrix.copy(matrix);
-  // outerGroupRef.current.matrixWorldNeedsUpdate = true;
-  //   current.direction = V31().multiply(current.dir).multiplyScalar(0.5);
 }

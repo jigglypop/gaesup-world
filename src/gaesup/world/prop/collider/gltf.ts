@@ -1,10 +1,10 @@
-import { gaesupWorldPropType } from "@/gaesup/stores/context";
-import { GLTFResult } from "@/gaesup/type";
-import { S3 } from "@/gaesup/utils/constant";
 import { useLoader } from "@react-three/fiber";
 import { Dispatch, useEffect } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { gaesupWorldPropType } from "../../../stores/context";
+import { GLTFResult } from "../../../type";
+import { S3 } from "../../../utils/constant";
 
 export type getGltfResultType = {
   characterGltf: GLTFResult;

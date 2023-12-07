@@ -1,5 +1,5 @@
-import { gaesupWorldPropType } from "@/gaesup/stores/context";
 import { Dispatch } from "react";
+import { gaesupWorldPropType } from "../../stores/context";
 import initColider from "./collider";
 
 export default function initProp(

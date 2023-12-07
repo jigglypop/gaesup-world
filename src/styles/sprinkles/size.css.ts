@@ -1,5 +1,6 @@
-import { persent, rem, size } from "@styles/constants/constant.css";
 import { defineProperties } from "@vanilla-extract/sprinkles";
+import { size } from "lodash";
+import { persent, rem } from "../constants/constant.css";
 
 const properties = { ...persent, ...size, ...rem };
 

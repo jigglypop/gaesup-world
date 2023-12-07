@@ -1,9 +1,9 @@
-import useCalcControl from "@gaesup/stores/control";
-import { joyStickOriginAtom } from "@gaesup/stores/joystick";
-import { statesAtom } from "@gaesup/stores/states";
-import { propType } from "@gaesup/type";
 import { useFrame } from "@react-three/fiber";
 import { useAtomValue } from "jotai";
+import useCalcControl from "../stores/control";
+import { joyStickOriginAtom } from "../stores/joystick";
+import { statesAtom } from "../stores/states";
+import { propType } from "../type";
 
 export default function checkMoving(prop: propType) {
   const states = useAtomValue(statesAtom);

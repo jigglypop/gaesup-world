@@ -1,5 +1,4 @@
 import { Collider } from "@dimforge/rapier3d-compat";
-import { optionsAtom } from "@gaesup/stores/options";
 import { Gltf } from "@react-three/drei";
 import {
   CuboidCollider,
@@ -12,6 +11,7 @@ import { useAtomValue } from "jotai";
 import { ReactNode, Ref, RefObject, forwardRef, useContext } from "react";
 import * as THREE from "three";
 import { GaesupWorldContext } from "../stores/context";
+import { optionsAtom } from "../stores/options";
 import { groundRayType } from "../type";
 import { S3 } from "../utils/constant";
 

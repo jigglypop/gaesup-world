@@ -1,4 +1,4 @@
-import { propType } from "@gaesup/type";
+import { propType } from "../type";
 import checkIsRotate from "./checkIsRotate";
 import checkMoving from "./checkMoving";
 import checkOnMovingObject from "./checkOnMovingObject";

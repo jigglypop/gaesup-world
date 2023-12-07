@@ -1,7 +1,7 @@
-import { sprinkles } from "@/styles/sprinkles/index.css";
-import { fixed, flex_absolute } from "@styles/recipe/index.css";
-import { vars } from "@styles/theme.css";
 import { keyframes, style } from "@vanilla-extract/css";
+import { fixed, flex_absolute } from "../../../styles/recipe/index.css";
+import { sprinkles } from "../../../styles/sprinkles/index.css";
+import { vars } from "../../../styles/theme.css";
 
 export const pulseWhite = keyframes({
   "0%": {

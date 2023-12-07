@@ -1,4 +1,5 @@
-import { boxShadow, boxShadowHover } from "@styles/constants/boxshadow.css";
+import { defineProperties } from "@vanilla-extract/sprinkles";
+import { boxShadow, boxShadowHover } from "../constants/boxshadow.css";
 import {
   gradient,
   palette,
@@ -6,8 +7,7 @@ import {
   theme,
   themeShadow,
   themeShadowHover,
-} from "@styles/constants/palette.css";
-import { defineProperties } from "@vanilla-extract/sprinkles";
+} from "../constants/palette.css";
 
 const paletteTheme = { ...palette, ...theme, ...rgba };
 const paletteThemeGradient = { ...palette, ...theme, ...gradient, ...rgba };

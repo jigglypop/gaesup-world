@@ -1,5 +1,5 @@
-import { propType } from "@gaesup/type";
 import { atom, useAtomValue } from "jotai";
+import { propType } from "../../type";
 import { optionsAtom } from "../options";
 
 export type controlType = {

@@ -1,7 +1,7 @@
-import { animationAtom } from "@gaesup/stores/animation";
-import { vars } from "@styles/theme.css";
 import { assignInlineVars } from "@vanilla-extract/dynamic";
 import { useAtomValue } from "jotai";
+import { vars } from "../../../styles/theme.css";
+import { animationAtom } from "../../stores/animation";
 import { KeyBoardAll, keyArrayItemType } from "./constant";
 import * as style from "./style.css";
 

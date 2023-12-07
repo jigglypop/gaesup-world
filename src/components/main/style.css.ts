@@ -1,6 +1,6 @@
-import { mobileButton } from "@/styles/recipe/button.css";
-import { vars } from "@/styles/theme.css";
 import { fontFace, style } from "@vanilla-extract/css";
+import { mobileButton } from "../../styles/recipe/button.css";
+import { vars } from "../../styles/theme.css";
 
 const BlackHanSans = fontFace({
   src: 'local("/public/fonts/BlackHanSans-Regular.ttf")',

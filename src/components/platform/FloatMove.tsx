@@ -1,5 +1,4 @@
 import { Collider, Ray, RayColliderToi } from "@dimforge/rapier3d-compat";
-import GaeSupProps from "@gaesup/stores/gaesupProps";
 import { useFrame } from "@react-three/fiber";
 import {
   CuboidCollider,
@@ -10,6 +9,7 @@ import {
 } from "@react-three/rapier";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import GaeSupProps from "../../gaesup/stores/gaesupProps";
 
 export type rayType = {
   origin: THREE.Vector3;

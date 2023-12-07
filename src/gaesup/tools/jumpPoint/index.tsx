@@ -1,6 +1,6 @@
-import { currentAtom } from "@gaesup/stores/current";
-import { jumpPointAtom } from "@gaesup/stores/gaesupProps";
 import { useAtomValue } from "jotai";
+import { currentAtom } from "../../stores/current";
+import { jumpPointAtom } from "../../stores/gaesupProps";
 import * as style from "./style.css";
 
 export default function JumpPoint() {

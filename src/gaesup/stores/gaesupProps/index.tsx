@@ -1,9 +1,9 @@
-import { vec3 } from '@react-three/rapier';
-import { atom, useAtomValue, useSetAtom } from 'jotai';
-import { useEffect, useRef } from 'react';
-import * as THREE from 'three';
-import { minimapAtom } from '../minimap';
-import { optionsAtom } from '../options';
+import { vec3 } from "@react-three/rapier";
+import { atom, useAtomValue, useSetAtom } from "jotai";
+import { useEffect, useRef } from "react";
+import * as THREE from "three";
+import { minimapAtom } from "../minimap";
+import { optionsAtom } from "../options";
 
 export type jumpPointType = {
   text: string;
@@ -12,13 +12,13 @@ export type jumpPointType = {
 
 export const jumpPointAtom = atom<jumpPointType>([]);
 
-jumpPointAtom.debugLabel = 'jumpPoint';
+jumpPointAtom.debugLabel = "jumpPoint";
 
 export default function GaeSupProps({
   text,
   position,
   jumpPoint,
-  children
+  children,
 }: {
   text: string;
   position?: [number, number, number];
@@ -35,8 +35,8 @@ export default function GaeSupProps({
         ...jumpPoint,
         {
           text,
-          position: vec3().set(position[0], 5, position[2] + 5)
-        }
+          position: vec3().set(position[0], 5, position[2] + 5),
+        },
       ]);
     }
     if (groupRef.current) {
@@ -50,11 +50,11 @@ export default function GaeSupProps({
       const obj = {
         text,
         size,
-        center
+        center,
       };
       setMiniMap((minimap) => ({
         ...minimap,
-        [text]: obj
+        [text]: obj,
       }));
     }
   }, []);

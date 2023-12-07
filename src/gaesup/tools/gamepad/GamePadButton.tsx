@@ -1,5 +1,5 @@
-import { controlAtom } from "@gaesup/stores/control";
 import { useSetAtom } from "jotai";
+import { controlAtom } from "../../stores/control";
 import * as style from "./style.css";
 
 export default function GamePadButton({ value }: { value: string }) {

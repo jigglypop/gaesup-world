@@ -1,5 +1,5 @@
-import { GLTFResult } from "@/gaesup/type";
 import { createContext } from "react";
+import { GLTFResult } from "../../type";
 
 export type characterColliderType = {
   halfHeight?: number;

@@ -1,13 +1,14 @@
-import { currentType, optionsType, propType } from "@gaesup/type";
-
 import { RootState, useFrame } from "@react-three/fiber";
-import { colliderAtom, colliderAtomType } from "@stores/collider";
-import useCalcControl from "@stores/control";
-import { currentAtom } from "@stores/current";
-import { joyStickOriginAtom, joyStickOriginType } from "@stores/joystick";
-import { optionsAtom } from "@stores/options";
-import { statesAtom, statesType } from "@stores/states";
+
 import { SetStateAction, useAtom, useAtomValue } from "jotai";
+import { useContext } from "react";
+import { GaesupWorldContext, gaesupWorldPropType } from "../stores/context";
+import useCalcControl from "../stores/control";
+import { currentAtom } from "../stores/current";
+import { joyStickOriginAtom, joyStickOriginType } from "../stores/joystick";
+import { optionsAtom } from "../stores/options";
+import { statesAtom, statesType } from "../stores/states";
+import { currentType, optionsType, propType } from "../type";
 import airplaneCalculation from "./airplane";
 import characterCalculation from "./character";
 import vehicleCalculation from "./vehicle";
@@ -23,10 +24,11 @@ export type calcPropType = propType & {
   checkCollision?: (delta: number) => void;
   option?: [optionsType, SetAtom<[SetStateAction<optionsType>], void>];
   states?: [statesType, SetAtom<[SetStateAction<statesType>], void>];
-  collider?: [
-    colliderAtomType,
-    SetAtom<[SetStateAction<colliderAtomType>], void>,
-  ];
+  // collider?: [
+  //   colliderAtomType,
+  //   SetAtom<[SetStateAction<colliderAtomType>], void>,
+  // ];
+  context?: gaesupWorldPropType;
   delta?: number;
   joystick?: [
     joyStickOriginType,
@@ -51,9 +53,8 @@ export default function calculation(prop: propType) {
   const option = useAtom(optionsAtom);
   const joystick = useAtom(joyStickOriginAtom);
   const states = useAtom(statesAtom);
-  const collider = useAtom(colliderAtom);
   const control = useCalcControl(prop);
-
+  const context = useContext<gaesupWorldPropType>(GaesupWorldContext);
   useFrame((state, delta) => {
     const { rigidBodyRef, outerGroupRef } = prop;
     if (
@@ -70,9 +71,9 @@ export default function calculation(prop: propType) {
       state,
       states,
       option,
-      collider,
       joystick,
       delta,
+      context,
     };
     if (options.mode === "vehicle") vehicleCalculation(calcProp);
     else if (options.mode === "normal") characterCalculation(calcProp);

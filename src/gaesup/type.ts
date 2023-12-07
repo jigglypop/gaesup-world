@@ -216,11 +216,9 @@ export type callbackPropType = {
   current: currentType;
   states: statesType;
   options: optionsType;
-  settings: optionsType;
   slopeRay: slopeRayType;
   groundRay: groundRayType;
   cameraRay: cameraRayType;
-  jump: jumpInnerType;
   move: moveType;
   constant: constantType;
   keyControl: {

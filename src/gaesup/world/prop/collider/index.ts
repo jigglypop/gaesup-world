@@ -1,5 +1,5 @@
-import { gaesupWorldPropType } from "@/gaesup/stores/context";
 import { Dispatch } from "react";
+import { gaesupWorldPropType } from "../../../stores/context";
 import { airplane } from "./airplane";
 import { character } from "./character";
 import getGltf from "./gltf";

@@ -1,14 +1,15 @@
 import { Collider } from "@dimforge/rapier3d-compat";
-import { colliderAtom } from "@gaesup/stores/collider";
-import { optionsAtom } from "@gaesup/stores/options";
+
 import {
   CuboidCollider,
   RapierRigidBody,
   RigidBody,
 } from "@react-three/rapier";
-import { useAtom, useAtomValue } from "jotai";
-import { ReactNode, Ref, forwardRef } from "react";
+import { useAtomValue } from "jotai";
+import { ReactNode, Ref, forwardRef, useContext } from "react";
 import * as THREE from "three";
+import { GaesupWorldContext, gaesupWorldPropType } from "../stores/context";
+import { optionsAtom } from "../stores/options";
 import { groundRayType } from "../type";
 
 export const AirplaneRigidBody = forwardRef(
@@ -25,13 +26,13 @@ export const AirplaneRigidBody = forwardRef(
     const options = useAtomValue(optionsAtom);
     return (
       <RigidBody colliders={false} ref={ref}>
-        {options.debug && (
+        {/* {options.debug && (
           <mesh visible={options.debug}>
             <arrowHelper
               args={[groundRay.dir, groundRay.origin, groundRay.length]}
             />
           </mesh>
-        )}
+        )} */}
         {children}
       </RigidBody>
     );
@@ -39,7 +40,8 @@ export const AirplaneRigidBody = forwardRef(
 );
 
 export const AirplaneCollider = forwardRef((_, ref: Ref<Collider>) => {
-  const [collider] = useAtom(colliderAtom);
+  const { airplaneCollider: collider } =
+    useContext<gaesupWorldPropType>(GaesupWorldContext);
   const { airplaneSizeX, airplaneSizeY, airplaneSizeZ } = collider;
 
   return (

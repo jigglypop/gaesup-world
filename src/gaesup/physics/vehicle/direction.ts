@@ -1,6 +1,6 @@
-import { V3 } from "@gaesup/utils/vector";
 import { vec3 } from "@react-three/rapier";
 import { calcPropType } from "..";
+import { V3 } from "../../utils/vector";
 
 export default function direction(prop: calcPropType) {
   const [current] = prop.current;

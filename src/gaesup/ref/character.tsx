@@ -8,7 +8,7 @@ import {
 import { useAtomValue } from "jotai";
 import { ReactNode, Ref, forwardRef, useContext } from "react";
 import * as THREE from "three";
-import { GaesupWorldContext } from "../stores/context";
+import { GaesupWorldContext, gaesupWorldPropType } from "../stores/context";
 import { optionsAtom } from "../stores/options";
 import { controllerType, groundRayType, slopeRayType } from "../type";
 
@@ -33,7 +33,7 @@ export const CharacterRigidBody = forwardRef(
         ref={ref}
         {...controllerProps}
       >
-        {options.debug && (
+        {/* {options.debug && (
           <mesh
             visible={options.debug}
             userData={{
@@ -44,7 +44,7 @@ export const CharacterRigidBody = forwardRef(
               args={[groundRay.dir, groundRay.origin, groundRay.length]}
             />
           </mesh>
-        )}
+        )} */}
         {children}
       </RigidBody>
     );
@@ -52,7 +52,8 @@ export const CharacterRigidBody = forwardRef(
 );
 
 export const CharacterCapsuleCollider = forwardRef((_, ref: Ref<Collider>) => {
-  const { characterCollider: collider } = useContext(GaesupWorldContext);
+  const { characterCollider: collider } =
+    useContext<gaesupWorldPropType>(GaesupWorldContext);
   return (
     <CapsuleCollider ref={ref} args={[collider.height, collider.radius]} />
   );
@@ -95,16 +96,16 @@ export const CharacterSlopeRay = forwardRef(
           groundRay.offset.z + slopeRay.offset.z,
         ]}
         ref={ref}
-        visible={options.debug}
+        visible={false}
         userData={{ intangible: true }}
       >
-        {options.debug && (
+        {/* {options.debug && (
           <mesh userData={{ intangible: true }}>
             <arrowHelper
               args={[slopeRay.dir, slopeRay.origin, slopeRay.length, "#ff0000"]}
             />
           </mesh>
-        )}
+        )} */}
         <boxGeometry args={[0.15, 0.15, 0.15]} />
       </mesh>
     );

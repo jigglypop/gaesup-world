@@ -1,12 +1,13 @@
-import { colliderAtom } from '@gaesup/stores/collider';
-import { propType } from '@gaesup/type';
-import { useFrame } from '@react-three/fiber';
-import { useRapier, vec3 } from '@react-three/rapier';
-import { useAtomValue } from 'jotai';
+import { useFrame } from "@react-three/fiber";
+import { useRapier, vec3 } from "@react-three/rapier";
+import { useContext } from "react";
+import { GaesupWorldContext, gaesupWorldPropType } from "../stores/context";
+import { propType } from "../type";
 
 export default function checkOnTheSlope(prop: propType) {
   const { capsuleColliderRef, slopeRayOriginRef, slopeRay, groundRay } = prop;
-  const collider = useAtomValue(colliderAtom);
+  const { characterCollider: collider } =
+    useContext<gaesupWorldPropType>(GaesupWorldContext);
   const { world } = useRapier();
   useFrame(() => {
     if (

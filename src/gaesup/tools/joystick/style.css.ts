@@ -1,5 +1,5 @@
-import { fixed, flex } from "@styles/recipe/index.css";
 import { style } from "@vanilla-extract/css";
+import { fixed, flex } from "../../../styles/recipe/index.css";
 
 export const joyStick = style([
   fixed({

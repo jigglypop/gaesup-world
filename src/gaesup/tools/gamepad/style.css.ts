@@ -1,6 +1,6 @@
-import { mobileButton } from "@styles/recipe/button.css";
-import { flex } from "@styles/recipe/index.css";
 import { style } from "@vanilla-extract/css";
+import { mobileButton } from "../../../styles/recipe/button.css";
+import { flex } from "../../../styles/recipe/index.css";
 
 export const gamePad = style([
   flex({

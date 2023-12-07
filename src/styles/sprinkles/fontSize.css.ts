@@ -1,25 +1,25 @@
-import { persent, size } from '@styles/constants/constant.css';
-import { defineProperties } from '@vanilla-extract/sprinkles';
+import { defineProperties } from "@vanilla-extract/sprinkles";
+import { persent, size } from "../constants/constant.css";
 
 const persentSizeRem = {
   ...persent,
-  ...size
+  ...size,
 };
 
 export const fontSizeProperties = defineProperties({
   conditions: {
     mobile: {},
-    tablet: { '@media': '(min-width: 768px)' },
-    laptop: { '@media': '(min-width: 1024px)' },
-    desktop: { '@media': '(min-width: 1440px)' }
+    tablet: { "@media": "(min-width: 768px)" },
+    laptop: { "@media": "(min-width: 1024px)" },
+    desktop: { "@media": "(min-width: 1440px)" },
   },
-  defaultCondition: 'mobile',
+  defaultCondition: "mobile",
   properties: {
     fontSize: persentSizeRem,
-    lineHeight: persentSizeRem
+    lineHeight: persentSizeRem,
   },
   shorthands: {
-    fs: ['fontSize'],
-    lh: ['lineHeight']
-  }
+    fs: ["fontSize"],
+    lh: ["lineHeight"],
+  },
 });

@@ -1,6 +1,6 @@
-import { sprinkles } from "@/styles/sprinkles/index.css";
-import { fixed, flex } from "@styles/recipe/index.css";
 import { style } from "@vanilla-extract/css";
+import { fixed, flex } from "../../../styles/recipe/index.css";
+import { sprinkles } from "../../../styles/sprinkles/index.css";
 
 export const keyBoardToolTip = style([
   fixed({

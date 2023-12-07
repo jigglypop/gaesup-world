@@ -1,5 +1,5 @@
-import { atom, useAtom } from 'jotai';
-import { useCallback } from 'react';
+import { atom, useAtom } from "jotai";
+import { useCallback } from "react";
 
 export type joyStickBallType = {
   x: string;
@@ -20,11 +20,11 @@ export type joyStickOriginType = {
 };
 
 export const joyStickBallAtom = atom<joyStickBallType>({
-  x: '50%',
-  y: '50%',
-  position: 'absolute',
-  background: 'rgba(0, 0, 0, 0.5)',
-  boxShadow: '0 0 10px  rgba(0, 0, 0, 0.5)'
+  x: "50%",
+  y: "50%",
+  position: "absolute",
+  background: "rgba(0, 0, 0, 0.5)",
+  boxShadow: "0 0 10px  rgba(0, 0, 0, 0.5)",
 });
 
 export const joyStickOriginAtom = atom<joyStickOriginType>({
@@ -34,7 +34,7 @@ export const joyStickOriginAtom = atom<joyStickOriginType>({
   currentRadius: 0,
   originRadius: 0,
   isIn: true,
-  isOn: false
+  isOn: false,
 });
 
 joyStickOriginAtom.debugPrivate = true;
@@ -54,7 +54,7 @@ export default function useJoyStick() {
     (origin: joyStickOriginType) => {
       setJoyStickOrigin((JoyStick) => ({
         ...JoyStick,
-        ...origin
+        ...origin,
       }));
     },
     [joyStickBall, setJoyStickBall]
@@ -65,6 +65,6 @@ export default function useJoyStick() {
     setJoyStickBall,
     setJoyStickOrigin,
     setBall,
-    setOrigin
+    setOrigin,
   };
 }

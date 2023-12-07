@@ -1,6 +1,6 @@
-import { cameraPropType } from "@physics/index";
 import { quat, vec3 } from "@react-three/rapier";
-import { V3 } from "@utils/vector";
+import { cameraPropType } from "../../physics";
+import { V3 } from "../../utils/vector";
 
 export default function orbit(prop: cameraPropType) {
   const { state } = prop;

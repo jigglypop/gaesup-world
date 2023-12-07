@@ -1,4 +1,4 @@
-import { cameraPropType } from "@physics/index";
+import { cameraPropType } from "../../physics";
 
 export default function normal(prop: cameraPropType) {
   const { state, cameraRay, constant, checkCollision, delta } = prop;

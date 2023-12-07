@@ -2,7 +2,7 @@ import { vec3 } from "@react-three/rapier";
 import { calcPropType } from "..";
 
 export default function impulse(prop: calcPropType) {
-  const { rigidBodyRef, constant, control } = prop;
+  const { rigidBodyRef, constant, control, outerGroupRef } = prop;
   const [current, setCurrent] = prop.current;
   const { accelRate } = constant;
   const { shift } = control;

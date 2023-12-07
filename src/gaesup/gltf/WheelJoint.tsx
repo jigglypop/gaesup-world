@@ -1,22 +1,22 @@
 import { RapierRigidBody } from "@react-three/rapier";
-import { useAtomValue } from "jotai";
-import { createRef, useRef } from "react";
+import { createRef, useContext, useRef } from "react";
 import { WheelRegidBodyRef } from "../ref/vehicle";
-import { colliderAtom } from "../stores/collider";
+import { GaesupWorldContext, gaesupWorldPropType } from "../stores/context";
 import { propType } from "../type";
 
 export function Wheels({ prop }: { prop: propType }) {
   const { rigidBodyRef, constant } = prop;
   const { wheelOffset } = constant;
-  const collider = useAtomValue(colliderAtom);
-  const { sizeX, sizeZ, wheelSizeX, wheelSizeZ } = collider;
-  const _sizeX = (sizeX + wheelSizeX) / 2 + wheelOffset;
-  const _sizeZ = (sizeZ + wheelSizeZ) / 2 + wheelOffset;
+  const { vehicleCollider: collider } =
+    useContext<gaesupWorldPropType>(GaesupWorldContext);
+  const { vehicleSizeX, vehicleSizeZ, wheelSizeX, wheelSizeZ } = collider;
+  const X = (vehicleSizeX + wheelSizeX) / 2 + wheelOffset;
+  const Z = (vehicleSizeZ + wheelSizeZ) / 2 + wheelOffset;
   const wheelPositions: [number, number, number][] = [
-    [-_sizeX, 0, _sizeZ],
-    [-_sizeX, 0, -_sizeZ],
-    [_sizeX, 0, _sizeZ],
-    [_sizeX, 0, -_sizeZ],
+    [-X, 0, Z],
+    [-X, 0, -Z],
+    [X, 0, Z],
+    [X, 0, -Z],
   ];
   const wheelRefs = useRef(
     wheelPositions.map(() => createRef<RapierRigidBody>())

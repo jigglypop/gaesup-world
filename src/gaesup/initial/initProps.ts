@@ -1,11 +1,10 @@
-import { colliderAtom } from "@gaesup/stores/collider";
-import { optionsAtom } from "@gaesup/stores/options";
 import { useKeyboardControls } from "@react-three/drei";
 import { useRapier, vec3 } from "@react-three/rapier";
 import { useAtom } from "jotai";
 import { useCallback, useContext, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { GaesupWorldContext } from "../stores/context";
+import { optionsAtom } from "../stores/options";
 import {
   constantType,
   controllerType,
@@ -63,8 +62,8 @@ export default function initProps({
       hit: null,
       rayCast: null,
       dir: vec3({ x: 0, y: -1, z: 0 }),
-      offset: vec3({ x: 0, y: 0, z: colliderAtom.init.radius - 0.03 }),
-      length: colliderAtom.init.radius + 3,
+      offset: vec3({ x: 0, y: 0, z: context.characterCollider.radius - 0.03 }),
+      length: context.characterCollider.radius + 3,
       angle: 0,
     };
   }, []);

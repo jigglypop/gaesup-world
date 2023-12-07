@@ -1,17 +1,17 @@
 "use client";
 
-import Controller from "@gaesup/index";
-import GaeSupTools from "@gaesup/tools";
 import { Environment, KeyboardControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 
-import { S3 } from "@/gaesup/utils/constant";
-import GaesupWorld from "@/gaesup/world";
-import Floor from "@components/platform/Floor";
-import { optionsAtom } from "@gaesup/stores/options";
 import { useAtom } from "jotai";
+import Controller from "../../gaesup";
+import { optionsAtom } from "../../gaesup/stores/options";
+import GaeSupTools from "../../gaesup/tools";
+import { S3 } from "../../gaesup/utils/constant";
+import GaesupWorld from "../../gaesup/world";
 import FloatMove from "../platform/FloatMove";
+import Floor from "../platform/Floor";
 import RigidObjects from "../platform/RigidObjects";
 import RoughPlane from "../platform/RoughPlane";
 import * as style from "./style.css";
@@ -177,7 +177,7 @@ export default function Main() {
               kartUrl={KART_URL}
               airplaneUrl={AIRPLANE_URL}
               options={{
-                debug: true,
+                debug: false,
                 controllerType: "keyboard",
                 mode: "normal",
                 kartUrl: KART_URL,

@@ -1,10 +1,10 @@
-import { controlAtom } from "@gaesup/stores/control";
-import { optionsAtom } from "@gaesup/stores/options";
 import { BiDownArrow } from "@react-icons/all-files/bi/BiDownArrow";
 import { BiLeftArrow } from "@react-icons/all-files/bi/BiLeftArrow";
 import { BiRightArrow } from "@react-icons/all-files/bi/BiRightArrow";
 import { BiUpArrow } from "@react-icons/all-files/bi/BiUpArrow";
 import { useAtom, useAtomValue } from "jotai";
+import { controlAtom } from "../../stores/control";
+import { optionsAtom } from "../../stores/options";
 import GamePadButton from "./GamePadButton";
 import * as style from "./style.css";
 

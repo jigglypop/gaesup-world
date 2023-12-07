@@ -1,5 +1,5 @@
-import { optionsType } from "@gaesup/type";
 import { atom } from "jotai";
+import { optionsType } from "../../type";
 
 export const optionsAtom = atom<optionsType>({
   debug: false,
