@@ -1,5 +1,6 @@
 import { calcPropType } from "..";
 import accelaration from "./accelaration";
+import currentSetting from "./currentSetting";
 import direction from "./direction";
 import impulse from "./impulse";
 import jump from "./jump";
@@ -15,4 +16,5 @@ export default function characterCalculation(calcProp: calcPropType) {
   accelaration(calcProp);
   impulse(calcProp);
   onTheObject(calcProp);
+  currentSetting(calcProp);
 }

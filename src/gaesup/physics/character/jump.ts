@@ -2,11 +2,11 @@ import { calcPropType } from "..";
 import { V3 } from "../../utils/vector";
 
 export default function jump(prop: calcPropType) {
-  const { rigidBodyRef, slopeRay, groundRay, move, constant } = prop;
+  const { rigidBodyRef, slopeRay, move, constant } = prop;
   const [current] = prop.current;
   const [states] = prop.states;
-  const { isOnTheGround } = states;
-  const { isJumping } = states;
+  const { isOnTheGround, isJumping } = states;
+  // const { isJumping } = states;
   const { jumpAccelY, jumpSpeed } = constant;
   if (isJumping && isOnTheGround) {
     rigidBodyRef.current.setLinvel(
@@ -16,10 +16,5 @@ export default function jump(prop: calcPropType) {
       false
     );
     move.mass.y *= jumpAccelY;
-    groundRay.parent?.applyImpulseAtPoint(
-      move.mass,
-      current.standPosition,
-      true
-    );
   }
 }

@@ -1,7 +1,5 @@
 "use client";
 
-import GaeSupProps from "@gaesup/stores/gaesupProps";
-import { Qt, V3 } from "@gaesup/utils/vector";
 import { Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import {
@@ -12,6 +10,8 @@ import {
 } from "@react-three/rapier";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
+import GaeSupProps from "../../gaesup/stores/gaesupProps";
+import { Qt, V3 } from "../../gaesup/utils/vector";
 
 export type dynamicType = {
   time: number | null;

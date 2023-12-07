@@ -2,11 +2,10 @@ import { ReactNode } from "react";
 import {
   airplaneColliderType,
   characterColliderType,
-  gaesupWorldPartialPropType,
-  optionType,
-  urlType,
   vehicleColliderType,
-} from "../stores/context";
+} from "../stores/collider";
+import { gaesupWorldPartialPropType, optionType } from "../stores/context";
+import { urlType } from "../stores/url";
 
 export type gaesupWorldPropsType = {
   children: ReactNode;

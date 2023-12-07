@@ -30,20 +30,13 @@ export default function onTheObject(prop: calcPropType) {
           .multiply(dragDamping)
           .negate()
       );
-      // calc up impulse (Y)
       const K = springConstant;
       const dY = collider.radius + 0.3 - groundRay.hit.toi;
       const sY = rigidBodyRef.current.linvel().y;
       const impulseY = K * dY - dragDamping.y * sY;
       const dragImpulse = forward.add(reverse).setY(impulseY);
-
       rigidBodyRef.current.applyImpulse(dragImpulse, false);
       move.mass.set(0, Math.min(-impulseY, 0), 0);
-      // groundRay.parent.applyImpulseAtPoint(
-      //   move.mass,
-      //   current.standPosition,
-      //   true
-      // );
     }
   }
 }

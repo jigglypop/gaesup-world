@@ -7,26 +7,20 @@ export default function accelaration(prop: calcPropType) {
   const [current] = prop.current;
   const { isMoving, isRunning } = states;
   if (!isMoving) return null;
-  const { direction, velocity: movingV } = move;
+  const { velocity: movingV } = move;
   const { velocity: currentV, reverseVelocity: reverseV } = current;
 
-  direction.applyQuaternion(outerGroupRef.current.quaternion);
-  // projection of velocity on direction
+  current.direction.applyQuaternion(outerGroupRef.current.quaternion);
   const projectedV = movingV
     .clone()
-    .projectOnVector(direction)
-    .multiply(direction);
-  const angle = movingV.angleTo(direction);
+    .projectOnVector(current.direction)
+    .multiply(current.direction);
+  const angle = movingV.angleTo(current.direction);
   const runRatio = constant.splintSpeed * (isRunning ? constant.runRate : 1);
   const reverseRatio = isMoving ? 0 : constant.rejectSpeed;
-  // 1. movingV
-  const runV = projectedV.addScalar(runRatio).multiply(direction);
-  // 2. -current
-  // 3. +reverse
+  const runV = projectedV.addScalar(runRatio).multiply(current.direction);
   const moveAngleV = movingV.multiplyScalar(Math.sin(angle));
-  // 4. -reverse
   const rejectV = reverseV.multiplyScalar(reverseRatio);
-  // 5 / dT
   const DT = vec3().set(1 / constant.dT, 0, 1 / constant.dT);
   move.accelation
     .copy(runV)

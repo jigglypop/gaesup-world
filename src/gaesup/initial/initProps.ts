@@ -1,7 +1,7 @@
 import { useKeyboardControls } from "@react-three/drei";
 import { useRapier, vec3 } from "@react-three/rapier";
 import { useAtom } from "jotai";
-import { useCallback, useContext, useEffect, useMemo } from "react";
+import { useContext, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { GaesupWorldContext } from "../stores/context";
 import { optionsAtom } from "../stores/options";
@@ -26,9 +26,7 @@ export default function initProps({
   const [_, getKeys] = useKeyboardControls();
   const keyControl: {
     [key: string]: boolean;
-  } = useCallback(() => {
-    return getKeys();
-  }, [getKeys])();
+  } = getKeys();
   const [options] = useAtom(optionsAtom);
 
   const groundRay: groundRayType = useMemo(() => {
@@ -99,7 +97,6 @@ export default function initProps({
 
   const move = useMemo(() => {
     return {
-      impulse: vec3(),
       direction: vec3(),
       accelation: vec3(),
       velocity: vec3(),

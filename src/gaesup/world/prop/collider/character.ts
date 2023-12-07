@@ -12,7 +12,7 @@ export function character(
 ) {
   const { url } = value;
   if (!url || !url.characterUrl) return;
-  const { characterGltf, characterSize } = gltf;
+  const { characterSize } = gltf;
   useEffect(() => {
     if (
       characterSize.x !== 0 &&

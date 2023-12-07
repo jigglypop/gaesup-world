@@ -44,7 +44,7 @@ export default function checkOnMovingObject(prop: propType) {
               (current.velocity.z - move.velocity.z) * dragDamping.z
             );
           } else {
-            move.dragForce.copy(current.impulse).negate();
+            // move.dragForce.copy(move.impulse).negate();
           }
           groundRay.parent.applyImpulseAtPoint(
             move.dragForce,

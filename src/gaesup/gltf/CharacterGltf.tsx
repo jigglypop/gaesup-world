@@ -1,9 +1,9 @@
-import { callbackType, groundRayType, propType, refsType } from "@gaesup/type";
 import { GroupProps } from "@react-three/fiber";
 import { useContext } from "react";
 import playActions from "../animation/actions";
 import initCallback from "../initial/initCallback";
 import { GaesupWorldContext, gaesupWorldPropType } from "../stores/context";
+import { callbackType, groundRayType, propType, refsType } from "../type";
 
 export type characterGltfType = {
   prop: propType;

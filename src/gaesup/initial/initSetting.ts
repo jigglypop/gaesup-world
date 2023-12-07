@@ -1,8 +1,8 @@
-import { propType } from "@gaesup/type";
 import { useAtomValue } from "jotai";
 import { useEffect } from "react";
 import { currentAtom } from "../stores/current";
 import { optionsAtom } from "../stores/options";
+import { propType } from "../type";
 
 export default function initSetting(prop: propType) {
   const options = useAtomValue(optionsAtom);

@@ -1,11 +1,11 @@
 import { useAnimations } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useAtom, useAtomValue } from "jotai";
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { animationAtom } from "../stores/animation";
+import { GaesupWorldContext, gaesupWorldPropType } from "../stores/context";
 import useCalcControl from "../stores/control";
 import { currentAtom } from "../stores/current";
-import { statesAtom } from "../stores/states";
 import {
   animationTagType,
   callbackPropType,
@@ -27,7 +27,7 @@ export default function initCallback({
   const { outerGroupRef, rigidBodyRef, slopeRayOriginRef, capsuleColliderRef } =
     prop;
   const current = useAtomValue(currentAtom);
-  const states = useAtomValue(statesAtom);
+  const { states } = useContext<gaesupWorldPropType>(GaesupWorldContext);
   const { actions } = useAnimations(animations, outerGroupRef);
   const [animation, setAnimation] = useAtom(animationAtom);
   // Animation set state

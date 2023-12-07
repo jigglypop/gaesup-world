@@ -6,11 +6,13 @@ export default function direction(prop: calcPropType) {
   const [options] = prop.option;
   const [current] = prop.current;
   const [joystick] = prop.joystick;
+
   const { forward, backward, leftward, rightward } = control;
   const { controllerType } = options;
   if (options.camera.type === "perspective") {
     if (options.camera.control === "orbit") {
-      move.direction.set(0, 0, Number(forward) - Number(backward));
+      // move.direction.set(0, 0, Number(forward) - Number(backward));
+      // current.direction.set(0, 0, Number(backward) - Number(forward));
       if (
         controllerType === "none" ||
         controllerType === "gameboy" ||
@@ -20,11 +22,16 @@ export default function direction(prop: calcPropType) {
           ((Number(leftward) - Number(rightward)) * Math.PI) / 32;
       } else if (controllerType === "joystick") {
         current.euler.y = -joystick.angle - Math.PI / 2;
-        move.direction = V3(
+        current.direction = V3(
           Math.sin(current.euler.y),
           0,
           Math.cos(current.euler.y)
         );
+        // move.direction = V3(
+        //   Math.sin(current.euler.y),
+        //   0,
+        //   Math.cos(current.euler.y)
+        // );
       }
       current.dir = V3(
         Math.sin(current.euler.y),
@@ -56,7 +63,7 @@ export default function direction(prop: calcPropType) {
       } else if (controllerType === "joystick") {
         current.euler.y = -joystick.angle - Math.PI / 2;
       }
-      move.direction.set(0, 0, 1);
+      // move.direction.set(0, 0, 1);
     }
   } else if (options.camera.type === "orthographic") {
     if (
@@ -80,6 +87,6 @@ export default function direction(prop: calcPropType) {
     } else if (controllerType === "joystick") {
       current.euler.y = -joystick.angle - Math.PI / 2;
     }
-    move.direction.set(0, 0, 1);
+    // move.direction.set(0, 0, 1);
   }
 }

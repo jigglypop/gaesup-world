@@ -14,6 +14,7 @@ import FloatMove from "../platform/FloatMove";
 import Floor from "../platform/Floor";
 import RigidObjects from "../platform/RigidObjects";
 import RoughPlane from "../platform/RoughPlane";
+import Slopes from "../platform/Slopes";
 import * as style from "./style.css";
 
 export const keyboardMap = [
@@ -209,6 +210,7 @@ export default function Main() {
           <RigidObjects />
           <FloatMove />
           <Floor />
+          <Slopes />
         </Physics>
       </Canvas>
       <GaeSupTools keyboardMap={keyboardMap} />

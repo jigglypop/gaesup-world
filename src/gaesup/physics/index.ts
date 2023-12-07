@@ -2,7 +2,12 @@ import { RootState, useFrame } from "@react-three/fiber";
 
 import { SetStateAction, useAtom, useAtomValue } from "jotai";
 import { useContext } from "react";
-import { GaesupWorldContext, gaesupWorldPropType } from "../stores/context";
+import {
+  GaesupWorldContext,
+  GaesupWorldDispatchContext,
+  gaesupDisptachType,
+  gaesupWorldPropType,
+} from "../stores/context";
 import useCalcControl from "../stores/control";
 import { currentAtom } from "../stores/current";
 import { joyStickOriginAtom, joyStickOriginType } from "../stores/joystick";
@@ -24,16 +29,13 @@ export type calcPropType = propType & {
   checkCollision?: (delta: number) => void;
   option?: [optionsType, SetAtom<[SetStateAction<optionsType>], void>];
   states?: [statesType, SetAtom<[SetStateAction<statesType>], void>];
-  // collider?: [
-  //   colliderAtomType,
-  //   SetAtom<[SetStateAction<colliderAtomType>], void>,
-  // ];
   context?: gaesupWorldPropType;
   delta?: number;
   joystick?: [
     joyStickOriginType,
     SetAtom<[SetStateAction<joyStickOriginType>], void>,
   ];
+  dispatch?: gaesupDisptachType;
 };
 
 export type cameraPropType = propType & {
@@ -55,6 +57,7 @@ export default function calculation(prop: propType) {
   const states = useAtom(statesAtom);
   const control = useCalcControl(prop);
   const context = useContext<gaesupWorldPropType>(GaesupWorldContext);
+  const dispatch = useContext<gaesupDisptachType>(GaesupWorldDispatchContext);
   useFrame((state, delta) => {
     const { rigidBodyRef, outerGroupRef } = prop;
     if (
@@ -74,6 +77,7 @@ export default function calculation(prop: propType) {
       joystick,
       delta,
       context,
+      dispatch,
     };
     if (options.mode === "vehicle") vehicleCalculation(calcProp);
     else if (options.mode === "normal") characterCalculation(calcProp);

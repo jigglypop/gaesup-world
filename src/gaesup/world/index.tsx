@@ -1,14 +1,17 @@
 import { useMemo, useReducer } from "react";
 import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
   airplaneColliderDefault,
   characterColliderDefault,
+  vehicleColliderDefault,
+} from "../stores/collider";
+import {
+  GaesupWorldContext,
+  GaesupWorldDispatchContext,
   gaesupReducer,
   optionDefault,
-  urlDefault,
-  vehicleColliderDefault,
 } from "../stores/context";
+import { statesDefault } from "../stores/states";
+import { urlDefault } from "../stores/url";
 import initProp from "./prop";
 import { gaesupWorldPropsType } from "./type";
 
@@ -39,6 +42,7 @@ export default function GaesupWorld({
     vehicleGltf: null,
     wheelGltf: null,
     airplaneGltf: null,
+    states: statesDefault,
   });
 
   const gaesupProps = useMemo(
@@ -52,6 +56,7 @@ export default function GaesupWorld({
       value.wheelGltf,
       value.url,
       value.option,
+      value.states,
       dispatch,
     ]
   );

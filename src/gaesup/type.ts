@@ -36,6 +36,7 @@ export type cameraRayType = {
 
 export type currentType = {
   position: THREE.Vector3;
+  impulse: THREE.Vector3;
   standPosition: THREE.Vector3;
   velocity: THREE.Vector3;
   reverseVelocity: THREE.Vector3;
@@ -58,7 +59,6 @@ export type currentType = {
 };
 
 export type moveType = {
-  impulse: THREE.Vector3;
   direction: THREE.Vector3;
   accelation: THREE.Vector3;
   velocity: THREE.Vector3;

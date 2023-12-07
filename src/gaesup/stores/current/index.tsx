@@ -6,6 +6,7 @@ import { V3 } from "../../utils/vector";
 export const currentAtom = atom<currentType>({
   position: V3(0, 2, 5),
   standPosition: vec3(),
+  impulse: vec3(),
   velocity: vec3(),
   reverseVelocity: vec3(),
   quat: quat(),

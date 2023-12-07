@@ -11,6 +11,17 @@ export type statesType = {
   isAnimationOuter: boolean;
 };
 
+export const statesDefault = {
+  isMoving: false,
+  isNotMoving: false,
+  isOnTheGround: false,
+  isOnMoving: false,
+  isRotated: false,
+  isRunning: false,
+  isJumping: false,
+  isAnimationOuter: false,
+};
+
 export const statesAtom = atom<statesType>({
   isMoving: false,
   isNotMoving: false,
