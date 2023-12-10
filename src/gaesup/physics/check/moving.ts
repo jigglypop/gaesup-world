@@ -1,6 +1,6 @@
-import { checkPropType } from ".";
+import { calcPropType } from "../type";
 
-export default function moving(prop: checkPropType) {
+export default function moving(prop: calcPropType) {
   const {
     control: calcControl,
     worldContext: { states, joystick, mode },

@@ -1,7 +1,7 @@
 import { assignInlineVars } from "@vanilla-extract/dynamic";
 import { useContext } from "react";
 import { vars } from "../../../styles/theme.css";
-import { GaesupWorldContext } from "../../stores/context";
+import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 import { KeyBoardAll, keyArrayItemType } from "./constant";
 import * as style from "./style.css";
 

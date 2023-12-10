@@ -8,9 +8,9 @@ import {
   slopeRayType,
 } from "../../controller/type";
 import { activeStateType } from "../../stores/active/type";
-import { animationPropType } from "../../stores/animation";
+import { animationPropType } from "../../stores/animation/type";
 import { keyControlType } from "../../stores/control/type";
-import { statesType } from "../../stores/states";
+import { statesType } from "../../stores/states/type";
 
 export type initCallbackType = {
   prop: propType;

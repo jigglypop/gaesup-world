@@ -3,18 +3,17 @@ import { vec3 } from "@react-three/rapier";
 import { useCallback, useContext, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../stores/context";
-
-import {
   constantType,
   controllerType,
   groundRayType,
   refsType,
   slopeRayType,
-} from "../controller/type";
-import { keyControlType } from "../stores/control/type";
+} from "../../controller/type";
+import {
+  GaesupWorldContext,
+  GaesupWorldDispatchContext,
+} from "../../stores/context/gaesupworld";
+import { keyControlType } from "../../stores/control/type";
 import initDebug from "./initDebug";
 
 export default function initControllerProps({
@@ -137,6 +136,7 @@ export default function initControllerProps({
     rigidBodyRef: refs.rigidBodyRef,
     outerGroupRef: refs.outerGroupRef,
     slopeRayOriginRef: refs.slopeRayOriginRef,
+    innerGroupRef: refs.innerGroupRef,
     keyControl,
     debug: props.debug,
   });

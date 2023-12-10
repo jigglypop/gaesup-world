@@ -1,6 +1,5 @@
 "use client";
 
-import check from "../check";
 import { propType, refsType } from "../controller/type";
 import calculation from "../physics";
 import CharacterGltf from "./gltf/CharacterGltf";
@@ -16,7 +15,6 @@ export function Vehicle({
   refs: refsType;
 }) {
   const { rigidBodyRef, outerGroupRef } = refs;
-  check(controllerProps);
   calculation(controllerProps);
 
   return (

@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { GaesupWorldContext } from "../../stores/context";
+import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 import { pointType } from "../../stores/point/type";
 import * as style from "./style.css";
 

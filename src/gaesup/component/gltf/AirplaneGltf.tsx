@@ -1,13 +1,13 @@
-import { useContext } from "react";
-import { GaesupWorldContext } from "../../stores/context";
+import { Ref, forwardRef, useContext } from "react";
+import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 
-export default function AirplaneGltf() {
+export const AirplaneInnerGroupRef = forwardRef((_, ref: Ref<THREE.Group>) => {
   const { airplaneGltf: gltf } = useContext(GaesupWorldContext);
   const { materials, nodes } = gltf;
   return (
     <>
       {nodes && materials && (
-        <group receiveShadow castShadow>
+        <group receiveShadow castShadow ref={ref}>
           {Object.keys(nodes).map((name: string, key: number) => {
             if (
               nodes[name].type === "Mesh" ||
@@ -28,4 +28,4 @@ export default function AirplaneGltf() {
       )}
     </>
   );
-}
+});

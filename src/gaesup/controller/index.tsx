@@ -9,14 +9,15 @@ import { Vehicle } from "../component/Vehicle";
 
 import { RapierRigidBody } from "@react-three/rapier";
 import Camera from "../camera";
-import initControllerProps from "../initial/initControllerProps";
-import { GaesupWorldContext } from "../stores/context";
+
+import initControllerProps from "../initial/controller";
 import {
   GaesupControllerContext,
   GaesupControllerDispatchContext,
   gaesupControllerDefault,
-  gaesupControllerReducer,
 } from "../stores/context/controller";
+import { gaesupControllerReducer } from "../stores/context/controller/reducer";
+import { GaesupWorldContext } from "../stores/context/gaesupworld";
 import { controllerType, propType, refsType } from "./type";
 
 export default function GaesupController(props: controllerType) {
@@ -43,6 +44,7 @@ export default function GaesupController(props: controllerType) {
   const capsuleColliderRef = useRef<Collider>(null);
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const outerGroupRef = useRef<THREE.Group>(null);
+  const innerGroupRef = useRef<THREE.Group>(null);
   const slopeRayOriginRef = useRef<THREE.Mesh>(null);
   const jointRefs = useRef<RevoluteImpulseJoint>(null);
 
@@ -64,6 +66,7 @@ export default function GaesupController(props: controllerType) {
     capsuleColliderRef,
     rigidBodyRef,
     outerGroupRef,
+    innerGroupRef,
     slopeRayOriginRef,
     jointRefs,
   };

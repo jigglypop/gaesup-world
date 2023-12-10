@@ -1,10 +1,11 @@
 "use client";
 
 import { useContext, useEffect } from "react";
+
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
-} from "../stores/context";
+} from "../stores/context/gaesupworld";
 import GameBoy from "./gameboy";
 import GamePad from "./gamepad";
 import JoyStick from "./joystick";
@@ -26,9 +27,7 @@ export default function GaeSupTools({
       return maps;
     }, {});
     const assignedControl = Object.assign(control, keyboard);
-    // setControl((control) => ({
-    //   ...Object.assign(control, keyboard),
-    // }));
+
     dispatch({
       type: "update",
       payload: {

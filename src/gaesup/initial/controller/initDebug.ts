@@ -1,9 +1,8 @@
 import { useControls } from "leva";
-import { propType } from "../controller/type";
+import { propType } from "../../controller/type";
 
 export default function initDebug(prop: propType) {
   const debugProps = { ...prop };
-  // Character jumpConst
   if (prop.debug) {
     debugProps.constant = useControls("constants", {
       jumpSpeed: {

@@ -45,7 +45,7 @@ export default function Main() {
   const [mode, changeMode] = useState<
     characterOptionType | vehicleOptionType | airplaneOptionType
   >({
-    type: "character",
+    type: "airplane",
     controller: "keyboard",
   });
 
@@ -53,7 +53,7 @@ export default function Main() {
     perspectiveCameraType | orthographicCameraType
   >({
     cameraType: "perspective",
-    controlType: "normal",
+    controlType: "orbit",
   });
 
   return (

@@ -10,11 +10,12 @@ import { ReactNode, RefObject } from "react";
 import * as THREE from "three";
 import { cameraRayType } from "../camera/type";
 import { callbackType } from "../initial/callback/type";
+
 import {
   gaesupCameraOptionType,
   gaesupCameraPropType,
   perspectiveCameraPropType,
-} from "../stores/context/controller";
+} from "../stores/context/controller/type";
 import { keyControlType } from "../stores/control/type";
 
 export type constantType = {
@@ -88,6 +89,7 @@ export type propType = {
   capsuleColliderRef: RefObject<Collider>;
   rigidBodyRef: RefObject<RapierRigidBody>;
   outerGroupRef: RefObject<THREE.Group>;
+  innerGroupRef: RefObject<THREE.Group>;
   slopeRayOriginRef: RefObject<THREE.Mesh>;
   jointRefs?: RefObject<RevoluteImpulseJoint>;
   characterUrl?: string;
@@ -117,6 +119,7 @@ export type refsType = {
   capsuleColliderRef: RefObject<Collider>;
   rigidBodyRef: RefObject<RapierRigidBody>;
   outerGroupRef: RefObject<THREE.Group>;
+  innerGroupRef: RefObject<THREE.Group>;
   slopeRayOriginRef: RefObject<THREE.Mesh>;
   jointRefs: RefObject<RevoluteImpulseJoint>;
 };

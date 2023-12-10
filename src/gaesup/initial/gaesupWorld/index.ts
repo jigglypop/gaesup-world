@@ -6,7 +6,8 @@ import {
   characterColliderDefault,
   vehicleColliderDefault,
 } from "../../stores/collider";
-import { gaesupReducer, modeDefault } from "../../stores/context";
+import { modeDefault } from "../../stores/context/gaesupworld";
+import { gaesupReducer } from "../../stores/context/gaesupworld/reducer";
 import { controlDefault } from "../../stores/control";
 import { joyStickDefault } from "../../stores/joystick";
 import { minimapDefault } from "../../stores/minimap";

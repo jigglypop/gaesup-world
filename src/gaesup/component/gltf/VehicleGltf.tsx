@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { GaesupWorldContext } from "../../stores/context";
+import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 
 export default function VehicleGltf() {
   const { vehicleGltf: gltf } = useContext(GaesupWorldContext);

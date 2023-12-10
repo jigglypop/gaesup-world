@@ -1,6 +1,5 @@
 "use client";
 
-import check from "../check";
 import calculation from "../physics";
 
 import { propType, refsType } from "../controller/type";
@@ -21,7 +20,6 @@ export function Character({
 }) {
   const { capsuleColliderRef, rigidBodyRef, outerGroupRef, slopeRayOriginRef } =
     refs;
-  check(controllerProps);
   calculation(controllerProps);
 
   return (

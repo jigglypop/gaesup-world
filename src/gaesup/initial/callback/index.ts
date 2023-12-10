@@ -3,10 +3,11 @@ import { useContext, useEffect } from "react";
 
 import { useAnimations, useKeyboardControls } from "@react-three/drei";
 import { animationTagType } from "../../controller/type";
+
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
-} from "../../stores/context";
+} from "../../stores/context/gaesupworld";
 import { callbackPropType, initCallbackType } from "./type";
 
 export default function initCallback({
@@ -60,7 +61,6 @@ export default function initCallback({
       callbacks.onFrame({ ...controllerProp, ...prop });
     }
     if (callbacks && callbacks.onAnimate) {
-      console.log("onAnimate");
       callbacks.onAnimate({
         ...controllerProp,
         ...prop,

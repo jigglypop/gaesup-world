@@ -2,12 +2,11 @@
 
 import { assignInlineVars } from "@vanilla-extract/dynamic";
 import { useContext } from "react";
-import { GaesupWorldContext } from "../../stores/context";
+import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 import * as style from "./style.css";
 
 export function MiniMapInner() {
   const { minimap, activeState } = useContext(GaesupWorldContext);
-  // const current = useAtomValue(currentAtom);
 
   return (
     <div className={style.minimap} style={minimap.minimapStyle || {}}>

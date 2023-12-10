@@ -1,5 +1,8 @@
 import { useContext } from "react";
-import { GaesupWorldContext, GaesupWorldDispatchContext } from "../context";
+import {
+  GaesupWorldContext,
+  GaesupWorldDispatchContext,
+} from "../context/gaesupworld";
 
 export const controlDefault = {
   forward: false,

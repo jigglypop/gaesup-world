@@ -3,7 +3,7 @@ import { BiLeftArrow } from "@react-icons/all-files/bi/BiLeftArrow";
 import { BiRightArrow } from "@react-icons/all-files/bi/BiRightArrow";
 import { BiUpArrow } from "@react-icons/all-files/bi/BiUpArrow";
 import { useContext } from "react";
-import { GaesupWorldContext } from "../../stores/context";
+import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 
 type gameBoyDirectionType = {
   tag: string;

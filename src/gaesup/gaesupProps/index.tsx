@@ -4,7 +4,7 @@ import * as THREE from "three";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
-} from "../stores/context";
+} from "../stores/context/gaesupworld";
 
 export default function GaeSupProps({
   text,

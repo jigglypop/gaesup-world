@@ -1,9 +1,8 @@
 "use client";
 
-import check from "../check";
 import { propType, refsType } from "../controller/type";
 import calculation from "../physics";
-import AirplaneGltf from "./gltf/AirplaneGltf";
+import { AirplaneInnerGroupRef } from "./gltf/AirplaneGltf";
 import {
   AirplaneCollider,
   AirplaneGroup,
@@ -17,8 +16,8 @@ export function Airplane({
   controllerProps: propType;
   refs: refsType;
 }) {
-  const { rigidBodyRef, outerGroupRef, capsuleColliderRef } = refs;
-  check(controllerProps);
+  const { rigidBodyRef, outerGroupRef, capsuleColliderRef, innerGroupRef } =
+    refs;
   calculation(controllerProps);
 
   return (
@@ -28,7 +27,7 @@ export function Airplane({
           ref={rigidBodyRef}
           groundRay={controllerProps.groundRay}
         >
-          <AirplaneCollider ref={capsuleColliderRef} />
+          <AirplaneCollider prop={controllerProps} ref={capsuleColliderRef} />
           {/* <CharacterGltf
             gltf={characterGltf}
             prop={prop}
@@ -39,7 +38,7 @@ export function Airplane({
             callbacks={callbacks}
             isRider={true}
           /> */}
-          <AirplaneGltf />
+          <AirplaneInnerGroupRef ref={innerGroupRef} />
         </AirplaneRigidBody>
       </AirplaneGroup>
     </>

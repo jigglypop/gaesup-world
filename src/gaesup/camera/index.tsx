@@ -9,11 +9,11 @@ import { useContext } from "react";
 import * as THREE from "three";
 import { propType, refsType } from "../controller/type";
 import { cameraPropType } from "../physics/type";
-import { GaesupWorldContext } from "../stores/context";
 import { GaesupControllerContext } from "../stores/context/controller";
+import { GaesupWorldContext } from "../stores/context/gaesupworld";
 import cameraCollisionDetector from "./cameraCollisionDetecter";
 import mapControl from "./control/map";
-import normal from "./control/normal";
+import normal from "./control/normal copy";
 import orbit from "./control/orbit";
 
 export default function Camera({
@@ -34,7 +34,7 @@ export default function Camera({
   const { rigidBodyRef, outerGroupRef } = refs;
   const { cameraRay } = prop;
   const { checkCollision } = cameraCollisionDetector(prop);
-  const { scene } = useThree();
+  const { scene, camera } = useThree();
   const { activeState } = worldContext;
 
   const intersectObjectMap: { [uuid: string]: THREE.Object3D } = {};
@@ -71,11 +71,11 @@ export default function Camera({
     cameraProp.delta = delta;
 
     if (cameraMode.cameraType === "perspective") {
+      scene.children.forEach((child) => getMeshs(child));
+      cameraRay.intersectObjectMap = intersectObjectMap;
       if (cameraMode.controlType === "orbit") {
         orbit(cameraProp);
       } else if (cameraMode.controlType === "normal") {
-        scene.children.forEach((child) => getMeshs(child));
-        cameraRay.intersectObjectMap = intersectObjectMap;
         normal(cameraProp);
       }
     } else if (cameraMode.cameraType === "orthographic") {

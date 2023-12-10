@@ -1,7 +1,7 @@
 import { RapierRigidBody } from "@react-three/rapier";
 import { createRef, useContext, useRef } from "react";
 import { propType } from "../../controller/type";
-import { GaesupWorldContext } from "../../stores/context";
+import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 import { WheelRegidBodyRef } from "../ref/vehicle";
 
 export function Wheels({ prop }: { prop: propType }) {

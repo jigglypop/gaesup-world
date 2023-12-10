@@ -1,7 +1,8 @@
 import { RootState } from "@react-three/fiber";
 import { activeStateType } from "../../stores/active/type";
-import { gaesupControllerPropType } from "../../stores/context";
-import { joyStickType } from "../../stores/joystick";
+
+import { gaesupControllerPropType } from "../../stores/context/gaesupworld/type";
+import { joyStickType } from "../../stores/joystick/type";
 import { V3 } from "../../utils/vector";
 import { calcPropType } from "../type";
 

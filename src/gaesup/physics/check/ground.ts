@@ -1,7 +1,7 @@
 import { vec3 } from "@react-three/rapier";
-import { checkPropType } from ".";
+import { calcPropType } from "../type";
 
-export default function checkOnTheGround(prop: checkPropType) {
+export default function checkOnTheGround(prop: calcPropType) {
   const {
     capsuleColliderRef,
     groundRay,

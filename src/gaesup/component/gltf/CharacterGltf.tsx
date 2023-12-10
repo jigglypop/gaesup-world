@@ -4,7 +4,7 @@ import playActions from "../../animation/actions";
 import { groundRayType, propType, refsType } from "../../controller/type";
 import initCallback from "../../initial/callback";
 import { callbackType } from "../../initial/callback/type";
-import { GaesupWorldContext } from "../../stores/context";
+import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 
 export type characterGltfType = {
   prop: propType;
