@@ -204,9 +204,9 @@ export default function Main() {
               groupProps={{
                 rotation: [0, Math.PI, 0],
               }}
-              onAnimate={({ keyControl, states, playAnimation }) => {
-                const { greet } = keyControl;
-                if (greet) {
+              onAnimate={({ control, states, playAnimation }) => {
+                const { keyZ } = control;
+                if (keyZ) {
                   states.isAnimationOuter = true;
                   playAnimation("greet");
                 } else {

@@ -1,13 +1,9 @@
 import { GroupProps } from "@react-three/fiber";
 import { useContext } from "react";
 import playActions from "../../animation/actions";
-import {
-  callbackType,
-  groundRayType,
-  propType,
-  refsType,
-} from "../../controller/type";
-import initCallback from "../../initial/initCallback";
+import { groundRayType, propType, refsType } from "../../controller/type";
+import initCallback from "../../initial/callback";
+import { callbackType } from "../../initial/callback/type";
 import { GaesupWorldContext } from "../../stores/context";
 
 export type characterGltfType = {
@@ -28,13 +24,13 @@ export default function CharacterGltf({
   isRider,
 }: characterGltfType) {
   const { characterGltf: gltf } = useContext(GaesupWorldContext);
-  const { materials, nodes, animations } = gltf;
+  const { materials, nodes } = gltf;
   const { characterCollider, vehicleCollider } = useContext(GaesupWorldContext);
 
   initCallback({
     prop,
     callbacks,
-    animations,
+    outerGroupRef: refs.outerGroupRef,
   });
 
   playActions({

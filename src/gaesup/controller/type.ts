@@ -4,24 +4,18 @@ import {
   RayColliderToi,
   RevoluteImpulseJoint,
 } from "@dimforge/rapier3d-compat";
-import {
-  GroupProps,
-  OrthographicCameraProps,
-  RootState,
-} from "@react-three/fiber";
+import { GroupProps, OrthographicCameraProps } from "@react-three/fiber";
 import { RapierRigidBody, RigidBodyProps } from "@react-three/rapier";
 import { ReactNode, RefObject } from "react";
 import * as THREE from "three";
 import { cameraRayType } from "../camera/type";
-import { activeStateType } from "../stores/active/type";
-import { animationPropType } from "../stores/animation";
+import { callbackType } from "../initial/callback/type";
 import {
   gaesupCameraOptionType,
   gaesupCameraPropType,
   perspectiveCameraPropType,
 } from "../stores/context/controller";
 import { keyControlType } from "../stores/control/type";
-import { statesType } from "../stores/states";
 
 export type constantType = {
   jumpSpeed: number;
@@ -117,33 +111,6 @@ export type animationTagType = {
 
 export type actionsType = animationTagType & {
   [key: string]: string;
-};
-
-export type onFramePropType = callbackPropType & RootState;
-export type onAnimatePropType = onFramePropType & {
-  actions: {
-    [x: string]: THREE.AnimationAction | null;
-  };
-  animation: animationPropType;
-  playAnimation: (tag: keyof actionsType) => void;
-};
-
-export type callbackPropType = {
-  activeState: activeStateType;
-  states: statesType;
-  options: optionsType;
-  slopeRay: slopeRayType;
-  groundRay: groundRayType;
-  cameraRay: cameraRayType;
-  constant: constantType;
-  keyControl: keyControlType;
-};
-
-export type callbackType = {
-  onReady?: (prop: callbackPropType) => void;
-  onFrame?: (prop: onFramePropType) => void;
-  onDestory?: (prop: callbackPropType) => void;
-  onAnimate?: (prop: onAnimatePropType) => void;
 };
 
 export type refsType = {
