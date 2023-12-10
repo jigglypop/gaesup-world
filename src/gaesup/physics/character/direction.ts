@@ -1,92 +1,103 @@
-import { calcPropType } from "..";
+import { RootState } from "@react-three/fiber";
+import { activeStateType } from "../../stores/active/type";
+import { gaesupControllerPropType } from "../../stores/context";
+import { joyStickType } from "../../stores/joystick";
 import { V3 } from "../../utils/vector";
+import { calcPropType } from "../type";
+
+export function joystickDirection() {}
+
+export function orbitDirection({
+  activeState,
+  control,
+  mode,
+  joystick,
+  state,
+}: {
+  state: RootState;
+  activeState: activeStateType;
+  mode: gaesupControllerPropType;
+  joystick: joyStickType;
+  control: {
+    [key: string]: boolean;
+  };
+}) {
+  const { forward, backward, leftward, rightward } = control;
+  let start = 0;
+  if (mode.controller === "joystick") {
+    activeState.euler.y =
+      -state.camera.rotation.y - joystick.joyStickOrigin.angle - Math.PI / 2;
+    start = joystick.joyStickOrigin.isOn ? 1 : 0;
+  } else {
+    activeState.euler.y +=
+      ((Number(leftward) - Number(rightward)) * Math.PI) / 32;
+    start = Number(forward) - Number(backward);
+  }
+  const front = V3(start, 0, start);
+  activeState.direction = front.multiply(
+    V3(Math.sin(activeState.euler.y), 0, Math.cos(activeState.euler.y))
+  );
+  activeState.dir = activeState.direction.normalize();
+}
+
+export function normalDirection({
+  activeState,
+  control,
+  mode,
+  joystick,
+  state,
+}: {
+  state: RootState;
+  activeState: activeStateType;
+  mode: gaesupControllerPropType;
+  joystick: joyStickType;
+  control: {
+    [key: string]: boolean;
+  };
+}) {
+  const { forward, backward, leftward, rightward } = control;
+  let start = 0;
+  if (mode.controller === "joystick") {
+    activeState.euler.y =
+      -state.camera.rotation.y - joystick.joyStickOrigin.angle - Math.PI / 2;
+    start = joystick.joyStickOrigin.isOn ? 1 : 0;
+  } else {
+    if (forward) {
+      activeState.euler.y =
+        -state.camera.rotation.y +
+        (leftward ? Math.PI / 4 : 0) -
+        (rightward ? Math.PI / 4 : 0);
+    } else if (backward) {
+      activeState.euler.y =
+        -state.camera.rotation.y +
+        Math.PI -
+        (leftward ? Math.PI / 4 : 0) +
+        (rightward ? Math.PI / 4 : 0);
+    } else if (leftward) {
+      activeState.euler.y = -state.camera.rotation.y + Math.PI / 2;
+    } else if (rightward) {
+      activeState.euler.y = -state.camera.rotation.y - Math.PI / 2;
+    }
+  }
+  const front = V3(
+    Number(backward) - Number(forward),
+    0,
+    Number(leftward) - Number(rightward)
+  );
+  activeState.direction = front;
+  activeState.dir = activeState.direction.normalize();
+}
 
 export default function direction(prop: calcPropType) {
-  const { move, cameraRay, control } = prop;
-  const [options] = prop.option;
-  const [current] = prop.current;
-  const [joystick] = prop.joystick;
-
-  const { forward, backward, leftward, rightward } = control;
-  const { controllerType } = options;
-  if (options.camera.type === "perspective") {
-    if (options.camera.control === "orbit") {
-      // move.direction.set(0, 0, Number(forward) - Number(backward));
-      // current.direction.set(0, 0, Number(backward) - Number(forward));
-      if (
-        controllerType === "none" ||
-        controllerType === "gameboy" ||
-        controllerType === "keyboard"
-      ) {
-        current.euler.y +=
-          ((Number(leftward) - Number(rightward)) * Math.PI) / 32;
-      } else if (controllerType === "joystick") {
-        current.euler.y = -joystick.angle - Math.PI / 2;
-        current.direction = V3(
-          Math.sin(current.euler.y),
-          0,
-          Math.cos(current.euler.y)
-        );
-        // move.direction = V3(
-        //   Math.sin(current.euler.y),
-        //   0,
-        //   Math.cos(current.euler.y)
-        // );
-      }
-      current.dir = V3(
-        Math.sin(current.euler.y),
-        0,
-        Math.cos(current.euler.y)
-      ).normalize();
-    } else if (options.camera.control === "normal") {
-      if (
-        controllerType === "none" ||
-        controllerType === "gameboy" ||
-        controllerType === "keyboard"
-      ) {
-        if (forward) {
-          current.euler.y =
-            cameraRay.pivot.rotation.y +
-            (leftward ? Math.PI / 4 : 0) -
-            (rightward ? Math.PI / 4 : 0);
-        } else if (backward) {
-          current.euler.y =
-            cameraRay.pivot.rotation.y +
-            Math.PI -
-            (leftward ? Math.PI / 4 : 0) +
-            (rightward ? Math.PI / 4 : 0);
-        } else if (leftward) {
-          current.euler.y = cameraRay.pivot.rotation.y + Math.PI / 2;
-        } else if (rightward) {
-          current.euler.y = cameraRay.pivot.rotation.y - Math.PI / 2;
-        }
-      } else if (controllerType === "joystick") {
-        current.euler.y = -joystick.angle - Math.PI / 2;
-      }
-      // move.direction.set(0, 0, 1);
-    }
-  } else if (options.camera.type === "orthographic") {
-    if (
-      controllerType === "none" ||
-      controllerType === "gameboy" ||
-      controllerType === "keyboard"
-    ) {
-      if (forward) {
-        current.euler.y =
-          (leftward ? Math.PI / 4 : 0) - (rightward ? Math.PI / 4 : 0);
-      } else if (backward) {
-        current.euler.y =
-          Math.PI -
-          (leftward ? Math.PI / 4 : 0) +
-          (rightward ? Math.PI / 4 : 0);
-      } else if (leftward) {
-        current.euler.y = Math.PI / 2;
-      } else if (rightward) {
-        current.euler.y = -Math.PI / 2;
-      }
-    } else if (controllerType === "joystick") {
-      current.euler.y = -joystick.angle - Math.PI / 2;
-    }
-    // move.direction.set(0, 0, 1);
+  const {
+    control,
+    state,
+    worldContext: { joystick, mode, activeState },
+    controllerContext: { cameraMode },
+  } = prop;
+  if (cameraMode.controlType === "normal") {
+    normalDirection({ activeState, control, mode, joystick, state });
+  } else if (cameraMode.controlType === "orbit") {
+    orbitDirection({ activeState, control, mode, joystick, state });
   }
 }

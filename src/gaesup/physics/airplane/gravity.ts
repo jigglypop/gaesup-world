@@ -1,4 +1,4 @@
-import { calcPropType } from "..";
+import { calcPropType } from "../type";
 
 export default function gravity(prop: calcPropType) {
   const { rigidBodyRef } = prop;

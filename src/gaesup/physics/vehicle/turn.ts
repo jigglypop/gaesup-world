@@ -1,9 +1,11 @@
-import { calcPropType } from "..";
+import { calcPropType } from "../type";
 
 export default function turn(prop: calcPropType) {
-  const [current] = prop.current;
-  const { constant, rigidBodyRef, move } = prop;
+  const {
+    rigidBodyRef,
+    worldContext: { activeState },
+  } = prop;
 
-  current.quat.setFromEuler(current.euler);
-  rigidBodyRef.current.setRotation(current.quat, false);
+  activeState.quat.setFromEuler(activeState.euler);
+  rigidBodyRef.current.setRotation(activeState.quat, false);
 }

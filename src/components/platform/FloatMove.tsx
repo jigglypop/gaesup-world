@@ -9,7 +9,7 @@ import {
 } from "@react-three/rapier";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import GaeSupProps from "../../gaesup/stores/gaesupProps";
+import GaeSupProps from "../../gaesup/gaesupProps";
 
 export type rayType = {
   origin: THREE.Vector3;
@@ -103,7 +103,7 @@ export default function FloatMove() {
   });
 
   return (
-    <GaeSupProps text="Float and move" jumpPoint={true} position={[0, 5, -17]}>
+    <GaeSupProps text="moving" jumpPoint={true} position={[0, 5, -17]}>
       <RigidBody mass={1} colliders={false} ref={rigidBodyRef}>
         <CuboidCollider args={[1.25, 0.1, 1.25]} ref={cuboidColliderRef} />
         <mesh receiveShadow castShadow>

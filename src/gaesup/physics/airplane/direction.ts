@@ -1,41 +1,43 @@
 import { vec3 } from "@react-three/rapier";
 import * as THREE from "three";
-import { calcPropType } from "..";
+import { calcPropType } from "../type";
 
 export default function direction(prop: calcPropType) {
-  const [current] = prop.current;
-  const { rigidBodyRef } = prop;
+  const {
+    rigidBodyRef,
+    worldContext: { activeState },
+  } = prop;
   const { forward, backward, leftward, rightward } = prop.control;
   const maxVelocity = 0.04;
-  current.yaw *= 0.95;
-  current.pitch *= 0.95;
-  if (Math.abs(current.yaw) > maxVelocity)
-    current.yaw = Math.sign(current.yaw) * maxVelocity;
+  activeState.yaw *= 0.95;
+  activeState.pitch *= 0.95;
+  if (Math.abs(activeState.yaw) > maxVelocity)
+    activeState.yaw = Math.sign(activeState.yaw) * maxVelocity;
 
-  if (Math.abs(current.pitch) > maxVelocity)
-    current.pitch = Math.sign(current.pitch) * maxVelocity;
-  current.yaw += (Number(rightward) - Number(leftward)) * 0.0025;
-  current.pitch += (Number(backward) - Number(forward)) * 0.0025;
+  if (Math.abs(activeState.pitch) > maxVelocity)
+    activeState.pitch = Math.sign(activeState.pitch) * maxVelocity;
+  activeState.yaw += (Number(rightward) - Number(leftward)) * 0.0025;
+  activeState.pitch += (Number(backward) - Number(forward)) * 0.0025;
 
-  current.axisX.applyAxisAngle(current.axisZ, current.yaw);
-  current.axisY.applyAxisAngle(current.axisX, current.pitch);
-  current.axisY.applyAxisAngle(current.axisZ, current.yaw);
-  current.axisZ.applyAxisAngle(current.axisX, current.pitch);
-  current.axisX.normalize();
-  current.axisY.normalize();
-  current.axisZ.normalize();
+  activeState.axisX.applyAxisAngle(activeState.axisZ, activeState.yaw);
+  activeState.axisY.applyAxisAngle(activeState.axisX, activeState.pitch);
+  activeState.axisY.applyAxisAngle(activeState.axisZ, activeState.yaw);
+  activeState.axisZ.applyAxisAngle(activeState.axisX, activeState.pitch);
+  activeState.axisX.normalize();
+  activeState.axisY.normalize();
+  activeState.axisZ.normalize();
   const rotMatrix = new THREE.Matrix4().makeBasis(
-    current.axisX,
-    current.axisY,
-    current.axisZ
+    activeState.axisX,
+    activeState.axisY,
+    activeState.axisZ
   );
-  current.position.add(current.axisZ.clone().multiplyScalar(0.1));
+  activeState.position.add(activeState.axisZ.clone().multiplyScalar(0.1));
   const matrix = new THREE.Matrix4()
     .multiply(
       new THREE.Matrix4().makeTranslation(
-        current.position.x,
-        current.position.y,
-        current.position.z
+        activeState.position.x,
+        activeState.position.y,
+        activeState.position.z
       )
     )
     .multiply(rotMatrix);

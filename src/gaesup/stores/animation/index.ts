@@ -1,9 +1,4 @@
-import { RefObject, useCallback, useEffect } from "react";
-
-import { useAnimations, useKeyboardControls } from "@react-three/drei";
-import { atom, useAtom } from "jotai";
-import * as THREE from "three";
-import { actionsType, animationTagType } from "../../type";
+import { actionsType, animationTagType } from "../../controller/type";
 
 export type animationPropType = {
   current: keyof animationTagType;
@@ -13,8 +8,8 @@ export type animationPropType = {
   };
 };
 
-export const animationAtom = atom<animationPropType>({
-  current: "idle",
+export const animationDefault = {
+  current: "idle" as keyof animationTagType,
   animationNames: {
     idle: "idle",
     walk: "walk",
@@ -28,94 +23,4 @@ export const animationAtom = atom<animationPropType>({
     fall: "fall",
   },
   keyControl: {},
-});
-
-animationAtom.debugLabel = "animation";
-
-export default function usePlay({
-  outerGroupRef,
-  animations,
-  defaultAnimation,
-}: {
-  outerGroupRef?: RefObject<THREE.Group>;
-  animations: THREE.AnimationClip[];
-  defaultAnimation?: string;
-}) {
-  const [_, getKeys] = useKeyboardControls();
-  const keys = getKeys();
-  const { actions } = useAnimations(animations, outerGroupRef);
-  const [animation, setAnimation] = useAtom(animationAtom);
-
-  useEffect(() => {
-    setAnimation((animation) => ({
-      ...animation,
-      keyControl: keys,
-    }));
-  }, [keys]);
-  // Animation set state
-  const playAnimation = useCallback(
-    (tag: keyof animationTagType) => {
-      setAnimation((animation) => ({
-        ...animation,
-        current: tag,
-      }));
-    },
-    [setAnimation, animation, animation.current]
-  );
-
-  const setAnimationName = (actions: {
-    [x: string]: THREE.AnimationAction | null;
-  }) => {
-    setAnimation((animation) => ({
-      ...animation,
-      animationNames: Object.assign(
-        animation.animationNames,
-        Object.keys(actions).reduce((acc, cur) => {
-          return {
-            ...acc,
-            [cur]: cur,
-          };
-        }, {})
-      ),
-    }));
-  };
-
-  const resetAni = () => playAnimation("idle");
-  const playIdle = () => playAnimation("idle");
-  const playWalk = () => playAnimation("walk");
-  const playRun = () => playAnimation("run");
-  const playJump = () => playAnimation("jump");
-  const playJumpIdle = () => playAnimation("jumpIdle");
-  const playJumpLand = () => playAnimation("jumpLand");
-  const playFall = () => playAnimation("fall");
-  const playRide = () => playAnimation("ride");
-
-  useEffect(() => {
-    return () => {
-      resetAni();
-    };
-  }, []);
-
-  useEffect(() => {
-    // Play animation
-    const action = actions[animation.current]?.reset().fadeIn(0.2).play();
-    setAnimationName(actions);
-    return () => {
-      action?.fadeOut(0.2);
-    };
-  }, [animation.current]);
-  return {
-    current: animation.current,
-    setAnimation,
-    playAnimation,
-    resetAni,
-    playIdle,
-    playWalk,
-    playRun,
-    playJump,
-    playJumpIdle,
-    playJumpLand,
-    playFall,
-    playRide,
-  };
-}
+};

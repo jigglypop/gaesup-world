@@ -18,8 +18,8 @@ export const joyStickInner = style([
     row: "center",
   }),
   {
-    margin: "3rem",
-    padding: "4rem",
+    margin: "4rem",
+    padding: "6rem",
     borderRadius: "50%",
     background: "rgba(0, 0, 0, 0.5)",
     boxShadow: "0 0 10px rgba(0, 0, 0, 0.5)",
@@ -29,8 +29,8 @@ export const joyStickInner = style([
 export const joystickBall = style([
   {
     position: "fixed",
-    width: "4rem",
-    height: "4rem",
+    width: "5rem",
+    height: "5rem",
     transform: "translate(-50%, -50%)",
     borderRadius: "50%",
     background: "rgba(0, 0, 0, 0.5)",

@@ -1,4 +1,4 @@
-import { calcPropType } from "..";
+import { calcPropType } from "../type";
 
 export default function damping(prop: calcPropType) {
   const { rigidBodyRef, constant, control } = prop;

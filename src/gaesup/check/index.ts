@@ -1,38 +1,28 @@
 import { World } from "@dimforge/rapier3d-compat";
+import { useKeyboardControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useRapier } from "@react-three/rapier";
-import { useAtom } from "jotai";
 import { useContext } from "react";
-import { calcPropType } from "../physics";
+import { propType } from "../controller/type";
+import { calcPropType } from "../physics/type";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
-  gaesupDisptachType,
-  gaesupWorldPropType,
 } from "../stores/context";
-import useCalcControl from "../stores/control";
-import { currentAtom } from "../stores/current";
-import { joyStickOriginAtom } from "../stores/joystick";
-import { optionsAtom } from "../stores/options";
-import { statesAtom } from "../stores/states";
-import { propType } from "../type";
-import checkIsRotate from "./checkIsRotate";
-import checkMoving from "./checkMoving";
-import checkOnMovingObject from "./checkOnMovingObject";
-import checkOnTheGround from "./checkOnTheGround";
-import checkOnTheSlope from "./checkOnTheSlope";
+import { GaesupControllerContext } from "../stores/context/controller";
+import ground from "./ground";
+import moving from "./moving";
+import rotate from "./rotate";
+import slope from "./slope";
 
 export type checkPropType = calcPropType & { world: World };
 
 export default function check(prop: propType) {
   const { world } = useRapier();
-  const current = useAtom(currentAtom);
-  const option = useAtom(optionsAtom);
-  const joystick = useAtom(joyStickOriginAtom);
-  const states = useAtom(statesAtom);
-  const control = useCalcControl(prop);
-  const context = useContext<gaesupWorldPropType>(GaesupWorldContext);
-  const dispatch = useContext<gaesupDisptachType>(GaesupWorldDispatchContext);
+  const worldContext = useContext(GaesupWorldContext);
+  const controllerContext = useContext(GaesupControllerContext);
+  const dispatch = useContext(GaesupWorldDispatchContext);
+  const control = useKeyboardControls()[1]();
   useFrame((state, delta) => {
     const { rigidBodyRef, outerGroupRef } = prop;
     if (
@@ -44,21 +34,17 @@ export default function check(prop: propType) {
       return null;
     const calcProp: checkPropType = {
       ...prop,
-      current,
       control,
       state,
-      states,
-      option,
-      joystick,
       delta,
-      context,
+      worldContext,
+      controllerContext,
       dispatch,
       world,
     };
-    checkOnTheGround(calcProp);
-    checkOnTheSlope(calcProp);
-    checkOnMovingObject(calcProp);
-    checkMoving(calcProp);
-    checkIsRotate(calcProp);
+    ground(calcProp);
+    slope(calcProp);
+    moving(calcProp);
+    rotate(calcProp);
   });
 }

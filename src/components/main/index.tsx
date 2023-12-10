@@ -4,9 +4,19 @@ import { Environment, KeyboardControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 
-import { useAtom } from "jotai";
-import Controller from "../../gaesup";
-import { optionsAtom } from "../../gaesup/stores/options";
+import { useState } from "react";
+import GaesupController from "../../gaesup/controller";
+import {
+  airplaneOptionType,
+  characterOptionType,
+  gaesupControllerPropType,
+  vehicleOptionType,
+} from "../../gaesup/stores/context";
+
+import {
+  orthographicCameraType,
+  perspectiveCameraType,
+} from "../../gaesup/stores/context/controller";
 import GaeSupTools from "../../gaesup/tools";
 import { S3 } from "../../gaesup/utils/constant";
 import GaesupWorld from "../../gaesup/world";
@@ -14,7 +24,6 @@ import FloatMove from "../platform/FloatMove";
 import Floor from "../platform/Floor";
 import RigidObjects from "../platform/RigidObjects";
 import RoughPlane from "../platform/RoughPlane";
-import Slopes from "../platform/Slopes";
 import * as style from "./style.css";
 
 export const keyboardMap = [
@@ -31,26 +40,50 @@ export const keyboardMap = [
 export default function Main() {
   const CHARACTER_URL = "./gaesupyee.glb";
   const AIRPLANE_URL = "./airplane.glb";
-  const KART_URL = S3 + "/kart2.glb";
   const VEHICLE_URL = S3 + "/kart2.glb";
 
-  const [options, setOptions] = useAtom(optionsAtom);
+  const [mode, changeMode] = useState<
+    characterOptionType | vehicleOptionType | airplaneOptionType
+  >({
+    type: "character",
+    controller: "keyboard",
+  });
+
+  const [camera, changeCamera] = useState<
+    perspectiveCameraType | orthographicCameraType
+  >({
+    cameraType: "perspective",
+    controlType: "normal",
+  });
 
   return (
     <GaesupWorld
+      mode={{ ...mode }}
       url={{
         characterUrl: CHARACTER_URL,
         vehicleUrl: VEHICLE_URL,
         airplaneUrl: AIRPLANE_URL,
+      }}
+      minimap={{
+        on: true,
+        ratio: 0.3,
+        minimapStyle: {
+          background: "rgba(0,0,0,0.5)",
+        },
+        objectStyle: {
+          background: "rgba(255,255,255,0.5)",
+          boxShadow: "0 0 5px rgba(0,0,0,0.5)",
+          border: "1px solid rgba(0,0,0,0.5)",
+        },
       }}
     >
       <div className={style.mainButtonContainer}>
         <button
           className={style.button}
           onClick={() =>
-            setOptions((options) => ({
-              ...options,
-              mode: "normal",
+            changeMode((mode: characterOptionType) => ({
+              type: "character",
+              controller: mode.controller,
             }))
           }
         >
@@ -59,9 +92,9 @@ export default function Main() {
         <button
           className={style.button}
           onClick={() =>
-            setOptions((options) => ({
-              ...options,
-              mode: "vehicle",
+            changeMode((mode: vehicleOptionType) => ({
+              type: "vehicle",
+              controller: mode.controller,
             }))
           }
         >
@@ -70,9 +103,9 @@ export default function Main() {
         <button
           className={style.button}
           onClick={() =>
-            setOptions((options) => ({
-              ...options,
-              mode: "airplane",
+            changeMode((mode: airplaneOptionType) => ({
+              type: "airplane",
+              controller: mode.controller,
             }))
           }
         >
@@ -81,12 +114,9 @@ export default function Main() {
         <button
           className={style.button}
           onClick={() =>
-            setOptions((options) => ({
-              ...options,
-              camera: {
-                type: "perspective",
-                control: "normal",
-              },
+            changeCamera(() => ({
+              cameraType: "perspective",
+              controlType: "normal",
             }))
           }
         >
@@ -95,12 +125,9 @@ export default function Main() {
         <button
           className={style.button}
           onClick={() =>
-            setOptions((options) => ({
-              ...options,
-              camera: {
-                type: "perspective",
-                control: "orbit",
-              },
+            changeCamera(() => ({
+              cameraType: "perspective",
+              controlType: "orbit",
             }))
           }
         >
@@ -109,12 +136,9 @@ export default function Main() {
         <button
           className={style.button}
           onClick={() => {
-            setOptions((options) => ({
-              ...options,
-              camera: {
-                type: "orthographic",
-                control: "normal",
-              },
+            changeCamera(() => ({
+              cameraType: "orthographic",
+              controlType: "orbit",
             }));
           }}
         >
@@ -123,9 +147,9 @@ export default function Main() {
         <button
           className={style.button}
           onClick={() => {
-            setOptions((options) => ({
-              ...options,
-              controllerType: "keyboard",
+            changeMode((mode: gaesupControllerPropType) => ({
+              type: mode.type,
+              controller: "keyboard",
             }));
           }}
         >
@@ -134,25 +158,25 @@ export default function Main() {
         <button
           className={style.button}
           onClick={() => {
-            setOptions((options) => ({
-              ...options,
-              controllerType: "joystick",
+            changeMode((mode: gaesupControllerPropType) => ({
+              type: mode.type,
+              controller: "joystick",
             }));
           }}
         >
           조이스틱
         </button>
-        <button
+        {/* <button
           className={style.button}
           onClick={() => {
-            setOptions((options) => ({
-              ...options,
-              controllerType: "gameboy",
+            changeMode((mode: gaesupControllerPropType) => ({
+              type: mode.type,
+              controller: "gameboy",
             }));
           }}
         >
           게임보이
-        </button>
+        </button> */}
       </div>
       <Canvas shadows dpr={[1, 2]} style={{ width: "100vw", height: "100vh" }}>
         <Environment background preset="sunset" blur={0.8} />
@@ -172,27 +196,12 @@ export default function Main() {
         <ambientLight intensity={0.5} />
         <Physics debug>
           <KeyboardControls map={keyboardMap}>
-            <Controller
-              url={CHARACTER_URL}
-              characterUrl={CHARACTER_URL}
-              kartUrl={KART_URL}
-              airplaneUrl={AIRPLANE_URL}
-              options={{
-                debug: false,
-                controllerType: "keyboard",
-                mode: "normal",
-                kartUrl: KART_URL,
-                characterUrl: CHARACTER_URL,
-                airplaneUrl: AIRPLANE_URL,
-                camera: {
-                  type: "perspective",
-                  control: "orbit",
-                },
-                orthographicCamera: {
-                  zoom: 80,
-                },
+            <GaesupController
+              cameraMode={{ ...camera }}
+              orthographicCamera={{
+                zoom: 80,
               }}
-              character={{
+              groupProps={{
                 rotation: [0, Math.PI, 0],
               }}
               onAnimate={({ keyControl, states, playAnimation }) => {
@@ -210,7 +219,7 @@ export default function Main() {
           <RigidObjects />
           <FloatMove />
           <Floor />
-          <Slopes />
+          {/* <Slopes /> */}
         </Physics>
       </Canvas>
       <GaeSupTools keyboardMap={keyboardMap} />

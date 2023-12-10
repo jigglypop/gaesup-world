@@ -1,9 +1,7 @@
-import { vec3 } from "@react-three/rapier";
-import { calcPropType } from "..";
+import { calcPropType } from "../type";
 
 export default function impulse(prop: calcPropType) {
   const { rigidBodyRef, constant, control, outerGroupRef } = prop;
-  const [current, setCurrent] = prop.current;
   const { accelRate } = constant;
   const { shift } = control;
   // current.direction.multiplyScalar(shift ? accelRate : 1);
@@ -22,9 +20,9 @@ export default function impulse(prop: calcPropType) {
   // );
   // current.position.setFromEuler(current.euler);
 
-  setCurrent((current) => ({
-    ...current,
-    position: vec3(rigidBodyRef.current!.translation()),
-    velocity: vec3(rigidBodyRef.current!.linvel()),
-  }));
+  // setCurrent((current) => ({
+  //   ...current,
+  //   position: vec3(rigidBodyRef.current!.translation()),
+  //   velocity: vec3(rigidBodyRef.current!.linvel()),
+  // }));
 }

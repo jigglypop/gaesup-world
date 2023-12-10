@@ -1,4 +1,5 @@
-import { calcPropType } from "..";
+import { calcPropType } from "../type";
+import currentSetting from "./currentSetting";
 import damping from "./damping";
 import direction from "./direction";
 import impulse from "./impulse";
@@ -9,4 +10,5 @@ export default function vehicleCalculation(calcProp: calcPropType) {
   turn(calcProp);
   impulse(calcProp);
   damping(calcProp);
+  currentSetting(calcProp);
 }

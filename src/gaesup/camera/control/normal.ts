@@ -1,13 +1,15 @@
-import { cameraPropType } from "../../physics";
+import { cameraPropType } from "../../physics/type";
+import { V3 } from "../../utils/vector";
 
 export default function normal(prop: cameraPropType) {
-  const { state, cameraRay, constant, checkCollision, delta } = prop;
-  const [current] = prop.current;
-  cameraRay.pivot.position.lerp(
-    current.position,
-    1 - Math.exp(-constant.cameraCamFollow * delta)
-  );
-  state.camera.position.set(0, 0, 0);
-  state.camera.lookAt(cameraRay.pivot.position);
-  checkCollision(delta);
+  const {
+    state,
+    controllerContext: { perspectiveCamera },
+    worldContext: { activeState },
+  } = prop;
+  const cameraPosition = activeState.position
+    .clone()
+    .add(V3(perspectiveCamera.XZDistance, perspectiveCamera.YDistance, 0));
+  state.camera.position.lerp(cameraPosition, 0.2);
+  state.camera.lookAt(activeState.position);
 }

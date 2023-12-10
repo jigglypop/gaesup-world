@@ -1,9 +1,10 @@
 "use client";
 
-import { useAtom, useAtomValue } from "jotai";
-import { useEffect } from "react";
-import { controlAtom } from "../stores/control";
-import { optionsAtom } from "../stores/options";
+import { useContext, useEffect } from "react";
+import {
+  GaesupWorldContext,
+  GaesupWorldDispatchContext,
+} from "../stores/context";
 import GameBoy from "./gameboy";
 import GamePad from "./gamepad";
 import JoyStick from "./joystick";
@@ -16,33 +17,42 @@ export default function GaeSupTools({
 }: {
   keyboardMap: { name: string; keys: string[] }[];
 }) {
-  const options = useAtomValue(optionsAtom);
-  const [control, setControl] = useAtom(controlAtom);
-  const { controllerType } = options;
+  const { minimap, mode } = useContext(GaesupWorldContext);
+  const { control } = useContext(GaesupWorldContext);
+  const dispatch = useContext(GaesupWorldDispatchContext);
   useEffect(() => {
     const keyboard = keyboardMap.reduce((maps, keyboardMapItem) => {
       maps[keyboardMapItem.name] = false;
       return maps;
     }, {});
-    setControl((control) => ({
-      ...Object.assign(control, keyboard),
-    }));
+    const assignedControl = Object.assign(control, keyboard);
+    // setControl((control) => ({
+    //   ...Object.assign(control, keyboard),
+    // }));
+    dispatch({
+      type: "update",
+      payload: {
+        control: {
+          ...assignedControl,
+        },
+      },
+    });
   }, []);
+
   return (
     <>
       <div className={style.footer}>
         <div className={style.footerUpper}>
-          {(controllerType === "joystick" || controllerType === "gameboy") && (
-            <GamePad />
-          )}
+          {(mode.controller === "joystick" ||
+            mode.controller === "gameboy") && <GamePad />}
         </div>
         <div className={style.footerLower}>
-          {controllerType === "joystick" && <JoyStick />}
-          {controllerType === "gameboy" && <GameBoy />}
-          {controllerType === "keyboard" && (
+          {mode.controller === "joystick" && <JoyStick />}
+          {mode.controller === "gameboy" && <GameBoy />}
+          {mode.controller === "keyboard" && (
             <KeyBoardToolTip keyboardMap={keyboardMap} />
           )}
-          {options.minimap && <MiniMap />}
+          {minimap.on && <MiniMap />}
         </div>
       </div>
 

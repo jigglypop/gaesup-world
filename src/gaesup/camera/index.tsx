@@ -1,37 +1,49 @@
 import {
+  MapControls,
   OrbitControls,
   OrthographicCamera,
   PerspectiveCamera,
 } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { vec3 } from "@react-three/rapier";
-import { useAtom } from "jotai";
+import { useContext } from "react";
 import * as THREE from "three";
-import { cameraPropType } from "../physics";
-import useCalcControl from "../stores/control";
-import { currentAtom } from "../stores/current";
-import { optionsAtom } from "../stores/options";
-import { propType } from "../type";
+import { propType, refsType } from "../controller/type";
+import { cameraPropType } from "../physics/type";
+import { GaesupWorldContext } from "../stores/context";
+import { GaesupControllerContext } from "../stores/context/controller";
 import cameraCollisionDetector from "./cameraCollisionDetecter";
+import mapControl from "./control/map";
 import normal from "./control/normal";
 import orbit from "./control/orbit";
 
-export default function Camera({ prop }: { prop: propType }) {
-  const option = useAtom(optionsAtom);
-  const [options] = option;
-  const { rigidBodyRef, outerGroupRef, cameraRay, constant } = prop;
-  const currents = useAtom(currentAtom);
+export default function Camera({
+  refs,
+  prop,
+  control,
+}: {
+  refs: refsType;
+  prop: propType;
+  control: {
+    [key: string]: boolean;
+  };
+}) {
+  const worldContext = useContext(GaesupWorldContext);
+  const controllerContext = useContext(GaesupControllerContext);
+  const { cameraMode, perspectiveCamera, orthographicCamera } =
+    controllerContext;
+  const { rigidBodyRef, outerGroupRef } = refs;
+  const { cameraRay } = prop;
   const { checkCollision } = cameraCollisionDetector(prop);
+  const { scene } = useThree();
+  const { activeState } = worldContext;
 
-  const { scene, camera } = useThree();
   const intersectObjectMap: { [uuid: string]: THREE.Object3D } = {};
-  const control = useCalcControl(prop);
   const cameraProp: cameraPropType = {
     ...prop,
-    current: currents,
     checkCollision,
     control,
-    option,
+    controllerContext,
+    worldContext,
   };
 
   const getMeshs = (object: THREE.Object3D) => {
@@ -47,23 +59,6 @@ export default function Camera({ prop }: { prop: propType }) {
     });
   };
 
-  // useEffect(() => {
-  //   if (
-  //     options.camera.type === "perspective" &&
-  //     options.camera.control === "normal"
-  //   ) {
-  //     scene.children.forEach((child) => getMeshs(child));
-  //     cameraRay.intersectObjectMap = intersectObjectMap;
-  //     cameraRay.followCamera.add(camera);
-  //     cameraRay.pivot.add(cameraRay.followCamera);
-  //   }
-  // });
-
-  // useEffect(() => {
-  //   refCheck(prop);
-  //   cameraSetting(cameraProp);
-  // }, []);
-
   useFrame((state, delta) => {
     if (
       !rigidBodyRef ||
@@ -74,44 +69,32 @@ export default function Camera({ prop }: { prop: propType }) {
       return null;
     cameraProp.state = state;
     cameraProp.delta = delta;
-    if (
-      options.camera.type === "perspective" &&
-      options.camera.control === "normal"
-    ) {
-      scene.children.forEach((child) => getMeshs(child));
-      cameraRay.intersectObjectMap = intersectObjectMap;
-      // cameraRay.followCamera.add(camera);
-      // cameraRay.pivot.add(cameraRay.followCamera);
-    }
-    if (options.camera.type === "perspective") {
-      if (options.camera.control === "orbit") {
+
+    if (cameraMode.cameraType === "perspective") {
+      if (cameraMode.controlType === "orbit") {
         orbit(cameraProp);
-      } else if (options.camera.control === "normal") {
+      } else if (cameraMode.controlType === "normal") {
+        scene.children.forEach((child) => getMeshs(child));
+        cameraRay.intersectObjectMap = intersectObjectMap;
         normal(cameraProp);
       }
-    } else if (options.camera.type === "orthographic") {
-      camera.position
-        .set(-10, 10, -10)
-        .add(vec3(rigidBodyRef.current.translation()));
+    } else if (cameraMode.cameraType === "orthographic") {
+      mapControl(cameraProp);
     }
   });
+
   return (
     <>
-      {options.camera.type === "perspective" && (
+      {cameraMode.cameraType === "perspective" && (
         <>
-          <OrbitControls />
-          <PerspectiveCamera makeDefault {...options.perspectiveCamera} />
+          <OrbitControls target={activeState.position} />
+          <PerspectiveCamera makeDefault {...perspectiveCamera} />
         </>
       )}
-      {options.camera.type === "orthographic" && (
+      {cameraMode.cameraType === "orthographic" && (
         <>
-          <OrbitControls
-            target={currents[0].position}
-            enableZoom={false}
-            enablePan={true}
-            zoomSpeed={0.3}
-          />
-          <OrthographicCamera makeDefault {...options.orthographicCamera} />
+          <MapControls target={activeState.position} />
+          <OrthographicCamera makeDefault {...orthographicCamera} />
         </>
       )}
     </>

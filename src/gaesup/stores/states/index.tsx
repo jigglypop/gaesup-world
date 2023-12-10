@@ -1,5 +1,3 @@
-import { atom } from "jotai";
-
 export type statesType = {
   isMoving: boolean;
   isNotMoving: boolean;
@@ -21,15 +19,3 @@ export const statesDefault = {
   isJumping: false,
   isAnimationOuter: false,
 };
-
-export const statesAtom = atom<statesType>({
-  isMoving: false,
-  isNotMoving: false,
-  isOnTheGround: false,
-  isOnMoving: false,
-  isRotated: false,
-  isRunning: false,
-  isJumping: false,
-  isAnimationOuter: false,
-});
-statesAtom.debugPrivate = true;

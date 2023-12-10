@@ -10,7 +10,7 @@ import {
 } from "@react-three/rapier";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import GaeSupProps from "../../gaesup/stores/gaesupProps";
+import GaeSupProps from "../../gaesup/gaesupProps";
 import { Qt, V3 } from "../../gaesup/utils/vector";
 
 export type dynamicType = {

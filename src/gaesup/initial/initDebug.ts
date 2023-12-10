@@ -1,21 +1,15 @@
 import { useControls } from "leva";
-import { propType } from "../type";
+import { propType } from "../controller/type";
 
 export default function initDebug(prop: propType) {
   const debugProps = { ...prop };
   // Character jumpConst
-  if (prop.options.debug) {
+  if (prop.debug) {
     debugProps.constant = useControls("constants", {
       jumpSpeed: {
         value: debugProps.constant.jumpSpeed,
         min: 1,
         max: 10,
-        step: 0.01,
-      },
-      jumpAccelY: {
-        value: debugProps.constant.jumpAccelY,
-        min: 0,
-        max: 80,
         step: 0.01,
       },
       turnSpeed: {
@@ -24,32 +18,20 @@ export default function initDebug(prop: propType) {
         max: 30,
         step: 0.01,
       },
-      rejectSpeed: {
-        value: debugProps.constant.rejectSpeed,
-        min: 0,
-        max: 10,
-        step: 0.01,
-      },
-      splintSpeed: {
-        value: debugProps.constant.splintSpeed,
+      walkSpeed: {
+        value: debugProps.constant.walkSpeed,
         min: 1,
         max: 5,
         step: 0.01,
       },
-      runRate: {
-        value: debugProps.constant.runRate,
+      runSpeed: {
+        value: debugProps.constant.runSpeed,
         min: 1,
-        max: 10,
+        max: 5,
         step: 0.01,
       },
       accelRate: {
         value: debugProps.constant.accelRate,
-        min: 1,
-        max: 10,
-        step: 0.01,
-      },
-      splintRate: {
-        value: debugProps.constant.splintRate,
         min: 1,
         max: 10,
         step: 0.01,
@@ -66,40 +48,10 @@ export default function initDebug(prop: propType) {
         max: 1,
         step: 0.01,
       },
-      dT: {
-        value: debugProps.constant.dT,
-        min: 1,
-        max: 100,
-        step: 0.01,
-      },
-      reconsil: {
-        value: debugProps.constant.reconsil,
+      linearDamping: {
+        value: debugProps.constant.linearDamping,
         min: 0,
         max: 1,
-        step: 0.01,
-      },
-      rotational: {
-        value: debugProps.constant.rotational,
-        min: 0,
-        max: 1,
-        step: 0.01,
-      },
-      vertical: {
-        value: debugProps.constant.vertical,
-        min: 0,
-        max: 1,
-        step: 0.01,
-      },
-      airDamping: {
-        value: debugProps.constant.airDamping,
-        min: 0,
-        max: 1,
-        step: 0.01,
-      },
-      springConstant: {
-        value: debugProps.constant.springConstant,
-        min: 1,
-        max: 10,
         step: 0.01,
       },
       cameraInitDistance: {

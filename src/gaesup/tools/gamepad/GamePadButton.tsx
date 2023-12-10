@@ -1,16 +1,8 @@
-import { useSetAtom } from "jotai";
-import { controlAtom } from "../../stores/control";
+import { usePushKey } from "../../stores/control";
 import * as style from "./style.css";
 
 export default function GamePadButton({ value }: { value: string }) {
-  const setControl = useSetAtom(controlAtom);
-
-  const pushKey = (key: string, value: boolean) => {
-    setControl((control) => ({
-      ...control,
-      [key]: value,
-    }));
-  };
+  const { pushKey } = usePushKey();
 
   const onMouseDown = () => {
     pushKey(value, true);

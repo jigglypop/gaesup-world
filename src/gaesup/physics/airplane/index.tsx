@@ -1,4 +1,5 @@
-import { calcPropType } from "..";
+import { calcPropType } from "../type";
+import currentSetting from "./currentSetting";
 import direction from "./direction";
 import gravity from "./gravity";
 import impulse from "./impulse";
@@ -9,4 +10,5 @@ export default function airplaneCalculation(calcProp: calcPropType) {
   turn(calcProp);
   impulse(calcProp);
   gravity(calcProp);
+  currentSetting(calcProp);
 }

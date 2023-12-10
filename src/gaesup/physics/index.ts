@@ -1,63 +1,24 @@
-import { RootState, useFrame } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 
-import { SetStateAction, useAtom, useAtomValue } from "jotai";
+import { useKeyboardControls } from "@react-three/drei";
 import { useContext } from "react";
+import { propType } from "../controller/type";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
-  gaesupDisptachType,
-  gaesupWorldPropType,
 } from "../stores/context";
-import useCalcControl from "../stores/control";
-import { currentAtom } from "../stores/current";
-import { joyStickOriginAtom, joyStickOriginType } from "../stores/joystick";
-import { optionsAtom } from "../stores/options";
-import { statesAtom, statesType } from "../stores/states";
-import { currentType, optionsType, propType } from "../type";
+import { GaesupControllerContext } from "../stores/context/controller";
 import airplaneCalculation from "./airplane";
 import characterCalculation from "./character";
+import { calcPropType } from "./type";
 import vehicleCalculation from "./vehicle";
 
-export type SetAtom<Args extends unknown[], Result> = (...args: Args) => Result;
-
-export type calcPropType = propType & {
-  current: [currentType, SetAtom<[SetStateAction<currentType>], void>];
-  control: {
-    [key: string]: boolean;
-  };
-  state?: RootState;
-  checkCollision?: (delta: number) => void;
-  option?: [optionsType, SetAtom<[SetStateAction<optionsType>], void>];
-  states?: [statesType, SetAtom<[SetStateAction<statesType>], void>];
-  context?: gaesupWorldPropType;
-  delta?: number;
-  joystick?: [
-    joyStickOriginType,
-    SetAtom<[SetStateAction<joyStickOriginType>], void>,
-  ];
-  dispatch?: gaesupDisptachType;
-};
-
-export type cameraPropType = propType & {
-  current: [currentType, SetAtom<[SetStateAction<currentType>], void>];
-  control: {
-    [key: string]: boolean;
-  };
-  state?: RootState;
-  checkCollision?: (delta: number) => void;
-  option: [optionsType, SetAtom<[SetStateAction<optionsType>], void>];
-  delta?: number;
-};
-
 export default function calculation(prop: propType) {
-  const options = useAtomValue(optionsAtom);
-  const current = useAtom(currentAtom);
-  const option = useAtom(optionsAtom);
-  const joystick = useAtom(joyStickOriginAtom);
-  const states = useAtom(statesAtom);
-  const control = useCalcControl(prop);
-  const context = useContext<gaesupWorldPropType>(GaesupWorldContext);
-  const dispatch = useContext<gaesupDisptachType>(GaesupWorldDispatchContext);
+  const worldContext = useContext(GaesupWorldContext);
+  const controllerContext = useContext(GaesupControllerContext);
+  const dispatch = useContext(GaesupWorldDispatchContext);
+  const control = useKeyboardControls()[1]();
+  const { mode } = worldContext;
   useFrame((state, delta) => {
     const { rigidBodyRef, outerGroupRef } = prop;
     if (
@@ -69,18 +30,15 @@ export default function calculation(prop: propType) {
       return null;
     const calcProp: calcPropType = {
       ...prop,
-      current,
       control,
       state,
-      states,
-      option,
-      joystick,
       delta,
-      context,
+      worldContext,
+      controllerContext,
       dispatch,
     };
-    if (options.mode === "vehicle") vehicleCalculation(calcProp);
-    else if (options.mode === "normal") characterCalculation(calcProp);
-    else if (options.mode === "airplane") airplaneCalculation(calcProp);
+    if (mode.type === "vehicle") vehicleCalculation(calcProp);
+    else if (mode.type === "character") characterCalculation(calcProp);
+    else if (mode.type === "airplane") airplaneCalculation(calcProp);
   });
 }

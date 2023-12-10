@@ -1,5 +1,4 @@
-import { useAtom } from "jotai";
-import { controlAtom } from "../../stores/control";
+import { usePushKey } from "../../stores/control";
 import * as style from "./style.css";
 
 export type gameBoyButtonType = {
@@ -9,14 +8,7 @@ export type gameBoyButtonType = {
 };
 
 export default function GameBoyButton({ tag, value, icon }: gameBoyButtonType) {
-  const [control, setControl] = useAtom(controlAtom);
-
-  const pushKey = (key: string, value: boolean) => {
-    setControl((control) => ({
-      ...control,
-      [key]: value,
-    }));
-  };
+  const { pushKey } = usePushKey();
 
   const onMouseDown = () => {
     pushKey(value, true);

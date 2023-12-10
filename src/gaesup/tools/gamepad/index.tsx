@@ -2,11 +2,8 @@ import { BiDownArrow } from "@react-icons/all-files/bi/BiDownArrow";
 import { BiLeftArrow } from "@react-icons/all-files/bi/BiLeftArrow";
 import { BiRightArrow } from "@react-icons/all-files/bi/BiRightArrow";
 import { BiUpArrow } from "@react-icons/all-files/bi/BiUpArrow";
-import { useAtom, useAtomValue } from "jotai";
-import { controlAtom } from "../../stores/control";
-import { optionsAtom } from "../../stores/options";
-import GamePadButton from "./GamePadButton";
-import * as style from "./style.css";
+import { useContext } from "react";
+import { GaesupWorldContext } from "../../stores/context";
 
 type gameBoyDirectionType = {
   tag: string;
@@ -26,8 +23,8 @@ export const GameBoyDirections = [
 ];
 
 export default function GamePad() {
-  const [control, setControl] = useAtom(controlAtom);
-  const options = useAtomValue(optionsAtom);
+  const { control } = useContext(GaesupWorldContext);
+  const { mode } = useContext(GaesupWorldContext);
   const GamePadDirections = Object.keys(control)
     .map((key) => {
       if (
@@ -44,14 +41,15 @@ export default function GamePad() {
     .filter((item) => item !== undefined)
     .filter(
       (item: gameBoyDirectionType) =>
-        !(item.tag === "run" && options.controllerType === "joystick")
+        !(item.tag === "run" && mode.controller === "joystick")
     );
 
   return (
-    <div className={style.gamePad}>
-      {GamePadDirections.map((item: gameBoyDirectionType, key: number) => {
-        return <GamePadButton key={key} value={item.value} />;
-      })}
-    </div>
+    <></>
+    // <div className={style.gamePad}>
+    //   {GamePadDirections.map((item: gameBoyDirectionType, key: number) => {
+    //     return <GamePadButton key={key} value={item.value} />;
+    //   })}
+    // </div>
   );
 }

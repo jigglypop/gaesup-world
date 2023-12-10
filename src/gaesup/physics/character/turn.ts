@@ -1,12 +1,17 @@
-import { calcPropType } from "..";
+import { calcPropType } from "../type";
 
 export default function turn(prop: calcPropType) {
-  const { outerGroupRef, constant, delta } = prop;
-  const [current] = prop.current;
+  const {
+    outerGroupRef,
+    constant,
+    delta,
+    worldContext: { activeState },
+  } = prop;
   const { turnSpeed } = constant;
-  current.quat.setFromEuler(current.euler);
+
+  activeState.quat.setFromEuler(activeState.euler);
   outerGroupRef.current.quaternion.rotateTowards(
-    current.quat,
+    activeState.quat,
     delta * turnSpeed
   );
 }

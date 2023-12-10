@@ -1,7 +1,7 @@
 import { assignInlineVars } from "@vanilla-extract/dynamic";
-import { useAtomValue } from "jotai";
+import { useContext } from "react";
 import { vars } from "../../../styles/theme.css";
-import { animationAtom } from "../../stores/animation";
+import { GaesupWorldContext } from "../../stores/context";
 import { KeyBoardAll, keyArrayItemType } from "./constant";
 import * as style from "./style.css";
 
@@ -13,7 +13,9 @@ export default function KeyBoardToolTip({
     keys: string[];
   }[];
 }) {
-  const animation = useAtomValue(animationAtom);
+  const worldContext = useContext(GaesupWorldContext);
+  const { animations } = worldContext;
+
   const keyArray = Object.entries(KeyBoardAll).reduce<keyArrayItemType[]>(
     (keyArray, cur) => {
       const [key, value] = cur;
@@ -45,7 +47,7 @@ export default function KeyBoardToolTip({
           let boxShadow = "0 0 5px rgba(0, 0, 0, 0.2)";
 
           if (codeToActionObj[item.code]) {
-            if (animation.keyControl[codeToActionObj[item.code]]) {
+            if (animations.keyControl[codeToActionObj[item.code]]) {
               background = `${vars.gradient.green}`;
               boxShadow = `0 0 10px rgba(99,251,215,1)`;
             } else {
@@ -56,7 +58,7 @@ export default function KeyBoardToolTip({
           let color = "white";
           if (
             codeToActionObj[item.code] &&
-            animation.keyControl[codeToActionObj[item.code]]
+            animations.keyControl[codeToActionObj[item.code]]
           ) {
             color = "black";
           }
