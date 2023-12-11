@@ -13,7 +13,7 @@ import { GaesupControllerContext } from "../stores/context/controller";
 import { GaesupWorldContext } from "../stores/context/gaesupworld";
 import cameraCollisionDetector from "./cameraCollisionDetecter";
 import mapControl from "./control/map";
-import normal from "./control/normal copy";
+import normal from "./control/normal";
 import orbit from "./control/orbit";
 
 export default function Camera({

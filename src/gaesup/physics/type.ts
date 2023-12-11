@@ -11,9 +11,6 @@ import {
 export type SetAtom<Args extends unknown[], Result> = (...args: Args) => Result;
 
 export type calcPropType = propType & {
-  control: {
-    [key: string]: boolean;
-  };
   state?: RootState;
   checkCollision?: (delta: number) => void;
   worldContext?: gaesupWorldPropType;

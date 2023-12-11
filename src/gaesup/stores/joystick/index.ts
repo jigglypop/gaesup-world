@@ -21,6 +21,8 @@ export const joyStickOriginDefault = {
   originRadius: 0,
   isIn: true,
   isOn: false,
+  isCenter: true,
+  isUp: true,
 };
 
 export const joyStickDefault = {

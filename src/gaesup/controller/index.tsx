@@ -36,6 +36,19 @@ export default function GaesupController(props: controllerType) {
       gaesupControllerDefault.orthographicCamera,
       props.orthographicCamera || {}
     ),
+    airplane: Object.assign(
+      gaesupControllerDefault.airplane,
+      props.airplane || {}
+    ),
+    vehicle: Object.assign(
+      gaesupControllerDefault.vehicle,
+      props.vehicle || {}
+    ),
+    character: Object.assign(
+      gaesupControllerDefault.character,
+      props.character || {}
+    ),
+    isRider: props.isRider !== null ? props.isRider : false,
   });
 
   const capsuleColliderRef = useRef<Collider>(null);
@@ -43,6 +56,7 @@ export default function GaesupController(props: controllerType) {
   const outerGroupRef = useRef<THREE.Group>(null);
   const innerGroupRef = useRef<THREE.Group>(null);
   const slopeRayOriginRef = useRef<THREE.Mesh>(null);
+  const characterInnerRef = useRef<THREE.Group>(null);
   const jointRefs = useRef<RevoluteImpulseJoint>(null);
 
   const gaesupControl = useMemo(
@@ -55,7 +69,10 @@ export default function GaesupController(props: controllerType) {
       controller.cameraOption,
       controller.perspectiveCamera,
       controller.orthographicCamera,
-      controllerDispatch,
+      controller.airplane,
+      controller.vehicle,
+      controller.character,
+      controller.isRider,
     ]
   );
 
@@ -65,6 +82,7 @@ export default function GaesupController(props: controllerType) {
     outerGroupRef,
     innerGroupRef,
     slopeRayOriginRef,
+    characterInnerRef,
     jointRefs,
   };
 
@@ -81,6 +99,7 @@ export default function GaesupController(props: controllerType) {
     },
     children: props.children,
     groupProps: props.groupProps,
+    isRider: props.isRider !== null ? props.isRider : false,
     ...refs,
   };
 

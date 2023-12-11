@@ -1,5 +1,6 @@
 import { OrthographicCameraProps } from "@react-three/fiber";
 import { Dispatch } from "react";
+import { airplaneType, characterType, vehicleType } from "../../airplane/type";
 
 export type perspectiveCameraType = {
   cameraType?: "perspective";
@@ -29,6 +30,10 @@ export type gaesupControllerType = {
   cameraOption: gaesupCameraOptionType;
   perspectiveCamera: perspectiveCameraPropType;
   orthographicCamera: OrthographicCameraProps;
+  airplane: airplaneType;
+  vehicle: vehicleType;
+  character: characterType;
+  isRider: boolean;
 };
 
 export type gaesupControllerPartialType = Partial<gaesupControllerType>;

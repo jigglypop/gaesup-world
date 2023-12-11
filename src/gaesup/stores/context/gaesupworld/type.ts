@@ -8,7 +8,7 @@ import {
   characterColliderType,
   vehicleColliderType,
 } from "../../collider";
-import { controlType } from "../../control/type";
+import { gameboyType } from "../../gameboy/type";
 import { joyStickType } from "../../joystick/type";
 import { minimapType } from "../../minimap/type";
 import { pointsType } from "../../point/type";
@@ -21,17 +21,21 @@ export type characterOptionType = {
 };
 export type vehicleOptionType = {
   type?: "vehicle";
-  controller?: "keyboard" | "joystick" | "steeringWheel";
+  controller?: "gameboy" | "keyboard" | "joystick";
 };
 export type airplaneOptionType = {
   type?: "airplane";
-  controller?: "keyboard" | "joystick" | "steeringWheel";
+  controller?: "gameboy" | "keyboard" | "joystick";
 };
 
 export type gaesupControllerPropType =
   | characterOptionType
   | vehicleOptionType
   | airplaneOptionType;
+
+type KeyboardControlsState<T extends string = string> = {
+  [K in T]: boolean;
+};
 
 export type gaesupWorldPropType = {
   activeState: activeStateType;
@@ -48,7 +52,8 @@ export type gaesupWorldPropType = {
   debug: boolean;
   minimap: minimapType;
   joystick: joyStickType;
-  control: controlType;
+  gameboy: gameboyType;
+  control: KeyboardControlsState<string>;
   points: pointsType;
   refs: refsType;
   animations: animationPropType;

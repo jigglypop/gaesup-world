@@ -4,16 +4,19 @@ import {
   TouchEvent,
   TouchEventHandler,
   useCallback,
+  useContext,
   useRef,
   useState,
 } from "react";
 import { vars } from "../../../styles/theme.css";
+import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 import useJoyStick from "../../stores/joystick";
 import * as style from "./style.css";
 
 export default function JoyStick() {
+  const { joystick } = useContext(GaesupWorldContext);
   return (
-    <div className={style.joyStick}>
+    <div className={style.joyStick} style={joystick.joyStickStyle}>
       <JoyBall />
     </div>
   );
@@ -21,6 +24,7 @@ export default function JoyStick() {
 
 export function JoyBall() {
   const outerRef = useRef<HTMLDivElement>(null);
+  const { joystick } = useContext(GaesupWorldContext);
   const { joyStickBall, joyStickOrigin, setBall, setOrigin } = useJoyStick();
   const [mouseDown, setMouseDown] = useState(false);
   const [touchDown, setTouchDown] = useState(false);
@@ -48,6 +52,8 @@ export function JoyBall() {
       originRadius,
       isIn: currentRadius > originRadius / 2,
       isOn: true,
+      isCenter: currentRadius < originRadius / 4,
+      isUp: top > Y - height / 2,
     });
     setBall({
       x: `${X}px`,
@@ -70,6 +76,8 @@ export function JoyBall() {
       originRadius: 0,
       isIn: true,
       isOn: false,
+      isCenter: true,
+      isUp: true,
     });
     setBall({
       x: "50%",
@@ -109,9 +117,10 @@ export function JoyBall() {
 
   return (
     <>
-      <div className={style.joyStick}>
+      <div className={style.joyStick} style={joystick.joyBallStyle}>
         <div
           className={style.joyStickInner}
+          style={joystick.joyStickInnerStyle}
           ref={outerRef}
           onMouseDown={() => setMouseDown(true)}
           onMouseUp={() => setMouseDown(false)}
@@ -132,8 +141,11 @@ export function JoyBall() {
             className={`${style.joystickBall}`}
             style={{
               position: joyStickBall.position as "fixed" | "absolute",
-              background: joyStickBall.background,
-              boxShadow: joyStickBall.boxShadow,
+              background:
+                joystick.joyStickBallStyle?.background ||
+                joyStickBall.background,
+              boxShadow:
+                joystick.joyStickBallStyle?.boxShadow || joyStickBall.boxShadow,
               top: joyStickBall.y,
               left: joyStickBall.x,
             }}

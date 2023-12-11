@@ -1,26 +1,13 @@
-import { BiDownArrow } from "@react-icons/all-files/bi/BiDownArrow";
-import { BiLeftArrow } from "@react-icons/all-files/bi/BiLeftArrow";
-import { BiRightArrow } from "@react-icons/all-files/bi/BiRightArrow";
-import { BiUpArrow } from "@react-icons/all-files/bi/BiUpArrow";
 import { useContext } from "react";
 import { GaesupWorldContext } from "../../stores/context/gaesupworld";
+import GamePadButton from "./GamePadButton";
+import * as style from "./style.css";
 
 type gameBoyDirectionType = {
   tag: string;
   value: string;
   icon: JSX.Element;
 };
-
-export const GameBoyDirections = [
-  {
-    tag: "up",
-    value: "forward",
-    icon: <BiUpArrow />,
-  },
-  { tag: "down", value: "backward", icon: <BiDownArrow /> },
-  { tag: "left", value: "leftward", icon: <BiLeftArrow /> },
-  { tag: "right", value: "rightward", icon: <BiRightArrow /> },
-];
 
 export default function GamePad() {
   const { control } = useContext(GaesupWorldContext);
@@ -45,11 +32,10 @@ export default function GamePad() {
     );
 
   return (
-    <></>
-    // <div className={style.gamePad}>
-    //   {GamePadDirections.map((item: gameBoyDirectionType, key: number) => {
-    //     return <GamePadButton key={key} value={item.value} />;
-    //   })}
-    // </div>
+    <div className={style.gamePad}>
+      {GamePadDirections.map((item: gameBoyDirectionType, key: number) => {
+        return <GamePadButton key={key} value={item.value} />;
+      })}
+    </div>
   );
 }

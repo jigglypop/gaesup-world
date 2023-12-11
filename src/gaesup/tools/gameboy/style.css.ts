@@ -74,5 +74,23 @@ export const gameBoyButtonRecipe = recipe({
         gridColumn: "3/4",
       },
     },
+    direction: {
+      up: {
+        background: vars.gradient.green,
+        boxShadow: "0 0 10px #78ffd6",
+      },
+      down: {
+        background: vars.gradient.green,
+        boxShadow: "0 0 10px #78ffd6",
+      },
+      left: {
+        background: vars.gradient.lightGreen,
+        boxShadow: "0 0 10px rgba(176,255,237,1)",
+      },
+      right: {
+        background: vars.gradient.lightGreen,
+        boxShadow: "0 0 10px rgba(176,255,237,1)",
+      },
+    },
   },
 });

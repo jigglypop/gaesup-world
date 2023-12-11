@@ -2,10 +2,9 @@ import { calcPropType } from "../type";
 
 export default function moving(prop: calcPropType) {
   const {
-    control: calcControl,
-    worldContext: { states, joystick, mode },
+    worldContext: { states, joystick, mode, control },
   } = prop;
-  const { forward, backward, leftward, rightward, shift, space } = calcControl;
+  const { forward, backward, leftward, rightward, shift, space } = control;
   if (mode.controller === "gameboy" || mode.controller === "keyboard") {
     states.isMoving = forward || backward || leftward || rightward;
     states.isNotMoving = !states.isMoving;

@@ -66,7 +66,7 @@ export const border = style([
 
 export const minimap = style([
   fixed({
-    south_east: true,
+    north_east: true,
   }),
   sprinkles({
     w: {

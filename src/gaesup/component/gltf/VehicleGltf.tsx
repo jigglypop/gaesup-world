@@ -1,13 +1,13 @@
-import { useContext } from "react";
+import { Ref, forwardRef, useContext } from "react";
 import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 
-export default function VehicleGltf() {
+export const VehicleInnerGroupRef = forwardRef((_, ref: Ref<THREE.Group>) => {
   const { vehicleGltf: gltf } = useContext(GaesupWorldContext);
   const { materials, nodes } = gltf;
   return (
     <>
       {nodes && materials && (
-        <group receiveShadow castShadow rotation={[0, Math.PI, 0]}>
+        <group receiveShadow castShadow rotation={[0, Math.PI, 0]} ref={ref}>
           {Object.keys(nodes).map((name: string, key: number) => {
             if (
               nodes[name].type === "Mesh" ||
@@ -28,4 +28,4 @@ export default function VehicleGltf() {
       )}
     </>
   );
-}
+});

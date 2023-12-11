@@ -4,12 +4,13 @@ import { fixed, flex } from "../../../styles/recipe/index.css";
 
 export const jumpPoints = style([
   fixed({
-    north_east: true,
+    north: true,
   }),
   flex({
-    column: "center",
+    row: "center",
   }),
   {
+    top: "18rem",
     margin: "1rem",
     zIndex: 1000,
   },

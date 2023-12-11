@@ -1,7 +1,5 @@
-import { BiDownArrow } from "@react-icons/all-files/bi/BiDownArrow";
-import { BiLeftArrow } from "@react-icons/all-files/bi/BiLeftArrow";
-import { BiRightArrow } from "@react-icons/all-files/bi/BiRightArrow";
-import { BiUpArrow } from "@react-icons/all-files/bi/BiUpArrow";
+import { useContext } from "react";
+import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 import GameBoyButton, { gameBoyButtonType } from "./GameBoyButton";
 import * as style from "./style.css";
 
@@ -9,17 +7,18 @@ export const GameBoyDirections = [
   {
     tag: "up",
     value: "forward",
-    icon: <BiUpArrow />,
+    icon: <></>,
   },
-  { tag: "down", value: "backward", icon: <BiDownArrow /> },
-  { tag: "left", value: "leftward", icon: <BiLeftArrow /> },
-  { tag: "right", value: "rightward", icon: <BiRightArrow /> },
+  { tag: "down", value: "backward", icon: <></> },
+  { tag: "left", value: "leftward", icon: <></> },
+  { tag: "right", value: "rightward", icon: <></> },
 ];
 
 export default function GameBoy() {
+  const { gameboy } = useContext(GaesupWorldContext);
   return (
-    <div className={style.gameBoy}>
-      <div className={style.gameBoyInner}>
+    <div className={style.gameBoy} style={gameboy.gameboyStyle}>
+      <div className={style.gameBoyInner} style={gameboy.gameboyInnerStyle}>
         {GameBoyDirections.map((item: gameBoyButtonType, key: number) => {
           return (
             <GameBoyButton

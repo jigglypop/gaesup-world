@@ -1,3 +1,5 @@
+import { CSSProperties } from "react";
+
 export type joyStickBallType = {
   x: string;
   y: string;
@@ -14,10 +16,16 @@ export type joyStickOriginType = {
   originRadius: number;
   isIn: boolean;
   isOn: boolean;
+  isCenter: boolean;
+  isUp: boolean;
 };
 
 export type joyStickType = {
-  on: boolean;
-  joyStickBall: joyStickBallType;
-  joyStickOrigin: joyStickOriginType;
+  on?: boolean;
+  joyStickBall?: joyStickBallType;
+  joyStickOrigin?: joyStickOriginType;
+  joyStickStyle?: CSSProperties;
+  joyBallStyle?: CSSProperties;
+  joyStickInnerStyle?: CSSProperties;
+  joyStickBallStyle?: CSSProperties;
 };

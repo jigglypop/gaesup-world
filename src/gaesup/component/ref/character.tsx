@@ -25,7 +25,7 @@ export const CharacterRigidBody = forwardRef(
       controllerProps,
       children,
     }: {
-      controllerProps: controllerType;
+      controllerProps: propType;
       children: ReactNode;
     },
     ref: Ref<RapierRigidBody>
@@ -35,20 +35,19 @@ export const CharacterRigidBody = forwardRef(
         colliders={false}
         canSleep={false}
         ref={ref}
-        {...controllerProps}
+        {...controllerProps.rigidBodyProps}
       >
-        {/* {options.debug && (
-          <mesh
-            visible={options.debug}
-            userData={{
-              intangible: true,
-            }}
-          >
+        {controllerProps.debug && (
+          <mesh visible={controllerProps.debug}>
             <arrowHelper
-              args={[groundRay.dir, groundRay.origin, groundRay.length]}
+              args={[
+                controllerProps.groundRay.dir,
+                controllerProps.groundRay.origin,
+                controllerProps.groundRay.length,
+              ]}
             />
           </mesh>
-        )} */}
+        )}
         {children}
       </RigidBody>
     );
@@ -82,14 +81,20 @@ export const CharacterCapsuleCollider = forwardRef(
 export const CharacterGroup = forwardRef(
   (
     {
+      controllerProps,
       children,
     }: {
+      controllerProps: controllerType;
       children: ReactNode;
     },
     ref: Ref<THREE.Group>
   ) => {
     return (
-      <group ref={ref} userData={{ intangible: true }}>
+      <group
+        ref={ref}
+        userData={{ intangible: true }}
+        {...controllerProps.character}
+      >
         {children}
       </group>
     );

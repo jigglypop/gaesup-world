@@ -9,30 +9,38 @@ import {
 } from "@react-three/rapier";
 import { ReactNode, Ref, RefObject, forwardRef, useContext } from "react";
 import * as THREE from "three";
-import { groundRayType } from "../../controller/type";
+import { controllerType, propType } from "../../controller/type";
 import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 import { S3 } from "../../utils/constant";
 
 export const VehicleRigidBody = forwardRef(
   (
     {
-      groundRay,
+      controllerProps,
       children,
     }: {
-      groundRay: groundRayType;
+      controllerProps: propType;
       children: ReactNode;
     },
     ref: Ref<RapierRigidBody>
   ) => {
     return (
-      <RigidBody colliders={false} ref={ref}>
-        {/* {options.debug && (
-          <mesh visible={options.debug}>
+      <RigidBody
+        colliders={false}
+        ref={ref}
+        {...controllerProps.rigidBodyProps}
+      >
+        {controllerProps.debug && (
+          <mesh visible={controllerProps.debug}>
             <arrowHelper
-              args={[groundRay.dir, groundRay.origin, groundRay.length]}
+              args={[
+                controllerProps.groundRay.dir,
+                controllerProps.groundRay.origin,
+                controllerProps.groundRay.length,
+              ]}
             />
           </mesh>
-        )} */}
+        )}
         {children}
       </RigidBody>
     );
@@ -54,14 +62,20 @@ export const VehicleCollider = forwardRef((_, ref: Ref<Collider>) => {
 export const VehicleGroup = forwardRef(
   (
     {
+      controllerProps,
       children,
     }: {
+      controllerProps: controllerType;
       children: ReactNode;
     },
     ref: Ref<THREE.Group>
   ) => {
     return (
-      <group ref={ref} userData={{ intangible: true }}>
+      <group
+        ref={ref}
+        userData={{ intangible: true }}
+        {...controllerProps.vehicle}
+      >
         {children}
       </group>
     );
@@ -106,40 +120,3 @@ export const WheelRegidBodyRef = forwardRef(
     );
   }
 );
-
-//
-// export const GaesupSlopeRay = forwardRef(
-//   (
-//     {
-//       groundRay,
-//       slopeRay,
-//     }: {
-//       groundRay: groundRayType;
-//       slopeRay: slopeRayType;
-//     },
-//     ref: Ref<THREE.Mesh>
-//   ) => {
-//     const options = useAtomValue(optionsAtom);
-//     return (
-//       <mesh
-//         position={[
-//           groundRay.offset.x,
-//           groundRay.offset.y,
-//           groundRay.offset.z + slopeRay.offset.z,
-//         ]}
-//         ref={ref}
-//         visible={false}
-//         userData={{ intangible: true }}
-//       >
-//         {options.debug && (
-//           <mesh>
-//             <arrowHelper
-//               args={[slopeRay.dir, slopeRay.origin, slopeRay.length, "#ff0000"]}
-//             />
-//           </mesh>
-//         )}
-//         <boxGeometry args={[0.15, 0.15, 0.15]} />
-//       </mesh>
-//     );
-//   }
-// );

@@ -4,12 +4,18 @@ import { calcPropType } from "../type";
 export default function impulse(prop: calcPropType) {
   const {
     rigidBodyRef,
-    constant,
-    control,
-    worldContext: { activeState },
+    worldContext: { activeState, control },
+    controllerContext: { airplane },
   } = prop;
-  const { shift } = control;
-  const { accelRate } = constant;
+  const { maxSpeed } = airplane;
+
+  const velocity = rigidBodyRef.current.linvel();
+  const currentSpeed = Math.sqrt(
+    velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2
+  );
+  if (currentSpeed > maxSpeed) {
+    return null;
+  }
 
   rigidBodyRef.current.applyImpulse(
     vec3({

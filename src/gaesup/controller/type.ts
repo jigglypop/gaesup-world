@@ -12,6 +12,11 @@ import { cameraRayType } from "../camera/type";
 import { callbackType } from "../initial/callback/type";
 
 import {
+  airplaneType,
+  characterType,
+  vehicleType,
+} from "../stores/airplane/type";
+import {
   gaesupCameraOptionType,
   gaesupCameraPropType,
   perspectiveCameraPropType,
@@ -82,6 +87,7 @@ export type groundRayType = Omit<rayType, "current" | "angle">;
 export type propType = {
   children?: ReactNode;
   groupProps?: GroupProps;
+  rigidBodyProps?: RigidBodyProps;
   slopeRay: slopeRayType;
   groundRay: groundRayType;
   cameraRay: cameraRayType;
@@ -98,6 +104,7 @@ export type propType = {
   keyControl: keyControlType;
   debug?: boolean;
   callbacks?: callbackType;
+  isRider?: boolean;
 };
 
 export type animationTagType = {
@@ -121,6 +128,7 @@ export type refsType = {
   outerGroupRef: RefObject<THREE.Group>;
   innerGroupRef: RefObject<THREE.Group>;
   slopeRayOriginRef: RefObject<THREE.Mesh>;
+  characterInnerRef: RefObject<THREE.Group>;
   jointRefs: RefObject<RevoluteImpulseJoint>;
 };
 
@@ -131,9 +139,14 @@ export interface controllerPropType extends RigidBodyProps {
   props?: RigidBodyProps;
   constant?: partialConstantType;
   groupProps?: GroupProps;
+  rigidBodyProps?: RigidBodyProps;
   cameraMode?: gaesupCameraPropType;
   cameraOption?: gaesupCameraOptionType;
   perspectiveCamera?: perspectiveCameraPropType;
   orthographicCamera?: OrthographicCameraProps;
+  airplane?: airplaneType;
+  vehicle?: vehicleType;
+  character?: characterType;
+  isRider?: boolean;
 }
 export type controllerType = controllerPropType & {} & callbackType;

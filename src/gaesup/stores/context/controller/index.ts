@@ -1,6 +1,5 @@
 import { createContext } from "react";
 import { V3 } from "../../../utils/vector";
-import { airplaneDefault } from "../../airplane";
 import { dispatchType } from "../gaesupworld/type";
 import {
   gaesupControllerType,
@@ -26,10 +25,29 @@ export const gaesupControllerDefault = {
     near: 0.1,
     far: 1000,
   },
-  airplane: { ...airplaneDefault },
+  airplane: {
+    angleChange: V3(0.01, 0.005, 0.005),
+    maxAngle: V3(0.1, 0.1, 0.1),
+    maxSpeed: 60,
+    accelRatio: 2,
+  },
+  vehicle: {
+    angleChange: V3(0.01, 0.005, 0.005),
+    maxAngle: V3(0.1, 0.1, 0.1),
+    maxSpeed: 60,
+    accelRatio: 2,
+  },
+  character: {
+    angleChange: V3(0.01, 0.005, 0.005),
+    maxAngle: V3(0.1, 0.1, 0.1),
+    maxSpeed: 60,
+    accelRatio: 2,
+  },
+  isRider: false,
 };
 
-export const GaesupControllerContext =
-  createContext<gaesupControllerType>(null);
+export const GaesupControllerContext = createContext<gaesupControllerType>({
+  ...gaesupControllerDefault,
+});
 export const GaesupControllerDispatchContext =
   createContext<dispatchType<gaesupControllerType>>(null);

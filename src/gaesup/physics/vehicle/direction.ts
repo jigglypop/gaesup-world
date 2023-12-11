@@ -1,25 +1,46 @@
-import { vec3 } from "@react-three/rapier";
+import { quat, vec3 } from "@react-three/rapier";
 import { V3 } from "../../utils/vector";
 import { calcPropType } from "../type";
 
 export default function direction(prop: calcPropType) {
   const {
-    worldContext: { activeState },
+    state,
+    worldContext: { activeState, control, mode, joystick },
   } = prop;
-  const { forward, backward, leftward, rightward } = prop.control;
+  const { forward, backward, leftward, rightward } = control;
 
-  const start = Number(forward) - Number(backward);
+  let start = Number(forward) - Number(backward);
+  if (mode.controller === "joystick") {
+    if (!joystick.joyStickOrigin.isCenter)
+      start = joystick.joyStickOrigin.isOn ? 1 : 0;
+  } else {
+    start = Number(forward) - Number(backward);
+  }
+
   const front = vec3().set(start, 0, start);
-  activeState.euler.y +=
-    ((Number(leftward) - Number(rightward)) * Math.PI) / 64;
-  // current.dir = V3(
-  //   Math.sin(current.euler.y),
-  //   0,
-  //   Math.cos(current.euler.y)
-  // ).normalize();
-  // current.direction = front
-  //   .multiply(current.dir)
-  //   .multiplyScalar(shift ? accelRate : 1);
+
+  const _euler = activeState.euler.clone();
+  const __euler = activeState.euler.clone();
+
+  if (mode.controller === "joystick") {
+    if (!joystick.joyStickOrigin.isCenter)
+      __euler.y =
+        -state.camera.rotation.y - joystick.joyStickOrigin.angle - Math.PI / 2;
+  } else {
+    activeState.euler.y +=
+      ((Number(leftward) - Number(rightward)) * Math.PI) / 64;
+  }
+
+  if (mode.controller === "joystick")
+    activeState.euler.setFromQuaternion(
+      quat()
+        .setFromEuler(_euler)
+        .slerp(
+          quat().setFromEuler(__euler),
+          joystick.joyStickOrigin.isIn ? 0.01 : 0.1
+        )
+    );
+
   activeState.direction = front.multiply(
     V3(Math.sin(activeState.euler.y), 0, Math.cos(activeState.euler.y))
   );

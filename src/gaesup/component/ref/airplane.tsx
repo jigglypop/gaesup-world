@@ -8,7 +8,7 @@ import {
 } from "@react-three/rapier";
 import { ReactNode, Ref, forwardRef, useContext } from "react";
 import * as THREE from "three";
-import { groundRayType, propType } from "../../controller/type";
+import { controllerType, groundRayType, propType } from "../../controller/type";
 import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 import { getRayHit } from "../../utils/ray";
 import { useForwardRef } from "../../utils/ref";
@@ -16,23 +16,31 @@ import { useForwardRef } from "../../utils/ref";
 export const AirplaneRigidBody = forwardRef(
   (
     {
-      groundRay,
+      controllerProps,
       children,
     }: {
-      groundRay: groundRayType;
+      controllerProps: propType;
       children: ReactNode;
     },
     ref: Ref<RapierRigidBody>
   ) => {
     return (
-      <RigidBody colliders={false} ref={ref}>
-        {/* {options.debug && (
-          <mesh visible={options.debug}>
+      <RigidBody
+        colliders={false}
+        ref={ref}
+        {...controllerProps.rigidBodyProps}
+      >
+        {controllerProps.debug && (
+          <mesh visible={controllerProps.debug}>
             <arrowHelper
-              args={[groundRay.dir, groundRay.origin, groundRay.length]}
+              args={[
+                controllerProps.groundRay.dir,
+                controllerProps.groundRay.origin,
+                controllerProps.groundRay.length,
+              ]}
             />
           </mesh>
-        )} */}
+        )}
         {children}
       </RigidBody>
     );
@@ -43,10 +51,10 @@ export const AirplaneCollider = forwardRef(
   ({ prop }: { prop: propType }, ref: Ref<Collider>) => {
     const { airplaneCollider: collider } = useContext(GaesupWorldContext);
     const { airplaneSizeX, airplaneSizeY, airplaneSizeZ } = collider;
-    console.log(airplaneSizeY);
+
     const colliderRef = useForwardRef<Collider>(ref);
     const { rapier } = useRapier();
-    const { groundRay, slopeRay } = prop;
+    const { groundRay } = prop;
     groundRay.length = airplaneSizeY * 5 + 2;
     groundRay.rayCast = new rapier.Ray(groundRay.origin, groundRay.dir);
     groundRay.hit = getRayHit<groundRayType>({
@@ -68,14 +76,20 @@ export const AirplaneCollider = forwardRef(
 export const AirplaneGroup = forwardRef(
   (
     {
+      controllerProps,
       children,
     }: {
+      controllerProps: controllerType;
       children: ReactNode;
     },
     ref: Ref<THREE.Group>
   ) => {
     return (
-      <group ref={ref} userData={{ intangible: true }}>
+      <group
+        ref={ref}
+        userData={{ intangible: true }}
+        {...controllerProps.airplane}
+      >
         {children}
       </group>
     );
