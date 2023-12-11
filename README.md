@@ -1,8 +1,8 @@
 # Gaesup World
 
-3D 웹 컨트롤러 유틸리티 라이브러리입니다
+Web 3D Character Controller and World Platform Library
 
-[![npm (tag)](https://img.shields.io/npm/v/leva?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/leva) [![npm bundle size](https://img.shields.io/bundlephobia/minzip/leva?style=flat&colorA=000000&colorB=000000&label=gzipped)](https://bundlephobia.com/result?p=leva) ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/pmndrs/leva/CI?style=flat&colorA=000000) [![Discord Shield](https://img.shields.io/discord/740090768164651008?style=flat&colorA=000000&colorB=000000&label=&logo=discord&logoColor=ffffff)](https://discord.gg/poimandres)
+[![npm (tag)](https://img.shields.io/npm/v/leva?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/leva)
 
 @react-three/fiber
 @react-three/drei
@@ -30,26 +30,6 @@ npm install @react-three/fiber @react-three/drei three @types/three @react-three
 
 ```bash
 yarn add @react-three/fiber @react-three/drei three @types/three @react-three/rapier gaesup-world
-```
-
-## 사용 방법
-
-기본적인 사용 예제:
-
-```jsx
-import React from "react";
-import { Canvas } from "@react-three/fiber";
-import { GaesupController } from "gaesup-character-controller";
-
-function App() {
-  return (
-    <Canvas>
-      <GaesupController />
-    </Canvas>
-  );
-}
-
-export default App;
 ```
 
 ## 문서
