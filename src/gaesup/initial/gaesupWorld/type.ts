@@ -4,13 +4,14 @@ import {
   characterColliderType,
   vehicleColliderType,
 } from "../../stores/collider";
+
 import {
   gaesupControllerPropType,
   gaesupWorldPartialPropType,
   gaesupWorldPropType,
-} from "../../stores/context";
-import { minimapType } from "../../stores/minimap";
-import { urlType } from "../../stores/url";
+} from "../../stores/context/gaesupworld/type";
+import { minimapType } from "../../stores/minimap/type";
+import { urlType } from "../../stores/url/type";
 import { getGltfResultType } from "./collider/gltf";
 
 export type initGaesupWorldPropsType = {

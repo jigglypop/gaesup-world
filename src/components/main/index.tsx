@@ -6,17 +6,17 @@ import { Physics } from "@react-three/rapier";
 
 import { useState } from "react";
 import GaesupController from "../../gaesup/controller";
+
+import {
+  orthographicCameraType,
+  perspectiveCameraType,
+} from "../../gaesup/stores/context/controller/type";
 import {
   airplaneOptionType,
   characterOptionType,
   gaesupControllerPropType,
   vehicleOptionType,
-} from "../../gaesup/stores/context";
-
-import {
-  orthographicCameraType,
-  perspectiveCameraType,
-} from "../../gaesup/stores/context/controller";
+} from "../../gaesup/stores/context/gaesupworld/type";
 import GaeSupTools from "../../gaesup/tools";
 import { S3 } from "../../gaesup/utils/constant";
 import GaesupWorld from "../../gaesup/world";

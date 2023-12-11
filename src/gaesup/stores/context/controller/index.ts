@@ -1,5 +1,6 @@
 import { createContext } from "react";
 import { V3 } from "../../../utils/vector";
+import { airplaneDefault } from "../../airplane";
 import { dispatchType } from "../gaesupworld/type";
 import {
   gaesupControllerType,
@@ -25,6 +26,7 @@ export const gaesupControllerDefault = {
     near: 0.1,
     far: 1000,
   },
+  airplane: { ...airplaneDefault },
 };
 
 export const GaesupControllerContext =

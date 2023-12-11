@@ -7,27 +7,29 @@ export default function direction(prop: calcPropType) {
     innerGroupRef,
     worldContext: { activeState },
   } = prop;
-  const { forward, backward, leftward, rightward } = prop.control;
+  const { forward, backward, leftward, rightward, shift } = prop.control;
 
-  const start = Number(forward) - Number(backward);
-  const front = V3().set(start, start, start);
-  activeState.euler.y += (Number(leftward) - Number(rightward)) / 64;
+  const boost = Number(shift);
+  const upDown = Number(backward) - Number(forward);
+  const leftRight = Number(rightward) - Number(leftward);
+  const front = V3().set(boost, boost, boost);
+  activeState.euler.y += (Number(leftward) - Number(rightward)) * 0.02;
 
-  const X = Math.PI * 0.01 * (Number(backward) - Number(forward));
-  const Z = Math.PI * 0.005 * (Number(rightward) - Number(leftward));
+  const X = Math.PI * 0.01 * upDown;
+  const Z = Math.PI * 0.005 * leftRight;
 
   const _x = innerGroupRef.current.rotation.x;
   const _z = innerGroupRef.current.rotation.z;
 
   const maxX = Math.PI / 16;
-  const maxZ = Math.PI / 64;
+  const maxZ = Math.PI / 16;
 
   if (_x < -maxX) innerGroupRef.current.rotation.x = -maxX + X;
-  else if (_x > maxX) innerGroupRef.current.rotation.x = maxX - X;
+  else if (_x > maxX) innerGroupRef.current.rotation.x = maxX + X;
   else innerGroupRef.current.rotateX(X);
 
   if (_z < -maxZ) innerGroupRef.current.rotation.z = -maxZ + Z;
-  else if (_z > maxZ) innerGroupRef.current.rotation.z = maxZ - Z;
+  else if (_z > maxZ) innerGroupRef.current.rotation.z = maxZ + Z;
   else innerGroupRef.current.rotateZ(Z);
 
   // current.dir = V3(
@@ -39,7 +41,7 @@ export default function direction(prop: calcPropType) {
   //   .multiply(current.dir)
   //   .multiplyScalar(shift ? accelRate : 1);
   activeState.direction = front.multiply(
-    V3(Math.sin(activeState.euler.y), 1, Math.cos(activeState.euler.y))
+    V3(Math.sin(activeState.euler.y), -upDown, Math.cos(activeState.euler.y))
   );
   activeState.dir = activeState.direction.normalize();
 

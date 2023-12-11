@@ -16,7 +16,7 @@ export default function impulse(prop: calcPropType) {
       x: activeState.direction.x,
       y: activeState.direction.y,
       z: activeState.direction.z,
-    }).multiplyScalar(shift ? accelRate : 1),
+    }),
     false
   );
 }
