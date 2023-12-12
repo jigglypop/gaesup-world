@@ -43,5 +43,78 @@ If you would like to contribute to this project, please follow these steps:
 This project is distributed under the MIT License.
 
 ---
+Sure, here is the translation of your text into English:
 
-Feel free to adjust the link for the documentation as needed.
+---
+
+## Introduction
+
+#### [Controller](#controller)
+* [Character](#character)
+* [Vehicle](#vehicle)
+* [Airplane](#airplane)
+
+## Character
+---
+
+This is the character control in Gaesup World.
+
+* Possible Camera Types
+
+| Name  | Camera  | Control    | Info |
+| -- | -- | -- | -- |
+| Normal | Perspective Camera | Orbit Control | Positioned parallel to the Z-axis from the character's location and not affected by rotation. |
+| Orbit | Perspective Camera | Orbit Control | Moves with the character and rotates according to the character's direction. |
+| Map | Orthographic Camera | Map Control | A top-down control view. |
+
+* Controller Tools
+
+| Name  | Info |
+| -- | -- |
+| Keyboard | A standard keyboard tool. You can see where on the keyboard is clicked. |
+| Joystick | A joystick implementation tool. It works on mobile devices. |
+| Gameboy | A Gameboy implementation tool. It works on mobile devices. |
+
+## Vehicle
+---
+
+This is the vehicle control in Gaesup World. Characters can board the vehicle.
+
+* Possible Camera Types
+
+| Name  | Camera  | Control    | Info |
+| -- | -- | -- | -- |
+| Normal | Perspective Camera | Orbit Control | Positioned parallel to the Z-axis from the character's location and not affected by rotation. |
+| Orbit | Perspective Camera | Orbit Control | Moves with the character and rotates according to the character's direction. |
+| Map | Orthographic Camera | Map Control | A top-down control view. |
+
+* Controller Tools
+
+| Name  | Info |
+| -- | -- |
+| Keyboard | A standard keyboard tool. You can see where on the keyboard is clicked. |
+| Joystick | A joystick implementation tool. It works on mobile devices. |
+| Gameboy | A Gameboy implementation tool. It works on mobile devices. |
+
+## Airplane
+---
+
+This is the airplane control in Gaesup World. Characters can board the airplane.
+
+* Possible Camera Types
+
+| Name  | Camera  | Control    | Info |
+| -- | -- | -- | -- |
+| Normal | Perspective Camera | Orbit Control | Positioned parallel to the Z-axis from the character's location and not affected by rotation. |
+| Orbit | Perspective Camera | Orbit Control | Moves with the character and rotates according to the character's direction. |
+| Map | Orthographic Camera | Map Control | A top-down control view. |
+
+* Controller Tools
+
+| Name  | Info |
+| -- | -- |
+| Keyboard | A standard keyboard tool. You can see where on the keyboard is clicked. |
+| Joystick | A joystick implementation tool. It works on mobile devices. |
+| Gameboy | A Gameboy implementation tool. It works on mobile devices. |
+
+---
