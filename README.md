@@ -2,27 +2,9 @@
 
 Web 3D Character Controller and World Platform Library
 
-[![npm (@react-three/fiber version)](https://img.shields.io/npm/v/@react-three/fiber?style=flat-square)](https://www.npmjs.com/package/@react-three/fiber)
-[![npm (@react-three/drei version)](https://img.shields.io/npm/v/@react-three/drei?style=flat-square)](https://www.npmjs.com/package/@react-three/drei)
+[![Version](https://img.shields.io/npm/v/gaesup-world?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/zustand)
+[![Downloads](https://img.shields.io/npm/dt/gaesup-world.svg?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/gaesup-world)
 
-[![npm (@react-three/postprocessing version)](https://img.shields.io/npm/v/@react-three/postprocessing?style=flat-square)](https://www.npmjs.com/package/@react-three/postprocessing)
-
-[![npm (@react-three/rapier version)](https://img.shields.io/npm/v/@react-three/rapier?style=flat-square)](https://www.npmjs.com/package/@react-three/rapier)
-
-[![npm (three.js version)](https://img.shields.io/npm/v/three?style=flat-square)](https://www.npmjs.com/package/three)
-
-[![npm (@emotion/react version)](https://img.shields.io/npm/v/@emotion/react?style=flat-square)](https://www.npmjs.com/package/@emotion/react)
-
-[![npm (@use-gesture/react version)](https://img.shields.io/npm/v/@use-gesture/react?style=flat-square)](https://www.npmjs.com/package/@use-gesture/react)
-
-[![npm (lamina version)](https://img.shields.io/npm/v/lamina?style=flat-square)](https://www.npmjs.com/package/lamina)
-
-[![npm (leva version)](https://img.shields.io/npm/v/leva?style=flat-square)](https://www.npmjs.com/package/leva)
-
-@react-three/fiber
-@react-three/drei
-three @types/three
-@react-three/rapier
 
 Gaesup World는 @react/three-fiber, @react/three-drei, rapier 를 사용하여 웹 3D 환경에서 캐릭터, 비행기, 자동자 등의 컨트롤 도구를 제공하는 라이브러리입니다.
 
