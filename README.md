@@ -5,44 +5,43 @@ Web 3D Character Controller and World Platform Library
 [![Version](https://img.shields.io/npm/v/gaesup-world?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/zustand)
 [![Downloads](https://img.shields.io/npm/dt/gaesup-world.svg?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/gaesup-world)
 
+Sure, here's the translation of your text into English:
 
-Gaesup World는 @react/three-fiber, @react/three-drei, rapier 를 사용하여 웹 3D 환경에서 캐릭터, 비행기, 자동자 등의 컨트롤 도구를 제공하는 라이브러리입니다.
+---
 
-이 컨트롤러는 캐릭터의 움직임, 애니메이션, 상호작용을 쉽게 관리할 수 있도록 설계되었습니다. 가상의 세계에서 캐릭터를 움직이거나 탈것을 쉽게 활용할 수 있고, 미니맵이나 조이스틱 등의 유틸 등도 설계되어 있습니다
+## Gaesup World
 
-## 특징
+Gaesup World is a library that uses @react/three-fiber, @react/three-drei, and rapier to provide control tools for characters, airplanes, cars, and more in a web 3D environment. This controller is designed to easily manage character movement, animation, and interaction. It allows for easy manipulation of characters or vehicles in a virtual world, and is also equipped with utilities like minimaps and joysticks.
 
-- React Three Fiber를 기반으로 하는 3D 캐릭터 컨트롤
-- 간단한 API를 통한 캐릭터 움직임 및 애니메이션 제어
-- 확장 가능한 구조로 다양한 커스터마이징 지원
-- 가벼운 라이브러리로 빠른 로딩 및 성능 최적화
+### Features
+- 3D character control based on React Three Fiber.
+- Simple API for controlling character movement and animation.
+- Extensible structure for various customizations.
+- Lightweight library for fast loading and performance optimization.
 
-## 설치 방법
-
+### Installation
 ```bash
 npm install @react-three/fiber @react-three/drei three @types/three @react-three/rapier gaesup-world
 ```
-
-또는
-
+Or
 ```bash
 yarn add @react-three/fiber @react-three/drei three @types/three @react-three/rapier gaesup-world
 ```
 
-## 문서
+### Documentation
+For more detailed usage methods and API documentation, please refer [here](#).
 
-더 자세한 사용 방법 및 API 문서는 [여기](#)를 참조하세요.
+### How to Contribute
+If you would like to contribute to this project, please follow these steps:
+  1. Fork the project.
+  2. Create a new Feature branch (`git checkout -b feature/AmazingFeature`).
+  3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+  4. Push to the branch (`git push origin feature/AmazingFeature`).
+  5. Create a Pull Request.
 
-## 기여 방법
+### License
+This project is distributed under the MIT License.
 
-이 프로젝트에 기여하고 싶으시다면, 다음 단계를 따라주세요:
+---
 
-1. 프로젝트를 Fork합니다.
-2. 새로운 Feature 브랜치를 생성합니다 (`git checkout -b feature/AmazingFeature`).
-3. 변경사항을 Commit합니다 (`git commit -m 'Add some AmazingFeature'`).
-4. 브랜치에 Push합니다 (`git push origin feature/AmazingFeature`).
-5. Pull Request를 생성합니다.
-
-## 라이센스
-
-이 프로젝트는 [MIT 라이센스](LICENSE) 하에 배포됩니다.
+Feel free to adjust the link for the documentation as needed.
