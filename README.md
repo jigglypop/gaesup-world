@@ -52,7 +52,6 @@ This project is distributed under the MIT License.
 * [Airplane](#airplane)
 
 ## Character
----
 
 This is the character control in Gaesup World.
 
@@ -73,7 +72,6 @@ This is the character control in Gaesup World.
 | Gameboy | A Gameboy implementation tool. It works on mobile devices. |
 
 ## Vehicle
----
 
 This is the vehicle control in Gaesup World. Characters can board the vehicle.
 
@@ -94,7 +92,6 @@ This is the vehicle control in Gaesup World. Characters can board the vehicle.
 | Gameboy | A Gameboy implementation tool. It works on mobile devices. |
 
 ## Airplane
----
 
 This is the airplane control in Gaesup World. Characters can board the airplane.
 
