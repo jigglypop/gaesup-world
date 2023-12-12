@@ -5,6 +5,7 @@
   "homepage": "https://jigglypop.github.io/gaesup-world/",
   "scripts": {
     "dev": "vite",
+    "build": "vite build",
     "prepare": "rm -rf dist && tsc",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",

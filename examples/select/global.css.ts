@@ -15,6 +15,7 @@ globalStyle("html", {
 });
 
 globalStyle("body", {
+  height: "100dvh",
   overflow: "hidden",
   position: "fixed",
   margin: 0,
