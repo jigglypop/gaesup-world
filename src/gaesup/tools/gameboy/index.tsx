@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { GaesupWorldContext } from "../../stores/context/gaesupworld";
+import { GaesupToolsContext } from "../context";
 import GameBoyButton, { gameBoyButtonType } from "./GameBoyButton";
 import * as style from "./style.css";
 
@@ -15,10 +15,12 @@ export const GameBoyDirections = [
 ];
 
 export default function GameBoy() {
-  const { gameboy } = useContext(GaesupWorldContext);
+  const {
+    gameboy: { gameboyStyle, gameboyInnerStyle },
+  } = useContext(GaesupToolsContext);
   return (
-    <div className={style.gameBoy} style={gameboy.gameboyStyle}>
-      <div className={style.gameBoyInner} style={gameboy.gameboyInnerStyle}>
+    <div className={style.gameBoy} style={gameboyStyle}>
+      <div className={style.gameBoyInner} style={gameboyInnerStyle}>
         {GameBoyDirections.map((item: gameBoyButtonType, key: number) => {
           return (
             <GameBoyButton

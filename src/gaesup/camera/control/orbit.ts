@@ -17,7 +17,7 @@ export default function orbit(prop: cameraPropType) {
       .add(V3(0, perspectiveCamera.YDistance, 0))
   );
 
-  state.camera.position.lerp(cameraPosition, 0.2);
+  state.camera.position.lerp(cameraPosition, 1);
   state.camera.quaternion.copy(
     activeState.quat
       .clone()

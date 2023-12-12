@@ -14,7 +14,7 @@ export const gameBoy = style([
     south: true,
   }),
   flex({
-    column: "6",
+    column: "7",
   }),
   {
     width: "100%",
@@ -26,7 +26,7 @@ export const gameBoyInner = style([
     row: "center",
   }),
   {
-    margin: "1rem",
+    margin: "5rem",
     padding: "1rem",
     borderRadius: "50%",
     gridTemplateColumns: "1fr 1fr 1fr",

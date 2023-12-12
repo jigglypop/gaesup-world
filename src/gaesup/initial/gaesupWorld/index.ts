@@ -9,11 +9,10 @@ import {
 import { modeDefault } from "../../stores/context/gaesupworld";
 import { gaesupReducer } from "../../stores/context/gaesupworld/reducer";
 import { controlDefault } from "../../stores/control";
-import { gameboyDefault } from "../../stores/gameboy";
-import { joyStickDefault } from "../../stores/joystick";
-import { minimapDefault } from "../../stores/minimap";
 import { statesDefault } from "../../stores/states";
 import { urlDefault } from "../../stores/url";
+import { joyStickInnerDefault } from "../../tools/joystick/default";
+import { minimapInnerDefault } from "../../tools/minimap/default";
 import { V3 } from "../../utils/vector";
 import initColider from "./collider";
 import { initGaesupWorldPropsType } from "./type";
@@ -44,9 +43,8 @@ export default function initGaesupWorld(props: initGaesupWorldPropsType) {
     airplaneGltf: null,
     states: statesDefault,
     debug: false,
-    minimap: Object.assign(minimapDefault, props.minimap || {}),
-    joystick: joyStickDefault,
-    gameboy: gameboyDefault,
+    minimap: minimapInnerDefault,
+    joystick: joyStickInnerDefault,
     control: controlDefault,
     points: [],
     refs: null,

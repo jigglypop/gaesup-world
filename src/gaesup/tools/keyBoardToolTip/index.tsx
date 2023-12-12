@@ -2,24 +2,29 @@ import { assignInlineVars } from "@vanilla-extract/dynamic";
 import { useContext } from "react";
 import { vars } from "../../../styles/theme.css";
 import { GaesupWorldContext } from "../../stores/context/gaesupworld";
-import { KeyBoardAll, keyArrayItemType } from "./constant";
+import { GaesupToolsContext } from "../context";
+import { KeyBoardAll } from "./constant";
 import * as style from "./style.css";
+import { keyArrayItemType } from "./type";
 
-export default function KeyBoardToolTip({
-  keyboardMap,
-}: {
-  keyboardMap: {
-    name: string;
-    keys: string[];
-  }[];
-}) {
+export default function KeyBoardToolTip() {
   const worldContext = useContext(GaesupWorldContext);
+  const {
+    keyboardToolTip: {
+      keyBoardMap,
+      keyBoardToolTipStyle,
+      keyBoardToolTipInnerStyle,
+      keyCapStyle,
+      keyBoardLabel,
+    },
+  } = useContext(GaesupToolsContext);
   const { animations } = worldContext;
 
   const keyArray = Object.entries(KeyBoardAll).reduce<keyArrayItemType[]>(
     (keyArray, cur) => {
       const [key, value] = cur;
       const { gridRow, gridColumn, name } = value;
+
       const keyBoardItem: keyArrayItemType = {
         code: value.code || key,
         gridRow,
@@ -32,7 +37,7 @@ export default function KeyBoardToolTip({
     []
   );
 
-  const codeToActionObj = keyboardMap.reduce((maps, keyboardMapItem) => {
+  const codeToActionObj = keyBoardMap.reduce((maps, keyboardMapItem) => {
     keyboardMapItem.keys.forEach((key) => {
       maps[key] = keyboardMapItem.name;
     });
@@ -40,8 +45,8 @@ export default function KeyBoardToolTip({
   }, {});
 
   return (
-    <div className={style.keyBoardToolTip}>
-      <div className={style.keyBoardTooInner}>
+    <div className={style.keyBoardToolTip} style={keyBoardToolTipStyle}>
+      <div className={style.keyBoardTooInner} style={keyBoardToolTipInnerStyle}>
         {keyArray.map((item: keyArrayItemType, key: number) => {
           let background = "rgba(0, 0, 0, 0.1)";
           let boxShadow = "0 0 5px rgba(0, 0, 0, 0.2)";
@@ -66,13 +71,16 @@ export default function KeyBoardToolTip({
           return (
             <div
               className={style.keyCap}
-              style={assignInlineVars({
-                background,
-                boxShadow,
-                color,
-                gridRow: item.gridRow,
-                gridColumn: item.gridColumn,
-              })}
+              style={{
+                ...assignInlineVars({
+                  background,
+                  boxShadow,
+                  color,
+                  gridRow: item.gridRow,
+                  gridColumn: item.gridColumn,
+                }),
+                ...keyCapStyle,
+              }}
               key={key}
             >
               {item.name}

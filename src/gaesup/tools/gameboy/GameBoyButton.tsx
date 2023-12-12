@@ -1,6 +1,6 @@
 import { useContext } from "react";
-import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 import { usePushKey } from "../../stores/control";
+import { GaesupToolsContext } from "../context";
 import * as style from "./style.css";
 
 export type gameBoyButtonType = {
@@ -10,7 +10,9 @@ export type gameBoyButtonType = {
 };
 
 export default function GameBoyButton({ tag, value, icon }: gameBoyButtonType) {
-  const { gameboy } = useContext(GaesupWorldContext);
+  const {
+    gameboy: { gameboyButtonStyle },
+  } = useContext(GaesupToolsContext);
 
   const { pushKey } = usePushKey();
 
@@ -36,7 +38,7 @@ export default function GameBoyButton({ tag, value, icon }: gameBoyButtonType) {
       }}
       onPointerDown={() => onMouseDown()}
       onPointerUp={() => onMouseLeave()}
-      style={gameboy.gameboyButtonStyle}
+      style={gameboyButtonStyle}
     >
       {icon}
     </button>

@@ -10,10 +10,10 @@ import {
   gaesupWorldPartialPropType,
   gaesupWorldPropType,
 } from "../../stores/context/gaesupworld/type";
-import { gameboyType } from "../../stores/gameboy/type";
-import { joyStickType } from "../../stores/joystick/type";
-import { minimapType } from "../../stores/minimap/type";
+
 import { urlType } from "../../stores/url/type";
+import { joyStickInnerType } from "../../tools/joystick/type";
+import { minimapInnerType } from "../../tools/minimap/type";
 import { getGltfResultType } from "./collider/gltf";
 
 export type initGaesupWorldPropsType = {
@@ -26,9 +26,8 @@ export type initGaesupWorldPropsType = {
   airplaneCollider?: airplaneColliderType;
   mode?: gaesupControllerPropType;
   debug?: boolean;
-  minimap?: Omit<minimapType, "props">;
-  joystick?: joyStickType;
-  gameboy?: gameboyType;
+  minimap?: Omit<minimapInnerType, "props">;
+  joystick?: joyStickInnerType;
 };
 
 export type innerColliderPropType = {

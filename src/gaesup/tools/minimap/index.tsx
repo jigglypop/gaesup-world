@@ -1,14 +1,31 @@
 "use client";
 
 import { assignInlineVars } from "@vanilla-extract/dynamic";
-import { useCallback, useContext, useState } from "react";
-import { GaesupWorldContext } from "../../stores/context/gaesupworld";
+import { useCallback, useContext, useEffect, useState } from "react";
+import {
+  GaesupWorldContext,
+  GaesupWorldDispatchContext,
+} from "../../stores/context/gaesupworld";
+import { GaesupToolsContext } from "../context";
 import * as style from "./style.css";
 
 export default function MiniMap() {
-  const { minimap, activeState } = useContext(GaesupWorldContext);
+  const { minimap: minimapInner, activeState } = useContext(GaesupWorldContext);
+  const dispatch = useContext(GaesupWorldDispatchContext);
+  const { minimap } = useContext(GaesupToolsContext);
   const [ratio, setRatio] = useState(minimap.ratio);
-  let lastScroll = 0;
+
+  useEffect(() => {
+    minimapInner.ratio = ratio;
+    dispatch({
+      type: "update",
+      payload: {
+        minimap: {
+          ...minimapInner,
+        },
+      },
+    });
+  }, []);
 
   const upRatio = useCallback(() => {
     if (ratio >= 1) setRatio((prev) => prev - 0.1);
@@ -31,7 +48,7 @@ export default function MiniMap() {
     >
       <div className={style.minimapOuter} style={minimap.objectStyle || {}} />
       <div className={style.minimapInner} style={minimap.innerStyle || {}}>
-        {Object.values(minimap.props).map((obj, key) => {
+        {Object.values(minimapInner.props).map((obj, key) => {
           return (
             <div
               key={key}

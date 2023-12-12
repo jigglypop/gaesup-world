@@ -3,10 +3,10 @@ import { fixed, flex } from "../../../styles/recipe/index.css";
 
 export const joyStick = style([
   fixed({
-    south: true,
+    south_east: true,
   }),
   flex({
-    column: "6",
+    column: "7",
   }),
   {
     width: "100%",
@@ -18,11 +18,20 @@ export const joyStickInner = style([
     row: "center",
   }),
   {
-    margin: "4rem",
-    padding: "6rem",
+    margin: "5rem",
+    padding: "1rem",
+    width: "12rem",
+    height: "12rem",
     borderRadius: "50%",
     background: "rgba(0, 0, 0, 0.5)",
     boxShadow: "0 0 10px rgba(0, 0, 0, 0.5)",
+    ":after": {
+      content: "''",
+      width: "10rem",
+      height: "10rem",
+      borderRadius: "50%",
+      background: "rgba(0, 0, 0, 0.2)",
+    },
   },
 ]);
 

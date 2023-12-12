@@ -34,7 +34,6 @@ export const keyboardMap = [
   { name: "space", keys: ["Space"] },
   { name: "shift", keys: ["Shift"] },
   { name: "keyZ", keys: ["KeyZ"] },
-  { name: "control", keys: ["ControlLeft", "ControlRight"] },
 ];
 
 export default function Selected() {
@@ -46,7 +45,7 @@ export default function Selected() {
     characterOptionType | vehicleOptionType | airplaneOptionType
   >({
     type: "character",
-    controller: isMobile ? "joystick" : "keyboard",
+    controller: isMobile ? "joystick" : "joystick",
   });
 
   const [camera, changeCamera] = useState<
@@ -64,21 +63,6 @@ export default function Selected() {
         characterUrl: CHARACTER_URL,
         vehicleUrl: VEHICLE_URL,
         airplaneUrl: AIRPLANE_URL,
-      }}
-      joystick={{
-        on: true,
-      }}
-      minimap={{
-        on: true,
-        ratio: 0.5,
-        minimapStyle: {
-          background: "rgba(0,0,0,0.5)",
-        },
-        objectStyle: {
-          background: "rgba(255,255,255,0.5)",
-          boxShadow: "0 0 5px rgba(0,0,0,0.5)",
-          border: "1px solid rgba(0,0,0,0.5)",
-        },
       }}
     >
       <div className={style.mainButtonContainer}>
@@ -204,7 +188,11 @@ export default function Selected() {
           게임보이
         </button>
       </div>
-      <Canvas shadows dpr={[1, 2]} style={{ width: "100vw", height: "100vh" }}>
+      <Canvas
+        shadows
+        dpr={[1, 2]}
+        style={{ width: "100dvw", height: "100dvh" }}
+      >
         <Environment background preset="sunset" blur={0.8} />
         <directionalLight
           castShadow
@@ -249,7 +237,15 @@ export default function Selected() {
           {/* <Slopes /> */}
         </Physics>
       </Canvas>
-      <GaeSupTools keyboardMap={keyboardMap} />
+      <GaeSupTools
+        keyboardToolTip={{
+          keyBoardMap: keyboardMap,
+          keyBoardLabel: {
+            keyZ: "GREET",
+            space: "JUMP",
+          },
+        }}
+      />
     </GaesupWorld>
   );
 }

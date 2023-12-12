@@ -1,19 +1,25 @@
 import { useContext } from "react";
 import { GaesupWorldContext } from "../../stores/context/gaesupworld";
+import { GaesupToolsContext } from "../context";
 import GamePadButton from "./GamePadButton";
 import * as style from "./style.css";
 
 type gameBoyDirectionType = {
   tag: string;
   value: string;
+  name: string;
   icon: JSX.Element;
 };
 
 export default function GamePad() {
-  const { control } = useContext(GaesupWorldContext);
-  const { mode } = useContext(GaesupWorldContext);
+  const {
+    gamepad: { gamepadStyle, gamepadGridStyle },
+    keyboardToolTip: { keyBoardLabel },
+  } = useContext(GaesupToolsContext);
+  const { control, mode } = useContext(GaesupWorldContext);
   const GamePadDirections = Object.keys(control)
     .map((key) => {
+      const name = keyBoardLabel[key] || key;
       if (
         key !== "forward" &&
         key !== "backward" &&
@@ -23,6 +29,7 @@ export default function GamePad() {
         return {
           tag: key,
           value: key,
+          name: name,
         };
     })
     .filter((item) => item !== undefined)
@@ -32,10 +39,14 @@ export default function GamePad() {
     );
 
   return (
-    <div className={style.gamePad}>
-      {GamePadDirections.map((item: gameBoyDirectionType, key: number) => {
-        return <GamePadButton key={key} value={item.value} />;
-      })}
+    <div className={style.gamePad} style={gamepadStyle}>
+      <div className={style.gamePadGrid} style={gamepadGridStyle}>
+        {GamePadDirections.map((item: gameBoyDirectionType, key: number) => {
+          return (
+            <GamePadButton key={key} value={item.value} name={item.name} />
+          );
+        })}
+      </div>
     </div>
   );
 }

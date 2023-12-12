@@ -5,18 +5,18 @@ import {
   TouchEventHandler,
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
 } from "react";
 import { vars } from "../../../styles/theme.css";
-import { GaesupWorldContext } from "../../stores/context/gaesupworld";
-import useJoyStick from "../../stores/joystick";
+import { GaesupToolsContext } from "../context";
+import useJoyStick from "./default";
 import * as style from "./style.css";
 
 export default function JoyStick() {
-  const { joystick } = useContext(GaesupWorldContext);
   return (
-    <div className={style.joyStick} style={joystick.joyStickStyle}>
+    <div className={style.joyStick}>
       <JoyBall />
     </div>
   );
@@ -24,10 +24,15 @@ export default function JoyStick() {
 
 export function JoyBall() {
   const outerRef = useRef<HTMLDivElement>(null);
-  const { joystick } = useContext(GaesupWorldContext);
+  const childRef = useRef<HTMLDivElement>(null);
+  const {
+    joystick: { joyStickBallStyle, joyStickInnerStyle, joyStickStyle },
+  } = useContext(GaesupToolsContext);
   const { joyStickBall, joyStickOrigin, setBall, setOrigin } = useJoyStick();
   const [mouseDown, setMouseDown] = useState(false);
   const [touchDown, setTouchDown] = useState(false);
+  const [background, setBackground] = useState("rgba(0, 0, 0, 0.5)");
+  const [boxShadow, setBoxShadow] = useState("0 0 10px  rgba(0, 0, 0, 0.5)");
 
   const calcOriginBall = <T extends MouseEvent | TouchEvent>(
     e: T,
@@ -55,22 +60,27 @@ export function JoyBall() {
       isCenter: currentRadius < originRadius / 4,
       isUp: top > Y - height / 2,
     });
+    setBoxShadow("0 0 10px rgba(99,251,215,1)");
+    setBackground(
+      currentRadius > originRadius / 2
+        ? vars.gradient.lightGreen
+        : vars.gradient.green
+    );
     setBall({
-      x: `${X}px`,
-      y: `${Y}px`,
-      position: "fixed",
-      background:
-        currentRadius > originRadius / 2
-          ? vars.gradient.lightGreen
-          : vars.gradient.green,
-      boxShadow: "0 0 10px rgba(99,251,215,1)",
+      top: `${Y}px`,
+      left: `${X}px`,
     });
   };
 
-  const initialize = () => {
+  const initialize = (e) => {
+    const outer = e.target as HTMLDivElement;
+    const parent = outer.parentElement as HTMLDivElement;
+    const { left, bottom, width, height } = parent.getBoundingClientRect();
+    const x = left + width / 2;
+    const y = bottom - height / 2;
     setOrigin({
-      x: 0,
-      y: 0,
+      x: x,
+      y: y,
       angle: Math.PI / 2,
       currentRadius: 0,
       originRadius: 0,
@@ -79,13 +89,7 @@ export function JoyBall() {
       isCenter: true,
       isUp: true,
     });
-    setBall({
-      x: "50%",
-      y: "50%",
-      position: "absolute",
-      background: "rgba(0, 0, 0, 0.5)",
-      boxShadow: "0 0 10px  rgba(0, 0, 0, 0.5)",
-    });
+    initBall();
   };
 
   const handleMouseOver: MouseEventHandler = useCallback(
@@ -108,50 +112,64 @@ export function JoyBall() {
     [touchDown]
   );
 
-  const handleTouchEnd = useCallback(() => {
-    return initialize();
-  }, [touchDown]);
-  const handleMouseOut = useCallback(() => {
-    return initialize();
-  }, [joyStickBall, joyStickOrigin, setBall, setOrigin, mouseDown]);
+  const handleTouchEnd: TouchEventHandler = useCallback(
+    (e) => {
+      setTouchDown(false);
+      return initialize(e);
+    },
+    [touchDown, setTouchDown]
+  );
+  const handleMouseOut: MouseEventHandler = useCallback(
+    (e) => {
+      setMouseDown(false);
+      return initialize(e);
+    },
+    [setBall, setMouseDown, setOrigin, mouseDown]
+  );
+
+  const initBall = () => {
+    if (outerRef.current) {
+      const { top, left, width, height } = outerRef.current.getClientRects()[0];
+      setBoxShadow("0 0 10px  rgba(0, 0, 0, 0.5)");
+      setBackground("rgba(0, 0, 0, 0.5)");
+      setBall({
+        top: `${top + height / 2}px`,
+        left: `${left + width / 2}px`,
+      });
+    }
+  };
+
+  useEffect(() => {
+    initBall();
+  }, []);
 
   return (
-    <>
-      <div className={style.joyStick} style={joystick.joyBallStyle}>
+    <div className={style.joyStick} style={joyStickStyle}>
+      <div
+        className={style.joyStickInner}
+        style={joyStickInnerStyle}
+        ref={outerRef}
+        onMouseDown={() => setMouseDown(true)}
+        onMouseUp={() => setMouseDown(false)}
+        onMouseMove={handleMouseOver}
+        onMouseLeave={(e) => handleMouseOut(e)}
+        onTouchStart={() => setTouchDown(true)}
+        onTouchEnd={(e) => handleTouchEnd(e)}
+        onTouchMove={handleTouchMove}
+        onTouchCancel={handleTouchEnd}
+      >
         <div
-          className={style.joyStickInner}
-          style={joystick.joyStickInnerStyle}
-          ref={outerRef}
-          onMouseDown={() => setMouseDown(true)}
-          onMouseUp={() => setMouseDown(false)}
-          onMouseMove={handleMouseOver}
-          onMouseLeave={() => {
-            setMouseDown(false);
-            handleMouseOut();
+          className={`${style.joystickBall}`}
+          ref={childRef}
+          style={{
+            background: joyStickBallStyle?.background || background,
+            boxShadow: joyStickBallStyle?.boxShadow || boxShadow,
+            top: joyStickBall.top,
+            left: joyStickBall.left,
+            ...joyStickBallStyle,
           }}
-          onTouchStart={() => setTouchDown(true)}
-          onTouchEnd={() => {
-            setTouchDown(false);
-            handleTouchEnd();
-          }}
-          onTouchMove={handleTouchMove}
-          onTouchCancel={handleTouchEnd}
-        >
-          <div
-            className={`${style.joystickBall}`}
-            style={{
-              position: joyStickBall.position as "fixed" | "absolute",
-              background:
-                joystick.joyStickBallStyle?.background ||
-                joyStickBall.background,
-              boxShadow:
-                joystick.joyStickBallStyle?.boxShadow || joyStickBall.boxShadow,
-              top: joyStickBall.y,
-              left: joyStickBall.x,
-            }}
-          />
-        </div>
+        />
       </div>
-    </>
+    </div>
   );
 }

@@ -1,6 +1,8 @@
 import { Dispatch } from "react";
 import { GLTFResult } from "../../../component/gltf/type";
 import { refsType } from "../../../controller/type";
+import { joyStickInnerType } from "../../../tools/joystick/type";
+import { minimapInnerType } from "../../../tools/minimap/type";
 import { activeStateType } from "../../active/type";
 import { animationPropType } from "../../animation/type";
 import {
@@ -8,9 +10,6 @@ import {
   characterColliderType,
   vehicleColliderType,
 } from "../../collider";
-import { gameboyType } from "../../gameboy/type";
-import { joyStickType } from "../../joystick/type";
-import { minimapType } from "../../minimap/type";
 import { pointsType } from "../../point/type";
 import { statesType } from "../../states/type";
 import { urlType } from "../../url/type";
@@ -50,9 +49,8 @@ export type gaesupWorldPropType = {
   airplaneGltf: GLTFResult;
   states: statesType;
   debug: boolean;
-  minimap: minimapType;
-  joystick: joyStickType;
-  gameboy: gameboyType;
+  minimap: minimapInnerType;
+  joystick: joyStickInnerType;
   control: KeyboardControlsState<string>;
   points: pointsType;
   refs: refsType;

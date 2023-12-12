@@ -1,20 +1,4 @@
-export type keyMapItemType = {
-  name: string;
-  gridRow: string;
-  gridColumn: string;
-  code?: string;
-};
-
-export type keyArrayItemType = {
-  code: string;
-  gridRow: string;
-  gridColumn: string;
-  name: string;
-};
-
-export type keyBoardMapType = {
-  [name: string]: keyMapItemType;
-};
+import { keyBoardMapType } from "./type";
 
 export const KeyboardF = {
   ESC: { name: "ESC", gridRow: "1/2", gridColumn: "1/2" },
