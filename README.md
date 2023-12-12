@@ -4,6 +4,24 @@ Web 3D Character Controller and World Platform Library
 
 [![npm (tag)](https://img.shields.io/npm/v/leva?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/leva)
 
+[![npm (@react-three/fiber version)](https://img.shields.io/npm/v/@react-three/fiber?style=flat-square)](https://www.npmjs.com/package/@react-three/fiber)
+
+[![npm (@react-three/drei version)](https://img.shields.io/npm/v/@react-three/drei?style=flat-square)](https://www.npmjs.com/package/@react-three/drei)
+
+[![npm (@react-three/postprocessing version)](https://img.shields.io/npm/v/@react-three/postprocessing?style=flat-square)](https://www.npmjs.com/package/@react-three/postprocessing)
+
+[![npm (@react-three/rapier version)](https://img.shields.io/npm/v/@react-three/rapier?style=flat-square)](https://www.npmjs.com/package/@react-three/rapier)
+
+[![npm (three.js version)](https://img.shields.io/npm/v/three?style=flat-square)](https://www.npmjs.com/package/three)
+
+[![npm (@emotion/react version)](https://img.shields.io/npm/v/@emotion/react?style=flat-square)](https://www.npmjs.com/package/@emotion/react)
+
+[![npm (@use-gesture/react version)](https://img.shields.io/npm/v/@use-gesture/react?style=flat-square)](https://www.npmjs.com/package/@use-gesture/react)
+
+[![npm (lamina version)](https://img.shields.io/npm/v/lamina?style=flat-square)](https://www.npmjs.com/package/lamina)
+
+[![npm (leva version)](https://img.shields.io/npm/v/leva?style=flat-square)](https://www.npmjs.com/package/leva)
+
 @react-three/fiber
 @react-three/drei
 three @types/three
