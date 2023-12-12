@@ -5,8 +5,6 @@ Web 3D Character Controller and World Platform Library
 [![Version](https://img.shields.io/npm/v/gaesup-world?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/zustand)
 [![Downloads](https://img.shields.io/npm/dt/gaesup-world.svg?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/gaesup-world)
 
-
-
 ---
 
 ## introduction
@@ -29,7 +27,9 @@ yarn add @react-three/fiber @react-three/drei three @types/three @react-three/ra
 ```
 
 ### Documentation
-For more detailed usage methods and API documentation, please refer [here](#).
+it is detailed usage methods and API documentation
+
+* [how to contribute](#how-to-contribute)
 
 ### How to Contribute
 If you would like to contribute to this project, please follow these steps:
