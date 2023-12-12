@@ -43,11 +43,8 @@ If you would like to contribute to this project, please follow these steps:
 This project is distributed under the MIT License.
 
 ---
-Sure, here is the translation of your text into English:
 
----
-
-## Introduction
+## Controller
 
 #### [Controller](#controller)
 * [Character](#character)
