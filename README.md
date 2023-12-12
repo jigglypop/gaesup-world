@@ -2,7 +2,7 @@
 
 Web 3D Character Controller and World Platform Library
 
-[!@react-three/fiber [@react-three/fiber (@react-three/fiber version)](https://img.shields.io/npm/v/@react-three/fiber?style=flat-square)](https://www.npmjs.com/package/@react-three/fiber)
+[!npm [@react-three/fiber (@react-three/fiber version)](https://img.shields.io/npm/v/@react-three/fiber?style=flat-square)](https://www.npmjs.com/package/@react-three/fiber)
 [![npm (@react-three/drei version)](https://img.shields.io/npm/v/@react-three/drei?style=flat-square)](https://www.npmjs.com/package/@react-three/drei)
 
 [![npm (@react-three/postprocessing version)](https://img.shields.io/npm/v/@react-three/postprocessing?style=flat-square)](https://www.npmjs.com/package/@react-three/postprocessing)
