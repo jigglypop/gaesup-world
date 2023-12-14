@@ -15,6 +15,59 @@ Web 3D Character Controller and World Platform Library
 
 Gaesup World is a library that uses @react/three-fiber, @react/three-drei, and rapier to provide control tools for characters, airplanes, cars, and more in a web 3D environment. This controller is designed to easily manage character movement, animation, and interaction. It allows for easy manipulation of characters or vehicles in a virtual world, and is also equipped with utilities like minimaps and joysticks.
 
+## How to start
+
+```react
+
+"use client";
+
+import { Environment, KeyboardControls } from "@react-three/drei";
+import { Canvas } from "@react-three/fiber";
+import { Physics } from "@react-three/rapier";
+
+import { GaesupController, GaesupWorld } from "gaesup-world";
+import Floor from "../platform/Floor";
+
+export const keyboardMap = [
+  { name: "forward", keys: ["ArrowUp", "KeyW"] },
+  { name: "backward", keys: ["ArrowDown", "KeyS"] },
+  { name: "leftward", keys: ["ArrowLeft", "KeyA"] },
+  { name: "rightward", keys: ["ArrowRight", "KeyD"] },
+  { name: "space", keys: ["Space"] },
+  { name: "shift", keys: ["Shift"] },
+  { name: "keyZ", keys: ["KeyZ"] },
+];
+
+export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
+
+export default function Selected() {
+  const CHARACTER_URL = "./gaesupyee.glb";
+
+  return (
+    <GaesupWorld
+      url={{
+        characterUrl: CHARACTER_URL,
+      }}
+    >
+      <Canvas shadows style={{ width: "100dvw", height: "100dvh" }}>
+        <Environment background preset="sunset" blur={0.8} />
+        <Physics>
+          <KeyboardControls map={keyboardMap}>
+            <GaesupController
+              groupProps={{
+                rotation: [0, Math.PI, 0],
+              }}
+            />
+          </KeyboardControls>
+          <Floor />
+        </Physics>
+      </Canvas>
+    </GaesupWorld>
+  );
+}
+
+```
+
 ### Features
 
 - 3D character control based on React Three Fiber.
