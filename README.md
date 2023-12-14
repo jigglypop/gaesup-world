@@ -22,10 +22,9 @@ Gaesup World is a library that uses @react/three-fiber, @react/three-drei, and r
 
 import { Environment, KeyboardControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { Physics } from "@react-three/rapier";
+import { Physics, RigidBody } from "@react-three/rapier";
 
 import { GaesupController, GaesupWorld } from "gaesup-world";
-import Floor from "../platform/Floor";
 
 export const keyboardMap = [
   { name: "forward", keys: ["ArrowUp", "KeyW"] },
@@ -37,9 +36,7 @@ export const keyboardMap = [
   { name: "keyZ", keys: ["KeyZ"] },
 ];
 
-export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
-
-export default function Selected() {
+export default function App() {
   const CHARACTER_URL = "./gaesupyee.glb";
 
   return (
@@ -58,7 +55,12 @@ export default function Selected() {
               }}
             />
           </KeyboardControls>
-          <Floor />
+          <RigidBody type="fixed">
+            <mesh receiveShadow position={[0, 0, 0]}>
+              <boxGeometry args={[300, 5, 300]} />
+              <meshStandardMaterial />
+            </mesh>
+          </RigidBody>
         </Physics>
       </Canvas>
     </GaesupWorld>
