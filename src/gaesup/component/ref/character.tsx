@@ -15,9 +15,9 @@ import {
   propType,
   slopeRayType,
 } from "../../controller/type";
-import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 import { getRayHit } from "../../utils/ray";
 import { useForwardRef } from "../../utils/ref";
+import { GaesupWorldContext } from "../../world/context";
 
 export const CharacterRigidBody = forwardRef(
   (

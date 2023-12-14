@@ -1,7 +1,7 @@
 import { assignInlineVars } from "@vanilla-extract/dynamic";
 import { useContext } from "react";
 import { vars } from "../../../styles/theme.css";
-import { GaesupWorldContext } from "../../stores/context/gaesupworld";
+import { GaesupWorldContext } from "../../world/context";
 import { GaesupToolsContext } from "../context";
 import { KeyBoardAll } from "./constant";
 import * as style from "./style.css";
@@ -15,7 +15,6 @@ export default function KeyBoardToolTip() {
       keyBoardToolTipStyle,
       keyBoardToolTipInnerStyle,
       keyCapStyle,
-      keyBoardLabel,
     },
   } = useContext(GaesupToolsContext);
   const { animations } = worldContext;

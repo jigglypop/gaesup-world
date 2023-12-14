@@ -7,10 +7,12 @@ import {
   propType,
   slopeRayType,
 } from "../../controller/type";
-import { activeStateType } from "../../stores/active/type";
-import { animationPropType } from "../../stores/animation/type";
-import { keyControlType } from "../../stores/control/type";
-import { statesType } from "../../stores/states/type";
+import {
+  activeStateType,
+  animationPropType,
+  keyControlType,
+  statesType,
+} from "../../world/context/type";
 
 export type initCallbackType = {
   prop: propType;

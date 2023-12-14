@@ -9,11 +9,12 @@ import {
   refsType,
   slopeRayType,
 } from "../../controller/type";
+
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
-} from "../../stores/context/gaesupworld";
-import { keyControlType } from "../../stores/control/type";
+} from "../../world/context";
+import { keyControlType } from "../../world/context/type";
 import initDebug from "./initDebug";
 
 export default function initControllerProps({

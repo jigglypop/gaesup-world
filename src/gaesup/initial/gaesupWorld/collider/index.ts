@@ -1,5 +1,5 @@
 import { Dispatch } from "react";
-import { gaesupWorldPropType } from "../../../stores/context/gaesupworld/type";
+import { gaesupWorldPropType } from "../../../world/context/type";
 import { innerColliderPropType } from "../type";
 import { airplane } from "./airplane";
 import { character } from "./character";

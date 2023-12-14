@@ -1,8 +1,8 @@
 import { recipe } from "@vanilla-extract/recipes";
-import { fraction, repeat } from "../constants/constant.css";
-import { clock, direction } from "../constants/direction.css";
-import { aligns } from "../constants/flex.css";
-import { gridTemplateAll } from "../constants/grid.css";
+import { fraction, repeat } from "../constants/constant.css.js";
+import { clock, direction } from "../constants/direction.css.js";
+import { aligns } from "../constants/flex.css.js";
+import { gridTemplateAll } from "../constants/grid.css.js";
 import {
   absolute_base,
   fixed_base,
@@ -10,7 +10,7 @@ import {
   glass_base,
   grid_base,
   relative_base,
-} from "./base.css";
+} from "./base.css.js";
 
 export const glass = recipe({
   base: [glass_base],

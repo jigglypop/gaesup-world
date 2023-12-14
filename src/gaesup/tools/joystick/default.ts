@@ -1,9 +1,10 @@
 import { useContext } from "react";
+
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
-} from "../../stores/context/gaesupworld";
-import { joyStickBallType, joyStickOriginType } from "./type";
+} from "../../world/context/index.js";
+import { joyStickBallType, joyStickOriginType } from "./type.js";
 
 export const joyStickBallDefault = {
   top: "50%",

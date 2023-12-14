@@ -1,14 +1,14 @@
-import { useFrame } from "@react-three/fiber";
-
 import { useContext } from "react";
 import { propType } from "../controller/type";
 
 import { useRapier } from "@react-three/rapier";
-import { GaesupControllerContext } from "../stores/context/controller";
+import { GaesupControllerContext } from "../controller/context";
+
+import { useFrame } from "@react-three/fiber";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
-} from "../stores/context/gaesupworld";
+} from "../world/context";
 import airplaneCalculation from "./airplane";
 import characterCalculation from "./character";
 import check from "./check";
@@ -21,6 +21,7 @@ export default function calculation(prop: propType) {
   const controllerContext = useContext(GaesupControllerContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
   const { mode } = worldContext;
+
   useFrame((state, delta) => {
     const { rigidBodyRef, outerGroupRef, innerGroupRef } = prop;
     if (

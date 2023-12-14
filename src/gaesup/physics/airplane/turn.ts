@@ -3,7 +3,6 @@ import { calcPropType } from "../type";
 export default function turn(prop: calcPropType) {
   const {
     rigidBodyRef,
-    innerGroupRef,
     worldContext: { activeState },
   } = prop;
 

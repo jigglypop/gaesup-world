@@ -7,10 +7,10 @@ import {
 import { useFrame, useThree } from "@react-three/fiber";
 import { useContext } from "react";
 import * as THREE from "three";
+import { GaesupControllerContext } from "../controller/context";
 import { propType, refsType } from "../controller/type";
 import { cameraPropType } from "../physics/type";
-import { GaesupControllerContext } from "../stores/context/controller";
-import { GaesupWorldContext } from "../stores/context/gaesupworld";
+import { GaesupWorldContext } from "../world/context";
 import cameraCollisionDetector from "./cameraCollisionDetecter";
 import mapControl from "./control/map";
 import normal from "./control/normal";
@@ -34,7 +34,7 @@ export default function Camera({
   const { rigidBodyRef, outerGroupRef } = refs;
   const { cameraRay } = prop;
   const { checkCollision } = cameraCollisionDetector(prop);
-  const { scene, camera } = useThree();
+  const { scene } = useThree();
   const { activeState } = worldContext;
 
   const intersectObjectMap: { [uuid: string]: THREE.Object3D } = {};

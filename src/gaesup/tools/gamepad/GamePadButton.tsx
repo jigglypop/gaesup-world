@@ -1,6 +1,7 @@
 import { useContext, useState } from "react";
-import { usePushKey } from "../../stores/control";
-import { GaesupToolsContext } from "../context";
+
+import { GaesupToolsContext } from "../context.js";
+import { usePushKey } from "../pushKey/index.js";
 import * as style from "./style.css";
 
 export default function GamePadButton({
@@ -28,9 +29,9 @@ export default function GamePadButton({
 
   return (
     <button
-      className={`${style.padButton({
+      className={style.padButton({
         isClicked: isClicked,
-      })}`}
+      })}
       onMouseDown={() => onMouseDown()}
       onMouseUp={() => onMouseLeave()}
       onMouseLeave={() => onMouseLeave()}

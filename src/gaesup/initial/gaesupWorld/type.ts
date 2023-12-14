@@ -1,19 +1,16 @@
 import { Dispatch, ReactNode } from "react";
+import { joyStickInnerType } from "../../tools/joystick/type";
+import { minimapInnerType } from "../../tools/minimap/type";
+import { keyboardMapType } from "../../tools/type";
 import {
   airplaneColliderType,
   characterColliderType,
-  vehicleColliderType,
-} from "../../stores/collider";
-
-import {
-  gaesupControllerPropType,
   gaesupWorldPartialPropType,
   gaesupWorldPropType,
-} from "../../stores/context/gaesupworld/type";
-
-import { urlType } from "../../stores/url/type";
-import { joyStickInnerType } from "../../tools/joystick/type";
-import { minimapInnerType } from "../../tools/minimap/type";
+  modeType,
+  urlType,
+  vehicleColliderType,
+} from "../../world/context/type";
 import { getGltfResultType } from "./collider/gltf";
 
 export type initGaesupWorldPropsType = {
@@ -24,10 +21,11 @@ export type initGaesupWorldPropsType = {
   characterCollider?: characterColliderType;
   vehicleCollider?: vehicleColliderType;
   airplaneCollider?: airplaneColliderType;
-  mode?: gaesupControllerPropType;
+  mode?: modeType;
   debug?: boolean;
   minimap?: Omit<minimapInnerType, "props">;
   joystick?: joyStickInnerType;
+  keyBoardMap?: keyboardMapType;
 };
 
 export type innerColliderPropType = {

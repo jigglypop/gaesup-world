@@ -1,6 +1,7 @@
 import { useContext } from "react";
-import { GaesupWorldContext } from "../../stores/context/gaesupworld";
-import { pointType } from "../../stores/point/type";
+
+import { GaesupWorldContext } from "../../world/context/index.js";
+import { pointType } from "../../world/context/type.js";
 import * as style from "./style.css";
 
 export default function JumpPoint() {

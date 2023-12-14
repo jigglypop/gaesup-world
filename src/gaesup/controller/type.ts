@@ -8,20 +8,17 @@ import { GroupProps, OrthographicCameraProps } from "@react-three/fiber";
 import { RapierRigidBody, RigidBodyProps } from "@react-three/rapier";
 import { ReactNode, RefObject } from "react";
 import * as THREE from "three";
-import { cameraRayType } from "../camera/type";
-import { callbackType } from "../initial/callback/type";
-
+import { cameraRayType } from "../camera/type.js";
+import { callbackType } from "../initial/callback/type.js";
+import { keyControlType } from "../world/context/type.js";
 import {
   airplaneType,
   characterType,
-  vehicleType,
-} from "../stores/airplane/type";
-import {
   gaesupCameraOptionType,
   gaesupCameraPropType,
   perspectiveCameraPropType,
-} from "../stores/context/controller/type";
-import { keyControlType } from "../stores/control/type";
+  vehicleType,
+} from "./context/type.js";
 
 export type constantType = {
   jumpSpeed: number;

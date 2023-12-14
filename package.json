@@ -1,13 +1,13 @@
 {
   "name": "gaesup-world",
-  "version": "0.0.2",
+  "version": "0.0.61",
   "type": "module",
   "homepage": "https://jigglypop.github.io/gaesup-world/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "prepare": "rm -rf dist && tsc",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "prepare": "rm -rf dist && mkdir dist && tsc",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
@@ -43,7 +43,6 @@
     "next-compose": "0.0.2",
     "next-remove-imports": "1.0.12",
     "node-fetch": "3.3.2",
-    "prettier": "^3.1.0",
     "r3f-perf": "7.1.2",
     "react": "^18.2.0",
     "react-device-detect": "^2.2.3",
@@ -62,6 +61,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.4",
     "path": "^0.12.7",
+    "prettier": "^3.1.1",
     "typescript": "^5.2.2",
     "vite": "^5.0.0"
   },

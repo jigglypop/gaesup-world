@@ -1,11 +1,8 @@
 "use client";
 
-import { useContext, useEffect, useMemo, useReducer } from "react";
+import { useContext, useMemo, useReducer } from "react";
 
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../stores/context/gaesupworld";
+import { GaesupWorldContext } from "../world/context";
 import { GaesupToolsContext, GaesupToolsDispatchContext } from "./context";
 import GameBoy from "./gameboy";
 import { gameboyDefault } from "./gameboy/default";
@@ -28,28 +25,8 @@ export default function GaeSupTools({
   gameboy,
   gamepad,
 }: gaesupToolsPartialPropType) {
-  const { mode } = useContext(GaesupWorldContext);
-  const { control } = useContext(GaesupWorldContext);
-  const dispatch = useContext(GaesupWorldDispatchContext);
-  useEffect(() => {
-    const keyboard = keyboardToolTip?.keyBoardMap.reduce(
-      (maps, keyboardMapItem) => {
-        maps[keyboardMapItem.name] = false;
-        return maps;
-      },
-      {}
-    );
-    const assignedControl = Object.assign(control, keyboard);
-
-    dispatch({
-      type: "update",
-      payload: {
-        control: {
-          ...assignedControl,
-        },
-      },
-    });
-  }, []);
+  const worldContext = useContext(GaesupWorldContext);
+  const { mode } = worldContext;
 
   const [tools, toolsDispatch] = useReducer(gaesupToolsReducer, {
     keyboardToolTip: Object.assign(

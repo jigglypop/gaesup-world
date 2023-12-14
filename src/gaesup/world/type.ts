@@ -1,5 +1,5 @@
 import { Dispatch } from "react";
-import { gaesupWorldPropType } from "../stores/context/gaesupworld/type";
+import { gaesupWorldPropType } from "./context/type";
 
 export type gaesupWorldInitType = {
   value: gaesupWorldPropType;

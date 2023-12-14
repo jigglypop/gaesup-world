@@ -1,6 +1,9 @@
 import { defineProperties } from "@vanilla-extract/sprinkles";
-import { fraction } from "../constants/constant.css";
-import { gridTemplateColumns, gridTemplateRows } from "../constants/grid.css";
+import { fraction } from "../constants/constant.css.js";
+import {
+  gridTemplateColumns,
+  gridTemplateRows,
+} from "../constants/grid.css.js";
 
 export const gridProperties = defineProperties({
   conditions: {

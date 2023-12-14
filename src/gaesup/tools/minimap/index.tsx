@@ -2,10 +2,11 @@
 
 import { assignInlineVars } from "@vanilla-extract/dynamic";
 import { useCallback, useContext, useEffect, useState } from "react";
+
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
-} from "../../stores/context/gaesupworld";
+} from "../../world/context";
 import { GaesupToolsContext } from "../context";
 import * as style from "./style.css";
 
