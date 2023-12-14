@@ -1,0 +1,8 @@
+import * as THREE from "three";
+export declare function isValidOrZero(condision: boolean, vector: THREE.Vector3): THREE.Vector3;
+export declare function isValidOrOne(condision: boolean, vector: THREE.Vector3): THREE.Vector3;
+export declare function V3(x?: number, y?: number, z?: number): THREE.Vector3;
+export declare function V30(): THREE.Vector3;
+export declare function V31(): THREE.Vector3;
+export declare function Qt(x?: number, y?: number, z?: number, w?: number): THREE.Quaternion;
+export declare function Elr(x: number, y: number, z: number): THREE.Euler;

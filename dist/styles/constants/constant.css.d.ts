@@ -1,0 +1,77 @@
+export declare const size: {
+    none: string;
+    half: string;
+    xs: string;
+    sm: string;
+    base: string;
+    lg: string;
+    xl: string;
+    "2xl": string;
+    "3xl": string;
+    "4xl": string;
+    "5xl": string;
+    "6xl": string;
+    "7xl": string;
+    "8xl": string;
+    "9xl": string;
+};
+export declare const zIndex: {
+    header: string;
+    modal: string;
+};
+export declare const persent: {
+    "0": string;
+    full: string;
+    auto: string;
+    "90!": string;
+    "110!": string;
+    "120!": string;
+    "110": string;
+    "120": string;
+    "130": string;
+    "140": string;
+    "150": string;
+    "160": string;
+    "170": string;
+};
+export declare const rem: {
+    "1": string;
+    "2": string;
+    "3": string;
+    "4": string;
+    "5": string;
+    "6": string;
+    "7": string;
+    "8": string;
+    "9": string;
+    "10": string;
+    "11": string;
+    "12": string;
+    "13": string;
+    "14": string;
+    "15": string;
+    "16": string;
+    "17": string;
+    "18": string;
+    "19": string;
+    "20": string;
+};
+export declare const fraction: {
+    "1/2": string;
+    "1/3": string;
+    "2/3": string;
+    "1/4": string;
+    "2/4": string;
+    "3/4": string;
+    "1/5": string;
+    "2/5": string;
+    "3/5": string;
+    "4/5": string;
+};
+export declare const repeat: {
+    "1": string;
+    "2": string;
+    "3": string;
+    "4": string;
+    "5": string;
+};

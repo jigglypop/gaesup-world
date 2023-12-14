@@ -41,7 +41,7 @@ export default function GamePadButton({
       }}
       onPointerDown={() => onMouseDown()}
       onPointerUp={() => onMouseLeave()}
-      style={gamepadButtonStyle}
+      // style={gamepadButtonStyle}
     >
       {name}
     </button>

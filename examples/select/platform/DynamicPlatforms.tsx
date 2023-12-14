@@ -7,11 +7,12 @@ import {
   CylinderCollider,
   RapierRigidBody,
   RigidBody,
+  quat,
+  vec3,
 } from "@react-three/rapier";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import GaeSupProps from "../../../src/gaesup/gaesupProps";
-import { Qt, V3 } from "../../../src/gaesup/utils/vector";
+import { GaeSupProps } from "../../../src";
 
 export type dynamicType = {
   time: number | null;
@@ -30,9 +31,9 @@ export default function DynamicPlatforms() {
   const dynamic = useMemo<dynamicType>(() => {
     return {
       time: null,
-      X: V3(1, 0, 0),
-      Y: V3(0, 1, 0),
-      Qt: Qt(),
+      X: vec3().set(1, 0, 0),
+      Y: vec3().set(0, 1, 0),
+      Qt: quat(),
     };
   }, []);
 

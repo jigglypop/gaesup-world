@@ -44,8 +44,14 @@ export default function KeyBoardToolTip() {
   }, {});
 
   return (
-    <div className={style.keyBoardToolTip} style={keyBoardToolTipStyle}>
-      <div className={style.keyBoardTooInner} style={keyBoardToolTipInnerStyle}>
+    <div
+      className={style.keyBoardToolTip}
+      // style={keyBoardToolTipStyle}
+    >
+      <div
+        className={style.keyBoardTooInner}
+        // style={keyBoardToolTipInnerStyle}
+      >
         {keyArray.map((item: keyArrayItemType, key: number) => {
           let background = "rgba(0, 0, 0, 0.1)";
           let boxShadow = "0 0 5px rgba(0, 0, 0, 0.2)";
@@ -70,16 +76,13 @@ export default function KeyBoardToolTip() {
           return (
             <div
               className={style.keyCap}
-              style={{
-                ...assignInlineVars({
-                  background,
-                  boxShadow,
-                  color,
-                  gridRow: item.gridRow,
-                  gridColumn: item.gridColumn,
-                }),
-                ...keyCapStyle,
-              }}
+              style={assignInlineVars({
+                background,
+                boxShadow,
+                color,
+                gridRow: item.gridRow,
+                gridColumn: item.gridColumn,
+              })}
               key={key}
             >
               {item.name}

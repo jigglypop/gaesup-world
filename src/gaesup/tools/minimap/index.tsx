@@ -1,5 +1,3 @@
-"use client";
-
 import { assignInlineVars } from "@vanilla-extract/dynamic";
 import { useCallback, useContext, useEffect, useState } from "react";
 
@@ -41,31 +39,37 @@ export default function MiniMap() {
   return (
     <div
       className={style.minimap}
-      style={minimap.minimapStyle || {}}
+      // style={assignInlineVars(minimap.minimapStyle || {})}
       onWheel={(e) => {
         if (e.deltaY > 0) downRatio();
         else upRatio();
       }}
     >
-      <div className={style.minimapOuter} style={minimap.objectStyle || {}} />
-      <div className={style.minimapInner} style={minimap.innerStyle || {}}>
+      <div
+        className={style.minimapOuter}
+        // style={minimap.objectStyle || {}}
+      />
+      <div
+        className={style.minimapInner}
+        // style={minimap.innerStyle || {}}
+      >
         {Object.values(minimapInner.props).map((obj, key) => {
           return (
             <div
               key={key}
               className={style.minimapObject}
-              style={{
-                ...assignInlineVars({
-                  width: `${obj.size.x}rem`,
-                  height: `${obj.size.z}rem`,
-                  transform: `translate(${
-                    -obj.center.x + activeState.position.x * ratio
-                  }rem, ${-obj.center.z + activeState.position.z * ratio}rem)`,
-                }),
-                ...minimap.objectStyle,
-              }}
+              style={assignInlineVars({
+                width: `${obj.size.x}rem`,
+                height: `${obj.size.z}rem`,
+                transform: `translate(${
+                  -obj.center.x + activeState.position.x * ratio
+                }rem, ${-obj.center.z + activeState.position.z * ratio}rem)`,
+              })}
             >
-              <div className={style.text} style={minimap.textStyle}>
+              <div
+                className={style.text}
+                // style={minimap.textStyle}
+              >
                 {obj.text}
               </div>
             </div>

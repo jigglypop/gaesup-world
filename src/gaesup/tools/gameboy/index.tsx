@@ -19,8 +19,14 @@ export default function GameBoy() {
     gameboy: { gameboyStyle, gameboyInnerStyle },
   } = useContext(GaesupToolsContext);
   return (
-    <div className={style.gameBoy} style={gameboyStyle}>
-      <div className={style.gameBoyInner} style={gameboyInnerStyle}>
+    <div
+      className={style.gameBoy}
+      // style={gameboyStyle}
+    >
+      <div
+        className={style.gameBoyInner}
+        // style={gameboyInnerStyle}
+      >
         {GameBoyDirections.map((item: gameBoyButtonType, key: number) => {
           return (
             <GameBoyButton

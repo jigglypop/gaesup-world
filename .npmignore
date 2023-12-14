@@ -8,3 +8,14 @@ public/*
 package-lock.json
 index.html
 node_modules
+examples
+public
+tsconfig.json
+tsconfig.build.json
+tsconfig.node.json
+node_modules/
+public/
+vite.config.ts
+src/*
+src
+src/

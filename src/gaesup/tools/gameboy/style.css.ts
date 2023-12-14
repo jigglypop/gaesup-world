@@ -26,6 +26,7 @@ export const gameBoyInner = style([
     row: "center",
   }),
   {
+    display: "grid",
     margin: "5rem",
     padding: "1rem",
     borderRadius: "50%",

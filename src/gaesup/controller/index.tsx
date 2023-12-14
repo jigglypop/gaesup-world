@@ -1,5 +1,3 @@
-"use client";
-
 import { Collider, RevoluteImpulseJoint } from "@dimforge/rapier3d-compat";
 import { RapierRigidBody } from "@react-three/rapier";
 import { useContext, useMemo, useReducer, useRef } from "react";
@@ -18,7 +16,7 @@ import {
 import { gaesupControllerReducer } from "./context/reducer";
 import { controllerType, propType, refsType } from "./type";
 
-export default function GaesupController(props: controllerType) {
+export function GaesupController(props: controllerType) {
   const { mode } = useContext(GaesupWorldContext);
   const [controller, controllerDispatch] = useReducer(gaesupControllerReducer, {
     cameraMode: Object.assign(

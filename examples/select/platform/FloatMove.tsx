@@ -9,7 +9,7 @@ import {
 } from "@react-three/rapier";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import GaeSupProps from "../../../src/gaesup/gaesupProps";
+import { GaeSupProps } from "../../../src";
 
 export type rayType = {
   origin: THREE.Vector3;

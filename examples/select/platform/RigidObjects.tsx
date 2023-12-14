@@ -6,7 +6,7 @@ import {
   CylinderCollider,
   RigidBody,
 } from "@react-three/rapier";
-import GaeSupProps from "../../../src/gaesup/gaesupProps";
+import { GaeSupProps } from "../../../src";
 
 export default function RigidObjects() {
   return (

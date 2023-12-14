@@ -5,15 +5,13 @@ import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 import { useState } from "react";
 import { isMobile } from "react-device-detect";
-import GaesupController from "../../../src/gaesup/controller";
 
+import { GaeSupTools, GaesupController, GaesupWorld } from "../../../src";
 import {
   orthographicCameraType,
   perspectiveCameraType,
 } from "../../../src/gaesup/controller/context/type";
-import GaeSupTools from "../../../src/gaesup/tools";
 import { S3 } from "../../../src/gaesup/utils/constant";
-import GaesupWorld from "../../../src/gaesup/world";
 import { modeType } from "../../../src/gaesup/world/context/type";
 import FloatMove from "../platform/FloatMove";
 import Floor from "../platform/Floor";

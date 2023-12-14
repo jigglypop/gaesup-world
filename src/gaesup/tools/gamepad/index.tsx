@@ -40,8 +40,14 @@ export default function GamePad() {
     );
 
   return (
-    <div className={style.gamePad} style={gamepadStyle}>
-      <div className={style.gamePadGrid} style={gamepadGridStyle}>
+    <div
+      className={style.gamePad}
+      // style={gamepadStyle}
+    >
+      <div
+        className={style.gamePadGrid}
+        // style={gamepadGridStyle}
+      >
         {GamePadDirections.map((item: gameBoyDirectionType, key: number) => {
           return (
             <GamePadButton key={key} value={item.value} name={item.name} />

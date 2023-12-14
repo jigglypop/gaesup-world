@@ -1,23 +1,25 @@
 import { style } from "@vanilla-extract/css";
-import { fixed, flex } from "../../../styles/recipe/index.css";
 
 export const joyStick = style([
-  fixed({
-    south_east: true,
-  }),
-  flex({
-    column: "7",
-  }),
   {
+    position: "fixed",
+    bottom: "0",
+    right: "0",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "flex-end",
+    alignItems: "flex-start",
+    textAlign: "center",
     width: "100%",
   },
 ]);
 
 export const joyStickInner = style([
-  flex({
-    row: "center",
-  }),
   {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center",
     margin: "5rem",
     padding: "1rem",
     width: "12rem",

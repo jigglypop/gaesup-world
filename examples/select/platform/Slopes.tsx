@@ -4,7 +4,7 @@ import { Html, useGLTF } from "@react-three/drei";
 import { RapierRigidBody, RigidBody } from "@react-three/rapier";
 import { SetStateAction, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import GaeSupProps from "../../../src/gaesup/gaesupProps";
+import { GaeSupProps } from "../../../src";
 import { S3 } from "../../../src/gaesup/utils/constant";
 import { ControlledInput } from "./ControlledInput";
 

@@ -4,7 +4,7 @@ import { useGLTF } from "@react-three/drei";
 import { RigidBody } from "@react-three/rapier";
 import { useEffect } from "react";
 import * as THREE from "three";
-import GaeSupProps from "../../../src/gaesup/gaesupProps";
+import { GaeSupProps } from "../../../src";
 import { S3 } from "../../../src/gaesup/utils/constant";
 
 export default function RoughPlane() {

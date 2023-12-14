@@ -6,7 +6,7 @@ import {
   GaesupWorldDispatchContext,
 } from "../world/context/index.js";
 
-export default function GaeSupProps({
+export function GaeSupProps({
   text,
   position,
   jumpPoint,

@@ -1,7 +1,4 @@
-"use client";
-
 import { useContext, useMemo, useReducer } from "react";
-
 import { GaesupWorldContext } from "../world/context";
 import { GaesupToolsContext, GaesupToolsDispatchContext } from "./context";
 import GameBoy from "./gameboy";
@@ -10,7 +7,6 @@ import GamePad from "./gamepad";
 import { gamepadDefault } from "./gamepad/default";
 import JoyStick from "./joystick";
 import { joyStickDefault } from "./joystick/default";
-import JumpPoint from "./jumpPoint";
 import KeyBoardToolTip from "./keyBoardToolTip";
 import { keyboardToolTipDefault } from "./keyBoardToolTip/default";
 import MiniMap from "./minimap";
@@ -18,7 +14,7 @@ import { minimapDefault } from "./minimap/default";
 import { gaesupToolsReducer } from "./reducer";
 import * as style from "./style.css";
 import { gaesupToolsPartialPropType } from "./type";
-export default function GaeSupTools({
+export function GaeSupTools({
   keyboardToolTip,
   joystick,
   minimap,
@@ -75,7 +71,7 @@ export default function GaeSupTools({
           </div>
         </div>
 
-        <JumpPoint />
+        {/* <JumpPoint /> */}
       </GaesupToolsDispatchContext.Provider>
     </GaesupToolsContext.Provider>
   );
