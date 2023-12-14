@@ -2,7 +2,7 @@
 
 Web 3D Character Controller and World Platform Library
 
-[![]](https://codesandbox.io/p/github/jigglypop/gaesup-world-examples/master?workspaceId=e8ae627a-af61-415e-aa21-1fe5af422c86)
+[![https://codesandbox.io/p/github/jigglypop/gaesup-world-examples/master?workspaceId=e8ae627a-af61-415e-aa21-1fe5af422c86]](https://codesandbox.io/p/github/jigglypop/gaesup-world-examples/master?workspaceId=e8ae627a-af61-415e-aa21-1fe5af422c86)
 
 [![Version](https://img.shields.io/npm/v/gaesup-world?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/gaesup-world)
 [![Downloads](https://img.shields.io/npm/dt/gaesup-world.svg?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/gaesup-world)
