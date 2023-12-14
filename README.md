@@ -17,8 +17,7 @@ Gaesup World is a library that uses @react/three-fiber, @react/three-drei, and r
 
 ## How to start
 
-```react
-
+```tsx
 "use client";
 
 import { Environment, KeyboardControls } from "@react-three/drei";
@@ -65,7 +64,6 @@ export default function Selected() {
     </GaesupWorld>
   );
 }
-
 ```
 
 ### Features
