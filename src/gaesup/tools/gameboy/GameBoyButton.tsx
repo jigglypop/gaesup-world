@@ -1,6 +1,7 @@
 import { useContext } from "react";
-import { usePushKey } from "../../stores/control";
-import { GaesupToolsContext } from "../context";
+
+import { GaesupToolsContext } from "../context.js";
+import { usePushKey } from "../pushKey/index.js";
 import * as style from "./style.css";
 
 export type gameBoyButtonType = {

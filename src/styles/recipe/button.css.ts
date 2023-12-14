@@ -1,9 +1,9 @@
 import { recipe } from "@vanilla-extract/recipes";
-import { boxShadowHover } from "../constants/boxshadow.css";
-import { palette } from "../constants/palette.css";
-import { sprinkles } from "../sprinkles/index.css";
-import { vars } from "../theme.css";
-import { flex_relative } from "./index.css";
+import { boxShadowHover } from "../constants/boxshadow.css.js";
+import { palette } from "../constants/palette.css.js";
+import { sprinkles } from "../sprinkles/index.css.js";
+import { vars } from "../theme.css.js";
+import { flex_relative } from "./index.css.js";
 
 export const button = recipe({
   base: [

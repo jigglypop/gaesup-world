@@ -8,13 +8,14 @@ import { Airplane } from "../component/Airplane";
 import { Character } from "../component/Character";
 import { Vehicle } from "../component/Vehicle";
 import initControllerProps from "../initial/controller";
+
+import { GaesupWorldContext } from "../world/context";
 import {
   GaesupControllerContext,
   GaesupControllerDispatchContext,
   gaesupControllerDefault,
-} from "../stores/context/controller";
-import { gaesupControllerReducer } from "../stores/context/controller/reducer";
-import { GaesupWorldContext } from "../stores/context/gaesupworld";
+} from "./context";
+import { gaesupControllerReducer } from "./context/reducer";
 import { controllerType, propType, refsType } from "./type";
 
 export default function GaesupController(props: controllerType) {

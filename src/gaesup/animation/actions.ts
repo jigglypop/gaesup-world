@@ -5,7 +5,7 @@ import { animationTagType, groundRayType } from "../controller/type";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
-} from "../stores/context/gaesupworld";
+} from "../world/context";
 
 export type playActionsType = {
   outerGroupRef: RefObject<THREE.Group>;

@@ -1,13 +1,13 @@
 import { defineProperties } from "@vanilla-extract/sprinkles";
-import { boxShadow, boxShadowHover } from "../constants/boxshadow.css";
+import { boxShadow, boxShadowHover } from "../constants/boxshadow.css.js";
 import {
-  gradient,
   palette,
   rgba,
   theme,
   themeShadow,
   themeShadowHover,
-} from "../constants/palette.css";
+} from "../constants/palette.css.js";
+import { gradient } from "../recipe/index.css.js";
 
 const paletteTheme = { ...palette, ...theme, ...rgba };
 const paletteThemeGradient = { ...palette, ...theme, ...gradient, ...rgba };
@@ -28,8 +28,8 @@ export const colorProperties = defineProperties({
   defaultCondition: "default",
   properties: {
     color: paletteTheme,
-    backgroundColor: paletteThemeGradient,
-    background: paletteThemeGradient,
+    backgroundColor: paletteThemeGradient as any,
+    background: paletteThemeGradient as any,
     boxShadow: boxShadows,
     tranCursor: {
       true: {

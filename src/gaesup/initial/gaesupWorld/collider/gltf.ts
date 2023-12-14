@@ -1,6 +1,7 @@
-import { useLoader } from "@react-three/fiber";
+import { ObjectMap, useLoader } from "@react-three/fiber";
 import { useEffect } from "react";
 import * as THREE from "three";
+import { GLTF } from "three-stdlib";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { GLTFResult } from "../../../component/gltf/type";
 import { S3 } from "../../../utils/constant";
@@ -33,7 +34,10 @@ export default function getGltf({
     airplaneSize: null,
   };
   if (url.characterUrl) {
-    const characterGltf: GLTFResult = useLoader(GLTFLoader, url.characterUrl);
+    const characterGltf: GLTF & ObjectMap = useLoader(
+      GLTFLoader,
+      url.characterUrl
+    );
     const { scene: characterScene } = characterGltf;
     const characterSize = new THREE.Box3()
       .setFromObject(characterScene)
@@ -42,8 +46,8 @@ export default function getGltf({
     result.characterSize = characterSize;
   }
   if (url.vehicleUrl) {
-    const vehicleGltf: GLTFResult = useLoader(GLTFLoader, url.vehicleUrl);
-    const wheelGltf: GLTFResult = useLoader(
+    const vehicleGltf: GLTF & ObjectMap = useLoader(GLTFLoader, url.vehicleUrl);
+    const wheelGltf: GLTF & ObjectMap = useLoader(
       GLTFLoader,
       url.wheelUrl || S3 + "/wheel.glb"
     );
@@ -61,7 +65,10 @@ export default function getGltf({
     result.wheelSize = wheelsize;
   }
   if (url.airplaneUrl) {
-    const airplaneGltf: GLTFResult = useLoader(GLTFLoader, url.airplaneUrl);
+    const airplaneGltf: GLTF & ObjectMap = useLoader(
+      GLTFLoader,
+      url.airplaneUrl
+    );
     const { scene: airplaneScene } = airplaneGltf;
     const airplaneSize = new THREE.Box3()
       .setFromObject(airplaneScene)

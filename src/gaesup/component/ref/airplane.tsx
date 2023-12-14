@@ -9,9 +9,9 @@ import {
 import { ReactNode, Ref, forwardRef, useContext } from "react";
 import * as THREE from "three";
 import { controllerType, groundRayType, propType } from "../../controller/type";
-import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 import { getRayHit } from "../../utils/ray";
 import { useForwardRef } from "../../utils/ref";
+import { GaesupWorldContext } from "../../world/context";
 
 export const AirplaneRigidBody = forwardRef(
   (

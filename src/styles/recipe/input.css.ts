@@ -1,5 +1,5 @@
 import { recipe } from "@vanilla-extract/recipes";
-import { palette } from "../constants/palette.css";
+import { palette } from "../constants/palette.css.js";
 
 export const input = recipe({
   base: {

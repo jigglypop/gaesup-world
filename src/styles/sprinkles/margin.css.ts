@@ -1,5 +1,5 @@
 import { defineProperties } from "@vanilla-extract/sprinkles";
-import { persent, rem, size } from "../constants/constant.css";
+import { persent, rem, size } from "../constants/constant.css.js";
 
 const properties = { ...persent, ...size, ...rem };
 

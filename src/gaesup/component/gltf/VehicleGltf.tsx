@@ -1,5 +1,5 @@
 import { Ref, forwardRef, useContext } from "react";
-import { GaesupWorldContext } from "../../stores/context/gaesupworld";
+import { GaesupWorldContext } from "../../world/context";
 
 export const VehicleInnerGroupRef = forwardRef((_, ref: Ref<THREE.Group>) => {
   const { vehicleGltf: gltf } = useContext(GaesupWorldContext);

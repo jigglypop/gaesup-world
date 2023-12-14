@@ -1,7 +1,7 @@
 import { style } from "@vanilla-extract/css";
 import { recipe } from "@vanilla-extract/recipes";
-import { fixed, grid } from "../../../styles/recipe/index.css";
-import { vars } from "../../../styles/theme.css";
+import { fixed, grid } from "../../../styles/recipe/index.css.js";
+import { vars } from "../../../styles/theme.css.js";
 
 export const gamePad = style([
   fixed({

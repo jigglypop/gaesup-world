@@ -6,8 +6,8 @@ import {
   flex_relative,
   glass,
   grid,
-} from "../../../styles/recipe/index.css";
-import { vars } from "../../../styles/theme.css";
+} from "../../../styles/recipe/index.css.js";
+import { vars } from "../../../styles/theme.css.js";
 
 export const gameBoy = style([
   fixed({

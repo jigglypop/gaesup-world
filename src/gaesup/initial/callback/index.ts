@@ -7,7 +7,7 @@ import { animationTagType } from "../../controller/type";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
-} from "../../stores/context/gaesupworld";
+} from "../../world/context";
 import { callbackPropType, initCallbackType } from "./type";
 
 export default function initCallback({

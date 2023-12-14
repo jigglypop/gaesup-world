@@ -2,7 +2,9 @@
 .idea
 .tscache
 .DS_Store
-node_modules/
-examples/
-public/
+node_modules/*
+examples/*
+public/*
 package-lock.json
+index.html
+node_modules

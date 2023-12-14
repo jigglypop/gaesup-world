@@ -1,55 +1,58 @@
-import { useMemo, useReducer } from "react";
-import { activeStateDefault } from "../../stores/active";
-import { animationDefault } from "../../stores/animation";
-import {
-  airplaneColliderDefault,
-  characterColliderDefault,
-  vehicleColliderDefault,
-} from "../../stores/collider";
-import { modeDefault } from "../../stores/context/gaesupworld";
-import { gaesupReducer } from "../../stores/context/gaesupworld/reducer";
-import { controlDefault } from "../../stores/control";
-import { statesDefault } from "../../stores/states";
-import { urlDefault } from "../../stores/url";
-import { joyStickInnerDefault } from "../../tools/joystick/default";
-import { minimapInnerDefault } from "../../tools/minimap/default";
-import { V3 } from "../../utils/vector";
+import { useEffect, useMemo, useReducer } from "react";
+
+import { gaesupWorldDefault } from "../../world/context";
+import { gaesupWorldReducer } from "../../world/context/reducer";
 import initColider from "./collider";
 import { initGaesupWorldPropsType } from "./type";
 
 export default function initGaesupWorld(props: initGaesupWorldPropsType) {
-  const [value, dispatch] = useReducer(gaesupReducer, {
-    activeState: {
-      ...activeStateDefault,
-      ...{ position: props.startPosition || V3(0, 2, 5) },
-    },
+  const [value, dispatch] = useReducer(gaesupWorldReducer, {
+    activeState: gaesupWorldDefault.activeState,
     characterCollider: Object.assign(
-      characterColliderDefault,
+      gaesupWorldDefault.characterCollider,
       props.characterCollider || {}
     ),
     vehicleCollider: Object.assign(
-      vehicleColliderDefault,
+      gaesupWorldDefault.vehicleCollider,
       props.vehicleCollider || {}
     ),
     airplaneCollider: Object.assign(
-      airplaneColliderDefault,
+      gaesupWorldDefault.airplaneCollider,
       props.airplaneCollider || {}
     ),
-    mode: Object.assign(modeDefault, props.mode || {}),
-    url: Object.assign(urlDefault, props.url || {}),
+    mode: Object.assign(gaesupWorldDefault.mode, props.mode || {}),
+    url: Object.assign(gaesupWorldDefault.url, props.url || {}),
     characterGltf: null,
     vehicleGltf: null,
     wheelGltf: null,
     airplaneGltf: null,
-    states: statesDefault,
+    states: gaesupWorldDefault.states,
     debug: false,
-    minimap: minimapInnerDefault,
-    joystick: joyStickInnerDefault,
-    control: controlDefault,
+    minimap: gaesupWorldDefault.minimap,
+    joystick: gaesupWorldDefault.joystick,
+    control: gaesupWorldDefault.control,
     points: [],
     refs: null,
-    animations: animationDefault,
+    animations: gaesupWorldDefault.animations,
+    keyBoardMap:  gaesupWorldDefault.keyBoardMap,
   });
+
+  useEffect(() => {
+    const keyboard = value.keyBoardMap?.reduce((maps, keyboardMapItem) => {
+      maps[keyboardMapItem.name] = false;
+      return maps;
+    }, {});
+    const assignedControl = Object.assign(value.control, keyboard);
+
+    dispatch({
+      type: "update",
+      payload: {
+        control: {
+          ...assignedControl,
+        },
+      },
+    });
+  }, []);
 
   const gaesupProps = useMemo(
     () => ({ value, dispatch }),

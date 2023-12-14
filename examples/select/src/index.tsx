@@ -6,19 +6,15 @@ import { Physics } from "@react-three/rapier";
 import { useState } from "react";
 import { isMobile } from "react-device-detect";
 import GaesupController from "../../../src/gaesup/controller";
+
 import {
   orthographicCameraType,
   perspectiveCameraType,
-} from "../../../src/gaesup/stores/context/controller/type";
-import {
-  airplaneOptionType,
-  characterOptionType,
-  gaesupControllerPropType,
-  vehicleOptionType,
-} from "../../../src/gaesup/stores/context/gaesupworld/type";
+} from "../../../src/gaesup/controller/context/type";
 import GaeSupTools from "../../../src/gaesup/tools";
 import { S3 } from "../../../src/gaesup/utils/constant";
 import GaesupWorld from "../../../src/gaesup/world";
+import { modeType } from "../../../src/gaesup/world/context/type";
 import FloatMove from "../platform/FloatMove";
 import Floor from "../platform/Floor";
 import RigidObjects from "../platform/RigidObjects";
@@ -41,9 +37,7 @@ export default function Selected() {
   const AIRPLANE_URL = "./airplane.glb";
   const VEHICLE_URL = S3 + "/kart2.glb";
 
-  const [mode, changeMode] = useState<
-    characterOptionType | vehicleOptionType | airplaneOptionType
-  >({
+  const [mode, changeMode] = useState<modeType>({
     type: "character",
     controller: isMobile ? "joystick" : "joystick",
   });
@@ -65,13 +59,14 @@ export default function Selected() {
         airplaneUrl: AIRPLANE_URL,
       }}
     >
+      <GaeSupTools />
       <div className={style.mainButtonContainer}>
         <button
           className={button({
             selected: mode.type === "character",
           })}
           onClick={() =>
-            changeMode((mode: characterOptionType) => ({
+            changeMode((mode) => ({
               type: "character",
               controller: mode.controller,
             }))
@@ -84,7 +79,7 @@ export default function Selected() {
             selected: mode.type === "vehicle",
           })}
           onClick={() =>
-            changeMode((mode: vehicleOptionType) => ({
+            changeMode((mode) => ({
               type: "vehicle",
               controller: mode.controller,
             }))
@@ -97,7 +92,7 @@ export default function Selected() {
             selected: mode.type === "airplane",
           })}
           onClick={() =>
-            changeMode((mode: airplaneOptionType) => ({
+            changeMode((mode) => ({
               type: "airplane",
               controller: mode.controller,
             }))
@@ -152,7 +147,7 @@ export default function Selected() {
               selected: mode.controller === "keyboard",
             })}
             onClick={() => {
-              changeMode((mode: gaesupControllerPropType) => ({
+              changeMode((mode) => ({
                 type: mode.type,
                 controller: "keyboard",
               }));
@@ -166,7 +161,7 @@ export default function Selected() {
             selected: mode.controller === "joystick",
           })}
           onClick={() => {
-            changeMode((mode: gaesupControllerPropType) => ({
+            changeMode((mode) => ({
               type: mode.type,
               controller: "joystick",
             }));
@@ -179,7 +174,7 @@ export default function Selected() {
             selected: mode.controller === "gameboy",
           })}
           onClick={() => {
-            changeMode((mode: gaesupControllerPropType) => ({
+            changeMode((mode) => ({
               type: mode.type,
               controller: "gameboy",
             }));

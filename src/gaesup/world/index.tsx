@@ -1,9 +1,6 @@
 import initGaesupWorld from "../initial/gaesupWorld";
 import { initGaesupWorldPropsType } from "../initial/gaesupWorld/type";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../stores/context/gaesupworld";
+import { GaesupWorldContext, GaesupWorldDispatchContext } from "./context";
 
 export default function GaesupWorld(props: initGaesupWorldPropsType) {
   const { gaesupProps } = initGaesupWorld(props);

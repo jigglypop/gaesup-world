@@ -1,4 +1,4 @@
-import { repeat } from "./constant.css";
+import { repeat } from "./constant.css.js";
 
 export const gridTemplateRows = {
   ...repeat,

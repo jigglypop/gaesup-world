@@ -10,8 +10,8 @@ import {
 import { ReactNode, Ref, RefObject, forwardRef, useContext } from "react";
 import * as THREE from "three";
 import { controllerType, propType } from "../../controller/type";
-import { GaesupWorldContext } from "../../stores/context/gaesupworld";
 import { S3 } from "../../utils/constant";
+import { GaesupWorldContext } from "../../world/context";
 
 export const VehicleRigidBody = forwardRef(
   (

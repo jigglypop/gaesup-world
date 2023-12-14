@@ -12,8 +12,6 @@ export default function direction(prop: calcPropType) {
   const { forward, backward, leftward, rightward, shift, space } = control;
   const { angleChange, maxAngle, accelRatio } = airplane;
 
-  console.log(Number(joystick.joyStickOrigin.isUp));
-
   let boost = 0;
   if (mode.controller === "joystick") {
     boost = space
