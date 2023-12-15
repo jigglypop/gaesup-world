@@ -19,3 +19,5 @@ vite.config.ts
 src/*
 src
 src/
+image
+image/

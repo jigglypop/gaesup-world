@@ -1,20 +1,21 @@
-import { useContext } from "react";
-
-import { GaesupToolsContext } from "../context.js";
+import { assignInlineVars } from "@vanilla-extract/dynamic";
 import { usePushKey } from "../pushKey/index.js";
+import { VECssType } from "../type.js";
 import * as style from "./style.css";
 
 export type gameBoyButtonType = {
   tag: "up" | "down" | "left" | "right";
   value: string;
   icon: JSX.Element;
+  gameboyButtonStyle: VECssType;
 };
 
-export default function GameBoyButton({ tag, value, icon }: gameBoyButtonType) {
-  const {
-    gameboy: { gameboyButtonStyle },
-  } = useContext(GaesupToolsContext);
-
+export default function GameBoyButton({
+  tag,
+  value,
+  icon,
+  gameboyButtonStyle,
+}: gameBoyButtonType) {
   const { pushKey } = usePushKey();
 
   const onMouseDown = () => {
@@ -39,7 +40,7 @@ export default function GameBoyButton({ tag, value, icon }: gameBoyButtonType) {
       }}
       onPointerDown={() => onMouseDown()}
       onPointerUp={() => onMouseLeave()}
-      style={gameboyButtonStyle}
+      style={assignInlineVars(gameboyButtonStyle)}
     >
       {icon}
     </button>

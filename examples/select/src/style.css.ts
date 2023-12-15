@@ -1,10 +1,68 @@
 import { fontFace, style } from "@vanilla-extract/css";
 import { recipe } from "@vanilla-extract/recipes";
+import { fixed, flex } from "../../../src/styles/recipe/index.css";
 import { vars } from "../../../src/styles/theme.css";
 
 const BlackHanSans = fontFace({
   src: 'local("/public/fonts/BlackHanSans-Regular.ttf")',
 });
+
+export const gameBoyOuter = style([
+  fixed({
+    south: true,
+  }),
+  flex({
+    column: "7",
+  }),
+  {
+    width: "100%",
+  },
+]);
+
+export const joyStickOuter = style([
+  {
+    position: "fixed",
+    bottom: "5lvh",
+    left: "5lvw",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "flex-end",
+    alignItems: "flex-start",
+    textAlign: "center",
+    width: "100%",
+  },
+]);
+
+export const footer = style([
+  {
+    position: "fixed",
+    bottom: "0",
+    width: "100%",
+    height: "25rem",
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gridTemplateRows: "repeat(2, 1fr)",
+  },
+]);
+
+export const footerUpper = style([
+  {
+    gridColumn: "1/4",
+    gridRow: "1/2",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+]);
+
+export const footerLower = style([
+  {
+    gridColumn: "1/4",
+    gridRow: "2/3",
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+  },
+]);
 
 export const blackHanSans = style({
   fontFamily: BlackHanSans,

@@ -1,11 +1,9 @@
 import { style } from "@vanilla-extract/css";
-import { fixed } from "../../styles/recipe/index.css";
 
 export const footer = style([
-  fixed({
-    south: true,
-  }),
   {
+    position: "fixed",
+    bottom: "0",
     width: "100%",
     height: "25rem",
     display: "grid",

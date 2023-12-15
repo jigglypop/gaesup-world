@@ -1,6 +1,6 @@
 {
   "name": "gaesup-world",
-  "version": "0.0.67",
+  "version": "0.0.68",
   "type": "commonjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -10,7 +10,9 @@
     "build": "vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "prepare": "rm -rf dist && mkdir dist && tsc -p tsconfig.build.json"
+    "prepare": "rm -rf dist && mkdir dist && tsc -p tsconfig.build.json",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@dimforge/rapier3d": "^0.11.2",
@@ -25,6 +27,7 @@
     "@vanilla-extract/next-plugin": "^2.3.1",
     "@vanilla-extract/recipes": "^0.5.0",
     "@vanilla-extract/sprinkles": "^1.6.1",
+    "gh-pages": "^6.1.0",
     "leva": "0.9.35",
     "node-fetch": "3.3.2",
     "react": "^18.2.0",

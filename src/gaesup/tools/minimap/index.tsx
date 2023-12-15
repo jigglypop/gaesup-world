@@ -1,81 +1,141 @@
 import { assignInlineVars } from "@vanilla-extract/dynamic";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useState } from "react";
 
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
-import { GaesupToolsContext } from "../context";
+import { GaesupWorldContext } from "../../world/context";
+import { minimapDefault } from "./default";
 import * as style from "./style.css";
+import { minimapType } from "./type";
 
-export default function MiniMap() {
-  const { minimap: minimapInner, activeState } = useContext(GaesupWorldContext);
-  const dispatch = useContext(GaesupWorldDispatchContext);
-  const { minimap } = useContext(GaesupToolsContext);
-  const [ratio, setRatio] = useState(minimap.ratio);
+// X 축은 동(+) 서(-) 방향, 즉 경도를 나타낸다.
+// Z 축은 남(+) 북(-) 방향, 즉 위도를 나타낸다.
 
-  useEffect(() => {
-    minimapInner.ratio = ratio;
-    dispatch({
-      type: "update",
-      payload: {
-        minimap: {
-          ...minimapInner,
-        },
-      },
-    });
-  }, []);
+export function MiniMap(props: minimapType) {
+  const { minimap, activeState } = useContext(GaesupWorldContext);
+  const [scale, setscale] = useState(props.scale || minimapDefault.scale);
+  const {
+    minimapStyle,
+    innerStyle,
+    textStyle,
+    objectStyle,
+    avatarStyle,
+    scaleStyle,
+    directionStyle,
+    plusMinusStyle,
+  } = props;
 
-  const upRatio = useCallback(() => {
-    if (ratio >= 1) setRatio((prev) => prev - 0.1);
-    else setRatio((prev) => prev + 0.1);
-  }, [setRatio, ratio]);
+  const upscale = useCallback(() => {
+    const max = props.maxScale || minimapDefault.maxScale;
+    setscale((scale) => Math.min(max, scale + 0.1));
+  }, [setscale, scale]);
 
-  const downRatio = useCallback(() => {
-    if (ratio <= 0) setRatio((prev) => prev + 0.1);
-    else setRatio((prev) => prev - 0.1);
-  }, [setRatio, ratio]);
+  const downscale = useCallback(() => {
+    const min = props.minScale || minimapDefault.minScale;
+    setscale((scale) => Math.max(min, scale - 0.1));
+  }, [setscale, scale]);
 
   return (
     <div
       className={style.minimap}
-      // style={assignInlineVars(minimap.minimapStyle || {})}
       onWheel={(e) => {
-        if (e.deltaY > 0) downRatio();
-        else upRatio();
+        if (props.blockScale) return;
+        if (e.deltaY <= 0) upscale();
+        else downscale();
       }}
+      style={assignInlineVars(minimapStyle)}
     >
       <div
         className={style.minimapOuter}
-        // style={minimap.objectStyle || {}}
+        style={assignInlineVars(objectStyle)}
       />
+
       <div
         className={style.minimapInner}
-        // style={minimap.innerStyle || {}}
+        style={assignInlineVars({
+          transform: `translate(-50%, -50%) rotate(${
+            (activeState.euler.y * 180) / Math.PI
+          }deg) `,
+          ...innerStyle,
+        })}
       >
-        {Object.values(minimapInner.props).map((obj, key) => {
+        <div
+          className={style.direction({
+            east: true,
+          })}
+          style={assignInlineVars(directionStyle)}
+        >
+          E
+        </div>
+        <div
+          className={style.direction({
+            west: true,
+          })}
+          style={assignInlineVars(directionStyle)}
+        >
+          W
+        </div>
+        <div
+          className={style.direction({
+            south: true,
+          })}
+          style={assignInlineVars(directionStyle)}
+        >
+          S
+        </div>
+        <div
+          className={style.direction({ north: true })}
+          style={assignInlineVars(directionStyle)}
+        >
+          N
+        </div>
+
+        {Object.values(minimap.props).map(({ center, size, text }, key) => {
+          const X = (center.x - activeState.position.x) * scale;
+          const Z = (center.z - activeState.position.z) * scale;
           return (
             <div
               key={key}
               className={style.minimapObject}
               style={assignInlineVars({
-                width: `${obj.size.x}rem`,
-                height: `${obj.size.z}rem`,
-                transform: `translate(${
-                  -obj.center.x + activeState.position.x * ratio
-                }rem, ${-obj.center.z + activeState.position.z * ratio}rem)`,
+                width: `${size.x * scale}rem`,
+                height: `${size.z * scale}rem`,
+                top: "50%",
+                left: "50%",
+                transform: `translate(-50%, -50%) translate(${-X}rem, ${-Z}rem)`,
+                transformOrigin: "50% 50%",
               })}
             >
-              <div
-                className={style.text}
-                // style={minimap.textStyle}
-              >
-                {obj.text}
+              <div className={style.text} style={assignInlineVars(textStyle)}>
+                {text}
               </div>
             </div>
           );
         })}
-        <div className={style.avatar} style={minimap.avatarStyle} />
+
+        <div className={style.avatar} style={assignInlineVars(avatarStyle)} />
+      </div>
+
+      <div className={style.scale} style={assignInlineVars(scaleStyle)}>
+        <div
+          className={style.plusMinus}
+          style={assignInlineVars(plusMinusStyle)}
+          onClick={() => {
+            if (props.blockScale) return;
+            upscale();
+          }}
+        >
+          +
+        </div>
+        SCALE 1:{Math.round(100 / scale)}
+        <div
+          className={style.plusMinus}
+          style={assignInlineVars(plusMinusStyle)}
+          onClick={() => {
+            if (props.blockScale) return;
+            downscale();
+          }}
+        >
+          -
+        </div>
       </div>
     </div>
   );

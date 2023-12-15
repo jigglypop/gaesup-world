@@ -1,3 +1,4 @@
+import { assignInlineVars } from "@vanilla-extract/dynamic";
 import {
   MouseEventHandler,
   TouchEventHandler,
@@ -8,30 +9,16 @@ import {
   useState,
 } from "react";
 import { vars } from "../../../styles/theme.css";
-import { GaesupToolsContext } from "../context";
+import { GaesupWorldContext } from "../../world/context";
 import useJoyStick from "./default";
 import * as style from "./style.css";
+import { joyStickType } from "./type";
 
-export default function JoyStick() {
-  const {
-    joystick: { joyStickStyle },
-  } = useContext(GaesupToolsContext);
-  return (
-    <div
-      className={style.joyStick}
-      // style={joyStickStyle}
-    >
-      <JoyBall />
-    </div>
-  );
-}
-
-export function JoyBall() {
+export function JoyStick(props: joyStickType) {
   const outerRef = useRef<HTMLDivElement>(null);
   const childRef = useRef<HTMLDivElement>(null);
-  const {
-    joystick: { joyStickBallStyle, joyStickInnerStyle, joyStickStyle },
-  } = useContext(GaesupToolsContext);
+  const { joyStickBallStyle, joyStickStyle } = props;
+  const { mode } = useContext(GaesupWorldContext);
   const { joyStickBall, joyStickOrigin, setBall, setOrigin } = useJoyStick();
 
   const [state, setState] = useState({
@@ -79,19 +66,6 @@ export function JoyBall() {
     }));
   };
 
-  const resize = () => {
-    const client = outerRef.current.getBoundingClientRect();
-    setScreenSize(() => ({
-      top: client.top,
-      left: client.left,
-      bottom: client.bottom,
-      right: client.right,
-      width: client.width,
-      height: client.height,
-    }));
-    initBall();
-  };
-
   const initialize = () => {
     const client = outerRef.current.getBoundingClientRect();
     const x = client.left + client.width / 2;
@@ -116,6 +90,19 @@ export function JoyBall() {
       isUp: true,
     });
     initBall();
+  };
+
+  const resize = () => {
+    const client = outerRef.current.getBoundingClientRect();
+    setScreenSize(() => ({
+      top: client.top,
+      left: client.left,
+      bottom: client.bottom,
+      right: client.right,
+      width: client.width,
+      height: client.height,
+    }));
+    // initBall();
   };
 
   const calcOriginBall = (X: number, Y: number) => {
@@ -155,13 +142,14 @@ export function JoyBall() {
 
   const handleMouseOver: MouseEventHandler = (e) => {
     if (!state.mouseDown) return;
-    calcOriginBall(e.pageX, e.pageY);
+    e.preventDefault();
+    calcOriginBall(e.clientX, e.clientY);
   };
 
   const handleTouchMove: TouchEventHandler = (e) => {
     if (!state.touchDown) return;
     e.preventDefault();
-    calcOriginBall(e.touches[0].pageX, e.touches[0].pageY);
+    calcOriginBall(e.touches[0].screenX, e.touches[0].screenY);
   };
 
   const handleTouchEnd: TouchEventHandler = useCallback(
@@ -198,35 +186,65 @@ export function JoyBall() {
   }, []);
 
   return (
-    <div
-      className={style.joyStickInner}
-      style={{
-        position: "fixed",
-        ...joyStickInnerStyle,
-      }}
-      ref={outerRef}
-      onMouseDown={() => setMouseDown(true)}
-      onMouseUp={() => setMouseDown(false)}
-      onMouseMove={handleMouseOver}
-      onMouseLeave={handleMouseOut}
-      onTouchStart={() => setTouchDown(true)}
-      onTouchEnd={handleTouchEnd}
-      onTouchMove={handleTouchMove}
-      onTouchCancel={handleTouchEnd}
-    >
-      <div
-        className={`${style.joystickBall}`}
-        ref={childRef}
-        style={{
-          position: state.position as "fixed" | "absolute" | "relative",
-          transform: state.transform,
-          background: joyStickBallStyle?.background || state.background,
-          boxShadow: joyStickBallStyle?.boxShadow || state.boxShadow,
-          top: joyStickBall.top,
-          left: joyStickBall.left,
-          ...joyStickBallStyle,
-        }}
-      />
-    </div>
+    <>
+      {mode.controller === "joystick" && (
+        <div
+          className={style.joyStick}
+          style={assignInlineVars({
+            position: "fixed",
+            ...joyStickStyle,
+          })}
+          ref={outerRef}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setMouseDown(true);
+          }}
+          onMouseUp={(e) => {
+            e.preventDefault();
+            setMouseDown(false);
+          }}
+          onMouseMove={handleMouseOver}
+          onMouseLeave={handleMouseOut}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            setTouchDown(true);
+          }}
+          onTouchEnd={handleTouchEnd}
+          onTouchMove={handleTouchMove}
+          onTouchCancel={handleTouchEnd}
+        >
+          <div
+            className={`${style.joystickBall}`}
+            ref={childRef}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setMouseDown(true);
+            }}
+            onMouseUp={(e) => {
+              e.preventDefault();
+              setMouseDown(false);
+            }}
+            onMouseMove={handleMouseOver}
+            onMouseLeave={handleMouseOut}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              setTouchDown(true);
+            }}
+            onTouchEnd={handleTouchEnd}
+            onTouchMove={handleTouchMove}
+            onTouchCancel={handleTouchEnd}
+            style={assignInlineVars({
+              position: state.position as "fixed" | "absolute" | "relative",
+              transform: state.transform,
+              background: joyStickBallStyle?.background || state.background,
+              boxShadow: joyStickBallStyle?.boxShadow || state.boxShadow,
+              top: joyStickBall.top,
+              left: joyStickBall.left,
+              ...joyStickBallStyle,
+            })}
+          />
+        </div>
+      )}
+    </>
   );
 }

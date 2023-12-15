@@ -1,32 +1,13 @@
 import { style } from "@vanilla-extract/css";
 import { recipe } from "@vanilla-extract/recipes";
-import {
-  fixed,
-  flex,
-  flex_relative,
-  glass,
-  grid,
-} from "../../../styles/recipe/index.css.js";
+import { flex_relative, glass } from "../../../styles/recipe/index.css.js";
 import { vars } from "../../../styles/theme.css.js";
 
 export const gameBoy = style([
-  fixed({
-    south: true,
-  }),
-  flex({
-    column: "7",
-  }),
-  {
-    width: "100%",
-  },
-]);
-
-export const gameBoyInner = style([
-  grid({
-    row: "center",
-  }),
   {
     display: "grid",
+    alignItems: "center",
+    justifyContent: "center",
     margin: "5rem",
     padding: "1rem",
     borderRadius: "50%",

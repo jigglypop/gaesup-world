@@ -1,6 +1,5 @@
 export {
   GaeSupProps,
-  GaeSupTools,
   GaesupController,
   GaesupWorld,
   playActions,

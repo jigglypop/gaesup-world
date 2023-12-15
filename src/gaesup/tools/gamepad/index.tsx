@@ -1,9 +1,10 @@
 import { useContext } from "react";
 
+import { assignInlineVars } from "@vanilla-extract/dynamic";
 import { GaesupWorldContext } from "../../world/context/index.js";
-import { GaesupToolsContext } from "../context.js";
 import GamePadButton from "./GamePadButton.js";
 import * as style from "./style.css";
+import { gamepadType } from "./type.js";
 
 type gameBoyDirectionType = {
   tag: string;
@@ -12,11 +13,9 @@ type gameBoyDirectionType = {
   icon: JSX.Element;
 };
 
-export default function GamePad() {
-  const {
-    gamepad: { gamepadStyle, gamepadGridStyle },
-    keyboardToolTip: { keyBoardLabel },
-  } = useContext(GaesupToolsContext);
+export function GamePad(props: gamepadType) {
+  const { gamepadStyle, gamepadGridStyle, gamepadButtonStyle, keyBoardLabel } =
+    props;
   const { control, mode } = useContext(GaesupWorldContext);
   const GamePadDirections = Object.keys(control)
     .map((key) => {
@@ -40,20 +39,28 @@ export default function GamePad() {
     );
 
   return (
-    <div
-      className={style.gamePad}
-      // style={gamepadStyle}
-    >
-      <div
-        className={style.gamePadGrid}
-        // style={gamepadGridStyle}
-      >
-        {GamePadDirections.map((item: gameBoyDirectionType, key: number) => {
-          return (
-            <GamePadButton key={key} value={item.value} name={item.name} />
-          );
-        })}
-      </div>
-    </div>
+    <>
+      {(mode.controller === "joystick" || mode.controller === "gameboy") && (
+        <div className={style.gamePad} style={assignInlineVars(gamepadStyle)}>
+          <div
+            className={style.gamePadGrid}
+            style={assignInlineVars(gamepadGridStyle)}
+          >
+            {GamePadDirections.map(
+              (item: gameBoyDirectionType, key: number) => {
+                return (
+                  <GamePadButton
+                    key={key}
+                    value={item.value}
+                    name={item.name}
+                    gamepadButtonStyle={gamepadButtonStyle}
+                  />
+                );
+              }
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

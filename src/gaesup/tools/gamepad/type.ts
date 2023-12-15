@@ -1,9 +1,11 @@
-import { CSSProperties } from "react";
+import { VECssType } from "../type";
 
 export type gamepadType = {
-  on?: boolean;
-  gamepadStyle?: CSSProperties;
-  gamepadInnerStyle?: CSSProperties;
-  gamepadGridStyle?: CSSProperties;
-  gamepadButtonStyle?: CSSProperties;
+  keyBoardLabel?: Record<string, string>;
+} & {
+  [key in
+    | "gamepadButtonStyle"
+    | "gamepadGridStyle"
+    | "gamepadInnerStyle"
+    | "gamepadStyle"]?: VECssType;
 };

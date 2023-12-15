@@ -1,9 +1,0 @@
-export declare const pulseWhite: string;
-export declare const avatar: string;
-export declare const avatarImage: string;
-export declare const border: string;
-export declare const minimap: string;
-export declare const minimapOuter: string;
-export declare const minimapInner: string;
-export declare const text: string;
-export declare const minimapObject: string;

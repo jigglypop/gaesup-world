@@ -1,8 +1,5 @@
-import { CSSProperties } from "react";
+import { VECssType } from "../type";
 
 export type gameboyType = {
-  on?: boolean;
-  gameboyStyle?: CSSProperties;
-  gameboyInnerStyle?: CSSProperties;
-  gameboyButtonStyle?: CSSProperties;
+  [key in "gameboyStyle" | "gameboyButtonStyle"]?: VECssType;
 };

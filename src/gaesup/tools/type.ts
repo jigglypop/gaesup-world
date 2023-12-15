@@ -1,4 +1,4 @@
-import { Dispatch } from "react";
+import { CSSProperties, Dispatch, ReactNode } from "react";
 import { gameboyType } from "./gameboy/type";
 import { gamepadType } from "./gamepad/type";
 import { joyStickType } from "./joystick/type";
@@ -7,6 +7,7 @@ import { minimapType } from "./minimap/type";
 
 export type keyboardMapType = { name: string; keys: string[] }[];
 export type gaesupToolsPropType = {
+  children: ReactNode;
   keyboardToolTip: keyBoardToolTipType;
   joystick: joyStickType;
   minimap: minimapType;
@@ -24,3 +25,5 @@ export type gaesupDisptachType = Dispatch<{
   type: string;
   payload?: Partial<gaesupToolsPropType>;
 }>;
+
+export type VECssType = Record<keyof CSSProperties, string>;

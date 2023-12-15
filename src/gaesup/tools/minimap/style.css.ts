@@ -1,5 +1,6 @@
 import { keyframes, style } from "@vanilla-extract/css";
-import { fixed, flex_absolute } from "../../../styles/recipe/index.css";
+import { recipe } from "@vanilla-extract/recipes";
+import { fixed, flex_absolute, glass } from "../../../styles/recipe/index.css";
 import { sprinkles } from "../../../styles/sprinkles/index.css";
 import { vars } from "../../../styles/theme.css";
 
@@ -32,6 +33,26 @@ export const avatar = style([
     objectFit: "cover",
     zIndex: 100,
     animation: `${pulseWhite} 2s infinite`,
+  },
+]);
+
+export const plusMinus = style([
+  {
+    position: "relative",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    width: "2rem",
+    height: "2rem",
+    borderRadius: "50%",
+    background: "rgba(0, 0, 0, 0.5)",
+    boxShadow: "0 0 5px rgba(0, 0, 0, 0.5)",
+    transition: "all 0.5s ease-in",
+    cursor: "pointer",
+    border: "2px solid transparent",
+    ":hover": {
+      boxShadow: "0 0 10px rgba(0, 0, 0, 0.5)",
+    },
   },
 ]);
 
@@ -70,15 +91,15 @@ export const minimap = style([
   }),
   sprinkles({
     w: {
-      mobile: "12",
-      tablet: "14",
-      laptop: "16",
+      mobile: "15",
+      tablet: "16",
+      laptop: "18",
       desktop: "19",
     },
     h: {
-      mobile: "12",
-      tablet: "14",
-      laptop: "16",
+      mobile: "15",
+      tablet: "16",
+      laptop: "18",
       desktop: "19",
     },
   }),
@@ -99,25 +120,27 @@ export const minimapOuter = style([
 ]);
 
 export const minimapInner = style([
-  flex_absolute({
-    center: true,
-  }),
   sprinkles({
     w: {
-      mobile: "11",
-      tablet: "13",
-      laptop: "15",
+      mobile: "14",
+      tablet: "15",
+      laptop: "17",
       desktop: "18",
     },
     h: {
-      mobile: "11",
-      tablet: "13",
-      laptop: "15",
+      mobile: "14",
+      tablet: "15",
+      laptop: "17",
       desktop: "18",
     },
   }),
   {
     zIndex: 2,
+    position: "absolute",
+    display: "flex",
+    top: "50%",
+    left: "50%",
+    transformOrigin: "50% 50%",
     borderRadius: "50%",
     background: "rgba(0, 0, 0, 0.9)",
     overflow: "hidden",
@@ -132,6 +155,29 @@ export const text = style([
   },
 ]);
 
+export const scale = style([
+  glass({}),
+  {
+    position: "absolute",
+    width: "13rem",
+    bottom: "-3rem",
+    left: "50%",
+    transform: "translateX(-50%)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    textAlign: "center",
+    fontSize: "1.2rem",
+    color: "white",
+    textShadow: "0 0 10px black",
+    padding: "0.5rem",
+    borderRadius: "0.5rem",
+    boxShadow: "0 0 10px solid black",
+    background: "rgba(0, 0, 0, 0.5)",
+    zIndex: 3,
+  },
+]);
+
 export const minimapObject = style([
   flex_absolute({}),
   {
@@ -142,3 +188,43 @@ export const minimapObject = style([
     opacity: 0.5,
   },
 ]);
+
+export const direction = recipe({
+  base: {
+    position: "absolute",
+    color: "rgba(99,251,215,1)",
+    textShadow: "0 0 10px rgba(99,251,215,1)",
+    margin: "0.5rem",
+    fontSize: "1.2rem",
+  },
+  variants: {
+    east: {
+      true: {
+        top: "50%",
+        transform: "translateY(-50%)",
+        left: 0,
+      },
+    },
+    west: {
+      true: {
+        top: "50%",
+        transform: "translateY(-50%)",
+        right: 0,
+      },
+    },
+    north: {
+      true: {
+        top: 0,
+        transform: "translateX(-50%)",
+        left: "50%",
+      },
+    },
+    south: {
+      true: {
+        bottom: 0,
+        transform: "translateX(-50%)",
+        left: "50%",
+      },
+    },
+  },
+});

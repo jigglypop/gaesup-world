@@ -1,5 +1,5 @@
-import { CSSProperties } from "react";
 import * as THREE from "three";
+import { VECssType } from "../type";
 
 export type minimapPropsType = {
   text: string;
@@ -16,12 +16,19 @@ export type minimapInnerType = {
 };
 
 export type minimapType = {
-  on: boolean;
-  ratio?: number;
-  minimapStyle?: CSSProperties;
-  outerStyle?: CSSProperties;
-  innerStyle?: CSSProperties;
-  textStyle?: CSSProperties;
-  objectStyle?: Omit<CSSProperties, "width" | "height" | "transform">;
-  avatarStyle?: CSSProperties;
+  [key in
+    | "minimapStyle"
+    | "outerStyle"
+    | "innerStyle"
+    | "textStyle"
+    | "objectStyle"
+    | "avatarStyle"
+    | "directionStyle"
+    | "scaleStyle"
+    | "plusMinusStyle"]?: VECssType;
+} & {
+  minScale?: number;
+  maxScale?: number;
+  blockScale?: boolean;
+  scale?: number;
 };

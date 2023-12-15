@@ -1,4 +1,4 @@
-import { CSSProperties } from "react";
+import { VECssType } from "../type";
 
 export type keyMapItemType = {
   name: string;
@@ -28,10 +28,13 @@ export type keyBoardLabelType = {
 };
 
 export type keyBoardToolTipType = {
-  on?: boolean;
   keyBoardLabel?: keyBoardLabelType;
   keyBoardMap?: keyboardMapItemType[];
-  keyBoardToolTipStyle?: CSSProperties;
-  keyBoardToolTipInnerStyle?: CSSProperties;
-  keyCapStyle?: CSSProperties;
+} & {
+  [key in
+    | "keyBoardToolTipStyle"
+    | "keyBoardToolTipInnerStyle"
+    | "keyCapStyle"]?: VECssType;
 };
+
+export type keyBoardToolTipPartialType = Partial<keyBoardToolTipType>;

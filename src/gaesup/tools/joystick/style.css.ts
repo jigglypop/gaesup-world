@@ -2,26 +2,10 @@ import { style } from "@vanilla-extract/css";
 
 export const joyStick = style([
   {
-    position: "fixed",
-    bottom: "0",
-    right: "0",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "flex-end",
-    alignItems: "flex-start",
-    textAlign: "center",
-    width: "100%",
-  },
-]);
-
-export const joyStickInner = style([
-  {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     textAlign: "center",
-    margin: "5rem",
-    padding: "1rem",
     width: "12rem",
     height: "12rem",
     overflow: "auto",

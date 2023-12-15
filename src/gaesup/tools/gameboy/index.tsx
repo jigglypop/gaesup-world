@@ -1,7 +1,9 @@
+import { assignInlineVars } from "@vanilla-extract/dynamic";
 import { useContext } from "react";
-import { GaesupToolsContext } from "../context";
+import { GaesupWorldContext } from "../../world/context";
 import GameBoyButton, { gameBoyButtonType } from "./GameBoyButton";
 import * as style from "./style.css";
+import { gameboyType } from "./type";
 
 export const GameBoyDirections = [
   {
@@ -14,30 +16,27 @@ export const GameBoyDirections = [
   { tag: "right", value: "rightward", icon: <></> },
 ];
 
-export default function GameBoy() {
-  const {
-    gameboy: { gameboyStyle, gameboyInnerStyle },
-  } = useContext(GaesupToolsContext);
+export function GameBoy(props: gameboyType) {
+  const { mode } = useContext(GaesupWorldContext);
+  const { gameboyStyle, gameboyButtonStyle } = props;
+
   return (
-    <div
-      className={style.gameBoy}
-      // style={gameboyStyle}
-    >
-      <div
-        className={style.gameBoyInner}
-        // style={gameboyInnerStyle}
-      >
-        {GameBoyDirections.map((item: gameBoyButtonType, key: number) => {
-          return (
-            <GameBoyButton
-              key={key}
-              tag={item.tag}
-              value={item.value}
-              icon={item.icon}
-            />
-          );
-        })}
-      </div>
-    </div>
+    <>
+      {mode.controller === "gameboy" && (
+        <div className={style.gameBoy} style={assignInlineVars(gameboyStyle)}>
+          {GameBoyDirections.map((item: gameBoyButtonType, key: number) => {
+            return (
+              <GameBoyButton
+                key={key}
+                tag={item.tag}
+                value={item.value}
+                icon={item.icon}
+                gameboyButtonStyle={gameboyButtonStyle}
+              />
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }

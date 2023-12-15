@@ -6,11 +6,15 @@ import { Physics } from "@react-three/rapier";
 import { useState } from "react";
 import { isMobile } from "react-device-detect";
 
-import { GaeSupTools, GaesupController, GaesupWorld } from "../../../src";
+import { GaesupController, GaesupWorld } from "../../../src";
 import {
   orthographicCameraType,
   perspectiveCameraType,
 } from "../../../src/gaesup/controller/context/type";
+import { GameBoy } from "../../../src/gaesup/tools/gameboy";
+import { GamePad } from "../../../src/gaesup/tools/gamepad";
+import { JoyStick } from "../../../src/gaesup/tools/joystick";
+import { KeyBoardToolTip } from "../../../src/gaesup/tools/keyBoardToolTip";
 import { S3 } from "../../../src/gaesup/utils/constant";
 import { modeType } from "../../../src/gaesup/world/context/type";
 import FloatMove from "../platform/FloatMove";
@@ -37,7 +41,7 @@ export default function Selected() {
 
   const [mode, changeMode] = useState<modeType>({
     type: "character",
-    controller: isMobile ? "joystick" : "joystick",
+    controller: isMobile ? "joystick" : "keyboard",
   });
 
   const [camera, changeCamera] = useState<
@@ -57,7 +61,6 @@ export default function Selected() {
         airplaneUrl: AIRPLANE_URL,
       }}
     >
-      <GaeSupTools />
       <div className={style.mainButtonContainer}>
         <button
           className={button({
@@ -230,15 +233,22 @@ export default function Selected() {
           {/* <Slopes /> */}
         </Physics>
       </Canvas>
-      <GaeSupTools
-        keyboardToolTip={{
-          keyBoardMap: keyboardMap,
-          keyBoardLabel: {
-            keyZ: "GREET",
-            space: "JUMP",
-          },
-        }}
-      />
+      <div className={style.footer}>
+        <div className={style.footerUpper}>
+          <GamePad />
+        </div>
+        <div className={style.footerLower}>
+          <div className={style.joyStickOuter}>
+            <JoyStick />
+          </div>
+          <div className={style.gameBoyOuter}>
+            <GameBoy />
+          </div>
+
+          <KeyBoardToolTip keyBoardMap={keyboardMap} />
+          {/* <MiniMap /> */}
+        </div>
+      </div>
     </GaesupWorld>
   );
 }
