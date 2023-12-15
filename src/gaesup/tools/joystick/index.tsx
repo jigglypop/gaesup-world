@@ -93,6 +93,7 @@ export function JoyStick(props: joyStickType) {
   };
 
   const resize = () => {
+    if (!outerRef.current) return;
     const client = outerRef.current.getBoundingClientRect();
     setScreenSize(() => ({
       top: client.top,

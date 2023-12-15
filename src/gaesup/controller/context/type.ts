@@ -1,4 +1,5 @@
 import { GroupProps, OrthographicCameraProps } from "@react-three/fiber";
+import { callbackType } from "../../initial/callback/type";
 import { dispatchType } from "../../utils/type";
 
 export interface airplaneType extends GroupProps {
@@ -54,6 +55,7 @@ export type gaesupControllerType = {
   vehicle: vehicleType;
   character: characterType;
   isRider: boolean;
+  callbacks: callbackType;
 };
 
 export type gaesupDisptachType = dispatchType<gaesupControllerType>;

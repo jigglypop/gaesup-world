@@ -17,6 +17,13 @@ import initControllerProps from "./initialize";
 import { controllerType, propType, refsType } from "./type";
 
 export function GaesupController(props: controllerType) {
+  const capsuleColliderRef = useRef<Collider>(null);
+  const rigidBodyRef = useRef<RapierRigidBody>(null);
+  const outerGroupRef = useRef<THREE.Group>(null);
+  const innerGroupRef = useRef<THREE.Group>(null);
+  const slopeRayOriginRef = useRef<THREE.Mesh>(null);
+  const characterInnerRef = useRef<THREE.Group>(null);
+  const jointRefs = useRef<RevoluteImpulseJoint>(null);
   const { mode } = useContext(GaesupWorldContext);
   const [controller, controllerDispatch] = useReducer(gaesupControllerReducer, {
     cameraMode: Object.assign(
@@ -47,16 +54,14 @@ export function GaesupController(props: controllerType) {
       gaesupControllerDefault.character,
       props.character || {}
     ),
+    callbacks: Object.assign(gaesupControllerDefault.callbacks, {
+      onReady: props.onReady,
+      onFrame: props.onFrame,
+      onDestory: props.onDestory,
+      onAnimate: props.onAnimate,
+    }),
     isRider: props.isRider !== null ? props.isRider : false,
   });
-
-  const capsuleColliderRef = useRef<Collider>(null);
-  const rigidBodyRef = useRef<RapierRigidBody>(null);
-  const outerGroupRef = useRef<THREE.Group>(null);
-  const innerGroupRef = useRef<THREE.Group>(null);
-  const slopeRayOriginRef = useRef<THREE.Mesh>(null);
-  const characterInnerRef = useRef<THREE.Group>(null);
-  const jointRefs = useRef<RevoluteImpulseJoint>(null);
 
   const gaesupControl = useMemo(
     () => ({
@@ -71,6 +76,7 @@ export function GaesupController(props: controllerType) {
       controller.airplane,
       controller.vehicle,
       controller.character,
+      controller.callbacks,
       controller.isRider,
     ]
   );

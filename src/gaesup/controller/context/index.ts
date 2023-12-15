@@ -43,6 +43,12 @@ export const gaesupControllerDefault = {
     maxSpeed: 60,
     accelRatio: 2,
   },
+  callbacks: {
+    onReady: () => {},
+    onFrame: () => {},
+    onDestory: () => {},
+    onAnimate: () => {},
+  },
   isRider: false,
 };
 
