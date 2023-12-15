@@ -1,10 +1,11 @@
 import { euler, quat, vec3 } from "@react-three/rapier";
 import { createContext } from "react";
 import { animationTagType } from "../../controller/type";
+import { dispatchType } from "../../utils/type";
 import { V3 } from "../../utils/vector";
-import { dispatchType, gaesupWorldPropType } from "./type";
+import { gaesupWorldContextType } from "./type";
 
-export const gaesupWorldDefault: gaesupWorldPropType = {
+export const gaesupWorldDefault: gaesupWorldContextType = {
   activeState: {
     position: V3(0, 1, 5),
     impulse: vec3(),
@@ -72,11 +73,9 @@ export const gaesupWorldDefault: gaesupWorldPropType = {
   },
   debug: false,
   minimap: {
-    on: true,
     props: {},
   },
   joystick: {
-    on: true,
     joyStickOrigin: {
       x: 0,
       y: 0,
@@ -128,6 +127,6 @@ export const gaesupWorldDefault: gaesupWorldPropType = {
   ],
 };
 
-export const GaesupWorldContext = createContext<gaesupWorldPropType>(null);
+export const GaesupWorldContext = createContext<gaesupWorldContextType>(null);
 export const GaesupWorldDispatchContext =
-  createContext<dispatchType<gaesupWorldPropType>>(null);
+  createContext<dispatchType<gaesupWorldContextType>>(null);

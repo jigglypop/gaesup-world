@@ -1,9 +1,9 @@
-import initGaesupWorld from "../initial/gaesupWorld";
-import { initGaesupWorldPropsType } from "../initial/gaesupWorld/type";
 import { MiniMap } from "../tools/minimap";
 import { GaesupWorldContext, GaesupWorldDispatchContext } from "./context";
+import initGaesupWorld from "./initalize";
+import { gaesupWorldPropsType } from "./type";
 
-export function GaesupWorld(props: initGaesupWorldPropsType) {
+export function GaesupWorld(props: gaesupWorldPropsType) {
   const { gaesupProps } = initGaesupWorld(props);
   return (
     <GaesupWorldContext.Provider value={gaesupProps.value}>

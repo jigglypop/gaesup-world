@@ -24,13 +24,8 @@ export const joyStickOriginDefault = {
 };
 
 export const joyStickInnerDefault = {
-  on: true,
   joyStickBall: joyStickBallDefault,
   joyStickOrigin: joyStickOriginDefault,
-};
-
-export const joyStickDefault = {
-  on: true,
 };
 
 export default function useJoyStick() {

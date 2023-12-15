@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { isVectorNonZero } from "../../../utils";
+import { update } from "../../context/reducer";
 import { innerColliderPropType } from "../type";
 
 export function character({ gltf, value, dispatch }: innerColliderPropType) {
@@ -6,19 +8,14 @@ export function character({ gltf, value, dispatch }: innerColliderPropType) {
   if (!url || !url.characterUrl) return;
   const { characterSize } = gltf;
   useEffect(() => {
-    if (
-      characterSize.x !== 0 &&
-      characterSize.y !== 0 &&
-      characterSize.z !== 0
-    ) {
+    if (isVectorNonZero(characterSize)) {
       const heightPlusDiameter = characterSize.y / 2;
       const diameter = Math.max(characterSize.x, characterSize.z);
       const radius = diameter / 2;
       const height = heightPlusDiameter - radius;
       const halfHeight = height / 2;
-      dispatch({
-        type: "update",
-        payload: {
+      update(
+        {
           characterCollider: {
             height,
             halfHeight,
@@ -26,7 +23,8 @@ export function character({ gltf, value, dispatch }: innerColliderPropType) {
             diameter,
           },
         },
-      });
+        dispatch
+      );
     }
   }, [characterSize.x, characterSize.y, characterSize.z]);
 }

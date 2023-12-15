@@ -6,6 +6,5 @@ export const minimapDefault = {
 };
 
 export const minimapInnerDefault = {
-  on: true,
   props: {},
 };

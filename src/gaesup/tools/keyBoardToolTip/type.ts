@@ -1,5 +1,6 @@
 import { VECssType } from "../type";
 
+export type keyboardMapType = { name: string; keys: string[] }[];
 export type keyMapItemType = {
   name: string;
   gridRow: string;

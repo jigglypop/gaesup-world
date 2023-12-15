@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { isVectorNonZero } from "../../../utils";
+import { update } from "../../context/reducer";
 import { innerColliderPropType } from "../type";
 
 export function airplane({ gltf, value, dispatch }: innerColliderPropType) {
@@ -7,10 +9,9 @@ export function airplane({ gltf, value, dispatch }: innerColliderPropType) {
   const { airplaneSize } = gltf;
 
   useEffect(() => {
-    if (airplaneSize.x !== 0 && airplaneSize.y !== 0 && airplaneSize.z !== 0) {
-      dispatch({
-        type: "update",
-        payload: {
+    if (isVectorNonZero(airplaneSize)) {
+      update(
+        {
           airplaneCollider: {
             airplaneSizeX: airplaneSize.x,
             airplaneSizeY: airplaneSize.y,
@@ -20,7 +21,8 @@ export function airplane({ gltf, value, dispatch }: innerColliderPropType) {
             airplaneZ: airplaneSize.z / 2,
           },
         },
-      });
+        dispatch
+      );
     }
   }, [airplaneSize.x, airplaneSize.y, airplaneSize.z]);
 }

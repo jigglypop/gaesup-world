@@ -8,8 +8,6 @@ export type minimapPropsType = {
 };
 
 export type minimapInnerType = {
-  on: boolean;
-  ratio?: number;
   props: {
     [key: string]: minimapPropsType;
   };

@@ -1,4 +1,4 @@
-import { gaesupControllerType } from "./type.js";
+import { gaesupControllerType } from "./type";
 
 export function gaesupControllerReducer(
   props: gaesupControllerType,

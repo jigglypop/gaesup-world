@@ -1,11 +1,11 @@
 import { createContext } from "react";
-import { dispatchType } from "../../tools/type.js";
-import { V3 } from "../../utils/vector.js";
+import { dispatchType } from "../../utils/type";
+import { V3 } from "../../utils/vector";
 import {
   gaesupControllerType,
   orthographicCameraType,
   perspectiveCameraType,
-} from "./type.js";
+} from "./type";
 
 export const gaesupControllerDefault = {
   cameraMode: {

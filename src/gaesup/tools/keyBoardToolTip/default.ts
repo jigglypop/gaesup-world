@@ -9,6 +9,5 @@ export const KeyboardMapDefault = [
 ];
 
 export const keyboardToolTipDefault = {
-  on: true,
   keyBoardMap: KeyboardMapDefault,
 };

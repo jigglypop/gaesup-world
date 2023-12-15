@@ -1,10 +1,10 @@
-import { Dispatch } from "react";
 import { GLTFResult } from "../../component/gltf/type";
 import { actionsType, animationTagType, refsType } from "../../controller/type";
 
 import { joyStickInnerType } from "../../tools/joystick/type";
+import { keyboardMapType } from "../../tools/keyBoardToolTip/type";
 import { minimapInnerType } from "../../tools/minimap/type";
-import { keyboardMapType } from "../../tools/type";
+import { dispatchType } from "../../utils/type";
 
 export type controlType = {
   forward: boolean;
@@ -105,7 +105,7 @@ type KeyboardControlsState<T extends string = string> = {
   [K in T]: boolean;
 };
 
-export type gaesupWorldPropType = {
+export type gaesupWorldContextType = {
   activeState: activeStateType;
   characterCollider: characterColliderType;
   vehicleCollider: vehicleColliderType;
@@ -127,13 +127,4 @@ export type gaesupWorldPropType = {
   keyBoardMap: keyboardMapType;
 };
 
-export type dispatchType<T> = Dispatch<{
-  type: string;
-  payload?: Partial<T>;
-}>;
-
-export type gaesupWorldPartialPropType = Partial<gaesupWorldPropType>;
-export type gaesupDisptachType = Dispatch<{
-  type: string;
-  payload?: Partial<gaesupWorldPropType>;
-}>;
+export type gaesupDisptachType = dispatchType<gaesupWorldContextType>;

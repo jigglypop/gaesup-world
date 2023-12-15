@@ -1,5 +1,5 @@
 import { GroupProps, OrthographicCameraProps } from "@react-three/fiber";
-import { Dispatch } from "react";
+import { dispatchType } from "../../utils/type";
 
 export interface airplaneType extends GroupProps {
   angleChange?: THREE.Vector3;
@@ -56,8 +56,4 @@ export type gaesupControllerType = {
   isRider: boolean;
 };
 
-export type gaesupControllerPartialType = Partial<gaesupControllerType>;
-export type gaesupDisptachType = Dispatch<{
-  type: string;
-  payload?: Partial<gaesupControllerType>;
-}>;
+export type gaesupDisptachType = dispatchType<gaesupControllerType>;

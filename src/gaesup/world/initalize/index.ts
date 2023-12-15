@@ -2,11 +2,12 @@ import { useEffect, useMemo, useReducer } from "react";
 
 import { gaesupWorldDefault } from "../../world/context";
 import { gaesupWorldReducer } from "../../world/context/reducer";
+import { gaesupWorldPropsType } from "../type";
 import initColider from "./collider";
-import { initGaesupWorldPropsType } from "./type";
 
-export default function initGaesupWorld(props: initGaesupWorldPropsType) {
+export default function initGaesupWorld(props: gaesupWorldPropsType) {
   const [value, dispatch] = useReducer(gaesupWorldReducer, {
+    debug: false,
     activeState: gaesupWorldDefault.activeState,
     characterCollider: Object.assign(
       gaesupWorldDefault.characterCollider,
@@ -26,15 +27,14 @@ export default function initGaesupWorld(props: initGaesupWorldPropsType) {
     vehicleGltf: null,
     wheelGltf: null,
     airplaneGltf: null,
+    points: [],
+    refs: null,
     states: gaesupWorldDefault.states,
-    debug: false,
     minimap: gaesupWorldDefault.minimap,
     joystick: gaesupWorldDefault.joystick,
     control: gaesupWorldDefault.control,
-    points: [],
-    refs: null,
     animations: gaesupWorldDefault.animations,
-    keyBoardMap:  gaesupWorldDefault.keyBoardMap,
+    keyBoardMap: gaesupWorldDefault.keyBoardMap,
   });
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function initGaesupWorld(props: initGaesupWorldPropsType) {
       dispatch,
     ]
   );
-  initColider(value, dispatch);
+  initColider({ value, dispatch });
   return {
     gaesupProps,
   };

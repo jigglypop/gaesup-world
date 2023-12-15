@@ -1,10 +1,28 @@
-import { Dispatch } from "react";
-import { gaesupWorldPropType } from "./context/type";
+import { ReactNode } from "react";
+import { keyboardMapType } from "../tools/keyBoardToolTip/type";
+import { dispatchType } from "../utils/type";
+import {
+  airplaneColliderType,
+  characterColliderType,
+  gaesupWorldContextType,
+  modeType,
+  urlType,
+  vehicleColliderType,
+} from "./context/type";
 
 export type gaesupWorldInitType = {
-  value: gaesupWorldPropType;
-  dispatch: Dispatch<{
-    type: string;
-    payload?: Partial<gaesupWorldPropType>;
-  }>;
+  value: gaesupWorldContextType;
+  dispatch: dispatchType<gaesupWorldContextType>;
+};
+
+export type gaesupWorldPropsType = {
+  children: ReactNode;
+  startPosition?: THREE.Vector3;
+  url?: urlType;
+  characterCollider?: characterColliderType;
+  vehicleCollider?: vehicleColliderType;
+  airplaneCollider?: airplaneColliderType;
+  mode?: modeType;
+  debug?: boolean;
+  keyBoardMap?: keyboardMapType;
 };

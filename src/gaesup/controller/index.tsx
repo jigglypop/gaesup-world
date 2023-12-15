@@ -5,7 +5,6 @@ import Camera from "../camera";
 import { Airplane } from "../component/Airplane";
 import { Character } from "../component/Character";
 import { Vehicle } from "../component/Vehicle";
-import initControllerProps from "../initial/controller";
 
 import { GaesupWorldContext } from "../world/context";
 import {
@@ -14,6 +13,7 @@ import {
   gaesupControllerDefault,
 } from "./context";
 import { gaesupControllerReducer } from "./context/reducer";
+import initControllerProps from "./initialize";
 import { controllerType, propType, refsType } from "./type";
 
 export function GaesupController(props: controllerType) {

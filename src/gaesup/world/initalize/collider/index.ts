@@ -1,18 +1,13 @@
-import { Dispatch } from "react";
-import { gaesupWorldPropType } from "../../../world/context/type";
 import { innerColliderPropType } from "../type";
 import { airplane } from "./airplane";
 import { character } from "./character";
 import getGltf from "./gltf";
 import { vehicle } from "./vehicle";
 
-export default function initColider(
-  value: gaesupWorldPropType,
-  dispatch: Dispatch<{
-    type: string;
-    payload?: Partial<gaesupWorldPropType>;
-  }>
-) {
+export default function initColider({
+  value,
+  dispatch,
+}: innerColliderPropType) {
   const colliderProps: innerColliderPropType = {
     gltf: null,
     value,

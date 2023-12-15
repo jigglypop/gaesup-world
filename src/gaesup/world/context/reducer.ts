@@ -1,4 +1,8 @@
-import { gaesupWorldPartialPropType, gaesupWorldPropType } from "./type";
+import {
+  dispatchType,
+  gaesupWorldPartialPropType,
+  gaesupWorldPropType,
+} from "./type";
 
 export function gaesupWorldReducer(
   props: gaesupWorldPropType,
@@ -19,3 +23,10 @@ export function gaesupWorldReducer(
     }
   }
 }
+
+export const update = (
+  payload: gaesupWorldPartialPropType,
+  dispatch: dispatchType<gaesupWorldPropType>
+) => {
+  dispatch({ type: "update", payload });
+};

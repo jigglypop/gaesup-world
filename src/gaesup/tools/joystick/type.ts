@@ -18,7 +18,6 @@ export type joyStickOriginType = {
 };
 
 export type joyStickInnerType = {
-  on?: boolean;
   joyStickBall?: joyStickBallType;
   joyStickOrigin?: joyStickOriginType;
 };

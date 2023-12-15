@@ -1,5 +1,9 @@
 import * as THREE from "three";
 
+export function isVectorNonZero(v: THREE.Vector3): boolean {
+  return v.toArray().every((value) => value !== 0);
+}
+
 export function isValidOrZero(
   condision: boolean,
   vector: THREE.Vector3

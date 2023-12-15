@@ -4,9 +4,9 @@ import { vars } from "../../../styles/theme.css";
 import { GaesupWorldContext } from "../../world/context";
 import { KeyBoardAll } from "./constant";
 import * as style from "./style.css";
-import { keyArrayItemType, keyBoardToolTipPartialType } from "./type";
+import { keyArrayItemType, keyBoardToolTipType } from "./type";
 
-export function KeyBoardToolTip(props: keyBoardToolTipPartialType) {
+export function KeyBoardToolTip(props: keyBoardToolTipType) {
   const worldContext = useContext(GaesupWorldContext);
   const {
     keyBoardMap,
