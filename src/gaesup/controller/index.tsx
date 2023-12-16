@@ -13,8 +13,9 @@ import {
   gaesupControllerDefault,
 } from "./context";
 import { gaesupControllerReducer } from "./context/reducer";
+import initDebug from "./debug";
 import initControllerProps from "./initialize";
-import { controllerType, propType, refsType } from "./type";
+import { controllerType, propType } from "./type";
 
 export function GaesupController(props: controllerType) {
   const capsuleColliderRef = useRef<Collider>(null);
@@ -60,6 +61,15 @@ export function GaesupController(props: controllerType) {
       onDestory: props.onDestory,
       onAnimate: props.onAnimate,
     }),
+    refs: {
+      capsuleColliderRef,
+      rigidBodyRef,
+      outerGroupRef,
+      innerGroupRef,
+      slopeRayOriginRef,
+      characterInnerRef,
+      jointRefs,
+    },
     isRider: props.isRider !== null ? props.isRider : false,
   });
 
@@ -78,10 +88,11 @@ export function GaesupController(props: controllerType) {
       controller.character,
       controller.callbacks,
       controller.isRider,
+      controller.refs,
     ]
   );
 
-  const refs: refsType = {
+  const refs = {
     capsuleColliderRef,
     rigidBodyRef,
     outerGroupRef,
@@ -93,6 +104,8 @@ export function GaesupController(props: controllerType) {
 
   const prop: propType = {
     ...initControllerProps({
+      controllerContext: gaesupControl.value,
+      controllerDispatch: gaesupControl.dispatch,
       props,
       refs,
     }),
@@ -107,6 +120,11 @@ export function GaesupController(props: controllerType) {
     isRider: props.isRider !== null ? props.isRider : false,
     ...refs,
   };
+
+  initDebug({
+    controllerContext: gaesupControl.value,
+    controllerDispatch: gaesupControl.dispatch,
+  });
 
   return (
     <GaesupControllerContext.Provider value={gaesupControl.value}>

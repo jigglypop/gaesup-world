@@ -1,6 +1,6 @@
 import { keyframes, style } from "@vanilla-extract/css";
 import { recipe } from "@vanilla-extract/recipes";
-import { fixed, flex_absolute, glass } from "../../../styles/recipe/index.css";
+import { flex_absolute, glass } from "../../../styles/recipe/index.css";
 import { sprinkles } from "../../../styles/sprinkles/index.css";
 import { vars } from "../../../styles/theme.css";
 
@@ -86,9 +86,6 @@ export const border = style([
 ]);
 
 export const minimap = style([
-  fixed({
-    north_east: true,
-  }),
   sprinkles({
     w: {
       mobile: "15",

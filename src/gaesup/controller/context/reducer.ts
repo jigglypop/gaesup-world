@@ -4,7 +4,7 @@ export function gaesupControllerReducer(
   props: gaesupControllerType,
   action: {
     type: string;
-    payload?: gaesupControllerType;
+    payload?: Partial<gaesupControllerType>;
   }
 ) {
   switch (action.type) {

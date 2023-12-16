@@ -1,12 +1,15 @@
 import { RapierRigidBody } from "@react-three/rapier";
 import { createRef, useContext, useRef } from "react";
+import { GaesupControllerContext } from "../../controller/context";
 import { propType } from "../../controller/type";
 import { GaesupWorldContext } from "../../world/context";
 import { WheelRegidBodyRef } from "../ref/vehicle";
 
 export function Wheels({ prop }: { prop: propType }) {
-  const { rigidBodyRef, constant } = prop;
-  const { wheelOffset } = constant;
+  const { rigidBodyRef } = prop;
+  const {
+    vehicle: { wheelOffset },
+  } = useContext(GaesupControllerContext);
   const { vehicleCollider: collider } = useContext(GaesupWorldContext);
   const { vehicleSizeX, vehicleSizeZ, wheelSizeX, wheelSizeZ } = collider;
   const X = (vehicleSizeX + wheelSizeX) / 2 + wheelOffset;

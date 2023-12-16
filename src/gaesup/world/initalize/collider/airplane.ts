@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { isVectorNonZero } from "../../../utils";
-import { update } from "../../context/reducer";
+import { update } from "../../../utils/context";
+import { gaesupWorldContextType } from "../../context/type";
 import { innerColliderPropType } from "../type";
 
 export function airplane({ gltf, value, dispatch }: innerColliderPropType) {
@@ -10,7 +11,7 @@ export function airplane({ gltf, value, dispatch }: innerColliderPropType) {
 
   useEffect(() => {
     if (isVectorNonZero(airplaneSize)) {
-      update(
+      update<gaesupWorldContextType>(
         {
           airplaneCollider: {
             airplaneSizeX: airplaneSize.x,

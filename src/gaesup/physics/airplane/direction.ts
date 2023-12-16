@@ -10,7 +10,7 @@ export default function direction(prop: calcPropType) {
     controllerContext: { airplane },
   } = prop;
   const { forward, backward, leftward, rightward, shift, space } = control;
-  const { angleChange, maxAngle, accelRatio } = airplane;
+  const { angleDelta, maxAngle, accelRatio } = airplane;
 
   let boost = 0;
   if (mode.controller === "joystick") {
@@ -35,7 +35,7 @@ export default function direction(prop: calcPropType) {
     __euler.y =
       -state.camera.rotation.y - joystick.joyStickOrigin.angle - Math.PI / 2;
   } else {
-    activeState.euler.y += -leftRight * angleChange.y;
+    activeState.euler.y += -leftRight * angleDelta.y;
   }
   if (mode.controller === "joystick")
     activeState.euler.setFromQuaternion(

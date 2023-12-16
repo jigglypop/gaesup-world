@@ -4,7 +4,6 @@ import { Environment, KeyboardControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 import { useState } from "react";
-import { isMobile } from "react-device-detect";
 
 import { GaesupController, GaesupWorld } from "../../../src";
 import {
@@ -15,14 +14,13 @@ import { GameBoy } from "../../../src/gaesup/tools/gameboy";
 import { GamePad } from "../../../src/gaesup/tools/gamepad";
 import { JoyStick } from "../../../src/gaesup/tools/joystick";
 import { KeyBoardToolTip } from "../../../src/gaesup/tools/keyBoardToolTip";
+import { MiniMap } from "../../../src/gaesup/tools/minimap";
 import { S3 } from "../../../src/gaesup/utils/constant";
-import { modeType } from "../../../src/gaesup/world/context/type";
 import FloatMove from "../platform/FloatMove";
 import Floor from "../platform/Floor";
 import RigidObjects from "../platform/RigidObjects";
 import RoughPlane from "../platform/RoughPlane";
 import * as style from "./style.css";
-import { button } from "./style.css";
 
 export const keyboardMap = [
   { name: "forward", keys: ["ArrowUp", "KeyW"] },
@@ -39,11 +37,6 @@ export default function Selected() {
   const AIRPLANE_URL = "./airplane.glb";
   const VEHICLE_URL = S3 + "/kart2.glb";
 
-  const [mode, changeMode] = useState<modeType>({
-    type: "character",
-    controller: isMobile ? "joystick" : "keyboard",
-  });
-
   const [camera, changeCamera] = useState<
     perspectiveCameraType | orthographicCameraType
   >({
@@ -54,136 +47,12 @@ export default function Selected() {
   return (
     <GaesupWorld
       debug={true}
-      mode={{ ...mode }}
       url={{
         characterUrl: CHARACTER_URL,
         vehicleUrl: VEHICLE_URL,
         airplaneUrl: AIRPLANE_URL,
       }}
     >
-      <div className={style.mainButtonContainer}>
-        <button
-          className={button({
-            selected: mode.type === "character",
-          })}
-          onClick={() =>
-            changeMode((mode) => ({
-              type: "character",
-              controller: mode.controller,
-            }))
-          }
-        >
-          CHARACTER
-        </button>
-        <button
-          className={button({
-            selected: mode.type === "vehicle",
-          })}
-          onClick={() =>
-            changeMode((mode) => ({
-              type: "vehicle",
-              controller: mode.controller,
-            }))
-          }
-        >
-          VEHICLE
-        </button>
-        <button
-          className={button({
-            selected: mode.type === "airplane",
-          })}
-          onClick={() =>
-            changeMode((mode) => ({
-              type: "airplane",
-              controller: mode.controller,
-            }))
-          }
-        >
-          AIRPLANE
-        </button>
-        <button
-          className={button({
-            selected: camera.controlType === "normal",
-          })}
-          onClick={() =>
-            changeCamera(() => ({
-              cameraType: "perspective",
-              controlType: "normal",
-            }))
-          }
-        >
-          NORMAL
-        </button>
-        <button
-          className={button({
-            selected:
-              camera.controlType === "orbit" &&
-              camera.cameraType === "perspective",
-          })}
-          onClick={() =>
-            changeCamera(() => ({
-              cameraType: "perspective",
-              controlType: "orbit",
-            }))
-          }
-        >
-          ORBIT
-        </button>
-        <button
-          className={button({
-            selected: camera.cameraType === "orthographic",
-          })}
-          onClick={() => {
-            changeCamera(() => ({
-              cameraType: "orthographic",
-              controlType: "orbit",
-            }));
-          }}
-        >
-          MAP
-        </button>
-        {!isMobile && (
-          <button
-            className={button({
-              selected: mode.controller === "keyboard",
-            })}
-            onClick={() => {
-              changeMode((mode) => ({
-                type: mode.type,
-                controller: "keyboard",
-              }));
-            }}
-          >
-            키보드
-          </button>
-        )}
-        <button
-          className={button({
-            selected: mode.controller === "joystick",
-          })}
-          onClick={() => {
-            changeMode((mode) => ({
-              type: mode.type,
-              controller: "joystick",
-            }));
-          }}
-        >
-          조이스틱
-        </button>
-        <button
-          className={button({
-            selected: mode.controller === "gameboy",
-          })}
-          onClick={() => {
-            changeMode((mode) => ({
-              type: mode.type,
-              controller: "gameboy",
-            }));
-          }}
-        >
-          게임보이
-        </button>
-      </div>
       <Canvas
         shadows
         dpr={[1, 2]}
@@ -207,7 +76,6 @@ export default function Selected() {
         <Physics debug>
           <KeyboardControls map={keyboardMap}>
             <GaesupController
-              isRider={mode.type === "vehicle" ? true : false}
               cameraMode={{ ...camera }}
               orthographicCamera={{
                 zoom: 80,
@@ -246,7 +114,9 @@ export default function Selected() {
           </div>
 
           <KeyBoardToolTip keyBoardMap={keyboardMap} />
-          {/* <MiniMap /> */}
+          <div className={style.minimapOuter}>
+            <MiniMap />
+          </div>
         </div>
       </div>
     </GaesupWorld>

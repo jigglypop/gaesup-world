@@ -10,22 +10,33 @@ import {
   slopeRayType,
 } from "../../controller/type";
 
+import { update } from "../../utils/context";
+import { dispatchType } from "../../utils/type";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
 } from "../../world/context";
-import { keyControlType } from "../../world/context/type";
-import initDebug from "./initDebug";
+import {
+  gaesupWorldContextType,
+  keyControlType,
+} from "../../world/context/type";
+import { gaesupControllerType } from "../context/type";
 
 export default function initControllerProps({
+  controllerContext,
+  controllerDispatch,
   props,
   refs,
 }: {
+  controllerContext: gaesupControllerType;
+  controllerDispatch: dispatchType<gaesupControllerType>;
   props: controllerType;
   refs: refsType;
 }) {
   const context = useContext(GaesupWorldContext);
+
   const dispatch = useContext(GaesupWorldDispatchContext);
+
   const { control, mode } = useContext(GaesupWorldContext);
   const [_, getKeys] = useKeyboardControls();
   const keyControl: keyControlType = getKeys();
@@ -42,6 +53,26 @@ export default function initControllerProps({
       });
     }
   }, [mode.controller, keyControl, control]);
+
+  let constant: constantType = useMemo(() => {
+    return {
+      jumpSpeed: 5,
+      turnSpeed: 10,
+      walkSpeed: 4,
+      runSpeed: 10,
+      accelRate: 5,
+      brakeRate: 5,
+      wheelOffset: 0.1,
+      linearDamping: 1,
+      cameraInitDistance: -5,
+      cameraMaxDistance: -7,
+      cameraMinDistance: -0.7,
+      cameraInitDirection: 0,
+      cameraCollisionOff: 0.7,
+      cameraDistance: -1,
+      cameraCamFollow: 11,
+    };
+  }, []);
 
   const groundRay: groundRayType = useMemo(() => {
     return {
@@ -65,26 +96,6 @@ export default function initControllerProps({
       offset: vec3({ x: 0, y: 0, z: context.characterCollider.radius - 0.03 }),
       length: context.characterCollider.radius + 3,
       angle: 0,
-    };
-  }, []);
-
-  let constant: constantType = useMemo(() => {
-    return {
-      jumpSpeed: 5,
-      turnSpeed: 10,
-      walkSpeed: 4,
-      runSpeed: 10,
-      accelRate: 5,
-      brakeRate: 5,
-      wheelOffset: 0.1,
-      linearDamping: 1,
-      cameraInitDistance: -5,
-      cameraMaxDistance: -7,
-      cameraMinDistance: -0.7,
-      cameraInitDirection: 0,
-      cameraCollisionOff: 0.7,
-      cameraDistance: -1,
-      cameraCamFollow: 11,
     };
   }, []);
 
@@ -114,14 +125,14 @@ export default function initControllerProps({
 
   const initRefs = useCallback(
     (refs: refsType) => {
-      dispatch({
-        type: "update",
-        payload: {
+      update<gaesupWorldContextType>(
+        {
           refs: {
             ...refs,
           },
         },
-      });
+        dispatch
+      );
     },
     [refs]
   );
@@ -141,17 +152,12 @@ export default function initControllerProps({
     }
   }, []);
 
-  return initDebug({
+  return {
     slopeRay,
     groundRay,
     constant,
     cameraRay,
-    capsuleColliderRef: refs.capsuleColliderRef,
-    rigidBodyRef: refs.rigidBodyRef,
-    outerGroupRef: refs.outerGroupRef,
-    slopeRayOriginRef: refs.slopeRayOriginRef,
-    innerGroupRef: refs.innerGroupRef,
     keyControl,
     debug: props.debug,
-  });
+  };
 }

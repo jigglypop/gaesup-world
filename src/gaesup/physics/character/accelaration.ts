@@ -3,8 +3,10 @@ import { calcPropType } from "../type";
 
 export default function accelaration(prop: calcPropType) {
   const {
-    constant: { walkSpeed, runSpeed },
     worldContext: { states, activeState },
+    controllerContext: {
+      character: { walkSpeed, runSpeed },
+    },
   } = prop;
   const { isMoving, isRunning } = states;
   if (!isMoving) return null;

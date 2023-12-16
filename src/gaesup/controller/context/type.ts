@@ -1,27 +1,37 @@
-import { GroupProps, OrthographicCameraProps } from "@react-three/fiber";
+import { GroupProps } from "@react-three/fiber";
 import { callbackType } from "../../initial/callback/type";
 import { dispatchType } from "../../utils/type";
+import { gaesupControllerContextPropType, refsType } from "../type";
 
-export interface airplaneType extends GroupProps {
-  angleChange?: THREE.Vector3;
+export type airplaneDebugType = {
+  angleDelta?: THREE.Vector3;
   maxAngle?: THREE.Vector3;
+  buoyancy?: number;
   maxSpeed?: number;
   accelRatio?: number;
-}
+  brakeRatio?: number;
+  linearDamping?: number;
+};
 
-export interface vehicleType extends GroupProps {
-  angleChange?: THREE.Vector3;
-  maxAngle?: THREE.Vector3;
+export type vehicleDebugType = {
   maxSpeed?: number;
   accelRatio?: number;
-}
+  brakeRatio?: number;
+  wheelOffset?: number;
+  linearDamping?: number;
+};
 
-export interface characterType extends GroupProps {
-  angleChange?: THREE.Vector3;
-  maxAngle?: THREE.Vector3;
-  maxSpeed?: number;
-  accelRatio?: number;
-}
+export type characterDebugType = {
+  jumpSpeed?: number;
+  turnSpeed?: number;
+  walkSpeed?: number;
+  runSpeed?: number;
+  linearDamping?: number;
+};
+
+export interface airplaneType extends GroupProps, airplaneDebugType {}
+export interface vehicleType extends GroupProps, vehicleDebugType {}
+export interface characterType extends GroupProps, characterDebugType {}
 
 export type perspectiveCameraType = {
   cameraType?: "perspective";
@@ -36,26 +46,33 @@ export type gaesupCameraPropType =
   | perspectiveCameraType
   | orthographicCameraType;
 
-export type gaesupCameraOptionType = {
-  offset?: THREE.Vector3;
+// camera option
+export type gaesupCameraOptionDebugType = {
+  initDistance?: number;
+  maxDistance?: number;
+  minDistance?: number;
+  initDir?: number;
+  distance?: number;
+  camFollow?: number;
 };
 
+export type cameraOptionType = {
+  offset?: THREE.Vector3;
+  collisionOff?: number;
+} & gaesupCameraOptionDebugType;
+
+// perspective camera
+export type perspectiveCameraDebugType = {
+  XZDistance?: number;
+  YDistance?: number;
+};
 export type perspectiveCameraPropType = {
   isFront: boolean;
-  XZDistance: number;
-  YDistance: number;
-};
+} & perspectiveCameraDebugType;
 
-export type gaesupControllerType = {
-  cameraMode: gaesupCameraPropType;
-  cameraOption: gaesupCameraOptionType;
-  perspectiveCamera: perspectiveCameraPropType;
-  orthographicCamera: OrthographicCameraProps;
-  airplane: airplaneType;
-  vehicle: vehicleType;
-  character: characterType;
-  isRider: boolean;
+export type gaesupControllerType = gaesupControllerContextPropType & {
   callbacks: callbackType;
+  refs: refsType;
 };
 
 export type gaesupDisptachType = dispatchType<gaesupControllerType>;

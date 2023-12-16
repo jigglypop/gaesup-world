@@ -7,6 +7,12 @@ const BlackHanSans = fontFace({
   src: 'local("/public/fonts/BlackHanSans-Regular.ttf")',
 });
 
+export const minimapOuter = style([
+  fixed({
+    north_west: true,
+  }),
+]);
+
 export const gameBoyOuter = style([
   fixed({
     south: true,

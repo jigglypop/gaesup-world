@@ -2,12 +2,13 @@ import { useEffect, useMemo, useReducer } from "react";
 
 import { gaesupWorldDefault } from "../../world/context";
 import { gaesupWorldReducer } from "../../world/context/reducer";
+import initDebug from "../debug";
 import { gaesupWorldPropsType } from "../type";
 import initColider from "./collider";
 
 export default function initGaesupWorld(props: gaesupWorldPropsType) {
   const [value, dispatch] = useReducer(gaesupWorldReducer, {
-    debug: false,
+    debug: props.debug || gaesupWorldDefault.debug,
     activeState: gaesupWorldDefault.activeState,
     characterCollider: Object.assign(
       gaesupWorldDefault.characterCollider,
@@ -78,6 +79,7 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
     ]
   );
   initColider({ value, dispatch });
+  initDebug({ value, dispatch });
   return {
     gaesupProps,
   };

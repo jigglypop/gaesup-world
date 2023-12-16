@@ -13,8 +13,8 @@ import { callbackType } from "../initial/callback/type.js";
 import { keyControlType } from "../world/context/type.js";
 import {
   airplaneType,
+  cameraOptionType,
   characterType,
-  gaesupCameraOptionType,
   gaesupCameraPropType,
   perspectiveCameraPropType,
   vehicleType,
@@ -85,23 +85,23 @@ export type propType = {
   children?: ReactNode;
   groupProps?: GroupProps;
   rigidBodyProps?: RigidBodyProps;
+  debug?: boolean;
+  isRider?: boolean;
+  constant: constantType;
+
   slopeRay: slopeRayType;
   groundRay: groundRayType;
   cameraRay: cameraRayType;
-  constant: constantType;
+
   capsuleColliderRef: RefObject<Collider>;
   rigidBodyRef: RefObject<RapierRigidBody>;
   outerGroupRef: RefObject<THREE.Group>;
   innerGroupRef: RefObject<THREE.Group>;
   slopeRayOriginRef: RefObject<THREE.Mesh>;
   jointRefs?: RefObject<RevoluteImpulseJoint>;
-  characterUrl?: string;
-  kartUrl?: string;
-  airplaneUrl?: string;
+
   keyControl: keyControlType;
-  debug?: boolean;
   callbacks?: callbackType;
-  isRider?: boolean;
 };
 
 export type animationTagType = {
@@ -129,21 +129,28 @@ export type refsType = {
   jointRefs: RefObject<RevoluteImpulseJoint>;
 };
 
-export interface controllerPropType extends RigidBodyProps {
+// context로 넘어가는 타입
+export type gaesupControllerContextPropType = {
+  cameraMode: gaesupCameraPropType;
+  cameraOption: cameraOptionType;
+  perspectiveCamera: perspectiveCameraPropType;
+  orthographicCamera: OrthographicCameraProps;
+  airplane: airplaneType;
+  vehicle: vehicleType;
+  character: characterType;
+  isRider: boolean;
+};
+
+// 나머지 controller 타입
+export interface controllerOtherPropType extends RigidBodyProps {
   children?: ReactNode;
-  debug?: boolean;
-  slopeRay?: slopeRayType;
-  props?: RigidBodyProps;
-  constant?: partialConstantType;
   groupProps?: GroupProps;
   rigidBodyProps?: RigidBodyProps;
-  cameraMode?: gaesupCameraPropType;
-  cameraOption?: gaesupCameraOptionType;
-  perspectiveCamera?: perspectiveCameraPropType;
-  orthographicCamera?: OrthographicCameraProps;
-  airplane?: airplaneType;
-  vehicle?: vehicleType;
-  character?: characterType;
-  isRider?: boolean;
+  debug?: boolean;
+  constant?: partialConstantType;
 }
-export type controllerType = controllerPropType & {} & callbackType;
+
+// controller 타입
+export type controllerType = controllerOtherPropType &
+  Partial<gaesupControllerContextPropType> &
+  callbackType;

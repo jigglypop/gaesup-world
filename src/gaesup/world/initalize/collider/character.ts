@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { isVectorNonZero } from "../../../utils";
-import { update } from "../../context/reducer";
+import { update } from "../../../utils/context";
+import { gaesupWorldContextType } from "../../context/type";
 import { innerColliderPropType } from "../type";
 
 export function character({ gltf, value, dispatch }: innerColliderPropType) {
@@ -14,7 +15,7 @@ export function character({ gltf, value, dispatch }: innerColliderPropType) {
       const radius = diameter / 2;
       const height = heightPlusDiameter - radius;
       const halfHeight = height / 2;
-      update(
+      update<gaesupWorldContextType>(
         {
           characterCollider: {
             height,

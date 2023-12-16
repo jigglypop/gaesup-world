@@ -7,3 +7,9 @@ export type innerColliderPropType = {
   value: gaesupWorldContextType;
   dispatch: dispatchType<gaesupWorldContextType>;
 };
+
+export type innerDebugPropType = {
+  gltf?: getGltfResultType;
+  value: gaesupWorldContextType;
+  dispatch: dispatchType<gaesupWorldContextType>;
+};

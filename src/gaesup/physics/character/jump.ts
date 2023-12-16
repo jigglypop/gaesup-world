@@ -5,11 +5,12 @@ export default function jump(prop: calcPropType) {
   const {
     rigidBodyRef,
     slopeRay,
-    constant,
     worldContext: { states, activeState },
+    controllerContext: {
+      character: { jumpSpeed },
+    },
   } = prop;
   const { isOnTheGround, isJumping } = states;
-  const { jumpSpeed } = constant;
   if (isJumping && isOnTheGround) {
     rigidBodyRef.current.setLinvel(
       V3(0, jumpSpeed * 0.25, 0)

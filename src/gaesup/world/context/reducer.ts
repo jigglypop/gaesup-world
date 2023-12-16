@@ -1,14 +1,10 @@
-import {
-  dispatchType,
-  gaesupWorldPartialPropType,
-  gaesupWorldPropType,
-} from "./type";
+import { gaesupWorldContextType } from "./type";
 
 export function gaesupWorldReducer(
-  props: gaesupWorldPropType,
+  props: gaesupWorldContextType,
   action: {
     type: string;
-    payload?: gaesupWorldPartialPropType;
+    payload?: Partial<gaesupWorldContextType>;
   }
 ) {
   switch (action.type) {
@@ -23,10 +19,3 @@ export function gaesupWorldReducer(
     }
   }
 }
-
-export const update = (
-  payload: gaesupWorldPartialPropType,
-  dispatch: dispatchType<gaesupWorldPropType>
-) => {
-  dispatch({ type: "update", payload });
-};

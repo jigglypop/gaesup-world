@@ -24,7 +24,7 @@ export function JoyStick(props: joyStickType) {
   const [state, setState] = useState({
     mouseDown: false,
     touchDown: false,
-    position: "fixed",
+    position: "absolute",
     transform: "",
     background: "rgba(0, 0, 0, 0.5)",
     boxShadow: "0 0 10px  rgba(0, 0, 0, 0.5)",
