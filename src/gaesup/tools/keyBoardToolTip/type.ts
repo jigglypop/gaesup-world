@@ -32,10 +32,7 @@ export type keyBoardToolTipType = {
   keyBoardLabel?: keyBoardLabelType;
   keyBoardMap?: keyboardMapItemType[];
 } & {
-  [key in
-    | "keyBoardToolTipStyle"
-    | "keyBoardToolTipInnerStyle"
-    | "keyCapStyle"]?: VECssType;
+  [key in "keyBoardToolTipInnerStyle" | "keyCapStyle"]?: VECssType;
 };
 
 export type keyBoardToolTipPartialType = Partial<keyBoardToolTipType>;

@@ -2,16 +2,9 @@ import { useKeyboardControls } from "@react-three/drei";
 import { vec3 } from "@react-three/rapier";
 import { useCallback, useContext, useEffect, useMemo } from "react";
 import * as THREE from "three";
-import {
-  constantType,
-  controllerType,
-  groundRayType,
-  refsType,
-  slopeRayType,
-} from "../../controller/type";
+import { groundRayType, refsType, slopeRayType } from "../../controller/type";
 
 import { update } from "../../utils/context";
-import { dispatchType } from "../../utils/type";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
@@ -24,17 +17,12 @@ import { gaesupControllerType } from "../context/type";
 
 export default function initControllerProps({
   controllerContext,
-  controllerDispatch,
-  props,
   refs,
 }: {
   controllerContext: gaesupControllerType;
-  controllerDispatch: dispatchType<gaesupControllerType>;
-  props: controllerType;
   refs: refsType;
 }) {
   const context = useContext(GaesupWorldContext);
-
   const dispatch = useContext(GaesupWorldDispatchContext);
 
   const { control, mode } = useContext(GaesupWorldContext);
@@ -53,26 +41,6 @@ export default function initControllerProps({
       });
     }
   }, [mode.controller, keyControl, control]);
-
-  let constant: constantType = useMemo(() => {
-    return {
-      jumpSpeed: 5,
-      turnSpeed: 10,
-      walkSpeed: 4,
-      runSpeed: 10,
-      accelRate: 5,
-      brakeRate: 5,
-      wheelOffset: 0.1,
-      linearDamping: 1,
-      cameraInitDistance: -5,
-      cameraMaxDistance: -7,
-      cameraMinDistance: -0.7,
-      cameraInitDirection: 0,
-      cameraCollisionOff: 0.7,
-      cameraDistance: -1,
-      cameraCamFollow: 11,
-    };
-  }, []);
 
   const groundRay: groundRayType = useMemo(() => {
     return {
@@ -120,7 +88,7 @@ export default function initControllerProps({
     cameraRay.origin,
     cameraRay.dir,
     0,
-    -constant.cameraMaxDistance
+    -controllerContext.cameraOption.maxDistance
   );
 
   const initRefs = useCallback(
@@ -143,21 +111,10 @@ export default function initControllerProps({
     }
   }, []);
 
-  useEffect(() => {
-    if (props.constant) {
-      constant = {
-        ...constant,
-        ...Object.assign(constant, props.constant),
-      };
-    }
-  }, []);
-
   return {
     slopeRay,
     groundRay,
-    constant,
     cameraRay,
     keyControl,
-    debug: props.debug,
   };
 }

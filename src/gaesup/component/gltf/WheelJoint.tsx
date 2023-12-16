@@ -1,12 +1,12 @@
 import { RapierRigidBody } from "@react-three/rapier";
 import { createRef, useContext, useRef } from "react";
 import { GaesupControllerContext } from "../../controller/context";
-import { propType } from "../../controller/type";
+import { controllerInnerType } from "../../controller/type";
 import { GaesupWorldContext } from "../../world/context";
 import { WheelRegidBodyRef } from "../ref/vehicle";
 
-export function Wheels({ prop }: { prop: propType }) {
-  const { rigidBodyRef } = prop;
+export function Wheels({ props }: { props: controllerInnerType }) {
+  const { rigidBodyRef } = props;
   const {
     vehicle: { wheelOffset },
   } = useContext(GaesupControllerContext);

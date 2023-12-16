@@ -10,9 +10,9 @@ import { ReactNode, Ref, forwardRef, useContext } from "react";
 import * as THREE from "three";
 
 import {
+  controllerInnerType,
   controllerType,
   groundRayType,
-  propType,
   slopeRayType,
 } from "../../controller/type";
 import { getRayHit } from "../../utils/ray";
@@ -22,10 +22,10 @@ import { GaesupWorldContext } from "../../world/context";
 export const CharacterRigidBody = forwardRef(
   (
     {
-      controllerProps,
+      props,
       children,
     }: {
-      controllerProps: propType;
+      props: controllerInnerType;
       children: ReactNode;
     },
     ref: Ref<RapierRigidBody>
@@ -35,15 +35,15 @@ export const CharacterRigidBody = forwardRef(
         colliders={false}
         canSleep={false}
         ref={ref}
-        {...controllerProps.rigidBodyProps}
+        {...props.rigidBodyProps}
       >
-        {controllerProps.debug && (
-          <mesh visible={controllerProps.debug}>
+        {props.debug && (
+          <mesh visible={props.debug}>
             <arrowHelper
               args={[
-                controllerProps.groundRay.dir,
-                controllerProps.groundRay.origin,
-                controllerProps.groundRay.length,
+                props.groundRay.dir,
+                props.groundRay.origin,
+                props.groundRay.length,
               ]}
             />
           </mesh>
@@ -55,11 +55,11 @@ export const CharacterRigidBody = forwardRef(
 );
 
 export const CharacterCapsuleCollider = forwardRef(
-  ({ prop }: { prop: propType }, ref: Ref<Collider>) => {
+  ({ props }: { props: controllerInnerType }, ref: Ref<Collider>) => {
     const { characterCollider: collider } = useContext(GaesupWorldContext);
     const colliderRef = useForwardRef<Collider>(ref);
     const { rapier } = useRapier();
-    const { groundRay, slopeRay } = prop;
+    const { groundRay, slopeRay } = props;
     groundRay.length = collider.radius + 2;
     groundRay.rayCast = new rapier.Ray(groundRay.origin, groundRay.dir);
     groundRay.hit = getRayHit<groundRayType>({
@@ -81,20 +81,16 @@ export const CharacterCapsuleCollider = forwardRef(
 export const CharacterGroup = forwardRef(
   (
     {
-      controllerProps,
+      props,
       children,
     }: {
-      controllerProps: controllerType;
+      props: controllerType;
       children: ReactNode;
     },
     ref: Ref<THREE.Group>
   ) => {
     return (
-      <group
-        ref={ref}
-        userData={{ intangible: true }}
-        {...controllerProps.character}
-      >
+      <group ref={ref} userData={{ intangible: true }} {...props.character}>
         {children}
       </group>
     );

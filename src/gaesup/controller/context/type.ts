@@ -66,6 +66,13 @@ export type perspectiveCameraDebugType = {
   XZDistance?: number;
   YDistance?: number;
 };
+// orthographic camera
+export type orthographicCameraDebugType = {
+  zoom?: number;
+  near?: number;
+  far?: number;
+};
+
 export type perspectiveCameraPropType = {
   isFront: boolean;
 } & perspectiveCameraDebugType;

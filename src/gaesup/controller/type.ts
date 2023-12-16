@@ -20,24 +20,6 @@ import {
   vehicleType,
 } from "./context/type.js";
 
-export type constantType = {
-  jumpSpeed: number;
-  turnSpeed: number;
-  walkSpeed: number;
-  runSpeed: number;
-  accelRate: number;
-  brakeRate: number;
-  wheelOffset: number;
-  linearDamping: number;
-  cameraInitDistance: number;
-  cameraMaxDistance: number;
-  cameraMinDistance: number;
-  cameraInitDirection: number;
-  cameraCollisionOff: number;
-  cameraDistance: number;
-  cameraCamFollow: number;
-};
-
 export type optionsType = {
   debug: boolean;
   mode?: "normal" | "vehicle" | "airplane";
@@ -52,7 +34,6 @@ export type optionsType = {
 };
 
 export type partialOptionsType = Partial<optionsType>;
-export type partialConstantType = Partial<constantType>;
 
 export type jumpInnerType = {
   velocity: THREE.Vector3;
@@ -81,28 +62,15 @@ export type rayType = {
 export type slopeRayType = Omit<rayType, "parent">;
 export type groundRayType = Omit<rayType, "current" | "angle">;
 
-export type propType = {
-  children?: ReactNode;
-  groupProps?: GroupProps;
-  rigidBodyProps?: RigidBodyProps;
-  debug?: boolean;
+export type controllerInnerType = {
   isRider?: boolean;
-  constant: constantType;
-
   slopeRay: slopeRayType;
   groundRay: groundRayType;
   cameraRay: cameraRayType;
-
-  capsuleColliderRef: RefObject<Collider>;
-  rigidBodyRef: RefObject<RapierRigidBody>;
-  outerGroupRef: RefObject<THREE.Group>;
-  innerGroupRef: RefObject<THREE.Group>;
-  slopeRayOriginRef: RefObject<THREE.Mesh>;
-  jointRefs?: RefObject<RevoluteImpulseJoint>;
-
   keyControl: keyControlType;
-  callbacks?: callbackType;
-};
+} & controllerOtherPropType &
+  refsType &
+  callbackType;
 
 export type animationTagType = {
   idle: string;
@@ -147,10 +115,29 @@ export interface controllerOtherPropType extends RigidBodyProps {
   groupProps?: GroupProps;
   rigidBodyProps?: RigidBodyProps;
   debug?: boolean;
-  constant?: partialConstantType;
 }
 
 // controller 타입
+
+//   children?: ReactNode;
+//   groupProps?: GroupProps;
+//   rigidBodyProps?: RigidBodyProps;
+//   debug ?: boolean;
+//   isRider: boolean;
+
+//   cameraMode: gaesupCameraPropType;
+//   cameraOption: cameraOptionType;
+//   perspectiveCamera: perspectiveCameraPropType;
+//   orthographicCamera: OrthographicCameraProps;
+//   airplane: airplaneType;
+//   vehicle: vehicleType;
+//   character: characterType;
+
+//   onReady?: (prop: callbackPropType) => void;
+//   onFrame?: (prop: onFramePropType) => void;
+//   onDestory?: (prop: callbackPropType) => void;
+//   onAnimate?: (prop: onAnimatePropType) => void;
+
 export type controllerType = controllerOtherPropType &
   Partial<gaesupControllerContextPropType> &
   callbackType;

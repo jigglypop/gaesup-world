@@ -1,6 +1,6 @@
 "use client";
 
-import { propType, refsType } from "../controller/type";
+import { controllerInnerType, refsType } from "../controller/type";
 import calculation from "../physics";
 import { AirplaneInnerGroupRef } from "./gltf/AirplaneGltf";
 import { CharacterInnerGroupRef } from "./gltf/CharacterGltf";
@@ -12,10 +12,10 @@ import {
 import setInit from "./setInit";
 
 export function Airplane({
-  controllerProps,
+  props,
   refs,
 }: {
-  controllerProps: propType;
+  props: controllerInnerType;
   refs: refsType;
 }) {
   const {
@@ -25,22 +25,19 @@ export function Airplane({
     innerGroupRef,
     characterInnerRef,
   } = refs;
-  calculation(controllerProps);
+  calculation(props);
   setInit(rigidBodyRef);
 
   return (
     <>
-      <AirplaneGroup ref={outerGroupRef} controllerProps={controllerProps}>
-        <AirplaneRigidBody ref={rigidBodyRef} controllerProps={controllerProps}>
-          <AirplaneCollider prop={controllerProps} ref={capsuleColliderRef} />
-          {controllerProps.isRider && (
+      <AirplaneGroup ref={outerGroupRef} props={props}>
+        <AirplaneRigidBody ref={rigidBodyRef} props={props}>
+          <AirplaneCollider prop={props} ref={capsuleColliderRef} />
+          {props.isRider && (
             <CharacterInnerGroupRef
-              prop={controllerProps}
-              groupProps={controllerProps.groupProps}
-              groundRay={controllerProps.groundRay}
+              props={props}
+              groundRay={props.groundRay}
               refs={refs}
-              callbacks={controllerProps.callbacks}
-              isRider={controllerProps.isRider}
               ref={characterInnerRef}
             />
           )}

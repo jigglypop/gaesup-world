@@ -1,11 +1,32 @@
 import { fontFace, style } from "@vanilla-extract/css";
 import { recipe } from "@vanilla-extract/recipes";
 import { fixed, flex } from "../../../src/styles/recipe/index.css";
+import { sprinkles } from "../../../src/styles/sprinkles/index.css";
 import { vars } from "../../../src/styles/theme.css";
 
 const BlackHanSans = fontFace({
   src: 'local("/public/fonts/BlackHanSans-Regular.ttf")',
 });
+
+export const keyBoardToolTipOuter = style([
+  fixed({
+    south: true,
+  }),
+  sprinkles({
+    display: {
+      mobile: "none",
+      tablet: "none",
+      laptop: "flex",
+      desktop: "flex",
+    },
+  }),
+  flex({
+    column: "6",
+  }),
+  {
+    width: "100vw",
+  },
+]);
 
 export const minimapOuter = style([
   fixed({

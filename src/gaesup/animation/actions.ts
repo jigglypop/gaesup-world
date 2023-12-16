@@ -37,7 +37,7 @@ export default function playActions({
     });
   }, [control]);
 
-  const playAnimation = (tag: keyof animationTagType) => {
+  const play = (tag: keyof animationTagType) => {
     characterAnimations.current = tag;
     dispatch({
       type: "update",
@@ -71,13 +71,13 @@ export default function playActions({
     });
   };
 
-  const resetAni = () => playAnimation("idle");
-  const playIdle = () => playAnimation("idle");
-  const playWalk = () => playAnimation("walk");
-  const playRun = () => playAnimation("run");
-  const playJump = () => playAnimation("jump");
-  const playFall = () => playAnimation("fall");
-  const playRide = () => playAnimation("ride");
+  const resetAni = () => play("idle");
+  const playIdle = () => play("idle");
+  const playWalk = () => play("walk");
+  const playRun = () => play("run");
+  const playJump = () => play("jump");
+  const playFall = () => play("fall");
+  const playRide = () => play("ride");
 
   useEffect(() => {
     return () => {

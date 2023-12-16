@@ -120,7 +120,7 @@ export function MiniMap(props: minimapType) {
           style={assignInlineVars(plusMinusStyle)}
           onClick={() => {
             if (props.blockScale) return;
-            upscale();
+            downscale();
           }}
         >
           +
@@ -131,7 +131,7 @@ export function MiniMap(props: minimapType) {
           style={assignInlineVars(plusMinusStyle)}
           onClick={() => {
             if (props.blockScale) return;
-            downscale();
+            upscale();
           }}
         >
           -

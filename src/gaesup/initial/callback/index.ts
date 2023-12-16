@@ -1,7 +1,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useContext, useEffect } from "react";
 
-import { useAnimations, useKeyboardControls } from "@react-three/drei";
+import { useAnimations } from "@react-three/drei";
 import { animationTagType } from "../../controller/type";
 
 import {
@@ -10,58 +10,60 @@ import {
 } from "../../world/context";
 import { callbackPropType, initCallbackType } from "./type";
 
-export default function initCallback({
-  prop,
-  callbacks,
-  outerGroupRef,
-}: initCallbackType) {
+export default function initCallback({ props }: initCallbackType) {
   const {
     characterGltf,
     animations: characterAnimations,
     activeState,
     states,
+    control,
   } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
   const { animations } = characterGltf;
-  const control = useKeyboardControls()[1]();
-  const { actions } = useAnimations(animations, outerGroupRef);
+  const { actions } = useAnimations(animations, props.outerGroupRef);
 
-  const playAnimation = (tag: keyof animationTagType) => {
+  const playAnimation = (tag: keyof animationTagType, key: string) => {
+    if (!(key in control)) return;
     characterAnimations.current = tag;
-    dispatch({
-      type: "update",
-      payload: {
-        animations: {
-          ...characterAnimations,
+    if (control[key]) {
+      states.isAnimationOuter = true;
+      dispatch({
+        type: "update",
+        payload: {
+          animations: {
+            ...characterAnimations,
+          },
         },
-      },
-    });
+      });
+    } else {
+      states.isAnimationOuter = false;
+    }
   };
 
   const controllerProp: callbackPropType = {
-    ...prop,
+    ...props,
     activeState,
     control,
     states,
   };
 
   useEffect(() => {
-    if (callbacks && callbacks.onReady) {
-      callbacks.onReady(controllerProp);
+    if (props.onReady) {
+      props.onReady(controllerProp);
     }
     return () => {
-      if (callbacks && callbacks.onDestory) {
-        callbacks.onDestory(controllerProp);
+      if (props.onDestory) {
+        props.onDestory(controllerProp);
       }
     };
   }, []);
 
   useFrame((prop) => {
-    if (callbacks && callbacks.onFrame) {
-      callbacks.onFrame({ ...controllerProp, ...prop });
+    if (props.onFrame) {
+      props.onFrame({ ...controllerProp, ...prop });
     }
-    if (callbacks && callbacks.onAnimate) {
-      callbacks.onAnimate({
+    if (props.onAnimate) {
+      props.onAnimate({
         ...controllerProp,
         ...prop,
         actions,

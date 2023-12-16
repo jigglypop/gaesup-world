@@ -83,14 +83,8 @@ export default function Selected() {
               groupProps={{
                 rotation: [0, Math.PI, 0],
               }}
-              onAnimate={({ control, states, playAnimation }) => {
-                const { keyZ } = control;
-                if (keyZ) {
-                  states.isAnimationOuter = true;
-                  playAnimation("greet");
-                } else {
-                  states.isAnimationOuter = false;
-                }
+              onAnimate={({ playAnimation }) => {
+                playAnimation("greet", "keyZ");
               }}
             />
           </KeyboardControls>
@@ -103,7 +97,13 @@ export default function Selected() {
       </Canvas>
       <div className={style.footer}>
         <div className={style.footerUpper}>
-          <GamePad />
+          <GamePad
+            label={{
+              keyZ: "GREET",
+              shift: "SPLINT",
+              space: "JUMP",
+            }}
+          />
         </div>
         <div className={style.footerLower}>
           <div className={style.joyStickOuter}>
@@ -112,8 +112,10 @@ export default function Selected() {
           <div className={style.gameBoyOuter}>
             <GameBoy />
           </div>
+          <div className={style.keyBoardToolTipOuter}>
+            <KeyBoardToolTip keyBoardMap={keyboardMap} />
+          </div>
 
-          <KeyBoardToolTip keyBoardMap={keyboardMap} />
           <div className={style.minimapOuter}>
             <MiniMap />
           </div>

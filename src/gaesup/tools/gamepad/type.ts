@@ -1,7 +1,7 @@
 import { VECssType } from "../type";
 
 export type gamepadType = {
-  keyBoardLabel?: Record<string, string>;
+  label?: Record<string, string>;
 } & {
   [key in
     | "gamepadButtonStyle"

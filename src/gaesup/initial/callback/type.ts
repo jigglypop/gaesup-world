@@ -2,9 +2,8 @@ import { RootState } from "@react-three/fiber";
 import { cameraRayType } from "../../camera/type";
 import {
   actionsType,
-  constantType,
+  controllerInnerType,
   groundRayType,
-  propType,
   slopeRayType,
 } from "../../controller/type";
 import {
@@ -15,9 +14,7 @@ import {
 } from "../../world/context/type";
 
 export type initCallbackType = {
-  prop: propType;
-  callbacks?: callbackType;
-  outerGroupRef: React.MutableRefObject<THREE.Group | undefined>;
+  props: controllerInnerType;
 };
 
 export type callbackPropType = {
@@ -26,7 +23,6 @@ export type callbackPropType = {
   slopeRay: slopeRayType;
   groundRay: groundRayType;
   cameraRay: cameraRayType;
-  constant: constantType;
   control: keyControlType;
 };
 
@@ -36,7 +32,7 @@ export type onAnimatePropType = onFramePropType & {
     [x: string]: THREE.AnimationAction | null;
   };
   animation: animationPropType;
-  playAnimation: (tag: keyof actionsType) => void;
+  playAnimation: (tag: keyof actionsType, key: string) => void;
 };
 
 export type callbackType = {

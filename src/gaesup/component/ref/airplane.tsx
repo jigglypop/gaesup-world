@@ -8,7 +8,11 @@ import {
 } from "@react-three/rapier";
 import { ReactNode, Ref, forwardRef, useContext } from "react";
 import * as THREE from "three";
-import { controllerType, groundRayType, propType } from "../../controller/type";
+import {
+  controllerInnerType,
+  controllerType,
+  groundRayType,
+} from "../../controller/type";
 import { getRayHit } from "../../utils/ray";
 import { useForwardRef } from "../../utils/ref";
 import { GaesupWorldContext } from "../../world/context";
@@ -16,27 +20,23 @@ import { GaesupWorldContext } from "../../world/context";
 export const AirplaneRigidBody = forwardRef(
   (
     {
-      controllerProps,
+      props,
       children,
     }: {
-      controllerProps: propType;
+      props: controllerInnerType;
       children: ReactNode;
     },
     ref: Ref<RapierRigidBody>
   ) => {
     return (
-      <RigidBody
-        colliders={false}
-        ref={ref}
-        {...controllerProps.rigidBodyProps}
-      >
-        {controllerProps.debug && (
-          <mesh visible={controllerProps.debug}>
+      <RigidBody colliders={false} ref={ref} {...props.rigidBodyProps}>
+        {props.debug && (
+          <mesh visible={props.debug}>
             <arrowHelper
               args={[
-                controllerProps.groundRay.dir,
-                controllerProps.groundRay.origin,
-                controllerProps.groundRay.length,
+                props.groundRay.dir,
+                props.groundRay.origin,
+                props.groundRay.length,
               ]}
             />
           </mesh>
@@ -48,7 +48,7 @@ export const AirplaneRigidBody = forwardRef(
 );
 
 export const AirplaneCollider = forwardRef(
-  ({ prop }: { prop: propType }, ref: Ref<Collider>) => {
+  ({ prop }: { prop: controllerInnerType }, ref: Ref<Collider>) => {
     const { airplaneCollider: collider } = useContext(GaesupWorldContext);
     const { airplaneSizeX, airplaneSizeY, airplaneSizeZ } = collider;
 
@@ -76,20 +76,16 @@ export const AirplaneCollider = forwardRef(
 export const AirplaneGroup = forwardRef(
   (
     {
-      controllerProps,
+      props,
       children,
     }: {
-      controllerProps: controllerType;
+      props: controllerType;
       children: ReactNode;
     },
     ref: Ref<THREE.Group>
   ) => {
     return (
-      <group
-        ref={ref}
-        userData={{ intangible: true }}
-        {...controllerProps.airplane}
-      >
+      <group ref={ref} userData={{ intangible: true }} {...props.airplane}>
         {children}
       </group>
     );

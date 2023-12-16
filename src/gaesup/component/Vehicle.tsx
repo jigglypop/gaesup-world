@@ -1,6 +1,6 @@
 "use client";
 
-import { propType, refsType } from "../controller/type";
+import { controllerInnerType, refsType } from "../controller/type";
 import calculation from "../physics";
 import { CharacterInnerGroupRef } from "./gltf/CharacterGltf";
 import { VehicleInnerGroupRef } from "./gltf/VehicleGltf";
@@ -9,35 +9,32 @@ import { VehicleCollider, VehicleGroup, VehicleRigidBody } from "./ref/vehicle";
 import setInit from "./setInit";
 
 export function Vehicle({
-  controllerProps,
+  props,
   refs,
 }: {
-  controllerProps: propType;
+  props: controllerInnerType;
   refs: refsType;
 }) {
   const { rigidBodyRef, outerGroupRef, characterInnerRef, innerGroupRef } =
     refs;
-  calculation(controllerProps);
+  calculation(props);
   setInit(rigidBodyRef);
 
   return (
-    <VehicleGroup ref={outerGroupRef} controllerProps={controllerProps}>
-      <VehicleRigidBody ref={rigidBodyRef} controllerProps={controllerProps}>
+    <VehicleGroup ref={outerGroupRef} props={props}>
+      <VehicleRigidBody ref={rigidBodyRef} props={props}>
         <VehicleCollider />
-        {controllerProps.isRider && (
+        {props.isRider && (
           <CharacterInnerGroupRef
-            prop={controllerProps}
-            groupProps={controllerProps.groupProps}
-            groundRay={controllerProps.groundRay}
+            props={props}
+            groundRay={props.groundRay}
             refs={refs}
-            callbacks={controllerProps.callbacks}
             ref={characterInnerRef}
-            isRider={true}
           />
         )}
         <VehicleInnerGroupRef ref={innerGroupRef} />
       </VehicleRigidBody>
-      <Wheels prop={controllerProps} />
+      <Wheels props={props} />
     </VehicleGroup>
   );
 }

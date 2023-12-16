@@ -2,7 +2,7 @@
 
 import calculation from "../physics";
 
-import { propType, refsType } from "../controller/type";
+import { controllerInnerType, refsType } from "../controller/type";
 import { CharacterInnerGroupRef, InnerGroupRef } from "./gltf/CharacterGltf";
 import {
   CharacterCapsuleCollider,
@@ -13,10 +13,10 @@ import {
 import setInit from "./setInit";
 
 export function Character({
-  controllerProps,
+  props,
   refs,
 }: {
-  controllerProps: propType;
+  props: controllerInnerType;
   refs: refsType;
 }) {
   const {
@@ -27,30 +27,24 @@ export function Character({
     characterInnerRef,
     innerGroupRef,
   } = refs;
-  calculation(controllerProps);
+  calculation(props);
   setInit(rigidBodyRef);
   return (
-    <CharacterRigidBody ref={rigidBodyRef} controllerProps={controllerProps}>
-      <CharacterCapsuleCollider
-        prop={controllerProps}
-        ref={capsuleColliderRef}
-      />
-      <CharacterGroup ref={outerGroupRef} controllerProps={controllerProps}>
+    <CharacterRigidBody ref={rigidBodyRef} props={props}>
+      <CharacterCapsuleCollider props={props} ref={capsuleColliderRef} />
+      <CharacterGroup ref={outerGroupRef} props={props}>
         <CharacterSlopeRay
-          slopeRay={controllerProps.slopeRay}
-          groundRay={controllerProps.groundRay}
+          slopeRay={props.slopeRay}
+          groundRay={props.groundRay}
           ref={slopeRayOriginRef}
         />
-        {controllerProps.children}
+        {props.children}
         <InnerGroupRef ref={innerGroupRef} />
         <CharacterInnerGroupRef
-          prop={controllerProps}
-          groupProps={controllerProps.groupProps}
-          groundRay={controllerProps.groundRay}
+          props={props}
+          groundRay={props.groundRay}
           refs={refs}
-          callbacks={controllerProps.callbacks}
           ref={characterInnerRef}
-          isRider={false}
         />
       </CharacterGroup>
     </CharacterRigidBody>

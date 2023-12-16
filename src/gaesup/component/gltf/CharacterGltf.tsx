@@ -1,18 +1,19 @@
-import { GroupProps } from "@react-three/fiber";
 import { Ref, forwardRef, useContext } from "react";
 import playActions from "../../animation/actions";
-import { groundRayType, propType, refsType } from "../../controller/type";
+import {
+  controllerInnerType,
+  groundRayType,
+  refsType,
+} from "../../controller/type";
 import initCallback from "../../initial/callback";
 import { callbackType } from "../../initial/callback/type";
 import { GaesupWorldContext } from "../../world/context";
 
 export type characterGltfType = {
-  prop: propType;
-  groupProps?: GroupProps;
+  props: controllerInnerType;
   groundRay: groundRayType;
   refs: refsType;
   callbacks?: callbackType;
-  isRider?: boolean;
 };
 
 export const InnerGroupRef = forwardRef((_, ref: Ref<THREE.Group>) => {
@@ -20,32 +21,20 @@ export const InnerGroupRef = forwardRef((_, ref: Ref<THREE.Group>) => {
 });
 
 export const CharacterInnerGroupRef = forwardRef(
-  (
-    {
-      prop,
-      groupProps,
-      groundRay,
-      refs,
-      callbacks,
-      isRider,
-    }: characterGltfType,
-    ref: Ref<THREE.Group>
-  ) => {
+  ({ props, groundRay, refs }: characterGltfType, ref: Ref<THREE.Group>) => {
     const { characterGltf: gltf } = useContext(GaesupWorldContext);
     const { materials, nodes } = gltf;
     const { characterCollider, vehicleCollider } =
       useContext(GaesupWorldContext);
 
     initCallback({
-      prop,
-      callbacks,
-      outerGroupRef: refs.outerGroupRef,
+      props,
     });
 
     playActions({
       outerGroupRef: refs.outerGroupRef,
       groundRay: groundRay,
-      isRider,
+      isRider: props.isRider,
     });
 
     return (
@@ -54,10 +43,10 @@ export const CharacterInnerGroupRef = forwardRef(
           <group
             receiveShadow
             castShadow
-            {...groupProps}
+            {...props.groupProps}
             position={[
               0,
-              isRider
+              props.isRider
                 ? vehicleCollider.vehicleSizeY / 2
                 : -characterCollider.height,
               0,

@@ -14,8 +14,5 @@ export function gaesupWorldReducer(
     case "update": {
       return { ...props, ...action.payload };
     }
-    default: {
-      throw Error("Unknown action: " + action.type);
-    }
   }
 }

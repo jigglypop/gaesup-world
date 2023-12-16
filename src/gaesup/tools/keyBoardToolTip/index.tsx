@@ -8,12 +8,7 @@ import { keyArrayItemType, keyBoardToolTipType } from "./type";
 
 export function KeyBoardToolTip(props: keyBoardToolTipType) {
   const worldContext = useContext(GaesupWorldContext);
-  const {
-    keyBoardMap,
-    keyBoardToolTipStyle,
-    keyBoardToolTipInnerStyle,
-    keyCapStyle,
-  } = props;
+  const { keyBoardMap, keyBoardToolTipInnerStyle, keyCapStyle } = props;
   const { animations, mode } = worldContext;
 
   const keyArray = Object.entries(KeyBoardAll).reduce<keyArrayItemType[]>(
@@ -44,52 +39,47 @@ export function KeyBoardToolTip(props: keyBoardToolTipType) {
     <>
       {mode.controller === "keyboard" && (
         <div
-          className={style.keyBoardToolTip}
-          style={assignInlineVars(keyBoardToolTipStyle)}
+          className={style.keyBoardTooInner}
+          style={assignInlineVars(keyBoardToolTipInnerStyle)}
         >
-          <div
-            className={style.keyBoardTooInner}
-            style={assignInlineVars(keyBoardToolTipInnerStyle)}
-          >
-            {keyArray.map((item: keyArrayItemType, key: number) => {
-              let background = "rgba(0, 0, 0, 0.1)";
-              let boxShadow = "0 0 5px rgba(0, 0, 0, 0.2)";
+          {keyArray.map((item: keyArrayItemType, key: number) => {
+            let background = "rgba(0, 0, 0, 0.1)";
+            let boxShadow = "0 0 5px rgba(0, 0, 0, 0.2)";
 
-              if (codeToActionObj[item.code]) {
-                if (animations.keyControl[codeToActionObj[item.code]]) {
-                  background = `${vars.gradient.green}`;
-                  boxShadow = `0 0 10px rgba(99,251,215,1)`;
-                } else {
-                  background = "rgba(0, 0, 0, 0.6)";
-                  boxShadow = "0 0 10px rgba(0, 0, 0, 0.6)";
-                }
+            if (codeToActionObj[item.code]) {
+              if (animations.keyControl[codeToActionObj[item.code]]) {
+                background = `${vars.gradient.green}`;
+                boxShadow = `0 0 10px rgba(99,251,215,1)`;
+              } else {
+                background = "rgba(0, 0, 0, 0.6)";
+                boxShadow = "0 0 10px rgba(0, 0, 0, 0.6)";
               }
-              let color = "white";
-              if (
-                codeToActionObj[item.code] &&
-                animations.keyControl[codeToActionObj[item.code]]
-              ) {
-                color = "black";
-              }
+            }
+            let color = "white";
+            if (
+              codeToActionObj[item.code] &&
+              animations.keyControl[codeToActionObj[item.code]]
+            ) {
+              color = "black";
+            }
 
-              return (
-                <div
-                  className={style.keyCap}
-                  style={assignInlineVars({
-                    background,
-                    boxShadow,
-                    color,
-                    gridRow: item.gridRow,
-                    gridColumn: item.gridColumn,
-                    ...keyCapStyle,
-                  })}
-                  key={key}
-                >
-                  {item.name}
-                </div>
-              );
-            })}
-          </div>
+            return (
+              <div
+                className={style.keyCap}
+                style={assignInlineVars({
+                  background,
+                  boxShadow,
+                  color,
+                  gridRow: item.gridRow,
+                  gridColumn: item.gridColumn,
+                  ...keyCapStyle,
+                })}
+                key={key}
+              >
+                {item.name}
+              </div>
+            );
+          })}
         </div>
       )}
     </>

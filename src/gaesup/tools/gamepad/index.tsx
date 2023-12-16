@@ -14,12 +14,11 @@ type gameBoyDirectionType = {
 };
 
 export function GamePad(props: gamepadType) {
-  const { gamepadStyle, gamepadGridStyle, gamepadButtonStyle, keyBoardLabel } =
-    props;
+  const { gamepadStyle, gamepadGridStyle, gamepadButtonStyle, label } = props;
   const { control, mode } = useContext(GaesupWorldContext);
   const GamePadDirections = Object.keys(control)
     .map((key) => {
-      const name = keyBoardLabel?.[key] || key;
+      const name = label?.[key] || key;
       if (
         key !== "forward" &&
         key !== "backward" &&

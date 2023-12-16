@@ -15,7 +15,7 @@ import {
 import { gaesupControllerReducer } from "./context/reducer";
 import initDebug from "./debug";
 import initControllerProps from "./initialize";
-import { controllerType, propType } from "./type";
+import { controllerInnerType, controllerType } from "./type";
 
 export function GaesupController(props: controllerType) {
   const capsuleColliderRef = useRef<Collider>(null);
@@ -102,22 +102,14 @@ export function GaesupController(props: controllerType) {
     jointRefs,
   };
 
-  const prop: propType = {
+  const prop: controllerInnerType = {
     ...initControllerProps({
       controllerContext: gaesupControl.value,
-      controllerDispatch: gaesupControl.dispatch,
-      props,
       refs,
     }),
-    callbacks: {
-      onReady: props.onReady,
-      onFrame: props.onFrame,
-      onDestory: props.onDestory,
-      onAnimate: props.onAnimate,
-    },
     children: props.children,
     groupProps: props.groupProps,
-    isRider: props.isRider !== null ? props.isRider : false,
+    ...gaesupControl.value.callbacks,
     ...refs,
   };
 
@@ -130,15 +122,9 @@ export function GaesupController(props: controllerType) {
     <GaesupControllerContext.Provider value={gaesupControl.value}>
       <Camera refs={refs} prop={prop} control={prop.keyControl} />
       <GaesupControllerDispatchContext.Provider value={gaesupControl.dispatch}>
-        {mode.type === "character" && (
-          <Character controllerProps={prop} refs={refs} />
-        )}
-        {mode.type === "vehicle" && (
-          <Vehicle controllerProps={prop} refs={refs} />
-        )}
-        {mode.type === "airplane" && (
-          <Airplane controllerProps={prop} refs={refs} />
-        )}
+        {mode.type === "character" && <Character props={prop} refs={refs} />}
+        {mode.type === "vehicle" && <Vehicle props={prop} refs={refs} />}
+        {mode.type === "airplane" && <Airplane props={prop} refs={refs} />}
       </GaesupControllerDispatchContext.Provider>
     </GaesupControllerContext.Provider>
   );

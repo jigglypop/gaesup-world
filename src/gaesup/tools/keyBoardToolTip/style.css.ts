@@ -1,26 +1,5 @@
 import { style } from "@vanilla-extract/css";
-import { fixed, flex } from "../../../styles/recipe/index.css";
-import { sprinkles } from "../../../styles/sprinkles/index.css";
-
-export const keyBoardToolTip = style([
-  fixed({
-    south: true,
-  }),
-  sprinkles({
-    display: {
-      mobile: "none",
-      tablet: "none",
-      laptop: "flex",
-      desktop: "flex",
-    },
-  }),
-  flex({
-    column: "6",
-  }),
-  {
-    width: "100vw",
-  },
-]);
+import { flex } from "../../../styles/recipe/index.css";
 
 export const keyBoardTooInner = style([
   flex({}),

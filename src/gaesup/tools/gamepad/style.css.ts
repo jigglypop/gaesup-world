@@ -19,7 +19,7 @@ export const gamePadGrid = style([
     row: "center",
   }),
   {
-    gridTemplateColumns: "repeat(2, 1fr)",
+    gridTemplateColumns: "repeat(3, 1fr)",
     gridTemplateRows: "repeat(3, 1fr)",
   },
 ]);

@@ -9,34 +9,30 @@ import {
 } from "@react-three/rapier";
 import { ReactNode, Ref, RefObject, forwardRef, useContext } from "react";
 import * as THREE from "three";
-import { controllerType, propType } from "../../controller/type";
+import { controllerInnerType, controllerType } from "../../controller/type";
 import { S3 } from "../../utils/constant";
 import { GaesupWorldContext } from "../../world/context";
 
 export const VehicleRigidBody = forwardRef(
   (
     {
-      controllerProps,
+      props,
       children,
     }: {
-      controllerProps: propType;
+      props: controllerInnerType;
       children: ReactNode;
     },
     ref: Ref<RapierRigidBody>
   ) => {
     return (
-      <RigidBody
-        colliders={false}
-        ref={ref}
-        {...controllerProps.rigidBodyProps}
-      >
-        {controllerProps.debug && (
-          <mesh visible={controllerProps.debug}>
+      <RigidBody colliders={false} ref={ref} {...props.rigidBodyProps}>
+        {props.debug && (
+          <mesh visible={props.debug}>
             <arrowHelper
               args={[
-                controllerProps.groundRay.dir,
-                controllerProps.groundRay.origin,
-                controllerProps.groundRay.length,
+                props.groundRay.dir,
+                props.groundRay.origin,
+                props.groundRay.length,
               ]}
             />
           </mesh>
@@ -62,20 +58,16 @@ export const VehicleCollider = forwardRef((_, ref: Ref<Collider>) => {
 export const VehicleGroup = forwardRef(
   (
     {
-      controllerProps,
+      props,
       children,
     }: {
-      controllerProps: controllerType;
+      props: controllerType;
       children: ReactNode;
     },
     ref: Ref<THREE.Group>
   ) => {
     return (
-      <group
-        ref={ref}
-        userData={{ intangible: true }}
-        {...controllerProps.vehicle}
-      >
+      <group ref={ref} userData={{ intangible: true }} {...props.vehicle}>
         {children}
       </group>
     );
