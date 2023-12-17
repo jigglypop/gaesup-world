@@ -5,7 +5,7 @@ import { RapierRigidBody, RigidBody } from "@react-three/rapier";
 import { SetStateAction, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { GaeSupProps } from "../../../src";
-import { S3 } from "../../../src/gaesup/utils/constant";
+import { S3 } from "../src";
 import { ControlledInput } from "./ControlledInput";
 
 export default function Slopes() {

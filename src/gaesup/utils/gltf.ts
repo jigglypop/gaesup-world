@@ -1,6 +1,6 @@
 import { useGLTF } from "@react-three/drei";
 import { ObjectMap } from "@react-three/fiber";
-import THREE from "three";
+import * as THREE from "three";
 import { GLTF } from "three-stdlib";
 
 export const useGltfAndSize = (url: string) => {

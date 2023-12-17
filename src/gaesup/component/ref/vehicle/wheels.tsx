@@ -12,8 +12,8 @@ export function Wheels({ props }: { props: controllerInnerType }) {
   } = useContext(GaesupControllerContext);
   const { vehicleCollider: collider } = useContext(GaesupWorldContext);
   const { vehicleSizeX, vehicleSizeZ, wheelSizeX, wheelSizeZ } = collider;
-  const X = (vehicleSizeX + wheelSizeX) / 2 + wheelOffset;
-  const Z = (vehicleSizeZ + wheelSizeZ) / 2 + wheelOffset;
+  const X = (vehicleSizeX - wheelSizeX) / 2 + wheelOffset;
+  const Z = (vehicleSizeZ - 2 * wheelSizeZ) / 2 + wheelOffset;
   const wheelPositions: [number, number, number][] = [
     [-X, 0, Z],
     [-X, 0, -Z],

@@ -73,7 +73,7 @@ export default function playActions({ groundRay, isRider }: playActionsType) {
   const playJump = () => play("jump");
   const playFall = () => play("fall");
   const playRide = () => play("ride");
-  const playLanding = () => play("sit");
+  const playLanding = () => play("land");
 
   useEffect(() => {
     return () => {
@@ -82,7 +82,6 @@ export default function playActions({ groundRay, isRider }: playActionsType) {
   }, []);
 
   useEffect(() => {
-    console.log(actions, characterAnimations.current);
     const action = actions[characterAnimations.current]
       ?.reset()
       .fadeIn(0.2)

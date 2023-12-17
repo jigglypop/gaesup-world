@@ -5,11 +5,11 @@ import {
   groundRayType,
   refsType,
 } from "../../../controller/type";
-import { callbackType } from "../../../initial/callback/type";
 import { GaesupWorldContext } from "../../../world/context";
 
 import { useGraph } from "@react-three/fiber";
 import { SkeletonUtils } from "three-stdlib";
+import { callbackType } from "../../../controller/initialize/callback/type";
 
 export type characterGltfType = {
   props: controllerInnerType;
@@ -23,7 +23,7 @@ export const InnerGroupRef = forwardRef((_, ref: Ref<THREE.Group>) => {
 });
 
 export const CharacterInnerGroupRef = forwardRef(
-  ({ props, groundRay, refs }: characterGltfType, ref: Ref<THREE.Group>) => {
+  ({ props, groundRay }: characterGltfType, ref: Ref<THREE.Group>) => {
     const {
       characterGltf: gltf,
       characterCollider,
@@ -42,7 +42,6 @@ export const CharacterInnerGroupRef = forwardRef(
     } = useGraph(clone);
 
     const { animationRef } = playActions({
-      outerGroupRef: refs.outerGroupRef,
       groundRay: groundRay,
       isRider: props.isRider,
     });

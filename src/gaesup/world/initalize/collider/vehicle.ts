@@ -20,8 +20,8 @@ export function vehicle({ gltf, value, dispatch }: innerColliderPropType) {
         vehicleZ: vehicleSize.z / 2,
       };
       if (url.wheelUrl && isVectorNonZero(wheelSize)) {
-        vehicleCollider.vehicleSizeY = wheelSize.y;
-        vehicleCollider.vehicleY = wheelSize.y / 2;
+        vehicleCollider.vehicleSizeY = wheelSize.y / 2;
+        vehicleCollider.vehicleY = wheelSize.y;
         vehicleCollider.wheelSizeX = wheelSize.x;
         vehicleCollider.wheelSizeY = wheelSize.y;
         vehicleCollider.wheelSizeZ = wheelSize.z;
@@ -46,5 +46,12 @@ export function vehicle({ gltf, value, dispatch }: innerColliderPropType) {
         );
       }
     }
-  }, [vehicleSize.x, vehicleSize.y, vehicleSize.z, wheelSize]);
+  }, [
+    vehicleSize.x,
+    vehicleSize.y,
+    vehicleSize.z,
+    wheelSize?.x,
+    wheelSize?.y,
+    wheelSize?.z,
+  ]);
 }

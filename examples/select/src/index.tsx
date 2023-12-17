@@ -10,14 +10,13 @@ import { GamePad } from "../../../src/gaesup/tools/gamepad";
 import { JoyStick } from "../../../src/gaesup/tools/joystick";
 import { KeyBoardToolTip } from "../../../src/gaesup/tools/keyBoardToolTip";
 import { MiniMap } from "../../../src/gaesup/tools/minimap";
-import { S3 } from "../../../src/gaesup/utils/constant";
-import Passive from "../passive";
 import FloatMove from "../platform/FloatMove";
 import Floor from "../platform/Floor";
 import RigidObjects from "../platform/RigidObjects";
 import RoughPlane from "../platform/RoughPlane";
 import * as style from "./style.css";
 
+export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
 export const keyboardMap = [
   { name: "forward", keys: ["ArrowUp", "KeyW"] },
   { name: "backward", keys: ["ArrowDown", "KeyS"] },
@@ -29,9 +28,10 @@ export const keyboardMap = [
 ];
 
 export default function Selected() {
-  const CHARACTER_URL = "./g2.glb";
+  const CHARACTER_URL = S3 + "/gaesupyee.glb";
   const AIRPLANE_URL = S3 + "/air.glb";
-  const VEHICLE_URL = S3 + "/kart.glb";
+  const VEHICLE_URL = S3 + "/gaesupkart.glb";
+  const WHEEL_URL = S3 + "/wheel.glb";
 
   return (
     <GaesupWorld
@@ -40,9 +40,10 @@ export default function Selected() {
         characterUrl: CHARACTER_URL,
         vehicleUrl: VEHICLE_URL,
         airplaneUrl: AIRPLANE_URL,
+        wheelUrl: WHEEL_URL,
       }}
       mode={{
-        type: "vehicle",
+        type: "character",
       }}
     >
       <Canvas
@@ -66,10 +67,13 @@ export default function Selected() {
         />
         <ambientLight intensity={0.5} />
         <Physics debug>
-          <Passive />
+          {/* <Passive /> */}
 
           <KeyboardControls map={keyboardMap}>
             <GaesupController
+              cameraMode={{
+                controlType: "normal",
+              }}
               orthographicCamera={{
                 zoom: 80,
               }}
