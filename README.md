@@ -182,3 +182,19 @@ This is the airplane control in Gaesup World. Characters can board the airplane.
 ## Tools
 
 #### [Tools](#tools)
+
+#### [joystick](#joystick)
+
+#### [keyboardtooltip](#keyboard tooltip)
+
+#### [minimap](#minimap)
+
+#### [gameboy](#gameboy)
+
+## joystick
+
+## keyboard tooltip
+
+## minimap
+
+## gameboy
