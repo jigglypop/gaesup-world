@@ -1,10 +1,7 @@
-import { ObjectMap, useLoader } from "@react-three/fiber";
 import { useEffect } from "react";
 import * as THREE from "three";
-import { GLTF } from "three-stdlib";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { GLTFResult } from "../../../component/gltf/type";
-import { S3 } from "../../../utils/constant";
+import { GLTFResult } from "../../../component/type";
+import { useGltfAndSize } from "../../../utils/gltf";
 import { innerColliderPropType } from "../type";
 
 export type getGltfResultType = {
@@ -34,47 +31,24 @@ export default function getGltf({
     airplaneSize: null,
   };
   if (url.characterUrl) {
-    const characterGltf: GLTF & ObjectMap = useLoader(
-      GLTFLoader,
-      url.characterUrl
-    );
-    const { scene: characterScene } = characterGltf;
-    const characterSize = new THREE.Box3()
-      .setFromObject(characterScene)
-      .getSize(new THREE.Vector3());
-    result.characterGltf = characterGltf;
-    result.characterSize = characterSize;
+    const characterGltfAndSize = useGltfAndSize(url.characterUrl);
+    result.characterGltf = characterGltfAndSize.gltf;
+    result.characterSize = characterGltfAndSize.size;
   }
   if (url.vehicleUrl) {
-    const vehicleGltf: GLTF & ObjectMap = useLoader(GLTFLoader, url.vehicleUrl);
-    const wheelGltf: GLTF & ObjectMap = useLoader(
-      GLTFLoader,
-      url.wheelUrl || S3 + "/wheel.glb"
-    );
-    const { scene: vehicleScene } = vehicleGltf;
-    const { scene: wheelScene } = wheelGltf;
-    const vehicleSize = new THREE.Box3()
-      .setFromObject(vehicleScene)
-      .getSize(new THREE.Vector3());
-    const wheelsize = new THREE.Box3()
-      .setFromObject(wheelScene)
-      .getSize(new THREE.Vector3());
-    result.vehicleGltf = vehicleGltf;
-    result.wheelGltf = wheelGltf;
-    result.vehicleSize = vehicleSize;
-    result.wheelSize = wheelsize;
+    const vehicleAndSize = useGltfAndSize(url.vehicleUrl);
+    result.vehicleGltf = vehicleAndSize.gltf;
+    result.vehicleSize = vehicleAndSize.size;
+    if (url.wheelUrl) {
+      const wheelAndSize = useGltfAndSize(url.wheelUrl);
+      result.wheelGltf = wheelAndSize.gltf;
+      result.wheelSize = wheelAndSize.size;
+    }
   }
   if (url.airplaneUrl) {
-    const airplaneGltf: GLTF & ObjectMap = useLoader(
-      GLTFLoader,
-      url.airplaneUrl
-    );
-    const { scene: airplaneScene } = airplaneGltf;
-    const airplaneSize = new THREE.Box3()
-      .setFromObject(airplaneScene)
-      .getSize(new THREE.Vector3());
-    result.airplaneGltf = airplaneGltf;
-    result.airplaneSize = airplaneSize;
+    const airplaneAndSize = useGltfAndSize(url.airplaneUrl);
+    result.airplaneGltf = airplaneAndSize.gltf;
+    result.airplaneSize = airplaneAndSize.size;
   }
 
   useEffect(() => {

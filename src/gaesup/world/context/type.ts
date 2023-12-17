@@ -1,4 +1,4 @@
-import { GLTFResult } from "../../component/gltf/type";
+import { GLTFResult } from "../../component/type";
 import { actionsType, animationTagType, refsType } from "../../controller/type";
 
 import { joyStickInnerType } from "../../tools/joystick/type";

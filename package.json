@@ -1,6 +1,6 @@
 {
   "name": "gaesup-world",
-  "version": "0.0.68",
+  "version": "0.0.691",
   "type": "commonjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -59,7 +59,10 @@
   "keywords": [
     "three.js",
     "@react-three/fiber",
-    "@react-three/drei"
+    "@react-three/drei",
+    "leva",
+    "@react-three/rapier",
+    "rapier"
   ],
   "author": "jigglypop",
   "license": "MIT",

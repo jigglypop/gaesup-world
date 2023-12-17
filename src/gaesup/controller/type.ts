@@ -8,9 +8,8 @@ import { GroupProps, OrthographicCameraProps } from "@react-three/fiber";
 import { RapierRigidBody, RigidBodyProps } from "@react-three/rapier";
 import { ReactNode, RefObject } from "react";
 import * as THREE from "three";
-import { cameraRayType } from "../camera/type.js";
-import { callbackType } from "../initial/callback/type.js";
-import { keyControlType } from "../world/context/type.js";
+import { cameraRayType } from "../camera/type";
+import { keyControlType } from "../world/context/type";
 import {
   airplaneType,
   cameraOptionType,
@@ -18,7 +17,8 @@ import {
   gaesupCameraPropType,
   perspectiveCameraPropType,
   vehicleType,
-} from "./context/type.js";
+} from "./context/type";
+import { callbackType } from "./initialize/callback/type";
 
 export type optionsType = {
   debug: boolean;
@@ -81,6 +81,8 @@ export type animationTagType = {
   jumpLand: string;
   fall: string;
   ride: string;
+  land: string;
+  sit: string;
 };
 
 export type actionsType = animationTagType & {

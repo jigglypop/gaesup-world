@@ -1,6 +1,6 @@
-import { propType } from "../controller/type";
+import { controllerInnerType } from "../controller/type";
 
-export default function cameraCollisionDetector(prop: propType) {
+export default function cameraCollisionDetector(prop: controllerInnerType) {
   //   const { cameraRay, constant, options } = prop;
   //   const { camera } = useThree();
   const checkCollision = (delta: number) => {

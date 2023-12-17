@@ -113,6 +113,8 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
       jumpIdle: "jumpIdle",
       jumpLand: "jumpLand",
       fall: "fall",
+      land: "land",
+      sit: "sit",
     },
     keyControl: {},
   },

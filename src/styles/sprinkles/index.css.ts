@@ -9,7 +9,7 @@ import { paddingProperties } from "./padding.css.js";
 import { positionProperties } from "./position.css.js";
 import { sizeProperties } from "./size.css.js";
 
-export const sprinkles: any = createSprinkles(
+export const sprinkles = createSprinkles(
   colorProperties,
   directionProperties,
   displayProperties,

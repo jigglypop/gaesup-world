@@ -1,14 +1,14 @@
 import { RootState } from "@react-three/fiber";
-import { propType } from "../controller/type";
 
 import { World } from "@dimforge/rapier3d-compat";
 import { gaesupControllerType } from "../controller/context/type";
+import { controllerInnerType } from "../controller/type";
 import { dispatchType } from "../utils/type";
 import { gaesupWorldContextType } from "../world/context/type";
 
 export type SetAtom<Args extends unknown[], Result> = (...args: Args) => Result;
 
-export type calcPropType = propType & {
+export type calcPropType = controllerInnerType & {
   state?: RootState;
   checkCollision?: (delta: number) => void;
   worldContext?: gaesupWorldContextType;
@@ -18,7 +18,7 @@ export type calcPropType = propType & {
   world: World;
 };
 
-export type cameraPropType = propType & {
+export type cameraPropType = controllerInnerType & {
   control: {
     [key: string]: boolean;
   };

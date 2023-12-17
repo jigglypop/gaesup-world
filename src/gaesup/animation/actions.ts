@@ -1,6 +1,6 @@
 import { useAnimations, useKeyboardControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { RefObject, useContext, useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { animationTagType, groundRayType } from "../controller/type";
 import {
   GaesupWorldContext,
@@ -8,22 +8,17 @@ import {
 } from "../world/context";
 
 export type playActionsType = {
-  outerGroupRef: RefObject<THREE.Group>;
   groundRay: groundRayType;
   isRider?: boolean;
 };
 
-export default function playActions({
-  outerGroupRef,
-  groundRay,
-  isRider,
-}: playActionsType) {
+export default function playActions({ groundRay, isRider }: playActionsType) {
   const { characterGltf, animations: characterAnimations } =
     useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
   const { animations } = characterGltf;
   const control = useKeyboardControls()[1]();
-  const { actions } = useAnimations(animations, outerGroupRef);
+  const { actions, ref: animationRef } = useAnimations(animations);
 
   useEffect(() => {
     characterAnimations.keyControl = control;
@@ -78,6 +73,7 @@ export default function playActions({
   const playJump = () => play("jump");
   const playFall = () => play("fall");
   const playRide = () => play("ride");
+  const playLanding = () => play("sit");
 
   useEffect(() => {
     return () => {
@@ -86,7 +82,7 @@ export default function playActions({
   }, []);
 
   useEffect(() => {
-    // Play animation
+    console.log(actions, characterAnimations.current);
     const action = actions[characterAnimations.current]
       ?.reset()
       .fadeIn(0.2)
@@ -98,8 +94,14 @@ export default function playActions({
   }, [characterAnimations.current]);
 
   const { states, activeState } = useContext(GaesupWorldContext);
-  const { isNotMoving, isMoving, isJumping, isRunning, isAnimationOuter } =
-    states;
+  const {
+    isNotMoving,
+    isMoving,
+    isJumping,
+    isRunning,
+    isAnimationOuter,
+    isOnTheGround,
+  } = states;
   useFrame(() => {
     if (isRider) {
       playRide();
@@ -114,10 +116,22 @@ export default function playActions({
         } else if (isMoving) {
           playWalk();
         }
+        if (groundRay.hit) {
+          if (!isJumping && !isOnTheGround) {
+            if (groundRay.hit.toi < 5) {
+              playLanding();
+            } else {
+              playFall();
+            }
+          }
+        }
         if (groundRay.hit === null && activeState.velocity.y < 0) {
           playFall();
         }
       }
     }
   });
+  return {
+    animationRef,
+  };
 }

@@ -1,12 +1,9 @@
 import { Collider, RevoluteImpulseJoint } from "@dimforge/rapier3d-compat";
 import { RapierRigidBody } from "@react-three/rapier";
-import { useContext, useMemo, useReducer, useRef } from "react";
+import { useMemo, useReducer, useRef } from "react";
 import Camera from "../camera";
-import { Airplane } from "../component/Airplane";
-import { Character } from "../component/Character";
-import { Vehicle } from "../component/Vehicle";
 
-import { GaesupWorldContext } from "../world/context";
+import { GaesupComponent } from "../component";
 import {
   GaesupControllerContext,
   GaesupControllerDispatchContext,
@@ -25,7 +22,6 @@ export function GaesupController(props: controllerType) {
   const slopeRayOriginRef = useRef<THREE.Mesh>(null);
   const characterInnerRef = useRef<THREE.Group>(null);
   const jointRefs = useRef<RevoluteImpulseJoint>(null);
-  const { mode } = useContext(GaesupWorldContext);
   const [controller, controllerDispatch] = useReducer(gaesupControllerReducer, {
     cameraMode: Object.assign(
       gaesupControllerDefault.cameraMode,
@@ -92,16 +88,17 @@ export function GaesupController(props: controllerType) {
     ]
   );
 
-  const refs = {
-    capsuleColliderRef,
-    rigidBodyRef,
-    outerGroupRef,
-    innerGroupRef,
-    slopeRayOriginRef,
-    characterInnerRef,
-    jointRefs,
-  };
-
+  const refs = useMemo(() => {
+    return {
+      capsuleColliderRef,
+      rigidBodyRef,
+      outerGroupRef,
+      innerGroupRef,
+      slopeRayOriginRef,
+      characterInnerRef,
+      jointRefs,
+    };
+  }, []);
   const prop: controllerInnerType = {
     ...initControllerProps({
       controllerContext: gaesupControl.value,
@@ -122,9 +119,7 @@ export function GaesupController(props: controllerType) {
     <GaesupControllerContext.Provider value={gaesupControl.value}>
       <Camera refs={refs} prop={prop} control={prop.keyControl} />
       <GaesupControllerDispatchContext.Provider value={gaesupControl.dispatch}>
-        {mode.type === "character" && <Character props={prop} refs={refs} />}
-        {mode.type === "vehicle" && <Vehicle props={prop} refs={refs} />}
-        {mode.type === "airplane" && <Airplane props={prop} refs={refs} />}
+        <GaesupComponent props={prop} refs={refs} />
       </GaesupControllerDispatchContext.Provider>
     </GaesupControllerContext.Provider>
   );

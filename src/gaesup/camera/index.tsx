@@ -8,7 +8,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useContext } from "react";
 import * as THREE from "three";
 import { GaesupControllerContext } from "../controller/context";
-import { propType, refsType } from "../controller/type";
+import { controllerInnerType, refsType } from "../controller/type";
 import { cameraPropType } from "../physics/type";
 import { GaesupWorldContext } from "../world/context";
 import cameraCollisionDetector from "./cameraCollisionDetecter";
@@ -22,7 +22,7 @@ export default function Camera({
   control,
 }: {
   refs: refsType;
-  prop: propType;
+  prop: controllerInnerType;
   control: {
     [key: string]: boolean;
   };

@@ -3,19 +3,15 @@
 import { Environment, KeyboardControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
-import { useState } from "react";
 
 import { GaesupController, GaesupWorld } from "../../../src";
-import {
-  orthographicCameraType,
-  perspectiveCameraType,
-} from "../../../src/gaesup/controller/context/type";
 import { GameBoy } from "../../../src/gaesup/tools/gameboy";
 import { GamePad } from "../../../src/gaesup/tools/gamepad";
 import { JoyStick } from "../../../src/gaesup/tools/joystick";
 import { KeyBoardToolTip } from "../../../src/gaesup/tools/keyBoardToolTip";
 import { MiniMap } from "../../../src/gaesup/tools/minimap";
 import { S3 } from "../../../src/gaesup/utils/constant";
+import Passive from "../passive";
 import FloatMove from "../platform/FloatMove";
 import Floor from "../platform/Floor";
 import RigidObjects from "../platform/RigidObjects";
@@ -33,16 +29,9 @@ export const keyboardMap = [
 ];
 
 export default function Selected() {
-  const CHARACTER_URL = "./gaesupyee.glb";
-  const AIRPLANE_URL = "./airplane.glb";
-  const VEHICLE_URL = S3 + "/kart2.glb";
-
-  const [camera, changeCamera] = useState<
-    perspectiveCameraType | orthographicCameraType
-  >({
-    cameraType: "perspective",
-    controlType: "orbit",
-  });
+  const CHARACTER_URL = "./g2.glb";
+  const AIRPLANE_URL = S3 + "/air.glb";
+  const VEHICLE_URL = S3 + "/kart.glb";
 
   return (
     <GaesupWorld
@@ -51,6 +40,9 @@ export default function Selected() {
         characterUrl: CHARACTER_URL,
         vehicleUrl: VEHICLE_URL,
         airplaneUrl: AIRPLANE_URL,
+      }}
+      mode={{
+        type: "vehicle",
       }}
     >
       <Canvas
@@ -74,9 +66,10 @@ export default function Selected() {
         />
         <ambientLight intensity={0.5} />
         <Physics debug>
+          <Passive />
+
           <KeyboardControls map={keyboardMap}>
             <GaesupController
-              cameraMode={{ ...camera }}
               orthographicCamera={{
                 zoom: 80,
               }}
@@ -92,6 +85,7 @@ export default function Selected() {
           <RigidObjects />
           <FloatMove />
           <Floor />
+          {/* <TreeA /> */}
           {/* <Slopes /> */}
         </Physics>
       </Canvas>
@@ -115,7 +109,6 @@ export default function Selected() {
           <div className={style.keyBoardToolTipOuter}>
             <KeyBoardToolTip keyBoardMap={keyboardMap} />
           </div>
-
           <div className={style.minimapOuter}>
             <MiniMap />
           </div>

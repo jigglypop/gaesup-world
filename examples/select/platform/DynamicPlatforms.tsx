@@ -27,7 +27,6 @@ export default function DynamicPlatforms() {
   const rotatePlatformRef = useRef<RapierRigidBody>(null);
   const rotationDrumRef = useRef<RapierRigidBody>(null);
 
-  // Initializ animation settings
   const dynamic = useMemo<dynamicType>(() => {
     return {
       time: null,
@@ -41,14 +40,12 @@ export default function DynamicPlatforms() {
     dynamic.time = state.clock.elapsedTime;
     const { time, Qt, X, Y } = dynamic;
     if (dynamic.time) {
-      // Move platform
       sideMovePlatformRef.current?.setNextKinematicTranslation({
         x: 5 * Math.sin(time / 2) - 12,
         y: -0.5,
         z: -10,
       });
 
-      // Elevate platform
       verticalMovePlatformRef.current?.setNextKinematicTranslation({
         x: -25,
         y: 2 * Math.sin(time / 2) + 2,
@@ -58,12 +55,10 @@ export default function DynamicPlatforms() {
         Qt.setFromAxisAngle(Y, time * 0.5)
       );
 
-      // Rotate platform
       rotatePlatformRef.current?.setNextKinematicRotation(
         Qt.setFromAxisAngle(Y, time * 0.5)
       );
 
-      // Rotate drum
       rotationDrumRef.current?.setNextKinematicRotation(
         Qt.setFromAxisAngle(X, time * 0.5)
       );

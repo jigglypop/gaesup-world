@@ -15,11 +15,11 @@ export default function Floor() {
         sectionSize={5}
         sectionThickness={1.5}
         sectionColor={"#212121"}
-        fadeDistance={300}
+        fadeDistance={1000}
       />
       <RigidBody type="fixed">
         <mesh receiveShadow position={[0, -3.5, 0]}>
-          <boxGeometry args={[300, 5, 300]} />
+          <boxGeometry args={[1000, 5, 1000]} />
           <meshStandardMaterial color="lightblue" />
         </mesh>
         <mesh
@@ -27,7 +27,7 @@ export default function Floor() {
           position={[0, -0.9, 0]}
           rotation={[-Math.PI / 2, 0, 0]}
         >
-          <planeGeometry args={[300, 300]} />
+          <planeGeometry args={[1000, 1000]} />
           <MeshReflectorMaterial
             mirror={0}
             blur={[300, 100]}
