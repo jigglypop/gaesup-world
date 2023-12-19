@@ -1,6 +1,6 @@
 import { GroupProps } from "@react-three/fiber";
-import { callbackType } from "../../initial/callback/type";
 import { dispatchType } from "../../utils/type";
+import { callbackType } from "../initialize/callback/type";
 import { gaesupControllerContextPropType, refsType } from "../type";
 
 export type airplaneDebugType = {

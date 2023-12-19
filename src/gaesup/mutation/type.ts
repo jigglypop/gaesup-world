@@ -7,13 +7,16 @@ export type passiveMutationType = {
   delta: number;
   outerGroupRef: React.MutableRefObject<THREE.Group>;
   rigidBodyRef: React.MutableRefObject<RapierRigidBody>;
+  innerGroupRef: React.MutableRefObject<THREE.Group>;
 };
 
 export type passiveMutationPropType = {
   outerGroupRef: React.MutableRefObject<THREE.Group>;
   rigidBodyRef: React.MutableRefObject<RapierRigidBody>;
+  innerGroupRef: React.MutableRefObject<THREE.Group>;
   position: THREE.Vector3;
   euler: THREE.Euler;
+  rotation: THREE.Euler;
   quat: THREE.Quaternion;
   delta?: number;
 };

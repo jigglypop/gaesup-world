@@ -19,6 +19,6 @@ export default function impulse(prop: calcPropType) {
       activeState.direction.normalize().y * Math.abs(Math.sin(slopeRay.angle)),
       F.z
     );
-    rigidBodyRef.current.applyImpulse(activeState.impulse, false);
+    rigidBodyRef.current.applyImpulse(activeState.impulse, true);
   }
 }

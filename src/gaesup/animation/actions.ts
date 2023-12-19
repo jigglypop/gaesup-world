@@ -1,6 +1,7 @@
 import { useAnimations, useKeyboardControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useContext, useEffect } from "react";
+import { Ref, useContext, useEffect } from "react";
+import { Object3D, Object3DEventMap } from "three";
 import { animationTagType, groundRayType } from "../controller/type";
 import {
   GaesupWorldContext,
@@ -9,46 +10,45 @@ import {
 
 export type playActionsType = {
   groundRay: groundRayType;
-  isRider?: boolean;
 };
 
-export default function playActions({ groundRay, isRider }: playActionsType) {
-  const { characterGltf, animations: characterAnimations } =
+export type actionsType = {
+  [x: string]: THREE.AnimationAction | null;
+};
+
+export type playResultType = {
+  actions: actionsType;
+  ref: Ref<Object3D<Object3DEventMap>>;
+};
+
+export function usePlayActions() {
+  const { characterGltf, vehicleGltf, airplaneGltf, animations } =
     useContext(GaesupWorldContext);
+  const { animations: characterAnimations } = characterGltf;
+  const characterResult = useAnimations(characterAnimations);
+
+  const { animations: vehicleAnimations } = vehicleGltf;
+  const vehicleResult = useAnimations(vehicleAnimations);
+
+  const { animations: airplaneAnimations } = airplaneGltf;
+  const airplaneResult = useAnimations(airplaneAnimations);
+
   const dispatch = useContext(GaesupWorldDispatchContext);
-  const { animations } = characterGltf;
-  const control = useKeyboardControls()[1]();
-  const { actions, ref: animationRef } = useAnimations(animations);
-
-  useEffect(() => {
-    characterAnimations.keyControl = control;
-    dispatch({
-      type: "update",
-      payload: {
-        animations: {
-          ...characterAnimations,
-        },
-      },
-    });
-  }, [control]);
-
   const play = (tag: keyof animationTagType) => {
-    characterAnimations.current = tag;
+    animations.current = tag;
     dispatch({
       type: "update",
       payload: {
         animations: {
-          ...characterAnimations,
+          ...animations,
         },
       },
     });
   };
 
-  const setAnimationName = (actions: {
-    [x: string]: THREE.AnimationAction | null;
-  }) => {
-    characterAnimations.animationNames = Object.assign(
-      characterAnimations.animationNames,
+  const setAnimationName = (actions: actionsType) => {
+    animations.animationNames = Object.assign(
+      animations.animationNames,
       Object.keys(actions).reduce((acc, cur) => {
         return {
           ...acc,
@@ -60,11 +60,44 @@ export default function playActions({ groundRay, isRider }: playActionsType) {
       type: "update",
       payload: {
         animations: {
-          ...characterAnimations,
+          ...animations,
         },
       },
     });
   };
+
+  const resultRef: {
+    character: playResultType;
+    vehicle: playResultType;
+    airplane: playResultType;
+  } = {
+    character: characterResult,
+    vehicle: vehicleResult,
+    airplane: airplaneResult,
+  };
+  return { resultRef, play, setAnimationName };
+}
+
+export default function playCharacterActions({ groundRay }: playActionsType) {
+  const {
+    resultRef: {
+      character: { actions, ref },
+    },
+    play,
+    setAnimationName,
+  } = usePlayActions();
+  const { states, activeState, animations, mode } =
+    useContext(GaesupWorldContext);
+  const {
+    isNotMoving,
+    isMoving,
+    isJumping,
+    isRunning,
+    isAnimationOuter,
+    isOnTheGround,
+  } = states;
+  const dispatch = useContext(GaesupWorldDispatchContext);
+  const control = useKeyboardControls()[1]();
 
   const resetAni = () => play("idle");
   const playIdle = () => play("idle");
@@ -82,29 +115,29 @@ export default function playActions({ groundRay, isRider }: playActionsType) {
   }, []);
 
   useEffect(() => {
-    const action = actions[characterAnimations.current]
-      ?.reset()
-      .fadeIn(0.2)
-      .play();
-    setAnimationName(actions);
-    return () => {
-      action?.fadeOut(0.2);
-    };
-  }, [characterAnimations.current]);
+    animations.keyControl = control;
+    dispatch({
+      type: "update",
+      payload: {
+        animations: {
+          ...animations,
+        },
+      },
+    });
+  }, [control]);
 
-  const { states, activeState } = useContext(GaesupWorldContext);
-  const {
-    isNotMoving,
-    isMoving,
-    isJumping,
-    isRunning,
-    isAnimationOuter,
-    isOnTheGround,
-  } = states;
+  useEffect(() => {
+    if (mode.type === "character") {
+      const action = actions[animations.current]?.reset().fadeIn(0.2).play();
+      setAnimationName(actions);
+      return () => {
+        action?.fadeOut(0.2);
+      };
+    }
+  }, [animations.current, mode.type]);
+
   useFrame(() => {
-    if (isRider) {
-      playRide();
-    } else {
+    if (mode.type === "character") {
       if (!isAnimationOuter) {
         if (isJumping) {
           playJump();
@@ -131,6 +164,6 @@ export default function playActions({ groundRay, isRider }: playActionsType) {
     }
   });
   return {
-    animationRef,
+    ref,
   };
 }

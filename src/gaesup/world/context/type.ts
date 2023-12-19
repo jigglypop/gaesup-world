@@ -91,14 +91,28 @@ export type activeStateType = {
   acceleration: THREE.Vector3;
   quat: THREE.Quaternion;
   euler: THREE.Euler;
+  rotation: THREE.Euler;
   direction: THREE.Vector3;
   dir: THREE.Vector3;
-  axisX: THREE.Vector3;
-  axisY: THREE.Vector3;
-  axisZ: THREE.Vector3;
-  yaw: number;
-  pitch: number;
-  roll: number;
+};
+
+export type wheelStateType = {
+  position: THREE.Vector3;
+  rotation: THREE.Euler;
+};
+
+export type wheelsStateType = {
+  0?: wheelStateType;
+  1?: wheelStateType;
+  2?: wheelStateType;
+  3?: wheelStateType;
+};
+
+export type passiveStateType = {
+  position: THREE.Vector3;
+  quat: THREE.Quaternion;
+  euler: THREE.Euler;
+  rotation: THREE.Euler;
 };
 
 type KeyboardControlsState<T extends string = string> = {
@@ -107,6 +121,8 @@ type KeyboardControlsState<T extends string = string> = {
 
 export type gaesupWorldContextType = {
   activeState: activeStateType;
+  wheelsState: wheelsStateType;
+  wheelPositions: number[][];
   characterCollider: characterColliderType;
   vehicleCollider: vehicleColliderType;
   airplaneCollider: airplaneColliderType;

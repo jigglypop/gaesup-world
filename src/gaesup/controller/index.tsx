@@ -1,4 +1,4 @@
-import { Collider, RevoluteImpulseJoint } from "@dimforge/rapier3d-compat";
+import { Collider } from "@dimforge/rapier3d-compat";
 import { RapierRigidBody } from "@react-three/rapier";
 import { useMemo, useReducer, useRef } from "react";
 import Camera from "../camera";
@@ -21,7 +21,6 @@ export function GaesupController(props: controllerType) {
   const innerGroupRef = useRef<THREE.Group>(null);
   const slopeRayOriginRef = useRef<THREE.Mesh>(null);
   const characterInnerRef = useRef<THREE.Group>(null);
-  const jointRefs = useRef<RevoluteImpulseJoint>(null);
   const [controller, controllerDispatch] = useReducer(gaesupControllerReducer, {
     cameraMode: Object.assign(
       gaesupControllerDefault.cameraMode,
@@ -64,7 +63,6 @@ export function GaesupController(props: controllerType) {
       innerGroupRef,
       slopeRayOriginRef,
       characterInnerRef,
-      jointRefs,
     },
     isRider: props.isRider !== null ? props.isRider : false,
   });
@@ -96,7 +94,6 @@ export function GaesupController(props: controllerType) {
       innerGroupRef,
       slopeRayOriginRef,
       characterInnerRef,
-      jointRefs,
     };
   }, []);
   const prop: controllerInnerType = {

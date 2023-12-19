@@ -10,6 +10,8 @@ import { GamePad } from "../../../src/gaesup/tools/gamepad";
 import { JoyStick } from "../../../src/gaesup/tools/joystick";
 import { KeyBoardToolTip } from "../../../src/gaesup/tools/keyBoardToolTip";
 import { MiniMap } from "../../../src/gaesup/tools/minimap";
+import Passive from "../passive";
+import Direction from "../platform/Direction";
 import FloatMove from "../platform/FloatMove";
 import Floor from "../platform/Floor";
 import RigidObjects from "../platform/RigidObjects";
@@ -28,7 +30,7 @@ export const keyboardMap = [
 ];
 
 export default function Selected() {
-  const CHARACTER_URL = S3 + "/gaesupyee.glb";
+  const CHARACTER_URL = "./gaesupyee_retopology3.glb";
   const AIRPLANE_URL = S3 + "/air.glb";
   const VEHICLE_URL = S3 + "/gaesupkart.glb";
   const WHEEL_URL = S3 + "/wheel.glb";
@@ -43,7 +45,7 @@ export default function Selected() {
         wheelUrl: WHEEL_URL,
       }}
       mode={{
-        type: "character",
+        type: "vehicle",
       }}
     >
       <Canvas
@@ -67,7 +69,7 @@ export default function Selected() {
         />
         <ambientLight intensity={0.5} />
         <Physics debug>
-          {/* <Passive /> */}
+          <Passive />
 
           <KeyboardControls map={keyboardMap}>
             <GaesupController
@@ -76,9 +78,6 @@ export default function Selected() {
               }}
               orthographicCamera={{
                 zoom: 80,
-              }}
-              groupProps={{
-                rotation: [0, Math.PI, 0],
               }}
               onAnimate={({ playAnimation }) => {
                 playAnimation("greet", "keyZ");
@@ -89,6 +88,7 @@ export default function Selected() {
           <RigidObjects />
           <FloatMove />
           <Floor />
+          <Direction />
           {/* <TreeA /> */}
           {/* <Slopes /> */}
         </Physics>

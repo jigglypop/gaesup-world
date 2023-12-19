@@ -1,7 +1,7 @@
+import stabilizing from "../common/stabilizing";
+import transition from "../common/transition";
 import { passiveMutationPropType } from "../type";
 import rotation from "./rotation";
-import stabilizing from "./stabilizing";
-import transition from "./transition";
 
 export default function characterMutation(props: passiveMutationPropType) {
   stabilizing(props);

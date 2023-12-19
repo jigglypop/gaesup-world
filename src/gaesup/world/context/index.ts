@@ -13,15 +13,34 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     acceleration: vec3(),
     quat: quat(),
     euler: euler(),
+    rotation: euler(),
     dir: vec3(),
     direction: vec3(),
-    axisX: V3(1, 0, 0),
-    axisY: V3(0, 1, 0),
-    axisZ: V3(0, 0, 1),
-    yaw: 0,
-    pitch: 0,
-    roll: 0,
   },
+  wheelsState: {
+    0: {
+      position: vec3(),
+      rotation: euler(),
+    },
+    1: {
+      position: vec3(),
+      rotation: euler(),
+    },
+    2: {
+      position: vec3(),
+      rotation: euler(),
+    },
+    3: {
+      position: vec3(),
+      rotation: euler(),
+    },
+  },
+  wheelPositions: [
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0],
+  ],
   characterCollider: {
     halfHeight: 0.35,
     height: 0.7,

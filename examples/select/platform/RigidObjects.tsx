@@ -24,12 +24,6 @@ export default function RigidObjects() {
           <meshStandardMaterial color={"lightsteelblue"} />
         </mesh>
       </RigidBody>
-      <RigidBody position={[0, 1, 0]}>
-        <mesh receiveShadow castShadow>
-          <boxGeometry args={[0.5, 0.5, 0.5]} />
-          <meshStandardMaterial color={"red"} />
-        </mesh>
-      </RigidBody>
 
       <RigidBody position={[15, 0, 0]} colliders={false}>
         {/* <Text

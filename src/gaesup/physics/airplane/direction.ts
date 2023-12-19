@@ -72,6 +72,7 @@ export default function direction(prop: calcPropType) {
       .slerp(quat().setFromEuler(innerGrounRefRotation.rotation), 0.1)
   );
 
+  activeState.rotation = innerGrounRefRotation.rotation;
   activeState.direction = front.multiply(
     V3(Math.sin(activeState.euler.y), -upDown, Math.cos(activeState.euler.y))
   );

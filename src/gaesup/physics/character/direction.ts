@@ -64,27 +64,26 @@ export function normalDirection({
         -state.camera.rotation.y - joystick.joyStickOrigin.angle - Math.PI / 2;
     start = joystick.joyStickOrigin.isOn ? 1 : 0;
   } else {
+    let angle = -state.camera.rotation.y;
     if (forward) {
       activeState.euler.y =
-        -state.camera.rotation.y +
-        (leftward ? Math.PI / 4 : 0) -
-        (rightward ? Math.PI / 4 : 0);
-    } else if (backward) {
-      activeState.euler.y =
-        -state.camera.rotation.y +
+        angle +
         Math.PI -
         (leftward ? Math.PI / 4 : 0) +
         (rightward ? Math.PI / 4 : 0);
+    } else if (backward) {
+      activeState.euler.y =
+        angle + (leftward ? Math.PI / 4 : 0) + (rightward ? Math.PI / 4 : 0);
     } else if (leftward) {
-      activeState.euler.y = -state.camera.rotation.y + Math.PI / 2;
+      activeState.euler.y = angle - Math.PI / 2;
     } else if (rightward) {
-      activeState.euler.y = -state.camera.rotation.y - Math.PI / 2;
+      activeState.euler.y = angle + Math.PI / 2;
     }
   }
   const front = V3(
-    Number(backward) - Number(forward),
+    Number(rightward) - Number(leftward),
     0,
-    Number(leftward) - Number(rightward)
+    Number(backward) - Number(forward)
   );
   activeState.direction = front;
   activeState.dir = activeState.direction.normalize();

@@ -1,24 +1,32 @@
 "use client";
 
 import { useGaesupController } from "../../../src/gaesup";
-import { PassiveCharacter } from "../../../src/gaesup/component/passive/passiveCharacter";
+import { GaesupPassiveComponent } from "../../../src/gaesup/component";
 import { V3 } from "../../../src/gaesup/utils";
 
 export default function Passive() {
-  const { state, mode, currentAnimation, url } = useGaesupController();
+  const {
+    state,
+    mode,
+    currentAnimation,
+    url,
+    vehicleCollider,
+    wheelOffset,
+    characterCollider,
+    airplaneCollider,
+  } = useGaesupController();
   const _euler = state.euler.clone();
-  _euler.y += Math.PI;
   // 4개 실험
-  const X = 1.5;
-  const Y = 1.5;
+  const X = 0.5;
+  const Y = 0.5;
 
   const stateStack = [];
 
-  for (let i = -1.5; i < X; i++) {
-    for (let j = -1.5; j < Y; j++) {
+  for (let i = -0.5; i < X; i++) {
+    for (let j = -0.5; j < Y; j++) {
       const _state = {
         ...state,
-        position: state.position.clone().add(V3(i * 2, 0, j * 2)),
+        position: state.position.clone().add(V3(i * 10, 0, j * 10)),
         euler: _euler,
       };
       stateStack.push(_state);
@@ -28,12 +36,16 @@ export default function Passive() {
     <group>
       {stateStack.map((state, index) => {
         return (
-          <PassiveCharacter
+          <GaesupPassiveComponent
             key={index}
             mode={mode}
             state={state}
-            url={url.characterUrl}
-            current={currentAnimation}
+            wheelOffset={0.5}
+            vehicleCollider={vehicleCollider}
+            characterCollider={characterCollider}
+            airplaneCollider={airplaneCollider}
+            currentAnimation={currentAnimation}
+            url={url}
           />
         );
       })}

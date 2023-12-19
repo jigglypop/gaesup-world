@@ -9,7 +9,7 @@ export default function normal(prop: cameraPropType) {
   } = prop;
   const cameraPosition = activeState.position
     .clone()
-    .add(V3(perspectiveCamera.XZDistance, perspectiveCamera.YDistance, 0));
+    .add(V3(0, perspectiveCamera.YDistance, perspectiveCamera.XZDistance));
 
   state.camera.position.lerp(cameraPosition, 1);
   state.camera.lookAt(activeState.position.clone());

@@ -1,7 +1,7 @@
 import { passiveMutationPropType } from "../type";
 
 export default function rotation(props: passiveMutationPropType) {
-  const { outerGroupRef, euler, quat, delta } = props;
-  quat.setFromEuler(euler);
-  outerGroupRef.current.quaternion.rotateTowards(quat, delta);
+  const { innerGroupRef, euler, quat: quaternion, delta } = props;
+  quaternion.setFromEuler(euler);
+  innerGroupRef.current.quaternion.rotateTowards(quaternion, delta * 1);
 }

@@ -4,11 +4,14 @@ import { calcPropType } from "../type";
 export default function currentSetting(prop: calcPropType) {
   const {
     rigidBodyRef,
-    worldContext: { activeState },
+    outerGroupRef,
+    innerGroupRef,
+    worldContext: { activeState, passiveState },
     dispatch,
   } = prop;
   activeState.position = vec3(rigidBodyRef.current.translation());
   activeState.velocity = vec3(rigidBodyRef.current.linvel());
+
   dispatch({
     type: "update",
     payload: {

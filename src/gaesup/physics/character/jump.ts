@@ -16,7 +16,7 @@ export default function jump(prop: calcPropType) {
       V3(0, jumpSpeed * 0.25, 0)
         .projectOnVector(slopeRay.current)
         .add(activeState.velocity.setY(jumpSpeed)),
-      false
+      true
     );
   }
 }

@@ -4,7 +4,7 @@ import { calcPropType } from "../type";
 export default function impulse(prop: calcPropType) {
   const {
     rigidBodyRef,
-    worldContext: { activeState, control },
+    worldContext: { activeState },
     controllerContext: { airplane },
   } = prop;
   const { maxSpeed } = airplane;

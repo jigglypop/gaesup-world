@@ -10,6 +10,8 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
   const [value, dispatch] = useReducer(gaesupWorldReducer, {
     debug: props.debug || gaesupWorldDefault.debug,
     activeState: gaesupWorldDefault.activeState,
+    wheelsState: gaesupWorldDefault.wheelsState,
+    wheelPositions: gaesupWorldDefault.wheelPositions,
     characterCollider: Object.assign(
       gaesupWorldDefault.characterCollider,
       props.characterCollider || {}
@@ -75,6 +77,7 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
       value.refs,
       value.animations,
       value.activeState,
+      value.wheelsState,
       dispatch,
     ]
   );
