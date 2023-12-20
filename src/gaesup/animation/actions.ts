@@ -148,18 +148,18 @@ export default function playCharacterActions({ groundRay }: playActionsType) {
         } else if (isMoving) {
           playWalk();
         }
-        if (groundRay.hit) {
-          if (!isJumping && !isOnTheGround) {
-            if (groundRay.hit.toi < 5) {
-              playLanding();
-            } else {
-              playFall();
-            }
-          }
-        }
-        if (groundRay.hit === null && activeState.velocity.y < 0) {
-          playFall();
-        }
+        // if (groundRay.hit) {
+        //   if (!isJumping && !isOnTheGround) {
+        //     if (groundRay.hit.toi < 5) {
+        //       playLanding();
+        //     } else {
+        //       playFall();
+        //     }
+        //   }
+        // }
+        // if (groundRay.hit === null && activeState.velocity.y < 0) {
+        //   playFall();
+        // }
       }
     }
   });

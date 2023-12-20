@@ -30,6 +30,7 @@ export default function initDebug({
 }) {
   const { debug: worldDebug } = useContext(GaesupWorldContext);
   const { cameraMode } = controllerContext;
+  if (!worldDebug) return;
 
   const [cameraType, setcameraType] = useControls(() => ({
     cameraType: cameraMode.cameraType,

@@ -11,7 +11,7 @@ export const RigidBodyRef = forwardRef(
     ref: Ref<RapierRigidBody>
   ) => {
     return (
-      <RigidBody colliders={false} ref={ref}>
+      <RigidBody colliders={false} ref={ref} userData={{ intangible: true }}>
         {children}
       </RigidBody>
     );

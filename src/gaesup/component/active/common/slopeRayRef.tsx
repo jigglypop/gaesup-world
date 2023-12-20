@@ -21,15 +21,16 @@ export const SlopeRayRef = forwardRef(
         ]}
         ref={ref}
         visible={false}
-        userData={{ intangible: true }}
+        // userData={{ intangible: true }}
       >
-        {/* {options.debug && (
-          <mesh userData={{ intangible: true }}>
-            <arrowHelper
-              args={[slopeRay.dir, slopeRay.origin, slopeRay.length, "#ff0000"]}
-            />
-          </mesh>
-        )} */}
+        {/* <arrowHelper
+          args={[
+            slopeRay.dir,
+            groundRay.origin.add(V3(0, 0, slopeRay.offset.z)),
+            slopeRay.length,
+            "#ff0000",
+          ]}
+        /> */}
         <boxGeometry args={[0.15, 0.15, 0.15]} />
       </mesh>
     );

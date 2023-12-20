@@ -16,6 +16,7 @@ export default function Floor() {
         sectionThickness={1.5}
         sectionColor={"#212121"}
         fadeDistance={1000}
+        userData={{ intangible: true }}
       />
       <RigidBody type="fixed">
         <mesh receiveShadow position={[0, -3.5, 0]}>

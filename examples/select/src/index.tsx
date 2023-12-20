@@ -10,7 +10,6 @@ import { GamePad } from "../../../src/gaesup/tools/gamepad";
 import { JoyStick } from "../../../src/gaesup/tools/joystick";
 import { KeyBoardToolTip } from "../../../src/gaesup/tools/keyBoardToolTip";
 import { MiniMap } from "../../../src/gaesup/tools/minimap";
-import Passive from "../passive";
 import Direction from "../platform/Direction";
 import FloatMove from "../platform/FloatMove";
 import Floor from "../platform/Floor";
@@ -37,7 +36,7 @@ export default function Selected() {
 
   return (
     <GaesupWorld
-      debug={true}
+      debug={false}
       url={{
         characterUrl: CHARACTER_URL,
         vehicleUrl: VEHICLE_URL,
@@ -45,7 +44,7 @@ export default function Selected() {
         wheelUrl: WHEEL_URL,
       }}
       mode={{
-        type: "vehicle",
+        type: "character",
       }}
     >
       <Canvas
@@ -68,8 +67,8 @@ export default function Selected() {
           shadow-camera-left={-50}
         />
         <ambientLight intensity={0.5} />
-        <Physics debug>
-          <Passive />
+        <Physics>
+          {/* <Passive /> */}
 
           <KeyboardControls map={keyboardMap}>
             <GaesupController

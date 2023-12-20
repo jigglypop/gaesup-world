@@ -73,16 +73,18 @@ export function GaesupController(props: controllerType) {
       dispatch: controllerDispatch,
     }),
     [
-      controller.cameraMode,
-      controller.cameraOption,
-      controller.perspectiveCamera,
-      controller.orthographicCamera,
-      controller.airplane,
-      controller.vehicle,
-      controller.character,
-      controller.callbacks,
-      controller.isRider,
-      controller.refs,
+      controller,
+      controllerDispatch,
+      // controller.cameraMode,
+      // controller.cameraOption,
+      // controller.perspectiveCamera,
+      // controller.orthographicCamera,
+      // controller.airplane,
+      // controller.vehicle,
+      // controller.character,
+      // controller.callbacks,
+      // controller.isRider,
+      // controller.refs,
     ]
   );
 

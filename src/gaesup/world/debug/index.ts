@@ -5,6 +5,9 @@ import { gaesupWorldContextType } from "../context/type";
 import { innerDebugPropType } from "../initalize/type";
 
 export default function initDebug({ value, dispatch }: innerDebugPropType) {
+  const { debug } = value;
+  if (!debug) return;
+
   const [type, setType] = useControls(() => ({
     type: value.mode.type,
     " ": buttonGroup({

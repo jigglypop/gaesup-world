@@ -5,16 +5,16 @@ import {
   PerspectiveCamera,
 } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useContext } from "react";
+import { useContext, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { GaesupControllerContext } from "../controller/context";
 import { controllerInnerType, refsType } from "../controller/type";
-import { cameraPropType } from "../physics/type";
+import { cameraPropType, intersectObjectMapType } from "../physics/type";
 import { GaesupWorldContext } from "../world/context";
-import cameraCollisionDetector from "./cameraCollisionDetecter";
 import mapControl from "./control/map";
 import normal from "./control/normal";
 import orbit from "./control/orbit";
+import detector from "./detector";
 
 export default function Camera({
   refs,
@@ -33,19 +33,17 @@ export default function Camera({
     controllerContext;
   const { rigidBodyRef, outerGroupRef } = refs;
   const { cameraRay } = prop;
-  const { checkCollision } = cameraCollisionDetector(prop);
-  const { scene } = useThree();
+  const { camera, scene } = useThree();
   const { activeState } = worldContext;
 
-  const intersectObjectMap: { [uuid: string]: THREE.Object3D } = {};
+  const intersectObjectMap: intersectObjectMapType = useMemo(() => ({}), []);
   const cameraProp: cameraPropType = {
     ...prop,
-    checkCollision,
     control,
     controllerContext,
     worldContext,
+    intersectObjectMap,
   };
-
   const getMeshs = (object: THREE.Object3D) => {
     if (object.userData && object.userData.intangible) return;
     if (
@@ -59,6 +57,10 @@ export default function Camera({
     });
   };
 
+  useEffect(() => {
+    scene.children.forEach((child) => getMeshs(child));
+  }, []);
+
   useFrame((state, delta) => {
     if (
       !rigidBodyRef ||
@@ -71,8 +73,6 @@ export default function Camera({
     cameraProp.delta = delta;
 
     if (cameraMode.cameraType === "perspective") {
-      scene.children.forEach((child) => getMeshs(child));
-      cameraRay.intersectObjectMap = intersectObjectMap;
       if (cameraMode.controlType === "orbit") {
         orbit(cameraProp);
       } else if (cameraMode.controlType === "normal") {
@@ -81,19 +81,23 @@ export default function Camera({
     } else if (cameraMode.cameraType === "orthographic") {
       mapControl(cameraProp);
     }
+    const distV3 = camera.position.clone().sub(activeState.position);
+    cameraRay.origin.copy(camera.position);
+    cameraRay.dir.copy(distV3.negate().normalize());
+    detector(cameraProp);
   });
 
   return (
     <>
       {cameraMode.cameraType === "perspective" && (
         <>
-          <OrbitControls target={activeState.position} />
+          <OrbitControls target={activeState.position}></OrbitControls>
           <PerspectiveCamera makeDefault {...perspectiveCamera} />
         </>
       )}
       {cameraMode.cameraType === "orthographic" && (
         <>
-          <MapControls target={activeState.position} />
+          <MapControls target={activeState.position}></MapControls>
           <OrthographicCamera makeDefault {...orthographicCamera} />
         </>
       )}

@@ -15,17 +15,15 @@ export const RigidBodyRef = forwardRef(
   ) => {
     return (
       <RigidBody colliders={false} ref={ref} {...props.rigidBodyProps}>
-        {props.debug && (
-          <mesh visible={props.debug}>
-            <arrowHelper
-              args={[
-                props.groundRay.dir,
-                props.groundRay.origin,
-                props.groundRay.length,
-              ]}
-            />
-          </mesh>
-        )}
+        {/* {debug && (
+          <arrowHelper
+            args={[
+              props.groundRay.dir,
+              props.groundRay.origin,
+              props.groundRay.length,
+            ]}
+          />
+        )} */}
         {children}
       </RigidBody>
     );

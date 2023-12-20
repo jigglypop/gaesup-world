@@ -26,7 +26,7 @@ export const InnerGroupRef = forwardRef(
     );
 
     return (
-      <group receiveShadow castShadow ref={ref}>
+      <group receiveShadow castShadow ref={ref} userData={{ intangible: true }}>
         {objectNode && animationRef && (
           <primitive
             object={objectNode}
@@ -47,6 +47,7 @@ export const InnerGroupRef = forwardRef(
                 geometry={node.geometry}
                 skeleton={node.skeleton}
                 key={key}
+                userData={{ intangible: true }}
               />
             );
           } else if (node instanceof THREE.Mesh) {
@@ -57,6 +58,7 @@ export const InnerGroupRef = forwardRef(
                 material={node.material}
                 geometry={node.geometry}
                 key={key}
+                userData={{ intangible: true }}
               />
             );
           }

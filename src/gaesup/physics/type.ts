@@ -10,12 +10,15 @@ export type SetAtom<Args extends unknown[], Result> = (...args: Args) => Result;
 
 export type calcPropType = controllerInnerType & {
   state?: RootState;
-  checkCollision?: (delta: number) => void;
   worldContext?: gaesupWorldContextType;
   controllerContext?: gaesupControllerType;
   delta?: number;
   dispatch?: dispatchType<gaesupWorldContextType>;
   world: World;
+};
+
+export type intersectObjectMapType = {
+  [uuid: string]: THREE.Mesh;
 };
 
 export type cameraPropType = controllerInnerType & {
@@ -24,7 +27,8 @@ export type cameraPropType = controllerInnerType & {
   };
   state?: RootState;
   worldContext?: gaesupWorldContextType;
-  checkCollision?: (delta: number) => void;
   controllerContext?: gaesupControllerType;
+  intersectObjectMap?: intersectObjectMapType;
   delta?: number;
+  dist?: number;
 };

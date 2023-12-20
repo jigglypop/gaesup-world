@@ -38,7 +38,12 @@ export const WheelRegidBodyRef = forwardRef(
     const colliderRef = useRef<Collider>(null);
 
     return (
-      <RigidBody position={wheelPosition} colliders={false} ref={ref}>
+      <RigidBody
+        position={wheelPosition}
+        colliders={false}
+        ref={ref}
+        userData={{ intangible: true }}
+      >
         <CylinderCollider
           args={[wheelSizeX / 2, wheelSizeY / 2]}
           rotation={[0, 0, Math.PI / 2]}

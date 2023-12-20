@@ -4,6 +4,7 @@ import { useCallback, useContext, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { groundRayType, refsType, slopeRayType } from "../../controller/type";
 
+import { cameraRayType } from "../../camera/type";
 import { update } from "../../utils/context";
 import {
   GaesupWorldContext,
@@ -67,20 +68,16 @@ export default function initControllerProps({
     };
   }, []);
 
-  const cameraRay = useMemo(() => {
+  const cameraRay: cameraRayType = useMemo(() => {
     return {
       origin: vec3(),
       hit: new THREE.Raycaster(),
       rayCast: new THREE.Raycaster(vec3(), vec3(), 0, -7),
-      lerpingPoint: vec3(),
       dir: vec3(),
       position: vec3(),
-      length: -1,
-      followCamera: new THREE.Object3D(),
-      pivot: new THREE.Object3D(),
-      intersetesAndTransParented: [],
+      length: -controllerContext.cameraOption.maxDistance,
+      detected: [],
       intersects: [],
-      intersectObjects: [],
       intersectObjectMap: {},
     };
   }, []);

@@ -24,11 +24,13 @@ export const CharacterCapsuleCollider = forwardRef(
     slopeRay.rayCast = new rapier.Ray(slopeRay.origin, slopeRay.dir);
 
     return (
-      <CapsuleCollider
-        ref={ref}
-        args={[collider.height, collider.radius]}
-        position={[0, collider.height + collider.radius, 0]}
-      />
+      <>
+        <CapsuleCollider
+          ref={ref}
+          args={[collider.height, collider.radius]}
+          position={[0, collider.height + collider.radius, 0]}
+        />
+      </>
     );
   }
 );

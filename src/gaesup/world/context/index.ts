@@ -17,30 +17,6 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     dir: vec3(),
     direction: vec3(),
   },
-  wheelsState: {
-    0: {
-      position: vec3(),
-      rotation: euler(),
-    },
-    1: {
-      position: vec3(),
-      rotation: euler(),
-    },
-    2: {
-      position: vec3(),
-      rotation: euler(),
-    },
-    3: {
-      position: vec3(),
-      rotation: euler(),
-    },
-  },
-  wheelPositions: [
-    [0, 0, 0],
-    [0, 0, 0],
-    [0, 0, 0],
-    [0, 0, 0],
-  ],
   characterCollider: {
     halfHeight: 0.35,
     height: 0.7,

@@ -4,9 +4,7 @@ import { calcPropType } from "../type";
 export default function currentSetting(prop: calcPropType) {
   const {
     rigidBodyRef,
-    outerGroupRef,
-    innerGroupRef,
-    worldContext: { activeState, passiveState },
+    worldContext: { activeState },
     dispatch,
   } = prop;
   activeState.position = vec3(rigidBodyRef.current.translation());

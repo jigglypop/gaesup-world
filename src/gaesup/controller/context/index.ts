@@ -49,7 +49,6 @@ export const gaesupControllerDefault = {
     linearDamping: 0.5,
   },
   character: {
-    // constant
     walkSpeed: 4,
     runSpeed: 10,
     turnSpeed: 10,

@@ -121,8 +121,6 @@ type KeyboardControlsState<T extends string = string> = {
 
 export type gaesupWorldContextType = {
   activeState: activeStateType;
-  wheelsState: wheelsStateType;
-  wheelPositions: number[][];
   characterCollider: characterColliderType;
   vehicleCollider: vehicleColliderType;
   airplaneCollider: airplaneColliderType;
