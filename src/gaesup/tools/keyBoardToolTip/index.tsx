@@ -8,19 +8,27 @@ import { keyArrayItemType, keyBoardToolTipType } from "./type";
 
 export function KeyBoardToolTip(props: keyBoardToolTipType) {
   const worldContext = useContext(GaesupWorldContext);
-  const { keyBoardMap, keyBoardToolTipInnerStyle, keyCapStyle } = props;
+  const {
+    keyBoardMap,
+    keyBoardToolTipInnerStyle,
+    selectedKeyCapStyle,
+    notSelectedkeyCapStyle,
+    keyCapStyle,
+    label,
+  } = props;
   const { animations, mode } = worldContext;
 
   const keyArray = Object.entries(KeyBoardAll).reduce<keyArrayItemType[]>(
     (keyArray, cur) => {
       const [key, value] = cur;
       const { gridRow, gridColumn, name } = value;
+      const labeledName = label?.[name] || name;
 
       const keyBoardItem: keyArrayItemType = {
         code: value.code || key,
         gridRow,
         gridColumn,
-        name,
+        name: labeledName,
       };
       keyArray.push(keyBoardItem);
       return keyArray;
@@ -45,12 +53,15 @@ export function KeyBoardToolTip(props: keyBoardToolTipType) {
           {keyArray.map((item: keyArrayItemType, key: number) => {
             let background = "rgba(0, 0, 0, 0.1)";
             let boxShadow = "0 0 5px rgba(0, 0, 0, 0.2)";
+            let isSelect = "none";
 
             if (codeToActionObj[item.code]) {
               if (animations.keyControl[codeToActionObj[item.code]]) {
+                isSelect = "select";
                 background = `${vars.gradient.green}`;
                 boxShadow = `0 0 10px rgba(99,251,215,1)`;
               } else {
+                isSelect = "notSelect";
                 background = "rgba(0, 0, 0, 0.6)";
                 boxShadow = "0 0 10px rgba(0, 0, 0, 0.6)";
               }
@@ -63,6 +74,17 @@ export function KeyBoardToolTip(props: keyBoardToolTipType) {
               color = "black";
             }
 
+            let keyStyle = keyCapStyle;
+            if (isSelect === "select") {
+              keyStyle = {
+                ...selectedKeyCapStyle,
+              };
+            } else if (isSelect === "notSelect") {
+              keyStyle = {
+                ...notSelectedkeyCapStyle,
+              };
+            }
+
             return (
               <div
                 className={style.keyCap}
@@ -72,7 +94,7 @@ export function KeyBoardToolTip(props: keyBoardToolTipType) {
                   color,
                   gridRow: item.gridRow,
                   gridColumn: item.gridColumn,
-                  ...keyCapStyle,
+                  ...keyStyle,
                 })}
                 key={key}
               >

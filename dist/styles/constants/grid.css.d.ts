@@ -1,0 +1,55 @@
+export declare const gridTemplateRows: {
+    writeA: string;
+    writeB: string;
+    "1,2": string;
+    "1,3": string;
+    "1,4": string;
+    "2,1": string;
+    "2,3": string;
+    "2,4": string;
+    "1": string;
+    "2": string;
+    "3": string;
+    "4": string;
+    "5": string;
+};
+export declare const gridTemplateColumns: {
+    sideBar: string;
+    postA: string;
+    postB: string;
+    "1,2": string;
+    "1,3": string;
+    "1,4": string;
+    "2,1": string;
+    "2,3": string;
+    "2,4": string;
+    "1": string;
+    "2": string;
+    "3": string;
+    "4": string;
+    "5": string;
+};
+export declare const gridTemplate: {
+    "15rem": string;
+    "10rem": string;
+};
+export declare const gridTemplateAll: {
+    sideBar: string;
+    postA: string;
+    postB: string;
+    "1,2": string;
+    "1,3": string;
+    "1,4": string;
+    "2,1": string;
+    "2,3": string;
+    "2,4": string;
+    "1": string;
+    "2": string;
+    "3": string;
+    "4": string;
+    "5": string;
+    writeA: string;
+    writeB: string;
+    "15rem": string;
+    "10rem": string;
+};

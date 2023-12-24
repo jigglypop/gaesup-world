@@ -12,7 +12,7 @@ export default function GamePadButton({
 }: {
   value: string;
   name: string;
-  gamepadButtonStyle: VECssType;
+  gamepadButtonStyle: Partial<VECssType>;
 }) {
   const [isClicked, setIsClicked] = useState(false);
   const { pushKey } = usePushKey();

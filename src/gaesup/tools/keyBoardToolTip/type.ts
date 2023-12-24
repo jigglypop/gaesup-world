@@ -31,8 +31,13 @@ export type keyBoardLabelType = {
 export type keyBoardToolTipType = {
   keyBoardLabel?: keyBoardLabelType;
   keyBoardMap?: keyboardMapItemType[];
+  label?: Record<string, string>;
 } & {
-  [key in "keyBoardToolTipInnerStyle" | "keyCapStyle"]?: VECssType;
+  [key in
+    | "keyBoardToolTipInnerStyle"
+    | "notSelectedkeyCapStyle"
+    | "selectedKeyCapStyle"
+    | "keyCapStyle"]?: Partial<VECssType>;
 };
 
 export type keyBoardToolTipPartialType = Partial<keyBoardToolTipType>;

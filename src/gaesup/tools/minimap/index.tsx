@@ -51,9 +51,11 @@ export function MiniMap(props: minimapType) {
       <div
         className={style.minimapInner}
         style={assignInlineVars({
-          transform: `translate(-50%, -50%) rotate(${
-            (activeState.euler.y * 180) / Math.PI
-          }deg) `,
+          transform: props.blockRotate
+            ? `translate(-50%, -50%)`
+            : `translate(-50%, -50%) rotate(${
+                (activeState.euler.y * 180) / Math.PI
+              }deg) `,
           ...innerStyle,
         })}
       >
@@ -102,6 +104,7 @@ export function MiniMap(props: minimapType) {
                 left: "50%",
                 transform: `translate(-50%, -50%) translate(${-X}rem, ${-Z}rem)`,
                 transformOrigin: "50% 50%",
+                ...objectStyle,
               })}
             >
               <div className={style.text} style={assignInlineVars(textStyle)}>
@@ -114,29 +117,31 @@ export function MiniMap(props: minimapType) {
         <div className={style.avatar} style={assignInlineVars(avatarStyle)} />
       </div>
 
-      <div className={style.scale} style={assignInlineVars(scaleStyle)}>
-        <div
-          className={style.plusMinus}
-          style={assignInlineVars(plusMinusStyle)}
-          onClick={() => {
-            if (props.blockScale) return;
-            downscale();
-          }}
-        >
-          +
+      {!props.blockScaleControl && (
+        <div className={style.scale} style={assignInlineVars(scaleStyle)}>
+          <div
+            className={style.plusMinus}
+            style={assignInlineVars(plusMinusStyle)}
+            onClick={() => {
+              if (props.blockScale) return;
+              downscale();
+            }}
+          >
+            +
+          </div>
+          SCALE 1:{Math.round(100 / scale)}
+          <div
+            className={style.plusMinus}
+            style={assignInlineVars(plusMinusStyle)}
+            onClick={() => {
+              if (props.blockScale) return;
+              upscale();
+            }}
+          >
+            -
+          </div>
         </div>
-        SCALE 1:{Math.round(100 / scale)}
-        <div
-          className={style.plusMinus}
-          style={assignInlineVars(plusMinusStyle)}
-          onClick={() => {
-            if (props.blockScale) return;
-            upscale();
-          }}
-        >
-          -
-        </div>
-      </div>
+      )}
     </div>
   );
 }

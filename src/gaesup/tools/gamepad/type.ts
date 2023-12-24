@@ -7,5 +7,5 @@ export type gamepadType = {
     | "gamepadButtonStyle"
     | "gamepadGridStyle"
     | "gamepadInnerStyle"
-    | "gamepadStyle"]?: VECssType;
+    | "gamepadStyle"]?: Partial<VECssType>;
 };

@@ -74,12 +74,12 @@ export type orthographicCameraDebugType = {
 };
 
 export type perspectiveCameraPropType = {
-  isFront: boolean;
+  isFront?: boolean;
 } & perspectiveCameraDebugType;
 
 export type gaesupControllerType = gaesupControllerContextPropType & {
-  callbacks: callbackType;
-  refs: refsType;
+  callbacks?: callbackType;
+  refs?: refsType;
 };
 
 export type gaesupDisptachType = dispatchType<gaesupControllerType>;

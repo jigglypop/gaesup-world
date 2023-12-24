@@ -1,6 +1,6 @@
 import "./global.css";
-import Selected from "./src";
+import Main from "./src";
 
 export default function App() {
-  return <Selected />;
+  return <Main />;
 }

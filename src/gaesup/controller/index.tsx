@@ -72,20 +72,7 @@ export function GaesupController(props: controllerType) {
       value: controller,
       dispatch: controllerDispatch,
     }),
-    [
-      controller,
-      controllerDispatch,
-      // controller.cameraMode,
-      // controller.cameraOption,
-      // controller.perspectiveCamera,
-      // controller.orthographicCamera,
-      // controller.airplane,
-      // controller.vehicle,
-      // controller.character,
-      // controller.callbacks,
-      // controller.isRider,
-      // controller.refs,
-    ]
+    [controller, controllerDispatch]
   );
 
   const refs = useMemo(() => {

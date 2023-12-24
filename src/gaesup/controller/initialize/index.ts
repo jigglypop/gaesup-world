@@ -25,23 +25,23 @@ export default function initControllerProps({
 }) {
   const context = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
-
-  const { control, mode } = useContext(GaesupWorldContext);
   const [_, getKeys] = useKeyboardControls();
   const keyControl: keyControlType = getKeys();
 
   useEffect(() => {
-    if (keyControl && control) {
+    if (context && keyControl && context.control) {
       dispatch({
         type: "update",
         payload: {
           control: {
-            ...(mode.controller === "keyboard" ? keyControl : control),
+            ...(context.mode.controller === "keyboard"
+              ? keyControl
+              : context.control),
           },
         },
       });
     }
-  }, [mode.controller, keyControl, control]);
+  }, [context.mode.controller, keyControl, context.control]);
 
   const groundRay: groundRayType = useMemo(() => {
     return {

@@ -24,14 +24,28 @@ export type playResultType = {
 export function usePlayActions() {
   const { characterGltf, vehicleGltf, airplaneGltf, animations } =
     useContext(GaesupWorldContext);
-  const { animations: characterAnimations } = characterGltf;
-  const characterResult = useAnimations(characterAnimations);
 
-  const { animations: vehicleAnimations } = vehicleGltf;
-  const vehicleResult = useAnimations(vehicleAnimations);
+  const resultRef: {
+    character: playResultType;
+    vehicle: playResultType;
+    airplane: playResultType;
+  } = {
+    character: null,
+    vehicle: null,
+    airplane: null,
+  };
 
-  const { animations: airplaneAnimations } = airplaneGltf;
-  const airplaneResult = useAnimations(airplaneAnimations);
+  if (characterGltf && characterGltf.animations) {
+    resultRef.character = useAnimations(characterGltf.animations);
+  }
+
+  if (vehicleGltf && vehicleGltf.animations) {
+    resultRef.vehicle = useAnimations(vehicleGltf.animations);
+  }
+
+  if (airplaneGltf && airplaneGltf.animations) {
+    resultRef.airplane = useAnimations(airplaneGltf.animations);
+  }
 
   const dispatch = useContext(GaesupWorldDispatchContext);
   const play = (tag: keyof animationTagType) => {
@@ -66,15 +80,6 @@ export function usePlayActions() {
     });
   };
 
-  const resultRef: {
-    character: playResultType;
-    vehicle: playResultType;
-    airplane: playResultType;
-  } = {
-    character: characterResult,
-    vehicle: vehicleResult,
-    airplane: airplaneResult,
-  };
   return { resultRef, play, setAnimationName };
 }
 

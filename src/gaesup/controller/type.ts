@@ -113,27 +113,6 @@ export interface controllerOtherPropType extends RigidBodyProps {
   debug?: boolean;
 }
 
-// controller 타입
-
-//   children?: ReactNode;
-//   groupProps?: GroupProps;
-//   rigidBodyProps?: RigidBodyProps;
-//   debug ?: boolean;
-//   isRider: boolean;
-
-//   cameraMode: gaesupCameraPropType;
-//   cameraOption: cameraOptionType;
-//   perspectiveCamera: perspectiveCameraPropType;
-//   orthographicCamera: OrthographicCameraProps;
-//   airplane: airplaneType;
-//   vehicle: vehicleType;
-//   character: characterType;
-
-//   onReady?: (prop: callbackPropType) => void;
-//   onFrame?: (prop: onFramePropType) => void;
-//   onDestory?: (prop: callbackPropType) => void;
-//   onAnimate?: (prop: onAnimatePropType) => void;
-
 export type controllerType = controllerOtherPropType &
   Partial<gaesupControllerContextPropType> &
   callbackType;

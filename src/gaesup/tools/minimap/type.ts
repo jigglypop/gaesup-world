@@ -23,10 +23,12 @@ export type minimapType = {
     | "avatarStyle"
     | "directionStyle"
     | "scaleStyle"
-    | "plusMinusStyle"]?: VECssType;
+    | "plusMinusStyle"]?: Partial<VECssType>;
 } & {
   minScale?: number;
   maxScale?: number;
   blockScale?: boolean;
   scale?: number;
+  blockRotate?: boolean;
+  blockScaleControl?: boolean;
 };

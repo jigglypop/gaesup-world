@@ -23,5 +23,8 @@ export type joyStickInnerType = {
 };
 
 export type joyStickType = {
-  [key in "joyStickBallStyle" | "joyStickStyle" | "joyBallStyle"]?: VECssType;
+  [key in
+    | "joyStickBallStyle"
+    | "joyStickStyle"
+    | "joyBallStyle"]?: Partial<VECssType>;
 };

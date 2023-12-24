@@ -14,7 +14,6 @@ import { GaesupWorldContext } from "../world/context";
 import mapControl from "./control/map";
 import normal from "./control/normal";
 import orbit from "./control/orbit";
-import detector from "./detector";
 
 export default function Camera({
   refs,
@@ -81,10 +80,10 @@ export default function Camera({
     } else if (cameraMode.cameraType === "orthographic") {
       mapControl(cameraProp);
     }
-    const distV3 = camera.position.clone().sub(activeState.position);
-    cameraRay.origin.copy(camera.position);
-    cameraRay.dir.copy(distV3.negate().normalize());
-    detector(cameraProp);
+    // const distV3 = camera.position.clone().sub(activeState.position);
+    // cameraRay.origin.copy(camera.position);
+    // cameraRay.dir.copy(distV3.negate().normalize());
+    // detector(cameraProp);
   });
 
   return (

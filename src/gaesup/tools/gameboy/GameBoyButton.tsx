@@ -7,7 +7,7 @@ export type gameBoyButtonType = {
   tag: "up" | "down" | "left" | "right";
   value: string;
   icon: JSX.Element;
-  gameboyButtonStyle: VECssType;
+  gameboyButtonStyle: Partial<VECssType>;
 };
 
 export default function GameBoyButton({

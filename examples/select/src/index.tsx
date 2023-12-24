@@ -10,8 +10,6 @@ import { GamePad } from "../../../src/gaesup/tools/gamepad";
 import { JoyStick } from "../../../src/gaesup/tools/joystick";
 import { KeyBoardToolTip } from "../../../src/gaesup/tools/keyBoardToolTip";
 import { MiniMap } from "../../../src/gaesup/tools/minimap";
-import Direction from "../platform/Direction";
-import FloatMove from "../platform/FloatMove";
 import Floor from "../platform/Floor";
 import RigidObjects from "../platform/RigidObjects";
 import RoughPlane from "../platform/RoughPlane";
@@ -29,19 +27,15 @@ export const keyboardMap = [
 ];
 
 export default function Selected() {
-  const CHARACTER_URL = "./gaesupyee_retopology3.glb";
-  const AIRPLANE_URL = S3 + "/air.glb";
-  const VEHICLE_URL = S3 + "/gaesupkart.glb";
-  const WHEEL_URL = S3 + "/wheel.glb";
+  const CHARACTER_URL = "./santa.glb";
+  // const AIRPLANE_URL = S3 + "/air.glb";
+  // const VEHICLE_URL = S3 + "/gaesupkart.glb";
+  // const WHEEL_URL = S3 + "/wheel.glb";
 
   return (
     <GaesupWorld
-      debug={false}
       url={{
         characterUrl: CHARACTER_URL,
-        vehicleUrl: VEHICLE_URL,
-        airplaneUrl: AIRPLANE_URL,
-        wheelUrl: WHEEL_URL,
       }}
       mode={{
         type: "character",
@@ -66,14 +60,11 @@ export default function Selected() {
           shadow-camera-bottom={-50}
           shadow-camera-left={-50}
         />
-        <ambientLight intensity={0.5} />
         <Physics>
-          {/* <Passive /> */}
-
           <KeyboardControls map={keyboardMap}>
             <GaesupController
               cameraMode={{
-                controlType: "normal",
+                controlType: "orbit",
               }}
               orthographicCamera={{
                 zoom: 80,
@@ -85,11 +76,9 @@ export default function Selected() {
           </KeyboardControls>
           <RoughPlane />
           <RigidObjects />
-          <FloatMove />
+          {/* <FloatMove /> */}
           <Floor />
-          <Direction />
-          {/* <TreeA /> */}
-          {/* <Slopes /> */}
+          {/* <Direction /> */}
         </Physics>
       </Canvas>
       <div className={style.footer}>
@@ -110,10 +99,34 @@ export default function Selected() {
             <GameBoy />
           </div>
           <div className={style.keyBoardToolTipOuter}>
-            <KeyBoardToolTip keyBoardMap={keyboardMap} />
+            <KeyBoardToolTip
+              keyBoardMap={keyboardMap}
+              label={{
+                Z: "인사(Z)",
+                Shift: "달리기(SHIFT)",
+                Space: "점프(SPACE)",
+              }}
+              selectedKeyCapStyle={{
+                padding: "2rem",
+              }}
+              notSelectedkeyCapStyle={{
+                padding: "2rem",
+              }}
+              keyBoardToolTipInnerStyle={{
+                gridGap: "2rem",
+              }}
+              keyCapStyle={{
+                display: "none",
+              }}
+            />
           </div>
           <div className={style.minimapOuter}>
-            <MiniMap />
+            <MiniMap
+              blockRotate={false}
+              objectStyle={{
+                background: "rgba(0, 0, 0, 0.1)",
+              }}
+            />
           </div>
         </div>
       </div>

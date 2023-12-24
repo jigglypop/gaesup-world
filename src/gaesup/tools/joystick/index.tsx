@@ -114,10 +114,15 @@ export function JoyStick(props: joyStickType) {
     const currentRadius = Math.sqrt(normX + normY);
     const originRadius = Math.sqrt((width / 2) ** 2 + (height / 2) ** 2);
 
+    const newAngle = Math.atan2(
+      Y - (bottom - height / 2),
+      X - (left + width / 2)
+    );
+
     setOrigin({
       x: left + width / 2,
       y: bottom - height / 2,
-      angle: Math.atan2(Y - (bottom - height / 2), X - (left + width / 2)),
+      angle: newAngle,
       currentRadius,
       originRadius,
       isIn: currentRadius > originRadius / 2,

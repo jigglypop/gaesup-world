@@ -55,34 +55,7 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
     });
   }, []);
 
-  const gaesupProps = useMemo(
-    () => ({ value, dispatch }),
-    [
-      value,
-      // value.characterCollider,
-      // value.vehicleCollider,
-      // value.airplaneCollider,
-      // value.airplaneGltf,
-      // value.vehicleGltf,
-      // value.wheelGltf,
-      // value.url,
-      // value.mode,
-      // value.states,
-      // value.debug,
-      // value.minimap,
-      // value.joystick,
-      // value.control,
-      // value.points,
-      // value.refs,
-      // value.animations,
-      // // value.animations.keyControl,
-      // // value.animations.animationNames,
-      // // value.joystick.joyStickBall,
-      // // value.joystick.joyStickOrigin,
-      // value.activeState,
-      dispatch,
-    ]
-  );
+  const gaesupProps = useMemo(() => ({ value, dispatch }), [value, dispatch]);
   initColider({ value, dispatch });
   initDebug({ value, dispatch });
   return {
