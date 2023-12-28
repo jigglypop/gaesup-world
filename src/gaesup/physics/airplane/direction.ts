@@ -77,4 +77,5 @@ export default function direction(prop: calcPropType) {
     V3(Math.sin(activeState.euler.y), -upDown, Math.cos(activeState.euler.y))
   );
   activeState.dir = activeState.direction.normalize();
+  activeState.euler = innerGroupRef.current.rotation;
 }

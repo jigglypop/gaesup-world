@@ -20,6 +20,7 @@ export function airplane({ gltf, value, dispatch }: innerColliderPropType) {
             airplaneX: airplaneSize.x / 2,
             airplaneY: airplaneSize.y / 2,
             airplaneZ: airplaneSize.z / 2,
+            gravity: 0.2,
           },
         },
         dispatch

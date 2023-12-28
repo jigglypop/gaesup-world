@@ -14,6 +14,7 @@ export function VehicleRef({
   refs: refsType;
 }) {
   const { url, characterGltf, vehicleGltf } = useContext(GaesupWorldContext);
+
   return (
     <WrapperRef
       props={props}

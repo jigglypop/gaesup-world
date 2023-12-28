@@ -15,13 +15,13 @@ export const characterDebugMap = {
     step: 0.01,
   },
   jumpSpeed: {
-    min: 1,
+    min: 0.1,
     max: 20,
     step: 0.01,
   },
   linearDamping: {
-    min: 0,
-    max: 1,
+    min: -10,
+    max: 10,
     step: 0.01,
   },
 };

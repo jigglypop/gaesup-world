@@ -32,7 +32,7 @@ export default function initControllerProps(_a) {
                 },
             });
         }
-    }, [context.mode.controller, keyControl, context.control]);
+    }, [context === null || context === void 0 ? void 0 : context.mode.controller, keyControl, context === null || context === void 0 ? void 0 : context.control]);
     var groundRay = useMemo(function () {
         return {
             origin: vec3(),

@@ -4,13 +4,18 @@ export default function gravity(prop: calcPropType) {
   const {
     rigidBodyRef,
     groundRay,
-    controllerContext: { airplane },
+    controllerContext: {
+      airplane: { buoyancy },
+    },
+    worldContext: { airplaneCollider },
   } = prop;
 
-  const { buoyancy } = airplane;
   if (groundRay.hit) {
-    rigidBodyRef.current.setGravityScale(1, false);
+    airplaneCollider.gravity =
+      (1 - buoyancy) / (groundRay.length - groundRay.hit.toi);
+    rigidBodyRef.current.setGravityScale(airplaneCollider.gravity, false);
   } else {
-    rigidBodyRef.current.setGravityScale(buoyancy, false);
+    airplaneCollider.gravity = buoyancy;
+    rigidBodyRef.current.setGravityScale(airplaneCollider.gravity, false);
   }
 }

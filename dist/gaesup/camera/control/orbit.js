@@ -8,11 +8,11 @@ export default function orbit(prop) {
         .multiplyScalar(perspectiveCamera.XZDistance)
         .multiplyScalar(perspectiveCamera.isFront ? -1 : 1)
         .add(V3(0, perspectiveCamera.YDistance, 0)));
-    state.camera.position.lerp(cameraPosition, 0.5);
+    state.camera.position.lerp(cameraPosition, 0.9);
     state.camera.quaternion.copy(activeState.quat
         .clone()
         .multiply(perspectiveCamera.isFront
         ? quat().setFromAxisAngle(V3(0, 1, 0), Math.PI)
         : quat()));
-    state.camera.lookAt(activeState.position);
+    state.camera.lookAt(activeState.position.clone());
 }

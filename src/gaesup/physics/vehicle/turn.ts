@@ -1,3 +1,4 @@
+import { quat } from "@react-three/rapier";
 import { calcPropType } from "../type";
 
 export default function turn(prop: calcPropType) {
@@ -6,6 +7,9 @@ export default function turn(prop: calcPropType) {
     worldContext: { activeState },
   } = prop;
 
-  activeState.quat.setFromEuler(activeState.euler);
-  rigidBodyRef.current.setRotation(activeState.quat, false);
+  // activeState.quat.setFromEuler(activeState.euler);
+  rigidBodyRef.current.setRotation(
+    quat().setFromEuler(activeState.euler),
+    false
+  );
 }

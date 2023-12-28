@@ -37,8 +37,8 @@ export function MiniMap(props) {
             else
                 downscale();
         }, style: assignInlineVars(minimapStyle), children: [_jsx("div", { className: style.minimapOuter, style: assignInlineVars(objectStyle) }), _jsxs("div", { className: style.minimapInner, style: assignInlineVars(__assign({ transform: props.blockRotate
-                        ? "translate(-50%, -50%)"
-                        : "translate(-50%, -50%) rotate(".concat((activeState.euler.y * 180) / Math.PI, "deg) ") }, innerStyle)), children: [_jsx("div", { className: style.direction({
+                        ? "translate(-50%, -50%) rotate(180deg) "
+                        : "translate(-50%, -50%) rotate(".concat((activeState.euler.y * 180) / Math.PI + 180, "deg) ") }, innerStyle)), children: [_jsx("div", { className: style.direction({
                             east: true,
                         }), style: assignInlineVars(directionStyle), children: "E" }), _jsx("div", { className: style.direction({
                             west: true,
@@ -48,7 +48,7 @@ export function MiniMap(props) {
                         var center = _a.center, size = _a.size, text = _a.text;
                         var X = (center.x - activeState.position.x) * scale;
                         var Z = (center.z - activeState.position.z) * scale;
-                        return (_jsx("div", { className: style.minimapObject, style: assignInlineVars(__assign({ width: "".concat(size.x * scale, "rem"), height: "".concat(size.z * scale, "rem"), top: "50%", left: "50%", transform: "translate(-50%, -50%) translate(".concat(-X, "rem, ").concat(-Z, "rem)"), transformOrigin: "50% 50%" }, objectStyle)), children: _jsx("div", { className: style.text, style: assignInlineVars(textStyle), children: text }) }, key));
+                        return (_jsx("div", { className: style.minimapObject, style: assignInlineVars(__assign({ width: "".concat(size.x * scale, "rem"), height: "".concat(size.z * scale, "rem"), top: "50%", left: "50%", transform: "translate(-50%, -50%) translate(".concat(-X, "rem, ").concat(-Z, "rem)"), transformOrigin: "50% 50%" }, objectStyle)), children: text && (_jsx("div", { className: style.text, style: assignInlineVars(textStyle), children: text })) }, key));
                     }), _jsx("div", { className: style.avatar, style: assignInlineVars(avatarStyle) })] }), !props.blockScaleControl && (_jsxs("div", { className: style.scale, style: assignInlineVars(scaleStyle), children: [_jsx("div", { className: style.plusMinus, style: assignInlineVars(plusMinusStyle), onClick: function () {
                             if (props.blockScale)
                                 return;

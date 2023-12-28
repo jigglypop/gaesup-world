@@ -1,7 +1,7 @@
 "use client";
 
 import { useGaesupController } from "../../../src/gaesup";
-import { GaesupPassiveComponent } from "../../../src/gaesup/component";
+import { PassiveAirplane } from "../../../src/gaesup/component/passive/airplane";
 import { V3 } from "../../../src/gaesup/utils";
 
 export default function Passive() {
@@ -11,44 +11,52 @@ export default function Passive() {
     currentAnimation,
     url,
     vehicleCollider,
-    wheelOffset,
     characterCollider,
     airplaneCollider,
   } = useGaesupController();
-  const _euler = state.euler.clone();
-  // 4개 실험
-  const X = 0.5;
-  const Y = 0.5;
 
-  const stateStack = [];
-
-  for (let i = -0.5; i < X; i++) {
-    for (let j = -0.5; j < Y; j++) {
-      const _state = {
-        ...state,
-        position: state.position.clone().add(V3(i * 10, 0, j * 10)),
-        euler: _euler,
-      };
-      stateStack.push(_state);
-    }
-  }
   return (
     <group>
-      {stateStack.map((state, index) => {
-        return (
-          <GaesupPassiveComponent
-            key={index}
-            mode={mode}
-            state={state}
-            wheelOffset={0.5}
-            vehicleCollider={vehicleCollider}
-            characterCollider={characterCollider}
-            airplaneCollider={airplaneCollider}
-            currentAnimation={currentAnimation}
-            url={url}
-          />
-        );
-      })}
+      {/* {vehicleCollider && (
+        <PassiveVehicle
+          position={state.position.clone().add(V3(-4, 0, -4))}
+          euler={state.euler.clone()}
+          currentAnimation={currentAnimation}
+          wheelSize={V3(
+            vehicleCollider.wheelSizeX,
+            vehicleCollider.wheelSizeY,
+            vehicleCollider.wheelSizeZ
+          )}
+          vehicleSize={V3(
+            vehicleCollider.vehicleSizeX,
+            vehicleCollider.vehicleSizeY,
+            vehicleCollider.vehicleSizeZ
+          )}
+          url={url}
+        ></PassiveVehicle>
+      )} */}
+      {/* <PassiveCharacter
+        position={state.position.clone().add(V3(5, 0, 5))}
+        euler={state.euler.clone()}
+        currentAnimation={currentAnimation}
+        height={characterCollider?.height}
+        diameter={characterCollider?.diameter}
+        url={url}
+      /> */}
+      {url.airplaneUrl && (
+        <PassiveAirplane
+          position={state.position.clone().add(V3(3, 0, 3))}
+          euler={state.euler.clone()}
+          currentAnimation={currentAnimation}
+          airplaneSize={V3(
+            airplaneCollider?.airplaneSizeX,
+            airplaneCollider?.airplaneSizeY,
+            airplaneCollider?.airplaneSizeZ
+          )}
+          airplaneUrl={url.airplaneUrl}
+          gravity={airplaneCollider?.gravity}
+        />
+      )}
     </group>
   );
 }

@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { VECssType } from "../type";
 
 export type minimapPropsType = {
-  text: string;
+  text?: string;
   center: THREE.Vector3;
   size: THREE.Vector3;
 };

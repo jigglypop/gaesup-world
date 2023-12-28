@@ -1,50 +1,74 @@
-import { RapierRigidBody } from "@react-three/rapier";
-import { useRef } from "react";
-import { gaesupPassivePropsType } from "../../../hooks/useGaesupController";
-import mutation from "../../../mutation";
-import { PassiveWrapperRef } from "../common/PassiveWrapperRef";
-import { VehicleCollider } from "./collider";
+import { Collider } from "@dimforge/rapier3d-compat";
+import { CuboidCollider, RapierRigidBody } from "@react-three/rapier";
+import { useMemo, useRef } from "react";
+import { InnerGroupRef } from "../common/InnerGroupRef";
+import { OuterGroupRef } from "../common/OuterGroupRef";
+import { RigidBodyRef } from "../common/RigidbodyRef";
+import { passiveVehiclePropsType } from "./type";
 import { Wheels } from "./wheels";
 
-export function PassiveVehicle({ props }: { props: gaesupPassivePropsType }) {
+export function PassiveVehicle(props: passiveVehiclePropsType) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const outerGroupRef = useRef<THREE.Group>(null);
   const innerGroupRef = useRef<THREE.Group>(null);
-  const characterInnerRef = useRef<THREE.Group>(null);
+  const colliderRef = useRef<Collider>(null);
 
   const refs = {
     rigidBodyRef,
     outerGroupRef,
     innerGroupRef,
-    characterInnerRef,
+    capsuleColliderRef: colliderRef,
   };
 
-  mutation({
-    refs,
-    props,
-    delta: 0.9,
-  });
+  const {
+    position,
+    euler,
+    vehicleSize,
+    wheelSize,
+    currentAnimation,
+    wheelUrl,
+    vehicleUrl,
+  } = useMemo(() => {
+    return {
+      position: props.position,
+      euler: props.euler,
+      vehicleSize: props.vehicleSize,
+      wheelSize: props.wheelSize,
+      currentAnimation: props.currentAnimation,
+      wheelUrl: props.url.wheelUrl,
+      vehicleUrl: props.url.vehicleUrl,
+    };
+  }, [props]);
 
   return (
-    <PassiveWrapperRef
-      props={props}
-      refs={refs}
-      url={props.url?.vehicleUrl}
-      outerChildren={
-        props.url?.wheelUrl ? (
-          <Wheels
-            props={props}
-            rigidBodyRef={rigidBodyRef}
-            url={props.url?.wheelUrl}
+    <OuterGroupRef ref={refs.outerGroupRef}>
+      {props.children}
+      {vehicleUrl && (
+        <RigidBodyRef
+          ref={refs.rigidBodyRef}
+          position={position}
+          rotation={euler}
+        >
+          <InnerGroupRef
+            currentAnimation={currentAnimation}
+            ref={refs.innerGroupRef}
+            url={vehicleUrl}
           />
-        ) : (
-          <></>
-        )
-      }
-    >
-      {props.vehicleCollider && (
-        <VehicleCollider collider={props.vehicleCollider} url={props.url} />
+          <CuboidCollider
+            ref={colliderRef}
+            args={[vehicleSize.x / 2, vehicleSize.y / 2, vehicleSize.z / 2]}
+            position={[0, vehicleSize.y + wheelSize.y || 0, 0]}
+          />
+        </RigidBodyRef>
       )}
-    </PassiveWrapperRef>
+      {wheelUrl && (
+        <Wheels
+          vehicleSize={vehicleSize}
+          wheelSize={wheelSize}
+          rigidBodyRef={rigidBodyRef}
+          url={wheelUrl}
+        />
+      )}
+    </OuterGroupRef>
   );
 }

@@ -41,7 +41,7 @@ export default function initControllerProps({
         },
       });
     }
-  }, [context.mode.controller, keyControl, context.control]);
+  }, [context?.mode.controller, keyControl, context?.control]);
 
   const groundRay: groundRayType = useMemo(() => {
     return {

@@ -3,6 +3,7 @@ import { actionsType, animationTagType, refsType } from "../../controller/type";
 import { joyStickInnerType } from "../../tools/joystick/type";
 import { keyboardMapType } from "../../tools/keyBoardToolTip/type";
 import { minimapInnerType } from "../../tools/minimap/type";
+import { VECssType } from "../../tools/type";
 import { dispatchType } from "../../utils/type";
 export type controlType = {
     forward: boolean;
@@ -15,8 +16,9 @@ export type keyControlType = {
     [key: string]: boolean;
 };
 export type pointType = {
-    text: string;
+    text?: string;
     position: THREE.Vector3;
+    jumpPortalStlye?: Partial<VECssType>;
 };
 export type pointsType = pointType[];
 export type statesType = {

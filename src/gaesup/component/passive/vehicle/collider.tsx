@@ -1,19 +1,23 @@
 import { Collider } from "@dimforge/rapier3d-compat";
 import { CuboidCollider } from "@react-three/rapier";
 import { Ref, forwardRef } from "react";
-import { urlType, vehicleColliderType } from "../../../world/context/type";
 
 export const VehicleCollider = forwardRef(
   (
-    { collider, url }: { collider: vehicleColliderType; url: urlType },
+    {
+      vehicleSize,
+      wheelSize,
+    }: {
+      vehicleSize: THREE.Vector3;
+      wheelSize: THREE.Vector3;
+    },
     ref: Ref<Collider>
   ) => {
-    const { vehicleSizeX, vehicleSizeY, vehicleSizeZ } = collider;
     return (
       <CuboidCollider
         ref={ref}
-        args={[vehicleSizeX / 2, vehicleSizeY / 2, vehicleSizeZ / 2]}
-        position={[0, vehicleSizeY + url.wheelUrl ? collider.wheelSizeY : 0, 0]}
+        args={[vehicleSize.x / 2, vehicleSize.y / 2, vehicleSize.z / 2]}
+        position={[0, vehicleSize.y + wheelSize.y || 0, 0]}
       />
     );
   }

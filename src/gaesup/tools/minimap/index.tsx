@@ -52,9 +52,9 @@ export function MiniMap(props: minimapType) {
         className={style.minimapInner}
         style={assignInlineVars({
           transform: props.blockRotate
-            ? `translate(-50%, -50%)`
+            ? `translate(-50%, -50%) rotate(180deg) `
             : `translate(-50%, -50%) rotate(${
-                (activeState.euler.y * 180) / Math.PI
+                (activeState.euler.y * 180) / Math.PI + 180
               }deg) `,
           ...innerStyle,
         })}
@@ -107,9 +107,11 @@ export function MiniMap(props: minimapType) {
                 ...objectStyle,
               })}
             >
-              <div className={style.text} style={assignInlineVars(textStyle)}>
-                {text}
-              </div>
+              {text && (
+                <div className={style.text} style={assignInlineVars(textStyle)}>
+                  {text}
+                </div>
+              )}
             </div>
           );
         })}

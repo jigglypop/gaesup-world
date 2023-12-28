@@ -34,13 +34,13 @@ export function normalDirection(_a) {
         if (forward) {
             activeState.euler.y =
                 angle +
-                    Math.PI -
-                    (leftward ? Math.PI / 4 : 0) +
+                    Math.PI +
+                    (leftward ? Math.PI / 4 : 0) -
                     (rightward ? Math.PI / 4 : 0);
         }
         else if (backward) {
             activeState.euler.y =
-                angle + (leftward ? Math.PI / 4 : 0) + (rightward ? Math.PI / 4 : 0);
+                angle - ((leftward ? Math.PI / 4 : 0) - (rightward ? Math.PI / 4 : 0));
         }
         else if (leftward) {
             activeState.euler.y = angle - Math.PI / 2;

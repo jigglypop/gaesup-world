@@ -16,9 +16,7 @@ export function CharacterRef({
 }) {
   initCallback(props);
 
-  const { characterGltf, characterCollider, vehicleCollider } =
-    useContext(GaesupWorldContext);
-
+  const { characterGltf } = useContext(GaesupWorldContext);
   const { ref } = playCharacterActions({
     groundRay: props.groundRay,
   });

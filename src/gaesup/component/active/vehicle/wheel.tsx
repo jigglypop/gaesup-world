@@ -39,16 +39,18 @@ export const WheelRegidBodyRef = forwardRef(
 
     return (
       <RigidBody
-        position={wheelPosition}
         colliders={false}
         ref={ref}
         userData={{ intangible: true }}
+        args={[wheelSizeX / 2, wheelSizeY / 2]}
+        rotation={[0, 0, Math.PI / 2]}
       >
         <CylinderCollider
           args={[wheelSizeX / 2, wheelSizeY / 2]}
           rotation={[0, 0, Math.PI / 2]}
           ref={colliderRef}
         />
+
         <Gltf src={url.wheelUrl} />
       </RigidBody>
     );

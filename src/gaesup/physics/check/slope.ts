@@ -1,4 +1,3 @@
-import { vec3 } from "@react-three/rapier";
 import { calcPropType } from "../type";
 
 export default function slope(prop: calcPropType) {
@@ -28,23 +27,23 @@ export default function slope(prop: calcPropType) {
     capsuleColliderRef.current
   );
 
-  if (slopeRay.hit && groundRay.rayCast) {
-    const castRayNormal = slopeRay.hit.collider.castRayAndGetNormal(
-      groundRay.rayCast,
-      slopeRay.length,
-      false
-    );
-    if (castRayNormal) slopeRay.current = vec3(castRayNormal.normal);
-  }
-  if (
-    slopeRay.hit &&
-    groundRay.hit &&
-    slopeRay.hit.toi < collider.radius + 0.3 + 0.5
-  ) {
-    slopeRay.angle = Number(
-      Math.atan(
-        (groundRay.hit.toi - slopeRay.hit.toi) / slopeRay.offset.z
-      ).toFixed(2)
-    );
-  }
+  // if (slopeRay.hit && groundRay.rayCast) {
+  //   const castRayNormal = slopeRay.hit.collider.castRayAndGetNormal(
+  //     groundRay.rayCast,
+  //     slopeRay.length,
+  //     false
+  //   );
+  //   if (castRayNormal) slopeRay.current = vec3(castRayNormal.normal);
+  // }
+  // if (
+  //   slopeRay.hit &&
+  //   groundRay.hit &&
+  //   slopeRay.hit.toi < collider.radius + 0.3 + 0.5
+  // ) {
+  //   slopeRay.angle = Number(
+  //     Math.atan(
+  //       (groundRay.hit.toi - slopeRay.hit.toi) / slopeRay.offset.z
+  //     ).toFixed(2)
+  //   );
+  // }
 }

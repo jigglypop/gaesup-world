@@ -20,7 +20,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 import { jsx as _jsx } from "react/jsx-runtime";
 import { vec3 } from "@react-three/rapier";
-import { useContext, useEffect, useRef } from "react";
+import { Suspense, useContext, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { GaesupWorldContext, GaesupWorldDispatchContext, } from "../world/context/index.js";
 export function GaeSupProps(_a) {
@@ -31,7 +31,7 @@ export function GaeSupProps(_a) {
     useEffect(function () {
         if (jumpPoint && position) {
             points.push({
-                text: text,
+                text: text || null,
                 position: vec3().set(position[0], 5, position[2]),
             });
             dispatch({
@@ -44,9 +44,7 @@ export function GaeSupProps(_a) {
         if (groupRef.current) {
             var box = new THREE.Box3().setFromObject(groupRef.current);
             var size = vec3(box.getSize(new THREE.Vector3())).clone();
-            // .multiplyScalar(minimap.ratio);
             var center = vec3(box.getCenter(new THREE.Vector3())).clone();
-            // .multiplyScalar(minimap.ratio);
             var obj = {
                 text: text,
                 size: size,
@@ -61,5 +59,5 @@ export function GaeSupProps(_a) {
             });
         }
     }, []);
-    return (_jsx("group", { ref: groupRef, position: position, children: children }));
+    return (_jsx(Suspense, { fallback: null, children: _jsx("group", { ref: groupRef, position: position, children: children }) }));
 }

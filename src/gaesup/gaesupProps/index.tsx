@@ -1,5 +1,5 @@
 import { vec3 } from "@react-three/rapier";
-import { useContext, useEffect, useRef } from "react";
+import { Suspense, useContext, useEffect, useRef } from "react";
 import * as THREE from "three";
 import {
   GaesupWorldContext,
@@ -12,7 +12,7 @@ export function GaeSupProps({
   jumpPoint,
   children,
 }: {
-  text: string;
+  text?: string;
   position?: [number, number, number];
   jumpPoint?: boolean;
   children: React.ReactNode;
@@ -23,7 +23,7 @@ export function GaeSupProps({
   useEffect(() => {
     if (jumpPoint && position) {
       points.push({
-        text,
+        text: text || null,
         position: vec3().set(position[0], 5, position[2]),
       });
       dispatch({
@@ -36,9 +36,7 @@ export function GaeSupProps({
     if (groupRef.current) {
       const box = new THREE.Box3().setFromObject(groupRef.current);
       const size = vec3(box.getSize(new THREE.Vector3())).clone();
-      // .multiplyScalar(minimap.ratio);
       const center = vec3(box.getCenter(new THREE.Vector3())).clone();
-      // .multiplyScalar(minimap.ratio);
       const obj = {
         text,
         size,
@@ -57,8 +55,10 @@ export function GaeSupProps({
   }, []);
 
   return (
-    <group ref={groupRef} position={position}>
-      {children}
-    </group>
+    <Suspense fallback={null}>
+      <group ref={groupRef} position={position}>
+        {children}
+      </group>
+    </Suspense>
   );
 }

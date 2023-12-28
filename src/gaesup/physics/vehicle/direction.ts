@@ -6,15 +6,14 @@ export default function direction(prop: calcPropType) {
   const {
     state,
     worldContext: { activeState, control, mode, joystick },
+    dispatch,
   } = prop;
   const { forward, backward, leftward, rightward } = control;
 
-  let start = Number(forward) - Number(backward);
+  let start = Number(backward) - Number(forward);
   if (mode.controller === "joystick") {
     if (!joystick.joyStickOrigin.isCenter)
       start = joystick.joyStickOrigin.isOn ? 1 : 0;
-  } else {
-    start = Number(forward) - Number(backward);
   }
 
   const front = vec3().set(start, 0, start);

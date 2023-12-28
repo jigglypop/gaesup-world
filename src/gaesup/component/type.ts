@@ -12,5 +12,4 @@ export type passiveRefsType = {
   rigidBodyRef: RefObject<RapierRigidBody>;
   outerGroupRef: RefObject<THREE.Group>;
   innerGroupRef: RefObject<THREE.Group>;
-  characterInnerRef: RefObject<THREE.Group>;
 };

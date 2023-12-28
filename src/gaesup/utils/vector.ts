@@ -42,3 +42,12 @@ export function Qt(
 export function Elr(x: number, y: number, z: number): THREE.Euler {
   return new THREE.Euler(x, y, z);
 }
+
+export function calcAngleByVector(dir: THREE.Vector3): number {
+  const axis = V3(0, 0, 1);
+  const angles = Math.acos(dir.dot(axis) / dir.length());
+  const product = dir.cross(axis);
+  const isLeft = Math.sin(product.y) || 1;
+  const angle = Math.PI - angles * isLeft;
+  return angle;
+}

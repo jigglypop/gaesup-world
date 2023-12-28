@@ -24,7 +24,7 @@ export function WrapperRef({
 }) {
   return (
     <OuterGroupRef ref={refs.outerGroupRef} props={props}>
-      <RigidBodyRef ref={refs.rigidBodyRef} props={props}>
+      <RigidBodyRef ref={refs.rigidBodyRef}>
         <SlopeRayRef
           slopeRay={props.slopeRay}
           groundRay={props.groundRay}

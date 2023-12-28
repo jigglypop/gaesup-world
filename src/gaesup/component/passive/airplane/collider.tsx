@@ -1,17 +1,14 @@
 import { Collider } from "@dimforge/rapier3d-compat";
 import { CuboidCollider } from "@react-three/rapier";
 import { Ref, forwardRef } from "react";
-import { airplaneColliderType } from "../../../world/context/type";
 
 export const AirplaneCollider = forwardRef(
-  ({ collider }: { collider: airplaneColliderType }, ref: Ref<Collider>) => {
-    const { airplaneSizeX, airplaneSizeY, airplaneSizeZ } = collider;
-
+  ({ airplaneSize }: { airplaneSize: THREE.Vector3 }, ref: Ref<Collider>) => {
     return (
       <CuboidCollider
         ref={ref}
-        args={[airplaneSizeX / 2, airplaneSizeY / 2, airplaneSizeZ / 2]}
-        position={[0, airplaneSizeY / 2, 0]}
+        args={[airplaneSize.x / 2, airplaneSize.y / 2, airplaneSize.z / 2]}
+        position={[0, airplaneSize.y / 2, 0]}
       />
     );
   }

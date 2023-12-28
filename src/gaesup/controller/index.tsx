@@ -21,6 +21,8 @@ export function GaesupController(props: controllerType) {
   const innerGroupRef = useRef<THREE.Group>(null);
   const slopeRayOriginRef = useRef<THREE.Mesh>(null);
   const characterInnerRef = useRef<THREE.Group>(null);
+  const passiveRigidBodyRef = useRef<RapierRigidBody>(null);
+
   const [controller, controllerDispatch] = useReducer(gaesupControllerReducer, {
     cameraMode: Object.assign(
       gaesupControllerDefault.cameraMode,
@@ -83,6 +85,7 @@ export function GaesupController(props: controllerType) {
       innerGroupRef,
       slopeRayOriginRef,
       characterInnerRef,
+      passiveRigidBodyRef,
     };
   }, []);
   const prop: controllerInnerType = {

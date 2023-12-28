@@ -38,7 +38,7 @@ export const gaesupControllerDefault = {
     maxSpeed: 60,
     accelRatio: 2,
     brakeRatio: 5,
-    buoyancy: 0.5,
+    buoyancy: 0.2,
     linearDamping: 1,
   },
   vehicle: {
@@ -52,7 +52,7 @@ export const gaesupControllerDefault = {
     walkSpeed: 4,
     runSpeed: 10,
     turnSpeed: 10,
-    jumpSpeed: 5,
+    jumpSpeed: 0.5,
     linearDamping: 1,
   },
   callbacks: {
@@ -68,7 +68,6 @@ export const gaesupControllerDefault = {
     innerGroupRef: null,
     slopeRayOriginRef: null,
     characterInnerRef: null,
-    jointRefs: null,
   },
   isRider: false,
 };

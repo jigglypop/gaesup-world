@@ -1,11 +1,9 @@
 import { RootState } from "@react-three/fiber";
 
 import { joyStickInnerType } from "../../tools/joystick/type";
-import { V3 } from "../../utils/vector";
+import { V3, calcAngleByVector } from "../../utils/vector";
 import { activeStateType, modeType } from "../../world/context/type";
 import { calcPropType } from "../type";
-
-export function joystickDirection() {}
 
 export function orbitDirection({
   activeState,
@@ -64,29 +62,16 @@ export function normalDirection({
         -state.camera.rotation.y - joystick.joyStickOrigin.angle - Math.PI / 2;
     start = joystick.joyStickOrigin.isOn ? 1 : 0;
   } else {
-    let angle = -state.camera.rotation.y;
-    if (forward) {
-      activeState.euler.y =
-        angle +
-        Math.PI -
-        (leftward ? Math.PI / 4 : 0) +
-        (rightward ? Math.PI / 4 : 0);
-    } else if (backward) {
-      activeState.euler.y =
-        angle + (leftward ? Math.PI / 4 : 0) + (rightward ? Math.PI / 4 : 0);
-    } else if (leftward) {
-      activeState.euler.y = angle - Math.PI / 2;
-    } else if (rightward) {
-      activeState.euler.y = angle + Math.PI / 2;
-    }
+    // 일반 컨트롤
+    // right hand rule. north -> east -> south -> west
+    const dirX = Number(leftward) - Number(rightward);
+    const dirZ = Number(forward) - Number(backward);
+    if (dirX === 0 && dirZ === 0) return;
+    const dir = V3(dirX, 0, dirZ);
+    const angle = calcAngleByVector(dir);
+    activeState.euler.y = angle;
+    activeState.dir.set(dirX, 0, dirZ);
   }
-  const front = V3(
-    Number(rightward) - Number(leftward),
-    0,
-    Number(backward) - Number(forward)
-  );
-  activeState.direction = front;
-  activeState.dir = activeState.direction.normalize();
 }
 
 export default function direction(prop: calcPropType) {

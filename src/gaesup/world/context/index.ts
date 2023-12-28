@@ -41,6 +41,7 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     airplaneX: 0.5,
     airplaneY: 0.5,
     airplaneZ: 0.5,
+    gravity: 0.2,
   },
   mode: {
     type: "character",

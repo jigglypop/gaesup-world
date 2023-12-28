@@ -10,9 +10,12 @@ import { GamePad } from "../../../src/gaesup/tools/gamepad";
 import { JoyStick } from "../../../src/gaesup/tools/joystick";
 import { KeyBoardToolTip } from "../../../src/gaesup/tools/keyBoardToolTip";
 import { MiniMap } from "../../../src/gaesup/tools/minimap";
+import Passive from "../passive";
+import Direction from "../platform/Direction";
 import Floor from "../platform/Floor";
 import RigidObjects from "../platform/RigidObjects";
 import RoughPlane from "../platform/RoughPlane";
+import Slopes from "../platform/Slopes";
 import * as style from "./style.css";
 
 export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
@@ -27,21 +30,26 @@ export const keyboardMap = [
 ];
 
 export default function Selected() {
-  const CHARACTER_URL = "./santa.glb";
-  // const AIRPLANE_URL = S3 + "/air.glb";
-  // const VEHICLE_URL = S3 + "/gaesupkart.glb";
-  // const WHEEL_URL = S3 + "/wheel.glb";
+  const CHARACTER_URL = S3 + "/santa.glb";
+  const AIRPLANE_URL = S3 + "/air.glb";
+  const VEHICLE_URL = S3 + "/gaesupkart.glb";
+  const WHEEL_URL = S3 + "/wheel.glb";
 
   return (
     <GaesupWorld
       url={{
         characterUrl: CHARACTER_URL,
+        vehicleUrl: VEHICLE_URL,
+        wheelUrl: WHEEL_URL,
+        airplaneUrl: AIRPLANE_URL,
       }}
       mode={{
-        type: "character",
+        type: "airplane",
       }}
+      debug={true}
     >
       <Canvas
+        frameloop="demand"
         shadows
         dpr={[1, 2]}
         style={{ width: "100dvw", height: "100dvh" }}
@@ -60,14 +68,15 @@ export default function Selected() {
           shadow-camera-bottom={-50}
           shadow-camera-left={-50}
         />
-        <Physics>
+        <Physics debug>
           <KeyboardControls map={keyboardMap}>
             <GaesupController
               cameraMode={{
-                controlType: "orbit",
+                controlType: "normal",
               }}
-              orthographicCamera={{
-                zoom: 80,
+              perspectiveCamera={{
+                XZDistance: 20,
+                YDistance: 15,
               }}
               onAnimate={({ playAnimation }) => {
                 playAnimation("greet", "keyZ");
@@ -76,9 +85,10 @@ export default function Selected() {
           </KeyboardControls>
           <RoughPlane />
           <RigidObjects />
-          {/* <FloatMove /> */}
+          <Passive />
           <Floor />
-          {/* <Direction /> */}
+          <Slopes />
+          <Direction />
         </Physics>
       </Canvas>
       <div className={style.footer}>
@@ -99,34 +109,10 @@ export default function Selected() {
             <GameBoy />
           </div>
           <div className={style.keyBoardToolTipOuter}>
-            <KeyBoardToolTip
-              keyBoardMap={keyboardMap}
-              label={{
-                Z: "인사(Z)",
-                Shift: "달리기(SHIFT)",
-                Space: "점프(SPACE)",
-              }}
-              selectedKeyCapStyle={{
-                padding: "2rem",
-              }}
-              notSelectedkeyCapStyle={{
-                padding: "2rem",
-              }}
-              keyBoardToolTipInnerStyle={{
-                gridGap: "2rem",
-              }}
-              keyCapStyle={{
-                display: "none",
-              }}
-            />
+            <KeyBoardToolTip keyBoardMap={keyboardMap} />
           </div>
           <div className={style.minimapOuter}>
-            <MiniMap
-              blockRotate={false}
-              objectStyle={{
-                background: "rgba(0, 0, 0, 0.1)",
-              }}
-            />
+            <MiniMap blockRotate={true} />
           </div>
         </div>
       </div>

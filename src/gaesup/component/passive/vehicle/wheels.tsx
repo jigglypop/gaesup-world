@@ -1,6 +1,5 @@
 import { RapierRigidBody } from "@react-three/rapier";
 import { createRef, useRef } from "react";
-import { gaesupPassivePropsType } from "../../../hooks/useGaesupController";
 import { WheelRegidBodyRef } from "./wheel";
 
 export type useSetWheelType = {
@@ -8,24 +7,25 @@ export type useSetWheelType = {
 };
 
 export function Wheels({
-  props,
+  vehicleSize,
+  wheelSize,
   rigidBodyRef,
   url,
 }: {
-  props: gaesupPassivePropsType;
+  vehicleSize: THREE.Vector3;
+  wheelSize: THREE.Vector3;
   rigidBodyRef: React.MutableRefObject<RapierRigidBody>;
   url: string;
 }) {
-  const { wheelOffset, vehicleCollider: collider } = props;
-  const { vehicleSizeX, vehicleSizeZ, wheelSizeX, wheelSizeZ } = collider;
-  const X = (vehicleSizeX - wheelSizeX) / 2 + wheelOffset;
-  const Z = (vehicleSizeZ - 2 * wheelSizeZ) / 2 + wheelOffset;
+  const X = (vehicleSize.x - wheelSize.x) / 2 + 0.5;
+  const Z = (vehicleSize.z - 2 * wheelSize.z) / 2 + 0.5;
   const wheelPositions: [number, number, number][] = [
     [-X, 0, Z],
     [-X, 0, -Z],
     [X, 0, Z],
     [X, 0, -Z],
   ];
+
   const wheelRefs = useRef(
     wheelPositions.map(() => createRef<RapierRigidBody>())
   );
@@ -41,7 +41,7 @@ export function Wheels({
             bodyRef: rigidBodyRef,
             wheel: wheelRefs.current[index],
             bodyAnchor: wheelPosition,
-            vehicleCollider: collider,
+            wheelSize,
             wheelAnchor: [0, 0, 0],
             rotationAxis: [1, 0, 0],
             url,
