@@ -28,7 +28,6 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
     vehicleGltf: null,
     wheelGltf: null,
     airplaneGltf: null,
-    points: [],
     refs: null,
     states: gaesupWorldDefault.states,
     minimap: gaesupWorldDefault.minimap,

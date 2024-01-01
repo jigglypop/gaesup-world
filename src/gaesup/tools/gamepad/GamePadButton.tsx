@@ -1,18 +1,16 @@
-import { useState } from "react";
+import { CSSProperties, useState } from "react";
 
-import { assignInlineVars } from "@vanilla-extract/dynamic";
 import { usePushKey } from "../pushKey/index.js";
-import { VECssType } from "../type.js";
-import * as style from "./style.css";
+import "./style.css";
 
 export default function GamePadButton({
   value,
   name,
-  gamepadButtonStyle,
+  gamePadButtonStyle,
 }: {
   value: string;
   name: string;
-  gamepadButtonStyle: Partial<VECssType>;
+  gamePadButtonStyle: CSSProperties;
 }) {
   const [isClicked, setIsClicked] = useState(false);
   const { pushKey } = usePushKey();
@@ -29,9 +27,7 @@ export default function GamePadButton({
 
   return (
     <button
-      className={style.padButton({
-        isClicked: isClicked,
-      })}
+      className={`padButton ${isClicked ? "isClicked" : ""}`}
       onMouseDown={() => onMouseDown()}
       onMouseUp={() => onMouseLeave()}
       onMouseLeave={() => onMouseLeave()}
@@ -41,7 +37,7 @@ export default function GamePadButton({
       }}
       onPointerDown={() => onMouseDown()}
       onPointerUp={() => onMouseLeave()}
-      style={assignInlineVars(gamepadButtonStyle)}
+      style={gamePadButtonStyle}
     >
       {name}
     </button>

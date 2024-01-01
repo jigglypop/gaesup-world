@@ -1,4 +1,3 @@
-import { assignInlineVars } from "@vanilla-extract/dynamic";
 import {
   MouseEventHandler,
   TouchEventHandler,
@@ -8,10 +7,9 @@ import {
   useRef,
   useState,
 } from "react";
-import { vars } from "../../../styles/theme.css";
 import { GaesupWorldContext } from "../../world/context";
 import useJoyStick from "./default";
-import * as style from "./style.css";
+import "./style.css";
 import { joyStickType } from "./type";
 
 export function JoyStick(props: joyStickType) {
@@ -136,8 +134,8 @@ export function JoyStick(props: joyStickType) {
       position: "fixed",
       background:
         currentRadius > originRadius / 2
-          ? vars.gradient.lightGreen
-          : vars.gradient.green,
+          ? "linear-gradient( 68.4deg,  rgba(176,255,237,1) -0.4%, rgba(161,244,255,1) 100.2% )"
+          : "linear-gradient( 68.4deg,  rgba(99,251,215,1) -0.4%, rgba(5,222,250,1) 100.2% )",
       boxShadow: "0 0 10px rgba(99,251,215,1)",
     }));
     setBall({
@@ -195,11 +193,11 @@ export function JoyStick(props: joyStickType) {
     <>
       {mode.controller === "joystick" && (
         <div
-          className={style.joyStick}
-          style={assignInlineVars({
+          className="joyStick"
+          style={{
             position: "fixed",
             ...joyStickStyle,
-          })}
+          }}
           ref={outerRef}
           onMouseDown={(e) => {
             e.preventDefault();
@@ -220,7 +218,7 @@ export function JoyStick(props: joyStickType) {
           onTouchCancel={handleTouchEnd}
         >
           <div
-            className={`${style.joystickBall}`}
+            className="joystickBall"
             ref={childRef}
             onMouseDown={(e) => {
               e.preventDefault();
@@ -239,7 +237,7 @@ export function JoyStick(props: joyStickType) {
             onTouchEnd={handleTouchEnd}
             onTouchMove={handleTouchMove}
             onTouchCancel={handleTouchEnd}
-            style={assignInlineVars({
+            style={{
               position: state.position as "fixed" | "absolute" | "relative",
               transform: state.transform,
               background: joyStickBallStyle?.background || state.background,
@@ -247,7 +245,7 @@ export function JoyStick(props: joyStickType) {
               top: joyStickBall.top,
               left: joyStickBall.left,
               ...joyStickBallStyle,
-            })}
+            }}
           />
         </div>
       )}

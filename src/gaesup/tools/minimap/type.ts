@@ -1,5 +1,5 @@
+import { CSSProperties } from "react";
 import * as THREE from "three";
-import { VECssType } from "../type";
 
 export type minimapPropsType = {
   text?: string;
@@ -23,7 +23,7 @@ export type minimapType = {
     | "avatarStyle"
     | "directionStyle"
     | "scaleStyle"
-    | "plusMinusStyle"]?: Partial<VECssType>;
+    | "plusMinusStyle"]?: CSSProperties;
 } & {
   minScale?: number;
   maxScale?: number;

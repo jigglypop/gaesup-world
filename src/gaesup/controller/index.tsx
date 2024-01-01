@@ -36,10 +36,6 @@ export function GaesupController(props: controllerType) {
       gaesupControllerDefault.perspectiveCamera,
       props.perspectiveCamera || {}
     ),
-    orthographicCamera: Object.assign(
-      gaesupControllerDefault.orthographicCamera,
-      props.orthographicCamera || {}
-    ),
     airplane: Object.assign(
       gaesupControllerDefault.airplane,
       props.airplane || {}

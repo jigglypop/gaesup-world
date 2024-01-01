@@ -1,8 +1,7 @@
-import { assignInlineVars } from "@vanilla-extract/dynamic";
 import { useContext } from "react";
 import { GaesupWorldContext } from "../../world/context";
 import GameBoyButton, { gameBoyButtonType } from "./GameBoyButton";
-import * as style from "./style.css";
+import "./style.css";
 import { gameboyType } from "./type";
 
 export const GameBoyDirections = [
@@ -23,7 +22,7 @@ export function GameBoy(props: gameboyType) {
   return (
     <>
       {mode.controller === "gameboy" && (
-        <div className={style.gameBoy} style={assignInlineVars(gameboyStyle)}>
+        <div className="gameboy" style={gameboyStyle}>
           {GameBoyDirections.map((item: gameBoyButtonType, key: number) => {
             return (
               <GameBoyButton

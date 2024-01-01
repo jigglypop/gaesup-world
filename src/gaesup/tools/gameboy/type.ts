@@ -1,5 +1,5 @@
-import { VECssType } from "../type";
+import { CSSProperties } from "react";
 
 export type gameboyType = {
-  [key in "gameboyStyle" | "gameboyButtonStyle"]?: Partial<VECssType>;
+  [key in "gameboyStyle" | "gameboyButtonStyle"]?: CSSProperties;
 };

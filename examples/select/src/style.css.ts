@@ -1,8 +1,7 @@
 import { fontFace, style } from "@vanilla-extract/css";
 import { recipe } from "@vanilla-extract/recipes";
-import { fixed, flex } from "../../../src/styles/recipe/index.css";
-import { sprinkles } from "../../../src/styles/sprinkles/index.css";
-import { vars } from "../../../src/styles/theme.css";
+import { fixed, flex, sprinkles } from "../styles";
+import { vars } from "../styles/theme.css";
 
 const BlackHanSans = fontFace({
   src: 'local("/public/fonts/BlackHanSans-Regular.ttf")',
@@ -36,10 +35,18 @@ export const minimapOuter = style([
 
 export const gameBoyOuter = style([
   fixed({
-    south: true,
+    south_east: true,
   }),
   flex({
     column: "7",
+  }),
+  sprinkles({
+    display: {
+      desktop: "none",
+      laptop: "none",
+      tablet: "flex",
+      mobile: "flex",
+    },
   }),
   {
     width: "100%",
@@ -169,3 +176,13 @@ export const button = recipe({
     },
   },
 });
+export const gamePad = style([
+  fixed({
+    south_east: true,
+  }),
+  {
+    marginRight: "5rem",
+    width: "12rem",
+    zIndex: 10000,
+  },
+]);

@@ -30,17 +30,15 @@ export default function Floor() {
         >
           <planeGeometry args={[1000, 1000]} />
           <MeshReflectorMaterial
-            mirror={0}
+            mirror={1}
             blur={[300, 100]}
             resolution={2048}
-            mixBlur={1}
-            mixStrength={80}
-            roughness={1}
-            depthScale={1.2}
-            minDepthThreshold={0.4}
-            maxDepthThreshold={1.4}
-            color="#212121"
-            metalness={0.5}
+            mixBlur={10}
+            mixStrength={10}
+            depthScale={10}
+            minDepthThreshold={10}
+            maxDepthThreshold={14}
+            color="#1f1f1f"
           />
         </mesh>
       </RigidBody>

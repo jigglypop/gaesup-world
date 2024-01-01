@@ -9,30 +9,16 @@ import {
 export function GaeSupProps({
   text,
   position,
-  jumpPoint,
   children,
 }: {
   text?: string;
   position?: [number, number, number];
-  jumpPoint?: boolean;
   children: React.ReactNode;
 }) {
   const groupRef = useRef<THREE.Group>(null);
-  const { minimap, points } = useContext(GaesupWorldContext);
+  const { minimap } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
   useEffect(() => {
-    if (jumpPoint && position) {
-      points.push({
-        text: text || null,
-        position: vec3().set(position[0], 5, position[2]),
-      });
-      dispatch({
-        type: "update",
-        payload: {
-          points: [...points],
-        },
-      });
-    }
     if (groupRef.current) {
       const box = new THREE.Box3().setFromObject(groupRef.current);
       const size = vec3(box.getSize(new THREE.Vector3())).clone();

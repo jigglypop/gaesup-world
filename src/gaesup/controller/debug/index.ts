@@ -10,14 +10,12 @@ import {
   cameraOptionType,
   characterDebugType,
   gaesupControllerType,
-  orthographicCameraDebugType,
   perspectiveCameraDebugType,
   vehicleDebugType,
 } from "../context/type";
 import { airplaneDebugMap } from "./airplane";
 import { cameraOptionDebugMap } from "./cameraOption";
 import { characterDebugMap } from "./character";
-import { orthographicCameraDebugMap } from "./orthographicCamera";
 import { perspectiveCameraDebugMap } from "./perspectiveCamera";
 import { vehicleDebugMap } from "./vehicle";
 
@@ -76,13 +74,6 @@ export default function initDebug({
     debugMap: airplaneDebugMap,
   });
 
-  const orthographicCameraOptionValue = debug<orthographicCameraDebugType>({
-    debug: worldDebug,
-    debugProps: controllerContext.orthographicCamera,
-    tag: "orthographicCamera",
-    debugMap: orthographicCameraDebugMap,
-  });
-
   const perspectiveCameraOptionValue = debug<perspectiveCameraDebugType>({
     debug: worldDebug,
     debugProps: controllerContext.perspectiveCamera,
@@ -101,10 +92,6 @@ export default function initDebug({
           ...controllerContext.perspectiveCamera,
           ...perspectiveCameraOptionValue,
         },
-        orthographicCamera: {
-          ...controllerContext.orthographicCamera,
-          ...orthographicCameraOptionValue,
-        },
         cameraMode: {
           cameraType: cameraType.cameraType,
           controlType: controlType.controlType as "normal" | "orbit",
@@ -118,7 +105,6 @@ export default function initDebug({
     vehicleOptionValue,
     airplaneOptionValue,
     perspectiveCameraOptionValue,
-    orthographicCameraOptionValue,
     cameraType,
     controlType,
   ]);

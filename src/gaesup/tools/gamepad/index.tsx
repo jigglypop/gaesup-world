@@ -1,9 +1,8 @@
 import { useContext } from "react";
 
-import { assignInlineVars } from "@vanilla-extract/dynamic";
 import { GaesupWorldContext } from "../../world/context/index.js";
 import GamePadButton from "./GamePadButton.js";
-import * as style from "./style.css";
+import "./style.css";
 import { gamepadType } from "./type.js";
 
 type gameBoyDirectionType = {
@@ -14,7 +13,7 @@ type gameBoyDirectionType = {
 };
 
 export function GamePad(props: gamepadType) {
-  const { gamepadStyle, gamepadGridStyle, gamepadButtonStyle, label } = props;
+  const { gamePadStyle, gamePadButtonStyle, label } = props;
   const { control, mode } = useContext(GaesupWorldContext);
   const GamePadDirections = Object.keys(control)
     .map((key) => {
@@ -40,24 +39,17 @@ export function GamePad(props: gamepadType) {
   return (
     <>
       {(mode.controller === "joystick" || mode.controller === "gameboy") && (
-        <div className={style.gamePad} style={assignInlineVars(gamepadStyle)}>
-          <div
-            className={style.gamePadGrid}
-            style={assignInlineVars(gamepadGridStyle)}
-          >
-            {GamePadDirections.map(
-              (item: gameBoyDirectionType, key: number) => {
-                return (
-                  <GamePadButton
-                    key={key}
-                    value={item.value}
-                    name={item.name}
-                    gamepadButtonStyle={gamepadButtonStyle}
-                  />
-                );
-              }
-            )}
-          </div>
+        <div className="gamePad" style={gamePadStyle}>
+          {GamePadDirections.map((item: gameBoyDirectionType, key: number) => {
+            return (
+              <GamePadButton
+                key={key}
+                value={item.value}
+                name={item.name}
+                gamePadButtonStyle={gamePadButtonStyle}
+              />
+            );
+          })}
         </div>
       )}
     </>

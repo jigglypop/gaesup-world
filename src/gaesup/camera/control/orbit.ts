@@ -12,8 +12,8 @@ export default function orbit(prop: cameraPropType) {
     V3(Math.sin(activeState.euler.y), 0, Math.cos(activeState.euler.y))
       .normalize()
       .clone()
-      .multiplyScalar(perspectiveCamera.XZDistance)
-      .multiplyScalar(perspectiveCamera.isFront ? -1 : 1)
+      .multiplyScalar(-perspectiveCamera.XZDistance)
+      // .multiplyScalar(-1)
       .add(V3(0, perspectiveCamera.YDistance, 0))
   );
 
@@ -21,11 +21,7 @@ export default function orbit(prop: cameraPropType) {
   state.camera.quaternion.copy(
     activeState.quat
       .clone()
-      .multiply(
-        perspectiveCamera.isFront
-          ? quat().setFromAxisAngle(V3(0, 1, 0), Math.PI)
-          : quat()
-      )
+      .multiply(quat().setFromAxisAngle(V3(0, 1, 0), Math.PI))
   );
   state.camera.lookAt(activeState.position.clone());
 }

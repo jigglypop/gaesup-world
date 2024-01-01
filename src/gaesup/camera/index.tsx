@@ -1,17 +1,13 @@
-import {
-  MapControls,
-  OrbitControls,
-  OrthographicCamera,
-  PerspectiveCamera,
-} from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useContext, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { GaesupControllerContext } from "../controller/context";
 import { controllerInnerType, refsType } from "../controller/type";
 import { cameraPropType, intersectObjectMapType } from "../physics/type";
-import { GaesupWorldContext } from "../world/context";
-import mapControl from "./control/map";
+import {
+  GaesupWorldContext,
+  GaesupWorldDispatchContext,
+} from "../world/context";
 import normal from "./control/normal";
 import orbit from "./control/orbit";
 
@@ -28,12 +24,10 @@ export default function Camera({
 }) {
   const worldContext = useContext(GaesupWorldContext);
   const controllerContext = useContext(GaesupControllerContext);
-  const { cameraMode, perspectiveCamera, orthographicCamera } =
-    controllerContext;
+  const dispatch = useContext(GaesupWorldDispatchContext);
+  const { cameraMode } = controllerContext;
   const { rigidBodyRef, outerGroupRef } = refs;
-  const { cameraRay } = prop;
-  const { camera, scene } = useThree();
-  const { activeState } = worldContext;
+  const { scene, camera } = useThree();
 
   const intersectObjectMap: intersectObjectMapType = useMemo(() => ({}), []);
   const cameraProp: cameraPropType = {
@@ -70,15 +64,10 @@ export default function Camera({
       return null;
     cameraProp.state = state;
     cameraProp.delta = delta;
-
-    if (cameraMode.cameraType === "perspective") {
-      if (cameraMode.controlType === "orbit") {
-        orbit(cameraProp);
-      } else if (cameraMode.controlType === "normal") {
-        normal(cameraProp);
-      }
-    } else if (cameraMode.cameraType === "orthographic") {
-      mapControl(cameraProp);
+    if (cameraMode.controlType === "orbit") {
+      orbit(cameraProp);
+    } else if (cameraMode.controlType === "normal") {
+      normal(cameraProp);
     }
     // const distV3 = camera.position.clone().sub(activeState.position);
     // cameraRay.origin.copy(camera.position);
@@ -86,20 +75,20 @@ export default function Camera({
     // detector(cameraProp);
   });
 
-  return (
-    <>
-      {cameraMode.cameraType === "perspective" && (
-        <>
-          <OrbitControls target={activeState.position}></OrbitControls>
-          <PerspectiveCamera makeDefault {...perspectiveCamera} />
-        </>
-      )}
-      {cameraMode.cameraType === "orthographic" && (
-        <>
-          <MapControls target={activeState.position}></MapControls>
-          <OrthographicCamera makeDefault {...orthographicCamera} />
-        </>
-      )}
-    </>
-  );
+  // cameraProp.controllerContext.perspectiveCamera.XZDistance = 50;
+  // cameraProp.controllerContext.perspectiveCamera.YDistance = 40;
+  // const perspective: perspectiveCameraPropType = {
+  //   ...cameraProp.controllerContext.perspectiveCamera,
+  //   XZDistance: 50,
+  //   YDistance: 40,
+  // };
+  // console.log("hi");
+  // console.log(dispatch);
+  // dispatch({
+  //   type: "update",
+  //   payload: {
+  //     perspectiveCamera: { ...perspective },
+  //   },
+  // });
+  return <></>;
 }

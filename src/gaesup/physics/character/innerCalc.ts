@@ -8,16 +8,20 @@ export default function innerCalc(prop: calcPropType) {
     controllerContext: {
       character: { linearDamping },
     },
-    worldContext: { activeState },
+    worldContext: { activeState, states },
     dispatch,
     delta,
   } = prop;
   activeState.position = vec3(rigidBodyRef.current.translation());
   activeState.velocity = vec3(rigidBodyRef.current.linvel());
-  rigidBodyRef.current.setLinearDamping(linearDamping);
+  if (states.isJumping || rigidBodyRef.current.linvel().y < 0) {
+    rigidBodyRef.current.setLinearDamping(linearDamping);
+  } else {
+    rigidBodyRef.current.setLinearDamping(
+      states.isNotMoving ? linearDamping * 5 : linearDamping
+    );
+  }
   rigidBodyRef.current.setEnabledRotations(false, false, false, false);
-  // rigidBodyRef.current.setTranslation(activeState.position.clone(), false);
-
   innerGroupRef.current.quaternion.rotateTowards(
     quat().setFromEuler(activeState.euler),
     10 * delta

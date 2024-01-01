@@ -32,10 +32,12 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
 
   useFrame(() => {
     if (innerGroupRef && innerGroupRef.current) {
+      const _euler = euler.clone();
+      _euler.y = 0;
       innerGroupRef.current.setRotationFromQuaternion(
         quat()
           .setFromEuler(innerGroupRef.current.rotation.clone())
-          .slerp(quat().setFromEuler(euler), 0.1)
+          .slerp(quat().setFromEuler(_euler), 0.2)
       );
     }
     if (rigidBodyRef && rigidBodyRef.current) {

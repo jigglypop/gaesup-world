@@ -1,13 +1,12 @@
-import { assignInlineVars } from "@vanilla-extract/dynamic";
+import { CSSProperties } from "react";
 import { usePushKey } from "../pushKey/index.js";
-import { VECssType } from "../type.js";
-import * as style from "./style.css";
+import "./style.css";
 
 export type gameBoyButtonType = {
   tag: "up" | "down" | "left" | "right";
   value: string;
   icon: JSX.Element;
-  gameboyButtonStyle: Partial<VECssType>;
+  gameboyButtonStyle: CSSProperties;
 };
 
 export default function GameBoyButton({
@@ -28,10 +27,7 @@ export default function GameBoyButton({
 
   return (
     <button
-      className={`${style.gameBoyButtonRecipe({
-        tag: tag,
-        direction: tag,
-      })}`}
+      className={`gameboy-button ${tag}`}
       onMouseDown={() => onMouseDown()}
       onMouseUp={() => onMouseLeave()}
       onMouseLeave={() => onMouseLeave()}
@@ -40,7 +36,7 @@ export default function GameBoyButton({
       }}
       onPointerDown={() => onMouseDown()}
       onPointerUp={() => onMouseLeave()}
-      style={assignInlineVars(gameboyButtonStyle)}
+      style={gameboyButtonStyle}
     >
       {icon}
     </button>

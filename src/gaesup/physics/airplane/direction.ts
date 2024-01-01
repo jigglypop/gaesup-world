@@ -8,6 +8,7 @@ export default function direction(prop: calcPropType) {
     innerGroupRef,
     worldContext: { joystick, activeState, control, mode },
     controllerContext: { airplane },
+    delta,
   } = prop;
   const { forward, backward, leftward, rightward, shift, space } = control;
   const { angleDelta, maxAngle, accelRatio } = airplane;
@@ -58,18 +59,26 @@ export default function direction(prop: calcPropType) {
 
   const innerGrounRefRotation = innerGroupRef.current.clone();
 
-  if (_x < -maxX) innerGrounRefRotation.rotation.x = -maxX + X;
-  else if (_x > maxX) innerGrounRefRotation.rotation.x = maxX + X;
-  else innerGrounRefRotation.rotateX(X);
+  if (_x < -maxX) {
+    innerGrounRefRotation.rotation.x = -maxX + X;
+  } else if (_x > maxX) {
+    innerGrounRefRotation.rotation.x = maxX + X;
+  } else {
+    innerGrounRefRotation.rotateX(X);
+  }
 
   if (_z < -maxZ) innerGrounRefRotation.rotation.z = -maxZ + Z;
   else if (_z > maxZ) innerGrounRefRotation.rotation.z = maxZ + Z;
   else innerGrounRefRotation.rotateZ(Z);
+  activeState.euler.x = innerGrounRefRotation.rotation.x;
+  activeState.euler.z = innerGrounRefRotation.rotation.z;
+
+  innerGrounRefRotation.rotation.y = 0;
 
   innerGroupRef.current.setRotationFromQuaternion(
     quat()
       .setFromEuler(innerGroupRef.current.rotation.clone())
-      .slerp(quat().setFromEuler(innerGrounRefRotation.rotation), 0.1)
+      .slerp(quat().setFromEuler(innerGrounRefRotation.rotation.clone()), 0.2)
   );
 
   activeState.rotation = innerGrounRefRotation.rotation;
@@ -77,5 +86,5 @@ export default function direction(prop: calcPropType) {
     V3(Math.sin(activeState.euler.y), -upDown, Math.cos(activeState.euler.y))
   );
   activeState.dir = activeState.direction.normalize();
-  activeState.euler = innerGroupRef.current.rotation;
+  // activeState.euler = innerGroupRef.current.rotation;
 }

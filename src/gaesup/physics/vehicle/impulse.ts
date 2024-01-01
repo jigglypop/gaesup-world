@@ -26,11 +26,7 @@ export default function impulse(prop: calcPropType) {
   }
 
   rigidBodyRef.current.applyImpulse(
-    vec3({
-      x: activeState.direction.x,
-      y: 0,
-      z: activeState.direction.z,
-    }).multiplyScalar(speed),
+    vec3().addScalar(speed).multiply(activeState.dir.clone().normalize()),
     false
   );
 }

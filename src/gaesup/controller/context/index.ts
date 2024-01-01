@@ -1,17 +1,13 @@
 import { createContext } from "react";
 import { dispatchType } from "../../utils/type";
 import { V3 } from "../../utils/vector";
-import {
-  gaesupControllerType,
-  orthographicCameraType,
-  perspectiveCameraType,
-} from "./type";
+import { gaesupControllerType, perspectiveCameraType } from "./type";
 
 export const gaesupControllerDefault = {
   cameraMode: {
     cameraType: "perspective" as "perspective",
     controlType: "normal" as "normal",
-  } as perspectiveCameraType | orthographicCameraType,
+  } as perspectiveCameraType,
   cameraOption: {
     offset: V3(-10, -10, -10),
     initDistance: -5,
@@ -25,16 +21,13 @@ export const gaesupControllerDefault = {
   perspectiveCamera: {
     isFront: true,
     XZDistance: 8,
+    XDistance: 8,
     YDistance: 1,
-  },
-  orthographicCamera: {
-    zoom: 1,
-    near: 0.1,
-    far: 1000,
+    ZDistance: 8,
   },
   airplane: {
-    angleDelta: V3(0.01, 0.005, 0.005),
-    maxAngle: V3(0.1, 0.1, 0.1),
+    angleDelta: V3(Math.PI / 256, Math.PI / 256, Math.PI / 256),
+    maxAngle: V3(Math.PI / 8, Math.PI / 8, Math.PI / 8),
     maxSpeed: 60,
     accelRatio: 2,
     brakeRatio: 5,
@@ -49,10 +42,10 @@ export const gaesupControllerDefault = {
     linearDamping: 0.5,
   },
   character: {
-    walkSpeed: 4,
-    runSpeed: 10,
+    walkSpeed: 10,
+    runSpeed: 20,
     turnSpeed: 10,
-    jumpSpeed: 0.5,
+    jumpSpeed: 1,
     linearDamping: 1,
   },
   callbacks: {

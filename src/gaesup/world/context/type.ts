@@ -1,10 +1,10 @@
+import { CSSProperties } from "react";
 import { GLTFResult } from "../../component/type";
 import { actionsType, animationTagType, refsType } from "../../controller/type";
 
 import { joyStickInnerType } from "../../tools/joystick/type";
 import { keyboardMapType } from "../../tools/keyBoardToolTip/type";
 import { minimapInnerType } from "../../tools/minimap/type";
-import { VECssType } from "../../tools/type";
 import { dispatchType } from "../../utils/type";
 
 export type controlType = {
@@ -19,13 +19,13 @@ export type keyControlType = {
   [key: string]: boolean;
 };
 
-export type pointType = {
+export type portalType = {
   text?: string;
   position: THREE.Vector3;
-  jumpPortalStlye?: Partial<VECssType>;
+  jumpPortalStlye?: CSSProperties;
 };
 
-export type pointsType = pointType[];
+export type portalsType = portalType[];
 
 export type statesType = {
   isMoving: boolean;
@@ -138,7 +138,6 @@ export type gaesupWorldContextType = {
   minimap: minimapInnerType;
   joystick: joyStickInnerType;
   control: KeyboardControlsState<string>;
-  points: pointsType;
   refs: refsType;
   animations: animationPropType;
   keyBoardMap: keyboardMapType;

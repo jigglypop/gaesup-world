@@ -37,14 +37,8 @@ export type perspectiveCameraType = {
   cameraType?: "perspective";
   controlType?: "orbit" | "normal";
 };
-export type orthographicCameraType = {
-  cameraType?: "orthographic";
-  controlType?: "orbit";
-};
 
-export type gaesupCameraPropType =
-  | perspectiveCameraType
-  | orthographicCameraType;
+export type gaesupCameraPropType = perspectiveCameraType;
 
 // camera option
 export type gaesupCameraOptionDebugType = {
@@ -66,16 +60,8 @@ export type perspectiveCameraDebugType = {
   XZDistance?: number;
   YDistance?: number;
 };
-// orthographic camera
-export type orthographicCameraDebugType = {
-  zoom?: number;
-  near?: number;
-  far?: number;
-};
 
-export type perspectiveCameraPropType = {
-  isFront?: boolean;
-} & perspectiveCameraDebugType;
+export type perspectiveCameraPropType = perspectiveCameraDebugType;
 
 export type gaesupControllerType = gaesupControllerContextPropType & {
   callbacks?: callbackType;

@@ -94,7 +94,6 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     leftward: false,
     rightward: false,
   },
-  points: [],
   refs: null,
   animations: {
     current: "idle" as keyof animationTagType,

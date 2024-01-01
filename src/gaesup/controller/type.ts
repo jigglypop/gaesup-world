@@ -1,5 +1,5 @@
 import { Collider, Ray, RayColliderToi } from "@dimforge/rapier3d-compat";
-import { GroupProps, OrthographicCameraProps } from "@react-three/fiber";
+import { GroupProps } from "@react-three/fiber";
 import { RapierRigidBody, RigidBodyProps } from "@react-three/rapier";
 import { ReactNode, RefObject } from "react";
 import * as THREE from "three";
@@ -98,7 +98,6 @@ export type gaesupControllerContextPropType = {
   cameraMode: gaesupCameraPropType;
   cameraOption: cameraOptionType;
   perspectiveCamera: perspectiveCameraPropType;
-  orthographicCamera: OrthographicCameraProps;
   airplane: airplaneType;
   vehicle: vehicleType;
   character: characterType;

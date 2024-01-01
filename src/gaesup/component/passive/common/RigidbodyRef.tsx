@@ -14,12 +14,15 @@ export const RigidBodyRef = forwardRef(
     },
     ref: Ref<RapierRigidBody>
   ) => {
+    const _euler = rotation.clone();
+    _euler.x = 0;
+    _euler.z = 0;
     return (
       <RigidBody
         colliders={false}
         ref={ref}
         position={position}
-        rotation={rotation}
+        rotation={_euler}
         userData={{ intangible: true }}
       >
         {children}

@@ -1,9 +1,7 @@
-import { assignInlineVars } from "@vanilla-extract/dynamic";
 import { useContext } from "react";
-import { vars } from "../../../styles/theme.css";
 import { GaesupWorldContext } from "../../world/context";
 import { KeyBoardAll } from "./constant";
-import * as style from "./style.css";
+import "./style.css";
 import { keyArrayItemType, keyBoardToolTipType } from "./type";
 
 export function KeyBoardToolTip(props: keyBoardToolTipType) {
@@ -46,10 +44,7 @@ export function KeyBoardToolTip(props: keyBoardToolTipType) {
   return (
     <>
       {mode.controller === "keyboard" && (
-        <div
-          className={style.keyBoardTooInner}
-          style={assignInlineVars(keyBoardToolTipInnerStyle)}
-        >
+        <div className="keyBoardToolInner" style={keyBoardToolTipInnerStyle}>
           {keyArray.map((item: keyArrayItemType, key: number) => {
             let background = "rgba(0, 0, 0, 0.1)";
             let boxShadow = "0 0 5px rgba(0, 0, 0, 0.2)";
@@ -58,7 +53,7 @@ export function KeyBoardToolTip(props: keyBoardToolTipType) {
             if (codeToActionObj[item.code]) {
               if (animations.keyControl[codeToActionObj[item.code]]) {
                 isSelect = "select";
-                background = `${vars.gradient.green}`;
+                background = `linear-gradient( 68.4deg,  rgba(99,251,215,1) -0.4%, rgba(5,222,250,1) 100.2% )`;
                 boxShadow = `0 0 10px rgba(99,251,215,1)`;
               } else {
                 isSelect = "notSelect";
@@ -87,15 +82,15 @@ export function KeyBoardToolTip(props: keyBoardToolTipType) {
 
             return (
               <div
-                className={style.keyCap}
-                style={assignInlineVars({
+                className="keyCap"
+                style={{
                   background,
                   boxShadow,
                   color,
                   gridRow: item.gridRow,
                   gridColumn: item.gridColumn,
                   ...keyStyle,
-                })}
+                }}
                 key={key}
               >
                 {item.name}

@@ -1,4 +1,4 @@
-import { VECssType } from "../type";
+import { CSSProperties } from "react";
 
 export type joyStickBallType = {
   left: string;
@@ -26,5 +26,5 @@ export type joyStickType = {
   [key in
     | "joyStickBallStyle"
     | "joyStickStyle"
-    | "joyBallStyle"]?: Partial<VECssType>;
+    | "joyBallStyle"]?: CSSProperties;
 };

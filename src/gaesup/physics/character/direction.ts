@@ -21,20 +21,21 @@ export function orbitDirection({
   };
 }) {
   const { forward, backward, leftward, rightward } = control;
+  const dirX = Number(leftward) - Number(rightward);
+  const dirZ = Number(forward) - Number(backward);
   let start = 0;
   if (mode.controller === "joystick") {
-    if (!joystick.joyStickOrigin.isCenter)
-      activeState.euler.y =
-        -state.camera.rotation.y - joystick.joyStickOrigin.angle - Math.PI / 2;
-    start = joystick.joyStickOrigin.isOn ? 1 : 0;
+    activeState.euler.y =
+      -state.camera.rotation.y - joystick.joyStickOrigin.angle - Math.PI / 2;
+    start = 1;
   } else {
-    activeState.euler.y +=
-      ((Number(leftward) - Number(rightward)) * Math.PI) / 32;
-    start = Number(forward) - Number(backward);
+    if (dirX === 0 && dirZ === 0) return;
+    activeState.euler.y += (dirX * Math.PI) / 32;
+    start = dirZ;
   }
   const front = V3(start, 0, start);
   activeState.direction = front.multiply(
-    V3(Math.sin(activeState.euler.y), 0, Math.cos(activeState.euler.y))
+    V3(-Math.sin(activeState.euler.y), 0, -Math.cos(activeState.euler.y))
   );
   activeState.dir = activeState.direction.normalize();
 }

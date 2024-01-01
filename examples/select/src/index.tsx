@@ -30,9 +30,9 @@ export const keyboardMap = [
 ];
 
 export default function Selected() {
-  const CHARACTER_URL = S3 + "/santa.glb";
+  const CHARACTER_URL = S3 + "/gaesup.glb";
   const AIRPLANE_URL = S3 + "/air.glb";
-  const VEHICLE_URL = S3 + "/gaesupkart.glb";
+  const VEHICLE_URL = S3 + "/kart.glb";
   const WHEEL_URL = S3 + "/wheel.glb";
 
   return (
@@ -45,15 +45,11 @@ export default function Selected() {
       }}
       mode={{
         type: "airplane",
+        controller: "keyboard",
       }}
       debug={true}
     >
-      <Canvas
-        frameloop="demand"
-        shadows
-        dpr={[1, 2]}
-        style={{ width: "100dvw", height: "100dvh" }}
-      >
+      <Canvas shadows dpr={[1, 2]} style={{ width: "100vw", height: "100vh" }}>
         <Environment background preset="sunset" blur={0.8} />
         <directionalLight
           castShadow
@@ -72,11 +68,11 @@ export default function Selected() {
           <KeyboardControls map={keyboardMap}>
             <GaesupController
               cameraMode={{
-                controlType: "normal",
+                controlType: "orbit",
               }}
               perspectiveCamera={{
-                XZDistance: 20,
-                YDistance: 15,
+                XZDistance: 10,
+                YDistance: 5,
               }}
               onAnimate={({ playAnimation }) => {
                 playAnimation("greet", "keyZ");
@@ -93,14 +89,17 @@ export default function Selected() {
       </Canvas>
       <div className={style.footer}>
         <div className={style.footerUpper}>
-          <GamePad
-            label={{
-              keyZ: "GREET",
-              shift: "SPLINT",
-              space: "JUMP",
-            }}
-          />
+          <div className={style.gamePad}>
+            <GamePad
+              label={{
+                keyZ: "GREET",
+                shift: "SPLINT",
+                space: "JUMP",
+              }}
+            />
+          </div>
         </div>
+
         <div className={style.footerLower}>
           <div className={style.joyStickOuter}>
             <JoyStick />
@@ -112,7 +111,7 @@ export default function Selected() {
             <KeyBoardToolTip keyBoardMap={keyboardMap} />
           </div>
           <div className={style.minimapOuter}>
-            <MiniMap blockRotate={true} />
+            <MiniMap />
           </div>
         </div>
       </div>

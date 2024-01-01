@@ -1,5 +1,5 @@
 import { globalStyle } from "@vanilla-extract/css";
-import { vars } from "../../src/styles/theme.css";
+import { vars } from "./styles/theme.css";
 
 globalStyle(":root", {
   background: vars.themes.background,
