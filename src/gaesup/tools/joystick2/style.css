@@ -1,0 +1,43 @@
+.joyStick {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  z-index: 1000;
+  width: 18rem;
+  height: 18rem;
+  background: red;
+  /* 
+  overflow: auto;
+  border-radius: 50%; */
+  /* 
+
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); */
+}
+/* 
+.joyStick::after {
+  content: "";
+  width: 10rem;
+  height: 10rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.joystickBall {
+  width: 5rem;
+  height: 5rem;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+.joyStick * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+} */

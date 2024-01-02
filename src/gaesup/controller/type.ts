@@ -5,14 +5,7 @@ import { ReactNode, RefObject } from "react";
 import * as THREE from "three";
 import { cameraRayType } from "../camera/type";
 import { keyControlType } from "../world/context/type";
-import {
-  airplaneType,
-  cameraOptionType,
-  characterType,
-  gaesupCameraPropType,
-  perspectiveCameraPropType,
-  vehicleType,
-} from "./context/type";
+import { airplaneType, characterType, vehicleType } from "./context/type";
 import { callbackType } from "./initialize/callback/type";
 
 export type optionsType = {
@@ -95,9 +88,6 @@ export type refsType = {
 
 // context로 넘어가는 타입
 export type gaesupControllerContextPropType = {
-  cameraMode: gaesupCameraPropType;
-  cameraOption: cameraOptionType;
-  perspectiveCamera: perspectiveCameraPropType;
   airplane: airplaneType;
   vehicle: vehicleType;
   character: characterType;

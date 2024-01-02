@@ -3,6 +3,7 @@ import { keyboardMapType } from "../tools/keyBoardToolTip/type";
 import { dispatchType } from "../utils/type";
 import {
   airplaneColliderType,
+  cameraOptionType,
   characterColliderType,
   gaesupWorldContextType,
   modeType,
@@ -25,4 +26,5 @@ export type gaesupWorldPropsType = {
   mode?: modeType;
   debug?: boolean;
   keyBoardMap?: keyboardMapType;
+  cameraOption?: cameraOptionType;
 };

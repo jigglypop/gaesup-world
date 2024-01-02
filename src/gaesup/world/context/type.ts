@@ -2,10 +2,30 @@ import { CSSProperties } from "react";
 import { GLTFResult } from "../../component/type";
 import { actionsType, animationTagType, refsType } from "../../controller/type";
 
+import { Camera } from "@react-three/fiber";
 import { joyStickInnerType } from "../../tools/joystick/type";
 import { keyboardMapType } from "../../tools/keyBoardToolTip/type";
 import { minimapInnerType } from "../../tools/minimap/type";
 import { dispatchType } from "../../utils/type";
+
+// camera option
+export type gaesupCameraOptionDebugType = {
+  initDistance?: number;
+  maxDistance?: number;
+  minDistance?: number;
+  initDir?: number;
+  distance?: number;
+  camFollow?: number;
+  XZDistance?: number;
+  XDistance?: number;
+  YDistance?: number;
+  ZDistance?: number;
+};
+
+export type cameraOptionType = {
+  offset?: THREE.Vector3;
+  collisionOff?: number;
+} & gaesupCameraOptionDebugType;
 
 export type controlType = {
   forward: boolean;
@@ -85,6 +105,7 @@ export type airplaneColliderType = {
 export type modeType = {
   type?: "character" | "vehicle" | "airplane";
   controller?: "gameboy" | "keyboard" | "joystick";
+  control?: "normal" | "orbit";
 };
 
 export type activeStateType = {
@@ -141,6 +162,10 @@ export type gaesupWorldContextType = {
   refs: refsType;
   animations: animationPropType;
   keyBoardMap: keyboardMapType;
+  cameraOption: cameraOptionType;
+  cameraState: Camera & {
+    manual?: boolean;
+  };
 };
 
 export type gaesupDisptachType = dispatchType<gaesupWorldContextType>;

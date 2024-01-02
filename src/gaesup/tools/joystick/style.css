@@ -3,6 +3,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
+  z-index: 1000;
   width: 12rem;
   height: 12rem;
   overflow: auto;

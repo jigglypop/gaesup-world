@@ -1,30 +1,9 @@
 import { createContext } from "react";
 import { dispatchType } from "../../utils/type";
 import { V3 } from "../../utils/vector";
-import { gaesupControllerType, perspectiveCameraType } from "./type";
+import { gaesupControllerType } from "./type";
 
 export const gaesupControllerDefault = {
-  cameraMode: {
-    cameraType: "perspective" as "perspective",
-    controlType: "normal" as "normal",
-  } as perspectiveCameraType,
-  cameraOption: {
-    offset: V3(-10, -10, -10),
-    initDistance: -5,
-    maxDistance: -7,
-    minDistance: -0.7,
-    initDir: 0,
-    collisionOff: 0.7,
-    distance: -1,
-    camFollow: 11,
-  },
-  perspectiveCamera: {
-    isFront: true,
-    XZDistance: 8,
-    XDistance: 8,
-    YDistance: 1,
-    ZDistance: 8,
-  },
   airplane: {
     angleDelta: V3(Math.PI / 256, Math.PI / 256, Math.PI / 256),
     maxAngle: V3(Math.PI / 8, Math.PI / 8, Math.PI / 8),

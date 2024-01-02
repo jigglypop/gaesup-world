@@ -22,6 +22,10 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
       gaesupWorldDefault.airplaneCollider,
       props.airplaneCollider || {}
     ),
+    cameraOption: Object.assign(
+      gaesupWorldDefault.cameraOption,
+      props.cameraOption || {}
+    ),
     mode: Object.assign(gaesupWorldDefault.mode, props.mode || {}),
     url: Object.assign(gaesupWorldDefault.url, props.url || {}),
     characterGltf: null,

@@ -46,6 +46,7 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
   mode: {
     type: "character",
     controller: "keyboard",
+    control: "normal",
   },
   url: {
     characterUrl: null,
@@ -122,6 +123,21 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     { name: "shift", keys: ["Shift"] },
     { name: "keyZ", keys: ["KeyZ"] },
   ],
+  cameraOption: {
+    offset: V3(-10, -10, -10),
+    initDistance: -5,
+    maxDistance: -7,
+    minDistance: -0.7,
+    initDir: 0,
+    collisionOff: 0.7,
+    distance: -1,
+    camFollow: 11,
+    XZDistance: 20,
+    XDistance: 20,
+    YDistance: 10,
+    ZDistance: 20,
+  },
+  cameraState: null,
 };
 
 export const GaesupWorldContext = createContext<gaesupWorldContextType>(null);

@@ -14,15 +14,8 @@ import {
   gaesupWorldContextType,
   keyControlType,
 } from "../../world/context/type";
-import { gaesupControllerType } from "../context/type";
 
-export default function initControllerProps({
-  controllerContext,
-  refs,
-}: {
-  controllerContext: gaesupControllerType;
-  refs: refsType;
-}) {
+export default function initControllerProps({ refs }: { refs: refsType }) {
   const context = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
   const [_, getKeys] = useKeyboardControls();
@@ -75,7 +68,7 @@ export default function initControllerProps({
       rayCast: new THREE.Raycaster(vec3(), vec3(), 0, -7),
       dir: vec3(),
       position: vec3(),
-      length: -controllerContext.cameraOption.maxDistance,
+      length: -context.cameraOption.maxDistance,
       detected: [],
       intersects: [],
       intersectObjectMap: {},
@@ -85,7 +78,7 @@ export default function initControllerProps({
     cameraRay.origin,
     cameraRay.dir,
     0,
-    -controllerContext.cameraOption.maxDistance
+    -context.cameraOption.maxDistance
   );
 
   const initRefs = useCallback(

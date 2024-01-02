@@ -24,18 +24,6 @@ export function GaesupController(props: controllerType) {
   const passiveRigidBodyRef = useRef<RapierRigidBody>(null);
 
   const [controller, controllerDispatch] = useReducer(gaesupControllerReducer, {
-    cameraMode: Object.assign(
-      gaesupControllerDefault.cameraMode,
-      props.cameraMode || {}
-    ),
-    cameraOption: Object.assign(
-      gaesupControllerDefault.cameraOption,
-      props.cameraOption || {}
-    ),
-    perspectiveCamera: Object.assign(
-      gaesupControllerDefault.perspectiveCamera,
-      props.perspectiveCamera || {}
-    ),
     airplane: Object.assign(
       gaesupControllerDefault.airplane,
       props.airplane || {}
@@ -86,7 +74,6 @@ export function GaesupController(props: controllerType) {
   }, []);
   const prop: controllerInnerType = {
     ...initControllerProps({
-      controllerContext: gaesupControl.value,
       refs,
     }),
     children: props.children,

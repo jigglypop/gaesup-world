@@ -33,36 +33,6 @@ export interface airplaneType extends GroupProps, airplaneDebugType {}
 export interface vehicleType extends GroupProps, vehicleDebugType {}
 export interface characterType extends GroupProps, characterDebugType {}
 
-export type perspectiveCameraType = {
-  cameraType?: "perspective";
-  controlType?: "orbit" | "normal";
-};
-
-export type gaesupCameraPropType = perspectiveCameraType;
-
-// camera option
-export type gaesupCameraOptionDebugType = {
-  initDistance?: number;
-  maxDistance?: number;
-  minDistance?: number;
-  initDir?: number;
-  distance?: number;
-  camFollow?: number;
-};
-
-export type cameraOptionType = {
-  offset?: THREE.Vector3;
-  collisionOff?: number;
-} & gaesupCameraOptionDebugType;
-
-// perspective camera
-export type perspectiveCameraDebugType = {
-  XZDistance?: number;
-  YDistance?: number;
-};
-
-export type perspectiveCameraPropType = perspectiveCameraDebugType;
-
 export type gaesupControllerType = gaesupControllerContextPropType & {
   callbacks?: callbackType;
   refs?: refsType;

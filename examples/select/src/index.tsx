@@ -44,9 +44,11 @@ export default function Selected() {
         airplaneUrl: AIRPLANE_URL,
       }}
       mode={{
-        type: "airplane",
-        controller: "keyboard",
+        type: "character",
+        controller: "joystick",
+        control: "orbit",
       }}
+      cameraOption={{ XZDistance: 10, YDistance: 5 }}
       debug={true}
     >
       <Canvas shadows dpr={[1, 2]} style={{ width: "100vw", height: "100vh" }}>
@@ -67,13 +69,6 @@ export default function Selected() {
         <Physics debug>
           <KeyboardControls map={keyboardMap}>
             <GaesupController
-              cameraMode={{
-                controlType: "orbit",
-              }}
-              perspectiveCamera={{
-                XZDistance: 10,
-                YDistance: 5,
-              }}
               onAnimate={({ playAnimation }) => {
                 playAnimation("greet", "keyZ");
               }}

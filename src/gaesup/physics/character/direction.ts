@@ -79,11 +79,10 @@ export default function direction(prop: calcPropType) {
   const {
     state,
     worldContext: { joystick, mode, activeState, control },
-    controllerContext: { cameraMode },
   } = prop;
-  if (cameraMode.controlType === "normal") {
+  if (mode.control === "normal") {
     normalDirection({ activeState, control, mode, joystick, state });
-  } else if (cameraMode.controlType === "orbit") {
+  } else if (mode.control === "orbit") {
     orbitDirection({ activeState, control, mode, joystick, state });
   }
 }

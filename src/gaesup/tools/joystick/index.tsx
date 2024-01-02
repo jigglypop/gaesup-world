@@ -101,21 +101,27 @@ export function JoyStick(props: joyStickType) {
       width: client.width,
       height: client.height,
     }));
-    // initBall();
   };
 
   const calcOriginBall = (X: number, Y: number) => {
     const { top, left, bottom, right, width, height } = screenSize;
     if (top > Y || bottom < Y || left > X || right < X) return;
-    const normX = (joyStickOrigin.x - X) ** 2;
-    const normY = (joyStickOrigin.y - Y) ** 2;
+    const dx = joyStickOrigin.x - X;
+    const dy = joyStickOrigin.y - Y;
+    const normX = dx ** 2;
+    const normY = dy ** 2;
     const currentRadius = Math.sqrt(normX + normY);
     const originRadius = Math.sqrt((width / 2) ** 2 + (height / 2) ** 2);
-
     const newAngle = Math.atan2(
       Y - (bottom - height / 2),
       X - (left + width / 2)
     );
+    const delta = newAngle - joyStickOrigin.angle;
+    console.log(delta);
+
+    if (currentRadius >= width / 2) {
+      return;
+    }
 
     setOrigin({
       x: left + width / 2,
@@ -158,6 +164,8 @@ export function JoyStick(props: joyStickType) {
 
   const handleTouchEnd: TouchEventHandler = useCallback(
     (e) => {
+      if (joyStickOrigin.currentRadius >= screenSize.width / 2) return;
+
       setState((state) => ({
         ...state,
         touchDown: false,
@@ -169,6 +177,8 @@ export function JoyStick(props: joyStickType) {
   );
   const handleMouseOut: MouseEventHandler = useCallback(
     (e) => {
+      if (joyStickOrigin.currentRadius >= screenSize.width / 2) return;
+
       setState((state) => ({
         ...state,
         mouseDown: false,

@@ -145,16 +145,10 @@
   position: relative;
   font-size: 1rem;
   color: black;
-  /* background: radial-gradient(
-    circle at center,
-    rgba(99, 251, 215, 1) 0.4%,
-    rgba(5, 222, 250, 1) 100.2%
-  ); */
   padding: 0.5rem;
   font-family: "Open Sans", sans-serif;
   font-weight: 600;
   border-radius: 0.5rem;
-  /* box-shadow: 0 0 10px rgba(99, 251, 215, 1); */
   background: rgba(255, 255, 255, 0.5);
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(1rem);
