@@ -13,8 +13,7 @@ export default function moving(prop: calcPropType) {
   } else if (mode.controller === "joystick") {
     states.isMoving = joystick.joyStickOrigin.isOn;
     states.isNotMoving = !joystick.joyStickOrigin.isOn;
-    states.isRunning =
-      joystick.joyStickOrigin.isOn && joystick.joyStickOrigin.isIn;
+    states.isRunning = shift && states.isMoving;
     states.isJumping = space;
   }
 }

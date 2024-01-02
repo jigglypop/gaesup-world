@@ -1,6 +1,6 @@
 import { CameraControls } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useContext, useEffect, useMemo, useRef } from "react";
+import { useContext, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { GaesupControllerContext } from "../controller/context";
 import { controllerInnerType, refsType } from "../controller/type";
@@ -22,11 +22,10 @@ export default function Camera({
 }) {
   const worldContext = useContext(GaesupWorldContext);
   const controllerContext = useContext(GaesupControllerContext);
-  const { mode } = worldContext;
-  const { rigidBodyRef, outerGroupRef } = refs;
-  const { scene } = useThree();
+  const { mode, activeState } = worldContext;
+  const { rigidBodyRef, outerGroupRef, cameraRef } = refs;
+  const { scene, camera } = useThree();
   const state = useThree();
-  const cameraControlsRef = useRef<CameraControls>();
 
   const intersectObjectMap: intersectObjectMapType = useMemo(() => ({}), []);
   const cameraProp: cameraPropType = {
@@ -62,6 +61,7 @@ export default function Camera({
     )
       return null;
     cameraProp.delta = delta;
+    cameraProp.state = state;
     if (mode.control === "orbit") {
       orbit(cameraProp);
     } else if (mode.control === "normal") {
@@ -69,25 +69,9 @@ export default function Camera({
     }
   });
 
-  useEffect(() => {
-    if (
-      !rigidBodyRef ||
-      !rigidBodyRef.current ||
-      !outerGroupRef ||
-      !outerGroupRef.current
-    )
-      return;
-    cameraProp.state = state;
-    if (mode.control === "orbit") {
-      orbit(cameraProp);
-    } else if (mode.control === "normal") {
-      normal(cameraProp);
-    }
-  }, [cameraProp, mode.control, state]);
-
   return (
     <>
-      <CameraControls ref={cameraControlsRef} />
+      <CameraControls ref={cameraRef} />
     </>
   );
 }

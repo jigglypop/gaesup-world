@@ -5,7 +5,7 @@ import { V3 } from "../../utils/vector";
 export default function orbit(prop: cameraPropType) {
   const {
     state,
-    worldContext: { activeState, cameraOption },
+    worldContext: { activeState, cameraOption, cameraState },
   } = prop;
   if (!state || !state.camera) return;
   const cameraPosition = activeState.position.clone().add(
@@ -13,11 +13,10 @@ export default function orbit(prop: cameraPropType) {
       .normalize()
       .clone()
       .multiplyScalar(-cameraOption.XZDistance)
-      // .multiplyScalar(-1)
       .add(V3(0, cameraOption.YDistance, 0))
   );
 
-  state.camera.position.lerp(cameraPosition, 0.9);
+  state.camera.position.lerp(cameraPosition, 1);
   state.camera.quaternion.copy(
     activeState.quat
       .clone()

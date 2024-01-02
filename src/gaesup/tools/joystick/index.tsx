@@ -117,7 +117,6 @@ export function JoyStick(props: joyStickType) {
       X - (left + width / 2)
     );
     const delta = newAngle - joyStickOrigin.angle;
-    console.log(delta);
 
     if (currentRadius >= width / 2) {
       return;
@@ -131,7 +130,7 @@ export function JoyStick(props: joyStickType) {
       originRadius,
       isIn: currentRadius > originRadius / 2,
       isOn: true,
-      isCenter: currentRadius < originRadius / 4,
+      isCenter: currentRadius < originRadius / 8,
       isUp: top > Y - height / 2,
     });
 
@@ -177,8 +176,6 @@ export function JoyStick(props: joyStickType) {
   );
   const handleMouseOut: MouseEventHandler = useCallback(
     (e) => {
-      if (joyStickOrigin.currentRadius >= screenSize.width / 2) return;
-
       setState((state) => ({
         ...state,
         mouseDown: false,

@@ -1,4 +1,5 @@
 import { Collider, Ray, RayColliderToi } from "@dimforge/rapier3d-compat";
+import { CameraControls } from "@react-three/drei";
 import { GroupProps } from "@react-three/fiber";
 import { RapierRigidBody, RigidBodyProps } from "@react-three/rapier";
 import { ReactNode, RefObject } from "react";
@@ -84,6 +85,7 @@ export type refsType = {
   innerGroupRef: RefObject<THREE.Group>;
   slopeRayOriginRef: RefObject<THREE.Mesh>;
   characterInnerRef: RefObject<THREE.Group>;
+  cameraRef: RefObject<CameraControls>;
 };
 
 // context로 넘어가는 타입

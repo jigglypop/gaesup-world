@@ -33,20 +33,13 @@ export default function direction(prop: calcPropType) {
   const _euler = activeState.euler.clone();
   const __euler = activeState.euler.clone();
   if (mode.controller === "joystick") {
-    __euler.y =
-      -state.camera.rotation.y - joystick.joyStickOrigin.angle - Math.PI / 2;
+    __euler.y = -Math.PI / 2 + joystick.joyStickOrigin.angle;
+    activeState.euler.setFromQuaternion(
+      quat().setFromEuler(_euler).slerp(quat().setFromEuler(__euler), 1)
+    );
   } else {
     activeState.euler.y += -leftRight * angleDelta.y;
   }
-  if (mode.controller === "joystick")
-    activeState.euler.setFromQuaternion(
-      quat()
-        .setFromEuler(_euler)
-        .slerp(
-          quat().setFromEuler(__euler),
-          joystick.joyStickOrigin.isIn ? 0.01 : 0.1
-        )
-    );
 
   const X = maxAngle.x * upDown;
   const Z = maxAngle.z * leftRight;

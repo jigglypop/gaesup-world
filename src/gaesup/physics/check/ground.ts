@@ -9,8 +9,10 @@ export default function checkOnTheGround(prop: calcPropType) {
   } = prop;
 
   groundRay.origin.addVectors(activeState.position, vec3(groundRay.offset));
-  if (!groundRay.hit || !groundRay.rayCast || !capsuleColliderRef.current)
-    return null;
+  if (!groundRay.hit || !groundRay.rayCast || !capsuleColliderRef.current) {
+    states.isOnTheGround = false;
+    return;
+  }
   if (groundRay.hit.toi < collider.radius + 0.4) {
     states.isOnTheGround = true;
   } else {

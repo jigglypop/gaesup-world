@@ -186,3 +186,14 @@ export const gamePad = style([
     zIndex: 10000,
   },
 ]);
+
+export const jump = style([
+  fixed({
+    west: true,
+  }),
+  {
+    marginRight: "5rem",
+    width: "12rem",
+    zIndex: 10000,
+  },
+]);

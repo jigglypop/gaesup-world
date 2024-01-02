@@ -3,6 +3,7 @@ import { RapierRigidBody } from "@react-three/rapier";
 import { useMemo, useReducer, useRef } from "react";
 import Camera from "../camera";
 
+import { CameraControls } from "@react-three/drei";
 import { GaesupComponent } from "../component";
 import {
   GaesupControllerContext,
@@ -22,6 +23,7 @@ export function GaesupController(props: controllerType) {
   const slopeRayOriginRef = useRef<THREE.Mesh>(null);
   const characterInnerRef = useRef<THREE.Group>(null);
   const passiveRigidBodyRef = useRef<RapierRigidBody>(null);
+  const cameraRef = useRef<CameraControls>(null);
 
   const [controller, controllerDispatch] = useReducer(gaesupControllerReducer, {
     airplane: Object.assign(
@@ -49,6 +51,7 @@ export function GaesupController(props: controllerType) {
       innerGroupRef,
       slopeRayOriginRef,
       characterInnerRef,
+      cameraRef,
     },
     isRider: props.isRider !== null ? props.isRider : false,
   });
@@ -70,6 +73,7 @@ export function GaesupController(props: controllerType) {
       slopeRayOriginRef,
       characterInnerRef,
       passiveRigidBodyRef,
+      cameraRef,
     };
   }, []);
   const prop: controllerInnerType = {

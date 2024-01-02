@@ -1,8 +1,6 @@
 "use client";
 
 import { useGaesupController } from "../../../src/gaesup";
-import { PassiveAirplane } from "../../../src/gaesup/component/passive/airplane";
-import { V3 } from "../../../src/gaesup/utils";
 
 export default function Passive() {
   const {
@@ -43,7 +41,7 @@ export default function Passive() {
         diameter={characterCollider?.diameter}
         url={url}
       /> */}
-      {url.airplaneUrl && (
+      {/* {url.airplaneUrl && (
         <PassiveAirplane
           position={state.position.clone().add(V3(3, 0, 3))}
           euler={state.euler.clone()}
@@ -56,7 +54,7 @@ export default function Passive() {
           airplaneUrl={url.airplaneUrl}
           gravity={airplaneCollider?.gravity}
         />
-      )}
+      )} */}
     </group>
   );
 }

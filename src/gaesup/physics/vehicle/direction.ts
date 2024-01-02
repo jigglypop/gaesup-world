@@ -1,21 +1,23 @@
-import { quat, vec3 } from "@react-three/rapier";
+import { vec3 } from "@react-three/rapier";
 import { V3 } from "../../utils/vector";
 import { calcPropType } from "../type";
 
 export function joystick(prop: calcPropType) {
   const {
     state,
-    worldContext: { activeState, control, mode, joystick },
+    worldContext: { activeState, joystick },
   } = prop;
   const zAxis = joystick.joyStickOrigin.isOn ? 1 : 0;
   const front = vec3().set(zAxis, 0, zAxis);
-  const _euler = activeState.euler.clone();
-  const __euler = activeState.euler.clone();
-  __euler.y =
-    -state.camera.rotation.y - joystick.joyStickOrigin.angle - Math.PI / 2;
-  activeState.euler.setFromQuaternion(
-    quat().setFromEuler(_euler).slerp(quat().setFromEuler(__euler), 0.1)
-  );
+  if (joystick.joyStickOrigin.isCenter) return front;
+  activeState.euler.y = Math.PI / 2 - joystick.joyStickOrigin.angle;
+
+  // const _euler = activeState.euler.clone();
+  // const __euler = activeState.euler.clone();
+  // __euler.y = Math.PI / 2 - joystick.joyStickOrigin.angle;
+  // activeState.euler.setFromQuaternion(
+  //   quat().setFromEuler(_euler).slerp(quat().setFromEuler(__euler), 1)
+  // );
   return front;
 }
 

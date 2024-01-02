@@ -4,18 +4,19 @@ import { Environment, KeyboardControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 
-import { GaesupController, GaesupWorld } from "../../../src";
+import { GaesupController, GaesupWorld, JoyStick } from "../../../src";
 import { GameBoy } from "../../../src/gaesup/tools/gameboy";
 import { GamePad } from "../../../src/gaesup/tools/gamepad";
-import { JoyStick } from "../../../src/gaesup/tools/joystick";
 import { KeyBoardToolTip } from "../../../src/gaesup/tools/keyBoardToolTip";
 import { MiniMap } from "../../../src/gaesup/tools/minimap";
+import { ZoomCamera } from "../../../src/gaesup/tools/zoomCamera";
 import Passive from "../passive";
 import Direction from "../platform/Direction";
 import Floor from "../platform/Floor";
 import RigidObjects from "../platform/RigidObjects";
 import RoughPlane from "../platform/RoughPlane";
 import Slopes from "../platform/Slopes";
+import Stair from "../platform/Stair";
 import * as style from "./style.css";
 
 export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
@@ -45,7 +46,7 @@ export default function Selected() {
       }}
       mode={{
         type: "character",
-        controller: "joystick",
+        controller: "keyboard",
         control: "orbit",
       }}
       cameraOption={{ XZDistance: 10, YDistance: 5 }}
@@ -80,6 +81,7 @@ export default function Selected() {
           <Floor />
           <Slopes />
           <Direction />
+          <Stair />
         </Physics>
       </Canvas>
       <div className={style.footer}>
@@ -93,6 +95,10 @@ export default function Selected() {
               }}
             />
           </div>
+        </div>
+
+        <div className={style.jump}>
+          <ZoomCamera />
         </div>
 
         <div className={style.footerLower}>

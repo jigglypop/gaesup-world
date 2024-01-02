@@ -25,8 +25,8 @@ export function orbitDirection({
   const dirZ = Number(forward) - Number(backward);
   let start = 0;
   if (mode.controller === "joystick") {
-    activeState.euler.y =
-      -state.camera.rotation.y - joystick.joyStickOrigin.angle - Math.PI / 2;
+    if (joystick.joyStickOrigin.isCenter) return;
+    activeState.euler.y = Math.PI / 2 - joystick.joyStickOrigin.angle;
     start = 1;
   } else {
     if (dirX === 0 && dirZ === 0) return;
@@ -58,10 +58,9 @@ export function normalDirection({
   const { forward, backward, leftward, rightward } = control;
   let start = 0;
   if (mode.controller === "joystick") {
-    if (!joystick.joyStickOrigin.isCenter)
-      activeState.euler.y =
-        -state.camera.rotation.y - joystick.joyStickOrigin.angle - Math.PI / 2;
-    start = joystick.joyStickOrigin.isOn ? 1 : 0;
+    if (joystick.joyStickOrigin.isCenter) return;
+    activeState.euler.y = Math.PI / 2 - joystick.joyStickOrigin.angle;
+    start = 1;
   } else {
     // 일반 컨트롤
     // right hand rule. north -> east -> south -> west
