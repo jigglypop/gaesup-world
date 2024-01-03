@@ -197,3 +197,17 @@ export const jump = style([
     zIndex: 10000,
   },
 ]);
+
+export const cameraLeft = style([
+  {
+    position: "fixed",
+    bottom: "50%",
+    left: 0,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "flex-end",
+    alignItems: "flex-start",
+    textAlign: "center",
+    width: "100%",
+  },
+]);

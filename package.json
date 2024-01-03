@@ -1,10 +1,10 @@
 {
   "name": "gaesup-world",
-  "version": "0.0.781",
+  "version": "0.0.782",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "homepage": "https://jigglypop.github.io/gaesup-world-examples/",
+  "homepage": "https://jigglypop.github.io/gaesup-world/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

@@ -103,7 +103,7 @@ export default function FloatMove() {
   });
 
   return (
-    <GaeSupProps text="moving" jumpPoint={true} position={[0, 5, -17]}>
+    <GaeSupProps text="moving" position={[0, 5, -17]}>
       <RigidBody mass={1} colliders={false} ref={rigidBodyRef}>
         <CuboidCollider args={[1.25, 0.1, 1.25]} ref={cuboidColliderRef} />
         <mesh receiveShadow castShadow>

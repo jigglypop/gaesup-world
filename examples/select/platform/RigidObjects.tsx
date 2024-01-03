@@ -10,7 +10,7 @@ import { GaeSupProps } from "../../../src";
 
 export default function RigidObjects() {
   return (
-    <GaeSupProps text="RigidObjects" jumpPoint={true}>
+    <GaeSupProps text="RigidObjects">
       {/* Rigid body boxes */}
       <RigidBody position={[15, 1, 2]}>
         <mesh receiveShadow castShadow>

@@ -2,7 +2,6 @@ import { CSSProperties } from "react";
 import { GLTFResult } from "../../component/type";
 import { actionsType, animationTagType, refsType } from "../../controller/type";
 
-import { Camera } from "@react-three/fiber";
 import { joyStickInnerType } from "../../tools/joystick/type";
 import { keyboardMapType } from "../../tools/keyBoardToolTip/type";
 import { minimapInnerType } from "../../tools/minimap/type";
@@ -163,9 +162,9 @@ export type gaesupWorldContextType = {
   animations: animationPropType;
   keyBoardMap: keyboardMapType;
   cameraOption: cameraOptionType;
-  cameraState: Camera & {
-    manual?: boolean;
-  };
+  moveTo: (position: THREE.Vector3, target: THREE.Vector3) => Promise<void>;
+  cameraBlock: boolean;
+  controlBlock: boolean;
 };
 
 export type gaesupDisptachType = dispatchType<gaesupWorldContextType>;

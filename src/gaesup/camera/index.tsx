@@ -1,6 +1,6 @@
 import { CameraControls } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useContext, useEffect, useMemo } from "react";
+import { useContext, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { GaesupControllerContext } from "../controller/context";
 import { controllerInnerType, refsType } from "../controller/type";
@@ -8,6 +8,7 @@ import { cameraPropType, intersectObjectMapType } from "../physics/type";
 import { GaesupWorldContext } from "../world/context";
 import normal from "./control/normal";
 import orbit from "./control/orbit";
+import detector from "./detector";
 
 export default function Camera({
   refs,
@@ -22,10 +23,10 @@ export default function Camera({
 }) {
   const worldContext = useContext(GaesupWorldContext);
   const controllerContext = useContext(GaesupControllerContext);
-  const { mode, activeState } = worldContext;
-  const { rigidBodyRef, outerGroupRef, cameraRef } = refs;
+  const { mode } = worldContext;
+  const { rigidBodyRef, outerGroupRef } = refs;
   const { scene, camera } = useThree();
-  const state = useThree();
+  const cameraRef = useRef<CameraControls>();
 
   const intersectObjectMap: intersectObjectMapType = useMemo(() => ({}), []);
   const cameraProp: cameraPropType = {
@@ -59,15 +60,42 @@ export default function Camera({
       !outerGroupRef ||
       !outerGroupRef.current
     )
-      return null;
+      return;
     cameraProp.delta = delta;
     cameraProp.state = state;
-    if (mode.control === "orbit") {
-      orbit(cameraProp);
-    } else if (mode.control === "normal") {
-      normal(cameraProp);
+    if (!worldContext.cameraBlock) {
+      if (mode.control === "orbit") {
+        orbit(cameraProp);
+      } else if (mode.control === "normal") {
+        normal(cameraProp);
+      }
+      cameraProp.cameraRay.origin.copy(camera.position);
+      cameraProp.cameraRay.dir.copy(
+        camera.getWorldDirection(new THREE.Vector3())
+      );
+      detector(cameraProp);
     }
   });
+
+  // moveTo 함수 정의
+  worldContext.moveTo = async (
+    position: THREE.Vector3,
+    target: THREE.Vector3
+  ) => {
+    camera.position.copy(position);
+    await Promise.all([
+      cameraRef.current.setPosition(position.x, position.y, position.z, true),
+      cameraRef.current.setLookAt(
+        position.x,
+        position.y,
+        position.z,
+        target.x,
+        target.y,
+        target.z,
+        true
+      ),
+    ]);
+  };
 
   return (
     <>

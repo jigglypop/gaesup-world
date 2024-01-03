@@ -4,18 +4,19 @@ import { Environment, KeyboardControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 
+import { useState } from "react";
 import { GaesupController, GaesupWorld, JoyStick } from "../../../src";
 import { GameBoy } from "../../../src/gaesup/tools/gameboy";
 import { GamePad } from "../../../src/gaesup/tools/gamepad";
 import { KeyBoardToolTip } from "../../../src/gaesup/tools/keyBoardToolTip";
 import { MiniMap } from "../../../src/gaesup/tools/minimap";
-import { ZoomCamera } from "../../../src/gaesup/tools/zoomCamera";
+import { ZoomButton } from "../../../src/gaesup/tools/zoomButton";
+import { V3 } from "../../../src/gaesup/utils";
 import Passive from "../passive";
 import Direction from "../platform/Direction";
 import Floor from "../platform/Floor";
 import RigidObjects from "../platform/RigidObjects";
 import RoughPlane from "../platform/RoughPlane";
-import Slopes from "../platform/Slopes";
 import Stair from "../platform/Stair";
 import * as style from "./style.css";
 
@@ -35,6 +36,8 @@ export default function Selected() {
   const AIRPLANE_URL = S3 + "/air.glb";
   const VEHICLE_URL = S3 + "/kart.glb";
   const WHEEL_URL = S3 + "/wheel.glb";
+
+  const [zoom, setZoom] = useState(false);
 
   return (
     <GaesupWorld
@@ -79,7 +82,6 @@ export default function Selected() {
           <RigidObjects />
           <Passive />
           <Floor />
-          <Slopes />
           <Direction />
           <Stair />
         </Physics>
@@ -97,8 +99,13 @@ export default function Selected() {
           </div>
         </div>
 
-        <div className={style.jump}>
-          <ZoomCamera />
+        <div
+          className={style.cameraLeft}
+          onClick={() => {
+            setZoom(!zoom);
+          }}
+        >
+          <ZoomButton position={zoom ? V3(20, 5, 20) : V3(10, 5, 10)} />
         </div>
 
         <div className={style.footerLower}>

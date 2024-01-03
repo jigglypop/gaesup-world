@@ -1,20 +1,29 @@
 import { quat } from "@react-three/rapier";
 import { cameraPropType } from "../../physics/type";
 import { V3 } from "../../utils/vector";
+import { activeStateType, cameraOptionType } from "../../world/context/type";
+
+export const makeCameraPosition = (
+  activeState: activeStateType,
+  cameraOption: cameraOptionType
+) => {
+  const { XDistance, YDistance, ZDistance } = cameraOption;
+  const cameraPosition = activeState.position.clone().add(
+    V3(Math.sin(activeState.euler.y), 1, Math.cos(activeState.euler.y))
+      .normalize()
+      .clone()
+      .multiply(V3(-XDistance, YDistance, -ZDistance))
+  );
+  return cameraPosition;
+};
 
 export default function orbit(prop: cameraPropType) {
   const {
     state,
-    worldContext: { activeState, cameraOption, cameraState },
+    worldContext: { activeState, cameraOption },
   } = prop;
   if (!state || !state.camera) return;
-  const cameraPosition = activeState.position.clone().add(
-    V3(Math.sin(activeState.euler.y), 0, Math.cos(activeState.euler.y))
-      .normalize()
-      .clone()
-      .multiplyScalar(-cameraOption.XZDistance)
-      .add(V3(0, cameraOption.YDistance, 0))
-  );
+  const cameraPosition = makeCameraPosition(activeState, cameraOption);
 
   state.camera.position.lerp(cameraPosition, 1);
   state.camera.quaternion.copy(

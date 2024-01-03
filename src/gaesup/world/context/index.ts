@@ -137,7 +137,9 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     YDistance: 10,
     ZDistance: 20,
   },
-  cameraState: null,
+  moveTo: null,
+  cameraBlock: false,
+  controlBlock: false,
 };
 
 export const GaesupWorldContext = createContext<gaesupWorldContextType>(null);

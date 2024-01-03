@@ -39,6 +39,9 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
     control: gaesupWorldDefault.control,
     animations: gaesupWorldDefault.animations,
     keyBoardMap: gaesupWorldDefault.keyBoardMap,
+    moveTo: null,
+    cameraBlock: props.cameraBlock || false,
+    controlBlock: props.controlBlock || false,
   });
 
   useEffect(() => {

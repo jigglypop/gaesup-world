@@ -27,4 +27,7 @@ export type gaesupWorldPropsType = {
   debug?: boolean;
   keyBoardMap?: keyboardMapType;
   cameraOption?: cameraOptionType;
+  moveTo?: (position: THREE.Vector3, target: THREE.Vector3) => void;
+  cameraBlock?: boolean;
+  controlBlock?: boolean;
 };

@@ -7,7 +7,7 @@ import { GaeSupProps } from "../../../src";
 export default function Direction() {
   const direct = 7;
   return (
-    <GaeSupProps text="direction" jumpPoint={true}>
+    <GaeSupProps text="direction">
       {/* east */}
       <RigidBody position={[-direct, 0, 0]}>
         <mesh receiveShadow castShadow>
