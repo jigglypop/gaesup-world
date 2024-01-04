@@ -52,6 +52,7 @@ export type groundRayType = Omit<rayType, "current" | "angle">;
 
 export type controllerInnerType = {
   isRider?: boolean;
+  name?: string;
   slopeRay: slopeRayType;
   groundRay: groundRayType;
   cameraRay: cameraRayType;

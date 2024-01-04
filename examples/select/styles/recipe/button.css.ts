@@ -49,10 +49,10 @@ export const button = recipe({
     },
     black: {
       false: {
-        background: palette.gray200,
+        background: palette.gray400,
       },
       true: {
-        background: palette.gray900,
+        background: palette.gray800,
         color: palette.gray200,
       },
     },

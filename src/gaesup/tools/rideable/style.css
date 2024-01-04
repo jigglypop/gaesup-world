@@ -1,10 +1,10 @@
-.zoomButton {
+.ridable {
   display: flex;
   justify-content: center;
   align-items: center;
   text-align: center;
   margin: 1rem;
-  font-size: 1.2rem;
+  font-size: 0.8rem;
   border-radius: 50%;
   width: 5rem;
   height: 5rem;

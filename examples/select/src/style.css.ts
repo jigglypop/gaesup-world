@@ -29,8 +29,11 @@ export const keyBoardToolTipOuter = style([
 
 export const minimapOuter = style([
   fixed({
-    north_west: true,
+    west: true,
   }),
+  {
+    top: "48rem",
+  },
 ]);
 
 export const gameBoyOuter = style([
@@ -72,7 +75,7 @@ export const footer = style([
     position: "fixed",
     bottom: "0",
     width: "100%",
-    height: "25rem",
+    height: "50rem",
     display: "grid",
     gridTemplateColumns: "repeat(3, 1fr)",
     gridTemplateRows: "repeat(2, 1fr)",
@@ -195,19 +198,5 @@ export const jump = style([
     marginRight: "5rem",
     width: "12rem",
     zIndex: 10000,
-  },
-]);
-
-export const cameraLeft = style([
-  {
-    position: "fixed",
-    bottom: "50%",
-    left: 0,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "flex-end",
-    alignItems: "flex-start",
-    textAlign: "center",
-    width: "100%",
   },
 ]);

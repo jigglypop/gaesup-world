@@ -2,9 +2,9 @@ import { CSSProperties } from "react";
 import { GLTFResult } from "../../component/type";
 import { actionsType, animationTagType, refsType } from "../../controller/type";
 
-import { joyStickInnerType } from "../../tools/joystick/type";
+import { joyStickInnerType } from "../../tools/joyStick/type";
 import { keyboardMapType } from "../../tools/keyBoardToolTip/type";
-import { minimapInnerType } from "../../tools/minimap/type";
+import { minimapInnerType } from "../../tools/miniMap/type";
 import { dispatchType } from "../../utils/type";
 
 // camera option
@@ -138,6 +138,13 @@ export type passiveStateType = {
   rotation: THREE.Euler;
 };
 
+export type rideableType = {
+  isRiding: boolean;
+  objectType?: "vehicle" | "airplane";
+  url?: string;
+  wheelUrl?: string;
+};
+
 type KeyboardControlsState<T extends string = string> = {
   [K in T]: boolean;
 };
@@ -165,6 +172,8 @@ export type gaesupWorldContextType = {
   moveTo: (position: THREE.Vector3, target: THREE.Vector3) => Promise<void>;
   cameraBlock: boolean;
   controlBlock: boolean;
+  scrollBlock: boolean;
+  rideable: rideableType;
 };
 
 export type gaesupDisptachType = dispatchType<gaesupWorldContextType>;

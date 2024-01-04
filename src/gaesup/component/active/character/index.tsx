@@ -26,6 +26,7 @@ export function CharacterRef({
       refs={refs}
       gltf={characterGltf}
       animationRef={ref}
+      name={"character"}
     >
       <CharacterCapsuleCollider props={props} ref={refs.capsuleColliderRef} />
     </WrapperRef>

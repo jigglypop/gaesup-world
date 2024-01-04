@@ -4,14 +4,19 @@ import { Environment, KeyboardControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 
-import { useState } from "react";
-import { GaesupController, GaesupWorld, JoyStick } from "../../../src";
-import { GameBoy } from "../../../src/gaesup/tools/gameboy";
-import { GamePad } from "../../../src/gaesup/tools/gamepad";
+import {
+  GaesupController,
+  GaesupWorld,
+  GameBoy,
+  GamePad,
+  JoyStick,
+  MiniMap,
+} from "../../../src";
+
 import { KeyBoardToolTip } from "../../../src/gaesup/tools/keyBoardToolTip";
-import { MiniMap } from "../../../src/gaesup/tools/minimap";
-import { ZoomButton } from "../../../src/gaesup/tools/zoomButton";
+import { Rideable } from "../../../src/gaesup/tools/rideable";
 import { V3 } from "../../../src/gaesup/utils";
+import Info from "../info";
 import Passive from "../passive";
 import Direction from "../platform/Direction";
 import Floor from "../platform/Floor";
@@ -37,8 +42,6 @@ export default function Selected() {
   const VEHICLE_URL = S3 + "/kart.glb";
   const WHEEL_URL = S3 + "/wheel.glb";
 
-  const [zoom, setZoom] = useState(false);
-
   return (
     <GaesupWorld
       url={{
@@ -55,7 +58,11 @@ export default function Selected() {
       cameraOption={{ XZDistance: 10, YDistance: 5 }}
       debug={true}
     >
-      <Canvas shadows dpr={[1, 2]} style={{ width: "100vw", height: "100vh" }}>
+      <Canvas
+        shadows
+        dpr={[1, 2]}
+        style={{ width: "100vw", height: "100vh", position: "fixed" }}
+      >
         <Environment background preset="sunset" blur={0.8} />
         <directionalLight
           castShadow
@@ -84,6 +91,12 @@ export default function Selected() {
           <Floor />
           <Direction />
           <Stair />
+          <Rideable
+            objectType="vehicle"
+            url={VEHICLE_URL}
+            wheelUrl={WHEEL_URL}
+            position={V3(-30, 0, 30)}
+          />
         </Physics>
       </Canvas>
       <div className={style.footer}>
@@ -98,15 +111,7 @@ export default function Selected() {
             />
           </div>
         </div>
-
-        <div
-          className={style.cameraLeft}
-          onClick={() => {
-            setZoom(!zoom);
-          }}
-        >
-          <ZoomButton position={zoom ? V3(20, 5, 20) : V3(10, 5, 10)} />
-        </div>
+        <Info />
 
         <div className={style.footerLower}>
           <div className={style.joyStickOuter}>

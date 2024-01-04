@@ -3,7 +3,6 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  z-index: 1000;
   width: 12rem;
   height: 12rem;
   overflow: auto;
@@ -12,13 +11,13 @@
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
-.joyStick::after {
+/* .joyStick::after {
   content: "";
   width: 10rem;
   height: 10rem;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.2);
-}
+} */
 
 .joystickBall {
   width: 5rem;

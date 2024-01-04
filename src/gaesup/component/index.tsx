@@ -13,9 +13,9 @@ export function GaesupComponent({
   props: controllerInnerType;
   refs: refsType;
 }) {
-  const { mode } = useContext(GaesupWorldContext);
-  calculation(props);
+  const { mode, activeState } = useContext(GaesupWorldContext);
 
+  calculation(props);
   return (
     <>
       {mode.type === "character" && <CharacterRef props={props} refs={refs} />}

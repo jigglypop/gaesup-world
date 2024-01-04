@@ -1,5 +1,6 @@
 import { CameraControls } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
+import { vec3 } from "@react-three/rapier";
 import { useContext, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { GaesupControllerContext } from "../controller/context";
@@ -23,7 +24,7 @@ export default function Camera({
 }) {
   const worldContext = useContext(GaesupWorldContext);
   const controllerContext = useContext(GaesupControllerContext);
-  const { mode } = worldContext;
+  const { mode, cameraOption } = worldContext;
   const { rigidBodyRef, outerGroupRef } = refs;
   const { scene, camera } = useThree();
   const cameraRef = useRef<CameraControls>();
@@ -53,6 +54,19 @@ export default function Camera({
     scene.children.forEach((child) => getMeshs(child));
   }, []);
 
+  const position = useMemo(() => camera.position, []);
+  const dir = useMemo(() => vec3(), []);
+  cameraProp.cameraRay.rayCast = new THREE.Raycaster(
+    cameraProp.cameraRay.origin,
+    cameraProp.cameraRay.dir,
+    0,
+    -cameraOption.maxDistance
+  );
+  useEffect(() => {
+    cameraProp.cameraRay.origin.copy(position);
+    cameraProp.cameraRay.dir.copy(camera.getWorldDirection(dir));
+  }, [cameraProp]);
+
   useFrame((state, delta) => {
     if (
       !rigidBodyRef ||
@@ -69,10 +83,6 @@ export default function Camera({
       } else if (mode.control === "normal") {
         normal(cameraProp);
       }
-      cameraProp.cameraRay.origin.copy(camera.position);
-      cameraProp.cameraRay.dir.copy(
-        camera.getWorldDirection(new THREE.Vector3())
-      );
       detector(cameraProp);
     }
   });
@@ -97,9 +107,5 @@ export default function Camera({
     ]);
   };
 
-  return (
-    <>
-      <CameraControls ref={cameraRef} />
-    </>
-  );
+  return <CameraControls ref={cameraRef}></CameraControls>;
 }

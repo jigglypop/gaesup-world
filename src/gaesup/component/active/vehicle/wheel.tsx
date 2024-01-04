@@ -22,8 +22,6 @@ export type wheelRegidBodyType = {
 export const WheelRegidBodyRef = forwardRef(
   (
     {
-      index,
-      wheelPosition,
       bodyRef,
       wheel,
       bodyAnchor,

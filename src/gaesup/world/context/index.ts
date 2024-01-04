@@ -140,6 +140,13 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
   moveTo: null,
   cameraBlock: false,
   controlBlock: false,
+  scrollBlock: true,
+  rideable: {
+    isRiding: false,
+    objectType: null,
+    url: null,
+    wheelUrl: null,
+  },
 };
 
 export const GaesupWorldContext = createContext<gaesupWorldContextType>(null);

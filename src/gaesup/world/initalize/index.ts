@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useReducer } from "react";
 
+import { isDesktop } from "react-device-detect";
 import { gaesupWorldDefault } from "../../world/context";
 import { gaesupWorldReducer } from "../../world/context/reducer";
 import initDebug from "../debug";
@@ -8,7 +9,7 @@ import initColider from "./collider";
 
 export default function initGaesupWorld(props: gaesupWorldPropsType) {
   const [value, dispatch] = useReducer(gaesupWorldReducer, {
-    debug: props.debug || gaesupWorldDefault.debug,
+    debug: (props.debug && isDesktop) || gaesupWorldDefault.debug,
     activeState: gaesupWorldDefault.activeState,
     characterCollider: Object.assign(
       gaesupWorldDefault.characterCollider,
@@ -42,6 +43,8 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
     moveTo: null,
     cameraBlock: props.cameraBlock || false,
     controlBlock: props.controlBlock || false,
+    scrollBlock: props.scrollBlock || true,
+    rideable: gaesupWorldDefault.rideable,
   });
 
   useEffect(() => {
@@ -50,7 +53,10 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
       return maps;
     }, {});
     const assignedControl = Object.assign(value.control, keyboard);
-
+    if (value.scrollBlock)
+      window.addEventListener("touchmove", (e) => e.preventDefault(), {
+        passive: false,
+      });
     dispatch({
       type: "update",
       payload: {

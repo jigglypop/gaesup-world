@@ -30,4 +30,5 @@ export type gaesupWorldPropsType = {
   moveTo?: (position: THREE.Vector3, target: THREE.Vector3) => void;
   cameraBlock?: boolean;
   controlBlock?: boolean;
+  scrollBlock?: boolean;
 };

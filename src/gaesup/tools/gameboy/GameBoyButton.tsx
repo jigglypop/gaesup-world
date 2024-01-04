@@ -1,5 +1,5 @@
 import { CSSProperties } from "react";
-import { usePushKey } from "../pushKey/index.js";
+import { usePushKey } from "../../hooks/usePushKey";
 import "./style.css";
 
 export type gameBoyButtonType = {

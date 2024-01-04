@@ -1,6 +1,6 @@
 "use client";
 
-import { useGaesupController } from "../../../src/gaesup";
+import { useGaesupController } from "../../../src";
 
 export default function Passive() {
   const {

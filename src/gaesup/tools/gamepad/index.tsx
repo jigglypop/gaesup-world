@@ -1,15 +1,18 @@
 import { useContext } from "react";
-
-import { GaesupWorldContext } from "../../world/context/index.js";
-import GamePadButton from "./GamePadButton.js";
+import { GaesupWorldContext } from "../../world/context";
+import GamePadButton from "./GamePadButton";
 import "./style.css";
-import { gamepadType } from "./type.js";
+import { gamepadType } from "./type";
 
 type gameBoyDirectionType = {
   tag: string;
   value: string;
   name: string;
   icon: JSX.Element;
+};
+
+export const gamepadDefault = {
+  on: true,
 };
 
 export function GamePad(props: gamepadType) {

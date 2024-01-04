@@ -1,7 +1,7 @@
 import { useContext } from "react";
 
-import { GaesupWorldContext } from "../../world/context/index.js";
-import { portalType } from "../../world/context/type.js";
+import { GaesupWorldContext } from "../../world/context";
+import { portalType } from "../../world/context/type";
 import "./style.css";
 
 export function JumpPortal(props: portalType) {

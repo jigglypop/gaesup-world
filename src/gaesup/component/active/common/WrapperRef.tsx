@@ -14,6 +14,7 @@ export function WrapperRef({
   refs,
   gltf,
   animationRef,
+  name,
 }: {
   children: ReactNode;
   outerChildren?: ReactNode;
@@ -21,10 +22,11 @@ export function WrapperRef({
   refs: refsType;
   gltf: GLTFResult;
   animationRef?: Ref<THREE.Object3D<THREE.Object3DEventMap>>;
+  name?: string;
 }) {
   return (
     <OuterGroupRef ref={refs.outerGroupRef} props={props}>
-      <RigidBodyRef ref={refs.rigidBodyRef}>
+      <RigidBodyRef ref={refs.rigidBodyRef} name={name}>
         <SlopeRayRef
           slopeRay={props.slopeRay}
           groundRay={props.groundRay}

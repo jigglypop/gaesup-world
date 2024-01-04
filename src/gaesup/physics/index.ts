@@ -21,16 +21,18 @@ export default function calculation(prop: controllerInnerType) {
   const worldContext = useContext(GaesupWorldContext);
   const controllerContext = useContext(GaesupControllerContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
-  const { mode, activeState } = worldContext;
+  const { mode, activeState, controlBlock } = worldContext;
 
   useEffect(() => {
     const { rigidBodyRef } = prop;
-    if (rigidBodyRef.current)
-      rigidBodyRef.current?.setTranslation(
-        activeState.position.add(V3(0, 1, 0)),
-        false
+    if (rigidBodyRef.current) {
+      rigidBodyRef.current.lockRotations(true, true);
+      rigidBodyRef.current.setTranslation(
+        activeState.position.clone().add(V3(0, 5, 0)),
+        true
       );
-  }, []);
+    }
+  }, [mode.type]);
 
   useFrame((state, delta) => {
     const { rigidBodyRef, outerGroupRef, innerGroupRef } = prop;
@@ -43,7 +45,7 @@ export default function calculation(prop: controllerInnerType) {
       !innerGroupRef.current
     )
       return null;
-
+    if (controlBlock) return null;
     const calcProp: calcPropType = {
       ...prop,
       state,

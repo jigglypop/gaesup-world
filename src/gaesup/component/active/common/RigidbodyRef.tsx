@@ -3,9 +3,12 @@ import { ReactNode, Ref, forwardRef } from "react";
 import { controllerInnerType } from "../../../controller/type";
 
 export const RigidBodyRef = forwardRef(
-  ({ children }: { children: ReactNode }, ref: Ref<RapierRigidBody>) => {
+  (
+    { children, name }: { children: ReactNode; name?: string },
+    ref: Ref<RapierRigidBody>
+  ) => {
     return (
-      <RigidBody colliders={false} ref={ref}>
+      <RigidBody colliders={false} ref={ref} name={name}>
         {children}
       </RigidBody>
     );

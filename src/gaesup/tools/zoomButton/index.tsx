@@ -1,5 +1,4 @@
 import { useContext } from "react";
-
 import { makeCameraPosition } from "../../camera/control/orbit.js";
 import {
   GaesupWorldContext,
@@ -8,9 +7,11 @@ import {
 import "./style.css";
 
 export type zoomButtonPropsType = {
+  children?: React.ReactNode;
   position: THREE.Vector3;
   target?: THREE.Vector3;
   keepBlocking?: boolean;
+  zoomButtonStyle?: React.CSSProperties;
 };
 
 export function ZoomButton(props: zoomButtonPropsType) {
@@ -43,7 +44,8 @@ export function ZoomButton(props: zoomButtonPropsType) {
 
   return (
     <div
-      className="jumpPortal"
+      className="zoomButton"
+      style={props.zoomButtonStyle}
       onClick={async () => {
         await closeCamera();
         await moveTo(
@@ -53,7 +55,7 @@ export function ZoomButton(props: zoomButtonPropsType) {
         await openCamera();
       }}
     >
-      줌
+      {props.children}
     </div>
   );
 }

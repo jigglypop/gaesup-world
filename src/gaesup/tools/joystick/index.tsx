@@ -7,8 +7,8 @@ import {
   useRef,
   useState,
 } from "react";
+import useJoyStick from "../../hooks/useJoyStick";
 import { GaesupWorldContext } from "../../world/context";
-import useJoyStick from "./default";
 import "./style.css";
 import { joyStickType } from "./type";
 
@@ -105,7 +105,10 @@ export function JoyStick(props: joyStickType) {
 
   const calcOriginBall = (X: number, Y: number) => {
     const { top, left, bottom, right, width, height } = screenSize;
-    if (top > Y || bottom < Y || left > X || right < X) return;
+
+    if (top > Y || bottom < Y || left > X || right < X) {
+      return;
+    }
     const dx = joyStickOrigin.x - X;
     const dy = joyStickOrigin.y - Y;
     const normX = dx ** 2;
@@ -116,7 +119,6 @@ export function JoyStick(props: joyStickType) {
       Y - (bottom - height / 2),
       X - (left + width / 2)
     );
-    const delta = newAngle - joyStickOrigin.angle;
 
     if (currentRadius >= width / 2) {
       return;
@@ -157,19 +159,15 @@ export function JoyStick(props: joyStickType) {
 
   const handleTouchMove: TouchEventHandler = (e) => {
     if (!state.touchDown) return;
-    e.preventDefault();
-    calcOriginBall(e.touches[0].screenX, e.touches[0].screenY);
+    calcOriginBall(e.touches[0].pageX, e.touches[0].pageY);
   };
 
   const handleTouchEnd: TouchEventHandler = useCallback(
     (e) => {
-      if (joyStickOrigin.currentRadius >= screenSize.width / 2) return;
-
       setState((state) => ({
         ...state,
         touchDown: false,
       }));
-      e.preventDefault();
       return initialize();
     },
     [setBall, setState, setOrigin, state.touchDown]
@@ -194,7 +192,7 @@ export function JoyStick(props: joyStickType) {
     if (outerRef.current) {
       initialize();
     }
-  }, []);
+  }, [mode.controller]);
 
   return (
     <>
@@ -217,7 +215,6 @@ export function JoyStick(props: joyStickType) {
           onMouseMove={handleMouseOver}
           onMouseLeave={handleMouseOut}
           onTouchStart={(e) => {
-            e.preventDefault();
             setTouchDown(true);
           }}
           onTouchEnd={handleTouchEnd}
@@ -238,7 +235,6 @@ export function JoyStick(props: joyStickType) {
             onMouseMove={handleMouseOver}
             onMouseLeave={handleMouseOut}
             onTouchStart={(e) => {
-              e.preventDefault();
               setTouchDown(true);
             }}
             onTouchEnd={handleTouchEnd}

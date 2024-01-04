@@ -74,12 +74,6 @@ export default function initControllerProps({ refs }: { refs: refsType }) {
       intersectObjectMap: {},
     };
   }, []);
-  cameraRay.rayCast = new THREE.Raycaster(
-    cameraRay.origin,
-    cameraRay.dir,
-    0,
-    -context.cameraOption.maxDistance
-  );
 
   const initRefs = useCallback(
     (refs: refsType) => {
