@@ -20,8 +20,6 @@ import Info from "../info";
 import Passive from "../passive";
 import Direction from "../platform/Direction";
 import Floor from "../platform/Floor";
-import RigidObjects from "../platform/RigidObjects";
-import RoughPlane from "../platform/RoughPlane";
 import Stair from "../platform/Stair";
 import * as style from "./style.css";
 
@@ -88,8 +86,6 @@ export default function Selected() {
               });
             }}
           />
-          <RoughPlane />
-          <RigidObjects />
           <Passive />
           <Floor />
           <Direction />
