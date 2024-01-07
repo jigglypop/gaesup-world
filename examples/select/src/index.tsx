@@ -100,6 +100,7 @@ export default function Selected() {
             isRiderOn={true}
             url={VEHICLE_URL}
             wheelUrl={WHEEL_URL}
+            offset={V3(0, 0.5, 0)}
             position={V3(-10, 5, 10)}
           />
           <Rideable
@@ -109,6 +110,21 @@ export default function Selected() {
             url={VEHICLE_URL}
             wheelUrl={WHEEL_URL}
             position={V3(-20, 5, 10)}
+          />
+          <Rideable
+            objectkey="3"
+            objectType="airplane"
+            isRiderOn={true}
+            url={AIRPLANE_URL}
+            offset={V3(0, 0.5, 0)}
+            position={V3(10, 5, 10)}
+          />
+          <Rideable
+            objectkey="4"
+            objectType="airplane"
+            isRiderOn={false}
+            url={AIRPLANE_URL}
+            position={V3(20, 5, 10)}
           />
         </Physics>
       </Canvas>

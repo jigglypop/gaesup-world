@@ -23,6 +23,7 @@ export const RigidBodyRef = forwardRef(
     const _euler = rotation.clone();
     _euler.x = 0;
     _euler.z = 0;
+
     return (
       <RigidBody
         colliders={false}

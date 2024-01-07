@@ -55,6 +55,7 @@ export type statesType = {
   isRunning: boolean;
   isJumping: boolean;
   isRiding: boolean;
+  isRiderOn: boolean;
   isPush: controlType;
   isLanding: boolean;
 };
@@ -89,6 +90,9 @@ export type characterColliderType = {
   height?: number;
   radius?: number;
   diameter?: number;
+  riderOffsetX?: number;
+  riderOffsetY?: number;
+  riderOffsetZ?: number;
 };
 
 export type vehicleColliderType = {
@@ -162,6 +166,7 @@ export type rideableType = {
   visible?: boolean;
   vehicleSize?: THREE.Vector3;
   wheelSize?: THREE.Vector3;
+  airplaneSize?: THREE.Vector3;
 };
 
 type KeyboardControlsState<T extends string = string> = {

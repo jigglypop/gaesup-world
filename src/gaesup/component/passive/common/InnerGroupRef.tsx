@@ -27,7 +27,6 @@ export const InnerGroupRef = forwardRef(
     const objectNode = Object.values(nodes).find(
       (node) => node.type === "Object3D"
     );
-
     return (
       <Suspense fallback={null}>
         <group

@@ -55,7 +55,7 @@ export function useRideable() {
    * @param {string} objectkey - The key of the rideable object to retrieve.
    * @returns {rideableType} The rideable object with the specified key.
    */
-  const getRideable = (objectkey: string) => {
+  const getRideable = (objectkey: string): rideableType => {
     return worldContext.rideable[objectkey];
   };
 
@@ -65,6 +65,10 @@ export function useRideable() {
    */
   const landing = (objectkey: string) => {
     const { activeState, vehicleCollider, airplaneCollider } = worldContext;
+    worldContext.characterCollider.riderOffsetX = 0;
+    worldContext.characterCollider.riderOffsetY = 0;
+    worldContext.characterCollider.riderOffsetZ = 0;
+    worldContext.states.isRiding = false;
     worldContext.rideable[objectkey].visible = true;
     worldContext.rideable[objectkey].position.copy(
       activeState.position
@@ -87,7 +91,9 @@ export function useRideable() {
     dispatch({
       type: "update",
       payload: {
-        rideable: worldContext.rideable,
+        rideable: { ...worldContext.rideable },
+        states: { ...worldContext.states },
+        characterCollider: { ...worldContext.characterCollider },
       },
     });
   };
@@ -120,17 +126,18 @@ export function useRideable() {
   const setModeAndRiding = async (props: rideableType) => {
     worldContext.mode.type = props.objectType;
     worldContext.states.isRiding = true;
+    worldContext.states.isRiderOn = props.isRiderOn;
+    worldContext.characterCollider.riderOffsetX = props?.offset?.x || 0;
+    worldContext.characterCollider.riderOffsetY = props?.offset?.y || 0;
+    worldContext.characterCollider.riderOffsetZ = props?.offset?.z || 0;
     worldContext.rideable[props.objectkey].visible = false;
 
     dispatch({
       type: "update",
       payload: {
-        mode: {
-          ...worldContext.mode,
-        },
-        states: {
-          ...worldContext.states,
-        },
+        mode: { ...worldContext.mode },
+        states: { ...worldContext.states },
+        characterCollider: { ...worldContext.characterCollider },
       },
     });
   };

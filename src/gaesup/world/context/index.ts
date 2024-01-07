@@ -21,6 +21,9 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     height: 0.7,
     radius: 0.3,
     diameter: 0.6,
+    riderOffsetX: 0,
+    riderOffsetY: 0,
+    riderOffsetZ: 0,
   },
   vehicleCollider: {
     wheelSizeX: 0.5,
@@ -62,6 +65,7 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     isRunning: false,
     isJumping: false,
     isRiding: false,
+    isRiderOn: false,
     isLanding: false,
     isPush: {
       forward: false,

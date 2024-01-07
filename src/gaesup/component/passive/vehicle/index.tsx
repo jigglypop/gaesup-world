@@ -1,6 +1,6 @@
 import { Collider } from "@dimforge/rapier3d-compat";
 import { CuboidCollider, RapierRigidBody } from "@react-three/rapier";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { InnerGroupRef } from "../common/InnerGroupRef";
 import { OuterGroupRef } from "../common/OuterGroupRef";
 import { RigidBodyRef } from "../common/RigidbodyRef";
@@ -40,6 +40,12 @@ export function PassiveVehicle(props: passiveVehiclePropsType) {
     };
   }, [props]);
 
+  useEffect(() => {
+    if (rigidBodyRef.current) {
+      rigidBodyRef.current.lockRotations(true, true);
+    }
+  }, []);
+
   return (
     <OuterGroupRef ref={refs.outerGroupRef}>
       {props.children}
@@ -55,11 +61,19 @@ export function PassiveVehicle(props: passiveVehiclePropsType) {
             ref={refs.innerGroupRef}
             url={vehicleUrl}
           />
-          <CuboidCollider
-            ref={colliderRef}
-            args={[vehicleSize.x / 2, vehicleSize.y / 2, vehicleSize.z / 2]}
-            position={[0, vehicleSize.y + wheelSize.y || 0, 0]}
-          />
+          {wheelUrl ? (
+            <CuboidCollider
+              ref={colliderRef}
+              args={[vehicleSize.x / 2, vehicleSize.y / 2, vehicleSize.z / 2]}
+              position={[0, vehicleSize.y + wheelSize.y / 2, 0]}
+            />
+          ) : (
+            <CuboidCollider
+              ref={colliderRef}
+              args={[vehicleSize.x / 2, vehicleSize.y / 2, vehicleSize.z / 2]}
+              position={[0, vehicleSize.y, 0]}
+            />
+          )}
         </RigidBodyRef>
       )}
       {wheelUrl && (
