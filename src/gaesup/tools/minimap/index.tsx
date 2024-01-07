@@ -46,19 +46,24 @@ export function MiniMap(props: minimapType) {
       <div
         className="minimapInner"
         style={{
-          // transform: props.blockRotate
-          //   ? `translate(-50%, -50%) rotate(180deg) `
-          //   : `translate(-50%, -50%) rotate(${
-          //       (activeState.euler.y * 180) / Math.PI + 180
-          //     }deg) `,
-          transform: `translate(-50%, -50%) rotate(180deg)`,
+          transform:
+            props.blockRotate || mode.control === "normal"
+              ? `translate(-50%, -50%) rotate(180deg) `
+              : `translate(-50%, -50%) rotate(${
+                  (activeState.euler.y * 180) / Math.PI + 180
+                }deg) `,
           ...innerStyle,
         }}
       >
         <div
           className="east direction"
           style={{
-            transform: `translate(-50%, 50%) rotate(180deg)`,
+            transform:
+              props.blockRotate || mode.control === "normal"
+                ? `translate(-50%, -50%) rotate(180deg) `
+                : `translate(-50%, -50%) rotate(-${
+                    (activeState.euler.y * 180) / Math.PI + 180
+                  }deg) `,
             ...directionStyle,
           }}
         >
@@ -67,7 +72,12 @@ export function MiniMap(props: minimapType) {
         <div
           className="west direction"
           style={{
-            transform: `translate(50%, 50%) rotate(180deg)`,
+            transform:
+              props.blockRotate || mode.control === "normal"
+                ? `translate(50%, -50%) rotate(180deg) `
+                : `translate(50%, -50%) rotate(-${
+                    (activeState.euler.y * 180) / Math.PI + 180
+                  }deg) `,
             ...directionStyle,
           }}
         >
@@ -76,7 +86,12 @@ export function MiniMap(props: minimapType) {
         <div
           className="south direction"
           style={{
-            transform: `translate(-50%, 50%) rotate(180deg)`,
+            transform:
+              props.blockRotate || mode.control === "normal"
+                ? `translate(-50%, 50%) rotate(180deg) `
+                : `translate(-50%, 50%) rotate(-${
+                    (activeState.euler.y * 180) / Math.PI + 180
+                  }deg) `,
             ...directionStyle,
           }}
         >
@@ -85,7 +100,12 @@ export function MiniMap(props: minimapType) {
         <div
           className="north direction"
           style={{
-            transform: `translate(-50%, -50%) rotate(180deg)`,
+            transform:
+              props.blockRotate || mode.control === "normal"
+                ? `translate(-50%, -50%) rotate(180deg) `
+                : `translate(-50%, -50%) rotate(-${
+                    (activeState.euler.y * 180) / Math.PI + 180
+                  }deg) `,
             ...directionStyle,
           }}
         >
@@ -96,30 +116,51 @@ export function MiniMap(props: minimapType) {
           const X = (center.x - activeState.position.x) * scale;
           const Z = (center.z - activeState.position.z) * scale;
           return (
-            <div
-              key={key}
-              className="minimapObject"
-              style={{
-                width: `${size.x * scale}rem`,
-                height: `${size.z * scale}rem`,
-                top: "50%",
-                left: "50%",
-                transform: `translate(-50%, -50%) translate(${-X}rem, ${-Z}rem)`,
-                transformOrigin: "50% 50%",
-                ...objectStyle,
-              }}
-            >
-              {text && (
-                <div
-                  className="text"
-                  style={{
-                    ...textStyle,
-                    transform: `rotate(-180deg)`,
-                  }}
-                >
-                  {text}
-                </div>
-              )}
+            <div key={key}>
+              <div
+                key={key}
+                className="minimapObject"
+                style={{
+                  width: `${size.x * scale}rem`,
+                  height: `${size.z * scale}rem`,
+                  top: "50%",
+                  left: "50%",
+                  transform: `translate(-50.1%, -50.1%) translate(${-X}rem, ${-Z}rem)`,
+                  transformOrigin: "50% 50%",
+                  zIndex: 1 + key,
+                  ...objectStyle,
+                }}
+              ></div>
+              <div
+                className="textObject"
+                style={{
+                  width: `${size.x * scale}rem`,
+                  height: `${size.z * scale}rem`,
+                  top: "50.1%",
+                  left: "50.1%",
+                  transform: `translate(-50.1%, -50.1%) translate(${-X}rem, ${-Z}rem)`,
+                  transformOrigin: "50.1% 50.1%",
+                  zIndex: 1001 + key,
+                }}
+              >
+                {text && (
+                  <div
+                    className="text"
+                    style={{
+                      ...textStyle,
+                      zIndex: 1001 + key,
+                      transform:
+                        props.blockRotate || mode.control === "normal"
+                          ? ` rotate(180deg) `
+                          : ` rotate(-${
+                              (activeState.euler.y * 180) / Math.PI + 180
+                            }deg) `,
+                    }}
+                  >
+                    {text}
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}

@@ -48,6 +48,7 @@ export function PassiveVehicle(props: passiveVehiclePropsType) {
           ref={refs.rigidBodyRef}
           position={position}
           rotation={euler}
+          onCollisionEnter={props.onCollisionEnter}
         >
           <InnerGroupRef
             currentAnimation={currentAnimation}

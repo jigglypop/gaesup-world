@@ -1,6 +1,5 @@
 import { euler, quat, vec3 } from "@react-three/rapier";
 import { createContext } from "react";
-import { animationTagType } from "../../controller/type";
 import { dispatchType } from "../../utils/type";
 import { V3 } from "../../utils/vector";
 import { gaesupWorldContextType } from "./type";
@@ -43,11 +42,7 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     airplaneZ: 0.5,
     gravity: 0.2,
   },
-  mode: {
-    type: "character",
-    controller: "keyboard",
-    control: "normal",
-  },
+  mode: {},
   url: {
     characterUrl: null,
     vehicleUrl: null,
@@ -66,7 +61,14 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     isRotated: false,
     isRunning: false,
     isJumping: false,
-    isAnimationOuter: false,
+    isRiding: false,
+    isLanding: false,
+    isPush: {
+      forward: false,
+      backward: false,
+      leftward: false,
+      rightward: false,
+    },
   },
   debug: false,
   minimap: {
@@ -97,7 +99,7 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
   },
   refs: null,
   animations: {
-    current: "idle" as keyof animationTagType,
+    current: "idle",
     animationNames: {
       idle: "idle",
       walk: "walk",
@@ -113,6 +115,8 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
       sit: "sit",
     },
     keyControl: {},
+    store: {},
+    default: "idle",
   },
   keyBoardMap: [
     { name: "forward", keys: ["ArrowUp", "KeyW"] },
@@ -141,12 +145,7 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
   cameraBlock: false,
   controlBlock: false,
   scrollBlock: true,
-  rideable: {
-    isRiding: false,
-    objectType: null,
-    url: null,
-    wheelUrl: null,
-  },
+  rideable: {},
 };
 
 export const GaesupWorldContext = createContext<gaesupWorldContextType>(null);

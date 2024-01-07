@@ -1,6 +1,6 @@
 import { RootState } from "@react-three/fiber";
 
-import { joyStickInnerType } from "../../tools/joystick/type";
+import { joyStickInnerType } from "../../tools/joyStick/type";
 import { V3, calcAngleByVector } from "../../utils/vector";
 import { activeStateType, modeType } from "../../world/context/type";
 import { calcPropType } from "../type";

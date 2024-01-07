@@ -1,3 +1,4 @@
+import { CollisionEnterPayload } from "@react-three/rapier";
 import {
   activeStateType,
   characterColliderType,
@@ -22,4 +23,5 @@ export type passiveVehiclePropsType = {
   url: urlType;
   currentAnimation: string;
   children?: React.ReactNode;
+  onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
 };

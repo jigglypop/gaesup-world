@@ -1,6 +1,6 @@
 import { CSSProperties } from "react";
 import { GLTFResult } from "../../component/type";
-import { actionsType, animationTagType, refsType } from "../../controller/type";
+import { actionsType, refsType } from "../../controller/type";
 
 import { joyStickInnerType } from "../../tools/joyStick/type";
 import { keyboardMapType } from "../../tools/keyBoardToolTip/type";
@@ -54,7 +54,9 @@ export type statesType = {
   isRotated: boolean;
   isRunning: boolean;
   isJumping: boolean;
-  isAnimationOuter: boolean;
+  isRiding: boolean;
+  isPush: controlType;
+  isLanding: boolean;
 };
 
 export type urlType = {
@@ -64,12 +66,22 @@ export type urlType = {
   wheelUrl?: string;
 };
 
+export type animationAtomType = {
+  tag: string;
+  condition: () => boolean;
+  action?: () => void;
+  animationName?: string;
+  key?: string;
+};
+
 export type animationPropType = {
-  current: keyof animationTagType;
+  current: string;
   animationNames: actionsType;
   keyControl: {
     [key: string]: boolean;
   };
+  store: {};
+  default: string;
 };
 
 export type characterColliderType = {
@@ -139,10 +151,17 @@ export type passiveStateType = {
 };
 
 export type rideableType = {
-  isRiding: boolean;
+  objectkey: string;
   objectType?: "vehicle" | "airplane";
+  isRiderOn?: boolean;
   url?: string;
   wheelUrl?: string;
+  position?: THREE.Vector3;
+  rotation?: THREE.Euler;
+  offset?: THREE.Vector3;
+  visible?: boolean;
+  vehicleSize?: THREE.Vector3;
+  wheelSize?: THREE.Vector3;
 };
 
 type KeyboardControlsState<T extends string = string> = {
@@ -173,7 +192,7 @@ export type gaesupWorldContextType = {
   cameraBlock: boolean;
   controlBlock: boolean;
   scrollBlock: boolean;
-  rideable: rideableType;
+  rideable: { [key: string]: rideableType };
 };
 
 export type gaesupDisptachType = dispatchType<gaesupWorldContextType>;

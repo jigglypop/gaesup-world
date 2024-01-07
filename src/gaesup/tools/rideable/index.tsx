@@ -1,85 +1,88 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect } from "react";
 
-import { Gltf } from "@react-three/drei";
-import { RigidBody } from "@react-three/rapier";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context/index.js";
+import { CollisionEnterPayload, euler } from "@react-three/rapier";
+import { PassiveVehicle } from "../../component/passive/vehicle/index.js";
+import { useRideable } from "../../hooks/useRideable/index.js";
+import { V3, V30 } from "../../utils/vector.js";
+import { GaesupWorldContext } from "../../world/context/index.js";
+import { rideableType } from "../../world/context/type.js";
 import "./style.css";
 
-export type ridableType = {
-  objectType: "vehicle" | "airplane";
-  url: string;
-  wheelUrl?: string;
-  position?: THREE.Vector3;
-  rotation?: THREE.Euler;
-};
+export function Rideable(props: rideableType) {
+  const { states, rideable, vehicleCollider, airplaneCollider } =
+    useContext(GaesupWorldContext);
 
-export function Rideable({
-  objectType,
-  url,
-  wheelUrl,
-  position,
-  rotation,
-}: ridableType) {
-  const context = useContext(GaesupWorldContext);
-  const dispatch = useContext(GaesupWorldDispatchContext);
-  const [visible, setVisible] = useState(true);
+  const { initRideable, getRideable, ride, landing } = useRideable();
+  const current = getRideable(props.objectkey);
 
-  const visibleFalse = async () => {
-    setVisible(false);
-  };
+  useEffect(() => {
+    initRideable(props);
+  }, []);
 
-  const setUrl = async () => {
-    if (objectType === "vehicle") {
-      context.url.vehicleUrl = url;
-      context.url.wheelUrl = wheelUrl || null;
-    } else if (objectType === "airplane") {
-      context.url.airplaneUrl = url;
+  useEffect(() => {
+    if (
+      states?.isLanding &&
+      rideable[props.objectkey] &&
+      !rideable[props.objectkey].visible
+    ) {
+      landing(props.objectkey);
     }
-    dispatch({
-      type: "update",
-      payload: {
-        url: {
-          ...context.url,
-        },
-      },
-    });
-  };
+  }, [states?.isLanding]);
 
-  const setMode = async () => {
-    context.mode.type = objectType;
-    dispatch({
-      type: "update",
-      payload: {
-        mode: {
-          ...context.mode,
-        },
-      },
-    });
+  const onCollisionEnter = async (e: CollisionEnterPayload) => {
+    await ride(e, props);
   };
 
   return (
     <group userData={{ intangible: true }}>
-      {visible && (
-        <RigidBody
-          type="dynamic"
-          colliders="cuboid"
-          position={position}
-          rotation={rotation}
-          userData={{ intangible: true }}
-          onCollisionEnter={async (e) => {
-            if (e.other.rigidBodyObject.name === "character") {
-              await visibleFalse();
-              await setUrl();
-              await setMode();
+      {current &&
+        rideable[props.objectkey] &&
+        rideable[props.objectkey].visible && (
+          <PassiveVehicle
+            position={current.position || V3(0, 0, 0)}
+            euler={current.rotation || euler()}
+            vehicleSize={
+              current.vehicleSize || props.objectType === "vehicle"
+                ? V3(
+                    vehicleCollider.vehicleSizeX,
+                    vehicleCollider.vehicleSizeY,
+                    vehicleCollider.vehicleSizeZ
+                  )
+                : V3(
+                    airplaneCollider.airplaneSizeX,
+                    airplaneCollider.airplaneSizeY,
+                    airplaneCollider.airplaneSizeZ
+                  )
             }
-          }}
-        >
-          <Gltf src={url} />
-        </RigidBody>
-      )}
+            wheelSize={
+              current.wheelSize || props.objectType === "vehicle"
+                ? V3(
+                    vehicleCollider.wheelSizeX,
+                    vehicleCollider.wheelSizeY,
+                    vehicleCollider.wheelSizeZ
+                  )
+                : V30()
+            }
+            currentAnimation={"idle"}
+            url={{
+              vehicleUrl: props.url,
+              wheelUrl: props.wheelUrl,
+            }}
+            onCollisionEnter={onCollisionEnter}
+          />
+          // <RigidBody
+          //   type="dynamic"
+          //   colliders="cuboid"
+          //   position={current.position || V3(0, 0, 0)}
+          //   rotation={current.rotation || euler()}
+          //   userData={{ intangible: true }}
+          //   onCollisionEnter={async (e) => {
+          //     await ride(e, props);
+          //   }}
+          // >
+          //   <Gltf src={props.url} />
+          // </RigidBody>
+        )}
     </group>
   );
 }

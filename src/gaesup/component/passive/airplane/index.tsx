@@ -21,7 +21,7 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
     colliderRef,
   };
 
-  const { position, euler, currentAnimation, airplaneUrl } = useMemo(() => {
+  const { euler } = useMemo(() => {
     return {
       position: props.position,
       euler: props.euler,

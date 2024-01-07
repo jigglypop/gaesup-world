@@ -2,6 +2,7 @@ import { RootState } from "@react-three/fiber";
 import { cameraRayType } from "../../../camera/type";
 import {
   activeStateType,
+  animationAtomType,
   animationPropType,
   keyControlType,
   statesType,
@@ -15,6 +16,7 @@ export type callbackPropType = {
   groundRay: groundRayType;
   cameraRay: cameraRayType;
   control: keyControlType;
+  subscribe: (props: animationAtomType) => void;
 };
 
 export type onFramePropType = callbackPropType & RootState;

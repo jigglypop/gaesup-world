@@ -11,6 +11,6 @@ export default function normal(prop: cameraPropType) {
     .clone()
     .add(V3(0, cameraOption.YDistance, cameraOption.XZDistance));
 
-  state.camera.position.lerp(cameraPosition, 0.9);
+  state.camera.position.lerp(cameraPosition, 1);
   state.camera.lookAt(activeState.position.clone());
 }

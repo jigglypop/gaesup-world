@@ -1,6 +1,7 @@
 import { useAnimations } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useContext, useEffect } from "react";
+import { useGaesupAnimation } from "../../../hooks/useGaesupAnimation";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
@@ -19,12 +20,12 @@ export default function initCallback(props: controllerInnerType) {
   const dispatch = useContext(GaesupWorldDispatchContext);
   const { animations } = characterGltf;
   const { actions } = useAnimations(animations, props.outerGroupRef);
+  const { subscribe } = useGaesupAnimation();
 
   const playAnimation = (tag: keyof animationTagType, key: string) => {
     if (!(key in control)) return;
     if (control[key]) {
       characterAnimations.current = tag;
-      states.isAnimationOuter = true;
       dispatch({
         type: "update",
         payload: {
@@ -33,8 +34,6 @@ export default function initCallback(props: controllerInnerType) {
           },
         },
       });
-    } else {
-      states.isAnimationOuter = false;
     }
   };
 
@@ -43,6 +42,7 @@ export default function initCallback(props: controllerInnerType) {
     activeState,
     control,
     states,
+    subscribe,
   };
 
   useEffect(() => {

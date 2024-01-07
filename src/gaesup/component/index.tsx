@@ -13,8 +13,7 @@ export function GaesupComponent({
   props: controllerInnerType;
   refs: refsType;
 }) {
-  const { mode, activeState } = useContext(GaesupWorldContext);
-
+  const { mode } = useContext(GaesupWorldContext);
   calculation(props);
   return (
     <>

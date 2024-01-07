@@ -28,7 +28,7 @@ export default function calculation(prop: controllerInnerType) {
     if (rigidBodyRef.current) {
       rigidBodyRef.current.lockRotations(true, true);
       rigidBodyRef.current.setTranslation(
-        activeState.position.clone().add(V3(0, 5, 0)),
+        activeState.position.clone().add(V3(0, 2, 0)),
         true
       );
     }

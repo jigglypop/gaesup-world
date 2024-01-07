@@ -1,9 +1,11 @@
 import { Collider } from "@dimforge/rapier3d-compat";
 import { RapierRigidBody } from "@react-three/rapier";
-import { useMemo, useReducer, useRef } from "react";
+import { useContext, useMemo, useReducer, useRef } from "react";
 import Camera from "../camera";
 
+import { KeyboardControls } from "@react-three/drei";
 import { GaesupComponent } from "../component";
+import { GaesupWorldContext } from "../world/context";
 import {
   GaesupControllerContext,
   GaesupControllerDispatchContext,
@@ -15,6 +17,16 @@ import initControllerProps from "./initialize";
 import { controllerInnerType, controllerType } from "./type";
 
 export function GaesupController(props: controllerType) {
+  const { keyBoardMap } = useContext(GaesupWorldContext);
+
+  return (
+    <KeyboardControls map={keyBoardMap}>
+      <GaesupControllerInner {...props}>{props.children}</GaesupControllerInner>
+    </KeyboardControls>
+  );
+}
+
+export function GaesupControllerInner(props: controllerType) {
   const capsuleColliderRef = useRef<Collider>(null);
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const outerGroupRef = useRef<THREE.Group>(null);

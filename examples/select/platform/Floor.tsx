@@ -2,10 +2,11 @@
 
 import { Grid, MeshReflectorMaterial } from "@react-three/drei";
 import { RigidBody } from "@react-three/rapier";
+import { GaeSupProps } from "../../../src";
 
 export default function Floor() {
   return (
-    <>
+    <GaeSupProps type="ground">
       <Grid
         renderOrder={-1}
         position={[0, -0.8, 0]}
@@ -42,6 +43,6 @@ export default function Floor() {
           />
         </mesh>
       </RigidBody>
-    </>
+    </GaeSupProps>
   );
 }

@@ -15,7 +15,8 @@
     "noEmit": false,
     "jsx": "react-jsx",
     "declaration": true,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "types": ["vite-plugin-svgr/client"] // 이부분 추가
   },
   "include": ["./src/**/*.tsx", "./src/**/*.ts", "src", "examples"],
   "references": [{ "path": "./tsconfig.node.json" }]

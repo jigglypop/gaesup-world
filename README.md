@@ -191,30 +191,32 @@ This is the airplane control in Gaesup World. Characters can board the airplane.
 
 #### [gameboy](#gameboy)
 
-## 1) joyStick
+1. JoyStick
 
-### (1) Info
+- This component provides a virtual joystick interface. It is recommended for use in mobile environments.
 
-- 가상 조이스틱 인터페이스를 제공하는 컴포넌트입니다. 모바일 환경에서 사용을 권장합니다
+> Caution! Due to position fluctuation in mobile environments, it is recommended to use the scrollBlock option of GaesupWorld.
 
-> 주의! 모바일에서 위치의 흔들림 때문에 `GaesupWorld` 의 옵션 `scrollBlock` 의 사용을 권장합니다.
+### (2) Features
 
-### (2) 특징
-
-- **모바일 등에서 조이스틱 인터페이스 제공**: 모바일 등의 환경에서 조이스틱 인터페이스를 제공합니다
-- **커스텀 외관**: 조이스틱과 그 공의 스타일링을 위한 `joyStickBallStyle` 및 `joyStickStyle` 속성을 받습니다.
-- **반응형 및 상호작용**: 다양한 장치에 대응하기 위한 마우스, 모바일 터치 이벤트를 지원합니다.
+Joystick Interface for Mobile and Other Environments: Provides a joystick interface in environments like mobile.
+Custom Appearance: Receives joyStickBallStyle and joyStickStyle properties for styling the joystick and its ball.
+Responsive and Interactive: Supports mouse and mobile touch events to cater to various devices.
 
 ### (3) Props
 
-- `joyStickBallStyle`: 조이스틱 공의 스타일 (`React.CSSProperties` 객체).
-- `joyStickStyle`: 조이스틱 컨테이너의 스타일 (`React.CSSProperties` 객체).
+joyStickBallStyle: Style of the joystick ball (React.CSSProperties object).
+joyStickStyle: Style of the joystick container (React.CSSProperties object).
 
 ### (4) How To Use
 
-1. 컴포넌트 트리에 `JoyStick` 컴포넌트를 포함시킵니다.
-2. 컴포넌트는 마우스 및 터치 입력에 반응하여 이동을 제어합니다.
-3. (선택) `joyStickBallStyle` 및 `joyStickStyle`을 통해 필요한 스타일을 커스텀합니다
+- Include the JoyStick component in your `GaesupWorld` component tree.
+
+> It is imperative to use it inside the GaesupWorld component
+
+- The component responds to mouse and touch inputs to control movement.
+
+- (Optional) Customize the necessary style using joyStickBallStyle and joyStickStyle.
 
 ### (5) Example
 
@@ -304,7 +306,7 @@ const MyComponent = () => {
 - **커스텀 스타일링**: 미니맵 및 그 내부 요소들의 스타일을 사용자 정의할 수 있습니다.
 - **마우스 휠 지원**: 마우스 휠을 사용하여 미니맵의 스케일을 조절할 수 있습니다.
 
-## 사용 방법
+### (3) 사용 방법
 
 1. `MiniMap` 컴포넌트를 컴포넌트 트리에 포함시킵니다.
 2. 필요한 스타일을 `minimapStyle`, `innerStyle`, `textStyle`, `objectStyle`, `avatarStyle`, `scaleStyle`, `directionStyle`, `plusMinusStyle` 속성을 통해 전달합니다.
@@ -408,7 +410,7 @@ const MyComponent = () => {
 
 ## 예제 코드
 
-```jsx
+```tsx
 import { GamePad } from "./GamePad";
 import { GaesupWorldContext } from "../../world/context";
 
@@ -451,15 +453,17 @@ const MyComponent = () => {
 
 ## 예제 코드
 
-```jsx
+```tsx
 import { ZoomButton } from "./ZoomButton";
 import * as THREE from "three";
 
 const App = () => {
   return (
-    <ZoomButton position={new THREE.Vector3(0, 0, 5)}>
-      Zoom to Position
-    </ZoomButton>
+    <GaesupWorld>
+      {/* ... */}
+      <ZoomButton position={new THREE.Vector3(0, 0, 5)}>{children}</ZoomButton>
+      {/* ... */}
+    </GaesupWorld>
   );
 };
 ```

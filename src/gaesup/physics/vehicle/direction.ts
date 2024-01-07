@@ -11,13 +11,6 @@ export function joystick(prop: calcPropType) {
   const front = vec3().set(zAxis, 0, zAxis);
   if (joystick.joyStickOrigin.isCenter) return front;
   activeState.euler.y = Math.PI / 2 - joystick.joyStickOrigin.angle;
-
-  // const _euler = activeState.euler.clone();
-  // const __euler = activeState.euler.clone();
-  // __euler.y = Math.PI / 2 - joystick.joyStickOrigin.angle;
-  // activeState.euler.setFromQuaternion(
-  //   quat().setFromEuler(_euler).slerp(quat().setFromEuler(__euler), 1)
-  // );
   return front;
 }
 

@@ -1,21 +1,19 @@
-import { useContext } from "react";
-
-import { GaesupWorldContext } from "../../world/context";
+import { useTeleport } from "../../hooks/useTeleport";
 import { portalType } from "../../world/context/type";
 import "./style.css";
 
-export function JumpPortal(props: portalType) {
-  const { refs } = useContext(GaesupWorldContext);
+export function JumpPortal({ text, position, jumpPortalStlye }: portalType) {
+  const { Teleport } = useTeleport();
 
   return (
     <div
       className="jumpPortal"
       onClick={() => {
-        refs.rigidBodyRef?.current?.setTranslation(props.position, true);
+        Teleport(position);
       }}
-      style={props.jumpPortalStlye}
+      style={jumpPortalStlye}
     >
-      {props.text}
+      {text}
     </div>
   );
 }

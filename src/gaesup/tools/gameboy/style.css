@@ -6,8 +6,6 @@ body {
   display: grid;
   align-items: center;
   justify-content: center;
-  margin: 5rem;
-  padding: 1rem;
   border-radius: 50%;
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: 1fr 1fr 1fr;

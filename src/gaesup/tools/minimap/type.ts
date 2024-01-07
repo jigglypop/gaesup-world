@@ -1,10 +1,13 @@
-import { CSSProperties } from "react";
+import { CSSProperties, ReactElement } from "react";
 import * as THREE from "three";
 
 export type minimapPropsType = {
+  type: "normal" | "ground";
   text?: string;
   center: THREE.Vector3;
   size: THREE.Vector3;
+  children?: ReactElement;
+  position?: THREE.Vector3;
 };
 
 export type minimapInnerType = {

@@ -39,7 +39,10 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
     joystick: gaesupWorldDefault.joystick,
     control: gaesupWorldDefault.control,
     animations: gaesupWorldDefault.animations,
-    keyBoardMap: gaesupWorldDefault.keyBoardMap,
+    keyBoardMap: Object.assign(
+      gaesupWorldDefault.keyBoardMap,
+      props.keyBoardMap || {}
+    ),
     moveTo: null,
     cameraBlock: props.cameraBlock || false,
     controlBlock: props.controlBlock || false,

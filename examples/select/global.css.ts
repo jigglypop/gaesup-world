@@ -1,9 +1,12 @@
 import { globalStyle } from "@vanilla-extract/css";
 import { vars } from "./styles/theme.css";
+const Roboto = "'Roboto', sans-serif;";
 
 globalStyle(":root", {
   background: vars.themes.background,
   color: vars.themes.text.normal,
+  fontWeight: "300",
+  fontFamily: Roboto,
 });
 
 globalStyle("html", {

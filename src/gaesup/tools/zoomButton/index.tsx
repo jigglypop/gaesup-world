@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { makeCameraPosition } from "../../camera/control/orbit.js";
 import {
   GaesupWorldContext,
@@ -14,14 +14,15 @@ export type zoomButtonPropsType = {
   zoomButtonStyle?: React.CSSProperties;
 };
 
-export function ZoomButton(props: zoomButtonPropsType) {
+export function useZoom() {
   const { moveTo, activeState, cameraOption } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
+  const [isZoom, setIsZoom] = useState(true);
 
-  const closeCamera = async () => {
-    cameraOption.XDistance = props.position.x;
-    cameraOption.YDistance = props.position.y;
-    cameraOption.ZDistance = props.position.z;
+  const closeCamera = async (position: THREE.Vector3) => {
+    cameraOption.XDistance = position.x;
+    cameraOption.YDistance = position.y;
+    cameraOption.ZDistance = position.z;
     dispatch({
       type: "update",
       payload: {
@@ -42,17 +43,34 @@ export function ZoomButton(props: zoomButtonPropsType) {
     });
   };
 
+  const setZoom = async (position: THREE.Vector3, isZoom: boolean) => {
+    setIsZoom(isZoom);
+    await closeCamera(position);
+    await moveTo(
+      makeCameraPosition(activeState, cameraOption),
+      activeState.position
+    );
+    await openCamera();
+  };
+
+  return {
+    setZoom,
+    openCamera,
+    closeCamera,
+    isZoom,
+    setIsZoom,
+  };
+}
+
+export function ZoomButton(props: zoomButtonPropsType) {
+  const { setZoom, isZoom } = useZoom();
+
   return (
     <div
       className="zoomButton"
       style={props.zoomButtonStyle}
       onClick={async () => {
-        await closeCamera();
-        await moveTo(
-          makeCameraPosition(activeState, cameraOption),
-          activeState.position
-        );
-        await openCamera();
+        await setZoom(props.position, isZoom);
       }}
     >
       {props.children}

@@ -1,6 +1,11 @@
 import { CSSProperties } from "react";
 
-export type keyboardMapType = { name: string; keys: string[] }[];
+export type keyboardMapType = {
+  name: string;
+  keys: string[];
+  label?: string;
+  match?: string;
+}[];
 export type keyMapItemType = {
   name: string;
   gridRow: string;

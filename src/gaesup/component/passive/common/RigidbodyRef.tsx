@@ -1,4 +1,8 @@
-import { RapierRigidBody, RigidBody } from "@react-three/rapier";
+import {
+  CollisionEnterPayload,
+  RapierRigidBody,
+  RigidBody,
+} from "@react-three/rapier";
 import { ReactNode, Ref, forwardRef } from "react";
 
 export const RigidBodyRef = forwardRef(
@@ -7,10 +11,12 @@ export const RigidBodyRef = forwardRef(
       children,
       position,
       rotation,
+      onCollisionEnter,
     }: {
       children: ReactNode;
       position?: THREE.Vector3;
       rotation?: THREE.Euler;
+      onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
     },
     ref: Ref<RapierRigidBody>
   ) => {
@@ -24,6 +30,7 @@ export const RigidBodyRef = forwardRef(
         position={position}
         rotation={_euler}
         userData={{ intangible: true }}
+        onCollisionEnter={onCollisionEnter}
       >
         {children}
       </RigidBody>

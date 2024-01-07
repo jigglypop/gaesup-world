@@ -32,7 +32,7 @@ export const minimapOuter = style([
     west: true,
   }),
   {
-    top: "48rem",
+    top: "5rem",
   },
 ]);
 
@@ -147,38 +147,19 @@ export const button = recipe({
     },
   ],
   variants: {
-    selected: {
-      true: {
-        background: vars.gradient.lightGreen,
-        boxShadow: "0 0 1rem rgba(5,222,250,1)",
-        color: "black",
-        ":hover": {
-          boxShadow: "0 0 2rem rgba(5,222,250,1)",
-        },
-      },
-    },
-    character: {
-      true: {
-        background: vars.gradient.lightGreen,
-        boxShadow: "0 0 1rem rgba(5,222,250,1)",
-        color: "black",
-        ":hover": {
-          boxShadow: "0 0 2rem rgba(5,222,250,1)",
-        },
-      },
-    },
     control: {
       true: {
-        background: vars.gradient.red,
-        boxShadow: "0 0 1rem rgba(245,177,97,1)",
+        background: vars.gradient.lightGreen,
+        boxShadow: "0 0 1rem rgba(5,222,250,1)",
         color: "black",
         ":hover": {
-          boxShadow: "0 0 2rem rrgba(245,177,97,1)",
+          boxShadow: "0 0 3rem rgba(5,222,250,1)",
         },
       },
     },
   },
 });
+
 export const gamePad = style([
   fixed({
     south_east: true,
