@@ -109,13 +109,19 @@ This project is distributed under the MIT License.
 
 ---
 
-## Controller
+### Index
 
-#### [Controller](#controller)
+- Player Type
 
-- [Character](#character)
-- [Vehicle](#vehicle)
-- [Airplane](#airplane)
+  - Character
+  - Vehicle
+  - Airplane
+
+- Animation
+
+## Player Type
+
+---
 
 ## Character
 
@@ -123,11 +129,10 @@ This is the character control in Gaesup World.
 
 - Possible Camera Types
 
-| Name   | Camera              | Control       | Info                                                                                          |
-| ------ | ------------------- | ------------- | --------------------------------------------------------------------------------------------- |
-| Normal | Perspective Camera  | Orbit Control | Positioned parallel to the Z-axis from the character's location and not affected by rotation. |
-| Orbit  | Perspective Camera  | Orbit Control | Moves with the character and rotates according to the character's direction.                  |
-| Map    | Orthographic Camera | Map Control   | A top-down control view.                                                                      |
+| Name   | Control       | Info                                                                                          |
+| ------ | ------------- | --------------------------------------------------------------------------------------------- |
+| Normal | Orbit Control | Positioned parallel to the Z-axis from the character's location and not affected by rotation. |
+| Orbit  | Orbit Control | Moves with the character and rotates according to the character's direction.                  |
 
 - Controller Tools
 
@@ -141,13 +146,11 @@ This is the character control in Gaesup World.
 
 This is the vehicle control in Gaesup World. Characters can board the vehicle.
 
-- Possible Camera Types
+- Possible Camera Types (only orbit type available)
 
-| Name   | Camera              | Control       | Info                                                                                          |
-| ------ | ------------------- | ------------- | --------------------------------------------------------------------------------------------- |
-| Normal | Perspective Camera  | Orbit Control | Positioned parallel to the Z-axis from the character's location and not affected by rotation. |
-| Orbit  | Perspective Camera  | Orbit Control | Moves with the character and rotates according to the character's direction.                  |
-| Map    | Orthographic Camera | Map Control   | A top-down control view.                                                                      |
+| Name  | Control       | Info                                                                         |
+| ----- | ------------- | ---------------------------------------------------------------------------- |
+| Orbit | Orbit Control | Moves with the character and rotates according to the character's direction. |
 
 - Controller Tools
 
@@ -161,13 +164,11 @@ This is the vehicle control in Gaesup World. Characters can board the vehicle.
 
 This is the airplane control in Gaesup World. Characters can board the airplane.
 
-- Possible Camera Types
+- Possible Camera Types (only orbit type available)
 
-| Name   | Camera              | Control       | Info                                                                                          |
-| ------ | ------------------- | ------------- | --------------------------------------------------------------------------------------------- |
-| Normal | Perspective Camera  | Orbit Control | Positioned parallel to the Z-axis from the character's location and not affected by rotation. |
-| Orbit  | Perspective Camera  | Orbit Control | Moves with the character and rotates according to the character's direction.                  |
-| Map    | Orthographic Camera | Map Control   | A top-down control view.                                                                      |
+| Name  | Control       | Info                                                                         |
+| ----- | ------------- | ---------------------------------------------------------------------------- |
+| Orbit | Orbit Control | Moves with the character and rotates according to the character's direction. |
 
 - Controller Tools
 
@@ -179,11 +180,115 @@ This is the airplane control in Gaesup World. Characters can board the airplane.
 
 ---
 
+# Animation
+
+- Animation refers to the method of controlling animations for characters and other elements in the Gaesup World.
+
+# Rideable
+
+- Rideable objects are objects that can be ridden. They detect collisions and allow the character to board when contact is made. Currently, two types of objects, 'vehicle' and 'airplane', can be ridden.
+
+![Rideable](https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/images/rideable.gif)
+
+### (1) Example
+
+```tsx
+export default function App() {
+  // Define URLs
+  const CHARACTER_URL = S3 + "/gaesup.glb";
+  const AIRPLANE_URL = S3 + "/air.glb";
+  const VEHICLE_URL = S3 + "/kart.glb";
+  const WHEEL_URL = S3 + "/wheel.glb";
+
+  return (
+    <GaesupWorld
+    // ...props defined here
+    >
+      <Canvas
+      // ...props defined here
+      >
+        <Physics>
+          <GaesupController />
+
+          {/* Import Rideable component inside and pass the arguments as shown below */}
+          <Rideable
+            objectkey="1"
+            objectType="vehicle"
+            isRiderOn={true}
+            url={VEHICLE_URL}
+            wheelUrl={WHEEL_URL}
+            offset={V3(0, 0.5, 0)}
+            position={V3(-10, 5, 10)}
+          />
+          <Rideable
+            objectkey="2"
+            objectType="vehicle"
+            isRiderOn={false}
+            url={VEHICLE_URL}
+            wheelUrl={WHEEL_URL}
+            position={V3(-20, 5, 10)}
+          />
+          <Rideable
+            objectkey="3"
+            objectType="airplane"
+            isRiderOn={true}
+            url={AIRPLANE_URL}
+            offset={V3(0, 0.5, 0)}
+            position={V3(10, 5, 10)}
+          />
+          <Rideable
+            objectkey="4"
+            objectType="airplane"
+            isRiderOn={false}
+            url={AIRPLANE_URL}
+            position={V3(20, 5, 10)}
+          />
+        </Physics>
+      </Canvas>
+    </GaesupWorld>
+  );
+}
+```
+
+### 2) Precautions
+
+- The `objectkey` must be unique.
+
+### 3) Props
+
+| Prop Name      | Type                    | Required | Description                                     | Default Value  |
+| -------------- | ----------------------- | -------- | ----------------------------------------------- | -------------- |
+| `objectkey`    | string                  | Required | Unique identifier for the rideable object       | None           |
+| `objectType`   | "vehicle" or "airplane" | Optional | Type of the rideable object                     | `undefined`    |
+| `isRiderOn`    | boolean                 | Optional | Whether a rider is on the rideable object       | `false`        |
+| `url`          | string                  | Optional | 3D model URL for the rideable object            | `null`         |
+| `wheelUrl`     | string                  | Optional | Wheel model URL for "vehicle" type rideables    | `null`         |
+| `position`     | THREE.Vector3           | Optional | Initial position of the rideable object         | `(0, 0, 0)`    |
+| `rotation`     | THREE.Euler             | Optional | Initial rotation angle of the rideable object   | `(0, 0, 0)`    |
+| `offset`       | THREE.Vector3           | Optional | Initial position offset for the rideable object | `(0, 0, 0)`    |
+| `visible`      | boolean                 | Optional | Visibility of the rideable object               | `true`         |
+| `vehicleSize`  | THREE.Vector3           | Optional | Size of the "vehicle" type rideable object      | Rapier default |
+| `wheelSize`    | THREE.Vector3           | Optional | Size of the wheel for "vehicle" type rideables  | Rapier default |
+| `airplaneSize` | THREE.Vector3           | Optional | Size of the "airplane" type rideable object     | Rapier default |
+
+### 4) Features
+
+1. **Support for Various Rideable Objects:** The Rideable component can render a variety of rideable objects, including "vehicle" and "airplane" types. It can render the 3D models of each object and allow interactions with them.
+2. **Customizable Properties:** You can easily configure the initial state, size, model URLs, visibility, and more of rideable objects using component properties.
+3. **Interaction with Riders:** The Rideable component supports interactions required for a rider to board and move with rideable objects.
+
+### Advantages:
+
+1. **Modularity and Reusability:** The Rideable component is modular and can be easily integrated with other components, increasing code reusability and facilitating maintenance.
+2. **Rapid Development:** By using the `useRideable` hook, which manages the physics engine and rideable object management, developers can quickly implement and render rideable objects, reducing development time.
+3. **Real-time Interaction:** Leveraging the Rapier physics engine allows for real-time handling of rideable object movements and collision checks, providing a high level of interaction in games or simulations.
+4. **Flexible Customization:** You can customize the appearance and behavior of each rideable object using properties, making it suitable for various game or simulation environments.
+
 # Tools
 
 - 개숲월드에서 캐릭터 컨트롤을 도와주는 다양한 도구들입니다.
 
-#### 1) [joystick](#joystick)
+#### 1) [joystick](#1. joyStick)
 
 #### 2) [keyboardtooltip](#keyBoardTooltip)
 
@@ -191,76 +296,67 @@ This is the airplane control in Gaesup World. Characters can board the airplane.
 
 #### [gameboy](#gameboy)
 
-1. JoyStick
+## 1. JoyStick
 
-- This component provides a virtual joystick interface. It is recommended for use in mobile environments.
+The JoyStick component provides a virtual joystick interface, primarily intended for mobile environments. This component allows you to simulate joystick-like input on mobile devices. Additionally, you can prevent position jitter, which can occur on mobile devices, by using the `scrollBlock` option in the `GaesupWorld` component.
 
-> Caution! Due to position fluctuation in mobile environments, it is recommended to use the scrollBlock option of GaesupWorld.
+### Key Features:
 
-### (2) Features
+- **Joystick Interface:** Provides a joystick-like user input interface, suitable for mobile devices.
+- **Customization:** You can customize the style of the JoyStick component by adjusting the styles of the joystick and the joystick ball using the `joyStickBallStyle` and `joyStickStyle` properties.
+- **Responsive and Interactive:** It supports various input devices and responds to both mouse and mobile touch events for controlling movement.
 
-Joystick Interface for Mobile and Other Environments: Provides a joystick interface in environments like mobile.
-Custom Appearance: Receives joyStickBallStyle and joyStickStyle properties for styling the joystick and its ball.
-Responsive and Interactive: Supports mouse and mobile touch events to cater to various devices.
+### Props:
 
-### (3) Props
-
-joyStickBallStyle: Style of the joystick ball (React.CSSProperties object).
-joyStickStyle: Style of the joystick container (React.CSSProperties object).
-
-### (4) How To Use
-
-- Include the JoyStick component in your `GaesupWorld` component tree.
-
-> It is imperative to use it inside the GaesupWorld component
-
-- The component responds to mouse and touch inputs to control movement.
-
-- (Optional) Customize the necessary style using joyStickBallStyle and joyStickStyle.
+- `joyStickBallStyle`: Style of the joystick ball.
 
 ### (5) Example
 
 ```jsx
 const MyComponent = () => {
-  // 커스텀 스타일 정의
   const joyStickStyle = {
-    /* 여기에 조이스틱 컨테이너 스타일을 정의하세요 */
+    /* joyStickStyle */
   };
   const joyStickBallStyle = {
-    /* 여기에 조이스틱 공의 스타일을 정의하세요 */
+    /* joyStickBallStyle */
   };
 
   return (
-    <JoyStick
-      joyStickStyle={joyStickStyle}
-      joyStickBallStyle={joyStickBallStyle}
-    />
+    <GaesupWorld>
+      {/* ... */}
+      <JoyStick
+        joyStickStyle={joyStickStyle}
+        joyStickBallStyle={joyStickBallStyle}
+      />
+      {/* ... */}
+    </GaesupWorld>
   );
 };
 ```
 
-## 2) keyBoardTooltip
+##
 
-### (1) 개요
+## 2. KeyBoardToolTip (키보드 툴팁)
 
-- 키보드 컨트롤러 인터페이스를 시각적으로 표시하기 위해 만든 컴포넌트입니다. 키보드의 각 키와 연결된 액션을 시각적으로 나타냅니다.
+The KeyBoardToolTip component is designed to visually represent a keyboard controller interface, providing a visual representation of each key and its associated action.
 
-### (2) 특징
+### Key Features:
 
-- **키 배열 시각화** : 키보드의 모든 키를 배열 형태로 시각화합니다.
-- **애니메이션 상태 반영** : 현재 활성화된 키와 연관된 액션을 다른 스타일로 표시하여 사용자에게 피드백을 제공합니다.
-- **커스텀 스타일링** : 키 캡의 스타일을 사용자 정의할 수 있도록 다양한 스타일링 속성을 제공합니다.
+- **Visualizing Keyboard Keys:** Visualizes all keyboard keys in an array format.
+- **State Animation:** Reflects the currently active keys and their associated actions by displaying them differently to provide user feedback.
+- **Custom Styling:** Provides various styling properties for customizing key caps' appearance.
 
-### (3) How To Use
+### How to Use:
 
-1. `KeyBoardToolTip` 컴포넌트를 `GaesupWorld` 컴포넌트에 포함시킵니다.
-2. mode의 `control`는 `keyboard` 로 정의합니다.
-3. 컴포넌트는 `KeyBoardAll` 상수에 따라 키보드의 각 키를 시각화하고, 현재 활성화된 키에 대해 다른 스타일을 적용합니다.
-4. (선택) 필요한 스타일을 `keyBoardToolTipInnerStyle`, `selectedKeyCapStyle`, `notSelectedkeyCapStyle`, `keyCapStyle` 속성을 통해 전달합니다.
+1. Include the `KeyBoardToolTip` component within the `GaesupWorld` component.
+2. Define the `control` mode as "keyboard" in the `mode` property.
+3. The component visualizes each keyboard key based on the `KeyBoardAll` constant and applies different styles for currently active keys.
+4. (Optional) Customize the styles using the `keyBoardToolTipInnerStyle`, `selectedKeyCapStyle`, `notSelectedkeyCapStyle`, and `keyCapStyle` properties.
 
-### (5) Example
+### Example:
 
-```jsx
+```
+jsxCopy code
 import { KeyBoardToolTip } from "./KeyBoardToolTip";
 import { GaesupWorldContext } from "../../world/context";
 
@@ -293,28 +389,26 @@ const MyComponent = () => {
 };
 ```
 
-## 3) minimap
+## 3. MiniMap
 
-### (1) Info
+The MiniMap component is used to display a small map of the user's location and the surrounding environment within a 3D world.
 
-- 3D 월드 내에서 사용자의 위치와 주변 환경을 작은 지도 형태로 보여주는 리액트 컴포넌트입니다. 이 컴포넌트는 `GaesupWorldContext`를 활용하여 사용자의 현재 상태와 모드에 따라 다르게 렌더링됩니다.
+### Key Features:
 
-### (2) 특징
+- **Dynamic Scaling:** Allows users to dynamically adjust the size of the map.
+- **Direction Indicators:** Visualizes directions such as East, West, South, and North.
+- **Custom Styling:** Allows customization of the MiniMap and its internal elements.
+- **Mouse Wheel Support:** Supports adjusting the map's scale using the mouse wheel.
 
-- **동적 스케일 조절**: 사용자가 지도의 크기를 동적으로 조절할 수 있습니다.
-- **방향 표시**: 동(East), 서(West), 남(South), 북(North) 방향을 시각적으로 표시합니다.
-- **커스텀 스타일링**: 미니맵 및 그 내부 요소들의 스타일을 사용자 정의할 수 있습니다.
-- **마우스 휠 지원**: 마우스 휠을 사용하여 미니맵의 스케일을 조절할 수 있습니다.
+### How to Use:
 
-### (3) 사용 방법
+1. Include the `MiniMap` component within your component tree.
+2. Customize the appearance using the `minimapStyle`, `innerStyle`, `textStyle`, `objectStyle`, `avatarStyle`, `scaleStyle`, `directionStyle`, and `plusMinusStyle` properties as needed.
+3. The component updates the MiniMap based on the user's current position and direction.
 
-1. `MiniMap` 컴포넌트를 컴포넌트 트리에 포함시킵니다.
-2. 필요한 스타일을 `minimapStyle`, `innerStyle`, `textStyle`, `objectStyle`, `avatarStyle`, `scaleStyle`, `directionStyle`, `plusMinusStyle` 속성을 통해 전달합니다.
-3. 컴포넌트는 현재 사용자의 위치와 방향에 따라 미니맵을 업데이트합니다.
+### Example:
 
-### (4) Example
-
-```jsx
+```tsx
 import { MiniMap } from "./MiniMap";
 
 const MyComponent = () => {
@@ -324,7 +418,7 @@ const MyComponent = () => {
   const innerStyle = {
     /* ... */
   };
-  // 다른 스타일 속성들도 정의
+  // Define other style properties as needed
 
   return (
     <GaesupWorld>
@@ -332,7 +426,7 @@ const MyComponent = () => {
       <MiniMap
         minimapStyle={minimapStyle}
         innerStyle={innerStyle}
-        // 다른 스타일 속성들 전달
+        // Pass other style properties as needed
       />
       {/* ... */}
     </GaesupWorld>
@@ -340,34 +434,32 @@ const MyComponent = () => {
 };
 ```
 
-## GameBoy
+## 4. GameBoy
 
-## 개요
+- The GameBoy component is a controller interface that emulates GameBoy-like directional buttons. It is primarily intended for mobile usage.
 
-- GameBoy 컨트롤러 인터페이스입니다. 게임 4방향 키처럼 사용할 수 있으며, 모바일에서 사용을 권장합니다.
+### Key Features:
 
-## 특징
+- **Direction Buttons:** Implements buttons for directional input (forward, backward, left, right) based on the `GameBoyDirections` array.
+- **Context-aware Rendering:** Renders the component based on the `mode.controller` value from the `GaesupWorldContext`.
+- **Custom Styling:** Provides `gameboyStyle` and `gameboyButtonStyle` properties for styling customization.
 
-- **방향 버튼**: `GameBoyDirections` 배열을 사용하여 방향 입력 (앞으로, 뒤로, 왼쪽으로, 오른쪽으로)을 위한 버튼을 구현합니다.
-- **컨텍스트 인식 렌더링**: `GaesupWorldContext`에서 `mode.controller` 값에 따라 컴포넌트를 렌더링합니다.
-- **커스텀 스타일링**: 스타일링을 위한 `gameboyStyle` 및 `gameboyButtonStyle` 속성을 받습니다.
+### How to Use:
 
-## 사용 방법
+To use the `GameBoy` component:
 
-`GameBoy` 컴포넌트를 사용하기 위해:
+1. Place the `GameBoy` component within your component tree.
+2. Customize the appearance by defining styles in the `gameboyStyle` and `gameboyButtonStyle` properties.
+3. The component renders buttons based on the `GameBoyDirections` array.
 
-1. 컴포넌트 트리에 배치합니다.
-2. 필요한 스타일을 `gameboyStyle` 및 `gameboyButtonStyle` 속성을 통해 전달합니다.
-3. 컴포넌트는 `GameBoyDirections` 배열에 기반하여 버튼을 렌더링합니다.
+### Example:
 
-## 예제 코드
-
-```jsx
+```tsx
 import { GameBoy } from "./GameBoy";
 import { GaesupWorldContext } from "../../world/context";
 
 const MyComponent = () => {
-  // 커스텀 스타일 정의
+  // Define custom styles
   const gameboyStyle = {
     /* ... */
   };
@@ -384,42 +476,41 @@ const MyComponent = () => {
 };
 ```
 
-## GamePad
+## 5. GamePad
 
-## 개요
+- The GamePad component provides a customizable controller interface that supports various controller modes, such as joysticks and GameBoys, making it versatile for different input scenarios.
 
-- 게임패드 컨트롤 인터페이스를 제공하는 커스터마이징 가능한 인터페이스입니다. 조이스틱과 GameBoy와 같은 다양한 컨트롤러 모드에 대응할 수 있는 범용성을 가지고 있습니다.
+### Key Features:
 
-## 특징
+- **Dynamic Button Rendering:** Dynamically generates buttons based on the `control` object in the `GaesupWorldContext`.
+- **Universal Usage:** Compatible with various controller modes like joysticks and GameBoys.
+- **Custom Styling:** Allows customization of the GamePad's appearance using the `gamePadStyle` and `gamePadButtonStyle` properties.
 
-- **동적 버튼 렌더링**: `GaesupWorldContext`의 `control` 객체에 기반하여 버튼을 생성합니다.
-- **범용적 사용**: 조이스틱 및 GameBoy와 같은 다양한 컨트롤러 모드와 호환됩니다.
-- **커스텀 스타일링**: `gamePadStyle` 및 `gamePadButtonStyle` 속성을 통해 커스텀 스타일링 가능.
+### Props:
 
-## 속성 (Props)
+- `gamePadStyle`: Style of the GamePad container (`React.CSSProperties` object).
+- `gamePadButtonStyle`: Style of individual buttons (`React.CSSProperties` object).
+- `label`: Custom label for the buttons.
 
-- `gamePadStyle`: 게임패드 컨테이너의 스타일 (`React.CSSProperties` 객체).
-- `gamePadButtonStyle`: 개별 버튼의 스타일 (`React.CSSProperties` 객체).
-- `label`: 버튼에 대한 커스텀 라벨.
+### How to Use:
 
-## 사용 방법
+1. Include the `GamePad` component within your component tree.
+2. Customize the appearance using the `gamePadStyle` and `gamePadButtonStyle` properties.
+3. The component dynamically renders buttons based on the `control` mode.
 
-1. `GamePad` 컴포넌트를 컴포넌트 트리에 배치합니다.
-2. `gamePadStyle` 및 `gamePadButtonStyle`을 사용하여 외관을 커스터마이즈합니다.
-3. 컴포넌트는 컨트롤러 모드에 맞춰 적절한 버튼을 렌더링합니다.
-
-## 예제 코드
+### Example:
 
 ```tsx
+jsxCopy code
 import { GamePad } from "./GamePad";
 import { GaesupWorldContext } from "../../world/context";
 
 const MyComponent = () => {
   const gamePadStyle = {
-    /* 여기에 커스텀 스타일을 정의하세요 */
+    /* Define custom styles here */
   };
   const gamePadButtonStyle = {
-    /* 여기에 버튼의 커스텀 스타일을 정의하세요 */
+    /* Define button styles here */
   };
 
   return (
@@ -431,39 +522,38 @@ const MyComponent = () => {
 };
 ```
 
-## ZoomButton
+## 6. ZoomButton
 
-## 개요
+The ZoomButton component is used to move the camera to a specific location and control the camera's zoom, primarily used for zooming to a target.
 
-- 특정 위치로 카메라를 이동시키기 위한 버튼이고 카메라의 zoom 컨트롤을 주로 수행합니다. target에 특정 물체를 넣을 수도 있습니다.
+### Key Features:
 
-## 속성 (Props)
+- `position`: The target position where the camera will move to (`THREE.Vector3` object).
+- `children`: (Optional) React nodes to render within the button.
+- `target`: (Optional) The target position the camera will look at (`THREE.Vector3` object).
+- `keepBlocking`: (Optional) Determines whether to keep the blocking state while the camera is moving.
+- `zoomButtonStyle`: (Optional) Style for the button (`React.CSSProperties` object).
 
-- `position`: 카메라가 이동할 대상 위치 (`THREE.Vector3` 객체).
-- `children`: (선택사항) 버튼 내에 렌더링될 React 노드.
-- `target`: (선택사항) 카메라가 바라볼 대상 위치 (`THREE.Vector3` 객체).
-- `keepBlocking`: (선택사항) 카메라 이동 중 블로킹 상태를 유지할지 여부.
-- `zoomButtonStyle`: (선택사항) 버튼의 스타일 (`React.CSSProperties` 객체).
+### How to Use:
 
-## 사용 방법
+1. Place the `ZoomButton` component in your component tree at the desired location.
+2. Define the `position` prop to specify the location the camera should move to.
+3. When the button is clicked, the camera will move to the specified position.
 
-1. `ZoomButton` 컴포넌트를 원하는 위치에 배치합니다.
-2. `position` prop을 통해 카메라가 이동할 위치를 지정합니다.
-3. 버튼을 클릭하면 지정된 위치로 카메라가 이동합니다.
-
-## 예제 코드
+### Example:
 
 ```tsx
+jsxCopy code
 import { ZoomButton } from "./ZoomButton";
 import * as THREE from "three";
 
 const App = () => {
   return (
-    <GaesupWorld>
-      {/* ... */}
-      <ZoomButton position={new THREE.Vector3(0, 0, 5)}>{children}</ZoomButton>
-      {/* ... */}
-    </GaesupWorld>
+    <ZoomButton position={new THREE.Vector3(0, 0, 5)}>
+      Zoom to Position
+    </ZoomButton>
   );
 };
 ```
+
+##
