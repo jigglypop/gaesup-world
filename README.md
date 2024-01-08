@@ -3,7 +3,8 @@
 [![Version](https://img.shields.io/npm/v/gaesup-world?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/gaesup-world)
 [![Downloads](https://img.shields.io/npm/dt/gaesup-world.svg?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/gaesup-world)
 
-### Web 3D Character Controller and World Platform Library![ezgif-7-177168be04](/Users/donghwanyeom/Desktop/ezgif-7-177168be04.gif)
+### Web 3D Character Controller and World Platform Library
+![Uploading ezgif-7-177168be04.gif…]()
 
 ---
 
