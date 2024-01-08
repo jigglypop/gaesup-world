@@ -4,10 +4,8 @@
 [![Downloads](https://img.shields.io/npm/dt/gaesup-world.svg?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/gaesup-world)
 
 ### Web 3D Character Controller and World Platform Library
+
 ![ezgif-7-177168be04](https://github.com/jigglypop/gaesup-world/assets/52653682/3ac16291-c851-4b0c-9c19-7026a18a00bb)
-
-
-
 
 ## introduction
 
