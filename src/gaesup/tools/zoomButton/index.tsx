@@ -1,9 +1,10 @@
 import { useContext, useState } from "react";
-import { makeCameraPosition } from "../../camera/control/orbit.js";
+import { makeNormalCameraPosition } from "../../camera/control/normal";
+import { makeOrbitCameraPosition } from "../../camera/control/orbit";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
-} from "../../world/context/index.js";
+} from "../../world/context/index";
 import "./style.css";
 
 export type zoomButtonPropsType = {
@@ -15,7 +16,8 @@ export type zoomButtonPropsType = {
 };
 
 export function useZoom() {
-  const { moveTo, activeState, cameraOption } = useContext(GaesupWorldContext);
+  const { moveTo, activeState, cameraOption, mode } =
+    useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
   const [isZoom, setIsZoom] = useState(true);
 
@@ -43,13 +45,24 @@ export function useZoom() {
     });
   };
 
+  const moveToCamera = async () => {
+    if (mode.control === "orbit" && moveTo) {
+      await moveTo(
+        makeOrbitCameraPosition(activeState, cameraOption),
+        activeState.position
+      );
+    } else if (mode.control === "normal" && moveTo) {
+      await moveTo(
+        makeNormalCameraPosition(activeState, cameraOption),
+        activeState.position
+      );
+    }
+  };
+
   const setZoom = async (position: THREE.Vector3, isZoom: boolean) => {
     setIsZoom(isZoom);
     await closeCamera(position);
-    await moveTo(
-      makeCameraPosition(activeState, cameraOption),
-      activeState.position
-    );
+    await moveToCamera();
     await openCamera();
   };
 
@@ -59,6 +72,7 @@ export function useZoom() {
     closeCamera,
     isZoom,
     setIsZoom,
+    moveToCamera,
   };
 }
 

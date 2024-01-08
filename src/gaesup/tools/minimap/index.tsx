@@ -12,7 +12,6 @@ export function MiniMap(props: minimapType) {
   const { minimap, activeState, mode } = useContext(GaesupWorldContext);
   const [scale, setscale] = useState(props.scale || minimapDefault.scale);
   const {
-    minimapStyle,
     innerStyle,
     textStyle,
     objectStyle,

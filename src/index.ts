@@ -7,7 +7,6 @@ export { PassiveVehicle } from "./gaesup/component/passive/vehicle";
 
 export { GaesupController } from "./gaesup/controller";
 export { GaeSupProps } from "./gaesup/gaesupProps";
-export { useGaesupController } from "./gaesup/hooks";
 export { GameBoy } from "./gaesup/tools/gameBoy";
 export { GamePad } from "./gaesup/tools/gamePad";
 export { JoyStick } from "./gaesup/tools/joyStick";
@@ -18,3 +17,10 @@ export { Rideable } from "./gaesup/tools/rideable";
 export { ZoomButton } from "./gaesup/tools/zoomButton";
 export { Elr, Qt, V3, V30, V31 } from "./gaesup/utils/vector";
 export { GaesupWorld } from "./gaesup/world";
+
+export { useGaesupAnimation } from "./gaesup/hooks/useGaesupAnimation";
+export { useGaesupController } from "./gaesup/hooks/useGaesupController";
+export * as useJoyStick from "./gaesup/hooks/useJoyStick";
+export { usePushKey } from "./gaesup/hooks/usePushKey";
+export { useRideable } from "./gaesup/hooks/useRideable";
+export { useTeleport } from "./gaesup/hooks/useTeleport";

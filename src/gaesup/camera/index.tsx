@@ -85,6 +85,11 @@ export default function Camera({
       }
       detector(cameraProp);
     }
+    console.log(
+      cameraProp.worldContext.cameraOption.XDistance,
+      cameraProp.worldContext.cameraOption.YDistance,
+      cameraProp.worldContext.cameraOption.ZDistance
+    );
   });
 
   // moveTo 함수 정의
@@ -93,18 +98,35 @@ export default function Camera({
     target: THREE.Vector3
   ) => {
     camera.position.copy(position);
-    await Promise.all([
-      cameraRef.current.setPosition(position.x, position.y, position.z, true),
-      cameraRef.current.setLookAt(
-        position.x,
-        position.y,
-        position.z,
-        target.x,
-        target.y,
-        target.z,
-        true
-      ),
-    ]);
+    if (mode.control === "orbit") {
+      await Promise.all([
+        cameraRef.current.setPosition(position.x, position.y, position.z, true),
+        camera.rotation.copy(worldContext.activeState.euler),
+        cameraRef.current.setLookAt(
+          position.x,
+          position.y,
+          position.z,
+          target.x,
+          target.y,
+          target.z,
+          true
+        ),
+      ]);
+    } else if (mode.control === "normal") {
+      await Promise.all([
+        cameraRef.current.setPosition(0, position.y, position.z, true),
+        camera.rotation.copy(worldContext.activeState.euler),
+        cameraRef.current.setLookAt(
+          0,
+          position.y,
+          position.z,
+          target.x,
+          target.y,
+          target.z,
+          true
+        ),
+      ]);
+    }
   };
 
   return <CameraControls ref={cameraRef}></CameraControls>;

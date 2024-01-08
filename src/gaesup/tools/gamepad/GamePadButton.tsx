@@ -3,15 +3,17 @@ import { CSSProperties, useState } from "react";
 import { usePushKey } from "../../hooks/usePushKey";
 import "./style.css";
 
+export type gamePadButtonType = {
+  value: string;
+  name: string;
+  gamePadButtonStyle: CSSProperties;
+};
+
 export default function GamePadButton({
   value,
   name,
   gamePadButtonStyle,
-}: {
-  value: string;
-  name: string;
-  gamePadButtonStyle: CSSProperties;
-}) {
+}: gamePadButtonType) {
   const [isClicked, setIsClicked] = useState(false);
   const { pushKey } = usePushKey();
 

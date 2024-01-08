@@ -5,61 +5,49 @@ import { RigidBody } from "@react-three/rapier";
 import { GaeSupProps } from "../../../src";
 
 export default function Direction() {
-  const direct = 7;
+  const direct = 50;
   return (
     <GaeSupProps text="direction">
       {/* east */}
       <RigidBody position={[-direct, 0, 0]}>
-        <mesh receiveShadow castShadow>
-          <boxGeometry args={[0.5, 0.5, 0.5]} />
-          <meshStandardMaterial color={"blue"} />
-        </mesh>
         <Text
-          position={[0, 0.5, 0]}
-          fontSize={0.3}
-          rotation={[0, Math.PI / 2, 0]}
+          position={[0, 5, 0]}
+          fontSize={10}
+          rotation={[0, 0, 0]}
+          color="black"
         >
           EAST
         </Text>
       </RigidBody>
       {/* west */}
       <RigidBody position={[direct, 0, 0]}>
-        <mesh receiveShadow castShadow>
-          <boxGeometry args={[0.5, 0.5, 0.5]} />
-          <meshStandardMaterial color={"white"} />
-        </mesh>
         <Text
-          position={[0, 0.5, 0]}
-          fontSize={0.3}
-          rotation={[0, Math.PI / 2, 0]}
+          position={[0, 5, 0]}
+          fontSize={10}
+          rotation={[0, 0, 0]}
+          color="black"
         >
           WEST
         </Text>
       </RigidBody>
       {/* south */}
       <RigidBody position={[0, 0, direct]}>
-        <mesh receiveShadow castShadow>
-          <boxGeometry args={[0.5, 0.5, 0.5]} />
-          <meshStandardMaterial color={"red"} />
-        </mesh>
         <Text
-          position={[0, 0.5, 0]}
-          fontSize={0.3}
-          rotation={[0, Math.PI / 2, 0]}
+          position={[0, 5, 0]}
+          fontSize={10}
+          rotation={[0, 0, 0]}
+          color="black"
         >
           SOUTH
         </Text>
       </RigidBody>
       {/* north */}
       <RigidBody position={[0, 0, -direct]}>
-        <mesh receiveShadow castShadow>
-          <boxGeometry args={[0.5, 0.5, 0.5]} />
-          <meshStandardMaterial color={"black"} />
-        </mesh>
         <Text
-          position={[0, 0.5, 0]}
-          fontSize={0.3}
-          rotation={[0, Math.PI / 2, 0]}
+          position={[0, 5, 0]}
+          fontSize={10}
+          rotation={[0, 0, 0]}
+          color="black"
         >
           NORTH
         </Text>

@@ -26,7 +26,7 @@ export default function calculation(prop: controllerInnerType) {
   useEffect(() => {
     const { rigidBodyRef, innerGroupRef } = prop;
     if (rigidBodyRef.current && innerGroupRef.current) {
-      rigidBodyRef.current.lockRotations(true, true);
+      // rigidBodyRef.current.lockRotations(true, true);
       activeState.euler.set(0, 0, 0);
       rigidBodyRef.current.setTranslation(
         activeState.position.clone().add(V3(0, 2, 0)),

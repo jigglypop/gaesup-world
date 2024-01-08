@@ -1,7 +1,7 @@
 "use client";
 
 import { Environment } from "@react-three/drei";
-import { Physics } from "@react-three/rapier";
+import { Physics, euler } from "@react-three/rapier";
 
 import {
   GaesupController,
@@ -36,7 +36,8 @@ export const keyBoardMap = [
 ];
 
 export default function Selected() {
-  const CHARACTER_URL = S3 + "/gaesup.glb";
+  const CHARACTER_URL =
+    "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf/gaesupyee.glb";
   const AIRPLANE_URL = S3 + "/air.glb";
   const VEHICLE_URL = S3 + "/kart.glb";
   const WHEEL_URL = S3 + "/wheel.glb";
@@ -52,9 +53,8 @@ export default function Selected() {
       mode={{
         type: "character",
         controller: "keyboard",
-        control: "orbit",
+        control: "normal",
       }}
-      cameraOption={{ XDistance: 15, YDistance: 8, ZDistance: 15 }}
       debug={true}
       keyBoardMap={keyBoardMap}
     >
@@ -78,7 +78,7 @@ export default function Selected() {
           shadow-camera-bottom={-50}
           shadow-camera-left={-50}
         />
-        <Physics debug>
+        <Physics>
           <GaesupController
             onAnimate={({ control, subscribe }) => {
               subscribe({
@@ -98,30 +98,17 @@ export default function Selected() {
             url={VEHICLE_URL}
             wheelUrl={WHEEL_URL}
             offset={V3(0, 0.5, 0)}
-            position={V3(-10, 5, 10)}
+            position={V3(-10, 1, 10)}
           />
-          <Rideable
-            objectkey="2"
-            objectType="vehicle"
-            isRiderOn={false}
-            url={VEHICLE_URL}
-            wheelUrl={WHEEL_URL}
-            position={V3(-20, 5, 10)}
-          />
+
           <Rideable
             objectkey="3"
             objectType="airplane"
             isRiderOn={true}
             url={AIRPLANE_URL}
             offset={V3(0, 0.5, 0)}
-            position={V3(10, 5, 10)}
-          />
-          <Rideable
-            objectkey="4"
-            objectType="airplane"
-            isRiderOn={false}
-            url={AIRPLANE_URL}
-            position={V3(20, 5, 10)}
+            position={V3(15, 1, 15)}
+            rotation={euler().set(0, Math.PI / 2, 0)}
           />
         </Physics>
       </Canvas>

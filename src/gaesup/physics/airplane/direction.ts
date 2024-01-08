@@ -4,11 +4,9 @@ import { calcPropType } from "../type";
 
 export default function direction(prop: calcPropType) {
   const {
-    state,
     innerGroupRef,
     worldContext: { joystick, activeState, control, mode },
     controllerContext: { airplane },
-    delta,
   } = prop;
   const { forward, backward, leftward, rightward, shift, space } = control;
   const { angleDelta, maxAngle, accelRatio } = airplane;
