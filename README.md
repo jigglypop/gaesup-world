@@ -116,21 +116,21 @@ This project is distributed under the MIT License.
 
 - Animation
 
-- ## [Tools](#Tools)
+- ### [Tools](#Tools)
 
-  - ### [JoyStick](##JoyStick)
+  - [JoyStick](#JoyStick)
 
-  * ### [keyBoardTooltip](##-keyBoardTooltip)
+  * [keyBoardTooltip](#keyBoardTooltip)
 
-  * ### [minimap](##MiniMap)
+  * [minimap](#MiniMap)
 
-  * ### [gameboy](##GameBoy)
+  * [gameboy](#GameBoy)
 
-  - ### [GamePad](##GamePad)
+  - [GamePad](#GamePad)
 
-  - ### [ZoomButton](##ZoomButton)
+  - [ZoomButton](#ZoomButton)
 
-  - ### [JumpPortal](##JumpPortal)
+  - [JumpPortal](#JumpPortal)
 
 # PlayerType
 
