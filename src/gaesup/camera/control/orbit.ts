@@ -3,7 +3,7 @@ import { cameraPropType } from "../../physics/type";
 import { V3 } from "../../utils/vector";
 import { activeStateType, cameraOptionType } from "../../world/context/type";
 
-export const makeCameraPosition = (
+export const makeOrbitCameraPosition = (
   activeState: activeStateType,
   cameraOption: cameraOptionType
 ) => {
@@ -23,7 +23,7 @@ export default function orbit(prop: cameraPropType) {
     worldContext: { activeState, cameraOption },
   } = prop;
   if (!state || !state.camera) return;
-  const cameraPosition = makeCameraPosition(activeState, cameraOption);
+  const cameraPosition = makeOrbitCameraPosition(activeState, cameraOption);
 
   state.camera.position.lerp(cameraPosition, 1);
   state.camera.quaternion.copy(

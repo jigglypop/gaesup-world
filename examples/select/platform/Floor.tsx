@@ -11,18 +11,17 @@ export default function Floor() {
         renderOrder={-1}
         position={[0, -0.8, 0]}
         infiniteGrid
-        cellSize={1}
+        cellSize={2}
         cellThickness={1}
+        cellColor={"#1d1d1d"}
         sectionSize={5}
-        sectionThickness={1.5}
-        sectionColor={"#343434"}
+        sectionThickness={0}
         fadeDistance={1000}
         userData={{ intangible: true }}
       />
-      <RigidBody type="fixed">
+      <RigidBody type="fixed" userData={{ intangible: true }}>
         <mesh receiveShadow position={[0, -3.5, 0]}>
           <boxGeometry args={[1000, 5, 1000]} />
-          <meshStandardMaterial color="lightblue" />
         </mesh>
         <mesh
           receiveShadow
@@ -39,7 +38,7 @@ export default function Floor() {
             depthScale={10}
             minDepthThreshold={10}
             maxDepthThreshold={14}
-            color="#f5ffbd"
+            color="#b963ff"
           />
         </mesh>
       </RigidBody>

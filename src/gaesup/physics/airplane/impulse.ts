@@ -24,19 +24,18 @@ export default function impulse(prop: calcPropType) {
   const { maxSpeed } = airplane;
 
   const velocity = rigidBodyRef.current.linvel();
-  const currentSpeed = Math.sqrt(
-    velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2
-  );
-  if (currentSpeed > maxSpeed) {
-    return null;
+  // a = v / t (t = 1) (approximate calculation)
+  const V = vec3(velocity).length();
+  if (V < maxSpeed) {
+    const M = rigidBodyRef.current.mass();
+    // impulse = mass * velocity
+    rigidBodyRef.current.applyImpulse(
+      vec3({
+        x: activeState.direction.x,
+        y: activeState.direction.y,
+        z: activeState.direction.z,
+      }).multiplyScalar(M),
+      false
+    );
   }
-
-  rigidBodyRef.current.applyImpulse(
-    vec3({
-      x: activeState.direction.x,
-      y: activeState.direction.y,
-      z: activeState.direction.z,
-    }),
-    false
-  );
 }

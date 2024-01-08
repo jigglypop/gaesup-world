@@ -3,11 +3,7 @@
 [![Version](https://img.shields.io/npm/v/gaesup-world?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/gaesup-world)
 [![Downloads](https://img.shields.io/npm/dt/gaesup-world.svg?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/gaesup-world)
 
-Web 3D Character Controller and World Platform Library
-
-[![main](https://github.com/jigglypop/gaesup-world/blob/master/image/main_image.png)](https://codesandbox.io/p/github/jigglypop/gaesup-world-examples/master?workspaceId=e8ae627a-af61-415e-aa21-1fe5af422c86)
-
-> click and watch code sandbox example!
+### Web 3D Character Controller and World Platform Library![ezgif-7-177168be04](/Users/donghwanyeom/Desktop/ezgif-7-177168be04.gif)
 
 ---
 
@@ -109,9 +105,9 @@ This project is distributed under the MIT License.
 
 ---
 
-### Index
+###
 
-- Player Type
+- ## [PlayerType](##PlayerType)
 
   - Character
   - Vehicle
@@ -119,7 +115,23 @@ This project is distributed under the MIT License.
 
 - Animation
 
-## Player Type
+- ## [Tools](#Tools)
+
+  - ### [JoyStick](##JoyStick)
+
+  * ### [keyBoardTooltip](##-keyBoardTooltip)
+
+  * ### [minimap](##MiniMap)
+
+  * ### [gameboy](##GameBoy)
+
+  - ### [GamePad](##GamePad)
+
+  - ### [ZoomButton](##ZoomButton)
+
+  - ### [JumpPortal](##JumpPortal)
+
+# PlayerType
 
 ---
 
@@ -144,9 +156,9 @@ This is the character control in Gaesup World.
 
 ## Vehicle
 
-This is the vehicle control in Gaesup World. Characters can board the vehicle.
+- This is the vehicle control in Gaesup World. Characters can board the vehicle.
 
-- Possible Camera Types (only orbit type available)
+* Possible Camera Types (only orbit type available)
 
 | Name  | Control       | Info                                                                         |
 | ----- | ------------- | ---------------------------------------------------------------------------- |
@@ -186,9 +198,7 @@ This is the airplane control in Gaesup World. Characters can board the airplane.
 
 # Rideable
 
-- Rideable objects are objects that can be ridden. They detect collisions and allow the character to board when contact is made. Currently, two types of objects, 'vehicle' and 'airplane', can be ridden.
-
-![Rideable](https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/images/rideable.gif)
+- Rideable objects are objects that can be ridden. They detect collisions and allow the character to board when contact is made. Currently, two types of objects, 'vehicle' and 'airplane', can be ridden.![Rideable](https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/images/rideable.gif)
 
 ### (1) Example
 
@@ -284,21 +294,54 @@ export default function App() {
 3. **Real-time Interaction:** Leveraging the Rapier physics engine allows for real-time handling of rideable object movements and collision checks, providing a high level of interaction in games or simulations.
 4. **Flexible Customization:** You can customize the appearance and behavior of each rideable object using properties, making it suitable for various game or simulation environments.
 
+# GaeSupProps
+
+The `GaeSupProps` component is a React component used in a 3D environment. It is designed to represent various types of props or objects within the scene. This component can be used to create props with different types, text labels, and positions for visualization in a 3D space.
+
+## Props
+
+The `GaeSupProps` component accepts the following props:
+
+- `type` (optional): A string specifying the type of the prop. It can be either `"normal"` or `"ground"`. Defaults to `"normal"` if not provided.
+- `text` (optional): A string representing the text label associated with the prop. This label can provide additional information about the prop. If not provided, no label will be displayed.
+- `position` (optional): An array of three numbers `[x, y, z]` specifying the initial position of the prop in the 3D space. If not provided, the prop will be positioned at the origin `[0, 0, 0]`.
+- `children` (required): This prop should contain the 3D content that makes up the visual representation of the prop. It can include any 3D objects or components you want to render within the prop.
+
+### (2) example
+
+- To use the `GaeSupProps` component, you need to import it and include it in your React component tree. Here's an example of how to use it:
+
+```tsx
+import { GaeSupProps } from "./GaeSupProps";
+
+function MyScene() {
+  return (
+    <GaeSupProps type="normal" text="My Prop" position={[3, 1, -2]}>
+      {/* 3D content goes here */}
+    </GaeSupProps>
+  );
+}
+```
+
+- In this example, we've created a `GaeSupProps` component with a `"normal"` type, a text label of `"My Prop"`, and a specific position in 3D space.
+
+### (3) Behavior
+
+- The `GaeSupProps` component also calculates the size and center of the 3D content it contains. It then updates a `minimap` object with this information, which can be useful for tracking the props within the scene.
+
+- Additionally, the component uses the `useEffect` hook to dispatch updates to the context, ensuring that changes to the `minimap` object are reflected in the sce
+
 # Tools
 
-- 개숲월드에서 캐릭터 컨트롤을 도와주는 다양한 도구들입니다.
+- Various tools that assist with character control in GaesupWorld
 
-#### 1) [joystick](#1. joyStick)
-
-#### 2) [keyboardtooltip](#keyBoardTooltip)
-
-#### [minimap](#minimap)
-
-#### [gameboy](#gameboy)
-
-## 1. JoyStick
+## JoyStick
 
 The JoyStick component provides a virtual joystick interface, primarily intended for mobile environments. This component allows you to simulate joystick-like input on mobile devices. Additionally, you can prevent position jitter, which can occur on mobile devices, by using the `scrollBlock` option in the `GaesupWorld` component.
+
+| Prop Name           | Type            | Required | Description                 | Default Value |
+| ------------------- | --------------- | -------- | --------------------------- | ------------- |
+| `joyStickBallStyle` | object (styles) | Optional | Style for the joystick ball | `undefined`   |
 
 ### Key Features:
 
@@ -334,9 +377,7 @@ const MyComponent = () => {
 };
 ```
 
-##
-
-## 2. KeyBoardToolTip (키보드 툴팁)
+## KeyBoardToolTip
 
 The KeyBoardToolTip component is designed to visually represent a keyboard controller interface, providing a visual representation of each key and its associated action.
 
@@ -355,25 +396,11 @@ The KeyBoardToolTip component is designed to visually represent a keyboard contr
 
 ### Example:
 
-```
-jsxCopy code
+```tsx
 import { KeyBoardToolTip } from "./KeyBoardToolTip";
 import { GaesupWorldContext } from "../../world/context";
 
-const MyComponent = () => {
-  const keyBoardToolTipInnerStyle = {
-    /* ... */
-  };
-  const selectedKeyCapStyle = {
-    /* ... */
-  };
-  const notSelectedkeyCapStyle = {
-    /* ... */
-  };
-  const keyCapStyle = {
-    /* ... */
-  };
-
+const App = () => {
   return (
     <GaesupWorld>
       {/* ... */}
@@ -389,37 +416,28 @@ const MyComponent = () => {
 };
 ```
 
-## 3. MiniMap
+## MiniMap
 
-The MiniMap component is used to display a small map of the user's location and the surrounding environment within a 3D world.
+- The MiniMap component is used to display a small map of the user's location and the surrounding environment within a 3D world.
 
-### Key Features:
+### (1) props
 
-- **Dynamic Scaling:** Allows users to dynamically adjust the size of the map.
-- **Direction Indicators:** Visualizes directions such as East, West, South, and North.
-- **Custom Styling:** Allows customization of the MiniMap and its internal elements.
-- **Mouse Wheel Support:** Supports adjusting the map's scale using the mouse wheel.
+| Prop Name        | Type            | Required | Description                                   | Default Value |
+| ---------------- | --------------- | -------- | --------------------------------------------- | ------------- |
+| `innerStyle`     | object (styles) | Optional | Style for the inner MiniMap container         | `undefined`   |
+| `textStyle`      | object (styles) | Optional | Style for text within the MiniMap             | `undefined`   |
+| `objectStyle`    | object (styles) | Optional | Style for objects within the MiniMap          | `undefined`   |
+| `avatarStyle`    | object (styles) | Optional | Style for avatars within the MiniMap          | `undefined`   |
+| `scaleStyle`     | object (styles) | Optional | Style for the scale control of the MiniMap    | `undefined`   |
+| `directionStyle` | object (styles) | Optional | Style for direction indicators in the MiniMap | `undefined`   |
+| `plusMinusStyle` | object (styles) | Optional | Style for plus/minus controls in the MiniMap  | `undefined`   |
 
-### How to Use:
-
-1. Include the `MiniMap` component within your component tree.
-2. Customize the appearance using the `minimapStyle`, `innerStyle`, `textStyle`, `objectStyle`, `avatarStyle`, `scaleStyle`, `directionStyle`, and `plusMinusStyle` properties as needed.
-3. The component updates the MiniMap based on the user's current position and direction.
-
-### Example:
+### 2) example
 
 ```tsx
 import { MiniMap } from "./MiniMap";
 
-const MyComponent = () => {
-  const minimapStyle = {
-    /* ... */
-  };
-  const innerStyle = {
-    /* ... */
-  };
-  // Define other style properties as needed
-
+const App = () => {
   return (
     <GaesupWorld>
       {/* ... */}
@@ -434,9 +452,50 @@ const MyComponent = () => {
 };
 ```
 
-## 4. GameBoy
+### Key Features:
+
+- **Dynamic Scaling:** Allows users to dynamically adjust the size of the map.
+- **Direction Indicators:** Visualizes directions such as East, West, South, and North.
+- **Custom Styling:** Allows customization of the MiniMap and its internal elements.
+- **Mouse Wheel Support:** Supports adjusting the map's scale using the mouse wheel.
+
+### How to Use:
+
+1. Include the `MiniMap` component within your component tree.
+2. Customize the appearance using the `minimapStyle`, `innerStyle`, `textStyle`, `objectStyle`, `avatarStyle`, `scaleStyle`, `directionStyle`, and `plusMinusStyle` properties as needed.
+3. The component updates the MiniMap based on the user's current position and direction.
+
+## GameBoy
 
 - The GameBoy component is a controller interface that emulates GameBoy-like directional buttons. It is primarily intended for mobile usage.
+
+### (1) props
+
+| Prop Name            | Type            | Required | Description                          | Default Value |
+| -------------------- | --------------- | -------- | ------------------------------------ | ------------- |
+| `gamePadStyle`       | object (styles) | Optional | Style for the GamePad container      | `undefined`   |
+| `gamePadButtonStyle` | object (styles) | Optional | Style for individual GamePad buttons | `undefined`   |
+| `label`              | string          | Optional | Custom label for the buttons         | `undefined`   |
+
+### (2) example
+
+```tsx
+import { GameBoy } from "./GameBoy";
+import { GaesupWorldContext } from "../../world/context";
+
+const App = () => {
+  return (
+    <GaesupWorld>
+      {/* ... */}
+      <GameBoy
+        gameboyStyle={gameboyStyle}
+        gameboyButtonStyle={gameboyButtonStyle}
+      />
+      {/* ... */}
+    </GaesupWorld>
+  );
+};
+```
 
 ### Key Features:
 
@@ -452,33 +511,37 @@ To use the `GameBoy` component:
 2. Customize the appearance by defining styles in the `gameboyStyle` and `gameboyButtonStyle` properties.
 3. The component renders buttons based on the `GameBoyDirections` array.
 
-### Example:
+## GamePad
+
+- The GamePad component provides a customizable controller interface that supports various controller modes, such as joysticks and GameBoys, making it versatile for different input scenarios.
+
+### (1) props
+
+| Prop Name            | Type            | Required | Description                          | Default Value |
+| -------------------- | --------------- | -------- | ------------------------------------ | ------------- |
+| `gamePadStyle`       | object (styles) | Optional | Style for the GamePad container      | `undefined`   |
+| `gamePadButtonStyle` | object (styles) | Optional | Style for individual GamePad buttons | `undefined`   |
+| `label`              | string          | Optional | Custom label for the buttons         | `undefined`   |
+
+### (2) example
 
 ```tsx
-import { GameBoy } from "./GameBoy";
+import { GamePad } from "./GamePad";
 import { GaesupWorldContext } from "../../world/context";
 
-const MyComponent = () => {
-  // Define custom styles
-  const gameboyStyle = {
-    /* ... */
-  };
-  const gameboyButtonStyle = {
-    /* ... */
-  };
-
+const App = () => {
   return (
-    <GameBoy
-      gameboyStyle={gameboyStyle}
-      gameboyButtonStyle={gameboyButtonStyle}
-    />
+    <GaesupWorld>
+      {/* ... */}
+      <GamePad
+        gamePadStyle={gamePadStyle}
+        gamePadButtonStyle={gamePadButtonStyle}
+      />
+      {/* ... */}
+    </GaesupWorld>
   );
 };
 ```
-
-## 5. GamePad
-
-- The GamePad component provides a customizable controller interface that supports various controller modes, such as joysticks and GameBoys, making it versatile for different input scenarios.
 
 ### Key Features:
 
@@ -486,74 +549,80 @@ const MyComponent = () => {
 - **Universal Usage:** Compatible with various controller modes like joysticks and GameBoys.
 - **Custom Styling:** Allows customization of the GamePad's appearance using the `gamePadStyle` and `gamePadButtonStyle` properties.
 
-### Props:
-
-- `gamePadStyle`: Style of the GamePad container (`React.CSSProperties` object).
-- `gamePadButtonStyle`: Style of individual buttons (`React.CSSProperties` object).
-- `label`: Custom label for the buttons.
-
 ### How to Use:
 
 1. Include the `GamePad` component within your component tree.
 2. Customize the appearance using the `gamePadStyle` and `gamePadButtonStyle` properties.
 3. The component dynamically renders buttons based on the `control` mode.
 
-### Example:
+## ZoomButton
+
+- The ZoomButton component is used to move the camera to a specific location and control the camera's zoom, primarily used for zooming to a target.
+
+### (1) props
+
+| Prop Name         | Type            | Required | Description                                                | Default Value |
+| ----------------- | --------------- | -------- | ---------------------------------------------------------- | ------------- |
+| `position`        | THREE.Vector3   | Required | Target position for the camera to move to                  | None          |
+| `children`        | React.ReactNode | Optional | React nodes to render within the button                    | `undefined`   |
+| `target`          | THREE.Vector3   | Optional | Target position for the camera to look at                  | `undefined`   |
+| `keepBlocking`    | boolean         | Optional | Determines whether to keep blocking while camera is moving | `undefined`   |
+| `zoomButtonStyle` | object (styles) | Optional | Style for the ZoomButton component                         | `undefined`   |
+
+### (2) example
 
 ```tsx
-jsxCopy code
-import { GamePad } from "./GamePad";
-import { GaesupWorldContext } from "../../world/context";
-
-const MyComponent = () => {
-  const gamePadStyle = {
-    /* Define custom styles here */
-  };
-  const gamePadButtonStyle = {
-    /* Define button styles here */
-  };
-
-  return (
-    <GamePad
-      gamePadStyle={gamePadStyle}
-      gamePadButtonStyle={gamePadButtonStyle}
-    />
-  );
-};
-```
-
-## 6. ZoomButton
-
-The ZoomButton component is used to move the camera to a specific location and control the camera's zoom, primarily used for zooming to a target.
-
-### Key Features:
-
-- `position`: The target position where the camera will move to (`THREE.Vector3` object).
-- `children`: (Optional) React nodes to render within the button.
-- `target`: (Optional) The target position the camera will look at (`THREE.Vector3` object).
-- `keepBlocking`: (Optional) Determines whether to keep the blocking state while the camera is moving.
-- `zoomButtonStyle`: (Optional) Style for the button (`React.CSSProperties` object).
-
-### How to Use:
-
-1. Place the `ZoomButton` component in your component tree at the desired location.
-2. Define the `position` prop to specify the location the camera should move to.
-3. When the button is clicked, the camera will move to the specified position.
-
-### Example:
-
-```tsx
-jsxCopy code
 import { ZoomButton } from "./ZoomButton";
 import * as THREE from "three";
 
 const App = () => {
   return (
-    <ZoomButton position={new THREE.Vector3(0, 0, 5)}>
-      Zoom to Position
-    </ZoomButton>
+    <GaesupWorld>
+      {/* ... */}
+      <ZoomButton position={new THREE.Vector3(0, 0, 5)}>{childern}</ZoomButton>
+      {/* ... */}
+    </GaesupWorld>
   );
 };
 ```
 
-##
+### (3) How to Use
+
+1. Place the `ZoomButton` component in your component tree at the desired location.
+2. Define the `position` prop to specify the location the camera should move to.
+3. When the button is clicked, the camera will move to the specified position.
+
+## JumpPortal
+
+- The `JumpPortal` component represents a clickable portal that allows users to teleport to a specified location within a 3D world. This component can be used to create interactive teleportation points in your application.
+
+### (1) props
+
+| Prop Name         | Type          | Required | Description                                                 | Default Value |
+| ----------------- | ------------- | -------- | ----------------------------------------------------------- | ------------- |
+| `text`            | string        | Optional | The text to display on the portal.                          | `undefined`   |
+| `position`        | THREE.Vector3 | Required | The target position to teleport to using a `THREE.Vector3`. | None          |
+| `jumpPortalStyle` | CSSProperties | Optional | CSS styles for customizing the appearance of the portal.    | `undefined`   |
+
+### (2) example
+
+- To use the `JumpPortal` component, you can import it and include it in your React application as follows:
+
+```tsx
+import { JumpPortal } from "./JumpPortal";
+import * as THREE from "three";
+
+const App = () => {
+  return (
+    <GaesupWorld>
+      {/* ... */}
+      <JumpPortal
+        text="Teleport"
+        position={new THREE.Vector3(10, 0, 5)}
+        jumpPortalStyle={{ backgroundColor: "blue", color: "white" }}
+      />
+      {/* ... */}
+    </GaesupWorld>
+  );
+};
+```

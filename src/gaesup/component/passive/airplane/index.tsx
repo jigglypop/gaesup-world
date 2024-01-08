@@ -41,13 +41,14 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
           .slerp(quat().setFromEuler(_euler), 0.2)
       );
     }
-
-    rigidBodyRef.current.setGravityScale(
-      props.position.y < 10
-        ? ((1 - 0.1) / (0 - 10)) * props.position.y + 1
-        : 0.1,
-      false
-    );
+    if (rigidBodyRef && rigidBodyRef.current) {
+      rigidBodyRef.current.setGravityScale(
+        props.position.y < 10
+          ? ((1 - 0.1) / (0 - 10)) * props.position.y + 1
+          : 0.1,
+        false
+      );
+    }
   });
 
   return (
@@ -65,7 +66,6 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
             ref={refs.innerGroupRef}
             url={airplaneUrl}
           />
-          {/* <AirplaneCollider airplaneSize={airplaneSize} ref={colliderRef} /> */}
           <CuboidCollider
             ref={colliderRef}
             args={[airplaneSize.x / 2, airplaneSize.y / 2, airplaneSize.z / 2]}

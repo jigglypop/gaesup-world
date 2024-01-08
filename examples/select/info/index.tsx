@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import { V3 } from "../../../src";
 import { useZoom } from "../../../src/gaesup/tools/zoomButton";
 import {
@@ -12,7 +12,7 @@ import * as style from "./style.css";
 // FaCarSide lazy loading
 
 export default function Info() {
-  const { mode } = useContext(GaesupWorldContext);
+  const { mode, activeState } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
   const { setZoom, isZoom } = useZoom();
 
@@ -52,6 +52,12 @@ export default function Info() {
       },
     });
   };
+
+  useEffect(() => {
+    setTimeout(async () => {
+      await setZoom(V3(7, 2, 7), true);
+    }, 1000);
+  }, []);
 
   return (
     <div className={style.infoStyle}>
@@ -154,7 +160,7 @@ export default function Info() {
               className={style.pRecipe({
                 selected: isZoom,
               })}
-              onClick={() => setZoom(V3(10, 3, 10), true)}
+              onClick={() => setZoom(V3(5, 2, 5), true)}
             >
               zoomIn
             </p>
@@ -162,7 +168,7 @@ export default function Info() {
               className={style.pRecipe({
                 selected: !isZoom,
               })}
-              onClick={() => setZoom(V3(15, 5, 15), false)}
+              onClick={() => setZoom(V3(12, 5, 12), false)}
             >
               zoomOut
             </p>
