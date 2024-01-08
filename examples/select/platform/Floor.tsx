@@ -15,7 +15,7 @@ export default function Floor() {
         cellThickness={1}
         sectionSize={5}
         sectionThickness={1.5}
-        sectionColor={"#212121"}
+        sectionColor={"#343434"}
         fadeDistance={1000}
         userData={{ intangible: true }}
       />
@@ -39,7 +39,7 @@ export default function Floor() {
             depthScale={10}
             minDepthThreshold={10}
             maxDepthThreshold={14}
-            color="#1f1f1f"
+            color="#f5ffbd"
           />
         </mesh>
       </RigidBody>

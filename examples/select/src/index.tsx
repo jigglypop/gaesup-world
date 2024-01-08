@@ -54,7 +54,7 @@ export default function Selected() {
         controller: "keyboard",
         control: "orbit",
       }}
-      cameraOption={{ XDistance: 10, YDistance: 5, ZDistance: 10 }}
+      cameraOption={{ XDistance: 15, YDistance: 8, ZDistance: 15 }}
       debug={true}
       keyBoardMap={keyBoardMap}
     >
@@ -62,6 +62,7 @@ export default function Selected() {
         shadows
         dpr={[1, 2]}
         style={{ width: "100vw", height: "100vh", position: "fixed" }}
+        frameloop="demand"
       >
         <Environment background preset="sunset" blur={0.8} />
         <directionalLight

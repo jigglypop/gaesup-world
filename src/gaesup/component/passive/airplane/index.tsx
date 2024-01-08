@@ -41,9 +41,13 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
           .slerp(quat().setFromEuler(_euler), 0.2)
       );
     }
-    // if (rigidBodyRef && rigidBodyRef.current) {
-    //   rigidBodyRef.current.setGravityScale(props.gravity, false);
-    // }
+
+    rigidBodyRef.current.setGravityScale(
+      props.position.y < 10
+        ? ((1 - 0.1) / (0 - 10)) * props.position.y + 1
+        : 0.1,
+      false
+    );
   });
 
   return (

@@ -31,5 +31,6 @@ export default function orbit(prop: cameraPropType) {
       .clone()
       .multiply(quat().setFromAxisAngle(V3(0, 1, 0), Math.PI))
   );
+  state.camera.rotation.copy(activeState.euler);
   state.camera.lookAt(activeState.position.clone());
 }
