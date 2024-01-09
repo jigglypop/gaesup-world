@@ -12,7 +12,7 @@ export default function Direction() {
       <RigidBody position={[-direct, 0, 0]}>
         <Text
           position={[0, 5, 0]}
-          fontSize={10}
+          fontSize={3}
           rotation={[0, 0, 0]}
           color="black"
         >
@@ -23,7 +23,7 @@ export default function Direction() {
       <RigidBody position={[direct, 0, 0]}>
         <Text
           position={[0, 5, 0]}
-          fontSize={10}
+          fontSize={3}
           rotation={[0, 0, 0]}
           color="black"
         >
@@ -34,7 +34,7 @@ export default function Direction() {
       <RigidBody position={[0, 0, direct]}>
         <Text
           position={[0, 5, 0]}
-          fontSize={10}
+          fontSize={3}
           rotation={[0, 0, 0]}
           color="black"
         >
@@ -45,7 +45,7 @@ export default function Direction() {
       <RigidBody position={[0, 0, -direct]}>
         <Text
           position={[0, 5, 0]}
-          fontSize={10}
+          fontSize={3}
           rotation={[0, 0, 0]}
           color="black"
         >
