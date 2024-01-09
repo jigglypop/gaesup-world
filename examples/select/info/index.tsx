@@ -1,6 +1,7 @@
 "use client";
 
 import { useContext, useEffect } from "react";
+import { isMobile } from "react-device-detect";
 import { V3 } from "../../../src";
 import { useZoom } from "../../../src/gaesup/tools/zoomButton";
 import {
@@ -54,9 +55,9 @@ export default function Info() {
   };
 
   useEffect(() => {
-    setTimeout(async () => {
-      await setZoom(V3(7, 2, 7), true);
-    }, 1000);
+    // setTimeout(async () => {
+    //   await setZoom(isMobile ? V3(12, 5, 12) : V3(7, 2, 7), true);
+    // }, 1000);
   }, []);
 
   return (
@@ -128,14 +129,16 @@ export default function Info() {
             >
               keyboard
             </p>
-            <p
-              className={style.pRecipe({
-                selected: mode.controller === "joystick",
-              })}
-              onClick={() => setController("joystick")}
-            >
-              joystick
-            </p>
+            {mode.type !== "character" && mode.control !== "normal" && (
+              <p
+                className={style.pRecipe({
+                  selected: mode.controller === "joystick",
+                })}
+                onClick={() => setController("joystick")}
+              >
+                joystick
+              </p>
+            )}
             <p
               className={style.pRecipe({
                 selected: mode.controller === "gameboy",
@@ -160,7 +163,9 @@ export default function Info() {
               className={style.pRecipe({
                 selected: isZoom,
               })}
-              onClick={() => setZoom(V3(5, 2, 5), true)}
+              onClick={async () =>
+                await setZoom(isMobile ? V3(12, 5, 12) : V3(7, 2, 7), true)
+              }
             >
               zoomIn
             </p>
@@ -168,7 +173,9 @@ export default function Info() {
               className={style.pRecipe({
                 selected: !isZoom,
               })}
-              onClick={() => setZoom(V3(12, 5, 12), false)}
+              onClick={async () =>
+                await setZoom(isMobile ? V3(20, 10, 20) : V3(12, 5, 12), true)
+              }
             >
               zoomOut
             </p>

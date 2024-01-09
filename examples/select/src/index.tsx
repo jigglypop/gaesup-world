@@ -13,6 +13,7 @@ import {
 } from "../../../src";
 
 import { Canvas } from "@react-three/fiber";
+import { isMobile } from "react-device-detect";
 import { KeyBoardToolTip } from "../../../src/gaesup/tools/keyBoardToolTip";
 import { Rideable } from "../../../src/gaesup/tools/rideable";
 import { V3 } from "../../../src/gaesup/utils";
@@ -36,9 +37,8 @@ export const keyBoardMap = [
 ];
 
 export default function Selected() {
-  const CHARACTER_URL =
-    "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf/gaesupyee.glb";
-  const AIRPLANE_URL = S3 + "/air.glb";
+  const CHARACTER_URL = S3 + "/gaesupyee.glb";
+  const AIRPLANE_URL = S3 + "/gaesae.glb";
   const VEHICLE_URL = S3 + "/kart.glb";
   const WHEEL_URL = S3 + "/wheel.glb";
 
@@ -47,12 +47,12 @@ export default function Selected() {
       url={{
         characterUrl: CHARACTER_URL,
         vehicleUrl: VEHICLE_URL,
-        wheelUrl: WHEEL_URL,
+        // wheelUrl: WHEEL_URL,
         airplaneUrl: AIRPLANE_URL,
       }}
       mode={{
         type: "character",
-        controller: "keyboard",
+        controller: isMobile ? "gameboy" : "keyboard",
         control: "normal",
       }}
       debug={true}
@@ -106,9 +106,9 @@ export default function Selected() {
             objectType="airplane"
             isRiderOn={true}
             url={AIRPLANE_URL}
-            offset={V3(0, 0.5, 0)}
+            offset={V3(0, 1.5, 0)}
             position={V3(15, 1, 15)}
-            rotation={euler().set(0, Math.PI / 2, 0)}
+            rotation={euler().set(0, 0, 0)}
           />
         </Physics>
       </Canvas>

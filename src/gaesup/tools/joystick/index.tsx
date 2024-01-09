@@ -13,10 +13,7 @@ import { GaesupWorldContext } from "../../world/context";
 import "./style.css";
 
 export type joyStickType = {
-  [key in
-    | "joyStickBallStyle"
-    | "joyStickStyle"
-    | "joyBallStyle"]?: CSSProperties;
+  [key in "joyStickBallStyle" | "joyStickStyle"]?: CSSProperties;
 };
 
 export function JoyStick(props: joyStickType) {

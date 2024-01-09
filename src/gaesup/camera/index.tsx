@@ -85,11 +85,6 @@ export default function Camera({
       }
       detector(cameraProp);
     }
-    console.log(
-      cameraProp.worldContext.cameraOption.XDistance,
-      cameraProp.worldContext.cameraOption.YDistance,
-      cameraProp.worldContext.cameraOption.ZDistance
-    );
   });
 
   // moveTo 함수 정의
