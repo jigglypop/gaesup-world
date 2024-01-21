@@ -1,12 +1,12 @@
 import { Collider } from "@dimforge/rapier3d-compat";
+import { useAnimations } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { RapierRigidBody, quat } from "@react-three/rapier";
 import { useEffect, useMemo, useRef } from "react";
+import playActions from "../../../animation/actions";
 import { refsType } from "../../../controller/type";
-import { InnerGroupRef } from "../common/InnerGroupRef";
-import { OuterGroupRef } from "../common/OuterGroupRef";
-import { RigidBodyRef } from "../common/RigidbodyRef";
-import { CharacterCapsuleCollider } from "./collider";
+import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
+import { CharacterInnerRef } from "../../inner/character";
 import { passiveCharacterPropsType } from "./type";
 
 export function PassiveCharacter(props: passiveCharacterPropsType) {
@@ -18,10 +18,10 @@ export function PassiveCharacter(props: passiveCharacterPropsType) {
     rigidBodyRef,
     outerGroupRef,
     innerGroupRef,
-    capsuleColliderRef: colliderRef,
+    colliderRef,
   };
 
-  const { position, euler, currentAnimation, characterUrl } = useMemo(() => {
+  const { position, euler, currentAnimation } = useMemo(() => {
     return {
       position: props.position,
       euler: props.euler,
@@ -45,23 +45,22 @@ export function PassiveCharacter(props: passiveCharacterPropsType) {
     }
   });
 
+  const { gltf } = useGltfAndSize({ url: props.url.characterUrl });
+  const animationResult = useAnimations(gltf.animations);
+  const { animationRef } = playActions({
+    type: "character",
+    animationResult,
+    currentAnimation,
+  });
+
   return (
-    <OuterGroupRef ref={refs.outerGroupRef}>
+    <CharacterInnerRef
+      animationRef={animationRef}
+      position={position}
+      refs={refs}
+      urls={props.url}
+    >
       {props.children}
-      {characterUrl && (
-        <RigidBodyRef ref={refs.rigidBodyRef} position={position}>
-          <CharacterCapsuleCollider
-            height={props.height}
-            diameter={props.diameter}
-            ref={colliderRef}
-          />
-          <InnerGroupRef
-            currentAnimation={currentAnimation}
-            ref={refs.innerGroupRef}
-            url={characterUrl}
-          />
-        </RigidBodyRef>
-      )}
-    </OuterGroupRef>
+    </CharacterInnerRef>
   );
 }

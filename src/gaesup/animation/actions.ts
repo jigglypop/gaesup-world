@@ -1,7 +1,13 @@
-import { useAnimations, useKeyboardControls } from "@react-three/drei";
+import { useAnimations } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { Ref, useContext, useEffect } from "react";
-import { Object3D, Object3DEventMap } from "three";
+import {
+  AnimationAction,
+  AnimationClip,
+  AnimationMixer,
+  Object3D,
+  Object3DEventMap,
+} from "three";
 import { animationTagType, groundRayType } from "../controller/type";
 import { useGaesupAnimation } from "../hooks/useGaesupAnimation";
 import {
@@ -9,8 +15,26 @@ import {
   GaesupWorldDispatchContext,
 } from "../world/context";
 
+export type Api<T extends AnimationClip> = {
+  ref: React.MutableRefObject<Object3D | undefined | null>;
+  clips: AnimationClip[];
+  mixer: AnimationMixer;
+  names: T["name"][];
+  actions: {
+    [key in T["name"]]: AnimationAction | null;
+  };
+};
+
 export type playActionsType = {
+  type: "character" | "vehicle" | "airplane";
+  animationResult: Api<AnimationClip>;
+  currentAnimation?: string;
+};
+
+export type subscribeActionsType = {
+  type: "character" | "vehicle" | "airplane";
   groundRay: groundRayType;
+  animations: AnimationClip[];
 };
 
 export type actionsType = {
@@ -22,78 +46,14 @@ export type playResultType = {
   ref: Ref<Object3D<Object3DEventMap>>;
 };
 
-// 캐릭터 등록, 애니메이션 이름 설정, 애니메이션 실행
-
-export function readyAnimation() {
-  const { characterGltf, vehicleGltf, airplaneGltf } =
-    useContext(GaesupWorldContext);
-  const resultRef: {
-    character: playResultType;
-    vehicle: playResultType;
-    airplane: playResultType;
-  } = {
-    character: null,
-    vehicle: null,
-    airplane: null,
-  };
-  if (characterGltf && characterGltf.animations)
-    resultRef.character = useAnimations(characterGltf.animations);
-  if (vehicleGltf && vehicleGltf.animations)
-    resultRef.vehicle = useAnimations(vehicleGltf.animations);
-  if (airplaneGltf && airplaneGltf.animations)
-    resultRef.airplane = useAnimations(airplaneGltf.animations);
-
-  return {
-    resultRef,
-  };
-}
-
-export default function playCharacterActions({ groundRay }: playActionsType) {
-  const {
-    states,
-    activeState,
-    animations,
-    mode,
-    characterGltf,
-    vehicleGltf,
-    airplaneGltf,
-  } = useContext(GaesupWorldContext);
-  const dispatch = useContext(GaesupWorldDispatchContext);
-  const control = useKeyboardControls()[1]();
-  const { subscribeAll, notify, store } = useGaesupAnimation();
-  const resultRef: {
-    character: playResultType;
-    vehicle: playResultType;
-    airplane: playResultType;
-  } = {
-    character: null,
-    vehicle: null,
-    airplane: null,
-  };
-  if (characterGltf && characterGltf.animations)
-    resultRef.character = useAnimations(characterGltf.animations);
-  if (vehicleGltf && vehicleGltf.animations)
-    resultRef.vehicle = useAnimations(vehicleGltf.animations);
-  if (airplaneGltf && airplaneGltf.animations)
-    resultRef.airplane = useAnimations(airplaneGltf.animations);
-
-  const play = (tag: keyof animationTagType) => {
-    animations.current = tag;
-    const currentAnimation = store[tag];
-    if (currentAnimation?.action) {
-      currentAnimation.action();
-    }
-    dispatch({
-      type: "update",
-      payload: {
-        animations: {
-          ...animations,
-        },
-      },
-    });
-  };
-
-  const { actions, ref } = resultRef.character;
+export function subscribeActions({
+  type,
+  groundRay,
+  animations,
+}: subscribeActionsType) {
+  const { states, activeState } = useContext(GaesupWorldContext);
+  const { subscribeAll } = useGaesupAnimation({ type });
+  const animationResult = useAnimations(animations);
 
   // 초기 기본 애니메이션 등록
   useEffect(() => {
@@ -136,32 +96,56 @@ export default function playCharacterActions({ groundRay }: playActionsType) {
     ]);
   }, []);
 
-  useEffect(() => {
-    animations.keyControl = control;
+  return {
+    animationResult,
+  };
+}
+
+export default function playActions({
+  type,
+  animationResult,
+  currentAnimation,
+}: playActionsType) {
+  const { mode, animationState } = useContext(GaesupWorldContext);
+  const dispatch = useContext(GaesupWorldDispatchContext);
+  const { notify, store } = useGaesupAnimation({ type });
+  const { actions, ref } = animationResult;
+
+  const play = (tag: keyof animationTagType) => {
+    animationState[type].current = tag;
+    const currentAnimation = store[tag];
+    if (currentAnimation?.action) {
+      currentAnimation.action();
+    }
     dispatch({
       type: "update",
       payload: {
-        animations: {
-          ...animations,
+        animationState: {
+          ...animationState,
         },
       },
     });
-  }, [control]);
+  };
 
   useEffect(() => {
-    const action = actions[animations.current]?.reset().fadeIn(0.2).play();
+    const action = actions[currentAnimation || animationState[type].current]
+      ?.reset()
+      .fadeIn(0.2)
+      .play();
     return () => {
       action?.fadeOut(0.2);
     };
-  }, [animations.current, mode.type]);
+  }, [currentAnimation, animationState[type].current, mode.type]);
 
   useFrame(() => {
-    const tag = notify() as keyof animationTagType;
-    play(tag);
+    if (!currentAnimation) {
+      const tag = notify() as keyof animationTagType;
+      play(tag);
+    }
   });
 
   return {
-    ref,
-    resultRef,
+    animationRef: ref,
+    currentAnimation: animationState?.[type]?.current,
   };
 }

@@ -1,9 +1,8 @@
-export { playActions } from "./gaesup/animation";
 export * as Camera from "./gaesup/camera";
 export { GaesupComponent } from "./gaesup/component";
-export { PassiveAirplane } from "./gaesup/component/passive/airplane";
+// export { PassiveAirplane } from "./gaesup/component/passive/airplane";
 export { PassiveCharacter } from "./gaesup/component/passive/character";
-export { PassiveVehicle } from "./gaesup/component/passive/vehicle";
+// export { PassiveVehicle } from "./gaesup/component/passive/vehicle";
 
 export { GaesupController } from "./gaesup/controller";
 export { GaeSupProps } from "./gaesup/gaesupProps";

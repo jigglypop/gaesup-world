@@ -2,11 +2,11 @@ import { calcPropType } from "../type";
 
 export default function riding(prop: calcPropType) {
   const {
-    worldContext: { states, rideable, mode },
+    worldContext: { states },
   } = prop;
 
-  const { isRiding } = states;
-  if (isRiding && states.isPush["keyR"]) {
+  const { isRiderOn } = states;
+  if (isRiderOn && states.isPush["keyR"]) {
     states.isLanding = true;
   }
 }

@@ -2,7 +2,7 @@ import { useKeyboardControls } from "@react-three/drei";
 import { vec3 } from "@react-three/rapier";
 import { useCallback, useContext, useEffect, useMemo } from "react";
 import * as THREE from "three";
-import { groundRayType, refsType, slopeRayType } from "../../controller/type";
+import { groundRayType, refsType } from "../../controller/type";
 
 import { cameraRayType } from "../../camera/type";
 import { update } from "../../utils/context";
@@ -40,24 +40,11 @@ export default function initControllerProps({ refs }: { refs: refsType }) {
     return {
       origin: vec3(),
       dir: vec3({ x: 0, y: -1, z: 0 }),
-      offset: vec3({ x: 0, y: -context.characterCollider.halfHeight, z: 0 }),
+      offset: vec3({ x: 0, y: -1, z: 0 }),
       hit: null,
       parent: null,
       rayCast: null,
       length: 0.5,
-    };
-  }, []);
-
-  const slopeRay: slopeRayType = useMemo(() => {
-    return {
-      current: vec3(),
-      origin: vec3(),
-      hit: null,
-      rayCast: null,
-      dir: vec3({ x: 0, y: -1, z: 0 }),
-      offset: vec3({ x: 0, y: 0, z: context.characterCollider.radius - 0.03 }),
-      length: context.characterCollider.radius + 3,
-      angle: 0,
     };
   }, []);
 
@@ -96,7 +83,6 @@ export default function initControllerProps({ refs }: { refs: refsType }) {
   }, []);
 
   return {
-    slopeRay,
     groundRay,
     cameraRay,
     keyControl,

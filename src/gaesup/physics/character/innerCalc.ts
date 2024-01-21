@@ -12,6 +12,7 @@ export default function innerCalc(prop: calcPropType) {
     dispatch,
     delta,
   } = prop;
+
   activeState.position = vec3(rigidBodyRef.current.translation());
   activeState.velocity = vec3(rigidBodyRef.current.linvel());
   if (states.isJumping || rigidBodyRef.current.linvel().y < 0) {

@@ -16,7 +16,7 @@ export type zoomButtonPropsType = {
 };
 
 export function useZoom() {
-  const { moveTo, activeState, cameraOption, mode } =
+  const { moveTo, activeState, cameraOption, mode, block } =
     useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
   const [isZoom, setIsZoom] = useState(true);
@@ -25,10 +25,13 @@ export function useZoom() {
     cameraOption.XDistance = position.x;
     cameraOption.YDistance = position.y;
     cameraOption.ZDistance = position.z;
+    block.camera = true;
     dispatch({
       type: "update",
       payload: {
-        cameraBlock: true,
+        block: {
+          ...block,
+        },
         cameraOption: {
           ...cameraOption,
         },
@@ -37,10 +40,13 @@ export function useZoom() {
   };
 
   const openCamera = async () => {
+    block.camera = false;
     dispatch({
       type: "update",
       payload: {
-        cameraBlock: false,
+        block: {
+          ...block,
+        },
       },
     });
   };

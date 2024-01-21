@@ -26,9 +26,6 @@ export default function impulse(prop: calcPropType) {
 
   const velocity = rigidBodyRef.current.linvel();
   // const V = vec3(velocity).length();
-  // const currentSpeed = Math.sqrt(
-  //   velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2
-  // );
   // a = v / t (t = 1) (approximate calculation)
   const V = vec3(velocity).length();
   if (V < maxSpeed) {

@@ -16,35 +16,15 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     dir: vec3(),
     direction: vec3(),
   },
-  characterCollider: {
-    halfHeight: 0.35,
-    height: 0.7,
-    radius: 0.3,
-    diameter: 0.6,
-    riderOffsetX: 0,
-    riderOffsetY: 0,
-    riderOffsetZ: 0,
-  },
-  vehicleCollider: {
-    wheelSizeX: 0.5,
-    wheelSizeY: 0.5,
-    wheelSizeZ: 0.5,
-    vehicleSizeX: 1,
-    vehicleSizeY: 1,
-    vehicleSizeZ: 1,
-    vehicleX: 0.5,
-    vehicleY: 0.5,
-    vehicleZ: 0.5,
-  },
-  airplaneCollider: {
-    airplaneSizeX: 1,
-    airplaneSizeY: 1,
-    airplaneSizeZ: 1,
-    airplaneX: 0.5,
-    airplaneY: 0.5,
-    airplaneZ: 0.5,
-    gravity: 0.2,
-  },
+  // characterCollider: {
+  //   halfHeight: 0.35,
+  //   height: 0.7,
+  //   radius: 0.3,
+  //   diameter: 0.6,
+  //   riderOffsetX: 0,
+  //   riderOffsetY: 0,
+  //   riderOffsetZ: 0,
+  // },
   mode: {},
   url: {
     characterUrl: null,
@@ -52,11 +32,9 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     airplaneUrl: null,
     wheelUrl: null,
   },
-  characterGltf: null,
-  vehicleGltf: null,
-  wheelGltf: null,
-  airplaneGltf: null,
+
   states: {
+    rideableId: null,
     isMoving: false,
     isNotMoving: false,
     isOnTheGround: false,
@@ -64,7 +42,7 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     isRotated: false,
     isRunning: false,
     isJumping: false,
-    isRiding: false,
+    enableRiding: false,
     isRiderOn: false,
     isLanding: false,
     isPush: {
@@ -102,25 +80,22 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     rightward: false,
   },
   refs: null,
-  animations: {
-    current: "idle",
-    animationNames: {
-      idle: "idle",
-      walk: "walk",
-      run: "run",
-      accel: "accel",
-      break: "break",
-      ride: "ride",
-      jump: "jump",
-      jumpIdle: "jumpIdle",
-      jumpLand: "jumpLand",
-      fall: "fall",
-      land: "land",
-      sit: "sit",
+  animationState: {
+    character: {
+      current: "idle",
+      default: "idle",
+      store: {},
     },
-    keyControl: {},
-    store: {},
-    default: "idle",
+    vehicle: {
+      current: "idle",
+      default: "idle",
+      store: {},
+    },
+    airplane: {
+      current: "idle",
+      default: "idle",
+      store: {},
+    },
   },
   keyBoardMap: [
     { name: "forward", keys: ["ArrowUp", "KeyW"] },
@@ -146,10 +121,16 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     ZDistance: 20,
   },
   moveTo: null,
-  cameraBlock: false,
-  controlBlock: false,
-  scrollBlock: true,
   rideable: {},
+  sizes: {},
+  block: {
+    camera: false,
+    control: false,
+    scroll: true,
+  },
+  callback: {
+    moveTo: null,
+  },
 };
 
 export const GaesupWorldContext = createContext<gaesupWorldContextType>(null);

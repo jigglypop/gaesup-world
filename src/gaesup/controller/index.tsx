@@ -27,11 +27,10 @@ export function GaesupController(props: controllerType) {
 }
 
 export function GaesupControllerInner(props: controllerType) {
-  const capsuleColliderRef = useRef<Collider>(null);
+  const colliderRef = useRef<Collider>(null);
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const outerGroupRef = useRef<THREE.Group>(null);
   const innerGroupRef = useRef<THREE.Group>(null);
-  const slopeRayOriginRef = useRef<THREE.Mesh>(null);
   const characterInnerRef = useRef<THREE.Group>(null);
   const passiveRigidBodyRef = useRef<RapierRigidBody>(null);
 
@@ -54,15 +53,14 @@ export function GaesupControllerInner(props: controllerType) {
       onDestory: props.onDestory,
       onAnimate: props.onAnimate,
     }),
+    urls: Object.assign(gaesupControllerDefault.urls, props.urls || {}),
     refs: {
-      capsuleColliderRef,
+      colliderRef,
       rigidBodyRef,
       outerGroupRef,
       innerGroupRef,
-      slopeRayOriginRef,
       characterInnerRef,
     },
-    isRider: props.isRider !== null ? props.isRider : false,
   });
 
   const gaesupControl = useMemo(
@@ -75,15 +73,15 @@ export function GaesupControllerInner(props: controllerType) {
 
   const refs = useMemo(() => {
     return {
-      capsuleColliderRef,
+      colliderRef,
       rigidBodyRef,
       outerGroupRef,
       innerGroupRef,
-      slopeRayOriginRef,
       characterInnerRef,
       passiveRigidBodyRef,
     };
   }, []);
+
   const prop: controllerInnerType = {
     ...initControllerProps({
       refs,
@@ -103,7 +101,7 @@ export function GaesupControllerInner(props: controllerType) {
     <GaesupControllerContext.Provider value={gaesupControl.value}>
       <Camera refs={refs} prop={prop} control={prop.keyControl} />
       <GaesupControllerDispatchContext.Provider value={gaesupControl.dispatch}>
-        <GaesupComponent props={prop} refs={refs} />
+        <GaesupComponent props={prop} refs={refs} urls={props.urls} />
       </GaesupControllerDispatchContext.Provider>
     </GaesupControllerContext.Provider>
   );

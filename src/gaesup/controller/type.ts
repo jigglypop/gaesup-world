@@ -4,7 +4,7 @@ import { RapierRigidBody, RigidBodyProps } from "@react-three/rapier";
 import { ReactNode, RefObject } from "react";
 import * as THREE from "three";
 import { cameraRayType } from "../camera/type";
-import { keyControlType } from "../world/context/type";
+import { keyControlType, urlType } from "../world/context/type";
 import { airplaneType, characterType, vehicleType } from "./context/type";
 import { callbackType } from "./initialize/callback/type";
 
@@ -51,9 +51,7 @@ export type slopeRayType = Omit<rayType, "parent">;
 export type groundRayType = Omit<rayType, "current" | "angle">;
 
 export type controllerInnerType = {
-  isRider?: boolean;
   name?: string;
-  slopeRay: slopeRayType;
   groundRay: groundRayType;
   cameraRay: cameraRayType;
   keyControl: keyControlType;
@@ -79,11 +77,10 @@ export type actionsType = animationTagType & {
 };
 
 export type refsType = {
-  capsuleColliderRef: RefObject<Collider>;
+  colliderRef: RefObject<Collider>;
   rigidBodyRef: RefObject<RapierRigidBody>;
   outerGroupRef: RefObject<THREE.Group>;
   innerGroupRef: RefObject<THREE.Group>;
-  slopeRayOriginRef: RefObject<THREE.Mesh>;
   characterInnerRef: RefObject<THREE.Group>;
 };
 
@@ -92,7 +89,7 @@ export type gaesupControllerContextPropType = {
   airplane: airplaneType;
   vehicle: vehicleType;
   character: characterType;
-  isRider: boolean;
+  urls: urlType;
 };
 
 // 나머지 controller 타입

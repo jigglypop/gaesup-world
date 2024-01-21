@@ -18,8 +18,6 @@ export type gaesupPassiveCharacterPropsType = {
 export type passiveCharacterPropsType = {
   position: THREE.Vector3;
   euler: THREE.Euler;
-  height: number;
-  diameter: number;
   url: urlType;
   currentAnimation: string;
   children?: React.ReactNode;

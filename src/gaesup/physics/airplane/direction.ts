@@ -7,10 +7,11 @@ export default function direction(prop: calcPropType) {
     innerGroupRef,
     worldContext: { joystick, activeState, control, mode },
     controllerContext: { airplane },
+    matchSizes,
   } = prop;
   const { forward, backward, leftward, rightward, shift, space } = control;
   const { angleDelta, maxAngle, accelRatio } = airplane;
-
+  console.log(matchSizes);
   let boost = 0;
   if (mode.controller === "joystick") {
     boost = space
@@ -65,7 +66,6 @@ export default function direction(prop: calcPropType) {
   activeState.euler.z = innerGrounRefRotation.rotation.z;
 
   innerGrounRefRotation.rotation.y = 0;
-
   innerGroupRef.current.setRotationFromQuaternion(
     quat()
       .setFromEuler(innerGroupRef.current.rotation.clone())

@@ -1,5 +1,4 @@
 import { CSSProperties } from "react";
-import { GLTFResult } from "../../component/type";
 import { actionsType, refsType } from "../../controller/type";
 
 import { joyStickInnerType } from "../../tools/joyStick/type";
@@ -47,6 +46,7 @@ export type portalType = {
 export type portalsType = portalType[];
 
 export type statesType = {
+  rideableId?: string;
   isMoving: boolean;
   isNotMoving: boolean;
   isOnTheGround: boolean;
@@ -54,13 +54,20 @@ export type statesType = {
   isRotated: boolean;
   isRunning: boolean;
   isJumping: boolean;
-  isRiding: boolean;
+  enableRiding: boolean;
   isRiderOn: boolean;
   isPush: controlType;
   isLanding: boolean;
 };
 
 export type urlType = {
+  characterUrl?: string;
+  vehicleUrl?: string;
+  airplaneUrl?: string;
+  wheelUrl?: string;
+};
+
+export type urlsType = {
   characterUrl?: string;
   vehicleUrl?: string;
   airplaneUrl?: string;
@@ -85,36 +92,14 @@ export type animationPropType = {
   default: string;
 };
 
-export type characterColliderType = {
-  halfHeight?: number;
-  height?: number;
-  radius?: number;
-  diameter?: number;
-  riderOffsetX?: number;
-  riderOffsetY?: number;
-  riderOffsetZ?: number;
-};
-
-export type vehicleColliderType = {
-  wheelSizeX?: number;
-  wheelSizeY?: number;
-  wheelSizeZ?: number;
-  vehicleSizeX?: number;
-  vehicleSizeY?: number;
-  vehicleSizeZ?: number;
-  vehicleX?: number;
-  vehicleY?: number;
-  vehicleZ?: number;
-};
-
-export type airplaneColliderType = {
-  airplaneSizeX?: number;
-  airplaneSizeY?: number;
-  airplaneSizeZ?: number;
-  airplaneX?: number;
-  airplaneY?: number;
-  airplaneZ?: number;
-  gravity?: number;
+export type animationStatePropType = {
+  current: string;
+  animationNames?: actionsType;
+  keyControl?: {
+    [key: string]: boolean;
+  };
+  store: {};
+  default: string;
 };
 
 export type modeType = {
@@ -140,6 +125,18 @@ export type wheelStateType = {
   rotation: THREE.Euler;
 };
 
+export type blockType = {
+  camera: boolean;
+  control: boolean;
+  scroll: boolean;
+};
+
+export type sizeType = {
+  x: number;
+  y: number;
+  z: number;
+};
+
 export type wheelsStateType = {
   0?: wheelStateType;
   1?: wheelStateType;
@@ -157,16 +154,26 @@ export type passiveStateType = {
 export type rideableType = {
   objectkey: string;
   objectType?: "vehicle" | "airplane";
+  enableRiding?: boolean;
   isRiderOn?: boolean;
   url?: string;
   wheelUrl?: string;
   position?: THREE.Vector3;
   rotation?: THREE.Euler;
   offset?: THREE.Vector3;
+  landingOffset?: THREE.Vector3;
   visible?: boolean;
   vehicleSize?: THREE.Vector3;
   wheelSize?: THREE.Vector3;
   airplaneSize?: THREE.Vector3;
+};
+
+export type animationStateType = {
+  [key: string]: animationStatePropType;
+};
+
+export type sizesType = {
+  [key: string]: THREE.Vector3;
 };
 
 type KeyboardControlsState<T extends string = string> = {
@@ -175,29 +182,24 @@ type KeyboardControlsState<T extends string = string> = {
 
 export type gaesupWorldContextType = {
   activeState: activeStateType;
-  characterCollider: characterColliderType;
-  vehicleCollider: vehicleColliderType;
-  airplaneCollider: airplaneColliderType;
   mode: modeType;
   url: urlType;
-  characterGltf: GLTFResult;
-  vehicleGltf: GLTFResult;
-  wheelGltf: GLTFResult;
-  airplaneGltf: GLTFResult;
   states: statesType;
   debug: boolean;
   minimap: minimapInnerType;
   joystick: joyStickInnerType;
   control: KeyboardControlsState<string>;
   refs: refsType;
-  animations: animationPropType;
+  animationState: animationStateType;
   keyBoardMap: keyboardMapType;
   cameraOption: cameraOptionType;
   moveTo: (position: THREE.Vector3, target: THREE.Vector3) => Promise<void>;
-  cameraBlock: boolean;
-  controlBlock: boolean;
-  scrollBlock: boolean;
   rideable: { [key: string]: rideableType };
+  sizes: sizesType;
+  block: blockType;
+  callback: {
+    moveTo: (position: THREE.Vector3, target: THREE.Vector3) => Promise<void>;
+  };
 };
 
 export type gaesupDisptachType = dispatchType<gaesupWorldContextType>;

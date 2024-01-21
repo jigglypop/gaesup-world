@@ -2,34 +2,22 @@
 
 import { useContext } from "react";
 import { GaesupWorldContext } from "../../world/context";
-import {
-  activeStateType,
-  airplaneColliderType,
-  characterColliderType,
-  modeType,
-  urlType,
-  vehicleColliderType,
-} from "../../world/context/type";
+import { activeStateType, modeType, urlType } from "../../world/context/type";
 
 export function useGaesupController(): gaesupPassivePropsType {
   const worldContext = useContext(GaesupWorldContext);
   return {
     state: worldContext.activeState,
-    vehicleCollider: worldContext.vehicleCollider,
-    characterCollider: worldContext.characterCollider,
-    airplaneCollider: worldContext.airplaneCollider,
     mode: worldContext.mode,
     url: worldContext.url,
-    currentAnimation: worldContext.animations.current,
+    currentAnimation: worldContext.mode.type
+      ? worldContext.animationState[worldContext.mode.type].current
+      : "idle",
   };
 }
 
 export type gaesupPassivePropsType = {
   state: activeStateType;
-
-  vehicleCollider: vehicleColliderType;
-  characterCollider?: characterColliderType;
-  airplaneCollider?: airplaneColliderType;
   mode: modeType;
   url: urlType;
   currentAnimation: string;

@@ -11,7 +11,7 @@ export default function landing(prop: calcPropType) {
     rideable.key = null;
     mode.type = "character";
     states.isLanding = false;
-    states.isRiding = false;
+    states.enableRiding = false;
   }
 
   dispatch({
