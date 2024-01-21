@@ -5,35 +5,40 @@ import {
 } from "../../world/context";
 import { animationAtomType } from "../../world/context/type";
 
-export function useGaesupAnimation() {
-  const { animations } = useContext(GaesupWorldContext);
+export function useGaesupAnimation({
+  type,
+}: {
+  type: "character" | "vehicle" | "airplane";
+}) {
+  const { animationState } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
 
   const getAnimationTag = (tag: string): { name: string; isValid: boolean } => {
-    const animation: animationAtomType = animations.store[tag];
-    if (!animation) return { name: animations.default, isValid: false };
+    const animation: animationAtomType = animationState[type].store[tag];
+    if (!animation)
+      return { name: animationState[type].default, isValid: false };
     if (animation.condition()) {
       return { name: animation.animationName, isValid: true };
     } else {
-      return { name: animations.default, isValid: false };
+      return { name: animationState[type].default, isValid: false };
     }
   };
 
   const notify = () => {
-    let tag = animations.default;
-    for (const key of Object.keys(animations.store)) {
+    let tag = animationState[type].default;
+    for (const key of Object.keys(animationState[type].store)) {
       const checked = getAnimationTag(key);
       if (checked.isValid) {
         tag = checked.name;
         break;
       }
     }
-    animations.current = tag;
+    animationState[type].current = tag;
     dispatch({
       type: "update",
       payload: {
-        animations: {
-          ...animations,
+        animationState: {
+          ...animationState,
         },
       },
     });
@@ -41,12 +46,12 @@ export function useGaesupAnimation() {
   };
 
   const unsubscribe = (tag: string) => {
-    delete animations.store[tag];
+    delete animationState[type].store[tag];
     dispatch({
       type: "update",
       payload: {
-        animations: {
-          ...animations,
+        animationState: {
+          ...animationState,
         },
       },
     });
@@ -59,7 +64,7 @@ export function useGaesupAnimation() {
     animationName,
     key,
   }: animationAtomType) => {
-    animations.store[tag] = {
+    animationState[type].store[tag] = {
       condition,
       action: action || (() => {}),
       animationName: animationName || tag,
@@ -68,8 +73,8 @@ export function useGaesupAnimation() {
     dispatch({
       type: "update",
       payload: {
-        animations: {
-          ...animations,
+        animationState: {
+          ...animationState,
         },
       },
     });
@@ -77,7 +82,7 @@ export function useGaesupAnimation() {
 
   const subscribeAll = (props: animationAtomType[]) => {
     props.forEach((item) => {
-      animations.store[item.tag] = {
+      animationState[type].store[item.tag] = {
         condition: item.condition,
         action: item.action,
         animationName: item.animationName,
@@ -87,8 +92,8 @@ export function useGaesupAnimation() {
     dispatch({
       type: "update",
       payload: {
-        animations: {
-          ...animations,
+        animationState: {
+          ...animationState,
         },
       },
     });
@@ -97,7 +102,7 @@ export function useGaesupAnimation() {
   return {
     subscribe,
     subscribeAll,
-    store: animations.store,
+    store: animationState[type].store,
     unsubscribe,
     notify,
   };

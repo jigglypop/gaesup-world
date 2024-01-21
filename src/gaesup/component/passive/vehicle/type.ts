@@ -4,6 +4,7 @@ import {
   characterColliderType,
   modeType,
   urlType,
+  urlsType,
 } from "../../../world/context/type";
 
 export type gaesupPassiveCharacterPropsType = {
@@ -18,10 +19,9 @@ export type gaesupPassiveCharacterPropsType = {
 export type passiveVehiclePropsType = {
   position: THREE.Vector3;
   euler: THREE.Euler;
-  vehicleSize: THREE.Vector3;
-  wheelSize: THREE.Vector3;
-  url: urlType;
+  urls: urlsType;
   currentAnimation: string;
   children?: React.ReactNode;
+  offset?: THREE.Vector3;
   onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
 };

@@ -10,9 +10,7 @@ import { rideableType } from "../../world/context/type.js";
 import "./style.css";
 
 export function Rideable(props: rideableType) {
-  const { states, rideable, vehicleCollider, airplaneCollider } =
-    useContext(GaesupWorldContext);
-
+  const { states, rideable } = useContext(GaesupWorldContext);
   const { initRideable, getRideable, ride, landing } = useRideable();
   const current = getRideable(props.objectkey);
 
@@ -44,24 +42,9 @@ export function Rideable(props: rideableType) {
               <PassiveVehicle
                 position={current.position || V3(0, 0, 0)}
                 euler={current.rotation || euler()}
-                vehicleSize={
-                  current.vehicleSize ||
-                  V3(
-                    vehicleCollider.vehicleSizeX,
-                    vehicleCollider.vehicleSizeY,
-                    vehicleCollider.vehicleSizeZ
-                  )
-                }
-                wheelSize={
-                  current.wheelSize ||
-                  V3(
-                    vehicleCollider.wheelSizeX,
-                    vehicleCollider.wheelSizeY,
-                    vehicleCollider.wheelSizeZ
-                  )
-                }
                 currentAnimation={"idle"}
-                url={{
+                offset={props.offset}
+                urls={{
                   vehicleUrl: props.url,
                   wheelUrl: props.wheelUrl,
                 }}
@@ -72,16 +55,11 @@ export function Rideable(props: rideableType) {
               <PassiveAirplane
                 position={current.position || V3(0, 0, 0)}
                 euler={current.rotation || euler()}
-                airplaneSize={
-                  current.airplaneSize ||
-                  V3(
-                    airplaneCollider.airplaneSizeX,
-                    airplaneCollider.airplaneSizeY,
-                    airplaneCollider.airplaneSizeZ
-                  )
-                }
                 currentAnimation={"idle"}
-                airplaneUrl={props.url}
+                offset={props.offset}
+                urls={{
+                  airplaneUrl: props.url,
+                }}
                 onCollisionEnter={onCollisionEnter}
               />
             )}

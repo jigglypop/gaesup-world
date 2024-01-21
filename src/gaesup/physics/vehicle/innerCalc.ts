@@ -11,7 +11,7 @@ export default function innerCalc(prop: calcPropType) {
   activeState.velocity = vec3(rigidBodyRef.current.linvel());
 
   rigidBodyRef.current.setRotation(
-    quat().setFromEuler(activeState.euler),
+    quat().setFromEuler(activeState.euler.clone()),
     false
   );
 

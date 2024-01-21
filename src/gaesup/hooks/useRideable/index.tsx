@@ -1,6 +1,5 @@
 import { CollisionEnterPayload, euler, vec3 } from "@react-three/rapier";
 import { useContext } from "react";
-import { V3 } from "../../utils";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
@@ -27,7 +26,13 @@ export const rideableDefault = {
  * Custom hook for managing rideable objects.
  * @returns {Object} An object containing functions to initialize, set, get, ride, and land rideable objects.
  */
-export function useRideable() {
+export function useRideable(): {
+  initRideable: (props: rideableType) => void;
+  setRideable: (props: rideableType) => void;
+  getRideable: (objectkey: string) => rideableType;
+  ride: (e: CollisionEnterPayload, props: rideableType) => Promise<void>;
+  landing: (objectkey: string) => void;
+} {
   const worldContext = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
 
@@ -64,28 +69,13 @@ export function useRideable() {
    * @param {string} objectkey - The key of the rideable object to land.
    */
   const landing = (objectkey: string) => {
-    const { activeState, vehicleCollider, airplaneCollider } = worldContext;
-    worldContext.characterCollider.riderOffsetX = 0;
-    worldContext.characterCollider.riderOffsetY = 0;
-    worldContext.characterCollider.riderOffsetZ = 0;
-    worldContext.states.isRiding = false;
+    const { activeState } = worldContext;
+    worldContext.states.enableRiding = false;
+    worldContext.states.isRiderOn = false;
+    worldContext.states.rideableId = null;
     worldContext.rideable[objectkey].visible = true;
     worldContext.rideable[objectkey].position.copy(
-      activeState.position
-        .clone()
-        .add(
-          worldContext.rideable[objectkey].objectType === "vehicle"
-            ? V3(
-                vehicleCollider.vehicleSizeX,
-                vehicleCollider.vehicleSizeY,
-                vehicleCollider.vehicleSizeZ
-              ).multiplyScalar(1.5)
-            : V3(
-                airplaneCollider.airplaneSizeX,
-                airplaneCollider.airplaneSizeY,
-                airplaneCollider.airplaneSizeZ
-              ).multiplyScalar(1.5)
-        )
+      activeState.position.clone()
     );
     worldContext.rideable[objectkey].rotation.copy(activeState.euler.clone());
     dispatch({
@@ -93,7 +83,6 @@ export function useRideable() {
       payload: {
         rideable: { ...worldContext.rideable },
         states: { ...worldContext.states },
-        characterCollider: { ...worldContext.characterCollider },
       },
     });
   };
@@ -125,19 +114,15 @@ export function useRideable() {
    */
   const setModeAndRiding = async (props: rideableType) => {
     worldContext.mode.type = props.objectType;
-    worldContext.states.isRiding = true;
-    worldContext.states.isRiderOn = props.isRiderOn;
-    worldContext.characterCollider.riderOffsetX = props?.offset?.x || 0;
-    worldContext.characterCollider.riderOffsetY = props?.offset?.y || 0;
-    worldContext.characterCollider.riderOffsetZ = props?.offset?.z || 0;
+    worldContext.states.enableRiding = props.enableRiding;
+    worldContext.states.isRiderOn = true;
+    worldContext.states.rideableId = props.objectkey;
     worldContext.rideable[props.objectkey].visible = false;
-
     dispatch({
       type: "update",
       payload: {
         mode: { ...worldContext.mode },
         states: { ...worldContext.states },
-        characterCollider: { ...worldContext.characterCollider },
       },
     });
   };

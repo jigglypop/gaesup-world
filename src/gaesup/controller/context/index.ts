@@ -34,14 +34,18 @@ export const gaesupControllerDefault = {
     onAnimate: () => {},
   },
   refs: {
-    capsuleColliderRef: null,
+    colliderRef: null,
     rigidBodyRef: null,
     outerGroupRef: null,
     innerGroupRef: null,
-    slopeRayOriginRef: null,
     characterInnerRef: null,
   },
-  isRider: false,
+  urls: {
+    airplaneUrl: null,
+    vehicleUrl: null,
+    characterUrl: null,
+    wheelUrl: null,
+  },
 };
 
 export const GaesupControllerContext = createContext<gaesupControllerType>({

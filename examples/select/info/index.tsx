@@ -1,8 +1,7 @@
 "use client";
 
-import { useContext, useEffect } from "react";
-import { isMobile } from "react-device-detect";
-import { V3 } from "../../../src";
+import { useContext } from "react";
+import { JumpPortal, V3 } from "../../../src";
 import { useZoom } from "../../../src/gaesup/tools/zoomButton";
 import {
   GaesupWorldContext,
@@ -53,12 +52,6 @@ export default function Info() {
       },
     });
   };
-
-  useEffect(() => {
-    // setTimeout(async () => {
-    //   await setZoom(isMobile ? V3(12, 5, 12) : V3(7, 2, 7), true);
-    // }, 1000);
-  }, []);
 
   return (
     <div className={style.infoStyle}>
@@ -155,40 +148,34 @@ export default function Info() {
       >
         <button className={style.glassButton}>{mode.controller}</button>
       </Icon>
-
       <Icon
         ToolTip={
           <>
             <p
-              className={style.pRecipe({
-                selected: isZoom,
-              })}
-              onClick={async () =>
-                await setZoom(isMobile ? V3(12, 5, 12) : V3(7, 2, 7), true)
-              }
+              className={style.pRecipe({ selected: mode.control === "orbit" })}
+              onClick={() => setControl("orbit")}
             >
-              zoomIn
+              orbit
             </p>
-            <p
-              className={style.pRecipe({
-                selected: !isZoom,
-              })}
-              onClick={async () =>
-                await setZoom(isMobile ? V3(20, 10, 20) : V3(12, 5, 12), true)
-              }
-            >
-              zoomOut
-            </p>
+            {mode.type === "character" && (
+              <p
+                className={style.pRecipe({
+                  selected: mode.control === "normal",
+                })}
+                onClick={() => setControl("normal")}
+              >
+                normal
+              </p>
+            )}
           </>
         }
         toolTipStyles={{
           background: "rgba(0,0,0,0.8)",
         }}
       >
-        <button className={style.glassButton}>
-          {isZoom ? "zoomIn" : "zoomOut"}
-        </button>
+        <button className={style.glassButton}>{mode.control}</button>
       </Icon>
+      <JumpPortal position={V3(-200, 10, -100)} text={"track"} />
     </div>
   );
 }

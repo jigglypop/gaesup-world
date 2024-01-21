@@ -77,7 +77,7 @@ export default function Camera({
       return;
     cameraProp.delta = delta;
     cameraProp.state = state;
-    if (!worldContext.cameraBlock) {
+    if (!worldContext.block.camera) {
       if (mode.control === "orbit") {
         orbit(cameraProp);
       } else if (mode.control === "normal") {

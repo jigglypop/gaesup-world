@@ -1,7 +1,7 @@
 "use client";
 
 import { Environment } from "@react-three/drei";
-import { Physics, euler } from "@react-three/rapier";
+import { Physics } from "@react-three/rapier";
 
 import {
   GaesupController,
@@ -10,18 +10,18 @@ import {
   GamePad,
   JoyStick,
   MiniMap,
+  Rideable,
+  V3,
 } from "../../../src";
 
 import { Canvas } from "@react-three/fiber";
 import { isMobile } from "react-device-detect";
 import { KeyBoardToolTip } from "../../../src/gaesup/tools/keyBoardToolTip";
-import { Rideable } from "../../../src/gaesup/tools/rideable";
-import { V3 } from "../../../src/gaesup/utils";
 import Info from "../info";
 import Passive from "../passive";
-import Direction from "../platform/Direction";
 import Floor from "../platform/Floor";
 import Stair from "../platform/Stair";
+import Track from "../platform/Track";
 import * as style from "./style.css";
 
 export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
@@ -47,7 +47,7 @@ export default function Selected() {
       url={{
         characterUrl: CHARACTER_URL,
         vehicleUrl: VEHICLE_URL,
-        // wheelUrl: WHEEL_URL,
+        wheelUrl: WHEEL_URL,
         airplaneUrl: AIRPLANE_URL,
       }}
       mode={{
@@ -78,8 +78,14 @@ export default function Selected() {
           shadow-camera-bottom={-50}
           shadow-camera-left={-50}
         />
-        <Physics>
+        <Physics debug>
           <GaesupController
+            urls={{
+              characterUrl: CHARACTER_URL,
+              vehicleUrl: VEHICLE_URL,
+              wheelUrl: WHEEL_URL,
+              airplaneUrl: AIRPLANE_URL,
+            }}
             onAnimate={({ control, subscribe }) => {
               subscribe({
                 tag: "greet",
@@ -89,26 +95,42 @@ export default function Selected() {
           />
           <Passive />
           <Floor />
-          <Direction />
           <Stair />
+          <Track />
           <Rideable
             objectkey="1"
             objectType="vehicle"
-            isRiderOn={true}
+            enableRiding={true}
             url={VEHICLE_URL}
             wheelUrl={WHEEL_URL}
             offset={V3(0, 0.5, 0)}
-            position={V3(-10, 1, 10)}
+            position={V3(-205, 2, -105)}
           />
 
           <Rideable
             objectkey="3"
+            objectType="vehicle"
+            enableRiding={false}
+            url={VEHICLE_URL}
+            wheelUrl={WHEEL_URL}
+            position={V3(-20, 1, 10)}
+          />
+
+          <Rideable
+            objectkey="4"
             objectType="airplane"
-            isRiderOn={true}
+            enableRiding={true}
             url={AIRPLANE_URL}
             offset={V3(0, 1.5, 0)}
-            position={V3(15, 1, 15)}
-            rotation={euler().set(0, 0, 0)}
+            position={V3(20, 1, -10)}
+          />
+
+          <Rideable
+            objectkey="5"
+            objectType="airplane"
+            enableRiding={false}
+            url={AIRPLANE_URL}
+            position={V3(20, 1, -20)}
           />
         </Physics>
       </Canvas>

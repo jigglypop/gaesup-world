@@ -1,10 +1,8 @@
 import { Collider } from "@dimforge/rapier3d-compat";
 import { useFrame } from "@react-three/fiber";
-import { CuboidCollider, RapierRigidBody, quat } from "@react-three/rapier";
+import { RapierRigidBody, quat } from "@react-three/rapier";
 import { useMemo, useRef } from "react";
-import { InnerGroupRef } from "../common/InnerGroupRef";
-import { OuterGroupRef } from "../common/OuterGroupRef";
-import { RigidBodyRef } from "../common/RigidbodyRef";
+import { AirplaneInnerRef } from "../../inner/airplane";
 import { passiveAirplanePropsType } from "./type";
 
 export function PassiveAirplane(props: passiveAirplanePropsType) {
@@ -20,16 +18,14 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
     colliderRef,
   };
 
-  const { position, euler, currentAnimation, airplaneUrl, airplaneSize } =
-    useMemo(() => {
-      return {
-        position: props.position,
-        euler: props.euler,
-        currentAnimation: props.currentAnimation,
-        airplaneUrl: props.airplaneUrl,
-        airplaneSize: props.airplaneSize,
-      };
-    }, [props]);
+  const { position, euler, currentAnimation, urls } = useMemo(() => {
+    return {
+      position: props.position,
+      euler: props.euler,
+      currentAnimation: props.currentAnimation,
+      urls: props.urls,
+    };
+  }, [props]);
 
   useFrame(() => {
     if (innerGroupRef && innerGroupRef.current) {
@@ -52,27 +48,15 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
   });
 
   return (
-    <OuterGroupRef ref={refs.outerGroupRef}>
+    <AirplaneInnerRef
+      refs={refs}
+      urls={urls}
+      position={position}
+      rotation={euler}
+      userData={{ intangible: true }}
+      onCollisionEnter={props.onCollisionEnter}
+    >
       {props.children}
-      {airplaneUrl && (
-        <RigidBodyRef
-          ref={refs.rigidBodyRef}
-          position={position}
-          rotation={euler}
-          onCollisionEnter={props.onCollisionEnter}
-        >
-          <InnerGroupRef
-            currentAnimation={currentAnimation}
-            ref={refs.innerGroupRef}
-            url={airplaneUrl}
-          />
-          <CuboidCollider
-            ref={colliderRef}
-            args={[airplaneSize.x / 2, airplaneSize.y / 2, airplaneSize.z / 2]}
-            position={[0, airplaneSize.y / 2, 0]}
-          />
-        </RigidBodyRef>
-      )}
-    </OuterGroupRef>
+    </AirplaneInnerRef>
   );
 }

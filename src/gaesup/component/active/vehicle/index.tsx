@@ -1,27 +1,32 @@
-import { useContext } from "react";
-import { controllerInnerType, refsType } from "../../../controller/type";
-import { GaesupWorldContext } from "../../../world/context";
-import { WrapperRef } from "../common/WrapperRef";
-import { VehicleCollider } from "./collider";
-import { Wheels } from "./wheels";
+import { ReactNode } from "react";
+import { refsType } from "../../../controller/type";
+import { urlsType } from "../../../world/context/type";
+import { VehicleInnerRef } from "../../inner/vehicle";
 
 export function VehicleRef({
-  props,
+  children,
+  enableRiding,
+  isRiderOn,
+  offset,
   refs,
+  urls,
 }: {
-  props: controllerInnerType;
+  children: ReactNode;
+  enableRiding?: boolean;
+  isRiderOn?: boolean;
+  offset?: THREE.Vector3;
   refs: refsType;
+  urls: urlsType;
 }) {
-  const { url, vehicleGltf } = useContext(GaesupWorldContext);
-
   return (
-    <WrapperRef
-      props={props}
+    <VehicleInnerRef
       refs={refs}
-      gltf={vehicleGltf}
-      outerChildren={url.wheelUrl ? <Wheels props={props} /> : <></>}
+      urls={urls}
+      isRiderOn={isRiderOn}
+      enableRiding={enableRiding}
+      offset={offset}
     >
-      <VehicleCollider />
-    </WrapperRef>
+      {children}
+    </VehicleInnerRef>
   );
 }

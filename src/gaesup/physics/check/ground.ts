@@ -3,17 +3,17 @@ import { calcPropType } from "../type";
 
 export default function checkOnTheGround(prop: calcPropType) {
   const {
-    capsuleColliderRef,
+    colliderRef,
     groundRay,
-    worldContext: { characterCollider: collider, states, activeState },
+    worldContext: { states, activeState },
   } = prop;
 
   groundRay.origin.addVectors(activeState.position, vec3(groundRay.offset));
-  if (!groundRay.hit || !groundRay.rayCast || !capsuleColliderRef.current) {
+  if (!groundRay.hit || !groundRay.rayCast || !colliderRef.current) {
     states.isOnTheGround = false;
     return;
   }
-  if (groundRay.hit.toi < collider.radius + 0.4) {
+  if (groundRay.hit.toi < groundRay.length + 0.5) {
     states.isOnTheGround = true;
   } else {
     states.isOnTheGround = false;

@@ -1,12 +1,12 @@
 import { CollisionEnterPayload } from "@react-three/rapier";
+import { urlsType } from "../../../world/context/type";
 
 export type passiveAirplanePropsType = {
   position: THREE.Vector3;
   euler: THREE.Euler;
-  airplaneSize: THREE.Vector3;
-  airplaneUrl: string;
+  urls: urlsType;
   currentAnimation: string;
+  offset?: THREE.Vector3;
   children?: React.ReactNode;
-  gravity?: number;
   onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
 };

@@ -7,7 +7,7 @@ import {
 } from "../world/context/index.js";
 
 export function GaeSupProps({
-  type,
+  type = "normal",
   text,
   position,
   children,

@@ -9,11 +9,9 @@
 
 ## introduction
 
-* Gaesup World is a library that uses `@react/three-fiber`,` @react/three-drei`, and `react-three-rapier` to provide control tools for characters, airplanes, cars, and more in a web 3D environment. 
+- Gaesup World is a library that uses `@react/three-fiber`,` @react/three-drei`, and `react-three-rapier` to provide control tools for characters, airplanes, cars, and more in a web 3D environment.
 
-* This controller is designed to easily manage character movement, animation, and interaction. It allows for easy manipulation of characters or vehicles in a virtual world, and is also equipped with utilities like minimaps and joysticks.
-
-
+- This controller is designed to easily manage character movement, animation, and interaction. It allows for easy manipulation of characters or vehicles in a virtual world, and is also equipped with utilities like minimaps and joysticks.
 
 ## How to start
 
@@ -42,16 +40,12 @@ export default function App() {
 
 ```
 
-
-
 ### Features
 
 - 3D character control based on React Three Fiber.
 - Simple API for controlling character movement and animation.
 - Extensible structure for various customizations.
 - Lightweight library for fast loading and performance optimization.
-
-
 
 ## Installation
 
@@ -65,10 +59,6 @@ Or
 yarn add @react-three/fiber @react-three/drei three @types/three @react-three/rapier gaesup-world
 ```
 
-
-
-
-
 ## 4) How to Contribute
 
 If you would like to contribute to this project, please follow these steps:
@@ -79,15 +69,11 @@ If you would like to contribute to this project, please follow these steps:
 4. Push to the branch (git push origin dev).
 5. Create a Pull Request.
 
-
-
 ## 5) License
 
 This project is distributed under the MIT License.
 
-
-
-* ## 1. [PlayerType](##PlayerType)
+- ## 1. [PlayerType](##PlayerType)
 
   - [Character](#Character)
 
@@ -95,13 +81,13 @@ This project is distributed under the MIT License.
 
   - [Airplane](#Airplane)
 
-- ## 2. [Animation](Animation)
+* ## 2. [Animation](Animation)
 
-- ## 3. [Rideable](Rideable)
+* ## 3. [Rideable](Rideable)
 
-- ## 4. [Passive](Passive)
+* ## 4. [Passive](Passive)
 
-- ## 5. [Tools](#Tools)
+* ## 5. [Tools](#Tools)
 
   - [JoyStick](#1JoyStick)
 
@@ -127,22 +113,18 @@ This is the character control in Gaesup World.
 
 - Possible Camera Types
 
-| Name   | Info                                                         |
-| ------ | ------------------------------------------------------------ |
+| Name   | Info                                                                                          |
+| ------ | --------------------------------------------------------------------------------------------- |
 | Normal | Positioned parallel to the Z-axis from the character's location and not affected by rotation. |
-| Orbit  | Moves with the character and rotates according to the character's direction. |
+| Orbit  | Moves with the character and rotates according to the character's direction.                  |
 
 - Controller Tools
 
-| Name     | Condition                   | Info                                                         |
-| -------- | --------------------------- | ------------------------------------------------------------ |
+| Name     | Condition                   | Info                                                                    |
+| -------- | --------------------------- | ----------------------------------------------------------------------- |
 | Keyboard | desktop                     | A standard keyboard tool. You can see where on the keyboard is clicked. |
-| Joystick | mobile (not normal control) | A joystick implementation tool. It works on mobile devices.  |
-| Gameboy  | mobile                      | A Gameboy implementation tool. It works on mobile devices.   |
-
-
-
-
+| Joystick | mobile (not normal control) | A joystick implementation tool. It works on mobile devices.             |
+| Gameboy  | mobile                      | A Gameboy implementation tool. It works on mobile devices.              |
 
 ## Vehicle
 
@@ -156,13 +138,11 @@ This is the character control in Gaesup World.
 
 - Controller Tools
 
-| Name     | Condition | Info                                                         |
-| -------- | --------- | ------------------------------------------------------------ |
+| Name     | Condition | Info                                                                    |
+| -------- | --------- | ----------------------------------------------------------------------- |
 | Keyboard | desktop   | A standard keyboard tool. You can see where on the keyboard is clicked. |
-| Joystick | mobile    | A joystick implementation tool. It works on mobile devices.  |
-| Gameboy  | mobile    | A Gameboy implementation tool. It works on mobile devices.   |
-
-
+| Joystick | mobile    | A joystick implementation tool. It works on mobile devices.             |
+| Gameboy  | mobile    | A Gameboy implementation tool. It works on mobile devices.              |
 
 ## Airplane
 
@@ -176,13 +156,11 @@ the airplane control in Gaesup World. Characters can board the airplane.
 
 - Controller Tools
 
-| Name     | Condition | Info                                                         |
-| -------- | --------- | ------------------------------------------------------------ |
+| Name     | Condition | Info                                                                    |
+| -------- | --------- | ----------------------------------------------------------------------- |
 | Keyboard | desktop   | A standard keyboard tool. You can see where on the keyboard is clicked. |
-| Joystick | mobile    | A joystick implementation tool. It works on mobile devices.  |
-| Gameboy  | mobile    | A Gameboy implementation tool. It works on mobile devices.   |
-
-
+| Joystick | mobile    | A joystick implementation tool. It works on mobile devices.             |
+| Gameboy  | mobile    | A Gameboy implementation tool. It works on mobile devices.              |
 
 # Animation
 
@@ -256,8 +234,6 @@ export default function App() {
 }
 ```
 
-
-
 ### 2) Precautions
 
 - The `objectkey` must be unique.
@@ -287,17 +263,15 @@ export default function App() {
 
 ### 5) Advantages
 
-* **Modularity and Reusability:** The Rideable component is modular and can be easily integrated with other components, increasing code reusability and facilitating maintenance.
+- **Modularity and Reusability:** The Rideable component is modular and can be easily integrated with other components, increasing code reusability and facilitating maintenance.
 
-* **Rapid Development:** By using the `useRideable` hook, which manages the physics engine and rideable object management, developers can quickly implement and render rideable objects, reducing development time.
+- **Rapid Development:** By using the `useRideable` hook, which manages the physics engine and rideable object management, developers can quickly implement and render rideable objects, reducing development time.
 
-* **Real-time Interaction:** Leveraging the Rapier physics engine allows for real-time handling of rideable object movements and collision checks, providing a high level of interaction in games or simulations.
+- **Real-time Interaction:** Leveraging the Rapier physics engine allows for real-time handling of rideable object movements and collision checks, providing a high level of interaction in games or simulations.
 
-* **Flexible Customization:** You can customize the appearance and behavior of each rideable object using properties, making it suitable for various game or simulation environments.
+- **Flexible Customization:** You can customize the appearance and behavior of each rideable object using properties, making it suitable for various game or simulation environments.
 
-
-
-# Passive 
+# Passive
 
 ---
 
@@ -306,8 +280,6 @@ under construct
 # GaeSupProps
 
 ---
-
-
 
 The `GaeSupProps` component is a React component used in a 3D environment. It is designed to represent various types of props or objects within the scene. This component can be used to create props with different types, text labels, and positions for visualization in a 3D space.
 
@@ -347,8 +319,6 @@ function MyScene() {
 # Tools
 
 - Various tools that assist with character control in GaesupWorld
-
-  
 
 ## GameBoy
 
@@ -396,10 +366,6 @@ To use the `GameBoy` component:
 2. Customize the appearance by defining styles in the `gameboyStyle` and `gameboyButtonStyle` properties.
 3. The component renders buttons based on the `GameBoyDirections` array.
 
-
-
-
-
 ## GamePad
 
 - The GamePad component provides a customizable controller interface that supports various controller modes, such as joysticks and GameBoys, making it versatile for different input scenarios.
@@ -444,13 +410,11 @@ const App = () => {
 2. Customize the appearance using the `gamePadStyle` and `gamePadButtonStyle` properties.
 3. The component dynamically renders buttons based on the `control` mode.
 
-
-
 ## JoyStick
 
 ---
 
-* The JoyStick component provides a virtual joystick interface, primarily intended for mobile environments. This component allows you to simulate joystick-like input on mobile devices. Additionally, you can prevent position jitter, which can occur on mobile devices, by using the `scrollBlock` option in the `GaesupWorld` component.
+- The JoyStick component provides a virtual joystick interface, primarily intended for mobile environments. This component allows you to simulate joystick-like input on mobile devices. Additionally, you can prevent position jitter, which can occur on mobile devices, by using the `scrollBlock` option in the `GaesupWorld` component.
 
 ### (1) props
 
@@ -489,8 +453,6 @@ const MyComponent = () => {
 - **Customization:** You can customize the style of the JoyStick component by adjusting the styles of the joystick and the joystick ball using the `joyStickBallStyle` and `joyStickStyle` properties.
 - **Responsive and Interactive:** It supports various input devices and responds to both mouse and mobile touch events for controlling movement.
 
-
-
 ## 4) JumpPortal
 
 - The `JumpPortal` component represents a clickable portal that allows users to teleport to a specified location within a 3D world. This component can be used to create interactive teleportation points in your application.
@@ -526,23 +488,19 @@ const App = () => {
 };
 ```
 
-
-
 ## KeyBoardToolTip
 
 ---
 
+- The KeyBoardToolTip component is designed to visually represent a keyboard controller interface, providing a visual representation of each key and its associated action.
 
-
-* The KeyBoardToolTip component is designed to visually represent a keyboard controller interface, providing a visual representation of each key and its associated action.
-
-### Key Features:
+### Key Features
 
 - **Visualizing Keyboard Keys:** Visualizes all keyboard keys in an array format.
 - **State Animation:** Reflects the currently active keys and their associated actions by displaying them differently to provide user feedback.
 - **Custom Styling:** Provides various styling properties for customizing key caps' appearance.
 
-### How to Use:
+### How to Use
 
 1. Include the `KeyBoardToolTip` component within the `GaesupWorld` component.
 2. Define the `control` mode as "keyboard" in the `mode` property.
@@ -571,13 +529,9 @@ const App = () => {
 };
 ```
 
-
-
 ## MiniMap
 
 ---
-
-
 
 - The MiniMap component is used to display a small map of the user's location and the surrounding environment within a 3D world.
 
@@ -626,13 +580,9 @@ const App = () => {
 2. Customize the appearance using the `minimapStyle`, `innerStyle`, `textStyle`, `objectStyle`, `avatarStyle`, `scaleStyle`, `directionStyle`, and `plusMinusStyle` properties as needed.
 3. The component updates the MiniMap based on the user's current position and direction.
 
-
-
 ## ZoomButton
 
 ---
-
-
 
 - The ZoomButton component is used to move the camera to a specific location and control the camera's zoom, primarily used for zooming to a target.
 
@@ -668,4 +618,3 @@ const App = () => {
 1. Place the `ZoomButton` component in your component tree at the desired location.
 2. Define the `position` prop to specify the location the camera should move to.
 3. When the button is clicked, the camera will move to the specified position.
-

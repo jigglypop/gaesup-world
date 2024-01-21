@@ -14,7 +14,7 @@ export function KeyBoardToolTip(props: keyBoardToolTipType) {
     keyCapStyle,
     label,
   } = props;
-  const { animations, mode } = worldContext;
+  const { mode, control } = worldContext;
 
   const keyArray = Object.entries(KeyBoardAll).reduce<keyArrayItemType[]>(
     (keyArray, cur) => {
@@ -51,7 +51,7 @@ export function KeyBoardToolTip(props: keyBoardToolTipType) {
             let isSelect = "none";
 
             if (codeToActionObj[item.code]) {
-              if (animations.keyControl[codeToActionObj[item.code]]) {
+              if (control[codeToActionObj[item.code]]) {
                 isSelect = "select";
                 background = `linear-gradient( 68.4deg,  rgba(99,251,215,1) -0.4%, rgba(5,222,250,1) 100.2% )`;
                 boxShadow = `0 0 10px rgba(99,251,215,1)`;
@@ -64,7 +64,7 @@ export function KeyBoardToolTip(props: keyBoardToolTipType) {
             let color = "white";
             if (
               codeToActionObj[item.code] &&
-              animations.keyControl[codeToActionObj[item.code]]
+              control[codeToActionObj[item.code]]
             ) {
               color = "black";
             }
