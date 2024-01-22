@@ -1,9 +1,18 @@
 import { Collider } from "@dimforge/rapier3d-compat";
-import { RapierRigidBody } from "@react-three/rapier";
-import { useMemo, useRef } from "react";
+import { CollisionEnterPayload, RapierRigidBody } from "@react-three/rapier";
+import { useRef } from "react";
+import { urlsType } from "../../../world/context/type";
 import { VehicleInnerRef } from "../../inner/vehicle";
-import { passiveVehiclePropsType } from "./type";
 
+export type passiveVehiclePropsType = {
+  position: THREE.Vector3;
+  euler: THREE.Euler;
+  urls: urlsType;
+  currentAnimation: string;
+  children?: React.ReactNode;
+  offset?: THREE.Vector3;
+  onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
+};
 export function PassiveVehicle(props: passiveVehiclePropsType) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const outerGroupRef = useRef<THREE.Group>(null);
@@ -17,27 +26,7 @@ export function PassiveVehicle(props: passiveVehiclePropsType) {
     colliderRef,
   };
 
-  const {
-    position,
-    euler,
-    // vehicleSize,
-    // wheelSize,
-    currentAnimation,
-    urls,
-    // wheelUrl,
-    // vehicleUrl,
-  } = useMemo(() => {
-    return {
-      position: props.position,
-      euler: props.euler,
-      // vehicleSize: props.vehicleSize,
-      // wheelSize: props.wheelSize,
-      currentAnimation: props.currentAnimation,
-      urls: props.urls,
-      // wheelUrl: props.url.wheelUrl,
-      // vehicleUrl: props.url.vehicleUrl,
-    };
-  }, [props]);
+  const { position, euler, currentAnimation, urls } = props;
 
   return (
     <VehicleInnerRef
@@ -47,6 +36,7 @@ export function PassiveVehicle(props: passiveVehiclePropsType) {
       rotation={euler}
       userData={{ intangible: true }}
       onCollisionEnter={props.onCollisionEnter}
+      currentAnimation={currentAnimation}
     >
       {props.children}
     </VehicleInnerRef>

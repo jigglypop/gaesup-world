@@ -6,8 +6,16 @@ import { useEffect, useMemo, useRef } from "react";
 import playActions from "../../../animation/actions";
 import { refsType } from "../../../controller/type";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
+import { urlsType } from "../../../world/context/type";
 import { CharacterInnerRef } from "../../inner/character";
-import { passiveCharacterPropsType } from "./type";
+
+export type passiveCharacterPropsType = {
+  position: THREE.Vector3;
+  euler: THREE.Euler;
+  urls: urlsType;
+  currentAnimation: string;
+  children?: React.ReactNode;
+};
 
 export function PassiveCharacter(props: passiveCharacterPropsType) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
@@ -26,7 +34,7 @@ export function PassiveCharacter(props: passiveCharacterPropsType) {
       position: props.position,
       euler: props.euler,
       currentAnimation: props.currentAnimation,
-      characterUrl: props.url.characterUrl,
+      characterUrl: props.urls.characterUrl,
     };
   }, [props]);
 
@@ -45,7 +53,7 @@ export function PassiveCharacter(props: passiveCharacterPropsType) {
     }
   });
 
-  const { gltf } = useGltfAndSize({ url: props.url.characterUrl });
+  const { gltf } = useGltfAndSize({ url: props.urls.characterUrl });
   const animationResult = useAnimations(gltf.animations);
   const { animationRef } = playActions({
     type: "character",
@@ -58,7 +66,7 @@ export function PassiveCharacter(props: passiveCharacterPropsType) {
       animationRef={animationRef}
       position={position}
       refs={refs}
-      urls={props.url}
+      urls={props.urls}
     >
       {props.children}
     </CharacterInnerRef>

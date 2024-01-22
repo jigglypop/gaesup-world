@@ -6,7 +6,7 @@ import {
   cameraOptionType,
   gaesupWorldContextType,
   modeType,
-  urlType,
+  urlsType,
 } from "./context/type";
 
 export type gaesupWorldInitType = {
@@ -17,7 +17,7 @@ export type gaesupWorldInitType = {
 export type gaesupWorldPropsType = {
   children: ReactNode;
   startPosition?: THREE.Vector3;
-  url?: urlType;
+  urls?: urlsType;
   mode?: modeType;
   debug?: boolean;
   keyBoardMap?: keyboardMapType;

@@ -16,23 +16,13 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     dir: vec3(),
     direction: vec3(),
   },
-  // characterCollider: {
-  //   halfHeight: 0.35,
-  //   height: 0.7,
-  //   radius: 0.3,
-  //   diameter: 0.6,
-  //   riderOffsetX: 0,
-  //   riderOffsetY: 0,
-  //   riderOffsetZ: 0,
-  // },
   mode: {},
-  url: {
+  urls: {
     characterUrl: null,
     vehicleUrl: null,
     airplaneUrl: null,
     wheelUrl: null,
   },
-
   states: {
     rideableId: null,
     isMoving: false,
@@ -108,14 +98,8 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
   ],
   cameraOption: {
     offset: V3(-10, -10, -10),
-    initDistance: -5,
     maxDistance: -7,
-    minDistance: -0.7,
-    initDir: 0,
-    collisionOff: 0.7,
     distance: -1,
-    camFollow: 11,
-    XZDistance: 20,
     XDistance: 20,
     YDistance: 10,
     ZDistance: 20,

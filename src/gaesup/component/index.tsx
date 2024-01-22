@@ -3,7 +3,7 @@ import { useContext } from "react";
 import { controllerInnerType, refsType } from "../controller/type";
 import calculation from "../physics";
 import { GaesupWorldContext } from "../world/context";
-import { urlType } from "../world/context/type";
+import { urlsType } from "../world/context/type";
 import { AirplaneRef } from "./active/airplane";
 import { CharacterRef } from "./active/character";
 import { VehicleRef } from "./active/vehicle";
@@ -15,7 +15,7 @@ export function GaesupComponent({
 }: {
   props: controllerInnerType;
   refs: refsType;
-  urls: urlType;
+  urls: urlsType;
 }) {
   const { mode, states, rideable } = useContext(GaesupWorldContext);
   const { enableRiding, isRiderOn, rideableId } = states;
@@ -27,6 +27,7 @@ export function GaesupComponent({
       )}
       {mode.type === "vehicle" && (
         <VehicleRef
+          groundRay={props.groundRay}
           refs={refs}
           urls={urls}
           enableRiding={enableRiding}

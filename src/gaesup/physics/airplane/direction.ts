@@ -5,13 +5,15 @@ import { calcPropType } from "../type";
 export default function direction(prop: calcPropType) {
   const {
     innerGroupRef,
+    rigidBodyRef,
     worldContext: { joystick, activeState, control, mode },
     controllerContext: { airplane },
     matchSizes,
   } = prop;
   const { forward, backward, leftward, rightward, shift, space } = control;
   const { angleDelta, maxAngle, accelRatio } = airplane;
-  console.log(matchSizes);
+  if (!matchSizes || !matchSizes["airplaneUrl"]) return null;
+
   let boost = 0;
   if (mode.controller === "joystick") {
     boost = space

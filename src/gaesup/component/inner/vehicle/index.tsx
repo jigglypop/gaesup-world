@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 import { InnerGroupRef } from "../common/InnerGroupRef";
 import { OuterGroupRef } from "../common/OuterGroupRef";
@@ -19,6 +18,7 @@ export function VehicleInnerRef({
   position,
   rotation,
   userData,
+  currentAnimation,
   onCollisionEnter,
 }: refPropsType) {
   const { vehicleUrl, wheelUrl } = urls;
@@ -26,12 +26,6 @@ export function VehicleInnerRef({
   const { size: vehicleSize } = useGltfAndSize({
     url: urls.vehicleUrl,
   });
-
-  useEffect(() => {
-    if (rigidBodyRef.current) {
-      rigidBodyRef.current.lockRotations(true, true);
-    }
-  }, []);
 
   return (
     <OuterGroupRef ref={outerGroupRef}>
@@ -56,7 +50,7 @@ export function VehicleInnerRef({
           <InnerGroupRef
             type={"vehicle"}
             url={vehicleUrl}
-            currentAnimation={"idle"}
+            currentAnimation={currentAnimation}
             ref={innerGroupRef}
           />
         </RigidBodyRef>

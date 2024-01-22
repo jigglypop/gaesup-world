@@ -4,7 +4,7 @@ import { CapsuleCollider } from "@react-three/rapier";
 import { ReactNode, Ref } from "react";
 import { Object3D, Object3DEventMap } from "three";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
-import { urlType } from "../../../world/context/type";
+import { urlsType } from "../../../world/context/type";
 import { InnerGroupRef } from "../common/InnerGroupRef";
 import { OuterGroupRef } from "../common/OuterGroupRef";
 import { RigidBodyRef } from "../common/RigidbodyRef";
@@ -37,12 +37,11 @@ export function CharacterInnerRef({
   urls,
   position,
   euler,
-  animationRef,
   currentAnimation,
 }: {
   children: ReactNode;
   refs: Partial<refsType>;
-  urls: urlType;
+  urls: urlsType;
   position?: THREE.Vector3;
   euler?: THREE.Euler;
   animationRef?: Ref<Object3D<Object3DEventMap>>;

@@ -3,7 +3,7 @@ import playActions, { subscribeActions } from "../../../animation/actions";
 import initCallback from "../../../controller/initialize/callback";
 import { controllerInnerType, refsType } from "../../../controller/type";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
-import { urlType } from "../../../world/context/type";
+import { urlsType } from "../../../world/context/type";
 import {
   CharacterInnerRef,
   calcCharacterColliderProps,
@@ -17,7 +17,7 @@ export function CharacterRef({
 }: {
   props: controllerInnerType;
   refs: refsType;
-  urls: urlType;
+  urls: urlsType;
 }) {
   initCallback(props, "character");
   const { colliderRef } = refs;

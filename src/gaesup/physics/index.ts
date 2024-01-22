@@ -22,7 +22,6 @@ export default function calculation(prop: controllerInnerType) {
   const dispatch = useContext(GaesupWorldDispatchContext);
   const { mode, activeState, block } = worldContext;
   const { getSizesByUrls } = useGaesupGltf();
-  // console.log(getSizesByUrls(controllerContext.urls));
   useEffect(() => {
     const { rigidBodyRef, innerGroupRef } = prop;
     if (rigidBodyRef.current && innerGroupRef.current) {

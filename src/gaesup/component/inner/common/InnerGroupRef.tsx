@@ -42,7 +42,6 @@ export const InnerGroupRef = forwardRef(
           userData={{ intangible: true }}
         >
           {children}
-          {/* {mode.type !== "character" && states.isRiderOn && <RiderGroup />} */}
           {objectNode && animationRef && (
             <primitive
               object={objectNode}

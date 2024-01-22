@@ -5,6 +5,7 @@ import {
   GaesupWorldDispatchContext,
 } from "../../world/context";
 import { rideableType } from "../../world/context/type";
+import { useGaesupGltf } from "../useGaesupGltf";
 
 /**
  * Default rideable object properties.
@@ -34,14 +35,16 @@ export function useRideable(): {
   landing: (objectkey: string) => void;
 } {
   const worldContext = useContext(GaesupWorldContext);
+  const { urls, states, rideable, mode } = worldContext;
   const dispatch = useContext(GaesupWorldDispatchContext);
+  const { getSizesByUrls } = useGaesupGltf();
 
   /**
    * Initialize a rideable object with the provided properties.
    * @param {rideableType} props - The properties of the rideable object to initialize.
    */
   const initRideable = (props: rideableType) => {
-    worldContext.rideable[props.objectkey] = {
+    rideable[props.objectkey] = {
       ...rideableDefault,
       ...props,
     };
@@ -52,7 +55,7 @@ export function useRideable(): {
    * @param {rideableType} props - The properties to set for the rideable object.
    */
   const setRideable = (props: rideableType) => {
-    worldContext.rideable[props.objectkey] = props;
+    rideable[props.objectkey] = props;
   };
 
   /**
@@ -61,7 +64,7 @@ export function useRideable(): {
    * @returns {rideableType} The rideable object with the specified key.
    */
   const getRideable = (objectkey: string): rideableType => {
-    return worldContext.rideable[objectkey];
+    return rideable[objectkey];
   };
 
   /**
@@ -69,20 +72,31 @@ export function useRideable(): {
    * @param {string} objectkey - The key of the rideable object to land.
    */
   const landing = (objectkey: string) => {
-    const { activeState } = worldContext;
-    worldContext.states.enableRiding = false;
-    worldContext.states.isRiderOn = false;
-    worldContext.states.rideableId = null;
-    worldContext.rideable[objectkey].visible = true;
-    worldContext.rideable[objectkey].position.copy(
-      activeState.position.clone()
-    );
-    worldContext.rideable[objectkey].rotation.copy(activeState.euler.clone());
+    const { activeState, refs } = worldContext;
+    states.enableRiding = false;
+    states.isRiderOn = false;
+    states.rideableId = null;
+    const modeType = rideable[objectkey].objectType;
+    const { vehicleUrl, airplaneUrl, characterUrl } = getSizesByUrls(urls);
+    const size = modeType === "vehicle" ? vehicleUrl : airplaneUrl;
+    const mySize = characterUrl;
+    rideable[objectkey].visible = true;
+    rideable[objectkey].position.copy(activeState.position.clone());
+    if (refs && refs.rigidBodyRef) {
+      refs.rigidBodyRef.current.setTranslation(
+        activeState.position
+          .clone()
+          .add(size.clone().add(mySize.clone()).addScalar(1)),
+        false
+      );
+    }
+
     dispatch({
       type: "update",
       payload: {
-        rideable: { ...worldContext.rideable },
-        states: { ...worldContext.states },
+        rideable: { ...rideable },
+        states: { ...states },
+        activeState: { ...activeState },
       },
     });
   };
@@ -93,16 +107,16 @@ export function useRideable(): {
    */
   const setUrl = async (props: rideableType) => {
     if (props.objectType === "vehicle") {
-      worldContext.url.vehicleUrl = props.url;
-      worldContext.url.wheelUrl = props.wheelUrl || null;
+      urls.vehicleUrl = props.url;
+      urls.wheelUrl = props.wheelUrl || null;
     } else if (props.objectType === "airplane") {
-      worldContext.url.airplaneUrl = props.url;
+      urls.airplaneUrl = props.url;
     }
     dispatch({
       type: "update",
       payload: {
-        url: {
-          ...worldContext.url,
+        urls: {
+          ...urls,
         },
       },
     });
@@ -113,16 +127,16 @@ export function useRideable(): {
    * @param {rideableType} props - The properties of the rideable object to set mode and riding state.
    */
   const setModeAndRiding = async (props: rideableType) => {
-    worldContext.mode.type = props.objectType;
-    worldContext.states.enableRiding = props.enableRiding;
-    worldContext.states.isRiderOn = true;
-    worldContext.states.rideableId = props.objectkey;
-    worldContext.rideable[props.objectkey].visible = false;
+    mode.type = props.objectType;
+    states.enableRiding = props.enableRiding;
+    states.isRiderOn = true;
+    states.rideableId = props.objectkey;
+    rideable[props.objectkey].visible = false;
     dispatch({
       type: "update",
       payload: {
-        mode: { ...worldContext.mode },
-        states: { ...worldContext.states },
+        mode: { ...mode },
+        states: { ...states },
       },
     });
   };

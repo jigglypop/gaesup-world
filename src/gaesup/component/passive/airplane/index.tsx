@@ -1,9 +1,23 @@
 import { Collider } from "@dimforge/rapier3d-compat";
 import { useFrame } from "@react-three/fiber";
-import { RapierRigidBody, quat } from "@react-three/rapier";
+import {
+  CollisionEnterPayload,
+  RapierRigidBody,
+  quat,
+} from "@react-three/rapier";
 import { useMemo, useRef } from "react";
+import { urlsType } from "../../../world/context/type";
 import { AirplaneInnerRef } from "../../inner/airplane";
-import { passiveAirplanePropsType } from "./type";
+
+export type passiveAirplanePropsType = {
+  position: THREE.Vector3;
+  euler: THREE.Euler;
+  urls: urlsType;
+  currentAnimation: string;
+  offset?: THREE.Vector3;
+  children?: React.ReactNode;
+  onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
+};
 
 export function PassiveAirplane(props: passiveAirplanePropsType) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
@@ -55,6 +69,7 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
       rotation={euler}
       userData={{ intangible: true }}
       onCollisionEnter={props.onCollisionEnter}
+      currentAnimation={props.currentAnimation}
     >
       {props.children}
     </AirplaneInnerRef>

@@ -8,13 +8,8 @@ import { dispatchType } from "../../utils/type";
 
 // camera option
 export type gaesupCameraOptionDebugType = {
-  initDistance?: number;
   maxDistance?: number;
-  minDistance?: number;
-  initDir?: number;
   distance?: number;
-  camFollow?: number;
-  XZDistance?: number;
   XDistance?: number;
   YDistance?: number;
   ZDistance?: number;
@@ -22,7 +17,6 @@ export type gaesupCameraOptionDebugType = {
 
 export type cameraOptionType = {
   offset?: THREE.Vector3;
-  collisionOff?: number;
 } & gaesupCameraOptionDebugType;
 
 export type controlType = {
@@ -58,13 +52,6 @@ export type statesType = {
   isRiderOn: boolean;
   isPush: controlType;
   isLanding: boolean;
-};
-
-export type urlType = {
-  characterUrl?: string;
-  vehicleUrl?: string;
-  airplaneUrl?: string;
-  wheelUrl?: string;
 };
 
 export type urlsType = {
@@ -183,7 +170,7 @@ type KeyboardControlsState<T extends string = string> = {
 export type gaesupWorldContextType = {
   activeState: activeStateType;
   mode: modeType;
-  url: urlType;
+  urls: urlsType;
   states: statesType;
   debug: boolean;
   minimap: minimapInnerType;
