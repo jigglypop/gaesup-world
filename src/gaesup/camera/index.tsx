@@ -96,6 +96,7 @@ export default function Camera({
     if (mode.control === "orbit") {
       await Promise.all([
         cameraRef.current.setPosition(position.x, position.y, position.z, true),
+
         camera.rotation.copy(worldContext.activeState.euler),
         cameraRef.current.setLookAt(
           position.x,

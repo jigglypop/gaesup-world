@@ -175,6 +175,37 @@ export default function Info() {
       >
         <button className={style.glassButton}>{mode.control}</button>
       </Icon>
+      <Icon
+        ToolTip={
+          <>
+            <p
+              className={style.pRecipe({
+                selected: !isZoom,
+              })}
+              onClick={() => setZoom(V3(10, 5, 10), false)}
+            >
+              zoom in
+            </p>
+
+            <p
+              className={style.pRecipe({
+                selected: isZoom,
+              })}
+              onClick={() => setZoom(V3(20, 10, 20), true)}
+            >
+              zoom out
+            </p>
+          </>
+        }
+        toolTipStyles={{
+          background: "rgba(0,0,0,0.8)",
+        }}
+      >
+        <button className={style.glassButton}>
+          {isZoom ? "zoom out" : "zoom in"}
+        </button>
+      </Icon>
+
       <JumpPortal position={V3(-200, 10, -100)} text={"track"} />
     </div>
   );

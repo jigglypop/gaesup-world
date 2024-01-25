@@ -37,7 +37,7 @@ export const keyBoardMap = [
 ];
 
 export default function Selected() {
-  const CHARACTER_URL = S3 + "/gaesupyee.glb";
+  const CHARACTER_URL = S3 + "/orri.glb";
   const AIRPLANE_URL = S3 + "/gaebird.glb";
   const VEHICLE_URL = S3 + "/gorani.glb";
   const WHEEL_URL = S3 + "/wheel.glb";
@@ -52,7 +52,7 @@ export default function Selected() {
       mode={{
         type: "character",
         controller: isMobile ? "gameboy" : "keyboard",
-        control: "normal",
+        control: "orbit",
       }}
       debug={false}
       keyBoardMap={keyBoardMap}
