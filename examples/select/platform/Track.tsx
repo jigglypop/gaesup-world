@@ -11,7 +11,7 @@ export default function Track() {
           receiveShadow
           castShadow
           scale={0.6}
-          position={[-100, 5.5, -100]}
+          position={[-100, -0.5, -100]}
         >
           <Gltf src={S3 + "/track.glb"} receiveShadow castShadow />
         </group>

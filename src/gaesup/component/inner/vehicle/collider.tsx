@@ -2,11 +2,11 @@ import { Collider } from "@dimforge/rapier3d-compat";
 import { CuboidCollider } from "@react-three/rapier";
 import { Ref, forwardRef } from "react";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
-import { urlType } from "../../../world/context/type";
+import { urlsType } from "../../../world/context/type";
 
 export const VehicleWheelCollider = forwardRef(
   (
-    { urls, vehicleSize }: { urls: urlType; vehicleSize: THREE.Vector3 },
+    { urls, vehicleSize }: { urls: urlsType; vehicleSize: THREE.Vector3 },
     ref: Ref<Collider>
   ) => {
     const { size: wheelSize } = useGltfAndSize({

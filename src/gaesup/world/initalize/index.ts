@@ -15,7 +15,7 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
       props.cameraOption || {}
     ),
     mode: Object.assign(gaesupWorldDefault.mode, props.mode || {}),
-    url: Object.assign(gaesupWorldDefault.url, props.url || {}),
+    urls: Object.assign(gaesupWorldDefault.urls, props.urls || {}),
     refs: null,
     states: gaesupWorldDefault.states,
     minimap: gaesupWorldDefault.minimap,
@@ -56,7 +56,6 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
   }, []);
 
   const gaesupProps = useMemo(() => ({ value, dispatch }), [value, dispatch]);
-  // initColider({ value, dispatch });
   initDebug({ value, dispatch });
   return {
     gaesupProps,

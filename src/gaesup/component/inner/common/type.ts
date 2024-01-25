@@ -13,5 +13,6 @@ export type refPropsType = {
   position?: THREE.Vector3;
   rotation?: THREE.Euler;
   userData?: { intangible: boolean };
+  currentAnimation?: string;
   onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
 };

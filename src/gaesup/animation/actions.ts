@@ -135,7 +135,7 @@ export default function playActions({
     return () => {
       action?.fadeOut(0.2);
     };
-  }, [currentAnimation, animationState[type].current, mode.type]);
+  }, [currentAnimation, mode.type]);
 
   useFrame(() => {
     if (!currentAnimation) {

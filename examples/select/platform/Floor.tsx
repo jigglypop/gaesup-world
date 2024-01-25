@@ -1,6 +1,6 @@
 "use client";
 
-import { Grid, MeshReflectorMaterial } from "@react-three/drei";
+import { Grid } from "@react-three/drei";
 import { RigidBody } from "@react-three/rapier";
 import { GaeSupProps } from "../../../src";
 
@@ -29,7 +29,8 @@ export default function Floor() {
           rotation={[-Math.PI / 2, 0, 0]}
         >
           <planeGeometry args={[1000, 1000]} />
-          <MeshReflectorMaterial
+          <meshStandardMaterial color="#b963ff" />
+          {/* <MeshReflectorMaterial
             mirror={1}
             blur={[300, 100]}
             resolution={2048}
@@ -39,7 +40,7 @@ export default function Floor() {
             minDepthThreshold={10}
             maxDepthThreshold={14}
             color="#b963ff"
-          />
+          /> */}
         </mesh>
       </RigidBody>
     </GaeSupProps>

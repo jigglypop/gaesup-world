@@ -37,25 +37,24 @@ export const keyBoardMap = [
 ];
 
 export default function Selected() {
-  const CHARACTER_URL = S3 + "/gaesupyee.glb";
-  const AIRPLANE_URL = S3 + "/gaesae.glb";
-  const VEHICLE_URL = S3 + "/kart.glb";
+  const CHARACTER_URL = S3 + "/orri.glb";
+  const AIRPLANE_URL = S3 + "/gaebird.glb";
+  const VEHICLE_URL = S3 + "/gorani.glb";
   const WHEEL_URL = S3 + "/wheel.glb";
 
   return (
     <GaesupWorld
-      url={{
+      urls={{
         characterUrl: CHARACTER_URL,
         vehicleUrl: VEHICLE_URL,
-        wheelUrl: WHEEL_URL,
         airplaneUrl: AIRPLANE_URL,
       }}
       mode={{
         type: "character",
         controller: isMobile ? "gameboy" : "keyboard",
-        control: "normal",
+        control: "orbit",
       }}
-      debug={true}
+      debug={false}
       keyBoardMap={keyBoardMap}
     >
       <Canvas
@@ -78,12 +77,24 @@ export default function Selected() {
           shadow-camera-bottom={-50}
           shadow-camera-left={-50}
         />
-        <Physics debug>
+        <directionalLight
+          castShadow
+          shadow-normalBias={0.06}
+          position={[-200, 30, -100]}
+          intensity={0.7}
+          shadow-mapSize={[5000, 5000]}
+          shadow-camera-near={1}
+          shadow-camera-far={50}
+          shadow-camera-top={50}
+          shadow-camera-right={50}
+          shadow-camera-bottom={-50}
+          shadow-camera-left={-50}
+        />
+        <Physics>
           <GaesupController
             urls={{
               characterUrl: CHARACTER_URL,
               vehicleUrl: VEHICLE_URL,
-              wheelUrl: WHEEL_URL,
               airplaneUrl: AIRPLANE_URL,
             }}
             onAnimate={({ control, subscribe }) => {
@@ -98,24 +109,30 @@ export default function Selected() {
           <Stair />
           <Track />
           <Rideable
-            objectkey="1"
+            objectkey="grani"
             objectType="vehicle"
             enableRiding={true}
             url={VEHICLE_URL}
-            wheelUrl={WHEEL_URL}
-            offset={V3(0, 0.5, 0)}
-            position={V3(-205, 2, -105)}
+            offset={V3(0, 2.1, -0.5)}
+            position={V3(-200, 2, -100)}
           />
 
           <Rideable
-            objectkey="3"
+            objectkey="grani2"
             objectType="vehicle"
-            enableRiding={false}
+            enableRiding={true}
             url={VEHICLE_URL}
-            wheelUrl={WHEEL_URL}
+            offset={V3(0, 2.1, -0.5)}
             position={V3(-20, 1, 10)}
           />
-
+          <Rideable
+            objectkey="grani3"
+            objectType="vehicle"
+            enableRiding={true}
+            url={VEHICLE_URL}
+            offset={V3(0, 2.1, -0.5)}
+            position={V3(-20, 1, 20)}
+          />
           <Rideable
             objectkey="4"
             objectType="airplane"
