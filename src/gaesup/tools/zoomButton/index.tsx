@@ -88,7 +88,9 @@ export function ZoomButton(props: zoomButtonPropsType) {
   return (
     <div
       className="zoomButton"
-      style={props.zoomButtonStyle}
+      style={{
+        ...props.zoomButtonStyle,
+      }}
       onClick={async () => {
         await setZoom(props.position, isZoom);
       }}

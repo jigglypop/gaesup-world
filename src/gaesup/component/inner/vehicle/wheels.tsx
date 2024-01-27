@@ -10,7 +10,7 @@ import { RefObject, createRef, useContext, useRef } from "react";
 import { refsType } from "../../../controller/type";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 import { GaesupWorldContext } from "../../../world/context";
-import { urlType } from "../../../world/context/type";
+import { urlsType } from "../../../world/context/type";
 
 const WheelJoint = ({
   body,
@@ -50,7 +50,7 @@ export function WheelsRef({
 }: {
   vehicleSize: THREE.Vector3;
   refs: Partial<refsType>;
-  urls: urlType;
+  urls: urlsType;
 }) {
   const { wheelUrl } = urls;
   const { rigidBodyRef } = refs;

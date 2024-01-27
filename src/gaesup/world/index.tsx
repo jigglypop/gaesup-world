@@ -1,3 +1,5 @@
+"use client";
+
 import { Leva } from "leva";
 import { GaesupWorldContext, GaesupWorldDispatchContext } from "./context";
 import initGaesupWorld from "./initalize";
