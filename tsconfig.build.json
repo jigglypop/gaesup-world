@@ -18,6 +18,11 @@
     "declaration": true,
     "outDir": "./dist"
   },
-  "include": ["./src/**/*.tsx", "./src/**/*.ts", "./src/**/*.css.ts"],
+  "include": [
+    "./src/**/*.tsx",
+    "./src/**/*.ts",
+    "./src/**/*.css.ts",
+    "./src/**/*.css"
+  ],
   "exclude": ["examples", "node_modules", "public", "index.html"]
 }

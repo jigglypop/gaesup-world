@@ -1,3 +1,5 @@
+"use client";
+
 import { Collider } from "@dimforge/rapier3d-compat";
 import { RapierRigidBody } from "@react-three/rapier";
 import { useContext, useMemo, useReducer, useRef } from "react";

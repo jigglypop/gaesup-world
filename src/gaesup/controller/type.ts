@@ -4,7 +4,7 @@ import { RapierRigidBody, RigidBodyProps } from "@react-three/rapier";
 import { ReactNode, RefObject } from "react";
 import * as THREE from "three";
 import { cameraRayType } from "../camera/type";
-import { keyControlType, urlType } from "../world/context/type";
+import { keyControlType, urlsType } from "../world/context/type";
 import { airplaneType, characterType, vehicleType } from "./context/type";
 import { callbackType } from "./initialize/callback/type";
 
@@ -89,7 +89,7 @@ export type gaesupControllerContextPropType = {
   airplane: airplaneType;
   vehicle: vehicleType;
   character: characterType;
-  urls: urlType;
+  urls: urlsType;
 };
 
 // 나머지 controller 타입

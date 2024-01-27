@@ -5,10 +5,10 @@ import * as THREE from "three";
 import { SkeletonUtils } from "three-stdlib";
 import playActions from "../../../animation/actions";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
-import { urlType } from "../../../world/context/type";
+import { urlsType } from "../../../world/context/type";
 
 export type riderRefType = {
-  urls: urlType;
+  urls: urlsType;
   children?: ReactNode;
   offset?: THREE.Vector3;
   euler?: THREE.Euler;

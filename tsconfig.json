@@ -16,8 +16,19 @@
     "jsx": "react-jsx",
     "declaration": true,
     "outDir": "./dist",
+    "paths": {
+      "@/*": ["./src/gaesup"]
+    },
     "types": ["vite-plugin-svgr/client"] // 이부분 추가
   },
-  "include": ["./src/**/*.tsx", "./src/**/*.ts", "src", "examples"],
+  "include": [
+    "./src/**/*.tsx",
+    "./src/**/*.ts",
+    "./src/**/*.css",
+    "src",
+    "examples",
+    "dist"
+  ],
+
   "references": [{ "path": "./tsconfig.node.json" }]
 }
