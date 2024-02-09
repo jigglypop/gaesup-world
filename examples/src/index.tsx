@@ -108,11 +108,24 @@ export default function MainComponent() {
 
           <Floor />
           <Passive />
-          <Clicker>
-            <InnerHtml position={V3(0, 0.5, 0)}>
-              <FaMapMarkerAlt style={{ color: "#f4ffd4", fontSize: "5rem" }} />
-            </InnerHtml>
-          </Clicker>
+          <Clicker
+            onMarker={
+              <>
+                <InnerHtml position={V3(0, 0.5, 0)}>
+                  <FaMapMarkerAlt
+                    style={{ color: "#f4ffd4", fontSize: "5rem" }}
+                  />
+                </InnerHtml>
+              </>
+            }
+            runMarker={
+              <InnerHtml position={V3(0, 0.5, 0)}>
+                <FaMapMarkerAlt
+                  style={{ color: "#ffac8e", fontSize: "5rem" }}
+                />
+              </InnerHtml>
+            }
+          ></Clicker>
 
           <PassiveCharacter
             position={V3(0, 0, 0)}
