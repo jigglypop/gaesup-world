@@ -149,3 +149,20 @@ export default function playActions({
     currentAnimation: animationState?.[type]?.current,
   };
 }
+
+export const setAnimation = ({
+  currentAnimation,
+  actions,
+  type,
+}: {
+  currentAnimation?: string;
+  actions?: actionsType;
+  type?: "character" | "vehicle" | "airplane";
+}) => {
+  useEffect(() => {
+    const action = actions[currentAnimation]?.reset().fadeIn(0.2).play();
+    return () => {
+      action?.fadeOut(0.2);
+    };
+  }, [currentAnimation, type]);
+};

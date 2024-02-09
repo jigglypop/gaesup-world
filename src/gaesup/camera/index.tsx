@@ -9,7 +9,6 @@ import { cameraPropType, intersectObjectMapType } from "../physics/type";
 import { GaesupWorldContext } from "../world/context";
 import normal from "./control/normal";
 import orbit from "./control/orbit";
-import detector from "./detector";
 
 export default function Camera({
   refs,
@@ -24,9 +23,9 @@ export default function Camera({
 }) {
   const worldContext = useContext(GaesupWorldContext);
   const controllerContext = useContext(GaesupControllerContext);
-  const { mode, cameraOption } = worldContext;
+  const { mode, cameraOption, activeState } = worldContext;
   const { rigidBodyRef, outerGroupRef } = refs;
-  const { scene, camera } = useThree();
+  const { camera } = useThree();
   const cameraRef = useRef<CameraControls>();
 
   const intersectObjectMap: intersectObjectMapType = useMemo(() => ({}), []);
@@ -37,22 +36,22 @@ export default function Camera({
     worldContext,
     intersectObjectMap,
   };
-  const getMeshs = (object: THREE.Object3D) => {
-    if (object.userData && object.userData.intangible) return;
-    if (
-      object instanceof THREE.Mesh &&
-      object.geometry.type !== "InstancedBufferGeometry"
-    ) {
-      intersectObjectMap[object.uuid] = object;
-    }
-    object.children.forEach((child) => {
-      getMeshs(child);
-    });
-  };
-
-  useEffect(() => {
-    scene.children.forEach((child) => getMeshs(child));
-  }, []);
+  //   const getMeshs = (object: THREE.Object3D) => {
+  //     if (object.userData && object.userData.intangible) return;
+  //     if (
+  //       object instanceof THREE.Mesh &&
+  //       object.geometry.type !== "InstancedBufferGeometry"
+  //     ) {
+  //       intersectObjectMap[object.uuid] = object;
+  //     }
+  //     object.children.forEach((child) => {
+  //       getMeshs(child);
+  //     });
+  //   };
+  //
+  //   useEffect(() => {
+  //     scene.children.forEach((child) => getMeshs(child));
+  //   }, []);
 
   const position = useMemo(() => camera.position, []);
   const dir = useMemo(() => vec3(), []);
@@ -83,47 +82,44 @@ export default function Camera({
       } else if (mode.control === "normal") {
         normal(cameraProp);
       }
-      detector(cameraProp);
+      // detector(cameraProp);
     }
   });
+  // zoom
+  useEffect(() => {
+    if (cameraRef.current) {
+      cameraRef.current.zoomTo(worldContext.cameraOption.zoom, true);
+    }
+  }, [worldContext.cameraOption.zoom]);
 
-  //   // moveTo 함수 정의
-  //   worldContext.moveTo = async (
-  //     position: THREE.Vector3,
-  //     target: THREE.Vector3
-  //   ) => {
-  //     camera.position.copy(position);
-  //     if (mode.control === "orbit") {
-  //       await Promise.all([
-  //         cameraRef.current.setPosition(position.x, position.y, position.z, true),
-  //
-  //         camera.rotation.copy(worldContext.activeState.euler),
-  //         cameraRef.current.setLookAt(
-  //           position.x,
-  //           position.y,
-  //           position.z,
-  //           target.x,
-  //           target.y,
-  //           target.z,
-  //           true
-  //         ),
-  //       ]);
-  //     } else if (mode.control === "normal") {
-  //       await Promise.all([
-  //         cameraRef.current.setPosition(0, position.y, position.z, true),
-  //         camera.rotation.copy(worldContext.activeState.euler),
-  //         cameraRef.current.setLookAt(
-  //           0,
-  //           position.y,
-  //           position.z,
-  //           target.x,
-  //           target.y,
-  //           target.z,
-  //           true
-  //         ),
-  //       ]);
-  //     }
-  //   };
+  // lookat
+  useEffect(() => {
+    if (cameraRef.current) {
+      const currentCamera = camera.position.clone();
+      if (cameraOption.focus) {
+        cameraRef.current.setLookAt(
+          currentCamera.x,
+          currentCamera.y,
+          currentCamera.z,
+          cameraOption.target.x,
+          cameraOption.target.y,
+          cameraOption.target.z,
+          true
+        );
+        // 포커스 품
+      } else if (!cameraOption.focus) {
+        cameraRef.current.setLookAt(
+          currentCamera.x,
+          currentCamera.y,
+          currentCamera.z,
+          activeState.position.x,
+          activeState.position.y,
+          activeState.position.z,
+          true
+        );
+      }
+    }
+  }, [cameraOption.focus]);
 
   return <CameraControls ref={cameraRef}></CameraControls>;
 }

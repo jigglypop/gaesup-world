@@ -21,6 +21,7 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
     minimap: gaesupWorldDefault.minimap,
     joystick: gaesupWorldDefault.joystick,
     control: gaesupWorldDefault.control,
+    clicker: gaesupWorldDefault.clicker,
     animationState: gaesupWorldDefault.animationState,
     keyBoardMap: Object.assign(
       gaesupWorldDefault.keyBoardMap,
@@ -57,6 +58,7 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
 
   const gaesupProps = useMemo(() => ({ value, dispatch }), [value, dispatch]);
   initDebug({ value, dispatch });
+
   return {
     gaesupProps,
   };

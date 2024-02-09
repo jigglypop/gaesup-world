@@ -1,10 +1,7 @@
 import { jsx as _jsx } from "react/jsx-runtime";
-import { useAnimations } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { quat } from "@react-three/rapier";
 import { useEffect, useMemo, useRef } from "react";
-import playActions from "../../../animation/actions";
-import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 import { CharacterInnerRef } from "../../inner/character";
 export function PassiveCharacter(props) {
     var rigidBodyRef = useRef(null);
@@ -21,13 +18,14 @@ export function PassiveCharacter(props) {
         return {
             position: props.position,
             euler: props.euler,
-            currentAnimation: props.currentAnimation,
             characterUrl: props.urls.characterUrl,
         };
-    }, [props]), position = _a.position, euler = _a.euler, currentAnimation = _a.currentAnimation;
+    }, [props]), position = _a.position, euler = _a.euler;
     useEffect(function () {
         if (rigidBodyRef || rigidBodyRef.current) {
             rigidBodyRef.current.setEnabledRotations(false, false, false, false);
+            // 중력 제거
+            rigidBodyRef.current.setGravityScale(0, true);
         }
     }, []);
     useFrame(function (_, delta) {
@@ -35,12 +33,5 @@ export function PassiveCharacter(props) {
             innerGroupRef.current.quaternion.rotateTowards(quat().setFromEuler(euler), 10 * delta);
         }
     });
-    var gltf = useGltfAndSize({ url: props.urls.characterUrl }).gltf;
-    var animationResult = useAnimations(gltf.animations);
-    var animationRef = playActions({
-        type: "character",
-        animationResult: animationResult,
-        currentAnimation: currentAnimation,
-    }).animationRef;
-    return (_jsx(CharacterInnerRef, { animationRef: animationRef, position: position, refs: refs, urls: props.urls, children: props.children }));
+    return (_jsx(CharacterInnerRef, { position: position, refs: refs, urls: props.urls, currentAnimation: props.currentAnimation, children: props.children }));
 }
