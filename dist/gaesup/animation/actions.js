@@ -101,3 +101,13 @@ export default function playActions(_a) {
         currentAnimation: (_b = animationState === null || animationState === void 0 ? void 0 : animationState[type]) === null || _b === void 0 ? void 0 : _b.current,
     };
 }
+export var setAnimation = function (_a) {
+    var currentAnimation = _a.currentAnimation, actions = _a.actions, type = _a.type;
+    useEffect(function () {
+        var _a;
+        var action = (_a = actions[currentAnimation]) === null || _a === void 0 ? void 0 : _a.reset().fadeIn(0.2).play();
+        return function () {
+            action === null || action === void 0 ? void 0 : action.fadeOut(0.2);
+        };
+    }, [currentAnimation, type]);
+};

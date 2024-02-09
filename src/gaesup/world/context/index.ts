@@ -46,6 +46,12 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
   minimap: {
     props: {},
   },
+  clicker: {
+    point: V3(0, 0, 0),
+    angle: Math.PI / 2,
+    isOn: false,
+    isRun: false,
+  },
   joystick: {
     joyStickOrigin: {
       x: 0,
@@ -103,6 +109,9 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     XDistance: 20,
     YDistance: 10,
     ZDistance: 20,
+    zoom: 1,
+    target: null,
+    focus: false,
   },
   moveTo: null,
   rideable: {},

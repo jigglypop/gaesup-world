@@ -1,8 +1,10 @@
-import { RootState } from "@react-three/fiber";
-
 import { joyStickInnerType } from "../../tools/joyStick/type";
 import { V3, calcAngleByVector } from "../../utils/vector";
-import { activeStateType, modeType } from "../../world/context/type";
+import {
+  activeStateType,
+  clickerType,
+  modeType,
+} from "../../world/context/type";
 import { calcPropType } from "../type";
 
 export function orbitDirection({
@@ -10,12 +12,12 @@ export function orbitDirection({
   control,
   mode,
   joystick,
-  state,
+  clicker,
 }: {
-  state: RootState;
   activeState: activeStateType;
   mode: modeType;
   joystick: joyStickInnerType;
+  clicker: clickerType;
   control: {
     [key: string]: boolean;
   };
@@ -27,6 +29,9 @@ export function orbitDirection({
   if (mode.controller === "joystick") {
     if (joystick.joyStickOrigin.isCenter) return;
     activeState.euler.y = Math.PI / 2 - joystick.joyStickOrigin.angle;
+    start = 1;
+  } else if (mode.controller === "clicker") {
+    activeState.euler.y = Math.PI / 2 - clicker.angle;
     start = 1;
   } else {
     if (dirX === 0 && dirZ === 0) return;
@@ -45,22 +50,32 @@ export function normalDirection({
   control,
   mode,
   joystick,
-  state,
+  clicker,
 }: {
-  state: RootState;
   activeState: activeStateType;
   mode: modeType;
   joystick: joyStickInnerType;
+  clicker: clickerType;
   control: {
     [key: string]: boolean;
   };
 }) {
   const { forward, backward, leftward, rightward } = control;
-  let start = 0;
   if (mode.controller === "joystick") {
     if (joystick.joyStickOrigin.isCenter) return;
     activeState.euler.y = Math.PI / 2 - joystick.joyStickOrigin.angle;
-    start = 1;
+    activeState.dir.set(
+      -Math.sin(activeState.euler.y),
+      0,
+      -Math.cos(activeState.euler.y)
+    );
+  } else if (mode.controller === "clicker") {
+    activeState.euler.y = Math.PI / 2 - clicker.angle;
+    activeState.dir.set(
+      -Math.sin(activeState.euler.y),
+      0,
+      -Math.cos(activeState.euler.y)
+    );
   } else {
     // 일반 컨트롤
     // right hand rule. north -> east -> south -> west
@@ -77,11 +92,11 @@ export function normalDirection({
 export default function direction(prop: calcPropType) {
   const {
     state,
-    worldContext: { joystick, mode, activeState, control },
+    worldContext: { joystick, mode, activeState, control, clicker },
   } = prop;
   if (mode.control === "normal") {
-    normalDirection({ activeState, control, mode, joystick, state });
+    normalDirection({ activeState, control, mode, joystick, clicker });
   } else if (mode.control === "orbit") {
-    orbitDirection({ activeState, control, mode, joystick, state });
+    orbitDirection({ activeState, control, mode, joystick, clicker });
   }
 }

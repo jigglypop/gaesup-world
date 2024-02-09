@@ -1,11 +1,8 @@
 import { Collider } from "@dimforge/rapier3d-compat";
-import { useAnimations } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { RapierRigidBody, quat } from "@react-three/rapier";
 import { useEffect, useMemo, useRef } from "react";
-import playActions from "../../../animation/actions";
 import { refsType } from "../../../controller/type";
-import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 import { urlsType } from "../../../world/context/type";
 import { CharacterInnerRef } from "../../inner/character";
 
@@ -14,6 +11,7 @@ export type passiveCharacterPropsType = {
   euler: THREE.Euler;
   urls: urlsType;
   currentAnimation: string;
+  gravityScale?: number;
   children?: React.ReactNode;
 };
 
@@ -29,11 +27,10 @@ export function PassiveCharacter(props: passiveCharacterPropsType) {
     colliderRef,
   };
 
-  const { position, euler, currentAnimation } = useMemo(() => {
+  const { position, euler } = useMemo(() => {
     return {
       position: props.position,
       euler: props.euler,
-      currentAnimation: props.currentAnimation,
       characterUrl: props.urls.characterUrl,
     };
   }, [props]);
@@ -53,20 +50,12 @@ export function PassiveCharacter(props: passiveCharacterPropsType) {
     }
   });
 
-  const { gltf } = useGltfAndSize({ url: props.urls.characterUrl });
-  const animationResult = useAnimations(gltf.animations);
-  const { animationRef } = playActions({
-    type: "character",
-    animationResult,
-    currentAnimation,
-  });
-
   return (
     <CharacterInnerRef
-      animationRef={animationRef}
       position={position}
       refs={refs}
       urls={props.urls}
+      currentAnimation={props.currentAnimation}
     >
       {props.children}
     </CharacterInnerRef>

@@ -42,3 +42,8 @@ export default function playActions({ type, animationResult, currentAnimation, }
     animationRef: import("react").MutableRefObject<Object3D<Object3DEventMap>>;
     currentAnimation: string;
 };
+export declare const setAnimation: ({ currentAnimation, actions, type, }: {
+    currentAnimation?: string;
+    actions?: actionsType;
+    type?: "character" | "vehicle" | "airplane";
+}) => void;

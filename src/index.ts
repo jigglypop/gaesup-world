@@ -6,6 +6,7 @@ export { PassiveVehicle } from "./gaesup/component/passive/vehicle";
 
 export { GaesupController } from "./gaesup/controller";
 export { GaeSupProps } from "./gaesup/gaesupProps";
+export { Clicker } from "./gaesup/tools/clicker";
 export { GameBoy } from "./gaesup/tools/gameBoy";
 export { GamePad } from "./gaesup/tools/gamePad";
 export { JoyStick } from "./gaesup/tools/joyStick";

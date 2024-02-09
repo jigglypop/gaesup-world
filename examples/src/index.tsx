@@ -1,22 +1,27 @@
 "use client";
 
 import { Environment } from "@react-three/drei";
-import { Physics } from "@react-three/rapier";
+import { Physics, euler } from "@react-three/rapier";
 
 import { Canvas } from "@react-three/fiber";
-import { isMobile } from "react-device-detect";
 
+import { FaMapMarkerAlt } from "react-icons/fa";
 import {
   GaesupController,
   GaesupWorld,
-  GameBoy,
-  GamePad,
-  JoyStick,
-  KeyBoardToolTip,
-  MiniMap,
+  // GameBoy,
+  // GamePad,
+  // JoyStick,
+  // KeyBoardToolTip,
+  // MiniMap,
+  PassiveCharacter,
+  V3,
 } from "../../src";
+import { Clicker } from "../../src/gaesup/tools/clicker";
+import { InnerHtml } from "../../src/gaesup/utils/innerHtml";
+import Passive from "../passive";
 import Floor from "./Floor";
-import * as style from "./style.css";
+// import * as style from "./style.css";
 
 export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
 export const keyBoardMap = [
@@ -44,8 +49,10 @@ export default function MainComponent() {
       }}
       mode={{
         type: "character",
-        controller: isMobile ? "gameboy" : "keyboard",
-        control: "orbit",
+        // controller: isMobile ? "gameboy" : "clicker",
+        controller: "clicker",
+
+        control: "normal",
       }}
       debug={false}
       keyBoardMap={keyBoardMap}
@@ -53,8 +60,9 @@ export default function MainComponent() {
       <Canvas
         shadows
         dpr={[1, 2]}
+        // dpr={[1, 2]}
         style={{ width: "100vw", height: "100vh", position: "fixed" }}
-        frameloop="demand"
+        // frameloop="demand"
       >
         <Environment background preset="sunset" blur={0.8} />
         <directionalLight
@@ -97,11 +105,27 @@ export default function MainComponent() {
               });
             }}
           />
+
           <Floor />
+          <Passive />
+          <Clicker>
+            <InnerHtml position={V3(0, 0.5, 0)}>
+              <FaMapMarkerAlt style={{ color: "#f4ffd4", fontSize: "5rem" }} />
+            </InnerHtml>
+          </Clicker>
+
+          <PassiveCharacter
+            position={V3(0, 0, 0)}
+            euler={euler()}
+            urls={{
+              characterUrl: CHARACTER_URL,
+            }}
+            currentAnimation="jump"
+          ></PassiveCharacter>
         </Physics>
       </Canvas>
 
-      <div className={style.footer}>
+      {/* <div className={style.footer}>
         <div className={style.footerUpper}>
           <div className={style.gamePad}>
             <GamePad
@@ -125,7 +149,7 @@ export default function MainComponent() {
             <MiniMap />
           </div>
         </div>
-      </div>
+      </div> */}
     </GaesupWorld>
   );
 }

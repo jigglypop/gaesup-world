@@ -10,6 +10,9 @@ export type gaesupCameraOptionDebugType = {
     XDistance?: number;
     YDistance?: number;
     ZDistance?: number;
+    zoom?: number;
+    target?: THREE.Vector3;
+    focus?: boolean;
 };
 export type cameraOptionType = {
     offset?: THREE.Vector3;

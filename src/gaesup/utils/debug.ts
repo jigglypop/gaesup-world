@@ -2,6 +2,7 @@ import { useControls } from "leva";
 
 type valueType =
   | string
+  | boolean
   | number
   | THREE.Vector3
   | THREE.Quaternion

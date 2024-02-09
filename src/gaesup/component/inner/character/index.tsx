@@ -54,7 +54,6 @@ export function CharacterInnerRef({
     <>
       {collider && (
         <OuterGroupRef ref={outerGroupRef}>
-          {children}
           <RigidBodyRef
             ref={rigidBodyRef}
             name={"character"}
@@ -71,9 +70,10 @@ export function CharacterInnerRef({
               ref={innerGroupRef}
               url={urls.characterUrl}
               currentAnimation={currentAnimation}
-            />
+            >
+              {children}
+            </InnerGroupRef>
           </RigidBodyRef>
-          {/* {outerChildren} */}
         </OuterGroupRef>
       )}
     </>
