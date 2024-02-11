@@ -96,6 +96,7 @@ export type modeType = {
   type?: "character" | "vehicle" | "airplane";
   controller?: "gameboy" | "keyboard" | "joystick" | "clicker";
   control?: "normal" | "orbit";
+  isButton?: boolean;
 };
 
 export type activeStateType = {

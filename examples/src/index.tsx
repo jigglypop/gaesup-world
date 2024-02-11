@@ -25,14 +25,15 @@ import Floor from "./Floor";
 
 export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
 export const keyBoardMap = [
-  { name: "forward", keys: ["ArrowUp", "KeyW"] },
-  { name: "backward", keys: ["ArrowDown", "KeyS"] },
-  { name: "leftward", keys: ["ArrowLeft", "KeyA"] },
-  { name: "rightward", keys: ["ArrowRight", "KeyD"] },
+  { name: "forward", keys: ["ArrowUp"] },
+  { name: "backward", keys: ["ArrowDown"] },
+  { name: "leftward", keys: ["ArrowLeft"] },
+  { name: "rightward", keys: ["ArrowRight"] },
   { name: "space", keys: ["Space"], label: "JUMP" },
   { name: "shift", keys: ["Shift"], label: "SPLINT" },
   { name: "keyZ", keys: ["KeyZ"], label: "GREET" },
   { name: "keyR", keys: ["KeyR"], label: "RIDE" },
+  { name: "keyS", keys: ["KeyS"], label: "STOP" },
 ];
 
 export default function MainComponent() {
@@ -51,7 +52,6 @@ export default function MainComponent() {
         type: "character",
         // controller: isMobile ? "gameboy" : "clicker",
         controller: "clicker",
-
         control: "normal",
       }}
       debug={false}
@@ -91,7 +91,7 @@ export default function MainComponent() {
           shadow-camera-bottom={-50}
           shadow-camera-left={-50}
         />
-        <Physics>
+        <Physics debug>
           <GaesupController
             urls={{
               characterUrl: CHARACTER_URL,
@@ -105,21 +105,21 @@ export default function MainComponent() {
               });
             }}
           />
-
+          {/* <Second /> */}
           <Floor />
           <Passive />
           <Clicker
             onMarker={
-              <>
-                <InnerHtml position={V3(0, 0.5, 0)}>
+              <group rotation={euler({ x: 0, y: Math.PI / 2, z: 0 })}>
+                <InnerHtml position={V3(0, 1, 0)}>
                   <FaMapMarkerAlt
                     style={{ color: "#f4ffd4", fontSize: "5rem" }}
                   />
                 </InnerHtml>
-              </>
+              </group>
             }
             runMarker={
-              <InnerHtml position={V3(0, 0.5, 0)}>
+              <InnerHtml position={V3(0, 1, 0)}>
                 <FaMapMarkerAlt
                   style={{ color: "#ffac8e", fontSize: "5rem" }}
                 />

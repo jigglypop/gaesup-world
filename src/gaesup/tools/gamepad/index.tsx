@@ -41,7 +41,9 @@ export function GamePad(props: gamepadType) {
 
   return (
     <>
-      {(mode.controller === "joystick" || mode.controller === "gameboy") && (
+      {(mode.controller === "joystick" ||
+        mode.controller === "gameboy" ||
+        mode.controller === "clicker") && (
         <div className="gamePad" style={gamePadStyle}>
           {GamePadDirections.map((item: gameBoyDirectionType, key: number) => {
             return (

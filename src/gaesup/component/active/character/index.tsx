@@ -19,7 +19,6 @@ export function CharacterRef({
   refs: refsType;
   urls: urlsType;
 }) {
-  initCallback(props, "character");
   const { colliderRef } = refs;
   const { size, gltf } = useGltfAndSize({ url: urls.characterUrl });
   const collider = calcCharacterColliderProps(size);
@@ -43,6 +42,13 @@ export function CharacterRef({
     type: "character",
     animationResult,
   });
+  // callback
+  initCallback({
+    props,
+    animationResult,
+    type: "character",
+  });
+
   return (
     <CharacterInnerRef
       animationRef={animationRef}
