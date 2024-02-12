@@ -18,52 +18,10 @@ import { GaesupWorldContext, GaesupWorldDispatchContext, } from "../world/contex
 export function GaeSupProps(_a) {
     var _b = _a.type, type = _b === void 0 ? "normal" : _b, text = _a.text, position = _a.position, children = _a.children;
     var groupRef = useRef(null);
-    var _c = useContext(GaesupWorldContext), minimap = _c.minimap, activeState = _c.activeState, clicker = _c.clicker;
+    var minimap = useContext(GaesupWorldContext).minimap;
     var dispatch = useContext(GaesupWorldDispatchContext);
     // clicker
     var moveClicker = useClicker().moveClicker;
-    //   const moveClicker = (e: ThreeEvent<MouseEvent>) => {
-    //     const originPoint = activeState.position;
-    //     const newPosition = e.point;
-    //     const newAngle = Math.atan2(
-    //       newPosition.z - originPoint.z,
-    //       newPosition.x - originPoint.x
-    //     );
-    //     const norm = Math.sqrt(
-    //       Math.pow(newPosition.z - originPoint.z, 2) +
-    //         Math.pow(newPosition.x - originPoint.x, 2)
-    //     );
-    //     if (norm < 1) return;
-    //     dispatch({
-    //       type: "update",
-    //       payload: {
-    //         clicker: {
-    //           point: V3(e.point.x, e.point.y, e.point.z),
-    //           angle: newAngle,
-    //           isOn: true,
-    //         },
-    //       },
-    //     });
-    //   };
-    //
-    //   // 거리 계산
-    //   useEffect(() => {
-    //     const originPoint = activeState.position;
-    //     const newPosition = clicker.point;
-    //     const norm = Math.sqrt(
-    //       Math.pow(newPosition.z - originPoint.z, 2) +
-    //         Math.pow(newPosition.x - originPoint.x, 2)
-    //     );
-    //     if (norm < 1) {
-    //       clicker.isOn = false;
-    //       dispatch({
-    //         type: "update",
-    //         payload: {
-    //           clicker: clicker,
-    //         },
-    //       });
-    //     }
-    //   }, [activeState.position, clicker.point]);
     useEffect(function () {
         if (groupRef.current) {
             var box = new THREE.Box3().setFromObject(groupRef.current);
@@ -84,7 +42,5 @@ export function GaeSupProps(_a) {
             });
         }
     }, []);
-    return (_jsx(Suspense, { fallback: null, children: _jsx("group", { ref: groupRef, position: position, 
-            // onClick={(e) => clickerPoint(e, activeState.position.clone())}
-            onPointerDown: function (e) { return moveClicker(e, false); }, onDoubleClick: function (e) { return moveClicker(e, true); }, children: children }) }));
+    return (_jsx(Suspense, { fallback: null, children: _jsx("group", { ref: groupRef, position: position, onPointerDown: function (e) { return moveClicker(e, false, type); }, onDoubleClick: function (e) { return moveClicker(e, true, type); }, children: children }) }));
 }

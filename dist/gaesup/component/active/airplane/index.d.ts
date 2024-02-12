@@ -1,8 +1,10 @@
 import { ReactNode } from "react";
-import { refsType } from "../../../controller/type";
+import { controllerInnerType, groundRayType, refsType } from "../../../controller/type";
 import { urlsType } from "../../../world/context/type";
-export declare function AirplaneRef({ children, enableRiding, isRiderOn, offset, refs, urls, }: {
+export declare function AirplaneRef({ children, props, groundRay, enableRiding, isRiderOn, offset, refs, urls, }: {
     children: ReactNode;
+    props: controllerInnerType;
+    groundRay: groundRayType;
     enableRiding?: boolean;
     isRiderOn?: boolean;
     offset?: THREE.Vector3;

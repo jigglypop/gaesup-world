@@ -73,7 +73,7 @@ export function normalDirection({
     activeState.euler.y = Math.PI / 2 - clicker.angle;
     activeState.dir.set(
       -Math.sin(activeState.euler.y),
-      0,
+      1,
       -Math.cos(activeState.euler.y)
     );
   } else {

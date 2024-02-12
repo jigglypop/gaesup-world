@@ -37,34 +37,35 @@ export function KeyBoardToolTip(props) {
         });
         return maps;
     }, {});
-    return (_jsx(_Fragment, { children: mode.controller === "keyboard" && (_jsx("div", { className: "keyBoardToolInner", style: keyBoardToolTipInnerStyle, children: keyArray.map(function (item, key) {
-                var background = "rgba(0, 0, 0, 0.1)";
-                var boxShadow = "0 0 5px rgba(0, 0, 0, 0.2)";
-                var isSelect = "none";
-                if (codeToActionObj[item.code]) {
-                    if (control[codeToActionObj[item.code]]) {
-                        isSelect = "select";
-                        background = "linear-gradient( 68.4deg,  rgba(99,251,215,1) -0.4%, rgba(5,222,250,1) 100.2% )";
-                        boxShadow = "0 0 10px rgba(99,251,215,1)";
+    return (_jsx(_Fragment, { children: mode.controller === "keyboard" ||
+            (mode.controller === "clicker" && !mode.isButton && (_jsx("div", { className: "keyBoardToolInner", style: keyBoardToolTipInnerStyle, children: keyArray.map(function (item, key) {
+                    var background = "rgba(0, 0, 0, 0.1)";
+                    var boxShadow = "0 0 5px rgba(0, 0, 0, 0.2)";
+                    var isSelect = "none";
+                    if (codeToActionObj[item.code]) {
+                        if (control[codeToActionObj[item.code]]) {
+                            isSelect = "select";
+                            background = "linear-gradient( 68.4deg,  rgba(99,251,215,1) -0.4%, rgba(5,222,250,1) 100.2% )";
+                            boxShadow = "0 0 10px rgba(99,251,215,1)";
+                        }
+                        else {
+                            isSelect = "notSelect";
+                            background = "rgba(0, 0, 0, 0.6)";
+                            boxShadow = "0 0 10px rgba(0, 0, 0, 0.6)";
+                        }
                     }
-                    else {
-                        isSelect = "notSelect";
-                        background = "rgba(0, 0, 0, 0.6)";
-                        boxShadow = "0 0 10px rgba(0, 0, 0, 0.6)";
+                    var color = "white";
+                    if (codeToActionObj[item.code] &&
+                        control[codeToActionObj[item.code]]) {
+                        color = "black";
                     }
-                }
-                var color = "white";
-                if (codeToActionObj[item.code] &&
-                    control[codeToActionObj[item.code]]) {
-                    color = "black";
-                }
-                var keyStyle = keyCapStyle;
-                if (isSelect === "select") {
-                    keyStyle = __assign({}, selectedKeyCapStyle);
-                }
-                else if (isSelect === "notSelect") {
-                    keyStyle = __assign({}, notSelectedkeyCapStyle);
-                }
-                return (_jsx("div", { className: "keyCap", style: __assign({ background: background, boxShadow: boxShadow, color: color, gridRow: item.gridRow, gridColumn: item.gridColumn }, keyStyle), children: item.name }, key));
-            }) })) }));
+                    var keyStyle = keyCapStyle;
+                    if (isSelect === "select") {
+                        keyStyle = __assign({}, selectedKeyCapStyle);
+                    }
+                    else if (isSelect === "notSelect") {
+                        keyStyle = __assign({}, notSelectedkeyCapStyle);
+                    }
+                    return (_jsx("div", { className: "keyCap", style: __assign({ background: background, boxShadow: boxShadow, color: color, gridRow: item.gridRow, gridColumn: item.gridColumn }, keyStyle), children: item.name }, key));
+                }) }))) }));
 }

@@ -17,9 +17,9 @@
     "declaration": true,
     "outDir": "./dist",
     "paths": {
-      "@/*": ["./src/gaesup"]
+      "@/*": ["./src/gaesup"],
     },
-    "types": ["vite-plugin-svgr/client"] // 이부분 추가
+    "types": ["vite-plugin-svgr/client"], // 이부분 추가
   },
   "include": [
     "./src/**/*.tsx",
@@ -27,8 +27,8 @@
     "./src/**/*.css",
     "src",
     "examples",
-    "dist"
+    "dist",
   ],
 
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "references": [{ "path": "./tsconfig.node.json" }],
 }

@@ -1,11 +1,10 @@
 import { RootState } from "@react-three/fiber";
 import { cameraRayType } from "../../../camera/type";
-import { activeStateType, animationAtomType, animationPropType, keyControlType, statesType } from "../../../world/context/type";
-import { actionsType, groundRayType, slopeRayType } from "../../type";
+import { activeStateType, animationAtomType, animationStateType, keyControlType, statesType } from "../../../world/context/type";
+import { actionsType, groundRayType } from "../../type";
 export type callbackPropType = {
     activeState: activeStateType;
     states: statesType;
-    slopeRay: slopeRayType;
     groundRay: groundRayType;
     cameraRay: cameraRayType;
     control: keyControlType;
@@ -16,7 +15,7 @@ export type onAnimatePropType = onFramePropType & {
     actions: {
         [x: string]: THREE.AnimationAction | null;
     };
-    animation: animationPropType;
+    animationState: animationStateType;
     playAnimation: (tag: keyof actionsType, key: string) => void;
 };
 export type callbackType = {

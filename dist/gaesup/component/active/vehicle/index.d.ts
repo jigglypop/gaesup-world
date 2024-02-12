@@ -1,8 +1,9 @@
 import { ReactNode } from "react";
-import { groundRayType, refsType } from "../../../controller/type";
+import { controllerInnerType, groundRayType, refsType } from "../../../controller/type";
 import { urlsType } from "../../../world/context/type";
-export declare function VehicleRef({ children, groundRay, enableRiding, isRiderOn, offset, refs, urls, }: {
+export declare function VehicleRef({ children, props, groundRay, enableRiding, isRiderOn, offset, refs, urls, }: {
     children: ReactNode;
+    props: controllerInnerType;
     groundRay: groundRayType;
     enableRiding?: boolean;
     isRiderOn?: boolean;

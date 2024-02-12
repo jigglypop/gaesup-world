@@ -7,7 +7,6 @@ import { CharacterInnerRef, calcCharacterColliderProps, } from "../../inner/char
 import { setGroundRay } from "../../inner/common/setGroundRay";
 export function CharacterRef(_a) {
     var props = _a.props, refs = _a.refs, urls = _a.urls;
-    initCallback(props, "character");
     var colliderRef = refs.colliderRef;
     var _b = useGltfAndSize({ url: urls.characterUrl }), size = _b.size, gltf = _b.gltf;
     var collider = calcCharacterColliderProps(size);
@@ -30,5 +29,11 @@ export function CharacterRef(_a) {
         type: "character",
         animationResult: animationResult,
     }), animationRef = _c.animationRef, currentAnimation = _c.currentAnimation;
+    // callback
+    initCallback({
+        props: props,
+        animationResult: animationResult,
+        type: "character",
+    });
     return (_jsx(CharacterInnerRef, { animationRef: animationRef, refs: refs, urls: urls, currentAnimation: currentAnimation, children: props.children }));
 }

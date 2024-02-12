@@ -29,22 +29,6 @@ export default function Camera(_a) {
     var cameraRef = useRef();
     var intersectObjectMap = useMemo(function () { return ({}); }, []);
     var cameraProp = __assign(__assign({}, prop), { control: control, controllerContext: controllerContext, worldContext: worldContext, intersectObjectMap: intersectObjectMap });
-    //   const getMeshs = (object: THREE.Object3D) => {
-    //     if (object.userData && object.userData.intangible) return;
-    //     if (
-    //       object instanceof THREE.Mesh &&
-    //       object.geometry.type !== "InstancedBufferGeometry"
-    //     ) {
-    //       intersectObjectMap[object.uuid] = object;
-    //     }
-    //     object.children.forEach((child) => {
-    //       getMeshs(child);
-    //     });
-    //   };
-    //
-    //   useEffect(() => {
-    //     scene.children.forEach((child) => getMeshs(child));
-    //   }, []);
     var position = useMemo(function () { return camera.position; }, []);
     var dir = useMemo(function () { return vec3(); }, []);
     cameraProp.cameraRay.rayCast = new THREE.Raycaster(cameraProp.cameraRay.origin, cameraProp.cameraRay.dir, 0, -cameraOption.maxDistance);

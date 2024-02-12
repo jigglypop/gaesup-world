@@ -3,7 +3,7 @@ import { createContext } from "react";
 import { V3 } from "../../utils/vector";
 export var gaesupWorldDefault = {
     activeState: {
-        position: V3(0, 1, 5),
+        position: V3(0, 5, 5),
         impulse: vec3(),
         velocity: vec3(),
         acceleration: vec3(),

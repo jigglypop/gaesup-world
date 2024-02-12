@@ -6,7 +6,7 @@ import { gaesupWorldContextType } from "./type";
 
 export const gaesupWorldDefault: gaesupWorldContextType = {
   activeState: {
-    position: V3(0, 1, 5),
+    position: V3(0, 5, 5),
     impulse: vec3(),
     velocity: vec3(),
     acceleration: vec3(),
