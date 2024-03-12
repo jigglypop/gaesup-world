@@ -1,5 +1,4 @@
 import { ThreeEvent } from "@react-three/fiber";
-import _ from "lodash";
 import { useContext, useEffect } from "react";
 import { V3 } from "../../utils";
 import {
@@ -28,32 +27,18 @@ export default function useClicker() {
       Math.pow(newPosition.z - originPoint.z, 2) +
         Math.pow(newPosition.x - originPoint.x, 2)
     );
-    if (norm < 1) return;
-    const dispatcher = _.debounce(() => {
-      dispatch({
-        type: "update",
-        payload: {
-          clicker: {
-            point: V3(e.point.x, e.point.y, e.point.z),
-            angle: newAngle,
-            isOn: true,
-            isRun: isRun,
-          },
+    if (norm < 2) return;
+    dispatch({
+      type: "update",
+      payload: {
+        clicker: {
+          point: V3(e.point.x, e.point.y, e.point.z),
+          angle: newAngle,
+          isOn: true,
+          isRun: isRun,
         },
-      });
-    }, 100);
-    dispatcher();
-    // dispatch({
-    //   type: "update",
-    //   payload: {
-    //     clicker: {
-    //       point: V3(e.point.x, e.point.y, e.point.z),
-    //       angle: newAngle,
-    //       isOn: true,
-    //       isRun: isRun,
-    //     },
-    //   },
-    // });
+      },
+    });
   };
   // const moveClicker = _.throttle(moveClick, 100);
 

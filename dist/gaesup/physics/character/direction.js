@@ -36,7 +36,7 @@ export function normalDirection(_a) {
     }
     else if (mode.controller === "clicker") {
         activeState.euler.y = Math.PI / 2 - clicker.angle;
-        activeState.dir.set(-Math.sin(activeState.euler.y), 1, -Math.cos(activeState.euler.y));
+        activeState.dir.set(-Math.sin(activeState.euler.y), 0, -Math.cos(activeState.euler.y));
     }
     else {
         // 일반 컨트롤
@@ -52,7 +52,7 @@ export function normalDirection(_a) {
     }
 }
 export default function direction(prop) {
-    var state = prop.state, _a = prop.worldContext, joystick = _a.joystick, mode = _a.mode, activeState = _a.activeState, control = _a.control, clicker = _a.clicker;
+    var _a = prop.worldContext, joystick = _a.joystick, mode = _a.mode, activeState = _a.activeState, control = _a.control, clicker = _a.clicker;
     if (mode.control === "normal") {
         normalDirection({ activeState: activeState, control: control, mode: mode, joystick: joystick, clicker: clicker });
     }

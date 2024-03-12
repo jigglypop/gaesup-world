@@ -14,14 +14,14 @@ export const makeNormalCameraPosition = (
 };
 export default function normal(prop: cameraPropType) {
   const {
+    delta,
     state,
     worldContext: { activeState, cameraOption },
   } = prop;
   if (!state || !state.camera) return;
-  const cameraPosition = activeState.position
-    .clone()
-    .add(V3(0, cameraOption.YDistance, cameraOption.ZDistance));
-
-  state.camera.position.lerp(cameraPosition, 1);
-  if (!cameraOption.target) state.camera.lookAt(activeState.position.clone());
+  // const cameraPosition = activeState.position
+  //   .clone()
+  //   .add(V3(0, cameraOption.YDistance, cameraOption.ZDistance));
+  state.camera.position.lerp(cameraOption.position.clone(), 1);
+  state.camera.lookAt(cameraOption.target);
 }

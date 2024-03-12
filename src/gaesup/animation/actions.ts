@@ -106,7 +106,7 @@ export default function playActions({
   animationResult,
   currentAnimation,
 }: playActionsType) {
-  const { mode, animationState } = useContext(GaesupWorldContext);
+  const { mode, animationState, block } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
   const { notify, store } = useGaesupAnimation({ type });
   const { actions, ref } = animationResult;
@@ -128,14 +128,19 @@ export default function playActions({
   };
 
   useEffect(() => {
-    const action = actions[currentAnimation || animationState[type].current]
-      ?.reset()
-      .fadeIn(0.2)
-      .play();
+    let animation = "idle";
+    if (block.animation) {
+      animation = "idle";
+    } else if (currentAnimation) {
+      animation = currentAnimation;
+    } else if (animationState[type].current) {
+      animation = animationState[type].current;
+    }
+    const action = actions[animation]?.reset().fadeIn(0.2).play();
     return () => {
       action?.fadeOut(0.2);
     };
-  }, [currentAnimation, mode.type]);
+  }, [currentAnimation, mode.type, block.animation]);
 
   useFrame(() => {
     if (!currentAnimation) {

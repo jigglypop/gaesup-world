@@ -30,7 +30,8 @@ export function CharacterRef({
 
   setGroundRay({
     groundRay: props.groundRay,
-    length: collider?.radius || 0 + 2,
+    length: (collider?.height || 0) + 2,
+    // length: collider?.radius || 0 + 2,
     colliderRef,
   });
   const { animationResult } = subscribeActions({

@@ -110,7 +110,8 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     YDistance: 10,
     ZDistance: 20,
     zoom: 1,
-    target: null,
+    target: vec3(),
+    position: vec3(),
     focus: false,
   },
   moveTo: null,
@@ -119,6 +120,7 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
   block: {
     camera: false,
     control: false,
+    animation: false,
     scroll: true,
   },
   callback: {

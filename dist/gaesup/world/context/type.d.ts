@@ -13,6 +13,7 @@ export type gaesupCameraOptionDebugType = {
     zoom?: number;
     target?: THREE.Vector3;
     focus?: boolean;
+    position?: THREE.Vector3;
 };
 export type cameraOptionType = {
     offset?: THREE.Vector3;
@@ -108,6 +109,7 @@ export type wheelStateType = {
 export type blockType = {
     camera: boolean;
     control: boolean;
+    animation: boolean;
     scroll: boolean;
 };
 export type sizeType = {

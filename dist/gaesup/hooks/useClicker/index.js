@@ -1,4 +1,3 @@
-import _ from "lodash";
 import { useContext, useEffect } from "react";
 import { V3 } from "../../utils";
 import { GaesupWorldContext, GaesupWorldDispatchContext, } from "../../world/context";
@@ -13,33 +12,19 @@ export default function useClicker() {
         var newAngle = Math.atan2(newPosition.z - originPoint.z, newPosition.x - originPoint.x);
         var norm = Math.sqrt(Math.pow(newPosition.z - originPoint.z, 2) +
             Math.pow(newPosition.x - originPoint.x, 2));
-        if (norm < 1)
+        if (norm < 2)
             return;
-        var dispatcher = _.debounce(function () {
-            dispatch({
-                type: "update",
-                payload: {
-                    clicker: {
-                        point: V3(e.point.x, e.point.y, e.point.z),
-                        angle: newAngle,
-                        isOn: true,
-                        isRun: isRun,
-                    },
+        dispatch({
+            type: "update",
+            payload: {
+                clicker: {
+                    point: V3(e.point.x, e.point.y, e.point.z),
+                    angle: newAngle,
+                    isOn: true,
+                    isRun: isRun,
                 },
-            });
-        }, 100);
-        dispatcher();
-        // dispatch({
-        //   type: "update",
-        //   payload: {
-        //     clicker: {
-        //       point: V3(e.point.x, e.point.y, e.point.z),
-        //       angle: newAngle,
-        //       isOn: true,
-        //       isRun: isRun,
-        //     },
-        //   },
-        // });
+            },
+        });
     };
     // const moveClicker = _.throttle(moveClick, 100);
     // 거리 계산

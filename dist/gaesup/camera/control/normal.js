@@ -7,13 +7,12 @@ export var makeNormalCameraPosition = function (activeState, cameraOption) {
     return cameraPosition;
 };
 export default function normal(prop) {
-    var state = prop.state, _a = prop.worldContext, activeState = _a.activeState, cameraOption = _a.cameraOption;
+    var delta = prop.delta, state = prop.state, _a = prop.worldContext, activeState = _a.activeState, cameraOption = _a.cameraOption;
     if (!state || !state.camera)
         return;
-    var cameraPosition = activeState.position
-        .clone()
-        .add(V3(0, cameraOption.YDistance, cameraOption.ZDistance));
-    state.camera.position.lerp(cameraPosition, 1);
-    if (!cameraOption.target)
-        state.camera.lookAt(activeState.position.clone());
+    // const cameraPosition = activeState.position
+    //   .clone()
+    //   .add(V3(0, cameraOption.YDistance, cameraOption.ZDistance));
+    state.camera.position.lerp(cameraOption.position.clone(), 1);
+    state.camera.lookAt(cameraOption.target);
 }

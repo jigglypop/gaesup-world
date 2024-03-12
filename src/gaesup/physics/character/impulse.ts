@@ -33,6 +33,7 @@ export default function impulse(prop: calcPropType) {
   rigidBodyRef.current.applyImpulse(impulse, true);
   activeState.position = vec3(rigidBodyRef.current.translation());
   activeState.velocity = vec3(rigidBodyRef.current.linvel());
+
   dispatch({
     type: "update",
     payload: {

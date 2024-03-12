@@ -4,7 +4,13 @@ import {
   RigidBody,
   euler,
 } from "@react-three/rapier";
-import { ReactNode, Ref, forwardRef } from "react";
+import {
+  MutableRefObject,
+  ReactNode,
+  forwardRef,
+  useEffect,
+  useState,
+} from "react";
 
 export const RigidBodyRef = forwardRef(
   (
@@ -15,6 +21,7 @@ export const RigidBodyRef = forwardRef(
       rotation,
       userData,
       onCollisionEnter,
+      positionLerp,
     }: {
       children: ReactNode;
       name?: string;
@@ -22,15 +29,24 @@ export const RigidBodyRef = forwardRef(
       rotation?: THREE.Euler;
       userData?: { intangible: boolean };
       onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
+      positionLerp?: number;
     },
-    ref: Ref<RapierRigidBody>
+    ref: MutableRefObject<RapierRigidBody>
   ) => {
+    const [newPosition, setNewPosition] = useState<THREE.Vector3>(position);
+    useEffect(() => {
+      if (!positionLerp) return;
+      setNewPosition((ordPosition) => {
+        return ordPosition.lerp(position.clone(), positionLerp);
+      });
+    }, [position, positionLerp]);
+
     return (
       <RigidBody
         colliders={false}
         ref={ref}
         name={name}
-        position={position}
+        position={positionLerp ? newPosition?.clone() : position}
         rotation={euler().set(0, rotation?.clone().y || 0, 0)}
         userData={userData}
         onCollisionEnter={onCollisionEnter}

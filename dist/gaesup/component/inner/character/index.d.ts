@@ -14,7 +14,7 @@ export type characterColliderType = {
     radius: number;
     diameter: number;
 };
-export declare function CharacterInnerRef({ children, refs, urls, position, euler, currentAnimation, }: {
+export declare function CharacterInnerRef({ children, refs, urls, position, euler, currentAnimation, positionLerp, }: {
     children: ReactNode;
     refs: Partial<refsType>;
     urls: urlsType;
@@ -22,4 +22,5 @@ export declare function CharacterInnerRef({ children, refs, urls, position, eule
     euler?: THREE.Euler;
     animationRef?: Ref<Object3D<Object3DEventMap>>;
     currentAnimation?: string;
+    positionLerp?: number;
 }): import("react/jsx-runtime").JSX.Element;

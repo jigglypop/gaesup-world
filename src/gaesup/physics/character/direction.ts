@@ -73,7 +73,7 @@ export function normalDirection({
     activeState.euler.y = Math.PI / 2 - clicker.angle;
     activeState.dir.set(
       -Math.sin(activeState.euler.y),
-      1,
+      0,
       -Math.cos(activeState.euler.y)
     );
   } else {
@@ -91,7 +91,6 @@ export function normalDirection({
 
 export default function direction(prop: calcPropType) {
   const {
-    state,
     worldContext: { joystick, mode, activeState, control, clicker },
   } = prop;
   if (mode.control === "normal") {

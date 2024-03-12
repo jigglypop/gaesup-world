@@ -17,7 +17,8 @@ export function CharacterRef(_a) {
     });
     setGroundRay({
         groundRay: props.groundRay,
-        length: (collider === null || collider === void 0 ? void 0 : collider.radius) || 0 + 2,
+        length: ((collider === null || collider === void 0 ? void 0 : collider.height) || 0) + 2,
+        // length: collider?.radius || 0 + 2,
         colliderRef: colliderRef,
     });
     var animationResult = subscribeActions({
