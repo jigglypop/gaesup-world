@@ -7,11 +7,9 @@ export var RigidBodyRef = forwardRef(function (_a, ref) {
     useEffect(function () {
         if (!positionLerp)
             return;
-        if (position) {
-            setNewPosition(function (ordPosition) {
-                return ordPosition.lerp(position.clone(), positionLerp);
-            });
-        }
+        setNewPosition(function (ordPosition) {
+            return ordPosition.lerp(position.clone(), positionLerp);
+        });
     }, [position, positionLerp]);
     return (_jsx(RigidBody, { colliders: false, ref: ref, name: name, position: positionLerp ? newPosition === null || newPosition === void 0 ? void 0 : newPosition.clone() : position, rotation: euler().set(0, (rotation === null || rotation === void 0 ? void 0 : rotation.clone().y) || 0, 0), userData: userData, onCollisionEnter: onCollisionEnter, children: children }));
 });
