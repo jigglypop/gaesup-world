@@ -17,7 +17,7 @@ import { useContext, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { GaesupControllerContext } from "../controller/context";
 import { GaesupWorldContext } from "../world/context";
-import normal from "./control/normal";
+import normal, { makeNormalCameraPosition } from "./control/normal";
 import orbit from "./control/orbit";
 export default function Camera(_a) {
     var refs = _a.refs, prop = _a.prop, control = _a.control;
@@ -29,22 +29,6 @@ export default function Camera(_a) {
     var cameraRef = useRef();
     var intersectObjectMap = useMemo(function () { return ({}); }, []);
     var cameraProp = __assign(__assign({}, prop), { control: control, controllerContext: controllerContext, worldContext: worldContext, intersectObjectMap: intersectObjectMap });
-    //   const getMeshs = (object: THREE.Object3D) => {
-    //     if (object.userData && object.userData.intangible) return;
-    //     if (
-    //       object instanceof THREE.Mesh &&
-    //       object.geometry.type !== "InstancedBufferGeometry"
-    //     ) {
-    //       intersectObjectMap[object.uuid] = object;
-    //     }
-    //     object.children.forEach((child) => {
-    //       getMeshs(child);
-    //     });
-    //   };
-    //
-    //   useEffect(() => {
-    //     scene.children.forEach((child) => getMeshs(child));
-    //   }, []);
     var position = useMemo(function () { return camera.position; }, []);
     var dir = useMemo(function () { return vec3(); }, []);
     cameraProp.cameraRay.rayCast = new THREE.Raycaster(cameraProp.cameraRay.origin, cameraProp.cameraRay.dir, 0, -cameraOption.maxDistance);
@@ -76,18 +60,40 @@ export default function Camera(_a) {
             cameraRef.current.zoomTo(worldContext.cameraOption.zoom, true);
         }
     }, [worldContext.cameraOption.zoom]);
-    // lookat
-    useEffect(function () {
-        if (cameraRef.current) {
-            var currentCamera = camera.position.clone();
-            if (cameraOption.focus) {
-                cameraRef.current.setLookAt(currentCamera.x, currentCamera.y, currentCamera.z, cameraOption.target.x, cameraOption.target.y, cameraOption.target.z, true);
-                // 포커스 품
-            }
-            else if (!cameraOption.focus) {
-                cameraRef.current.setLookAt(currentCamera.x, currentCamera.y, currentCamera.z, activeState.position.x, activeState.position.y, activeState.position.z, true);
-            }
+    // 포커스가 아닐 때 카메라 activeStae 따라가기
+    useFrame(function () {
+        if (!cameraOption.focus) {
+            cameraOption.target = activeState.position;
+            cameraOption.position = makeNormalCameraPosition(activeState, cameraOption);
         }
-    }, [cameraOption.focus]);
+    });
+    // lookat
+    // useEffect(() => {
+    //   if (cameraRef.current) {
+    //     const currentCamera = camera.position.clone();
+    //     if (cameraOption.focus) {
+    //       cameraRef.current.setLookAt(
+    //         currentCamera.x,
+    //         currentCamera.y,
+    //         currentCamera.z,
+    //         cameraOption.target.x,
+    //         cameraOption.target.y,
+    //         cameraOption.target.z,
+    //         true
+    //       );
+    //       // 포커스 품
+    //     } else if (!cameraOption.focus) {
+    //       cameraRef.current.setLookAt(
+    //         currentCamera.x,
+    //         currentCamera.y,
+    //         currentCamera.z,
+    //         activeState.position.x,
+    //         activeState.position.y,
+    //         activeState.position.z,
+    //         true
+    //       );
+    //     }
+    //   }
+    // }, [cameraOption.focus]);
     return _jsx(CameraControls, { ref: cameraRef });
 }

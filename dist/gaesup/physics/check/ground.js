@@ -4,12 +4,14 @@ export default function checkOnTheGround(prop) {
     groundRay.origin.addVectors(activeState.position, vec3(groundRay.offset));
     if (!groundRay.hit || !groundRay.rayCast || !colliderRef.current) {
         states.isOnTheGround = false;
-        return;
+        // return;
     }
-    if (groundRay.hit.toi < groundRay.length + 0.5) {
-        states.isOnTheGround = true;
-    }
-    else {
-        states.isOnTheGround = false;
+    if (groundRay.hit) {
+        if (groundRay.hit.toi < groundRay.length + 0.5) {
+            states.isOnTheGround = true;
+        }
+        else {
+            states.isOnTheGround = false;
+        }
     }
 }

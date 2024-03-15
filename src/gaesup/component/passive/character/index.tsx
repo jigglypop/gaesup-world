@@ -13,6 +13,7 @@ export type passiveCharacterPropsType = {
   currentAnimation: string;
   gravityScale?: number;
   children?: React.ReactNode;
+  positionLerp?: number;
 };
 
 export function PassiveCharacter(props: passiveCharacterPropsType) {
@@ -56,6 +57,7 @@ export function PassiveCharacter(props: passiveCharacterPropsType) {
       refs={refs}
       urls={props.urls}
       currentAnimation={props.currentAnimation}
+      positionLerp={props.positionLerp}
     >
       {props.children}
     </CharacterInnerRef>

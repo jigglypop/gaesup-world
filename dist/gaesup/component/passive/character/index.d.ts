@@ -5,6 +5,8 @@ export type passiveCharacterPropsType = {
     euler: THREE.Euler;
     urls: urlsType;
     currentAnimation: string;
+    gravityScale?: number;
     children?: React.ReactNode;
+    positionLerp?: number;
 };
 export declare function PassiveCharacter(props: passiveCharacterPropsType): import("react/jsx-runtime").JSX.Element;

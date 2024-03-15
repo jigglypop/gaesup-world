@@ -24,8 +24,6 @@ export function PassiveCharacter(props) {
     useEffect(function () {
         if (rigidBodyRef || rigidBodyRef.current) {
             rigidBodyRef.current.setEnabledRotations(false, false, false, false);
-            // 중력 제거
-            rigidBodyRef.current.setGravityScale(0, true);
         }
     }, []);
     useFrame(function (_, delta) {
@@ -33,5 +31,5 @@ export function PassiveCharacter(props) {
             innerGroupRef.current.quaternion.rotateTowards(quat().setFromEuler(euler), 10 * delta);
         }
     });
-    return (_jsx(CharacterInnerRef, { position: position, refs: refs, urls: props.urls, currentAnimation: props.currentAnimation, children: props.children }));
+    return (_jsx(CharacterInnerRef, { position: position, refs: refs, urls: props.urls, currentAnimation: props.currentAnimation, positionLerp: props.positionLerp, children: props.children }));
 }

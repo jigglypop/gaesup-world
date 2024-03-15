@@ -1,12 +1,12 @@
 "use client";
 
 import { useContext } from "react";
-import { JumpPortal, V3 } from "../../dist";
-import { useZoom } from "../../dist/gaesup/tools/zoomButton";
+
+import { JumpPortal, V3 } from "../../src";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
-} from "../../dist/gaesup/world/context";
+} from "../../src/gaesup/world/context";
 import { Icon } from "../icon";
 import * as style from "./style.css";
 // FaCarSide lazy loading
@@ -14,7 +14,6 @@ import * as style from "./style.css";
 export default function Info() {
   const { mode, activeState } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
-  const { setZoom, isZoom } = useZoom();
 
   const setType = (type: "character" | "vehicle" | "airplane") => {
     dispatch({
@@ -174,36 +173,6 @@ export default function Info() {
         }}
       >
         <button className={style.glassButton}>{mode.control}</button>
-      </Icon>
-      <Icon
-        ToolTip={
-          <>
-            <p
-              className={style.pRecipe({
-                selected: !isZoom,
-              })}
-              onClick={() => setZoom(V3(10, 5, 10), false)}
-            >
-              zoom in
-            </p>
-
-            <p
-              className={style.pRecipe({
-                selected: isZoom,
-              })}
-              onClick={() => setZoom(V3(20, 10, 20), true)}
-            >
-              zoom out
-            </p>
-          </>
-        }
-        toolTipStyles={{
-          background: "rgba(0,0,0,0.8)",
-        }}
-      >
-        <button className={style.glassButton}>
-          {isZoom ? "zoom out" : "zoom in"}
-        </button>
       </Icon>
 
       <JumpPortal position={V3(-200, 10, -100)} text={"track"} />

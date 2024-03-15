@@ -15,12 +15,15 @@ export { KeyBoardToolTip } from "./gaesup/tools/keyBoardToolTip";
 export { MiniMap } from "./gaesup/tools/miniMap";
 export { Rideable } from "./gaesup/tools/rideable";
 export { ZoomButton } from "./gaesup/tools/zoomButton";
+export { InnerHtml } from "./gaesup/utils/innerHtml";
 export { Elr, Qt, V3, V30, V31 } from "./gaesup/utils/vector";
 export { GaesupWorld } from "./gaesup/world";
 
+export { useFocus } from "./gaesup/hooks/useFocus";
 export { useGaesupAnimation } from "./gaesup/hooks/useGaesupAnimation";
 export { useGaesupController } from "./gaesup/hooks/useGaesupController";
 export * as useJoyStick from "./gaesup/hooks/useJoyStick";
 export { usePushKey } from "./gaesup/hooks/usePushKey";
 export { useRideable } from "./gaesup/hooks/useRideable";
 export { useTeleport } from "./gaesup/hooks/useTeleport";
+export { useZoom } from "./gaesup/hooks/useZoom";

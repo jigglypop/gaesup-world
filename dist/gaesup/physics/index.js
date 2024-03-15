@@ -32,7 +32,7 @@ export default function calculation(prop) {
         if (rigidBodyRef.current && innerGroupRef.current) {
             rigidBodyRef.current.lockRotations(false, true);
             activeState.euler.set(0, 0, 0);
-            rigidBodyRef.current.setTranslation(activeState.position.clone().add(V3(0, 2, 0)), true);
+            rigidBodyRef.current.setTranslation(activeState.position.clone().add(V3(0, 5, 0)), true);
         }
     }, [mode.type]);
     useFrame(function (state, delta) {

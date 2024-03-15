@@ -9,11 +9,9 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-import { quat, vec3 } from "@react-three/rapier";
+import { quat } from "@react-three/rapier";
 export default function innerCalc(prop) {
     var rigidBodyRef = prop.rigidBodyRef, innerGroupRef = prop.innerGroupRef, linearDamping = prop.controllerContext.character.linearDamping, _a = prop.worldContext, activeState = _a.activeState, states = _a.states, dispatch = prop.dispatch, delta = prop.delta;
-    activeState.position = vec3(rigidBodyRef.current.translation());
-    activeState.velocity = vec3(rigidBodyRef.current.linvel());
     if (states.isJumping || rigidBodyRef.current.linvel().y < 0) {
         rigidBodyRef.current.setLinearDamping(linearDamping);
     }

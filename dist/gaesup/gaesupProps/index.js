@@ -11,17 +11,17 @@ var __assign = (this && this.__assign) || function () {
 };
 import { jsx as _jsx } from "react/jsx-runtime";
 import { vec3 } from "@react-three/rapier";
-import { Suspense, useContext, useEffect, useMemo, useRef } from "react";
+import { Suspense, useContext, useEffect, useRef } from "react";
 import * as THREE from "three";
-import { GaesupWorldContext, GaesupWorldDispatchContext, } from "../world/context/index.js";
+import useClicker from "../hooks/useClicker";
+import { GaesupWorldContext, GaesupWorldDispatchContext, } from "../world/context";
 export function GaeSupProps(_a) {
     var _b = _a.type, type = _b === void 0 ? "normal" : _b, text = _a.text, position = _a.position, children = _a.children;
     var groupRef = useRef(null);
     var minimap = useContext(GaesupWorldContext).minimap;
     var dispatch = useContext(GaesupWorldDispatchContext);
-    var groupComponent = useMemo(function () {
-        return (_jsx("group", { ref: groupRef, position: position, children: children }));
-    }, []);
+    // clicker
+    var moveClicker = useClicker().moveClicker;
     useEffect(function () {
         if (groupRef.current) {
             var box = new THREE.Box3().setFromObject(groupRef.current);
@@ -42,5 +42,5 @@ export function GaeSupProps(_a) {
             });
         }
     }, []);
-    return _jsx(Suspense, { fallback: null, children: groupComponent });
+    return (_jsx(Suspense, { fallback: null, children: _jsx("group", { ref: groupRef, position: position, onPointerDown: function (e) { return moveClicker(e, false, type); }, onDoubleClick: function (e) { return moveClicker(e, true, type); }, children: children }) }));
 }

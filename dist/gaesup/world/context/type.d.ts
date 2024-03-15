@@ -13,6 +13,7 @@ export type gaesupCameraOptionDebugType = {
     zoom?: number;
     target?: THREE.Vector3;
     focus?: boolean;
+    position?: THREE.Vector3;
 };
 export type cameraOptionType = {
     offset?: THREE.Vector3;
@@ -80,8 +81,9 @@ export type animationStatePropType = {
 };
 export type modeType = {
     type?: "character" | "vehicle" | "airplane";
-    controller?: "gameboy" | "keyboard" | "joystick";
+    controller?: "gameboy" | "keyboard" | "joystick" | "clicker";
     control?: "normal" | "orbit";
+    isButton?: boolean;
 };
 export type activeStateType = {
     position: THREE.Vector3;
@@ -94,6 +96,12 @@ export type activeStateType = {
     direction: THREE.Vector3;
     dir: THREE.Vector3;
 };
+export type clickerType = {
+    point: THREE.Vector3;
+    angle: number;
+    isOn: boolean;
+    isRun: boolean;
+};
 export type wheelStateType = {
     position: THREE.Vector3;
     rotation: THREE.Euler;
@@ -101,6 +109,7 @@ export type wheelStateType = {
 export type blockType = {
     camera: boolean;
     control: boolean;
+    animation: boolean;
     scroll: boolean;
 };
 export type sizeType = {
@@ -158,6 +167,7 @@ export type gaesupWorldContextType = {
     animationState: animationStateType;
     keyBoardMap: keyboardMapType;
     cameraOption: cameraOptionType;
+    clicker: clickerType;
     moveTo: (position: THREE.Vector3, target: THREE.Vector3) => Promise<void>;
     rideable: {
         [key: string]: rideableType;

@@ -23,13 +23,24 @@ export default function initControllerProps({ refs }: { refs: refsType }) {
 
   useEffect(() => {
     if (context && keyControl && context.control) {
+      // 컨트롤 정하기
+      let newControl = {};
+      if (context.mode.controller === "keyboard") {
+        newControl = { ...keyControl };
+      } else if (context.mode.controller === "clicker") {
+        if (context.mode.isButton) {
+          newControl = { ...context.control };
+        } else {
+          newControl = { ...keyControl };
+        }
+      } else {
+        newControl = { ...context.control };
+      }
       dispatch({
         type: "update",
         payload: {
           control: {
-            ...(context.mode.controller === "keyboard"
-              ? keyControl
-              : context.control),
+            ...newControl,
           },
         },
       });

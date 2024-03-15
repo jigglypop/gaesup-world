@@ -3,7 +3,7 @@ import { createContext } from "react";
 import { V3 } from "../../utils/vector";
 export var gaesupWorldDefault = {
     activeState: {
-        position: V3(0, 1, 5),
+        position: V3(0, 5, 5),
         impulse: vec3(),
         velocity: vec3(),
         acceleration: vec3(),
@@ -42,6 +42,12 @@ export var gaesupWorldDefault = {
     debug: false,
     minimap: {
         props: {},
+    },
+    clicker: {
+        point: V3(0, 0, 0),
+        angle: Math.PI / 2,
+        isOn: false,
+        isRun: false,
     },
     joystick: {
         joyStickOrigin: {
@@ -101,7 +107,8 @@ export var gaesupWorldDefault = {
         YDistance: 10,
         ZDistance: 20,
         zoom: 1,
-        target: null,
+        target: vec3(),
+        position: vec3(),
         focus: false,
     },
     moveTo: null,
@@ -110,6 +117,7 @@ export var gaesupWorldDefault = {
     block: {
         camera: false,
         control: false,
+        animation: false,
         scroll: true,
     },
     callback: {

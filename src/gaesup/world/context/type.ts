@@ -16,6 +16,7 @@ export type gaesupCameraOptionDebugType = {
   zoom?: number;
   target?: THREE.Vector3;
   focus?: boolean;
+  position?: THREE.Vector3;
 };
 
 export type cameraOptionType = {
@@ -96,6 +97,7 @@ export type modeType = {
   type?: "character" | "vehicle" | "airplane";
   controller?: "gameboy" | "keyboard" | "joystick" | "clicker";
   control?: "normal" | "orbit";
+  isButton?: boolean;
 };
 
 export type activeStateType = {
@@ -126,6 +128,7 @@ export type wheelStateType = {
 export type blockType = {
   camera: boolean;
   control: boolean;
+  animation: boolean;
   scroll: boolean;
 };
 

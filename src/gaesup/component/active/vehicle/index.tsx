@@ -1,7 +1,12 @@
 import { vec3 } from "@react-three/rapier";
 import { ReactNode } from "react";
 import playActions, { subscribeActions } from "../../../animation/actions";
-import { groundRayType, refsType } from "../../../controller/type";
+import initCallback from "../../../controller/initialize/callback";
+import {
+  controllerInnerType,
+  groundRayType,
+  refsType,
+} from "../../../controller/type";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 import { urlsType } from "../../../world/context/type";
 import { setGroundRay } from "../../inner/common/setGroundRay";
@@ -9,6 +14,7 @@ import { VehicleInnerRef } from "../../inner/vehicle";
 
 export function VehicleRef({
   children,
+  props,
   groundRay,
   enableRiding,
   isRiderOn,
@@ -17,6 +23,7 @@ export function VehicleRef({
   urls,
 }: {
   children: ReactNode;
+  props: controllerInnerType;
   groundRay: groundRayType;
   enableRiding?: boolean;
   isRiderOn?: boolean;
@@ -42,9 +49,15 @@ export function VehicleRef({
     groundRay: groundRay,
     animations: gltf.animations,
   });
-  const { animationRef, currentAnimation } = playActions({
+  const { currentAnimation } = playActions({
     type: "vehicle",
     animationResult,
+  });
+  // callback
+  initCallback({
+    props,
+    animationResult,
+    type: "vehicle",
   });
   return (
     <VehicleInnerRef

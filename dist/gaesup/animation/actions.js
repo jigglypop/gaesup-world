@@ -66,7 +66,7 @@ export function subscribeActions(_a) {
 export default function playActions(_a) {
     var _b;
     var type = _a.type, animationResult = _a.animationResult, currentAnimation = _a.currentAnimation;
-    var _c = useContext(GaesupWorldContext), mode = _c.mode, animationState = _c.animationState;
+    var _c = useContext(GaesupWorldContext), mode = _c.mode, animationState = _c.animationState, block = _c.block;
     var dispatch = useContext(GaesupWorldDispatchContext);
     var _d = useGaesupAnimation({ type: type }), notify = _d.notify, store = _d.store;
     var actions = animationResult.actions, ref = animationResult.ref;
@@ -85,11 +85,21 @@ export default function playActions(_a) {
     };
     useEffect(function () {
         var _a;
-        var action = (_a = actions[currentAnimation || animationState[type].current]) === null || _a === void 0 ? void 0 : _a.reset().fadeIn(0.2).play();
+        var animation = "idle";
+        if (block.animation) {
+            animation = "idle";
+        }
+        else if (currentAnimation) {
+            animation = currentAnimation;
+        }
+        else if (animationState[type].current) {
+            animation = animationState[type].current;
+        }
+        var action = (_a = actions[animation]) === null || _a === void 0 ? void 0 : _a.reset().fadeIn(0.2).play();
         return function () {
             action === null || action === void 0 ? void 0 : action.fadeOut(0.2);
         };
-    }, [currentAnimation, mode.type]);
+    }, [currentAnimation, mode.type, block.animation]);
     useFrame(function () {
         if (!currentAnimation) {
             var tag = notify();

@@ -9,4 +9,5 @@ export declare const RigidBodyRef: import("react").ForwardRefExoticComponent<{
         intangible: boolean;
     };
     onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
+    positionLerp?: number;
 } & import("react").RefAttributes<RapierRigidBody>>;

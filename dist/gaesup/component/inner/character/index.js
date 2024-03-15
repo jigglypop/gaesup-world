@@ -20,9 +20,9 @@ export var calcCharacterColliderProps = function (characterSize) {
     };
 };
 export function CharacterInnerRef(_a) {
-    var children = _a.children, refs = _a.refs, urls = _a.urls, position = _a.position, euler = _a.euler, currentAnimation = _a.currentAnimation;
+    var children = _a.children, refs = _a.refs, urls = _a.urls, position = _a.position, euler = _a.euler, currentAnimation = _a.currentAnimation, positionLerp = _a.positionLerp;
     var outerGroupRef = refs.outerGroupRef, rigidBodyRef = refs.rigidBodyRef, colliderRef = refs.colliderRef, innerGroupRef = refs.innerGroupRef;
     var size = useGltfAndSize({ url: urls.characterUrl }).size;
     var collider = calcCharacterColliderProps(size);
-    return (_jsx(_Fragment, { children: collider && (_jsxs(OuterGroupRef, { ref: outerGroupRef, children: [children, _jsxs(RigidBodyRef, { ref: rigidBodyRef, name: "character", position: position, rotation: euler, children: [_jsx(CapsuleCollider, { ref: colliderRef, args: [collider.height, collider.radius], position: [0, collider.height + collider.radius, 0] }), _jsx(InnerGroupRef, { type: "character", ref: innerGroupRef, url: urls.characterUrl, currentAnimation: currentAnimation })] })] })) }));
+    return (_jsx(_Fragment, { children: collider && (_jsx(OuterGroupRef, { ref: outerGroupRef, children: _jsxs(RigidBodyRef, { ref: rigidBodyRef, name: "character", position: position, positionLerp: positionLerp, rotation: euler, children: [_jsx(CapsuleCollider, { ref: colliderRef, args: [collider.height, collider.radius], position: [0, collider.height + collider.radius, 0] }), _jsx(InnerGroupRef, { type: "character", ref: innerGroupRef, url: urls.characterUrl, currentAnimation: currentAnimation, children: children })] }) })) }));
 }

@@ -91,7 +91,6 @@ export function normalDirection({
 
 export default function direction(prop: calcPropType) {
   const {
-    state,
     worldContext: { joystick, mode, activeState, control, clicker },
   } = prop;
   if (mode.control === "normal") {

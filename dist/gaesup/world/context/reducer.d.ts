@@ -17,6 +17,7 @@ export declare function gaesupWorldReducer(props: gaesupWorldContextType, action
     animationState: import("./type").animationStateType;
     keyBoardMap: import("../../tools/keyBoardToolTip/type").keyboardMapType;
     cameraOption: import("./type").cameraOptionType;
+    clicker: import("./type").clickerType;
     moveTo: (position: import("three").Vector3, target: import("three").Vector3) => Promise<void>;
     rideable: {
         [key: string]: import("./type").rideableType;

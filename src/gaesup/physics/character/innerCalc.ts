@@ -1,4 +1,4 @@
-import { quat, vec3 } from "@react-three/rapier";
+import { quat } from "@react-three/rapier";
 import { calcPropType } from "../type";
 
 export default function innerCalc(prop: calcPropType) {
@@ -13,8 +13,6 @@ export default function innerCalc(prop: calcPropType) {
     delta,
   } = prop;
 
-  activeState.position = vec3(rigidBodyRef.current.translation());
-  activeState.velocity = vec3(rigidBodyRef.current.linvel());
   if (states.isJumping || rigidBodyRef.current.linvel().y < 0) {
     rigidBodyRef.current.setLinearDamping(linearDamping);
   } else {

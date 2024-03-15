@@ -26,7 +26,9 @@ export function GamePad(props) {
         .filter(function (item) {
         return !(item.tag === "run" && mode.controller === "joystick");
     });
-    return (_jsx(_Fragment, { children: (mode.controller === "joystick" || mode.controller === "gameboy") && (_jsx("div", { className: "gamePad", style: gamePadStyle, children: GamePadDirections.map(function (item, key) {
+    return (_jsx(_Fragment, { children: (mode.controller === "joystick" ||
+            mode.controller === "gameboy" ||
+            mode.controller === "clicker") && (_jsx("div", { className: "gamePad", style: gamePadStyle, children: GamePadDirections.map(function (item, key) {
                 return (_jsx(GamePadButton, { value: item.value, name: item.name, gamePadButtonStyle: gamePadButtonStyle }, key));
             }) })) }));
 }

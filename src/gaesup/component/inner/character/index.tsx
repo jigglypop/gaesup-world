@@ -38,6 +38,7 @@ export function CharacterInnerRef({
   position,
   euler,
   currentAnimation,
+  positionLerp,
 }: {
   children: ReactNode;
   refs: Partial<refsType>;
@@ -46,6 +47,7 @@ export function CharacterInnerRef({
   euler?: THREE.Euler;
   animationRef?: Ref<Object3D<Object3DEventMap>>;
   currentAnimation?: string;
+  positionLerp?: number;
 }) {
   const { outerGroupRef, rigidBodyRef, colliderRef, innerGroupRef } = refs;
   const { size } = useGltfAndSize({ url: urls.characterUrl });
@@ -58,6 +60,7 @@ export function CharacterInnerRef({
             ref={rigidBodyRef}
             name={"character"}
             position={position}
+            positionLerp={positionLerp}
             rotation={euler}
           >
             <CapsuleCollider

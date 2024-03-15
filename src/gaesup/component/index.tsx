@@ -27,6 +27,7 @@ export function GaesupComponent({
       )}
       {mode.type === "vehicle" && (
         <VehicleRef
+          props={props}
           groundRay={props.groundRay}
           refs={refs}
           urls={urls}
@@ -43,6 +44,8 @@ export function GaesupComponent({
       )}
       {mode.type === "airplane" && (
         <AirplaneRef
+          props={props}
+          groundRay={props.groundRay}
           refs={refs}
           urls={urls}
           enableRiding={enableRiding}
