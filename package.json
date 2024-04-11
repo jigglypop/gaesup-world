@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@dimforge/rapier3d": "^0.12.0",
+    "@dimforge/rapier3d-compat": "^0.12.0",
     "@react-icons/all-files": "^4.1.0",
     "@react-three/drei": "9.102.6",
     "@react-three/fiber": "8.16.1",
@@ -25,15 +26,18 @@
     "@types/three": "^0.162.0",
     "gh-pages": "^6.1.1",
     "leva": "0.9.35",
+    "lodash": "^4.17.21",
     "node-fetch": "3.3.2",
     "react": "^18.2.0",
     "react-device-detect": "^2.2.3",
     "react-dom": "^18.2.0",
     "react-icons": "^5.0.1",
     "react-use-refs": "^1.0.1",
-    "three": "^0.163.0"
+    "three": "^0.163.0",
+    "three-stdlib": "^2.29.6"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.0",
     "@types/react": "^18.2.73",
     "@types/react-dom": "^18.2.23",
     "@typescript-eslint/eslint-plugin": "^7.4.0",
@@ -73,5 +77,6 @@
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/jigglypop/gaesup-world/issues"
-  }
+  },
+  "packageManager": "yarn@4.1.1"
 }

@@ -3,7 +3,7 @@
 import { euler } from "@react-three/rapier";
 import { throttle } from "lodash";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { V3, useGaesupController } from "../../src";
+import { PassiveCharacter, V3, useGaesupController } from "../../src";
 
 export default function Passive() {
   const points = [V3(10, 0, 10)];
@@ -74,7 +74,7 @@ export default function Passive() {
 
   return (
     <group>
-      {/* {points.map((point, index) => {
+      {points.map((point, index) => {
         return (
           <PassiveCharacter
             key={index}
@@ -87,7 +87,7 @@ export default function Passive() {
             <></>
           </PassiveCharacter>
         );
-      })} */}
+      })}
     </group>
   );
 }
