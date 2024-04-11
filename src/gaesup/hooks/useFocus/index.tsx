@@ -1,4 +1,5 @@
 import { useContext } from "react";
+import * as THREE from "three";
 import { makeNormalCameraPosition } from "../../camera/control/normal";
 import {
   GaesupWorldContext,

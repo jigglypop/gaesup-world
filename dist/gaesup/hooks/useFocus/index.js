@@ -102,91 +102,81 @@ export function useFocus() {
             return [2 /*return*/];
         });
     }); };
-    var focus = function (_a) {
-        var zoom = _a.zoom, target = _a.target, position = _a.position;
-        return __awaiter(_this, void 0, void 0, function () {
-            return __generator(this, function (_b) {
-                if (zoom)
-                    cameraOption.zoom = zoom;
-                cameraOption.position.lerp(position, 0.1);
-                cameraOption.target.lerp(target, 0.1);
-                return [2 /*return*/];
-            });
+    var focus = function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
+        var zoom = _b.zoom, target = _b.target, position = _b.position;
+        return __generator(this, function (_c) {
+            if (zoom)
+                cameraOption.zoom = zoom;
+            cameraOption.position.lerp(position, 0.1);
+            cameraOption.target.lerp(target, 0.1);
+            return [2 /*return*/];
         });
-    };
-    var free = function (_a) {
-        var zoom = _a.zoom;
-        return __awaiter(_this, void 0, void 0, function () {
-            return __generator(this, function (_b) {
-                if (zoom)
-                    cameraOption.zoom = zoom;
-                cameraOption.position.lerp(makeNormalCameraPosition(activeState, cameraOption), 0.1);
-                cameraOption.target.lerp(activeState.position.clone(), 0.1);
-                return [2 /*return*/];
-            });
+    }); };
+    var free = function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
+        var zoom = _b.zoom;
+        return __generator(this, function (_c) {
+            if (zoom)
+                cameraOption.zoom = zoom;
+            cameraOption.position.lerp(makeNormalCameraPosition(activeState, cameraOption), 0.1);
+            cameraOption.target.lerp(activeState.position.clone(), 0.1);
+            return [2 /*return*/];
         });
-    };
-    var move = function (_a) {
-        var newPosition = _a.newPosition;
-        return __awaiter(_this, void 0, void 0, function () {
-            return __generator(this, function (_b) {
-                cameraOption.position.lerp(newPosition.clone(), 0.1);
-                return [2 /*return*/];
-            });
+    }); };
+    var move = function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
+        var newPosition = _b.newPosition;
+        return __generator(this, function (_c) {
+            cameraOption.position.lerp(newPosition.clone(), 0.1);
+            return [2 /*return*/];
         });
-    };
-    var focusOn = function (_a) {
-        var zoom = _a.zoom, target = _a.target, position = _a.position;
-        return __awaiter(_this, void 0, void 0, function () {
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0: return [4 /*yield*/, close()];
-                    case 1:
-                        _b.sent();
-                        return [4 /*yield*/, on()];
-                    case 2:
-                        _b.sent();
-                        return [4 /*yield*/, move({ newPosition: position })];
-                    case 3:
-                        _b.sent();
-                        return [4 /*yield*/, focus({ zoom: zoom, target: target, position: position })];
-                    case 4:
-                        _b.sent();
-                        return [4 /*yield*/, dispatchAsync()];
-                    case 5:
-                        _b.sent();
-                        return [2 /*return*/];
-                }
-            });
+    }); };
+    var focusOn = function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
+        var zoom = _b.zoom, target = _b.target, position = _b.position;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
+                case 0: return [4 /*yield*/, close()];
+                case 1:
+                    _c.sent();
+                    return [4 /*yield*/, on()];
+                case 2:
+                    _c.sent();
+                    return [4 /*yield*/, move({ newPosition: position })];
+                case 3:
+                    _c.sent();
+                    return [4 /*yield*/, focus({ zoom: zoom, target: target, position: position })];
+                case 4:
+                    _c.sent();
+                    return [4 /*yield*/, dispatchAsync()];
+                case 5:
+                    _c.sent();
+                    return [2 /*return*/];
+            }
         });
-    };
-    var focusOff = function (_a) {
-        var zoom = _a.zoom;
-        return __awaiter(_this, void 0, void 0, function () {
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0: return [4 /*yield*/, open()];
-                    case 1:
-                        _b.sent();
-                        return [4 /*yield*/, off()];
-                    case 2:
-                        _b.sent();
-                        return [4 /*yield*/, move({
-                                newPosition: makeNormalCameraPosition(activeState, cameraOption),
-                            })];
-                    case 3:
-                        _b.sent();
-                        return [4 /*yield*/, free({ zoom: zoom })];
-                    case 4:
-                        _b.sent();
-                        return [4 /*yield*/, dispatchAsync()];
-                    case 5:
-                        _b.sent();
-                        return [2 /*return*/];
-                }
-            });
+    }); };
+    var focusOff = function (_a) { return __awaiter(_this, [_a], void 0, function (_b) {
+        var zoom = _b.zoom;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
+                case 0: return [4 /*yield*/, open()];
+                case 1:
+                    _c.sent();
+                    return [4 /*yield*/, off()];
+                case 2:
+                    _c.sent();
+                    return [4 /*yield*/, move({
+                            newPosition: makeNormalCameraPosition(activeState, cameraOption),
+                        })];
+                case 3:
+                    _c.sent();
+                    return [4 /*yield*/, free({ zoom: zoom })];
+                case 4:
+                    _c.sent();
+                    return [4 /*yield*/, dispatchAsync()];
+                case 5:
+                    _c.sent();
+                    return [2 /*return*/];
+            }
         });
-    };
+    }); };
     return {
         open: open,
         close: close,

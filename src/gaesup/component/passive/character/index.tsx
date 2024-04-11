@@ -1,7 +1,12 @@
 import { Collider } from "@dimforge/rapier3d-compat";
 import { useFrame } from "@react-three/fiber";
-import { RapierRigidBody, quat } from "@react-three/rapier";
+import {
+  RapierRigidBody,
+  RigidBodyTypeString,
+  quat,
+} from "@react-three/rapier";
 import { useEffect, useMemo, useRef } from "react";
+import * as THREE from "three";
 import { refsType } from "../../../controller/type";
 import { urlsType } from "../../../world/context/type";
 import { CharacterInnerRef } from "../../inner/character";
@@ -14,6 +19,7 @@ export type passiveCharacterPropsType = {
   gravityScale?: number;
   children?: React.ReactNode;
   positionLerp?: number;
+  type?: RigidBodyTypeString;
 };
 
 export function PassiveCharacter(props: passiveCharacterPropsType) {
@@ -58,6 +64,7 @@ export function PassiveCharacter(props: passiveCharacterPropsType) {
       urls={props.urls}
       currentAnimation={props.currentAnimation}
       positionLerp={props.positionLerp}
+      type={props.type}
     >
       {props.children}
     </CharacterInnerRef>

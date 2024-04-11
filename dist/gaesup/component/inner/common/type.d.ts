@@ -1,5 +1,6 @@
 /// <reference types="react" />
-import { CollisionEnterPayload } from "@react-three/rapier";
+import { CollisionEnterPayload, RigidBodyTypeString } from "@react-three/rapier";
+import * as THREE from "three";
 import { refsType } from "../../../controller/type";
 import { urlsType } from "../../../world/context/type";
 export type refPropsType = {
@@ -17,4 +18,5 @@ export type refPropsType = {
     };
     currentAnimation?: string;
     onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
+    type?: RigidBodyTypeString;
 };

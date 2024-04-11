@@ -1,5 +1,6 @@
 import { CSSProperties } from "react";
 import { actionsType, refsType } from "../../controller/type";
+import * as THREE from "three";
 import { joyStickInnerType } from "../../tools/joyStick/type";
 import { keyboardMapType } from "../../tools/keyBoardToolTip/type";
 import { minimapInnerType } from "../../tools/miniMap/type";

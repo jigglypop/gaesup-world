@@ -1,5 +1,6 @@
 /// <reference types="react" />
 import { Collider } from "@dimforge/rapier3d-compat";
+import * as THREE from "three";
 import { urlsType } from "../../../world/context/type";
 export declare const VehicleWheelCollider: import("react").ForwardRefExoticComponent<{
     urls: urlsType;

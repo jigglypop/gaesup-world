@@ -1,7 +1,8 @@
 import { refsType } from "../../../controller/type";
 
-import { CapsuleCollider } from "@react-three/rapier";
+import { CapsuleCollider, RigidBodyTypeString } from "@react-three/rapier";
 import { ReactNode, Ref } from "react";
+import * as THREE from "three";
 import { Object3D, Object3DEventMap } from "three";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 import { urlsType } from "../../../world/context/type";
@@ -39,6 +40,7 @@ export function CharacterInnerRef({
   euler,
   currentAnimation,
   positionLerp,
+  type,
 }: {
   children: ReactNode;
   refs: Partial<refsType>;
@@ -48,6 +50,7 @@ export function CharacterInnerRef({
   animationRef?: Ref<Object3D<Object3DEventMap>>;
   currentAnimation?: string;
   positionLerp?: number;
+  type?: RigidBodyTypeString;
 }) {
   const { outerGroupRef, rigidBodyRef, colliderRef, innerGroupRef } = refs;
   const { size } = useGltfAndSize({ url: urls.characterUrl });
@@ -62,6 +65,7 @@ export function CharacterInnerRef({
             position={position}
             positionLerp={positionLerp}
             rotation={euler}
+            type={type}
           >
             <CapsuleCollider
               ref={colliderRef}

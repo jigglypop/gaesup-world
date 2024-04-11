@@ -2,6 +2,7 @@ import {
   CollisionEnterPayload,
   RapierRigidBody,
   RigidBody,
+  RigidBodyTypeString,
   euler,
 } from "@react-three/rapier";
 import {
@@ -11,6 +12,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import * as THREE from "three";
 
 export const RigidBodyRef = forwardRef(
   (
@@ -22,6 +24,7 @@ export const RigidBodyRef = forwardRef(
       userData,
       onCollisionEnter,
       positionLerp,
+      type,
     }: {
       children: ReactNode;
       name?: string;
@@ -30,6 +33,7 @@ export const RigidBodyRef = forwardRef(
       userData?: { intangible: boolean };
       onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
       positionLerp?: number;
+      type?: RigidBodyTypeString;
     },
     ref: MutableRefObject<RapierRigidBody>
   ) => {
@@ -50,6 +54,7 @@ export const RigidBodyRef = forwardRef(
         rotation={euler().set(0, rotation?.clone().y || 0, 0)}
         userData={userData}
         onCollisionEnter={onCollisionEnter}
+        type={type || "dynamic"}
       >
         {children}
       </RigidBody>

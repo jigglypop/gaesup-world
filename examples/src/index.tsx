@@ -143,6 +143,7 @@ export default function MainComponent() {
               characterUrl: CHARACTER_URL,
             }}
             currentAnimation="jump"
+            type={"fixed"}
           ></PassiveCharacter>
         </Physics>
       </Canvas>

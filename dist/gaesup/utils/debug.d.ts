@@ -1,3 +1,4 @@
+import * as THREE from "three";
 type valueType = string | boolean | number | THREE.Vector3 | THREE.Quaternion | THREE.Euler;
 type constantType = {
     [key: string]: valueType;

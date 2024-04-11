@@ -18,6 +18,7 @@ export function AirplaneInnerRef({
   rotation,
   userData,
   onCollisionEnter,
+  type,
 }: refPropsType) {
   const { airplaneUrl } = urls;
   const { rigidBodyRef, innerGroupRef, outerGroupRef } = refs;
@@ -34,6 +35,7 @@ export function AirplaneInnerRef({
           rotation={rotation}
           userData={userData}
           onCollisionEnter={onCollisionEnter}
+          type={type}
         >
           <CuboidCollider
             args={[size.x / 2, size.y / 2, size.z / 2]}

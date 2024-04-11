@@ -1,4 +1,5 @@
 import { useControls } from "leva";
+import * as THREE from "three";
 
 type valueType =
   | string

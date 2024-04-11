@@ -1,4 +1,5 @@
 import { useContext, useState } from "react";
+import * as THREE from "three";
 import { makeNormalCameraPosition } from "../../camera/control/normal";
 import { makeOrbitCameraPosition } from "../../camera/control/orbit";
 import {

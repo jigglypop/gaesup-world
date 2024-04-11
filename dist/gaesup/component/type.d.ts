@@ -1,6 +1,7 @@
 import { ObjectMap } from "@react-three/fiber";
 import { RapierRigidBody } from "@react-three/rapier";
 import { RefObject } from "react";
+import * as THREE from "three";
 import { GLTF } from "three-stdlib";
 export type GLTFResult = GLTF & {
     nodes: {

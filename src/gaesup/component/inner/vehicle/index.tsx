@@ -20,6 +20,7 @@ export function VehicleInnerRef({
   userData,
   currentAnimation,
   onCollisionEnter,
+  type,
 }: refPropsType) {
   const { vehicleUrl, wheelUrl } = urls;
   const { rigidBodyRef, innerGroupRef, outerGroupRef } = refs;
@@ -37,6 +38,7 @@ export function VehicleInnerRef({
           rotation={rotation}
           userData={userData}
           onCollisionEnter={onCollisionEnter}
+          type={type}
         >
           {wheelUrl ? (
             <VehicleWheelCollider urls={urls} vehicleSize={vehicleSize} />

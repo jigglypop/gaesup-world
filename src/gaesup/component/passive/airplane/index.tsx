@@ -3,9 +3,11 @@ import { useFrame } from "@react-three/fiber";
 import {
   CollisionEnterPayload,
   RapierRigidBody,
+  RigidBodyTypeString,
   quat,
 } from "@react-three/rapier";
 import { useMemo, useRef } from "react";
+import * as THREE from "three";
 import { urlsType } from "../../../world/context/type";
 import { AirplaneInnerRef } from "../../inner/airplane";
 
@@ -17,6 +19,7 @@ export type passiveAirplanePropsType = {
   offset?: THREE.Vector3;
   children?: React.ReactNode;
   onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
+  type?: RigidBodyTypeString;
 };
 
 export function PassiveAirplane(props: passiveAirplanePropsType) {
@@ -70,6 +73,7 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
       userData={{ intangible: true }}
       onCollisionEnter={props.onCollisionEnter}
       currentAnimation={props.currentAnimation}
+      type={props.type}
     >
       {props.children}
     </AirplaneInnerRef>

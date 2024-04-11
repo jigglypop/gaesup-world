@@ -36,5 +36,5 @@ export function PassiveAirplane(props) {
                 : 0.1, false);
         }
     });
-    return (_jsx(AirplaneInnerRef, { refs: refs, urls: urls, position: position, rotation: euler, userData: { intangible: true }, onCollisionEnter: props.onCollisionEnter, currentAnimation: props.currentAnimation, children: props.children }));
+    return (_jsx(AirplaneInnerRef, { refs: refs, urls: urls, position: position, rotation: euler, userData: { intangible: true }, onCollisionEnter: props.onCollisionEnter, currentAnimation: props.currentAnimation, type: props.type, children: props.children }));
 }

@@ -3,6 +3,7 @@
 import { Collider } from "@dimforge/rapier3d-compat";
 import { RapierRigidBody } from "@react-three/rapier";
 import { useContext, useMemo, useReducer, useRef } from "react";
+import * as THREE from "three";
 import Camera from "../camera";
 
 import { KeyboardControls } from "@react-three/drei";

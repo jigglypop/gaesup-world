@@ -1,4 +1,5 @@
 import { Ref } from "react";
+import * as THREE from "three";
 import { AnimationAction, AnimationClip, AnimationMixer, Object3D, Object3DEventMap } from "three";
 import { groundRayType } from "../controller/type";
 export type Api<T extends AnimationClip> = {
@@ -29,17 +30,17 @@ export type playResultType = {
 };
 export declare function subscribeActions({ type, groundRay, animations, }: subscribeActionsType): {
     animationResult: {
-        ref: import("react").MutableRefObject<Object3D<Object3DEventMap>>;
-        clips: AnimationClip[];
-        mixer: AnimationMixer;
+        ref: import("react").MutableRefObject<THREE.Object3D<THREE.Object3DEventMap>>;
+        clips: THREE.AnimationClip[];
+        mixer: THREE.AnimationMixer;
         names: string[];
         actions: {
-            [x: string]: AnimationAction;
+            [x: string]: THREE.AnimationAction;
         };
     };
 };
 export default function playActions({ type, animationResult, currentAnimation, }: playActionsType): {
-    animationRef: import("react").MutableRefObject<Object3D<Object3DEventMap>>;
+    animationRef: import("react").MutableRefObject<THREE.Object3D<THREE.Object3DEventMap>>;
     currentAnimation: string;
 };
 export declare const setAnimation: ({ currentAnimation, actions, type, }: {

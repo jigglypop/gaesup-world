@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import * as THREE from "three";
 import { keyboardMapType } from "../tools/keyBoardToolTip/type";
 import { dispatchType } from "../utils/type";
 import { blockType, cameraOptionType, gaesupWorldContextType, modeType, urlsType } from "./context/type";

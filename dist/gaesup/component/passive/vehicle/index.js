@@ -13,5 +13,5 @@ export function PassiveVehicle(props) {
         colliderRef: colliderRef,
     };
     var position = props.position, euler = props.euler, currentAnimation = props.currentAnimation, urls = props.urls;
-    return (_jsx(VehicleInnerRef, { refs: refs, urls: urls, position: position, rotation: euler, userData: { intangible: true }, onCollisionEnter: props.onCollisionEnter, currentAnimation: currentAnimation, children: props.children }));
+    return (_jsx(VehicleInnerRef, { refs: refs, urls: urls, position: position, rotation: euler, userData: { intangible: true }, onCollisionEnter: props.onCollisionEnter, currentAnimation: currentAnimation, type: props.type, children: props.children }));
 }

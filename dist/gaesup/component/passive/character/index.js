@@ -1,6 +1,6 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { useFrame } from "@react-three/fiber";
-import { quat } from "@react-three/rapier";
+import { quat, } from "@react-three/rapier";
 import { useEffect, useMemo, useRef } from "react";
 import { CharacterInnerRef } from "../../inner/character";
 export function PassiveCharacter(props) {
@@ -31,5 +31,5 @@ export function PassiveCharacter(props) {
             innerGroupRef.current.quaternion.rotateTowards(quat().setFromEuler(euler), 10 * delta);
         }
     });
-    return (_jsx(CharacterInnerRef, { position: position, refs: refs, urls: props.urls, currentAnimation: props.currentAnimation, positionLerp: props.positionLerp, children: props.children }));
+    return (_jsx(CharacterInnerRef, { position: position, refs: refs, urls: props.urls, currentAnimation: props.currentAnimation, positionLerp: props.positionLerp, type: props.type, children: props.children }));
 }

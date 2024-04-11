@@ -17,7 +17,7 @@ import initDebug from "../debug";
 export default function initGaesupWorld(props) {
     var _a = useReducer(gaesupWorldReducer, {
         debug: (props.debug && isDesktop) || gaesupWorldDefault.debug,
-        activeState: gaesupWorldDefault.activeState,
+        activeState: __assign(__assign({}, gaesupWorldDefault.activeState), { position: props.startPosition || gaesupWorldDefault.activeState.position }),
         cameraOption: Object.assign(gaesupWorldDefault.cameraOption, props.cameraOption || {}),
         mode: Object.assign(gaesupWorldDefault.mode, props.mode || {}),
         urls: Object.assign(gaesupWorldDefault.urls, props.urls || {}),

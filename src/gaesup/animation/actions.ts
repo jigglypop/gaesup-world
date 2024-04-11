@@ -1,6 +1,7 @@
 import { useAnimations } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { Ref, useContext, useEffect } from "react";
+import * as THREE from "three";
 import {
   AnimationAction,
   AnimationClip,

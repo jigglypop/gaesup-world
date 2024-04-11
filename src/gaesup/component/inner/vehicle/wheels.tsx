@@ -7,6 +7,7 @@ import {
   useRevoluteJoint,
 } from "@react-three/rapier";
 import { RefObject, createRef, useContext, useRef } from "react";
+import * as THREE from "three";
 import { refsType } from "../../../controller/type";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 import { GaesupWorldContext } from "../../../world/context";

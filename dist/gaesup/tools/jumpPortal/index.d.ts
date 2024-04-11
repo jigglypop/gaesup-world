@@ -1,4 +1,5 @@
 import { CSSProperties } from "react";
+import * as THREE from "three";
 import "./style.css";
 export type JumpPortalType = {
     text?: string;

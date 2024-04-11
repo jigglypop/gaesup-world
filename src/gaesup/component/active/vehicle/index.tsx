@@ -1,5 +1,6 @@
 import { vec3 } from "@react-three/rapier";
 import { ReactNode } from "react";
+import * as THREE from "three";
 import playActions, { subscribeActions } from "../../../animation/actions";
 import initCallback from "../../../controller/initialize/callback";
 import {

@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { Api } from "../../../animation/actions";
 import { controllerInnerType } from "../../type";
 export default function initCallback({ props, animationResult, type, }: {

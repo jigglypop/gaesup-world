@@ -1,6 +1,11 @@
 import { Collider } from "@dimforge/rapier3d-compat";
-import { CollisionEnterPayload, RapierRigidBody } from "@react-three/rapier";
+import {
+  CollisionEnterPayload,
+  RapierRigidBody,
+  RigidBodyTypeString,
+} from "@react-three/rapier";
 import { useRef } from "react";
+import * as THREE from "three";
 import { urlsType } from "../../../world/context/type";
 import { VehicleInnerRef } from "../../inner/vehicle";
 
@@ -12,6 +17,7 @@ export type passiveVehiclePropsType = {
   children?: React.ReactNode;
   offset?: THREE.Vector3;
   onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
+  type?: RigidBodyTypeString;
 };
 export function PassiveVehicle(props: passiveVehiclePropsType) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
@@ -37,6 +43,7 @@ export function PassiveVehicle(props: passiveVehiclePropsType) {
       userData={{ intangible: true }}
       onCollisionEnter={props.onCollisionEnter}
       currentAnimation={currentAnimation}
+      type={props.type}
     >
       {props.children}
     </VehicleInnerRef>

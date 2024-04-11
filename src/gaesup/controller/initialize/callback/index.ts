@@ -1,5 +1,6 @@
 import { useFrame } from "@react-three/fiber";
 import { useContext, useEffect } from "react";
+import * as THREE from "three";
 import { Api } from "../../../animation/actions";
 import { useGaesupAnimation } from "../../../hooks/useGaesupAnimation";
 import {

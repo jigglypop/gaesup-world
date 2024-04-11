@@ -1,4 +1,5 @@
 import { forwardRef, ReactNode, Ref } from "react";
+import * as THREE from "three";
 
 export const OuterGroupRef = forwardRef(
   (

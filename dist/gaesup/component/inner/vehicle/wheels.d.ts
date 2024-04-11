@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { refsType } from "../../../controller/type";
 import { urlsType } from "../../../world/context/type";
 export declare function WheelsRef({ vehicleSize, refs, urls, }: {

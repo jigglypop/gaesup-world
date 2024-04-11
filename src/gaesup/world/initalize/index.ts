@@ -9,7 +9,10 @@ import { gaesupWorldPropsType } from "../type";
 export default function initGaesupWorld(props: gaesupWorldPropsType) {
   const [value, dispatch] = useReducer(gaesupWorldReducer, {
     debug: (props.debug && isDesktop) || gaesupWorldDefault.debug,
-    activeState: gaesupWorldDefault.activeState,
+    activeState: {
+      ...gaesupWorldDefault.activeState,
+      position: props.startPosition || gaesupWorldDefault.activeState.position,
+    },
     cameraOption: Object.assign(
       gaesupWorldDefault.cameraOption,
       props.cameraOption || {}
