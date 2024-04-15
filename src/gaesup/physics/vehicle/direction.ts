@@ -4,7 +4,6 @@ import { calcPropType } from "../type";
 
 export function joystick(prop: calcPropType) {
   const {
-    state,
     worldContext: { activeState, joystick },
   } = prop;
   const zAxis = joystick.joyStickOrigin.isOn ? 1 : 0;

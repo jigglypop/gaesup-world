@@ -53,7 +53,7 @@ export default function calculation(prop: controllerInnerType) {
       worldContext,
       controllerContext,
       dispatch,
-      world,
+      // world,
       matchSizes: getSizesByUrls(controllerContext?.urls),
     };
     if (mode.type === "vehicle") vehicleCalculation(calcProp);

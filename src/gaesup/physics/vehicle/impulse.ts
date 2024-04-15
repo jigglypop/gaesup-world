@@ -38,7 +38,6 @@ export default function impulse(prop: calcPropType) {
       speed = shift ? accelRatio : 1;
     }
     // impulse = mass * velocity
-
     rigidBodyRef.current.applyImpulse(
       vec3()
         .addScalar(speed)

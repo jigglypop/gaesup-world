@@ -5,7 +5,6 @@ import { calcPropType } from "../type";
 export default function direction(prop: calcPropType) {
   const {
     innerGroupRef,
-    rigidBodyRef,
     worldContext: { joystick, activeState, control, mode },
     controllerContext: { airplane },
     matchSizes,

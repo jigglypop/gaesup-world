@@ -1,6 +1,5 @@
 import { RootState } from "@react-three/fiber";
 
-import { World } from "@dimforge/rapier3d-compat";
 import * as THREE from "three";
 import { gaesupControllerType } from "../controller/context/type";
 import { controllerInnerType, refsType } from "../controller/type";
@@ -23,7 +22,7 @@ export type calcPropType = controllerInnerType & {
   };
   delta?: number;
   dispatch?: dispatchType<gaesupWorldContextType>;
-  world: World;
+  // world: World;
 };
 
 export type intersectObjectMapType = {
