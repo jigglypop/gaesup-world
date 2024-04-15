@@ -15,7 +15,6 @@ import {
   // KeyBoardToolTip,
   // MiniMap,
   PassiveCharacter,
-  Rideable,
   V3,
 } from "../../src";
 import { Clicker } from "../../src/gaesup/tools/clicker";
@@ -61,9 +60,8 @@ export default function MainComponent() {
       <Canvas
         shadows
         dpr={[1, 2]}
-        // dpr={[1, 2]}
         style={{ width: "100vw", height: "100vh", position: "fixed" }}
-        // frameloop="demand"
+        frameloop="demand"
       >
         <Environment background preset="sunset" blur={0.8} />
         <directionalLight
@@ -109,14 +107,14 @@ export default function MainComponent() {
           {/* <Second /> */}
           <Floor />
           <Passive />
-          <Rideable
+          {/* <Rideable
             objectkey="gorani"
             url={S3 + "/gorani.glb"}
             objectType={"vehicle"}
             enableRiding={true}
             offset={V3(0, 2, 0)}
             position={V3(-20, 0, 0)}
-          />
+          /> */}
           <Clicker
             onMarker={
               <group rotation={euler({ x: 0, y: Math.PI / 2, z: 0 })}>

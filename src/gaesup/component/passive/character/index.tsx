@@ -43,7 +43,7 @@ export function PassiveCharacter(props: passiveCharacterPropsType) {
   }, [props]);
 
   useEffect(() => {
-    if (rigidBodyRef || rigidBodyRef.current) {
+    if (rigidBodyRef && rigidBodyRef.current) {
       rigidBodyRef.current.setEnabledRotations(false, false, false, false);
     }
   }, []);

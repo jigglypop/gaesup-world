@@ -22,7 +22,7 @@ export function PassiveCharacter(props) {
         };
     }, [props]), position = _a.position, euler = _a.euler;
     useEffect(function () {
-        if (rigidBodyRef || rigidBodyRef.current) {
+        if (rigidBodyRef && rigidBodyRef.current) {
             rigidBodyRef.current.setEnabledRotations(false, false, false, false);
         }
     }, []);

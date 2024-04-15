@@ -7,13 +7,12 @@ import { PassiveCharacter, V3, useGaesupController } from "../../src";
 
 export default function Passive() {
   const points = [V3(10, 0, 10)];
-  for (let x = -5; x <= 5; x += 5) {
-    for (let y = -5; y <= 5; y += 5) {
+  for (let x = -10; x <= 10; x += 15) {
+    for (let y = -10; y <= 10; y += 15) {
       points.push(V3(x, 0, y));
     }
   }
   // setTimeout으로 1초마다 상태값 변경하게 하는 로직
-
   const gaesupState = useGaesupController();
   const { state, currentAnimation, urls } = gaesupState;
 
@@ -33,7 +32,6 @@ export default function Passive() {
         state: {
           ...newState,
         },
-
         currentAnimation,
         urls: { ...urls },
       });
@@ -73,7 +71,7 @@ export default function Passive() {
   }, [throttledSocket]);
 
   return (
-    <group>
+    <>
       {points.map((point, index) => {
         return (
           <PassiveCharacter
@@ -88,6 +86,6 @@ export default function Passive() {
           </PassiveCharacter>
         );
       })}
-    </group>
+    </>
   );
 }

@@ -40,8 +40,6 @@ export default function useClicker() {
       },
     });
   };
-  // const moveClicker = _.throttle(moveClick, 100);
-
   // 거리 계산
   useEffect(() => {
     if (mode.controller !== "clicker") return;

@@ -1,5 +1,5 @@
 import { useGraph } from "@react-three/fiber";
-import { Ref, Suspense, forwardRef, useMemo } from "react";
+import { Ref,  forwardRef, useMemo } from "react";
 import * as THREE from "three";
 import { SkeletonUtils } from "three-stdlib";
 
@@ -33,7 +33,6 @@ export const InnerGroupRef = forwardRef(
     );
 
     return (
-      <Suspense fallback={null}>
         <group
           receiveShadow
           castShadow
@@ -77,7 +76,6 @@ export const InnerGroupRef = forwardRef(
             }
           })}
         </group>
-      </Suspense>
     );
   }
 );

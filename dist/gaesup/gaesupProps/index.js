@@ -11,7 +11,7 @@ var __assign = (this && this.__assign) || function () {
 };
 import { jsx as _jsx } from "react/jsx-runtime";
 import { vec3 } from "@react-three/rapier";
-import { Suspense, useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef } from "react";
 import * as THREE from "three";
 import useClicker from "../hooks/useClicker";
 import { GaesupWorldContext, GaesupWorldDispatchContext, } from "../world/context";
@@ -42,5 +42,5 @@ export function GaeSupProps(_a) {
             });
         }
     }, []);
-    return (_jsx(Suspense, { fallback: null, children: _jsx("group", { ref: groupRef, position: position, onPointerDown: function (e) { return moveClicker(e, false, type); }, onDoubleClick: function (e) { return moveClicker(e, true, type); }, children: children }) }));
+    return (_jsx("group", { ref: groupRef, position: position, onPointerDown: function (e) { return moveClicker(e, false, type); }, onDoubleClick: function (e) { return moveClicker(e, true, type); }, children: children }));
 }
