@@ -1,5 +1,4 @@
 import { useFrame } from "@react-three/fiber";
-import { useRapier } from "@react-three/rapier";
 import { useContext, useEffect } from "react";
 import { GaesupControllerContext } from "../controller/context";
 import { controllerInnerType } from "../controller/type";
@@ -16,7 +15,6 @@ import { calcPropType } from "./type";
 import vehicleCalculation from "./vehicle";
 
 export default function calculation(prop: controllerInnerType) {
-  const { world } = useRapier();
   const worldContext = useContext(GaesupWorldContext);
   const controllerContext = useContext(GaesupControllerContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
@@ -53,7 +51,6 @@ export default function calculation(prop: controllerInnerType) {
       worldContext,
       controllerContext,
       dispatch,
-      // world,
       matchSizes: getSizesByUrls(controllerContext?.urls),
     };
     if (mode.type === "vehicle") vehicleCalculation(calcProp);
