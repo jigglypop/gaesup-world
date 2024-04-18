@@ -1,6 +1,6 @@
-import { calcPropType } from "../type";
+import { calcType } from "../type";
 
-export default function rotate(prop: calcPropType) {
+export default function rotate(prop: calcType) {
   const {
     outerGroupRef,
     worldContext: { states, activeState },

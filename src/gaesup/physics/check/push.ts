@@ -1,6 +1,6 @@
-import { calcPropType } from "../type";
+import { calcType } from "../type";
 
-export default function push(prop: calcPropType) {
+export default function push(prop: calcType) {
   const {
     worldContext: { states, control },
   } = prop;

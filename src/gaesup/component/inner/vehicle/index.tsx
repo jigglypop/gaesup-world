@@ -1,64 +1,55 @@
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
-import { InnerGroupRef } from "../common/InnerGroupRef";
 import { OuterGroupRef } from "../common/OuterGroupRef";
 import { RigidBodyRef } from "../common/RigidbodyRef";
-import { refPropsType } from "../common/type";
 import RiderRef from "../rider";
 import { VehicleCollider, VehicleWheelCollider } from "./collider";
+import { vehicleInnerType } from "./type";
 import { WheelsRef } from "./wheels";
 
-export function VehicleInnerRef({
-  children,
-  refs,
-  urls,
-  isRiderOn,
-  enableRiding,
-  offset,
-  name,
-  position,
-  rotation,
-  userData,
-  currentAnimation,
-  onCollisionEnter,
-  type,
-}: refPropsType) {
-  const { vehicleUrl, wheelUrl } = urls;
-  const { rigidBodyRef, innerGroupRef, outerGroupRef } = refs;
+export function VehicleInnerRef(props: vehicleInnerType) {
+  const { vehicleUrl, wheelUrl } = props.urls;
+  const { rigidBodyRef, innerGroupRef, outerGroupRef, colliderRef } = refs;
   const { size: vehicleSize } = useGltfAndSize({
-    url: urls.vehicleUrl,
+    url: props.urls.vehicleUrl,
   });
 
   return (
     <OuterGroupRef ref={outerGroupRef}>
-      {vehicleUrl && rigidBodyRef && (
+      {vehicleUrl && (
         <RigidBodyRef
           ref={rigidBodyRef}
-          name={name}
-          position={position}
-          rotation={rotation}
-          userData={userData}
-          onCollisionEnter={onCollisionEnter}
-          type={type}
+          name={props.name}
+          url={props.urls.vehicleUrl}
+          // position={position}
+          // rotation={rotation}
+          // userData={userData}
+          // onCollisionEnter={onCollisionEnter}
+          // type={type}
+          // url={urls.vehicleUrl}
+          outerGroupRef={outerGroupRef}
+          innerGroupRef={innerGroupRef}
+          rigidBodyRef={rigidBodyRef}
+          colliderRef={colliderRef}
+          componentType="vehicle"
+          {...props}
         >
           {wheelUrl ? (
-            <VehicleWheelCollider urls={urls} vehicleSize={vehicleSize} />
+            <VehicleWheelCollider urls={props.urls} vehicleSize={vehicleSize} />
           ) : (
             <VehicleCollider vehicleSize={vehicleSize} />
           )}
-          {enableRiding && isRiderOn && urls.characterUrl && (
-            <RiderRef urls={urls} offset={offset} />
+          {props.enableRiding && props.isRiderOn && props.urls.characterUrl && (
+            <RiderRef urls={props.urls} offset={props.offset} />
           )}
-          {children}
-          <InnerGroupRef
-            type={"vehicle"}
-            url={vehicleUrl}
-            currentAnimation={currentAnimation}
-            ref={innerGroupRef}
-          />
+          {props.children}
         </RigidBodyRef>
       )}
       {wheelUrl && (
-        <WheelsRef refs={refs} urls={urls} vehicleSize={vehicleSize} />
+        <WheelsRef
+          refs={props.refs}
+          urls={props.urls}
+          vehicleSize={vehicleSize}
+        />
       )}
     </OuterGroupRef>
   );

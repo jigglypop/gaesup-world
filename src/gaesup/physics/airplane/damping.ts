@@ -1,6 +1,6 @@
-import { calcPropType } from "../type";
+import { calcType } from "../type";
 
-export default function damping(prop: calcPropType) {
+export default function damping(prop: calcType) {
   const {
     rigidBodyRef,
     controllerContext: { airplane },

@@ -65,6 +65,12 @@ export function PassiveCharacter(props: passiveCharacterPropsType) {
       currentAnimation={props.currentAnimation}
       positionLerp={props.positionLerp}
       type={props.type}
+      outerGroupRef={outerGroupRef}
+      innerGroupRef={innerGroupRef}
+      colliderRef={colliderRef}
+      rigidBodyRef={rigidBodyRef}
+      isActive={false}
+      componentType={"character"}
     >
       {props.children}
     </CharacterInnerRef>

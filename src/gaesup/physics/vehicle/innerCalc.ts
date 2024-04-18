@@ -1,7 +1,7 @@
 import { quat, vec3 } from "@react-three/rapier";
-import { calcPropType } from "../type";
+import { calcType } from "../type";
 
-export default function innerCalc(prop: calcPropType) {
+export default function innerCalc(prop: calcType) {
   const {
     rigidBodyRef,
     worldContext: { activeState },

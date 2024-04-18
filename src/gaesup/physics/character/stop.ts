@@ -1,6 +1,6 @@
-import { calcPropType } from "../type";
+import { calcType } from "../type";
 
-export default function stop(prop: calcPropType) {
+export default function stop(prop: calcType) {
   const {
     worldContext: { control, clicker, mode },
   } = prop;

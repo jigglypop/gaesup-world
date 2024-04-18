@@ -1,8 +1,11 @@
 import { RootState } from "@react-three/fiber";
 
+import { Collider } from "@dimforge/rapier3d-compat";
+import { RapierRigidBody } from "@react-three/rapier";
+import { RefObject } from "react";
 import * as THREE from "three";
 import { gaesupControllerType } from "../controller/context/type";
-import { controllerInnerType, refsType } from "../controller/type";
+import { groundRayType, refsType } from "../controller/type";
 import { dispatchType } from "../utils/type";
 import { gaesupWorldContextType, urlsType } from "../world/context/type";
 
@@ -13,7 +16,14 @@ export type hidratePropType = {
   euler: THREE.Euler;
 } & Partial<refsType>;
 
-export type calcPropType = controllerInnerType & {
+export type propInnerType = {
+  colliderRef: RefObject<Collider>;
+  rigidBodyRef: RefObject<RapierRigidBody>;
+  outerGroupRef: RefObject<THREE.Group>;
+  innerGroupRef: RefObject<THREE.Group>;
+};
+
+export type calcPropType = propInnerType & {
   state?: RootState;
   worldContext?: gaesupWorldContextType;
   controllerContext?: gaesupControllerType;
@@ -22,21 +32,21 @@ export type calcPropType = controllerInnerType & {
   };
   delta?: number;
   dispatch?: dispatchType<gaesupWorldContextType>;
-  // world: World;
 };
 
 export type intersectObjectMapType = {
   [uuid: string]: THREE.Mesh;
 };
 
-export type cameraPropType = controllerInnerType & {
-  control: {
-    [key: string]: boolean;
-  };
+export type cameraPropType = {
   state?: RootState;
   worldContext?: gaesupWorldContextType;
   controllerContext?: gaesupControllerType;
-  intersectObjectMap?: intersectObjectMapType;
-  delta?: number;
-  dist?: number;
 };
+
+// calculation
+export type calcType = calcPropType & {
+  groundRay: groundRayType;
+};
+
+// vehicle Inner

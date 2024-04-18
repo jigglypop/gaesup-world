@@ -7,8 +7,8 @@ import { PassiveCharacter, V3, useGaesupController } from "../../src";
 
 export default function Passive() {
   const points = [V3(10, 0, 10)];
-  for (let x = -10; x <= 10; x += 15) {
-    for (let y = -10; y <= 10; y += 15) {
+  for (let x = -10; x <= 10; x += 30) {
+    for (let y = -10; y <= 10; y += 30) {
       points.push(V3(x, 0, y));
     }
   }
@@ -77,7 +77,6 @@ export default function Passive() {
           <PassiveCharacter
             key={index}
             position={states.state.position.clone().add(point)}
-            positionLerp={0.005}
             euler={states.state.euler.clone()}
             currentAnimation={states.currentAnimation}
             urls={states.urls}

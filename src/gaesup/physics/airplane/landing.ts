@@ -1,6 +1,6 @@
-import { calcPropType } from "../type";
+import { calcType } from "../type";
 
-export default function landing(prop: calcPropType) {
+export default function landing(prop: calcType) {
   const {
     worldContext: { states, rideable, mode },
     dispatch,

@@ -57,6 +57,7 @@ export type statesType = {
   isRiderOn: boolean;
   isPush: controlType;
   isLanding: boolean;
+  isFalling: boolean;
 };
 
 export type urlsType = {

@@ -1,14 +1,7 @@
-import { refsType } from "../../../controller/type";
-
-import { CapsuleCollider, RigidBodyTypeString } from "@react-three/rapier";
-import { ReactNode, Ref } from "react";
 import * as THREE from "three";
-import { Object3D, Object3DEventMap } from "three";
-import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
-import { urlsType } from "../../../world/context/type";
-import { InnerGroupRef } from "../common/InnerGroupRef";
 import { OuterGroupRef } from "../common/OuterGroupRef";
 import { RigidBodyRef } from "../common/RigidbodyRef";
+import { characterInnerType } from "./type";
 
 export const calcCharacterColliderProps = (characterSize: THREE.Vector3) => {
   if (!characterSize) return null;
@@ -32,57 +25,23 @@ export type characterColliderType = {
   diameter: number;
 };
 
-export function CharacterInnerRef({
-  children,
-  refs,
-  urls,
-  position,
-  euler,
-  currentAnimation,
-  positionLerp,
-  type,
-}: {
-  children: ReactNode;
-  refs: Partial<refsType>;
-  urls: urlsType;
-  position?: THREE.Vector3;
-  euler?: THREE.Euler;
-  animationRef?: Ref<Object3D<Object3DEventMap>>;
-  currentAnimation?: string;
-  positionLerp?: number;
-  type?: RigidBodyTypeString;
-}) {
-  const { outerGroupRef, rigidBodyRef, colliderRef, innerGroupRef } = refs;
-  const { size } = useGltfAndSize({ url: urls.characterUrl });
-  const collider = calcCharacterColliderProps(size);
+export function CharacterInnerRef(props: characterInnerType) {
+  const { outerGroupRef, rigidBodyRef, colliderRef, innerGroupRef } =
+    props.refs;
   return (
-    <>
-      {collider && (
-        <OuterGroupRef ref={outerGroupRef}>
-          <RigidBodyRef
-            ref={rigidBodyRef}
-            name={"character"}
-            position={position}
-            positionLerp={positionLerp}
-            rotation={euler}
-            type={type}
-          >
-            <CapsuleCollider
-              ref={colliderRef}
-              args={[collider.height, collider.radius]}
-              position={[0, collider.height + collider.radius, 0]}
-            />
-            <InnerGroupRef
-              type={"character"}
-              ref={innerGroupRef}
-              url={urls.characterUrl}
-              currentAnimation={currentAnimation}
-            >
-              {children}
-            </InnerGroupRef>
-          </RigidBodyRef>
-        </OuterGroupRef>
-      )}
-    </>
+    <OuterGroupRef ref={outerGroupRef}>
+      <RigidBodyRef
+        ref={rigidBodyRef}
+        name={"character"}
+        url={props.urls.characterUrl}
+        outerGroupRef={outerGroupRef}
+        innerGroupRef={innerGroupRef}
+        rigidBodyRef={rigidBodyRef}
+        colliderRef={colliderRef}
+        {...props}
+      >
+        {props.children}
+      </RigidBodyRef>
+    </OuterGroupRef>
   );
 }

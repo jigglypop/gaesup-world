@@ -1,6 +1,6 @@
-import { calcPropType } from "../type";
+import { calcType } from "../type";
 
-export default function riding(prop: calcPropType) {
+export default function riding(prop: calcType) {
   const {
     worldContext: { states },
   } = prop;

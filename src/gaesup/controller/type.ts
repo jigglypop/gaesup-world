@@ -1,6 +1,10 @@
 import { Collider, Ray, RayColliderToi } from "@dimforge/rapier3d-compat";
-import { GroupProps } from "@react-three/fiber";
-import { RapierRigidBody, RigidBodyProps } from "@react-three/rapier";
+import { GroupProps, Props } from "@react-three/fiber";
+import {
+  PhysicsProps,
+  RapierRigidBody,
+  RigidBodyProps,
+} from "@react-three/rapier";
 import { ReactNode, RefObject } from "react";
 import * as THREE from "three";
 import { cameraRayType } from "../camera/type";
@@ -98,6 +102,8 @@ export interface controllerOtherPropType extends RigidBodyProps {
   groupProps?: GroupProps;
   rigidBodyProps?: RigidBodyProps;
   debug?: boolean;
+  CanvasProps?: Partial<Props>;
+  PhysicsProps?: Partial<PhysicsProps>;
 }
 
 export type controllerType = controllerOtherPropType &

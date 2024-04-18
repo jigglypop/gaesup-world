@@ -1,7 +1,7 @@
 import { vec3 } from "@react-three/rapier";
-import { calcPropType } from "../type";
+import { calcType } from "../type";
 
-export default function impulse(prop: calcPropType) {
+export default function impulse(prop: calcType) {
   const {
     rigidBodyRef,
     worldContext: { states, activeState },

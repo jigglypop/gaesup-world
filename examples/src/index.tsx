@@ -6,17 +6,7 @@ import { Physics, euler } from "@react-three/rapier";
 import { Canvas } from "@react-three/fiber";
 
 import { FaMapMarkerAlt } from "react-icons/fa";
-import {
-  GaesupController,
-  GaesupWorld,
-  // GameBoy,
-  // GamePad,
-  // JoyStick,
-  // KeyBoardToolTip,
-  // MiniMap,
-  PassiveCharacter,
-  V3,
-} from "../../src";
+import { GaesupController, GaesupWorld, PassiveCharacter, V3 } from "../../src";
 import { Clicker } from "../../src/gaesup/tools/clicker";
 import { InnerHtml } from "../../src/gaesup/utils/innerHtml";
 import Passive from "../passive";
@@ -37,7 +27,7 @@ export const keyBoardMap = [
 ];
 
 export default function MainComponent() {
-  const CHARACTER_URL = S3 + "/orri.glb";
+  const CHARACTER_URL = S3 + "/gaesupyee.glb";
   const AIRPLANE_URL = S3 + "/gaebird.glb";
   const VEHICLE_URL = S3 + "/gorani.glb";
 
@@ -63,7 +53,7 @@ export default function MainComponent() {
         style={{ width: "100vw", height: "100vh", position: "fixed" }}
         frameloop="demand"
       >
-        <Environment background preset="sunset" blur={0.8} />
+        <Environment background preset="sunset" backgroundBlurriness={1} />
         <directionalLight
           castShadow
           shadow-normalBias={0.06}

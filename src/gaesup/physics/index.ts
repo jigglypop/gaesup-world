@@ -1,7 +1,6 @@
 import { useFrame } from "@react-three/fiber";
 import { useContext, useEffect } from "react";
 import { GaesupControllerContext } from "../controller/context";
-import { controllerInnerType } from "../controller/type";
 import { useGaesupGltf } from "../hooks/useGaesupGltf";
 import { V3 } from "../utils";
 import {
@@ -11,17 +10,23 @@ import {
 import airplaneCalculation from "./airplane";
 import characterCalculation from "./character";
 import check from "./check";
-import { calcPropType } from "./type";
+import { calcType } from "./type";
 import vehicleCalculation from "./vehicle";
 
-export default function calculation(prop: controllerInnerType) {
+export default function calculation({
+  groundRay,
+  rigidBodyRef,
+  outerGroupRef,
+  innerGroupRef,
+  colliderRef,
+}) {
   const worldContext = useContext(GaesupWorldContext);
   const controllerContext = useContext(GaesupControllerContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
   const { mode, activeState, block } = worldContext;
   const { getSizesByUrls } = useGaesupGltf();
   useEffect(() => {
-    const { rigidBodyRef, innerGroupRef } = prop;
+    if (!rigidBodyRef || !innerGroupRef) return;
     if (rigidBodyRef.current && innerGroupRef.current) {
       rigidBodyRef.current.lockRotations(false, true);
       activeState.euler.set(0, 0, 0);
@@ -33,7 +38,6 @@ export default function calculation(prop: controllerInnerType) {
   }, [mode.type]);
 
   useFrame((state, delta) => {
-    const { rigidBodyRef, outerGroupRef, innerGroupRef } = prop;
     if (
       !rigidBodyRef ||
       !rigidBodyRef.current ||
@@ -44,8 +48,12 @@ export default function calculation(prop: controllerInnerType) {
     )
       return null;
     if (block.control) return null;
-    const calcProp: calcPropType = {
-      ...prop,
+    const calcProp: calcType = {
+      rigidBodyRef,
+      outerGroupRef,
+      innerGroupRef,
+      colliderRef,
+      groundRay,
       state,
       delta,
       worldContext,

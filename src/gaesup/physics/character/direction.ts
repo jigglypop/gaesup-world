@@ -5,7 +5,7 @@ import {
   clickerType,
   modeType,
 } from "../../world/context/type";
-import { calcPropType } from "../type";
+import { calcType } from "../type";
 
 export function orbitDirection({
   activeState,
@@ -89,7 +89,7 @@ export function normalDirection({
   }
 }
 
-export default function direction(prop: calcPropType) {
+export default function direction(prop: calcType) {
   const {
     worldContext: { joystick, mode, activeState, control, clicker },
   } = prop;

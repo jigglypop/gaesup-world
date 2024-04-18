@@ -1,4 +1,4 @@
-import { forwardRef, ReactNode, Ref } from "react";
+import { forwardRef, MutableRefObject, ReactNode } from "react";
 import * as THREE from "three";
 
 export const OuterGroupRef = forwardRef(
@@ -8,7 +8,7 @@ export const OuterGroupRef = forwardRef(
     }: {
       children: ReactNode;
     },
-    ref: Ref<THREE.Group>
+    ref: MutableRefObject<THREE.Group>
   ) => {
     return (
       <group ref={ref} userData={{ intangible: true }}>

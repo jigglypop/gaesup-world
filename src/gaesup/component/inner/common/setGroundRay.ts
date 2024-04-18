@@ -1,15 +1,13 @@
-import { Collider } from "@dimforge/rapier3d-compat";
 import { useRapier } from "@react-three/rapier";
-import { RefObject } from "react";
 import { groundRayType } from "../../../controller/type";
 import { getRayHit } from "../../../utils";
+import { setGroundRayType } from "./type";
 
-export type setGroundRayType = {
-  groundRay: groundRayType;
-  length: number;
-  colliderRef: RefObject<Collider>;
-};
+/*
 
+  @ setGroundRay
+  // 그라운드 레이캐스터를 설정합니다.
+*/
 export function setGroundRay({
   groundRay,
   length,

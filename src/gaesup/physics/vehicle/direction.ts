@@ -1,8 +1,8 @@
 import { vec3 } from "@react-three/rapier";
 import { V3 } from "../../utils/vector";
-import { calcPropType } from "../type";
+import { calcType } from "../type";
 
-export function joystick(prop: calcPropType) {
+export function joystick(prop: calcType) {
   const {
     worldContext: { activeState, joystick },
   } = prop;
@@ -13,7 +13,7 @@ export function joystick(prop: calcPropType) {
   return front;
 }
 
-export function normal(prop: calcPropType) {
+export function normal(prop: calcType) {
   const {
     worldContext: { activeState, control },
   } = prop;
@@ -25,7 +25,7 @@ export function normal(prop: calcPropType) {
   return front;
 }
 
-export default function direction(prop: calcPropType) {
+export default function direction(prop: calcType) {
   const {
     worldContext: { mode, activeState },
   } = prop;
