@@ -1,5 +1,10 @@
 import { useRapier } from "@react-three/rapier";
 import { getRayHit } from "../../../utils";
+/*
+
+  @ setGroundRay
+  // 그라운드 레이캐스터를 설정합니다.
+*/
 export function setGroundRay(_a) {
     var _b;
     var groundRay = _a.groundRay, length = _a.length, colliderRef = _a.colliderRef;

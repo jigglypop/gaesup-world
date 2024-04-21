@@ -31,5 +31,5 @@ export function PassiveCharacter(props) {
             innerGroupRef.current.quaternion.rotateTowards(quat().setFromEuler(euler), 10 * delta);
         }
     });
-    return (_jsx(CharacterInnerRef, { position: position, refs: refs, urls: props.urls, currentAnimation: props.currentAnimation, positionLerp: props.positionLerp, type: props.type, children: props.children }));
+    return (_jsx(CharacterInnerRef, { position: position, refs: refs, urls: props.urls, currentAnimation: props.currentAnimation, positionLerp: props.positionLerp, type: props.type, outerGroupRef: outerGroupRef, innerGroupRef: innerGroupRef, colliderRef: colliderRef, rigidBodyRef: rigidBodyRef, isActive: false, componentType: "character", children: props.children }));
 }

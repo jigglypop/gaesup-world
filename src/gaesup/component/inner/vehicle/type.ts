@@ -4,11 +4,13 @@ import {
 } from "@react-three/rapier";
 import { ReactNode } from "react";
 import * as THREE from "three";
-import { refsType } from "../../../controller/type";
+import { controllerOptionsType, refsType } from "../../../controller/type";
+import { propInnerType } from "../../../physics/type";
 import { urlsType } from "../../../world/context/type";
 
 export type vehicleInnerType = {
   children: ReactNode;
+  controllerOptions: controllerOptionsType;
   refs: Partial<refsType>;
   urls: urlsType;
   position?: THREE.Vector3;
@@ -23,7 +25,7 @@ export type vehicleInnerType = {
   userData?: { intangible: boolean };
   isRiderOn?: boolean;
   enableRiding?: boolean;
-  offset: THREE.Vector3;
+  offset?: THREE.Vector3;
   rotation?: THREE.Euler;
   onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
-};
+} & propInnerType;

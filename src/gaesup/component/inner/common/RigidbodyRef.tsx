@@ -28,6 +28,7 @@ export const RigidBodyRef = forwardRef(
   (
     {
       children,
+      controllerOptions,
       name,
       position,
       rotation,
@@ -93,6 +94,7 @@ export const RigidBodyRef = forwardRef(
         state: null,
         worldContext,
         controllerContext,
+        controllerOptions,
       };
       useFrame((state) => {
         cameraProps.state = state;
@@ -119,12 +121,24 @@ export const RigidBodyRef = forwardRef(
       (node) => node.type === "Object3D"
     );
     useFrame(() => {
-      if (isActive || !position) return;
+      if (isActive || !position || !ref || !ref.current) return;
       ref.current.setTranslation(
         V3(
-          THREE.MathUtils.lerp(ref.current.translation().x, position.x, 0.1),
-          THREE.MathUtils.lerp(ref.current.translation().y, position.y, 0.1),
-          THREE.MathUtils.lerp(ref.current.translation().z, position.z, 0.1)
+          THREE.MathUtils.lerp(
+            ref.current.translation().x,
+            position.x,
+            controllerOptions.lerp.cameraPosition
+          ),
+          THREE.MathUtils.lerp(
+            ref.current.translation().y,
+            position.y,
+            controllerOptions.lerp.cameraPosition
+          ),
+          THREE.MathUtils.lerp(
+            ref.current.translation().z,
+            position.z,
+            controllerOptions.lerp.cameraPosition
+          )
         ),
         false
       );

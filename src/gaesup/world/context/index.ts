@@ -35,6 +35,8 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     enableRiding: false,
     isRiderOn: false,
     isLanding: false,
+    isFalling: false,
+    isRiding: false,
     isPush: {
       forward: false,
       backward: false,
@@ -128,6 +130,7 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
   },
 };
 
-export const GaesupWorldContext = createContext<gaesupWorldContextType>(null);
+export const GaesupWorldContext =
+  createContext<Partial<gaesupWorldContextType>>(null);
 export const GaesupWorldDispatchContext =
-  createContext<dispatchType<gaesupWorldContextType>>(null);
+  createContext<dispatchType<Partial<gaesupWorldContextType>>>(null);

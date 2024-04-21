@@ -1,5 +1,9 @@
 import { CSSProperties } from "react";
-import { actionsType, refsType } from "../../controller/type";
+import {
+  actionsType,
+  controllerOptionsType,
+  refsType,
+} from "../../controller/type";
 
 import * as THREE from "three";
 import { joyStickInnerType } from "../../tools/joyStick/type";
@@ -58,6 +62,7 @@ export type statesType = {
   isPush: controlType;
   isLanding: boolean;
   isFalling: boolean;
+  isRiding: boolean;
 };
 
 export type urlsType = {
@@ -157,6 +162,7 @@ export type passiveStateType = {
 export type rideableType = {
   objectkey: string;
   objectType?: "vehicle" | "airplane";
+  controllerOptions: controllerOptionsType;
   enableRiding?: boolean;
   isRiderOn?: boolean;
   url?: string;

@@ -5,7 +5,11 @@ import { RapierRigidBody } from "@react-three/rapier";
 import { RefObject } from "react";
 import * as THREE from "three";
 import { gaesupControllerType } from "../controller/context/type";
-import { groundRayType, refsType } from "../controller/type";
+import {
+  controllerOptionsType,
+  groundRayType,
+  refsType,
+} from "../controller/type";
 import { dispatchType } from "../utils/type";
 import { gaesupWorldContextType, urlsType } from "../world/context/type";
 
@@ -25,7 +29,7 @@ export type propInnerType = {
 
 export type calcPropType = propInnerType & {
   state?: RootState;
-  worldContext?: gaesupWorldContextType;
+  worldContext?: Partial<gaesupWorldContextType>;
   controllerContext?: gaesupControllerType;
   matchSizes?: {
     [key in keyof urlsType]?: THREE.Vector3;
@@ -40,8 +44,9 @@ export type intersectObjectMapType = {
 
 export type cameraPropType = {
   state?: RootState;
-  worldContext?: gaesupWorldContextType;
-  controllerContext?: gaesupControllerType;
+  worldContext: Partial<gaesupWorldContextType>;
+  controllerContext: gaesupControllerType;
+  controllerOptions: controllerOptionsType;
 };
 
 // calculation

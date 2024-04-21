@@ -5,18 +5,16 @@ export default function moving(prop) {
         states.isMoving = forward || backward || leftward || rightward;
         states.isNotMoving = !states.isMoving;
         states.isRunning = shift && states.isMoving;
-        states.isJumping = space;
     }
     else if (mode.controller === "joystick") {
         states.isMoving = joystick.joyStickOrigin.isOn;
         states.isNotMoving = !joystick.joyStickOrigin.isOn;
         states.isRunning = shift && states.isMoving;
-        states.isJumping = space;
     }
     else if (mode.controller === "clicker") {
         states.isMoving = clicker.isOn;
         states.isNotMoving = !clicker.isOn;
         states.isRunning = (shift || clicker.isRun) && states.isMoving;
-        states.isJumping = space;
     }
+    states.isJumping = space;
 }

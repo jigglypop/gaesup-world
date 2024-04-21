@@ -15,6 +15,7 @@ export function CharacterRef({
     <CharacterInnerRef
       refs={refs}
       urls={urls}
+      controllerOptions={props.controllerOptions}
       outerGroupRef={refs.outerGroupRef}
       innerGroupRef={refs.innerGroupRef}
       rigidBodyRef={refs.rigidBodyRef}

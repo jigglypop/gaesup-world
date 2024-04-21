@@ -1,7 +1,18 @@
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 import { jsx as _jsx } from "react/jsx-runtime";
 import { useFrame } from "@react-three/fiber";
-import { quat, } from "@react-three/rapier";
-import { useMemo, useRef } from "react";
+import { quat } from "@react-three/rapier";
+import { useRef } from "react";
 import { AirplaneInnerRef } from "../../inner/airplane";
 export function PassiveAirplane(props) {
     var rigidBodyRef = useRef(null);
@@ -14,17 +25,9 @@ export function PassiveAirplane(props) {
         innerGroupRef: innerGroupRef,
         colliderRef: colliderRef,
     };
-    var _a = useMemo(function () {
-        return {
-            position: props.position,
-            euler: props.euler,
-            currentAnimation: props.currentAnimation,
-            urls: props.urls,
-        };
-    }, [props]), position = _a.position, euler = _a.euler, currentAnimation = _a.currentAnimation, urls = _a.urls;
     useFrame(function () {
         if (innerGroupRef && innerGroupRef.current) {
-            var _euler = euler.clone();
+            var _euler = props.rotation.clone();
             _euler.y = 0;
             innerGroupRef.current.setRotationFromQuaternion(quat()
                 .setFromEuler(innerGroupRef.current.rotation.clone())
@@ -36,5 +39,5 @@ export function PassiveAirplane(props) {
                 : 0.1, false);
         }
     });
-    return (_jsx(AirplaneInnerRef, { refs: refs, urls: urls, position: position, rotation: euler, userData: { intangible: true }, onCollisionEnter: props.onCollisionEnter, currentAnimation: props.currentAnimation, type: props.type, children: props.children }));
+    return (_jsx(AirplaneInnerRef, __assign({ outerGroupRef: outerGroupRef, innerGroupRef: innerGroupRef, rigidBodyRef: rigidBodyRef, colliderRef: colliderRef, refs: refs, userData: { intangible: true }, componentType: "airplane", name: "airplane", isRiderOn: props.isRiderOn, enableRiding: props.enableRiding, isActive: false }, props, { children: props.children })));
 }

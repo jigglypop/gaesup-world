@@ -6,12 +6,20 @@ import { Physics, euler } from "@react-three/rapier";
 import { Canvas } from "@react-three/fiber";
 
 import { FaMapMarkerAlt } from "react-icons/fa";
-import { GaesupController, GaesupWorld, PassiveCharacter, V3 } from "../../src";
+import {
+  GaesupController,
+  GaesupWorld,
+  GameBoy,
+  GamePad,
+  JoyStick,
+  KeyBoardToolTip,
+  V3,
+} from "../../src";
 import { Clicker } from "../../src/gaesup/tools/clicker";
 import { InnerHtml } from "../../src/gaesup/utils/innerHtml";
-import Passive from "../passive";
 import Floor from "./Floor";
-// import * as style from "./style.css";
+import Rideables from "./rideable";
+import * as style from "./style.css";
 
 export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
 export const keyBoardMap = [
@@ -28,7 +36,7 @@ export const keyBoardMap = [
 
 export default function MainComponent() {
   const CHARACTER_URL = S3 + "/gaesupyee.glb";
-  const AIRPLANE_URL = S3 + "/gaebird.glb";
+  const AIRPLANE_URL = S3 + "/orri.glb";
   const VEHICLE_URL = S3 + "/gorani.glb";
 
   return (
@@ -40,9 +48,8 @@ export default function MainComponent() {
       }}
       mode={{
         type: "character",
-        // controller: isMobile ? "gameboy" : "clicker",
         controller: "clicker",
-        control: "normal",
+        control: "orbit",
       }}
       debug={false}
       keyBoardMap={keyBoardMap}
@@ -96,7 +103,19 @@ export default function MainComponent() {
           />
           {/* <Second /> */}
           <Floor />
-          <Passive />
+          <Rideables />
+          {/* <Passive /> */}
+
+          {/* <PassiveCharacter
+            position={V3(0, 0, 0)}
+            euler={euler()}
+            urls={{
+              characterUrl: CHARACTER_URL,
+            }}
+            currentAnimation="jump"
+            type={"fixed"}
+          ></PassiveCharacter> */}
+
           {/* <Rideable
             objectkey="gorani"
             url={S3 + "/gorani.glb"}
@@ -123,20 +142,10 @@ export default function MainComponent() {
               </InnerHtml>
             }
           ></Clicker>
-
-          <PassiveCharacter
-            position={V3(0, 0, 0)}
-            euler={euler()}
-            urls={{
-              characterUrl: CHARACTER_URL,
-            }}
-            currentAnimation="jump"
-            type={"fixed"}
-          ></PassiveCharacter>
         </Physics>
       </Canvas>
 
-      {/* <div className={style.footer}>
+      <div className={style.footer}>
         <div className={style.footerUpper}>
           <div className={style.gamePad}>
             <GamePad
@@ -156,11 +165,8 @@ export default function MainComponent() {
           <div className={style.keyBoardToolTipOuter}>
             <KeyBoardToolTip keyBoardMap={keyBoardMap} />
           </div>
-          <div className={style.minimapOuter}>
-            <MiniMap />
-          </div>
         </div>
-      </div> */}
+      </div>
     </GaesupWorld>
   );
 }

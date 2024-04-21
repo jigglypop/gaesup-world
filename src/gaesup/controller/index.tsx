@@ -70,7 +70,7 @@ export function GaesupControllerInner(props: controllerType) {
       value: controller,
       dispatch: controllerDispatch,
     }),
-    [controller, controllerDispatch]
+    []
   );
 
   const refs = useMemo(() => {

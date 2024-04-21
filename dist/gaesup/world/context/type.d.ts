@@ -48,6 +48,8 @@ export type statesType = {
     isRiderOn: boolean;
     isPush: controlType;
     isLanding: boolean;
+    isFalling: boolean;
+    isRiding: boolean;
 };
 export type urlsType = {
     characterUrl?: string;

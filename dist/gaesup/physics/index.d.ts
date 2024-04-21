@@ -1,2 +1,7 @@
-import { controllerInnerType } from "../controller/type";
-export default function calculation(prop: controllerInnerType): void;
+export default function calculation({ groundRay, rigidBodyRef, outerGroupRef, innerGroupRef, colliderRef, }: {
+    groundRay: any;
+    rigidBodyRef: any;
+    outerGroupRef: any;
+    innerGroupRef: any;
+    colliderRef: any;
+}): void;

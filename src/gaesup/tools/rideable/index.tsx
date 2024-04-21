@@ -10,7 +10,7 @@ import { rideableType } from "../../world/context/type.js";
 import "./style.css";
 
 export function Rideable(props: rideableType) {
-  const { states, rideable } = useContext(GaesupWorldContext);
+  const { states, rideable, urls } = useContext(GaesupWorldContext);
   const { initRideable, getRideable, ride, landing } = useRideable();
   const current = getRideable(props.objectkey);
 
@@ -18,20 +18,19 @@ export function Rideable(props: rideableType) {
     initRideable(props);
   }, []);
 
-  useEffect(() => {
-    if (
-      states?.isLanding &&
-      rideable[props.objectkey] &&
-      !rideable[props.objectkey].visible
-    ) {
-      landing(props.objectkey);
-    }
-  }, [states?.isLanding]);
+  // useEffect(() => {
+  //   if (
+  //     states?.isRiding &&
+  //     rideable[props.objectkey] &&
+  //     !rideable[props.objectkey].visible
+  //   ) {
+  //     landing(props.objectkey);
+  //   }
+  // }, [states?.isRiding]);
 
   const onCollisionEnter = async (e: CollisionEnterPayload) => {
     await ride(e, props);
   };
-
   return (
     <>
       {current &&
@@ -40,25 +39,28 @@ export function Rideable(props: rideableType) {
           <group userData={{ intangible: true }}>
             {props.objectType === "vehicle" && (
               <PassiveVehicle
+                controllerOptions={props.controllerOptions}
                 position={current.position || V3(0, 0, 0)}
-                euler={current.rotation || euler()}
+                rotation={current.rotation || euler()}
                 currentAnimation={"idle"}
                 offset={props.offset}
                 urls={{
                   vehicleUrl: props.url,
                   wheelUrl: props.wheelUrl,
+                  characterUrl: urls.characterUrl,
                 }}
                 onCollisionEnter={onCollisionEnter}
               />
             )}
             {props.objectType === "airplane" && (
               <PassiveAirplane
+                controllerOptions={props.controllerOptions}
                 position={current.position || V3(0, 0, 0)}
-                euler={current.rotation || euler()}
+                rotation={current.rotation || euler()}
                 currentAnimation={"idle"}
                 offset={props.offset}
                 urls={{
-                  airplaneUrl: props.url,
+                  airplaneUrl: urls.airplaneUrl,
                 }}
                 onCollisionEnter={onCollisionEnter}
               />

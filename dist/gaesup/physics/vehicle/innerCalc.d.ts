@@ -1,2 +1,2 @@
-import { calcPropType } from "../type";
-export default function innerCalc(prop: calcPropType): void;
+import { calcType } from "../type";
+export default function innerCalc(prop: calcType): void;

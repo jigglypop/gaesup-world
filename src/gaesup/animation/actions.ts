@@ -48,12 +48,8 @@ export type playResultType = {
   ref: Ref<Object3D<Object3DEventMap>>;
 };
 
-export function subscribeActions({
-  type,
-  // groundRay,
-  // animations,
-}: subscribeActionsType) {
-  const { states, activeState } = useContext(GaesupWorldContext);
+export function subscribeActions({ type }: subscribeActionsType) {
+  const { states } = useContext(GaesupWorldContext);
   const { subscribeAll } = useGaesupAnimation({ type });
   // 초기 기본 애니메이션 등록
   useEffect(() => {
@@ -103,29 +99,6 @@ export function subscribeActions({
       },
     ]);
   }, []);
-
-  // const memorizedSubscribe = useCallback(
-  //   (hit: RayColliderToi, Y: number) => {
-  //     subscribeAll([
-  //       {
-  //         tag: "fall",
-  //         condition: () => hit === null && Y < 0,
-  //         action: () => {},
-  //         animationName: "fall",
-  //         key: "fall",
-  //       },
-  //     ]);
-  //   },
-  //   [hit, activeState.velocity.y]
-  // );
-  // memorizedSubscribe(hit, activeState.velocity.y);
-  // useEffect(() => {
-  //   setHit((prev) => groundRay.hit);
-  // }, [groundRay.hit]);
-
-  // return {
-  //   animationResult,
-  // };
 }
 
 export default function playActions({

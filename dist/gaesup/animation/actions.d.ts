@@ -13,8 +13,10 @@ export type Api<T extends AnimationClip> = {
 };
 export type playActionsType = {
     type: "character" | "vehicle" | "airplane";
-    animationResult: Api<AnimationClip>;
     currentAnimation?: string;
+    actions: actionsType;
+    animationRef: Ref<Object3D<Object3DEventMap>>;
+    isActive: boolean;
 };
 export type subscribeActionsType = {
     type: "character" | "vehicle" | "airplane";
@@ -28,23 +30,8 @@ export type playResultType = {
     actions: actionsType;
     ref: Ref<Object3D<Object3DEventMap>>;
 };
-export declare function subscribeActions({ type, groundRay, animations, }: subscribeActionsType): {
-    animationResult: {
-        ref: import("react").MutableRefObject<THREE.Object3D<THREE.Object3DEventMap>>;
-        clips: THREE.AnimationClip[];
-        mixer: THREE.AnimationMixer;
-        names: string[];
-        actions: {
-            [x: string]: THREE.AnimationAction;
-        };
-    };
-};
-export default function playActions({ type, animationResult, currentAnimation, }: playActionsType): {
-    animationRef: import("react").MutableRefObject<THREE.Object3D<THREE.Object3DEventMap>>;
+export declare function subscribeActions({ type }: subscribeActionsType): void;
+export default function playActions({ type, actions, animationRef, currentAnimation, isActive, }: playActionsType): {
+    animationRef: Ref<THREE.Object3D<THREE.Object3DEventMap>>;
     currentAnimation: string;
 };
-export declare const setAnimation: ({ currentAnimation, actions, type, }: {
-    currentAnimation?: string;
-    actions?: actionsType;
-    type?: "character" | "vehicle" | "airplane";
-}) => void;

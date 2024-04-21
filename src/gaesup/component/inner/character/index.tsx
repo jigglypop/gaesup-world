@@ -38,6 +38,7 @@ export function CharacterInnerRef(props: characterInnerType) {
         innerGroupRef={innerGroupRef}
         rigidBodyRef={rigidBodyRef}
         colliderRef={colliderRef}
+        controllerOptions={props.controllerOptions}
         {...props}
       >
         {props.children}

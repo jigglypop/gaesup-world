@@ -10,12 +10,14 @@ export default function RiderRef(_a) {
     var urls = _a.urls, children = _a.children, offset = _a.offset, euler = _a.euler, currentAnimation = _a.currentAnimation;
     var gltf = useGltfAndSize({ url: urls.characterUrl }).gltf;
     var animations = gltf.animations, scene = gltf.scene;
-    var animationResult = useAnimations(animations);
-    var animationRef = playActions({
+    var _b = useAnimations(animations), actions = _b.actions, animationRef = _b.ref;
+    playActions({
         type: "character",
-        animationResult: animationResult,
         currentAnimation: currentAnimation || "ride",
-    }).animationRef;
+        actions: actions,
+        animationRef: animationRef,
+        isActive: false,
+    });
     var characterClone = useMemo(function () { return SkeletonUtils.clone(scene); }, [scene]);
     var characterNodes = useGraph(characterClone).nodes;
     var characterObjectNode = Object.values(characterNodes).find(function (node) { return node.type === "Object3D"; });

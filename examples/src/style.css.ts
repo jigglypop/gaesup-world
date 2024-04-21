@@ -27,14 +27,7 @@ export const keyBoardToolTipOuter = style([
   },
 ]);
 
-export const minimapOuter = style([
-  fixed({
-    west: true,
-  }),
-  {
-    top: "5rem",
-  },
-]);
+export const minimapOuter = style([flex({})]);
 
 export const gameBoyOuter = style([
   fixed({

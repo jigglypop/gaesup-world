@@ -5,7 +5,6 @@ export default function innerCalc(prop: calcType) {
   const {
     rigidBodyRef,
     worldContext: { activeState },
-    dispatch,
   } = prop;
   activeState.position = vec3(rigidBodyRef.current.translation());
   activeState.velocity = vec3(rigidBodyRef.current.linvel());
@@ -14,13 +13,4 @@ export default function innerCalc(prop: calcType) {
     quat().setFromEuler(activeState.euler.clone()),
     false
   );
-
-  dispatch({
-    type: "update",
-    payload: {
-      activeState: {
-        ...activeState,
-      },
-    },
-  });
 }

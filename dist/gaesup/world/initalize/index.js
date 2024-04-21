@@ -9,20 +9,52 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-import { useEffect, useMemo, useReducer } from "react";
+import { useEffect, useMemo, useReducer, useRef } from "react";
 import { isDesktop } from "react-device-detect";
 import { gaesupWorldDefault } from "../../world/context";
 import { gaesupWorldReducer } from "../../world/context/reducer";
 import initDebug from "../debug";
 export default function initGaesupWorld(props) {
+    var _value = useRef({
+    // activeState: {
+    //   ...gaesupWorldDefault.activeState,
+    //   position: props.startPosition || gaesupWorldDefault.activeState.position,
+    // },
+    // cameraOption: Object.assign(
+    //   gaesupWorldDefault.cameraOption,
+    //   props.cameraOption || {}
+    // ),
+    // mode: Object.assign(gaesupWorldDefault.mode, props.mode || {}),
+    // urls: Object.assign(gaesupWorldDefault.urls, props.urls || {}),
+    // refs: null,
+    // states: gaesupWorldDefault.states,
+    // rideable: gaesupWorldDefault.rideable,
+    // debug: (props.debug && isDesktop) || gaesupWorldDefault.debug,
+    // minimap: gaesupWorldDefault.minimap,
+    // joystick: gaesupWorldDefault.joystick,
+    // control: gaesupWorldDefault.control,
+    // clicker: gaesupWorldDefault.clicker,
+    // animationState: gaesupWorldDefault.animationState,
+    // keyBoardMap: Object.assign(
+    //   gaesupWorldDefault.keyBoardMap,
+    //   props.keyBoardMap || {}
+    // ),
+    // moveTo: null,
+    // block: Object.assign(gaesupWorldDefault.block, props.block || {}),
+    // sizes: gaesupWorldDefault.sizes,
+    // callback: {
+    //   moveTo: null,
+    // },
+    });
     var _a = useReducer(gaesupWorldReducer, {
-        debug: (props.debug && isDesktop) || gaesupWorldDefault.debug,
         activeState: __assign(__assign({}, gaesupWorldDefault.activeState), { position: props.startPosition || gaesupWorldDefault.activeState.position }),
         cameraOption: Object.assign(gaesupWorldDefault.cameraOption, props.cameraOption || {}),
         mode: Object.assign(gaesupWorldDefault.mode, props.mode || {}),
         urls: Object.assign(gaesupWorldDefault.urls, props.urls || {}),
         refs: null,
         states: gaesupWorldDefault.states,
+        rideable: gaesupWorldDefault.rideable,
+        debug: (props.debug && isDesktop) || gaesupWorldDefault.debug,
         minimap: gaesupWorldDefault.minimap,
         joystick: gaesupWorldDefault.joystick,
         control: gaesupWorldDefault.control,
@@ -30,7 +62,6 @@ export default function initGaesupWorld(props) {
         animationState: gaesupWorldDefault.animationState,
         keyBoardMap: Object.assign(gaesupWorldDefault.keyBoardMap, props.keyBoardMap || {}),
         moveTo: null,
-        rideable: gaesupWorldDefault.rideable,
         block: Object.assign(gaesupWorldDefault.block, props.block || {}),
         sizes: gaesupWorldDefault.sizes,
         callback: {
@@ -55,9 +86,10 @@ export default function initGaesupWorld(props) {
             },
         });
     }, []);
-    var gaesupProps = useMemo(function () { return ({ value: value, dispatch: dispatch }); }, [value, dispatch]);
-    initDebug({ value: value, dispatch: dispatch });
+    var gaesupProps = useMemo(function () { return ({ value: __assign({}, value), dispatch: dispatch }); }, [value, dispatch]);
+    initDebug({ value: gaesupProps.value, dispatch: dispatch });
     return {
         gaesupProps: gaesupProps,
+        refProps: _value.current,
     };
 }

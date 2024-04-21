@@ -5,7 +5,11 @@ import {
 } from "@react-three/rapier";
 import { ReactNode, RefObject } from "react";
 import * as THREE from "three";
-import { groundRayType, refsType } from "../../../controller/type";
+import {
+  controllerOptionsType,
+  groundRayType,
+  refsType,
+} from "../../../controller/type";
 import { propInnerType } from "../../../physics/type";
 import { urlsType } from "../../../world/context/type";
 
@@ -33,6 +37,7 @@ export type setGroundRayType = {
 
 export type rigidBodyRefType = {
   children: ReactNode;
+  controllerOptions: controllerOptionsType;
   name?: string;
   position?: THREE.Vector3;
   rotation?: THREE.Euler;

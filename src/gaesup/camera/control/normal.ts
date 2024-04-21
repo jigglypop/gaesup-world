@@ -16,8 +16,12 @@ export default function normal(prop: cameraPropType) {
   const {
     state,
     worldContext: { cameraOption },
+    controllerOptions: { lerp },
   } = prop;
   if (!state || !state.camera) return;
-  state.camera.position.lerp(cameraOption.position.clone(), 1);
+  state.camera.position.lerp(
+    cameraOption.position.clone(),
+    lerp.cameraPosition
+  );
   state.camera.lookAt(cameraOption.target);
 }

@@ -7,10 +7,6 @@ import {
 import { rideableType } from "../../world/context/type";
 import { useGaesupGltf } from "../useGaesupGltf";
 
-/**
- * Default rideable object properties.
- * @type {Object}
- */
 export const rideableDefault = {
   objectkey: null,
   objectType: null,
@@ -23,10 +19,6 @@ export const rideableDefault = {
   visible: true,
 };
 
-/**
- * Custom hook for managing rideable objects.
- * @returns {Object} An object containing functions to initialize, set, get, ride, and land rideable objects.
- */
 export function useRideable(): {
   initRideable: (props: rideableType) => void;
   setRideable: (props: rideableType) => void;
@@ -39,10 +31,6 @@ export function useRideable(): {
   const dispatch = useContext(GaesupWorldDispatchContext);
   const { getSizesByUrls } = useGaesupGltf();
 
-  /**
-   * Initialize a rideable object with the provided properties.
-   * @param {rideableType} props - The properties of the rideable object to initialize.
-   */
   const initRideable = (props: rideableType) => {
     rideable[props.objectkey] = {
       ...rideableDefault,
@@ -50,27 +38,14 @@ export function useRideable(): {
     };
   };
 
-  /**
-   * Set the properties of a rideable object.
-   * @param {rideableType} props - The properties to set for the rideable object.
-   */
   const setRideable = (props: rideableType) => {
     rideable[props.objectkey] = props;
   };
 
-  /**
-   * Get the rideable object with the specified object key.
-   * @param {string} objectkey - The key of the rideable object to retrieve.
-   * @returns {rideableType} The rideable object with the specified key.
-   */
   const getRideable = (objectkey: string): rideableType => {
     return rideable[objectkey];
   };
 
-  /**
-   * Handle landing of a rideable object.
-   * @param {string} objectkey - The key of the rideable object to land.
-   */
   const landing = (objectkey: string) => {
     const { activeState, refs } = worldContext;
     states.enableRiding = false;
@@ -101,10 +76,6 @@ export function useRideable(): {
     });
   };
 
-  /**
-   * Set the URL properties of a rideable object. (inner function)
-   * @param {rideableType} props - The properties containing URLs for the rideable object.
-   */
   const setUrl = async (props: rideableType) => {
     if (props.objectType === "vehicle") {
       urls.vehicleUrl = props.url;
@@ -122,10 +93,6 @@ export function useRideable(): {
     });
   };
 
-  /**
-   * Set the mode and riding state for a rideable object. (inner function)
-   * @param {rideableType} props - The properties of the rideable object to set mode and riding state.
-   */
   const setModeAndRiding = async (props: rideableType) => {
     mode.type = props.objectType;
     states.enableRiding = props.enableRiding;
@@ -141,11 +108,6 @@ export function useRideable(): {
     });
   };
 
-  /**
-   * Handle the ride event for a rideable object.
-   * @param {CollisionEnterPayload} e - The collision event payload.
-   * @param {rideableType} props - The properties of the rideable object.
-   */
   const ride = async (e: CollisionEnterPayload, props: rideableType) => {
     if (e.other.rigidBodyObject.name === "character") {
       await setUrl(props);

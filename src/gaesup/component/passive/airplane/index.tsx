@@ -1,26 +1,10 @@
 import { Collider } from "@dimforge/rapier3d-compat";
 import { useFrame } from "@react-three/fiber";
-import {
-  CollisionEnterPayload,
-  RapierRigidBody,
-  RigidBodyTypeString,
-  quat,
-} from "@react-three/rapier";
-import { useMemo, useRef } from "react";
+import { RapierRigidBody, quat } from "@react-three/rapier";
+import { useRef } from "react";
 import * as THREE from "three";
-import { urlsType } from "../../../world/context/type";
 import { AirplaneInnerRef } from "../../inner/airplane";
-
-export type passiveAirplanePropsType = {
-  position: THREE.Vector3;
-  euler: THREE.Euler;
-  urls: urlsType;
-  currentAnimation: string;
-  offset?: THREE.Vector3;
-  children?: React.ReactNode;
-  onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
-  type?: RigidBodyTypeString;
-};
+import { passiveAirplanePropsType } from "./type";
 
 export function PassiveAirplane(props: passiveAirplanePropsType) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
@@ -35,18 +19,9 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
     colliderRef,
   };
 
-  const { position, euler, currentAnimation, urls } = useMemo(() => {
-    return {
-      position: props.position,
-      euler: props.euler,
-      currentAnimation: props.currentAnimation,
-      urls: props.urls,
-    };
-  }, [props]);
-
   useFrame(() => {
     if (innerGroupRef && innerGroupRef.current) {
-      const _euler = euler.clone();
+      const _euler = props.rotation.clone();
       _euler.y = 0;
       innerGroupRef.current.setRotationFromQuaternion(
         quat()
@@ -66,14 +41,19 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
 
   return (
     <AirplaneInnerRef
+      outerGroupRef={outerGroupRef}
+      innerGroupRef={innerGroupRef}
+      rigidBodyRef={rigidBodyRef}
+      colliderRef={colliderRef}
       refs={refs}
-      urls={urls}
-      position={position}
-      rotation={euler}
       userData={{ intangible: true }}
-      onCollisionEnter={props.onCollisionEnter}
-      currentAnimation={props.currentAnimation}
-      type={props.type}
+      componentType={"airplane"}
+      name={"airplane"}
+      isRiderOn={props.isRiderOn}
+      enableRiding={props.enableRiding}
+      isActive={false}
+      controllerOptions={props.controllerOptions}
+      {...props}
     >
       {props.children}
     </AirplaneInnerRef>

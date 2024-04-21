@@ -1,12 +1,13 @@
 import { RigidBodyTypeString } from "@react-three/rapier";
 import { ReactNode } from "react";
 import * as THREE from "three";
-import { refsType } from "../../../controller/type";
+import { controllerOptionsType, refsType } from "../../../controller/type";
 import { propInnerType } from "../../../physics/type";
 import { urlsType } from "../../../world/context/type";
 
 export type characterInnerType = {
   children: ReactNode;
+  controllerOptions: controllerOptionsType;
   refs: Partial<refsType>;
   urls: urlsType;
   position?: THREE.Vector3;

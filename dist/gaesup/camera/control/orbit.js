@@ -13,7 +13,7 @@ export default function orbit(prop) {
     if (!state || !state.camera)
         return;
     var cameraPosition = makeOrbitCameraPosition(activeState, cameraOption);
-    state.camera.position.lerp(cameraPosition, 1);
+    state.camera.position.lerp(cameraPosition.clone(), 0.2);
     state.camera.quaternion.copy(activeState.quat
         .clone()
         .multiply(quat().setFromAxisAngle(V3(0, 1, 0), Math.PI)));

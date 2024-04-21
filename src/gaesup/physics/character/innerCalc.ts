@@ -9,7 +9,6 @@ export default function innerCalc(prop: calcType) {
       character: { linearDamping },
     },
     worldContext: { activeState, states },
-    dispatch,
     delta,
   } = prop;
 
@@ -25,12 +24,4 @@ export default function innerCalc(prop: calcType) {
     quat().setFromEuler(activeState.euler),
     10 * delta
   );
-  dispatch({
-    type: "update",
-    payload: {
-      activeState: {
-        ...activeState,
-      },
-    },
-  });
 }

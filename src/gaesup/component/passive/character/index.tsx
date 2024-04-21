@@ -7,7 +7,7 @@ import {
 } from "@react-three/rapier";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { refsType } from "../../../controller/type";
+import { controllerOptionsType, refsType } from "../../../controller/type";
 import { urlsType } from "../../../world/context/type";
 import { CharacterInnerRef } from "../../inner/character";
 
@@ -15,6 +15,7 @@ export type passiveCharacterPropsType = {
   position: THREE.Vector3;
   euler: THREE.Euler;
   urls: urlsType;
+  controllerOptions: controllerOptionsType;
   currentAnimation: string;
   gravityScale?: number;
   children?: React.ReactNode;
@@ -62,6 +63,7 @@ export function PassiveCharacter(props: passiveCharacterPropsType) {
       position={position}
       refs={refs}
       urls={props.urls}
+      controllerOptions={props.controllerOptions}
       currentAnimation={props.currentAnimation}
       positionLerp={props.positionLerp}
       type={props.type}

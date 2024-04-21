@@ -52,12 +52,12 @@ export function Rideable(props) {
         initRideable(props);
     }, []);
     useEffect(function () {
-        if ((states === null || states === void 0 ? void 0 : states.isLanding) &&
+        if ((states === null || states === void 0 ? void 0 : states.isRiding) &&
             rideable[props.objectkey] &&
             !rideable[props.objectkey].visible) {
             landing(props.objectkey);
         }
-    }, [states === null || states === void 0 ? void 0 : states.isLanding]);
+    }, [states === null || states === void 0 ? void 0 : states.isRiding]);
     var onCollisionEnter = function (e) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -70,10 +70,11 @@ export function Rideable(props) {
     }); };
     return (_jsx(_Fragment, { children: current &&
             rideable[props.objectkey] &&
-            rideable[props.objectkey].visible && (_jsxs("group", { userData: { intangible: true }, children: [props.objectType === "vehicle" && (_jsx(PassiveVehicle, { position: current.position || V3(0, 0, 0), euler: current.rotation || euler(), currentAnimation: "idle", offset: props.offset, urls: {
+            rideable[props.objectkey].visible && (_jsxs("group", { userData: { intangible: true }, children: [props.objectType === "vehicle" && (_jsx(PassiveVehicle, { position: current.position || V3(0, 0, 0), rotation: current.rotation || euler(), currentAnimation: "idle", offset: props.offset, urls: {
                         vehicleUrl: props.url,
                         wheelUrl: props.wheelUrl,
-                    }, onCollisionEnter: onCollisionEnter })), props.objectType === "airplane" && (_jsx(PassiveAirplane, { position: current.position || V3(0, 0, 0), euler: current.rotation || euler(), currentAnimation: "idle", offset: props.offset, urls: {
-                        airplaneUrl: props.url,
+                    }, onCollisionEnter: onCollisionEnter })), props.objectType === "airplane" && (_jsx(PassiveAirplane, { position: current.position || V3(0, 0, 0), rotation: current.rotation || euler(), currentAnimation: "idle", offset: props.offset, urls: {
+                        vehicleUrl: props.url,
+                        wheelUrl: props.wheelUrl,
                     }, onCollisionEnter: onCollisionEnter }))] })) }));
 }

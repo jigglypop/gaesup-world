@@ -1,2 +1,2 @@
-import { calcPropType } from "../type";
-export default function check(calcProp: calcPropType): void;
+import { calcType } from "../type";
+export default function check(calcProp: calcType): void;

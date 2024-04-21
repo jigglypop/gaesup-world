@@ -1,2 +1,2 @@
-import { refPropsType } from "../common/type";
-export declare function AirplaneInnerRef({ children, refs, urls, isRiderOn, enableRiding, offset, name, position, rotation, userData, onCollisionEnter, type, }: refPropsType): import("react/jsx-runtime").JSX.Element;
+import { vehicleInnerType } from "../vehicle/type";
+export declare function AirplaneInnerRef(props: vehicleInnerType): import("react/jsx-runtime").JSX.Element;
