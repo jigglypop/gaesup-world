@@ -20,19 +20,12 @@ export function PassiveVehicle(props: passiveVehiclePropsType) {
 
   return (
     <VehicleInnerRef
-      outerGroupRef={outerGroupRef}
-      innerGroupRef={innerGroupRef}
-      rigidBodyRef={rigidBodyRef}
-      colliderRef={colliderRef}
-      controllerOptions={props.controllerOptions}
-      refs={refs}
       userData={{ intangible: true }}
       componentType={"vehicle"}
       name={"vehicle"}
-      isRiderOn={props.isRiderOn}
-      enableRiding={props.enableRiding}
       isActive={false}
       {...props}
+      {...refs}
     >
       {props.children}
     </VehicleInnerRef>

@@ -1,27 +1,34 @@
-import { gaesupPassivePropsType } from "../../hooks/useGaesupController";
+import { Collider } from "@dimforge/rapier3d-compat";
 import {
-  activeStateType,
-  modeType,
-  wheelsStateType,
-} from "../../world/context/type";
+  CollisionEnterPayload,
+  RapierRigidBody,
+  RigidBodyTypeString,
+} from "@react-three/rapier";
+import { MutableRefObject } from "react";
+import * as THREE from "three";
+import { controllerOptionsType } from "../../controller/type";
+import { ridingType } from "../inner/common/type";
 
-export type passiveComponentType = {
-  props: gaesupPassivePropsType;
+// 컴포넌트 종류
+export type componentTypeString = "character" | "vehicle" | "airplane";
+// 내부 컴포넌트 종류
+export type innerRefType = {
+  colliderRef: MutableRefObject<Collider>;
+  rigidBodyRef: MutableRefObject<RapierRigidBody>;
+  outerGroupRef: MutableRefObject<THREE.Group>;
+  innerGroupRef: MutableRefObject<THREE.Group>;
 };
-
-export type passiveCharacterType = {
-  mode: modeType;
-  state: activeStateType;
-  current: string;
-  url: string;
-};
-
-export type passiveVehicleType = {
-  mode: modeType;
-  state: activeStateType;
-  wheelsState?: wheelsStateType;
-  wheelPositions?: number[][];
-  current: string;
+// passive 오브젝트 타입정의
+export type passivePropsType = {
+  children?: React.ReactNode;
   url: string;
   wheelUrl?: string;
-};
+  position?: THREE.Vector3;
+  rotation?: THREE.Euler;
+  offset?: THREE.Vector3;
+  controllerOptions?: controllerOptionsType;
+  currentAnimation?: string;
+  rigidbodyType?: RigidBodyTypeString;
+  onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
+  componentType: componentTypeString;
+} & ridingType;

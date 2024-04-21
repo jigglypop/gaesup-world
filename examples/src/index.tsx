@@ -18,7 +18,6 @@ import {
 import { Clicker } from "../../src/gaesup/tools/clicker";
 import { InnerHtml } from "../../src/gaesup/utils/innerHtml";
 import Floor from "./Floor";
-import Rideables from "./rideable";
 import * as style from "./style.css";
 
 export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
@@ -103,7 +102,7 @@ export default function MainComponent() {
           />
           {/* <Second /> */}
           <Floor />
-          <Rideables />
+          {/* <Rideables /> */}
           {/* <Passive /> */}
 
           {/* <PassiveCharacter
@@ -116,14 +115,6 @@ export default function MainComponent() {
             type={"fixed"}
           ></PassiveCharacter> */}
 
-          {/* <Rideable
-            objectkey="gorani"
-            url={S3 + "/gorani.glb"}
-            objectType={"vehicle"}
-            enableRiding={true}
-            offset={V3(0, 2, 0)}
-            position={V3(-20, 0, 0)}
-          /> */}
           <Clicker
             onMarker={
               <group rotation={euler({ x: 0, y: Math.PI / 2, z: 0 })}>
@@ -145,27 +136,25 @@ export default function MainComponent() {
         </Physics>
       </Canvas>
 
-      <div className={style.footer}>
-        <div className={style.footerUpper}>
-          <div className={style.gamePad}>
-            <GamePad
-              label={{
-                keyZ: "GREET",
-                shift: "SPLINT",
-                space: "JUMP",
-              }}
-            />
-          </div>
+      <div className={style.footerUpper}>
+        <div className={style.gamePad}>
+          <GamePad
+            label={{
+              keyZ: "GREET",
+              shift: "SPLINT",
+              space: "JUMP",
+            }}
+          />
         </div>
-        <div className={style.footerLower}>
-          <div className={style.joyStickOuter}>
-            <JoyStick />
-            <GameBoy />
-          </div>
-          <div className={style.keyBoardToolTipOuter}>
-            <KeyBoardToolTip keyBoardMap={keyBoardMap} />
-          </div>
+      </div>
+      <div className={style.footerLower}>
+        <div className={style.joyStickOuter}>
+          <JoyStick />
+          <GameBoy />
         </div>
+      </div>
+      <div className={style.keyBoardToolTipOuter}>
+        <KeyBoardToolTip keyBoardMap={keyBoardMap} />
       </div>
     </GaesupWorld>
   );

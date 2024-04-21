@@ -8,22 +8,16 @@ const BlackHanSans = fontFace({
 });
 
 export const keyBoardToolTipOuter = style([
-  fixed({
-    south: true,
-  }),
-  sprinkles({
-    display: {
-      mobile: "none",
-      tablet: "none",
-      laptop: "flex",
-      desktop: "flex",
-    },
-  }),
   flex({
     column: "6",
   }),
   {
-    width: "100vw",
+    position: "fixed",
+    bottom: "0",
+    left: "50%",
+    transform: "translate(-50%, 0)",
+    width: "45vw",
+    height: "25vh",
   },
 ]);
 

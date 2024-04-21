@@ -1,14 +1,6 @@
-import { MutableRefObject, Ref, forwardRef } from "react";
+import { Ref, forwardRef } from "react";
 import * as THREE from "three";
-
-export type InnerGroupRefType = {
-  children?: React.ReactNode;
-  objectNode: THREE.Object3D;
-  animationRef: MutableRefObject<THREE.Object3D<THREE.Object3DEventMap>>;
-  nodes: {
-    [name: string]: THREE.Object3D<THREE.Object3DEventMap>;
-  };
-};
+import { InnerGroupRefType } from "./type";
 
 export const InnerGroupRef = forwardRef(
   (

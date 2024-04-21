@@ -3,19 +3,35 @@ import {
   CollisionEnterPayload,
   RigidBodyTypeString,
 } from "@react-three/rapier";
-import { ReactNode, RefObject } from "react";
+import { MutableRefObject, RefObject } from "react";
 import * as THREE from "three";
-import {
-  controllerOptionsType,
-  groundRayType,
-  refsType,
-} from "../../../controller/type";
-import { propInnerType } from "../../../physics/type";
+import { groundRayType } from "../../../controller/type";
 import { urlsType } from "../../../world/context/type";
+import { innerRefType, passivePropsType } from "../../passive/type";
+// collider 정의
+export type characterColliderType = {
+  height: number;
+  halfHeight: number;
+  radius: number;
+  diameter: number;
+};
+// innerGroupRef 타입정의
+export type InnerGroupRefType = {
+  children?: React.ReactNode;
+  objectNode: THREE.Object3D;
+  animationRef: MutableRefObject<THREE.Object3D<THREE.Object3DEventMap>>;
+  nodes: {
+    [name: string]: THREE.Object3D<THREE.Object3DEventMap>;
+  };
+};
+// riding 타입정의
+export type ridingType = {
+  isRiderOn?: boolean;
+  enableRiding?: boolean;
+};
 
 export type refPropsType = {
   children: React.ReactNode;
-  refs: Partial<refsType>;
   urls: urlsType;
   isRiderOn?: boolean;
   enableRiding?: boolean;
@@ -36,25 +52,9 @@ export type setGroundRayType = {
 };
 
 export type rigidBodyRefType = {
-  children: ReactNode;
-  controllerOptions: controllerOptionsType;
   name?: string;
-  position?: THREE.Vector3;
-  rotation?: THREE.Euler;
   userData?: { intangible: boolean };
   onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
-  positionLerp?: number;
-  type?: RigidBodyTypeString;
-  url: string;
   isActive?: boolean;
-  currentAnimation?: string;
-  componentType: "character" | "vehicle" | "airplane";
-} & propInnerType;
-
-export type InnerGroupRefType = {
-  children?: React.ReactNode;
-  type: "character" | "vehicle" | "airplane";
-  currentAnimation: string;
-  url: string;
-  rotation?: THREE.Euler;
-};
+} & passivePropsType &
+  innerRefType;

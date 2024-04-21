@@ -3,15 +3,14 @@ import { CuboidCollider } from "@react-three/rapier";
 import { Ref, forwardRef } from "react";
 import * as THREE from "three";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
-import { urlsType } from "../../../world/context/type";
 
 export const VehicleWheelCollider = forwardRef(
   (
-    { urls, vehicleSize }: { urls: urlsType; vehicleSize: THREE.Vector3 },
+    { wheelUrl, vehicleSize }: { wheelUrl: string; vehicleSize: THREE.Vector3 },
     ref: Ref<Collider>
   ) => {
     const { size: wheelSize } = useGltfAndSize({
-      url: urls.wheelUrl,
+      url: wheelUrl,
     });
 
     return (

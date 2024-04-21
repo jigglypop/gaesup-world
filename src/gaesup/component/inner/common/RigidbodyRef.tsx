@@ -20,7 +20,7 @@ import calculation from "../../../physics";
 import { cameraPropType } from "../../../physics/type";
 import { V3 } from "../../../utils";
 import { GaesupWorldContext } from "../../../world/context";
-import { calcCharacterColliderProps } from "../character";
+import { calcCharacterColliderProps } from "../../inner/common/calc";
 import { InnerGroupRef } from "./InnerGroupRef";
 import { rigidBodyRefType } from "./type";
 
@@ -34,7 +34,7 @@ export const RigidBodyRef = forwardRef(
       rotation,
       userData,
       onCollisionEnter,
-      type,
+      rigidbodyType,
       outerGroupRef,
       innerGroupRef,
       colliderRef,
@@ -83,7 +83,6 @@ export const RigidBodyRef = forwardRef(
     const { actions, ref: animationRef } = useAnimations(animations);
     const worldContext = useContext(GaesupWorldContext);
     const controllerContext = useContext(GaesupControllerContext);
-
     if (isActive) {
       subscribeActions({
         type: componentType,
@@ -151,7 +150,7 @@ export const RigidBodyRef = forwardRef(
         rotation={euler().set(0, rotation?.clone().y || 0, 0)}
         userData={userData}
         onCollisionEnter={onCollisionEnter}
-        type={type || "dynamic"}
+        type={rigidbodyType || "fixed"}
       >
         <CapsuleCollider
           ref={colliderRef}

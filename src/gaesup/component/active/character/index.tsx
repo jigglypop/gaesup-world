@@ -13,15 +13,12 @@ export function CharacterRef({
 }) {
   return (
     <CharacterInnerRef
-      refs={refs}
-      urls={urls}
-      controllerOptions={props.controllerOptions}
-      outerGroupRef={refs.outerGroupRef}
-      innerGroupRef={refs.innerGroupRef}
-      rigidBodyRef={refs.rigidBodyRef}
-      colliderRef={refs.colliderRef}
+      url={urls.characterUrl}
       isActive={true}
       componentType="character"
+      rigidbodyType={"dynamic"}
+      controllerOptions={props.controllerOptions}
+      {...refs}
     >
       {props.children}
     </CharacterInnerRef>

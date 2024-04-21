@@ -26,9 +26,10 @@ export function GaesupComponent({
       )}
       {mode.type === "vehicle" && (
         <VehicleRef
+          componentType={"vehicle"}
           controllerOptions={props.controllerOptions}
-          refs={refs}
-          urls={urls}
+          url={urls.vehicleUrl}
+          wheelUrl={urls.wheelUrl}
           enableRiding={enableRiding}
           isRiderOn={isRiderOn}
           offset={
@@ -36,15 +37,16 @@ export function GaesupComponent({
               ? rideable[rideableId].offset
               : vec3()
           }
+          {...refs}
         >
           {props.children}
         </VehicleRef>
       )}
       {mode.type === "airplane" && (
         <AirplaneRef
+          componentType={"airplane"}
           controllerOptions={props.controllerOptions}
-          refs={refs}
-          urls={urls}
+          url={urls.airplaneUrl}
           enableRiding={enableRiding}
           isRiderOn={isRiderOn}
           offset={
@@ -52,6 +54,7 @@ export function GaesupComponent({
               ? rideable[rideableId].offset
               : vec3()
           }
+          {...refs}
         >
           {props.children}
         </AirplaneRef>

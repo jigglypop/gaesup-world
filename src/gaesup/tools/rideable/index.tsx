@@ -6,10 +6,10 @@ import { PassiveVehicle } from "../../component/passive/vehicle/index.js";
 import { useRideable } from "../../hooks/useRideable/index.js";
 import { V3 } from "../../utils/vector.js";
 import { GaesupWorldContext } from "../../world/context/index.js";
-import { rideableType } from "../../world/context/type.js";
 import "./style.css";
+import { rideablePropType } from "./type.js";
 
-export function Rideable(props: rideableType) {
+export function Rideable(props: rideablePropType) {
   const { states, rideable, urls } = useContext(GaesupWorldContext);
   const { initRideable, getRideable, ride, landing } = useRideable();
   const current = getRideable(props.objectkey);
@@ -39,29 +39,30 @@ export function Rideable(props: rideableType) {
           <group userData={{ intangible: true }}>
             {props.objectType === "vehicle" && (
               <PassiveVehicle
+                componentType={"vehicle"}
                 controllerOptions={props.controllerOptions}
                 position={current.position || V3(0, 0, 0)}
                 rotation={current.rotation || euler()}
                 currentAnimation={"idle"}
+                url={props.url}
+                wheelUrl={props.wheelUrl}
                 offset={props.offset}
-                urls={{
-                  vehicleUrl: props.url,
-                  wheelUrl: props.wheelUrl,
-                  characterUrl: urls.characterUrl,
-                }}
+                isRiderOn={props.isRiderOn}
+                enableRiding={props.enableRiding}
                 onCollisionEnter={onCollisionEnter}
               />
             )}
             {props.objectType === "airplane" && (
               <PassiveAirplane
+                componentType={"airplane"}
                 controllerOptions={props.controllerOptions}
                 position={current.position || V3(0, 0, 0)}
                 rotation={current.rotation || euler()}
                 currentAnimation={"idle"}
+                url={props.url}
                 offset={props.offset}
-                urls={{
-                  airplaneUrl: urls.airplaneUrl,
-                }}
+                isRiderOn={props.isRiderOn}
+                enableRiding={props.enableRiding}
                 onCollisionEnter={onCollisionEnter}
               />
             )}

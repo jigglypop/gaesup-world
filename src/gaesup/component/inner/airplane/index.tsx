@@ -2,25 +2,18 @@ import { CuboidCollider } from "@react-three/rapier";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 import { OuterGroupRef } from "../common/OuterGroupRef";
 import { RigidBodyRef } from "../common/RigidbodyRef";
-import { vehicleInnerType } from "../vehicle/type";
+import { airplaneInnerType } from "./type";
 
-export function AirplaneInnerRef(props: vehicleInnerType) {
-  const { airplaneUrl } = props.urls;
-  const { rigidBodyRef, innerGroupRef, outerGroupRef, colliderRef } =
-    props.refs;
+export function AirplaneInnerRef(props: airplaneInnerType) {
+  const { rigidBodyRef, outerGroupRef } = props;
   const { size } = useGltfAndSize({
-    url: airplaneUrl,
+    url: props.url,
   });
   return (
     <OuterGroupRef ref={outerGroupRef}>
       <RigidBodyRef
         ref={rigidBodyRef}
         name={props.name}
-        url={props.urls.airplaneUrl}
-        outerGroupRef={outerGroupRef}
-        innerGroupRef={innerGroupRef}
-        rigidBodyRef={rigidBodyRef}
-        colliderRef={colliderRef}
         componentType={"airplane"}
         {...props}
       >

@@ -41,19 +41,12 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
 
   return (
     <AirplaneInnerRef
-      outerGroupRef={outerGroupRef}
-      innerGroupRef={innerGroupRef}
-      rigidBodyRef={rigidBodyRef}
-      colliderRef={colliderRef}
-      refs={refs}
       userData={{ intangible: true }}
       componentType={"airplane"}
       name={"airplane"}
-      isRiderOn={props.isRiderOn}
-      enableRiding={props.enableRiding}
       isActive={false}
-      controllerOptions={props.controllerOptions}
       {...props}
+      {...refs}
     >
       {props.children}
     </AirplaneInnerRef>
