@@ -21,11 +21,12 @@ export default function orbit(prop: cameraPropType) {
   const {
     state,
     worldContext: { activeState, cameraOption },
+    controllerOptions: { lerp },
   } = prop;
+
   if (!state || !state.camera) return;
   const cameraPosition = makeOrbitCameraPosition(activeState, cameraOption);
-
-  state.camera.position.lerp(cameraPosition, 1);
+  state.camera.position.lerp(cameraPosition.clone(), lerp.cameraTurn);
   state.camera.quaternion.copy(
     activeState.quat
       .clone()

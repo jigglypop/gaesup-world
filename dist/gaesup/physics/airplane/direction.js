@@ -1,7 +1,7 @@
 import { quat } from "@react-three/rapier";
 import { V3 } from "../../utils/vector";
 export default function direction(prop) {
-    var innerGroupRef = prop.innerGroupRef, rigidBodyRef = prop.rigidBodyRef, _a = prop.worldContext, joystick = _a.joystick, activeState = _a.activeState, control = _a.control, mode = _a.mode, airplane = prop.controllerContext.airplane, matchSizes = prop.matchSizes;
+    var innerGroupRef = prop.innerGroupRef, _a = prop.worldContext, joystick = _a.joystick, activeState = _a.activeState, control = _a.control, mode = _a.mode, airplane = prop.controllerContext.airplane, matchSizes = prop.matchSizes;
     var forward = control.forward, backward = control.backward, leftward = control.leftward, rightward = control.rightward, shift = control.shift, space = control.space;
     var angleDelta = airplane.angleDelta, maxAngle = airplane.maxAngle, accelRatio = airplane.accelRatio;
     if (!matchSizes || !matchSizes["airplaneUrl"])

@@ -7,4 +7,10 @@ export default function initControllerProps({ refs }: {
     groundRay: groundRayType;
     cameraRay: cameraRayType;
     keyControl: keyControlType;
+    controllerOptions: {
+        lerp: {
+            cameraPosition: number;
+            cameraTurn: number;
+        };
+    };
 };

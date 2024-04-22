@@ -1,6 +1,6 @@
-import { useAnimations } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { Ref, useContext, useEffect } from "react";
+import * as THREE from "three";
 import {
   AnimationAction,
   AnimationClip,
@@ -27,8 +27,10 @@ export type Api<T extends AnimationClip> = {
 
 export type playActionsType = {
   type: "character" | "vehicle" | "airplane";
-  animationResult: Api<AnimationClip>;
   currentAnimation?: string;
+  actions: actionsType;
+  animationRef: Ref<Object3D<Object3DEventMap>>;
+  isActive: boolean;
 };
 
 export type subscribeActionsType = {
@@ -46,15 +48,9 @@ export type playResultType = {
   ref: Ref<Object3D<Object3DEventMap>>;
 };
 
-export function subscribeActions({
-  type,
-  groundRay,
-  animations,
-}: subscribeActionsType) {
-  const { states, activeState } = useContext(GaesupWorldContext);
+export function subscribeActions({ type }: subscribeActionsType) {
+  const { states } = useContext(GaesupWorldContext);
   const { subscribeAll } = useGaesupAnimation({ type });
-  const animationResult = useAnimations(animations);
-
   // 초기 기본 애니메이션 등록
   useEffect(() => {
     subscribeAll([
@@ -79,13 +75,7 @@ export function subscribeActions({
         animationName: "jump",
         key: "jump",
       },
-      {
-        tag: "fall",
-        condition: () => groundRay.hit === null && activeState.velocity.y < 0,
-        action: () => {},
-        animationName: "fall",
-        key: "fall",
-      },
+
       {
         tag: "ride",
         condition: () => states.isPush["keyR"],
@@ -93,23 +83,38 @@ export function subscribeActions({
         animationName: "ride",
         key: "ride",
       },
+      {
+        tag: "land",
+        condition: () => states.isLanding,
+        action: () => {},
+        animationName: "land",
+        key: "land",
+      },
+      {
+        tag: "fall",
+        condition: () => states.isFalling,
+        action: () => {},
+        animationName: "fall",
+        key: "fall",
+      },
     ]);
   }, []);
-
-  return {
-    animationResult,
-  };
 }
 
 export default function playActions({
   type,
-  animationResult,
+  actions,
+  animationRef,
   currentAnimation,
+  isActive,
 }: playActionsType) {
   const { mode, animationState, block } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
   const { notify, store } = useGaesupAnimation({ type });
-  const { actions, ref } = animationResult;
+
+  if (isActive) {
+    currentAnimation = animationState?.[type]?.current;
+  }
 
   const play = (tag: keyof animationTagType) => {
     animationState[type].current = tag;
@@ -140,34 +145,17 @@ export default function playActions({
     return () => {
       action?.fadeOut(0.2);
     };
-  }, [currentAnimation, mode.type, block.animation]);
+  }, [currentAnimation, mode.type, block.animation, type]);
 
   useFrame(() => {
-    if (!currentAnimation) {
+    if (isActive) {
       const tag = notify() as keyof animationTagType;
       play(tag);
     }
   });
 
   return {
-    animationRef: ref,
+    animationRef,
     currentAnimation: animationState?.[type]?.current,
   };
 }
-
-export const setAnimation = ({
-  currentAnimation,
-  actions,
-  type,
-}: {
-  currentAnimation?: string;
-  actions?: actionsType;
-  type?: "character" | "vehicle" | "airplane";
-}) => {
-  useEffect(() => {
-    const action = actions[currentAnimation]?.reset().fadeIn(0.2).play();
-    return () => {
-      action?.fadeOut(0.2);
-    };
-  }, [currentAnimation, type]);
-};

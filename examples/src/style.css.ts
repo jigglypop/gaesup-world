@@ -8,33 +8,20 @@ const BlackHanSans = fontFace({
 });
 
 export const keyBoardToolTipOuter = style([
-  fixed({
-    south: true,
-  }),
-  sprinkles({
-    display: {
-      mobile: "none",
-      tablet: "none",
-      laptop: "flex",
-      desktop: "flex",
-    },
-  }),
   flex({
     column: "6",
   }),
   {
-    width: "100vw",
+    position: "fixed",
+    bottom: "0",
+    left: "50%",
+    transform: "translate(-50%, 0)",
+    width: "45vw",
+    height: "25vh",
   },
 ]);
 
-export const minimapOuter = style([
-  fixed({
-    west: true,
-  }),
-  {
-    top: "5rem",
-  },
-]);
+export const minimapOuter = style([flex({})]);
 
 export const gameBoyOuter = style([
   fixed({
@@ -56,7 +43,7 @@ export const gameBoyOuter = style([
   },
 ]);
 
-export const joyStickOuter = style([
+export const joystickOuter = style([
   {
     position: "fixed",
     bottom: "5lvh",

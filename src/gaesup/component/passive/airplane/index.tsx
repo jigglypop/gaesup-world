@@ -1,23 +1,10 @@
 import { Collider } from "@dimforge/rapier3d-compat";
 import { useFrame } from "@react-three/fiber";
-import {
-  CollisionEnterPayload,
-  RapierRigidBody,
-  quat,
-} from "@react-three/rapier";
-import { useMemo, useRef } from "react";
-import { urlsType } from "../../../world/context/type";
+import { RapierRigidBody, quat } from "@react-three/rapier";
+import { useRef } from "react";
+import * as THREE from "three";
 import { AirplaneInnerRef } from "../../inner/airplane";
-
-export type passiveAirplanePropsType = {
-  position: THREE.Vector3;
-  euler: THREE.Euler;
-  urls: urlsType;
-  currentAnimation: string;
-  offset?: THREE.Vector3;
-  children?: React.ReactNode;
-  onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
-};
+import { passiveAirplanePropsType } from "./type";
 
 export function PassiveAirplane(props: passiveAirplanePropsType) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
@@ -32,18 +19,9 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
     colliderRef,
   };
 
-  const { position, euler, currentAnimation, urls } = useMemo(() => {
-    return {
-      position: props.position,
-      euler: props.euler,
-      currentAnimation: props.currentAnimation,
-      urls: props.urls,
-    };
-  }, [props]);
-
   useFrame(() => {
     if (innerGroupRef && innerGroupRef.current) {
-      const _euler = euler.clone();
+      const _euler = props.rotation.clone();
       _euler.y = 0;
       innerGroupRef.current.setRotationFromQuaternion(
         quat()
@@ -63,13 +41,22 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
 
   return (
     <AirplaneInnerRef
-      refs={refs}
-      urls={urls}
-      position={position}
-      rotation={euler}
-      userData={{ intangible: true }}
-      onCollisionEnter={props.onCollisionEnter}
+      isActive={false}
+      componentType={"airplane"}
+      name={"airplane"}
+      controllerOptions={
+        props.controllerOptions || {
+          lerp: {
+            cameraTurn: 1,
+            cameraPosition: 1,
+          },
+        }
+      }
+      position={props.position.clone()}
+      rotation={props.rotation.clone()}
       currentAnimation={props.currentAnimation}
+      {...props}
+      {...refs}
     >
       {props.children}
     </AirplaneInnerRef>

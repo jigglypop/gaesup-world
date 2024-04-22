@@ -1,16 +1,22 @@
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { CuboidCollider } from "@react-three/rapier";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
+import { jsx as _jsx } from "react/jsx-runtime";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
-import { InnerGroupRef } from "../common/InnerGroupRef";
 import { OuterGroupRef } from "../common/OuterGroupRef";
 import { RigidBodyRef } from "../common/RigidbodyRef";
-import RiderRef from "../rider";
-export function AirplaneInnerRef(_a) {
-    var children = _a.children, refs = _a.refs, urls = _a.urls, isRiderOn = _a.isRiderOn, enableRiding = _a.enableRiding, offset = _a.offset, name = _a.name, position = _a.position, rotation = _a.rotation, userData = _a.userData, onCollisionEnter = _a.onCollisionEnter;
-    var airplaneUrl = urls.airplaneUrl;
-    var rigidBodyRef = refs.rigidBodyRef, innerGroupRef = refs.innerGroupRef, outerGroupRef = refs.outerGroupRef;
+export function AirplaneInnerRef(props) {
+    var rigidBodyRef = props.rigidBodyRef, outerGroupRef = props.outerGroupRef;
     var size = useGltfAndSize({
-        url: airplaneUrl,
+        url: props.url,
     }).size;
-    return (_jsx(OuterGroupRef, { ref: outerGroupRef, children: airplaneUrl && (_jsxs(RigidBodyRef, { ref: rigidBodyRef, name: name, position: position, rotation: rotation, userData: userData, onCollisionEnter: onCollisionEnter, children: [_jsx(CuboidCollider, { args: [size.x / 2, size.y / 2, size.z / 2], position: [0, size.y / 2, 0] }), children, _jsx(InnerGroupRef, { type: "airplane", url: airplaneUrl, currentAnimation: "idle", ref: innerGroupRef, children: enableRiding && isRiderOn && urls.characterUrl && (_jsx(RiderRef, { urls: urls, offset: offset })) })] })) }));
+    return (_jsx(OuterGroupRef, { ref: outerGroupRef, children: _jsx(RigidBodyRef, __assign({ ref: rigidBodyRef, name: props.name, componentType: "airplane" }, props, { children: props.children })) }));
 }

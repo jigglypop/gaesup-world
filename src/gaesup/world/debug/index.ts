@@ -9,7 +9,7 @@ export default function initDebug({
   value,
   dispatch,
 }: {
-  value: gaesupWorldContextType;
+  value: Partial<gaesupWorldContextType>;
   dispatch: dispatchType<gaesupWorldContextType>;
 }) {
   const { debug: worldDebug } = value;

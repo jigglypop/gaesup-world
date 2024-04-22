@@ -17,18 +17,19 @@
     "declaration": true,
     "outDir": "./dist",
     "paths": {
-      "@/*": ["./src/gaesup"],
+      "@/*": ["./src/gaesup"]
     },
-    "types": ["vite-plugin-svgr/client"], // 이부분 추가
+    "types": ["vite-plugin-svgr/client"] // 이부분 추가
   },
   "include": [
     "./src/**/*.tsx",
     "./src/**/*.ts",
     "./src/**/*.css",
     "src",
+    "*.ts",
+    "*.tsx",
     "examples",
     "dist",
-  ],
-
-  "references": [{ "path": "./tsconfig.node.json" }],
+    "*.json"
+  ]
 }

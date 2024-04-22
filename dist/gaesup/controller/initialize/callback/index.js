@@ -9,12 +9,13 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-import { useFrame } from "@react-three/fiber";
-import { useContext, useEffect } from "react";
+import { useContext } from "react";
 import { useGaesupAnimation } from "../../../hooks/useGaesupAnimation";
 import { GaesupWorldContext, GaesupWorldDispatchContext, } from "../../../world/context";
 export default function initCallback(_a) {
-    var props = _a.props, animationResult = _a.animationResult, type = _a.type;
+    var 
+    // props,
+    animationResult = _a.animationResult, type = _a.type;
     var actions = animationResult.actions;
     var animationState = useContext(GaesupWorldContext).animationState;
     var dispatch = useContext(GaesupWorldDispatchContext);
@@ -38,23 +39,42 @@ export default function initCallback(_a) {
             });
         }
     };
-    var controllerProp = __assign(__assign({}, props), { activeState: activeState, control: control, states: states, subscribe: subscribe });
-    useEffect(function () {
-        if (props.onReady) {
-            props.onReady(controllerProp);
-        }
-        return function () {
-            if (props.onDestory) {
-                props.onDestory(controllerProp);
-            }
-        };
-    }, []);
-    useFrame(function (prop) {
-        if (props.onFrame) {
-            props.onFrame(__assign(__assign({}, controllerProp), prop));
-        }
-        if (props.onAnimate) {
-            props.onAnimate(__assign(__assign(__assign({}, controllerProp), prop), { actions: actions, animationState: animationState, playAnimation: playAnimation }));
-        }
-    });
+    //   const controllerProp: callbackPropType = {
+    //     ...props,
+    //     activeState,
+    //     control,
+    //     states,
+    //     subscribe,
+    //   };
+    //
+    //   useEffect(() => {
+    //     if (props.onReady) {
+    //       props.onReady(controllerProp);
+    //     }
+    //     return () => {
+    //       if (props.onDestory) {
+    //         props.onDestory(controllerProp);
+    //       }
+    //     };
+    //   }, []);
+    //
+    //   useFrame((prop) => {
+    //     if (props.onFrame) {
+    //       props.onFrame({ ...controllerProp, ...prop });
+    //     }
+    //     if (props.onAnimate) {
+    //       props.onAnimate({
+    //         ...controllerProp,
+    //         ...prop,
+    //         actions,
+    //         animationState,
+    //         playAnimation,
+    //       });
+    //     }
+    //   });
+    return {
+        subscribe: subscribe,
+        playAnimation: playAnimation,
+        dispatch: dispatch,
+    };
 }

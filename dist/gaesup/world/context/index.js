@@ -32,6 +32,8 @@ export var gaesupWorldDefault = {
         enableRiding: false,
         isRiderOn: false,
         isLanding: false,
+        isFalling: false,
+        isRiding: false,
         isPush: {
             forward: false,
             backward: false,

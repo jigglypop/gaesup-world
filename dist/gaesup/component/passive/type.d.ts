@@ -1,20 +1,29 @@
-import { gaesupPassivePropsType } from "../../hooks/useGaesupController";
-import { activeStateType, modeType, wheelsStateType } from "../../world/context/type";
-export type passiveComponentType = {
-    props: gaesupPassivePropsType;
+import { Collider } from "@dimforge/rapier3d-compat";
+import { CollisionEnterPayload, RapierRigidBody, RigidBodyTypeString } from "@react-three/rapier";
+import { MutableRefObject } from "react";
+import * as THREE from "three";
+import { controllerOptionsType } from "../../controller/type";
+import { ridingType } from "../inner/common/type";
+export type componentTypeString = "character" | "vehicle" | "airplane";
+export type innerRefType = {
+    colliderRef: MutableRefObject<Collider>;
+    rigidBodyRef: MutableRefObject<RapierRigidBody>;
+    outerGroupRef: MutableRefObject<THREE.Group>;
+    innerGroupRef: MutableRefObject<THREE.Group>;
 };
-export type passiveCharacterType = {
-    mode: modeType;
-    state: activeStateType;
-    current: string;
-    url: string;
-};
-export type passiveVehicleType = {
-    mode: modeType;
-    state: activeStateType;
-    wheelsState?: wheelsStateType;
-    wheelPositions?: number[][];
-    current: string;
+export type passivePropsType = {
+    children?: React.ReactNode;
     url: string;
     wheelUrl?: string;
-};
+    position?: THREE.Vector3;
+    rotation?: THREE.Euler;
+    offset?: THREE.Vector3;
+    controllerOptions?: controllerOptionsType;
+    currentAnimation?: string;
+    rigidbodyType?: RigidBodyTypeString;
+    onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
+    componentType: componentTypeString;
+    userData?: {
+        intangible: boolean;
+    };
+} & ridingType;

@@ -71,6 +71,14 @@ export default function initControllerProps(_a) {
             intersectObjectMap: {},
         };
     }, []);
+    var controllerOptions = useMemo(function () {
+        return {
+            lerp: {
+                cameraPosition: 0.9,
+                cameraTurn: 0.1,
+            },
+        };
+    }, []);
     var initRefs = useCallback(function (refs) {
         update({
             refs: __assign({}, refs),
@@ -85,5 +93,6 @@ export default function initControllerProps(_a) {
         groundRay: groundRay,
         cameraRay: cameraRay,
         keyControl: keyControl,
+        controllerOptions: controllerOptions,
     };
 }

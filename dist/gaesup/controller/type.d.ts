@@ -42,11 +42,18 @@ export type rayType = {
 };
 export type slopeRayType = Omit<rayType, "parent">;
 export type groundRayType = Omit<rayType, "current" | "angle">;
+export type controllerOptionsType = {
+    lerp: {
+        cameraTurn: number;
+        cameraPosition: number;
+    };
+};
 export type controllerInnerType = {
     name?: string;
     groundRay: groundRayType;
     cameraRay: cameraRayType;
     keyControl: keyControlType;
+    controllerOptions: controllerOptionsType;
 } & controllerOtherPropType & refsType & callbackType;
 export type animationTagType = {
     idle: string;

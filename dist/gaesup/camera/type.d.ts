@@ -1,3 +1,4 @@
+import * as THREE from "three";
 export type cameraRayType = {
     origin: THREE.Vector3;
     hit: THREE.Raycaster;

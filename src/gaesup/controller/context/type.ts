@@ -1,4 +1,5 @@
 import { GroupProps } from "@react-three/fiber";
+import * as THREE from "three";
 import { dispatchType } from "../../utils/type";
 import { callbackType } from "../initialize/callback/type";
 import { gaesupControllerContextPropType, refsType } from "../type";

@@ -20,3 +20,12 @@ node_modules
 *.njsproj
 *.sln
 *.sw?
+
+# IDE
+.yarn/*
+!.yarn/cache // Zero-Install 
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions

@@ -1,7 +1,7 @@
 import { vec3 } from "@react-three/rapier";
-import { Suspense, useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef } from "react";
 import * as THREE from "three";
-import useClicker from "../hooks/useClicker";
+import { useClicker } from "../hooks/useClicker";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
@@ -50,15 +50,13 @@ export function GaeSupProps({
   }, []);
 
   return (
-    <Suspense fallback={null}>
-      <group
-        ref={groupRef}
-        position={position}
-        onPointerDown={(e) => moveClicker(e, false, type)}
-        onDoubleClick={(e) => moveClicker(e, true, type)}
-      >
-        {children}
-      </group>
-    </Suspense>
+    <group
+      ref={groupRef}
+      position={position}
+      onPointerDown={(e) => moveClicker(e, false, type)}
+      onDoubleClick={(e) => moveClicker(e, true, type)}
+    >
+      {children}
+    </group>
   );
 }

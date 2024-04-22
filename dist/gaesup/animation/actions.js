@@ -9,16 +9,14 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-import { useAnimations } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useContext, useEffect } from "react";
 import { useGaesupAnimation } from "../hooks/useGaesupAnimation";
 import { GaesupWorldContext, GaesupWorldDispatchContext, } from "../world/context";
 export function subscribeActions(_a) {
-    var type = _a.type, groundRay = _a.groundRay, animations = _a.animations;
-    var _b = useContext(GaesupWorldContext), states = _b.states, activeState = _b.activeState;
+    var type = _a.type;
+    var states = useContext(GaesupWorldContext).states;
     var subscribeAll = useGaesupAnimation({ type: type }).subscribeAll;
-    var animationResult = useAnimations(animations);
     // 초기 기본 애니메이션 등록
     useEffect(function () {
         subscribeAll([
@@ -44,32 +42,38 @@ export function subscribeActions(_a) {
                 key: "jump",
             },
             {
-                tag: "fall",
-                condition: function () { return groundRay.hit === null && activeState.velocity.y < 0; },
-                action: function () { },
-                animationName: "fall",
-                key: "fall",
-            },
-            {
                 tag: "ride",
                 condition: function () { return states.isPush["keyR"]; },
                 action: function () { },
                 animationName: "ride",
                 key: "ride",
             },
+            {
+                tag: "land",
+                condition: function () { return states.isLanding; },
+                action: function () { },
+                animationName: "land",
+                key: "land",
+            },
+            {
+                tag: "fall",
+                condition: function () { return states.isFalling; },
+                action: function () { },
+                animationName: "fall",
+                key: "fall",
+            },
         ]);
     }, []);
-    return {
-        animationResult: animationResult,
-    };
 }
 export default function playActions(_a) {
-    var _b;
-    var type = _a.type, animationResult = _a.animationResult, currentAnimation = _a.currentAnimation;
-    var _c = useContext(GaesupWorldContext), mode = _c.mode, animationState = _c.animationState, block = _c.block;
+    var _b, _c;
+    var type = _a.type, actions = _a.actions, animationRef = _a.animationRef, currentAnimation = _a.currentAnimation, isActive = _a.isActive;
+    var _d = useContext(GaesupWorldContext), mode = _d.mode, animationState = _d.animationState, block = _d.block;
     var dispatch = useContext(GaesupWorldDispatchContext);
-    var _d = useGaesupAnimation({ type: type }), notify = _d.notify, store = _d.store;
-    var actions = animationResult.actions, ref = animationResult.ref;
+    var _e = useGaesupAnimation({ type: type }), notify = _e.notify, store = _e.store;
+    if (isActive) {
+        currentAnimation = (_b = animationState === null || animationState === void 0 ? void 0 : animationState[type]) === null || _b === void 0 ? void 0 : _b.current;
+    }
     var play = function (tag) {
         animationState[type].current = tag;
         var currentAnimation = store[tag];
@@ -99,25 +103,15 @@ export default function playActions(_a) {
         return function () {
             action === null || action === void 0 ? void 0 : action.fadeOut(0.2);
         };
-    }, [currentAnimation, mode.type, block.animation]);
+    }, [currentAnimation, mode.type, block.animation, type]);
     useFrame(function () {
-        if (!currentAnimation) {
+        if (isActive) {
             var tag = notify();
             play(tag);
         }
     });
     return {
-        animationRef: ref,
-        currentAnimation: (_b = animationState === null || animationState === void 0 ? void 0 : animationState[type]) === null || _b === void 0 ? void 0 : _b.current,
+        animationRef: animationRef,
+        currentAnimation: (_c = animationState === null || animationState === void 0 ? void 0 : animationState[type]) === null || _c === void 0 ? void 0 : _c.current,
     };
 }
-export var setAnimation = function (_a) {
-    var currentAnimation = _a.currentAnimation, actions = _a.actions, type = _a.type;
-    useEffect(function () {
-        var _a;
-        var action = (_a = actions[currentAnimation]) === null || _a === void 0 ? void 0 : _a.reset().fadeIn(0.2).play();
-        return function () {
-            action === null || action === void 0 ? void 0 : action.fadeOut(0.2);
-        };
-    }, [currentAnimation, type]);
-};

@@ -9,11 +9,11 @@ export var makeOrbitCameraPosition = function (activeState, cameraOption) {
     return cameraPosition;
 };
 export default function orbit(prop) {
-    var state = prop.state, _a = prop.worldContext, activeState = _a.activeState, cameraOption = _a.cameraOption;
+    var state = prop.state, _a = prop.worldContext, activeState = _a.activeState, cameraOption = _a.cameraOption, lerp = prop.controllerOptions.lerp;
     if (!state || !state.camera)
         return;
     var cameraPosition = makeOrbitCameraPosition(activeState, cameraOption);
-    state.camera.position.lerp(cameraPosition, 1);
+    state.camera.position.lerp(cameraPosition.clone(), lerp.cameraTurn);
     state.camera.quaternion.copy(activeState.quat
         .clone()
         .multiply(quat().setFromAxisAngle(V3(0, 1, 0), Math.PI)));

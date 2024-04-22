@@ -88,7 +88,7 @@ export function useGaesupAnimation(_a) {
     return {
         subscribe: subscribe,
         subscribeAll: subscribeAll,
-        store: animationState[type].store,
+        store: animationState === null || animationState === void 0 ? void 0 : animationState[type].store,
         unsubscribe: unsubscribe,
         notify: notify,
     };

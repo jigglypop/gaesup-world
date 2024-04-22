@@ -1,7 +1,7 @@
 import { quat } from "@react-three/rapier";
-import { calcPropType } from "../type";
+import { calcType } from "../type";
 
-export default function innerCalc(prop: calcPropType) {
+export default function innerCalc(prop: calcType) {
   const {
     rigidBodyRef,
     innerGroupRef,
@@ -9,7 +9,6 @@ export default function innerCalc(prop: calcPropType) {
       character: { linearDamping },
     },
     worldContext: { activeState, states },
-    dispatch,
     delta,
   } = prop;
 
@@ -25,12 +24,4 @@ export default function innerCalc(prop: calcPropType) {
     quat().setFromEuler(activeState.euler),
     10 * delta
   );
-  dispatch({
-    type: "update",
-    payload: {
-      activeState: {
-        ...activeState,
-      },
-    },
-  });
 }

@@ -1,7 +1,6 @@
 import { vec3 } from "@react-three/rapier";
 import { useContext } from "react";
 import { controllerInnerType, refsType } from "../controller/type";
-import calculation from "../physics";
 import { GaesupWorldContext } from "../world/context";
 import { urlsType } from "../world/context/type";
 import { AirplaneRef } from "./active/airplane";
@@ -19,7 +18,7 @@ export function GaesupComponent({
 }) {
   const { mode, states, rideable } = useContext(GaesupWorldContext);
   const { enableRiding, isRiderOn, rideableId } = states;
-  calculation(props);
+
   return (
     <>
       {mode.type === "character" && (
@@ -27,10 +26,9 @@ export function GaesupComponent({
       )}
       {mode.type === "vehicle" && (
         <VehicleRef
-          props={props}
-          groundRay={props.groundRay}
-          refs={refs}
-          urls={urls}
+          controllerOptions={props.controllerOptions}
+          url={urls.vehicleUrl}
+          wheelUrl={urls.wheelUrl}
           enableRiding={enableRiding}
           isRiderOn={isRiderOn}
           offset={
@@ -38,16 +36,15 @@ export function GaesupComponent({
               ? rideable[rideableId].offset
               : vec3()
           }
+          {...refs}
         >
           {props.children}
         </VehicleRef>
       )}
       {mode.type === "airplane" && (
         <AirplaneRef
-          props={props}
-          groundRay={props.groundRay}
-          refs={refs}
-          urls={urls}
+          controllerOptions={props.controllerOptions}
+          url={urls.airplaneUrl}
           enableRiding={enableRiding}
           isRiderOn={isRiderOn}
           offset={
@@ -55,6 +52,7 @@ export function GaesupComponent({
               ? rideable[rideableId].offset
               : vec3()
           }
+          {...refs}
         >
           {props.children}
         </AirplaneRef>

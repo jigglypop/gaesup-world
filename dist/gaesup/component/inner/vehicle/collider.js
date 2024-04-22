@@ -3,9 +3,9 @@ import { CuboidCollider } from "@react-three/rapier";
 import { forwardRef } from "react";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 export var VehicleWheelCollider = forwardRef(function (_a, ref) {
-    var urls = _a.urls, vehicleSize = _a.vehicleSize;
+    var wheelUrl = _a.wheelUrl, vehicleSize = _a.vehicleSize;
     var wheelSize = useGltfAndSize({
-        url: urls.wheelUrl,
+        url: wheelUrl,
     }).size;
     return (_jsx(CuboidCollider, { ref: ref, args: [
             vehicleSize.x / 2,

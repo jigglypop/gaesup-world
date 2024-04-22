@@ -7,10 +7,9 @@ import {
   useRevoluteJoint,
 } from "@react-three/rapier";
 import { RefObject, createRef, useContext, useRef } from "react";
-import { refsType } from "../../../controller/type";
+import * as THREE from "three";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 import { GaesupWorldContext } from "../../../world/context";
-import { urlsType } from "../../../world/context/type";
 
 const WheelJoint = ({
   body,
@@ -45,17 +44,15 @@ const WheelJoint = ({
 
 export function WheelsRef({
   vehicleSize,
-  refs,
-  urls,
+  rigidBodyRef,
+  wheelUrl,
 }: {
   vehicleSize: THREE.Vector3;
-  refs: Partial<refsType>;
-  urls: urlsType;
+  rigidBodyRef: RefObject<RapierRigidBody>;
+  wheelUrl: string;
 }) {
-  const { wheelUrl } = urls;
-  const { rigidBodyRef } = refs;
   const { size: wheelSize } = useGltfAndSize({
-    url: urls.wheelUrl,
+    url: wheelUrl,
   });
 
   const X = (vehicleSize.x - wheelSize.x) / 2;
@@ -72,9 +69,7 @@ export function WheelsRef({
 
   return (
     <>
-      {rigidBodyRef &&
-        wheelUrl &&
-        wheelRefs &&
+      {wheelRefs &&
         wheelPositions.map((wheelPosition, index) => {
           if (
             !wheelRefs ||
@@ -102,9 +97,7 @@ export function WheelsRef({
             </RigidBody>
           );
         })}
-      {rigidBodyRef &&
-        wheelUrl &&
-        wheelRefs &&
+      {wheelRefs &&
         wheelPositions.map((wheelPosition, index) => {
           if (
             !wheelRefs ||

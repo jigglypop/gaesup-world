@@ -1,7 +1,7 @@
 import { vec3 } from "@react-three/rapier";
 import { V3 } from "../../utils/vector";
 export function joystick(prop) {
-    var state = prop.state, _a = prop.worldContext, activeState = _a.activeState, joystick = _a.joystick;
+    var _a = prop.worldContext, activeState = _a.activeState, joystick = _a.joystick;
     var zAxis = joystick.joyStickOrigin.isOn ? 1 : 0;
     var front = vec3().set(zAxis, 0, zAxis);
     if (joystick.joyStickOrigin.isCenter)

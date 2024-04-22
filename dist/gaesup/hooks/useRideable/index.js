@@ -49,10 +49,6 @@ import { euler, vec3 } from "@react-three/rapier";
 import { useContext } from "react";
 import { GaesupWorldContext, GaesupWorldDispatchContext, } from "../../world/context";
 import { useGaesupGltf } from "../useGaesupGltf";
-/**
- * Default rideable object properties.
- * @type {Object}
- */
 export var rideableDefault = {
     objectkey: null,
     objectType: null,
@@ -64,42 +60,21 @@ export var rideableDefault = {
     offset: vec3(),
     visible: true,
 };
-/**
- * Custom hook for managing rideable objects.
- * @returns {Object} An object containing functions to initialize, set, get, ride, and land rideable objects.
- */
 export function useRideable() {
     var _this = this;
     var worldContext = useContext(GaesupWorldContext);
     var urls = worldContext.urls, states = worldContext.states, rideable = worldContext.rideable, mode = worldContext.mode;
     var dispatch = useContext(GaesupWorldDispatchContext);
     var getSizesByUrls = useGaesupGltf().getSizesByUrls;
-    /**
-     * Initialize a rideable object with the provided properties.
-     * @param {rideableType} props - The properties of the rideable object to initialize.
-     */
     var initRideable = function (props) {
         rideable[props.objectkey] = __assign(__assign({}, rideableDefault), props);
     };
-    /**
-     * Set the properties of a rideable object.
-     * @param {rideableType} props - The properties to set for the rideable object.
-     */
     var setRideable = function (props) {
         rideable[props.objectkey] = props;
     };
-    /**
-     * Get the rideable object with the specified object key.
-     * @param {string} objectkey - The key of the rideable object to retrieve.
-     * @returns {rideableType} The rideable object with the specified key.
-     */
     var getRideable = function (objectkey) {
         return rideable[objectkey];
     };
-    /**
-     * Handle landing of a rideable object.
-     * @param {string} objectkey - The key of the rideable object to land.
-     */
     var landing = function (objectkey) {
         var activeState = worldContext.activeState, refs = worldContext.refs;
         states.enableRiding = false;
@@ -125,10 +100,6 @@ export function useRideable() {
             },
         });
     };
-    /**
-     * Set the URL properties of a rideable object. (inner function)
-     * @param {rideableType} props - The properties containing URLs for the rideable object.
-     */
     var setUrl = function (props) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             if (props.objectType === "vehicle") {
@@ -147,10 +118,6 @@ export function useRideable() {
             return [2 /*return*/];
         });
     }); };
-    /**
-     * Set the mode and riding state for a rideable object. (inner function)
-     * @param {rideableType} props - The properties of the rideable object to set mode and riding state.
-     */
     var setModeAndRiding = function (props) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             mode.type = props.objectType;
@@ -168,11 +135,6 @@ export function useRideable() {
             return [2 /*return*/];
         });
     }); };
-    /**
-     * Handle the ride event for a rideable object.
-     * @param {CollisionEnterPayload} e - The collision event payload.
-     * @param {rideableType} props - The properties of the rideable object.
-     */
     var ride = function (e, props) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {

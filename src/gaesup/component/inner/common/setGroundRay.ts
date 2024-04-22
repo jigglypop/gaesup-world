@@ -1,14 +1,7 @@
-import { Collider } from "@dimforge/rapier3d-compat";
 import { useRapier } from "@react-three/rapier";
-import { RefObject } from "react";
 import { groundRayType } from "../../../controller/type";
 import { getRayHit } from "../../../utils";
-
-export type setGroundRayType = {
-  groundRay: groundRayType;
-  length: number;
-  colliderRef: RefObject<Collider>;
-};
+import { setGroundRayType } from "./type";
 
 export function setGroundRay({
   groundRay,

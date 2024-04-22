@@ -1,4 +1,5 @@
 import { CSSProperties } from "react";
+import * as THREE from "three";
 import { useTeleport } from "../../hooks/useTeleport";
 import "./style.css";
 

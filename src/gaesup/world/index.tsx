@@ -7,6 +7,7 @@ import { gaesupWorldPropsType } from "./type";
 
 export function GaesupWorld(props: gaesupWorldPropsType) {
   const { gaesupProps } = initGaesupWorld(props);
+
   return (
     <GaesupWorldContext.Provider value={gaesupProps.value}>
       <GaesupWorldDispatchContext.Provider value={gaesupProps.dispatch}>

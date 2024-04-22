@@ -2,16 +2,14 @@
 
 import { Grid } from "@react-three/drei";
 import { RigidBody } from "@react-three/rapier";
-import { GaeSupProps, useFocus } from "../../src";
+import { GaeSupProps } from "../../src";
 
 export default function Floor() {
-  const { focusOn, focusOff } = useFocus();
-
   return (
     <>
       <Grid
         renderOrder={-1}
-        position={[0, 1, 0]}
+        position={[0, 0.2, 0]}
         infiniteGrid
         cellSize={2}
         cellThickness={1}
@@ -33,21 +31,9 @@ export default function Floor() {
             rotation={[-Math.PI / 2, 0, 0]}
           >
             <planeGeometry args={[1000, 1000]} />
-            <meshStandardMaterial color="#b963ff" />
+            <meshStandardMaterial color="#3d3d3d" />
           </mesh>
         </GaeSupProps>
-
-        {/* <MeshReflectorMaterial
-            mirror={1}
-            blur={[300, 100]}
-            resolution={2048}
-            mixBlur={10}
-            mixStrength={10}
-            depthScale={10}
-            minDepthThreshold={10}
-            maxDepthThreshold={14}
-            color="#b963ff"
-          /> */}
       </RigidBody>
     </>
   );

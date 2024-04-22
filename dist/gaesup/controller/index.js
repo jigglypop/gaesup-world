@@ -10,9 +10,8 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx } from "react/jsx-runtime";
 import { useContext, useMemo, useReducer, useRef } from "react";
-import Camera from "../camera";
 import { KeyboardControls } from "@react-three/drei";
 import { GaesupComponent } from "../component";
 import { GaesupWorldContext } from "../world/context";
@@ -53,7 +52,7 @@ export function GaesupControllerInner(props) {
     var gaesupControl = useMemo(function () { return ({
         value: controller,
         dispatch: controllerDispatch,
-    }); }, [controller, controllerDispatch]);
+    }); }, []);
     var refs = useMemo(function () {
         return {
             colliderRef: colliderRef,
@@ -71,5 +70,5 @@ export function GaesupControllerInner(props) {
         controllerContext: gaesupControl.value,
         controllerDispatch: gaesupControl.dispatch,
     });
-    return (_jsxs(GaesupControllerContext.Provider, { value: gaesupControl.value, children: [_jsx(Camera, { refs: refs, prop: prop, control: prop.keyControl }), _jsx(GaesupControllerDispatchContext.Provider, { value: gaesupControl.dispatch, children: _jsx(GaesupComponent, { props: prop, refs: refs, urls: props.urls }) })] }));
+    return (_jsx(GaesupControllerContext.Provider, { value: gaesupControl.value, children: _jsx(GaesupControllerDispatchContext.Provider, { value: gaesupControl.dispatch, children: _jsx(GaesupComponent, { props: prop, refs: refs, urls: props.urls }) }) }));
 }

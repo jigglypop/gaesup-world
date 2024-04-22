@@ -30,7 +30,7 @@ export var joyStickInnerDefault = {
     joyStickBall: joyStickBallDefault,
     joyStickOrigin: joyStickOriginDefault,
 };
-export default function useJoyStick() {
+export function useJoyStick() {
     var joystick = useContext(GaesupWorldContext).joystick;
     var dispatch = useContext(GaesupWorldDispatchContext);
     var joyStickBall = joystick.joyStickBall, joyStickOrigin = joystick.joyStickOrigin;

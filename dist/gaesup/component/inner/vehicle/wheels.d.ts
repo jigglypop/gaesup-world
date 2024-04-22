@@ -1,7 +1,8 @@
-import { refsType } from "../../../controller/type";
-import { urlsType } from "../../../world/context/type";
-export declare function WheelsRef({ vehicleSize, refs, urls, }: {
+import { RapierRigidBody } from "@react-three/rapier";
+import { RefObject } from "react";
+import * as THREE from "three";
+export declare function WheelsRef({ vehicleSize, rigidBodyRef, wheelUrl, }: {
     vehicleSize: THREE.Vector3;
-    refs: Partial<refsType>;
-    urls: urlsType;
+    rigidBodyRef: RefObject<RapierRigidBody>;
+    wheelUrl: string;
 }): import("react/jsx-runtime").JSX.Element;

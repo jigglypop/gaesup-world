@@ -3,7 +3,7 @@
 import { Collider } from "@dimforge/rapier3d-compat";
 import { RapierRigidBody } from "@react-three/rapier";
 import { useContext, useMemo, useReducer, useRef } from "react";
-import Camera from "../camera";
+import * as THREE from "three";
 
 import { KeyboardControls } from "@react-three/drei";
 import { GaesupComponent } from "../component";
@@ -70,7 +70,7 @@ export function GaesupControllerInner(props: controllerType) {
       value: controller,
       dispatch: controllerDispatch,
     }),
-    [controller, controllerDispatch]
+    []
   );
 
   const refs = useMemo(() => {
@@ -101,7 +101,6 @@ export function GaesupControllerInner(props: controllerType) {
 
   return (
     <GaesupControllerContext.Provider value={gaesupControl.value}>
-      <Camera refs={refs} prop={prop} control={prop.keyControl} />
       <GaesupControllerDispatchContext.Provider value={gaesupControl.dispatch}>
         <GaesupComponent props={prop} refs={refs} urls={props.urls} />
       </GaesupControllerDispatchContext.Provider>

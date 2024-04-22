@@ -35,29 +35,36 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useState } from "react";
 import { euler } from "@react-three/rapier";
-import { PassiveAirplane } from "../../component/passive/airplane/index.js";
-import { PassiveVehicle } from "../../component/passive/vehicle/index.js";
-import { useRideable } from "../../hooks/useRideable/index.js";
-import { V3 } from "../../utils/vector.js";
-import { GaesupWorldContext } from "../../world/context/index.js";
+import { PassiveAirplane } from "../../component/passive/airplane";
+import { PassiveVehicle } from "../../component/passive/vehicle";
+import { useRideable } from "../../hooks/useRideable";
+import { V3 } from "../../utils";
+import { GaesupWorldContext } from "../../world/context";
 import "./style.css";
 export function Rideable(props) {
     var _this = this;
-    var _a = useContext(GaesupWorldContext), states = _a.states, rideable = _a.rideable;
-    var _b = useRideable(), initRideable = _b.initRideable, getRideable = _b.getRideable, ride = _b.ride, landing = _b.landing;
-    var current = getRideable(props.objectkey);
+    var _a;
+    var _b = useContext(GaesupWorldContext), states = _b.states, rideable = _b.rideable, urls = _b.urls;
+    var _c = useRideable(), initRideable = _c.initRideable, getRideable = _c.getRideable, ride = _c.ride, landing = _c.landing;
+    // const current = getRideable(props.objectkey);
+    var _d = useState({
+        position: props.position || V3(0, 0, 0),
+        rotation: props.rotation || euler(),
+    }), _rideable = _d[0], set_Rideable = _d[1];
+    // console.log(current);
+    // if (!current) return null;
     useEffect(function () {
         initRideable(props);
     }, []);
     useEffect(function () {
-        if ((states === null || states === void 0 ? void 0 : states.isLanding) &&
+        if ((states === null || states === void 0 ? void 0 : states.isRiding) &&
             rideable[props.objectkey] &&
             !rideable[props.objectkey].visible) {
             landing(props.objectkey);
         }
-    }, [states === null || states === void 0 ? void 0 : states.isLanding]);
+    }, [states === null || states === void 0 ? void 0 : states.isRiding]);
     var onCollisionEnter = function (e) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -68,12 +75,5 @@ export function Rideable(props) {
             }
         });
     }); };
-    return (_jsx(_Fragment, { children: current &&
-            rideable[props.objectkey] &&
-            rideable[props.objectkey].visible && (_jsxs("group", { userData: { intangible: true }, children: [props.objectType === "vehicle" && (_jsx(PassiveVehicle, { position: current.position || V3(0, 0, 0), euler: current.rotation || euler(), currentAnimation: "idle", offset: props.offset, urls: {
-                        vehicleUrl: props.url,
-                        wheelUrl: props.wheelUrl,
-                    }, onCollisionEnter: onCollisionEnter })), props.objectType === "airplane" && (_jsx(PassiveAirplane, { position: current.position || V3(0, 0, 0), euler: current.rotation || euler(), currentAnimation: "idle", offset: props.offset, urls: {
-                        airplaneUrl: props.url,
-                    }, onCollisionEnter: onCollisionEnter }))] })) }));
+    return (_jsx(_Fragment, { children: ((_a = rideable === null || rideable === void 0 ? void 0 : rideable[props.objectkey]) === null || _a === void 0 ? void 0 : _a.visible) && (_jsxs("group", { userData: { intangible: true }, children: [props.objectType === "vehicle" && (_jsx(PassiveVehicle, { controllerOptions: props.controllerOptions, position: _rideable.position, rotation: _rideable.rotation, currentAnimation: "idle", url: props.url, wheelUrl: props.wheelUrl, offset: props.offset, enableRiding: props.enableRiding, onCollisionEnter: onCollisionEnter })), props.objectType === "airplane" && (_jsx(PassiveAirplane, { controllerOptions: props.controllerOptions, position: _rideable.position, rotation: _rideable.rotation, currentAnimation: "idle", url: props.url, offset: props.offset, enableRiding: props.enableRiding, onCollisionEnter: onCollisionEnter }))] })) }));
 }

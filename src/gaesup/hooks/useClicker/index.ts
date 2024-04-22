@@ -6,7 +6,7 @@ import {
   GaesupWorldDispatchContext,
 } from "../../world/context";
 
-export default function useClicker() {
+export function useClicker() {
   const { activeState, clicker, mode } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
 
@@ -40,8 +40,6 @@ export default function useClicker() {
       },
     });
   };
-  // const moveClicker = _.throttle(moveClick, 100);
-
   // 거리 계산
   useEffect(() => {
     if (mode.controller !== "clicker") return;

@@ -1,6 +1,15 @@
-import { jsx as _jsx } from "react/jsx-runtime";
-import { useFrame } from "@react-three/fiber";
-import { quat } from "@react-three/rapier";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
+import { jsx as _jsx, Fragment as _Fragment } from "react/jsx-runtime";
 import { useEffect, useMemo, useRef } from "react";
 import { CharacterInnerRef } from "../../inner/character";
 export function PassiveCharacter(props) {
@@ -14,22 +23,18 @@ export function PassiveCharacter(props) {
         innerGroupRef: innerGroupRef,
         colliderRef: colliderRef,
     };
-    var _a = useMemo(function () {
-        return {
-            position: props.position,
-            euler: props.euler,
-            characterUrl: props.urls.characterUrl,
-        };
-    }, [props]), position = _a.position, euler = _a.euler;
     useEffect(function () {
-        if (rigidBodyRef || rigidBodyRef.current) {
+        if (rigidBodyRef && rigidBodyRef.current) {
             rigidBodyRef.current.setEnabledRotations(false, false, false, false);
         }
     }, []);
-    useFrame(function (_, delta) {
-        if (innerGroupRef && innerGroupRef.current) {
-            innerGroupRef.current.quaternion.rotateTowards(quat().setFromEuler(euler), 10 * delta);
-        }
-    });
-    return (_jsx(CharacterInnerRef, { position: position, refs: refs, urls: props.urls, currentAnimation: props.currentAnimation, positionLerp: props.positionLerp, children: props.children }));
+    var memorized = useMemo(function () {
+        return (_jsx(CharacterInnerRef, __assign({ isActive: false, componentType: "character", controllerOptions: props.controllerOptions || {
+                lerp: {
+                    cameraTurn: 1,
+                    cameraPosition: 1,
+                },
+            }, position: props.position.clone(), rotation: props.rotation.clone(), currentAnimation: props.currentAnimation }, refs, props, { children: props.children })));
+    }, [props.position, props.rotation, props.currentAnimation]);
+    return _jsx(_Fragment, { children: memorized });
 }

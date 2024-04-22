@@ -1,11 +1,10 @@
 import { quat } from "@react-three/rapier";
 import { V3 } from "../../utils/vector";
-import { calcPropType } from "../type";
+import { calcType } from "../type";
 
-export default function direction(prop: calcPropType) {
+export default function direction(prop: calcType) {
   const {
     innerGroupRef,
-    rigidBodyRef,
     worldContext: { joystick, activeState, control, mode },
     controllerContext: { airplane },
     matchSizes,

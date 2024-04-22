@@ -1,4 +1,5 @@
 /// <reference types="react" />
+import * as THREE from "three";
 import "./style.css";
 export type zoomButtonPropsType = {
     children?: React.ReactNode;

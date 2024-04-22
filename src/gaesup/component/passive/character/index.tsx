@@ -1,63 +1,46 @@
 import { Collider } from "@dimforge/rapier3d-compat";
-import { useFrame } from "@react-three/fiber";
-import { RapierRigidBody, quat } from "@react-three/rapier";
-import { useEffect, useMemo, useRef } from "react";
-import { refsType } from "../../../controller/type";
-import { urlsType } from "../../../world/context/type";
+import { RapierRigidBody } from "@react-three/rapier";
+import { useEffect, useRef } from "react";
+import * as THREE from "three";
 import { CharacterInnerRef } from "../../inner/character";
-
-export type passiveCharacterPropsType = {
-  position: THREE.Vector3;
-  euler: THREE.Euler;
-  urls: urlsType;
-  currentAnimation: string;
-  gravityScale?: number;
-  children?: React.ReactNode;
-  positionLerp?: number;
-};
+import { innerRefType } from "../type";
+import { passiveCharacterPropsType } from "./type";
 
 export function PassiveCharacter(props: passiveCharacterPropsType) {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const outerGroupRef = useRef<THREE.Group>(null);
   const innerGroupRef = useRef<THREE.Group>(null);
   const colliderRef = useRef<Collider>(null);
-  const refs: Partial<refsType> = {
+  const refs: innerRefType = {
     rigidBodyRef,
     outerGroupRef,
     innerGroupRef,
     colliderRef,
   };
 
-  const { position, euler } = useMemo(() => {
-    return {
-      position: props.position,
-      euler: props.euler,
-      characterUrl: props.urls.characterUrl,
-    };
-  }, [props]);
-
   useEffect(() => {
-    if (rigidBodyRef || rigidBodyRef.current) {
+    if (rigidBodyRef && rigidBodyRef.current) {
       rigidBodyRef.current.setEnabledRotations(false, false, false, false);
     }
   }, []);
 
-  useFrame((_, delta) => {
-    if (innerGroupRef && innerGroupRef.current) {
-      innerGroupRef.current.quaternion.rotateTowards(
-        quat().setFromEuler(euler),
-        10 * delta
-      );
-    }
-  });
-
   return (
     <CharacterInnerRef
-      position={position}
-      refs={refs}
-      urls={props.urls}
+      isActive={false}
+      componentType={"character"}
+      controllerOptions={
+        props.controllerOptions || {
+          lerp: {
+            cameraTurn: 1,
+            cameraPosition: 1,
+          },
+        }
+      }
+      position={props.position.clone()}
+      rotation={props.rotation.clone()}
       currentAnimation={props.currentAnimation}
-      positionLerp={props.positionLerp}
+      {...refs}
+      {...props}
     >
       {props.children}
     </CharacterInnerRef>

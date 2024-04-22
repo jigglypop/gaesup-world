@@ -102,7 +102,7 @@ export function useGaesupAnimation({
   return {
     subscribe,
     subscribeAll,
-    store: animationState[type].store,
+    store: animationState?.[type].store,
     unsubscribe,
     notify,
   };

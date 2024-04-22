@@ -9,20 +9,20 @@ import { FaMapMarkerAlt } from "react-icons/fa";
 import {
   GaesupController,
   GaesupWorld,
-  // GameBoy,
-  // GamePad,
-  // JoyStick,
-  // KeyBoardToolTip,
-  // MiniMap,
-  PassiveCharacter,
-  Rideable,
+  GameBoy,
+  GamePad,
+  JoyStick,
+  KeyBoardToolTip,
+  MiniMap,
   V3,
 } from "../../src";
 import { Clicker } from "../../src/gaesup/tools/clicker";
 import { InnerHtml } from "../../src/gaesup/utils/innerHtml";
+import Info from "../info";
 import Passive from "../passive";
 import Floor from "./Floor";
-// import * as style from "./style.css";
+import Rideables from "./rideable";
+import * as style from "./style.css";
 
 export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
 export const keyBoardMap = [
@@ -38,7 +38,7 @@ export const keyBoardMap = [
 ];
 
 export default function MainComponent() {
-  const CHARACTER_URL = S3 + "/orri.glb";
+  const CHARACTER_URL = S3 + "/gaesupyee.glb";
   const AIRPLANE_URL = S3 + "/gaebird.glb";
   const VEHICLE_URL = S3 + "/gorani.glb";
 
@@ -51,9 +51,8 @@ export default function MainComponent() {
       }}
       mode={{
         type: "character",
-        // controller: isMobile ? "gameboy" : "clicker",
         controller: "clicker",
-        control: "normal",
+        control: "orbit",
       }}
       debug={false}
       keyBoardMap={keyBoardMap}
@@ -61,11 +60,10 @@ export default function MainComponent() {
       <Canvas
         shadows
         dpr={[1, 2]}
-        // dpr={[1, 2]}
         style={{ width: "100vw", height: "100vh", position: "fixed" }}
-        // frameloop="demand"
+        frameloop="demand"
       >
-        <Environment background preset="sunset" blur={0.8} />
+        <Environment background preset="sunset" backgroundBlurriness={1} />
         <directionalLight
           castShadow
           shadow-normalBias={0.06}
@@ -106,17 +104,10 @@ export default function MainComponent() {
               });
             }}
           />
-          {/* <Second /> */}
           <Floor />
+          <Rideables />
           <Passive />
-          <Rideable
-            objectkey="gorani"
-            url={S3 + "/gorani.glb"}
-            objectType={"vehicle"}
-            enableRiding={true}
-            offset={V3(0, 2, 0)}
-            position={V3(-20, 0, 0)}
-          />
+
           <Clicker
             onMarker={
               <group rotation={euler({ x: 0, y: Math.PI / 2, z: 0 })}>
@@ -135,43 +126,31 @@ export default function MainComponent() {
               </InnerHtml>
             }
           ></Clicker>
-
-          <PassiveCharacter
-            position={V3(0, 0, 0)}
-            euler={euler()}
-            urls={{
-              characterUrl: CHARACTER_URL,
-            }}
-            currentAnimation="jump"
-          ></PassiveCharacter>
         </Physics>
       </Canvas>
+      <Info />
 
-      {/* <div className={style.footer}>
-        <div className={style.footerUpper}>
-          <div className={style.gamePad}>
-            <GamePad
-              label={{
-                keyZ: "GREET",
-                shift: "SPLINT",
-                space: "JUMP",
-              }}
-            />
-          </div>
+      <div className={style.footerUpper}>
+        <div className={style.gamePad}>
+          <GamePad
+            label={{
+              keyZ: "GREET",
+              shift: "SPLINT",
+              space: "JUMP",
+            }}
+          />
         </div>
-        <div className={style.footerLower}>
-          <div className={style.joyStickOuter}>
-            <JoyStick />
-            <GameBoy />
-          </div>
-          <div className={style.keyBoardToolTipOuter}>
-            <KeyBoardToolTip keyBoardMap={keyBoardMap} />
-          </div>
-          <div className={style.minimapOuter}>
-            <MiniMap />
-          </div>
+      </div>
+      <div className={style.footerLower}>
+        <div className={style.joystickOuter}>
+          <JoyStick />
+          <GameBoy />
+          <MiniMap />
         </div>
-      </div> */}
+      </div>
+      <div className={style.keyBoardToolTipOuter}>
+        <KeyBoardToolTip keyBoardMap={keyBoardMap} />
+      </div>
     </GaesupWorld>
   );
 }

@@ -89,7 +89,7 @@ This project is distributed under the MIT License.
 
 * ## 5. [Tools](#Tools)
 
-  - [JoyStick](#1JoyStick)
+  - [joystick](#1joystick)
 
   * [keyBoardTooltip](#keyBoardTooltip)
 
@@ -123,7 +123,7 @@ This is the character control in Gaesup World.
 | Name     | Condition                   | Info                                                                    |
 | -------- | --------------------------- | ----------------------------------------------------------------------- |
 | Keyboard | desktop                     | A standard keyboard tool. You can see where on the keyboard is clicked. |
-| Joystick | mobile (not normal control) | A joystick implementation tool. It works on mobile devices.             |
+| joystick | mobile (not normal control) | A joystick implementation tool. It works on mobile devices.             |
 | Gameboy  | mobile                      | A Gameboy implementation tool. It works on mobile devices.              |
 
 ## Vehicle
@@ -141,7 +141,7 @@ This is the character control in Gaesup World.
 | Name     | Condition | Info                                                                    |
 | -------- | --------- | ----------------------------------------------------------------------- |
 | Keyboard | desktop   | A standard keyboard tool. You can see where on the keyboard is clicked. |
-| Joystick | mobile    | A joystick implementation tool. It works on mobile devices.             |
+| joystick | mobile    | A joystick implementation tool. It works on mobile devices.             |
 | Gameboy  | mobile    | A Gameboy implementation tool. It works on mobile devices.              |
 
 ## Airplane
@@ -159,7 +159,7 @@ the airplane control in Gaesup World. Characters can board the airplane.
 | Name     | Condition | Info                                                                    |
 | -------- | --------- | ----------------------------------------------------------------------- |
 | Keyboard | desktop   | A standard keyboard tool. You can see where on the keyboard is clicked. |
-| Joystick | mobile    | A joystick implementation tool. It works on mobile devices.             |
+| joystick | mobile    | A joystick implementation tool. It works on mobile devices.             |
 | Gameboy  | mobile    | A Gameboy implementation tool. It works on mobile devices.              |
 
 # Animation
@@ -410,36 +410,36 @@ const App = () => {
 2. Customize the appearance using the `gamePadStyle` and `gamePadButtonStyle` properties.
 3. The component dynamically renders buttons based on the `control` mode.
 
-## JoyStick
+## joystick
 
 ---
 
-- The JoyStick component provides a virtual joystick interface, primarily intended for mobile environments. This component allows you to simulate joystick-like input on mobile devices. Additionally, you can prevent position jitter, which can occur on mobile devices, by using the `scrollBlock` option in the `GaesupWorld` component.
+- The joystick component provides a virtual joystick interface, primarily intended for mobile environments. This component allows you to simulate joystick-like input on mobile devices. Additionally, you can prevent position jitter, which can occur on mobile devices, by using the `scrollBlock` option in the `GaesupWorld` component.
 
 ### (1) props
 
 | Prop Name           | Type            | Required | Description                 | Default Value |
 | ------------------- | --------------- | -------- | --------------------------- | ------------- |
-| `joyStickStyle`     | object (styles) | Optional | Style for the joystick      | `undefined`   |
-| `joyStickBallStyle` | object (styles) | Optional | Style for the joystick ball | `undefined`   |
+| `joystickStyle`     | object (styles) | Optional | Style for the joystick      | `undefined`   |
+| `joystickBallStyle` | object (styles) | Optional | Style for the joystick ball | `undefined`   |
 
 ### (2) example
 
 ```jsx
 const MyComponent = () => {
-  const joyStickStyle = {
-    /* joyStickStyle */
+  const joystickStyle = {
+    /* joystickStyle */
   };
-  const joyStickBallStyle = {
-    /* joyStickBallStyle */
+  const joystickBallStyle = {
+    /* joystickBallStyle */
   };
 
   return (
     <GaesupWorld>
       {/* ... */}
-      <JoyStick
-        joyStickStyle={joyStickStyle}
-        joyStickBallStyle={joyStickBallStyle}
+      <joystick
+        joystickStyle={joystickStyle}
+        joystickBallStyle={joystickBallStyle}
       />
       {/* ... */}
     </GaesupWorld>
@@ -449,8 +449,8 @@ const MyComponent = () => {
 
 ### (3) Key Features:
 
-- **Joystick Interface:** Provides a joystick-like user input interface, suitable for mobile devices.
-- **Customization:** You can customize the style of the JoyStick component by adjusting the styles of the joystick and the joystick ball using the `joyStickBallStyle` and `joyStickStyle` properties.
+- **joystick Interface:** Provides a joystick-like user input interface, suitable for mobile devices.
+- **Customization:** You can customize the style of the joystick component by adjusting the styles of the joystick and the joystick ball using the `joystickBallStyle` and `joystickStyle` properties.
 - **Responsive and Interactive:** It supports various input devices and responds to both mouse and mobile touch events for controlling movement.
 
 ## 4) JumpPortal

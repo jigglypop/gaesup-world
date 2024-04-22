@@ -30,7 +30,6 @@ export default function Direction() {
           WEST
         </Text>
       </RigidBody>
-      {/* south */}
       <RigidBody position={[0, 0, direct]}>
         <Text
           position={[0, 5, 0]}
@@ -41,7 +40,6 @@ export default function Direction() {
           SOUTH
         </Text>
       </RigidBody>
-      {/* north */}
       <RigidBody position={[0, 0, -direct]}>
         <Text
           position={[0, 5, 0]}

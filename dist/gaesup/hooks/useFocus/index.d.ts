@@ -1,3 +1,4 @@
+import * as THREE from "three";
 export declare function useFocus(): {
     open: () => Promise<void>;
     close: () => Promise<void>;

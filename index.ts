@@ -1,5 +1,4 @@
 export {
-  Camera,
   Elr,
   GaeSupProps,
   GaesupComponent,
@@ -20,9 +19,11 @@ export {
   V30,
   V31,
   ZoomButton,
+  useClicker,
   useGaesupAnimation,
   useGaesupController,
   useJoyStick,
+  useMovePoint,
   usePushKey,
   useRideable,
   useTeleport,

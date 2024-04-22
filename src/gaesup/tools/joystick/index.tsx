@@ -1,5 +1,4 @@
 import {
-  CSSProperties,
   MouseEventHandler,
   TouchEventHandler,
   useCallback,
@@ -8,13 +7,10 @@ import {
   useRef,
   useState,
 } from "react";
-import useJoyStick from "../../hooks/useJoyStick";
+import { useJoyStick } from "../../hooks/useJoyStick";
 import { GaesupWorldContext } from "../../world/context";
 import "./style.css";
-
-export type joyStickType = {
-  [key in "joyStickBallStyle" | "joyStickStyle"]?: CSSProperties;
-};
+import { joyStickType } from "./type";
 
 export function JoyStick(props: joyStickType) {
   const outerRef = useRef<HTMLDivElement>(null);

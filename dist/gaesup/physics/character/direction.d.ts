@@ -1,6 +1,6 @@
-import { joyStickInnerType } from "../../tools/joyStick/type";
+import { joyStickInnerType } from "../../tools/joystick/type";
 import { activeStateType, clickerType, modeType } from "../../world/context/type";
-import { calcPropType } from "../type";
+import { calcType } from "../type";
 export declare function orbitDirection({ activeState, control, mode, joystick, clicker, }: {
     activeState: activeStateType;
     mode: modeType;
@@ -19,4 +19,4 @@ export declare function normalDirection({ activeState, control, mode, joystick, 
         [key: string]: boolean;
     };
 }): void;
-export default function direction(prop: calcPropType): void;
+export default function direction(prop: calcType): void;

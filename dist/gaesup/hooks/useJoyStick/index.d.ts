@@ -1,4 +1,4 @@
-import { joyStickBallType, joyStickOriginType } from "../../tools/joyStick/type";
+import { joyStickBallType, joyStickOriginType } from "../../tools/joystick/type";
 export declare const joyStickBallDefault: {
     top: string;
     left: string;
@@ -31,7 +31,7 @@ export declare const joyStickInnerDefault: {
         isCenter: boolean;
     };
 };
-export default function useJoyStick(): {
+export declare function useJoyStick(): {
     joyStickOrigin: joyStickOriginType;
     joyStickBall: joyStickBallType;
     setBall: (ball: joyStickBallType) => void;

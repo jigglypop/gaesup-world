@@ -1,2 +1,2 @@
-import { calcPropType } from "../type";
-export default function direction(prop: calcPropType): any;
+import { calcType } from "../type";
+export default function direction(prop: calcType): any;

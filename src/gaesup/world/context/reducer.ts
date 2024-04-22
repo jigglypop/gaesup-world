@@ -1,7 +1,7 @@
 import { gaesupWorldContextType } from "./type";
 
 export function gaesupWorldReducer(
-  props: gaesupWorldContextType,
+  props: Partial<gaesupWorldContextType>,
   action: {
     type: string;
     payload?: Partial<gaesupWorldContextType>;

@@ -1,11 +1,11 @@
-import { joyStickInnerType } from "../../tools/joyStick/type";
+import { joyStickInnerType } from "../../tools/joystick/type";
 import { V3, calcAngleByVector } from "../../utils/vector";
 import {
   activeStateType,
   clickerType,
   modeType,
 } from "../../world/context/type";
-import { calcPropType } from "../type";
+import { calcType } from "../type";
 
 export function orbitDirection({
   activeState,
@@ -89,7 +89,7 @@ export function normalDirection({
   }
 }
 
-export default function direction(prop: calcPropType) {
+export default function direction(prop: calcType) {
   const {
     worldContext: { joystick, mode, activeState, control, clicker },
   } = prop;

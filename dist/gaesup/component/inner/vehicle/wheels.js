@@ -21,11 +21,9 @@ var WheelJoint = function (_a) {
     return null;
 };
 export function WheelsRef(_a) {
-    var vehicleSize = _a.vehicleSize, refs = _a.refs, urls = _a.urls;
-    var wheelUrl = urls.wheelUrl;
-    var rigidBodyRef = refs.rigidBodyRef;
+    var vehicleSize = _a.vehicleSize, rigidBodyRef = _a.rigidBodyRef, wheelUrl = _a.wheelUrl;
     var wheelSize = useGltfAndSize({
-        url: urls.wheelUrl,
+        url: wheelUrl,
     }).size;
     var X = (vehicleSize.x - wheelSize.x) / 2;
     var Z = (vehicleSize.z - 2 * wheelSize.z) / 2;
@@ -36,9 +34,7 @@ export function WheelsRef(_a) {
         [X, 0, -Z],
     ];
     var wheelRefs = useRef(wheelPositions.map(function () { return createRef(); }));
-    return (_jsxs(_Fragment, { children: [rigidBodyRef &&
-                wheelUrl &&
-                wheelRefs &&
+    return (_jsxs(_Fragment, { children: [wheelRefs &&
                 wheelPositions.map(function (wheelPosition, index) {
                     if (!wheelRefs ||
                         !wheelRefs.current ||
@@ -48,9 +44,7 @@ export function WheelsRef(_a) {
                         return _jsx(_Fragment, {});
                     var wheelRef = wheelRefs.current[index];
                     return (_jsxs(RigidBody, { position: wheelPosition, colliders: false, type: "dynamic", ref: wheelRef, rotation: [0, 0, Math.PI / 2], children: [_jsx(CylinderCollider, { rotation: [0, 0, Math.PI / 2], args: [wheelSize.x / 2, wheelSize.y / 2] }), _jsx(Gltf, { src: wheelUrl })] }, index));
-                }), rigidBodyRef &&
-                wheelUrl &&
-                wheelRefs &&
+                }), wheelRefs &&
                 wheelPositions.map(function (wheelPosition, index) {
                     if (!wheelRefs ||
                         !wheelRefs.current ||

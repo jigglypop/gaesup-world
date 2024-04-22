@@ -1,6 +1,8 @@
 import { CSSProperties } from "react";
 import { actionsType, refsType } from "../../controller/type";
-import { joyStickInnerType } from "../../tools/joyStick/type";
+import * as THREE from "three";
+import { rideableType } from "../../hooks/useRideable";
+import { joyStickInnerType } from "../../tools/joystick/type";
 import { keyboardMapType } from "../../tools/keyBoardToolTip/type";
 import { minimapInnerType } from "../../tools/miniMap/type";
 import { dispatchType } from "../../utils/type";
@@ -47,6 +49,8 @@ export type statesType = {
     isRiderOn: boolean;
     isPush: controlType;
     isLanding: boolean;
+    isFalling: boolean;
+    isRiding: boolean;
 };
 export type urlsType = {
     characterUrl?: string;
@@ -128,22 +132,6 @@ export type passiveStateType = {
     quat: THREE.Quaternion;
     euler: THREE.Euler;
     rotation: THREE.Euler;
-};
-export type rideableType = {
-    objectkey: string;
-    objectType?: "vehicle" | "airplane";
-    enableRiding?: boolean;
-    isRiderOn?: boolean;
-    url?: string;
-    wheelUrl?: string;
-    position?: THREE.Vector3;
-    rotation?: THREE.Euler;
-    offset?: THREE.Vector3;
-    landingOffset?: THREE.Vector3;
-    visible?: boolean;
-    vehicleSize?: THREE.Vector3;
-    wheelSize?: THREE.Vector3;
-    airplaneSize?: THREE.Vector3;
 };
 export type animationStateType = {
     [key: string]: animationStatePropType;

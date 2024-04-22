@@ -1,20 +1,19 @@
-import { useFrame } from "@react-three/fiber";
-import { useContext, useEffect } from "react";
+import { useContext } from "react";
+import * as THREE from "three";
 import { Api } from "../../../animation/actions";
 import { useGaesupAnimation } from "../../../hooks/useGaesupAnimation";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
 } from "../../../world/context";
-import { animationTagType, controllerInnerType } from "../../type";
-import { callbackPropType } from "./type";
+import { animationTagType } from "../../type";
 
 export default function initCallback({
-  props,
+  // props,
   animationResult,
   type,
 }: {
-  props: controllerInnerType;
+  // props: controllerInnerType;
   animationResult: Api<THREE.AnimationClip>;
   type: "character" | "vehicle" | "airplane";
 }) {
@@ -44,37 +43,43 @@ export default function initCallback({
     }
   };
 
-  const controllerProp: callbackPropType = {
-    ...props,
-    activeState,
-    control,
-    states,
+  //   const controllerProp: callbackPropType = {
+  //     ...props,
+  //     activeState,
+  //     control,
+  //     states,
+  //     subscribe,
+  //   };
+  //
+  //   useEffect(() => {
+  //     if (props.onReady) {
+  //       props.onReady(controllerProp);
+  //     }
+  //     return () => {
+  //       if (props.onDestory) {
+  //         props.onDestory(controllerProp);
+  //       }
+  //     };
+  //   }, []);
+  //
+  //   useFrame((prop) => {
+  //     if (props.onFrame) {
+  //       props.onFrame({ ...controllerProp, ...prop });
+  //     }
+  //     if (props.onAnimate) {
+  //       props.onAnimate({
+  //         ...controllerProp,
+  //         ...prop,
+  //         actions,
+  //         animationState,
+  //         playAnimation,
+  //       });
+  //     }
+  //   });
+
+  return {
     subscribe,
+    playAnimation,
+    dispatch,
   };
-
-  useEffect(() => {
-    if (props.onReady) {
-      props.onReady(controllerProp);
-    }
-    return () => {
-      if (props.onDestory) {
-        props.onDestory(controllerProp);
-      }
-    };
-  }, []);
-
-  useFrame((prop) => {
-    if (props.onFrame) {
-      props.onFrame({ ...controllerProp, ...prop });
-    }
-    if (props.onAnimate) {
-      props.onAnimate({
-        ...controllerProp,
-        ...prop,
-        actions,
-        animationState,
-        playAnimation,
-      });
-    }
-  });
 }

@@ -1,28 +1,18 @@
-import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
-import { CapsuleCollider } from "@react-three/rapier";
-import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
-import { InnerGroupRef } from "../common/InnerGroupRef";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
+import { jsx as _jsx } from "react/jsx-runtime";
 import { OuterGroupRef } from "../common/OuterGroupRef";
 import { RigidBodyRef } from "../common/RigidbodyRef";
-export var calcCharacterColliderProps = function (characterSize) {
-    if (!characterSize)
-        return null;
-    var heightPlusDiameter = characterSize.y / 2;
-    var diameter = Math.max(characterSize.x, characterSize.z);
-    var radius = diameter / 2;
-    var height = heightPlusDiameter - radius;
-    var halfHeight = height / 2;
-    return {
-        height: height,
-        halfHeight: halfHeight,
-        radius: radius,
-        diameter: diameter,
-    };
-};
-export function CharacterInnerRef(_a) {
-    var children = _a.children, refs = _a.refs, urls = _a.urls, position = _a.position, euler = _a.euler, currentAnimation = _a.currentAnimation, positionLerp = _a.positionLerp;
-    var outerGroupRef = refs.outerGroupRef, rigidBodyRef = refs.rigidBodyRef, colliderRef = refs.colliderRef, innerGroupRef = refs.innerGroupRef;
-    var size = useGltfAndSize({ url: urls.characterUrl }).size;
-    var collider = calcCharacterColliderProps(size);
-    return (_jsx(_Fragment, { children: collider && (_jsx(OuterGroupRef, { ref: outerGroupRef, children: _jsxs(RigidBodyRef, { ref: rigidBodyRef, name: "character", position: position, positionLerp: positionLerp, rotation: euler, children: [_jsx(CapsuleCollider, { ref: colliderRef, args: [collider.height, collider.radius], position: [0, collider.height + collider.radius, 0] }), _jsx(InnerGroupRef, { type: "character", ref: innerGroupRef, url: urls.characterUrl, currentAnimation: currentAnimation, children: children })] }) })) }));
+export function CharacterInnerRef(props) {
+    var outerGroupRef = props.outerGroupRef;
+    return (_jsx(OuterGroupRef, { ref: outerGroupRef, children: _jsx(RigidBodyRef, __assign({ name: "character", url: props.url, controllerOptions: props.controllerOptions, ref: props.rigidBodyRef }, props, { children: props.children })) }));
 }
