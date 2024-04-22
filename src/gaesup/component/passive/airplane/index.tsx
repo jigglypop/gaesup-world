@@ -1,7 +1,7 @@
 import { Collider } from "@dimforge/rapier3d-compat";
 import { useFrame } from "@react-three/fiber";
 import { RapierRigidBody, quat } from "@react-three/rapier";
-import { useMemo, useRef } from "react";
+import { useRef } from "react";
 import * as THREE from "three";
 import { AirplaneInnerRef } from "../../inner/airplane";
 import { passiveAirplanePropsType } from "./type";
@@ -39,30 +39,26 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
     }
   });
 
-  const memorized = useMemo(() => {
-    return (
-      <AirplaneInnerRef
-        isActive={false}
-        componentType={"airplane"}
-        name={"airplane"}
-        controllerOptions={
-          props.controllerOptions || {
-            lerp: {
-              cameraTurn: 1,
-              cameraPosition: 1,
-            },
-          }
+  return (
+    <AirplaneInnerRef
+      isActive={false}
+      componentType={"airplane"}
+      name={"airplane"}
+      controllerOptions={
+        props.controllerOptions || {
+          lerp: {
+            cameraTurn: 1,
+            cameraPosition: 1,
+          },
         }
-        position={props.position.clone()}
-        rotation={props.rotation.clone()}
-        currentAnimation={props.currentAnimation}
-        {...props}
-        {...refs}
-      >
-        {props.children}
-      </AirplaneInnerRef>
-    );
-  }, [props.position, props.rotation, props.currentAnimation]);
-
-  return <>{memorized}</>;
+      }
+      position={props.position.clone()}
+      rotation={props.rotation.clone()}
+      currentAnimation={props.currentAnimation}
+      {...props}
+      {...refs}
+    >
+      {props.children}
+    </AirplaneInnerRef>
+  );
 }

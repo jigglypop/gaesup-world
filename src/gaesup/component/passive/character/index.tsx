@@ -1,6 +1,6 @@
 import { Collider } from "@dimforge/rapier3d-compat";
 import { RapierRigidBody } from "@react-three/rapier";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { CharacterInnerRef } from "../../inner/character";
 import { innerRefType } from "../type";
@@ -24,29 +24,25 @@ export function PassiveCharacter(props: passiveCharacterPropsType) {
     }
   }, []);
 
-  const memorized = useMemo(() => {
-    return (
-      <CharacterInnerRef
-        isActive={false}
-        componentType={"character"}
-        controllerOptions={
-          props.controllerOptions || {
-            lerp: {
-              cameraTurn: 1,
-              cameraPosition: 1,
-            },
-          }
+  return (
+    <CharacterInnerRef
+      isActive={false}
+      componentType={"character"}
+      controllerOptions={
+        props.controllerOptions || {
+          lerp: {
+            cameraTurn: 1,
+            cameraPosition: 1,
+          },
         }
-        position={props.position.clone()}
-        rotation={props.rotation.clone()}
-        currentAnimation={props.currentAnimation}
-        {...refs}
-        {...props}
-      >
-        {props.children}
-      </CharacterInnerRef>
-    );
-  }, [props.position, props.rotation, props.currentAnimation]);
-
-  return <>{memorized}</>;
+      }
+      position={props.position.clone()}
+      rotation={props.rotation.clone()}
+      currentAnimation={props.currentAnimation}
+      {...refs}
+      {...props}
+    >
+      {props.children}
+    </CharacterInnerRef>
+  );
 }
