@@ -9,8 +9,8 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-import { jsx as _jsx, Fragment as _Fragment } from "react/jsx-runtime";
-import { useEffect, useMemo, useRef } from "react";
+import { jsx as _jsx } from "react/jsx-runtime";
+import { useEffect, useRef } from "react";
 import { CharacterInnerRef } from "../../inner/character";
 export function PassiveCharacter(props) {
     var rigidBodyRef = useRef(null);
@@ -28,13 +28,10 @@ export function PassiveCharacter(props) {
             rigidBodyRef.current.setEnabledRotations(false, false, false, false);
         }
     }, []);
-    var memorized = useMemo(function () {
-        return (_jsx(CharacterInnerRef, __assign({ isActive: false, componentType: "character", controllerOptions: props.controllerOptions || {
-                lerp: {
-                    cameraTurn: 1,
-                    cameraPosition: 1,
-                },
-            }, position: props.position.clone(), rotation: props.rotation.clone(), currentAnimation: props.currentAnimation }, refs, props, { children: props.children })));
-    }, [props.position, props.rotation, props.currentAnimation]);
-    return _jsx(_Fragment, { children: memorized });
+    return (_jsx(CharacterInnerRef, __assign({ isActive: false, componentType: "character", controllerOptions: props.controllerOptions || {
+            lerp: {
+                cameraTurn: 1,
+                cameraPosition: 1,
+            },
+        }, position: props.position.clone(), rotation: props.rotation.clone(), currentAnimation: props.currentAnimation }, refs, props, { children: props.children })));
 }

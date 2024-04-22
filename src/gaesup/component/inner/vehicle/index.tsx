@@ -33,7 +33,7 @@ export function VehicleInnerRef(props: vehicleInnerType) {
         {props.children}
       </RigidBodyRef>
       {/* {!props.wheelUrl === undefined && (
-        <WheelsRef
+        <WheelsRef∂
           rigidBodyRef={rigidBodyRef}
           wheelUrl={props.wheelUrl}
           vehicleSize={vehicleSize}

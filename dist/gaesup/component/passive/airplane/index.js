@@ -9,10 +9,10 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-import { jsx as _jsx, Fragment as _Fragment } from "react/jsx-runtime";
+import { jsx as _jsx } from "react/jsx-runtime";
 import { useFrame } from "@react-three/fiber";
 import { quat } from "@react-three/rapier";
-import { useMemo, useRef } from "react";
+import { useRef } from "react";
 import { AirplaneInnerRef } from "../../inner/airplane";
 export function PassiveAirplane(props) {
     var rigidBodyRef = useRef(null);
@@ -39,13 +39,10 @@ export function PassiveAirplane(props) {
                 : 0.1, false);
         }
     });
-    var memorized = useMemo(function () {
-        return (_jsx(AirplaneInnerRef, __assign({ isActive: false, componentType: "airplane", name: "airplane", controllerOptions: props.controllerOptions || {
-                lerp: {
-                    cameraTurn: 1,
-                    cameraPosition: 1,
-                },
-            }, position: props.position.clone(), rotation: props.rotation.clone(), currentAnimation: props.currentAnimation }, props, refs, { children: props.children })));
-    }, [props.position, props.rotation, props.currentAnimation]);
-    return _jsx(_Fragment, { children: memorized });
+    return (_jsx(AirplaneInnerRef, __assign({ isActive: false, componentType: "airplane", name: "airplane", controllerOptions: props.controllerOptions || {
+            lerp: {
+                cameraTurn: 1,
+                cameraPosition: 1,
+            },
+        }, position: props.position.clone(), rotation: props.rotation.clone(), currentAnimation: props.currentAnimation }, props, refs, { children: props.children })));
 }

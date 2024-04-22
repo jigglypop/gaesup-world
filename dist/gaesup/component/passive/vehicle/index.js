@@ -9,12 +9,10 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-import { jsx as _jsx, Fragment as _Fragment } from "react/jsx-runtime";
-import { useContext, useMemo, useRef } from "react";
-import { GaesupWorldContext } from "../../../world/context";
+import { jsx as _jsx } from "react/jsx-runtime";
+import { useRef } from "react";
 import { VehicleInnerRef } from "../../inner/vehicle";
 export function PassiveVehicle(props) {
-    var states = useContext(GaesupWorldContext).states;
     var rigidBodyRef = useRef(null);
     var outerGroupRef = useRef(null);
     var innerGroupRef = useRef(null);
@@ -25,13 +23,10 @@ export function PassiveVehicle(props) {
         innerGroupRef: innerGroupRef,
         colliderRef: colliderRef,
     };
-    var memorized = useMemo(function () {
-        return (_jsx(VehicleInnerRef, __assign({ isActive: false, componentType: "vehicle", name: "vehicle", controllerOptions: props.controllerOptions || {
-                lerp: {
-                    cameraTurn: 1,
-                    cameraPosition: 1,
-                },
-            }, position: props.position.clone(), rotation: props.rotation.clone(), currentAnimation: props.currentAnimation }, props, refs, { children: props.children })));
-    }, [props.position, props.rotation, props.currentAnimation]);
-    return _jsx(_Fragment, { children: memorized });
+    return (_jsx(VehicleInnerRef, __assign({ isActive: false, componentType: "vehicle", name: "vehicle", controllerOptions: props.controllerOptions || {
+            lerp: {
+                cameraTurn: 1,
+                cameraPosition: 1,
+            },
+        }, position: props.position.clone(), rotation: props.rotation.clone(), currentAnimation: props.currentAnimation }, props, refs, { children: props.children })));
 }
