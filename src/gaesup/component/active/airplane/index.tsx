@@ -4,7 +4,6 @@ import { activeAirplaneInnerType } from "./type";
 export function AirplaneRef(props: activeAirplaneInnerType) {
   return (
     <AirplaneInnerRef
-      url={props.url}
       name={"airplane"}
       isActive={true}
       currentAnimation={"idle"}

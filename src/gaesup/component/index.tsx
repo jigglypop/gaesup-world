@@ -26,7 +26,6 @@ export function GaesupComponent({
       )}
       {mode.type === "vehicle" && (
         <VehicleRef
-          componentType={"vehicle"}
           controllerOptions={props.controllerOptions}
           url={urls.vehicleUrl}
           wheelUrl={urls.wheelUrl}
@@ -44,7 +43,6 @@ export function GaesupComponent({
       )}
       {mode.type === "airplane" && (
         <AirplaneRef
-          componentType={"airplane"}
           controllerOptions={props.controllerOptions}
           url={urls.airplaneUrl}
           enableRiding={enableRiding}

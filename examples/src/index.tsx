@@ -13,11 +13,15 @@ import {
   GamePad,
   JoyStick,
   KeyBoardToolTip,
+  MiniMap,
   V3,
 } from "../../src";
 import { Clicker } from "../../src/gaesup/tools/clicker";
 import { InnerHtml } from "../../src/gaesup/utils/innerHtml";
+import Info from "../info";
+import Passive from "../passive";
 import Floor from "./Floor";
+import Rideables from "./rideable";
 import * as style from "./style.css";
 
 export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
@@ -35,7 +39,7 @@ export const keyBoardMap = [
 
 export default function MainComponent() {
   const CHARACTER_URL = S3 + "/gaesupyee.glb";
-  const AIRPLANE_URL = S3 + "/orri.glb";
+  const AIRPLANE_URL = S3 + "/gaebird.glb";
   const VEHICLE_URL = S3 + "/gorani.glb";
 
   return (
@@ -100,20 +104,9 @@ export default function MainComponent() {
               });
             }}
           />
-          {/* <Second /> */}
           <Floor />
-          {/* <Rideables /> */}
-          {/* <Passive /> */}
-
-          {/* <PassiveCharacter
-            position={V3(0, 0, 0)}
-            euler={euler()}
-            urls={{
-              characterUrl: CHARACTER_URL,
-            }}
-            currentAnimation="jump"
-            type={"fixed"}
-          ></PassiveCharacter> */}
+          <Rideables />
+          <Passive />
 
           <Clicker
             onMarker={
@@ -135,6 +128,7 @@ export default function MainComponent() {
           ></Clicker>
         </Physics>
       </Canvas>
+      <Info />
 
       <div className={style.footerUpper}>
         <div className={style.gamePad}>
@@ -151,6 +145,7 @@ export default function MainComponent() {
         <div className={style.joyStickOuter}>
           <JoyStick />
           <GameBoy />
+          <MiniMap />
         </div>
       </div>
       <div className={style.keyBoardToolTipOuter}>

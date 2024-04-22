@@ -147,15 +147,17 @@ export const RigidBodyRef = forwardRef(
         colliders={false}
         ref={ref}
         name={name}
-        rotation={euler().set(0, rotation?.clone().y || 0, 0)}
+        rotation={euler()
+          .set(0, rotation?.clone().y || 0, 0)
+          .clone()}
         userData={userData}
-        onCollisionEnter={onCollisionEnter}
-        type={rigidbodyType || "fixed"}
+        // onCollisionEnter={onCollisionEnter}
+        type={rigidbodyType || (isActive ? "dynamic" : "fixed")}
       >
         <CapsuleCollider
           ref={colliderRef}
-          args={[collider.height, collider.radius]}
-          position={[0, collider.height + collider.radius, 0]}
+          args={[(size.y / 2 - size.x) * 1.2, size.x * 1.2]}
+          position={[0, (size.y / 2 + size.x / 2) * 1.2, 0]}
         />
         {children}
         <InnerGroupRef

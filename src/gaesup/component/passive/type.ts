@@ -31,4 +31,7 @@ export type passivePropsType = {
   rigidbodyType?: RigidBodyTypeString;
   onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
   componentType: componentTypeString;
+  userData?: {
+    intangible: boolean;
+  };
 } & ridingType;

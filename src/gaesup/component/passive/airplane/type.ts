@@ -1,3 +1,3 @@
 import { passivePropsType } from "../type";
 
-export type passiveAirplanePropsType = passivePropsType;
+export type passiveAirplanePropsType = Omit<passivePropsType, "componentType">;

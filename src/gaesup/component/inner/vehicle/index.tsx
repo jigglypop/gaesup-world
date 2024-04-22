@@ -1,13 +1,11 @@
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 import { OuterGroupRef } from "../common/OuterGroupRef";
 import { RigidBodyRef } from "../common/RigidbodyRef";
-import { VehicleCollider, VehicleWheelCollider } from "./collider";
 import { vehicleInnerType } from "./type";
-import { WheelsRef } from "./wheels";
 
 export function VehicleInnerRef(props: vehicleInnerType) {
   const { rigidBodyRef, outerGroupRef } = props;
-  const { size: vehicleSize } = useGltfAndSize({
+  const { size } = useGltfAndSize({
     url: props.url,
   });
   return (
@@ -15,29 +13,34 @@ export function VehicleInnerRef(props: vehicleInnerType) {
       <RigidBodyRef
         ref={rigidBodyRef}
         name={props.name}
-        colliderRef={null}
         componentType={"vehicle"}
         {...props}
       >
-        {props.wheelUrl && (
+        {/* <CuboidCollider
+          args={[size.x / 2, size.y / 2, size.z / 2]}
+          position={[0, size.y / 2, 0]}
+        /> */}
+        {/* {!props.wheelUrl === undefined && (
           <VehicleWheelCollider
             wheelUrl={props.wheelUrl}
             vehicleSize={vehicleSize}
           />
         )}
-        {props.url && <VehicleCollider vehicleSize={vehicleSize} />}
+        {!props.url === undefined && (
+          <VehicleCollider vehicleSize={vehicleSize} />
+        )} */}
         {/* {props.enableRiding && props.isRiderOn && (
           <RiderRef urls={props.urls} offset={props.offset} />
         )} */}
         {props.children}
       </RigidBodyRef>
-      {props.wheelUrl && (
+      {/* {!props.wheelUrl === undefined && (
         <WheelsRef
           rigidBodyRef={rigidBodyRef}
           wheelUrl={props.wheelUrl}
           vehicleSize={vehicleSize}
         />
-      )}
+      )} */}
     </OuterGroupRef>
   );
 }
