@@ -151,7 +151,7 @@ export const RigidBodyRef = forwardRef(
           .set(0, rotation?.clone().y || 0, 0)
           .clone()}
         userData={userData}
-        // onCollisionEnter={onCollisionEnter}
+        onCollisionEnter={onCollisionEnter}
         type={rigidbodyType || (isActive ? "dynamic" : "fixed")}
       >
         <CapsuleCollider

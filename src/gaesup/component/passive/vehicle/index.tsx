@@ -1,11 +1,13 @@
 import { Collider } from "@dimforge/rapier3d-compat";
 import { RapierRigidBody } from "@react-three/rapier";
-import { useMemo, useRef } from "react";
+import { useContext, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { GaesupWorldContext } from "../../../world/context";
 import { VehicleInnerRef } from "../../inner/vehicle";
 import { passiveVehiclePropsType } from "./type";
 
 export function PassiveVehicle(props: passiveVehiclePropsType) {
+  const { states } = useContext(GaesupWorldContext);
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const outerGroupRef = useRef<THREE.Group>(null);
   const innerGroupRef = useRef<THREE.Group>(null);

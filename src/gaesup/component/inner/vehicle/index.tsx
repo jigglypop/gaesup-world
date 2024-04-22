@@ -29,9 +29,7 @@ export function VehicleInnerRef(props: vehicleInnerType) {
         {!props.url === undefined && (
           <VehicleCollider vehicleSize={vehicleSize} />
         )} */}
-        {/* {props.enableRiding && props.isRiderOn && (
-          <RiderRef urls={props.urls} offset={props.offset} />
-        )} */}
+
         {props.children}
       </RigidBodyRef>
       {/* {!props.wheelUrl === undefined && (

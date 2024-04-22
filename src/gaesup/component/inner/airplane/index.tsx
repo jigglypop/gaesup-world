@@ -21,6 +21,7 @@ export function AirplaneInnerRef(props: airplaneInnerType) {
           args={[size.x / 2, size.y / 2, size.z / 2]}
           position={[0, size.y / 2, 0]}
         /> */}
+
         {props.children}
       </RigidBodyRef>
     </OuterGroupRef>

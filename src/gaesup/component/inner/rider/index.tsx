@@ -5,10 +5,9 @@ import * as THREE from "three";
 import { SkeletonUtils } from "three-stdlib";
 import playActions from "../../../animation/actions";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
-import { urlsType } from "../../../world/context/type";
 
 export type riderRefType = {
-  urls: urlsType;
+  url: string;
   children?: ReactNode;
   offset?: THREE.Vector3;
   euler?: THREE.Euler;
@@ -16,15 +15,20 @@ export type riderRefType = {
 };
 
 export default function RiderRef({
-  urls,
+  url,
   children,
   offset,
   euler,
   currentAnimation,
 }: riderRefType) {
-  const { gltf } = useGltfAndSize({ url: urls.characterUrl });
+  const { gltf } = useGltfAndSize({ url });
   const { animations, scene } = gltf;
   const { actions, ref: animationRef } = useAnimations(animations);
+  const characterClone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
+  const { nodes: characterNodes } = useGraph(characterClone);
+  const characterObjectNode = Object.values(characterNodes).find(
+    (node) => node.type === "Object3D"
+  );
   playActions({
     type: "character",
     currentAnimation: currentAnimation || "ride",
@@ -32,11 +36,6 @@ export default function RiderRef({
     animationRef,
     isActive: false,
   });
-  const characterClone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
-  const { nodes: characterNodes } = useGraph(characterClone);
-  const characterObjectNode = Object.values(characterNodes).find(
-    (node) => node.type === "Object3D"
-  );
   return (
     <>
       <group position={offset}>

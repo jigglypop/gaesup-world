@@ -5,13 +5,12 @@ export default function Rideables() {
   return (
     <>
       <Rideable
-        objectkey="gorani"
-        url={S3 + "/gorani.glb"}
+        objectkey="gaebird_1"
+        url={S3 + "/gaebird.glb"}
         objectType={"vehicle"}
         enableRiding={true}
-        isRiderOn={true}
         offset={V3(0, 1, 0)}
-        position={V3(-40, 0, 0)}
+        position={V3(-10, 0, 10)}
         controllerOptions={{
           lerp: {
             cameraPosition: 1,
@@ -20,13 +19,12 @@ export default function Rideables() {
         }}
       />
       <Rideable
-        objectkey="gaebird"
+        objectkey="gaebird_2"
         url={S3 + "/gaebird.glb"}
         objectType={"airplane"}
         enableRiding={true}
-        isRiderOn={true}
         offset={V3(0, 1, 0)}
-        position={V3(40, 0, 0)}
+        position={V3(10, 0, 10)}
         controllerOptions={{
           lerp: {
             cameraPosition: 1,
