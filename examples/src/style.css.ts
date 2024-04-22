@@ -43,7 +43,7 @@ export const gameBoyOuter = style([
   },
 ]);
 
-export const joyStickOuter = style([
+export const joystickOuter = style([
   {
     position: "fixed",
     bottom: "5lvh",

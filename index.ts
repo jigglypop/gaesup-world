@@ -1,5 +1,4 @@
 export {
-  Camera,
   Elr,
   GaeSupProps,
   GaesupComponent,

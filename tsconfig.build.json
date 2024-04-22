@@ -22,11 +22,7 @@
     "./src/**/*.tsx",
     "./src/**/*.ts",
     "./src/**/*.css.ts",
-    "./src/**/*.css",
-    "*.css",
-    "*.css.ts",
-    "**/*.css",
-    "**/*.css.ts"
+    "./src/**/*.css"
   ],
   "exclude": ["examples", "node_modules", "public", "index.html"]
 }

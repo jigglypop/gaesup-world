@@ -6,7 +6,7 @@ import {
   GaesupWorldDispatchContext,
 } from "../../world/context";
 
-export default function useClicker() {
+export function useClicker() {
   const { activeState, clicker, mode } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
 

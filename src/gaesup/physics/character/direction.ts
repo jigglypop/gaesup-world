@@ -1,4 +1,4 @@
-import { joyStickInnerType } from "../../tools/joyStick/type";
+import { joyStickInnerType } from "../../tools/joystick/type";
 import { V3, calcAngleByVector } from "../../utils/vector";
 import {
   activeStateType,

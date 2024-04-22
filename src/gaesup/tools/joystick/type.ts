@@ -1,3 +1,5 @@
+import { CSSProperties } from "react";
+
 export type joyStickBallType = {
   left: string;
   top: string;
@@ -18,4 +20,8 @@ export type joyStickOriginType = {
 export type joyStickInnerType = {
   joyStickBall?: joyStickBallType;
   joyStickOrigin?: joyStickOriginType;
+};
+
+export type joyStickType = {
+  [key in "joyStickBallStyle" | "joyStickStyle"]?: CSSProperties;
 };

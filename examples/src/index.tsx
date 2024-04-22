@@ -142,7 +142,7 @@ export default function MainComponent() {
         </div>
       </div>
       <div className={style.footerLower}>
-        <div className={style.joyStickOuter}>
+        <div className={style.joystickOuter}>
           <JoyStick />
           <GameBoy />
           <MiniMap />

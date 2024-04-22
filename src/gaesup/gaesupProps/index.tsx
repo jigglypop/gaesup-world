@@ -1,7 +1,7 @@
 import { vec3 } from "@react-three/rapier";
 import { useContext, useEffect, useRef } from "react";
 import * as THREE from "three";
-import useClicker from "../hooks/useClicker";
+import { useClicker } from "../hooks/useClicker";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,

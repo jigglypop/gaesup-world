@@ -31,6 +31,5 @@
     "examples",
     "dist",
     "*.json"
-  ],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  ]
 }

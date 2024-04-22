@@ -3,7 +3,7 @@ import { actionsType, refsType } from "../../controller/type";
 
 import * as THREE from "three";
 import { rideableType } from "../../hooks/useRideable";
-import { joyStickInnerType } from "../../tools/joyStick/type";
+import { joyStickInnerType } from "../../tools/joystick/type";
 import { keyboardMapType } from "../../tools/keyBoardToolTip/type";
 import { minimapInnerType } from "../../tools/miniMap/type";
 import { dispatchType } from "../../utils/type";

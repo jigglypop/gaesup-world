@@ -3,7 +3,7 @@ import { useContext } from "react";
 import {
   joyStickBallType,
   joyStickOriginType,
-} from "../../tools/joyStick/type";
+} from "../../tools/joystick/type";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
@@ -31,7 +31,7 @@ export const joyStickInnerDefault = {
   joyStickOrigin: joyStickOriginDefault,
 };
 
-export default function useJoyStick() {
+export function useJoyStick() {
   const { joystick } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
   const { joyStickBall, joyStickOrigin } = joystick;
