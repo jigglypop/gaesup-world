@@ -36,6 +36,7 @@ export type minimapType = {
   blockRotate?: boolean;
   blockScaleControl?: boolean;
   isImage?: boolean;
+  imageUrl?: string;
   imageWidth?: number;
   imageHeight?: number;
 };
