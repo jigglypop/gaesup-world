@@ -5,6 +5,7 @@ import {
 } from "@react-three/rapier";
 import { MutableRefObject, RefObject } from "react";
 import * as THREE from "three";
+import { callbackType } from "../../../controller/initialize/callback/type";
 import { groundRayType } from "../../../controller/type";
 import { urlsType } from "../../../world/context/type";
 import { innerRefType, passivePropsType } from "../../passive/type";
@@ -61,4 +62,5 @@ export type rigidBodyRefType = {
   isActive?: boolean;
   ridingUrl?: string;
 } & passivePropsType &
-  innerRefType;
+  innerRefType &
+  callbackType;

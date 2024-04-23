@@ -1,3 +1,4 @@
+import { callbackType } from "../../../controller/initialize/callback/type";
 import { passiveCharacterPropsType } from "../../passive/character/type";
 import { componentTypeString, innerRefType } from "../../passive/type";
 
@@ -6,4 +7,5 @@ export type characterInnerType = {
   componentType: componentTypeString;
   isActive?: boolean;
 } & passiveCharacterPropsType &
-  innerRefType;
+  innerRefType &
+  callbackType;

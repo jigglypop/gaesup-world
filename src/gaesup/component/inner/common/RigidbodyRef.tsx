@@ -14,6 +14,7 @@ import { SkeletonUtils } from "three-stdlib";
 import playActions, { subscribeActions } from "../../../animation/actions";
 import Camera from "../../../camera";
 import { GaesupControllerContext } from "../../../controller/context";
+import initCallback from "../../../controller/initialize/callback";
 import { groundRayType } from "../../../controller/type";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 import calculation from "../../../physics";
@@ -94,6 +95,11 @@ export const RigidBodyRef = forwardRef(
       animationRef,
       currentAnimation: props.isActive ? undefined : props.currentAnimation,
       isActive: props.isActive,
+    });
+    initCallback({
+      props,
+      actions,
+      componentType: props.componentType,
     });
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
     const { nodes } = useGraph(clone);

@@ -18,6 +18,10 @@ export function CharacterRef({
       componentType="character"
       rigidbodyType={"dynamic"}
       controllerOptions={props.controllerOptions}
+      onAnimate={props.onAnimate}
+      onFrame={props.onFrame}
+      onReady={props.onReady}
+      onDestory={props.onDestory}
       {...refs}
     >
       {props.children}
