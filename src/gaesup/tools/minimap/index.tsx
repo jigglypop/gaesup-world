@@ -114,7 +114,7 @@ export function MiniMap(props: minimapType) {
         </div>
         {props.isImage && (
           <img
-            src={"/gaesup-world/canvas.png"}
+            src={props.imageUrl}
             className="minimapObject"
             style={{
               width: `${100 * scale}rem`,
