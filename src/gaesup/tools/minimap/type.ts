@@ -33,6 +33,7 @@ export type minimapType = {
   maxScale?: number;
   blockScale?: boolean;
   scale?: number;
+  angle?: number;
   blockRotate?: boolean;
   blockScaleControl?: boolean;
   isImage?: boolean;

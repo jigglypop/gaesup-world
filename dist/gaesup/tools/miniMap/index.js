@@ -35,7 +35,7 @@ export function MiniMap(props) {
                 upscale();
             else
                 downscale();
-        }, children: [_jsx("div", { className: "minimapOuter", style: objectStyle }), _jsxs("div", { className: "minimapInner", style: __assign({ transform: props.blockRotate || mode.control === "normal"
+        }, children: [_jsx("div", { className: "minimapOuter", style: objectStyle }), _jsxs("div", { className: "minimapInner", style: __assign({ transform: props.blockRotate
                         ? "translate(-50%, -50%) rotate(180deg) "
                         : "translate(-50%, -50%) rotate(".concat((activeState.euler.y * 180) / Math.PI + 180, "deg) ") }, innerStyle), children: [" ", _jsx("div", { className: "east direction", style: __assign({ transform: props.blockRotate || mode.control === "normal"
                                 ? "translate(-50%, -50%) rotate(180deg) "
