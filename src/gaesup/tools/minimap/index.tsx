@@ -121,7 +121,7 @@ export function MiniMap(props: minimapType) {
               height: `${100 * scale}rem`,
               top: "50%",
               left: "50%",
-              transform: `translate(-50.1%, -50.1%) translate(${activeState.position.x * scale}rem, ${activeState.position.z}rem)`,
+              transform: `translate(-50.1%, -50.1%) translate(-${activeState.position.x * scale}rem, -${activeState.position.z}rem)`,
               transformOrigin: "50% 50%",
               zIndex: 100,
               ...imageStyle,
