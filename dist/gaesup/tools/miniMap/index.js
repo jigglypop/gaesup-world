@@ -48,10 +48,10 @@ export function MiniMap(props) {
                                 : "translate(-50%, -50%) rotate(-".concat((activeState.euler.y * 180) / Math.PI + 180, "deg) ") }, directionStyle), children: "N" }), "\u00E7", Object.values(minimap.props).map(function (_a, key) {
                         var center = _a.center, size = _a.size, text = _a.text;
                         var X = (center.x - activeState.position.x) *
-                            (props.angle ? 1 + Math.sin(props.angle) : 1) *
+                            (props.angle ? 1 - Math.sin(props.angle) : 1) *
                             scale;
                         var Z = (center.z - activeState.position.z) *
-                            (props.angle ? 1 + Math.cos(props.angle) : 1) *
+                            (props.angle ? 1 - Math.cos(props.angle) : 1) *
                             scale;
                         return (_jsxs("div", { children: [_jsx("div", { className: "minimapObject", style: __assign({ width: "".concat(size.x * scale, "rem"), height: "".concat(size.z * scale, "rem"), top: "50%", left: "50%", transform: "translate(-50.1%, -50.1%) translate(".concat(-X, "rem, ").concat(-Z, "rem)"), transformOrigin: "50% 50%", zIndex: 1 + key }, objectStyle) }, key), _jsx("div", { className: "imageObject", style: __assign({ width: "".concat(props.imageWidth * scale, "rem"), height: "".concat(props.imageHeight * scale, "rem"), top: "50%", left: "50%", transform: "translate(-50.1%, -50.1%) translate(".concat(-X, "rem, ").concat(-Z, "rem)"), transformOrigin: "50% 50%", zIndex: 1000 + key }, imageStyle) }, key + 10), _jsx("div", { className: "textObject", style: {
                                         width: "".concat(size.x * scale, "rem"),
