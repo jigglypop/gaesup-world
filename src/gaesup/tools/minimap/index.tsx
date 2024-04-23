@@ -19,6 +19,7 @@ export function MiniMap(props: minimapType) {
     scaleStyle,
     directionStyle,
     plusMinusStyle,
+    imageStyle,
   } = props;
 
   const upscale = useCallback(() => {
@@ -54,6 +55,7 @@ export function MiniMap(props: minimapType) {
           ...innerStyle,
         }}
       >
+        {" "}
         <div
           className="east direction"
           style={{
@@ -110,7 +112,22 @@ export function MiniMap(props: minimapType) {
         >
           N
         </div>
-
+        {props.isImage && (
+          <img
+            src={"/gaesup-world/canvas.png"}
+            className="minimapObject"
+            style={{
+              width: `${100 * scale}rem`,
+              height: `${100 * scale}rem`,
+              top: "50%",
+              left: "50%",
+              transform: `translate(-50.1%, -50.1%) translate(${activeState.position.x * scale}rem, ${activeState.position.z}rem)`,
+              transformOrigin: "50% 50%",
+              zIndex: 100,
+              ...imageStyle,
+            }}
+          />
+        )}
         {Object.values(minimap.props).map(({ center, size, text }, key) => {
           const X = (center.x - activeState.position.x) * scale;
           const Z = (center.z - activeState.position.z) * scale;
@@ -163,7 +180,6 @@ export function MiniMap(props: minimapType) {
             </div>
           );
         })}
-
         <div className="avatar" style={avatarStyle} />
       </div>
 

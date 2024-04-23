@@ -26,6 +26,7 @@ export type minimapType = {
     | "avatarStyle"
     | "directionStyle"
     | "scaleStyle"
+    | "imageStyle"
     | "plusMinusStyle"]?: CSSProperties;
 } & {
   minScale?: number;
@@ -34,4 +35,7 @@ export type minimapType = {
   scale?: number;
   blockRotate?: boolean;
   blockScaleControl?: boolean;
+  isImage?: boolean;
+  imageWidth?: number;
+  imageHeight?: number;
 };
