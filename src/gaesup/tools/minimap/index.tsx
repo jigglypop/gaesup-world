@@ -120,7 +120,7 @@ export function MiniMap(props: minimapType) {
             scale;
           const Z =
             (center.z - activeState.position.z) *
-            (props.angle ? -Math.cos(props.angle) : 1) *
+            (props.angle ? Math.cos(props.angle) : 1) *
             scale;
           return (
             <div key={key}>
