@@ -7,4 +7,4 @@ export type riderRefType = {
     euler?: THREE.Euler;
     currentAnimation?: string;
 };
-export default function RiderRef({ url, children, offset, euler, currentAnimation, }: riderRefType): import("react/jsx-runtime").JSX.Element;
+export default function RiderRef({ url, children, offset, currentAnimation, }: riderRefType): import("react/jsx-runtime").JSX.Element;

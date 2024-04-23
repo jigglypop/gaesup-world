@@ -18,5 +18,5 @@ export function VehicleInnerRef(props) {
     var size = useGltfAndSize({
         url: props.url,
     }).size;
-    return (_jsx(OuterGroupRef, { ref: outerGroupRef, children: _jsx(RigidBodyRef, __assign({ ref: rigidBodyRef, name: props.name, componentType: "vehicle" }, props, { children: props.children })) }));
+    return (_jsx(OuterGroupRef, { ref: outerGroupRef, children: _jsx(RigidBodyRef, __assign({ ref: rigidBodyRef, name: props.name, componentType: "vehicle", ridingUrl: props.ridingUrl }, props, { children: props.children })) }));
 }

@@ -7,7 +7,7 @@ import { SkeletonUtils } from "three-stdlib";
 import playActions from "../../../animation/actions";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 export default function RiderRef(_a) {
-    var url = _a.url, children = _a.children, offset = _a.offset, euler = _a.euler, currentAnimation = _a.currentAnimation;
+    var url = _a.url, children = _a.children, offset = _a.offset, currentAnimation = _a.currentAnimation;
     var gltf = useGltfAndSize({ url: url }).gltf;
     var animations = gltf.animations, scene = gltf.scene;
     var _b = useAnimations(animations), actions = _b.actions, animationRef = _b.ref;

@@ -20,7 +20,7 @@ export declare function gaesupWorldReducer(props: Partial<gaesupWorldContextType
     clicker?: import("./type").clickerType;
     moveTo?: (position: import("three").Vector3, target: import("three").Vector3) => Promise<void>;
     rideable?: {
-        [key: string]: import("../../hooks/useRideable").rideableType;
+        [key: string]: import("../../hooks/useRideable/type").rideableType;
     };
     sizes?: import("./type").sizesType;
     block?: import("./type").blockType;

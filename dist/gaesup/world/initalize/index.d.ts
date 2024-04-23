@@ -20,7 +20,7 @@ export default function initGaesupWorld(props: gaesupWorldPropsType): {
             clicker?: import("../context/type").clickerType;
             moveTo?: (position: import("three").Vector3, target: import("three").Vector3) => Promise<void>;
             rideable?: {
-                [key: string]: import("../../hooks/useRideable").rideableType;
+                [key: string]: import("../../hooks/useRideable/type").rideableType;
             };
             sizes?: import("../context/type").sizesType;
             block?: import("../context/type").blockType;

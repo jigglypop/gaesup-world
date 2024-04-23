@@ -44,5 +44,5 @@ export function PassiveAirplane(props) {
                 cameraTurn: 1,
                 cameraPosition: 1,
             },
-        }, position: props.position.clone(), rotation: props.rotation.clone(), currentAnimation: props.currentAnimation }, props, refs, { children: props.children })));
+        }, position: props.position, rotation: props.rotation, currentAnimation: props.currentAnimation, ridingUrl: props.ridingUrl }, props, refs, { children: props.children })));
 }

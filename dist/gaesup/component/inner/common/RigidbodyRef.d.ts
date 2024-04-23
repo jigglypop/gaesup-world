@@ -8,9 +8,11 @@ export declare const RigidBodyRef: import("react").ForwardRefExoticComponent<{
     };
     onCollisionEnter?: (e: import("@react-three/rapier").CollisionEnterPayload) => Promise<void>;
     isActive?: boolean;
+    ridingUrl?: string;
 } & {
     children?: import("react").ReactNode;
     url: string;
+    ridingUrl?: string;
     wheelUrl?: string;
     position?: THREE.Vector3;
     rotation?: THREE.Euler;

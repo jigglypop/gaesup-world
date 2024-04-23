@@ -1,9 +1,7 @@
 import * as THREE from "three";
-import { controllerOptionsType } from "../../controller/type";
-export type rideablePropType = {
+export type rideableType = {
     objectkey: string;
     objectType?: "vehicle" | "airplane";
-    controllerOptions: controllerOptionsType;
     enableRiding?: boolean;
     isRiderOn?: boolean;
     url?: string;

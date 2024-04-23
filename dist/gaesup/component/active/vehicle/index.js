@@ -12,5 +12,5 @@ var __assign = (this && this.__assign) || function () {
 import { jsx as _jsx } from "react/jsx-runtime";
 import { VehicleInnerRef } from "../../inner/vehicle";
 export function VehicleRef(props) {
-    return (_jsx(VehicleInnerRef, __assign({ name: "vehicle", isActive: true, currentAnimation: "idle", componentType: "vehicle" }, props, { children: props.children })));
+    return (_jsx(VehicleInnerRef, __assign({ name: "vehicle", isActive: true, currentAnimation: "idle", componentType: "vehicle", ridingUrl: props.ridingUrl }, props, { children: props.children })));
 }

@@ -53,8 +53,6 @@ export function Rideable(props) {
         position: props.position || V3(0, 0, 0),
         rotation: props.rotation || euler(),
     }), _rideable = _d[0], set_Rideable = _d[1];
-    // console.log(current);
-    // if (!current) return null;
     useEffect(function () {
         initRideable(props);
     }, []);
@@ -75,5 +73,5 @@ export function Rideable(props) {
             }
         });
     }); };
-    return (_jsx(_Fragment, { children: ((_a = rideable === null || rideable === void 0 ? void 0 : rideable[props.objectkey]) === null || _a === void 0 ? void 0 : _a.visible) && (_jsxs("group", { userData: { intangible: true }, children: [props.objectType === "vehicle" && (_jsx(PassiveVehicle, { controllerOptions: props.controllerOptions, position: _rideable.position, rotation: _rideable.rotation, currentAnimation: "idle", url: props.url, wheelUrl: props.wheelUrl, offset: props.offset, enableRiding: props.enableRiding, onCollisionEnter: onCollisionEnter })), props.objectType === "airplane" && (_jsx(PassiveAirplane, { controllerOptions: props.controllerOptions, position: _rideable.position, rotation: _rideable.rotation, currentAnimation: "idle", url: props.url, offset: props.offset, enableRiding: props.enableRiding, onCollisionEnter: onCollisionEnter }))] })) }));
+    return (_jsx(_Fragment, { children: ((_a = rideable === null || rideable === void 0 ? void 0 : rideable[props.objectkey]) === null || _a === void 0 ? void 0 : _a.visible) && (_jsxs("group", { userData: { intangible: true }, children: [props.objectType === "vehicle" && (_jsx(PassiveVehicle, { controllerOptions: props.controllerOptions, position: props.position, rotation: props.rotation, currentAnimation: "idle", url: props.url, wheelUrl: props.wheelUrl, ridingUrl: props.ridingUrl, offset: props.offset, enableRiding: props.enableRiding, onCollisionEnter: onCollisionEnter })), props.objectType === "airplane" && (_jsx(PassiveAirplane, { controllerOptions: props.controllerOptions, position: _rideable.position, rotation: _rideable.rotation, ridingUrl: props.ridingUrl, currentAnimation: "idle", url: props.url, offset: props.offset, enableRiding: props.enableRiding, onCollisionEnter: onCollisionEnter }))] })) }));
 }

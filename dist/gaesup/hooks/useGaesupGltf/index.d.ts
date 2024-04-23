@@ -21,5 +21,6 @@ export declare const useGaesupGltf: () => {
         vehicleUrl?: THREE.Vector3;
         airplaneUrl?: THREE.Vector3;
         wheelUrl?: THREE.Vector3;
+        ridingUrl?: THREE.Vector3;
     };
 };

@@ -102,6 +102,7 @@ export function useRideable() {
     };
     var setUrl = function (props) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
+            urls.ridingUrl = props.ridingUrl || urls.characterUrl || null;
             if (props.objectType === "vehicle") {
                 urls.vehicleUrl = props.url;
                 urls.wheelUrl = props.wheelUrl || null;
