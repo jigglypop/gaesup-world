@@ -116,11 +116,11 @@ export function MiniMap(props: minimapType) {
         {Object.values(minimap.props).map(({ center, size, text }, key) => {
           const X =
             (center.x - activeState.position.x) *
-            (props.angle ? -Math.sin(props.angle) : 1) *
+            (props.angle ? Math.sin(props.angle) : 1) *
             scale;
           const Z =
             (center.z - activeState.position.z) *
-            (props.angle ? Math.cos(props.angle) : 1) *
+            (props.angle ? -Math.cos(props.angle) : 1) *
             scale;
           return (
             <div key={key}>
