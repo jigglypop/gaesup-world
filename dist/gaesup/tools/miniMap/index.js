@@ -51,7 +51,7 @@ export function MiniMap(props) {
                             (props.angle ? Math.cos(props.angle) : 1) *
                             scale;
                         var Z = (center.z - activeState.position.z) *
-                            (props.angle ? Math.sin(props.angle) : 1) *
+                            (props.angle ? -Math.sin(props.angle) : 1) *
                             scale;
                         return (_jsxs("div", { children: [_jsx("div", { className: "minimapObject", style: __assign({ width: "".concat(size.x * scale, "rem"), height: "".concat(size.z * scale, "rem"), top: "50%", left: "50%", transform: "translate(-50.1%, -50.1%) translate(".concat(-X, "rem, ").concat(-Z, "rem)"), transformOrigin: "50% 50%", zIndex: 1 + key }, objectStyle) }, key), _jsx("div", { className: "imageObject", style: __assign({ width: "".concat(props.imageWidth * scale, "rem"), height: "".concat(props.imageHeight * scale, "rem"), top: "50%", left: "50%", transform: "translate(-50.1%, -50.1%) translate(".concat(-X, "rem, ").concat(-Z, "rem)"), transformOrigin: "50% 50%", zIndex: 1000 + key }, imageStyle) }, key + 10), _jsx("div", { className: "textObject", style: {
                                         width: "".concat(size.x * scale, "rem"),
