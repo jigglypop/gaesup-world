@@ -22,6 +22,7 @@ export type innerRefType = {
 export type passivePropsType = {
   children?: React.ReactNode;
   url: string;
+  ridingUrl?: string;
   wheelUrl?: string;
   position?: THREE.Vector3;
   rotation?: THREE.Euler;

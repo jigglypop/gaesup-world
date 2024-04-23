@@ -23,7 +23,10 @@ export type InnerGroupRefType = {
   nodes: {
     [name: string]: THREE.Object3D<THREE.Object3DEventMap>;
   };
-};
+  isActive?: boolean;
+  ridingUrl?: string;
+  offset?: THREE.Vector3;
+} & ridingType;
 // riding 타입정의
 export type ridingType = {
   isRiderOn?: boolean;
@@ -56,5 +59,6 @@ export type rigidBodyRefType = {
   userData?: { intangible: boolean };
   onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
   isActive?: boolean;
+  ridingUrl?: string;
 } & passivePropsType &
   innerRefType;

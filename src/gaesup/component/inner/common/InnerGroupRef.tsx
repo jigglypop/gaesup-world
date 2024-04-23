@@ -1,26 +1,31 @@
 import { Ref, forwardRef } from "react";
 import * as THREE from "three";
+import RiderRef from "../rider";
 import { InnerGroupRefType } from "./type";
 
 export const InnerGroupRef = forwardRef(
-  (
-    { children, objectNode, animationRef, nodes }: InnerGroupRefType,
-    ref: Ref<THREE.Group>
-  ) => {
+  (props: InnerGroupRefType, ref: Ref<THREE.Group>) => {
     return (
       <group receiveShadow castShadow ref={ref} userData={{ intangible: true }}>
-        {children}
-        {objectNode && animationRef && (
+        {props.isRiderOn &&
+          props.enableRiding &&
+          props.isActive &&
+          props.ridingUrl && (
+            <RiderRef url={props.ridingUrl} offset={props.offset} />
+          )}
+
+        {props.children}
+        {props.objectNode && props.animationRef && (
           <primitive
-            object={objectNode}
+            object={props.objectNode}
             visible={false}
             receiveShadow
             castShadow
-            ref={animationRef}
+            ref={props.animationRef}
           />
         )}
-        {Object.keys(nodes).map((name: string, key: number) => {
-          const node = nodes[name];
+        {Object.keys(props.nodes).map((name: string, key: number) => {
+          const node = props.nodes[name];
           if (node instanceof THREE.SkinnedMesh) {
             return (
               <skinnedMesh

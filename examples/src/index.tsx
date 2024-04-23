@@ -48,6 +48,7 @@ export default function MainComponent() {
         characterUrl: CHARACTER_URL,
         vehicleUrl: VEHICLE_URL,
         airplaneUrl: AIRPLANE_URL,
+        ridingUrl: CHARACTER_URL,
       }}
       mode={{
         type: "character",
@@ -96,6 +97,7 @@ export default function MainComponent() {
               characterUrl: CHARACTER_URL,
               vehicleUrl: VEHICLE_URL,
               airplaneUrl: AIRPLANE_URL,
+              ridingUrl: CHARACTER_URL,
             }}
             onAnimate={({ control, subscribe }) => {
               subscribe({

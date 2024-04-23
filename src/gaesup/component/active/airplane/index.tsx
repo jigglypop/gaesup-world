@@ -8,6 +8,7 @@ export function AirplaneRef(props: activeAirplaneInnerType) {
       isActive={true}
       currentAnimation={"idle"}
       componentType={"airplane"}
+      ridingUrl={props.ridingUrl}
       {...props}
     >
       {props.children}

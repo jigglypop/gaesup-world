@@ -52,9 +52,10 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
           },
         }
       }
-      position={props.position.clone()}
-      rotation={props.rotation.clone()}
+      position={props.position}
+      rotation={props.rotation}
       currentAnimation={props.currentAnimation}
+      ridingUrl={props.ridingUrl}
       {...props}
       {...refs}
     >

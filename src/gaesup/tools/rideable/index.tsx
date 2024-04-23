@@ -22,8 +22,7 @@ export function Rideable(props: rideablePropType) {
     position: props.position || V3(0, 0, 0),
     rotation: props.rotation || euler(),
   });
-  // console.log(current);
-  // if (!current) return null;
+
   useEffect(() => {
     initRideable(props);
   }, []);
@@ -49,11 +48,12 @@ export function Rideable(props: rideablePropType) {
           {props.objectType === "vehicle" && (
             <PassiveVehicle
               controllerOptions={props.controllerOptions}
-              position={_rideable.position}
-              rotation={_rideable.rotation}
+              position={props.position}
+              rotation={props.rotation}
               currentAnimation={"idle"}
               url={props.url}
               wheelUrl={props.wheelUrl}
+              ridingUrl={props.ridingUrl}
               offset={props.offset}
               enableRiding={props.enableRiding}
               onCollisionEnter={onCollisionEnter}
@@ -64,6 +64,7 @@ export function Rideable(props: rideablePropType) {
               controllerOptions={props.controllerOptions}
               position={_rideable.position}
               rotation={_rideable.rotation}
+              ridingUrl={props.ridingUrl}
               currentAnimation={"idle"}
               url={props.url}
               offset={props.offset}

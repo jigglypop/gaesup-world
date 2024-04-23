@@ -2,7 +2,7 @@ import { CSSProperties } from "react";
 import { actionsType, refsType } from "../../controller/type";
 
 import * as THREE from "three";
-import { rideableType } from "../../hooks/useRideable";
+import { rideableType } from "../../hooks/useRideable/type";
 import { joyStickInnerType } from "../../tools/joystick/type";
 import { keyboardMapType } from "../../tools/keyBoardToolTip/type";
 import { minimapInnerType } from "../../tools/miniMap/type";
@@ -67,6 +67,7 @@ export type urlsType = {
   vehicleUrl?: string;
   airplaneUrl?: string;
   wheelUrl?: string;
+  ridingUrl?: string;
 };
 
 export type animationAtomType = {

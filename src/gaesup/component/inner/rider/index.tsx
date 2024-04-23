@@ -18,7 +18,6 @@ export default function RiderRef({
   url,
   children,
   offset,
-  euler,
   currentAnimation,
 }: riderRefType) {
   const { gltf } = useGltfAndSize({ url });

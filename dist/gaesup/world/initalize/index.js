@@ -55,7 +55,26 @@ export default function initGaesupWorld(props) {
             },
         });
     }, []);
-    var gaesupProps = useMemo(function () { return ({ value: value, dispatch: dispatch }); }, [value]);
+    var gaesupProps = useMemo(function () { return ({ value: value, dispatch: dispatch }); }, [
+        value,
+        value.activeState,
+        value.mode,
+        value.urls,
+        value.states,
+        value.rideable,
+        value.debug,
+        value.minimap,
+        value.joystick,
+        value.control,
+        value.clicker,
+        value.animationState,
+        value.keyBoardMap,
+        value.moveTo,
+        value.block,
+        value.sizes,
+        value.callback,
+        dispatch,
+    ]);
     initDebug({ value: gaesupProps.value, dispatch: dispatch });
     return {
         gaesupProps: gaesupProps,

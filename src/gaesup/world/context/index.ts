@@ -22,6 +22,7 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     vehicleUrl: null,
     airplaneUrl: null,
     wheelUrl: null,
+    ridingUrl: null,
   },
   states: {
     rideableId: null,

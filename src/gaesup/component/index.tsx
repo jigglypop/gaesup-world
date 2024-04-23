@@ -29,6 +29,7 @@ export function GaesupComponent({
           controllerOptions={props.controllerOptions}
           url={urls.vehicleUrl}
           wheelUrl={urls.wheelUrl}
+          ridingUrl={urls.ridingUrl}
           enableRiding={enableRiding}
           isRiderOn={isRiderOn}
           offset={
@@ -45,6 +46,7 @@ export function GaesupComponent({
         <AirplaneRef
           controllerOptions={props.controllerOptions}
           url={urls.airplaneUrl}
+          ridingUrl={urls.ridingUrl}
           enableRiding={enableRiding}
           isRiderOn={isRiderOn}
           offset={

@@ -11,6 +11,7 @@ export default function Rideables() {
         enableRiding={true}
         offset={V3(0, 1, 0)}
         position={V3(-10, 0, 10)}
+        ridingUrl={S3 + "/orri.glb"}
         controllerOptions={{
           lerp: {
             cameraPosition: 1,
@@ -25,6 +26,7 @@ export default function Rideables() {
         enableRiding={true}
         offset={V3(0, 1, 0)}
         position={V3(10, 0, 10)}
+        ridingUrl={S3 + "/orri.glb"}
         controllerOptions={{
           lerp: {
             cameraPosition: 1,

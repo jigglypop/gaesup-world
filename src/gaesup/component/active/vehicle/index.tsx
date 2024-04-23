@@ -8,6 +8,7 @@ export function VehicleRef(props: activeVehicleInnerType) {
       isActive={true}
       currentAnimation={"idle"}
       componentType={"vehicle"}
+      ridingUrl={props.ridingUrl}
       {...props}
     >
       {props.children}

@@ -14,6 +14,7 @@ export function VehicleInnerRef(props: vehicleInnerType) {
         ref={rigidBodyRef}
         name={props.name}
         componentType={"vehicle"}
+        ridingUrl={props.ridingUrl}
         {...props}
       >
         {/* <CuboidCollider
