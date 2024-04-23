@@ -46,12 +46,11 @@ export function MiniMap(props: minimapType) {
       <div
         className="minimapInner"
         style={{
-          transform:
-            props.blockRotate || mode.control === "normal"
-              ? `translate(-50%, -50%) rotate(180deg) `
-              : `translate(-50%, -50%) rotate(${
-                  (activeState.euler.y * 180) / Math.PI + 180
-                }deg) `,
+          transform: props.blockRotate
+            ? `translate(-50%, -50%) rotate(180deg) `
+            : `translate(-50%, -50%) rotate(${
+                (activeState.euler.y * 180) / Math.PI + 180
+              }deg) `,
           ...innerStyle,
         }}
       >
