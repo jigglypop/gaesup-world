@@ -112,22 +112,7 @@ export function MiniMap(props: minimapType) {
         >
           N
         </div>
-        {props.isImage && (
-          <img
-            src={props.imageUrl}
-            className="minimapObject"
-            style={{
-              width: `${100 * scale}rem`,
-              height: `${100 * scale}rem`,
-              top: "50%",
-              left: "50%",
-              transform: `translate(-50.1%, -50.1%) translate(-${activeState.position.x * scale}rem, -${activeState.position.z}rem)`,
-              transformOrigin: "50% 50%",
-              zIndex: 100,
-              ...imageStyle,
-            }}
-          />
-        )}
+        ç
         {Object.values(minimap.props).map(({ center, size, text }, key) => {
           const X = (center.x - activeState.position.x) * scale;
           const Z = (center.z - activeState.position.z) * scale;
@@ -145,6 +130,20 @@ export function MiniMap(props: minimapType) {
                   transformOrigin: "50% 50%",
                   zIndex: 1 + key,
                   ...objectStyle,
+                }}
+              ></div>
+              <div
+                key={key + 10}
+                className="imageObject"
+                style={{
+                  width: `${props.imageWidth * scale}rem`,
+                  height: `${props.imageHeight * scale}rem`,
+                  top: "50%",
+                  left: "50%",
+                  transform: `translate(-50.1%, -50.1%) translate(${-X}rem, ${-Z}rem)`,
+                  transformOrigin: "50% 50%",
+                  zIndex: 1000 + key,
+                  ...imageStyle,
                 }}
               ></div>
               <div
