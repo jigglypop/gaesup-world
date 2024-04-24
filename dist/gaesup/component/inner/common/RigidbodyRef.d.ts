@@ -12,7 +12,7 @@ export declare const RigidBodyRef: import("react").ForwardRefExoticComponent<{
     groundRay: import("../../../controller/type").groundRayType;
 } & {
     children?: import("react").ReactNode;
-    groundRay: import("../../../controller/type").groundRayType;
+    groundRay?: import("../../../controller/type").groundRayType;
     url: string;
     ridingUrl?: string;
     wheelUrl?: string;

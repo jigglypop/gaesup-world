@@ -13,7 +13,7 @@ export type innerRefType = {
 };
 export type passivePropsType = {
     children?: React.ReactNode;
-    groundRay: groundRayType;
+    groundRay?: groundRayType;
     url: string;
     ridingUrl?: string;
     wheelUrl?: string;
