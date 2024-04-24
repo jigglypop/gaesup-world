@@ -53,7 +53,7 @@ export function MiniMap(props) {
                         var Z = (center.z - activeState.position.z) *
                             (props.angle ? -Math.cos(props.angle) : 1) *
                             scale;
-                        return (_jsxs("div", { children: [_jsx("div", { className: "minimapObject", style: __assign({ width: "".concat(size.x * scale, "rem"), height: "".concat(size.z * scale, "rem"), top: "50%", left: "50%", transform: "translate(-50.1%, -50.1%) translate(".concat(-X, "rem, ").concat(-Z, "rem) rotate(").concat((Math.PI * 3) / 2 + props.angle || 0, "rad)"), transformOrigin: "50% 50%", zIndex: 1 + key }, objectStyle) }), _jsx("div", { className: "imageObject", style: {
+                        return (_jsxs("div", { children: [_jsx("div", { className: "minimapObject", style: __assign({ width: "".concat(size.x * scale, "rem"), height: "".concat(size.z * scale, "rem"), top: "50%", left: "50%", transform: "translate(-50.1%, -50.1%) translate(".concat(-X, "rem, ").concat(-Z, "rem) rotate(").concat((Math.PI * 3) / 2 + props.angle || 0, "rad)"), transformOrigin: "50% 50%", zIndex: 1 + key }, objectStyle) }), key === 0 && (_jsx("div", { className: "imageObject", style: {
                                         width: "".concat(size.x * scale, "rem"),
                                         height: "".concat(size.z * scale, "rem"),
                                         top: "50%",
@@ -61,7 +61,7 @@ export function MiniMap(props) {
                                         transform: "translate(-50.1%, -50.1%) translate(".concat(-X, "rem, ").concat(-Z, "rem) rotate(").concat((Math.PI * 3) / 2 + props.angle || 0, "rad)"),
                                         transformOrigin: "50% 50%",
                                         zIndex: 10 + key,
-                                    } }), _jsx("div", { className: "textObject", style: {
+                                    } })), _jsx("div", { className: "textObject", style: {
                                         width: "".concat(size.x * scale, "rem"),
                                         height: "".concat(size.z * scale, "rem"),
                                         top: "50.1%",

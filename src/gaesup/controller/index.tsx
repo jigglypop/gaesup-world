@@ -5,7 +5,7 @@ import { RapierRigidBody } from "@react-three/rapier";
 import { useContext, useMemo, useReducer, useRef } from "react";
 import * as THREE from "three";
 
-import { KeyboardControls } from "@react-three/drei";
+import { KeyboardControls, useContextBridge } from "@react-three/drei";
 import { GaesupComponent } from "../component";
 import { GaesupWorldContext } from "../world/context";
 import {
@@ -99,11 +99,20 @@ export function GaesupControllerInner(props: controllerType) {
     controllerDispatch: gaesupControl.dispatch,
   });
 
+  const ContextBridge = useContextBridge(
+    GaesupWorldContext,
+    GaesupControllerContext
+  );
+
   return (
-    <GaesupControllerContext.Provider value={gaesupControl.value}>
-      <GaesupControllerDispatchContext.Provider value={gaesupControl.dispatch}>
-        <GaesupComponent props={prop} refs={refs} urls={props.urls} />
-      </GaesupControllerDispatchContext.Provider>
-    </GaesupControllerContext.Provider>
+    <ContextBridge>
+      <GaesupControllerContext.Provider value={gaesupControl.value}>
+        <GaesupControllerDispatchContext.Provider
+          value={gaesupControl.dispatch}
+        >
+          <GaesupComponent props={prop} refs={refs} urls={props.urls} />
+        </GaesupControllerDispatchContext.Provider>
+      </GaesupControllerContext.Provider>
+    </ContextBridge>
   );
 }
