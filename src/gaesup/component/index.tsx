@@ -32,6 +32,7 @@ export function GaesupComponent({
           ridingUrl={urls.ridingUrl}
           enableRiding={enableRiding}
           isRiderOn={isRiderOn}
+          groundRay={props.groundRay}
           offset={
             rideableId && rideable[rideableId]
               ? rideable[rideableId].offset
@@ -49,6 +50,7 @@ export function GaesupComponent({
           ridingUrl={urls.ridingUrl}
           enableRiding={enableRiding}
           isRiderOn={isRiderOn}
+          groundRay={props.groundRay}
           offset={
             rideableId && rideable[rideableId]
               ? rideable[rideableId].offset

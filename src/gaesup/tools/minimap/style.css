@@ -188,6 +188,7 @@
   text-align: center;
   border-radius: 2px;
   background: rgba(0, 0, 0, 0.3);
+
   /* border: 2px solid rgba(88, 88, 88, 0.5); */
 }
 
@@ -198,9 +199,11 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  border-radius: 2px;
-  background: rgba(0, 0, 0, 0.3);
-  /* border: 2px solid rgba(88, 88, 88, 0.5); */
+  background:
+    linear-gradient(to bottom, transparent 95%, rgba(0, 0, 0, 0.2) 20%) 0 0 /
+      100% 40px repeat-y,
+    linear-gradient(to right, transparent 38px, rgba(0, 0, 0, 0.2) 38px) 0 0 /
+      40px 100% repeat-x transparent;
 }
 
 .textObject {

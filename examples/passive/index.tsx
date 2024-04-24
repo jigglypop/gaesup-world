@@ -1,8 +1,8 @@
 "use client";
 
-import { Gltf } from "@react-three/drei";
 import { euler } from "@react-three/rapier";
 import {
+  PassiveAirplane,
   PassiveCharacter,
   PassiveVehicle,
   V3,
@@ -92,7 +92,15 @@ export default function Passive() {
         currentAnimation="idle"
         rigidbodyType={"fixed"}
       ></PassiveVehicle>
-      <Gltf src={S3 + "/gorani.glb"} position={V3(20, 2, 0)} />
+      <group visible={false}>
+        <PassiveAirplane
+          position={V3(30, 0, 0)}
+          rotation={euler()}
+          url={S3 + "/gaebird.glb"}
+          currentAnimation="idle"
+          rigidbodyType={"fixed"}
+        ></PassiveAirplane>
+      </group>
     </>
   );
 }

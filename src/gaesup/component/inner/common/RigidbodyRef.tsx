@@ -5,8 +5,6 @@ import {
   RapierRigidBody,
   RigidBody,
   euler,
-  useRapier,
-  vec3,
 } from "@react-three/rapier";
 import { MutableRefObject, forwardRef, useContext, useMemo } from "react";
 import * as THREE from "three";
@@ -15,52 +13,25 @@ import playActions, { subscribeActions } from "../../../animation/actions";
 import Camera from "../../../camera";
 import { GaesupControllerContext } from "../../../controller/context";
 import initCallback from "../../../controller/initialize/callback";
-import { groundRayType } from "../../../controller/type";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 import calculation from "../../../physics";
 import { cameraPropType } from "../../../physics/type";
 import { V3 } from "../../../utils";
 import { GaesupWorldContext } from "../../../world/context";
-import { calcCharacterColliderProps } from "../../inner/common/calc";
 import { InnerGroupRef } from "./InnerGroupRef";
+import { setGroundRay } from "./setGroundRay";
 import { rigidBodyRefType } from "./type";
 
 export const RigidBodyRef = forwardRef(
   (props: rigidBodyRefType, ref: MutableRefObject<RapierRigidBody>) => {
     const { size } = useGltfAndSize({ url: props.url });
-    const collider = calcCharacterColliderProps(size);
 
-    const groundRay: groundRayType = useMemo(() => {
-      return {
-        origin: vec3(),
-        dir: vec3({ x: 0, y: -1, z: 0 }),
-        offset: vec3({ x: 0, y: -1, z: 0 }),
-        hit: null,
-        parent: null,
-        rayCast: null,
+    props.groundRay &&
+      setGroundRay({
+        groundRay: props.groundRay,
         length: 0.5,
-      };
-    }, []);
-    const { rapier, world } = useRapier();
-    useFrame(() => {
-      groundRay.offset = vec3({
-        x: 0,
-        y: collider?.halfHeight ? -collider.halfHeight : -1,
-        z: 0,
+        colliderRef: props.colliderRef,
       });
-
-      groundRay.length = 5;
-      groundRay.rayCast = new rapier.Ray(groundRay.origin, groundRay.dir);
-      groundRay.hit = world.castRay(
-        groundRay.rayCast,
-        groundRay.length,
-        true,
-        undefined,
-        undefined
-      );
-      groundRay.parent = groundRay.hit?.collider.parent();
-    });
-
     const { scene, animations } = useGLTF(props.url);
     const { actions, ref: animationRef } = useAnimations(animations);
     const worldContext = useContext(GaesupWorldContext);
@@ -68,7 +39,7 @@ export const RigidBodyRef = forwardRef(
     if (props.isActive) {
       subscribeActions({
         type: props.componentType,
-        groundRay: groundRay,
+        groundRay: props.groundRay,
         animations: animations,
       });
       const cameraProps: cameraPropType = {
@@ -86,7 +57,7 @@ export const RigidBodyRef = forwardRef(
         innerGroupRef: props.innerGroupRef,
         rigidBodyRef: ref,
         colliderRef: props.colliderRef,
-        groundRay,
+        groundRay: props.groundRay,
       });
     }
     playActions({

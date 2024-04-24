@@ -112,7 +112,6 @@ export function MiniMap(props: minimapType) {
         >
           N
         </div>
-        ç
         {Object.values(minimap.props).map(({ center, size, text }, key) => {
           const X =
             (center.x - activeState.position.x) *
@@ -120,7 +119,7 @@ export function MiniMap(props: minimapType) {
             scale;
           const Z =
             (center.z - activeState.position.z) *
-            (props.angle ? Math.cos(props.angle) : 1) *
+            (props.angle ? -Math.cos(props.angle) : 1) *
             scale;
           return (
             <div key={key}>
@@ -132,24 +131,23 @@ export function MiniMap(props: minimapType) {
                   height: `${size.z * scale}rem`,
                   top: "50%",
                   left: "50%",
-                  transform: `translate(-50.1%, -50.1%) translate(${-X}rem, ${-Z}rem)`,
+                  transform: `translate(-50.1%, -50.1%) translate(${-X}rem, ${-Z}rem) rotate(${(Math.PI * 3) / 2 + props.angle || 0}rad)`,
                   transformOrigin: "50% 50%",
                   zIndex: 1 + key,
                   ...objectStyle,
                 }}
               ></div>
               <div
-                key={key + 10}
+                key={key}
                 className="imageObject"
                 style={{
-                  width: `${props.imageWidth * scale}rem`,
-                  height: `${props.imageHeight * scale}rem`,
+                  width: `${size.x * scale}rem`,
+                  height: `${size.z * scale}rem`,
                   top: "50%",
                   left: "50%",
-                  transform: `translate(-50.1%, -50.1%) translate(${-X}rem, ${-Z}rem)`,
+                  transform: `translate(-50.1%, -50.1%) translate(${-X}rem, ${-Z}rem) rotate(${(Math.PI * 3) / 2 + props.angle || 0}rad)`,
                   transformOrigin: "50% 50%",
-                  zIndex: 1000 + key,
-                  ...imageStyle,
+                  zIndex: 1 + key,
                 }}
               ></div>
               <div

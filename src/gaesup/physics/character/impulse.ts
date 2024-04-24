@@ -15,6 +15,8 @@ export default function impulse(prop: calcType) {
   } = prop;
   const { isOnTheGround, isJumping } = states;
   const impulse = vec3();
+  console.log(isJumping ? "점프중" : "점프안함");
+  console.log(isOnTheGround ? "땅에있음" : "땅에없음");
   if (isJumping && isOnTheGround) {
     impulse.setY(jumpSpeed * rigidBodyRef.current.mass());
   }

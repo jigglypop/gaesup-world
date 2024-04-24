@@ -55,7 +55,7 @@ export default function initControllerProps({ refs }: { refs: refsType }) {
       hit: null,
       parent: null,
       rayCast: null,
-      length: 0.5,
+      length: 10,
     };
   }, []);
 

@@ -13,20 +13,15 @@ export default function checkOnTheGround(prop: calcType) {
     states.isOnTheGround = false;
   }
   if (groundRay.hit) {
-    if (groundRay.hit.toi >= groundRay.length * 0.8) {
+    const MAX = groundRay.length * 2;
+    const MIN = groundRay.length * 0.8;
+    if (groundRay.hit.toi >= MAX) {
       states.isFalling = true;
-      states.isLanding = false;
       states.isOnTheGround = false;
-    } else if (
-      groundRay.length * 0.4 < groundRay.hit.toi &&
-      groundRay.hit.toi < groundRay.length * 0.8
-    ) {
-      states.isLanding = true;
+    } else if (MIN <= groundRay.hit.toi && groundRay.hit.toi < MAX) {
+      states.isFalling = true;
+    } else if (groundRay.hit.toi < MIN) {
       states.isFalling = false;
-      states.isOnTheGround = false;
-    } else {
-      states.isFalling = false;
-      states.isLanding = false;
       states.isOnTheGround = true;
     }
   }

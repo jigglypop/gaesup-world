@@ -16,10 +16,19 @@
     "jsx": "react-jsx",
     "declaration": true,
     "outDir": "./dist",
+    "baseUrl": "./examples",
     "paths": {
-      "@/*": ["./src/gaesup"]
+      "@components/*": ["components/*"],
+      "@styles/*": ["styles/*"],
+      "@constants/*": ["constants/*"],
+      "@type/*": ["type/*"],
+      "@containers/*": ["containers/*"],
+      "@utils/*": ["utils/*"],
+      "@store/*": ["store/*"],
+      "@api/*": ["api/*"],
+      "@common/*": ["common/*"]
     },
-    "types": ["vite-plugin-svgr/client"] // 이부분 추가
+    "types": ["vite-plugin-svgr/client"]
   },
   "include": [
     "./src/**/*.tsx",

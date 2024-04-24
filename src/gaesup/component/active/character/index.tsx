@@ -18,6 +18,7 @@ export function CharacterRef({
       componentType="character"
       rigidbodyType={"dynamic"}
       controllerOptions={props.controllerOptions}
+      groundRay={props.groundRay}
       onAnimate={props.onAnimate}
       onFrame={props.onFrame}
       onReady={props.onReady}

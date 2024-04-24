@@ -11,6 +11,7 @@ export function CharacterInnerRef(props: characterInnerType) {
         url={props.url}
         controllerOptions={props.controllerOptions}
         ref={props.rigidBodyRef}
+        groundRay={props.groundRay}
         {...props}
       >
         {props.children}
