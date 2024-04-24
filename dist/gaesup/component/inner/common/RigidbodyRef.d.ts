@@ -9,7 +9,7 @@ export declare const RigidBodyRef: import("react").ForwardRefExoticComponent<{
     onCollisionEnter?: (e: import("@react-three/rapier").CollisionEnterPayload) => Promise<void>;
     isActive?: boolean;
     ridingUrl?: string;
-    groundRay: import("../../../controller/type").groundRayType;
+    groundRay?: import("../../../controller/type").groundRayType;
 } & {
     children?: import("react").ReactNode;
     groundRay?: import("../../../controller/type").groundRayType;

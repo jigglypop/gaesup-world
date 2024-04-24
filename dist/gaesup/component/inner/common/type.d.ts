@@ -56,5 +56,5 @@ export type rigidBodyRefType = {
     onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
     isActive?: boolean;
     ridingUrl?: string;
-    groundRay: groundRayType;
+    groundRay?: groundRayType;
 } & passivePropsType & innerRefType & callbackType;
