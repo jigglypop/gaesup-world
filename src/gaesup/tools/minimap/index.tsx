@@ -136,18 +136,20 @@ export function MiniMap(props: minimapType) {
                   ...objectStyle,
                 }}
               ></div>
-              <div
-                className="imageObject"
-                style={{
-                  width: `${size.x * scale}rem`,
-                  height: `${size.z * scale}rem`,
-                  top: "50%",
-                  left: "50%",
-                  transform: `translate(-50.1%, -50.1%) translate(${-X}rem, ${-Z}rem) rotate(${(Math.PI * 3) / 2 + props.angle || 0}rad)`,
-                  transformOrigin: "50% 50%",
-                  zIndex: 10 + key,
-                }}
-              ></div>
+              {key === 0 && (
+                <div
+                  className="imageObject"
+                  style={{
+                    width: `${size.x * scale}rem`,
+                    height: `${size.z * scale}rem`,
+                    top: "50%",
+                    left: "50%",
+                    transform: `translate(-50.1%, -50.1%) translate(${-X}rem, ${-Z}rem) rotate(${(Math.PI * 3) / 2 + props.angle || 0}rad)`,
+                    transformOrigin: "50% 50%",
+                    zIndex: 10 + key,
+                  }}
+                ></div>
+              )}
               <div
                 className="textObject"
                 style={{
