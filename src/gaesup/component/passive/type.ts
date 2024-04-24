@@ -21,7 +21,7 @@ export type innerRefType = {
 // passive 오브젝트 타입정의
 export type passivePropsType = {
   children?: React.ReactNode;
-  groundRay: groundRayType;
+  groundRay?: groundRayType;
   url: string;
   ridingUrl?: string;
   wheelUrl?: string;

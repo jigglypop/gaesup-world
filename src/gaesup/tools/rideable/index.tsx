@@ -40,7 +40,6 @@ export function Rideable(props: rideablePropType) {
   const onCollisionEnter = async (e: CollisionEnterPayload) => {
     await ride(e, props);
   };
-
   return (
     <>
       {rideable?.[props.objectkey]?.visible && (
