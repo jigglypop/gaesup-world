@@ -12,7 +12,7 @@ var __assign = (this && this.__assign) || function () {
 };
 import { jsx as _jsx } from "react/jsx-runtime";
 import { useContext, useMemo, useReducer, useRef } from "react";
-import { KeyboardControls } from "@react-three/drei";
+import { KeyboardControls, useContextBridge } from "@react-three/drei";
 import { GaesupComponent } from "../component";
 import { GaesupWorldContext } from "../world/context";
 import { GaesupControllerContext, GaesupControllerDispatchContext, gaesupControllerDefault, } from "./context";
@@ -70,5 +70,6 @@ export function GaesupControllerInner(props) {
         controllerContext: gaesupControl.value,
         controllerDispatch: gaesupControl.dispatch,
     });
-    return (_jsx(GaesupControllerContext.Provider, { value: gaesupControl.value, children: _jsx(GaesupControllerDispatchContext.Provider, { value: gaesupControl.dispatch, children: _jsx(GaesupComponent, { props: prop, refs: refs, urls: props.urls }) }) }));
+    var ContextBridge = useContextBridge(GaesupWorldContext, GaesupControllerContext);
+    return (_jsx(ContextBridge, { children: _jsx(GaesupControllerContext.Provider, { value: gaesupControl.value, children: _jsx(GaesupControllerDispatchContext.Provider, { value: gaesupControl.dispatch, children: _jsx(GaesupComponent, { props: prop, refs: refs, urls: props.urls }) }) }) }));
 }

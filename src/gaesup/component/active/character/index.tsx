@@ -3,10 +3,12 @@ import { urlsType } from "../../../world/context/type";
 import { CharacterInnerRef } from "../../inner/character";
 
 export function CharacterRef({
+  children,
   props,
   refs,
   urls,
 }: {
+  children: React.ReactNode;
   props: controllerInnerType;
   refs: refsType;
   urls: urlsType;
@@ -25,7 +27,7 @@ export function CharacterRef({
       onDestory={props.onDestory}
       {...refs}
     >
-      {props.children}
+      {children}
     </CharacterInnerRef>
   );
 }

@@ -22,7 +22,9 @@ export function GaesupComponent({
   return (
     <>
       {mode.type === "character" && (
-        <CharacterRef props={props} refs={refs} urls={urls} />
+        <CharacterRef props={props} refs={refs} urls={urls}>
+          {props.children}
+        </CharacterRef>
       )}
       {mode.type === "vehicle" && (
         <VehicleRef
