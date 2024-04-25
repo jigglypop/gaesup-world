@@ -20,7 +20,7 @@ export function GaesupComponent(_a) {
     var props = _a.props, refs = _a.refs, urls = _a.urls;
     var _b = useContext(GaesupWorldContext), mode = _b.mode, states = _b.states, rideable = _b.rideable;
     var enableRiding = states.enableRiding, isRiderOn = states.isRiderOn, rideableId = states.rideableId;
-    return (_jsxs(_Fragment, { children: [mode.type === "character" && (_jsx(CharacterRef, { props: props, refs: refs, urls: urls })), mode.type === "vehicle" && (_jsx(VehicleRef, __assign({ controllerOptions: props.controllerOptions, url: urls.vehicleUrl, wheelUrl: urls.wheelUrl, ridingUrl: urls.ridingUrl, enableRiding: enableRiding, isRiderOn: isRiderOn, groundRay: props.groundRay, offset: rideableId && rideable[rideableId]
+    return (_jsxs(_Fragment, { children: [mode.type === "character" && (_jsx(CharacterRef, { props: props, refs: refs, urls: urls, children: props.children })), mode.type === "vehicle" && (_jsx(VehicleRef, __assign({ controllerOptions: props.controllerOptions, url: urls.vehicleUrl, wheelUrl: urls.wheelUrl, ridingUrl: urls.ridingUrl, enableRiding: enableRiding, isRiderOn: isRiderOn, groundRay: props.groundRay, offset: rideableId && rideable[rideableId]
                     ? rideable[rideableId].offset
                     : vec3() }, refs, { children: props.children }))), mode.type === "airplane" && (_jsx(AirplaneRef, __assign({ controllerOptions: props.controllerOptions, url: urls.airplaneUrl, ridingUrl: urls.ridingUrl, enableRiding: enableRiding, isRiderOn: isRiderOn, groundRay: props.groundRay, offset: rideableId && rideable[rideableId]
                     ? rideable[rideableId].offset
