@@ -4,8 +4,13 @@ import { calcType } from "../type";
 export default function innerCalc(prop: calcType) {
   const {
     rigidBodyRef,
-    worldContext: { activeState },
+    worldContext: { activeState, block },
   } = prop;
+  if (block.control) {
+    rigidBodyRef.current.resetForces(false);
+    rigidBodyRef.current.resetTorques(false);
+    return null;
+  }
   activeState.position = vec3(rigidBodyRef.current.translation());
   activeState.velocity = vec3(rigidBodyRef.current.linvel());
 

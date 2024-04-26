@@ -47,7 +47,9 @@ export default function calculation({
       !innerGroupRef.current
     )
       return null;
-    if (block.control) return null;
+    if (block.control) {
+      return null;
+    }
     const calcProp: calcType = {
       rigidBodyRef,
       outerGroupRef,
