@@ -61,7 +61,7 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
 
   const gaesupProps = useMemo(
     () => ({ value: value, dispatch }),
-    [value, dispatch]
+    [value, value.block, dispatch]
   );
   initDebug({ value: gaesupProps.value, dispatch });
 
