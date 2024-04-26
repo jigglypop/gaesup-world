@@ -11,11 +11,7 @@ export default function innerCalc(prop: calcType) {
     worldContext: { activeState, states, block },
     delta,
   } = prop;
-  if (block.control) {
-    rigidBodyRef.current.resetForces(false);
-    rigidBodyRef.current.resetTorques(false);
-    return null;
-  }
+
   if (states.isJumping || rigidBodyRef.current.linvel().y < 0) {
     rigidBodyRef.current.setLinearDamping(linearDamping);
   } else {

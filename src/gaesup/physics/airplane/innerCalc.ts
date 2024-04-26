@@ -7,11 +7,7 @@ export default function innerCalc(prop: calcType) {
     worldContext: { activeState, block },
     dispatch,
   } = prop;
-  if (block.control) {
-    rigidBodyRef.current.resetForces(false);
-    rigidBodyRef.current.resetTorques(false);
-    return null;
-  }
+
   activeState.position = vec3(rigidBodyRef.current.translation());
   activeState.velocity = vec3(rigidBodyRef.current.linvel());
 

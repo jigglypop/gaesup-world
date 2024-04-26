@@ -37,6 +37,15 @@ export default function calculation({
     }
   }, [mode.type]);
 
+  useEffect(() => {
+    if (rigidBodyRef && rigidBodyRef.current) {
+      if (block.control) {
+        rigidBodyRef.current.resetForces(false);
+        rigidBodyRef.current.resetTorques(false);
+      }
+    }
+  }, [block.control, rigidBodyRef.current]);
+
   useFrame((state, delta) => {
     if (
       !rigidBodyRef ||
