@@ -10,13 +10,12 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 import { jsx as _jsx } from "react/jsx-runtime";
-import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 import { OuterGroupRef } from "../common/OuterGroupRef";
 import { RigidBodyRef } from "../common/RigidbodyRef";
 export function VehicleInnerRef(props) {
     var rigidBodyRef = props.rigidBodyRef, outerGroupRef = props.outerGroupRef;
-    var size = useGltfAndSize({
-        url: props.url,
-    }).size;
+    // const { size } = useGltfAndSize({
+    //   url: props.url,
+    // });
     return (_jsx(OuterGroupRef, { ref: outerGroupRef, children: _jsx(RigidBodyRef, __assign({ ref: rigidBodyRef, name: props.name, componentType: "vehicle", ridingUrl: props.ridingUrl }, props, { children: props.children })) }));
 }

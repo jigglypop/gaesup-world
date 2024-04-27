@@ -46,13 +46,13 @@ import "./style.css";
 export function Rideable(props) {
     var _this = this;
     var _a;
-    var _b = useContext(GaesupWorldContext), states = _b.states, rideable = _b.rideable, urls = _b.urls;
-    var _c = useRideable(), initRideable = _c.initRideable, getRideable = _c.getRideable, ride = _c.ride, landing = _c.landing;
+    var _b = useContext(GaesupWorldContext), states = _b.states, rideable = _b.rideable;
+    var _c = useRideable(), initRideable = _c.initRideable, ride = _c.ride, landing = _c.landing;
     // const current = getRideable(props.objectkey);
-    var _d = useState({
+    var _rideable = useState({
         position: props.position || V3(0, 0, 0),
         rotation: props.rotation || euler(),
-    }), _rideable = _d[0], set_Rideable = _d[1];
+    })[0];
     useEffect(function () {
         initRideable(props);
     }, []);
@@ -63,7 +63,7 @@ export function Rideable(props) {
             landing(props.objectkey);
         }
     }, [states === null || states === void 0 ? void 0 : states.isRiding]);
-    var onCollisionEnter = function (e) { return __awaiter(_this, void 0, void 0, function () {
+    var onIntersectionEnter = function (e) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, ride(e, props)];
@@ -73,5 +73,5 @@ export function Rideable(props) {
             }
         });
     }); };
-    return (_jsx(_Fragment, { children: ((_a = rideable === null || rideable === void 0 ? void 0 : rideable[props.objectkey]) === null || _a === void 0 ? void 0 : _a.visible) && (_jsxs("group", { userData: { intangible: true }, children: [props.objectType === "vehicle" && (_jsx(PassiveVehicle, { controllerOptions: props.controllerOptions, position: props.position, rotation: props.rotation, currentAnimation: "idle", url: props.url, wheelUrl: props.wheelUrl, ridingUrl: props.ridingUrl, offset: props.offset, enableRiding: props.enableRiding, onCollisionEnter: onCollisionEnter })), props.objectType === "airplane" && (_jsx(PassiveAirplane, { controllerOptions: props.controllerOptions, position: _rideable.position, rotation: _rideable.rotation, ridingUrl: props.ridingUrl, currentAnimation: "idle", url: props.url, offset: props.offset, enableRiding: props.enableRiding, onCollisionEnter: onCollisionEnter }))] })) }));
+    return (_jsx(_Fragment, { children: ((_a = rideable === null || rideable === void 0 ? void 0 : rideable[props.objectkey]) === null || _a === void 0 ? void 0 : _a.visible) && (_jsxs("group", { userData: { intangible: true }, children: [props.objectType === "vehicle" && (_jsx(PassiveVehicle, { controllerOptions: props.controllerOptions, position: _rideable.position, rotation: _rideable.rotation, currentAnimation: "idle", url: props.url, wheelUrl: props.wheelUrl, ridingUrl: props.ridingUrl, offset: props.offset, enableRiding: props.enableRiding, rigidBodyProps: props.rigidBodyProps, sensor: true, onIntersectionEnter: onIntersectionEnter })), props.objectType === "airplane" && (_jsx(PassiveAirplane, { controllerOptions: props.controllerOptions, position: _rideable.position.clone(), rotation: _rideable.rotation.clone(), currentAnimation: "idle", url: props.url, ridingUrl: props.ridingUrl, offset: props.offset, enableRiding: props.enableRiding, rigidBodyProps: props.rigidBodyProps, sensor: true, onIntersectionEnter: onIntersectionEnter }))] })) }));
 }

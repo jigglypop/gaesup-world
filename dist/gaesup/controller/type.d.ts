@@ -81,7 +81,6 @@ export type gaesupControllerContextPropType = {
     airplane: airplaneType;
     vehicle: vehicleType;
     character: characterType;
-    urls: urlsType;
 };
 export interface controllerOtherPropType extends RigidBodyProps {
     children?: ReactNode;
@@ -89,4 +88,4 @@ export interface controllerOtherPropType extends RigidBodyProps {
     rigidBodyProps?: RigidBodyProps;
     debug?: boolean;
 }
-export type controllerType = controllerOtherPropType & Partial<gaesupControllerContextPropType> & callbackType;
+export type controllerType = controllerOtherPropType & urlsType & Partial<gaesupControllerContextPropType> & callbackType;

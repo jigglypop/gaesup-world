@@ -40,7 +40,6 @@ export function GaesupControllerInner(props) {
             onDestory: props.onDestory,
             onAnimate: props.onAnimate,
         }),
-        urls: Object.assign(gaesupControllerDefault.urls, props.urls || {}),
         refs: {
             colliderRef: colliderRef,
             rigidBodyRef: rigidBodyRef,
@@ -71,5 +70,5 @@ export function GaesupControllerInner(props) {
         controllerDispatch: gaesupControl.dispatch,
     });
     var ContextBridge = useContextBridge(GaesupWorldContext, GaesupControllerContext);
-    return (_jsx(ContextBridge, { children: _jsx(GaesupControllerContext.Provider, { value: gaesupControl.value, children: _jsx(GaesupControllerDispatchContext.Provider, { value: gaesupControl.dispatch, children: _jsx(GaesupComponent, { props: prop, refs: refs, urls: props.urls }) }) }) }));
+    return (_jsx(ContextBridge, { children: _jsx(GaesupControllerContext.Provider, { value: gaesupControl.value, children: _jsx(GaesupControllerDispatchContext.Provider, { value: gaesupControl.dispatch, children: _jsx(GaesupComponent, { props: prop, refs: refs }) }) }) }));
 }

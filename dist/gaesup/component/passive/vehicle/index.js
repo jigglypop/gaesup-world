@@ -28,5 +28,5 @@ export function PassiveVehicle(props) {
                 cameraTurn: 1,
                 cameraPosition: 1,
             },
-        }, position: props.position, rotation: props.rotation, currentAnimation: props.currentAnimation, ridingUrl: props.ridingUrl }, props, refs, { children: props.children })));
+        }, position: props.position, rotation: props.rotation, currentAnimation: props.currentAnimation, url: props.url, ridingUrl: props.ridingUrl }, props, refs, { children: props.children })));
 }

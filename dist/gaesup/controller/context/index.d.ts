@@ -38,12 +38,6 @@ export declare const gaesupControllerDefault: {
         innerGroupRef: any;
         characterInnerRef: any;
     };
-    urls: {
-        airplaneUrl: any;
-        vehicleUrl: any;
-        characterUrl: any;
-        wheelUrl: any;
-    };
 };
 export declare const GaesupControllerContext: import("react").Context<gaesupControllerType>;
 export declare const GaesupControllerDispatchContext: import("react").Context<dispatchType<gaesupControllerType>>;

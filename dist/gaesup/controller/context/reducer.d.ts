@@ -6,7 +6,6 @@ export declare function gaesupControllerReducer(props: gaesupControllerType, act
     airplane: import("./type").airplaneType;
     vehicle: import("./type").vehicleType;
     character: import("./type").characterType;
-    urls: import("../../world/context/type").urlsType;
     callbacks?: import("../initialize/callback/type").callbackType;
     refs?: import("../type").refsType;
 };

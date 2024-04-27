@@ -11,7 +11,7 @@ var __assign = (this && this.__assign) || function () {
 };
 import { quat, vec3 } from "@react-three/rapier";
 export default function innerCalc(prop) {
-    var rigidBodyRef = prop.rigidBodyRef, _a = prop.worldContext, activeState = _a.activeState, block = _a.block, dispatch = prop.dispatch;
+    var rigidBodyRef = prop.rigidBodyRef, activeState = prop.worldContext.activeState, dispatch = prop.dispatch;
     activeState.position = vec3(rigidBodyRef.current.translation());
     activeState.velocity = vec3(rigidBodyRef.current.linvel());
     var _euler = activeState.euler.clone();

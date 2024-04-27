@@ -1,5 +1,5 @@
 import { Collider } from "@dimforge/rapier3d-compat";
-import { CollisionEnterPayload, RigidBodyTypeString } from "@react-three/rapier";
+import { RapierRigidBody, RigidBodyTypeString } from "@react-three/rapier";
 import { MutableRefObject, RefObject } from "react";
 import * as THREE from "three";
 import { callbackType } from "../../../controller/initialize/callback/type";
@@ -40,7 +40,6 @@ export type refPropsType = {
         intangible: boolean;
     };
     currentAnimation?: string;
-    onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
     type?: RigidBodyTypeString;
 };
 export type setGroundRayType = {
@@ -53,8 +52,8 @@ export type rigidBodyRefType = {
     userData?: {
         intangible: boolean;
     };
-    onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
     isActive?: boolean;
     ridingUrl?: string;
     groundRay?: groundRayType;
+    rigidBodyProps?: RapierRigidBody;
 } & passivePropsType & innerRefType & callbackType;

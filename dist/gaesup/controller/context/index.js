@@ -48,12 +48,6 @@ export var gaesupControllerDefault = {
         innerGroupRef: null,
         characterInnerRef: null,
     },
-    urls: {
-        airplaneUrl: null,
-        vehicleUrl: null,
-        characterUrl: null,
-        wheelUrl: null,
-    },
 };
 export var GaesupControllerContext = createContext(__assign({}, gaesupControllerDefault));
 export var GaesupControllerDispatchContext = createContext(null);
