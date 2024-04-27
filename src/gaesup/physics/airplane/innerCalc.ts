@@ -4,7 +4,7 @@ import { calcType } from "../type";
 export default function innerCalc(prop: calcType) {
   const {
     rigidBodyRef,
-    worldContext: { activeState, block },
+    worldContext: { activeState },
     dispatch,
   } = prop;
 

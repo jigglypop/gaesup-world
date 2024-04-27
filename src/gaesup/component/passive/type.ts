@@ -31,9 +31,14 @@ export type passivePropsType = {
   controllerOptions?: controllerOptionsType;
   currentAnimation?: string;
   rigidbodyType?: RigidBodyTypeString;
+  sensor?: boolean;
+  onIntersectionEnter?: (e: CollisionEnterPayload) => Promise<void>;
   onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
   componentType: componentTypeString;
   userData?: {
     intangible: boolean;
   };
+  rigidBodyProps?: RapierRigidBody;
+  outerGroupProps?: THREE.Group;
+  innerGroupProps?: THREE.Group;
 } & ridingType;

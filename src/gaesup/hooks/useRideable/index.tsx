@@ -77,6 +77,7 @@ export function useRideable() {
     } else if (props.objectType === "airplane") {
       urls.airplaneUrl = props.url;
     }
+
     dispatch({
       type: "update",
       payload: {

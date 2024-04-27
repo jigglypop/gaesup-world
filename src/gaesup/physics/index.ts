@@ -70,7 +70,7 @@ export default function calculation({
       worldContext,
       controllerContext,
       dispatch,
-      matchSizes: getSizesByUrls(controllerContext?.urls),
+      matchSizes: getSizesByUrls(worldContext?.urls),
     };
     if (mode.type === "vehicle") vehicleCalculation(calcProp);
     else if (mode.type === "character") characterCalculation(calcProp);

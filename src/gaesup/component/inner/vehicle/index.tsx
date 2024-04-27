@@ -1,13 +1,12 @@
-import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 import { OuterGroupRef } from "../common/OuterGroupRef";
 import { RigidBodyRef } from "../common/RigidbodyRef";
 import { vehicleInnerType } from "./type";
 
 export function VehicleInnerRef(props: vehicleInnerType) {
   const { rigidBodyRef, outerGroupRef } = props;
-  const { size } = useGltfAndSize({
-    url: props.url,
-  });
+  // const { size } = useGltfAndSize({
+  //   url: props.url,
+  // });
   return (
     <OuterGroupRef ref={outerGroupRef}>
       <RigidBodyRef

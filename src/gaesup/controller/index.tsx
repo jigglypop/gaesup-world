@@ -55,7 +55,6 @@ export function GaesupControllerInner(props: controllerType) {
       onDestory: props.onDestory,
       onAnimate: props.onAnimate,
     }),
-    urls: Object.assign(gaesupControllerDefault.urls, props.urls || {}),
     refs: {
       colliderRef,
       rigidBodyRef,
@@ -110,7 +109,7 @@ export function GaesupControllerInner(props: controllerType) {
         <GaesupControllerDispatchContext.Provider
           value={gaesupControl.dispatch}
         >
-          <GaesupComponent props={prop} refs={refs} urls={props.urls} />
+          <GaesupComponent props={prop} refs={refs} />
         </GaesupControllerDispatchContext.Provider>
       </GaesupControllerContext.Provider>
     </ContextBridge>

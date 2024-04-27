@@ -34,6 +34,7 @@ export function PassiveVehicle(props: passiveVehiclePropsType) {
       position={props.position}
       rotation={props.rotation}
       currentAnimation={props.currentAnimation}
+      url={props.url}
       ridingUrl={props.ridingUrl}
       {...props}
       {...refs}

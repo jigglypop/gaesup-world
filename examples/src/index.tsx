@@ -92,11 +92,6 @@ export default function MainComponent() {
         />
         <Physics debug>
           <GaesupController
-            urls={{
-              characterUrl: CHARACTER_URL,
-              vehicleUrl: VEHICLE_URL,
-              airplaneUrl: AIRPLANE_URL,
-            }}
             onAnimate={({ control, subscribe }) => {
               subscribe({
                 tag: "greet",

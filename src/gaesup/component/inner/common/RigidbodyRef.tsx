@@ -109,8 +109,11 @@ export const RigidBodyRef = forwardRef(
           .set(0, props.rotation?.clone().y || 0, 0)
           .clone()}
         userData={props.userData}
-        onCollisionEnter={props.onCollisionEnter}
         type={props.rigidbodyType || (props.isActive ? "dynamic" : "fixed")}
+        sensor={props.sensor}
+        onIntersectionEnter={props.onIntersectionEnter}
+        onCollisionEnter={props.onCollisionEnter}
+        {...props.rigidBodyProps}
       >
         <CapsuleCollider
           ref={props.colliderRef}

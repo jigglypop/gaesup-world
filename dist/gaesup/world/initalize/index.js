@@ -55,7 +55,7 @@ export default function initGaesupWorld(props) {
             },
         });
     }, []);
-    var gaesupProps = useMemo(function () { return ({ value: value, dispatch: dispatch }); }, [value, dispatch]);
+    var gaesupProps = useMemo(function () { return ({ value: value, dispatch: dispatch }); }, [value, value.block, dispatch]);
     initDebug({ value: gaesupProps.value, dispatch: dispatch });
     return {
         gaesupProps: gaesupProps,

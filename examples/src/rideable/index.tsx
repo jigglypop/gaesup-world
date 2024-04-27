@@ -6,11 +6,11 @@ export default function Rideables() {
     <>
       <Rideable
         objectkey="gaebird_1"
-        url={S3 + "/gaebird.glb"}
+        url={S3 + "/gorani.glb"}
         objectType={"vehicle"}
         enableRiding={true}
         offset={V3(0, 1, 0)}
-        position={V3(-10, 0, 10)}
+        position={V3(-10, 2, 10)}
         controllerOptions={{
           lerp: {
             cameraPosition: 1,
@@ -24,7 +24,21 @@ export default function Rideables() {
         objectType={"airplane"}
         enableRiding={true}
         offset={V3(0, 1, 0)}
-        position={V3(10, 0, 10)}
+        position={V3(10, 2, 10)}
+        controllerOptions={{
+          lerp: {
+            cameraPosition: 1,
+            cameraTurn: 1,
+          },
+        }}
+      />
+      <Rideable
+        objectkey="gaebird_3"
+        url={S3 + "/orri.glb"}
+        objectType={"airplane"}
+        enableRiding={true}
+        offset={V3(0, 1, 0)}
+        position={V3(20, 2, 10)}
         controllerOptions={{
           lerp: {
             cameraPosition: 1,
