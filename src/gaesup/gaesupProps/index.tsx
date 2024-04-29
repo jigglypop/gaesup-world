@@ -52,7 +52,7 @@ export function GaeSupProps({
 
   const moveThrottleClicker = _.throttle((e) => {
     moveClicker(e, false, type);
-  }, 100);
+  }, clickerOption.throttle);
 
   return (
     <group

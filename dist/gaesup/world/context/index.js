@@ -128,6 +128,7 @@ export var gaesupWorldDefault = {
     },
     clickerOption: {
         isRun: true,
+        throttle: 100,
     },
 };
 export var GaesupWorldContext = createContext(null);

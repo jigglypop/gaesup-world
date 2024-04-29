@@ -109,6 +109,7 @@ export type clickerType = {
 };
 export type clickerOptionType = {
     isRun: boolean;
+    throttle: number;
 };
 export type wheelStateType = {
     position: THREE.Vector3;
