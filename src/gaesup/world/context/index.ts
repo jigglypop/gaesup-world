@@ -131,6 +131,7 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
   },
   clickerOption: {
     isRun: true,
+    throttle: 100,
   },
 };
 

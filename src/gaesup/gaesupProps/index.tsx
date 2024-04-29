@@ -1,4 +1,5 @@
 import { vec3 } from "@react-three/rapier";
+import * as _ from "lodash";
 import { useContext, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useClicker } from "../hooks/useClicker";
@@ -19,7 +20,7 @@ export function GaeSupProps({
   children: React.ReactNode;
 }) {
   const groupRef = useRef<THREE.Group>(null);
-  const { minimap } = useContext(GaesupWorldContext);
+  const { minimap, clickerOption } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
 
   // clicker
@@ -49,12 +50,16 @@ export function GaeSupProps({
     }
   }, []);
 
+  const moveThrottleClicker = _.throttle((e) => {
+    moveClicker(e, false, type);
+  }, 100);
+
   return (
     <group
       ref={groupRef}
       position={position}
-      onPointerDown={(e) => moveClicker(e, false, type)}
-      onDoubleClick={(e) => moveClicker(e, true, type)}
+      onPointerDown={moveThrottleClicker}
+      onDoubleClick={moveThrottleClicker}
     >
       {children}
     </group>
