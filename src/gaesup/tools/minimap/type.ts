@@ -19,8 +19,9 @@ export type minimapInnerType = {
 export type minimapType = {
   [key in
     | "minimapStyle"
-    | "outerStyle"
-    | "innerStyle"
+    | "minimapOuterStyle"
+    | "minimapInnerStyle"
+    | "minimapObjectStyle"
     | "textStyle"
     | "objectStyle"
     | "avatarStyle"

@@ -189,13 +189,9 @@ export type gaesupWorldContextType = {
   cameraOption: cameraOptionType;
   clickerOption: clickerOptionType;
   clicker: clickerType;
-  moveTo: (position: THREE.Vector3, target: THREE.Vector3) => Promise<void>;
   rideable: { [key: string]: rideableType };
   sizes: sizesType;
   block: blockType;
-  callback: {
-    moveTo: (position: THREE.Vector3, target: THREE.Vector3) => Promise<void>;
-  };
 };
 
 export type gaesupDisptachType = dispatchType<gaesupWorldContextType>;

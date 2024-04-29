@@ -40,6 +40,12 @@ export const gaesupControllerDefault = {
     innerGroupRef: null,
     characterInnerRef: null,
   },
+  controllerOptions: {
+    lerp: {
+      cameraTurn: 1,
+      cameraPosition: 1,
+    },
+  },
 };
 
 export const GaesupControllerContext = createContext<gaesupControllerType>({

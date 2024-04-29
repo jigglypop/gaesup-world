@@ -98,6 +98,12 @@ export default function MainComponent() {
                 condition: () => control?.keyZ,
               });
             }}
+            controllerOptions={{
+              lerp: {
+                cameraTurn: 0.1,
+                cameraPosition: 1,
+              },
+            }}
           />
           <Floor />
           <Rideables />

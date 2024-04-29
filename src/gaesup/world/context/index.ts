@@ -117,7 +117,6 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     position: vec3(),
     focus: false,
   },
-  moveTo: null,
   rideable: {},
   sizes: {},
   block: {
@@ -125,9 +124,6 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     control: false,
     animation: false,
     scroll: true,
-  },
-  callback: {
-    moveTo: null,
   },
   clickerOption: {
     isRun: true,

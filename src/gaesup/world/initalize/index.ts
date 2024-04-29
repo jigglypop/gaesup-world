@@ -35,12 +35,9 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
       gaesupWorldDefault.keyBoardMap,
       props.keyBoardMap || {}
     ),
-    moveTo: null,
+
     block: Object.assign(gaesupWorldDefault.block, props.block || {}),
     sizes: gaesupWorldDefault.sizes,
-    callback: {
-      moveTo: null,
-    },
   });
 
   useEffect(() => {

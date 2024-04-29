@@ -15,7 +15,7 @@ import {
   keyControlType,
 } from "../../world/context/type";
 
-export default function initControllerProps({ refs }: { refs: refsType }) {
+export default function initControllerProps(props: { refs: refsType }) {
   const context = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
   const [_, getKeys] = useKeyboardControls();
@@ -73,20 +73,6 @@ export default function initControllerProps({ refs }: { refs: refsType }) {
     };
   }, []);
 
-  const controllerOptions: {
-    lerp: {
-      cameraPosition: number;
-      cameraTurn: number;
-    };
-  } = useMemo(() => {
-    return {
-      lerp: {
-        cameraPosition: 0.9,
-        cameraTurn: 0.1,
-      },
-    };
-  }, []);
-
   const initRefs = useCallback(
     (refs: refsType) => {
       update<gaesupWorldContextType>(
@@ -98,12 +84,12 @@ export default function initControllerProps({ refs }: { refs: refsType }) {
         dispatch
       );
     },
-    [refs]
+    [props.refs]
   );
 
   useEffect(() => {
-    if (refs) {
-      initRefs(refs);
+    if (props.refs) {
+      initRefs(props.refs);
     }
   }, []);
 
@@ -111,6 +97,5 @@ export default function initControllerProps({ refs }: { refs: refsType }) {
     groundRay,
     cameraRay,
     keyControl,
-    controllerOptions,
   };
 }

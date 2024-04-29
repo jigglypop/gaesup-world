@@ -12,14 +12,16 @@ export function MiniMap(props: minimapType) {
   const { minimap, activeState, mode } = useContext(GaesupWorldContext);
   const [scale, setscale] = useState(props.scale || minimapDefault.scale);
   const {
-    innerStyle,
+    minimapInnerStyle,
     textStyle,
-    objectStyle,
+    minimapObjectStyle,
     avatarStyle,
     scaleStyle,
     directionStyle,
     plusMinusStyle,
     imageStyle,
+    minimapStyle,
+    minimapOuterStyle,
   } = props;
 
   const upscale = useCallback(() => {
@@ -40,8 +42,9 @@ export function MiniMap(props: minimapType) {
         if (e.deltaY <= 0) upscale();
         else downscale();
       }}
+      style={minimapStyle}
     >
-      <div className="minimapOuter" style={objectStyle} />
+      <div className="minimapOuter" style={minimapOuterStyle} />
 
       <div
         className="minimapInner"
@@ -52,10 +55,9 @@ export function MiniMap(props: minimapType) {
               : `translate(-50%, -50%) rotate(${
                   (activeState.euler.y * 180) / Math.PI + 180
                 }deg) `,
-          ...innerStyle,
+          ...minimapInnerStyle,
         }}
       >
-        {" "}
         <div
           className="east direction"
           style={{
@@ -133,7 +135,7 @@ export function MiniMap(props: minimapType) {
                   transform: `translate(-50.1%, -50.1%) translate(${-X}rem, ${-Z}rem) rotate(${(Math.PI * 3) / 2 + props.angle || 0}rad)`,
                   transformOrigin: "50% 50%",
                   zIndex: 1 + key,
-                  ...objectStyle,
+                  ...minimapObjectStyle,
                 }}
               ></div>
               {key === 0 && (

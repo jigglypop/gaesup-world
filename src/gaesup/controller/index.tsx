@@ -62,6 +62,10 @@ export function GaesupControllerInner(props: controllerType) {
       innerGroupRef,
       characterInnerRef,
     },
+    controllerOptions: Object.assign(
+      gaesupControllerDefault.controllerOptions,
+      props.controllerOptions || {}
+    ),
   });
 
   const gaesupControl = useMemo(
@@ -89,6 +93,7 @@ export function GaesupControllerInner(props: controllerType) {
     }),
     children: props.children,
     groupProps: props.groupProps,
+    controllerOptions: gaesupControl.value.controllerOptions,
     ...gaesupControl.value.callbacks,
     ...refs,
   };
