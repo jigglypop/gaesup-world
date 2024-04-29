@@ -17,6 +17,7 @@ export default function initGaesupWorld(props: gaesupWorldPropsType): {
             animationState?: import("../context/type").animationStateType;
             keyBoardMap?: import("../../tools/keyBoardToolTip/type").keyboardMapType;
             cameraOption?: import("../context/type").cameraOptionType;
+            clickerOption?: import("../context/type").clickerOptionType;
             clicker?: import("../context/type").clickerType;
             moveTo?: (position: import("three").Vector3, target: import("three").Vector3) => Promise<void>;
             rideable?: {

@@ -107,6 +107,9 @@ export type clickerType = {
     isOn: boolean;
     isRun: boolean;
 };
+export type clickerOptionType = {
+    isRun: boolean;
+};
 export type wheelStateType = {
     position: THREE.Vector3;
     rotation: THREE.Euler;
@@ -156,6 +159,7 @@ export type gaesupWorldContextType = {
     animationState: animationStateType;
     keyBoardMap: keyboardMapType;
     cameraOption: cameraOptionType;
+    clickerOption: clickerOptionType;
     clicker: clickerType;
     moveTo: (position: THREE.Vector3, target: THREE.Vector3) => Promise<void>;
     rideable: {

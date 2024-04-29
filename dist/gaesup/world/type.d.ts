@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import * as THREE from "three";
 import { keyboardMapType } from "../tools/keyBoardToolTip/type";
 import { dispatchType } from "../utils/type";
-import { blockType, cameraOptionType, clickerType, gaesupWorldContextType, modeType, urlsType } from "./context/type";
+import { blockType, cameraOptionType, clickerOptionType, gaesupWorldContextType, modeType, urlsType } from "./context/type";
 export type gaesupWorldInitType = {
     value: gaesupWorldContextType;
     dispatch: dispatchType<gaesupWorldContextType>;
@@ -17,5 +17,5 @@ export type gaesupWorldPropsType = {
     cameraOption?: cameraOptionType;
     moveTo?: (position: THREE.Vector3, target: THREE.Vector3) => void;
     block?: blockType;
-    clicker?: clickerType;
+    clickerOption?: clickerOptionType;
 };
