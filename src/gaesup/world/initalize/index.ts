@@ -25,6 +25,7 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
     minimap: gaesupWorldDefault.minimap,
     joystick: gaesupWorldDefault.joystick,
     control: gaesupWorldDefault.control,
+    clicker: gaesupWorldDefault.clicker,
     clickerOption: Object.assign(
       gaesupWorldDefault.clickerOption,
       props.clickerOption || {}
