@@ -8,13 +8,13 @@ export function Clicker({
   onMarker: ReactNode;
   runMarker: ReactNode;
 }) {
-  const { clicker, mode } = useContext(GaesupWorldContext);
+  const { clicker, mode, clickerOption } = useContext(GaesupWorldContext);
   return (
     <>
       {mode.controller === "clicker" && (
         <group position={clicker.point}>
           {clicker.isOn && onMarker}
-          {clicker.isOn && clicker.isRun && runMarker}
+          {clicker.isOn && clickerOption.isRun && clicker.isRun && runMarker}
         </group>
       )}
     </>

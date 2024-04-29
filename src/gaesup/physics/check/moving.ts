@@ -2,7 +2,7 @@ import { calcType } from "../type";
 
 export default function moving(prop: calcType) {
   const {
-    worldContext: { states, joystick, mode, control, clicker },
+    worldContext: { states, joystick, mode, control, clicker, clickerOption },
   } = prop;
   const { forward, backward, leftward, rightward, shift, space } = control;
   if (mode.controller === "gameboy" || mode.controller === "keyboard") {
@@ -18,7 +18,8 @@ export default function moving(prop: calcType) {
   } else if (mode.controller === "clicker") {
     states.isMoving = clicker.isOn;
     states.isNotMoving = !clicker.isOn;
-    states.isRunning = (shift || clicker.isRun) && states.isMoving;
+    states.isRunning =
+      (shift || clicker.isRun) && states.isMoving && clickerOption.isRun;
     states.isJumping = space;
   }
 }

@@ -1,0 +1,62 @@
+.gamePad {
+  display: grid;
+  align-items: center;
+  justify-content: center;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+}
+
+.padButton {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  width: 5rem;
+  height: 5rem;
+  border-radius: 50%;
+  font-size: 1rem;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: all 0.3s ease-in;
+  margin: 0.5rem;
+}
+
+.padButton:hover {
+  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.5);
+}
+
+.padButton::after {
+  content: "";
+  position: absolute;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 100000;
+}
+
+/* padButton isClicked variant */
+.padButton.isClicked {
+  background: radial-gradient(
+    circle at center,
+    rgba(245, 177, 97, 1) 0.4%,
+    rgba(236, 54, 110, 1) 100.2%
+  );
+  box-shadow: 0 0 1rem rgba(245, 177, 97, 1);
+  color: black;
+  transition: all 0.3s ease-in;
+}
+
+.padButton.isClicked:hover {
+  box-shadow: 0 0 2rem rgba(245, 177, 97, 1);
+}
+
+.gamePad * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}

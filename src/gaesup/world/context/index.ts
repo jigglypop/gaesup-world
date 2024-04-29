@@ -129,6 +129,9 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
   callback: {
     moveTo: null,
   },
+  clickerOption: {
+    isRun: true,
+  },
 };
 
 export const GaesupWorldContext =
