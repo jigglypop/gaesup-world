@@ -2,7 +2,6 @@ export { GaesupComponent } from "./gaesup/component";
 export { PassiveAirplane } from "./gaesup/component/passive/airplane";
 export { PassiveCharacter } from "./gaesup/component/passive/character";
 export { PassiveVehicle } from "./gaesup/component/passive/vehicle";
-
 export { GaesupController } from "./gaesup/controller";
 export { GaeSupProps } from "./gaesup/gaesupProps";
 export { Clicker } from "./gaesup/tools/clicker";
@@ -13,11 +12,10 @@ export { JumpPortal } from "./gaesup/tools/jumpPortal";
 export { KeyBoardToolTip } from "./gaesup/tools/keyBoardToolTip";
 export { MiniMap } from "./gaesup/tools/miniMap";
 export { Rideable } from "./gaesup/tools/rideable";
-// export { ZoomButton } from "./gaesup/tools/zoomButton";
+export { ZoomButton } from "./gaesup/tools/zoomButton";
 export { InnerHtml } from "./gaesup/utils/innerHtml";
 export { Elr, Qt, V3, V30, V31 } from "./gaesup/utils/vector";
 export { GaesupWorld } from "./gaesup/world";
-
 export { useClicker } from "./gaesup/hooks/useClicker";
 export { useGaesupAnimation } from "./gaesup/hooks/useGaesupAnimation";
 export { useGaesupController } from "./gaesup/hooks/useGaesupController";
