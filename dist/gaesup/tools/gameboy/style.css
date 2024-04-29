@@ -1,0 +1,92 @@
+body {
+  -webkit-touch-callout: none;
+}
+
+.gameboy {
+  display: grid;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.gameboy .gameboy-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  backdrop-filter: blur(2rem);
+  -webkit-backdrop-filter: blur(2rem);
+  all: unset;
+  width: 3rem;
+  height: 3rem;
+  margin: 0.3rem;
+  border-radius: 50%;
+  background: linear-gradient(
+    68.4deg,
+    rgba(99, 251, 215, 1) -0.4%,
+    rgba(5, 222, 250, 1) 100.2%
+  );
+  box-shadow: 0 0 10px #78ffd6;
+  font-size: 1.6rem;
+  color: black;
+  text-shadow: 0 0 10px black;
+  cursor: pointer;
+  transition: all 0.3s ease-in;
+}
+
+.gameboy-button.up {
+  grid-row: 1/2;
+  grid-column: 2/3;
+  background: linear-gradient(
+    68.4deg,
+    rgba(99, 251, 215, 1) -0.4%,
+    rgba(5, 222, 250, 1) 100.2%
+  );
+  box-shadow: 0 0 10px #78ffd6;
+}
+
+.gameboy-button.left {
+  grid-row: 2/3;
+  grid-column: 1/2;
+  background: linear-gradient(
+    68.4deg,
+    rgba(176, 255, 237, 1) -0.4%,
+    rgba(161, 244, 255, 1) 100.2%
+  );
+  box-shadow: 0 0 10px rgba(176, 255, 237, 1);
+}
+
+.gameboy-button.down {
+  grid-row: 3/4;
+  grid-column: 2/3;
+  background: linear-gradient(
+    68.4deg,
+    rgba(99, 251, 215, 1) -0.4%,
+    rgba(5, 222, 250, 1) 100.2%
+  );
+  box-shadow: 0 0 10px #78ffd6;
+}
+
+.gameboy-button.right {
+  grid-row: 2/3;
+  grid-column: 3/4;
+  background: linear-gradient(
+    68.4deg,
+    rgba(176, 255, 237, 1) -0.4%,
+    rgba(161, 244, 255, 1) 100.2%
+  );
+  box-shadow: 0 0 10px rgba(176, 255, 237, 1);
+}
+
+.gameboy * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
