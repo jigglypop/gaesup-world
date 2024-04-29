@@ -1,6 +1,6 @@
 {
   "name": "gaesup-world",
-  "version": "0.8.17",
+  "version": "0.8.18",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -29,7 +29,6 @@
     "gh-pages": "^6.1.1",
     "jotai": "^2.8.0",
     "leva": "0.9.35",
-    "lodash": "^4.17.21",
     "node-fetch": "3.3.2",
     "react": "^18.3.1",
     "react-device-detect": "^2.2.3",
@@ -40,7 +39,6 @@
     "three-stdlib": "^2.29.7"
   },
   "devDependencies": {
-    "@types/lodash": "^4.17.0",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.0",
     "@vanilla-extract/css": "^1.14.2",

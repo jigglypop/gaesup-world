@@ -45,6 +45,6 @@ export function GaeSupProps(_a) {
     }, []);
     var moveThrottleClicker = _.throttle(function (e) {
         moveClicker(e, false, type);
-    }, 100);
+    }, clickerOption.throttle);
     return (_jsx("group", { ref: groupRef, position: position, onPointerDown: moveThrottleClicker, onDoubleClick: moveThrottleClicker, children: children }));
 }
