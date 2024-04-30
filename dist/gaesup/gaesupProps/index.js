@@ -43,7 +43,15 @@ export function GaeSupProps(_a) {
         }
     }, []);
     return (_jsx("group", { ref: groupRef, position: position, onPointerDown: function (e) {
+            // Only the mesh closest to the camera will be processed
+            e.stopPropagation();
+            // You may optionally capture the target
+            e.target.setPointerCapture(e.pointerId);
             moveClicker(e, false, type);
+        }, onPointerUp: function (e) {
+            e.stopPropagation();
+            // Optionally release capture
+            e.target.releasePointerCapture(e.pointerId);
         }, onDoubleClick: function (e) {
             moveDoubleClicker(e, true, type);
         }, children: children }));

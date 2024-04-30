@@ -59,6 +59,9 @@ export function GaeSupProps({
         e.stopPropagation();
         // You may optionally capture the target
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        if (e.srcElement instanceof HTMLDivElement) {
+          return;
+        }
         moveClicker(e, false, type);
       }}
       onPointerUp={(e) => {

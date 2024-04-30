@@ -21,8 +21,6 @@ export function useClicker() {
     const v = V3(e.point.x, e.point.y, e.point.z);
     const norm = calcNorm(u, v, false);
     if (norm < 2) return;
-    const gap = calcNorm(v, clicker.point, true);
-    if (gap < 1) return;
     const newAngle = Math.atan2(v.z - u.z, v.x - u.x);
     dispatch({
       type: "update",
