@@ -5,6 +5,7 @@ import { dispatchType } from "../utils/type";
 import {
   blockType,
   cameraOptionType,
+  clickerOptionType,
   gaesupWorldContextType,
   modeType,
   urlsType,
@@ -23,6 +24,6 @@ export type gaesupWorldPropsType = {
   debug?: boolean;
   keyBoardMap?: keyboardMapType;
   cameraOption?: cameraOptionType;
-  moveTo?: (position: THREE.Vector3, target: THREE.Vector3) => void;
   block?: blockType;
+  clickerOption?: clickerOptionType;
 };

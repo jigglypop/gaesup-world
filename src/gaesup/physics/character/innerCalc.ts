@@ -8,7 +8,7 @@ export default function innerCalc(prop: calcType) {
     controllerContext: {
       character: { linearDamping },
     },
-    worldContext: { activeState, states },
+    worldContext: { activeState, states, block },
     delta,
   } = prop;
 

@@ -1,11 +1,11 @@
 import { CollisionEnterPayload, euler, vec3 } from "@react-three/rapier";
 import { useContext } from "react";
-import * as THREE from "three";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
 } from "../../world/context";
 import { useGaesupGltf } from "../useGaesupGltf";
+import { rideableType } from "./type";
 
 export const rideableDefault = {
   objectkey: null,
@@ -17,23 +17,6 @@ export const rideableDefault = {
   rotation: euler(),
   offset: vec3(),
   visible: true,
-};
-
-export type rideableType = {
-  objectkey: string;
-  objectType?: "vehicle" | "airplane";
-  enableRiding?: boolean;
-  isRiderOn?: boolean;
-  url?: string;
-  wheelUrl?: string;
-  position?: THREE.Vector3;
-  rotation?: THREE.Euler;
-  offset?: THREE.Vector3;
-  landingOffset?: THREE.Vector3;
-  visible?: boolean;
-  vehicleSize?: THREE.Vector3;
-  wheelSize?: THREE.Vector3;
-  airplaneSize?: THREE.Vector3;
 };
 
 export function useRideable() {
@@ -76,7 +59,6 @@ export function useRideable() {
         false
       );
     }
-
     dispatch({
       type: "update",
       payload: {
@@ -88,12 +70,14 @@ export function useRideable() {
   };
 
   const setUrl = async (props: rideableType) => {
+    urls.ridingUrl = props.ridingUrl || urls.characterUrl || null;
     if (props.objectType === "vehicle") {
       urls.vehicleUrl = props.url;
       urls.wheelUrl = props.wheelUrl || null;
     } else if (props.objectType === "airplane") {
       urls.airplaneUrl = props.url;
     }
+
     dispatch({
       type: "update",
       payload: {

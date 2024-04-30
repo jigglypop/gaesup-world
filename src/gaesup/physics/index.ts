@@ -37,6 +37,15 @@ export default function calculation({
     }
   }, [mode.type]);
 
+  useEffect(() => {
+    if (rigidBodyRef && rigidBodyRef.current) {
+      if (block.control) {
+        rigidBodyRef.current.resetForces(false);
+        rigidBodyRef.current.resetTorques(false);
+      }
+    }
+  }, [block.control, rigidBodyRef.current]);
+
   useFrame((state, delta) => {
     if (
       !rigidBodyRef ||
@@ -47,7 +56,9 @@ export default function calculation({
       !innerGroupRef.current
     )
       return null;
-    if (block.control) return null;
+    if (block.control) {
+      return null;
+    }
     const calcProp: calcType = {
       rigidBodyRef,
       outerGroupRef,
@@ -59,7 +70,7 @@ export default function calculation({
       worldContext,
       controllerContext,
       dispatch,
-      matchSizes: getSizesByUrls(controllerContext?.urls),
+      matchSizes: getSizesByUrls(worldContext?.urls),
     };
     if (mode.type === "vehicle") vehicleCalculation(calcProp);
     else if (mode.type === "character") characterCalculation(calcProp);

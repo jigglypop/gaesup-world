@@ -22,6 +22,7 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     vehicleUrl: null,
     airplaneUrl: null,
     wheelUrl: null,
+    ridingUrl: null,
   },
   states: {
     rideableId: null,
@@ -116,7 +117,6 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     position: vec3(),
     focus: false,
   },
-  moveTo: null,
   rideable: {},
   sizes: {},
   block: {
@@ -125,8 +125,9 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     animation: false,
     scroll: true,
   },
-  callback: {
-    moveTo: null,
+  clickerOption: {
+    isRun: true,
+    throttle: 100,
   },
 };
 

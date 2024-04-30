@@ -12,13 +12,16 @@ export function MiniMap(props: minimapType) {
   const { minimap, activeState, mode } = useContext(GaesupWorldContext);
   const [scale, setscale] = useState(props.scale || minimapDefault.scale);
   const {
-    innerStyle,
+    minimapInnerStyle,
     textStyle,
-    objectStyle,
+    minimapObjectStyle,
     avatarStyle,
     scaleStyle,
     directionStyle,
     plusMinusStyle,
+    imageStyle,
+    minimapStyle,
+    minimapOuterStyle,
   } = props;
 
   const upscale = useCallback(() => {
@@ -39,8 +42,9 @@ export function MiniMap(props: minimapType) {
         if (e.deltaY <= 0) upscale();
         else downscale();
       }}
+      style={minimapStyle}
     >
-      <div className="minimapOuter" style={objectStyle} />
+      <div className="minimapOuter" style={minimapOuterStyle} />
 
       <div
         className="minimapInner"
@@ -51,7 +55,7 @@ export function MiniMap(props: minimapType) {
               : `translate(-50%, -50%) rotate(${
                   (activeState.euler.y * 180) / Math.PI + 180
                 }deg) `,
-          ...innerStyle,
+          ...minimapInnerStyle,
         }}
       >
         <div
@@ -110,26 +114,45 @@ export function MiniMap(props: minimapType) {
         >
           N
         </div>
-
         {Object.values(minimap.props).map(({ center, size, text }, key) => {
-          const X = (center.x - activeState.position.x) * scale;
-          const Z = (center.z - activeState.position.z) * scale;
+          const X =
+            (center.x - activeState.position.x) *
+            (props.angle ? Math.sin(props.angle) : 1) *
+            scale;
+          const Z =
+            (center.z - activeState.position.z) *
+            (props.angle ? -Math.cos(props.angle) : 1) *
+            scale;
           return (
             <div key={key}>
               <div
-                key={key}
                 className="minimapObject"
                 style={{
                   width: `${size.x * scale}rem`,
                   height: `${size.z * scale}rem`,
                   top: "50%",
                   left: "50%",
-                  transform: `translate(-50.1%, -50.1%) translate(${-X}rem, ${-Z}rem)`,
+                  transform: `translate(-50.1%, -50.1%) translate(${-X}rem, ${-Z}rem) rotate(${(Math.PI * 3) / 2 + props.angle || 0}rad)`,
                   transformOrigin: "50% 50%",
                   zIndex: 1 + key,
-                  ...objectStyle,
+                  ...minimapObjectStyle,
                 }}
               ></div>
+              {key === 0 && (
+                <div
+                  className="imageObject"
+                  style={{
+                    width: `${size.x * scale}rem`,
+                    height: `${size.z * scale}rem`,
+                    top: "50%",
+                    left: "50%",
+                    transform: `translate(-50.1%, -50.1%) translate(${-X}rem, ${-Z}rem) rotate(${(Math.PI * 3) / 2 + props.angle || 0}rad)`,
+                    transformOrigin: "50% 50%",
+                    zIndex: 10 + key,
+                    ...imageStyle,
+                  }}
+                ></div>
+              )}
               <div
                 className="textObject"
                 style={{
@@ -163,7 +186,6 @@ export function MiniMap(props: minimapType) {
             </div>
           );
         })}
-
         <div className="avatar" style={avatarStyle} />
       </div>
 

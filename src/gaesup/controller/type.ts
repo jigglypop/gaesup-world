@@ -97,7 +97,7 @@ export type gaesupControllerContextPropType = {
   airplane: airplaneType;
   vehicle: vehicleType;
   character: characterType;
-  urls: urlsType;
+  controllerOptions: controllerOptionsType;
 };
 
 // 나머지 controller 타입
@@ -109,5 +109,6 @@ export interface controllerOtherPropType extends RigidBodyProps {
 }
 
 export type controllerType = controllerOtherPropType &
+  urlsType &
   Partial<gaesupControllerContextPropType> &
-  callbackType;
+  callbackType & { controllerOptions?: controllerOptionsType };

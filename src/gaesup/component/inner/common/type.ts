@@ -1,10 +1,8 @@
 import { Collider } from "@dimforge/rapier3d-compat";
-import {
-  CollisionEnterPayload,
-  RigidBodyTypeString,
-} from "@react-three/rapier";
+import { RapierRigidBody, RigidBodyTypeString } from "@react-three/rapier";
 import { MutableRefObject, RefObject } from "react";
 import * as THREE from "three";
+import { callbackType } from "../../../controller/initialize/callback/type";
 import { groundRayType } from "../../../controller/type";
 import { urlsType } from "../../../world/context/type";
 import { innerRefType, passivePropsType } from "../../passive/type";
@@ -23,7 +21,10 @@ export type InnerGroupRefType = {
   nodes: {
     [name: string]: THREE.Object3D<THREE.Object3DEventMap>;
   };
-};
+  isActive?: boolean;
+  ridingUrl?: string;
+  offset?: THREE.Vector3;
+} & ridingType;
 // riding 타입정의
 export type ridingType = {
   isRiderOn?: boolean;
@@ -41,7 +42,6 @@ export type refPropsType = {
   rotation?: THREE.Euler;
   userData?: { intangible: boolean };
   currentAnimation?: string;
-  onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
   type?: RigidBodyTypeString;
 };
 
@@ -54,7 +54,10 @@ export type setGroundRayType = {
 export type rigidBodyRefType = {
   name?: string;
   userData?: { intangible: boolean };
-  onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
   isActive?: boolean;
+  ridingUrl?: string;
+  groundRay?: groundRayType;
+  rigidBodyProps?: RapierRigidBody;
 } & passivePropsType &
-  innerRefType;
+  innerRefType &
+  callbackType;

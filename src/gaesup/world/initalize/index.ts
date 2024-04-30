@@ -26,17 +26,18 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
     joystick: gaesupWorldDefault.joystick,
     control: gaesupWorldDefault.control,
     clicker: gaesupWorldDefault.clicker,
+    clickerOption: Object.assign(
+      gaesupWorldDefault.clickerOption,
+      props.clickerOption || {}
+    ),
     animationState: gaesupWorldDefault.animationState,
     keyBoardMap: Object.assign(
       gaesupWorldDefault.keyBoardMap,
       props.keyBoardMap || {}
     ),
-    moveTo: null,
+
     block: Object.assign(gaesupWorldDefault.block, props.block || {}),
     sizes: gaesupWorldDefault.sizes,
-    callback: {
-      moveTo: null,
-    },
   });
 
   useEffect(() => {
@@ -59,7 +60,10 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
     });
   }, []);
 
-  const gaesupProps = useMemo(() => ({ value: value, dispatch }), [value]);
+  const gaesupProps = useMemo(
+    () => ({ value: value, dispatch }),
+    [value, value.block, dispatch]
+  );
   initDebug({ value: gaesupProps.value, dispatch });
 
   return {

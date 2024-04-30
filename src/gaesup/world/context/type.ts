@@ -2,7 +2,7 @@ import { CSSProperties } from "react";
 import { actionsType, refsType } from "../../controller/type";
 
 import * as THREE from "three";
-import { rideableType } from "../../hooks/useRideable";
+import { rideableType } from "../../hooks/useRideable/type";
 import { joyStickInnerType } from "../../tools/joystick/type";
 import { keyboardMapType } from "../../tools/keyBoardToolTip/type";
 import { minimapInnerType } from "../../tools/miniMap/type";
@@ -67,6 +67,7 @@ export type urlsType = {
   vehicleUrl?: string;
   airplaneUrl?: string;
   wheelUrl?: string;
+  ridingUrl?: string;
 };
 
 export type animationAtomType = {
@@ -122,6 +123,11 @@ export type clickerType = {
   angle: number;
   isOn: boolean;
   isRun: boolean;
+};
+
+export type clickerOptionType = {
+  isRun: boolean;
+  throttle: number;
 };
 
 export type wheelStateType = {
@@ -181,14 +187,11 @@ export type gaesupWorldContextType = {
   animationState: animationStateType;
   keyBoardMap: keyboardMapType;
   cameraOption: cameraOptionType;
+  clickerOption: clickerOptionType;
   clicker: clickerType;
-  moveTo: (position: THREE.Vector3, target: THREE.Vector3) => Promise<void>;
   rideable: { [key: string]: rideableType };
   sizes: sizesType;
   block: blockType;
-  callback: {
-    moveTo: (position: THREE.Vector3, target: THREE.Vector3) => Promise<void>;
-  };
 };
 
 export type gaesupDisptachType = dispatchType<gaesupWorldContextType>;

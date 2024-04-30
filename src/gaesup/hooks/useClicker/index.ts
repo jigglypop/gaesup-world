@@ -1,13 +1,14 @@
 import { ThreeEvent } from "@react-three/fiber";
-import { useContext, useEffect } from "react";
-import { V3 } from "../../utils";
+import { useContext } from "react";
+import { V3, calcNorm } from "../../utils";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
 } from "../../world/context";
 
 export function useClicker() {
-  const { activeState, clicker, mode } = useContext(GaesupWorldContext);
+  const { activeState, mode, clicker, clickerOption } =
+    useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
 
   const moveClicker = (
@@ -16,23 +17,16 @@ export function useClicker() {
     type: "normal" | "ground"
   ) => {
     if (mode.controller !== "clicker" || type !== "ground") return;
-    const originPoint = activeState.position;
-    const newPosition = e.point;
-    const newAngle = Math.atan2(
-      newPosition.z - originPoint.z,
-      newPosition.x - originPoint.x
-    );
-
-    const norm = Math.sqrt(
-      Math.pow(newPosition.z - originPoint.z, 2) +
-        Math.pow(newPosition.x - originPoint.x, 2)
-    );
+    const u = activeState.position;
+    const v = V3(e.point.x, e.point.y, e.point.z);
+    const norm = calcNorm(u, v, false);
     if (norm < 2) return;
+    const newAngle = Math.atan2(v.z - u.z, v.x - u.x);
     dispatch({
       type: "update",
       payload: {
         clicker: {
-          point: V3(e.point.x, e.point.y, e.point.z),
+          point: v,
           angle: newAngle,
           isOn: true,
           isRun: isRun,
@@ -40,27 +34,27 @@ export function useClicker() {
       },
     });
   };
-  // 거리 계산
-  useEffect(() => {
-    if (mode.controller !== "clicker") return;
-    const originPoint = activeState.position;
-    const newPosition = clicker.point;
-    const norm = Math.sqrt(
-      Math.pow(newPosition.z - originPoint.z, 2) +
-        Math.pow(newPosition.x - originPoint.x, 2)
-    );
-    if (norm < 1) {
-      clicker.isOn = false;
-      dispatch({
-        type: "update",
-        payload: {
-          clicker: clicker,
+
+  const moveDoubleClicker = (
+    e: ThreeEvent<MouseEvent>,
+    isRun: boolean,
+    type: "normal" | "ground"
+  ) => {
+    if (!clicker.isOn || !clickerOption.isRun) return;
+
+    dispatch({
+      type: "update",
+      payload: {
+        clicker: {
+          ...clicker,
+          isRun,
         },
-      });
-    }
-  }, [activeState.position, clicker.point]);
+      },
+    });
+  };
 
   return {
     moveClicker,
+    moveDoubleClicker,
   };
 }

@@ -5,8 +5,6 @@ import {
   RapierRigidBody,
   RigidBody,
   euler,
-  useRapier,
-  vec3,
 } from "@react-three/rapier";
 import { MutableRefObject, forwardRef, useContext, useMemo } from "react";
 import * as THREE from "three";
@@ -14,105 +12,65 @@ import { SkeletonUtils } from "three-stdlib";
 import playActions, { subscribeActions } from "../../../animation/actions";
 import Camera from "../../../camera";
 import { GaesupControllerContext } from "../../../controller/context";
-import { groundRayType } from "../../../controller/type";
+import initCallback from "../../../controller/initialize/callback";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 import calculation from "../../../physics";
 import { cameraPropType } from "../../../physics/type";
 import { V3 } from "../../../utils";
 import { GaesupWorldContext } from "../../../world/context";
-import { calcCharacterColliderProps } from "../../inner/common/calc";
 import { InnerGroupRef } from "./InnerGroupRef";
+import { setGroundRay } from "./setGroundRay";
 import { rigidBodyRefType } from "./type";
 
 export const RigidBodyRef = forwardRef(
-  (
-    {
-      children,
-      controllerOptions,
-      name,
-      position,
-      rotation,
-      userData,
-      onCollisionEnter,
-      rigidbodyType,
-      outerGroupRef,
-      innerGroupRef,
-      colliderRef,
-      url,
-      isActive,
-      currentAnimation,
-      componentType,
-    }: rigidBodyRefType,
-    ref: MutableRefObject<RapierRigidBody>
-  ) => {
-    const { size } = useGltfAndSize({ url });
-    const collider = calcCharacterColliderProps(size);
+  (props: rigidBodyRefType, ref: MutableRefObject<RapierRigidBody>) => {
+    const { size } = useGltfAndSize({ url: props.url });
 
-    const groundRay: groundRayType = useMemo(() => {
-      return {
-        origin: vec3(),
-        dir: vec3({ x: 0, y: -1, z: 0 }),
-        offset: vec3({ x: 0, y: -1, z: 0 }),
-        hit: null,
-        parent: null,
-        rayCast: null,
+    props.groundRay &&
+      setGroundRay({
+        groundRay: props.groundRay,
         length: 0.5,
-      };
-    }, []);
-    const { rapier, world } = useRapier();
-    useFrame(() => {
-      groundRay.offset = vec3({
-        x: 0,
-        y: collider?.halfHeight ? -collider.halfHeight : -1,
-        z: 0,
+        colliderRef: props.colliderRef,
       });
-
-      groundRay.length = 5;
-      groundRay.rayCast = new rapier.Ray(groundRay.origin, groundRay.dir);
-      groundRay.hit = world.castRay(
-        groundRay.rayCast,
-        groundRay.length,
-        true,
-        undefined,
-        undefined
-      );
-      groundRay.parent = groundRay.hit?.collider.parent();
-    });
-
-    const { scene, animations } = useGLTF(url);
+    const { scene, animations } = useGLTF(props.url);
     const { actions, ref: animationRef } = useAnimations(animations);
     const worldContext = useContext(GaesupWorldContext);
     const controllerContext = useContext(GaesupControllerContext);
-    if (isActive) {
+    if (props.isActive) {
       subscribeActions({
-        type: componentType,
-        groundRay: groundRay,
+        type: props.componentType,
+        groundRay: props.groundRay,
         animations: animations,
       });
       const cameraProps: cameraPropType = {
         state: null,
         worldContext,
         controllerContext,
-        controllerOptions,
+        controllerOptions: props.controllerOptions,
       };
       useFrame((state) => {
         cameraProps.state = state;
       });
       Camera(cameraProps);
       calculation({
-        outerGroupRef,
-        innerGroupRef,
+        outerGroupRef: props.outerGroupRef,
+        innerGroupRef: props.innerGroupRef,
         rigidBodyRef: ref,
-        colliderRef,
-        groundRay,
+        colliderRef: props.colliderRef,
+        groundRay: props.groundRay,
       });
     }
     playActions({
-      type: componentType,
+      type: props.componentType,
       actions,
       animationRef,
-      currentAnimation: isActive ? undefined : currentAnimation,
-      isActive,
+      currentAnimation: props.isActive ? undefined : props.currentAnimation,
+      isActive: props.isActive,
+    });
+    initCallback({
+      props,
+      actions,
+      componentType: props.componentType,
     });
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
     const { nodes } = useGraph(clone);
@@ -120,23 +78,23 @@ export const RigidBodyRef = forwardRef(
       (node) => node.type === "Object3D"
     );
     useFrame(() => {
-      if (isActive || !position || !ref || !ref.current) return;
+      if (props.isActive || !props.position || !ref || !ref.current) return;
       ref.current.setTranslation(
         V3(
           THREE.MathUtils.lerp(
             ref.current.translation().x,
-            position.x,
-            controllerOptions.lerp.cameraPosition
+            props.position.x,
+            props.controllerOptions.lerp.cameraPosition
           ),
           THREE.MathUtils.lerp(
             ref.current.translation().y,
-            position.y,
-            controllerOptions.lerp.cameraPosition
+            props.position.y,
+            props.controllerOptions.lerp.cameraPosition
           ),
           THREE.MathUtils.lerp(
             ref.current.translation().z,
-            position.z,
-            controllerOptions.lerp.cameraPosition
+            props.position.z,
+            props.controllerOptions.lerp.cameraPosition
           )
         ),
         false
@@ -146,27 +104,35 @@ export const RigidBodyRef = forwardRef(
       <RigidBody
         colliders={false}
         ref={ref}
-        name={name}
+        name={props.name}
         rotation={euler()
-          .set(0, rotation?.clone().y || 0, 0)
+          .set(0, props.rotation?.clone().y || 0, 0)
           .clone()}
-        userData={userData}
-        onCollisionEnter={onCollisionEnter}
-        type={rigidbodyType || (isActive ? "dynamic" : "fixed")}
+        userData={props.userData}
+        type={props.rigidbodyType || (props.isActive ? "dynamic" : "fixed")}
+        sensor={props.sensor}
+        onIntersectionEnter={props.onIntersectionEnter}
+        onCollisionEnter={props.onCollisionEnter}
+        {...props.rigidBodyProps}
       >
         <CapsuleCollider
-          ref={colliderRef}
+          ref={props.colliderRef}
           args={[(size.y / 2 - size.x) * 1.2, size.x * 1.2]}
           position={[0, (size.y / 2 + size.x / 2) * 1.2, 0]}
         />
-        {children}
+        {props.children}
         <InnerGroupRef
           objectNode={objectNode}
           animationRef={animationRef}
           nodes={nodes}
-          ref={innerGroupRef}
+          ref={props.innerGroupRef}
+          isActive={props.isActive}
+          isRiderOn={props.isRiderOn}
+          enableRiding={props.enableRiding}
+          ridingUrl={props.ridingUrl}
+          offset={props.offset}
         >
-          {children}
+          {props.children}
         </InnerGroupRef>
       </RigidBody>
     );

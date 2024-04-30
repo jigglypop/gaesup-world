@@ -12,18 +12,17 @@ import "./style.css";
 import { rideablePropType } from "./type";
 
 export function Rideable(props: rideablePropType) {
-  const { states, rideable, urls } = useContext(GaesupWorldContext);
-  const { initRideable, getRideable, ride, landing } = useRideable();
+  const { states, rideable } = useContext(GaesupWorldContext);
+  const { initRideable, ride, landing } = useRideable();
   // const current = getRideable(props.objectkey);
-  const [_rideable, set_Rideable] = useState<{
+  const [_rideable] = useState<{
     position: THREE.Vector3;
     rotation: THREE.Euler;
   }>({
     position: props.position || V3(0, 0, 0),
     rotation: props.rotation || euler(),
   });
-  // console.log(current);
-  // if (!current) return null;
+
   useEffect(() => {
     initRideable(props);
   }, []);
@@ -38,10 +37,9 @@ export function Rideable(props: rideablePropType) {
     }
   }, [states?.isRiding]);
 
-  const onCollisionEnter = async (e: CollisionEnterPayload) => {
+  const onIntersectionEnter = async (e: CollisionEnterPayload) => {
     await ride(e, props);
   };
-
   return (
     <>
       {rideable?.[props.objectkey]?.visible && (
@@ -54,21 +52,27 @@ export function Rideable(props: rideablePropType) {
               currentAnimation={"idle"}
               url={props.url}
               wheelUrl={props.wheelUrl}
+              ridingUrl={props.ridingUrl}
               offset={props.offset}
               enableRiding={props.enableRiding}
-              onCollisionEnter={onCollisionEnter}
+              rigidBodyProps={props.rigidBodyProps}
+              sensor={true}
+              onIntersectionEnter={onIntersectionEnter}
             />
           )}
           {props.objectType === "airplane" && (
             <PassiveAirplane
               controllerOptions={props.controllerOptions}
-              position={_rideable.position}
-              rotation={_rideable.rotation}
+              position={_rideable.position.clone()}
+              rotation={_rideable.rotation.clone()}
               currentAnimation={"idle"}
               url={props.url}
+              ridingUrl={props.ridingUrl}
               offset={props.offset}
               enableRiding={props.enableRiding}
-              onCollisionEnter={onCollisionEnter}
+              rigidBodyProps={props.rigidBodyProps}
+              sensor={true}
+              onIntersectionEnter={onIntersectionEnter}
             />
           )}
         </group>

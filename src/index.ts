@@ -13,7 +13,7 @@ export { JumpPortal } from "./gaesup/tools/jumpPortal";
 export { KeyBoardToolTip } from "./gaesup/tools/keyBoardToolTip";
 export { MiniMap } from "./gaesup/tools/miniMap";
 export { Rideable } from "./gaesup/tools/rideable";
-export { ZoomButton } from "./gaesup/tools/zoomButton";
+// export { ZoomButton } from "./gaesup/tools/zoomButton";
 export { InnerHtml } from "./gaesup/utils/innerHtml";
 export { Elr, Qt, V3, V30, V31 } from "./gaesup/utils/vector";
 export { GaesupWorld } from "./gaesup/world";

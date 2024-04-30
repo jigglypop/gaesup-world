@@ -7,6 +7,6 @@ export default function riding(prop: calcType) {
 
   const { isRiderOn } = states;
   if (isRiderOn && states.isPush["keyR"]) {
-    states.isLanding = true;
+    states.isRiding = true;
   }
 }

@@ -19,19 +19,26 @@ export type minimapInnerType = {
 export type minimapType = {
   [key in
     | "minimapStyle"
-    | "outerStyle"
-    | "innerStyle"
+    | "minimapOuterStyle"
+    | "minimapInnerStyle"
+    | "minimapObjectStyle"
     | "textStyle"
     | "objectStyle"
     | "avatarStyle"
     | "directionStyle"
     | "scaleStyle"
+    | "imageStyle"
     | "plusMinusStyle"]?: CSSProperties;
 } & {
   minScale?: number;
   maxScale?: number;
   blockScale?: boolean;
   scale?: number;
+  angle?: number;
   blockRotate?: boolean;
   blockScaleControl?: boolean;
+  isImage?: boolean;
+  imageUrl?: string;
+  imageWidth?: number;
+  imageHeight?: number;
 };

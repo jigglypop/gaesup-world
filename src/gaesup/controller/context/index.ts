@@ -40,11 +40,11 @@ export const gaesupControllerDefault = {
     innerGroupRef: null,
     characterInnerRef: null,
   },
-  urls: {
-    airplaneUrl: null,
-    vehicleUrl: null,
-    characterUrl: null,
-    wheelUrl: null,
+  controllerOptions: {
+    lerp: {
+      cameraTurn: 1,
+      cameraPosition: 1,
+    },
   },
 };
 

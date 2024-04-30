@@ -5,7 +5,7 @@ import { RapierRigidBody } from "@react-three/rapier";
 import { useContext, useMemo, useReducer, useRef } from "react";
 import * as THREE from "three";
 
-import { KeyboardControls } from "@react-three/drei";
+import { KeyboardControls, useContextBridge } from "@react-three/drei";
 import { GaesupComponent } from "../component";
 import { GaesupWorldContext } from "../world/context";
 import {
@@ -55,7 +55,6 @@ export function GaesupControllerInner(props: controllerType) {
       onDestory: props.onDestory,
       onAnimate: props.onAnimate,
     }),
-    urls: Object.assign(gaesupControllerDefault.urls, props.urls || {}),
     refs: {
       colliderRef,
       rigidBodyRef,
@@ -63,6 +62,10 @@ export function GaesupControllerInner(props: controllerType) {
       innerGroupRef,
       characterInnerRef,
     },
+    controllerOptions: Object.assign(
+      gaesupControllerDefault.controllerOptions,
+      props.controllerOptions || {}
+    ),
   });
 
   const gaesupControl = useMemo(
@@ -90,6 +93,7 @@ export function GaesupControllerInner(props: controllerType) {
     }),
     children: props.children,
     groupProps: props.groupProps,
+    controllerOptions: gaesupControl.value.controllerOptions,
     ...gaesupControl.value.callbacks,
     ...refs,
   };
@@ -99,11 +103,20 @@ export function GaesupControllerInner(props: controllerType) {
     controllerDispatch: gaesupControl.dispatch,
   });
 
+  const ContextBridge = useContextBridge(
+    GaesupWorldContext,
+    GaesupControllerContext
+  );
+
   return (
-    <GaesupControllerContext.Provider value={gaesupControl.value}>
-      <GaesupControllerDispatchContext.Provider value={gaesupControl.dispatch}>
-        <GaesupComponent props={prop} refs={refs} urls={props.urls} />
-      </GaesupControllerDispatchContext.Provider>
-    </GaesupControllerContext.Provider>
+    <ContextBridge>
+      <GaesupControllerContext.Provider value={gaesupControl.value}>
+        <GaesupControllerDispatchContext.Provider
+          value={gaesupControl.dispatch}
+        >
+          <GaesupComponent props={prop} refs={refs} />
+        </GaesupControllerDispatchContext.Provider>
+      </GaesupControllerContext.Provider>
+    </ContextBridge>
   );
 }

@@ -1,3 +1,4 @@
+import { ThreeEvent } from "@react-three/fiber";
 import { vec3 } from "@react-three/rapier";
 import { useContext, useEffect, useRef } from "react";
 import * as THREE from "three";
@@ -19,11 +20,11 @@ export function GaeSupProps({
   children: React.ReactNode;
 }) {
   const groupRef = useRef<THREE.Group>(null);
-  const { minimap } = useContext(GaesupWorldContext);
+  const { minimap, clickerOption } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
 
   // clicker
-  const { moveClicker } = useClicker();
+  const { moveClicker, moveDoubleClicker } = useClicker();
 
   useEffect(() => {
     if (groupRef.current) {
@@ -53,8 +54,12 @@ export function GaeSupProps({
     <group
       ref={groupRef}
       position={position}
-      onPointerDown={(e) => moveClicker(e, false, type)}
-      onDoubleClick={(e) => moveClicker(e, true, type)}
+      onPointerDown={(e: ThreeEvent<PointerEvent>) => {
+        moveClicker(e, false, type);
+      }}
+      onDoubleClick={(e: ThreeEvent<PointerEvent>) => {
+        moveDoubleClicker(e, true, type);
+      }}
     >
       {children}
     </group>

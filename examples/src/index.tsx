@@ -52,10 +52,15 @@ export default function MainComponent() {
       mode={{
         type: "character",
         controller: "clicker",
-        control: "orbit",
+        control: "normal",
       }}
       debug={false}
       keyBoardMap={keyBoardMap}
+      cameraOption={{
+        XDistance: 28,
+        YDistance: 25,
+        ZDistance: 28,
+      }}
     >
       <Canvas
         shadows
@@ -92,16 +97,17 @@ export default function MainComponent() {
         />
         <Physics debug>
           <GaesupController
-            urls={{
-              characterUrl: CHARACTER_URL,
-              vehicleUrl: VEHICLE_URL,
-              airplaneUrl: AIRPLANE_URL,
-            }}
             onAnimate={({ control, subscribe }) => {
               subscribe({
                 tag: "greet",
                 condition: () => control?.keyZ,
               });
+            }}
+            controllerOptions={{
+              lerp: {
+                cameraTurn: 0.1,
+                cameraPosition: 1,
+              },
             }}
           />
           <Floor />

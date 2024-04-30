@@ -6,7 +6,7 @@ import {
 } from "@react-three/rapier";
 import { MutableRefObject } from "react";
 import * as THREE from "three";
-import { controllerOptionsType } from "../../controller/type";
+import { controllerOptionsType, groundRayType } from "../../controller/type";
 import { ridingType } from "../inner/common/type";
 
 // 컴포넌트 종류
@@ -21,7 +21,9 @@ export type innerRefType = {
 // passive 오브젝트 타입정의
 export type passivePropsType = {
   children?: React.ReactNode;
+  groundRay?: groundRayType;
   url: string;
+  ridingUrl?: string;
   wheelUrl?: string;
   position?: THREE.Vector3;
   rotation?: THREE.Euler;
@@ -29,9 +31,14 @@ export type passivePropsType = {
   controllerOptions?: controllerOptionsType;
   currentAnimation?: string;
   rigidbodyType?: RigidBodyTypeString;
+  sensor?: boolean;
+  onIntersectionEnter?: (e: CollisionEnterPayload) => Promise<void>;
   onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
   componentType: componentTypeString;
   userData?: {
     intangible: boolean;
   };
+  rigidBodyProps?: RapierRigidBody;
+  outerGroupProps?: THREE.Group;
+  innerGroupProps?: THREE.Group;
 } & ridingType;
