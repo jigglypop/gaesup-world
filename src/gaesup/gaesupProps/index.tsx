@@ -68,7 +68,7 @@ export function GaeSupProps({
       ref={groupRef}
       position={position}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
-        handleClick(e, moveClicker, clickerOption.throttle || 100);
+        moveClicker(e, false, type);
       }}
       onDoubleClick={(e: any) => {
         e.stopPropagation();

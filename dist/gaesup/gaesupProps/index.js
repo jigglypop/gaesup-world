@@ -11,7 +11,6 @@ var __assign = (this && this.__assign) || function () {
 };
 import { jsx as _jsx } from "react/jsx-runtime";
 import { vec3 } from "@react-three/rapier";
-import { throttle } from "lodash";
 import { useContext, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useClicker } from "../hooks/useClicker";
@@ -43,9 +42,21 @@ export function GaeSupProps(_a) {
             });
         }
     }, []);
-    var moveClickerThrottle = throttle(moveClicker, clickerOption.throttle || 0);
+    var lastClickTime = 0;
+    function handleClick(e, cb, gap) {
+        var currentTime = new Date().getTime();
+        var timeDiff = currentTime - lastClickTime;
+        if (timeDiff < gap) {
+            e.preventDefault();
+            return;
+        }
+        else {
+            cb(e);
+            lastClickTime = currentTime;
+        }
+    }
     return (_jsx("group", { ref: groupRef, position: position, onPointerDown: function (e) {
-            moveClickerThrottle(e, false, type);
+            handleClick(e, moveClicker, clickerOption.throttle || 100);
         }, onDoubleClick: function (e) {
             e.stopPropagation();
         }, children: children }));

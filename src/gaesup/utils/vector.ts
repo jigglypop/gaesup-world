@@ -4,6 +4,18 @@ export function isVectorNonZero(v: THREE.Vector3): boolean {
   return v.toArray().every((value) => value !== 0);
 }
 
+export function calcNorm(
+  u: THREE.Vector3,
+  v: THREE.Vector3,
+  calcZ: boolean
+): number {
+  return Math.sqrt(
+    Math.pow(u.x - v.x, 2) +
+      (calcZ && Math.pow(u.y - v.y, 2)) +
+      Math.pow(u.z - v.z, 2)
+  );
+}
+
 export function isValidOrZero(
   condision: boolean,
   vector: THREE.Vector3
