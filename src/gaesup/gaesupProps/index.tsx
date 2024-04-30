@@ -54,7 +54,6 @@ export function GaeSupProps({
       ref={groupRef}
       position={position}
       onPointerDown={(e) => moveClicker(e, false, type)}
-      onDoubleClick={(e) => moveClicker(e, true, type)}
     >
       {children}
     </group>
