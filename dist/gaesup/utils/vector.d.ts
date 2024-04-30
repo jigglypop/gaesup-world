@@ -1,5 +1,6 @@
 import * as THREE from "three";
 export declare function isVectorNonZero(v: THREE.Vector3): boolean;
+export declare function calcNorm(u: THREE.Vector3, v: THREE.Vector3, calcZ: boolean): number;
 export declare function isValidOrZero(condision: boolean, vector: THREE.Vector3): THREE.Vector3;
 export declare function isValidOrOne(condision: boolean, vector: THREE.Vector3): THREE.Vector3;
 export declare function V3(x?: number, y?: number, z?: number): THREE.Vector3;

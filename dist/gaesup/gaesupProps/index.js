@@ -56,7 +56,7 @@ export function GaeSupProps(_a) {
         }
     }
     return (_jsx("group", { ref: groupRef, position: position, onPointerDown: function (e) {
-            handleClick(e, moveClicker, clickerOption.throttle || 100);
+            moveClicker(e, false, type);
         }, onDoubleClick: function (e) {
             e.stopPropagation();
         }, children: children }));

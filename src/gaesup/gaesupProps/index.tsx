@@ -50,19 +50,6 @@ export function GaeSupProps({
     }
   }, []);
 
-  let lastClickTime = 0;
-  function handleClick(e, cb, gap) {
-    const currentTime = new Date().getTime();
-    const timeDiff = currentTime - lastClickTime;
-    if (timeDiff < gap) {
-      e.preventDefault();
-      return;
-    } else {
-      cb(e);
-      lastClickTime = currentTime;
-    }
-  }
-
   return (
     <group
       ref={groupRef}

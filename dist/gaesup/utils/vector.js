@@ -2,6 +2,11 @@ import * as THREE from "three";
 export function isVectorNonZero(v) {
     return v.toArray().every(function (value) { return value !== 0; });
 }
+export function calcNorm(u, v, calcZ) {
+    return Math.sqrt(Math.pow(u.x - v.x, 2) +
+        (calcZ && Math.pow(u.y - v.y, 2)) +
+        Math.pow(u.z - v.z, 2));
+}
 export function isValidOrZero(condision, vector) {
     return condision ? vector : new THREE.Vector3(0, 0, 0);
 }
