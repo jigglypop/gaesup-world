@@ -42,19 +42,6 @@ export function GaeSupProps(_a) {
             });
         }
     }, []);
-    var lastClickTime = 0;
-    function handleClick(e, cb, gap) {
-        var currentTime = new Date().getTime();
-        var timeDiff = currentTime - lastClickTime;
-        if (timeDiff < gap) {
-            e.preventDefault();
-            return;
-        }
-        else {
-            cb(e);
-            lastClickTime = currentTime;
-        }
-    }
     return (_jsx("group", { ref: groupRef, position: position, onPointerDown: function (e) {
             moveClicker(e, false, type);
         }, onDoubleClick: function (e) {

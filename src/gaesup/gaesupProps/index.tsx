@@ -24,7 +24,7 @@ export function GaeSupProps({
   const dispatch = useContext(GaesupWorldDispatchContext);
 
   // clicker
-  const { moveClicker } = useClicker();
+  const { moveClicker, moveDoubleClicker } = useClicker();
 
   useEffect(() => {
     if (groupRef.current) {
@@ -57,8 +57,8 @@ export function GaeSupProps({
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
         moveClicker(e, false, type);
       }}
-      onDoubleClick={(e: any) => {
-        e.stopPropagation();
+      onDoubleClick={(e: ThreeEvent<PointerEvent>) => {
+        moveDoubleClicker(e, true, type);
       }}
     >
       {children}
