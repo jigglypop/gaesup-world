@@ -52,10 +52,15 @@ export default function MainComponent() {
       mode={{
         type: "character",
         controller: "clicker",
-        control: "orbit",
+        control: "normal",
       }}
       debug={false}
       keyBoardMap={keyBoardMap}
+      cameraOption={{
+        XDistance: 28,
+        YDistance: 25,
+        ZDistance: 28,
+      }}
     >
       <Canvas
         shadows
