@@ -54,8 +54,17 @@ export function GaeSupProps({
     <group
       ref={groupRef}
       position={position}
-      onPointerDown={(e: ThreeEvent<PointerEvent>) => {
+      onPointerDown={(e) => {
+        // Only the mesh closest to the camera will be processed
+        e.stopPropagation();
+        // You may optionally capture the target
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
         moveClicker(e, false, type);
+      }}
+      onPointerUp={(e) => {
+        e.stopPropagation();
+        // Optionally release capture
+        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
       }}
       onDoubleClick={(e: ThreeEvent<PointerEvent>) => {
         moveDoubleClicker(e, true, type);
