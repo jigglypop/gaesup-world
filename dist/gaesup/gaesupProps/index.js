@@ -11,6 +11,7 @@ var __assign = (this && this.__assign) || function () {
 };
 import { jsx as _jsx } from "react/jsx-runtime";
 import { vec3 } from "@react-three/rapier";
+import { throttle } from "lodash";
 import { useContext, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useClicker } from "../hooks/useClicker";
@@ -18,7 +19,7 @@ import { GaesupWorldContext, GaesupWorldDispatchContext, } from "../world/contex
 export function GaeSupProps(_a) {
     var _b = _a.type, type = _b === void 0 ? "normal" : _b, text = _a.text, position = _a.position, children = _a.children;
     var groupRef = useRef(null);
-    var minimap = useContext(GaesupWorldContext).minimap;
+    var _c = useContext(GaesupWorldContext), minimap = _c.minimap, clickerOption = _c.clickerOption;
     var dispatch = useContext(GaesupWorldDispatchContext);
     // clicker
     var moveClicker = useClicker().moveClicker;
@@ -42,5 +43,10 @@ export function GaeSupProps(_a) {
             });
         }
     }, []);
-    return (_jsx("group", { ref: groupRef, position: position, onPointerDown: function (e) { return moveClicker(e, false, type); }, children: children }));
+    var moveClickerThrottle = throttle(moveClicker, clickerOption.throttle || 0);
+    return (_jsx("group", { ref: groupRef, position: position, onPointerDown: function (e) {
+            moveClickerThrottle(e, false, type);
+        }, onDoubleClick: function (e) {
+            e.stopPropagation();
+        }, children: children }));
 }

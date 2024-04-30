@@ -16,6 +16,7 @@ export function useClicker() {
     type: "normal" | "ground"
   ) => {
     if (mode.controller !== "clicker" || type !== "ground") return;
+
     const originPoint = activeState.position;
     const newPosition = e.point;
     const newAngle = Math.atan2(

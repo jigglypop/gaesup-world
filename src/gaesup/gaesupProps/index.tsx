@@ -1,6 +1,5 @@
 import { ThreeEvent } from "@react-three/fiber";
 import { vec3 } from "@react-three/rapier";
-import { throttle } from "lodash";
 import { useContext, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useClicker } from "../hooks/useClicker";
@@ -51,17 +50,25 @@ export function GaeSupProps({
     }
   }, []);
 
-  const moveClickerThrottle = throttle(
-    moveClicker,
-    clickerOption.throttle || 0
-  );
+  let lastClickTime = 0;
+  function handleClick(e, cb, gap) {
+    const currentTime = new Date().getTime();
+    const timeDiff = currentTime - lastClickTime;
+    if (timeDiff < gap) {
+      e.preventDefault();
+      return;
+    } else {
+      cb(e);
+      lastClickTime = currentTime;
+    }
+  }
 
   return (
     <group
       ref={groupRef}
       position={position}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
-        moveClickerThrottle(e, false, type);
+        handleClick(e, moveClicker, clickerOption.throttle || 100);
       }}
       onDoubleClick={(e: any) => {
         e.stopPropagation();
