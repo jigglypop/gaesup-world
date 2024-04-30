@@ -42,5 +42,5 @@ export function GaeSupProps(_a) {
             });
         }
     }, []);
-    return (_jsx("group", { ref: groupRef, position: position, onPointerDown: function (e) { return moveClicker(e, false, type); }, onDoubleClick: function (e) { return moveClicker(e, true, type); }, children: children }));
+    return (_jsx("group", { ref: groupRef, position: position, onPointerDown: function (e) { return moveClicker(e, false, type); }, children: children }));
 }
