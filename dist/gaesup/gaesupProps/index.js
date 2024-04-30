@@ -21,7 +21,7 @@ export function GaeSupProps(_a) {
     var _c = useContext(GaesupWorldContext), minimap = _c.minimap, clickerOption = _c.clickerOption;
     var dispatch = useContext(GaesupWorldDispatchContext);
     // clicker
-    var moveClicker = useClicker().moveClicker;
+    var _d = useClicker(), moveClicker = _d.moveClicker, moveDoubleClicker = _d.moveDoubleClicker;
     useEffect(function () {
         if (groupRef.current) {
             var box = new THREE.Box3().setFromObject(groupRef.current);
@@ -45,6 +45,6 @@ export function GaeSupProps(_a) {
     return (_jsx("group", { ref: groupRef, position: position, onPointerDown: function (e) {
             moveClicker(e, false, type);
         }, onDoubleClick: function (e) {
-            e.stopPropagation();
+            moveDoubleClicker(e, true, type);
         }, children: children }));
 }

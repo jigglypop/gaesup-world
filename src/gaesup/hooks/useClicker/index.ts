@@ -22,22 +22,17 @@ export function useClicker() {
     const norm = calcNorm(u, v, false);
     if (norm < 2) return;
     const newAngle = Math.atan2(v.z - u.z, v.x - u.x);
-    clicker.point = v;
-    clicker.angle = newAngle;
-    clicker.isOn = true;
-    clicker.isRun = isRun;
-
-    // dispatch({
-    //   type: "update",
-    //   payload: {
-    //     clicker: {
-    //       point: v,
-    //       angle: newAngle,
-    //       isOn: true,
-    //       isRun: isRun,
-    //     },
-    //   },
-    // });
+    dispatch({
+      type: "update",
+      payload: {
+        clicker: {
+          point: v,
+          angle: newAngle,
+          isOn: true,
+          isRun: isRun,
+        },
+      },
+    });
   };
 
   const moveDoubleClicker = (
@@ -46,19 +41,16 @@ export function useClicker() {
     type: "normal" | "ground"
   ) => {
     if (!clicker.isOn || !clickerOption.isRun) return;
-    clicker.isRun = isRun;
 
-    // dispatch({
-    //   type: "update",
-    //   payload: {
-    //     clicker: {
-    //       point: v,
-    //       angle: newAngle,
-    //       isOn: true,
-    //       isRun: isRun,
-    //     },
-    //   },
-    // });
+    dispatch({
+      type: "update",
+      payload: {
+        clicker: {
+          ...clicker,
+          isRun,
+        },
+      },
+    });
   };
 
   return {
