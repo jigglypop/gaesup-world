@@ -20,7 +20,7 @@ export function GaeSupProps({
   children: React.ReactNode;
 }) {
   const groupRef = useRef<THREE.Group>(null);
-  const { minimap, clickerOption } = useContext(GaesupWorldContext);
+  const { minimap } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
 
   // clicker
@@ -58,10 +58,8 @@ export function GaeSupProps({
         if (e.srcElement instanceof HTMLDivElement) return;
         moveClicker(e, false, type);
       }}
-      onPointerUp={(e) => {
-        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-      }}
       onDoubleClick={(e: ThreeEvent<PointerEvent>) => {
+        if (e.srcElement instanceof HTMLDivElement) return;
         moveDoubleClicker(e, true, type);
       }}
     >

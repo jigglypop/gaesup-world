@@ -1,4 +1,5 @@
-import { useContext, useEffect } from "react";
+import { vec3 } from "@react-three/rapier";
+import { useContext } from "react";
 import * as THREE from "three";
 import { V3 } from "../../utils";
 import {
@@ -11,17 +12,9 @@ export function useMovePoint() {
   const dispatch = useContext(GaesupWorldDispatchContext);
 
   const move = (position: THREE.Vector3, isRun: boolean) => {
-    const originPoint = activeState.position;
-    const newAngle = Math.atan2(
-      position.z - originPoint.z,
-      position.x - originPoint.x
-    );
-
-    const norm = Math.sqrt(
-      Math.pow(position.z - originPoint.z, 2) +
-        Math.pow(position.x - originPoint.x, 2)
-    );
-    if (norm < 2) return;
+    const u = activeState.position;
+    const v = vec3(position);
+    const newAngle = Math.atan2(v.z - u.z, v.x - u.x);
     dispatch({
       type: "update",
       payload: {
@@ -34,24 +27,6 @@ export function useMovePoint() {
       },
     });
   };
-  // 거리 계산
-  useEffect(() => {
-    const originPoint = activeState.position;
-    const newPosition = clicker.point;
-    const norm = Math.sqrt(
-      Math.pow(newPosition.z - originPoint.z, 2) +
-        Math.pow(newPosition.x - originPoint.x, 2)
-    );
-    if (norm < 1) {
-      clicker.isOn = false;
-      dispatch({
-        type: "update",
-        payload: {
-          clicker: clicker,
-        },
-      });
-    }
-  }, [activeState.position, clicker.point]);
 
   return {
     move,

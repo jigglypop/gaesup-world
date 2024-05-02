@@ -128,6 +128,9 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
   clickerOption: {
     isRun: true,
     throttle: 100,
+    track: false,
+    loop: false,
+    queue: [],
   },
 };
 

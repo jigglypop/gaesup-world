@@ -126,8 +126,11 @@ export type clickerType = {
 };
 
 export type clickerOptionType = {
-  isRun: boolean;
-  throttle: number;
+  isRun?: boolean;
+  throttle?: number;
+  track?: boolean;
+  loop?: boolean;
+  queue?: THREE.Vector3[];
 };
 
 export type wheelStateType = {

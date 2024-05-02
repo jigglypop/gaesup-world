@@ -61,6 +61,10 @@ export default function MainComponent() {
         YDistance: 25,
         ZDistance: 28,
       }}
+      clickerOption={{
+        track: true,
+        queue: [V3(10, 0, 10), V3(30, 0, 30), V3(10, 0, 30), V3(30, 0, 10)],
+      }}
     >
       <Canvas
         shadows
