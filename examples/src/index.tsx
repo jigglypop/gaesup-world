@@ -1,11 +1,13 @@
 "use client";
 
-import { Environment } from "@react-three/drei";
+import { Environment, Trail } from "@react-three/drei";
 import { Physics, euler } from "@react-three/rapier";
 
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 
+import { useRef } from "react";
 import { FaMapMarkerAlt } from "react-icons/fa";
+import * as THREE from "three";
 import {
   GaesupController,
   GaesupWorld,
@@ -19,10 +21,37 @@ import {
 import { Clicker } from "../../src/gaesup/tools/clicker";
 import { InnerHtml } from "../../src/gaesup/utils/innerHtml";
 import Info from "../info";
-import Passive from "../passive";
 import Floor from "./Floor";
-import Rideables from "./rideable";
 import * as style from "./style.css";
+
+function Electron({ radius = 2.75, speed = 6, ...props }) {
+  const ref = useRef<THREE.Mesh>();
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime() * speed;
+    if (!ref.current) return;
+    ref.current.position.set(
+      Math.sin(t) * radius,
+      (Math.cos(t) * radius * Math.atan(t)) / Math.PI / 1.25,
+      0
+    );
+  });
+  return (
+    <group {...props}>
+      <Trail
+        local
+        width={5}
+        length={6}
+        color={new THREE.Color(2, 1, 10)}
+        attenuation={(t) => t * t}
+      >
+        <mesh ref={ref}>
+          <sphereGeometry args={[0.25]} />
+          <meshBasicMaterial color={[10, 1, 10]} toneMapped={false} />
+        </mesh>
+      </Trail>
+    </group>
+  );
+}
 
 export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
 export const keyBoardMap = [
@@ -62,8 +91,11 @@ export default function MainComponent() {
         ZDistance: 28,
       }}
       clickerOption={{
+        autoStart: true,
         track: true,
-        queue: [V3(10, 0, 10), V3(30, 0, 30), V3(10, 0, 30), V3(30, 0, 10)],
+        loop: true,
+        queue: [V3(10, 0, 0), V3(30, 0, 30), V3(10, 0, 30), V3(30, 0, 10)],
+        line: true,
       }}
     >
       <Canvas
@@ -115,9 +147,9 @@ export default function MainComponent() {
             }}
           />
           <Floor />
-          <Rideables />
-          <Passive />
-
+          {/* <Rideables />
+          <Passive /> */}
+          <Electron />
           <Clicker
             onMarker={
               <group rotation={euler({ x: 0, y: Math.PI / 2, z: 0 })}>

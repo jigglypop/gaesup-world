@@ -1,10 +1,5 @@
-import { joyStickInnerType } from "../../tools/joystick/type";
 import { V3, calcAngleByVector } from "../../utils/vector";
-import {
-  activeStateType,
-  clickerType,
-  modeType,
-} from "../../world/context/type";
+import { gaesupWorldContextType } from "../../world/context/type";
 import { calcType } from "../type";
 
 export function orbitDirection({
@@ -13,15 +8,8 @@ export function orbitDirection({
   mode,
   joystick,
   clicker,
-}: {
-  activeState: activeStateType;
-  mode: modeType;
-  joystick: joyStickInnerType;
-  clicker: clickerType;
-  control: {
-    [key: string]: boolean;
-  };
-}) {
+  clickerOption,
+}: Partial<gaesupWorldContextType>) {
   const { forward, backward, leftward, rightward } = control;
   const dirX = Number(leftward) - Number(rightward);
   const dirZ = Number(forward) - Number(backward);
@@ -51,15 +39,8 @@ export function normalDirection({
   mode,
   joystick,
   clicker,
-}: {
-  activeState: activeStateType;
-  mode: modeType;
-  joystick: joyStickInnerType;
-  clicker: clickerType;
-  control: {
-    [key: string]: boolean;
-  };
-}) {
+  clickerOption,
+}: Partial<gaesupWorldContextType>) {
   const { forward, backward, leftward, rightward } = control;
   if (mode.controller === "joystick") {
     if (joystick.joyStickOrigin.isCenter) return;
@@ -90,12 +71,10 @@ export function normalDirection({
 }
 
 export default function direction(prop: calcType) {
-  const {
-    worldContext: { joystick, mode, activeState, control, clicker },
-  } = prop;
-  if (mode.control === "normal") {
-    normalDirection({ activeState, control, mode, joystick, clicker });
-  } else if (mode.control === "orbit") {
-    orbitDirection({ activeState, control, mode, joystick, clicker });
+  const { worldContext } = prop;
+  if (worldContext.mode.control === "normal") {
+    normalDirection(worldContext);
+  } else if (worldContext.mode.control === "orbit") {
+    orbitDirection(worldContext);
   }
 }
