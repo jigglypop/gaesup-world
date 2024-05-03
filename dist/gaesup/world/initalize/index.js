@@ -11,6 +11,7 @@ var __assign = (this && this.__assign) || function () {
 };
 import { useEffect, useMemo, useReducer } from "react";
 import { isDesktop } from "react-device-detect";
+import { V3 } from "../../utils";
 import { gaesupWorldDefault } from "../../world/context";
 import { gaesupWorldReducer } from "../../world/context/reducer";
 import initDebug from "../debug";
@@ -34,6 +35,27 @@ export default function initGaesupWorld(props) {
         block: Object.assign(gaesupWorldDefault.block, props.block || {}),
         sizes: gaesupWorldDefault.sizes,
     }), value = _a[0], dispatch = _a[1];
+    // autoStart
+    useEffect(function () {
+        if (value.clickerOption.autoStart) {
+            var u = value.activeState.position;
+            var v = value.clickerOption.queue.shift();
+            if (value.clickerOption.loop) {
+                value.clickerOption.queue.push(v);
+            }
+            var newAngle = Math.atan2(v.z - u.z, v.x - u.x);
+            value.clicker.angle = newAngle;
+            value.clicker.point = V3(v.x, 0, v.z);
+            value.clicker.isOn = true;
+        }
+        dispatch({
+            type: "update",
+            payload: {
+                clicker: __assign({}, value.clicker),
+                clickerOption: __assign({}, value.clickerOption),
+            },
+        });
+    }, [value.clickerOption.autoStart]);
     useEffect(function () {
         var _a;
         var keyboard = (_a = value.keyBoardMap) === null || _a === void 0 ? void 0 : _a.reduce(function (maps, keyboardMapItem) {
