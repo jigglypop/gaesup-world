@@ -4,7 +4,7 @@ import { calcType } from "../type";
 export default function impulse(prop: calcType) {
   const {
     rigidBodyRef,
-    worldContext: { states, activeState },
+    worldContext: { states, activeState, clicker, clickerOption },
     dispatch,
   } = prop;
   const { isMoving, isRunning } = states;

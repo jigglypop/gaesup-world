@@ -10,7 +10,6 @@ export function useClicker() {
   const { activeState, mode, clicker, clickerOption } =
     useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
-
   // autoStart
   useEffect(() => {
     if (clickerOption.autoStart) {
@@ -20,21 +19,21 @@ export function useClicker() {
         clickerOption.queue.push(v);
       }
       const newAngle = Math.atan2(v.z - u.z, v.x - u.x);
-      dispatch({
-        type: "update",
-        payload: {
-          clicker: {
-            ...clicker,
-            point: V3(v.x, 0, v.z),
-            angle: newAngle,
-            isOn: true,
-          },
-          clickerOption: {
-            ...clickerOption,
-          },
-        },
-      });
+      clicker.angle = newAngle;
+      clicker.point = V3(v.x, 0, v.z);
+      clicker.isOn = true;
     }
+    dispatch({
+      type: "update",
+      payload: {
+        clicker: {
+          ...clicker,
+        },
+        clickerOption: {
+          ...clickerOption,
+        },
+      },
+    });
   }, [clickerOption.autoStart]);
 
   const moveClicker = (

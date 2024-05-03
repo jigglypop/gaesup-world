@@ -5,9 +5,11 @@ import { calcType } from "../type";
 export default function stop(prop: calcType) {
   const {
     rigidBodyRef,
-    worldContext: { control, clicker, mode, clickerOption },
+    worldContext: { control, clicker, mode, clickerOption, activeState },
+    dispatch,
   } = prop;
   const { keyS } = control;
+
   if (keyS && mode.controller === "clicker") {
     clicker.isOn = false;
     clicker.isRun = false;
@@ -15,6 +17,7 @@ export default function stop(prop: calcType) {
   // 목적지 도착 (클리커 막기 로직)
   const u = vec3(rigidBodyRef.current?.translation());
   const norm = calcNorm(u, clicker.point, false);
+
   if (norm < 1 && mode.controller === "clicker") {
     if (clickerOption.track && clickerOption.queue.length !== 0) {
       clicker.point = clickerOption.queue.shift();
