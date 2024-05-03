@@ -5,7 +5,7 @@ import { calcType } from "../type";
 export default function stop(prop: calcType) {
   const {
     rigidBodyRef,
-    worldContext: { control, clicker, mode, clickerOption, activeState },
+    worldContext: { control, clicker, mode, clickerOption },
   } = prop;
   const { keyS } = control;
 
@@ -13,10 +13,16 @@ export default function stop(prop: calcType) {
     clicker.isOn = false;
     clicker.isRun = false;
   }
-  // 목적지 도착 (클리커 막기 로직)
-  const u = vec3(rigidBodyRef.current?.translation());
-  const norm = calcNorm(u, clicker.point, false);
 
+  const u = vec3(rigidBodyRef.current?.translation());
+  let norm = calcNorm(u, clicker.point, false);
+  if (clickerOption.autoStart) {
+    clicker.isOn = true;
+    norm = calcNorm(u, clickerOption.queue[0], false);
+    const v = vec3(clickerOption.queue[0]);
+    const newAngle = Math.atan2(v.z - u.z, v.x - u.x);
+    clicker.angle = newAngle;
+  }
   if (norm < 1 && mode.controller === "clicker") {
     if (clickerOption.track && clickerOption.queue.length !== 0) {
       clicker.point = clickerOption.queue.shift();

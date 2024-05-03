@@ -20,21 +20,21 @@ export function Clicker({
       )}
       {clickerOption.line &&
         clickerOption.queue.map((item, key) => {
+          const current = key;
+          const before = key === 0 ? clickerOption.queue.length - 1 : key - 1;
           return (
             <group position={[0, 1, 0]}>
-              {key >= 1 && (
-                <Line
-                  worldUnits
-                  points={[
-                    clickerOption.queue[key - 1],
-                    clickerOption.queue[key],
-                  ]}
-                  color="turquoise"
-                  transparent
-                  opacity={0.5}
-                  lineWidth={0.4}
-                />
-              )}
+              <Line
+                worldUnits
+                points={[
+                  clickerOption.queue[before],
+                  clickerOption.queue[current],
+                ]}
+                color="turquoise"
+                transparent
+                opacity={0.5}
+                lineWidth={0.4}
+              />
 
               <mesh key={key} position={item}>
                 <sphereGeometry args={[0.6, 30, 0.6]} />
