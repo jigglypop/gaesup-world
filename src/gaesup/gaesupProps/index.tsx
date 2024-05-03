@@ -3,6 +3,7 @@ import { vec3 } from "@react-three/rapier";
 import { useContext, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useClicker } from "../hooks/useClicker";
+import { useMovePoint } from "../hooks/useMovePoint";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
@@ -20,11 +21,19 @@ export function GaeSupProps({
   children: React.ReactNode;
 }) {
   const groupRef = useRef<THREE.Group>(null);
-  const { minimap } = useContext(GaesupWorldContext);
+  const { minimap, activeState, clickerOption } =
+    useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
 
   // clicker
   const { moveClicker, moveDoubleClicker } = useClicker();
+  const { move } = useMovePoint();
+
+  useEffect(() => {
+    if (clickerOption.autoStart) {
+      move(activeState.position, false);
+    }
+  }, [clickerOption.autoStart]);
 
   useEffect(() => {
     if (groupRef.current) {

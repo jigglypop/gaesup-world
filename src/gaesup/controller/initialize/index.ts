@@ -5,7 +5,6 @@ import * as THREE from "three";
 import { groundRayType, refsType } from "../../controller/type";
 
 import { cameraRayType } from "../../camera/type";
-import { V3 } from "../../utils";
 import { update } from "../../utils/context";
 import {
   GaesupWorldContext,
@@ -47,37 +46,6 @@ export default function initControllerProps(props: { refs: refsType }) {
       });
     }
   }, [context?.mode.controller, keyControl, context?.control]);
-
-  // autoStart
-  useEffect(() => {
-    if (context?.clickerOption.autoStart) {
-      const u = context?.activeState.position;
-      const v = context?.clickerOption.queue.shift();
-      if (context?.clickerOption.loop) {
-        context?.clickerOption.queue.push(v);
-      }
-      const newAngle = Math.atan2(v.z - u.z, v.x - u.x);
-      context.clicker.angle = newAngle;
-      context.clicker.point = V3(v.x, 0, v.z);
-      context.clicker.isOn = true;
-    }
-    dispatch({
-      type: "update",
-      payload: {
-        clicker: {
-          ...context?.clicker,
-        },
-        clickerOption: {
-          ...context?.clickerOption,
-        },
-      },
-    });
-  }, [
-    context?.clicker,
-    context,
-    context?.clickerOption,
-    context?.clickerOption.autoStart,
-  ]);
 
   const groundRay: groundRayType = useMemo(() => {
     return {

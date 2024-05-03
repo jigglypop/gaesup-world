@@ -13,6 +13,7 @@ import { useKeyboardControls } from "@react-three/drei";
 import { vec3 } from "@react-three/rapier";
 import { useCallback, useContext, useEffect, useMemo } from "react";
 import * as THREE from "three";
+import { V3 } from "../../utils";
 import { update } from "../../utils/context";
 import { GaesupWorldContext, GaesupWorldDispatchContext, } from "../../world/context";
 export default function initControllerProps(props) {
@@ -46,6 +47,32 @@ export default function initControllerProps(props) {
             });
         }
     }, [context === null || context === void 0 ? void 0 : context.mode.controller, keyControl, context === null || context === void 0 ? void 0 : context.control]);
+    // autoStart
+    useEffect(function () {
+        if (context === null || context === void 0 ? void 0 : context.clickerOption.autoStart) {
+            var u = context === null || context === void 0 ? void 0 : context.activeState.position;
+            var v = context === null || context === void 0 ? void 0 : context.clickerOption.queue.shift();
+            if (context === null || context === void 0 ? void 0 : context.clickerOption.loop) {
+                context === null || context === void 0 ? void 0 : context.clickerOption.queue.push(v);
+            }
+            var newAngle = Math.atan2(v.z - u.z, v.x - u.x);
+            context.clicker.angle = newAngle;
+            context.clicker.point = V3(v.x, 0, v.z);
+            context.clicker.isOn = true;
+        }
+        dispatch({
+            type: "update",
+            payload: {
+                clicker: __assign({}, context === null || context === void 0 ? void 0 : context.clicker),
+                clickerOption: __assign({}, context === null || context === void 0 ? void 0 : context.clickerOption),
+            },
+        });
+    }, [
+        context === null || context === void 0 ? void 0 : context.clicker,
+        context,
+        context === null || context === void 0 ? void 0 : context.clickerOption,
+        context === null || context === void 0 ? void 0 : context.clickerOption.autoStart,
+    ]);
     var groundRay = useMemo(function () {
         return {
             origin: vec3(),
