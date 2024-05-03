@@ -14,7 +14,6 @@ import { vec3 } from "@react-three/rapier";
 import { useContext, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useClicker } from "../hooks/useClicker";
-import { useMovePoint } from "../hooks/useMovePoint";
 import { GaesupWorldContext, GaesupWorldDispatchContext, } from "../world/context";
 export function GaeSupProps(_a) {
     var _b = _a.type, type = _b === void 0 ? "normal" : _b, text = _a.text, position = _a.position, children = _a.children;
@@ -23,12 +22,6 @@ export function GaeSupProps(_a) {
     var dispatch = useContext(GaesupWorldDispatchContext);
     // clicker
     var _d = useClicker(), moveClicker = _d.moveClicker, moveDoubleClicker = _d.moveDoubleClicker;
-    var move = useMovePoint().move;
-    useEffect(function () {
-        if (clickerOption.autoStart) {
-            move(activeState.position, false);
-        }
-    }, [clickerOption.autoStart]);
     useEffect(function () {
         if (groupRef.current) {
             var box = new THREE.Box3().setFromObject(groupRef.current);

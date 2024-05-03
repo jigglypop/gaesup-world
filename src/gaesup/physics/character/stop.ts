@@ -6,7 +6,6 @@ export default function stop(prop: calcType) {
   const {
     rigidBodyRef,
     worldContext: { control, clicker, mode, clickerOption, activeState },
-    dispatch,
   } = prop;
   const { keyS } = control;
 
@@ -18,7 +17,7 @@ export default function stop(prop: calcType) {
   const u = vec3(rigidBodyRef.current?.translation());
   const norm = calcNorm(u, clicker.point, false);
 
-  if (norm < 1 && mode.controller === "clicker") {
+  if ((norm < 1 || clickerOption.autoStart) && mode.controller === "clicker") {
     if (clickerOption.track && clickerOption.queue.length !== 0) {
       clicker.point = clickerOption.queue.shift();
       const v = vec3(clicker.point);
