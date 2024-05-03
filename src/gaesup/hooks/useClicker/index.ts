@@ -1,5 +1,5 @@
 import { ThreeEvent } from "@react-three/fiber";
-import { useContext, useEffect } from "react";
+import { useContext } from "react";
 import { V3 } from "../../utils";
 import {
   GaesupWorldContext,
@@ -10,31 +10,6 @@ export function useClicker() {
   const { activeState, mode, clicker, clickerOption } =
     useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
-  // autoStart
-  useEffect(() => {
-    if (clickerOption.autoStart) {
-      const u = activeState.position;
-      const v = clickerOption.queue.shift();
-      if (clickerOption.loop) {
-        clickerOption.queue.push(v);
-      }
-      const newAngle = Math.atan2(v.z - u.z, v.x - u.x);
-      clicker.angle = newAngle;
-      clicker.point = V3(v.x, 0, v.z);
-      clicker.isOn = true;
-    }
-    dispatch({
-      type: "update",
-      payload: {
-        clicker: {
-          ...clicker,
-        },
-        clickerOption: {
-          ...clickerOption,
-        },
-      },
-    });
-  }, [clickerOption.autoStart]);
 
   const moveClicker = (
     e: ThreeEvent<MouseEvent>,

@@ -2,7 +2,7 @@ import { vec3 } from "@react-three/rapier";
 import { calcNorm } from "../../utils";
 export default function stop(prop) {
     var _a;
-    var rigidBodyRef = prop.rigidBodyRef, _b = prop.worldContext, control = _b.control, clicker = _b.clicker, mode = _b.mode, clickerOption = _b.clickerOption;
+    var rigidBodyRef = prop.rigidBodyRef, _b = prop.worldContext, control = _b.control, clicker = _b.clicker, mode = _b.mode, clickerOption = _b.clickerOption, activeState = _b.activeState, dispatch = prop.dispatch;
     var keyS = control.keyS;
     if (keyS && mode.controller === "clicker") {
         clicker.isOn = false;

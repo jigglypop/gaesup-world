@@ -24,14 +24,17 @@ export function useClicker() {
                 clickerOption.queue.push(v);
             }
             var newAngle = Math.atan2(v.z - u.z, v.x - u.x);
-            dispatch({
-                type: "update",
-                payload: {
-                    clicker: __assign(__assign({}, clicker), { point: V3(v.x, 0, v.z), angle: newAngle, isOn: true }),
-                    clickerOption: __assign({}, clickerOption),
-                },
-            });
+            clicker.angle = newAngle;
+            clicker.point = V3(v.x, 0, v.z);
+            clicker.isOn = true;
         }
+        dispatch({
+            type: "update",
+            payload: {
+                clicker: __assign({}, clicker),
+                clickerOption: __assign({}, clickerOption),
+            },
+        });
     }, [clickerOption.autoStart]);
     var moveClicker = function (e, isRun, type) {
         if (mode.controller !== "clicker" || type !== "ground")
