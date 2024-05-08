@@ -9,7 +9,7 @@ export declare const RigidBodyRef: import("react").ForwardRefExoticComponent<{
     isActive?: boolean;
     ridingUrl?: string;
     groundRay?: import("../../../controller/type").groundRayType;
-    rigidBodyProps?: RapierRigidBody;
+    rigidBodyProps?: import("@react-three/rapier").RigidBodyProps;
 } & {
     children?: import("react").ReactNode;
     groundRay?: import("../../../controller/type").groundRayType;
@@ -29,7 +29,7 @@ export declare const RigidBodyRef: import("react").ForwardRefExoticComponent<{
     userData?: {
         intangible: boolean;
     };
-    rigidBodyProps?: RapierRigidBody;
+    rigidBodyProps?: import("@react-three/rapier").RigidBodyProps;
     outerGroupProps?: THREE.Group<THREE.Object3DEventMap>;
     innerGroupProps?: THREE.Group<THREE.Object3DEventMap>;
 } & import("./type").ridingType & import("../../passive/type").innerRefType & import("../../../controller/initialize/callback/type").callbackType & import("react").RefAttributes<RapierRigidBody>>;
