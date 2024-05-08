@@ -21,7 +21,7 @@ export function GaeSupProps(_a) {
     var _c = useContext(GaesupWorldContext), minimap = _c.minimap, activeState = _c.activeState, clickerOption = _c.clickerOption;
     var dispatch = useContext(GaesupWorldDispatchContext);
     // clicker
-    var _d = useClicker(), moveClicker = _d.moveClicker, moveDoubleClicker = _d.moveDoubleClicker;
+    var moveClicker = useClicker().moveClicker;
     useEffect(function () {
         if (groupRef.current) {
             var box = new THREE.Box3().setFromObject(groupRef.current);
@@ -46,9 +46,5 @@ export function GaeSupProps(_a) {
             if (e.srcElement instanceof HTMLDivElement)
                 return;
             moveClicker(e, false, type);
-        }, onDoubleClick: function (e) {
-            if (e.srcElement instanceof HTMLDivElement)
-                return;
-            moveDoubleClicker(e, true, type);
         }, children: children }));
 }
