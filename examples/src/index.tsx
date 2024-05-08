@@ -1,6 +1,6 @@
 "use client";
 
-import { Environment, Trail } from "@react-three/drei";
+import { Environment, Gltf, Trail } from "@react-three/drei";
 import { Physics, euler } from "@react-three/rapier";
 
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -131,7 +131,7 @@ export default function MainComponent() {
           shadow-camera-bottom={-50}
           shadow-camera-left={-50}
         />
-        <Physics debug>
+        <Physics debug interpolate={true}>
           <GaesupController
             onAnimate={({ control, subscribe }) => {
               subscribe({
@@ -145,7 +145,10 @@ export default function MainComponent() {
                 cameraPosition: 1,
               },
             }}
-          />
+            rigidBodyProps={{}}
+          >
+            <Gltf src={CHARACTER_URL} position={V3(0, 4, 0)} />
+          </GaesupController>
           <Floor />
           {/* <Rideables />
           <Passive /> */}

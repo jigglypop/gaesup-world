@@ -93,6 +93,7 @@ export function GaesupControllerInner(props: controllerType) {
     }),
     children: props.children,
     groupProps: props.groupProps,
+    rigidBodyProps: props.rigidBodyProps,
     controllerOptions: gaesupControl.value.controllerOptions,
     ...gaesupControl.value.callbacks,
     ...refs,

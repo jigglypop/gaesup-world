@@ -120,7 +120,6 @@ export const RigidBodyRef = forwardRef(
           args={[(size.y / 2 - size.x) * 1.2, size.x * 1.2]}
           position={[0, (size.y / 2 + size.x / 2) * 1.2, 0]}
         />
-        {props.children}
         <InnerGroupRef
           objectNode={objectNode}
           animationRef={animationRef}

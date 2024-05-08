@@ -2,6 +2,7 @@ import { Collider } from "@dimforge/rapier3d-compat";
 import {
   CollisionEnterPayload,
   RapierRigidBody,
+  RigidBodyProps,
   RigidBodyTypeString,
 } from "@react-three/rapier";
 import { MutableRefObject } from "react";
@@ -38,7 +39,7 @@ export type passivePropsType = {
   userData?: {
     intangible: boolean;
   };
-  rigidBodyProps?: RapierRigidBody;
+  rigidBodyProps?: RigidBodyProps;
   outerGroupProps?: THREE.Group;
   innerGroupProps?: THREE.Group;
 } & ridingType;
