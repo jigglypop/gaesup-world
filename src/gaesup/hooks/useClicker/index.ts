@@ -7,8 +7,7 @@ import {
 } from "../../world/context";
 
 export function useClicker() {
-  const { activeState, mode, clicker, clickerOption } =
-    useContext(GaesupWorldContext);
+  const { activeState, mode } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
 
   const moveClicker = (
@@ -33,26 +32,7 @@ export function useClicker() {
     });
   };
 
-  const moveDoubleClicker = (
-    e: ThreeEvent<MouseEvent>,
-    isRun: boolean,
-    type: "normal" | "ground"
-  ) => {
-    if (!clicker.isOn || !clickerOption.isRun) return;
-
-    dispatch({
-      type: "update",
-      payload: {
-        clicker: {
-          ...clicker,
-          isRun,
-        },
-      },
-    });
-  };
-
   return {
     moveClicker,
-    moveDoubleClicker,
   };
 }
