@@ -10,4 +10,5 @@ export declare const InnerGroupRef: import("react").ForwardRefExoticComponent<{
     isActive?: boolean;
     ridingUrl?: string;
     offset?: THREE.Vector3;
+    parts?: import("../../../controller/type").partsType;
 } & import("./type").ridingType & import("react").RefAttributes<THREE.Group<THREE.Object3DEventMap>>>;

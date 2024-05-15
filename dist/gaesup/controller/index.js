@@ -65,7 +65,7 @@ export function GaesupControllerInner(props) {
     }, []);
     var prop = __assign(__assign(__assign(__assign({}, initControllerProps({
         refs: refs,
-    })), { children: props.children, groupProps: props.groupProps, rigidBodyProps: props.rigidBodyProps, controllerOptions: gaesupControl.value.controllerOptions }), gaesupControl.value.callbacks), refs);
+    })), { children: props.children, groupProps: props.groupProps, rigidBodyProps: props.rigidBodyProps, controllerOptions: gaesupControl.value.controllerOptions, parts: props.parts }), gaesupControl.value.callbacks), refs);
     initDebug({
         controllerContext: gaesupControl.value,
         controllerDispatch: gaesupControl.dispatch,

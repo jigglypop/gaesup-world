@@ -54,6 +54,7 @@ export type controllerInnerType = {
     cameraRay: cameraRayType;
     keyControl: keyControlType;
     controllerOptions: controllerOptionsType;
+    parts?: partsType;
 } & controllerOtherPropType & refsType & callbackType;
 export type animationTagType = {
     idle: string;
@@ -89,6 +90,8 @@ export interface controllerOtherPropType extends RigidBodyProps {
     rigidBodyProps?: RigidBodyProps;
     debug?: boolean;
 }
+export type partsType = string[];
 export type controllerType = controllerOtherPropType & urlsType & Partial<gaesupControllerContextPropType> & callbackType & {
     controllerOptions?: controllerOptionsType;
+    parts?: partsType;
 };

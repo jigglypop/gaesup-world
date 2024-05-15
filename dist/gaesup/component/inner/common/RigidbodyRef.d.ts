@@ -10,6 +10,7 @@ export declare const RigidBodyRef: import("react").ForwardRefExoticComponent<{
     ridingUrl?: string;
     groundRay?: import("../../../controller/type").groundRayType;
     rigidBodyProps?: import("@react-three/rapier").RigidBodyProps;
+    parts?: import("../../../controller/type").partsType;
 } & {
     children?: import("react").ReactNode;
     groundRay?: import("../../../controller/type").groundRayType;

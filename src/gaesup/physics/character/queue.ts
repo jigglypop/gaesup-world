@@ -7,9 +7,10 @@ export default function queue(prop: calcType) {
   const {
     rigidBodyRef,
     state,
-    worldContext: { clicker, mode, clickerOption },
+    worldContext: { clicker, mode, clickerOption, block },
   } = prop;
   const u = vec3(rigidBodyRef.current?.translation());
+
   let norm = calcNorm(u, clicker.point, false);
   if (clickerOption.autoStart) {
     if (clickerOption.queue[0] instanceof THREE.Vector3) {
@@ -29,7 +30,16 @@ export default function queue(prop: calcType) {
         const newAngle = Math.atan2(v.z - u.z, v.x - u.x);
         clicker.angle = newAngle;
       } else {
-        Q();
+        const { action, beforeCB, afterCB, time } = Q;
+        if (action === "stop") {
+          state.clock.stop();
+          beforeCB(state);
+          console.log();
+          setTimeout(() => {
+            state.clock.start();
+            afterCB(state);
+          }, time);
+        }
       }
       if (clickerOption.loop) {
         clickerOption.queue.push(Q);

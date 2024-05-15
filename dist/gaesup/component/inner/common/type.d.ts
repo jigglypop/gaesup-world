@@ -3,7 +3,7 @@ import { RigidBodyProps, RigidBodyTypeString } from "@react-three/rapier";
 import { MutableRefObject, RefObject } from "react";
 import * as THREE from "three";
 import { callbackType } from "../../../controller/initialize/callback/type";
-import { groundRayType } from "../../../controller/type";
+import { groundRayType, partsType } from "../../../controller/type";
 import { urlsType } from "../../../world/context/type";
 import { innerRefType, passivePropsType } from "../../passive/type";
 export type characterColliderType = {
@@ -22,6 +22,7 @@ export type InnerGroupRefType = {
     isActive?: boolean;
     ridingUrl?: string;
     offset?: THREE.Vector3;
+    parts?: partsType;
 } & ridingType;
 export type ridingType = {
     isRiderOn?: boolean;
@@ -56,4 +57,5 @@ export type rigidBodyRefType = {
     ridingUrl?: string;
     groundRay?: groundRayType;
     rigidBodyProps?: RigidBodyProps;
+    parts?: partsType;
 } & passivePropsType & innerRefType & callbackType;

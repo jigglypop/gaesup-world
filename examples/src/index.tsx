@@ -71,10 +71,6 @@ export default function MainComponent() {
   const AIRPLANE_URL = S3 + "/gaebird.glb";
   const VEHICLE_URL = S3 + "/gorani.glb";
 
-  const stopCB = () => {
-    console.log("stop");
-  };
-
   return (
     <GaesupWorld
       urls={{
@@ -103,7 +99,22 @@ export default function MainComponent() {
           V3(30, 0, 30),
           V3(10, 0, 30),
           V3(30, 0, 10),
-          stopCB,
+          {
+            action: "stop",
+            beforeCB: (state) => {
+              console.log("stop");
+              // state.clock.stop();
+              // console.log("stop");
+              // if (clock.getElapsedTime() > 20) {
+              //   console.log("start");
+              //   state.clock.start();
+              // }
+            },
+            afterCB: (state) => {
+              console.log("start");
+            },
+            time: 3000,
+          },
         ],
         line: true,
       }}

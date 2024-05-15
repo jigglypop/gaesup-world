@@ -107,13 +107,15 @@ export type clickerType = {
     isOn: boolean;
     isRun: boolean;
 };
+export type queueItemtype = THREE.Vector3 | Function;
+export type queueType = queueItemtype[];
 export type clickerOptionType = {
     autoStart?: boolean;
     isRun?: boolean;
     throttle?: number;
     track?: boolean;
     loop?: boolean;
-    queue?: THREE.Vector3[];
+    queue?: queueType;
     line?: boolean;
 };
 export type wheelStateType = {

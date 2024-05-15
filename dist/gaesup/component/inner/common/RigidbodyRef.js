@@ -25,6 +25,7 @@ import calculation from "../../../physics";
 import { V3 } from "../../../utils";
 import { GaesupWorldContext } from "../../../world/context";
 import { InnerGroupRef } from "./InnerGroupRef";
+import { PartsGroupRef } from "./partsGroupRef";
 import { setGroundRay } from "./setGroundRay";
 export var RigidBodyRef = forwardRef(function (props, ref) {
     var _a;
@@ -85,5 +86,8 @@ export var RigidBodyRef = forwardRef(function (props, ref) {
     });
     return (_jsxs(RigidBody, __assign({ colliders: false, ref: ref, name: props.name, rotation: euler()
             .set(0, ((_a = props.rotation) === null || _a === void 0 ? void 0 : _a.clone().y) || 0, 0)
-            .clone(), userData: props.userData, type: props.rigidbodyType || (props.isActive ? "dynamic" : "fixed"), sensor: props.sensor, onIntersectionEnter: props.onIntersectionEnter, onCollisionEnter: props.onCollisionEnter }, props.rigidBodyProps, { children: [_jsx(CapsuleCollider, { ref: props.colliderRef, args: [(size.y / 2 - size.x) * 1.2, size.x * 1.2], position: [0, (size.y / 2 + size.x / 2) * 1.2, 0] }), _jsx(InnerGroupRef, { objectNode: objectNode, animationRef: animationRef, nodes: nodes, ref: props.innerGroupRef, isActive: props.isActive, isRiderOn: props.isRiderOn, enableRiding: props.enableRiding, ridingUrl: props.ridingUrl, offset: props.offset, children: props.children })] })));
+            .clone(), userData: props.userData, type: props.rigidbodyType || (props.isActive ? "dynamic" : "fixed"), sensor: props.sensor, onIntersectionEnter: props.onIntersectionEnter, onCollisionEnter: props.onCollisionEnter }, props.rigidBodyProps, { children: [_jsx(CapsuleCollider, { ref: props.colliderRef, args: [(size.y / 2 - size.x) * 1.2, size.x * 1.2], position: [0, (size.y / 2 + size.x / 2) * 1.2, 0] }), _jsxs(InnerGroupRef, { objectNode: objectNode, animationRef: animationRef, nodes: nodes, ref: props.innerGroupRef, isActive: props.isActive, isRiderOn: props.isRiderOn, enableRiding: props.enableRiding, ridingUrl: props.ridingUrl, offset: props.offset, parts: props.parts, children: [props.children, props.parts &&
+                        props.parts.map(function (url, key) {
+                            return (_jsx(PartsGroupRef, { url: url, isActive: props.isActive, componentType: props.componentType, currentAnimation: props.currentAnimation }, key + url));
+                        })] })] })));
 });
