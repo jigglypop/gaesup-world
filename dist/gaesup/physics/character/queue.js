@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { calcNorm } from "../../utils";
 export default function queue(prop) {
     var _a;
-    var rigidBodyRef = prop.rigidBodyRef, state = prop.state, _b = prop.worldContext, clicker = _b.clicker, mode = _b.mode, clickerOption = _b.clickerOption;
+    var rigidBodyRef = prop.rigidBodyRef, state = prop.state, _b = prop.worldContext, clicker = _b.clicker, mode = _b.mode, clickerOption = _b.clickerOption, block = _b.block;
     var u = vec3((_a = rigidBodyRef.current) === null || _a === void 0 ? void 0 : _a.translation());
     var norm = calcNorm(u, clicker.point, false);
     if (clickerOption.autoStart) {
@@ -25,7 +25,16 @@ export default function queue(prop) {
                 clicker.angle = newAngle;
             }
             else {
-                Q();
+                var action = Q.action, beforeCB = Q.beforeCB, afterCB_1 = Q.afterCB, time = Q.time;
+                if (action === "stop") {
+                    state.clock.stop();
+                    beforeCB(state);
+                    console.log();
+                    setTimeout(function () {
+                        state.clock.start();
+                        afterCB_1(state);
+                    }, time);
+                }
             }
             if (clickerOption.loop) {
                 clickerOption.queue.push(Q);

@@ -1,5 +1,6 @@
 import { CSSProperties } from "react";
 import { actionsType, refsType } from "../../controller/type";
+import { RootState } from "@react-three/fiber";
 import * as THREE from "three";
 import { rideableType } from "../../hooks/useRideable/type";
 import { joyStickInnerType } from "../../tools/joystick/type";
@@ -107,7 +108,14 @@ export type clickerType = {
     isOn: boolean;
     isRun: boolean;
 };
-export type queueItemtype = THREE.Vector3 | Function;
+export type queueActionType = "stop";
+export type queueFunctionType = {
+    action: queueActionType;
+    beforeCB: (state: RootState) => void;
+    afterCB: (state: RootState) => void;
+    time: number;
+};
+export type queueItemtype = THREE.Vector3 | queueFunctionType;
 export type queueType = queueItemtype[];
 export type clickerOptionType = {
     autoStart?: boolean;

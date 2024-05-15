@@ -42,4 +42,5 @@ export type passivePropsType = {
   rigidBodyProps?: RigidBodyProps;
   outerGroupProps?: THREE.Group;
   innerGroupProps?: THREE.Group;
+  parts?: string[];
 } & ridingType;

@@ -21,6 +21,7 @@ import {
 import { Clicker } from "../../src/gaesup/tools/clicker";
 import { InnerHtml } from "../../src/gaesup/utils/innerHtml";
 import Info from "../info";
+import Passive from "../passive";
 import Floor from "./Floor";
 import * as style from "./style.css";
 
@@ -177,7 +178,8 @@ export default function MainComponent() {
           ></GaesupController>
           <Floor />
           {/* <Rideables />
-          <Passive /> */}
+           */}
+          <Passive />
           <Electron />
           <Clicker
             onMarker={
