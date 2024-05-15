@@ -26,6 +26,7 @@ export function CharacterRef({
       onReady={props.onReady}
       onDestory={props.onDestory}
       rigidBodyProps={props.rigidBodyProps}
+      parts={props.parts}
       {...refs}
     >
       {children}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Environment, Gltf, Trail } from "@react-three/drei";
+import { Environment, Trail } from "@react-three/drei";
 import { Physics, euler } from "@react-three/rapier";
 
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -67,9 +67,13 @@ export const keyBoardMap = [
 ];
 
 export default function MainComponent() {
-  const CHARACTER_URL = S3 + "/gaesupyee.glb";
+  const CHARACTER_URL = "gltf/ally_body.glb";
   const AIRPLANE_URL = S3 + "/gaebird.glb";
   const VEHICLE_URL = S3 + "/gorani.glb";
+
+  const stopCB = () => {
+    console.log("stop");
+  };
 
   return (
     <GaesupWorld
@@ -86,21 +90,33 @@ export default function MainComponent() {
       debug={false}
       keyBoardMap={keyBoardMap}
       cameraOption={{
-        XDistance: 28,
-        YDistance: 25,
-        ZDistance: 28,
+        XDistance: 20,
+        YDistance: 20,
+        ZDistance: 20,
       }}
       clickerOption={{
         autoStart: true,
         track: true,
         loop: true,
-        queue: [V3(10, 0, 0), V3(30, 0, 30), V3(10, 0, 30), V3(30, 0, 10)],
+        queue: [
+          V3(10, 0, 0),
+          V3(30, 0, 30),
+          V3(10, 0, 30),
+          V3(30, 0, 10),
+          stopCB,
+        ],
         line: true,
       }}
     >
       <Canvas
         shadows
         dpr={[1, 2]}
+        camera={{
+          position: [0, 10, 20],
+          fov: 45,
+          near: 0.1,
+          far: 1000,
+        }}
         style={{ width: "100vw", height: "100vh", position: "fixed" }}
         frameloop="demand"
       >
@@ -146,9 +162,8 @@ export default function MainComponent() {
               },
             }}
             rigidBodyProps={{}}
-          >
-            <Gltf src={CHARACTER_URL} position={V3(0, 4, 0)} />
-          </GaesupController>
+            parts={["gltf/ally_cloth_rabbit.glb"]}
+          ></GaesupController>
           <Floor />
           {/* <Rideables />
           <Passive /> */}

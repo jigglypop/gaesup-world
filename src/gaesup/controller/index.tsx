@@ -95,6 +95,7 @@ export function GaesupControllerInner(props: controllerType) {
     groupProps: props.groupProps,
     rigidBodyProps: props.rigidBodyProps,
     controllerOptions: gaesupControl.value.controllerOptions,
+    parts: props.parts,
     ...gaesupControl.value.callbacks,
     ...refs,
   };

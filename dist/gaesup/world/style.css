@@ -1,0 +1,13 @@
+#leva__root > * {
+  top: 25rem;
+  left: 1rem;
+  width: 30rem;
+}
+
+@media (max-width: 1024px) {
+  #leva__root > * {
+    top: 25rem;
+    left: 1rem;
+    width: 25rem;
+  }
+}

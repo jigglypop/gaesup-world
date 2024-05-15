@@ -24,6 +24,7 @@ export const InnerGroupRef = forwardRef(
             ref={props.animationRef}
           />
         )}
+
         {Object.keys(props.nodes).map((name: string, key: number) => {
           const node = props.nodes[name];
           if (node instanceof THREE.SkinnedMesh) {

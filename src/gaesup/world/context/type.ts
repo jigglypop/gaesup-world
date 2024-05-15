@@ -124,14 +124,17 @@ export type clickerType = {
   isOn: boolean;
   isRun: boolean;
 };
+// 클리커 옵션
+export type queueItemtype = THREE.Vector3 | Function;
 
+export type queueType = queueItemtype[];
 export type clickerOptionType = {
   autoStart?: boolean;
   isRun?: boolean;
   throttle?: number;
   track?: boolean;
   loop?: boolean;
-  queue?: THREE.Vector3[];
+  queue?: queueType;
   line?: boolean;
 };
 

@@ -1,4 +1,4 @@
-import { RapierRigidBody } from "@react-three/rapier";
+import { RigidBodyProps } from "@react-three/rapier";
 import * as THREE from "three";
 import { controllerOptionsType } from "../../controller/type";
 export type rideablePropType = {
@@ -19,7 +19,7 @@ export type rideablePropType = {
     vehicleSize?: THREE.Vector3;
     wheelSize?: THREE.Vector3;
     airplaneSize?: THREE.Vector3;
-    rigidBodyProps?: RapierRigidBody;
+    rigidBodyProps?: RigidBodyProps;
     outerGroupProps?: THREE.Group;
     innerGroupProps?: THREE.Group;
 };
