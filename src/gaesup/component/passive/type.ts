@@ -7,7 +7,11 @@ import {
 } from "@react-three/rapier";
 import { MutableRefObject } from "react";
 import * as THREE from "three";
-import { controllerOptionsType, groundRayType } from "../../controller/type";
+import {
+  controllerOptionsType,
+  groundRayType,
+  partsType,
+} from "../../controller/type";
 import { ridingType } from "../inner/common/type";
 
 // 컴포넌트 종류
@@ -42,5 +46,5 @@ export type passivePropsType = {
   rigidBodyProps?: RigidBodyProps;
   outerGroupProps?: THREE.Group;
   innerGroupProps?: THREE.Group;
-  parts?: string[];
+  parts?: partsType;
 } & ridingType;

@@ -174,7 +174,7 @@ export default function MainComponent() {
               },
             }}
             rigidBodyProps={{}}
-            parts={["gltf/ally_cloth_rabbit.glb"]}
+            parts={[{ url: "gltf/ally_cloth_rabbit.glb", color: "#ffe0e0" }]}
           ></GaesupController>
           <Floor />
           {/* <Rideables />

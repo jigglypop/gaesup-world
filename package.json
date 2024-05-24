@@ -1,6 +1,6 @@
 {
   "name": "gaesup-world",
-  "version": "0.8.51",
+  "version": "0.8.52",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

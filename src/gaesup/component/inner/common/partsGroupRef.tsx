@@ -1,5 +1,6 @@
 import { useAnimations, useGLTF } from "@react-three/drei";
 import { useGraph } from "@react-three/fiber";
+import { isEqual } from "lodash";
 import { useMemo } from "react";
 import * as THREE from "three";
 import { SkeletonUtils } from "three-stdlib";
@@ -11,15 +12,16 @@ export const PartsGroupRef = ({
   isActive,
   componentType,
   currentAnimation,
+  color,
 }: {
   url: string;
   isActive: boolean;
-
   componentType: componentTypeString;
   currentAnimation: string;
+  color?: string;
 }) => {
   const { scene, animations } = useGLTF(url);
-  const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
+  const clone = useMemo(() => SkeletonUtils.clone(scene), [scene, color]);
   const { actions, ref } = useAnimations(animations);
 
   const { nodes } = useGraph(clone);
@@ -44,28 +46,54 @@ export const PartsGroupRef = ({
         ref={ref}
       />
       {Object.keys(nodes).map((name: string, key: number) => {
-        const node = nodes[name];
+        const node = nodes?.[name];
         if (node instanceof THREE.SkinnedMesh) {
-          return (
-            <skinnedMesh
-              castShadow
-              receiveShadow
-              material={node.material}
-              geometry={node.geometry}
-              skeleton={node.skeleton}
-              key={key}
-            />
-          );
-        } else if (node instanceof THREE.Mesh) {
-          return (
-            <mesh
-              castShadow
-              receiveShadow
-              material={node.material}
-              geometry={node.geometry}
-              key={key}
-            />
-          );
+          if (isEqual("color", node) && color) {
+            return (
+              <skinnedMesh
+                castShadow
+                receiveShadow
+                geometry={node.geometry}
+                skeleton={node.skeleton}
+                key={key}
+              >
+                <meshStandardMaterial color={color} />
+              </skinnedMesh>
+            );
+          } else {
+            return (
+              <skinnedMesh
+                castShadow
+                receiveShadow
+                material={node.material}
+                geometry={node.geometry}
+                skeleton={node.skeleton}
+                key={key}
+              />
+            );
+          }
+        } else if (
+          node instanceof THREE.Mesh &&
+          isEqual("color", node) &&
+          color
+        ) {
+          if (isEqual("color", node) && color) {
+            return (
+              <mesh castShadow receiveShadow geometry={node.geometry} key={key}>
+                <meshStandardMaterial color={color} />
+              </mesh>
+            );
+          } else {
+            return (
+              <mesh
+                castShadow
+                receiveShadow
+                material={node.material}
+                geometry={node.geometry}
+                key={key}
+              />
+            );
+          }
         }
       })}
     </>

@@ -110,7 +110,14 @@ export interface controllerOtherPropType extends RigidBodyProps {
 }
 
 // 파츠
-export type partsType = string[];
+export type partType = {
+  url: string;
+  color?: string;
+  position?: THREE.Vector3;
+  rotation?: THREE.Euler;
+  scale?: THREE.Vector3;
+};
+export type partsType = partType[];
 
 export type controllerType = controllerOtherPropType &
   urlsType &

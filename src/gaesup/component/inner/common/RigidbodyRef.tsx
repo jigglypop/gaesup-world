@@ -135,13 +135,15 @@ export const RigidBodyRef = forwardRef(
         >
           {props.children}
           {props.parts &&
-            props.parts.map((url, key) => {
+            props.parts.map(({ url, color }, key) => {
+              console.log(url, color);
               return (
                 <PartsGroupRef
                   url={url}
                   isActive={props.isActive}
                   componentType={props.componentType}
                   currentAnimation={props.currentAnimation}
+                  color={color}
                   key={key + url}
                 />
               );

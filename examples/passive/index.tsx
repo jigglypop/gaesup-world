@@ -84,7 +84,7 @@ export default function Passive() {
         url={"gltf/ally_body.glb"}
         currentAnimation="jump"
         rigidbodyType={"fixed"}
-        parts={["gltf/ally_cloth_rabbit.glb"]}
+        parts={[{ url: "gltf/ally_cloth_rabbit.glb", color: "red" }]}
       ></PassiveCharacter>
       <PassiveVehicle
         position={V3(20, 0, 0)}
