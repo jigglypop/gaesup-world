@@ -135,8 +135,9 @@ export const RigidBodyRef = forwardRef(
         >
           {props.children}
           {props.parts &&
+            props.parts.length > 0 &&
             props.parts.map(({ url, color }, key) => {
-              console.log(url, color);
+              if (!url) return null;
               return (
                 <PartsGroupRef
                   url={url}
