@@ -34,7 +34,6 @@ export default function queue(prop: calcType) {
         if (action === "stop") {
           state.clock.stop();
           beforeCB(state);
-          console.log();
           setTimeout(() => {
             state.clock.start();
             afterCB(state);

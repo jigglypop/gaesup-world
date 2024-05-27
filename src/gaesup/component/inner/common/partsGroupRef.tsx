@@ -48,8 +48,6 @@ export const PartsGroupRef = ({
       {Object.keys(nodes).map((name: string, key: number) => {
         const node = nodes?.[name];
         if (node instanceof THREE.SkinnedMesh) {
-          console.log("color", color, node.name, isEqual("color", node));
-
           if (isEqual("color", node) && color) {
             return (
               <skinnedMesh
@@ -63,8 +61,6 @@ export const PartsGroupRef = ({
               </skinnedMesh>
             );
           } else {
-            console.log("color", color);
-
             return (
               <skinnedMesh
                 castShadow
