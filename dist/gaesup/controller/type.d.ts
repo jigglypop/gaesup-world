@@ -91,11 +91,11 @@ export interface controllerOtherPropType extends RigidBodyProps {
     debug?: boolean;
 }
 export type partType = {
-    url: string;
-    color?: string;
-    position?: THREE.Vector3;
-    rotation?: THREE.Euler;
-    scale?: THREE.Vector3;
+    url?: string | undefined;
+    color?: string | undefined;
+    position?: THREE.Vector3 | undefined;
+    rotation?: THREE.Euler | undefined;
+    scale?: THREE.Vector3 | undefined;
 };
 export type partsType = partType[];
 export type controllerType = controllerOtherPropType & urlsType & Partial<gaesupControllerContextPropType> & callbackType & {

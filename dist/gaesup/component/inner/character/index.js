@@ -14,5 +14,5 @@ import { OuterGroupRef } from "../common/OuterGroupRef";
 import { RigidBodyRef } from "../common/RigidbodyRef";
 export function CharacterInnerRef(props) {
     var outerGroupRef = props.outerGroupRef;
-    return (_jsx(OuterGroupRef, { ref: outerGroupRef, children: _jsx(RigidBodyRef, __assign({ name: "character", url: props.url, controllerOptions: props.controllerOptions, ref: props.rigidBodyRef, groundRay: props.groundRay }, props, { children: props.children })) }));
+    return (_jsx(OuterGroupRef, { ref: outerGroupRef, children: _jsx(RigidBodyRef, __assign({ name: "character", url: props.url, controllerOptions: props.controllerOptions, ref: props.rigidBodyRef, groundRay: props.groundRay, parts: props.parts }, props, { children: props.children })) }));
 }

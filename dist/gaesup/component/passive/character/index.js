@@ -33,5 +33,5 @@ export function PassiveCharacter(props) {
                 cameraTurn: 1,
                 cameraPosition: 1,
             },
-        }, position: props.position, rotation: props.rotation, groundRay: props.groundRay, currentAnimation: props.currentAnimation }, refs, props, { children: props.children })));
+        }, position: props.position, rotation: props.rotation, groundRay: props.groundRay, currentAnimation: props.currentAnimation, parts: props.parts }, refs, props, { children: props.children })));
 }
