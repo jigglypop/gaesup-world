@@ -1,10 +1,10 @@
 import { useAnimations, useGLTF } from "@react-three/drei";
 import { useGraph } from "@react-three/fiber";
-import { isEqual } from "lodash";
 import { useMemo } from "react";
 import * as THREE from "three";
 import { SkeletonUtils } from "three-stdlib";
 import playActions from "../../../animation/actions";
+import { isEqual } from "../../../utils/getTag";
 import { componentTypeString } from "../../passive/type";
 
 export const PartsGroupRef = ({
@@ -48,6 +48,8 @@ export const PartsGroupRef = ({
       {Object.keys(nodes).map((name: string, key: number) => {
         const node = nodes?.[name];
         if (node instanceof THREE.SkinnedMesh) {
+          console.log("color", color, node.name, isEqual("color", node));
+
           if (isEqual("color", node) && color) {
             return (
               <skinnedMesh
@@ -57,10 +59,12 @@ export const PartsGroupRef = ({
                 skeleton={node.skeleton}
                 key={key}
               >
-                <meshStandardMaterial color={color} />
+                <meshStandardMaterial color={new THREE.Color(color)} />
               </skinnedMesh>
             );
           } else {
+            console.log("color", color);
+
             return (
               <skinnedMesh
                 castShadow
@@ -80,7 +84,7 @@ export const PartsGroupRef = ({
           if (isEqual("color", node) && color) {
             return (
               <mesh castShadow receiveShadow geometry={node.geometry} key={key}>
-                <meshStandardMaterial color={color} />
+                <meshStandardMaterial color={new THREE.Color(color)} />
               </mesh>
             );
           } else {

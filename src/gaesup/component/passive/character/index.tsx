@@ -40,6 +40,7 @@ export function PassiveCharacter(props: passiveCharacterPropsType) {
       rotation={props.rotation}
       groundRay={props.groundRay}
       currentAnimation={props.currentAnimation}
+      parts={props.parts}
       {...refs}
       {...props}
     >
