@@ -19,6 +19,7 @@ import { cameraPropType } from "../../../physics/type";
 import { V3 } from "../../../utils";
 import { GaesupWorldContext } from "../../../world/context";
 import { InnerGroupRef } from "./InnerGroupRef";
+import { PartsGroupRef } from "./partsGroupRef";
 import { setGroundRay } from "./setGroundRay";
 import { rigidBodyRefType } from "./type";
 
@@ -120,7 +121,6 @@ export const RigidBodyRef = forwardRef(
           args={[(size.y / 2 - size.x) * 1.2, size.x * 1.2]}
           position={[0, (size.y / 2 + size.x / 2) * 1.2, 0]}
         />
-        {props.children}
         <InnerGroupRef
           objectNode={objectNode}
           animationRef={animationRef}
@@ -131,8 +131,24 @@ export const RigidBodyRef = forwardRef(
           enableRiding={props.enableRiding}
           ridingUrl={props.ridingUrl}
           offset={props.offset}
+          parts={props.parts}
         >
           {props.children}
+          {props.parts &&
+            props.parts.length > 0 &&
+            props.parts.map(({ url, color }, key) => {
+              if (!url) return null;
+              return (
+                <PartsGroupRef
+                  url={url}
+                  isActive={props.isActive}
+                  componentType={props.componentType}
+                  currentAnimation={props.currentAnimation}
+                  color={color}
+                  key={key + url}
+                />
+              );
+            })}
         </InnerGroupRef>
       </RigidBody>
     );

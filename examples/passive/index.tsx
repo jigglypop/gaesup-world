@@ -81,9 +81,10 @@ export default function Passive() {
       <PassiveCharacter
         position={V3(10, 0, 0)}
         rotation={euler()}
-        url={S3 + "/orri.glb"}
+        url={"gltf/ally_body.glb"}
         currentAnimation="jump"
         rigidbodyType={"fixed"}
+        parts={[{ url: "gltf/ally_cloth_rabbit.glb", color: "red" }]}
       ></PassiveCharacter>
       <PassiveVehicle
         position={V3(20, 0, 0)}

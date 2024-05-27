@@ -1,9 +1,9 @@
 import { Collider } from "@dimforge/rapier3d-compat";
-import { RapierRigidBody, RigidBodyTypeString } from "@react-three/rapier";
+import { RigidBodyProps, RigidBodyTypeString } from "@react-three/rapier";
 import { MutableRefObject, RefObject } from "react";
 import * as THREE from "three";
 import { callbackType } from "../../../controller/initialize/callback/type";
-import { groundRayType } from "../../../controller/type";
+import { groundRayType, partsType } from "../../../controller/type";
 import { urlsType } from "../../../world/context/type";
 import { innerRefType, passivePropsType } from "../../passive/type";
 // collider 정의
@@ -24,6 +24,7 @@ export type InnerGroupRefType = {
   isActive?: boolean;
   ridingUrl?: string;
   offset?: THREE.Vector3;
+  parts?: partsType;
 } & ridingType;
 // riding 타입정의
 export type ridingType = {
@@ -57,7 +58,8 @@ export type rigidBodyRefType = {
   isActive?: boolean;
   ridingUrl?: string;
   groundRay?: groundRayType;
-  rigidBodyProps?: RapierRigidBody;
+  rigidBodyProps?: RigidBodyProps;
+  parts?: partsType;
 } & passivePropsType &
   innerRefType &
   callbackType;

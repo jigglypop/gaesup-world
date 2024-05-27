@@ -1,11 +1,13 @@
 "use client";
 
-import { Environment } from "@react-three/drei";
+import { Environment, Trail } from "@react-three/drei";
 import { Physics, euler } from "@react-three/rapier";
 
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 
+import { useRef } from "react";
 import { FaMapMarkerAlt } from "react-icons/fa";
+import * as THREE from "three";
 import {
   GaesupController,
   GaesupWorld,
@@ -21,8 +23,36 @@ import { InnerHtml } from "../../src/gaesup/utils/innerHtml";
 import Info from "../info";
 import Passive from "../passive";
 import Floor from "./Floor";
-import Rideables from "./rideable";
 import * as style from "./style.css";
+
+function Electron({ radius = 2.75, speed = 6, ...props }) {
+  const ref = useRef<THREE.Mesh>();
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime() * speed;
+    if (!ref.current) return;
+    ref.current.position.set(
+      Math.sin(t) * radius,
+      (Math.cos(t) * radius * Math.atan(t)) / Math.PI / 1.25,
+      0
+    );
+  });
+  return (
+    <group {...props}>
+      <Trail
+        local
+        width={5}
+        length={6}
+        color={new THREE.Color(2, 1, 10)}
+        attenuation={(t) => t * t}
+      >
+        <mesh ref={ref}>
+          <sphereGeometry args={[0.25]} />
+          <meshBasicMaterial color={[10, 1, 10]} toneMapped={false} />
+        </mesh>
+      </Trail>
+    </group>
+  );
+}
 
 export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
 export const keyBoardMap = [
@@ -38,7 +68,7 @@ export const keyBoardMap = [
 ];
 
 export default function MainComponent() {
-  const CHARACTER_URL = S3 + "/gaesupyee.glb";
+  const CHARACTER_URL = "gltf/ally_body.glb";
   const AIRPLANE_URL = S3 + "/gaebird.glb";
   const VEHICLE_URL = S3 + "/gorani.glb";
 
@@ -57,14 +87,48 @@ export default function MainComponent() {
       debug={false}
       keyBoardMap={keyBoardMap}
       cameraOption={{
-        XDistance: 28,
-        YDistance: 25,
-        ZDistance: 28,
+        XDistance: 20,
+        YDistance: 20,
+        ZDistance: 20,
+      }}
+      clickerOption={{
+        autoStart: true,
+        track: true,
+        loop: true,
+        queue: [
+          V3(10, 0, 0),
+          V3(30, 0, 30),
+          V3(10, 0, 30),
+          V3(30, 0, 10),
+          {
+            action: "stop",
+            beforeCB: (state) => {
+              console.log("stop");
+              // state.clock.stop();
+              // console.log("stop");
+              // if (clock.getElapsedTime() > 20) {
+              //   console.log("start");
+              //   state.clock.start();
+              // }
+            },
+            afterCB: (state) => {
+              console.log("start");
+            },
+            time: 3000,
+          },
+        ],
+        line: true,
       }}
     >
       <Canvas
         shadows
         dpr={[1, 2]}
+        camera={{
+          position: [0, 10, 20],
+          fov: 45,
+          near: 0.1,
+          far: 1000,
+        }}
         style={{ width: "100vw", height: "100vh", position: "fixed" }}
         frameloop="demand"
       >
@@ -95,7 +159,7 @@ export default function MainComponent() {
           shadow-camera-bottom={-50}
           shadow-camera-left={-50}
         />
-        <Physics debug>
+        <Physics debug interpolate={true}>
           <GaesupController
             onAnimate={({ control, subscribe }) => {
               subscribe({
@@ -109,11 +173,14 @@ export default function MainComponent() {
                 cameraPosition: 1,
               },
             }}
-          />
+            rigidBodyProps={{}}
+            parts={[{ url: "gltf/ally_cloth_rabbit.glb", color: "#ffe0e0" }]}
+          ></GaesupController>
           <Floor />
-          <Rideables />
+          {/* <Rideables />
+           */}
           <Passive />
-
+          <Electron />
           <Clicker
             onMarker={
               <group rotation={euler({ x: 0, y: Math.PI / 2, z: 0 })}>

@@ -63,6 +63,7 @@ export type controllerInnerType = {
   cameraRay: cameraRayType;
   keyControl: keyControlType;
   controllerOptions: controllerOptionsType;
+  parts?: partsType;
 } & controllerOtherPropType &
   refsType &
   callbackType;
@@ -108,7 +109,20 @@ export interface controllerOtherPropType extends RigidBodyProps {
   debug?: boolean;
 }
 
+// 파츠
+export type partType = {
+  url?: string | undefined;
+  color?: string | undefined;
+  position?: THREE.Vector3 | undefined;
+  rotation?: THREE.Euler | undefined;
+  scale?: THREE.Vector3 | undefined;
+};
+export type partsType = partType[];
+
 export type controllerType = controllerOtherPropType &
   urlsType &
   Partial<gaesupControllerContextPropType> &
-  callbackType & { controllerOptions?: controllerOptionsType };
+  callbackType & {
+    controllerOptions?: controllerOptionsType;
+    parts?: partsType;
+  };

@@ -5,7 +5,6 @@ export default function impulse(prop: calcType) {
   const {
     rigidBodyRef,
     worldContext: { states, activeState },
-    dispatch,
   } = prop;
   const { isMoving, isRunning } = states;
   const {
@@ -33,13 +32,4 @@ export default function impulse(prop: calcType) {
   rigidBodyRef.current.applyImpulse(impulse, true);
   activeState.position = vec3(rigidBodyRef.current.translation());
   activeState.velocity = vec3(rigidBodyRef.current.linvel());
-
-  dispatch({
-    type: "update",
-    payload: {
-      activeState: {
-        ...activeState,
-      },
-    },
-  });
 }

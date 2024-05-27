@@ -6,10 +6,10 @@ export const makeNormalCameraPosition = (
   activeState: activeStateType,
   cameraOption: cameraOptionType
 ) => {
-  const { YDistance, ZDistance } = cameraOption;
+  const { XDistance, YDistance, ZDistance } = cameraOption;
   const cameraPosition = activeState.position
     .clone()
-    .add(V3(0, YDistance, ZDistance));
+    .add(V3(XDistance, YDistance, ZDistance));
   return cameraPosition;
 };
 export default function normal(prop: cameraPropType) {

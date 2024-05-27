@@ -14,7 +14,6 @@ import { rideablePropType } from "./type";
 export function Rideable(props: rideablePropType) {
   const { states, rideable } = useContext(GaesupWorldContext);
   const { initRideable, ride, landing } = useRideable();
-  // const current = getRideable(props.objectkey);
   const [_rideable] = useState<{
     position: THREE.Vector3;
     rotation: THREE.Euler;
