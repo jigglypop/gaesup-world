@@ -1,4 +1,3 @@
-/// <reference types="react" />
 import { gaesupWorldPropsType } from "../type";
 export default function initGaesupWorld(props: gaesupWorldPropsType): {
     gaesupProps: {

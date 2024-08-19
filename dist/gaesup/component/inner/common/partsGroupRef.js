@@ -23,12 +23,10 @@ export var PartsGroupRef = function (_a) {
     return (_jsxs(_Fragment, { children: [_jsx("primitive", { object: objectNode, visible: false, receiveShadow: true, castShadow: true, ref: ref }), Object.keys(nodes).map(function (name, key) {
                 var node = nodes === null || nodes === void 0 ? void 0 : nodes[name];
                 if (node instanceof THREE.SkinnedMesh) {
-                    console.log("color", color, node.name, isEqual("color", node));
                     if (isEqual("color", node) && color) {
                         return (_jsx("skinnedMesh", { castShadow: true, receiveShadow: true, geometry: node.geometry, skeleton: node.skeleton, children: _jsx("meshStandardMaterial", { color: new THREE.Color(color) }) }, key));
                     }
                     else {
-                        console.log("color", color);
                         return (_jsx("skinnedMesh", { castShadow: true, receiveShadow: true, material: node.material, geometry: node.geometry, skeleton: node.skeleton }, key));
                     }
                 }

@@ -29,7 +29,6 @@ export default function queue(prop) {
                 if (action === "stop") {
                     state.clock.stop();
                     beforeCB(state);
-                    console.log();
                     setTimeout(function () {
                         state.clock.start();
                         afterCB_1(state);

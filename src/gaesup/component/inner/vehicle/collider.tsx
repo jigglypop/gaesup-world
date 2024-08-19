@@ -15,7 +15,7 @@ export const VehicleWheelCollider = forwardRef(
 
     return (
       <CuboidCollider
-        ref={ref}
+        ref={ref as any}
         args={[
           vehicleSize.x / 2,
           vehicleSize.y / 2 - wheelSize.y / 2,
@@ -31,7 +31,7 @@ export const VehicleCollider = forwardRef(
   ({ vehicleSize }: { vehicleSize: THREE.Vector3 }, ref: Ref<Collider>) => {
     return (
       <CuboidCollider
-        ref={ref}
+        ref={ref as any}
         args={[vehicleSize.x / 2, vehicleSize.y / 2, vehicleSize.z / 2]}
         position={[0, vehicleSize.y / 2, 0]}
       />

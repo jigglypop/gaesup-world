@@ -44,6 +44,9 @@ export default function calculation({
         rigidBodyRef.current.resetTorques(false);
       }
     }
+    return () => {
+      rigidBodyRef = null;
+    };
   }, [block.control, rigidBodyRef.current]);
 
   useFrame((state, delta) => {

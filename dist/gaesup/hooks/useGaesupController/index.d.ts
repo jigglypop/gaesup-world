@@ -1,4 +1,3 @@
-/// <reference types="react" />
 import { activeStateType, modeType, urlsType } from "../../world/context/type";
 export declare function useGaesupController(): gaesupPassivePropsType;
 export type gaesupPassivePropsType = {

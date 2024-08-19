@@ -98,6 +98,10 @@ export function subscribeActions({ type }: subscribeActionsType) {
         key: "fall",
       },
     ]);
+    return () => {
+      // Unsubscribe
+      subscribeAll([]);
+    };
   }, []);
 }
 

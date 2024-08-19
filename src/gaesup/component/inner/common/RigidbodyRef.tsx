@@ -6,7 +6,13 @@ import {
   RigidBody,
   euler,
 } from "@react-three/rapier";
-import { MutableRefObject, forwardRef, useContext, useMemo } from "react";
+import {
+  MutableRefObject,
+  forwardRef,
+  useContext,
+  useEffect,
+  useMemo,
+} from "react";
 import * as THREE from "three";
 import { SkeletonUtils } from "three-stdlib";
 import playActions, { subscribeActions } from "../../../animation/actions";
@@ -73,7 +79,9 @@ export const RigidBodyRef = forwardRef(
       actions,
       componentType: props.componentType,
     });
-    const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
+    const clone = useMemo(() => {
+      return SkeletonUtils.clone(scene);
+    }, [scene]);
     const { nodes } = useGraph(clone);
     const objectNode = Object.values(nodes).find(
       (node) => node.type === "Object3D"
@@ -101,6 +109,23 @@ export const RigidBodyRef = forwardRef(
         false
       );
     });
+
+    useEffect(() => {
+      return () => {
+        if (scene) {
+          scene.traverse((object: any) => {
+            if (object.isMesh) {
+              object.geometry.dispose();
+              if (object.material.isMaterial) {
+                object.material.dispose();
+              } else if (Array.isArray(object.material)) {
+                object.material.forEach((material) => material.dispose());
+              }
+            }
+          });
+        }
+      };
+    }, [scene]);
     return (
       <RigidBody
         colliders={false}
@@ -117,7 +142,7 @@ export const RigidBodyRef = forwardRef(
         {...props.rigidBodyProps}
       >
         <CapsuleCollider
-          ref={props.colliderRef}
+          ref={props.colliderRef as any}
           args={[(size.y / 2 - size.x) * 1.2, size.x * 1.2]}
           position={[0, (size.y / 2 + size.x / 2) * 1.2, 0]}
         />

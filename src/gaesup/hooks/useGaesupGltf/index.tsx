@@ -1,5 +1,5 @@
 import { useGLTF } from "@react-three/drei";
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import * as THREE from "three";
 import { GLTFResult } from "../../component/type";
 import {
@@ -47,18 +47,37 @@ export const useGltfAndSize = ({ url }: useGltfAndSizeType) => {
           sizes: { ...sizes },
         },
       });
-      return sizes[key];
-    } else {
-      return sizes[key];
     }
+    return sizes[key];
   };
-
+  useEffect(() => {
+    return () => {
+      if (gltf) {
+        gltf.scene.traverse((object) => {
+          if (object instanceof THREE.Mesh) {
+            object.geometry.dispose();
+            if (object.material.isMaterial) {
+              object.material.dispose();
+            } else if (Array.isArray(object.material)) {
+              object.material.forEach((material) => material.dispose());
+            }
+          } else if (object instanceof THREE.SkinnedMesh) {
+            object.geometry.dispose();
+            if (object.material.isMaterial) {
+              object.material.dispose();
+            } else if (Array.isArray(object.material)) {
+              object.material.forEach((material) => material.dispose());
+            }
+          }
+        });
+      }
+    };
+  }, [gltf]);
   return { gltf, size: setSize(), setSize, getSize };
 };
 
 export const useGaesupGltf = () => {
   const { sizes } = useContext(GaesupWorldContext);
-
   // get size by url
   const getSizesByUrls = (urls?: urlsType) => {
     const matchedSizes: { [key in keyof urlsType]: THREE.Vector3 } = {};

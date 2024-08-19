@@ -186,6 +186,9 @@ export function JoyStick(props: joyStickType) {
 
   useEffect(() => {
     window.addEventListener("resize", resize);
+    return () => {
+      window.removeEventListener("resize", resize);
+    };
   }, []);
 
   useEffect(() => {

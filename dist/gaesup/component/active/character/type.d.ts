@@ -1,4 +1,3 @@
-/// <reference types="react" />
 import { RigidBodyTypeString } from "@react-three/rapier";
 import * as THREE from "three";
 import { controllerOptionsType } from "../../../controller/type";

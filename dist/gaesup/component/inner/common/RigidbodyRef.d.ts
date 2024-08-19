@@ -1,4 +1,3 @@
-/// <reference types="react" />
 import { RapierRigidBody } from "@react-three/rapier";
 import * as THREE from "three";
 export declare const RigidBodyRef: import("react").ForwardRefExoticComponent<{
@@ -12,7 +11,7 @@ export declare const RigidBodyRef: import("react").ForwardRefExoticComponent<{
     rigidBodyProps?: import("@react-three/rapier").RigidBodyProps;
     parts?: import("../../../controller/type").partsType;
 } & {
-    children?: import("react").ReactNode;
+    children?: React.ReactNode;
     groundRay?: import("../../../controller/type").groundRayType;
     url: string;
     ridingUrl?: string;
@@ -31,7 +30,7 @@ export declare const RigidBodyRef: import("react").ForwardRefExoticComponent<{
         intangible: boolean;
     };
     rigidBodyProps?: import("@react-three/rapier").RigidBodyProps;
-    outerGroupProps?: THREE.Group<THREE.Object3DEventMap>;
-    innerGroupProps?: THREE.Group<THREE.Object3DEventMap>;
+    outerGroupProps?: THREE.Group;
+    innerGroupProps?: THREE.Group;
     parts?: import("../../../controller/type").partsType;
 } & import("./type").ridingType & import("../../passive/type").innerRefType & import("../../../controller/initialize/callback/type").callbackType & import("react").RefAttributes<RapierRigidBody>>;

@@ -1,4 +1,3 @@
-/// <reference types="react" />
 import { dispatchType } from "../../utils/type";
 import { gaesupControllerType } from "./type";
 export declare const gaesupControllerDefault: {

@@ -1,4 +1,3 @@
-/// <reference types="react" />
 export declare function GaeSupProps({ type, text, position, children, }: {
     type?: "normal" | "ground";
     text?: string;

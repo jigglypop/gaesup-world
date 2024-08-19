@@ -1,4 +1,3 @@
-/// <reference types="react" />
 import { dispatchType } from "../../utils/type";
 import { gaesupWorldContextType } from "./type";
 export declare const gaesupWorldDefault: gaesupWorldContextType;
