@@ -17,7 +17,6 @@ import { GaesupComponent } from "../component";
 import { GaesupWorldContext } from "../world/context";
 import { GaesupControllerContext, GaesupControllerDispatchContext, gaesupControllerDefault, } from "./context";
 import { gaesupControllerReducer } from "./context/reducer";
-import initDebug from "./debug";
 import initControllerProps from "./initialize";
 export function GaesupController(props) {
     var keyBoardMap = useContext(GaesupWorldContext).keyBoardMap;
@@ -66,10 +65,6 @@ export function GaesupControllerInner(props) {
     var prop = __assign(__assign(__assign(__assign({}, initControllerProps({
         refs: refs,
     })), { children: props.children, groupProps: props.groupProps, rigidBodyProps: props.rigidBodyProps, controllerOptions: gaesupControl.value.controllerOptions, parts: props.parts }), gaesupControl.value.callbacks), refs);
-    initDebug({
-        controllerContext: gaesupControl.value,
-        controllerDispatch: gaesupControl.dispatch,
-    });
     var ContextBridge = useContextBridge(GaesupWorldContext, GaesupControllerContext);
     return (_jsx(ContextBridge, { children: _jsx(GaesupControllerContext.Provider, { value: gaesupControl.value, children: _jsx(GaesupControllerDispatchContext.Provider, { value: gaesupControl.dispatch, children: _jsx(GaesupComponent, { props: prop, refs: refs }) }) }) }));
 }

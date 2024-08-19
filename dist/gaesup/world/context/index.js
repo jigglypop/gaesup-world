@@ -42,7 +42,6 @@ export var gaesupWorldDefault = {
             rightward: false,
         },
     },
-    debug: false,
     minimap: {
         props: {},
     },

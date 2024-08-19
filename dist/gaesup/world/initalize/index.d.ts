@@ -6,7 +6,6 @@ export default function initGaesupWorld(props: gaesupWorldPropsType): {
             mode?: import("../context/type").modeType;
             urls?: import("../context/type").urlsType;
             states?: import("../context/type").statesType;
-            debug?: boolean;
             minimap?: import("../../tools/MiniMap/type").minimapInnerType;
             joystick?: import("../../tools/joystick/type").joyStickInnerType;
             control?: {

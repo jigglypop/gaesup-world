@@ -45,7 +45,6 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
       rightward: false,
     },
   },
-  debug: false,
   minimap: {
     props: {},
   },

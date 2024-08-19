@@ -18,7 +18,6 @@ export {
   V3,
   V30,
   V31,
-  ZoomButton,
   useClicker,
   useGaesupAnimation,
   useGaesupController,

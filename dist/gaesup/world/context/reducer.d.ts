@@ -7,7 +7,6 @@ export declare function gaesupWorldReducer(props: Partial<gaesupWorldContextType
     mode?: import("./type").modeType;
     urls?: import("./type").urlsType;
     states?: import("./type").statesType;
-    debug?: boolean;
     minimap?: import("../../tools/MiniMap/type").minimapInnerType;
     joystick?: import("../../tools/joystick/type").joyStickInnerType;
     control?: {

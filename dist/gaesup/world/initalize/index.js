@@ -10,10 +10,8 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 import { useEffect, useMemo, useReducer } from "react";
-import { isDesktop } from "react-device-detect";
 import { gaesupWorldDefault } from "../../world/context";
 import { gaesupWorldReducer } from "../../world/context/reducer";
-import initDebug from "../debug";
 export default function initGaesupWorld(props) {
     var _a = useReducer(gaesupWorldReducer, {
         activeState: __assign(__assign({}, gaesupWorldDefault.activeState), { position: props.startPosition || gaesupWorldDefault.activeState.position }),
@@ -23,7 +21,6 @@ export default function initGaesupWorld(props) {
         refs: null,
         states: gaesupWorldDefault.states,
         rideable: gaesupWorldDefault.rideable,
-        debug: (props.debug && isDesktop) || gaesupWorldDefault.debug,
         minimap: gaesupWorldDefault.minimap,
         joystick: gaesupWorldDefault.joystick,
         control: gaesupWorldDefault.control,
@@ -53,7 +50,6 @@ export default function initGaesupWorld(props) {
         });
     }, []);
     var gaesupProps = useMemo(function () { return ({ value: value, dispatch: dispatch }); }, [value, value.block, dispatch]);
-    initDebug({ value: gaesupProps.value, dispatch: dispatch });
     return {
         gaesupProps: gaesupProps,
     };

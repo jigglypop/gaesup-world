@@ -5,9 +5,7 @@ import * as THREE from "three";
 
 export function InnerHtml({ children, ...props }) {
   const ref = useRef<THREE.Group>();
-  const [isOccluded, setOccluded] = useState();
   const [isInRange, setInRange] = useState<boolean>();
-  const isVisible = isInRange && !isOccluded;
   const vec = new THREE.Vector3();
   useFrame((state) => {
     const range =

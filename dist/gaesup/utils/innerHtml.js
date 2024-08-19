@@ -28,9 +28,7 @@ import * as THREE from "three";
 export function InnerHtml(_a) {
     var children = _a.children, props = __rest(_a, ["children"]);
     var ref = useRef();
-    var _b = useState(), isOccluded = _b[0], setOccluded = _b[1];
-    var _c = useState(), isInRange = _c[0], setInRange = _c[1];
-    var isVisible = isInRange && !isOccluded;
+    var _b = useState(), isInRange = _b[0], setInRange = _b[1];
     var vec = new THREE.Vector3();
     useFrame(function (state) {
         var range = state.camera.position.distanceTo(ref.current.getWorldPosition(vec)) <= 10;

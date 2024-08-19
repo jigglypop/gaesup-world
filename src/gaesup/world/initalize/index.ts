@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useReducer } from "react";
 
-import { isDesktop } from "react-device-detect";
 import { gaesupWorldDefault } from "../../world/context";
 import { gaesupWorldReducer } from "../../world/context/reducer";
-import initDebug from "../debug";
 import { gaesupWorldPropsType } from "../type";
 
 export default function initGaesupWorld(props: gaesupWorldPropsType) {
@@ -21,7 +19,6 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
     refs: null,
     states: gaesupWorldDefault.states,
     rideable: gaesupWorldDefault.rideable,
-    debug: (props.debug && isDesktop) || gaesupWorldDefault.debug,
     minimap: gaesupWorldDefault.minimap,
     joystick: gaesupWorldDefault.joystick,
     control: gaesupWorldDefault.control,
@@ -64,7 +61,6 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
     () => ({ value: value, dispatch }),
     [value, value.block, dispatch]
   );
-  initDebug({ value: gaesupProps.value, dispatch });
 
   return {
     gaesupProps,

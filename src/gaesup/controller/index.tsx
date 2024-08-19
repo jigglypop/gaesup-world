@@ -14,7 +14,6 @@ import {
   gaesupControllerDefault,
 } from "./context";
 import { gaesupControllerReducer } from "./context/reducer";
-import initDebug from "./debug";
 import initControllerProps from "./initialize";
 import { controllerInnerType, controllerType } from "./type";
 
@@ -99,11 +98,6 @@ export function GaesupControllerInner(props: controllerType) {
     ...gaesupControl.value.callbacks,
     ...refs,
   };
-
-  initDebug({
-    controllerContext: gaesupControl.value,
-    controllerDispatch: gaesupControl.dispatch,
-  });
 
   const ContextBridge = useContextBridge(
     GaesupWorldContext,

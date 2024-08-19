@@ -196,7 +196,6 @@ export type gaesupWorldContextType = {
   mode: modeType;
   urls: urlsType;
   states: statesType;
-  debug: boolean;
   minimap: minimapInnerType;
   joystick: joyStickInnerType;
   control: KeyboardControlsState<string>;
