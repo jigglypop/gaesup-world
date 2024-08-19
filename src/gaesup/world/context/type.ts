@@ -4,9 +4,9 @@ import { actionsType, refsType } from "../../controller/type";
 import { RootState } from "@react-three/fiber";
 import * as THREE from "three";
 import { rideableType } from "../../hooks/useRideable/type";
+import { minimapInnerType } from "../../tools/MiniMap/type";
 import { joyStickInnerType } from "../../tools/joystick/type";
 import { keyboardMapType } from "../../tools/keyBoardToolTip/type";
-import { minimapInnerType } from "../../tools/miniMap/type";
 import { dispatchType } from "../../utils/type";
 
 // camera option

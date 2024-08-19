@@ -1,6 +1,6 @@
 {
   "name": "gaesup-world",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,6 +13,7 @@
     "build": "vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
+    "prepare": "rm -rf dist && mkdir dist && tsc -p tsconfig.build.json",
     "predeploy": "vite build",
     "deploy": "gh-pages -d dist"
   },
@@ -61,7 +62,7 @@
   "description": "Web 3D Character Controller and World Platform Library",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jigglypop/../../../src.git"
+    "url": "https://github.com/jigglypop/gaesup-world.git"
   },
   "keywords": [
     "three.js",
@@ -74,6 +75,6 @@
   "author": "jigglypop",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jigglypop/../../../src/issues"
+    "url": "https://github.com/jigglypop/gaesup-world.git/issues"
   }
 }

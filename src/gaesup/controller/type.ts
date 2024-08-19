@@ -1,4 +1,4 @@
-import { Collider, Ray, RayColliderToi } from "@dimforge/rapier3d-compat";
+import { Collider, Ray } from "@dimforge/rapier3d-compat";
 import { GroupProps } from "@react-three/fiber";
 import { RapierRigidBody, RigidBodyProps } from "@react-three/rapier";
 import { ReactNode, RefObject } from "react";
@@ -37,7 +37,7 @@ export type jumpPropType = jumpInnerType & jumpConstType;
 
 export type rayType = {
   origin: THREE.Vector3;
-  hit: RayColliderToi | null;
+  hit: any | null;
   rayCast: Ray | null;
   dir: THREE.Vector3;
   offset: THREE.Vector3;

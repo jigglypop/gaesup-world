@@ -117,7 +117,7 @@ export const RigidBodyRef = forwardRef(
         {...props.rigidBodyProps}
       >
         <CapsuleCollider
-          ref={props.colliderRef}
+          ref={props.colliderRef as any}
           args={[(size.y / 2 - size.x) * 1.2, size.x * 1.2]}
           position={[0, (size.y / 2 + size.x / 2) * 1.2, 0]}
         />
