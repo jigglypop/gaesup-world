@@ -26,5 +26,5 @@ export {
   useMovePoint,
   usePushKey,
   useRideable,
-  useTeleport,
+  useTeleport
 } from "./dist";

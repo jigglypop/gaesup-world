@@ -3,12 +3,11 @@ import { useCallback, useContext, useState } from "react";
 import { GaesupWorldContext } from "../../world/context";
 import { minimapDefault } from "./default";
 import "./style.css";
-import { minimapType } from "./type";
 
 // X 축은 동(+) 서(-) 방향, 즉 경도를 나타낸다.
 // Z 축은 남(+) 북(-) 방향, 즉 위도를 나타낸다.
 
-export function MiniMap(props: minimapType) {
+export function MiniMap(props: any) {
   const { minimap, activeState, mode } = useContext(GaesupWorldContext);
   const [scale, setscale] = useState(props.scale || minimapDefault.scale);
   const {
