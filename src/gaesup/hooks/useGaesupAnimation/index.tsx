@@ -81,6 +81,8 @@ export function useGaesupAnimation({
   };
 
   const subscribeAll = (props: animationAtomType[]) => {
+    const subscribedTags: string[] = [];
+
     props.forEach((item) => {
       animationState[type].store[item.tag] = {
         condition: item.condition,
@@ -88,7 +90,9 @@ export function useGaesupAnimation({
         animationName: item.animationName,
         key: item.key,
       };
+      subscribedTags.push(item.tag);
     });
+
     dispatch({
       type: "update",
       payload: {
@@ -97,6 +101,21 @@ export function useGaesupAnimation({
         },
       },
     });
+
+    // 구독 해제 함수 반환
+    return () => {
+      subscribedTags.forEach((tag) => {
+        delete animationState[type].store[tag];
+      });
+      dispatch({
+        type: "update",
+        payload: {
+          animationState: {
+            ...animationState,
+          },
+        },
+      });
+    };
   };
 
   return {

@@ -4,7 +4,7 @@ import { calcType } from "../type";
 export default function impulse(prop: calcType) {
   const {
     rigidBodyRef,
-    worldContext: { activeState, control, mode, joystick },
+    worldContext: { activeState, control },
     controllerContext: { vehicle },
   } = prop;
   const { shift } = control;
@@ -15,13 +15,7 @@ export default function impulse(prop: calcType) {
   const V = vec3(velocity).length();
   if (V < maxSpeed) {
     const M = rigidBodyRef.current.mass();
-    let speed = 1;
-    if (mode.controller === "joystick") {
-      if (!joystick.joyStickOrigin.isCenter)
-        speed = joystick.joyStickOrigin.isIn ? accelRatio : 1;
-    } else {
-      speed = shift ? accelRatio : 1;
-    }
+    let speed = shift ? accelRatio : 1;
     // impulse = mass * velocity
     rigidBodyRef.current.applyImpulse(
       vec3()

@@ -2,10 +2,10 @@
 
 import { Collider } from "@dimforge/rapier3d-compat";
 import { RapierRigidBody } from "@react-three/rapier";
-import { useContext, useMemo, useReducer, useRef } from "react";
+import { useMemo, useReducer, useRef } from "react";
 import * as THREE from "three";
 
-import { KeyboardControls, useContextBridge } from "@react-three/drei";
+import { useContextBridge } from "@react-three/drei";
 import { GaesupComponent } from "../component";
 import { GaesupWorldContext } from "../world/context";
 import {
@@ -18,12 +18,10 @@ import initControllerProps from "./initialize";
 import { controllerInnerType, controllerType } from "./type";
 
 export function GaesupController(props: controllerType) {
-  const { keyBoardMap } = useContext(GaesupWorldContext);
-
   return (
-    <KeyboardControls map={keyBoardMap}>
+    <>
       <GaesupControllerInner {...props}>{props.children}</GaesupControllerInner>
-    </KeyboardControls>
+    </>
   );
 }
 

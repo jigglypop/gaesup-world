@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer } from "react";
+import { useMemo, useReducer } from "react";
 
 import { gaesupWorldDefault } from "../../world/context";
 import { gaesupWorldReducer } from "../../world/context/reducer";
@@ -20,7 +20,6 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
     states: gaesupWorldDefault.states,
     rideable: gaesupWorldDefault.rideable,
     minimap: gaesupWorldDefault.minimap,
-    joystick: gaesupWorldDefault.joystick,
     control: gaesupWorldDefault.control,
     clicker: gaesupWorldDefault.clicker,
     clickerOption: Object.assign(
@@ -28,34 +27,9 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
       props.clickerOption || {}
     ),
     animationState: gaesupWorldDefault.animationState,
-    keyBoardMap: Object.assign(
-      gaesupWorldDefault.keyBoardMap,
-      props.keyBoardMap || {}
-    ),
-
     block: Object.assign(gaesupWorldDefault.block, props.block || {}),
     sizes: gaesupWorldDefault.sizes,
   });
-
-  useEffect(() => {
-    const keyboard = value.keyBoardMap?.reduce((maps, keyboardMapItem) => {
-      maps[keyboardMapItem.name] = false;
-      return maps;
-    }, {});
-    const assignedControl = Object.assign(value.control, keyboard);
-    if (value.block.scroll)
-      window.addEventListener("touchmove", (e) => e.preventDefault(), {
-        passive: false,
-      });
-    dispatch({
-      type: "update",
-      payload: {
-        control: {
-          ...assignedControl,
-        },
-      },
-    });
-  }, []);
 
   const gaesupProps = useMemo(
     () => ({ value: value, dispatch }),

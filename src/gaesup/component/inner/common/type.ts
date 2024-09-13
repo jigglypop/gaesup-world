@@ -59,6 +59,7 @@ export type rigidBodyRefType = {
   ridingUrl?: string;
   groundRay?: groundRayType;
   rigidBodyProps?: RigidBodyProps;
+  isNotColliding?: boolean;
   parts?: partsType;
 } & passivePropsType &
   innerRefType &

@@ -5,8 +5,7 @@ import { RootState } from "@react-three/fiber";
 import * as THREE from "three";
 import { rideableType } from "../../hooks/useRideable/type";
 import { minimapInnerType } from "../../tools/MiniMap/type";
-import { joyStickInnerType } from "../../tools/joystick/type";
-import { keyboardMapType } from "../../tools/keyBoardToolTip/type";
+
 import { dispatchType } from "../../utils/type";
 
 // camera option
@@ -101,7 +100,7 @@ export type animationStatePropType = {
 
 export type modeType = {
   type?: "character" | "vehicle" | "airplane";
-  controller?: "gameboy" | "keyboard" | "joystick" | "clicker";
+  controller?: "clicker";
   control?: "normal" | "orbit";
   isButton?: boolean;
 };
@@ -197,11 +196,9 @@ export type gaesupWorldContextType = {
   urls: urlsType;
   states: statesType;
   minimap: minimapInnerType;
-  joystick: joyStickInnerType;
   control: KeyboardControlsState<string>;
   refs: refsType;
   animationState: animationStateType;
-  keyBoardMap: keyboardMapType;
   cameraOption: cameraOptionType;
   clickerOption: clickerOptionType;
   clicker: clickerType;

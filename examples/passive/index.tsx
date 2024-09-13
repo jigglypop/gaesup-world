@@ -84,6 +84,7 @@ export default function Passive() {
         url={"gltf/ally_body.glb"}
         currentAnimation="jump"
         rigidbodyType={"fixed"}
+        isNotColliding={true}
         parts={[{ url: "gltf/ally_cloth_rabbit.glb", color: "red" }]}
       ></PassiveCharacter>
       <PassiveVehicle
@@ -92,6 +93,7 @@ export default function Passive() {
         url={S3 + "/gaebird.glb"}
         currentAnimation="idle"
         rigidbodyType={"fixed"}
+        isNotColliding={true}
       ></PassiveVehicle>
       <group visible={false}>
         <PassiveAirplane
@@ -100,6 +102,7 @@ export default function Passive() {
           url={S3 + "/gaebird.glb"}
           currentAnimation="idle"
           rigidbodyType={"fixed"}
+          isNotColliding={true}
         ></PassiveAirplane>
       </group>
     </>

@@ -2,14 +2,7 @@ import { useContext } from "react";
 import { GaesupWorldContext } from "../../world/context";
 import GamePadButton from "./GamePadButton";
 import "./style.css";
-import { gamepadType } from "./type";
-
-type gameBoyDirectionType = {
-  tag: string;
-  value: string;
-  name: string;
-  icon: JSX.Element;
-};
+import { gameBoyDirectionType, gamepadType } from "./type";
 
 export const gamepadDefault = {
   on: true,
@@ -34,16 +27,11 @@ export function GamePad(props: gamepadType) {
         };
     })
     .filter((item) => item !== undefined)
-    .filter(
-      (item: gameBoyDirectionType) =>
-        !(item.tag === "run" && mode.controller === "joystick")
-    );
+    .filter((item: gameBoyDirectionType) => !(item.tag === "run"));
 
   return (
     <>
-      {(mode.controller === "joystick" ||
-        mode.controller === "gameboy" ||
-        mode.controller === "clicker") && (
+      {mode.controller === "clicker" && (
         <div className="gamePad" style={gamePadStyle}>
           {GamePadDirections.map((item: gameBoyDirectionType, key: number) => {
             return (

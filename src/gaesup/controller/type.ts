@@ -4,14 +4,14 @@ import { RapierRigidBody, RigidBodyProps } from "@react-three/rapier";
 import { ReactNode, RefObject } from "react";
 import * as THREE from "three";
 import { cameraRayType } from "../camera/type";
-import { keyControlType, urlsType } from "../world/context/type";
+import { urlsType } from "../world/context/type";
 import { airplaneType, characterType, vehicleType } from "./context/type";
 import { callbackType } from "./initialize/callback/type";
 
 export type optionsType = {
   debug: boolean;
   mode?: "normal" | "vehicle" | "airplane";
-  controllerType: "none" | "gameboy" | "joystick" | "keyboard";
+  controllerType: "none";
   cameraCollisionType: "transparent" | "closeUp";
   camera: {
     type: "perspective" | "orthographic";
@@ -61,7 +61,6 @@ export type controllerInnerType = {
   name?: string;
   groundRay: groundRayType;
   cameraRay: cameraRayType;
-  keyControl: keyControlType;
   controllerOptions: controllerOptionsType;
   parts?: partsType;
 } & controllerOtherPropType &

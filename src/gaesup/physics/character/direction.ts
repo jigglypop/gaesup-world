@@ -6,19 +6,13 @@ export function orbitDirection({
   activeState,
   control,
   mode,
-  joystick,
   clicker,
-  clickerOption,
 }: Partial<gaesupWorldContextType>) {
   const { forward, backward, leftward, rightward } = control;
   const dirX = Number(leftward) - Number(rightward);
   const dirZ = Number(forward) - Number(backward);
   let start = 0;
-  if (mode.controller === "joystick") {
-    if (joystick.joyStickOrigin.isCenter) return;
-    activeState.euler.y = Math.PI / 2 - joystick.joyStickOrigin.angle;
-    start = 1;
-  } else if (mode.controller === "clicker") {
+  if (mode.controller === "clicker") {
     activeState.euler.y = Math.PI / 2 - clicker.angle;
     start = 1;
   } else {
@@ -37,20 +31,10 @@ export function normalDirection({
   activeState,
   control,
   mode,
-  joystick,
   clicker,
-  clickerOption,
 }: Partial<gaesupWorldContextType>) {
   const { forward, backward, leftward, rightward } = control;
-  if (mode.controller === "joystick") {
-    if (joystick.joyStickOrigin.isCenter) return;
-    activeState.euler.y = Math.PI / 2 - joystick.joyStickOrigin.angle;
-    activeState.dir.set(
-      -Math.sin(activeState.euler.y),
-      0,
-      -Math.cos(activeState.euler.y)
-    );
-  } else if (mode.controller === "clicker") {
+  if (mode.controller === "clicker") {
     activeState.euler.y = Math.PI / 2 - clicker.angle;
     activeState.dir.set(
       -Math.sin(activeState.euler.y),

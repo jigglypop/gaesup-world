@@ -12,6 +12,7 @@ export function CharacterInnerRef(props: characterInnerType) {
         controllerOptions={props.controllerOptions}
         ref={props.rigidBodyRef}
         groundRay={props.groundRay}
+        isNotColliding={props.isNotColliding}
         {...props}
       >
         {props.children}

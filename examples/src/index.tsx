@@ -5,19 +5,10 @@ import { Physics, euler } from "@react-three/rapier";
 
 import { Canvas, useFrame } from "@react-three/fiber";
 
-import { useRef } from "react";
+import { Suspense, useRef } from "react";
 import { FaMapMarkerAlt } from "react-icons/fa";
 import * as THREE from "three";
-import {
-  GaesupController,
-  GaesupWorld,
-  GameBoy,
-  GamePad,
-  JoyStick,
-  KeyBoardToolTip,
-  MiniMap,
-  V3,
-} from "../../src";
+import { GaesupController, GaesupWorld, GamePad, MiniMap, V3 } from "../../src";
 import { Clicker } from "../../src/gaesup/tools/clicker";
 import { InnerHtml } from "../../src/gaesup/utils/innerHtml";
 import Info from "../info";
@@ -85,40 +76,31 @@ export default function MainComponent() {
         control: "normal",
       }}
       debug={false}
-      keyBoardMap={keyBoardMap}
       cameraOption={{
         XDistance: 20,
         YDistance: 20,
         ZDistance: 20,
       }}
-      clickerOption={{
-        autoStart: true,
-        track: true,
-        loop: true,
-        queue: [
-          V3(10, 0, 0),
-          V3(30, 0, 30),
-          V3(10, 0, 30),
-          V3(30, 0, 10),
-          {
-            action: "stop",
-            beforeCB: (state) => {
-              console.log("stop");
-              // state.clock.stop();
-              // console.log("stop");
-              // if (clock.getElapsedTime() > 20) {
-              //   console.log("start");
-              //   state.clock.start();
-              // }
-            },
-            afterCB: (state) => {
-              console.log("start");
-            },
-            time: 3000,
-          },
-        ],
-        line: true,
-      }}
+      // clickerOption={{
+      //   autoStart: true,
+      //   track: true,
+      //   loop: true,
+      //   queue: [
+      //     V3(10, 0, 0),
+      //     V3(30, 0, 30),
+      //     V3(10, 0, 30),
+      //     V3(30, 0, 10),
+      //     {
+      //       action: "stop",
+      //       beforeCB: (state) => {},
+      //       afterCB: (state) => {
+      //         console.log("start");
+      //       },
+      //       time: 3000,
+      //     },
+      //   ],
+      //   line: true,
+      // }}
     >
       <Canvas
         shadows
@@ -159,47 +141,48 @@ export default function MainComponent() {
           shadow-camera-bottom={-50}
           shadow-camera-left={-50}
         />
-        <Physics debug interpolate={true}>
-          <GaesupController
-            onAnimate={({ control, subscribe }) => {
-              subscribe({
-                tag: "greet",
-                condition: () => control?.keyZ,
-              });
-            }}
-            controllerOptions={{
-              lerp: {
-                cameraTurn: 0.1,
-                cameraPosition: 1,
-              },
-            }}
-            rigidBodyProps={{}}
-            parts={[{ url: "gltf/ally_cloth_rabbit.glb", color: "#ffe0e0" }]}
-          ></GaesupController>
-          <Floor />
-          {/* <Rideables />
-           */}
-          <Passive />
-          <Electron />
-          <Clicker
-            onMarker={
-              <group rotation={euler({ x: 0, y: Math.PI / 2, z: 0 })}>
+        <Suspense>
+          <Physics debug interpolate={true}>
+            <GaesupController
+              onAnimate={({ control, subscribe }) => {
+                subscribe({
+                  tag: "greet",
+                  condition: () => control?.keyZ,
+                });
+              }}
+              controllerOptions={{
+                lerp: {
+                  cameraTurn: 0.1,
+                  cameraPosition: 1,
+                },
+              }}
+              rigidBodyProps={{}}
+              parts={[{ url: "gltf/ally_cloth_rabbit.glb", color: "#ffe0e0" }]}
+            ></GaesupController>
+            <Floor />
+
+            <Passive />
+            <Electron />
+            <Clicker
+              onMarker={
+                <group rotation={euler({ x: 0, y: Math.PI / 2, z: 0 })}>
+                  <InnerHtml position={V3(0, 1, 0)}>
+                    <FaMapMarkerAlt
+                      style={{ color: "#f4ffd4", fontSize: "5rem" }}
+                    />
+                  </InnerHtml>
+                </group>
+              }
+              runMarker={
                 <InnerHtml position={V3(0, 1, 0)}>
                   <FaMapMarkerAlt
-                    style={{ color: "#f4ffd4", fontSize: "5rem" }}
+                    style={{ color: "#ffac8e", fontSize: "5rem" }}
                   />
                 </InnerHtml>
-              </group>
-            }
-            runMarker={
-              <InnerHtml position={V3(0, 1, 0)}>
-                <FaMapMarkerAlt
-                  style={{ color: "#ffac8e", fontSize: "5rem" }}
-                />
-              </InnerHtml>
-            }
-          ></Clicker>
-        </Physics>
+              }
+            ></Clicker>
+          </Physics>
+        </Suspense>
       </Canvas>
       <Info />
 
@@ -216,13 +199,8 @@ export default function MainComponent() {
       </div>
       <div className={style.footerLower}>
         <div className={style.joystickOuter}>
-          <JoyStick />
-          <GameBoy />
           <MiniMap />
         </div>
-      </div>
-      <div className={style.keyBoardToolTipOuter}>
-        <KeyBoardToolTip keyBoardMap={keyBoardMap} />
       </div>
     </GaesupWorld>
   );

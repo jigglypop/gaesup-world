@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
 import * as THREE from "three";
-import { keyboardMapType } from "../tools/keyBoardToolTip/type";
 import { dispatchType } from "../utils/type";
 import {
   blockType,
@@ -22,7 +21,6 @@ export type gaesupWorldPropsType = {
   urls?: urlsType;
   mode?: modeType;
   debug?: boolean;
-  keyBoardMap?: keyboardMapType;
   cameraOption?: cameraOptionType;
   block?: blockType;
   clickerOption?: clickerOptionType;

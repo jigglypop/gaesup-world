@@ -54,23 +54,6 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     isOn: false,
     isRun: false,
   },
-  joystick: {
-    joyStickOrigin: {
-      x: 0,
-      y: 0,
-      angle: Math.PI / 2,
-      currentRadius: 0,
-      originRadius: 0,
-      isIn: true,
-      isOn: false,
-      isUp: true,
-      isCenter: true,
-    },
-    joyStickBall: {
-      top: "50%",
-      left: "50%",
-    },
-  },
   control: {
     forward: false,
     backward: false,
@@ -95,15 +78,6 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
       store: {},
     },
   },
-  keyBoardMap: [
-    { name: "forward", keys: ["ArrowUp", "KeyW"] },
-    { name: "backward", keys: ["ArrowDown", "KeyS"] },
-    { name: "leftward", keys: ["ArrowLeft", "KeyA"] },
-    { name: "rightward", keys: ["ArrowRight", "KeyD"] },
-    { name: "space", keys: ["Space"] },
-    { name: "shift", keys: ["Shift"] },
-    { name: "keyZ", keys: ["KeyZ"] },
-  ],
   cameraOption: {
     offset: V3(-10, -10, -10),
     maxDistance: -7,

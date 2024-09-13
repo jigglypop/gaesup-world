@@ -5,7 +5,7 @@ import { calcType } from "../type";
 export default function direction(prop: calcType) {
   const {
     innerGroupRef,
-    worldContext: { joystick, activeState, control, mode },
+    worldContext: { activeState, control },
     controllerContext: { airplane },
     matchSizes,
   } = prop;
@@ -14,32 +14,14 @@ export default function direction(prop: calcType) {
   if (!matchSizes || !matchSizes["airplaneUrl"]) return null;
 
   let boost = 0;
-  if (mode.controller === "joystick") {
-    boost = space
-      ? Number(joystick.joyStickOrigin.isOn)
-      : Number(joystick.joyStickOrigin.isOn) * accelRatio;
-  } else {
-    boost = space ? Number(shift) : Number(shift) * accelRatio;
-  }
-  const upDown =
-    mode.controller === "joystick"
-      ? joystick.joyStickOrigin.isUp
-        ? -1
-        : 1
-      : Number(backward) - Number(forward);
+
+  boost = space ? Number(shift) : Number(shift) * accelRatio;
+
+  const upDown = Number(backward) - Number(forward);
   const leftRight = Number(rightward) - Number(leftward);
   const front = V3().set(boost, boost, boost);
 
-  const _euler = activeState.euler.clone();
-  const __euler = activeState.euler.clone();
-  if (mode.controller === "joystick") {
-    __euler.y = -Math.PI / 2 + joystick.joyStickOrigin.angle;
-    activeState.euler.setFromQuaternion(
-      quat().setFromEuler(_euler).slerp(quat().setFromEuler(__euler), 1)
-    );
-  } else {
-    activeState.euler.y += -leftRight * angleDelta.y;
-  }
+  activeState.euler.y += -leftRight * angleDelta.y;
 
   const X = maxAngle.x * upDown;
   const Z = maxAngle.z * leftRight;

@@ -1,4 +1,3 @@
-import { useKeyboardControls } from "@react-three/drei";
 import { vec3 } from "@react-three/rapier";
 import { useCallback, useContext, useEffect, useMemo } from "react";
 import * as THREE from "three";
@@ -10,28 +9,19 @@ import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
 } from "../../world/context";
-import {
-  gaesupWorldContextType,
-  keyControlType,
-} from "../../world/context/type";
+import { gaesupWorldContextType } from "../../world/context/type";
 
 export default function initControllerProps(props: { refs: refsType }) {
   const context = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
-  const [_, getKeys] = useKeyboardControls();
-  const keyControl: keyControlType = getKeys();
 
   useEffect(() => {
-    if (context && keyControl && context.control) {
+    if (context && context.control) {
       // 컨트롤 정하기
       let newControl = {};
-      if (context.mode.controller === "keyboard") {
-        newControl = { ...keyControl };
-      } else if (context.mode.controller === "clicker") {
+      if (context.mode.controller === "clicker") {
         if (context.mode.isButton) {
           newControl = { ...context.control };
-        } else {
-          newControl = { ...keyControl };
         }
       } else {
         newControl = { ...context.control };
@@ -45,7 +35,7 @@ export default function initControllerProps(props: { refs: refsType }) {
         },
       });
     }
-  }, [context?.mode.controller, keyControl, context?.control]);
+  }, [context?.mode.controller, context?.control]);
 
   const groundRay: groundRayType = useMemo(() => {
     return {
@@ -96,6 +86,5 @@ export default function initControllerProps(props: { refs: refsType }) {
   return {
     groundRay,
     cameraRay,
-    keyControl,
   };
 }

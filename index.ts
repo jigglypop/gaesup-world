@@ -4,7 +4,6 @@ export {
   GaesupComponent,
   GaesupController,
   GaesupWorld,
-  GameBoy,
   GamePad,
   JoyStick,
   JumpPortal,
@@ -21,9 +20,8 @@ export {
   useClicker,
   useGaesupAnimation,
   useGaesupController,
-  useJoyStick,
   useMovePoint,
   usePushKey,
   useRideable,
-  useTeleport
+  useTeleport,
 } from "./dist";

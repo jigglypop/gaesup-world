@@ -12,7 +12,7 @@ import * as style from "./style.css";
 // FaCarSide lazy loading
 
 export default function Info() {
-  const { mode, activeState } = useContext(GaesupWorldContext);
+  const { mode } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
 
   const setType = (type: "character" | "vehicle" | "airplane") => {
@@ -23,18 +23,6 @@ export default function Info() {
           ...mode,
           type: type,
           control: "orbit",
-        },
-      },
-    });
-  };
-
-  const setController = (controller: "keyboard" | "joystick" | "gameboy") => {
-    dispatch({
-      type: "update",
-      payload: {
-        mode: {
-          ...mode,
-          controller,
         },
       },
     });
@@ -111,36 +99,7 @@ export default function Info() {
         <button className={style.glassButton}>{mode.control}</button>
       </Icon>
       <Icon
-        ToolTip={
-          <>
-            <p
-              className={style.pRecipe({
-                selected: mode.controller === "keyboard",
-              })}
-              onClick={() => setController("keyboard")}
-            >
-              keyboard
-            </p>
-            {mode.type !== "character" && mode.control !== "normal" && (
-              <p
-                className={style.pRecipe({
-                  selected: mode.controller === "joystick",
-                })}
-                onClick={() => setController("joystick")}
-              >
-                joystick
-              </p>
-            )}
-            <p
-              className={style.pRecipe({
-                selected: mode.controller === "gameboy",
-              })}
-              onClick={() => setController("gameboy")}
-            >
-              gameboy
-            </p>
-          </>
-        }
+        ToolTip={<></>}
         toolTipStyles={{
           background: "rgba(0,0,0,0.8)",
         }}

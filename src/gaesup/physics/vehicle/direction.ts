@@ -2,17 +2,6 @@ import { vec3 } from "@react-three/rapier";
 import { V3 } from "../../utils/vector";
 import { calcType } from "../type";
 
-export function joystick(prop: calcType) {
-  const {
-    worldContext: { activeState, joystick },
-  } = prop;
-  const zAxis = joystick.joyStickOrigin.isOn ? 1 : 0;
-  const front = vec3().set(zAxis, 0, zAxis);
-  if (joystick.joyStickOrigin.isCenter) return front;
-  activeState.euler.y = Math.PI / 2 - joystick.joyStickOrigin.angle;
-  return front;
-}
-
 export function normal(prop: calcType) {
   const {
     worldContext: { activeState, control },
@@ -30,8 +19,7 @@ export default function direction(prop: calcType) {
     worldContext: { mode, activeState },
   } = prop;
   const front = vec3();
-  if (mode.controller === "joystick") front.copy(joystick(prop));
-  else front.copy(normal(prop));
+  front.copy(normal(prop));
   activeState.direction = front.multiply(
     V3(Math.sin(activeState.euler.y), 0, Math.cos(activeState.euler.y))
   );

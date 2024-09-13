@@ -47,4 +47,5 @@ export type passivePropsType = {
   outerGroupProps?: THREE.Group;
   innerGroupProps?: THREE.Group;
   parts?: partsType;
+  isNotColliding?: boolean;
 } & ridingType;
