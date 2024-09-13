@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target":"ES6",
+    "noEmit": false,
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -14,7 +15,6 @@
     "isolatedModules": true,
     // publish options
     "jsx": "react-jsx",
-    "noEmit": false,
     "declaration": true,
     "outDir": "./dist"
   },

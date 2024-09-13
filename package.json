@@ -1,21 +1,21 @@
 {
   "name": "gaesup-world",
-  "version": "0.9.51",
+  "version": "0.9.52",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "homepage": "https://jigglypop.github.io/gaesup-world/",
   "scripts": {
     "dev": "vite",
-    "preinstall": "npx only-allow pnpm",
     "clean": "rimraf dist/",
     "copy-files": "copyfiles -u 1 src/**/*.html src/**/*.css dist/",
     "build": "vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "prepare": "rm -rf dist && mkdir dist && tsc -p tsconfig.build.json && pnpm copy-files",
-    "predeploy": "vite build",
-    "deploy": "gh-pages -d dist"
+    "prepare": "yarn clean && tsc -p tsconfig.build.json && yarn copy-files",
+    "predeploy": "yarn build",
+    "deploy": "gh-pages -d dist",
+    "test": "jest"
   },
   "dependencies": {
     "@dimforge/rapier3d": "^0.14.0",
@@ -76,5 +76,6 @@
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/jigglypop/gaesup-world.git/issues"
-  }
+  },
+  "packageManager": "yarn@4.4.1"
 }
