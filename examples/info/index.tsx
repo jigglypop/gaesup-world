@@ -2,7 +2,7 @@
 
 import { useContext } from "react";
 
-import { JumpPortal, V3 } from "../../src";
+import { V3 } from "../../src";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
@@ -134,7 +134,7 @@ export default function Info() {
         <button className={style.glassButton}>{mode.control}</button>
       </Icon>
 
-      <JumpPortal position={V3(-200, 10, -100)} text={"track"} />
+      <teleport position={V3(-200, 10, -100)} text={"track"} />
     </div>
   );
 }

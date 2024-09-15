@@ -731,17 +731,17 @@ The **Passive** component defines objects that do not require interaction, such 
 
 ---
 
-#### JumpPortal
+#### teleport
 
 - **Description**: Represents a clickable portal that allows users to teleport to a specified location within the 3D world. Ideal for creating interactive teleportation points in your application.
 
 - **Props**:
 
-  | Prop Name         | Type          | Required | Description                                                 | Default Value |
-  | ----------------- | ------------- | -------- | ----------------------------------------------------------- | ------------- |
-  | `text`            | string        | Optional | The text to display on the portal.                          | `undefined`   |
-  | `position`        | THREE.Vector3 | Required | The target position to teleport to using a `THREE.Vector3`. | None          |
-  | `jumpPortalStyle` | CSSProperties | Optional | CSS styles for customizing the appearance of the portal.    | `undefined`   |
+  | Prop Name       | Type          | Required | Description                                                 | Default Value |
+  | --------------- | ------------- | -------- | ----------------------------------------------------------- | ------------- |
+  | `text`          | string        | Optional | The text to display on the portal.                          | `undefined`   |
+  | `position`      | THREE.Vector3 | Required | The target position to teleport to using a `THREE.Vector3`. | None          |
+  | `teleportStyle` | CSSProperties | Optional | CSS styles for customizing the appearance of the portal.    | `undefined`   |
 
 - **Usage Example**:
 
@@ -749,7 +749,7 @@ The **Passive** component defines objects that do not require interaction, such 
   import React from 'react';
   import { Canvas } from '@react-three/fiber';
   import { Physics } from '@react-three/rapier';
-  import { GaesupWorld, JumpPortal } from '../../../src';
+  import { GaesupWorld, teleport } from '../../../src';
   import * as THREE from 'three';
 
   export default function App() {
@@ -764,10 +764,10 @@ The **Passive** component defines objects that do not require interaction, such 
       >
         <Canvas>
           <Physics>
-            <JumpPortal
+            <teleport
               text="Teleport"
               position={new THREE.Vector3(10, 0, 5)}
-              jumpPortalStyle={{ backgroundColor: "blue", color: "white" }}
+              teleportStyle={{ backgroundColor: "blue", color: "white" }}
             />
             {/* Other components */}
           </Physics>
@@ -779,7 +779,7 @@ The **Passive** component defines objects that do not require interaction, such 
 
 - **Key Features**:
   - **Teleport Functionality**: Moves the camera and character to the specified position upon clicking the portal.
-  - **Custom Styling**: Customize the portal's appearance using `jumpPortalStyle`.
+  - **Custom Styling**: Customize the portal's appearance using `teleportStyle`.
   - **Text Display**: Displays text on the portal to guide users.
 
 ---
@@ -1543,17 +1543,17 @@ export default function App() {
 
 ---
 
-#### JumpPortal
+#### teleport
 
 - **설명**: 클릭 가능한 포탈을 통해 사용자를 지정된 위치로 텔레포트할 수 있는 컴포넌트입니다. 인터랙티브한 텔레포테이션 포인트를 생성하는 데 사용됩니다.
   
 - **Props**:
 
-  | Prop Name         | Type          | Required | Description                                    | Default Value |
-  | ----------------- | ------------- | -------- | ---------------------------------------------- | ------------- |
-  | `text`            | string        | Optional | 포탈에 표시할 텍스트                           | `undefined`   |
-  | `position`        | THREE.Vector3 | Required | 텔레포트할 목표 위치                           | None          |
-  | `jumpPortalStyle` | CSSProperties | Optional | 포탈의 외관을 커스터마이징하기 위한 CSS 스타일 | `undefined`   |
+  | Prop Name       | Type          | Required | Description                                    | Default Value |
+  | --------------- | ------------- | -------- | ---------------------------------------------- | ------------- |
+  | `text`          | string        | Optional | 포탈에 표시할 텍스트                           | `undefined`   |
+  | `position`      | THREE.Vector3 | Required | 텔레포트할 목표 위치                           | None          |
+  | `teleportStyle` | CSSProperties | Optional | 포탈의 외관을 커스터마이징하기 위한 CSS 스타일 | `undefined`   |
 
 - **사용 예제**:
 
@@ -1561,7 +1561,7 @@ export default function App() {
   import React from 'react';
   import { Canvas } from '@react-three/fiber';
   import { Physics } from '@react-three/rapier';
-  import { GaesupWorld, JumpPortal } from '../../../src';
+  import { GaesupWorld, teleport } from '../../../src';
   import * as THREE from 'three';
 
   export default function App() {
@@ -1576,10 +1576,10 @@ export default function App() {
       >
         <Canvas>
           <Physics>
-            <JumpPortal
+            <teleport
               text="Teleport"
               position={new THREE.Vector3(10, 0, 5)}
-              jumpPortalStyle={{ backgroundColor: "blue", color: "white" }}
+              teleportStyle={{ backgroundColor: "blue", color: "white" }}
             />
             {/* 다른 컴포넌트 */}
           </Physics>
@@ -1591,7 +1591,7 @@ export default function App() {
 
 - **주요 기능**:
   - **텔레포트 기능**: 버튼 클릭 시 카메라와 캐릭터를 지정된 위치로 이동시킵니다.
-  - **커스터마이징**: `jumpPortalStyle`을 통해 포탈의 외관을 자유롭게 커스터마이징할 수 있습니다.
+  - **커스터마이징**: `teleportStyle`을 통해 포탈의 외관을 자유롭게 커스터마이징할 수 있습니다.
   - **텍스트 표시**: 포탈에 표시할 텍스트를 통해 사용자에게 명확한 안내를 제공합니다.
 
 ---
