@@ -15,7 +15,8 @@
     "prepare": "yarn clean && tsc -p tsconfig.build.json && yarn copy-files",
     "predeploy": "yarn build",
     "deploy": "gh-pages -d dist",
-    "test": "jest"
+    "test": "jest",
+    "publish:full": "yarn prepare && npm publish"
   },
   "peerDependencies": {
     "react": "^18.0.0",
