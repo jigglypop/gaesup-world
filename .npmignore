@@ -21,3 +21,5 @@ src
 src/
 image
 image/
+.yarn
+.vscode
