@@ -1,15 +1,9 @@
-import { Line } from "@react-three/drei";
-import { ReactNode, useContext } from "react";
-import * as THREE from "three";
-import { GaesupWorldContext } from "../../world/context";
+import { Line } from '@react-three/drei';
+import { ReactNode, useContext } from 'react';
+import * as THREE from 'three';
+import { GaesupWorldContext } from '../../world/context';
 
-export function Clicker({
-  onMarker,
-  runMarker,
-}: {
-  onMarker: ReactNode;
-  runMarker: ReactNode;
-}) {
+export function Clicker({ onMarker, runMarker }: { onMarker: ReactNode; runMarker: ReactNode }) {
   const { clicker, mode, clickerOption } = useContext(GaesupWorldContext);
   const pointQ = [];
   for (let i = 0; i < clickerOption.queue.length; i++) {
@@ -20,7 +14,7 @@ export function Clicker({
 
   return (
     <>
-      {mode.controller === "clicker" && (
+      {mode.controller === 'clicker' && (
         <group position={clicker.point}>
           {clicker.isOn && onMarker}
           {clicker.isOn && clickerOption.isRun && clicker.isRun && runMarker}
@@ -45,11 +39,7 @@ export function Clicker({
 
                 <mesh key={key} position={queueItem}>
                   <sphereGeometry args={[0.6, 30, 0.6]} />
-                  <meshStandardMaterial
-                    color="turquoise"
-                    transparent
-                    opacity={0.8}
-                  />
+                  <meshStandardMaterial color="turquoise" transparent opacity={0.8} />
                 </mesh>
               </group>
             );

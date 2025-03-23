@@ -1,12 +1,9 @@
-import { CSSProperties } from "react";
+import { CSSProperties } from 'react';
 
 export type gamepadType = {
   label?: Record<string, string>;
 } & {
-  [key in
-    | "gamePadButtonStyle"
-    | "gamePadStyle"
-    | "gamePadInnerStyle"]?: CSSProperties;
+  [key in 'gamePadButtonStyle' | 'gamePadStyle' | 'gamePadInnerStyle']?: CSSProperties;
 };
 
 export type gameBoyDirectionType = {
@@ -14,4 +11,10 @@ export type gameBoyDirectionType = {
   value: string;
   name: string;
   icon: JSX.Element;
+};
+
+export type GamePadButtonType = {
+  value: string;
+  name: string;
+  gamePadButtonStyle?: CSSProperties;
 };

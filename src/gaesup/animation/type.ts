@@ -1,26 +1,20 @@
-import { Ref } from "react";
-import * as THREE from "three";
-import {
-  AnimationAction,
-  AnimationClip,
-  AnimationMixer,
-  Object3D,
-  Object3DEventMap,
-} from "three";
-import { groundRayType } from "../controller/type";
+import { Ref } from 'react';
+import * as THREE from 'three';
+import { AnimationAction, AnimationClip, AnimationMixer, Object3D, Object3DEventMap } from 'three';
+import { groundRayType } from '../controller/type';
 
 export type Api<T extends AnimationClip> = {
   ref: React.MutableRefObject<Object3D | undefined | null>;
   clips: AnimationClip[];
   mixer: AnimationMixer;
-  names: T["name"][];
+  names: T['name'][];
   actions: {
-    [key in T["name"]]: AnimationAction | null;
+    [key in T['name']]: AnimationAction | null;
   };
 };
 
 export type playActionsType = {
-  type: "character" | "vehicle" | "airplane";
+  type: 'character' | 'vehicle' | 'airplane';
   currentAnimation?: string;
   actions: actionsType;
   animationRef: Ref<Object3D<Object3DEventMap>>;
@@ -28,7 +22,7 @@ export type playActionsType = {
 };
 
 export type subscribeActionsType = {
-  type: "character" | "vehicle" | "airplane";
+  type: 'character' | 'vehicle' | 'airplane';
   groundRay: groundRayType;
   animations: AnimationClip[];
 };

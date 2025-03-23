@@ -1215,9 +1215,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-three/fiber@npm:8.17.7":
-  version: 8.17.7
-  resolution: "@react-three/fiber@npm:8.17.7"
+"@react-three/fiber@npm:^8.17.7":
+  version: 8.17.10
+  resolution: "@react-three/fiber@npm:8.17.10"
   dependencies:
     "@babel/runtime": "npm:^7.17.8"
     "@types/debounce": "npm:^1.2.1"
@@ -1253,7 +1253,7 @@ __metadata:
       optional: true
     react-native:
       optional: true
-  checksum: 10c0/05a60c18c278dfe45542263ef59177dea826fd3c768f25a3de23eda30b0ac71432a4b911535171d5f7317efb761618f82bfd9f826ecf7423526e9be9c8e7ec97
+  checksum: 10c0/650f1dac4e275e05757297e58b1413b46a322fd9b05ea381c94118ed2be582f132a905890aa41fca73a43d96752470859aa3f93c8b0b95175807d70aaef634a6
   languageName: node
   linkType: hard
 
@@ -2978,7 +2978,7 @@ __metadata:
     "@dimforge/rapier3d-compat": "npm:^0.14.0"
     "@react-icons/all-files": "npm:^4.1.0"
     "@react-three/drei": "npm:9.112.0"
-    "@react-three/fiber": "npm:8.17.7"
+    "@react-three/fiber": "npm:^8.17.7"
     "@react-three/postprocessing": "npm:^2.16.2"
     "@react-three/rapier": "npm:^1.4.0"
     "@types/lodash": "npm:^4.17.7"
@@ -3001,17 +3001,27 @@ __metadata:
     node-fetch: "npm:3.3.2"
     path: "npm:^0.12.7"
     prettier: "npm:^3.3.3"
-    react: "npm:^18.3.1"
+    react: "npm:^18.0.0"
     react-device-detect: "npm:^2.2.3"
-    react-dom: "npm:^18.3.1"
+    react-dom: "npm:^18.0.0"
     react-icons: "npm:^5.3.0"
     react-use-refs: "npm:^1.0.1"
     rimraf: "npm:^6.0.1"
     three: "npm:^0.168.0"
     three-stdlib: "npm:^2.32.2"
+    turbo: "npm:^2.3.3"
     typescript: "npm:^5.6.2"
     vite: "npm:^5.4.4"
     vite-plugin-svgr: "npm:^4.2.0"
+  peerDependencies:
+    "@dimforge/rapier3d": ^0.14.0
+    "@dimforge/rapier3d-compat": ^0.14.0
+    "@react-three/drei": 9.112.0
+    "@react-three/fiber": ^8.17.7
+    "@react-three/rapier": ^1.4.0
+    react: ^18.0.0
+    react-dom: ^18.0.0
+    three: ^0.168.0
   languageName: unknown
   linkType: soft
 
@@ -4351,7 +4361,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:^18.3.1":
+"react-dom@npm:^18.0.0":
   version: 18.3.1
   resolution: "react-dom@npm:18.3.1"
   dependencies:
@@ -4413,7 +4423,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:^18.3.1":
+"react@npm:^18.0.0":
   version: 18.3.1
   resolution: "react@npm:18.3.1"
   dependencies:
@@ -4984,6 +4994,77 @@ __metadata:
   dependencies:
     zustand: "npm:^4.3.2"
   checksum: 10c0/93cd50c7c9141e2662707602a21401145092e5a3c815b57a752937419ab6187a2ff36fa7e0f65e0c587022149bf2d323ace07dff61106511b7d4845e53390cc9
+  languageName: node
+  linkType: hard
+
+"turbo-darwin-64@npm:2.3.3":
+  version: 2.3.3
+  resolution: "turbo-darwin-64@npm:2.3.3"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"turbo-darwin-arm64@npm:2.3.3":
+  version: 2.3.3
+  resolution: "turbo-darwin-arm64@npm:2.3.3"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"turbo-linux-64@npm:2.3.3":
+  version: 2.3.3
+  resolution: "turbo-linux-64@npm:2.3.3"
+  conditions: os=linux & cpu=x64
+  languageName: node
+  linkType: hard
+
+"turbo-linux-arm64@npm:2.3.3":
+  version: 2.3.3
+  resolution: "turbo-linux-arm64@npm:2.3.3"
+  conditions: os=linux & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"turbo-windows-64@npm:2.3.3":
+  version: 2.3.3
+  resolution: "turbo-windows-64@npm:2.3.3"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"turbo-windows-arm64@npm:2.3.3":
+  version: 2.3.3
+  resolution: "turbo-windows-arm64@npm:2.3.3"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"turbo@npm:^2.3.3":
+  version: 2.3.3
+  resolution: "turbo@npm:2.3.3"
+  dependencies:
+    turbo-darwin-64: "npm:2.3.3"
+    turbo-darwin-arm64: "npm:2.3.3"
+    turbo-linux-64: "npm:2.3.3"
+    turbo-linux-arm64: "npm:2.3.3"
+    turbo-windows-64: "npm:2.3.3"
+    turbo-windows-arm64: "npm:2.3.3"
+  dependenciesMeta:
+    turbo-darwin-64:
+      optional: true
+    turbo-darwin-arm64:
+      optional: true
+    turbo-linux-64:
+      optional: true
+    turbo-linux-arm64:
+      optional: true
+    turbo-windows-64:
+      optional: true
+    turbo-windows-arm64:
+      optional: true
+  bin:
+    turbo: bin/turbo
+  checksum: 10c0/9aab52fb868a2b6246f41fe2343dec56c70252a9cb7729a3ea183458cfa728c1445d1b98882dd43542f0ffd46524e8ba7776fe0925e31a86904b113222778fa5
   languageName: node
   linkType: hard
 

@@ -1,8 +1,8 @@
-import { euler, quat, vec3 } from "@react-three/rapier";
-import { createContext } from "react";
-import { dispatchType } from "../../utils/type";
-import { V3 } from "../../utils/vector";
-import { gaesupWorldContextType } from "./type";
+import { euler, quat, vec3 } from '@react-three/rapier';
+import { createContext } from 'react';
+import { dispatchType } from '../../utils/type';
+import { V3 } from '../../utils/vector';
+import { gaesupWorldContextType } from './type';
 
 export const gaesupWorldDefault: gaesupWorldContextType = {
   activeState: {
@@ -63,18 +63,18 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
   refs: null,
   animationState: {
     character: {
-      current: "idle",
-      default: "idle",
+      current: 'idle',
+      default: 'idle',
       store: {},
     },
     vehicle: {
-      current: "idle",
-      default: "idle",
+      current: 'idle',
+      default: 'idle',
       store: {},
     },
     airplane: {
-      current: "idle",
-      default: "idle",
+      current: 'idle',
+      default: 'idle',
       store: {},
     },
   },
@@ -109,7 +109,6 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
   },
 };
 
-export const GaesupWorldContext =
-  createContext<Partial<gaesupWorldContextType>>(null);
+export const GaesupWorldContext = createContext<Partial<gaesupWorldContextType>>(null);
 export const GaesupWorldDispatchContext =
   createContext<dispatchType<Partial<gaesupWorldContextType>>>(null);

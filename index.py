@@ -67,8 +67,7 @@ def extract_code_separated(folder_path, output_md, supported_extensions):
 
 if __name__ == "__main__":
     # 파일 확장자를 리스트로 지정
-    supported_extensions = [".css.ts"]  # 필요에 따라 확장자 추가
-    
+    supported_extensions = [".ts", ".tsx"]  # 필요에 따라 확장자 추가
     # 폴더 경로와 출력 Markdown 파일 경로 설정
     folder_path = './src'        # 코드 추출할 폴더 경로
     output_md = './output.md'    # 출력할 Markdown 파일 경로

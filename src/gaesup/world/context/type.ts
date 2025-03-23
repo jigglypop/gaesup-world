@@ -1,12 +1,12 @@
-import { CSSProperties } from "react";
-import { actionsType, refsType } from "../../controller/type";
+import { CSSProperties } from 'react';
+import { actionsType, refsType } from '../../controller/type';
 
-import { RootState } from "@react-three/fiber";
-import * as THREE from "three";
-import { rideableType } from "../../hooks/useRideable/type";
-import { minimapInnerType } from "../../tools/minimap/type";
+import { RootState } from '@react-three/fiber';
+import * as THREE from 'three';
+import { rideableType } from '../../hooks/useRideable/type';
+import { minimapInnerType } from '../../tools/minimap/type';
 
-import { dispatchType } from "../../utils/type";
+import { dispatchType } from '../../utils/type';
 
 // camera option
 export type gaesupCameraOptionDebugType = {
@@ -99,9 +99,9 @@ export type animationStatePropType = {
 };
 
 export type modeType = {
-  type?: "character" | "vehicle" | "airplane";
-  controller?: "clicker";
-  control?: "normal" | "orbit";
+  type?: 'character' | 'vehicle' | 'airplane';
+  controller?: 'clicker';
+  control?: 'normal' | 'orbit';
   isButton?: boolean;
 };
 
@@ -125,7 +125,7 @@ export type clickerType = {
   isRun: boolean;
 };
 // 클리커 옵션
-export type queueActionType = "stop";
+export type queueActionType = 'stop';
 export type queueFunctionType = {
   action: queueActionType;
   beforeCB: (state: RootState) => void;

@@ -1,17 +1,14 @@
-import { useFrame } from "@react-three/fiber";
-import { useContext, useEffect } from "react";
-import { GaesupControllerContext } from "../controller/context";
-import { useGaesupGltf } from "../hooks/useGaesupGltf";
-import { V3 } from "../utils";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../world/context";
-import airplaneCalculation from "./airplane";
-import characterCalculation from "./character";
-import check from "./check";
-import { calcType } from "./type";
-import vehicleCalculation from "./vehicle";
+import { useFrame } from '@react-three/fiber';
+import { useContext, useEffect } from 'react';
+import { GaesupControllerContext } from '../controller/context';
+import { useGaesupGltf } from '../hooks/useGaesupGltf';
+import { V3 } from '../utils';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../world/context';
+import airplaneCalculation from './airplane';
+import characterCalculation from './character';
+import check from './check';
+import { calcType } from './type';
+import vehicleCalculation from './vehicle';
 
 export default function calculation({
   groundRay,
@@ -30,10 +27,7 @@ export default function calculation({
     if (rigidBodyRef.current && innerGroupRef.current) {
       rigidBodyRef.current.lockRotations(false, true);
       activeState.euler.set(0, 0, 0);
-      rigidBodyRef.current.setTranslation(
-        activeState.position.clone().add(V3(0, 5, 0)),
-        true
-      );
+      rigidBodyRef.current.setTranslation(activeState.position.clone().add(V3(0, 5, 0)), true);
     }
   }, [mode.type]);
 
@@ -72,9 +66,9 @@ export default function calculation({
       dispatch,
       matchSizes: getSizesByUrls(worldContext?.urls),
     };
-    if (mode.type === "vehicle") vehicleCalculation(calcProp);
-    else if (mode.type === "character") characterCalculation(calcProp);
-    else if (mode.type === "airplane") airplaneCalculation(calcProp);
+    if (mode.type === 'vehicle') vehicleCalculation(calcProp);
+    else if (mode.type === 'character') characterCalculation(calcProp);
+    else if (mode.type === 'airplane') airplaneCalculation(calcProp);
     check(calcProp);
   });
 }
