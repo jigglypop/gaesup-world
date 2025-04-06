@@ -5,31 +5,30 @@
 ### index.ts
 
 ```typescript
-export { GaesupComponent } from "./gaesup/component";
-export { PassiveAirplane } from "./gaesup/component/passive/airplane";
-export { PassiveCharacter } from "./gaesup/component/passive/character";
-export { PassiveVehicle } from "./gaesup/component/passive/vehicle";
+export { GaesupComponent } from './gaesup/component';
+export { PassiveAirplane } from './gaesup/component/passive/airplane';
+export { PassiveCharacter } from './gaesup/component/passive/character';
+export { PassiveVehicle } from './gaesup/component/passive/vehicle';
 
-export { GaesupController } from "./gaesup/controller";
-export { GaeSupProps } from "./gaesup/gaesupProps";
-export { Clicker } from "./gaesup/tools/clicker";
-export { GamePad } from "./gaesup/tools/gamepad";
-export { MiniMap } from "./gaesup/tools/minimap";
-export { Rideable } from "./gaesup/tools/rideable";
-export { teleport } from "./gaesup/tools/teleport";
-export { InnerHtml } from "./gaesup/utils/innerHtml";
-export { Elr, Qt, V3, V30, V31 } from "./gaesup/utils/vector";
-export { GaesupWorld } from "./gaesup/world";
+export { GaesupController } from './gaesup/controller';
+export { GaeSupProps } from './gaesup/gaesupProps';
+export { Clicker } from './gaesup/tools/clicker';
+export { GamePad } from './gaesup/tools/gamepad';
+export { MiniMap } from './gaesup/tools/minimap';
+export { Rideable } from './gaesup/tools/rideable';
+export { teleport } from './gaesup/tools/teleport';
+export { InnerHtml } from './gaesup/utils/innerHtml';
+export { Elr, Qt, V3, V30, V31 } from './gaesup/utils/vector';
+export { GaesupWorld } from './gaesup/world';
 
-export { useClicker } from "./gaesup/hooks/useClicker";
-export { useGaesupAnimation } from "./gaesup/hooks/useGaesupAnimation";
-export { useGaesupController } from "./gaesup/hooks/useGaesupController";
-export { useMovePoint } from "./gaesup/hooks/useMovePoint";
-export { usePushKey } from "./gaesup/hooks/usePushKey";
-export { useRideable } from "./gaesup/hooks/useRideable";
-export { useTeleport } from "./gaesup/hooks/useTeleport";
-export { useZoom } from "./gaesup/hooks/useZoom";
-
+export { useClicker } from './gaesup/hooks/useClicker';
+export { useGaesupAnimation } from './gaesup/hooks/useGaesupAnimation';
+export { useGaesupController } from './gaesup/hooks/useGaesupController';
+export { useMovePoint } from './gaesup/hooks/useMovePoint';
+export { usePushKey } from './gaesup/hooks/usePushKey';
+export { useRideable } from './gaesup/hooks/useRideable';
+export { useTeleport } from './gaesup/hooks/useTeleport';
+export { useZoom } from './gaesup/hooks/useZoom';
 ```
 
 ### gaesup\animation\actions.ts
@@ -153,35 +152,28 @@ export default function playActions({
     currentAnimation: animationState?.[type]?.current,
   };
 }
-
 ```
 
 ### gaesup\animation\type.ts
 
 ```typescript
-import { Ref } from "react";
-import * as THREE from "three";
-import {
-  AnimationAction,
-  AnimationClip,
-  AnimationMixer,
-  Object3D,
-  Object3DEventMap,
-} from "three";
-import { groundRayType } from "../controller/type";
+import { Ref } from 'react';
+import * as THREE from 'three';
+import { AnimationAction, AnimationClip, AnimationMixer, Object3D, Object3DEventMap } from 'three';
+import { groundRayType } from '../controller/type';
 
 export type Api<T extends AnimationClip> = {
   ref: React.MutableRefObject<Object3D | undefined | null>;
   clips: AnimationClip[];
   mixer: AnimationMixer;
-  names: T["name"][];
+  names: T['name'][];
   actions: {
-    [key in T["name"]]: AnimationAction | null;
+    [key in T['name']]: AnimationAction | null;
   };
 };
 
 export type playActionsType = {
-  type: "character" | "vehicle" | "airplane";
+  type: 'character' | 'vehicle' | 'airplane';
   currentAnimation?: string;
   actions: actionsType;
   animationRef: Ref<Object3D<Object3DEventMap>>;
@@ -189,7 +181,7 @@ export type playActionsType = {
 };
 
 export type subscribeActionsType = {
-  type: "character" | "vehicle" | "airplane";
+  type: 'character' | 'vehicle' | 'airplane';
   groundRay: groundRayType;
   animations: AnimationClip[];
 };
@@ -202,41 +194,13 @@ export type playResultType = {
   actions: actionsType;
   ref: Ref<Object3D<Object3DEventMap>>;
 };
-
-```
-
-### gaesup\atoms\blockAtom.ts
-
-```typescript
-
-```
-
-### gaesup\atoms\cameraOptionAtom.ts
-
-```typescript
-// src/gaesup/atoms/cameraOptionAtom.ts
-import { atom } from 'jotai';
-import * as THREE from 'three';
-
-export interface CameraOption {
-  offset: THREE.Vector3;
-  zoom: number;
-  maxDistance: number;
-}
-
-export const cameraOptionAtom = atom<CameraOption>({
-  offset: new THREE.Vector3(-10, -10, -10),
-  zoom: 1,
-  maxDistance: -7,
-});
-
 ```
 
 ### gaesup\camera\type.ts
 
 ```typescript
+// camera/type.ts
 import * as THREE from 'three';
-import {} from 'three-stdlib';
 
 export type cameraRayType = {
   origin: THREE.Vector3;
@@ -247,28 +211,30 @@ export type cameraRayType = {
   position: THREE.Vector3;
   intersects: THREE.Intersection<THREE.Mesh>[];
   detected: THREE.Intersection<THREE.Mesh>[];
-  intersectObjectMap: { [uuid: string]: THREE.Mesh };
+  intersectObjectMap: Map<string, THREE.Mesh>; // 객체를 Map으로 변경하여 검색 성능 개선
+  lastRaycastTime: number; // 레이캐스트 빈도 제한을 위한 타임스탬프
+  raycastInterval: number; // 레이캐스트 간격 (ms)
 };
-
 ```
 
 ### gaesup\camera\control\normal.ts
 
 ```typescript
-import { cameraPropType } from "../../physics/type";
-import { V3 } from "../../utils/vector";
-import { activeStateType, cameraOptionType } from "../../world/context/type";
+import * as THREE from 'three';
+import { cameraPropType } from '../../physics/type';
+import { activeStateType, cameraOptionType } from '../../world/context/type';
+
+// 임시 벡터 객체 생성 - 재사용
+const tempVector = new THREE.Vector3();
 
 export const makeNormalCameraPosition = (
   activeState: activeStateType,
-  cameraOption: cameraOptionType
+  cameraOption: cameraOptionType,
 ) => {
   const { XDistance, YDistance, ZDistance } = cameraOption;
-  const cameraPosition = activeState.position
-    .clone()
-    .add(V3(XDistance, YDistance, ZDistance));
-  return cameraPosition;
+  return tempVector.set(XDistance, YDistance, ZDistance).add(activeState.position);
 };
+
 export default function normal(prop: cameraPropType) {
   const {
     state,
@@ -276,35 +242,34 @@ export default function normal(prop: cameraPropType) {
     controllerOptions: { lerp },
   } = prop;
   if (!state || !state.camera) return;
-  state.camera.position.lerp(
-    cameraOption.position.clone(),
-    lerp.cameraPosition
-  );
+  state.camera.position.lerp(cameraOption.position, lerp.cameraPosition);
   state.camera.lookAt(cameraOption.target);
 }
-
 ```
 
 ### gaesup\camera\control\orbit.ts
 
 ```typescript
 import { quat } from '@react-three/rapier';
+import * as THREE from 'three';
 import { cameraPropType } from '../../physics/type';
 import { V3 } from '../../utils/vector';
 import { activeStateType, cameraOptionType } from '../../world/context/type';
+
+// 임시 벡터 객체 생성 - 재사용
+const tempVector = new THREE.Vector3();
+const tempQuat = new THREE.Quaternion();
 
 export const makeOrbitCameraPosition = (
   activeState: activeStateType,
   cameraOption: cameraOptionType,
 ) => {
   const { XDistance, YDistance, ZDistance } = cameraOption;
-  const cameraPosition = activeState.position.clone().add(
-    V3(Math.sin(activeState.euler.y), 1, Math.cos(activeState.euler.y))
-      .normalize()
-      .clone()
-      .multiply(V3(-XDistance, YDistance, -ZDistance)),
-  );
-  return cameraPosition;
+  // Math.sin과 Math.cos 계산 재사용
+  const sinY = Math.sin(activeState.euler.y);
+  const cosY = Math.cos(activeState.euler.y);
+  // 임시 벡터 재사용하여 불필요한 객체 생성 방지
+  return tempVector.set(-XDistance * sinY, YDistance, -ZDistance * cosY).add(activeState.position);
 };
 
 export default function orbit(prop: cameraPropType) {
@@ -315,24 +280,25 @@ export default function orbit(prop: cameraPropType) {
   } = prop;
   if (!state || !state.camera) return;
   const cameraPosition = makeOrbitCameraPosition(activeState, cameraOption);
-  state.camera.position.lerp(cameraPosition.clone(), lerp.cameraTurn);
-  state.camera.quaternion.copy(
-    activeState.quat.clone().multiply(quat().setFromAxisAngle(V3(0, 1, 0), Math.PI)),
-  );
+  state.camera.position.lerp(cameraPosition, lerp.cameraTurn);
+  // 4x4 행렬 연산 대신 쿼터니언 직접 계산으로 성능 개선
+  tempQuat.copy(activeState.quat);
+  // Y축 기준 180도(PI) 회전 쿼터니언 계산 (한 번만 계산)
+  const piRotation = quat().setFromAxisAngle(V3(0, 1, 0), Math.PI);
+  state.camera.quaternion.copy(tempQuat.multiply(piRotation));
   state.camera.rotation.copy(activeState.euler);
-  state.camera.lookAt(activeState.position.clone());
+  state.camera.lookAt(activeState.position);
 }
-
 ```
 
 ### gaesup\component\type.ts
 
 ```typescript
-import { ObjectMap } from "@react-three/fiber";
-import { RapierRigidBody } from "@react-three/rapier";
-import { RefObject } from "react";
-import * as THREE from "three";
-import { GLTF } from "three-stdlib";
+import { ObjectMap } from '@react-three/fiber';
+import { RapierRigidBody } from '@react-three/rapier';
+import { RefObject } from 'react';
+import * as THREE from 'three';
+import { GLTF } from 'three-stdlib';
 
 export type GLTFResult = GLTF & {
   nodes: { [name: string]: THREE.Mesh | THREE.SkinnedMesh };
@@ -344,25 +310,23 @@ export type passiveRefsType = {
   outerGroupRef: RefObject<THREE.Group>;
   innerGroupRef: RefObject<THREE.Group>;
 };
-
 ```
 
 ### gaesup\component\active\airplane\type.ts
 
 ```typescript
-import { passiveAirplanePropsType } from "../../passive/airplane/type";
-import { innerRefType } from "../../passive/type";
+import { passiveAirplanePropsType } from '../../passive/airplane/type';
+import { innerRefType } from '../../passive/type';
 
 export type activeAirplaneInnerType = passiveAirplanePropsType & innerRefType;
-
 ```
 
 ### gaesup\component\active\character\type.ts
 
 ```typescript
-import { RigidBodyTypeString } from "@react-three/rapier";
-import * as THREE from "three";
-import { controllerOptionsType } from "../../../controller/type";
+import { RigidBodyTypeString } from '@react-three/rapier';
+import * as THREE from 'three';
+import { controllerOptionsType } from '../../../controller/type';
 
 export type activeCharacterPropsType = {
   characterUrl: string;
@@ -373,23 +337,21 @@ export type activeCharacterPropsType = {
   children?: React.ReactNode;
   rigidbodyType?: RigidBodyTypeString;
 };
-
 ```
 
 ### gaesup\component\active\vehicle\type.ts
 
 ```typescript
-import { innerRefType } from "../../passive/type";
-import { passiveVehiclePropsType } from "../../passive/vehicle/type";
+import { innerRefType } from '../../passive/type';
+import { passiveVehiclePropsType } from '../../passive/vehicle/type';
 
 export type activeVehicleInnerType = passiveVehiclePropsType & innerRefType;
-
 ```
 
 ### gaesup\component\inner\airplane\type.ts
 
 ```typescript
-import { ridingType, rigidBodyRefType } from "../common/type";
+import { ridingType, rigidBodyRefType } from '../common/type';
 
 // airplane 타입 정의
 export type airplaneUrlType = {
@@ -397,16 +359,15 @@ export type airplaneUrlType = {
 };
 
 export type airplaneInnerType = rigidBodyRefType & ridingType & airplaneUrlType;
-
 ```
 
 ### gaesup\component\inner\character\type.ts
 
 ```typescript
-import { callbackType } from "../../../controller/initialize/callback/type";
-import { groundRayType, partsType } from "../../../controller/type";
-import { passiveCharacterPropsType } from "../../passive/character/type";
-import { componentTypeString, innerRefType } from "../../passive/type";
+import { callbackType } from '../../../controller/initialize/callback/type';
+import { groundRayType, partsType } from '../../../controller/type';
+import { passiveCharacterPropsType } from '../../passive/character/type';
+import { componentTypeString, innerRefType } from '../../passive/type';
 
 // 내부 정의
 export type characterInnerType = {
@@ -417,13 +378,12 @@ export type characterInnerType = {
 } & passiveCharacterPropsType &
   innerRefType &
   callbackType;
-
 ```
 
 ### gaesup\component\inner\common\calc.ts
 
 ```typescript
-import * as THREE from "three";
+import * as THREE from 'three';
 
 export const calcCharacterColliderProps = (characterSize: THREE.Vector3) => {
   if (!characterSize) return null;
@@ -439,7 +399,6 @@ export const calcCharacterColliderProps = (characterSize: THREE.Vector3) => {
     diameter,
   };
 };
-
 ```
 
 ### gaesup\component\inner\common\setGroundRay.ts
@@ -463,20 +422,19 @@ export function useSetGroundRay() {
   };
   return setGroundRay;
 }
-
 ```
 
 ### gaesup\component\inner\common\type.ts
 
 ```typescript
-import { Collider } from "@dimforge/rapier3d-compat";
-import { RigidBodyProps, RigidBodyTypeString } from "@react-three/rapier";
-import { MutableRefObject, RefObject } from "react";
-import * as THREE from "three";
-import { callbackType } from "../../../controller/initialize/callback/type";
-import { groundRayType, partsType } from "../../../controller/type";
-import { urlsType } from "../../../world/context/type";
-import { innerRefType, passivePropsType } from "../../passive/type";
+import { Collider } from '@dimforge/rapier3d-compat';
+import { RigidBodyProps, RigidBodyTypeString } from '@react-three/rapier';
+import { MutableRefObject, RefObject } from 'react';
+import * as THREE from 'three';
+import { callbackType } from '../../../controller/initialize/callback/type';
+import { groundRayType, partsType } from '../../../controller/type';
+import { urlsType } from '../../../world/context/type';
+import { innerRefType, passivePropsType } from '../../passive/type';
 // collider 정의
 export type characterColliderType = {
   height: number;
@@ -535,7 +493,6 @@ export type rigidBodyRefType = {
 } & passivePropsType &
   innerRefType &
   callbackType;
-
 ```
 
 ### gaesup\component\inner\common\useGenericRefs.ts
@@ -560,13 +517,12 @@ export function useGenericRefs(): GenericRefsType {
   const colliderRef = useRef<Collider>(null);
   return { rigidBodyRef, outerGroupRef, innerGroupRef, colliderRef };
 }
-
 ```
 
 ### gaesup\component\inner\vehicle\type.ts
 
 ```typescript
-import { ridingType, rigidBodyRefType } from "../common/type";
+import { ridingType, rigidBodyRefType } from '../common/type';
 
 // vehicle 타입 정의
 export type vehicleUrlType = {
@@ -574,30 +530,25 @@ export type vehicleUrlType = {
 };
 
 export type vehicleInnerType = rigidBodyRefType & ridingType & vehicleUrlType;
-
 ```
 
 ### gaesup\component\passive\type.ts
 
 ```typescript
-import { Collider } from "@dimforge/rapier3d-compat";
+import { Collider } from '@dimforge/rapier3d-compat';
 import {
   CollisionEnterPayload,
   RapierRigidBody,
   RigidBodyProps,
   RigidBodyTypeString,
-} from "@react-three/rapier";
-import { MutableRefObject } from "react";
-import * as THREE from "three";
-import {
-  controllerOptionsType,
-  groundRayType,
-  partsType,
-} from "../../controller/type";
-import { ridingType } from "../inner/common/type";
+} from '@react-three/rapier';
+import { MutableRefObject } from 'react';
+import * as THREE from 'three';
+import { controllerOptionsType, groundRayType, partsType } from '../../controller/type';
+import { ridingType } from '../inner/common/type';
 
 // 컴포넌트 종류
-export type componentTypeString = "character" | "vehicle" | "airplane";
+export type componentTypeString = 'character' | 'vehicle' | 'airplane';
 // 내부 컴포넌트 종류
 export type innerRefType = {
   colliderRef: MutableRefObject<Collider>;
@@ -631,16 +582,14 @@ export type passivePropsType = {
   parts?: partsType;
   isNotColliding?: boolean;
 } & ridingType;
-
 ```
 
 ### gaesup\component\passive\airplane\type.ts
 
 ```typescript
-import { passivePropsType } from "../type";
+import { passivePropsType } from '../type';
 
-export type passiveAirplanePropsType = Omit<passivePropsType, "componentType">;
-
+export type passiveAirplanePropsType = Omit<passivePropsType, 'componentType'>;
 ```
 
 ### gaesup\component\passive\character\type.ts
@@ -652,39 +601,37 @@ export type passiveCharacterPropsType = Omit<
   passivePropsType,
   'isRiding' | 'enableRiding' | 'componentType'
 >;
-
 ```
 
 ### gaesup\component\passive\vehicle\type.ts
 
 ```typescript
-import { passivePropsType } from "../type";
+import { passivePropsType } from '../type';
 
-export type passiveVehiclePropsType = Omit<passivePropsType, "componentType">;
-
+export type passiveVehiclePropsType = Omit<passivePropsType, 'componentType'>;
 ```
 
 ### gaesup\controller\type.ts
 
 ```typescript
-import { Collider, Ray } from "@dimforge/rapier3d-compat";
-import { GroupProps } from "@react-three/fiber";
-import { RapierRigidBody, RigidBodyProps } from "@react-three/rapier";
-import { ReactNode, RefObject } from "react";
-import * as THREE from "three";
-import { cameraRayType } from "../camera/type";
-import { urlsType } from "../world/context/type";
-import { airplaneType, characterType, vehicleType } from "./context/type";
-import { callbackType } from "./initialize/callback/type";
+import { Collider, Ray } from '@dimforge/rapier3d-compat';
+import { GroupProps } from '@react-three/fiber';
+import { RapierRigidBody, RigidBodyProps } from '@react-three/rapier';
+import { ReactNode, RefObject } from 'react';
+import * as THREE from 'three';
+import { cameraRayType } from '../camera/type';
+import { urlsType } from '../world/context/type';
+import { airplaneType, characterType, vehicleType } from './context/type';
+import { callbackType } from './initialize/callback/type';
 
 export type optionsType = {
   debug: boolean;
-  mode?: "normal" | "vehicle" | "airplane";
-  controllerType: "none";
-  cameraCollisionType: "transparent" | "closeUp";
+  mode?: 'normal' | 'vehicle' | 'airplane';
+  controllerType: 'none';
+  cameraCollisionType: 'transparent' | 'closeUp';
   camera: {
-    type: "perspective" | "orthographic";
-    control: "orbit" | "normal";
+    type: 'perspective' | 'orthographic';
+    control: 'orbit' | 'normal';
   };
   minimap: boolean;
   minimapRatio: number;
@@ -716,8 +663,8 @@ export type rayType = {
   parent?: RapierRigidBody | null | undefined;
 };
 
-export type slopeRayType = Omit<rayType, "parent">;
-export type groundRayType = Omit<rayType, "current" | "angle">;
+export type slopeRayType = Omit<rayType, 'parent'>;
+export type groundRayType = Omit<rayType, 'current' | 'angle'>;
 // ref 전환
 export type controllerOptionsType = {
   lerp: {
@@ -794,7 +741,6 @@ export type controllerType = controllerOtherPropType &
     controllerOptions?: controllerOptionsType;
     parts?: partsType;
   };
-
 ```
 
 ### gaesup\controller\context\index.ts
@@ -855,7 +801,6 @@ export const GaesupControllerContext = createContext<gaesupControllerType>({
 });
 export const GaesupControllerDispatchContext =
   createContext<dispatchType<gaesupControllerType>>(null);
-
 ```
 
 ### gaesup\controller\context\reducer.ts
@@ -879,7 +824,6 @@ export function gaesupControllerReducer(
     }
   }
 }
-
 ```
 
 ### gaesup\controller\context\type.ts
@@ -927,24 +871,20 @@ export type gaesupControllerType = gaesupControllerContextPropType & {
 };
 
 export type gaesupDisptachType = dispatchType<gaesupControllerType>;
-
 ```
 
 ### gaesup\controller\initialize\index.ts
 
 ```typescript
-import { vec3 } from "@react-three/rapier";
-import { useCallback, useContext, useEffect, useMemo } from "react";
-import * as THREE from "three";
-import { groundRayType, refsType } from "../../controller/type";
+import { vec3 } from '@react-three/rapier';
+import { useCallback, useContext, useEffect, useMemo } from 'react';
+import * as THREE from 'three';
+import { groundRayType, refsType } from '../../controller/type';
 
-import { cameraRayType } from "../../camera/type";
-import { update } from "../../utils/context";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
-import { gaesupWorldContextType } from "../../world/context/type";
+import { cameraRayType } from '../../camera/type';
+import { update } from '../../utils/context';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
+import { gaesupWorldContextType } from '../../world/context/type';
 
 export default function initControllerProps(props: { refs: refsType }) {
   const context = useContext(GaesupWorldContext);
@@ -954,7 +894,7 @@ export default function initControllerProps(props: { refs: refsType }) {
     if (context && context.control) {
       // 컨트롤 정하기
       let newControl = {};
-      if (context.mode.controller === "clicker") {
+      if (context.mode.controller === 'clicker') {
         if (context.mode.isButton) {
           newControl = { ...context.control };
         }
@@ -962,7 +902,7 @@ export default function initControllerProps(props: { refs: refsType }) {
         newControl = { ...context.control };
       }
       dispatch({
-        type: "update",
+        type: 'update',
         payload: {
           control: {
             ...newControl,
@@ -1006,10 +946,10 @@ export default function initControllerProps(props: { refs: refsType }) {
             ...refs,
           },
         },
-        dispatch
+        dispatch,
       );
     },
-    [props.refs]
+    [props.refs],
   );
 
   useEffect(() => {
@@ -1023,24 +963,20 @@ export default function initControllerProps(props: { refs: refsType }) {
     cameraRay,
   };
 }
-
 ```
 
 ### gaesup\controller\initialize\callback\index.ts
 
 ```typescript
-import { useFrame } from "@react-three/fiber";
-import { useContext, useEffect } from "react";
-import { AnimationAction } from "three";
-import { rigidBodyRefType } from "../../../component/inner/common/type";
-import { componentTypeString } from "../../../component/passive/type";
-import { useGaesupAnimation } from "../../../hooks/useGaesupAnimation";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../../world/context";
-import { animationTagType } from "../../type";
-import { callbackPropType } from "./type";
+import { useFrame } from '@react-three/fiber';
+import { useContext, useEffect } from 'react';
+import { AnimationAction } from 'three';
+import { rigidBodyRefType } from '../../../component/inner/common/type';
+import { componentTypeString } from '../../../component/passive/type';
+import { useGaesupAnimation } from '../../../hooks/useGaesupAnimation';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../../world/context';
+import { animationTagType } from '../../type';
+import { callbackPropType } from './type';
 
 export default function initCallback({
   props,
@@ -1068,7 +1004,7 @@ export default function initCallback({
         currentAnimation.action();
       }
       dispatch({
-        type: "update",
+        type: 'update',
         payload: {
           animationState: {
             ...animationState,
@@ -1117,28 +1053,25 @@ export default function initCallback({
     dispatch,
   };
 }
-
 ```
 
 ### gaesup\controller\initialize\callback\type.ts
 
 ```typescript
-import { RootState } from "@react-three/fiber";
-import * as THREE from "three";
+import { RootState } from '@react-three/fiber';
+import * as THREE from 'three';
 import {
   activeStateType,
   animationAtomType,
   animationStateType,
   keyControlType,
   statesType,
-} from "../../../world/context/type";
-import { actionsType } from "../../type";
+} from '../../../world/context/type';
+import { actionsType } from '../../type';
 
 export type callbackPropType = {
   activeState: activeStateType;
   states: statesType;
-  // groundRay: groundRayType;
-  // cameraRay: cameraRayType;
   control: keyControlType;
   subscribe: (props: animationAtomType) => void;
 };
@@ -1158,7 +1091,6 @@ export type callbackType = {
   onDestory?: (prop: callbackPropType) => void;
   onAnimate?: (prop: onAnimatePropType) => void;
 };
-
 ```
 
 ### gaesup\hooks\useClicker\index.ts
@@ -1194,7 +1126,6 @@ export function useClicker() {
     moveClicker,
   };
 }
-
 ```
 
 ### gaesup\hooks\useGaesupController\index.ts
@@ -1202,9 +1133,9 @@ export function useClicker() {
 ```typescript
 // "Please use this only as a subcomponent of GaesupWorld."
 
-import { useContext } from "react";
-import { GaesupWorldContext } from "../../world/context";
-import { activeStateType, modeType, urlsType } from "../../world/context/type";
+import { useContext } from 'react';
+import { GaesupWorldContext } from '../../world/context';
+import { activeStateType, modeType, urlsType } from '../../world/context/type';
 
 export function useGaesupController(): gaesupPassivePropsType {
   const worldContext = useContext(GaesupWorldContext);
@@ -1214,7 +1145,7 @@ export function useGaesupController(): gaesupPassivePropsType {
     urls: worldContext.urls,
     currentAnimation: worldContext.mode.type
       ? worldContext.animationState[worldContext.mode.type].current
-      : "idle",
+      : 'idle',
   };
 }
 
@@ -1225,23 +1156,19 @@ export type gaesupPassivePropsType = {
   currentAnimation: string;
   children?: React.ReactNode;
 };
-
 ```
 
 ### gaesup\hooks\useMovePoint\index.ts
 
 ```typescript
-import { vec3 } from "@react-three/rapier";
-import { useContext } from "react";
-import * as THREE from "three";
-import { V3 } from "../../utils";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
+import { vec3 } from '@react-three/rapier';
+import { useContext } from 'react';
+import * as THREE from 'three';
+import { V3 } from '../../utils';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
 
 export function useMovePoint() {
-  const { activeState, clicker } = useContext(GaesupWorldContext);
+  const { activeState } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
 
   const move = (position: THREE.Vector3, isRun: boolean) => {
@@ -1249,7 +1176,7 @@ export function useMovePoint() {
     const v = vec3(position);
     const newAngle = Math.atan2(v.z - u.z, v.x - u.x);
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         clicker: {
           point: V3(position.x, 0, position.z),
@@ -1265,17 +1192,13 @@ export function useMovePoint() {
     move,
   };
 }
-
 ```
 
 ### gaesup\hooks\usePushKey\index.ts
 
 ```typescript
-import { useContext } from "react";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
+import { useContext } from 'react';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
 
 export function usePushKey() {
   const { control } = useContext(GaesupWorldContext);
@@ -1284,7 +1207,7 @@ export function usePushKey() {
   const pushKey = (key: string, value: boolean) => {
     control[key] = value;
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         control: {
           ...control,
@@ -1297,16 +1220,15 @@ export function usePushKey() {
     pushKey,
   };
 }
-
 ```
 
 ### gaesup\hooks\useRayHit\index.ts
 
 ```typescript
-import { Collider } from "@dimforge/rapier3d-compat";
-import { useRapier } from "@react-three/rapier";
-import { RefObject, useCallback } from "react";
-import { groundRayType } from "../../controller/type";
+import { Collider } from '@dimforge/rapier3d-compat';
+import { useRapier } from '@react-three/rapier';
+import { RefObject, useCallback } from 'react';
+import { groundRayType } from '../../controller/type';
 
 export function useRayHit() {
   const rapier = useRapier();
@@ -1320,25 +1242,24 @@ export function useRayHit() {
         undefined,
         undefined,
         ref.current as any,
-        undefined
+        undefined,
       );
     },
-    [rapier]
+    [rapier],
   );
 
   return getRayHit;
 }
-
 ```
 
 ### gaesup\hooks\useRideable\type.ts
 
 ```typescript
-import * as THREE from "three";
+import * as THREE from 'three';
 
 export type rideableType = {
   objectkey: string;
-  objectType?: "vehicle" | "airplane";
+  objectType?: 'vehicle' | 'airplane';
   enableRiding?: boolean;
   isRiderOn?: boolean;
   url?: string;
@@ -1354,24 +1275,165 @@ export type rideableType = {
   wheelSize?: THREE.Vector3;
   airplaneSize?: THREE.Vector3;
 };
+```
 
+### gaesup\physics\direction.ts
+
+```typescript
+// direction.ts
+import { calcType } from './type';
+import { V3, calcAngleByVector } from '../utils/vector';
+import { vec3 } from '@react-three/rapier';
+import * as THREE from 'three';
+
+/**
+ * (1) 캐릭터 - 일반 컨트롤(normal) 방향 계산
+ */
+function normalDirection(worldContext: calcType['worldContext']) {
+  const { activeState, control, mode, clicker } = worldContext;
+  const { forward, backward, leftward, rightward } = control;
+
+  // clicker 모드
+  if (mode.controller === 'clicker') {
+    activeState.euler.y = Math.PI / 2 - clicker.angle;
+    activeState.dir.set(-Math.sin(activeState.euler.y), 0, -Math.cos(activeState.euler.y));
+    return;
+  }
+
+  // 키보드 WASD
+  const dirX = Number(leftward) - Number(rightward);
+  const dirZ = Number(forward) - Number(backward);
+  if (dirX === 0 && dirZ === 0) return;
+
+  const dir = V3(dirX, 0, dirZ);
+  const angle = calcAngleByVector(dir);
+  activeState.euler.y = angle;
+  activeState.dir.set(dirX, 0, dirZ);
+}
+
+/**
+ * (2) 캐릭터 - 궤도 컨트롤(orbit) 방향 계산
+ */
+function orbitDirection(worldContext: calcType['worldContext']) {
+  const { activeState, control, mode, clicker } = worldContext;
+  const { forward, backward, leftward, rightward } = control;
+
+  const dirX = Number(leftward) - Number(rightward);
+  const dirZ = Number(forward) - Number(backward);
+  let start = 0;
+
+  if (mode.controller === 'clicker') {
+    activeState.euler.y = Math.PI / 2 - clicker.angle;
+    start = 1;
+  } else {
+    if (dirX === 0 && dirZ === 0) return;
+    activeState.euler.y += (dirX * Math.PI) / 32;
+    start = dirZ;
+  }
+
+  const front = V3(start, 0, start);
+  activeState.direction = front.multiply(
+    V3(-Math.sin(activeState.euler.y), 0, -Math.cos(activeState.euler.y)),
+  );
+  activeState.dir = activeState.direction.normalize();
+}
+function vehicleDirection(prop: calcType) {
+  const { worldContext } = prop;
+  const { activeState, control } = worldContext;
+  const { forward, backward, leftward, rightward } = control;
+
+  const xAxis = Number(leftward) - Number(rightward);
+  const zAxis = Number(forward) - Number(backward);
+  const front = vec3().set(zAxis, 0, zAxis);
+
+  activeState.euler.y += xAxis * (Math.PI / 64);
+  activeState.direction = front.multiply(
+    V3(Math.sin(activeState.euler.y), 0, Math.cos(activeState.euler.y)),
+  );
+  activeState.dir = activeState.direction.normalize();
+}
+
+/**
+ * (4) 비행기 방향 계산
+ */
+function airplaneDirection(prop: calcType) {
+  const { worldContext, controllerContext, innerGroupRef, matchSizes } = prop;
+  const { activeState, control } = worldContext;
+  const { airplane } = controllerContext;
+  const { forward, backward, leftward, rightward, shift, space } = control;
+  const { angleDelta, maxAngle, accelRatio } = airplane;
+  if (!matchSizes || !matchSizes['airplaneUrl']) return;
+  const boost = space ? Number(shift) : Number(shift) * accelRatio;
+  const upDown = Number(backward) - Number(forward);
+  const leftRight = Number(rightward) - Number(leftward);
+  const front = V3().set(boost, boost, boost);
+  activeState.euler.y += -leftRight * angleDelta.y;
+  if (!innerGroupRef?.current) return;
+  const _x = innerGroupRef.current.rotation.x;
+  const _z = innerGroupRef.current.rotation.z;
+
+  const X = maxAngle.x * upDown;
+  const Z = maxAngle.z * leftRight;
+  if (_x < -maxAngle.x) {
+    innerGroupRef.current.rotation.x = -maxAngle.x + X;
+  } else if (_x > maxAngle.x) {
+    innerGroupRef.current.rotation.x = maxAngle.x + X;
+  } else {
+    innerGroupRef.current.rotation.x += X;
+  }
+  if (_z < -maxAngle.z) {
+    innerGroupRef.current.rotation.z = -maxAngle.z + Z;
+  } else if (_z > maxAngle.z) {
+    innerGroupRef.current.rotation.z = maxAngle.z + Z;
+  } else {
+    innerGroupRef.current.rotation.z += Z;
+  }
+
+  activeState.euler.x = innerGroupRef.current.rotation.x;
+  activeState.euler.z = innerGroupRef.current.rotation.z;
+  activeState.direction = front.multiply(
+    V3(Math.sin(activeState.euler.y), -upDown, Math.cos(activeState.euler.y)),
+  );
+  activeState.dir = activeState.direction.normalize();
+}
+export function calculateDirection(prop: calcType) {
+  const { worldContext } = prop;
+  const { mode } = worldContext;
+
+  switch (mode.type) {
+    case 'character':
+      if (mode.control === 'normal') normalDirection(worldContext);
+      else if (mode.control === 'orbit') orbitDirection(worldContext);
+      break;
+    case 'vehicle':
+      vehicleDirection(prop);
+      break;
+    case 'airplane':
+      airplaneDirection(prop);
+      break;
+  }
+}
 ```
 
 ### gaesup\physics\index.ts
 
 ```typescript
+// gaesup/physics/index.ts
 import { useFrame } from '@react-three/fiber';
-import { useContext, useEffect } from 'react';
-import { GaesupControllerContext } from '../controller/context';
-import { useGaesupGltf } from '../hooks/useGaesupGltf';
-import { V3 } from '../utils';
-import { GaesupWorldContext, GaesupWorldDispatchContext } from '../world/context';
-import airplaneCalculation from './airplane';
-import characterCalculation from './character';
-import check from './check';
-import { calcType } from './type';
-import vehicleCalculation from './vehicle';
+import { useContext, useEffect, useMemo } from 'react';
+import { quat, vec3 } from '@react-three/rapier';
+import * as THREE from 'three';
 
+import { GaesupControllerContext } from '../controller/context';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../world/context';
+import { useGaesupGltf } from '../hooks/useGaesupGltf';
+import { V3 } from '../utils/vector';
+import { calcType } from './type';
+
+// (새로 추가) 방향 계산 전용 함수들을 가져옴
+import { calculateDirection } from './direction';
+
+// 메인 계산 함수 (기존과 동일)
 export default function calculation({
   groundRay,
   rigidBodyRef,
@@ -1384,6 +1446,11 @@ export default function calculation({
   const dispatch = useContext(GaesupWorldDispatchContext);
   const { mode, activeState, block } = worldContext;
   const { getSizesByUrls } = useGaesupGltf();
+
+  // 매치 사이즈 캐싱
+  const matchSizes = useMemo(() => getSizesByUrls(worldContext?.urls), [worldContext?.urls]);
+
+  // 초기화 설정
   useEffect(() => {
     if (!rigidBodyRef || !innerGroupRef) return;
     if (rigidBodyRef.current && innerGroupRef.current) {
@@ -1393,28 +1460,22 @@ export default function calculation({
     }
   }, [mode.type]);
 
+  // 블록 컨트롤 처리
   useEffect(() => {
-    if (rigidBodyRef && rigidBodyRef.current) {
-      if (block.control) {
-        rigidBodyRef.current.resetForces(false);
-        rigidBodyRef.current.resetTorques(false);
-      }
+    if (rigidBodyRef?.current && block.control) {
+      rigidBodyRef.current.resetForces(false);
+      rigidBodyRef.current.resetTorques(false);
     }
   }, [block.control, rigidBodyRef.current]);
 
+  // 매 프레임 물리 계산
   useFrame((state, delta) => {
-    if (
-      !rigidBodyRef ||
-      !rigidBodyRef.current ||
-      !outerGroupRef ||
-      !outerGroupRef.current ||
-      !innerGroupRef ||
-      !innerGroupRef.current
-    )
-      return null;
-    if (block.control) {
-      return null;
-    }
+    // 필수 참조 확인
+    if (!rigidBodyRef?.current || !outerGroupRef?.current || !innerGroupRef?.current) return null;
+    // 컨트롤 블록 확인
+    if (block.control) return null;
+
+    // 계산 속성 구성
     const calcProp: calcType = {
       rigidBodyRef,
       outerGroupRef,
@@ -1426,34 +1487,371 @@ export default function calculation({
       worldContext,
       controllerContext,
       dispatch,
-      matchSizes: getSizesByUrls(worldContext?.urls),
+      matchSizes,
     };
-    if (mode.type === 'vehicle') vehicleCalculation(calcProp);
-    else if (mode.type === 'character') characterCalculation(calcProp);
-    else if (mode.type === 'airplane') airplaneCalculation(calcProp);
-    check(calcProp);
+
+    // 통합된 물리 계산
+    entityCalculation(calcProp);
+    checkEntityStates(calcProp);
   });
 }
 
+// 통합된 물리 계산 함수
+function entityCalculation(prop: calcType) {
+  const { worldContext } = prop;
+  const { mode } = worldContext;
+
+  // 1. 방향 계산
+  calculateDirection(prop);
+
+  // 2. 충격량 적용
+  applyImpulse(prop);
+
+  // 3. 엔티티별 특수 처리
+  switch (mode.type) {
+    case 'character':
+      handleCharacterPhysics(prop);
+      break;
+    case 'vehicle':
+      handleVehiclePhysics(prop);
+      break;
+    case 'airplane':
+      handleAirplanePhysics(prop);
+      break;
+  }
+
+  // 4. 상태 업데이트
+  updateState(prop);
+}
+
+// 2. 충격량 적용
+function applyImpulse(prop: calcType) {
+  const { worldContext, controllerContext, rigidBodyRef } = prop;
+  const { activeState, states } = worldContext;
+  const { mode } = worldContext;
+
+  if (!rigidBodyRef?.current) return;
+
+  switch (mode.type) {
+    case 'character':
+      applyCharacterImpulse(prop);
+      break;
+    case 'vehicle':
+      applyVehicleImpulse(prop);
+      break;
+    case 'airplane':
+      applyAirplaneImpulse(prop);
+      break;
+  }
+}
+
+// 캐릭터 충격량 적용
+function applyCharacterImpulse(prop: calcType) {
+  const { worldContext, rigidBodyRef } = prop;
+  const { activeState, states } = worldContext;
+  const { character } = prop.controllerContext;
+  const { walkSpeed, runSpeed, jumpSpeed } = character;
+
+  const impulse = vec3();
+
+  // 점프
+  if (states.isJumping && states.isOnTheGround) {
+    impulse.setY(jumpSpeed * rigidBodyRef.current.mass());
+  }
+
+  // 이동
+  if (states.isMoving) {
+    const speed = states.isRunning ? runSpeed : walkSpeed;
+    const velocity = vec3().addScalar(speed).multiply(activeState.dir.clone().normalize().negate());
+    const M = rigidBodyRef.current.mass();
+    const A = velocity.clone().sub(activeState.velocity);
+    const F = A.multiplyScalar(M);
+    impulse.setX(F.x);
+    impulse.setZ(F.z);
+  }
+
+  rigidBodyRef.current.applyImpulse(impulse, true);
+}
+
+// 차량 충격량 적용
+function applyVehicleImpulse(prop: calcType) {
+  const { worldContext, controllerContext, rigidBodyRef } = prop;
+  const { activeState, control } = worldContext;
+  const { shift } = control;
+  const { vehicle } = controllerContext;
+  const { maxSpeed, accelRatio } = vehicle;
+
+  const velocity = rigidBodyRef.current.linvel();
+  const V = vec3(velocity).length();
+
+  if (V < maxSpeed) {
+    const M = rigidBodyRef.current.mass();
+    let speed = shift ? accelRatio : 1;
+
+    rigidBodyRef.current.applyImpulse(
+      vec3().addScalar(speed).multiply(activeState.dir.clone().normalize()).multiplyScalar(M),
+      false,
+    );
+  }
+}
+
+// 비행기 충격량 적용
+function applyAirplaneImpulse(prop: calcType) {
+  const { worldContext, controllerContext, rigidBodyRef } = prop;
+  const { activeState } = worldContext;
+  const { airplane } = controllerContext;
+  const { maxSpeed } = airplane;
+
+  const velocity = rigidBodyRef.current.linvel();
+  const V = vec3(velocity).length();
+
+  if (V < maxSpeed) {
+    const M = rigidBodyRef.current.mass();
+    rigidBodyRef.current.applyImpulse(
+      vec3({
+        x: activeState.direction.x,
+        y: activeState.direction.y,
+        z: activeState.direction.z,
+      }).multiplyScalar(M),
+      false,
+    );
+  }
+}
+
+// 캐릭터 물리 처리
+function handleCharacterPhysics(prop: calcType) {
+  const { worldContext, rigidBodyRef, innerGroupRef, delta } = prop;
+  const { states, activeState } = worldContext;
+  const { character } = prop.controllerContext;
+  const { linearDamping } = character;
+
+  // 댐핑 설정
+  if (states.isJumping || rigidBodyRef.current.linvel().y < 0) {
+    rigidBodyRef.current.setLinearDamping(linearDamping);
+  } else {
+    rigidBodyRef.current.setLinearDamping(states.isNotMoving ? linearDamping * 5 : linearDamping);
+  }
+
+  // 회전 제한
+  rigidBodyRef.current.setEnabledRotations(false, false, false, false);
+
+  // 내부 그룹 회전
+  innerGroupRef.current.quaternion.rotateTowards(
+    quat().setFromEuler(activeState.euler),
+    10 * delta,
+  );
+
+  // 클리커 관련 로직은 handleClickerQueue 함수에서 처리
+  handleClickerQueue(prop);
+}
+
+// 클리커 큐 처리
+function handleClickerQueue(prop: calcType) {
+  const { worldContext, rigidBodyRef, state } = prop;
+  const { control, clicker, mode, clickerOption } = worldContext;
+
+  // S 키로 정지
+  if (control.keyS && mode.controller === 'clicker') {
+    clicker.isOn = false;
+    clicker.isRun = false;
+    return;
+  }
+
+  // clicker 모드 아님
+  if (mode.controller !== 'clicker') return;
+
+  const u = vec3(rigidBodyRef.current?.translation());
+  let norm = calcNorm(u, clicker.point, false);
+
+  // 자동 시작
+  if (clickerOption.autoStart && clickerOption.queue[0] instanceof THREE.Vector3) {
+    clicker.isOn = true;
+    norm = calcNorm(u, clickerOption.queue[0], false);
+    const v = vec3(clickerOption.queue[0]);
+    clicker.angle = Math.atan2(v.z - u.z, v.x - u.x);
+  }
+
+  // 목적지 도달
+  if (norm < 1) {
+    if (clickerOption.track && clickerOption.queue.length !== 0) {
+      const Q = clickerOption.queue.shift();
+      if (Q instanceof THREE.Vector3) {
+        clicker.point = Q;
+        const v = vec3(clicker.point);
+        clicker.angle = Math.atan2(v.z - u.z, v.x - u.x);
+      } else {
+        const { action, beforeCB, afterCB, time } = Q;
+        if (action === 'stop') {
+          state.clock.stop();
+          beforeCB(state);
+          setTimeout(() => {
+            state.clock.start();
+            afterCB(state);
+          }, time);
+        }
+      }
+      if (clickerOption.loop) {
+        clickerOption.queue.push(Q);
+      }
+    } else {
+      clicker.isOn = false;
+      clicker.isRun = false;
+    }
+  }
+}
+
+// 차량 물리 처리
+function handleVehiclePhysics(prop: calcType) {
+  const { worldContext, controllerContext, rigidBodyRef } = prop;
+  const { control, states, rideable, mode } = worldContext;
+  const { vehicle } = controllerContext;
+  const { brakeRatio, linearDamping } = vehicle;
+  const { space } = control;
+
+  rigidBodyRef.current.setLinearDamping(space ? brakeRatio : linearDamping);
+
+  // 내부 위치 및 상태 업데이트
+  handleEntityLanding(prop);
+}
+
+// 비행기 물리 처리
+function handleAirplanePhysics(prop: calcType) {
+  const { worldContext, controllerContext, rigidBodyRef } = prop;
+  const { activeState } = worldContext;
+  const { airplane } = controllerContext;
+  const { linearDamping } = airplane;
+
+  rigidBodyRef.current.setLinearDamping(linearDamping);
+
+  // 중력 스케일
+  rigidBodyRef.current.setGravityScale(
+    activeState.position.y < 10 ? ((1 - 0.1) / (0 - 10)) * activeState.position.y + 1 : 0.1,
+    false,
+  );
+
+  // 회전 제한
+  const _euler = activeState.euler.clone();
+  _euler.x = 0;
+  _euler.z = 0;
+  rigidBodyRef.current.setRotation(quat().setFromEuler(_euler), true);
+
+  // 내부 위치 및 상태 업데이트
+  handleEntityLanding(prop);
+}
+
+// 엔티티 하차 처리
+function handleEntityLanding(prop: calcType) {
+  const { worldContext, dispatch } = prop;
+  const { states, rideable, mode } = worldContext;
+  const { isRiding } = states;
+
+  if (isRiding) {
+    rideable.objectType = null;
+    rideable.key = null;
+    mode.type = 'character';
+    states.isRiding = false;
+    states.enableRiding = false;
+    dispatch({
+      type: 'update',
+      payload: {
+        mode: { ...mode },
+        rideable: { ...rideable },
+      },
+    });
+  }
+}
+
+// 상태 업데이트
+function updateState(prop: calcType) {
+  const { worldContext, rigidBodyRef, dispatch } = prop;
+  const { activeState } = worldContext;
+  if (rigidBodyRef?.current) {
+    activeState.position = vec3(rigidBodyRef.current.translation());
+    activeState.velocity = vec3(rigidBodyRef.current.linvel());
+    dispatch({
+      type: 'update',
+      payload: {
+        activeState: { ...activeState },
+      },
+    });
+  }
+}
+
+// 엔티티 상태 체크
+function checkEntityStates(prop: calcType) {
+  const { worldContext, colliderRef, groundRay, outerGroupRef } = prop;
+  const { states, activeState, mode, control, clicker, clickerOption } = worldContext;
+
+  // 1. 지면 체크
+  if (groundRay) {
+    groundRay.origin.addVectors(activeState.position, vec3(groundRay.offset));
+    if (!groundRay.hit || !groundRay.rayCast || !colliderRef?.current) {
+      states.isOnTheGround = false;
+    }
+    if (groundRay.hit) {
+      const MAX = groundRay.length * 2;
+      const MIN = groundRay.length * 0.8;
+      const toi = groundRay.hit.toi;
+
+      if (toi >= MAX) {
+        states.isFalling = true;
+        states.isOnTheGround = false;
+      } else if (MIN <= toi && toi < MAX) {
+        states.isFalling = true;
+      } else if (toi < MIN) {
+        states.isFalling = false;
+        states.isOnTheGround = true;
+      }
+    }
+  }
+
+  // clicker 모드
+  if (mode.controller === 'clicker') {
+    states.isMoving = clicker.isOn;
+    states.isNotMoving = !clicker.isOn;
+    states.isRunning = (control.shift || clicker.isRun) && states.isMoving && clickerOption.isRun;
+    states.isJumping = control.space;
+  }
+
+  // 회전 여부
+  if (states.isMoving && outerGroupRef?.current) {
+    states.isRotated =
+      Math.sin(outerGroupRef.current.rotation.y).toFixed(3) ===
+      Math.sin(activeState.euler.y).toFixed(3);
+  }
+
+  // 누르고 있는 키 상태
+  Object.keys(control).forEach((key) => {
+    states.isPush[key] = control[key];
+  });
+
+  // 탑승/하차
+  if (states.isRiderOn && states.isPush['keyR']) {
+    states.isRiding = true;
+  }
+}
+
+// 거리 계산 유틸
+function calcNorm(u: THREE.Vector3, v: THREE.Vector3, calcZ: boolean): number {
+  return Math.sqrt(
+    Math.pow(u.x - v.x, 2) + (calcZ ? Math.pow(u.y - v.y, 2) : 0) + Math.pow(u.z - v.z, 2),
+  );
+}
 ```
 
 ### gaesup\physics\type.ts
 
 ```typescript
-import { RootState } from "@react-three/fiber";
+import { RootState } from '@react-three/fiber';
 
-import { Collider } from "@dimforge/rapier3d-compat";
-import { RapierRigidBody } from "@react-three/rapier";
-import { RefObject } from "react";
-import * as THREE from "three";
-import { gaesupControllerType } from "../controller/context/type";
-import {
-  controllerOptionsType,
-  groundRayType,
-  refsType,
-} from "../controller/type";
-import { dispatchType } from "../utils/type";
-import { gaesupWorldContextType, urlsType } from "../world/context/type";
+import { Collider } from '@dimforge/rapier3d-compat';
+import { RapierRigidBody } from '@react-three/rapier';
+import { RefObject } from 'react';
+import * as THREE from 'three';
+import { gaesupControllerType } from '../controller/context/type';
+import { controllerOptionsType, groundRayType, refsType } from '../controller/type';
+import { dispatchType } from '../utils/type';
+import { gaesupWorldContextType, urlsType } from '../world/context/type';
 
 export type SetAtom<Args extends unknown[], Result> = (...args: Args) => Result;
 
@@ -1497,788 +1895,91 @@ export type calcType = calcPropType & {
 };
 
 // vehicle Inner
-
-```
-
-### gaesup\physics\airplane\damping.ts
-
-```typescript
-import { calcType } from "../type";
-
-export default function damping(prop: calcType) {
-  const {
-    rigidBodyRef,
-    controllerContext: { airplane },
-  } = prop;
-  const { linearDamping } = airplane;
-  rigidBodyRef.current.setLinearDamping(linearDamping);
-}
-
-```
-
-### gaesup\physics\airplane\direction.ts
-
-```typescript
-import { quat } from "@react-three/rapier";
-import { V3 } from "../../utils/vector";
-import { calcType } from "../type";
-
-export default function direction(prop: calcType) {
-  const {
-    innerGroupRef,
-    worldContext: { activeState, control },
-    controllerContext: { airplane },
-    matchSizes,
-  } = prop;
-  const { forward, backward, leftward, rightward, shift, space } = control;
-  const { angleDelta, maxAngle, accelRatio } = airplane;
-  if (!matchSizes || !matchSizes["airplaneUrl"]) return null;
-
-  let boost = 0;
-
-  boost = space ? Number(shift) : Number(shift) * accelRatio;
-
-  const upDown = Number(backward) - Number(forward);
-  const leftRight = Number(rightward) - Number(leftward);
-  const front = V3().set(boost, boost, boost);
-
-  activeState.euler.y += -leftRight * angleDelta.y;
-
-  const X = maxAngle.x * upDown;
-  const Z = maxAngle.z * leftRight;
-
-  const _x = innerGroupRef.current.rotation.x;
-  const _z = innerGroupRef.current.rotation.z;
-
-  const maxX = maxAngle.x;
-  const maxZ = maxAngle.z;
-
-  const innerGrounRefRotation = innerGroupRef.current.clone();
-
-  if (_x < -maxX) {
-    innerGrounRefRotation.rotation.x = -maxX + X;
-  } else if (_x > maxX) {
-    innerGrounRefRotation.rotation.x = maxX + X;
-  } else {
-    innerGrounRefRotation.rotateX(X);
-  }
-
-  if (_z < -maxZ) innerGrounRefRotation.rotation.z = -maxZ + Z;
-  else if (_z > maxZ) innerGrounRefRotation.rotation.z = maxZ + Z;
-  else innerGrounRefRotation.rotateZ(Z);
-  activeState.euler.x = innerGrounRefRotation.rotation.x;
-  activeState.euler.z = innerGrounRefRotation.rotation.z;
-
-  innerGrounRefRotation.rotation.y = 0;
-  innerGroupRef.current.setRotationFromQuaternion(
-    quat()
-      .setFromEuler(innerGroupRef.current.rotation.clone())
-      .slerp(quat().setFromEuler(innerGrounRefRotation.rotation.clone()), 0.2)
-  );
-
-  activeState.rotation = innerGrounRefRotation.rotation;
-  activeState.direction = front.multiply(
-    V3(Math.sin(activeState.euler.y), -upDown, Math.cos(activeState.euler.y))
-  );
-  activeState.dir = activeState.direction.normalize();
-}
-
-```
-
-### gaesup\physics\airplane\gravity.ts
-
-```typescript
-import { calcType } from "../type";
-
-export default function gravity(prop: calcType) {
-  const {
-    rigidBodyRef,
-    worldContext: { activeState },
-  } = prop;
-  rigidBodyRef.current.setGravityScale(
-    activeState.position.y < 10
-      ? ((1 - 0.1) / (0 - 10)) * activeState.position.y + 1
-      : 0.1,
-    false
-  );
-}
-
-```
-
-### gaesup\physics\airplane\impulse.ts
-
-```typescript
-import { vec3 } from "@react-three/rapier";
-import { calcType } from "../type";
-
-export default function impulse(prop: calcType) {
-  const {
-    rigidBodyRef,
-    worldContext: { activeState },
-    controllerContext: { airplane },
-  } = prop;
-  const { maxSpeed } = airplane;
-  const velocity = rigidBodyRef.current.linvel();
-  // a = v / t (t = 1) (approximate calculation)
-  const V = vec3(velocity).length();
-  if (V < maxSpeed) {
-    const M = rigidBodyRef.current.mass();
-    // impulse = mass * velocity
-    rigidBodyRef.current.applyImpulse(
-      vec3({
-        x: activeState.direction.x,
-        y: activeState.direction.y,
-        z: activeState.direction.z,
-      }).multiplyScalar(M),
-      false
-    );
-  }
-}
-
-```
-
-### gaesup\physics\airplane\innerCalc.ts
-
-```typescript
-import { quat, vec3 } from "@react-three/rapier";
-import { calcType } from "../type";
-
-export default function innerCalc(prop: calcType) {
-  const {
-    rigidBodyRef,
-    worldContext: { activeState },
-    dispatch,
-  } = prop;
-
-  activeState.position = vec3(rigidBodyRef.current.translation());
-  activeState.velocity = vec3(rigidBodyRef.current.linvel());
-
-  const _euler = activeState.euler.clone();
-  _euler.x = 0;
-  _euler.z = 0;
-  rigidBodyRef.current.setRotation(quat().setFromEuler(_euler), true);
-
-  dispatch({
-    type: "update",
-    payload: {
-      activeState: {
-        ...activeState,
-      },
-    },
-  });
-}
-
-```
-
-### gaesup\physics\airplane\landing.ts
-
-```typescript
-import { calcType } from "../type";
-
-export default function landing(prop: calcType) {
-  const {
-    worldContext: { states, rideable, mode },
-    dispatch,
-  } = prop;
-  const { isRiding } = states;
-  if (isRiding) {
-    rideable.objectType = null;
-    rideable.key = null;
-    mode.type = "character";
-    states.isRiding = false;
-    states.enableRiding = false;
-  }
-
-  dispatch({
-    type: "update",
-    payload: {
-      mode: {
-        ...mode,
-      },
-      rideable: {
-        ...rideable,
-      },
-    },
-  });
-}
-
-```
-
-### gaesup\physics\character\direction.ts
-
-```typescript
-import { V3, calcAngleByVector } from '../../utils/vector';
-import { gaesupWorldContextType } from '../../world/context/type';
-import { calcType } from '../type';
-
-export function orbitDirection({
-  activeState,
-  control,
-  mode,
-  clicker,
-}: Partial<gaesupWorldContextType>) {
-  const { forward, backward, leftward, rightward } = control;
-  const dirX = Number(leftward) - Number(rightward);
-  const dirZ = Number(forward) - Number(backward);
-  let start = 0;
-  if (mode.controller === 'clicker') {
-    activeState.euler.y = Math.PI / 2 - clicker.angle;
-    start = 1;
-  } else {
-    if (dirX === 0 && dirZ === 0) return;
-    activeState.euler.y += (dirX * Math.PI) / 32;
-    start = dirZ;
-  }
-  const front = V3(start, 0, start);
-  activeState.direction = front.multiply(
-    V3(-Math.sin(activeState.euler.y), 0, -Math.cos(activeState.euler.y)),
-  );
-  activeState.dir = activeState.direction.normalize();
-}
-
-export function normalDirection({
-  activeState,
-  control,
-  mode,
-  clicker,
-}: Partial<gaesupWorldContextType>) {
-  const { forward, backward, leftward, rightward } = control;
-  if (mode.controller === 'clicker') {
-    activeState.euler.y = Math.PI / 2 - clicker.angle;
-    activeState.dir.set(-Math.sin(activeState.euler.y), 0, -Math.cos(activeState.euler.y));
-  } else {
-    // 일반 컨트롤
-    // right hand rule. north -> east -> south -> west
-    const dirX = Number(leftward) - Number(rightward);
-    const dirZ = Number(forward) - Number(backward);
-    if (dirX === 0 && dirZ === 0) return;
-    const dir = V3(dirX, 0, dirZ);
-    const angle = calcAngleByVector(dir);
-    activeState.euler.y = angle;
-    activeState.dir.set(dirX, 0, dirZ);
-  }
-}
-
-export default function direction(prop: calcType) {
-  const { worldContext } = prop;
-  if (worldContext.mode.control === 'normal') {
-    normalDirection(worldContext);
-  } else if (worldContext.mode.control === 'orbit') {
-    orbitDirection(worldContext);
-  }
-}
-
-```
-
-### gaesup\physics\character\impulse.ts
-
-```typescript
-import { vec3 } from "@react-three/rapier";
-import { calcType } from "../type";
-
-export default function impulse(prop: calcType) {
-  const {
-    rigidBodyRef,
-    worldContext: { states, activeState },
-  } = prop;
-  const { isMoving, isRunning } = states;
-  const {
-    controllerContext: {
-      character: { walkSpeed, runSpeed, jumpSpeed },
-    },
-  } = prop;
-  const { isOnTheGround, isJumping } = states;
-  const impulse = vec3();
-  if (isJumping && isOnTheGround) {
-    impulse.setY(jumpSpeed * rigidBodyRef.current.mass());
-  }
-  if (isMoving) {
-    const speed = isRunning ? runSpeed : walkSpeed;
-    const velocity = vec3()
-      .addScalar(speed)
-      .multiply(activeState.dir.clone().normalize().negate());
-    const M = rigidBodyRef.current.mass();
-    // a = v / t = dv / 1 (dt = 1)
-    const A = velocity.clone().sub(activeState.velocity);
-    const F = A.multiplyScalar(M);
-    impulse.setX(F.x);
-    impulse.setZ(F.z);
-  }
-  rigidBodyRef.current.applyImpulse(impulse, true);
-  activeState.position = vec3(rigidBodyRef.current.translation());
-  activeState.velocity = vec3(rigidBodyRef.current.linvel());
-}
-
-```
-
-### gaesup\physics\character\innerCalc.ts
-
-```typescript
-import { quat } from "@react-three/rapier";
-import { calcType } from "../type";
-
-export default function innerCalc(prop: calcType) {
-  const {
-    rigidBodyRef,
-    innerGroupRef,
-    controllerContext: {
-      character: { linearDamping },
-    },
-    worldContext: { activeState, states, block },
-    delta,
-  } = prop;
-
-  if (states.isJumping || rigidBodyRef.current.linvel().y < 0) {
-    rigidBodyRef.current.setLinearDamping(linearDamping);
-  } else {
-    rigidBodyRef.current.setLinearDamping(
-      states.isNotMoving ? linearDamping * 5 : linearDamping
-    );
-  }
-  rigidBodyRef.current.setEnabledRotations(false, false, false, false);
-  innerGroupRef.current.quaternion.rotateTowards(
-    quat().setFromEuler(activeState.euler),
-    10 * delta
-  );
-}
-
-```
-
-### gaesup\physics\character\queue.ts
-
-```typescript
-import { vec3 } from "@react-three/rapier";
-import * as THREE from "three";
-import { calcNorm } from "../../utils";
-import { calcType } from "../type";
-
-export default function queue(prop: calcType) {
-  const {
-    rigidBodyRef,
-    state,
-    worldContext: { clicker, mode, clickerOption, block },
-  } = prop;
-  const u = vec3(rigidBodyRef.current?.translation());
-
-  let norm = calcNorm(u, clicker.point, false);
-  if (clickerOption.autoStart) {
-    if (clickerOption.queue[0] instanceof THREE.Vector3) {
-      clicker.isOn = true;
-      norm = calcNorm(u, clickerOption.queue[0], false);
-      const v = vec3(clickerOption.queue[0]);
-      const newAngle = Math.atan2(v.z - u.z, v.x - u.x);
-      clicker.angle = newAngle;
-    }
-  }
-  if (norm < 1 && mode.controller === "clicker") {
-    if (clickerOption.track && clickerOption.queue.length !== 0) {
-      const Q = clickerOption.queue.shift();
-      if (Q instanceof THREE.Vector3) {
-        clicker.point = Q;
-        const v = vec3(clicker.point);
-        const newAngle = Math.atan2(v.z - u.z, v.x - u.x);
-        clicker.angle = newAngle;
-      } else {
-        const { action, beforeCB, afterCB, time } = Q;
-        if (action === "stop") {
-          state.clock.stop();
-          beforeCB(state);
-          console.log();
-          setTimeout(() => {
-            state.clock.start();
-            afterCB(state);
-          }, time);
-        }
-      }
-      if (clickerOption.loop) {
-        clickerOption.queue.push(Q);
-      }
-    } else {
-      clicker.isOn = false;
-      clicker.isRun = false;
-    }
-  }
-}
-
-```
-
-### gaesup\physics\character\stop.ts
-
-```typescript
-import { calcType } from "../type";
-
-export default function stop(prop: calcType) {
-  const {
-    worldContext: { control, clicker, mode },
-  } = prop;
-  const { keyS } = control;
-
-  if (keyS && mode.controller === "clicker") {
-    clicker.isOn = false;
-    clicker.isRun = false;
-  }
-}
-
-```
-
-### gaesup\physics\check\ground.ts
-
-```typescript
-import { vec3 } from "@react-three/rapier";
-import { calcType } from "../type";
-
-export default function checkOnTheGround(prop: calcType) {
-  const {
-    colliderRef,
-    groundRay,
-    worldContext: { states, activeState },
-  } = prop;
-
-  groundRay.origin.addVectors(activeState.position, vec3(groundRay.offset));
-  if (!groundRay.hit || !groundRay.rayCast || !colliderRef.current) {
-    states.isOnTheGround = false;
-  }
-  if (groundRay.hit) {
-    const MAX = groundRay.length * 2;
-    const MIN = groundRay.length * 0.8;
-    if (groundRay.hit.toi >= MAX) {
-      states.isFalling = true;
-      states.isOnTheGround = false;
-    } else if (MIN <= groundRay.hit.toi && groundRay.hit.toi < MAX) {
-      states.isFalling = true;
-    } else if (groundRay.hit.toi < MIN) {
-      states.isFalling = false;
-      states.isOnTheGround = true;
-    }
-  }
-}
-
-```
-
-### gaesup\physics\check\index.ts
-
-```typescript
-import { calcType } from "../type";
-import ground from "./ground";
-import moving from "./moving";
-import push from "./push";
-import riding from "./riding";
-import rotate from "./rotate";
-
-export default function check(calcProp: calcType) {
-  ground(calcProp);
-  moving(calcProp);
-  rotate(calcProp);
-  push(calcProp);
-  riding(calcProp);
-}
-
-```
-
-### gaesup\physics\check\moving.ts
-
-```typescript
-import { calcType } from "../type";
-
-export default function moving(prop: calcType) {
-  const {
-    worldContext: { states, mode, control, clicker, clickerOption },
-  } = prop;
-  const { shift, space } = control;
-  if (mode.controller === "clicker") {
-    states.isMoving = clicker.isOn;
-    states.isNotMoving = !clicker.isOn;
-    states.isRunning =
-      (shift || clicker.isRun) && states.isMoving && clickerOption.isRun;
-    states.isJumping = space;
-  }
-}
-
-```
-
-### gaesup\physics\check\push.ts
-
-```typescript
-import { calcType } from "../type";
-
-export default function push(prop: calcType) {
-  const {
-    worldContext: { states, control },
-  } = prop;
-  Object.keys(control).forEach((key) => {
-    states.isPush[key] = control[key];
-  });
-}
-
-```
-
-### gaesup\physics\check\riding.ts
-
-```typescript
-import { calcType } from "../type";
-
-export default function riding(prop: calcType) {
-  const {
-    worldContext: { states },
-  } = prop;
-
-  const { isRiderOn } = states;
-  if (isRiderOn && states.isPush["keyR"]) {
-    states.isRiding = true;
-  }
-}
-
-```
-
-### gaesup\physics\check\rotate.ts
-
-```typescript
-import { calcType } from "../type";
-
-export default function rotate(prop: calcType) {
-  const {
-    outerGroupRef,
-    worldContext: { states, activeState },
-  } = prop;
-  if (states.isMoving && outerGroupRef && outerGroupRef.current) {
-    states.isRotated =
-      Math.sin(outerGroupRef.current.rotation.y).toFixed(3) ===
-      Math.sin(activeState.euler.y).toFixed(3);
-  }
-}
-
-```
-
-### gaesup\physics\vehicle\damping.ts
-
-```typescript
-import { calcType } from "../type";
-
-export default function damping(prop: calcType) {
-  const {
-    rigidBodyRef,
-    worldContext: { control },
-    controllerContext: { vehicle },
-  } = prop;
-  const { space } = control;
-  const { brakeRatio, linearDamping } = vehicle;
-  rigidBodyRef.current.setLinearDamping(space ? brakeRatio : linearDamping);
-}
-
-```
-
-### gaesup\physics\vehicle\direction.ts
-
-```typescript
-import { vec3 } from "@react-three/rapier";
-import { V3 } from "../../utils/vector";
-import { calcType } from "../type";
-
-export function normal(prop: calcType) {
-  const {
-    worldContext: { activeState, control },
-  } = prop;
-  const { forward, backward, leftward, rightward } = control;
-  const xAxis = Number(leftward) - Number(rightward);
-  const zAxis = Number(forward) - Number(backward);
-  const front = vec3().set(zAxis, 0, zAxis);
-  activeState.euler.y += xAxis * (Math.PI / 64);
-  return front;
-}
-
-export default function direction(prop: calcType) {
-  const {
-    worldContext: { mode, activeState },
-  } = prop;
-  const front = vec3();
-  front.copy(normal(prop));
-  activeState.direction = front.multiply(
-    V3(Math.sin(activeState.euler.y), 0, Math.cos(activeState.euler.y))
-  );
-  activeState.dir = activeState.direction.normalize();
-}
-
-```
-
-### gaesup\physics\vehicle\impulse.ts
-
-```typescript
-import { vec3 } from "@react-three/rapier";
-import { calcType } from "../type";
-
-export default function impulse(prop: calcType) {
-  const {
-    rigidBodyRef,
-    worldContext: { activeState, control },
-    controllerContext: { vehicle },
-  } = prop;
-  const { shift } = control;
-  const { maxSpeed, accelRatio } = vehicle;
-
-  const velocity = rigidBodyRef.current.linvel();
-  // a = v / t (t = 1) (approximate calculation)
-  const V = vec3(velocity).length();
-  if (V < maxSpeed) {
-    const M = rigidBodyRef.current.mass();
-    let speed = shift ? accelRatio : 1;
-    // impulse = mass * velocity
-    rigidBodyRef.current.applyImpulse(
-      vec3()
-        .addScalar(speed)
-        .multiply(activeState.dir.clone().normalize())
-        .multiplyScalar(M),
-      false
-    );
-  }
-}
-
-```
-
-### gaesup\physics\vehicle\innerCalc.ts
-
-```typescript
-import { quat, vec3 } from "@react-three/rapier";
-import { calcType } from "../type";
-
-export default function innerCalc(prop: calcType) {
-  const {
-    rigidBodyRef,
-    worldContext: { activeState },
-  } = prop;
-
-  activeState.position = vec3(rigidBodyRef.current.translation());
-  activeState.velocity = vec3(rigidBodyRef.current.linvel());
-
-  rigidBodyRef.current.setRotation(
-    quat().setFromEuler(activeState.euler.clone()),
-    false
-  );
-}
-
-```
-
-### gaesup\physics\vehicle\landing.ts
-
-```typescript
-import { calcType } from "../type";
-
-export default function landing(prop: calcType) {
-  const {
-    worldContext: { states, rideable, mode },
-    dispatch,
-  } = prop;
-  const { isRiding } = states;
-  if (isRiding) {
-    rideable.objectType = null;
-    rideable.key = null;
-    mode.type = "character";
-    states.isRiding = false;
-    states.enableRiding = false;
-  }
-
-  dispatch({
-    type: "update",
-    payload: {
-      mode: {
-        ...mode,
-      },
-      rideable: {
-        ...rideable,
-      },
-    },
-  });
-}
-
 ```
 
 ### gaesup\tools\shared.css.ts
 
 ```typescript
-import { style } from "@vanilla-extract/css";
+import { style } from '@vanilla-extract/css';
 
-// 공통 Flex 중앙 정렬 스타일
 export const flexCenter = style({
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  textAlign: "center",
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  textAlign: 'center',
 });
 
-// 공통 버튼 스타일
 export const commonButton = style([
   flexCenter,
   {
-    width: "5rem",
-    height: "5rem",
-    cursor: "pointer",
-    transition: "all 0.3s ease-in",
-    boxShadow: "0 0 0.5rem rgba(0, 0, 0, 0.5)",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    color: "white",
+    width: '5rem',
+    height: '5rem',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease-in',
+    boxShadow: '0 0 0.5rem rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    color: 'white',
     selectors: {
-      "&:hover": {
-        boxShadow: "0 0 1rem rgba(0, 0, 0, 0.5)",
+      '&:hover': {
+        boxShadow: '0 0 1rem rgba(0, 0, 0, 0.5)',
       },
     },
   },
 ]);
 
-// 미니맵 공통 사이즈 및 미디어 쿼리
 export const minimapSize = {
-  width: "18rem",
-  height: "18rem",
-  "@media": {
-    "screen and (max-width: 1024px)": {
-      width: "17rem",
-      height: "17rem",
+  width: '18rem',
+  height: '18rem',
+  '@media': {
+    'screen and (max-width: 1024px)': {
+      width: '17rem',
+      height: '17rem',
     },
-    "screen and (max-width: 768px)": {
-      width: "16rem",
-      height: "16rem",
+    'screen and (max-width: 768px)': {
+      width: '16rem',
+      height: '16rem',
     },
   },
 };
-
 ```
 
 ### gaesup\tools\type.ts
 
 ```typescript
-import { CSSProperties } from "react";
+import { CSSProperties } from 'react';
 
 export type VECssType = Record<keyof CSSProperties, string>;
-
 ```
 
 ### gaesup\tools\gamepad\style.css.ts
 
 ```typescript
-import { globalStyle, style } from "@vanilla-extract/css";
-import { commonButton } from "../shared.css";
+import { globalStyle, style } from '@vanilla-extract/css';
+import { commonButton } from '../shared.css';
 
 export const gamePad = style({
-  display: "grid",
-  alignItems: "center",
-  justifyContent: "center",
-  gridTemplateColumns: "repeat(3, 1fr)",
-  gridTemplateRows: "repeat(3, 1fr)",
+  display: 'grid',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gridTemplateColumns: 'repeat(3, 1fr)',
+  gridTemplateRows: 'repeat(3, 1fr)',
 });
 
 export const padButton = style([
   commonButton,
   {
-    position: "relative",
-    fontSize: "1rem",
-    margin: "0.5rem",
-    borderRadius: "50%",
+    position: 'relative',
+    fontSize: '1rem',
+    margin: '0.5rem',
+    borderRadius: '50%',
     selectors: {
-      "&::after": {
+      '&::after': {
         content: '""',
-        position: "absolute",
-        width: "4rem",
-        height: "4rem",
-        borderRadius: "50%",
-        background: "rgba(0, 0, 0, 0.2)",
+        position: 'absolute',
+        width: '4rem',
+        height: '4rem',
+        borderRadius: '50%',
+        background: 'rgba(0, 0, 0, 0.2)',
         zIndex: 100000,
       },
     },
@@ -2287,27 +1988,26 @@ export const padButton = style([
 
 export const isClicked = style({
   background:
-    "radial-gradient(circle at center, rgba(245, 177, 97, 1) 0.4%, rgba(236, 54, 110, 1) 100.2%)",
-  boxShadow: "0 0 1rem rgba(245, 177, 97, 1)",
-  color: "black",
-  transition: "all 0.3s ease-in",
-  borderRadius: "50%",
+    'radial-gradient(circle at center, rgba(245, 177, 97, 1) 0.4%, rgba(236, 54, 110, 1) 100.2%)',
+  boxShadow: '0 0 1rem rgba(245, 177, 97, 1)',
+  color: 'black',
+  transition: 'all 0.3s ease-in',
+  borderRadius: '50%',
   selectors: {
-    "&:hover": {
-      boxShadow: "0 0 2rem rgba(245, 177, 97, 1)",
+    '&:hover': {
+      boxShadow: '0 0 2rem rgba(245, 177, 97, 1)',
     },
   },
 });
 
 // 사용자 선택 방지 글로벌 스타일
 globalStyle(`${gamePad} *`, {
-  WebkitTouchCallout: "none",
-  WebkitUserSelect: "none",
-  MozUserSelect: "none",
-  msUserSelect: "none",
-  userSelect: "none",
+  WebkitTouchCallout: 'none',
+  WebkitUserSelect: 'none',
+  MozUserSelect: 'none',
+  msUserSelect: 'none',
+  userSelect: 'none',
 });
-
 ```
 
 ### gaesup\tools\gamepad\type.ts
@@ -2333,237 +2033,12 @@ export type GamePadButtonType = {
   name: string;
   gamePadButtonStyle?: CSSProperties;
 };
-
 ```
 
 ### gaesup\tools\minimap\style.css.ts
 
 ```typescript
-// import { keyframes, style } from "@vanilla-extract/css";
-// import { flexCenter, minimapSize } from "../shared.css";
-//
-// // 키프레임 정의
-// const pulseWhite = keyframes({
-//   "0%": {
-//     boxShadow: "0 0 0 0 rgba(255, 255, 255, 0.7)",
-//     opacity: 1,
-//   },
-//   "70%": {
-//     boxShadow: "0 0 0 10px rgba(255, 255, 255, 0)",
-//     opacity: 0.7,
-//   },
-//   "100%": {
-//     boxShadow: "0 0 0 0 rgba(255, 255, 255, 0)",
-//     opacity: 1,
-//   },
-// });
-//
-// // 스타일 정의
-// export const minimap = style([
-//   {
-//     margin: "1rem",
-//     borderRadius: "50%",
-//     background: "rgba(0, 0, 0, 0.6)",
-//     boxShadow: "0 0 10px rgba(0, 0, 0, 0.5)",
-//     backdropFilter: "blur(1rem)",
-//     WebkitBackdropFilter: "blur(1rem)",
-//     border: "4px solid rgba(0, 0, 0, 0.5)",
-//     overflow: "hidden",
-//   },
-//   minimapSize,
-// ]);
-//
-// export const minimapOuter = style([
-//   flexCenter,
-//   {
-//     position: "absolute",
-//     textAlign: "center",
-//     overflow: "hidden",
-//   },
-//   minimapSize,
-// ]);
-//
-// export const minimapInner = style([
-//   {
-//     position: "relative",
-//     display: "flex",
-//     top: "50%",
-//     left: "50%",
-//     transformOrigin: "50% 50%",
-//     borderRadius: "50%",
-//     overflow: "hidden",
-//   },
-//   minimapSize,
-// ]);
-//
-// export const avatar = style([
-//   {
-//     position: "absolute",
-//     display: "flex",
-//     alignItems: "center",
-//     justifyContent: "center",
-//     textAlign: "center",
-//     top: "50%",
-//     left: "50%",
-//     transform: "translate(-50%, -50%)",
-//     width: "2rem",
-//     height: "2rem",
-//     borderRadius: "50%",
-//     background: "rgba(5, 222, 250, 1)",
-//     boxShadow: "0 0 10px rgba(5, 222, 250, 1)",
-//     border: "2px solid transparent",
-//     objectFit: "cover",
-//     zIndex: 100,
-//     animation: `${pulseWhite} 2s infinite`,
-//   },
-// ]);
-//
-// export const plusMinus = style([
-//   {
-//     position: "relative",
-//     display: "flex",
-//     justifyContent: "center",
-//     alignItems: "center",
-//     width: "2rem",
-//     height: "2rem",
-//     borderRadius: "50%",
-//     background: "rgba(0, 0, 0, 0.5)",
-//     boxShadow: "0 0 5px rgba(0, 0, 0, 0.5)",
-//     transition: "all 0.5s ease-in",
-//     cursor: "pointer",
-//     border: "2px solid transparent",
-//     selectors: {
-//       "&:hover": {
-//         boxShadow: "0 0 10px rgba(0, 0, 0, 0.5)",
-//       },
-//     },
-//   },
-// ]);
-//
-// export const scale = style([
-//   {
-//     position: "absolute",
-//     width: "13rem",
-//     bottom: "-5rem",
-//     left: "50%",
-//     transform: "translateX(-50%)",
-//     display: "flex",
-//     alignItems: "center",
-//     justifyContent: "space-between",
-//     fontSize: "1.2rem",
-//     color: "white",
-//     textShadow: "0 0 10px black",
-//     padding: "0.5rem",
-//     borderRadius: "0.5rem",
-//     boxShadow: "0 0 10px black",
-//     background: "rgba(0, 0, 0, 0.5)",
-//     zIndex: 3,
-//     WebkitBackdropFilter: "blur(2rem)",
-//     backdropFilter: "blur(2rem)",
-//     fontFamily: '"Open Sans", sans-serif',
-//     fontWeight: 300,
-//   },
-// ]);
-//
-// export const text = style({
-//   position: "relative",
-//   fontSize: "1rem",
-//   color: "black",
-//   padding: "0.5rem",
-//   borderRadius: "0.5rem",
-//   background: "rgba(255, 255, 255, 0.5)",
-//   boxShadow: "0 0 10px rgba(255, 255, 255, 0.5)",
-//   zIndex: 3,
-// });
-//
-// export const minimapObject = style({
-//   position: "absolute",
-//   display: "flex",
-//   alignItems: "center",
-//   justifyContent: "center",
-//   textAlign: "center",
-//   borderRadius: "2px",
-//   background: "rgba(0, 0, 0, 0.3)",
-// });
-//
-// export const imageObject = style({
-//   position: "absolute",
-//   display: "flex",
-//   alignItems: "center",
-//   justifyContent: "center",
-//   textAlign: "center",
-//   background: `
-//     linear-gradient(to bottom, transparent 95%, rgba(0, 0, 0, 0.2) 20%) 0 0 / 100% 40px repeat-y,
-//     linear-gradient(to right, transparent 38px, rgba(0, 0, 0, 0.2) 38px) 0 0 / 40px 100% repeat-x transparent
-//   `,
-// });
-//
-// export const textObject = style({
-//   position: "absolute",
-//   display: "flex",
-//   alignItems: "center",
-//   justifyContent: "center",
-//   textAlign: "center",
-// });
-//
-// const directionBase = style({
-//   position: "absolute",
-//   color: "white",
-//   fontSize: "1.5rem",
-//   zIndex: 2000,
-// });
-//
-// export const east = style([
-//   directionBase,
-//   {
-//     top: "50%",
-//     right: 0,
-//   },
-// ]);
-//
-// export const west = style([
-//   directionBase,
-//   {
-//     top: "50%",
-//     left: 0,
-//   },
-// ]);
-//
-// export const south = style([
-//   directionBase,
-//   {
-//     top: 0,
-//     left: "50%",
-//   },
-// ]);
-//
-// export const north = style([
-//   directionBase,
-//   {
-//     bottom: 0,
-//     left: "50%",
-//   },
-// ]);
-import { keyframes, style } from '@vanilla-extract/css';
-
 const MINIMAP_SIZE = 200; // px 단위로 고정
-
-// 키프레임 정의
-const pulseWhite = keyframes({
-  '0%': {
-    boxShadow: '0 0 0 0 rgba(255, 255, 255, 0.7)',
-    opacity: 1,
-  },
-  '70%': {
-    boxShadow: '0 0 0 10px rgba(255, 255, 255, 0)',
-    opacity: 0.7,
-  },
-  '100%': {
-    boxShadow: '0 0 0 0 rgba(255, 255, 255, 0)',
-    opacity: 1,
-  },
-});
-
 // 기본 스타일
 export const baseStyles = {
   minimap: {
@@ -2632,7 +2107,6 @@ export const textStyles = {
 };
 
 export const MINIMAP_SIZE_PX = MINIMAP_SIZE;
-
 ```
 
 ### gaesup\tools\minimap\type.ts
@@ -2736,20 +2210,19 @@ export interface ActiveState {
 export interface Mode {
   control: 'normal' | string;
 }
-
 ```
 
 ### gaesup\tools\rideable\type.ts
 
 ```typescript
-import { RigidBodyProps } from "@react-three/rapier";
-import * as THREE from "three";
-import { controllerOptionsType } from "../../controller/type";
+import { RigidBodyProps } from '@react-three/rapier';
+import * as THREE from 'three';
+import { controllerOptionsType } from '../../controller/type';
 
 export type rideablePropType = {
   groundRay: any;
   objectkey: string;
-  objectType?: "vehicle" | "airplane";
+  objectType?: 'vehicle' | 'airplane';
   controllerOptions: controllerOptionsType;
   enableRiding?: boolean;
   isRiderOn?: boolean;
@@ -2769,41 +2242,448 @@ export type rideablePropType = {
   outerGroupProps?: THREE.Group;
   innerGroupProps?: THREE.Group;
 };
-
 ```
 
 ### gaesup\tools\teleport\style.css.ts
 
 ```typescript
-import { style } from "@vanilla-extract/css";
-import { commonButton } from "../shared.css";
+import { style } from '@vanilla-extract/css';
+import { commonButton } from '../shared.css';
 
 export const teleport = style([
   commonButton,
   {
-    margin: "1rem",
-    fontSize: "0.8rem",
-    background: "rgba(0, 0, 0, 0.6)",
-    boxShadow: "0 0 5px 0 rgba(0, 0, 0, 0.6)",
-    transition: "all 0.2s ease-in",
-    borderRadius: "50%",
+    margin: '1rem',
+    fontSize: '0.8rem',
+    background: 'rgba(0, 0, 0, 0.6)',
+    boxShadow: '0 0 5px 0 rgba(0, 0, 0, 0.6)',
+    transition: 'all 0.2s ease-in',
+    borderRadius: '50%',
   },
 ]);
-
 ```
 
 ### gaesup\tools\teleport\type.ts
 
 ```typescript
-import { CSSProperties } from "react";
-import * as THREE from "three";
+import { CSSProperties } from 'react';
+import * as THREE from 'three';
 
 export type teleportType = {
   text?: string;
   position: THREE.Vector3;
   teleportStyle?: CSSProperties;
 };
+```
 
+### gaesup\types\index.ts
+
+```typescript
+import * as THREE from 'three';
+import { ReactNode, Dispatch, RefObject } from 'react';
+import { RootState, GroupProps } from '@react-three/fiber';
+import { Collider, Ray } from '@dimforge/rapier3d-compat';
+import { CollisionEnterPayload, RigidBodyProps } from '@react-three/rapier';
+
+export type AppDispatch<T> = Dispatch<{
+  type: string;
+  payload?: Partial<T>;
+}>;
+
+export type ComponentTypeString = 'character' | 'vehicle' | 'airplane';
+export interface AnimationTagType {
+  idle: string;
+  walk: string;
+  run: string;
+  jump: string;
+  jumpIdle: string;
+  jumpLand: string;
+  fall: string;
+  ride: string;
+  land: string;
+  sit: string;
+}
+
+export type ActionsType = AnimationTagType & {
+  [key: string]: string;
+};
+
+/**
+ * 애니메이션 한 건에 대한 조건/액션
+ */
+export interface AnimationAtomType {
+  tag: string; // 예: "walk" / "jump"
+  condition: () => boolean; // 재생 여부 판별
+  action?: () => void; // 해당 애니메이션 시 실행할 액션
+  animationName?: string; // 실제 클립 이름
+  key?: string; // 키 입력(KeyControl)과 연결할 때 사용
+}
+
+/**
+ * 애니메이션 상태(특정 entity 기준)
+ */
+export interface AnimationStatePropType {
+  current: string; // 현재 재생 중인 애니메이션
+  default: string; // 조건 미달 시 재생할 기본 애니메이션
+  store: Record<
+    string,
+    {
+      condition: () => boolean;
+      action?: () => void;
+      animationName?: string;
+      key?: string;
+    }
+  >; // 구독한 애니메이션들
+}
+
+export interface AnimationStateType {
+  [key: string]: AnimationStatePropType;
+}
+
+export interface GroundRayType {
+  origin: THREE.Vector3;
+  dir: THREE.Vector3;
+  offset: THREE.Vector3;
+  length: number;
+  rayCast: Ray | null;
+  hit: null;
+  parent?: import('@react-three/rapier').RapierRigidBody | null;
+}
+
+/**
+ * 카메라 충돌 감지용 Ray
+ * (groundRay와 거의 유사하지만, 카메라 전용 필드 포함 가능)
+ */
+export interface CameraRayType {
+  origin: THREE.Vector3;
+  dir: THREE.Vector3;
+  position: THREE.Vector3;
+  length: number;
+
+  // three.js Raycaster
+  hit: THREE.Raycaster;
+  rayCast: THREE.Raycaster | null;
+  intersects: THREE.Intersection<THREE.Object3D>[];
+  detected: THREE.Intersection<THREE.Object3D>[];
+
+  // 추가적인 카메라 충돌 관리 필드들
+  intersectObjectMap: Map<string, THREE.Mesh>;
+  lastRaycastTime: number;
+  raycastInterval: number;
+}
+
+/* ========== 4) Controller/Keyboard & 모드 관련 ========== */
+
+/**
+ * 카메라 이동 보간(lerp) 같은 옵션
+ */
+export interface ControllerOptionsType {
+  lerp: {
+    cameraTurn: number;
+    cameraPosition: number;
+  };
+}
+
+/**
+ * 키 입력 상태
+ * (forward, backward, leftward, rightward, shift, space, 등등)
+ */
+export interface KeyControlType {
+  [key: string]: boolean; // ex) forward: true, backward: false ...
+}
+
+/**
+ * 'controller' 개념에서 사용되는 모드
+ */
+export interface ModeType {
+  type?: ComponentTypeString; // character | vehicle | airplane
+  controller?: 'clicker'; // 현재 예제에서 clicker만 보임
+  control?: 'normal' | 'orbit'; // 카메라 조작 방식
+  isButton?: boolean;
+}
+
+/* ========== 5) World 전역 상태(상태/Context) ========== */
+
+/**
+ * 유저의 "activeState": 현재 위치, 회전, 속도 등
+ */
+export interface ActiveStateType {
+  position: THREE.Vector3;
+  impulse: THREE.Vector3;
+  velocity: THREE.Vector3;
+  acceleration: THREE.Vector3;
+  quat: THREE.Quaternion;
+  euler: THREE.Euler;
+  rotation: THREE.Euler; // euler와 중복될 수 있음(프로젝트마다 필요성 점검)
+  direction: THREE.Vector3;
+  dir: THREE.Vector3;
+}
+
+/**
+ * 움직임 관련 간단 상태
+ */
+export interface StatesType {
+  rideableId?: string;
+  isMoving: boolean;
+  isNotMoving: boolean;
+  isOnTheGround: boolean;
+  isOnMoving: boolean;
+  isRotated: boolean;
+  isRunning: boolean;
+  isJumping: boolean;
+  enableRiding: boolean;
+  isRiderOn: boolean;
+  isLanding: boolean;
+  isFalling: boolean;
+  isRiding: boolean;
+
+  // 누르고 있는 키 상태
+  isPush: KeyControlType;
+}
+
+/**
+ * 기본 URL들(캐릭터, 차량, 비행기 등)
+ */
+export interface UrlsType {
+  characterUrl?: string;
+  vehicleUrl?: string;
+  airplaneUrl?: string;
+  wheelUrl?: string;
+  ridingUrl?: string;
+}
+
+/**
+ * Clicker용 queueType
+ * - Vector3나, 'stop' 등 기능성 객체를 혼합
+ */
+export type QueueActionType = 'stop';
+export interface QueueFunctionType {
+  action: QueueActionType;
+  beforeCB: (state: RootState) => void;
+  afterCB: (state: RootState) => void;
+  time: number;
+}
+export type QueueItemType = THREE.Vector3 | QueueFunctionType;
+
+/**
+ * Clicker Option
+ */
+export interface ClickerOptionType {
+  autoStart?: boolean;
+  isRun?: boolean;
+  throttle?: number;
+  track?: boolean;
+  loop?: boolean;
+  queue?: QueueItemType[];
+  line?: boolean;
+}
+
+/**
+ * Clicker 자체 상태
+ */
+export interface ClickerType {
+  point: THREE.Vector3;
+  angle: number;
+  isOn: boolean;
+  isRun: boolean;
+}
+
+/**
+ * 카메라 옵션
+ */
+export interface CameraOptionType {
+  offset?: THREE.Vector3;
+  maxDistance?: number;
+  distance?: number;
+  XDistance?: number;
+  YDistance?: number;
+  ZDistance?: number;
+  zoom?: number;
+  target: THREE.Vector3;
+  position: THREE.Vector3;
+  focus?: boolean;
+}
+
+/**
+ * rideable 오브젝트(차량/비행기 등)
+ */
+export interface RideableType {
+  objectkey: string;
+  objectType?: 'vehicle' | 'airplane';
+  enableRiding?: boolean;
+  isRiderOn?: boolean;
+  url?: string;
+  characterUrl?: string;
+  ridingUrl?: string;
+  wheelUrl?: string;
+  position?: THREE.Vector3;
+  rotation?: THREE.Euler;
+  offset?: THREE.Vector3;
+  landingOffset?: THREE.Vector3;
+  visible?: boolean;
+  vehicleSize?: THREE.Vector3;
+  wheelSize?: THREE.Vector3;
+  airplaneSize?: THREE.Vector3;
+}
+
+/**
+ * block 상태(카메라/컨트롤/애니메이션 등 잠금)
+ */
+export interface BlockType {
+  camera: boolean;
+  control: boolean;
+  animation: boolean;
+  scroll: boolean;
+}
+
+/**
+ * WorldContext 전역에서 보관하는 "world" 전체 상태
+ */
+export interface GaesupWorldContextType {
+  activeState: ActiveStateType;
+  mode: ModeType;
+  urls: UrlsType;
+  states: StatesType;
+  minimap: {
+    props: Record<
+      string,
+      {
+        type: 'normal' | 'ground';
+        text?: string;
+        size: THREE.Vector3;
+        center: THREE.Vector3;
+      }
+    >;
+  };
+  control: KeyControlType;
+  refs: RefsType | null; // 아래 RefsType 참고
+  animationState: AnimationStateType; // char/vehicle/airplane 애니메이션 상태
+  cameraOption: CameraOptionType;
+  clickerOption: ClickerOptionType;
+  clicker: ClickerType;
+  rideable: Record<string, RideableType>;
+  sizes: Record<string, THREE.Vector3>; // GLTF 사이즈 캐싱
+  block: BlockType;
+}
+
+/* ========== 6) Controller (세부) ========== */
+
+export interface AirplaneDebugType {
+  angleDelta?: THREE.Vector3;
+  maxAngle?: THREE.Vector3;
+  buoyancy?: number;
+  maxSpeed?: number;
+  accelRatio?: number;
+  brakeRatio?: number;
+  linearDamping?: number;
+}
+export interface VehicleDebugType {
+  maxSpeed?: number;
+  accelRatio?: number;
+  brakeRatio?: number;
+  wheelOffset?: number;
+  linearDamping?: number;
+}
+export interface CharacterDebugType {
+  jumpSpeed?: number;
+  turnSpeed?: number;
+  walkSpeed?: number;
+  runSpeed?: number;
+  linearDamping?: number;
+}
+
+export interface AirplaneType extends GroupProps, AirplaneDebugType {}
+export interface VehicleType extends GroupProps, VehicleDebugType {}
+export interface CharacterType extends GroupProps, CharacterDebugType {}
+
+export interface GaesupControllerType {
+  airplane: AirplaneType;
+  vehicle: VehicleType;
+  character: CharacterType;
+  callbacks?: CallbackType; // 아래 정의
+  refs?: RefsType;
+  controllerOptions?: ControllerOptionsType;
+}
+
+/* ========== 7) 콜백/이벤트 ========== */
+
+/**
+ * onReady, onFrame, onDestroy, onAnimate 등 콜백에 넘기는 인자
+ */
+export interface CallbackPropType {
+  activeState: ActiveStateType;
+  states: StatesType;
+  control: KeyControlType;
+  subscribe: (atom: AnimationAtomType) => void;
+}
+export interface OnFramePropType extends CallbackPropType, RootState {}
+export interface OnAnimatePropType extends OnFramePropType {
+  actions: {
+    [x: string]: THREE.AnimationAction | null;
+  };
+  animationState: AnimationStateType;
+  playAnimation: (tag: keyof ActionsType, key: string) => void;
+}
+
+export interface CallbackType {
+  onReady?: (prop: CallbackPropType) => void;
+  onFrame?: (prop: OnFramePropType) => void;
+  onDestory?: (prop: CallbackPropType) => void;
+  onAnimate?: (prop: OnAnimatePropType) => void;
+}
+
+export interface RefsType {
+  colliderRef: RefObject<Collider>;
+  rigidBodyRef: RefObject<import('@react-three/rapier').RapierRigidBody>;
+  outerGroupRef: RefObject<THREE.Group>;
+  innerGroupRef: RefObject<THREE.Group>;
+  characterInnerRef?: RefObject<THREE.Group>; // 캐릭터 전용
+  passiveRigidBodyRef?: RefObject<import('@react-three/rapier').RapierRigidBody>;
+}
+
+export interface PassivePropsType {
+  url: string; // GLTF url
+  ridingUrl?: string;
+  wheelUrl?: string;
+  position?: THREE.Vector3;
+  rotation?: THREE.Euler;
+  offset?: THREE.Vector3;
+
+  componentType: ComponentTypeString;
+  currentAnimation?: string;
+  rigidbodyType?: import('@react-three/rapier').RigidBodyTypeString;
+  sensor?: boolean; // 충돌/감지를 센서로만 쓸지 여부
+  onIntersectionEnter?: (e: CollisionEnterPayload) => Promise<void>;
+  onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
+  userData?: {
+    intangible: boolean;
+  };
+  rigidBodyProps?: RigidBodyProps;
+  outerGroupProps?: THREE.Group; // 필요하면 확장
+  innerGroupProps?: THREE.Group; // 필요하면 확장
+
+  controllerOptions?: ControllerOptionsType;
+  children?: ReactNode;
+  isNotColliding?: boolean;
+  enableRiding?: boolean;
+  isRiderOn?: boolean;
+  groundRay?: GroundRayType;
+  parts?: PartType[];
+
+  // 추가: material, color, scale 등등 확장 가능
+}
+
+/**
+ * 파츠 (모듈식 부품) 정보
+ */
+export interface PartType {
+  url?: string;
+  color?: string;
+  position?: THREE.Vector3;
+  rotation?: THREE.Euler;
+  scale?: THREE.Vector3;
+}
+export type PartsType = PartType[];
 ```
 
 ### gaesup\utils\context.ts
@@ -2814,20 +2694,17 @@ import { dispatchType } from './type';
 export const update = <T>(payload: Partial<T>, dispatch: dispatchType<T>) => {
   dispatch({ type: 'update', payload });
 };
-
 ```
 
 ### gaesup\utils\getTag.ts
 
 ```typescript
-import * as THREE from "three";
+import * as THREE from 'three';
 
 // split한 태그의 첫번째 문자열을 가져오는 함수.
-export const getTag = (node?: THREE.Mesh) => node?.name?.split("_")?.[0];
+export const getTag = (node?: THREE.Mesh) => node?.name?.split('_')?.[0];
 // 태그와 이름이 일치하는지 확인
-export const isEqual = (tag: string, node?: THREE.Mesh) =>
-  node?.name?.split("_")?.[0] === tag;
-
+export const isEqual = (tag: string, node?: THREE.Mesh) => node?.name?.split('_')?.[0] === tag;
 ```
 
 ### gaesup\utils\index.ts
@@ -2836,24 +2713,17 @@ export const isEqual = (tag: string, node?: THREE.Mesh) =>
 export * from './ray';
 export * from './ref';
 export * from './vector';
-
 ```
 
 ### gaesup\utils\ray.ts
 
 ```typescript
-import { Collider } from "@dimforge/rapier3d-compat";
-import { useRapier } from "@react-three/rapier";
-import { RefObject } from "react";
-import { groundRayType } from "../controller/type";
+import { Collider } from '@dimforge/rapier3d-compat';
+import { useRapier } from '@react-three/rapier';
+import { RefObject } from 'react';
+import { groundRayType } from '../controller/type';
 
-export const getRayHit = ({
-  ray,
-  ref,
-}: {
-  ray: groundRayType;
-  ref: RefObject<Collider>;
-}) => {
+export const getRayHit = ({ ray, ref }: { ray: groundRayType; ref: RefObject<Collider> }) => {
   const { world } = useRapier();
   return world.castRay(
     ray.rayCast,
@@ -2862,25 +2732,21 @@ export const getRayHit = ({
     undefined,
     undefined,
     ref.current as any,
-    undefined
+    undefined,
   );
 };
-
 ```
 
 ### gaesup\utils\ref.ts
 
 ```typescript
-import { ForwardedRef, useEffect, useRef } from "react";
+import { ForwardedRef, useEffect, useRef } from 'react';
 
-export const useForwardRef = <T>(
-  ref: ForwardedRef<T>,
-  initialValue: any = null
-) => {
+export const useForwardRef = <T>(ref: ForwardedRef<T>, initialValue: any = null) => {
   const targetRef = useRef<T>(initialValue);
   useEffect(() => {
     if (!ref) return;
-    if (typeof ref === "function") {
+    if (typeof ref === 'function') {
       ref(targetRef.current);
     } else {
       targetRef.current = ref.current;
@@ -2888,19 +2754,17 @@ export const useForwardRef = <T>(
   }, [ref]);
   return targetRef;
 };
-
 ```
 
 ### gaesup\utils\type.ts
 
 ```typescript
-import { Dispatch } from "react";
+import { Dispatch } from 'react';
 
 export type dispatchType<T> = Dispatch<{
   type: string;
   payload?: Partial<T>;
 }>;
-
 ```
 
 ### gaesup\utils\vector.ts
@@ -2939,15 +2803,14 @@ export const Qt = (x = 0, y = 0, z = 0, w = 1) => new THREE.Quaternion(x, y, z, 
 export const Elr = (x = 0, y = 0, z = 0) => new THREE.Euler(x, y, z);
 export const V30 = () => new THREE.Vector3();
 export const V31 = () => new THREE.Vector3(1, 1, 1);
-
 ```
 
 ### gaesup\world\type.ts
 
 ```typescript
-import { ReactNode } from "react";
-import * as THREE from "three";
-import { dispatchType } from "../utils/type";
+import { ReactNode } from 'react';
+import * as THREE from 'three';
+import { dispatchType } from '../utils/type';
 import {
   blockType,
   cameraOptionType,
@@ -2955,7 +2818,7 @@ import {
   gaesupWorldContextType,
   modeType,
   urlsType,
-} from "./context/type";
+} from './context/type';
 
 export type gaesupWorldInitType = {
   value: gaesupWorldContextType;
@@ -2972,7 +2835,6 @@ export type gaesupWorldPropsType = {
   block?: blockType;
   clickerOption?: clickerOptionType;
 };
-
 ```
 
 ### gaesup\world\context\index.ts
@@ -3092,31 +2954,29 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
 export const GaesupWorldContext = createContext<Partial<gaesupWorldContextType>>(null);
 export const GaesupWorldDispatchContext =
   createContext<dispatchType<Partial<gaesupWorldContextType>>>(null);
-
 ```
 
 ### gaesup\world\context\reducer.ts
 
 ```typescript
-import { gaesupWorldContextType } from "./type";
+import { gaesupWorldContextType } from './type';
 
 export function gaesupWorldReducer(
   props: Partial<gaesupWorldContextType>,
   action: {
     type: string;
     payload?: Partial<gaesupWorldContextType>;
-  }
+  },
 ) {
   switch (action.type) {
-    case "init": {
+    case 'init': {
       return { ...props };
     }
-    case "update": {
+    case 'update': {
       return { ...props, ...action.payload };
     }
   }
 }
-
 ```
 
 ### gaesup\world\context\type.ts
@@ -3332,7 +3192,6 @@ export type gaesupWorldContextType = {
 };
 
 export type gaesupDisptachType = dispatchType<gaesupWorldContextType>;
-
 ```
 
 ### gaesup\world\initalize\index.ts
@@ -3371,7 +3230,6 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
     gaesupProps,
   };
 }
-
 ```
 
 ## TypeScript React Files (.tsx)
@@ -3380,33 +3238,105 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
 
 ```tsx
 import { useFrame } from '@react-three/fiber';
+import { useContext, useMemo, useRef } from 'react';
+import * as THREE from 'three';
 import { cameraPropType } from '../physics/type';
 import normal, { makeNormalCameraPosition } from './control/normal';
 import orbit from './control/orbit';
+import { GaesupWorldDispatchContext } from '../world/context';
 
 export default function Camera(prop: cameraPropType) {
+  const { worldContext } = prop;
+  const dispatch = useContext(GaesupWorldDispatchContext);
+  // 레이캐스트 최적화를 위한 참조 및 메모이제이션
+  const frameCountRef = useRef(0);
+  const raycastIntervalRef = useRef(2); // 2 프레임마다 레이캐스트 수행
+  const lastRaycastResultRef = useRef<THREE.Intersection<THREE.Object3D>[]>([]);
+  // 레이캐스트를 위한 임시 객체들 (재사용)
+  const tempRaycaster = useMemo(() => new THREE.Raycaster(), []);
+  const tempVector = useMemo(() => new THREE.Vector3(), []); // 레이캐스트 타겟 객체 캐싱
+  const raycastTargets = useRef<THREE.Object3D[]>([]);
+  // 레이캐스트 수행 함수 (최적화 버전)
+  const performRaycast = (state) => {
+    if (!worldContext.cameraOption || !worldContext.activeState) return;
+    // 프레임 카운트 증가 및 레이캐스트 빈도 제한
+    frameCountRef.current++;
+    if (frameCountRef.current % raycastIntervalRef.current !== 0) {
+      return lastRaycastResultRef.current;
+    }
+    // 타겟 객체가 없으면 레이캐스트 수행하지 않음
+    if (raycastTargets.current.length === 0 && state.scene) {
+      // 충돌 감지가 필요한 객체만 필터링 (intangible이 false인 객체)
+      raycastTargets.current = state.scene.children.filter((obj) => !obj.userData?.intangible);
+    }
+    // 카메라에서 캐릭터 방향으로 레이캐스트 수행
+    tempVector.copy(worldContext.activeState.position);
+    const cameraPosition = worldContext.cameraOption.position.clone();
+    tempRaycaster.set(cameraPosition, tempVector.sub(cameraPosition).normalize());
+    tempRaycaster.far = worldContext.cameraOption.maxDistance || 10;
+    // 최적화: 충돌 감지가 필요한 객체들만 대상으로 레이캐스트 수행
+    const intersects = tempRaycaster.intersectObjects(raycastTargets.current, true);
+    // 결과 캐싱
+    lastRaycastResultRef.current = intersects;
+    // 레이캐스트 결과에 따른 카메라 포지션 조정
+    if (intersects.length > 0 && worldContext.cameraOption) {
+      handleCameraCollision(intersects, cameraPosition);
+    }
+    return intersects;
+  };
+
+  // 카메라 충돌 처리 함수
+  const handleCameraCollision = (intersects, cameraPosition) => {
+    const collision = intersects[0];
+    // 충돌 지점까지의 거리 계산
+    const distanceToCollision = collision.distance;
+    const maxDistance = Math.abs(worldContext.cameraOption.maxDistance || 10);
+    // 충돌 지점이 최대 거리보다 가까우면 카메라 위치 조정
+    if (distanceToCollision < maxDistance) {
+      const direction = tempVector
+        .copy(worldContext.activeState.position)
+        .sub(cameraPosition)
+        .normalize();
+      // 충돌 지점 앞으로 카메라 위치 조정 (약간의 여유 공간 추가)
+      const newPosition = worldContext.activeState.position
+        .clone()
+        .sub(direction.multiplyScalar(distanceToCollision * 0.9));
+      worldContext.cameraOption.position.copy(newPosition);
+      dispatch({
+        type: 'update',
+        payload: {
+          cameraOption: { ...worldContext.cameraOption },
+        },
+      });
+    }
+  };
+
   useFrame((state) => {
     prop.state = state;
-    if (!prop.worldContext.block.camera) {
-      if (prop.worldContext.mode.control === 'orbit') {
+    // 카메라 제어 유형에 따른 처리
+    if (!worldContext.block.camera) {
+      if (worldContext.mode.control === 'orbit') {
         orbit(prop);
-      } else if (prop.worldContext.mode.control === 'normal') {
+      } else if (worldContext.mode.control === 'normal') {
         normal(prop);
       }
+      // 레이캐스트 수행 (충돌 감지)
+      if (worldContext.cameraOption && worldContext.cameraOption.maxDistance) {
+        performRaycast(state);
+      }
     }
-  });
-  // 포커스가 아닐 때 카메라 activeStae 따라가기
-  useFrame(() => {
-    if (!prop.worldContext.cameraOption.focus) {
-      prop.worldContext.cameraOption.target = prop.worldContext.activeState.position;
-      prop.worldContext.cameraOption.position = makeNormalCameraPosition(
-        prop.worldContext.activeState,
-        prop.worldContext.cameraOption,
+    // 포커스가 아닐 때 카메라가 activeState 따라가기
+    if (!worldContext.cameraOption.focus) {
+      worldContext.cameraOption.target = worldContext.activeState.position;
+      worldContext.cameraOption.position = makeNormalCameraPosition(
+        worldContext.activeState,
+        worldContext.cameraOption,
       );
     }
   });
-}
 
+  return null;
+}
 ```
 
 ### gaesup\component\index.tsx
@@ -3463,22 +3393,21 @@ export function GaesupComponent({ props, refs }: { props: controllerInnerType; r
     </>
   );
 }
-
 ```
 
 ### gaesup\component\active\airplane\index.tsx
 
 ```tsx
-import { AirplaneInnerRef } from "../../inner/airplane";
-import { activeAirplaneInnerType } from "./type";
+import { AirplaneInnerRef } from '../../inner/airplane';
+import { activeAirplaneInnerType } from './type';
 
 export function AirplaneRef(props: activeAirplaneInnerType) {
   return (
     <AirplaneInnerRef
-      name={"airplane"}
+      name={'airplane'}
       isActive={true}
-      currentAnimation={"idle"}
-      componentType={"airplane"}
+      currentAnimation={'idle'}
+      componentType={'airplane'}
       ridingUrl={props.ridingUrl}
       {...props}
     >
@@ -3486,15 +3415,14 @@ export function AirplaneRef(props: activeAirplaneInnerType) {
     </AirplaneInnerRef>
   );
 }
-
 ```
 
 ### gaesup\component\active\character\index.tsx
 
 ```tsx
-import { controllerInnerType, refsType } from "../../../controller/type";
-import { urlsType } from "../../../world/context/type";
-import { CharacterInnerRef } from "../../inner/character";
+import { controllerInnerType, refsType } from '../../../controller/type';
+import { urlsType } from '../../../world/context/type';
+import { CharacterInnerRef } from '../../inner/character';
 
 export function CharacterRef({
   children,
@@ -3512,7 +3440,7 @@ export function CharacterRef({
       url={urls.characterUrl}
       isActive={true}
       componentType="character"
-      rigidbodyType={"dynamic"}
+      rigidbodyType={'dynamic'}
       controllerOptions={props.controllerOptions}
       groundRay={props.groundRay}
       onAnimate={props.onAnimate}
@@ -3527,22 +3455,21 @@ export function CharacterRef({
     </CharacterInnerRef>
   );
 }
-
 ```
 
 ### gaesup\component\active\vehicle\index.tsx
 
 ```tsx
-import { VehicleInnerRef } from "../../inner/vehicle";
-import { activeVehicleInnerType } from "./type";
+import { VehicleInnerRef } from '../../inner/vehicle';
+import { activeVehicleInnerType } from './type';
 
 export function VehicleRef(props: activeVehicleInnerType) {
   return (
     <VehicleInnerRef
-      name={"vehicle"}
+      name={'vehicle'}
       isActive={true}
-      currentAnimation={"idle"}
-      componentType={"vehicle"}
+      currentAnimation={'idle'}
+      componentType={'vehicle'}
       ridingUrl={props.ridingUrl}
       {...props}
     >
@@ -3550,7 +3477,6 @@ export function VehicleRef(props: activeVehicleInnerType) {
     </VehicleInnerRef>
   );
 }
-
 ```
 
 ### gaesup\component\inner\airplane\index.tsx
@@ -3577,22 +3503,21 @@ export function AirplaneInnerRef(props: airplaneInnerType) {
     </OuterGroupRef>
   );
 }
-
 ```
 
 ### gaesup\component\inner\character\index.tsx
 
 ```tsx
-import { OuterGroupRef } from "../common/OuterGroupRef";
-import { RigidBodyRef } from "../common/RigidbodyRef";
-import { characterInnerType } from "./type";
+import { OuterGroupRef } from '../common/OuterGroupRef';
+import { RigidBodyRef } from '../common/RigidbodyRef';
+import { characterInnerType } from './type';
 
 export function CharacterInnerRef(props: characterInnerType) {
   const { outerGroupRef } = props;
   return (
     <OuterGroupRef ref={outerGroupRef}>
       <RigidBodyRef
-        name={"character"}
+        name={'character'}
         url={props.url}
         controllerOptions={props.controllerOptions}
         ref={props.rigidBodyRef}
@@ -3605,76 +3530,69 @@ export function CharacterInnerRef(props: characterInnerType) {
     </OuterGroupRef>
   );
 }
-
 ```
 
 ### gaesup\component\inner\common\InnerGroupRef.tsx
 
 ```tsx
-import { Ref, forwardRef } from "react";
-import * as THREE from "three";
-import RiderRef from "../rider";
-import { InnerGroupRefType } from "./type";
+import { Ref, forwardRef } from 'react';
+import * as THREE from 'three';
+import RiderRef from '../rider';
+import { InnerGroupRefType } from './type';
 
-export const InnerGroupRef = forwardRef(
-  (props: InnerGroupRefType, ref: Ref<THREE.Group>) => {
-    return (
-      <group receiveShadow castShadow ref={ref} userData={{ intangible: true }}>
-        {props.isRiderOn &&
-          props.enableRiding &&
-          props.isActive &&
-          props.ridingUrl && (
-            <RiderRef url={props.ridingUrl} offset={props.offset} />
-          )}
+export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THREE.Group>) => {
+  return (
+    <group receiveShadow castShadow ref={ref} userData={{ intangible: true }}>
+      {props.isRiderOn && props.enableRiding && props.isActive && props.ridingUrl && (
+        <RiderRef url={props.ridingUrl} offset={props.offset} />
+      )}
 
-        {props.children}
-        {props.objectNode && props.animationRef && (
-          <primitive
-            object={props.objectNode}
-            visible={false}
-            receiveShadow
-            castShadow
-            ref={props.animationRef}
-          />
-        )}
+      {props.children}
+      {props.objectNode && props.animationRef && (
+        <primitive
+          object={props.objectNode}
+          visible={false}
+          receiveShadow
+          castShadow
+          ref={props.animationRef}
+        />
+      )}
 
-        {Object.keys(props.nodes).map((name: string, key: number) => {
-          const node = props.nodes[name];
-          if (node instanceof THREE.SkinnedMesh) {
-            return (
-              <skinnedMesh
-                castShadow
-                receiveShadow
-                material={node.material}
-                geometry={node.geometry}
-                skeleton={node.skeleton}
-                key={key}
-              />
-            );
-          } else if (node instanceof THREE.Mesh) {
-            return (
-              <mesh
-                castShadow
-                receiveShadow
-                material={node.material}
-                geometry={node.geometry}
-                key={key}
-              />
-            );
-          }
-        })}
-      </group>
-    );
-  }
-);
-
+      {Object.keys(props.nodes).map((name: string, key: number) => {
+        const node = props.nodes[name];
+        if (node instanceof THREE.SkinnedMesh) {
+          return (
+            <skinnedMesh
+              castShadow
+              receiveShadow
+              material={node.material}
+              geometry={node.geometry}
+              skeleton={node.skeleton}
+              key={key}
+            />
+          );
+        } else if (node instanceof THREE.Mesh) {
+          return (
+            <mesh
+              castShadow
+              receiveShadow
+              material={node.material}
+              geometry={node.geometry}
+              key={key}
+            />
+          );
+        }
+      })}
+    </group>
+  );
+});
 ```
 
 ### gaesup\component\inner\common\OuterGroupRef.tsx
 
 ```tsx
-import { forwardRef, MutableRefObject, ReactNode } from "react";
-import * as THREE from "three";
+import { forwardRef, MutableRefObject, ReactNode } from 'react';
+import * as THREE from 'three';
 
 export const OuterGroupRef = forwardRef(
   (
@@ -3683,26 +3601,25 @@ export const OuterGroupRef = forwardRef(
     }: {
       children: ReactNode;
     },
-    ref: MutableRefObject<THREE.Group>
+    ref: MutableRefObject<THREE.Group>,
   ) => {
     return (
       <group ref={ref} userData={{ intangible: true }}>
         {children}
       </group>
     );
-  }
+  },
 );
-
 ```
 
 ### gaesup\component\inner\common\partsGroupRef.tsx
 
 ```tsx
-import { useAnimations, useGLTF } from "@react-three/drei";
-import { useMemo } from "react";
-import * as THREE from "three";
-import playActions from "../../../animation/actions";
-import { componentTypeString } from "../../passive/type";
+import { useAnimations, useGLTF } from '@react-three/drei';
+import { useMemo } from 'react';
+import * as THREE from 'three';
+import playActions from '../../../animation/actions';
+import { componentTypeString } from '../../passive/type';
 
 export const PartsGroupRef = ({
   url,
@@ -3754,7 +3671,7 @@ export const PartsGroupRef = ({
             skeleton={skeleton}
             key={key}
             material={
-              mesh.name === "color" && color
+              mesh.name === 'color' && color
                 ? new THREE.MeshStandardMaterial({ color })
                 : mesh.material
             }
@@ -3764,7 +3681,6 @@ export const PartsGroupRef = ({
     </>
   );
 };
-
 ```
 
 ### gaesup\component\inner\common\RigidbodyRef.tsx
@@ -3817,7 +3733,6 @@ export const RigidBodyRef = forwardRef(
       });
       return skel;
     }, [clone]);
-
     if (props.isActive) {
       subscribeActions({
         type: props.componentType,
@@ -3910,19 +3825,18 @@ export const RigidBodyRef = forwardRef(
     );
   },
 );
-
 ```
 
 ### gaesup\component\inner\rider\index.tsx
 
 ```tsx
-import { useAnimations } from "@react-three/drei";
-import { useGraph } from "@react-three/fiber";
-import { ReactNode, useMemo } from "react";
-import * as THREE from "three";
-import { SkeletonUtils } from "three-stdlib";
-import playActions from "../../../animation/actions";
-import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
+import { useAnimations } from '@react-three/drei';
+import { useGraph } from '@react-three/fiber';
+import { ReactNode, useMemo } from 'react';
+import * as THREE from 'three';
+import { SkeletonUtils } from 'three-stdlib';
+import playActions from '../../../animation/actions';
+import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
 
 export type riderRefType = {
   url: string;
@@ -3932,23 +3846,18 @@ export type riderRefType = {
   currentAnimation?: string;
 };
 
-export default function RiderRef({
-  url,
-  children,
-  offset,
-  currentAnimation,
-}: riderRefType) {
+export default function RiderRef({ url, children, offset, currentAnimation }: riderRefType) {
   const { gltf } = useGltfAndSize({ url });
   const { animations, scene } = gltf;
   const { actions, ref: animationRef } = useAnimations(animations);
   const characterClone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { nodes: characterNodes } = useGraph(characterClone);
   const characterObjectNode = Object.values(characterNodes).find(
-    (node) => node.type === "Object3D"
+    (node) => node.type === 'Object3D',
   );
   playActions({
-    type: "character",
-    currentAnimation: currentAnimation || "ride",
+    type: 'character',
+    currentAnimation: currentAnimation || 'ride',
     actions,
     animationRef,
     isActive: false,
@@ -3995,39 +3904,33 @@ export default function RiderRef({
     </>
   );
 }
-
 ```
 
 ### gaesup\component\inner\vehicle\collider.tsx
 
 ```tsx
-import { Collider } from "@dimforge/rapier3d-compat";
-import { CuboidCollider } from "@react-three/rapier";
-import { Ref, forwardRef } from "react";
-import * as THREE from "three";
-import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
+import { Collider } from '@dimforge/rapier3d-compat';
+import { CuboidCollider } from '@react-three/rapier';
+import { Ref, forwardRef } from 'react';
+import * as THREE from 'three';
+import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
 
 export const VehicleWheelCollider = forwardRef(
   (
     { wheelUrl, vehicleSize }: { wheelUrl: string; vehicleSize: THREE.Vector3 },
-    ref: Ref<Collider>
+    ref: Ref<Collider>,
   ) => {
     const { size: wheelSize } = useGltfAndSize({
       url: wheelUrl,
     });
-
     return (
       <CuboidCollider
         ref={ref as any}
-        args={[
-          vehicleSize.x / 2,
-          vehicleSize.y / 2 - wheelSize.y / 2,
-          vehicleSize.z / 2,
-        ]}
+        args={[vehicleSize.x / 2, vehicleSize.y / 2 - wheelSize.y / 2, vehicleSize.z / 2]}
         position={[0, vehicleSize.y / 2 + wheelSize.y / 2, 0]}
       />
     );
-  }
+  },
 );
 
 export const VehicleCollider = forwardRef(
@@ -4039,76 +3942,50 @@ export const VehicleCollider = forwardRef(
         position={[0, vehicleSize.y / 2, 0]}
       />
     );
-  }
+  },
 );
-
 ```
 
 ### gaesup\component\inner\vehicle\index.tsx
 
 ```tsx
-import { OuterGroupRef } from "../common/OuterGroupRef";
-import { RigidBodyRef } from "../common/RigidbodyRef";
-import { vehicleInnerType } from "./type";
+import { OuterGroupRef } from '../common/OuterGroupRef';
+import { RigidBodyRef } from '../common/RigidbodyRef';
+import { vehicleInnerType } from './type';
 
 export function VehicleInnerRef(props: vehicleInnerType) {
   const { rigidBodyRef, outerGroupRef } = props;
-  // const { size } = useGltfAndSize({
-  //   url: props.url,
-  // });
   return (
     <OuterGroupRef ref={outerGroupRef}>
       <RigidBodyRef
         ref={rigidBodyRef}
         name={props.name}
-        componentType={"vehicle"}
+        componentType={'vehicle'}
         ridingUrl={props.ridingUrl}
         {...props}
       >
-        {/* <CuboidCollider
-          args={[size.x / 2, size.y / 2, size.z / 2]}
-          position={[0, size.y / 2, 0]}
-        /> */}
-        {/* {!props.wheelUrl === undefined && (
-          <VehicleWheelCollider
-            wheelUrl={props.wheelUrl}
-            vehicleSize={vehicleSize}
-          />
-        )}
-        {!props.url === undefined && (
-          <VehicleCollider vehicleSize={vehicleSize} />
-        )} */}
-
         {props.children}
       </RigidBodyRef>
-      {/* {!props.wheelUrl === undefined && (
-        <WheelsRef∂
-          rigidBodyRef={rigidBodyRef}
-          wheelUrl={props.wheelUrl}
-          vehicleSize={vehicleSize}
-        />
-      )} */}
     </OuterGroupRef>
   );
 }
-
 ```
 
 ### gaesup\component\inner\vehicle\wheels.tsx
 
 ```tsx
-import { Gltf } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import { Gltf } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
 import {
   CylinderCollider,
   RapierRigidBody,
   RigidBody,
   useRevoluteJoint,
-} from "@react-three/rapier";
-import { RefObject, createRef, useContext, useRef } from "react";
-import * as THREE from "three";
-import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
-import { GaesupWorldContext } from "../../../world/context";
+} from '@react-three/rapier';
+import { RefObject, createRef, useContext, useRef } from 'react';
+import * as THREE from 'three';
+import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
+import { GaesupWorldContext } from '../../../world/context';
 
 const WheelJoint = ({
   body,
@@ -4123,24 +4000,15 @@ const WheelJoint = ({
   wheelAnchor: [number, number, number];
   rotationAxis: [number, number, number];
 }) => {
-  const joint = useRevoluteJoint(body, wheel, [
-    bodyAnchor,
-    wheelAnchor,
-    rotationAxis,
-  ]);
+  const joint = useRevoluteJoint(body, wheel, [bodyAnchor, wheelAnchor, rotationAxis]);
   const { activeState } = useContext(GaesupWorldContext);
   useFrame(() => {
     if (joint.current) {
-      joint.current.configureMotorPosition(
-        activeState.position.length(),
-        0.8,
-        0
-      );
+      joint.current.configureMotorPosition(activeState.position.length(), 0.8, 0);
     }
   });
   return null;
 };
-
 export function WheelsRef({
   vehicleSize,
   rigidBodyRef,
@@ -4153,7 +4021,6 @@ export function WheelsRef({
   const { size: wheelSize } = useGltfAndSize({
     url: wheelUrl,
   });
-
   const X = (vehicleSize.x - wheelSize.x) / 2;
   const Z = (vehicleSize.z - 2 * wheelSize.z) / 2;
   const wheelPositions: [number, number, number][] = [
@@ -4162,10 +4029,7 @@ export function WheelsRef({
     [X, 0, Z],
     [X, 0, -Z],
   ];
-  const wheelRefs = useRef(
-    wheelPositions.map(() => createRef<RapierRigidBody>())
-  );
-
+  const wheelRefs = useRef(wheelPositions.map(() => createRef<RapierRigidBody>()));
   return (
     <>
       {wheelRefs &&
@@ -4221,7 +4085,6 @@ export function WheelsRef({
     </>
   );
 }
-
 ```
 
 ### gaesup\component\passive\airplane\index.tsx
@@ -4234,10 +4097,7 @@ import { passiveAirplanePropsType } from './type';
 import { AirplaneInnerRef } from '../../inner/airplane';
 
 export function PassiveAirplane(props: passiveAirplanePropsType) {
-  // ★ 기존 4개 useRef -> 하나의 Hook으로
   const { rigidBodyRef, outerGroupRef, innerGroupRef, colliderRef } = useGenericRefs();
-
-  // 기존: onFrame 등 그대로
   useFrame(() => {
     if (innerGroupRef.current) {
       const _euler = props.rotation.clone();
@@ -4256,7 +4116,6 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
     }
   });
 
-  // 동일: refs 객체 통합
   const refs = {
     rigidBodyRef,
     outerGroupRef,
@@ -4276,7 +4135,6 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
     </AirplaneInnerRef>
   );
 }
-
 ```
 
 ### gaesup\component\passive\character\index.tsx
@@ -4331,7 +4189,6 @@ export function PassiveCharacter(props: passiveCharacterPropsType) {
     </CharacterInnerRef>
   );
 }
-
 ```
 
 ### gaesup\component\passive\vehicle\index.tsx
@@ -4357,7 +4214,6 @@ export function PassiveVehicle(props: passiveVehiclePropsType) {
     </VehicleInnerRef>
   );
 }
-
 ```
 
 ### gaesup\controller\index.tsx
@@ -4441,7 +4297,6 @@ export function GaesupControllerInner(props: controllerType) {
     </ContextBridge>
   );
 }
-
 ```
 
 ### gaesup\gaesupProps\index.tsx
@@ -4504,19 +4359,15 @@ export function GaeSupProps({
     </group>
   );
 }
-
 ```
 
 ### gaesup\hooks\useFocus\index.tsx
 
 ```tsx
-import { useContext } from "react";
-import * as THREE from "three";
-import { makeNormalCameraPosition } from "../../camera/control/normal";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
+import { useContext } from 'react';
+import * as THREE from 'three';
+import { makeNormalCameraPosition } from '../../camera/control/normal';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
 
 export function useFocus() {
   const { cameraOption, activeState, block } = useContext(GaesupWorldContext);
@@ -4524,7 +4375,7 @@ export function useFocus() {
 
   const dispatchAsync = async () => {
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         cameraOption: cameraOption,
       },
@@ -4535,7 +4386,7 @@ export function useFocus() {
     block.control = true;
     block.animation = true;
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         block: block,
       },
@@ -4546,34 +4397,30 @@ export function useFocus() {
     block.control = false;
     block.animation = false;
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         block: block,
       },
     });
   };
-
   const on = async () => {
     cameraOption.focus = true;
-
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         cameraOption: cameraOption,
       },
     });
   };
-
   const off = async () => {
     cameraOption.focus = false;
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         cameraOption: cameraOption,
       },
     });
   };
-
   const focus = async ({
     zoom,
     target,
@@ -4587,13 +4434,9 @@ export function useFocus() {
     cameraOption.position.lerp(position, 0.1);
     cameraOption.target.lerp(target, 0.1);
   };
-
   const free = async ({ zoom }: { zoom?: number }) => {
     if (zoom) cameraOption.zoom = zoom;
-    cameraOption.position.lerp(
-      makeNormalCameraPosition(activeState, cameraOption),
-      0.1
-    );
+    cameraOption.position.lerp(makeNormalCameraPosition(activeState, cameraOption), 0.1);
     cameraOption.target.lerp(activeState.position.clone(), 0.1);
   };
 
@@ -4639,155 +4482,150 @@ export function useFocus() {
     focusOff,
   };
 }
-
 ```
 
 ### gaesup\hooks\useGaesupAnimation\index.tsx
 
 ```tsx
-import { useContext } from "react";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
-import { animationAtomType } from "../../world/context/type";
+import { useCallback, useMemo, useContext } from 'react';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
+import { animationAtomType } from '../../world/context/type';
 
-export function useGaesupAnimation({
-  type,
-}: {
-  type: "character" | "vehicle" | "airplane";
-}) {
+export function useGaesupAnimation({ type }: { type: 'character' | 'vehicle' | 'airplane' }) {
   const { animationState } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
-
-  const getAnimationTag = (tag: string): { name: string; isValid: boolean } => {
-    const animation: animationAtomType = animationState[type].store[tag];
-    if (!animation)
-      return { name: animationState[type].default, isValid: false };
-    if (animation.condition()) {
-      return { name: animation.animationName, isValid: true };
-    } else {
-      return { name: animationState[type].default, isValid: false };
-    }
-  };
-
-  const notify = () => {
-    let tag = animationState[type].default;
-    for (const key of Object.keys(animationState[type].store)) {
+  // 현재 타입에 맞는 애니메이션 상태 메모이제이션
+  const currentTypeAnimState = useMemo(() => {
+    return animationState[type] || { current: 'idle', default: 'idle', store: {} };
+  }, [animationState, type]);
+  // 상태 업데이트 함수 메모이제이션 - 불필요한 함수 생성 방지
+  const updateAnimationState = useCallback(() => {
+    dispatch({
+      type: 'update',
+      payload: {
+        animationState: { ...animationState },
+      },
+    });
+  }, [dispatch, animationState]);
+  // 애니메이션 태그 유효성 확인 함수
+  const getAnimationTag = useCallback(
+    (tag: string): { name: string; isValid: boolean } => {
+      const animation = currentTypeAnimState.store[tag];
+      if (!animation) {
+        return { name: currentTypeAnimState.default, isValid: false };
+      }
+      return {
+        name: animation.condition() ? animation.animationName || tag : currentTypeAnimState.default,
+        isValid: animation.condition(),
+      };
+    },
+    [currentTypeAnimState],
+  );
+  // 현재 조건에 맞는 애니메이션 알림 함수
+  const notify = useCallback(() => {
+    // 현재 타입의 기본 애니메이션을 초기값으로 설정
+    let tag = currentTypeAnimState.default;
+    // 모든 등록된 애니메이션을 조건 확인
+    for (const key of Object.keys(currentTypeAnimState.store)) {
       const checked = getAnimationTag(key);
       if (checked.isValid) {
         tag = checked.name;
         break;
       }
     }
-    animationState[type].current = tag;
-    dispatch({
-      type: "update",
-      payload: {
-        animationState: {
-          ...animationState,
-        },
-      },
-    });
+    // 현재 애니메이션 업데이트 (이전과 다른 경우에만)
+    if (currentTypeAnimState.current !== tag) {
+      animationState[type].current = tag;
+      updateAnimationState();
+    }
     return tag;
-  };
+  }, [animationState, currentTypeAnimState, getAnimationTag, type, updateAnimationState]);
 
-  const unsubscribe = (tag: string) => {
-    delete animationState[type].store[tag];
-    dispatch({
-      type: "update",
-      payload: {
-        animationState: {
-          ...animationState,
-        },
-      },
-    });
-  };
-
-  const subscribe = ({
-    tag,
-    condition,
-    action,
-    animationName,
-    key,
-  }: animationAtomType) => {
-    animationState[type].store[tag] = {
-      condition,
-      action: action || (() => {}),
-      animationName: animationName || tag,
-      key: key || tag,
-    };
-    dispatch({
-      type: "update",
-      payload: {
-        animationState: {
-          ...animationState,
-        },
-      },
-    });
-  };
-
-  const subscribeAll = (props: animationAtomType[]) => {
-    const subscribedTags: string[] = [];
-
-    props.forEach((item) => {
-      animationState[type].store[item.tag] = {
-        condition: item.condition,
-        action: item.action,
-        animationName: item.animationName,
-        key: item.key,
-      };
-      subscribedTags.push(item.tag);
-    });
-
-    dispatch({
-      type: "update",
-      payload: {
-        animationState: {
-          ...animationState,
-        },
-      },
-    });
-
-    // 구독 해제 함수 반환
-    return () => {
-      subscribedTags.forEach((tag) => {
+  // 애니메이션 구독 해제 함수
+  const unsubscribe = useCallback(
+    (tag: string) => {
+      if (currentTypeAnimState.store[tag]) {
         delete animationState[type].store[tag];
-      });
-      dispatch({
-        type: "update",
-        payload: {
-          animationState: {
-            ...animationState,
-          },
-        },
-      });
-    };
-  };
+        updateAnimationState();
+      }
+    },
+    [animationState, currentTypeAnimState.store, type, updateAnimationState],
+  );
 
+  // 애니메이션 구독 함수
+  const subscribe = useCallback(
+    (props: animationAtomType) => {
+      const { tag, condition, action, animationName, key } = props;
+
+      animationState[type].store[tag] = {
+        condition,
+        action: action || (() => {}),
+        animationName: animationName || tag,
+        key: key || tag,
+      };
+
+      updateAnimationState();
+    },
+    [animationState, type, updateAnimationState],
+  );
+
+  // 다중 애니메이션 구독 함수
+  const subscribeAll = useCallback(
+    (props: animationAtomType[]) => {
+      const subscribedTags: string[] = [];
+
+      // 모든 애니메이션 등록
+      props.forEach((item) => {
+        animationState[type].store[item.tag] = {
+          condition: item.condition,
+          action: item.action || (() => {}),
+          animationName: item.animationName || item.tag,
+          key: item.key || item.tag,
+        };
+        subscribedTags.push(item.tag);
+      });
+
+      updateAnimationState();
+
+      // 구독 해제 함수 반환 (클린업용)
+      return () => {
+        subscribedTags.forEach((tag) => {
+          if (animationState[type]?.store[tag]) {
+            delete animationState[type].store[tag];
+          }
+        });
+        updateAnimationState();
+      };
+    },
+    [animationState, type, updateAnimationState],
+  );
+
+  // 메모이제이션된 스토어 참조
+  const animationStore = useMemo(
+    () => currentTypeAnimState.store || {},
+    [currentTypeAnimState.store],
+  );
+
+  // 최적화된 API 반환
   return {
     subscribe,
     subscribeAll,
-    store: animationState?.[type].store,
+    store: animationStore,
     unsubscribe,
     notify,
   };
 }
-
 ```
 
 ### gaesup\hooks\useGaesupGltf\index.tsx
 
 ```tsx
-import { useGLTF } from "@react-three/drei";
-import { useContext } from "react";
-import * as THREE from "three";
-import { GLTFResult } from "../../component/type";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
-import { urlsType } from "../../world/context/type";
+import { useGLTF } from '@react-three/drei';
+import { useContext } from 'react';
+import * as THREE from 'three';
+import { GLTFResult } from '../../component/type';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
+import { urlsType } from '../../world/context/type';
 
 export type gltfAndSizeType = {
   size: THREE.Vector3;
@@ -4823,7 +4661,7 @@ export const useGltfAndSize = ({ url }: useGltfAndSizeType) => {
     if (!(key in sizes)) {
       sizes[key] = size || makeGltfSize();
       dispatch({
-        type: "update",
+        type: 'update',
         payload: {
           sizes: { ...sizes },
         },
@@ -4857,20 +4695,16 @@ export const useGaesupGltf = () => {
 
   return { getSizesByUrls };
 };
-
 ```
 
 ### gaesup\hooks\useRideable\index.tsx
 
 ```tsx
-import { CollisionEnterPayload, euler, vec3 } from "@react-three/rapier";
-import { useContext } from "react";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
-import { useGaesupGltf } from "../useGaesupGltf";
-import { rideableType } from "./type";
+import { CollisionEnterPayload, euler, vec3 } from '@react-three/rapier';
+import { useContext } from 'react';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
+import { useGaesupGltf } from '../useGaesupGltf';
+import { rideableType } from './type';
 
 export const rideableDefault = {
   objectkey: null,
@@ -4912,20 +4746,18 @@ export function useRideable() {
     states.rideableId = null;
     const modeType = rideable[objectkey].objectType;
     const { vehicleUrl, airplaneUrl, characterUrl } = getSizesByUrls(urls);
-    const size = modeType === "vehicle" ? vehicleUrl : airplaneUrl;
+    const size = modeType === 'vehicle' ? vehicleUrl : airplaneUrl;
     const mySize = characterUrl;
     rideable[objectkey].visible = true;
     rideable[objectkey].position.copy(activeState.position.clone());
     if (refs && refs.rigidBodyRef) {
       refs.rigidBodyRef.current.setTranslation(
-        activeState.position
-          .clone()
-          .add(size.clone().add(mySize.clone()).addScalar(1)),
-        false
+        activeState.position.clone().add(size.clone().add(mySize.clone()).addScalar(1)),
+        false,
       );
     }
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         rideable: { ...rideable },
         states: { ...states },
@@ -4936,15 +4768,15 @@ export function useRideable() {
 
   const setUrl = async (props: rideableType) => {
     urls.ridingUrl = props.ridingUrl || urls.characterUrl || null;
-    if (props.objectType === "vehicle") {
+    if (props.objectType === 'vehicle') {
       urls.vehicleUrl = props.url;
       urls.wheelUrl = props.wheelUrl || null;
-    } else if (props.objectType === "airplane") {
+    } else if (props.objectType === 'airplane') {
       urls.airplaneUrl = props.url;
     }
 
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         urls: {
           ...urls,
@@ -4961,7 +4793,7 @@ export function useRideable() {
     states.rideableId = props.objectkey;
     rideable[props.objectkey].visible = false;
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         mode: { ...mode },
         states: { ...states },
@@ -4970,7 +4802,7 @@ export function useRideable() {
   };
 
   const ride = async (e: CollisionEnterPayload, props: rideableType) => {
-    if (e.other.rigidBodyObject.name === "character") {
+    if (e.other.rigidBodyObject.name === 'character') {
       await setUrl(props);
       await setModeAndRiding(props);
     }
@@ -4984,19 +4816,17 @@ export function useRideable() {
     landing,
   };
 }
-
 ```
 
 ### gaesup\hooks\useTeleport\index.tsx
 
 ```tsx
-import { useContext } from "react";
-import * as THREE from "three";
-import { GaesupWorldContext } from "../../world/context";
+import { useContext } from 'react';
+import * as THREE from 'three';
+import { GaesupWorldContext } from '../../world/context';
 
 export function useTeleport() {
   const worldContext = useContext(GaesupWorldContext);
-
   const Teleport = (position: THREE.Vector3) => {
     if (
       worldContext &&
@@ -5006,22 +4836,17 @@ export function useTeleport() {
     )
       worldContext.refs.rigidBodyRef.current.setTranslation(position, true);
   };
-
   return {
     Teleport,
   };
 }
-
 ```
 
 ### gaesup\hooks\useZoom\index.tsx
 
 ```tsx
-import { useContext } from "react";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
+import { useContext } from 'react';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
 
 export function useZoom() {
   const { cameraOption } = useContext(GaesupWorldContext);
@@ -5030,7 +4855,7 @@ export function useZoom() {
   const zoom = (zoom: number) => {
     cameraOption.zoom = zoom;
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         cameraOption: cameraOption,
       },
@@ -5041,69 +4866,6 @@ export function useZoom() {
     zoom,
   };
 }
-
-```
-
-### gaesup\physics\airplane\index.tsx
-
-```tsx
-import { calcType } from "../type";
-import damping from "./damping";
-import direction from "./direction";
-import gravity from "./gravity";
-import impulse from "./impulse";
-import innerCalc from "./innerCalc";
-import landing from "./landing";
-
-export default function airplaneCalculation(calcProp: calcType) {
-  direction(calcProp);
-  impulse(calcProp);
-  damping(calcProp);
-  gravity(calcProp);
-  landing(calcProp);
-  innerCalc(calcProp);
-}
-
-```
-
-### gaesup\physics\character\index.tsx
-
-```tsx
-import { calcType } from '../type';
-import direction from './direction';
-import impulse from './impulse';
-import innerCalc from './innerCalc';
-import queue from './queue';
-import stop from './stop';
-
-export default function characterCalculation(calcProp: calcType) {
-  direction(calcProp);
-  impulse(calcProp);
-  innerCalc(calcProp);
-  stop(calcProp);
-  queue(calcProp);
-}
-
-```
-
-### gaesup\physics\vehicle\index.tsx
-
-```tsx
-import { calcType } from "../type";
-import damping from "./damping";
-import direction from "./direction";
-import impulse from "./impulse";
-import innerCalc from "./innerCalc";
-import landing from "./landing";
-
-export default function vehicleCalculation(calcProp: calcType) {
-  direction(calcProp);
-  impulse(calcProp);
-  damping(calcProp);
-  landing(calcProp);
-  innerCalc(calcProp);
-}
-
 ```
 
 ### gaesup\tools\clicker\index.tsx
@@ -5159,7 +4921,6 @@ export function Clicker({ onMarker, runMarker }: { onMarker: ReactNode; runMarke
     </>
   );
 }
-
 ```
 
 ### gaesup\tools\gamepad\GamePadButton.tsx
@@ -5202,7 +4963,6 @@ export default function GamePadButton({ value, name, gamePadButtonStyle }: GameP
     </button>
   );
 }
-
 ```
 
 ### gaesup\tools\gamepad\index.tsx
@@ -5254,233 +5014,11 @@ export function GamePad(props: gamepadType) {
     </>
   );
 }
-
 ```
 
 ### gaesup\tools\minimap\index.tsx
 
 ```tsx
-// import { useCallback, useContext, useState } from 'react';
-// import { GaesupWorldContext } from '../../world/context';
-// import * as S from './style.css';
-//
-// // X 축은 동(+) 서(-) 방향, 즉 경도를 나타낸다.
-// // Z 축은 남(+) 북(-) 방향, 즉 위도를 나타낸다.
-//
-// export const minimapDefault = {
-//   scale: 0.5,
-//   minScale: 0.1,
-//   maxScale: 2,
-//   blockScale: false,
-// };
-//
-// export const minimapInnerDefault = {
-//   props: {},
-// };
-//
-// export function MiniMap(props: any) {
-//   const { minimap, activeState, mode } = useContext(GaesupWorldContext);
-//   const [scale, setscale] = useState(props.scale || minimapDefault.scale);
-//   const {
-//     minimapInnerStyle,
-//     textStyle,
-//     minimapObjectStyle,
-//     avatarStyle,
-//     scaleStyle,
-//     directionStyle,
-//     plusMinusStyle,
-//     imageStyle,
-//     minimapStyle,
-//     minimapOuterStyle,
-//   } = props;
-//
-//   const upscale = useCallback(() => {
-//     const max = props.maxScale || minimapDefault.maxScale;
-//     setscale((scale) => Math.min(max, scale + 0.1));
-//   }, [props.maxScale]);
-//
-//   const downscale = useCallback(() => {
-//     const min = props.minScale || minimapDefault.minScale;
-//     setscale((scale) => Math.max(min, scale - 0.1));
-//   }, [props.minScale]);
-//
-//   return (
-//     <div
-//       className={S.minimap}
-//       onWheel={(e) => {
-//         if (props.blockScale) return;
-//         if (e.deltaY <= 0) upscale();
-//         else downscale();
-//       }}
-//       style={minimapStyle}
-//     >
-//       <div className={S.minimapOuter} style={minimapOuterStyle} />
-//
-//       <div
-//         className={S.minimapInner}
-//         style={{
-//           transform:
-//             props.blockRotate || mode.control === 'normal'
-//               ? `translate(-50%, -50%) rotate(180deg)`
-//               : `translate(-50%, -50%) rotate(${(activeState.euler.y * 180) / Math.PI + 180}deg)`,
-//           ...minimapInnerStyle,
-//         }}
-//       >
-//         <div
-//           className={S.east}
-//           style={{
-//             transform:
-//               props.blockRotate || mode.control === 'normal'
-//                 ? `translate(-50%, -50%) rotate(180deg)`
-//                 : `translate(-50%, -50%) rotate(-${
-//                     (activeState.euler.y * 180) / Math.PI + 180
-//                   }deg)`,
-//             ...directionStyle,
-//           }}
-//         >
-//           E
-//         </div>
-//         <div
-//           className={S.west}
-//           style={{
-//             transform:
-//               props.blockRotate || mode.control === 'normal'
-//                 ? `translate(50%, -50%) rotate(180deg)`
-//                 : `translate(50%, -50%) rotate(-${(activeState.euler.y * 180) / Math.PI + 180}deg)`,
-//             ...directionStyle,
-//           }}
-//         >
-//           W
-//         </div>
-//         <div
-//           className={S.south}
-//           style={{
-//             transform:
-//               props.blockRotate || mode.control === 'normal'
-//                 ? `translate(-50%, 50%) rotate(180deg)`
-//                 : `translate(-50%, 50%) rotate(-${(activeState.euler.y * 180) / Math.PI + 180}deg)`,
-//             ...directionStyle,
-//           }}
-//         >
-//           S
-//         </div>
-//         <div
-//           className={S.north}
-//           style={{
-//             transform:
-//               props.blockRotate || mode.control === 'normal'
-//                 ? `translate(-50%, -50%) rotate(180deg)`
-//                 : `translate(-50%, -50%) rotate(-${
-//                     (activeState.euler.y * 180) / Math.PI + 180
-//                   }deg)`,
-//             ...directionStyle,
-//           }}
-//         >
-//           N
-//         </div>
-//         {Object.values(minimap.props).map(({ center, size, text }, key) => {
-//           const X =
-//             (center.x - activeState.position.x) * (props.angle ? Math.sin(props.angle) : 1) * scale;
-//           const Z =
-//             (center.z - activeState.position.z) *
-//             (props.angle ? -Math.cos(props.angle) : 1) *
-//             scale;
-//           return (
-//             <div key={key}>
-//               <div
-//                 className={S.minimapObject}
-//                 style={{
-//                   width: `${size.x * scale}rem`,
-//                   height: `${size.z * scale}rem`,
-//                   top: '50%',
-//                   left: '50%',
-//                   transform: `translate(-50.1%, -50.1%) translate(${-X}rem, ${-Z}rem) rotate(${
-//                     (Math.PI * 3) / 2 + props.angle || 0
-//                   }rad)`,
-//                   transformOrigin: '50% 50%',
-//                   zIndex: 1 + key,
-//                   ...minimapObjectStyle,
-//                 }}
-//               ></div>
-//               {key === 0 && (
-//                 <div
-//                   className={S.imageObject}
-//                   style={{
-//                     width: `${size.x * scale}rem`,
-//                     height: `${size.z * scale}rem`,
-//                     top: '50%',
-//                     left: '50%',
-//                     transform: `translate(-50.1%, -50.1%) translate(${-X}rem, ${-Z}rem) rotate(${
-//                       (Math.PI * 3) / 2 + props.angle || 0
-//                     }rad)`,
-//                     transformOrigin: '50% 50%',
-//                     zIndex: 10 + key,
-//                     ...imageStyle,
-//                   }}
-//                 ></div>
-//               )}
-//               <div
-//                 className={S.textObject}
-//                 style={{
-//                   width: `${size.x * scale}rem`,
-//                   height: `${size.z * scale}rem`,
-//                   top: '50.1%',
-//                   left: '50.1%',
-//                   transform: `translate(-50.1%, -50.1%) translate(${-X}rem, ${-Z}rem)`,
-//                   transformOrigin: '50.1% 50.1%',
-//                   zIndex: 1001 + key,
-//                 }}
-//               >
-//                 {text && (
-//                   <div
-//                     className={S.text}
-//                     style={{
-//                       ...textStyle,
-//                       zIndex: 1001 + key,
-//                       transform:
-//                         props.blockRotate || mode.control === 'normal'
-//                           ? `rotate(180deg)`
-//                           : `rotate(-${(activeState.euler.y * 180) / Math.PI + 180}deg)`,
-//                     }}
-//                   >
-//                     {text}
-//                   </div>
-//                 )}
-//               </div>
-//             </div>
-//           );
-//         })}
-//         <div className={S.avatar} style={avatarStyle} />
-//       </div>
-//
-//       {!props.blockScaleControl && (
-//         <div className={S.scale} style={scaleStyle}>
-//           <div
-//             className={S.plusMinus}
-//             style={plusMinusStyle}
-//             onClick={() => {
-//               if (props.blockScale) return;
-//               downscale();
-//             }}
-//           >
-//             +
-//           </div>
-//           SCALE 1:{Math.round(100 / scale)}
-//           <div
-//             className={S.plusMinus}
-//             style={plusMinusStyle}
-//             onClick={() => {
-//               if (props.blockScale) return;
-//               upscale();
-//             }}
-//           >
-//             -
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
 import React, { useCallback, useContext, useEffect, useRef } from 'react';
 import { GaesupWorldContext } from '../../world/context';
 import { MinimapProps } from './type';
@@ -5506,14 +5044,12 @@ export function MiniMap({
   blockRotate = false,
   angle = 0,
   minimapStyle,
-  minimapInnerStyle,
   textStyle,
   minimapObjectStyle,
   avatarStyle,
   scaleStyle,
   directionStyle,
   plusMinusStyle,
-  imageStyle,
 }: MinimapProps) {
   const { minimap, activeState, mode } = useContext(GaesupWorldContext);
   const [scale, setScale] = React.useState(initialScale);
@@ -5604,10 +5140,9 @@ export function MiniMap({
       // Calculate position
       const posX = (center.x - activeState.position.x) * (angle ? Math.sin(angle) : 1) * scale;
       const posZ = (center.z - activeState.position.z) * (angle ? -Math.cos(angle) : 1) * scale;
-
       // Draw object
       ctx.save();
-      ctx.fillStyle = minimapObjectStyle?.background || objectStyles.background;
+      ctx.fillStyle = (minimapObjectStyle?.background as string) || objectStyles.background;
       const width = size.x * scale;
       const height = size.z * scale;
       const x = MINIMAP_SIZE_PX / 2 - posX - width / 2;
@@ -5636,7 +5171,7 @@ export function MiniMap({
 
     // Draw avatar
     ctx.save();
-    ctx.fillStyle = avatarStyle?.background || avatarStyles.background;
+    ctx.fillStyle = (avatarStyle?.background as string) || avatarStyles.background;
     ctx.shadowColor = avatarStyle?.boxShadow || avatarStyles.boxShadow;
     ctx.shadowBlur = 10;
     ctx.beginPath();
@@ -5704,7 +5239,6 @@ export function MiniMap({
     </div>
   );
 }
-
 ```
 
 ### gaesup\tools\rideable\index.tsx
@@ -5785,16 +5319,15 @@ export function Rideable(props: rideablePropType) {
     </>
   );
 }
-
 ```
 
 ### gaesup\tools\teleport\index.tsx
 
 ```tsx
 // teleport.tsx
-import { useTeleport } from "../../hooks/useTeleport";
-import * as S from "./style.css";
-import { teleportType } from "./type.ts";
+import { useTeleport } from '../../hooks/useTeleport';
+import * as S from './style.css';
+import { teleportType } from './type.ts';
 
 export function teleport({ text, position, teleportStyle }: teleportType) {
   const { Teleport } = useTeleport();
@@ -5811,24 +5344,22 @@ export function teleport({ text, position, teleportStyle }: teleportType) {
     </div>
   );
 }
-
 ```
 
 ### gaesup\utils\innerHtml.tsx
 
 ```tsx
-import { Html } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
-import { useRef, useState } from "react";
-import * as THREE from "three";
+import { Html } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
+import { useRef, useState } from 'react';
+import * as THREE from 'three';
 
 export function InnerHtml({ children, ...props }) {
   const ref = useRef<THREE.Group>();
   const [isInRange, setInRange] = useState<boolean>();
   const vec = new THREE.Vector3();
   useFrame((state) => {
-    const range =
-      state.camera.position.distanceTo(ref.current.getWorldPosition(vec)) <= 10;
+    const range = state.camera.position.distanceTo(ref.current.getWorldPosition(vec)) <= 10;
     if (range !== isInRange) setInRange(range);
   });
   return (
@@ -5839,7 +5370,6 @@ export function InnerHtml({ children, ...props }) {
     </group>
   );
 }
-
 ```
 
 ### gaesup\world\index.tsx
@@ -5853,7 +5383,6 @@ import { gaesupWorldPropsType } from './type';
 
 export function GaesupWorld(props: gaesupWorldPropsType) {
   const { gaesupProps } = initGaesupWorld(props);
-
   return (
     <GaesupWorldContext.Provider value={gaesupProps.value}>
       <GaesupWorldDispatchContext.Provider value={gaesupProps.dispatch}>
@@ -5862,6 +5391,4 @@ export function GaesupWorld(props: gaesupWorldPropsType) {
     </GaesupWorldContext.Provider>
   );
 }
-
 ```
-

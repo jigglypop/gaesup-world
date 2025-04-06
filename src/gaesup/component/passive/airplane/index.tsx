@@ -5,10 +5,7 @@ import { passiveAirplanePropsType } from './type';
 import { AirplaneInnerRef } from '../../inner/airplane';
 
 export function PassiveAirplane(props: passiveAirplanePropsType) {
-  // ★ 기존 4개 useRef -> 하나의 Hook으로
   const { rigidBodyRef, outerGroupRef, innerGroupRef, colliderRef } = useGenericRefs();
-
-  // 기존: onFrame 등 그대로
   useFrame(() => {
     if (innerGroupRef.current) {
       const _euler = props.rotation.clone();
@@ -27,7 +24,6 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
     }
   });
 
-  // 동일: refs 객체 통합
   const refs = {
     rigidBodyRef,
     outerGroupRef,

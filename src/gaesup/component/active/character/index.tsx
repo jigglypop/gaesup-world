@@ -1,6 +1,6 @@
-import { controllerInnerType, refsType } from "../../../controller/type";
-import { urlsType } from "../../../world/context/type";
-import { CharacterInnerRef } from "../../inner/character";
+import { controllerInnerType, refsType } from '../../../controller/type';
+import { urlsType } from '../../../world/context/type';
+import { CharacterInnerRef } from '../../inner/character';
 
 export function CharacterRef({
   children,
@@ -18,7 +18,7 @@ export function CharacterRef({
       url={urls.characterUrl}
       isActive={true}
       componentType="character"
-      rigidbodyType={"dynamic"}
+      rigidbodyType={'dynamic'}
       controllerOptions={props.controllerOptions}
       groundRay={props.groundRay}
       onAnimate={props.onAnimate}

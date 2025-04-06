@@ -1,12 +1,9 @@
-import { useGLTF } from "@react-three/drei";
-import { useContext } from "react";
-import * as THREE from "three";
-import { GLTFResult } from "../../component/type";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
-import { urlsType } from "../../world/context/type";
+import { useGLTF } from '@react-three/drei';
+import { useContext } from 'react';
+import * as THREE from 'three';
+import { GLTFResult } from '../../component/type';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
+import { urlsType } from '../../world/context/type';
 
 export type gltfAndSizeType = {
   size: THREE.Vector3;
@@ -42,7 +39,7 @@ export const useGltfAndSize = ({ url }: useGltfAndSizeType) => {
     if (!(key in sizes)) {
       sizes[key] = size || makeGltfSize();
       dispatch({
-        type: "update",
+        type: 'update',
         payload: {
           sizes: { ...sizes },
         },

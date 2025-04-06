@@ -1,11 +1,8 @@
-import { CollisionEnterPayload, euler, vec3 } from "@react-three/rapier";
-import { useContext } from "react";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
-import { useGaesupGltf } from "../useGaesupGltf";
-import { rideableType } from "./type";
+import { CollisionEnterPayload, euler, vec3 } from '@react-three/rapier';
+import { useContext } from 'react';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
+import { useGaesupGltf } from '../useGaesupGltf';
+import { rideableType } from './type';
 
 export const rideableDefault = {
   objectkey: null,
@@ -47,20 +44,18 @@ export function useRideable() {
     states.rideableId = null;
     const modeType = rideable[objectkey].objectType;
     const { vehicleUrl, airplaneUrl, characterUrl } = getSizesByUrls(urls);
-    const size = modeType === "vehicle" ? vehicleUrl : airplaneUrl;
+    const size = modeType === 'vehicle' ? vehicleUrl : airplaneUrl;
     const mySize = characterUrl;
     rideable[objectkey].visible = true;
     rideable[objectkey].position.copy(activeState.position.clone());
     if (refs && refs.rigidBodyRef) {
       refs.rigidBodyRef.current.setTranslation(
-        activeState.position
-          .clone()
-          .add(size.clone().add(mySize.clone()).addScalar(1)),
-        false
+        activeState.position.clone().add(size.clone().add(mySize.clone()).addScalar(1)),
+        false,
       );
     }
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         rideable: { ...rideable },
         states: { ...states },
@@ -71,15 +66,15 @@ export function useRideable() {
 
   const setUrl = async (props: rideableType) => {
     urls.ridingUrl = props.ridingUrl || urls.characterUrl || null;
-    if (props.objectType === "vehicle") {
+    if (props.objectType === 'vehicle') {
       urls.vehicleUrl = props.url;
       urls.wheelUrl = props.wheelUrl || null;
-    } else if (props.objectType === "airplane") {
+    } else if (props.objectType === 'airplane') {
       urls.airplaneUrl = props.url;
     }
 
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         urls: {
           ...urls,
@@ -96,7 +91,7 @@ export function useRideable() {
     states.rideableId = props.objectkey;
     rideable[props.objectkey].visible = false;
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         mode: { ...mode },
         states: { ...states },
@@ -105,7 +100,7 @@ export function useRideable() {
   };
 
   const ride = async (e: CollisionEnterPayload, props: rideableType) => {
-    if (e.other.rigidBodyObject.name === "character") {
+    if (e.other.rigidBodyObject.name === 'character') {
       await setUrl(props);
       await setModeAndRiding(props);
     }

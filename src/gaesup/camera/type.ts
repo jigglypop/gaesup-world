@@ -1,5 +1,5 @@
+// camera/type.ts
 import * as THREE from 'three';
-import {} from 'three-stdlib';
 
 export type cameraRayType = {
   origin: THREE.Vector3;
@@ -10,5 +10,7 @@ export type cameraRayType = {
   position: THREE.Vector3;
   intersects: THREE.Intersection<THREE.Mesh>[];
   detected: THREE.Intersection<THREE.Mesh>[];
-  intersectObjectMap: { [uuid: string]: THREE.Mesh };
+  intersectObjectMap: Map<string, THREE.Mesh>; // 객체를 Map으로 변경하여 검색 성능 개선
+  lastRaycastTime: number; // 레이캐스트 빈도 제한을 위한 타임스탬프
+  raycastInterval: number; // 레이캐스트 간격 (ms)
 };

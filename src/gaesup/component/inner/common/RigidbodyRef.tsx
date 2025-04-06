@@ -45,7 +45,6 @@ export const RigidBodyRef = forwardRef(
       });
       return skel;
     }, [clone]);
-
     if (props.isActive) {
       subscribeActions({
         type: props.componentType,

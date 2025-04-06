@@ -23,14 +23,12 @@ export function MiniMap({
   blockRotate = false,
   angle = 0,
   minimapStyle,
-  minimapInnerStyle,
   textStyle,
   minimapObjectStyle,
   avatarStyle,
   scaleStyle,
   directionStyle,
   plusMinusStyle,
-  imageStyle,
 }: MinimapProps) {
   const { minimap, activeState, mode } = useContext(GaesupWorldContext);
   const [scale, setScale] = React.useState(initialScale);
@@ -121,10 +119,9 @@ export function MiniMap({
       // Calculate position
       const posX = (center.x - activeState.position.x) * (angle ? Math.sin(angle) : 1) * scale;
       const posZ = (center.z - activeState.position.z) * (angle ? -Math.cos(angle) : 1) * scale;
-
       // Draw object
       ctx.save();
-      ctx.fillStyle = minimapObjectStyle?.background || objectStyles.background;
+      ctx.fillStyle = (minimapObjectStyle?.background as string) || objectStyles.background;
       const width = size.x * scale;
       const height = size.z * scale;
       const x = MINIMAP_SIZE_PX / 2 - posX - width / 2;
@@ -153,7 +150,7 @@ export function MiniMap({
 
     // Draw avatar
     ctx.save();
-    ctx.fillStyle = avatarStyle?.background || avatarStyles.background;
+    ctx.fillStyle = (avatarStyle?.background as string) || avatarStyles.background;
     ctx.shadowColor = avatarStyle?.boxShadow || avatarStyles.boxShadow;
     ctx.shadowBlur = 10;
     ctx.beginPath();

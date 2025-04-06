@@ -1,10 +1,9 @@
-import { useContext } from "react";
-import * as THREE from "three";
-import { GaesupWorldContext } from "../../world/context";
+import { useContext } from 'react';
+import * as THREE from 'three';
+import { GaesupWorldContext } from '../../world/context';
 
 export function useTeleport() {
   const worldContext = useContext(GaesupWorldContext);
-
   const Teleport = (position: THREE.Vector3) => {
     if (
       worldContext &&
@@ -14,7 +13,6 @@ export function useTeleport() {
     )
       worldContext.refs.rigidBodyRef.current.setTranslation(position, true);
   };
-
   return {
     Teleport,
   };

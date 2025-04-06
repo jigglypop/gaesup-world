@@ -1,4 +1,4 @@
-import { ridingType, rigidBodyRefType } from "../common/type";
+import { ridingType, rigidBodyRefType } from '../common/type';
 
 // airplane 타입 정의
 export type airplaneUrlType = {

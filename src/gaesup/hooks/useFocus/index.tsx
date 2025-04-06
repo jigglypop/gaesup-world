@@ -1,10 +1,7 @@
-import { useContext } from "react";
-import * as THREE from "three";
-import { makeNormalCameraPosition } from "../../camera/control/normal";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
+import { useContext } from 'react';
+import * as THREE from 'three';
+import { makeNormalCameraPosition } from '../../camera/control/normal';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
 
 export function useFocus() {
   const { cameraOption, activeState, block } = useContext(GaesupWorldContext);
@@ -12,7 +9,7 @@ export function useFocus() {
 
   const dispatchAsync = async () => {
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         cameraOption: cameraOption,
       },
@@ -23,7 +20,7 @@ export function useFocus() {
     block.control = true;
     block.animation = true;
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         block: block,
       },
@@ -34,34 +31,30 @@ export function useFocus() {
     block.control = false;
     block.animation = false;
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         block: block,
       },
     });
   };
-
   const on = async () => {
     cameraOption.focus = true;
-
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         cameraOption: cameraOption,
       },
     });
   };
-
   const off = async () => {
     cameraOption.focus = false;
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         cameraOption: cameraOption,
       },
     });
   };
-
   const focus = async ({
     zoom,
     target,
@@ -75,13 +68,9 @@ export function useFocus() {
     cameraOption.position.lerp(position, 0.1);
     cameraOption.target.lerp(target, 0.1);
   };
-
   const free = async ({ zoom }: { zoom?: number }) => {
     if (zoom) cameraOption.zoom = zoom;
-    cameraOption.position.lerp(
-      makeNormalCameraPosition(activeState, cameraOption),
-      0.1
-    );
+    cameraOption.position.lerp(makeNormalCameraPosition(activeState, cameraOption), 0.1);
     cameraOption.target.lerp(activeState.position.clone(), 0.1);
   };
 

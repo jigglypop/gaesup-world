@@ -1,15 +1,15 @@
-import { Gltf } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import { Gltf } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
 import {
   CylinderCollider,
   RapierRigidBody,
   RigidBody,
   useRevoluteJoint,
-} from "@react-three/rapier";
-import { RefObject, createRef, useContext, useRef } from "react";
-import * as THREE from "three";
-import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
-import { GaesupWorldContext } from "../../../world/context";
+} from '@react-three/rapier';
+import { RefObject, createRef, useContext, useRef } from 'react';
+import * as THREE from 'three';
+import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
+import { GaesupWorldContext } from '../../../world/context';
 
 const WheelJoint = ({
   body,
@@ -24,24 +24,15 @@ const WheelJoint = ({
   wheelAnchor: [number, number, number];
   rotationAxis: [number, number, number];
 }) => {
-  const joint = useRevoluteJoint(body, wheel, [
-    bodyAnchor,
-    wheelAnchor,
-    rotationAxis,
-  ]);
+  const joint = useRevoluteJoint(body, wheel, [bodyAnchor, wheelAnchor, rotationAxis]);
   const { activeState } = useContext(GaesupWorldContext);
   useFrame(() => {
     if (joint.current) {
-      joint.current.configureMotorPosition(
-        activeState.position.length(),
-        0.8,
-        0
-      );
+      joint.current.configureMotorPosition(activeState.position.length(), 0.8, 0);
     }
   });
   return null;
 };
-
 export function WheelsRef({
   vehicleSize,
   rigidBodyRef,
@@ -54,7 +45,6 @@ export function WheelsRef({
   const { size: wheelSize } = useGltfAndSize({
     url: wheelUrl,
   });
-
   const X = (vehicleSize.x - wheelSize.x) / 2;
   const Z = (vehicleSize.z - 2 * wheelSize.z) / 2;
   const wheelPositions: [number, number, number][] = [
@@ -63,10 +53,7 @@ export function WheelsRef({
     [X, 0, Z],
     [X, 0, -Z],
   ];
-  const wheelRefs = useRef(
-    wheelPositions.map(() => createRef<RapierRigidBody>())
-  );
-
+  const wheelRefs = useRef(wheelPositions.map(() => createRef<RapierRigidBody>()));
   return (
     <>
       {wheelRefs &&

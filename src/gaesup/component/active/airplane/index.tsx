@@ -1,13 +1,13 @@
-import { AirplaneInnerRef } from "../../inner/airplane";
-import { activeAirplaneInnerType } from "./type";
+import { AirplaneInnerRef } from '../../inner/airplane';
+import { activeAirplaneInnerType } from './type';
 
 export function AirplaneRef(props: activeAirplaneInnerType) {
   return (
     <AirplaneInnerRef
-      name={"airplane"}
+      name={'airplane'}
       isActive={true}
-      currentAnimation={"idle"}
-      componentType={"airplane"}
+      currentAnimation={'idle'}
+      componentType={'airplane'}
       ridingUrl={props.ridingUrl}
       {...props}
     >

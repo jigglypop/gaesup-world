@@ -1,15 +1,18 @@
+import * as THREE from 'three';
 import { cameraPropType } from '../../physics/type';
-import { V3 } from '../../utils/vector';
 import { activeStateType, cameraOptionType } from '../../world/context/type';
+
+// 임시 벡터 객체 생성 - 재사용
+const tempVector = new THREE.Vector3();
 
 export const makeNormalCameraPosition = (
   activeState: activeStateType,
   cameraOption: cameraOptionType,
 ) => {
   const { XDistance, YDistance, ZDistance } = cameraOption;
-  const cameraPosition = activeState.position.clone().add(V3(XDistance, YDistance, ZDistance));
-  return cameraPosition;
+  return tempVector.set(XDistance, YDistance, ZDistance).add(activeState.position);
 };
+
 export default function normal(prop: cameraPropType) {
   const {
     state,
@@ -17,6 +20,6 @@ export default function normal(prop: cameraPropType) {
     controllerOptions: { lerp },
   } = prop;
   if (!state || !state.camera) return;
-  state.camera.position.lerp(cameraOption.position.clone(), lerp.cameraPosition);
+  state.camera.position.lerp(cameraOption.position, lerp.cameraPosition);
   state.camera.lookAt(cameraOption.target);
 }

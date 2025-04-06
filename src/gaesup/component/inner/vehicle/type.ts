@@ -1,4 +1,4 @@
-import { ridingType, rigidBodyRefType } from "../common/type";
+import { ridingType, rigidBodyRefType } from '../common/type';
 
 // vehicle 타입 정의
 export type vehicleUrlType = {

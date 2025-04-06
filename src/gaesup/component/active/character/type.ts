@@ -1,6 +1,6 @@
-import { RigidBodyTypeString } from "@react-three/rapier";
-import * as THREE from "three";
-import { controllerOptionsType } from "../../../controller/type";
+import { RigidBodyTypeString } from '@react-three/rapier';
+import * as THREE from 'three';
+import { controllerOptionsType } from '../../../controller/type';
 
 export type activeCharacterPropsType = {
   characterUrl: string;

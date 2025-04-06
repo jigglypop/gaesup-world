@@ -1,5 +1,5 @@
-import { CSSProperties } from "react";
-import * as THREE from "three";
+import { CSSProperties } from 'react';
+import * as THREE from 'three';
 
 export type teleportType = {
   text?: string;

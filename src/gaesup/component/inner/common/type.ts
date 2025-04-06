@@ -1,11 +1,11 @@
-import { Collider } from "@dimforge/rapier3d-compat";
-import { RigidBodyProps, RigidBodyTypeString } from "@react-three/rapier";
-import { MutableRefObject, RefObject } from "react";
-import * as THREE from "three";
-import { callbackType } from "../../../controller/initialize/callback/type";
-import { groundRayType, partsType } from "../../../controller/type";
-import { urlsType } from "../../../world/context/type";
-import { innerRefType, passivePropsType } from "../../passive/type";
+import { Collider } from '@dimforge/rapier3d-compat';
+import { RigidBodyProps, RigidBodyTypeString } from '@react-three/rapier';
+import { MutableRefObject, RefObject } from 'react';
+import * as THREE from 'three';
+import { callbackType } from '../../../controller/initialize/callback/type';
+import { groundRayType, partsType } from '../../../controller/type';
+import { urlsType } from '../../../world/context/type';
+import { innerRefType, passivePropsType } from '../../passive/type';
 // collider 정의
 export type characterColliderType = {
   height: number;
