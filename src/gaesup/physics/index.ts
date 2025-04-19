@@ -1,13 +1,19 @@
 import { useFrame } from '@react-three/fiber';
-import { useContext, useEffect, useMemo } from 'react';
+import { useContext, useEffect, useMemo, useRef } from 'react';
 import { quat, vec3 } from '@react-three/rapier';
 import * as THREE from 'three';
 import { GaesupControllerContext } from '../controller/context';
 import { GaesupWorldContext, GaesupWorldDispatchContext } from '../world/context';
 import { useGaesupGltf } from '../hooks/useGaesupGltf';
-import { V3 } from '../utils/vector';
-import { calcType } from './type';
+import { V3, getTempVector, getTempVector2, calcNorm } from '../utils/vector';
 import { calculateDirection } from './direction';
+import { CalcType } from '../types';
+
+// 재사용 가능한 벡터 객체들
+const _tempVec3 = new THREE.Vector3();
+const _tempVec3_2 = new THREE.Vector3();
+const _tempVec3_3 = new THREE.Vector3();
+const _tempVec3_4 = new THREE.Vector3();
 
 export default function calculation({
   groundRay,
@@ -21,17 +27,28 @@ export default function calculation({
   const dispatch = useContext(GaesupWorldDispatchContext);
   const { mode, activeState, block } = worldContext;
   const { getSizesByUrls } = useGaesupGltf();
+
   // 매치 사이즈 캐싱
   const matchSizes = useMemo(() => getSizesByUrls(worldContext?.urls), [worldContext?.urls]);
+
+  // 임시 벡터 객체 모음 (함수 내에서 재사용)
+  const tempVectors = useRef({
+    impulse: new THREE.Vector3(),
+    velocity: new THREE.Vector3(),
+  });
+
   // 초기화 설정
   useEffect(() => {
     if (!rigidBodyRef || !innerGroupRef) return;
     if (rigidBodyRef.current && innerGroupRef.current) {
       rigidBodyRef.current.lockRotations(false, true);
       activeState.euler.set(0, 0, 0);
-      rigidBodyRef.current.setTranslation(activeState.position.clone().add(V3(0, 5, 0)), true);
+      // 새 객체 생성 대신 임시 벡터 사용
+      _tempVec3.copy(activeState.position).add(V3(0, 5, 0));
+      rigidBodyRef.current.setTranslation(_tempVec3, true);
     }
   }, [mode.type]);
+
   // 블록 컨트롤 처리
   useEffect(() => {
     if (rigidBodyRef?.current && block.control) {
@@ -39,11 +56,12 @@ export default function calculation({
       rigidBodyRef.current.resetTorques(false);
     }
   }, [block.control, rigidBodyRef.current]);
+
   // 매 프레임 물리 계산
   useFrame((state, delta) => {
     if (!rigidBodyRef?.current || !outerGroupRef?.current || !innerGroupRef?.current) return null;
     if (block.control) return null;
-    const calcProp: calcType = {
+    const calcProp: CalcType = {
       rigidBodyRef,
       outerGroupRef,
       innerGroupRef,
@@ -55,20 +73,18 @@ export default function calculation({
       controllerContext,
       dispatch,
       matchSizes,
+      tempVectors: tempVectors.current,
     };
     entityCalculation(calcProp);
     checkEntityStates(calcProp);
   });
 }
 
-const entityCalculation = (prop: calcType) => {
+const entityCalculation = (prop: CalcType) => {
   const { worldContext } = prop;
   const { mode } = worldContext;
-  // 1. 방향 계산
   calculateDirection(prop);
-  // 2. 충격량 적용
   applyImpulse(prop);
-  // 3. 엔티티별 특수 처리
   switch (mode.type) {
     case 'character':
       handleCharacterPhysics(prop);
@@ -80,12 +96,10 @@ const entityCalculation = (prop: calcType) => {
       handleAirplanePhysics(prop);
       break;
   }
-  // 4. 상태 업데이트
   updateState(prop);
 };
 
-// 2. 충격량 적용
-function applyImpulse(prop: calcType) {
+const applyImpulse = (prop: CalcType) => {
   const { worldContext, rigidBodyRef } = prop;
   const { mode } = worldContext;
   if (!rigidBodyRef?.current) return;
@@ -100,17 +114,15 @@ function applyImpulse(prop: calcType) {
       applyAirplaneImpulse(prop);
       break;
   }
-}
+};
 
 // 캐릭터 충격량 적용
-function applyCharacterImpulse(prop: calcType) {
+const applyCharacterImpulse = (prop: CalcType) => {
   const { worldContext, rigidBodyRef } = prop;
   const { activeState, states } = worldContext;
   const { character } = prop.controllerContext;
   const { walkSpeed, runSpeed, jumpSpeed } = character;
-
   const impulse = vec3();
-
   // 점프
   if (states.isJumping && states.isOnTheGround) {
     impulse.setY(jumpSpeed * rigidBodyRef.current.mass());
@@ -125,32 +137,27 @@ function applyCharacterImpulse(prop: calcType) {
     impulse.setZ(F.z);
   }
   rigidBodyRef.current.applyImpulse(impulse, true);
-}
+};
 
-// 차량 충격량 적용
-function applyVehicleImpulse(prop: calcType) {
+const applyVehicleImpulse = (prop: CalcType) => {
   const { worldContext, controllerContext, rigidBodyRef } = prop;
   const { activeState, control } = worldContext;
   const { shift } = control;
   const { vehicle } = controllerContext;
   const { maxSpeed, accelRatio } = vehicle;
-
   const velocity = rigidBodyRef.current.linvel();
   const V = vec3(velocity).length();
-
   if (V < maxSpeed) {
     const M = rigidBodyRef.current.mass();
     let speed = shift ? accelRatio : 1;
-
     rigidBodyRef.current.applyImpulse(
       vec3().addScalar(speed).multiply(activeState.dir.clone().normalize()).multiplyScalar(M),
       false,
     );
   }
-}
-
+};
 // 비행기 충격량 적용
-function applyAirplaneImpulse(prop: calcType) {
+const applyAirplaneImpulse = (prop: CalcType) => {
   const { worldContext, controllerContext, rigidBodyRef } = prop;
   const { activeState } = worldContext;
   const { airplane } = controllerContext;
@@ -170,40 +177,31 @@ function applyAirplaneImpulse(prop: calcType) {
       false,
     );
   }
-}
-
+};
 // 캐릭터 물리 처리
-function handleCharacterPhysics(prop: calcType) {
+const handleCharacterPhysics = (prop: CalcType) => {
   const { worldContext, rigidBodyRef, innerGroupRef, delta } = prop;
   const { states, activeState } = worldContext;
   const { character } = prop.controllerContext;
   const { linearDamping } = character;
-
   // 댐핑 설정
   if (states.isJumping || rigidBodyRef.current.linvel().y < 0) {
     rigidBodyRef.current.setLinearDamping(linearDamping);
   } else {
     rigidBodyRef.current.setLinearDamping(states.isNotMoving ? linearDamping * 5 : linearDamping);
   }
-
-  // 회전 제한
   rigidBodyRef.current.setEnabledRotations(false, false, false, false);
-
-  // 내부 그룹 회전
   innerGroupRef.current.quaternion.rotateTowards(
     quat().setFromEuler(activeState.euler),
     10 * delta,
   );
-
-  // 클리커 관련 로직은 handleClickerQueue 함수에서 처리
   handleClickerQueue(prop);
-}
+};
 
 // 클리커 큐 처리
-function handleClickerQueue(prop: calcType) {
+const handleClickerQueue = (prop: CalcType) => {
   const { worldContext, rigidBodyRef, state } = prop;
   const { control, clicker, mode, clickerOption } = worldContext;
-
   // S 키로 정지
   if (control.keyS && mode.controller === 'clicker') {
     clicker.isOn = false;
@@ -252,10 +250,10 @@ function handleClickerQueue(prop: calcType) {
       clicker.isRun = false;
     }
   }
-}
+};
 
 // 차량 물리 처리
-function handleVehiclePhysics(prop: calcType) {
+function handleVehiclePhysics(prop: CalcType) {
   const { worldContext, controllerContext, rigidBodyRef } = prop;
   const { control, states, rideable, mode } = worldContext;
   const { vehicle } = controllerContext;
@@ -269,7 +267,7 @@ function handleVehiclePhysics(prop: calcType) {
 }
 
 // 비행기 물리 처리
-function handleAirplanePhysics(prop: calcType) {
+function handleAirplanePhysics(prop: CalcType) {
   const { worldContext, controllerContext, rigidBodyRef } = prop;
   const { activeState } = worldContext;
   const { airplane } = controllerContext;
@@ -294,7 +292,7 @@ function handleAirplanePhysics(prop: calcType) {
 }
 
 // 엔티티 하차 처리
-function handleEntityLanding(prop: calcType) {
+function handleEntityLanding(prop: CalcType) {
   const { worldContext, dispatch } = prop;
   const { states, rideable, mode } = worldContext;
   const { isRiding } = states;
@@ -315,30 +313,52 @@ function handleEntityLanding(prop: calcType) {
   }
 }
 
-// 상태 업데이트
-function updateState(prop: calcType) {
+// 상태 업데이트 (최적화 버전)
+function updateState(prop: CalcType) {
   const { worldContext, rigidBodyRef, dispatch } = prop;
   const { activeState } = worldContext;
-  if (rigidBodyRef?.current) {
-    activeState.position = vec3(rigidBodyRef.current.translation());
-    activeState.velocity = vec3(rigidBodyRef.current.linvel());
-    dispatch({
-      type: 'update',
-      payload: {
-        activeState: { ...activeState },
-      },
-    });
+  if (!rigidBodyRef?.current) return;
+
+  const newPos = rigidBodyRef.current.translation();
+  const newVel = rigidBodyRef.current.linvel();
+
+  // 임시 벡터 사용하여 거리 계산
+  _tempVec3.set(
+    newPos.x - activeState.position.x,
+    newPos.y - activeState.position.y,
+    newPos.z - activeState.position.z,
+  );
+
+  const distance = _tempVec3.length();
+  if (distance < 0.05) {
+    return;
   }
+
+  // 벡터 복사로 새 객체 생성 피하기
+  activeState.position.set(newPos.x, newPos.y, newPos.z);
+  activeState.velocity.set(newVel.x, newVel.y, newVel.z);
+
+  // 전역 상태 업데이트 (dispatch)
+  dispatch({
+    type: 'update',
+    payload: {
+      activeState: { ...activeState },
+    },
+  });
 }
 
-// 엔티티 상태 체크
-function checkEntityStates(prop: calcType) {
+// 엔티티 상태 체크 (최적화 버전)
+function checkEntityStates(prop: CalcType) {
   const { worldContext, colliderRef, groundRay, outerGroupRef } = prop;
   const { states, activeState, mode, control, clicker, clickerOption } = worldContext;
 
   // 1. 지면 체크
   if (groundRay) {
-    groundRay.origin.addVectors(activeState.position, vec3(groundRay.offset));
+    // 새 객체 생성 대신 직접 계산
+    groundRay.origin.x = activeState.position.x + groundRay.offset.x;
+    groundRay.origin.y = activeState.position.y + groundRay.offset.y;
+    groundRay.origin.z = activeState.position.z + groundRay.offset.z;
+
     if (!groundRay.hit || !groundRay.rayCast || !colliderRef?.current) {
       states.isOnTheGround = false;
     }
@@ -369,9 +389,10 @@ function checkEntityStates(prop: calcType) {
 
   // 회전 여부
   if (states.isMoving && outerGroupRef?.current) {
-    states.isRotated =
-      Math.sin(outerGroupRef.current.rotation.y).toFixed(3) ===
-      Math.sin(activeState.euler.y).toFixed(3);
+    // toFixed 사용 대신 반올림 연산으로 대체 (성능 개선)
+    const yRot = Math.sin(outerGroupRef.current.rotation.y);
+    const yEuler = Math.sin(activeState.euler.y);
+    states.isRotated = Math.abs(yRot - yEuler) < 0.001;
   }
 
   // 누르고 있는 키 상태
@@ -383,11 +404,4 @@ function checkEntityStates(prop: calcType) {
   if (states.isRiderOn && states.isPush['keyR']) {
     states.isRiding = true;
   }
-}
-
-// 거리 계산 유틸
-function calcNorm(u: THREE.Vector3, v: THREE.Vector3, calcZ: boolean): number {
-  return Math.sqrt(
-    Math.pow(u.x - v.x, 2) + (calcZ ? Math.pow(u.y - v.y, 2) : 0) + Math.pow(u.z - v.z, 2),
-  );
 }

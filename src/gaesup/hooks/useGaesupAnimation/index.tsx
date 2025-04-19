@@ -5,11 +5,16 @@ import { animationAtomType } from '../../world/context/type';
 export function useGaesupAnimation({ type }: { type: 'character' | 'vehicle' | 'airplane' }) {
   const { animationState } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
-  // 현재 타입에 맞는 애니메이션 상태 메모이제이션
+
+  // Memoize current animation state
   const currentTypeAnimState = useMemo(() => {
     return animationState[type] || { current: 'idle', default: 'idle', store: {} };
   }, [animationState, type]);
-  // 상태 업데이트 함수 메모이제이션 - 불필요한 함수 생성 방지
+
+  // Memoize store to prevent unnecessary recalculations
+  const store = useMemo(() => currentTypeAnimState.store, [currentTypeAnimState.store]);
+
+  // Memoize update function
   const updateAnimationState = useCallback(() => {
     dispatch({
       type: 'update',
@@ -18,10 +23,11 @@ export function useGaesupAnimation({ type }: { type: 'character' | 'vehicle' | '
       },
     });
   }, [dispatch, animationState]);
-  // 애니메이션 태그 유효성 확인 함수
+
+  // Memoize animation tag validation
   const getAnimationTag = useCallback(
     (tag: string): { name: string; isValid: boolean } => {
-      const animation = currentTypeAnimState.store[tag];
+      const animation = store[tag];
       if (!animation) {
         return { name: currentTypeAnimState.default, isValid: false };
       }
@@ -30,64 +36,39 @@ export function useGaesupAnimation({ type }: { type: 'character' | 'vehicle' | '
         isValid: animation.condition(),
       };
     },
-    [currentTypeAnimState],
+    [store, currentTypeAnimState.default],
   );
-  // 현재 조건에 맞는 애니메이션 알림 함수
-  const notify = useCallback(() => {
-    // 현재 타입의 기본 애니메이션을 초기값으로 설정
-    let tag = currentTypeAnimState.default;
-    // 모든 등록된 애니메이션을 조건 확인
-    for (const key of Object.keys(currentTypeAnimState.store)) {
-      const checked = getAnimationTag(key);
-      if (checked.isValid) {
-        tag = checked.name;
-        break;
-      }
-    }
-    // 현재 애니메이션 업데이트 (이전과 다른 경우에만)
-    if (currentTypeAnimState.current !== tag) {
-      animationState[type].current = tag;
-      updateAnimationState();
-    }
-    return tag;
-  }, [animationState, currentTypeAnimState, getAnimationTag, type, updateAnimationState]);
 
-  // 애니메이션 구독 해제 함수
-  const unsubscribe = useCallback(
-    (tag: string) => {
-      if (currentTypeAnimState.store[tag]) {
-        delete animationState[type].store[tag];
+  // Memoize subscribe function
+  const subscribe = useCallback(
+    (props: animationAtomType) => {
+      if (!store[props.tag]) {
+        store[props.tag] = props;
         updateAnimationState();
       }
     },
-    [animationState, currentTypeAnimState.store, type, updateAnimationState],
+    [store, updateAnimationState],
   );
 
-  // 애니메이션 구독 함수
-  const subscribe = useCallback(
-    (props: animationAtomType) => {
-      const { tag, condition, action, animationName, key } = props;
-
-      animationState[type].store[tag] = {
-        condition,
-        action: action || (() => {}),
-        animationName: animationName || tag,
-        key: key || tag,
-      };
-
-      updateAnimationState();
+  // Memoize unsubscribe function
+  const unsubscribe = useCallback(
+    (tag: string) => {
+      if (store[tag]) {
+        delete store[tag];
+        updateAnimationState();
+      }
     },
-    [animationState, type, updateAnimationState],
+    [store, updateAnimationState],
   );
 
-  // 다중 애니메이션 구독 함수
+  // Add back the subscribeAll function
   const subscribeAll = useCallback(
     (props: animationAtomType[]) => {
       const subscribedTags: string[] = [];
 
-      // 모든 애니메이션 등록
+      // Register all animations
       props.forEach((item) => {
-        animationState[type].store[item.tag] = {
+        store[item.tag] = {
           condition: item.condition,
           action: item.action || (() => {}),
           animationName: item.animationName || item.tag,
@@ -98,31 +79,46 @@ export function useGaesupAnimation({ type }: { type: 'character' | 'vehicle' | '
 
       updateAnimationState();
 
-      // 구독 해제 함수 반환 (클린업용)
+      // Return cleanup function
       return () => {
         subscribedTags.forEach((tag) => {
-          if (animationState[type]?.store[tag]) {
-            delete animationState[type].store[tag];
+          if (store[tag]) {
+            delete store[tag];
           }
         });
         updateAnimationState();
       };
     },
-    [animationState, type, updateAnimationState],
+    [store, updateAnimationState],
   );
 
-  // 메모이제이션된 스토어 참조
-  const animationStore = useMemo(
-    () => currentTypeAnimState.store || {},
-    [currentTypeAnimState.store],
-  );
+  // Add back the notify function
+  const notify = useCallback(() => {
+    // Set default animation as initial value
+    let tag = currentTypeAnimState.default;
+    // Check conditions for all registered animations
+    for (const key of Object.keys(store)) {
+      const checked = getAnimationTag(key);
+      if (checked.isValid) {
+        tag = checked.name;
+        break;
+      }
+    }
+    // Update current animation (only if different from previous)
+    if (currentTypeAnimState.current !== tag) {
+      animationState[type].current = tag;
+      updateAnimationState();
+    }
+    return tag;
+  }, [animationState, currentTypeAnimState, getAnimationTag, type, updateAnimationState]);
 
-  // 최적화된 API 반환
   return {
+    store,
     subscribe,
     subscribeAll,
-    store: animationStore,
     unsubscribe,
+    getAnimationTag,
+    currentTypeAnimState,
     notify,
   };
 }

@@ -28,6 +28,6 @@ export type onAnimatePropType = onFramePropType & {
 export type callbackType = {
   onReady?: (prop: callbackPropType) => void;
   onFrame?: (prop: onFramePropType) => void;
-  onDestory?: (prop: callbackPropType) => void;
+  onDestroy?: (prop: callbackPropType) => void;
   onAnimate?: (prop: onAnimatePropType) => void;
 };

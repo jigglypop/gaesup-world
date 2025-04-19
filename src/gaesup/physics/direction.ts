@@ -1,29 +1,25 @@
-import { calcType } from './type';
+import { calcType } from '../types';
 import { V3, calcAngleByVector } from '../utils/vector';
 import { vec3 } from '@react-three/rapier';
 
-function normalDirection(worldContext: calcType['worldContext']) {
+const normalDirection = (worldContext: calcType['worldContext']) => {
   const { activeState, control, mode, clicker } = worldContext;
   const { forward, backward, leftward, rightward } = control;
-
   if (mode.controller === 'clicker') {
     activeState.euler.y = Math.PI / 2 - clicker.angle;
     activeState.dir.set(-Math.sin(activeState.euler.y), 0, -Math.cos(activeState.euler.y));
     return;
   }
-
-  // 키보드 WASD
   const dirX = Number(leftward) - Number(rightward);
   const dirZ = Number(forward) - Number(backward);
   if (dirX === 0 && dirZ === 0) return;
-
   const dir = V3(dirX, 0, dirZ);
   const angle = calcAngleByVector(dir);
   activeState.euler.y = angle;
   activeState.dir.set(dirX, 0, dirZ);
-}
+};
 
-function orbitDirection(worldContext: calcType['worldContext']) {
+const orbitDirection = (worldContext: calcType['worldContext']) => {
   const { activeState, control, mode, clicker } = worldContext;
   const { forward, backward, leftward, rightward } = control;
   const dirX = Number(leftward) - Number(rightward);
@@ -42,8 +38,8 @@ function orbitDirection(worldContext: calcType['worldContext']) {
     V3(-Math.sin(activeState.euler.y), 0, -Math.cos(activeState.euler.y)),
   );
   activeState.dir = activeState.direction.normalize();
-}
-function vehicleDirection(prop: calcType) {
+};
+const vehicleDirection = (prop: calcType) => {
   const { worldContext } = prop;
   const { activeState, control } = worldContext;
   const { forward, backward, leftward, rightward } = control;
@@ -55,7 +51,7 @@ function vehicleDirection(prop: calcType) {
     V3(Math.sin(activeState.euler.y), 0, Math.cos(activeState.euler.y)),
   );
   activeState.dir = activeState.direction.normalize();
-}
+};
 
 const airplaneDirection = (prop: calcType) => {
   const { worldContext, controllerContext, innerGroupRef, matchSizes } = prop;
@@ -97,10 +93,9 @@ const airplaneDirection = (prop: calcType) => {
   );
   activeState.dir = activeState.direction.normalize();
 };
-export function calculateDirection(prop: calcType) {
+export const calculateDirection = (prop: calcType) => {
   const { worldContext } = prop;
   const { mode } = worldContext;
-
   switch (mode.type) {
     case 'character':
       if (mode.control === 'normal') normalDirection(worldContext);
@@ -113,4 +108,4 @@ export function calculateDirection(prop: calcType) {
       airplaneDirection(prop);
       break;
   }
-}
+};
