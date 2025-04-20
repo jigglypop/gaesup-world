@@ -1,12 +1,9 @@
 'use client';
 
 import { useContext } from 'react';
-
-import { V3 } from '../../src';
 import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../src/gaesup/world/context';
 import { Icon } from '../icon';
 import * as style from './style.css';
-// FaCarSide lazy loading
 
 export default function Info() {
   const { mode } = useContext(GaesupWorldContext);

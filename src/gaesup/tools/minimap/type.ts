@@ -41,6 +41,7 @@ export type minimapType = {
   imageUrl?: string;
   imageWidth?: number;
   imageHeight?: number;
+  onRotationChange?: (angle: number) => void;
 };
 export interface MinimapProps {
   scale?: number;
@@ -59,6 +60,7 @@ export interface MinimapProps {
   directionStyle?: React.CSSProperties;
   plusMinusStyle?: React.CSSProperties;
   imageStyle?: React.CSSProperties;
+  onRotationChange?: (angle: number) => void;
 }
 
 export interface Position {

@@ -22,3 +22,4 @@ export { usePushKey } from './gaesup/hooks/usePushKey';
 export { useRideable } from './gaesup/hooks/useRideable';
 export { useTeleport } from './gaesup/hooks/useTeleport';
 export { useZoom } from './gaesup/hooks/useZoom';
+export { useRotation } from './gaesup/hooks/useRotation';

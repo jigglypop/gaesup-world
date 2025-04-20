@@ -5,7 +5,6 @@ import { useGaesupAnimation } from '../hooks/useGaesupAnimation';
 import { GaesupWorldContext, GaesupWorldDispatchContext } from '../world/context';
 import { playActionsType, subscribeActionsType } from './type';
 
-// 공통 애니메이션 설정을 미리 메모이제이션
 const DEFAULT_ANIMATION_ATOMS = [
   {
     tag: 'walk',
@@ -56,9 +55,7 @@ export function subscribeActions({ type }: subscribeActionsType) {
   const { states } = worldContext;
   const { subscribeAll } = useGaesupAnimation({ type });
 
-  // 초기 애니메이션 등록 (최적화)
   useEffect(() => {
-    // 상태를 클로저로 바인딩하여 함수 생성 최적화
     const animationAtoms = DEFAULT_ANIMATION_ATOMS.map((atom) => ({
       ...atom,
       condition: () => atom.condition(states),
@@ -78,12 +75,10 @@ export default function playActions({
   const { mode, animationState, block } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
   const { notify, store } = useGaesupAnimation({ type });
-
   if (isActive) {
     currentAnimation = animationState?.[type]?.current;
   }
 
-  // 현재 애니메이션 상태를 계산하는 함수 메모이제이션
   const getAnimationState = useMemo(() => {
     return () => {
       if (block.animation) {
@@ -98,14 +93,11 @@ export default function playActions({
       return 'idle';
     };
   }, [block.animation, currentAnimation, animationState, type]);
-
   const play = (tag: keyof AnimationTagType) => {
-    // 같은 애니메이션이 재생 중이면 중복 상태 업데이트 방지
     if (animationState[type].current === tag) {
       return;
     }
-
-    animationState[type].current = tag;
+    animationState[type].current = tag as string;
     const currentAnimation = store[tag];
     if (currentAnimation?.action) {
       currentAnimation.action();

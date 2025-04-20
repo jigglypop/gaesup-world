@@ -4,7 +4,6 @@ import { dispatchType } from '../../utils/type';
 import { V3 } from '../../utils/vector';
 import { gaesupWorldContextType } from './type';
 
-// Split contexts for better performance
 export const ActiveStateContext = createContext<gaesupWorldContextType['activeState']>(null);
 export const ModeContext = createContext<gaesupWorldContextType['mode']>(null);
 export const UrlsContext = createContext<gaesupWorldContextType['urls']>(null);
@@ -17,14 +16,10 @@ export const ClickerContext = createContext<gaesupWorldContextType['clicker']>(n
 export const RideableContext = createContext<gaesupWorldContextType['rideable']>(null);
 export const SizesContext = createContext<gaesupWorldContextType['sizes']>(null);
 export const BlockContext = createContext<gaesupWorldContextType['block']>(null);
-
 // For backward compatibility
 export const GaesupWorldContext = createContext<Partial<gaesupWorldContextType>>(null);
-
-// Dispatch context for state updates
 export const GaesupWorldDispatchContext =
   createContext<dispatchType<Partial<gaesupWorldContextType>>>(null);
-
 // Default values
 export const gaesupWorldDefault: gaesupWorldContextType = {
   activeState: {

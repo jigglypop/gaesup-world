@@ -1,4 +1,3 @@
-// GamePad.tsx
 import { useContext } from 'react';
 import { GaesupWorldContext } from '../../world/context';
 import GamePadButton from './GamePadButton';

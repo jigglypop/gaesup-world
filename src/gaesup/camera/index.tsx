@@ -17,6 +17,13 @@ export default function Camera(prop: cameraPropType) {
   const tempRaycaster = useMemo(() => new THREE.Raycaster(), []);
   const tempVector = useMemo(() => new THREE.Vector3(), []); // 레이캐스트 타겟 객체 캐싱
   const raycastTargets = useRef<THREE.Object3D[]>([]);
+  // 이전 프레임의 위치를 저장해 이동 여부를 판단 (불필요한 레이캐스트 방지)
+  const prevActivePosRef = useRef<THREE.Vector3>(new THREE.Vector3());
+  const prevCameraPosRef = useRef<THREE.Vector3>(new THREE.Vector3());
+
+  // 이동량이 임계값 이상인지 확인하는 유틸
+  const hasMoved = (a: THREE.Vector3, b: THREE.Vector3, threshold = 0.01) =>
+    a.distanceToSquared(b) > threshold * threshold;
   // 레이캐스트 수행 함수 (최적화 버전)
   const performRaycast = (state) => {
     if (!worldContext.cameraOption || !worldContext.activeState) return;
@@ -62,6 +69,9 @@ export default function Camera(prop: cameraPropType) {
       const newPosition = worldContext.activeState.position
         .clone()
         .sub(direction.multiplyScalar(distanceToCollision * 0.9));
+      const currentPos = worldContext.cameraOption.position;
+      // 위치 변화가 미미하면 업데이트/디스패치 생략
+      if (!hasMoved(currentPos, newPosition, 0.01)) return;
       worldContext.cameraOption.position.copy(newPosition);
       dispatch({
         type: 'update',
@@ -81,8 +91,14 @@ export default function Camera(prop: cameraPropType) {
       } else if (worldContext.mode.control === 'normal') {
         normal(prop);
       }
-      // 레이캐스트 수행 (충돌 감지)
-      if (worldContext.cameraOption && worldContext.cameraOption.maxDistance) {
+      // 레이캐스트 수행 (충돌 감지) - 위치 변동이 있을 때만
+      const activeMoved = hasMoved(prevActivePosRef.current, worldContext.activeState.position);
+      const cameraMoved = hasMoved(prevCameraPosRef.current, worldContext.cameraOption.position);
+      if (
+        worldContext.cameraOption &&
+        worldContext.cameraOption.maxDistance &&
+        (activeMoved || cameraMoved)
+      ) {
         performRaycast(state);
       }
     }
@@ -94,6 +110,10 @@ export default function Camera(prop: cameraPropType) {
         worldContext.cameraOption,
       );
     }
+
+    // 현재 위치를 다음 프레임 비교를 위해 저장
+    prevActivePosRef.current.copy(worldContext.activeState.position);
+    prevCameraPosRef.current.copy(worldContext.cameraOption.position);
   });
 
   return null;

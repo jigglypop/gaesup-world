@@ -7,9 +7,10 @@ import { AirplaneInnerRef } from '../../inner/airplane';
 export function PassiveAirplane(props: passiveAirplanePropsType) {
   const { rigidBodyRef, outerGroupRef, innerGroupRef, colliderRef } = useGenericRefs();
   useFrame(() => {
+    if (!innerGroupRef.current && !rigidBodyRef.current) return;
+    const _euler = props.rotation.clone();
+    _euler.y = 0;
     if (innerGroupRef.current) {
-      const _euler = props.rotation.clone();
-      _euler.y = 0;
       innerGroupRef.current.setRotationFromQuaternion(
         quat()
           .setFromEuler(innerGroupRef.current.rotation.clone())

@@ -58,7 +58,6 @@ export const avatarStyles = {
   background: '#01fff7',
   boxShadow: '0 0 10px rgba(1,255,247,0.7)',
 };
-
 // 텍스트 스타일
 export const textStyles = {
   color: 'white',

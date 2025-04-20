@@ -1,45 +1,23 @@
 {
   "compilerOptions": {
-    "target": "ES6",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "strict": false,
     "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
     "allowImportingTsExtensions": true,
-    "module": "esnext",
+    "module": "ESNext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "declaration": true,
-    "outDir": "./dist",
-    "baseUrl": "./examples",
-    "paths": {
-      "@components/*": ["components/*"],
-      "@styles/*": ["styles/*"],
-      "@constants/*": ["constants/*"],
-      "@type/*": ["type/*"],
-      "@containers/*": ["containers/*"],
-      "@utils/*": ["utils/*"],
-      "@store/*": ["store/*"],
-      "@api/*": ["api/*"],
-      "@common/*": ["common/*"]
-    },
-    "types": ["vite-plugin-svgr/client"]
+    "types": ["jest", "node"]
   },
-  "include": [
-    "./src/**/*.tsx",
-    "./src/**/*.ts",
-    "./src/**/*.css",
-    "src",
-    "*.ts",
-    "*.tsx",
-    "examples",
-    "dist",
-    "*.json"
-  ]
+  "include": ["src", "tests"],
+  "exclude": ["node_modules"]
 }

@@ -5,6 +5,7 @@
 
 ![Gaesup World](https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/poster.png)
 
+Web 3D Character Controller and World Platform Library
 
 ## Language / 언어
 
@@ -96,6 +97,7 @@ In this example, the **GaesupWorld** component sets up the 3D environment, and t
 The **Character** component handles character movement, animation, and interactions within Gaesup World.
 
 - **Camera Types**:
+
   - **Normal**: Positioned parallel to the Z-axis from the character's location and not affected by rotation.
   - **Orbit**: Moves with the character and rotates according to the character's direction.
 
@@ -141,6 +143,7 @@ export default function App() {
 The **Vehicle** component manages vehicle movement, animation, and interactions within Gaesup World. Characters can board and control vehicles.
 
 - **Camera Types**:
+
   - **Orbit Control**: Moves with the character and rotates according to the character's direction.
 
 - **Controller Tools**:
@@ -199,6 +202,7 @@ export default function App() {
 The **Airplane** component manages airplane movement, animation, and interactions within Gaesup World. Characters can board and control airplanes.
 
 - **Camera Types**:
+
   - **Orbit Control**: Moves with the character and rotates according to the character's direction.
 
 - **Controller Tools**:
@@ -415,10 +419,7 @@ The **Passive** component defines objects that do not require interaction, such 
       >
         <Canvas>
           <Physics>
-            <Joystick
-              joystickStyle={joystickStyle}
-              joystickBallStyle={joystickBallStyle}
-            />
+            <Joystick joystickStyle={joystickStyle} joystickBallStyle={joystickBallStyle} />
             {/* Other components */}
           </Physics>
         </Canvas>
@@ -439,6 +440,7 @@ The **Passive** component defines objects that do not require interaction, such 
 - **Description**: Visually represents a keyboard controller interface, displaying each key and its associated action.
 
 - **Key Features**:
+
   - **Visualizing Keyboard Keys**: Displays all keyboard keys in an array format.
   - **State Animation**: Highlights active keys to provide user feedback.
   - **Custom Styling**: Customize keycaps' appearance using various style properties.
@@ -597,10 +599,7 @@ The **Passive** component defines objects that do not require interaction, such 
       >
         <Canvas>
           <Physics>
-            <GameBoy
-              gamePadStyle={gamePadStyle}
-              gamePadButtonStyle={gamePadButtonStyle}
-            />
+            <GameBoy gamePadStyle={gamePadStyle} gamePadButtonStyle={gamePadButtonStyle} />
             {/* Other components */}
           </Physics>
         </Canvas>
@@ -655,10 +654,7 @@ The **Passive** component defines objects that do not require interaction, such 
       >
         <Canvas>
           <Physics>
-            <GamePad
-              gamePadStyle={gamePadStyle}
-              gamePadButtonStyle={gamePadButtonStyle}
-            />
+            <GamePad gamePadStyle={gamePadStyle} gamePadButtonStyle={gamePadButtonStyle} />
             {/* Other components */}
           </Physics>
         </Canvas>
@@ -767,7 +763,7 @@ The **Passive** component defines objects that do not require interaction, such 
             <teleport
               text="Teleport"
               position={new THREE.Vector3(10, 0, 5)}
-              teleportStyle={{ backgroundColor: "blue", color: "white" }}
+              teleportStyle={{ backgroundColor: 'blue', color: 'white' }}
             />
             {/* Other components */}
           </Physics>
@@ -908,6 +904,7 @@ export default function App() {
 **Character** 컴포넌트는 Gaesup World 내에서 캐릭터의 이동, 애니메이션, 상호작용을 관리하는 핵심 컴포넌트입니다.
 
 - **카메라 타입**:
+
   - **Normal**: 캐릭터의 위치를 기준으로 Z축에 평행하게 배치되며, 캐릭터의 회전에 영향을 받지 않습니다.
   - **Orbit**: 캐릭터와 함께 움직이며 캐릭터의 방향에 따라 카메라가 회전합니다.
 
@@ -953,6 +950,7 @@ export default function App() {
 **Vehicle** 컴포넌트는 Gaesup World 내에서 차량의 이동, 애니메이션, 상호작용을 관리합니다. 캐릭터가 차량에 탑승할 수 있습니다.
 
 - **카메라 타입**:
+
   - **Orbit Control**: 캐릭터와 함께 움직이며 캐릭터의 방향에 따라 카메라가 회전합니다.
 
 - **컨트롤러 도구**:
@@ -1011,6 +1009,7 @@ export default function App() {
 **Airplane** 컴포넌트는 Gaesup World 내에서 비행기의 이동, 애니메이션, 상호작용을 관리합니다. 캐릭터가 비행기에 탑승할 수 있습니다.
 
 - **카메라 타입**:
+
   - **Orbit Control**: 캐릭터와 함께 움직이며 캐릭터의 방향에 따라 카메라가 회전합니다.
 
 - **컨트롤러 도구**:
@@ -1151,7 +1150,7 @@ export default function App() {
 
 **중요 사항**:
 
-- `objectkey`는 각 Rideable 컴포넌트마다 고유해야 합니다.
+- The `objectkey` must be unique for each Rideable component.
 - `objectType`은 `"vehicle"` 또는 `"airplane"`이어야 합니다.
 
 ##### Props 설명
@@ -1191,7 +1190,6 @@ export default function App() {
 #### Joystick
 
 - **설명**: 모바일 환경에서 조이스틱 입력을 시뮬레이션하는 컴포넌트입니다. 스크롤 블록 옵션을 사용하여 모바일 장치에서 위치 지터를 방지할 수 있습니다.
-  
 - **Props**:
 
   | Prop Name           | Type            | Required | Description              | Default Value |
@@ -1221,17 +1219,14 @@ export default function App() {
           characterUrl: 'https://your-s3-bucket/gaesupyee.glb',
         }}
         mode={{
-          controller: 'joystick', // 또는 'keyboard', 'gamepad' 등
+          controller: 'joystick', // 또는 'keyboard', 'gamepad', etc.
           scrollBlock: true, // 모바일 장치에서 위치 지터 방지
         }}
       >
         <Canvas>
           <Physics>
-            <Joystick
-              joystickStyle={joystickStyle}
-              joystickBallStyle={joystickBallStyle}
-            />
-            {/* 다른 컴포넌트 */}
+            <Joystick joystickStyle={joystickStyle} joystickBallStyle={joystickBallStyle} />
+            {/* Other components */}
           </Physics>
         </Canvas>
       </GaesupWorld>
@@ -1249,8 +1244,8 @@ export default function App() {
 #### KeyBoardTooltip
 
 - **설명**: 키보드 컨트롤러 인터페이스를 시각적으로 표현하는 컴포넌트로, 각 키의 동작을 시각적으로 표시합니다.
-  
 - **주요 기능**:
+
   - **키보드 키 시각화**: 모든 키보드 키를 배열 형식으로 시각화합니다.
   - **상태 애니메이션**: 현재 활성화된 키와 관련 동작을 다르게 표시하여 사용자 피드백을 제공합니다.
   - **커스터마이징**: 키 캡의 외관을 커스터마이징할 수 있는 다양한 스타일 속성을 제공합니다.
@@ -1265,16 +1260,16 @@ export default function App() {
 
   export default function App() {
     const keyBoardToolTipInnerStyle = {
-      /* 내부 툴팁 스타일 정의 */
+      /* Define inner tooltip styles */
     };
     const selectedKeyCapStyle = {
-      /* 선택된 키 스타일 정의 */
+      /* Define styles for selected keycaps */
     };
     const notSelectedkeyCapStyle = {
-      /* 선택되지 않은 키 스타일 정의 */
+      /* Define styles for non-selected keycaps */
     };
     const keyCapStyle = {
-      /* 키 캡 기본 스타일 정의 */
+      /* Define default keycap styles */
     };
 
     return (
@@ -1283,7 +1278,7 @@ export default function App() {
           characterUrl: 'https://your-s3-bucket/gaesupyee.glb',
         }}
         mode={{
-          controller: 'keyboard', // 컨트롤러 모드를 'keyboard'로 설정
+          controller: 'keyboard', // Ensure controller mode is set to 'keyboard'
         }}
       >
         <Canvas>
@@ -1294,7 +1289,7 @@ export default function App() {
               notSelectedkeyCapStyle={notSelectedkeyCapStyle}
               keyCapStyle={keyCapStyle}
             />
-            {/* 다른 컴포넌트 */}
+            {/* Other components */}
           </Physics>
         </Canvas>
       </GaesupWorld>
@@ -1307,7 +1302,6 @@ export default function App() {
 #### MiniMap
 
 - **설명**: 사용자의 위치와 주변 환경을 3D 세계 내에 작은 지도 형태로 표시하는 컴포넌트입니다.
-  
 - **Props**:
 
   | Prop Name        | Type            | Required | Description                            | Default Value |
@@ -1331,12 +1325,12 @@ export default function App() {
 
   export default function App() {
     const minimapStyle = {
-      /* 미니맵 스타일 정의 */
+      /* Define MiniMap container styles */
     };
     const innerStyle = {
-      /* 내부 스타일 정의 */
+      /* Define inner MiniMap styles */
     };
-    // 기타 스타일 속성 정의
+    // Define other style properties as needed
 
     return (
       <GaesupWorld
@@ -1352,9 +1346,9 @@ export default function App() {
             <MiniMap
               minimapStyle={minimapStyle}
               innerStyle={innerStyle}
-              // 기타 스타일 속성 전달
+              // Pass other style properties as needed
             />
-            {/* 다른 컴포넌트 */}
+            {/* Other components */}
           </Physics>
         </Canvas>
       </GaesupWorld>
@@ -1373,7 +1367,6 @@ export default function App() {
 #### GameBoy
 
 - **설명**: 모바일 환경을 위한 GameBoy 스타일의 방향 버튼을 모방한 컨트롤러 인터페이스입니다.
-  
 - **Props**:
 
   | Prop Name            | Type            | Required | Description               | Default Value |
@@ -1392,10 +1385,10 @@ export default function App() {
 
   export default function App() {
     const gamePadStyle = {
-      /* GamePad 컨테이너 스타일 정의 */
+      /* Define GamePad container styles */
     };
     const gamePadButtonStyle = {
-      /* GamePad 버튼 스타일 정의 */
+      /* Define GamePad button styles */
     };
 
     return (
@@ -1404,16 +1397,13 @@ export default function App() {
           characterUrl: 'https://your-s3-bucket/gaesupyee.glb',
         }}
         mode={{
-          controller: 'gameboy', // 컨트롤러 모드를 'gameboy'로 설정
+          controller: 'gameboy', // Ensure controller mode is set to 'gameboy'
         }}
       >
         <Canvas>
           <Physics>
-            <GameBoy
-              gamePadStyle={gamePadStyle}
-              gamePadButtonStyle={gamePadButtonStyle}
-            />
-            {/* 다른 컴포넌트 */}
+            <GameBoy gamePadStyle={gamePadStyle} gamePadButtonStyle={gamePadButtonStyle} />
+            {/* Other components */}
           </Physics>
         </Canvas>
       </GaesupWorld>
@@ -1431,7 +1421,6 @@ export default function App() {
 #### GamePad
 
 - **설명**: 다양한 컨트롤러 모드를 지원하는 커스터마이징 가능한 컨트롤러 인터페이스입니다. 조이스틱, GameBoy 등 다양한 입력 시나리오에 유연하게 대응할 수 있습니다.
-  
 - **Props**:
 
   | Prop Name            | Type            | Required | Description               | Default Value |
@@ -1450,10 +1439,10 @@ export default function App() {
 
   export default function App() {
     const gamePadStyle = {
-      /* GamePad 컨테이너 스타일 정의 */
+      /* Define GamePad container styles */
     };
     const gamePadButtonStyle = {
-      /* GamePad 버튼 스타일 정의 */
+      /* Define GamePad button styles */
     };
 
     return (
@@ -1462,16 +1451,13 @@ export default function App() {
           characterUrl: 'https://your-s3-bucket/gaesupyee.glb',
         }}
         mode={{
-          controller: 'gamepad', // 또는 'joystick', 'gameboy' 등
+          controller: 'gamepad', // or 'joystick', 'gameboy', etc.
         }}
       >
         <Canvas>
           <Physics>
-            <GamePad
-              gamePadStyle={gamePadStyle}
-              gamePadButtonStyle={gamePadButtonStyle}
-            />
-            {/* 다른 컴포넌트 */}
+            <GamePad gamePadStyle={gamePadStyle} gamePadButtonStyle={gamePadButtonStyle} />
+            {/* Other components */}
           </Physics>
         </Canvas>
       </GaesupWorld>
@@ -1489,18 +1475,17 @@ export default function App() {
 #### ZoomButton
 
 - **설명**: 카메라를 특정 위치로 이동시키고 줌을 제어하는 버튼 컴포넌트입니다. 주로 특정 타겟으로의 줌인/줌아웃에 사용됩니다.
-  
 - **Props**:
 
-  | Prop Name         | Type            | Required | Description                           | Default Value |
-  | ----------------- | --------------- | -------- | ------------------------------------- | ------------- |
-  | `position`        | THREE.Vector3   | Required | 카메라가 이동할 목표 위치             | None          |
-  | `children`        | React.ReactNode | Optional | 버튼 내에 렌더링할 React 노드         | `undefined`   |
-  | `target`          | THREE.Vector3   | Optional | 카메라가 바라볼 타겟 위치             | `undefined`   |
-  | `keepBlocking`    | boolean         | Optional | 카메라 이동 중 블로킹을 유지할지 여부 | `undefined`   |
-  | `zoomButtonStyle` | object (styles) | Optional | ZoomButton 컴포넌트의 스타일          | `undefined`   |
+  | Prop Name         | Type            | Required | Description                                                | Default Value |
+  | ----------------- | --------------- | -------- | ---------------------------------------------------------- | ------------- |
+  | `position`        | THREE.Vector3   | Required | Target position for the camera to move to                  | None          |
+  | `children`        | React.ReactNode | Optional | React nodes to render within the button                    | `undefined`   |
+  | `target`          | THREE.Vector3   | Optional | Target position for the camera to look at                  | `undefined`   |
+  | `keepBlocking`    | boolean         | Optional | Determines whether to keep blocking while camera is moving | `undefined`   |
+  | `zoomButtonStyle` | object (styles) | Optional | Style for the ZoomButton component                         | `undefined`   |
 
-- **사용 예제**:
+- **Usage Example**:
 
   ```tsx
   import React from 'react';
@@ -1528,7 +1513,7 @@ export default function App() {
             >
               Zoom In
             </ZoomButton>
-            {/* 다른 컴포넌트 */}
+            {/* Other components */}
           </Physics>
         </Canvas>
       </GaesupWorld>
@@ -1546,14 +1531,13 @@ export default function App() {
 #### teleport
 
 - **설명**: 클릭 가능한 포탈을 통해 사용자를 지정된 위치로 텔레포트할 수 있는 컴포넌트입니다. 인터랙티브한 텔레포테이션 포인트를 생성하는 데 사용됩니다.
-  
 - **Props**:
 
-  | Prop Name       | Type          | Required | Description                                    | Default Value |
-  | --------------- | ------------- | -------- | ---------------------------------------------- | ------------- |
-  | `text`          | string        | Optional | 포탈에 표시할 텍스트                           | `undefined`   |
-  | `position`      | THREE.Vector3 | Required | 텔레포트할 목표 위치                           | None          |
-  | `teleportStyle` | CSSProperties | Optional | 포탈의 외관을 커스터마이징하기 위한 CSS 스타일 | `undefined`   |
+  | Prop Name       | Type          | Required | Description                                                 | Default Value |
+  | --------------- | ------------- | -------- | ----------------------------------------------------------- | ------------- |
+  | `text`          | string        | Optional | The text to display on the portal.                          | `undefined`   |
+  | `position`      | THREE.Vector3 | Required | The target position to teleport to using a `THREE.Vector3`. | None          |
+  | `teleportStyle` | CSSProperties | Optional | CSS styles for customizing the appearance of the portal.    | `undefined`   |
 
 - **사용 예제**:
 
@@ -1579,9 +1563,9 @@ export default function App() {
             <teleport
               text="Teleport"
               position={new THREE.Vector3(10, 0, 5)}
-              teleportStyle={{ backgroundColor: "blue", color: "white" }}
+              teleportStyle={{ backgroundColor: 'blue', color: 'white' }}
             />
-            {/* 다른 컴포넌트 */}
+            {/* Other components */}
           </Physics>
         </Canvas>
       </GaesupWorld>
@@ -1596,43 +1580,41 @@ export default function App() {
 
 ---
 
-## 기여 방법
+## 테스트 실행
 
-**Gaesup World**에 기여하고 싶으신가요? 다음 단계를 따라주세요:
+이 프로젝트는 Jest 및 Testing Library를 사용하여 테스트를 실행합니다.
+Three.js 및 React Three Fiber 컴포넌트를 테스트하기 위한 환경이 구성되어 있습니다.
 
-1. **프로젝트 포크(Fork)**: GitHub에서 이 저장소를 포크하세요.
-2. **개발 브랜치로 전환**: `dev` 브랜치로 이동합니다.
+```bash
+# 모든 테스트 실행
+yarn test
 
-   ```bash
-   git checkout dev
-   ```
+# 감시 모드로 테스트 실행
+yarn test:watch
 
-3. **변경 사항 커밋**: 변경한 내용을 커밋합니다.
+# 코드 커버리지 리포트 생성
+yarn test:coverage
+```
 
-   ```bash
-   git commit -m 'Add some AmazingFeature'
-   ```
+## 테스트 구조
 
-4. **브랜치에 푸시**: 변경한 브랜치를 원격 저장소에 푸시합니다.
+- `tests/unit`: 개별 컴포넌트 단위 테스트
+- `tests/integration`: 컴포넌트 간 상호작용 테스트
+- `tests/utils`: 테스트 헬퍼 및 유틸리티 함수
 
-   ```bash
-   git push origin dev
-   ```
+## 개발
 
-5. **풀 리퀘스트 생성**: GitHub에서 풀 리퀘스트를 생성하여 변경 사항을 제출합니다.
+```bash
+# 개발 서버 실행
+yarn dev
 
----
+# 빌드
+yarn build
 
-## 라이선스
+# 라이브러리 준비
+yarn prepare
+```
 
-이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 [LICENSE](./LICENSE)를 참고하세요.
+## 라이센스
 
----
-
-## 추가 정보
-
-**Gaesup World**는 지속적으로 업데이트되고 있으며, 사용자 피드백을 바탕으로 기능이 개선되고 있습니다. 더 자세한 정보나 도움이 필요하시다면 [GitHub 이슈 트래커](https://github.com/jigglypop/../../../src/issues)를 통해 문의해 주세요.
-
----
-
-**Gaesup World**와 함께 몰입감 있는 웹 3D 환경을 구축해 보세요!
+MIT

@@ -2,7 +2,7 @@ import { RootState } from '@react-three/fiber';
 
 import { Collider } from '@dimforge/rapier3d-compat';
 import { RapierRigidBody } from '@react-three/rapier';
-import { RefObject } from 'react';
+import { RefObject, ReactNode } from 'react';
 import * as THREE from 'three';
 import { gaesupControllerType } from '../controller/context/type';
 import { controllerOptionsType, groundRayType, refsType } from '../controller/type';
@@ -43,6 +43,7 @@ export type cameraPropType = {
   worldContext: Partial<gaesupWorldContextType>;
   controllerContext: gaesupControllerType;
   controllerOptions: controllerOptionsType;
+  children?: ReactNode;
 };
 
 // calculation

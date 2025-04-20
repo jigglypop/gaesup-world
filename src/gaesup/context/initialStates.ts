@@ -1,0 +1,125 @@
+import * as THREE from 'three';
+import { GaesupWorldContextType, GaesupControllerType } from '../types';
+
+export const worldInitialState: GaesupWorldContextType = {
+  activeState: {
+    position: new THREE.Vector3(0, 0, 0),
+    impulse: new THREE.Vector3(0, 0, 0),
+    velocity: new THREE.Vector3(0, 0, 0),
+    acceleration: new THREE.Vector3(0, 0, 0),
+    quat: new THREE.Quaternion(),
+    euler: new THREE.Euler(),
+    rotation: new THREE.Euler(),
+    direction: new THREE.Vector3(0, 0, 1),
+    dir: new THREE.Vector3(0, 0, 1),
+  },
+  mode: {
+    type: 'character',
+    controller: 'normal',
+    control: 'normal',
+    isButton: false,
+  },
+  urls: {
+    characterUrl: '',
+    vehicleUrl: '',
+    airplaneUrl: '',
+    wheelUrl: '',
+    ridingUrl: '',
+  },
+  states: {
+    isMoving: false,
+    isNotMoving: true,
+    isOnTheGround: false,
+    isOnMoving: false,
+    isRotated: false,
+    isRunning: false,
+    isJumping: false,
+    enableRiding: false,
+    isRiderOn: false,
+    isLanding: false,
+    isFalling: false,
+    isRiding: false,
+    isPush: {},
+  },
+  minimap: {
+    props: {},
+  },
+  control: {},
+  refs: null,
+  animationState: {},
+  cameraOption: {
+    offset: new THREE.Vector3(0, 0, 0),
+    maxDistance: 5,
+    distance: 5,
+    XDistance: 0,
+    YDistance: 0,
+    ZDistance: 5,
+    zoom: 1,
+    target: new THREE.Vector3(0, 0, 0),
+    position: new THREE.Vector3(0, 0, 5),
+    focus: true,
+  },
+  clickerOption: {
+    autoStart: false,
+    isRun: false,
+    throttle: 0,
+    track: false,
+    loop: false,
+    queue: [],
+    line: false,
+  },
+  clicker: {
+    point: new THREE.Vector3(0, 0, 0),
+    angle: 0,
+    isOn: false,
+    isRun: false,
+  },
+  rideable: {},
+  sizes: {},
+  block: {
+    camera: false,
+    control: false,
+    animation: false,
+    scroll: false,
+  },
+};
+
+// 컨트롤러 상태 초기값
+export const controllerInitialState: GaesupControllerType = {
+  airplane: {
+    angleDelta: new THREE.Vector3(0, 0, 0),
+    maxAngle: new THREE.Vector3(0.5, 0.5, 0.5),
+    buoyancy: 1,
+    maxSpeed: 50,
+    accelRatio: 1,
+    brakeRatio: 1,
+    linearDamping: 0.5,
+  },
+  vehicle: {
+    maxSpeed: 20,
+    accelRatio: 1,
+    brakeRatio: 1,
+    wheelOffset: 0.055,
+    linearDamping: 0.5,
+  },
+  character: {
+    jumpSpeed: 7,
+    turnSpeed: 10,
+    walkSpeed: 2.5,
+    runSpeed: 5,
+    linearDamping: 0.1,
+  },
+  callbacks: {},
+  refs: {
+    colliderRef: undefined,
+    rigidBodyRef: undefined,
+    outerGroupRef: undefined,
+    innerGroupRef: undefined,
+  },
+  controllerOptions: {
+    lerp: {
+      cameraTurn: 0.1,
+      cameraPosition: 0.1,
+    },
+  },
+};

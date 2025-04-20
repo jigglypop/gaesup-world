@@ -6,27 +6,18 @@ import {
   ActiveStateType,
   CameraOptionType,
 } from '../types';
-
-// 초기 상태
 import { worldInitialState } from './initialStates';
 import { controllerInitialState } from './initialStates';
-
-// 리듀서
 import { worldReducer } from './reducers';
 import { controllerReducer } from './reducers';
 
-// --- 컨텍스트 정의 ---
-// 1. 세분화된 컨텍스트 (선택적 구독 지원)
 export const ActiveStateContext = createContext<ActiveStateType>(null);
 export const CameraContext = createContext<CameraOptionType>(null);
 export const WorldContext = createContext<GaesupWorldContextType>(null);
 export const ControllerContext = createContext<GaesupControllerType>(null);
-
-// 2. 디스패치 컨텍스트 (별도 분리)
 export const WorldDispatchContext = createContext<DispatchType<GaesupWorldContextType>>(null);
 export const ControllerDispatchContext = createContext<DispatchType<GaesupControllerType>>(null);
 
-// --- 커스텀 훅 ---
 export const useActiveState = () => useContext(ActiveStateContext);
 export const useCamera = () => useContext(CameraContext);
 export const useWorldState = () => useContext(WorldContext);
@@ -95,7 +86,6 @@ export const GaesupProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 };
 
-// 레거시 지원을 위한 별칭 (기존 코드와 호환성 유지)
 export const GaesupWorldContext = WorldContext;
 export const GaesupWorldDispatchContext = WorldDispatchContext;
 export const GaesupControllerContext = ControllerContext;

@@ -6,7 +6,7 @@ import {
   RigidBody,
   useRevoluteJoint,
 } from '@react-three/rapier';
-import { RefObject, createRef, useContext, useRef } from 'react';
+import { RefObject, createRef, useContext, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
 import { GaesupWorldContext } from '../../../world/context';
@@ -17,22 +17,22 @@ const WheelJoint = ({
   bodyAnchor,
   wheelAnchor,
   rotationAxis,
+  onJointCreated,
 }: {
   body: RefObject<RapierRigidBody>;
   wheel: RefObject<RapierRigidBody>;
   bodyAnchor: [number, number, number];
   wheelAnchor: [number, number, number];
   rotationAxis: [number, number, number];
+  onJointCreated: (jointRef: RefObject<any>) => void;
 }) => {
   const joint = useRevoluteJoint(body, wheel, [bodyAnchor, wheelAnchor, rotationAxis]);
-  const { activeState } = useContext(GaesupWorldContext);
-  useFrame(() => {
-    if (joint.current) {
-      joint.current.configureMotorPosition(activeState.position.length(), 0.8, 0);
-    }
-  });
+  useEffect(() => {
+    if (onJointCreated) onJointCreated(joint);
+  }, [joint, onJointCreated]);
   return null;
 };
+
 export function WheelsRef({
   vehicleSize,
   rigidBodyRef,
@@ -45,6 +45,7 @@ export function WheelsRef({
   const { size: wheelSize } = useGltfAndSize({
     url: wheelUrl,
   });
+  const { activeState } = useContext(GaesupWorldContext);
   const X = (vehicleSize.x - wheelSize.x) / 2;
   const Z = (vehicleSize.z - 2 * wheelSize.z) / 2;
   const wheelPositions: [number, number, number][] = [
@@ -54,6 +55,22 @@ export function WheelsRef({
     [X, 0, -Z],
   ];
   const wheelRefs = useRef(wheelPositions.map(() => createRef<RapierRigidBody>()));
+  const jointRefs = useRef<Array<ReturnType<typeof useRevoluteJoint>>>(
+    Array(wheelPositions.length).fill(null),
+  );
+
+  // 모든 휠 조인트를 한번에 업데이트 (useFrame 병합)
+  useFrame(() => {
+    if (!activeState?.position) return;
+    const posLen = activeState.position?.length && activeState.position.length();
+    if (!Number.isFinite(posLen)) return;
+    jointRefs.current.forEach((jointRef) => {
+      if (jointRef?.current && typeof jointRef.current.configureMotorPosition === 'function') {
+        jointRef.current.configureMotorPosition(posLen, 0.8, 0);
+      }
+    });
+  });
+
   return (
     <>
       {wheelRefs &&
@@ -103,6 +120,9 @@ export function WheelsRef({
               bodyAnchor={wheelPosition}
               wheelAnchor={[0, 0, 0]}
               rotationAxis={[1, 0, 0]}
+              onJointCreated={(joint) => {
+                jointRefs.current[index] = joint;
+              }}
             />
           );
         })}

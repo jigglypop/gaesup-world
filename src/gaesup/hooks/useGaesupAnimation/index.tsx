@@ -5,16 +5,11 @@ import { animationAtomType } from '../../world/context/type';
 export function useGaesupAnimation({ type }: { type: 'character' | 'vehicle' | 'airplane' }) {
   const { animationState } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
-
-  // Memoize current animation state
   const currentTypeAnimState = useMemo(() => {
     return animationState[type] || { current: 'idle', default: 'idle', store: {} };
   }, [animationState, type]);
-
-  // Memoize store to prevent unnecessary recalculations
   const store = useMemo(() => currentTypeAnimState.store, [currentTypeAnimState.store]);
 
-  // Memoize update function
   const updateAnimationState = useCallback(() => {
     dispatch({
       type: 'update',
@@ -24,7 +19,6 @@ export function useGaesupAnimation({ type }: { type: 'character' | 'vehicle' | '
     });
   }, [dispatch, animationState]);
 
-  // Memoize animation tag validation
   const getAnimationTag = useCallback(
     (tag: string): { name: string; isValid: boolean } => {
       const animation = store[tag];
@@ -39,7 +33,6 @@ export function useGaesupAnimation({ type }: { type: 'character' | 'vehicle' | '
     [store, currentTypeAnimState.default],
   );
 
-  // Memoize subscribe function
   const subscribe = useCallback(
     (props: animationAtomType) => {
       if (!store[props.tag]) {

@@ -1,8 +1,5 @@
-import { useContext } from "react";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
+import { useContext } from 'react';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
 
 export function useZoom() {
   const { cameraOption } = useContext(GaesupWorldContext);
@@ -11,7 +8,7 @@ export function useZoom() {
   const zoom = (zoom: number) => {
     cameraOption.zoom = zoom;
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         cameraOption: cameraOption,
       },

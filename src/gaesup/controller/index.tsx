@@ -34,7 +34,7 @@ export function GaesupControllerInner(props: controllerType) {
       ...gaesupControllerDefault.callbacks,
       onReady: props.onReady,
       onFrame: props.onFrame,
-      onDestory: props.onDestory,
+      onDestroy: props.onDestroy,
       onAnimate: props.onAnimate,
     },
     refs: { colliderRef, rigidBodyRef, outerGroupRef, innerGroupRef, characterInnerRef },

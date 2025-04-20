@@ -1,15 +1,16 @@
 import { GaesupWorldContextType, GaesupControllerType } from '../types';
 
 // 깊은 복사 방지를 위한 헬퍼 (성능 최적화)
-const shallowMerge = (state, payload) => {
-  const result = { ...state };
+const shallowMerge = <T extends Record<string, any>>(state: T, payload: Partial<T>): T => {
+  const result = { ...state } as T;
 
   Object.keys(payload).forEach((key) => {
+    const k = key as keyof T;
     // 내부 객체 처리
-    if (typeof payload[key] === 'object' && payload[key] !== null && !Array.isArray(payload[key])) {
-      result[key] = { ...state[key], ...payload[key] };
+    if (typeof payload[k] === 'object' && payload[k] !== null && !Array.isArray(payload[k])) {
+      result[k] = { ...state[k], ...payload[k] } as T[keyof T];
     } else {
-      result[key] = payload[key];
+      result[k] = payload[k] as T[keyof T];
     }
   });
 

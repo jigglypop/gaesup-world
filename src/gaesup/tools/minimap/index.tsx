@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useRef } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { GaesupWorldContext } from '../../world/context';
 import { MinimapProps } from './type';
 import {
@@ -29,10 +29,13 @@ export function MiniMap({
   scaleStyle,
   directionStyle,
   plusMinusStyle,
+  onRotationChange,
 }: MinimapProps) {
   const { minimap, activeState, mode } = useContext(GaesupWorldContext);
   const [scale, setScale] = React.useState(initialScale);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [rotationAngle, setRotationAngle] = useState(0);
 
   const upscale = useCallback(() => {
     if (blockScale) return;
@@ -58,6 +61,46 @@ export function MiniMap({
     return (activeState.euler.y * 180) / Math.PI + 180;
   }, [blockRotate, mode.control, activeState.euler.y]);
 
+  // 클릭 후 회전 기능을 위한 핸들러
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (blockRotate) return;
+    setIsDragging(true);
+  }, [blockRotate]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isDragging || blockRotate) return;
+      
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      // 마우스 위치와 중심점의 차이로 각도 계산
+      const dx = e.clientX - centerX;
+      const dy = e.clientY - centerY;
+      const angle = Math.atan2(dy, dx);
+      
+      setRotationAngle(angle);
+      
+      // 회전 변경 콜백 호출
+      if (onRotationChange) {
+        onRotationChange(angle);
+      }
+    },
+    [isDragging, blockRotate, onRotationChange],
+  );
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !activeState?.position || !minimap?.props) return;
@@ -78,8 +121,12 @@ export function MiniMap({
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
     ctx.fillRect(0, 0, MINIMAP_SIZE_PX, MINIMAP_SIZE_PX);
 
-    // Setup rotation
-    const rotation = getRotation();
+    // Setup rotation - 드래그 회전 값 적용
+    let rotation = getRotation();
+    if (isDragging) {
+      rotation = (rotationAngle * 180) / Math.PI;
+    }
+    
     ctx.translate(MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2);
     ctx.rotate((rotation * Math.PI) / 180);
     ctx.translate(-MINIMAP_SIZE_PX / 2, -MINIMAP_SIZE_PX / 2);
@@ -106,10 +153,8 @@ export function MiniMap({
         ctx.fillText(text, 0, 0);
         ctx.restore();
       });
-
       ctx.restore();
     };
-
     drawDirections();
 
     // Draw minimap objects
@@ -171,6 +216,8 @@ export function MiniMap({
     textStyle,
     avatarStyle,
     directionStyle,
+    isDragging,
+    rotationAngle,
   ]);
 
   return (
@@ -182,8 +229,13 @@ export function MiniMap({
         style={{
           ...baseStyles.minimap,
           ...minimapStyle,
+          cursor: blockRotate ? 'default' : 'pointer',
         }}
         onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        onMouseMove={handleMouseMove}
       />
       {!blockScaleControl && (
         <div
@@ -198,7 +250,7 @@ export function MiniMap({
               cursor: blockScale ? 'default' : 'pointer',
               ...plusMinusStyle,
             }}
-            onClick={downscale}
+            onClick={upscale}
           >
             +
           </div>
@@ -209,7 +261,7 @@ export function MiniMap({
               cursor: blockScale ? 'default' : 'pointer',
               ...plusMinusStyle,
             }}
-            onClick={upscale}
+            onClick={downscale}
           >
             -
           </div>

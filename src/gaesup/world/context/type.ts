@@ -1,12 +1,16 @@
 import { CSSProperties } from 'react';
 import { actionsType, refsType } from '../../controller/type';
-
 import { RootState } from '@react-three/fiber';
 import * as THREE from 'three';
 import { rideableType } from '../../hooks/useRideable/type';
 import { minimapInnerType } from '../../tools/minimap/type';
-
 import { dispatchType } from '../../utils/type';
+
+export type ActionBase =
+  | { type: 'init'; payload?: Partial<gaesupWorldContextType> }
+  | { type: 'update'; payload?: Partial<gaesupWorldContextType> };
+
+export type ActionType = ActionBase | { type: 'batch'; payload: ActionBase[] };
 
 // camera option
 export type gaesupCameraOptionDebugType = {
