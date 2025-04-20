@@ -79,9 +79,7 @@ export const useRotation = () => {
         },
       });
     }
-    
-    // 디버그 정보
-    console.log(`회전 적용: ${angle}, Normal 모드: ${isNormalMode}`);
+
   }, [dispatch, activeState, mode, cameraOption, isNormalMode]);
 
   // 회전 상태 업데이트

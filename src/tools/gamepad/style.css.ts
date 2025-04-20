@@ -16,17 +16,6 @@ export const padButton = style([
     fontSize: '1rem',
     margin: '0.5rem',
     borderRadius: '50%',
-    selectors: {
-      '&::after': {
-        content: '""',
-        position: 'absolute',
-        width: '4rem',
-        height: '4rem',
-        borderRadius: '50%',
-        background: 'rgba(0, 0, 0, 0.2)',
-        zIndex: 100000,
-      },
-    },
   },
 ]);
 

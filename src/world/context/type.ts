@@ -64,6 +64,7 @@ export type statesType = {
   isLanding: boolean;
   isFalling: boolean;
   isRiding: boolean;
+  _jumpCounter?: number;
 };
 
 export type urlsType = {

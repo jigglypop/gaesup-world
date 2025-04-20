@@ -85,11 +85,9 @@ export function JumpingCharacter({ position = [0, 2, 0], color = '#44ccff' }) {
     };
   }, [isJumping]);
   
-  // 애니메이션 및 움직임 처리
   useFrame((state, delta) => {
     if (!ref.current) return;
     const pos = positionRef.current;
-
     if (keys.jump && !isJumping) {
       setIsJumping(true);
       jumpTimeRef.current = 0;
@@ -105,35 +103,25 @@ export function JumpingCharacter({ position = [0, 2, 0], color = '#44ccff' }) {
         ref.current.position.y = pos.y;
       }
     }
-    
-    // 이동 처리
     let moveX = 0;
     let moveZ = 0;
-    
     if (keys.forward) moveZ -= moveSpeed;
     if (keys.backward) moveZ += moveSpeed;
     if (keys.left) moveX -= moveSpeed;
     if (keys.right) moveX += moveSpeed;
-    
-    // 대각선 움직임 정규화
     if (moveX !== 0 && moveZ !== 0) {
-      moveX *= 0.7071; // 1/sqrt(2)
+      moveX *= 0.7071; 
       moveZ *= 0.7071;
     }
-    
-    // 위치 업데이트
     positionRef.current.x += moveX;
     positionRef.current.z += moveZ;
     ref.current.position.x = positionRef.current.x;
     ref.current.position.z = positionRef.current.z;
-    
-    // 움직이는 방향으로 회전
+
     if (moveX !== 0 || moveZ !== 0) {
       const angle = Math.atan2(moveX, moveZ);
       ref.current.rotation.y = angle;
     }
-    
-    // 점프 시 약간 돌기
     if (isJumping) {
       ref.current.rotation.x = Math.sin(jumpTimeRef.current * 5) * 0.2;
     } else {
