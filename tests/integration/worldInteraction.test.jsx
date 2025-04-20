@@ -5,10 +5,10 @@ import { render } from '@testing-library/react';
 import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import { createPointerEvent } from '../utils/testUtils';
-import { GaesupWorld } from '../../src/gaesup/world';
-import { GaesupComponent } from '../../src/gaesup/component';
-import { GaesupController } from '../../src/gaesup/controller';
-import { Clicker } from '../../src/gaesup/tools/clicker';
+import { GaesupWorld } from '../../src/world';
+import { GaesupComponent } from '../../src/component';
+import { GaesupController } from '../../src/controller';
+import { Clicker } from '../../src/tools/clicker';
 
 // 테스트 후 정리
 afterEach(cleanup);

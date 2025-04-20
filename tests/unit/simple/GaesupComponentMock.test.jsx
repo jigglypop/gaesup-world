@@ -37,8 +37,8 @@ jest.mock('../../../src/gaesup/world', () => ({
 }));
 
 // 테스트에 사용할 원본 모듈 가져오기 (모킹된 버전)
-import { GaesupComponent } from '../../../src/gaesup/component';
-import { GaesupWorld } from '../../../src/gaesup/world';
+import { GaesupComponent } from '../../../src/component';
+import { GaesupWorld } from '../../../src/world';
 
 // 테스트 유틸리티 - 벡터 생성
 const createVector3 = (x = 0, y = 0, z = 0) => ({ x, y, z });

@@ -191,6 +191,7 @@ const handleCharacterPhysics = (prop: CalcType) => {
     rigidBodyRef.current.setLinearDamping(states.isNotMoving ? linearDamping * 5 : linearDamping);
   }
   rigidBodyRef.current.setEnabledRotations(false, false, false, false);
+  rigidBodyRef.current.setGravityScale(1.0, false);
   innerGroupRef.current.quaternion.rotateTowards(
     quat().setFromEuler(activeState.euler),
     10 * delta,

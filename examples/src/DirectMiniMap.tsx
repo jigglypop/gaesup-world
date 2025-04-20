@@ -66,15 +66,12 @@ export default function DirectMiniMap({ onRotate, currentAngle: externalAngle, s
       ctx.restore();
     });
 
-    // 플레이어 표시 (중앙에 고정)
     ctx.fillStyle = '#01fff7';
     ctx.beginPath();
     ctx.arc(MINIMAP_SIZE / 2, MINIMAP_SIZE / 2, 8, 0, Math.PI * 2);
     ctx.fill();
-
     ctx.restore();
 
-    // 미니맵 테두리 그리기
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -82,23 +79,15 @@ export default function DirectMiniMap({ onRotate, currentAngle: externalAngle, s
     ctx.stroke();
   }, [currentAngle]);
 
-  // 회전 각도 계산 및 적용 - 외부로 전달
   const updateRotation = useCallback((angle: number) => {
-    // 로컬 상태 업데이트
     setLocalAngle(angle);
-    
-    // 부모 컴포넌트에 회전 각도 전달
     if (onRotate) {
       onRotate(angle);
     }
-    
-    console.log(`미니맵 회전: ${angle.toFixed(2)}`);
   }, [onRotate]);
 
-  // 마우스/터치 이벤트에서 회전 각도 계산
   const calcAngle = useCallback((clientX: number, clientY: number) => {
     if (!isDragging) return;
-    
     const canvas = canvasRef.current;
     if (!canvas) return;
     
@@ -106,11 +95,9 @@ export default function DirectMiniMap({ onRotate, currentAngle: externalAngle, s
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
     
-    // 마우스/터치 위치와 중심점 사이의 각도 계산
     const dx = clientX - centerX;
     const dy = clientY - centerY;
     const angle = Math.atan2(dy, dx) + Math.PI / 2; // 90도 조정 (북쪽이 위를 향하게)
-    
     updateRotation(angle);
   }, [isDragging, updateRotation]);
 
@@ -145,14 +132,10 @@ export default function DirectMiniMap({ onRotate, currentAngle: externalAngle, s
     }
   }, [externalAngle]);
 
-  // 컴포넌트 마운트 시 초기 각도 설정
   useEffect(() => {
-    // 초기 각도 설정 (북쪽을 향하도록)
     if (externalAngle === undefined) {
       updateRotation(Math.PI * 1.5);
     }
-    
-    // 글로벌 변수 설정 (외부에서 접근 가능하도록)
     window.miniMapControl = {
       rotate: updateRotation,
       getAngle: () => currentAngle

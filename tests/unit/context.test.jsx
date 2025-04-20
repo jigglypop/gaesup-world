@@ -9,7 +9,7 @@ import {
   useWorldDispatch,
   useController,
   useControllerDispatch,
-} from '../../src/gaesup/context';
+} from '../../src/context';
 
 // 테스트 후 정리
 afterEach(cleanup);

@@ -85,15 +85,10 @@ export function MiniMap({
       const rect = canvas.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
-      
-      // 마우스 위치와 중심점의 차이로 각도 계산
       const dx = e.clientX - centerX;
       const dy = e.clientY - centerY;
       const angle = Math.atan2(dy, dx);
-      
       setRotationAngle(angle);
-      
-      // 회전 변경 콜백 호출
       if (onRotationChange) {
         onRotationChange(angle);
       }
@@ -104,23 +99,15 @@ export function MiniMap({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !activeState?.position || !minimap?.props) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    // Clear and setup
     ctx.clearRect(0, 0, MINIMAP_SIZE_PX, MINIMAP_SIZE_PX);
-
-    // Apply circular clip
     ctx.save();
     ctx.beginPath();
     ctx.arc(MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2, 0, Math.PI * 2);
     ctx.clip();
-
-    // Draw background
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
     ctx.fillRect(0, 0, MINIMAP_SIZE_PX, MINIMAP_SIZE_PX);
-
     // Setup rotation - 드래그 회전 값 적용
     let rotation = getRotation();
     if (isDragging) {

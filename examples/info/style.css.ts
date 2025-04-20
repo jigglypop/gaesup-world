@@ -39,6 +39,17 @@ export const text = style([
   },
 ]);
 
+export const gamePad = style([
+  {
+    position: "fixed",
+    right: "0",
+    width: "5rem",
+    height: "100%",
+    background: "red",
+    zIndex: 10000000000000,
+  },
+]);
+
 globalStyle(`${text} p`, {
   fontWeight: "700",
   margin: 0,

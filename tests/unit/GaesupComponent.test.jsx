@@ -2,7 +2,7 @@ import React from 'react';
 import { cleanup } from '@testing-library/react';
 import * as THREE from 'three';
 import { renderWithGaesup } from '../utils/testUtils';
-import { GaesupComponent } from '../../src/gaesup/component';
+import { GaesupComponent } from '../../src/component';
 
 // 테스트 후 정리
 afterEach(cleanup);

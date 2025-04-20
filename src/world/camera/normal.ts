@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { cameraPropType } from '../../physics/type';
-import { activeStateType, cameraOptionType } from '../../world/context/type';
+import { activeStateType, cameraOptionType } from '../context/type';
 
 const tempVector = new THREE.Vector3();
 

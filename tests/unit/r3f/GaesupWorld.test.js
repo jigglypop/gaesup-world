@@ -1,6 +1,6 @@
 import { Physics } from '@react-three/rapier';
 import * as THREE from 'three';
-import { GaesupWorld } from '../../../src/gaesup/world';
+import { GaesupWorld } from '../../../src/world';
 import { renderWithR3f } from '../../utils/r3fTestUtils';
 
 // 간단한 자식 컴포넌트

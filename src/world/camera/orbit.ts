@@ -2,7 +2,7 @@ import { quat } from '@react-three/rapier';
 import * as THREE from 'three';
 import { cameraPropType } from '../../physics/type';
 import { V3 } from '../../utils/vector';
-import { activeStateType, cameraOptionType } from '../../world/context/type';
+import { activeStateType, cameraOptionType } from '../context/type';
 
 const tempVector = new THREE.Vector3();
 const tempQuat = new THREE.Quaternion();

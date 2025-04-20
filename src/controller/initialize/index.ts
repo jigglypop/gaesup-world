@@ -1,7 +1,7 @@
 import { vec3 } from "@react-three/rapier";
 import { useCallback, useContext, useEffect, useMemo } from "react";
 import * as THREE from "three";
-import { groundRayType, refsType } from "../../controller/type";
+import { groundRayType, refsType } from "../type";
 
 import { cameraRayType } from "../../camera/type";
 import { update } from "../../utils/context";

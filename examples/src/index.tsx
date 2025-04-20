@@ -1,51 +1,19 @@
 'use client';
 
-import { Environment, Trail } from '@react-three/drei';
+import { Environment } from '@react-three/drei';
 import { Physics, euler } from '@react-three/rapier';
-
 import { Canvas, useFrame } from '@react-three/fiber';
-
 import { Suspense, useRef, useState, useEffect } from 'react';
 import { FaMapMarkerAlt } from 'react-icons/fa';
-import * as THREE from 'three';
 import { GaesupController, GaesupWorld, GamePad, V3 } from '../../src';
-import { Clicker } from '../../src/gaesup/tools/clicker';
-import { InnerHtml } from '../../src/gaesup/utils/innerHtml';
+import { Clicker } from '../../src/tools/clicker';
+import { InnerHtml } from '../../src/utils/innerHtml';
 import Info from '../info';
 import Passive from '../passive';
 import Floor from './Floor';
 import * as style from './style.css';
-import CameraRotationTest from './CameraRotationTest';
 import DirectMiniMap from './DirectMiniMap';
-
-function Electron({ radius = 2.75, speed = 6, ...props }) {
-  const ref = useRef<THREE.Mesh>();
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime() * speed;
-    if (!ref.current) return;
-    ref.current.position.set(
-      Math.sin(t) * radius,
-      (Math.cos(t) * radius * Math.atan(t)) / Math.PI / 1.25,
-      0,
-    );
-  });
-  return (
-    <group {...props}>
-      <Trail
-        local
-        width={5}
-        length={6}
-        color={new THREE.Color(2, 1, 10)}
-        attenuation={(t) => t * t}
-      >
-        <mesh ref={ref}>
-          <sphereGeometry args={[0.25]} />
-          <meshBasicMaterial color={[10, 1, 10]} toneMapped={false} />
-        </mesh>
-      </Trail>
-    </group>
-  );
-}
+import DemoObjects from './DemoObjects';
 
 export const S3 = 'https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf';
 export const keyBoardMap = [
@@ -60,25 +28,31 @@ export const keyBoardMap = [
   { name: 'keyS', keys: ['KeyS'], label: 'STOP' },
 ];
 
+function CameraRotationTest() {
+  const rotationRef = useRef({ time: 0 });
+  
+  useFrame((state, delta) => {
+    rotationRef.current.time += delta * 0.2; 
+  });
+  
+  return null; 
+}
+
 export default function MainComponent() {
   const CHARACTER_URL = 'gltf/ally_body.glb';
   const AIRPLANE_URL = S3 + '/gaebird.glb';
   const VEHICLE_URL = S3 + '/gorani.glb';
-  
-  // 카메라 옵션 상태
+
   const [cameraOption, setCameraOption] = useState({
     XDistance: 20,
     YDistance: 20,
     ZDistance: 20,
   });
   
-  // 현재 회전 각도
-  const [rotationAngle, setRotationAngle] = useState(Math.PI * 1.5); // 북쪽 방향
-  
-  // 카메라 줌 레벨
+
+  const [rotationAngle, setRotationAngle] = useState(Math.PI * 1.5); 
   const [zoomLevel, setZoomLevel] = useState(1.0);
-  
-  // 줌인/줌아웃 상수
+
   const MIN_ZOOM = 0.5;
   const MAX_ZOOM = 2.5;
   const ZOOM_SPEED = 0.1;
@@ -93,17 +67,11 @@ export default function MainComponent() {
   
   // 카메라 위치 업데이트 함수
   const updateCameraPosition = (angle, zoom) => {
-    // 기본 거리
     const baseDistance = Math.sqrt(400 + 400); // 20^2 + 20^2의 제곱근
-    
-    // 줌 레벨 적용 (줌인하면 거리 감소, 줌아웃하면 거리 증가)
     const distance = baseDistance / zoom;
-    
-    // 각도 적용
     const xDistance = distance * Math.sin(angle);
     const zDistance = distance * Math.cos(angle);
-    
-    // 카메라 옵션 업데이트
+ 
     setCameraOption({
       XDistance: xDistance,
       YDistance: 20 / zoom, // Y 거리도 줌 레벨에 따라 조정
@@ -120,43 +88,26 @@ export default function MainComponent() {
   
   // 마우스 휠 핸들러
   const handleWheel = (e) => {
-    // 마우스 휠 방향에 따라 줌 레벨 조정
-    // deltaY < 0: 휠 업 (줌인)
-    // deltaY > 0: 휠 다운 (줌아웃)
     let newZoom = zoomLevel;
-    
     if (e.deltaY < 0) {
-      // 줌인 (더 가깝게)
       newZoom = Math.min(MAX_ZOOM, zoomLevel + ZOOM_SPEED);
     } else {
-      // 줌아웃 (더 멀게)
       newZoom = Math.max(MIN_ZOOM, zoomLevel - ZOOM_SPEED);
     }
-    
-    // 줌 레벨 업데이트
+
     setZoomLevel(newZoom);
-    
-    // 카메라 위치 업데이트
     updateCameraPosition(rotationAngle, newZoom);
-    
-    console.log(`줌 레벨: ${newZoom.toFixed(2)}`);
+  
   };
-  
-  // 카메라 자동 회전 테스트 활성화 여부
+
   const [enableCameraRotation, setEnableCameraRotation] = useState(false);
-  
-  // 컴포넌트 마운트 시 이벤트 리스너 등록
   useEffect(() => {
-    // 전역 이벤트 리스너로 마우스 휠 이벤트 감지
     window.addEventListener('wheel', handleWheel, { passive: false });
-    
-    // 컴포넌트 언마운트 시 이벤트 리스너 제거
     return () => {
       window.removeEventListener('wheel', handleWheel);
     };
   }, [zoomLevel, rotationAngle]); // 줌 레벨과 회전 각도가 변경될 때마다 핸들러 업데이트
   
-  // 버튼 스타일
   const buttonStyle = {
     position: 'absolute',
     top: '20px',
@@ -211,13 +162,13 @@ export default function MainComponent() {
         줌 레벨: {zoomLevel.toFixed(2)}x
       </div>
       
-      {/* 미니맵 컴포넌트 (GaesupWorld 외부) */}
       <div style={externalMiniMapStyle}>
         <DirectMiniMap 
           onRotate={handleRotation}
           currentAngle={rotationAngle}
         />
       </div>
+
       
       <GaesupWorld
         urls={{
@@ -232,6 +183,7 @@ export default function MainComponent() {
         }}
         debug={false}
         cameraOption={cameraOption}
+        keyMap={keyBoardMap}
       >
         <Canvas
           shadows
@@ -289,11 +241,12 @@ export default function MainComponent() {
                 }}
                 rigidBodyProps={{}}
                 parts={[{ url: 'gltf/ally_cloth_rabbit.glb', color: '#ffe0e0' }]}
-              ></GaesupController>
-              <Floor />
+              >
 
+
+              </GaesupController>
+              <Floor />
               <Passive />
-              <Electron />
               <Clicker
                 onMarker={
                   <group rotation={euler({ x: 0, y: Math.PI / 2, z: 0 })}>
@@ -308,21 +261,36 @@ export default function MainComponent() {
                   </InnerHtml>
                 }
               ></Clicker>
-              
-              {/* 카메라 회전 테스트 컴포넌트 */}
-              {enableCameraRotation && <CameraRotationTest />}
+              <DemoObjects />
             </Physics>
           </Suspense>
         </Canvas>
         <Info />
 
         <div className={style.footerUpper}>
-          <div className={style.gamePad}>
+          <div className={style.gamePad} style={{position: 'fixed', bottom: '20px', right: '20px', zIndex: 10000}}>
             <GamePad
               label={{
-                keyZ: 'GREET',
-                shift: 'SPLINT',
                 space: 'JUMP',
+                shift: 'SPLINT',
+                keyZ: 'GREET',
+                keyR: 'RIDE',
+                keyS: 'STOP'
+              }}
+              gamePadStyle={{
+                background: 'rgba(0,0,0,0.5)',
+                padding: '10px',
+                borderRadius: '10px',
+                border: '2px solid yellow',
+                zIndex: 10000
+              }}
+              gamePadButtonStyle={{
+                background: 'rgba(255,255,255,0.7)',
+                margin: '5px',
+                padding: '10px',
+                borderRadius: '5px',
+                color: 'black',
+                fontWeight: 'bold'
               }}
             />
           </div>

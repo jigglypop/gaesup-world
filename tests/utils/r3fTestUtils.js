@@ -1,7 +1,7 @@
 import { Physics } from '@react-three/rapier';
 import { create } from '@react-three/test-renderer';
 import * as React from 'react';
-import { GaesupProvider } from '../../src/gaesup/context';
+import { GaesupProvider } from '../../src/context';
 
 /**
  * 기본 r3f 컴포넌트 테스트 렌더러

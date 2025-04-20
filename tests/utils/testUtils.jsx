@@ -2,7 +2,7 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
-import { GaesupProvider } from '../../src/gaesup/context';
+import { GaesupProvider } from '../../src/context';
 
 // Three.js 렌더링 환경이 포함된 React 테스트 렌더러
 export function renderWithR3F(ui) {

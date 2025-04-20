@@ -16,7 +16,6 @@ export const ClickerContext = createContext<gaesupWorldContextType['clicker']>(n
 export const RideableContext = createContext<gaesupWorldContextType['rideable']>(null);
 export const SizesContext = createContext<gaesupWorldContextType['sizes']>(null);
 export const BlockContext = createContext<gaesupWorldContextType['block']>(null);
-// For backward compatibility
 export const GaesupWorldContext = createContext<Partial<gaesupWorldContextType>>(null);
 export const GaesupWorldDispatchContext =
   createContext<dispatchType<Partial<gaesupWorldContextType>>>(null);
@@ -75,7 +74,7 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     forward: false,
     backward: false,
     leftward: false,
-    rightward: false,
+    rightward: false
   },
   refs: null,
   animationState: {

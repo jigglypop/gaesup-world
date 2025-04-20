@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { render } from '@testing-library/react';
 import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
-import { GaesupWorld } from '../../src/gaesup/world';
+import { GaesupWorld } from '../../src/world';
 
 // 테스트 후 정리
 afterEach(cleanup);

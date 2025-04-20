@@ -2,7 +2,7 @@ import React from 'react';
 import { cleanup } from '@testing-library/react';
 import * as THREE from 'three';
 import { renderWithPhysics } from '../utils/testUtils';
-import { GroundRayType } from '../../src/gaesup/types';
+import { GroundRayType } from '../../src/types';
 
 // 테스트를 위한 간단한 물리 컴포넌트
 const TestPhysicsComponent = ({ groundRay, onRayUpdate }) => {

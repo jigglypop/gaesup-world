@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GaesupComponent } from '../../../src/gaesup/component';
+import { GaesupComponent } from '../../../src/component';
 import { renderWithGaesup } from '../../utils/r3fTestUtils';
 
 // jest.mock 사용하여 GLTF 로더 모킹

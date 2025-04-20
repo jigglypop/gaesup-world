@@ -1,7 +1,7 @@
 import { useMemo, useReducer } from 'react';
 
-import { gaesupWorldDefault } from '../../world/context';
-import { gaesupWorldReducer } from '../../world/context/reducer';
+import { gaesupWorldDefault } from '../context';
+import { gaesupWorldReducer } from '../context/reducer';
 import { gaesupWorldPropsType } from '../type';
 
 export default function initGaesupWorld(props: gaesupWorldPropsType) {

@@ -148,13 +148,11 @@ export const button = recipe({
 });
 
 export const gamePad = style([
-  fixed({
-    south_east: true,
-  }),
   {
+    position: "fixed",
     marginRight: "5rem",
     width: "12rem",
-    zIndex: 10000,
+    zIndex: 10000000,
   },
 ]);
 
