@@ -1,12 +1,9 @@
-import { useFrame } from "@react-three/fiber";
-import { useContext, useEffect } from "react";
-import { animationTagType } from "../controller/type";
-import { useGaesupAnimation } from "../hooks/useGaesupAnimation";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../world/context";
-import { playActionsType, subscribeActionsType } from "./type";
+import { useFrame } from '@react-three/fiber';
+import { useContext, useEffect } from 'react';
+import { animationTagType } from '../controller/type';
+import { useGaesupAnimation } from '../hooks/useGaesupAnimation';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../world/context';
+import { playActionsType, subscribeActionsType } from './type';
 
 export function subscribeActions({ type }: subscribeActionsType) {
   const { states } = useContext(GaesupWorldContext);
@@ -15,47 +12,47 @@ export function subscribeActions({ type }: subscribeActionsType) {
   useEffect(() => {
     subscribeAll([
       {
-        tag: "walk",
+        tag: 'walk',
         condition: () => !states.isRunning && states.isMoving,
         action: () => {},
-        animationName: "walk",
-        key: "walk",
+        animationName: 'walk',
+        key: 'walk',
       },
       {
-        tag: "run",
+        tag: 'run',
         condition: () => states.isRunning,
         action: () => {},
-        animationName: "run",
-        key: "run",
+        animationName: 'run',
+        key: 'run',
       },
       {
-        tag: "jump",
+        tag: 'jump',
         condition: () => states.isJumping,
         action: () => {},
-        animationName: "jump",
-        key: "jump",
+        animationName: 'jump',
+        key: 'jump',
       },
 
       {
-        tag: "ride",
-        condition: () => states.isPush["keyR"],
+        tag: 'ride',
+        condition: () => states.isPush['keyR'],
         action: () => {},
-        animationName: "ride",
-        key: "ride",
+        animationName: 'ride',
+        key: 'ride',
       },
       {
-        tag: "land",
+        tag: 'land',
         condition: () => states.isLanding,
         action: () => {},
-        animationName: "land",
-        key: "land",
+        animationName: 'land',
+        key: 'land',
       },
       {
-        tag: "fall",
+        tag: 'fall',
         condition: () => states.isFalling,
         action: () => {},
-        animationName: "fall",
-        key: "fall",
+        animationName: 'fall',
+        key: 'fall',
       },
     ]);
   }, []);
@@ -83,7 +80,7 @@ export default function playActions({
       currentAnimation.action();
     }
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         animationState: {
           ...animationState,
@@ -93,9 +90,9 @@ export default function playActions({
   };
 
   useEffect(() => {
-    let animation = "idle";
+    let animation = 'idle';
     if (block.animation) {
-      animation = "idle";
+      animation = 'idle';
     } else if (currentAnimation) {
       animation = currentAnimation;
     } else if (animationState[type].current) {

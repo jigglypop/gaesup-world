@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { Environment, Trail } from "@react-three/drei";
-import { Physics, euler } from "@react-three/rapier";
+import { Environment, Trail } from '@react-three/drei';
+import { Physics, euler } from '@react-three/rapier';
 
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame } from '@react-three/fiber';
 
-import { Suspense, useRef } from "react";
-import { FaMapMarkerAlt } from "react-icons/fa";
-import * as THREE from "three";
-import { GaesupController, GaesupWorld, GamePad, MiniMap, V3 } from "../../src";
-import { Clicker } from "../../src/gaesup/tools/clicker";
-import { InnerHtml } from "../../src/gaesup/utils/innerHtml";
-import Info from "../info";
-import Passive from "../passive";
-import Floor from "./Floor";
-import * as style from "./style.css";
+import { Suspense, useRef } from 'react';
+import { FaMapMarkerAlt } from 'react-icons/fa';
+import * as THREE from 'three';
+import { GaesupController, GaesupWorld, GamePad, MiniMap, V3 } from '../../src';
+import { Clicker } from '../../src/gaesup/tools/clicker';
+import { InnerHtml } from '../../src/gaesup/utils/innerHtml';
+import Info from '../info';
+import Passive from '../passive';
+import Floor from './Floor';
+import * as style from './style.css';
 
 function Electron({ radius = 2.75, speed = 6, ...props }) {
   const ref = useRef<THREE.Mesh>();
@@ -24,7 +24,7 @@ function Electron({ radius = 2.75, speed = 6, ...props }) {
     ref.current.position.set(
       Math.sin(t) * radius,
       (Math.cos(t) * radius * Math.atan(t)) / Math.PI / 1.25,
-      0
+      0,
     );
   });
   return (
@@ -45,23 +45,23 @@ function Electron({ radius = 2.75, speed = 6, ...props }) {
   );
 }
 
-export const S3 = "https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf";
+export const S3 = 'https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf';
 export const keyBoardMap = [
-  { name: "forward", keys: ["ArrowUp"] },
-  { name: "backward", keys: ["ArrowDown"] },
-  { name: "leftward", keys: ["ArrowLeft"] },
-  { name: "rightward", keys: ["ArrowRight"] },
-  { name: "space", keys: ["Space"], label: "JUMP" },
-  { name: "shift", keys: ["Shift"], label: "SPLINT" },
-  { name: "keyZ", keys: ["KeyZ"], label: "GREET" },
-  { name: "keyR", keys: ["KeyR"], label: "RIDE" },
-  { name: "keyS", keys: ["KeyS"], label: "STOP" },
+  { name: 'forward', keys: ['ArrowUp'] },
+  { name: 'backward', keys: ['ArrowDown'] },
+  { name: 'leftward', keys: ['ArrowLeft'] },
+  { name: 'rightward', keys: ['ArrowRight'] },
+  { name: 'space', keys: ['Space'], label: 'JUMP' },
+  { name: 'shift', keys: ['Shift'], label: 'SPLINT' },
+  { name: 'keyZ', keys: ['KeyZ'], label: 'GREET' },
+  { name: 'keyR', keys: ['KeyR'], label: 'RIDE' },
+  { name: 'keyS', keys: ['KeyS'], label: 'STOP' },
 ];
 
 export default function MainComponent() {
-  const CHARACTER_URL = "gltf/ally_body.glb";
-  const AIRPLANE_URL = S3 + "/gaebird.glb";
-  const VEHICLE_URL = S3 + "/gorani.glb";
+  const CHARACTER_URL = 'gltf/ally_body.glb';
+  const AIRPLANE_URL = S3 + '/gaebird.glb';
+  const VEHICLE_URL = S3 + '/gorani.glb';
 
   return (
     <GaesupWorld
@@ -71,9 +71,9 @@ export default function MainComponent() {
         airplaneUrl: AIRPLANE_URL,
       }}
       mode={{
-        type: "character",
-        controller: "clicker",
-        control: "normal",
+        type: 'character',
+        controller: 'keyboard',
+        control: 'normal',
       }}
       debug={false}
       cameraOption={{
@@ -81,26 +81,6 @@ export default function MainComponent() {
         YDistance: 20,
         ZDistance: 20,
       }}
-      // clickerOption={{
-      //   autoStart: true,
-      //   track: true,
-      //   loop: true,
-      //   queue: [
-      //     V3(10, 0, 0),
-      //     V3(30, 0, 30),
-      //     V3(10, 0, 30),
-      //     V3(30, 0, 10),
-      //     {
-      //       action: "stop",
-      //       beforeCB: (state) => {},
-      //       afterCB: (state) => {
-      //         console.log("start");
-      //       },
-      //       time: 3000,
-      //     },
-      //   ],
-      //   line: true,
-      // }}
     >
       <Canvas
         shadows
@@ -111,7 +91,7 @@ export default function MainComponent() {
           near: 0.1,
           far: 1000,
         }}
-        style={{ width: "100vw", height: "100vh", position: "fixed" }}
+        style={{ width: '100vw', height: '100vh', position: 'fixed' }}
         frameloop="demand"
       >
         <Environment background preset="sunset" backgroundBlurriness={1} />
@@ -146,7 +126,7 @@ export default function MainComponent() {
             <GaesupController
               onAnimate={({ control, subscribe }) => {
                 subscribe({
-                  tag: "greet",
+                  tag: 'greet',
                   condition: () => control?.keyZ,
                 });
               }}
@@ -157,7 +137,7 @@ export default function MainComponent() {
                 },
               }}
               rigidBodyProps={{}}
-              parts={[{ url: "gltf/ally_cloth_rabbit.glb", color: "#ffe0e0" }]}
+              parts={[{ url: 'gltf/ally_cloth_rabbit.glb', color: '#ffe0e0' }]}
             ></GaesupController>
             <Floor />
 
@@ -167,17 +147,13 @@ export default function MainComponent() {
               onMarker={
                 <group rotation={euler({ x: 0, y: Math.PI / 2, z: 0 })}>
                   <InnerHtml position={V3(0, 1, 0)}>
-                    <FaMapMarkerAlt
-                      style={{ color: "#f4ffd4", fontSize: "5rem" }}
-                    />
+                    <FaMapMarkerAlt style={{ color: '#f4ffd4', fontSize: '5rem' }} />
                   </InnerHtml>
                 </group>
               }
               runMarker={
                 <InnerHtml position={V3(0, 1, 0)}>
-                  <FaMapMarkerAlt
-                    style={{ color: "#ffac8e", fontSize: "5rem" }}
-                  />
+                  <FaMapMarkerAlt style={{ color: '#ffac8e', fontSize: '5rem' }} />
                 </InnerHtml>
               }
             ></Clicker>
@@ -190,9 +166,9 @@ export default function MainComponent() {
         <div className={style.gamePad}>
           <GamePad
             label={{
-              keyZ: "GREET",
-              shift: "SPLINT",
-              space: "JUMP",
+              keyZ: 'GREET',
+              shift: 'SPLINT',
+              space: 'JUMP',
             }}
           />
         </div>

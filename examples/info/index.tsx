@@ -1,36 +1,33 @@
-"use client";
+'use client';
 
-import { useContext } from "react";
+import { useContext } from 'react';
 
-import { TeleportPortal, V3 } from "../../src";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../src/gaesup/world/context";
-import { Icon } from "../icon";
-import * as style from "./style.css";
+import { V3 } from '../../src';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../src/gaesup/world/context';
+import { Icon } from '../icon';
+import * as style from './style.css';
 // FaCarSide lazy loading
 
 export default function Info() {
   const { mode } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
 
-  const setType = (type: "character" | "vehicle" | "airplane") => {
+  const setType = (type: 'character' | 'vehicle' | 'airplane') => {
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         mode: {
           ...mode,
           type: type,
-          control: "orbit",
+          control: 'orbit',
         },
       },
     });
   };
 
-  const setControl = (control: "orbit" | "normal") => {
+  const setControl = (control: 'orbit' | 'normal') => {
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         mode: {
           ...mode,
@@ -46,27 +43,27 @@ export default function Info() {
         ToolTip={
           <>
             <p
-              className={style.pRecipe({ selected: mode.type === "character" })}
-              onClick={() => setType("character")}
+              className={style.pRecipe({ selected: mode.type === 'character' })}
+              onClick={() => setType('character')}
             >
               character
             </p>
             <p
-              className={style.pRecipe({ selected: mode.type === "vehicle" })}
-              onClick={() => setType("vehicle")}
+              className={style.pRecipe({ selected: mode.type === 'vehicle' })}
+              onClick={() => setType('vehicle')}
             >
               vehicle
             </p>
             <p
-              className={style.pRecipe({ selected: mode.type === "airplane" })}
-              onClick={() => setType("airplane")}
+              className={style.pRecipe({ selected: mode.type === 'airplane' })}
+              onClick={() => setType('airplane')}
             >
               airplane
             </p>
           </>
         }
         toolTipStyles={{
-          background: "rgba(0,0,0,0.8)",
+          background: 'rgba(0,0,0,0.8)',
         }}
       >
         <button className={style.glassButton}>{mode.type}</button>
@@ -75,17 +72,17 @@ export default function Info() {
         ToolTip={
           <>
             <p
-              className={style.pRecipe({ selected: mode.control === "orbit" })}
-              onClick={() => setControl("orbit")}
+              className={style.pRecipe({ selected: mode.control === 'orbit' })}
+              onClick={() => setControl('orbit')}
             >
               orbit
             </p>
-            {mode.type === "character" && (
+            {mode.type === 'character' && (
               <p
                 className={style.pRecipe({
-                  selected: mode.control === "normal",
+                  selected: mode.control === 'normal',
                 })}
-                onClick={() => setControl("normal")}
+                onClick={() => setControl('normal')}
               >
                 normal
               </p>
@@ -93,7 +90,7 @@ export default function Info() {
           </>
         }
         toolTipStyles={{
-          background: "rgba(0,0,0,0.8)",
+          background: 'rgba(0,0,0,0.8)',
         }}
       >
         <button className={style.glassButton}>{mode.control}</button>
@@ -101,7 +98,7 @@ export default function Info() {
       <Icon
         ToolTip={<></>}
         toolTipStyles={{
-          background: "rgba(0,0,0,0.8)",
+          background: 'rgba(0,0,0,0.8)',
         }}
       >
         <button className={style.glassButton}>{mode.controller}</button>
@@ -110,17 +107,17 @@ export default function Info() {
         ToolTip={
           <>
             <p
-              className={style.pRecipe({ selected: mode.control === "orbit" })}
-              onClick={() => setControl("orbit")}
+              className={style.pRecipe({ selected: mode.control === 'orbit' })}
+              onClick={() => setControl('orbit')}
             >
               orbit
             </p>
-            {mode.type === "character" && (
+            {mode.type === 'character' && (
               <p
                 className={style.pRecipe({
-                  selected: mode.control === "normal",
+                  selected: mode.control === 'normal',
                 })}
-                onClick={() => setControl("normal")}
+                onClick={() => setControl('normal')}
               >
                 normal
               </p>
@@ -128,13 +125,11 @@ export default function Info() {
           </>
         }
         toolTipStyles={{
-          background: "rgba(0,0,0,0.8)",
+          background: 'rgba(0,0,0,0.8)',
         }}
       >
         <button className={style.glassButton}>{mode.control}</button>
       </Icon>
-
-      <TeleportPortal position={V3(-200, 10, -100)} text={"track"} />
     </div>
   );
 }

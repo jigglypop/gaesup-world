@@ -1,83 +1,74 @@
-import { CSSProperties } from "react";
-import { actionsType, refsType } from "../../controller/type";
+/**
+ * @deprecated 이 파일의 대부분 타입들은 '../../../types/index.ts'로 이동되었습니다.
+ * 하위 호환성을 위해 유지되지만, 새로운 코드에서는 중앙 집중식 타입을 사용하세요.
+ */
 
-import { RootState } from "@react-three/fiber";
-import * as THREE from "three";
-import { rideableType } from "../../hooks/useRideable/type";
-import { minimapInnerType } from "../../tools/minimap/type";
+import { rideableType } from '../../hooks/useRideable/type';
+import { minimapInnerType } from '../../tools/minimap/type';
 
-import { dispatchType } from "../../utils/type";
+// 중앙 집중식 타입에서 가져오기
+import {
+  // 기본 타입들
+  DispatchType,
+  ActiveStateType,
+  ModeType,
+  ResourceUrlsType,
+  GameStatesType,
+  CameraOptionType,
+  CameraOptionDebugType,
+  ControlState,
+  KeyboardControlState,
+  PortalType,
+  PortalsType,
+  AnimationAtomType,
+  AnimationStatePropType,
+  AnimationStateType,
+  ClickerType,
+  QueueActionType,
+  QueueFunctionType,
+  QueueItemType,
+  QueueType,
+  ClickerOptionType,
+  WheelStateType,
+  WheelsStateType,
+  PassiveStateType,
+  BlockType,
+  SizeType,
+  SizesType,
+  RefsType,
+  ActionsType,
+  // 하위 호환성 별칭들
+  dispatchType,
+  activeStateType,
+  modeType,
+  urlsType,
+  statesType,
+  cameraOptionType,
+  gaesupCameraOptionDebugType,
+  controlType,
+  keyControlType,
+  portalType,
+  portalsType,
+  animationAtomType,
+  animationStatePropType,
+  animationStateType,
+  clickerType,
+  queueActionType,
+  queueFunctionType,
+  queueItemtype,
+  queueType,
+  clickerOptionType,
+  wheelStateType,
+  wheelsStateType,
+  passiveStateType,
+  blockType,
+  sizeType,
+  sizesType,
+  refsType,
+  actionsType
+} from '../../types';
 
-// camera option
-export type gaesupCameraOptionDebugType = {
-  maxDistance?: number;
-  distance?: number;
-  XDistance?: number;
-  YDistance?: number;
-  ZDistance?: number;
-  zoom?: number;
-  target?: THREE.Vector3;
-  focus?: boolean;
-  position?: THREE.Vector3;
-};
-
-export type cameraOptionType = {
-  offset?: THREE.Vector3;
-} & gaesupCameraOptionDebugType;
-
-export type controlType = {
-  forward: boolean;
-  backward: boolean;
-  leftward: boolean;
-  rightward: boolean;
-  [key: string]: boolean;
-};
-
-export type keyControlType = {
-  [key: string]: boolean;
-};
-
-export type portalType = {
-  text?: string;
-  position: THREE.Vector3;
-  teleportStlye?: CSSProperties;
-};
-
-export type portalsType = portalType[];
-
-export type statesType = {
-  rideableId?: string;
-  isMoving: boolean;
-  isNotMoving: boolean;
-  isOnTheGround: boolean;
-  isOnMoving: boolean;
-  isRotated: boolean;
-  isRunning: boolean;
-  isJumping: boolean;
-  enableRiding: boolean;
-  isRiderOn: boolean;
-  isPush: controlType;
-  isLanding: boolean;
-  isFalling: boolean;
-  isRiding: boolean;
-};
-
-export type urlsType = {
-  characterUrl?: string;
-  vehicleUrl?: string;
-  airplaneUrl?: string;
-  wheelUrl?: string;
-  ridingUrl?: string;
-};
-
-export type animationAtomType = {
-  tag: string;
-  condition: () => boolean;
-  action?: () => void;
-  animationName?: string;
-  key?: string;
-};
-
+// 하위 호환성을 위한 추가 타입 정의 (중앙 집중식 타입에 없는 것들만)
 export type animationPropType = {
   current: string;
   animationNames: actionsType;
@@ -88,123 +79,53 @@ export type animationPropType = {
   default: string;
 };
 
-export type animationStatePropType = {
-  current: string;
-  animationNames?: actionsType;
-  keyControl?: {
-    [key: string]: boolean;
-  };
-  store: {};
-  default: string;
-};
-
-export type modeType = {
-  type?: "character" | "vehicle" | "airplane";
-  controller?: "clicker";
-  control?: "normal" | "orbit";
-  isButton?: boolean;
-};
-
-export type activeStateType = {
-  position: THREE.Vector3;
-  impulse: THREE.Vector3;
-  velocity: THREE.Vector3;
-  acceleration: THREE.Vector3;
-  quat: THREE.Quaternion;
-  euler: THREE.Euler;
-  rotation: THREE.Euler;
-  direction: THREE.Vector3;
-  dir: THREE.Vector3;
-};
-
-// camera option
-export type clickerType = {
-  point: THREE.Vector3;
-  angle: number;
-  isOn: boolean;
-  isRun: boolean;
-};
-// 클리커 옵션
-export type queueActionType = "stop";
-export type queueFunctionType = {
-  action: queueActionType;
-  beforeCB: (state: RootState) => void;
-  afterCB: (state: RootState) => void;
-  time: number;
-};
-
-export type queueItemtype = THREE.Vector3 | queueFunctionType;
-
-export type queueType = queueItemtype[];
-export type clickerOptionType = {
-  autoStart?: boolean;
-  isRun?: boolean;
-  throttle?: number;
-  track?: boolean;
-  loop?: boolean;
-  queue?: queueType;
-  line?: boolean;
-};
-
-export type wheelStateType = {
-  position: THREE.Vector3;
-  rotation: THREE.Euler;
-};
-
-export type blockType = {
-  camera: boolean;
-  control: boolean;
-  animation: boolean;
-  scroll: boolean;
-};
-
-export type sizeType = {
-  x: number;
-  y: number;
-  z: number;
-};
-
-export type wheelsStateType = {
-  0?: wheelStateType;
-  1?: wheelStateType;
-  2?: wheelStateType;
-  3?: wheelStateType;
-};
-
-export type passiveStateType = {
-  position: THREE.Vector3;
-  quat: THREE.Quaternion;
-  euler: THREE.Euler;
-  rotation: THREE.Euler;
-};
-
-export type animationStateType = {
-  [key: string]: animationStatePropType;
-};
-
-export type sizesType = {
-  [key: string]: THREE.Vector3;
-};
-
-type KeyboardControlsState<T extends string = string> = {
-  [K in T]: boolean;
+// 하위 호환성을 위해 타입들을 다시 내보내기
+export type {
+  // 기본 타입들
+  ActiveStateType,
+  ModeType,
+  ResourceUrlsType,
+  GameStatesType,
+  CameraOptionType,
+  CameraOptionDebugType,
+  ControlState,
+  KeyboardControlState,
+  PortalType,
+  PortalsType,
+  AnimationAtomType,
+  AnimationStatePropType,
+  AnimationStateType,
+  ClickerType,
+  QueueActionType,
+  QueueFunctionType,
+  QueueItemType,
+  QueueType,
+  ClickerOptionType,
+  WheelStateType,
+  WheelsStateType,
+  PassiveStateType,
+  BlockType,
+  SizeType,
+  SizesType,
+  RefsType,
+  ActionsType
 };
 
 export type gaesupWorldContextType = {
-  activeState: activeStateType;
-  mode: modeType;
-  urls: urlsType;
-  states: statesType;
+  activeState: ActiveStateType;
+  mode: ModeType;
+  urls: ResourceUrlsType;
+  states: GameStatesType;
   minimap: minimapInnerType;
-  control: KeyboardControlsState<string>;
-  refs: refsType;
-  animationState: animationStateType;
-  cameraOption: cameraOptionType;
-  clickerOption: clickerOptionType;
-  clicker: clickerType;
+  control: KeyboardControlState<string>;
+  refs: RefsType;
+  animationState: AnimationStateType;
+  cameraOption: CameraOptionType;
+  clickerOption: ClickerOptionType;
+  clicker: ClickerType;
   rideable: { [key: string]: rideableType };
-  sizes: sizesType;
-  block: blockType;
+  sizes: SizesType;
+  block: BlockType;
 };
 
-export type gaesupDisptachType = dispatchType<gaesupWorldContextType>;
+export type gaesupDisptachType = DispatchType<gaesupWorldContextType>;

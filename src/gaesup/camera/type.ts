@@ -1,5 +1,5 @@
-import * as THREE from "three";
-import {} from "three-stdlib";
+import * as THREE from 'three';
+import {} from 'three-stdlib';
 
 export type cameraRayType = {
   origin: THREE.Vector3;

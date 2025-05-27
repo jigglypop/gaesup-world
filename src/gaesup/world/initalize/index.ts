@@ -1,41 +1,32 @@
-import { useMemo, useReducer } from "react";
+import { useMemo, useReducer } from 'react';
 
-import { gaesupWorldDefault } from "../../world/context";
-import { gaesupWorldReducer } from "../../world/context/reducer";
-import { gaesupWorldPropsType } from "../type";
+import { gaesupWorldDefault } from '../../world/context';
+import { gaesupWorldReducer } from '../../world/context/reducer';
+import { gaesupWorldPropsType } from '../type';
 
 export default function initGaesupWorld(props: gaesupWorldPropsType) {
-  const [value, dispatch] = useReducer(gaesupWorldReducer, {
+  const initialState = useMemo(() => ({
     activeState: {
       ...gaesupWorldDefault.activeState,
       position: props.startPosition || gaesupWorldDefault.activeState.position,
     },
-    cameraOption: Object.assign(
-      gaesupWorldDefault.cameraOption,
-      props.cameraOption || {}
-    ),
-    mode: Object.assign(gaesupWorldDefault.mode, props.mode || {}),
-    urls: Object.assign(gaesupWorldDefault.urls, props.urls || {}),
+    cameraOption: { ...gaesupWorldDefault.cameraOption, ...(props.cameraOption || {}) },
+    mode: { ...gaesupWorldDefault.mode, ...(props.mode || {}) },
+    urls: { ...gaesupWorldDefault.urls, ...(props.urls || {}) },
     refs: null,
     states: gaesupWorldDefault.states,
     rideable: gaesupWorldDefault.rideable,
     minimap: gaesupWorldDefault.minimap,
     control: gaesupWorldDefault.control,
     clicker: gaesupWorldDefault.clicker,
-    clickerOption: Object.assign(
-      gaesupWorldDefault.clickerOption,
-      props.clickerOption || {}
-    ),
+    clickerOption: { ...gaesupWorldDefault.clickerOption, ...(props.clickerOption || {}) },
     animationState: gaesupWorldDefault.animationState,
-    block: Object.assign(gaesupWorldDefault.block, props.block || {}),
+    block: { ...gaesupWorldDefault.block, ...(props.block || {}) },
     sizes: gaesupWorldDefault.sizes,
-  });
+  }), [props.startPosition, props.cameraOption, props.mode, props.urls, props.clickerOption, props.block]);
 
-  const gaesupProps = useMemo(
-    () => ({ value: value, dispatch }),
-    [value, value.block, dispatch]
-  );
-
+  const [value, dispatch] = useReducer(gaesupWorldReducer, initialState);
+  const gaesupProps = useMemo(() => ({ value, dispatch }), [value, dispatch]);
   return {
     gaesupProps,
   };

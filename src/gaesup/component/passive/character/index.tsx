@@ -1,33 +1,21 @@
-import { Collider } from "@dimforge/rapier3d-compat";
-import { RapierRigidBody } from "@react-three/rapier";
-import { useEffect, useRef } from "react";
-import * as THREE from "three";
-import { CharacterInnerRef } from "../../inner/character";
-import { innerRefType } from "../type";
-import { passiveCharacterPropsType } from "./type";
+import { useEffect } from 'react';
+import { CharacterInnerRef } from '../../inner/character';
+import { useGenericRefs } from '../../inner/common/useGenericRefs';
+import { passiveCharacterPropsType } from './type';
 
 export function PassiveCharacter(props: passiveCharacterPropsType) {
-  const rigidBodyRef = useRef<RapierRigidBody>(null);
-  const outerGroupRef = useRef<THREE.Group>(null);
-  const innerGroupRef = useRef<THREE.Group>(null);
-  const colliderRef = useRef<Collider>(null);
-  const refs: innerRefType = {
-    rigidBodyRef,
-    outerGroupRef,
-    innerGroupRef,
-    colliderRef,
-  };
+  const refs = useGenericRefs();
 
   useEffect(() => {
-    if (rigidBodyRef && rigidBodyRef.current) {
-      rigidBodyRef.current.setEnabledRotations(false, false, false, false);
+    if (refs.rigidBodyRef && refs.rigidBodyRef.current) {
+      refs.rigidBodyRef.current.setEnabledRotations(false, false, false, false);
     }
-  }, []);
+  }, [refs.rigidBodyRef]);
 
   return (
     <CharacterInnerRef
       isActive={false}
-      componentType={"character"}
+      componentType={'character'}
       controllerOptions={
         props.controllerOptions || {
           lerp: {

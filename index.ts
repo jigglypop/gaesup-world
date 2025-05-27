@@ -22,4 +22,4 @@ export {
   usePushKey,
   useRideable,
   useTeleport,
-} from "./dist";
+} from './dist';

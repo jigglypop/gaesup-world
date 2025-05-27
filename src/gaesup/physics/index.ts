@@ -1,17 +1,14 @@
-import { useFrame } from "@react-three/fiber";
-import { useContext, useEffect } from "react";
-import { GaesupControllerContext } from "../controller/context";
-import { useGaesupGltf } from "../hooks/useGaesupGltf";
-import { V3 } from "../utils";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../world/context";
-import airplaneCalculation from "./airplane";
-import characterCalculation from "./character";
-import check from "./check";
-import { calcType } from "./type";
-import vehicleCalculation from "./vehicle";
+import { useContext, useEffect, useMemo } from 'react';
+import { GaesupControllerContext } from '../controller/context';
+import { useGaesupGltf } from '../hooks/useGaesupGltf';
+import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
+import { V3 } from '../utils';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../world/context';
+import airplaneCalculation from './airplane';
+import characterCalculation from './character';
+import check from './check';
+import { calcType } from './type';
+import vehicleCalculation from './vehicle';
 
 export default function calculation({
   groundRay,
@@ -30,51 +27,64 @@ export default function calculation({
     if (rigidBodyRef.current && innerGroupRef.current) {
       rigidBodyRef.current.lockRotations(false, true);
       activeState.euler.set(0, 0, 0);
-      rigidBodyRef.current.setTranslation(
-        activeState.position.clone().add(V3(0, 5, 0)),
-        true
-      );
+      rigidBodyRef.current.setTranslation(activeState.position.clone().add(V3(0, 5, 0)), true);
+    }
+  }, [mode.type, rigidBodyRef, innerGroupRef, activeState]);
+
+  useEffect(() => {
+    if (rigidBodyRef?.current && block.control) {
+      rigidBodyRef.current.resetForces(false);
+      rigidBodyRef.current.resetTorques(false);
+    }
+  }, [block.control]);
+
+  const isReady = useMemo(() => 
+    rigidBodyRef?.current && 
+    outerGroupRef?.current && 
+    innerGroupRef?.current, 
+    [rigidBodyRef?.current, outerGroupRef?.current, innerGroupRef?.current]
+  );
+
+  // 크기 정보를 미리 계산하고 캐시
+  const matchSizes = useMemo(() => 
+    getSizesByUrls(worldContext?.urls), 
+    [getSizesByUrls, worldContext?.urls]
+  );
+
+  // 계산 함수를 미리 선택하여 매 프레임마다 조건 검사 방지
+  const calculationFunction = useMemo(() => {
+    switch (mode.type) {
+      case 'vehicle': return vehicleCalculation;
+      case 'character': return characterCalculation;
+      case 'airplane': return airplaneCalculation;
+      default: return characterCalculation;
     }
   }, [mode.type]);
 
-  useEffect(() => {
-    if (rigidBodyRef && rigidBodyRef.current) {
-      if (block.control) {
-        rigidBodyRef.current.resetForces(false);
-        rigidBodyRef.current.resetTorques(false);
+  // 통합 프레임 시스템 사용 (우선순위: 0 - 물리 계산이 가장 먼저)
+  useUnifiedFrame(
+    `physics-${rigidBodyRef?.current?.handle || 'unknown'}`,
+    (state, delta) => {
+      if (!isReady || block.control) {
+        return;
       }
-    }
-  }, [block.control, rigidBodyRef.current]);
-
-  useFrame((state, delta) => {
-    if (
-      !rigidBodyRef ||
-      !rigidBodyRef.current ||
-      !outerGroupRef ||
-      !outerGroupRef.current ||
-      !innerGroupRef ||
-      !innerGroupRef.current
-    )
-      return null;
-    if (block.control) {
-      return null;
-    }
-    const calcProp: calcType = {
-      rigidBodyRef,
-      outerGroupRef,
-      innerGroupRef,
-      colliderRef,
-      groundRay,
-      state,
-      delta,
-      worldContext,
-      controllerContext,
-      dispatch,
-      matchSizes: getSizesByUrls(worldContext?.urls),
-    };
-    if (mode.type === "vehicle") vehicleCalculation(calcProp);
-    else if (mode.type === "character") characterCalculation(calcProp);
-    else if (mode.type === "airplane") airplaneCalculation(calcProp);
-    check(calcProp);
-  });
+      const calcProp: calcType = {
+        rigidBodyRef,
+        outerGroupRef,
+        innerGroupRef,
+        colliderRef,
+        groundRay,
+        state,
+        delta,
+        worldContext,
+        controllerContext,
+        dispatch,
+        matchSizes,
+      };
+      calculationFunction(calcProp);
+      check(calcProp);
+    },
+    0, // 최고 우선순위
+    isReady && !block.control
+  );
 }

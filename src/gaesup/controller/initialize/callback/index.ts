@@ -1,9 +1,9 @@
-import { useFrame } from "@react-three/fiber";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useMemo, useCallback } from "react";
 import { AnimationAction } from "three";
 import { rigidBodyRefType } from "../../../component/inner/common/type";
 import { componentTypeString } from "../../../component/passive/type";
 import { useGaesupAnimation } from "../../../hooks/useGaesupAnimation";
+import { useUnifiedFrame } from "../../../hooks/useUnifiedFrame";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
@@ -28,31 +28,38 @@ export default function initCallback({
   const { activeState, states, control } = useContext(GaesupWorldContext);
   const { subscribe } = useGaesupAnimation({ type: componentType });
 
-  const playAnimation = (tag: keyof animationTagType, key: string) => {
+  const playAnimation = useCallback((tag: keyof animationTagType, key: string) => {
     if (!(key in control)) return;
     if (control[key] && animationState[componentType]) {
-      animationState[componentType].current = tag;
-      const currentAnimation = store[tag];
-      if (currentAnimation?.action) {
-        currentAnimation.action();
-      }
-      dispatch({
-        type: "update",
-        payload: {
-          animationState: {
-            ...animationState,
+      const currentTag = animationState[componentType].current;
+      if (currentTag !== tag) { // 변경된 경우에만 업데이트
+        animationState[componentType].current = tag;
+        const currentAnimation = store[tag];
+        if (currentAnimation?.action) {
+          currentAnimation.action();
+        }
+        dispatch({
+          type: "update",
+          payload: {
+            animationState: {
+              ...animationState,
+              [componentType]: {
+                ...animationState[componentType],
+                current: tag
+              }
+            },
           },
-        },
-      });
+        });
+      }
     }
-  };
+  }, [control, animationState, componentType, store, dispatch]);
 
-  const controllerProp: callbackPropType = {
+  const controllerProp: callbackPropType = useMemo(() => ({
     activeState,
     control,
     states,
     subscribe,
-  };
+  }), [activeState, control, states, subscribe]);
 
   useEffect(() => {
     if (props.onReady) {
@@ -63,22 +70,33 @@ export default function initCallback({
         props.onDestory(controllerProp);
       }
     };
-  }, []);
+  }, [props.onReady, props.onDestory, controllerProp]);
 
-  useFrame((prop) => {
-    if (props.onFrame) {
-      props.onFrame({ ...controllerProp, ...prop });
-    }
-    if (props.onAnimate) {
-      props.onAnimate({
-        ...controllerProp,
-        ...prop,
-        actions,
-        animationState,
-        playAnimation,
-      });
-    }
-  });
+  // 애니메이션 프로퍼티를 미리 계산
+  const animateProps = useMemo(() => ({
+    ...controllerProp,
+    actions,
+    animationState,
+    playAnimation,
+  }), [controllerProp, actions, animationState, playAnimation]);
+
+  // 통합 프레임 시스템 사용 (우선순위: 2 - 애니메이션 콜백)
+  useUnifiedFrame(
+    `callback-${componentType}`,
+    (prop) => {
+      if (props.onFrame) {
+        props.onFrame({ ...controllerProp, ...prop });
+      }
+      if (props.onAnimate) {
+        props.onAnimate({
+          ...animateProps,
+          ...prop,
+        });
+      }
+    },
+    2, // 카메라 다음 우선순위
+    !!(props.onFrame || props.onAnimate)
+  );
 
   return {
     subscribe,

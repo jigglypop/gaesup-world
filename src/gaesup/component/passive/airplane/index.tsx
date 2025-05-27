@@ -1,17 +1,45 @@
-import { Collider } from "@dimforge/rapier3d-compat";
-import { useFrame } from "@react-three/fiber";
-import { RapierRigidBody, quat } from "@react-three/rapier";
-import { useRef } from "react";
-import * as THREE from "three";
-import { AirplaneInnerRef } from "../../inner/airplane";
-import { passiveAirplanePropsType } from "./type";
+import { quat } from '@react-three/rapier';
+import { useGenericRefs } from '../../inner/common/useGenericRefs';
+import { useUnifiedFrame } from '../../../hooks/useUnifiedFrame';
+import { passiveAirplanePropsType } from './type';
+import { AirplaneInnerRef } from '../../inner/airplane';
+import { useMemo } from 'react';
 
 export function PassiveAirplane(props: passiveAirplanePropsType) {
-  const rigidBodyRef = useRef<RapierRigidBody>(null);
-  const outerGroupRef = useRef<THREE.Group>(null);
-  const innerGroupRef = useRef<THREE.Group>(null);
-  const colliderRef = useRef<Collider>(null);
+  const { rigidBodyRef, outerGroupRef, innerGroupRef, colliderRef } = useGenericRefs();
 
+  // 중력 스케일 계산을 미리 계산
+  const gravityScale = useMemo(() => {
+    return props.position.y < 10 ? ((1 - 0.1) / (0 - 10)) * props.position.y + 1 : 0.1;
+  }, [props.position.y]);
+
+  // 회전 계산을 미리 캐시
+  const targetRotation = useMemo(() => {
+    const _euler = props.rotation.clone();
+    _euler.y = 0;
+    return _euler;
+  }, [props.rotation]);
+
+  // 통합 프레임 시스템 사용 (우선순위: 3 - 패시브 객체)
+  useUnifiedFrame(
+    `passive-airplane-${props.name || 'unnamed'}`,
+    () => {
+      if (innerGroupRef.current) {
+        innerGroupRef.current.setRotationFromQuaternion(
+          quat()
+            .setFromEuler(innerGroupRef.current.rotation.clone())
+            .slerp(quat().setFromEuler(targetRotation), 0.2),
+        );
+      }
+      if (rigidBodyRef.current) {
+        rigidBodyRef.current.setGravityScale(gravityScale, false);
+      }
+    },
+    3, // 패시브 객체 우선순위
+    !!(innerGroupRef.current || rigidBodyRef.current)
+  );
+
+  // 동일: refs 객체 통합
   const refs = {
     rigidBodyRef,
     outerGroupRef,
@@ -19,43 +47,11 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
     colliderRef,
   };
 
-  useFrame(() => {
-    if (innerGroupRef && innerGroupRef.current) {
-      const _euler = props.rotation.clone();
-      _euler.y = 0;
-      innerGroupRef.current.setRotationFromQuaternion(
-        quat()
-          .setFromEuler(innerGroupRef.current.rotation.clone())
-          .slerp(quat().setFromEuler(_euler), 0.2)
-      );
-    }
-    if (rigidBodyRef && rigidBodyRef.current) {
-      rigidBodyRef.current.setGravityScale(
-        props.position.y < 10
-          ? ((1 - 0.1) / (0 - 10)) * props.position.y + 1
-          : 0.1,
-        false
-      );
-    }
-  });
-
   return (
     <AirplaneInnerRef
       isActive={false}
-      componentType={"airplane"}
-      name={"airplane"}
-      controllerOptions={
-        props.controllerOptions || {
-          lerp: {
-            cameraTurn: 1,
-            cameraPosition: 1,
-          },
-        }
-      }
-      position={props.position}
-      rotation={props.rotation}
-      currentAnimation={props.currentAnimation}
-      ridingUrl={props.ridingUrl}
+      componentType="airplane"
+      name="airplane"
       {...props}
       {...refs}
     >

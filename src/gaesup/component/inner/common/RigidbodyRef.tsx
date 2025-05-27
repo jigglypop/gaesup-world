@@ -1,33 +1,21 @@
-import { useAnimations, useGLTF } from "@react-three/drei";
-import { useFrame, useGraph } from "@react-three/fiber";
-import {
-  CapsuleCollider,
-  RapierRigidBody,
-  RigidBody,
-  euler,
-} from "@react-three/rapier";
-import {
-  MutableRefObject,
-  forwardRef,
-  useContext,
-  useEffect,
-  useMemo,
-} from "react";
-import * as THREE from "three";
-import { SkeletonUtils } from "three-stdlib";
-import playActions, { subscribeActions } from "../../../animation/actions";
-import Camera from "../../../camera";
-import { GaesupControllerContext } from "../../../controller/context";
-import initCallback from "../../../controller/initialize/callback";
-import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
-import calculation from "../../../physics";
-import { cameraPropType } from "../../../physics/type";
-import { V3 } from "../../../utils";
-import { GaesupWorldContext } from "../../../world/context";
-import { InnerGroupRef } from "./InnerGroupRef";
-import { PartsGroupRef } from "./partsGroupRef";
-import { useSetGroundRay } from "./setGroundRay";
-import { rigidBodyRefType } from "./type";
+import { useAnimations, useGLTF } from '@react-three/drei';
+import { useGraph } from '@react-three/fiber';
+import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three/rapier';
+import { MutableRefObject, forwardRef, useContext, useEffect, useMemo } from 'react';
+import * as THREE from 'three';
+import { SkeletonUtils } from 'three-stdlib';
+import playActions, { subscribeActions } from '../../../animation/actions';
+import Camera from '../../../camera';
+import { GaesupControllerContext } from '../../../controller/context';
+import initCallback from '../../../controller/initialize/callback';
+import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
+import calculation from '../../../physics';
+import { cameraPropType } from '../../../physics/type';
+import { GaesupWorldContext } from '../../../world/context';
+import { InnerGroupRef } from './InnerGroupRef';
+import { PartsGroupRef } from './partsGroupRef';
+import { useSetGroundRay } from './setGroundRay';
+import { rigidBodyRefType } from './type';
 
 export const RigidBodyRef = forwardRef(
   (props: rigidBodyRefType, ref: MutableRefObject<RapierRigidBody>) => {
@@ -46,7 +34,6 @@ export const RigidBodyRef = forwardRef(
     const { actions, ref: animationRef } = useAnimations(animations);
     const worldContext = useContext(GaesupWorldContext);
     const controllerContext = useContext(GaesupControllerContext);
-
     // skeleton을 추출하여 memoization
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
     const skeleton = useMemo(() => {
@@ -94,32 +81,7 @@ export const RigidBodyRef = forwardRef(
       componentType: props.componentType,
     });
     const { nodes } = useGraph(clone);
-    const objectNode = Object.values(nodes).find(
-      (node) => node.type === "Object3D"
-    );
-    useFrame(() => {
-      if (props.isActive || !props.position || !ref || !ref.current) return;
-      ref.current.setTranslation(
-        V3(
-          THREE.MathUtils.lerp(
-            ref.current.translation().x,
-            props.position.x,
-            props.controllerOptions.lerp.cameraPosition
-          ),
-          THREE.MathUtils.lerp(
-            ref.current.translation().y,
-            props.position.y,
-            props.controllerOptions.lerp.cameraPosition
-          ),
-          THREE.MathUtils.lerp(
-            ref.current.translation().z,
-            props.position.z,
-            props.controllerOptions.lerp.cameraPosition
-          )
-        ),
-        false
-      );
-    });
+    const objectNode = Object.values(nodes).find((node) => node.type === 'Object3D');
     return (
       <RigidBody
         colliders={false}
@@ -129,7 +91,7 @@ export const RigidBodyRef = forwardRef(
           .set(0, props.rotation?.clone().y || 0, 0)
           .clone()}
         userData={props.userData}
-        type={props.rigidbodyType || (props.isActive ? "dynamic" : "fixed")}
+        type={props.rigidbodyType || (props.isActive ? 'dynamic' : 'fixed')}
         sensor={props.sensor}
         onIntersectionEnter={props.onIntersectionEnter}
         onCollisionEnter={props.onCollisionEnter}
@@ -174,5 +136,5 @@ export const RigidBodyRef = forwardRef(
         </InnerGroupRef>
       </RigidBody>
     );
-  }
+  },
 );

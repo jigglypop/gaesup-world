@@ -1,6 +1,6 @@
-import { V3, calcAngleByVector } from "../../utils/vector";
-import { gaesupWorldContextType } from "../../world/context/type";
-import { calcType } from "../type";
+import { V3, calcAngleByVector } from '../../utils/vector';
+import { gaesupWorldContextType } from '../../world/context/type';
+import { calcType } from '../type';
 
 export function orbitDirection({
   activeState,
@@ -12,7 +12,7 @@ export function orbitDirection({
   const dirX = Number(leftward) - Number(rightward);
   const dirZ = Number(forward) - Number(backward);
   let start = 0;
-  if (mode.controller === "clicker") {
+  if (mode.controller === 'clicker') {
     activeState.euler.y = Math.PI / 2 - clicker.angle;
     start = 1;
   } else {
@@ -22,7 +22,7 @@ export function orbitDirection({
   }
   const front = V3(start, 0, start);
   activeState.direction = front.multiply(
-    V3(-Math.sin(activeState.euler.y), 0, -Math.cos(activeState.euler.y))
+    V3(-Math.sin(activeState.euler.y), 0, -Math.cos(activeState.euler.y)),
   );
   activeState.dir = activeState.direction.normalize();
 }
@@ -34,13 +34,9 @@ export function normalDirection({
   clicker,
 }: Partial<gaesupWorldContextType>) {
   const { forward, backward, leftward, rightward } = control;
-  if (mode.controller === "clicker") {
+  if (mode.controller === 'clicker') {
     activeState.euler.y = Math.PI / 2 - clicker.angle;
-    activeState.dir.set(
-      -Math.sin(activeState.euler.y),
-      0,
-      -Math.cos(activeState.euler.y)
-    );
+    activeState.dir.set(-Math.sin(activeState.euler.y), 0, -Math.cos(activeState.euler.y));
   } else {
     // 일반 컨트롤
     // right hand rule. north -> east -> south -> west
@@ -56,9 +52,9 @@ export function normalDirection({
 
 export default function direction(prop: calcType) {
   const { worldContext } = prop;
-  if (worldContext.mode.control === "normal") {
+  if (worldContext.mode.control === 'normal') {
     normalDirection(worldContext);
-  } else if (worldContext.mode.control === "orbit") {
+  } else if (worldContext.mode.control === 'orbit') {
     orbitDirection(worldContext);
   }
 }

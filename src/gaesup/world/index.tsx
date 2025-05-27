@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { GaesupWorldContext, GaesupWorldDispatchContext } from "./context";
-import initGaesupWorld from "./initalize";
-import { gaesupWorldPropsType } from "./type";
+import { GaesupWorldContext, GaesupWorldDispatchContext } from './context';
+import initGaesupWorld from './initalize';
+import { gaesupWorldPropsType } from './type';
 
 export function GaesupWorld(props: gaesupWorldPropsType) {
   const { gaesupProps } = initGaesupWorld(props);

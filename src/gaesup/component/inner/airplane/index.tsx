@@ -1,6 +1,6 @@
-import { OuterGroupRef } from "../common/OuterGroupRef";
-import { RigidBodyRef } from "../common/RigidbodyRef";
-import { airplaneInnerType } from "./type";
+import { OuterGroupRef } from '../common/OuterGroupRef';
+import { RigidBodyRef } from '../common/RigidbodyRef';
+import { airplaneInnerType } from './type';
 
 export function AirplaneInnerRef(props: airplaneInnerType) {
   const { rigidBodyRef, outerGroupRef } = props;
@@ -10,7 +10,7 @@ export function AirplaneInnerRef(props: airplaneInnerType) {
       <RigidBodyRef
         ref={rigidBodyRef}
         name={props.name}
-        componentType={"airplane"}
+        componentType={'airplane'}
         ridingUrl={props.ridingUrl}
         {...props}
       >

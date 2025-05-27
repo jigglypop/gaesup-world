@@ -1,9 +1,9 @@
 // GamePad.tsx
-import { useContext } from "react";
-import { GaesupWorldContext } from "../../world/context";
-import GamePadButton from "./GamePadButton";
-import * as S from "./style.css";
-import { gameBoyDirectionType, gamepadType } from "./type";
+import { useContext } from 'react';
+import { GaesupWorldContext } from '../../world/context';
+import GamePadButton from './GamePadButton';
+import * as S from './style.css';
+import { gameBoyDirectionType, gamepadType } from './type';
 
 export const gamepadDefault = {
   on: true,
@@ -15,12 +15,7 @@ export function GamePad(props: gamepadType) {
   const GamePadDirections = Object.keys(control)
     .map((key) => {
       const name = label?.[key] || key;
-      if (
-        key !== "forward" &&
-        key !== "backward" &&
-        key !== "leftward" &&
-        key !== "rightward"
-      )
+      if (key !== 'forward' && key !== 'backward' && key !== 'leftward' && key !== 'rightward')
         return {
           tag: key,
           value: key,
@@ -28,11 +23,11 @@ export function GamePad(props: gamepadType) {
         };
     })
     .filter((item) => item !== undefined)
-    .filter((item: gameBoyDirectionType) => !(item.tag === "run"));
+    .filter((item: gameBoyDirectionType) => !(item.tag === 'run'));
 
   return (
     <>
-      {mode.controller === "clicker" && (
+      {mode.controller === 'clicker' && (
         <div className={S.gamePad} style={gamePadStyle}>
           {GamePadDirections.map((item: gameBoyDirectionType, key: number) => {
             return (

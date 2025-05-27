@@ -19,6 +19,7 @@ export function useMovePoint() {
       type: "update",
       payload: {
         clicker: {
+          ...clicker,
           point: V3(position.x, 0, position.z),
           angle: newAngle,
           isOn: true,

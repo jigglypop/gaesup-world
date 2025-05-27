@@ -15,27 +15,27 @@ export default function initControllerProps(props: { refs: refsType }) {
   const context = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
 
+  // 컨트롤 설정을 useMemo로 최적화
+  const controlConfig = useMemo(() => {
+    if (!context?.control) return null;
+    
+    if (context.mode.controller === "clicker") {
+      return context.mode.isButton ? { ...context.control } : {};
+    } else {
+      return { ...context.control };
+    }
+  }, [context?.mode.controller, context?.mode.isButton, context?.control]);
+
   useEffect(() => {
-    if (context && context.control) {
-      // 컨트롤 정하기
-      let newControl = {};
-      if (context.mode.controller === "clicker") {
-        if (context.mode.isButton) {
-          newControl = { ...context.control };
-        }
-      } else {
-        newControl = { ...context.control };
-      }
+    if (controlConfig) {
       dispatch({
         type: "update",
         payload: {
-          control: {
-            ...newControl,
-          },
+          control: controlConfig,
         },
       });
     }
-  }, [context?.mode.controller, context?.control]);
+  }, [controlConfig, dispatch]);
 
   const groundRay: groundRayType = useMemo(() => {
     return {
@@ -61,7 +61,7 @@ export default function initControllerProps(props: { refs: refsType }) {
       intersects: [],
       intersectObjectMap: {},
     };
-  }, []);
+  }, [context.cameraOption.maxDistance]);
 
   const initRefs = useCallback(
     (refs: refsType) => {
@@ -74,14 +74,14 @@ export default function initControllerProps(props: { refs: refsType }) {
         dispatch
       );
     },
-    [props.refs]
+    [dispatch]
   );
 
   useEffect(() => {
     if (props.refs) {
       initRefs(props.refs);
     }
-  }, []);
+  }, [props.refs, initRefs]);
 
   return {
     groundRay,

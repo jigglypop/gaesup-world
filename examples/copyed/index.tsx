@@ -1,16 +1,30 @@
 "use client";
 
 import { PassiveCharacter, V3, useGaesupController } from "../../src";
+import { useMemo } from "react";
 
 export default function Copyed() {
-  const points = [V3(10, 0, 10)];
-  for (let x = -10; x <= 10; x += 30) {
-    for (let y = -10; y <= 10; y += 30) {
-      points.push(V3(x, 0, y));
+  // points를 useMemo로 캐시
+  const points = useMemo(() => {
+    const pointsArray = [V3(10, 0, 10)];
+    for (let x = -10; x <= 10; x += 30) {
+      for (let y = -10; y <= 10; y += 30) {
+        pointsArray.push(V3(x, 0, y));
+      }
     }
-  }
+    return pointsArray;
+  }, []);
+
   const gaesupState = useGaesupController();
   const { state, currentAnimation, urls } = gaesupState;
+
+  // controllerOptions를 미리 계산
+  const controllerOptions = useMemo(() => ({
+    lerp: {
+      cameraTurn: 0.05,
+      cameraPosition: 0.05,
+    },
+  }), []);
   // setTimeout으로 1초마다 상태값 변경하게 하는 로직
 
   //
@@ -73,18 +87,13 @@ export default function Copyed() {
       {points.map((point, index) => {
         return (
           <PassiveCharacter
-            key={index}
+            key={`character-${index}`} // 더 명확한 키
             position={state.position.clone().add(point)}
             rotation={state.euler.clone()}
             currentAnimation={currentAnimation}
             url={urls.characterUrl}
             rigidbodyType="dynamic"
-            controllerOptions={{
-              lerp: {
-                cameraTurn: 0.05,
-                cameraPosition: 0.05,
-              },
-            }}
+            controllerOptions={controllerOptions}
           >
             <></>
           </PassiveCharacter>

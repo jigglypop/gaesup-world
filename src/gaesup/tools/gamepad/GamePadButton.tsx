@@ -1,19 +1,9 @@
-// GamePadButton.tsx
-import { CSSProperties, useState } from "react";
-import { usePushKey } from "../../hooks/usePushKey";
-import * as S from "./style.css";
+import { useState } from 'react';
+import { usePushKey } from '../../hooks/usePushKey';
+import * as S from './style.css';
+import { GamePadButtonType } from './type';
 
-export type GamePadButtonType = {
-  value: string;
-  name: string;
-  gamePadButtonStyle?: CSSProperties;
-};
-
-export default function GamePadButton({
-  value,
-  name,
-  gamePadButtonStyle,
-}: GamePadButtonType) {
+export default function GamePadButton({ value, name, gamePadButtonStyle }: GamePadButtonType) {
   const [isClicked, setIsClicked] = useState(false);
   const { pushKey } = usePushKey();
 
@@ -29,7 +19,7 @@ export default function GamePadButton({
 
   return (
     <button
-      className={`${S.padButton} ${isClicked ? S.isClicked : ""}`}
+      className={`${S.padButton} ${isClicked ? S.isClicked : ''}`}
       onMouseDown={onMouseDown}
       onMouseUp={onMouseLeave}
       onMouseLeave={onMouseLeave}

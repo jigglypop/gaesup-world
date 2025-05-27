@@ -1,6 +1,6 @@
-import { passivePropsType } from "../type";
+import { passivePropsType } from '../type';
 
 export type passiveCharacterPropsType = Omit<
   passivePropsType,
-  "isRiding" | "enableRiding" | "componentType"
+  'isRiding' | 'enableRiding' | 'componentType'
 >;

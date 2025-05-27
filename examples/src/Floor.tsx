@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Grid } from "@react-three/drei";
-import { RigidBody } from "@react-three/rapier";
-import { GaeSupProps } from "../../src";
+import { Grid } from '@react-three/drei';
+import { RigidBody } from '@react-three/rapier';
+import { GaeSupProps } from '../../src';
 
 export default function Floor() {
   return (
@@ -13,7 +13,7 @@ export default function Floor() {
         infiniteGrid
         cellSize={2}
         cellThickness={1}
-        cellColor={"#1d1d1d"}
+        cellColor={'#1d1d1d'}
         sectionSize={5}
         sectionThickness={0}
         fadeDistance={1000}
@@ -25,11 +25,7 @@ export default function Floor() {
         </mesh>
 
         <GaeSupProps type="ground">
-          <mesh
-            receiveShadow
-            position={[0, 0.1, 0]}
-            rotation={[-Math.PI / 2, 0, 0]}
-          >
+          <mesh receiveShadow position={[0, 0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             <planeGeometry args={[1000, 1000]} />
             <meshStandardMaterial color="#3d3d3d" />
           </mesh>

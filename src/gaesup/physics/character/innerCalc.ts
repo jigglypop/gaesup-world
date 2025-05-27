@@ -20,8 +20,20 @@ export default function innerCalc(prop: calcType) {
     );
   }
   rigidBodyRef.current.setEnabledRotations(false, false, false, false);
-  innerGroupRef.current.quaternion.rotateTowards(
-    quat().setFromEuler(activeState.euler),
-    10 * delta
-  );
+  
+  // 떨림 방지: 회전 보간 안정화
+  const targetQuaternion = quat().setFromEuler(activeState.euler);
+  const currentQuaternion = innerGroupRef.current.quaternion;
+  
+  // 회전 차이가 임계값보다 클 때만 보간 적용
+  const rotationThreshold = 0.01;
+  const angleDifference = currentQuaternion.angleTo(targetQuaternion);
+  
+  if (angleDifference > rotationThreshold) {
+    // 떨림 방지: 회전 속도 감소 (10 → 6)
+    innerGroupRef.current.quaternion.rotateTowards(
+      targetQuaternion,
+      6 * delta
+    );
+  }
 }
