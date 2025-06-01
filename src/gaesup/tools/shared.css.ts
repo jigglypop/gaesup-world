@@ -1,5 +1,7 @@
 import { style } from "@vanilla-extract/css";
 
+const PretendardFont = "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif";
+
 // 공통 Flex 중앙 정렬 스타일
 export const flexCenter = style({
   display: "flex",
@@ -15,6 +17,8 @@ export const commonButton = style([
     width: "5rem",
     height: "5rem",
     cursor: "pointer",
+    fontFamily: PretendardFont,
+    fontWeight: "500",
     transition: "all 0.3s ease-in",
     boxShadow: "0 0 0.5rem rgba(0, 0, 0, 0.5)",
     backgroundColor: "rgba(0, 0, 0, 0.5)",

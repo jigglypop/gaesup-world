@@ -1,11 +1,9 @@
-import { fontFace, style } from "@vanilla-extract/css";
+import { fontFace, style, globalStyle } from "@vanilla-extract/css";
 import { recipe } from "@vanilla-extract/recipes";
 import { fixed, flex, sprinkles } from "../styles";
 import { vars } from "../styles/theme.css";
 
-const BlackHanSans = fontFace({
-  src: 'local("/public/fonts/BlackHanSans-Regular.ttf")',
-});
+const PretendardFont = "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif";
 
 export const keyBoardToolTipOuter = style([
   flex({
@@ -93,7 +91,7 @@ export const footerLower = style([
 ]);
 
 export const blackHanSans = style({
-  fontFamily: BlackHanSans,
+  fontFamily: PretendardFont,
 });
 
 export const main = style([
@@ -104,7 +102,7 @@ export const main = style([
     justifyContent: "center",
     height: "100vh",
     background: vars.gradient.lightGreen,
-    fontFamily: blackHanSans,
+    fontFamily: PretendardFont,
   },
 ]);
 
@@ -179,7 +177,7 @@ export const helpPanel = style({
   position: 'fixed',
   top: '20px',
   right: '20px',
-  width: '300px',
+  width: '320px',
   maxHeight: '70vh',
   backgroundColor: 'rgba(0, 0, 0, 0.85)',
   border: '1px solid rgba(255, 255, 255, 0.2)',
@@ -188,46 +186,53 @@ export const helpPanel = style({
   backdropFilter: 'blur(10px)',
   color: 'white',
   fontSize: '14px',
+  fontFamily: PretendardFont,
+  letterSpacing: '0.3px',
+  lineHeight: '1.5',
   zIndex: 500,
   overflow: 'auto',
+});
+
+// helpPanel 내부 요소들에 직접 스타일 적용
+globalStyle(`${helpPanel} h3`, {
+  margin: '0 0 16px 0',
+  color: '#4CAF50',
+  fontSize: '18px',
+  fontWeight: '600',
+  borderBottom: '1px solid rgba(76, 175, 80, 0.3)',
+  paddingBottom: '8px',
+});
+
+globalStyle(`${helpPanel} h4`, {
+  margin: '0 0 8px 0',
+  color: '#81C784',
+  fontSize: '15px',
+  fontWeight: '500',
+});
+
+globalStyle(`${helpPanel} ul`, {
+  margin: '0 0 16px 0',
+  paddingLeft: '16px',
+  listStyle: 'disc',
+});
+
+globalStyle(`${helpPanel} li`, {
+  marginBottom: '4px',
+  lineHeight: '1.5',
+  fontSize: '14px',
+});
+
+globalStyle(`${helpPanel} strong`, {
+  color: '#A5D6A7',
+  fontWeight: '600',
 });
 
 export const helpContent = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: '16px',
+  gap: '0px',
 });
 
 export const helpSection = style({
-  marginBottom: '12px',
-});
-
-export const helpPanel_h3 = style({
-  margin: '0 0 16px 0',
-  color: '#4CAF50',
-  fontSize: '18px',
-  borderBottom: '1px solid rgba(76, 175, 80, 0.3)',
-  paddingBottom: '8px',
-});
-
-export const helpPanel_h4 = style({
-  margin: '0 0 8px 0',
-  color: '#81C784',
-  fontSize: '14px',
-});
-
-export const helpPanel_ul = style({
-  margin: '0',
-  paddingLeft: '16px',
-  listStyle: 'disc',
-});
-
-export const helpPanel_li = style({
-  marginBottom: '4px',
-  lineHeight: '1.4',
-});
-
-export const helpPanel_strong = style({
-  color: '#A5D6A7',
-  fontWeight: 'bold',
+  marginBottom: '18px',
 });

@@ -2,7 +2,8 @@ import { globalStyle, style } from "@vanilla-extract/css";
 import { recipe } from "@vanilla-extract/recipes";
 import { fixed, flex } from "../styles/recipe/index.css";
 
-const Roboto = "'Roboto', sans-serif;";
+const PretendardFont = "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif";
+
 export const infoStyle = style({
   position: 'fixed',
   top: 0,
@@ -26,14 +27,17 @@ export const text = style([
   {
     margin: "0 1rem",
     padding: 0,
-    fontSize: "2rem",
+    fontSize: "1.6rem",
     color: "black",
-    fontFamily: Roboto,
+    fontFamily: PretendardFont,
+    fontWeight: "500",
+    letterSpacing: "0.3px",
   },
 ]);
 
 globalStyle(`${text} p`, {
-  fontWeight: "700",
+  fontWeight: "500",
+  fontFamily: PretendardFont,
   margin: 0,
   padding: 0,
 });
@@ -41,8 +45,10 @@ globalStyle(`${text} p`, {
 export const small = style([
   {
     margin: "0.5rem",
-    fontSize: "1.2rem",
+    fontSize: "1.1rem",
     color: "black",
+    fontFamily: PretendardFont,
+    letterSpacing: "0.2px",
   },
 ]);
 
@@ -71,6 +77,9 @@ export const pRecipe = recipe({
     margin: '4px 0',
     cursor: 'pointer',
     borderRadius: '4px',
+    fontSize: '14px',
+    fontFamily: PretendardFont,
+    letterSpacing: '0.2px',
     transition: 'all 0.2s ease',
     ':hover': {
       backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -98,6 +107,9 @@ export const glassButton = style({
   cursor: 'pointer',
   backdropFilter: 'blur(10px)',
   fontSize: '14px',
+  fontFamily: PretendardFont,
+  fontWeight: '500',
+  letterSpacing: '0.2px',
   transition: 'all 0.3s ease',
   ':hover': {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -112,12 +124,16 @@ export const cameraDescription = style({
   transform: 'translateX(-50%)',
   backgroundColor: 'rgba(0, 0, 0, 0.8)',
   color: 'white',
-  padding: '10px 20px',
+  padding: '12px 24px',
   borderRadius: '20px',
   fontSize: '14px',
+  fontFamily: PretendardFont,
+  fontWeight: '300',
+  letterSpacing: '0.5px',
+  lineHeight: '1.5',
   zIndex: 999,
   textAlign: 'center',
-  maxWidth: '400px',
+  maxWidth: '450px',
   backdropFilter: 'blur(10px)',
   border: '1px solid rgba(255, 255, 255, 0.2)',
 });
@@ -134,6 +150,10 @@ export const cameraSettings = style({
   padding: '20px',
   backdropFilter: 'blur(15px)',
   color: 'white',
+  fontFamily: PretendardFont,
+  fontSize: '14px',
+  letterSpacing: '0.3px',
+  lineHeight: '1.4',
   zIndex: 999,
   overflow: 'auto',
 });
@@ -145,6 +165,8 @@ export const settingsHeader = style({
   marginBottom: '20px',
   paddingBottom: '10px',
   borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+  fontFamily: PretendardFont,
+  letterSpacing: '0.3px',
 });
 
 export const resetButton = style({
@@ -155,6 +177,8 @@ export const resetButton = style({
   color: 'white',
   cursor: 'pointer',
   fontSize: '12px',
+  fontFamily: PretendardFont,
+  letterSpacing: '0.1px',
   transition: 'all 0.2s ease',
   ':hover': {
     backgroundColor: 'rgba(255, 100, 100, 0.4)',
@@ -180,6 +204,7 @@ export const settingGroup = style({
   backgroundColor: 'rgba(255, 255, 255, 0.05)',
   borderRadius: '8px',
   border: '1px solid rgba(255, 255, 255, 0.1)',
+  fontFamily: PretendardFont,
 });
 
 export const inputRow = style({
@@ -187,6 +212,7 @@ export const inputRow = style({
   alignItems: 'center',
   gap: '10px',
   fontSize: '14px',
+  letterSpacing: '0.2px',
 });
 
 export const checkboxRow = style({
@@ -194,6 +220,7 @@ export const checkboxRow = style({
   alignItems: 'center',
   gap: '8px',
   fontSize: '14px',
+  letterSpacing: '0.2px',
 });
 
 export const slider = style({
@@ -231,6 +258,7 @@ export const quickPresets = style({
   backgroundColor: 'rgba(255, 255, 255, 0.05)',
   borderRadius: '8px',
   border: '1px solid rgba(255, 255, 255, 0.1)',
+  fontFamily: PretendardFont,
 });
 
 export const presetButtons = style({
@@ -248,6 +276,8 @@ export const presetButton = style({
   color: 'white',
   cursor: 'pointer',
   fontSize: '12px',
+  fontFamily: PretendardFont,
+  letterSpacing: '0.1px',
   transition: 'all 0.2s ease',
   ':hover': {
     backgroundColor: 'rgba(100, 200, 255, 0.4)',

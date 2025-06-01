@@ -1,12 +1,42 @@
-import { globalStyle } from "@vanilla-extract/css";
+import { globalStyle, globalFontFace } from "@vanilla-extract/css";
 import { vars } from "./styles/theme.css";
-const Roboto = "'Roboto', sans-serif;";
+
+// 프리텐다드 폰트 웹폰트 정의
+globalFontFace('Pretendard', {
+  src: 'url("https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff") format("woff")',
+  fontWeight: '400',
+  fontStyle: 'normal',
+  fontDisplay: 'swap',
+});
+
+globalFontFace('Pretendard', {
+  src: 'url("https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Medium.woff") format("woff")',
+  fontWeight: '500',
+  fontStyle: 'normal',
+  fontDisplay: 'swap',
+});
+
+globalFontFace('Pretendard', {
+  src: 'url("https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-SemiBold.woff") format("woff")',
+  fontWeight: '600',
+  fontStyle: 'normal',
+  fontDisplay: 'swap',
+});
+
+globalFontFace('Pretendard', {
+  src: 'url("https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Bold.woff") format("woff")',
+  fontWeight: '700',
+  fontStyle: 'normal',
+  fontDisplay: 'swap',
+});
+
+const PretendardFont = "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif";
 
 globalStyle(":root", {
   background: vars.themes.background,
   color: vars.themes.text.normal,
   fontWeight: "300",
-  fontFamily: Roboto,
+  fontFamily: PretendardFont,
 });
 
 globalStyle("html", {
@@ -15,6 +45,8 @@ globalStyle("html", {
   maxWidth: "100%",
   overflowX: "hidden",
   padding: 0,
+  fontFamily: PretendardFont,
+  fontWeight: "300",
 });
 
 globalStyle("body", {
@@ -22,6 +54,9 @@ globalStyle("body", {
   position: "fixed",
   margin: 0,
   padding: 0,
+  fontFamily: PretendardFont,
+  fontSize: "1.4rem",
+  fontWeight: "300",
 });
 
 globalStyle("*, *::before, *::after", {
