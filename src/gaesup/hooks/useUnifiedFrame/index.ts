@@ -9,17 +9,23 @@ interface FrameSubscription {
   priority: number; // 낮을수록 먼저 실행
 }
 
-// 전역 프레임 매니저
+// 전역 프레임 매니저 - 성능 최적화 버전
 class FrameManager {
   private subscriptions: Map<string, FrameSubscription> = new Map();
+  private sortedSubscriptions: FrameSubscription[] = [];
+  private needsSort = false;
   private isRunning = false;
 
   subscribe(id: string, callback: FrameCallback, priority: number = 0) {
-    this.subscriptions.set(id, { id, callback, priority });
+    const subscription = { id, callback, priority };
+    this.subscriptions.set(id, subscription);
+    this.needsSort = true; // 다음 프레임에서 재정렬 필요
   }
 
   unsubscribe(id: string) {
-    this.subscriptions.delete(id);
+    if (this.subscriptions.delete(id)) {
+      this.needsSort = true; // 다음 프레임에서 재정렬 필요
+    }
   }
 
   executeFrame(state: any, delta: number) {
@@ -27,11 +33,15 @@ class FrameManager {
     this.isRunning = true;
 
     try {
-      // 우선순위 순으로 정렬하여 실행
-      const sortedSubscriptions = Array.from(this.subscriptions.values())
-        .sort((a, b) => a.priority - b.priority);
+      // 구독자가 변경되었거나 처음 실행인 경우에만 재정렬
+      if (this.needsSort) {
+        this.sortedSubscriptions = Array.from(this.subscriptions.values())
+          .sort((a, b) => a.priority - b.priority);
+        this.needsSort = false;
+      }
 
-      for (const subscription of sortedSubscriptions) {
+      // 캐시된 정렬 배열을 사용하여 실행 (60fps에서 배열 정렬 완전 제거!)
+      for (const subscription of this.sortedSubscriptions) {
         try {
           subscription.callback(state, delta);
         } catch (error) {
@@ -45,6 +55,16 @@ class FrameManager {
 
   getSubscriptionCount() {
     return this.subscriptions.size;
+  }
+
+  // 개발용 디버깅 메서드
+  getStats() {
+    return {
+      totalSubscriptions: this.subscriptions.size,
+      needsSort: this.needsSort,
+      isRunning: this.isRunning,
+      sortedLength: this.sortedSubscriptions.length,
+    };
   }
 }
 

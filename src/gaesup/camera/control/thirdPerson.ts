@@ -11,7 +11,20 @@ export const makeThirdPersonCameraPosition = (
   const yDist = cameraOption.yDistance ?? cameraOption.YDistance ?? 10;
   const zDist = cameraOption.zDistance ?? cameraOption.ZDistance ?? 20;
   
-  const cameraPosition = activeState.position
+  let position: THREE.Vector3;
+  if (activeState.position instanceof THREE.Vector3) {
+    position = activeState.position;
+  } else if (activeState.position && typeof activeState.position === 'object') {
+    position = new THREE.Vector3(
+      activeState.position.x || 0,
+      activeState.position.y || 0,
+      activeState.position.z || 0
+    );
+  } else {
+    position = new THREE.Vector3(0, 0, 0);
+  }
+  
+  const cameraPosition = position
     .clone()
     .add(V3(xDist, yDist, zDist));
   
@@ -82,9 +95,23 @@ export default function thirdPerson(prop: cameraPropType) {
   
   if (!state || !state.camera) return;
 
+  // activeState.position을 안전하게 Three.js Vector3로 변환
+  let currentPosition: THREE.Vector3;
+  if (activeState.position instanceof THREE.Vector3) {
+    currentPosition = activeState.position;
+  } else if (activeState.position && typeof activeState.position === 'object') {
+    currentPosition = new THREE.Vector3(
+      activeState.position.x || 0,
+      activeState.position.y || 0,
+      activeState.position.z || 0
+    );
+  } else {
+    currentPosition = new THREE.Vector3(0, 0, 0);
+  }
+
   let targetPosition = makeThirdPersonCameraPosition(activeState, cameraOption);
   
-  targetPosition = checkCameraCollision(targetPosition, activeState.position, cameraOption);
+  targetPosition = checkCameraCollision(targetPosition, currentPosition, cameraOption);
   
   targetPosition = clampCameraPosition(targetPosition, cameraOption);
   
@@ -98,7 +125,7 @@ export default function thirdPerson(prop: cameraPropType) {
   
   state.camera.position.lerp(targetPosition, adaptiveLerpSpeed);
   
-  const lookAtTarget = cameraOption.target || activeState.position;
+  const lookAtTarget = cameraOption.target || currentPosition;
   state.camera.lookAt(lookAtTarget);
   
   if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {

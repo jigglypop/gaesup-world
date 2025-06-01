@@ -17,14 +17,23 @@ interface CharacterPoolConfig {
   cullingDistance: number; // 카메라로부터 이 거리 이상이면 업데이트 중단
 }
 
+// 성능 최적화된 캐릭터 풀
 class CharacterPool {
   private instances: Map<string, CharacterInstance> = new Map();
   private availableIds: string[] = [];
+  private activeInstances: Set<string> = new Set(); // 🚀 활성 인스턴스만 별도 관리
   private config: CharacterPoolConfig;
   private lastGlobalUpdate = 0;
+  private cullingDistanceSquared: number; // 🚀 제곱 거리 사전 계산
+  private lodThresholds = {
+    near: { distanceSquared: 50 * 50, updateInterval: 16 },
+    medium: { distanceSquared: 100 * 100, updateInterval: 33 },
+    far: { distanceSquared: 200 * 200, updateInterval: 66 }
+  }; // 🚀 LOD 임계값 사전 계산
 
   constructor(config: CharacterPoolConfig) {
     this.config = config;
+    this.cullingDistanceSquared = config.cullingDistance * config.cullingDistance;
     
     // 풀 초기화
     for (let i = 0; i < config.maxInstances; i++) {
@@ -50,7 +59,10 @@ class CharacterPool {
     instance.rotation.copy(rotation);
     instance.currentAnimation = animation;
     instance.isActive = true;
-    instance.lastUpdateTime = performance.now();
+    instance.lastUpdateTime = 0; // 다음 프레임에서 즉시 업데이트되도록
+
+    // 🚀 활성 인스턴스 Set에 추가
+    this.activeInstances.add(id);
 
     return id;
   }
@@ -60,6 +72,9 @@ class CharacterPool {
     if (instance && instance.isActive) {
       instance.isActive = false;
       this.availableIds.push(id);
+      
+      // 🚀 활성 인스턴스 Set에서 제거
+      this.activeInstances.delete(id);
     }
   }
 
@@ -69,7 +84,7 @@ class CharacterPool {
       instance.position.copy(position);
       instance.rotation.copy(rotation);
       instance.currentAnimation = animation;
-      instance.lastUpdateTime = performance.now();
+      // lastUpdateTime은 batchUpdate에서 관리
     }
   }
 
@@ -80,20 +95,29 @@ class CharacterPool {
     }
     this.lastGlobalUpdate = currentTime;
 
-    // 거리 기반 컬링 및 배치 업데이트
-    for (const [id, instance] of this.instances) {
-      if (!instance.isActive) continue;
-
-      const distance = instance.position.distanceTo(cameraPosition);
+    // 🚀 활성 인스턴스만 순회 (Map 전체 순회 제거!)
+    for (const id of this.activeInstances) {
+      const instance = this.instances.get(id)!;
+      
+      // 🚀 제곱 거리 비교로 제곱근 연산 완전 제거
+      const distanceSquared = instance.position.distanceToSquared(cameraPosition);
       
       // 너무 멀면 업데이트 스킵
-      if (distance > this.config.cullingDistance) {
+      if (distanceSquared > this.cullingDistanceSquared) {
         continue;
       }
 
-      // LOD 기반 업데이트 빈도 조절
-      const updateFrequency = distance < 50 ? 16 : distance < 100 ? 33 : 66; // ms
-      if (currentTime - instance.lastUpdateTime < updateFrequency) {
+      // 🚀 사전 계산된 LOD 임계값으로 빠른 업데이트 빈도 결정
+      let updateInterval: number;
+      if (distanceSquared < this.lodThresholds.near.distanceSquared) {
+        updateInterval = this.lodThresholds.near.updateInterval;
+      } else if (distanceSquared < this.lodThresholds.medium.distanceSquared) {
+        updateInterval = this.lodThresholds.medium.updateInterval;
+      } else {
+        updateInterval = this.lodThresholds.far.updateInterval;
+      }
+
+      if (currentTime - instance.lastUpdateTime < updateInterval) {
         continue;
       }
 
@@ -103,16 +127,31 @@ class CharacterPool {
   }
 
   getActiveInstances(): CharacterInstance[] {
-    return Array.from(this.instances.values()).filter(instance => instance.isActive);
+    // 🚀 활성 인스턴스 Set을 활용하여 O(n) → O(active) 성능 향상
+    const result: CharacterInstance[] = [];
+    for (const id of this.activeInstances) {
+      const instance = this.instances.get(id)!;
+      result.push(instance);
+    }
+    return result;
   }
 
   getStats() {
-    const active = this.getActiveInstances().length;
     return {
       total: this.instances.size,
-      active,
+      active: this.activeInstances.size, // 🚀 O(1) 활성 개수 조회
       available: this.availableIds.length,
-      utilization: (active / this.instances.size) * 100,
+      utilization: (this.activeInstances.size / this.instances.size) * 100,
+    };
+  }
+
+  // 🚀 개발용 성능 디버깅 메서드
+  getPerformanceStats() {
+    return {
+      ...this.getStats(),
+      cullingDistanceSquared: this.cullingDistanceSquared,
+      lodThresholds: this.lodThresholds,
+      lastGlobalUpdate: this.lastGlobalUpdate,
     };
   }
 }
@@ -133,12 +172,12 @@ export function useCharacterPool(config: Partial<CharacterPoolConfig> = {}) {
 
   const pool = poolRef.current;
 
-  // 통합 프레임 시스템에서 배치 업데이트
+  // 🚀 통합 프레임 시스템에서 최적화된 배치 업데이트
   useUnifiedFrame(
     'character-pool-batch-update',
     (state) => {
       const cameraPosition = state.camera.position;
-      const currentTime = performance.now();
+      const currentTime = performance.now(); // 🚀 프레임당 1회만 호출
       pool.batchUpdate(cameraPosition, currentTime);
     },
     4, // 패시브 객체들 다음 우선순위
@@ -174,11 +213,17 @@ export function useCharacterPool(config: Partial<CharacterPoolConfig> = {}) {
     return pool.getActiveInstances();
   }, [pool]);
 
+  // 🚀 성능 디버깅용 추가 메서드
+  const getPerformanceStats = useCallback(() => {
+    return pool.getPerformanceStats();
+  }, [pool]);
+
   return {
     acquireCharacter,
     releaseCharacter,
     updateCharacter,
     getStats,
     getActiveCharacters,
+    getPerformanceStats, // 🚀 성능 모니터링용
   };
 } 

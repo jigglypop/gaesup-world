@@ -1,10 +1,13 @@
 import { Line } from '@react-three/drei';
 import { ReactNode, useContext } from 'react';
+import { useAtomValue } from 'jotai';
 import * as THREE from 'three';
 import { GaesupWorldContext } from '../../world/context';
+import { modeAtom } from '../../atoms';
 
 export function Clicker({ onMarker, runMarker }: { onMarker: ReactNode; runMarker: ReactNode }) {
-  const { clicker, mode, clickerOption } = useContext(GaesupWorldContext);
+  const { clicker, clickerOption } = useContext(GaesupWorldContext);
+  const mode = useAtomValue(modeAtom);
   const pointQ = [];
   for (let i = 0; i < clickerOption.queue.length; i++) {
     if (clickerOption.queue[i] instanceof THREE.Vector3) {

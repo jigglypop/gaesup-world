@@ -5,7 +5,7 @@ import { useAtom } from 'jotai';
 
 import { V3 } from '../../src';
 import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../src/gaesup/world/context';
-import { cameraOptionAtom } from '../../src/gaesup/atoms/cameraOptionAtom';
+import { cameraOptionAtom, modeAtom } from '../../src/gaesup/atoms';
 import { Icon } from '../icon';
 import * as style from './style.css';
 // FaCarSide lazy loading
@@ -54,47 +54,31 @@ const CAMERA_DESCRIPTIONS = {
 };
 
 export default function Info() {
-  const { mode } = useContext(GaesupWorldContext);
-  const dispatch = useContext(GaesupWorldDispatchContext);
+  const [mode, setMode] = useAtom(modeAtom);
   const [cameraOption, setCameraOption] = useAtom(cameraOptionAtom);
   const [showCameraSettings, setShowCameraSettings] = useState(false);
 
   const setType = (type: 'character' | 'vehicle' | 'airplane') => {
-    dispatch({
-      type: 'update',
-      payload: {
-        mode: {
-          ...mode,
-          type: type,
-          control: 'thirdPersonOrbit',
-        },
-      },
+    setMode({
+      ...mode,
+      type: type,
+      control: 'thirdPersonOrbit',
     });
   };
 
   const setController = (controller: 'keyboard' | 'clicker') => {
-    dispatch({
-      type: 'update',
-      payload: {
-        mode: {
-          ...mode,
-          controller,
-        },
-      },
+    setMode({
+      ...mode,
+      controller,
     });
   };
 
   const setControl = (control: 'thirdPersonOrbit' | 'thirdPerson' | 'firstPerson' | 'topDown' | 'sideScroll' | 'orbit' | 'normal') => {
     const preset = CAMERA_PRESETS[control] || CAMERA_PRESETS[control === 'normal' ? 'thirdPerson' : control === 'orbit' ? 'thirdPersonOrbit' : 'thirdPerson'];
     
-    dispatch({
-      type: 'update',
-      payload: {
-        mode: {
-          ...mode,
-          control,
-        },
-      },
+    setMode({
+      ...mode,
+      control,
     });
 
     setCameraOption(prev => ({
