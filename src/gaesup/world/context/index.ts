@@ -45,9 +45,6 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
       rightward: false,
     },
   },
-  minimap: {
-    props: {},
-  },
   clicker: {
     point: V3(0, 0, 0),
     angle: Math.PI / 2,
@@ -77,18 +74,6 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
       default: 'idle',
       store: {},
     },
-  },
-  cameraOption: {
-    offset: V3(-10, -10, -10),
-    maxDistance: -7,
-    distance: -1,
-    XDistance: 20,
-    YDistance: 10,
-    ZDistance: 20,
-    zoom: 1,
-    target: vec3(),
-    position: vec3(),
-    focus: false,
   },
   rideable: {},
   sizes: {},

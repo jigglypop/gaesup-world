@@ -12,6 +12,7 @@ import {
 } from "../controller/type";
 import { dispatchType } from "../utils/type";
 import { gaesupWorldContextType, urlsType } from "../world/context/type";
+import { CameraOptionType } from "../types";
 
 export type SetAtom<Args extends unknown[], Result> = (...args: Args) => Result;
 
@@ -47,6 +48,7 @@ export type cameraPropType = {
   worldContext: Partial<gaesupWorldContextType>;
   controllerContext: gaesupControllerType;
   controllerOptions: controllerOptionsType;
+  cameraOption: CameraOptionType;
 };
 
 // calculation

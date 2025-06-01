@@ -16,6 +16,7 @@ export { teleport } from "./gaesup/tools/teleport";
 export { InnerHtml } from "./gaesup/utils/innerHtml";
 export { Elr, Qt, V3, V30, V31 } from "./gaesup/utils/vector";
 export { GaesupWorld } from "./gaesup/world";
+export * from "./gaesup/atoms";
 
 // ============================================================================
 // 훅 내보내기

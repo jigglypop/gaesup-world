@@ -1,8 +1,10 @@
 import { vec3 } from '@react-three/rapier';
 import { useContext, useEffect, useRef } from 'react';
+import { useAtom } from 'jotai';
 import * as THREE from 'three';
 import { useClicker } from '../hooks/useClicker';
 import { GaesupWorldContext, GaesupWorldDispatchContext } from '../world/context';
+import { minimapAtom } from '../atoms/minimapAtom';
 
 export function GaeSupProps({
   type = 'normal',
@@ -16,11 +18,12 @@ export function GaeSupProps({
   children: React.ReactNode;
 }) {
   const groupRef = useRef<THREE.Group>(null);
-  const { minimap } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
+  const [minimap, setMinimap] = useAtom(minimapAtom);
   const { moveClicker } = useClicker();
+
   useEffect(() => {
-    if (groupRef.current) {
+    if (groupRef.current && text) {
       const box = new THREE.Box3().setFromObject(groupRef.current);
       const size = vec3(box.getSize(new THREE.Vector3())).clone();
       const center = vec3(box.getCenter(new THREE.Vector3())).clone();
@@ -30,17 +33,16 @@ export function GaeSupProps({
         size,
         center,
       };
-      minimap.props[text] = obj;
-      dispatch({
-        type: 'update',
-        payload: {
-          minimap: {
-            ...minimap,
-          },
+
+      setMinimap(prev => ({
+        ...prev,
+        props: {
+          ...prev.props,
+          [text]: obj,
         },
-      });
+      }));
     }
-  }, []);
+  }, [text, type, setMinimap]);
 
   return (
     <group

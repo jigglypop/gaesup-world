@@ -1,65 +1,47 @@
 import { useContext } from "react";
+import { useAtom } from "jotai";
 import * as THREE from "three";
 import { makeNormalCameraPosition } from "../../camera/control/normal";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
 } from "../../world/context";
+import { cameraOptionAtom, blockAtom } from "../../atoms";
 
 export function useFocus() {
-  const { cameraOption, activeState, block } = useContext(GaesupWorldContext);
+  const { activeState } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
-
-  const dispatchAsync = async () => {
-    dispatch({
-      type: "update",
-      payload: {
-        cameraOption: cameraOption,
-      },
-    });
-  };
+  const [cameraOption, setCameraOption] = useAtom(cameraOptionAtom);
+  const [block, setBlock] = useAtom(blockAtom);
 
   const close = async () => {
-    block.control = true;
-    block.animation = true;
-    dispatch({
-      type: "update",
-      payload: {
-        block: block,
-      },
-    });
+    setBlock(prev => ({
+      ...prev,
+      control: true,
+      animation: true,
+    }));
   };
 
   const open = async () => {
-    block.control = false;
-    block.animation = false;
-    dispatch({
-      type: "update",
-      payload: {
-        block: block,
-      },
-    });
+    setBlock(prev => ({
+      ...prev,
+      control: false,
+      animation: false,
+    }));
   };
 
   const on = async () => {
-    cameraOption.focus = true;
-
-    dispatch({
-      type: "update",
-      payload: {
-        cameraOption: cameraOption,
-      },
-    });
+    setCameraOption(prev => ({
+      ...prev,
+      focus: true,
+    }));
   };
 
   const off = async () => {
-    cameraOption.focus = false;
-    dispatch({
-      type: "update",
-      payload: {
-        cameraOption: cameraOption,
-      },
-    });
+    setCameraOption(prev => ({
+      ...prev,
+      focus: false,
+    }));
   };
 
   const focus = async ({
@@ -71,22 +53,34 @@ export function useFocus() {
     target: THREE.Vector3;
     position: THREE.Vector3;
   }) => {
-    if (zoom) cameraOption.zoom = zoom;
-    cameraOption.position.lerp(position, 0.1);
-    cameraOption.target.lerp(target, 0.1);
+    setCameraOption(prev => {
+      const updated = { ...prev };
+      if (zoom) updated.zoom = zoom;
+      updated.position.lerp(position, 0.1);
+      updated.target.lerp(target, 0.1);
+      return updated;
+    });
   };
 
   const free = async ({ zoom }: { zoom?: number }) => {
-    if (zoom) cameraOption.zoom = zoom;
-    cameraOption.position.lerp(
-      makeNormalCameraPosition(activeState, cameraOption),
-      0.1
-    );
-    cameraOption.target.lerp(activeState.position.clone(), 0.1);
+    setCameraOption(prev => {
+      const updated = { ...prev };
+      if (zoom) updated.zoom = zoom;
+      updated.position.lerp(
+        makeNormalCameraPosition(activeState, cameraOption),
+        0.1
+      );
+      updated.target.lerp(activeState.position.clone(), 0.1);
+      return updated;
+    });
   };
 
   const move = async ({ newPosition }: { newPosition: THREE.Vector3 }) => {
-    cameraOption.position.lerp(newPosition.clone(), 0.1);
+    setCameraOption(prev => {
+      const updated = { ...prev };
+      updated.position.lerp(newPosition.clone(), 0.1);
+      return updated;
+    });
   };
 
   const focusOn = async ({
@@ -101,9 +95,7 @@ export function useFocus() {
     await close();
     await on();
     await move({ newPosition: position });
-
     await focus({ zoom, target, position });
-    await dispatchAsync();
   };
 
   const focusOff = async ({ zoom }: { zoom?: number }) => {
@@ -113,7 +105,6 @@ export function useFocus() {
       newPosition: makeNormalCameraPosition(activeState, cameraOption),
     });
     await free({ zoom });
-    await dispatchAsync();
   };
 
   return {

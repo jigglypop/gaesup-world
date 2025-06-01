@@ -10,20 +10,18 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
       ...gaesupWorldDefault.activeState,
       position: props.startPosition || gaesupWorldDefault.activeState.position,
     },
-    cameraOption: { ...gaesupWorldDefault.cameraOption, ...(props.cameraOption || {}) },
     mode: { ...gaesupWorldDefault.mode, ...(props.mode || {}) },
     urls: { ...gaesupWorldDefault.urls, ...(props.urls || {}) },
     refs: null,
     states: gaesupWorldDefault.states,
     rideable: gaesupWorldDefault.rideable,
-    minimap: gaesupWorldDefault.minimap,
     control: gaesupWorldDefault.control,
     clicker: gaesupWorldDefault.clicker,
     clickerOption: { ...gaesupWorldDefault.clickerOption, ...(props.clickerOption || {}) },
     animationState: gaesupWorldDefault.animationState,
     block: { ...gaesupWorldDefault.block, ...(props.block || {}) },
     sizes: gaesupWorldDefault.sizes,
-  }), [props.startPosition, props.cameraOption, props.mode, props.urls, props.clickerOption, props.block]);
+  }), [props.startPosition, props.mode, props.urls, props.clickerOption, props.block]);
 
   const [value, dispatch] = useReducer(gaesupWorldReducer, initialState);
   const gaesupProps = useMemo(() => ({ value, dispatch }), [value, dispatch]);

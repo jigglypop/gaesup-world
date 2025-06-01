@@ -1,14 +1,29 @@
 import { atom } from 'jotai';
 import * as THREE from 'three';
+import { CameraOptionType } from '../types';
+import { V3 } from '../utils/vector';
 
-export interface CameraOption {
-  offset: THREE.Vector3;
-  zoom: number;
-  maxDistance: number;
-}
-
-export const cameraOptionAtom = atom<CameraOption>({
-  offset: new THREE.Vector3(-10, -10, -10),
-  zoom: 1,
+export const cameraOptionAtom = atom<CameraOptionType>({
+  offset: V3(-10, -10, -10),
   maxDistance: -7,
+  distance: -1,
+  xDistance: 20,
+  yDistance: 10,
+  zDistance: 20,
+  zoom: 1,
+  target: new THREE.Vector3(),
+  position: new THREE.Vector3(),
+  focus: false,
+  enableCollision: false,
+  collisionMargin: 0.1,
+  smoothing: {
+    position: 0.1,
+    rotation: 0.1,
+    fov: 0.1,
+  },
+  fov: 75,
+  minFov: 10,
+  maxFov: 120,
+  bounds: {},
+  modeSettings: {},
 });

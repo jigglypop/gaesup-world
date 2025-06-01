@@ -1,5 +1,6 @@
 import { vec3 } from "@react-three/rapier";
 import { useCallback, useContext, useEffect, useMemo } from "react";
+import { useAtom } from "jotai";
 import * as THREE from "three";
 import { groundRayType, refsType } from "../../controller/type";
 
@@ -10,10 +11,12 @@ import {
   GaesupWorldDispatchContext,
 } from "../../world/context";
 import { gaesupWorldContextType } from "../../world/context/type";
+import { cameraOptionAtom } from "../../atoms/cameraOptionAtom";
 
 export default function initControllerProps(props: { refs: refsType }) {
   const context = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
+  const [cameraOption] = useAtom(cameraOptionAtom);
 
   // 컨트롤 설정을 useMemo로 최적화
   const controlConfig = useMemo(() => {
@@ -56,12 +59,12 @@ export default function initControllerProps(props: { refs: refsType }) {
       rayCast: new THREE.Raycaster(vec3(), vec3(), 0, -7),
       dir: vec3(),
       position: vec3(),
-      length: -context.cameraOption.maxDistance,
+      length: -cameraOption.maxDistance,
       detected: [],
       intersects: [],
       intersectObjectMap: {},
     };
-  }, [context.cameraOption.maxDistance]);
+  }, [cameraOption.maxDistance]);
 
   const initRefs = useCallback(
     (refs: refsType) => {

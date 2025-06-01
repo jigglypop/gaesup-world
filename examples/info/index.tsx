@@ -1,9 +1,11 @@
 'use client';
 
 import { useContext, useState } from 'react';
+import { useAtom } from 'jotai';
 
 import { V3 } from '../../src';
 import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../src/gaesup/world/context';
+import { cameraOptionAtom } from '../../src/gaesup/atoms/cameraOptionAtom';
 import { Icon } from '../icon';
 import * as style from './style.css';
 // FaCarSide lazy loading
@@ -52,8 +54,9 @@ const CAMERA_DESCRIPTIONS = {
 };
 
 export default function Info() {
-  const { mode, cameraOption } = useContext(GaesupWorldContext);
+  const { mode } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
+  const [cameraOption, setCameraOption] = useAtom(cameraOptionAtom);
   const [showCameraSettings, setShowCameraSettings] = useState(false);
 
   const setType = (type: 'character' | 'vehicle' | 'airplane') => {
@@ -91,54 +94,40 @@ export default function Info() {
           ...mode,
           control,
         },
-        cameraOption: {
-          ...cameraOption,
-          ...preset,
-        },
       },
     });
+
+    setCameraOption(prev => ({
+      ...prev,
+      ...preset,
+    }));
   };
 
   const updateCameraOption = (key: string, value: any) => {
-    dispatch({
-      type: 'update',
-      payload: {
-        cameraOption: {
-          ...cameraOption,
-          [key]: value,
-        },
-      },
-    });
+    setCameraOption(prev => ({
+      ...prev,
+      [key]: value,
+    }));
   };
 
   const updateSmoothingOption = (key: string, value: number) => {
-    dispatch({
-      type: 'update',
-      payload: {
-        cameraOption: {
-          ...cameraOption,
-          smoothing: {
-            ...cameraOption.smoothing,
-            [key]: value,
-          },
-        },
+    setCameraOption(prev => ({
+      ...prev,
+      smoothing: {
+        ...prev.smoothing,
+        [key]: value,
       },
-    });
+    }));
   };
 
   const resetToPreset = () => {
     const control = mode.control;
     const preset = CAMERA_PRESETS[control] || CAMERA_PRESETS[control === 'normal' ? 'thirdPerson' : control === 'orbit' ? 'thirdPersonOrbit' : 'thirdPerson'];
     
-    dispatch({
-      type: 'update',
-      payload: {
-        cameraOption: {
-          ...cameraOption,
-          ...preset,
-        },
-      },
-    });
+    setCameraOption(prev => ({
+      ...prev,
+      ...preset,
+    }));
   };
 
   const getCurrentCameraDescription = () => {

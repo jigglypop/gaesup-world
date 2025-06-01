@@ -38,29 +38,27 @@ export const clampTopDownPosition = (
 export default function topDown(prop: cameraPropType) {
   const {
     state,
-    worldContext: { cameraOption, activeState },
+    worldContext: { activeState },
     controllerOptions: { lerp },
+    cameraOption,
   } = prop;
   
   if (!state || !state.camera) return;
 
-  let targetPosition = makeTopDownCameraPosition(activeState, cameraOption);
-  
-  if (cameraOption.bounds) {
-    targetPosition = clampTopDownPosition(targetPosition, {
-      minX: cameraOption.bounds.minX,
-      maxX: cameraOption.bounds.maxX,
-      minZ: cameraOption.bounds.minZ,
-      maxZ: cameraOption.bounds.maxZ,
-    });
-  }
+  const targetPosition = makeTopDownCameraPosition(activeState, cameraOption);
   
   const lerpSpeed = cameraOption.smoothing?.position ?? lerp.cameraPosition;
   state.camera.position.lerp(targetPosition, lerpSpeed);
   
-  state.camera.rotation.set(-Math.PI / 2, 0, 0);
-  
-  const lookAtTarget = activeState.position.clone();
-  lookAtTarget.y = 0;
+  const lookAtTarget = cameraOption.target || activeState.position;
   state.camera.lookAt(lookAtTarget);
+  
+  if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
+    const targetFov = cameraOption.fov;
+    const currentFov = state.camera.fov;
+    const fovLerpSpeed = cameraOption.smoothing?.fov ?? 0.1;
+    
+    state.camera.fov = THREE.MathUtils.lerp(currentFov, targetFov, fovLerpSpeed);
+    state.camera.updateProjectionMatrix();
+  }
 } 

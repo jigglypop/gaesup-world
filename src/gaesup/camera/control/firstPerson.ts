@@ -4,12 +4,24 @@ import { V3 } from "../../utils/vector";
 import { activeStateType, cameraOptionType } from "../../world/context/type";
 
 export const makeFirstPersonCameraPosition = (
-  activeState: activeStateType,
-  cameraOption: cameraOptionType
+  activeState: any,
+  cameraOption: any
 ): THREE.Vector3 => {
-  const yOffset = cameraOption.yDistance ?? cameraOption.YDistance ?? 1.6;
+  const yOffset = cameraOption.yDistance ?? 1.6;
   
-  return activeState.position.clone().add(V3(0, yOffset, 0));
+  const cameraPosition = activeState.position
+    .clone()
+    .add(new THREE.Vector3(0, yOffset, 0));
+  
+  return cameraPosition;
+};
+
+export const calculateFirstPersonDirection = (
+  activeState: any
+): THREE.Vector3 => {
+  const forward = new THREE.Vector3(0, 0, -1);
+  forward.applyEuler(activeState.euler);
+  return forward.normalize();
 };
 
 export const applyHeadBobbing = (
@@ -28,18 +40,20 @@ export const applyHeadBobbing = (
 export default function firstPerson(prop: cameraPropType) {
   const {
     state,
-    worldContext: { cameraOption, activeState },
-    controllerOptions: { lerp },
+    worldContext: { activeState },
+    cameraOption,
   } = prop;
   
   if (!state || !state.camera) return;
 
   const targetPosition = makeFirstPersonCameraPosition(activeState, cameraOption);
   
-  const lerpSpeed = cameraOption.smoothing?.position ?? lerp.cameraPosition;
+  const lerpSpeed = cameraOption.smoothing?.position ?? 0.1;
   state.camera.position.lerp(targetPosition, lerpSpeed);
   
-  state.camera.rotation.copy(activeState.euler);
+  const lookDirection = calculateFirstPersonDirection(activeState);
+  const lookAtTarget = state.camera.position.clone().add(lookDirection.multiplyScalar(10));
+  state.camera.lookAt(lookAtTarget);
   
   if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
     const targetFov = cameraOption.fov;

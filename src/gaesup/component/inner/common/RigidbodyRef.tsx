@@ -2,10 +2,12 @@ import { useAnimations, useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
 import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three/rapier';
 import { MutableRefObject, forwardRef, useContext, useEffect, useMemo } from 'react';
+import { useAtom } from 'jotai';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import playActions, { subscribeActions } from '../../../animation/actions';
 import Camera from '../../../camera';
+import { cameraOptionAtom } from '../../../atoms/cameraOptionAtom';
 import { GaesupControllerContext } from '../../../controller/context';
 import initCallback from '../../../controller/initialize/callback';
 import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
@@ -21,6 +23,10 @@ export const RigidBodyRef = forwardRef(
   (props: rigidBodyRefType, ref: MutableRefObject<RapierRigidBody>) => {
     const { size } = useGltfAndSize({ url: props.url });
     const setGroundRay = useSetGroundRay();
+    const worldContext = useContext(GaesupWorldContext);
+    const controllerContext = useContext(GaesupControllerContext);
+    const [cameraOption] = useAtom(cameraOptionAtom);
+
     useEffect(() => {
       if (props.groundRay && props.colliderRef) {
         setGroundRay({
@@ -30,11 +36,10 @@ export const RigidBodyRef = forwardRef(
         });
       }
     }, [props.groundRay, props.colliderRef, setGroundRay]);
+
     const { scene, animations } = useGLTF(props.url);
     const { actions, ref: animationRef } = useAnimations(animations);
-    const worldContext = useContext(GaesupWorldContext);
-    const controllerContext = useContext(GaesupControllerContext);
-    // skeleton을 추출하여 memoization
+
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
     const skeleton = useMemo(() => {
       let skel = null;
@@ -57,6 +62,7 @@ export const RigidBodyRef = forwardRef(
         worldContext,
         controllerContext,
         controllerOptions: props.controllerOptions,
+        cameraOption,
       };
 
       Camera(cameraProps);

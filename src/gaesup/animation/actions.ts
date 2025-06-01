@@ -1,8 +1,10 @@
 import { useFrame } from '@react-three/fiber';
 import { useContext, useEffect } from 'react';
+import { useAtomValue } from 'jotai';
 import { animationTagType } from '../controller/type';
 import { useGaesupAnimation } from '../hooks/useGaesupAnimation';
 import { GaesupWorldContext, GaesupWorldDispatchContext } from '../world/context';
+import { blockAtom, modeAtom } from '../atoms';
 import { playActionsType, subscribeActionsType } from './type';
 
 export function subscribeActions({ type }: subscribeActionsType) {
@@ -65,8 +67,10 @@ export default function playActions({
   currentAnimation,
   isActive,
 }: playActionsType) {
-  const { mode, animationState, block } = useContext(GaesupWorldContext);
+  const { animationState } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
+  const block = useAtomValue(blockAtom);
+  const mode = useAtomValue(modeAtom);
   const { notify, store } = useGaesupAnimation({ type });
 
   if (isActive) {

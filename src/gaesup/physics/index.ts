@@ -1,9 +1,11 @@
 import { useContext, useEffect, useMemo } from 'react';
+import { useAtomValue } from 'jotai';
 import { GaesupControllerContext } from '../controller/context';
 import { useGaesupGltf } from '../hooks/useGaesupGltf';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
 import { V3 } from '../utils';
 import { GaesupWorldContext, GaesupWorldDispatchContext } from '../world/context';
+import { urlsAtom, blockAtom } from '../atoms';
 import airplaneCalculation from './airplane';
 import characterCalculation from './character';
 import check from './check';
@@ -20,7 +22,9 @@ export default function calculation({
   const worldContext = useContext(GaesupWorldContext);
   const controllerContext = useContext(GaesupControllerContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
-  const { mode, activeState, block } = worldContext;
+  const urls = useAtomValue(urlsAtom);
+  const block = useAtomValue(blockAtom);
+  const { mode, activeState } = worldContext;
   const { getSizesByUrls } = useGaesupGltf();
   useEffect(() => {
     if (!rigidBodyRef || !innerGroupRef) return;
@@ -47,8 +51,8 @@ export default function calculation({
 
   // 크기 정보를 미리 계산하고 캐시
   const matchSizes = useMemo(() => 
-    getSizesByUrls(worldContext?.urls), 
-    [getSizesByUrls, worldContext?.urls]
+    getSizesByUrls(urls), 
+    [getSizesByUrls, urls]
   );
 
   // 계산 함수를 미리 선택하여 매 프레임마다 조건 검사 방지

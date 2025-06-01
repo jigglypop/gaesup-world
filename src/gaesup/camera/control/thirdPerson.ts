@@ -75,8 +75,9 @@ export const calculateAdaptiveLerpSpeed = (
 export default function thirdPerson(prop: cameraPropType) {
   const {
     state,
-    worldContext: { cameraOption, activeState },
+    worldContext: { activeState },
     controllerOptions: { lerp },
+    cameraOption,
   } = prop;
   
   if (!state || !state.camera) return;

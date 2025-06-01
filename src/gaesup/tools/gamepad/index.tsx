@@ -1,6 +1,8 @@
 // GamePad.tsx
 import { useContext } from 'react';
+import { useAtomValue } from 'jotai';
 import { GaesupWorldContext } from '../../world/context';
+import { modeAtom } from '../../atoms';
 import GamePadButton from './GamePadButton';
 import * as S from './style.css';
 import { gameBoyDirectionType, gamepadType } from './type';
@@ -11,7 +13,8 @@ export const gamepadDefault = {
 
 export function GamePad(props: gamepadType) {
   const { gamePadStyle, gamePadButtonStyle, label } = props;
-  const { control, mode } = useContext(GaesupWorldContext);
+  const { control } = useContext(GaesupWorldContext);
+  const mode = useAtomValue(modeAtom);
   const GamePadDirections = Object.keys(control)
     .map((key) => {
       const name = label?.[key] || key;

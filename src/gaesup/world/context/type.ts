@@ -116,11 +116,9 @@ export type gaesupWorldContextType = {
   mode: ModeType;
   urls: ResourceUrlsType;
   states: GameStatesType;
-  minimap: minimapInnerType;
   control: KeyboardControlState<string>;
   refs: RefsType;
   animationState: AnimationStateType;
-  cameraOption: CameraOptionType;
   clickerOption: ClickerOptionType;
   clicker: ClickerType;
   rideable: { [key: string]: rideableType };

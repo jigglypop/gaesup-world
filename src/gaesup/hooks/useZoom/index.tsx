@@ -1,21 +1,14 @@
-import { useContext } from "react";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
+import { useAtom } from "jotai";
+import { cameraOptionAtom } from "../../atoms/cameraOptionAtom";
 
 export function useZoom() {
-  const { cameraOption } = useContext(GaesupWorldContext);
-  const dispatch = useContext(GaesupWorldDispatchContext);
+  const [cameraOption, setCameraOption] = useAtom(cameraOptionAtom);
 
   const zoom = (zoom: number) => {
-    cameraOption.zoom = zoom;
-    dispatch({
-      type: "update",
-      payload: {
-        cameraOption: cameraOption,
-      },
-    });
+    setCameraOption(prev => ({
+      ...prev,
+      zoom,
+    }));
   };
 
   return {

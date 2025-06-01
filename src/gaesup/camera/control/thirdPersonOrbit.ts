@@ -36,27 +36,29 @@ export const smoothOrbitRotation = (
 export default function thirdPersonOrbit(prop: cameraPropType) {
   const {
     state,
-    worldContext: { activeState, cameraOption },
+    worldContext: { activeState },
     controllerOptions: { lerp },
+    cameraOption,
   } = prop;
   
   if (!state || !state.camera) return;
+
+  const targetPosition = makeThirdPersonOrbitCameraPosition(activeState, cameraOption);
   
-  const cameraPosition = makeThirdPersonOrbitCameraPosition(activeState, cameraOption);
+  const lerpSpeed = cameraOption.smoothing?.position ?? lerp.cameraPosition;
+  state.camera.position.lerp(targetPosition, lerpSpeed);
   
-  const lerpSpeed = cameraOption.smoothing?.position ?? lerp.cameraTurn;
-  state.camera.position.lerp(cameraPosition.clone(), lerpSpeed);
+  const lookAtTarget = cameraOption.target || activeState.position;
+  state.camera.lookAt(lookAtTarget);
   
-  if (cameraOption.smoothing?.rotation) {
-    smoothOrbitRotation(state.camera, activeState, cameraOption.smoothing.rotation);
-  } else {
-    state.camera.quaternion.copy(
-      activeState.quat.clone().multiply(quat().setFromAxisAngle(V3(0, 1, 0), Math.PI)),
-    );
-    state.camera.rotation.copy(activeState.euler);
+  if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
+    const targetFov = cameraOption.fov;
+    const currentFov = state.camera.fov;
+    const fovLerpSpeed = cameraOption.smoothing?.fov ?? 0.1;
+    
+    state.camera.fov = THREE.MathUtils.lerp(currentFov, targetFov, fovLerpSpeed);
+    state.camera.updateProjectionMatrix();
   }
-  
-  state.camera.lookAt(activeState.position.clone());
 }
 
 export const makeOrbitCameraPosition = makeThirdPersonOrbitCameraPosition;

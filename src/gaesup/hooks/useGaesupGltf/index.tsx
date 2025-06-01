@@ -1,5 +1,6 @@
 import { useGLTF } from "@react-three/drei";
 import { useContext } from "react";
+import { useAtomValue } from "jotai";
 import * as THREE from "three";
 import { GLTFResult } from "../../component/type";
 import {
@@ -7,6 +8,7 @@ import {
   GaesupWorldDispatchContext,
 } from "../../world/context";
 import { urlsType } from "../../world/context/type";
+import { sizesAtom } from "../../atoms";
 
 export type gltfAndSizeType = {
   size: THREE.Vector3;
@@ -57,7 +59,7 @@ export const useGltfAndSize = ({ url }: useGltfAndSizeType) => {
 };
 
 export const useGaesupGltf = () => {
-  const { sizes } = useContext(GaesupWorldContext);
+  const sizes = useAtomValue(sizesAtom);
 
   // get size by url
   const getSizesByUrls = (urls?: urlsType) => {

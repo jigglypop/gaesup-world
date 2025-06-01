@@ -1,5 +1,7 @@
+import { useAtom, useAtomValue } from 'jotai';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
 import { cameraPropType } from '../physics/type';
+import { cameraOptionAtom, blockAtom } from '../atoms';
 import thirdPerson, { makeThirdPersonCameraPosition } from './control/thirdPerson';
 import thirdPersonOrbit from './control/thirdPersonOrbit';
 import firstPerson from './control/firstPerson';
@@ -7,50 +9,58 @@ import topDown from './control/topDown';
 import sideScroll from './control/sideScroll';
 
 export default function Camera(prop: cameraPropType) {
+  const [cameraOption, setCameraOption] = useAtom(cameraOptionAtom);
+  const block = useAtomValue(blockAtom);
+  
+  const propWithCamera = { ...prop, cameraOption };
+  
   // 통합 프레임 시스템 사용 (우선순위: 1 - 물리 계산 다음)
   useUnifiedFrame(
     `camera-${prop.worldContext.mode.control}`,
     (state) => {
-      prop.state = state;
+      propWithCamera.state = state;
       
       // 카메라 컨트롤 처리
-      if (!prop.worldContext.block.camera) {
+      if (!block.camera) {
         const control = prop.worldContext.mode.control;
         
         switch (control) {
           case 'firstPerson':
-            firstPerson(prop);
+            firstPerson(propWithCamera);
             break;
           case 'thirdPerson':
           case 'normal':
-            thirdPerson(prop);
+            thirdPerson(propWithCamera);
             break;
           case 'thirdPersonOrbit':
           case 'orbit':
-            thirdPersonOrbit(prop);
+            thirdPersonOrbit(propWithCamera);
             break;
           case 'topDown':
-            topDown(prop);
+            topDown(propWithCamera);
             break;
           case 'sideScroll':
-            sideScroll(prop);
+            sideScroll(propWithCamera);
             break;
           default:
-            thirdPerson(prop);
+            thirdPerson(propWithCamera);
             break;
         }
       }
       
       // 포커스가 아닐 때 카메라 activeState 따라가기
-      if (!prop.worldContext.cameraOption.focus) {
-        prop.worldContext.cameraOption.target = prop.worldContext.activeState.position;
-        prop.worldContext.cameraOption.position = makeThirdPersonCameraPosition(
-          prop.worldContext.activeState,
-          prop.worldContext.cameraOption,
-        );
+      if (!cameraOption.focus) {
+        setCameraOption(prev => ({
+          ...prev,
+          target: prop.worldContext.activeState.position,
+          position: makeThirdPersonCameraPosition(
+            prop.worldContext.activeState,
+            prev,
+          ),
+        }));
       }
     },
     1, // 물리 계산 다음 우선순위
-    !prop.worldContext.block.camera
+    !block.camera
   );
 }
