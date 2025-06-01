@@ -7,7 +7,8 @@ export default function stop(prop: calcType) {
   } = prop;
   const { keyS } = control;
 
-  if (keyS && mode.controller === "clicker") {
+  // 하이브리드 모드: S 키로 클리커 이동 중지 (컨트롤러 모드 무관)
+  if (keyS && clicker.isOn) {
     dispatch({
       type: "update",
       payload: {

@@ -12,7 +12,9 @@ export function orbitDirection({
   const dirX = Number(leftward) - Number(rightward);
   const dirZ = Number(forward) - Number(backward);
   let start = 0;
-  if (mode.controller === 'clicker') {
+  
+  // 하이브리드 모드: 클리커가 활성화되면 클리커 우선, 아니면 키보드
+  if (clicker.isOn) {
     activeState.euler.y = Math.PI / 2 - clicker.angle;
     start = 1;
   } else {
@@ -34,12 +36,14 @@ export function normalDirection({
   clicker,
 }: Partial<gaesupWorldContextType>) {
   const { forward, backward, leftward, rightward } = control;
-  if (mode.controller === 'clicker') {
+  
+  // 하이브리드 모드: 클리커가 활성화되면 클리커 우선, 아니면 키보드
+  if (clicker.isOn) {
+    // 클리커 모드 방향 계산
     activeState.euler.y = Math.PI / 2 - clicker.angle;
     activeState.dir.set(-Math.sin(activeState.euler.y), 0, -Math.cos(activeState.euler.y));
   } else {
-    // 일반 컨트롤
-    // right hand rule. north -> east -> south -> west
+    // 키보드 모드 방향 계산
     const dirX = Number(leftward) - Number(rightward);
     const dirZ = Number(forward) - Number(backward);
     if (dirX === 0 && dirZ === 0) return;
@@ -52,9 +56,13 @@ export function normalDirection({
 
 export default function direction(prop: calcType) {
   const { worldContext } = prop;
-  if (worldContext.mode.control === 'normal') {
+  const control = worldContext.mode.control;
+  
+  if (control === 'thirdPerson' || control === 'normal' || control === 'firstPerson' || control === 'topDown' || control === 'sideScroll') {
     normalDirection(worldContext);
-  } else if (worldContext.mode.control === 'orbit') {
+  } else if (control === 'thirdPersonOrbit' || control === 'orbit') {
     orbitDirection(worldContext);
+  } else {
+    normalDirection(worldContext);
   }
 }

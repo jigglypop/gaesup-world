@@ -3,22 +3,15 @@ import { recipe } from "@vanilla-extract/recipes";
 import { fixed, flex } from "../styles/recipe/index.css";
 
 const Roboto = "'Roboto', sans-serif;";
-export const infoStyle = style([
-  fixed({
-    north_west: true,
-  }),
-  {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "between",
-    top: "0",
-    left: "0",
-    color: "white",
-    zIndex: "10",
-    width: "100%",
-    height: "6rem",
-  },
-]);
+export const infoStyle = style({
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  display: 'flex',
+  gap: '10px',
+  padding: '20px',
+  zIndex: 1000,
+});
 
 export const infoInnerStyle = style([
   flex({ row: "9" }),
@@ -74,42 +67,190 @@ export const cameraLeft = style([
 
 export const pRecipe = recipe({
   base: {
-    color: "white",
+    padding: '8px 12px',
+    margin: '4px 0',
+    cursor: 'pointer',
+    borderRadius: '4px',
+    transition: 'all 0.2s ease',
+    ':hover': {
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    },
   },
   variants: {
     selected: {
-      false: {
-        color: "white",
-      },
       true: {
-        color: "rgba(99,251,215,1)",
+        backgroundColor: 'rgba(100, 200, 255, 0.3)',
+        color: '#ffffff',
+      },
+      false: {
+        color: 'rgba(255, 255, 255, 0.8)',
       },
     },
   },
 });
 
-export const glassButton = style([
-  {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    textAlign: "center",
-    margin: "0.5rem",
-    fontSize: "1rem",
-    borderRadius: "50%",
-    width: "4.5rem",
-    height: "4.5rem",
-    color: "white",
-    background: "rgba(0, 0, 0, 0.6)",
-    boxShadow: "0 0 2px 0 rgba(0, 0, 0, 0.6)",
-    transition: "all 0.2s ease-in",
-    cursor: "pointer",
-    fontWeight: "300",
-    fontFamily: Roboto,
+export const glassButton = style({
+  padding: '8px 16px',
+  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  borderRadius: '8px',
+  color: 'white',
+  cursor: 'pointer',
+  backdropFilter: 'blur(10px)',
+  fontSize: '14px',
+  transition: 'all 0.3s ease',
+  ':hover': {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    transform: 'translateY(-2px)',
+  },
+});
 
-    ":hover": {
-      background: "rgba(0, 0, 0, 0.8)",
-      boxShadow: "0 0 5px 0 rgba(0, 0, 0, 0.8)",
+export const cameraDescription = style({
+  position: 'fixed',
+  top: '80px',
+  left: '50%',
+  transform: 'translateX(-50%)',
+  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  color: 'white',
+  padding: '10px 20px',
+  borderRadius: '20px',
+  fontSize: '14px',
+  zIndex: 999,
+  textAlign: 'center',
+  maxWidth: '400px',
+  backdropFilter: 'blur(10px)',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+});
+
+export const cameraSettings = style({
+  position: 'fixed',
+  top: '80px',
+  left: '20px',
+  width: '600px',
+  maxHeight: '80vh',
+  backgroundColor: 'rgba(0, 0, 0, 0.9)',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  borderRadius: '12px',
+  padding: '20px',
+  backdropFilter: 'blur(15px)',
+  color: 'white',
+  zIndex: 999,
+  overflow: 'auto',
+});
+
+export const settingsHeader = style({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: '20px',
+  paddingBottom: '10px',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+});
+
+export const resetButton = style({
+  padding: '6px 12px',
+  backgroundColor: 'rgba(255, 100, 100, 0.2)',
+  border: '1px solid rgba(255, 100, 100, 0.4)',
+  borderRadius: '6px',
+  color: 'white',
+  cursor: 'pointer',
+  fontSize: '12px',
+  transition: 'all 0.2s ease',
+  ':hover': {
+    backgroundColor: 'rgba(255, 100, 100, 0.4)',
+  },
+});
+
+export const settingsGrid = style({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, 1fr)',
+  gap: '20px',
+  '@media': {
+    '(max-width: 768px)': {
+      gridTemplateColumns: '1fr',
     },
   },
-]);
+});
+
+export const settingGroup = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px',
+  padding: '15px',
+  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  borderRadius: '8px',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+});
+
+export const inputRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+  fontSize: '14px',
+});
+
+export const checkboxRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  fontSize: '14px',
+});
+
+export const slider = style({
+  flex: 1,
+  height: '4px',
+  borderRadius: '2px',
+  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  outline: 'none',
+  opacity: 0.7,
+  transition: 'opacity 0.2s',
+  ':hover': {
+    opacity: 1,
+  },
+  '::-webkit-slider-thumb': {
+    appearance: 'none',
+    width: '16px',
+    height: '16px',
+    borderRadius: '50%',
+    backgroundColor: '#4CAF50',
+    cursor: 'pointer',
+  },
+  '::-moz-range-thumb': {
+    width: '16px',
+    height: '16px',
+    borderRadius: '50%',
+    backgroundColor: '#4CAF50',
+    cursor: 'pointer',
+    border: 'none',
+  },
+});
+
+export const quickPresets = style({
+  marginTop: '20px',
+  padding: '15px',
+  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  borderRadius: '8px',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+});
+
+export const presetButtons = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '8px',
+  marginTop: '10px',
+});
+
+export const presetButton = style({
+  padding: '6px 12px',
+  backgroundColor: 'rgba(100, 200, 255, 0.2)',
+  border: '1px solid rgba(100, 200, 255, 0.4)',
+  borderRadius: '6px',
+  color: 'white',
+  cursor: 'pointer',
+  fontSize: '12px',
+  transition: 'all 0.2s ease',
+  ':hover': {
+    backgroundColor: 'rgba(100, 200, 255, 0.4)',
+    transform: 'translateY(-1px)',
+  },
+});

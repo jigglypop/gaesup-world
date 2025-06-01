@@ -14,12 +14,11 @@ export function Clicker({ onMarker, runMarker }: { onMarker: ReactNode; runMarke
 
   return (
     <>
-      {mode.controller === 'clicker' && (
-        <group position={clicker.point}>
-          {clicker.isOn && onMarker}
-          {clicker.isOn && clickerOption.isRun && clicker.isRun && runMarker}
-        </group>
-      )}
+      {/* 하이브리드 모드: 항상 클리커 마커 표시 */}
+      <group position={clicker.point}>
+        {clicker.isOn && onMarker}
+        {clicker.isOn && clickerOption.isRun && clicker.isRun && runMarker}
+      </group>
       {clickerOption.line &&
         pointQ.map((queueItem, key) => {
           if (queueItem instanceof THREE.Vector3) {

@@ -44,16 +44,13 @@ export const gameBoyOuter = style([
 ]);
 
 export const joystickOuter = style([
+  fixed({
+    south_west: true,
+  }),
   {
-    position: "fixed",
-    bottom: "5lvh",
-    left: "5lvw",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "flex-end",
-    alignItems: "flex-start",
-    textAlign: "center",
-    width: "100%",
+    margin: '1rem',
+    width: '100px',
+    height: '100px',
   },
 ]);
 
@@ -70,21 +67,28 @@ export const footer = style([
 ]);
 
 export const footerUpper = style([
+  fixed({
+    south_east: true,
+  }),
   {
-    gridColumn: "1/4",
-    gridRow: "1/2",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
+    display: 'flex',
+    flexDirection: 'column',
+    bottom: '8rem',
+    right: '0',
+    zIndex: '10',
   },
 ]);
 
 export const footerLower = style([
+  fixed({
+    south_west: true,
+  }),
   {
-    gridColumn: "1/4",
-    gridRow: "2/3",
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
+    display: 'flex',
+    flexDirection: 'column',
+    bottom: '0',
+    left: '0',
+    zIndex: '10',
   },
 ]);
 
@@ -152,9 +156,9 @@ export const gamePad = style([
     south_east: true,
   }),
   {
-    marginRight: "5rem",
-    width: "12rem",
-    zIndex: 10000,
+    margin: '1rem',
+    width: '200px',
+    height: '200px',
   },
 ]);
 
@@ -168,3 +172,62 @@ export const jump = style([
     zIndex: 10000,
   },
 ]);
+
+export const demoBackGroundImage = 'https://jigglog.s3.ap-northeast-2.amazonaws.com/space.jpg';
+
+export const helpPanel = style({
+  position: 'fixed',
+  top: '20px',
+  right: '20px',
+  width: '300px',
+  maxHeight: '70vh',
+  backgroundColor: 'rgba(0, 0, 0, 0.85)',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  borderRadius: '12px',
+  padding: '20px',
+  backdropFilter: 'blur(10px)',
+  color: 'white',
+  fontSize: '14px',
+  zIndex: 500,
+  overflow: 'auto',
+});
+
+export const helpContent = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '16px',
+});
+
+export const helpSection = style({
+  marginBottom: '12px',
+});
+
+export const helpPanel_h3 = style({
+  margin: '0 0 16px 0',
+  color: '#4CAF50',
+  fontSize: '18px',
+  borderBottom: '1px solid rgba(76, 175, 80, 0.3)',
+  paddingBottom: '8px',
+});
+
+export const helpPanel_h4 = style({
+  margin: '0 0 8px 0',
+  color: '#81C784',
+  fontSize: '14px',
+});
+
+export const helpPanel_ul = style({
+  margin: '0',
+  paddingLeft: '16px',
+  listStyle: 'disc',
+});
+
+export const helpPanel_li = style({
+  marginBottom: '4px',
+  lineHeight: '1.4',
+});
+
+export const helpPanel_strong = style({
+  color: '#A5D6A7',
+  fontWeight: 'bold',
+});

@@ -30,7 +30,9 @@ export default function queue(prop: calcType) {
       norm = calcNorm(u, clickerOption.queue[0], false);
     }
   }
-  if (norm < 1 && mode.controller === "clicker") {
+  
+  // 하이브리드 모드: 클리커가 활성화되어 있고 목적지에 도착했으면 중지
+  if (norm < 1 && clicker.isOn) {
     if (clickerOption.track && clickerOption.queue.length !== 0) {
       const Q = clickerOption.queue.shift();
       if (Q instanceof THREE.Vector3) {

@@ -56,7 +56,19 @@ export type PushState = ControlState;
 export type ControllerType = 'character' | 'vehicle' | 'airplane';
 
 /**
- * 컨트롤 모드
+ * 카메라 제어 모드 (표준화된 camelCase)
+ */
+export type CameraControlMode = 
+  | 'firstPerson'        // 1인칭 시점
+  | 'thirdPerson'        // 3인칭 고정 시점 (기존 normal)
+  | 'thirdPersonOrbit'   // 3인칭 궤도 시점 (기존 orbit)
+  | 'topDown'           // 탑다운 시점
+  | 'sideScroll'        // 사이드 스크롤 시점
+  | 'isometric'         // 아이소메트릭 시점
+  | 'free';             // 자유 시점
+
+/**
+ * @deprecated 'normal' | 'orbit' 사용 대신 CameraControlMode를 사용하세요
  */
 export type ControlMode = 'normal' | 'orbit';
 
@@ -71,7 +83,7 @@ export type ControllerMode = 'clicker';
 export type ModeType = {
   type?: ControllerType;
   controller?: ControllerMode;
-  control?: ControlMode;
+  control?: CameraControlMode | ControlMode; // 하위 호환성 유지
   isButton?: boolean;
 };
 
@@ -130,18 +142,40 @@ export type ResourceUrlsType = {
 // ============================================================================
 
 /**
- * 카메라 옵션 디버그 타입
+ * 카메라 옵션 디버그 타입 (속성명 camelCase 표준화)
  */
 export type CameraOptionDebugType = {
   maxDistance?: number;
   distance?: number;
-  XDistance?: number;
-  YDistance?: number;
-  ZDistance?: number;
+  xDistance?: number;  // XDistance → xDistance
+  yDistance?: number;  // YDistance → yDistance 
+  zDistance?: number;  // ZDistance → zDistance
   zoom?: number;
   target?: THREE.Vector3;
   focus?: boolean;
   position?: THREE.Vector3;
+  // 카메라 충돌 감지 옵션 추가
+  enableCollision?: boolean;
+  collisionMargin?: number;
+  // 부드러운 이동 옵션 추가
+  smoothing?: {
+    position: number;
+    rotation: number;
+    fov: number;
+  };
+  // FOV 옵션 추가
+  fov?: number;
+  minFov?: number;
+  maxFov?: number;
+  // 경계 제한 옵션 추가
+  bounds?: {
+    minX?: number;
+    maxX?: number;
+    minY?: number;
+    maxY?: number;
+    minZ?: number;
+    maxZ?: number;
+  };
 };
 
 /**
@@ -149,6 +183,10 @@ export type CameraOptionDebugType = {
  */
 export type CameraOptionType = {
   offset?: THREE.Vector3;
+  // 카메라 모드별 설정
+  modeSettings?: {
+    [K in CameraControlMode]?: Partial<CameraOptionDebugType>;
+  };
 } & CameraOptionDebugType;
 
 /**
@@ -435,7 +473,7 @@ export type OptionsType = {
   cameraCollisionType: 'transparent' | 'closeUp';
   camera: {
     type: 'perspective' | 'orthographic';
-    control: 'orbit' | 'normal';
+    control: CameraControlMode | 'orbit' | 'normal'; // 하위 호환성 유지
   };
   minimap: boolean;
   minimapRatio: number;

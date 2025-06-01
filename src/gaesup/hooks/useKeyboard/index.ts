@@ -1,19 +1,37 @@
 import { useContext, useEffect, useRef } from 'react';
 import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
 
-// 키 매핑 정의
+// 키 매핑 정의 (게임 표준 키 설정)
 const KEY_MAPPING = {
+  // WASD 이동 (메인)
+  'KeyW': 'forward',
+  'KeyA': 'leftward', 
+  'KeyS': 'backward',
+  'KeyD': 'rightward',
+  // 화살표 키 (보조)
   'ArrowUp': 'forward',
   'ArrowDown': 'backward', 
   'ArrowLeft': 'leftward',
   'ArrowRight': 'rightward',
+  // 공통 키
   'Space': 'space',
   'ShiftLeft': 'shift',
   'ShiftRight': 'shift',
   'KeyZ': 'keyZ',
   'KeyR': 'keyR',
-  'KeyS': 'keyS',
+  'KeyF': 'keyF', // 상호작용 키 추가
+  'KeyE': 'keyE', // 사용 키 추가
+  'Escape': 'escape', // ESC 키 추가
 } as const;
+
+// 컨트롤러 모드와 무관하게 항상 작동해야 하는 키들 (모든 키 포함)
+const UNIVERSAL_KEYS = [
+  // 이동 키
+  'KeyW', 'KeyA', 'KeyS', 'KeyD',
+  'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+  // 액션 키
+  'Space', 'ShiftLeft', 'ShiftRight', 'KeyZ', 'KeyR', 'KeyF', 'KeyE', 'Escape'
+];
 
 export function useKeyboard() {
   const { control, mode } = useContext(GaesupWorldContext);
@@ -21,15 +39,11 @@ export function useKeyboard() {
   const pressedKeys = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    // 키보드 모드가 아니면 리스너 등록하지 않음
-    if (mode.controller !== 'keyboard') {
-      return;
-    }
-
     const handleKeyDown = (event: KeyboardEvent) => {
       const mappedKey = KEY_MAPPING[event.code as keyof typeof KEY_MAPPING];
       
       if (mappedKey && !pressedKeys.current.has(event.code)) {
+        // 모든 키가 항상 작동 (컨트롤러 모드 무관)
         pressedKeys.current.add(event.code);
         
         // 스페이스 키 특별 처리 (페이지 스크롤 방지)
@@ -55,6 +69,7 @@ export function useKeyboard() {
       const mappedKey = KEY_MAPPING[event.code as keyof typeof KEY_MAPPING];
       
       if (mappedKey && pressedKeys.current.has(event.code)) {
+        // 모든 키가 항상 작동 (컨트롤러 모드 무관)
         pressedKeys.current.delete(event.code);
         
         const newControl = {
@@ -71,35 +86,33 @@ export function useKeyboard() {
       }
     };
 
-    // 포커스 잃었을 때 모든 키 해제
-    const handleBlur = () => {
-      pressedKeys.current.clear();
-      const newControl = { ...control };
-      Object.values(KEY_MAPPING).forEach(key => {
-        newControl[key] = false;
-      });
-      
-      dispatch({
-        type: 'update',
-        payload: {
-          control: newControl,
-        },
-      });
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        pressedKeys.current.clear();
+        
+        // 모든 키를 false로 리셋
+        const resetControl = Object.keys(control).reduce((acc, key) => {
+          acc[key] = false;
+          return acc;
+        }, {} as typeof control);
+
+        dispatch({
+          type: 'update',
+          payload: {
+            control: resetControl,
+          },
+        });
+      }
     };
 
-    // 이벤트 리스너 등록
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('blur', handleBlur);
-    window.addEventListener('focus', handleBlur); // 포커스 시에도 초기화
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // 정리 함수
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
-      window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('focus', handleBlur);
-      pressedKeys.current.clear();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [control, dispatch, mode.controller]);
 

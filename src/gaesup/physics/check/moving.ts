@@ -4,21 +4,18 @@ export default function moving(prop: calcType) {
   const {
     worldContext: { states, mode, control, clicker, clickerOption },
   } = prop;
-  const { shift, space } = control;
+  const { shift, space, forward, backward, leftward, rightward } = control;
   
   // 점프는 모든 컨트롤러 모드에서 작동
   states.isJumping = space;
   
-  if (mode.controller === "clicker") {
-    states.isMoving = clicker.isOn;
-    states.isNotMoving = !clicker.isOn;
-    states.isRunning =
-      (shift || clicker.isRun) && states.isMoving && clickerOption.isRun;
-  } else {
-    // 키보드 모드에서의 이동 상태 설정
-    const { forward, backward, leftward, rightward } = control;
-    states.isMoving = forward || backward || leftward || rightward;
-    states.isNotMoving = !states.isMoving;
-    states.isRunning = shift && states.isMoving;
-  }
+  // 하이브리드 모드: 클리커와 키보드 입력을 모두 처리
+  const isKeyboardMoving = forward || backward || leftward || rightward;
+  const isClickerMoving = clicker.isOn;
+  
+  states.isMoving = isKeyboardMoving || isClickerMoving;
+  states.isNotMoving = !states.isMoving;
+  
+  // 달리기: 키보드 이동 중 Shift 누르거나, 클리커 Run 모드
+  states.isRunning = (shift && isKeyboardMoving) || (clicker.isRun && isClickerMoving && clickerOption.isRun);
 }
