@@ -421,15 +421,6 @@ export type PortalType = {
 };
 
 /**
- * @deprecated teleportStlye는 오타입니다. teleportStyle을 사용하세요.
- */
-export type PortalTypeLegacy = {
-  text?: string;
-  position: THREE.Vector3;
-  teleportStlye?: CSSProperties;
-};
-
-/**
  * 포털들 타입
  */
 export type PortalsType = PortalType[];
@@ -544,10 +535,10 @@ export interface ControllerOtherPropType extends RigidBodyProps {
 }
 
 // ============================================================================
-// 내보내기 - 하위 호환성을 위한 별칭들
+// 하위 호환성을 위한 타입 별칭들 (snake_case)
+// 🚨 주의: 새 코드에서는 위의 PascalCase 타입들을 사용하세요
 // ============================================================================
 
-// 기존 타입명과의 호환성을 위한 별칭들
 export type dispatchType<T> = DispatchType<T>;
 export type controlType = ControlState;
 export type keyControlType = KeyboardControlState;
@@ -569,7 +560,7 @@ export type animationStateType = AnimationStateType;
 export type clickerType = ClickerType;
 export type queueActionType = QueueActionType;
 export type queueFunctionType = QueueFunctionType;
-export type queueItemtype = QueueItemType;
+export type queueItemType = QueueItemType;
 export type queueType = QueueType;
 export type clickerOptionType = ClickerOptionType;
 export type blockType = BlockType;
@@ -578,7 +569,7 @@ export type sizesType = SizesType;
 export type wheelStateType = WheelStateType;
 export type wheelsStateType = WheelsStateType;
 export type passiveStateType = PassiveStateType;
-export type portalType = PortalTypeLegacy;
+export type portalType = PortalType;
 export type portalsType = PortalsType;
 export type refsType = RefsType;
 export type controllerOptionsType = ControllerOptionsType;

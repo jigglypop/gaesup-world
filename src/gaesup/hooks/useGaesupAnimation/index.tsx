@@ -1,8 +1,11 @@
-import { useContext, useCallback } from "react";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
+import { useCallback, useMemo } from "react";
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { 
+  getAnimationAtom, 
+  createCurrentAnimationAtom, 
+  createAnimationStoreAtom,
+  createAnimationSubscriptionAtom 
+} from "../../atoms/animationAtoms";
 import { AnimationAtomType } from "../../types";
 
 export function useGaesupAnimation({
@@ -10,66 +13,34 @@ export function useGaesupAnimation({
 }: {
   type: "character" | "vehicle" | "airplane";
 }) {
-  const { animationState } = useContext(GaesupWorldContext);
-  const dispatch = useContext(GaesupWorldDispatchContext);
+  const animationAtom = useMemo(() => getAnimationAtom(type), [type]);
+  const currentAnimationAtom = useMemo(() => createCurrentAnimationAtom(type), [type]);
+  const storeAtom = useMemo(() => createAnimationStoreAtom(type), [type]);
+  const subscriptionAtom = useMemo(() => createAnimationSubscriptionAtom(type), [type]);
 
-  const getAnimationTag = (tag: string): { name: string; isValid: boolean } => {
-    const animation: AnimationAtomType = animationState[type].store[tag];
-    if (!animation)
-      return { name: animationState[type].default, isValid: false };
-    if (animation.condition()) {
-      return { name: animation.animationName, isValid: true };
-    } else {
-      return { name: animationState[type].default, isValid: false };
-    }
-  };
+  const animationState = useAtomValue(animationAtom);
+  const [currentAnimation, setCurrentAnimation] = useAtom(currentAnimationAtom);
+  const [store, setStore] = useAtom(storeAtom);
+  const subscribeAction = useSetAtom(subscriptionAtom);
 
   const notify = useCallback(() => {
-    let tag = animationState[type].default;
-    const store = animationState[type].store;
-    
-    for (const key of Object.keys(store)) {
+    let tag = animationState.default;
+    for (const key in store) {
       const animation = store[key];
       if (animation?.condition()) {
         tag = animation.animationName || key;
         break;
       }
     }
-    
-    // 현재 애니메이션과 다를 때만 업데이트
-    if (animationState[type].current !== tag) {
-      animationState[type].current = tag;
-      dispatch({
-        type: "update",
-        payload: {
-          animationState: {
-            ...animationState,
-            [type]: {
-              ...animationState[type],
-              current: tag
-            }
-          },
-        },
-      });
+    if (currentAnimation !== tag) {
+      setCurrentAnimation(tag);
     }
     return tag;
-  }, [animationState, type, dispatch]);
+  }, [store, animationState.default, currentAnimation, setCurrentAnimation]);
 
   const unsubscribe = useCallback((tag: string) => {
-    delete animationState[type].store[tag];
-    dispatch({
-      type: "update",
-      payload: {
-        animationState: {
-          ...animationState,
-          [type]: {
-            ...animationState[type],
-            store: { ...animationState[type].store }
-          }
-        },
-      },
-    });
-  }, [animationState, type, dispatch]);
+    subscribeAction({ type: 'unsubscribe', tag });
+  }, [subscribeAction]);
 
   const subscribe = useCallback(({
     tag,
@@ -78,7 +49,6 @@ export function useGaesupAnimation({
     animationName,
     key,
   }: AnimationAtomType) => {
-    const currentStore = animationState[type].store[tag];
     const newAnimation = {
       tag,
       condition,
@@ -86,34 +56,13 @@ export function useGaesupAnimation({
       animationName: animationName || tag,
       key: key || tag,
     };
-    
-    // 이미 같은 애니메이션이 등록되어 있으면 스킵
-    if (currentStore && 
-        currentStore.tag === tag && 
-        currentStore.animationName === animationName) {
-      return;
-    }
-    
-    animationState[type].store[tag] = newAnimation;
-    dispatch({
-      type: "update",
-      payload: {
-        animationState: {
-          ...animationState,
-          [type]: {
-            ...animationState[type],
-            store: { ...animationState[type].store, [tag]: newAnimation }
-          }
-        },
-      },
-    });
-  }, [animationState, type, dispatch]);
+    subscribeAction({ type: 'subscribe', tag, animation: newAnimation });
+  }, [subscribeAction]);
 
   const subscribeAll = useCallback((props: AnimationAtomType[]) => {
     const subscribedTags: string[] = [];
-    const newStore = { ...animationState[type].store };
+    const newStore = { ...store };
     let hasChanges = false;
-
     props.forEach((item) => {
       const currentAnimation = newStore[item.tag];
       const newAnimation = {
@@ -123,8 +72,7 @@ export function useGaesupAnimation({
         animationName: item.animationName,
         key: item.key,
       };
-      
-      // 변경된 경우에만 업데이트
+
       if (!currentAnimation || 
           currentAnimation.animationName !== item.animationName ||
           currentAnimation.tag !== item.tag) {
@@ -133,48 +81,22 @@ export function useGaesupAnimation({
       }
       subscribedTags.push(item.tag);
     });
-
     if (hasChanges) {
-      dispatch({
-        type: "update",
-        payload: {
-          animationState: {
-            ...animationState,
-            [type]: {
-              ...animationState[type],
-              store: newStore
-            }
-          },
-        },
-      });
+      setStore(newStore);
     }
-
-    // 구독 해제 함수 반환
     return () => {
-      const cleanedStore = { ...animationState[type].store };
       subscribedTags.forEach((tag) => {
-        delete cleanedStore[tag];
-      });
-      dispatch({
-        type: "update",
-        payload: {
-          animationState: {
-            ...animationState,
-            [type]: {
-              ...animationState[type],
-              store: cleanedStore
-            }
-          },
-        },
+        subscribeAction({ type: 'unsubscribe', tag });
       });
     };
-  }, [animationState, type, dispatch]);
+  }, [store, setStore, subscribeAction]);
 
   return {
     subscribe,
     subscribeAll,
-    store: animationState?.[type].store,
+    store,
     unsubscribe,
     notify,
+    current: currentAnimation,
   };
 }

@@ -13,7 +13,6 @@ export { GamePad } from "./gaesup/tools/gamepad";
 export { MiniMap } from "./gaesup/tools/minimap";
 export { Rideable } from "./gaesup/tools/rideable";
 export { teleport } from "./gaesup/tools/teleport";
-export { InnerHtml } from "./gaesup/utils/innerHtml";
 export { Elr, Qt, V3, V30, V31 } from "./gaesup/utils/vector";
 export { GaesupWorld } from "./gaesup/world";
 export * from "./gaesup/atoms";
@@ -34,7 +33,7 @@ export { useZoom } from "./gaesup/hooks/useZoom";
 export { useKeyboard } from "./gaesup/hooks/useKeyboard";
 
 // ============================================================================
-// 타입 내보내기 - 중앙 집중식 타입 시스템
+// 타입 내보내기
 // ============================================================================
 export type {
   // 기본 유틸리티 타입들
@@ -121,7 +120,7 @@ export type {
   // 기타 컨트롤러 프로퍼티 타입들
   ControllerOtherPropType,
   
-  // 하위 호환성을 위한 별칭들 (deprecated)
+  // 하위 호환성을 위한 별칭들 (deprecated - 새 코드에서는 PascalCase 사용)
   dispatchType,
   controlType,
   keyControlType,
@@ -143,7 +142,7 @@ export type {
   clickerType,
   queueActionType,
   queueFunctionType,
-  queueItemtype,
+  queueItemType,
   queueType,
   clickerOptionType,
   blockType,
