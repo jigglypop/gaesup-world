@@ -8,10 +8,9 @@ export default function innerCalc(prop: calcType) {
     controllerContext: {
       character: { linearDamping },
     },
-    worldContext: { activeState, states, block },
+    worldContext: { activeState, states },
     delta,
   } = prop;
-
   // Linear damping 설정 - 점프/떨어질 때는 매우 낮게 설정하여 자연스러운 중력 유지
   if (states.isJumping || states.isFalling) {
     // 점프/떨어질 때는 damping을 매우 낮게 하여 Y축 velocity에 방해되지 않도록

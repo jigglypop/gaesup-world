@@ -36,27 +36,25 @@ export type ControlState = {
   backward: boolean;
   leftward: boolean;
   rightward: boolean;
+  shift?: boolean;
+  space?: boolean;
   [key: string]: boolean;
 };
 
+/**
+ * 키보드 컨트롤 상태 타입
+ */
 export type KeyboardControlState<T extends string = string> = {
   [K in T]: boolean;
 };
 
-
-export type PushState = ControlState;
-
-// ============================================================================
-// 모드 및 상태 타입들
-// ============================================================================
-
 /**
- * 컨트롤러 타입
+ * 컨트롤러 모드 타입
  */
 export type ControllerType = 'character' | 'vehicle' | 'airplane';
 
 /**
- * 카메라 제어 모드 (표준화된 camelCase)
+ * 카메라 컨트롤 모드 타입
  */
 export type CameraControlMode = 
   | 'firstPerson'        // 1인칭 시점
@@ -68,12 +66,12 @@ export type CameraControlMode =
   | 'free';             // 자유 시점
 
 /**
- * @deprecated 'normal' | 'orbit' 사용 대신 CameraControlMode를 사용하세요
+ * 하위 호환성을 위한 컨트롤 모드 타입
  */
 export type ControlMode = 'normal' | 'orbit';
 
 /**
- * 컨트롤러 모드
+ * 컨트롤러 모드 타입
  */
 export type ControllerMode = 'clicker';
 
@@ -92,12 +90,9 @@ export type ModeType = {
  */
 export type ActiveStateType = {
   position: THREE.Vector3;
-  impulse: THREE.Vector3;
   velocity: THREE.Vector3;
-  acceleration: THREE.Vector3;
   quat: THREE.Quaternion;
   euler: THREE.Euler;
-  rotation: THREE.Euler;
   direction: THREE.Vector3;
   dir: THREE.Vector3;
 };
@@ -116,7 +111,6 @@ export type GameStatesType = {
   isJumping: boolean;
   enableRiding: boolean;
   isRiderOn: boolean;
-  isPush: PushState;
   isLanding: boolean;
   isFalling: boolean;
   isRiding: boolean;

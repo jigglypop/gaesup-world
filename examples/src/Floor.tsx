@@ -23,7 +23,6 @@ export default function Floor() {
         <mesh receiveShadow position={[0, -1, 0]}>
           <boxGeometry args={[1000, 2, 1000]} />
         </mesh>
-
         <GaeSupProps type="ground">
           <mesh receiveShadow position={[0, 0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             <planeGeometry args={[1000, 1000]} />

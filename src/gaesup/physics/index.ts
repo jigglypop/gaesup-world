@@ -49,13 +49,11 @@ export default function calculation({
     [rigidBodyRef?.current, outerGroupRef?.current, innerGroupRef?.current]
   );
 
-  // 크기 정보를 미리 계산하고 캐시
   const matchSizes = useMemo(() => 
     getSizesByUrls(urls), 
     [getSizesByUrls, urls]
   );
 
-  // 계산 함수를 미리 선택하여 매 프레임마다 조건 검사 방지
   const calculationFunction = useMemo(() => {
     switch (mode.type) {
       case 'vehicle': return vehicleCalculation;
@@ -65,7 +63,6 @@ export default function calculation({
     }
   }, [mode.type]);
 
-  // 통합 프레임 시스템 사용 (우선순위: 0 - 물리 계산이 가장 먼저)
   useUnifiedFrame(
     `physics-${rigidBodyRef?.current?.handle || 'unknown'}`,
     (state, delta) => {

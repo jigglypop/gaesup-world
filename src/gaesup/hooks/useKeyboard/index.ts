@@ -1,5 +1,7 @@
 import { useContext, useEffect, useRef } from 'react';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
+import { clickerAtom } from '../../atoms';
 
 // 키 매핑 정의 (게임 표준 키 설정)
 const KEY_MAPPING = {
@@ -36,6 +38,8 @@ const UNIVERSAL_KEYS = [
 export function useKeyboard() {
   const { control, mode } = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
+  const clicker = useAtomValue(clickerAtom);
+  const setClicker = useSetAtom(clickerAtom);
   const pressedKeys = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -49,6 +53,15 @@ export function useKeyboard() {
         // 스페이스 키 특별 처리 (페이지 스크롤 방지)
         if (event.code === 'Space') {
           event.preventDefault();
+        }
+        
+        // S키로 clicker 중지 (physics에서 이동한 로직)
+        if (event.code === 'KeyS' && clicker.isOn) {
+          setClicker({
+            ...clicker,
+            isOn: false,
+            isRun: false,
+          });
         }
         
         const newControl = {
@@ -114,7 +127,7 @@ export function useKeyboard() {
       window.removeEventListener('keyup', handleKeyUp);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [control, dispatch, mode.controller]);
+  }, [control, dispatch, mode.controller, clicker, setClicker]);
 
   return {
     pressedKeys: Array.from(pressedKeys.current),

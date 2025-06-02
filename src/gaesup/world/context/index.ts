@@ -7,12 +7,9 @@ import { gaesupWorldContextType } from './type';
 export const gaesupWorldDefault: gaesupWorldContextType = {
   activeState: {
     position: V3(0, 5, 5),
-    impulse: vec3(),
     velocity: vec3(),
-    acceleration: vec3(),
     quat: quat(),
     euler: euler(),
-    rotation: euler(),
     dir: vec3(),
     direction: vec3(),
   },
@@ -38,12 +35,6 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     isLanding: false,
     isFalling: false,
     isRiding: false,
-    isPush: {
-      forward: false,
-      backward: false,
-      leftward: false,
-      rightward: false,
-    },
   },
   clicker: {
     point: V3(0, 0, 0),

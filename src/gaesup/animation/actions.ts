@@ -4,11 +4,12 @@ import { useAtomValue } from 'jotai';
 import { animationTagType } from '../controller/type';
 import { useGaesupAnimation } from '../hooks/useGaesupAnimation';
 import { GaesupWorldContext, GaesupWorldDispatchContext } from '../world/context';
-import { blockAtom, modeAtom } from '../atoms';
+import { blockAtom, modeAtom, controlAtom } from '../atoms';
 import { playActionsType, subscribeActionsType } from './type';
 
 export function subscribeActions({ type }: subscribeActionsType) {
   const { states } = useContext(GaesupWorldContext);
+  const control = useAtomValue(controlAtom);
   const { subscribeAll } = useGaesupAnimation({ type });
   // 초기 기본 애니메이션 등록
   useEffect(() => {
@@ -37,7 +38,7 @@ export function subscribeActions({ type }: subscribeActionsType) {
 
       {
         tag: 'ride',
-        condition: () => states.isPush['keyR'],
+        condition: () => control.keyR,
         action: () => {},
         animationName: 'ride',
         key: 'ride',

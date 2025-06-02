@@ -2,11 +2,11 @@ import { calcType } from "../type";
 
 export default function riding(prop: calcType) {
   const {
-    worldContext: { states },
+    worldContext: { states, control },
   } = prop;
 
   const { isRiderOn } = states;
-  if (isRiderOn && states.isPush["keyR"]) {
+  if (isRiderOn && control.keyR) {
     states.isRiding = true;
   }
 }

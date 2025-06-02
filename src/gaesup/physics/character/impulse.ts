@@ -14,7 +14,6 @@ export default function impulse(prop: calcType) {
   } = prop;
   const { isOnTheGround, isJumping } = states;
   const impulse = vec3();
-  
   // 점프: 지면에 있고 점프 상태일 때만 한 번 적용
   if (isJumping && isOnTheGround) {
     // 현재 velocity를 가져와서 Y만 교체하는 방식으로 더 자연스러운 점프

@@ -7,29 +7,11 @@ export default function queue(prop: calcType) {
   const {
     rigidBodyRef,
     state,
-    worldContext: { clicker, mode, clickerOption, block },
+    worldContext: { clicker, clickerOption },
     dispatch,
   } = prop;
   const u = vec3(rigidBodyRef.current?.translation());
-
   let norm = calcNorm(u, clicker.point, false);
-  if (clickerOption.autoStart) {
-    if (clickerOption.queue[0] instanceof THREE.Vector3) {
-      const v = vec3(clickerOption.queue[0]);
-      const newAngle = Math.atan2(v.z - u.z, v.x - u.x);
-      dispatch({
-        type: "update",
-        payload: {
-          clicker: {
-            ...clicker,
-            isOn: true,
-            angle: newAngle,
-          },
-        },
-      });
-      norm = calcNorm(u, clickerOption.queue[0], false);
-    }
-  }
   
   // 하이브리드 모드: 클리커가 활성화되어 있고 목적지에 도착했으면 중지
   if (norm < 1 && clicker.isOn) {
