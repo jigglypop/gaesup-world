@@ -31,7 +31,7 @@ export const RigidBodyRef = forwardRef(
       if (props.groundRay && props.colliderRef) {
         setGroundRay({
           groundRay: props.groundRay,
-          length: 0.5,
+          length: 2.0,
           colliderRef: props.colliderRef,
         });
       }
@@ -107,7 +107,7 @@ export const RigidBodyRef = forwardRef(
           <CapsuleCollider
             ref={props.colliderRef as any}
             args={[(size.y / 2 - size.x) * 1.2, size.x * 1.2]}
-            position={[0, (size.y / 2 + size.x / 2) * 1.2, 0]}
+            position={[0, size.y / 2, 0]}
           />
         )}
         <InnerGroupRef

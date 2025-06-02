@@ -24,7 +24,7 @@ export const gaesupControllerDefault = {
     walkSpeed: 10,
     runSpeed: 20,
     turnSpeed: 10,
-    jumpSpeed: 1,
+    jumpSpeed: 15,
     linearDamping: 1,
   },
   callbacks: {

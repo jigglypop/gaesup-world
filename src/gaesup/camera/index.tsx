@@ -1,4 +1,5 @@
 import { useAtom, useAtomValue } from 'jotai';
+import { useEffect } from 'react';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
 import { cameraPropType } from '../physics/type';
 import { cameraOptionAtom, blockAtom } from '../atoms';
@@ -13,6 +14,20 @@ export default function Camera(prop: cameraPropType) {
   const block = useAtomValue(blockAtom);
   
   const propWithCamera = { ...prop, cameraOption };
+  
+  // 초기화 시 카메라 옵션 설정
+  useEffect(() => {
+    if (prop.worldContext.activeState?.position) {
+      setCameraOption(prev => ({
+        ...prev,
+        target: prop.worldContext.activeState.position,
+        position: makeThirdPersonCameraPosition(
+          prop.worldContext.activeState,
+          prev,
+        ),
+      }));
+    }
+  }, []);
   
   // 통합 프레임 시스템 사용 (우선순위: 1 - 물리 계산 다음)
   useUnifiedFrame(

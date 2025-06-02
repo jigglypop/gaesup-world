@@ -6,8 +6,14 @@ export default function moving(prop: calcType) {
   } = prop;
   const { shift, space, forward, backward, leftward, rightward } = control;
   
-  // 점프는 모든 컨트롤러 모드에서 작동
-  states.isJumping = space;
+  // 점프는 지면에 있을 때만 가능하고, 이전 프레임에서 스페이스바가 눌리지 않았을 때만
+  const wasJumpingLastFrame = states.isJumping;
+  if (space && states.isOnTheGround && !wasJumpingLastFrame) {
+    states.isJumping = true;
+  } else if (!space) {
+    // 스페이스바를 뗐을 때 점프 상태 리셋 (착지 후 다시 점프 가능)
+    states.isJumping = false;
+  }
   
   // 하이브리드 모드: 클리커와 키보드 입력을 모두 처리
   const isKeyboardMoving = forward || backward || leftward || rightward;

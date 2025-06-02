@@ -1,73 +1,100 @@
 'use client';
 
-import { Environment, Trail } from '@react-three/drei';
-import { Physics, euler } from '@react-three/rapier';
+import { Environment } from '@react-three/drei';
+import { Physics, euler, RigidBody } from '@react-three/rapier';
 
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 
-import { Suspense, useRef } from 'react';
-import { FaMapMarkerAlt } from 'react-icons/fa';
-import * as THREE from 'three';
-import { GaesupController, GaesupWorld, GamePad, MiniMap, V3 } from '../../src';
-import { Clicker } from '../../src/gaesup/tools/clicker';
-import { InnerHtml } from '../../src/gaesup/utils/innerHtml';
+import { Suspense } from 'react';
+import { GaesupController, GaesupWorld, GamePad, MiniMap } from '../../src';
 import Info from '../info';
 import Passive from '../passive';
 import Floor from './Floor';
 import * as style from './style.css';
 
-function Electron({ radius = 2.75, speed = 6, ...props }) {
-  const ref = useRef<THREE.Mesh>();
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime() * speed;
-    if (!ref.current) return;
-    ref.current.position.set(
-      Math.sin(t) * radius,
-      (Math.cos(t) * radius * Math.atan(t)) / Math.PI / 1.25,
-      0,
-    );
-  });
-  return (
-    <group {...props}>
-      <Trail
-        local
-        width={5}
-        length={6}
-        color={new THREE.Color(2, 1, 10)}
-        attenuation={(t) => t * t}
-      >
-        <mesh ref={ref}>
-          <sphereGeometry args={[0.25]} />
-          <meshBasicMaterial color={[10, 1, 10]} toneMapped={false} />
-        </mesh>
-      </Trail>
-    </group>
-  );
-}
-
-function DemoObjects() {
+// 발판과 계단 컴포넌트 - Rapier fixed body 사용
+function Platforms() {
   return (
     <>
-      <mesh position={[10, 2, 0]} castShadow>
-        <boxGeometry args={[2, 4, 2]} />
-        <meshStandardMaterial color="orange" />
-      </mesh>
-      <mesh position={[-10, 1.5, 5]} castShadow>
-        <cylinderGeometry args={[1, 1, 3]} />
-        <meshStandardMaterial color="cyan" />
-      </mesh>
-      <mesh position={[0, 1, 15]} castShadow>
-        <sphereGeometry args={[2]} />
-        <meshStandardMaterial color="purple" />
-      </mesh>
-      <mesh position={[20, 1, -10]} castShadow>
-        <coneGeometry args={[2, 4]} />
-        <meshStandardMaterial color="green" />
-      </mesh>
-      <mesh position={[-15, 2, -8]} castShadow>
-        <dodecahedronGeometry args={[2]} />
-        <meshStandardMaterial color="red" />
-      </mesh>
+      {/* 큰 발판들 */}
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[10, 2, 0]} castShadow receiveShadow>
+          <boxGeometry args={[8, 1, 8]} />
+          <meshStandardMaterial color="#8B4513" />
+        </mesh>
+      </RigidBody>
+
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[-10, 3, 5]} castShadow receiveShadow>
+          <boxGeometry args={[6, 1, 6]} />
+          <meshStandardMaterial color="#A0522D" />
+        </mesh>
+      </RigidBody>
+
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[0, 4, 15]} castShadow receiveShadow>
+          <boxGeometry args={[10, 1, 6]} />
+          <meshStandardMaterial color="#CD853F" />
+        </mesh>
+      </RigidBody>
+
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[20, 5, -10]} castShadow receiveShadow>
+          <boxGeometry args={[8, 1, 8]} />
+          <meshStandardMaterial color="#DEB887" />
+        </mesh>
+      </RigidBody>
+
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[-15, 6, -8]} castShadow receiveShadow>
+          <boxGeometry args={[6, 1, 10]} />
+          <meshStandardMaterial color="#F4A460" />
+        </mesh>
+      </RigidBody>
+
+      {/* 계단형 발판들 */}
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[25, 1, 5]} castShadow receiveShadow>
+          <boxGeometry args={[4, 1, 4]} />
+          <meshStandardMaterial color="#D2691E" />
+        </mesh>
+      </RigidBody>
+
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[25, 2, 10]} castShadow receiveShadow>
+          <boxGeometry args={[4, 1, 4]} />
+          <meshStandardMaterial color="#D2691E" />
+        </mesh>
+      </RigidBody>
+
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[25, 3, 15]} castShadow receiveShadow>
+          <boxGeometry args={[4, 1, 4]} />
+          <meshStandardMaterial color="#D2691E" />
+        </mesh>
+      </RigidBody>
+
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[25, 4, 20]} castShadow receiveShadow>
+          <boxGeometry args={[4, 1, 4]} />
+          <meshStandardMaterial color="#D2691E" />
+        </mesh>
+      </RigidBody>
+
+      {/* 긴 연결 발판 */}
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[0, 7, -20]} castShadow receiveShadow>
+          <boxGeometry args={[15, 1, 4]} />
+          <meshStandardMaterial color="#B22222" />
+        </mesh>
+      </RigidBody>
+
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[-20, 8, -15]} castShadow receiveShadow>
+          <boxGeometry args={[8, 1, 12]} />
+          <meshStandardMaterial color="#800080" />
+        </mesh>
+      </RigidBody>
     </>
   );
 }
@@ -183,39 +210,23 @@ export default function MainComponent() {
               parts={[{ url: 'gltf/ally_cloth_rabbit.glb', color: '#ffe0e0' }]}
             ></GaesupController>
             <Floor />
-            <DemoObjects />
+            <Platforms />
             <Passive />
-            <Electron />
-            <Clicker
-              onMarker={
-                <group rotation={euler({ x: 0, y: Math.PI / 2, z: 0 })}>
-                  <InnerHtml position={V3(0, 1, 0)}>
-                    <FaMapMarkerAlt style={{ color: '#f4ffd4', fontSize: '5rem' }} />
-                  </InnerHtml>
-                </group>
-              }
-              runMarker={
-                <InnerHtml position={V3(0, 1, 0)}>
-                  <FaMapMarkerAlt style={{ color: '#ffac8e', fontSize: '5rem' }} />
-                </InnerHtml>
-              }
-            ></Clicker>
           </Physics>
         </Suspense>
       </Canvas>
       <Info />
 
       <div className={style.helpPanel}>
-        <h3>카메라 데모 조작법</h3>
+        <h3>발판 점프 데모 조작법</h3>
         <div className={style.helpContent}>
           <div className={style.helpSection}>
-            <h4>카메라 모드:</h4>
+            <h4>발판과 계단:</h4>
             <ul>
-              <li><strong>1인칭:</strong> 캐릭터 눈으로 보는 시점</li>
-              <li><strong>3인칭:</strong> 충돌 감지가 있는 뒤따라가기 카메라</li>
-              <li><strong>3인칭 궤도:</strong> 캐릭터 주변을 도는 카메라</li>
-              <li><strong>탑다운:</strong> 전략 게임용 위에서 내려다보는 시점</li>
-              <li><strong>사이드 스크롤:</strong> 클래식 2D 플랫폼 게임 스타일</li>
+              <li><strong>갈색 발판들:</strong> Rapier fixed body로 구현된 점프 가능한 발판</li>
+              <li><strong>계단형 발판:</strong> 오른쪽에 있는 단계별 올라갈 수 있는 계단</li>
+              <li><strong>높은 발판들:</strong> 점프해서 도달할 수 있는 다양한 높이의 발판</li>
+              <li><strong>연결 발판:</strong> 긴 형태의 발판으로 플랫폼 간 이동 가능</li>
             </ul>
           </div>
           <div className={style.helpSection}>
@@ -227,7 +238,7 @@ export default function MainComponent() {
               <li><strong>A/←:</strong> 왼쪽으로 이동</li>
               <li><strong>D/→:</strong> 오른쪽으로 이동</li>
               <li><strong>🖱️ 마우스 클릭:</strong> 바닥 클릭으로 이동</li>
-              <li><strong>스페이스:</strong> 점프</li>
+              <li><strong>스페이스:</strong> 점프 (지면이나 발판에서만 가능)</li>
               <li><strong>Shift:</strong> 달리기 (이동 중에 누르기)</li>
               <li><strong>Z:</strong> 인사</li>
               <li><strong>R:</strong> 탑승 (차량 근처에서)</li>
@@ -236,14 +247,14 @@ export default function MainComponent() {
             </ul>
           </div>
           <div className={style.helpSection}>
-            <h4>테스트 기능:</h4>
+            <h4>점프 시스템 특징:</h4>
             <ul>
-              <li><strong>컨트롤러 전환:</strong> 클리커와 키보드 모드 체험</li>
-              <li>카메라 충돌 감지 (3인칭)</li>
-              <li>모드 간 부드러운 전환</li>
-              <li>시야각(FOV) 조정</li>
-              <li>경계 제한</li>
-              <li>실시간 설정 조정 (⚙️ 버튼)</li>
+              <li><strong>발판 점프:</strong> 모든 발판에서 점프 가능</li>
+              <li><strong>연속 점프 방지:</strong> 착지 후에만 다시 점프 가능</li>
+              <li><strong>물리 기반:</strong> Rapier 물리 엔진으로 자연스러운 점프</li>
+              <li><strong>카메라 추적:</strong> 3인칭 카메라가 부드럽게 따라감</li>
+              <li><strong>높이 감지:</strong> Y velocity 기반 지면/발판 감지</li>
+              <li><strong>실시간 설정:</strong> 카메라 옵션 실시간 조정 가능 (⚙️ 버튼)</li>
             </ul>
           </div>
         </div>
