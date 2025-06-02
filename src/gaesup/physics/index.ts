@@ -1,8 +1,10 @@
 import { useContext, useEffect, useMemo } from 'react';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { GaesupControllerContext } from '../controller/context';
 import { useGaesupGltf } from '../hooks/useGaesupGltf';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
+import { usePhysicsInput } from '../hooks/usePhysicsInput';
+import { keyboardInputAtom, mouseInputAtom } from '../atoms/inputSystemAtom';
 import { V3 } from '../utils';
 import { GaesupWorldContext, GaesupWorldDispatchContext } from '../world/context';
 import { urlsAtom, blockAtom } from '../atoms';
@@ -22,6 +24,9 @@ export default function calculation({
   const worldContext = useContext(GaesupWorldContext);
   const controllerContext = useContext(GaesupControllerContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
+  const { inputRef } = usePhysicsInput();
+  const setKeyboardInput = useSetAtom(keyboardInputAtom);
+  const setMouseInput = useSetAtom(mouseInputAtom);
   const urls = useAtomValue(urlsAtom);
   const block = useAtomValue(blockAtom);
   const { mode, activeState } = worldContext;
@@ -81,6 +86,9 @@ export default function calculation({
         controllerContext,
         dispatch,
         matchSizes,
+        inputRef,
+        setKeyboardInput,
+        setMouseInput,
       };
       calculationFunction(calcProp);
       check(calcProp);

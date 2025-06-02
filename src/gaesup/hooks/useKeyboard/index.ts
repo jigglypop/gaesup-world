@@ -1,7 +1,8 @@
-import { useContext, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
 import { clickerAtom } from '../../atoms';
+// 새로운 통합 입력 시스템만 사용
+import { keyboardInputAtom, mouseInputAtom } from '../../atoms/inputSystemAtom';
 
 // 키 매핑 정의 (게임 표준 키 설정)
 const KEY_MAPPING = {
@@ -36,10 +37,12 @@ const UNIVERSAL_KEYS = [
 ];
 
 export function useKeyboard() {
-  const { control, mode } = useContext(GaesupWorldContext);
-  const dispatch = useContext(GaesupWorldDispatchContext);
+  // === 새로운 통합 시스템만 사용 ===
   const clicker = useAtomValue(clickerAtom);
   const setClicker = useSetAtom(clickerAtom);
+  const setKeyboardInput = useSetAtom(keyboardInputAtom);
+  const setMouseInput = useSetAtom(mouseInputAtom);
+  
   const pressedKeys = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -57,23 +60,23 @@ export function useKeyboard() {
         
         // S키로 clicker 중지 (physics에서 이동한 로직)
         if (event.code === 'KeyS' && clicker.isOn) {
+          // clicker 중지
           setClicker({
             ...clicker,
             isOn: false,
             isRun: false,
           });
+          
+          // mouse input 시스템도 업데이트
+          setMouseInput({
+            isActive: false,
+            shouldRun: false,
+          });
         }
         
-        const newControl = {
-          ...control,
+        // === 키보드 입력 상태 업데이트 ===
+        setKeyboardInput({
           [mappedKey]: true,
-        };
-        
-        dispatch({
-          type: 'update',
-          payload: {
-            control: newControl,
-          },
         });
       }
     };
@@ -82,52 +85,54 @@ export function useKeyboard() {
       const mappedKey = KEY_MAPPING[event.code as keyof typeof KEY_MAPPING];
       
       if (mappedKey && pressedKeys.current.has(event.code)) {
-        // 모든 키가 항상 작동 (컨트롤러 모드 무관)
         pressedKeys.current.delete(event.code);
         
-        const newControl = {
-          ...control,
+        // === 키보드 입력 상태 업데이트 ===
+        setKeyboardInput({
           [mappedKey]: false,
-        };
-        
-        dispatch({
-          type: 'update',
-          payload: {
-            control: newControl,
-          },
         });
       }
     };
 
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        pressedKeys.current.clear();
-        
-        // 모든 키를 false로 리셋
-        const resetControl = Object.keys(control).reduce((acc, key) => {
-          acc[key] = false;
-          return acc;
-        }, {} as typeof control);
-
-        dispatch({
-          type: 'update',
-          payload: {
-            control: resetControl,
-          },
-        });
-      }
-    };
-
+    // 키보드 이벤트 리스너 등록
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
+    // 컴포넌트 언마운트 시 정리
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [clicker, setClicker, setKeyboardInput, setMouseInput]);
+
+  // visibility change 처리 (탭 전환 시 키 상태 초기화)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // 페이지가 숨겨졌을 때 모든 키 상태 초기화
+        pressedKeys.current.clear();
+        setKeyboardInput({
+          forward: false,
+          backward: false,
+          leftward: false,
+          rightward: false,
+          shift: false,
+          space: false,
+          keyZ: false,
+          keyR: false,
+          keyF: false,
+          keyE: false,
+          escape: false,
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [control, dispatch, mode.controller, clicker, setClicker]);
+  }, [setKeyboardInput]);
 
   return {
     pressedKeys: Array.from(pressedKeys.current),

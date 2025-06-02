@@ -15,6 +15,8 @@ import {
 const DEFAULT_SCALE = 0.5;
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 2;
+const UPDATE_THRESHOLD = 0.1; // 위치 변화 임계값
+const ROTATION_THRESHOLD = 0.02; // 회전 변화 임계값 (라디안)
 
 export function MiniMap({
   scale: initialScale = DEFAULT_SCALE,
@@ -39,6 +41,11 @@ export function MiniMap({
   const [minimap] = useAtom(minimapAtom);
   const [scale, setScale] = React.useState(initialScale);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // 성능 최적화: 이전 위치/회전 추적
+  const lastPositionRef = useRef({ x: 0, y: 0, z: 0 });
+  const lastRotationRef = useRef(0);
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const upscale = useCallback(() => {
     if (blockScale) return;
@@ -62,9 +69,10 @@ export function MiniMap({
   const getRotation = useCallback(() => {
     if (blockRotate || mode.control === 'normal') return 180;
     return (activeState.euler.y * 180) / Math.PI + 180;
-  }, [blockRotate, mode.control, activeState.euler.y]);
+  }, [blockRotate, mode.control]);
 
-  useEffect(() => {
+  // 성능 최적화: Canvas 업데이트 함수
+  const updateCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || !activeState?.position || !minimap?.props) return;
 
@@ -168,7 +176,6 @@ export function MiniMap({
     ctx.restore();
   }, [
     minimap,
-    activeState,
     scale,
     angle,
     blockRotate,
@@ -179,6 +186,64 @@ export function MiniMap({
     avatarStyle,
     directionStyle,
   ]);
+
+  // 성능 최적화: 위치/회전 변화 감지 및 throttled 업데이트
+  useEffect(() => {
+    const checkForUpdates = () => {
+      if (!activeState?.position) return;
+
+      const currentPos = activeState.position;
+      const currentRotation = activeState.euler.y;
+      const lastPos = lastPositionRef.current;
+      const lastRotation = lastRotationRef.current;
+
+      // 위치 변화 확인
+      const positionChanged = 
+        Math.abs(currentPos.x - lastPos.x) > UPDATE_THRESHOLD ||
+        Math.abs(currentPos.z - lastPos.z) > UPDATE_THRESHOLD;
+
+      // 회전 변화 확인
+      const rotationChanged = Math.abs(currentRotation - lastRotation) > ROTATION_THRESHOLD;
+
+      if (positionChanged || rotationChanged) {
+        // 이전 타임아웃 취소
+        if (updateTimeoutRef.current) {
+          clearTimeout(updateTimeoutRef.current);
+        }
+
+        // 새로운 업데이트 스케줄 (16ms = ~60fps 제한)
+        updateTimeoutRef.current = setTimeout(() => {
+          updateCanvas();
+          
+          // 마지막 값 업데이트
+          lastPositionRef.current = {
+            x: currentPos.x,
+            y: currentPos.y,
+            z: currentPos.z,
+          };
+          lastRotationRef.current = currentRotation;
+        }, 16);
+      }
+    };
+
+    // 초기 렌더링
+    updateCanvas();
+
+    // 위치 변화 체크를 위한 interval (120fps에서 체크, 업데이트는 60fps로 제한)
+    const intervalId = setInterval(checkForUpdates, 8);
+
+    return () => {
+      clearInterval(intervalId);
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, [updateCanvas]);
+
+  // 스케일 변화시에만 즉시 업데이트
+  useEffect(() => {
+    updateCanvas();
+  }, [scale, updateCanvas]);
 
   return (
     <div>

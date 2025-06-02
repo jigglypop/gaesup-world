@@ -1,22 +1,15 @@
-import { useContext } from "react";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
+import { useSetAtom } from 'jotai';
+// 새로운 통합 입력 시스템만 사용
+import { keyboardInputAtom } from '../../atoms/inputSystemAtom';
 
 export function usePushKey() {
-  const { control } = useContext(GaesupWorldContext);
-  const dispatch = useContext(GaesupWorldDispatchContext);
+  // === 새로운 통합 시스템만 사용 ===
+  const setKeyboardInput = useSetAtom(keyboardInputAtom);
 
   const pushKey = (key: string, value: boolean) => {
-    control[key] = value;
-    dispatch({
-      type: "update",
-      payload: {
-        control: {
-          ...control,
-        },
-      },
+    // === 키보드 입력 상태 업데이트 ===
+    setKeyboardInput({
+      [key]: value,
     });
   };
 

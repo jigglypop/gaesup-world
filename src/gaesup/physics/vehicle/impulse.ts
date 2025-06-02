@@ -6,8 +6,18 @@ export default function impulse(prop: calcType) {
     rigidBodyRef,
     worldContext: { activeState, control },
     controllerContext: { vehicle },
+    inputRef
   } = prop;
-  const { shift } = control;
+  
+  // === 새로운 ref 기반 시스템 우선 사용 ===
+  let shift: boolean;
+  if (inputRef && inputRef.current) {
+    shift = inputRef.current.keyboard.shift;
+  } else {
+    // === 기존 시스템 fallback (하위 호환성) ===
+    shift = control.shift;
+  }
+  
   const { maxSpeed, accelRatio } = vehicle;
 
   const velocity = rigidBodyRef.current.linvel();

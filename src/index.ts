@@ -34,6 +34,10 @@ export { useUnifiedFrame, useMainFrameLoop } from "./gaesup/hooks/useUnifiedFram
 export { useZoom } from "./gaesup/hooks/useZoom";
 export { useKeyboard } from "./gaesup/hooks/useKeyboard";
 
+// Optimized input system hooks
+export { usePhysicsInput } from "./gaesup/hooks/usePhysicsInput";
+export { useInputValidation, useInputLogger } from "./gaesup/hooks/useInputValidation";
+
 // ============================================================================
 // 타입 내보내기
 // ============================================================================
@@ -48,7 +52,6 @@ export type {
   // 컨트롤 관련 타입들
   ControlState,
   KeyboardControlState,
-  PushState,
   
   // 모드 및 상태 타입들
   ControllerType,
@@ -122,3 +125,21 @@ export type {
   // 기타 컨트롤러 프로퍼티 타입들
   ControllerOtherPropType
 } from "./gaesup/types";
+
+// ============================================================================
+// 새로운 Input System 추가 export
+// ============================================================================
+export type {
+  KeyboardInputState,
+  MouseInputState, 
+  ClickerOptionState,
+  UnifiedInputSystemState
+} from "./gaesup/atoms/inputSystemAtom";
+
+export {
+  inputSystemAtom,
+  keyboardInputAtom,
+  mouseInputAtom,
+  clickerOptionInputAtom,
+  movementStateAtom
+} from "./gaesup/atoms/inputSystemAtom";

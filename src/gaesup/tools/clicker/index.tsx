@@ -3,11 +3,12 @@ import { ReactNode, useContext } from 'react';
 import { useAtomValue } from 'jotai';
 import * as THREE from 'three';
 import { GaesupWorldContext } from '../../world/context';
-import { modeAtom } from '../../atoms';
+import { modeAtom, inputSystemAtom } from '../../atoms';
 
 export function Clicker({ onMarker, runMarker }: { onMarker: ReactNode; runMarker: ReactNode }) {
-  const { clicker, clickerOption } = useContext(GaesupWorldContext);
-  const mode = useAtomValue(modeAtom);
+  const inputSystem = useAtomValue(inputSystemAtom);
+  const mouse = inputSystem.mouse;
+  const clickerOption = inputSystem.clickerOption;
   const pointQ = [];
   for (let i = 0; i < clickerOption.queue.length; i++) {
     if (clickerOption.queue[i] instanceof THREE.Vector3) {
@@ -18,9 +19,9 @@ export function Clicker({ onMarker, runMarker }: { onMarker: ReactNode; runMarke
   return (
     <>
       {/* 하이브리드 모드: 항상 클리커 마커 표시 */}
-      <group position={clicker.point}>
-        {clicker.isOn && onMarker}
-        {clicker.isOn && clickerOption.isRun && clicker.isRun && runMarker}
+      <group position={mouse.target}>
+        {mouse.isActive && onMarker}
+        {mouse.isActive && clickerOption.isRun && mouse.shouldRun && runMarker}
       </group>
       {clickerOption.line &&
         pointQ.map((queueItem, key) => {

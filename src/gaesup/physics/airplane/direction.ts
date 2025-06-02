@@ -8,8 +8,25 @@ export default function direction(prop: calcType) {
     worldContext: { activeState, control },
     controllerContext: { airplane },
     matchSizes,
+    inputRef
   } = prop;
-  const { forward, backward, leftward, rightward, shift, space } = control;
+  
+  // === 새로운 ref 기반 시스템 우선 사용 ===
+  let forward: boolean, backward: boolean, leftward: boolean, rightward: boolean, shift: boolean, space: boolean;
+  
+  if (inputRef && inputRef.current) {
+    const keyboard = inputRef.current.keyboard;
+    forward = keyboard.forward;
+    backward = keyboard.backward;
+    leftward = keyboard.leftward;
+    rightward = keyboard.rightward;
+    shift = keyboard.shift;
+    space = keyboard.space;
+  } else {
+    // === 기존 시스템 fallback (하위 호환성) ===
+    ({ forward, backward, leftward, rightward, shift, space } = control);
+  }
+  
   const { angleDelta, maxAngle, accelRatio } = airplane;
   if (!matchSizes || !matchSizes["airplaneUrl"]) return null;
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { useFocus } from '../../hooks/useFocus';
 import { cameraOptionAtom } from '../../atoms';
 import './style.css';

@@ -13,6 +13,7 @@ import {
 import { dispatchType } from "../utils/type";
 import { gaesupWorldContextType, urlsType } from "../world/context/type";
 import { CameraOptionType } from "../types";
+import { PhysicsInputRef, KeyboardInputState, MouseInputState } from "../hooks/usePhysicsInput";
 
 export type SetAtom<Args extends unknown[], Result> = (...args: Args) => Result;
 
@@ -54,6 +55,9 @@ export type cameraPropType = {
 // calculation
 export type calcType = calcPropType & {
   groundRay: groundRayType;
+  inputRef?: PhysicsInputRef;
+  setKeyboardInput?: (update: Partial<KeyboardInputState>) => void;
+  setMouseInput?: (update: Partial<MouseInputState>) => void;
 };
 
 // vehicle Inner
