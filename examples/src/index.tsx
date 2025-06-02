@@ -2,102 +2,282 @@
 
 import { Environment } from '@react-three/drei';
 import { Physics, euler, RigidBody } from '@react-three/rapier';
-
 import { Canvas } from '@react-three/fiber';
-
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { FaMapMarkerAlt } from 'react-icons/fa';
 import { GaesupController, GaesupWorld, GamePad, MiniMap, V3 } from '../../src';
 import { Clicker } from '../../src/gaesup/tools/clicker';
 import { InnerHtml } from '../../src/gaesup/utils/innerHtml';
+import { FocusModal } from '../../src/gaesup/tools/FocusModal';
+import { ObjectInfoPanel } from '../../src/gaesup/tools/ObjectInfoPanel';
+import { useFocus } from '../../src/gaesup/hooks/useFocus';
 import Info from '../info';
 import Passive from '../passive';
 import Floor from './Floor';
 import * as style from './style.css';
 
+function FocusHandler({ onObjectFocused, onCenterFocused }: { 
+  onObjectFocused: (obj: any) => void;
+  onCenterFocused: (obj: any) => void;
+}) {
+  const { focusOn } = useFocus();
+
+  // 발판 포커싱 (기존)
+  (window as any).handlePlatformFocus = async (platformData: any, clickPosition: any) => {
+    const targetPosition = V3(clickPosition.x, clickPosition.y + 5, clickPosition.z + 8);
+    const lookAtPosition = V3(platformData.position[0], platformData.position[1], platformData.position[2]);
+    
+    await focusOn({
+      zoom: 1.5,
+      target: lookAtPosition,
+      position: targetPosition,
+    });
+    
+    onObjectFocused({
+      name: platformData.name,
+      position: {
+        x: platformData.position[0],
+        y: platformData.position[1],
+        z: platformData.position[2]
+      },
+      color: platformData.color,
+      type: platformData.type,
+    });
+  };
+
+  // 중앙 오브젝트 포커싱 (새로운)
+  (window as any).handleCenterFocus = async (objectData: any) => {
+    const objectPosition = V3(objectData.position[0], objectData.position[1], objectData.position[2]);
+    
+    // 오브젝트를 화면 중앙에 배치하는 카메라 위치 계산 (더 가까이)
+    const distance = objectData.focusDistance || 5;
+    const targetPosition = V3(
+      objectPosition.x + distance * 0.5,
+      objectPosition.y + distance * 0.3,
+      objectPosition.z + distance * 0.5
+    );
+    
+    // 확실한 포커싱을 위해 연속으로 실행
+    const focusParams = {
+      zoom: 4.0,
+      target: objectPosition,
+      position: targetPosition,
+    };
+    
+    // 첫 번째 포커싱
+    await focusOn(focusParams);
+    
+    // 추가 포커싱들로 확실하게 완료
+    setTimeout(() => focusOn(focusParams), 50);
+    setTimeout(() => focusOn(focusParams), 150);
+    setTimeout(() => focusOn(focusParams), 300);
+    
+    onCenterFocused({
+      name: objectData.name,
+      position: {
+        x: objectData.position[0],
+        y: objectData.position[1],
+        z: objectData.position[2]
+      },
+      color: objectData.color,
+      type: objectData.type,
+      description: objectData.description,
+      properties: objectData.properties,
+    });
+  };
+
+  return null;
+}
+
 // 발판과 계단 컴포넌트 - Rapier fixed body 사용
 function Platforms() {
+  const platforms = [
+    { name: "갈색 발판 A", position: [10, 2, 0], size: [8, 1, 8], color: "#8B4513", type: "큰 발판" },
+    { name: "갈색 발판 B", position: [-10, 3, 5], size: [6, 1, 6], color: "#A0522D", type: "중간 발판" },
+    { name: "갈색 발판 C", position: [0, 4, 15], size: [10, 1, 6], color: "#CD853F", type: "긴 발판" },
+    { name: "갈색 발판 D", position: [20, 5, -10], size: [8, 1, 8], color: "#DEB887", type: "높은 발판" },
+    { name: "갈색 발판 E", position: [-15, 6, -8], size: [6, 1, 10], color: "#F4A460", type: "최고 발판" },
+    { name: "계단 1단", position: [25, 1, 5], size: [4, 1, 4], color: "#D2691E", type: "계단" },
+    { name: "계단 2단", position: [25, 2, 10], size: [4, 1, 4], color: "#D2691E", type: "계단" },
+    { name: "계단 3단", position: [25, 3, 15], size: [4, 1, 4], color: "#D2691E", type: "계단" },
+    { name: "계단 4단", position: [25, 4, 20], size: [4, 1, 4], color: "#D2691E", type: "계단" },
+    { name: "연결 발판 A", position: [0, 7, -20], size: [15, 1, 4], color: "#B22222", type: "연결 발판" },
+    { name: "연결 발판 B", position: [-20, 8, -15], size: [8, 1, 12], color: "#800080", type: "연결 발판" },
+  ];
+
+  const handlePlatformClick = (e: any, platformData: any) => {
+    e.stopPropagation();
+    
+    // 전역 함수 호출 (GaesupWorld 내부에서 사용 가능)
+    if ((window as any).handlePlatformFocus) {
+      const clickedPosition = e.point || platformData.position;
+      (window as any).handlePlatformFocus(platformData, clickedPosition);
+    }
+  };
+
   return (
     <>
-      {/* 큰 발판들 */}
-      <RigidBody type="fixed" colliders="cuboid">
-        <mesh position={[10, 2, 0]} castShadow receiveShadow>
-          <boxGeometry args={[8, 1, 8]} />
-          <meshStandardMaterial color="#8B4513" />
-        </mesh>
-      </RigidBody>
+      {platforms.map((platform, index) => (
+        <RigidBody key={index} type="fixed" colliders="cuboid">
+          <mesh 
+            position={platform.position as [number, number, number]}
+            castShadow 
+            receiveShadow
+            onClick={(e) => handlePlatformClick(e, platform)}
+            onPointerOver={(e) => (e.object.material.emissive.setHex(0x222222))}
+            onPointerOut={(e) => (e.object.material.emissive.setHex(0x000000))}
+          >
+            <boxGeometry args={platform.size as [number, number, number]} />
+            <meshStandardMaterial color={platform.color} />
+          </mesh>
+        </RigidBody>
+      ))}
+    </>
+  );
+}
 
-      <RigidBody type="fixed" colliders="cuboid">
-        <mesh position={[-10, 3, 5]} castShadow receiveShadow>
-          <boxGeometry args={[6, 1, 6]} />
-          <meshStandardMaterial color="#A0522D" />
-        </mesh>
-      </RigidBody>
+// 중앙 포커싱용 오브젝트들
+function FocusObjects() {
+  const objects = [
+    {
+      name: "신비한 크리스탈",
+      position: [5, 3, 10],
+      geometry: "dodecahedron",
+      args: [2],
+      color: "#FF6B9D",
+      focusDistance: 4,
+      description: "고대 문명의 유물로 추정되는 신비한 크리스탈입니다. 내부에서 미약한 에너지가 감지됩니다.",
+      properties: {
+        material: "미지의 크리스탈",
+        energy: "87%",
+        origin: "고대 문명",
+        rarity: "전설급"
+      }
+    },
+    {
+      name: "마법의 오브",
+      position: [-8, 4, 12],
+      geometry: "sphere",
+      args: [1.5],
+      color: "#4ECDC4",
+      focusDistance: 3,
+      description: "마법사들이 사용하던 신비한 구슬입니다. 만지면 따뜻한 기운이 느껴집니다.",
+      properties: {
+        material: "마법석",
+        temperature: "28°C",
+        mana: "충전됨",
+        enchantment: "치유의 오라"
+      }
+    },
+    {
+      name: "고대 기둥",
+      position: [15, 3, -5],
+      geometry: "cylinder",
+      args: [0.8, 6],
+      color: "#F7B731",
+      focusDistance: 6,
+      description: "수천 년 전 건설된 것으로 보이는 석조 기둥입니다. 표면에 알 수 없는 문자가 새겨져 있습니다.",
+      properties: {
+        material: "고대 석재",
+        age: "3,000년 추정",
+        inscriptions: "고대 룬 문자",
+        condition: "양호"
+      }
+    },
+    {
+      name: "에너지 큐브",
+      position: [-12, 2.5, -10],
+      geometry: "box",
+      args: [2, 2, 2],
+      color: "#A55EEA",
+      focusDistance: 4,
+      description: "미래 기술로 만들어진 에너지 저장 장치입니다. 표면이 부드럽게 빛나고 있습니다.",
+      properties: {
+        material: "나노 합금",
+        energy: "95%",
+        technology: "미래형",
+        status: "활성"
+      }
+    },
+    {
+      name: "우주 파편",
+      position: [8, 5, -15],
+      geometry: "octahedron",
+      args: [2.5],
+      color: "#FF6B35",
+      focusDistance: 5,
+      description: "운석으로 추정되는 우주 파편입니다. 지구에서는 발견되지 않는 원소가 포함되어 있습니다.",
+      properties: {
+        material: "우주 광물",
+        origin: "외계",
+        composition: "미지의 원소",
+        radioactivity: "안전"
+      }
+    },
+  ];
 
-      <RigidBody type="fixed" colliders="cuboid">
-        <mesh position={[0, 4, 15]} castShadow receiveShadow>
-          <boxGeometry args={[10, 1, 6]} />
-          <meshStandardMaterial color="#CD853F" />
-        </mesh>
-      </RigidBody>
+  const handleObjectClick = (e: any, objectData: any) => {
+    e.stopPropagation();
+    
+    if ((window as any).handleCenterFocus) {
+      (window as any).handleCenterFocus(objectData);
+    }
+  };
 
-      <RigidBody type="fixed" colliders="cuboid">
-        <mesh position={[20, 5, -10]} castShadow receiveShadow>
-          <boxGeometry args={[8, 1, 8]} />
-          <meshStandardMaterial color="#DEB887" />
-        </mesh>
-      </RigidBody>
+  const createGeometry = (object: any) => {
+    switch (object.geometry) {
+      case "sphere":
+        return <sphereGeometry args={object.args} />;
+      case "box":
+        return <boxGeometry args={object.args} />;
+      case "cylinder":
+        return <cylinderGeometry args={object.args} />;
+      case "dodecahedron":
+        return <dodecahedronGeometry args={object.args} />;
+      case "octahedron":
+        return <octahedronGeometry args={object.args} />;
+      default:
+        return <boxGeometry args={[1, 1, 1]} />;
+    }
+  };
 
-      <RigidBody type="fixed" colliders="cuboid">
-        <mesh position={[-15, 6, -8]} castShadow receiveShadow>
-          <boxGeometry args={[6, 1, 10]} />
-          <meshStandardMaterial color="#F4A460" />
-        </mesh>
-      </RigidBody>
-
-      {/* 계단형 발판들 */}
-      <RigidBody type="fixed" colliders="cuboid">
-        <mesh position={[25, 1, 5]} castShadow receiveShadow>
-          <boxGeometry args={[4, 1, 4]} />
-          <meshStandardMaterial color="#D2691E" />
-        </mesh>
-      </RigidBody>
-
-      <RigidBody type="fixed" colliders="cuboid">
-        <mesh position={[25, 2, 10]} castShadow receiveShadow>
-          <boxGeometry args={[4, 1, 4]} />
-          <meshStandardMaterial color="#D2691E" />
-        </mesh>
-      </RigidBody>
-
-      <RigidBody type="fixed" colliders="cuboid">
-        <mesh position={[25, 3, 15]} castShadow receiveShadow>
-          <boxGeometry args={[4, 1, 4]} />
-          <meshStandardMaterial color="#D2691E" />
-        </mesh>
-      </RigidBody>
-
-      <RigidBody type="fixed" colliders="cuboid">
-        <mesh position={[25, 4, 20]} castShadow receiveShadow>
-          <boxGeometry args={[4, 1, 4]} />
-          <meshStandardMaterial color="#D2691E" />
-        </mesh>
-      </RigidBody>
-
-      {/* 긴 연결 발판 */}
-      <RigidBody type="fixed" colliders="cuboid">
-        <mesh position={[0, 7, -20]} castShadow receiveShadow>
-          <boxGeometry args={[15, 1, 4]} />
-          <meshStandardMaterial color="#B22222" />
-        </mesh>
-      </RigidBody>
-
-      <RigidBody type="fixed" colliders="cuboid">
-        <mesh position={[-20, 8, -15]} castShadow receiveShadow>
-          <boxGeometry args={[8, 1, 12]} />
-          <meshStandardMaterial color="#800080" />
-        </mesh>
-      </RigidBody>
+  return (
+    <>
+      {objects.map((object, index) => (
+        <RigidBody key={index} type="fixed" colliders="cuboid">
+          <mesh 
+            position={object.position as [number, number, number]}
+            castShadow 
+            receiveShadow
+            onClick={(e) => handleObjectClick(e, object)}
+            onPointerOver={(e) => {
+              e.object.material.emissive.setHex(0x444444);
+              document.body.style.cursor = 'pointer';
+            }}
+            onPointerOut={(e) => {
+              e.object.material.emissive.setHex(0x000000);
+              document.body.style.cursor = 'default';
+            }}
+          >
+            {createGeometry(object)}
+            <meshStandardMaterial 
+              color={object.color}
+              metalness={0.3}
+              roughness={0.4}
+            />
+          </mesh>
+          
+          {/* 물체 위에 떠있는 라벨 */}
+          <mesh position={[object.position[0], object.position[1] + 4, object.position[2]]}>
+            <planeGeometry args={[3, 0.8]} />
+            <meshBasicMaterial 
+              color="rgba(0, 0, 0, 0.7)" 
+              transparent 
+              opacity={0.8}
+            />
+          </mesh>
+        </RigidBody>
+      ))}
     </>
   );
 }
@@ -121,6 +301,22 @@ export default function MainComponent() {
   const AIRPLANE_URL = S3 + '/gaebird.glb';
   const VEHICLE_URL = S3 + '/gorani.glb';
 
+  const [focusedObject, setFocusedObject] = useState<{
+    name: string;
+    position: { x: number; y: number; z: number };
+    color: string;
+    type: string;
+  } | null>(null);
+
+  const [centerFocusedObject, setCenterFocusedObject] = useState<{
+    name: string;
+    position: { x: number; y: number; z: number };
+    color: string;
+    type: string;
+    description: string;
+    properties: Record<string, string>;
+  } | null>(null);
+
   return (
     <GaesupWorld
       urls={{
@@ -140,9 +336,9 @@ export default function MainComponent() {
         zDistance: 15,
         enableCollision: true,
         smoothing: {
-          position: 0.08,
-          rotation: 0.1,
-          fov: 0.1,
+          position: 0.25,
+          rotation: 0.3,
+          fov: 0.2,
         },
         fov: 75,
         bounds: {
@@ -155,6 +351,12 @@ export default function MainComponent() {
         },
       }}
     >
+      {/* 포커싱 핸들러 - GaesupWorld 내부에서 context 사용 가능 */}
+      <FocusHandler 
+        onObjectFocused={setFocusedObject} 
+        onCenterFocused={setCenterFocusedObject}
+      />
+      
       <Canvas
         shadows
         dpr={[1, 2]}
@@ -214,6 +416,7 @@ export default function MainComponent() {
             ></GaesupController>
             <Floor />
             <Platforms />
+            <FocusObjects />
             <Passive />
             <Clicker
               onMarker={
@@ -234,16 +437,48 @@ export default function MainComponent() {
       </Canvas>
       <Info />
 
+      {/* 포커싱 모달 - Canvas 외부에 위치 */}
+      <FocusModal 
+        focusedObject={focusedObject} 
+        onClose={() => setFocusedObject(null)} 
+      />
+
+      {/* 중앙 포커싱 모달 */}
+      <ObjectInfoPanel 
+        focusedObject={centerFocusedObject} 
+        onClose={() => setCenterFocusedObject(null)} 
+      />
+
       <div className={style.helpPanel}>
-        <h3>발판 점프 데모 조작법</h3>
+        <h3>🎯 오브젝트 포커싱 & 발판 점프 데모</h3>
         <div className={style.helpContent}>
           <div className={style.helpSection}>
-            <h4>발판과 계단:</h4>
+            <h4>🔮 중앙 포커싱 기능:</h4>
             <ul>
-              <li><strong>갈색 발판들:</strong> Rapier fixed body로 구현된 점프 가능한 발판</li>
-              <li><strong>계단형 발판:</strong> 오른쪽에 있는 단계별 올라갈 수 있는 계단</li>
-              <li><strong>높은 발판들:</strong> 점프해서 도달할 수 있는 다양한 높이의 발판</li>
-              <li><strong>연결 발판:</strong> 긴 형태의 발판으로 플랫폼 간 이동 가능</li>
+              <li><strong>신비한 오브젝트들:</strong> 다양한 3D 오브젝트들이 월드에 배치됨</li>
+              <li><strong>오브젝트 클릭:</strong> 오브젝트를 클릭하면 화면 중앙에 포커싱</li>
+              <li><strong>자세한 정보:</strong> 오브젝트의 설명, 속성, 위치 정보 표시</li>
+              <li><strong>자연스러운 전환:</strong> 부드러운 카메라 이동과 줌</li>
+              <li><strong>캐릭터 복귀:</strong> "캐릭터로 돌아가기" 버튼으로 원래 시점 복원</li>
+            </ul>
+          </div>
+          <div className={style.helpSection}>
+            <h4>🎯 발판 포커싱 기능:</h4>
+            <ul>
+              <li><strong>발판 클릭:</strong> 마우스로 발판을 클릭하면 해당 발판에 줌인</li>
+              <li><strong>호버 효과:</strong> 발판에 마우스를 올리면 하이라이트 표시</li>
+              <li><strong>모달 창:</strong> 클릭한 발판의 정보와 카메라 상태 표시</li>
+              <li><strong>줌아웃:</strong> 모달 창에서 "줌아웃하고 닫기" 버튼으로 원래 시점 복원</li>
+            </ul>
+          </div>
+          <div className={style.helpSection}>
+            <h4>🌟 특별한 오브젝트들:</h4>
+            <ul>
+              <li><strong>신비한 크리스탈:</strong> 12면체 모양의 핑크 크리스탈 (고대 문명 유물)</li>
+              <li><strong>마법의 오브:</strong> 구체 모양의 청록색 마법석 (치유의 오라)</li>
+              <li><strong>고대 기둥:</strong> 원통형 황금색 석조 기둥 (룬 문자 새겨짐)</li>
+              <li><strong>에너지 큐브:</strong> 정육면체 보라색 미래 기술 장치</li>
+              <li><strong>우주 파편:</strong> 8면체 주황색 운석 (외계 광물)</li>
             </ul>
           </div>
           <div className={style.helpSection}>
@@ -254,7 +489,7 @@ export default function MainComponent() {
               <li><strong>S/↓:</strong> 뒤로 이동</li>
               <li><strong>A/←:</strong> 왼쪽으로 이동</li>
               <li><strong>D/→:</strong> 오른쪽으로 이동</li>
-              <li><strong>🖱️ 마우스 클릭:</strong> 바닥 클릭으로 이동</li>
+              <li><strong>🖱️ 마우스 클릭:</strong> 바닥 클릭으로 이동 / 발판&오브젝트 클릭으로 포커싱</li>
               <li><strong>스페이스:</strong> 점프 (지면이나 발판에서만 가능)</li>
               <li><strong>Shift:</strong> 달리기 (이동 중에 누르기)</li>
               <li><strong>Z:</strong> 인사</li>
@@ -264,13 +499,16 @@ export default function MainComponent() {
             </ul>
           </div>
           <div className={style.helpSection}>
-            <h4>점프 시스템 특징:</h4>
+            <h4>시스템 특징:</h4>
             <ul>
+              <li><strong>🎯 듀얼 포커싱:</strong> 발판 포커싱 + 오브젝트 중앙 포커싱</li>
+              <li><strong>🔮 오브젝트 탐색:</strong> 다양한 신비한 오브젝트들과 상호작용</li>
+              <li><strong>📖 상세 정보:</strong> 각 오브젝트의 배경 스토리와 속성 표시</li>
               <li><strong>발판 점프:</strong> 모든 발판에서 점프 가능</li>
               <li><strong>연속 점프 방지:</strong> 착지 후에만 다시 점프 가능</li>
               <li><strong>물리 기반:</strong> Rapier 물리 엔진으로 자연스러운 점프</li>
               <li><strong>카메라 추적:</strong> 3인칭 카메라가 부드럽게 따라감</li>
-              <li><strong>높이 감지:</strong> Y velocity 기반 지면/발판 감지</li>
+              <li><strong>높이 감지:</strong> 개선된 Y velocity 기반 지면/발판 감지</li>
               <li><strong>실시간 설정:</strong> 카메라 옵션 실시간 조정 가능 (⚙️ 버튼)</li>
             </ul>
           </div>

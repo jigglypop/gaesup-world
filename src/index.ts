@@ -9,6 +9,7 @@ export { PassiveVehicle } from "./gaesup/component/passive/vehicle";
 export { GaesupController } from "./gaesup/controller";
 export { GaeSupProps } from "./gaesup/gaesupProps";
 export { Clicker } from "./gaesup/tools/clicker";
+export { FocusModal } from "./gaesup/tools/FocusModal";
 export { GamePad } from "./gaesup/tools/gamepad";
 export { MiniMap } from "./gaesup/tools/minimap";
 export { Rideable } from "./gaesup/tools/rideable";
@@ -22,6 +23,7 @@ export * from "./gaesup/atoms";
 // ============================================================================
 export { useCharacterPool } from "./gaesup/hooks/useCharacterPool";
 export { useClicker } from "./gaesup/hooks/useClicker";
+export { useFocus } from "./gaesup/hooks/useFocus";
 export { useGaesupAnimation } from "./gaesup/hooks/useGaesupAnimation";
 export { useGaesupController } from "./gaesup/hooks/useGaesupController";
 export { useMovePoint } from "./gaesup/hooks/useMovePoint";

@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { useAtom } from "jotai";
 import * as THREE from "three";
-import { makeNormalCameraPosition } from "../../camera/control/normal";
+import { makeNormalCameraPosition } from "../../camera/control/thirdPerson";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
@@ -56,8 +56,8 @@ export function useFocus() {
     setCameraOption(prev => {
       const updated = { ...prev };
       if (zoom) updated.zoom = zoom;
-      updated.position.lerp(position, 0.1);
-      updated.target.lerp(target, 0.1);
+      updated.position.lerp(position, 0.8);
+      updated.target.lerp(target, 0.8);
       return updated;
     });
   };
@@ -68,9 +68,9 @@ export function useFocus() {
       if (zoom) updated.zoom = zoom;
       updated.position.lerp(
         makeNormalCameraPosition(activeState, cameraOption),
-        0.1
+        0.8
       );
-      updated.target.lerp(activeState.position.clone(), 0.1);
+      updated.target.lerp(activeState.position.clone(), 0.8);
       return updated;
     });
   };
@@ -78,7 +78,7 @@ export function useFocus() {
   const move = async ({ newPosition }: { newPosition: THREE.Vector3 }) => {
     setCameraOption(prev => {
       const updated = { ...prev };
-      updated.position.lerp(newPosition.clone(), 0.1);
+      updated.position.lerp(newPosition.clone(), 0.8);
       return updated;
     });
   };

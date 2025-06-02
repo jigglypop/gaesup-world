@@ -1,0 +1,313 @@
+/* 좌측 정보 패널 */
+.object-info-panel {
+  position: fixed;
+  top: 0;
+  left: -400px;
+  width: 380px;
+  height: 100vh;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(240, 245, 250, 0.9));
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    5px 0 25px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.object-info-panel.visible {
+  left: 0;
+}
+
+/* 헤더 */
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(240, 240, 250, 0.7));
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex: 1;
+}
+
+.object-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.15),
+    0 0 0 2px rgba(255, 255, 255, 0.5) inset;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.object-icon::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0));
+}
+
+.title-section h2 {
+  margin: 0 0 5px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #2c3e50;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  line-height: 1.2;
+}
+
+.object-type {
+  display: inline-block;
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  color: white;
+  padding: 3px 10px;
+  border-radius: 15px;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.close-button {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.close-button:hover {
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: scale(1.05);
+}
+
+/* 콘텐츠 */
+.panel-content {
+  flex: 1;
+  padding: 20px 25px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.panel-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+/* 섹션 공통 스타일 */
+.description-section,
+.properties-section,
+.location-section,
+.camera-section {
+  margin-bottom: 20px;
+}
+
+.description-section h3,
+.properties-section h3,
+.location-section h3,
+.camera-section h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #34495e;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 설명 섹션 */
+.description-text {
+  background: linear-gradient(135deg, rgba(116, 75, 162, 0.08), rgba(102, 126, 234, 0.08));
+  padding: 15px;
+  border-radius: 10px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #2c3e50;
+  border-left: 3px solid #667eea;
+}
+
+/* 속성 리스트 */
+.properties-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.property-item {
+  background: rgba(255, 255, 255, 0.6);
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.property-item:hover {
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.property-key {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7f8c8d;
+  text-transform: uppercase;
+}
+
+.property-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+/* 위치 좌표 */
+.location-coords {
+  display: flex;
+  gap: 10px;
+}
+
+.coord-item {
+  background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(155, 89, 182, 0.1));
+  padding: 12px;
+  border-radius: 10px;
+  text-align: center;
+  border: 1px solid rgba(52, 152, 219, 0.2);
+  flex: 1;
+}
+
+.coord-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: #3498db;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.coord-value {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+/* 카메라 상태 */
+.camera-status {
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(26, 188, 156, 0.08));
+  padding: 12px;
+  border-radius: 10px;
+  border-left: 3px solid #2ecc71;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.status-item:last-child {
+  margin-bottom: 0;
+}
+
+.status-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #27ae60;
+}
+
+.status-value {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 6px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.status-value.active {
+  color: #27ae60;
+  background: rgba(46, 204, 113, 0.2);
+}
+
+.status-value.inactive {
+  color: #e74c3c;
+  background: rgba(231, 76, 60, 0.2);
+}
+
+/* 푸터 */
+.panel-footer {
+  padding: 20px 25px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(240, 240, 250, 0.7));
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.return-button {
+  width: 100%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.return-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .object-info-panel {
+    width: 100%;
+    left: -100%;
+  }
+  
+  .coord-item {
+    padding: 8px;
+  }
+  
+  .coord-value {
+    font-size: 12px;
+  }
+} 

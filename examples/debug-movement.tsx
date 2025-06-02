@@ -3,24 +3,20 @@ import { Canvas } from '@react-three/fiber';
 import { 
   GaesupWorld, 
   useMainFrameLoop, 
-  useGaesupState,
   useEventBus,
   EventBus,
   useRefStates
 } from 'gaesup-world';
 
-// 🔧 버스 연결 및 움직임 문제 진단용 디버그 컴포넌트
 function MovementDebugger() {
   const [eventLog, setEventLog] = useState<string[]>([]);
-  const [keyStates, setKeyStates] = useState<Record<string, boolean>>({});
+  const [_, setKeyStates] = useState<Record<string, boolean>>({});
   const [physicsStates, setPhysicsStates] = useState<any>({});
   
   // 이벤트 로그 추가
   const addLog = (message: string) => {
     setEventLog(prev => [...prev.slice(-10), `${new Date().toLocaleTimeString()}: ${message}`]);
   };
-
-  // 🎯 모든 중요한 이벤트를 감지
   useEventBus('playerMoveStart', (payload) => {
     addLog(`✅ 이동 시작 - 위치: ${payload.position.x.toFixed(2)}, ${payload.position.z.toFixed(2)}`);
   });
@@ -44,10 +40,7 @@ function MovementDebugger() {
       [payload.key]: payload.action === 'down'
     }));
   });
-
-  // ref 상태 모니터링
   const refStatesHook = useRefStates();
-  
   useEffect(() => {
     const interval = setInterval(() => {
       const states = refStatesHook.refStates;
@@ -101,8 +94,6 @@ function MovementDebugger() {
           총 리스너: {EventBus.getStats().totalListeners}
         </div>
       </div>
-
-      {/* 키 입력 상태 */}
       <div style={{ marginBottom: 10 }}>
         <strong>⌨️ 키 상태:</strong>
         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
