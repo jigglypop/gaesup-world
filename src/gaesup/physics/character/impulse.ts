@@ -17,9 +17,14 @@ export default function impulse(prop: calcType) {
   
   // 점프: 지면에 있고 점프 상태일 때만 한 번 적용
   if (isJumping && isOnTheGround) {
+    // 현재 velocity를 가져와서 Y만 교체하는 방식으로 더 자연스러운 점프
     const currentVelocity = rigidBodyRef.current.linvel();
-    // 현재 Y velocity를 무시하고 새로운 점프 velocity 설정
-    impulse.setY(jumpSpeed * rigidBodyRef.current.mass());
+    const newVelocity = vec3({
+      x: currentVelocity.x,
+      y: jumpSpeed, // 직접 velocity 설정 (mass 곱하지 않음)
+      z: currentVelocity.z
+    });
+    rigidBodyRef.current.setLinvel(newVelocity, true);
   }
   
   if (isMoving) {
@@ -33,9 +38,11 @@ export default function impulse(prop: calcType) {
     const F = A.multiplyScalar(M);
     impulse.setX(F.x);
     impulse.setZ(F.z);
+    
+    // 수평 이동만 impulse로 적용
+    rigidBodyRef.current.applyImpulse(impulse, true);
   }
   
-  rigidBodyRef.current.applyImpulse(impulse, true);
   activeState.position = vec3(rigidBodyRef.current.translation());
   activeState.velocity = vec3(rigidBodyRef.current.linvel());
 }

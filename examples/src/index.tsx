@@ -6,7 +6,10 @@ import { Physics, euler, RigidBody } from '@react-three/rapier';
 import { Canvas } from '@react-three/fiber';
 
 import { Suspense } from 'react';
-import { GaesupController, GaesupWorld, GamePad, MiniMap } from '../../src';
+import { FaMapMarkerAlt } from 'react-icons/fa';
+import { GaesupController, GaesupWorld, GamePad, MiniMap, V3 } from '../../src';
+import { Clicker } from '../../src/gaesup/tools/clicker';
+import { InnerHtml } from '../../src/gaesup/utils/innerHtml';
 import Info from '../info';
 import Passive from '../passive';
 import Floor from './Floor';
@@ -212,6 +215,20 @@ export default function MainComponent() {
             <Floor />
             <Platforms />
             <Passive />
+            <Clicker
+              onMarker={
+                <group rotation={euler({ x: 0, y: Math.PI / 2, z: 0 })}>
+                  <InnerHtml position={V3(0, 1, 0)}>
+                    <FaMapMarkerAlt style={{ color: '#f4ffd4', fontSize: '5rem' }} />
+                  </InnerHtml>
+                </group>
+              }
+              runMarker={
+                <InnerHtml position={V3(0, 1, 0)}>
+                  <FaMapMarkerAlt style={{ color: '#ffac8e', fontSize: '5rem' }} />
+                </InnerHtml>
+              }
+            ></Clicker>
           </Physics>
         </Suspense>
       </Canvas>
