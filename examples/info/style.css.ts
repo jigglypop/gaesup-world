@@ -100,8 +100,8 @@ export const pRecipe = recipe({
 
 export const glassButton = style({
   padding: '8px 16px',
-  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
+  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  border: '1px solid rgba(255, 255, 255, 0.3)',
   borderRadius: '8px',
   color: 'white',
   cursor: 'pointer',
@@ -111,9 +111,11 @@ export const glassButton = style({
   fontWeight: '500',
   letterSpacing: '0.2px',
   transition: 'all 0.3s ease',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
   ':hover': {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     transform: 'translateY(-2px)',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
   },
 });
 

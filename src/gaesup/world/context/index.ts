@@ -13,7 +13,11 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     dir: vec3(),
     direction: vec3(),
   },
-  mode: {},
+  mode: {
+    type: 'character',
+    controller: 'clicker',
+    control: 'thirdPersonOrbit',
+  },
   urls: {
     characterUrl: null,
     vehicleUrl: null,

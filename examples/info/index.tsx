@@ -46,11 +46,11 @@ const CAMERA_PRESETS = {
 };
 
 const CAMERA_DESCRIPTIONS = {
-  firstPerson: "캐릭터 눈높이 시점 - 이동하면 머리 흔들림 효과를 볼 수 있어요!",
-  thirdPerson: "충돌 감지 기능이 있는 추적 카메라 - 물체 근처에서 걸어보세요!",
-  thirdPersonOrbit: "캐릭터 중심으로 회전하는 궤도 카메라 - 좌우로 돌려보세요!",
-  topDown: "새가 내려다보는 시점 - 전략 게임이나 전체 맵 보기에 좋아요!",
-  sideScroll: "클래식 2D 플랫폼 게임 시점 - 좌우로 이동해보세요!",
+  firstPerson: "🎯 캐릭터의 눈으로 보는 1인칭 시점 - 몰입감 있는 경험을 제공합니다",
+  thirdPerson: "📷 캐릭터를 따라가는 3인칭 카메라 - 벽이나 장애물과 충돌하면 자동으로 가까워집니다",
+  thirdPersonOrbit: "🔄 캐릭터 중심으로 회전하는 궤도 카메라 - 마우스로 카메라 각도를 자유롭게 조절할 수 있습니다",
+  topDown: "🗺️ 위에서 내려다보는 탑뷰 카메라 - 전체적인 상황을 한눈에 파악하기 좋습니다",
+  sideScroll: "📖 옆에서 보는 사이드뷰 카메라 - 클래식한 2D 플랫폼 게임 스타일입니다",
 };
 
 export default function Info() {
@@ -116,7 +116,7 @@ export default function Info() {
 
   const getCurrentCameraDescription = () => {
     const control = mode.control;
-    const controllerDesc = ' (WASD/Arrow Keys + Mouse Click)';
+    const controllerDesc = ' (WASD + Mouse Click으로 조작 가능)';
     return (CAMERA_DESCRIPTIONS[control] || CAMERA_DESCRIPTIONS[control === 'normal' ? 'thirdPerson' : control === 'orbit' ? 'thirdPersonOrbit' : 'thirdPerson']) + controllerDesc;
   };
 
@@ -130,19 +130,19 @@ export default function Info() {
                 className={style.pRecipe({ selected: mode.type === 'character' })}
                 onClick={() => setType('character')}
               >
-                character
+                🚶 캐릭터
               </p>
               <p
                 className={style.pRecipe({ selected: mode.type === 'vehicle' })}
                 onClick={() => setType('vehicle')}
               >
-                vehicle
+                🚗 차량
               </p>
               <p
                 className={style.pRecipe({ selected: mode.type === 'airplane' })}
                 onClick={() => setType('airplane')}
               >
-                airplane
+                ✈️ 비행기
               </p>
             </>
           }
@@ -150,7 +150,11 @@ export default function Info() {
             background: 'rgba(0,0,0,0.8)',
           }}
         >
-          <button className={style.glassButton}>{mode.type}</button>
+          <button className={style.glassButton}>
+            {mode.type === 'character' && '🚶 캐릭터'}
+            {mode.type === 'vehicle' && '🚗 차량'}
+            {mode.type === 'airplane' && '✈️ 비행기'}
+          </button>
         </Icon>
         
         <Icon
@@ -160,46 +164,31 @@ export default function Info() {
                 className={style.pRecipe({ selected: mode.control === 'firstPerson' })}
                 onClick={() => setControl('firstPerson')}
               >
-                🎯 firstPerson
+                🎯 1인칭
               </p>
               <p
                 className={style.pRecipe({ selected: mode.control === 'thirdPerson' || mode.control === 'normal' })}
                 onClick={() => setControl('thirdPerson')}
               >
-                📷 thirdPerson
+                📷 3인칭
               </p>
               <p
                 className={style.pRecipe({ selected: mode.control === 'thirdPersonOrbit' || mode.control === 'orbit' })}
                 onClick={() => setControl('thirdPersonOrbit')}
               >
-                🔄 thirdPersonOrbit
+                🔄 궤도 카메라
               </p>
               <p
                 className={style.pRecipe({ selected: mode.control === 'topDown' })}
                 onClick={() => setControl('topDown')}
               >
-                🗺️ topDown
+                🗺️ 탑뷰
               </p>
               <p
                 className={style.pRecipe({ selected: mode.control === 'sideScroll' })}
                 onClick={() => setControl('sideScroll')}
               >
-                📖 sideScroll
-              </p>
-            </>
-          }
-          toolTipStyles={{
-            background: 'rgba(0,0,0,0.8)',
-          }}
-        >
-          <button className={style.glassButton}>{mode.control}</button>
-        </Icon>
-
-        <Icon
-          ToolTip={
-            <>
-              <p className={style.pRecipe({ selected: true })}>
-                🎮 Hybrid Control (Keyboard + Mouse)
+                📖 사이드뷰
               </p>
             </>
           }
@@ -208,12 +197,17 @@ export default function Info() {
           }}
         >
           <button className={style.glassButton}>
-            🎮 Hybrid
+            {mode.control === 'firstPerson' && '🎯 1인칭'}
+            {mode.control === 'thirdPerson' && '📷 3인칭'}
+            {mode.control === 'thirdPersonOrbit' && '🔄 궤도'}
+            {mode.control === 'topDown' && '🗺️ 탑뷰'}
+            {mode.control === 'sideScroll' && '📖 사이드'}
+            {(mode.control === 'normal' || mode.control === 'orbit') && '📷 3인칭'}
           </button>
         </Icon>
 
         <Icon
-          ToolTip={<>Camera Settings</>}
+          ToolTip={<>⚙️ 카메라 설정</>}
           toolTipStyles={{
             background: 'rgba(0,0,0,0.8)',
           }}
@@ -222,7 +216,7 @@ export default function Info() {
             className={style.glassButton}
             onClick={() => setShowCameraSettings(!showCameraSettings)}
           >
-            ⚙️
+            ⚙️ 설정
           </button>
         </Icon>
       </div>

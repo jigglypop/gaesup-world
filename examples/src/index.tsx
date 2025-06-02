@@ -3,14 +3,15 @@
 import { Environment } from '@react-three/drei';
 import { Physics, euler, RigidBody } from '@react-three/rapier';
 import { Canvas } from '@react-three/fiber';
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { FaMapMarkerAlt } from 'react-icons/fa';
-import { GaesupController, GaesupWorld, GamePad, MiniMap, V3 } from '../../src';
+import { GaesupController, GaesupWorld, GamePad, MiniMap, MinimapPlatform, MinimapObject, V3 } from '../../src';
 import { Clicker } from '../../src/gaesup/tools/clicker';
 import { InnerHtml } from '../../src/gaesup/utils/innerHtml';
 import { FocusModal } from '../../src/gaesup/tools/FocusModal';
 import { ObjectInfoPanel } from '../../src/gaesup/tools/ObjectInfoPanel';
 import { useFocus } from '../../src/gaesup/hooks/useFocus';
+import { useTeleport } from '../../src/gaesup/hooks/useTeleport';
 import Info from '../info';
 import Passive from '../passive';
 import Floor from './Floor';
@@ -89,20 +90,20 @@ function FocusHandler({ onObjectFocused, onCenterFocused }: {
   return null;
 }
 
-// 발판과 계단 컴포넌트 - Rapier fixed body 사용
+// 발판과 계단 컴포넌트 - 자동 미니맵 등록 포함
 function Platforms() {
   const platforms = [
-    { name: "갈색 발판 A", position: [10, 2, 0], size: [8, 1, 8], color: "#8B4513", type: "큰 발판" },
-    { name: "갈색 발판 B", position: [-10, 3, 5], size: [6, 1, 6], color: "#A0522D", type: "중간 발판" },
-    { name: "갈색 발판 C", position: [0, 4, 15], size: [10, 1, 6], color: "#CD853F", type: "긴 발판" },
-    { name: "갈색 발판 D", position: [20, 5, -10], size: [8, 1, 8], color: "#DEB887", type: "높은 발판" },
-    { name: "갈색 발판 E", position: [-15, 6, -8], size: [6, 1, 10], color: "#F4A460", type: "최고 발판" },
-    { name: "계단 1단", position: [25, 1, 5], size: [4, 1, 4], color: "#D2691E", type: "계단" },
-    { name: "계단 2단", position: [25, 2, 10], size: [4, 1, 4], color: "#D2691E", type: "계단" },
-    { name: "계단 3단", position: [25, 3, 15], size: [4, 1, 4], color: "#D2691E", type: "계단" },
-    { name: "계단 4단", position: [25, 4, 20], size: [4, 1, 4], color: "#D2691E", type: "계단" },
-    { name: "연결 발판 A", position: [0, 7, -20], size: [15, 1, 4], color: "#B22222", type: "연결 발판" },
-    { name: "연결 발판 B", position: [-20, 8, -15], size: [8, 1, 12], color: "#800080", type: "연결 발판" },
+    { name: "갈색 발판 A", position: [10, 2, 0], size: [8, 1, 8], color: "#8B4513", type: "큰 발판", label: "A" },
+    { name: "갈색 발판 B", position: [-10, 3, 5], size: [6, 1, 6], color: "#A0522D", type: "중간 발판", label: "B" },
+    { name: "갈색 발판 C", position: [0, 4, 15], size: [10, 1, 6], color: "#CD853F", type: "긴 발판", label: "C" },
+    { name: "갈색 발판 D", position: [20, 5, -10], size: [8, 1, 8], color: "#DEB887", type: "높은 발판", label: "D" },
+    { name: "갈색 발판 E", position: [-15, 6, -8], size: [6, 1, 10], color: "#F4A460", type: "최고 발판", label: "E" },
+    { name: "계단 1단", position: [25, 1, 5], size: [4, 1, 4], color: "#D2691E", type: "계단", label: "1" },
+    { name: "계단 2단", position: [25, 2, 10], size: [4, 1, 4], color: "#D2691E", type: "계단", label: "2" },
+    { name: "계단 3단", position: [25, 3, 15], size: [4, 1, 4], color: "#D2691E", type: "계단", label: "3" },
+    { name: "계단 4단", position: [25, 4, 20], size: [4, 1, 4], color: "#D2691E", type: "계단", label: "4" },
+    { name: "연결 발판 A", position: [0, 7, -20], size: [15, 1, 4], color: "#B22222", type: "연결 발판", label: "RA" },
+    { name: "연결 발판 B", position: [-20, 8, -15], size: [8, 1, 12], color: "#800080", type: "연결 발판", label: "RB" },
   ];
 
   const handlePlatformClick = (e: any, platformData: any) => {
@@ -118,25 +119,33 @@ function Platforms() {
   return (
     <>
       {platforms.map((platform, index) => (
-        <RigidBody key={index} type="fixed" colliders="cuboid">
-          <mesh 
-            position={platform.position as [number, number, number]}
-            castShadow 
-            receiveShadow
-            onClick={(e) => handlePlatformClick(e, platform)}
-            onPointerOver={(e) => (e.object.material.emissive.setHex(0x222222))}
-            onPointerOut={(e) => (e.object.material.emissive.setHex(0x000000))}
-          >
-            <boxGeometry args={platform.size as [number, number, number]} />
-            <meshStandardMaterial color={platform.color} />
-          </mesh>
-        </RigidBody>
+        <MinimapPlatform
+          key={index}
+          id={`platform_${index}`}
+          position={platform.position as [number, number, number]}
+          size={platform.size as [number, number, number]}
+          label={platform.label}
+        >
+          <RigidBody type="fixed" colliders="cuboid">
+            <mesh 
+              position={platform.position as [number, number, number]}
+              castShadow 
+              receiveShadow
+              onClick={(e) => handlePlatformClick(e, platform)}
+              onPointerOver={(e) => (e.object.material.emissive.setHex(0x222222))}
+              onPointerOut={(e) => (e.object.material.emissive.setHex(0x000000))}
+            >
+              <boxGeometry args={platform.size as [number, number, number]} />
+              <meshStandardMaterial color={platform.color} />
+            </mesh>
+          </RigidBody>
+        </MinimapPlatform>
       ))}
     </>
   );
 }
 
-// 중앙 포커싱용 오브젝트들
+// 중앙 포커싱용 오브젝트들 - 자동 미니맵 등록 포함
 function FocusObjects() {
   const objects = [
     {
@@ -146,6 +155,7 @@ function FocusObjects() {
       args: [2],
       color: "#FF6B9D",
       focusDistance: 4,
+      emoji: "💎",
       description: "고대 문명의 유물로 추정되는 신비한 크리스탈입니다. 내부에서 미약한 에너지가 감지됩니다.",
       properties: {
         material: "미지의 크리스탈",
@@ -161,6 +171,7 @@ function FocusObjects() {
       args: [1.5],
       color: "#4ECDC4",
       focusDistance: 3,
+      emoji: "🔮",
       description: "마법사들이 사용하던 신비한 구슬입니다. 만지면 따뜻한 기운이 느껴집니다.",
       properties: {
         material: "마법석",
@@ -176,6 +187,7 @@ function FocusObjects() {
       args: [0.8, 6],
       color: "#F7B731",
       focusDistance: 6,
+      emoji: "🏛️",
       description: "수천 년 전 건설된 것으로 보이는 석조 기둥입니다. 표면에 알 수 없는 문자가 새겨져 있습니다.",
       properties: {
         material: "고대 석재",
@@ -191,6 +203,7 @@ function FocusObjects() {
       args: [2, 2, 2],
       color: "#A55EEA",
       focusDistance: 4,
+      emoji: "⚡",
       description: "미래 기술로 만들어진 에너지 저장 장치입니다. 표면이 부드럽게 빛나고 있습니다.",
       properties: {
         material: "나노 합금",
@@ -206,6 +219,7 @@ function FocusObjects() {
       args: [2.5],
       color: "#FF6B35",
       focusDistance: 5,
+      emoji: "☄️",
       description: "운석으로 추정되는 우주 파편입니다. 지구에서는 발견되지 않는 원소가 포함되어 있습니다.",
       properties: {
         material: "우주 광물",
@@ -244,42 +258,61 @@ function FocusObjects() {
   return (
     <>
       {objects.map((object, index) => (
-        <RigidBody key={index} type="fixed" colliders="cuboid">
-          <mesh 
-            position={object.position as [number, number, number]}
-            castShadow 
-            receiveShadow
-            onClick={(e) => handleObjectClick(e, object)}
-            onPointerOver={(e) => {
-              e.object.material.emissive.setHex(0x444444);
-              document.body.style.cursor = 'pointer';
-            }}
-            onPointerOut={(e) => {
-              e.object.material.emissive.setHex(0x000000);
-              document.body.style.cursor = 'default';
-            }}
-          >
-            {createGeometry(object)}
-            <meshStandardMaterial 
-              color={object.color}
-              metalness={0.3}
-              roughness={0.4}
-            />
-          </mesh>
-          
-          {/* 물체 위에 떠있는 라벨 */}
-          <mesh position={[object.position[0], object.position[1] + 4, object.position[2]]}>
-            <planeGeometry args={[3, 0.8]} />
-            <meshBasicMaterial 
-              color="rgba(0, 0, 0, 0.7)" 
-              transparent 
-              opacity={0.8}
-            />
-          </mesh>
-        </RigidBody>
+        <MinimapObject
+          key={index}
+          id={`object_${index}`}
+          position={object.position as [number, number, number]}
+          emoji={object.emoji}
+        >
+          <RigidBody type="fixed" colliders="cuboid">
+            <mesh 
+              position={object.position as [number, number, number]}
+              castShadow 
+              receiveShadow
+              onClick={(e) => handleObjectClick(e, object)}
+              onPointerOver={(e) => {
+                e.object.material.emissive.setHex(0x444444);
+                document.body.style.cursor = 'pointer';
+              }}
+              onPointerOut={(e) => {
+                e.object.material.emissive.setHex(0x000000);
+                document.body.style.cursor = 'default';
+              }}
+            >
+              {createGeometry(object)}
+              <meshStandardMaterial 
+                color={object.color}
+                metalness={0.3}
+                roughness={0.4}
+              />
+            </mesh>
+            
+            {/* 물체 위에 떠있는 라벨 */}
+            <mesh position={[object.position[0], object.position[1] + 4, object.position[2]]}>
+              <planeGeometry args={[3, 0.8]} />
+              <meshBasicMaterial 
+                color="rgba(0, 0, 0, 0.7)" 
+                transparent 
+                opacity={0.8}
+              />
+            </mesh>
+          </RigidBody>
+        </MinimapObject>
       ))}
     </>
   );
+}
+
+// 텔레포트 핸들러
+function TeleportHandler() {
+  const { Teleport } = useTeleport();
+
+  // 전역 텔레포트 함수 등록
+  (window as any).teleportTo = (x: number, y: number, z: number) => {
+    Teleport(V3(x, y, z));
+  };
+
+  return null;
 }
 
 export const S3 = 'https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf';
@@ -356,6 +389,9 @@ export default function MainComponent() {
         onObjectFocused={setFocusedObject} 
         onCenterFocused={setCenterFocusedObject}
       />
+      
+      {/* 텔레포트 핸들러 - GaesupWorld 내부에서 context 사용 가능 */}
+      <TeleportHandler />
       
       <Canvas
         shadows
@@ -437,6 +473,121 @@ export default function MainComponent() {
       </Canvas>
       <Info />
 
+      {/* 미니맵 - 좌하단에 배치 */}
+      <div style={{
+        position: 'fixed',
+        bottom: '20px',
+        left: '20px',
+        zIndex: 1000,
+      }}>
+        <MiniMap
+          scale={0.3}
+          blockRotate={false}
+          minimapStyle={{
+            position: 'relative',
+          }}
+          scaleStyle={{
+            marginTop: '10px',
+          }}
+        />
+      </div>
+
+      {/* 텔레포트 포인트들 */}
+      <div style={{
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+      }}>
+        <button
+          onClick={() => (window as any).teleportTo && (window as any).teleportTo(10, 3, 0)}
+          style={{
+            padding: '8px 12px',
+            background: 'rgba(139, 69, 19, 0.9)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px',
+          }}
+        >
+          🟫 발판 A
+        </button>
+        <button
+          onClick={() => (window as any).teleportTo && (window as any).teleportTo(-10, 4, 5)}
+          style={{
+            padding: '8px 12px',
+            background: 'rgba(160, 82, 45, 0.9)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px',
+          }}
+        >
+          🟫 발판 B
+        </button>
+        <button
+          onClick={() => (window as any).teleportTo && (window as any).teleportTo(0, 5, 15)}
+          style={{
+            padding: '8px 12px',
+            background: 'rgba(205, 133, 63, 0.9)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px',
+          }}
+        >
+          🟫 발판 C
+        </button>
+        <button
+          onClick={() => (window as any).teleportTo && (window as any).teleportTo(5, 4, 10)}
+          style={{
+            padding: '8px 12px',
+            background: 'rgba(255, 107, 157, 0.9)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px',
+          }}
+        >
+          💎 크리스탈
+        </button>
+        <button
+          onClick={() => (window as any).teleportTo && (window as any).teleportTo(-8, 5, 12)}
+          style={{
+            padding: '8px 12px',
+            background: 'rgba(78, 205, 196, 0.9)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px',
+          }}
+        >
+          🔮 마법 오브
+        </button>
+        <button
+          onClick={() => (window as any).teleportTo && (window as any).teleportTo(0, 2, 0)}
+          style={{
+            padding: '8px 12px',
+            background: 'rgba(70, 130, 180, 0.9)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px',
+          }}
+        >
+          🏠 시작점
+        </button>
+      </div>
+
       {/* 포커싱 모달 - Canvas 외부에 위치 */}
       <FocusModal 
         focusedObject={focusedObject} 
@@ -504,6 +655,10 @@ export default function MainComponent() {
               <li><strong>🎯 듀얼 포커싱:</strong> 발판 포커싱 + 오브젝트 중앙 포커싱</li>
               <li><strong>🔮 오브젝트 탐색:</strong> 다양한 신비한 오브젝트들과 상호작용</li>
               <li><strong>📖 상세 정보:</strong> 각 오브젝트의 배경 스토리와 속성 표시</li>
+              <li><strong>🗺️ 자동 미니맵 등록:</strong> MinimapPlatform, MinimapObject 컴포넌트로 자동 등록</li>
+              <li><strong>🎮 성능 최적화:</strong> 미니맵 wheel 이벤트 개선, 자동 언마운트 시 제거</li>
+              <li><strong>🚀 즉시 텔레포트:</strong> 우상단 버튼들로 주요 위치에 순간이동</li>
+              <li><strong>📍 미니맵 위치:</strong> 좌하단으로 이동해서 게임패드와 겹치지 않음</li>
               <li><strong>발판 점프:</strong> 모든 발판에서 점프 가능</li>
               <li><strong>연속 점프 방지:</strong> 착지 후에만 다시 점프 가능</li>
               <li><strong>물리 기반:</strong> Rapier 물리 엔진으로 자연스러운 점프</li>
@@ -524,11 +679,6 @@ export default function MainComponent() {
               space: 'JUMP',
             }}
           />
-        </div>
-      </div>
-      <div className={style.footerLower}>
-        <div className={style.joystickOuter}>
-          <MiniMap />
         </div>
       </div>
     </GaesupWorld>

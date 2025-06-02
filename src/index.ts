@@ -11,7 +11,7 @@ export { GaeSupProps } from "./gaesup/gaesupProps";
 export { Clicker } from "./gaesup/tools/clicker";
 export { FocusModal } from "./gaesup/tools/FocusModal";
 export { GamePad } from "./gaesup/tools/gamepad";
-export { MiniMap } from "./gaesup/tools/minimap";
+export { MiniMap, MinimapMarker, MinimapPlatform, MinimapObject } from "./gaesup/tools/minimap";
 export { Rideable } from "./gaesup/tools/rideable";
 export { teleport } from "./gaesup/tools/teleport";
 export { Elr, Qt, V3, V30, V31 } from "./gaesup/utils/vector";
