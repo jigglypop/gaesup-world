@@ -26,12 +26,10 @@
   "dependencies": {
     "@react-icons/all-files": "^4.1.0",
     "@react-three/postprocessing": "^2.16.2",
-    "@types/lodash": "^4.17.7",
     "@types/three": "^0.168.0",
     "gh-pages": "^6.1.1",
     "jotai": "^2.9.3",
     "leva": "0.9.35",
-    "lodash": "^4.17.21",
     "lru-cache": "^11.0.1",
     "node-fetch": "3.3.2",
     "react-device-detect": "^2.2.3",

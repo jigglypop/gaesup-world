@@ -1,5 +1,5 @@
 import { useFrame } from '@react-three/fiber';
-import React, { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 
 type FrameCallback = (state: any, delta: number) => void;
 
