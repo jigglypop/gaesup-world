@@ -1,17 +1,15 @@
-import { useContext, useEffect, useMemo } from 'react';
-import { useAtomValue, useSetAtom } from 'jotai';
-import { GaesupControllerContext } from '../controller/context';
-import { useGaesupGltf } from '../hooks/useGaesupGltf';
+import { useEffect, useRef } from 'react';
+import * as THREE from 'three';
+import { useBridgeConnector } from '../hooks/useBridgeConnector';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
-import { usePhysicsInput } from '../hooks/usePhysicsInput';
-import { keyboardInputAtom, mouseInputAtom } from '../atoms/inputSystemAtom';
-import { V3 } from '../utils';
-import { GaesupWorldContext, GaesupWorldDispatchContext } from '../world/context';
-import { urlsAtom, blockAtom } from '../atoms';
 import airplaneCalculation from './airplane';
-import characterCalculation from './character';
+import { direction } from './character/direction';
+import { gravity } from './character/gravity';
+import { impulse } from './character/impulse';
+import { innerCalc } from './character/innerCalc';
 import check from './check';
-import { calcType } from './type';
+import { worldContextSync } from './stores/physicsEventBus';
+import { calcType, PhysicsCalculationProps, PhysicsState } from './type';
 import vehicleCalculation from './vehicle';
 
 export default function calculation({
@@ -20,60 +18,162 @@ export default function calculation({
   outerGroupRef,
   innerGroupRef,
   colliderRef,
-}) {
-  const worldContext = useContext(GaesupWorldContext);
-  const controllerContext = useContext(GaesupControllerContext);
-  const dispatch = useContext(GaesupWorldDispatchContext);
-  const { inputRef } = usePhysicsInput();
-  const setKeyboardInput = useSetAtom(keyboardInputAtom);
-  const setMouseInput = useSetAtom(mouseInputAtom);
-  const urls = useAtomValue(urlsAtom);
-  const block = useAtomValue(blockAtom);
-  const { mode, activeState } = worldContext;
-  const { getSizesByUrls } = useGaesupGltf();
+}: PhysicsCalculationProps) {
+  const { bridgeRef, layerStatus } = useBridgeConnector();
+  const physicsStateRef = useRef<PhysicsState | null>(null);
+  const isReadyRef = useRef(false);
+  const matchSizesRef = useRef(null);
+  const isInitializedRef = useRef(false);
+
+  const prevStateRef = useRef<{
+    worldContext: any;
+    controllerContext: any;
+    input: any;
+    urls: any;
+  } | null>(null);
+
   useEffect(() => {
-    if (!rigidBodyRef || !innerGroupRef) return;
-    if (rigidBodyRef.current && innerGroupRef.current) {
+    if (!isInitializedRef.current && bridgeRef.current.worldContext) {
+      worldContextSync.setWorldContext(bridgeRef.current.worldContext);
+      isInitializedRef.current = true;
+    }
+  }, [bridgeRef.current.worldContext]);
+
+  useEffect(() => {
+    if (!rigidBodyRef?.current || !innerGroupRef?.current || !isInitializedRef.current) return;
+    const { activeState } = bridgeRef.current;
+    if (activeState) {
       rigidBodyRef.current.lockRotations(false, true);
       activeState.euler.set(0, 0, 0);
-      rigidBodyRef.current.setTranslation(activeState.position.clone().add(V3(0, 5, 0)), true);
+      rigidBodyRef.current.setTranslation(
+        { x: activeState.position.x, y: activeState.position.y + 5, z: activeState.position.z },
+        true,
+      );
     }
-  }, [mode.type, rigidBodyRef, innerGroupRef, activeState]);
+  }, [rigidBodyRef?.current, innerGroupRef?.current, isInitializedRef.current]);
 
-  useEffect(() => {
-    if (rigidBodyRef?.current && block.control) {
-      rigidBodyRef.current.resetForces(false);
-      rigidBodyRef.current.resetTorques(false);
+  // 🎯 최적화된 상태 업데이트 (변경된 내용만 업데이트)
+  const updatePhysicsState = () => {
+    const { worldContext, controllerContext, input, urls, getSizesByUrls } = bridgeRef.current;
+
+    // 🔥 변경 사항이 없으면 업데이트 건너뛰기
+    const prevState = prevStateRef.current;
+    if (
+      prevState &&
+      prevState.worldContext === worldContext &&
+      prevState.controllerContext === controllerContext &&
+      prevState.input === input &&
+      prevState.urls === urls
+    ) {
+      return; // 변경 사항 없음
     }
-  }, [block.control]);
 
-  const isReady = useMemo(() => 
-    rigidBodyRef?.current && 
-    outerGroupRef?.current && 
-    innerGroupRef?.current, 
-    [rigidBodyRef?.current, outerGroupRef?.current, innerGroupRef?.current]
-  );
+    // 상태 변경 감지됨 - 업데이트 진행
+    prevStateRef.current = { worldContext, controllerContext, input, urls };
 
-  const matchSizes = useMemo(() => 
-    getSizesByUrls(urls), 
-    [getSizesByUrls, urls]
-  );
-
-  const calculationFunction = useMemo(() => {
-    switch (mode.type) {
-      case 'vehicle': return vehicleCalculation;
-      case 'character': return characterCalculation;
-      case 'airplane': return airplaneCalculation;
-      default: return characterCalculation;
+    if (!worldContext || !controllerContext || !input) {
+      physicsStateRef.current = null;
+      isReadyRef.current = false;
+      return;
     }
-  }, [mode.type]);
+
+    const refsReady = rigidBodyRef?.current && outerGroupRef?.current && innerGroupRef?.current;
+    const layersReady = layerStatus.atomsConnected && layerStatus.contextConnected;
+    isReadyRef.current = refsReady && layersReady;
+
+    // 🔥 matchSizes도 캐싱하여 불필요한 재계산 방지
+    if (!matchSizesRef.current || prevState?.urls !== urls) {
+      matchSizesRef.current = getSizesByUrls(urls) as any;
+    }
+
+    // 🔥 physicsState 객체 재사용하여 가비지 컬렉션 부담 감소
+    if (!physicsStateRef.current) {
+      physicsStateRef.current = {
+        activeState: worldContext.activeState!,
+        gameStates: worldContext.states!,
+        keyboard: { ...input.keyboard },
+        mouse: {
+          target: new THREE.Vector3().copy(input.mouse.target),
+          angle: input.mouse.angle,
+          isActive: input.mouse.isActive,
+          shouldRun: input.mouse.shouldRun,
+        },
+        characterConfig: controllerContext.character || {},
+        vehicleConfig: controllerContext.vehicle || {},
+        airplaneConfig: controllerContext.airplane || {},
+        clickerOption: worldContext.clickerOption || {
+          isRun: true,
+          throttle: 100,
+          autoStart: false,
+          track: false,
+          loop: false,
+          queue: [],
+          line: false,
+        },
+        modeType: (worldContext.mode?.type || 'character') as 'character' | 'vehicle' | 'airplane',
+      };
+    } else {
+      // 기존 객체 재사용하여 메모리 할당 최소화
+      physicsStateRef.current.activeState = worldContext.activeState!;
+      physicsStateRef.current.gameStates = worldContext.states!;
+      Object.assign(physicsStateRef.current.keyboard, input.keyboard);
+      physicsStateRef.current.mouse.target.copy(input.mouse.target);
+      physicsStateRef.current.mouse.angle = input.mouse.angle;
+      physicsStateRef.current.mouse.isActive = input.mouse.isActive;
+      physicsStateRef.current.mouse.shouldRun = input.mouse.shouldRun;
+      physicsStateRef.current.characterConfig = controllerContext.character || {};
+      physicsStateRef.current.vehicleConfig = controllerContext.vehicle || {};
+      physicsStateRef.current.airplaneConfig = controllerContext.airplane || {};
+      physicsStateRef.current.clickerOption =
+        worldContext.clickerOption || physicsStateRef.current.clickerOption;
+      physicsStateRef.current.modeType = (worldContext.mode?.type || 'character') as
+        | 'character'
+        | 'vehicle'
+        | 'airplane';
+    }
+  };
+
+  const executeCharacterPhysics = (calcProp: calcType) => {
+    const physicsState = physicsStateRef.current;
+    if (!physicsState?.activeState || !physicsState?.gameStates || !physicsState?.characterConfig) {
+      return;
+    }
+
+    direction(physicsState, bridgeRef.current.worldContext?.mode?.control, calcProp);
+    impulse(rigidBodyRef, physicsState);
+    gravity(rigidBodyRef, physicsState);
+    innerCalc(rigidBodyRef, innerGroupRef, physicsState);
+  };
+
+  const getCalculationFunction = () => {
+    const { modeType } = bridgeRef.current;
+    switch (modeType) {
+      case 'vehicle':
+        return vehicleCalculation;
+      case 'character':
+        return executeCharacterPhysics;
+      case 'airplane':
+        return airplaneCalculation;
+      default:
+        return executeCharacterPhysics;
+    }
+  };
 
   useUnifiedFrame(
     `physics-${rigidBodyRef?.current?.handle || 'unknown'}`,
     (state, delta) => {
-      if (!isReady || block.control) {
+      if (bridgeRef.current.blockControl) {
+        if (rigidBodyRef?.current) {
+          rigidBodyRef.current.resetForces(false);
+          rigidBodyRef.current.resetTorques(false);
+        }
         return;
       }
+      updatePhysicsState();
+      if (!isReadyRef.current || !physicsStateRef.current) return;
+      const { worldContext, controllerContext, dispatch, input, setKeyboardInput, setMouseInput } =
+        bridgeRef.current;
+      if (!worldContext || !dispatch || !controllerContext) return;
       const calcProp: calcType = {
         rigidBodyRef,
         outerGroupRef,
@@ -85,15 +185,20 @@ export default function calculation({
         worldContext,
         controllerContext,
         dispatch,
-        matchSizes,
-        inputRef,
+        matchSizes: matchSizesRef.current || {},
+        inputRef: { current: input },
         setKeyboardInput,
         setMouseInput,
       };
+      check(
+        calcProp,
+        physicsStateRef.current.activeState,
+        `physics-${rigidBodyRef?.current?.handle || 'unknown'}`,
+      );
+      const calculationFunction = getCalculationFunction();
       calculationFunction(calcProp);
-      check(calcProp);
     },
-    0, // 최고 우선순위
-    isReady && !block.control
+    0,
+    true,
   );
 }

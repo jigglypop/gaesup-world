@@ -1,12 +1,13 @@
 'use client';
-import * as THREE from 'three';
-import { useRef, useReducer, useMemo } from 'react';
 import { Collider } from '@dimforge/rapier3d-compat';
-import { RapierRigidBody } from '@react-three/rapier';
 import { useContextBridge } from '@react-three/drei';
-import { GaesupWorldContext } from '../world/context';
-import { useMainFrameLoop } from '../hooks/useUnifiedFrame';
+import { RapierRigidBody } from '@react-three/rapier';
+import { ReactElement, useMemo, useReducer, useRef } from 'react';
+import * as THREE from 'three';
+import { GaesupComponent } from '../component';
 import { useKeyboard } from '../hooks/useKeyboard';
+import { useMainFrameLoop } from '../hooks/useUnifiedFrame';
+import { GaesupWorldContext } from '../world/context';
 import {
   GaesupControllerContext,
   GaesupControllerDispatchContext,
@@ -14,20 +15,15 @@ import {
 } from './context';
 import { gaesupControllerReducer } from './context/reducer';
 import initControllerProps from './initialize';
-import { GaesupComponent } from '../component';
-import { controllerType, controllerInnerType } from './type';
+import { controllerInnerType, controllerType } from './type';
 
-export function GaesupController(props: controllerType) {
+export function GaesupController(props: controllerType): ReactElement {
   return <GaesupControllerInner {...props}>{props.children}</GaesupControllerInner>;
 }
 
-export function GaesupControllerInner(props: controllerType) {
-  // 통합 프레임 루프 시작 (Canvas 내부에서 실행)
+export function GaesupControllerInner(props: controllerType): ReactElement {
   useMainFrameLoop();
-  
-  // 키보드 이벤트 리스너 시작
   useKeyboard();
-
   const colliderRef = useRef<Collider>(null),
     rigidBodyRef = useRef<RapierRigidBody>(null),
     outerGroupRef = useRef<THREE.Group>(null),
@@ -61,7 +57,14 @@ export function GaesupControllerInner(props: controllerType) {
       characterInnerRef,
       passiveRigidBodyRef,
     }),
-    [colliderRef, rigidBodyRef, outerGroupRef, innerGroupRef, characterInnerRef, passiveRigidBodyRef],
+    [
+      colliderRef,
+      rigidBodyRef,
+      outerGroupRef,
+      innerGroupRef,
+      characterInnerRef,
+      passiveRigidBodyRef,
+    ],
   );
   const prop: controllerInnerType = {
     ...initControllerProps({ refs }),

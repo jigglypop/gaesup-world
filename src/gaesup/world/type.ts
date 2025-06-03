@@ -1,14 +1,14 @@
-import { ReactNode } from "react";
-import * as THREE from "three";
-import { dispatchType } from "../utils/type";
+import { ReactNode } from 'react';
+import * as THREE from 'three';
+import { dispatchType } from '../utils/type';
 import {
-  blockType,
-  cameraOptionType,
-  clickerOptionType,
+  BlockType,
+  CameraOptionType,
+  ClickerOptionType,
   gaesupWorldContextType,
-  modeType,
-  urlsType,
-} from "./context/type";
+  ModeType,
+  UrlsType,
+} from './context/type';
 
 export type gaesupWorldInitType = {
   value: gaesupWorldContextType;

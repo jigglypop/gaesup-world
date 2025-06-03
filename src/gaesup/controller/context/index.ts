@@ -26,6 +26,10 @@ export const gaesupControllerDefault = {
     turnSpeed: 10,
     jumpSpeed: 15,
     linearDamping: 1,
+    jumpGravityScale: 1.5,
+    normalGravityScale: 1.0,
+    airDamping: 0.1,
+    stopDamping: 3,
   },
   callbacks: {
     onReady: () => {},

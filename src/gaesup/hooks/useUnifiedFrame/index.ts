@@ -1,42 +1,41 @@
-import { useFrame } from '@react-three/fiber';
-import { useCallback, useRef, useEffect } from 'react';
+import { RootState, useFrame } from '@react-three/fiber';
+import { useCallback, useEffect, useRef } from 'react';
 
-type FrameCallback = (state: any, delta: number) => void;
-
+type FrameCallback = (state: RootState, delta: number) => void;
 interface FrameSubscription {
   id: string;
   callback: FrameCallback;
   priority: number; // 낮을수록 먼저 실행
 }
 
-// 전역 프레임 매니저 - 성능 최적화 버전
 class FrameManager {
   private subscriptions: Map<string, FrameSubscription> = new Map();
   private sortedSubscriptions: FrameSubscription[] = [];
   private needsSort = false;
   private isRunning = false;
 
-  subscribe(id: string, callback: FrameCallback, priority: number = 0) {
+  subscribe(id: string, callback: FrameCallback, priority: number = 0): void {
     const subscription = { id, callback, priority };
     this.subscriptions.set(id, subscription);
     this.needsSort = true; // 다음 프레임에서 재정렬 필요
   }
 
-  unsubscribe(id: string) {
+  unsubscribe(id: string): void {
     if (this.subscriptions.delete(id)) {
       this.needsSort = true; // 다음 프레임에서 재정렬 필요
     }
   }
 
-  executeFrame(state: any, delta: number) {
+  executeFrame(state: RootState, delta: number): void {
     if (this.isRunning) return; // 중복 실행 방지
     this.isRunning = true;
 
     try {
       // 구독자가 변경되었거나 처음 실행인 경우에만 재정렬
       if (this.needsSort) {
-        this.sortedSubscriptions = Array.from(this.subscriptions.values())
-          .sort((a, b) => a.priority - b.priority);
+        this.sortedSubscriptions = Array.from(this.subscriptions.values()).sort(
+          (a, b) => a.priority - b.priority,
+        );
         this.needsSort = false;
       }
 
@@ -53,12 +52,16 @@ class FrameManager {
     }
   }
 
-  getSubscriptionCount() {
+  getSubscriptionCount(): number {
     return this.subscriptions.size;
   }
 
-  // 개발용 디버깅 메서드
-  getStats() {
+  getStats(): {
+    totalSubscriptions: number;
+    needsSort: boolean;
+    isRunning: boolean;
+    sortedLength: number;
+  } {
     return {
       totalSubscriptions: this.subscriptions.size,
       needsSort: this.needsSort,
@@ -74,28 +77,29 @@ export function useUnifiedFrame(
   id: string,
   callback: FrameCallback,
   priority: number = 0,
-  enabled: boolean = true
-) {
+  enabled: boolean = true,
+): { subscriptionCount: number } {
   const callbackRef = useRef(callback);
   callbackRef.current = callback;
 
-  const stableCallback = useCallback((state: any, delta: number) => {
-    if (enabled) {
-      callbackRef.current(state, delta);
-    }
-  }, [enabled]);
+  const stableCallback = useCallback(
+    (state: RootState, delta: number): void => {
+      if (enabled) {
+        callbackRef.current(state, delta);
+      }
+    },
+    [enabled],
+  );
 
-  // 구독 관리
-  const subscribe = useCallback(() => {
+  const subscribe = useCallback((): void => {
     frameManager.subscribe(id, stableCallback, priority);
   }, [id, stableCallback, priority]);
 
-  const unsubscribe = useCallback(() => {
+  const unsubscribe = useCallback((): void => {
     frameManager.unsubscribe(id);
   }, [id]);
 
-  // 컴포넌트 마운트/언마운트 시 구독 관리
-  useEffect(() => {
+  useEffect((): (() => void) => {
     subscribe();
     return unsubscribe;
   }, [subscribe, unsubscribe]);
@@ -105,11 +109,10 @@ export function useUnifiedFrame(
   };
 }
 
-// 메인 프레임 루프 (한 번만 실행되어야 함)
-export function useMainFrameLoop() {
+export function useMainFrameLoop(): void {
   useFrame((state, delta) => {
     frameManager.executeFrame(state, delta);
   });
 }
 
-export { frameManager }; 
+export { frameManager };

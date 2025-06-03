@@ -39,6 +39,10 @@ export const gaesupWorldDefault: gaesupWorldContextType = {
     isLanding: false,
     isFalling: false,
     isRiding: false,
+    canRide: false,
+    nearbyRideable: null,
+    shouldEnterRideable: false,
+    shouldExitRideable: false,
   },
   clicker: {
     point: V3(0, 0, 0),

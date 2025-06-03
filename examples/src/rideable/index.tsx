@@ -4,8 +4,9 @@ import { Rideable, V3 } from "../../../src";
 export default function Rideables() {
   return (
     <>
+      {/* 차량 (Vehicle) */}
       <Rideable
-        objectkey="gaebird_1"
+        objectkey="vehicle_1"
         url={S3 + "/gorani.glb"}
         objectType={"vehicle"}
         enableRiding={true}
@@ -18,8 +19,10 @@ export default function Rideables() {
           },
         }}
       />
+      
+      {/* 비행기 (Airplane) */}
       <Rideable
-        objectkey="gaebird_2"
+        objectkey="airplane_1"
         url={S3 + "/gaebird.glb"}
         objectType={"airplane"}
         enableRiding={true}
@@ -32,8 +35,10 @@ export default function Rideables() {
           },
         }}
       />
+      
+      {/* 또 다른 비행기 */}
       <Rideable
-        objectkey="gaebird_3"
+        objectkey="airplane_2"
         url={S3 + "/orri.glb"}
         objectType={"airplane"}
         enableRiding={true}

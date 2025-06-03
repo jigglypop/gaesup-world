@@ -1,17 +1,17 @@
-import { gaesupWorldContextType } from "./type";
+import { gaesupWorldContextType } from './type';
 
 export function gaesupWorldReducer(
   props: Partial<gaesupWorldContextType>,
   action: {
     type: string;
     payload?: Partial<gaesupWorldContextType>;
-  }
+  },
 ) {
   switch (action.type) {
-    case "init": {
+    case 'init': {
       return { ...props };
     }
-    case "update": {
+    case 'update': {
       return { ...props, ...action.payload };
     }
   }

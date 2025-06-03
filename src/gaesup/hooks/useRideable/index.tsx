@@ -1,5 +1,5 @@
-import { CollisionEnterPayload, euler, vec3 } from "@react-three/rapier";
-import { useContext } from "react";
+import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from "@react-three/rapier";
+import { useContext, useEffect } from "react";
 import {
   GaesupWorldContext,
   GaesupWorldDispatchContext,
@@ -24,6 +24,33 @@ export function useRideable() {
   const { urls, states, rideable, mode } = worldContext;
   const dispatch = useContext(GaesupWorldDispatchContext);
   const { getSizesByUrls } = useGaesupGltf();
+
+  // 플래그 감지 및 자동 처리
+  useEffect(() => {
+    if (states.shouldEnterRideable) {
+      enterRideable();
+      // 플래그 리셋
+      dispatch({
+        type: "update",
+        payload: {
+          states: { ...states, shouldEnterRideable: false },
+        },
+      });
+    }
+  }, [states.shouldEnterRideable]);
+
+  useEffect(() => {
+    if (states.shouldExitRideable) {
+      exitRideable();
+      // 플래그 리셋
+      dispatch({
+        type: "update",
+        payload: {
+          states: { ...states, shouldExitRideable: false },
+        },
+      });
+    }
+  }, [states.shouldExitRideable]);
 
   const initRideable = (props: rideableType) => {
     rideable[props.objectkey] = {
@@ -65,6 +92,7 @@ export function useRideable() {
         rideable: { ...rideable },
         states: { ...states },
         activeState: { ...activeState },
+        mode: { ...mode, type: 'character' },
       },
     });
   };
@@ -92,7 +120,6 @@ export function useRideable() {
     mode.type = props.objectType;
     states.enableRiding = props.enableRiding;
     states.isRiderOn = true;
-
     states.rideableId = props.objectkey;
     rideable[props.objectkey].visible = false;
     dispatch({
@@ -104,11 +131,66 @@ export function useRideable() {
     });
   };
 
-  const ride = async (e: CollisionEnterPayload, props: rideableType) => {
-    if (e.other.rigidBodyObject.name === "character") {
-      await setUrl(props);
-      await setModeAndRiding(props);
+  const onRideableNear = async (e: CollisionEnterPayload, props: rideableType) => {
+    if (e.other.rigidBodyObject.name === "character" && !states.isRiding) {
+      states.nearbyRideable = {
+        objectkey: props.objectkey,
+        objectType: props.objectType,
+        name: props.objectType === 'vehicle' ? '차량' : '비행기'
+      };
+      states.canRide = true;
+      
+      dispatch({
+        type: "update",
+        payload: {
+          states: { ...states },
+        },
+      });
     }
+  };
+
+  const onRideableLeave = async (e: CollisionExitPayload) => {
+    if (e.other.rigidBodyObject.name === "character") {
+      states.nearbyRideable = null;
+      states.canRide = false;
+      
+      dispatch({
+        type: "update",
+        payload: {
+          states: { ...states },
+        },
+      });
+    }
+  };
+
+  const enterRideable = async () => {
+    if (states.canRide && states.nearbyRideable && !states.isRiding) {
+      const rideableData = rideable[states.nearbyRideable.objectkey];
+      if (rideableData) {
+        await setUrl(rideableData);
+        await setModeAndRiding(rideableData);
+        
+        states.canRide = false;
+        states.nearbyRideable = null;
+        
+        dispatch({
+          type: "update",
+          payload: {
+            states: { ...states },
+          },
+        });
+      }
+    }
+  };
+
+  const exitRideable = async () => {
+    if (states.isRiding && states.rideableId) {
+      landing(states.rideableId);
+    }
+  };
+
+  const ride = async (e: CollisionEnterPayload, props: rideableType) => {
+    await onRideableNear(e, props);
   };
 
   return {
@@ -116,6 +198,10 @@ export function useRideable() {
     setRideable,
     getRideable,
     ride,
+    onRideableNear,
+    onRideableLeave,
+    enterRideable,
+    exitRideable,
     landing,
   };
 }

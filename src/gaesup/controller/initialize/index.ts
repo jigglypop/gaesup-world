@@ -1,45 +1,37 @@
-import { vec3 } from "@react-three/rapier";
-import { useCallback, useContext, useEffect, useMemo } from "react";
-import { useAtom } from "jotai";
-import * as THREE from "three";
-import { groundRayType, refsType } from "../../controller/type";
+import { vec3 } from '@react-three/rapier';
+import { useAtom } from 'jotai';
+import { useCallback, useContext, useEffect, useMemo } from 'react';
+import * as THREE from 'three';
+import { groundRayType, refsType } from '../../controller/type';
 
-import { cameraRayType } from "../../camera/type";
-import { update } from "../../utils/context";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
-import { gaesupWorldContextType } from "../../world/context/type";
-import { cameraOptionAtom } from "../../atoms/cameraOptionAtom";
+import { cameraOptionAtom } from '../../atoms/cameraOptionAtom';
+import { cameraRayType } from '../../camera/type';
+import { update } from '../../utils/context';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
+import { gaesupWorldContextType } from '../../world/context/type';
 
 export default function initControllerProps(props: { refs: refsType }) {
   const context = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
   const [cameraOption] = useAtom(cameraOptionAtom);
-
-  // 컨트롤 설정을 useMemo로 최적화
   const controlConfig = useMemo(() => {
     if (!context?.control) return null;
-    
-    if (context.mode.controller === "clicker") {
+    if (context.mode.controller === 'clicker') {
       return context.mode.isButton ? { ...context.control } : {};
     } else {
       return { ...context.control };
     }
   }, [context?.mode.controller, context?.mode.isButton, context?.control]);
-
   useEffect(() => {
     if (controlConfig) {
       dispatch({
-        type: "update",
+        type: 'update',
         payload: {
           control: controlConfig,
         },
       });
     }
   }, [controlConfig, dispatch]);
-
   const groundRay: groundRayType = useMemo(() => {
     return {
       origin: vec3(),
@@ -74,10 +66,10 @@ export default function initControllerProps(props: { refs: refsType }) {
             ...refs,
           },
         },
-        dispatch
+        dispatch,
       );
     },
-    [dispatch]
+    [dispatch],
   );
 
   useEffect(() => {

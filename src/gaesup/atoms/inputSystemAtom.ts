@@ -19,10 +19,10 @@ export interface KeyboardInputState {
 }
 
 export interface MouseInputState {
-  target: THREE.Vector3;    // clicker.point
-  angle: number;           // clicker.angle
-  isActive: boolean;       // clicker.isOn
-  shouldRun: boolean;      // clicker.isRun
+  target: THREE.Vector3; // clicker.point
+  angle: number; // clicker.angle
+  isActive: boolean; // clicker.isOn
+  shouldRun: boolean; // clicker.isRun
 }
 
 export interface ClickerOptionState {
@@ -31,7 +31,7 @@ export interface ClickerOptionState {
   autoStart: boolean;
   track: boolean;
   loop: boolean;
-  queue: any[];
+  queue: THREE.Vector3[];
   line: boolean;
 }
 
@@ -56,14 +56,14 @@ export const inputSystemAtom = atom<UnifiedInputSystemState>({
     keyE: false,
     escape: false,
   },
-  
+
   mouse: {
     target: V3(0, 0, 0),
     angle: Math.PI / 2,
     isActive: false,
     shouldRun: false,
   },
-  
+
   clickerOption: {
     isRun: true,
     throttle: 100,
@@ -82,9 +82,9 @@ export const keyboardInputAtom = atom(
     const current = get(inputSystemAtom);
     set(inputSystemAtom, {
       ...current,
-      keyboard: { ...current.keyboard, ...update }
+      keyboard: { ...current.keyboard, ...update },
     });
-  }
+  },
 );
 
 export const mouseInputAtom = atom(
@@ -93,9 +93,9 @@ export const mouseInputAtom = atom(
     const current = get(inputSystemAtom);
     set(inputSystemAtom, {
       ...current,
-      mouse: { ...current.mouse, ...update }
+      mouse: { ...current.mouse, ...update },
     });
-  }
+  },
 );
 
 export const clickerOptionInputAtom = atom(
@@ -104,23 +104,27 @@ export const clickerOptionInputAtom = atom(
     const current = get(inputSystemAtom);
     set(inputSystemAtom, {
       ...current,
-      clickerOption: { ...current.clickerOption, ...update }
+      clickerOption: { ...current.clickerOption, ...update },
     });
-  }
+  },
 );
 
 // 통합 파생 상태 atom들
 export const movementStateAtom = atom((get) => {
   const input = get(inputSystemAtom);
-  
-  const isKeyboardMoving = input.keyboard.forward || input.keyboard.backward || 
-                          input.keyboard.leftward || input.keyboard.rightward;
+
+  const isKeyboardMoving =
+    input.keyboard.forward ||
+    input.keyboard.backward ||
+    input.keyboard.leftward ||
+    input.keyboard.rightward;
   const isMouseMoving = input.mouse.isActive;
-  
+
   return {
     isMoving: isKeyboardMoving || isMouseMoving,
-    isRunning: (input.keyboard.shift && isKeyboardMoving) || 
-               (input.mouse.shouldRun && isMouseMoving && input.clickerOption.isRun),
+    isRunning:
+      (input.keyboard.shift && isKeyboardMoving) ||
+      (input.mouse.shouldRun && isMouseMoving && input.clickerOption.isRun),
     isJumping: input.keyboard.space, // 기본값, 나중에 physics에서 복잡한 로직 적용
     inputSource: isKeyboardMoving ? 'keyboard' : isMouseMoving ? 'mouse' : 'none',
     isKeyboardMoving,
@@ -132,10 +136,10 @@ export const movementStateAtom = atom((get) => {
 export const inputDebugAtom = atom((get) => {
   const input = get(inputSystemAtom);
   const movement = get(movementStateAtom);
-  
+
   return {
     ...input,
     computed: movement,
     timestamp: Date.now(),
   };
-}); 
+});

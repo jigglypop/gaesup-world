@@ -2,18 +2,34 @@
   "name": "gaesup-world",
   "version": "0.9.67",
   "type": "module",
-  "main": "dist/index.ts",
-  "types": "dist/index.d.ts",
-  "homepage": "https://jigglypop.github.io/gaesup-world/",
+  "description": "Web 3D Character Controller and World Platform Library",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE.txt"
+  ],
   "scripts": {
     "dev": "vite",
     "clean": "rimraf dist/",
-    "copy-files": "copyfiles -u 1 src/**/*.ts src/**/*.tsx dist/",
-    "build": "vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:types",
+    "build:esm": "vite build --mode esm",
+    "build:cjs": "vite build --mode cjs",
+    "build:types": "tsc --emitDeclarationOnly --outDir dist",
+    "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint . --fix",
     "preview": "vite preview",
-    "prepare": "yarn clean && tsc -p tsconfig.build.json && yarn copy-files",
-    "predeploy": "yarn build",
+    "prepare": "npm run build",
+    "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -21,7 +37,8 @@
     "test:memory": "jest --testPathPattern=memory --verbose",
     "test:memory:verbose": "node scripts/run-memory-tests.js --verbose",
     "test:memory:ci": "node scripts/run-memory-tests.js --ci",
-    "publish:full": "yarn prepare && npm publish"
+    "release": "semantic-release",
+    "publish:full": "npm run prepare && npm publish"
   },
   "dependencies": {
     "@react-icons/all-files": "^4.1.0",
@@ -42,9 +59,16 @@
   "devDependencies": {
     "@dimforge/rapier3d": "^0.14.0",
     "@dimforge/rapier3d-compat": "^0.14.0",
+    "@eslint/js": "^9.15.0",
     "@react-three/drei": "9.112.0",
     "@react-three/fiber": "^8.17.7",
     "@react-three/rapier": "^1.4.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^11.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^9.2.6",
+    "@semantic-release/npm": "^11.0.2",
+    "@semantic-release/release-notes-generator": "^12.1.0",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.1",
     "@testing-library/react-hooks": "^8.0.1",
@@ -59,17 +83,24 @@
     "@vitejs/plugin-react-swc": "^3.7.0",
     "copyfiles": "^2.4.1",
     "css-loader": "^7.1.2",
+    "eslint": "^9.15.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.14",
+    "globals": "^15.12.0",
     "import-local": "^3.2.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "path": "^0.12.7",
     "prettier": "^3.3.3",
+    "publint": "^0.2.7",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "rimraf": "^6.0.1",
+    "semantic-release": "^23.0.0",
     "ts-jest": "^29.1.2",
     "turbo": "^2.3.3",
     "typescript": "^5.6.2",
+    "typescript-eslint": "^8.15.0",
     "vite": "^5.4.4",
     "vite-plugin-svgr": "^4.2.0"
   },
@@ -83,7 +114,6 @@
     "react-dom": "^18.0.0",
     "three": "^0.168.0"
   },
-  "description": "Web 3D Character Controller and World Platform Library",
   "repository": {
     "type": "git",
     "url": "https://github.com/jigglypop/gaesup-world.git"
@@ -101,5 +131,12 @@
   "bugs": {
     "url": "https://github.com/jigglypop/gaesup-world.git/issues"
   },
-  "packageManager": "yarn@4.9.1"
+  "packageManager": "yarn@4.9.1",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

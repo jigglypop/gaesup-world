@@ -1,41 +1,70 @@
-import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
-import react from '@vitejs/plugin-react-swc';
 import { defineConfig } from 'vite';
-import svgr from 'vite-plugin-svgr';
+import react from '@vitejs/plugin-react-swc';
+import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
+import path from 'path';
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  base: '',
-  plugins: [react(), vanillaExtractPlugin(), svgr()],
-  resolve: {
-    alias: [
-      { find: '@components', replacement: '/examples/components' },
-      { find: '@common', replacement: '/examples/common' },
-      { find: '@constants', replacement: '/examples/constants' },
-      { find: '@hooks', replacement: '/examples/hooks' },
-      { find: '@styles', replacement: '/examples/styles' },
-      { find: '@utils', replacement: '/examples/utils' },
-      { find: '@store', replacement: '/examples/store' },
-      { find: '@containers', replacement: '/examples/containers' },
-    ],
-  },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          // Three.js 관련 라이브러리들을 별도 청크로 분리
-          'three-core': ['three'],
-          'three-fiber': ['@react-three/fiber'],
-          'three-drei': ['@react-three/drei'],
-          'three-rapier': ['@react-three/rapier'],
-          // React 관련 라이브러리들을 별도 청크로 분리
-          'react-vendor': ['react', 'react-dom'],
-          // 물리 엔진을 별도 청크로 분리 (가장 큰 라이브러리)
-          'physics-engine': ['@dimforge/rapier3d-compat'],
+export default defineConfig(({ mode }) => {
+  const isLibraryBuild = mode === 'esm' || mode === 'cjs';
+
+  if (isLibraryBuild) {
+    // Library build configuration
+    return {
+      plugins: [react(), vanillaExtractPlugin()],
+      build: {
+        lib: {
+          entry: path.resolve(__dirname, 'src/index.ts'),
+          name: 'GaesupWorld',
+          fileName: mode === 'esm' ? 'index' : 'index',
+          formats: mode === 'esm' ? ['es'] : ['cjs'],
         },
+        rollupOptions: {
+          external: [
+            'react',
+            'react-dom',
+            'three',
+            '@react-three/fiber',
+            '@react-three/drei',
+            '@react-three/rapier',
+            '@dimforge/rapier3d',
+            '@dimforge/rapier3d-compat',
+            'jotai',
+            'leva',
+            'react-device-detect',
+            'react-icons',
+            'react-use-refs',
+            'three-stdlib',
+          ],
+          output: {
+            globals: {
+              react: 'React',
+              'react-dom': 'ReactDOM',
+              three: 'THREE',
+            },
+          },
+        },
+        outDir: mode === 'esm' ? 'dist' : 'dist',
+        emptyOutDir: false,
       },
+      define: {
+        'process.env.NODE_ENV': JSON.stringify('production'),
+      },
+    };
+  }
+
+  // Development/demo build configuration
+  return {
+    plugins: [react(), vanillaExtractPlugin()],
+    server: {
+      port: 3000,
+      open: true,
     },
-    // 청크 크기 경고 임계값 조정
-    chunkSizeWarningLimit: 500,
-  },
+    build: {
+      outDir: 'demo-dist',
+      sourcemap: true,
+    },
+    define: {
+      'process.env.NODE_ENV': JSON.stringify(mode === 'production' ? 'production' : 'development'),
+    },
+  };
 });

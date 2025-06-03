@@ -1,4 +1,4 @@
-import { calcType } from "../type";
+import { calcType } from '../type';
 
 export default function damping(prop: calcType) {
   const {

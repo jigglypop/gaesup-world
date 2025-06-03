@@ -1,145 +1,96 @@
-// ============================================================================
-// 컴포넌트 내보내기
-// ============================================================================
-export { GaesupComponent } from "./gaesup/component";
-export { PassiveAirplane } from "./gaesup/component/passive/airplane";
-export { PassiveCharacter } from "./gaesup/component/passive/character";
-export { PassiveVehicle } from "./gaesup/component/passive/vehicle";
+export {
+  keyboardInputAtom,
+  movementStateAtom,
+  pointerInputAtom,
+  unifiedInputAtom,
+} from './gaesup/atoms/unifiedInputAtom';
+export { GaesupComponent } from './gaesup/component';
+export { GaesupController } from './gaesup/controller';
+export { GaeSupProps } from './gaesup/gaesupProps';
+export { useGaesupController } from './gaesup/hooks/useGaesupController';
+export { useMainFrameLoop } from './gaesup/hooks/useUnifiedFrame';
+export type { ControllerMode, ControllerType, ControlMode } from './gaesup/types';
+export { GaesupWorld } from './gaesup/world';
 
-export { GaesupController } from "./gaesup/controller";
-export { GaeSupProps } from "./gaesup/gaesupProps";
-export { Clicker } from "./gaesup/tools/clicker";
-export { FocusModal } from "./gaesup/tools/FocusModal";
-export { GamePad } from "./gaesup/tools/gamepad";
-export { MiniMap, MinimapMarker, MinimapPlatform, MinimapObject } from "./gaesup/tools/minimap";
-export { Rideable } from "./gaesup/tools/rideable";
-export { teleport } from "./gaesup/tools/teleport";
-export { Elr, Qt, V3, V30, V31 } from "./gaesup/utils/vector";
-export { GaesupWorld } from "./gaesup/world";
-export * from "./gaesup/atoms";
-
-// ============================================================================
-// 훅 내보내기
-// ============================================================================
-export { useCharacterPool } from "./gaesup/hooks/useCharacterPool";
-export { useClicker } from "./gaesup/hooks/useClicker";
-export { useFocus } from "./gaesup/hooks/useFocus";
-export { useGaesupAnimation } from "./gaesup/hooks/useGaesupAnimation";
-export { useGaesupController } from "./gaesup/hooks/useGaesupController";
-export { useMovePoint } from "./gaesup/hooks/useMovePoint";
-export { usePushKey } from "./gaesup/hooks/usePushKey";
-export { useRideable } from "./gaesup/hooks/useRideable";
-export { useTeleport } from "./gaesup/hooks/useTeleport";
-export { useUnifiedFrame, useMainFrameLoop } from "./gaesup/hooks/useUnifiedFrame";
-export { useZoom } from "./gaesup/hooks/useZoom";
-export { useKeyboard } from "./gaesup/hooks/useKeyboard";
-
-// Optimized input system hooks
-export { usePhysicsInput } from "./gaesup/hooks/usePhysicsInput";
-export { useInputValidation, useInputLogger } from "./gaesup/hooks/useInputValidation";
-
-// ============================================================================
-// 타입 내보내기
-// ============================================================================
+export * from './gaesup/atoms';
 export type {
-  // 기본 유틸리티 타입들
-  DispatchAction,
-  DispatchType,
-  Vector3Like,
-  EulerLike,
-  QuaternionLike,
-  
-  // 컨트롤 관련 타입들
-  ControlState,
-  KeyboardControlState,
-  
-  // 모드 및 상태 타입들
-  ControllerType,
-  ControlMode,
-  ControllerMode,
-  ModeType,
-  ActiveStateType,
-  GameStatesType,
-  
-  // URL 및 리소스 타입들
-  ResourceUrlsType,
-  
-  // 카메라 관련 타입들
-  CameraOptionDebugType,
-  CameraOptionType,
-  CameraRayType,
-  
-  // 레이 캐스팅 타입들
-  RayType,
-  SlopeRayType,
-  GroundRayType,
-  
-  // 애니메이션 타입들
-  AnimationTagType,
+  ClickerOptionState,
+  KeyboardInputState,
+  MouseInputState,
+  UnifiedInputState,
+} from './gaesup/atoms/unifiedInputAtom';
+export { PassiveAirplane } from './gaesup/component/passive/airplane';
+export { PassiveCharacter } from './gaesup/component/passive/character';
+export { PassiveVehicle } from './gaesup/component/passive/vehicle';
+export { useCharacterPool } from './gaesup/hooks/useCharacterPool';
+export { useClicker } from './gaesup/hooks/useClicker';
+export { useFocus } from './gaesup/hooks/useFocus';
+export { useGaesupAnimation } from './gaesup/hooks/useGaesupAnimation';
+export { useInputLogger, useInputValidation } from './gaesup/hooks/useInputValidation';
+export { useKeyboard } from './gaesup/hooks/useKeyboard';
+export { useMovePoint } from './gaesup/hooks/useMovePoint';
+export { usePhysicsInput } from './gaesup/hooks/usePhysicsInput';
+export { usePushKey } from './gaesup/hooks/usePushKey';
+export { useRideable } from './gaesup/hooks/useRideable';
+export { useTeleport } from './gaesup/hooks/useTeleport';
+export { useUnifiedFrame } from './gaesup/hooks/useUnifiedFrame';
+export { useZoom } from './gaesup/hooks/useZoom';
+export { Clicker } from './gaesup/tools/clicker';
+export { FocusModal } from './gaesup/tools/FocusModal';
+export { GamePad } from './gaesup/tools/gamepad';
+export { MiniMap, MinimapMarker, MinimapObject, MinimapPlatform } from './gaesup/tools/minimap';
+export { Rideable } from './gaesup/tools/rideable';
+export { teleport } from './gaesup/tools/teleport';
+export { Elr, Qt, V3, V30, V31 } from './gaesup/utils/vector';
+
+export type {
   ActionsType,
+  ActiveStateType,
   AnimationAtomType,
   AnimationStatePropType,
   AnimationStateType,
-  
-  // 클리커 관련 타입들
+  AnimationTagType,
+  BlockType,
+  CameraOptionDebugType,
+  CameraOptionType,
+  CameraRayType,
+  ClickerOptionType,
   ClickerType,
+  ControllerOptionsType,
+  ControllerOtherPropType,
+  ControlState,
+  DispatchAction,
+  DispatchType,
+  EulerLike,
+  GameStatesType,
+  GroundRayType,
+  JumpConstType,
+  JumpInnerType,
+  JumpPropType,
+  KeyboardControlState,
+  ModeType,
+  OptionsType,
+  PartialOptionsType,
+  PartsType,
+  // 파츠 타입들
+  PartType,
+  // 패시브 상태 타입
+  PassiveStateType,
+  PortalsType,
+  // 포털 타입들
+  PortalType,
+  QuaternionLike,
   QueueActionType,
   QueueFunctionType,
   QueueItemType,
   QueueType,
-  ClickerOptionType,
-  
-  // 블록 및 크기 타입들
-  BlockType,
-  SizeType,
-  SizesType,
-  
-  // 휠 관련 타입들
-  WheelStateType,
-  WheelsStateType,
-  
-  // 패시브 상태 타입
-  PassiveStateType,
-  
-  // 포털 타입들
-  PortalType,
-  PortalsType,
-  
-  // 참조 타입들
+  RayType,
   RefsType,
-  
-  // 컨트롤러 옵션 타입들
-  ControllerOptionsType,
-  OptionsType,
-  PartialOptionsType,
-  
-  // 점프 관련 타입들
-  JumpInnerType,
-  JumpConstType,
-  JumpPropType,
-  
-  // 파츠 타입들
-  PartType,
-  PartsType,
-  
-  // 기타 컨트롤러 프로퍼티 타입들
-  ControllerOtherPropType
-} from "./gaesup/types";
-
-// ============================================================================
-// 새로운 Input System 추가 export
-// ============================================================================
-export type {
-  KeyboardInputState,
-  MouseInputState, 
-  ClickerOptionState,
-  UnifiedInputSystemState
-} from "./gaesup/atoms/inputSystemAtom";
-
-export {
-  inputSystemAtom,
-  keyboardInputAtom,
-  mouseInputAtom,
-  clickerOptionInputAtom,
-  movementStateAtom
-} from "./gaesup/atoms/inputSystemAtom";
+  ResourceUrlsType,
+  SizesType,
+  SizeType,
+  SlopeRayType,
+  Vector3Like,
+  WheelsStateType,
+  WheelStateType,
+} from './gaesup/types';

@@ -1,6 +1,6 @@
-import { quat } from "@react-three/rapier";
-import { V3 } from "../../utils/vector";
-import { calcType } from "../type";
+import { quat } from '@react-three/rapier';
+import { V3 } from '../../utils/vector';
+import { calcType } from '../type';
 
 export default function direction(prop: calcType) {
   const {
@@ -8,12 +8,17 @@ export default function direction(prop: calcType) {
     worldContext: { activeState, control },
     controllerContext: { airplane },
     matchSizes,
-    inputRef
+    inputRef,
   } = prop;
-  
+
   // === 새로운 ref 기반 시스템 우선 사용 ===
-  let forward: boolean, backward: boolean, leftward: boolean, rightward: boolean, shift: boolean, space: boolean;
-  
+  let forward: boolean,
+    backward: boolean,
+    leftward: boolean,
+    rightward: boolean,
+    shift: boolean,
+    space: boolean;
+
   if (inputRef && inputRef.current) {
     const keyboard = inputRef.current.keyboard;
     forward = keyboard.forward;
@@ -26,9 +31,9 @@ export default function direction(prop: calcType) {
     // === 기존 시스템 fallback (하위 호환성) ===
     ({ forward, backward, leftward, rightward, shift, space } = control);
   }
-  
+
   const { angleDelta, maxAngle, accelRatio } = airplane;
-  if (!matchSizes || !matchSizes["airplaneUrl"]) return null;
+  if (!matchSizes || !matchSizes['airplaneUrl']) return null;
 
   let boost = 0;
 
@@ -69,11 +74,11 @@ export default function direction(prop: calcType) {
   innerGroupRef.current.setRotationFromQuaternion(
     quat()
       .setFromEuler(innerGroupRef.current.rotation.clone())
-      .slerp(quat().setFromEuler(innerGrounRefRotation.rotation.clone()), 0.2)
+      .slerp(quat().setFromEuler(innerGrounRefRotation.rotation.clone()), 0.2),
   );
 
   activeState.direction = front.multiply(
-    V3(Math.sin(activeState.euler.y), -upDown, Math.cos(activeState.euler.y))
+    V3(Math.sin(activeState.euler.y), -upDown, Math.cos(activeState.euler.y)),
   );
   activeState.dir = activeState.direction.normalize();
 }

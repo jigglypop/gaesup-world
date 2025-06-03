@@ -1,14 +1,11 @@
 'use client';
 
-import { useContext, useState } from 'react';
 import { useAtom } from 'jotai';
+import { useState } from 'react';
 
-import { V3 } from '../../src';
-import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../src/gaesup/world/context';
 import { cameraOptionAtom, modeAtom } from '../../src/gaesup/atoms';
 import { Icon } from '../icon';
 import * as style from './style.css';
-// FaCarSide lazy loading
 
 const CAMERA_PRESETS = {
   firstPerson: {
@@ -46,11 +43,11 @@ const CAMERA_PRESETS = {
 };
 
 const CAMERA_DESCRIPTIONS = {
-  firstPerson: "🎯 캐릭터의 눈으로 보는 1인칭 시점 - 몰입감 있는 경험을 제공합니다",
-  thirdPerson: "📷 캐릭터를 따라가는 3인칭 카메라 - 벽이나 장애물과 충돌하면 자동으로 가까워집니다",
-  thirdPersonOrbit: "🔄 캐릭터 중심으로 회전하는 궤도 카메라 - 마우스로 카메라 각도를 자유롭게 조절할 수 있습니다",
-  topDown: "🗺️ 위에서 내려다보는 탑뷰 카메라 - 전체적인 상황을 한눈에 파악하기 좋습니다",
-  sideScroll: "📖 옆에서 보는 사이드뷰 카메라 - 클래식한 2D 플랫폼 게임 스타일입니다",
+  firstPerson: '1인칭 시점',
+  thirdPerson: '3인칭 카메라',
+  thirdPersonOrbit: '궤도 카메라',
+  topDown: '탑뷰 카메라',
+  sideScroll: '사이드뷰 카메라',
 };
 
 export default function Info() {
@@ -73,29 +70,46 @@ export default function Info() {
     });
   };
 
-  const setControl = (control: 'thirdPersonOrbit' | 'thirdPerson' | 'firstPerson' | 'topDown' | 'sideScroll' | 'orbit' | 'normal') => {
-    const preset = CAMERA_PRESETS[control] || CAMERA_PRESETS[control === 'normal' ? 'thirdPerson' : control === 'orbit' ? 'thirdPersonOrbit' : 'thirdPerson'];
-    
+  const setControl = (
+    control:
+      | 'thirdPersonOrbit'
+      | 'thirdPerson'
+      | 'firstPerson'
+      | 'topDown'
+      | 'sideScroll'
+      | 'orbit'
+      | 'normal',
+  ) => {
+    const preset =
+      CAMERA_PRESETS[control] ||
+      CAMERA_PRESETS[
+        control === 'normal'
+          ? 'thirdPerson'
+          : control === 'orbit'
+            ? 'thirdPersonOrbit'
+            : 'thirdPerson'
+      ];
+
     setMode({
       ...mode,
       control,
     });
 
-    setCameraOption(prev => ({
+    setCameraOption((prev) => ({
       ...prev,
       ...preset,
     }));
   };
 
   const updateCameraOption = (key: string, value: any) => {
-    setCameraOption(prev => ({
+    setCameraOption((prev) => ({
       ...prev,
       [key]: value,
     }));
   };
 
   const updateSmoothingOption = (key: string, value: number) => {
-    setCameraOption(prev => ({
+    setCameraOption((prev) => ({
       ...prev,
       smoothing: {
         ...prev.smoothing,
@@ -106,9 +120,17 @@ export default function Info() {
 
   const resetToPreset = () => {
     const control = mode.control;
-    const preset = CAMERA_PRESETS[control] || CAMERA_PRESETS[control === 'normal' ? 'thirdPerson' : control === 'orbit' ? 'thirdPersonOrbit' : 'thirdPerson'];
-    
-    setCameraOption(prev => ({
+    const preset =
+      CAMERA_PRESETS[control] ||
+      CAMERA_PRESETS[
+        control === 'normal'
+          ? 'thirdPerson'
+          : control === 'orbit'
+            ? 'thirdPersonOrbit'
+            : 'thirdPerson'
+      ];
+
+    setCameraOption((prev) => ({
       ...prev,
       ...preset,
     }));
@@ -117,7 +139,16 @@ export default function Info() {
   const getCurrentCameraDescription = () => {
     const control = mode.control;
     const controllerDesc = ' (WASD + Mouse Click으로 조작 가능)';
-    return (CAMERA_DESCRIPTIONS[control] || CAMERA_DESCRIPTIONS[control === 'normal' ? 'thirdPerson' : control === 'orbit' ? 'thirdPersonOrbit' : 'thirdPerson']) + controllerDesc;
+    return (
+      (CAMERA_DESCRIPTIONS[control] ||
+        CAMERA_DESCRIPTIONS[
+          control === 'normal'
+            ? 'thirdPerson'
+            : control === 'orbit'
+              ? 'thirdPersonOrbit'
+              : 'thirdPerson'
+        ]) + controllerDesc
+    );
   };
 
   return (
@@ -156,7 +187,7 @@ export default function Info() {
             {mode.type === 'airplane' && '✈️ 비행기'}
           </button>
         </Icon>
-        
+
         <Icon
           ToolTip={
             <>
@@ -167,13 +198,17 @@ export default function Info() {
                 🎯 1인칭
               </p>
               <p
-                className={style.pRecipe({ selected: mode.control === 'thirdPerson' || mode.control === 'normal' })}
+                className={style.pRecipe({
+                  selected: mode.control === 'thirdPerson' || mode.control === 'normal',
+                })}
                 onClick={() => setControl('thirdPerson')}
               >
                 📷 3인칭
               </p>
               <p
-                className={style.pRecipe({ selected: mode.control === 'thirdPersonOrbit' || mode.control === 'orbit' })}
+                className={style.pRecipe({
+                  selected: mode.control === 'thirdPersonOrbit' || mode.control === 'orbit',
+                })}
                 onClick={() => setControl('thirdPersonOrbit')}
               >
                 🔄 궤도 카메라
@@ -212,7 +247,7 @@ export default function Info() {
             background: 'rgba(0,0,0,0.8)',
           }}
         >
-          <button 
+          <button
             className={style.glassButton}
             onClick={() => setShowCameraSettings(!showCameraSettings)}
           >
@@ -221,9 +256,7 @@ export default function Info() {
         </Icon>
       </div>
 
-      <div className={style.cameraDescription}>
-        {getCurrentCameraDescription()}
-      </div>
+      <div className={style.cameraDescription}>{getCurrentCameraDescription()}</div>
 
       {showCameraSettings && (
         <div className={style.cameraSettings}>
@@ -233,7 +266,7 @@ export default function Info() {
               Reset to Preset
             </button>
           </div>
-          
+
           <div className={style.settingsGrid}>
             <div className={style.settingGroup}>
               <label>Distance</label>

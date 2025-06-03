@@ -22,7 +22,6 @@ export function ObjectInfoPanel({ focusedObject, onClose }: ObjectInfoPanelProps
   const { focusOff } = useFocus();
   const cameraOption = useAtomValue(cameraOptionAtom);
   const [isVisible, setIsVisible] = useState(false);
-
   useEffect(() => {
     if (focusedObject) {
       setIsVisible(true);
@@ -30,11 +29,9 @@ export function ObjectInfoPanel({ focusedObject, onClose }: ObjectInfoPanelProps
       setIsVisible(false);
     }
   }, [focusedObject]);
-
   const handleClose = async () => {
     setIsVisible(false);
     await focusOff({ zoom: 1 });
-    // 애니메이션 완료 후 onClose 호출
     setTimeout(() => {
       onClose();
     }, 300);

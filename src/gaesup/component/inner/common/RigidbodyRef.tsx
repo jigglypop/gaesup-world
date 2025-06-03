@@ -1,13 +1,13 @@
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
 import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three/rapier';
-import { MutableRefObject, forwardRef, useContext, useEffect, useMemo } from 'react';
 import { useAtom } from 'jotai';
+import { MutableRefObject, forwardRef, useContext, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import playActions, { subscribeActions } from '../../../animation/actions';
-import Camera from '../../../camera';
 import { cameraOptionAtom } from '../../../atoms/cameraOptionAtom';
+import Camera from '../../../camera';
 import { GaesupControllerContext } from '../../../controller/context';
 import initCallback from '../../../controller/initialize/callback';
 import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
@@ -27,16 +27,7 @@ export const RigidBodyRef = forwardRef(
     const controllerContext = useContext(GaesupControllerContext);
     const [cameraOption] = useAtom(cameraOptionAtom);
 
-    useEffect(() => {
-      if (props.groundRay && props.colliderRef) {
-        setGroundRay({
-          groundRay: props.groundRay,
-          length: 2.0,
-          colliderRef: props.colliderRef,
-        });
-      }
-    }, [props.groundRay, props.colliderRef, setGroundRay]);
-
+    // GLTF와 애니메이션을 먼저 로드
     const { scene, animations } = useGLTF(props.url);
     const { actions, ref: animationRef } = useAnimations(animations);
 
@@ -51,6 +42,17 @@ export const RigidBodyRef = forwardRef(
       return skel;
     }, [clone]);
 
+    useEffect(() => {
+      if (props.groundRay && props.colliderRef) {
+        setGroundRay({
+          groundRay: props.groundRay,
+          length: 2.0,
+          colliderRef: props.colliderRef,
+        });
+      }
+    }, [props.groundRay, props.colliderRef, setGroundRay]);
+
+    // Active 관련 로직을 다시 컴포넌트 최상위로 이동 (Hook 규칙 준수)
     if (props.isActive) {
       subscribeActions({
         type: props.componentType,
@@ -74,6 +76,7 @@ export const RigidBodyRef = forwardRef(
         groundRay: props.groundRay,
       });
     }
+
     playActions({
       type: props.componentType,
       actions,
@@ -88,18 +91,22 @@ export const RigidBodyRef = forwardRef(
     });
     const { nodes } = useGraph(clone);
     const objectNode = Object.values(nodes).find((node) => node.type === 'Object3D');
+
+    // rotation 안전 처리
+    const safeRotationY = props.rotation?.clone ? props.rotation.clone().y : props.rotation?.y || 0;
+
     return (
       <RigidBody
         colliders={false}
         ref={ref}
         name={props.name}
-        rotation={euler()
-          .set(0, props.rotation?.clone().y || 0, 0)
-          .clone()}
+        position={props.position}
+        rotation={euler().set(0, safeRotationY, 0).clone()}
         userData={props.userData}
         type={props.rigidbodyType || (props.isActive ? 'dynamic' : 'fixed')}
         sensor={props.sensor}
         onIntersectionEnter={props.onIntersectionEnter}
+        onIntersectionExit={props.onIntersectionExit}
         onCollisionEnter={props.onCollisionEnter}
         {...props.rigidBodyProps}
       >

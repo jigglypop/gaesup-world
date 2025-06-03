@@ -1,9 +1,8 @@
 import { Line } from '@react-three/drei';
-import { ReactNode, useContext } from 'react';
 import { useAtomValue } from 'jotai';
+import { ReactNode } from 'react';
 import * as THREE from 'three';
-import { GaesupWorldContext } from '../../world/context';
-import { modeAtom, inputSystemAtom } from '../../atoms';
+import { inputSystemAtom } from '../../atoms';
 
 export function Clicker({ onMarker, runMarker }: { onMarker: ReactNode; runMarker: ReactNode }) {
   const inputSystem = useAtomValue(inputSystemAtom);
@@ -39,7 +38,6 @@ export function Clicker({ onMarker, runMarker }: { onMarker: ReactNode; runMarke
                   opacity={0.5}
                   lineWidth={0.4}
                 />
-
                 <mesh key={key} position={queueItem}>
                   <sphereGeometry args={[0.6, 30, 0.6]} />
                   <meshStandardMaterial color="turquoise" transparent opacity={0.8} />

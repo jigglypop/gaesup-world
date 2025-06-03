@@ -1,24 +1,23 @@
-import React, { useCallback, useContext, useEffect, useRef } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
-import { GaesupWorldContext } from '../../world/context';
+import React, { useCallback, useContext, useEffect, useRef } from 'react';
 import { minimapAtom, modeAtom } from '../../atoms';
-import { usePhysicsInput } from '../../hooks/usePhysicsInput';
-import { MinimapProps } from './type';
+import { GaesupWorldContext } from '../../world/context';
 import {
-  baseStyles,
-  MINIMAP_SIZE_PX,
-  directionStyles,
-  objectStyles,
   avatarStyles,
+  baseStyles,
+  directionStyles,
+  MINIMAP_SIZE_PX,
+  objectStyles,
   textStyles,
 } from './style.css';
+import { MinimapProps } from './type';
 
 const DEFAULT_SCALE = 0.5;
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 2;
 const UPDATE_THRESHOLD = 0.15;
-const ROTATION_THRESHOLD = 0.03; 
-const UPDATE_INTERVAL = 50; 
+const ROTATION_THRESHOLD = 0.03;
+const UPDATE_INTERVAL = 50;
 
 export function MiniMap({
   scale: initialScale = DEFAULT_SCALE,
@@ -41,23 +40,18 @@ export function MiniMap({
   const [minimap] = useAtom(minimapAtom);
   const [scale, setScale] = React.useState(initialScale);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  // 성능 최적화: 이전 위치/회전 추적
   const lastPositionRef = useRef({ x: 0, y: 0, z: 0 });
   const lastRotationRef = useRef(0);
   const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   const upscale = useCallback(() => {
     if (blockScale) return;
     setScale((prev) => Math.min(maxScale, prev + 0.1));
   }, [blockScale, maxScale]);
-
   const downscale = useCallback(() => {
     if (blockScale) return;
     setScale((prev) => Math.max(minScale, prev - 0.1));
   }, [blockScale, minScale]);
-
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       if (blockScale) return;
@@ -66,46 +60,42 @@ export function MiniMap({
     },
     [blockScale, upscale, downscale],
   );
-
-  // 네이티브 wheel 이벤트 리스너로 preventDefault 처리
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const handleNativeWheel = (e: WheelEvent) => {
       if (blockScale) return;
-      e.preventDefault(); // 네이티브 이벤트에서는 정상 작동
+      e.preventDefault();
       if (e.deltaY < 0) upscale();
       else downscale();
     };
-
     canvas.addEventListener('wheel', handleNativeWheel, { passive: false });
-    
     return () => {
       canvas.removeEventListener('wheel', handleNativeWheel);
     };
   }, [blockScale, upscale, downscale]);
-
-  // ref 기반 위치/회전 정보 가져오기 (수정됨)
   const getCurrentState = useCallback(() => {
     if (!activeState?.position) return null;
-    
+
     return {
       position: activeState.position,
       rotation: activeState.euler.y,
     };
   }, [activeState]);
 
-  const getRotation = useCallback((rotation: number) => {
-    if (blockRotate || mode.control === 'normal') return 180;
-    return (rotation * 180) / Math.PI + 180;
-  }, [blockRotate, mode.control]);
+  const getRotation = useCallback(
+    (rotation: number) => {
+      if (blockRotate || mode.control === 'normal') return 180;
+      return (rotation * 180) / Math.PI + 180;
+    },
+    [blockRotate, mode.control],
+  );
 
   // 성능 최적화: Canvas 업데이트 함수
   const updateCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     const currentState = getCurrentState();
-    
+
     if (!canvas || !currentState || !minimap?.props) return;
 
     const ctx = canvas.getContext('2d');
@@ -124,8 +114,12 @@ export function MiniMap({
 
     // Draw background with gradient
     const gradient = ctx.createRadialGradient(
-      MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2, 0,
-      MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2
+      MINIMAP_SIZE_PX / 2,
+      MINIMAP_SIZE_PX / 2,
+      0,
+      MINIMAP_SIZE_PX / 2,
+      MINIMAP_SIZE_PX / 2,
+      MINIMAP_SIZE_PX / 2,
     );
     gradient.addColorStop(0, 'rgba(20, 30, 40, 0.9)');
     gradient.addColorStop(1, 'rgba(10, 20, 30, 0.95)');
@@ -187,7 +181,7 @@ export function MiniMap({
     if (minimap?.props && typeof minimap.props === 'object') {
       Object.values(minimap.props).forEach((obj: any, index) => {
         if (!obj || typeof obj !== 'object' || !obj.center || !obj.size) return;
-        
+
         const { center, size, text } = obj;
 
         // Calculate position
@@ -196,7 +190,7 @@ export function MiniMap({
 
         // Draw object with border and shadow
         ctx.save();
-        
+
         const width = size.x * scale;
         const height = size.z * scale;
         const x = MINIMAP_SIZE_PX / 2 - posX - width / 2;
@@ -243,16 +237,20 @@ export function MiniMap({
 
     // Draw enhanced avatar
     ctx.save();
-    
+
     // Avatar glow effect
     const avatarGradient = ctx.createRadialGradient(
-      MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2, 0,
-      MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2, 12
+      MINIMAP_SIZE_PX / 2,
+      MINIMAP_SIZE_PX / 2,
+      0,
+      MINIMAP_SIZE_PX / 2,
+      MINIMAP_SIZE_PX / 2,
+      12,
     );
     avatarGradient.addColorStop(0, avatarStyle?.background || avatarStyles.background);
     avatarGradient.addColorStop(0.7, avatarStyle?.background || avatarStyles.background);
     avatarGradient.addColorStop(1, 'transparent');
-    
+
     ctx.fillStyle = avatarGradient;
     ctx.beginPath();
     ctx.arc(MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2, 12, 0, Math.PI * 2);
@@ -302,7 +300,7 @@ export function MiniMap({
       const lastRotation = lastRotationRef.current;
 
       // 위치 변화 확인
-      const positionChanged = 
+      const positionChanged =
         Math.abs(position.x - lastPos.x) > UPDATE_THRESHOLD ||
         Math.abs(position.z - lastPos.z) > UPDATE_THRESHOLD;
 
@@ -318,7 +316,7 @@ export function MiniMap({
         // 새로운 업데이트 스케줄 (33ms = ~30fps 제한으로 성능 개선)
         updateTimeoutRef.current = setTimeout(() => {
           updateCanvas();
-          
+
           // 마지막 값 업데이트
           lastPositionRef.current = {
             x: position.x,
@@ -394,12 +392,14 @@ export function MiniMap({
           >
             +
           </div>
-          <span style={{ 
-            color: 'white', 
-            fontSize: '12px',
-            fontWeight: 'bold',
-            textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)' 
-          }}>
+          <span
+            style={{
+              color: 'white',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              textShadow: '1px 1px 2px rgba(0, 0, 0, 0.8)',
+            }}
+          >
             1:{Math.round(100 / scale)}
           </span>
           <div
@@ -426,4 +426,4 @@ export function MiniMap({
 }
 
 // 자동 등록 컴포넌트들도 함께 export
-export { MinimapMarker, MinimapPlatform, MinimapObject } from './MinimapMarker';
+export { MinimapMarker, MinimapObject, MinimapPlatform } from './MinimapMarker';

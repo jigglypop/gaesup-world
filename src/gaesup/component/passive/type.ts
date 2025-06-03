@@ -1,6 +1,7 @@
 import { Collider } from "@dimforge/rapier3d-compat";
 import {
   CollisionEnterPayload,
+  CollisionExitPayload,
   RapierRigidBody,
   RigidBodyProps,
   RigidBodyTypeString,
@@ -38,6 +39,7 @@ export type passivePropsType = {
   rigidbodyType?: RigidBodyTypeString;
   sensor?: boolean;
   onIntersectionEnter?: (e: CollisionEnterPayload) => Promise<void>;
+  onIntersectionExit?: (e: CollisionExitPayload) => Promise<void>;
   onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
   componentType: componentTypeString;
   userData?: {

@@ -1,7 +1,7 @@
-import { CSSProperties, Dispatch, ReactNode, RefObject } from 'react';
+import { Collider, Ray, RayColliderHit } from '@dimforge/rapier3d-compat';
 import { GroupProps, RootState } from '@react-three/fiber';
 import { RapierRigidBody, RigidBodyProps } from '@react-three/rapier';
-import { Collider, Ray } from '@dimforge/rapier3d-compat';
+import { CSSProperties, Dispatch, ReactNode, RefObject } from 'react';
 import * as THREE from 'three';
 
 export type DispatchAction<T> = {
@@ -22,9 +22,6 @@ export type EulerLike = {
   order?: string;
 };
 
-/**
- * 쿼터니언 타입 (THREE.Quaternion 호환)
- */
 export type QuaternionLike = {
   x: number;
   y: number;
@@ -41,53 +38,28 @@ export type ControlState = {
   [key: string]: boolean;
 };
 
-/**
- * 키보드 컨트롤 상태 타입
- */
 export type KeyboardControlState<T extends string = string> = {
   [K in T]: boolean;
 };
 
-/**
- * 컨트롤러 모드 타입
- */
 export type ControllerType = 'character' | 'vehicle' | 'airplane';
+export type CameraControlMode =
+  | 'firstPerson' // 1인칭 시점
+  | 'thirdPerson' // 3인칭 고정 시점 (기존 normal)
+  | 'thirdPersonOrbit' // 3인칭 궤도 시점 (기존 orbit)
+  | 'topDown' // 탑다운 시점
+  | 'sideScroll' // 사이드 스크롤 시점
+  | 'isometric' // 아이소메트릭 시점
+  | 'free'; // 자유 시점
 
-/**
- * 카메라 컨트롤 모드 타입
- */
-export type CameraControlMode = 
-  | 'firstPerson'        // 1인칭 시점
-  | 'thirdPerson'        // 3인칭 고정 시점 (기존 normal)
-  | 'thirdPersonOrbit'   // 3인칭 궤도 시점 (기존 orbit)
-  | 'topDown'           // 탑다운 시점
-  | 'sideScroll'        // 사이드 스크롤 시점
-  | 'isometric'         // 아이소메트릭 시점
-  | 'free';             // 자유 시점
-
-/**
- * 하위 호환성을 위한 컨트롤 모드 타입
- */
 export type ControlMode = 'normal' | 'orbit';
-
-/**
- * 컨트롤러 모드 타입
- */
 export type ControllerMode = 'clicker';
-
-/**
- * 모드 타입
- */
 export type ModeType = {
   type?: ControllerType;
   controller?: ControllerMode;
   control?: CameraControlMode | ControlMode; // 하위 호환성 유지
   isButton?: boolean;
 };
-
-/**
- * 활성 상태 타입
- */
 export type ActiveStateType = {
   position: THREE.Vector3;
   velocity: THREE.Vector3;
@@ -97,9 +69,6 @@ export type ActiveStateType = {
   dir: THREE.Vector3;
 };
 
-/**
- * 게임 상태 타입
- */
 export type GameStatesType = {
   rideableId?: string;
   isMoving: boolean;
@@ -114,15 +83,15 @@ export type GameStatesType = {
   isLanding: boolean;
   isFalling: boolean;
   isRiding: boolean;
+  canRide?: boolean;
+  nearbyRideable?: {
+    objectkey: string;
+    objectType: 'vehicle' | 'airplane';
+    name: string;
+  } | null;
+  shouldEnterRideable?: boolean;
+  shouldExitRideable?: boolean;
 };
-
-// ============================================================================
-// URL 및 리소스 타입들
-// ============================================================================
-
-/**
- * 리소스 URL 타입
- */
 export type ResourceUrlsType = {
   characterUrl?: string;
   vehicleUrl?: string;
@@ -131,37 +100,26 @@ export type ResourceUrlsType = {
   ridingUrl?: string;
 };
 
-// ============================================================================
-// 카메라 관련 타입들
-// ============================================================================
-
-/**
- * 카메라 옵션 디버그 타입 (속성명 camelCase 표준화)
- */
 export type CameraOptionDebugType = {
   maxDistance?: number;
   distance?: number;
-  xDistance?: number;  // XDistance → xDistance
-  yDistance?: number;  // YDistance → yDistance 
-  zDistance?: number;  // ZDistance → zDistance
+  xDistance?: number;
+  yDistance?: number;
+  zDistance?: number;
   zoom?: number;
   target?: THREE.Vector3;
   focus?: boolean;
   position?: THREE.Vector3;
-  // 카메라 충돌 감지 옵션 추가
   enableCollision?: boolean;
   collisionMargin?: number;
-  // 부드러운 이동 옵션 추가
   smoothing?: {
     position: number;
     rotation: number;
     fov: number;
   };
-  // FOV 옵션 추가
   fov?: number;
   minFov?: number;
   maxFov?: number;
-  // 경계 제한 옵션 추가
   bounds?: {
     minX?: number;
     maxX?: number;
@@ -172,20 +130,13 @@ export type CameraOptionDebugType = {
   };
 };
 
-/**
- * 카메라 옵션 타입
- */
 export type CameraOptionType = {
   offset?: THREE.Vector3;
-  // 카메라 모드별 설정
   modeSettings?: {
     [K in CameraControlMode]?: Partial<CameraOptionDebugType>;
   };
 } & CameraOptionDebugType;
 
-/**
- * 카메라 레이 타입
- */
 export type CameraRayType = {
   origin: THREE.Vector3;
   hit: THREE.Raycaster;
@@ -198,16 +149,9 @@ export type CameraRayType = {
   intersectObjectMap: { [uuid: string]: THREE.Mesh };
 };
 
-// ============================================================================
-// 레이 캐스팅 타입들
-// ============================================================================
-
-/**
- * 기본 레이 타입
- */
 export type RayType = {
   origin: THREE.Vector3;
-  hit: any | null;
+  hit: RayColliderHit | null;
   rayCast: Ray | null;
   dir: THREE.Vector3;
   offset: THREE.Vector3;
@@ -448,9 +392,6 @@ export type ControllerOptionsType = {
   };
 };
 
-/**
- * 옵션 타입
- */
 export type OptionsType = {
   debug: boolean;
   mode?: 'normal' | 'vehicle' | 'airplane';
@@ -458,49 +399,23 @@ export type OptionsType = {
   cameraCollisionType: 'transparent' | 'closeUp';
   camera: {
     type: 'perspective' | 'orthographic';
-    control: CameraControlMode | 'orbit' | 'normal'; // 하위 호환성 유지
+    control: CameraControlMode | 'orbit' | 'normal';
   };
   minimap: boolean;
   minimapRatio: number;
 };
-
-/**
- * 부분 옵션 타입
- */
 export type PartialOptionsType = Partial<OptionsType>;
-
-// ============================================================================
-// 점프 관련 타입들
-// ============================================================================
-
-/**
- * 점프 내부 타입
- */
 export type JumpInnerType = {
   velocity: THREE.Vector3;
   direction: THREE.Vector3;
 };
 
-/**
- * 점프 상수 타입
- */
 export type JumpConstType = {
   speed: number;
   gravity: number;
 };
 
-/**
- * 점프 프로퍼티 타입
- */
 export type JumpPropType = JumpInnerType & JumpConstType;
-
-// ============================================================================
-// 파츠 타입들
-// ============================================================================
-
-/**
- * 파트 타입
- */
 export type PartType = {
   url?: string;
   color?: string;
@@ -509,30 +424,13 @@ export type PartType = {
   scale?: THREE.Vector3;
 };
 
-/**
- * 파츠 타입
- */
 export type PartsType = PartType[];
-
-// ============================================================================
-// 기타 컨트롤러 프로퍼티 타입들
-// ============================================================================
-
-/**
- * 컨트롤러 기타 프로퍼티 타입
- */
 export interface ControllerOtherPropType extends RigidBodyProps {
   children?: ReactNode;
   groupProps?: GroupProps;
   rigidBodyProps?: RigidBodyProps;
   debug?: boolean;
 }
-
-// ============================================================================
-// 하위 호환성을 위한 타입 별칭들 (snake_case)
-// 🚨 주의: 새 코드에서는 위의 PascalCase 타입들을 사용하세요
-// ============================================================================
-
 export type dispatchType<T> = DispatchType<T>;
 export type controlType = ControlState;
 export type keyControlType = KeyboardControlState;
@@ -574,4 +472,4 @@ export type jumpConstType = JumpConstType;
 export type jumpPropType = JumpPropType;
 export type partType = PartType;
 export type partsType = PartsType;
-export type controllerOtherPropType = ControllerOtherPropType; 
+export type controllerOtherPropType = ControllerOtherPropType;

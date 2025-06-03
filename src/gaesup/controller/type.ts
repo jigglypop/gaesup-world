@@ -1,73 +1,44 @@
-/**
- * @deprecated 이 파일의 대부분 타입들은 '../types/index.ts'로 이동되었습니다.
- * 하위 호환성을 위해 유지되지만, 새로운 코드에서는 중앙 집중식 타입을 사용하세요.
- */
+import { airplaneType, characterType, vehicleType } from './context/type';
+import { callbackType } from './initialize/callback/type';
 
-import { airplaneType, characterType, vehicleType } from "./context/type";
-import { callbackType } from "./initialize/callback/type";
-
-// 중앙 집중식 타입에서 가져오기
 import {
-  // 기본 타입들
-  CameraRayType,
-  ResourceUrlsType,
-  GroundRayType,
-  SlopeRayType,
-  RayType,
-  ControllerOptionsType,
-  OptionsType,
-  PartialOptionsType,
-  JumpInnerType,
-  JumpConstType,
-  JumpPropType,
-  AnimationTagType,
   ActionsType,
-  RefsType,
-  PartType,
-  PartsType,
+  AnimationTagType,
+  CameraRayType,
+  ControllerOptionsType,
   ControllerOtherPropType,
-  // 하위 호환성 별칭들
-  cameraRayType,
-  urlsType,
-  groundRayType,
-  slopeRayType,
-  rayType,
-  controllerOptionsType,
-  optionsType,
-  partialOptionsType,
-  jumpInnerType,
-  jumpConstType,
-  jumpPropType,
-  animationTagType,
-  actionsType,
-  refsType,
-  partType,
-  partsType,
-  controllerOtherPropType
+  GroundRayType,
+  JumpConstType,
+  JumpInnerType,
+  JumpPropType,
+  OptionsType,
+  PartType,
+  PartialOptionsType,
+  PartsType,
+  RayType,
+  RefsType,
+  ResourceUrlsType,
+  SlopeRayType,
 } from '../types';
 
-// 하위 호환성을 위한 추가 타입 정의 (중앙 집중식 타입에 없는 것들만)
-
-// 하위 호환성을 위해 타입들을 다시 내보내기
 export type {
-  // 기본 타입들
-  CameraRayType,
-  ResourceUrlsType,
-  GroundRayType,
-  SlopeRayType,
-  RayType,
-  ControllerOptionsType,
-  OptionsType,
-  PartialOptionsType,
-  JumpInnerType,
-  JumpConstType,
-  JumpPropType,
-  AnimationTagType,
   ActionsType,
-  RefsType,
+  AnimationTagType,
+  CameraRayType,
+  ControllerOptionsType,
+  ControllerOtherPropType,
+  GroundRayType,
+  JumpConstType,
+  JumpInnerType,
+  JumpPropType,
+  OptionsType,
   PartType,
+  PartialOptionsType,
   PartsType,
-  ControllerOtherPropType
+  RayType,
+  RefsType,
+  ResourceUrlsType,
+  SlopeRayType,
 };
 
 export type controllerInnerType = {
@@ -80,7 +51,6 @@ export type controllerInnerType = {
   RefsType &
   callbackType;
 
-// context로 넘어가는 타입
 export type gaesupControllerContextPropType = {
   airplane: airplaneType;
   vehicle: vehicleType;

@@ -1,13 +1,14 @@
-import { calcType } from "../type";
+import { PhysicsCalc, PhysicsState } from '../type';
 
-export default function gravity(prop: calcType) {
+export function gravity(rigidBodyRef: PhysicsCalc['rigidBodyRef'], physicsState: PhysicsState) {
+  if (!rigidBodyRef.current) return;
   const {
-    rigidBodyRef,
-    worldContext: { states },
-  } = prop;
-  if (states.isJumping || states.isFalling) {
-    rigidBodyRef.current.setGravityScale(1.5, false);
+    gameStates: { isJumping, isFalling },
+    characterConfig: { jumpGravityScale = 1.5, normalGravityScale = 1.0 },
+  } = physicsState;
+  if (isJumping || isFalling) {
+    rigidBodyRef.current.setGravityScale(jumpGravityScale, false);
   } else {
-    rigidBodyRef.current.setGravityScale(1.0, false);
+    rigidBodyRef.current.setGravityScale(normalGravityScale, false);
   }
-} 
+}
