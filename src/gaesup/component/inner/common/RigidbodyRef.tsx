@@ -20,7 +20,8 @@ import { rigidBodyRefType } from './type';
 
 export const RigidBodyRef = forwardRef(
   (props: rigidBodyRefType, ref: MutableRefObject<RapierRigidBody>) => {
-    const { size } = useGltfAndSize({ url: props.url });
+    const { size } = useGltfAndSize({ url: props.url || '' });
+    
     const setGroundRay = useSetGroundRay();
     const worldContext = useContext(GaesupWorldContext);
     const [cameraOption] = useAtom(cameraOptionAtom);
@@ -109,7 +110,7 @@ export const RigidBodyRef = forwardRef(
           <CapsuleCollider
             ref={props.colliderRef as any}
             args={[(size.y / 2 - size.x) * 1.2, size.x * 1.2]}
-            position={[0, size.y / 2, 0]}
+            position={[0, size.x * 1.2, 0]}
           />
         )}
         <InnerGroupRef
