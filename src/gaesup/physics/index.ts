@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useBridgeConnector } from '../hooks/useBridgeConnector';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
-import { SizesType } from '../types';
+import { type SizesType } from '../../types';
 import airplaneCalculation from './airplane';
 import { direction } from './character/direction';
 import { gravity } from './character/gravity';
@@ -20,13 +20,27 @@ export default function calculation(props: PhysicsCalculationProps) {
   const isInitializedRef = useRef(false);
   const calcPropRef = useRef<PhysicsCalcProps | null>(null);
   const calculationFnRef = useRef<((calcProp: PhysicsCalcProps) => void) | null>(null);
-  const prevDataRef = useRef<{
-    worldContext: any;
-    input: any;
-    urls: any;
-    modeType: string;
-    modeControl: string;
-  } | null>(null);
+  
+  // 캐시 및 성능 최적화 관련 Ref들
+  const cacheRef = useRef({
+    modeType: '',
+    modeControl: '',
+    calculationFn: null as ((calcProp: PhysicsCalcProps) => void) | null,
+    lastUpdateTime: 0,
+    frameSkipCount: 0,
+    lastWorldContext: null as any,
+    lastInput: null as any,
+    lastUrls: null as any,
+    skipFrameCount: 0,
+  });
+
+  // 성능 모니터링
+  const performanceRef = useRef({
+    frameCount: 0,
+    totalTime: 0,
+    avgFrameTime: 0,
+    lastPerfCheck: 0,
+  });
 
   useEffect(() => {
     if (!isInitializedRef.current && bridgeRef.current?.worldContext) {
@@ -53,30 +67,86 @@ export default function calculation(props: PhysicsCalculationProps) {
     }
   }, [props.rigidBodyRef?.current, props.innerGroupRef?.current, isInitializedRef.current]);
 
-  const updatePhysicsState = () => {
+  // 물리 상태만 업데이트하는 최적화 함수
+  const updatePhysicsStateOnly = useCallback((
+    state: PhysicsState,
+    worldContext: any,
+    input: any
+  ): void => {
+    // 키보드 상태 업데이트 (변경된 값만)
+    const kb = state.keyboard;
+    const inputKb = input.keyboard;
+    if (kb.forward !== inputKb.forward) kb.forward = inputKb.forward;
+    if (kb.backward !== inputKb.backward) kb.backward = inputKb.backward;
+    if (kb.leftward !== inputKb.leftward) kb.leftward = inputKb.leftward;
+    if (kb.rightward !== inputKb.rightward) kb.rightward = inputKb.rightward;
+    if (kb.shift !== inputKb.shift) kb.shift = inputKb.shift;
+    if (kb.space !== inputKb.space) kb.space = inputKb.space;
+    if (kb.keyR !== inputKb.keyR) kb.keyR = inputKb.keyR;
+    
+    // 마우스 상태 업데이트 (변경된 값만)
+    if (!state.mouse.target.equals(input.mouse.target)) {
+      state.mouse.target.copy(input.mouse.target);
+    }
+    if (state.mouse.angle !== input.mouse.angle) state.mouse.angle = input.mouse.angle;
+    if (state.mouse.isActive !== input.mouse.isActive) state.mouse.isActive = input.mouse.isActive;
+    if (state.mouse.shouldRun !== input.mouse.shouldRun) state.mouse.shouldRun = input.mouse.shouldRun;
+    
+    // 참조 업데이트 (필요한 경우만)
+    if (state.activeState !== worldContext.activeState) {
+      state.activeState = worldContext.activeState;
+    }
+    if (state.gameStates !== worldContext.states) {
+      state.gameStates = worldContext.states;
+    }
+  }, []);
+
+  const updatePhysicsState = useCallback(() => {
     if (!bridgeRef.current) return false;
     
+    const now = performance.now();
+    const cache = cacheRef.current;
+    
     const { worldContext, input, urls, getSizesByUrls } = bridgeRef.current;
-    const prevData = prevDataRef.current;
     const modeType = worldContext?.mode?.type || 'character';
     const modeControl = worldContext?.mode?.control || 'thirdPerson';
 
-    if (
-      prevData &&
-      prevData.worldContext === worldContext &&
-      prevData.input === input &&
-      prevData.urls === urls &&
-      prevData.modeType === modeType &&
-      prevData.modeControl === modeControl
-    ) {
-      return false;
+    // 성능 기반 프레임 스킵 (적응형)
+    if (performanceRef.current.avgFrameTime > 20) { // 50fps 미만
+      cache.skipFrameCount++;
+      if (cache.skipFrameCount % 2 === 0) {
+        return false; // 격 프레임 스킵
+      }
     }
 
-    if (prevData && (prevData.modeType !== modeType || prevData.modeControl !== modeControl)) {
+    // 모드가 변경되지 않았고 기존 상태가 있으면 최적화된 업데이트만 수행
+    if (
+      cache.modeType === modeType && 
+      cache.modeControl === modeControl && 
+      cache.calculationFn &&
+      physicsStateRef.current &&
+      cache.lastWorldContext === worldContext &&
+      cache.lastInput === input &&
+      cache.lastUrls === urls
+    ) {
+      // 빠른 업데이트 (상태만 변경)
+      updatePhysicsStateOnly(physicsStateRef.current, worldContext, input);
+      return false; // 새로 생성할 필요 없음
+    }
+
+    // 모드 변경 또는 초기 설정시에만 함수 재생성
+    if (cache.modeType !== modeType) {
+      cache.modeType = modeType;
+      cache.calculationFn = getCalculationFunction(modeType);
+      calculationFnRef.current = cache.calculationFn;
       worldContextSync.updateMode(worldContext?.mode);
     }
 
-    prevDataRef.current = { worldContext, input, urls, modeType, modeControl };
+    cache.modeControl = modeControl;
+    cache.lastUpdateTime = now;
+    cache.lastWorldContext = worldContext;
+    cache.lastInput = input;
+    cache.lastUrls = urls;
 
     if (!worldContext || !input) {
       physicsStateRef.current = null;
@@ -90,64 +160,69 @@ export default function calculation(props: PhysicsCalculationProps) {
     const layersReady = layerStatus.atomsConnected && layerStatus.contextConnected;
     isReadyRef.current = refsReady && layersReady;
 
-    if (!matchSizesRef.current || prevData?.urls !== urls) {
+    // 크기 정보 캐싱 (URL이 변경되었을 때만 재계산)
+    if (!matchSizesRef.current || cache.lastUrls !== urls) {
       matchSizesRef.current = getSizesByUrls(urls) as SizesType;
     }
 
+    // 물리 상태 생성 또는 업데이트
     if (!physicsStateRef.current) {
-      physicsStateRef.current = {
-        activeState: worldContext.activeState!,
-        gameStates: worldContext.states!,
-        keyboard: { ...input.keyboard },
-        mouse: {
-          target: input.mouse.target.clone(),
-          angle: input.mouse.angle,
-          isActive: input.mouse.isActive,
-          shouldRun: input.mouse.shouldRun,
-        },
-        characterConfig: worldContext.character || {},
-        vehicleConfig: worldContext.vehicle || {},
-        airplaneConfig: worldContext.airplane || {},
-        clickerOption: worldContext.clickerOption || {
-          isRun: true,
-          throttle: 100,
-          autoStart: false,
-          track: false,
-          loop: false,
-          queue: [],
-          line: false,
-        },
-        modeType: modeType as 'character' | 'vehicle' | 'airplane',
-      };
+      physicsStateRef.current = createInitialPhysicsState(worldContext, input, modeType);
     } else {
+      updatePhysicsStateOnly(physicsStateRef.current, worldContext, input);
+      
+      // 설정 업데이트 (필요한 경우만)
       const state = physicsStateRef.current;
-      state.activeState = worldContext.activeState!;
-      state.gameStates = worldContext.states!;
-      const kb = state.keyboard;
-      const inputKb = input.keyboard;
-      kb.forward = inputKb.forward;
-      kb.backward = inputKb.backward;
-      kb.leftward = inputKb.leftward;
-      kb.rightward = inputKb.rightward;
-      kb.shift = inputKb.shift;
-      kb.space = inputKb.space;
-      kb.keyR = inputKb.keyR;
-      state.mouse.target.copy(input.mouse.target);
-      state.mouse.angle = input.mouse.angle;
-      state.mouse.isActive = input.mouse.isActive;
-      state.mouse.shouldRun = input.mouse.shouldRun;
-      state.characterConfig = worldContext.character || {};
-      state.vehicleConfig = worldContext.vehicle || {};
-      state.airplaneConfig = worldContext.airplane || {};
-      state.clickerOption = worldContext.clickerOption || state.clickerOption;
-      state.modeType = modeType as 'character' | 'vehicle' | 'airplane';
+      if (state.characterConfig !== worldContext.character) {
+        state.characterConfig = worldContext.character || {};
+      }
+      if (state.vehicleConfig !== worldContext.vehicle) {
+        state.vehicleConfig = worldContext.vehicle || {};
+      }
+      if (state.airplaneConfig !== worldContext.airplane) {
+        state.airplaneConfig = worldContext.airplane || {};
+      }
+      if (state.clickerOption !== worldContext.clickerOption) {
+        state.clickerOption = worldContext.clickerOption || state.clickerOption;
+      }
+      if (state.modeType !== modeType) {
+        state.modeType = modeType as 'character' | 'vehicle' | 'airplane';
+      }
     }
 
-    calculationFnRef.current = getCalculationFunction(modeType);
+    calculationFnRef.current = cache.calculationFn || getCalculationFunction(modeType);
     return true;
-  };
+  }, [updatePhysicsStateOnly]);
 
-  const executeCharacterPhysics = (calcProp: PhysicsCalcProps) => {
+  // 초기 물리 상태 생성 함수 (분리하여 가독성 향상)
+  const createInitialPhysicsState = useCallback((worldContext: any, input: any, modeType: string): PhysicsState => {
+    return {
+      activeState: worldContext.activeState!,
+      gameStates: worldContext.states!,
+      keyboard: { ...input.keyboard },
+      mouse: {
+        target: input.mouse.target.clone(),
+        angle: input.mouse.angle,
+        isActive: input.mouse.isActive,
+        shouldRun: input.mouse.shouldRun,
+      },
+      characterConfig: worldContext.character || {},
+      vehicleConfig: worldContext.vehicle || {},
+      airplaneConfig: worldContext.airplane || {},
+      clickerOption: worldContext.clickerOption || {
+        isRun: true,
+        throttle: 100,
+        autoStart: false,
+        track: false,
+        loop: false,
+        queue: [],
+        line: false,
+      },
+      modeType: modeType as 'character' | 'vehicle' | 'airplane',
+    };
+  }, []);
+
+  const executeCharacterPhysics = useCallback((calcProp: PhysicsCalcProps) => {
     const physicsState = physicsStateRef.current;
     if (!physicsState?.activeState || !physicsState?.gameStates || !physicsState?.characterConfig)
       return;
@@ -155,9 +230,9 @@ export default function calculation(props: PhysicsCalculationProps) {
     impulse(props.rigidBodyRef, physicsState);
     gravity(props.rigidBodyRef, physicsState);
     innerCalc(props.rigidBodyRef, props.innerGroupRef, physicsState);
-  };
+  }, []);
 
-  const getCalculationFunction = (modeType: string) => {
+  const getCalculationFunction = useCallback((modeType: string) => {
     switch (modeType) {
       case 'vehicle':
         return (calcProp: PhysicsCalcProps) =>
@@ -168,11 +243,13 @@ export default function calculation(props: PhysicsCalculationProps) {
       default:
         return executeCharacterPhysics;
     }
-  };
+  }, [executeCharacterPhysics]);
 
   useUnifiedFrame(
     `physics-${props.rigidBodyRef?.current?.handle || 'unknown'}`,
     (state, delta) => {
+      const startTime = performance.now();
+      
       if (bridgeRef.current?.blockControl) {
         if (props.rigidBodyRef?.current) {
           props.rigidBodyRef.current.resetForces(false);
@@ -180,6 +257,7 @@ export default function calculation(props: PhysicsCalculationProps) {
         }
         return;
       }
+
       const stateChanged = updatePhysicsState();
       if (!isReadyRef.current || !physicsStateRef.current || !calculationFnRef.current) return;
 
@@ -187,6 +265,7 @@ export default function calculation(props: PhysicsCalculationProps) {
       const { worldContext, dispatch, input, setKeyboardInput, setMouseInput } = bridgeRef.current;
       if (!worldContext || !dispatch) return;
 
+      // calcProp 재사용 최적화
       if (!calcPropRef.current || stateChanged) {
         calcPropRef.current = {
           ...props,
@@ -200,6 +279,7 @@ export default function calculation(props: PhysicsCalculationProps) {
           setMouseInput,
         };
       } else {
+        // 변경된 값만 업데이트
         calcPropRef.current.state = state;
         calcPropRef.current.delta = delta;
       }
@@ -211,6 +291,27 @@ export default function calculation(props: PhysicsCalculationProps) {
           `physics-${props.rigidBodyRef?.current?.handle || 'unknown'}`,
         );
         calculationFnRef.current(calcPropRef.current);
+      }
+
+      // 성능 측정 및 통계 업데이트
+      const frameTime = performance.now() - startTime;
+      const perf = performanceRef.current;
+      perf.frameCount++;
+      perf.totalTime += frameTime;
+      perf.avgFrameTime = perf.totalTime / perf.frameCount;
+      
+      // 100프레임마다 성능 통계 리셋
+      if (perf.frameCount >= 100) {
+        perf.frameCount = 0;
+        perf.totalTime = 0;
+      }
+      
+      // 5초마다 성능 정보 로그 (개발 환경에서만)
+      if (startTime - perf.lastPerfCheck > 5000) {
+        if (typeof window !== 'undefined' && window.location?.hostname === 'localhost') {
+          console.log(`Physics Performance: ${perf.avgFrameTime.toFixed(2)}ms avg, ${(1000 / perf.avgFrameTime).toFixed(1)} FPS`);
+        }
+        perf.lastPerfCheck = startTime;
       }
     },
     0,

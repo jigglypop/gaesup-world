@@ -1,77 +1,34 @@
-import { useAtomValue } from 'jotai';
 import { RefObject, useRef } from 'react';
-import { RigidBody } from '@react-three/rapier';
-import { GaesupWorldContextType } from '../../world/context/type';
-import { activeStateAtom } from '../../atoms';
-
-export interface PhysicsInputRef {
-  current: {
-    keyboard: {
-      forward: boolean;
-      backward: boolean;
-      leftward: boolean;
-      rightward: boolean;
-      shift: boolean;
-      space: boolean;
-      keyZ: boolean;
-      keyR: boolean;
-      keyF: boolean;
-      keyE: boolean;
-      escape: boolean;
-    };
-    mouse: {
-      target: THREE.Vector3;
-      angle: number;
-      isActive: boolean;
-      shouldRun: boolean;
-    };
-  } | null;
-}
-
-export interface PhysicsBridgeInputData {
-  inputSystem: {
-    keyboard: any;
-    mouse: any;
-  };
-  urls: any;
-  block: any;
-  worldContext: GaesupWorldContextType | null;
-  controllerContext: GaesupWorldContextType | null;
-  dispatch: any;
-  setKeyboardInput: (update: any) => void;
-  setMouseInput: (update: any) => void;
-  getSizesByUrls: () => any;
-}
-
-export interface PhysicsBridgeData {
-  worldContext: GaesupWorldContextType | null;
-  activeState: any;
-  input: {
-    keyboard: any;
-    mouse: any;
-  } | null;
-  urls: any;
-  blockControl: boolean;
-  dispatch: any;
-  setKeyboardInput: (update: any) => void;
-  setMouseInput: (update: any) => void;
-  getSizesByUrls: () => any;
-}
-
-export interface PhysicsBridgeOutput {
-  bridgeRef: RefObject<PhysicsBridgeData>;
-  isReady: boolean;
-  error: string | null;
-}
+import * as THREE from 'three';
+import type {
+  KeyboardInputState,
+  MouseInputState,
+  ResourceUrlsType,
+  BlockState,
+  ActiveStateType,
+  DispatchType,
+  SizesType,
+  PhysicsInputRef,
+  PhysicsBridgeInputData,
+  PhysicsBridgeData,
+  PhysicsBridgeOutput
+} from '../../../types';
 
 export function usePhysicsInput(injectedData: PhysicsBridgeInputData): PhysicsBridgeOutput {
   const bridgeRef = useRef<PhysicsBridgeData>({
     worldContext: null,
-    activeState: null,
+    activeState: {
+      position: new THREE.Vector3(),
+      velocity: new THREE.Vector3(),
+      quat: new THREE.Quaternion(),
+      euler: new THREE.Euler(),
+      direction: new THREE.Vector3(),
+      dir: new THREE.Vector3(),
+    },
     input: null,
-    urls: null,
+    urls: {},
     blockControl: false,
-    dispatch: null,
+    dispatch: () => {},
     setKeyboardInput: () => {},
     setMouseInput: () => {},
     getSizesByUrls: () => ({}),
@@ -80,7 +37,7 @@ export function usePhysicsInput(injectedData: PhysicsBridgeInputData): PhysicsBr
   if (injectedData.worldContext && injectedData.inputSystem) {
     bridgeRef.current = {
       worldContext: injectedData.worldContext,
-      activeState: injectedData.worldContext.activeState,
+      activeState: (injectedData.worldContext as any).activeState || bridgeRef.current.activeState,
       input: {
         keyboard: injectedData.inputSystem.keyboard,
         mouse: injectedData.inputSystem.mouse,

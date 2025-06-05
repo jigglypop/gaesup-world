@@ -1,33 +1,67 @@
-import { ActiveStateType, GameStatesType } from '../../types';
-import { PhysicsEventData, PhysicsEventType } from './type';
+import type { ActiveStateType, GameStatesType, PhysicsEventData, PhysicsEventType, PhysicsEventCallback } from '../../../types';
 
-class PhysicsEventBus {
-  private listeners: Map<PhysicsEventType, Set<(data: any) => void>> = new Map();
+class OptimizedPhysicsEventBus {
+  private listeners: Map<PhysicsEventType, Set<PhysicsEventCallback<any>>> = new Map();
   private eventCount = 0;
-  private lastEventData: Map<PhysicsEventType, any> = new Map();
+  private lastEventData: Map<PhysicsEventType, unknown> = new Map();
+  private lastEventTime: Map<PhysicsEventType, number> = new Map();
+  
+  // 이벤트 큐와 스로틀링
+  private eventQueue: Map<PhysicsEventType, PhysicsEventData[PhysicsEventType][]> = new Map();
+  private isProcessing = false;
+  private lastProcessTime = 0;
+  private eventThrottleMap = new Map<PhysicsEventType, number>([
+    ['POSITION_UPDATE', 16], // 60fps
+    ['ROTATION_UPDATE', 33], // 30fps
+    ['MOVE_STATE_CHANGE', 50], // 20fps
+    ['JUMP_STATE_CHANGE', 100], // 10fps
+    ['GROUND_STATE_CHANGE', 100], // 10fps
+    ['RIDE_STATE_CHANGE', 200], // 5fps
+    ['MODE_CHANGE', 0], // 즉시
+    ['CAMERA_UPDATE', 33], // 30fps
+  ]);
 
   subscribe<T extends PhysicsEventType>(
     eventType: T,
-    callback: (data: PhysicsEventData[T]) => void,
+    callback: PhysicsEventCallback<T>,
   ): () => void {
     if (!this.listeners.has(eventType)) {
       this.listeners.set(eventType, new Set());
     }
 
-    this.listeners.get(eventType)!.add(callback as (data: any) => void);
+    this.listeners.get(eventType)!.add(callback as PhysicsEventCallback<any>);
 
     return () => {
-      this.listeners.get(eventType)?.delete(callback as (data: any) => void);
+      this.listeners.get(eventType)?.delete(callback as PhysicsEventCallback<any>);
     };
   }
 
   emit<T extends PhysicsEventType>(eventType: T, data: PhysicsEventData[T]): void {
-    const lastData = this.lastEventData.get(eventType);
+    const now = performance.now();
+    const throttleTime = this.eventThrottleMap.get(eventType) || 0;
+    
+    // 스로틀링 적용
+    if (throttleTime > 0) {
+      const lastEmit = this.lastEventTime.get(eventType) || 0;
+      if (now - lastEmit < throttleTime) {
+        // 큐에 저장 (마지막 값만 유지)
+        if (!this.eventQueue.has(eventType)) {
+          this.eventQueue.set(eventType, []);
+        }
+        const queue = this.eventQueue.get(eventType)!;
+        queue.length = 0; // 기존 값 제거
+        queue.push(data);
+        this.scheduleFlush();
+        return;
+      }
+    }
 
-    if (this.isDuplicateEvent(eventType, data, lastData)) {
+    // 더 정교한 중복 체크
+    if (this.isDeepDuplicate(eventType, data)) {
       return;
     }
 
+    this.lastEventTime.set(eventType, now);
     this.lastEventData.set(eventType, data);
     this.eventCount++;
 
@@ -43,30 +77,107 @@ class PhysicsEventBus {
     }
   }
 
-  private isDuplicateEvent(eventType: PhysicsEventType, newData: any, lastData: any): boolean {
+  private isDeepDuplicate(eventType: PhysicsEventType, newData: any): boolean {
+    const lastData = this.lastEventData.get(eventType) as any;
     if (!lastData) return false;
 
     switch (eventType) {
       case 'POSITION_UPDATE':
-        return (
-          newData.position?.equals?.(lastData.position) &&
-          newData.velocity?.equals?.(lastData.velocity)
-        );
+        // 위치 변화가 0.01 미만이면 무시
+        const posDiff = newData.position?.distanceTo?.(lastData.position) || 0;
+        const velDiff = newData.velocity?.distanceTo?.(lastData.velocity) || 0;
+        return posDiff < 0.01 && velDiff < 0.01;
+        
       case 'ROTATION_UPDATE':
-        return (
-          newData.euler?.equals?.(lastData.euler) && newData.direction?.equals?.(lastData.direction)
-        );
+        // 회전 변화가 0.001 라디안 미만이면 무시
+        const eulerDiff = Math.abs((newData.euler?.y || 0) - (lastData.euler?.y || 0));
+        const dirDiff = newData.direction?.distanceTo?.(lastData.direction) || 0;
+        return eulerDiff < 0.001 && dirDiff < 0.01;
+        
       case 'MOVE_STATE_CHANGE':
-        return newData.isMoving === lastData.isMoving && newData.isRunning === lastData.isRunning;
-      case 'MODE_CHANGE':
-        return newData.type === lastData.type && newData.control === lastData.control;
-      case 'CAMERA_UPDATE':
         return (
-          newData.position?.equals?.(lastData.position) && newData.target?.equals?.(lastData.target)
+          newData.isMoving === lastData.isMoving && 
+          newData.isRunning === lastData.isRunning &&
+          newData.isNotMoving === lastData.isNotMoving &&
+          newData.isNotRunning === lastData.isNotRunning
         );
+        
+      case 'JUMP_STATE_CHANGE':
+        return (
+          newData.isJumping === lastData.isJumping &&
+          newData.isOnTheGround === lastData.isOnTheGround
+        );
+        
+      case 'GROUND_STATE_CHANGE':
+        return (
+          newData.isOnTheGround === lastData.isOnTheGround &&
+          newData.isFalling === lastData.isFalling
+        );
+        
+      case 'RIDE_STATE_CHANGE':
+        return (
+          newData.isRiding === lastData.isRiding &&
+          newData.canRide === lastData.canRide &&
+          newData.shouldEnterRideable === lastData.shouldEnterRideable &&
+          newData.shouldExitRideable === lastData.shouldExitRideable
+        );
+        
+      case 'MODE_CHANGE':
+        return (
+          newData.type === lastData.type && 
+          newData.control === lastData.control &&
+          newData.controller === lastData.controller
+        );
+        
+      case 'CAMERA_UPDATE':
+        const camPosDiff = newData.position?.distanceTo?.(lastData.position) || 0;
+        const camTargetDiff = newData.target?.distanceTo?.(lastData.target) || 0;
+        return camPosDiff < 0.01 && camTargetDiff < 0.01;
+        
       default:
         return JSON.stringify(newData) === JSON.stringify(lastData);
     }
+  }
+
+  private scheduleFlush(): void {
+    if (!this.isProcessing && this.eventQueue.size > 0) {
+      this.isProcessing = true;
+      requestAnimationFrame(() => this.flushQueue());
+    }
+  }
+
+  private flushQueue(): void {
+    const now = performance.now();
+    
+    // 큐에 있는 이벤트들을 처리
+    this.eventQueue.forEach((events, type) => {
+      if (events.length > 0) {
+        // 마지막 이벤트만 발행 (중간 상태는 무시)
+        const lastEvent = events[events.length - 1];
+        
+        // 중복 체크 후 발행
+        if (!this.isDeepDuplicate(type, lastEvent)) {
+          this.lastEventTime.set(type, now);
+          this.lastEventData.set(type, lastEvent);
+          this.eventCount++;
+
+          const listeners = this.listeners.get(type);
+          if (listeners) {
+            listeners.forEach((callback) => {
+              try {
+                callback(lastEvent);
+              } catch (error) {
+                console.error(`Physics event error [${type}]:`, error);
+              }
+            });
+          }
+        }
+      }
+    });
+
+    this.eventQueue.clear();
+    this.isProcessing = false;
+    this.lastProcessTime = now;
   }
 
   getStats() {
@@ -76,6 +187,9 @@ class PhysicsEventBus {
         type,
         count: set.size,
       })),
+      queueSize: this.eventQueue.size,
+      isProcessing: this.isProcessing,
+      avgProcessTime: this.lastProcessTime,
     };
   }
 
@@ -83,22 +197,26 @@ class PhysicsEventBus {
     this.listeners.clear();
     this.eventCount = 0;
     this.lastEventData.clear();
+    this.lastEventTime.clear();
+    this.eventQueue.clear();
+    this.isProcessing = false;
   }
 }
 
-export const physicsEventBus = new PhysicsEventBus();
+// 기존 PhysicsEventBus를 OptimizedPhysicsEventBus로 교체
+export const physicsEventBus = new OptimizedPhysicsEventBus();
 
 // worldContext 직접 업데이트 헬퍼 (리렌더링 방지)
 export class WorldContextSync {
   private activeState: ActiveStateType | null = null;
   private gameStates: GameStatesType | null = null;
-  private mode: any = null;
-  private cameraState: any = null;
+  private mode: unknown = null;
+  private cameraState: unknown = null;
 
   setWorldContext(worldContext: {
     activeState: ActiveStateType;
     states: GameStatesType;
-    mode?: any;
+    mode?: unknown;
   }) {
     this.activeState = worldContext?.activeState;
     this.gameStates = worldContext?.states;
@@ -130,20 +248,21 @@ export class WorldContextSync {
     Object.assign(this.gameStates, update);
   }
 
-  updateMode(mode: any) {
-    const oldMode = this.mode;
+  updateMode(mode: unknown) {
+    const oldMode = this.mode as any;
     this.mode = mode;
 
-    if (oldMode?.control !== mode?.control || oldMode?.type !== mode?.type) {
+    const modeData = mode as any;
+    if (oldMode?.control !== modeData?.control || oldMode?.type !== modeData?.type) {
       physicsEventBus.emit('MODE_CHANGE', {
-        type: mode.type,
-        control: mode.control,
-        controller: mode.controller,
+        type: modeData.type,
+        control: modeData.control,
+        controller: modeData.controller,
       });
     }
   }
 
-  updateCamera(cameraData: any) {
+  updateCamera(cameraData: unknown) {
     this.cameraState = cameraData;
     physicsEventBus.emit('CAMERA_UPDATE', cameraData);
   }
@@ -169,12 +288,17 @@ export const worldContextSync = new WorldContextSync();
 
 // 🔧 jotai atoms와 동기화하는 클래스 추가
 export class JotaiPhysicsSync {
-  private setActiveState: any = null;
-  private setGameStates: any = null;
-  private setMode: any = null;
-  private setCamera: any = null;
+  private setActiveState: ((update: Partial<ActiveStateType>) => void) | null = null;
+  private setGameStates: ((update: Partial<GameStatesType>) => void) | null = null;
+  private setMode: ((mode: unknown) => void) | null = null;
+  private setCamera: ((cameraData: unknown) => void) | null = null;
 
-  initialize(setActiveStateFn: any, setGameStatesFn: any, setModeFn?: any, setCameraFn?: any) {
+  initialize(
+    setActiveStateFn: (update: Partial<ActiveStateType>) => void,
+    setGameStatesFn: (update: Partial<GameStatesType>) => void,
+    setModeFn?: (mode: unknown) => void,
+    setCameraFn?: (cameraData: unknown) => void
+  ) {
     this.setActiveState = setActiveStateFn;
     this.setGameStates = setGameStatesFn;
     this.setMode = setModeFn;
@@ -193,13 +317,13 @@ export class JotaiPhysicsSync {
     }
   }
 
-  syncMode(mode: any) {
+  syncMode(mode: unknown) {
     if (this.setMode) {
       this.setMode(mode);
     }
   }
 
-  syncCamera(cameraData: any) {
+  syncCamera(cameraData: unknown) {
     if (this.setCamera) {
       this.setCamera(cameraData);
     }

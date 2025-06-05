@@ -9,7 +9,7 @@ export { GaesupController } from './gaesup/controller';
 export { GaeSupProps } from './gaesup/gaesupProps';
 export { useGaesupController } from './gaesup/hooks/useGaesupController';
 export { useMainFrameLoop } from './gaesup/hooks/useUnifiedFrame';
-export type { ControllerMode, ControllerType, ControlMode } from './gaesup/types';
+export type { ControllerMode, ControllerType, ControlMode } from './types';
 export { GaesupWorld } from './gaesup/world';
 
 export * from './gaesup/atoms';
@@ -50,7 +50,7 @@ export type {
   AnimationStatePropType,
   AnimationStateType,
   AnimationTagType,
-  BlockType,
+  BlockState,
   CameraOptionDebugType,
   CameraOptionType,
   CameraRayType,
@@ -68,16 +68,16 @@ export type {
   JumpInnerType,
   JumpPropType,
   KeyboardControlState,
+  KeyboardInputState,
+  MouseInputState,
+  UnifiedInputState,
   ModeType,
   OptionsType,
   PartialOptionsType,
   PartsType,
-  // 파츠 타입들
   PartType,
-  // 패시브 상태 타입
   PassiveStateType,
   PortalsType,
-  // 포털 타입들
   PortalType,
   QuaternionLike,
   QueueActionType,
@@ -93,4 +93,4 @@ export type {
   Vector3Like,
   WheelsStateType,
   WheelStateType,
-} from './gaesup/types';
+} from './types';

@@ -13,7 +13,7 @@ interface ValidationResult {
 
 export function useInputValidation(): {
   validate: () => ValidationResult;
-  getInputDebug: () => any;
+  getInputDebug: () => unknown;
 } {
   const inputSystem = useAtomValue(unifiedInputAtom);
   const movementState = useAtomValue(movementStateAtom);

@@ -54,7 +54,6 @@ export const urlsStateAtom = atom<UrlsState>({
   ridingUrl: null,
 });
 
-// 게임 상태 (이동, 점프, 라이딩 등)
 export interface GameStates {
   rideableId: string | null;
   isMoving: boolean;

@@ -7,7 +7,7 @@ import { PhysicsState } from '../type';
 export default function direction(
   physicsState: PhysicsState,
   innerGroupRef: RefObject<THREE.Group>,
-  matchSizes: any,
+  matchSizes: unknown,
 ) {
   const { activeState, keyboard, airplaneConfig } = physicsState;
   const { forward, backward, leftward, rightward, shift, space } = keyboard;

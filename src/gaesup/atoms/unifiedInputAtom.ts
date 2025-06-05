@@ -1,71 +1,13 @@
 import { atom } from 'jotai';
-import * as THREE from 'three';
 import { V3 } from '../utils/vector';
+import type {
+  KeyboardInputState,
+  MouseInputState,
+  ClickerOptionState,
+  BlockState,
+  UnifiedInputState
+} from '../../types';
 
-export interface KeyboardInputState {
-  forward: boolean;
-  backward: boolean;
-  leftward: boolean;
-  rightward: boolean;
-  shift: boolean;
-  space: boolean;
-  keyZ: boolean;
-  keyR: boolean;
-  keyF: boolean;
-  keyE: boolean;
-  escape: boolean;
-}
-
-export interface MouseInputState {
-  target: THREE.Vector3;
-  angle: number;
-  isActive: boolean;
-  shouldRun: boolean;
-}
-
-export interface ClickerOptionState {
-  isRun: boolean;
-  throttle: number;
-  autoStart: boolean;
-  track: boolean;
-  loop: boolean;
-  queue: THREE.Vector3[];
-  line: boolean;
-}
-
-export interface GamepadInputState {
-  connected: boolean;
-  leftStick: { x: number; y: number };
-  rightStick: { x: number; y: number };
-  buttons: Record<string, boolean>;
-}
-
-export interface BlockState {
-  camera: boolean;
-  control: boolean;
-  animation: boolean;
-  scroll: boolean;
-}
-
-// 통합 입력 상태 인터페이스
-export interface UnifiedInputState {
-  // 키보드 입력
-  keyboard: KeyboardInputState;
-
-  // 마우스/터치 입력
-  pointer: MouseInputState;
-
-  // 게임패드 입력 (미래 확장성)
-  gamepad: GamepadInputState;
-
-  // 컨트롤 블록 상태
-  blocks: BlockState;
-
-  // 클리커 옵션
-  clickerOption: ClickerOptionState;
-}
-
-// 메인 통합 입력 atom
 export const unifiedInputAtom = atom<UnifiedInputState>({
   keyboard: {
     forward: false,
@@ -113,10 +55,9 @@ export const unifiedInputAtom = atom<UnifiedInputState>({
   },
 });
 
-// 파생 상태 atoms (성능 최적화)
+
 export const movementStateAtom = atom((get) => {
   const input = get(unifiedInputAtom);
-
   const isKeyboardMoving =
     input.keyboard.forward ||
     input.keyboard.backward ||
@@ -137,7 +78,6 @@ export const movementStateAtom = atom((get) => {
   };
 });
 
-// 개별 섹션 접근자 (하위 호환성)
 export const keyboardInputAtom = atom(
   (get) => get(unifiedInputAtom).keyboard,
   (get, set, update: Partial<KeyboardInputState>) => {
