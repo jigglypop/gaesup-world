@@ -1,13 +1,8 @@
 import { euler, quat, vec3 } from '@react-three/rapier';
 import { atom } from 'jotai';
 import * as THREE from 'three';
+import { AnimationAtomType } from '../types';
 import { V3 } from '../utils/vector';
-
-// ============================================================================
-// 🎯 핵심 상태 Atoms (Context 대체)
-// ============================================================================
-
-// 액티브 상태 (위치, 회전, 속도 등)
 export interface ActiveState {
   position: THREE.Vector3;
   velocity: THREE.Vector3;
@@ -72,7 +67,11 @@ export interface GameStates {
   isFalling: boolean;
   isRiding: boolean;
   canRide: boolean;
-  nearbyRideable: any;
+  nearbyRideable: {
+    objectkey: string;
+    objectType: 'vehicle' | 'airplane';
+    name: string;
+  } | null;
   shouldEnterRideable: boolean;
   shouldExitRideable: boolean;
 }
@@ -102,17 +101,17 @@ export interface AnimationState {
   character: {
     current: string;
     default: string;
-    store: Record<string, any>;
+    store: Record<string, AnimationAtomType>;
   };
   vehicle: {
     current: string;
     default: string;
-    store: Record<string, any>;
+    store: Record<string, AnimationAtomType>;
   };
   airplane: {
     current: string;
     default: string;
-    store: Record<string, any>;
+    store: Record<string, AnimationAtomType>;
   };
 }
 
@@ -135,10 +134,21 @@ export const animationStateAtom = atom<AnimationState>({
 });
 
 // 라이더블 상태
-export const rideableStateAtom = atom<Record<string, any>>({});
+export const rideableStateAtom = atom<
+  Record<
+    string,
+    {
+      position: THREE.Vector3;
+      rotation: THREE.Euler;
+      velocity: THREE.Vector3;
+      isOccupied: boolean;
+      objectType: 'vehicle' | 'airplane';
+    }
+  >
+>({});
 
 // 사이즈 상태
-export const sizesStateAtom = atom<Record<string, any>>({});
+export const sizesStateAtom = atom<Record<string, THREE.Vector3>>({});
 
 // ============================================================================
 // 🎮 컨트롤러 설정 Atoms
@@ -275,7 +285,7 @@ export type EventType =
 
 export interface EventPayload {
   type: EventType;
-  data: any;
+  data: Record<string, unknown>;
   timestamp: number;
 }
 

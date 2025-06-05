@@ -179,10 +179,15 @@ export function MiniMap({
 
     // Draw minimap objects with enhanced styling
     if (minimap?.props && typeof minimap.props === 'object') {
-      Object.values(minimap.props).forEach((obj: any, index) => {
-        if (!obj || typeof obj !== 'object' || !obj.center || !obj.size) return;
+      Object.values(minimap.props).forEach((obj: unknown, index) => {
+        if (!obj || typeof obj !== 'object' || !('center' in obj) || !('size' in obj)) return;
 
-        const { center, size, text } = obj;
+        const objectWithProps = obj as {
+          center: { x: number; z: number };
+          size: { x: number; z: number };
+          text?: string;
+        };
+        const { center, size, text } = objectWithProps;
 
         // Calculate position
         const posX = (center.x - position.x) * (angle ? Math.sin(angle) : 1) * scale;

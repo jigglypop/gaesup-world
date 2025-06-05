@@ -5,4 +5,4 @@ export const modeAtom = atom<ModeType>({
   type: 'character',
   controller: 'clicker',
   control: 'thirdPersonOrbit',
-}); 
+});

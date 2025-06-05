@@ -3,7 +3,7 @@ import { useGraph } from "@react-three/fiber";
 import { ReactNode, useMemo } from "react";
 import * as THREE from "three";
 import { SkeletonUtils } from "three-stdlib";
-import playActions from "../../../animation/actions";
+import { usePlayActions } from "../../../atoms/animationAtoms";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
 
 export type riderRefType = {
@@ -28,7 +28,7 @@ export default function RiderRef({
   const characterObjectNode = Object.values(characterNodes).find(
     (node) => node.type === "Object3D"
   );
-  playActions({
+  usePlayActions({
     type: "character",
     currentAnimation: currentAnimation || "ride",
     actions,

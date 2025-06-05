@@ -63,13 +63,6 @@ export default function Info() {
     });
   };
 
-  const setController = (controller: 'keyboard' | 'clicker') => {
-    setMode({
-      ...mode,
-      controller,
-    });
-  };
-
   const setControl = (
     control:
       | 'thirdPersonOrbit'
@@ -101,7 +94,7 @@ export default function Info() {
     }));
   };
 
-  const updateCameraOption = (key: string, value: any) => {
+  const updateCameraOption = (key: string, value: number | boolean) => {
     setCameraOption((prev) => ({
       ...prev,
       [key]: value,
@@ -376,7 +369,7 @@ export default function Info() {
                 <button
                   key={presetName}
                   className={style.presetButton}
-                  onClick={() => setControl(presetName as any)}
+                  onClick={() => setControl(presetName as keyof typeof CAMERA_PRESETS)}
                 >
                   {presetName}
                 </button>

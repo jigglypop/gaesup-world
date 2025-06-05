@@ -1,19 +1,16 @@
-import { euler, CollisionEnterPayload, CollisionExitPayload } from '@react-three/rapier';
-import { useContext, useState, useEffect } from 'react';
-import { useRideable } from '../../hooks/useRideable';
-import { V3 } from '../../utils';
-import { GaesupWorldContext } from '../../world/context';
-import { rideablePropType } from './type';
-import * as THREE from 'three';
+import { CollisionEnterPayload, CollisionExitPayload } from '@react-three/rapier';
+import { useContext, useEffect } from 'react';
 import { PassiveAirplane } from '../../component/passive/airplane';
 import { PassiveVehicle } from '../../component/passive/vehicle';
+import { useRideable } from '../../hooks/useRideable';
+import { GameStatesType } from '../../types';
+import { GaesupWorldContext } from '../../world/context';
+import { rideablePropType } from './type';
 
-// E키 UI 컴포넌트
-function RideableUI({ states }: { states: any }) {
+export function RideableUI({ states }: { states: GameStatesType }) {
   if (!states.canRide || !states.nearbyRideable) {
     return null;
   }
-
   const uiStyle: React.CSSProperties = {
     position: 'fixed',
     top: '50%',
@@ -30,21 +27,7 @@ function RideableUI({ states }: { states: any }) {
     pointerEvents: 'none',
     animation: 'pulse 1.5s infinite',
   };
-
-  return (
-    <div style={uiStyle}>
-      <style>
-        {`
-          @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-          }
-        `}
-      </style>
-      🚗 E키를 눌러 {states.nearbyRideable.name}에 탑승하세요
-    </div>
-  );
+  return <div style={uiStyle}>🚗 E키를 눌러 {states.nearbyRideable.name}에 탑승하세요</div>;
 }
 
 export function Rideable(props: rideablePropType) {
@@ -62,20 +45,15 @@ export function Rideable(props: rideablePropType) {
   }, [states?.isRiding]);
 
   const onIntersectionEnter = async (e: CollisionEnterPayload) => {
-    // 충돌 감지 시 근처 상태로 설정 (즉시 탑승 X)
     await onRideableNear(e, props);
   };
 
   const onIntersectionExit = async (e: CollisionExitPayload) => {
-    // 충돌 벗어날 시 근처 상태 해제
     await onRideableLeave(e);
   };
 
   return (
     <>
-      {/* E키 UI 표시 */}
-      <RideableUI states={states} />
-      
       {rideable?.[props.objectkey]?.visible && (
         <group userData={{ intangible: true }}>
           {props.objectType === 'vehicle' && (

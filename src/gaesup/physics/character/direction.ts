@@ -1,59 +1,73 @@
 import * as THREE from 'three';
 import { ActiveStateType } from '../../types';
-import { calcAngleByVector, calcNorm, V3 } from '../../utils/vector';
-import { calcType, PhysicsState } from '../type';
+import { calcAngleByVector, calcNorm } from '../../utils/vector';
+import { physicsEventBus } from '../stores/physicsEventBus';
+import { PhysicsCalcProps, PhysicsState } from '../types';
 
-function handleClickerQueue(calcProp: calcType) {
-  if (!calcProp.rigidBodyRef.current || !calcProp.inputRef?.current) return;
-  const currentPos = calcProp.rigidBodyRef.current.translation();
-  const mouse = calcProp.inputRef.current.mouse;
-  const { clickerOption } = calcProp.worldContext || {};
-  if (!mouse.isActive || !clickerOption?.queue) return;
-  const currentPosVector3 = V3(currentPos.x, currentPos.y, currentPos.z);
-  const norm = calcNorm(currentPosVector3, mouse.target, false);
-  if (norm < 1) {
-    if (clickerOption.track && clickerOption.queue.length > 0) {
-      const Q = clickerOption.queue.shift();
-      if (Q instanceof THREE.Vector3) {
-        const newAngle = Math.atan2(Q.z - currentPos.z, Q.x - currentPos.x);
-        calcProp.setMouseInput?.({ target: Q, angle: newAngle });
-      } else if (Q?.action === 'stop') {
-        const { beforeCB, afterCB, time } = Q;
-        if (calcProp.state) {
-          calcProp.state.clock.stop();
-          beforeCB(calcProp.state);
-          setTimeout(() => {
-            if (calcProp.state) {
-              calcProp.state.clock.start();
-              afterCB(calcProp.state);
-            }
-          }, time);
-        }
-      }
-      if (clickerOption.loop && Q) clickerOption.queue.push(Q);
-    } else {
-      calcProp.setMouseInput?.({ isActive: false, shouldRun: false });
-    }
-  }
-}
+const _tempVector3 = new THREE.Vector3();
+const _tempDirection = new THREE.Vector3();
+const _tempFront = new THREE.Vector3();
+const _tempCurrentPos = new THREE.Vector3();
 
-export function direction(physicsState: PhysicsState, controlMode?: string, calcProp?: calcType) {
+export function direction(
+  physicsState: PhysicsState,
+  controlMode?: string,
+  calcProp?: PhysicsCalcProps,
+) {
   const { activeState, keyboard, mouse, characterConfig } = physicsState;
   if (mouse.isActive) {
-    mouseDirection(activeState, mouse, characterConfig);
+    mouseDirection(activeState, mouse, characterConfig, calcProp);
   } else {
     keyboardDirection(activeState, keyboard, characterConfig, controlMode);
   }
-  if (calcProp) {
-    handleClickerQueue(calcProp);
-  }
+
+  // 방향이 변경되었으면 ROTATION_UPDATE 이벤트 발행
+  physicsEventBus.emit('ROTATION_UPDATE', {
+    euler: activeState.euler,
+    direction: activeState.direction,
+    dir: activeState.dir,
+  });
 }
 
 function mouseDirection(
   activeState: ActiveStateType,
   mouse: PhysicsState['mouse'],
   characterConfig: PhysicsState['characterConfig'],
+  calcProp?: PhysicsCalcProps,
 ) {
+  if (calcProp?.rigidBodyRef.current) {
+    const currentPos = calcProp.rigidBodyRef.current.translation();
+    _tempCurrentPos.set(currentPos.x, currentPos.y, currentPos.z);
+    const norm = calcNorm(_tempCurrentPos, mouse.target, false);
+    if (norm < 1) {
+      const { clickerOption } = calcProp.worldContext || {};
+      if (clickerOption?.track && clickerOption.queue && clickerOption.queue.length > 0) {
+        const Q = clickerOption.queue.shift();
+        if (Q instanceof THREE.Vector3) {
+          const newAngle = Math.atan2(Q.z - currentPos.z, Q.x - currentPos.x);
+          calcProp.setMouseInput?.({ target: Q, angle: newAngle });
+        } else if (Q?.action === 'stop') {
+          const { beforeCB, afterCB, time } = Q;
+          if (calcProp.state) {
+            calcProp.state.clock.stop();
+            beforeCB(calcProp.state);
+            setTimeout(() => {
+              if (calcProp.state) {
+                calcProp.state.clock.start();
+                afterCB(calcProp.state);
+              }
+            }, time);
+          }
+        }
+        if (clickerOption.loop && Q && clickerOption.queue) {
+          clickerOption.queue.push(Q);
+        }
+      } else {
+        calcProp.setMouseInput?.({ isActive: false, shouldRun: false });
+        return;
+      }
+    }
+  }
   const { turnSpeed = 10 } = characterConfig;
   const targetAngle = Math.PI / 2 - mouse.angle;
   let angleDiff = targetAngle - activeState.euler.y;
@@ -62,12 +76,14 @@ function mouseDirection(
   const rotationSpeed = (turnSpeed * Math.PI) / 80;
   const rotationStep = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), rotationSpeed);
   activeState.euler.y += rotationStep;
-  const start = 1;
-  const front = V3(start, 0, start);
-  activeState.direction = front.multiply(
-    V3(-Math.sin(activeState.euler.y), 0, -Math.cos(activeState.euler.y)),
-  );
-  activeState.dir = activeState.direction.normalize();
+
+  const sinY = -Math.sin(activeState.euler.y);
+  const cosY = -Math.cos(activeState.euler.y);
+  _tempFront.set(1, 0, 1);
+  _tempDirection.set(sinY, 0, cosY);
+  _tempFront.multiply(_tempDirection);
+  activeState.direction.copy(_tempFront);
+  activeState.dir.copy(_tempFront).normalize();
 }
 
 function keyboardDirection(
@@ -85,15 +101,17 @@ function keyboardDirection(
   if (controlMode === 'thirdPersonOrbit' || controlMode === 'orbit') {
     const orbitRotationSpeed = (turnSpeed * Math.PI) / 320;
     activeState.euler.y += dirX * orbitRotationSpeed;
-    const start = dirZ;
-    const front = V3(start, 0, start);
-    activeState.direction = front.multiply(
-      V3(-Math.sin(activeState.euler.y), 0, -Math.cos(activeState.euler.y)),
-    );
-    activeState.dir = activeState.direction.normalize();
+
+    const sinY = -Math.sin(activeState.euler.y);
+    const cosY = -Math.cos(activeState.euler.y);
+    _tempFront.set(dirZ, 0, dirZ);
+    _tempDirection.set(sinY, 0, cosY);
+    _tempFront.multiply(_tempDirection);
+    activeState.direction.copy(_tempFront);
+    activeState.dir.copy(_tempFront).normalize();
   } else {
-    const dir = V3(dirX, 0, dirZ);
-    const targetAngle = calcAngleByVector(dir);
+    _tempVector3.set(dirX, 0, dirZ);
+    const targetAngle = calcAngleByVector(_tempVector3);
     let angleDiff = targetAngle - activeState.euler.y;
     while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
     while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
@@ -101,6 +119,6 @@ function keyboardDirection(
     const rotationStep = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), rotationSpeed);
     activeState.euler.y += rotationStep;
     activeState.dir.set(dirX, 0, dirZ);
-    activeState.direction = activeState.dir.clone();
+    activeState.direction.copy(activeState.dir);
   }
 }

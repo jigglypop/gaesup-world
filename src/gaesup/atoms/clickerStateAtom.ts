@@ -1,5 +1,5 @@
 import { atom } from 'jotai';
-import { ClickerType, ClickerOptionType } from '../types';
+import { ClickerOptionType, ClickerType } from '../types';
 import { V3 } from '../utils/vector';
 
 export interface ClickerStateType {
@@ -32,9 +32,9 @@ export const clickerAtom = atom(
     const current = get(clickerStateAtom);
     set(clickerStateAtom, {
       ...current,
-      clicker: { ...current.clicker, ...update }
+      clicker: { ...current.clicker, ...update },
     });
-  }
+  },
 );
 
 export const clickerOptionAtom = atom(
@@ -43,7 +43,7 @@ export const clickerOptionAtom = atom(
     const current = get(clickerStateAtom);
     set(clickerStateAtom, {
       ...current,
-      option: { ...current.option, ...update }
+      option: { ...current.option, ...update },
     });
-  }
-); 
+  },
+);

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { PhysicsState } from '../physics/type';
+import { ActiveStateType, GameStatesType } from '../types';
 
 export type EventType =
   | 'playerMoveStart'
@@ -37,9 +38,19 @@ export interface EventPayload {
   npcStateChange: { npcId: string; state: string; data: unknown };
   uiToggle: { uiType: string; isOpen: boolean };
   globalKeyEvent: { key: string; action: 'down' | 'up' | 'pressed' };
-  activeStateUpdate: { activeState: any };
-  physicsFrameStart: { state: any; delta: number; physicsState: PhysicsState; timestamp: number };
-  physicsFrameEnd: { state: any; delta: number; physicsState: PhysicsState; timestamp: number };
+  activeStateUpdate: { activeState: ActiveStateType };
+  physicsFrameStart: {
+    state: GameStatesType;
+    delta: number;
+    physicsState: PhysicsState;
+    timestamp: number;
+  };
+  physicsFrameEnd: {
+    state: GameStatesType;
+    delta: number;
+    physicsState: PhysicsState;
+    timestamp: number;
+  };
 }
 
 export type EventCallback<T extends EventType> = (payload: EventPayload[T]) => void;

@@ -1,49 +1,28 @@
-import { vec3 } from '@react-three/rapier';
-import { V3 } from '../../utils/vector';
-import { calcType } from '../type';
+import { physicsEventBus } from '../stores/physicsEventBus';
+import { PhysicsState } from '../type';
 
-export function normalRef(prop: calcType) {
-  const {
-    worldContext: { activeState },
-    inputRef,
-  } = prop;
-  if (!inputRef || !inputRef.current) {
-    return normal(prop);
-  }
-  const { forward, backward, leftward, rightward } = inputRef.current.keyboard;
+export default function direction(physicsState: PhysicsState) {
+  const { activeState, keyboard } = physicsState;
+  const { forward, backward, leftward, rightward } = keyboard;
   const xAxis = Number(leftward) - Number(rightward);
   const zAxis = Number(forward) - Number(backward);
-  const front = vec3().set(zAxis, 0, zAxis);
-  activeState.euler.y += xAxis * (Math.PI / 64);
-  return front;
-}
 
-export function normal(prop: calcType) {
-  const {
-    worldContext: { activeState, control },
-  } = prop;
-  const { forward, backward, leftward, rightward } = control;
-  const xAxis = Number(leftward) - Number(rightward);
-  const zAxis = Number(forward) - Number(backward);
-  const front = vec3().set(zAxis, 0, zAxis);
-  activeState.euler.y += xAxis * (Math.PI / 64);
-  return front;
-}
+  // 회전이 있을 때만 처리
+  if (xAxis !== 0) {
+    activeState.euler.y += xAxis * (Math.PI / 64);
 
-export default function direction(prop: calcType) {
-  const {
-    worldContext: { activeState },
-    inputRef,
-  } = prop;
-
-  const front = vec3();
-  if (inputRef && inputRef.current) {
-    front.copy(normalRef(prop));
-  } else {
-    front.copy(normal(prop));
+    // ROTATION_UPDATE 이벤트 발행하여 카메라에 알림
+    physicsEventBus.emit('ROTATION_UPDATE', {
+      euler: activeState.euler,
+      direction: activeState.direction,
+      dir: activeState.dir,
+    });
   }
-  activeState.direction = front.multiply(
-    V3(Math.sin(activeState.euler.y), 0, Math.cos(activeState.euler.y)),
+
+  activeState.direction.set(
+    Math.sin(activeState.euler.y) * zAxis,
+    0,
+    Math.cos(activeState.euler.y) * zAxis,
   );
-  activeState.dir = activeState.direction.normalize();
+  activeState.dir.copy(activeState.direction).normalize();
 }

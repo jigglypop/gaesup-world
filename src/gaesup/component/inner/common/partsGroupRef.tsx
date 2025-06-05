@@ -1,8 +1,8 @@
-import { useAnimations, useGLTF } from "@react-three/drei";
-import { useMemo } from "react";
-import * as THREE from "three";
-import playActions from "../../../animation/actions";
-import { componentTypeString } from "../../passive/type";
+import { useAnimations, useGLTF } from '@react-three/drei';
+import { useMemo } from 'react';
+import * as THREE from 'three';
+import { usePlayActions } from '../../../atoms/animationAtoms';
+import { componentTypeString } from '../../passive/type';
 
 export const PartsGroupRef = ({
   url,
@@ -35,7 +35,7 @@ export const PartsGroupRef = ({
     return meshes;
   }, [scene, skeleton]);
 
-  playActions({
+  usePlayActions({
     type: componentType,
     actions,
     animationRef: ref,
@@ -54,7 +54,7 @@ export const PartsGroupRef = ({
             skeleton={skeleton}
             key={key}
             material={
-              mesh.name === "color" && color
+              mesh.name === 'color' && color
                 ? new THREE.MeshStandardMaterial({ color })
                 : mesh.material
             }

@@ -1,11 +1,9 @@
-import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from "@react-three/rapier";
-import { useContext, useEffect } from "react";
-import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
-import { useGaesupGltf } from "../useGaesupGltf";
-import { rideableType } from "./type";
+import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
+import { useContext, useEffect } from 'react';
+import { physicsEventBus } from '../../physics/stores/physicsEventBus';
+import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
+import { useGaesupGltf } from '../useGaesupGltf';
+import { rideableType } from './type';
 
 export const rideableDefault = {
   objectkey: null,
@@ -25,13 +23,34 @@ export function useRideable() {
   const dispatch = useContext(GaesupWorldDispatchContext);
   const { getSizesByUrls } = useGaesupGltf();
 
+  // physicsEventBus의 RIDE_STATE_CHANGE 이벤트 구독
+  useEffect(() => {
+    const unsubscribe = physicsEventBus.subscribe('RIDE_STATE_CHANGE', (data) => {
+      dispatch({
+        type: 'update',
+        payload: {
+          states: {
+            ...states,
+            shouldEnterRideable: data.shouldEnterRideable,
+            shouldExitRideable: data.shouldExitRideable,
+            canRide: data.canRide,
+            isRiding: data.isRiding,
+          },
+        },
+      });
+    });
+
+    return unsubscribe;
+  }, [dispatch, states]); // states 다시 추가
+
   // 플래그 감지 및 자동 처리
   useEffect(() => {
     if (states.shouldEnterRideable) {
+      console.log('🚗 탑승 플래그 감지! enterRideable 호출');
       enterRideable();
       // 플래그 리셋
       dispatch({
-        type: "update",
+        type: 'update',
         payload: {
           states: { ...states, shouldEnterRideable: false },
         },
@@ -41,10 +60,11 @@ export function useRideable() {
 
   useEffect(() => {
     if (states.shouldExitRideable) {
+      console.log('🚪 하차 플래그 감지! exitRideable 호출');
       exitRideable();
       // 플래그 리셋
       dispatch({
-        type: "update",
+        type: 'update',
         payload: {
           states: { ...states, shouldExitRideable: false },
         },
@@ -74,20 +94,18 @@ export function useRideable() {
     states.rideableId = null;
     const modeType = rideable[objectkey].objectType;
     const { vehicleUrl, airplaneUrl, characterUrl } = getSizesByUrls(urls);
-    const size = modeType === "vehicle" ? vehicleUrl : airplaneUrl;
+    const size = modeType === 'vehicle' ? vehicleUrl : airplaneUrl;
     const mySize = characterUrl;
     rideable[objectkey].visible = true;
     rideable[objectkey].position.copy(activeState.position.clone());
     if (refs && refs.rigidBodyRef) {
       refs.rigidBodyRef.current.setTranslation(
-        activeState.position
-          .clone()
-          .add(size.clone().add(mySize.clone()).addScalar(1)),
-        false
+        activeState.position.clone().add(size.clone().add(mySize.clone()).addScalar(1)),
+        false,
       );
     }
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         rideable: { ...rideable },
         states: { ...states },
@@ -99,15 +117,15 @@ export function useRideable() {
 
   const setUrl = async (props: rideableType) => {
     urls.ridingUrl = props.ridingUrl || urls.characterUrl || null;
-    if (props.objectType === "vehicle") {
+    if (props.objectType === 'vehicle') {
       urls.vehicleUrl = props.url;
       urls.wheelUrl = props.wheelUrl || null;
-    } else if (props.objectType === "airplane") {
+    } else if (props.objectType === 'airplane') {
       urls.airplaneUrl = props.url;
     }
 
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         urls: {
           ...urls,
@@ -123,7 +141,7 @@ export function useRideable() {
     states.rideableId = props.objectkey;
     rideable[props.objectkey].visible = false;
     dispatch({
-      type: "update",
+      type: 'update',
       payload: {
         mode: { ...mode },
         states: { ...states },
@@ -132,16 +150,16 @@ export function useRideable() {
   };
 
   const onRideableNear = async (e: CollisionEnterPayload, props: rideableType) => {
-    if (e.other.rigidBodyObject.name === "character" && !states.isRiding) {
+    if (e.other.rigidBodyObject.name === 'character' && !states.isRiding) {
       states.nearbyRideable = {
         objectkey: props.objectkey,
         objectType: props.objectType,
-        name: props.objectType === 'vehicle' ? '차량' : '비행기'
+        name: props.objectType === 'vehicle' ? '차량' : '비행기',
       };
       states.canRide = true;
-      
+
       dispatch({
-        type: "update",
+        type: 'update',
         payload: {
           states: { ...states },
         },
@@ -150,12 +168,12 @@ export function useRideable() {
   };
 
   const onRideableLeave = async (e: CollisionExitPayload) => {
-    if (e.other.rigidBodyObject.name === "character") {
+    if (e.other.rigidBodyObject.name === 'character') {
       states.nearbyRideable = null;
       states.canRide = false;
-      
+
       dispatch({
-        type: "update",
+        type: 'update',
         payload: {
           states: { ...states },
         },
@@ -167,18 +185,20 @@ export function useRideable() {
     if (states.canRide && states.nearbyRideable && !states.isRiding) {
       const rideableData = rideable[states.nearbyRideable.objectkey];
       if (rideableData) {
+        console.log('🔧 탈것 데이터:', rideableData);
         await setUrl(rideableData);
         await setModeAndRiding(rideableData);
-        
+
         states.canRide = false;
         states.nearbyRideable = null;
-        
+
         dispatch({
-          type: "update",
+          type: 'update',
           payload: {
             states: { ...states },
           },
         });
+      } else {
       }
     }
   };

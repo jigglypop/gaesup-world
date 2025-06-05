@@ -1,5 +1,4 @@
 import { atom } from 'jotai';
-import * as THREE from 'three';
 import { CameraOptionType } from '../types';
 import { V3 } from '../utils/vector';
 

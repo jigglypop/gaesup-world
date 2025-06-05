@@ -2,7 +2,6 @@ import { atom } from 'jotai';
 import * as THREE from 'three';
 import { V3 } from '../utils/vector';
 
-// 개별 타입 정의 (export)
 export interface KeyboardInputState {
   forward: boolean;
   backward: boolean;

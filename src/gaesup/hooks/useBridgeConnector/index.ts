@@ -1,5 +1,5 @@
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useMemo, useRef } from 'react';
 import { blockAtom, urlsAtom } from '../../atoms';
 import {
   airplaneAnimationAtom,
@@ -7,7 +7,6 @@ import {
   vehicleAnimationAtom,
 } from '../../atoms/animationAtoms';
 import { inputSystemAtom, keyboardInputAtom, mouseInputAtom } from '../../atoms/inputSystemAtom';
-import { GaesupControllerContext } from '../../controller/context';
 import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
 import { useGaesupGltf } from '../useGaesupGltf';
 import { PhysicsBridgeInputData, usePhysicsInput } from '../usePhysicsInput';
@@ -47,9 +46,6 @@ export const useBridgeConnector = () => {
   // ✅ 월드 상태: Context가 진실의 원천 (activeState, mode, states 등)
   const worldContext = useContext(GaesupWorldContext);
   const worldDispatch = useContext(GaesupWorldDispatchContext);
-
-  // ✅ 컨트롤러 설정: Context가 진실의 원천
-  const controllerContext = useContext(GaesupControllerContext);
 
   // ============================================================================
   // 🔄 애니메이션 상태 동기화 (Context → Atoms)
@@ -101,27 +97,58 @@ export const useBridgeConnector = () => {
   // Bridge 데이터 구성 및 Physics에 주입
   // ============================================================================
 
-  const bridgeInputData: PhysicsBridgeInputData = {
-    // 입력 시스템 (Atoms -> Bridge)
-    inputSystem: {
-      keyboard: inputSystem.keyboard,
-      mouse: inputSystem.mouse,
-    },
+  const bridgeDataRef = useRef<PhysicsBridgeInputData | null>(null);
+  const lastInputSystemRef = useRef(inputSystem);
+  const lastUrlsRef = useRef(urls);
+  const lastBlockRef = useRef(block);
+  const lastWorldContextRef = useRef(worldContext);
+  const lastWorldDispatchRef = useRef(worldDispatch);
 
-    // 리소스 및 설정 (Atoms -> Bridge)
+  const bridgeInputData = useMemo(() => {
+    const hasChanged =
+      lastInputSystemRef.current !== inputSystem ||
+      lastUrlsRef.current !== urls ||
+      lastBlockRef.current !== block ||
+      lastWorldContextRef.current !== worldContext ||
+      lastWorldDispatchRef.current !== worldDispatch;
+
+    if (!hasChanged && bridgeDataRef.current) {
+      return bridgeDataRef.current;
+    }
+
+    lastInputSystemRef.current = inputSystem;
+    lastUrlsRef.current = urls;
+    lastBlockRef.current = block;
+    lastWorldContextRef.current = worldContext;
+    lastWorldDispatchRef.current = worldDispatch;
+
+    const data: PhysicsBridgeInputData = {
+      inputSystem: {
+        keyboard: inputSystem.keyboard,
+        mouse: inputSystem.mouse,
+      },
+      urls,
+      block,
+      worldContext,
+      controllerContext: worldContext,
+      dispatch: worldDispatch,
+      setKeyboardInput: (update) => setKeyboardInput(update),
+      setMouseInput: (update) => setMouseInput(update),
+      getSizesByUrls,
+    };
+
+    bridgeDataRef.current = data;
+    return data;
+  }, [
+    inputSystem,
     urls,
     block,
-
-    // Context 데이터 (Context -> Bridge)
     worldContext,
-    controllerContext,
-    dispatch: worldDispatch,
-
-    // 함수들
-    setKeyboardInput: (update) => setKeyboardInput(update),
-    setMouseInput: (update) => setMouseInput(update),
+    worldDispatch,
+    setKeyboardInput,
+    setMouseInput,
     getSizesByUrls,
-  };
+  ]);
 
   // Physics Bridge Hook에 데이터 주입
   const physicsResult = usePhysicsInput(bridgeInputData);
@@ -136,14 +163,14 @@ export const useBridgeConnector = () => {
       urls,
       block,
       worldContext,
-      controllerContext,
+      controllerContext: worldContext,
       worldDispatch,
     },
 
     // 레이어 상태 체크 (개발용)
     layerStatus: {
       atomsConnected: !!(inputSystem && urls && block),
-      contextConnected: !!(worldContext && controllerContext),
+      contextConnected: !!worldContext,
       bridgeReady: !!physicsResult.bridgeRef.current,
       animationSynced: !!worldContext?.animationState,
     },

@@ -2,10 +2,9 @@ import { vec3 } from '@react-three/rapier';
 import { useAtom } from 'jotai';
 import { useCallback, useContext, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { groundRayType, refsType } from '../../controller/type';
-
 import { cameraOptionAtom } from '../../atoms/cameraOptionAtom';
 import { cameraRayType } from '../../camera/type';
+import { groundRayType, refsType } from '../../controller/type';
 import { update } from '../../utils/context';
 import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
 import { gaesupWorldContextType } from '../../world/context/type';

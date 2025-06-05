@@ -1,7 +1,7 @@
-import { Collider } from "@dimforge/rapier3d-compat";
-import { useRapier } from "@react-three/rapier";
-import { RefObject, useCallback } from "react";
-import { groundRayType } from "../../controller/type";
+import { Collider } from '@dimforge/rapier3d-compat';
+import { useRapier } from '@react-three/rapier';
+import { RefObject, useCallback } from 'react';
+import { groundRayType } from '../../controller/type';
 
 export function useRayHit() {
   const rapier = useRapier();
@@ -14,11 +14,11 @@ export function useRayHit() {
         true,
         undefined,
         undefined,
-        ref.current as any,
-        undefined
+        ref.current || undefined,
+        undefined,
       );
     },
-    [rapier]
+    [rapier],
   );
 
   return getRayHit;

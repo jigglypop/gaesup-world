@@ -1,47 +1,29 @@
 import { quat } from '@react-three/rapier';
-import { V3 } from '../../utils/vector';
-import { calcType } from '../type';
+import { RefObject } from 'react';
+import * as THREE from 'three';
+import { physicsEventBus } from '../stores/physicsEventBus';
+import { PhysicsState } from '../type';
 
-export default function direction(prop: calcType) {
+export default function direction(
+  physicsState: PhysicsState,
+  innerGroupRef: RefObject<THREE.Group>,
+  matchSizes: any,
+) {
+  const { activeState, keyboard, airplaneConfig } = physicsState;
+  const { forward, backward, leftward, rightward, shift, space } = keyboard;
   const {
-    innerGroupRef,
-    worldContext: { activeState, control },
-    controllerContext: { airplane },
-    matchSizes,
-    inputRef,
-  } = prop;
+    angleDelta = { x: 0, y: 0, z: 0 },
+    maxAngle = { x: 0, y: 0, z: 0 },
+    accelRatio = 1,
+  } = airplaneConfig || {};
 
-  // === 새로운 ref 기반 시스템 우선 사용 ===
-  let forward: boolean,
-    backward: boolean,
-    leftward: boolean,
-    rightward: boolean,
-    shift: boolean,
-    space: boolean;
-
-  if (inputRef && inputRef.current) {
-    const keyboard = inputRef.current.keyboard;
-    forward = keyboard.forward;
-    backward = keyboard.backward;
-    leftward = keyboard.leftward;
-    rightward = keyboard.rightward;
-    shift = keyboard.shift;
-    space = keyboard.space;
-  } else {
-    // === 기존 시스템 fallback (하위 호환성) ===
-    ({ forward, backward, leftward, rightward, shift, space } = control);
-  }
-
-  const { angleDelta, maxAngle, accelRatio } = airplane;
-  if (!matchSizes || !matchSizes['airplaneUrl']) return null;
+  if (!matchSizes || !matchSizes['airplaneUrl'] || !innerGroupRef.current) return;
 
   let boost = 0;
-
   boost = space ? Number(shift) : Number(shift) * accelRatio;
 
   const upDown = Number(backward) - Number(forward);
   const leftRight = Number(rightward) - Number(leftward);
-  const front = V3().set(boost, boost, boost);
 
   activeState.euler.y += -leftRight * angleDelta.y;
 
@@ -67,6 +49,7 @@ export default function direction(prop: calcType) {
   if (_z < -maxZ) innerGrounRefRotation.rotation.z = -maxZ + Z;
   else if (_z > maxZ) innerGrounRefRotation.rotation.z = maxZ + Z;
   else innerGrounRefRotation.rotateZ(Z);
+
   activeState.euler.x = innerGrounRefRotation.rotation.x;
   activeState.euler.z = innerGrounRefRotation.rotation.z;
 
@@ -77,8 +60,18 @@ export default function direction(prop: calcType) {
       .slerp(quat().setFromEuler(innerGrounRefRotation.rotation.clone()), 0.2),
   );
 
-  activeState.direction = front.multiply(
-    V3(Math.sin(activeState.euler.y), -upDown, Math.cos(activeState.euler.y)),
+  // 기존 direction 객체 재사용
+  activeState.direction.set(
+    Math.sin(activeState.euler.y) * boost,
+    -upDown * boost,
+    Math.cos(activeState.euler.y) * boost,
   );
-  activeState.dir = activeState.direction.normalize();
+  activeState.dir.copy(activeState.direction).normalize();
+
+  // ROTATION_UPDATE 이벤트 발행
+  physicsEventBus.emit('ROTATION_UPDATE', {
+    euler: activeState.euler,
+    direction: activeState.direction,
+    dir: activeState.dir,
+  });
 }

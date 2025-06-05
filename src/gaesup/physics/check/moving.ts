@@ -1,10 +1,12 @@
 import { physicsEventBus } from '../stores/physicsEventBus';
-import { calcType } from '../type';
+import { PhysicsCalcProps } from '../types';
 
 // 점프 상태 추적용 변수
 let isCurrentlyJumping = false;
+let lastMovingState = false;
+let lastRunningState = false;
 
-export default function moving(prop: calcType) {
+export default function moving(prop: PhysicsCalcProps) {
   const { inputRef } = prop;
   if (!inputRef || !inputRef.current) {
     return;
@@ -39,12 +41,17 @@ export default function moving(prop: calcType) {
     });
   }
 
-  physicsEventBus.emit('MOVE_STATE_CHANGE', {
-    isMoving,
-    isRunning,
-    isNotMoving: !isMoving,
-    isNotRunning: !isRunning,
-  });
+  if (lastMovingState !== isMoving || lastRunningState !== isRunning) {
+    lastMovingState = isMoving;
+    lastRunningState = isRunning;
+
+    physicsEventBus.emit('MOVE_STATE_CHANGE', {
+      isMoving,
+      isRunning,
+      isNotMoving: !isMoving,
+      isNotRunning: !isRunning,
+    });
+  }
 }
 
 // 지면에 닿았을 때 점프 상태 리셋을 위한 함수

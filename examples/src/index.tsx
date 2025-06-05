@@ -3,14 +3,16 @@
 import { Environment } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { euler, Physics, RigidBody } from '@react-three/rapier';
-import { Suspense, useState } from 'react';
+import { Suspense, useContext, useState } from 'react';
 import { FaMapMarkerAlt } from 'react-icons/fa';
 import { GaesupController, GaesupWorld, MiniMap, MinimapPlatform, Rideable, V3 } from '../../src';
 import { useFocus } from '../../src/gaesup/hooks/useFocus';
 import { useTeleport } from '../../src/gaesup/hooks/useTeleport';
 import { Clicker } from '../../src/gaesup/tools/clicker';
 import { FocusModal } from '../../src/gaesup/tools/FocusModal';
+import { RideableUI } from '../../src/gaesup/tools/rideable';
 import { InnerHtml } from '../../src/gaesup/utils/innerHtml';
+import { GaesupWorldContext } from '../../src/gaesup/world/context';
 import Info from '../info';
 import Passive from '../passive';
 import Floor from './Floor';
@@ -337,6 +339,12 @@ function InfoTabs() {
   );
 }
 
+// 탈것 UI 렌더러 - GaesupWorldContext 사용
+function RideableUIRenderer() {
+  const { states } = useContext(GaesupWorldContext);
+  return <RideableUI states={states} />;
+}
+
 export const S3 = 'https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf';
 
 export default function MainComponent() {
@@ -361,7 +369,7 @@ export default function MainComponent() {
       mode={{
         type: 'character',
         controller: 'keyboard',
-        control: 'thirdPerson', // "궤도" → "thirdPerson"으로 명확하게
+        control: 'thirdPerson',
       }}
       debug={false}
       cameraOption={{
@@ -432,6 +440,9 @@ export default function MainComponent() {
       </Canvas>
 
       <Info />
+
+      {/* 탈것 탑승 UI - Canvas 밖에서 렌더링 */}
+      <RideableUIRenderer />
 
       {/* 미니맵 */}
       <div

@@ -1,10 +1,11 @@
-import { calcType } from '../type';
+import { PhysicsCalc, PhysicsState } from '../type';
 
-export default function damping(prop: calcType) {
-  const {
-    rigidBodyRef,
-    controllerContext: { airplane },
-  } = prop;
-  const { linearDamping } = airplane;
+export default function damping(
+  rigidBodyRef: PhysicsCalc['rigidBodyRef'],
+  physicsState: PhysicsState,
+) {
+  if (!rigidBodyRef.current) return;
+  const { airplaneConfig } = physicsState;
+  const { linearDamping = 1 } = airplaneConfig || {};
   rigidBodyRef.current.setLinearDamping(linearDamping);
 }

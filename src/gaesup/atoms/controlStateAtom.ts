@@ -1,5 +1,5 @@
 import { atom } from 'jotai';
-import { ControlState, BlockType } from '../types';
+import { BlockType, ControlState } from '../types';
 
 export interface ControlStateType {
   control: ControlState;
@@ -30,9 +30,9 @@ export const controlAtom = atom(
     const current = get(controlStateAtom);
     set(controlStateAtom, {
       ...current,
-      control: { ...current.control, ...update }
+      control: { ...current.control, ...update },
     });
-  }
+  },
 );
 
 export const blockAtom = atom(
@@ -41,7 +41,7 @@ export const blockAtom = atom(
     const current = get(controlStateAtom);
     set(controlStateAtom, {
       ...current,
-      block: { ...current.block, ...update }
+      block: { ...current.block, ...update },
     });
-  }
-); 
+  },
+);

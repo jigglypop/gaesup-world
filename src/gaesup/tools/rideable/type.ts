@@ -1,12 +1,12 @@
 import { RigidBodyProps } from '@react-three/rapier';
 import * as THREE from 'three';
-import { controllerOptionsType, GroundRayType } from '../../controller/type';
+import { ControllerOptionsType, GroundRayType } from '../../controller/type';
 
 export type rideablePropType = {
   groundRay?: GroundRayType;
   objectkey: string;
   objectType?: 'vehicle' | 'airplane';
-  controllerOptions: controllerOptionsType;
+  controllerOptions: ControllerOptionsType;
   enableRiding?: boolean;
   isRiderOn?: boolean;
   url?: string;

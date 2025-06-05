@@ -1,6 +1,5 @@
 import '@testing-library/jest-dom';
 
-// Canvas API Mock (JSDOM에서는 기본 제공되지 않음)
 const mockCanvasContext = {
   fillRect: jest.fn(),
   clearRect: jest.fn(),
@@ -40,36 +39,96 @@ const mockCanvasContext = {
   })),
   createPattern: jest.fn(() => ({})),
   // Lottie가 필요로 하는 속성들
-  get fillStyle() { return '#000000'; },
-  set fillStyle(value) { /* mock setter */ },
-  get strokeStyle() { return '#000000'; },
-  set strokeStyle(value) { /* mock setter */ },
-  get lineWidth() { return 1; },
-  set lineWidth(value) { /* mock setter */ },
-  get lineCap() { return 'butt'; },
-  set lineCap(value) { /* mock setter */ },
-  get lineJoin() { return 'miter'; },
-  set lineJoin(value) { /* mock setter */ },
-  get miterLimit() { return 10; },
-  set miterLimit(value) { /* mock setter */ },
-  get globalAlpha() { return 1; },
-  set globalAlpha(value) { /* mock setter */ },
-  get globalCompositeOperation() { return 'source-over'; },
-  set globalCompositeOperation(value) { /* mock setter */ },
-  get shadowBlur() { return 0; },
-  set shadowBlur(value) { /* mock setter */ },
-  get shadowColor() { return 'rgba(0, 0, 0, 0)'; },
-  set shadowColor(value) { /* mock setter */ },
-  get shadowOffsetX() { return 0; },
-  set shadowOffsetX(value) { /* mock setter */ },
-  get shadowOffsetY() { return 0; },
-  set shadowOffsetY(value) { /* mock setter */ },
-  get font() { return '10px sans-serif'; },
-  set font(value) { /* mock setter */ },
-  get textAlign() { return 'start'; },
-  set textAlign(value) { /* mock setter */ },
-  get textBaseline() { return 'alphabetic'; },
-  set textBaseline(value) { /* mock setter */ },
+  get fillStyle() {
+    return '#000000';
+  },
+  set fillStyle(value) {
+    /* mock setter */
+  },
+  get strokeStyle() {
+    return '#000000';
+  },
+  set strokeStyle(value) {
+    /* mock setter */
+  },
+  get lineWidth() {
+    return 1;
+  },
+  set lineWidth(value) {
+    /* mock setter */
+  },
+  get lineCap() {
+    return 'butt';
+  },
+  set lineCap(value) {
+    /* mock setter */
+  },
+  get lineJoin() {
+    return 'miter';
+  },
+  set lineJoin(value) {
+    /* mock setter */
+  },
+  get miterLimit() {
+    return 10;
+  },
+  set miterLimit(value) {
+    /* mock setter */
+  },
+  get globalAlpha() {
+    return 1;
+  },
+  set globalAlpha(value) {
+    /* mock setter */
+  },
+  get globalCompositeOperation() {
+    return 'source-over';
+  },
+  set globalCompositeOperation(value) {
+    /* mock setter */
+  },
+  get shadowBlur() {
+    return 0;
+  },
+  set shadowBlur(value) {
+    /* mock setter */
+  },
+  get shadowColor() {
+    return 'rgba(0, 0, 0, 0)';
+  },
+  set shadowColor(value) {
+    /* mock setter */
+  },
+  get shadowOffsetX() {
+    return 0;
+  },
+  set shadowOffsetX(value) {
+    /* mock setter */
+  },
+  get shadowOffsetY() {
+    return 0;
+  },
+  set shadowOffsetY(value) {
+    /* mock setter */
+  },
+  get font() {
+    return '10px sans-serif';
+  },
+  set font(value) {
+    /* mock setter */
+  },
+  get textAlign() {
+    return 'start';
+  },
+  set textAlign(value) {
+    /* mock setter */
+  },
+  get textBaseline() {
+    return 'alphabetic';
+  },
+  set textBaseline(value) {
+    /* mock setter */
+  },
   canvas: {
     width: 300,
     height: 150,
@@ -106,18 +165,18 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
         clear: jest.fn(),
         viewport: jest.fn(),
         getParameter: jest.fn((param) => {
-          if (param === 0x1F00) return 'Mock Vendor'; // VENDOR
-          if (param === 0x1F01) return 'Mock Renderer'; // RENDERER
-          if (param === 0x1F02) return 'Mock Version'; // VERSION
-          if (param === 0x8B8C) return 32; // MAX_FRAGMENT_UNIFORM_VECTORS
+          if (param === 0x1f00) return 'Mock Vendor'; // VENDOR
+          if (param === 0x1f01) return 'Mock Renderer'; // RENDERER
+          if (param === 0x1f02) return 'Mock Version'; // VERSION
+          if (param === 0x8b8c) return 32; // MAX_FRAGMENT_UNIFORM_VECTORS
           return null;
         }),
         getExtension: jest.fn(() => null),
         getSupportedExtensions: jest.fn(() => []),
-        VERTEX_SHADER: 0x8B31,
-        FRAGMENT_SHADER: 0x8B30,
+        VERTEX_SHADER: 0x8b31,
+        FRAGMENT_SHADER: 0x8b30,
         ARRAY_BUFFER: 0x8892,
-        STATIC_DRAW: 0x88E4,
+        STATIC_DRAW: 0x88e4,
         COLOR_BUFFER_BIT: 0x00004000,
         DEPTH_BUFFER_BIT: 0x00000100,
       };
@@ -149,7 +208,7 @@ Object.defineProperty(window, 'cancelAnimationFrame', {
 
 // Media Query Mock
 Object.defineProperty(window, 'matchMedia', {
-  value: jest.fn().mockImplementation(query => ({
+  value: jest.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -174,11 +233,12 @@ Object.defineProperty(window.performance, 'memory', {
 
 // Global test utilities
 (global as any).measureMemory = () => {
-  if (window.performance.memory) {
+  if ((window as any).performance?.memory) {
+    const memory = (window as any).performance.memory;
     return {
-      used: window.performance.memory.usedJSHeapSize,
-      total: window.performance.memory.totalJSHeapSize,
-      limit: window.performance.memory.jsHeapSizeLimit,
+      used: memory.usedJSHeapSize,
+      total: memory.totalJSHeapSize,
+      limit: memory.jsHeapSizeLimit,
     };
   }
   return { used: 0, total: 0, limit: 0 };
@@ -190,12 +250,12 @@ console.warn = (...args) => {
   if (
     typeof args[0] === 'string' &&
     (args[0].includes('three.js') ||
-     args[0].includes('react-three-fiber') ||
-     args[0].includes('WebGL'))
+      args[0].includes('react-three-fiber') ||
+      args[0].includes('WebGL'))
   ) {
     return;
   }
   originalWarn(...args);
 };
 
-export {}; 
+export {};

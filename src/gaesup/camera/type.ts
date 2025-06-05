@@ -1,5 +1,11 @@
 import * as THREE from 'three';
-import {} from 'three-stdlib';
+import { CameraOptionType, gaesupWorldContextType } from '../world/context/type';
+
+export interface CameraPropType {
+  state?: { camera?: THREE.Camera };
+  worldContext: Partial<gaesupWorldContextType>;
+  cameraOption: CameraOptionType;
+}
 
 export type cameraRayType = {
   origin: THREE.Vector3;

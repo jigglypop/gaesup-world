@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export function isVectorNonZero(v: THREE.Vector3): boolean {
-  return v.toArray().every((value) => value !== 0);
+  return v.x !== 0 && v.y !== 0 && v.z !== 0;
 }
 
 export function calcNorm(u: THREE.Vector3, v: THREE.Vector3, calcZ: boolean): number {

@@ -5,10 +5,9 @@ import { useAtom } from 'jotai';
 import { MutableRefObject, forwardRef, useContext, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
-import playActions, { subscribeActions } from '../../../animation/actions';
+import { useSubscribeActions, usePlayActions } from '../../../atoms/animationAtoms';
 import { cameraOptionAtom } from '../../../atoms/cameraOptionAtom';
 import Camera from '../../../camera';
-import { GaesupControllerContext } from '../../../controller/context';
 import initCallback from '../../../controller/initialize/callback';
 import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
 import calculation from '../../../physics';
@@ -24,7 +23,6 @@ export const RigidBodyRef = forwardRef(
     const { size } = useGltfAndSize({ url: props.url });
     const setGroundRay = useSetGroundRay();
     const worldContext = useContext(GaesupWorldContext);
-    const controllerContext = useContext(GaesupControllerContext);
     const [cameraOption] = useAtom(cameraOptionAtom);
 
     // GLTF와 애니메이션을 먼저 로드
@@ -54,7 +52,7 @@ export const RigidBodyRef = forwardRef(
 
     // Active 관련 로직을 다시 컴포넌트 최상위로 이동 (Hook 규칙 준수)
     if (props.isActive) {
-      subscribeActions({
+      useSubscribeActions({
         type: props.componentType,
         groundRay: props.groundRay,
         animations: animations,
@@ -62,7 +60,6 @@ export const RigidBodyRef = forwardRef(
       const cameraProps: cameraPropType = {
         state: null,
         worldContext,
-        controllerContext,
         controllerOptions: props.controllerOptions,
         cameraOption,
       };
@@ -77,7 +74,7 @@ export const RigidBodyRef = forwardRef(
       });
     }
 
-    playActions({
+    usePlayActions({
       type: props.componentType,
       actions,
       animationRef,
@@ -91,8 +88,6 @@ export const RigidBodyRef = forwardRef(
     });
     const { nodes } = useGraph(clone);
     const objectNode = Object.values(nodes).find((node) => node.type === 'Object3D');
-
-    // rotation 안전 처리
     const safeRotationY = props.rotation?.clone ? props.rotation.clone().y : props.rotation?.y || 0;
 
     return (

@@ -22,7 +22,13 @@ export interface MemoryTestResult {
  * 메모리 스냅샷을 생성합니다
  */
 export function createMemorySnapshot(): MemorySnapshot {
-  const memory = (global as any).measureMemory();
+  const memory = (
+    global as { measureMemory?: () => Omit<MemorySnapshot, 'timestamp'> }
+  ).measureMemory?.() || {
+    used: 0,
+    total: 0,
+    limit: 0,
+  };
   return {
     ...memory,
     timestamp: Date.now(),
@@ -187,7 +193,10 @@ export function checkThreeJSMemoryLeaks(scene: THREE.Scene | THREE.Object3D): st
   scene.traverse?.((object: THREE.Object3D) => {
     if ('geometry' in object && object.geometry) {
       const geometry = object.geometry as THREE.BufferGeometry;
-      if (geometry.dispose && !(geometry as any).isDisposed) {
+      if (
+        geometry.dispose &&
+        !(geometry as THREE.BufferGeometry & { isDisposed?: boolean }).isDisposed
+      ) {
         warnings.push(`Geometry not disposed: ${object.type}`);
       }
     }
@@ -196,15 +205,28 @@ export function checkThreeJSMemoryLeaks(scene: THREE.Scene | THREE.Object3D): st
     if ('material' in object && object.material) {
       const materials = Array.isArray(object.material) ? object.material : [object.material];
       materials.forEach((material: THREE.Material) => {
-        if (material.dispose && !(material as any).isDisposed) {
+        if (
+          material.dispose &&
+          !(material as THREE.Material & { isDisposed?: boolean }).isDisposed
+        ) {
           warnings.push(`Material not disposed: ${material.type}`);
         }
 
         // Texture 체크
         Object.keys(material).forEach((key) => {
-          const prop = (material as any)[key];
-          if (prop && prop.isTexture && prop.dispose && !prop.isDisposed) {
-            warnings.push(`Texture not disposed: ${key}`);
+          const prop = (material as Record<string, unknown>)[key];
+          if (
+            prop &&
+            typeof prop === 'object' &&
+            prop !== null &&
+            'isTexture' in prop &&
+            'dispose' in prop &&
+            'isDisposed' in prop
+          ) {
+            const texture = prop as THREE.Texture & { isDisposed?: boolean };
+            if (texture.dispose && !texture.isDisposed) {
+              warnings.push(`Texture not disposed: ${key}`);
+            }
           }
         });
       });

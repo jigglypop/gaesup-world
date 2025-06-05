@@ -14,6 +14,10 @@ export default function riding(prop: calcType, instanceId: string = 'default') {
   const keyState = keyStateCache.get(instanceId)!;
   const keyE = inputRef.current.keyboard.keyE;
   const keyR = inputRef.current.keyboard.keyR;
+
+  if (!keyStateCache.has('logged')) {
+    keyStateCache.set('logged', { lastKeyE: false, lastKeyR: false });
+  }
   if (keyE && !keyState.lastKeyE) {
     physicsEventBus.emit('RIDE_STATE_CHANGE', {
       isRiding: false,

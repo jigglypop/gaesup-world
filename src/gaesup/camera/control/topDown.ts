@@ -1,11 +1,10 @@
+import { ActiveStateType, CameraOptionType } from '@/gaesup/types';
 import * as THREE from 'three';
-import { cameraPropType } from '../../physics/type';
 import { V3 } from '../../utils/vector';
-import { activeStateType, cameraOptionType } from '../../world/context/type';
 
 export const makeTopDownCameraPosition = (
-  activeState: activeStateType,
-  cameraOption: cameraOptionType,
+  activeState: ActiveStateType,
+  cameraOption: CameraOptionType,
 ): THREE.Vector3 => {
   const height = Math.abs(cameraOption.yDistance ?? cameraOption.YDistance ?? 20);
   const xOffset = cameraOption.xDistance ?? cameraOption.XDistance ?? 0;
@@ -35,7 +34,7 @@ export const clampTopDownPosition = (
   return clampedPos;
 };
 
-export default function topDown(prop: cameraPropType) {
+export default function topDown(prop: CameraPropType) {
   const {
     state,
     worldContext: { activeState },

@@ -1,4 +1,4 @@
-import * as THREE from "three";
+import * as THREE from 'three';
 
 export const calcCharacterColliderProps = (characterSize: THREE.Vector3) => {
   if (!characterSize) return null;

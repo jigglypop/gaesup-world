@@ -24,9 +24,9 @@ export const urlsAtom = atom(
     const current = get(resourceStateAtom);
     set(resourceStateAtom, {
       ...current,
-      urls: { ...current.urls, ...update }
+      urls: { ...current.urls, ...update },
     });
-  }
+  },
 );
 
 export const sizesAtom = atom(
@@ -35,7 +35,7 @@ export const sizesAtom = atom(
     const current = get(resourceStateAtom);
     set(resourceStateAtom, {
       ...current,
-      sizes: { ...current.sizes, ...update }
+      sizes: { ...current.sizes, ...update },
     });
-  }
-); 
+  },
+);
