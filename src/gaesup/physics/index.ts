@@ -34,13 +34,7 @@ export default function calculation(props: PhysicsCalculationProps) {
     skipFrameCount: 0,
   });
 
-  // 성능 모니터링
-  const performanceRef = useRef({
-    frameCount: 0,
-    totalTime: 0,
-    avgFrameTime: 0,
-    lastPerfCheck: 0,
-  });
+
 
   useEffect(() => {
     if (!isInitializedRef.current && bridgeRef.current?.worldContext) {
@@ -111,13 +105,7 @@ export default function calculation(props: PhysicsCalculationProps) {
     const modeType = worldContext?.mode?.type || 'character';
     const modeControl = worldContext?.mode?.control || 'thirdPerson';
 
-    // 성능 기반 프레임 스킵 (적응형)
-    if (performanceRef.current.avgFrameTime > 20) { // 50fps 미만
-      cache.skipFrameCount++;
-      if (cache.skipFrameCount % 2 === 0) {
-        return false; // 격 프레임 스킵
-      }
-    }
+
 
     // 모드가 변경되지 않았고 기존 상태가 있으면 최적화된 업데이트만 수행
     if (
@@ -248,8 +236,6 @@ export default function calculation(props: PhysicsCalculationProps) {
   useUnifiedFrame(
     `physics-${props.rigidBodyRef?.current?.handle || 'unknown'}`,
     (state, delta) => {
-      const startTime = performance.now();
-      
       if (bridgeRef.current?.blockControl) {
         if (props.rigidBodyRef?.current) {
           props.rigidBodyRef.current.resetForces(false);
@@ -293,26 +279,7 @@ export default function calculation(props: PhysicsCalculationProps) {
         calculationFnRef.current(calcPropRef.current);
       }
 
-      // 성능 측정 및 통계 업데이트
-      const frameTime = performance.now() - startTime;
-      const perf = performanceRef.current;
-      perf.frameCount++;
-      perf.totalTime += frameTime;
-      perf.avgFrameTime = perf.totalTime / perf.frameCount;
-      
-      // 100프레임마다 성능 통계 리셋
-      if (perf.frameCount >= 100) {
-        perf.frameCount = 0;
-        perf.totalTime = 0;
-      }
-      
-      // 5초마다 성능 정보 로그 (개발 환경에서만)
-      if (startTime - perf.lastPerfCheck > 5000) {
-        if (typeof window !== 'undefined' && window.location?.hostname === 'localhost') {
-          console.log(`Physics Performance: ${perf.avgFrameTime.toFixed(2)}ms avg, ${(1000 / perf.avgFrameTime).toFixed(1)} FPS`);
-        }
-        perf.lastPerfCheck = startTime;
-      }
+
     },
     0,
     true,

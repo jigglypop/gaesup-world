@@ -7,6 +7,8 @@ export {
 export { GaesupComponent } from './gaesup/component';
 export { GaesupController } from './gaesup/controller';
 export { GaeSupProps } from './gaesup/gaesupProps';
+export { PerfMonitor } from './gaesup/debug/DetailedPerformanceDisplay';
+export type { PerformanceMonitorConfig } from './gaesup/world/type';
 export { useGaesupController } from './gaesup/hooks/useGaesupController';
 export { useMainFrameLoop } from './gaesup/hooks/useUnifiedFrame';
 export type { ControllerMode, ControllerType, ControlMode } from './types';

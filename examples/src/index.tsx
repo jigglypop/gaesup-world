@@ -5,7 +5,7 @@ import { Canvas } from '@react-three/fiber';
 import { euler, Physics, RigidBody } from '@react-three/rapier';
 import { Suspense, useContext, useState } from 'react';
 import { FaMapMarkerAlt } from 'react-icons/fa';
-import { GaesupController, GaesupWorld, MiniMap, MinimapPlatform, Rideable, V3 } from '../../src';
+import { GaesupController, GaesupWorld, MiniMap, MinimapPlatform, PerfMonitor, Rideable, V3 } from '../../src';
 import { useFocus } from '../../src/gaesup/hooks/useFocus';
 import { useTeleport } from '../../src/gaesup/hooks/useTeleport';
 import { Clicker } from '../../src/gaesup/tools/clicker';
@@ -381,6 +381,7 @@ export default function MainComponent() {
         fov: 75,
         bounds: { minY: 2, maxY: 50, minX: -100, maxX: 100, minZ: -100, maxZ: 100 },
       }}
+
     >
       <FocusHandler onObjectFocused={setFocusedObject} />
       <TeleportHandler />
@@ -436,8 +437,14 @@ export default function MainComponent() {
             />
             <RideableVehicles />
           </Physics>
+          <PerfMonitor
+            position="bottom-right"
+            updateInterval={500}
+            visible={true}
+            zIndex={10001}
+          />
         </Suspense>
-      </Canvas>
+              </Canvas>
 
       <Info />
 
