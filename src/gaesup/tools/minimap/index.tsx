@@ -1,6 +1,6 @@
 import { useAtom, useAtomValue } from 'jotai';
 import React, { useCallback, useContext, useEffect, useRef } from 'react';
-import { minimapAtom, modeAtom } from '../../atoms';
+import { minimapAtom, modeStateAtom } from '../../atoms';
 import { GaesupWorldContext } from '../../world/context';
 import {
   avatarStyles,
@@ -36,7 +36,7 @@ export function MiniMap({
   plusMinusStyle,
 }: MinimapProps) {
   const { activeState } = useContext(GaesupWorldContext);
-  const mode = useAtomValue(modeAtom);
+  const mode = useAtomValue(modeStateAtom);
   const [minimap] = useAtom(minimapAtom);
   const [scale, setScale] = React.useState(initialScale);
   const canvasRef = useRef<HTMLCanvasElement>(null);

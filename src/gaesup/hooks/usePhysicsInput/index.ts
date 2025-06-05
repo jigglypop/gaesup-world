@@ -1,6 +1,8 @@
-import { useRef } from 'react';
-import * as THREE from 'three';
-import { gaesupWorldContextType } from '../../world/context/type';
+import { useAtomValue } from 'jotai';
+import { RefObject, useRef } from 'react';
+import { RigidBody } from '@react-three/rapier';
+import { GaesupWorldContextType } from '../../world/context/type';
+import { activeStateAtom } from '../../atoms';
 
 export interface PhysicsInputRef {
   current: {
@@ -33,15 +35,16 @@ export interface PhysicsBridgeInputData {
   };
   urls: any;
   block: any;
-  worldContext: Partial<gaesupWorldContextType> | null;
+  worldContext: GaesupWorldContextType | null;
+  controllerContext: GaesupWorldContextType | null;
   dispatch: any;
   setKeyboardInput: (update: any) => void;
   setMouseInput: (update: any) => void;
-  getSizesByUrls: (urls: any) => any;
+  getSizesByUrls: () => any;
 }
 
 export interface PhysicsBridgeData {
-  worldContext: Partial<gaesupWorldContextType> | null;
+  worldContext: GaesupWorldContextType | null;
   activeState: any;
   input: {
     keyboard: any;
@@ -52,10 +55,16 @@ export interface PhysicsBridgeData {
   dispatch: any;
   setKeyboardInput: (update: any) => void;
   setMouseInput: (update: any) => void;
-  getSizesByUrls: (urls: any) => any;
+  getSizesByUrls: () => any;
 }
 
-export function usePhysicsInput(injectedData: PhysicsBridgeInputData) {
+export interface PhysicsBridgeOutput {
+  bridgeRef: RefObject<PhysicsBridgeData>;
+  isReady: boolean;
+  error: string | null;
+}
+
+export function usePhysicsInput(injectedData: PhysicsBridgeInputData): PhysicsBridgeOutput {
   const bridgeRef = useRef<PhysicsBridgeData>({
     worldContext: null,
     activeState: null,
@@ -87,9 +96,7 @@ export function usePhysicsInput(injectedData: PhysicsBridgeInputData) {
 
   return {
     bridgeRef,
+    isReady: true,
+    error: null,
   };
 }
-
-// Physics 계산에서 사용할 타입 export
-export type PhysicsInputRef = ReturnType<typeof usePhysicsInput>['inputRef'];
-export type PhysicsBridgeRef = ReturnType<typeof usePhysicsInput>['bridgeRef'];

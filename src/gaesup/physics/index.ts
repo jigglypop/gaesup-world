@@ -29,7 +29,7 @@ export default function calculation(props: PhysicsCalculationProps) {
   } | null>(null);
 
   useEffect(() => {
-    if (!isInitializedRef.current && bridgeRef.current.worldContext) {
+    if (!isInitializedRef.current && bridgeRef.current?.worldContext) {
       worldContextSync.setWorldContext(bridgeRef.current.worldContext as any);
       jotaiPhysicsSync.initialize(
         () => {},
@@ -37,12 +37,12 @@ export default function calculation(props: PhysicsCalculationProps) {
       );
       isInitializedRef.current = true;
     }
-  }, [bridgeRef.current.worldContext]);
+  }, [bridgeRef.current?.worldContext]);
 
   useEffect(() => {
     if (!props.rigidBodyRef?.current || !props.innerGroupRef?.current || !isInitializedRef.current)
       return;
-    const { activeState } = bridgeRef.current;
+    const activeState = bridgeRef.current?.activeState;
     if (activeState) {
       props.rigidBodyRef.current.lockRotations(false, true);
       activeState.euler.set(0, 0, 0);
@@ -54,6 +54,8 @@ export default function calculation(props: PhysicsCalculationProps) {
   }, [props.rigidBodyRef?.current, props.innerGroupRef?.current, isInitializedRef.current]);
 
   const updatePhysicsState = () => {
+    if (!bridgeRef.current) return false;
+    
     const { worldContext, input, urls, getSizesByUrls } = bridgeRef.current;
     const prevData = prevDataRef.current;
     const modeType = worldContext?.mode?.type || 'character';
@@ -149,7 +151,7 @@ export default function calculation(props: PhysicsCalculationProps) {
     const physicsState = physicsStateRef.current;
     if (!physicsState?.activeState || !physicsState?.gameStates || !physicsState?.characterConfig)
       return;
-    direction(physicsState, bridgeRef.current.worldContext?.mode?.control, calcProp);
+    direction(physicsState, bridgeRef.current?.worldContext?.mode?.control, calcProp);
     impulse(props.rigidBodyRef, physicsState);
     gravity(props.rigidBodyRef, physicsState);
     innerCalc(props.rigidBodyRef, props.innerGroupRef, physicsState);
@@ -171,7 +173,7 @@ export default function calculation(props: PhysicsCalculationProps) {
   useUnifiedFrame(
     `physics-${props.rigidBodyRef?.current?.handle || 'unknown'}`,
     (state, delta) => {
-      if (bridgeRef.current.blockControl) {
+      if (bridgeRef.current?.blockControl) {
         if (props.rigidBodyRef?.current) {
           props.rigidBodyRef.current.resetForces(false);
           props.rigidBodyRef.current.resetTorques(false);
@@ -181,6 +183,7 @@ export default function calculation(props: PhysicsCalculationProps) {
       const stateChanged = updatePhysicsState();
       if (!isReadyRef.current || !physicsStateRef.current || !calculationFnRef.current) return;
 
+      if (!bridgeRef.current) return;
       const { worldContext, dispatch, input, setKeyboardInput, setMouseInput } = bridgeRef.current;
       if (!worldContext || !dispatch) return;
 

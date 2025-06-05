@@ -170,3 +170,35 @@ export const blockStateAtom = atom(
     });
   },
 );
+
+export const clickerOptionAtom = atom(
+  (get) => get(unifiedInputAtom).clickerOption,
+  (get, set, update: Partial<ClickerOptionState>) => {
+    const current = get(unifiedInputAtom);
+    set(unifiedInputAtom, {
+      ...current,
+      clickerOption: { ...current.clickerOption, ...update },
+    });
+  },
+);
+
+export const controlAtom = atom(
+  (get) => get(unifiedInputAtom).keyboard,
+  (get, set, update: Partial<KeyboardInputState>) => {
+    set(keyboardInputAtom, update);
+  },
+);
+
+export const blockAtom = atom(
+  (get) => get(unifiedInputAtom).blocks,
+  (get, set, update: Partial<BlockState>) => {
+    set(blockStateAtom, update);
+  },
+);
+
+export const clickerAtom = atom(
+  (get) => get(unifiedInputAtom).pointer,
+  (get, set, update: Partial<MouseInputState>) => {
+    set(pointerInputAtom, update);
+  },
+);

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { clickerAtom } from '../../atoms';
 // 새로운 통합 입력 시스템만 사용
-import { keyboardInputAtom, mouseInputAtom } from '../../atoms/inputSystemAtom';
+import { keyboardInputAtom, pointerInputAtom } from '../../atoms/unifiedInputAtom';
 
 // 키 매핑 정의 (게임 표준 키 설정)
 const KEY_MAPPING = {
@@ -41,7 +41,7 @@ export function useKeyboard() {
   const clicker = useAtomValue(clickerAtom);
   const setClicker = useSetAtom(clickerAtom);
   const setKeyboardInput = useSetAtom(keyboardInputAtom);
-  const setMouseInput = useSetAtom(mouseInputAtom);
+  const setPointerInput = useSetAtom(pointerInputAtom);
   
   const pressedKeys = useRef<Set<string>>(new Set());
 
@@ -68,7 +68,7 @@ export function useKeyboard() {
           });
           
           // mouse input 시스템도 업데이트
-          setMouseInput({
+          setPointerInput({
             isActive: false,
             shouldRun: false,
           });
@@ -103,7 +103,7 @@ export function useKeyboard() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [clicker, setClicker, setKeyboardInput, setMouseInput]);
+  }, [clicker, setClicker, setKeyboardInput, setPointerInput]);
 
   // visibility change 처리 (탭 전환 시 키 상태 초기화)
   useEffect(() => {

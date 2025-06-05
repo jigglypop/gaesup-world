@@ -1,9 +1,9 @@
 'use client';
 
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { useState } from 'react';
 
-import { cameraOptionAtom, modeAtom } from '../../src/gaesup/atoms';
+import { cameraOptionAtom, modeStateAtom } from '../../src/gaesup/atoms';
 import { Icon } from '../icon';
 import * as style from './style.css';
 
@@ -51,7 +51,7 @@ const CAMERA_DESCRIPTIONS = {
 };
 
 export default function Info() {
-  const [mode, setMode] = useAtom(modeAtom);
+  const [mode, setMode] = useAtom(modeStateAtom);
   const [cameraOption, setCameraOption] = useAtom(cameraOptionAtom);
   const [showCameraSettings, setShowCameraSettings] = useState(false);
 

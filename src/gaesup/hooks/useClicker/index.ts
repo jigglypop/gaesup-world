@@ -4,14 +4,14 @@ import { useSetAtom } from 'jotai';
 import { V3 } from '../../utils';
 import { GaesupWorldContext } from '../../world/context';
 // 새로운 통합 입력 시스템만 사용
-import { mouseInputAtom } from '../../atoms/inputSystemAtom';
+import { pointerInputAtom } from '../../atoms/unifiedInputAtom';
 
 export function useClicker() {
   // === activeState만 Context에서 가져오기 (위치 정보 필요) ===
   const { activeState } = useContext(GaesupWorldContext);
   
   // === 새로운 통합 시스템만 사용 ===
-  const setMouseInput = useSetAtom(mouseInputAtom);
+  const setMouseInput = useSetAtom(pointerInputAtom);
   
   const moveClicker = (e: ThreeEvent<MouseEvent>, isRun: boolean, type: 'normal' | 'ground') => {
     if (type !== 'ground') return;

@@ -2,8 +2,9 @@ import { vec3 } from '@react-three/rapier';
 import { useAtom } from 'jotai';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { minimapAtom } from '../atoms/minimapAtom';
+import { minimapAtom } from '../atoms';
 import { useClicker } from '../hooks/useClicker';
+import Minimap from '../tools/minimap';
 
 export function GaeSupProps({
   type = 'normal',

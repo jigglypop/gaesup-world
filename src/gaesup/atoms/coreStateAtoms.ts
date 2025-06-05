@@ -3,6 +3,9 @@ import { atom } from 'jotai';
 import * as THREE from 'three';
 import { AnimationAtomType } from '../types';
 import { V3 } from '../utils/vector';
+import { movementStateAtom, unifiedInputAtom } from './unifiedInputAtom';
+import { minimapInnerType } from '../tools/minimap/type';
+
 export interface ActiveState {
   position: THREE.Vector3;
   velocity: THREE.Vector3;
@@ -149,6 +152,10 @@ export const rideableStateAtom = atom<
 
 // 사이즈 상태
 export const sizesStateAtom = atom<Record<string, THREE.Vector3>>({});
+
+export const minimapAtom = atom<minimapInnerType>({
+  props: {},
+});
 
 // ============================================================================
 // 🎮 컨트롤러 설정 Atoms
@@ -312,9 +319,18 @@ export const createEventSubscriptionAtom = (eventType: EventType) =>
     return events.filter((event) => event.type === eventType);
   });
 
-// ============================================================================
-// 🔗 하위 호환성 Export
-// ============================================================================
+export const urlsAtom = atom(
+  (get) => get(urlsStateAtom),
+  (get, set, update: Partial<UrlsState>) => {
+    const current = get(urlsStateAtom);
+    set(urlsStateAtom, { ...current, ...update });
+  },
+);
 
-// 기존 unifiedInputAtom import
-import { movementStateAtom, unifiedInputAtom } from './unifiedInputAtom';
+export const sizesAtom = atom(
+  (get) => get(sizesStateAtom),
+  (get, set, update: Partial<Record<string, THREE.Vector3>>) => {
+    const current = get(sizesStateAtom);
+    set(sizesStateAtom, { ...current, ...update });
+  },
+);

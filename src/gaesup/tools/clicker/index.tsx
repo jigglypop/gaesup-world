@@ -1,12 +1,27 @@
 import { Line } from '@react-three/drei';
 import { useAtomValue } from 'jotai';
-import { ReactNode } from 'react';
+import { memo } from 'react';
 import * as THREE from 'three';
-import { inputSystemAtom } from '../../atoms';
+import { unifiedInputAtom } from '../../atoms';
+import { useMovePoint } from '../../hooks/useMovePoint';
 
-export function Clicker({ onMarker, runMarker }: { onMarker: ReactNode; runMarker: ReactNode }) {
-  const inputSystem = useAtomValue(inputSystemAtom);
-  const mouse = inputSystem.mouse;
+const OnMarker = memo(() => (
+  <mesh>
+    <sphereGeometry args={[0.3, 16, 16]} />
+    <meshStandardMaterial color="red" transparent opacity={0.8} />
+  </mesh>
+));
+
+const RunMarker = memo(() => (
+  <mesh>
+    <sphereGeometry args={[0.4, 16, 16]} />
+    <meshStandardMaterial color="orange" transparent opacity={0.8} />
+  </mesh>
+));
+
+export const Clicker = memo(() => {
+  const inputSystem = useAtomValue(unifiedInputAtom);
+  const pointer = inputSystem.pointer;
   const clickerOption = inputSystem.clickerOption;
   const pointQ = [];
   for (let i = 0; i < clickerOption.queue.length; i++) {
@@ -15,12 +30,14 @@ export function Clicker({ onMarker, runMarker }: { onMarker: ReactNode; runMarke
     }
   }
 
+  useMovePoint();
+
   return (
     <>
       {/* 하이브리드 모드: 항상 클리커 마커 표시 */}
-      <group position={mouse.target}>
-        {mouse.isActive && onMarker}
-        {mouse.isActive && clickerOption.isRun && mouse.shouldRun && runMarker}
+      <group position={pointer.target}>
+        {pointer.isActive && <OnMarker />}
+        {pointer.isActive && clickerOption.isRun && pointer.shouldRun && <RunMarker />}
       </group>
       {clickerOption.line &&
         pointQ.map((queueItem, key) => {
@@ -48,4 +65,4 @@ export function Clicker({ onMarker, runMarker }: { onMarker: ReactNode; runMarke
         })}
     </>
   );
-}
+});

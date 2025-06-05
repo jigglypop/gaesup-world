@@ -1,136 +1,127 @@
 import { useEffect, useRef } from 'react';
 import { useAtomValue } from 'jotai';
-import { inputSystemAtom, movementStateAtom, inputDebugAtom } from '../../atoms/inputSystemAtom';
+import { unifiedInputAtom, movementStateAtom } from '../../atoms/unifiedInputAtom';
 
-export interface ValidationResult {
+interface ValidationResult {
   isValid: boolean;
-  errors: string[];
-  warnings: string[];
-  timestamp: number;
+  issues: string[];
+  performance: {
+    responseTime: number;
+    accuracy: number;
+  };
 }
 
-// 새로운 Input System 검증 Hook
-export const useInputValidation = (enableLogging = false) => {
-  const inputSystem = useAtomValue(inputSystemAtom);
+export function useInputValidation(): {
+  validate: () => ValidationResult;
+  getInputDebug: () => any;
+} {
+  const inputSystem = useAtomValue(unifiedInputAtom);
   const movementState = useAtomValue(movementStateAtom);
-  const debugInfo = useAtomValue(inputDebugAtom);
+
+  const validate = (): ValidationResult => {
+    const issues: string[] = [];
+    let responseTime = 16;
+    let accuracy = 1.0;
+
+    const keyboard = inputSystem.keyboard;
+    const pointer = inputSystem.pointer;
+
+    if (!keyboard || !pointer) {
+      issues.push('Input system not initialized');
+      accuracy *= 0.5;
+    }
+
+    const contradictoryInputs = (keyboard.forward && keyboard.backward) || 
+                               (keyboard.leftward && keyboard.rightward);
+    if (contradictoryInputs) {
+      issues.push('Contradictory keyboard inputs detected');
+      accuracy *= 0.8;
+    }
+
+    if (pointer.isActive && !pointer.target) {
+      issues.push('Mouse active but no target position');
+      accuracy *= 0.9;
+    }
+
+    return {
+      isValid: issues.length === 0,
+      issues,
+      performance: {
+        responseTime,
+        accuracy,
+      },
+    };
+  };
+
+  const getInputDebug = () => ({
+    inputSystem,
+    movementState,
+    validation: validate(),
+  });
+
+  return { validate, getInputDebug };
+}
+
+export const useInputValidation2 = (enableLogging = false) => {
+  const inputSystem = useAtomValue(unifiedInputAtom);
+  const movementState = useAtomValue(movementStateAtom);
   const lastValidationRef = useRef<ValidationResult | null>(null);
 
-  const validateInputSystem = (): ValidationResult => {
-    const errors: string[] = [];
-    const warnings: string[] = [];
+  const validate = () => {
+    const startTime = performance.now();
+    const issues: string[] = [];
 
-    // 1. Keyboard 상태 검증
-    const keyboard = inputSystem.keyboard;
-    const keyboardKeys = ['forward', 'backward', 'leftward', 'rightward', 'shift', 'space'];
-    
-    keyboardKeys.forEach(key => {
-      if (typeof keyboard[key] !== 'boolean') {
-        errors.push(`Keyboard key '${key}' should be boolean, got ${typeof keyboard[key]}`);
-      }
-    });
-
-    // 2. Mouse 상태 검증
-    const mouse = inputSystem.mouse;
-    
-    if (!mouse.target || typeof mouse.target.x !== 'number') {
-      errors.push('Mouse target should be a valid Vector3');
-    }
-    
-    if (typeof mouse.angle !== 'number') {
-      errors.push('Mouse angle should be a number');
-    }
-    
-    if (typeof mouse.isActive !== 'boolean') {
-      errors.push('Mouse isActive should be boolean');
+    if (!inputSystem?.keyboard || !inputSystem?.pointer) {
+      issues.push('Input system components missing');
     }
 
-    // 3. 파생 상태 검증
-    const expectedIsMoving = keyboard.forward || keyboard.backward || 
-                           keyboard.leftward || keyboard.rightward || mouse.isActive;
-    
-    if (movementState.isMoving !== expectedIsMoving) {
-      warnings.push(`Movement state mismatch: expected ${expectedIsMoving}, got ${movementState.isMoving}`);
-    }
-
-    // 4. 논리적 일관성 검증
-    if (movementState.isRunning && !movementState.isMoving) {
-      warnings.push('Running state is true but not moving');
-    }
+    const endTime = performance.now();
+    const responseTime = endTime - startTime;
 
     const result: ValidationResult = {
-      isValid: errors.length === 0,
-      errors,
-      warnings,
-      timestamp: Date.now(),
+      isValid: issues.length === 0,
+      issues,
+      performance: {
+        responseTime,
+        accuracy: issues.length === 0 ? 1.0 : 0.8,
+      },
     };
 
+    lastValidationRef.current = result;
     return result;
   };
 
-  // 실시간 검증 실행
   useEffect(() => {
-    const result = validateInputSystem();
-    lastValidationRef.current = result;
-
     if (enableLogging) {
-      if (!result.isValid) {
-        console.error('Input System Validation Failed:', result.errors);
-      }
-      if (result.warnings.length > 0) {
-        console.warn('Input System Warnings:', result.warnings);
-      }
-      if (result.isValid && result.warnings.length === 0) {
-        console.log('✅ Input System validation passed');
-      }
+      console.log('Input System State:', {
+        inputSystem,
+        movementState,
+        validation: lastValidationRef.current,
+      });
     }
   }, [inputSystem, movementState, enableLogging]);
 
-  // 수동 검증 함수
-  const runValidation = () => {
-    const result = validateInputSystem();
-    lastValidationRef.current = result;
-    return result;
-  };
-
-  // 현재 상태 스냅샷 반환
-  const getStateSnapshot = () => ({
-    inputSystem,
-    movementState,
-    debugInfo,
-    validation: lastValidationRef.current,
-  });
-
-  return {
-    validationResult: lastValidationRef.current,
-    runValidation,
-    getStateSnapshot,
-    isValid: lastValidationRef.current?.isValid ?? false,
-  };
+  return { validate, inputSystem, movementState };
 };
 
-// 개발 도구: 입력 상태를 콘솔에 출력하는 Hook
 export const useInputLogger = (enabled = false, interval = 1000) => {
-  const inputSystem = useAtomValue(inputSystemAtom);
+  const inputSystem = useAtomValue(unifiedInputAtom);
   const movementState = useAtomValue(movementStateAtom);
 
   useEffect(() => {
     if (!enabled) return;
 
     const logInterval = setInterval(() => {
-      console.table({
-        'Keyboard Forward': inputSystem.keyboard.forward,
-        'Keyboard Backward': inputSystem.keyboard.backward,
-        'Keyboard Left': inputSystem.keyboard.leftward,
-        'Keyboard Right': inputSystem.keyboard.rightward,
-        'Keyboard Shift': inputSystem.keyboard.shift,
-        'Keyboard Space': inputSystem.keyboard.space,
-        'Mouse Active': inputSystem.mouse.isActive,
-        'Mouse Should Run': inputSystem.mouse.shouldRun,
-        'Is Moving': movementState.isMoving,
-        'Is Running': movementState.isRunning,
-        'Input Source': movementState.inputSource,
+      console.group('🎮 Input System Debug');
+      console.log('Keyboard State:', inputSystem.keyboard);
+      console.log('Pointer State:', inputSystem.pointer);
+      console.log('Movement State:', movementState);
+      console.log('Timestamps:', {
+        'Current': Date.now(),
+        'Pointer Active': inputSystem.pointer.isActive,
+        'Pointer Should Run': inputSystem.pointer.shouldRun,
       });
+      console.groupEnd();
     }, interval);
 
     return () => clearInterval(logInterval);

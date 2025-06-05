@@ -1,6 +1,7 @@
 import { useSetAtom } from 'jotai';
 // 새로운 통합 입력 시스템만 사용
-import { keyboardInputAtom } from '../../atoms/inputSystemAtom';
+import { keyboardInputAtom } from '../../atoms/unifiedInputAtom';
+import { useCallback } from 'react';
 
 export function usePushKey() {
   // === 새로운 통합 시스템만 사용 ===

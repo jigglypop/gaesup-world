@@ -6,10 +6,13 @@ import {
   characterAnimationAtom,
   vehicleAnimationAtom,
 } from '../../atoms/animationAtoms';
-import { inputSystemAtom, keyboardInputAtom, mouseInputAtom } from '../../atoms/inputSystemAtom';
+import { unifiedInputAtom, keyboardInputAtom, pointerInputAtom } from '../../atoms/unifiedInputAtom';
 import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
 import { useGaesupGltf } from '../useGaesupGltf';
 import { PhysicsBridgeInputData, usePhysicsInput } from '../usePhysicsInput';
+import { activeStateType, modeType, worldContextType, blockType } from '../../world/context/type';
+import { V3 } from '../../utils/vector';
+import * as THREE from 'three';
 
 /**
  * Bridge Connector Hook
@@ -26,9 +29,9 @@ export const useBridgeConnector = () => {
   // ============================================================================
 
   // ✅ 입력 시스템: Atoms가 진실의 원천
-  const inputSystem = useAtomValue(inputSystemAtom);
+  const inputSystem = useAtomValue(unifiedInputAtom);
   const setKeyboardInput = useSetAtom(keyboardInputAtom);
-  const setMouseInput = useSetAtom(mouseInputAtom);
+  const setPointerInput = useSetAtom(pointerInputAtom);
 
   // ✅ 리소스 및 설정: Atoms가 진실의 원천
   const urls = useAtomValue(urlsAtom);
@@ -125,7 +128,7 @@ export const useBridgeConnector = () => {
     const data: PhysicsBridgeInputData = {
       inputSystem: {
         keyboard: inputSystem.keyboard,
-        mouse: inputSystem.mouse,
+        mouse: inputSystem.pointer,
       },
       urls,
       block,
@@ -133,7 +136,7 @@ export const useBridgeConnector = () => {
       controllerContext: worldContext,
       dispatch: worldDispatch,
       setKeyboardInput: (update) => setKeyboardInput(update),
-      setMouseInput: (update) => setMouseInput(update),
+      setMouseInput: (update) => setPointerInput(update),
       getSizesByUrls,
     };
 
@@ -146,7 +149,7 @@ export const useBridgeConnector = () => {
     worldContext,
     worldDispatch,
     setKeyboardInput,
-    setMouseInput,
+    setPointerInput,
     getSizesByUrls,
   ]);
 
