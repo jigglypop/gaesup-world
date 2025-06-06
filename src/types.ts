@@ -101,6 +101,8 @@ export type CameraControlMode =
   | 'thirdPersonOrbit'
   | 'topDown'
   | 'sideScroll'
+  | 'shoulder'
+  | 'fixed'
   | 'isometric'
   | 'free';
 
@@ -230,6 +232,12 @@ export type CameraOptionType = {
   modeSettings?: {
     [K in CameraControlMode]?: Partial<CameraOptionDebugType>;
   };
+  shoulderOffset?: THREE.Vector3;
+  aimOffset?: THREE.Vector3;
+  fixedPosition?: THREE.Vector3;
+  fixedRotation?: THREE.Euler;
+  lookAtTarget?: THREE.Vector3;
+  isoAngle?: number;
 } & CameraOptionDebugType;
 
 export type CameraRayType = {
@@ -528,4 +536,4 @@ export type PhysicsEventData = {
   };
 };
 
-export type PhysicsEventCallback<T extends PhysicsEventType> = (data: PhysicsEventData[T]) => void; 
+export type PhysicsEventCallback<T extends PhysicsEventType> = (data: PhysicsEventData[T]) => void;

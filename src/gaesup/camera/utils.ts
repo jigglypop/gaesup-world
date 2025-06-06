@@ -3,6 +3,7 @@ import * as THREE from 'three';
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
 const tempQuaternion = new THREE.Quaternion();
+const tempQuaternion2 = new THREE.Quaternion();
 
 export const cameraUtils = {
   tempVectors: {
@@ -17,6 +18,58 @@ export const cameraUtils = {
 
   lerpSmooth: (current: number, target: number, factor: number): number => {
     return current + (target - current) * factor;
+  },
+
+  frameRateIndependentLerp: (
+    current: number,
+    target: number,
+    speed: number,
+    deltaTime: number,
+  ): number => {
+    const factor = 1 - Math.exp(-speed * deltaTime);
+    return current + (target - current) * factor;
+  },
+
+  frameRateIndependentLerpVector3: (
+    current: THREE.Vector3,
+    target: THREE.Vector3,
+    speed: number,
+    deltaTime: number,
+  ): void => {
+    const factor = 1 - Math.exp(-speed * deltaTime);
+    current.lerp(target, factor);
+  },
+
+  smoothLookAt: (
+    camera: THREE.Camera,
+    target: THREE.Vector3,
+    speed: number,
+    deltaTime: number,
+  ): void => {
+    tempVector3.subVectors(target, camera.position).normalize();
+    const targetQuaternion = tempQuaternion
+      .setFromRotationMatrix(new THREE.Matrix4().lookAt(camera.position, target, camera.up))
+      .normalize();
+
+    const currentQuaternion = camera.quaternion.clone().normalize();
+
+    if (currentQuaternion.dot(targetQuaternion) < 0) {
+      targetQuaternion.multiplyScalar(-1);
+    }
+
+    const factor = 1 - Math.exp(-speed * deltaTime);
+    camera.quaternion.slerp(targetQuaternion, factor).normalize();
+  },
+
+  preventCameraJitter: (
+    camera: THREE.Camera,
+    targetPosition: THREE.Vector3,
+    targetLookAt: THREE.Vector3,
+    speed: number,
+    deltaTime: number,
+  ): void => {
+    cameraUtils.frameRateIndependentLerpVector3(camera.position, targetPosition, speed, deltaTime);
+    cameraUtils.smoothLookAt(camera, targetLookAt, speed * 0.8, deltaTime);
   },
 
   distanceSquared: (a: THREE.Vector3, b: THREE.Vector3): number => {
@@ -34,19 +87,19 @@ export const cameraUtils = {
     velocity: THREE.Vector3,
     smoothTime: number,
     deltaTime: number,
-    maxSpeed?: number
+    maxSpeed?: number,
   ): void => {
     const omega = 2 / smoothTime;
     const x = omega * deltaTime;
     const exp = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
-    
+
     tempVector3.subVectors(current, target);
     const maxChange = maxSpeed ? maxSpeed * smoothTime : Infinity;
     tempVector3.clampLength(0, maxChange);
-    
+
     tempVector3_2.copy(velocity).addScaledVector(tempVector3, omega).multiplyScalar(deltaTime);
     velocity.copy(velocity).sub(tempVector3_2).multiplyScalar(exp);
-    
+
     current.copy(target).add(tempVector3.add(tempVector3_2).multiplyScalar(exp));
   },
 
@@ -60,18 +113,18 @@ export const cameraUtils = {
       maxY?: number;
       minZ?: number;
       maxZ?: number;
-    }
+    },
   ): THREE.Vector3 => {
     if (!bounds) return center;
-    
+
     const x = bounds.minX !== undefined ? Math.max(bounds.minX, center.x) : center.x;
     const y = bounds.minY !== undefined ? Math.max(bounds.minY, center.y) : center.y;
     const z = bounds.minZ !== undefined ? Math.max(bounds.minZ, center.z) : center.z;
-    
+
     const maxX = bounds.maxX !== undefined ? Math.min(bounds.maxX, x) : x;
     const maxY = bounds.maxY !== undefined ? Math.min(bounds.maxY, y) : y;
     const maxZ = bounds.maxZ !== undefined ? Math.min(bounds.maxZ, z) : z;
-    
+
     return tempVector3.set(maxX, maxY, maxZ);
   },
 
@@ -82,9 +135,11 @@ export const cameraUtils = {
   },
 
   isPositionEqual: (a: THREE.Vector3, b: THREE.Vector3, threshold = 0.001): boolean => {
-    return Math.abs(a.x - b.x) < threshold &&
-           Math.abs(a.y - b.y) < threshold &&
-           Math.abs(a.z - b.z) < threshold;
+    return (
+      Math.abs(a.x - b.x) < threshold &&
+      Math.abs(a.y - b.y) < threshold &&
+      Math.abs(a.z - b.z) < threshold
+    );
   },
 
   updateFOV: (
@@ -92,7 +147,7 @@ export const cameraUtils = {
     targetFov: number,
     lerpSpeed: number,
     minFov = 10,
-    maxFov = 120
+    maxFov = 120,
   ): void => {
     const clampedFov = cameraUtils.clampValue(targetFov, minFov, maxFov);
     camera.fov = THREE.MathUtils.lerp(camera.fov, clampedFov, lerpSpeed);
@@ -107,15 +162,19 @@ export const cameraUtils = {
     releaseVector3: (vector: THREE.Vector3): void => {
       vector.set(0, 0, 0);
       cameraUtils.pool.vectors.push(vector);
-    }
+    },
   },
 
   updateFOVLerp: (
     camera: THREE.PerspectiveCamera,
     targetFov: number,
-    lerpSpeed: number = CAMERA_CONSTANTS.DEFAULT_FOV_LERP
+    lerpSpeed: number = CAMERA_CONSTANTS.DEFAULT_FOV_LERP,
   ): void => {
-    const clampedFov = cameraUtils.clampValue(targetFov, CAMERA_CONSTANTS.MIN_FOV, CAMERA_CONSTANTS.MAX_FOV);
+    const clampedFov = cameraUtils.clampValue(
+      targetFov,
+      CAMERA_CONSTANTS.MIN_FOV,
+      CAMERA_CONSTANTS.MAX_FOV,
+    );
     camera.fov = THREE.MathUtils.lerp(camera.fov, clampedFov, lerpSpeed);
     camera.updateProjectionMatrix();
   },
@@ -129,16 +188,16 @@ export const cameraUtils = {
       maxY?: number;
       minZ?: number;
       maxZ?: number;
-    }
+    },
   ): THREE.Vector3 => {
     if (!bounds) return position;
-    
+
     const x = cameraUtils.clampValue(position.x, bounds.minX ?? -Infinity, bounds.maxX ?? Infinity);
     const y = cameraUtils.clampValue(position.y, bounds.minY ?? -Infinity, bounds.maxY ?? Infinity);
     const z = cameraUtils.clampValue(position.z, bounds.minZ ?? -Infinity, bounds.maxZ ?? Infinity);
-    
+
     return tempVector3.set(x, y, z);
-  }
+  },
 };
 
 export const CAMERA_CONSTANTS = {
@@ -149,4 +208,5 @@ export const CAMERA_CONSTANTS = {
   DEFAULT_FOV_LERP: 0.05,
   MIN_FOV: 10,
   MAX_FOV: 120,
-} as const; 
+  FRAME_RATE_LERP_SPEED: 8.0,
+} as const;
