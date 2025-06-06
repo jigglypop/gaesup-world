@@ -1,5 +1,4 @@
 import { airplaneType, characterType, vehicleType } from '../context';
-import { callbackType } from './initialize/callback/type';
 import {
   ActionsType,
   AnimationTagType,
@@ -19,6 +18,7 @@ import {
   ResourceUrlsType,
   SlopeRayType,
 } from '../types';
+import { callbackType } from './initialize/callback/type';
 
 export type {
   ActionsType,

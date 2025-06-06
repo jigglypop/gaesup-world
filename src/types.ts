@@ -77,11 +77,6 @@ export interface inputState {
   blocks: BlockState;
   clickerOption: ClickerOptionState;
 }
-
-// ============================================================================
-// 컨트롤러 관련 타입들
-// ============================================================================
-
 export type ControllerType = 'character' | 'vehicle' | 'airplane';
 
 export type CameraControlMode =
@@ -104,10 +99,6 @@ export type ModeType = {
   control?: CameraControlMode | ControlMode;
   isButton?: boolean;
 };
-
-// ============================================================================
-// 상태 관련 타입들
-// ============================================================================
 
 export type ActiveStateType = {
   position: THREE.Vector3;
@@ -241,10 +232,6 @@ export type CameraRayType = {
   intersectObjectMap: { [uuid: string]: THREE.Mesh };
 };
 
-// ============================================================================
-// 레이 관련 타입들
-// ============================================================================
-
 export type RayType = {
   origin: THREE.Vector3;
   hit: RayColliderHit | null;
@@ -300,11 +287,6 @@ export type AnimationStatePropType = {
 export type AnimationStateType = {
   [key: string]: AnimationStatePropType;
 };
-
-// ============================================================================
-// 클리커 관련 타입들
-// ============================================================================
-
 export type ClickerType = {
   point: THREE.Vector3;
   angle: number;
@@ -335,11 +317,6 @@ export interface ClickerOptionState {
 }
 
 export type ClickerOptionType = ClickerOptionState;
-
-// ============================================================================
-// 휠 관련 타입들
-// ============================================================================
-
 export type WheelStateType = {
   position: THREE.Vector3;
   rotation: THREE.Euler;
@@ -351,11 +328,6 @@ export type WheelsStateType = {
   2?: WheelStateType;
   3?: WheelStateType;
 };
-
-// ============================================================================
-// 포털 관련 타입들
-// ============================================================================
-
 export type PortalType = {
   text?: string;
   position: THREE.Vector3;
@@ -363,11 +335,6 @@ export type PortalType = {
 };
 
 export type PortalsType = PortalType[];
-
-// ============================================================================
-// 참조 및 Props 타입들
-// ============================================================================
-
 export type RefsType = {
   colliderRef: RefObject<Collider>;
   rigidBodyRef: RefObject<RapierRigidBody>;
@@ -382,11 +349,6 @@ export interface ControllerOtherPropType extends RigidBodyProps {
   rigidBodyProps?: RigidBodyProps;
   debug?: boolean;
 }
-
-// ============================================================================
-// 옵션 관련 타입들
-// ============================================================================
-
 export type ControllerOptionsType = {
   lerp: {
     cameraTurn: number;
@@ -408,11 +370,6 @@ export type OptionsType = {
 };
 
 export type PartialOptionsType = Partial<OptionsType>;
-
-// ============================================================================
-// 점프 관련 타입들
-// ============================================================================
-
 export type JumpInnerType = {
   velocity: THREE.Vector3;
   direction: THREE.Vector3;
@@ -424,11 +381,6 @@ export type JumpConstType = {
 };
 
 export type JumpPropType = JumpInnerType & JumpConstType;
-
-// ============================================================================
-// 파츠 관련 타입들
-// ============================================================================
-
 export type PartType = {
   url?: string;
   color?: string;
@@ -438,11 +390,6 @@ export type PartType = {
 };
 
 export type PartsType = PartType[];
-
-// ============================================================================
-// 물리학 관련 타입들
-// ============================================================================
-
 export interface PhysicsInputRef {
   current: {
     keyboard: KeyboardInputState;
@@ -457,8 +404,8 @@ export interface PhysicsBridgeInputData {
   };
   urls: ResourceUrlsType;
   block: BlockState;
-  worldContext: unknown; // GaesupWorldContextType - 순환 참조 방지
-  controllerContext: unknown; // GaesupWorldContextType - 순환 참조 방지
+  worldContext: unknown;
+  controllerContext: unknown;
   dispatch: DispatchType<unknown>;
   setKeyboardInput: (update: Partial<KeyboardInputState>) => void;
   setMouseInput: (update: Partial<MouseInputState>) => void;
@@ -466,7 +413,7 @@ export interface PhysicsBridgeInputData {
 }
 
 export interface PhysicsBridgeData {
-  worldContext: unknown; // GaesupWorldContextType - 순환 참조 방지
+  worldContext: unknown;
   activeState: ActiveStateType;
   input: {
     keyboard: KeyboardInputState;
@@ -485,11 +432,6 @@ export interface PhysicsBridgeOutput {
   isReady: boolean;
   error: string | null;
 }
-
-// ============================================================================
-// 이벤트 관련 타입들
-// ============================================================================
-
 export type PhysicsEventType =
   | 'POSITION_UPDATE'
   | 'ROTATION_UPDATE'

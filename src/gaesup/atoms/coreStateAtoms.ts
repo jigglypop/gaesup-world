@@ -232,11 +232,6 @@ export const controllerConfigAtom = atom<ControllerConfig>({
   },
 });
 
-// ============================================================================
-// 🔄 파생 상태 Atoms (계산된 값들)
-// ============================================================================
-
-// 현재 타입에 맞는 컨트롤러 설정
 export const currentControllerConfigAtom = atom((get) => {
   const mode = get(modeStateAtom);
   const config = get(controllerConfigAtom);

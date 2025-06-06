@@ -123,21 +123,21 @@ export const clickerOptionAtom = atom(
 
 export const controlAtom = atom(
   (get) => get(inputAtom).keyboard,
-  (get, set, update: Partial<KeyboardInputState>) => {
+  (_, set, update: Partial<KeyboardInputState>) => {
     set(keyboardInputAtom, update);
   },
 );
 
 export const blockAtom = atom(
   (get) => get(inputAtom).blocks,
-  (get, set, update: Partial<BlockState>) => {
+  (_, set, update: Partial<BlockState>) => {
     set(blockStateAtom, update);
   },
 );
 
 export const clickerAtom = atom(
   (get) => get(inputAtom).pointer,
-  (get, set, update: Partial<MouseInputState>) => {
+  (_, set, update: Partial<MouseInputState>) => {
     set(pointerInputAtom, update);
   },
 );
