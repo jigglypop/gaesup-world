@@ -1,0 +1,45 @@
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.common-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  width: 5rem;
+  height: 5rem;
+  cursor: pointer;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  font-weight: 500;
+  transition: all 0.3s ease-in;
+  box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+}
+
+.common-button:hover {
+  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.5);
+}
+
+.minimap-size {
+  width: 18rem;
+  height: 18rem;
+}
+
+@media screen and (max-width: 1024px) {
+  .minimap-size {
+    width: 17rem;
+    height: 17rem;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .minimap-size {
+    width: 16rem;
+    height: 16rem;
+  }
+} 

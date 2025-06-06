@@ -28,14 +28,11 @@ class CharacterPool {
   private lodThresholds = {
     near: { distanceSquared: 50 * 50, updateInterval: 16 },
     medium: { distanceSquared: 100 * 100, updateInterval: 33 },
-    far: { distanceSquared: 200 * 200, updateInterval: 66 }
-  }; // 🚀 LOD 임계값 사전 계산
-
+    far: { distanceSquared: 200 * 200, updateInterval: 66 },
+  };
   constructor(config: CharacterPoolConfig) {
     this.config = config;
     this.cullingDistanceSquared = config.cullingDistance * config.cullingDistance;
-    
-    // 풀 초기화
     for (let i = 0; i < config.maxInstances; i++) {
       const id = `character-pool-${i}`;
       this.availableIds.push(id);
@@ -72,8 +69,6 @@ class CharacterPool {
     if (instance && instance.isActive) {
       instance.isActive = false;
       this.availableIds.push(id);
-      
-      // 🚀 활성 인스턴스 Set에서 제거
       this.activeInstances.delete(id);
     }
   }
@@ -98,10 +93,10 @@ class CharacterPool {
     // 🚀 활성 인스턴스만 순회 (Map 전체 순회 제거!)
     for (const id of this.activeInstances) {
       const instance = this.instances.get(id)!;
-      
+
       // 🚀 제곱 거리 비교로 제곱근 연산 완전 제거
       const distanceSquared = instance.position.distanceToSquared(cameraPosition);
-      
+
       // 너무 멀면 업데이트 스킵
       if (distanceSquared > this.cullingDistanceSquared) {
         continue;
@@ -181,29 +176,29 @@ export function useCharacterPool(config: Partial<CharacterPoolConfig> = {}) {
       pool.batchUpdate(cameraPosition, currentTime);
     },
     4, // 패시브 객체들 다음 우선순위
-    true
+    true,
   );
 
-  const acquireCharacter = useCallback((
-    position: THREE.Vector3, 
-    rotation: THREE.Euler, 
-    animation: string = 'idle'
-  ) => {
-    return pool.acquire(position, rotation, animation);
-  }, [pool]);
+  const acquireCharacter = useCallback(
+    (position: THREE.Vector3, rotation: THREE.Euler, animation: string = 'idle') => {
+      return pool.acquire(position, rotation, animation);
+    },
+    [pool],
+  );
 
-  const releaseCharacter = useCallback((id: string) => {
-    pool.release(id);
-  }, [pool]);
+  const releaseCharacter = useCallback(
+    (id: string) => {
+      pool.release(id);
+    },
+    [pool],
+  );
 
-  const updateCharacter = useCallback((
-    id: string,
-    position: THREE.Vector3,
-    rotation: THREE.Euler,
-    animation: string
-  ) => {
-    pool.update(id, position, rotation, animation);
-  }, [pool]);
+  const updateCharacter = useCallback(
+    (id: string, position: THREE.Vector3, rotation: THREE.Euler, animation: string) => {
+      pool.update(id, position, rotation, animation);
+    },
+    [pool],
+  );
 
   const getStats = useCallback(() => {
     return pool.getStats();
@@ -226,4 +221,4 @@ export function useCharacterPool(config: Partial<CharacterPoolConfig> = {}) {
     getActiveCharacters,
     getPerformanceStats, // 🚀 성능 모니터링용
   };
-} 
+}

@@ -1,12 +1,12 @@
 import { useTeleport } from '../../hooks/useInputControls';
-import * as S from './style.css';
+import './style.css';
 import { teleportType } from './type.ts';
 
 export function teleport({ text, position, teleportStyle }: teleportType) {
   const { Teleport } = useTeleport();
   return (
     <div
-      className={S.teleport}
+      className="teleport"
       onClick={() => {
         Teleport(position);
       }}

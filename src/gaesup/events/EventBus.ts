@@ -68,4 +68,25 @@ export function useEventBus<T extends EventType>(
   }, [eventType, ...deps]);
 }
 
+export const eventHelpers = {
+  emitPositionUpdate: (position: any, velocity: any) => {
+    EventBus.dispatch('POSITION_UPDATE', {
+      position:
+        position instanceof Array ? { x: position[0], y: position[1], z: position[2] } : position,
+      velocity:
+        velocity instanceof Array ? { x: velocity[0], y: velocity[1], z: velocity[2] } : velocity,
+    });
+  },
+
+  emitRotationUpdate: (euler: any, direction: any) => {
+    EventBus.dispatch('ROTATION_UPDATE', {
+      euler: euler instanceof Array ? { x: euler[0], y: euler[1], z: euler[2] } : euler,
+      direction:
+        direction instanceof Array
+          ? { x: direction[0], y: direction[1], z: direction[2] }
+          : direction,
+    });
+  },
+};
+
 export default EventBus;

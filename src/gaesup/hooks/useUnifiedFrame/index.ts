@@ -6,7 +6,7 @@ type FrameCallback = (state: RootState, delta: number) => void;
 interface FrameSubscription {
   id: string;
   callback: FrameCallback;
-  priority: number; // 낮을수록 먼저 실행
+  priority: number;
 }
 
 class OptimizedFrameManager {

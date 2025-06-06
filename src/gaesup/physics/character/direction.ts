@@ -34,8 +34,6 @@ export function direction(
     mouseDirection(activeState, mouse, characterConfig, calcProp);
   } else if (hasKeyboardInput || keyboardChanged) {
     keyboardDirection(activeState, keyboard, characterConfig, controlMode);
-
-    // 키보드 상태 저장
     lastKeyboardState = {
       forward: keyboard.forward,
       backward: keyboard.backward,
@@ -43,19 +41,15 @@ export function direction(
       rightward: keyboard.rightward,
     };
   }
-
-  // 의미있는 변화가 있을 때만 이벤트 발행 (성능 최적화)
   const currentDirectionLength = activeState.dir.length();
   const eulerChanged = shouldUpdate(activeState.euler.y, lastEulerY, 0.001);
   const directionChanged = shouldUpdate(currentDirectionLength, lastDirectionLength, 0.01);
-
   if (eulerChanged || directionChanged) {
     physicsEventBus.emit('ROTATION_UPDATE', {
       euler: activeState.euler,
       direction: activeState.direction,
       dir: activeState.dir,
     });
-
     lastEulerY = activeState.euler.y;
     lastDirectionLength = currentDirectionLength;
   }
@@ -69,13 +63,9 @@ function mouseDirection(
 ) {
   if (calcProp?.rigidBodyRef.current) {
     const currentPos = calcProp.rigidBodyRef.current.translation();
-
-    // 임시 벡터 재사용
     const tempCurrentPos = vectorCache.getTempVector(0);
     tempCurrentPos.set(currentPos.x, currentPos.y, currentPos.z);
-
     const norm = calcNorm(tempCurrentPos, mouse.target, false);
-
     if (norm < 1) {
       const { clickerOption } = calcProp.worldContext || {};
       if (clickerOption?.track && clickerOption.queue && clickerOption.queue.length > 0) {
@@ -105,28 +95,18 @@ function mouseDirection(
       }
     }
   }
-
   const { turnSpeed = 10 } = characterConfig;
   const targetAngle = Math.PI / 2 - mouse.angle;
-
-  // 각도 정규화와 차이 계산 최적화
   let angleDiff = normalizeAngle(targetAngle - activeState.euler.y);
-
   const rotationSpeed = (turnSpeed * Math.PI) / 80;
   const rotationStep = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), rotationSpeed);
   activeState.euler.y += rotationStep;
-
-  // 캐시된 삼각함수 사용
   const { sin: sinY, cos: cosY } = getCachedTrig(activeState.euler.y);
-
-  // 임시 벡터 재사용
   const tempFront = vectorCache.getTempVector(1);
   const tempDirection = vectorCache.getTempVector(2);
-
   tempFront.set(1, 0, 1);
   tempDirection.set(-sinY, 0, -cosY);
   tempFront.multiply(tempDirection);
-
   activeState.direction.copy(tempFront);
   activeState.dir.copy(tempFront).normalize();
 }

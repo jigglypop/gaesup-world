@@ -2,13 +2,7 @@ import { useAtom, useAtomValue } from 'jotai';
 import React, { useCallback, useContext, useEffect, useRef } from 'react';
 import { minimapAtom, modeStateAtom } from '../../atoms';
 import { GaesupContext } from '../../context';
-import {
-  avatarStyles,
-  baseStyles,
-  directionStyles,
-  objectStyles,
-  textStyles,
-} from './style.css';
+import './style.css';
 import { MinimapProps } from './type';
 import {
   DEFAULT_SCALE,
@@ -18,7 +12,74 @@ import {
   ROTATION_THRESHOLD,
   UPDATE_INTERVAL,
   MINIMAP_SIZE_PX,
+  PRETENDARD_FONT,
 } from '../constants';
+
+const baseStyles = {
+  minimap: {
+    position: 'absolute' as const,
+    bottom: '20px',
+    left: '20px',
+    width: `${MINIMAP_SIZE_PX}px`,
+    height: `${MINIMAP_SIZE_PX}px`,
+    zIndex: 100,
+    cursor: 'pointer',
+  },
+  scale: {
+    position: 'absolute' as const,
+    bottom: '20px',
+    left: '230px',
+    zIndex: 101,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    color: 'white',
+    fontSize: '1rem',
+    fontFamily: PRETENDARD_FONT,
+    fontWeight: '400',
+    background: 'rgba(0,0,0,0.5)',
+    padding: '0.5rem 1rem',
+    borderRadius: '1rem',
+  },
+  plusMinus: {
+    cursor: 'pointer',
+    width: '2rem',
+    height: '2rem',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: '50%',
+    background: 'rgba(0,0,0,0.5)',
+    fontFamily: PRETENDARD_FONT,
+    fontWeight: '500',
+    transition: 'all 0.2s',
+  },
+};
+
+const directionStyles = {
+  color: 'white',
+  fontSize: '1.5rem',
+  fontFamily: PRETENDARD_FONT,
+  fontWeight: 'bold',
+};
+
+const objectStyles = {
+  background: 'rgba(0,0,0,0.3)',
+  boxShadow: '0 0 5px rgba(0,0,0,0.3)',
+};
+
+const avatarStyles = {
+  background: '#01fff7',
+  boxShadow: '0 0 10px rgba(1,255,247,0.7)',
+};
+
+const textStyles = {
+  color: 'white',
+  fontSize: '1rem',
+  fontFamily: PRETENDARD_FONT,
+  fontWeight: 'bold',
+};
+
 import { useCanvas } from './useCanvas';
 import { useMinimapControls } from './useMinimapControls';
 import { useMinimapUpdates } from './useMinimapUpdates';
@@ -44,28 +105,20 @@ export function MiniMap({
   const [minimap] = useAtom(minimapAtom);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const {
-    scale,
-    upscale,
-    downscale,
-    handleWheel,
-    setupWheelListener,
-  } = useMinimapControls(initialScale, minScale, maxScale, blockScale, blockScaleControl);
-
-  const { updateCanvas } = useCanvas(
-    activeState,
-    minimap,
-    mode,
-    scale,
-    angle,
-    blockRotate,
-    {
-      minimapObjectStyle,
-      textStyle,
-      avatarStyle,
-      directionStyle,
-    }
+  const { scale, upscale, downscale, handleWheel, setupWheelListener } = useMinimapControls(
+    initialScale,
+    minScale,
+    maxScale,
+    blockScale,
+    blockScaleControl,
   );
+
+  const { updateCanvas } = useCanvas(activeState, minimap, mode, scale, angle, blockRotate, {
+    minimapObjectStyle,
+    textStyle,
+    avatarStyle,
+    directionStyle,
+  });
 
   const getCurrentState = useCallback(() => {
     if (!activeState?.position) return null;

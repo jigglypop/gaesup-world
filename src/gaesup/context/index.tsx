@@ -315,3 +315,17 @@ export function useGaesupContext() {
 export function useGaesupDispatch() {
   return useContext(GaesupDispatchContext);
 }
+
+export const createStateUpdater = <T extends keyof gaesupWorldContextType>(
+  dispatch: dispatchType<Partial<gaesupWorldContextType>>,
+  stateKey: T,
+) => {
+  return (updates: Partial<gaesupWorldContextType[T]>) => {
+    dispatch({
+      type: 'update',
+      payload: {
+        [stateKey]: updates,
+      },
+    });
+  };
+};

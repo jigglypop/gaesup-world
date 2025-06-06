@@ -1,17 +1,9 @@
-import { RefObject, useRef } from 'react';
+import { useRef } from 'react';
 import * as THREE from 'three';
 import type {
-  KeyboardInputState,
-  MouseInputState,
-  ResourceUrlsType,
-  BlockState,
-  ActiveStateType,
-  DispatchType,
-  SizesType,
-  PhysicsInputRef,
   PhysicsBridgeInputData,
   PhysicsBridgeData,
-  PhysicsBridgeOutput
+  PhysicsBridgeOutput,
 } from '../../../types';
 
 export function usePhysicsInput(injectedData: PhysicsBridgeInputData): PhysicsBridgeOutput {

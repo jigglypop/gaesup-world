@@ -12,12 +12,7 @@ import {
   ResourceUrlsType,
 } from '../types';
 import { dispatchType } from '../utils/type';
-import {
-  airplaneType,
-  characterType,
-  gaesupWorldContextType,
-  vehicleType,
-} from '../context';
+import { airplaneType, characterType, gaesupWorldContextType, vehicleType } from '../context';
 
 export interface PhysicsRefs {
   colliderRef: RefObject<Collider>;
@@ -70,3 +65,37 @@ export interface PhysicsCalcProps extends PhysicsRefs {
 export interface PhysicsCalculationProps extends PhysicsRefs {
   groundRay: GroundRayType;
 }
+
+export const commonPhysics = {
+  applyDamping: (
+    rigidBodyRef: RefObject<RapierRigidBody>,
+    config: { linearDamping: number; condition?: boolean; brakeRatio?: number },
+  ) => {
+    if (!rigidBodyRef.current) return;
+    const damping = config.condition ? config.brakeRatio || 5 : config.linearDamping;
+    rigidBodyRef.current.setLinearDamping(damping);
+  },
+
+  applyImpulse: (
+    rigidBodyRef: RefObject<RapierRigidBody>,
+    direction: THREE.Vector3,
+    config: { maxSpeed: number; boost?: number },
+  ) => {
+    if (!rigidBodyRef.current) return;
+    const velocity = rigidBodyRef.current.linvel();
+    const speed = Math.sqrt(velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2);
+
+    if (speed < config.maxSpeed) {
+      const mass = rigidBodyRef.current.mass();
+      const boost = config.boost || 1;
+      rigidBodyRef.current.applyImpulse(
+        {
+          x: direction.x * mass * boost,
+          y: direction.y * mass * boost,
+          z: direction.z * mass * boost,
+        },
+        false,
+      );
+    }
+  },
+};

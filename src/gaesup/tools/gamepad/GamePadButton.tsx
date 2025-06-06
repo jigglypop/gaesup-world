@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { usePushKey } from '../../hooks/useInputControls';
-import * as S from './style.css';
+import './style.css';
 import { GamePadButtonType } from './type';
 
 export default function GamePadButton({ value, name, gamePadButtonStyle }: GamePadButtonType) {
@@ -16,12 +16,12 @@ export default function GamePadButton({ value, name, gamePadButtonStyle }: GameP
   };
   return (
     <button
-      className={`${S.padButton} ${isClicked ? S.isClicked : ''}`}
+      className={`pad-button ${isClicked ? 'is-clicked' : ''}`}
       onMouseDown={onMouseDown}
       onMouseUp={onMouseLeave}
       onMouseLeave={onMouseLeave}
       onContextMenu={(e) => {
-        e.preventDefault();l
+        e.preventDefault();
         onMouseLeave();
       }}
       onPointerDown={onMouseDown}

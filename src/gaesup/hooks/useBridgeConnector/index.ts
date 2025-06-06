@@ -1,11 +1,7 @@
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useContext, useEffect, useMemo, useRef } from 'react';
 import { blockAtom, urlsAtom } from '../../atoms';
-import {
-  airplaneAnimationAtom,
-  characterAnimationAtom,
-  vehicleAnimationAtom,
-} from '../../atoms/animationAtoms';
+import { animationAtoms } from '../../atoms/animationAtoms';
 import { inputAtom, keyboardInputAtom, pointerInputAtom } from '../../atoms/inputAtom';
 import { GaesupContext, GaesupDispatchContext } from '../../context';
 import { useGaesupGltf } from '../useGaesupGltf';
@@ -29,34 +25,16 @@ export const useBridgeConnector = () => {
   const inputSystem = useAtomValue(inputAtom);
   const setKeyboardInput = useSetAtom(keyboardInputAtom);
   const setPointerInput = useSetAtom(pointerInputAtom);
-
-  // ✅ 리소스 및 설정: Atoms가 진실의 원천
   const urls = useAtomValue(urlsAtom);
   const block = useAtomValue(blockAtom);
-
-  // 🔄 애니메이션 Atoms (동기화용)
-  const setCharacterAnimation = useSetAtom(characterAnimationAtom);
-  const setVehicleAnimation = useSetAtom(vehicleAnimationAtom);
-  const setAirplaneAnimation = useSetAtom(airplaneAnimationAtom);
-
-  // ============================================================================
-  // 3번 레이어 (Context) - 선택된 진실의 원천
-  // ============================================================================
-
-  // ✅ 월드 상태: Context가 진실의 원천 (activeState, mode, states 등)
+  const setCharacterAnimation = useSetAtom(animationAtoms.character);
+  const setVehicleAnimation = useSetAtom(animationAtoms.vehicle);
+  const setAirplaneAnimation = useSetAtom(animationAtoms.airplane);
   const worldContext = useContext(GaesupContext);
   const worldDispatch = useContext(GaesupDispatchContext);
-
-  // ============================================================================
-  // 🔄 애니메이션 상태 동기화 (Context → Atoms)
-  // ============================================================================
-
   useEffect(() => {
     if (!worldContext?.animationState) return;
-
     const { animationState } = worldContext;
-
-    // Context의 애니메이션 상태를 Atoms에 동기화
     if (animationState.character) {
       setCharacterAnimation({
         current: animationState.character.current,
@@ -86,24 +64,13 @@ export const useBridgeConnector = () => {
     setVehicleAnimation,
     setAirplaneAnimation,
   ]);
-
-  // ============================================================================
-  // 유틸리티 함수들
-  // ============================================================================
-
   const { getSizesByUrls } = useGaesupGltf();
-
-  // ============================================================================
-  // Bridge 데이터 구성 및 Physics에 주입
-  // ============================================================================
-
   const bridgeDataRef = useRef<PhysicsBridgeInputData | null>(null);
   const lastInputSystemRef = useRef(inputSystem);
   const lastUrlsRef = useRef(urls);
   const lastBlockRef = useRef(block);
   const lastWorldContextRef = useRef(worldContext);
   const lastWorldDispatchRef = useRef(worldDispatch);
-
   const bridgeInputData = useMemo(() => {
     const hasChanged =
       lastInputSystemRef.current !== inputSystem ||
@@ -136,7 +103,6 @@ export const useBridgeConnector = () => {
       setMouseInput: (update) => setPointerInput(update),
       getSizesByUrls,
     };
-
     bridgeDataRef.current = data;
     return data;
   }, [

@@ -12,17 +12,16 @@ const defaultAnimationState: AnimationStatePropType = {
   default: 'idle',
 };
 
-export const characterAnimationAtom = atom<AnimationStatePropType>({
+const createAnimationAtom = () =>
+  atom<AnimationStatePropType>({
   ...defaultAnimationState,
 });
 
-export const vehicleAnimationAtom = atom<AnimationStatePropType>({
-  ...defaultAnimationState,
-});
-
-export const airplaneAnimationAtom = atom<AnimationStatePropType>({
-  ...defaultAnimationState,
-});
+export const animationAtoms = {
+  character: createAnimationAtom(),
+  vehicle: createAnimationAtom(),
+  airplane: createAnimationAtom(),
+} as const;
 
 const ANIMATION_CONFIGS: Omit<AnimationAtomType, 'condition'>[] = [
   { tag: 'walk', action: () => {}, animationName: 'walk', key: 'walk' },
@@ -33,20 +32,8 @@ const ANIMATION_CONFIGS: Omit<AnimationAtomType, 'condition'>[] = [
   { tag: 'fall', action: () => {}, animationName: 'fall', key: 'fall' },
 ];
 
-export function getAnimationAtom(
-  type: 'character' | 'vehicle' | 'airplane',
-): WritableAtom<AnimationStatePropType, [AnimationStatePropType], void> {
-  switch (type) {
-    case 'character':
-      return characterAnimationAtom;
-    case 'vehicle':
-      return vehicleAnimationAtom;
-    case 'airplane':
-      return airplaneAnimationAtom;
-    default:
-      return characterAnimationAtom;
-  }
-}
+export const getAnimationAtom = (type: 'character' | 'vehicle' | 'airplane') =>
+  animationAtoms[type];
 
 export const createCurrentAnimationAtom = (type: 'character' | 'vehicle' | 'airplane') =>
   atom(

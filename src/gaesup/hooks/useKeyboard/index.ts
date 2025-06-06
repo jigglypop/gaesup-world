@@ -2,17 +2,14 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import { useEffect, useRef } from 'react';
 import { clickerAtom } from '../../atoms';
 import { keyboardInputAtom, pointerInputAtom } from '../../atoms/inputAtom';
-import { KEY_MAPPING } from '../../constants/keyboardConstants';
+import { KEY_MAPPING } from '../../tools/constants';
 
 export function useKeyboard() {
-  // === 새로운 통합 시스템만 사용 ===
   const clicker = useAtomValue(clickerAtom);
   const setClicker = useSetAtom(clickerAtom);
   const setKeyboardInput = useSetAtom(keyboardInputAtom);
   const setPointerInput = useSetAtom(pointerInputAtom);
-
   const pressedKeys = useRef<Set<string>>(new Set());
-
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const mappedKey = KEY_MAPPING[event.code as keyof typeof KEY_MAPPING];

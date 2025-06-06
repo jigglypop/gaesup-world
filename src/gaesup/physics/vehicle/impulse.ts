@@ -1,30 +1,13 @@
-import { PhysicsCalc, PhysicsState } from '../type';
+import { PhysicsState, commonPhysics, PhysicsRefs } from '../types';
 
 export default function impulse(
-  rigidBodyRef: PhysicsCalc['rigidBodyRef'],
+  rigidBodyRef: PhysicsRefs['rigidBodyRef'],
   physicsState: PhysicsState,
 ) {
-  if (!rigidBodyRef.current) return;
-
   const { activeState, keyboard, vehicleConfig } = physicsState;
   const { shift } = keyboard;
   const { maxSpeed = 60, accelRatio = 2 } = vehicleConfig || {};
+  const boost = shift ? accelRatio : 1;
 
-  const velocity = rigidBodyRef.current.linvel();
-  const V = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
-
-  if (V < maxSpeed) {
-    const M = rigidBodyRef.current.mass();
-    let speed = shift ? accelRatio : 1;
-
-    // impulse = mass * velocity
-    rigidBodyRef.current.applyImpulse(
-      {
-        x: activeState.dir.x * speed * M,
-        y: activeState.dir.y * speed * M,
-        z: activeState.dir.z * speed * M,
-      },
-      false,
-    );
-  }
+  commonPhysics.applyImpulse(rigidBodyRef, activeState.dir, { maxSpeed, boost });
 }

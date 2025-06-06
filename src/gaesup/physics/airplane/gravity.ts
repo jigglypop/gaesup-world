@@ -5,7 +5,6 @@ export default function gravity(
   physicsState: PhysicsState,
 ) {
   if (!rigidBodyRef.current) return;
-
   const { activeState } = physicsState;
   rigidBodyRef.current.setGravityScale(
     activeState.position.y < 10 ? ((1 - 0.1) / (0 - 10)) * activeState.position.y + 1 : 0.1,

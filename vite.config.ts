@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
-import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import path from 'path';
 
 // https://vitejs.dev/config/
@@ -10,7 +9,7 @@ export default defineConfig(({ mode }) => {
   if (isLibraryBuild) {
     // Library build configuration
     return {
-      plugins: [react(), vanillaExtractPlugin()],
+      plugins: [react()],
       build: {
         lib: {
           entry: path.resolve(__dirname, 'src/index.ts'),
@@ -54,7 +53,7 @@ export default defineConfig(({ mode }) => {
 
   // Development/demo build configuration
   return {
-    plugins: [react(), vanillaExtractPlugin()],
+    plugins: [react()],
     server: {
       port: 3000,
       open: true,

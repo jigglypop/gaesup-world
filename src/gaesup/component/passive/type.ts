@@ -1,22 +1,18 @@
-import { Collider } from "@dimforge/rapier3d-compat";
+import { Collider } from '@dimforge/rapier3d-compat';
 import {
   CollisionEnterPayload,
   CollisionExitPayload,
   RapierRigidBody,
   RigidBodyProps,
   RigidBodyTypeString,
-} from "@react-three/rapier";
-import { MutableRefObject } from "react";
-import * as THREE from "three";
-import {
-  controllerOptionsType,
-  groundRayType,
-  partsType,
-} from "../../controller/type";
-import { ridingType } from "../inner/common/type";
+} from '@react-three/rapier';
+import { MutableRefObject } from 'react';
+import * as THREE from 'three';
+import { controllerOptionsType, groundRayType, partsType } from '../../controller/type';
+import { ridingType } from '../inner/common/type';
 
 // 컴포넌트 종류
-export type componentTypeString = "character" | "vehicle" | "airplane";
+export type componentTypeString = 'character' | 'vehicle' | 'airplane';
 // 내부 컴포넌트 종류
 export type innerRefType = {
   colliderRef: MutableRefObject<Collider>;
@@ -51,3 +47,8 @@ export type passivePropsType = {
   parts?: partsType;
   isNotColliding?: boolean;
 } & ridingType;
+
+export type PassiveRideableProps<T extends 'vehicle' | 'airplane'> = passivePropsType & {
+  componentType: T;
+  name?: string;
+};

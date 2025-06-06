@@ -203,3 +203,45 @@ export const CAMERA_CONSTANTS = {
   MAX_FOV: 120,
   FRAME_RATE_LERP_SPEED: 8.0,
 } as const;
+
+export abstract class BaseCameraController {
+  protected tempVector = new THREE.Vector3();
+
+  abstract calculateTargetPosition(activeState: any, cameraOption: any): THREE.Vector3;
+
+  update(prop: any): void {
+    const {
+      state,
+      worldContext: { activeState },
+      cameraOption,
+    } = prop;
+    if (!state?.camera) return;
+
+    const targetPosition = this.calculateTargetPosition(activeState, cameraOption);
+    const lerpSpeed = cameraOption.smoothing?.position ?? 0.1;
+
+    state.camera.position.lerp(targetPosition, lerpSpeed);
+    state.camera.lookAt(cameraOption.target || activeState.position);
+
+    if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
+      cameraUtils.updateFOVLerp(state.camera, cameraOption.fov, cameraOption.smoothing?.fov);
+    }
+  }
+}
+
+export const vectorUtils = {
+  copyFromRapier: (target: THREE.Vector3, source: { x: number; y: number; z: number }) => {
+    target.set(source.x, source.y, source.z);
+    return target;
+  },
+
+  toThreeVector3: (source: { x: number; y: number; z: number }) => {
+    return new THREE.Vector3(source.x, source.y, source.z);
+  },
+
+  updatePosition: (target: THREE.Vector3, rigidBody: any) => {
+    if (!rigidBody) return target;
+    const translation = rigidBody.translation();
+    return vectorUtils.copyFromRapier(target, translation);
+  },
+};

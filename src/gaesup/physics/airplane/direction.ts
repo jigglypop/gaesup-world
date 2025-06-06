@@ -19,27 +19,20 @@ export default function direction(
   } = airplaneConfig || {};
 
   if (!innerGroupRef.current) return;
-
-  // 기본 추진력 1, shift로 가속, space로 추가 부스트
   let boost = 1;
   if (shift) boost *= accelRatio;
-  if (space) boost *= 1.5; // 추가 부스트
-
+  if (space) boost *= 1.5;
   const upDown = Number(backward) - Number(forward);
   const leftRight = Number(rightward) - Number(leftward);
-
   if (controlMode === 'chase') {
     activeState.euler.y += -leftRight * angleDelta.y * 0.5;
   } else {
     activeState.euler.y += -leftRight * angleDelta.y;
   }
-
   const X = maxAngle.x * upDown;
   const Z = maxAngle.z * leftRight;
-
   const _x = innerGroupRef.current.rotation.x;
   const _z = innerGroupRef.current.rotation.z;
-
   const maxX = maxAngle.x;
   const maxZ = maxAngle.z;
 

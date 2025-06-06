@@ -6,16 +6,12 @@ export default function direction(physicsState: PhysicsState, controlMode?: stri
   const { forward, backward, leftward, rightward } = keyboard;
   const xAxis = Number(leftward) - Number(rightward);
   const zAxis = Number(forward) - Number(backward);
-
-  // 회전이 있을 때만 처리
   if (xAxis !== 0) {
     if (controlMode === 'chase') {
       activeState.euler.y += xAxis * (Math.PI / 120);
     } else {
       activeState.euler.y += xAxis * (Math.PI / 64);
     }
-
-    // ROTATION_UPDATE 이벤트 발행하여 카메라에 알림
     physicsEventBus.emit('ROTATION_UPDATE', {
       euler: activeState.euler,
       direction: activeState.direction,

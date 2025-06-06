@@ -1,7 +1,5 @@
 import { physicsEventBus } from '../stores/physicsEventBus';
 import { PhysicsCalcProps } from '../types';
-
-// 점프 상태 추적용 변수
 let isCurrentlyJumping = false;
 let lastMovingState = false;
 let lastRunningState = false;
@@ -31,8 +29,6 @@ export default function moving(prop: PhysicsCalcProps) {
   } else if (isClickerMoving && clickerIsRun) {
     isRunning = true;
   }
-
-  // 점프 처리 - 이미 점프 중이 아닐 때만 점프 허용
   if (space && !isCurrentlyJumping) {
     isCurrentlyJumping = true;
     physicsEventBus.emit('JUMP_STATE_CHANGE', {
@@ -40,11 +36,9 @@ export default function moving(prop: PhysicsCalcProps) {
       isOnTheGround: true,
     });
   }
-
   if (lastMovingState !== isMoving || lastRunningState !== isRunning) {
     lastMovingState = isMoving;
     lastRunningState = isRunning;
-
     physicsEventBus.emit('MOVE_STATE_CHANGE', {
       isMoving,
       isRunning,
@@ -54,7 +48,6 @@ export default function moving(prop: PhysicsCalcProps) {
   }
 }
 
-// 지면에 닿았을 때 점프 상태 리셋을 위한 함수
 export function resetJumpState() {
   isCurrentlyJumping = false;
 }

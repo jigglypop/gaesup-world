@@ -1,0 +1,61 @@
+.game-pad {
+  display: grid;
+  align-items: center;
+  justify-content: center;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+}
+
+.pad-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  width: 5rem;
+  height: 5rem;
+  cursor: pointer;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  font-weight: 500;
+  transition: all 0.3s ease-in;
+  box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  position: relative;
+  font-size: 1rem;
+  margin: 0.5rem;
+  border-radius: 50%;
+}
+
+.pad-button::after {
+  content: "";
+  position: absolute;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 100000;
+}
+
+.pad-button:hover {
+  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.5);
+}
+
+.is-clicked {
+  background: radial-gradient(circle at center, rgba(245, 177, 97, 1) 0.4%, rgba(236, 54, 110, 1) 100.2%);
+  box-shadow: 0 0 1rem rgba(245, 177, 97, 1);
+  color: black;
+  transition: all 0.3s ease-in;
+  border-radius: 50%;
+}
+
+.is-clicked:hover {
+  box-shadow: 0 0 2rem rgba(245, 177, 97, 1);
+}
+
+.game-pad * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+} 

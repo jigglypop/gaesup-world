@@ -2,7 +2,7 @@
 import { useAtomValue } from 'jotai';
 import { inputAtom, modeStateAtom } from '../../atoms';
 import GamePadButton from './GamePadButton';
-import * as S from './style.css';
+import './style.css';
 import { gameBoyDirectionType, gamepadType } from './type';
 
 export const gamepadDefault = {
@@ -36,7 +36,7 @@ export function GamePad(props: gamepadType) {
   return (
     <>
       {mode.controller === 'clicker' && (
-        <div className={S.gamePad} style={gamePadStyle}>
+        <div className="game-pad" style={gamePadStyle}>
           {GamePadDirections.map((item: gameBoyDirectionType, key: number) => {
             return (
               <GamePadButton
