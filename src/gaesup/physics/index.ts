@@ -28,9 +28,9 @@ export default function calculation(props: PhysicsCalculationProps) {
     calculationFn: null as ((calcProp: PhysicsCalcProps) => void) | null,
     lastUpdateTime: 0,
     frameSkipCount: 0,
-    lastWorldContext: null as any,
-    lastInput: null as any,
-    lastUrls: null as any,
+    lastWorldContext: null as unknown,
+    lastInput: null as unknown,
+    lastUrls: null as unknown,
     skipFrameCount: 0,
   });
 
@@ -84,7 +84,7 @@ export default function calculation(props: PhysicsCalculationProps) {
 
   // 물리 상태만 업데이트하는 최적화 함수
   const updatePhysicsStateOnly = useCallback(
-    (state: PhysicsState, worldContext: any, input: any): void => {
+    (state: PhysicsState, worldContext: unknown, input: unknown): void => {
       // 키보드 상태 업데이트 (변경된 값만)
       const kb = state.keyboard;
       const inputKb = input.keyboard;
@@ -204,7 +204,7 @@ export default function calculation(props: PhysicsCalculationProps) {
 
   // 초기 물리 상태 생성 함수 (분리하여 가독성 향상)
   const createInitialPhysicsState = useCallback(
-    (worldContext: any, input: any, modeType: string): PhysicsState => {
+    (worldContext: unknown, input: unknown, modeType: string): PhysicsState => {
       return {
         activeState: worldContext.activeState!,
         gameStates: worldContext.states!,

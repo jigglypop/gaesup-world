@@ -1,0 +1,175 @@
+.info-style {
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: flex;
+  gap: 10px;
+  padding: 20px;
+  z-index: 1000;
+}
+.p-recipe {
+  padding: 8px 12px;
+  margin: 4px 0;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  letter-spacing: 0.2px;
+  transition: all 0.2s ease;
+  color: rgba(255, 255, 255, 0.8);
+}
+.p-recipe:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+.p-recipe.selected {
+  background-color: rgba(100, 200, 255, 0.3);
+  color: #ffffff;
+}
+.glass-button {
+  padding: 8px 16px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  font-size: 14px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.glass-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.camera-description {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+  line-height: 1.5;
+  z-index: 999;
+  text-align: center;
+  max-width: 450px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.camera-settings {
+  position: fixed;
+  top: 80px;
+  left: 20px;
+  width: 600px;
+  max-height: 80vh;
+  background-color: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  backdrop-filter: blur(15px);
+  color: white;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.3px;
+  line-height: 1.4;
+  z-index: 999;
+  overflow: auto;
+}
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  letter-spacing: 0.3px;
+}
+.reset-button {
+  padding: 6px 12px;
+  background-color: rgba(255, 100, 100, 0.2);
+  border: 1px solid rgba(255, 100, 100, 0.4);
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  letter-spacing: 0.1px;
+  transition: all 0.2s ease;
+}
+.reset-button:hover {
+  background-color: rgba(255, 100, 100, 0.4);
+}
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+@media (max-width: 768px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 15px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+}
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+}
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+}
+.quick-presets {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+}
+.preset-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.preset-button {
+  padding: 6px 12px;
+  background-color: rgba(100, 200, 255, 0.2);
+  border: 1px solid rgba(100, 200, 255, 0.4);
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  letter-spacing: 0.1px;
+  transition: all 0.2s ease;
+}
+.preset-button:hover {
+  background-color: rgba(100, 200, 255, 0.4);
+  transform: translateY(-1px);
+} 

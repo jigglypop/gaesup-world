@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAtomValue } from 'jotai';
-import { useFocus } from '../../hooks/useFocus';
-import { cameraOptionAtom } from '../../atoms';
+import { useFocus } from '../../../../src/gaesup/hooks/useFocus';
+import { cameraOptionAtom } from '../../../../src/gaesup/atoms';
 import './style.css';
 
 interface FocusedObject {

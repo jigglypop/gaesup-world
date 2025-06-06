@@ -20,14 +20,14 @@ export { useForwardRef } from './gaesup/hooks/useForwardRef';
 export { useGaesupAnimation } from './gaesup/hooks/useGaesupAnimation';
 export { useGaesupController } from './gaesup/hooks/useGaesupController';
 export { useClicker, usePushKey, useTeleport } from './gaesup/hooks/useInputControls';
-export { useInputLogger, useInputValidation } from './gaesup/hooks/useInputValidation';
+export { useInputValidation } from './gaesup/hooks/useInputValidation';
 export { useKeyboard } from './gaesup/hooks/useKeyboard';
 export { useMovePoint } from './gaesup/hooks/useMovePoint';
 export { usePhysicsInput } from './gaesup/hooks/usePhysicsInput';
 export { useRideable } from './gaesup/hooks/useRideable';
 export { useMainFrameLoop, useUnifiedFrame } from './gaesup/hooks/useUnifiedFrame';
 export { Clicker } from './gaesup/tools/clicker';
-export { FocusModal } from './gaesup/tools/FocusModal';
+export { FocusModal } from '../examples/src/commons/FocusModal';
 export { GamePad } from './gaesup/tools/gamepad';
 export { MiniMap, MinimapMarker, MinimapObject, MinimapPlatform } from './gaesup/tools/minimap';
 export { Rideable } from './gaesup/tools/rideable';
@@ -56,10 +56,7 @@ export type {
   AnimationStateType,
   AnimationTagType,
   BlockState,
-  CameraOptionDebugType,
-  CameraOptionType,
   CameraRayType,
-  ClickerOptionType,
   ClickerType,
   ControllerOptionsType,
   ControllerOtherPropType,

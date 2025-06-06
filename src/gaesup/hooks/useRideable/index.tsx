@@ -1,7 +1,7 @@
 import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
 import { useContext, useEffect } from 'react';
-import { physicsEventBus } from '../../physics/stores/physicsEventBus';
 import { GaesupContext, GaesupDispatchContext } from '../../context';
+import { physicsEventBus } from '../../physics/stores/physicsEventBus';
 import { useGaesupGltf } from '../useGaesupGltf';
 import { rideableType } from './type';
 
@@ -22,8 +22,6 @@ export function useRideable() {
   const { urls, states, rideable, mode } = worldContext;
   const dispatch = useContext(GaesupDispatchContext);
   const { getSizesByUrls } = useGaesupGltf();
-
-  // physicsEventBus의 RIDE_STATE_CHANGE 이벤트 구독
   useEffect(() => {
     const unsubscribe = physicsEventBus.subscribe('RIDE_STATE_CHANGE', (data) => {
       dispatch({
@@ -43,12 +41,9 @@ export function useRideable() {
     return unsubscribe;
   }, [dispatch, states]); // states 다시 추가
 
-  // 플래그 감지 및 자동 처리
   useEffect(() => {
     if (states.shouldEnterRideable) {
-      console.log('🚗 탑승 플래그 감지! enterRideable 호출');
       enterRideable();
-      // 플래그 리셋
       dispatch({
         type: 'update',
         payload: {
@@ -56,13 +51,11 @@ export function useRideable() {
         },
       });
     }
-  }, [states.shouldEnterRideable]);
+  }, [states.shouldEnterRideable, dispatch, states]);
 
   useEffect(() => {
     if (states.shouldExitRideable) {
-      console.log('🚪 하차 플래그 감지! exitRideable 호출');
       exitRideable();
-      // 플래그 리셋
       dispatch({
         type: 'update',
         payload: {
@@ -70,7 +63,7 @@ export function useRideable() {
         },
       });
     }
-  }, [states.shouldExitRideable]);
+  }, [states.shouldExitRideable, dispatch, states]);
 
   const initRideable = (props: rideableType) => {
     rideable[props.objectkey] = {
@@ -185,7 +178,6 @@ export function useRideable() {
     if (states.canRide && states.nearbyRideable && !states.isRiding) {
       const rideableData = rideable[states.nearbyRideable.objectkey];
       if (rideableData) {
-        console.log('🔧 탈것 데이터:', rideableData);
         await setUrl(rideableData);
         await setModeAndRiding(rideableData);
 

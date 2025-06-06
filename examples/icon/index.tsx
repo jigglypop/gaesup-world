@@ -1,6 +1,5 @@
-import { assignInlineVars } from "@vanilla-extract/dynamic";
-import { CSSProperties, MouseEvent, useState } from "react";
-import * as style from "./style.css";
+import { CSSProperties, MouseEvent, useState } from 'react';
+import './styles.css';
 
 export const Icon = ({
   children,
@@ -20,24 +19,22 @@ export const Icon = ({
   const [closet, setCloset] = useState(true);
   return (
     <div
-      className={style.icon}
+      className="icon"
       onMouseOver={() => setCloset(false)}
       onMouseLeave={() => setCloset(true)}
       onClick={(e) => {
         onClick && onClick(e);
       }}
-      style={assignInlineVars({
-        ...iconStyle,
-      })}
+      style={iconStyle}
       id={id}
     >
-      <div className={style.iconInner}>{children}</div>
+      <div className="icon-inner">{children}</div>
       <div
-        className={style.tooltip}
-        style={assignInlineVars({
-          opacity: closet ? "0" : "1",
+        className="tooltip"
+        style={{
+          opacity: closet ? '0' : '1',
           ...toolTipStyles,
-        })}
+        }}
       >
         {ToolTip}
       </div>

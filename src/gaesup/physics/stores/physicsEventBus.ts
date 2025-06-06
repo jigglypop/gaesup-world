@@ -107,8 +107,8 @@ class OptimizedPhysicsEventBus {
     }
   }
 
-  private isDeepDuplicate(eventType: PhysicsEventType, newData: any): boolean {
-    const lastData = this.lastEventData.get(eventType) as any;
+  private isDeepDuplicate(eventType: PhysicsEventType, newData: unknown): boolean {
+    const lastData = this.lastEventData.get(eventType) as unknown;
     if (!lastData) return false;
 
     switch (eventType) {

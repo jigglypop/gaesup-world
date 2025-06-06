@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 import { cameraOptionAtom, modeStateAtom } from '../../src/gaesup/atoms';
 import { Icon } from '../icon';
-import * as style from './style.css';
+import './styles.css';
 
 const CAMERA_PRESETS = {
   firstPerson: {
@@ -114,24 +114,24 @@ export default function Info() {
 
   return (
     <>
-      <div className={style.infoStyle}>
+      <div className="info-style">
         <Icon
           ToolTip={
             <>
               <p
-                className={style.pRecipe({ selected: mode.type === 'character' })}
+                className={`p-recipe ${mode.type === 'character' ? 'selected' : ''}`}
                 onClick={() => setType('character')}
               >
                 🚶 캐릭터
               </p>
               <p
-                className={style.pRecipe({ selected: mode.type === 'vehicle' })}
+                className={`p-recipe ${mode.type === 'vehicle' ? 'selected' : ''}`}
                 onClick={() => setType('vehicle')}
               >
                 🚗 차량
               </p>
               <p
-                className={style.pRecipe({ selected: mode.type === 'airplane' })}
+                className={`p-recipe ${mode.type === 'airplane' ? 'selected' : ''}`}
                 onClick={() => setType('airplane')}
               >
                 ✈️ 비행기
@@ -142,7 +142,7 @@ export default function Info() {
             background: 'rgba(0,0,0,0.8)',
           }}
         >
-          <button className={style.glassButton}>
+          <button className="glass-button">
             {mode.type === 'character' && '🚶 캐릭터'}
             {mode.type === 'vehicle' && '🚗 차량'}
             {mode.type === 'airplane' && '✈️ 비행기'}
@@ -153,35 +153,31 @@ export default function Info() {
           ToolTip={
             <>
               <p
-                className={style.pRecipe({ selected: mode.control === 'firstPerson' })}
+                className={`p-recipe ${mode.control === 'firstPerson' ? 'selected' : ''}`}
                 onClick={() => setControl('firstPerson')}
               >
                 firstPerson
               </p>
               <p
-                className={style.pRecipe({
-                  selected: mode.control === 'thirdPerson' || mode.control === 'normal',
-                })}
+                className={`p-recipe ${mode.control === 'thirdPerson' || mode.control === 'normal' ? 'selected' : ''}`}
                 onClick={() => setControl('thirdPerson')}
               >
                 thirdPerson
               </p>
               <p
-                className={style.pRecipe({
-                  selected: mode.control === 'chase',
-                })}
+                className={`p-recipe ${mode.control === 'chase' ? 'selected' : ''}`}
                 onClick={() => setControl('chase')}
               >
                 chase
               </p>
               <p
-                className={style.pRecipe({ selected: mode.control === 'topDown' })}
+                className={`p-recipe ${mode.control === 'topDown' ? 'selected' : ''}`}
                 onClick={() => setControl('topDown')}
               >
                 topDown
               </p>
               <p
-                className={style.pRecipe({ selected: mode.control === 'sideScroll' })}
+                className={`p-recipe ${mode.control === 'sideScroll' ? 'selected' : ''}`}
                 onClick={() => setControl('sideScroll')}
               >
                 sideScroll
@@ -192,7 +188,7 @@ export default function Info() {
             background: 'rgba(0,0,0,0.8)',
           }}
         >
-          <button className={style.glassButton}>
+          <button className="glass-button">
             {mode.control === 'firstPerson' && 'firstPerson'}
             {mode.control === 'thirdPerson' && 'thirdPerson'}
             {mode.control === 'chase' && 'chase'}
@@ -208,7 +204,7 @@ export default function Info() {
           }}
         >
           <button
-            className={style.glassButton}
+            className="glass-button"
             onClick={() => setShowCameraSettings(!showCameraSettings)}
           >
             ⚙️ 설정
@@ -216,21 +212,21 @@ export default function Info() {
         </Icon>
       </div>
 
-      <div className={style.cameraDescription}>{getCurrentCameraDescription()}</div>
+      <div className="camera-description">{getCurrentCameraDescription()}</div>
 
       {showCameraSettings && (
-        <div className={style.cameraSettings}>
-          <div className={style.settingsHeader}>
+        <div className="camera-settings">
+          <div className="settings-header">
             <h3>Camera Settings - {mode.control}</h3>
-            <button onClick={resetToPreset} className={style.resetButton}>
+            <button onClick={resetToPreset} className="reset-button">
               Reset to Preset
             </button>
           </div>
 
-          <div className={style.settingsGrid}>
-            <div className={style.settingGroup}>
+          <div className="settings-grid">
+            <div className="setting-group">
               <label>Distance</label>
-              <div className={style.inputRow}>
+              <div className="input-row">
                 <span>X:</span>
                 <input
                   type="range"
@@ -242,7 +238,7 @@ export default function Info() {
                 />
                 <span>{cameraOption.xDistance ?? cameraOption.XDistance ?? 0}</span>
               </div>
-              <div className={style.inputRow}>
+              <div className="input-row">
                 <span>Y:</span>
                 <input
                   type="range"
@@ -254,7 +250,7 @@ export default function Info() {
                 />
                 <span>{cameraOption.yDistance ?? cameraOption.YDistance ?? 0}</span>
               </div>
-              <div className={style.inputRow}>
+              <div className="input-row">
                 <span>Z:</span>
                 <input
                   type="range"
@@ -268,9 +264,9 @@ export default function Info() {
               </div>
             </div>
 
-            <div className={style.settingGroup}>
+            <div className="setting-group">
               <label>FOV & Smoothing</label>
-              <div className={style.inputRow}>
+              <div className="input-row">
                 <span>FOV:</span>
                 <input
                   type="range"
@@ -282,7 +278,7 @@ export default function Info() {
                 />
                 <span>{cameraOption.fov ?? 75}°</span>
               </div>
-              <div className={style.inputRow}>
+              <div className="input-row">
                 <span>Position:</span>
                 <input
                   type="range"
@@ -294,7 +290,7 @@ export default function Info() {
                 />
                 <span>{(cameraOption.smoothing?.position ?? 0.1).toFixed(2)}</span>
               </div>
-              <div className={style.inputRow}>
+              <div className="input-row">
                 <span>Rotation:</span>
                 <input
                   type="range"
@@ -308,9 +304,9 @@ export default function Info() {
               </div>
             </div>
 
-            <div className={style.settingGroup}>
+            <div className="setting-group">
               <label>Options</label>
-              <div className={style.checkboxRow}>
+              <div className="checkbox-row">
                 <input
                   type="checkbox"
                   checked={cameraOption.enableCollision ?? false}
@@ -318,7 +314,7 @@ export default function Info() {
                 />
                 <span>Enable Collision</span>
               </div>
-              <div className={style.checkboxRow}>
+              <div className="checkbox-row">
                 <input
                   type="checkbox"
                   checked={cameraOption.focus ?? false}
@@ -329,13 +325,13 @@ export default function Info() {
             </div>
           </div>
 
-          <div className={style.quickPresets}>
+          <div className="quick-presets">
             <h4>Quick Presets:</h4>
-            <div className={style.presetButtons}>
+            <div className="preset-buttons">
               {Object.keys(CAMERA_PRESETS).map((presetName) => (
                 <button
                   key={presetName}
-                  className={style.presetButton}
+                  className="preset-button"
                   onClick={() => setControl(presetName as keyof typeof CAMERA_PRESETS)}
                 >
                   {presetName}

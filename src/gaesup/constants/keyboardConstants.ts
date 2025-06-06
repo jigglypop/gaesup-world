@@ -31,4 +31,4 @@ export const DEFAULT_KEYBOARD_STATE = {
   keyF: false,
   keyE: false,
   escape: false,
-}; 
+};

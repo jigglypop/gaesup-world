@@ -1,20 +1,22 @@
 'use client';
 import { useSetAtom } from 'jotai';
-import { useEffect, Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { cameraOptionAtom } from '../atoms';
-import { useGaesupGltf } from '../hooks/useGaesupGltf';
 import { GaesupProvider } from '../context';
+import { useGaesupGltf } from '../hooks/useGaesupGltf';
 import initGaesupWorld from './initalize';
 import { gaesupWorldPropsType } from './type';
 
 function LoadingSpinner() {
   return (
-    <div style={{
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-    }}>
+    <div
+      style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+      }}
+    >
       <div>Loading 3D Models...</div>
     </div>
   );
@@ -32,7 +34,7 @@ export function GaesupWorld(props: gaesupWorldPropsType) {
   }, [props.urls, preloadSizes]);
   useEffect(() => {
     if (props.cameraOption) {
-      setCameraOption((prevOption: any) => ({
+      setCameraOption((prevOption) => ({
         ...prevOption,
         ...props.cameraOption,
       }));
@@ -40,9 +42,7 @@ export function GaesupWorld(props: gaesupWorldPropsType) {
   }, [props.cameraOption, setCameraOption]);
   return (
     <GaesupProvider initialState={gaesupProps.value}>
-      <Suspense fallback={<LoadingSpinner />}>
-        {props.children}
-      </Suspense>
+      <Suspense fallback={<LoadingSpinner />}>{props.children}</Suspense>
     </GaesupProvider>
   );
 }

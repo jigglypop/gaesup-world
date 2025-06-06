@@ -1,224 +1,10 @@
-import { Collider, Ray, RayColliderHit } from '@dimforge/rapier3d-compat';
-import { GroupProps, RootState } from '@react-three/fiber';
-import { RapierRigidBody, RigidBodyProps } from '@react-three/rapier';
-import { CSSProperties, Dispatch, ReactNode, RefObject } from 'react';
+import { Ray, RayColliderHit } from '@dimforge/rapier3d-compat';
+import { RootState } from '@react-three/fiber';
+import { RapierRigidBody } from '@react-three/rapier';
+import { CSSProperties, RefObject } from 'react';
 import * as THREE from 'three';
 
-export type DispatchAction<T> = {
-  type: string;
-  payload?: Partial<T>;
-};
-
-export type DispatchType<T> = Dispatch<DispatchAction<T>>;
-export type Vector3Like = {
-  x: number;
-  y: number;
-  z: number;
-};
-export type EulerLike = {
-  x: number;
-  y: number;
-  z: number;
-  order?: string;
-};
-export type QuaternionLike = {
-  x: number;
-  y: number;
-  z: number;
-  w: number;
-};
-
-export type ControlState = {
-  forward: boolean;
-  backward: boolean;
-  leftward: boolean;
-  rightward: boolean;
-  shift?: boolean;
-  space?: boolean;
-  [key: string]: boolean | undefined;
-};
-
-export type KeyboardControlState<T extends string = string> = {
-  [K in T]: boolean;
-};
-
-export interface KeyboardInputState {
-  forward: boolean;
-  backward: boolean;
-  leftward: boolean;
-  rightward: boolean;
-  shift: boolean;
-  space: boolean;
-  keyZ: boolean;
-  keyR: boolean;
-  keyF: boolean;
-  keyE: boolean;
-  escape: boolean;
-}
-
-export interface MouseInputState {
-  target: THREE.Vector3;
-  angle: number;
-  isActive: boolean;
-  shouldRun: boolean;
-}
-
-export interface GamepadInputState {
-  connected: boolean;
-  leftStick: { x: number; y: number };
-  rightStick: { x: number; y: number };
-  buttons: Record<string, boolean>;
-}
-
-export interface inputState {
-  keyboard: KeyboardInputState;
-  pointer: MouseInputState;
-  gamepad: GamepadInputState;
-  blocks: BlockState;
-  clickerOption: ClickerOptionState;
-}
-export type ControllerType = 'character' | 'vehicle' | 'airplane';
-
-export type CameraControlMode =
-  | 'firstPerson'
-  | 'thirdPerson'
-  | 'chase'
-  | 'topDown'
-  | 'sideScroll'
-  | 'shoulder'
-  | 'fixed'
-  | 'isometric'
-  | 'free';
-
-export type ControlMode = 'normal' | 'chase';
-export type ControllerMode = 'clicker';
-
-export type ModeType = {
-  type?: ControllerType;
-  controller?: ControllerMode;
-  control?: CameraControlMode | ControlMode;
-  isButton?: boolean;
-};
-
-export type ActiveStateType = {
-  position: THREE.Vector3;
-  velocity: THREE.Vector3;
-  quat: THREE.Quaternion;
-  euler: THREE.Euler;
-  direction: THREE.Vector3;
-  dir: THREE.Vector3;
-};
-
-export type GameStatesType = {
-  rideableId?: string;
-  isMoving: boolean;
-  isNotMoving: boolean;
-  isOnTheGround: boolean;
-  isOnMoving: boolean;
-  isRotated: boolean;
-  isRunning: boolean;
-  isJumping: boolean;
-  enableRiding: boolean;
-  isRiderOn: boolean;
-  isLanding: boolean;
-  isFalling: boolean;
-  isRiding: boolean;
-  canRide?: boolean;
-  nearbyRideable?: {
-    objectkey: string;
-    objectType: 'vehicle' | 'airplane';
-    name: string;
-  } | null;
-  shouldEnterRideable?: boolean;
-  shouldExitRideable?: boolean;
-};
-
-export type PassiveStateType = {
-  position: THREE.Vector3;
-  quat: THREE.Quaternion;
-  euler: THREE.Euler;
-  rotation: THREE.Euler;
-};
-
-// ============================================================================
-// 블록 관련 타입들
-// ============================================================================
-
-export interface BlockState {
-  camera: boolean;
-  control: boolean;
-  animation: boolean;
-  scroll: boolean;
-}
-
-// ============================================================================
-// 리소스 및 크기 타입들
-// ============================================================================
-
-export type ResourceUrlsType = {
-  characterUrl?: string;
-  vehicleUrl?: string;
-  airplaneUrl?: string;
-  wheelUrl?: string;
-  ridingUrl?: string;
-};
-
-export type SizeType = {
-  x: number;
-  y: number;
-  z: number;
-};
-
-export type SizesType = {
-  [key: string]: THREE.Vector3;
-};
-
-// ============================================================================
-// 카메라 관련 타입들
-// ============================================================================
-
-export type CameraOptionDebugType = {
-  maxDistance?: number;
-  distance?: number;
-  xDistance?: number;
-  yDistance?: number;
-  zDistance?: number;
-  zoom?: number;
-  target?: THREE.Vector3;
-  focus?: boolean;
-  position?: THREE.Vector3;
-  enableCollision?: boolean;
-  collisionMargin?: number;
-  smoothing?: {
-    position: number;
-    rotation: number;
-    fov: number;
-  };
-  fov?: number;
-  minFov?: number;
-  maxFov?: number;
-  bounds?: {
-    minX?: number;
-    maxX?: number;
-    minY?: number;
-    maxY?: number;
-    minZ?: number;
-    maxZ?: number;
-  };
-};
-
-export type CameraOptionType = {
-  offset?: THREE.Vector3;
-  modeSettings?: {
-    [K in CameraControlMode]?: Partial<CameraOptionDebugType>;
-  };
-  shoulderOffset?: THREE.Vector3;
-  aimOffset?: THREE.Vector3;
-  fixedPosition?: THREE.Vector3;
-  fixedRotation?: THREE.Euler;
-  lookAtTarget?: THREE.Vector3;
-  isoAngle?: number;
-} & CameraOptionDebugType;
+export * from './gaesup/types/core';
 
 export type CameraRayType = {
   origin: THREE.Vector3;
@@ -246,10 +32,6 @@ export type RayType = {
 
 export type SlopeRayType = Omit<RayType, 'parent'>;
 export type GroundRayType = Omit<RayType, 'current' | 'angle'>;
-
-// ============================================================================
-// 애니메이션 관련 타입들
-// ============================================================================
 
 export type AnimationTagType = {
   idle: string;
@@ -287,6 +69,7 @@ export type AnimationStatePropType = {
 export type AnimationStateType = {
   [key: string]: AnimationStatePropType;
 };
+
 export type ClickerType = {
   point: THREE.Vector3;
   angle: number;
@@ -306,17 +89,6 @@ export type QueueFunctionType = {
 export type QueueItemType = THREE.Vector3 | QueueFunctionType;
 export type QueueType = QueueItemType[];
 
-export interface ClickerOptionState {
-  isRun: boolean;
-  throttle: number;
-  autoStart: boolean;
-  track: boolean;
-  loop: boolean;
-  queue: THREE.Vector3[];
-  line: boolean;
-}
-
-export type ClickerOptionType = ClickerOptionState;
 export type WheelStateType = {
   position: THREE.Vector3;
   rotation: THREE.Euler;
@@ -328,6 +100,7 @@ export type WheelsStateType = {
   2?: WheelStateType;
   3?: WheelStateType;
 };
+
 export type PortalType = {
   text?: string;
   position: THREE.Vector3;
@@ -335,41 +108,7 @@ export type PortalType = {
 };
 
 export type PortalsType = PortalType[];
-export type RefsType = {
-  colliderRef: RefObject<Collider>;
-  rigidBodyRef: RefObject<RapierRigidBody>;
-  outerGroupRef: RefObject<THREE.Group>;
-  innerGroupRef: RefObject<THREE.Group>;
-  characterInnerRef: RefObject<THREE.Group>;
-};
 
-export interface ControllerOtherPropType extends RigidBodyProps {
-  children?: ReactNode;
-  groupProps?: GroupProps;
-  rigidBodyProps?: RigidBodyProps;
-  debug?: boolean;
-}
-export type ControllerOptionsType = {
-  lerp: {
-    cameraTurn: number;
-    cameraPosition: number;
-  };
-};
-
-export type OptionsType = {
-  debug: boolean;
-  mode?: 'normal' | 'vehicle' | 'airplane';
-  controllerType: 'none';
-  cameraCollisionType: 'transparent' | 'closeUp';
-  camera: {
-    type: 'perspective' | 'orthographic';
-    control: CameraControlMode | 'chase' | 'normal';
-  };
-  minimap: boolean;
-  minimapRatio: number;
-};
-
-export type PartialOptionsType = Partial<OptionsType>;
 export type JumpInnerType = {
   velocity: THREE.Vector3;
   direction: THREE.Vector3;
@@ -381,15 +120,7 @@ export type JumpConstType = {
 };
 
 export type JumpPropType = JumpInnerType & JumpConstType;
-export type PartType = {
-  url?: string;
-  color?: string;
-  position?: THREE.Vector3;
-  rotation?: THREE.Euler;
-  scale?: THREE.Vector3;
-};
 
-export type PartsType = PartType[];
 export interface PhysicsInputRef {
   current: {
     keyboard: KeyboardInputState;
@@ -432,6 +163,7 @@ export interface PhysicsBridgeOutput {
   isReady: boolean;
   error: string | null;
 }
+
 export type PhysicsEventType =
   | 'POSITION_UPDATE'
   | 'ROTATION_UPDATE'

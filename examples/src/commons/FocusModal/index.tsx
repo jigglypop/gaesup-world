@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAtomValue } from 'jotai';
-import { useFocus } from '../../hooks/useFocus';
-import { cameraOptionAtom } from '../../atoms';
+import { useFocus } from '../../../../src/gaesup/hooks/useFocus';
+import { cameraOptionAtom } from '../../../../src/gaesup/atoms';
 import './style.css';
 
 interface FocusedObject {
@@ -41,11 +41,8 @@ export function FocusModal({ focusedObject, onClose }: FocusModalProps) {
   return (
     <>
       {/* 백드롭 */}
-      <div 
-        className={`focus-modal-backdrop ${isVisible ? 'visible' : ''}`}
-        onClick={handleClose}
-      />
-      
+      <div className={`focus-modal-backdrop ${isVisible ? 'visible' : ''}`} onClick={handleClose} />
+
       {/* 모달 */}
       <div className={`focus-modal ${isVisible ? 'visible' : ''}`}>
         <div className="focus-modal-header">
@@ -54,7 +51,7 @@ export function FocusModal({ focusedObject, onClose }: FocusModalProps) {
             ✕
           </button>
         </div>
-        
+
         <div className="focus-modal-content">
           <div className="object-info">
             <div className="info-row">
@@ -64,18 +61,20 @@ export function FocusModal({ focusedObject, onClose }: FocusModalProps) {
             <div className="info-row">
               <span className="label">위치:</span>
               <span className="value">
-                X: {focusedObject.position.x.toFixed(1)}, 
-                Y: {focusedObject.position.y.toFixed(1)}, 
+                X: {focusedObject.position.x.toFixed(1)}, Y: {focusedObject.position.y.toFixed(1)},
                 Z: {focusedObject.position.z.toFixed(1)}
               </span>
             </div>
             <div className="info-row">
               <span className="label">색상:</span>
-              <div className="color-indicator" style={{ backgroundColor: focusedObject.color }}></div>
+              <div
+                className="color-indicator"
+                style={{ backgroundColor: focusedObject.color }}
+              ></div>
               <span className="value">{focusedObject.color}</span>
             </div>
           </div>
-          
+
           <div className="camera-info">
             <h3>카메라 상태</h3>
             <div className="info-row">
@@ -88,7 +87,7 @@ export function FocusModal({ focusedObject, onClose }: FocusModalProps) {
             </div>
           </div>
         </div>
-        
+
         <div className="focus-modal-footer">
           <button className="zoom-out-button" onClick={handleClose}>
             줌아웃하고 닫기
@@ -97,4 +96,4 @@ export function FocusModal({ focusedObject, onClose }: FocusModalProps) {
       </div>
     </>
   );
-} 
+}

@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { euler } from "@react-three/rapier";
+import { euler } from '@react-three/rapier';
 import {
   PassiveAirplane,
   PassiveCharacter,
   PassiveVehicle,
   V3,
   useGaesupController,
-} from "../../src";
-import { S3 } from "../src";
+} from '../../src';
+import { S3 } from '../src/constants';
 
 export default function Passive() {
   const points = [V3(10, 0, 10)];
@@ -81,27 +81,27 @@ export default function Passive() {
       <PassiveCharacter
         position={V3(10, 0, 0)}
         rotation={euler()}
-        url={"gltf/ally_body.glb"}
+        url={'gltf/ally_body.glb'}
         currentAnimation="jump"
-        rigidbodyType={"fixed"}
+        rigidbodyType={'fixed'}
         isNotColliding={true}
-        parts={[{ url: "gltf/ally_cloth_rabbit.glb", color: "red" }]}
+        parts={[{ url: 'gltf/ally_cloth_rabbit.glb', color: 'red' }]}
       ></PassiveCharacter>
       <PassiveVehicle
         position={V3(20, 0, 0)}
         rotation={euler()}
-        url={S3 + "/gaebird.glb"}
+        url={S3 + '/gaebird.glb'}
         currentAnimation="idle"
-        rigidbodyType={"fixed"}
+        rigidbodyType={'fixed'}
         isNotColliding={true}
       ></PassiveVehicle>
       <group visible={false}>
         <PassiveAirplane
           position={V3(30, 0, 0)}
           rotation={euler()}
-          url={S3 + "/gaebird.glb"}
+          url={S3 + '/gaebird.glb'}
           currentAnimation="idle"
-          rigidbodyType={"fixed"}
+          rigidbodyType={'fixed'}
           isNotColliding={true}
         ></PassiveAirplane>
       </group>

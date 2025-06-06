@@ -4,10 +4,6 @@ import { RapierRigidBody, RigidBodyProps } from '@react-three/rapier';
 import { Dispatch, ReactNode, RefObject } from 'react';
 import * as THREE from 'three';
 
-// ============================================================================
-// 기본 타입들
-// ============================================================================
-
 export namespace GaesupCore {
   /**
    * 기본 벡터 인터페이스
@@ -179,9 +175,6 @@ export namespace GaesupCore {
     };
   }
 
-  // ============================================================================
-  // 설정 관련
-  // ============================================================================
   export namespace Config {
     /**
      * 컨트롤러 설정
@@ -233,9 +226,6 @@ export namespace GaesupCore {
     }
   }
 
-  // ============================================================================
-  // 컨트롤러 타입들
-  // ============================================================================
   export namespace Controller {
     /**
      * 컨트롤러 타입
@@ -275,9 +265,6 @@ export namespace GaesupCore {
     };
   }
 
-  // ============================================================================
-  // 참조 및 Props 타입들
-  // ============================================================================
   export namespace Refs {
     /**
      * 주요 참조들
@@ -301,9 +288,6 @@ export namespace GaesupCore {
     }
   }
 
-  // ============================================================================
-  // 리소스 관련 타입들
-  // ============================================================================
   export namespace Resource {
     /**
      * 리소스 URL들
@@ -340,9 +324,6 @@ export namespace GaesupCore {
     export type Parts = Part[];
   }
 
-  // ============================================================================
-  // 옵션 관련 타입들
-  // ============================================================================
   export namespace Options {
     /**
      * 전역 옵션
@@ -367,24 +348,16 @@ export namespace GaesupCore {
   }
 }
 
-// ============================================================================
-// 하위 호환성을 위한 타입 별칭들
-// ============================================================================
-
 export type Vector3Like = GaesupCore.Vector3Like;
 export type EulerLike = GaesupCore.EulerLike;
 export type QuaternionLike = GaesupCore.QuaternionLike;
 export type SizeType = GaesupCore.SizeType;
 export type DispatchAction<T> = GaesupCore.DispatchAction<T>;
 export type DispatchType<T> = GaesupCore.DispatchType<T>;
-
-// 상태 관련
 export type ActiveStateType = GaesupCore.State.Active;
 export type PassiveStateType = GaesupCore.State.Passive;
 export type GameStatesType = GaesupCore.State.Game;
 export type BlockState = GaesupCore.State.Block;
-
-// 입력 관련
 export type KeyboardInputState = GaesupCore.Input.Keyboard;
 export type MouseInputState = GaesupCore.Input.Mouse;
 export type GamepadInputState = GaesupCore.Input.Gamepad;
@@ -392,27 +365,17 @@ export type ClickerOptionState = GaesupCore.Input.ClickerOption;
 export type inputState = GaesupCore.Input.Unified;
 export type ControlState = GaesupCore.Input.Control;
 export type KeyboardControlState<T extends string = string> = GaesupCore.Input.KeyboardControl<T>;
-
-// 설정 관련
 export type ControllerOptionsType = GaesupCore.Config.Controller;
-
-// 컨트롤러 관련
 export type ControllerType = GaesupCore.Controller.Type;
 export type CameraControlMode = GaesupCore.Controller.CameraControlMode;
 export type ControlMode = GaesupCore.Controller.ControlMode;
 export type ControllerMode = GaesupCore.Controller.Mode;
 export type ModeType = GaesupCore.Controller.ModeType;
-
-// 참조 관련
 export type RefsType = GaesupCore.Refs.Main;
 export type ControllerOtherPropType = GaesupCore.Refs.ControllerOtherProp;
-
-// 리소스 관련
 export type ResourceUrlsType = GaesupCore.Resource.Urls;
 export type SizesType = GaesupCore.Resource.Sizes;
 export type PartType = GaesupCore.Resource.Part;
 export type PartsType = GaesupCore.Resource.Parts;
-
-// 옵션 관련
 export type OptionsType = GaesupCore.Options.Global;
 export type PartialOptionsType = GaesupCore.Options.Partial;

@@ -69,7 +69,7 @@ export default function Camera(prop: CameraPropType) {
       if (positionChanged || targetChanged) {
         lastPositionRef.current = newPosition.clone();
         lastTargetRef.current = newTarget.clone();
-        setCameraOption((prev: any) => ({
+        setCameraOption((prev: typeof cameraOption) => ({
           ...prev,
           target: newTarget.clone(),
           position: newPosition.clone(),

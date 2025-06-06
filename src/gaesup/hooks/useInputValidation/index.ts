@@ -1,5 +1,5 @@
 import { useAtomValue } from 'jotai';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { inputAtom, movementStateAtom } from '../../atoms/inputAtom';
 
 interface ValidationResult {
@@ -90,40 +90,5 @@ export const useInputValidation2 = (enableLogging = false) => {
     lastValidationRef.current = result;
     return result;
   };
-
-  useEffect(() => {
-    if (enableLogging) {
-      console.log('Input System State:', {
-        inputSystem,
-        movementState,
-        validation: lastValidationRef.current,
-      });
-    }
-  }, [inputSystem, movementState, enableLogging]);
-
   return { validate, inputSystem, movementState };
-};
-
-export const useInputLogger = (enabled = false, interval = 1000) => {
-  const inputSystem = useAtomValue(inputAtom);
-  const movementState = useAtomValue(movementStateAtom);
-
-  useEffect(() => {
-    if (!enabled) return;
-
-    const logInterval = setInterval(() => {
-      console.group('🎮 Input System Debug');
-      console.log('Keyboard State:', inputSystem.keyboard);
-      console.log('Pointer State:', inputSystem.pointer);
-      console.log('Movement State:', movementState);
-      console.log('Timestamps:', {
-        Current: Date.now(),
-        'Pointer Active': inputSystem.pointer.isActive,
-        'Pointer Should Run': inputSystem.pointer.shouldRun,
-      });
-      console.groupEnd();
-    }, interval);
-
-    return () => clearInterval(logInterval);
-  }, [enabled, interval, inputSystem, movementState]);
 };
