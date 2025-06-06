@@ -14,14 +14,25 @@ class OptimizedFrameManager {
   private sortedSubscriptions: FrameSubscription[] = [];
   private needsSort = false;
   private isRunning = false;
+  private maxSubscriptions = 100;
 
   subscribe(id: string, callback: FrameCallback, priority: number = 0): void {
-    const subscription: FrameSubscription = { 
-      id, 
-      callback, 
+    if (this.subscriptions.size >= this.maxSubscriptions) {
+      console.error(`Maximum frame subscriptions (${this.maxSubscriptions}) exceeded`);
+      const lowestPriority = Array.from(this.subscriptions.values())
+        .sort((a, b) => b.priority - a.priority)
+        .pop();
+      if (lowestPriority) {
+        this.subscriptions.delete(lowestPriority.id);
+      }
+    }
+
+    const subscription: FrameSubscription = {
+      id,
+      callback,
       priority,
     };
-    
+
     this.subscriptions.set(id, subscription);
     this.needsSort = true; // 다음 프레임에서 재정렬 필요
   }
@@ -35,7 +46,7 @@ class OptimizedFrameManager {
   executeFrame(state: RootState, delta: number): void {
     if (this.isRunning) return; // 중복 실행 방지
     this.isRunning = true;
-    
+
     try {
       // 구독자가 변경되었거나 처음 실행인 경우에만 재정렬
       if (this.needsSort) {
@@ -61,6 +72,19 @@ class OptimizedFrameManager {
   getSubscriptionCount(): number {
     return this.subscriptions.size;
   }
+
+  destroy() {
+    this.subscriptions.clear();
+    this.sortedSubscriptions = [];
+    this.needsSort = false;
+    this.isRunning = false;
+  }
+
+  clear() {
+    this.subscriptions.clear();
+    this.sortedSubscriptions = [];
+    this.needsSort = false;
+  }
 }
 
 const frameManager = new OptimizedFrameManager();
@@ -70,7 +94,7 @@ export function useUnifiedFrame(
   callback: FrameCallback,
   priority: number = 0,
   enabled: boolean = true,
-): { 
+): {
   subscriptionCount: number;
 } {
   const callbackRef = useRef(callback);
