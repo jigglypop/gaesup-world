@@ -1,6 +1,6 @@
 'use client';
 
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom } from 'jotai';
 import { useState } from 'react';
 
 import { cameraOptionAtom, modeStateAtom } from '../../src/gaesup/atoms';
@@ -21,7 +21,7 @@ const CAMERA_PRESETS = {
     smoothing: { position: 0.08, rotation: 0.1, fov: 0.1 },
     bounds: { minY: 2, maxY: 50 },
   },
-  thirdPersonOrbit: {
+  chase: {
     xDistance: 20,
     yDistance: 10,
     zDistance: 20,
@@ -45,7 +45,7 @@ const CAMERA_PRESETS = {
 const CAMERA_DESCRIPTIONS = {
   firstPerson: '1인칭 시점',
   thirdPerson: '3인칭 카메라',
-  thirdPersonOrbit: '궤도 카메라',
+  chase: '추적 카메라',
   topDown: '탑뷰 카메라',
   sideScroll: '사이드뷰 카메라',
 };
@@ -59,29 +59,14 @@ export default function Info() {
     setMode({
       ...mode,
       type: type,
-      control: 'thirdPersonOrbit',
+      control: 'chase',
     });
   };
 
   const setControl = (
-    control:
-      | 'thirdPersonOrbit'
-      | 'thirdPerson'
-      | 'firstPerson'
-      | 'topDown'
-      | 'sideScroll'
-      | 'orbit'
-      | 'normal',
+    control: 'chase' | 'thirdPerson' | 'firstPerson' | 'topDown' | 'sideScroll' | 'normal',
   ) => {
-    const preset =
-      CAMERA_PRESETS[control] ||
-      CAMERA_PRESETS[
-        control === 'normal'
-          ? 'thirdPerson'
-          : control === 'orbit'
-            ? 'thirdPersonOrbit'
-            : 'thirdPerson'
-      ];
+    const preset = CAMERA_PRESETS[control] || CAMERA_PRESETS['thirdPerson'];
 
     setMode({
       ...mode,
@@ -113,15 +98,7 @@ export default function Info() {
 
   const resetToPreset = () => {
     const control = mode.control;
-    const preset =
-      CAMERA_PRESETS[control] ||
-      CAMERA_PRESETS[
-        control === 'normal'
-          ? 'thirdPerson'
-          : control === 'orbit'
-            ? 'thirdPersonOrbit'
-            : 'thirdPerson'
-      ];
+    const preset = CAMERA_PRESETS[control] || CAMERA_PRESETS['thirdPerson'];
 
     setCameraOption((prev) => ({
       ...prev,
@@ -132,16 +109,7 @@ export default function Info() {
   const getCurrentCameraDescription = () => {
     const control = mode.control;
     const controllerDesc = ' (WASD + Mouse Click으로 조작 가능)';
-    return (
-      (CAMERA_DESCRIPTIONS[control] ||
-        CAMERA_DESCRIPTIONS[
-          control === 'normal'
-            ? 'thirdPerson'
-            : control === 'orbit'
-              ? 'thirdPersonOrbit'
-              : 'thirdPerson'
-        ]) + controllerDesc
-    );
+    return (CAMERA_DESCRIPTIONS[control] || CAMERA_DESCRIPTIONS['thirdPerson']) + controllerDesc;
   };
 
   return (
@@ -188,7 +156,7 @@ export default function Info() {
                 className={style.pRecipe({ selected: mode.control === 'firstPerson' })}
                 onClick={() => setControl('firstPerson')}
               >
-                🎯 1인칭
+                firstPerson
               </p>
               <p
                 className={style.pRecipe({
@@ -196,27 +164,27 @@ export default function Info() {
                 })}
                 onClick={() => setControl('thirdPerson')}
               >
-                📷 3인칭
+                thirdPerson
               </p>
               <p
                 className={style.pRecipe({
-                  selected: mode.control === 'thirdPersonOrbit' || mode.control === 'orbit',
+                  selected: mode.control === 'chase',
                 })}
-                onClick={() => setControl('thirdPersonOrbit')}
+                onClick={() => setControl('chase')}
               >
-                🔄 궤도 카메라
+                chase
               </p>
               <p
                 className={style.pRecipe({ selected: mode.control === 'topDown' })}
                 onClick={() => setControl('topDown')}
               >
-                🗺️ 탑뷰
+                topDown
               </p>
               <p
                 className={style.pRecipe({ selected: mode.control === 'sideScroll' })}
                 onClick={() => setControl('sideScroll')}
               >
-                📖 사이드뷰
+                sideScroll
               </p>
             </>
           }
@@ -225,12 +193,11 @@ export default function Info() {
           }}
         >
           <button className={style.glassButton}>
-            {mode.control === 'firstPerson' && '🎯 1인칭'}
-            {mode.control === 'thirdPerson' && '📷 3인칭'}
-            {mode.control === 'thirdPersonOrbit' && '🔄 궤도'}
-            {mode.control === 'topDown' && '🗺️ 탑뷰'}
-            {mode.control === 'sideScroll' && '📖 사이드'}
-            {(mode.control === 'normal' || mode.control === 'orbit') && '📷 3인칭'}
+            {mode.control === 'firstPerson' && 'firstPerson'}
+            {mode.control === 'thirdPerson' && 'thirdPerson'}
+            {mode.control === 'chase' && 'chase'}
+            {mode.control === 'topDown' && 'topDown'}
+            {mode.control === 'sideScroll' && 'sideScroll'}
           </button>
         </Icon>
 

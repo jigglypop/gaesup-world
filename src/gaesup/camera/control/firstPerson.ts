@@ -40,17 +40,13 @@ export default function firstPerson(prop: cameraPropType) {
     worldContext: { activeState },
     cameraOption,
   } = prop;
-  
   if (!state?.camera) return;
-  
   const targetPosition = makeFirstPersonCameraPosition(activeState, cameraOption);
   const lerpSpeed = cameraOption.smoothing?.position ?? 0.1;
   state.camera.position.lerp(targetPosition, lerpSpeed);
-  
   const lookDirection = calculateFirstPersonDirection(activeState);
   tempLookAt.copy(state.camera.position).add(lookDirection.multiplyScalar(10));
   state.camera.lookAt(tempLookAt);
-  
   if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
     cameraUtils.updateFOVLerp(state.camera, cameraOption.fov, cameraOption.smoothing?.fov);
   }

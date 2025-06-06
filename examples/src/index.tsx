@@ -5,14 +5,22 @@ import { Canvas } from '@react-three/fiber';
 import { euler, Physics, RigidBody } from '@react-three/rapier';
 import { Suspense, useContext, useState } from 'react';
 import { FaMapMarkerAlt } from 'react-icons/fa';
-import { GaesupController, GaesupWorld, MiniMap, MinimapPlatform, PerfMonitor, Rideable, V3 } from '../../src';
+import {
+  GaesupController,
+  GaesupWorld,
+  MiniMap,
+  MinimapPlatform,
+  PerfMonitor,
+  Rideable,
+  V3,
+} from '../../src';
+import { InnerHtml } from '../../src/gaesup/component/InnerHtml';
+import { GaesupContext } from '../../src/gaesup/context';
 import { useFocus } from '../../src/gaesup/hooks/useFocus';
 import { useTeleport } from '../../src/gaesup/hooks/useInputControls';
 import { Clicker } from '../../src/gaesup/tools/clicker';
 import { FocusModal } from '../../src/gaesup/tools/FocusModal';
 import { RideableUI } from '../../src/gaesup/tools/rideable';
-import { InnerHtml } from '../../src/gaesup/component/InnerHtml';
-import { GaesupContext } from '../../src/gaesup/context';
 import Info from '../info';
 import Passive from '../passive';
 import Floor from './Floor';
@@ -381,7 +389,6 @@ export default function MainComponent() {
         fov: 75,
         bounds: { minY: 2, maxY: 50, minX: -100, maxX: 100, minZ: -100, maxZ: 100 },
       }}
-
     >
       <FocusHandler onObjectFocused={setFocusedObject} />
       <TeleportHandler />
@@ -417,6 +424,7 @@ export default function MainComponent() {
               controllerOptions={{ lerp: { cameraTurn: 0.1, cameraPosition: 0.08 } }}
               rigidBodyProps={{}}
               parts={[{ url: 'gltf/ally_cloth_rabbit.glb', color: '#ffe0e0' }]}
+              rotation={euler({ x: 0, y: Math.PI, z: 0 })}
             />
             <Floor />
             <Platforms />
@@ -437,14 +445,9 @@ export default function MainComponent() {
             />
             <RideableVehicles />
           </Physics>
-          <PerfMonitor
-            position="bottom-right"
-            updateInterval={500}
-            visible={true}
-            zIndex={10001}
-          />
+          <PerfMonitor position="bottom-right" updateInterval={500} visible={true} zIndex={10001} />
         </Suspense>
-              </Canvas>
+      </Canvas>
 
       <Info />
 

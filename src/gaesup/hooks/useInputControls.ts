@@ -1,10 +1,10 @@
+import { ThreeEvent } from '@react-three/fiber';
 import { useSetAtom } from 'jotai';
 import { useContext } from 'react';
-import { ThreeEvent } from '@react-three/fiber';
-import * as THREE from "three";
-import { keyboardInputAtom, pointerInputAtom } from '../atoms/unifiedInputAtom';
-import { V3 } from '../utils';
+import * as THREE from 'three';
+import { keyboardInputAtom, pointerInputAtom } from '../atoms/inputAtom';
 import { GaesupContext } from '../context';
+import { V3 } from '../utils';
 
 export function usePushKey() {
   const setKeyboardInput = useSetAtom(keyboardInputAtom);
@@ -61,4 +61,4 @@ export function useTeleport() {
   return {
     Teleport,
   };
-} 
+}

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { physicsEventBus } from '../../physics/stores/physicsEventBus';
 import { ActiveBlend, CameraBlendState } from './types';
 
 export enum BlendFunction {
@@ -21,6 +22,7 @@ export class CameraBlendManager {
       return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
     },
   };
+  isControllingCamera = false;
   startBlend(
     from: Partial<CameraBlendState>,
     to: Partial<CameraBlendState>,
@@ -31,6 +33,13 @@ export class CameraBlendManager {
   ): void {
     const fromState = this.createState(from, camera);
     const toState = this.createState(to, camera);
+
+    physicsEventBus.emit('CAMERA_BLEND_START', {
+      from: fromState,
+      to: toState,
+      duration,
+    });
+
     const initialQuaternion = new THREE.Quaternion().setFromEuler(fromState.rotation).normalize();
     const targetQuaternion = new THREE.Quaternion().setFromEuler(toState.rotation).normalize();
     if (initialQuaternion.dot(targetQuaternion) < 0) {
@@ -42,7 +51,7 @@ export class CameraBlendManager {
       duration,
       elapsed: 0,
       blendFunction,
-      onComplete,
+      ...(onComplete && { onComplete }),
       initialQuaternion,
       targetQuaternion,
     };
@@ -69,20 +78,23 @@ export class CameraBlendManager {
       );
       camera.updateProjectionMatrix();
     }
-
     if (t >= 1) {
+      const finalState = this.activeBlend.to;
+      physicsEventBus.emit('CAMERA_BLEND_END', {
+        finalState,
+      });
       this.activeBlend.onComplete?.();
       this.activeBlend = null;
+      this.isControllingCamera = false;
       return false;
     }
-
     return true;
   }
-  private createState(partial: Partial<CameraBlendState>): CameraBlendState {
+  private createState(partial: Partial<CameraBlendState>, camera?: THREE.Camera): CameraBlendState {
     return {
-      position: partial.position || new THREE.Vector3(),
-      rotation: partial.rotation || new THREE.Euler(),
-      fov: partial.fov || 75,
+      position: partial.position || (camera ? camera.position.clone() : new THREE.Vector3()),
+      rotation: partial.rotation || (camera ? camera.rotation.clone() : new THREE.Euler()),
+      fov: partial.fov || (camera instanceof THREE.PerspectiveCamera ? camera.fov : 75),
       target: partial.target,
     };
   }

@@ -1,8 +1,8 @@
-import * as THREE from 'three';
-import { Dispatch, ReactNode, RefObject } from 'react';
-import { RapierRigidBody, RigidBodyProps } from '@react-three/rapier';
 import { Collider } from '@dimforge/rapier3d-compat';
 import { GroupProps } from '@react-three/fiber';
+import { RapierRigidBody, RigidBodyProps } from '@react-three/rapier';
+import { Dispatch, ReactNode, RefObject } from 'react';
+import * as THREE from 'three';
 
 // ============================================================================
 // 기본 타입들
@@ -52,18 +52,8 @@ export namespace GaesupCore {
     payload?: Partial<T>;
   };
 
-  /**
-   * 디스패치 타입
-   */
   export type DispatchType<T> = Dispatch<DispatchAction<T>>;
-
-  // ============================================================================
-  // 상태 관련
-  // ============================================================================
   export namespace State {
-    /**
-     * 활성 상태 (물리 엔진과 직접 연동)
-     */
     export interface Active {
       position: THREE.Vector3;
       velocity: THREE.Vector3;
@@ -72,20 +62,12 @@ export namespace GaesupCore {
       direction: THREE.Vector3;
       dir: THREE.Vector3;
     }
-
-    /**
-     * 수동 상태 (읽기 전용)
-     */
     export interface Passive {
       position: THREE.Vector3;
       quat: THREE.Quaternion;
       euler: THREE.Euler;
       rotation: THREE.Euler;
     }
-
-    /**
-     * 게임 상태
-     */
     export interface Game {
       rideableId?: string;
       isMoving: boolean;
@@ -105,19 +87,11 @@ export namespace GaesupCore {
       shouldEnterRideable?: boolean;
       shouldExitRideable?: boolean;
     }
-
-    /**
-     * 주변 탈 것 정보
-     */
     export interface NearbyRideable {
       objectkey: string;
       objectType: 'vehicle' | 'airplane';
       name: string;
     }
-
-    /**
-     * 블록 상태
-     */
     export interface Block {
       camera: boolean;
       control: boolean;
@@ -125,14 +99,7 @@ export namespace GaesupCore {
       scroll: boolean;
     }
   }
-
-  // ============================================================================
-  // 입력 관련
-  // ============================================================================
   export namespace Input {
-    /**
-     * 키보드 입력 상태
-     */
     export interface Keyboard {
       forward: boolean;
       backward: boolean;
@@ -281,7 +248,7 @@ export namespace GaesupCore {
     export type CameraControlMode =
       | 'firstPerson'
       | 'thirdPerson'
-      | 'thirdPersonOrbit'
+      | 'chase'
       | 'topDown'
       | 'sideScroll'
       | 'isometric'
@@ -290,7 +257,7 @@ export namespace GaesupCore {
     /**
      * 제어 모드
      */
-    export type ControlMode = 'normal' | 'orbit';
+    export type ControlMode = 'normal' | 'chase';
 
     /**
      * 컨트롤러 모드
@@ -387,7 +354,7 @@ export namespace GaesupCore {
       cameraCollisionType: 'transparent' | 'closeUp';
       camera: {
         type: 'perspective' | 'orthographic';
-        control: Controller.CameraControlMode | 'orbit' | 'normal';
+        control: Controller.CameraControlMode | 'chase' | 'normal';
       };
       minimap: boolean;
       minimapRatio: number;
@@ -422,7 +389,7 @@ export type KeyboardInputState = GaesupCore.Input.Keyboard;
 export type MouseInputState = GaesupCore.Input.Mouse;
 export type GamepadInputState = GaesupCore.Input.Gamepad;
 export type ClickerOptionState = GaesupCore.Input.ClickerOption;
-export type UnifiedInputState = GaesupCore.Input.Unified;
+export type inputState = GaesupCore.Input.Unified;
 export type ControlState = GaesupCore.Input.Control;
 export type KeyboardControlState<T extends string = string> = GaesupCore.Input.KeyboardControl<T>;
 
@@ -448,4 +415,4 @@ export type PartsType = GaesupCore.Resource.Parts;
 
 // 옵션 관련
 export type OptionsType = GaesupCore.Options.Global;
-export type PartialOptionsType = GaesupCore.Options.Partial; 
+export type PartialOptionsType = GaesupCore.Options.Partial;

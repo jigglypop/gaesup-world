@@ -4,40 +4,29 @@ import { RapierRigidBody, RigidBodyProps } from '@react-three/rapier';
 import { CSSProperties, Dispatch, ReactNode, RefObject } from 'react';
 import * as THREE from 'three';
 
-// ============================================================================
-// 기본 타입들
-// ============================================================================
-
 export type DispatchAction<T> = {
   type: string;
   payload?: Partial<T>;
 };
 
 export type DispatchType<T> = Dispatch<DispatchAction<T>>;
-
 export type Vector3Like = {
   x: number;
   y: number;
   z: number;
 };
-
 export type EulerLike = {
   x: number;
   y: number;
   z: number;
   order?: string;
 };
-
 export type QuaternionLike = {
   x: number;
   y: number;
   z: number;
   w: number;
 };
-
-// ============================================================================
-// 입력 관련 타입들
-// ============================================================================
 
 export type ControlState = {
   forward: boolean;
@@ -81,7 +70,7 @@ export interface GamepadInputState {
   buttons: Record<string, boolean>;
 }
 
-export interface UnifiedInputState {
+export interface inputState {
   keyboard: KeyboardInputState;
   pointer: MouseInputState;
   gamepad: GamepadInputState;
@@ -98,7 +87,7 @@ export type ControllerType = 'character' | 'vehicle' | 'airplane';
 export type CameraControlMode =
   | 'firstPerson'
   | 'thirdPerson'
-  | 'thirdPersonOrbit'
+  | 'chase'
   | 'topDown'
   | 'sideScroll'
   | 'shoulder'
@@ -106,7 +95,7 @@ export type CameraControlMode =
   | 'isometric'
   | 'free';
 
-export type ControlMode = 'normal' | 'orbit';
+export type ControlMode = 'normal' | 'chase';
 export type ControllerMode = 'clicker';
 
 export type ModeType = {
@@ -412,7 +401,7 @@ export type OptionsType = {
   cameraCollisionType: 'transparent' | 'closeUp';
   camera: {
     type: 'perspective' | 'orthographic';
-    control: CameraControlMode | 'orbit' | 'normal';
+    control: CameraControlMode | 'chase' | 'normal';
   };
   minimap: boolean;
   minimapRatio: number;
@@ -509,7 +498,10 @@ export type PhysicsEventType =
   | 'GROUND_STATE_CHANGE'
   | 'RIDE_STATE_CHANGE'
   | 'MODE_CHANGE'
-  | 'CAMERA_UPDATE';
+  | 'CAMERA_UPDATE'
+  | 'CAMERA_BLEND_START'
+  | 'CAMERA_BLEND_END'
+  | 'CAMERA_EFFECT';
 
 export type PhysicsEventData = {
   POSITION_UPDATE: {
@@ -533,6 +525,36 @@ export type PhysicsEventData = {
   CAMERA_UPDATE: {
     position: THREE.Vector3;
     target: THREE.Vector3;
+    fov?: number;
+    mode?: string;
+    isBlending?: boolean;
+  };
+  CAMERA_BLEND_START: {
+    from: {
+      position: THREE.Vector3;
+      rotation: THREE.Euler;
+      fov: number;
+      target?: THREE.Vector3;
+    };
+    to: {
+      position: THREE.Vector3;
+      rotation: THREE.Euler;
+      fov: number;
+      target?: THREE.Vector3;
+    };
+    duration: number;
+  };
+  CAMERA_BLEND_END: {
+    finalState: {
+      position: THREE.Vector3;
+      rotation: THREE.Euler;
+      fov: number;
+      target?: THREE.Vector3;
+    };
+  };
+  CAMERA_EFFECT: {
+    type: 'shake' | 'zoom' | 'punch' | 'earthquake';
+    config: unknown;
   };
 };
 

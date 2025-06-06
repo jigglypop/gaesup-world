@@ -1,10 +1,10 @@
 import { euler, quat, vec3 } from '@react-three/rapier';
 import { atom } from 'jotai';
 import * as THREE from 'three';
+import { minimapInnerType } from '../tools/minimap/type';
 import { AnimationAtomType } from '../types';
 import { V3 } from '../utils/vector';
-import { movementStateAtom, unifiedInputAtom } from './unifiedInputAtom';
-import { minimapInnerType } from '../tools/minimap/type';
+import { inputAtom, movementStateAtom } from './inputAtom';
 
 export interface ActiveState {
   position: THREE.Vector3;
@@ -28,13 +28,13 @@ export const activeStateAtom = atom<ActiveState>({
 export interface ModeState {
   type: 'character' | 'vehicle' | 'airplane';
   controller: 'clicker' | 'keyboard' | 'joystick' | 'gamepad';
-  control: 'thirdPersonOrbit' | 'firstPerson' | 'topDown';
+  control: 'chase' | 'firstPerson' | 'topDown';
 }
 
 export const modeStateAtom = atom<ModeState>({
   type: 'character',
   controller: 'clicker',
-  control: 'thirdPersonOrbit',
+  control: 'chase',
 });
 
 // URL 리소스 상태
@@ -263,7 +263,7 @@ export const currentAnimationAtom = atom((get) => {
 
 // 이동 관련 상태 (기존 movementStateAtom과 통합)
 export const physicsMovementAtom = atom((get) => {
-  const input = get(unifiedInputAtom);
+  const input = get(inputAtom);
   const gameStates = get(gameStatesAtom);
 
   return {

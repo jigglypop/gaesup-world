@@ -2,7 +2,7 @@ import { Line } from '@react-three/drei';
 import { useAtomValue } from 'jotai';
 import { memo } from 'react';
 import * as THREE from 'three';
-import { unifiedInputAtom } from '../../atoms';
+import { inputAtom } from '../../atoms';
 import { useMovePoint } from '../../hooks/useMovePoint';
 
 const OnMarker = memo(() => (
@@ -20,7 +20,7 @@ const RunMarker = memo(() => (
 ));
 
 export const Clicker = memo(() => {
-  const inputSystem = useAtomValue(unifiedInputAtom);
+  const inputSystem = useAtomValue(inputAtom);
   const pointer = inputSystem.pointer;
   const clickerOption = inputSystem.clickerOption;
   const pointQ = [];

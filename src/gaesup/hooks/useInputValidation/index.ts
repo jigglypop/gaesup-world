@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
 import { useAtomValue } from 'jotai';
-import { unifiedInputAtom, movementStateAtom } from '../../atoms/unifiedInputAtom';
+import { useEffect, useRef } from 'react';
+import { inputAtom, movementStateAtom } from '../../atoms/inputAtom';
 
 interface ValidationResult {
   isValid: boolean;
@@ -15,7 +15,7 @@ export function useInputValidation(): {
   validate: () => ValidationResult;
   getInputDebug: () => unknown;
 } {
-  const inputSystem = useAtomValue(unifiedInputAtom);
+  const inputSystem = useAtomValue(inputAtom);
   const movementState = useAtomValue(movementStateAtom);
 
   const validate = (): ValidationResult => {
@@ -31,8 +31,8 @@ export function useInputValidation(): {
       accuracy *= 0.5;
     }
 
-    const contradictoryInputs = (keyboard.forward && keyboard.backward) || 
-                               (keyboard.leftward && keyboard.rightward);
+    const contradictoryInputs =
+      (keyboard.forward && keyboard.backward) || (keyboard.leftward && keyboard.rightward);
     if (contradictoryInputs) {
       issues.push('Contradictory keyboard inputs detected');
       accuracy *= 0.8;
@@ -63,7 +63,7 @@ export function useInputValidation(): {
 }
 
 export const useInputValidation2 = (enableLogging = false) => {
-  const inputSystem = useAtomValue(unifiedInputAtom);
+  const inputSystem = useAtomValue(inputAtom);
   const movementState = useAtomValue(movementStateAtom);
   const lastValidationRef = useRef<ValidationResult | null>(null);
 
@@ -105,7 +105,7 @@ export const useInputValidation2 = (enableLogging = false) => {
 };
 
 export const useInputLogger = (enabled = false, interval = 1000) => {
-  const inputSystem = useAtomValue(unifiedInputAtom);
+  const inputSystem = useAtomValue(inputAtom);
   const movementState = useAtomValue(movementStateAtom);
 
   useEffect(() => {
@@ -117,7 +117,7 @@ export const useInputLogger = (enabled = false, interval = 1000) => {
       console.log('Pointer State:', inputSystem.pointer);
       console.log('Movement State:', movementState);
       console.log('Timestamps:', {
-        'Current': Date.now(),
+        Current: Date.now(),
         'Pointer Active': inputSystem.pointer.isActive,
         'Pointer Should Run': inputSystem.pointer.shouldRun,
       });
@@ -126,4 +126,4 @@ export const useInputLogger = (enabled = false, interval = 1000) => {
 
     return () => clearInterval(logInterval);
   }, [enabled, interval, inputSystem, movementState]);
-}; 
+};

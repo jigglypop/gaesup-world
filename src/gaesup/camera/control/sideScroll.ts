@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { cameraPropType } from '../../physics/type';
 import { V3 } from '../../utils/vector';
-import { ActiveStateType, CameraOptionType } from '../../context';
 import { cameraUtils } from '../utils';
 
 export const makeSideScrollCameraPosition = (
@@ -15,7 +14,6 @@ export const makeSideScrollCameraPosition = (
 };
 
 export const clampSideScrollPosition = cameraUtils.clampPosition;
-
 export default function sideScroll(prop: cameraPropType) {
   const {
     state,
@@ -23,17 +21,12 @@ export default function sideScroll(prop: cameraPropType) {
     controllerOptions: { lerp },
     cameraOption,
   } = prop;
-
   if (!state || !state.camera) return;
-
   const targetPosition = makeSideScrollCameraPosition(activeState, cameraOption);
-
   const lerpSpeed = cameraOption.smoothing?.position ?? lerp.cameraPosition;
   state.camera.position.lerp(targetPosition, lerpSpeed);
-
   const lookAtTarget = cameraOption.target || activeState.position;
   state.camera.lookAt(lookAtTarget);
-
   if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
     cameraUtils.updateFOVLerp(state.camera, cameraOption.fov, cameraOption.smoothing?.fov);
   }

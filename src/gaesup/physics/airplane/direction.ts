@@ -8,6 +8,7 @@ export default function direction(
   physicsState: PhysicsState,
   innerGroupRef: RefObject<THREE.Group>,
   matchSizes: unknown,
+  controlMode?: string,
 ) {
   const { activeState, keyboard, airplaneConfig } = physicsState;
   const { forward, backward, leftward, rightward, shift, space } = keyboard;
@@ -27,7 +28,11 @@ export default function direction(
   const upDown = Number(backward) - Number(forward);
   const leftRight = Number(rightward) - Number(leftward);
 
-  activeState.euler.y += -leftRight * angleDelta.y;
+  if (controlMode === 'chase') {
+    activeState.euler.y += -leftRight * angleDelta.y * 0.5;
+  } else {
+    activeState.euler.y += -leftRight * angleDelta.y;
+  }
 
   const X = maxAngle.x * upDown;
   const Z = maxAngle.z * leftRight;

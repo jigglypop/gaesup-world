@@ -53,9 +53,9 @@ export function PerfMonitor({
       let memoryInfo = { used: 0, total: 0, limit: 0 };
       if (performance.memory) {
         memoryInfo = {
-          used: Math.round(performance.memory.usedJSHeapSize / 1048576 * 100) / 100,
-          total: Math.round(performance.memory.totalJSHeapSize / 1048576 * 100) / 100,
-          limit: Math.round(performance.memory.jsHeapSizeLimit / 1048576 * 100) / 100,
+          used: Math.round((performance.memory.usedJSHeapSize / 1048576) * 100) / 100,
+          total: Math.round((performance.memory.totalJSHeapSize / 1048576) * 100) / 100,
+          limit: Math.round((performance.memory.jsHeapSizeLimit / 1048576) * 100) / 100,
         };
       }
       const info = gl.info;
@@ -116,7 +116,7 @@ export function PerfMonitor({
         document.body.removeChild(container);
       }
     };
-  }, [position, zIndex]); 
+  }, [position, zIndex]);
   useEffect(() => {
     const container = document.getElementById('perf-monitor');
     if (!container) return;
@@ -134,13 +134,17 @@ export function PerfMonitor({
         </div>
       </div>
 
-      ${performance.memory ? `
+      ${
+        performance.memory
+          ? `
         <div style="margin-bottom: 4px; border-top: 1px solid #333; padding-top: 3px;">
           <div style="color: #f08; font-size: 9px;">💾 Memory</div>
           <div style="color: #ff8">${perfData.memory.used}MB / ${perfData.memory.limit}MB</div>
           <div style="color: #80f">${Math.round((perfData.memory.used / perfData.memory.limit) * 100)}% used</div>
         </div>
-      ` : ''}
+      `
+          : ''
+      }
 
       <div style="border-top: 1px solid #333; padding-top: 3px;">
         <div style="color: #8ff; font-size: 9px;">🎮 WebGL</div>
@@ -152,4 +156,4 @@ export function PerfMonitor({
   return null;
 }
 
-export default PerfMonitor; 
+export default PerfMonitor;

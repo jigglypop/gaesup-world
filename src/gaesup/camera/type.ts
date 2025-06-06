@@ -7,5 +7,4 @@ export interface CameraPropType {
   cameraOption: CameraOptionType;
 }
 
-
 export type CameraControlFunction = (prop: CameraPropType) => void;

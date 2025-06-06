@@ -3,7 +3,6 @@ import * as THREE from 'three';
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
 const tempQuaternion = new THREE.Quaternion();
-const tempQuaternion2 = new THREE.Quaternion();
 
 export const cameraUtils = {
   tempVectors: {
@@ -92,14 +91,11 @@ export const cameraUtils = {
     const omega = 2 / smoothTime;
     const x = omega * deltaTime;
     const exp = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
-
     tempVector3.subVectors(current, target);
     const maxChange = maxSpeed ? maxSpeed * smoothTime : Infinity;
     tempVector3.clampLength(0, maxChange);
-
     tempVector3_2.copy(velocity).addScaledVector(tempVector3, omega).multiplyScalar(deltaTime);
     velocity.copy(velocity).sub(tempVector3_2).multiplyScalar(exp);
-
     current.copy(target).add(tempVector3.add(tempVector3_2).multiplyScalar(exp));
   },
 
@@ -116,15 +112,12 @@ export const cameraUtils = {
     },
   ): THREE.Vector3 => {
     if (!bounds) return center;
-
     const x = bounds.minX !== undefined ? Math.max(bounds.minX, center.x) : center.x;
     const y = bounds.minY !== undefined ? Math.max(bounds.minY, center.y) : center.y;
     const z = bounds.minZ !== undefined ? Math.max(bounds.minZ, center.z) : center.z;
-
     const maxX = bounds.maxX !== undefined ? Math.min(bounds.maxX, x) : x;
     const maxY = bounds.maxY !== undefined ? Math.min(bounds.maxY, y) : y;
     const maxZ = bounds.maxZ !== undefined ? Math.min(bounds.maxZ, z) : z;
-
     return tempVector3.set(maxX, maxY, maxZ);
   },
 

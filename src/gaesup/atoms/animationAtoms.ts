@@ -118,17 +118,13 @@ export type subscribeActionsType = {
 export function useSubscribeActions({ type }: subscribeActionsType) {
   const { rawData } = useBridgeConnector();
   const isSubscribed = useRef(false);
-
   useEffect(() => {
     const states = rawData.worldContext?.states;
     const control = rawData.inputSystem?.keyboard;
     const dispatch = rawData.worldDispatch;
     const animationState = rawData.worldContext?.animationState;
-
     if (!states || !control || !dispatch || !animationState?.[type] || isSubscribed.current) return;
-
     const newStore: Record<string, AnimationAtomType> = {};
-
     ANIMATION_CONFIGS.forEach((config) => {
       let condition: () => boolean;
       switch (config.tag) {

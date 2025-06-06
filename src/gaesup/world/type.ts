@@ -1,9 +1,7 @@
 import { ReactNode } from 'react';
 import * as THREE from 'three';
 import { dispatchType } from '../utils/type';
-import {
-  gaesupWorldContextType,
-} from './context/type';
+import { gaesupWorldContextType } from './context/type';
 
 export type gaesupWorldInitType = {
   value: gaesupWorldContextType;

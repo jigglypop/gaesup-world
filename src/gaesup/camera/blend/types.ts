@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { BlendFunction } from './CameraBlendManager';
 
 export interface CameraBlendState {
   position: THREE.Vector3;

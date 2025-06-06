@@ -27,6 +27,9 @@ class OptimizedPhysicsEventBus {
     ['RIDE_STATE_CHANGE', 200], // 5fps
     ['MODE_CHANGE', 0], // 즉시
     ['CAMERA_UPDATE', 33], // 30fps
+    ['CAMERA_BLEND_START', 0], // 즉시
+    ['CAMERA_BLEND_END', 0], // 즉시
+    ['CAMERA_EFFECT', 0], // 즉시
   ]);
 
   subscribe<T extends PhysicsEventType>(
@@ -159,7 +162,13 @@ class OptimizedPhysicsEventBus {
       case 'CAMERA_UPDATE':
         const camPosDiff = newData.position?.distanceTo?.(lastData.position) || 0;
         const camTargetDiff = newData.target?.distanceTo?.(lastData.target) || 0;
-        return camPosDiff < 0.01 && camTargetDiff < 0.01;
+        const fovDiff = Math.abs((newData.fov || 75) - (lastData.fov || 75));
+        return camPosDiff < 0.01 && camTargetDiff < 0.01 && fovDiff < 0.1;
+
+      case 'CAMERA_BLEND_START':
+      case 'CAMERA_BLEND_END':
+      case 'CAMERA_EFFECT':
+        return false; // 항상 발행
 
       default:
         return JSON.stringify(newData) === JSON.stringify(lastData);

@@ -1,14 +1,14 @@
 import { atom } from 'jotai';
-import { V3 } from '../utils/vector';
 import type {
+  BlockState,
+  ClickerOptionState,
   KeyboardInputState,
   MouseInputState,
-  ClickerOptionState,
-  BlockState,
-  UnifiedInputState
+  inputState,
 } from '../../types';
+import { V3 } from '../utils/vector';
 
-export const unifiedInputAtom = atom<UnifiedInputState>({
+export const inputAtom = atom<inputState>({
   keyboard: {
     forward: false,
     backward: false,
@@ -55,9 +55,8 @@ export const unifiedInputAtom = atom<UnifiedInputState>({
   },
 });
 
-
 export const movementStateAtom = atom((get) => {
-  const input = get(unifiedInputAtom);
+  const input = get(inputAtom);
   const isKeyboardMoving =
     input.keyboard.forward ||
     input.keyboard.backward ||
@@ -79,10 +78,10 @@ export const movementStateAtom = atom((get) => {
 });
 
 export const keyboardInputAtom = atom(
-  (get) => get(unifiedInputAtom).keyboard,
+  (get) => get(inputAtom).keyboard,
   (get, set, update: Partial<KeyboardInputState>) => {
-    const current = get(unifiedInputAtom);
-    set(unifiedInputAtom, {
+    const current = get(inputAtom);
+    set(inputAtom, {
       ...current,
       keyboard: { ...current.keyboard, ...update },
     });
@@ -90,10 +89,10 @@ export const keyboardInputAtom = atom(
 );
 
 export const pointerInputAtom = atom(
-  (get) => get(unifiedInputAtom).pointer,
+  (get) => get(inputAtom).pointer,
   (get, set, update: Partial<MouseInputState>) => {
-    const current = get(unifiedInputAtom);
-    set(unifiedInputAtom, {
+    const current = get(inputAtom);
+    set(inputAtom, {
       ...current,
       pointer: { ...current.pointer, ...update },
     });
@@ -101,10 +100,10 @@ export const pointerInputAtom = atom(
 );
 
 export const blockStateAtom = atom(
-  (get) => get(unifiedInputAtom).blocks,
+  (get) => get(inputAtom).blocks,
   (get, set, update: Partial<BlockState>) => {
-    const current = get(unifiedInputAtom);
-    set(unifiedInputAtom, {
+    const current = get(inputAtom);
+    set(inputAtom, {
       ...current,
       blocks: { ...current.blocks, ...update },
     });
@@ -112,10 +111,10 @@ export const blockStateAtom = atom(
 );
 
 export const clickerOptionAtom = atom(
-  (get) => get(unifiedInputAtom).clickerOption,
+  (get) => get(inputAtom).clickerOption,
   (get, set, update: Partial<ClickerOptionState>) => {
-    const current = get(unifiedInputAtom);
-    set(unifiedInputAtom, {
+    const current = get(inputAtom);
+    set(inputAtom, {
       ...current,
       clickerOption: { ...current.clickerOption, ...update },
     });
@@ -123,21 +122,21 @@ export const clickerOptionAtom = atom(
 );
 
 export const controlAtom = atom(
-  (get) => get(unifiedInputAtom).keyboard,
+  (get) => get(inputAtom).keyboard,
   (get, set, update: Partial<KeyboardInputState>) => {
     set(keyboardInputAtom, update);
   },
 );
 
 export const blockAtom = atom(
-  (get) => get(unifiedInputAtom).blocks,
+  (get) => get(inputAtom).blocks,
   (get, set, update: Partial<BlockState>) => {
     set(blockStateAtom, update);
   },
 );
 
 export const clickerAtom = atom(
-  (get) => get(unifiedInputAtom).pointer,
+  (get) => get(inputAtom).pointer,
   (get, set, update: Partial<MouseInputState>) => {
     set(pointerInputAtom, update);
   },

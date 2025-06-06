@@ -6,13 +6,10 @@ import {
   characterAnimationAtom,
   vehicleAnimationAtom,
 } from '../../atoms/animationAtoms';
-import { unifiedInputAtom, keyboardInputAtom, pointerInputAtom } from '../../atoms/unifiedInputAtom';
+import { inputAtom, keyboardInputAtom, pointerInputAtom } from '../../atoms/inputAtom';
 import { GaesupContext, GaesupDispatchContext } from '../../context';
 import { useGaesupGltf } from '../useGaesupGltf';
 import { PhysicsBridgeInputData, usePhysicsInput } from '../usePhysicsInput';
-import { ActiveStateType, ModeType, gaesupWorldContextType, BlockType } from '../../context';
-import { V3 } from '../../utils/vector';
-import * as THREE from 'three';
 
 /**
  * Bridge Connector Hook
@@ -29,7 +26,7 @@ export const useBridgeConnector = () => {
   // ============================================================================
 
   // ✅ 입력 시스템: Atoms가 진실의 원천
-  const inputSystem = useAtomValue(unifiedInputAtom);
+  const inputSystem = useAtomValue(inputAtom);
   const setKeyboardInput = useSetAtom(keyboardInputAtom);
   const setPointerInput = useSetAtom(pointerInputAtom);
 

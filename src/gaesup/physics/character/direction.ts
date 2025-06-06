@@ -1,15 +1,17 @@
 import * as THREE from 'three';
 import { ActiveStateType } from '../../types';
+import {
+  getCachedTrig,
+  MemoizationManager,
+  normalizeAngle,
+  shouldUpdate,
+} from '../../utils/memoization';
 import { calcAngleByVector, calcNorm } from '../../utils/vector';
-import { getCachedTrig, MemoizationManager, normalizeAngle, shouldUpdate } from '../../utils/memoization';
 import { physicsEventBus } from '../stores/physicsEventBus';
 import { PhysicsCalcProps, PhysicsState } from '../types';
 
-// 메모이제이션 매니저와 벡터 캐시 인스턴스
 const memoManager = MemoizationManager.getInstance();
 const vectorCache = memoManager.getVectorCache('character-direction');
-
-// 이전 상태 추적을 위한 변수들
 let lastEulerY = 0;
 let lastDirectionLength = 0;
 let lastKeyboardState = { forward: false, backward: false, leftward: false, rightward: false };
@@ -20,27 +22,25 @@ export function direction(
   calcProp?: PhysicsCalcProps,
 ) {
   const { activeState, keyboard, mouse, characterConfig } = physicsState;
-  
-  // 변화가 있는지 확인 (최적화)
-  const hasKeyboardInput = keyboard.forward || keyboard.backward || keyboard.leftward || keyboard.rightward;
-  const keyboardChanged = (
+  const hasKeyboardInput =
+    keyboard.forward || keyboard.backward || keyboard.leftward || keyboard.rightward;
+  const keyboardChanged =
     lastKeyboardState.forward !== keyboard.forward ||
     lastKeyboardState.backward !== keyboard.backward ||
     lastKeyboardState.leftward !== keyboard.leftward ||
-    lastKeyboardState.rightward !== keyboard.rightward
-  );
-  
+    lastKeyboardState.rightward !== keyboard.rightward;
+
   if (mouse.isActive) {
     mouseDirection(activeState, mouse, characterConfig, calcProp);
   } else if (hasKeyboardInput || keyboardChanged) {
     keyboardDirection(activeState, keyboard, characterConfig, controlMode);
-    
+
     // 키보드 상태 저장
     lastKeyboardState = {
       forward: keyboard.forward,
       backward: keyboard.backward,
       leftward: keyboard.leftward,
-      rightward: keyboard.rightward
+      rightward: keyboard.rightward,
     };
   }
 
@@ -48,14 +48,14 @@ export function direction(
   const currentDirectionLength = activeState.dir.length();
   const eulerChanged = shouldUpdate(activeState.euler.y, lastEulerY, 0.001);
   const directionChanged = shouldUpdate(currentDirectionLength, lastDirectionLength, 0.01);
-  
+
   if (eulerChanged || directionChanged) {
     physicsEventBus.emit('ROTATION_UPDATE', {
       euler: activeState.euler,
       direction: activeState.direction,
       dir: activeState.dir,
     });
-    
+
     lastEulerY = activeState.euler.y;
     lastDirectionLength = currentDirectionLength;
   }
@@ -69,13 +69,13 @@ function mouseDirection(
 ) {
   if (calcProp?.rigidBodyRef.current) {
     const currentPos = calcProp.rigidBodyRef.current.translation();
-    
+
     // 임시 벡터 재사용
     const tempCurrentPos = vectorCache.getTempVector(0);
     tempCurrentPos.set(currentPos.x, currentPos.y, currentPos.z);
-    
+
     const norm = calcNorm(tempCurrentPos, mouse.target, false);
-    
+
     if (norm < 1) {
       const { clickerOption } = calcProp.worldContext || {};
       if (clickerOption?.track && clickerOption.queue && clickerOption.queue.length > 0) {
@@ -105,28 +105,28 @@ function mouseDirection(
       }
     }
   }
-  
+
   const { turnSpeed = 10 } = characterConfig;
   const targetAngle = Math.PI / 2 - mouse.angle;
-  
+
   // 각도 정규화와 차이 계산 최적화
   let angleDiff = normalizeAngle(targetAngle - activeState.euler.y);
-  
+
   const rotationSpeed = (turnSpeed * Math.PI) / 80;
   const rotationStep = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), rotationSpeed);
   activeState.euler.y += rotationStep;
 
   // 캐시된 삼각함수 사용
   const { sin: sinY, cos: cosY } = getCachedTrig(activeState.euler.y);
-  
+
   // 임시 벡터 재사용
   const tempFront = vectorCache.getTempVector(1);
   const tempDirection = vectorCache.getTempVector(2);
-  
+
   tempFront.set(1, 0, 1);
   tempDirection.set(-sinY, 0, -cosY);
   tempFront.multiply(tempDirection);
-  
+
   activeState.direction.copy(tempFront);
   activeState.dir.copy(tempFront).normalize();
 }
@@ -141,40 +141,33 @@ function keyboardDirection(
   const { turnSpeed = 10 } = characterConfig;
   const dirX = Number(leftward) - Number(rightward);
   const dirZ = Number(forward) - Number(backward);
-  
+
   if (dirX === 0 && dirZ === 0) return;
 
-  if (controlMode === 'thirdPersonOrbit' || controlMode === 'orbit') {
-    const orbitRotationSpeed = (turnSpeed * Math.PI) / 320;
-    activeState.euler.y += dirX * orbitRotationSpeed;
-
-    // 캐시된 삼각함수 사용
-    const { sin: sinY, cos: cosY } = getCachedTrig(activeState.euler.y);
-    
-    // 임시 벡터 재사용
-    const tempFront = vectorCache.getTempVector(3);
-    const tempDirection = vectorCache.getTempVector(4);
-    
-    tempFront.set(dirZ, 0, dirZ);
-    tempDirection.set(-sinY, 0, -cosY);
-    tempFront.multiply(tempDirection);
-    
-    activeState.direction.copy(tempFront);
-    activeState.dir.copy(tempFront).normalize();
+  if (controlMode === 'chase') {
+    const tempVector3 = vectorCache.getTempVector(5);
+    tempVector3.set(dirX, 0, dirZ);
+    const targetAngle = calcAngleByVector(tempVector3);
+    let angleDiff = normalizeAngle(targetAngle - activeState.euler.y);
+    const rotationSpeed = (turnSpeed * Math.PI) / 160;
+    const rotationStep = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), rotationSpeed);
+    activeState.euler.y += rotationStep;
+    activeState.dir.set(dirX, 0, dirZ);
+    activeState.direction.copy(activeState.dir);
   } else {
     // 임시 벡터 재사용
     const tempVector3 = vectorCache.getTempVector(5);
     tempVector3.set(dirX, 0, dirZ);
-    
+
     const targetAngle = calcAngleByVector(tempVector3);
-    
+
     // 각도 정규화와 차이 계산 최적화
     let angleDiff = normalizeAngle(targetAngle - activeState.euler.y);
-    
+
     const rotationSpeed = (turnSpeed * Math.PI) / 160;
     const rotationStep = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), rotationSpeed);
     activeState.euler.y += rotationStep;
-    
+
     activeState.dir.set(dirX, 0, dirZ);
     activeState.direction.copy(activeState.dir);
   }

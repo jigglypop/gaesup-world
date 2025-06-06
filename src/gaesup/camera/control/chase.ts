@@ -1,27 +1,18 @@
 import * as THREE from 'three';
 import { ActiveStateType, CameraOptionType } from '../../context';
-import { cameraPropType } from '../../physics/type';
+import { CameraPropType } from '../type';
 import { cameraUtils } from '../utils';
 
-const tempVector3 = new THREE.Vector3();
 const tempDirection = new THREE.Vector3();
 const tempCameraOffset = new THREE.Vector3();
+const tempCameraPosition = new THREE.Vector3();
 
-export const makeOrbitCameraPosition = (
+export const makeChaseCameraPosition = (
   activeState: ActiveStateType,
   cameraOption: CameraOptionType,
 ): THREE.Vector3 => {
   const distance = Math.abs(cameraOption.xDistance ?? cameraOption.XDistance ?? 15);
   const height = cameraOption.yDistance ?? cameraOption.YDistance ?? 8;
-  const zOffset = cameraOption.zDistance ?? cameraOption.ZDistance ?? 15;
-
-  console.log('ORBIT DEBUG - activeState:', {
-    position: activeState.position,
-    direction: activeState.direction,
-    dir: activeState.dir,
-    euler: activeState.euler,
-  });
-
   if (activeState.direction && activeState.direction.length() > 0) {
     tempDirection.copy(activeState.direction).normalize();
   } else if (activeState.dir && activeState.dir.length() > 0) {
@@ -29,65 +20,38 @@ export const makeOrbitCameraPosition = (
   } else {
     tempDirection.set(0, 0, -1);
   }
-
-  console.log('ORBIT DEBUG - direction:', tempDirection);
-
   tempCameraOffset.copy(tempDirection).multiplyScalar(-distance);
   tempCameraOffset.y = height;
-  tempCameraOffset.z += zOffset * 0.3;
-
-  const finalPosition = tempVector3.copy(activeState.position).add(tempCameraOffset);
-
-  console.log('ORBIT DEBUG - finalPosition:', finalPosition);
-
-  return finalPosition;
+  tempCameraPosition.copy(activeState.position).add(tempCameraOffset);
+  return tempCameraPosition;
 };
 
-const clampOrbitPosition = (
+const clampChasePosition = (
   position: THREE.Vector3,
   cameraOption: CameraOptionType,
 ): THREE.Vector3 => {
   if (!cameraOption.bounds) return position;
-
   const { bounds } = cameraOption;
   if (bounds.minY !== undefined) position.y = Math.max(position.y, bounds.minY);
   if (bounds.maxY !== undefined) position.y = Math.min(position.y, bounds.maxY);
-
   return position;
 };
 
-export default function thirdPersonOrbit(prop: cameraPropType) {
+export default function chase(prop: CameraPropType) {
   const {
     state,
     worldContext: { activeState },
     cameraOption,
   } = prop;
-
-  console.log('ORBIT CAMERA CALLED - state:', !!state?.camera, 'activeState:', activeState);
-
-  if (!state?.camera) return;
-
-  let targetPosition = makeOrbitCameraPosition(activeState, cameraOption);
-  targetPosition = clampOrbitPosition(targetPosition, cameraOption);
-
-  const lerpSpeed = cameraOption.smoothing?.position ?? 0.08;
-  const deltaTime = prop.state?.delta || 0.016;
-
-  console.log(
-    'ORBIT DEBUG - lerp from:',
-    state.camera.position,
-    'to:',
-    targetPosition,
-    'speed:',
-    lerpSpeed,
-  );
-
+  if (!state?.camera || !activeState) return;
+  let targetPosition = makeChaseCameraPosition(activeState, cameraOption);
+  targetPosition = clampChasePosition(targetPosition, cameraOption);
+  const lerpSpeed = cameraOption.smoothing?.position ?? 0.15;
+  state.camera.position.lerp(targetPosition, lerpSpeed);
   const lookAtTarget = cameraOption.target || activeState.position;
-  cameraUtils.preventCameraJitter(state.camera, targetPosition, lookAtTarget, 8.0, deltaTime);
-
+  const tempLookAt = new THREE.Vector3().copy(lookAtTarget);
+  state.camera.lookAt(tempLookAt);
   if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
     cameraUtils.updateFOVLerp(state.camera, cameraOption.fov, cameraOption.smoothing?.fov);
   }
 }
-
-export const orbit = thirdPersonOrbit;

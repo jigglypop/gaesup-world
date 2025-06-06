@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
+import { useEffect, useRef } from 'react';
 import { clickerAtom } from '../../atoms';
-import { keyboardInputAtom, pointerInputAtom } from '../../atoms/unifiedInputAtom';
-import { KEY_MAPPING, DEFAULT_KEYBOARD_STATE } from '../../constants/keyboardConstants';
+import { keyboardInputAtom, pointerInputAtom } from '../../atoms/inputAtom';
+import { KEY_MAPPING } from '../../constants/keyboardConstants';
 
 export function useKeyboard() {
   // === 새로운 통합 시스템만 사용 ===
@@ -10,22 +10,22 @@ export function useKeyboard() {
   const setClicker = useSetAtom(clickerAtom);
   const setKeyboardInput = useSetAtom(keyboardInputAtom);
   const setPointerInput = useSetAtom(pointerInputAtom);
-  
+
   const pressedKeys = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const mappedKey = KEY_MAPPING[event.code as keyof typeof KEY_MAPPING];
-      
+
       if (mappedKey && !pressedKeys.current.has(event.code)) {
         // 모든 키가 항상 작동 (컨트롤러 모드 무관)
         pressedKeys.current.add(event.code);
-        
+
         // 스페이스 키 특별 처리 (페이지 스크롤 방지)
         if (event.code === 'Space') {
           event.preventDefault();
         }
-        
+
         // S키로 clicker 중지 (physics에서 이동한 로직)
         if (event.code === 'KeyS' && clicker.isOn) {
           // clicker 중지
@@ -34,14 +34,14 @@ export function useKeyboard() {
             isOn: false,
             isRun: false,
           });
-          
+
           // mouse input 시스템도 업데이트
           setPointerInput({
             isActive: false,
             shouldRun: false,
           });
         }
-        
+
         // === 키보드 입력 상태 업데이트 ===
         setKeyboardInput({
           [mappedKey]: true,
@@ -51,10 +51,10 @@ export function useKeyboard() {
 
     const handleKeyUp = (event: KeyboardEvent) => {
       const mappedKey = KEY_MAPPING[event.code as keyof typeof KEY_MAPPING];
-      
+
       if (mappedKey && pressedKeys.current.has(event.code)) {
         pressedKeys.current.delete(event.code);
-        
+
         // === 키보드 입력 상태 업데이트 ===
         setKeyboardInput({
           [mappedKey]: false,
@@ -96,7 +96,7 @@ export function useKeyboard() {
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
@@ -105,4 +105,4 @@ export function useKeyboard() {
   return {
     pressedKeys: Array.from(pressedKeys.current),
   };
-} 
+}

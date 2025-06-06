@@ -1,19 +1,19 @@
 export {
+  inputAtom,
   keyboardInputAtom,
   movementStateAtom,
   pointerInputAtom,
-  unifiedInputAtom,
-} from './gaesup/atoms/unifiedInputAtom';
+} from './gaesup/atoms/inputAtom';
 export { GaesupComponent } from './gaesup/component';
-export { GaesupController } from './gaesup/controller';
 export { GaesupProvider, useGaesup, useGaesupContext, useGaesupDispatch } from './gaesup/context';
+export { GaesupController } from './gaesup/controller';
+export { PerfMonitor } from './gaesup/debug/PerformanceDisplay';
 export { GaeSupProps } from './gaesup/gaesupProps';
-export { PerfMonitor } from './gaesup/debug/DetailedPerformanceDisplay';
-export type { PerformanceMonitorConfig } from './gaesup/world/type';
 export { useGaesupController } from './gaesup/hooks/useGaesupController';
 export { useMainFrameLoop } from './gaesup/hooks/useUnifiedFrame';
-export type { ControllerMode, ControllerType, ControlMode } from './types';
 export { GaesupWorld } from './gaesup/world';
+export type { PerformanceMonitorConfig } from './gaesup/world/type';
+export type { ControllerMode, ControllerType, ControlMode } from './types';
 
 export * from './gaesup/atoms';
 
@@ -21,28 +21,37 @@ export { PassiveAirplane } from './gaesup/component/passive/airplane';
 export { PassiveCharacter } from './gaesup/component/passive/character';
 export { PassiveVehicle } from './gaesup/component/passive/vehicle';
 export { useCharacterPool } from './gaesup/hooks/useCharacterPool';
-export { useClicker } from './gaesup/hooks/useInputControls';
 export { useFocus } from './gaesup/hooks/useFocus';
 export { useForwardRef } from './gaesup/hooks/useForwardRef';
 export { useGaesupAnimation } from './gaesup/hooks/useGaesupAnimation';
+export { useClicker, usePushKey, useTeleport } from './gaesup/hooks/useInputControls';
 export { useInputLogger, useInputValidation } from './gaesup/hooks/useInputValidation';
 export { useKeyboard } from './gaesup/hooks/useKeyboard';
 export { useMovePoint } from './gaesup/hooks/useMovePoint';
 export { usePhysicsInput } from './gaesup/hooks/usePhysicsInput';
-export { usePushKey } from './gaesup/hooks/useInputControls';
 export { useRideable } from './gaesup/hooks/useRideable';
-export { useTeleport } from './gaesup/hooks/useInputControls';
 export { useUnifiedFrame } from './gaesup/hooks/useUnifiedFrame';
 
+export { InnerHtml } from './gaesup/component/InnerHtml';
 export { Clicker } from './gaesup/tools/clicker';
 export { FocusModal } from './gaesup/tools/FocusModal';
 export { GamePad } from './gaesup/tools/gamepad';
-export { InnerHtml } from './gaesup/component/InnerHtml';
 export { MiniMap, MinimapMarker, MinimapObject, MinimapPlatform } from './gaesup/tools/minimap';
 export { Rideable } from './gaesup/tools/rideable';
 export { teleport } from './gaesup/tools/teleport';
 export { Elr, Qt, V3, V30, V31 } from './gaesup/utils/vector';
 
+export type {
+  airplaneDebugType,
+  airplaneType,
+  animationPropType,
+  characterDebugType,
+  characterType,
+  gaesupDisptachType,
+  gaesupWorldContextType,
+  vehicleDebugType,
+  vehicleType,
+} from './gaesup/context';
 export type {
   ActionsType,
   ActiveStateType,
@@ -91,14 +100,3 @@ export type {
   WheelsStateType,
   WheelStateType,
 } from './types';
-export type {
-  gaesupWorldContextType,
-  gaesupDisptachType,
-  airplaneType,
-  vehicleType,
-  characterType,
-  animationPropType,
-  airplaneDebugType,
-  vehicleDebugType,
-  characterDebugType,
-} from './gaesup/context';

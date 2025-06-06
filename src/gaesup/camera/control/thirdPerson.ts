@@ -15,7 +15,6 @@ export const makeThirdPersonCameraPosition = (
   const xDist = cameraOption.xDistance ?? cameraOption.XDistance ?? 20;
   const yDist = cameraOption.yDistance ?? cameraOption.YDistance ?? 10;
   const zDist = cameraOption.zDistance ?? cameraOption.ZDistance ?? 20;
-
   let position: THREE.Vector3;
   if (activeState.position instanceof THREE.Vector3) {
     position = activeState.position;
@@ -30,7 +29,6 @@ export const makeThirdPersonCameraPosition = (
     tempVector3.set(0, 0, 0);
     position = tempVector3;
   }
-
   return tempVector3_2.copy(position).add(V3(xDist, yDist, zDist));
 };
 
@@ -42,15 +40,12 @@ export const checkCameraCollision = (
   if (!cameraOption.enableCollision) {
     return cameraPosition;
   }
-
   tempDirection.copy(cameraPosition).sub(targetPosition).normalize();
   const distance = cameraPosition.distanceTo(targetPosition);
   const minDistance = Math.abs(cameraOption.maxDistance ?? -7) * 0.3;
-
   if (distance < minDistance) {
     return tempVector3.copy(targetPosition).add(tempDirection.multiplyScalar(minDistance));
   }
-
   return cameraPosition;
 };
 
@@ -81,9 +76,7 @@ export default function thirdPerson(prop: cameraPropType) {
     controllerOptions: { lerp },
     cameraOption,
   } = prop;
-
   if (!state?.camera) return;
-
   let currentPosition: THREE.Vector3;
   if (activeState.position instanceof THREE.Vector3) {
     currentPosition = activeState.position;
@@ -102,21 +95,9 @@ export default function thirdPerson(prop: cameraPropType) {
   let targetPosition = makeThirdPersonCameraPosition(activeState, cameraOption);
   targetPosition = checkCameraCollision(targetPosition, currentPosition, cameraOption);
   targetPosition = clampCameraPosition(targetPosition, cameraOption);
-
-  const adaptiveLerpSpeed =
-    cameraOption.smoothing?.position ??
-    calculateAdaptiveLerpSpeed(
-      state.camera.position,
-      targetPosition,
-      lerp.cameraPosition,
-      cameraOption,
-    );
-
   const deltaTime = prop.state?.delta || 0.016;
   const lookAtTarget = cameraOption.target || currentPosition;
-
   cameraUtils.preventCameraJitter(state.camera, targetPosition, lookAtTarget, 8.0, deltaTime);
-
   if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
     cameraUtils.updateFOVLerp(state.camera, cameraOption.fov, cameraOption.smoothing?.fov);
   }

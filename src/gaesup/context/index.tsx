@@ -1,10 +1,10 @@
 'use client';
-import { euler, quat, vec3 } from '@react-three/rapier';
 import { GroupProps } from '@react-three/fiber';
-import { createContext, ReactNode, useContext, useReducer } from 'react';
+import { euler, quat, vec3 } from '@react-three/rapier';
+import { useAtomValue } from 'jotai';
+import { ReactNode, createContext, useContext, useEffect, useReducer } from 'react';
 import * as THREE from 'three';
-import { dispatchType } from '../utils/type';
-import { V3 } from '../utils/vector';
+import { modeStateAtom } from '../atoms/coreStateAtoms';
 import { callbackType } from '../controller/initialize/callback/type';
 import { rideableType } from '../hooks/useRideable/type';
 import {
@@ -38,6 +38,8 @@ import {
   WheelsStateType,
   actionsType,
 } from '../types';
+import { dispatchType } from '../utils/type';
+import { V3 } from '../utils/vector';
 export type {
   ActionsType,
   ActiveStateType,
@@ -159,7 +161,7 @@ export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
   mode: {
     type: 'character',
     controller: 'clicker',
-    control: 'thirdPersonOrbit',
+    control: 'chase',
   },
   urls: {
     characterUrl: '',
@@ -274,18 +276,28 @@ export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
   },
 };
 export const GaesupContext = createContext<Partial<gaesupWorldContextType>>(gaesupWorldDefault);
-export const GaesupDispatchContext = createContext<dispatchType<Partial<gaesupWorldContextType>>>(() => {});
+export const GaesupDispatchContext = createContext<dispatchType<Partial<gaesupWorldContextType>>>(
+  () => {},
+);
 interface GaesupProviderProps {
   children: ReactNode;
   initialState?: Partial<gaesupWorldContextType>;
 }
 export function GaesupProvider({ children, initialState = {} }: GaesupProviderProps) {
-  const [state, dispatch] = useReducer(gaesupWorldReducer, { ...gaesupWorldDefault, ...initialState });
+  const [state, dispatch] = useReducer(gaesupWorldReducer, {
+    ...gaesupWorldDefault,
+    ...initialState,
+  });
+  const modeState = useAtomValue(modeStateAtom);
+  useEffect(() => {
+    dispatch({
+      type: 'update',
+      payload: { mode: modeState },
+    });
+  }, [modeState]);
   return (
     <GaesupContext.Provider value={state}>
-      <GaesupDispatchContext.Provider value={dispatch}>
-        {children}
-      </GaesupDispatchContext.Provider>
+      <GaesupDispatchContext.Provider value={dispatch}>{children}</GaesupDispatchContext.Provider>
     </GaesupContext.Provider>
   );
 }
@@ -302,4 +314,4 @@ export function useGaesupContext() {
 }
 export function useGaesupDispatch() {
   return useContext(GaesupDispatchContext);
-} 
+}

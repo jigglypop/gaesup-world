@@ -5,11 +5,12 @@ import { RapierRigidBody } from '@react-three/rapier';
 import { ReactElement, useRef } from 'react';
 import * as THREE from 'three';
 import { GaesupComponent } from '../component';
+import { GaesupContext } from '../context';
 import { useKeyboard } from '../hooks/useKeyboard';
 import { useMainFrameLoop } from '../hooks/useUnifiedFrame';
-import { GaesupContext } from '../context';
 import initControllerProps from './initialize';
 import { controllerInnerType, controllerType } from './type';
+
 export function GaesupController(props: controllerType): ReactElement {
   return <GaesupControllerInner {...props}>{props.children}</GaesupControllerInner>;
 }
@@ -30,7 +31,6 @@ export function GaesupControllerInner(props: controllerType): ReactElement {
     characterInnerRef,
     passiveRigidBodyRef,
   };
-
   const prop: controllerInnerType = {
     ...initControllerProps({ refs }),
     children: props.children,
@@ -49,9 +49,7 @@ export function GaesupControllerInner(props: controllerType): ReactElement {
     onAnimate: props.onAnimate || (() => {}),
     ...refs,
   } as controllerInnerType;
-
   const ContextBridge = useContextBridge(GaesupContext);
-
   return (
     <ContextBridge>
       <GaesupComponent props={prop} refs={refs} />
