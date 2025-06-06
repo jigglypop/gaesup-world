@@ -1,7 +1,7 @@
 import { vec3 } from '@react-three/rapier';
 import { ReactElement, useContext, useMemo } from 'react';
 import { controllerInnerType, refsType } from '../controller/type';
-import { GaesupWorldContext } from '../world/context';
+import { GaesupContext } from '../context';
 import { AirplaneRef } from './active/airplane';
 import { CharacterRef } from './active/character';
 import { VehicleRef } from './active/vehicle';
@@ -13,7 +13,7 @@ export function GaesupComponent({
   props: controllerInnerType;
   refs: refsType;
 }): ReactElement | null {
-  const { mode, states, rideable, urls } = useContext(GaesupWorldContext);
+  const { mode, states, rideable, urls } = useContext(GaesupContext);
   const { enableRiding, isRiderOn, rideableId } = states;
 
   const offset = useMemo(

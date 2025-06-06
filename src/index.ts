@@ -6,6 +6,7 @@ export {
 } from './gaesup/atoms/unifiedInputAtom';
 export { GaesupComponent } from './gaesup/component';
 export { GaesupController } from './gaesup/controller';
+export { GaesupProvider, useGaesup, useGaesupContext, useGaesupDispatch } from './gaesup/context';
 export { GaeSupProps } from './gaesup/gaesupProps';
 export { PerfMonitor } from './gaesup/debug/DetailedPerformanceDisplay';
 export type { PerformanceMonitorConfig } from './gaesup/world/type';
@@ -15,12 +16,7 @@ export type { ControllerMode, ControllerType, ControlMode } from './types';
 export { GaesupWorld } from './gaesup/world';
 
 export * from './gaesup/atoms';
-export type {
-  ClickerOptionState,
-  KeyboardInputState,
-  MouseInputState,
-  UnifiedInputState,
-} from './gaesup/atoms/unifiedInputAtom';
+
 export { PassiveAirplane } from './gaesup/component/passive/airplane';
 export { PassiveCharacter } from './gaesup/component/passive/character';
 export { PassiveVehicle } from './gaesup/component/passive/vehicle';
@@ -72,9 +68,6 @@ export type {
   JumpInnerType,
   JumpPropType,
   KeyboardControlState,
-  KeyboardInputState,
-  MouseInputState,
-  UnifiedInputState,
   ModeType,
   OptionsType,
   PartialOptionsType,
@@ -98,3 +91,14 @@ export type {
   WheelsStateType,
   WheelStateType,
 } from './types';
+export type {
+  gaesupWorldContextType,
+  gaesupDisptachType,
+  airplaneType,
+  vehicleType,
+  characterType,
+  animationPropType,
+  airplaneDebugType,
+  vehicleDebugType,
+  characterDebugType,
+} from './gaesup/context';

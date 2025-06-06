@@ -4,7 +4,7 @@ import { rigidBodyRefType } from '../../../component/inner/common/type';
 import { componentTypeString } from '../../../component/passive/type';
 import { useGaesupAnimation } from '../../../hooks/useGaesupAnimation';
 import { useUnifiedFrame } from '../../../hooks/useUnifiedFrame';
-import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../../world/context';
+import { GaesupContext, GaesupDispatchContext } from '../../../context';
 import { callbackPropType } from './type';
 import { AnimationTagType } from '../../type';
 
@@ -19,10 +19,10 @@ export default function initCallback({
   };
   componentType: componentTypeString;
 }) {
-  const { animationState } = useContext(GaesupWorldContext);
-  const dispatch = useContext(GaesupWorldDispatchContext);
+  const { animationState } = useContext(GaesupContext);
+  const dispatch = useContext(GaesupDispatchContext);
   const { store } = useGaesupAnimation({ type: componentType });
-  const { activeState, states, control } = useContext(GaesupWorldContext);
+  const { activeState, states, control } = useContext(GaesupContext);
   const { subscribe } = useGaesupAnimation({ type: componentType });
 
   const playAnimation = useCallback(

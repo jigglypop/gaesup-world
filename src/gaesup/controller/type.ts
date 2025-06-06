@@ -1,6 +1,5 @@
-import { airplaneType, characterType, vehicleType } from './context/type';
+import { airplaneType, characterType, vehicleType } from '../context';
 import { callbackType } from './initialize/callback/type';
-
 import {
   ActionsType,
   AnimationTagType,

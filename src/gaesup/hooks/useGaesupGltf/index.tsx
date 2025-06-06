@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import * as THREE from "three";
 import { GLTFResult } from "../../component/type";
-import { urlsType } from "../../world/context/type";
+import { ResourceUrlsType } from "../../context";
 import { sizesAtom } from "../../atoms";
 
 export type gltfAndSizeType = {

@@ -1,19 +1,19 @@
 import { RootState } from '@react-three/fiber';
 import * as THREE from 'three';
 import {
-  activeStateType,
-  animationAtomType,
-  animationStateType,
-  keyControlType,
-  statesType,
-} from '../../../world/context/type';
-import { actionsType } from '../../type';
+  ActiveStateType,
+  AnimationAtomType,
+  AnimationStateType,
+  KeyboardControlState,
+  GameStatesType,
+} from '../../../context';
+import { ActionsType } from '../../type';
 
 export type callbackPropType = {
-  activeState: activeStateType;
-  states: statesType;
-  control: keyControlType;
-  subscribe: (props: animationAtomType) => void;
+  activeState: ActiveStateType;
+  states: GameStatesType;
+  control: KeyboardControlState<string>;
+  subscribe: (props: AnimationAtomType) => void;
 };
 
 export type onFramePropType = callbackPropType & RootState;
@@ -21,8 +21,8 @@ export type onAnimatePropType = onFramePropType & {
   actions: {
     [x: string]: THREE.AnimationAction | null;
   };
-  animationState: animationStateType;
-  playAnimation: (tag: keyof actionsType, key: string) => void;
+  animationState: AnimationStateType;
+  playAnimation: (tag: keyof ActionsType, key: string) => void;
 };
 
 export type callbackType = {

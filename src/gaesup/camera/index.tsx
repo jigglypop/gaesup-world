@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { blockAtom, cameraOptionAtom } from '../atoms';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
 import { physicsEventBus } from '../physics/stores/physicsEventBus';
-import { gaesupWorldContextType } from '../world/context/type';
+import { gaesupWorldContextType } from '../context';
 import firstPerson from './control/firstPerson';
 import sideScroll from './control/sideScroll';
 import thirdPerson, { makeThirdPersonCameraPosition } from './control/thirdPerson';

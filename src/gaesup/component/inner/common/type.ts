@@ -3,8 +3,8 @@ import { RigidBodyProps, RigidBodyTypeString } from "@react-three/rapier";
 import { MutableRefObject, RefObject } from "react";
 import * as THREE from "three";
 import { callbackType } from "../../../controller/initialize/callback/type";
-import { groundRayType, partsType } from "../../../controller/type";
-import { urlsType } from "../../../world/context/type";
+import { GroundRayType, PartsType } from "../../../controller/type";
+import { ResourceUrlsType } from "../../../context";
 import { innerRefType, passivePropsType } from "../../passive/type";
 // collider 정의
 export type characterColliderType = {
@@ -24,7 +24,7 @@ export type InnerGroupRefType = {
   isActive?: boolean;
   ridingUrl?: string;
   offset?: THREE.Vector3;
-  parts?: partsType;
+  parts?: PartsType;
 } & ridingType;
 // riding 타입정의
 export type ridingType = {
@@ -34,7 +34,7 @@ export type ridingType = {
 
 export type refPropsType = {
   children: React.ReactNode;
-  urls: urlsType;
+  urls: ResourceUrlsType;
   isRiderOn?: boolean;
   enableRiding?: boolean;
   offset?: THREE.Vector3;
@@ -47,7 +47,7 @@ export type refPropsType = {
 };
 
 export type setGroundRayType = {
-  groundRay: groundRayType;
+  groundRay: GroundRayType;
   length: number;
   colliderRef: RefObject<Collider>;
 };
@@ -57,10 +57,10 @@ export type rigidBodyRefType = {
   userData?: { intangible: boolean };
   isActive?: boolean;
   ridingUrl?: string;
-  groundRay?: groundRayType;
+  groundRay?: GroundRayType;
   rigidBodyProps?: RigidBodyProps;
   isNotColliding?: boolean;
-  parts?: partsType;
+  parts?: PartsType;
 } & passivePropsType &
   innerRefType &
   callbackType;

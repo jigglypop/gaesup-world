@@ -3,14 +3,14 @@ import { useAtom } from "jotai";
 import * as THREE from "three";
 import { makeNormalCameraPosition } from "../../camera/control/thirdPerson";
 import {
-  GaesupWorldContext,
-  GaesupWorldDispatchContext,
-} from "../../world/context";
+  GaesupContext,
+  GaesupDispatchContext,
+} from "../../context";
 import { cameraOptionAtom, blockAtom } from "../../atoms";
 
 export function useFocus() {
-  const { activeState } = useContext(GaesupWorldContext);
-  const dispatch = useContext(GaesupWorldDispatchContext);
+  const { activeState } = useContext(GaesupContext);
+  const dispatch = useContext(GaesupDispatchContext);
   const [cameraOption, setCameraOption] = useAtom(cameraOptionAtom);
   const [block, setBlock] = useAtom(blockAtom);
 

@@ -9,7 +9,7 @@ import {
 import { RefObject, createRef, useContext, useRef } from "react";
 import * as THREE from "three";
 import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
-import { GaesupWorldContext } from "../../../world/context";
+import { GaesupContext } from "../../../context";
 
 const WheelJoint = ({
   body,
@@ -29,7 +29,7 @@ const WheelJoint = ({
     wheelAnchor,
     rotationAxis,
   ]);
-  const { activeState } = useContext(GaesupWorldContext);
+  const { activeState } = useContext(GaesupContext);
   useFrame(() => {
     if (joint.current) {
       joint.current.configureMotorPosition(

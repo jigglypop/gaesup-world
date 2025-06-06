@@ -17,7 +17,7 @@ import {
   characterType,
   gaesupWorldContextType,
   vehicleType,
-} from '../world/context/type';
+} from '../context';
 
 export interface PhysicsRefs {
   colliderRef: RefObject<Collider>;

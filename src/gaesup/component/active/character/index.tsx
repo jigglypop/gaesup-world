@@ -1,5 +1,5 @@
 import { controllerInnerType, refsType } from "../../../controller/type";
-import { urlsType } from "../../../world/context/type";
+import { ResourceUrlsType } from "../../../context";
 import { CharacterInnerRef } from "../../inner/character";
 
 export function CharacterRef({

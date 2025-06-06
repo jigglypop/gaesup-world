@@ -12,7 +12,7 @@ import initCallback from '../../../controller/initialize/callback';
 import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
 import calculation from '../../../physics';
 import { cameraPropType } from '../../../physics/type';
-import { GaesupWorldContext } from '../../../world/context';
+import { GaesupContext } from '../../../context';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './partsGroupRef';
 import { useSetGroundRay } from './setGroundRay';
@@ -23,7 +23,7 @@ export const RigidBodyRef = forwardRef(
     const { size } = useGltfAndSize({ url: props.url || '' });
     
     const setGroundRay = useSetGroundRay();
-    const worldContext = useContext(GaesupWorldContext);
+    const worldContext = useContext(GaesupContext);
     const [cameraOption] = useAtom(cameraOptionAtom);
 
     // GLTF와 애니메이션을 먼저 로드

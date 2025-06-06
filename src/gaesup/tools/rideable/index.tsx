@@ -4,7 +4,7 @@ import { PassiveAirplane } from '../../component/passive/airplane';
 import { PassiveVehicle } from '../../component/passive/vehicle';
 import { useRideable } from '../../hooks/useRideable';
 import { GameStatesType } from '../../types';
-import { GaesupWorldContext } from '../../world/context';
+import { GaesupContext } from '../../context';
 import { rideablePropType } from './type';
 
 export function RideableUI({ states }: { states: GameStatesType }) {
@@ -31,7 +31,7 @@ export function RideableUI({ states }: { states: GameStatesType }) {
 }
 
 export function Rideable(props: rideablePropType) {
-  const { states, rideable } = useContext(GaesupWorldContext);
+  const { states, rideable } = useContext(GaesupContext);
   const { initRideable, onRideableNear, onRideableLeave, landing } = useRideable();
 
   useEffect(() => {

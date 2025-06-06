@@ -12,7 +12,7 @@ import { Clicker } from '../../src/gaesup/tools/clicker';
 import { FocusModal } from '../../src/gaesup/tools/FocusModal';
 import { RideableUI } from '../../src/gaesup/tools/rideable';
 import { InnerHtml } from '../../src/gaesup/component/InnerHtml';
-import { GaesupWorldContext } from '../../src/gaesup/world/context';
+import { GaesupContext } from '../../src/gaesup/context';
 import Info from '../info';
 import Passive from '../passive';
 import Floor from './Floor';
@@ -341,7 +341,7 @@ function InfoTabs() {
 
 // 탈것 UI 렌더러 - GaesupWorldContext 사용
 function RideableUIRenderer() {
-  const { states } = useContext(GaesupWorldContext);
+  const { states } = useContext(GaesupContext);
   return <RideableUI states={states} />;
 }
 

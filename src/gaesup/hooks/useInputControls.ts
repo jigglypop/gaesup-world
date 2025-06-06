@@ -4,7 +4,7 @@ import { ThreeEvent } from '@react-three/fiber';
 import * as THREE from "three";
 import { keyboardInputAtom, pointerInputAtom } from '../atoms/unifiedInputAtom';
 import { V3 } from '../utils';
-import { GaesupWorldContext } from '../world/context';
+import { GaesupContext } from '../context';
 
 export function usePushKey() {
   const setKeyboardInput = useSetAtom(keyboardInputAtom);
@@ -19,7 +19,7 @@ export function usePushKey() {
 }
 
 export function useClicker() {
-  const { activeState } = useContext(GaesupWorldContext);
+  const { activeState } = useContext(GaesupContext);
   const setMouseInput = useSetAtom(pointerInputAtom);
   const moveClicker = (e: ThreeEvent<MouseEvent>, isRun: boolean, type: 'normal' | 'ground') => {
     if (type !== 'ground') return;
@@ -48,7 +48,7 @@ export function useClicker() {
 }
 
 export function useTeleport() {
-  const worldContext = useContext(GaesupWorldContext);
+  const worldContext = useContext(GaesupContext);
   const Teleport = (position: THREE.Vector3) => {
     if (
       worldContext &&

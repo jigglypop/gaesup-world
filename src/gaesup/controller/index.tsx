@@ -7,14 +7,12 @@ import * as THREE from 'three';
 import { GaesupComponent } from '../component';
 import { useKeyboard } from '../hooks/useKeyboard';
 import { useMainFrameLoop } from '../hooks/useUnifiedFrame';
-import { GaesupWorldContext } from '../world/context';
+import { GaesupContext } from '../context';
 import initControllerProps from './initialize';
 import { controllerInnerType, controllerType } from './type';
-
 export function GaesupController(props: controllerType): ReactElement {
   return <GaesupControllerInner {...props}>{props.children}</GaesupControllerInner>;
 }
-
 export function GaesupControllerInner(props: controllerType): ReactElement {
   useMainFrameLoop();
   useKeyboard();
@@ -52,7 +50,7 @@ export function GaesupControllerInner(props: controllerType): ReactElement {
     ...refs,
   } as controllerInnerType;
 
-  const ContextBridge = useContextBridge(GaesupWorldContext);
+  const ContextBridge = useContextBridge(GaesupContext);
 
   return (
     <ContextBridge>

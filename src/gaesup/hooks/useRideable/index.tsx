@@ -1,7 +1,7 @@
 import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
 import { useContext, useEffect } from 'react';
 import { physicsEventBus } from '../../physics/stores/physicsEventBus';
-import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
+import { GaesupContext, GaesupDispatchContext } from '../../context';
 import { useGaesupGltf } from '../useGaesupGltf';
 import { rideableType } from './type';
 
@@ -18,9 +18,9 @@ export const rideableDefault = {
 };
 
 export function useRideable() {
-  const worldContext = useContext(GaesupWorldContext);
+  const worldContext = useContext(GaesupContext);
   const { urls, states, rideable, mode } = worldContext;
-  const dispatch = useContext(GaesupWorldDispatchContext);
+  const dispatch = useContext(GaesupDispatchContext);
   const { getSizesByUrls } = useGaesupGltf();
 
   // physicsEventBus의 RIDE_STATE_CHANGE 이벤트 구독

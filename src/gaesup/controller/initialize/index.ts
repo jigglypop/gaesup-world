@@ -1,16 +1,15 @@
 import { vec3 } from '@react-three/rapier';
 import { useAtom } from 'jotai';
-import { useCallback, useContext, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { cameraOptionAtom } from '../../atoms/cameraOptionAtom';
-import { CameraRayType, GroundRayType, RefsType } from '../../types';
+import { CameraRayType, GroundRayType, RefsType } from '../../../types';
 import { update } from '../../utils/context';
-import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
-import { gaesupWorldContextType } from '../../world/context/type';
-
+import { useGaesupContext, useGaesupDispatch } from '../../context';
+import { gaesupWorldContextType } from '../../context';
 export default function initControllerProps(props: { refs: RefsType }) {
-  const context = useContext(GaesupWorldContext);
-  const dispatch = useContext(GaesupWorldDispatchContext);
+  const context = useGaesupContext();
+  const dispatch = useGaesupDispatch();
   const [cameraOption] = useAtom(cameraOptionAtom);
   const controlConfig = useMemo(() => {
     if (!context?.control) return null;
@@ -30,7 +29,7 @@ export default function initControllerProps(props: { refs: RefsType }) {
       });
     }
   }, [controlConfig, dispatch]);
-  const groundRay: groundRayType = useMemo(() => {
+  const groundRay: GroundRayType = useMemo(() => {
     return {
       origin: vec3(),
       dir: vec3({ x: 0, y: -1, z: 0 }),
@@ -42,7 +41,7 @@ export default function initControllerProps(props: { refs: RefsType }) {
     };
   }, []);
 
-  const cameraRay: cameraRayType = useMemo(() => {
+  const cameraRay: CameraRayType = useMemo(() => {
     return {
       origin: vec3(),
       hit: new THREE.Raycaster(),
@@ -57,7 +56,7 @@ export default function initControllerProps(props: { refs: RefsType }) {
   }, [cameraOption.maxDistance]);
 
   const initRefs = useCallback(
-    (refs: refsType) => {
+    (refs: RefsType) => {
       update<gaesupWorldContextType>(
         {
           refs: {

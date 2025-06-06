@@ -3,12 +3,12 @@ import { useContext } from "react";
 import { useSetAtom } from "jotai";
 import * as THREE from "three";
 import { V3 } from "../../utils";
-import { GaesupWorldContext } from "../../world/context";
+import { GaesupContext } from "../../context";
 import { pointerInputAtom } from "../../atoms/unifiedInputAtom";
 import { MoveToType } from './type';
 
 export function useMovePoint() {
-  const { activeState } = useContext(GaesupWorldContext);
+  const { activeState } = useContext(GaesupContext);
   const setMouseInput = useSetAtom(pointerInputAtom);
 
   const move = (position: THREE.Vector3, isRun: boolean) => {

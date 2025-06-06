@@ -7,10 +7,10 @@ import {
   vehicleAnimationAtom,
 } from '../../atoms/animationAtoms';
 import { unifiedInputAtom, keyboardInputAtom, pointerInputAtom } from '../../atoms/unifiedInputAtom';
-import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
+import { GaesupContext, GaesupDispatchContext } from '../../context';
 import { useGaesupGltf } from '../useGaesupGltf';
 import { PhysicsBridgeInputData, usePhysicsInput } from '../usePhysicsInput';
-import { activeStateType, modeType, worldContextType, blockType } from '../../world/context/type';
+import { ActiveStateType, ModeType, gaesupWorldContextType, BlockType } from '../../context';
 import { V3 } from '../../utils/vector';
 import * as THREE from 'three';
 
@@ -47,8 +47,8 @@ export const useBridgeConnector = () => {
   // ============================================================================
 
   // ✅ 월드 상태: Context가 진실의 원천 (activeState, mode, states 등)
-  const worldContext = useContext(GaesupWorldContext);
-  const worldDispatch = useContext(GaesupWorldDispatchContext);
+  const worldContext = useContext(GaesupContext);
+  const worldDispatch = useContext(GaesupDispatchContext);
 
   // ============================================================================
   // 🔄 애니메이션 상태 동기화 (Context → Atoms)

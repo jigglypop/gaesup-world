@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { cameraPropType } from '../../physics/type';
 import { V3 } from '../../utils/vector';
-import { activeStateType, cameraOptionType } from '../../world/context/type';
+import { ActiveStateType, CameraOptionType } from '../../context';
 import { cameraUtils } from '../utils';
 
 export const makeSideScrollCameraPosition = (
