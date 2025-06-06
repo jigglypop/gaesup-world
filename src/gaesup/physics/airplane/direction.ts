@@ -17,10 +17,12 @@ export default function direction(
     accelRatio = 1,
   } = airplaneConfig || {};
 
-  if (!matchSizes || !matchSizes['airplaneUrl'] || !innerGroupRef.current) return;
+  if (!innerGroupRef.current) return;
 
-  let boost = 0;
-  boost = space ? Number(shift) : Number(shift) * accelRatio;
+  // 기본 추진력 1, shift로 가속, space로 추가 부스트
+  let boost = 1;
+  if (shift) boost *= accelRatio;
+  if (space) boost *= 1.5; // 추가 부스트
 
   const upDown = Number(backward) - Number(forward);
   const leftRight = Number(rightward) - Number(leftward);

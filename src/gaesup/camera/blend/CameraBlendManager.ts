@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { ActiveBlend, CameraBlendState } from './types';
 
 export enum BlendFunction {
   Linear = 'linear',
@@ -8,27 +9,8 @@ export enum BlendFunction {
   Spring = 'spring',
 }
 
-interface CameraBlendState {
-  position: THREE.Vector3;
-  rotation: THREE.Euler;
-  fov: number;
-  target?: THREE.Vector3;
-}
-
-interface ActiveBlend {
-  from: CameraBlendState;
-  to: CameraBlendState;
-  duration: number;
-  elapsed: number;
-  blendFunction: BlendFunction;
-  onComplete?: () => void;
-  initialQuaternion: THREE.Quaternion;
-  targetQuaternion: THREE.Quaternion;
-}
-
 export class CameraBlendManager {
   private activeBlend: ActiveBlend | null = null;
-  private isControllingCamera = false;
   private blendFunctions: Record<BlendFunction, (t: number) => number> = {
     linear: (t) => t,
     easeIn: (t) => t * t,
@@ -39,7 +21,6 @@ export class CameraBlendManager {
       return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
     },
   };
-
   startBlend(
     from: Partial<CameraBlendState>,
     to: Partial<CameraBlendState>,
@@ -50,14 +31,11 @@ export class CameraBlendManager {
   ): void {
     const fromState = this.createState(from, camera);
     const toState = this.createState(to, camera);
-
     const initialQuaternion = new THREE.Quaternion().setFromEuler(fromState.rotation).normalize();
     const targetQuaternion = new THREE.Quaternion().setFromEuler(toState.rotation).normalize();
-
     if (initialQuaternion.dot(targetQuaternion) < 0) {
       targetQuaternion.multiplyScalar(-1);
     }
-
     this.activeBlend = {
       from: fromState,
       to: toState,
@@ -68,27 +46,21 @@ export class CameraBlendManager {
       initialQuaternion,
       targetQuaternion,
     };
-
     this.isControllingCamera = true;
   }
-
   update(deltaTime: number, camera: THREE.Camera): boolean {
     if (!this.activeBlend) return false;
-
     this.activeBlend.elapsed += deltaTime;
     const t = Math.min(this.activeBlend.elapsed / this.activeBlend.duration, 1);
     const blendValue = this.blendFunctions[this.activeBlend.blendFunction](t);
-
     camera.position.lerpVectors(
       this.activeBlend.from.position,
       this.activeBlend.to.position,
       blendValue,
     );
-
     const fromQuat = new THREE.Quaternion().setFromEuler(this.activeBlend.from.rotation);
     const toQuat = new THREE.Quaternion().setFromEuler(this.activeBlend.to.rotation);
     camera.quaternion.slerpQuaternions(fromQuat, toQuat, blendValue);
-
     if (camera instanceof THREE.PerspectiveCamera) {
       camera.fov = THREE.MathUtils.lerp(
         this.activeBlend.from.fov,
@@ -106,7 +78,6 @@ export class CameraBlendManager {
 
     return true;
   }
-
   private createState(partial: Partial<CameraBlendState>): CameraBlendState {
     return {
       position: partial.position || new THREE.Vector3(),
@@ -115,11 +86,9 @@ export class CameraBlendManager {
       target: partial.target,
     };
   }
-
   isBlending(): boolean {
     return this.activeBlend !== null;
   }
-
   stopBlend(): void {
     this.activeBlend = null;
   }

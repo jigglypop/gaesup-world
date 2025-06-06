@@ -1,13 +1,5 @@
 import * as THREE from 'three';
-
-interface CollisionConfig {
-  rayCount: number;
-  sphereCastRadius: number;
-  minDistance: number;
-  maxDistance: number;
-  avoidanceSmoothing: number;
-  transparentLayers?: number[];
-}
+import { CollisionConfig } from './types';
 
 export class SmartCollisionSystem {
   private raycaster = new THREE.Raycaster();
