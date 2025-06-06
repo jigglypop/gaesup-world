@@ -2,13 +2,9 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useRef, useState } from 'react';
 
 interface PerfMonitorProps {
-  /** 화면에서의 위치 */
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-  /** 업데이트 간격 (ms) */
   updateInterval?: number;
-  /** 표시할지 여부 */
   visible?: boolean;
-  /** Z-index 값 */
   zIndex?: number;
 }
 
@@ -42,7 +38,7 @@ export function PerfMonitor({
     webgl: { textures: 0, geometries: 0, programs: 0, drawCalls: 0, triangles: 0 },
   });
 
-  const { gl, scene } = useThree();
+  const { gl } = useThree();
   const frameCountRef = useRef(0);
   const lastTimeRef = useRef(performance.now());
   const lastUpdateRef = useRef(performance.now());
@@ -52,12 +48,8 @@ export function PerfMonitor({
     const now = performance.now();
     const deltaTime = now - lastTimeRef.current;
     lastTimeRef.current = now;
-
-    // 지정된 간격마다 업데이트
     if (now - lastUpdateRef.current >= updateInterval) {
       const fps = Math.round(1000 / deltaTime);
-      
-      // 메모리 정보
       let memoryInfo = { used: 0, total: 0, limit: 0 };
       if (performance.memory) {
         memoryInfo = {
@@ -66,8 +58,6 @@ export function PerfMonitor({
           limit: Math.round(performance.memory.jsHeapSizeLimit / 1048576 * 100) / 100,
         };
       }
-
-      // WebGL 정보
       const info = gl.info;
       const webglInfo = {
         textures: info.memory.textures,
@@ -88,9 +78,7 @@ export function PerfMonitor({
       frameCountRef.current = 0;
     }
   });
-
   if (!visible) return null;
-
   const positionStyle = {
     position: 'fixed' as const,
     zIndex,
@@ -118,27 +106,20 @@ export function PerfMonitor({
       }
     })(),
   };
-
-  // DOM에서 포털로 렌더링
   useEffect(() => {
     const container = document.createElement('div');
     container.id = 'perf-monitor';
     Object.assign(container.style, positionStyle);
-    
     document.body.appendChild(container);
-    
     return () => {
       if (document.body.contains(container)) {
         document.body.removeChild(container);
       }
     };
-  }, [position, zIndex]); // position과 zIndex만 의존성에 추가
-
-  // 데이터가 업데이트될 때마다 DOM 업데이트
+  }, [position, zIndex]); 
   useEffect(() => {
     const container = document.getElementById('perf-monitor');
     if (!container) return;
-    
     container.innerHTML = `
       <div style="border-bottom: 1px solid #555; padding-bottom: 2px; margin-bottom: 4px; font-size: 9px;">
         <strong>⚡ Performance</strong>
@@ -168,7 +149,6 @@ export function PerfMonitor({
       </div>
     `;
   }, [perfData]);
-
   return null;
 }
 

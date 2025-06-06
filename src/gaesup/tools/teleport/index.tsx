@@ -1,5 +1,4 @@
-// teleport.tsx
-import { useTeleport } from '../../hooks/useTeleport';
+import { useTeleport } from '../../hooks/useInputControls';
 import * as S from './style.css';
 import { teleportType } from './type.ts';
 

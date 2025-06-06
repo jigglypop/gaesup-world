@@ -1,11 +1,15 @@
 import * as THREE from 'three';
 import { cameraPropType } from "../../physics/type";
 import { V3 } from "../../utils/vector";
-import { activeStateType, cameraOptionType } from "../../world/context/type";
+import { ActiveStateType, CameraOptionType } from "../../world/context/type";
+
+const tempVector3 = new THREE.Vector3();
+const tempVector3_2 = new THREE.Vector3();
+const tempDirection = new THREE.Vector3();
 
 export const makeThirdPersonCameraPosition = (
-  activeState: activeStateType,
-  cameraOption: cameraOptionType
+  activeState: ActiveStateType,
+  cameraOption: CameraOptionType
 ): THREE.Vector3 => {
   const xDist = cameraOption.xDistance ?? cameraOption.XDistance ?? 20;
   const yDist = cameraOption.yDistance ?? cameraOption.YDistance ?? 10;
@@ -15,37 +19,35 @@ export const makeThirdPersonCameraPosition = (
   if (activeState.position instanceof THREE.Vector3) {
     position = activeState.position;
   } else if (activeState.position && typeof activeState.position === 'object') {
-    position = new THREE.Vector3(
+    tempVector3.set(
       activeState.position.x || 0,
       activeState.position.y || 0,
       activeState.position.z || 0
     );
+    position = tempVector3;
   } else {
-    position = new THREE.Vector3(0, 0, 0);
+    tempVector3.set(0, 0, 0);
+    position = tempVector3;
   }
   
-  const cameraPosition = position
-    .clone()
-    .add(V3(xDist, yDist, zDist));
-  
-  return cameraPosition;
+  return tempVector3_2.copy(position).add(V3(xDist, yDist, zDist));
 };
 
 export const checkCameraCollision = (
   cameraPosition: THREE.Vector3,
   targetPosition: THREE.Vector3,
-  cameraOption: cameraOptionType
+  cameraOption: CameraOptionType
 ): THREE.Vector3 => {
   if (!cameraOption.enableCollision) {
     return cameraPosition;
   }
 
-  const direction = cameraPosition.clone().sub(targetPosition).normalize();
+  tempDirection.copy(cameraPosition).sub(targetPosition).normalize();
   const distance = cameraPosition.distanceTo(targetPosition);
   const minDistance = Math.abs(cameraOption.maxDistance ?? -7) * 0.3;
   
   if (distance < minDistance) {
-    return targetPosition.clone().add(direction.multiplyScalar(minDistance));
+    return tempVector3.copy(targetPosition).add(tempDirection.multiplyScalar(minDistance));
   }
   
   return cameraPosition;
@@ -53,30 +55,45 @@ export const checkCameraCollision = (
 
 export const clampCameraPosition = (
   position: THREE.Vector3,
-  cameraOption: cameraOptionType
+  cameraOption: CameraOptionType
 ): THREE.Vector3 => {
   if (!cameraOption.bounds) {
     return position;
   }
 
   const { bounds } = cameraOption;
-  const clampedPosition = position.clone();
+  const x = bounds.minX !== undefined && bounds.maxX !== undefined 
+    ? Math.max(bounds.minX, Math.min(bounds.maxX, position.x))
+    : bounds.minX !== undefined 
+      ? Math.max(bounds.minX, position.x)
+      : bounds.maxX !== undefined 
+        ? Math.min(bounds.maxX, position.x)
+        : position.x;
 
-  if (bounds.minX !== undefined) clampedPosition.x = Math.max(clampedPosition.x, bounds.minX);
-  if (bounds.maxX !== undefined) clampedPosition.x = Math.min(clampedPosition.x, bounds.maxX);
-  if (bounds.minY !== undefined) clampedPosition.y = Math.max(clampedPosition.y, bounds.minY);
-  if (bounds.maxY !== undefined) clampedPosition.y = Math.min(clampedPosition.y, bounds.maxY);
-  if (bounds.minZ !== undefined) clampedPosition.z = Math.max(clampedPosition.z, bounds.minZ);
-  if (bounds.maxZ !== undefined) clampedPosition.z = Math.min(clampedPosition.z, bounds.maxZ);
+  const y = bounds.minY !== undefined && bounds.maxY !== undefined 
+    ? Math.max(bounds.minY, Math.min(bounds.maxY, position.y))
+    : bounds.minY !== undefined 
+      ? Math.max(bounds.minY, position.y)
+      : bounds.maxY !== undefined 
+        ? Math.min(bounds.maxY, position.y)
+        : position.y;
 
-  return clampedPosition;
+  const z = bounds.minZ !== undefined && bounds.maxZ !== undefined 
+    ? Math.max(bounds.minZ, Math.min(bounds.maxZ, position.z))
+    : bounds.minZ !== undefined 
+      ? Math.max(bounds.minZ, position.z)
+      : bounds.maxZ !== undefined 
+        ? Math.min(bounds.maxZ, position.z)
+        : position.z;
+
+  return tempVector3_2.set(x, y, z);
 };
 
 export const calculateAdaptiveLerpSpeed = (
   currentPos: THREE.Vector3,
   targetPos: THREE.Vector3,
   baseLerpSpeed: number,
-  cameraOption: cameraOptionType
+  cameraOption: CameraOptionType
 ): number => {
   const distance = currentPos.distanceTo(targetPos);
   const maxDistance = Math.abs(cameraOption.maxDistance ?? -7);
@@ -93,26 +110,25 @@ export default function thirdPerson(prop: cameraPropType) {
     cameraOption,
   } = prop;
   
-  if (!state || !state.camera) return;
+  if (!state?.camera) return;
 
-  // activeState.position을 안전하게 Three.js Vector3로 변환
   let currentPosition: THREE.Vector3;
   if (activeState.position instanceof THREE.Vector3) {
     currentPosition = activeState.position;
   } else if (activeState.position && typeof activeState.position === 'object') {
-    currentPosition = new THREE.Vector3(
+    tempVector3.set(
       activeState.position.x || 0,
       activeState.position.y || 0,
       activeState.position.z || 0
     );
+    currentPosition = tempVector3;
   } else {
-    currentPosition = new THREE.Vector3(0, 0, 0);
+    tempVector3.set(0, 0, 0);
+    currentPosition = tempVector3;
   }
 
   let targetPosition = makeThirdPersonCameraPosition(activeState, cameraOption);
-  
   targetPosition = checkCameraCollision(targetPosition, currentPosition, cameraOption);
-  
   targetPosition = clampCameraPosition(targetPosition, cameraOption);
   
   const adaptiveLerpSpeed = cameraOption.smoothing?.position ?? 

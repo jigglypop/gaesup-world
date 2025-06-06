@@ -3,8 +3,7 @@ import { useAtom } from 'jotai';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { minimapAtom } from '../atoms';
-import { useClicker } from '../hooks/useClicker';
-import Minimap from '../tools/minimap';
+import { useClicker } from '../hooks/useInputControls';
 
 export function GaeSupProps({
   type = 'normal',

@@ -1,5 +1,3 @@
-// "Please use this only as a subcomponent of GaesupWorld."
-
 import { useContext } from "react";
 import { useAtomValue } from "jotai";
 import { GaesupWorldContext } from "../../world/context";

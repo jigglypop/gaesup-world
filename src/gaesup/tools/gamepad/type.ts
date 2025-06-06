@@ -10,7 +10,6 @@ export type gameBoyDirectionType = {
   tag: string;
   value: string;
   name: string;
-  icon: JSX.Element;
 };
 
 export type GamePadButtonType = {

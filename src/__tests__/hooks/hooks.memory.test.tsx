@@ -8,7 +8,6 @@ import {
   usePushKey, 
   useRideable,
   useTeleport,
-  useZoom,
   GaesupWorld 
 } from '../../index';
 import {
@@ -202,22 +201,7 @@ describe('Hooks Memory Tests', () => {
     });
   });
 
-  describe('useZoom Hook', () => {
-    test('useZoom 메모리 누수 테스트', async () => {
-      const result = await testComponentMemoryUsage(
-        () => renderHook(() => useZoom(), {
-          wrapper: TestWrapper,
-        }),
-        (result) => result.unmount(),
-        8,
-        256 * 1024
-      );
 
-      console.log('useZoom:', formatMemoryResult(result));
-      
-      expect(result.hasMemoryLeak).toBe(false);
-    });
-  });
 
   describe('Multiple Hooks 조합 테스트', () => {
     test('여러 hooks 동시 사용 메모리 테스트', async () => {
@@ -290,7 +274,7 @@ describe('Hooks Memory Tests', () => {
         { name: 'usePushKey', hook: usePushKey },
         { name: 'useRideable', hook: useRideable },
         { name: 'useTeleport', hook: useTeleport },
-        { name: 'useZoom', hook: useZoom },
+
       ];
 
       const results = [];

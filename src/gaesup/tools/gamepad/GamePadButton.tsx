@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePushKey } from '../../hooks/usePushKey';
+import { usePushKey } from '../../hooks/useInputControls';
 import * as S from './style.css';
 import { GamePadButtonType } from './type';
 

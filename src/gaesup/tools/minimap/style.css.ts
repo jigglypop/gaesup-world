@@ -1,9 +1,5 @@
 import { keyframes, style } from '@vanilla-extract/css';
-
-const MINIMAP_SIZE = 200; // px 단위로 고정
-const PretendardFont = "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif";
-
-// 키프레임 정의
+import { MINIMAP_SIZE_PX, PRETENDARD_FONT } from '../constants';
 const pulseWhite = keyframes({
   '0%': {
     boxShadow: '0 0 0 0 rgba(255, 255, 255, 0.7)',
@@ -18,15 +14,13 @@ const pulseWhite = keyframes({
     opacity: 1,
   },
 });
-
-// 기본 스타일
 export const baseStyles = {
   minimap: {
     position: 'absolute',
     bottom: '20px',
     left: '20px',
-    width: `${MINIMAP_SIZE}px`,
-    height: `${MINIMAP_SIZE}px`,
+    width: `${MINIMAP_SIZE_PX}px`,
+    height: `${MINIMAP_SIZE_PX}px`,
     zIndex: 100,
     cursor: 'pointer',
   },
@@ -40,7 +34,7 @@ export const baseStyles = {
     gap: '0.5rem',
     color: 'white',
     fontSize: '1rem',
-    fontFamily: PretendardFont,
+    fontFamily: PRETENDARD_FONT,
     fontWeight: '400',
     background: 'rgba(0,0,0,0.5)',
     padding: '0.5rem 1rem',
@@ -55,7 +49,7 @@ export const baseStyles = {
     alignItems: 'center',
     borderRadius: '50%',
     background: 'rgba(0,0,0,0.5)',
-    fontFamily: PretendardFont,
+    fontFamily: PRETENDARD_FONT,
     fontWeight: '500',
     transition: 'all 0.2s',
     ':hover': {
@@ -63,33 +57,23 @@ export const baseStyles = {
     },
   },
 };
-
-// 방향 표시 스타일
 export const directionStyles = {
   color: 'white',
   fontSize: '1.5rem',
-  fontFamily: PretendardFont,
+  fontFamily: PRETENDARD_FONT,
   fontWeight: 'bold',
 };
-
-// 기본 오브젝트 스타일
 export const objectStyles = {
   background: 'rgba(0,0,0,0.3)',
   boxShadow: '0 0 5px rgba(0,0,0,0.3)',
 };
-
-// 아바타 스타일
 export const avatarStyles = {
   background: '#01fff7',
   boxShadow: '0 0 10px rgba(1,255,247,0.7)',
 };
-
-// 텍스트 스타일
 export const textStyles = {
   color: 'white',
   fontSize: '1rem',
-  fontFamily: PretendardFont,
+  fontFamily: PRETENDARD_FONT,
   fontWeight: 'bold',
 };
-
-export const MINIMAP_SIZE_PX = MINIMAP_SIZE;

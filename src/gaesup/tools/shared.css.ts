@@ -1,23 +1,18 @@
 import { style } from "@vanilla-extract/css";
-
-const PretendardFont = "'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif";
-
-// 공통 Flex 중앙 정렬 스타일
+import { PRETENDARD_FONT } from "./constants";
 export const flexCenter = style({
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
   textAlign: "center",
 });
-
-// 공통 버튼 스타일
 export const commonButton = style([
   flexCenter,
   {
     width: "5rem",
     height: "5rem",
     cursor: "pointer",
-    fontFamily: PretendardFont,
+    fontFamily: PRETENDARD_FONT,
     fontWeight: "500",
     transition: "all 0.3s ease-in",
     boxShadow: "0 0 0.5rem rgba(0, 0, 0, 0.5)",
@@ -30,8 +25,6 @@ export const commonButton = style([
     },
   },
 ]);
-
-// 미니맵 공통 사이즈 및 미디어 쿼리
 export const minimapSize = {
   width: "18rem",
   height: "18rem",

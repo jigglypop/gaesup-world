@@ -43,8 +43,6 @@ export const isClicked = style({
     },
   },
 });
-
-// 사용자 선택 방지 글로벌 스타일
 globalStyle(`${gamePad} *`, {
   WebkitTouchCallout: 'none',
   WebkitUserSelect: 'none',

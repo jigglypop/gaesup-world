@@ -1,40 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { clickerAtom } from '../../atoms';
-// 새로운 통합 입력 시스템만 사용
 import { keyboardInputAtom, pointerInputAtom } from '../../atoms/unifiedInputAtom';
-
-// 키 매핑 정의 (게임 표준 키 설정)
-const KEY_MAPPING = {
-  // WASD 이동 (메인)
-  'KeyW': 'forward',
-  'KeyA': 'leftward', 
-  'KeyS': 'backward',
-  'KeyD': 'rightward',
-  // 화살표 키 (보조)
-  'ArrowUp': 'forward',
-  'ArrowDown': 'backward', 
-  'ArrowLeft': 'leftward',
-  'ArrowRight': 'rightward',
-  // 공통 키
-  'Space': 'space',
-  'ShiftLeft': 'shift',
-  'ShiftRight': 'shift',
-  'KeyZ': 'keyZ',
-  'KeyR': 'keyR',
-  'KeyF': 'keyF', // 상호작용 키 추가
-  'KeyE': 'keyE', // 사용 키 추가
-  'Escape': 'escape', // ESC 키 추가
-} as const;
-
-// 컨트롤러 모드와 무관하게 항상 작동해야 하는 키들 (모든 키 포함)
-const UNIVERSAL_KEYS = [
-  // 이동 키
-  'KeyW', 'KeyA', 'KeyS', 'KeyD',
-  'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-  // 액션 키
-  'Space', 'ShiftLeft', 'ShiftRight', 'KeyZ', 'KeyR', 'KeyF', 'KeyE', 'Escape'
-];
+import { KEY_MAPPING, DEFAULT_KEYBOARD_STATE } from '../../constants/keyboardConstants';
 
 export function useKeyboard() {
   // === 새로운 통합 시스템만 사용 ===
