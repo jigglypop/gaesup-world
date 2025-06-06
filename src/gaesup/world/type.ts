@@ -2,12 +2,7 @@ import { ReactNode } from 'react';
 import * as THREE from 'three';
 import { dispatchType } from '../utils/type';
 import {
-  BlockType,
-  CameraOptionType,
-  ClickerOptionType,
   gaesupWorldContextType,
-  ModeType,
-  UrlsType,
 } from './context/type';
 
 export type gaesupWorldInitType = {

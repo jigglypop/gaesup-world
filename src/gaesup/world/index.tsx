@@ -6,6 +6,7 @@ import { useGaesupGltf } from '../hooks/useGaesupGltf';
 import { GaesupProvider } from '../context';
 import initGaesupWorld from './initalize';
 import { gaesupWorldPropsType } from './type';
+
 function LoadingSpinner() {
   return (
     <div style={{

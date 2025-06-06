@@ -5,14 +5,14 @@ import { useAtom } from 'jotai';
 import { MutableRefObject, forwardRef, useContext, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
-import { useSubscribeActions, usePlayActions } from '../../../atoms/animationAtoms';
+import { usePlayActions, useSubscribeActions } from '../../../atoms/animationAtoms';
 import { cameraOptionAtom } from '../../../atoms/cameraOptionAtom';
 import Camera from '../../../camera';
+import { GaesupContext } from '../../../context';
 import initCallback from '../../../controller/initialize/callback';
 import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
 import calculation from '../../../physics';
 import { cameraPropType } from '../../../physics/type';
-import { GaesupContext } from '../../../context';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './partsGroupRef';
 import { useSetGroundRay } from './setGroundRay';
@@ -21,12 +21,11 @@ import { rigidBodyRefType } from './type';
 export const RigidBodyRef = forwardRef(
   (props: rigidBodyRefType, ref: MutableRefObject<RapierRigidBody>) => {
     const { size } = useGltfAndSize({ url: props.url || '' });
-    
+
     const setGroundRay = useSetGroundRay();
     const worldContext = useContext(GaesupContext);
     const [cameraOption] = useAtom(cameraOptionAtom);
 
-    // GLTF와 애니메이션을 먼저 로드
     const { scene, animations } = useGLTF(props.url);
     const { actions, ref: animationRef } = useAnimations(animations);
 
@@ -42,6 +41,49 @@ export const RigidBodyRef = forwardRef(
     }, [clone]);
 
     useEffect(() => {
+      return () => {
+        if (clone) {
+          clone.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              child.geometry.dispose();
+
+              if (Array.isArray(child.material)) {
+                child.material.forEach((material) => {
+                  Object.keys(material).forEach((key) => {
+                    if (material[key] && material[key].isTexture) {
+                      material[key].dispose();
+                    }
+                  });
+                  material.dispose();
+                });
+              } else if (child.material) {
+                Object.keys(child.material).forEach((key) => {
+                  if (child.material[key] && child.material[key].isTexture) {
+                    child.material[key].dispose();
+                  }
+                });
+                child.material.dispose();
+              }
+            }
+          });
+        }
+
+        if (skeleton) {
+          skeleton.dispose();
+        }
+
+        if (actions) {
+          Object.values(actions).forEach((action) => {
+            if (action) {
+              action.stop();
+              action.getMixer().uncacheAction(action.getClip());
+            }
+          });
+        }
+      };
+    }, [clone, skeleton, actions]);
+
+    useEffect(() => {
       if (props.groundRay && props.colliderRef) {
         setGroundRay({
           groundRay: props.groundRay,
@@ -51,7 +93,6 @@ export const RigidBodyRef = forwardRef(
       }
     }, [props.groundRay, props.colliderRef, setGroundRay]);
 
-    // Active 관련 로직을 다시 컴포넌트 최상위로 이동 (Hook 규칙 준수)
     if (props.isActive) {
       useSubscribeActions({
         type: props.componentType,

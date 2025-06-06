@@ -1,9 +1,9 @@
 import { useAtom, useAtomValue } from 'jotai';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { blockAtom, cameraOptionAtom } from '../atoms';
+import { gaesupWorldContextType } from '../context';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
 import { physicsEventBus } from '../physics/stores/physicsEventBus';
-import { gaesupWorldContextType } from '../context';
 import firstPerson from './control/firstPerson';
 import sideScroll from './control/sideScroll';
 import thirdPerson, { makeThirdPersonCameraPosition } from './control/thirdPerson';
@@ -25,7 +25,7 @@ const controllerMap = {
 export default function Camera(prop: CameraPropType) {
   const [cameraOption, setCameraOption] = useAtom(cameraOptionAtom);
   const block = useAtomValue(blockAtom);
-  
+
   const cameraOptionRef = useRef(cameraOption);
   const lastModeControlRef = useRef<string | null>(null);
   const lastActiveStateRef = useRef<Partial<gaesupWorldContextType['activeState']> | null>(null);
@@ -53,9 +53,11 @@ export default function Camera(prop: CameraPropType) {
       if (!newTarget || !newPosition) return;
       const lastPos = lastPositionRef.current;
       const lastTar = lastTargetRef.current;
-      const positionChanged = !lastPos || 
+      const positionChanged =
+        !lastPos ||
         !cameraUtils.isPositionEqual(newPosition, lastPos, CAMERA_CONSTANTS.POSITION_THRESHOLD);
-      const targetChanged = !lastTar ||
+      const targetChanged =
+        !lastTar ||
         !cameraUtils.isPositionEqual(newTarget, lastTar, CAMERA_CONSTANTS.TARGET_THRESHOLD);
       if (positionChanged || targetChanged) {
         lastPositionRef.current = newPosition.clone();
@@ -115,5 +117,10 @@ export default function Camera(prop: CameraPropType) {
     [propWithCamera, block.camera, prop.worldContext.mode?.control],
   );
 
-  useUnifiedFrame(`camera-${prop.worldContext.mode?.control || 'default'}`, frameCallback, 1, !block.camera);
+  useUnifiedFrame(
+    `camera-${prop.worldContext.mode?.control || 'default'}`,
+    frameCallback,
+    1,
+    !block.camera,
+  );
 }

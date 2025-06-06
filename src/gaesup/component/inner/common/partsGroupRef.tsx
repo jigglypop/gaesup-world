@@ -1,5 +1,5 @@
 import { useAnimations, useGLTF } from '@react-three/drei';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { usePlayActions } from '../../../atoms/animationAtoms';
 import { componentTypeString } from '../../passive/type';
@@ -34,6 +34,29 @@ export const PartsGroupRef = ({
     });
     return meshes;
   }, [scene, skeleton]);
+
+  useEffect(() => {
+    return () => {
+      clonedMeshes.forEach((mesh) => {
+        mesh.geometry.dispose();
+        if (mesh.material) {
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach((mat) => mat.dispose());
+          } else {
+            mesh.material.dispose();
+          }
+        }
+      });
+
+      if (actions) {
+        Object.values(actions).forEach((action) => {
+          if (action) {
+            action.stop();
+          }
+        });
+      }
+    };
+  }, [clonedMeshes, actions]);
 
   usePlayActions({
     type: componentType,

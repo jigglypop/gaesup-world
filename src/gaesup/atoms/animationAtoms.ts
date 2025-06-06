@@ -1,11 +1,10 @@
-import { atom, WritableAtom } from 'jotai';
 import { useFrame } from '@react-three/fiber';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { atom, WritableAtom } from 'jotai';
+import { Ref, useCallback, useEffect, useMemo, useRef } from 'react';
+import { AnimationAction, AnimationClip, Object3D, Object3DEventMap } from 'three';
+import { groundRayType } from '../controller/type';
 import { useBridgeConnector } from '../hooks/useBridgeConnector';
 import { AnimationAtomType, AnimationStatePropType } from '../types';
-import { AnimationClip, AnimationAction, Object3D, Object3DEventMap } from 'three';
-import { Ref } from 'react';
-import { groundRayType } from '../controller/type';
 
 const defaultAnimationState: AnimationStatePropType = {
   current: 'idle',
