@@ -3,13 +3,12 @@ import { useAtom } from 'jotai';
 import { useCallback, useContext, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { cameraOptionAtom } from '../../atoms/cameraOptionAtom';
-import { cameraRayType } from '../../camera/type';
-import { groundRayType, refsType } from '../../controller/type';
+import { CameraRayType, GroundRayType, RefsType } from '../../types';
 import { update } from '../../utils/context';
 import { GaesupWorldContext, GaesupWorldDispatchContext } from '../../world/context';
 import { gaesupWorldContextType } from '../../world/context/type';
 
-export default function initControllerProps(props: { refs: refsType }) {
+export default function initControllerProps(props: { refs: RefsType }) {
   const context = useContext(GaesupWorldContext);
   const dispatch = useContext(GaesupWorldDispatchContext);
   const [cameraOption] = useAtom(cameraOptionAtom);

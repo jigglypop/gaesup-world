@@ -108,6 +108,36 @@ export const cameraUtils = {
       vector.set(0, 0, 0);
       cameraUtils.pool.vectors.push(vector);
     }
+  },
+
+  updateFOVLerp: (
+    camera: THREE.PerspectiveCamera,
+    targetFov: number,
+    lerpSpeed: number = CAMERA_CONSTANTS.DEFAULT_FOV_LERP
+  ): void => {
+    const clampedFov = cameraUtils.clampValue(targetFov, CAMERA_CONSTANTS.MIN_FOV, CAMERA_CONSTANTS.MAX_FOV);
+    camera.fov = THREE.MathUtils.lerp(camera.fov, clampedFov, lerpSpeed);
+    camera.updateProjectionMatrix();
+  },
+
+  clampPosition: (
+    position: THREE.Vector3,
+    bounds?: {
+      minX?: number;
+      maxX?: number;
+      minY?: number;
+      maxY?: number;
+      minZ?: number;
+      maxZ?: number;
+    }
+  ): THREE.Vector3 => {
+    if (!bounds) return position;
+    
+    const x = cameraUtils.clampValue(position.x, bounds.minX ?? -Infinity, bounds.maxX ?? Infinity);
+    const y = cameraUtils.clampValue(position.y, bounds.minY ?? -Infinity, bounds.maxY ?? Infinity);
+    const z = cameraUtils.clampValue(position.z, bounds.minZ ?? -Infinity, bounds.maxZ ?? Infinity);
+    
+    return tempVector3.set(x, y, z);
   }
 };
 

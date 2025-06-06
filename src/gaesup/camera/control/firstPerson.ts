@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { cameraPropType } from '../../physics/type';
 import { ActiveStateType, CameraOptionType } from '../../types';
+import { cameraUtils } from '../utils';
 
 const tempVector3 = new THREE.Vector3();
 const tempForward = new THREE.Vector3(0, 0, -1);
@@ -51,11 +52,6 @@ export default function firstPerson(prop: cameraPropType) {
   state.camera.lookAt(tempLookAt);
   
   if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
-    const targetFov = cameraOption.fov;
-    const currentFov = state.camera.fov;
-    const fovLerpSpeed = cameraOption.smoothing?.fov ?? 0.1;
-    
-    state.camera.fov = THREE.MathUtils.lerp(currentFov, targetFov, fovLerpSpeed);
-    state.camera.updateProjectionMatrix();
+    cameraUtils.updateFOVLerp(state.camera, cameraOption.fov, cameraOption.smoothing?.fov);
   }
 }

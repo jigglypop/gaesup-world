@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { cameraPropType } from "../../physics/type";
 import { V3 } from "../../utils/vector";
 import { ActiveStateType, CameraOptionType } from "../../world/context/type";
+import { cameraUtils } from '../utils';
 
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
@@ -57,36 +58,7 @@ export const clampCameraPosition = (
   position: THREE.Vector3,
   cameraOption: CameraOptionType
 ): THREE.Vector3 => {
-  if (!cameraOption.bounds) {
-    return position;
-  }
-
-  const { bounds } = cameraOption;
-  const x = bounds.minX !== undefined && bounds.maxX !== undefined 
-    ? Math.max(bounds.minX, Math.min(bounds.maxX, position.x))
-    : bounds.minX !== undefined 
-      ? Math.max(bounds.minX, position.x)
-      : bounds.maxX !== undefined 
-        ? Math.min(bounds.maxX, position.x)
-        : position.x;
-
-  const y = bounds.minY !== undefined && bounds.maxY !== undefined 
-    ? Math.max(bounds.minY, Math.min(bounds.maxY, position.y))
-    : bounds.minY !== undefined 
-      ? Math.max(bounds.minY, position.y)
-      : bounds.maxY !== undefined 
-        ? Math.min(bounds.maxY, position.y)
-        : position.y;
-
-  const z = bounds.minZ !== undefined && bounds.maxZ !== undefined 
-    ? Math.max(bounds.minZ, Math.min(bounds.maxZ, position.z))
-    : bounds.minZ !== undefined 
-      ? Math.max(bounds.minZ, position.z)
-      : bounds.maxZ !== undefined 
-        ? Math.min(bounds.maxZ, position.z)
-        : position.z;
-
-  return tempVector3_2.set(x, y, z);
+  return cameraUtils.clampPosition(position, cameraOption.bounds);
 };
 
 export const calculateAdaptiveLerpSpeed = (
@@ -145,12 +117,7 @@ export default function thirdPerson(prop: cameraPropType) {
   state.camera.lookAt(lookAtTarget);
   
   if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
-    const targetFov = cameraOption.fov;
-    const currentFov = state.camera.fov;
-    const fovLerpSpeed = cameraOption.smoothing?.fov ?? 0.1;
-    
-    state.camera.fov = THREE.MathUtils.lerp(currentFov, targetFov, fovLerpSpeed);
-    state.camera.updateProjectionMatrix();
+    cameraUtils.updateFOVLerp(state.camera, cameraOption.fov, cameraOption.smoothing?.fov);
   }
 }
 

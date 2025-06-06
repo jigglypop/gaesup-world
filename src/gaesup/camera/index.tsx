@@ -10,10 +10,7 @@ import thirdPerson, { makeThirdPersonCameraPosition } from './control/thirdPerso
 import thirdPersonOrbit from './control/thirdPersonOrbit';
 import topDown from './control/topDown';
 import { CameraPropType } from './type';
-
-const THROTTLE_MS = 16;
-const POSITION_THRESHOLD = 0.001;
-const TARGET_THRESHOLD = 0.001;
+import { CAMERA_CONSTANTS, cameraUtils } from './utils';
 
 const controllerMap = {
   firstPerson,
@@ -43,43 +40,26 @@ export default function Camera(prop: CameraPropType) {
   const updateCameraPosition = useCallback(
     (activeState: gaesupWorldContextType['activeState'], force = false) => {
       const currentMode = prop.worldContext.mode?.control || 'thirdPerson';
-      
-      console.log('CAMERA DEBUG - updateCameraPosition called, mode:', currentMode);
-      
       if (currentMode === 'thirdPersonOrbit' || currentMode === 'orbit') {
-        console.log('CAMERA DEBUG - skipping updateCameraPosition for orbit mode');
         return;
       }
-      
       const now = performance.now();
-      if (!force && now - throttleTimeRef.current < THROTTLE_MS) return;
+      if (!force && now - throttleTimeRef.current < CAMERA_CONSTANTS.THROTTLE_MS) return;
       throttleTimeRef.current = now;
-      
       if (!activeState?.position) return;
-      
       const currentOption = cameraOptionRef.current;
       const newPosition = makeThirdPersonCameraPosition(activeState, currentOption);
       const newTarget = activeState.position;
-      
       if (!newTarget || !newPosition) return;
-
       const lastPos = lastPositionRef.current;
       const lastTar = lastTargetRef.current;
-      
       const positionChanged = !lastPos || 
-        Math.abs(newPosition.x - lastPos.x) > POSITION_THRESHOLD ||
-        Math.abs(newPosition.y - lastPos.y) > POSITION_THRESHOLD ||
-        Math.abs(newPosition.z - lastPos.z) > POSITION_THRESHOLD;
-      
+        !cameraUtils.isPositionEqual(newPosition, lastPos, CAMERA_CONSTANTS.POSITION_THRESHOLD);
       const targetChanged = !lastTar ||
-        Math.abs(newTarget.x - lastTar.x) > TARGET_THRESHOLD ||
-        Math.abs(newTarget.y - lastTar.y) > TARGET_THRESHOLD ||
-        Math.abs(newTarget.z - lastTar.z) > TARGET_THRESHOLD;
-
+        !cameraUtils.isPositionEqual(newTarget, lastTar, CAMERA_CONSTANTS.TARGET_THRESHOLD);
       if (positionChanged || targetChanged) {
         lastPositionRef.current = newPosition.clone();
         lastTargetRef.current = newTarget.clone();
-        
         setCameraOption((prev: any) => ({
           ...prev,
           target: newTarget.clone(),
@@ -123,27 +103,12 @@ export default function Camera(prop: CameraPropType) {
   const frameCallback = useCallback(
     (state: any) => {
       propWithCamera.state = state;
-      
-      console.log('CAMERA DEBUG - frameCallback called:', {
-        blockCamera: block.camera,
-        hasCamera: !!state.camera,
-        mode: prop.worldContext.mode?.control
-      });
-      
       if (!block.camera && state.camera) {
         const control = prop.worldContext.mode?.control || 'thirdPerson';
-        
-        console.log('CAMERA DEBUG - executing camera control:', control);
-        
         if (lastModeControlRef.current !== control) {
           lastModeControlRef.current = control;
-          console.log('CAMERA DEBUG - mode changed to:', control);
         }
-
         const controller = controllerMap[control as keyof typeof controllerMap] || thirdPerson;
-        
-        console.log('CAMERA DEBUG - calling controller:', controller.name || 'unknown');
-        
         controller(propWithCamera);
       }
     },

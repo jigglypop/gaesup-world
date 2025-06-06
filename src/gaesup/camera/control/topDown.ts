@@ -1,6 +1,8 @@
-import { ActiveStateType, CameraOptionType } from '@/gaesup/types';
 import * as THREE from 'three';
+import { cameraPropType } from '../../physics/type';
 import { V3 } from '../../utils/vector';
+import { ActiveStateType, CameraOptionType } from '../../world/context/type';
+import { cameraUtils } from '../utils';
 
 export const makeTopDownCameraPosition = (
   activeState: ActiveStateType,
@@ -13,28 +15,9 @@ export const makeTopDownCameraPosition = (
   return activeState.position.clone().add(V3(xOffset, height, zOffset));
 };
 
-export const clampTopDownPosition = (
-  position: THREE.Vector3,
-  bounds?: {
-    minX?: number;
-    maxX?: number;
-    minZ?: number;
-    maxZ?: number;
-  },
-): THREE.Vector3 => {
-  if (!bounds) return position;
+export const clampTopDownPosition = cameraUtils.clampPosition;
 
-  const clampedPos = position.clone();
-
-  if (bounds.minX !== undefined) clampedPos.x = Math.max(clampedPos.x, bounds.minX);
-  if (bounds.maxX !== undefined) clampedPos.x = Math.min(clampedPos.x, bounds.maxX);
-  if (bounds.minZ !== undefined) clampedPos.z = Math.max(clampedPos.z, bounds.minZ);
-  if (bounds.maxZ !== undefined) clampedPos.z = Math.min(clampedPos.z, bounds.maxZ);
-
-  return clampedPos;
-};
-
-export default function topDown(prop: CameraPropType) {
+export default function topDown(prop: cameraPropType) {
   const {
     state,
     worldContext: { activeState },
@@ -53,11 +36,6 @@ export default function topDown(prop: CameraPropType) {
   state.camera.lookAt(lookAtTarget);
 
   if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
-    const targetFov = cameraOption.fov;
-    const currentFov = state.camera.fov;
-    const fovLerpSpeed = cameraOption.smoothing?.fov ?? 0.1;
-
-    state.camera.fov = THREE.MathUtils.lerp(currentFov, targetFov, fovLerpSpeed);
-    state.camera.updateProjectionMatrix();
+    cameraUtils.updateFOVLerp(state.camera, cameraOption.fov, cameraOption.smoothing?.fov);
   }
 }
