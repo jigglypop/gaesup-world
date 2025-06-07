@@ -8,9 +8,9 @@ import { gravity } from './character/gravity';
 import { impulse } from './character/impulse';
 import { innerCalc } from './character/innerCalc';
 import check from './check';
-import { jotaiPhysicsSync, worldContextSync } from './stores/physicsEventBus';
 import { PhysicsCalcProps, PhysicsCalculationProps, PhysicsState } from './types';
 import vehicleCalculation from './vehicle';
+import { physicsSync } from './stores';
 
 export default function calculation(props: PhysicsCalculationProps) {
   const { bridgeRef, layerStatus } = useBridgeConnector();
@@ -20,8 +20,6 @@ export default function calculation(props: PhysicsCalculationProps) {
   const isInitializedRef = useRef(false);
   const calcPropRef = useRef<PhysicsCalcProps | null>(null);
   const calculationFnRef = useRef<((calcProp: PhysicsCalcProps) => void) | null>(null);
-
-  // 캐시 및 성능 최적화 관련 Ref들
   const cacheRef = useRef({
     modeType: '',
     modeControl: '',
@@ -42,7 +40,6 @@ export default function calculation(props: PhysicsCalculationProps) {
       isInitializedRef.current = false;
       calcPropRef.current = null;
       calculationFnRef.current = null;
-
       cacheRef.current = {
         modeType: '',
         modeControl: '',
@@ -59,8 +56,8 @@ export default function calculation(props: PhysicsCalculationProps) {
 
   useEffect(() => {
     if (!isInitializedRef.current && bridgeRef.current?.worldContext) {
-      worldContextSync.setWorldContext(bridgeRef.current.worldContext as any);
-      jotaiPhysicsSync.initialize(
+      physicsSync.setWorldContext(bridgeRef.current.worldContext as any);
+      physicsSync.initialize(
         () => {},
         () => {},
       );
@@ -82,10 +79,8 @@ export default function calculation(props: PhysicsCalculationProps) {
     }
   }, [props.rigidBodyRef?.current, props.innerGroupRef?.current, isInitializedRef.current]);
 
-  // 물리 상태만 업데이트하는 최적화 함수
   const updatePhysicsStateOnly = useCallback(
-    (state: PhysicsState, worldContext: unknown, input: unknown): void => {
-      // 키보드 상태 업데이트 (변경된 값만)
+    (state: PhysicsState, worldContext: any, input: any): void => {
       const kb = state.keyboard;
       const inputKb = input.keyboard;
       if (kb.forward !== inputKb.forward) kb.forward = inputKb.forward;
@@ -95,8 +90,6 @@ export default function calculation(props: PhysicsCalculationProps) {
       if (kb.shift !== inputKb.shift) kb.shift = inputKb.shift;
       if (kb.space !== inputKb.space) kb.space = inputKb.space;
       if (kb.keyR !== inputKb.keyR) kb.keyR = inputKb.keyR;
-
-      // 마우스 상태 업데이트 (변경된 값만)
       if (!state.mouse.target.equals(input.mouse.target)) {
         state.mouse.target.copy(input.mouse.target);
       }
@@ -106,7 +99,6 @@ export default function calculation(props: PhysicsCalculationProps) {
       if (state.mouse.shouldRun !== input.mouse.shouldRun)
         state.mouse.shouldRun = input.mouse.shouldRun;
 
-      // 참조 업데이트 (필요한 경우만)
       if (state.activeState !== worldContext.activeState) {
         state.activeState = worldContext.activeState;
       }
@@ -124,10 +116,9 @@ export default function calculation(props: PhysicsCalculationProps) {
     const cache = cacheRef.current;
 
     const { worldContext, input, urls, getSizesByUrls } = bridgeRef.current;
-    const modeType = worldContext?.mode?.type || 'character';
-    const modeControl = worldContext?.mode?.control || 'thirdPerson';
+    const modeType = (worldContext as any)?.mode?.type || 'character';
+    const modeControl = (worldContext as any)?.mode?.control || 'thirdPerson';
 
-    // 모드가 변경되지 않았고 기존 상태가 있으면 최적화된 업데이트만 수행
     if (
       cache.modeType === modeType &&
       cache.modeControl === modeControl &&
@@ -137,17 +128,15 @@ export default function calculation(props: PhysicsCalculationProps) {
       cache.lastInput === input &&
       cache.lastUrls === urls
     ) {
-      // 빠른 업데이트 (상태만 변경)
       updatePhysicsStateOnly(physicsStateRef.current, worldContext, input);
-      return false; // 새로 생성할 필요 없음
+      return false;
     }
 
-    // 모드 변경 또는 초기 설정시에만 함수 재생성
     if (cache.modeType !== modeType) {
       cache.modeType = modeType;
       cache.calculationFn = getCalculationFunction(modeType);
       calculationFnRef.current = cache.calculationFn;
-      worldContextSync.updateMode(worldContext?.mode);
+      physicsSync.updateMode((worldContext as any)?.mode);
     }
 
     cache.modeControl = modeControl;
@@ -168,30 +157,27 @@ export default function calculation(props: PhysicsCalculationProps) {
     const layersReady = layerStatus.atomsConnected && layerStatus.contextConnected;
     isReadyRef.current = refsReady && layersReady;
 
-    // 크기 정보 캐싱 (URL이 변경되었을 때만 재계산)
     if (!matchSizesRef.current || cache.lastUrls !== urls) {
-      matchSizesRef.current = getSizesByUrls(urls) as SizesType;
+      matchSizesRef.current = getSizesByUrls() as SizesType;
     }
 
-    // 물리 상태 생성 또는 업데이트
     if (!physicsStateRef.current) {
       physicsStateRef.current = createInitialPhysicsState(worldContext, input, modeType);
     } else {
       updatePhysicsStateOnly(physicsStateRef.current, worldContext, input);
 
-      // 설정 업데이트 (필요한 경우만)
       const state = physicsStateRef.current;
-      if (state.characterConfig !== worldContext.character) {
-        state.characterConfig = worldContext.character || {};
+      if (state.characterConfig !== (worldContext as any).character) {
+        state.characterConfig = (worldContext as any).character || {};
       }
-      if (state.vehicleConfig !== worldContext.vehicle) {
-        state.vehicleConfig = worldContext.vehicle || {};
+      if (state.vehicleConfig !== (worldContext as any).vehicle) {
+        state.vehicleConfig = (worldContext as any).vehicle || {};
       }
-      if (state.airplaneConfig !== worldContext.airplane) {
-        state.airplaneConfig = worldContext.airplane || {};
+      if (state.airplaneConfig !== (worldContext as any).airplane) {
+        state.airplaneConfig = (worldContext as any).airplane || {};
       }
-      if (state.clickerOption !== worldContext.clickerOption) {
-        state.clickerOption = worldContext.clickerOption || state.clickerOption;
+      if (state.clickerOption !== (worldContext as any).clickerOption) {
+        state.clickerOption = (worldContext as any).clickerOption || state.clickerOption;
       }
       if (state.modeType !== modeType) {
         state.modeType = modeType as 'character' | 'vehicle' | 'airplane';
@@ -202,9 +188,8 @@ export default function calculation(props: PhysicsCalculationProps) {
     return true;
   }, [updatePhysicsStateOnly]);
 
-  // 초기 물리 상태 생성 함수 (분리하여 가독성 향상)
   const createInitialPhysicsState = useCallback(
-    (worldContext: unknown, input: unknown, modeType: string): PhysicsState => {
+    (worldContext: any, input: any, modeType: string): PhysicsState => {
       return {
         activeState: worldContext.activeState!,
         gameStates: worldContext.states!,
@@ -237,7 +222,7 @@ export default function calculation(props: PhysicsCalculationProps) {
     const physicsState = physicsStateRef.current;
     if (!physicsState?.activeState || !physicsState?.gameStates || !physicsState?.characterConfig)
       return;
-    direction(physicsState, bridgeRef.current?.worldContext?.mode?.control, calcProp);
+    direction(physicsState, (bridgeRef.current?.worldContext as any)?.mode?.control, calcProp);
     impulse(props.rigidBodyRef, physicsState);
     gravity(props.rigidBodyRef, physicsState);
     innerCalc(props.rigidBodyRef, props.innerGroupRef, physicsState);
@@ -276,12 +261,9 @@ export default function calculation(props: PhysicsCalculationProps) {
 
       const stateChanged = updatePhysicsState();
       if (!isReadyRef.current || !physicsStateRef.current || !calculationFnRef.current) return;
-
       if (!bridgeRef.current) return;
       const { worldContext, dispatch, input, setKeyboardInput, setMouseInput } = bridgeRef.current;
       if (!worldContext || !dispatch) return;
-
-      // calcProp 재사용 최적화
       if (!calcPropRef.current || stateChanged) {
         calcPropRef.current = {
           ...props,
@@ -295,7 +277,6 @@ export default function calculation(props: PhysicsCalculationProps) {
           setMouseInput,
         };
       } else {
-        // 변경된 값만 업데이트
         calcPropRef.current.state = state;
         calcPropRef.current.delta = delta;
       }

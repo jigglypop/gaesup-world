@@ -1,4 +1,4 @@
-import { physicsEventBus } from '../stores/physicsEventBus';
+import { eventBus } from '../stores';
 import { PhysicsState } from '../type';
 
 export default function direction(physicsState: PhysicsState, controlMode?: string) {
@@ -12,7 +12,7 @@ export default function direction(physicsState: PhysicsState, controlMode?: stri
     } else {
       activeState.euler.y += xAxis * (Math.PI / 64);
     }
-    physicsEventBus.emit('ROTATION_UPDATE', {
+    eventBus.emit('ROTATION_UPDATE', {
       euler: activeState.euler,
       direction: activeState.direction,
       dir: activeState.dir,

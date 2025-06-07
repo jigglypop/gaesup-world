@@ -4,7 +4,6 @@ import { Rideable, V3 } from '../../../src';
 export default function Rideables() {
   return (
     <>
-      {/* 차량 (Vehicle) */}
       <Rideable
         objectkey="vehicle_1"
         url={S3 + '/gorani.glb'}

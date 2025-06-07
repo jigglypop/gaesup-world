@@ -1,4 +1,4 @@
-import { physicsEventBus } from '../stores/physicsEventBus';
+import { eventBus } from '../stores';
 import { PhysicsCalcProps } from '../types';
 let isCurrentlyJumping = false;
 let lastMovingState = false;
@@ -31,7 +31,7 @@ export default function moving(prop: PhysicsCalcProps) {
   }
   if (space && !isCurrentlyJumping) {
     isCurrentlyJumping = true;
-    physicsEventBus.emit('JUMP_STATE_CHANGE', {
+    eventBus.emit('JUMP_STATE_CHANGE', {
       isJumping: true,
       isOnTheGround: true,
     });
@@ -39,7 +39,7 @@ export default function moving(prop: PhysicsCalcProps) {
   if (lastMovingState !== isMoving || lastRunningState !== isRunning) {
     lastMovingState = isMoving;
     lastRunningState = isRunning;
-    physicsEventBus.emit('MOVE_STATE_CHANGE', {
+    eventBus.emit('MOVE_STATE_CHANGE', {
       isMoving,
       isRunning,
       isNotMoving: !isMoving,

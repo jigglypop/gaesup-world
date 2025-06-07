@@ -1,4 +1,4 @@
-import { physicsEventBus } from '../stores/physicsEventBus';
+import { eventBus } from '../stores';
 import { PhysicsState } from '../type';
 
 export default function landing(physicsState: PhysicsState) {
@@ -6,8 +6,7 @@ export default function landing(physicsState: PhysicsState) {
   const { isRiding } = gameStates;
 
   if (isRiding) {
-    // Physics에서는 상태만 업데이트, rideable과 mode 조작은 UI 레벨에서 처리
-    physicsEventBus.emit('RIDE_STATE_CHANGE', {
+    eventBus.emit('RIDE_STATE_CHANGE', {
       isRiding: false,
       canRide: false,
       shouldEnterRideable: false,

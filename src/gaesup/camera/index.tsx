@@ -4,7 +4,6 @@ import * as THREE from 'three';
 import { blockAtom, cameraOptionAtom } from '../atoms';
 import { gaesupWorldContextType } from '../context';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
-import { physicsEventBus } from '../physics/stores/physicsEventBus';
 import { CameraBlendManager } from './blend/CameraBlendManager';
 import { SmartCollisionSystem } from './collision/SmartCollisionSystem';
 import chase from './control/chase';
@@ -19,6 +18,7 @@ import { CameraEffects } from './effects/CameraEffects';
 import { CameraStateManager } from './state/CameraStateManager';
 import { CameraPropType } from './type';
 import { CAMERA_CONSTANTS, cameraUtils } from './utils';
+import { eventBus } from '../physics/stores';
 
 const controllerMap = {
   firstPerson,
@@ -84,7 +84,7 @@ export default function Camera(prop: CameraPropType) {
     }
   }, [prop.worldContext.activeState?.position, updateCameraPosition]);
   useEffect(() => {
-    const unsubscribePosition = physicsEventBus.subscribe('POSITION_UPDATE', (data) => {
+    const unsubscribePosition = eventBus.subscribe('POSITION_UPDATE', (data) => {
       const activeState = {
         position: data.position,
         velocity: data.velocity,
@@ -92,7 +92,7 @@ export default function Camera(prop: CameraPropType) {
       } as gaesupWorldContextType['activeState'];
       updateCameraPosition(activeState);
     });
-    const unsubscribeRotation = physicsEventBus.subscribe('ROTATION_UPDATE', (data) => {
+    const unsubscribeRotation = eventBus.subscribe('ROTATION_UPDATE', (data) => {
       lastActiveStateRef.current = {
         ...prop.worldContext.activeState,
         euler: data.euler,
@@ -100,7 +100,7 @@ export default function Camera(prop: CameraPropType) {
         dir: data.dir,
       };
     });
-    const unsubscribeModeChange = physicsEventBus.subscribe('MODE_CHANGE', (data) => {
+    const unsubscribeModeChange = eventBus.subscribe('MODE_CHANGE', (data) => {
       const newCameraOption = { ...cameraOption };
       switch (data.control) {
         case 'firstPerson':
@@ -179,7 +179,7 @@ export default function Camera(prop: CameraPropType) {
             );
             state.camera.position.copy(safePos);
           }
-          physicsEventBus.emit('CAMERA_UPDATE', {
+          eventBus.emit('CAMERA_UPDATE', {
             position: state.camera.position.clone(),
             target:
               cameraOption.target ||
@@ -190,7 +190,7 @@ export default function Camera(prop: CameraPropType) {
             isBlending: false,
           });
         } else {
-          physicsEventBus.emit('CAMERA_UPDATE', {
+          eventBus.emit('CAMERA_UPDATE', {
             position: state.camera.position.clone(),
             target:
               cameraOption.target ||

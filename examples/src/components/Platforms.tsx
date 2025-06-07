@@ -1,19 +1,11 @@
 import { RigidBody } from '@react-three/rapier';
 import { MinimapPlatform } from '../../../src';
-import { useFocusable } from '../context/FocusContext';
 import { PLATFORMS } from '../constants';
 import { PlatformData } from '../types';
 
 export function Platforms() {
-  const { focusOnPlatform } = useFocusable();
   const handlePlatformClick = (e: any, platformData: PlatformData) => {
     e.stopPropagation();
-    const clickedPosition = e.point || {
-      x: platformData.position[0],
-      y: platformData.position[1],
-      z: platformData.position[2],
-    };
-    focusOnPlatform(platformData, clickedPosition);
   };
 
   return (

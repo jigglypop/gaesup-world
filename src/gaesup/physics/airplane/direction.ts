@@ -1,8 +1,8 @@
 import { quat } from '@react-three/rapier';
 import { RefObject } from 'react';
 import * as THREE from 'three';
-import { physicsEventBus } from '../stores/physicsEventBus';
 import { PhysicsState } from '../type';
+import { eventBus } from '../stores';
 
 export default function direction(
   physicsState: PhysicsState,
@@ -67,9 +67,7 @@ export default function direction(
     Math.cos(activeState.euler.y) * boost,
   );
   activeState.dir.copy(activeState.direction).normalize();
-
-  // ROTATION_UPDATE 이벤트 발행
-  physicsEventBus.emit('ROTATION_UPDATE', {
+  eventBus.emit('ROTATION_UPDATE', {
     euler: activeState.euler,
     direction: activeState.direction,
     dir: activeState.dir,

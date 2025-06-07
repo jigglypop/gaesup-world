@@ -15,7 +15,7 @@ export function GamePad(props: gamepadType) {
   const mode = useAtomValue(modeStateAtom);
   const keyboard = inputSystem.keyboard;
   const GamePadDirections = Object.keys(keyboard)
-    .map((key) => {
+    .map((key: string) => {
       const name = label?.[key] || key;
       if (
         key !== 'forward' &&

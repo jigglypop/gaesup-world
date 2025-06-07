@@ -7,21 +7,7 @@ import { GaesupContext, GaesupDispatchContext } from '../../context';
 import { useGaesupGltf } from '../useGaesupGltf';
 import { PhysicsBridgeInputData, usePhysicsInput } from '../usePhysicsInput';
 
-/**
- * Bridge Connector Hook
- *
- * 역할: 2번 레이어(atoms)와 3번 레이어(context)를 연결하여
- * 1번 레이어(physics core)에 통합된 데이터를 제공
- *
- * 이 hook은 "진실의 단일 원천" 원칙에 따라
- * 어떤 상태를 어느 레이어에서 가져올지 결정하는 중앙 집중식 connector
- */
 export const useBridgeConnector = () => {
-  // ============================================================================
-  // 2번 레이어 (Atoms) - 선택된 진실의 원천
-  // ============================================================================
-
-  // ✅ 입력 시스템: Atoms가 진실의 원천
   const inputSystem = useAtomValue(inputAtom);
   const setKeyboardInput = useSetAtom(keyboardInputAtom);
   const setPointerInput = useSetAtom(pointerInputAtom);
@@ -116,14 +102,9 @@ export const useBridgeConnector = () => {
     getSizesByUrls,
   ]);
 
-  // Physics Bridge Hook에 데이터 주입
   const physicsResult = usePhysicsInput(bridgeInputData);
-
   return {
-    // Physics Bridge 결과
     ...physicsResult,
-
-    // 개발/디버깅용 원본 데이터 접근
     rawData: {
       inputSystem,
       urls,
@@ -132,8 +113,6 @@ export const useBridgeConnector = () => {
       controllerContext: worldContext,
       worldDispatch,
     },
-
-    // 레이어 상태 체크 (개발용)
     layerStatus: {
       atomsConnected: !!(inputSystem && urls && block),
       contextConnected: !!worldContext,

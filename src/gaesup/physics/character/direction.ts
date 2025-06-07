@@ -7,8 +7,8 @@ import {
   shouldUpdate,
 } from '../../utils/memoization';
 import { calcAngleByVector, calcNorm } from '../../utils/vector';
-import { physicsEventBus } from '../stores/physicsEventBus';
 import { PhysicsCalcProps, PhysicsState } from '../types';
+import { eventBus } from '../stores';
 
 const memoManager = MemoizationManager.getInstance();
 const vectorCache = memoManager.getVectorCache('character-direction');
@@ -45,7 +45,7 @@ export function direction(
   const eulerChanged = shouldUpdate(activeState.euler.y, lastEulerY, 0.001);
   const directionChanged = shouldUpdate(currentDirectionLength, lastDirectionLength, 0.01);
   if (eulerChanged || directionChanged) {
-    physicsEventBus.emit('ROTATION_UPDATE', {
+    eventBus.emit('ROTATION_UPDATE', {
       euler: activeState.euler,
       direction: activeState.direction,
       dir: activeState.dir,

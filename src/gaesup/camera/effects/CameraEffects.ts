@@ -1,18 +1,6 @@
 import * as THREE from 'three';
-import { physicsEventBus } from '../../physics/stores/physicsEventBus';
-
-export interface ShakeConfig {
-  intensity: number;
-  duration: number;
-  frequency: number;
-  decay: boolean;
-}
-
-export interface ZoomConfig {
-  targetFov: number;
-  duration: number;
-  easing: (t: number) => number;
-}
+import { ShakeConfig, ZoomConfig } from './types';
+import { eventBus } from '@/gaesup/physics/stores';
 
 export class CameraEffects {
   private shakeState: {
@@ -50,30 +38,24 @@ export class CameraEffects {
     elapsed: 0,
     easing: (t) => t,
   };
-
   private noiseValues: number[] = [];
-
   constructor() {
     this.generateNoise();
   }
-
   private generateNoise(): void {
     for (let i = 0; i < 256; i++) {
       this.noiseValues[i] = Math.random() * 2 - 1;
     }
   }
-
   private noise(x: number): number {
     const i = Math.floor(x) & 255;
     return this.noiseValues[i];
   }
-
   startShake(config: ShakeConfig): void {
-    physicsEventBus.emit('CAMERA_EFFECT', {
+    eventBus.emit('CAMERA_EFFECT', {
       type: 'shake',
       config,
     });
-
     this.shakeState = {
       active: true,
       intensity: config.intensity,
@@ -85,9 +67,8 @@ export class CameraEffects {
       offset: new THREE.Vector3(),
     };
   }
-
   startZoom(config: ZoomConfig): void {
-    physicsEventBus.emit('CAMERA_EFFECT', {
+    eventBus.emit('CAMERA_EFFECT', {
       type: 'zoom',
       config,
     });
@@ -188,7 +169,7 @@ export class CameraEffects {
   }
 
   punch(intensity: number = 1.0): void {
-    physicsEventBus.emit('CAMERA_EFFECT', {
+    eventBus.emit('CAMERA_EFFECT', {
       type: 'punch',
       config: { intensity, duration: 0.15, frequency: 50, decay: true },
     });
@@ -202,7 +183,7 @@ export class CameraEffects {
   }
 
   earthquake(intensity: number = 0.8, duration: number = 2.0): void {
-    physicsEventBus.emit('CAMERA_EFFECT', {
+    eventBus.emit('CAMERA_EFFECT', {
       type: 'earthquake',
       config: { intensity, duration, frequency: 5, decay: false },
     });

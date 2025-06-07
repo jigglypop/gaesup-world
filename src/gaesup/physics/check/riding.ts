@@ -1,4 +1,4 @@
-import { physicsEventBus } from '../stores/physicsEventBus';
+import { eventBus } from '../stores';
 import { calcType } from '../type';
 
 const keyStateCache = new Map<string, { lastKeyE: boolean; lastKeyR: boolean }>();
@@ -18,7 +18,7 @@ export default function riding(prop: calcType, instanceId: string = 'default') {
     keyStateCache.set('logged', { lastKeyE: false, lastKeyR: false });
   }
   if (keyE && !keyState.lastKeyE) {
-    physicsEventBus.emit('RIDE_STATE_CHANGE', {
+    eventBus.emit('RIDE_STATE_CHANGE', {
       isRiding: false,
       canRide: true,
       shouldEnterRideable: true,
@@ -26,7 +26,7 @@ export default function riding(prop: calcType, instanceId: string = 'default') {
     });
   }
   if (keyR && !keyState.lastKeyR) {
-    physicsEventBus.emit('RIDE_STATE_CHANGE', {
+    eventBus.emit('RIDE_STATE_CHANGE', {
       isRiding: false,
       canRide: false,
       shouldEnterRideable: false,

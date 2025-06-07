@@ -1,10 +1,9 @@
-"use client";
+'use client';
 
-import { PassiveCharacter, V3, useGaesupController } from "../../src";
-import { useMemo } from "react";
+import { PassiveCharacter, V3, useGaesupController } from '../../src';
+import { useMemo } from 'react';
 
 export default function Copyed() {
-  // points를 useMemo로 캐시
   const points = useMemo(() => {
     const pointsArray = [V3(10, 0, 10)];
     for (let x = -10; x <= 10; x += 30) {
@@ -19,12 +18,15 @@ export default function Copyed() {
   const { state, currentAnimation, urls } = gaesupState;
 
   // controllerOptions를 미리 계산
-  const controllerOptions = useMemo(() => ({
-    lerp: {
-      cameraTurn: 0.05,
-      cameraPosition: 0.05,
-    },
-  }), []);
+  const controllerOptions = useMemo(
+    () => ({
+      lerp: {
+        cameraTurn: 0.05,
+        cameraPosition: 0.05,
+      },
+    }),
+    [],
+  );
   // setTimeout으로 1초마다 상태값 변경하게 하는 로직
 
   //

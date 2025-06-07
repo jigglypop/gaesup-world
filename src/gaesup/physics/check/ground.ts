@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { physicsEventBus } from '../stores/physicsEventBus';
 import { calcType } from '../type';
 import { resetJumpState } from './moving';
+import { eventBus } from '../stores';
 
 export default function checkOnTheGround(prop: calcType) {
   const { rigidBodyRef, matchSizes } = prop;
   if (!rigidBodyRef.current) {
-    physicsEventBus.emit('GROUND_STATE_CHANGE', {
+    eventBus.emit('GROUND_STATE_CHANGE', {
       isOnTheGround: false,
       isFalling: true,
     });
@@ -26,11 +26,11 @@ export default function checkOnTheGround(prop: calcType) {
   if (isOnTheGround) {
     resetJumpState();
   }
-  physicsEventBus.emit('GROUND_STATE_CHANGE', {
+  eventBus.emit('GROUND_STATE_CHANGE', {
     isOnTheGround,
     isFalling,
   });
-  physicsEventBus.emit('POSITION_UPDATE', {
+  eventBus.emit('POSITION_UPDATE', {
     position: new THREE.Vector3(position.x, position.y, position.z),
     velocity: new THREE.Vector3(velocity.x, velocity.y, velocity.z),
   });

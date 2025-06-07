@@ -19,12 +19,9 @@ import { RideableVehicles } from './components/RideableVehicles';
 import { TeleportButtons } from './components/TeleportButtons';
 import { TeleportHandler } from './components/TeleportHandler';
 import { CHARACTER_URL, VEHICLE_URL, AIRPLANE_URL, S3 } from './constants';
-import { FocusableProvider, useFocusable } from './context/FocusContext';
 export { S3 };
 
 function AppContent() {
-  const { focusedObject, clearFocus } = useFocusable();
-
   return (
     <>
       <TeleportHandler />
@@ -96,7 +93,6 @@ function AppContent() {
       </div>
       <TeleportButtons />
       <InfoTabs />
-      <FocusModal focusedObject={focusedObject} onClose={clearFocus} />
     </>
   );
 }
@@ -125,9 +121,7 @@ export default function MainComponent() {
         bounds: { minY: 2, maxY: 50, minX: -100, maxX: 100, minZ: -100, maxZ: 100 },
       }}
     >
-      <FocusableProvider>
-        <AppContent />
-      </FocusableProvider>
+      <AppContent />
     </GaesupWorld>
   );
 }

@@ -1,7 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useAtomValue } from 'jotai';
-import { useFocusable } from '../../context/FocusContext';
-import { cameraOptionAtom } from '../../../../src/gaesup/atoms';
 import './style.css';
 
 interface FocusedObject {

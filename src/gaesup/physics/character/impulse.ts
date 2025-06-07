@@ -1,4 +1,4 @@
-import { physicsEventBus } from '../stores/physicsEventBus';
+import { eventBus } from '../stores';
 import { PhysicsCalc, PhysicsState } from '../type';
 
 export function impulse(rigidBodyRef: PhysicsCalc['rigidBodyRef'], physicsState: PhysicsState) {
@@ -12,7 +12,7 @@ export function impulse(rigidBodyRef: PhysicsCalc['rigidBodyRef'], physicsState:
   if (isJumping && isOnTheGround) {
     const currentVel = rigidBodyRef.current.linvel();
     rigidBodyRef.current.setLinvel({ x: currentVel.x, y: jumpSpeed, z: currentVel.z }, true);
-    physicsEventBus.emit('JUMP_STATE_CHANGE', {
+    eventBus.emit('JUMP_STATE_CHANGE', {
       isJumping: false,
       isOnTheGround: true,
     });

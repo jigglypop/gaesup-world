@@ -14,11 +14,9 @@ export { GaesupProvider, useGaesup, useGaesupContext, useGaesupDispatch } from '
 export { GaesupController } from './gaesup/controller';
 export { PerfMonitor } from './gaesup/debug/PerformanceDisplay';
 export { GaeSupProps } from './gaesup/gaesupProps';
-export { useCharacterPool } from './gaesup/hooks/useCharacterPool';
-export { useFocus } from './gaesup/hooks/useFocus';
+// export { useCharacterPool } from './gaesup/hooks/useCharacterPool';
 export { useGaesupController } from './gaesup/hooks/useGaesupController';
 export { useClicker, usePushKey, useTeleport } from './gaesup/hooks/useInputControls';
-export { useInputValidation } from './gaesup/hooks/useInputValidation';
 export { useKeyboard } from './gaesup/hooks/useKeyboard';
 export { useMovePoint } from './gaesup/hooks/useMovePoint';
 export { usePhysicsInput } from './gaesup/hooks/usePhysicsInput';

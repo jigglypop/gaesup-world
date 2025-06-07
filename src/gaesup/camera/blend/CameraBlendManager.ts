@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { physicsEventBus } from '../../physics/stores/physicsEventBus';
 import { ActiveBlend, CameraBlendState } from './types';
+import { eventBus } from '@/gaesup/physics/stores';
 
 export enum BlendFunction {
   Linear = 'linear',
@@ -33,8 +33,7 @@ export class CameraBlendManager {
   ): void {
     const fromState = this.createState(from, camera);
     const toState = this.createState(to, camera);
-
-    physicsEventBus.emit('CAMERA_BLEND_START', {
+    eventBus.emit('CAMERA_BLEND_START', {
       from: fromState,
       to: toState,
       duration,
@@ -80,7 +79,7 @@ export class CameraBlendManager {
     }
     if (t >= 1) {
       const finalState = this.activeBlend.to;
-      physicsEventBus.emit('CAMERA_BLEND_END', {
+      eventBus.emit('CAMERA_BLEND_END', {
         finalState,
       });
       this.activeBlend.onComplete?.();

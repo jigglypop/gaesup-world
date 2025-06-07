@@ -1,9 +1,9 @@
 import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
 import { useContext, useEffect } from 'react';
 import { GaesupContext, GaesupDispatchContext } from '../../context';
-import { physicsEventBus } from '../../physics/stores/physicsEventBus';
 import { useGaesupGltf } from '../useGaesupGltf';
 import { rideableType } from './type';
+import { eventBus } from '@/gaesup/physics/stores';
 
 export const rideableDefault = {
   objectkey: null,
@@ -23,7 +23,7 @@ export function useRideable() {
   const dispatch = useContext(GaesupDispatchContext);
   const { getSizesByUrls } = useGaesupGltf();
   useEffect(() => {
-    const unsubscribe = physicsEventBus.subscribe('RIDE_STATE_CHANGE', (data) => {
+    const unsubscribe = eventBus.subscribe('RIDE_STATE_CHANGE', (data) => {
       dispatch({
         type: 'update',
         payload: {
@@ -37,10 +37,8 @@ export function useRideable() {
         },
       });
     });
-
     return unsubscribe;
-  }, [dispatch, states]); // states 다시 추가
-
+  }, [dispatch, states]);
   useEffect(() => {
     if (states.shouldEnterRideable) {
       enterRideable();

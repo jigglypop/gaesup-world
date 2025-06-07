@@ -10,7 +10,7 @@ export const useMinimapUpdates = (
   getCurrentState: () => ActiveState | null,
   updateCanvas: (canvasRef: React.RefObject<HTMLCanvasElement>) => void,
   canvasRef: React.RefObject<HTMLCanvasElement>,
-  scale: number
+  scale: number,
 ) => {
   const lastPositionRef = useRef({ x: 0, y: 0, z: 0 });
   const lastRotationRef = useRef(0);
@@ -68,4 +68,4 @@ export const useMinimapUpdates = (
   useEffect(() => {
     updateCanvas(canvasRef);
   }, [scale, updateCanvas, canvasRef]);
-}; 
+};
