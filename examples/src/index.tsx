@@ -8,7 +8,6 @@ import { FaMapMarkerAlt } from 'react-icons/fa';
 import { GaesupController, GaesupWorld, MiniMap, PerfMonitor, V3 } from '../../src';
 import { InnerHtml } from '../../src/gaesup/component/InnerHtml';
 import { Clicker } from '../../src/gaesup/tools/clicker';
-import { FocusModal } from './commons/FocusModal';
 import Info from '../info';
 import Passive from '../passive';
 import Floor from './Floor';

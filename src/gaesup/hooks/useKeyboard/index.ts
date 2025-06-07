@@ -24,15 +24,11 @@ export function useKeyboard() {
             isOn: false,
             isRun: false,
           });
-
-          // mouse input 시스템도 업데이트
           setPointerInput({
             isActive: false,
             shouldRun: false,
           });
         }
-
-        // === 키보드 입력 상태 업데이트 ===
         setKeyboardInput({
           [mappedKey]: true,
         });
@@ -41,33 +37,24 @@ export function useKeyboard() {
 
     const handleKeyUp = (event: KeyboardEvent) => {
       const mappedKey = KEY_MAPPING[event.code as keyof typeof KEY_MAPPING];
-
       if (mappedKey && pressedKeys.current.has(event.code)) {
         pressedKeys.current.delete(event.code);
-
-        // === 키보드 입력 상태 업데이트 ===
         setKeyboardInput({
           [mappedKey]: false,
         });
       }
     };
 
-    // 키보드 이벤트 리스너 등록
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
-
-    // 컴포넌트 언마운트 시 정리
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
   }, [clicker, setClicker, setKeyboardInput, setPointerInput]);
-
-  // visibility change 처리 (탭 전환 시 키 상태 초기화)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // 페이지가 숨겨졌을 때 모든 키 상태 초기화
         pressedKeys.current.clear();
         setKeyboardInput({
           forward: false,
@@ -84,14 +71,11 @@ export function useKeyboard() {
         });
       }
     };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
-
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [setKeyboardInput]);
-
   return {
     pressedKeys: Array.from(pressedKeys.current),
   };

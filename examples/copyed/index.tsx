@@ -17,7 +17,6 @@ export default function Copyed() {
   const gaesupState = useGaesupController();
   const { state, currentAnimation, urls } = gaesupState;
 
-  // controllerOptions를 미리 계산
   const controllerOptions = useMemo(
     () => ({
       lerp: {
@@ -27,62 +26,6 @@ export default function Copyed() {
     }),
     [],
   );
-  // setTimeout으로 1초마다 상태값 변경하게 하는 로직
-
-  //
-  //   const [states, setStates] = useState<any>({
-  //     state: {
-  //       position: V3(0, 0, 0),
-  //       euler: euler(),
-  //     },
-  //     currentAnimation: "idle",
-  //     urls: { ...urls },
-  //   });
-  //   // throttle
-  //   const sendSocket = useCallback(
-  //     (gaesupState) => {
-  //       const { state: newState } = gaesupState;
-  //       setStates({
-  //         state: {
-  //           ...newState,
-  //         },
-  //         currentAnimation,
-  //         urls: { ...urls },
-  //       });
-  //     },
-  //     [currentAnimation]
-  //   );
-  //
-  //   const throttledSocket = useMemo(
-  //     () => throttle(sendSocket, 200),
-  //     [sendSocket]
-  //   );
-  //
-  //   const onSend = useCallback(
-  //     (gaesupState) => {
-  //       throttledSocket(gaesupState);
-  //     },
-  //     [throttledSocket]
-  //   );
-  //
-  //   useEffect(() => {
-  //     onSend(gaesupState);
-  //   }, [
-  //     state.position.x,
-  //     state.position.y,
-  //     state.position.z,
-  //     state.euler.x,
-  //     state.euler.y,
-  //     state.euler.z,
-  //     currentAnimation,
-  //     urls,
-  //   ]);
-  //
-  //   useEffect(() => {
-  //     return () => {
-  //       throttledSocket.cancel();
-  //     };
-  //   }, [throttledSocket]);
 
   return (
     <>

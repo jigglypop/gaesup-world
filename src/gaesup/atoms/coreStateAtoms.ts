@@ -3,7 +3,6 @@ import { atom } from 'jotai';
 import * as THREE from 'three';
 import { minimapInnerType } from '../tools/minimap/type';
 import { AnimationAtomType } from '../types';
-import { V3 } from '../utils/vector';
 import { inputAtom, movementStateAtom } from './inputAtom';
 
 export interface ActiveState {
@@ -16,7 +15,11 @@ export interface ActiveState {
 }
 
 export const activeStateAtom = atom<ActiveState>({
-  position: V3(0, 5, 5),
+  position: vec3({
+    x: 0,
+    y: 5,
+    z: 5,
+  }),
   velocity: vec3(),
   quat: quat(),
   euler: euler(),
@@ -24,7 +27,6 @@ export const activeStateAtom = atom<ActiveState>({
   direction: vec3(),
 });
 
-// 모드 상태 (컨트롤러 타입, 조작 방식 등)
 export interface ModeState {
   type: 'character' | 'vehicle' | 'airplane';
   controller: 'clicker' | 'keyboard' | 'joystick' | 'gamepad';
@@ -37,7 +39,6 @@ export const modeStateAtom = atom<ModeState>({
   control: 'chase',
 });
 
-// URL 리소스 상태
 export interface UrlsState {
   characterUrl: string | null;
   vehicleUrl: string | null;
@@ -98,7 +99,6 @@ export const gameStatesAtom = atom<GameStates>({
   shouldExitRideable: false,
 });
 
-// 애니메이션 상태
 export interface AnimationState {
   character: {
     current: string;
@@ -135,7 +135,6 @@ export const animationStateAtom = atom<AnimationState>({
   },
 });
 
-// 라이더블 상태
 export const rideableStateAtom = atom<
   Record<
     string,
@@ -149,16 +148,10 @@ export const rideableStateAtom = atom<
   >
 >({});
 
-// 사이즈 상태
 export const sizesStateAtom = atom<Record<string, THREE.Vector3>>({});
-
 export const minimapAtom = atom<minimapInnerType>({
   props: {},
 });
-
-// ============================================================================
-// 🎮 컨트롤러 설정 Atoms
-// ============================================================================
 
 export interface ControllerConfig {
   airplane: {
@@ -198,8 +191,16 @@ export interface ControllerConfig {
 
 export const controllerConfigAtom = atom<ControllerConfig>({
   airplane: {
-    angleDelta: V3(Math.PI / 256, Math.PI / 256, Math.PI / 256),
-    maxAngle: V3(Math.PI / 8, Math.PI / 8, Math.PI / 8),
+    angleDelta: vec3({
+      x: Math.PI / 256,
+      y: Math.PI / 256,
+      z: Math.PI / 256,
+    }),
+    maxAngle: vec3({
+      x: Math.PI / 8,
+      y: Math.PI / 8,
+      z: Math.PI / 8,
+    }),
     maxSpeed: 60,
     accelRatio: 2,
     brakeRatio: 5,
@@ -263,17 +264,12 @@ export const physicsMovementAtom = atom((get) => {
 
   return {
     ...get(movementStateAtom), // 기존 입력 기반 이동 상태
-    // 물리 기반 추가 상태
     isOnGround: gameStates.isOnTheGround,
     isJumping: gameStates.isJumping,
     isRiding: gameStates.isRiding,
     velocity: get(activeStateAtom).velocity,
   };
 });
-
-// ============================================================================
-// 🚌 이벤트 버스 (Context 대신 사용)
-// ============================================================================
 
 export type EventType =
   | 'POSITION_CHANGED'
@@ -290,23 +286,17 @@ export interface EventPayload {
   timestamp: number;
 }
 
-// 이벤트 버스 Atom
 export const eventBusAtom = atom<EventPayload[]>([]);
-
-// 이벤트 발행 함수
 export const publishEventAtom = atom(null, (get, set, event: Omit<EventPayload, 'timestamp'>) => {
   const currentEvents = get(eventBusAtom);
   const newEvent: EventPayload = {
     ...event,
     timestamp: Date.now(),
   };
-
-  // 최근 100개 이벤트만 유지 (메모리 관리)
   const updatedEvents = [...currentEvents, newEvent].slice(-100);
   set(eventBusAtom, updatedEvents);
 });
 
-// 특정 타입 이벤트 구독
 export const createEventSubscriptionAtom = (eventType: EventType) =>
   atom((get) => {
     const events = get(eventBusAtom);

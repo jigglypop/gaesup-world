@@ -12,12 +12,10 @@ export { PassiveCharacter } from './gaesup/component/passive/character';
 export { PassiveVehicle } from './gaesup/component/passive/vehicle';
 export { GaesupProvider, useGaesup, useGaesupContext, useGaesupDispatch } from './gaesup/context';
 export { GaesupController } from './gaesup/controller';
-export { PerfMonitor } from './gaesup/debug/PerformanceDisplay';
+export { PerfMonitor } from './gaesup/component/perfMonitor';
 export { GaeSupProps } from './gaesup/gaesupProps';
-// export { useCharacterPool } from './gaesup/hooks/useCharacterPool';
 export { useGaesupController } from './gaesup/hooks/useGaesupController';
 export { useClicker, usePushKey, useTeleport } from './gaesup/hooks/useInputControls';
-export { useKeyboard } from './gaesup/hooks/useKeyboard';
 export { useMovePoint } from './gaesup/hooks/useMovePoint';
 export { usePhysicsInput } from './gaesup/hooks/usePhysicsInput';
 export { useRideable } from './gaesup/hooks/useRideable';
@@ -32,7 +30,6 @@ export { Elr, Qt, V3, V30, V31 } from './gaesup/utils/vector';
 export { GaesupWorld } from './gaesup/world';
 export type { PerformanceMonitorConfig } from './gaesup/world/type';
 export type { ControllerMode, ControllerType, ControlMode } from './types';
-
 export type {
   airplaneDebugType,
   airplaneType,
