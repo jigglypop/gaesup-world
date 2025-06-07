@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import { RapierRigidBody } from '@react-three/rapier';
+import { ActiveStateType, CameraOptionType } from '../../types';
+import { CameraPropType } from './types';
 
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
@@ -53,7 +56,10 @@ export const cameraUtils = {
     const currentQuaternion = camera.quaternion.clone().normalize();
 
     if (currentQuaternion.dot(targetQuaternion) < 0) {
-      targetQuaternion.multiplyScalar(-1);
+      targetQuaternion.x *= -1;
+      targetQuaternion.y *= -1;
+      targetQuaternion.z *= -1;
+      targetQuaternion.w *= -1;
     }
 
     const factor = 1 - Math.exp(-speed * deltaTime);
@@ -207,15 +213,20 @@ export const CAMERA_CONSTANTS = {
 export abstract class BaseCameraController {
   protected tempVector = new THREE.Vector3();
 
-  abstract calculateTargetPosition(activeState: any, cameraOption: any): THREE.Vector3;
+  abstract calculateTargetPosition(
+    activeState: ActiveStateType,
+    cameraOption: CameraOptionType,
+  ): THREE.Vector3;
 
-  update(prop: any): void {
+  update(prop: CameraPropType): void {
     const {
       state,
       worldContext: { activeState },
       cameraOption,
     } = prop;
     if (!state?.camera) return;
+
+    if (!activeState) return;
 
     const targetPosition = this.calculateTargetPosition(activeState, cameraOption);
     const lerpSpeed = cameraOption.smoothing?.position ?? 0.1;
@@ -239,7 +250,7 @@ export const vectorUtils = {
     return new THREE.Vector3(source.x, source.y, source.z);
   },
 
-  updatePosition: (target: THREE.Vector3, rigidBody: any) => {
+  updatePosition: (target: THREE.Vector3, rigidBody: RapierRigidBody) => {
     if (!rigidBody) return target;
     const translation = rigidBody.translation();
     return vectorUtils.copyFromRapier(target, translation);

@@ -1,6 +1,7 @@
 import { useGenericRefs } from '../../inner/common/useGenericRefs';
 import { VehicleInnerRef } from '../../inner/vehicle';
-import { PassiveRideableProps } from '../type';
+import { PassiveRideableProps } from '../types';
+import { passiveVehiclePropsType } from './types';
 
 function PassiveRideable<T extends 'vehicle' | 'airplane'>({
   componentType,
@@ -25,6 +26,6 @@ function PassiveRideable<T extends 'vehicle' | 'airplane'>({
   );
 }
 
-export function PassiveVehicle(props: Omit<PassiveRideableProps<'vehicle'>, 'componentType'>) {
+export function PassiveVehicle(props: passiveVehiclePropsType) {
   return <PassiveRideable componentType="vehicle" {...props} />;
 }

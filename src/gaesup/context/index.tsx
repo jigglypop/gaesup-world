@@ -1,12 +1,8 @@
 'use client';
-import { GroupProps } from '@react-three/fiber';
 import { euler, quat, vec3 } from '@react-three/rapier';
 import { useAtomValue } from 'jotai';
 import { ReactNode, createContext, useContext, useEffect, useReducer } from 'react';
-import * as THREE from 'three';
 import { modeStateAtom } from '../atoms/coreStateAtoms';
-import { callbackType } from '../controller/initialize/callback/type';
-import { rideableType } from '../hooks/useRideable/type';
 import {
   ActiveStateType,
   ControlState,
@@ -20,8 +16,9 @@ import {
   SizeType,
   SizesType,
 } from '../types';
-import { dispatchType } from '../utils/type';
 import { V3 } from '../utils/vector';
+import { gaesupDisptachType, gaesupWorldContextType } from './types';
+
 export type {
   ActiveStateType,
   ControlState,
@@ -34,70 +31,7 @@ export type {
   SizeType,
   SizesType,
 };
-export type animationPropType = {
-  current: string;
-  animationNames: actionsType;
-  keyControl: {
-    [key: string]: boolean;
-  };
-  store: {};
-  default: string;
-};
-export type airplaneDebugType = {
-  angleDelta?: THREE.Vector3;
-  maxAngle?: THREE.Vector3;
-  buoyancy?: number;
-  maxSpeed?: number;
-  accelRatio?: number;
-  brakeRatio?: number;
-  linearDamping?: number;
-};
-export type vehicleDebugType = {
-  maxSpeed?: number;
-  accelRatio?: number;
-  brakeRatio?: number;
-  wheelOffset?: number;
-  linearDamping?: number;
-};
-export type characterDebugType = {
-  jumpSpeed?: number;
-  turnSpeed?: number;
-  walkSpeed?: number;
-  runSpeed?: number;
-  linearDamping?: number;
-  jumpGravityScale?: number;
-  normalGravityScale?: number;
-  airDamping?: number;
-  stopDamping?: number;
-};
-export interface airplaneType extends GroupProps, airplaneDebugType {}
-export interface vehicleType extends GroupProps, vehicleDebugType {}
-export interface characterType extends GroupProps, characterDebugType {}
-export type gaesupWorldContextType = {
-  activeState: ActiveStateType;
-  mode: ModeType;
-  urls: ResourceUrlsType;
-  states: GameStatesType;
-  control: KeyboardControlState<string>;
-  refs?: RefsType;
-  animationState: AnimationStateType;
-  clickerOption: ClickerOptionType;
-  clicker: ClickerType;
-  rideable: { [key: string]: rideableType };
-  sizes: SizesType;
-  block: BlockType;
-  airplane: airplaneType;
-  vehicle: vehicleType;
-  character: characterType;
-  callbacks: callbackType;
-  controllerOptions: {
-    lerp: {
-      cameraTurn: number;
-      cameraPosition: number;
-    };
-  };
-};
-export type gaesupDisptachType = DispatchType<gaesupWorldContextType>;
+
 export function gaesupWorldReducer(
   props: Partial<gaesupWorldContextType>,
   action: {
@@ -114,6 +48,7 @@ export function gaesupWorldReducer(
       return props;
   }
 }
+
 export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
   activeState: {
     position: V3(0, 5, 5),
@@ -240,32 +175,36 @@ export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
     },
   },
 };
+
 export const GaesupContext = createContext<Partial<gaesupWorldContextType>>(gaesupWorldDefault);
-export const GaesupDispatchContext = createContext<dispatchType<Partial<gaesupWorldContextType>>>(
-  () => {},
-);
+export const GaesupDispatchContext = createContext<gaesupDisptachType>(() => {});
+
 interface GaesupProviderProps {
   children: ReactNode;
   initialState?: Partial<gaesupWorldContextType>;
 }
+
 export function GaesupProvider({ children, initialState = {} }: GaesupProviderProps) {
   const [state, dispatch] = useReducer(gaesupWorldReducer, {
     ...gaesupWorldDefault,
     ...initialState,
   });
   const modeState = useAtomValue(modeStateAtom);
+
   useEffect(() => {
     dispatch({
       type: 'update',
       payload: { mode: modeState },
     });
   }, [modeState]);
+
   return (
     <GaesupContext.Provider value={state}>
       <GaesupDispatchContext.Provider value={dispatch}>{children}</GaesupDispatchContext.Provider>
     </GaesupContext.Provider>
   );
 }
+
 export function useGaesup() {
   const context = useContext(GaesupContext);
   const dispatch = useContext(GaesupDispatchContext);
@@ -274,15 +213,17 @@ export function useGaesup() {
   }
   return { context, dispatch };
 }
+
 export function useGaesupContext() {
   return useContext(GaesupContext);
 }
+
 export function useGaesupDispatch() {
   return useContext(GaesupDispatchContext);
 }
 
 export const createStateUpdater = <T extends keyof gaesupWorldContextType>(
-  dispatch: dispatchType<Partial<gaesupWorldContextType>>,
+  dispatch: DispatchType<Partial<gaesupWorldContextType>>,
   stateKey: T,
 ) => {
   return (updates: Partial<gaesupWorldContextType[T]>) => {

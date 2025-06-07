@@ -1,6 +1,6 @@
 import { useRapier } from '@react-three/rapier';
 import { useRayHit } from '../../../hooks/useRayHit';
-import { setGroundRayType } from './type';
+import { setGroundRayType } from './types';
 
 export function useSetGroundRay() {
   const { rapier } = useRapier();

@@ -16,7 +16,7 @@ import thirdPerson, { makeThirdPersonCameraPosition } from './control/thirdPerso
 import topDown from './control/topDown';
 import { CameraEffects } from './effects/CameraEffects';
 import { CameraStateManager } from './state/CameraStateManager';
-import { CameraPropType } from './type';
+import { CameraPropType } from './types';
 import { CAMERA_CONSTANTS, cameraUtils } from './utils';
 import { eventBus } from '../physics/stores';
 

@@ -1,4 +1,4 @@
-import { ridingType, rigidBodyRefType } from '../common/type';
+import { ridingType, rigidBodyRefType } from '../common/types';
 
 export type airplaneUrlType = {
   wheelUrl?: string;

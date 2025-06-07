@@ -2,7 +2,8 @@ import { useAnimations, useGLTF } from '@react-three/drei';
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { useAnimationPlayer } from '../../../hooks/useGaesupAnimation/useAnimationPlayer';
-import { componentTypeString } from '../../passive/type';
+import { componentTypeString } from '../../passive/types';
+import { PartsGroupRefProps } from './types';
 
 export const PartsGroupRef = ({
   url,
@@ -11,14 +12,7 @@ export const PartsGroupRef = ({
   currentAnimation,
   color,
   skeleton,
-}: {
-  url: string;
-  isActive: boolean;
-  componentType: componentTypeString;
-  currentAnimation: string;
-  color?: string;
-  skeleton?: THREE.Skeleton;
-}) => {
+}: PartsGroupRefProps) => {
   const { scene, animations } = useGLTF(url);
   const { actions, ref } = useAnimations(animations);
 

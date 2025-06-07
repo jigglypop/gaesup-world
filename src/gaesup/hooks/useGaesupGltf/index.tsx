@@ -3,7 +3,9 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { sizesAtom } from '../../atoms';
-import { GLTFResult } from '../../component/type';
+import { GLTFResult } from '../../component/types';
+import { ResourceUrlsType } from '../../types';
+import { GltfAndSizeReturnType, gltfAndSizeType, useGltfAndSizeType } from './types';
 
 const gltfCache = new Map<
   string,
@@ -36,19 +38,7 @@ const cleanupGltf = (url: string) => {
   }
 };
 
-export type gltfAndSizeType = {
-  size: THREE.Vector3;
-  setSize: (size: THREE.Vector3, keyName?: string) => void;
-  getSize: (keyName?: string) => THREE.Vector3 | null;
-};
-
-export type useGltfAndSizeType = {
-  url: string;
-};
-
-export const useGltfAndSize = ({
-  url,
-}: useGltfAndSizeType): gltfAndSizeType & { gltf: GLTFResult } => {
+export const useGltfAndSize = ({ url }: useGltfAndSizeType): GltfAndSizeReturnType => {
   const sizes = useAtomValue(sizesAtom);
   const setSizes = useSetAtom(sizesAtom);
 
@@ -96,7 +86,12 @@ export const useGltfAndSize = ({
     if (!isInitialized.current && isValidUrl && url && scene && !(url in sizes)) {
       isInitialized.current = true;
       const newSize = calculateSize();
-      setSizes((prev) => ({ ...prev, [url]: newSize }));
+      setSizes(
+        (prev: Record<string, THREE.Vector3>): Record<string, THREE.Vector3> => ({
+          ...prev,
+          [url]: newSize,
+        }),
+      );
     }
   }, [url, scene, sizes, setSizes, calculateSize, isValidUrl]);
 
@@ -112,7 +107,12 @@ export const useGltfAndSize = ({
       if (!isValidUrl) return;
       const key = keyName || url;
       Promise.resolve().then(() => {
-        setSizes((prev) => ({ ...prev, [key]: newSize }));
+        setSizes(
+          (prev: Record<string, THREE.Vector3>): Record<string, THREE.Vector3> => ({
+            ...prev,
+            [key]: newSize,
+          }),
+        );
       });
     },
     [url, setSizes, isValidUrl],
@@ -135,16 +135,16 @@ export const useGaesupGltf = () => {
   const setSizes = useSetAtom(sizesAtom);
 
   const getSizesByUrls = useCallback(
-    (urls?: urlsType) => {
-      const matchedSizes: { [key in keyof urlsType]: THREE.Vector3 | null } = {};
+    (urls?: ResourceUrlsType) => {
+      const matchedSizes: { [key in keyof ResourceUrlsType]?: THREE.Vector3 | null } = {};
       if (!urls) return matchedSizes;
 
       Object.keys(urls).forEach((key) => {
-        const url = urls[key as keyof urlsType];
+        const url = urls[key as keyof ResourceUrlsType];
         if (url && url in sizes) {
-          matchedSizes[key as keyof urlsType] = sizes[url];
+          matchedSizes[key as keyof ResourceUrlsType] = sizes[url] || null;
         } else {
-          matchedSizes[key as keyof urlsType] = null;
+          matchedSizes[key as keyof ResourceUrlsType] = null;
         }
       });
 
@@ -162,8 +162,10 @@ export const useGaesupGltf = () => {
       const loadPromises = urlsToLoad.map(async (url) => {
         try {
           const gltf = await useGLTF.preload(url);
-          if (gltf && gltf.scene) {
-            const size = new THREE.Box3().setFromObject(gltf.scene).getSize(new THREE.Vector3());
+          if (gltf && (gltf as GLTFResult).scene) {
+            const size = new THREE.Box3()
+              .setFromObject((gltf as GLTFResult).scene)
+              .getSize(new THREE.Vector3());
             return { url, size };
           }
           return null;
@@ -175,7 +177,7 @@ export const useGaesupGltf = () => {
 
       const results = await Promise.all(loadPromises);
 
-      setSizes((prev) => {
+      setSizes((prev: Record<string, THREE.Vector3>): Record<string, THREE.Vector3> => {
         const newSizes = { ...prev };
         results.forEach((result) => {
           if (result) {

@@ -6,7 +6,8 @@ import {
   AnimationStateType,
   KeyboardControlState,
   GameStatesType,
-} from '../../../context';
+} from '../../../types';
+import { AnimationActions } from '../../../hooks/useGaesupAnimation/types';
 import { ActionsType } from '../../type';
 
 export type callbackPropType = {
@@ -18,9 +19,7 @@ export type callbackPropType = {
 
 export type onFramePropType = callbackPropType & RootState;
 export type onAnimatePropType = onFramePropType & {
-  actions: {
-    [x: string]: THREE.AnimationAction | null;
-  };
+  actions: AnimationActions;
   animationState: AnimationStateType;
   playAnimation: (tag: keyof ActionsType, key: string) => void;
 };
@@ -30,4 +29,11 @@ export type callbackType = {
   onFrame?: (prop: onFramePropType) => void;
   onDestory?: (prop: callbackPropType) => void;
   onAnimate?: (prop: onAnimatePropType) => void;
+};
+
+export type initCallbackType = {
+  props: any;
+  actions: AnimationActions;
+  componentType: string;
+  onLoad?: (props: any) => void;
 };

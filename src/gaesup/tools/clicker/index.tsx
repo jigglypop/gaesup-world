@@ -3,7 +3,6 @@ import { useAtomValue } from 'jotai';
 import { memo } from 'react';
 import * as THREE from 'three';
 import { inputAtom } from '../../atoms';
-import { useMovePoint } from '../../hooks/useMovePoint';
 
 const OnMarker = memo(() => (
   <mesh>
@@ -29,12 +28,8 @@ export const Clicker = memo(() => {
       pointQ.push(clickerOption.queue[i]);
     }
   }
-
-  useMovePoint();
-
   return (
     <>
-      {/* 하이브리드 모드: 항상 클리커 마커 표시 */}
       <group position={pointer.target}>
         {pointer.isActive && <OnMarker />}
         {pointer.isActive && clickerOption.isRun && pointer.shouldRun && <RunMarker />}

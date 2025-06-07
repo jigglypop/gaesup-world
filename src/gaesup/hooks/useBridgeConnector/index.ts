@@ -4,10 +4,12 @@ import { blockAtom, urlsAtom } from '../../atoms';
 import { animationAtoms } from '../../atoms/animationAtoms';
 import { inputAtom, keyboardInputAtom, pointerInputAtom } from '../../atoms/inputAtom';
 import { GaesupContext, GaesupDispatchContext } from '../../context';
+import { PhysicsBridgeInputData } from '../../../types';
 import { useGaesupGltf } from '../useGaesupGltf';
-import { PhysicsBridgeInputData, usePhysicsInput } from '../usePhysicsInput';
+import { usePhysicsInput } from '../usePhysicsInput';
+import { BridgeConnectorReturnType } from './types';
 
-export const useBridgeConnector = () => {
+export const useBridgeConnector = (): BridgeConnectorReturnType => {
   const inputSystem = useAtomValue(inputAtom);
   const setKeyboardInput = useSetAtom(keyboardInputAtom);
   const setPointerInput = useSetAtom(pointerInputAtom);
@@ -21,27 +23,27 @@ export const useBridgeConnector = () => {
   useEffect(() => {
     if (!worldContext?.animationState) return;
     const { animationState } = worldContext;
-    if (animationState.character) {
+    if (animationState['character']) {
       setCharacterAnimation({
-        current: animationState.character.current,
-        default: animationState.character.default,
-        store: animationState.character.store || {},
+        current: animationState['character'].current,
+        default: animationState['character'].default,
+        store: animationState['character'].store || {},
       });
     }
 
-    if (animationState.vehicle) {
+    if (animationState['vehicle']) {
       setVehicleAnimation({
-        current: animationState.vehicle.current,
-        default: animationState.vehicle.default,
-        store: animationState.vehicle.store || {},
+        current: animationState['vehicle'].current,
+        default: animationState['vehicle'].default,
+        store: animationState['vehicle'].store || {},
       });
     }
 
-    if (animationState.airplane) {
+    if (animationState['airplane']) {
       setAirplaneAnimation({
-        current: animationState.airplane.current,
-        default: animationState.airplane.default,
-        store: animationState.airplane.store || {},
+        current: animationState['airplane'].current,
+        default: animationState['airplane'].default,
+        store: animationState['airplane'].store || {},
       });
     }
   }, [

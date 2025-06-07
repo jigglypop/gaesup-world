@@ -5,6 +5,7 @@ import type {
   PhysicsBridgeData,
   PhysicsBridgeOutput,
 } from '../../../types';
+import { gaesupWorldContextType } from '../../context/types';
 
 export function usePhysicsInput(injectedData: PhysicsBridgeInputData): PhysicsBridgeOutput {
   const bridgeRef = useRef<PhysicsBridgeData>({
@@ -29,7 +30,9 @@ export function usePhysicsInput(injectedData: PhysicsBridgeInputData): PhysicsBr
   if (injectedData.worldContext && injectedData.inputSystem) {
     bridgeRef.current = {
       worldContext: injectedData.worldContext,
-      activeState: (injectedData.worldContext as any).activeState || bridgeRef.current.activeState,
+      activeState:
+        (injectedData.worldContext as Partial<gaesupWorldContextType>).activeState ||
+        bridgeRef.current.activeState,
       input: {
         keyboard: injectedData.inputSystem.keyboard,
         mouse: injectedData.inputSystem.mouse,

@@ -6,8 +6,10 @@ import { cameraOptionAtom } from '../../atoms/cameraOptionAtom';
 import { CameraRayType, GroundRayType, RefsType } from '../../../types';
 import { update } from '../../utils/context';
 import { useGaesupContext, useGaesupDispatch } from '../../context';
-import { gaesupWorldContextType } from '../../context';
-export default function initControllerProps(props: { refs: RefsType }) {
+import { gaesupWorldContextType } from '../../context/types';
+import { initControllerPropsType } from './types';
+
+export default function initControllerProps(props: initControllerPropsType) {
   const context = useGaesupContext();
   const dispatch = useGaesupDispatch();
   const [cameraOption] = useAtom(cameraOptionAtom);

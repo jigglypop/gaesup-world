@@ -1,12 +1,9 @@
 import { useAtomValue } from 'jotai';
 import { useEffect, useRef } from 'react';
 import { activeAnimationAtom } from '@/gaesup/atoms/animationAtoms';
-import { AnimationAction } from 'three';
+import { AnimationActions } from './types';
 
-export function useAnimationPlayer(
-  actions: { [x: string]: AnimationAction | null } | undefined,
-  active: boolean,
-) {
+export function useAnimationPlayer(actions: AnimationActions | undefined, active: boolean) {
   const activeTag = useAtomValue(activeAnimationAtom);
   const previousTag = useRef('idle');
 

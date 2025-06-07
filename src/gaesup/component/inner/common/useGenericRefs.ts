@@ -2,13 +2,7 @@ import { MutableRefObject, useRef } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 import { Collider } from '@dimforge/rapier3d-compat';
 import * as THREE from 'three';
-
-export type GenericRefsType = {
-  rigidBodyRef: MutableRefObject<RapierRigidBody | null>;
-  outerGroupRef: MutableRefObject<THREE.Group | null>;
-  innerGroupRef: MutableRefObject<THREE.Group | null>;
-  colliderRef: MutableRefObject<Collider | null>;
-};
+import { GenericRefsType } from './types';
 
 export function useGenericRefs(): GenericRefsType {
   const rigidBodyRef = useRef<RapierRigidBody>(null);

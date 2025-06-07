@@ -233,3 +233,31 @@ export type PhysicsEventData = {
 };
 
 export type PhysicsEventCallback<T extends PhysicsEventType> = (data: PhysicsEventData[T]) => void;
+
+export type CameraOptionType = {
+  offset: THREE.Vector3;
+  maxDistance: number;
+  distance: number;
+  xDistance: number;
+  yDistance: number;
+  zDistance: number;
+  zoom: number;
+  target: THREE.Vector3;
+  position: THREE.Vector3;
+  focus: boolean;
+  enableCollision: boolean;
+  collisionMargin: number;
+  smoothing: {
+    position: number;
+    rotation: number;
+    fov: number;
+  };
+  fov: number;
+  minFov: number;
+  maxFov: number;
+  bounds: {
+    minY: number;
+    maxY: number;
+  };
+  modeSettings: Record<string, any>;
+};

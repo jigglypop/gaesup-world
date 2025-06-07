@@ -1,4 +1,4 @@
-import { passivePropsType } from '../type';
+import { passivePropsType } from '../types';
 
 export type passiveCharacterPropsType = Omit<
   passivePropsType,

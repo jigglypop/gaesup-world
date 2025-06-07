@@ -65,7 +65,7 @@ export namespace GaesupCore {
       rotation: THREE.Euler;
     }
     export interface Game {
-      rideableId?: string;
+      rideableId?: string | null;
       isMoving: boolean;
       isNotMoving: boolean;
       isOnTheGround: boolean;
@@ -252,7 +252,7 @@ export namespace GaesupCore {
     /**
      * 컨트롤러 모드
      */
-    export type Mode = 'clicker';
+    export type Mode = 'clicker' | 'keyboard' | 'gamepad' | 'joystick';
 
     /**
      * 모드 타입
@@ -270,11 +270,11 @@ export namespace GaesupCore {
      * 주요 참조들
      */
     export interface Main {
-      colliderRef: RefObject<Collider>;
-      rigidBodyRef: RefObject<RapierRigidBody>;
-      outerGroupRef: RefObject<THREE.Group>;
-      innerGroupRef: RefObject<THREE.Group>;
-      characterInnerRef: RefObject<THREE.Group>;
+      colliderRef: RefObject<Collider | null>;
+      rigidBodyRef: RefObject<RapierRigidBody | null>;
+      outerGroupRef: RefObject<THREE.Group | null>;
+      innerGroupRef: RefObject<THREE.Group | null>;
+      characterInnerRef: RefObject<THREE.Group | null>;
     }
 
     /**

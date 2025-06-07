@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { CharacterInnerRef } from '../../inner/character';
 import { useGenericRefs } from '../../inner/common/useGenericRefs';
-import { passiveCharacterPropsType } from './type';
+import { passiveCharacterPropsType } from './types';
 
 export function PassiveCharacter(props: passiveCharacterPropsType) {
   const refs = useGenericRefs();

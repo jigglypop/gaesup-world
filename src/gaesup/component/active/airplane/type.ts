@@ -1,4 +1,4 @@
-import { passiveAirplanePropsType } from "../../passive/airplane/type";
-import { innerRefType } from "../../passive/type";
+import { passiveAirplanePropsType } from '../../passive/airplane/types';
+import { innerRefType } from '../../passive/types';
 
 export type activeAirplaneInnerType = passiveAirplanePropsType & innerRefType;

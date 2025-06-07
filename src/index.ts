@@ -16,7 +16,6 @@ export { PerfMonitor } from './gaesup/component/perfMonitor';
 export { GaeSupProps } from './gaesup/gaesupProps';
 export { useGaesupController } from './gaesup/hooks/useGaesupController';
 export { useClicker, usePushKey, useTeleport } from './gaesup/hooks/useInputControls';
-export { useMovePoint } from './gaesup/hooks/useMovePoint';
 export { usePhysicsInput } from './gaesup/hooks/usePhysicsInput';
 export { useRideable } from './gaesup/hooks/useRideable';
 export { useMainFrameLoop, useUnifiedFrame } from './gaesup/hooks/useUnifiedFrame';

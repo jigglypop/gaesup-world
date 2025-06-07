@@ -1,26 +1,22 @@
-import { useContext } from "react";
-import { useAtomValue } from "jotai";
-import { GaesupContext } from "../../context";
-import { ActiveStateType, ModeType, ResourceUrlsType } from "../../context";
-import { urlsAtom } from "../../atoms";
+import { useContext } from 'react';
+import { useAtomValue } from 'jotai';
+import { GaesupContext } from '../../context';
+import { urlsAtom } from '../../atoms';
+import { gaesupPassivePropsType } from './types';
 
 export function useGaesupController(): gaesupPassivePropsType {
   const worldContext = useContext(GaesupContext);
   const urls = useAtomValue(urlsAtom);
-  return {
-    state: worldContext.activeState,
-    mode: worldContext.mode,
-    urls: urls,
-    currentAnimation: worldContext.mode.type
+
+  const currentAnimation =
+    worldContext.mode?.type && worldContext.animationState
       ? worldContext.animationState[worldContext.mode.type].current
-      : "idle",
+      : 'idle';
+
+  return {
+    state: worldContext.activeState || null,
+    mode: worldContext.mode || null,
+    urls: urls,
+    currentAnimation,
   };
 }
-
-export type gaesupPassivePropsType = {
-  state: ActiveStateType;
-  mode: ModeType;
-  urls: ResourceUrlsType;
-  currentAnimation: string;
-  children?: React.ReactNode;
-};

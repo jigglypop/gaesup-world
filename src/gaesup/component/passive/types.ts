@@ -9,7 +9,7 @@ import {
 import { MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { controllerOptionsType, groundRayType, partsType } from '../../controller/type';
-import { ridingType } from '../inner/common/type';
+import { ridingType } from '../inner/common/types';
 
 // 컴포넌트 종류
 export type componentTypeString = 'character' | 'vehicle' | 'airplane';
@@ -38,9 +38,6 @@ export type passivePropsType = {
   onIntersectionExit?: (e: CollisionExitPayload) => Promise<void>;
   onCollisionEnter?: (e: CollisionEnterPayload) => Promise<void>;
   componentType: componentTypeString;
-  userData?: {
-    intangible: boolean;
-  };
   rigidBodyProps?: RigidBodyProps;
   outerGroupProps?: THREE.Group;
   innerGroupProps?: THREE.Group;

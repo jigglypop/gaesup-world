@@ -1,56 +1,29 @@
-import { Gltf } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import { Gltf } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
 import {
   CylinderCollider,
   RapierRigidBody,
   RigidBody,
   useRevoluteJoint,
-} from "@react-three/rapier";
-import { RefObject, createRef, useContext, useRef } from "react";
-import * as THREE from "three";
-import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
-import { GaesupContext } from "../../../context";
+} from '@react-three/rapier';
+import { RefObject, createRef, useContext, useRef } from 'react';
+import * as THREE from 'three';
+import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
+import { GaesupContext } from '../../../context';
+import { WheelJointProps, WheelsRefProps } from './type';
 
-const WheelJoint = ({
-  body,
-  wheel,
-  bodyAnchor,
-  wheelAnchor,
-  rotationAxis,
-}: {
-  body: RefObject<RapierRigidBody>;
-  wheel: RefObject<RapierRigidBody>;
-  bodyAnchor: [number, number, number];
-  wheelAnchor: [number, number, number];
-  rotationAxis: [number, number, number];
-}) => {
-  const joint = useRevoluteJoint(body, wheel, [
-    bodyAnchor,
-    wheelAnchor,
-    rotationAxis,
-  ]);
+const WheelJoint = ({ body, wheel, bodyAnchor, wheelAnchor, rotationAxis }: WheelJointProps) => {
+  const joint = useRevoluteJoint(body, wheel, [bodyAnchor, wheelAnchor, rotationAxis]);
   const { activeState } = useContext(GaesupContext);
   useFrame(() => {
-    if (joint.current) {
-      joint.current.configureMotorPosition(
-        activeState.position.length(),
-        0.8,
-        0
-      );
+    if (joint.current && activeState) {
+      joint.current.configureMotorPosition(activeState.position.length(), 0.8, 0);
     }
   });
   return null;
 };
 
-export function WheelsRef({
-  vehicleSize,
-  rigidBodyRef,
-  wheelUrl,
-}: {
-  vehicleSize: THREE.Vector3;
-  rigidBodyRef: RefObject<RapierRigidBody>;
-  wheelUrl: string;
-}) {
+export function WheelsRef({ vehicleSize, rigidBodyRef, wheelUrl }: WheelsRefProps) {
   const { size: wheelSize } = useGltfAndSize({
     url: wheelUrl,
   });
@@ -63,9 +36,7 @@ export function WheelsRef({
     [X, 0, Z],
     [X, 0, -Z],
   ];
-  const wheelRefs = useRef(
-    wheelPositions.map(() => createRef<RapierRigidBody>())
-  );
+  const wheelRefs = useRef(wheelPositions.map(() => createRef<RapierRigidBody>()));
 
   return (
     <>

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { CameraOptionType, gaesupWorldContextType } from '../context';
+import { gaesupWorldContextType } from '../context/types';
+import { CameraOptionType } from '../types';
 
 export interface CameraPropType {
   state?: { camera?: THREE.Camera };

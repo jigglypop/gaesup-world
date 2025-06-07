@@ -1,12 +1,14 @@
 import { quat, euler, vec3 } from '@react-three/rapier';
 import { useGenericRefs } from '../../inner/common/useGenericRefs';
 import { useUnifiedFrame } from '../../../hooks/useUnifiedFrame';
-import { passiveAirplanePropsType } from './type';
+import { passiveAirplanePropsType } from './types';
 import { AirplaneInnerRef } from '../../inner/airplane';
 import { useMemo } from 'react';
+import { useRideable } from '../../../hooks/useRideable';
 
 export function PassiveAirplane(props: passiveAirplanePropsType) {
   const { rigidBodyRef, outerGroupRef, innerGroupRef, colliderRef } = useGenericRefs();
+  const { ride } = useRideable();
   const safePosition = props.position || vec3(0, 0, 0);
   const safeRotation = props.rotation || euler(0, 0, 0);
   const gravityScale = useMemo(() => {
@@ -34,7 +36,7 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
       }
     },
     3, // 패시브 객체 우선순위
-    !!(innerGroupRef.current || rigidBodyRef.current)
+    !!(innerGroupRef.current || rigidBodyRef.current),
   );
 
   // 동일: refs 객체 통합

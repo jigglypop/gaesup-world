@@ -1,20 +1,29 @@
 import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { useRef, useState } from 'react';
+import { ReactNode, useRef, useState } from 'react';
 import * as THREE from 'three';
 
-export function InnerHtml({ children, distance = 10, throttle = 100, ...props }) {
-  const ref = useRef<THREE.Group>();
-  const [isInRange, setInRange] = useState<boolean>();
+interface InnerHtmlProps {
+  distance?: number;
+  throttle?: number;
+  children: ReactNode;
+  [key: string]: any;
+}
+
+export function InnerHtml({ children, distance = 10, throttle = 100, ...props }: InnerHtmlProps) {
+  const ref = useRef<THREE.Group>(null);
+  const [isInRange, setInRange] = useState<boolean>(true);
   const vecRef = useRef(new THREE.Vector3());
   const lastCheckRef = useRef(0);
   useFrame((state) => {
     const now = state.clock.elapsedTime * 1000;
     if (now - lastCheckRef.current < throttle) return;
     lastCheckRef.current = now;
-    const vec = vecRef.current;
-    const range = state.camera.position.distanceTo(ref.current.getWorldPosition(vec)) <= distance;
-    if (range !== isInRange) setInRange(range);
+    if (ref.current) {
+      const vec = vecRef.current;
+      const range = state.camera.position.distanceTo(ref.current.getWorldPosition(vec)) <= distance;
+      if (range !== isInRange) setInRange(range);
+    }
   });
   return (
     <group ref={ref}>

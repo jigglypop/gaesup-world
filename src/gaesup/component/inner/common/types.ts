@@ -1,11 +1,11 @@
-import { Collider } from "@dimforge/rapier3d-compat";
-import { RigidBodyProps, RigidBodyTypeString } from "@react-three/rapier";
-import { MutableRefObject, RefObject } from "react";
-import * as THREE from "three";
-import { callbackType } from "../../../controller/initialize/callback/type";
-import { GroundRayType, PartsType } from "../../../controller/type";
-import { ResourceUrlsType } from "../../../context";
-import { innerRefType, passivePropsType } from "../../passive/type";
+import { Collider } from '@dimforge/rapier3d-compat';
+import { RigidBodyProps, RigidBodyTypeString } from '@react-three/rapier';
+import { MutableRefObject, RefObject } from 'react';
+import * as THREE from 'three';
+import { callbackType } from '../../../../controller/initialize/callback/type';
+import { GroundRayType, PartsType } from '../../../../controller/type';
+import { ResourceUrlsType } from '../../../../context';
+import { innerRefType, passivePropsType } from '../../../passive/types';
 // collider 정의
 export type characterColliderType = {
   height: number;
@@ -41,7 +41,6 @@ export type refPropsType = {
   name?: string;
   position?: THREE.Vector3;
   rotation?: THREE.Euler;
-  userData?: { intangible: boolean };
   currentAnimation?: string;
   type?: RigidBodyTypeString;
 };
@@ -54,7 +53,6 @@ export type setGroundRayType = {
 
 export type rigidBodyRefType = {
   name?: string;
-  userData?: { intangible: boolean };
   isActive?: boolean;
   ridingUrl?: string;
   groundRay?: GroundRayType;
@@ -64,3 +62,23 @@ export type rigidBodyRefType = {
 } & passivePropsType &
   innerRefType &
   callbackType;
+
+export type GenericRefsType = {
+  rigidBodyRef: MutableRefObject<RapierRigidBody | null>;
+  outerGroupRef: MutableRefObject<THREE.Group | null>;
+  innerGroupRef: MutableRefObject<THREE.Group | null>;
+  colliderRef: MutableRefObject<Collider | null>;
+};
+
+export type PartsGroupRefProps = {
+  url: string;
+  isActive: boolean;
+  componentType: componentTypeString;
+  currentAnimation: string;
+  color?: string;
+  skeleton?: THREE.Skeleton;
+};
+
+export type OuterGroupRefProps = {
+  children: React.ReactNode;
+};

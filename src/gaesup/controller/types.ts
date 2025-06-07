@@ -18,7 +18,7 @@ import {
   ResourceUrlsType,
   SlopeRayType,
 } from '../types';
-import { callbackType } from './initialize/callback/type';
+import { callbackType } from './initialize/callback/types';
 
 export type {
   ActionsType,

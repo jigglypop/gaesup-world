@@ -14,6 +14,9 @@ export function GaesupComponent({
   refs: refsType;
 }): ReactElement | null {
   const { mode, states, rideable, urls } = useContext(GaesupContext);
+
+  if (!mode || !states || !rideable || !urls) return null;
+
   const { enableRiding, isRiderOn, rideableId } = states;
 
   const offset = useMemo(

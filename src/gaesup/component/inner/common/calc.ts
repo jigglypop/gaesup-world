@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 
 export const calcCharacterColliderProps = (characterSize: THREE.Vector3) => {
-  if (!characterSize) return null;
   const heightPlusDiameter = characterSize.y / 2;
   const diameter = Math.max(characterSize.x, characterSize.z);
   const radius = diameter / 2;

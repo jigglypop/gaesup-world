@@ -7,16 +7,16 @@ import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import { cameraOptionAtom } from '../../../atoms/cameraOptionAtom';
 import Camera from '../../../camera';
+import { CameraPropType } from '../../../camera/type';
 import { GaesupContext } from '../../../context';
 import initCallback from '../../../controller/initialize/callback';
 import { useAnimationPlayer } from '../../../hooks/useGaesupAnimation/useAnimationPlayer';
 import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
 import calculation from '../../../physics';
-import { cameraPropType } from '../../../physics/type';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './partsGroupRef';
 import { useSetGroundRay } from './setGroundRay';
-import { rigidBodyRefType } from './type';
+import { rigidBodyRefType } from './types';
 
 export const RigidBodyRef = forwardRef(
   (props: rigidBodyRefType, ref: MutableRefObject<RapierRigidBody>) => {

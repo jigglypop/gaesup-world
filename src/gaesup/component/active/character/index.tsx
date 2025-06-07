@@ -1,24 +1,15 @@
-import { controllerInnerType, refsType } from "../../../controller/type";
-import { ResourceUrlsType } from "../../../context";
-import { CharacterInnerRef } from "../../inner/character";
+import { controllerInnerType, refsType } from '../../../controller/type';
+import { ResourceUrlsType } from '../../../context';
+import { CharacterInnerRef } from '../../inner/character';
+import { CharacterRefProps } from './types';
 
-export function CharacterRef({
-  children,
-  props,
-  refs,
-  urls,
-}: {
-  children: React.ReactNode;
-  props: controllerInnerType;
-  refs: refsType;
-  urls: urlsType;
-}) {
+export function CharacterRef({ children, props, refs, urls }: CharacterRefProps) {
   return (
     <CharacterInnerRef
       url={urls.characterUrl}
       isActive={true}
       componentType="character"
-      rigidbodyType={"dynamic"}
+      rigidbodyType={'dynamic'}
       controllerOptions={props.controllerOptions}
       groundRay={props.groundRay}
       onAnimate={props.onAnimate}

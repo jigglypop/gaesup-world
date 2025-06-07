@@ -9,7 +9,7 @@ import { GaesupContext } from '../context';
 import { useKeyboard } from '../hooks/useKeyboard';
 import { useMainFrameLoop } from '../hooks/useUnifiedFrame';
 import initControllerProps from './initialize';
-import { controllerInnerType, controllerType } from './type';
+import { controllerInnerType, controllerType } from './types';
 
 export function GaesupController(props: controllerType): ReactElement {
   return <GaesupControllerInner {...props}>{props.children}</GaesupControllerInner>;

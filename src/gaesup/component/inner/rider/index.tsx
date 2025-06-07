@@ -1,18 +1,11 @@
 import { useAnimations } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
-import { ReactNode, useMemo } from 'react';
+import { useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import { useAnimationPlayer } from '../../../hooks/useGaesupAnimation/useAnimationPlayer';
 import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
-
-export type riderRefType = {
-  url: string;
-  children?: ReactNode;
-  offset?: THREE.Vector3;
-  euler?: THREE.Euler;
-  currentAnimation?: string;
-};
+import { riderRefType } from './types';
 
 export default function RiderRef({ url, children, offset, currentAnimation }: riderRefType) {
   const { gltf } = useGltfAndSize({ url });

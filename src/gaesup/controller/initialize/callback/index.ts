@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useGLTF } from '@react-three/drei';
-import { initCallbackType } from './type';
+import { initCallbackType } from './types';
 
 const initCallback = ({ props, actions, componentType }: initCallbackType) => {
-  const { animations } = useGLTF(props.url);
+  const { animations } = useGLTF(props.url) as any;
   const isInitialized = useRef(false);
 
   useEffect(() => {

@@ -1,13 +1,6 @@
 import { RootState, useFrame } from '@react-three/fiber';
 import { useCallback, useEffect, useRef } from 'react';
-
-type FrameCallback = (state: RootState, delta: number) => void;
-
-interface FrameSubscription {
-  id: string;
-  callback: FrameCallback;
-  priority: number;
-}
+import { FrameSubscription, FrameCallback } from './types';
 
 class OptimizedFrameManager {
   private subscriptions: Map<string, FrameSubscription> = new Map();
@@ -15,7 +8,6 @@ class OptimizedFrameManager {
   private needsSort = false;
   private isRunning = false;
   private maxSubscriptions = 100;
-
   subscribe(id: string, callback: FrameCallback, priority: number = 0): void {
     if (this.subscriptions.size >= this.maxSubscriptions) {
       console.error(`Maximum frame subscriptions (${this.maxSubscriptions}) exceeded`);
@@ -34,29 +26,25 @@ class OptimizedFrameManager {
     };
 
     this.subscriptions.set(id, subscription);
-    this.needsSort = true; // 다음 프레임에서 재정렬 필요
+    this.needsSort = true;
   }
 
   unsubscribe(id: string): void {
     if (this.subscriptions.delete(id)) {
-      this.needsSort = true; // 다음 프레임에서 재정렬 필요
+      this.needsSort = true;
     }
   }
 
   executeFrame(state: RootState, delta: number): void {
-    if (this.isRunning) return; // 중복 실행 방지
+    if (this.isRunning) return;
     this.isRunning = true;
-
     try {
-      // 구독자가 변경되었거나 처음 실행인 경우에만 재정렬
       if (this.needsSort) {
         this.sortedSubscriptions = Array.from(this.subscriptions.values()).sort(
           (a, b) => a.priority - b.priority,
         );
         this.needsSort = false;
       }
-
-      // 캐시된 정렬 배열을 사용하여 실행
       for (const subscription of this.sortedSubscriptions) {
         try {
           subscription.callback(state, delta);
@@ -68,18 +56,15 @@ class OptimizedFrameManager {
       this.isRunning = false;
     }
   }
-
   getSubscriptionCount(): number {
     return this.subscriptions.size;
   }
-
   destroy() {
     this.subscriptions.clear();
     this.sortedSubscriptions = [];
     this.needsSort = false;
     this.isRunning = false;
   }
-
   clear() {
     this.subscriptions.clear();
     this.sortedSubscriptions = [];
@@ -88,7 +73,6 @@ class OptimizedFrameManager {
 }
 
 const frameManager = new OptimizedFrameManager();
-
 export function useUnifiedFrame(
   id: string,
   callback: FrameCallback,
@@ -132,6 +116,4 @@ export function useMainFrameLoop(): void {
     frameManager.executeFrame(state, delta);
   });
 }
-
-// 개발 도구용 export
 export { frameManager };
