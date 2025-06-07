@@ -3,7 +3,7 @@
 import { Environment } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { euler, Physics } from '@react-three/rapier';
-import { Suspense, useState } from 'react';
+import { Suspense } from 'react';
 import { FaMapMarkerAlt } from 'react-icons/fa';
 import { GaesupController, GaesupWorld, MiniMap, PerfMonitor, V3 } from '../../src';
 import { InnerHtml } from '../../src/gaesup/component/InnerHtml';
@@ -12,7 +12,6 @@ import { FocusModal } from './commons/FocusModal';
 import Info from '../info';
 import Passive from '../passive';
 import Floor from './Floor';
-import { FocusHandler } from './components/FocusHandler';
 import { InfoTabs } from './components/InfoTabs';
 import { Platforms } from './components/Platforms';
 import { RideableUIRenderer } from './components/RideableUIRenderer';
@@ -20,35 +19,14 @@ import { RideableVehicles } from './components/RideableVehicles';
 import { TeleportButtons } from './components/TeleportButtons';
 import { TeleportHandler } from './components/TeleportHandler';
 import { CHARACTER_URL, VEHICLE_URL, AIRPLANE_URL, S3 } from './constants';
-import { FocusedObject } from './types';
+import { FocusableProvider, useFocusable } from './context/FocusContext';
 export { S3 };
 
-export default function MainComponent() {
-  const [focusedObject, setFocusedObject] = useState<FocusedObject | null>(null);
+function AppContent() {
+  const { focusedObject, clearFocus } = useFocusable();
+
   return (
-    <GaesupWorld
-      urls={{
-        characterUrl: CHARACTER_URL,
-        vehicleUrl: VEHICLE_URL,
-        airplaneUrl: AIRPLANE_URL,
-      }}
-      mode={{
-        type: 'character',
-        controller: 'keyboard',
-        control: 'thirdPerson',
-      }}
-      debug={false}
-      cameraOption={{
-        xDistance: 15,
-        yDistance: 8,
-        zDistance: 15,
-        enableCollision: true,
-        smoothing: { position: 0.25, rotation: 0.3, fov: 0.2 },
-        fov: 75,
-        bounds: { minY: 2, maxY: 50, minX: -100, maxX: 100, minZ: -100, maxZ: 100 },
-      }}
-    >
-      <FocusHandler onObjectFocused={setFocusedObject} />
+    <>
       <TeleportHandler />
       <Canvas
         shadows
@@ -118,7 +96,38 @@ export default function MainComponent() {
       </div>
       <TeleportButtons />
       <InfoTabs />
-      <FocusModal focusedObject={focusedObject} onClose={() => setFocusedObject(null)} />
+      <FocusModal focusedObject={focusedObject} onClose={clearFocus} />
+    </>
+  );
+}
+
+export default function MainComponent() {
+  return (
+    <GaesupWorld
+      urls={{
+        characterUrl: CHARACTER_URL,
+        vehicleUrl: VEHICLE_URL,
+        airplaneUrl: AIRPLANE_URL,
+      }}
+      mode={{
+        type: 'character',
+        controller: 'keyboard',
+        control: 'thirdPerson',
+      }}
+      debug={false}
+      cameraOption={{
+        xDistance: 15,
+        yDistance: 8,
+        zDistance: 15,
+        enableCollision: true,
+        smoothing: { position: 0.25, rotation: 0.3, fov: 0.2 },
+        fov: 75,
+        bounds: { minY: 2, maxY: 50, minX: -100, maxX: 100, minZ: -100, maxZ: 100 },
+      }}
+    >
+      <FocusableProvider>
+        <AppContent />
+      </FocusableProvider>
     </GaesupWorld>
   );
 }

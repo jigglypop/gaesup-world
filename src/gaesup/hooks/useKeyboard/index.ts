@@ -13,19 +13,12 @@ export function useKeyboard() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const mappedKey = KEY_MAPPING[event.code as keyof typeof KEY_MAPPING];
-
       if (mappedKey && !pressedKeys.current.has(event.code)) {
-        // 모든 키가 항상 작동 (컨트롤러 모드 무관)
         pressedKeys.current.add(event.code);
-
-        // 스페이스 키 특별 처리 (페이지 스크롤 방지)
         if (event.code === 'Space') {
           event.preventDefault();
         }
-
-        // S키로 clicker 중지 (physics에서 이동한 로직)
         if (event.code === 'KeyS' && clicker.isOn) {
-          // clicker 중지
           setClicker({
             ...clicker,
             isOn: false,

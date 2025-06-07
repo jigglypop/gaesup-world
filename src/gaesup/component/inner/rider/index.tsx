@@ -1,10 +1,10 @@
-import { useAnimations } from "@react-three/drei";
-import { useGraph } from "@react-three/fiber";
-import { ReactNode, useMemo } from "react";
-import * as THREE from "three";
-import { SkeletonUtils } from "three-stdlib";
-import { usePlayActions } from "../../../atoms/animationAtoms";
-import { useGltfAndSize } from "../../../hooks/useGaesupGltf";
+import { useAnimations } from '@react-three/drei';
+import { useGraph } from '@react-three/fiber';
+import { ReactNode, useMemo } from 'react';
+import * as THREE from 'three';
+import { SkeletonUtils } from 'three-stdlib';
+import { useAnimationPlayer } from '../../../hooks/useGaesupAnimation/useAnimationPlayer';
+import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
 
 export type riderRefType = {
   url: string;
@@ -14,27 +14,16 @@ export type riderRefType = {
   currentAnimation?: string;
 };
 
-export default function RiderRef({
-  url,
-  children,
-  offset,
-  currentAnimation,
-}: riderRefType) {
+export default function RiderRef({ url, children, offset, currentAnimation }: riderRefType) {
   const { gltf } = useGltfAndSize({ url });
   const { animations, scene } = gltf;
   const { actions, ref: animationRef } = useAnimations(animations);
   const characterClone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { nodes: characterNodes } = useGraph(characterClone);
   const characterObjectNode = Object.values(characterNodes).find(
-    (node) => node.type === "Object3D"
+    (node) => node.type === 'Object3D',
   );
-  usePlayActions({
-    type: "character",
-    currentAnimation: currentAnimation || "ride",
-    actions,
-    animationRef,
-    isActive: false,
-  });
+  useAnimationPlayer(actions, true);
   return (
     <>
       <group position={offset}>

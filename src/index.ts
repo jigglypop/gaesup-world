@@ -16,8 +16,6 @@ export { PerfMonitor } from './gaesup/debug/PerformanceDisplay';
 export { GaeSupProps } from './gaesup/gaesupProps';
 export { useCharacterPool } from './gaesup/hooks/useCharacterPool';
 export { useFocus } from './gaesup/hooks/useFocus';
-export { useForwardRef } from './gaesup/hooks/useForwardRef';
-export { useGaesupAnimation } from './gaesup/hooks/useGaesupAnimation';
 export { useGaesupController } from './gaesup/hooks/useGaesupController';
 export { useClicker, usePushKey, useTeleport } from './gaesup/hooks/useInputControls';
 export { useInputValidation } from './gaesup/hooks/useInputValidation';

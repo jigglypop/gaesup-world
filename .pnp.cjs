@@ -61,6 +61,7 @@ const RAW_RUNTIME_STATE =
           ["globals", "npm:15.15.0"],\
           ["import-local", "npm:3.2.0"],\
           ["jest", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:29.7.0"],\
+          ["jest-canvas-mock", "npm:2.5.2"],\
           ["jest-environment-jsdom", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:29.7.0"],\
           ["jotai", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:2.12.5"],\
           ["leva", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:0.9.35"],\
@@ -6616,6 +6617,15 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["cssfontparser", [\
+      ["npm:1.2.1", {\
+        "packageLocation": "../../AppData/Local/Yarn/Berry/cache/cssfontparser-npm-1.2.1-f48947509b-10c0.zip/node_modules/cssfontparser/",\
+        "packageDependencies": [\
+          ["cssfontparser", "npm:1.2.1"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["cssom", [\
       ["npm:0.3.8", {\
         "packageLocation": "../../AppData/Local/Yarn/Berry/cache/cssom-npm-0.3.8-a9291d36ff-10c0.zip/node_modules/cssom/",\
@@ -8018,6 +8028,7 @@ const RAW_RUNTIME_STATE =
           ["globals", "npm:15.15.0"],\
           ["import-local", "npm:3.2.0"],\
           ["jest", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:29.7.0"],\
+          ["jest-canvas-mock", "npm:2.5.2"],\
           ["jest-environment-jsdom", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:29.7.0"],\
           ["jotai", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:2.12.5"],\
           ["leva", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:0.9.35"],\
@@ -9394,6 +9405,17 @@ const RAW_RUNTIME_STATE =
         "packagePeers": [\
           "@types/node-notifier",\
           "node-notifier"\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["jest-canvas-mock", [\
+      ["npm:2.5.2", {\
+        "packageLocation": "../../AppData/Local/Yarn/Berry/cache/jest-canvas-mock-npm-2.5.2-d82f044139-10c0.zip/node_modules/jest-canvas-mock/",\
+        "packageDependencies": [\
+          ["cssfontparser", "npm:1.2.1"],\
+          ["jest-canvas-mock", "npm:2.5.2"],\
+          ["moo-color", "npm:1.0.3"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -11020,6 +11042,16 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "../../AppData/Local/Yarn/Berry/cache/mkdirp-npm-3.0.1-f94bfa769e-10c0.zip/node_modules/mkdirp/",\
         "packageDependencies": [\
           ["mkdirp", "npm:3.0.1"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["moo-color", [\
+      ["npm:1.0.3", {\
+        "packageLocation": "../../AppData/Local/Yarn/Berry/cache/moo-color-npm-1.0.3-50b8650764-10c0.zip/node_modules/moo-color/",\
+        "packageDependencies": [\
+          ["color-name", "npm:1.1.4"],\
+          ["moo-color", "npm:1.0.3"]\
         ],\
         "linkType": "HARD"\
       }]\

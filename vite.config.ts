@@ -10,6 +10,9 @@ export default defineConfig(({ mode }) => {
     // Library build configuration
     return {
       plugins: [react()],
+      resolve: {
+        alias: [{ find: '@', replacement: path.resolve(__dirname, 'src') }],
+      },
       build: {
         lib: {
           entry: path.resolve(__dirname, 'src/index.ts'),
@@ -54,6 +57,20 @@ export default defineConfig(({ mode }) => {
   // Development/demo build configuration
   return {
     plugins: [react()],
+    resolve: {
+      alias: [
+        { find: '@', replacement: path.resolve(__dirname, 'src') },
+        { find: '@components', replacement: path.resolve(__dirname, 'examples/src/components') },
+        { find: '@styles', replacement: path.resolve(__dirname, 'examples/styles') },
+        { find: '@constants', replacement: path.resolve(__dirname, 'examples/src/constants') },
+        { find: '@type', replacement: path.resolve(__dirname, 'examples/src/type') },
+        { find: '@containers', replacement: path.resolve(__dirname, 'examples/src/containers') },
+        { find: '@utils', replacement: path.resolve(__dirname, 'examples/src/utils') },
+        { find: '@store', replacement: path.resolve(__dirname, 'examples/src/store') },
+        { find: '@api', replacement: path.resolve(__dirname, 'examples/src/api') },
+        { find: '@common', replacement: path.resolve(__dirname, 'examples/src/common') },
+      ],
+    },
     server: {
       port: 3000,
       open: true,

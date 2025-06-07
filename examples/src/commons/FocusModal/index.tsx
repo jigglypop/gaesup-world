@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAtomValue } from 'jotai';
-import { useFocus } from '../../../../src/gaesup/hooks/useFocus';
+import { useFocusable } from '../../context/FocusContext';
 import { cameraOptionAtom } from '../../../../src/gaesup/atoms';
 import './style.css';
 
@@ -17,8 +17,6 @@ interface FocusModalProps {
 }
 
 export function FocusModal({ focusedObject, onClose }: FocusModalProps) {
-  const { focusOff } = useFocus();
-  const cameraOption = useAtomValue(cameraOptionAtom);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -29,7 +27,6 @@ export function FocusModal({ focusedObject, onClose }: FocusModalProps) {
 
   const handleClose = async () => {
     setIsVisible(false);
-    await focusOff({ zoom: 1 });
     // 애니메이션 완료 후 onClose 호출
     setTimeout(() => {
       onClose();

@@ -1,7 +1,7 @@
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { usePlayActions } from '../../../atoms/animationAtoms';
+import { useAnimationPlayer } from '../../../hooks/useGaesupAnimation/useAnimationPlayer';
 import { componentTypeString } from '../../passive/type';
 
 export const PartsGroupRef = ({
@@ -58,13 +58,7 @@ export const PartsGroupRef = ({
     };
   }, [clonedMeshes, actions]);
 
-  usePlayActions({
-    type: componentType,
-    actions,
-    animationRef: ref,
-    currentAnimation: isActive ? undefined : currentAnimation,
-    isActive,
-  });
+  useAnimationPlayer(actions, isActive);
 
   return (
     <>

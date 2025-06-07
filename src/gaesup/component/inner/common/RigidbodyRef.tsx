@@ -5,11 +5,11 @@ import { useAtom } from 'jotai';
 import { MutableRefObject, forwardRef, useContext, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
-import { usePlayActions, useSubscribeActions } from '../../../atoms/animationAtoms';
 import { cameraOptionAtom } from '../../../atoms/cameraOptionAtom';
 import Camera from '../../../camera';
 import { GaesupContext } from '../../../context';
 import initCallback from '../../../controller/initialize/callback';
+import { useAnimationPlayer } from '../../../hooks/useGaesupAnimation/useAnimationPlayer';
 import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
 import calculation from '../../../physics';
 import { cameraPropType } from '../../../physics/type';
@@ -94,11 +94,6 @@ export const RigidBodyRef = forwardRef(
     }, [props.groundRay, props.colliderRef, setGroundRay]);
 
     if (props.isActive) {
-      useSubscribeActions({
-        type: props.componentType,
-        groundRay: props.groundRay,
-        animations: animations,
-      });
       const cameraProps: cameraPropType = {
         state: null,
         worldContext,
@@ -116,13 +111,8 @@ export const RigidBodyRef = forwardRef(
       });
     }
 
-    usePlayActions({
-      type: props.componentType,
-      actions,
-      animationRef,
-      currentAnimation: props.isActive ? undefined : props.currentAnimation,
-      isActive: props.isActive,
-    });
+    useAnimationPlayer(actions, props.isActive);
+
     initCallback({
       props,
       actions,
