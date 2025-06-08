@@ -14,6 +14,7 @@ export * from './gamepad';
 export * from './minimap';
 export * from './teleport';
 export * from './perfMonitor';
+export * from './rideable';
 
 // === TYPES ===
 export type * from './types';

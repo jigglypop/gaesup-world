@@ -8,8 +8,8 @@ export * from './component/exports';
 export * from './controller';
 // === HOOKS ===
 export * from './hooks';
-// === TOOLS ===
-export * from './tools/rideable';
+// === TOOLS (moved to components) ===
+// Rideable, RideableUI now exported from './component/exports'
 // === UTILS ===
 export * from './utils';
 // === WORLD ===

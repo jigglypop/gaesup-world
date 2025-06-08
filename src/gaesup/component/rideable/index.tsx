@@ -1,36 +1,25 @@
 import { CollisionEnterPayload, CollisionExitPayload } from '@react-three/rapier';
 import { useContext, useEffect } from 'react';
-import { PassiveAirplane } from '../../component/passive/airplane';
-import { PassiveVehicle } from '../../component/passive/vehicle';
+import { PassiveAirplane } from '../passive/airplane';
+import { PassiveVehicle } from '../passive/vehicle';
 import { useRideable } from '../../hooks/useRideable';
-import { GameStatesType } from '../../types';
 import { GaesupContext } from '../../atoms';
-import { rideablePropType } from './type';
+import { RideableUIProps, RideablePropType } from './types';
+import './styles.css';
 
-export function RideableUI({ states }: { states: GameStatesType }) {
+export function RideableUI({ states }: RideableUIProps) {
   if (!states.canRide || !states.nearbyRideable) {
     return null;
   }
-  const uiStyle: React.CSSProperties = {
-    position: 'fixed',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    color: 'white',
-    padding: '10px 20px',
-    borderRadius: '8px',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    border: '2px solid #4CAF50',
-    zIndex: 1000,
-    pointerEvents: 'none',
-    animation: 'pulse 1.5s infinite',
-  };
-  return <div style={uiStyle}>🚗 E키를 눌러 {states.nearbyRideable.name}에 탑승하세요</div>;
+  
+  return (
+    <div className="rideable-ui">
+      🚗 E키를 눌러 {states.nearbyRideable.name}에 탑승하세요
+    </div>
+  );
 }
 
-export function Rideable(props: rideablePropType) {
+export function Rideable(props: RideablePropType) {
   const { states, rideable } = useContext(GaesupContext);
   const { initRideable, onRideableNear, onRideableLeave, landing } = useRideable();
 
@@ -93,4 +82,4 @@ export function Rideable(props: rideablePropType) {
       )}
     </>
   );
-}
+} 

@@ -1,8 +1,13 @@
 import { RigidBodyProps } from '@react-three/rapier';
 import * as THREE from 'three';
 import { ControllerOptionsType, GroundRayType } from '../../controller/type';
+import { GameStatesType } from '../../types';
 
-export type rideablePropType = {
+export interface RideableUIProps {
+  states: GameStatesType;
+}
+
+export interface RideablePropType {
   groundRay?: GroundRayType;
   objectkey: string;
   objectType?: 'vehicle' | 'airplane';
@@ -24,4 +29,7 @@ export type rideablePropType = {
   rigidBodyProps?: RigidBodyProps;
   outerGroupProps?: THREE.Group;
   innerGroupProps?: THREE.Group;
-};
+}
+
+// Legacy export for compatibility
+export type rideablePropType = RideablePropType;
