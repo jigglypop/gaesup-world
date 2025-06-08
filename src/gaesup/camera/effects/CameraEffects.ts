@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ShakeConfig, ZoomConfig } from './types';
-import { eventBus } from '@/gaesup/physics/stores';
+import { gameStore } from '../../store/gameStore';
 
 export class CameraEffects {
   private shakeState: {

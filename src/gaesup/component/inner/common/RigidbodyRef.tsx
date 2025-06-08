@@ -1,13 +1,13 @@
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
 import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three/rapier';
-import { useAtom } from 'jotai';
+import { useSnapshot } from 'valtio';
 import { MutableRefObject, forwardRef, useContext, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
-import { cameraOptionAtom } from '../../../atoms/cameraOptionAtom';
+import { gameStore } from '../../../store/gameStore';
 import Camera from '../../../camera';
-import { CameraPropType } from '../../../camera/type';
+import { CameraPropType } from '../../../camera/types';
 import { GaesupContext } from '../../../context';
 import initCallback from '../../../controller/initialize/callback';
 import { useAnimationPlayer } from '../../../hooks/useGaesupAnimation/useAnimationPlayer';
@@ -24,7 +24,7 @@ export const RigidBodyRef = forwardRef(
 
     const setGroundRay = useSetGroundRay();
     const worldContext = useContext(GaesupContext);
-    const [cameraOption] = useAtom(cameraOptionAtom);
+    const cameraOption = useSnapshot(gameStore.ui.cameraOption);
 
     const { scene, animations } = useGLTF(props.url);
     const { actions, ref: animationRef } = useAnimations(animations);
@@ -94,7 +94,7 @@ export const RigidBodyRef = forwardRef(
     }, [props.groundRay, props.colliderRef, setGroundRay]);
 
     if (props.isActive) {
-      const cameraProps: cameraPropType = {
+      const cameraProps: CameraPropType = {
         state: null,
         worldContext,
         controllerOptions: props.controllerOptions,

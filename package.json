@@ -57,7 +57,8 @@
     "react-use-refs": "^1.0.1",
     "stats.js": "^0.17.0",
     "three": "^0.168.0",
-    "three-stdlib": "^2.32.2"
+    "three-stdlib": "^2.32.2",
+    "valtio": "^2.1.5"
   },
   "devDependencies": {
     "@dimforge/rapier3d": "^0.14.0",

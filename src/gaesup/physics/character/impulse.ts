@@ -1,4 +1,4 @@
-import { eventBus } from '../stores';
+import { gameStore } from '../../store/gameStore';
 import { PhysicsCalc, PhysicsState } from '../type';
 
 export function impulse(rigidBodyRef: PhysicsCalc['rigidBodyRef'], physicsState: PhysicsState) {
@@ -12,10 +12,8 @@ export function impulse(rigidBodyRef: PhysicsCalc['rigidBodyRef'], physicsState:
   if (isJumping && isOnTheGround) {
     const currentVel = rigidBodyRef.current.linvel();
     rigidBodyRef.current.setLinvel({ x: currentVel.x, y: jumpSpeed, z: currentVel.z }, true);
-    eventBus.emit('JUMP_STATE_CHANGE', {
-      isJumping: false,
-      isOnTheGround: true,
-    });
+    // gameStore 직접 업데이트
+    gameStore.gameStates.isJumping = false;
   }
   if (isMoving) {
     const speed = isRunning ? runSpeed : walkSpeed;

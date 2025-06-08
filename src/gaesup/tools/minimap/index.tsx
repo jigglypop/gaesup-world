@@ -1,7 +1,6 @@
-import { useAtom, useAtomValue } from 'jotai';
-import React, { useCallback, useContext, useEffect, useRef } from 'react';
-import { minimapAtom, modeStateAtom } from '../../atoms';
-import { GaesupContext } from '../../context';
+import { useSnapshot } from 'valtio';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { gameStore } from '../../store/gameStore';
 import './style.css';
 import { MinimapProps } from './type';
 import {
@@ -100,9 +99,9 @@ export function MiniMap({
   directionStyle,
   plusMinusStyle,
 }: MinimapProps) {
-  const { activeState } = useContext(GaesupContext);
-  const mode = useAtomValue(modeStateAtom);
-  const [minimap] = useAtom(minimapAtom);
+  const activeState = gameStore.physics.activeState;
+  const mode = useSnapshot(gameStore.ui.mode);
+  const minimap = useSnapshot(gameStore.minimap);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const { scale, upscale, downscale, handleWheel, setupWheelListener } = useMinimapControls(

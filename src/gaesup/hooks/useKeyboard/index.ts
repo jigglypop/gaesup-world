@@ -1,15 +1,13 @@
-import { useAtomValue, useSetAtom } from 'jotai';
 import { useEffect, useRef } from 'react';
-import { clickerAtom } from '../../atoms';
-import { keyboardInputAtom, pointerInputAtom } from '../../atoms/inputAtom';
+import { useSnapshot } from 'valtio';
+import { gameStore } from '../../store/gameStore';
+import { gameActions } from '../../store/actions';
 import { KEY_MAPPING } from '../../tools/constants';
 
 export function useKeyboard() {
-  const clicker = useAtomValue(clickerAtom);
-  const setClicker = useSetAtom(clickerAtom);
-  const setKeyboardInput = useSetAtom(keyboardInputAtom);
-  const setPointerInput = useSetAtom(pointerInputAtom);
+  const clicker = useSnapshot(gameStore.input.pointer);
   const pressedKeys = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const mappedKey = KEY_MAPPING[event.code as keyof typeof KEY_MAPPING];
@@ -18,18 +16,13 @@ export function useKeyboard() {
         if (event.code === 'Space') {
           event.preventDefault();
         }
-        if (event.code === 'KeyS' && clicker.isOn) {
-          setClicker({
-            ...clicker,
-            isOn: false,
-            isRun: false,
-          });
-          setPointerInput({
+        if (event.code === 'KeyS' && clicker.isActive) {
+          gameActions.updatePointer({
             isActive: false,
             shouldRun: false,
           });
         }
-        setKeyboardInput({
+        gameActions.updateKeyboard({
           [mappedKey]: true,
         });
       }
@@ -39,7 +32,7 @@ export function useKeyboard() {
       const mappedKey = KEY_MAPPING[event.code as keyof typeof KEY_MAPPING];
       if (mappedKey && pressedKeys.current.has(event.code)) {
         pressedKeys.current.delete(event.code);
-        setKeyboardInput({
+        gameActions.updateKeyboard({
           [mappedKey]: false,
         });
       }
@@ -51,12 +44,13 @@ export function useKeyboard() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [clicker, setClicker, setKeyboardInput, setPointerInput]);
+  }, [clicker.isActive]);
+
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
         pressedKeys.current.clear();
-        setKeyboardInput({
+        gameActions.updateKeyboard({
           forward: false,
           backward: false,
           leftward: false,
@@ -75,7 +69,8 @@ export function useKeyboard() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [setKeyboardInput]);
+  }, []);
+
   return {
     pressedKeys: Array.from(pressedKeys.current),
   };

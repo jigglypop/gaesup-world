@@ -8,7 +8,7 @@ import {
 } from '../../utils/memoization';
 import { calcAngleByVector, calcNorm } from '../../utils/vector';
 import { PhysicsCalcProps, PhysicsState } from '../types';
-import { eventBus } from '../stores';
+import { gameStore } from '../../store/gameStore';
 
 const memoManager = MemoizationManager.getInstance();
 const vectorCache = memoManager.getVectorCache('character-direction');
@@ -45,7 +45,8 @@ export function direction(
   const eulerChanged = shouldUpdate(activeState.euler.y, lastEulerY, 0.001);
   const directionChanged = shouldUpdate(currentDirectionLength, lastDirectionLength, 0.01);
   if (eulerChanged || directionChanged) {
-    eventBus.emit('ROTATION_UPDATE', {
+    // gameStore에 직접 업데이트
+    Object.assign(gameStore.physics.activeState, {
       euler: activeState.euler,
       direction: activeState.direction,
       dir: activeState.dir,

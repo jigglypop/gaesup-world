@@ -5981,6 +5981,7 @@ __metadata:
     turbo: "npm:^2.3.3"
     typescript: "npm:^5.6.2"
     typescript-eslint: "npm:^8.15.0"
+    valtio: "npm:^2.1.5"
     vite: "npm:^5.4.4"
     vite-plugin-svgr: "npm:^4.2.0"
   peerDependencies:
@@ -9785,6 +9786,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"proxy-compare@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "proxy-compare@npm:3.0.1"
+  checksum: 10c0/1e3631ef32603d4de263860ce02d84b48384dce9b62238b2148b3c58a4e4ec5b06644615dcc196a339f73b9695443317099d55a9173e02ce8492088c9330c00b
+  languageName: node
+  linkType: hard
+
 "psl@npm:^1.1.33":
   version: 1.15.0
   resolution: "psl@npm:1.15.0"
@@ -11810,6 +11818,23 @@ __metadata:
   version: 6.0.1
   resolution: "validate-npm-package-name@npm:6.0.1"
   checksum: 10c0/4d5455523e0a0c9a9ae3f306d4e6205c43be71dac85882db1c357ebbaf685390ea94985511824cfe41c04ca302dd85eb1f0292ab6941234b5ddca38d11865f9a
+  languageName: node
+  linkType: hard
+
+"valtio@npm:^2.1.5":
+  version: 2.1.5
+  resolution: "valtio@npm:2.1.5"
+  dependencies:
+    proxy-compare: "npm:^3.0.1"
+  peerDependencies:
+    "@types/react": ">=18.0.0"
+    react: ">=18.0.0"
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+    react:
+      optional: true
+  checksum: 10c0/66bc5027b28af7611c66bf4839860e548c3657d086fa1a76992d07a45d83c5fbe42a351332fe3cf1ef79e34706d4c550dc1a038a3b00933dad1e34f4000009ee
   languageName: node
   linkType: hard
 

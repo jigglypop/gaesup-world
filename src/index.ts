@@ -5,6 +5,30 @@ export {
   movementStateAtom,
   pointerInputAtom,
 } from './gaesup/atoms/inputAtom';
+
+export { gameStore, gameActions } from './gaesup/store';
+
+export {
+  usePhysicsState,
+  useGameStates,
+  useInputState,
+  useMovementState,
+  useModeState,
+  useAnimationState,
+  useCameraOption,
+  useUrls,
+  useSizes,
+  useBlockState,
+  useClickerOption,
+  useCurrentController,
+} from './gaesup/hooks/useValtio';
+
+export {
+  ValtioGaesupProvider,
+  useValtioGaesup,
+  useValtioGaesupContext,
+  useValtioGaesupActions,
+} from './gaesup/context/valtioProvider';
 export { GaesupComponent } from './gaesup/component';
 export { InnerHtml } from './gaesup/component/InnerHtml';
 export { PassiveAirplane } from './gaesup/component/passive/airplane';

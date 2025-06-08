@@ -1,5 +1,5 @@
-import { eventBus } from '../stores';
-import { PhysicsState } from '../type';
+import { gameStore } from '../../store/gameStore';
+import { PhysicsState } from '../types';
 
 export default function direction(physicsState: PhysicsState, controlMode?: string) {
   const { activeState, keyboard } = physicsState;
@@ -12,7 +12,8 @@ export default function direction(physicsState: PhysicsState, controlMode?: stri
     } else {
       activeState.euler.y += xAxis * (Math.PI / 64);
     }
-    eventBus.emit('ROTATION_UPDATE', {
+    // gameStore에 직접 업데이트
+    Object.assign(gameStore.physics.activeState, {
       euler: activeState.euler,
       direction: activeState.direction,
       dir: activeState.dir,

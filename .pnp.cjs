@@ -85,6 +85,7 @@ const RAW_RUNTIME_STATE =
           ["turbo", "npm:2.5.4"],\
           ["typescript", "patch:typescript@npm%3A5.8.3#optional!builtin<compat/typescript>::version=5.8.3&hash=5786d5"],\
           ["typescript-eslint", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:8.33.1"],\
+          ["valtio", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:2.1.5"],\
           ["vite", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:5.4.19"],\
           ["vite-plugin-svgr", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:4.3.0"]\
         ],\
@@ -8052,6 +8053,7 @@ const RAW_RUNTIME_STATE =
           ["turbo", "npm:2.5.4"],\
           ["typescript", "patch:typescript@npm%3A5.8.3#optional!builtin<compat/typescript>::version=5.8.3&hash=5786d5"],\
           ["typescript-eslint", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:8.33.1"],\
+          ["valtio", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:2.1.5"],\
           ["vite", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:5.4.19"],\
           ["vite-plugin-svgr", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:4.3.0"]\
         ],\
@@ -12434,6 +12436,15 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["proxy-compare", [\
+      ["npm:3.0.1", {\
+        "packageLocation": "../../AppData/Local/Yarn/Berry/cache/proxy-compare-npm-3.0.1-9fd092e688-10c0.zip/node_modules/proxy-compare/",\
+        "packageDependencies": [\
+          ["proxy-compare", "npm:3.0.1"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["psl", [\
       ["npm:1.15.0", {\
         "packageLocation": "../../AppData/Local/Yarn/Berry/cache/psl-npm-1.15.0-410584ca6b-10c0.zip/node_modules/psl/",\
@@ -14889,6 +14900,29 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "../../AppData/Local/Yarn/Berry/cache/validate-npm-package-name-npm-6.0.1-f452d01817-10c0.zip/node_modules/validate-npm-package-name/",\
         "packageDependencies": [\
           ["validate-npm-package-name", "npm:6.0.1"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["valtio", [\
+      ["npm:2.1.5", {\
+        "packageLocation": "../../AppData/Local/Yarn/Berry/cache/valtio-npm-2.1.5-b65cf64d82-10c0.zip/node_modules/valtio/",\
+        "packageDependencies": [\
+          ["valtio", "npm:2.1.5"]\
+        ],\
+        "linkType": "SOFT"\
+      }],\
+      ["virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:2.1.5", {\
+        "packageLocation": "./.yarn/__virtual__/valtio-virtual-2b7654affe/3/AppData/Local/Yarn/Berry/cache/valtio-npm-2.1.5-b65cf64d82-10c0.zip/node_modules/valtio/",\
+        "packageDependencies": [\
+          ["@types/react", "npm:19.1.6"],\
+          ["proxy-compare", "npm:3.0.1"],\
+          ["react", "npm:18.3.1"],\
+          ["valtio", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:2.1.5"]\
+        ],\
+        "packagePeers": [\
+          "@types/react",\
+          "react"\
         ],\
         "linkType": "HARD"\
       }]\

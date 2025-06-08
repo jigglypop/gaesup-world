@@ -3,6 +3,8 @@ import { ActiveStateType, CameraOptionType } from '../../context';
 import { cameraPropType } from '../../physics/type';
 import { V3 } from '../../utils/vector';
 import { cameraUtils } from '../utils';
+import { CameraPropType } from '../types';
+import { gameStore } from '../../store/gameStore';
 
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
@@ -76,28 +78,19 @@ export default function thirdPerson(prop: cameraPropType) {
     controllerOptions: { lerp },
     cameraOption,
   } = prop;
-  if (!state?.camera) return;
-  let currentPosition: THREE.Vector3;
-  if (activeState.position instanceof THREE.Vector3) {
-    currentPosition = activeState.position;
-  } else if (activeState.position && typeof activeState.position === 'object') {
-    tempVector3.set(
-      activeState.position.x || 0,
-      activeState.position.y || 0,
-      activeState.position.z || 0,
-    );
-    currentPosition = tempVector3;
-  } else {
-    tempVector3.set(0, 0, 0);
-    currentPosition = tempVector3;
-  }
+  if (!state?.camera || !activeState || !activeState.position || !activeState.euler) return;
 
-  let targetPosition = makeThirdPersonCameraPosition(activeState, cameraOption);
-  targetPosition = checkCameraCollision(targetPosition, currentPosition, cameraOption);
-  targetPosition = clampCameraPosition(targetPosition, cameraOption);
-  const deltaTime = prop.state?.delta || 0.016;
-  const lookAtTarget = cameraOption.target || currentPosition;
-  cameraUtils.preventCameraJitter(state.camera, targetPosition, lookAtTarget, 8.0, deltaTime);
+  const idealPosition = makeThirdPersonCameraPosition(activeState, cameraOption);
+  const idealLookAt = activeState.position.clone();
+
+  // ref store에 이상적인 target 저장
+  gameStore.camera.target.copy(idealLookAt);
+
+  const t = 1.0 - Math.pow(1.0 - (cameraOption.smoothing?.position || 0.1), state.delta * 30);
+
+  state.camera.position.lerp(idealPosition, t);
+  state.camera.lookAt(idealLookAt);
+
   if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
     cameraUtils.updateFOVLerp(state.camera, cameraOption.fov, cameraOption.smoothing?.fov);
   }

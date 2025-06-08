@@ -1,6 +1,6 @@
 // GamePad.tsx
-import { useAtomValue } from 'jotai';
-import { inputAtom, modeStateAtom } from '../../atoms';
+import { useSnapshot } from 'valtio';
+import { gameStore } from '../../store/gameStore';
 import GamePadButton from './GamePadButton';
 import './style.css';
 import { gameBoyDirectionType, gamepadType } from './type';
@@ -11,8 +11,8 @@ export const gamepadDefault = {
 
 export function GamePad(props: gamepadType) {
   const { gamePadStyle, gamePadButtonStyle, label } = props;
-  const inputSystem = useAtomValue(inputAtom);
-  const mode = useAtomValue(modeStateAtom);
+  const inputSystem = useSnapshot(gameStore.input);
+  const mode = useSnapshot(gameStore.ui.mode);
   const keyboard = inputSystem.keyboard;
   const GamePadDirections = Object.keys(keyboard)
     .map((key: string) => {

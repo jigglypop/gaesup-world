@@ -1,4 +1,4 @@
-import { eventBus } from '../stores';
+import { gameStore } from '../../store/gameStore';
 import { calcType } from '../type';
 
 const keyStateCache = new Map<string, { lastKeyE: boolean; lastKeyR: boolean }>();
@@ -18,7 +18,8 @@ export default function riding(prop: calcType, instanceId: string = 'default') {
     keyStateCache.set('logged', { lastKeyE: false, lastKeyR: false });
   }
   if (keyE && !keyState.lastKeyE) {
-    eventBus.emit('RIDE_STATE_CHANGE', {
+    // gameStore에 직접 업데이트
+    Object.assign(gameStore.gameStates, {
       isRiding: false,
       canRide: true,
       shouldEnterRideable: true,
@@ -26,7 +27,8 @@ export default function riding(prop: calcType, instanceId: string = 'default') {
     });
   }
   if (keyR && !keyState.lastKeyR) {
-    eventBus.emit('RIDE_STATE_CHANGE', {
+    // gameStore에 직접 업데이트
+    Object.assign(gameStore.gameStates, {
       isRiding: false,
       canRide: false,
       shouldEnterRideable: false,

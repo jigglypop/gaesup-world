@@ -1,8 +1,8 @@
 import { quat } from '@react-three/rapier';
 import { RefObject } from 'react';
 import * as THREE from 'three';
-import { PhysicsState } from '../type';
-import { eventBus } from '../stores';
+import { PhysicsState } from '../types';
+import { gameStore } from '../../store/gameStore';
 
 export default function direction(
   physicsState: PhysicsState,
@@ -67,7 +67,8 @@ export default function direction(
     Math.cos(activeState.euler.y) * boost,
   );
   activeState.dir.copy(activeState.direction).normalize();
-  eventBus.emit('ROTATION_UPDATE', {
+  // gameStore에 직접 업데이트
+  Object.assign(gameStore.physics.activeState, {
     euler: activeState.euler,
     direction: activeState.direction,
     dir: activeState.dir,

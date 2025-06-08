@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { type SizesType } from '../../types';
+import { gameStore } from '../store/gameStore';
 import { useBridgeConnector } from '../hooks/useBridgeConnector';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
 import airplaneCalculation from './airplane';
@@ -81,30 +82,16 @@ export default function calculation(props: PhysicsCalculationProps) {
 
   const updatePhysicsStateOnly = useCallback(
     (state: PhysicsState, worldContext: any, input: any): void => {
-      const kb = state.keyboard;
-      const inputKb = input.keyboard;
-      if (kb.forward !== inputKb.forward) kb.forward = inputKb.forward;
-      if (kb.backward !== inputKb.backward) kb.backward = inputKb.backward;
-      if (kb.leftward !== inputKb.leftward) kb.leftward = inputKb.leftward;
-      if (kb.rightward !== inputKb.rightward) kb.rightward = inputKb.rightward;
-      if (kb.shift !== inputKb.shift) kb.shift = inputKb.shift;
-      if (kb.space !== inputKb.space) kb.space = inputKb.space;
-      if (kb.keyR !== inputKb.keyR) kb.keyR = inputKb.keyR;
-      if (!state.mouse.target.equals(input.mouse.target)) {
-        state.mouse.target.copy(input.mouse.target);
-      }
-      if (state.mouse.angle !== input.mouse.angle) state.mouse.angle = input.mouse.angle;
-      if (state.mouse.isActive !== input.mouse.isActive)
-        state.mouse.isActive = input.mouse.isActive;
-      if (state.mouse.shouldRun !== input.mouse.shouldRun)
-        state.mouse.shouldRun = input.mouse.shouldRun;
-
-      if (state.activeState !== worldContext.activeState) {
-        state.activeState = worldContext.activeState;
-      }
-      if (state.gameStates !== worldContext.states) {
-        state.gameStates = worldContext.states;
-      }
+      // gameStore는 이미 최신 상태이므로 직접 참조만 업데이트
+      state.activeState = gameStore.physics.activeState;
+      state.gameStates = gameStore.gameStates;
+      state.keyboard = gameStore.input.keyboard;
+      state.mouse = gameStore.input.pointer;
+      state.characterConfig = gameStore.config.character;
+      state.vehicleConfig = gameStore.config.vehicle;
+      state.airplaneConfig = gameStore.config.airplane;
+      state.clickerOption = gameStore.input.clickerOption;
+      state.modeType = gameStore.ui.mode.type as 'character' | 'vehicle' | 'airplane';
     },
     [],
   );
@@ -116,8 +103,8 @@ export default function calculation(props: PhysicsCalculationProps) {
     const cache = cacheRef.current;
 
     const { worldContext, input, urls, getSizesByUrls } = bridgeRef.current;
-    const modeType = (worldContext as any)?.mode?.type || 'character';
-    const modeControl = (worldContext as any)?.mode?.control || 'thirdPerson';
+    const modeType = gameStore.ui.mode.type;
+    const modeControl = gameStore.ui.mode.control;
 
     if (
       cache.modeType === modeType &&
@@ -136,7 +123,7 @@ export default function calculation(props: PhysicsCalculationProps) {
       cache.modeType = modeType;
       cache.calculationFn = getCalculationFunction(modeType);
       calculationFnRef.current = cache.calculationFn;
-      physicsSync.updateMode((worldContext as any)?.mode);
+      physicsSync.updateMode(gameStore.ui.mode);
     }
 
     cache.modeControl = modeControl;
@@ -190,29 +177,17 @@ export default function calculation(props: PhysicsCalculationProps) {
 
   const createInitialPhysicsState = useCallback(
     (worldContext: any, input: any, modeType: string): PhysicsState => {
+      // Valtio store에서 직접 상태 사용
       return {
-        activeState: worldContext.activeState!,
-        gameStates: worldContext.states!,
-        keyboard: { ...input.keyboard },
-        mouse: {
-          target: input.mouse.target.clone(),
-          angle: input.mouse.angle,
-          isActive: input.mouse.isActive,
-          shouldRun: input.mouse.shouldRun,
-        },
-        characterConfig: worldContext.character || {},
-        vehicleConfig: worldContext.vehicle || {},
-        airplaneConfig: worldContext.airplane || {},
-        clickerOption: worldContext.clickerOption || {
-          isRun: true,
-          throttle: 100,
-          autoStart: false,
-          track: false,
-          loop: false,
-          queue: [],
-          line: false,
-        },
-        modeType: modeType as 'character' | 'vehicle' | 'airplane',
+        activeState: gameStore.physics.activeState,
+        gameStates: gameStore.gameStates,
+        keyboard: gameStore.input.keyboard,
+        mouse: gameStore.input.pointer,
+        characterConfig: gameStore.config.character,
+        vehicleConfig: gameStore.config.vehicle,
+        airplaneConfig: gameStore.config.airplane,
+        clickerOption: gameStore.input.clickerOption,
+        modeType: gameStore.ui.mode.type as 'character' | 'vehicle' | 'airplane',
       };
     },
     [],
@@ -222,7 +197,7 @@ export default function calculation(props: PhysicsCalculationProps) {
     const physicsState = physicsStateRef.current;
     if (!physicsState?.activeState || !physicsState?.gameStates || !physicsState?.characterConfig)
       return;
-    direction(physicsState, (bridgeRef.current?.worldContext as any)?.mode?.control, calcProp);
+    direction(physicsState, gameStore.ui.mode.control, calcProp);
     impulse(props.rigidBodyRef, physicsState);
     gravity(props.rigidBodyRef, physicsState);
     innerCalc(props.rigidBodyRef, props.innerGroupRef, physicsState);
@@ -282,9 +257,18 @@ export default function calculation(props: PhysicsCalculationProps) {
       }
 
       if (calcPropRef.current) {
+        // Valtio store에서 직접 상태 가져오기
+        const currentActiveState = {
+          ...gameStore.physics.activeState,
+          isMoving: gameStore.gameStates.isMoving,
+          isRunning: gameStore.gameStates.isRunning,
+          isJumping: gameStore.gameStates.isJumping,
+          isOnTheGround: gameStore.gameStates.isOnTheGround,
+        };
+
         check(
           calcPropRef.current,
-          physicsStateRef.current.activeState,
+          currentActiveState,
           `physics-${props.rigidBodyRef?.current?.handle || 'unknown'}`,
         );
         calculationFnRef.current(calcPropRef.current);

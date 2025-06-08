@@ -235,3 +235,15 @@ export const createStateUpdater = <T extends keyof gaesupWorldContextType>(
     });
   };
 };
+
+export type {
+  airplaneDebugType,
+  airplaneType,
+  animationPropType,
+  characterDebugType,
+  characterType,
+  gaesupDisptachType,
+  gaesupWorldContextType,
+  vehicleDebugType,
+  vehicleType,
+} from './types';

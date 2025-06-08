@@ -1,8 +1,9 @@
 import { useGLTF } from '@react-three/drei';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useSnapshot } from 'valtio';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { sizesAtom } from '../../atoms';
+import { gameStore } from '../../store/gameStore';
+import { gameActions } from '../../store/actions';
 import { GLTFResult } from '../../component/types';
 import { ResourceUrlsType } from '../../types';
 import { GltfAndSizeReturnType, gltfAndSizeType, useGltfAndSizeType } from './types';
@@ -39,8 +40,7 @@ const cleanupGltf = (url: string) => {
 };
 
 export const useGltfAndSize = ({ url }: useGltfAndSizeType): GltfAndSizeReturnType => {
-  const sizes = useAtomValue(sizesAtom);
-  const setSizes = useSetAtom(sizesAtom);
+  const sizes = useSnapshot(gameStore.resources.sizes);
 
   const safeUrl = url || 'data:application/json,{}';
   const isValidUrl = Boolean(url && url.trim() !== '');
@@ -86,14 +86,12 @@ export const useGltfAndSize = ({ url }: useGltfAndSizeType): GltfAndSizeReturnTy
     if (!isInitialized.current && isValidUrl && url && scene && !(url in sizes)) {
       isInitialized.current = true;
       const newSize = calculateSize();
-      setSizes(
-        (prev: Record<string, THREE.Vector3>): Record<string, THREE.Vector3> => ({
-          ...prev,
-          [url]: newSize,
-        }),
-      );
+      gameActions.updateSizes({
+        ...sizes,
+        [url]: newSize,
+      });
     }
-  }, [url, scene, sizes, setSizes, calculateSize, isValidUrl]);
+  }, [url, scene, sizes, calculateSize, isValidUrl]);
 
   const size = useMemo(() => {
     if (!isValidUrl) {
@@ -107,15 +105,13 @@ export const useGltfAndSize = ({ url }: useGltfAndSizeType): GltfAndSizeReturnTy
       if (!isValidUrl) return;
       const key = keyName || url;
       Promise.resolve().then(() => {
-        setSizes(
-          (prev: Record<string, THREE.Vector3>): Record<string, THREE.Vector3> => ({
-            ...prev,
-            [key]: newSize,
-          }),
-        );
+        gameActions.updateSizes({
+          ...sizes,
+          [key]: newSize,
+        });
       });
     },
-    [url, setSizes, isValidUrl],
+    [url, sizes, isValidUrl],
   );
 
   const getSize = useCallback(
@@ -131,8 +127,7 @@ export const useGltfAndSize = ({ url }: useGltfAndSizeType): GltfAndSizeReturnTy
 };
 
 export const useGaesupGltf = () => {
-  const sizes = useAtomValue(sizesAtom);
-  const setSizes = useSetAtom(sizesAtom);
+  const sizes = useSnapshot(gameStore.resources.sizes);
 
   const getSizesByUrls = useCallback(
     (urls?: ResourceUrlsType) => {
@@ -177,17 +172,15 @@ export const useGaesupGltf = () => {
 
       const results = await Promise.all(loadPromises);
 
-      setSizes((prev: Record<string, THREE.Vector3>): Record<string, THREE.Vector3> => {
-        const newSizes = { ...prev };
-        results.forEach((result) => {
-          if (result) {
-            newSizes[result.url] = result.size;
-          }
-        });
-        return newSizes;
+      const newSizes = { ...sizes };
+      results.forEach((result) => {
+        if (result) {
+          newSizes[result.url] = result.size;
+        }
       });
+      gameActions.updateSizes(newSizes);
     },
-    [sizes, setSizes],
+    [sizes],
   );
 
   return { getSizesByUrls, preloadSizes };

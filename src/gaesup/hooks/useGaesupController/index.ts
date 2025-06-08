@@ -1,22 +1,19 @@
-import { useContext } from 'react';
-import { useAtomValue } from 'jotai';
-import { GaesupContext } from '../../context';
-import { urlsAtom } from '../../atoms';
+import { useSnapshot } from 'valtio';
+import { gameStore } from '../../store/gameStore';
 import { gaesupPassivePropsType } from './types';
 
 export function useGaesupController(): gaesupPassivePropsType {
-  const worldContext = useContext(GaesupContext);
-  const urls = useAtomValue(urlsAtom);
+  const mode = useSnapshot(gameStore.ui.mode);
+  const urls = useSnapshot(gameStore.resources.urls);
+  const animation = useSnapshot(gameStore.ui.animation);
 
   const currentAnimation =
-    worldContext.mode?.type && worldContext.animationState
-      ? worldContext.animationState[worldContext.mode.type].current
-      : 'idle';
+    mode.type && animation ? (animation as any)[mode.type]?.current || 'idle' : 'idle';
 
   return {
-    state: worldContext.activeState || null,
-    mode: worldContext.mode || null,
-    urls: urls,
+    state: gameStore.physics.activeState,
+    mode: mode as any,
+    urls: urls as any,
     currentAnimation,
   };
 }

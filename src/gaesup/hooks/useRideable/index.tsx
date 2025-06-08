@@ -1,9 +1,10 @@
 import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
-import { useContext, useEffect } from 'react';
-import { GaesupContext, GaesupDispatchContext } from '../../context';
+import { useEffect } from 'react';
+import { useSnapshot } from 'valtio';
+import { gameStore } from '../../store/gameStore';
+import { gameActions } from '../../store/actions';
 import { useGaesupGltf } from '../useGaesupGltf';
 import { RideStateChangeData, rideableType } from './types';
-import { eventBus } from '@/gaesup/physics/stores';
 
 export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'url' | 'wheelUrl'> =
   {
@@ -15,226 +16,148 @@ export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'u
   };
 
 export function useRideable() {
-  const worldContext = useContext(GaesupContext);
-  const { urls, states, rideable, mode } = worldContext;
-  const dispatch = useContext(GaesupDispatchContext);
+  const gameStates = useSnapshot(gameStore.gameStates);
+  const urls = useSnapshot(gameStore.resources.urls);
+  const rideable = useSnapshot(gameStore.resources.rideable);
+  const mode = useSnapshot(gameStore.ui.mode);
   const { getSizesByUrls } = useGaesupGltf();
 
   useEffect(() => {
-    if (!states) return;
-    const unsubscribe = eventBus.subscribe('RIDE_STATE_CHANGE', (data: RideStateChangeData) => {
-      dispatch({
-        type: 'update',
-        payload: {
-          states: {
-            ...states,
-            shouldEnterRideable: data.shouldEnterRideable,
-            shouldExitRideable: data.shouldExitRideable,
-            canRide: data.canRide,
-            isRiding: data.isRiding,
-          },
-        },
-      });
-    });
-    return unsubscribe;
-  }, [dispatch, states]);
-
-  useEffect(() => {
-    if (states?.shouldEnterRideable) {
+    if (gameStates.shouldEnterRideable) {
       enterRideable();
-      dispatch({
-        type: 'update',
-        payload: {
-          states: { ...states, shouldEnterRideable: false },
-        },
-      });
+      gameActions.updateGameStates({ shouldEnterRideable: false });
     }
-  }, [states?.shouldEnterRideable, dispatch, states]);
+  }, [gameStates.shouldEnterRideable]);
 
   useEffect(() => {
-    if (states?.shouldExitRideable) {
+    if (gameStates.shouldExitRideable) {
       exitRideable();
-      dispatch({
-        type: 'update',
-        payload: {
-          states: { ...states, shouldExitRideable: false },
-        },
-      });
+      gameActions.updateGameStates({ shouldExitRideable: false });
     }
-  }, [states?.shouldExitRideable, dispatch, states]);
+  }, [gameStates.shouldExitRideable]);
 
   const initRideable = (props: rideableType) => {
-    if (!rideable) return;
-    rideable[props.objectkey] = {
+    gameActions.updateRideable(props.objectkey, {
       ...rideableDefault,
       ...props,
-    };
+    });
   };
 
   const setRideable = (props: rideableType) => {
-    if (!rideable) return;
-    rideable[props.objectkey] = props;
+    gameActions.updateRideable(props.objectkey, props);
   };
 
   const getRideable = (objectkey: string): rideableType | undefined => {
-    if (!rideable) return undefined;
-    return rideable[objectkey];
+    return gameStore.resources.rideable[objectkey];
   };
 
   const landing = (objectkey: string) => {
-    if (
-      !worldContext.states ||
-      !worldContext.rideable ||
-      !worldContext.activeState ||
-      !worldContext.urls ||
-      !worldContext.mode
-    )
-      return;
+    const activeState = gameStore.physics.activeState;
+    const refs = gameStore.physics.refs;
+    const rideableItem = gameStore.resources.rideable[objectkey];
 
-    const { activeState, refs, states, rideable, urls, mode } = worldContext;
-
-    states.enableRiding = false;
-    states.isRiderOn = false;
-    states.rideableId = null;
-
-    const rideableItem = rideable[objectkey];
     if (!rideableItem || !rideableItem.position) return;
 
+    gameActions.updateGameStates({
+      enableRiding: false,
+      isRiderOn: false,
+      rideableId: null,
+    });
+
     const modeType = rideableItem.objectType;
-    const { vehicleUrl, airplaneUrl, characterUrl } = getSizesByUrls(urls);
+    const { vehicleUrl, airplaneUrl, characterUrl } = getSizesByUrls(urls as any);
     const size = modeType === 'vehicle' ? vehicleUrl : airplaneUrl;
     const mySize = characterUrl;
     if (!size || !mySize) return;
 
-    rideableItem.visible = true;
-    rideableItem.position.copy(activeState.position.clone());
+    gameActions.updateRideable(objectkey, { visible: true });
+    gameActions.updateRideable(objectkey, { position: activeState.position.clone() });
+
     if (refs && refs.rigidBodyRef) {
       refs.rigidBodyRef.current.setTranslation(
         activeState.position.clone().add(size.clone().add(mySize.clone()).addScalar(1)),
         false,
       );
     }
-    dispatch({
-      type: 'update',
-      payload: {
-        rideable: { ...rideable },
-        states: { ...states },
-        activeState: { ...activeState },
-        mode: { ...mode, type: 'character' },
-      },
-    });
+
+    gameActions.updateMode({ type: 'character' });
   };
 
   const setUrl = async (props: rideableType) => {
-    if (!worldContext.urls) return;
-    const { urls } = worldContext;
-    urls.ridingUrl = props.ridingUrl || urls.characterUrl || undefined;
+    const updateData: any = {
+      ridingUrl: props.ridingUrl || (gameStore.resources.urls as any).characterUrl || undefined,
+    };
+
     if (props.objectType === 'vehicle') {
-      urls.vehicleUrl = props.url;
-      urls.wheelUrl = props.wheelUrl || undefined;
+      updateData.vehicleUrl = props.url;
+      updateData.wheelUrl = props.wheelUrl || undefined;
     } else if (props.objectType === 'airplane') {
-      urls.airplaneUrl = props.url;
+      updateData.airplaneUrl = props.url;
     }
 
-    dispatch({
-      type: 'update',
-      payload: {
-        urls: {
-          ...urls,
-        },
-      },
-    });
+    gameActions.updateUrls(updateData);
   };
 
   const setModeAndRiding = async (props: rideableType) => {
-    if (!worldContext.mode || !worldContext.states || !worldContext.rideable) return;
-    const { mode, states, rideable } = worldContext;
     if (!props.objectType) return;
-    mode.type = props.objectType;
-    states.enableRiding = props.enableRiding ?? false;
-    states.isRiderOn = true;
-    states.rideableId = props.objectkey;
-    const rideableItem = rideable[props.objectkey];
-    if (!rideableItem) return;
-    rideableItem.visible = false;
-    dispatch({
-      type: 'update',
-      payload: {
-        mode: { ...mode },
-        states: { ...states },
-      },
+
+    gameActions.updateMode({ type: props.objectType });
+    gameActions.updateGameStates({
+      enableRiding: props.enableRiding ?? false,
+      isRiderOn: true,
+      rideableId: props.objectkey as any,
     });
+
+    gameActions.updateRideable(props.objectkey, { visible: false });
   };
 
   const onRideableNear = async (e: CollisionEnterPayload, props: rideableType) => {
-    if (!worldContext.states) return;
-    const { states } = worldContext;
     if (
       e.other.rigidBodyObject &&
       e.other.rigidBodyObject.name === 'character' &&
-      !states.isRiding
+      !gameStates.isRiding
     ) {
       if (!props.objectType) return;
-      states.nearbyRideable = {
-        objectkey: props.objectkey,
-        objectType: props.objectType,
-        name: props.objectType === 'vehicle' ? '차량' : '비행기',
-      };
-      states.canRide = true;
 
-      dispatch({
-        type: 'update',
-        payload: {
-          states: { ...states },
-        },
+      gameActions.updateGameStates({
+        nearbyRideable: {
+          objectkey: props.objectkey,
+          objectType: props.objectType,
+          name: props.objectType === 'vehicle' ? '차량' : '비행기',
+        } as any,
+        canRide: true,
       });
     }
   };
 
   const onRideableLeave = async (e: CollisionExitPayload) => {
-    if (!worldContext.states) return;
-    const { states } = worldContext;
     if (e.other.rigidBodyObject && e.other.rigidBodyObject.name === 'character') {
-      states.nearbyRideable = null;
-      states.canRide = false;
-
-      dispatch({
-        type: 'update',
-        payload: {
-          states: { ...states },
-        },
+      gameActions.updateGameStates({
+        nearbyRideable: null,
+        canRide: false,
       });
     }
   };
 
   const enterRideable = async () => {
-    if (!worldContext.states || !worldContext.rideable) return;
-    const { states, rideable } = worldContext;
-    if (states.canRide && states.nearbyRideable && !states.isRiding) {
-      const rideableData = rideable[states.nearbyRideable.objectkey];
+    if (gameStates.canRide && gameStates.nearbyRideable && !gameStates.isRiding) {
+      const rideableData =
+        gameStore.resources.rideable[(gameStates.nearbyRideable as any).objectkey];
       if (rideableData) {
         await setUrl(rideableData);
         await setModeAndRiding(rideableData);
 
-        states.canRide = false;
-        states.nearbyRideable = null;
-
-        dispatch({
-          type: 'update',
-          payload: {
-            states: { ...states },
-          },
+        gameActions.updateGameStates({
+          canRide: false,
+          nearbyRideable: null,
         });
-      } else {
       }
     }
   };
 
   const exitRideable = async () => {
-    if (!worldContext.states) return;
-    const { states } = worldContext;
-    if (states.isRiding && states.rideableId) {
-      landing(states.rideableId);
+    if (gameStates.isRiding && gameStates.rideableId) {
+      landing(gameStates.rideableId);
     }
   };
 

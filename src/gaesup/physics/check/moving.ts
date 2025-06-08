@@ -1,16 +1,13 @@
-import { eventBus } from '../stores';
+import { gameStore } from '../../store/gameStore';
 import { PhysicsCalcProps } from '../types';
 let isCurrentlyJumping = false;
 let lastMovingState = false;
 let lastRunningState = false;
 
 export default function moving(prop: PhysicsCalcProps) {
-  const { inputRef } = prop;
-  if (!inputRef || !inputRef.current) {
-    return;
-  }
-  const keyboard = inputRef.current.keyboard;
-  const mouse = inputRef.current.mouse;
+  // gameStore에서 직접 상태 가져오기
+  const keyboard = gameStore.input.keyboard;
+  const mouse = gameStore.input.pointer;
   const shift = keyboard.shift;
   const space = keyboard.space;
   const forward = keyboard.forward;
@@ -29,22 +26,20 @@ export default function moving(prop: PhysicsCalcProps) {
   } else if (isClickerMoving && clickerIsRun) {
     isRunning = true;
   }
+
   if (space && !isCurrentlyJumping) {
     isCurrentlyJumping = true;
-    eventBus.emit('JUMP_STATE_CHANGE', {
-      isJumping: true,
-      isOnTheGround: true,
-    });
+    // gameStore 직접 업데이트
+    gameStore.gameStates.isJumping = true;
   }
+
   if (lastMovingState !== isMoving || lastRunningState !== isRunning) {
     lastMovingState = isMoving;
     lastRunningState = isRunning;
-    eventBus.emit('MOVE_STATE_CHANGE', {
-      isMoving,
-      isRunning,
-      isNotMoving: !isMoving,
-      isNotRunning: !isRunning,
-    });
+    // gameStore 직접 업데이트
+    gameStore.gameStates.isMoving = isMoving;
+    gameStore.gameStates.isRunning = isRunning;
+    gameStore.gameStates.isNotMoving = !isMoving;
   }
 }
 

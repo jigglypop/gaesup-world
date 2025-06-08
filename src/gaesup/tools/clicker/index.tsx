@@ -1,8 +1,8 @@
 import { Line } from '@react-three/drei';
-import { useAtomValue } from 'jotai';
+import { useSnapshot } from 'valtio';
 import { memo } from 'react';
 import * as THREE from 'three';
-import { inputAtom } from '../../atoms';
+import { gameStore } from '../../store/gameStore';
 
 const OnMarker = memo(() => (
   <mesh>
@@ -19,7 +19,7 @@ const RunMarker = memo(() => (
 ));
 
 export const Clicker = memo(() => {
-  const inputSystem = useAtomValue(inputAtom);
+  const inputSystem = useSnapshot(gameStore.input);
   const pointer = inputSystem.pointer;
   const clickerOption = inputSystem.clickerOption;
   const pointQ = [];

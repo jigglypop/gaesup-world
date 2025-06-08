@@ -1,8 +1,8 @@
 import { vec3 } from '@react-three/rapier';
-import { useAtom } from 'jotai';
+import { useSnapshot } from 'valtio';
 import { useCallback, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { cameraOptionAtom } from '../../atoms/cameraOptionAtom';
+import { gameStore } from '../../store/gameStore';
 import { CameraRayType, GroundRayType, RefsType } from '../../../types';
 import { update } from '../../utils/context';
 import { useGaesupContext, useGaesupDispatch } from '../../context';
@@ -12,7 +12,7 @@ import { initControllerPropsType } from './types';
 export default function initControllerProps(props: initControllerPropsType) {
   const context = useGaesupContext();
   const dispatch = useGaesupDispatch();
-  const [cameraOption] = useAtom(cameraOptionAtom);
+  const cameraOption = useSnapshot(gameStore.ui.cameraOption);
   const controlConfig = useMemo(() => {
     if (!context?.control) return null;
     if (context.mode.controller === 'clicker') {

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ActiveBlend, CameraBlendState } from './types';
-import { eventBus } from '@/gaesup/physics/stores';
+import { gameStore } from '../../store/gameStore';
 
 export enum BlendFunction {
   Linear = 'linear',

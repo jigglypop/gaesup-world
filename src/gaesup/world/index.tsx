@@ -1,7 +1,6 @@
 'use client';
-import { useSetAtom } from 'jotai';
 import { Suspense, useEffect } from 'react';
-import { cameraOptionAtom } from '../atoms';
+import { gameActions } from '../store/actions';
 import { GaesupProvider } from '../context';
 import { useGaesupGltf } from '../hooks/useGaesupGltf';
 import initGaesupWorld from './initalize';
@@ -24,7 +23,6 @@ function LoadingSpinner() {
 
 export function GaesupWorld(props: gaesupWorldPropsType) {
   const { gaesupProps } = initGaesupWorld(props);
-  const setCameraOption = useSetAtom(cameraOptionAtom);
   const { preloadSizes } = useGaesupGltf();
   useEffect(() => {
     const urls = Object.values(props.urls || {}).filter(Boolean) as string[];
@@ -34,12 +32,9 @@ export function GaesupWorld(props: gaesupWorldPropsType) {
   }, [props.urls, preloadSizes]);
   useEffect(() => {
     if (props.cameraOption) {
-      setCameraOption((prevOption) => ({
-        ...prevOption,
-        ...props.cameraOption,
-      }));
+      gameActions.updateCameraOption(props.cameraOption);
     }
-  }, [props.cameraOption, setCameraOption]);
+  }, [props.cameraOption]);
   return (
     <GaesupProvider initialState={gaesupProps.value}>
       <Suspense fallback={<LoadingSpinner />}>{props.children}</Suspense>
