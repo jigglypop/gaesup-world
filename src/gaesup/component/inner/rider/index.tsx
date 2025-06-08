@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import { useAnimationPlayer } from '../../../utils/animation';
-import { useGltfAndSize } from '../../../utils/gltf';
+import { useGltfAndSize } from '../../../gltf';
 import { riderRefType } from './types';
 
 export default function RiderRef({ url, children, offset, currentAnimation }: riderRefType) {

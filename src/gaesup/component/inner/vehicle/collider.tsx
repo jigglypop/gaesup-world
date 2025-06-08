@@ -1,7 +1,7 @@
 import { Collider } from '@dimforge/rapier3d-compat';
 import { CuboidCollider } from '@react-three/rapier';
 import { Ref, forwardRef } from 'react';
-import { useGltfAndSize } from '../../../utils/gltf';
+import { useGltfAndSize } from '../../../gltf';
 import { VehicleColliderProps, VehicleWheelColliderProps } from './type';
 
 export const VehicleWheelCollider = forwardRef(

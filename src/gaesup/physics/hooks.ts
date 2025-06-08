@@ -7,7 +7,7 @@ import { inputAtom, keyboardInputAtom, pointerInputAtom } from '../atoms/inputAt
 import { GaesupContext, GaesupDispatchContext } from '../context';
 import { gaesupWorldContextType } from '../context/types';
 import type { PhysicsBridgeInputData, PhysicsBridgeData } from '../../types';
-import { useGaesupGltf } from './gltf';
+import { useGaesupGltf } from '../gltf';
 
 export interface PhysicsResult {
   bridgeRef: React.RefObject<PhysicsBridgeData>;
