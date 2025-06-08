@@ -30,7 +30,6 @@ export interface PhysicsResult {
 }
 
 export function usePhysics(): PhysicsResult {
-  // Atoms and contexts
   const inputSystem = useAtomValue(inputAtom);
   const setKeyboardInput = useSetAtom(keyboardInputAtom);
   const setPointerInput = useSetAtom(pointerInputAtom);

@@ -6,9 +6,9 @@ import {
   AnimationStateType,
   KeyboardControlState,
   GameStatesType,
-} from '../../../types';
-import { AnimationActions } from '../../../utils/animation';
-import { ActionsType } from '../../type';
+} from '../../../../types';
+import { AnimationActions } from '../../../../utils/animation';
+import { ActionsType } from '../../../types';
 
 export type callbackPropType = {
   activeState: ActiveStateType;

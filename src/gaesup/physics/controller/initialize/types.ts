@@ -1,4 +1,4 @@
-import { RefsType } from '../../../types';
+import { RefsType } from '../../../../types';
 
 export type initControllerPropsType = {
   refs: RefsType;

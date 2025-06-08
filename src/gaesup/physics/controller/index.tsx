@@ -4,10 +4,10 @@ import { useContextBridge } from '@react-three/drei';
 import { RapierRigidBody } from '@react-three/rapier';
 import { ReactElement, useRef } from 'react';
 import * as THREE from 'three';
-import { GaesupComponent } from '../component';
-import { GaesupContext } from '../atoms';
-import { useKeyboard } from '../hooks/useKeyboard';
-import { useMainFrameLoop } from '../hooks/useUnifiedFrame';
+import { GaesupComponent } from '../../component';
+import { GaesupContext } from '../../atoms';
+import { useKeyboard } from '../../hooks/useKeyboard';
+import { useMainFrameLoop } from '../../hooks/useUnifiedFrame';
 import initControllerProps from './initialize';
 import { controllerInnerType, controllerType } from './types';
 

@@ -1,4 +1,4 @@
-import { airplaneType, characterType, vehicleType } from '../atoms';
+import { airplaneType, characterType, vehicleType } from '../../atoms';
 import {
   ActionsType,
   AnimationTagType,
@@ -17,7 +17,7 @@ import {
   RefsType,
   ResourceUrlsType,
   SlopeRayType,
-} from '../types';
+} from '../../types';
 import { callbackType } from './initialize/callback/types';
 
 export type {

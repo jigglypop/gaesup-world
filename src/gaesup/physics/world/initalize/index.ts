@@ -1,6 +1,6 @@
 import { useMemo, useReducer } from 'react';
-import { gaesupWorldDefault, gaesupWorldReducer } from '../../atoms';
-import { gaesupWorldPropsType } from '../type';
+import { gaesupWorldDefault, gaesupWorldReducer } from '../../../atoms';
+import { gaesupWorldPropsType } from '../types';
 
 export default function initGaesupWorld(props: gaesupWorldPropsType) {
   const initialState = useMemo(
@@ -13,7 +13,7 @@ export default function initGaesupWorld(props: gaesupWorldPropsType) {
       urls: { ...gaesupWorldDefault.urls, ...(props.urls || {}) },
       refs: null,
       states: gaesupWorldDefault.states,
-      rideable: gaesupWorldDefault.rideable,
+      rideable: gaesupWorldDefault.rideable || {},
       control: gaesupWorldDefault.control,
       clicker: gaesupWorldDefault.clicker,
       clickerOption: { ...gaesupWorldDefault.clickerOption, ...(props.clickerOption || {}) },

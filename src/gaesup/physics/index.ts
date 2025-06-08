@@ -12,6 +12,9 @@ import { PhysicsCalcProps, PhysicsCalculationProps, PhysicsState } from './types
 import vehicleCalculation from './vehicle';
 import { physicsSync } from './stores';
 
+export { GaesupController } from './controller';
+export { GaesupWorld } from './world';
+
 export default function calculation(props: PhysicsCalculationProps) {
   const { bridgeRef, layerStatus } = usePhysics();
   const physicsStateRef = useRef<PhysicsState | null>(null);

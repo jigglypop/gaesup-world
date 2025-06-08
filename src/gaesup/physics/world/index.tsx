@@ -1,11 +1,11 @@
 'use client';
 import { useSetAtom } from 'jotai';
 import { Suspense, useEffect } from 'react';
-import { cameraOptionAtom } from '../atoms';
-import { GaesupProvider } from '../atoms';
-import { useGaesupGltf } from '../utils/gltf';
+import { cameraOptionAtom } from '../../atoms';
+import { GaesupProvider } from '../../atoms';
+import { useGaesupGltf } from '../../utils/gltf';
 import initGaesupWorld from './initalize';
-import { gaesupWorldPropsType } from './type';
+import { gaesupWorldPropsType } from './types';
 
 function LoadingSpinner() {
   return (

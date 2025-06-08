@@ -8,7 +8,6 @@ import { SkeletonUtils } from 'three-stdlib';
 import { cameraOptionAtom } from '../../../atoms/cameraOptionAtom';
 import Camera from '../../../camera';
 import { GaesupContext } from '../../../atoms';
-import initCallback from '../../../controller/initialize/callback';
 import { useAnimationPlayer } from '../../../utils/animation';
 import { useGltfAndSize } from '../../../utils/gltf';
 import calculation from '../../../physics';
@@ -16,6 +15,7 @@ import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './partsGroupRef';
 import { useSetGroundRay } from './setGroundRay';
 import { rigidBodyRefType } from './types';
+import initCallback from '@/gaesup/physics/controller/initialize/callback';
 
 export const RigidBodyRef = forwardRef(
   (props: rigidBodyRefType, ref: MutableRefObject<RapierRigidBody>) => {
@@ -111,7 +111,6 @@ export const RigidBodyRef = forwardRef(
     }
 
     useAnimationPlayer(actions, props.isActive);
-
     initCallback({
       props,
       actions,

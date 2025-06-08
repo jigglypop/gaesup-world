@@ -1,7 +1,13 @@
 import { ReactNode } from 'react';
 import * as THREE from 'three';
-import { DispatchType } from '../types';
-import { gaesupWorldContextType } from './context/type';
+import {
+  DispatchType,
+  ResourceUrlsType,
+  ModeType,
+  CameraOptionType,
+  ClickerOptionState,
+} from '../../types';
+import { gaesupWorldContextType } from '../../atoms/types';
 
 export type gaesupWorldInitType = {
   value: gaesupWorldContextType;
@@ -19,11 +25,11 @@ export type PerformanceMonitorConfig = {
 export type gaesupWorldPropsType = {
   children: ReactNode;
   startPosition?: THREE.Vector3;
-  urls?: urlsType;
-  mode?: modeType;
+  urls?: ResourceUrlsType;
+  mode?: ModeType;
   debug?: boolean;
-  cameraOption?: cameraOptionType;
-  block?: blockType;
-  clickerOption?: clickerOptionType;
+  cameraOption?: CameraOptionType;
+  block?: any;
+  clickerOption?: ClickerOptionState;
   performance?: PerformanceMonitorConfig;
 };
