@@ -1,6 +1,6 @@
 import { quat, euler, vec3 } from '@react-three/rapier';
 import { useGenericRefs } from '../../inner/common/useGenericRefs';
-import { useUnifiedFrame } from '../../../hooks/useUnifiedFrame';
+import { useUnifiedFrame } from '../../../utils/frame';
 import { passiveAirplanePropsType } from './types';
 import { AirplaneInnerRef } from '../../inner/airplane';
 import { useMemo } from 'react';

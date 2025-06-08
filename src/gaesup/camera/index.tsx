@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { blockAtom, cameraOptionAtom } from '../atoms';
 import { gaesupWorldContextType } from '../context';
-import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
+import { useUnifiedFrame } from '../utils/frame';
 import { CameraBlendManager } from './blend/CameraBlendManager';
 import { SmartCollisionSystem } from './collision/SmartCollisionSystem';
 import chase from './control/chase';

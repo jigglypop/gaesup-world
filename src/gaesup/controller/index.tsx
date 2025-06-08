@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { GaesupComponent } from '../component';
 import { GaesupContext } from '../context';
 import { useKeyboard } from '../hooks/useKeyboard';
-import { useMainFrameLoop } from '../hooks/useUnifiedFrame';
+import { useMainFrameLoop } from '../utils/frame';
 import initControllerProps from './initialize';
 import { controllerInnerType, controllerType } from './types';
 

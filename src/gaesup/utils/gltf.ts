@@ -2,10 +2,20 @@ import { useGLTF } from '@react-three/drei';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { sizesAtom } from '../../atoms';
-import { GLTFResult } from '../../component/types';
+import { sizesAtom } from '../atoms';
+import { GLTFResult } from '../component/types';
 import { ResourceUrlsType } from '../../types';
-import { GltfAndSizeReturnType, useGltfAndSizeType } from './types';
+
+export interface GltfAndSizeOptions {
+  url?: string;
+}
+
+export interface GltfAndSizeResult {
+  gltf: GLTFResult;
+  size: THREE.Vector3;
+  setSize: (newSize: THREE.Vector3, keyName?: string) => void;
+  getSize: (keyName?: string) => THREE.Vector3 | null;
+}
 
 const gltfCache = new Map<
   string,
@@ -38,7 +48,7 @@ const cleanupGltf = (url: string) => {
   }
 };
 
-export const useGltfAndSize = ({ url }: useGltfAndSizeType): GltfAndSizeReturnType => {
+export const useGltfAndSize = ({ url }: GltfAndSizeOptions): GltfAndSizeResult => {
   const sizes = useAtomValue(sizesAtom);
   const setSizes = useSetAtom(sizesAtom);
 
@@ -130,7 +140,12 @@ export const useGltfAndSize = ({ url }: useGltfAndSizeType): GltfAndSizeReturnTy
   return { gltf, size, setSize, getSize };
 };
 
-export const useGaesupGltf = () => {
+export interface GaesupGltfUtils {
+  getSizesByUrls: (urls?: ResourceUrlsType) => Record<string, THREE.Vector3 | null>;
+  preloadSizes: (urls: string[]) => Promise<void>;
+}
+
+export const useGaesupGltf = (): GaesupGltfUtils => {
   const sizes = useAtomValue(sizesAtom);
   const setSizes = useSetAtom(sizesAtom);
 

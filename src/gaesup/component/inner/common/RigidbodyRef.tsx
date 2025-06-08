@@ -10,7 +10,7 @@ import Camera from '../../../camera';
 import { GaesupContext } from '../../../context';
 import initCallback from '../../../controller/initialize/callback';
 import { useAnimationPlayer } from '../../../utils/animation';
-import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
+import { useGltfAndSize } from '../../../utils/gltf';
 import calculation from '../../../physics';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './partsGroupRef';

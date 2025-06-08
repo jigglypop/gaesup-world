@@ -6,9 +6,8 @@ import {
   RigidBody,
   useRevoluteJoint,
 } from '@react-three/rapier';
-import { RefObject, createRef, useContext, useRef } from 'react';
-import * as THREE from 'three';
-import { useGltfAndSize } from '../../../hooks/useGaesupGltf';
+import { createRef, useContext, useRef } from 'react';
+import { useGltfAndSize } from '../../../utils/gltf';
 import { GaesupContext } from '../../../context';
 import { WheelJointProps, WheelsRefProps } from './type';
 

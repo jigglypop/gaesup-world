@@ -1,7 +1,7 @@
 import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
 import { useContext, useEffect } from 'react';
 import { GaesupContext, GaesupDispatchContext } from '../../context';
-import { useGaesupGltf } from '../useGaesupGltf';
+import { useGaesupGltf } from '../../utils/gltf';
 import { RideStateChangeData, rideableType } from './types';
 import { eventBus } from '@/gaesup/physics/stores';
 
@@ -16,7 +16,7 @@ export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'u
 
 export function useRideable() {
   const worldContext = useContext(GaesupContext);
-  const { urls, states, rideable, mode } = worldContext;
+  const { states, rideable } = worldContext;
   const dispatch = useContext(GaesupDispatchContext);
   const { getSizesByUrls } = useGaesupGltf();
 

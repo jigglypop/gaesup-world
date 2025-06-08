@@ -1,13 +1,13 @@
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useContext, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { blockAtom, urlsAtom } from '../../atoms';
-import { animationAtoms } from '../../atoms/animationAtoms';
-import { inputAtom, keyboardInputAtom, pointerInputAtom } from '../../atoms/inputAtom';
-import { GaesupContext, GaesupDispatchContext } from '../../context';
-import { gaesupWorldContextType } from '../../context/types';
-import type { PhysicsBridgeInputData, PhysicsBridgeData } from '../../../types';
-import { useGaesupGltf } from '../useGaesupGltf';
+import { blockAtom, urlsAtom } from '../atoms';
+import { animationAtoms } from '../atoms/animationAtoms';
+import { inputAtom, keyboardInputAtom, pointerInputAtom } from '../atoms/inputAtom';
+import { GaesupContext, GaesupDispatchContext } from '../context';
+import { gaesupWorldContextType } from '../context/types';
+import type { PhysicsBridgeInputData, PhysicsBridgeData } from '../../types';
+import { useGaesupGltf } from './gltf';
 
 export interface PhysicsResult {
   bridgeRef: React.RefObject<PhysicsBridgeData>;
