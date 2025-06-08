@@ -1,7 +1,7 @@
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { useAnimationPlayer } from '../../../hooks/useGaesupAnimation/useAnimationPlayer';
+import { useAnimationPlayer } from '../../../utils/animation';
 import { componentTypeString } from '../../passive/types';
 import { PartsGroupRefProps } from './types';
 

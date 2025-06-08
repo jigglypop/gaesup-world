@@ -2,8 +2,9 @@ import { useSetAtom } from 'jotai';
 import { useEffect } from 'react';
 import * as THREE from 'three';
 import { minimapAtom } from '../../atoms';
+import { MinimapMarkerProps, MinimapObjectProps, MinimapPlatformProps } from './types';
 
-interface MinimapMarkerProps {
+interface InternalMinimapMarkerProps {
   id: string;
   position: THREE.Vector3 | [number, number, number];
   size?: THREE.Vector3 | [number, number, number];
@@ -12,7 +13,6 @@ interface MinimapMarkerProps {
   children?: React.ReactNode;
 }
 
-// 미니맵 마커 자동 등록 컴포넌트
 export function MinimapMarker({
   id,
   position,
@@ -20,13 +20,12 @@ export function MinimapMarker({
   text = '',
   type = 'normal',
   children,
-}: MinimapMarkerProps) {
+}: InternalMinimapMarkerProps) {
   const setMinimap = useSetAtom(minimapAtom);
 
   useEffect(() => {
     // 위치와 크기를 Vector3로 변환
     const pos = Array.isArray(position) ? new THREE.Vector3(...position) : position;
-
     const sizeVec = Array.isArray(size) ? new THREE.Vector3(...size) : size;
 
     // 미니맵에 등록

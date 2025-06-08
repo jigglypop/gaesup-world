@@ -1,14 +1,14 @@
 import { useRapier } from '@react-three/rapier';
-import { useRayHit } from '../../../hooks/useRayHit';
+import { useRaycast } from '../../../utils/physics';
 import { setGroundRayType } from './types';
 
 export function useSetGroundRay() {
   const { rapier } = useRapier();
-  const getRayHit = useRayHit();
+  const { castRay } = useRaycast();
   const setGroundRay = ({ groundRay, length, colliderRef }: setGroundRayType) => {
     groundRay.length = length;
     groundRay.rayCast = new rapier.Ray(groundRay.origin, groundRay.dir);
-    groundRay.hit = getRayHit({
+    groundRay.hit = castRay({
       ray: groundRay,
       ref: colliderRef,
     });

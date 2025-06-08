@@ -1,10 +1,4 @@
-import type {
-  ActiveStateType,
-  GameStatesType,
-  PhysicsEventCallback,
-  PhysicsEventData,
-  PhysicsEventType,
-} from '../../../types';
+import type { PhysicsEventCallback, PhysicsEventData, PhysicsEventType } from '../../../types';
 
 class EventBus {
   private listeners: Map<PhysicsEventType, Set<PhysicsEventCallback<any>>> = new Map();
@@ -12,7 +6,6 @@ class EventBus {
   private lastEventData: Map<PhysicsEventType, unknown> = new Map();
   private lastEventTime: Map<PhysicsEventType, number> = new Map();
   private maxListenersPerEvent = 50;
-  private listenerWarningThreshold = 30;
   private eventQueue: Map<PhysicsEventType, PhysicsEventData[PhysicsEventType][]> = new Map();
   private isProcessing = false;
   private lastProcessTime = 0;
@@ -49,7 +42,6 @@ class EventBus {
       const listeners = this.listeners.get(eventType);
       if (listeners) {
         listeners.delete(callback as PhysicsEventCallback<any>);
-
         if (listeners.size === 0) {
           this.listeners.delete(eventType);
         }
@@ -73,16 +65,12 @@ class EventBus {
         return;
       }
     }
-
-    // 더 정교한 중복 체크
     if (this.isDeepDuplicate(eventType, data)) {
       return;
     }
-
     this.lastEventTime.set(eventType, now);
     this.lastEventData.set(eventType, data);
     this.eventCount++;
-
     const listeners = this.listeners.get(eventType);
     if (listeners) {
       listeners.forEach((callback) => {

@@ -7,7 +7,7 @@ import {
   KeyboardControlState,
   GameStatesType,
 } from '../../../types';
-import { AnimationActions } from '../../../hooks/useGaesupAnimation/types';
+import { AnimationActions } from '../../../utils/animation';
 import { ActionsType } from '../../type';
 
 export type callbackPropType = {

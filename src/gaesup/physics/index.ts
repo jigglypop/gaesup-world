@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { type SizesType } from '../../types';
-import { useBridgeConnector } from '../hooks/useBridgeConnector';
+import { usePhysics } from '../hooks/usePhysics';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
 import airplaneCalculation from './airplane';
 import { direction } from './character/direction';
@@ -13,7 +13,7 @@ import vehicleCalculation from './vehicle';
 import { physicsSync } from './stores';
 
 export default function calculation(props: PhysicsCalculationProps) {
-  const { bridgeRef, layerStatus } = useBridgeConnector();
+  const { bridgeRef, layerStatus } = usePhysics();
   const physicsStateRef = useRef<PhysicsState | null>(null);
   const isReadyRef = useRef(false);
   const matchSizesRef = useRef<SizesType | null>(null);

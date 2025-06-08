@@ -1,9 +1,8 @@
-// GamePad.tsx
 import { useAtomValue } from 'jotai';
 import { inputAtom, modeStateAtom } from '../../atoms';
 import GamePadButton from './GamePadButton';
 import './style.css';
-import { gameBoyDirectionType, gamepadType } from './type';
+import { gameBoyDirectionType, gamepadType } from './types';
 
 export const gamepadDefault = {
   on: true,
@@ -14,6 +13,7 @@ export function GamePad(props: gamepadType) {
   const inputSystem = useAtomValue(inputAtom);
   const mode = useAtomValue(modeStateAtom);
   const keyboard = inputSystem.keyboard;
+  
   const GamePadDirections = Object.keys(keyboard)
     .map((key: string) => {
       const name = label?.[key] || key;
@@ -51,4 +51,4 @@ export function GamePad(props: gamepadType) {
       )}
     </>
   );
-}
+} 

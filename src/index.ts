@@ -15,16 +15,39 @@ export { GaesupController } from './gaesup/controller';
 export { PerfMonitor } from './gaesup/component/perfMonitor';
 export { GaeSupProps } from './gaesup/gaesupProps';
 export { useGaesupController } from './gaesup/hooks/useGaesupController';
-export { useClicker, usePushKey, useTeleport } from './gaesup/hooks/useInputControls';
-export { usePhysicsInput } from './gaesup/hooks/usePhysicsInput';
+export { useKeyboard } from './gaesup/hooks/useKeyboard';
+export type { KeyboardResult, KeyboardOptions } from './gaesup/hooks/useKeyboard';
+export { useClicker } from './gaesup/hooks/useClicker';
+export type { ClickerResult, ClickerMoveOptions } from './gaesup/hooks/useClicker';
+export { useTeleport } from './gaesup/hooks/useTeleport';
+export type { TeleportResult } from './gaesup/hooks/useTeleport';
+export { usePhysics } from './gaesup/hooks/usePhysics';
+export type { PhysicsResult } from './gaesup/hooks/usePhysics';
+export { useRaycast } from './gaesup/utils/physics';
+export { useAnimationPlayer, createAnimationController } from './gaesup/utils/animation';
+export type { AnimationActions } from './gaesup/utils/animation';
 export { useRideable } from './gaesup/hooks/useRideable';
 export { useMainFrameLoop, useUnifiedFrame } from './gaesup/hooks/useUnifiedFrame';
-export { Clicker } from './gaesup/tools/clicker';
+export { Clicker } from './gaesup/component/clicker';
 export { FocusModal } from '../examples/src/commons/FocusModal';
-export { GamePad } from './gaesup/tools/gamepad';
-export { MiniMap, MinimapMarker, MinimapObject, MinimapPlatform } from './gaesup/tools/minimap';
+export { GamePad } from './gaesup/component/gamepad';
+export type {
+  gamepadType,
+  gameBoyDirectionType,
+  GamePadButtonType,
+} from './gaesup/component/gamepad/types';
+export { MiniMap, MinimapMarker, MinimapObject, MinimapPlatform } from './gaesup/component/minimap';
+export { useMinimap } from './gaesup/hooks/useMinimap';
+export type { MinimapResult } from './gaesup/hooks/useMinimap';
+export type {
+  MinimapProps,
+  MinimapMarkerProps,
+  MinimapObjectProps,
+  MinimapPlatformProps,
+} from './gaesup/component/minimap/types';
 export { Rideable } from './gaesup/tools/rideable';
-export { teleport } from './gaesup/tools/teleport';
+export { Teleport } from './gaesup/component/teleport';
+export type { TeleportProps } from './gaesup/component/teleport/types';
 export { Elr, Qt, V3, V30, V31 } from './gaesup/utils/vector';
 export { GaesupWorld } from './gaesup/world';
 export type { PerformanceMonitorConfig } from './gaesup/world/type';

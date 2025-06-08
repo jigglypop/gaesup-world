@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { sizesAtom } from '../../atoms';
 import { GLTFResult } from '../../component/types';
 import { ResourceUrlsType } from '../../types';
-import { GltfAndSizeReturnType, gltfAndSizeType, useGltfAndSizeType } from './types';
+import { GltfAndSizeReturnType, useGltfAndSizeType } from './types';
 
 const gltfCache = new Map<
   string,
