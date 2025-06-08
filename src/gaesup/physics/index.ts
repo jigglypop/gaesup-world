@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { type SizesType } from '../../types';
-import { usePhysics } from './hooks';
+import { usePhysics } from './stores';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
 import airplaneCalculation from './airplane';
 import { direction } from './character/direction';
