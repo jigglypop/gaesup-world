@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ActiveStateType, CameraOptionType } from '../../context';
+import { ActiveStateType, CameraOptionType } from '../../atoms';
 import { CameraPropType } from '../type';
 import { cameraUtils } from '../utils';
 

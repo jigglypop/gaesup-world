@@ -1,4 +1,4 @@
-export * from '../../../types';
+export * from '../../types';
 export * from './core';
 
 export type {

@@ -4,7 +4,7 @@ import { PassiveAirplane } from '../../component/passive/airplane';
 import { PassiveVehicle } from '../../component/passive/vehicle';
 import { useRideable } from '../../hooks/useRideable';
 import { GameStatesType } from '../../types';
-import { GaesupContext } from '../../context';
+import { GaesupContext } from '../../atoms';
 import { rideablePropType } from './type';
 
 export function RideableUI({ states }: { states: GameStatesType }) {

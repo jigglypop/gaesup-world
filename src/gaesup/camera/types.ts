@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { gaesupWorldContextType } from '../context/types';
+import { gaesupWorldContextType } from '../atoms/types';
 import { CameraOptionType } from '../types';
 
 export interface CameraPropType {

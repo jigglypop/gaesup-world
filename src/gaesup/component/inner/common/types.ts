@@ -4,7 +4,7 @@ import { MutableRefObject, RefObject } from 'react';
 import * as THREE from 'three';
 import { callbackType } from '../../../../controller/initialize/callback/type';
 import { GroundRayType, PartsType } from '../../../../controller/type';
-import { ResourceUrlsType } from '../../../../context';
+import { ResourceUrlsType } from '../../../../atoms';
 import { innerRefType, passivePropsType } from '../../../passive/types';
 // collider 정의
 export type characterColliderType = {

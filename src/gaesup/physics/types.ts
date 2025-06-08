@@ -11,8 +11,8 @@ import {
   GroundRayType,
   ResourceUrlsType,
 } from '../types';
-import { dispatchType } from '../utils/type';
-import { airplaneType, characterType, gaesupWorldContextType, vehicleType } from '../context';
+import { DispatchType } from '../types';
+import { airplaneType, characterType, gaesupWorldContextType, vehicleType } from '../atoms';
 
 export interface PhysicsRefs {
   colliderRef: RefObject<Collider>;
@@ -55,7 +55,7 @@ export interface PhysicsCalcProps extends PhysicsRefs {
   state: RootState;
   delta: number;
   worldContext: Partial<gaesupWorldContextType>;
-  dispatch: dispatchType<gaesupWorldContextType>;
+  dispatch: DispatchType<gaesupWorldContextType>;
   matchSizes: { [key in keyof ResourceUrlsType]?: THREE.Vector3 };
   inputRef: PhysicsInputRef;
   setKeyboardInput: (update: Partial<PhysicsState['keyboard']>) => void;

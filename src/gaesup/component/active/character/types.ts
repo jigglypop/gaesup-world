@@ -2,7 +2,7 @@ import { RigidBodyTypeString } from '@react-three/rapier';
 import * as THREE from 'three';
 import { controllerInnerType, refsType } from '../../../../controller/type';
 import { controllerOptionsType } from '../../../controller/type';
-import { ResourceUrlsType } from '../../../context';
+import { ResourceUrlsType } from '../../../atoms';
 import { ReactNode } from 'react';
 
 export type activeCharacterPropsType = {

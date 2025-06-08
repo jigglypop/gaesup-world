@@ -1,36 +1,18 @@
 'use client';
-import { euler, quat, vec3 } from '@react-three/rapier';
 import { useAtomValue } from 'jotai';
 import { ReactNode, createContext, useContext, useEffect, useReducer } from 'react';
-import { modeStateAtom } from '../atoms/coreStateAtoms';
+import * as THREE from 'three';
 import {
-  ActiveStateType,
-  ControlState,
-  DispatchType,
-  GameStatesType,
-  KeyboardControlState,
-  ModeType,
-  PassiveStateType,
-  RefsType,
-  ResourceUrlsType,
-  SizeType,
-  SizesType,
-} from '../types';
-import { V3 } from '../utils/vector';
+  activeStateAtom,
+  modeStateAtom,
+  urlsStateAtom,
+  gameStatesAtom,
+  animationStateAtom,
+  rideableStateAtom,
+  sizesStateAtom,
+  controllerConfigAtom,
+} from './coreStateAtoms';
 import { gaesupDisptachType, gaesupWorldContextType } from './types';
-
-export type {
-  ActiveStateType,
-  ControlState,
-  GameStatesType,
-  KeyboardControlState,
-  ModeType,
-  PassiveStateType,
-  RefsType,
-  ResourceUrlsType,
-  SizeType,
-  SizesType,
-};
 
 export function gaesupWorldReducer(
   props: Partial<gaesupWorldContextType>,
@@ -49,14 +31,23 @@ export function gaesupWorldReducer(
   }
 }
 
+export const GaesupContext = createContext<Partial<gaesupWorldContextType>>({});
+export const GaesupDispatchContext = createContext<gaesupDisptachType>(() => {});
+
+interface GaesupProviderProps {
+  children: ReactNode;
+  initialState?: Partial<gaesupWorldContextType>;
+}
+
+// Export default state for compatibility
 export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
   activeState: {
-    position: V3(0, 5, 5),
-    velocity: vec3(),
-    quat: quat(),
-    euler: euler(),
-    dir: vec3(),
-    direction: vec3(),
+    position: new THREE.Vector3(0, 5, 5),
+    velocity: new THREE.Vector3(),
+    quat: new THREE.Quaternion(),
+    euler: new THREE.Euler(),
+    dir: new THREE.Vector3(),
+    direction: new THREE.Vector3(),
   },
   mode: {
     type: 'character',
@@ -90,7 +81,7 @@ export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
     shouldExitRideable: false,
   },
   clicker: {
-    point: V3(0, 0, 0),
+    point: new THREE.Vector3(0, 0, 0),
     angle: Math.PI / 2,
     isOn: false,
     isRun: false,
@@ -135,68 +126,74 @@ export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
     queue: [],
     line: false,
   },
-  airplane: {
-    angleDelta: V3(Math.PI / 256, Math.PI / 256, Math.PI / 256),
-    maxAngle: V3(Math.PI / 8, Math.PI / 8, Math.PI / 8),
-    maxSpeed: 60,
-    accelRatio: 2,
-    brakeRatio: 5,
-    buoyancy: 0.2,
-    linearDamping: 1,
-  },
-  vehicle: {
-    maxSpeed: 60,
-    accelRatio: 2,
-    brakeRatio: 5,
-    wheelOffset: 0.1,
-    linearDamping: 0.5,
-  },
-  character: {
-    walkSpeed: 10,
-    runSpeed: 20,
-    turnSpeed: 10,
-    jumpSpeed: 15,
-    linearDamping: 1,
-    jumpGravityScale: 1.5,
-    normalGravityScale: 1.0,
-    airDamping: 0.1,
-    stopDamping: 3,
-  },
   callbacks: {
     onReady: () => {},
     onFrame: () => {},
     onDestory: () => {},
     onAnimate: () => {},
   },
-  controllerOptions: {
-    lerp: {
-      cameraTurn: 1,
-      cameraPosition: 1,
-    },
-  },
 };
 
-export const GaesupContext = createContext<Partial<gaesupWorldContextType>>(gaesupWorldDefault);
-export const GaesupDispatchContext = createContext<gaesupDisptachType>(() => {});
-
-interface GaesupProviderProps {
-  children: ReactNode;
-  initialState?: Partial<gaesupWorldContextType>;
-}
-
 export function GaesupProvider({ children, initialState = {} }: GaesupProviderProps) {
+  // Atoms에서 기본값들 가져오기 (중복 제거)
+  const activeState = useAtomValue(activeStateAtom);
+  const mode = useAtomValue(modeStateAtom);
+  const urls = useAtomValue(urlsStateAtom);
+  const gameStates = useAtomValue(gameStatesAtom);
+  const animationState = useAtomValue(animationStateAtom);
+  const rideable = useAtomValue(rideableStateAtom);
+  const sizes = useAtomValue(sizesStateAtom);
+  const controllerConfig = useAtomValue(controllerConfigAtom);
+
+  const defaultState: Partial<gaesupWorldContextType> = {
+    activeState,
+    mode,
+    urls,
+    states: gameStates,
+    animationState,
+    rideable,
+    sizes,
+    ...controllerConfig,
+    // 기타 설정들
+    clicker: {
+      point: new THREE.Vector3(0, 0, 0),
+      angle: Math.PI / 2,
+      isOn: false,
+      isRun: false,
+    },
+    control: {
+      forward: false,
+      backward: false,
+      leftward: false,
+      rightward: false,
+    },
+    block: {
+      camera: false,
+      control: false,
+      animation: false,
+      scroll: true,
+    },
+    clickerOption: {
+      isRun: true,
+      throttle: 100,
+      autoStart: false,
+      track: false,
+      loop: false,
+      queue: [],
+      line: false,
+    },
+    callbacks: {
+      onReady: () => {},
+      onFrame: () => {},
+      onDestory: () => {},
+      onAnimate: () => {},
+    },
+  };
+
   const [state, dispatch] = useReducer(gaesupWorldReducer, {
-    ...gaesupWorldDefault,
+    ...defaultState,
     ...initialState,
   });
-  const modeState = useAtomValue(modeStateAtom);
-
-  useEffect(() => {
-    dispatch({
-      type: 'update',
-      payload: { mode: modeState },
-    });
-  }, [modeState]);
 
   return (
     <GaesupContext.Provider value={state}>
@@ -221,17 +218,3 @@ export function useGaesupContext() {
 export function useGaesupDispatch() {
   return useContext(GaesupDispatchContext);
 }
-
-export const createStateUpdater = <T extends keyof gaesupWorldContextType>(
-  dispatch: DispatchType<Partial<gaesupWorldContextType>>,
-  stateKey: T,
-) => {
-  return (updates: Partial<gaesupWorldContextType[T]>) => {
-    dispatch({
-      type: 'update',
-      payload: {
-        [stateKey]: updates,
-      },
-    });
-  };
-};

@@ -4,10 +4,10 @@ import * as THREE from 'three';
 import { blockAtom, urlsAtom } from '../atoms';
 import { animationAtoms } from '../atoms/animationAtoms';
 import { inputAtom, keyboardInputAtom, pointerInputAtom } from '../atoms/inputAtom';
-import { GaesupContext, GaesupDispatchContext } from '../context';
-import { gaesupWorldContextType } from '../context/types';
+import { GaesupContext, GaesupDispatchContext } from '../atoms';
+import { gaesupWorldContextType } from '../atoms/types';
 import type { PhysicsBridgeInputData, PhysicsBridgeData } from '../../types';
-import { useGaesupGltf } from '../gltf';
+import { useGaesupGltf } from '../utils/gltf';
 
 export interface PhysicsResult {
   bridgeRef: React.RefObject<PhysicsBridgeData>;

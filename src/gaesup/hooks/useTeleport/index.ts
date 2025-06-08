@@ -1,6 +1,6 @@
 import { useContext } from 'react';
 import * as THREE from 'three';
-import { GaesupContext } from '../../context';
+import { GaesupContext } from '../../atoms';
 
 export interface TeleportResult {
   teleport: (position: THREE.Vector3) => boolean;

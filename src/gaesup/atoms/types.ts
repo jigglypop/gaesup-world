@@ -1,6 +1,87 @@
-import { minimapInnerType } from '../tools/minimap/types';
-import { AnimationAtomType } from '../types';
+import { GroupProps } from '@react-three/fiber';
+import { Dispatch } from 'react';
 import * as THREE from 'three';
+
+// Context types (moved from context/types.ts)
+export type animationPropType = {
+  current: string;
+  animationNames: any;
+  keyControl: {
+    [key: string]: boolean;
+  };
+  store: {};
+  default: string;
+};
+
+export type airplaneDebugType = {
+  angleDelta?: THREE.Vector3;
+  maxAngle?: THREE.Vector3;
+  buoyancy?: number;
+  maxSpeed?: number;
+  accelRatio?: number;
+  brakeRatio?: number;
+  linearDamping?: number;
+};
+
+export type vehicleDebugType = {
+  maxSpeed?: number;
+  accelRatio?: number;
+  brakeRatio?: number;
+  wheelOffset?: number;
+  linearDamping?: number;
+};
+
+export type characterDebugType = {
+  jumpSpeed?: number;
+  turnSpeed?: number;
+  walkSpeed?: number;
+  runSpeed?: number;
+  linearDamping?: number;
+  jumpGravityScale?: number;
+  normalGravityScale?: number;
+  airDamping?: number;
+  stopDamping?: number;
+};
+
+export interface airplaneType extends GroupProps, airplaneDebugType {}
+export interface vehicleType extends GroupProps, vehicleDebugType {}
+export interface characterType extends GroupProps, characterDebugType {}
+
+export type gaesupWorldContextType = {
+  activeState?: any;
+  mode?: any;
+  urls?: any;
+  states?: any;
+  control?: any;
+  refs?: any;
+  animationState?: any;
+  clickerOption?: any;
+  clicker?: any;
+  rideable?: { [key: string]: any };
+  sizes?: any;
+  block?: any;
+  airplane?: airplaneType;
+  vehicle?: vehicleType;
+  character?: characterType;
+  callbacks?: any;
+  controllerOptions?: {
+    lerp: {
+      cameraTurn: number;
+      cameraPosition: number;
+    };
+  };
+};
+
+export type gaesupDisptachType = Dispatch<{
+  type: string;
+  payload?: Partial<gaesupWorldContextType>;
+}>;
+
+export type AnimationAtomType = {
+  current: string;
+  default: string;
+  store: Record<string, any>;
+};
 
 export interface ActiveState {
   position: THREE.Vector3;

@@ -2,7 +2,7 @@ import { useAtom, useAtomValue } from 'jotai';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { blockAtom, cameraOptionAtom } from '../atoms';
-import { gaesupWorldContextType } from '../context';
+import { gaesupWorldContextType } from '../atoms';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
 import { CameraBlendManager } from './blend/CameraBlendManager';
 import { SmartCollisionSystem } from './collision/SmartCollisionSystem';

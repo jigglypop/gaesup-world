@@ -1,7 +1,7 @@
 import { useAtom, useAtomValue } from 'jotai';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { minimapAtom, modeStateAtom } from '../../atoms';
-import { GaesupContext } from '../../context';
+import { GaesupContext } from '../../atoms';
 
 const DEFAULT_SCALE = 5;
 const MIN_SCALE = 0.5;

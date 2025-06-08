@@ -1,3 +1,3 @@
 export * from './vector';
-export * from './context';
 export * from './memoization';
+export * from './gltf';

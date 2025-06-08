@@ -1,4 +1,4 @@
-import { airplaneType, characterType, vehicleType } from '../context';
+import { airplaneType, characterType, vehicleType } from '../atoms';
 import {
   ActionsType,
   AnimationTagType,

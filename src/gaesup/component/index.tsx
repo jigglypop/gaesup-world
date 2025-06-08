@@ -1,7 +1,7 @@
 import { vec3 } from '@react-three/rapier';
 import { ReactElement, useContext, useMemo } from 'react';
 import { controllerInnerType, refsType } from '../controller/type';
-import { GaesupContext } from '../context';
+import { GaesupContext } from '../atoms';
 import { AirplaneRef } from './active/airplane';
 import { CharacterRef } from './active/character';
 import { VehicleRef } from './active/vehicle';

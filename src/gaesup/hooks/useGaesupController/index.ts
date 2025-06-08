@@ -1,6 +1,6 @@
 import { useContext } from 'react';
 import { useAtomValue } from 'jotai';
-import { GaesupContext } from '../../context';
+import { GaesupContext } from '../../atoms';
 import { urlsAtom } from '../../atoms';
 import { gaesupPassivePropsType } from './types';
 

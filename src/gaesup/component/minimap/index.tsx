@@ -99,3 +99,4 @@ export function MiniMap({
 
 // Re-export marker components
 export { MinimapMarker, MinimapObject, MinimapPlatform } from './MinimapMarker';
+ 

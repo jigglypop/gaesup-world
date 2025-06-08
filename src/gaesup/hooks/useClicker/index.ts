@@ -3,7 +3,7 @@ import { useSetAtom } from 'jotai';
 import { useContext } from 'react';
 import * as THREE from 'three';
 import { pointerInputAtom } from '../../atoms/inputAtom';
-import { GaesupContext } from '../../context';
+import { GaesupContext } from '../../atoms';
 import { V3 } from '../../utils';
 
 export interface ClickerResult {

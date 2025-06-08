@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { cameraPropType } from '../../physics/type';
 import { V3 } from '../../utils/vector';
-import { ActiveStateType, CameraOptionType } from '../../context';
+import { ActiveStateType, CameraOptionType } from '../../atoms';
 import { cameraUtils } from '../utils';
 
 export const makeTopDownCameraPosition = (

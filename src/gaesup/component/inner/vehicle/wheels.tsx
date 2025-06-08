@@ -7,8 +7,8 @@ import {
   useRevoluteJoint,
 } from '@react-three/rapier';
 import { createRef, useContext, useRef } from 'react';
-import { useGltfAndSize } from '../../../gltf';
-import { GaesupContext } from '../../../context';
+import { useGltfAndSize } from '../../../utils/gltf';
+import { GaesupContext } from '../../../atoms';
 import { WheelJointProps, WheelsRefProps } from './type';
 
 const WheelJoint = ({ body, wheel, bodyAnchor, wheelAnchor, rotationAxis }: WheelJointProps) => {

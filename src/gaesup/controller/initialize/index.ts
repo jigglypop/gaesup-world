@@ -4,9 +4,8 @@ import { useCallback, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { cameraOptionAtom } from '../../atoms/cameraOptionAtom';
 import { CameraRayType, GroundRayType, RefsType } from '../../../types';
-import { update } from '../../utils/context';
-import { useGaesupContext, useGaesupDispatch } from '../../context';
-import { gaesupWorldContextType } from '../../context/types';
+import { useGaesupContext, useGaesupDispatch } from '../../atoms';
+import { gaesupWorldContextType } from '../../atoms/types';
 import { initControllerPropsType } from './types';
 
 export default function initControllerProps(props: initControllerPropsType) {
@@ -59,14 +58,14 @@ export default function initControllerProps(props: initControllerPropsType) {
 
   const initRefs = useCallback(
     (refs: RefsType) => {
-      update<gaesupWorldContextType>(
-        {
+      dispatch({
+        type: 'update',
+        payload: {
           refs: {
             ...refs,
           },
         },
-        dispatch,
-      );
+      });
     },
     [dispatch],
   );

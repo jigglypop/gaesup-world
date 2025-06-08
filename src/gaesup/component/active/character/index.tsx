@@ -1,5 +1,5 @@
 import { controllerInnerType, refsType } from '../../../controller/type';
-import { ResourceUrlsType } from '../../../context';
+import { ResourceUrlsType } from '../../../atoms';
 import { CharacterInnerRef } from '../../inner/character';
 import { CharacterRefProps } from './types';
 

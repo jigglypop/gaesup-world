@@ -1,7 +1,7 @@
 import { euler, quat, vec3 } from '@react-three/rapier';
 import { atom } from 'jotai';
 import * as THREE from 'three';
-import { minimapInnerType } from '../tools/minimap/types';
+// Use inline type for minimap instead of minimapInnerType
 import { AnimationAtomType } from '../../types';
 import { inputAtom, movementStateAtom } from './inputAtom';
 import {
@@ -94,7 +94,7 @@ export const rideableStateAtom = atom<
 >({});
 
 export const sizesStateAtom = atom<Record<string, THREE.Vector3>>({});
-export const minimapAtom = atom<minimapInnerType>({
+export const minimapAtom = atom<{ props: Record<string, any> }>({
   props: {},
 });
 
