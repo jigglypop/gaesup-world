@@ -58,6 +58,8 @@ export type callbackType = {
   onAnimate?: () => void;
 };
 
+export type componentTypeString = 'character' | 'vehicle' | 'airplane' | 'passive';
+
 export type controllerInnerType = {
   name?: string;
   groundRay: GroundRayType;

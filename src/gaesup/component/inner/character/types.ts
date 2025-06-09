@@ -1,4 +1,4 @@
-import { callbackType } from '../../../physics/world/initalize/callback';
+import { callbackType } from '../../../physics/world/types';
 import { GroundRayType, PartsType } from '../../../physics/world/types';
 import { passiveCharacterPropsType } from '../../passive/character/types';
 import { componentTypeString, innerRefType } from '../../passive/types';
