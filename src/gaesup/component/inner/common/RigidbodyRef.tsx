@@ -15,7 +15,7 @@ import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './partsGroupRef';
 import { useSetGroundRay } from './setGroundRay';
 import { rigidBodyRefType } from './types';
-import { initCallback } from '@/gaesup/physics/world';
+import { initCallback } from '@/gaesup/component/physics';
 
 export const RigidBodyRef = forwardRef(
   (props: rigidBodyRefType, ref: MutableRefObject<RapierRigidBody>) => {

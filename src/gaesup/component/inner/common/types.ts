@@ -2,8 +2,7 @@ import { Collider } from '@dimforge/rapier3d-compat';
 import { RigidBodyProps, RigidBodyTypeString } from '@react-three/rapier';
 import { MutableRefObject, RefObject } from 'react';
 import * as THREE from 'three';
-import { callbackType } from '../../../physics/world/types';
-import { GroundRayType, PartsType } from '../../../physics/world/types';
+import { callbackType, GroundRayType, PartsType } from '../../physics/types';
 import { ResourceUrlsType } from '../../../../atoms';
 import { innerRefType, passivePropsType } from '../../../passive/types';
 // collider 정의

@@ -2,17 +2,11 @@ import { useCallback, useEffect, useRef } from 'react';
 import { type SizesType } from '../../types';
 import { usePhysics } from './stores';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
-import airplaneCalculation from './airplane';
-import { direction } from './character/direction';
-import { gravity } from './character/gravity';
-import { impulse } from './character/impulse';
-import { innerCalc } from './character/innerCalc';
-import check from './check';
 import { PhysicsCalcProps, PhysicsCalculationProps, PhysicsState } from './types';
-import vehicleCalculation from './vehicle';
 import { physicsSync } from './stores';
+import { PhysicsEngine } from './PhysicsEngine';
 
-export { GaesupWorld, GaesupController } from './world';
+export { GaesupWorld, GaesupController } from '../component/physics';
 
 export default function calculation(props: PhysicsCalculationProps) {
   const { bridgeRef, layerStatus } = usePhysics();
@@ -136,7 +130,7 @@ export default function calculation(props: PhysicsCalculationProps) {
 
     if (cache.modeType !== modeType) {
       cache.modeType = modeType;
-      cache.calculationFn = getCalculationFunction(modeType);
+      cache.calculationFn = getCalculationFunction();
       calculationFnRef.current = cache.calculationFn;
       physicsSync.updateMode((worldContext as any)?.mode);
     }
@@ -186,7 +180,7 @@ export default function calculation(props: PhysicsCalculationProps) {
       }
     }
 
-    calculationFnRef.current = cache.calculationFn || getCalculationFunction(modeType);
+    calculationFnRef.current = cache.calculationFn || getCalculationFunction();
     return true;
   }, [updatePhysicsStateOnly]);
 
@@ -220,31 +214,17 @@ export default function calculation(props: PhysicsCalculationProps) {
     [],
   );
 
-  const executeCharacterPhysics = useCallback((calcProp: PhysicsCalcProps) => {
+  const physicsEngine = useRef(new PhysicsEngine());
+
+  const executePhysics = useCallback((calcProp: PhysicsCalcProps) => {
     const physicsState = physicsStateRef.current;
-    if (!physicsState?.activeState || !physicsState?.gameStates || !physicsState?.characterConfig)
-      return;
-    direction(physicsState, (bridgeRef.current?.worldContext as any)?.mode?.control, calcProp);
-    impulse(props.rigidBodyRef, physicsState);
-    gravity(props.rigidBodyRef, physicsState);
-    innerCalc(props.rigidBodyRef, props.innerGroupRef, physicsState);
+    if (!physicsState?.activeState || !physicsState?.gameStates) return;
+    physicsEngine.current.calculate(calcProp, physicsState);
   }, []);
 
-  const getCalculationFunction = useCallback(
-    (modeType: string) => {
-      switch (modeType) {
-        case 'vehicle':
-          return (calcProp: PhysicsCalcProps) =>
-            vehicleCalculation(calcProp, physicsStateRef.current!);
-        case 'airplane':
-          return (calcProp: PhysicsCalcProps) =>
-            airplaneCalculation(calcProp, physicsStateRef.current!);
-        default:
-          return executeCharacterPhysics;
-      }
-    },
-    [executeCharacterPhysics],
-  );
+  const getCalculationFunction = useCallback(() => {
+    return executePhysics;
+  }, [executePhysics]);
 
   useUnifiedFrame(
     `physics-${props.rigidBodyRef?.current?.handle || 'unknown'}`,
@@ -284,11 +264,6 @@ export default function calculation(props: PhysicsCalculationProps) {
       }
 
       if (calcPropRef.current) {
-        check(
-          calcPropRef.current,
-          physicsStateRef.current.activeState,
-          `physics-${props.rigidBodyRef?.current?.handle || 'unknown'}`,
-        );
         calculationFnRef.current(calcPropRef.current);
       }
     },

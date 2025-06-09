@@ -23,7 +23,7 @@ import {
   gaesupWorldDefault,
   gaesupWorldReducer,
 } from '../../atoms';
-import { GaesupComponent } from '../../component';
+import { GaesupComponent } from '../';
 import { GaesupContext } from '../../atoms';
 import { useKeyboard } from '../../hooks/useKeyboard';
 import { useMainFrameLoop } from '../../hooks/useUnifiedFrame';
