@@ -1,12 +1,8 @@
-'use client';
-
 import { Environment } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { euler, Physics } from '@react-three/rapier';
 import { Suspense } from 'react';
-import { FaMapMarkerAlt } from 'react-icons/fa';
-import { Clicker, GaesupController, GaesupWorld, MiniMap, PerfMonitor, V3 } from '../../src';
-import { InnerHtml } from '../../src/gaesup/component/InnerHtml';
+import { Clicker, GaesupController, GaesupWorld, MiniMap, PerfMonitor } from '../../src';
 import Info from '../info';
 import Passive from '../passive';
 import Floor from './Floor';
@@ -58,20 +54,7 @@ function AppContent() {
             <Floor />
             <Platforms />
             <Passive />
-            <Clicker
-              onMarker={
-                <group rotation={euler({ x: 0, y: Math.PI / 2, z: 0 })}>
-                  <InnerHtml position={V3(0, 1, 0)}>
-                    <FaMapMarkerAlt style={{ color: '#f4ffd4', fontSize: '5rem' }} />
-                  </InnerHtml>
-                </group>
-              }
-              runMarker={
-                <InnerHtml position={V3(0, 1, 0)}>
-                  <FaMapMarkerAlt style={{ color: '#ffac8e', fontSize: '5rem' }} />
-                </InnerHtml>
-              }
-            />
+            <Clicker />
             <RideableVehicles />
           </Physics>
           <PerfMonitor position="bottom-right" updateInterval={500} visible={true} zIndex={10001} />

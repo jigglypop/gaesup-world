@@ -1,6 +1,6 @@
 import { useTeleport } from '../../hooks/useTeleport';
-import './style.css';
 import { TeleportProps } from './types';
+import './style.css';
 
 export function Teleport({ text, position, teleportStyle }: TeleportProps) {
   const { teleport, canTeleport } = useTeleport();
@@ -8,7 +8,7 @@ export function Teleport({ text, position, teleportStyle }: TeleportProps) {
   const handleTeleport = () => {
     const success = teleport(position);
     if (!success) {
-      console.warn('Teleport operation failed');
+      console.warn('이동에 실패했습니다.');
     }
   };
 
