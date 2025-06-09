@@ -1,8 +1,6 @@
 import { euler, quat, vec3 } from '@react-three/rapier';
 import { atom } from 'jotai';
 import * as THREE from 'three';
-// Use inline type for minimap instead of minimapInnerType
-import { AnimationAtomType } from '../../types';
 import { inputAtom, movementStateAtom } from './inputAtom';
 import {
   ActiveState,

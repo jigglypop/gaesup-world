@@ -2,16 +2,7 @@ import { useSetAtom } from 'jotai';
 import { useEffect } from 'react';
 import * as THREE from 'three';
 import { minimapAtom } from '../../atoms';
-import { MinimapMarkerProps, MinimapObjectProps, MinimapPlatformProps } from './types';
-
-interface InternalMinimapMarkerProps {
-  id: string;
-  position: THREE.Vector3 | [number, number, number];
-  size?: THREE.Vector3 | [number, number, number];
-  text?: string;
-  type?: 'normal' | 'ground';
-  children?: React.ReactNode;
-}
+import { InternalMinimapMarkerProps } from './types';
 
 export function MinimapMarker({
   id,
@@ -24,11 +15,8 @@ export function MinimapMarker({
   const setMinimap = useSetAtom(minimapAtom);
 
   useEffect(() => {
-    // 위치와 크기를 Vector3로 변환
     const pos = Array.isArray(position) ? new THREE.Vector3(...position) : position;
     const sizeVec = Array.isArray(size) ? new THREE.Vector3(...size) : size;
-
-    // 미니맵에 등록
     setMinimap((prev) => ({
       props: {
         ...prev.props,
@@ -40,8 +28,6 @@ export function MinimapMarker({
         },
       },
     }));
-
-    // 컴포넌트 언마운트 시 제거
     return () => {
       setMinimap((prev) => {
         const newProps = { ...prev.props };
@@ -50,11 +36,9 @@ export function MinimapMarker({
       });
     };
   }, [id, position, size, text, type, setMinimap]);
-
   return <>{children}</>;
 }
 
-// 편의를 위한 특별한 마커들
 export function MinimapPlatform({
   id,
   position,

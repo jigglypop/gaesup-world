@@ -17,7 +17,6 @@ export class DirectionController {
   private tempEuler = new THREE.Euler();
   private tempQuaternion = new THREE.Quaternion();
   private targetQuaternion = new THREE.Quaternion();
-
   private lastEulerY = { character: 0, vehicle: 0, airplane: 0 };
   private lastDirectionLength = 0;
   private lastKeyboardState = {

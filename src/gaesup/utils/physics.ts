@@ -3,11 +3,9 @@ import { useRapier } from '@react-three/rapier';
 import { RefObject, useCallback } from 'react';
 import { GroundRayType } from '../../types';
 
-// 레이캐스트 유틸리티 함수들
 export function createRaycastHook() {
   return function useRaycast() {
     const rapier = useRapier();
-
     const castRay = useCallback(
       ({ ray, ref }: { ray: GroundRayType; ref: RefObject<Collider> }) => {
         if (!ray.rayCast) return null;

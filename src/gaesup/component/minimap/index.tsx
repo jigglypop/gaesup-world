@@ -42,7 +42,6 @@ export function MiniMap({
 
   return (
     <div className="minimap-container">
-      {/* Main minimap canvas */}
       <canvas
         ref={canvasRef}
         width={MINIMAP_SIZE_PX}
@@ -53,8 +52,6 @@ export function MiniMap({
         }}
         onWheel={handleWheel}
       />
-
-      {/* Scale controls */}
       {!blockScaleControl && (
         <div
           className="minimap-scale-controls"
@@ -99,4 +96,3 @@ export function MiniMap({
 
 // Re-export marker components
 export { MinimapMarker, MinimapObject, MinimapPlatform } from './MinimapMarker';
- 
