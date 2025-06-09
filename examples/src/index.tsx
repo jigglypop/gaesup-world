@@ -47,8 +47,8 @@ function AppContent() {
         <Suspense>
           <Physics debug interpolate={true}>
             <GaesupController
-              onAnimate={({ control, subscribe }) => {
-                subscribe({ tag: 'greet', condition: () => control?.keyZ });
+              onAnimate={() => {
+                // TODO: 애니메이션 로직 추가 필요
               }}
               controllerOptions={{ lerp: { cameraTurn: 0.1, cameraPosition: 0.08 } }}
               rigidBodyProps={{}}
@@ -116,7 +116,7 @@ export default function MainComponent() {
         enableCollision: true,
         smoothing: { position: 0.25, rotation: 0.3, fov: 0.2 },
         fov: 75,
-        bounds: { minY: 2, maxY: 50, minX: -100, maxX: 100, minZ: -100, maxZ: 100 },
+        bounds: { minY: 2, maxY: 50 },
       }}
     >
       <AppContent />

@@ -4,6 +4,10 @@ import * as THREE from 'three';
 import { PhysicsState } from '../type';
 import { eventBus } from '../stores';
 
+const tempEuler = new THREE.Euler();
+const tempQuaternion = new THREE.Quaternion();
+const targetQuaternion = new THREE.Quaternion();
+
 export default function direction(
   physicsState: PhysicsState,
   innerGroupRef: RefObject<THREE.Group>,
@@ -36,31 +40,24 @@ export default function direction(
   const maxX = maxAngle.x;
   const maxZ = maxAngle.z;
 
-  const innerGrounRefRotation = innerGroupRef.current.clone();
+  let targetX = _x + X;
+  let targetZ = _z + Z;
 
-  if (_x < -maxX) {
-    innerGrounRefRotation.rotation.x = -maxX + X;
-  } else if (_x > maxX) {
-    innerGrounRefRotation.rotation.x = maxX + X;
-  } else {
-    innerGrounRefRotation.rotateX(X);
-  }
+  if (targetX < -maxX) targetX = -maxX;
+  else if (targetX > maxX) targetX = maxX;
 
-  if (_z < -maxZ) innerGrounRefRotation.rotation.z = -maxZ + Z;
-  else if (_z > maxZ) innerGrounRefRotation.rotation.z = maxZ + Z;
-  else innerGrounRefRotation.rotateZ(Z);
+  if (targetZ < -maxZ) targetZ = -maxZ;
+  else if (targetZ > maxZ) targetZ = maxZ;
 
-  activeState.euler.x = innerGrounRefRotation.rotation.x;
-  activeState.euler.z = innerGrounRefRotation.rotation.z;
+  activeState.euler.x = targetX;
+  activeState.euler.z = targetZ;
 
-  innerGrounRefRotation.rotation.y = 0;
-  innerGroupRef.current.setRotationFromQuaternion(
-    quat()
-      .setFromEuler(innerGroupRef.current.rotation.clone())
-      .slerp(quat().setFromEuler(innerGrounRefRotation.rotation.clone()), 0.2),
-  );
+  tempEuler.set(targetX, 0, targetZ);
+  tempQuaternion.setFromEuler(innerGroupRef.current.rotation);
+  targetQuaternion.setFromEuler(tempEuler);
+  tempQuaternion.slerp(targetQuaternion, 0.2);
+  innerGroupRef.current.setRotationFromQuaternion(tempQuaternion);
 
-  // 기존 direction 객체 재사용
   activeState.direction.set(
     Math.sin(activeState.euler.y) * boost,
     -upDown * boost,

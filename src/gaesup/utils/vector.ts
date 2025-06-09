@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 
+const tempVector = new THREE.Vector3();
+const tempAxis = new THREE.Vector3(0, 0, 1);
+
 export function isVectorNonZero(v: THREE.Vector3): boolean {
   return v.x !== 0 && v.y !== 0 && v.z !== 0;
 }
@@ -19,13 +22,13 @@ export function isValidOrOne(condision: boolean, vector: THREE.Vector3): THREE.V
 }
 
 export function calcAngleByVector(dir: THREE.Vector3): number {
-  const axis = V3(0, 0, 1);
-  const angles = Math.acos(dir.dot(axis) / dir.length());
-  const product = dir.cross(axis);
-  const isLeft = Math.sin(product.y) || 1;
+  const angles = Math.acos(dir.dot(tempAxis) / dir.length());
+  tempVector.copy(dir).cross(tempAxis);
+  const isLeft = Math.sin(tempVector.y) || 1;
   const angle = Math.PI - angles * isLeft;
   return angle;
 }
+
 export const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 export const Qt = (x = 0, y = 0, z = 0, w = 1) => new THREE.Quaternion(x, y, z, w);
 export const Elr = (x = 0, y = 0, z = 0) => new THREE.Euler(x, y, z);

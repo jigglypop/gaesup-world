@@ -16,6 +16,12 @@ export class SmartCollisionSystem {
   private debugLines: THREE.Line[] = [];
   private debugMode = false;
 
+  private tempVector1 = new THREE.Vector3();
+  private tempVector2 = new THREE.Vector3();
+  private tempVector3 = new THREE.Vector3();
+  private tempQuaternion = new THREE.Quaternion();
+  private tempDirection = new THREE.Vector3(0, 0, -1);
+
   constructor(config?: Partial<CollisionConfig>) {
     this.config = { ...this.config, ...config };
     this.initializeRayDirections();
@@ -43,12 +49,12 @@ export class SmartCollisionSystem {
     scene: THREE.Scene,
     excludeObjects?: THREE.Object3D[],
   ): THREE.Vector3 {
-    const direction = new THREE.Vector3().subVectors(to, from).normalize();
+    this.tempVector1.subVectors(to, from).normalize();
     const distance = from.distanceTo(to);
     const bestPosition = this.findBestCameraPosition(
       from,
       to,
-      direction,
+      this.tempVector1,
       distance,
       scene,
       excludeObjects,
@@ -68,18 +74,16 @@ export class SmartCollisionSystem {
     let bestPosition = to.clone();
     let shortestDistance = distance;
 
+    this.tempQuaternion.setFromUnitVectors(this.tempDirection, direction);
+
     for (const rayDir of this.rayDirections) {
-      const offsetDir = rayDir
-        .clone()
-        .applyQuaternion(
-          new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), direction),
-        );
+      this.tempVector2.copy(rayDir).applyQuaternion(this.tempQuaternion);
 
-      const rayOrigin = from
-        .clone()
-        .add(offsetDir.clone().multiplyScalar(this.config.sphereCastRadius));
+      this.tempVector3.copy(from).add(
+        this.tempVector2.multiplyScalar(this.config.sphereCastRadius)
+      );
 
-      this.raycaster.set(rayOrigin, direction);
+      this.raycaster.set(this.tempVector3, direction);
       this.raycaster.far = distance;
 
       const intersects = this.raycaster.intersectObjects(scene.children, true).filter((hit) => {
@@ -116,25 +120,23 @@ export class SmartCollisionSystem {
     collisionPoint: THREE.Vector3,
     scene: THREE.Scene,
   ): THREE.Vector3 | null {
-    const direction = new THREE.Vector3().subVectors(collisionPoint, from).normalize();
-    this.raycaster.set(from, direction);
+    this.tempVector1.subVectors(collisionPoint, from).normalize();
+    this.raycaster.set(from, this.tempVector1);
 
     const hit = this.raycaster.intersectObjects(scene.children, true)[0];
     if (!hit || !hit.face) return null;
 
     const normal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld).normalize();
 
-    const slideDirection = new THREE.Vector3()
-      .crossVectors(normal, new THREE.Vector3(0, 1, 0))
-      .normalize();
+    this.tempVector2.crossVectors(normal, new THREE.Vector3(0, 1, 0)).normalize();
 
     const slideDistance = 2;
-    const leftSlide = collisionPoint
-      .clone()
-      .add(slideDirection.clone().multiplyScalar(slideDistance));
-    const rightSlide = collisionPoint
-      .clone()
-      .add(slideDirection.clone().multiplyScalar(-slideDistance));
+    const leftSlide = collisionPoint.clone().add(
+      this.tempVector2.clone().multiplyScalar(slideDistance)
+    );
+    const rightSlide = collisionPoint.clone().add(
+      this.tempVector2.clone().multiplyScalar(-slideDistance)
+    );
 
     const leftClear = this.isPositionClear(leftSlide, scene);
     const rightClear = this.isPositionClear(rightSlide, scene);
@@ -150,18 +152,27 @@ export class SmartCollisionSystem {
 
   private isPositionClear(position: THREE.Vector3, scene: THREE.Scene): boolean {
     const checkRadius = this.config.sphereCastRadius * 2;
-    const nearbyObjects: THREE.Object3D[] = [];
-
-    scene.traverse((object) => {
-      if (object instanceof THREE.Mesh && object.geometry.boundingSphere) {
-        const distance = position.distanceTo(object.position);
-        if (distance < checkRadius + object.geometry.boundingSphere.radius) {
-          nearbyObjects.push(object);
+    
+    for (const child of scene.children) {
+      if (child instanceof THREE.Mesh && child.geometry.boundingSphere) {
+        const distance = position.distanceTo(child.position);
+        if (distance < checkRadius + child.geometry.boundingSphere.radius) {
+          return false;
         }
       }
-    });
+      if (child.children.length > 0) {
+        for (const subChild of child.children) {
+          if (subChild instanceof THREE.Mesh && subChild.geometry.boundingSphere) {
+            const distance = position.distanceTo(subChild.position);
+            if (distance < checkRadius + subChild.geometry.boundingSphere.radius) {
+              return false;
+            }
+          }
+        }
+      }
+    }
 
-    return nearbyObjects.length === 0;
+    return true;
   }
 
   setDebugMode(enabled: boolean, scene?: THREE.Scene): void {

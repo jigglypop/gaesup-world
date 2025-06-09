@@ -1,5 +1,5 @@
-import { callbackType } from '../../../controller/initialize/callback/type';
-import { groundRayType, partsType } from '../../../controller/type';
+import { callbackType } from '../../../physics/world/initalize/callback';
+import { GroundRayType, PartsType } from '../../../physics/world/types';
 import { passiveCharacterPropsType } from '../../passive/character/types';
 import { componentTypeString, innerRefType } from '../../passive/types';
 
@@ -7,8 +7,8 @@ import { componentTypeString, innerRefType } from '../../passive/types';
 export type characterInnerType = {
   componentType: componentTypeString;
   isActive?: boolean;
-  groundRay: groundRayType;
-  parts?: partsType;
+  groundRay: GroundRayType;
+  parts?: PartsType;
 } & passiveCharacterPropsType &
   innerRefType &
   callbackType;
