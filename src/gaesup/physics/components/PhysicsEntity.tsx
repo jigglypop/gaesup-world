@@ -5,20 +5,20 @@ import { useAtom } from 'jotai';
 import { MutableRefObject, forwardRef, useContext, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
-import { cameraOptionAtom } from '../../../atoms/cameraOptionAtom';
-import Camera from '../../../camera';
-import { GaesupContext } from '../../../atoms';
-import { useAnimationPlayer } from '../../../utils/animation';
-import { useGltfAndSize } from '../../../utils/gltf';
-import calculation from '../../../physics';
+import { cameraOptionAtom } from '../../atoms/cameraOptionAtom';
+import Camera from '../../camera';
+import { GaesupContext } from '../../atoms';
+import { useAnimationPlayer } from '../../utils/animation';
+import { useGltfAndSize } from '../../utils/gltf';
+import calculation from '../index';
 import { InnerGroupRef } from './InnerGroupRef';
-import { PartsGroupRef } from './partsGroupRef';
+import { PartsGroupRef } from './PartsGroupRef';
 import { useSetGroundRay } from './setGroundRay';
-import { rigidBodyRefType } from './types';
-import { initCallback } from '@/gaesup/component/physics';
+import { initCallback } from '../../component/physics';
+import { PhysicsEntityProps } from './types';
 
-export const RigidBodyRef = forwardRef(
-  (props: rigidBodyRefType, ref: MutableRefObject<RapierRigidBody>) => {
+export const PhysicsEntity = forwardRef(
+  (props: PhysicsEntityProps, rigidBodyRef: MutableRefObject<RapierRigidBody>) => {
     const { size } = useGltfAndSize({ url: props.url || '' });
 
     const setGroundRay = useSetGroundRay();
@@ -38,6 +38,27 @@ export const RigidBodyRef = forwardRef(
       });
       return skel;
     }, [clone]);
+
+    const partsComponents = useMemo(() => {
+      if (!props.parts || props.parts.length === 0) return null;
+
+      return props.parts
+        .map(({ url, color }, index) => {
+          if (!url) return null;
+          return (
+            <PartsGroupRef
+              url={url}
+              isActive={props.isActive}
+              componentType={props.componentType}
+              currentAnimation={props.currentAnimation}
+              color={color}
+              key={`${props.componentType}-${url}-${color || 'default'}-${index}`}
+              skeleton={skeleton}
+            />
+          );
+        })
+        .filter(Boolean);
+    }, [props.parts, props.isActive, props.componentType, props.currentAnimation, skeleton]);
 
     useEffect(() => {
       return () => {
@@ -93,7 +114,7 @@ export const RigidBodyRef = forwardRef(
     }, [props.groundRay, props.colliderRef, setGroundRay]);
 
     if (props.isActive) {
-      const cameraProps: cameraPropType = {
+      const cameraProps = {
         state: null,
         worldContext,
         controllerOptions: props.controllerOptions,
@@ -104,7 +125,7 @@ export const RigidBodyRef = forwardRef(
       calculation({
         outerGroupRef: props.outerGroupRef,
         innerGroupRef: props.innerGroupRef,
-        rigidBodyRef: ref,
+        rigidBodyRef,
         colliderRef: props.colliderRef,
         groundRay: props.groundRay,
       });
@@ -121,58 +142,45 @@ export const RigidBodyRef = forwardRef(
     const safeRotationY = props.rotation?.clone ? props.rotation.clone().y : props.rotation?.y || 0;
 
     return (
-      <RigidBody
-        colliders={false}
-        ref={ref}
-        name={props.name}
-        position={props.position}
-        rotation={euler().set(0, safeRotationY, 0).clone()}
-        userData={props.userData}
-        type={props.rigidbodyType || (props.isActive ? 'dynamic' : 'fixed')}
-        sensor={props.sensor}
-        onIntersectionEnter={props.onIntersectionEnter}
-        onIntersectionExit={props.onIntersectionExit}
-        onCollisionEnter={props.onCollisionEnter}
-        {...props.rigidBodyProps}
-      >
-        {!props.isNotColliding && (
-          <CapsuleCollider
-            ref={props.colliderRef as any}
-            args={[(size.y / 2 - size.x) * 1.2, size.x * 1.2]}
-            position={[0, size.x * 1.2, 0]}
-          />
-        )}
-        <InnerGroupRef
-          objectNode={objectNode}
-          animationRef={animationRef}
-          nodes={nodes}
-          ref={props.innerGroupRef}
-          isActive={props.isActive}
-          isRiderOn={props.isRiderOn}
-          enableRiding={props.enableRiding}
-          ridingUrl={props.ridingUrl}
-          offset={props.offset}
-          parts={props.parts}
+      <group ref={props.outerGroupRef} userData={{ intangible: true }}>
+        <RigidBody
+          colliders={false}
+          ref={rigidBodyRef}
+          name={props.name}
+          position={props.position}
+          rotation={euler().set(0, safeRotationY, 0).clone()}
+          userData={props.userData}
+          type={props.rigidbodyType || (props.isActive ? 'dynamic' : 'fixed')}
+          sensor={props.sensor}
+          onIntersectionEnter={props.onIntersectionEnter}
+          onIntersectionExit={props.onIntersectionExit}
+          onCollisionEnter={props.onCollisionEnter}
+          {...props.rigidBodyProps}
         >
-          {props.children}
-          {props.parts &&
-            props.parts.length > 0 &&
-            props.parts.map(({ url, color }, key) => {
-              if (!url) return null;
-              return (
-                <PartsGroupRef
-                  url={url}
-                  isActive={props.isActive}
-                  componentType={props.componentType}
-                  currentAnimation={props.currentAnimation}
-                  color={color}
-                  key={key + url}
-                  skeleton={skeleton}
-                />
-              );
-            })}
-        </InnerGroupRef>
-      </RigidBody>
+          {!props.isNotColliding && (
+            <CapsuleCollider
+              ref={props.colliderRef as any}
+              args={[(size.y / 2 - size.x) * 1.2, size.x * 1.2]}
+              position={[0, size.x * 1.2, 0]}
+            />
+          )}
+          <InnerGroupRef
+            objectNode={objectNode}
+            animationRef={animationRef}
+            nodes={nodes}
+            ref={props.innerGroupRef}
+            isActive={props.isActive}
+            isRiderOn={props.isRiderOn}
+            enableRiding={props.enableRiding}
+            ridingUrl={props.ridingUrl}
+            offset={props.offset}
+            parts={props.parts}
+          >
+            {props.children}
+            {partsComponents}
+          </InnerGroupRef>
+        </RigidBody>
+      </group>
     );
   },
 );

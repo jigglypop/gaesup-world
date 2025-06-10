@@ -1,7 +1,7 @@
 import { Ref, forwardRef, useEffect } from 'react';
 import * as THREE from 'three';
-import RiderRef from '../rider';
-import { InnerGroupRefType } from './types';
+import RiderRef from './RiderRef';
+import { InnerGroupRefType } from './physicsTypes';
 
 export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THREE.Group>) => {
   useEffect(() => {
@@ -43,25 +43,25 @@ export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THRE
       {Object.keys(props.nodes).map((name: string, key: number) => {
         const node = props.nodes[name];
         if (node instanceof THREE.SkinnedMesh) {
+          const material = Array.isArray(node.material)
+            ? node.material.map((m) => m.clone())
+            : node.material.clone();
           return (
             <skinnedMesh
               castShadow
               receiveShadow
-              material={node.material}
+              material={material}
               geometry={node.geometry}
               skeleton={node.skeleton}
               key={key}
             />
           );
         } else if (node instanceof THREE.Mesh) {
+          const material = Array.isArray(node.material)
+            ? node.material.map((m) => m.clone())
+            : node.material.clone();
           return (
-            <mesh
-              castShadow
-              receiveShadow
-              material={node.material}
-              geometry={node.geometry}
-              key={key}
-            />
+            <mesh castShadow receiveShadow material={material} geometry={node.geometry} key={key} />
           );
         }
       })}

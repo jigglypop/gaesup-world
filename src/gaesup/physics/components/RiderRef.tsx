@@ -3,9 +3,15 @@ import { useGraph } from '@react-three/fiber';
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
-import { useAnimationPlayer } from '../../../utils/animation';
-import { useGltfAndSize } from '../../../utils/gltf';
-import { riderRefType } from './types';
+import { useAnimationPlayer } from '../../utils/animation';
+import { useGltfAndSize } from '../../utils/gltf';
+
+type riderRefType = {
+  url: string;
+  children?: React.ReactNode;
+  offset?: THREE.Vector3;
+  currentAnimation?: string;
+};
 
 export default function RiderRef({ url, children, offset, currentAnimation }: riderRefType) {
   const { gltf } = useGltfAndSize({ url });
@@ -32,22 +38,28 @@ export default function RiderRef({ url, children, offset, currentAnimation }: ri
         {Object.keys(characterNodes).map((name: string, key: number) => {
           const characterNode = characterNodes[name];
           if (characterNode instanceof THREE.SkinnedMesh) {
+            const material = Array.isArray(characterNode.material)
+              ? characterNode.material.map((m) => m.clone())
+              : characterNode.material.clone();
             return (
               <skinnedMesh
                 castShadow
                 receiveShadow
-                material={characterNode.material}
+                material={material}
                 geometry={characterNode.geometry}
                 skeleton={characterNode.skeleton}
                 key={key}
               />
             );
           } else if (characterNode instanceof THREE.Mesh) {
+            const material = Array.isArray(characterNode.material)
+              ? characterNode.material.map((m) => m.clone())
+              : characterNode.material.clone();
             return (
               <mesh
                 castShadow
                 receiveShadow
-                material={characterNode.material}
+                material={material}
                 geometry={characterNode.geometry}
                 key={key}
               />
