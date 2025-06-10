@@ -1,0 +1,83 @@
+* {
+  box-sizing: border-box;
+}
+button {
+  all: unset;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: linear-gradient(45deg, #101010, #101010, #1b1b1b);
+  color: rgba(255, 255, 255, 0.8);
+  overflow: hidden;
+  height: 100%;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  width: 3rem;
+  height: 3rem;
+  color: rgba(0, 0, 0, 0.2);
+  background-color: #a1ffce;
+}
+
+.three,
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  position: relative;
+  height: 2.5rem;
+  width: 2.5rem;
+  background: radial-gradient(
+    circle farthest-corner at 10.2% 55.8%,
+    rgb(194, 255, 165) 0%,
+    rgb(138, 255, 167) 90.1%
+  );
+  box-shadow: 0 0 10px rgb(138, 255, 167);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#jotai-devtools-root * {
+  font-size: 102%;
+}
+
+::-webkit-scrollbar {
+  width: 0.9rem;
+  height: 1rem;
+}
+
+::-webkit-scrollbar-thumb {
+  background: radial-gradient(
+    circle farthest-corner at 10.2% 55.8%,
+    rgb(132, 132, 132) 0%,
+    rgb(179, 179, 179) 90.1%
+  );
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-radius: 50%;
+}
+
+::-webkit-scrollbar-corner {
+  background-color: rgba(0, 0, 0, 0.2);
+}

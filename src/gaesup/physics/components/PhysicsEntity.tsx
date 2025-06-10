@@ -164,7 +164,7 @@ export const PhysicsEntity = forwardRef(
         <RigidBody
           colliders={false}
           ref={rigidBodyRef}
-          name={props.name}
+          name={props.name || (props.isActive ? 'character' : props.componentType)}
           position={props.position}
           rotation={euler().set(0, safeRotationY, 0).clone()}
           userData={props.userData}

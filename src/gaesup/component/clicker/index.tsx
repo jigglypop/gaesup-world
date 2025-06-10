@@ -109,7 +109,6 @@ export const Clicker = memo(() => {
             const before = index === 0 ? pointQueue.length - 1 : index - 1;
             return (
               <group key={index}>
-                {/* 연결 라인 */}
                 <Line
                   worldUnits
                   points={[pointQueue[before], pointQueue[current]]}

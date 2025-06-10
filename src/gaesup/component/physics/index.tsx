@@ -158,24 +158,8 @@ function GaesupUnifiedController() {
   useMainFrameLoop();
   useKeyboard();
 
-  const colliderRef = useRef<Collider>(null),
-    rigidBodyRef = useRef<RapierRigidBody>(null),
-    outerGroupRef = useRef<THREE.Group>(null),
-    innerGroupRef = useRef<THREE.Group>(null),
-    characterInnerRef = useRef<THREE.Group>(null),
-    passiveRigidBodyRef = useRef<RapierRigidBody>(null);
-
-  const refs = {
-    colliderRef,
-    rigidBodyRef,
-    outerGroupRef,
-    innerGroupRef,
-    characterInnerRef,
-    passiveRigidBodyRef,
-  };
-
-  const props: controllerInnerType = {
-    ...initControllerProps({ refs }),
+  const props = {
+    ...initControllerProps({ refs: {} as any }),
     children: controllerProps.children,
     groupProps: controllerProps.groupProps || {},
     rigidBodyProps: controllerProps.rigidBodyProps || {},
@@ -187,13 +171,12 @@ function GaesupUnifiedController() {
     onFrame: controllerProps.onFrame || (() => {}),
     onDestory: controllerProps.onDestory || (() => {}),
     onAnimate: controllerProps.onAnimate || (() => {}),
-    ...refs,
-  } as controllerInnerType;
+  };
 
   const ContextBridge = useContextBridge(GaesupContext);
   return (
     <ContextBridge>
-      <GaesupComponent props={props} refs={refs} />
+      <GaesupComponent props={props} />
     </ContextBridge>
   );
 }

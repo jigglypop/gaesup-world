@@ -1,5 +1,5 @@
 import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import { GaesupContext, GaesupDispatchContext } from '../../atoms';
 import { useGaesupGltf } from '../../utils/gltf';
 import { RideStateChangeData, rideableType } from './types';
@@ -14,11 +14,66 @@ export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'u
     visible: true,
   };
 
+// UI 요소를 생성하는 함수
+const createRideableUI = () => {
+  const ui = document.createElement('div');
+  ui.id = 'rideable-ui';
+  ui.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 10px;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    z-index: 1000;
+    display: none;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  `;
+  document.body.appendChild(ui);
+  return ui;
+};
+
 export function useRideable() {
   const worldContext = useContext(GaesupContext);
   const { states, rideable } = worldContext;
   const dispatch = useContext(GaesupDispatchContext);
   const { getSizesByUrls } = useGaesupGltf();
+  const uiRef = useRef<HTMLElement | null>(null);
+
+  // UI 요소 초기화
+  useEffect(() => {
+    let ui = document.getElementById('rideable-ui');
+    if (!ui) {
+      ui = createRideableUI();
+    }
+    uiRef.current = ui;
+
+    return () => {
+      if (uiRef.current && document.body.contains(uiRef.current)) {
+        document.body.removeChild(uiRef.current);
+      }
+    };
+  }, []);
+
+  // states 변경에 따른 UI 업데이트
+  useEffect(() => {
+    if (!uiRef.current) return;
+
+    if (states?.canRide && states?.nearbyRideable) {
+      uiRef.current.innerHTML = `🚗 E키를 눌러 ${states.nearbyRideable.name}에 탑승하세요`;
+      uiRef.current.style.display = 'block';
+    } else if (states?.isRiding) {
+      uiRef.current.innerHTML = `🚗 R키를 눌러 하차하세요`;
+      uiRef.current.style.display = 'block';
+    } else {
+      uiRef.current.style.display = 'none';
+    }
+  }, [states?.canRide, states?.nearbyRideable, states?.isRiding]);
 
   useEffect(() => {
     if (!states) return;
@@ -167,13 +222,26 @@ export function useRideable() {
   };
 
   const onRideableNear = async (e: CollisionEnterPayload, props: rideableType) => {
+    console.log(
+      '[useRideable] Collision detected:',
+      e.other.rigidBodyObject?.name,
+      'props:',
+      props.objectType,
+    );
+    console.log('[useRideable] Collision object type:', e.other.rigidBodyObject?.userData);
+
     if (!worldContext.states) return;
     const { states } = worldContext;
-    if (
-      e.other.rigidBodyObject &&
-      e.other.rigidBodyObject.name === 'character' &&
-      !states.isRiding
-    ) {
+
+    // character인지 확인하는 조건을 더 유연하게 변경
+    const isCharacterCollision =
+      (e.other.rigidBodyObject && e.other.rigidBodyObject.name === 'character') ||
+      (e.other.rigidBodyObject && !e.other.rigidBodyObject.name) || // name이 없는 경우도 허용
+      e.other.rigidBody; // rigidBody가 있으면 character로 간주
+
+    if (isCharacterCollision && !states.isRiding) {
+      console.log('[useRideable] Setting up rideable near state for:', props.objectType);
+
       if (!props.objectType) return;
       states.nearbyRideable = {
         objectkey: props.objectkey,
@@ -181,6 +249,13 @@ export function useRideable() {
         name: props.objectType === 'vehicle' ? '차량' : '비행기',
       };
       states.canRide = true;
+
+      console.log(
+        '[useRideable] States updated - canRide:',
+        states.canRide,
+        'nearbyRideable:',
+        states.nearbyRideable,
+      );
 
       dispatch({
         type: 'update',
@@ -192,9 +267,20 @@ export function useRideable() {
   };
 
   const onRideableLeave = async (e: CollisionExitPayload) => {
+    console.log('[useRideable] Collision exit detected:', e.other.rigidBodyObject?.name);
+
     if (!worldContext.states) return;
     const { states } = worldContext;
-    if (e.other.rigidBodyObject && e.other.rigidBodyObject.name === 'character') {
+
+    // character인지 확인하는 조건을 더 유연하게 변경
+    const isCharacterCollision =
+      (e.other.rigidBodyObject && e.other.rigidBodyObject.name === 'character') ||
+      (e.other.rigidBodyObject && !e.other.rigidBodyObject.name) ||
+      e.other.rigidBody;
+
+    if (isCharacterCollision) {
+      console.log('[useRideable] Clearing rideable state');
+
       states.nearbyRideable = null;
       states.canRide = false;
 

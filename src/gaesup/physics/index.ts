@@ -84,6 +84,7 @@ export default function calculation(props: PhysicsCalculationProps) {
       if (kb.rightward !== inputKb.rightward) kb.rightward = inputKb.rightward;
       if (kb.shift !== inputKb.shift) kb.shift = inputKb.shift;
       if (kb.space !== inputKb.space) kb.space = inputKb.space;
+      if (kb.keyE !== inputKb.keyE) kb.keyE = inputKb.keyE;
       if (kb.keyR !== inputKb.keyR) kb.keyR = inputKb.keyR;
       if (!state.mouse.target.equals(input.mouse.target)) {
         state.mouse.target.copy(input.mouse.target);
