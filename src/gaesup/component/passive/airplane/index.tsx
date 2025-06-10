@@ -2,7 +2,8 @@ import { quat, euler, vec3 } from '@react-three/rapier';
 import { useGenericRefs } from '../../inner/common/useGenericRefs';
 import { useUnifiedFrame } from '../../../hooks/useUnifiedFrame';
 import { passiveAirplanePropsType } from './types';
-import { AirplaneInnerRef } from '../../inner/airplane';
+import { OuterGroupRef } from '../../inner/common/OuterGroupRef';
+import { RigidBodyRef } from '../../inner/common/RigidbodyRef';
 import { useMemo } from 'react';
 import { useRideable } from '../../../hooks/useRideable';
 
@@ -39,25 +40,22 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
     !!(innerGroupRef.current || rigidBodyRef.current),
   );
 
-  // 동일: refs 객체 통합
-  const refs = {
-    rigidBodyRef,
-    outerGroupRef,
-    innerGroupRef,
-    colliderRef,
-  };
-
   return (
-    <AirplaneInnerRef
-      isActive={false}
-      componentType="airplane"
-      name="airplane"
-      {...props}
-      position={safePosition}
-      rotation={safeRotation}
-      {...refs}
-    >
-      {props.children}
-    </AirplaneInnerRef>
+    <OuterGroupRef ref={outerGroupRef}>
+      <RigidBodyRef
+        isActive={false}
+        componentType="airplane"
+        name="airplane"
+        position={safePosition}
+        rotation={safeRotation}
+        ref={rigidBodyRef}
+        outerGroupRef={outerGroupRef}
+        innerGroupRef={innerGroupRef}
+        colliderRef={colliderRef}
+        {...props}
+      >
+        {props.children}
+      </RigidBodyRef>
+    </OuterGroupRef>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { CharacterInnerRef } from '../../inner/character';
+import { OuterGroupRef } from '../../inner/common/OuterGroupRef';
+import { RigidBodyRef } from '../../inner/common/RigidbodyRef';
 import { useGenericRefs } from '../../inner/common/useGenericRefs';
 import { passiveCharacterPropsType } from './types';
 
@@ -13,25 +14,30 @@ export function PassiveCharacter(props: passiveCharacterPropsType) {
   }, [refs.rigidBodyRef]);
 
   return (
-    <CharacterInnerRef
-      isActive={false}
-      componentType={'character'}
-      controllerOptions={
-        props.controllerOptions || {
-          lerp: {
-            cameraTurn: 1,
-            cameraPosition: 1,
-          },
+    <OuterGroupRef ref={refs.outerGroupRef}>
+      <RigidBodyRef
+        isActive={false}
+        componentType={'character'}
+        controllerOptions={
+          props.controllerOptions || {
+            lerp: {
+              cameraTurn: 1,
+              cameraPosition: 1,
+            },
+          }
         }
-      }
-      position={props.position}
-      rotation={props.rotation}
-      groundRay={props.groundRay}
-      currentAnimation={props.currentAnimation}
-      {...refs}
-      {...props}
-    >
-      {props.children}
-    </CharacterInnerRef>
+        position={props.position}
+        rotation={props.rotation}
+        groundRay={props.groundRay}
+        currentAnimation={props.currentAnimation}
+        ref={refs.rigidBodyRef}
+        outerGroupRef={refs.outerGroupRef}
+        innerGroupRef={refs.innerGroupRef}
+        colliderRef={refs.colliderRef}
+        {...props}
+      >
+        {props.children}
+      </RigidBodyRef>
+    </OuterGroupRef>
   );
 }
