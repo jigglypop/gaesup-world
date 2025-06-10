@@ -6,21 +6,18 @@ import {
   RigidBodyProps,
   RigidBodyTypeString,
 } from '@react-three/rapier';
-import { MutableRefObject } from 'react';
+import { RefObject } from 'react';
 import * as THREE from 'three';
 import { controllerOptionsType, groundRayType, partsType } from '../../controller/type';
 import { ridingType } from '../inner/common/types';
 
-// 컴포넌트 종류
 export type componentTypeString = 'character' | 'vehicle' | 'airplane';
-// 내부 컴포넌트 종류
 export type innerRefType = {
-  colliderRef: MutableRefObject<Collider>;
-  rigidBodyRef: MutableRefObject<RapierRigidBody>;
-  outerGroupRef: MutableRefObject<THREE.Group>;
-  innerGroupRef: MutableRefObject<THREE.Group>;
+  colliderRef: RefObject<Collider>;
+  rigidBodyRef: RefObject<RapierRigidBody>;
+  outerGroupRef: RefObject<THREE.Group>;
+  innerGroupRef: RefObject<THREE.Group>;
 };
-// passive 오브젝트 타입정의
 export type passivePropsType = {
   children?: React.ReactNode;
   groundRay?: groundRayType;
@@ -43,6 +40,8 @@ export type passivePropsType = {
   innerGroupProps?: THREE.Group;
   parts?: partsType;
   isNotColliding?: boolean;
+  isRiderOn?: boolean;
+  enableRiding?: boolean;
 } & ridingType;
 
 export type PassiveRideableProps<T extends 'vehicle' | 'airplane'> = passivePropsType & {

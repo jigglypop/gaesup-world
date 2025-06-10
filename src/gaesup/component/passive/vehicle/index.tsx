@@ -3,7 +3,6 @@ import { passiveVehiclePropsType } from './types';
 
 export function PassiveVehicle(props: passiveVehiclePropsType) {
   const refs = useGenericRefs();
-
   return (
     <PhysicsEntity
       url={props.url || ''}

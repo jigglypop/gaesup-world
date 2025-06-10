@@ -27,9 +27,9 @@ export interface PhysicsEntityProps {
   children?: ReactNode;
   userData?: any;
   sensor?: boolean;
-  onIntersectionEnter?: (payload: any) => void;
-  onIntersectionExit?: (payload: any) => void;
-  onCollisionEnter?: (payload: any) => void;
+  onIntersectionEnter?: (payload: any) => Promise<void> | void;
+  onIntersectionExit?: (payload: any) => Promise<void> | void;
+  onCollisionEnter?: (payload: any) => Promise<void> | void;
   isNotColliding?: boolean;
   isRiderOn?: boolean;
   enableRiding?: boolean;

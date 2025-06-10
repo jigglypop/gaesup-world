@@ -48,7 +48,7 @@ export const PhysicsEntity = forwardRef(
           return (
             <PartsGroupRef
               url={url}
-              isActive={props.isActive}
+              isActive={true}
               componentType={props.componentType}
               currentAnimation={props.currentAnimation}
               color={color}
@@ -58,7 +58,7 @@ export const PhysicsEntity = forwardRef(
           );
         })
         .filter(Boolean);
-    }, [props.parts, props.isActive, props.componentType, props.currentAnimation, skeleton]);
+    }, [props.parts, props.componentType, props.currentAnimation, skeleton]);
 
     useEffect(() => {
       return () => {
@@ -131,7 +131,7 @@ export const PhysicsEntity = forwardRef(
       });
     }
 
-    useAnimationPlayer(actions, props.isActive);
+    useAnimationPlayer(actions, true);
     initCallback({
       props,
       actions,
@@ -140,6 +140,24 @@ export const PhysicsEntity = forwardRef(
     const { nodes } = useGraph(clone);
     const objectNode = Object.values(nodes).find((node) => node.type === 'Object3D');
     const safeRotationY = props.rotation?.clone ? props.rotation.clone().y : props.rotation?.y || 0;
+
+    const handleIntersectionEnter = async (payload: any) => {
+      if (props.onIntersectionEnter) {
+        await props.onIntersectionEnter(payload);
+      }
+    };
+
+    const handleIntersectionExit = async (payload: any) => {
+      if (props.onIntersectionExit) {
+        await props.onIntersectionExit(payload);
+      }
+    };
+
+    const handleCollisionEnter = async (payload: any) => {
+      if (props.onCollisionEnter) {
+        await props.onCollisionEnter(payload);
+      }
+    };
 
     return (
       <group ref={props.outerGroupRef} userData={{ intangible: true }}>
@@ -152,9 +170,9 @@ export const PhysicsEntity = forwardRef(
           userData={props.userData}
           type={props.rigidbodyType || (props.isActive ? 'dynamic' : 'fixed')}
           sensor={props.sensor}
-          onIntersectionEnter={props.onIntersectionEnter}
-          onIntersectionExit={props.onIntersectionExit}
-          onCollisionEnter={props.onCollisionEnter}
+          onIntersectionEnter={handleIntersectionEnter}
+          onIntersectionExit={handleIntersectionExit}
+          onCollisionEnter={handleCollisionEnter}
           {...props.rigidBodyProps}
         >
           {!props.isNotColliding && (
