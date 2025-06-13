@@ -9,7 +9,7 @@ import {
 } from '../../utils/memoization';
 import { calcAngleByVector, calcNorm } from '../../utils/vector';
 import { PhysicsCalcProps, PhysicsState } from '../types';
-import { eventBus } from '../stores';
+import { eventBus } from '../connectors';
 
 export class DirectionController {
   private memoManager = MemoizationManager.getInstance();

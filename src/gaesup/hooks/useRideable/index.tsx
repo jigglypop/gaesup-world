@@ -3,7 +3,7 @@ import { useContext, useEffect, useRef } from 'react';
 import { GaesupContext, GaesupDispatchContext } from '../../atoms';
 import { useGaesupGltf } from '../../utils/gltf';
 import { RideStateChangeData, rideableType } from './types';
-import { eventBus } from '@/gaesup/physics/stores';
+import { eventBus } from '@/gaesup/physics/connectors';
 
 export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'url' | 'wheelUrl'> =
   {

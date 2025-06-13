@@ -1,7 +1,7 @@
 import { RefObject } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 import { PhysicsState } from '../types';
-import { eventBus } from '../stores';
+import { eventBus } from '../connectors';
 
 export class ImpulseController {
   applyImpulse(rigidBodyRef: RefObject<RapierRigidBody>, physicsState: PhysicsState): void {

@@ -15,106 +15,59 @@ export class PhysicsEngine {
 
     this.stateChecker.checkAll(calcProp, physicsState);
 
-    switch (physicsState.modeType) {
-      case 'character':
-        this.calculateCharacter(calcProp, physicsState);
-        break;
-      case 'vehicle':
-        this.calculateVehicle(calcProp, physicsState);
-        break;
-      case 'airplane':
-        this.calculateAirplane(calcProp, physicsState);
-        break;
-      default:
-        this.calculateCharacter(calcProp, physicsState);
-    }
-  }
-
-  private calculateCharacter(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
-    const { rigidBodyRef, innerGroupRef } = calcProp;
-    const controlMode = (calcProp.worldContext as any)?.mode?.control;
-
-    this.directionController.updateDirection(physicsState, controlMode, calcProp);
-    this.impulseController.applyImpulse(rigidBodyRef, physicsState);
-    this.gravityController.applyGravity(rigidBodyRef, physicsState);
-    this.calculateInner(rigidBodyRef, innerGroupRef, physicsState);
-  }
-
-  private calculateVehicle(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
-    const { rigidBodyRef } = calcProp;
-
-    this.directionController.updateDirection(physicsState, 'normal', calcProp);
-    this.impulseController.applyImpulse(rigidBodyRef, physicsState);
-    this.applyDamping(rigidBodyRef, physicsState);
-    this.checkLanding(physicsState);
-    this.calculateInner(rigidBodyRef, null, physicsState);
-  }
-
-  private calculateAirplane(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
-    const { rigidBodyRef, innerGroupRef, matchSizes } = calcProp;
+    const { rigidBodyRef, innerGroupRef, matchSizes, worldContext } = calcProp;
+    const { modeType = 'character' } = physicsState;
+    const controlMode = (worldContext as any)?.mode?.control;
 
     this.directionController.updateDirection(
       physicsState,
-      'normal',
+      modeType === 'character' ? controlMode : 'normal',
       calcProp,
-      innerGroupRef,
-      matchSizes,
+      modeType === 'airplane' ? innerGroupRef : undefined,
+      modeType === 'airplane' ? matchSizes : undefined,
     );
+
     this.impulseController.applyImpulse(rigidBodyRef, physicsState);
-    this.applyDamping(rigidBodyRef, physicsState);
-    this.gravityController.applyGravity(rigidBodyRef, physicsState);
-    this.checkLanding(physicsState);
-    this.calculateInner(rigidBodyRef, null, physicsState);
-  }
 
-  private calculateInner(rigidBodyRef: any, innerGroupRef: any, physicsState: PhysicsState): void {
-    if (!rigidBodyRef?.current) return;
+    if (modeType === 'character' || modeType === 'airplane') {
+      this.gravityController.applyGravity(rigidBodyRef, physicsState);
+    }
 
-    const { modeType } = physicsState;
+    if (modeType === 'vehicle' || modeType === 'airplane') {
+      this.applyDamping(rigidBodyRef, physicsState);
+    }
 
-    if (modeType === 'character' && innerGroupRef?.current) {
-      const {
-        gameStates: { isJumping, isFalling, isNotMoving },
-        activeState,
-        characterConfig: { linearDamping = 1, airDamping = 0.1, stopDamping = 3 },
-      } = physicsState;
-
-      if (isJumping || isFalling) {
-        rigidBodyRef.current.setLinearDamping(airDamping);
-      } else {
+    if (rigidBodyRef?.current) {
+      if (modeType === 'character' && innerGroupRef?.current) {
+        const {
+          gameStates: { isJumping, isFalling, isNotMoving },
+          activeState,
+          characterConfig: { linearDamping = 1, airDamping = 0.1, stopDamping = 3 },
+        } = physicsState;
         rigidBodyRef.current.setLinearDamping(
-          isNotMoving ? linearDamping * stopDamping : linearDamping,
+          isJumping || isFalling
+            ? airDamping
+            : isNotMoving
+              ? linearDamping * stopDamping
+              : linearDamping,
         );
+        innerGroupRef.current.quaternion.setFromEuler(activeState.euler);
       }
-      rigidBodyRef.current.setEnabledRotations(false, false, false, false);
-      innerGroupRef.current.quaternion.setFromEuler(activeState.euler);
-    } else {
       rigidBodyRef.current.setEnabledRotations(false, false, false, false);
     }
   }
 
   private applyDamping(rigidBodyRef: any, physicsState: PhysicsState): void {
-    if (!rigidBodyRef?.current) return;
-
-    const { modeType } = physicsState;
-
+    if (!rigidBodyRef?.current || !physicsState) return;
+    const { modeType, vehicleConfig, airplaneConfig } = physicsState;
+    let damping = 0;
     if (modeType === 'vehicle') {
-      const damping = (physicsState.vehicleConfig as any)?.damping || 0.9;
-      rigidBodyRef.current.setLinearDamping(damping);
+      damping = (vehicleConfig as any)?.damping || 0.9;
     } else if (modeType === 'airplane') {
-      const damping = (physicsState.airplaneConfig as any)?.damping || 0.8;
-      rigidBodyRef.current.setLinearDamping(damping);
+      damping = (airplaneConfig as any)?.damping || 0.8;
     }
-  }
-
-  private checkLanding(physicsState: PhysicsState): void {
-    const {
-      gameStates: { isOnTheGround },
-      characterConfig,
-    } = physicsState;
-
-    if (isOnTheGround) {
-      // Landing logic if needed
+    if (damping > 0) {
+      rigidBodyRef.current.setLinearDamping(damping);
     }
   }
 }

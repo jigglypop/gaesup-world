@@ -18,7 +18,7 @@ import { CameraEffects } from './effects/CameraEffects';
 import { CameraStateManager } from './state/CameraStateManager';
 import { CameraPropType } from './types';
 import { CAMERA_CONSTANTS, cameraUtils } from './utils';
-import { eventBus } from '../physics/stores';
+import { eventBus } from '../physics/connectors';
 
 const controllerMap = {
   firstPerson,

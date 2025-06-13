@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { PhysicsCalcProps, PhysicsState } from '../types';
-import { eventBus } from '../stores';
+import { eventBus } from '../connectors';
 
 export class StateChecker {
   private keyStateCache = new Map<string, { lastKeyE: boolean; lastKeyR: boolean }>();

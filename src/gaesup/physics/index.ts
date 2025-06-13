@@ -1,120 +1,103 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { type SizesType } from '../../types';
-import { usePhysics } from './stores/physics';
+import { usePhysics } from './connectors/physics';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
 import { PhysicsCalcProps, PhysicsCalculationProps, PhysicsState } from './types';
-import { physicsSync } from './stores';
+import { physicsSync } from './connectors';
 import { PhysicsEngine } from './PhysicsEngine';
 export { GaesupWorld, GaesupController } from '../component/physics';
 
-const defaultClickerOption = {
-  isRun: true,
-  throttle: 100,
-  autoStart: false,
-  track: false,
-  loop: false,
-  queue: [],
-  line: false,
-};
-
-const updateKeyboardState = (state: any, input: any) => {
-  const keys = ['forward', 'backward', 'leftward', 'rightward', 'shift', 'space', 'keyE', 'keyR'];
-  keys.forEach((key) => {
+const updateInputState = (state: PhysicsState, input: any) => {
+  const keyboardKeys: (keyof typeof state.keyboard)[] = [
+    'forward',
+    'backward',
+    'leftward',
+    'rightward',
+    'shift',
+    'space',
+    'keyE',
+    'keyR',
+  ];
+  keyboardKeys.forEach((key) => {
     if (state.keyboard[key] !== input.keyboard[key]) {
       state.keyboard[key] = input.keyboard[key];
     }
   });
-};
-
-const updateMouseState = (state: any, input: any) => {
   if (!state.mouse.target.equals(input.mouse.target)) state.mouse.target.copy(input.mouse.target);
-  ['angle', 'isActive', 'shouldRun'].forEach((prop) => {
-    if (state.mouse[prop] !== input.mouse[prop]) state.mouse[prop] = input.mouse[prop];
+
+  const mouseKeys: Exclude<keyof typeof state.mouse, 'target'>[] = [
+    'angle',
+    'isActive',
+    'shouldRun',
+  ];
+  mouseKeys.forEach((prop) => {
+    if (state.mouse[prop] !== input.mouse[prop]) {
+      (state.mouse as any)[prop] = input.mouse[prop];
+    }
   });
 };
 
-export default function calculation(props: PhysicsCalculationProps) {
+const usePhysicsLoop = (props: PhysicsCalculationProps) => {
   const physics = usePhysics();
   const physicsStateRef = useRef<PhysicsState | null>(null);
-  const isInitializedRef = useRef(false);
   const physicsEngine = useRef(new PhysicsEngine());
+  const isInitializedRef = useRef(false);
   const lastModeType = useRef('');
 
   useEffect(() => {
-    if (isInitializedRef.current || !physics.worldContext) return;
-    physicsSync.setWorldContext(physics.worldContext as any);
-    physicsSync.initialize(
-      () => {},
-      () => {},
-    );
-    isInitializedRef.current = true;
-  }, [physics.worldContext]);
-
-  useEffect(() => {
-    if (!props.rigidBodyRef?.current || !props.innerGroupRef?.current || !isInitializedRef.current)
-      return;
-    const activeState = physics.activeState;
-    if (activeState) {
-      props.rigidBodyRef.current.lockRotations(false, true);
-      activeState.euler.set(0, 0, 0);
-      props.rigidBodyRef.current.setTranslation(
-        { x: activeState.position.x, y: activeState.position.y + 5, z: activeState.position.z },
-        true,
+    if (!isInitializedRef.current && physics.worldContext) {
+      physicsSync.setWorldContext(physics.worldContext as any);
+      physicsSync.initialize(
+        () => {},
+        () => {},
       );
+      isInitializedRef.current = true;
     }
-  }, [
-    props.rigidBodyRef?.current,
-    props.innerGroupRef?.current,
-    isInitializedRef.current,
-    physics.activeState,
-  ]);
-
-  const createOrUpdatePhysicsState = useCallback(() => {
-    if (!physics.worldContext || !physics.input) return null;
-
-    const modeType = (physics.worldContext as any)?.mode?.type || 'character';
-
-    if (!physicsStateRef.current) {
-      physicsStateRef.current = {
-        activeState: physics.activeState!,
-        gameStates: (physics.worldContext as any).states!,
-        keyboard: { ...physics.input.keyboard },
-        mouse: {
-          target: physics.input.mouse.target.clone(),
-          angle: physics.input.mouse.angle,
-          isActive: physics.input.mouse.isActive,
-          shouldRun: physics.input.mouse.shouldRun,
-        },
-        characterConfig: (physics.worldContext as any).character || {},
-        vehicleConfig: (physics.worldContext as any).vehicle || {},
-        airplaneConfig: (physics.worldContext as any).airplane || {},
-        clickerOption: (physics.worldContext as any).clickerOption || defaultClickerOption,
-        modeType: modeType as 'character' | 'vehicle' | 'airplane',
-      };
-    } else {
-      updateKeyboardState(physicsStateRef.current, physics.input);
-      updateMouseState(physicsStateRef.current, physics.input);
-
-      if (physicsStateRef.current.activeState !== physics.activeState) {
-        physicsStateRef.current.activeState = physics.activeState!;
-      }
-      if (physicsStateRef.current.gameStates !== (physics.worldContext as any).states) {
-        physicsStateRef.current.gameStates = (physics.worldContext as any).states;
-      }
-
-      if (lastModeType.current !== modeType) {
-        physicsSync.updateMode((physics.worldContext as any)?.mode);
-        lastModeType.current = modeType;
-      }
-    }
-
-    return physicsStateRef.current;
-  }, [physics]);
+  }, [physics.worldContext]);
 
   const executePhysics = useCallback(
     (state: any, delta: number) => {
-      const physicsState = createOrUpdatePhysicsState();
-      if (!physicsState?.activeState || !physicsState?.gameStates) return;
+      if (!physics.worldContext || !physics.input) return;
+
+      if (!physicsStateRef.current) {
+        const modeType = (physics.worldContext as any)?.mode?.type || 'character';
+        physicsStateRef.current = {
+          activeState: physics.activeState!,
+          gameStates: (physics.worldContext as any).states!,
+          keyboard: { ...physics.input.keyboard },
+          mouse: {
+            target: physics.input.mouse.target.clone(),
+            angle: physics.input.mouse.angle,
+            isActive: physics.input.mouse.isActive,
+            shouldRun: physics.input.mouse.shouldRun,
+          },
+          characterConfig: (physics.worldContext as any).character || {},
+          vehicleConfig: (physics.worldContext as any).vehicle || {},
+          airplaneConfig: (physics.worldContext as any).airplane || {},
+          clickerOption: (physics.worldContext as any).clickerOption || {},
+          modeType: modeType as 'character' | 'vehicle' | 'airplane',
+        };
+        // Initial position setup
+        if (props.rigidBodyRef?.current && physics.activeState) {
+          props.rigidBodyRef.current.lockRotations(false, true);
+          physics.activeState.euler.set(0, 0, 0);
+          props.rigidBodyRef.current.setTranslation(
+            {
+              x: physics.activeState.position.x,
+              y: physics.activeState.position.y + 5,
+              z: physics.activeState.position.z,
+            },
+            true,
+          );
+        }
+      } else {
+        updateInputState(physicsStateRef.current, physics.input);
+        const modeType = (physics.worldContext as any)?.mode?.type || 'character';
+        if (lastModeType.current !== modeType) {
+          physicsSync.updateMode((physics.worldContext as any)?.mode);
+          lastModeType.current = modeType;
+        }
+      }
 
       const calcProp: PhysicsCalcProps = {
         ...props,
@@ -128,9 +111,9 @@ export default function calculation(props: PhysicsCalculationProps) {
         setMouseInput: physics.setMouseInput,
       };
 
-      physicsEngine.current.calculate(calcProp, physicsState);
+      physicsEngine.current.calculate(calcProp, physicsStateRef.current);
     },
-    [props, physics, createOrUpdatePhysicsState],
+    [physics, props],
   );
 
   useUnifiedFrame(
@@ -149,4 +132,6 @@ export default function calculation(props: PhysicsCalculationProps) {
     0,
     true,
   );
-}
+};
+
+export default usePhysicsLoop;
