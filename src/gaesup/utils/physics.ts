@@ -5,21 +5,21 @@ import { GroundRayType } from '../../types';
 
 export function createRaycastHook() {
   return function useRaycast() {
-    const rapier = useRapier();
+    const { world } = useRapier();
+
     const castRay = useCallback(
-      ({ ray, ref }: { ray: GroundRayType; ref: RefObject<Collider> }) => {
-        if (!ray.rayCast) return null;
-        return rapier.world.castRay(
-          ray.rayCast,
-          ray.length,
-          true,
-          undefined,
-          undefined,
-          ref.current || undefined,
-          undefined,
-        );
-      },
-      [rapier],
+      ({ ray, ref }: { ray: GroundRayType; ref: RefObject<Collider> }) =>
+        ray.rayCast
+          ? world.castRay(
+              ray.rayCast,
+              ray.length,
+              true,
+              undefined,
+              undefined,
+              ref.current || undefined,
+            )
+          : null,
+      [world],
     );
 
     const castRayFromPosition = useCallback(
@@ -27,17 +27,11 @@ export function createRaycastHook() {
         origin: { x: number; y: number; z: number },
         direction: { x: number; y: number; z: number },
         maxDistance: number,
-      ) => {
-        const ray = { origin, dir: direction };
-        return rapier.world.castRay(ray, maxDistance, true);
-      },
-      [rapier],
+      ) => world.castRay({ origin, dir: direction }, maxDistance, true),
+      [world],
     );
 
-    return {
-      castRay,
-      castRayFromPosition,
-    };
+    return { castRay, castRayFromPosition };
   };
 }
 

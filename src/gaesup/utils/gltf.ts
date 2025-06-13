@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { sizesAtom } from '../atoms';
 import { GLTFResult } from '../component/types';
 import { ResourceUrlsType } from '../../types';
+import { getPooledVector } from './vector';
 
 export interface GltfAndSizeOptions {
   url?: string;
@@ -17,34 +18,32 @@ export interface GltfAndSizeResult {
   getSize: (keyName?: string) => THREE.Vector3 | null;
 }
 
-const gltfCache = new Map<
-  string,
-  {
-    gltf: GLTFResult;
-    refCount: number;
-    size: THREE.Vector3;
-  }
->();
+const gltfCache = new Map<string, { gltf: GLTFResult; refCount: number; size: THREE.Vector3 }>();
+const defaultSize = new THREE.Vector3(1, 1, 1);
+const tempBox3 = new THREE.Box3();
 
 const cleanupGltf = (url: string) => {
   const cached = gltfCache.get(url);
-  if (cached) {
-    cached.refCount--;
-    if (cached.refCount <= 0) {
-      cached.gltf.scene.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          child.geometry.dispose();
-          if (child.material) {
-            if (Array.isArray(child.material)) {
-              child.material.forEach((mat) => mat.dispose());
-            } else {
-              child.material.dispose();
-            }
-          }
+  if (cached && --cached.refCount <= 0) {
+    cached.gltf.scene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.geometry.dispose();
+        if (child.material) {
+          (Array.isArray(child.material) ? child.material : [child.material]).forEach((mat) =>
+            mat.dispose(),
+          );
         }
-      });
-      gltfCache.delete(url);
-    }
+      }
+    });
+    gltfCache.delete(url);
+  }
+};
+
+const calculateSizeFromScene = (scene: THREE.Object3D): THREE.Vector3 => {
+  try {
+    return tempBox3.setFromObject(scene).getSize(getPooledVector());
+  } catch {
+    return defaultSize.clone();
   }
 };
 
@@ -53,87 +52,53 @@ export const useGltfAndSize = ({ url }: GltfAndSizeOptions): GltfAndSizeResult =
   const setSizes = useSetAtom(sizesAtom);
 
   const safeUrl = url || 'data:application/json,{}';
-  const isValidUrl = Boolean(url && url.trim() !== '');
+  const isValidUrl = Boolean(url?.trim());
 
   const gltf = useGLTF(safeUrl) as GLTFResult;
-  const { scene } = gltf;
-
   const isInitialized = useRef(false);
 
-  const calculateSize = useCallback(() => {
-    if (!isValidUrl || !scene) {
-      return new THREE.Vector3(1, 1, 1);
-    }
-    try {
-      return new THREE.Box3().setFromObject(scene).getSize(new THREE.Vector3());
-    } catch {
-      return new THREE.Vector3(1, 1, 1);
-    }
-  }, [scene, isValidUrl]);
+  const calculateSize = useCallback(
+    () => (isValidUrl && gltf.scene ? calculateSizeFromScene(gltf.scene) : defaultSize.clone()),
+    [gltf.scene, isValidUrl],
+  );
 
   useEffect(() => {
-    if (url && isValidUrl) {
-      const cached = gltfCache.get(url);
-      if (cached) {
-        cached.refCount++;
-      } else {
-        gltfCache.set(url, {
-          gltf,
-          refCount: 1,
-          size: calculateSize(),
-        });
-      }
+    if (!url || !isValidUrl) return;
+
+    const cached = gltfCache.get(url);
+    if (cached) {
+      cached.refCount++;
+    } else {
+      gltfCache.set(url, { gltf, refCount: 1, size: calculateSize() });
     }
 
-    return () => {
-      if (url && isValidUrl) {
-        cleanupGltf(url);
-      }
-    };
+    return () => cleanupGltf(url);
   }, [url, isValidUrl, gltf, calculateSize]);
 
   useEffect(() => {
-    if (!isInitialized.current && isValidUrl && url && scene && !(url in sizes)) {
-      isInitialized.current = true;
-      const newSize = calculateSize();
-      setSizes(
-        (prev: Record<string, THREE.Vector3>): Record<string, THREE.Vector3> => ({
-          ...prev,
-          [url]: newSize,
-        }),
-      );
-    }
-  }, [url, scene, sizes, setSizes, calculateSize, isValidUrl]);
+    if (isInitialized.current || !isValidUrl || !url || !gltf.scene || url in sizes) return;
 
-  const size = useMemo(() => {
-    if (!isValidUrl) {
-      return new THREE.Vector3(1, 1, 1);
-    }
-    return sizes[url] || new THREE.Vector3(1, 1, 1);
-  }, [sizes, url, isValidUrl]);
+    isInitialized.current = true;
+    const newSize = calculateSize();
+    setSizes((prev) => ({ ...prev, [url]: newSize }));
+  }, [url, gltf.scene, sizes, setSizes, calculateSize, isValidUrl]);
+
+  const size = useMemo(
+    () => (isValidUrl ? sizes[url] || defaultSize : defaultSize),
+    [sizes, url, isValidUrl],
+  );
 
   const setSize = useCallback(
     (newSize: THREE.Vector3, keyName?: string) => {
       if (!isValidUrl) return;
       const key = keyName || url;
-      Promise.resolve().then(() => {
-        setSizes(
-          (prev: Record<string, THREE.Vector3>): Record<string, THREE.Vector3> => ({
-            ...prev,
-            [key]: newSize,
-          }),
-        );
-      });
+      Promise.resolve().then(() => setSizes((prev) => ({ ...prev, [key]: newSize })));
     },
     [url, setSizes, isValidUrl],
   );
 
   const getSize = useCallback(
-    (keyName?: string) => {
-      if (!isValidUrl) return null;
-      const key = keyName || url;
-      return sizes[key] || null;
-    },
+    (keyName?: string) => (isValidUrl ? sizes[keyName || url] || null : null),
     [url, sizes, isValidUrl],
   );
 
@@ -151,19 +116,10 @@ export const useGaesupGltf = (): GaesupGltfUtils => {
 
   const getSizesByUrls = useCallback(
     (urls?: ResourceUrlsType) => {
-      const matchedSizes: { [key in keyof ResourceUrlsType]?: THREE.Vector3 | null } = {};
-      if (!urls) return matchedSizes;
-
-      Object.keys(urls).forEach((key) => {
-        const url = urls[key as keyof ResourceUrlsType];
-        if (url && url in sizes) {
-          matchedSizes[key as keyof ResourceUrlsType] = sizes[url] || null;
-        } else {
-          matchedSizes[key as keyof ResourceUrlsType] = null;
-        }
-      });
-
-      return matchedSizes;
+      if (!urls) return {};
+      return Object.fromEntries(
+        Object.entries(urls).map(([key, url]) => [key, (url && sizes[url]) || null]),
+      );
     },
     [sizes],
   );
@@ -171,36 +127,35 @@ export const useGaesupGltf = (): GaesupGltfUtils => {
   const preloadSizes = useCallback(
     async (urls: string[]) => {
       const urlsToLoad = urls.filter((url) => url && !(url in sizes));
+      if (!urlsToLoad.length) return;
 
-      if (urlsToLoad.length === 0) return;
-
-      const loadPromises = urlsToLoad.map(async (url) => {
-        try {
-          const gltf = await useGLTF.preload(url);
-          if (gltf && (gltf as GLTFResult).scene) {
-            const size = new THREE.Box3()
-              .setFromObject((gltf as GLTFResult).scene)
-              .getSize(new THREE.Vector3());
-            return { url, size };
+      const results = await Promise.allSettled(
+        urlsToLoad.map(async (url) => {
+          try {
+            const gltf = await useGLTF.preload(url);
+            if (gltf?.scene) {
+              return { url, size: calculateSizeFromScene(gltf.scene) };
+            }
+          } catch (error) {
+            console.error(`Failed to preload ${url}:`, error);
           }
           return null;
-        } catch (error) {
-          console.error(`Failed to preload ${url}:`, error);
-          return null;
-        }
-      });
+        }),
+      );
 
-      const results = await Promise.all(loadPromises);
-
-      setSizes((prev: Record<string, THREE.Vector3>): Record<string, THREE.Vector3> => {
-        const newSizes = { ...prev };
-        results.forEach((result) => {
-          if (result) {
-            newSizes[result.url] = result.size;
+      const newSizes = results.reduce(
+        (acc, result) => {
+          if (result.status === 'fulfilled' && result.value) {
+            acc[result.value.url] = result.value.size;
           }
-        });
-        return newSizes;
-      });
+          return acc;
+        },
+        {} as Record<string, THREE.Vector3>,
+      );
+
+      if (Object.keys(newSizes).length) {
+        setSizes((prev) => ({ ...prev, ...newSizes }));
+      }
     },
     [sizes, setSizes],
   );

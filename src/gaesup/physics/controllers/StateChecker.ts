@@ -127,16 +127,7 @@ export class StateChecker {
     const keyE = inputRef.current.keyboard.keyE;
     const keyR = inputRef.current.keyboard.keyR;
 
-    console.log(
-      `[StateChecker] Keys - E: ${keyE}, R: ${keyR}, lastE: ${keyState.lastKeyE}, lastR: ${keyState.lastKeyR}`,
-    );
-
-    if (!this.keyStateCache.has('logged')) {
-      this.keyStateCache.set('logged', { lastKeyE: false, lastKeyR: false });
-    }
-
     if (keyE && !keyState.lastKeyE) {
-      console.log('[StateChecker] E키 눌림 - 탑승 시도');
       eventBus.emit('RIDE_STATE_CHANGE', {
         isRiding: false,
         canRide: true,
@@ -146,7 +137,6 @@ export class StateChecker {
     }
 
     if (keyR && !keyState.lastKeyR) {
-      console.log('[StateChecker] R키 눌림 - 하차 시도');
       eventBus.emit('RIDE_STATE_CHANGE', {
         isRiding: false,
         canRide: false,
