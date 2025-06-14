@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { gaesupWorldContextType } from '../atoms/types';
 import { UrlsSlice, createUrlsSlice } from './slices/urlsSlice';
 import { ModeSlice, createModeSlice } from './slices/modeSlice';
+import { ClickerOptionSlice, createClickerOptionSlice } from './slices/clickerOptionSlice';
 
 export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
   activeState: {
@@ -70,15 +71,6 @@ export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
     animation: false,
     scroll: true,
   },
-  clickerOption: {
-    isRun: true,
-    throttle: 100,
-    autoStart: false,
-    track: false,
-    loop: false,
-    queue: [],
-    line: false,
-  },
   callbacks: {
     onReady: () => {},
     onFrame: () => {},
@@ -96,7 +88,7 @@ interface GaesupStoreState extends Partial<gaesupWorldContextType> {
   setStates: (states: Partial<gaesupWorldContextType['states']>) => void;
 }
 
-type StoreState = GaesupStoreState & UrlsSlice & ModeSlice;
+type StoreState = GaesupStoreState & UrlsSlice & ModeSlice & ClickerOptionSlice;
 
 export const useGaesupStore = create<StoreState>()(
   devtools(
@@ -104,6 +96,7 @@ export const useGaesupStore = create<StoreState>()(
       ...gaesupWorldDefault,
       ...createUrlsSlice(set, get, api),
       ...createModeSlice(set, get, api),
+      ...createClickerOptionSlice(set, get, api),
 
       updateState: (updates) => {
         set((state) => ({ ...state, ...updates }));
@@ -114,7 +107,7 @@ export const useGaesupStore = create<StoreState>()(
       },
 
       initializeState: (initialState) => {
-        set((state) => ({ ...gaesupWorldDefault, ...initialState }));
+        set((state) => ({ ...state, ...initialState }));
       },
 
       setRefs: (refs) => {

@@ -10,10 +10,15 @@ interface GaesupProviderProps {
 
 export function GaesupProvider({ children, initialState = {} }: GaesupProviderProps) {
   const initializeState = useGaesupStore((state) => state.initializeState);
+  const setClickerOption = useGaesupStore((state) => state.setClickerOption);
 
   useEffect(() => {
-    initializeState(initialState);
-  }, [initialState, initializeState]);
+    const { clickerOption, ...restInitialState } = initialState;
+    if (clickerOption) {
+      setClickerOption(clickerOption);
+    }
+    initializeState(restInitialState);
+  }, [initialState, initializeState, setClickerOption]);
 
   return <>{children}</>;
 }

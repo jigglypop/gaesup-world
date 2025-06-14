@@ -40,15 +40,6 @@ export const inputAtom = atom<inputState>({
     animation: false,
     scroll: true,
   },
-  clickerOption: {
-    isRun: true,
-    throttle: 100,
-    autoStart: false,
-    track: false,
-    loop: false,
-    queue: [],
-    line: false,
-  },
 });
 
 export const movementStateAtom = atom((get) => {

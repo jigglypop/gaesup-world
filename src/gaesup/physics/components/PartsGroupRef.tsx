@@ -3,7 +3,7 @@ import { useGraph } from '@react-three/fiber';
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
-import { useAnimationPlayer } from '../../hooks/useAnimationPlayer';
+import { useAnimationPlayer } from '../../utils/animation';
 import { ModelRendererProps, PartsGroupRefProps } from './types';
 
 export function ModelRenderer({ nodes, color, skeleton, url }: ModelRendererProps) {

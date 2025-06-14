@@ -3,6 +3,7 @@ import { useAtomValue } from 'jotai';
 import { memo } from 'react';
 import * as THREE from 'three';
 import { inputAtom } from '../../atoms';
+import { useGaesupStore } from '../../stores/gaesupStore';
 
 const TargetMarker = memo(() => (
   <group>
@@ -91,7 +92,7 @@ const QueuePointMarker = memo(({ position }: { position: THREE.Vector3 }) => (
 export const Clicker = memo(() => {
   const inputSystem = useAtomValue(inputAtom);
   const pointer = inputSystem.pointer;
-  const clickerOption = inputSystem.clickerOption;
+  const clickerOption = useGaesupStore((state) => state.clickerOption);
   const pointQueue = clickerOption.queue.filter(
     (item): item is THREE.Vector3 => item instanceof THREE.Vector3,
   );

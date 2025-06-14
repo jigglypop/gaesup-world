@@ -151,7 +151,6 @@ export namespace GaesupCore {
       pointer: Mouse;
       gamepad: Gamepad;
       blocks: State.Block;
-      clickerOption: ClickerOption;
     }
 
     /**

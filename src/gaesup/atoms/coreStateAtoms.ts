@@ -2,7 +2,16 @@ import { euler, quat, vec3 } from '@react-three/rapier';
 import { atom } from 'jotai';
 import * as THREE from 'three';
 import { inputAtom, movementStateAtom } from './inputAtom';
-import { ActiveState, ControllerConfig, EventPayload, EventType, GameStates } from './types';
+import {
+  ActiveState,
+  AnimationState,
+  ControllerConfig,
+  EventPayload,
+  EventType,
+  GameStates,
+  ModeState,
+  UrlsState,
+} from './types';
 
 export const activeStateAtom = atom<ActiveState>({
   position: vec3({
@@ -35,6 +44,24 @@ export const gameStatesAtom = atom<GameStates>({
   nearbyRideable: null,
   shouldEnterRideable: false,
   shouldExitRideable: false,
+});
+
+export const animationStateAtom = atom<AnimationState>({
+  character: {
+    current: 'idle',
+    default: 'idle',
+    store: {},
+  },
+  vehicle: {
+    current: 'idle',
+    default: 'idle',
+    store: {},
+  },
+  airplane: {
+    current: 'idle',
+    default: 'idle',
+    store: {},
+  },
 });
 
 export const rideableStateAtom = atom<
@@ -113,6 +140,13 @@ export const currentControllerConfigAtom = atom((get) => {
     default:
       return config.character;
   }
+});
+
+export const currentAnimationAtom = atom((get) => {
+  const mode = get(modeStateAtom);
+  const animations = get(animationStateAtom);
+
+  return animations[mode.type];
 });
 
 export const physicsMovementAtom = atom((get) => {

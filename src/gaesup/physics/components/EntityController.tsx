@@ -3,6 +3,7 @@ import { vec3 } from '@react-three/rapier';
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { PhysicsEntity } from './PhysicsEntity';
 import { useGenericRefs } from './useGenericRefs';
+import { controllerInnerType } from '../../component/types';
 import { EntityControllerProps } from './types';
 
 export function EntityController({ props, children }: EntityControllerProps) {

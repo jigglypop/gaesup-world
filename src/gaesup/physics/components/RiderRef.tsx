@@ -3,7 +3,7 @@ import { useGraph } from '@react-three/fiber';
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
-import { useAnimationPlayer } from '../../hooks/useAnimationPlayer';
+import { useAnimationPlayer } from '../../utils/animation';
 import { useGltfAndSize } from '../../utils/gltf';
 import { ModelRenderer } from './PartsGroupRef';
 import { riderRefType } from './types';
