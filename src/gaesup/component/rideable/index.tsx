@@ -1,9 +1,10 @@
+'use client';
 import { CollisionEnterPayload, CollisionExitPayload } from '@react-three/rapier';
-import { useContext, useEffect } from 'react';
+import { useEffect } from 'react';
 import { PassiveAirplane } from '../passive/airplane';
 import { PassiveVehicle } from '../passive/vehicle';
 import { useRideable } from '../../hooks/useRideable';
-import { GaesupContext } from '../../atoms';
+import { useGaesupContext } from '../../atoms';
 import { RideableUIProps, RideablePropType } from './types';
 import './styles.css';
 
@@ -11,16 +12,12 @@ export function RideableUI({ states }: RideableUIProps) {
   if (!states.canRide || !states.nearbyRideable) {
     return null;
   }
-  
-  return (
-    <div className="rideable-ui">
-      🚗 E키를 눌러 {states.nearbyRideable.name}에 탑승하세요
-    </div>
-  );
+
+  return <div className="rideable-ui">🚗 E키를 눌러 {states.nearbyRideable.name}에 탑승하세요</div>;
 }
 
 export function Rideable(props: RideablePropType) {
-  const { states, rideable } = useContext(GaesupContext);
+  const { states, rideable } = useGaesupContext();
   const { initRideable, onRideableNear, onRideableLeave, landing } = useRideable();
 
   useEffect(() => {
@@ -28,7 +25,7 @@ export function Rideable(props: RideablePropType) {
   }, []);
 
   useEffect(() => {
-    if (states?.isRiding && rideable[props.objectkey] && !rideable[props.objectkey].visible) {
+    if (states?.isRiding && rideable?.[props.objectkey] && !rideable[props.objectkey].visible) {
       landing(props.objectkey);
     }
   }, [states?.isRiding]);
@@ -82,4 +79,4 @@ export function Rideable(props: RideablePropType) {
       )}
     </>
   );
-} 
+}

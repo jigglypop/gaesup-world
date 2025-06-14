@@ -1,41 +1,50 @@
 import * as THREE from 'three';
-import { cameraPropType } from '../../physics/type';
+import { ActiveStateType, CameraOptionType, CameraPropType } from '../../../types';
+import { BaseCameraController } from './BaseCameraController';
 import { V3 } from '../../utils/vector';
-import { ActiveStateType, CameraOptionType } from '../../atoms';
 import { cameraUtils } from '../utils';
 
-export const makeTopDownCameraPosition = (
-  activeState: ActiveStateType,
-  cameraOption: CameraOptionType,
-): THREE.Vector3 => {
-  const height = Math.abs(cameraOption.yDistance ?? cameraOption.YDistance ?? 20);
-  const xOffset = cameraOption.xDistance ?? cameraOption.XDistance ?? 0;
-  const zOffset = cameraOption.zDistance ?? cameraOption.ZDistance ?? 0;
+export class TopDownController extends BaseCameraController {
+  public calculateTargetPosition(
+    activeState: ActiveStateType,
+    cameraOption: CameraOptionType,
+  ): THREE.Vector3 {
+    const characterPosition = activeState.position
+      ? V3(activeState.position.x, activeState.position.y, activeState.position.z)
+      : V3(0, 0, 0);
 
-  return activeState.position.clone().add(V3(xOffset, height, zOffset));
-};
+    const height = Math.abs(cameraOption.yDistance ?? 20);
+    const xOffset = cameraOption.xDistance ?? 0;
+    const zOffset = cameraOption.zDistance ?? 0;
 
-export const clampTopDownPosition = cameraUtils.clampPosition;
+    let targetPosition = characterPosition.clone().add(V3(xOffset, height, zOffset));
 
-export default function topDown(prop: cameraPropType) {
-  const {
-    state,
-    worldContext: { activeState },
-    controllerOptions: { lerp },
-    cameraOption,
-  } = prop;
+    if (cameraOption.bounds) {
+      targetPosition = cameraUtils.clampPosition(targetPosition, cameraOption.bounds);
+    }
 
-  if (!state || !state.camera) return;
+    return targetPosition;
+  }
 
-  const targetPosition = makeTopDownCameraPosition(activeState, cameraOption);
+  public override update(prop: CameraPropType): void {
+    const {
+      state,
+      worldContext: { activeState },
+      cameraOption,
+    } = prop;
 
-  const lerpSpeed = cameraOption.smoothing?.position ?? lerp.cameraPosition;
-  state.camera.position.lerp(targetPosition, lerpSpeed);
+    if (!state?.camera || !activeState?.position) return;
 
-  const lookAtTarget = cameraOption.target || activeState.position;
-  state.camera.lookAt(lookAtTarget);
+    const targetPosition = this.calculateTargetPosition(activeState, cameraOption);
 
-  if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
-    cameraUtils.updateFOVLerp(state.camera, cameraOption.fov, cameraOption.smoothing?.fov);
+    const lerpSpeed = cameraOption.smoothing?.position ?? 0.1;
+    state.camera.position.lerp(targetPosition, lerpSpeed);
+
+    const lookAtTarget = cameraOption.target || activeState.position;
+    state.camera.lookAt(lookAtTarget);
+
+    if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
+      cameraUtils.updateFOV(state.camera, cameraOption.fov, cameraOption.smoothing?.fov);
+    }
   }
 }

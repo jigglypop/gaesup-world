@@ -3,7 +3,6 @@ import { RootState } from '@react-three/fiber';
 import { RapierRigidBody } from '@react-three/rapier';
 import { RefObject } from 'react';
 import * as THREE from 'three';
-// PhysicsInputRef moved to main types
 import {
   ActiveStateType,
   ClickerOptionType,

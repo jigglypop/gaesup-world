@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ShakeConfig, ZoomConfig } from './types';
+import { CameraShakeConfig, CameraZoomConfig } from '../../types';
 import { eventBus } from '@/gaesup/physics/connectors';
 
 export class CameraEffects {
@@ -51,7 +51,7 @@ export class CameraEffects {
     const i = Math.floor(x) & 255;
     return this.noiseValues[i];
   }
-  startShake(config: ShakeConfig): void {
+  startShake(config: CameraShakeConfig): void {
     eventBus.emit('CAMERA_EFFECT', {
       type: 'shake',
       config,
@@ -67,7 +67,7 @@ export class CameraEffects {
       offset: new THREE.Vector3(),
     };
   }
-  startZoom(config: ZoomConfig): void {
+  startZoom(config: CameraZoomConfig): void {
     eventBus.emit('CAMERA_EFFECT', {
       type: 'zoom',
       config,

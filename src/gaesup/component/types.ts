@@ -1,9 +1,33 @@
 import { ObjectMap } from '@react-three/fiber';
 import { RapierRigidBody } from '@react-three/rapier';
-import { RefObject } from 'react';
+import { RefObject, ReactNode } from 'react';
 import * as THREE from 'three';
 import { GLTF } from 'three-stdlib';
-import { controllerInnerType, refsType } from '../controller/type';
+import {
+  DispatchType,
+  ResourceUrlsType,
+  ModeType,
+  CameraOptionType,
+  ClickerOptionState,
+  ActionsType,
+  AnimationTagType,
+  CameraRayType,
+  ControllerOptionsType,
+  ControllerOtherPropType,
+  GroundRayType,
+  JumpConstType,
+  JumpInnerType,
+  JumpPropType,
+  OptionsType,
+  PartType,
+  PartialOptionsType,
+  PartsType,
+  RayType,
+  RefsType,
+  SlopeRayType,
+} from '../types';
+import { gaesupWorldContextType } from '../atoms/types';
+import { airplaneType, characterType, vehicleType } from '../atoms';
 
 export type GLTFResult = GLTF & {
   nodes: { [name: string]: THREE.Mesh | THREE.SkinnedMesh };
@@ -23,10 +47,85 @@ export type refsType = {
 };
 
 export type controllerInnerType = {
-  // Add any necessary properties for the controller
+  name?: string;
+  groundRay: GroundRayType;
+  cameraRay: CameraRayType;
+  controllerOptions: ControllerOptionsType;
+  parts?: PartsType;
+} & ControllerOtherPropType &
+  RefsType &
+  callbackType;
+
+export type gaesupControllerContextPropType = {
+  airplane: airplaneType;
+  vehicle: vehicleType;
+  character: characterType;
+  controllerOptions: ControllerOptionsType;
 };
+
+export type controllerType = ControllerOtherPropType &
+  ResourceUrlsType &
+  Partial<gaesupControllerContextPropType> &
+  callbackType & {
+    controllerOptions?: ControllerOptionsType;
+    parts?: PartsType;
+  };
 
 export type GaesupComponentProps = {
   props: controllerInnerType;
   refs: refsType;
+};
+
+export type gaesupWorldInitType = {
+  value: gaesupWorldContextType;
+  dispatch: DispatchType<gaesupWorldContextType>;
+};
+
+export type PerformanceMonitorConfig = {
+  enabled?: boolean;
+  mode?: 0 | 1 | 2;
+  position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  zIndex?: number;
+  opacity?: number;
+};
+
+export type gaesupWorldPropsType = {
+  children: ReactNode;
+  startPosition?: THREE.Vector3;
+  urls?: ResourceUrlsType;
+  mode?: ModeType;
+  debug?: boolean;
+  cameraOption?: CameraOptionType;
+  block?: any;
+  clickerOption?: ClickerOptionState;
+  performance?: PerformanceMonitorConfig;
+};
+
+export type callbackType = {
+  onReady?: () => void;
+  onFrame?: () => void;
+  onDestory?: () => void;
+  onAnimate?: () => void;
+};
+
+export type componentTypeString = 'character' | 'vehicle' | 'airplane' | 'passive';
+
+export type {
+  ActionsType,
+  AnimationTagType,
+  CameraRayType,
+  ControllerOptionsType,
+  ControllerOtherPropType,
+  GroundRayType,
+  JumpConstType,
+  JumpInnerType,
+  JumpPropType,
+  OptionsType,
+  PartType,
+  PartialOptionsType,
+  PartsType,
+  RayType,
+  RefsType,
+  ResourceUrlsType,
+  SlopeRayType,
 };

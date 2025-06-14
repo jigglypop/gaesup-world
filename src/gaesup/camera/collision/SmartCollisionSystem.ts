@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { CollisionConfig } from './types';
+import { CameraCollisionConfig } from '../../types';
 
 export class SmartCollisionSystem {
   private raycaster = new THREE.Raycaster();
-  private config: CollisionConfig = {
+  private config: CameraCollisionConfig = {
     rayCount: 5,
     sphereCastRadius: 0.5,
     minDistance: 1,
@@ -22,7 +22,7 @@ export class SmartCollisionSystem {
   private tempQuaternion = new THREE.Quaternion();
   private tempDirection = new THREE.Vector3(0, 0, -1);
 
-  constructor(config?: Partial<CollisionConfig>) {
+  constructor(config?: Partial<CameraCollisionConfig>) {
     this.config = { ...this.config, ...config };
     this.initializeRayDirections();
   }
@@ -79,9 +79,9 @@ export class SmartCollisionSystem {
     for (const rayDir of this.rayDirections) {
       this.tempVector2.copy(rayDir).applyQuaternion(this.tempQuaternion);
 
-      this.tempVector3.copy(from).add(
-        this.tempVector2.multiplyScalar(this.config.sphereCastRadius)
-      );
+      this.tempVector3
+        .copy(from)
+        .add(this.tempVector2.multiplyScalar(this.config.sphereCastRadius));
 
       this.raycaster.set(this.tempVector3, direction);
       this.raycaster.far = distance;
@@ -131,12 +131,12 @@ export class SmartCollisionSystem {
     this.tempVector2.crossVectors(normal, new THREE.Vector3(0, 1, 0)).normalize();
 
     const slideDistance = 2;
-    const leftSlide = collisionPoint.clone().add(
-      this.tempVector2.clone().multiplyScalar(slideDistance)
-    );
-    const rightSlide = collisionPoint.clone().add(
-      this.tempVector2.clone().multiplyScalar(-slideDistance)
-    );
+    const leftSlide = collisionPoint
+      .clone()
+      .add(this.tempVector2.clone().multiplyScalar(slideDistance));
+    const rightSlide = collisionPoint
+      .clone()
+      .add(this.tempVector2.clone().multiplyScalar(-slideDistance));
 
     const leftClear = this.isPositionClear(leftSlide, scene);
     const rightClear = this.isPositionClear(rightSlide, scene);
@@ -152,7 +152,7 @@ export class SmartCollisionSystem {
 
   private isPositionClear(position: THREE.Vector3, scene: THREE.Scene): boolean {
     const checkRadius = this.config.sphereCastRadius * 2;
-    
+
     for (const child of scene.children) {
       if (child instanceof THREE.Mesh && child.geometry.boundingSphere) {
         const distance = position.distanceTo(child.position);

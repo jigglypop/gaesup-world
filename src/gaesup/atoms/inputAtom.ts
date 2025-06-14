@@ -22,28 +22,24 @@ export const inputAtom = atom<inputState>({
     keyE: false,
     escape: false,
   },
-
   pointer: {
     target: V3(0, 0, 0),
     angle: Math.PI / 2,
     isActive: false,
     shouldRun: false,
   },
-
   gamepad: {
     connected: false,
     leftStick: { x: 0, y: 0 },
     rightStick: { x: 0, y: 0 },
     buttons: {},
   },
-
   blocks: {
     camera: false,
     control: false,
     animation: false,
     scroll: true,
   },
-
   clickerOption: {
     isRun: true,
     throttle: 100,
@@ -62,9 +58,7 @@ export const movementStateAtom = atom((get) => {
     input.keyboard.backward ||
     input.keyboard.leftward ||
     input.keyboard.rightward;
-
   const isPointerMoving = input.pointer.isActive;
-
   return {
     isMoving: isKeyboardMoving || isPointerMoving,
     isRunning:

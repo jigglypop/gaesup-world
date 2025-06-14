@@ -1,29 +1,46 @@
 import * as THREE from 'three';
-import { CameraPropType } from '../type';
+import { ActiveStateType, CameraOptionType, CameraPropType } from '../../../types';
+import { BaseCameraController } from './BaseCameraController';
+import { V3 } from '../../utils/vector';
 
-const tempVector3 = new THREE.Vector3();
+export class IsometricController extends BaseCameraController {
+  public calculateTargetPosition(
+    activeState: ActiveStateType,
+    cameraOption: CameraOptionType,
+  ): THREE.Vector3 {
+    const distance = cameraOption.distance ?? 20;
+    const angle = cameraOption.isoAngle ?? Math.PI / 4;
 
-export default function isometric(prop: CameraPropType): void {
-  const {
-    state,
-    worldContext: { activeState },
-    cameraOption,
-  } = prop;
-  if (!state?.camera || !activeState?.position) return;
-  const distance = cameraOption.distance || 20;
-  const angle = cameraOption.isoAngle || Math.PI / 4;
-  const targetPosition = tempVector3.set(
-    activeState.position.x + distance * Math.cos(angle),
-    activeState.position.y + distance,
-    activeState.position.z + distance * Math.sin(angle),
-  );
+    const characterPosition = activeState.position
+      ? V3(activeState.position.x, activeState.position.y, activeState.position.z)
+      : V3(0, 0, 0);
 
-  state.camera.position.lerp(targetPosition, 0.1);
-  state.camera.lookAt(activeState.position);
+    return new THREE.Vector3(
+      characterPosition.x + distance * Math.cos(angle),
+      characterPosition.y + distance,
+      characterPosition.z + distance * Math.sin(angle),
+    );
+  }
 
-  if (state.camera instanceof THREE.OrthographicCamera) {
-    const zoom = cameraOption.zoom || 1;
-    state.camera.zoom = zoom;
-    state.camera.updateProjectionMatrix();
+  public override update(prop: CameraPropType): void {
+    const {
+      state,
+      worldContext: { activeState },
+      cameraOption,
+    } = prop;
+
+    if (!state?.camera || !activeState?.position) return;
+
+    const targetPosition = this.calculateTargetPosition(activeState, cameraOption);
+
+    const lerpSpeed = cameraOption.smoothing?.position ?? 0.1;
+    state.camera.position.lerp(targetPosition, lerpSpeed);
+    state.camera.lookAt(activeState.position);
+
+    if (state.camera instanceof THREE.OrthographicCamera) {
+      const zoom = cameraOption.zoom || 1;
+      state.camera.zoom = THREE.MathUtils.lerp(state.camera.zoom, zoom, lerpSpeed);
+      state.camera.updateProjectionMatrix();
+    }
   }
 }

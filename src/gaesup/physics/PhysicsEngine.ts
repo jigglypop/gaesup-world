@@ -12,13 +12,10 @@ export class PhysicsEngine {
 
   calculate(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
     if (!physicsState) return;
-
     this.stateChecker.checkAll(calcProp, physicsState);
-
     const { rigidBodyRef, innerGroupRef, matchSizes, worldContext } = calcProp;
     const { modeType = 'character' } = physicsState;
     const controlMode = (worldContext as any)?.mode?.control;
-
     this.directionController.updateDirection(
       physicsState,
       modeType === 'character' ? controlMode : 'normal',
@@ -26,17 +23,13 @@ export class PhysicsEngine {
       modeType === 'airplane' ? innerGroupRef : undefined,
       modeType === 'airplane' ? matchSizes : undefined,
     );
-
     this.impulseController.applyImpulse(rigidBodyRef, physicsState);
-
     if (modeType === 'character' || modeType === 'airplane') {
       this.gravityController.applyGravity(rigidBodyRef, physicsState);
     }
-
     if (modeType === 'vehicle' || modeType === 'airplane') {
       this.applyDamping(rigidBodyRef, physicsState);
     }
-
     if (rigidBodyRef?.current) {
       if (modeType === 'character' && innerGroupRef?.current) {
         const {
@@ -56,7 +49,6 @@ export class PhysicsEngine {
       rigidBodyRef.current.setEnabledRotations(false, false, false, false);
     }
   }
-
   private applyDamping(rigidBodyRef: any, physicsState: PhysicsState): void {
     if (!rigidBodyRef?.current || !physicsState) return;
     const { modeType, vehicleConfig, airplaneConfig } = physicsState;

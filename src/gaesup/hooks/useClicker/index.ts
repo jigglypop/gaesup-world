@@ -2,15 +2,25 @@ import { ThreeEvent } from '@react-three/fiber';
 import { useSetAtom } from 'jotai';
 import { useContext } from 'react';
 import { pointerInputAtom } from '../../atoms/inputAtom';
-import { GaesupContext } from '../../atoms';
+import { useGaesupContext } from '../../atoms';
 import { V3 } from '../../utils';
 import { ClickerMoveOptions, ClickerResult } from './types';
+import { useFrame } from '@react-three/fiber';
+import { useAtomValue } from 'jotai';
+import { blockAtom } from '../../atoms';
 
 export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
   const { minHeight = 0.5, offsetY = 0.5 } = options;
-  const { activeState } = useContext(GaesupContext);
+  const { activeState } = useGaesupContext();
   const setMouseInput = useSetAtom(pointerInputAtom);
   const isReady = Boolean(activeState?.position);
+  const blockState = useAtomValue(blockAtom);
+  const block = blockState?.control;
+
+  useFrame(() => {
+    if (block || !activeState) return;
+  });
+
   const moveClicker = (
     event: ThreeEvent<MouseEvent>,
     isRun: boolean,

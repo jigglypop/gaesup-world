@@ -1,21 +1,23 @@
-import { useContext, useMemo, useEffect } from 'react';
+import { useContext, useMemo, useEffect, useRef } from 'react';
 import { vec3 } from '@react-three/rapier';
-import { GaesupContext, GaesupDispatchContext } from '../../atoms';
+import { useGaesupContext, useGaesupDispatch } from '../../atoms';
 import { PhysicsEntity } from './PhysicsEntity';
 import { useGenericRefs } from './useGenericRefs';
+import { controllerInnerType } from '../types';
 
 interface EntityControllerProps {
-  props: any; // controllerInnerType 대신 any 사용
+  props: controllerInnerType;
   children?: React.ReactNode;
 }
 
 export function EntityController({ props, children }: EntityControllerProps) {
-  const { mode, states, rideable, urls } = useContext(GaesupContext);
-  const dispatch = useContext(GaesupDispatchContext);
+  const { mode, states, rideable, urls } = useGaesupContext();
+  const dispatch = useGaesupDispatch();
   const refs = useGenericRefs();
+  const refsSetRef = useRef(false);
 
   useEffect(() => {
-    if (refs.rigidBodyRef.current && dispatch) {
+    if (dispatch && !refsSetRef.current) {
       dispatch({
         type: 'update',
         payload: {
@@ -27,9 +29,12 @@ export function EntityController({ props, children }: EntityControllerProps) {
           },
         },
       });
+      refsSetRef.current = true;
     }
-  }, [refs.rigidBodyRef.current, dispatch]);
+  }, [dispatch]);
+
   if (!mode || !states || !rideable || !urls) return null;
+
   const { enableRiding, isRiderOn, rideableId } = states;
   const offset = useMemo(
     () => (rideableId && rideable[rideableId] ? rideable[rideableId].offset : vec3()),
@@ -87,6 +92,7 @@ export function EntityController({ props, children }: EntityControllerProps) {
         };
     }
   };
+
   const entityProps = getEntityProps();
   return <PhysicsEntity {...entityProps} />;
 }

@@ -1,8 +1,7 @@
-import { useContext } from 'react';
-import { GaesupContext } from '../../../src/gaesup/atoms';
-import { RideableUI } from '../../../src';
+import { useGaesupContext } from '../../../src/gaesup/atoms';
+import { RideableUI } from '../../../src/gaesup/component/rideable';
 
 export function RideableUIRenderer() {
-  const { states } = useContext(GaesupContext);
+  const { states } = useGaesupContext();
   return <RideableUI states={states} />;
 }

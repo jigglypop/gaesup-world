@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ActiveBlend, CameraBlendState } from './types';
+import { CameraActiveBlend, CameraBlendState } from '../../types';
 import { eventBus } from '@/gaesup/physics/connectors';
 
 export enum BlendFunction {
@@ -11,7 +11,7 @@ export enum BlendFunction {
 }
 
 export class CameraBlendManager {
-  private activeBlend: ActiveBlend | null = null;
+  private activeBlend: CameraActiveBlend | null = null;
   private blendFunctions: Record<BlendFunction, (t: number) => number> = {
     linear: (t) => t,
     easeIn: (t) => t * t,

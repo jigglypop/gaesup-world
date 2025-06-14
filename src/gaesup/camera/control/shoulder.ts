@@ -1,45 +1,60 @@
 import * as THREE from 'three';
-import { CameraPropType } from '../type';
+import { ActiveStateType, CameraOptionType, CameraPropType } from '../../../types';
+import { BaseCameraController } from './BaseCameraController';
+import { cameraUtils } from '../utils';
+import { V3 } from '../../utils/vector';
 
-const tempVector3 = new THREE.Vector3();
 const tempOffset = new THREE.Vector3();
 const tempEuler = new THREE.Euler();
 
-export default function shoulder(prop: CameraPropType): void {
-  const {
-    state,
-    worldContext: { activeState },
-    cameraOption,
-  } = prop;
+export class ShoulderController extends BaseCameraController {
+  public calculateTargetPosition(
+    activeState: ActiveStateType,
+    cameraOption: CameraOptionType,
+    isAiming: boolean = false,
+  ): THREE.Vector3 {
+    const shoulderOffset = cameraOption.shoulderOffset || V3(0.5, 1.6, -2);
+    const aimOffset = cameraOption.aimOffset || V3(0.3, 1.6, -1);
 
-  if (!state?.camera || !activeState?.position) return;
+    const targetOffset = isAiming ? aimOffset : shoulderOffset;
 
-  const shoulderOffset = cameraOption.shoulderOffset || new THREE.Vector3(0.5, 1.6, -2);
-  const aimOffset = cameraOption.aimOffset || new THREE.Vector3(0.3, 1.6, -1);
+    tempOffset.copy(targetOffset);
+    if (activeState.euler) {
+      tempEuler.copy(activeState.euler);
+      tempOffset.applyEuler(tempEuler);
+    }
 
-  const isAiming = (prop.worldContext as any)?.states?.isAiming || false;
-  const targetOffset = isAiming ? aimOffset : shoulderOffset;
+    const characterPosition = activeState.position
+      ? V3(activeState.position.x, activeState.position.y, activeState.position.z)
+      : V3(0, 0, 0);
 
-  tempOffset.copy(targetOffset);
-  if (activeState.euler) {
-    tempEuler.copy(activeState.euler);
-    tempOffset.applyEuler(tempEuler);
+    return characterPosition.clone().add(tempOffset);
   }
 
-  const targetPosition = tempVector3.copy(activeState.position).add(tempOffset);
+  public override update(prop: CameraPropType): void {
+    const {
+      state,
+      worldContext: { activeState, states },
+      cameraOption,
+    } = prop;
 
-  const lerpSpeed = isAiming ? 0.2 : 0.1;
-  const deltaTime = prop.state?.delta || 0.016;
+    if (!state?.camera || !activeState?.position) return;
 
-  const lookTarget =
-    cameraOption.lookTarget ||
-    tempVector3.copy(activeState.position).add(new THREE.Vector3(0, 1.5, 0));
+    const isAiming = states?.isAiming || false;
 
-  cameraUtils.preventCameraJitter(
-    state.camera,
-    targetPosition,
-    lookTarget,
-    isAiming ? 12.0 : 8.0,
-    deltaTime,
-  );
+    const targetPosition = this.calculateTargetPosition(activeState, cameraOption, isAiming);
+
+    const deltaTime = (state as any).delta || 0.016;
+    const lookTarget =
+      cameraOption.target ||
+      V3(activeState.position.x, activeState.position.y, activeState.position.z).add(V3(0, 1.5, 0));
+
+    cameraUtils.preventCameraJitter(
+      state.camera,
+      targetPosition,
+      lookTarget,
+      isAiming ? 12.0 : 8.0,
+      deltaTime
+    );
+  }
 }

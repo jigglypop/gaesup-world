@@ -1,11 +1,12 @@
 import { useContext } from 'react';
+import * as THREE from 'three';
+import { useGaesupContext } from '../../atoms';
 import { useAtomValue } from 'jotai';
-import { GaesupContext } from '../../atoms';
 import { urlsAtom } from '../../atoms';
 import { gaesupPassivePropsType } from './types';
 
 export function useGaesupController(): gaesupPassivePropsType {
-  const worldContext = useContext(GaesupContext);
+  const worldContext = useGaesupContext();
   const urls = useAtomValue(urlsAtom);
 
   const currentAnimation =

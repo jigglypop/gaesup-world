@@ -4,3 +4,4 @@ export * from './coreStateAtoms';
 export * from './inputAtom';
 export * from './providers';
 export * from './types';
+export { useGaesupStore } from '../stores/gaesupStore';

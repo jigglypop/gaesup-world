@@ -1,11 +1,20 @@
 import * as THREE from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
-import { CameraOptionType } from '../../types';
-import { CameraPropType } from './types';
 
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
 const tempQuaternion = new THREE.Quaternion();
+
+export const CAMERA_CONSTANTS = {
+  THROTTLE_MS: 16,
+  POSITION_THRESHOLD: 0.001,
+  TARGET_THRESHOLD: 0.001,
+  DEFAULT_LERP_SPEED: 0.1,
+  DEFAULT_FOV_LERP: 0.05,
+  MIN_FOV: 10,
+  MAX_FOV: 120,
+  FRAME_RATE_LERP_SPEED: 8.0,
+} as const;
 
 export const cameraUtils = {
   tempVectors: {
@@ -133,47 +142,14 @@ export const cameraUtils = {
     return Math.atan(y / x) + (y >= 0 ? Math.PI : -Math.PI);
   },
 
-  isPositionEqual: (a: THREE.Vector3, b: THREE.Vector3, threshold = 0.001): boolean => {
-    return (
-      Math.abs(a.x - b.x) < threshold &&
-      Math.abs(a.y - b.y) < threshold &&
-      Math.abs(a.z - b.z) < threshold
-    );
-  },
-
   updateFOV: (
     camera: THREE.PerspectiveCamera,
     targetFov: number,
-    lerpSpeed: number,
-    minFov = 10,
-    maxFov = 120,
+    lerpSpeed: number = CAMERA_CONSTANTS.DEFAULT_FOV_LERP,
+    minFov = CAMERA_CONSTANTS.MIN_FOV,
+    maxFov = CAMERA_CONSTANTS.MAX_FOV,
   ): void => {
     const clampedFov = cameraUtils.clampValue(targetFov, minFov, maxFov);
-    camera.fov = THREE.MathUtils.lerp(camera.fov, clampedFov, lerpSpeed);
-    camera.updateProjectionMatrix();
-  },
-
-  pool: {
-    vectors: [] as THREE.Vector3[],
-    getVector3: (): THREE.Vector3 => {
-      return cameraUtils.pool.vectors.pop() || new THREE.Vector3();
-    },
-    releaseVector3: (vector: THREE.Vector3): void => {
-      vector.set(0, 0, 0);
-      cameraUtils.pool.vectors.push(vector);
-    },
-  },
-
-  updateFOVLerp: (
-    camera: THREE.PerspectiveCamera,
-    targetFov: number,
-    lerpSpeed: number = CAMERA_CONSTANTS.DEFAULT_FOV_LERP,
-  ): void => {
-    const clampedFov = cameraUtils.clampValue(
-      targetFov,
-      CAMERA_CONSTANTS.MIN_FOV,
-      CAMERA_CONSTANTS.MAX_FOV,
-    );
     camera.fov = THREE.MathUtils.lerp(camera.fov, clampedFov, lerpSpeed);
     camera.updateProjectionMatrix();
   },
@@ -197,48 +173,26 @@ export const cameraUtils = {
 
     return tempVector3.set(x, y, z);
   },
+
+  isPositionEqual: (a: THREE.Vector3, b: THREE.Vector3, threshold = 0.001): boolean => {
+    return (
+      Math.abs(a.x - b.x) < threshold &&
+      Math.abs(a.y - b.y) < threshold &&
+      Math.abs(a.z - b.z) < threshold
+    );
+  },
+
+  pool: {
+    vectors: [] as THREE.Vector3[],
+    getVector3: (): THREE.Vector3 => {
+      return cameraUtils.pool.vectors.pop() || new THREE.Vector3();
+    },
+    releaseVector3: (vector: THREE.Vector3): void => {
+      vector.set(0, 0, 0);
+      cameraUtils.pool.vectors.push(vector);
+    },
+  },
 };
-
-export const CAMERA_CONSTANTS = {
-  THROTTLE_MS: 16,
-  POSITION_THRESHOLD: 0.001,
-  TARGET_THRESHOLD: 0.001,
-  DEFAULT_LERP_SPEED: 0.1,
-  DEFAULT_FOV_LERP: 0.05,
-  MIN_FOV: 10,
-  MAX_FOV: 120,
-  FRAME_RATE_LERP_SPEED: 8.0,
-} as const;
-
-export abstract class BaseCameraController {
-  protected tempVector = new THREE.Vector3();
-
-  abstract calculateTargetPosition(
-    activeState: ActiveStateType,
-    cameraOption: CameraOptionType,
-  ): THREE.Vector3;
-
-  update(prop: CameraPropType): void {
-    const {
-      state,
-      worldContext: { activeState },
-      cameraOption,
-    } = prop;
-    if (!state?.camera) return;
-
-    if (!activeState) return;
-
-    const targetPosition = this.calculateTargetPosition(activeState, cameraOption);
-    const lerpSpeed = cameraOption.smoothing?.position ?? 0.1;
-
-    state.camera.position.lerp(targetPosition, lerpSpeed);
-    state.camera.lookAt(cameraOption.target || activeState.position);
-
-    if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
-      cameraUtils.updateFOVLerp(state.camera, cameraOption.fov, cameraOption.smoothing?.fov);
-    }
-  }
-}
 
 export const vectorUtils = {
   copyFromRapier: (target: THREE.Vector3, source: { x: number; y: number; z: number }) => {

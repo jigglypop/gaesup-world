@@ -1,9 +1,9 @@
 import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
 import { useContext, useEffect, useRef } from 'react';
-import { GaesupContext, GaesupDispatchContext } from '../../atoms';
-import { useGaesupGltf } from '../../utils/gltf';
+import { useGaesupContext, useGaesupDispatch } from '../../atoms';
 import { RideStateChangeData, rideableType } from './types';
 import { eventBus } from '@/gaesup/physics/connectors';
+import { useGaesupGltf } from '../../utils/gltf';
 
 export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'url' | 'wheelUrl'> =
   {
@@ -39,13 +39,12 @@ const createRideableUI = () => {
 };
 
 export function useRideable() {
-  const worldContext = useContext(GaesupContext);
+  const worldContext = useGaesupContext();
   const { states, rideable } = worldContext;
-  const dispatch = useContext(GaesupDispatchContext);
+  const dispatch = useGaesupDispatch();
   const { getSizesByUrls } = useGaesupGltf();
   const uiRef = useRef<HTMLElement | null>(null);
 
-  // UI 요소 초기화
   useEffect(() => {
     let ui = document.getElementById('rideable-ui');
     if (!ui) {

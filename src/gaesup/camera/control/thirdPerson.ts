@@ -1,14 +1,79 @@
 import * as THREE from 'three';
-import { ActiveStateType, CameraOptionType } from '../../atoms';
-import { cameraPropType } from '../../physics/type';
+import { ActiveStateType, CameraOptionType, CameraPropType } from '../../../types';
 import { V3 } from '../../utils/vector';
 import { cameraUtils } from '../utils';
+import { BaseCameraController } from './BaseCameraController';
 
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
 const tempDirection = new THREE.Vector3();
 
-export const makeThirdPersonCameraPosition = (
+export class ThirdPersonController extends BaseCameraController {
+  public calculateTargetPosition(
+    activeState: ActiveStateType,
+    cameraOption: CameraOptionType,
+  ): THREE.Vector3 {
+    const {
+      xDistance = 15,
+      yDistance = 8,
+      zDistance = 15,
+      enableCollision,
+      maxDistance = -7,
+      bounds,
+    } = cameraOption;
+
+    const characterPosition = activeState.position
+      ? V3(activeState.position.x, activeState.position.y, activeState.position.z)
+      : V3(0, 0, 0);
+
+    // 1. Calculate ideal position
+    let targetPosition = characterPosition.clone().add(V3(xDistance, yDistance, zDistance));
+
+    // 2. Check for collision
+    if (enableCollision) {
+      const direction = targetPosition.clone().sub(characterPosition).normalize();
+      const distance = targetPosition.distanceTo(characterPosition);
+      const minDistance = Math.abs(maxDistance) * 0.3;
+      if (distance < minDistance) {
+        targetPosition = characterPosition.clone().add(direction.multiplyScalar(minDistance));
+      }
+    }
+
+    // 3. Clamp to bounds
+    if (bounds) {
+      targetPosition = cameraUtils.clampPosition(targetPosition, bounds);
+    }
+
+    return targetPosition;
+  }
+
+  public override update(prop: CameraPropType): void {
+    const {
+      state,
+      worldContext: { activeState },
+      cameraOption,
+    } = prop;
+    if (!state?.camera || !activeState || !activeState.position) return;
+
+    const targetPosition = this.calculateTargetPosition(activeState, cameraOption);
+    const lookAtTarget = cameraOption.target || activeState.position;
+    const deltaTime = (state as any).delta || 0.016;
+
+    cameraUtils.preventCameraJitter(state.camera, targetPosition, lookAtTarget, 8.0, deltaTime);
+
+    if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
+      cameraUtils.updateFOV(state.camera, cameraOption.fov, cameraOption.smoothing?.fov);
+    }
+  }
+}
+
+const thirdPersonController = new ThirdPersonController();
+const boundUpdate = thirdPersonController.update.bind(thirdPersonController);
+
+export default boundUpdate;
+export const normal = boundUpdate;
+
+export const makeNormalCameraPosition = (
   activeState: ActiveStateType,
   cameraOption: CameraOptionType,
 ): THREE.Vector3 => {
@@ -68,40 +133,3 @@ export const calculateAdaptiveLerpSpeed = (
   const speedMultiplier = Math.min(distance / maxDistance, 2);
   return Math.min(baseLerpSpeed * speedMultiplier, 0.3);
 };
-
-export default function thirdPerson(prop: cameraPropType) {
-  const {
-    state,
-    worldContext: { activeState },
-    controllerOptions: { lerp },
-    cameraOption,
-  } = prop;
-  if (!state?.camera) return;
-  let currentPosition: THREE.Vector3;
-  if (activeState.position instanceof THREE.Vector3) {
-    currentPosition = activeState.position;
-  } else if (activeState.position && typeof activeState.position === 'object') {
-    tempVector3.set(
-      activeState.position.x || 0,
-      activeState.position.y || 0,
-      activeState.position.z || 0,
-    );
-    currentPosition = tempVector3;
-  } else {
-    tempVector3.set(0, 0, 0);
-    currentPosition = tempVector3;
-  }
-
-  let targetPosition = makeThirdPersonCameraPosition(activeState, cameraOption);
-  targetPosition = checkCameraCollision(targetPosition, currentPosition, cameraOption);
-  targetPosition = clampCameraPosition(targetPosition, cameraOption);
-  const deltaTime = prop.state?.delta || 0.016;
-  const lookAtTarget = cameraOption.target || currentPosition;
-  cameraUtils.preventCameraJitter(state.camera, targetPosition, lookAtTarget, 8.0, deltaTime);
-  if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
-    cameraUtils.updateFOVLerp(state.camera, cameraOption.fov, cameraOption.smoothing?.fov);
-  }
-}
-
-export const makeNormalCameraPosition = makeThirdPersonCameraPosition;
-export const normal = thirdPerson;

@@ -5,7 +5,8 @@ import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
 import { PhysicsCalcProps, PhysicsCalculationProps, PhysicsState } from './types';
 import { physicsSync } from './connectors';
 import { PhysicsEngine } from './PhysicsEngine';
-export { GaesupWorld, GaesupController } from '../component/physics';
+export { GaesupWorld } from '../component/GaesupWorld';
+export { GaesupController } from '../component/GaesupController';
 
 const updateInputState = (state: PhysicsState, input: any) => {
   const keyboardKeys: (keyof typeof state.keyboard)[] = [
@@ -58,7 +59,6 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
   const executePhysics = useCallback(
     (state: any, delta: number) => {
       if (!physics.worldContext || !physics.input) return;
-
       if (!physicsStateRef.current) {
         const modeType = (physics.worldContext as any)?.mode?.type || 'character';
         physicsStateRef.current = {
@@ -77,7 +77,6 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
           clickerOption: (physics.worldContext as any).clickerOption || {},
           modeType: modeType as 'character' | 'vehicle' | 'airplane',
         };
-        // Initial position setup
         if (props.rigidBodyRef?.current && physics.activeState) {
           props.rigidBodyRef.current.lockRotations(false, true);
           physics.activeState.euler.set(0, 0, 0);
@@ -126,7 +125,6 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
         props.rigidBodyRef?.current?.resetTorques(false);
         return;
       }
-
       executePhysics(state, delta);
     },
     0,

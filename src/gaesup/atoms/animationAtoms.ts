@@ -50,13 +50,11 @@ export const createAnimationStoreAtom = (type: 'character' | 'vehicle' | 'airpla
 export const activeAnimationAtom = atom((get) => {
   const gameStates = get(gameStatesAtom);
   const movement = get(movementStateAtom);
-
   if (gameStates.isJumping) return 'jump';
   if (gameStates.isFalling) return 'fall';
   if (gameStates.isRiding) return 'ride';
   if (gameStates.isLanding) return 'land';
   if (movement.isRunning) return 'run';
   if (movement.isMoving) return 'walk';
-
   return 'idle';
 });

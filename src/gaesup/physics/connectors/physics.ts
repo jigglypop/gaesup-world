@@ -1,7 +1,6 @@
 import { useAtomValue, useSetAtom } from 'jotai';
-import { useContext } from 'react';
 import { inputAtom, keyboardInputAtom, pointerInputAtom, blockAtom, urlsAtom } from '../../atoms';
-import { GaesupContext, GaesupDispatchContext } from '../../atoms';
+import { useGaesupContext, useGaesupDispatch } from '../../atoms';
 import { useGaesupGltf } from '../../utils/gltf';
 
 export function usePhysics() {
@@ -10,8 +9,8 @@ export function usePhysics() {
   const setPointerInput = useSetAtom(pointerInputAtom);
   const urls = useAtomValue(urlsAtom);
   const block = useAtomValue(blockAtom);
-  const worldContext = useContext(GaesupContext);
-  const dispatch = useContext(GaesupDispatchContext);
+  const worldContext = useGaesupContext();
+  const dispatch = useGaesupDispatch();
   const { getSizesByUrls } = useGaesupGltf();
 
   const isReady = !!(inputSystem && urls && block !== undefined && worldContext && dispatch);

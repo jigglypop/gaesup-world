@@ -7,14 +7,14 @@ import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import { cameraOptionAtom } from '../../atoms/cameraOptionAtom';
 import Camera from '../../camera';
-import { GaesupContext } from '../../atoms';
+import { useGaesupContext } from '../../atoms';
 import { useAnimationPlayer } from '../../utils/animation';
 import { useGltfAndSize } from '../../utils/gltf';
-import calculation from '../index';
+import usePhysicsLoop from '../index';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
 import { useSetGroundRay } from './setGroundRay';
-import { initCallback } from '../../component/physics';
+import { initCallback } from '../../utils/initCallback';
 import { PhysicsEntityProps } from './types';
 
 export const PhysicsEntity = forwardRef(
@@ -22,7 +22,7 @@ export const PhysicsEntity = forwardRef(
     const { size } = useGltfAndSize({ url: props.url || '' });
 
     const setGroundRay = useSetGroundRay();
-    const worldContext = useContext(GaesupContext);
+    const worldContext = useGaesupContext();
     const [cameraOption] = useAtom(cameraOptionAtom);
 
     const { scene, animations } = useGLTF(props.url);
@@ -122,7 +122,7 @@ export const PhysicsEntity = forwardRef(
       };
 
       Camera(cameraProps);
-      calculation({
+      usePhysicsLoop({
         outerGroupRef: props.outerGroupRef,
         innerGroupRef: props.innerGroupRef,
         rigidBodyRef,

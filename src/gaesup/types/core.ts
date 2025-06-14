@@ -265,6 +265,134 @@ export namespace GaesupCore {
     };
   }
 
+  export namespace Camera {
+    export interface Option extends Partial<OptionsType> {
+      target?: THREE.Vector3;
+      position?: THREE.Vector3;
+      offset?: THREE.Vector3;
+      zoom?: number;
+      smoothing?: {
+        position?: number;
+        rotation?: number;
+        fov?: number;
+      };
+      yDistance?: number;
+      shoulderOffset?: THREE.Vector3;
+      aimOffset?: THREE.Vector3;
+      fixedPosition?: THREE.Vector3;
+      isoAngle?: number;
+      maxDistance?: number;
+      distance?: number;
+      xDistance?: number;
+      zDistance?: number;
+      focus?: boolean;
+      enableCollision?: boolean;
+      collisionMargin?: number;
+      fov?: number;
+      minFov?: number;
+      maxFov?: number;
+      bounds?: {
+        minX?: number;
+        maxX?: number;
+        minY?: number;
+        maxY?: number;
+        minZ?: number;
+        maxZ?: number;
+      };
+      modeSettings?: Record<string, any>;
+    }
+
+    export interface Context {
+      activeState?: State.Active;
+      mode?: Controller.ModeType;
+      urls?: Resource.Urls;
+      states?: State.Game & { isAiming?: boolean };
+      control?: Input.Control;
+      refs?: Refs.Main;
+      animationState?: unknown; // Replace with a specific type if available
+      clickerOption?: Input.ClickerOption;
+      clicker?: unknown; // Replace with a specific type if available
+      rideable?: { [key: string]: any };
+      sizes?: Resource.Sizes;
+      block?: State.Block;
+      airplane?: Config.Airplane;
+      vehicle?: Config.Vehicle;
+      character?: Config.Character;
+      callbacks?: unknown; // Replace with a specific type if available
+      controllerOptions?: Config.Controller;
+    }
+
+    export interface Prop {
+      state?: { camera?: THREE.Camera };
+      worldContext: Partial<Context>;
+      cameraOption: Option;
+    }
+
+    export type ControlFunction = (prop: Prop) => void;
+  }
+
+  export namespace Camera.State {
+    export interface Definition {
+      name: string;
+      type: string;
+      position: THREE.Vector3;
+      rotation: THREE.Euler;
+      fov: number;
+      target?: THREE.Vector3;
+      config: Record<string, unknown>;
+      priority: number;
+      tags: string[];
+    }
+
+    export interface Transition {
+      from: string;
+      to: string;
+      condition: () => boolean;
+      duration: number;
+      blendFunction: any;
+    }
+
+    export interface ShakeConfig {
+      intensity: number;
+      duration: number;
+      frequency: number;
+      decay: boolean;
+    }
+
+    export interface ZoomConfig {
+      targetFov: number;
+      duration: number;
+      easing: (t: number) => number;
+    }
+
+    export interface CollisionConfig {
+      rayCount: number;
+      sphereCastRadius: number;
+      minDistance: number;
+      maxDistance: number;
+      avoidanceSmoothing: number;
+      transparentLayers?: number[];
+    }
+
+    export interface BlendState {
+      position: THREE.Vector3;
+      rotation: THREE.Euler;
+      fov: number;
+      target?: THREE.Vector3;
+    }
+
+    export interface ActiveBlend {
+      from: BlendState;
+      to: BlendState;
+      duration: number;
+      elapsed: number;
+      blendFunction: any;
+      onComplete?: () => void;
+      initialQuaternion: THREE.Quaternion;
+      targetQuaternion: THREE.Quaternion;
+    }
+  }
+
   export namespace Refs {
     /**
      * 주요 참조들
@@ -371,6 +499,17 @@ export type CameraControlMode = GaesupCore.Controller.CameraControlMode;
 export type ControlMode = GaesupCore.Controller.ControlMode;
 export type ControllerMode = GaesupCore.Controller.Mode;
 export type ModeType = GaesupCore.Controller.ModeType;
+export type CameraOptionType = GaesupCore.Camera.Option;
+export type gaesupWorldContextType = GaesupCore.Camera.Context;
+export type CameraPropType = GaesupCore.Camera.Prop;
+export type CameraControlFunction = GaesupCore.Camera.ControlFunction;
+export type CameraState = GaesupCore.Camera.State.Definition;
+export type CameraTransition = GaesupCore.Camera.State.Transition;
+export type CameraShakeConfig = GaesupCore.Camera.State.ShakeConfig;
+export type CameraZoomConfig = GaesupCore.Camera.State.ZoomConfig;
+export type CameraCollisionConfig = GaesupCore.Camera.State.CollisionConfig;
+export type CameraBlendState = GaesupCore.Camera.State.BlendState;
+export type CameraActiveBlend = GaesupCore.Camera.State.ActiveBlend;
 export type RefsType = GaesupCore.Refs.Main;
 export type ControllerOtherPropType = GaesupCore.Refs.ControllerOtherProp;
 export type ResourceUrlsType = GaesupCore.Resource.Urls;
