@@ -1,18 +1,13 @@
-import {
-  inputAtom,
-  keyboardInputAtom,
-  pointerInputAtom,
-  gaesupWorldContextType,
-} from '@/gaesup/atoms';
+import { gaesupWorldContextType } from '@/gaesup/atoms';
+import { StoreState } from '@/gaesup/stores/gaesupStore';
 import { DispatchType, PhysicsBridgeData } from '@/types';
-import { useAtomValue, useSetAtom } from 'jotai';
 
-export interface AtomBridgeData {
-  inputSystem: ReturnType<typeof useAtomValue<typeof inputAtom>>;
-  urls: ReturnType<typeof useAtomValue<typeof urlsAtom>>;
-  block: ReturnType<typeof useAtomValue<typeof blockAtom>>;
-  setKeyboardInput: ReturnType<typeof useSetAtom<typeof keyboardInputAtom>>;
-  setPointerInput: ReturnType<typeof useSetAtom<typeof pointerInputAtom>>;
+export interface StoreBridgeData {
+  input: StoreState['input'];
+  urls: StoreState['urls'];
+  block: StoreState['block'];
+  setKeyboard: StoreState['setKeyboard'];
+  setPointer: StoreState['setPointer'];
 }
 
 export interface ContextBridgeData {

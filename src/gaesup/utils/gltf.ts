@@ -1,11 +1,10 @@
 import { useGLTF } from '@react-three/drei';
-import { useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { sizesAtom } from '../atoms';
 import { GLTFResult } from '../component/types';
 import { ResourceUrlsType } from '../../types';
 import { getPooledVector } from './vector';
+import { useGaesupStore } from '../stores/gaesupStore';
 
 export interface GltfAndSizeOptions {
   url?: string;
@@ -48,8 +47,8 @@ const calculateSizeFromScene = (scene: THREE.Object3D): THREE.Vector3 => {
 };
 
 export const useGltfAndSize = ({ url }: GltfAndSizeOptions): GltfAndSizeResult => {
-  const sizes = useAtomValue(sizesAtom);
-  const setSizes = useSetAtom(sizesAtom);
+  const sizes = useGaesupStore((state) => state.sizes);
+  const setSizes = useGaesupStore((state) => state.setSizes);
 
   const safeUrl = url || 'data:application/json,{}';
   const isValidUrl = Boolean(url?.trim());
@@ -76,15 +75,15 @@ export const useGltfAndSize = ({ url }: GltfAndSizeOptions): GltfAndSizeResult =
   }, [url, isValidUrl, gltf, calculateSize]);
 
   useEffect(() => {
-    if (isInitialized.current || !isValidUrl || !url || !gltf.scene || url in sizes) return;
+    if (isInitialized.current || !isValidUrl || !url || !gltf.scene || sizes[url]) return;
 
     isInitialized.current = true;
     const newSize = calculateSize();
-    setSizes((prev) => ({ ...prev, [url]: newSize }));
+    setSizes((prev) => ({ ...prev, [url!]: newSize }));
   }, [url, gltf.scene, sizes, setSizes, calculateSize, isValidUrl]);
 
   const size = useMemo(
-    () => (isValidUrl ? sizes[url] || defaultSize : defaultSize),
+    () => (isValidUrl && url ? sizes[url] || defaultSize : defaultSize),
     [sizes, url, isValidUrl],
   );
 
@@ -92,13 +91,17 @@ export const useGltfAndSize = ({ url }: GltfAndSizeOptions): GltfAndSizeResult =
     (newSize: THREE.Vector3, keyName?: string) => {
       if (!isValidUrl) return;
       const key = keyName || url;
-      Promise.resolve().then(() => setSizes((prev) => ({ ...prev, [key]: newSize })));
+      Promise.resolve().then(() => setSizes((prev) => ({ ...prev, [key!]: newSize })));
     },
     [url, setSizes, isValidUrl],
   );
 
   const getSize = useCallback(
-    (keyName?: string) => (isValidUrl ? sizes[keyName || url] || null : null),
+    (keyName?: string) => {
+      if (!isValidUrl) return null;
+      const key = keyName || url;
+      return key ? sizes[key] || null : null;
+    },
     [url, sizes, isValidUrl],
   );
 
@@ -111,14 +114,14 @@ export interface GaesupGltfUtils {
 }
 
 export const useGaesupGltf = (): GaesupGltfUtils => {
-  const sizes = useAtomValue(sizesAtom);
-  const setSizes = useSetAtom(sizesAtom);
+  const sizes = useGaesupStore((state) => state.sizes);
+  const setSizes = useGaesupStore((state) => state.setSizes);
 
   const getSizesByUrls = useCallback(
     (urls?: ResourceUrlsType) => {
       if (!urls) return {};
       return Object.fromEntries(
-        Object.entries(urls).map(([key, url]) => [key, (url && sizes[url]) || null]),
+        Object.entries(urls).map(([key, url]) => [key, url ? sizes[url] || null : null]),
       );
     },
     [sizes],
@@ -126,13 +129,13 @@ export const useGaesupGltf = (): GaesupGltfUtils => {
 
   const preloadSizes = useCallback(
     async (urls: string[]) => {
-      const urlsToLoad = urls.filter((url) => url && !(url in sizes));
+      const urlsToLoad = urls.filter((url) => url && !sizes[url]);
       if (!urlsToLoad.length) return;
 
       const results = await Promise.allSettled(
         urlsToLoad.map(async (url) => {
           try {
-            const gltf = await useGLTF.preload(url);
+            const gltf: any = await useGLTF.preload(url);
             if (gltf?.scene) {
               return { url, size: calculateSizeFromScene(gltf.scene) };
             }

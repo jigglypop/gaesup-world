@@ -1,19 +1,13 @@
 import { ThreeEvent } from '@react-three/fiber';
-import { useSetAtom } from 'jotai';
-import { useContext } from 'react';
-import { pointerInputAtom } from '../../atoms/inputAtom';
-import { useGaesupContext } from '../../atoms';
-import { V3 } from '../../utils';
-import { ClickerMoveOptions, ClickerResult } from './types';
 import { useFrame } from '@react-three/fiber';
 import { useGaesupStore } from '../../stores/gaesupStore';
+import { V3 } from '../../utils';
+import { ClickerMoveOptions, ClickerResult } from './types';
 
 export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
   const { minHeight = 0.5, offsetY = 0.5 } = options;
-  const { activeState } = useGaesupContext();
-  const setMouseInput = useSetAtom(pointerInputAtom);
+  const { activeState, block, setPointer } = useGaesupStore();
   const isReady = Boolean(activeState?.position);
-  const block = useGaesupStore((state) => state.block);
 
   useFrame(() => {
     if (block.control || !activeState) return;
@@ -42,7 +36,7 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
       const adjustedY = Math.max(targetPoint.y + offsetY, minHeight);
       const finalTarget = V3(targetPoint.x, adjustedY, targetPoint.z);
 
-      setMouseInput({
+      setPointer({
         target: finalTarget,
         angle: newAngle,
         isActive: true,
@@ -58,7 +52,7 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
 
   const stopClicker = () => {
     try {
-      setMouseInput({
+      setPointer({
         isActive: false,
         shouldRun: false,
       });

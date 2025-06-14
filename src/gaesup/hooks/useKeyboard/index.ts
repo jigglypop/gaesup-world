@@ -1,7 +1,5 @@
-import { useSetAtom } from 'jotai';
 import { useCallback, useEffect, useRef } from 'react';
 import { useGaesupStore } from '../../stores/gaesupStore';
-import { keyboardInputAtom, pointerInputAtom } from '../../atoms/inputAtom';
 import { KEY_MAPPING } from '../../constants';
 import { KeyboardOptions, KeyboardResult } from './types';
 
@@ -21,17 +19,14 @@ const initialKeyState = {
 
 export function useKeyboard(options: KeyboardOptions = {}): KeyboardResult {
   const { preventDefault = true, enableClicker = true, customKeyMapping = {} } = options;
-  const clickerOption = useGaesupStore((state) => state.clickerOption);
-  const setClickerOption = useGaesupStore((state) => state.setClickerOption);
-  const setKeyboardInput = useSetAtom(keyboardInputAtom);
-  const setPointerInput = useSetAtom(pointerInputAtom);
+  const { clickerOption, setClickerOption, setKeyboard, setPointer } = useGaesupStore();
   const pressedKeys = useRef<Set<string>>(new Set());
   const keyMapping = { ...KEY_MAPPING, ...customKeyMapping };
 
   const pushKey = useCallback(
     (key: string, value: boolean): boolean => {
       try {
-        setKeyboardInput({ [key]: value });
+        setKeyboard({ [key]: value });
         value ? pressedKeys.current.add(key) : pressedKeys.current.delete(key);
         return true;
       } catch (error) {
@@ -39,12 +34,12 @@ export function useKeyboard(options: KeyboardOptions = {}): KeyboardResult {
         return false;
       }
     },
-    [setKeyboardInput],
+    [setKeyboard],
   );
 
   const clearAllKeys = () => {
     pressedKeys.current.clear();
-    setKeyboardInput(initialKeyState);
+    setKeyboard(initialKeyState);
   };
 
   useEffect(() => {
@@ -60,13 +55,13 @@ export function useKeyboard(options: KeyboardOptions = {}): KeyboardResult {
 
         if (enableClicker && event.code === 'KeyS' && clickerOption.isRun) {
           setClickerOption({ isRun: false });
-          setPointerInput({ isActive: false, shouldRun: false });
+          setPointer({ isActive: false, shouldRun: false });
         }
 
-        setKeyboardInput({ [mappedKey]: true });
+        setKeyboard({ [mappedKey]: true });
       } else if (!isDown && wasPressed) {
         pressedKeys.current.delete(event.code);
-        setKeyboardInput({ [mappedKey]: false });
+        setKeyboard({ [mappedKey]: false });
       }
     };
 
@@ -86,8 +81,8 @@ export function useKeyboard(options: KeyboardOptions = {}): KeyboardResult {
   }, [
     clickerOption,
     setClickerOption,
-    setKeyboardInput,
-    setPointerInput,
+    setKeyboard,
+    setPointer,
     keyMapping,
     preventDefault,
     enableClicker,

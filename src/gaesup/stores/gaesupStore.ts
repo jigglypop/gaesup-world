@@ -9,6 +9,8 @@ import { BlockSlice, createBlockSlice } from './slices/blockSlice';
 import { CameraOptionSlice, createCameraOptionSlice } from './slices/cameraOptionSlice';
 import { CameraSlice, createCameraSlice } from './slices/cameraSlice';
 import { MinimapSlice, createMinimapSlice } from './slices/minimapSlice';
+import { InputSlice, createInputSlice } from './slices/inputSlice';
+import { SizesSlice, createSizesSlice } from './slices/sizesSlice';
 
 export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
   activeState: {
@@ -84,22 +86,22 @@ export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
   refs: {},
 };
 
-interface GaesupStoreState extends Partial<gaesupWorldContextType> {
-  updateState: (updates: Partial<gaesupWorldContextType>) => void;
-  resetState: () => void;
-  initializeState: (initialState: Partial<gaesupWorldContextType>) => void;
-  setRefs: (refs: Partial<gaesupWorldContextType['refs']>) => void;
-  setStates: (states: Partial<gaesupWorldContextType['states']>) => void;
-}
-
-type StoreState = GaesupStoreState &
+export type StoreState = gaesupWorldContextType &
   UrlsSlice &
   ModeSlice &
   ClickerOptionSlice &
   BlockSlice &
   CameraOptionSlice &
   CameraSlice &
-  MinimapSlice;
+  MinimapSlice &
+  InputSlice &
+  SizesSlice & {
+    updateState: (updates: Partial<StoreState>) => void;
+    resetState: () => void;
+    initializeState: (initialState: Partial<StoreState>) => void;
+    setRefs: (refs: Partial<gaesupWorldContextType['refs']>) => void;
+    setStates: (states: Partial<gaesupWorldContextType['states']>) => void;
+  };
 
 export const useGaesupStore = create<StoreState>()(
   devtools(
@@ -112,6 +114,8 @@ export const useGaesupStore = create<StoreState>()(
       ...createCameraOptionSlice(set, get, api),
       ...createCameraSlice(set, get, api),
       ...createMinimapSlice(set, get, api),
+      ...createInputSlice(set, get, api),
+      ...createSizesSlice(set, get, api),
 
       updateState: (updates: Partial<StoreState>) => {
         set((state: StoreState) => ({ ...state, ...updates }));

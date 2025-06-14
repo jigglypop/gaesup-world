@@ -1,6 +1,5 @@
-import { useAtomValue } from 'jotai';
-import { useEffect, useRef } from 'react';
-import { activeAnimationAtom } from '../atoms/animationAtoms';
+import { useEffect, useMemo, useRef } from 'react';
+import { useGaesupStore } from '../stores/gaesupStore';
 
 export interface AnimationActions {
   [key: string]: {
@@ -12,7 +11,33 @@ export interface AnimationActions {
 }
 
 export function useAnimationPlayer(actions: AnimationActions | undefined, active: boolean) {
-  const activeTag = useAtomValue(activeAnimationAtom);
+  const states = useGaesupStore((state) => state.states);
+  const input = useGaesupStore((state) => state.input);
+
+  const movement = useMemo(() => {
+    const isKeyboardMoving =
+      input.keyboard.forward ||
+      input.keyboard.backward ||
+      input.keyboard.leftward ||
+      input.keyboard.rightward;
+    const isPointerMoving = input.pointer.isActive;
+    return {
+      isMoving: isKeyboardMoving || isPointerMoving,
+      isRunning:
+        (input.keyboard.shift && isKeyboardMoving) ||
+        (input.pointer.shouldRun && isPointerMoving && input.clickerOption.isRun),
+    };
+  }, [input]);
+
+  const activeTag = (() => {
+    if (states.isJumping) return 'jump';
+    if (states.isFalling) return 'fall';
+    if (states.isRiding) return 'ride';
+    if (states.isLanding) return 'land';
+    if (movement.isRunning) return 'run';
+    if (movement.isMoving) return 'walk';
+    return 'idle';
+  })();
   const previousTag = useRef('idle');
 
   useEffect(() => {

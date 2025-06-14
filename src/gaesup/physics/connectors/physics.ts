@@ -1,22 +1,26 @@
-import { useAtomValue, useSetAtom } from 'jotai';
-import { inputAtom, keyboardInputAtom, pointerInputAtom } from '../../atoms';
-import { useGaesupContext, useGaesupDispatch } from '../../atoms';
 import { useGaesupGltf } from '../../utils/gltf';
-import { useGaesupStore } from '../../stores/gaesupStore';
+import { StoreState, useGaesupStore } from '../../stores/gaesupStore';
 
 export function usePhysics() {
-  const inputSystem = useAtomValue(inputAtom);
-  const setKeyboardInput = useSetAtom(keyboardInputAtom);
-  const setPointerInput = useSetAtom(pointerInputAtom);
-  const urls = useGaesupStore((state) => state.urls);
-  const worldContext = useGaesupContext();
-  const dispatch = useGaesupDispatch();
+  const store = useGaesupStore();
+  const {
+    input: inputSystem,
+    setKeyboard: setKeyboardInput,
+    setPointer: setPointerInput,
+    urls,
+    activeState,
+    updateState,
+  } = store;
   const { getSizesByUrls } = useGaesupGltf();
-  const isReady = !!(inputSystem && urls && worldContext && dispatch);
+  const isReady = !!(inputSystem && urls && activeState && updateState);
+
+  const dispatch = (payload: Partial<StoreState>) => {
+    updateState(payload);
+  };
 
   return {
-    worldContext,
-    activeState: worldContext?.activeState,
+    worldContext: store,
+    activeState,
     input: {
       keyboard: inputSystem?.keyboard,
       mouse: inputSystem?.pointer,
