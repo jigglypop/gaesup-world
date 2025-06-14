@@ -1,6 +1,4 @@
-import { useAtom, useAtomValue } from 'jotai';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { minimapAtom, modeStateAtom } from '../../atoms';
 import { useGaesupContext } from '../../atoms';
 import { useGaesupStore } from '../../stores/gaesupStore';
 
@@ -46,7 +44,7 @@ export function useMinimap(options: MinimapOptions = {}): MinimapResult {
   } = options;
   const { activeState } = useGaesupContext();
   const mode = useGaesupStore((state) => state.mode);
-  const [minimap] = useAtom(minimapAtom);
+  const minimap = useGaesupStore((state) => state.minimap);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [scale, setScale] = useState(initialScale);
   const lastPositionRef = useRef({ x: 0, y: 0, z: 0 });

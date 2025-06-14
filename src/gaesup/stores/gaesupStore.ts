@@ -7,6 +7,8 @@ import { ModeSlice, createModeSlice } from './slices/modeSlice';
 import { ClickerOptionSlice, createClickerOptionSlice } from './slices/clickerOptionSlice';
 import { BlockSlice, createBlockSlice } from './slices/blockSlice';
 import { CameraOptionSlice, createCameraOptionSlice } from './slices/cameraOptionSlice';
+import { CameraSlice, createCameraSlice } from './slices/cameraSlice';
+import { MinimapSlice, createMinimapSlice } from './slices/minimapSlice';
 
 export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
   activeState: {
@@ -95,7 +97,9 @@ type StoreState = GaesupStoreState &
   ModeSlice &
   ClickerOptionSlice &
   BlockSlice &
-  CameraOptionSlice;
+  CameraOptionSlice &
+  CameraSlice &
+  MinimapSlice;
 
 export const useGaesupStore = create<StoreState>()(
   devtools(
@@ -106,6 +110,8 @@ export const useGaesupStore = create<StoreState>()(
       ...createClickerOptionSlice(set, get, api),
       ...createBlockSlice(set, get, api),
       ...createCameraOptionSlice(set, get, api),
+      ...createCameraSlice(set, get, api),
+      ...createMinimapSlice(set, get, api),
 
       updateState: (updates: Partial<StoreState>) => {
         set((state: StoreState) => ({ ...state, ...updates }));

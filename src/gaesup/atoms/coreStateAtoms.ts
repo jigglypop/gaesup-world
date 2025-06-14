@@ -78,9 +78,6 @@ export const rideableStateAtom = atom<
 >({});
 
 export const sizesStateAtom = atom<Record<string, THREE.Vector3>>({});
-export const minimapAtom = atom<{ props: Record<string, any> }>({
-  props: {},
-});
 
 export const controllerConfigAtom = atom<ControllerConfig>({
   airplane: {

@@ -1,14 +1,13 @@
 import { vec3 } from '@react-three/rapier';
-import { useAtom } from 'jotai';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { minimapAtom } from '../../atoms';
+import { useGaesupStore } from '../../stores/gaesupStore';
 import { useClicker } from '../../hooks/useClicker';
 import { GaeSupPropsType } from './types';
 
 export function GaeSupProps({ type = 'normal', text, position, children }: GaeSupPropsType) {
   const groupRef = useRef<THREE.Group>(null);
-  const [_, setMinimap] = useAtom(minimapAtom);
+  const addMinimapMarker = useGaesupStore((state) => state.addMinimapMarker);
   const { moveClicker } = useClicker();
 
   useEffect(() => {
@@ -16,22 +15,15 @@ export function GaeSupProps({ type = 'normal', text, position, children }: GaeSu
       const box = new THREE.Box3().setFromObject(groupRef.current);
       const size = vec3(box.getSize(new THREE.Vector3())).clone();
       const center = vec3(box.getCenter(new THREE.Vector3())).clone();
-      const obj = {
+
+      addMinimapMarker(text, {
         type: type ? type : 'normal',
         text,
         size,
         center,
-      };
-
-      setMinimap((prev) => ({
-        ...prev,
-        props: {
-          ...prev.props,
-          [text]: obj,
-        },
-      }));
+      });
     }
-  }, [text, type, setMinimap]);
+  }, [text, type, addMinimapMarker]);
 
   return (
     <group

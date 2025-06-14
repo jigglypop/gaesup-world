@@ -1,7 +1,6 @@
-import { useSetAtom } from 'jotai';
 import { useEffect } from 'react';
 import * as THREE from 'three';
-import { minimapAtom } from '../../atoms';
+import { useGaesupStore } from '../../stores/gaesupStore';
 import { InternalMinimapMarkerProps } from './types';
 
 export function MinimapMarker({
@@ -12,30 +11,22 @@ export function MinimapMarker({
   type = 'normal',
   children,
 }: InternalMinimapMarkerProps) {
-  const setMinimap = useSetAtom(minimapAtom);
+  const addMinimapMarker = useGaesupStore((state) => state.addMinimapMarker);
+  const removeMinimapMarker = useGaesupStore((state) => state.removeMinimapMarker);
 
   useEffect(() => {
     const pos = Array.isArray(position) ? new THREE.Vector3(...position) : position;
     const sizeVec = Array.isArray(size) ? new THREE.Vector3(...size) : size;
-    setMinimap((prev) => ({
-      props: {
-        ...prev.props,
-        [id]: {
-          type,
-          text,
-          center: pos,
-          size: sizeVec,
-        },
-      },
-    }));
+    addMinimapMarker(id, {
+      type,
+      text,
+      center: pos,
+      size: sizeVec,
+    });
     return () => {
-      setMinimap((prev) => {
-        const newProps = { ...prev.props };
-        delete newProps[id];
-        return { props: newProps };
-      });
+      removeMinimapMarker(id);
     };
-  }, [id, position, size, text, type, setMinimap]);
+  }, [id, position, size, text, type, addMinimapMarker, removeMinimapMarker]);
   return <>{children}</>;
 }
 

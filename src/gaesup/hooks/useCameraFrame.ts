@@ -1,8 +1,6 @@
-import { useAtomValue } from 'jotai';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useGaesupStore } from '../stores/gaesupStore';
-import { currentCameraStateAtom } from '../atoms/cameraStateAtoms';
 import { CameraOptionType, gaesupWorldContextType, CameraPropType } from '../types';
 import { useUnifiedFrame } from './useUnifiedFrame';
 import { useCameraState } from './useCameraState';
@@ -16,7 +14,11 @@ export function useCameraFrame(
   setCameraOption: (update: React.SetStateAction<CameraOptionType>) => void,
 ) {
   const block = useGaesupStore((state) => state.block);
-  const currentCameraState = useAtomValue(currentCameraStateAtom);
+  const { cameraStates, currentCameraStateName } = useGaesupStore();
+  const currentCameraState = useMemo(
+    () => cameraStates.get(currentCameraStateName),
+    [cameraStates, currentCameraStateName],
+  );
   const lastActiveStateRef = useRef<Partial<gaesupWorldContextType['activeState']>>(null);
   const blendManagerRef = useRef(new CameraBlendManager());
   const { checkAutoTransitions } = useCameraState(blendManagerRef.current);

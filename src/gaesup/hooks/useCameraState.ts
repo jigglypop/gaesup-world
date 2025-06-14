@@ -1,46 +1,45 @@
-import { useAtom, useSetAtom } from 'jotai';
 import { useCallback } from 'react';
-import {
-  cameraStatesAtom,
-  cameraStateHistoryAtom,
-  cameraTransitionsAtom,
-  currentCameraStateNameAtom,
-} from '../atoms/cameraStateAtoms';
+import { useGaesupStore } from '../stores/gaesupStore';
 import { CameraBlendManager } from '../camera';
 import { CameraState } from '../types';
 
 const MAX_HISTORY_SIZE = 10;
 
 export function useCameraState(blendManager: CameraBlendManager) {
-  const [states, setStates] = useAtom(cameraStatesAtom);
-  const [transitions, setTransitions] = useAtom(cameraTransitionsAtom);
-  const [currentName, setCurrentName] = useAtom(currentCameraStateNameAtom);
-  const [history, setHistory] = useAtom(cameraStateHistoryAtom);
+  const {
+    cameraStates,
+    cameraTransitions,
+    currentCameraStateName,
+    setCameraStates,
+    setCurrentCameraStateName,
+    setCameraStateHistory,
+    addCameraState,
+  } = useGaesupStore();
 
   const setCameraState = useCallback(
     (stateName: string, immediate: boolean = false) => {
-      if (!states.has(stateName)) {
+      if (!cameraStates.has(stateName)) {
         console.warn(`Camera state '${stateName}' not found`);
         return null;
       }
 
-      const newState = states.get(stateName)!;
-      const oldState = states.get(currentName);
+      const newState = cameraStates.get(stateName)!;
+      const oldState = cameraStates.get(currentCameraStateName);
 
-      setHistory((prev) => {
-        const newHistory = [...prev, currentName];
+      setCameraStateHistory((prev) => {
+        const newHistory = [...prev, currentCameraStateName];
         if (newHistory.length > MAX_HISTORY_SIZE) {
           newHistory.shift();
         }
         return newHistory;
       });
 
-      setCurrentName(stateName);
+      setCurrentCameraStateName(stateName);
 
       if (immediate || !oldState) {
         // No blend, just set the state
       } else {
-        const transition = transitions.find(
+        const transition = cameraTransitions.find(
           (t) => t.from === oldState.name && t.to === newState.name,
         );
         const duration = transition?.duration || 1.0;
@@ -65,23 +64,30 @@ export function useCameraState(blendManager: CameraBlendManager) {
       }
       return newState;
     },
-    [states, currentName, transitions, blendManager, setHistory, setCurrentName],
+    [
+      cameraStates,
+      currentCameraStateName,
+      cameraTransitions,
+      blendManager,
+      setCameraStateHistory,
+      setCurrentCameraStateName,
+    ],
   );
 
   const checkAutoTransitions = useCallback(() => {
-    for (const transition of transitions) {
-      if (transition.from === currentName && transition.condition()) {
+    for (const transition of cameraTransitions) {
+      if (transition.from === currentCameraStateName && transition.condition()) {
         setCameraState(transition.to);
         break;
       }
     }
-  }, [transitions, currentName, setCameraState]);
+  }, [cameraTransitions, currentCameraStateName, setCameraState]);
 
   const registerState = useCallback(
     (state: CameraState) => {
-      setStates((prev) => new Map(prev).set(state.name, state));
+      addCameraState(state.name, state);
     },
-    [setStates],
+    [addCameraState],
   );
 
   return { setCameraState, checkAutoTransitions, registerState };

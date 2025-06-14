@@ -34,11 +34,14 @@ export const inputAtom = atom<inputState>({
     rightStick: { x: 0, y: 0 },
     buttons: {},
   },
-  blocks: {
-    camera: false,
-    control: false,
-    animation: false,
-    scroll: true,
+  clickerOption: {
+    isRun: true,
+    throttle: 100,
+    autoStart: false,
+    track: false,
+    loop: false,
+    queue: [],
+    line: false,
   },
 });
 
@@ -84,32 +87,9 @@ export const pointerInputAtom = atom(
   },
 );
 
-export const blockStateAtom = atom(
-  (get) => get(inputAtom).blocks,
-  (get, set, update: Partial<BlockState>) => {
-    const current = get(inputAtom);
-    set(inputAtom, {
-      ...current,
-      blocks: { ...current.blocks, ...update },
-    });
-  },
-);
-
-export const clickerOptionAtom = atom(
-  (get) => get(inputAtom).clickerOption,
-  (get, set, update: Partial<ClickerOptionState>) => {
-    const current = get(inputAtom);
-    set(inputAtom, {
-      ...current,
-      clickerOption: { ...current.clickerOption, ...update },
-    });
-  },
-);
-
 export const controlAtom = atom(
   (get) => get(inputAtom).keyboard,
   (_, set, update: Partial<KeyboardInputState>) => {
     set(keyboardInputAtom, update);
   },
 );
-
