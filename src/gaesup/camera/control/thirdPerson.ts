@@ -7,16 +7,22 @@ import { BaseCameraController } from './BaseCameraController';
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
 const tempDirection = new THREE.Vector3();
+const tempCameraOffset = new THREE.Vector3();
+const tempQuaternion = new THREE.Quaternion();
+const tempEuler = new THREE.Euler(0, 0, 0, 'YXZ');
 
 export class ThirdPersonController extends BaseCameraController {
+  private pitch: number = 0.2; // Initial camera pitch
+  private yaw: number = 0; // Initial camera yaw
+
   public calculateTargetPosition(
     activeState: ActiveStateType,
     cameraOption: CameraOptionType,
+    prop: CameraPropType,
   ): THREE.Vector3 {
     const {
       xDistance = 15,
       yDistance = 8,
-      zDistance = 15,
       enableCollision,
       maxDistance = -7,
       bounds,
@@ -26,8 +32,30 @@ export class ThirdPersonController extends BaseCameraController {
       ? V3(activeState.position.x, activeState.position.y, activeState.position.z)
       : V3(0, 0, 0);
 
-    // 1. Calculate ideal position
-    let targetPosition = characterPosition.clone().add(V3(xDistance, yDistance, zDistance));
+    // Get character's direction
+    if (activeState.direction && activeState.direction.length() > 0.01) {
+      tempDirection.copy(activeState.direction).normalize();
+    } else {
+      // Fallback to a default direction if no direction is available
+      tempDirection.set(0, 0, 1);
+    }
+
+    // Update yaw based on mouse input if active
+    if (prop.worldContext.input?.pointer.isActive) {
+      this.yaw -= prop.worldContext.input.pointer.angle * 2;
+    } else {
+      // Gradually align yaw with character direction when mouse is not active
+      const characterYaw = Math.atan2(tempDirection.x, tempDirection.z);
+      this.yaw += (characterYaw - this.yaw) * 0.1;
+    }
+
+    tempEuler.set(this.pitch, this.yaw, 0);
+    tempQuaternion.setFromEuler(tempEuler);
+
+    // 1. Calculate ideal position based on direction
+    tempCameraOffset.set(0, 0, -xDistance).applyQuaternion(tempQuaternion);
+    tempCameraOffset.y = yDistance;
+    let targetPosition = characterPosition.clone().add(tempCameraOffset);
 
     // 2. Check for collision
     if (enableCollision) {
@@ -55,7 +83,7 @@ export class ThirdPersonController extends BaseCameraController {
     } = prop;
     if (!state?.camera || !activeState || !activeState.position) return;
 
-    const targetPosition = this.calculateTargetPosition(activeState, cameraOption);
+    const targetPosition = this.calculateTargetPosition(activeState, cameraOption, prop);
     const lookAtTarget = cameraOption.target || activeState.position;
     const deltaTime = (state as any).delta || 0.016;
 

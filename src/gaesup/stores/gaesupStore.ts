@@ -95,12 +95,15 @@ export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
     onDestory: () => {},
     onAnimate: () => {},
   },
+  refs: {},
 };
 
 interface GaesupStoreState extends Partial<gaesupWorldContextType> {
   updateState: (updates: Partial<gaesupWorldContextType>) => void;
   resetState: () => void;
   initializeState: (initialState: Partial<gaesupWorldContextType>) => void;
+  setRefs: (refs: Partial<gaesupWorldContextType['refs']>) => void;
+  setStates: (states: Partial<gaesupWorldContextType['states']>) => void;
 }
 
 export const useGaesupStore = create<GaesupStoreState>()(
@@ -117,6 +120,20 @@ export const useGaesupStore = create<GaesupStoreState>()(
 
     initializeState: (initialState) => {
       set((state) => ({ ...gaesupWorldDefault, ...initialState }));
+    },
+
+    setRefs: (refs) => {
+      set((state) => ({
+        ...state,
+        refs: { ...state.refs, ...refs },
+      }));
+    },
+
+    setStates: (states) => {
+      set((state) => ({
+        ...state,
+        states: { ...state.states, ...states },
+      }));
     },
   })),
 );

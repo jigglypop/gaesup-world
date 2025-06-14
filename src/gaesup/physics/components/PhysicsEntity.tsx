@@ -2,7 +2,7 @@ import { useAnimations, useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
 import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three/rapier';
 import { useAtom } from 'jotai';
-import { MutableRefObject, forwardRef, useContext, useEffect, useMemo } from 'react';
+import { MutableRefObject, forwardRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import { cameraOptionAtom } from '../../atoms/cameraOptionAtom';
@@ -17,8 +17,8 @@ import { useSetGroundRay } from './setGroundRay';
 import { initCallback } from '../../utils/initCallback';
 import { PhysicsEntityProps } from './types';
 
-export const PhysicsEntity = forwardRef(
-  (props: PhysicsEntityProps, rigidBodyRef: MutableRefObject<RapierRigidBody>) => {
+export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
+  (props, rigidBodyRef) => {
     const { size } = useGltfAndSize({ url: props.url || '' });
 
     const setGroundRay = useSetGroundRay();
@@ -30,7 +30,7 @@ export const PhysicsEntity = forwardRef(
 
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
     const skeleton = useMemo(() => {
-      let skel = null;
+      let skel: THREE.Skeleton | null = null;
       clone.traverse((child) => {
         if (child instanceof THREE.SkinnedMesh) {
           skel = child.skeleton;
@@ -70,19 +70,21 @@ export const PhysicsEntity = forwardRef(
               if (Array.isArray(child.material)) {
                 child.material.forEach((material) => {
                   Object.keys(material).forEach((key) => {
-                    if (material[key] && material[key].isTexture) {
-                      material[key].dispose();
+                    const prop = (material as any)[key];
+                    if (prop && prop.isTexture) {
+                      prop.dispose();
                     }
                   });
                   material.dispose();
                 });
               } else if (child.material) {
-                Object.keys(child.material).forEach((key) => {
-                  if (child.material[key] && child.material[key].isTexture) {
-                    child.material[key].dispose();
+                const material = child.material as any;
+                Object.keys(material).forEach((key) => {
+                  if (material[key] && material[key].isTexture) {
+                    material[key].dispose();
                   }
                 });
-                child.material.dispose();
+                material.dispose();
               }
             }
           });
@@ -125,7 +127,7 @@ export const PhysicsEntity = forwardRef(
       usePhysicsLoop({
         outerGroupRef: props.outerGroupRef,
         innerGroupRef: props.innerGroupRef,
-        rigidBodyRef,
+        rigidBodyRef: rigidBodyRef as MutableRefObject<RapierRigidBody>,
         colliderRef: props.colliderRef,
         groundRay: props.groundRay,
       });
@@ -139,7 +141,7 @@ export const PhysicsEntity = forwardRef(
     });
     const { nodes } = useGraph(clone);
     const objectNode = Object.values(nodes).find((node) => node.type === 'Object3D');
-    const safeRotationY = props.rotation?.clone ? props.rotation.clone().y : props.rotation?.y || 0;
+    const safeRotationY = props.rotation instanceof THREE.Euler ? props.rotation.y : 0;
 
     const handleIntersectionEnter = async (payload: any) => {
       if (props.onIntersectionEnter) {
@@ -162,11 +164,13 @@ export const PhysicsEntity = forwardRef(
     return (
       <group ref={props.outerGroupRef} userData={{ intangible: true }}>
         <RigidBody
+          canSleep={false}
+          ccd={true}
           colliders={false}
           ref={rigidBodyRef}
           name={props.name || (props.isActive ? 'character' : props.componentType)}
           position={props.position}
-          rotation={euler().set(0, safeRotationY, 0).clone()}
+          rotation={euler().set(0, safeRotationY, 0)}
           userData={props.userData}
           type={props.rigidbodyType || (props.isActive ? 'dynamic' : 'fixed')}
           sensor={props.sensor}
@@ -183,10 +187,10 @@ export const PhysicsEntity = forwardRef(
             />
           )}
           <InnerGroupRef
-            objectNode={objectNode}
-            animationRef={animationRef}
+            objectNode={objectNode as THREE.Object3D}
+            animationRef={animationRef as MutableRefObject<THREE.Group | null>}
             nodes={nodes}
-            ref={props.innerGroupRef}
+            ref={props.innerGroupRef as MutableRefObject<THREE.Group | null>}
             isActive={props.isActive}
             isRiderOn={props.isRiderOn}
             enableRiding={props.enableRiding}

@@ -1,9 +1,9 @@
 import { useContext, useMemo, useEffect, useRef } from 'react';
 import { vec3 } from '@react-three/rapier';
-import { useGaesupContext, useGaesupDispatch } from '../../atoms';
+import { useGaesupStore } from '../../stores/gaesupStore';
 import { PhysicsEntity } from './PhysicsEntity';
 import { useGenericRefs } from './useGenericRefs';
-import { controllerInnerType } from '../types';
+import { controllerInnerType } from '../../component/types';
 
 interface EntityControllerProps {
   props: controllerInnerType;
@@ -11,27 +11,22 @@ interface EntityControllerProps {
 }
 
 export function EntityController({ props, children }: EntityControllerProps) {
-  const { mode, states, rideable, urls } = useGaesupContext();
-  const dispatch = useGaesupDispatch();
+  const { mode, states, rideable, urls, refs: contextRefs } = useGaesupStore();
+  const setRefs = useGaesupStore((state) => state.setRefs);
   const refs = useGenericRefs();
   const refsSetRef = useRef(false);
 
   useEffect(() => {
-    if (dispatch && !refsSetRef.current) {
-      dispatch({
-        type: 'update',
-        payload: {
-          refs: {
-            rigidBodyRef: refs.rigidBodyRef,
-            colliderRef: refs.colliderRef,
-            outerGroupRef: refs.outerGroupRef,
-            innerGroupRef: refs.innerGroupRef,
-          },
-        },
+    if (setRefs && !refsSetRef.current) {
+      setRefs({
+        rigidBodyRef: refs.rigidBodyRef,
+        colliderRef: refs.colliderRef,
+        outerGroupRef: refs.outerGroupRef,
+        innerGroupRef: refs.innerGroupRef,
       });
       refsSetRef.current = true;
     }
-  }, [dispatch]);
+  }, [setRefs, refs]);
 
   if (!mode || !states || !rideable || !urls) return null;
 
@@ -55,12 +50,14 @@ export function EntityController({ props, children }: EntityControllerProps) {
       outerGroupRef: refs.outerGroupRef,
       innerGroupRef: refs.innerGroupRef,
       colliderRef: refs.colliderRef,
-      onAnimate: props.onAnimate,
-      onFrame: props.onFrame,
-      onReady: props.onReady,
-      onDestory: props.onDestory,
+      onAnimate: props.onAnimate || (() => {}),
+      onFrame: props.onFrame || (() => {}),
+      onReady: props.onReady || (() => {}),
+      onDestory: props.onDestory || (() => {}),
       rigidBodyProps: props.rigidBodyProps,
-      parts: props.parts,
+      parts: (props.parts || [])
+        .filter((part): part is { url: string; color?: string } => !!part.url)
+        .map((part) => ({ ...part, url: part.url })),
     };
 
     switch (mode.type) {
@@ -94,5 +91,5 @@ export function EntityController({ props, children }: EntityControllerProps) {
   };
 
   const entityProps = getEntityProps();
-  return <PhysicsEntity {...entityProps} />;
+  return <PhysicsEntity {...entityProps} groundRay={props.groundRay as any} />;
 }
