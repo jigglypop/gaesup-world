@@ -1,13 +1,14 @@
 import { useAtomValue, useSetAtom } from 'jotai';
-import { inputAtom, keyboardInputAtom, pointerInputAtom, blockAtom, urlsAtom } from '../../atoms';
+import { inputAtom, keyboardInputAtom, pointerInputAtom, blockAtom } from '../../atoms';
 import { useGaesupContext, useGaesupDispatch } from '../../atoms';
 import { useGaesupGltf } from '../../utils/gltf';
+import { useGaesupStore } from '../../stores/gaesupStore';
 
 export function usePhysics() {
   const inputSystem = useAtomValue(inputAtom);
   const setKeyboardInput = useSetAtom(keyboardInputAtom);
   const setPointerInput = useSetAtom(pointerInputAtom);
-  const urls = useAtomValue(urlsAtom);
+  const urls = useGaesupStore((state) => state.urls);
   const block = useAtomValue(blockAtom);
   const worldContext = useGaesupContext();
   const dispatch = useGaesupDispatch();

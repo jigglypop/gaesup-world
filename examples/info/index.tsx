@@ -2,8 +2,8 @@
 
 import { useAtom } from 'jotai';
 import { useState } from 'react';
-
-import { cameraOptionAtom, modeStateAtom } from '../../src/gaesup/atoms';
+import { cameraOptionAtom } from '../../src/gaesup/atoms';
+import { useGaesupStore } from '../../src/gaesup/stores/gaesupStore';
 import { Icon } from '../icon';
 import './styles.css';
 
@@ -51,8 +51,9 @@ const CAMERA_DESCRIPTIONS = {
 };
 
 export default function Info() {
-  const [mode, setMode] = useAtom(modeStateAtom);
   const [cameraOption, setCameraOption] = useAtom(cameraOptionAtom);
+  const mode = useGaesupStore((state) => state.mode);
+  const setMode = useGaesupStore((state) => state.setMode);
   const [showCameraSettings, setShowCameraSettings] = useState(false);
 
   const setType = (type: 'character' | 'vehicle' | 'airplane') => {

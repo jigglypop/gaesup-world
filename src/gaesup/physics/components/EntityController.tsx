@@ -1,17 +1,12 @@
-import { useContext, useMemo, useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { vec3 } from '@react-three/rapier';
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { PhysicsEntity } from './PhysicsEntity';
 import { useGenericRefs } from './useGenericRefs';
-import { controllerInnerType } from '../../component/types';
-
-interface EntityControllerProps {
-  props: controllerInnerType;
-  children?: React.ReactNode;
-}
+import { EntityControllerProps } from './types';
 
 export function EntityController({ props, children }: EntityControllerProps) {
-  const { mode, states, rideable, urls, refs: contextRefs } = useGaesupStore();
+  const { mode, states, rideable, urls } = useGaesupStore();
   const setRefs = useGaesupStore((state) => state.setRefs);
   const refs = useGenericRefs();
   const refsSetRef = useRef(false);
@@ -27,9 +22,7 @@ export function EntityController({ props, children }: EntityControllerProps) {
       refsSetRef.current = true;
     }
   }, [setRefs, refs]);
-
   if (!mode || !states || !rideable || !urls) return null;
-
   const { enableRiding, isRiderOn, rideableId } = states;
   const offset = useMemo(
     () => (rideableId && rideable[rideableId] ? rideable[rideableId].offset : vec3()),

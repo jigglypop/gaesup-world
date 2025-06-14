@@ -1,7 +1,9 @@
 import { create } from 'zustand';
-import { subscribeWithSelector } from 'zustand/middleware';
+import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import * as THREE from 'three';
 import { gaesupWorldContextType } from '../atoms/types';
+import { UrlsSlice, createUrlsSlice } from './slices/urlsSlice';
+import { ModeSlice, createModeSlice } from './slices/modeSlice';
 
 export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
   activeState: {
@@ -11,18 +13,6 @@ export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
     euler: new THREE.Euler(),
     dir: new THREE.Vector3(),
     direction: new THREE.Vector3(),
-  },
-  mode: {
-    type: 'character',
-    controller: 'clicker',
-    control: 'chase',
-  },
-  urls: {
-    characterUrl: '',
-    vehicleUrl: '',
-    airplaneUrl: '',
-    wheelUrl: '',
-    ridingUrl: '',
   },
   states: {
     rideableId: '',
@@ -106,36 +96,42 @@ interface GaesupStoreState extends Partial<gaesupWorldContextType> {
   setStates: (states: Partial<gaesupWorldContextType['states']>) => void;
 }
 
-export const useGaesupStore = create<GaesupStoreState>()(
-  subscribeWithSelector((set, get) => ({
-    ...gaesupWorldDefault,
+type StoreState = GaesupStoreState & UrlsSlice & ModeSlice;
 
-    updateState: (updates) => {
-      set((state) => ({ ...state, ...updates }));
-    },
+export const useGaesupStore = create<StoreState>()(
+  devtools(
+    subscribeWithSelector((set, get, api) => ({
+      ...gaesupWorldDefault,
+      ...createUrlsSlice(set, get, api),
+      ...createModeSlice(set, get, api),
 
-    resetState: () => {
-      set({ ...gaesupWorldDefault });
-    },
+      updateState: (updates) => {
+        set((state) => ({ ...state, ...updates }));
+      },
 
-    initializeState: (initialState) => {
-      set((state) => ({ ...gaesupWorldDefault, ...initialState }));
-    },
+      resetState: () => {
+        set({ ...gaesupWorldDefault });
+      },
 
-    setRefs: (refs) => {
-      set((state) => ({
-        ...state,
-        refs: { ...state.refs, ...refs },
-      }));
-    },
+      initializeState: (initialState) => {
+        set((state) => ({ ...gaesupWorldDefault, ...initialState }));
+      },
 
-    setStates: (states) => {
-      set((state) => ({
-        ...state,
-        states: { ...state.states, ...states },
-      }));
-    },
-  })),
+      setRefs: (refs) => {
+        set((state) => ({
+          ...state,
+          refs: { ...state.refs, ...refs },
+        }));
+      },
+
+      setStates: (states) => {
+        set((state) => ({
+          ...state,
+          states: { ...state.states, ...states },
+        }));
+      },
+    })),
+  ),
 );
 
 export const useGaesupContext = () => {

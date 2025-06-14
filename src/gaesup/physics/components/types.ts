@@ -2,7 +2,7 @@ import { RigidBodyTypeString } from '@react-three/rapier';
 import { MutableRefObject, ReactNode } from 'react';
 import * as THREE from 'three';
 import { RapierCollider } from '@react-three/rapier';
-import { controllerOptionsType } from '../../component/controller/type';
+import { controllerOptionsType, controllerInnerType } from '../../component/types';
 import { ComponentType } from '../../component/types';
 
 export interface PhysicsEntityProps {
@@ -36,4 +36,30 @@ export interface PhysicsEntityProps {
   ridingUrl?: string;
   offset?: THREE.Vector3;
   currentAnimation?: string;
+}
+
+export interface ModelRendererProps {
+  nodes: { [name: string]: THREE.Object3D };
+  color?: string;
+  skeleton?: THREE.Skeleton | null;
+  url: string;
+  offset?: THREE.Vector3;
+}
+
+export interface PartsGroupRefProps {
+  url: string;
+  isActive: boolean;
+  color?: string;
+  skeleton?: THREE.Skeleton | null;
+}
+
+export interface riderRefType {
+  url: string;
+  children?: React.ReactNode;
+  offset?: THREE.Vector3;
+}
+
+export interface EntityControllerProps {
+  props: controllerInnerType;
+  children?: React.ReactNode;
 }

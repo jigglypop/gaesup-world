@@ -9,6 +9,8 @@ export type InnerGroupRefType = {
   nodes: {
     [name: string]: THREE.Object3D<THREE.Object3DEventMap>;
   };
+  url?: string;
+  skeleton?: THREE.Skeleton | null;
   isActive?: boolean;
   ridingUrl?: string;
   offset?: THREE.Vector3;

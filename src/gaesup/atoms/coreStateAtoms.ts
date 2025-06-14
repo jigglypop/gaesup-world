@@ -2,16 +2,7 @@ import { euler, quat, vec3 } from '@react-three/rapier';
 import { atom } from 'jotai';
 import * as THREE from 'three';
 import { inputAtom, movementStateAtom } from './inputAtom';
-import {
-  ActiveState,
-  AnimationState,
-  ControllerConfig,
-  EventPayload,
-  EventType,
-  GameStates,
-  ModeState,
-  UrlsState,
-} from './types';
+import { ActiveState, ControllerConfig, EventPayload, EventType, GameStates } from './types';
 
 export const activeStateAtom = atom<ActiveState>({
   position: vec3({
@@ -24,20 +15,6 @@ export const activeStateAtom = atom<ActiveState>({
   euler: euler(),
   dir: vec3(),
   direction: vec3(),
-});
-
-export const modeStateAtom = atom<ModeState>({
-  type: 'character',
-  controller: 'clicker',
-  control: 'chase',
-});
-
-export const urlsStateAtom = atom<UrlsState>({
-  characterUrl: null,
-  vehicleUrl: null,
-  airplaneUrl: null,
-  wheelUrl: null,
-  ridingUrl: null,
 });
 
 export const gameStatesAtom = atom<GameStates>({
@@ -58,24 +35,6 @@ export const gameStatesAtom = atom<GameStates>({
   nearbyRideable: null,
   shouldEnterRideable: false,
   shouldExitRideable: false,
-});
-
-export const animationStateAtom = atom<AnimationState>({
-  character: {
-    current: 'idle',
-    default: 'idle',
-    store: {},
-  },
-  vehicle: {
-    current: 'idle',
-    default: 'idle',
-    store: {},
-  },
-  airplane: {
-    current: 'idle',
-    default: 'idle',
-    store: {},
-  },
 });
 
 export const rideableStateAtom = atom<
@@ -156,13 +115,6 @@ export const currentControllerConfigAtom = atom((get) => {
   }
 });
 
-export const currentAnimationAtom = atom((get) => {
-  const mode = get(modeStateAtom);
-  const animations = get(animationStateAtom);
-
-  return animations[mode.type];
-});
-
 export const physicsMovementAtom = atom((get) => {
   const input = get(inputAtom);
   const gameStates = get(gameStatesAtom);
@@ -192,14 +144,6 @@ export const createEventSubscriptionAtom = (eventType: EventType) =>
     const events = get(eventBusAtom);
     return events.filter((event) => event.type === eventType);
   });
-
-export const urlsAtom = atom(
-  (get) => get(urlsStateAtom),
-  (get, set, update: Partial<UrlsState>) => {
-    const current = get(urlsStateAtom);
-    set(urlsStateAtom, { ...current, ...update });
-  },
-);
 
 export const sizesAtom = atom(
   (get) => get(sizesStateAtom),

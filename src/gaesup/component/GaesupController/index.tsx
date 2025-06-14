@@ -1,32 +1,27 @@
-'use client';
 import { GaesupComponent } from '../GaesupComponent';
 import { useMainFrameLoop } from '../../hooks/useUnifiedFrame';
 import { useKeyboard } from '../../hooks/useKeyboard';
 import { initControllerProps } from '../../utils/initControllerProps';
 import { controllerType } from '../types';
 
-function GaesupUnifiedController(controllerProps: controllerType) {
+export function GaesupController(props: controllerType) {
   useMainFrameLoop();
   useKeyboard();
 
-  const props = {
+  const controllerProps = {
     ...initControllerProps({ refs: {} as any }),
-    children: controllerProps.children,
-    groupProps: controllerProps.groupProps || {},
-    rigidBodyProps: controllerProps.rigidBodyProps || {},
-    controllerOptions: controllerProps.controllerOptions || {
+    children: props.children,
+    groupProps: props.groupProps || {},
+    rigidBodyProps: props.rigidBodyProps || {},
+    controllerOptions: props.controllerOptions || {
       lerp: { cameraTurn: 1, cameraPosition: 1 },
     },
-    parts: controllerProps.parts || [],
-    onReady: controllerProps.onReady || (() => {}),
-    onFrame: controllerProps.onFrame || (() => {}),
-    onDestory: controllerProps.onDestory || (() => {}),
-    onAnimate: controllerProps.onAnimate || (() => {}),
+    parts: props.parts || [],
+    onReady: props.onReady || (() => {}),
+    onFrame: props.onFrame || (() => {}),
+    onDestory: props.onDestory || (() => {}),
+    onAnimate: props.onAnimate || (() => {}),
   };
 
-  return <GaesupComponent props={props} />;
-}
-
-export function GaesupController(props: controllerType) {
-  return <GaesupUnifiedController {...props} />;
+  return <GaesupComponent props={controllerProps} />;
 }

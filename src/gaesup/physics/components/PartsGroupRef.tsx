@@ -3,32 +3,10 @@ import { useGraph } from '@react-three/fiber';
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
-import { useAnimationPlayer } from '../../utils/animation';
-import { ComponentType } from '../../component/types';
+import { useAnimationPlayer } from '../../hooks/useAnimationPlayer';
+import { ModelRendererProps, PartsGroupRefProps } from './types';
 
-type PartsGroupRefProps = {
-  url: string;
-  isActive: boolean;
-  componentType: ComponentType;
-  currentAnimation?: string;
-  color?: string;
-  skeleton?: THREE.Skeleton | null;
-};
-
-export function PartsGroupRef({
-  url,
-  isActive,
-  componentType,
-  currentAnimation,
-  color,
-  skeleton,
-}: PartsGroupRefProps) {
-  const { scene, animations } = useGLTF(url);
-  const { actions } = useAnimations(animations);
-
-  const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
-  const { nodes } = useGraph(clone);
-
+export function ModelRenderer({ nodes, color, skeleton, url }: ModelRendererProps) {
   const processedNodes = useMemo(() => {
     return Object.keys(nodes)
       .map((name: string, key: number) => {
@@ -86,10 +64,8 @@ export function PartsGroupRef({
       .filter(Boolean);
   }, [nodes, color, skeleton, url]);
 
-  useAnimationPlayer(actions, isActive);
-
   return (
-    <group>
+    <>
       {processedNodes.map((nodeData) => {
         if (!nodeData) return null;
 
@@ -116,6 +92,22 @@ export function PartsGroupRef({
           );
         }
       })}
+    </>
+  );
+}
+
+export function PartsGroupRef({ url, isActive, color, skeleton }: PartsGroupRefProps) {
+  const { scene, animations } = useGLTF(url);
+  const { actions } = useAnimations(animations);
+
+  const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
+  const { nodes } = useGraph(clone);
+
+  useAnimationPlayer(actions, isActive);
+
+  return (
+    <group>
+      <ModelRenderer nodes={nodes} color={color} skeleton={skeleton} url={url} />
     </group>
   );
 }

@@ -8,7 +8,7 @@ import { SkeletonUtils } from 'three-stdlib';
 import { cameraOptionAtom } from '../../atoms/cameraOptionAtom';
 import Camera from '../../camera';
 import { useGaesupContext } from '../../atoms';
-import { useAnimationPlayer } from '../../utils/animation';
+import { useAnimationPlayer } from '../../hooks/useAnimationPlayer';
 import { useGltfAndSize } from '../../utils/gltf';
 import usePhysicsLoop from '../index';
 import { InnerGroupRef } from './InnerGroupRef';
