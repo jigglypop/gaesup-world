@@ -5,14 +5,6 @@ import { V3 } from '../../utils/vector';
 // Slice Interface
 export interface InputSlice {
   input: inputState;
-  movement: () => {
-    isMoving: boolean;
-    isRunning: boolean;
-    isJumping: boolean;
-    inputSource: 'keyboard' | 'pointer' | 'none';
-    isKeyboardMoving: boolean;
-    isPointerMoving: boolean;
-  };
   setKeyboard: (update: Partial<KeyboardInputState>) => void;
   setPointer: (update: Partial<MouseInputState>) => void;
 }
@@ -53,25 +45,6 @@ export const createInputSlice: StateCreator<InputSlice, [], [], InputSlice> = (s
       queue: [],
       line: false,
     },
-  },
-  movement: () => {
-    const { input } = get();
-    const isKeyboardMoving =
-      input.keyboard.forward ||
-      input.keyboard.backward ||
-      input.keyboard.leftward ||
-      input.keyboard.rightward;
-    const isPointerMoving = input.pointer.isActive;
-    return {
-      isMoving: isKeyboardMoving || isPointerMoving,
-      isRunning:
-        (input.keyboard.shift && isKeyboardMoving) ||
-        (input.pointer.shouldRun && isPointerMoving && input.clickerOption.isRun),
-      isJumping: input.keyboard.space,
-      inputSource: isKeyboardMoving ? 'keyboard' : isPointerMoving ? 'pointer' : 'none',
-      isKeyboardMoving,
-      isPointerMoving,
-    };
   },
   setKeyboard: (update) =>
     set((state) => ({

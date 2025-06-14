@@ -174,6 +174,19 @@ export namespace GaesupCore {
     };
   }
 
+  export namespace Animation {
+    export interface Atom {
+      current: string;
+      default: string;
+      store: Record<string, any>;
+    }
+    export interface Unified {
+      character: Atom;
+      vehicle: Atom;
+      airplane: Atom;
+    }
+  }
+
   export namespace Config {
     /**
      * 컨트롤러 설정
@@ -308,7 +321,7 @@ export namespace GaesupCore {
       states?: State.Game & { isAiming?: boolean };
       control?: Input.Control;
       refs?: Refs.Main;
-      animationState?: unknown; // Replace with a specific type if available
+      animationState?: Animation.Unified;
       clickerOption?: Input.ClickerOption;
       clicker?: unknown; // Replace with a specific type if available
       rideable?: { [key: string]: any };
@@ -502,6 +515,8 @@ export type CameraOptionType = GaesupCore.Camera.Option;
 export type gaesupWorldContextType = GaesupCore.Camera.Context;
 export type CameraPropType = GaesupCore.Camera.Prop;
 export type CameraControlFunction = GaesupCore.Camera.ControlFunction;
+export type AnimationStateType = GaesupCore.Animation.Unified;
+export type AnimationAtomType = GaesupCore.Animation.Atom;
 export type CameraState = GaesupCore.Camera.State.Definition;
 export type CameraTransition = GaesupCore.Camera.State.Transition;
 export type CameraShakeConfig = GaesupCore.Camera.State.ShakeConfig;

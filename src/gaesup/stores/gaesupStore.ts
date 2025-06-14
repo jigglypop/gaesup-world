@@ -11,6 +11,7 @@ import { CameraSlice, createCameraSlice } from './slices/cameraSlice';
 import { MinimapSlice, createMinimapSlice } from './slices/minimapSlice';
 import { InputSlice, createInputSlice } from './slices/inputSlice';
 import { SizesSlice, createSizesSlice } from './slices/sizesSlice';
+import { AnimationSlice, createAnimationSlice } from './slices/animationSlice';
 
 export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
   activeState: {
@@ -95,7 +96,8 @@ export type StoreState = gaesupWorldContextType &
   CameraSlice &
   MinimapSlice &
   InputSlice &
-  SizesSlice & {
+  SizesSlice &
+  AnimationSlice & {
     updateState: (updates: Partial<StoreState>) => void;
     resetState: () => void;
     initializeState: (initialState: Partial<StoreState>) => void;
@@ -116,6 +118,7 @@ export const useGaesupStore = create<StoreState>()(
       ...createMinimapSlice(set, get, api),
       ...createInputSlice(set, get, api),
       ...createSizesSlice(set, get, api),
+      ...createAnimationSlice(set, get, api),
 
       updateState: (updates: Partial<StoreState>) => {
         set((state: StoreState) => ({ ...state, ...updates }));
