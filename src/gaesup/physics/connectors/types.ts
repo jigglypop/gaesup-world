@@ -1,7 +1,5 @@
 import {
   inputAtom,
-  urlsAtom,
-  blockAtom,
   keyboardInputAtom,
   pointerInputAtom,
   gaesupWorldContextType,

@@ -1,5 +1,5 @@
 import { useAtomValue, useSetAtom } from 'jotai';
-import { inputAtom, keyboardInputAtom, pointerInputAtom, blockAtom } from '../../atoms';
+import { inputAtom, keyboardInputAtom, pointerInputAtom } from '../../atoms';
 import { useGaesupContext, useGaesupDispatch } from '../../atoms';
 import { useGaesupGltf } from '../../utils/gltf';
 import { useGaesupStore } from '../../stores/gaesupStore';
@@ -9,12 +9,10 @@ export function usePhysics() {
   const setKeyboardInput = useSetAtom(keyboardInputAtom);
   const setPointerInput = useSetAtom(pointerInputAtom);
   const urls = useGaesupStore((state) => state.urls);
-  const block = useAtomValue(blockAtom);
   const worldContext = useGaesupContext();
   const dispatch = useGaesupDispatch();
   const { getSizesByUrls } = useGaesupGltf();
-
-  const isReady = !!(inputSystem && urls && block !== undefined && worldContext && dispatch);
+  const isReady = !!(inputSystem && urls && worldContext && dispatch);
 
   return {
     worldContext,
@@ -24,7 +22,6 @@ export function usePhysics() {
       mouse: inputSystem?.pointer,
     },
     urls,
-    blockControl: block?.control || false,
     dispatch,
     setKeyboardInput,
     setMouseInput: setPointerInput,

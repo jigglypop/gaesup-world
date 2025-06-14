@@ -6,19 +6,17 @@ import { useGaesupContext } from '../../atoms';
 import { V3 } from '../../utils';
 import { ClickerMoveOptions, ClickerResult } from './types';
 import { useFrame } from '@react-three/fiber';
-import { useAtomValue } from 'jotai';
-import { blockAtom } from '../../atoms';
+import { useGaesupStore } from '../../stores/gaesupStore';
 
 export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
   const { minHeight = 0.5, offsetY = 0.5 } = options;
   const { activeState } = useGaesupContext();
   const setMouseInput = useSetAtom(pointerInputAtom);
   const isReady = Boolean(activeState?.position);
-  const blockState = useAtomValue(blockAtom);
-  const block = blockState?.control;
+  const block = useGaesupStore((state) => state.block);
 
   useFrame(() => {
-    if (block || !activeState) return;
+    if (block.control || !activeState) return;
   });
 
   const moveClicker = (

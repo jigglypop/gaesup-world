@@ -1,6 +1,6 @@
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useSetAtom } from 'jotai';
 import { useCallback, useEffect, useRef } from 'react';
-import { clickerAtom } from '../../atoms';
+import { useGaesupStore } from '../../stores/gaesupStore';
 import { keyboardInputAtom, pointerInputAtom } from '../../atoms/inputAtom';
 import { KEY_MAPPING } from '../../constants';
 import { KeyboardOptions, KeyboardResult } from './types';
@@ -21,8 +21,8 @@ const initialKeyState = {
 
 export function useKeyboard(options: KeyboardOptions = {}): KeyboardResult {
   const { preventDefault = true, enableClicker = true, customKeyMapping = {} } = options;
-  const clicker = useAtomValue(clickerAtom);
-  const setClicker = useSetAtom(clickerAtom);
+  const clickerOption = useGaesupStore((state) => state.clickerOption);
+  const setClickerOption = useGaesupStore((state) => state.setClickerOption);
   const setKeyboardInput = useSetAtom(keyboardInputAtom);
   const setPointerInput = useSetAtom(pointerInputAtom);
   const pressedKeys = useRef<Set<string>>(new Set());
@@ -58,8 +58,8 @@ export function useKeyboard(options: KeyboardOptions = {}): KeyboardResult {
         pressedKeys.current.add(event.code);
         if (event.code === 'Space' && preventDefault) event.preventDefault();
 
-        if (enableClicker && event.code === 'KeyS' && clicker.isOn) {
-          setClicker({ ...clicker, isOn: false, isRun: false });
+        if (enableClicker && event.code === 'KeyS' && clickerOption.isRun) {
+          setClickerOption({ isRun: false });
           setPointerInput({ isActive: false, shouldRun: false });
         }
 
@@ -84,8 +84,8 @@ export function useKeyboard(options: KeyboardOptions = {}): KeyboardResult {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [
-    clicker,
-    setClicker,
+    clickerOption,
+    setClickerOption,
     setKeyboardInput,
     setPointerInput,
     keyMapping,

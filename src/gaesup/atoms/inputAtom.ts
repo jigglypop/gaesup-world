@@ -113,16 +113,3 @@ export const controlAtom = atom(
   },
 );
 
-export const blockAtom = atom(
-  (get) => get(inputAtom).blocks,
-  (_, set, update: Partial<BlockState>) => {
-    set(blockStateAtom, update);
-  },
-);
-
-export const clickerAtom = atom(
-  (get) => get(inputAtom).pointer,
-  (_, set, update: Partial<MouseInputState>) => {
-    set(pointerInputAtom, update);
-  },
-);

@@ -1,7 +1,7 @@
-import { useAtomValue, useAtom } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { blockAtom } from '../atoms';
+import { useGaesupStore } from '../stores/gaesupStore';
 import { currentCameraStateAtom } from '../atoms/cameraStateAtoms';
 import { CameraOptionType, gaesupWorldContextType, CameraPropType } from '../types';
 import { useUnifiedFrame } from './useUnifiedFrame';
@@ -9,14 +9,13 @@ import { useCameraState } from './useCameraState';
 import { eventBus } from '../physics/connectors';
 import { CameraBlendManager, CameraEffects, SmartCollisionSystem } from '../camera';
 import { controllerMap } from '../camera/control';
-import { cameraUtils } from '../camera/utils';
 
 export function useCameraFrame(
   prop: Omit<CameraPropType, 'cameraOption' | 'state'>,
   cameraOption: CameraOptionType,
   setCameraOption: (update: React.SetStateAction<CameraOptionType>) => void,
 ) {
-  const block = useAtomValue(blockAtom);
+  const block = useGaesupStore((state) => state.block);
   const currentCameraState = useAtomValue(currentCameraStateAtom);
   const lastActiveStateRef = useRef<Partial<gaesupWorldContextType['activeState']>>(null);
   const blendManagerRef = useRef(new CameraBlendManager());
@@ -110,21 +109,10 @@ export function useCameraFrame(
         }
       }
     },
-    [
-      propWithCameraOption,
-      block.camera,
-      cameraOption.target,
-      checkAutoTransitions,
-      currentCameraState,
-    ],
+    [propWithCameraOption, cameraOption.target, checkAutoTransitions, currentCameraState],
   );
 
-  useUnifiedFrame(
-    `camera-${prop.worldContext.mode?.control || 'default'}`,
-    frameCallback,
-    1,
-    !block.camera,
-  );
+  useUnifiedFrame(`camera-${prop.worldContext.mode?.control || 'default'}`, frameCallback, 1);
 
   return {
     blendManager: blendManagerRef.current,
