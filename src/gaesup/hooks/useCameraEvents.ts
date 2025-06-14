@@ -1,7 +1,6 @@
-import { useAtom } from 'jotai';
 import { useEffect } from 'react';
 import * as THREE from 'three';
-import { cameraOptionAtom } from '../atoms';
+import { useGaesupStore } from '../stores/gaesupStore';
 import { eventBus } from '../physics/connectors';
 import { CameraControlMode, CameraOptionType } from '../types';
 
@@ -40,15 +39,15 @@ const modeOptions: Partial<Record<CameraControlMode, Partial<CameraOptionType>>>
 };
 
 export function useCameraEvents() {
-  const [cameraOption, setCameraOption] = useAtom(cameraOptionAtom);
+  const cameraOption = useGaesupStore((state) => state.cameraOption);
+  const setCameraOption = useGaesupStore((state) => state.setCameraOption);
 
   useEffect(() => {
     const handleModeChange = (data: { control: CameraControlMode }) => {
       const newOptions = modeOptions[data.control] || modeOptions.thirdPerson;
-      setCameraOption((prev) => ({
-        ...prev,
+      setCameraOption({
         ...newOptions,
-      }));
+      });
     };
 
     const unsubscribeModeChange = eventBus.subscribe('MODE_CHANGE', handleModeChange);

@@ -1,15 +1,13 @@
 'use client';
-import { useSetAtom } from 'jotai';
 import { Suspense, useEffect } from 'react';
-import { cameraOptionAtom } from '../../atoms/cameraOptionAtom';
-import { GaesupProvider } from '../../atoms';
+import { GaesupProvider, useGaesupStore } from '../../atoms';
 import { useGaesupGltf } from '../../utils/gltf';
 import { gaesupWorldPropsType } from '../types';
 import { initGaesupWorld } from '../../utils/initGaesupWorld';
 
 export function GaesupWorld(props: gaesupWorldPropsType) {
   const { gaesupProps } = initGaesupWorld(props);
-  const setCameraOption = useSetAtom(cameraOptionAtom);
+  const setCameraOption = useGaesupStore((state) => state.setCameraOption);
   const { preloadSizes } = useGaesupGltf();
 
   useEffect(() => {
@@ -21,10 +19,7 @@ export function GaesupWorld(props: gaesupWorldPropsType) {
 
   useEffect(() => {
     if (props.cameraOption) {
-      setCameraOption((prevOption) => ({
-        ...prevOption,
-        ...props.cameraOption,
-      }));
+      setCameraOption(props.cameraOption);
     }
   }, [props.cameraOption, setCameraOption]);
 

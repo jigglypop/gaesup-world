@@ -6,6 +6,7 @@ import { UrlsSlice, createUrlsSlice } from './slices/urlsSlice';
 import { ModeSlice, createModeSlice } from './slices/modeSlice';
 import { ClickerOptionSlice, createClickerOptionSlice } from './slices/clickerOptionSlice';
 import { BlockSlice, createBlockSlice } from './slices/blockSlice';
+import { CameraOptionSlice, createCameraOptionSlice } from './slices/cameraOptionSlice';
 
 export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
   activeState: {
@@ -89,7 +90,12 @@ interface GaesupStoreState extends Partial<gaesupWorldContextType> {
   setStates: (states: Partial<gaesupWorldContextType['states']>) => void;
 }
 
-type StoreState = GaesupStoreState & UrlsSlice & ModeSlice & ClickerOptionSlice & BlockSlice;
+type StoreState = GaesupStoreState &
+  UrlsSlice &
+  ModeSlice &
+  ClickerOptionSlice &
+  BlockSlice &
+  CameraOptionSlice;
 
 export const useGaesupStore = create<StoreState>()(
   devtools(
@@ -99,28 +105,29 @@ export const useGaesupStore = create<StoreState>()(
       ...createModeSlice(set, get, api),
       ...createClickerOptionSlice(set, get, api),
       ...createBlockSlice(set, get, api),
+      ...createCameraOptionSlice(set, get, api),
 
-      updateState: (updates) => {
-        set((state) => ({ ...state, ...updates }));
+      updateState: (updates: Partial<StoreState>) => {
+        set((state: StoreState) => ({ ...state, ...updates }));
       },
 
       resetState: () => {
-        set({ ...gaesupWorldDefault });
+        set({ ...gaesupWorldDefault } as StoreState);
       },
 
-      initializeState: (initialState) => {
-        set((state) => ({ ...state, ...initialState }));
+      initializeState: (initialState: Partial<StoreState>) => {
+        set((state: StoreState) => ({ ...state, ...initialState }));
       },
 
-      setRefs: (refs) => {
-        set((state) => ({
+      setRefs: (refs: Partial<gaesupWorldContextType['refs']>) => {
+        set((state: StoreState) => ({
           ...state,
           refs: { ...state.refs, ...refs },
         }));
       },
 
-      setStates: (states) => {
-        set((state) => ({
+      setStates: (states: Partial<gaesupWorldContextType['states']>) => {
+        set((state: StoreState) => ({
           ...state,
           states: { ...state.states, ...states },
         }));

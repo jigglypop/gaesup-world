@@ -1,13 +1,11 @@
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
 import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three/rapier';
-import { useAtom } from 'jotai';
 import { MutableRefObject, forwardRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
-import { cameraOptionAtom } from '../../atoms/cameraOptionAtom';
 import Camera from '../../camera';
-import { useGaesupContext } from '../../atoms';
+import { useGaesupContext, useGaesupStore } from '../../atoms';
 import { useAnimationPlayer } from '../../utils/animation';
 import { useGltfAndSize } from '../../utils/gltf';
 import usePhysicsLoop from '../index';
@@ -16,6 +14,7 @@ import { PartsGroupRef } from './PartsGroupRef';
 import { useSetGroundRay } from './setGroundRay';
 import { initCallback } from '../../utils/initCallback';
 import { PhysicsEntityProps } from './types';
+import { AnimationActions } from '../../hooks/useAnimationPlayer';
 
 export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
   (props, rigidBodyRef) => {
@@ -23,7 +22,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
 
     const setGroundRay = useSetGroundRay();
     const worldContext = useGaesupContext();
-    const [cameraOption] = useAtom(cameraOptionAtom);
+    const cameraOption = useGaesupStore((state) => state.cameraOption);
 
     const { scene, animations } = useGLTF(props.url);
     const { actions, ref: animationRef } = useAnimations(animations);
@@ -95,7 +94,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
         }
 
         if (actions) {
-          Object.values(actions).forEach((action) => {
+          Object.values(actions).forEach((action: any) => {
             if (action) {
               action.stop();
               action.getMixer().uncacheAction(action.getClip());

@@ -1,11 +1,14 @@
 'use client';
 
-import { useAtom } from 'jotai';
-import { useState } from 'react';
-import { cameraOptionAtom } from '../../src/gaesup/atoms';
-import { useGaesupStore } from '../../src/gaesup/stores/gaesupStore';
+import { Leva, useControls } from 'leva';
+import { Suspense, useMemo, useState } from 'react';
+import { GaesupWorld, useGaesupStore } from '../../src/gaesup';
+import { ControlPanel } from './ControlPanel';
 import { Icon } from '../icon';
 import './styles.css';
+import { Preload, OrbitControls } from '@react-three/drei';
+import { Canvas } from '@react-three/fiber';
+import { ControlPanel as FiberControlPanel } from './ControlPanel';
 
 const CAMERA_PRESETS = {
   firstPerson: {
@@ -51,14 +54,16 @@ const CAMERA_DESCRIPTIONS = {
 };
 
 export default function Info() {
-  const [cameraOption, setCameraOption] = useAtom(cameraOptionAtom);
+  const [urls, setUrls] = useState<string[]>([]);
+  const [objectUrl, setObjectUrl] = useState<string>('');
+  const cameraOption = useGaesupStore((state) => state.cameraOption);
+  const setCameraOption = useGaesupStore((state) => state.setCameraOption);
   const mode = useGaesupStore((state) => state.mode);
   const setMode = useGaesupStore((state) => state.setMode);
   const [showCameraSettings, setShowCameraSettings] = useState(false);
 
   const setType = (type: 'character' | 'vehicle' | 'airplane') => {
     setMode({
-      ...mode,
       type: type,
       control: 'chase',
     });
@@ -70,47 +75,42 @@ export default function Info() {
     const preset = CAMERA_PRESETS[control] || CAMERA_PRESETS['thirdPerson'];
 
     setMode({
-      ...mode,
       control,
     });
 
-    setCameraOption((prev) => ({
-      ...prev,
-      ...preset,
-    }));
+    setCameraOption(preset);
   };
 
   const updateCameraOption = (key: string, value: number | boolean) => {
-    setCameraOption((prev) => ({
-      ...prev,
+    setCameraOption({
       [key]: value,
-    }));
+    });
   };
 
   const updateSmoothingOption = (key: string, value: number) => {
-    setCameraOption((prev) => ({
-      ...prev,
+    setCameraOption({
       smoothing: {
-        ...prev.smoothing,
+        ...cameraOption.smoothing,
         [key]: value,
       },
-    }));
+    });
   };
 
   const resetToPreset = () => {
     const control = mode.control;
     const preset = CAMERA_PRESETS[control] || CAMERA_PRESETS['thirdPerson'];
 
-    setCameraOption((prev) => ({
-      ...prev,
-      ...preset,
-    }));
+    setCameraOption(preset);
   };
 
   const getCurrentCameraDescription = () => {
     const control = mode.control;
     const controllerDesc = ' (WASD + Mouse Click으로 조작 가능)';
     return (CAMERA_DESCRIPTIONS[control] || CAMERA_DESCRIPTIONS['thirdPerson']) + controllerDesc;
+  };
+
+  const handleUrls = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // ... existing code ...
   };
 
   return (

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useAtomValue } from 'jotai';
+import { useGaesupStore } from '../../../../src/gaesup';
 import { useFocus } from '../../../../src/gaesup/hooks/useFocus';
-import { cameraOptionAtom } from '../../../../src/gaesup/atoms';
 import './style.css';
 
 interface FocusedObject {
@@ -20,7 +19,7 @@ interface ObjectModalProps {
 
 export function ObjectModal({ focusedObject, onClose }: ObjectModalProps) {
   const { focusOff } = useFocus();
-  const cameraOption = useAtomValue(cameraOptionAtom);
+  const cameraOption = useGaesupStore((state) => state.cameraOption);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -43,11 +42,11 @@ export function ObjectModal({ focusedObject, onClose }: ObjectModalProps) {
   return (
     <>
       {/* 백드롭 */}
-      <div 
+      <div
         className={`object-modal-backdrop ${isVisible ? 'visible' : ''}`}
         onClick={handleClose}
       />
-      
+
       {/* 모달 */}
       <div className={`object-modal ${isVisible ? 'visible' : ''}`}>
         <div className="object-modal-header">
@@ -62,13 +61,13 @@ export function ObjectModal({ focusedObject, onClose }: ObjectModalProps) {
             ✕
           </button>
         </div>
-        
+
         <div className="object-modal-content">
           <div className="description-section">
             <h3>📖 설명</h3>
             <p className="description-text">{focusedObject.description}</p>
           </div>
-          
+
           <div className="properties-section">
             <h3>🔍 속성</h3>
             <div className="properties-grid">
@@ -80,7 +79,7 @@ export function ObjectModal({ focusedObject, onClose }: ObjectModalProps) {
               ))}
             </div>
           </div>
-          
+
           <div className="location-section">
             <h3>📍 위치 정보</h3>
             <div className="location-grid">
@@ -98,7 +97,7 @@ export function ObjectModal({ focusedObject, onClose }: ObjectModalProps) {
               </div>
             </div>
           </div>
-          
+
           <div className="camera-section">
             <h3>📷 카메라 상태</h3>
             <div className="camera-info">
@@ -119,7 +118,7 @@ export function ObjectModal({ focusedObject, onClose }: ObjectModalProps) {
             </div>
           </div>
         </div>
-        
+
         <div className="object-modal-footer">
           <div className="footer-info">
             <span className="tip">💡 마우스 휠로 줌 조절, 드래그로 회전 가능</span>
@@ -131,4 +130,4 @@ export function ObjectModal({ focusedObject, onClose }: ObjectModalProps) {
       </div>
     </>
   );
-} 
+}

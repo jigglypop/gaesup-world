@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useAtomValue } from 'jotai';
+import { useGaesupStore } from '../../../../src/gaesup';
 import { useFocus } from '../../hooks/useFocus';
-import { cameraOptionAtom } from '../../atoms';
 import './style.css';
 
 interface FocusedObject {
@@ -20,7 +19,7 @@ interface ObjectInfoPanelProps {
 
 export function ObjectInfoPanel({ focusedObject, onClose }: ObjectInfoPanelProps) {
   const { focusOff } = useFocus();
-  const cameraOption = useAtomValue(cameraOptionAtom);
+  const cameraOption = useGaesupStore((state) => state.cameraOption);
   const [isVisible, setIsVisible] = useState(false);
   useEffect(() => {
     if (focusedObject) {
@@ -53,13 +52,13 @@ export function ObjectInfoPanel({ focusedObject, onClose }: ObjectInfoPanelProps
               ✕
             </button>
           </div>
-          
+
           <div className="panel-content">
             <div className="description-section">
               <h3>📖 설명</h3>
               <p className="description-text">{focusedObject.description}</p>
             </div>
-            
+
             <div className="properties-section">
               <h3>🔍 속성</h3>
               <div className="properties-list">
@@ -71,7 +70,7 @@ export function ObjectInfoPanel({ focusedObject, onClose }: ObjectInfoPanelProps
                 ))}
               </div>
             </div>
-            
+
             <div className="location-section">
               <h3>📍 위치</h3>
               <div className="location-coords">
@@ -89,7 +88,7 @@ export function ObjectInfoPanel({ focusedObject, onClose }: ObjectInfoPanelProps
                 </div>
               </div>
             </div>
-            
+
             <div className="camera-section">
               <h3>📷 카메라</h3>
               <div className="camera-status">
@@ -106,7 +105,7 @@ export function ObjectInfoPanel({ focusedObject, onClose }: ObjectInfoPanelProps
               </div>
             </div>
           </div>
-          
+
           <div className="panel-footer">
             <button className="return-button" onClick={handleClose}>
               🏃 캐릭터로 돌아가기
@@ -116,4 +115,4 @@ export function ObjectInfoPanel({ focusedObject, onClose }: ObjectInfoPanelProps
       )}
     </div>
   );
-} 
+}

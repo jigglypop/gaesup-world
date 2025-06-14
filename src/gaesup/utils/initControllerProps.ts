@@ -1,15 +1,13 @@
-import { useAtom } from 'jotai';
 import { useEffect, useMemo, useCallback, useRef } from 'react';
 import { vec3 } from '@react-three/rapier';
 import * as THREE from 'three';
-import { cameraOptionAtom } from '../atoms/cameraOptionAtom';
-import { useGaesupContext, useGaesupDispatch } from '../atoms';
+import { useGaesupContext, useGaesupDispatch, useGaesupStore } from '../atoms';
 import { CameraRayType, GroundRayType, RefsType } from '../types';
 
 export function initControllerProps(props: { refs: RefsType }) {
   const context = useGaesupContext();
   const dispatch = useGaesupDispatch();
-  const [cameraOption] = useAtom(cameraOptionAtom);
+  const cameraOption = useGaesupStore((state) => state.cameraOption);
   const controlConfigSetRef = useRef(false);
   const refsSetRef = useRef(false);
 

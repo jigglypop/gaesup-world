@@ -49,6 +49,8 @@ export interface ModelRendererProps {
 export interface PartsGroupRefProps {
   url: string;
   isActive: boolean;
+  componentType: ComponentType;
+  currentAnimation?: string;
   color?: string;
   skeleton?: THREE.Skeleton | null;
 }
