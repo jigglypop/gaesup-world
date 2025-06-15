@@ -1,6 +1,6 @@
 import { Gltf } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
-import { S3 } from '../src/constants';
+import { S3 } from '../constants';
 
 export default function Stair() {
   return (

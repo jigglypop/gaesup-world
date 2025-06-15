@@ -1,7 +1,7 @@
 import { Gltf } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
 import { GaeSupProps } from '../../src';
-import { S3 } from '../src/constants';
+import { S3 } from '../constants';
 
 export default function Track() {
   return (

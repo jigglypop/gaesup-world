@@ -1,14 +1,7 @@
-'use client';
-
-import { Leva, useControls } from 'leva';
-import { Suspense, useMemo, useState } from 'react';
-import { GaesupWorld, useGaesupStore } from '../../src/gaesup';
-import { ControlPanel } from './ControlPanel';
+import { useState } from 'react';
+import { useGaesupStore } from '../../src/core';
 import { Icon } from '../icon';
 import './styles.css';
-import { Preload, OrbitControls } from '@react-three/drei';
-import { Canvas } from '@react-three/fiber';
-import { ControlPanel as FiberControlPanel } from './ControlPanel';
 
 const CAMERA_PRESETS = {
   firstPerson: {
@@ -21,7 +14,7 @@ const CAMERA_PRESETS = {
     yDistance: 8,
     zDistance: 15,
     enableCollision: true,
-    smoothing: { position: 0.08, rotation: 0.1, fov: 0.1 },
+    smoothing: { position: 1, rotation: 0.1, fov: 0.1 },
     bounds: { minY: 2, maxY: 50 },
   },
   chase: {
@@ -54,8 +47,6 @@ const CAMERA_DESCRIPTIONS = {
 };
 
 export default function Info() {
-  const [urls, setUrls] = useState<string[]>([]);
-  const [objectUrl, setObjectUrl] = useState<string>('');
   const cameraOption = useGaesupStore((state) => state.cameraOption);
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
   const mode = useGaesupStore((state) => state.mode);
@@ -73,11 +64,9 @@ export default function Info() {
     control: 'chase' | 'thirdPerson' | 'firstPerson' | 'topDown' | 'sideScroll' | 'normal',
   ) => {
     const preset = CAMERA_PRESETS[control] || CAMERA_PRESETS['thirdPerson'];
-
     setMode({
       control,
     });
-
     setCameraOption(preset);
   };
 
@@ -109,10 +98,6 @@ export default function Info() {
     return (CAMERA_DESCRIPTIONS[control] || CAMERA_DESCRIPTIONS['thirdPerson']) + controllerDesc;
   };
 
-  const handleUrls = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // ... existing code ...
-  };
-
   return (
     <>
       <div className="info-style">
@@ -123,19 +108,19 @@ export default function Info() {
                 className={`p-recipe ${mode.type === 'character' ? 'selected' : ''}`}
                 onClick={() => setType('character')}
               >
-                🚶 캐릭터
+                캐릭터
               </p>
               <p
                 className={`p-recipe ${mode.type === 'vehicle' ? 'selected' : ''}`}
                 onClick={() => setType('vehicle')}
               >
-                🚗 차량
+                차량
               </p>
               <p
                 className={`p-recipe ${mode.type === 'airplane' ? 'selected' : ''}`}
                 onClick={() => setType('airplane')}
               >
-                ✈️ 비행기
+                비행기
               </p>
             </>
           }
@@ -144,9 +129,9 @@ export default function Info() {
           }}
         >
           <button className="glass-button">
-            {mode.type === 'character' && '🚶 캐릭터'}
-            {mode.type === 'vehicle' && '🚗 차량'}
-            {mode.type === 'airplane' && '✈️ 비행기'}
+            {mode.type === 'character' && '캐릭터'}
+            {mode.type === 'vehicle' && '차량'}
+            {mode.type === 'airplane' && '비행기'}
           </button>
         </Icon>
 

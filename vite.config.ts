@@ -5,9 +5,7 @@ import path from 'path';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const isLibraryBuild = mode === 'esm' || mode === 'cjs';
-
   if (isLibraryBuild) {
-    // Library build configuration
     return {
       plugins: [react()],
       resolve: {
@@ -53,22 +51,19 @@ export default defineConfig(({ mode }) => {
       },
     };
   }
-
-  // Development/demo build configuration
   return {
     plugins: [react()],
     resolve: {
       alias: [
         { find: '@', replacement: path.resolve(__dirname, 'src') },
-        { find: '@components', replacement: path.resolve(__dirname, 'examples/src/components') },
-        { find: '@styles', replacement: path.resolve(__dirname, 'examples/styles') },
-        { find: '@constants', replacement: path.resolve(__dirname, 'examples/src/constants') },
-        { find: '@type', replacement: path.resolve(__dirname, 'examples/src/type') },
-        { find: '@containers', replacement: path.resolve(__dirname, 'examples/src/containers') },
-        { find: '@utils', replacement: path.resolve(__dirname, 'examples/src/utils') },
-        { find: '@store', replacement: path.resolve(__dirname, 'examples/src/store') },
-        { find: '@api', replacement: path.resolve(__dirname, 'examples/src/api') },
-        { find: '@common', replacement: path.resolve(__dirname, 'examples/src/common') },
+        { find: '@core', replacement: path.resolve(__dirname, 'src/core') },
+        { find: '@hooks', replacement: path.resolve(__dirname, 'src/core/hooks') },
+        { find: '@stores', replacement: path.resolve(__dirname, 'src/core/stores') },
+        { find: '@components', replacement: path.resolve(__dirname, 'src/core/components') },
+        { find: '@constants', replacement: path.resolve(__dirname, 'src/core/constants') },
+        { find: '@utils', replacement: path.resolve(__dirname, 'src/core/utils') },
+        { find: '@types', replacement: path.resolve(__dirname, 'src/core/types') },
+        { find: '@motions', replacement: path.resolve(__dirname, 'src/core/motions') },
       ],
     },
     server: {

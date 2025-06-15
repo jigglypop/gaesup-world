@@ -248,9 +248,9 @@ export type CameraOptionType = {
   enableCollision: boolean;
   collisionMargin: number;
   smoothing: {
-    position: number;
     rotation: number;
     fov: number;
+    position: number;
   };
   fov: number;
   minFov: number;
@@ -259,5 +259,15 @@ export type CameraOptionType = {
     minY: number;
     maxY: number;
   };
-  modeSettings: Record<string, any>;
+  modeSettings?: {
+    [key: string]: any;
+  };
+  shoulderOffset?: THREE.Vector3;
+  fixedPosition?: THREE.Vector3;
+  isoAngle?: number;
+};
+
+export type RideableType = {
+  objectkey: string;
+  // ... existing code ...
 };

@@ -9,8 +9,8 @@ export const Icon = ({
   toolTipStyles,
   iconStyle,
 }: {
-  children: JSX.Element;
-  ToolTip: JSX.Element;
+  children: React.ReactNode;
+  ToolTip: React.ReactNode;
   onClick?: (e: MouseEvent<HTMLDivElement>) => void;
   id?: string;
   toolTipStyles?: { [K in keyof CSSProperties]: string };

@@ -34,15 +34,14 @@
     "noUnusedParameters": true,
     "paths": {
       "@/*": ["src/*"],
-      "@components/*": ["examples/src/components/*"],
-      "@styles/*": ["examples/styles/*"],
-      "@constants/*": ["examples/src/constants/*"],
-      "@type/*": ["examples/src/type/*"],
-      "@containers/*": ["examples/src/containers/*"],
-      "@utils/*": ["examples/src/utils/*"],
-      "@store/*": ["examples/src/store/*"],
-      "@api/*": ["examples/src/api/*"],
-      "@common/*": ["examples/src/common/*"]
+      "@core/*": ["src/core/*"],
+      "@hooks/*": ["src/core/hooks/*"],
+      "@stores/*": ["src/core/stores/*"],
+      "@components/*": ["src/core/components/*"],
+      "@constants/*": ["src/core/constants/*"],
+      "@utils/*": ["src/core/utils/*"],
+      "@types/*": ["src/core/types/*"],
+      "@motions/*": ["src/core/motions/*"]
     }
   },
   "include": ["src/**/*", "examples/**/*", "*.ts", "*.tsx"],
