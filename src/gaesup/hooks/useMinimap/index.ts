@@ -1,13 +1,14 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { useGaesupContext } from '../../atoms';
+import { useGaesupContext } from '../../stores/gaesupStore';
 import { useGaesupStore } from '../../stores/gaesupStore';
+import { MinimapProps } from '../../component/minimap/types';
 
 const DEFAULT_SCALE = 5;
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 20;
 const UPDATE_THRESHOLD = 0.1;
 const ROTATION_THRESHOLD = 0.01;
-const UPDATE_INTERVAL = 100;
+const UPDATE_INTERVAL = 33;
 const MINIMAP_SIZE_PX = 200;
 
 interface MinimapOptions {
@@ -32,45 +33,43 @@ export interface MinimapResult {
   isReady: boolean;
 }
 
-export function useMinimap(options: MinimapOptions = {}): MinimapResult {
+export const useMinimap = (props: MinimapProps) => {
+  const { mode, activeState, states, rideable } = useGaesupContext();
+
   const {
-    initialScale = DEFAULT_SCALE,
-    minScale = MIN_SCALE,
-    maxScale = MAX_SCALE,
-    blockScale = false,
+    size = 200,
+    scale: initialScale = DEFAULT_SCALE,
+    zoom = 2,
     blockRotate = false,
     angle = 0,
-    updateInterval = UPDATE_INTERVAL,
-  } = options;
-  const { activeState } = useGaesupContext();
-  const mode = useGaesupStore((state) => state.mode);
-  const minimap = useGaesupStore((state) => state.minimap);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+    updateInterval = 33,
+  } = props;
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [scale, setScale] = useState(initialScale);
-  const lastPositionRef = useRef({ x: 0, y: 0, z: 0 });
-  const lastRotationRef = useRef(0);
-  const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const isReady = Boolean(activeState?.position && minimap?.props);
+  const lastPositionRef = useRef(activeState?.position);
+  const lastRotationRef = useRef(activeState?.euler.y);
+
+  const isReady = !!(activeState?.position && props);
 
   const upscale = useCallback(() => {
-    if (blockScale) return;
-    setScale((prev) => Math.min(maxScale, prev + 0.1));
-  }, [blockScale, maxScale]);
+    if (blockRotate) return;
+    setScale((prev) => Math.min(MAX_SCALE, prev + 0.1));
+  }, [blockRotate]);
 
   const downscale = useCallback(() => {
-    if (blockScale) return;
-    setScale((prev) => Math.max(minScale, prev - 0.1));
-  }, [blockScale, minScale]);
+    if (blockRotate) return;
+    setScale((prev) => Math.max(MIN_SCALE, prev - 0.1));
+  }, [blockRotate]);
 
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
-      if (blockScale) return;
+      if (blockRotate) return;
       e.preventDefault();
       if (e.deltaY < 0) upscale();
       else downscale();
     },
-    [blockScale, upscale, downscale],
+    [blockRotate, upscale, downscale],
   );
 
   const setupWheelListener = useCallback(() => {
@@ -78,7 +77,7 @@ export function useMinimap(options: MinimapOptions = {}): MinimapResult {
     if (!canvas) return;
 
     const handleNativeWheel = (e: WheelEvent) => {
-      if (blockScale) return;
+      if (blockRotate) return;
       e.preventDefault();
       if (e.deltaY < 0) upscale();
       else downscale();
@@ -89,11 +88,11 @@ export function useMinimap(options: MinimapOptions = {}): MinimapResult {
     return () => {
       canvas.removeEventListener('wheel', handleNativeWheel);
     };
-  }, [blockScale, upscale, downscale]);
+  }, [blockRotate, upscale, downscale]);
 
   const updateCanvas = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !activeState || !minimap?.props) return;
+    if (!canvas || !activeState || !props) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -173,8 +172,8 @@ export function useMinimap(options: MinimapOptions = {}): MinimapResult {
     ctx.restore();
 
     // Draw objects
-    if (minimap?.props && typeof minimap.props === 'object') {
-      Object.values(minimap.props).forEach((obj: any) => {
+    if (props && typeof props === 'object') {
+      Object.values(props).forEach((obj: any) => {
         if (!obj?.center || !obj?.size) return;
 
         const { center, size, text } = obj;
@@ -263,7 +262,7 @@ export function useMinimap(options: MinimapOptions = {}): MinimapResult {
 
     ctx.restore();
     ctx.restore();
-  }, [activeState, minimap, mode, scale, angle, blockRotate]);
+  }, [activeState, props, mode, scale, angle, blockRotate]);
 
   // Update tracking and intervals
   const checkForUpdates = useCallback(() => {
@@ -281,26 +280,19 @@ export function useMinimap(options: MinimapOptions = {}): MinimapResult {
     const rotationChanged = Math.abs(rotation - lastRotation) > ROTATION_THRESHOLD;
 
     if (positionChanged || rotationChanged) {
-      if (updateTimeoutRef.current) {
-        clearTimeout(updateTimeoutRef.current);
-      }
-
-      updateTimeoutRef.current = setTimeout(() => {
-        updateCanvas();
-        lastPositionRef.current = { x: position.x, y: position.y, z: position.z };
-        lastRotationRef.current = rotation;
-      }, 33);
+      updateCanvas();
+      lastPositionRef.current = { x: position.x, y: position.y, z: position.z };
+      lastRotationRef.current = rotation;
     }
   }, [activeState, updateCanvas]);
 
   // Setup update intervals
   useEffect(() => {
     updateCanvas();
-    intervalRef.current = setInterval(checkForUpdates, updateInterval);
+    const interval = setInterval(checkForUpdates, updateInterval);
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
+      clearInterval(interval);
     };
   }, [updateCanvas, checkForUpdates, updateInterval]);
 
@@ -319,4 +311,4 @@ export function useMinimap(options: MinimapOptions = {}): MinimapResult {
     updateCanvas,
     isReady,
   };
-}
+};

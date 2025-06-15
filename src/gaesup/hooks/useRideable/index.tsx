@@ -1,6 +1,6 @@
 import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
 import { useContext, useEffect, useRef } from 'react';
-import { useGaesupContext, useGaesupDispatch } from '../../atoms';
+import { useGaesupContext, useGaesupDispatch } from '../../stores/gaesupStore';
 import { RideStateChangeData, rideableType } from './types';
 import { eventBus } from '@/gaesup/physics/connectors';
 import { useGaesupGltf } from '../../utils/gltf';

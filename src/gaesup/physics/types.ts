@@ -11,7 +11,7 @@ import {
   ResourceUrlsType,
 } from '../types';
 import { DispatchType } from '../types';
-import { airplaneType, characterType, gaesupWorldContextType, vehicleType } from '../atoms';
+import { airplaneType, characterType, gaesupWorldContextType, vehicleType } from '../types/core';
 
 export interface PhysicsRefs {
   colliderRef: RefObject<Collider>;

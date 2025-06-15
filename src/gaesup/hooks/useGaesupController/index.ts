@@ -1,8 +1,6 @@
 import { useContext } from 'react';
 import * as THREE from 'three';
-import { useGaesupContext } from '../../atoms';
-import { useAtomValue } from 'jotai';
-import { useGaesupStore } from '../../stores/gaesupStore';
+import { useGaesupContext, useGaesupStore } from '../../stores/gaesupStore';
 import { gaesupPassivePropsType } from './types';
 
 export function useGaesupController(): gaesupPassivePropsType {

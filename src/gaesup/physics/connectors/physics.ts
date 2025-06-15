@@ -10,6 +10,7 @@ export function usePhysics() {
     urls,
     activeState,
     updateState,
+    block,
   } = store;
   const { getSizesByUrls } = useGaesupGltf();
   const isReady = !!(inputSystem && urls && activeState && updateState);
@@ -31,5 +32,6 @@ export function usePhysics() {
     setMouseInput: setPointerInput,
     getSizesByUrls,
     isReady,
+    blockControl: block?.control,
   };
 }

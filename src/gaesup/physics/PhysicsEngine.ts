@@ -11,7 +11,9 @@ export class PhysicsEngine {
   private stateChecker = new StateChecker();
 
   calculate(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
-    if (!physicsState) return;
+    if (!physicsState || !calcProp.rigidBodyRef.current) return;
+    const currentVelocity = calcProp.rigidBodyRef.current.linvel();
+    physicsState.activeState.velocity.set(currentVelocity.x, currentVelocity.y, currentVelocity.z);
     this.stateChecker.checkAll(calcProp, physicsState);
     const { rigidBodyRef, innerGroupRef, matchSizes, worldContext } = calcProp;
     const { modeType = 'character' } = physicsState;
@@ -35,7 +37,7 @@ export class PhysicsEngine {
         const {
           gameStates: { isJumping, isFalling, isNotMoving },
           activeState,
-          characterConfig: { linearDamping = 1, airDamping = 0.1, stopDamping = 3 },
+          characterConfig: { linearDamping = 0.2, airDamping = 0.1, stopDamping = 2 },
         } = physicsState;
         rigidBodyRef.current.setLinearDamping(
           isJumping || isFalling

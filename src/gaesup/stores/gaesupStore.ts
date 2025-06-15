@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import * as THREE from 'three';
-import { gaesupWorldContextType } from '../atoms/types';
+import { gaesupWorldContextType } from '../types/core';
 import { UrlsSlice, createUrlsSlice } from './slices/urlsSlice';
 import { ModeSlice, createModeSlice } from './slices/modeSlice';
 import { ClickerOptionSlice, createClickerOptionSlice } from './slices/clickerOptionSlice';
@@ -12,6 +12,7 @@ import { MinimapSlice, createMinimapSlice } from './slices/minimapSlice';
 import { InputSlice, createInputSlice } from './slices/inputSlice';
 import { SizesSlice, createSizesSlice } from './slices/sizesSlice';
 import { AnimationSlice, createAnimationSlice } from './slices/animationSlice';
+import { EventSlice, createEventSlice } from './slices/eventSlice';
 
 export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
   activeState: {
@@ -97,7 +98,8 @@ export type StoreState = gaesupWorldContextType &
   MinimapSlice &
   InputSlice &
   SizesSlice &
-  AnimationSlice & {
+  AnimationSlice &
+  EventSlice & {
     updateState: (updates: Partial<StoreState>) => void;
     resetState: () => void;
     initializeState: (initialState: Partial<StoreState>) => void;
@@ -119,6 +121,7 @@ export const useGaesupStore = create<StoreState>()(
       ...createInputSlice(set, get, api),
       ...createSizesSlice(set, get, api),
       ...createAnimationSlice(set, get, api),
+      ...createEventSlice(set, get, api),
 
       updateState: (updates: Partial<StoreState>) => {
         set((state: StoreState) => ({ ...state, ...updates }));

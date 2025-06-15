@@ -1,4 +1,5 @@
 import { StateCreator } from 'zustand';
+import { ClickerOptionState } from '../../types/core';
 
 // From types.ts
 export interface ClickerOptionState {
@@ -17,21 +18,23 @@ export interface ClickerOptionSlice {
   setClickerOption: (update: Partial<ClickerOptionState>) => void;
 }
 
+export const initialClickerOptionState: ClickerOptionState = {
+  isRun: true,
+  throttle: 100,
+  autoStart: false,
+  track: false,
+  loop: false,
+  queue: [],
+  line: false,
+};
+
 export const createClickerOptionSlice: StateCreator<
   ClickerOptionSlice,
   [],
   [],
   ClickerOptionSlice
 > = (set) => ({
-  clickerOption: {
-    isRun: true,
-    throttle: 100,
-    autoStart: false,
-    track: false,
-    loop: false,
-    queue: [],
-    line: false,
-  },
+  clickerOption: initialClickerOptionState,
   setClickerOption: (update) =>
     set((state) => ({
       clickerOption: { ...state.clickerOption, ...update },

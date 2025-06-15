@@ -239,13 +239,10 @@ export class DirectionController {
     const rotationStep = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), rotationSpeed);
     activeState.euler.y += rotationStep;
     const { sin: sinY, cos: cosY } = getCachedTrig(activeState.euler.y);
-    const tempFront = this.vectorCache.getTempVector(1);
     const tempDirection = this.vectorCache.getTempVector(2);
-    tempFront.set(1, 0, 1);
     tempDirection.set(-sinY, 0, -cosY);
-    tempFront.multiply(tempDirection);
-    activeState.direction.copy(tempFront);
-    activeState.dir.copy(tempFront).normalize();
+    activeState.direction.copy(tempDirection);
+    activeState.dir.copy(tempDirection).normalize();
   }
 
   private handleKeyboardDirection(

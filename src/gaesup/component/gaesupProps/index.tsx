@@ -30,7 +30,6 @@ export function GaeSupProps({ type = 'normal', text, position, children }: GaeSu
       ref={groupRef}
       position={position}
       onPointerDown={(e) => {
-        if (e.srcElement instanceof HTMLDivElement) return;
         moveClicker(e, false, type);
       }}
     >

@@ -1,8 +1,12 @@
-import { useMemo, useReducer } from 'react';
-import { gaesupWorldDefault, gaesupWorldReducer } from '../atoms';
+import { useMemo } from 'react';
+import { useGaesupStore, gaesupWorldDefault } from '../stores/gaesupStore';
 import { gaesupWorldPropsType } from '../component/types';
+import { initialClickerOptionState } from '../stores/slices/clickerOptionSlice';
 
 export function initGaesupWorld(props: gaesupWorldPropsType) {
+  const initializeState = useGaesupStore((state) => state.initializeState);
+  const resetState = useGaesupStore((state) => state.resetState);
+
   const initialState = useMemo(
     () => ({
       activeState: {
@@ -16,7 +20,10 @@ export function initGaesupWorld(props: gaesupWorldPropsType) {
       rideable: gaesupWorldDefault.rideable || {},
       control: gaesupWorldDefault.control,
       clicker: gaesupWorldDefault.clicker,
-      clickerOption: { ...gaesupWorldDefault.clickerOption, ...(props.clickerOption || {}) },
+      clickerOption: {
+        ...initialClickerOptionState,
+        ...(props.clickerOption || {}),
+      },
       animationState: gaesupWorldDefault.animationState,
       block: { ...gaesupWorldDefault.block, ...(props.block || {}) },
       sizes: gaesupWorldDefault.sizes,
@@ -24,7 +31,8 @@ export function initGaesupWorld(props: gaesupWorldPropsType) {
     [props.startPosition, props.mode, props.urls, props.clickerOption, props.block],
   );
 
-  const [value, dispatch] = useReducer(gaesupWorldReducer, initialState);
-  const gaesupProps = useMemo(() => ({ value, dispatch }), [value, dispatch]);
-  return { gaesupProps };
+  useMemo(() => {
+    resetState();
+    initializeState(initialState);
+  }, [initialState, initializeState, resetState]);
 }

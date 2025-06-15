@@ -1,6 +1,6 @@
 import { ObjectMap } from '@react-three/fiber';
 import { RapierRigidBody } from '@react-three/rapier';
-import { RefObject, ReactNode } from 'react';
+import { MutableRefObject, ReactNode, Ref, RefObject, SetStateAction } from 'react';
 import * as THREE from 'three';
 import { GLTF } from 'three-stdlib';
 import {
@@ -26,8 +26,7 @@ import {
   RefsType,
   SlopeRayType,
 } from '../types';
-import { gaesupWorldContextType } from '../atoms/types';
-import { airplaneType, characterType, vehicleType } from '../atoms';
+import { gaesupWorldContextType, airplaneType, characterType, vehicleType } from '../types/core';
 
 export type GLTFResult = GLTF & {
   nodes: { [name: string]: THREE.Mesh | THREE.SkinnedMesh };

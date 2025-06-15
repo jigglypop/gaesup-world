@@ -5,9 +5,7 @@ import { PhysicsState } from '../types';
 export class GravityController {
   applyGravity(rigidBodyRef: RefObject<RapierRigidBody>, physicsState: PhysicsState): void {
     if (!rigidBodyRef.current) return;
-
     const { modeType } = physicsState;
-
     switch (modeType) {
       case 'character':
         this.applyCharacterGravity(rigidBodyRef, physicsState);

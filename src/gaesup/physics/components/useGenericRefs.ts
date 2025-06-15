@@ -1,14 +1,12 @@
 import { RapierCollider, RapierRigidBody } from '@react-three/rapier';
-import { MutableRefObject, useRef } from 'react';
+import { RefObject, useRef } from 'react';
 import * as THREE from 'three';
 
 export function useGenericRefs() {
-  const outerGroupRef: MutableRefObject<THREE.Group> = useRef() as MutableRefObject<THREE.Group>;
-  const innerGroupRef: MutableRefObject<THREE.Group> = useRef() as MutableRefObject<THREE.Group>;
-  const rigidBodyRef: MutableRefObject<RapierRigidBody> =
-    useRef() as MutableRefObject<RapierRigidBody>;
-  const colliderRef: MutableRefObject<RapierCollider> =
-    useRef() as MutableRefObject<RapierCollider>;
+  const outerGroupRef: RefObject<THREE.Group | null> = useRef(null);
+  const innerGroupRef: RefObject<THREE.Group | null> = useRef(null);
+  const rigidBodyRef: RefObject<RapierRigidBody | null> = useRef(null);
+  const colliderRef: RefObject<RapierCollider | null> = useRef(null);
 
   return {
     outerGroupRef,

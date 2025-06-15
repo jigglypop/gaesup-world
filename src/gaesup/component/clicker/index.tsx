@@ -88,8 +88,11 @@ const QueuePointMarker = memo(({ position }: { position: THREE.Vector3 }) => (
 ));
 
 export const Clicker = memo(() => {
-  const { input, clickerOption } = useGaesupStore();
-  const pointer = input.pointer;
+  const pointer = useGaesupStore((state) => state.input.pointer);
+  const clickerOption = useGaesupStore((state) => state.clickerOption);
+
+  if (!clickerOption) return null;
+
   const pointQueue = clickerOption.queue.filter(
     (item): item is THREE.Vector3 => item instanceof THREE.Vector3,
   );

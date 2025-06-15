@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { type SizesType } from '../../types';
 import { usePhysics } from './connectors/physics';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
 import { PhysicsCalcProps, PhysicsCalculationProps, PhysicsState } from './types';
-import { physicsSync } from './connectors';
 import { PhysicsEngine } from './PhysicsEngine';
+import { SizesType } from '../stores/slices/sizesSlice';
 export { GaesupWorld } from '../component/GaesupWorld';
 export { GaesupController } from '../component/GaesupController';
 
@@ -43,15 +42,9 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
   const physicsStateRef = useRef<PhysicsState | null>(null);
   const physicsEngine = useRef(new PhysicsEngine());
   const isInitializedRef = useRef(false);
-  const lastModeType = useRef('');
 
   useEffect(() => {
     if (!isInitializedRef.current && physics.worldContext) {
-      physicsSync.setWorldContext(physics.worldContext as any);
-      physicsSync.initialize(
-        () => {},
-        () => {},
-      );
       isInitializedRef.current = true;
     }
   }, [physics.worldContext]);
@@ -91,10 +84,8 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
         }
       } else {
         updateInputState(physicsStateRef.current, physics.input);
-        const modeType = (physics.worldContext as any)?.mode?.type || 'character';
-        if (lastModeType.current !== modeType) {
-          physicsSync.updateMode((physics.worldContext as any)?.mode);
-          lastModeType.current = modeType;
+        if (physicsStateRef.current) {
+          physicsStateRef.current.gameStates = (physics.worldContext as any).states!;
         }
       }
 

@@ -1,12 +1,14 @@
 import { useAnimations, useGLTF } from '@react-three/drei';
-import { useGraph } from '@react-three/fiber';
+import { useGraph, useFrame } from '@react-three/fiber';
 import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three/rapier';
 import { MutableRefObject, forwardRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import Camera from '../../camera';
-import { useGaesupContext, useGaesupStore } from '../../atoms';
-import { useAnimationPlayer } from '../../utils/animation';
+import { useGaesupComponent } from '../../../component/GaesupComponent/GaesupComponentContext';
+import { useGaesupContext, useGaesupStore } from '../../stores/gaesupStore';
+import { GaesupComponentContextType } from '../../../component/GaesupComponent/types';
+import { useAnimationPlayer } from '../../hooks/useAnimationPlayer';
 import { useGltfAndSize } from '../../utils/gltf';
 import usePhysicsLoop from '../index';
 import { InnerGroupRef } from './InnerGroupRef';
@@ -15,6 +17,8 @@ import { useSetGroundRay } from './setGroundRay';
 import { initCallback } from '../../utils/initCallback';
 import { PhysicsEntityProps } from './types';
 import { AnimationActions } from '../../hooks/useAnimationPlayer';
+import { useGenericRefs } from './useGenericRefs';
+import { setGroundRay } from './setGroundRay';
 
 export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
   (props, rigidBodyRef) => {

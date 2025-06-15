@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useCallback, useRef } from 'react';
 import { vec3 } from '@react-three/rapier';
 import * as THREE from 'three';
-import { useGaesupContext, useGaesupDispatch, useGaesupStore } from '../atoms';
+import { useGaesupContext, useGaesupDispatch, useGaesupStore } from '../stores/gaesupStore';
 import { CameraRayType, GroundRayType, RefsType } from '../types';
 
 export function initControllerProps(props: { refs: RefsType }) {
   const context = useGaesupContext();
   const dispatch = useGaesupDispatch();
+  const store = useGaesupStore();
   const cameraOption = useGaesupStore((state) => state.cameraOption);
   const controlConfigSetRef = useRef(false);
   const refsSetRef = useRef(false);

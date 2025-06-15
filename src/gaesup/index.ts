@@ -1,4 +1,3 @@
-export * from './atoms';
 export * from './stores/gaesupStore';
 export * from './camera';
 export * from './component';

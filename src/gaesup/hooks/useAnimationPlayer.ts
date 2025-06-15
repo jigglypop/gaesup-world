@@ -1,5 +1,5 @@
-import { useAtomValue } from 'jotai';
 import { useEffect, useRef } from 'react';
+import { shallow } from 'zustand/shallow';
 import { useGaesupStore } from '../stores/gaesupStore';
 
 export interface AnimationActions {
@@ -12,15 +12,15 @@ export interface AnimationActions {
 }
 
 export function useAnimationPlayer(actions: AnimationActions | undefined, active: boolean) {
-  // This logic will be moved to a Zustand slice later
-  const gameStates = useGaesupStore((state) => state.states);
+  const states = useGaesupStore((state) => state.states, shallow);
+
   const activeAnimation = (() => {
-    if (gameStates.isJumping) return 'jump';
-    if (gameStates.isFalling) return 'fall';
-    if (gameStates.isRiding) return 'ride';
-    if (gameStates.isLanding) return 'land';
-    if (gameStates.isRunning) return 'run';
-    if (gameStates.isMoving) return 'walk';
+    if (states.isJumping) return 'jump';
+    if (states.isFalling) return 'fall';
+    if (states.isRiding) return 'ride';
+    if (states.isLanding) return 'land';
+    if (states.isRunning) return 'run';
+    if (states.isMoving) return 'walk';
     return 'idle';
   })();
 
@@ -32,11 +32,11 @@ export function useAnimationPlayer(actions: AnimationActions | undefined, active
     const currentAction = actions[activeAnimation];
     const previousAction = actions[previousTag.current];
 
-    if (previousAction && previousAction !== null) {
+    if (previousAction) {
       previousAction.fadeOut(0.2);
     }
 
-    if (currentAction && currentAction !== null) {
+    if (currentAction) {
       currentAction.reset().fadeIn(0.2).play();
     }
 

@@ -10,7 +10,6 @@ export class StateChecker {
 
   checkAll(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
     const instanceId = `physics-${calcProp.rigidBodyRef?.current?.handle || 'unknown'}`;
-
     this.checkGround(calcProp);
     this.checkMoving(calcProp);
     this.checkRotate(calcProp, physicsState.activeState);

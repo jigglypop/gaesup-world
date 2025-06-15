@@ -1,12 +1,12 @@
 'use client';
 import { Suspense, useEffect } from 'react';
-import { GaesupProvider, useGaesupStore } from '../../atoms';
 import { useGaesupGltf } from '../../utils/gltf';
 import { gaesupWorldPropsType } from '../types';
 import { initGaesupWorld } from '../../utils/initGaesupWorld';
+import { useGaesupStore } from '../../stores/gaesupStore';
 
 export function GaesupWorld(props: gaesupWorldPropsType) {
-  const { gaesupProps } = initGaesupWorld(props);
+  initGaesupWorld(props);
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
   const { preloadSizes } = useGaesupGltf();
 
@@ -23,9 +23,5 @@ export function GaesupWorld(props: gaesupWorldPropsType) {
     }
   }, [props.cameraOption, setCameraOption]);
 
-  return (
-    <GaesupProvider initialState={gaesupProps.value}>
-      <Suspense fallback={null}>{props.children}</Suspense>
-    </GaesupProvider>
-  );
+  return <Suspense fallback={null}>{props.children}</Suspense>;
 }

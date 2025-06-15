@@ -4,25 +4,55 @@ import { useEffect } from 'react';
 import { PassiveAirplane } from '../passive/airplane';
 import { PassiveVehicle } from '../passive/vehicle';
 import { useRideable } from '../../hooks/useRideable';
-import { useGaesupContext } from '../../atoms';
+import { useGaesupStore } from '../../stores/gaesupStore';
 import { RideableUIProps, RideablePropType } from './types';
 import './styles.css';
+import React from 'react';
 
 export function RideableUI({ states }: RideableUIProps) {
-  if (!states.canRide || !states.nearbyRideable) {
-    return null;
-  }
+  const updateState = useGaesupStore((state) => state.updateState);
+  const handleClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    e.stopPropagation();
+    if (states.canRide && states.nearbyRideable) {
+      const { objectkey, objectType, name } = states.nearbyRideable;
+      updateState({
+        mode: {
+          type: objectType,
+        },
+        states: {
+          rideableId: objectkey,
+          isRiding: true,
+          shouldEnterRideable: true,
+          nearbyRideable: null,
+        },
+      });
+    }
+    if (states.isRiding) {
+      updateState({
+        mode: {
+          type: 'character',
+        },
+        states: {
+          shouldExitRideable: true,
+          isRiding: false,
+        },
+      });
+    }
+  };
 
-  return <div className="rideable-ui">🚗 E키를 눌러 {states.nearbyRideable.name}에 탑승하세요</div>;
+  return (
+    <div className="rideable-ui-container" onClick={handleClick}>
+      <div className="message-box">
+        {states.canRide && <div>Press F to ride</div>}
+        {states.isRiding && <div>Press F to exit</div>}
+      </div>
+    </div>
+  );
 }
 
 export function Rideable(props: RideablePropType) {
-  const { states, rideable } = useGaesupContext();
+  const { states, rideable } = useGaesupStore();
   const { initRideable, onRideableNear, onRideableLeave, landing } = useRideable();
-
-  useEffect(() => {
-    initRideable(props);
-  }, []);
 
   useEffect(() => {
     if (states?.isRiding && rideable?.[props.objectkey] && !rideable[props.objectkey].visible) {
@@ -30,51 +60,42 @@ export function Rideable(props: RideablePropType) {
     }
   }, [states?.isRiding]);
 
-  const onIntersectionEnter = async (e: CollisionEnterPayload) => {
-    await onRideableNear(e, props);
-  };
-
-  const onIntersectionExit = async (e: CollisionExitPayload) => {
-    await onRideableLeave(e);
-  };
-
   return (
     <>
-      {rideable?.[props.objectkey]?.visible && (
-        <group userData={{ intangible: true }}>
-          {props.objectType === 'vehicle' && (
-            <PassiveVehicle
-              controllerOptions={props.controllerOptions}
-              position={props.position}
-              rotation={props.rotation}
-              currentAnimation={'idle'}
-              url={props.url}
-              wheelUrl={props.wheelUrl}
-              ridingUrl={props.ridingUrl}
-              offset={props.offset}
-              enableRiding={props.enableRiding}
-              rigidBodyProps={props.rigidBodyProps}
-              sensor={true}
-              onIntersectionEnter={onIntersectionEnter}
-              onIntersectionExit={onIntersectionExit}
-            />
-          )}
-          {props.objectType === 'airplane' && (
-            <PassiveAirplane
-              controllerOptions={props.controllerOptions}
-              position={props.position}
-              rotation={props.rotation}
-              currentAnimation={'idle'}
-              url={props.url}
-              ridingUrl={props.ridingUrl}
-              offset={props.offset}
-              enableRiding={props.enableRiding}
-              rigidBodyProps={props.rigidBodyProps}
-              sensor={true}
-              onIntersectionEnter={onIntersectionEnter}
-              onIntersectionExit={onIntersectionExit}
-            />
-          )}
+      {props.objectType === 'vehicle' && (
+        <group
+          position={props.position}
+          rotation={props.rotation}
+          name={props.name}
+          userData={{
+            ...props.userData,
+            objectType: props.objectType,
+            rideable: true,
+            init: initRideable,
+            onNear: onRideableNear,
+            onLeave: onRideableLeave,
+            landing,
+          }}
+        >
+          <PassiveVehicle {...props} visible={!rideable[props.name]?.isOccupied} />
+        </group>
+      )}
+      {props.objectType === 'airplane' && (
+        <group
+          position={props.position}
+          rotation={props.rotation}
+          name={props.name}
+          userData={{
+            ...props.userData,
+            objectType: props.objectType,
+            rideable: true,
+            init: initRideable,
+            onNear: onRideableNear,
+            onLeave: onRideableLeave,
+            landing,
+          }}
+        >
+          <PassiveAirplane {...props} visible={!rideable[props.name]?.isOccupied} />
         </group>
       )}
     </>
