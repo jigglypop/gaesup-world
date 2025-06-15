@@ -7,7 +7,6 @@ import {
   DispatchType,
   ResourceUrlsType,
   ModeType,
-  CameraOptionType,
   ClickerOptionState,
   ActionsType,
   AnimationTagType,
@@ -27,6 +26,7 @@ import {
   SlopeRayType,
 } from '../types';
 import { gaesupWorldContextType, airplaneType, characterType, vehicleType } from '../types/core';
+export type { CameraOptionType } from '../types';
 
 export type GLTFResult = GLTF & {
   nodes: { [name: string]: THREE.Mesh | THREE.SkinnedMesh };

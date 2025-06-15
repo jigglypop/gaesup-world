@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useGaesupStore } from '../../src/core';
+import { useGaesupStore } from '../../../src/core';
 import { Icon } from '../icon';
 import './styles.css';
 

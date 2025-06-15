@@ -1,7 +1,3 @@
-export const S3 = 'https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf';
-export const CHARACTER_URL = 'gltf/ally_body.glb';
-export const AIRPLANE_URL = S3 + '/gaebird.glb';
-export const VEHICLE_URL = S3 + '/gorani.glb';
 export const PLATFORMS = [
   {
     name: '발판 A',
@@ -67,18 +63,4 @@ export const PLATFORMS = [
     type: '계단',
     label: '4',
   },
-];
-export const TABS = [
-  { id: 'controls', label: '조작법', emoji: '' },
-  { id: 'features', label: '기능', emoji: '' },
-  { id: 'locations', label: '위치', emoji: '' },
-];
-export const TELEPORT_POINTS = [
-  { name: '시작점', position: [0, 2, 0] },
-  { name: '발판 A', position: [40, 3, 0] },
-  { name: '발판 B', position: [-40, 4, 20] },
-  { name: '계단', position: [100, 2, 20] },
-  { name: '차량', position: [-70, 3, 30] },
-  { name: '비행기1', position: [70, 3, 40] },
-  { name: '비행기2', position: [-30, 3, 80] },
 ];

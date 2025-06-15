@@ -1,5 +1,7 @@
-import { Rideable, V3 } from '../../src';
-import { S3 } from '../constants';
+import { Rideable, useGaesupContext, V3 } from '../../../src';
+import { RideableUI } from '../../../src/core/component/rideable';
+import { S3 } from '../../config/constants';
+
 export function RideableVehicles() {
   return (
     <>
@@ -32,4 +34,9 @@ export function RideableVehicles() {
       />
     </>
   );
+}
+
+export function RideableUIRenderer() {
+  const { states } = useGaesupContext();
+  return <RideableUI states={states} />;
 }

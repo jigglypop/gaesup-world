@@ -1,7 +1,8 @@
 import { RigidBody } from '@react-three/rapier';
-import { MinimapPlatform } from '../../src';
-import { PLATFORMS } from '../constants';
-import { PlatformData } from '../src/types';
+import { MinimapPlatform } from '../../../src';
+import { PLATFORMS } from './constants';
+import { PlatformData } from './types';
+import './styles.css';
 
 export function Platforms() {
   const handlePlatformClick = (e: any, platformData: PlatformData) => {

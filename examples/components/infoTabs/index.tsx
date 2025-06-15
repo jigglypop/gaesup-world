@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { TABS } from '../constants';
-import { TabId } from '../src/types';
+import { TABS } from './constants';
+import { TabId } from './types';
+import './styles.css';
+
 export function InfoTabs() {
   const [activeTab, setActiveTab] = useState<TabId>('controls');
   return (
