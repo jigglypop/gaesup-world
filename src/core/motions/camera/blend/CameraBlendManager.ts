@@ -1,6 +1,22 @@
 import * as THREE from 'three';
-import { CameraActiveBlend, CameraBlendState } from '../../types';
-import { eventBus } from '@motions/core';
+
+interface CameraBlendState {
+  position: THREE.Vector3;
+  rotation: THREE.Euler;
+  fov: number;
+  target?: THREE.Vector3 | undefined;
+}
+
+interface CameraActiveBlend {
+  from: CameraBlendState;
+  to: CameraBlendState;
+  duration: number;
+  elapsed: number;
+  blendFunction: BlendFunction;
+  onComplete?: () => void;
+  initialQuaternion: THREE.Quaternion;
+  targetQuaternion: THREE.Quaternion;
+}
 
 export enum BlendFunction {
   Linear = 'linear',
@@ -33,16 +49,11 @@ export class CameraBlendManager {
   ): void {
     const fromState = this.createState(from, camera);
     const toState = this.createState(to, camera);
-    eventBus.emit('CAMERA_BLEND_START', {
-      from: fromState,
-      to: toState,
-      duration,
-    });
 
     const initialQuaternion = new THREE.Quaternion().setFromEuler(fromState.rotation).normalize();
     const targetQuaternion = new THREE.Quaternion().setFromEuler(toState.rotation).normalize();
     if (initialQuaternion.dot(targetQuaternion) < 0) {
-      targetQuaternion.multiplyScalar(-1);
+      targetQuaternion.multiply(new THREE.Quaternion(-1, -1, -1, -1));
     }
     this.activeBlend = {
       from: fromState,
@@ -78,10 +89,6 @@ export class CameraBlendManager {
       camera.updateProjectionMatrix();
     }
     if (t >= 1) {
-      const finalState = this.activeBlend.to;
-      eventBus.emit('CAMERA_BLEND_END', {
-        finalState,
-      });
       this.activeBlend.onComplete?.();
       this.activeBlend = null;
       this.isControllingCamera = false;

@@ -9,7 +9,7 @@ import {
 } from '../../utils/memoization';
 import { calcAngleByVector, calcNorm } from '../../utils/vector';
 import { PhysicsCalcProps, PhysicsState } from '../types';
-import { eventBus } from '../core';
+import { useGaesupStore } from '@stores/gaesupStore';
 
 export class DirectionController {
   private memoManager = MemoizationManager.getInstance();
@@ -132,10 +132,13 @@ export class DirectionController {
     );
     activeState.dir.copy(activeState.direction).normalize();
 
-    eventBus.emit('ROTATION_UPDATE', {
-      euler: activeState.euler,
-      direction: activeState.direction,
-      dir: activeState.dir,
+    useGaesupStore.getState().updateState({
+      activeState: {
+        ...useGaesupStore.getState().activeState,
+        euler: activeState.euler,
+        direction: activeState.direction,
+        dir: activeState.dir,
+      },
     });
   }
 
@@ -270,10 +273,13 @@ export class DirectionController {
     const directionChanged = shouldUpdate(currentDirectionLength, this.lastDirectionLength, 0.01);
 
     if (eulerChanged || directionChanged) {
-      eventBus.emit('ROTATION_UPDATE', {
-        euler: activeState.euler,
-        direction: activeState.direction,
-        dir: activeState.dir,
+      useGaesupStore.getState().updateState({
+        activeState: {
+          ...useGaesupStore.getState().activeState,
+          euler: activeState.euler,
+          direction: activeState.direction,
+          dir: activeState.dir,
+        },
       });
       this.lastEulerY[entityType] = activeState.euler.y;
       this.lastDirectionLength = currentDirectionLength;

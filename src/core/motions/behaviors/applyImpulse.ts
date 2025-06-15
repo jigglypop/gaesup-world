@@ -1,7 +1,7 @@
 import { RefObject } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 import { PhysicsState } from '../types';
-import { eventBus } from '../core';
+import { useGaesupStore } from '@stores/gaesupStore';
 
 export class ImpulseController {
   applyImpulse(rigidBodyRef: RefObject<RapierRigidBody>, physicsState: PhysicsState): void {
@@ -35,7 +35,7 @@ export class ImpulseController {
     if (isJumping && isOnTheGround) {
       const currentVel = rigidBodyRef.current!.linvel();
       rigidBodyRef.current!.setLinvel({ x: currentVel.x, y: jumpSpeed, z: currentVel.z }, true);
-      eventBus.emit('JUMP_STATE_CHANGE', {
+      useGaesupStore.getState().setStates({
         isJumping: false,
         isOnTheGround: true,
       });

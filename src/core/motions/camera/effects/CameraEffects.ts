@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { CameraShakeConfig, CameraZoomConfig } from '../../types';
-import { eventBus } from '@motions/core';
 
 export class CameraEffects {
   private shakeState: {
@@ -52,10 +51,6 @@ export class CameraEffects {
     return this.noiseValues[i];
   }
   startShake(config: CameraShakeConfig): void {
-    eventBus.emit('CAMERA_EFFECT', {
-      type: 'shake',
-      config,
-    });
     this.shakeState = {
       active: true,
       intensity: config.intensity,
@@ -68,11 +63,6 @@ export class CameraEffects {
     };
   }
   startZoom(config: CameraZoomConfig): void {
-    eventBus.emit('CAMERA_EFFECT', {
-      type: 'zoom',
-      config,
-    });
-
     this.zoomState = {
       active: true,
       startFov: this.zoomState.startFov,
@@ -169,11 +159,6 @@ export class CameraEffects {
   }
 
   punch(intensity: number = 1.0): void {
-    eventBus.emit('CAMERA_EFFECT', {
-      type: 'punch',
-      config: { intensity, duration: 0.15, frequency: 50, decay: true },
-    });
-
     this.startShake({
       intensity,
       duration: 0.15,
@@ -183,11 +168,6 @@ export class CameraEffects {
   }
 
   earthquake(intensity: number = 0.8, duration: number = 2.0): void {
-    eventBus.emit('CAMERA_EFFECT', {
-      type: 'earthquake',
-      config: { intensity, duration, frequency: 5, decay: false },
-    });
-
     this.startShake({
       intensity,
       duration,

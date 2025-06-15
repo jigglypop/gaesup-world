@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { PhysicsCalcProps, PhysicsState } from '../types';
-import { eventBus } from '../core';
+import { useGaesupStore } from '@stores/gaesupStore';
 
 export class StateChecker {
   private keyStateCache = new Map<string, { lastKeyE: boolean; lastKeyR: boolean }>();
@@ -19,7 +19,7 @@ export class StateChecker {
   private checkGround(prop: PhysicsCalcProps): void {
     const { rigidBodyRef, matchSizes } = prop;
     if (!rigidBodyRef.current) {
-      eventBus.emit('GROUND_STATE_CHANGE', {
+      useGaesupStore.getState().setStates({
         isOnTheGround: false,
         isFalling: true,
       });
@@ -44,14 +44,17 @@ export class StateChecker {
       this.resetJumpState();
     }
 
-    eventBus.emit('GROUND_STATE_CHANGE', {
+    useGaesupStore.getState().setStates({
       isOnTheGround,
       isFalling,
     });
 
-    eventBus.emit('POSITION_UPDATE', {
-      position: new THREE.Vector3(position.x, position.y, position.z),
-      velocity: new THREE.Vector3(velocity.x, velocity.y, velocity.z),
+    useGaesupStore.getState().updateState({
+      activeState: {
+        ...useGaesupStore.getState().activeState,
+        position: new THREE.Vector3(position.x, position.y, position.z),
+        velocity: new THREE.Vector3(velocity.x, velocity.y, velocity.z),
+      },
     });
   }
 
@@ -84,7 +87,7 @@ export class StateChecker {
 
     if (space && !this.isCurrentlyJumping) {
       this.isCurrentlyJumping = true;
-      eventBus.emit('JUMP_STATE_CHANGE', {
+      useGaesupStore.getState().setStates({
         isJumping: true,
         isOnTheGround: true,
       });
@@ -93,7 +96,7 @@ export class StateChecker {
     if (this.lastMovingState !== isMoving || this.lastRunningState !== isRunning) {
       this.lastMovingState = isMoving;
       this.lastRunningState = isRunning;
-      eventBus.emit('MOVE_STATE_CHANGE', {
+      useGaesupStore.getState().setStates({
         isMoving,
         isRunning,
         isNotMoving: !isMoving,
@@ -127,7 +130,7 @@ export class StateChecker {
     const keyR = inputRef.current.keyboard.keyR;
 
     if (keyE && !keyState.lastKeyE) {
-      eventBus.emit('RIDE_STATE_CHANGE', {
+      useGaesupStore.getState().setStates({
         isRiding: false,
         canRide: true,
         shouldEnterRideable: true,
@@ -136,7 +139,7 @@ export class StateChecker {
     }
 
     if (keyR && !keyState.lastKeyR) {
-      eventBus.emit('RIDE_STATE_CHANGE', {
+      useGaesupStore.getState().setStates({
         isRiding: false,
         canRide: false,
         shouldEnterRideable: false,

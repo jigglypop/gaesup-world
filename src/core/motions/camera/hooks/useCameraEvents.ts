@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import * as THREE from 'three';
 import { useGaesupStore } from '@stores/gaesupStore';
-import { eventBus } from '../../core';
 import { CameraControlMode, CameraOptionType } from '../../../types';
 
 const modeOptions: Record<string, Partial<CameraOptionType>> = {
@@ -42,12 +41,13 @@ export function useCameraEvents() {
   const cameraOption = useGaesupStore((state) => state.cameraOption);
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
   const controllerOptions = useGaesupStore((state) => state.controllerOptions);
+  const mode = useGaesupStore((state) => state.mode);
 
   useEffect(() => {
-    const handleModeChange = (data: { control: CameraControlMode }) => {
+    if (mode?.control) {
       const newOptions = {
-        ...(Object.prototype.hasOwnProperty.call(modeOptions, data.control)
-          ? modeOptions[data.control]
+        ...(Object.prototype.hasOwnProperty.call(modeOptions, mode.control)
+          ? modeOptions[mode.control]
           : modeOptions.thirdPerson),
       };
       if (newOptions.smoothing && controllerOptions?.lerp) {
@@ -59,14 +59,8 @@ export function useCameraEvents() {
       setCameraOption({
         ...newOptions,
       });
-    };
-
-    const unsubscribeModeChange = eventBus.subscribe('MODE_CHANGE', handleModeChange);
-
-    return () => {
-      unsubscribeModeChange();
-    };
-  }, [setCameraOption, controllerOptions]);
+    }
+  }, [mode?.control, setCameraOption, controllerOptions]);
 
   return { cameraOption, setCameraOption };
 }

@@ -1,9 +1,8 @@
 import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
 import { useEffect, useRef } from 'react';
-import { useGaesupContext, useGaesupDispatch } from '@stores/gaesupStore';
+import { useGaesupContext, useGaesupDispatch, useGaesupStore } from '@stores/gaesupStore';
 import { RideStateChangeData, rideableType } from './types';
 import { useGaesupGltf } from '@utils/gltf';
-import { eventBus } from '@motions/core';
 
 export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'url' | 'wheelUrl'> =
   {
@@ -72,24 +71,31 @@ export function useRideable() {
     }
   }, [states?.canRide, states?.nearbyRideable, states?.isRiding]);
 
+  const zustandStates = useGaesupStore((state) => state.states);
+
   useEffect(() => {
-    if (!states) return;
-    const unsubscribe = eventBus.subscribe('RIDE_STATE_CHANGE', (data: RideStateChangeData) => {
+    if (!states || !zustandStates) return;
+
+    if (
+      zustandStates.shouldEnterRideable !== states.shouldEnterRideable ||
+      zustandStates.shouldExitRideable !== states.shouldExitRideable ||
+      zustandStates.canRide !== states.canRide ||
+      zustandStates.isRiding !== states.isRiding
+    ) {
       dispatch({
         type: 'update',
         payload: {
           states: {
             ...states,
-            shouldEnterRideable: data.shouldEnterRideable,
-            shouldExitRideable: data.shouldExitRideable,
-            canRide: data.canRide,
-            isRiding: data.isRiding,
+            shouldEnterRideable: zustandStates.shouldEnterRideable,
+            shouldExitRideable: zustandStates.shouldExitRideable,
+            canRide: zustandStates.canRide,
+            isRiding: zustandStates.isRiding,
           },
         },
       });
-    });
-    return unsubscribe;
-  }, [dispatch, states]);
+    }
+  }, [dispatch, states, zustandStates]);
 
   useEffect(() => {
     if (states?.shouldEnterRideable) {
