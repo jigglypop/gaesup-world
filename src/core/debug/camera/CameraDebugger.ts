@@ -26,7 +26,6 @@ export class CameraDebugger {
   enable(scene?: THREE.Scene): void {
     this.isEnabled = true;
     if (scene) this.scene = scene;
-
     this.setupCleanupInterval();
     this.setupEventListeners();
   }
@@ -58,7 +57,7 @@ export class CameraDebugger {
 
   private handleResize(): void {
     if (this.isEnabled) {
-      console.log('[CameraDebugger] Window resized, clearing debug info');
+      console.error('[CameraDebugger] Window resized, clearing debug info');
       this.clearDebugInfo();
     }
   }

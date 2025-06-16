@@ -4,7 +4,6 @@ import * as THREE from 'three';
 import type { RefObject } from 'react';
 import type { RapierRigidBody, RapierCollider } from '@react-three/rapier';
 
-// Context types (moved from context/types.ts)
 export type animationPropType = {
   current: string;
   animationNames: any;
@@ -169,12 +168,6 @@ export type gaesupDisptachType = Dispatch<{
   type: string;
   payload?: Partial<gaesupWorldContextType>;
 }>;
-
-export type AnimationAtomType = {
-  current: string;
-  default: string;
-  store: Record<string, any>;
-};
 
 export interface ModeState {
   type: 'character' | 'vehicle' | 'airplane';

@@ -41,7 +41,8 @@
       "@constants/*": ["src/core/constants/*"],
       "@utils/*": ["src/core/utils/*"],
       "@types/*": ["src/core/types/*"],
-      "@motions/*": ["src/core/motions/*"]
+      "@motions/*": ["src/core/motions/*"],
+      "@debug/*": ["src/core/debug/*"]
     }
   },
   "include": ["src/**/*", "examples/**/*", "*.ts", "*.tsx"],

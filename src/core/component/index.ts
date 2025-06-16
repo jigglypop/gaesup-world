@@ -8,11 +8,3 @@ export * from './rideable';
 export * from './teleport';
 export * from './clicker';
 export * from './gamepad';
-export { PerfMonitor } from './perfMonitor';
-export type {
-  PerfMonitorProps,
-  PerformanceData,
-  GPUInfo,
-  NetworkInfo,
-  RapierInfo,
-} from './perfMonitor/types';

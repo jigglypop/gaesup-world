@@ -64,6 +64,7 @@ export default defineConfig(({ mode }) => {
         { find: '@utils', replacement: path.resolve(__dirname, 'src/core/utils') },
         { find: '@types', replacement: path.resolve(__dirname, 'src/core/types') },
         { find: '@motions', replacement: path.resolve(__dirname, 'src/core/motions') },
+        { find: '@debug', replacement: path.resolve(__dirname, 'src/core/debug') },
       ],
     },
     server: {

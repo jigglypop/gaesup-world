@@ -198,23 +198,18 @@
   color: #f08;
 }
 
-.perf-monitor-webgl-title {
-  font-size: 9px;
-  color: #8ff;
-}
-
 .perf-monitor-memory-value {
-  color: #ff8;
-}
-
-.perf-monitor-memory-usage {
-  color: #80f;
-}
-
-.perf-monitor-webgl-metrics {
   color: #0f8;
 }
 
+.perf-monitor-memory-usage {
+  color: #fa0;
+}
+
+.perf-monitor-webgl-metrics {
+  font-size: 8px;
+}
+
 .perf-monitor-webgl-calls {
-  color: #ff0;
+  color: #08f;
 } 

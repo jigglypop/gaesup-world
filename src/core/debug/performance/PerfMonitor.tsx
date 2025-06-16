@@ -98,7 +98,7 @@ export function PerfMonitor({
       }
     }
 
-    if (enableNetworkInfo && !networkInfoRef.current && 'connection' in navigator) {
+    if (enableNetworkInfo && !networkInfoRef.current) {
       const connection = (navigator as any).connection;
       if (connection) {
         networkInfoRef.current = {
@@ -108,22 +108,9 @@ export function PerfMonitor({
           rtt: connection.rtt || 0,
           saveData: connection.saveData || false,
         };
-
-        const updateNetworkInfo = () => {
-          networkInfoRef.current = {
-            type: connection.type || 'unknown',
-            effectiveType: connection.effectiveType || 'unknown',
-            downlink: connection.downlink || 0,
-            rtt: connection.rtt || 0,
-            saveData: connection.saveData || false,
-          };
-        };
-
-        connection.addEventListener('change', updateNetworkInfo);
-        return () => connection.removeEventListener('change', updateNetworkInfo);
       }
     }
-  }, [enableGPUInfo, enableNetworkInfo, gl]);
+  }, [gl, enableGPUInfo, enableNetworkInfo]);
 
   useFrame(() => {
     frameCountRef.current++;
@@ -222,46 +209,50 @@ export function PerfMonitor({
   }, [visible]);
 
   useEffect(() => {
-    if (!visible || !containerRef.current) return;
+    if (!containerRef.current || !visible) return;
 
     const container = containerRef.current;
     container.className = `perf-monitor-container advanced ${position}`;
-    container.style.zIndex = String(zIndex);
+    container.style.zIndex = zIndex.toString();
 
     const getFpsColor = (fps: number) => {
       if (fps >= 55) return '#00ff88';
-      if (fps >= 30) return '#ffdd00';
+      if (fps >= 30) return '#ffaa00';
       return '#ff4444';
     };
 
     const getMemoryColor = (percentage: number) => {
-      if (percentage < 50) return '#00ff88';
-      if (percentage < 80) return '#ffdd00';
+      if (percentage < 60) return '#00ff88';
+      if (percentage < 80) return '#ffaa00';
       return '#ff4444';
     };
 
-    const frameTimeColor =
-      perfData.frame.frameTime <= 16.67
-        ? '#00ff88'
-        : perfData.frame.frameTime <= 33.33
-          ? '#ffdd00'
-          : '#ff4444';
+    const frameTimeColor = perfData.frame.frameTime < 20 ? '#00ff88' : '#ffaa00';
 
-    const createSparkline = (data: number[]) => {
-      if (data.length < 2) return '';
-      const max = Math.max(...data);
-      const min = Math.min(...data);
-      const range = max - min || 1;
+    const fpsSparkline = perfData.frame.frameTimes
+      .slice(-30)
+      .map((time) => {
+        const fps = 1000 / time;
+        const height = Math.max(2, Math.min(16, (fps / 60) * 16));
+        const color = getFpsColor(fps);
+        return `<div class="sparkline-bar" style="height: ${height}px; background: ${color};"></div>`;
+      })
+      .join('');
 
-      return data
-        .map((value, index) => {
-          const height = ((value - min) / range) * 15 + 1;
-          return `<div class="sparkline-bar" style="height: ${height}px;"></div>`;
-        })
-        .join('');
+    const exportData = () => {
+      const data = {
+        performance: perfData,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `performance-data-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
     };
-
-    const fpsSparkline = createSparkline(fpsHistoryRef.current.slice(-20));
 
     container.innerHTML = `
       <div class="perf-monitor-header">
@@ -310,11 +301,11 @@ export function PerfMonitor({
       <div class="perf-monitor-section webgl-section">
         <div class="section-title">🎮 WebGL</div>
         <div class="metric-grid">
-          <div>Tex: <span class="metric-value">${perfData.webgl.textures}</span></div>
-          <div>Geo: <span class="metric-value">${perfData.webgl.geometries}</span></div>
-          <div>Prog: <span class="metric-value">${perfData.webgl.programs}</span></div>
-          <div>Calls: <span class="metric-value">${perfData.webgl.drawCalls}</span></div>
-          <div>Tri: <span class="metric-value">${(perfData.webgl.triangles / 1000).toFixed(1)}k</span></div>
+          <div>Textures: <span class="metric-value">${perfData.webgl.textures}</span></div>
+          <div>Geometries: <span class="metric-value">${perfData.webgl.geometries}</span></div>
+          <div>Programs: <span class="metric-value">${perfData.webgl.programs}</span></div>
+          <div>Draw Calls: <span class="metric-value">${perfData.webgl.drawCalls}</span></div>
+          <div>Triangles: <span class="metric-value">${perfData.webgl.triangles}</span></div>
           <div>Lines: <span class="metric-value">${perfData.webgl.lines}</span></div>
         </div>
       </div>
@@ -323,18 +314,18 @@ export function PerfMonitor({
         perfData.gpu
           ? `
         <div class="perf-monitor-section gpu-section">
-          <div class="section-title">🎯 GPU</div>
+          <div class="section-title">🔧 GPU</div>
           <div class="metric-row small">
             <span class="metric-label">Vendor:</span>
-            <span class="metric-value-small">${perfData.gpu.vendor.split(' ')[0]}</span>
+            <span class="metric-value-small">${perfData.gpu.vendor.substring(0, 15)}</span>
           </div>
           <div class="metric-row small">
-            <span class="metric-label">MaxTex:</span>
+            <span class="metric-label">Device:</span>
+            <span class="metric-value-small">${perfData.gpu.renderer.substring(0, 15)}</span>
+          </div>
+          <div class="metric-row small">
+            <span class="metric-label">Max Tex:</span>
             <span class="metric-value">${perfData.gpu.maxTextures}</span>
-          </div>
-          <div class="metric-row small">
-            <span class="metric-label">TexSize:</span>
-            <span class="metric-value">${perfData.gpu.maxTextureSize}</span>
           </div>
         </div>
       `

@@ -1,6 +1,7 @@
-import { Rideable, useGaesupContext, V3 } from '../../../src';
-import { RideableUI } from '../../../src/core/component/rideable';
+import { V3 } from '@/core/utils';
+import { Rideable, RideableUI } from '../../../src/core/component/rideable';
 import { S3 } from '../../config/constants';
+import { useGaesupContext } from '@/core/stores/gaesupStore';
 
 export function RideableVehicles() {
   return (

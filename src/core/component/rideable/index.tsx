@@ -1,4 +1,3 @@
-'use client';
 import { useEffect } from 'react';
 import { PassiveAirplane } from '../passive/airplane';
 import { PassiveVehicle } from '../passive/vehicle';

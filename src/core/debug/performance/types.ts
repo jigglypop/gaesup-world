@@ -80,3 +80,43 @@ export interface PerformanceWithMemory extends Performance {
     jsHeapSizeLimit: number;
   };
 }
+
+export interface PerformanceMetrics {
+  fps: {
+    current: number;
+    average: number;
+    min: number;
+    max: number;
+    history: number[];
+  };
+  frameTime: {
+    current: number;
+    average: number;
+    p95: number;
+    p99: number;
+    history: number[];
+  };
+  memory: {
+    used: number;
+    total: number;
+    limit: number;
+    percentage: number;
+    gcEvents: number;
+  };
+  cpu: {
+    mainThread: number;
+    worker: number;
+    idle: number;
+  };
+  gpu: {
+    vendor: string;
+    renderer: string;
+    memory?: number;
+    textureMemory?: number;
+  };
+  network: {
+    rtt: number;
+    bandwidth: number;
+    effectiveType: string;
+  };
+}
