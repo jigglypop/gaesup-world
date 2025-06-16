@@ -23,3 +23,4 @@ export interface ClickerOptionSlice {
   clickerOption: ClickerOptionState;
   setClickerOption: (update: Partial<ClickerOptionState>) => void;
 }
+ 

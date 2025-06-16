@@ -13,7 +13,7 @@ import { InputSlice, createInputSlice } from './slices/input';
 import { SizesSlice, createSizesSlice } from './slices/sizes';
 import { AnimationSlice, createAnimationSlice } from './slices/animation';
 
-export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
+export const gaesupWorldDefault = {
   activeState: {
     position: new THREE.Vector3(0, 5, 5),
     velocity: new THREE.Vector3(),
@@ -72,12 +72,6 @@ export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
   },
   rideable: {},
   sizes: {},
-  block: {
-    camera: false,
-    control: false,
-    animation: false,
-    scroll: true,
-  },
   callbacks: {
     onReady: () => {},
     onFrame: () => {},
@@ -122,14 +116,7 @@ export const useGaesupStore = create<StoreState>()(
 
       updateState: (updates: Partial<StoreState>) => {
         set((state: StoreState) => {
-          const newState = { ...state };
-          Object.keys(updates).forEach((key) => {
-            const typedKey = key as keyof StoreState;
-            if (updates[typedKey] !== undefined) {
-              (newState as any)[typedKey] = updates[typedKey];
-            }
-          });
-          return newState;
+          return { ...state, ...updates };
         });
       },
 
