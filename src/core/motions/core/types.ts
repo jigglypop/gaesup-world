@@ -1,22 +1,11 @@
-import { gaesupDisptachType, gaesupWorldContextType } from '../../types/core';
-import { StoreState } from '../../stores/gaesupStore';
-import { PhysicsBridgeData } from '../../../types';
-import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
+import { RapierRigidBody } from '@react-three/rapier';
+import { BaseCallbacks, BaseRefs, BaseState } from '../../../types/common';
+import { GaesupWorldState, StoreState } from '../../../stores/types';
 
-export interface StoreBridgeData {
-  dispatch: gaesupDisptachType;
-  get: () => StoreState;
-  set: (
-    partial:
-      | StoreState
-      | Partial<StoreState>
-      | ((state: StoreState) => StoreState | Partial<StoreState>),
-    replace?: boolean | undefined,
-  ) => void;
-  worldContext: Partial<gaesupWorldContextType>;
-  setKeyboard: StoreState['setKeyboard'];
-  setPointer: StoreState['setPointer'];
+export interface PhysicsBridgeData {
+  update: (delta: number) => void;
+  state: BaseState<PhysicsLayerStatus>;
 }
 
 export interface PhysicsLayerProps {
@@ -31,33 +20,7 @@ export interface PhysicsLayerStatus {
   isPaused: boolean;
 }
 
-export interface PhysicsStatusResult {
-  isReady: boolean;
-  error: string | null;
-  layerStatus: PhysicsLayerStatus;
-  rawData: {
-    inputSystem: any;
-    urls: any;
-    block: any;
-    worldContext: any;
-    controllerContext: any;
-    worldDispatch: any;
-  };
-}
-
-export interface PhysicsResult extends PhysicsStatusResult {
-  bridgeRef: React.RefObject<PhysicsBridgeData>;
-}
-
-export type PhysicsConnectorType = {
-  (state: StoreState): (delta: number) => void;
-};
-
-export type PhysicsConnectors = {
-  [key: string]: PhysicsConnectorType;
-};
-
-export type getPhysicsState = {
+export interface PhysicsState {
   rigidBody: RapierRigidBody;
   outerGroup: THREE.Group;
   innerGroup: THREE.Group;
@@ -67,4 +30,23 @@ export type getPhysicsState = {
     leftward: boolean;
     rightward: boolean;
   };
-};
+}
+
+export type PhysicsConnector = (state: StoreState) => (delta: number) => void;
+
+export type PhysicsConnectors = Record<string, PhysicsConnector>;
+
+export interface PhysicsStatus extends BaseState<PhysicsLayerStatus> {
+  rawData: {
+    inputSystem: unknown;
+    urls: unknown;
+    block: unknown;
+    worldContext: Partial<GaesupWorldState>;
+    controllerContext: unknown;
+    worldDispatch: (action: { type: string; payload?: unknown }) => void;
+  };
+}
+
+export interface PhysicsResult extends PhysicsStatus {
+  bridgeRef: React.RefObject<PhysicsBridgeData>;
+}

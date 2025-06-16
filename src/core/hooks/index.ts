@@ -5,3 +5,4 @@ export * from './useMinimap';
 export * from './useRideable';
 export * from './useGaesupController';
 export * from './useUnifiedFrame';
+export * from './useAnimationPlayer';

@@ -1,15 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { shallow } from 'zustand/shallow';
 import { useGaesupStore } from '@stores/gaesupStore';
-
-export interface AnimationActions {
-  [key: string]: {
-    fadeOut: (duration: number) => any;
-    reset: () => any;
-    fadeIn: (duration: number) => any;
-    play: () => any;
-  } | null;
-}
+import { AnimationActions } from './types';
 
 export function useAnimationPlayer(actions: AnimationActions | undefined, active: boolean) {
   const states = useGaesupStore((state) => state.states, shallow);
@@ -39,7 +31,6 @@ export function useAnimationPlayer(actions: AnimationActions | undefined, active
     if (currentAction) {
       currentAction.reset().fadeIn(0.2).play();
     }
-
     previousTag.current = activeAnimation;
   }, [activeAnimation, actions, active]);
 }

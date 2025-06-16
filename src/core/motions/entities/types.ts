@@ -1,61 +1,60 @@
-import { RigidBodyTypeString } from '@react-three/rapier';
+import { RigidBodyProps, RigidBodyTypeString } from '@react-three/rapier';
 import * as THREE from 'three';
-import { RapierCollider } from '@react-three/rapier';
+import { RapierCollider, CollisionPayload } from '@react-three/rapier';
 import { controllerInnerType, GroundRayType } from '../../component/types';
 import { ComponentType, ReactNode, RefObject } from 'react';
+import { BaseCallbacks, BaseRefs, Position3D, Rotation3D } from '../../../types/common';
 
-export type PartsType = {
+export interface Part {
   url: string;
   color?: string;
-};
+}
 
-export type setGroundRayType = {
-  groundRay: GroundRayType;
+export interface GroundRay {
+  origin: THREE.Vector3;
+  direction: THREE.Vector3;
+  length: number;
+}
+
+export interface SetGroundRay {
+  groundRay: GroundRay;
   length: number;
   colliderRef: RefObject<RapierCollider>;
-};
+}
 
-export type InnerGroupRefType = {
+export interface InnerGroupRef {
   children?: React.ReactNode;
   objectNode: THREE.Object3D;
-  animationRef: RefObject<THREE.Object3D<THREE.Object3DEventMap>>;
-  nodes: {
-    [name: string]: THREE.Object3D<THREE.Object3DEventMap>;
-  };
+  animationRef: RefObject<THREE.Object3D>;
+  nodes: Record<string, THREE.Object3D>;
   url?: string;
   skeleton?: THREE.Skeleton | null;
   isActive?: boolean;
   ridingUrl?: string;
   offset?: THREE.Vector3;
-  parts?: PartsType;
+  parts?: Part;
   isRiderOn?: boolean;
   enableRiding?: boolean;
-};
+}
 
-export interface PhysicsEntityProps {
+export interface PhysicsEntityProps extends BaseCallbacks {
   url: string;
   name?: string;
-  position?: THREE.Vector3;
-  rotation?: THREE.Euler;
+  position?: Position3D;
+  rotation?: Rotation3D;
   isActive: boolean;
   componentType: ComponentType;
   rigidbodyType?: RigidBodyTypeString;
   groundRay?: THREE.Ray;
-  onAnimate?: () => void;
-  onFrame?: () => void;
-  onReady?: () => void;
-  onDestory?: () => void;
-  rigidBodyProps?: any;
-  parts?: Array<{ url: string; color?: string }>;
-  outerGroupRef: RefObject<THREE.Group>;
-  innerGroupRef: RefObject<THREE.Group>;
-  colliderRef: RefObject<RapierCollider>;
+  rigidBodyProps?: RigidBodyProps;
+  parts?: Part[];
+  refs: BaseRefs;
   children?: ReactNode;
-  userData?: any;
+  userData?: Record<string, unknown>;
   sensor?: boolean;
-  onIntersectionEnter?: (payload: any) => Promise<void> | void;
-  onIntersectionExit?: (payload: any) => Promise<void> | void;
-  onCollisionEnter?: (payload: any) => Promise<void> | void;
+  onIntersectionEnter?: (payload: CollisionPayload) => void;
+  onIntersectionExit?: (payload: CollisionPayload) => void;
+  onCollisionEnter?: (payload: CollisionPayload) => void;
   isNotColliding?: boolean;
   isRiderOn?: boolean;
   enableRiding?: boolean;
@@ -65,7 +64,7 @@ export interface PhysicsEntityProps {
 }
 
 export interface ModelRendererProps {
-  nodes: { [name: string]: THREE.Object3D };
+  nodes: Record<string, THREE.Object3D>;
   color?: string;
   skeleton?: THREE.Skeleton | null;
   url: string;
@@ -81,13 +80,13 @@ export interface PartsGroupRefProps {
   skeleton?: THREE.Skeleton | null;
 }
 
-export interface riderRefType {
+export interface RiderRef {
   url: string;
   children?: React.ReactNode;
   offset?: THREE.Vector3;
 }
 
 export interface EntityControllerProps {
-  props: controllerInnerType;
+  props: unknown;
   children?: React.ReactNode;
 }

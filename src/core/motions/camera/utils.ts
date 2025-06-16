@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
-import { CameraOptionType } from '../../types';
+import { CameraOptionType } from '../../component/types';
+import { CameraBounds, CameraConstants, CollisionCheckResult, Obstacle } from './types';
 
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
 const tempQuaternion = new THREE.Quaternion();
 
-export const CAMERA_CONSTANTS = {
+export const CAMERA_CONSTANTS: CameraConstants = {
   THROTTLE_MS: 16,
   POSITION_THRESHOLD: 0.001,
   TARGET_THRESHOLD: 0.001,
@@ -92,16 +93,16 @@ export const cameraUtils = {
     to: THREE.Vector3,
     scene: THREE.Scene,
     radius: number = 0.5,
-  ): { safe: boolean; position: THREE.Vector3; obstacles: any[] } => {
+  ): CollisionCheckResult => {
     const direction = new THREE.Vector3().subVectors(to, from).normalize();
     const distance = from.distanceTo(to);
     const raycaster = new THREE.Raycaster(from, direction, 0, distance);
 
-    const obstacles: any[] = [];
+    const obstacles: Obstacle[] = [];
 
     scene.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return;
-      if (object.userData?.intangible) return;
+      if (object.userData['intangible']) return;
       if (!object.geometry?.boundingSphere) return;
 
       const intersects = raycaster.intersectObject(object, false);
@@ -160,14 +161,7 @@ export const cameraUtils = {
   calculateBounds: (
     center: THREE.Vector3,
     radius: number,
-    bounds?: {
-      minX?: number;
-      maxX?: number;
-      minY?: number;
-      maxY?: number;
-      minZ?: number;
-      maxZ?: number;
-    },
+    bounds?: CameraBounds,
   ): THREE.Vector3 => {
     if (!bounds) return center;
     const x = bounds.minX !== undefined ? Math.max(bounds.minX, center.x) : center.x;
@@ -194,9 +188,13 @@ export const cameraUtils = {
     camera.updateProjectionMatrix();
   },
 
-  clampPosition: (position: THREE.Vector3, bounds: CameraOptionType['bounds']): THREE.Vector3 => {
+  clampPosition: (position: THREE.Vector3, bounds?: CameraBounds): THREE.Vector3 => {
     if (bounds) {
-      position.y = cameraUtils.clampValue(position.y, bounds.minY, bounds.maxY);
+      position.y = cameraUtils.clampValue(
+        position.y,
+        bounds.minY || -Infinity,
+        bounds.maxY || Infinity,
+      );
     }
     return position;
   },

@@ -18,14 +18,11 @@ import Camera from '../camera';
 export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
   (props, rigidBodyRef) => {
     const { size } = useGltfAndSize({ url: props.url || '' });
-
     const setGroundRay = useSetGroundRay();
     const worldContext = useGaesupContext();
     const cameraOption = useGaesupStore((state) => state.cameraOption);
-
     const { scene, animations } = useGLTF(props.url);
     const { actions, ref: animationRef } = useAnimations(animations);
-
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
     const skeleton = useMemo(() => {
       let skel: THREE.Skeleton | null = null;
