@@ -1,1 +1,0 @@
-export { AdvancedPerformanceExample } from './AdvancedPerformanceExample';

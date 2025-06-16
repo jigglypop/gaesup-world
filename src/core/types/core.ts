@@ -4,9 +4,9 @@ import * as THREE from 'three';
 import type { RefObject } from 'react';
 import type { RapierRigidBody, RapierCollider } from '@react-three/rapier';
 
-export type animationPropType = {
+export type AnimationPropType = {
   current: string;
-  animationNames: any;
+  animationNames: string;
   keyControl: {
     [key: string]: boolean;
   };
@@ -46,9 +46,9 @@ export type characterDebugType = {
   stopDamping?: number;
 };
 
-export interface airplaneType extends GroupProps, airplaneDebugType {}
-export interface vehicleType extends GroupProps, vehicleDebugType {}
-export interface characterType extends GroupProps, characterDebugType {}
+export interface airplaneType extends GroupProps, airplaneDebugType { }
+export interface vehicleType extends GroupProps, vehicleDebugType { }
+export interface characterType extends GroupProps, characterDebugType { }
 
 export interface ActiveState {
   position: THREE.Vector3;

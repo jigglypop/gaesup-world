@@ -1,11 +1,7 @@
 import { StateCreator } from 'zustand';
-import { CameraOptionType } from '../../types';
-import { V3 } from '../../utils/vector';
+import { CameraOptionSlice } from './types';
+import { V3 } from '../../../utils/vector';
 
-export interface CameraOptionSlice {
-  cameraOption: CameraOptionType;
-  setCameraOption: (update: Partial<CameraOptionType>) => void;
-}
 export const createCameraOptionSlice: StateCreator<CameraOptionSlice, [], [], CameraOptionSlice> = (
   set,
 ) => ({

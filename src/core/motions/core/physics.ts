@@ -14,7 +14,6 @@ export function usePhysics() {
   } = store;
   const { getSizesByUrls } = useGaesupGltf();
   const isReady = !!(inputSystem && urls && activeState && updateState);
-
   const dispatch = (payload: Partial<StoreState>) => {
     updateState(payload);
   };

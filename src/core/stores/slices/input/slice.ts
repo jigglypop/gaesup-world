@@ -1,13 +1,6 @@
 import { StateCreator } from 'zustand';
-import { KeyboardInputState, MouseInputState, inputState } from '../../../types';
-import { V3 } from '../../utils/vector';
-
-// Slice Interface
-export interface InputSlice {
-  input: inputState;
-  setKeyboard: (update: Partial<KeyboardInputState>) => void;
-  setPointer: (update: Partial<MouseInputState>) => void;
-}
+import { InputSlice } from './types';
+import { V3 } from '../../../utils/vector';
 
 export const createInputSlice: StateCreator<InputSlice, [], [], InputSlice> = (set, get) => ({
   input: {

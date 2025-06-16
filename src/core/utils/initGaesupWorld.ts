@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useGaesupStore, gaesupWorldDefault } from '../stores/gaesupStore';
 import { gaesupWorldPropsType } from '../component/types';
-import { initialClickerOptionState } from '../stores/slices/clickerOptionSlice';
+import { initialClickerOptionState } from '../stores/slices/clickerOption';
 
 export function initGaesupWorld(props: gaesupWorldPropsType) {
   const initializeState = useGaesupStore((state) => state.initializeState);

@@ -1,17 +1,5 @@
 import { StateCreator } from 'zustand';
-
-export interface UrlsState {
-  characterUrl: string | null;
-  vehicleUrl: string | null;
-  airplaneUrl: string | null;
-  wheelUrl: string | null;
-  ridingUrl: string | null;
-}
-
-export interface UrlsSlice {
-  urls: UrlsState;
-  setUrls: (update: Partial<UrlsState>) => void;
-}
+import { UrlsSlice } from './types';
 
 export const createUrlsSlice: StateCreator<UrlsSlice, [], [], UrlsSlice> = (set) => ({
   urls: {

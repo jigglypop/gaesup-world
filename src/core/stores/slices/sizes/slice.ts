@@ -1,12 +1,5 @@
 import { StateCreator } from 'zustand';
-import * as THREE from 'three';
-
-export type SizesType = Record<string, THREE.Vector3>;
-
-export interface SizesSlice {
-  sizes: SizesType;
-  setSizes: (update: (prev: SizesType) => SizesType) => void;
-}
+import { SizesSlice } from './types';
 
 export const createSizesSlice: StateCreator<SizesSlice, [], [], SizesSlice> = (set) => ({
   sizes: {},

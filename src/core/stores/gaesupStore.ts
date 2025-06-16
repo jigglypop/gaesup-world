@@ -2,16 +2,16 @@ import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import * as THREE from 'three';
 import { gaesupWorldContextType } from '../types/core';
-import { UrlsSlice, createUrlsSlice } from './slices/urlsSlice';
-import { ModeSlice, createModeSlice } from './slices/modeSlice';
-import { ClickerOptionSlice, createClickerOptionSlice } from './slices/clickerOptionSlice';
-import { BlockSlice, createBlockSlice } from './slices/blockSlice';
-import { CameraOptionSlice, createCameraOptionSlice } from './slices/cameraOptionSlice';
-import { CameraSlice, createCameraSlice } from './slices/cameraSlice';
-import { MinimapSlice, createMinimapSlice } from './slices/minimapSlice';
-import { InputSlice, createInputSlice } from './slices/inputSlice';
-import { SizesSlice, createSizesSlice } from './slices/sizesSlice';
-import { AnimationSlice, createAnimationSlice } from './slices/animationSlice';
+import { UrlsSlice, createUrlsSlice } from './slices/urls';
+import { ModeSlice, createModeSlice } from './slices/mode';
+import { ClickerOptionSlice, createClickerOptionSlice } from './slices/clickerOption';
+import { BlockSlice, createBlockSlice } from './slices/block';
+import { CameraOptionSlice, createCameraOptionSlice } from './slices/cameraOption';
+import { CameraSlice, createCameraSlice } from './slices/camera';
+import { MinimapSlice, createMinimapSlice } from './slices/minimap';
+import { InputSlice, createInputSlice } from './slices/input';
+import { SizesSlice, createSizesSlice } from './slices/sizes';
+import { AnimationSlice, createAnimationSlice } from './slices/animation';
 
 export const gaesupWorldDefault: Partial<gaesupWorldContextType> = {
   activeState: {
@@ -134,7 +134,10 @@ export const useGaesupStore = create<StoreState>()(
       },
 
       resetState: () => {
-        set({ ...gaesupWorldDefault } as StoreState);
+        set((state) => ({
+          ...state,
+          ...gaesupWorldDefault,
+        }));
       },
 
       initializeState: (initialState: Partial<StoreState>) => {

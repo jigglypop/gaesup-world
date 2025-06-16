@@ -2,18 +2,16 @@ import * as THREE from 'three';
 import { BaseAnimationState, BaseCallbacks, BaseController, BaseRefs } from '../types/common';
 import { ControllerPropsConfig, ResourceUrls } from '../utils/types';
 import { gaesupWorldContextType } from '../types/core';
-import {
-  AnimationSlice,
-  BlockSlice,
-  CameraOptionSlice,
-  CameraSlice,
-  ClickerOptionSlice,
-  InputSlice,
-  MinimapSlice,
-  ModeSlice,
-  SizesSlice,
-  UrlsSlice,
-} from './slices';
+import { AnimationSlice } from './slices/animation';
+import { BlockSlice } from './slices/block';
+import { CameraOptionSlice } from './slices/cameraOption';
+import { CameraSlice } from './slices/camera';
+import { ClickerOptionSlice } from './slices/clickerOption';
+import { InputSlice } from './slices/input';
+import { MinimapSlice } from './slices/minimap';
+import { ModeSlice } from './slices/mode';
+import { SizesSlice } from './slices/sizes';
+import { UrlsSlice } from './slices/urls';
 
 export type GaesupWorldMode = 'character' | 'vehicle' | 'airplane';
 

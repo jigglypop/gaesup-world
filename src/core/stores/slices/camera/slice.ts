@@ -1,6 +1,6 @@
 import { StateCreator } from 'zustand';
 import * as THREE from 'three';
-import { CameraState, CameraTransition } from '../../types';
+import { CameraSlice, CameraState } from './types';
 
 const defaultStates: CameraState[] = [
   {
@@ -36,18 +36,6 @@ const defaultStates: CameraState[] = [
 ];
 
 const initialStates = new Map<string, CameraState>(defaultStates.map((s) => [s.name, s]));
-
-export interface CameraSlice {
-  cameraStates: Map<string, CameraState>;
-  cameraTransitions: CameraTransition[];
-  currentCameraStateName: string;
-  cameraStateHistory: string[];
-  setCameraStates: (states: Map<string, CameraState>) => void;
-  setCameraTransitions: (transitions: CameraTransition[]) => void;
-  setCurrentCameraStateName: (name: string) => void;
-  setCameraStateHistory: (history: string[]) => void;
-  addCameraState: (name: string, state: CameraState) => void;
-}
 
 export const createCameraSlice: StateCreator<CameraSlice, [], [], CameraSlice> = (set) => ({
   cameraStates: initialStates,

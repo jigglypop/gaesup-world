@@ -7,4 +7,3 @@ export * from './component';
 export * from './error';
 export * from './motions';
 export * from './debug';
-export * from './examples';

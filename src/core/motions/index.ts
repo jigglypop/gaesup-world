@@ -3,11 +3,11 @@ import { usePhysics } from './core/physics';
 import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
 import { PhysicsCalcProps, PhysicsCalculationProps, PhysicsState } from './types';
 import { PhysicsEngine } from './core/Engine';
-import { SizesType } from '../stores/slices/sizesSlice';
+import { SizesType } from '../stores/slices/sizes';
 export { GaesupWorld } from '../component/GaesupWorld';
 export { GaesupController } from '../component/GaesupController';
 
-const updateInputState = (state: PhysicsState, input: any) => {
+const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps) => {
   const keyboardKeys: (keyof typeof state.keyboard)[] = [
     'forward',
     'backward',

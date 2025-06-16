@@ -1,20 +1,5 @@
 import { StateCreator } from 'zustand';
-import { ClickerOptionState } from '../../types/core';
-
-export interface ClickerOptionState {
-  isRun: boolean;
-  throttle: number;
-  autoStart: boolean;
-  track: boolean;
-  loop: boolean;
-  queue: Array<any>;
-  line: boolean;
-}
-
-export interface ClickerOptionSlice {
-  clickerOption: ClickerOptionState;
-  setClickerOption: (update: Partial<ClickerOptionState>) => void;
-}
+import { ClickerOptionSlice, ClickerOptionState } from './types';
 
 export const initialClickerOptionState: ClickerOptionState = {
   isRun: true,
