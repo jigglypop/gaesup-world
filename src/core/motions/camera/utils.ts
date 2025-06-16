@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
+import { CameraOptionType } from '../../types';
 
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
@@ -86,6 +87,48 @@ export const cameraUtils = {
     cameraUtils.smoothLookAt(camera, targetLookAt, speed * 0.8, deltaTime);
   },
 
+  improvedCollisionCheck: (
+    from: THREE.Vector3,
+    to: THREE.Vector3,
+    scene: THREE.Scene,
+    radius: number = 0.5,
+  ): { safe: boolean; position: THREE.Vector3; obstacles: any[] } => {
+    const direction = new THREE.Vector3().subVectors(to, from).normalize();
+    const distance = from.distanceTo(to);
+    const raycaster = new THREE.Raycaster(from, direction, 0, distance);
+
+    const obstacles: any[] = [];
+
+    scene.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      if (object.userData?.intangible) return;
+      if (!object.geometry?.boundingSphere) return;
+
+      const intersects = raycaster.intersectObject(object, false);
+      if (intersects.length > 0) {
+        obstacles.push({
+          object,
+          distance: intersects[0].distance,
+          point: intersects[0].point,
+        });
+      }
+    });
+
+    if (obstacles.length === 0) {
+      return { safe: true, position: to, obstacles: [] };
+    }
+
+    const nearestObstacle = obstacles.reduce((nearest, current) =>
+      current.distance < nearest.distance ? current : nearest,
+    );
+
+    const safePosition = from
+      .clone()
+      .add(direction.multiplyScalar(Math.max(0, nearestObstacle.distance - radius)));
+
+    return { safe: false, position: safePosition, obstacles };
+  },
+
   distanceSquared: (a: THREE.Vector3, b: THREE.Vector3): number => {
     return tempVector3.subVectors(a, b).lengthSq();
   },
@@ -142,36 +185,20 @@ export const cameraUtils = {
     return Math.atan(y / x) + (y >= 0 ? Math.PI : -Math.PI);
   },
 
-  updateFOV: (
-    camera: THREE.PerspectiveCamera,
-    targetFov: number,
-    lerpSpeed: number = CAMERA_CONSTANTS.DEFAULT_FOV_LERP,
-    minFov = CAMERA_CONSTANTS.MIN_FOV,
-    maxFov = CAMERA_CONSTANTS.MAX_FOV,
-  ): void => {
-    const clampedFov = cameraUtils.clampValue(targetFov, minFov, maxFov);
-    camera.fov = THREE.MathUtils.lerp(camera.fov, clampedFov, lerpSpeed);
+  updateFOV: (camera: THREE.PerspectiveCamera, targetFOV: number, speed?: number): void => {
+    if (speed && speed > 0) {
+      camera.fov = THREE.MathUtils.lerp(camera.fov, targetFOV, speed);
+    } else {
+      camera.fov = targetFOV;
+    }
     camera.updateProjectionMatrix();
   },
 
-  clampPosition: (
-    position: THREE.Vector3,
-    bounds?: {
-      minX?: number;
-      maxX?: number;
-      minY?: number;
-      maxY?: number;
-      minZ?: number;
-      maxZ?: number;
-    },
-  ): THREE.Vector3 => {
-    if (!bounds) return position;
-
-    const x = cameraUtils.clampValue(position.x, bounds.minX ?? -Infinity, bounds.maxX ?? Infinity);
-    const y = cameraUtils.clampValue(position.y, bounds.minY ?? -Infinity, bounds.maxY ?? Infinity);
-    const z = cameraUtils.clampValue(position.z, bounds.minZ ?? -Infinity, bounds.maxZ ?? Infinity);
-
-    return tempVector3.set(x, y, z);
+  clampPosition: (position: THREE.Vector3, bounds: CameraOptionType['bounds']): THREE.Vector3 => {
+    if (bounds) {
+      position.y = cameraUtils.clampValue(position.y, bounds.minY, bounds.maxY);
+    }
+    return position;
   },
 
   isPositionEqual: (a: THREE.Vector3, b: THREE.Vector3, threshold = 0.001): boolean => {
@@ -191,6 +218,21 @@ export const cameraUtils = {
       vector.set(0, 0, 0);
       cameraUtils.pool.vectors.push(vector);
     },
+  },
+
+  calculateSafeDistance: (
+    cameraPosition: THREE.Vector3,
+    targetPosition: THREE.Vector3,
+    minDistance: number,
+    maxDistance: number,
+  ): number => {
+    const currentDistance = cameraPosition.distanceTo(targetPosition);
+    return THREE.MathUtils.clamp(currentDistance, minDistance, maxDistance);
+  },
+
+  isPositionValid: (position: THREE.Vector3, bounds?: CameraOptionType['bounds']): boolean => {
+    if (!bounds) return true;
+    return position.y >= bounds.minY && position.y <= bounds.maxY;
   },
 };
 

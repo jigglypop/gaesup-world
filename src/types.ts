@@ -196,6 +196,10 @@ export type CameraOptionType = {
   fixedPosition?: THREE.Vector3;
   isoAngle?: number;
   rotation?: THREE.Euler;
+  mode?: 'fixed' | 'orbital' | 'smart' | 'follow';
+  followCharacterRotation?: boolean;
+  worldOffsetX?: number;
+  worldOffsetZ?: number;
 };
 
 export type RideableType = {

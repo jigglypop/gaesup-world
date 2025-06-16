@@ -7,13 +7,38 @@ const tempDirection = new THREE.Vector3();
 const tempCameraOffset = new THREE.Vector3();
 
 export class ChaseController extends BaseCameraController {
+  private fixedOffset = new THREE.Vector3(-15, 8, -15);
+  private smoothedOffset = new THREE.Vector3(-15, 8, -15);
+
   public calculateTargetPosition(
     activeState: ActiveStateType,
     camera: THREE.Camera,
     cameraOption: CameraOptionType,
   ): THREE.Vector3 {
-    const distance = Math.abs(cameraOption.xDistance);
-    const height = cameraOption.yDistance;
+    const distance = Math.abs(cameraOption.xDistance ?? 15);
+    const height = cameraOption.yDistance ?? 8;
+
+    if (!activeState.position) return camera.position;
+
+    if (cameraOption.mode === 'fixed') {
+      this.fixedOffset.set(
+        -(cameraOption.xDistance ?? 15),
+        height,
+        -(cameraOption.zDistance ?? 15),
+      );
+      return this.tempVector.copy(activeState.position).add(this.fixedOffset);
+    }
+
+    if (cameraOption.mode === 'smart' && activeState.velocity) {
+      const velocity = activeState.velocity;
+      if (velocity.length() > 0.1) {
+        tempDirection.copy(velocity).normalize();
+        tempCameraOffset.copy(tempDirection).multiplyScalar(-distance);
+        tempCameraOffset.y = height;
+        this.smoothedOffset.lerp(tempCameraOffset, 0.1);
+      }
+      return this.tempVector.copy(activeState.position).add(this.smoothedOffset);
+    }
 
     if (activeState.direction && activeState.direction.length() > 0) {
       tempDirection.copy(activeState.direction).normalize();
@@ -26,10 +51,8 @@ export class ChaseController extends BaseCameraController {
     tempCameraOffset.copy(tempDirection).multiplyScalar(-distance);
     tempCameraOffset.y = height;
 
-    if (!activeState.position) return camera.position;
     const targetPosition = this.tempVector.copy(activeState.position).add(tempCameraOffset);
 
-    // Clamp position
     if (cameraOption.bounds) {
       cameraUtils.clampPosition(targetPosition, cameraOption.bounds);
     }

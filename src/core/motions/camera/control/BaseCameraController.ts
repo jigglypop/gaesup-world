@@ -5,6 +5,7 @@ import { cameraUtils } from '../utils';
 
 export abstract class BaseCameraController {
   protected tempVector = new THREE.Vector3();
+  private lastUpdateTime = 0;
 
   abstract calculateTargetPosition(
     activeState: ActiveStateType,
@@ -36,23 +37,23 @@ export abstract class BaseCameraController {
     } = prop;
     if (!state?.camera) return;
     if (!activeState) return;
+
     const targetPosition = this.calculateTargetPosition(activeState, state.camera, cameraOption);
-
-    if (this.shouldLerpPosition()) {
-      const lerpSpeed = cameraOption.smoothing?.position ?? 0.1;
-      state.camera.position.lerp(targetPosition, lerpSpeed);
-    } else {
-      state.camera.position.copy(targetPosition);
-    }
-
     const lookAtTarget = this.calculateLookAt(prop);
     const rotation = this.calculateRotation(prop);
     const deltaTime = state.delta || 0.016;
 
-    if (lookAtTarget) {
+    if (this.shouldLerpPosition() && lookAtTarget) {
       cameraUtils.preventCameraJitter(state.camera, targetPosition, lookAtTarget, 8.0, deltaTime);
-    } else if (rotation) {
-      state.camera.rotation.copy(rotation);
+    } else if (this.shouldLerpPosition()) {
+      const lerpSpeed = cameraOption.smoothing?.position ?? 0.1;
+      const factor = 1 - Math.exp(-8.0 * deltaTime);
+      state.camera.position.lerp(targetPosition, factor);
+    } else {
+      state.camera.position.copy(targetPosition);
+      if (rotation) {
+        state.camera.rotation.copy(rotation);
+      }
     }
 
     if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
@@ -60,8 +61,8 @@ export abstract class BaseCameraController {
     }
     if (state.camera instanceof THREE.OrthographicCamera) {
       const zoom = cameraOption.zoom || 1;
-      const lerpSpeed = cameraOption.smoothing?.position ?? 0.1;
-      state.camera.zoom = THREE.MathUtils.lerp(state.camera.zoom, zoom, lerpSpeed);
+      const factor = 1 - Math.exp(-8.0 * deltaTime);
+      state.camera.zoom = THREE.MathUtils.lerp(state.camera.zoom, zoom, factor);
       state.camera.updateProjectionMatrix();
     }
     this.afterUpdate(prop);
