@@ -34,9 +34,7 @@ export function useCameraState(blendManager: CameraBlendManager) {
       });
 
       setCurrentCameraStateName(stateName);
-
       if (immediate || !oldState) {
-        // No blend, just set the state
       } else {
         const transition = cameraTransitions.find(
           (t) => t.from === oldState.name && t.to === newState.name,

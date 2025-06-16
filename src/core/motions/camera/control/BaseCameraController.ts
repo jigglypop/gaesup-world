@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { ActiveStateType, CameraOptionType } from '../../../types';
 import { CameraPropType } from '../../types';
-import { V3 } from '@utils/vector';
 import { cameraUtils } from '../utils';
 
 export abstract class BaseCameraController {
@@ -9,8 +8,25 @@ export abstract class BaseCameraController {
 
   abstract calculateTargetPosition(
     activeState: ActiveStateType,
+    camera: THREE.Camera,
     cameraOption: CameraOptionType,
   ): THREE.Vector3;
+
+  calculateLookAt(prop: CameraPropType): THREE.Vector3 | undefined {
+    return prop.cameraOption.target;
+  }
+
+  calculateRotation(prop: CameraPropType): THREE.Euler | undefined {
+    return undefined;
+  }
+
+  shouldLerpPosition(): boolean {
+    return true;
+  }
+
+  afterUpdate(prop: CameraPropType): void {
+    // Can be implemented by subclasses
+  }
 
   update(prop: CameraPropType): void {
     const {
@@ -19,19 +35,35 @@ export abstract class BaseCameraController {
       cameraOption,
     } = prop;
     if (!state?.camera) return;
-
     if (!activeState) return;
+    const targetPosition = this.calculateTargetPosition(activeState, state.camera, cameraOption);
 
-    const targetPosition = this.calculateTargetPosition(activeState, cameraOption);
-    const lerpSpeed = cameraOption.smoothing?.position ?? 0.1;
+    if (this.shouldLerpPosition()) {
+      const lerpSpeed = cameraOption.smoothing?.position ?? 0.1;
+      state.camera.position.lerp(targetPosition, lerpSpeed);
+    } else {
+      state.camera.position.copy(targetPosition);
+    }
 
-    state.camera.position.lerp(targetPosition, lerpSpeed);
-    if (cameraOption.target) {
-      state.camera.lookAt(cameraOption.target);
+    const lookAtTarget = this.calculateLookAt(prop);
+    const rotation = this.calculateRotation(prop);
+    const deltaTime = state.delta || 0.016;
+
+    if (lookAtTarget) {
+      cameraUtils.preventCameraJitter(state.camera, targetPosition, lookAtTarget, 8.0, deltaTime);
+    } else if (rotation) {
+      state.camera.rotation.copy(rotation);
     }
 
     if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
       cameraUtils.updateFOV(state.camera, cameraOption.fov, cameraOption.smoothing?.fov);
     }
+    if (state.camera instanceof THREE.OrthographicCamera) {
+      const zoom = cameraOption.zoom || 1;
+      const lerpSpeed = cameraOption.smoothing?.position ?? 0.1;
+      state.camera.zoom = THREE.MathUtils.lerp(state.camera.zoom, zoom, lerpSpeed);
+      state.camera.updateProjectionMatrix();
+    }
+    this.afterUpdate(prop);
   }
 }

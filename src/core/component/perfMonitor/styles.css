@@ -1,14 +1,22 @@
 .perf-monitor-container {
-  font-family: Monaco, Consolas, monospace;
+  font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
   font-size: 10px;
-  background-color: rgba(0, 0, 0, 0.85);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.92), rgba(20, 20, 20, 0.95));
   color: #ffffff;
-  padding: 6px;
-  border-radius: 3px;
-  border: 1px solid #444;
-  min-width: 160px;
-  max-width: 180px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  backdrop-filter: blur(4px);
+  min-width: 180px;
+  max-width: 220px;
   position: absolute;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.perf-monitor-container.advanced {
+  min-width: 200px;
+  max-width: 240px;
+  font-size: 9px;
 }
 
 .perf-monitor-container.top-left {
@@ -29,14 +37,146 @@
 }
 
 .perf-monitor-header {
-  border-bottom: 1px solid #555;
-  padding-bottom: 2px;
-  margin-bottom: 4px;
-  font-size: 9px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+  font-size: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.perf-monitor-timestamp {
+  font-size: 8px;
+  color: #888;
+  font-weight: normal;
 }
 
 .perf-monitor-section {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  padding: 3px 0;
+}
+
+.section-title {
+  font-size: 9px;
+  font-weight: bold;
+  margin-bottom: 3px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 1px;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.metric-row.small {
+  font-size: 8px;
+}
+
+.metric-label {
+  color: #aaa;
+  min-width: 35px;
+}
+
+.metric-value {
+  color: #fff;
+  font-weight: bold;
+}
+
+.metric-value-small {
+  color: #ccc;
+  font-size: 8px;
+}
+
+.metric-minmax {
+  color: #666;
+  font-size: 8px;
+  margin-left: 4px;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  font-size: 8px;
+}
+
+.metric-grid > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 1px 0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.progress-fill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  border-radius: 2px;
+}
+
+.sparkline-container {
+  margin-top: 4px;
+  height: 18px;
+  display: flex;
+  align-items: end;
+}
+
+.sparkline {
+  display: flex;
+  align-items: end;
+  height: 16px;
+  width: 100%;
+  gap: 1px;
+}
+
+.sparkline-bar {
+  background: linear-gradient(to top, #00ff88, #88ffaa);
+  width: 2px;
+  min-height: 1px;
+  border-radius: 1px;
+  transition: height 0.1s ease;
+}
+
+.frame-section .metric-row:first-child .metric-value {
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.memory-section {
+  border-top: 1px solid #333;
+  padding-top: 4px;
+}
+
+.webgl-section {
+  border-top: 1px solid #333;
+  padding-top: 4px;
+}
+
+.gpu-section {
+  border-top: 1px solid #333;
+  padding-top: 4px;
+}
+
+.network-section {
+  border-top: 1px solid #333;
+  padding-top: 4px;
+}
+
+.physics-section {
+  border-top: 1px solid #333;
+  padding-top: 4px;
 }
 
 .perf-monitor-memory-section,

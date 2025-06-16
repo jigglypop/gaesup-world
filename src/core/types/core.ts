@@ -1,6 +1,8 @@
 import { GroupProps } from '@react-three/fiber';
 import { Dispatch } from 'react';
 import * as THREE from 'three';
+import type { RefObject } from 'react';
+import type { RapierRigidBody, RapierCollider } from '@react-three/rapier';
 
 // Context types (moved from context/types.ts)
 export type animationPropType = {
@@ -49,42 +51,6 @@ export interface airplaneType extends GroupProps, airplaneDebugType {}
 export interface vehicleType extends GroupProps, vehicleDebugType {}
 export interface characterType extends GroupProps, characterDebugType {}
 
-export type gaesupWorldContextType = {
-  activeState?: any;
-  mode?: any;
-  urls?: any;
-  states?: any;
-  control?: any;
-  refs?: any;
-  animationState?: any;
-  clickerOption?: any;
-  clicker?: any;
-  rideable?: { [key: string]: any };
-  sizes?: any;
-  block?: any;
-  airplane?: airplaneType;
-  vehicle?: vehicleType;
-  character?: characterType;
-  callbacks?: any;
-  controllerOptions?: {
-    lerp: {
-      cameraTurn: number;
-      cameraPosition: number;
-    };
-  };
-};
-
-export type gaesupDisptachType = Dispatch<{
-  type: string;
-  payload?: Partial<gaesupWorldContextType>;
-}>;
-
-export type AnimationAtomType = {
-  current: string;
-  default: string;
-  store: Record<string, any>;
-};
-
 export interface ActiveState {
   position: THREE.Vector3;
   velocity: THREE.Vector3;
@@ -94,22 +60,8 @@ export interface ActiveState {
   direction: THREE.Vector3;
 }
 
-export interface ModeState {
-  type: 'character' | 'vehicle' | 'airplane';
-  controller: 'clicker' | 'keyboard' | 'joystick' | 'gamepad';
-  control: 'chase' | 'firstPerson' | 'topDown';
-}
-
-export interface UrlsState {
-  characterUrl: string | null;
-  vehicleUrl: string | null;
-  airplaneUrl: string | null;
-  wheelUrl: string | null;
-  ridingUrl: string | null;
-}
-
 export interface GameStates {
-  rideableId: string | null;
+  rideableId: string;
   isMoving: boolean;
   isNotMoving: boolean;
   isOnTheGround: boolean;
@@ -123,31 +75,119 @@ export interface GameStates {
   isFalling: boolean;
   isRiding: boolean;
   canRide: boolean;
-  nearbyRideable: {
-    objectkey: string;
-    objectType: 'vehicle' | 'airplane';
-    name: string;
-  } | null;
+  nearbyRideable: THREE.Object3D | null;
   shouldEnterRideable: boolean;
   shouldExitRideable: boolean;
 }
 
+export interface ControllerRefs {
+  rigidBodyRef?: RefObject<RapierRigidBody>;
+  colliderRef?: RefObject<RapierCollider>;
+  outerGroupRef?: RefObject<THREE.Group>;
+  innerGroupRef?: RefObject<THREE.Group>;
+  animationRef?: RefObject<THREE.Group>;
+}
+
 export interface AnimationState {
-  character: {
-    current: string;
-    default: string;
-    store: Record<string, AnimationAtomType>;
+  current: string;
+  default: string;
+  store: Record<string, THREE.AnimationAction>;
+}
+
+export interface EntityAnimationStates {
+  character: AnimationState;
+  vehicle: AnimationState;
+  airplane: AnimationState;
+}
+
+export interface EntityCallbacks {
+  onReady?: () => void;
+  onFrame?: () => void;
+  onDestory?: () => void;
+  onAnimate?: () => void;
+}
+
+export interface ControllerOptions {
+  lerp: {
+    cameraTurn: number;
+    cameraPosition: number;
   };
-  vehicle: {
-    current: string;
-    default: string;
-    store: Record<string, AnimationAtomType>;
+}
+
+export type gaesupWorldContextType = {
+  activeState?: ActiveState;
+  mode?: {
+    type: 'character' | 'vehicle' | 'airplane';
+    subType?: string;
   };
-  airplane: {
-    current: string;
-    default: string;
-    store: Record<string, AnimationAtomType>;
+  urls?: {
+    characterUrl?: string;
+    vehicleUrl?: string;
+    airplaneUrl?: string;
+    wheelUrl?: string;
+    ridingUrl?: string;
   };
+  states?: GameStates;
+  control?: {
+    forward: boolean;
+    backward: boolean;
+    leftward: boolean;
+    rightward: boolean;
+  };
+  refs?: ControllerRefs;
+  animationState?: EntityAnimationStates;
+  clickerOption?: {
+    isRun: boolean;
+    track?: boolean;
+    queue?: Array<
+      THREE.Vector3 | { action: string; beforeCB: Function; afterCB: Function; time: number }
+    >;
+    loop?: boolean;
+  };
+  clicker?: {
+    point: THREE.Vector3;
+    angle: number;
+    isOn: boolean;
+    isRun: boolean;
+  };
+  rideable?: { [key: string]: THREE.Object3D };
+  sizes?: { [key: string]: THREE.Vector3 };
+  block?: {
+    camera: boolean;
+    control: boolean;
+    animation: boolean;
+    scroll: boolean;
+  };
+  airplane?: airplaneType;
+  vehicle?: vehicleType;
+  character?: characterType;
+  callbacks?: EntityCallbacks;
+  controllerOptions?: ControllerOptions;
+};
+
+export type gaesupDisptachType = Dispatch<{
+  type: string;
+  payload?: Partial<gaesupWorldContextType>;
+}>;
+
+export type AnimationAtomType = {
+  current: string;
+  default: string;
+  store: Record<string, any>;
+};
+
+export interface ModeState {
+  type: 'character' | 'vehicle' | 'airplane';
+  controller: 'clicker' | 'keyboard' | 'joystick' | 'gamepad';
+  control: 'chase' | 'firstPerson' | 'topDown';
+}
+
+export interface UrlsState {
+  characterUrl: string | null;
+  vehicleUrl: string | null;
+  airplaneUrl: string | null;
+  wheelUrl: string | null;
+  ridingUrl: string | null;
 }
 
 export type rideableState = Record<

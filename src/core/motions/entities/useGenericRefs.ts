@@ -7,7 +7,6 @@ export function useGenericRefs() {
   const innerGroupRef: RefObject<THREE.Group | null> = useRef(null);
   const rigidBodyRef: RefObject<RapierRigidBody | null> = useRef(null);
   const colliderRef: RefObject<RapierCollider | null> = useRef(null);
-
   return {
     outerGroupRef,
     innerGroupRef,

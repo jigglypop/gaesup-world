@@ -1,8 +1,8 @@
 import { Ref, forwardRef, useEffect } from 'react';
 import * as THREE from 'three';
 import RiderRef from './RiderRef';
-import { InnerGroupRefType } from './physicsTypes';
 import { ModelRenderer } from './PartsGroupRef';
+import { InnerGroupRefType } from './types';
 
 export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THREE.Group>) => {
   useEffect(() => {

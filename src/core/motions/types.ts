@@ -101,7 +101,7 @@ export const commonPhysics = {
 };
 
 export type CameraPropType = {
-  state: RootState;
+  state: RootState & { delta: number };
   worldContext: gaesupWorldContextType;
   cameraOption: CameraOptionType;
 };

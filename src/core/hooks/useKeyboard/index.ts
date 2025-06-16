@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useMemo } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { KEY_MAPPING } from '@constants/index';
 import { KeyboardOptions, KeyboardResult } from './types';
@@ -21,7 +21,8 @@ export function useKeyboard(options: KeyboardOptions = {}): KeyboardResult {
   const { preventDefault = true, enableClicker = true, customKeyMapping = {} } = options;
   const { clickerOption, setClickerOption, setKeyboard, setPointer } = useGaesupStore();
   const pressedKeys = useRef<Set<string>>(new Set());
-  const keyMapping = { ...KEY_MAPPING, ...customKeyMapping };
+
+  const keyMapping = useMemo(() => ({ ...KEY_MAPPING, ...customKeyMapping }), [customKeyMapping]);
 
   const pushKey = useCallback(
     (key: string, value: boolean): boolean => {
@@ -37,10 +38,10 @@ export function useKeyboard(options: KeyboardOptions = {}): KeyboardResult {
     [setKeyboard],
   );
 
-  const clearAllKeys = () => {
+  const clearAllKeys = useCallback(() => {
     pressedKeys.current.clear();
     setKeyboard(initialKeyState);
-  };
+  }, [setKeyboard]);
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent, isDown: boolean) => {
@@ -79,13 +80,13 @@ export function useKeyboard(options: KeyboardOptions = {}): KeyboardResult {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [
-    clickerOption,
-    setClickerOption,
-    setKeyboard,
-    setPointer,
     keyMapping,
     preventDefault,
     enableClicker,
+    setKeyboard,
+    setClickerOption,
+    setPointer,
+    clearAllKeys,
   ]);
 
   return {

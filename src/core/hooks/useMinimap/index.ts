@@ -98,16 +98,11 @@ export const useMinimap = (props: MinimapProps) => {
     gradient.addColorStop(1, 'rgba(10, 20, 30, 0.95)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, MINIMAP_SIZE_PX, MINIMAP_SIZE_PX);
-
-    // Apply rotation
     const displayRotation =
       blockRotate || mode.control === 'normal' ? 180 : (rotation * 180) / Math.PI + 180;
-
     ctx.translate(MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2);
     ctx.rotate((displayRotation * Math.PI) / 180);
     ctx.translate(-MINIMAP_SIZE_PX / 2, -MINIMAP_SIZE_PX / 2);
-
-    // Draw grid
     ctx.save();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.lineWidth = 1;
@@ -167,18 +162,12 @@ export const useMinimap = (props: MinimapProps) => {
         ctx.shadowBlur = 4;
         ctx.shadowOffsetX = 2;
         ctx.shadowOffsetY = 2;
-
-        // Object background
         ctx.fillStyle = 'rgba(0,0,0,0.3)';
         ctx.fillRect(x, y, width, height);
-
-        // Object border
         ctx.shadowColor = 'transparent';
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 1;
         ctx.strokeRect(x, y, width, height);
-
-        // Object text
         if (text) {
           ctx.save();
           ctx.fillStyle = 'white';

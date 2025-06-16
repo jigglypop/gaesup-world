@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useGaesupStore } from '@stores/gaesupStore';
-import { CameraOptionType, gaesupWorldContextType } from '../../../types';
+import { CameraOptionType } from '../../../types';
 import { CameraPropType } from '../../types';
 import { useUnifiedFrame } from '../../../hooks/useUnifiedFrame';
 import { useCameraState } from './useCameraState';
@@ -12,7 +12,6 @@ import { controllerMap } from '../control';
 export function useCameraFrame(
   prop: Omit<CameraPropType, 'cameraOption' | 'state'>,
   cameraOption: CameraOptionType,
-  setCameraOption: (update: React.SetStateAction<CameraOptionType>) => void,
 ) {
   const block = useGaesupStore((state) => state.block);
   const { cameraStates, currentCameraStateName } = useGaesupStore();
@@ -49,20 +48,23 @@ export function useCameraFrame(
         const isBlending = blendManagerRef.current.update(state.delta, state.camera);
         if (!isBlending) {
           const control =
-            prop.worldContext.mode?.control || currentCameraState?.type || 'thirdPerson';
+            currentCameraState?.type || prop.worldContext.mode?.control || 'thirdPerson';
 
           const controller =
             controllerMap[control as keyof typeof controllerMap] || controllerMap.thirdPerson;
 
-          controller(propWithFullContext);
+          controller.update(propWithFullContext);
 
-          if (state.scene && (propWithFullContext.worldContext.activeState as any)?.mesh) {
+          if (
+            state.scene &&
+            (propWithFullContext.worldContext.activeState as { mesh: THREE.Object3D })?.mesh
+          ) {
             const targetPos = state.camera.position.clone();
             const safePos = collisionSystemRef.current.checkCollision(
               state.camera.position,
               targetPos,
               state.scene,
-              [(propWithFullContext.worldContext.activeState as any).mesh],
+              [(propWithFullContext.worldContext.activeState as { mesh: THREE.Object3D }).mesh],
             );
             state.camera.position.copy(safePos);
           }

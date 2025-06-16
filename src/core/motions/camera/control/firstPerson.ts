@@ -10,24 +10,29 @@ const tempLookAt = new THREE.Vector3();
 export class FirstPersonController extends BaseCameraController {
   public calculateTargetPosition(
     activeState: ActiveStateType,
+    camera: THREE.Camera,
     cameraOption: CameraOptionType,
   ): THREE.Vector3 {
     const yOffset = cameraOption.yDistance ?? 1.6;
-    const characterPosition = activeState.position
-      ? V3(activeState.position.x, activeState.position.y, activeState.position.z)
-      : V3(0, 0, 0);
+    if (!activeState.position) return camera.position;
+    const characterPosition = V3(
+      activeState.position.x,
+      activeState.position.y,
+      activeState.position.z,
+    );
     return characterPosition.add(V3(0, yOffset, 0));
   }
 
-  private calculateLookAt(
-    cameraPosition: THREE.Vector3,
-    activeState: ActiveStateType,
-  ): THREE.Vector3 {
+  public override calculateLookAt(prop: CameraPropType): THREE.Vector3 {
+    const {
+      state,
+      worldContext: { activeState },
+    } = prop;
     tempForward.set(0, 0, -1);
     if (activeState.euler) {
       tempForward.applyEuler(activeState.euler);
     }
-    return tempLookAt.copy(cameraPosition).add(tempForward.multiplyScalar(10));
+    return tempLookAt.copy(state.camera.position).add(tempForward.multiplyScalar(10));
   }
 
   private applyHeadBobbing(
@@ -44,26 +49,12 @@ export class FirstPersonController extends BaseCameraController {
     }
   }
 
-  public override update(prop: CameraPropType): void {
+  public override afterUpdate(prop: CameraPropType): void {
     const {
       state,
       worldContext: { activeState },
-      cameraOption,
     } = prop;
-    if (!state?.camera || !activeState || !activeState.position) return;
-
-    const targetPosition = this.calculateTargetPosition(activeState, cameraOption);
-    const lerpSpeed = cameraOption.smoothing?.position;
-    state.camera.position.lerp(targetPosition, lerpSpeed);
-    const lookAt = this.calculateLookAt(state.camera.position, activeState);
-    state.camera.lookAt(lookAt);
-
+    if (!state?.camera) return;
     this.applyHeadBobbing(state.camera, activeState, Date.now() / 1000);
-
-    if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
-      const fovLerpSpeed = cameraOption.smoothing?.fov ?? 0.1;
-      state.camera.fov = THREE.MathUtils.lerp(state.camera.fov, cameraOption.fov, fovLerpSpeed);
-      state.camera.updateProjectionMatrix();
-    }
   }
 }

@@ -121,7 +121,16 @@ export const useGaesupStore = create<StoreState>()(
       ...createAnimationSlice(set, get, api),
 
       updateState: (updates: Partial<StoreState>) => {
-        set((state: StoreState) => ({ ...state, ...updates }));
+        set((state: StoreState) => {
+          const newState = { ...state };
+          Object.keys(updates).forEach((key) => {
+            const typedKey = key as keyof StoreState;
+            if (updates[typedKey] !== undefined) {
+              (newState as any)[typedKey] = updates[typedKey];
+            }
+          });
+          return newState;
+        });
       },
 
       resetState: () => {

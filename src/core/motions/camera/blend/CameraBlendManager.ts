@@ -49,7 +49,6 @@ export class CameraBlendManager {
   ): void {
     const fromState = this.createState(from, camera);
     const toState = this.createState(to, camera);
-
     const initialQuaternion = new THREE.Quaternion().setFromEuler(fromState.rotation).normalize();
     const targetQuaternion = new THREE.Quaternion().setFromEuler(toState.rotation).normalize();
     if (initialQuaternion.dot(targetQuaternion) < 0) {

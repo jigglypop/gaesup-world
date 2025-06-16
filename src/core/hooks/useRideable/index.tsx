@@ -1,7 +1,7 @@
 import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
 import { useEffect, useRef } from 'react';
 import { useGaesupContext, useGaesupDispatch, useGaesupStore } from '@stores/gaesupStore';
-import { RideStateChangeData, rideableType } from './types';
+import { rideableType } from './types';
 import { useGaesupGltf } from '@utils/gltf';
 
 export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'url' | 'wheelUrl'> =
@@ -13,7 +13,6 @@ export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'u
     visible: true,
   };
 
-// UI 요소를 생성하는 함수
 const createRideableUI = () => {
   const ui = document.createElement('div');
   ui.id = 'rideable-ui';

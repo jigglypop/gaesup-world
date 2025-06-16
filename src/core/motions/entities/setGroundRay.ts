@@ -1,13 +1,5 @@
-import { RapierCollider } from '@react-three/rapier';
-import { RefObject } from 'react';
 import * as THREE from 'three';
-import { GroundRayType } from '../../../types';
-
-type setGroundRayType = {
-  groundRay: GroundRayType;
-  length: number;
-  colliderRef: RefObject<RapierCollider>;
-};
+import { setGroundRayType } from './types';
 
 export function useSetGroundRay() {
   return ({ groundRay, length, colliderRef }: setGroundRayType) => {

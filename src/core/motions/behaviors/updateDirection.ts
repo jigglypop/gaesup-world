@@ -56,8 +56,7 @@ export class DirectionController {
     calcProp?: PhysicsCalcProps,
   ): void {
     const { activeState, keyboard, mouse, characterConfig } = physicsState;
-    const hasKeyboardInput =
-      keyboard.forward || keyboard.backward || keyboard.leftward || keyboard.rightward;
+
     const keyboardChanged =
       this.lastKeyboardState.forward !== keyboard.forward ||
       this.lastKeyboardState.backward !== keyboard.backward ||
@@ -66,8 +65,14 @@ export class DirectionController {
 
     if (mouse.isActive) {
       this.handleMouseDirection(activeState, mouse, characterConfig, calcProp);
-    } else if (hasKeyboardInput || keyboardChanged) {
-      this.handleKeyboardDirection(activeState, keyboard, characterConfig, controlMode);
+    } else if (keyboardChanged) {
+      const hasKeyboardInput =
+        keyboard.forward || keyboard.backward || keyboard.leftward || keyboard.rightward;
+
+      if (hasKeyboardInput) {
+        this.handleKeyboardDirection(activeState, keyboard, characterConfig, controlMode);
+      }
+
       this.lastKeyboardState = {
         forward: keyboard.forward,
         backward: keyboard.backward,

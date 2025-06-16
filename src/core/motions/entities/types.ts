@@ -1,8 +1,19 @@
 import { RigidBodyTypeString } from '@react-three/rapier';
 import * as THREE from 'three';
 import { RapierCollider } from '@react-three/rapier';
-import { controllerInnerType } from '../../component/types';
+import { controllerInnerType, GroundRayType } from '../../component/types';
 import { ComponentType, ReactNode, RefObject } from 'react';
+
+export type PartsType = {
+  url: string;
+  color?: string;
+};
+
+export type setGroundRayType = {
+  groundRay: GroundRayType;
+  length: number;
+  colliderRef: RefObject<RapierCollider>;
+};
 
 export type InnerGroupRefType = {
   children?: React.ReactNode;
@@ -29,7 +40,6 @@ export interface PhysicsEntityProps {
   isActive: boolean;
   componentType: ComponentType;
   rigidbodyType?: RigidBodyTypeString;
-  controllerOptions?: controllerOptionsType;
   groundRay?: THREE.Ray;
   onAnimate?: () => void;
   onFrame?: () => void;

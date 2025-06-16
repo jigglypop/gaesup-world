@@ -195,6 +195,7 @@ export type CameraOptionType = {
   shoulderOffset?: THREE.Vector3;
   fixedPosition?: THREE.Vector3;
   isoAngle?: number;
+  rotation?: THREE.Euler;
 };
 
 export type RideableType = {

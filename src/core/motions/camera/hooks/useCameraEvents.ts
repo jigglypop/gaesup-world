@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import * as THREE from 'three';
 import { useGaesupStore } from '@stores/gaesupStore';
-import { CameraControlMode, CameraOptionType } from '../../../types';
+import { CameraOptionType } from '../../../types';
 
 const modeOptions: Record<string, Partial<CameraOptionType>> = {
   firstPerson: {
@@ -15,10 +15,6 @@ const modeOptions: Record<string, Partial<CameraOptionType>> = {
   topDown: {
     yDistance: 10,
     smoothing: { position: 0.05, rotation: 0.05, fov: 0.1 },
-  },
-  shoulder: {
-    shoulderOffset: new THREE.Vector3(0.5, 1.5, -1),
-    smoothing: { position: 0.1, rotation: 0.12, fov: 0.1 },
   },
   sideScroll: {
     fixedPosition: new THREE.Vector3(0, 5, 15),
@@ -48,14 +44,8 @@ export function useCameraEvents() {
       const newOptions = {
         ...(Object.prototype.hasOwnProperty.call(modeOptions, mode.control)
           ? modeOptions[mode.control]
-          : modeOptions.thirdPerson),
+          : modeOptions['thirdPerson']),
       };
-      if (newOptions.smoothing && controllerOptions?.lerp) {
-        newOptions.smoothing.position =
-          controllerOptions.lerp.cameraPosition ?? newOptions.smoothing.position;
-        newOptions.smoothing.rotation =
-          controllerOptions.lerp.cameraTurn ?? newOptions.smoothing.rotation;
-      }
       setCameraOption({
         ...newOptions,
       });
