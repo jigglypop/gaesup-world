@@ -1,9 +1,9 @@
 export interface UrlsState {
-  characterUrl: string | null;
-  vehicleUrl: string | null;
-  airplaneUrl: string | null;
-  wheelUrl: string | null;
-  ridingUrl: string | null;
+  characterUrl: string;
+  vehicleUrl: string;
+  airplaneUrl: string;
+  wheelUrl: string;
+  ridingUrl: string;
 }
 
 export interface UrlsSlice {

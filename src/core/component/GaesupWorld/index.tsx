@@ -1,20 +1,31 @@
 import { Suspense, useEffect } from 'react';
-import { useGaesupGltf } from '@utils/gltf';
-import { gaesupWorldPropsType } from '../types';
-import { initGaesupWorld } from '@utils/initGaesupWorld';
+import { gaesupWorldPropsType } from './types';
 import { useGaesupStore } from '@stores/gaesupStore';
 
 export function GaesupWorld(props: gaesupWorldPropsType) {
-  initGaesupWorld(props);
-  const setCameraOption = useGaesupStore((state) => state.setCameraOption);
-  const { preloadSizes } = useGaesupGltf();
+  const setMode = useGaesupStore((state) => state.setMode);
+  const setUrls = useGaesupStore((state) => state.setUrls);
 
   useEffect(() => {
-    const urls = Object.values(props.urls || {}).filter(Boolean) as string[];
-    if (urls.length > 0) {
-      preloadSizes(urls);
+    if (props.mode) {
+      setMode(props.mode);
     }
-  }, [props.urls, preloadSizes]);
+  }, [props.mode, setMode]);
+
+  useEffect(() => {
+    if (props.urls) {
+      const updates: Record<string, string> = {};
+      if (props.urls.characterUrl) updates.characterUrl = props.urls.characterUrl;
+      if (props.urls.vehicleUrl) updates.vehicleUrl = props.urls.vehicleUrl;
+      if (props.urls.airplaneUrl) updates.airplaneUrl = props.urls.airplaneUrl;
+      if (props.urls.wheelUrl) updates.wheelUrl = props.urls.wheelUrl;
+      if (props.urls.ridingUrl) updates.ridingUrl = props.urls.ridingUrl;
+      if (Object.keys(updates).length > 0) {
+        setUrls(updates);
+      }
+    }
+  }, [props.urls, setUrls]);
+  const setCameraOption = useGaesupStore((state) => state.setCameraOption);
 
   useEffect(() => {
     if (props.cameraOption) {

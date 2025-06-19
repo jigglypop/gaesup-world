@@ -52,3 +52,4 @@ export interface CameraSlice {
   setCameraStateHistory: (history: string[]) => void;
   addCameraState: (name: string, state: CameraState) => void;
 }
+ 

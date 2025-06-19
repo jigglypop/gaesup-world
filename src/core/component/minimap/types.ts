@@ -12,6 +12,9 @@ export interface MinimapProps {
   minimapStyle?: CSSProperties;
   scaleStyle?: CSSProperties;
   plusMinusStyle?: CSSProperties;
+  size?: number;
+  zoom?: number;
+  updateInterval?: number;
 }
 
 export interface MinimapMarkerProps {
@@ -21,6 +24,15 @@ export interface MinimapMarkerProps {
   size: THREE.Vector3;
   children?: ReactElement;
   position?: THREE.Vector3;
+}
+
+export interface InternalMinimapMarkerProps {
+  id: string;
+  position: THREE.Vector3 | [number, number, number];
+  size?: THREE.Vector3 | [number, number, number];
+  text?: string;
+  type?: 'normal' | 'ground';
+  children?: React.ReactNode;
 }
 
 export interface MinimapObjectProps {

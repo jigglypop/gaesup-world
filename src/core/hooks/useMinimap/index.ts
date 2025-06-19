@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGaesupContext } from '../../stores/gaesupStore';
 import { MinimapProps } from '../../component/minimap/types';
+import * as THREE from 'three';
 
 const DEFAULT_SCALE = 5;
 const MIN_SCALE = 0.5;
@@ -20,8 +21,8 @@ export interface MinimapResult {
   isReady: boolean;
 }
 
-export const useMinimap = (props: MinimapProps) => {
-  const { mode, activeState } = useGaesupContext();
+export const useMinimap = (props: MinimapProps): MinimapResult => {
+  const { mode, activeState, minimap } = useGaesupContext();
 
   const {
     size = 200,
@@ -40,30 +41,30 @@ export const useMinimap = (props: MinimapProps) => {
   const isReady = !!(activeState?.position && props);
 
   const upscale = useCallback(() => {
-    if (blockRotate) return;
+    if (props.blockScale) return;
     setScale((prev) => Math.min(MAX_SCALE, prev + 0.1));
-  }, [blockRotate]);
+  }, [props.blockScale]);
 
   const downscale = useCallback(() => {
-    if (blockRotate) return;
+    if (props.blockScale) return;
     setScale((prev) => Math.max(MIN_SCALE, prev - 0.1));
-  }, [blockRotate]);
+  }, [props.blockScale]);
 
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
-      if (blockRotate) return;
+      if (props.blockScale) return;
       e.preventDefault();
       if (e.deltaY < 0) upscale();
       else downscale();
     },
-    [blockRotate, upscale, downscale],
+    [props.blockScale, upscale, downscale],
   );
 
   const setupWheelListener = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const handleNativeWheel = (e: WheelEvent) => {
-      if (blockRotate) return;
+      if (props.blockScale) return;
       e.preventDefault();
       if (e.deltaY < 0) upscale();
       else downscale();
@@ -72,11 +73,11 @@ export const useMinimap = (props: MinimapProps) => {
     return () => {
       canvas.removeEventListener('wheel', handleNativeWheel);
     };
-  }, [blockRotate, upscale, downscale]);
+  }, [props.blockScale, upscale, downscale]);
 
   const updateCanvas = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !activeState || !props) return;
+    if (!canvas || !activeState || !minimap) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const { position, euler } = activeState;
@@ -99,7 +100,7 @@ export const useMinimap = (props: MinimapProps) => {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, MINIMAP_SIZE_PX, MINIMAP_SIZE_PX);
     const displayRotation =
-      blockRotate || mode.control === 'normal' ? 180 : (rotation * 180) / Math.PI + 180;
+      blockRotate || mode?.control === 'normal' ? 180 : (rotation * 180) / Math.PI + 180;
     ctx.translate(MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2);
     ctx.rotate((displayRotation * Math.PI) / 180);
     ctx.translate(-MINIMAP_SIZE_PX / 2, -MINIMAP_SIZE_PX / 2);
@@ -116,7 +117,6 @@ export const useMinimap = (props: MinimapProps) => {
     }
     ctx.restore();
 
-    // Draw compass
     ctx.save();
     ctx.fillStyle = 'white';
     ctx.font = 'bold 16px sans-serif';
@@ -142,9 +142,8 @@ export const useMinimap = (props: MinimapProps) => {
     });
     ctx.restore();
 
-    // Draw objects
-    if (props && typeof props === 'object') {
-      Object.values(props).forEach((obj: any) => {
+    if (minimap && minimap.props) {
+      Object.values(minimap.props).forEach((obj) => {
         if (!obj?.center || !obj?.size) return;
 
         const { center, size, text } = obj;
@@ -157,7 +156,6 @@ export const useMinimap = (props: MinimapProps) => {
         const x = MINIMAP_SIZE_PX / 2 - posX - width / 2;
         const y = MINIMAP_SIZE_PX / 2 - posZ - height / 2;
 
-        // Object shadow
         ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
         ctx.shadowBlur = 4;
         ctx.shadowOffsetX = 2;
@@ -175,7 +173,7 @@ export const useMinimap = (props: MinimapProps) => {
           ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
           ctx.shadowBlur = 2;
           ctx.translate(x + width / 2, y + height / 2);
-          if (blockRotate || mode.control === 'normal') {
+          if (blockRotate || mode?.control === 'normal') {
             ctx.rotate(Math.PI);
           } else {
             ctx.rotate((-displayRotation * Math.PI) / 180);
@@ -189,7 +187,6 @@ export const useMinimap = (props: MinimapProps) => {
       });
     }
 
-    // Draw player avatar
     ctx.save();
     const avatarGradient = ctx.createRadialGradient(
       MINIMAP_SIZE_PX / 2,
@@ -208,7 +205,6 @@ export const useMinimap = (props: MinimapProps) => {
     ctx.arc(MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2, 12, 0, Math.PI * 2);
     ctx.fill();
 
-    // Player dot
     ctx.fillStyle = '#01fff7';
     ctx.shadowColor = '0 0 10px rgba(1,255,247,0.7)';
     ctx.shadowBlur = 8;
@@ -216,7 +212,6 @@ export const useMinimap = (props: MinimapProps) => {
     ctx.arc(MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2, 6, 0, Math.PI * 2);
     ctx.fill();
 
-    // Direction indicator
     ctx.shadowColor = 'transparent';
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.lineWidth = 2;
@@ -227,9 +222,8 @@ export const useMinimap = (props: MinimapProps) => {
 
     ctx.restore();
     ctx.restore();
-  }, [activeState, props, mode, scale, angle, blockRotate]);
+  }, [activeState, minimap, mode, scale, angle, blockRotate]);
 
-  // Update tracking and intervals
   const checkForUpdates = useCallback(() => {
     if (!activeState?.position) return;
 
@@ -237,6 +231,8 @@ export const useMinimap = (props: MinimapProps) => {
     const rotation = euler.y;
     const lastPos = lastPositionRef.current;
     const lastRotation = lastRotationRef.current;
+
+    if (!lastPos || !lastRotation) return;
 
     const positionChanged =
       Math.abs(position.x - lastPos.x) > UPDATE_THRESHOLD ||
@@ -251,7 +247,6 @@ export const useMinimap = (props: MinimapProps) => {
     }
   }, [activeState, updateCanvas]);
 
-  // Setup update intervals
   useEffect(() => {
     updateCanvas();
     const interval = setInterval(checkForUpdates, updateInterval);
@@ -261,7 +256,6 @@ export const useMinimap = (props: MinimapProps) => {
     };
   }, [updateCanvas, checkForUpdates, updateInterval]);
 
-  // Update on scale change
   useEffect(() => {
     updateCanvas();
   }, [scale, updateCanvas]);

@@ -59,3 +59,4 @@ export interface InputSlice {
   setKeyboard: (update: Partial<KeyboardInputState>) => void;
   setPointer: (update: Partial<MouseInputState>) => void;
 }
+ 

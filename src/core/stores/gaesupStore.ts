@@ -1,7 +1,5 @@
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
-import * as THREE from 'three';
-import { gaesupWorldContextType } from '../types/core';
 import { UrlsSlice, createUrlsSlice } from './slices/urls';
 import { ModeSlice, createModeSlice } from './slices/mode';
 import { ClickerOptionSlice, createClickerOptionSlice } from './slices/clickerOption';
@@ -12,77 +10,11 @@ import { MinimapSlice, createMinimapSlice } from './slices/minimap';
 import { InputSlice, createInputSlice } from './slices/input';
 import { SizesSlice, createSizesSlice } from './slices/sizes';
 import { AnimationSlice, createAnimationSlice } from './slices/animation';
+import { GameStatesSlice, createGameStatesSlice } from './slices/gameStates';
+import { RideableSlice, createRideableSlice } from './slices/rideable';
+import { ActiveStateSlice, createActiveStateSlice } from './slices/activeState';
 
-export const gaesupWorldDefault = {
-  activeState: {
-    position: new THREE.Vector3(0, 5, 5),
-    velocity: new THREE.Vector3(),
-    quat: new THREE.Quaternion(),
-    euler: new THREE.Euler(),
-    dir: new THREE.Vector3(),
-    direction: new THREE.Vector3(),
-  },
-  states: {
-    rideableId: '',
-    isMoving: false,
-    isNotMoving: false,
-    isOnTheGround: false,
-    isOnMoving: false,
-    isRotated: false,
-    isRunning: false,
-    isJumping: false,
-    enableRiding: false,
-    isRiderOn: false,
-    isLanding: false,
-    isFalling: false,
-    isRiding: false,
-    canRide: false,
-    nearbyRideable: null,
-    shouldEnterRideable: false,
-    shouldExitRideable: false,
-  },
-  clicker: {
-    point: new THREE.Vector3(0, 0, 0),
-    angle: Math.PI / 2,
-    isOn: false,
-    isRun: false,
-  },
-  control: {
-    forward: false,
-    backward: false,
-    leftward: false,
-    rightward: false,
-  },
-  animationState: {
-    character: {
-      current: 'idle',
-      default: 'idle',
-      store: {},
-    },
-    vehicle: {
-      current: 'idle',
-      default: 'idle',
-      store: {},
-    },
-    airplane: {
-      current: 'idle',
-      default: 'idle',
-      store: {},
-    },
-  },
-  rideable: {},
-  sizes: {},
-  callbacks: {
-    onReady: () => {},
-    onFrame: () => {},
-    onDestory: () => {},
-    onAnimate: () => {},
-  },
-  refs: {},
-};
-
-export type StoreState = gaesupWorldContextType &
-  UrlsSlice &
+export type StoreState = UrlsSlice &
   ModeSlice &
   ClickerOptionSlice &
   BlockSlice &
@@ -91,18 +23,14 @@ export type StoreState = gaesupWorldContextType &
   MinimapSlice &
   InputSlice &
   SizesSlice &
-  AnimationSlice & {
-    updateState: (updates: Partial<StoreState>) => void;
-    resetState: () => void;
-    initializeState: (initialState: Partial<StoreState>) => void;
-    setRefs: (refs: Partial<gaesupWorldContextType['refs']>) => void;
-    setStates: (states: Partial<gaesupWorldContextType['states']>) => void;
-  };
+  AnimationSlice &
+  GameStatesSlice &
+  RideableSlice &
+  ActiveStateSlice;
 
 export const useGaesupStore = create<StoreState>()(
   devtools(
     subscribeWithSelector((set, get, api) => ({
-      ...gaesupWorldDefault,
       ...createUrlsSlice(set, get, api),
       ...createModeSlice(set, get, api),
       ...createClickerOptionSlice(set, get, api),
@@ -113,36 +41,11 @@ export const useGaesupStore = create<StoreState>()(
       ...createInputSlice(set, get, api),
       ...createSizesSlice(set, get, api),
       ...createAnimationSlice(set, get, api),
-
+      ...createGameStatesSlice(set, get, api),
+      ...createRideableSlice(set, get, api),
+      ...createActiveStateSlice(set, get, api),
       updateState: (updates: Partial<StoreState>) => {
-        set((state: StoreState) => {
-          return { ...state, ...updates };
-        });
-      },
-
-      resetState: () => {
-        set((state) => ({
-          ...state,
-          ...gaesupWorldDefault,
-        }));
-      },
-
-      initializeState: (initialState: Partial<StoreState>) => {
-        set((state: StoreState) => ({ ...state, ...initialState }));
-      },
-
-      setRefs: (refs: Partial<gaesupWorldContextType['refs']>) => {
-        set((state: StoreState) => ({
-          ...state,
-          refs: { ...state.refs, ...refs },
-        }));
-      },
-
-      setStates: (states: Partial<gaesupWorldContextType['states']>) => {
-        set((state: StoreState) => ({
-          ...state,
-          states: { ...state.states, ...states },
-        }));
+        set((state) => ({ ...state, ...updates }));
       },
     })),
   ),
@@ -150,19 +53,38 @@ export const useGaesupStore = create<StoreState>()(
 
 export const useGaesupContext = () => {
   const store = useGaesupStore();
-  const { updateState, resetState, initializeState, ...state } = store;
-  return state as Partial<gaesupWorldContextType>;
+  return {
+    activeState: store.activeState,
+    mode: store.mode,
+    animationState: store.animationState,
+    states: store.states,
+    urls: store.urls,
+    clickerOption: store.clickerOption,
+    input: store.input,
+    rideable: store.rideable,
+    block: store.block,
+    cameraOption: store.cameraOption,
+  };
 };
 
 export const useGaesupDispatch = () => {
-  const updateState = useGaesupStore((state) => state.updateState);
-  return (action: { type: string; payload?: Partial<gaesupWorldContextType> }) => {
+  const store = useGaesupStore();
+  return (action: { type: string; payload?: any }) => {
     switch (action.type) {
-      case 'init':
-        updateState(action.payload || {});
+      case 'setMode':
+        if (action.payload && typeof action.payload === 'object') {
+          store.setMode(action.payload);
+        }
         break;
-      case 'update':
-        updateState(action.payload || {});
+      case 'setUrls':
+        if (action.payload && typeof action.payload === 'object') {
+          store.setUrls(action.payload);
+        }
+        break;
+      case 'setStates':
+        if (action.payload && typeof action.payload === 'object') {
+          store.setStates(action.payload);
+        }
         break;
       default:
         break;

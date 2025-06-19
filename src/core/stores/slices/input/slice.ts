@@ -1,6 +1,6 @@
 import { StateCreator } from 'zustand';
-import { InputSlice } from './types';
-import { V3 } from '../../../utils/vector';
+import { InputSlice, KeyboardInputState, MouseInputState } from './types';
+import * as THREE from 'three';
 
 export const createInputSlice: StateCreator<InputSlice, [], [], InputSlice> = (set, get) => ({
   input: {
@@ -18,8 +18,8 @@ export const createInputSlice: StateCreator<InputSlice, [], [], InputSlice> = (s
       escape: false,
     },
     pointer: {
-      target: V3(0, 0, 0),
-      angle: Math.PI / 2,
+      target: new THREE.Vector3(0, 0, 0),
+      angle: 0,
       isActive: false,
       shouldRun: false,
     },
@@ -30,27 +30,35 @@ export const createInputSlice: StateCreator<InputSlice, [], [], InputSlice> = (s
       buttons: {},
     },
     clickerOption: {
-      isRun: true,
+      isRun: false,
       throttle: 100,
       autoStart: false,
       track: false,
       loop: false,
       queue: [],
-      line: false,
+      line: true,
     },
   },
-  setKeyboard: (update) =>
+  setKeyboard: (update: Partial<KeyboardInputState>) => {
     set((state) => ({
       input: {
         ...state.input,
-        keyboard: { ...state.input.keyboard, ...update },
+        keyboard: {
+          ...state.input.keyboard,
+          ...update,
+        },
       },
-    })),
-  setPointer: (update) =>
+    }));
+  },
+  setPointer: (update: Partial<MouseInputState>) => {
     set((state) => ({
       input: {
         ...state.input,
-        pointer: { ...state.input.pointer, ...update },
+        pointer: {
+          ...state.input.pointer,
+          ...update,
+        },
       },
-    })),
+    }));
+  },
 });

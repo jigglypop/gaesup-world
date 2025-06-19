@@ -1,13 +1,18 @@
 import { StateCreator } from 'zustand';
-import { UrlsSlice } from './types';
+import { UrlsSlice, UrlsState } from './types';
+
+const initialUrlsState: UrlsState = {
+  characterUrl: '',
+  vehicleUrl: '',
+  airplaneUrl: '',
+  wheelUrl: '',
+  ridingUrl: '',
+};
 
 export const createUrlsSlice: StateCreator<UrlsSlice, [], [], UrlsSlice> = (set) => ({
-  urls: {
-    characterUrl: null,
-    vehicleUrl: null,
-    airplaneUrl: null,
-    wheelUrl: null,
-    ridingUrl: null,
-  },
-  setUrls: (update) => set((state) => ({ urls: { ...state.urls, ...update } })),
+  urls: initialUrlsState,
+  setUrls: (update) =>
+    set((state) => ({
+      urls: { ...state.urls, ...update },
+    })),
 });

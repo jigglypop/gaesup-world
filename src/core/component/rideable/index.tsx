@@ -8,32 +8,36 @@ import './styles.css';
 import React from 'react';
 
 export function RideableUI({ states }: RideableUIProps) {
-  const updateState = useGaesupStore((state) => state.updateState);
+  const mode = useGaesupStore((state) => state.mode);
+  const setMode = useGaesupStore((state) => state.setMode);
+  const setStates = useGaesupStore((state) => state.setStates);
+
+  if (!states) {
+    return null;
+  }
+
   const handleClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     e.stopPropagation();
     if (states.canRide && states.nearbyRideable) {
       const { objectkey, objectType } = states.nearbyRideable;
-      updateState({
-        mode: {
-          type: objectType,
-        },
-        states: {
-          rideableId: objectkey,
-          isRiding: true,
-          shouldEnterRideable: true,
-          nearbyRideable: null,
-        },
+      setMode({
+        type: objectType as 'character' | 'vehicle' | 'airplane',
+      });
+      setStates({
+        rideableId: objectkey,
+        isRiding: true,
+        shouldEnterRideable: true,
+        nearbyRideable: null,
+        canRide: false,
       });
     }
     if (states.isRiding) {
-      updateState({
-        mode: {
-          type: 'character',
-        },
-        states: {
-          shouldExitRideable: true,
-          isRiding: false,
-        },
+      setMode({
+        type: 'character',
+      });
+      setStates({
+        shouldExitRideable: true,
+        isRiding: false,
       });
     }
   };
@@ -49,14 +53,15 @@ export function RideableUI({ states }: RideableUIProps) {
 }
 
 export function Rideable(props: RideablePropType) {
-  const { states, rideable } = useGaesupStore();
+  const mode = useGaesupStore((state) => state.mode);
+  const rideable = useGaesupStore((state) => state.rideable);
   const { initRideable, onRideableNear, onRideableLeave, landing } = useRideable();
 
   useEffect(() => {
-    if (states?.isRiding && rideable?.[props.objectkey] && !rideable[props.objectkey].visible) {
+    if (mode.type !== 'character' && props.objectkey && rideable[props.objectkey]) {
       landing(props.objectkey);
     }
-  }, [states?.isRiding]);
+  }, [mode.type, props.objectkey, rideable, landing]);
 
   return (
     <>
@@ -75,7 +80,10 @@ export function Rideable(props: RideablePropType) {
             landing,
           }}
         >
-          <PassiveVehicle {...props} visible={!rideable[props.name]?.isOccupied} />
+          <PassiveVehicle
+            {...props}
+            visible={!rideable[props.name || props.objectkey]?.isOccupied}
+          />
         </group>
       )}
       {props.objectType === 'airplane' && (
@@ -93,7 +101,10 @@ export function Rideable(props: RideablePropType) {
             landing,
           }}
         >
-          <PassiveAirplane {...props} visible={!rideable[props.name]?.isOccupied} />
+          <PassiveAirplane
+            {...props}
+            visible={!rideable[props.name || props.objectkey]?.isOccupied}
+          />
         </group>
       )}
     </>

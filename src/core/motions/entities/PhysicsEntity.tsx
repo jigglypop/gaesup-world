@@ -11,7 +11,6 @@ import usePhysicsLoop from '../index';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
 import { useSetGroundRay } from './setGroundRay';
-import { initCallback } from '@utils/initCallback';
 import { PhysicsEntityProps } from './types';
 import Camera from '../camera';
 
@@ -64,17 +63,17 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
               if (Array.isArray(child.material)) {
                 child.material.forEach((material) => {
                   Object.keys(material).forEach((key) => {
-                    const prop = (material as any)[key];
-                    if (prop && prop.isTexture) {
+                    const prop = material[key];
+                    if (prop?.isTexture) {
                       prop.dispose();
                     }
                   });
                   material.dispose();
                 });
               } else if (child.material) {
-                const material = child.material as any;
+                const material = child.material;
                 Object.keys(material).forEach((key) => {
-                  if (material[key] && material[key].isTexture) {
+                  if (material[key]?.isTexture) {
                     material[key].dispose();
                   }
                 });
@@ -128,11 +127,14 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     }
 
     useAnimationPlayer(actions, true);
-    initCallback({
-      props,
-      actions,
-      componentType: props.componentType,
-    });
+    if (props.onReady) props.onReady();
+    if (props.onFrame) props.onFrame();
+    if (props.onAnimate && actions) props.onAnimate();
+    // initCallback({
+    //   props,
+    //   actions,
+    //   componentType: props.componentType,
+    // });
     const { nodes } = useGraph(clone);
     const objectNode = Object.values(nodes).find((node) => node.type === 'Object3D');
     const safeRotationY = props.rotation instanceof THREE.Euler ? props.rotation.y : 0;

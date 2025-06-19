@@ -46,9 +46,9 @@ export type characterDebugType = {
   stopDamping?: number;
 };
 
-export interface airplaneType extends GroupProps, airplaneDebugType { }
-export interface vehicleType extends GroupProps, vehicleDebugType { }
-export interface characterType extends GroupProps, characterDebugType { }
+export interface airplaneType extends GroupProps, airplaneDebugType {}
+export interface vehicleType extends GroupProps, vehicleDebugType {}
+export interface characterType extends GroupProps, characterDebugType {}
 
 export interface ActiveState {
   position: THREE.Vector3;
@@ -114,19 +114,10 @@ export interface ControllerOptions {
 }
 
 export type gaesupWorldContextType = {
-  activeState?: ActiveState;
-  mode?: {
-    type: 'character' | 'vehicle' | 'airplane';
-    subType?: string;
-  };
-  urls?: {
-    characterUrl?: string;
-    vehicleUrl?: string;
-    airplaneUrl?: string;
-    wheelUrl?: string;
-    ridingUrl?: string;
-  };
-  states?: GameStates;
+  activeState?: ActiveStateType;
+  mode?: ModeType;
+  urls?: ResourceUrlsType;
+  states?: GameStatesType;
   control?: {
     forward: boolean;
     backward: boolean;
@@ -172,15 +163,14 @@ export type gaesupDisptachType = Dispatch<{
 export interface ModeState {
   type: 'character' | 'vehicle' | 'airplane';
   controller: 'clicker' | 'keyboard' | 'joystick' | 'gamepad';
-  control: 'chase' | 'firstPerson' | 'topDown';
-}
-
-export interface UrlsState {
-  characterUrl: string | null;
-  vehicleUrl: string | null;
-  airplaneUrl: string | null;
-  wheelUrl: string | null;
-  ridingUrl: string | null;
+  control:
+    | 'chase'
+    | 'firstPerson'
+    | 'topDown'
+    | 'thirdPerson'
+    | 'fixed'
+    | 'isometric'
+    | 'sideScroll';
 }
 
 export type rideableState = Record<
@@ -243,4 +233,68 @@ export interface EventPayload {
   type: EventType;
   data: Record<string, unknown>;
   timestamp: number;
+}
+
+export type ActiveStateType = ActiveState;
+export type ModeType = ModeState;
+export type GameStatesType = GameStates;
+export type ResourceUrlsType = {
+  characterUrl: string;
+  vehicleUrl: string;
+  airplaneUrl: string;
+  wheelUrl: string;
+  ridingUrl: string;
+};
+
+export interface CameraOptionType {
+  offset?: THREE.Vector3;
+  maxDistance?: number;
+  distance?: number;
+  xDistance?: number;
+  yDistance?: number;
+  zDistance?: number;
+  zoom?: number;
+  target?: THREE.Vector3;
+  position?: THREE.Vector3;
+  focus?: boolean;
+  enableCollision?: boolean;
+  collisionMargin?: number;
+  smoothing?: {
+    position?: number;
+    rotation?: number;
+    fov?: number;
+  };
+  fov?: number;
+  minFov?: number;
+  maxFov?: number;
+  bounds?: {
+    minY?: number;
+    maxY?: number;
+  };
+  mode?: string;
+  fixedPosition?: THREE.Vector3;
+  rotation?: THREE.Euler;
+  isoAngle?: number;
+}
+
+export interface CameraShakeConfig {
+  intensity: number;
+  duration: number;
+  frequency: number;
+  decay: boolean;
+}
+
+export interface CameraZoomConfig {
+  targetFov: number;
+  duration: number;
+  easing: (t: number) => number;
+}
+
+export interface CameraCollisionConfig {
+  rayCount: number;
+  sphereCastRadius: number;
+  minDistance: number;
+  maxDistance: number;
+  avoidanceSmoothing: number;
+  transparentLayers: number[];
 }

@@ -3,19 +3,16 @@ import { StoreState, useGaesupStore } from '@stores/gaesupStore';
 
 export function usePhysics() {
   const store = useGaesupStore();
-  const {
-    input: inputSystem,
-    setKeyboard: setKeyboardInput,
-    setPointer: setPointerInput,
-    urls,
-    activeState,
-    updateState,
-    block,
-  } = store;
+  const inputSystem = useGaesupStore((state) => state.input);
+  const setKeyboardInput = useGaesupStore((state) => state.setKeyboard);
+  const setPointerInput = useGaesupStore((state) => state.setPointer);
+  const urls = useGaesupStore((state) => state.urls);
+  const activeState = useGaesupStore((state) => state.activeState);
+  const block = useGaesupStore((state) => state.block);
   const { getSizesByUrls } = useGaesupGltf();
-  const isReady = !!(inputSystem && urls && activeState && updateState);
+  const isReady = !!(inputSystem && urls && activeState);
   const dispatch = (payload: Partial<StoreState>) => {
-    updateState(payload);
+    console.log('Physics dispatch:', payload);
   };
 
   return {

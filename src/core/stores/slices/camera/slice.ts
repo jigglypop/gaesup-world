@@ -1,53 +1,63 @@
 import { StateCreator } from 'zustand';
+import { CameraSlice, CameraState, CameraTransition } from './types';
 import * as THREE from 'three';
-import { CameraSlice, CameraState } from './types';
 
-const defaultStates: CameraState[] = [
+const createDefaultCameraState = (): CameraState => ({
+  name: 'default',
+  type: 'thirdPerson',
+  position: new THREE.Vector3(0, 5, 10),
+  rotation: new THREE.Euler(0, 0, 0),
+  fov: 75,
+  config: {
+    distance: 10,
+    height: 5,
+    followSpeed: 0.1,
+    rotationSpeed: 0.1,
+  },
+  priority: 0,
+  tags: [],
+});
+
+const createDefaultTransitions = (): CameraTransition[] => [
   {
-    name: 'default',
-    type: 'thirdPerson',
-    position: new THREE.Vector3(-10, 10, -10),
-    rotation: new THREE.Euler(0, 0, 0),
-    fov: 75,
-    config: {},
-    priority: 0,
-    tags: ['gameplay'],
+    from: 'character',
+    to: 'vehicle',
+    duration: 1.0,
+    easing: 'easeInOut',
   },
   {
-    name: 'combat',
-    type: 'shoulder',
-    position: new THREE.Vector3(-2, 2, -5),
-    rotation: new THREE.Euler(0, 0, 0),
-    fov: 60,
-    config: { shoulderOffset: new THREE.Vector3(1, 1.6, -3) },
-    priority: 10,
-    tags: ['combat', 'action'],
-  },
-  {
-    name: 'dialogue',
-    type: 'fixed',
-    position: new THREE.Vector3(0, 2, 5),
-    rotation: new THREE.Euler(0, Math.PI, 0),
-    fov: 50,
-    config: {},
-    priority: 20,
-    tags: ['cutscene', 'dialogue'],
+    from: 'vehicle',
+    to: 'airplane',
+    duration: 1.5,
+    easing: 'easeOut',
   },
 ];
 
-const initialStates = new Map<string, CameraState>(defaultStates.map((s) => [s.name, s]));
-
 export const createCameraSlice: StateCreator<CameraSlice, [], [], CameraSlice> = (set) => ({
-  cameraStates: initialStates,
-  cameraTransitions: [],
+  cameraStates: new Map([['default', createDefaultCameraState()]]),
+  cameraTransitions: createDefaultTransitions(),
   currentCameraStateName: 'default',
-  cameraStateHistory: [],
-  setCameraStates: (states) => set({ cameraStates: states }),
-  setCameraTransitions: (transitions) => set({ cameraTransitions: transitions }),
-  setCurrentCameraStateName: (name) => set({ currentCameraStateName: name }),
-  setCameraStateHistory: (history) => set({ cameraStateHistory: history }),
-  addCameraState: (name, state) =>
-    set((s) => ({
-      cameraStates: new Map(s.cameraStates).set(name, state),
-    })),
+  cameraStateHistory: ['default'],
+  setCameraStates: (states: Map<string, CameraState>) => {
+    set({ cameraStates: states });
+  },
+  setCameraTransitions: (transitions: CameraTransition[]) => {
+    set({ cameraTransitions: transitions });
+  },
+  setCurrentCameraStateName: (name: string) => {
+    set((state) => ({
+      currentCameraStateName: name,
+      cameraStateHistory: [...state.cameraStateHistory, name],
+    }));
+  },
+  setCameraStateHistory: (history: string[]) => {
+    set({ cameraStateHistory: history });
+  },
+  addCameraState: (name: string, state: CameraState) => {
+    set((prevState) => {
+      const newStates = new Map(prevState.cameraStates);
+      newStates.set(name, state);
+      return { cameraStates: newStates };
+    });
+  },
 });

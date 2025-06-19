@@ -38,6 +38,10 @@ export interface InnerGroupRef {
 }
 
 export interface PhysicsEntityProps extends BaseCallbacks {
+  onReady?: () => void;
+  onFrame?: () => void;
+  onDestory?: () => void;
+  onAnimate?: () => void;
   url: string;
   name?: string;
   position?: Position3D;

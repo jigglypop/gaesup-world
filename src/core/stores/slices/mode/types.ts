@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ControllerConfig as CoreControllerConfig } from '../../../types/core';
+import { ModeState as CoreModeState } from '../../../types/core';
 
 export type ModeType = 'character' | 'vehicle' | 'airplane';
 export type ControllerType = 'clicker' | 'keyboard' | 'gamepad';
@@ -12,23 +13,11 @@ export interface ControllerOptionsType {
   };
 }
 
-export interface ModeSlice {
-  mode: {
-    type: ModeType;
-    controller: ControllerType;
-    control: ControlType;
-  };
-  controllerConfig: CoreControllerConfig;
-  controllerOptions: ControllerOptionsType;
-  setMode: (
-    mode: Partial<{ type: ModeType; controller: ControllerType; control: ControlType }>,
-  ) => void;
-  setControllerOptions: (options: Partial<ControllerOptionsType>) => void;
-  currentControllerConfig: () => CoreControllerConfig[ModeType];
-}
+export type ModeState = CoreModeState;
 
-export interface ModeState {
-  type: ModeType;
-  controller: ControllerType;
-  control: ControlType;
+export interface ModeSlice {
+  mode: ModeState;
+  controllerOptions: ControllerOptionsType;
+  setMode: (update: Partial<ModeState>) => void;
+  setControllerOptions: (update: Partial<ControllerOptionsType>) => void;
 }

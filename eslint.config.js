@@ -19,7 +19,16 @@ export default tseslint.config(
   },
 
   js.configs.recommended,
-  ...tseslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
+
+  {
+    languageOptions: {
+      parserOptions: {
+        project: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
 
   {
     files: ['src/**/*.{ts,tsx}'],

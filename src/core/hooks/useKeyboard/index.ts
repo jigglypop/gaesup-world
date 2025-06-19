@@ -19,7 +19,10 @@ const initialKeyState = {
 
 export function useKeyboard(options: KeyboardOptions = {}): KeyboardResult {
   const { preventDefault = true, enableClicker = true, customKeyMapping = {} } = options;
-  const { clickerOption, setClickerOption, setKeyboard, setPointer } = useGaesupStore();
+  const clickerOption = useGaesupStore((state) => state.clickerOption);
+  const setClickerOption = useGaesupStore((state) => state.setClickerOption);
+  const setKeyboard = useGaesupStore((state) => state.setKeyboard);
+  const setPointer = useGaesupStore((state) => state.setPointer);
   const pressedKeys = useRef<Set<string>>(new Set());
 
   const keyMapping = useMemo(() => ({ ...KEY_MAPPING, ...customKeyMapping }), [customKeyMapping]);
