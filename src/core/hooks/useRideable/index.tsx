@@ -155,7 +155,7 @@ export function useRideable() {
     states.rideableId = null;
 
     const rideableItem = rideable[objectkey];
-    if (!rideableItem || !rideableItem.position) return;
+    if (!rideableItem?.position) return;
 
     const modeType = rideableItem.objectType;
     const { vehicleUrl, airplaneUrl, characterUrl } = getSizesByUrls(urls);
@@ -165,7 +165,7 @@ export function useRideable() {
 
     rideableItem.visible = true;
     rideableItem.position.copy(activeState.position.clone());
-    if (refs && refs.rigidBodyRef) {
+    if (refs?.rigidBodyRef) {
       refs.rigidBodyRef.current.setTranslation(
         activeState.position.clone().add(size.clone().add(mySize.clone()).addScalar(1)),
         false,

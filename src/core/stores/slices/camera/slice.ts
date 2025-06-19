@@ -3,11 +3,11 @@ import { CameraSlice, CameraState, CameraTransition } from './types';
 import * as THREE from 'three';
 
 const createDefaultCameraState = (): CameraState => ({
-  name: 'default',
-  type: 'thirdPerson',
+    name: 'default',
+    type: 'thirdPerson',
   position: new THREE.Vector3(0, 5, 10),
-  rotation: new THREE.Euler(0, 0, 0),
-  fov: 75,
+    rotation: new THREE.Euler(0, 0, 0),
+    fov: 75,
   config: {
     distance: 10,
     height: 5,

@@ -1,9 +1,8 @@
 import { RigidBodyProps, RigidBodyTypeString } from '@react-three/rapier';
 import * as THREE from 'three';
 import { RapierCollider, CollisionPayload } from '@react-three/rapier';
-import { controllerInnerType, GroundRayType } from '../../component/types';
 import { ComponentType, ReactNode, RefObject } from 'react';
-import { BaseCallbacks, BaseRefs, Position3D, Rotation3D } from '../../../types/common';
+import { BaseCallbacks, BaseRefs, Position3D, Rotation3D } from '@/core/types/common';
 
 export interface Part {
   url: string;

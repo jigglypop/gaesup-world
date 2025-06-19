@@ -13,6 +13,7 @@ import { AnimationSlice, createAnimationSlice } from './slices/animation';
 import { GameStatesSlice, createGameStatesSlice } from './slices/gameStates';
 import { RideableSlice, createRideableSlice } from './slices/rideable';
 import { ActiveStateSlice, createActiveStateSlice } from './slices/activeState';
+import { ModeState } from '../types';
 
 export type StoreState = UrlsSlice &
   ModeSlice &
@@ -64,12 +65,13 @@ export const useGaesupContext = () => {
     rideable: store.rideable,
     block: store.block,
     cameraOption: store.cameraOption,
+    minimap: store.minimap,
   };
 };
 
 export const useGaesupDispatch = () => {
   const store = useGaesupStore();
-  return (action: { type: string; payload?: any }) => {
+  return (action: { type: string; payload? }) => {
     switch (action.type) {
       case 'setMode':
         if (action.payload && typeof action.payload === 'object') {

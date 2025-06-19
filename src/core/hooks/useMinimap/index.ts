@@ -35,10 +35,10 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [scale, setScale] = useState(initialScale);
-  const lastPositionRef = useRef(activeState?.position);
-  const lastRotationRef = useRef(activeState?.euler.y);
+  const lastPositionRef = useRef<THREE.Vector3 | null>(null);
+  const lastRotationRef = useRef<number | null>(null);
 
-  const isReady = !!(activeState?.position && props);
+  const isReady = !!(activeState.position && props);
 
   const upscale = useCallback(() => {
     if (props.blockScale) return;
@@ -77,7 +77,7 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
 
   const updateCanvas = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !activeState || !minimap) return;
+    if (!canvas || !minimap) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const { position, euler } = activeState;
@@ -225,14 +225,17 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
   }, [activeState, minimap, mode, scale, angle, blockRotate]);
 
   const checkForUpdates = useCallback(() => {
-    if (!activeState?.position) return;
-
     const { position, euler } = activeState;
     const rotation = euler.y;
     const lastPos = lastPositionRef.current;
     const lastRotation = lastRotationRef.current;
 
-    if (!lastPos || !lastRotation) return;
+    if (!lastPos || lastRotation === null) {
+      updateCanvas();
+      lastPositionRef.current = position.clone();
+      lastRotationRef.current = rotation;
+      return;
+    }
 
     const positionChanged =
       Math.abs(position.x - lastPos.x) > UPDATE_THRESHOLD ||
@@ -242,7 +245,7 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
 
     if (positionChanged || rotationChanged) {
       updateCanvas();
-      lastPositionRef.current = { x: position.x, y: position.y, z: position.z };
+      lastPositionRef.current = position.clone();
       lastRotationRef.current = rotation;
     }
   }, [activeState, updateCanvas]);
