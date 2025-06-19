@@ -1,11 +1,15 @@
 .teleport-container {
   position: fixed;
-  top: 20px;
-  right: 360px;
+  top: 50%;
+  left: 1rem;
+  transform: translate(0, -50%);
   z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 2px;
+  width: 240px;
+  height: 120px;
 }
 
 .teleport-button {
@@ -15,8 +19,12 @@
   padding: 8px 12px;
   cursor: pointer;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 12px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
 }
 
 .teleport-button:hover {

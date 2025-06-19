@@ -4,6 +4,7 @@ import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
 import { PhysicsCalcProps, PhysicsCalculationProps, PhysicsState } from './types';
 import { PhysicsEngine } from './core/Engine';
 import { SizesType } from '../stores/slices/sizes';
+import * as THREE from 'three';
 export { GaesupWorld } from '../component/GaesupWorld';
 export { GaesupController } from '../component/GaesupController';
 
@@ -48,6 +49,37 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
       isInitializedRef.current = true;
     }
   }, [physics.worldContext]);
+
+  useEffect(() => {
+    const handleTeleport = (event: CustomEvent) => {
+      const { position } = event.detail;
+      console.log('Physics Loop: Received teleport event', position);
+
+      if (props.rigidBodyRef?.current && position) {
+        props.rigidBodyRef.current.setTranslation(
+          {
+            x: position.x,
+            y: position.y,
+            z: position.z,
+          },
+          true,
+        );
+
+        props.rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        props.rigidBodyRef.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
+
+        console.log('Physics Loop: RigidBody position updated to', position);
+      }
+    };
+
+    window.addEventListener('gaesup:teleport', handleTeleport as EventListener);
+    document.addEventListener('teleport-request', handleTeleport as EventListener);
+
+    return () => {
+      window.removeEventListener('gaesup:teleport', handleTeleport as EventListener);
+      document.removeEventListener('teleport-request', handleTeleport as EventListener);
+    };
+  }, [props.rigidBodyRef]);
 
   const executePhysics = useCallback(
     (state: any, delta: number) => {

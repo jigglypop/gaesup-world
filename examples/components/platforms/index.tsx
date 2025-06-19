@@ -3,6 +3,7 @@ import { MinimapPlatform } from '../../../src';
 import { PLATFORMS } from './constants';
 import { PlatformData } from './types';
 import './styles.css';
+import { Html } from '@react-three/drei';
 
 export function Platforms() {
   const handlePlatformClick = (e: any, platformData: PlatformData) => {
