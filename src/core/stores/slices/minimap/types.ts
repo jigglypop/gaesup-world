@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export interface MinimapMarkerProps {
-  type: 'normal' | 'ground' | string;
+  type: 'normal' | 'ground';
   text: string;
   center: THREE.Vector3;
   size: THREE.Vector3;

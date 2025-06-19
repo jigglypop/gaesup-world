@@ -22,9 +22,21 @@ export interface CameraTransitionCondition {
   callback?: () => boolean;
 }
 
+export type CameraType =
+  | 'thirdPerson'
+  | 'shoulder'
+  | 'fixed'
+  | 'isometric'
+  | 'firstPerson'
+  | 'topDown'
+  | 'chase'
+  | 'orbit'
+  | 'free'
+  | 'custom';
+
 export interface CameraState {
   name: string;
-  type: 'thirdPerson' | 'shoulder' | 'fixed' | string;
+  type: CameraType;
   position: THREE.Vector3;
   rotation: THREE.Euler;
   fov: number;
@@ -52,4 +64,3 @@ export interface CameraSlice {
   setCameraStateHistory: (history: string[]) => void;
   addCameraState: (name: string, state: CameraState) => void;
 }
- 

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BaseCallbacks, BaseConfig, Position3D, Rotation3D } from '../types/common';
+import { BaseConfig, Position3D, Rotation3D } from '../types/common';
 import { GLTF } from 'three-stdlib';
 
 export interface CallbackConfig {

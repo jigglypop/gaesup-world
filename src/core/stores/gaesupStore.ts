@@ -13,7 +13,8 @@ import { AnimationSlice, createAnimationSlice } from './slices/animation';
 import { GameStatesSlice, createGameStatesSlice } from './slices/gameStates';
 import { RideableSlice, createRideableSlice } from './slices/rideable';
 import { ActiveStateSlice, createActiveStateSlice } from './slices/activeState';
-import { ModeState } from '../types';
+import { ModeState, GameStatesType } from '../types';
+import { UrlsState } from './slices/urls/types';
 
 export type StoreState = UrlsSlice &
   ModeSlice &
@@ -28,6 +29,12 @@ export type StoreState = UrlsSlice &
   GameStatesSlice &
   RideableSlice &
   ActiveStateSlice;
+
+type GaesupAction =
+  | { type: 'setMode'; payload: Partial<ModeState> }
+  | { type: 'setUrls'; payload: Partial<UrlsState> }
+  | { type: 'setStates'; payload: Partial<GameStatesType> }
+  | { type: 'update'; payload: Partial<StoreState> };
 
 export const useGaesupStore = create<StoreState>()(
   devtools(
@@ -47,6 +54,12 @@ export const useGaesupStore = create<StoreState>()(
       ...createActiveStateSlice(set, get, api),
       updateState: (updates: Partial<StoreState>) => {
         set((state) => ({ ...state, ...updates }));
+      },
+      initialize: (config: { mode?: any; urls?: any; cameraOption?: any }) => {
+        const state = get();
+        if (config.mode) state.setMode(config.mode);
+        if (config.urls) state.setUrls(config.urls);
+        if (config.cameraOption) state.setCameraOption(config.cameraOption);
       },
     })),
   ),
@@ -71,23 +84,24 @@ export const useGaesupContext = () => {
 
 export const useGaesupDispatch = () => {
   const store = useGaesupStore();
-  return (action: { type: string; payload? }) => {
+  return (action: GaesupAction) => {
     switch (action.type) {
       case 'setMode':
-        if (action.payload && typeof action.payload === 'object') {
-          store.setMode(action.payload);
-        }
+        store.setMode(action.payload);
         break;
       case 'setUrls':
-        if (action.payload && typeof action.payload === 'object') {
-          store.setUrls(action.payload);
-        }
+        store.setUrls(action.payload);
         break;
       case 'setStates':
-        if (action.payload && typeof action.payload === 'object') {
-          store.setStates(action.payload);
-        }
+        store.setStates(action.payload);
         break;
+      case 'update': {
+        const { updateState } = store as StoreState & {
+          updateState: (updates: Partial<StoreState>) => void;
+        };
+        updateState(action.payload);
+        break;
+      }
       default:
         break;
     }

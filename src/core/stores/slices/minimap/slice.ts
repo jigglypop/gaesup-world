@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { MinimapSlice, MinimapMarkerProps } from './types';
+import { MinimapSlice } from './types';
 
 export const createMinimapSlice: StateCreator<MinimapSlice, [], [], MinimapSlice> = (set) => ({
   minimap: {

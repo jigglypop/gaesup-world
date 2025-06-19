@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { ActiveStateType } from '../../../types/core';
 
 export interface ActiveStateSlice {

@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-import { ControllerConfig as CoreControllerConfig } from '../../../types/core';
 import { ModeState as CoreModeState } from '../../../types/core';
 
 export type ModeType = 'character' | 'vehicle' | 'airplane';

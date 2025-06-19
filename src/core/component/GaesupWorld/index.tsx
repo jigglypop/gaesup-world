@@ -5,6 +5,7 @@ import { useGaesupStore } from '@stores/gaesupStore';
 export function GaesupWorld(props: gaesupWorldPropsType) {
   const setMode = useGaesupStore((state) => state.setMode);
   const setUrls = useGaesupStore((state) => state.setUrls);
+  const setCameraOption = useGaesupStore((state) => state.setCameraOption);
 
   useEffect(() => {
     if (props.mode) {
@@ -14,18 +15,14 @@ export function GaesupWorld(props: gaesupWorldPropsType) {
 
   useEffect(() => {
     if (props.urls) {
-      const updates: Record<string, string> = {};
-      if (props.urls.characterUrl) updates.characterUrl = props.urls.characterUrl;
-      if (props.urls.vehicleUrl) updates.vehicleUrl = props.urls.vehicleUrl;
-      if (props.urls.airplaneUrl) updates.airplaneUrl = props.urls.airplaneUrl;
-      if (props.urls.wheelUrl) updates.wheelUrl = props.urls.wheelUrl;
-      if (props.urls.ridingUrl) updates.ridingUrl = props.urls.ridingUrl;
-      if (Object.keys(updates).length > 0) {
-        setUrls(updates);
+      const urlUpdates = Object.fromEntries(
+        Object.entries(props.urls).filter(([, value]) => value !== undefined),
+      );
+      if (Object.keys(urlUpdates).length > 0) {
+        setUrls(urlUpdates);
       }
     }
   }, [props.urls, setUrls]);
-  const setCameraOption = useGaesupStore((state) => state.setCameraOption);
 
   useEffect(() => {
     if (props.cameraOption) {

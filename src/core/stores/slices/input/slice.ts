@@ -2,7 +2,7 @@ import { StateCreator } from 'zustand';
 import { InputSlice, KeyboardInputState, MouseInputState } from './types';
 import * as THREE from 'three';
 
-export const createInputSlice: StateCreator<InputSlice, [], [], InputSlice> = (set, get) => ({
+export const createInputSlice: StateCreator<InputSlice, [], [], InputSlice> = (set, _) => ({
   input: {
     keyboard: {
       forward: false,

@@ -64,21 +64,3 @@ export interface BlockState {
   animation: boolean;
   scroll: boolean;
 }
-
-export type StoreState = gaesupWorldContextType &
-  UrlsSlice &
-  ModeSlice &
-  ClickerOptionSlice &
-  BlockSlice &
-  CameraOptionSlice &
-  CameraSlice &
-  MinimapSlice &
-  InputSlice &
-  SizesSlice &
-  AnimationSlice & {
-    updateState: (updates: Partial<StoreState>) => void;
-    resetState: () => void;
-    initializeState: (initialState: Partial<StoreState>) => void;
-    setRefs: (refs: Partial<gaesupWorldContextType['refs']>) => void;
-    setStates: (states: Partial<gaesupWorldContextType['states']>) => void;
-  };
