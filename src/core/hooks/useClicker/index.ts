@@ -6,13 +6,8 @@ import { ClickerMoveOptions, ClickerResult } from './types';
 
 export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
   const { minHeight = 0.5, offsetY = 0.5 } = options;
-  const { activeState, block, setPointer } = useGaesupStore();
+  const { activeState, setPointer } = useGaesupStore();
   const isReady = Boolean(activeState?.position);
-
-  useFrame(() => {
-    if (block.control || !activeState) return;
-  });
-
   const moveClicker = (
     event: ThreeEvent<MouseEvent>,
     isRun: boolean,

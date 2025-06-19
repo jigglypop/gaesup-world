@@ -10,7 +10,7 @@ export type AnimationPropType = {
   keyControl: {
     [key: string]: boolean;
   };
-  store: {};
+  store: Record<string, THREE.AnimationAction>;
   default: string;
   timestamp: number;
   data: Record<string, unknown>;
@@ -130,7 +130,7 @@ export type gaesupWorldContextType = {
     isRun: boolean;
     track?: boolean;
     queue?: Array<
-      THREE.Vector3 | { action: string; beforeCB: Function; afterCB: Function; time: number }
+      THREE.Vector3 | { action: string; beforeCB: () => void; afterCB: () => void; time: number }
     >;
     loop?: boolean;
   };

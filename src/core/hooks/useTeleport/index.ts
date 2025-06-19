@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { useGaesupStore } from '@stores/gaesupStore';
 
 export interface TeleportResult {
-  teleport: (position: THREE.Vector3) => Promise<boolean>;
+  teleport: (position: THREE.Vector3) => boolean;
   canTeleport: boolean;
 }
 
@@ -11,7 +11,7 @@ export function useTeleport(): TeleportResult {
   const setActiveState = useGaesupStore((state) => state.setActiveState);
   const canTeleport = Boolean(activeState);
 
-  const teleport = async (position: THREE.Vector3): Promise<boolean> => {
+  const teleport = (position: THREE.Vector3): boolean => {
     if (!activeState) {
       return false;
     }

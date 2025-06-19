@@ -1,8 +1,13 @@
-import { RigidBodyProps, RigidBodyTypeString } from '@react-three/rapier';
+import {
+  RigidBodyProps,
+  RigidBodyTypeString,
+  CollisionEnterPayload,
+  CollisionExitPayload,
+} from '@react-three/rapier';
 import * as THREE from 'three';
-import { RapierCollider, CollisionPayload } from '@react-three/rapier';
+import { RapierCollider, RapierRigidBody } from '@react-three/rapier';
 import { ComponentType, ReactNode, RefObject } from 'react';
-import { BaseCallbacks, BaseRefs, Position3D, Rotation3D } from '@/core/types/common';
+import { BaseCallbacks, Position3D, Rotation3D } from '@/core/types/common';
 
 export interface Part {
   url: string;
@@ -51,19 +56,28 @@ export interface PhysicsEntityProps extends BaseCallbacks {
   groundRay?: THREE.Ray;
   rigidBodyProps?: RigidBodyProps;
   parts?: Part[];
-  refs: BaseRefs;
+  rigidBodyRef?: RefObject<RapierRigidBody>;
+  colliderRef?: RefObject<RapierCollider>;
+  outerGroupRef?: RefObject<THREE.Group>;
+  innerGroupRef?: RefObject<THREE.Group>;
   children?: ReactNode;
   userData?: Record<string, unknown>;
   sensor?: boolean;
-  onIntersectionEnter?: (payload: CollisionPayload) => void;
-  onIntersectionExit?: (payload: CollisionPayload) => void;
-  onCollisionEnter?: (payload: CollisionPayload) => void;
+  onIntersectionEnter?: (payload: CollisionEnterPayload) => void;
+  onIntersectionExit?: (payload: CollisionExitPayload) => void;
+  onCollisionEnter?: (payload: CollisionEnterPayload) => void;
   isNotColliding?: boolean;
   isRiderOn?: boolean;
   enableRiding?: boolean;
   ridingUrl?: string;
   offset?: THREE.Vector3;
   currentAnimation?: string;
+  controllerOptions?: {
+    lerp: {
+      cameraTurn: number;
+      cameraPosition: number;
+    };
+  };
 }
 
 export interface ModelRendererProps {

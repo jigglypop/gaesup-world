@@ -39,10 +39,8 @@ const calculateSizeFromScene = (scene: THREE.Object3D): THREE.Vector3 => {
 export const useGltfAndSize = ({ url }: GltfAndSizeOptions): GltfAndSizeResult => {
   const sizes = useGaesupStore((state) => state.sizes);
   const setSizes = useGaesupStore((state) => state.setSizes);
-
   const safeUrl = url ?? 'data:application/json,{}';
   const isValidUrl = Boolean(url?.trim());
-
   const gltf = useGLTF(safeUrl) as GLTF;
   const isInitialized = useRef(false);
 
@@ -53,14 +51,12 @@ export const useGltfAndSize = ({ url }: GltfAndSizeOptions): GltfAndSizeResult =
 
   useEffect(() => {
     if (!url || !isValidUrl) return;
-
     const cached = gltfCache.get(url);
     if (cached) {
       cached.refCount++;
     } else {
       gltfCache.set(url, { gltf, refCount: 1, size: calculateSize() });
     }
-
     return () => cleanupGltf(url);
   }, [url, isValidUrl, gltf, calculateSize]);
 

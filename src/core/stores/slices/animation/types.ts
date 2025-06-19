@@ -25,7 +25,7 @@ export type AnimationPropType = {
   keyControl: {
     [key: string]: boolean;
   };
-  store: {};
+  store: Record<string, THREE.AnimationAction>;
   default: string;
   timestamp: number;
   data: Record<string, unknown>;

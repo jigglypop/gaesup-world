@@ -28,7 +28,7 @@ export interface ControllerType {
   groupProps?: ControllerGroupProps;
   rigidBodyProps?: RigidBodyProps;
   controllerOptions?: ControllerOptions;
-  parts?: unknown[];
+  parts?: Array<{ url: string; color?: string }>;
   onReady?: () => void;
   onFrame?: () => void;
   onDestory?: () => void;

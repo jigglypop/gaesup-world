@@ -42,23 +42,18 @@ export function useAnimationPlayer(actions: AnimationActions | undefined, active
 
   useEffect(() => {
     if (!active || !actions || activeTag === previousTag.current) return;
-
     const currentAction = actions[activeTag];
     const previousAction = actions[previousTag.current];
-
     if (previousAction && previousAction !== null) {
       previousAction.fadeOut(0.2);
     }
-
     if (currentAction && currentAction !== null) {
       currentAction.reset().fadeIn(0.2).play();
     }
-
     previousTag.current = activeTag;
   }, [activeTag, actions, active]);
 }
 
-// 애니메이션 상태 관리 유틸리티
 export function createAnimationController(actions: AnimationActions) {
   return {
     playAnimation: (tag: string, fadeTime = 0.2) => {

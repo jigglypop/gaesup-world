@@ -224,26 +224,13 @@ export function useRideable() {
   };
 
   const onRideableNear = async (e: CollisionEnterPayload, props: rideableType) => {
-    console.log(
-      '[useRideable] Collision detected:',
-      e.other.rigidBodyObject?.name,
-      'props:',
-      props.objectType,
-    );
-    console.log('[useRideable] Collision object type:', e.other.rigidBodyObject?.userData);
-
     if (!worldContext.states) return;
     const { states } = worldContext;
-
-    // character인지 확인하는 조건을 더 유연하게 변경
     const isCharacterCollision =
       (e.other.rigidBodyObject && e.other.rigidBodyObject.name === 'character') ||
       (e.other.rigidBodyObject && !e.other.rigidBodyObject.name) || // name이 없는 경우도 허용
-      e.other.rigidBody; // rigidBody가 있으면 character로 간주
-
+      e.other.rigidBody;
     if (isCharacterCollision && !states.isRiding) {
-      console.log('[useRideable] Setting up rideable near state for:', props.objectType);
-
       if (!props.objectType) return;
       states.nearbyRideable = {
         objectkey: props.objectkey,
@@ -251,14 +238,6 @@ export function useRideable() {
         name: props.objectType === 'vehicle' ? '차량' : '비행기',
       };
       states.canRide = true;
-
-      console.log(
-        '[useRideable] States updated - canRide:',
-        states.canRide,
-        'nearbyRideable:',
-        states.nearbyRideable,
-      );
-
       dispatch({
         type: 'update',
         payload: {
@@ -269,23 +248,16 @@ export function useRideable() {
   };
 
   const onRideableLeave = async (e: CollisionExitPayload) => {
-    console.log('[useRideable] Collision exit detected:', e.other.rigidBodyObject?.name);
-
     if (!worldContext.states) return;
     const { states } = worldContext;
-
-    // character인지 확인하는 조건을 더 유연하게 변경
     const isCharacterCollision =
       (e.other.rigidBodyObject && e.other.rigidBodyObject.name === 'character') ||
       (e.other.rigidBodyObject && !e.other.rigidBodyObject.name) ||
       e.other.rigidBody;
 
     if (isCharacterCollision) {
-      console.log('[useRideable] Clearing rideable state');
-
       states.nearbyRideable = null;
       states.canRide = false;
-
       dispatch({
         type: 'update',
         payload: {
@@ -303,17 +275,14 @@ export function useRideable() {
       if (rideableData) {
         await setUrl(rideableData);
         await setModeAndRiding(rideableData);
-
         states.canRide = false;
         states.nearbyRideable = null;
-
         dispatch({
           type: 'update',
           payload: {
             states: { ...states },
           },
         });
-      } else {
       }
     }
   };

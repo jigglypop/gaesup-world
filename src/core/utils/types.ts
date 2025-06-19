@@ -4,7 +4,7 @@ import { GLTF } from 'three-stdlib';
 
 export interface CallbackConfig {
   props: Record<string, unknown>;
-  actions: Record<string, Function>;
+  actions: Record<string, (...args: unknown[]) => unknown>;
 }
 
 export interface ControllerPropsConfig {

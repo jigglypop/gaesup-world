@@ -88,7 +88,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
         }
 
         if (actions) {
-          Object.values(actions).forEach((action: any) => {
+          Object.values(actions).forEach((action) => {
             if (action) {
               action.stop();
               action.getMixer().uncacheAction(action.getClip());
@@ -130,11 +130,6 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     if (props.onReady) props.onReady();
     if (props.onFrame) props.onFrame();
     if (props.onAnimate && actions) props.onAnimate();
-    // initCallback({
-    //   props,
-    //   actions,
-    //   componentType: props.componentType,
-    // });
     const { nodes } = useGraph(clone);
     const objectNode = Object.values(nodes).find((node) => node.type === 'Object3D');
     const safeRotationY = props.rotation instanceof THREE.Euler ? props.rotation.y : 0;
