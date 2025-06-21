@@ -32,7 +32,7 @@ export function EntityController({ props, children }: EntityControllerProps) {
   const getEntityProps = () => {
     const baseProps = {
       isActive: true,
-      componentType: mode.type as 'character' | 'vehicle' | 'airplane',
+      componentType: mode.type,
       controllerOptions: props.controllerOptions,
       enableRiding,
       isRiderOn,
@@ -59,7 +59,6 @@ export function EntityController({ props, children }: EntityControllerProps) {
           ...baseProps,
           url: urls.characterUrl || '',
         };
-
       case 'vehicle':
         return {
           ...baseProps,
@@ -67,14 +66,12 @@ export function EntityController({ props, children }: EntityControllerProps) {
           wheelUrl: urls.wheelUrl,
           ridingUrl: urls.ridingUrl,
         };
-
       case 'airplane':
         return {
           ...baseProps,
           url: urls.airplaneUrl || '',
           ridingUrl: urls.ridingUrl,
         };
-
       default:
         return {
           ...baseProps,
