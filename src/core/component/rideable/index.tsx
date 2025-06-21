@@ -8,7 +8,6 @@ import './styles.css';
 import React from 'react';
 
 export function RideableUI({ states }: RideableUIProps) {
-  const mode = useGaesupStore((state) => state.mode);
   const setMode = useGaesupStore((state) => state.setMode);
   const setStates = useGaesupStore((state) => state.setStates);
 
@@ -16,34 +15,43 @@ export function RideableUI({ states }: RideableUIProps) {
     return null;
   }
 
-  const handleClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    e.stopPropagation();
-    if (states.canRide && states.nearbyRideable) {
-      const { objectkey, objectType } = states.nearbyRideable;
-      setMode({
-        type: objectType as 'character' | 'vehicle' | 'airplane',
-      });
-      setStates({
-        rideableId: objectkey,
-        isRiding: true,
-        shouldEnterRideable: true,
-        nearbyRideable: null,
-        canRide: false,
-      });
-    }
-    if (states.isRiding) {
-      setMode({
-        type: 'character',
-      });
-      setStates({
-        shouldExitRideable: true,
-        isRiding: false,
-      });
-    }
-  };
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.code !== 'KeyF') return;
+      
+      if (states.canRide && states.nearbyRideable) {
+        const { objectkey, objectType } = states.nearbyRideable;
+        setMode({
+          type: objectType as 'character' | 'vehicle' | 'airplane',
+        });
+        setStates({
+          rideableId: objectkey,
+          isRiding: true,
+          shouldEnterRideable: true,
+          nearbyRideable: null,
+          canRide: false,
+        });
+      } else if (states.isRiding) {
+        setMode({
+          type: 'character',
+        });
+        setStates({
+          shouldExitRideable: true,
+          isRiding: false,
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [states.canRide, states.nearbyRideable, states.isRiding, setMode, setStates]);
+
+  if (!states.canRide && !states.isRiding) {
+    return null;
+  }
 
   return (
-    <div className="rideable-ui-container" onClick={handleClick}>
+    <div className="rideable-ui-container">
       <div className="message-box">
         {states.canRide && <div>Press F to ride</div>}
         {states.isRiding && <div>Press F to exit</div>}
@@ -63,49 +71,31 @@ export function Rideable(props: RideablePropType) {
     }
   }, [mode.type, props.objectkey, rideable, landing]);
 
+  const userData = {
+    objectType: props.objectType,
+    objectkey: props.objectkey,
+    rideable: true,
+    init: initRideable,
+    onNear: onRideableNear,
+    onLeave: onRideableLeave,
+    landing,
+  };
+
   return (
     <>
       {props.objectType === 'vehicle' && (
-        <group
-          position={props.position}
-          rotation={props.rotation}
-          name={props.name}
-          userData={{
-            ...props.userData,
-            objectType: props.objectType,
-            rideable: true,
-            init: initRideable,
-            onNear: onRideableNear,
-            onLeave: onRideableLeave,
-            landing,
-          }}
-        >
-          <PassiveVehicle
-            {...props}
-            visible={!rideable[props.name || props.objectkey]?.isOccupied}
-          />
-        </group>
+        <PassiveVehicle
+          {...props}
+          userData={userData}
+          visible={!rideable[props.objectkey]?.isOccupied}
+        />
       )}
       {props.objectType === 'airplane' && (
-        <group
-          position={props.position}
-          rotation={props.rotation}
-          name={props.name}
-          userData={{
-            ...props.userData,
-            objectType: props.objectType,
-            rideable: true,
-            init: initRideable,
-            onNear: onRideableNear,
-            onLeave: onRideableLeave,
-            landing,
-          }}
-        >
-          <PassiveAirplane
-            {...props}
-            visible={!rideable[props.name || props.objectkey]?.isOccupied}
-          />
-        </group>
+        <PassiveAirplane
+          {...props}
+          userData={userData}
+          visible={!rideable[props.objectkey]?.isOccupied}
+        />
       )}
     </>
   );

@@ -1,5 +1,5 @@
 import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useGaesupContext, useGaesupDispatch, useGaesupStore } from '@stores/gaesupStore';
 import { rideableType } from './types';
 import { useGaesupGltf } from '@utils/gltf';
@@ -13,62 +13,11 @@ export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'u
     visible: true,
   };
 
-const createRideableUI = () => {
-  const ui = document.createElement('div');
-  ui.id = 'rideable-ui';
-  ui.style.cssText = `
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 15px 25px;
-    border-radius: 10px;
-    font-family: Arial, sans-serif;
-    font-size: 16px;
-    z-index: 1000;
-    display: none;
-    text-align: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  `;
-  document.body.appendChild(ui);
-  return ui;
-};
-
 export function useRideable() {
   const worldContext = useGaesupContext();
   const { states, rideable } = worldContext;
   const dispatch = useGaesupDispatch();
   const { getSizesByUrls } = useGaesupGltf();
-  const uiRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    let ui = document.getElementById('rideable-ui');
-    if (!ui) {
-      ui = createRideableUI();
-    }
-    uiRef.current = ui;
-
-    return () => {
-      if (uiRef.current && document.body.contains(uiRef.current)) {
-        document.body.removeChild(uiRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!uiRef.current) return;
-    if (states?.canRide && states?.nearbyRideable) {
-      uiRef.current.innerHTML = `🚗 E키를 눌러 ${states.nearbyRideable.name}에 탑승하세요`;
-      uiRef.current.style.display = 'block';
-    } else if (states?.isRiding) {
-      uiRef.current.innerHTML = `🚗 R키를 눌러 하차하세요`;
-      uiRef.current.style.display = 'block';
-    } else {
-      uiRef.current.style.display = 'none';
-    }
-  }, [states?.canRide, states?.nearbyRideable, states?.isRiding]);
 
   const zustandStates = useGaesupStore((state) => state.states);
 

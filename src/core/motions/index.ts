@@ -32,7 +32,7 @@ const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps) =
   ];
   mouseKeys.forEach((prop) => {
     if (state.mouse[prop] !== input.mouse[prop]) {
-      (state.mouse as any)[prop] = input.mouse[prop];
+      state.mouse[prop] = input.mouse[prop];
     }
   });
 };
@@ -52,9 +52,7 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
   useEffect(() => {
     const handleTeleport = (event: CustomEvent) => {
       const { position } = event.detail;
-      console.log('Physics Loop: Received teleport event', position);
-
-      if (props.rigidBodyRef?.current && position) {
+      if (props.rigidBodyRef.current && position) {
         props.rigidBodyRef.current.setTranslation(
           {
             x: position.x,
@@ -63,11 +61,8 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
           },
           true,
         );
-
         props.rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
         props.rigidBodyRef.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
-
-        console.log('Physics Loop: RigidBody position updated to', position);
       }
     };
 
@@ -138,10 +133,9 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
   );
 
   useUnifiedFrame(
-    `physics-${props.rigidBodyRef?.current?.handle || 'unknown'}`,
+    `physics-${props.rigidBodyRef.current?.handle || 'unknown'}`,
     (state, delta) => {
       if (!physics.isReady || !isInitializedRef.current) return;
-
       if (physics.blockControl) {
         props.rigidBodyRef?.current?.resetForces(false);
         props.rigidBodyRef?.current?.resetTorques(false);

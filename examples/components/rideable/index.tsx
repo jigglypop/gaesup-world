@@ -12,7 +12,7 @@ export function RideableVehicles() {
         objectType="vehicle"
         enableRiding={true}
         offset={V3(0, 1, 0)}
-        position={V3(-70, 2, 30)}
+        position={V3(-70, 1, 30)}
         controllerOptions={{ lerp: { cameraPosition: 0.1, cameraTurn: 0.1 } }}
       />
       <Rideable
@@ -21,7 +21,7 @@ export function RideableVehicles() {
         objectType="airplane"
         enableRiding={true}
         offset={V3(0, 1, 0)}
-        position={V3(70, 2, 40)}
+        position={V3(70, 1, 40)}
         controllerOptions={{ lerp: { cameraPosition: 0.1, cameraTurn: 0.1 } }}
       />
       <Rideable
@@ -30,7 +30,7 @@ export function RideableVehicles() {
         objectType="airplane"
         enableRiding={true}
         offset={V3(0, 1, 0)}
-        position={V3(-30, 2, 80)}
+        position={V3(-30, 1, 80)}
         controllerOptions={{ lerp: { cameraPosition: 0.1, cameraTurn: 0.1 } }}
       />
     </>
