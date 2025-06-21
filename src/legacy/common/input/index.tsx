@@ -1,13 +1,11 @@
-import { inputRecipe } from "@styles/recipe/input.css";
+import { inputRecipe } from '@styles/recipe/input.css';
 
 // rgbInput
 export const RgbInput = ({
   setRgb,
   rgbTag,
 }: {
-  setRgb: React.Dispatch<
-    React.SetStateAction<{ r: number; g: number; b: number }>
-  >;
+  setRgb: React.Dispatch<React.SetStateAction<{ r: number; g: number; b: number }>>;
   rgbTag: string;
 }) => {
   return (
@@ -15,10 +13,8 @@ export const RgbInput = ({
       className={inputRecipe({
         blackSmall: true,
       })}
-      type={"number"}
-      onChange={(e) =>
-        setRgb((prev) => ({ ...prev, [rgbTag]: parseInt(e.target.value) }))
-      }
+      type={'number'}
+      onChange={(e) => setRgb((prev) => ({ ...prev, [rgbTag]: parseInt(e.target.value) }))}
     />
   );
 };

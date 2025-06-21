@@ -33,8 +33,8 @@ export class ImpulseController {
     } = physicsState;
     const { walkSpeed = 10, runSpeed = 20, jumpSpeed = 15 } = characterConfig;
     if (isJumping && isOnTheGround) {
-      const currentVel = rigidBodyRef.current!.linvel();
-      rigidBodyRef.current!.setLinvel({ x: currentVel.x, y: jumpSpeed, z: currentVel.z }, true);
+      const currentVel = rigidBodyRef.current.linvel();
+      rigidBodyRef.current.setLinvel({ x: currentVel.x, y: jumpSpeed, z: currentVel.z }, true);
       useGaesupStore.getState().setStates({
         isJumping: false,
         isOnTheGround: true,
@@ -44,14 +44,14 @@ export class ImpulseController {
       const speed = isRunning ? runSpeed : walkSpeed;
       const dir = activeState.dir;
       const vel = activeState.velocity;
-      const M = rigidBodyRef.current!.mass();
+      const M = rigidBodyRef.current.mass();
       const targetVelX = -dir.x * speed;
       const targetVelZ = -dir.z * speed;
       const accelX = targetVelX - vel.x;
       const accelZ = targetVelZ - vel.z;
       const forceX = accelX * M;
       const forceZ = accelZ * M;
-      rigidBodyRef.current!.applyImpulse({ x: forceX, y: 0, z: forceZ }, true);
+      rigidBodyRef.current.applyImpulse({ x: forceX, y: 0, z: forceZ }, true);
     }
   }
 
@@ -62,7 +62,7 @@ export class ImpulseController {
     const { activeState, vehicleConfig } = physicsState;
     const { maxSpeed = 10 } = vehicleConfig;
     const impulse = activeState.direction.clone().multiplyScalar(maxSpeed);
-    rigidBodyRef.current!.applyImpulse({ x: impulse.x, y: 0, z: impulse.z }, true);
+    rigidBodyRef.current.applyImpulse({ x: impulse.x, y: 0, z: impulse.z }, true);
   }
 
   private applyAirplaneImpulse(
@@ -72,6 +72,6 @@ export class ImpulseController {
     const { activeState, airplaneConfig } = physicsState;
     const { maxSpeed = 5 } = airplaneConfig;
     const impulse = activeState.direction.clone().multiplyScalar(maxSpeed);
-    rigidBodyRef.current!.applyImpulse({ x: impulse.x, y: impulse.y, z: impulse.z }, true);
+    rigidBodyRef.current.applyImpulse({ x: impulse.x, y: impulse.y, z: impulse.z }, true);
   }
 }

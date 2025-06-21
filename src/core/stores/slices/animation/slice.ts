@@ -46,11 +46,11 @@ export const createAnimationSlice: StateCreator<AnimationSlice, [], [], Animatio
       },
     })),
   getCurrentAnimation: (type) => {
-    const anim = get().animationState[type];
-    return anim ? anim.current : 'idle';
+    const animation = get().animationState[type];
+    return animation.current;
   },
   getAnimationStore: (type) => {
-    const anim = get().animationState[type];
-    return anim ? anim.store : {};
+    const animation = get().animationState[type];
+    return animation.store;
   },
 });

@@ -15,7 +15,6 @@ export class SmartCollisionSystem {
   private rayDirections: THREE.Vector3[] = [];
   private debugLines: THREE.Line[] = [];
   private debugMode = false;
-
   private tempVector1 = new THREE.Vector3();
   private tempVector2 = new THREE.Vector3();
   private tempVector3 = new THREE.Vector3();
@@ -111,7 +110,6 @@ export class SmartCollisionSystem {
         bestPosition = slidePosition;
       }
     }
-
     return bestPosition;
   }
 
@@ -122,14 +120,10 @@ export class SmartCollisionSystem {
   ): THREE.Vector3 | null {
     this.tempVector1.subVectors(collisionPoint, from).normalize();
     this.raycaster.set(from, this.tempVector1);
-
     const hit = this.raycaster.intersectObjects(scene.children, true)[0];
     if (!hit || !hit.face) return null;
-
     const normal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld).normalize();
-
     this.tempVector2.crossVectors(normal, new THREE.Vector3(0, 1, 0)).normalize();
-
     const slideDistance = 2;
     const leftSlide = collisionPoint
       .clone()
@@ -137,22 +131,18 @@ export class SmartCollisionSystem {
     const rightSlide = collisionPoint
       .clone()
       .add(this.tempVector2.clone().multiplyScalar(-slideDistance));
-
     const leftClear = this.isPositionClear(leftSlide, scene);
     const rightClear = this.isPositionClear(rightSlide, scene);
-
     if (leftClear && !rightClear) return leftSlide;
     if (!leftClear && rightClear) return rightSlide;
     if (leftClear && rightClear) {
       return from.distanceTo(leftSlide) < from.distanceTo(rightSlide) ? leftSlide : rightSlide;
     }
-
     return null;
   }
 
   private isPositionClear(position: THREE.Vector3, scene: THREE.Scene): boolean {
     const checkRadius = this.config.sphereCastRadius * 2;
-
     for (const child of scene.children) {
       if (child instanceof THREE.Mesh && child.geometry.boundingSphere) {
         const distance = position.distanceTo(child.position);
@@ -171,13 +161,11 @@ export class SmartCollisionSystem {
         }
       }
     }
-
     return true;
   }
 
   setDebugMode(enabled: boolean, scene?: THREE.Scene): void {
     this.debugMode = enabled;
-
     if (!enabled && scene) {
       this.debugLines.forEach((line) => scene.remove(line));
       this.debugLines = [];
@@ -186,14 +174,11 @@ export class SmartCollisionSystem {
 
   updateDebugVisualization(from: THREE.Vector3, to: THREE.Vector3, scene: THREE.Scene): void {
     if (!this.debugMode) return;
-
     this.debugLines.forEach((line) => scene.remove(line));
     this.debugLines = [];
-
     const material = new THREE.LineBasicMaterial({ color: 0x00ff00 });
     const geometry = new THREE.BufferGeometry().setFromPoints([from, to]);
     const line = new THREE.Line(geometry, material);
-
     scene.add(line);
     this.debugLines.push(line);
   }

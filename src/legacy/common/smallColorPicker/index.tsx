@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { SketchPicker } from "react-color";
-import * as S from "./styles.css";
+import { useEffect, useState } from 'react';
+import { SketchPicker } from 'react-color';
+import * as S from './styles.css';
 
 export default function SmallColorPicker({
   color,
@@ -12,11 +12,7 @@ export default function SmallColorPicker({
   colors?: { [key: string]: string };
   setColor: (color: { color: string }) => void;
 }) {
-  const parsedColor = color
-    .replace("rgb(", "")
-    .replace(")", "")
-    .replace(" ", "")
-    .split(",");
+  const parsedColor = color.replace('rgb(', '').replace(')', '').replace(' ', '').split(',');
 
   useEffect(() => {
     setRgb({
@@ -37,11 +33,11 @@ export default function SmallColorPicker({
         styles={{
           default: {
             picker: {
-              background: "rgba(100,100,100,0)",
-              position: "relative",
-              width: "10rem",
-              height: "10rem",
-              overflow: "hidden",
+              background: 'rgba(100,100,100,0)',
+              position: 'relative',
+              width: '10rem',
+              height: '10rem',
+              overflow: 'hidden',
             },
           },
         }}

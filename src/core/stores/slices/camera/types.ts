@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { CameraType } from '../../types';
 
 export interface CameraConfig {
   shoulderOffset?: THREE.Vector3;
@@ -21,18 +22,6 @@ export interface CameraTransitionCondition {
   target?: string;
   callback?: () => boolean;
 }
-
-export type CameraType =
-  | 'thirdPerson'
-  | 'shoulder'
-  | 'fixed'
-  | 'isometric'
-  | 'firstPerson'
-  | 'topDown'
-  | 'chase'
-  | 'orbit'
-  | 'free'
-  | 'custom';
 
 export interface CameraState {
   name: string;

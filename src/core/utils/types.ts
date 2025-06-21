@@ -1,30 +1,5 @@
 import * as THREE from 'three';
-import { BaseConfig, Position3D, Rotation3D } from '../types/common';
 import { GLTF } from 'three-stdlib';
-
-export interface CallbackConfig {
-  props: Record<string, unknown>;
-  actions: Record<string, (...args: unknown[]) => unknown>;
-}
-
-export interface ControllerPropsConfig {
-  characterUrl?: string;
-  vehicleUrl?: string;
-  airplaneUrl?: string;
-  wheelUrl?: string;
-  ridingUrl?: string;
-  position?: Position3D;
-  rotation?: Rotation3D;
-  debug?: boolean;
-}
-
-export interface GaesupWorldConfig {
-  startPosition?: Position3D;
-  urls?: ResourceUrls;
-  mode?: EntityMode;
-  debug?: boolean;
-  performance?: PerformanceConfig;
-}
 
 export interface ResourceUrls {
   characterUrl?: string;
@@ -34,13 +9,7 @@ export interface ResourceUrls {
   ridingUrl?: string;
 }
 
-export type EntityMode = {
-  type: 'character' | 'vehicle' | 'airplane';
-  controller?: 'clicker' | 'keyboard' | 'joystick' | 'gamepad';
-  control?: 'chase' | 'firstPerson' | 'topDown';
-};
-
-export interface PerformanceConfig extends BaseConfig {
+export interface PerformanceConfig {
   mode?: 0 | 1 | 2;
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   zIndex?: number;

@@ -40,7 +40,6 @@ export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THRE
           ref={props.animationRef}
         />
       )}
-
       <ModelRenderer nodes={props.nodes} skeleton={props.skeleton} url={props.url || ''} />
     </group>
   );

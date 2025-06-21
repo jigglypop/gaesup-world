@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useState } from 'react';
 
 export default function SliderWrapper({
   children,
   openStyle = {},
-  openStyleRecipe = "",
+  openStyleRecipe = '',
   isDisplay = false,
   closeChildren,
 }: {
@@ -30,10 +30,11 @@ export default function SliderWrapper({
           style={
             !isDisplay && !isOpen
               ? {
-                  display: "none",
+                  display: 'none',
                 }
               : openStyle
-          }>
+          }
+        >
           <span onClick={toggleSlider}>{closeChildren}</span>
           {children}
         </div>

@@ -1,8 +1,4 @@
-import { ModeState as CoreModeState } from '../../../types/core';
-
-export type ModeType = 'character' | 'vehicle' | 'airplane';
-export type ControllerType = 'clicker' | 'keyboard' | 'gamepad';
-export type ControlType = 'normal' | 'chase' | 'firstPerson' | 'thirdPerson' | 'topDown';
+import { ModeType, ControllerType, CameraType } from "../../types";
 
 export interface ControllerOptionsType {
   lerp: {
@@ -11,7 +7,11 @@ export interface ControllerOptionsType {
   };
 }
 
-export type ModeState = CoreModeState;
+export interface ModeState {
+  type: ModeType;
+  controller: ControllerType;
+  control: CameraType;
+}
 
 export interface ModeSlice {
   mode: ModeState;

@@ -1,40 +1,19 @@
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
-import { UrlsSlice, createUrlsSlice } from './slices/urls';
-import { ModeSlice, createModeSlice } from './slices/mode';
-import { ClickerOptionSlice, createClickerOptionSlice } from './slices/clickerOption';
-import { BlockSlice, createBlockSlice } from './slices/block';
-import { CameraOptionSlice, createCameraOptionSlice } from './slices/cameraOption';
-import { CameraSlice, createCameraSlice } from './slices/camera';
-import { MinimapSlice, createMinimapSlice } from './slices/minimap';
-import { InputSlice, createInputSlice } from './slices/input';
-import { SizesSlice, createSizesSlice } from './slices/sizes';
-import { AnimationSlice, createAnimationSlice } from './slices/animation';
-import { GameStatesSlice, createGameStatesSlice } from './slices/gameStates';
-import { RideableSlice, createRideableSlice } from './slices/rideable';
-import { ActiveStateSlice, createActiveStateSlice } from './slices/activeState';
-import { ModeState, GameStatesType } from '../types';
-import { UrlsState } from './slices/urls/types';
-
-export type StoreState = UrlsSlice &
-  ModeSlice &
-  ClickerOptionSlice &
-  BlockSlice &
-  CameraOptionSlice &
-  CameraSlice &
-  MinimapSlice &
-  InputSlice &
-  SizesSlice &
-  AnimationSlice &
-  GameStatesSlice &
-  RideableSlice &
-  ActiveStateSlice;
-
-type GaesupAction =
-  | { type: 'setMode'; payload: Partial<ModeState> }
-  | { type: 'setUrls'; payload: Partial<UrlsState> }
-  | { type: 'setStates'; payload: Partial<GameStatesType> }
-  | { type: 'update'; payload: Partial<StoreState> };
+import { createUrlsSlice } from './slices/urls';
+import { createModeSlice } from './slices/mode';
+import { createClickerOptionSlice } from './slices/clickerOption';
+import { createBlockSlice } from './slices/block';
+import { createCameraOptionSlice } from './slices/cameraOption';
+import { createCameraSlice } from './slices/camera';
+import { createMinimapSlice } from './slices/minimap';
+import { createInputSlice } from './slices/input';
+import { createSizesSlice } from './slices/sizes';
+import { createAnimationSlice } from './slices/animation';
+import { createGameStatesSlice } from './slices/gameStates';
+import { createRideableSlice } from './slices/rideable';
+import { createActiveStateSlice } from './slices/activeState';
+import { StoreState, GaesupAction } from './types';
 
 export const useGaesupStore = create<StoreState>()(
   devtools(
@@ -55,7 +34,7 @@ export const useGaesupStore = create<StoreState>()(
       updateState: (updates: Partial<StoreState>) => {
         set((state) => ({ ...state, ...updates }));
       },
-      initialize: (config: { mode?: any; urls?: any; cameraOption?: any }) => {
+      initialize: (config: Partial<StoreState>) => {
         const state = get();
         if (config.mode) state.setMode(config.mode);
         if (config.urls) state.setUrls(config.urls);
@@ -95,13 +74,9 @@ export const useGaesupDispatch = () => {
       case 'setStates':
         store.setStates(action.payload);
         break;
-      case 'update': {
-        const { updateState } = store as StoreState & {
-          updateState: (updates: Partial<StoreState>) => void;
-        };
-        updateState(action.payload);
+      case 'update':
+        store.updateState(action.payload);
         break;
-      }
       default:
         break;
     }

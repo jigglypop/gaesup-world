@@ -1,6 +1,6 @@
 import { RefObject } from 'react';
 import * as THREE from 'three';
-import { ActiveStateType } from '../../types';
+import { ActiveStateType, ModeType } from '../../types';
 import {
   getCachedTrig,
   MemoizationManager,
@@ -56,23 +56,19 @@ export class DirectionController {
     calcProp?: PhysicsCalcProps,
   ): void {
     const { activeState, keyboard, mouse, characterConfig } = physicsState;
-
     const keyboardChanged =
       this.lastKeyboardState.forward !== keyboard.forward ||
       this.lastKeyboardState.backward !== keyboard.backward ||
       this.lastKeyboardState.leftward !== keyboard.leftward ||
       this.lastKeyboardState.rightward !== keyboard.rightward;
-
     if (mouse.isActive) {
       this.handleMouseDirection(activeState, mouse, characterConfig, calcProp);
     } else if (keyboardChanged) {
       const hasKeyboardInput =
         keyboard.forward || keyboard.backward || keyboard.leftward || keyboard.rightward;
-
       if (hasKeyboardInput) {
         this.handleKeyboardDirection(activeState, keyboard, characterConfig, controlMode);
       }
-
       this.lastKeyboardState = {
         forward: keyboard.forward,
         backward: keyboard.backward,
@@ -136,7 +132,6 @@ export class DirectionController {
       Math.cos(activeState.euler.y) * boost,
     );
     activeState.dir.copy(activeState.direction).normalize();
-
     useGaesupStore.getState().updateState({
       activeState: {
         ...useGaesupStore.getState().activeState,
@@ -271,12 +266,11 @@ export class DirectionController {
 
   private emitRotationUpdate(
     activeState: ActiveStateType,
-    entityType: 'character' | 'vehicle' | 'airplane',
+    entityType: ModeType,
   ): void {
     const currentDirectionLength = activeState.dir.length();
     const eulerChanged = shouldUpdate(activeState.euler.y, this.lastEulerY[entityType], 0.001);
     const directionChanged = shouldUpdate(currentDirectionLength, this.lastDirectionLength, 0.01);
-
     if (eulerChanged || directionChanged) {
       useGaesupStore.getState().updateState({
         activeState: {

@@ -4,7 +4,6 @@ import { useUnifiedFrame } from '../hooks/useUnifiedFrame';
 import { PhysicsCalcProps, PhysicsCalculationProps, PhysicsState } from './types';
 import { PhysicsEngine } from './core/Engine';
 import { SizesType } from '../stores/slices/sizes';
-import * as THREE from 'three';
 export { GaesupWorld } from '../component/GaesupWorld';
 export { GaesupController } from '../component/GaesupController';
 

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ActiveStateType, CameraOptionType, gaesupWorldContextType } from '../../../types';
+import { ActiveStateType, CameraOptionType } from '../../../types';
 import { CameraPropType } from '../../types';
 import { cameraUtils } from '../utils';
 import { BaseCameraController } from './BaseCameraController';

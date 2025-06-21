@@ -9,12 +9,6 @@ export type queueFunctionType = {
   time: number;
 };
 
-export type clickerOptionType = {
-  autoStart: boolean;
-  track: boolean;
-  queue: (THREE.Vector3 | queueFunctionType)[];
-  loop: boolean;
-};
 
 export type blockOptionType = {
   camera: boolean;

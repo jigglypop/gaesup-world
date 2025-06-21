@@ -28,11 +28,10 @@ export class GravityController {
       gameStates: { isJumping, isFalling },
       characterConfig: { jumpGravityScale = 1.5, normalGravityScale = 1.0 },
     } = physicsState;
-
     if (isJumping || isFalling) {
-      rigidBodyRef.current!.setGravityScale(jumpGravityScale, false);
+      rigidBodyRef.current.setGravityScale(jumpGravityScale, false);
     } else {
-      rigidBodyRef.current!.setGravityScale(normalGravityScale, false);
+      rigidBodyRef.current.setGravityScale(normalGravityScale, false);
     }
   }
 
@@ -41,6 +40,6 @@ export class GravityController {
     physicsState: PhysicsState,
   ): void {
     const { airplaneConfig: { gravityScale = 0.3 } = {} } = physicsState;
-    rigidBodyRef.current!.setGravityScale(gravityScale, false);
+    rigidBodyRef.current.setGravityScale(gravityScale, false);
   }
 }

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { PhysicsCalcProps, PhysicsState } from '../types';
+import { PhysicsState } from '../types';
 import { useGaesupStore } from '@stores/gaesupStore';
+import { PhysicsCalcProps } from '../core/types';
 
 export class StateChecker {
   private keyStateCache = new Map<string, { lastKeyE: boolean; lastKeyR: boolean }>();
@@ -9,7 +10,7 @@ export class StateChecker {
   private lastRunningState = false;
 
   checkAll(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
-    const instanceId = `physics-${calcProp.rigidBodyRef?.current?.handle || 'unknown'}`;
+    const instanceId = `physics-${calcProp.rigidBodyRef.current?.handle || 'unknown'}`;
     this.checkGround(calcProp);
     this.checkMoving(calcProp);
     this.checkRotate(calcProp, physicsState.activeState);
@@ -29,7 +30,6 @@ export class StateChecker {
     const velocity = rigidBodyRef.current.linvel();
     const position = rigidBodyRef.current.translation();
     let groundCheckDistance = 1.0;
-
     if (matchSizes && matchSizes.characterUrl) {
       const characterSize = matchSizes.characterUrl;
       groundCheckDistance = characterSize.y * 0.1;
@@ -74,7 +74,6 @@ export class StateChecker {
     const rightward = keyboard.rightward;
     const isClickerMoving = mouse.isActive;
     const clickerIsRun = mouse.shouldRun;
-
     const isKeyboardMoving = forward || backward || leftward || rightward;
     const isMoving = isKeyboardMoving || isClickerMoving;
 

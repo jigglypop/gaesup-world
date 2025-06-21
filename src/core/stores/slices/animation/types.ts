@@ -1,18 +1,29 @@
 import * as THREE from 'three';
 import { EntityAnimationStates } from '../../../types/core';
+import { ModeType } from '../../types';
+
+export interface AnimationActions {
+  [key: string]: {
+    fadeOut: (duration: number) => any;
+    reset: () => any;
+    fadeIn: (duration: number) => any;
+    play: () => any;
+  } | null;
+}
 
 export interface AnimationSlice {
   animationState: EntityAnimationStates;
-  setCurrentAnimation: (type: 'character' | 'vehicle' | 'airplane', newCurrent: string) => void;
+  setCurrentAnimation: (type: ModeType, newCurrent: string) => void;
   setAnimationStore: (
-    type: 'character' | 'vehicle' | 'airplane',
+    type: ModeType,
     newStore: { [key: string]: AnimationPropType },
   ) => void;
-  getCurrentAnimation: (type: 'character' | 'vehicle' | 'airplane') => string;
+  getCurrentAnimation: (type: ModeType) => string;
   getAnimationStore: (
-    type: 'character' | 'vehicle' | 'airplane',
-  ) => Record<string, AnimationPropType>;
+    type: ModeType,
+  ) => Record<string, AnimationActions>;
 }
+
 export interface AnimationState {
   current: string;
   default: string;

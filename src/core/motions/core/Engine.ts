@@ -1,8 +1,12 @@
-import { PhysicsCalcProps, PhysicsState } from '../types';
+import { PhysicsState } from '../types';
 import { DirectionController } from '../behaviors/updateDirection';
 import { ImpulseController } from '../behaviors/applyImpulse';
 import { GravityController } from '../behaviors/applyGravity';
 import { StateChecker } from '../behaviors/checkState';
+import { PhysicsCalcProps } from './types';
+import { RapierRigidBody } from '@react-three/rapier';
+import { RefObject } from 'react';
+
 
 export class PhysicsEngine {
   private directionController = new DirectionController();
@@ -15,12 +19,11 @@ export class PhysicsEngine {
     const currentVelocity = calcProp.rigidBodyRef.current.linvel();
     physicsState.activeState.velocity.set(currentVelocity.x, currentVelocity.y, currentVelocity.z);
     this.stateChecker.checkAll(calcProp, physicsState);
-    const { rigidBodyRef, innerGroupRef, matchSizes, worldContext } = calcProp;
+    const { rigidBodyRef, innerGroupRef, matchSizes } = calcProp;
     const { modeType = 'character' } = physicsState;
-    const controlMode = (worldContext as any)?.mode?.control;
     this.directionController.updateDirection(
       physicsState,
-      modeType === 'character' ? controlMode : 'normal',
+      'normal',
       calcProp,
       modeType === 'airplane' ? innerGroupRef : undefined,
       modeType === 'airplane' ? matchSizes : undefined,
@@ -51,14 +54,14 @@ export class PhysicsEngine {
       rigidBodyRef.current.setEnabledRotations(false, false, false, false);
     }
   }
-  private applyDamping(rigidBodyRef: any, physicsState: PhysicsState): void {
+  private applyDamping(rigidBodyRef: RefObject<RapierRigidBody>, physicsState: PhysicsState): void {
     if (!rigidBodyRef?.current || !physicsState) return;
     const { modeType, vehicleConfig, airplaneConfig } = physicsState;
     let damping = 0;
     if (modeType === 'vehicle') {
-      damping = (vehicleConfig as any)?.damping || 0.9;
+      damping = vehicleConfig?.linearDamping || 0.9;
     } else if (modeType === 'airplane') {
-      damping = (airplaneConfig as any)?.damping || 0.8;
+      damping = airplaneConfig?.linearDamping || 0.8;
     }
     if (damping > 0) {
       rigidBodyRef.current.setLinearDamping(damping);

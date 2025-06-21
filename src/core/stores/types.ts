@@ -1,66 +1,52 @@
-import * as THREE from 'three';
-import { BaseAnimationState, BaseCallbacks, BaseController, BaseRefs } from '../types/common';
-import { ControllerPropsConfig, ResourceUrls } from '../utils/types';
-import { gaesupWorldContextType } from '../types/core';
-import { AnimationSlice } from './slices/animation';
+import { UrlsSlice } from './slices/urls';
+import { ModeSlice, ModeState } from './slices/mode';
+import { ClickerOptionSlice } from './slices/clickerOption';
 import { BlockSlice } from './slices/block';
 import { CameraOptionSlice } from './slices/cameraOption';
 import { CameraSlice } from './slices/camera';
-import { ClickerOptionSlice } from './slices/clickerOption';
-import { InputSlice } from './slices/input';
 import { MinimapSlice } from './slices/minimap';
-import { ModeSlice } from './slices/mode';
+import { InputSlice } from './slices/input';
 import { SizesSlice } from './slices/sizes';
-import { UrlsSlice } from './slices/urls';
+import { AnimationSlice } from './slices/animation';
+import { GameStatesSlice } from './slices/gameStates';
+import { RideableSlice } from './slices/rideable';
+import { ActiveStateSlice } from './slices/activeState';
+import { GameStatesType } from '../types';
+import { UrlsState } from './slices/urls/types';
 
-export type GaesupWorldMode = 'character' | 'vehicle' | 'airplane';
+export type ModeType = 'character' | 'vehicle' | 'airplane';
+export type ControllerType = 'clicker' | 'keyboard' | 'joystick' | 'gamepad';
+export type CameraType =
+  | 'thirdPerson'
+  | 'shoulder'
+  | 'fixed'
+  | 'isometric'
+  | 'firstPerson'
+  | 'topDown'
+  | 'chase'
+  | 'orbit'
+  | 'free'
+  | 'custom';
 
-export interface GaesupWorldState {
-  mode: GaesupWorldMode;
-  subType?: string;
-  urls: ResourceUrls;
-  states: GameStates;
-  control: BaseController['input'];
-  refs: BaseRefs;
-  animationState: Record<GaesupWorldMode, BaseAnimationState>;
-  clicker: ClickerState;
-  rideable: Record<string, THREE.Object3D>;
-  sizes: Record<string, THREE.Vector3>;
-  block: BlockState;
-  config: ControllerPropsConfig;
-  callbacks: BaseCallbacks;
-}
+export type StoreState = UrlsSlice &
+  ModeSlice &
+  ClickerOptionSlice &
+  BlockSlice &
+  CameraOptionSlice &
+  CameraSlice &
+  MinimapSlice &
+  InputSlice &
+  SizesSlice &
+  AnimationSlice &
+  GameStatesSlice &
+  RideableSlice &
+  ActiveStateSlice & {
+    updateState: (updates: Partial<StoreState>) => void;
+    initialize: (config: Partial<StoreState>) => void;
+  };
 
-export interface GameStates {
-  rideableId: string;
-  isMoving: boolean;
-  isNotMoving: boolean;
-  isOnTheGround: boolean;
-  isOnMoving: boolean;
-  isRotated: boolean;
-  isRunning: boolean;
-  isJumping: boolean;
-  enableRiding: boolean;
-  isRiderOn: boolean;
-  isLanding: boolean;
-  isFalling: boolean;
-  isRiding: boolean;
-  canRide: boolean;
-  nearbyRideable: THREE.Object3D | null;
-  shouldEnterRideable: boolean;
-  shouldExitRideable: boolean;
-}
-
-export interface ClickerState {
-  point: THREE.Vector3;
-  angle: number;
-  isOn: boolean;
-  isRun: boolean;
-}
-
-export interface BlockState {
-  camera: boolean;
-  control: boolean;
-  animation: boolean;
-  scroll: boolean;
-}
+export type GaesupAction =
+  | { type: 'setMode'; payload: Partial<ModeState> }
+  | { type: 'setUrls'; payload: Partial<UrlsState> }
+  | { type: 'setStates'; payload: Partial<GameStatesType> }
+  | { type: 'update'; payload: Partial<StoreState> };

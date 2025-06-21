@@ -7,7 +7,6 @@ import {
 import * as THREE from 'three';
 import { RapierCollider, RapierRigidBody } from '@react-three/rapier';
 import { ComponentType, ReactNode, RefObject } from 'react';
-import { BaseCallbacks, Position3D, Rotation3D } from '@/core/types/common';
 
 export interface Part {
   url: string;
@@ -41,15 +40,15 @@ export interface InnerGroupRef {
   enableRiding?: boolean;
 }
 
-export interface PhysicsEntityProps extends BaseCallbacks {
+export interface PhysicsEntityProps {
   onReady?: () => void;
   onFrame?: () => void;
   onDestory?: () => void;
   onAnimate?: () => void;
   url: string;
   name?: string;
-  position?: Position3D;
-  rotation?: Rotation3D;
+  position?: THREE.Vector3 | [number, number, number];
+  rotation?: THREE.Euler | [number, number, number];
   isActive: boolean;
   componentType: ComponentType;
   rigidbodyType?: RigidBodyTypeString;

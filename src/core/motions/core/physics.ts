@@ -1,5 +1,5 @@
 import { useGaesupGltf } from '@utils/gltf';
-import { StoreState, useGaesupStore } from '@stores/gaesupStore';
+import { useGaesupStore } from '@stores/gaesupStore';
 
 export function usePhysics() {
   const store = useGaesupStore();
@@ -11,10 +11,6 @@ export function usePhysics() {
   const block = useGaesupStore((state) => state.block);
   const { getSizesByUrls } = useGaesupGltf();
   const isReady = !!(inputSystem && urls && activeState);
-  const dispatch = (payload: Partial<StoreState>) => {
-    console.log('Physics dispatch:', payload);
-  };
-
   return {
     worldContext: store,
     activeState,
@@ -23,7 +19,6 @@ export function usePhysics() {
       mouse: inputSystem?.pointer,
     },
     urls,
-    dispatch,
     setKeyboardInput,
     setMouseInput: setPointerInput,
     getSizesByUrls,

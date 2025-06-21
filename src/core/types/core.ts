@@ -1,54 +1,6 @@
-import { GroupProps } from '@react-three/fiber';
-import { Dispatch } from 'react';
 import * as THREE from 'three';
 import type { RefObject } from 'react';
 import type { RapierRigidBody, RapierCollider } from '@react-three/rapier';
-
-export type AnimationPropType = {
-  current: string;
-  animationNames: string;
-  keyControl: {
-    [key: string]: boolean;
-  };
-  store: Record<string, THREE.AnimationAction>;
-  default: string;
-  timestamp: number;
-  data: Record<string, unknown>;
-};
-
-export type airplaneDebugType = {
-  angleDelta?: THREE.Vector3;
-  maxAngle?: THREE.Vector3;
-  buoyancy?: number;
-  maxSpeed?: number;
-  accelRatio?: number;
-  brakeRatio?: number;
-  linearDamping?: number;
-};
-
-export type vehicleDebugType = {
-  maxSpeed?: number;
-  accelRatio?: number;
-  brakeRatio?: number;
-  wheelOffset?: number;
-  linearDamping?: number;
-};
-
-export type characterDebugType = {
-  jumpSpeed?: number;
-  turnSpeed?: number;
-  walkSpeed?: number;
-  runSpeed?: number;
-  linearDamping?: number;
-  jumpGravityScale?: number;
-  normalGravityScale?: number;
-  airDamping?: number;
-  stopDamping?: number;
-};
-
-export interface airplaneType extends GroupProps, airplaneDebugType {}
-export interface vehicleType extends GroupProps, vehicleDebugType {}
-export interface characterType extends GroupProps, characterDebugType {}
 
 export interface ActiveState {
   position: THREE.Vector3;
@@ -113,66 +65,6 @@ export interface ControllerOptions {
   };
 }
 
-export type gaesupWorldContextType = {
-  activeState?: ActiveStateType;
-  mode?: ModeType;
-  urls?: ResourceUrlsType;
-  states?: GameStatesType;
-  control?: {
-    forward: boolean;
-    backward: boolean;
-    leftward: boolean;
-    rightward: boolean;
-  };
-  refs?: ControllerRefs;
-  animationState?: EntityAnimationStates;
-  clickerOption?: {
-    isRun: boolean;
-    track?: boolean;
-    queue?: Array<
-      THREE.Vector3 | { action: string; beforeCB: () => void; afterCB: () => void; time: number }
-    >;
-    loop?: boolean;
-  };
-  clicker?: {
-    point: THREE.Vector3;
-    angle: number;
-    isOn: boolean;
-    isRun: boolean;
-  };
-  rideable?: { [key: string]: THREE.Object3D };
-  sizes?: { [key: string]: THREE.Vector3 };
-  block?: {
-    camera: boolean;
-    control: boolean;
-    animation: boolean;
-    scroll: boolean;
-  };
-  airplane?: airplaneType;
-  vehicle?: vehicleType;
-  character?: characterType;
-  callbacks?: EntityCallbacks;
-  controllerOptions?: ControllerOptions;
-};
-
-export type gaesupDisptachType = Dispatch<{
-  type: string;
-  payload?: Partial<gaesupWorldContextType>;
-}>;
-
-export interface ModeState {
-  type: 'character' | 'vehicle' | 'airplane';
-  controller: 'clicker' | 'keyboard' | 'joystick' | 'gamepad';
-  control:
-    | 'chase'
-    | 'firstPerson'
-    | 'topDown'
-    | 'thirdPerson'
-    | 'fixed'
-    | 'isometric'
-    | 'sideScroll';
-}
-
 export type rideableState = Record<
   string,
   {
@@ -184,59 +76,7 @@ export type rideableState = Record<
   }
 >;
 
-export interface ControllerConfig {
-  airplane: {
-    angleDelta: THREE.Vector3;
-    maxAngle: THREE.Vector3;
-    maxSpeed: number;
-    accelRatio: number;
-    brakeRatio: number;
-    buoyancy: number;
-    linearDamping: number;
-  };
-  vehicle: {
-    maxSpeed: number;
-    accelRatio: number;
-    brakeRatio: number;
-    wheelOffset: number;
-    linearDamping: number;
-  };
-  character: {
-    walkSpeed: number;
-    runSpeed: number;
-    turnSpeed: number;
-    jumpSpeed: number;
-    linearDamping: number;
-    jumpGravityScale: number;
-    normalGravityScale: number;
-    airDamping: number;
-    stopDamping: number;
-  };
-  controllerOptions: {
-    lerp: {
-      cameraTurn: number;
-      cameraPosition: number;
-    };
-  };
-}
-
-export type EventType =
-  | 'POSITION_CHANGED'
-  | 'MODE_CHANGED'
-  | 'RIDEABLE_ENTER'
-  | 'RIDEABLE_EXIT'
-  | 'ANIMATION_CHANGE'
-  | 'PHYSICS_UPDATE'
-  | 'COLLISION_DETECTED';
-
-export interface EventPayload {
-  type: EventType;
-  data: Record<string, unknown>;
-  timestamp: number;
-}
-
 export type ActiveStateType = ActiveState;
-export type ModeType = ModeState;
 export type GameStatesType = GameStates;
 export type ResourceUrlsType = {
   characterUrl: string;
