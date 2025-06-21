@@ -145,17 +145,26 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       if (props.onIntersectionEnter) {
         await props.onIntersectionEnter(payload);
       }
+      if (props.userData?.onNear) {
+        await props.userData.onNear(payload, props.userData);
+      }
     };
 
     const handleIntersectionExit = async (payload: any) => {
       if (props.onIntersectionExit) {
         await props.onIntersectionExit(payload);
       }
+      if (props.userData?.onLeave) {
+        await props.userData.onLeave(payload);
+      }
     };
 
     const handleCollisionEnter = async (payload: any) => {
       if (props.onCollisionEnter) {
         await props.onCollisionEnter(payload);
+      }
+      if (props.userData?.onNear) {
+        await props.userData.onNear(payload, props.userData);
       }
     };
 

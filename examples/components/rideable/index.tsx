@@ -14,6 +14,9 @@ export function RideableVehicles() {
         offset={V3(0, 1, 0)}
         position={V3(-70, 1, 30)}
         controllerOptions={{ lerp: { cameraPosition: 0.1, cameraTurn: 0.1 } }}
+        displayName="고라니 차량"
+        rideMessage="F키를 눌러 고라니에 탑승하세요"
+        exitMessage="F키를 눌러 차량에서 내리세요"
       />
       <Rideable
         objectkey="airplane_main"
@@ -23,6 +26,9 @@ export function RideableVehicles() {
         offset={V3(0, 1, 0)}
         position={V3(70, 1, 40)}
         controllerOptions={{ lerp: { cameraPosition: 0.1, cameraTurn: 0.1 } }}
+        displayName="비행기"
+        rideMessage="F키를 눌러 비행기에 탑승하세요"
+        exitMessage="F키를 눌러 비행기에서 내리세요"
       />
       <Rideable
         objectkey="airplane_advanced"
@@ -32,6 +38,9 @@ export function RideableVehicles() {
         offset={V3(0, 1, 0)}
         position={V3(-30, 1, 80)}
         controllerOptions={{ lerp: { cameraPosition: 0.1, cameraTurn: 0.1 } }}
+        displayName="오리 전투기"
+        rideMessage="F키를 눌러 전투기에 탑승하세요"
+        exitMessage="F키를 눌러 전투기에서 내리세요"
       />
     </>
   );

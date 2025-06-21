@@ -1,9 +1,14 @@
 /* Rideable UI 스타일 */
-.rideable-ui {
+.rideable-ui-container {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.message-box {
   background-color: rgba(0, 0, 0, 0.8);
   color: white;
   padding: 10px 20px;
@@ -11,8 +16,6 @@
   font-size: 16px;
   font-weight: bold;
   border: 2px solid #4CAF50;
-  z-index: 1000;
-  pointer-events: none;
   animation: rideable-pulse 1.5s infinite;
 }
 

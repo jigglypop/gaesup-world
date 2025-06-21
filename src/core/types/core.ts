@@ -11,6 +11,15 @@ export interface ActiveState {
   direction: THREE.Vector3;
 }
 
+export interface NearbyRideable {
+  objectkey: string;
+  objectType: 'vehicle' | 'airplane';
+  name: string;
+  rideMessage?: string;
+  exitMessage?: string;
+  displayName?: string;
+}
+
 export interface GameStates {
   rideableId: string;
   isMoving: boolean;
@@ -26,7 +35,7 @@ export interface GameStates {
   isFalling: boolean;
   isRiding: boolean;
   canRide: boolean;
-  nearbyRideable: THREE.Object3D | null;
+  nearbyRideable: NearbyRideable | null;
   shouldEnterRideable: boolean;
   shouldExitRideable: boolean;
 }

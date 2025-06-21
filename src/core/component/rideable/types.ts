@@ -29,6 +29,9 @@ export interface RideablePropType {
   rigidBodyProps?: RigidBodyProps;
   outerGroupProps?: THREE.Group;
   innerGroupProps?: THREE.Group;
+  rideMessage?: string;
+  exitMessage?: string;
+  displayName?: string;
 }
 
 // Legacy export for compatibility

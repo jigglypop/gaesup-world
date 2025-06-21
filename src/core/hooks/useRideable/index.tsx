@@ -177,7 +177,7 @@ export function useRideable() {
     const { states } = worldContext;
     const isCharacterCollision =
       (e.other.rigidBodyObject && e.other.rigidBodyObject.name === 'character') ||
-      (e.other.rigidBodyObject && !e.other.rigidBodyObject.name) || // name이 없는 경우도 허용
+      (e.other.rigidBodyObject && !e.other.rigidBodyObject.name) ||
       e.other.rigidBody;
     if (isCharacterCollision && !states.isRiding) {
       if (!props.objectType) return;
@@ -185,6 +185,9 @@ export function useRideable() {
         objectkey: props.objectkey,
         objectType: props.objectType,
         name: props.objectType === 'vehicle' ? '차량' : '비행기',
+        rideMessage: props.rideMessage,
+        exitMessage: props.exitMessage,
+        displayName: props.displayName,
       };
       states.canRide = true;
       dispatch({

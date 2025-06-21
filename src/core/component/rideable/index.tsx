@@ -50,11 +50,14 @@ export function RideableUI({ states }: RideableUIProps) {
     return null;
   }
 
+  const rideMessage = states.nearbyRideable?.rideMessage || `Press F to ride ${states.nearbyRideable?.displayName || states.nearbyRideable?.name || 'vehicle'}`;
+  const exitMessage = states.nearbyRideable?.exitMessage || 'Press F to exit';
+
   return (
     <div className="rideable-ui-container">
       <div className="message-box">
-        {states.canRide && <div>Press F to ride</div>}
-        {states.isRiding && <div>Press F to exit</div>}
+        {states.canRide && <div>{rideMessage}</div>}
+        {states.isRiding && <div>{exitMessage}</div>}
       </div>
     </div>
   );
@@ -64,6 +67,10 @@ export function Rideable(props: RideablePropType) {
   const mode = useGaesupStore((state) => state.mode);
   const rideable = useGaesupStore((state) => state.rideable);
   const { initRideable, onRideableNear, onRideableLeave, landing } = useRideable();
+
+  useEffect(() => {
+    initRideable(props);
+  }, [initRideable, props]);
 
   useEffect(() => {
     if (mode.type !== 'character' && props.objectkey && rideable[props.objectkey]) {
@@ -79,6 +86,9 @@ export function Rideable(props: RideablePropType) {
     onNear: onRideableNear,
     onLeave: onRideableLeave,
     landing,
+    rideMessage: props.rideMessage,
+    exitMessage: props.exitMessage,
+    displayName: props.displayName,
   };
 
   return (
@@ -87,6 +97,7 @@ export function Rideable(props: RideablePropType) {
         <PassiveVehicle
           {...props}
           userData={userData}
+          sensor={true}
           visible={!rideable[props.objectkey]?.isOccupied}
         />
       )}
@@ -94,6 +105,7 @@ export function Rideable(props: RideablePropType) {
         <PassiveAirplane
           {...props}
           userData={userData}
+          sensor={true}
           visible={!rideable[props.objectkey]?.isOccupied}
         />
       )}

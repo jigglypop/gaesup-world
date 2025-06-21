@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GaesupCore } from '../../types/core';
+import { NearbyRideable } from '../../types/core';
 
 export type rideableType = {
   objectkey: string;
@@ -18,6 +18,9 @@ export type rideableType = {
   vehicleSize?: THREE.Vector3;
   wheelSize?: THREE.Vector3;
   airplaneSize?: THREE.Vector3;
+  rideMessage?: string;
+  exitMessage?: string;
+  displayName?: string;
 };
 
 export type RideStateChangeData = {
@@ -27,4 +30,4 @@ export type RideStateChangeData = {
   isRiding?: boolean;
 };
 
-export type NearbyRideableType = GaesupCore.State.NearbyRideable;
+export type NearbyRideableType = NearbyRideable;
