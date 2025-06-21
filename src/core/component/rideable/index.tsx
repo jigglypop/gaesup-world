@@ -8,50 +8,22 @@ import './styles.css';
 import React from 'react';
 
 export function RideableUI({ states }: RideableUIProps) {
-  const setMode = useGaesupStore((state) => state.setMode);
-  const setStates = useGaesupStore((state) => state.setStates);
-
   if (!states) {
     return null;
   }
-
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.code !== 'KeyF') return;
-      
-      if (states.canRide && states.nearbyRideable) {
-        const { objectkey, objectType } = states.nearbyRideable;
-        setMode({
-          type: objectType as 'character' | 'vehicle' | 'airplane',
-        });
-        setStates({
-          rideableId: objectkey,
-          isRiding: true,
-          shouldEnterRideable: true,
-          nearbyRideable: null,
-          canRide: false,
-        });
-      } else if (states.isRiding) {
-        setMode({
-          type: 'character',
-        });
-        setStates({
-          shouldExitRideable: true,
-          isRiding: false,
-        });
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [states.canRide, states.nearbyRideable, states.isRiding, setMode, setStates]);
 
   if (!states.canRide && !states.isRiding) {
     return null;
   }
 
-  const rideMessage = states.nearbyRideable?.rideMessage || `Press F to ride ${states.nearbyRideable?.displayName || states.nearbyRideable?.name || 'vehicle'}`;
-  const exitMessage = states.nearbyRideable?.exitMessage || 'Press F to exit';
+  const rideMessage =
+    states.nearbyRideable?.rideMessage ??
+    `Press F to ride ${
+      states.nearbyRideable?.displayName ??
+      states.nearbyRideable?.name ??
+      'vehicle'
+    }`;
+  const exitMessage = states.nearbyRideable?.exitMessage ?? 'Press F to exit';
 
   return (
     <div className="rideable-ui-container">
@@ -64,19 +36,13 @@ export function RideableUI({ states }: RideableUIProps) {
 }
 
 export function Rideable(props: RideablePropType) {
-  const mode = useGaesupStore((state) => state.mode);
   const rideable = useGaesupStore((state) => state.rideable);
-  const { initRideable, onRideableNear, onRideableLeave, landing } = useRideable();
+  const { initRideable, onRideableNear, onRideableLeave, landing } =
+    useRideable();
 
   useEffect(() => {
     initRideable(props);
-  }, [initRideable, props]);
-
-  useEffect(() => {
-    if (mode.type !== 'character' && props.objectkey && rideable[props.objectkey]) {
-      landing(props.objectkey);
-    }
-  }, [mode.type, props.objectkey, rideable, landing]);
+  }, [props, initRideable]);
 
   const userData = {
     objectType: props.objectType,

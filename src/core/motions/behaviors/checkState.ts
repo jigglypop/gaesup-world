@@ -125,29 +125,25 @@ export class StateChecker {
     }
 
     const keyState = this.keyStateCache.get(instanceId)!;
-    const keyE = inputRef.current.keyboard.keyE;
-    const keyR = inputRef.current.keyboard.keyR;
+    const keyF = inputRef.current.keyboard.keyF;
+    const states = useGaesupStore.getState().states;
 
-    if (keyE && !keyState.lastKeyE) {
-      useGaesupStore.getState().setStates({
-        isRiding: false,
-        canRide: true,
-        shouldEnterRideable: true,
-        shouldExitRideable: false,
-      });
+    if (keyF && !keyState.lastKeyE) {
+      if (states.canRide && !states.isRiding) {
+        useGaesupStore.getState().setStates({
+          shouldEnterRideable: true,
+          shouldExitRideable: false,
+        });
+      } else if (states.isRiding) {
+        useGaesupStore.getState().setStates({
+          shouldEnterRideable: false,
+          shouldExitRideable: true,
+        });
+      }
     }
 
-    if (keyR && !keyState.lastKeyR) {
-      useGaesupStore.getState().setStates({
-        isRiding: false,
-        canRide: false,
-        shouldEnterRideable: false,
-        shouldExitRideable: true,
-      });
-    }
-
-    keyState.lastKeyE = keyE;
-    keyState.lastKeyR = keyR;
+    keyState.lastKeyE = keyF;
+    keyState.lastKeyR = false;
   }
 
   private resetJumpState(): void {

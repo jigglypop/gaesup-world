@@ -1,18 +1,20 @@
-import { useGaesupContext, useGaesupStore } from '@stores/gaesupStore';
+import { useGaesupStore } from '@stores/gaesupStore';
 import { gaesupPassivePropsType } from './types';
 
 export function useGaesupController(): gaesupPassivePropsType {
-  const worldContext = useGaesupContext();
+  const activeState = useGaesupStore((state) => state.activeState);
+  const mode = useGaesupStore((state) => state.mode);
+  const animationState = useGaesupStore((state) => state.animationState);
   const urls = useGaesupStore((state) => state.urls);
 
   const currentAnimation =
-    worldContext.mode?.type && worldContext.animationState
-      ? worldContext.animationState[worldContext.mode.type].current
+    mode?.type && animationState
+      ? animationState[mode.type].current
       : 'idle';
 
   return {
-    state: worldContext.activeState || null,
-    mode: worldContext.mode || null,
+    state: activeState || null,
+    mode: mode || null,
     urls: urls,
     currentAnimation,
   };

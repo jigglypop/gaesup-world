@@ -2,12 +2,11 @@ import { useAnimations } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
 import { useMemo } from 'react';
 import * as THREE from 'three';
-import { SkeletonUtils,  } from 'three-stdlib';
+import { SkeletonUtils } from 'three-stdlib';
 import { useAnimationPlayer } from '@/core/hooks';
 import { useGltfAndSize } from '@utils/gltf';
 import { ModelRenderer } from './PartsGroupRef';
 import { riderRefType } from './types';
-import { Group } from 'three'
 
 export default function RiderRef({
   url,
@@ -24,20 +23,18 @@ export default function RiderRef({
   );
   useAnimationPlayer(actions, true);
   return (
-    <>
-      <Group position={offset}>
-        {characterObjectNode && (
-          <primitive
-            object={characterObjectNode}
-            visible={false}
-            receiveShadow
-            castShadow
-            ref={animationRef}
-          />
-        )}
-        <ModelRenderer nodes={characterNodes} url={url} />
-        {children}
-      </Group>
-    </>
+    <group position={offset}>
+      {characterObjectNode && (
+        <primitive
+          object={characterObjectNode}
+          visible={false}
+          receiveShadow
+          castShadow
+          ref={animationRef}
+        />
+      )}
+      <ModelRenderer nodes={characterNodes} url={url} />
+      {children}
+    </group>
   );
 }

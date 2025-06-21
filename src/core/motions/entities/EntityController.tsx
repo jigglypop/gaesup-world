@@ -6,7 +6,10 @@ import { EntityControllerProps } from './types';
 import { PhysicsEntity } from './PhysicsEntity';
 
 export function EntityController({ props, children }: EntityControllerProps) {
-  const { mode, states, rideable, urls } = useGaesupStore();
+  const mode = useGaesupStore((state) => state.mode);
+  const states = useGaesupStore((state) => state.states);
+  const rideable = useGaesupStore((state) => state.rideable);
+  const urls = useGaesupStore((state) => state.urls);
   const setRefs = useGaesupStore((state) => state.setRefs);
   const refs = useGenericRefs();
   const refsSetRef = useRef(false);
@@ -53,6 +56,11 @@ export function EntityController({ props, children }: EntityControllerProps) {
         .map((part) => ({ ...part, url: part.url })),
     };
 
+    const ridingProps =
+      isRiderOn && mode.type !== 'character'
+        ? { ridingUrl: urls.ridingUrl }
+        : { ridingUrl: undefined };
+
     switch (mode.type) {
       case 'character':
         return {
@@ -62,15 +70,15 @@ export function EntityController({ props, children }: EntityControllerProps) {
       case 'vehicle':
         return {
           ...baseProps,
+          ...ridingProps,
           url: urls.vehicleUrl || '',
           wheelUrl: urls.wheelUrl,
-          ridingUrl: urls.ridingUrl,
         };
       case 'airplane':
         return {
           ...baseProps,
+          ...ridingProps,
           url: urls.airplaneUrl || '',
-          ridingUrl: urls.ridingUrl,
         };
       default:
         return {

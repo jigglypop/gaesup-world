@@ -96,7 +96,7 @@ export interface PartsGroupRefProps {
   skeleton?: THREE.Skeleton | null;
 }
 
-export interface RiderRef {
+export interface riderRefType {
   url: string;
   children?: React.ReactNode;
   offset?: THREE.Vector3;

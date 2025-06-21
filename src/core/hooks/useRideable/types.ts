@@ -15,6 +15,7 @@ export type rideableType = {
   offset?: THREE.Vector3;
   landingOffset?: THREE.Vector3;
   visible?: boolean;
+  isOccupied?: boolean;
   vehicleSize?: THREE.Vector3;
   wheelSize?: THREE.Vector3;
   airplaneSize?: THREE.Vector3;

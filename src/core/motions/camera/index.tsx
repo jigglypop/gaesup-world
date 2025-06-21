@@ -1,9 +1,15 @@
 import { useCameraEvents } from './hooks/useCameraEvents';
 import { useCameraFrame } from './hooks/useCameraFrame';
-import { CameraPropType } from '../types';
+import { useGaesupStore } from '@stores/gaesupStore';
 
-export default function Camera(prop: Omit<CameraPropType, 'cameraOption' | 'state'>) {
+export default function Camera() {
   const { cameraOption } = useCameraEvents();
+  const controllerOptions = useGaesupStore((state) => state.controllerOptions);
+  
+  const prop = {
+    controllerOptions,
+  };
+  
   useCameraFrame(prop, cameraOption);
   return null;
 }

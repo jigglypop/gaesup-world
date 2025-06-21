@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { CameraOptionType } from '../../../types';
-import { CameraPropType } from '../../types';
+
 import { useUnifiedFrame } from '../../../hooks/useUnifiedFrame';
 import { useCameraState } from './useCameraState';
 import { CameraBlendManager, CameraEffects } from '..';
@@ -10,7 +10,7 @@ import { SmartCollisionSystem } from '../../systems/SmartCollisionSystem';
 import { controllerMap } from '../control';
 
 export function useCameraFrame(
-  prop: Omit<CameraPropType, 'cameraOption' | 'state'>,
+  prop: { controllerOptions?: any },
   cameraOption: CameraOptionType,
 ) {
   const block = useGaesupStore((state) => state.block);
@@ -20,6 +20,7 @@ export function useCameraFrame(
     [cameraStates, currentCameraStateName],
   );
   const activeState = useGaesupStore((state) => state.activeState);
+  const mode = useGaesupStore((state) => state.mode);
   const blendManagerRef = useRef(new CameraBlendManager());
   const { checkAutoTransitions } = useCameraState(blendManagerRef.current);
   const collisionSystemRef = useRef(new SmartCollisionSystem());
@@ -32,11 +33,8 @@ export function useCameraFrame(
       const propWithFullContext = {
         ...propWithCameraOption,
         worldContext: {
-          ...propWithCameraOption.worldContext,
-          activeState: {
-            ...propWithCameraOption.worldContext.activeState,
-            ...activeState,
-          },
+          activeState,
+          mode,
         },
         state: { ...state, delta: state.delta },
       };
@@ -48,7 +46,7 @@ export function useCameraFrame(
         const isBlending = blendManagerRef.current.update(state.delta, state.camera);
         if (!isBlending) {
           const control =
-            currentCameraState?.type || prop.worldContext.mode?.control || 'thirdPerson';
+            currentCameraState?.type || mode?.control || 'thirdPerson';
 
           const controller =
             controllerMap[control as keyof typeof controllerMap] || controllerMap.thirdPerson;
@@ -57,23 +55,23 @@ export function useCameraFrame(
 
           if (
             state.scene &&
-            (propWithFullContext.worldContext.activeState as { mesh: THREE.Object3D })?.mesh
+            (activeState as { mesh: THREE.Object3D })?.mesh
           ) {
             const targetPos = state.camera.position.clone();
             const safePos = collisionSystemRef.current.checkCollision(
               state.camera.position,
               targetPos,
               state.scene,
-              [(propWithFullContext.worldContext.activeState as { mesh: THREE.Object3D }).mesh],
+              [(activeState as { mesh: THREE.Object3D }).mesh],
             );
             state.camera.position.copy(safePos);
           }
         }
       }
     },
-    [propWithCameraOption, cameraOption.target, checkAutoTransitions, currentCameraState],
+    [propWithCameraOption, cameraOption.target, checkAutoTransitions, currentCameraState, activeState, mode],
   );
-  useUnifiedFrame(`camera-${prop.worldContext.mode?.control || 'default'}`, frameCallback, 1);
+  useUnifiedFrame(`camera-${mode?.control || 'default'}`, frameCallback, 1);
   return {
     blendManager: blendManagerRef.current,
     collisionSystem: collisionSystemRef.current,

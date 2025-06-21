@@ -1,6 +1,6 @@
 import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
-import { useEffect } from 'react';
-import { useGaesupContext, useGaesupDispatch, useGaesupStore } from '@stores/gaesupStore';
+import { useCallback, useEffect } from 'react';
+import { useGaesupStore } from '@stores/gaesupStore';
 import { rideableType } from './types';
 import { useGaesupGltf } from '@utils/gltf';
 
@@ -14,248 +14,207 @@ export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'u
   };
 
 export function useRideable() {
-  const worldContext = useGaesupContext();
-  const { states, rideable } = worldContext;
-  const dispatch = useGaesupDispatch();
+  const states = useGaesupStore((state) => state.states);
+  const rideable = useGaesupStore((state) => state.rideable);
+  const activeState = useGaesupStore((state) => state.activeState);
+  const urls = useGaesupStore((state) => state.urls);
+  const setStates = useGaesupStore((state) => state.setStates);
+  const setMode = useGaesupStore((state) => state.setMode);
+  const setRideable = useGaesupStore((state) => state.setRideable);
+  const setUrls = useGaesupStore((state) => state.setUrls);
   const { getSizesByUrls } = useGaesupGltf();
 
-  const zustandStates = useGaesupStore((state) => state.states);
+  const setUrl = useCallback(
+    (props: rideableType) => {
+      const newUrls: Partial<typeof urls> = {};
+      newUrls.ridingUrl = props.ridingUrl ?? urls.characterUrl;
+      if (props.objectType === 'vehicle') {
+        newUrls.vehicleUrl = props.url ?? '';
+        newUrls.wheelUrl = props.wheelUrl ?? '';
+      } else if (props.objectType === 'airplane') {
+        newUrls.airplaneUrl = props.url ?? '';
+      }
+      setUrls(newUrls);
+    },
+    [setUrls, urls],
+  );
 
-  useEffect(() => {
-    if (!states || !zustandStates) return;
+  const landing = useCallback(
+    (objectkey: string) => {
+      const rideableItem = rideable[objectkey];
+      if (!rideableItem?.position) return;
 
-    if (
-      zustandStates.shouldEnterRideable !== states.shouldEnterRideable ||
-      zustandStates.shouldExitRideable !== states.shouldExitRideable ||
-      zustandStates.canRide !== states.canRide ||
-      zustandStates.isRiding !== states.isRiding
-    ) {
-      dispatch({
-        type: 'update',
-        payload: {
-          states: {
-            ...states,
-            shouldEnterRideable: zustandStates.shouldEnterRideable,
-            shouldExitRideable: zustandStates.shouldExitRideable,
-            canRide: zustandStates.canRide,
-            isRiding: zustandStates.isRiding,
-          },
-        },
+      const modeType = rideableItem.objectType;
+      const { vehicleUrl, airplaneUrl, characterUrl } = getSizesByUrls(urls);
+      const size = modeType === 'vehicle' ? vehicleUrl : airplaneUrl;
+      const mySize = characterUrl;
+      if (!size || !mySize) return;
+
+      setStates({
+        enableRiding: false,
+        isRiderOn: false,
+        rideableId: '',
+      });
+
+      setRideable(objectkey, {
+        ...rideableItem,
+        visible: true,
+        position: activeState.position.clone(),
+      });
+    },
+    [
+      rideable,
+      getSizesByUrls,
+      urls,
+      setStates,
+      setRideable,
+      activeState.position,
+    ],
+  );
+
+  const enterRideable = useCallback(async () => {
+    if (states.canRide && states.nearbyRideable && !states.isRiding) {
+      const { objectkey, objectType } = states.nearbyRideable;
+      const rideableItem = rideable[objectkey];
+      if (!rideableItem) return;
+      setUrl(rideableItem);
+      setMode({ type: objectType });
+      setStates({
+        rideableId: objectkey,
+        isRiding: true,
+        canRide: false,
+        nearbyRideable: null,
+        enableRiding: rideableItem.enableRiding,
+        isRiderOn: true,
+      });
+      setRideable(objectkey, {
+        ...rideableItem,
+        visible: false,
       });
     }
-  }, [dispatch, states, zustandStates]);
+  }, [
+    states.canRide,
+    states.nearbyRideable,
+    states.isRiding,
+    rideable,
+    setUrl,
+    setMode,
+    setStates,
+    setRideable,
+  ]);
 
-  useEffect(() => {
-    if (states?.shouldEnterRideable) {
-      enterRideable();
-      dispatch({
-        type: 'update',
-        payload: {
-          states: { ...states, shouldEnterRideable: false },
-        },
+  const exitRideable = useCallback(async () => {
+    if (states.isRiding && states.rideableId) {
+      landing(states.rideableId);
+      setMode({ type: 'character' });
+      setStates({
+        isRiding: false,
+        rideableId: '',
       });
     }
-  }, [states?.shouldEnterRideable, dispatch, states]);
+  }, [states.isRiding, states.rideableId, landing, setMode, setStates]);
 
   useEffect(() => {
-    if (states?.shouldExitRideable) {
-      exitRideable();
-      dispatch({
-        type: 'update',
-        payload: {
-          states: { ...states, shouldExitRideable: false },
-        },
-      });
-    }
-  }, [states?.shouldExitRideable, dispatch, states]);
-
-  const initRideable = (props: rideableType) => {
-    if (!rideable) return;
-    rideable[props.objectkey] = {
-      ...rideableDefault,
-      ...props,
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.code !== 'KeyF') return;
+      if (states.canRide && states.nearbyRideable) {
+        void enterRideable();
+      } else if (states.isRiding) {
+        void exitRideable();
+      }
     };
-  };
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [
+    states.canRide,
+    states.nearbyRideable,
+    states.isRiding,
+    enterRideable,
+    exitRideable,
+  ]);
 
-  const setRideable = (props: rideableType) => {
-    if (!rideable) return;
-    rideable[props.objectkey] = props;
-  };
+  useEffect(() => {
+    if (states.shouldEnterRideable) {
+      void enterRideable();
+      setStates({ shouldEnterRideable: false });
+    }
+  }, [states.shouldEnterRideable, enterRideable, setStates]);
+
+  useEffect(() => {
+    if (states.shouldExitRideable) {
+      void exitRideable();
+      setStates({ shouldExitRideable: false });
+    }
+  }, [states.shouldExitRideable, exitRideable, setStates]);
+
+  const initRideable = useCallback(
+    (props: rideableType) => {
+      setRideable(props.objectkey, {
+        ...rideableDefault,
+        ...props,
+      });
+    },
+    [setRideable],
+  );
+
+  const updateRideable = useCallback(
+    (props: rideableType) => {
+      setRideable(props.objectkey, props);
+    },
+    [setRideable],
+  );
 
   const getRideable = (objectkey: string): rideableType | undefined => {
-    if (!rideable) return undefined;
     return rideable[objectkey];
   };
 
-  const landing = (objectkey: string) => {
-    if (
-      !worldContext.states ||
-      !worldContext.rideable ||
-      !worldContext.activeState ||
-      !worldContext.urls ||
-      !worldContext.mode
-    )
-      return;
-
-    const { activeState, refs, states, rideable, urls, mode } = worldContext;
-
-    states.enableRiding = false;
-    states.isRiderOn = false;
-    states.rideableId = null;
-
-    const rideableItem = rideable[objectkey];
-    if (!rideableItem?.position) return;
-
-    const modeType = rideableItem.objectType;
-    const { vehicleUrl, airplaneUrl, characterUrl } = getSizesByUrls(urls);
-    const size = modeType === 'vehicle' ? vehicleUrl : airplaneUrl;
-    const mySize = characterUrl;
-    if (!size || !mySize) return;
-
-    rideableItem.visible = true;
-    rideableItem.position.copy(activeState.position.clone());
-    if (refs?.rigidBodyRef) {
-      refs.rigidBodyRef.current.setTranslation(
-        activeState.position.clone().add(size.clone().add(mySize.clone()).addScalar(1)),
-        false,
-      );
-    }
-    dispatch({
-      type: 'update',
-      payload: {
-        rideable: { ...rideable },
-        states: { ...states },
-        activeState: { ...activeState },
-        mode: { ...mode, type: 'character' },
-      },
-    });
-  };
-
-  const setUrl = async (props: rideableType) => {
-    if (!worldContext.urls) return;
-    const { urls } = worldContext;
-    urls.ridingUrl = props.ridingUrl || urls.characterUrl || undefined;
-    if (props.objectType === 'vehicle') {
-      urls.vehicleUrl = props.url;
-      urls.wheelUrl = props.wheelUrl || undefined;
-    } else if (props.objectType === 'airplane') {
-      urls.airplaneUrl = props.url;
-    }
-
-    dispatch({
-      type: 'update',
-      payload: {
-        urls: {
-          ...urls,
-        },
-      },
-    });
-  };
-
-  const setModeAndRiding = async (props: rideableType) => {
-    if (!worldContext.mode || !worldContext.states || !worldContext.rideable) return;
-    const { mode, states, rideable } = worldContext;
-    if (!props.objectType) return;
-    mode.type = props.objectType;
-    states.enableRiding = props.enableRiding ?? false;
-    states.isRiderOn = true;
-    states.rideableId = props.objectkey;
-    const rideableItem = rideable[props.objectkey];
-    if (!rideableItem) return;
-    rideableItem.visible = false;
-    dispatch({
-      type: 'update',
-      payload: {
-        mode: { ...mode },
-        states: { ...states },
-      },
-    });
-  };
-
-  const onRideableNear = async (e: CollisionEnterPayload, props: rideableType) => {
-    if (!worldContext.states) return;
-    const { states } = worldContext;
-    const isCharacterCollision =
-      (e.other.rigidBodyObject && e.other.rigidBodyObject.name === 'character') ||
-      (e.other.rigidBodyObject && !e.other.rigidBodyObject.name) ||
-      e.other.rigidBody;
-    if (isCharacterCollision && !states.isRiding) {
-      if (!props.objectType) return;
-      states.nearbyRideable = {
-        objectkey: props.objectkey,
-        objectType: props.objectType,
-        name: props.objectType === 'vehicle' ? '차량' : '비행기',
-        rideMessage: props.rideMessage,
-        exitMessage: props.exitMessage,
-        displayName: props.displayName,
-      };
-      states.canRide = true;
-      dispatch({
-        type: 'update',
-        payload: {
-          states: { ...states },
-        },
-      });
-    }
-  };
-
-  const onRideableLeave = async (e: CollisionExitPayload) => {
-    if (!worldContext.states) return;
-    const { states } = worldContext;
-    const isCharacterCollision =
-      (e.other.rigidBodyObject && e.other.rigidBodyObject.name === 'character') ||
-      (e.other.rigidBodyObject && !e.other.rigidBodyObject.name) ||
-      e.other.rigidBody;
-
-    if (isCharacterCollision) {
-      states.nearbyRideable = null;
-      states.canRide = false;
-      dispatch({
-        type: 'update',
-        payload: {
-          states: { ...states },
-        },
-      });
-    }
-  };
-
-  const enterRideable = async () => {
-    if (!worldContext.states || !worldContext.rideable) return;
-    const { states, rideable } = worldContext;
-    if (states.canRide && states.nearbyRideable && !states.isRiding) {
-      const rideableData = rideable[states.nearbyRideable.objectkey];
-      if (rideableData) {
-        await setUrl(rideableData);
-        await setModeAndRiding(rideableData);
-        states.canRide = false;
-        states.nearbyRideable = null;
-        dispatch({
-          type: 'update',
-          payload: {
-            states: { ...states },
+  const onRideableNear = useCallback(
+    async (e: CollisionEnterPayload, props: rideableType) => {
+      const isCharacterCollision =
+        (e.other.rigidBodyObject &&
+          e.other.rigidBodyObject.name === 'character') ||
+        (e.other.rigidBodyObject && !e.other.rigidBodyObject.name) ||
+        e.other.rigidBody;
+      if (isCharacterCollision && !states.isRiding) {
+        if (!props.objectType) return;
+        setStates({
+          nearbyRideable: {
+            objectkey: props.objectkey,
+            objectType: props.objectType,
+            name: props.objectType === 'vehicle' ? '차량' : '비행기',
+            rideMessage: props.rideMessage,
+            exitMessage: props.exitMessage,
+            displayName: props.displayName,
           },
+          canRide: true,
         });
       }
-    }
-  };
+    },
+    [states.isRiding, setStates],
+  );
 
-  const exitRideable = async () => {
-    if (!worldContext.states) return;
-    const { states } = worldContext;
-    if (states.isRiding && states.rideableId) {
-      landing(states.rideableId);
-    }
-  };
+  const onRideableLeave = useCallback(
+    async (e: CollisionExitPayload) => {
+      const isCharacterCollision =
+        (e.other.rigidBodyObject &&
+          e.other.rigidBodyObject.name === 'character') ||
+        (e.other.rigidBodyObject && !e.other.rigidBodyObject.name) ||
+        e.other.rigidBody;
 
-  const ride = async (e: CollisionEnterPayload, props: rideableType) => {
-    await onRideableNear(e, props);
-  };
+      if (isCharacterCollision) {
+        setStates({
+          nearbyRideable: null,
+          canRide: false,
+        });
+      }
+    },
+    [setStates],
+  );
 
   return {
     initRideable,
-    setRideable,
+    updateRideable,
     getRideable,
-    ride,
     onRideableNear,
     onRideableLeave,
     enterRideable,

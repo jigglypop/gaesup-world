@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useGaesupContext } from '../../stores/gaesupStore';
+import { useGaesupStore } from '../../stores/gaesupStore';
 import { MinimapProps } from '../../component/minimap/types';
 import * as THREE from 'three';
 
@@ -22,7 +22,9 @@ export interface MinimapResult {
 }
 
 export const useMinimap = (props: MinimapProps): MinimapResult => {
-  const { mode, activeState, minimap } = useGaesupContext();
+  const mode = useGaesupStore((state) => state.mode);
+  const activeState = useGaesupStore((state) => state.activeState);
+  const minimap = useGaesupStore((state) => state.minimap);
 
   const {
     size = 200,

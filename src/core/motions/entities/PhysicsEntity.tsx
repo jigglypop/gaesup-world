@@ -4,7 +4,7 @@ import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three
 import { RefObject, forwardRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
-import { useGaesupContext, useGaesupStore } from '@stores/gaesupStore';
+import { useGaesupStore } from '@stores/gaesupStore';
 import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
 import { useGltfAndSize } from '@utils/gltf';
 import usePhysicsLoop from '../index';
@@ -14,12 +14,25 @@ import { useSetGroundRay } from './setGroundRay';
 import { PhysicsEntityProps } from './types';
 import Camera from '../camera';
 
+function RidingAnimation({
+  url,
+  active = false,
+}: {
+  url: string;
+  active?: boolean;
+}) {
+  const { animations: ridingAnimations } = useGLTF(url);
+  const { actions: ridingActions } = useAnimations(ridingAnimations);
+
+  useAnimationPlayer(ridingActions, active);
+
+  return null;
+}
+
 export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
   (props, rigidBodyRef) => {
     const { size } = useGltfAndSize({ url: props.url || '' });
     const setGroundRay = useSetGroundRay();
-    const worldContext = useGaesupContext();
-    const cameraOption = useGaesupStore((state) => state.cameraOption);
     const { scene, animations } = useGLTF(props.url);
     const { actions, ref: animationRef } = useAnimations(animations);
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
@@ -109,14 +122,6 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     }, [props.groundRay, props.colliderRef, setGroundRay]);
 
     if (props.isActive) {
-      const cameraProps = {
-        state: null,
-        worldContext,
-        controllerOptions: props.controllerOptions,
-        cameraOption,
-      };
-
-      Camera(cameraProps);
       usePhysicsLoop({
         outerGroupRef: props.outerGroupRef,
         innerGroupRef: props.innerGroupRef,
@@ -126,7 +131,10 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       });
     }
 
-    useAnimationPlayer(actions, props.isActive || false);
+    const isRiding = useGaesupStore((state) => state.states.isRiding);
+    const mode = useGaesupStore((state) => state.mode);
+
+    useAnimationPlayer(actions, props.isActive && !isRiding);
     
     useEffect(() => {
       if (!props.isActive && actions && actions.idle) {
@@ -170,6 +178,10 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
 
     return (
       <group ref={props.outerGroupRef} userData={{ intangible: true }}>
+        {props.isActive && <Camera />}
+        {props.ridingUrl && mode.type !== 'character' && (
+          <RidingAnimation url={props.ridingUrl} active={isRiding} />
+        )}
         <RigidBody
           canSleep={false}
           ccd={true}

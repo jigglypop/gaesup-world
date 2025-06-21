@@ -33,4 +33,5 @@ export interface ControllerType {
   onFrame?: () => void;
   onDestory?: () => void;
   onAnimate?: () => void;
+  rideable?: boolean;
 }
