@@ -2,9 +2,12 @@ import * as THREE from 'three';
 import {
   ActiveStateType,
   GameStatesType,
+  CameraOptionType,
 } from '../types';
-import { GroupProps } from '@react-three/fiber';
-import { ModeType } from '../stores/types';
+import { GroupProps, RootState } from '@react-three/fiber';
+import { ModeType, StoreState } from '../stores/types';
+import { RefObject } from 'react';
+import { RapierRigidBody } from '@react-three/rapier';
 
 export type clickerOptionType = {
   autoStart: boolean;
@@ -48,6 +51,30 @@ export interface airplaneType extends GroupProps, airplaneConfigType { }
 export interface vehicleType extends GroupProps, vehicleConfigType { }
 export interface characterType extends GroupProps, characterConfigType { }
 
+export interface PhysicsCalculationProps {
+  keyboard: {
+    forward: boolean;
+    backward: boolean;
+    leftward: boolean;
+    rightward: boolean;
+    shift: boolean;
+    space: boolean;
+    keyZ: boolean;
+    keyR: boolean;
+    keyF: boolean;
+    keyE: boolean;
+    escape: boolean;
+  };
+  mouse: {
+    target: THREE.Vector3;
+    angle: number;
+    isActive: boolean;
+    shouldRun: boolean;
+  };
+  rigidBodyRef: RefObject<RapierRigidBody>;
+  innerGroupRef?: RefObject<THREE.Group>;
+}
+
 export interface PhysicsState {
   activeState: ActiveStateType;
   gameStates: GameStatesType;
@@ -75,4 +102,13 @@ export interface PhysicsState {
   airplaneConfig: airplaneConfigType;
   clickerOption: clickerOptionType;
   modeType: ModeType;
+}
+
+export interface CameraPropType {
+  state: RootState & { delta: number };
+  worldContext: {
+    activeState: ActiveStateType;
+  };
+  cameraOption: CameraOptionType;
+  controllerOptions?: any;
 }

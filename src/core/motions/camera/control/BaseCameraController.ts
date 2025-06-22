@@ -5,8 +5,6 @@ import { cameraUtils } from '../utils';
 
 export abstract class BaseCameraController {
   protected tempVector = new THREE.Vector3();
-  private lastUpdateTime = 0;
-
   abstract calculateTargetPosition(
     activeState: ActiveStateType,
     camera: THREE.Camera,

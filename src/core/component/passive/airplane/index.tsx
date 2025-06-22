@@ -1,6 +1,6 @@
 import { quat, euler, vec3 } from '@react-three/rapier';
 import { PhysicsEntity, useGenericRefs } from '@motions/entities';
-import { useUnifiedFrame } from '@hooks/useUnifiedFrame';
+import { useFrame } from '@react-three/fiber';
 import { passiveAirplanePropsType } from './types';
 import { useMemo } from 'react';
 
@@ -17,23 +17,18 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
     return _euler;
   }, [safeRotation]);
 
-  useUnifiedFrame(
-    `passive-airplane-${props.name || 'unnamed'}`,
-    () => {
-      if (innerGroupRef.current) {
-        innerGroupRef.current.setRotationFromQuaternion(
-          quat()
-            .setFromEuler(innerGroupRef.current.rotation.clone())
-            .slerp(quat().setFromEuler(targetRotation), 0.2),
-        );
-      }
-      if (rigidBodyRef.current) {
-        rigidBodyRef.current.setGravityScale(gravityScale, false);
-      }
-    },
-    3, // 패시브 객체 우선순위
-    !!(innerGroupRef.current || rigidBodyRef.current),
-  );
+  useFrame(() => {
+    if (innerGroupRef.current) {
+      innerGroupRef.current.setRotationFromQuaternion(
+        quat()
+          .setFromEuler(innerGroupRef.current.rotation.clone())
+          .slerp(quat().setFromEuler(targetRotation), 0.2),
+      );
+    }
+    if (rigidBodyRef.current) {
+      rigidBodyRef.current.setGravityScale(gravityScale, false);
+    }
+  });
 
   return (
     <PhysicsEntity

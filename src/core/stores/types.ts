@@ -1,18 +1,18 @@
 import { UrlsSlice } from './slices/urls';
 import { ModeSlice, ModeState } from './slices/mode';
-import { ClickerOptionSlice } from './slices/clickerOption';
+import { ClickerOptionSlice } from '@stores/slices';
 import { BlockSlice } from './slices/block';
-import { CameraOptionSlice } from './slices/cameraOption';
-import { CameraSlice } from './slices/camera';
-import { MinimapSlice } from './slices/minimap';
+import { CameraOptionSlice } from '@stores/slices';
+import { CameraSlice } from '@stores/slices';
+import { MinimapSlice } from '@stores/slices';
 import { InputSlice } from './slices/input';
 import { SizesSlice } from './slices/sizes';
-import { AnimationSlice } from './slices/animation';
-import { GameStatesSlice } from './slices/gameStates';
-import { RideableSlice } from './slices/rideable';
-import { ActiveStateSlice } from './slices/activeState';
-import { GameStatesType } from '../types';
-import { UrlsState } from './slices/urls/types';
+import { AnimationSlice } from '@stores/slices';
+import { GameStatesSlice } from '@stores/slices';
+import { RideableSlice } from '@stores/slices';
+import { ActiveStateSlice } from '@stores/slices';
+import { GameStatesType } from '@/core';
+import { UrlsState } from '@stores/slices';
 
 export type ModeType = 'character' | 'vehicle' | 'airplane';
 export type ControllerType = 'clicker' | 'keyboard' | 'joystick' | 'gamepad';

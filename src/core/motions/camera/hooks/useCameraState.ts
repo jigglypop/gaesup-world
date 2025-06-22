@@ -21,10 +21,8 @@ export function useCameraState(blendManager: CameraBlendManager) {
         console.warn(`Camera state '${stateName}' not found`);
         return null;
       }
-
       const newState = cameraStates.get(stateName)!;
       const oldState = cameraStates.get(currentCameraStateName);
-
       setCameraStateHistory((prev) => {
         const newHistory = [...prev, currentCameraStateName];
         if (newHistory.length > MAX_HISTORY_SIZE) {
@@ -32,7 +30,6 @@ export function useCameraState(blendManager: CameraBlendManager) {
         }
         return newHistory;
       });
-
       setCurrentCameraStateName(stateName);
       if (immediate || !oldState) {
       } else {
@@ -41,7 +38,6 @@ export function useCameraState(blendManager: CameraBlendManager) {
         );
         const duration = transition?.duration || 1.0;
         const blendFunc = transition?.blendFunction || 'EaseInOut'; // Simplified
-
         blendManager.startBlend(
           {
             position: oldState.position,

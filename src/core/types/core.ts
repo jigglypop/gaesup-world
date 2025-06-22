@@ -1,6 +1,4 @@
 import * as THREE from 'three';
-import type { RefObject } from 'react';
-import type { RapierRigidBody, RapierCollider } from '@react-three/rapier';
 
 export interface ActiveState {
   position: THREE.Vector3;
@@ -40,14 +38,6 @@ export interface GameStates {
   shouldExitRideable: boolean;
 }
 
-export interface ControllerRefs {
-  rigidBodyRef?: RefObject<RapierRigidBody>;
-  colliderRef?: RefObject<RapierCollider>;
-  outerGroupRef?: RefObject<THREE.Group>;
-  innerGroupRef?: RefObject<THREE.Group>;
-  animationRef?: RefObject<THREE.Group>;
-}
-
 export interface AnimationState {
   current: string;
   default: string;
@@ -59,31 +49,6 @@ export interface EntityAnimationStates {
   vehicle: AnimationState;
   airplane: AnimationState;
 }
-
-export interface EntityCallbacks {
-  onReady?: () => void;
-  onFrame?: () => void;
-  onDestory?: () => void;
-  onAnimate?: () => void;
-}
-
-export interface ControllerOptions {
-  lerp: {
-    cameraTurn: number;
-    cameraPosition: number;
-  };
-}
-
-export type rideableState = Record<
-  string,
-  {
-    position: THREE.Vector3;
-    rotation: THREE.Euler;
-    velocity: THREE.Vector3;
-    isOccupied: boolean;
-    objectType: 'vehicle' | 'airplane';
-  }
->;
 
 export type ActiveStateType = ActiveState;
 export type GameStatesType = GameStates;
@@ -124,19 +89,6 @@ export interface CameraOptionType {
   fixedPosition?: THREE.Vector3;
   rotation?: THREE.Euler;
   isoAngle?: number;
-}
-
-export interface CameraShakeConfig {
-  intensity: number;
-  duration: number;
-  frequency: number;
-  decay: boolean;
-}
-
-export interface CameraZoomConfig {
-  targetFov: number;
-  duration: number;
-  easing: (t: number) => number;
 }
 
 export interface CameraCollisionConfig {

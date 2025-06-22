@@ -5,11 +5,9 @@ import { useGaesupStore } from '@stores/gaesupStore';
 export default function Camera() {
   const { cameraOption } = useCameraEvents();
   const controllerOptions = useGaesupStore((state) => state.controllerOptions);
-  
   const prop = {
     controllerOptions,
   };
-  
   useCameraFrame(prop, cameraOption);
   return null;
 }

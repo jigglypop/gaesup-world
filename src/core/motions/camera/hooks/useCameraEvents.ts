@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import * as THREE from 'three';
 import { useGaesupStore } from '@stores/gaesupStore';
-import { CameraOptionType } from '../../../types';
+import { CameraOptionType } from '@/core';
 
 const modeOptions: Record<string, Partial<CameraOptionType>> = {
   firstPerson: {

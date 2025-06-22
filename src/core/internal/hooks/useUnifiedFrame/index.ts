@@ -7,15 +7,19 @@ class OptimizedFrameManager {
   private sortedSubscriptions: FrameSubscription[] = [];
   private needsSort = false;
   private isRunning = false;
-  private maxSubscriptions = 100;
+  private readonly maxSubscriptions = 100;
+  private executionTimings: Map<string, number> = new Map();
+  private readonly maxExecutionTime = 16;
+
   subscribe(id: string, callback: FrameCallback, priority: number = 0): void {
     if (this.subscriptions.size >= this.maxSubscriptions) {
-      console.error(`Maximum frame subscriptions (${this.maxSubscriptions}) exceeded`);
+      console.warn(`Maximum frame subscriptions (${this.maxSubscriptions}) reached`);
       const lowestPriority = Array.from(this.subscriptions.values())
         .sort((a, b) => b.priority - a.priority)
         .pop();
       if (lowestPriority) {
         this.subscriptions.delete(lowestPriority.id);
+        this.executionTimings.delete(lowestPriority.id);
       }
     }
 
@@ -31,13 +35,17 @@ class OptimizedFrameManager {
 
   unsubscribe(id: string): void {
     if (this.subscriptions.delete(id)) {
+      this.executionTimings.delete(id);
       this.needsSort = true;
     }
   }
 
   executeFrame(state: RootState, delta: number): void {
     if (this.isRunning) return;
+    
     this.isRunning = true;
+    const frameStartTime = performance.now();
+
     try {
       if (this.needsSort) {
         this.sortedSubscriptions = Array.from(this.subscriptions.values()).sort(
@@ -45,34 +53,67 @@ class OptimizedFrameManager {
         );
         this.needsSort = false;
       }
+
       for (const subscription of this.sortedSubscriptions) {
+        const callbackStartTime = performance.now();
+        
         try {
           subscription.callback(state, delta);
+          
+          const executionTime = performance.now() - callbackStartTime;
+          this.executionTimings.set(subscription.id, executionTime);
+          
+          if (executionTime > this.maxExecutionTime) {
+            console.warn(`Frame callback ${subscription.id} took ${executionTime.toFixed(2)}ms`);
+          }
         } catch (error) {
           console.error(`Frame callback error for ${subscription.id}:`, error);
+        }
+
+        if ((performance.now() - frameStartTime) > this.maxExecutionTime) {
+          console.warn('Frame execution time exceeded limit, skipping remaining callbacks');
+          break;
         }
       }
     } finally {
       this.isRunning = false;
     }
   }
+
   getSubscriptionCount(): number {
     return this.subscriptions.size;
   }
-  destroy() {
+
+  getAverageExecutionTime(): number {
+    const times = Array.from(this.executionTimings.values());
+    return times.length > 0 ? times.reduce((sum, time) => sum + time, 0) / times.length : 0;
+  }
+
+  destroy(): void {
     this.subscriptions.clear();
     this.sortedSubscriptions = [];
+    this.executionTimings.clear();
     this.needsSort = false;
     this.isRunning = false;
   }
-  clear() {
+
+  clear(): void {
     this.subscriptions.clear();
     this.sortedSubscriptions = [];
+    this.executionTimings.clear();
     this.needsSort = false;
   }
 }
 
-const frameManager = new OptimizedFrameManager();
+let frameManager: OptimizedFrameManager | null = null;
+
+const getFrameManager = (): OptimizedFrameManager => {
+  if (!frameManager) {
+    frameManager = new OptimizedFrameManager();
+  }
+  return frameManager;
+};
+
 export function useUnifiedFrame(
   id: string,
   callback: FrameCallback,
@@ -80,8 +121,11 @@ export function useUnifiedFrame(
   enabled: boolean = true,
 ): {
   subscriptionCount: number;
+  averageExecutionTime: number;
 } {
   const callbackRef = useRef(callback);
+  const manager = getFrameManager();
+  
   callbackRef.current = callback;
 
   const stableCallback = useCallback(
@@ -94,26 +138,39 @@ export function useUnifiedFrame(
   );
 
   const subscribe = useCallback((): void => {
-    frameManager.subscribe(id, stableCallback, priority);
-  }, [id, stableCallback, priority]);
+    manager.subscribe(id, stableCallback, priority);
+  }, [id, stableCallback, priority, manager]);
 
   const unsubscribe = useCallback((): void => {
-    frameManager.unsubscribe(id);
-  }, [id]);
+    manager.unsubscribe(id);
+  }, [id, manager]);
 
   useEffect((): (() => void) => {
     subscribe();
     return unsubscribe;
   }, [subscribe, unsubscribe]);
 
+  useEffect(() => {
+    return () => {
+      if (manager.getSubscriptionCount() === 0) {
+        manager.destroy();
+        frameManager = null;
+      }
+    };
+  }, [manager]);
+
   return {
-    subscriptionCount: frameManager.getSubscriptionCount(),
+    subscriptionCount: manager.getSubscriptionCount(),
+    averageExecutionTime: manager.getAverageExecutionTime(),
   };
 }
 
 export function useMainFrameLoop(): void {
+  const manager = getFrameManager();
+  
   useFrame((state, delta) => {
-    frameManager.executeFrame(state, delta);
+    manager.executeFrame(state, delta);
   });
 }
-export { frameManager };
+
+export { getFrameManager as frameManager };

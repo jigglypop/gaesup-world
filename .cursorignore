@@ -1,0 +1,9 @@
+/node_modules
+yarn.lock
+.pnp.cjs
+.pnp.loader.mjs
+/public
+/public/*
+.yarn
+.yarn/
+.yarn/*

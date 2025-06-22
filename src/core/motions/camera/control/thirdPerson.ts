@@ -81,11 +81,9 @@ export class ThirdPersonController extends BaseCameraController {
     const {
       worldContext: { activeState },
     } = prop;
-
     if (!activeState?.position) {
       return undefined;
     }
-
     return new THREE.Vector3(
       activeState.position.x || 0,
       activeState.position.y || 0,

@@ -15,21 +15,18 @@ export function useTeleport(): TeleportResult {
     if (!activeState) {
       return false;
     }
-
     try {
       setActiveState({
         ...activeState,
         position: position.clone(),
         velocity: new THREE.Vector3(0, 0, 0),
       });
-
       const teleportEvent = new CustomEvent('gaesup:teleport', {
         detail: {
           position: position.clone(),
           timestamp: Date.now(),
         },
       });
-
       window.dispatchEvent(teleportEvent);
       document.dispatchEvent(
         new CustomEvent('teleport-request', {

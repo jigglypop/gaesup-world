@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { RootState, useFrame } from '@react-three/fiber';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { CameraOptionType } from '../../../types';
-
-import { useUnifiedFrame } from '../../../hooks/useUnifiedFrame';
+import { CameraPropType } from '../../types';
 import { useCameraState } from './useCameraState';
 import { CameraBlendManager, CameraEffects } from '..';
 import { SmartCollisionSystem } from '../../systems/SmartCollisionSystem';
@@ -23,58 +23,39 @@ export function useCameraFrame(
   const mode = useGaesupStore((state) => state.mode);
   const blendManagerRef = useRef(new CameraBlendManager());
   const { checkAutoTransitions } = useCameraState(blendManagerRef.current);
-  const collisionSystemRef = useRef(new SmartCollisionSystem());
-  const effectsRef = useRef(new CameraEffects());
-
-  const propWithCameraOption = useMemo(() => ({ ...prop, cameraOption }), [prop, cameraOption]);
+  const cameraEffectsRef = useRef(new CameraEffects());
 
   const frameCallback = useCallback(
-    (state: any) => {
-      const propWithFullContext = {
-        ...propWithCameraOption,
-        worldContext: {
-          activeState,
-          mode,
-        },
-        state: { ...state, delta: state.delta },
-      };
+    (state: RootState, delta: number) => {
+      if (!activeState || !mode?.control || block.camera) return;
 
-      if (!block.camera && state.camera) {
-        checkAutoTransitions();
-        effectsRef.current.update(state.delta, state.camera);
+      try {
+        checkAutoTransitions(state.camera, activeState);
+        const { camera } = state;
+        const currentController = controllerMap[mode.control];
+        if (!currentController) return;
 
-        const isBlending = blendManagerRef.current.update(state.delta, state.camera);
-        if (!isBlending) {
-          const control =
-            currentCameraState?.type || mode?.control || 'thirdPerson';
+        const currentBlendState = currentCameraState || blendManagerRef.current.getDefault();
+        const blendedState = blendManagerRef.current.update(currentBlendState, delta);
 
-          const controller =
-            controllerMap[control as keyof typeof controllerMap] || controllerMap.thirdPerson;
+        const cameraProp: CameraPropType = {
+          state: { ...state, delta },
+          worldContext: {
+            activeState,
+          },
+          cameraOption: blendedState || cameraOption,
+          controllerOptions: prop.controllerOptions,
+        };
 
-          controller.update(propWithFullContext);
+        currentController.update(cameraProp);
 
-          if (
-            state.scene &&
-            (activeState as { mesh: THREE.Object3D })?.mesh
-          ) {
-            const targetPos = state.camera.position.clone();
-            const safePos = collisionSystemRef.current.checkCollision(
-              state.camera.position,
-              targetPos,
-              state.scene,
-              [(activeState as { mesh: THREE.Object3D }).mesh],
-            );
-            state.camera.position.copy(safePos);
-          }
-        }
+        cameraEffectsRef.current.update(camera, activeState, blendedState || cameraOption, delta);
+      } catch (error) {
+        console.error('Camera frame error:', error);
       }
     },
-    [propWithCameraOption, cameraOption.target, checkAutoTransitions, currentCameraState, activeState, mode],
+    [activeState, mode, block, currentCameraState, cameraOption, prop.controllerOptions, checkAutoTransitions],
   );
-  useUnifiedFrame(`camera-${mode?.control || 'default'}`, frameCallback, 1);
-  return {
-    blendManager: blendManagerRef.current,
-    collisionSystem: collisionSystemRef.current,
-    effects: effectsRef.current,
-  };
+
+  useFrame(frameCallback);
 }

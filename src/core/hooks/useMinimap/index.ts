@@ -25,7 +25,6 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
   const mode = useGaesupStore((state) => state.mode);
   const activeState = useGaesupStore((state) => state.activeState);
   const minimap = useGaesupStore((state) => state.minimap);
-
   const {
     size = 200,
     scale: initialScale = DEFAULT_SCALE,
@@ -34,7 +33,6 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
     angle = 0,
     updateInterval = 33,
   } = props;
-
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [scale, setScale] = useState(initialScale);
   const lastPositionRef = useRef<THREE.Vector3 | null>(null);
