@@ -22,8 +22,8 @@
   opacity: 0;
   text-align: center;
   padding: 0.5rem;
-  width: 10rem;
-  font-size: 1.2rem;
+  width: 5rem;
+  font-size: 12px;
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
   font-weight: 400;
   border-radius: 0.5rem;
@@ -31,7 +31,7 @@
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   color: white;
   z-index: 1;
-  margin-top: 5rem;
+  margin-top: 2.2rem;
   transition: all 0.3s ease-in;
   cursor: pointer;
   display: flex;

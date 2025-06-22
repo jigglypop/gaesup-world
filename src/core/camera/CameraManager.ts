@@ -8,7 +8,6 @@ export class CameraManager {
   private effects: CameraEffects;
   private blendManager: CameraBlendManager;
   private currentController: CameraController | null = null;
-
   constructor() {
     this.effects = new CameraEffects();
     this.blendManager = new CameraBlendManager();
@@ -16,16 +15,11 @@ export class CameraManager {
 
   update(state: CameraState): void {
     const { camera, activeState, cameraOption, deltaTime } = state;
-    
     if (!activeState || !camera) return;
-
     const controllerName = this.getControllerName(cameraOption);
     const controller = controllerMap[controllerName];
-    
     if (!controller) return;
-
     this.currentController = controller;
-
     const targetPosition = controller.calculatePosition(state);
     const lookAtTarget = controller.calculateLookAt?.(state);
 

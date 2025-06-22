@@ -12,7 +12,6 @@ export class ChaseController extends CameraController {
   ): THREE.Vector3 {
     const position = activeStateUtils.getPosition(activeState);
     const euler = activeStateUtils.getEuler(activeState);
-    
     const offset = activeStateUtils.calculateCameraOffset(position, {
       xDistance: cameraOption.xDistance,
       yDistance: cameraOption.yDistance,
@@ -22,11 +21,9 @@ export class ChaseController extends CameraController {
     });
 
     const targetPosition = position.clone().add(offset);
-    
     if (cameraOption.bounds) {
       cameraUtils.clampPosition(targetPosition, cameraOption.bounds);
     }
-    
     return targetPosition;
   }
 
@@ -37,9 +34,7 @@ export class ChaseController extends CameraController {
 
   public override afterUpdate(prop: any): void {
     const { state, worldContext: { activeState }, cameraOption } = prop;
-    
     if (!state?.camera) return;
-
     const lookAtTarget = activeStateUtils.getCameraTarget(activeState, cameraOption);
     state.camera.lookAt(lookAtTarget);
   }

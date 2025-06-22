@@ -10,9 +10,7 @@ export default function thirdPerson(prop: CameraPropType) {
     worldContext: { activeState },
     cameraOption,
   } = prop;
-
   if (!state?.camera || !activeState) return;
-
   const currentPosition = activeStateUtils.getPosition(activeState);
   const offset = activeStateUtils.calculateCameraOffset(currentPosition, {
     xDistance: cameraOption.xDistance,
@@ -20,18 +18,14 @@ export default function thirdPerson(prop: CameraPropType) {
     zDistance: cameraOption.zDistance,
     mode: 'thirdPerson',
   });
-
   const targetPosition = currentPosition.clone().add(offset);
-  
   if (cameraOption.bounds) {
     cameraUtils.clampPosition(targetPosition, cameraOption.bounds);
   }
 
   const deltaTime = prop.state?.delta || 0.016;
   const lookAtTarget = activeStateUtils.getCameraTarget(activeState, cameraOption);
-  
   cameraUtils.preventCameraJitter(state.camera, targetPosition, lookAtTarget, 8.0, deltaTime);
-  
   if (cameraOption.fov && state.camera instanceof THREE.PerspectiveCamera) {
     cameraUtils.updateFOV(state.camera, cameraOption.fov, cameraOption.smoothing?.fov);
   }
@@ -50,7 +44,6 @@ export class ThirdPersonController extends CameraController {
       zDistance: cameraOption.zDistance,
       mode: 'thirdPerson',
     });
-    
     return position.clone().add(offset);
   }
 

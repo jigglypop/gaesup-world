@@ -1,5 +1,6 @@
+
 .info-style {
-  position: fixed;
+  position: relative;
   top: 0;
   left: 0;
   display: flex;
@@ -8,12 +9,11 @@
   z-index: 1000;
 }
 .p-recipe {
-  padding: 8px 12px;
+  padding: 8px;
   margin: 4px 0;
   cursor: pointer;
   border-radius: 4px;
-  font-size: 14px;
-  letter-spacing: 0.2px;
+  font-size: 12px;
   transition: all 0.2s ease;
   color: rgba(255, 255, 255, 0.8);
 }
@@ -25,18 +25,17 @@
   color: #ffffff;
 }
 .glass-button {
-  padding: 8px 16px;
+  padding: 8px;
   background-color: rgba(0, 0, 0, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: none;
   border-radius: 8px;
   color: white;
   cursor: pointer;
   backdrop-filter: blur(10px);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.2px;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
 }
 .glass-button:hover {
   background-color: rgba(255, 255, 255, 0.2);

@@ -14,13 +14,11 @@ export class IsometricController extends CameraController {
     const position = activeStateUtils.getPosition(activeState);
     const distance = cameraOption.distance || 15;
     const angle = cameraOption.isoAngle || Math.PI / 4;
-    
     const offset = new THREE.Vector3(
       Math.cos(angle) * distance,
       distance * 0.8,
       Math.sin(angle) * distance
     );
-    
     return position.clone().add(offset);
   }
 

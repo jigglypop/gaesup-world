@@ -22,12 +22,10 @@ export class FirstPersonController extends CameraController {
     const { worldContext: { activeState } } = prop;
     const position = activeStateUtils.getPosition(activeState);
     const euler = activeStateUtils.getEuler(activeState);
-    
     const lookDirection = tempForward.clone();
     if (euler) {
       lookDirection.applyEuler(euler);
     }
-    
     return position.clone().add(lookDirection);
   }
 
@@ -35,9 +33,6 @@ export class FirstPersonController extends CameraController {
     const { worldContext: { activeState } } = prop;
     const velocity = activeStateUtils.getVelocity(activeState);
     const speed = velocity.length();
-    
-    if (speed > 0.1) {
-    }
   }
 
   public override shouldLerpPosition(): boolean {
