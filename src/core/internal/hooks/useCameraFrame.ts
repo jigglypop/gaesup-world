@@ -2,11 +2,12 @@ import { useCallback, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { RootState, useFrame } from '@react-three/fiber';
 import { useGaesupStore } from '@stores/gaesupStore';
-import { CameraOptionType } from '../../../types';
-import { CameraPropType } from '../../types';
+import { CameraOptionType } from '../../types';
+import { CameraPropType } from '../../types/camera';
 import { useCameraState } from './useCameraState';
-import { CameraBlendManager, CameraEffects } from '..';
-import { controllerMap } from '../control';
+import { CameraBlendManager } from '../systems/CameraBlendManager';
+import { CameraEffects } from '../systems/CameraEffects';
+import { controllerMap } from '../../component/camera';
 
 export function useCameraFrame(
   prop: { controllerOptions?: any },
@@ -58,4 +59,4 @@ export function useCameraFrame(
   );
 
   useFrame(frameCallback);
-}
+} 

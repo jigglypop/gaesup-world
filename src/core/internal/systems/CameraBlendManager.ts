@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CameraOptionType } from '../../../types';
+import { CameraOptionType } from '../../types';
 
 interface CameraBlendState {
   position: THREE.Vector3;
@@ -141,4 +141,4 @@ export class CameraBlendManager {
     this.activeBlend = null;
     this.isControllingCamera = false;
   }
-}
+} 

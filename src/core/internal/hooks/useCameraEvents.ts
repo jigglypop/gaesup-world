@@ -50,4 +50,4 @@ export function useCameraEvents() {
   }, [mode?.control, currentModeOptions, setCameraOption]);
 
   return { cameraOption, setCameraOption };
-}
+} 

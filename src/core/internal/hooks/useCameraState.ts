@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
 import * as THREE from 'three';
 import { useGaesupStore } from '@stores/gaesupStore';
-import { CameraBlendManager } from '../blend/CameraBlendManager';
-import { CameraState } from '../../types';
-import { ActiveStateType } from '../../../types';
+import { CameraBlendManager } from '../systems/CameraBlendManager';
+import { CameraState } from '../../types/camera';
+import { ActiveStateType } from '../../types';
 
 const MAX_HISTORY_SIZE = 10;
 
@@ -86,4 +86,4 @@ export function useCameraState(blendManager: CameraBlendManager) {
   );
 
   return { setCameraState, checkAutoTransitions, registerState };
-}
+} 

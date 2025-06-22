@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { useCameraEvents } from './hooks/useCameraEvents';
-import { useCameraFrame } from './hooks/useCameraFrame';
+import { useCameraEvents } from '../../internal/hooks/useCameraEvents';
+import { useCameraFrame } from '../../internal/hooks/useCameraFrame';
 import { useGaesupStore } from '@stores/gaesupStore';
 
 export default function Camera() {
@@ -13,8 +13,4 @@ export default function Camera() {
   
   useCameraFrame(frameProps, cameraOption);
   return null;
-}
-
-export * from './blend/CameraBlendManager';
-export * from '../systems/SmartCollisionSystem';
-export * from './effects/CameraEffects';
+} 
