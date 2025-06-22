@@ -1,22 +1,21 @@
 .perf-monitor-container {
-  font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+  position: fixed;
   font-size: 10px;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.92), rgba(20, 20, 20, 0.95));
+  background: linear-gradient(135deg, rgba(32, 1, 34, 0.2), rgba(111, 0, 0, 0.2));
   color: #ffffff;
   padding: 8px;
   border-radius: 6px;
-  border: 1px solid #333;
   backdrop-filter: blur(4px);
   min-width: 180px;
   max-width: 220px;
-  position: absolute;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  height: 80%;
+  box-shadow: 0 4px 12px rgba(32, 1, 34, 0.5);
 }
 
 .perf-monitor-container.advanced {
   min-width: 200px;
   max-width: 240px;
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .perf-monitor-container.top-left {
@@ -40,14 +39,14 @@
   border-bottom: 1px solid #444;
   padding-bottom: 4px;
   margin-bottom: 6px;
-  font-size: 10px;
+  font-size: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .perf-monitor-timestamp {
-  font-size: 8px;
+  font-size: 10px;
   color: #888;
   font-weight: normal;
 }
@@ -58,7 +57,7 @@
 }
 
 .section-title {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: bold;
   margin-bottom: 3px;
   border-bottom: 1px solid #333;
@@ -74,7 +73,7 @@
 }
 
 .metric-row.small {
-  font-size: 8px;
+  font-size: 12px;
 }
 
 .metric-label {

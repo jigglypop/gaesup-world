@@ -1,10 +1,144 @@
 import { useState } from 'react';
-import { TABS } from './constants';
+import { TABS, CONTROL_ITEMS, FEATURES, LOCATIONS } from './constants';
 import { TabId } from './types';
 import './styles.css';
 
 export function InfoTabs() {
   const [activeTab, setActiveTab] = useState<TabId>('controls');
+
+  const renderControls = () => (
+    <div className="content-blocks">
+      <div className="content-block">
+        <h4 className="block-title">키보드</h4>
+        <ul className="block-list">
+          {CONTROL_ITEMS.map((item, index) => (
+            <li key={index} className="block-item">
+              <span className="control-key">{item.key}</span>
+              <span className="control-description">{item.description}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="content-block">
+        <h4 className="block-title">마우스</h4>
+        <ul className="block-list">
+          <li className="block-item">
+            <span className="control-key">클릭</span>
+            <span className="control-description">이동 및 상호작용</span>
+          </li>
+          <li className="block-item">
+            <span className="control-key">발판 클릭</span>
+            <span className="control-description">카메라 포커싱</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  );
+
+  const renderFeatures = () => {
+    const coreFeatures = FEATURES.slice(0, 2);
+    const systemFeatures = FEATURES.slice(2, 4);
+    const techFeatures = FEATURES.slice(4, 6);
+
+    return (
+      <div className="content-blocks">
+        <div className="content-block">
+          <h4 className="block-title">핵심 기능</h4>
+          <ul className="block-list">
+            {coreFeatures.map((feature, index) => (
+              <li key={index} className="feature-item">
+                <span className="feature-icon">{feature.icon}</span>
+                <div className="feature-content">
+                  <div className="feature-name">{feature.title}</div>
+                  <div className="feature-desc">{feature.description}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="content-block">
+          <h4 className="block-title">시스템</h4>
+          <ul className="block-list">
+            {systemFeatures.map((feature, index) => (
+              <li key={index} className="feature-item">
+                <span className="feature-icon">{feature.icon}</span>
+                <div className="feature-content">
+                  <div className="feature-name">{feature.title}</div>
+                  <div className="feature-desc">{feature.description}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="content-block">
+          <h4 className="block-title">기술</h4>
+          <ul className="block-list">
+            {techFeatures.map((feature, index) => (
+              <li key={index} className="feature-item">
+                <span className="feature-icon">{feature.icon}</span>
+                <div className="feature-content">
+                  <div className="feature-name">{feature.title}</div>
+                  <div className="feature-desc">{feature.description}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  };
+
+  const renderLocations = () => {
+    const baseLocations = LOCATIONS.slice(0, 3);
+    const specialLocations = LOCATIONS.slice(3, 6);
+
+    return (
+      <div className="content-blocks">
+        <div className="content-block">
+          <h4 className="block-title">기본 구역</h4>
+          <ul className="block-list">
+            {baseLocations.map((location, index) => (
+              <li key={index} className="location-item">
+                <span className="location-icon">{location.icon}</span>
+                <div className="location-content">
+                  <div className="location-name">{location.name}</div>
+                  <div className="location-description">{location.description}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="content-block">
+          <h4 className="block-title">특수 구역</h4>
+          <ul className="block-list">
+            {specialLocations.map((location, index) => (
+              <li key={index} className="location-item">
+                <span className="location-icon">{location.icon}</span>
+                <div className="location-content">
+                  <div className="location-name">{location.name}</div>
+                  <div className="location-description">{location.description}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'controls':
+        return renderControls();
+      case 'features':
+        return renderFeatures();
+      case 'locations':
+        return renderLocations();
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="help-panel">
       <div className="tab-header">
@@ -14,108 +148,12 @@ export function InfoTabs() {
             className={`tab-button ${activeTab === tab.id ? 'tab-button-active' : ''}`}
             onClick={() => setActiveTab(tab.id as TabId)}
           >
-            {tab.emoji} {tab.label}
+            {tab.emoji && <span>{tab.emoji}</span>}
+            <span>{tab.label}</span>
           </button>
         ))}
       </div>
-      <div className="tab-content">
-        {activeTab === 'controls' && (
-          <div>
-            <h3>🎮 기본 조작</h3>
-            <ul>
-              <li>
-                <strong>W/↑:</strong> 앞으로 이동
-              </li>
-              <li>
-                <strong>S/↓:</strong> 뒤로 이동
-              </li>
-              <li>
-                <strong>A/←:</strong> 왼쪽 이동
-              </li>
-              <li>
-                <strong>D/→:</strong> 오른쪽 이동
-              </li>
-              <li>
-                <strong>Space:</strong> 점프
-              </li>
-              <li>
-                <strong>Shift:</strong> 달리기
-              </li>
-              <li>
-                <strong>R:</strong> 탑승
-              </li>
-            </ul>
-            <h4>🖱️ 마우스 조작</h4>
-            <ul>
-              <li>
-                <strong>클릭:</strong> 이동 및 상호작용
-              </li>
-              <li>
-                <strong>발판 클릭:</strong> 포커싱
-              </li>
-            </ul>
-          </div>
-        )}
-        {activeTab === 'features' && (
-          <div>
-            <h3>✨ 주요 기능</h3>
-            <ul>
-              <li>
-                <strong>🎯 발판 포커싱:</strong> 발판 클릭으로 카메라 줌
-              </li>
-              <li>
-                <strong>🚗 탈것 시스템:</strong> 차량/비행기 탑승
-              </li>
-              <li>
-                <strong>🗺️ 미니맵:</strong> 실시간 위치 표시
-              </li>
-              <li>
-                <strong>📍 텔레포트:</strong> 즉시 이동
-              </li>
-              <li>
-                <strong>🎮 물리 엔진:</strong> Rapier 기반
-              </li>
-            </ul>
-            <h4>🔧 시스템</h4>
-            <ul>
-              <li>
-                <strong>성능 최적화:</strong> 리렌더링 최소화
-              </li>
-              <li>
-                <strong>연속 점프 방지:</strong> 지면 착지 후 점프
-              </li>
-              <li>
-                <strong>카메라 추적:</strong> 부드러운 3인칭 시점
-              </li>
-            </ul>
-          </div>
-        )}
-        {activeTab === 'locations' && (
-          <div>
-            <h3>📍 주요 위치</h3>
-            <ul>
-              <li>
-                <strong>🏠 시작점:</strong> (0, 0, 0)
-              </li>
-              <li>
-                <strong>🟫 발판 A:</strong> 기본 연습용
-              </li>
-              <li>
-                <strong>🟫 발판 B~D:</strong> 점프 연습
-              </li>
-              <li>
-                <strong>📐 계단:</strong> 높이 변화 체험
-              </li>
-              <li>
-                <strong>🚗 차량:</strong> 좌측 구역
-              </li>
-              <li>
-                <strong>✈️ 비행기:</strong> 우측/상단 구역
-              </li>
-            </ul>
-          </div>
-        )}
-      </div>
+      <div className="tab-content">{renderTabContent()}</div>
     </div>
   );
 }

@@ -19,7 +19,6 @@ export function usePerformanceMonitor(historyLength = 120) {
     while (performance.now() - cpuStart < 1) {
       count++;
     }
-
     return {
       mainThread: performance.now() - start,
       worker: 0,

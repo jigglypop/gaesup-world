@@ -1,9 +1,10 @@
 import * as THREE from 'three';
-import { ActiveStateType, CameraOptionType } from '../../../types';
-import { CameraPropType } from '../../types';
-import { cameraUtils } from '../utils';
+import { ActiveStateType } from '../../types';
+import { CameraOptionType } from '../../types/camera';
+import { CameraPropType } from '../../types/camera';
+import { cameraUtils } from '../../utils/camera';
 
-export abstract class BaseCameraController {
+export abstract class CameraController {
   protected tempVector = new THREE.Vector3();
   abstract calculateTargetPosition(
     activeState: ActiveStateType,
@@ -24,7 +25,6 @@ export abstract class BaseCameraController {
   }
 
   afterUpdate(prop: CameraPropType): void {
-    // Can be implemented by subclasses
   }
 
   update(prop: CameraPropType): void {
@@ -65,4 +65,4 @@ export abstract class BaseCameraController {
     }
     this.afterUpdate(prop);
   }
-}
+} 

@@ -1,60 +1,46 @@
 import * as THREE from 'three';
-import { ActiveStateType, CameraOptionType } from '../../types';
-import { CameraPropType } from '../../types/camera';
+import { ActiveStateType } from '../../types';
+import { CameraOptionType } from '../../types/camera';
+import { cameraUtils, activeStateUtils } from '../../utils/camera';
 import { V3 } from '@utils/vector';
-import { BaseCameraController } from './BaseCameraController';
+import { CameraController } from './CameraController';
 
 const tempForward = new THREE.Vector3(0, 0, -1);
-const tempLookAt = new THREE.Vector3();
 
-export class FirstPersonController extends BaseCameraController {
+export class FirstPersonController extends CameraController {
   public calculateTargetPosition(
     activeState: ActiveStateType,
     camera: THREE.Camera,
     cameraOption: CameraOptionType,
   ): THREE.Vector3 {
-    const yOffset = cameraOption.yDistance ?? 1.6;
-    if (!activeState.position) return camera.position;
-    const characterPosition = V3(
-      activeState.position.x,
-      activeState.position.y,
-      activeState.position.z,
-    );
-    return characterPosition.add(V3(0, yOffset, 0));
+    const position = activeStateUtils.getPosition(activeState);
+    const headOffset = new THREE.Vector3(0, cameraOption.yDistance || 1.8, 0);
+    return position.clone().add(headOffset);
   }
 
-  public override calculateLookAt(prop: CameraPropType): THREE.Vector3 {
-    const {
-      state,
-      worldContext: { activeState },
-    } = prop;
-    tempForward.set(0, 0, -1);
-    if (activeState.euler) {
-      tempForward.applyEuler(activeState.euler);
+  public override calculateLookAt(prop): THREE.Vector3 {
+    const { worldContext: { activeState } } = prop;
+    const position = activeStateUtils.getPosition(activeState);
+    const euler = activeStateUtils.getEuler(activeState);
+    
+    const lookDirection = tempForward.clone();
+    if (euler) {
+      lookDirection.applyEuler(euler);
     }
-    return tempLookAt.copy(state.camera.position).add(tempForward.multiplyScalar(10));
+    
+    return position.clone().add(lookDirection);
   }
 
-  private applyHeadBobbing(
-    camera: THREE.Camera,
-    activeState: ActiveStateType,
-    time: number,
-    intensity: number = 0.05,
-  ) {
-    if (!activeState.velocity) return;
-    const velocity = activeState.velocity.length();
-    if (velocity > 0.1) {
-      const bobbing = Math.sin(time * 8) * intensity * velocity * 0.1;
-      camera.position.y += bobbing;
+  public override afterUpdate(prop): void {
+    const { worldContext: { activeState } } = prop;
+    const velocity = activeStateUtils.getVelocity(activeState);
+    const speed = velocity.length();
+    
+    if (speed > 0.1) {
     }
   }
 
-  public override afterUpdate(prop: CameraPropType): void {
-    const {
-      state,
-      worldContext: { activeState },
-    } = prop;
-    if (!state?.camera) return;
-    this.applyHeadBobbing(state.camera, activeState, Date.now() / 1000);
+  public override shouldLerpPosition(): boolean {
+    return false;
   }
 }

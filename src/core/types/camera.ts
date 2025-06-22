@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { RootState } from '@react-three/fiber';
+import { ActiveStateType } from './core';
 
 export interface CameraConstants {
   THROTTLE_MS: number;
@@ -11,16 +13,49 @@ export interface CameraConstants {
   FRAME_RATE_LERP_SPEED: number;
 }
 
-export interface Obstacle {
-  object: THREE.Object3D;
-  distance: number;
-  point: THREE.Vector3;
-}
-
-export interface CollisionCheckResult {
-  safe: boolean;
-  position: THREE.Vector3;
-  obstacles: Obstacle[];
+export interface CameraOption {
+  offset?: THREE.Vector3;
+  maxDistance?: number;
+  distance?: number;
+  xDistance?: number;
+  yDistance?: number;
+  zDistance?: number;
+  zoom?: number;
+  target?: THREE.Vector3;
+  position?: THREE.Vector3;
+  focus?: boolean;
+  enableCollision?: boolean;
+  collisionMargin?: number;
+  smoothing?: {
+    position?: number;
+    rotation?: number;
+    fov?: number;
+  };
+  fov?: number;
+  minFov?: number;
+  maxFov?: number;
+  bounds?: CameraBounds;
+  mode?: string;
+  fixedPosition?: THREE.Vector3;
+  rotation?: THREE.Euler;
+  isoAngle?: number;
+  modeSettings?: {
+    character?: {
+      distance?: number;
+      height?: number;
+      angle?: number;
+    };
+    vehicle?: {
+      distance?: number;
+      height?: number;
+      angle?: number;
+    };
+    airplane?: {
+      distance?: number;
+      height?: number;
+      angle?: number;
+    };
+  };
 }
 
 export interface CameraBounds {
@@ -32,37 +67,74 @@ export interface CameraBounds {
   maxZ?: number;
 }
 
-export interface CameraOption {
-  type?: 'orthographic' | 'perspective';
-  fov?: number;
-  near?: number;
-  far?: number;
-  zoom?: number;
-  bounds?: CameraBounds;
-  position?: THREE.Vector3;
-  lookAt?: THREE.Vector3;
+export interface Obstacle {
+  object: THREE.Mesh;
+  distance: number;
+  point: THREE.Vector3;
+}
+
+export interface CollisionCheckResult {
+  safe: boolean;
+  position: THREE.Vector3;
+  obstacles: Obstacle[];
+}
+
+export type CameraType = 
+  | 'thirdPerson'
+  | 'firstPerson'
+  | 'topDown'
+  | 'sideScroll'
+  | 'isometric'
+  | 'fixed'
+  | 'chase';
+
+export interface CameraTransitionCondition {
+  type: string;
+  value: any;
+}
+
+export interface CameraConfig {
+  shoulderOffset?: THREE.Vector3;
+  distance?: number;
+  height?: number;
+  lockTarget?: boolean;
+  followSpeed?: number;
+  rotationSpeed?: number;
+  constraints?: {
+    minDistance?: number;
+    maxDistance?: number;
+    minAngle?: number;
+    maxAngle?: number;
+  };
 }
 
 export interface CameraState {
   name: string;
+  type: CameraType;
   position: THREE.Vector3;
   rotation: THREE.Euler;
   fov: number;
-  target?: THREE.Vector3;
+  config: CameraConfig;
+  priority: number;
+  tags: string[];
 }
 
 export interface CameraTransition {
   from: string;
   to: string;
   duration: number;
-  blendFunction?: string;
-  condition?: () => boolean;
+  easing?: string;
+  conditions?: CameraTransitionCondition[];
 }
 
+export type CameraOptionType = CameraOption;
+
 export interface CameraPropType {
-  state: any;
-  worldContext: any;
-  cameraOption: any;
+  state: RootState & { delta: number };
+  worldContext: {
+    activeState: ActiveStateType;
+  };
+  cameraOption: CameraOptionType;
   controllerOptions?: any;
 }
 

@@ -4,7 +4,7 @@ import { euler, Physics, RigidBody } from '@react-three/rapier';
 import { Suspense } from 'react';
 import * as THREE from 'three';
 import { Clicker, GaesupController, GaeSupProps, GaesupWorld, MiniMap, PerfMonitor } from '../src';
-import { CameraOptionType } from '../src/core/component/types';
+import { CameraOptionType } from '../src/core/types/camera';
 import Info from './components/info';
 import { InfoTabs } from './components/infoTabs';
 import { Platforms } from './components/platforms';
@@ -24,7 +24,6 @@ const cameraOption: CameraOptionType = {
   fov: 75,
   zoom: 1,
   maxDistance: 50,
-  minDistance: 1,
   distance: 10,
   bounds: { minY: 2, maxY: 50 },
 };

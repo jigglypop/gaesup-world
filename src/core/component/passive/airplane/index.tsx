@@ -18,16 +18,16 @@ export function PassiveAirplane(props: passiveAirplanePropsType) {
   }, [safeRotation]);
 
   useFrame(() => {
-    if (innerGroupRef.current) {
-      innerGroupRef.current.setRotationFromQuaternion(
-        quat()
-          .setFromEuler(innerGroupRef.current.rotation.clone())
-          .slerp(quat().setFromEuler(targetRotation), 0.2),
-      );
-    }
-    if (rigidBodyRef.current) {
-      rigidBodyRef.current.setGravityScale(gravityScale, false);
-    }
+      if (innerGroupRef.current) {
+        innerGroupRef.current.setRotationFromQuaternion(
+          quat()
+            .setFromEuler(innerGroupRef.current.rotation.clone())
+            .slerp(quat().setFromEuler(targetRotation), 0.2),
+        );
+      }
+      if (rigidBodyRef.current) {
+        rigidBodyRef.current.setGravityScale(gravityScale, false);
+      }
   });
 
   return (

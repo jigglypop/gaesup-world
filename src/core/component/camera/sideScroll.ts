@@ -1,29 +1,29 @@
 import * as THREE from 'three';
-import { ActiveStateType, CameraOptionType } from '../../types';
-import { BaseCameraController } from './BaseCameraController';
+import { ActiveStateType } from '../../types';
+import { CameraOptionType } from '../../types/camera';
+import { cameraUtils, activeStateUtils } from '../../utils/camera';
+import { CameraController } from './CameraController';
 import { V3 } from '@utils/vector';
-import { cameraUtils } from '../../utils/camera';
 
-export class SideScrollController extends BaseCameraController {
+export class SideScrollController extends CameraController {
   public calculateTargetPosition(
     activeState: ActiveStateType,
     camera: THREE.Camera,
     cameraOption: CameraOptionType,
   ): THREE.Vector3 {
-    if (!activeState.position) return camera.position;
+    const position = activeStateUtils.getPosition(activeState);
+    const xOffset = cameraOption.xDistance || -10;
+    const yOffset = cameraOption.yDistance || 5;
+    
+    return position.clone().add(new THREE.Vector3(xOffset, yOffset, 0));
+  }
 
-    const characterPosition = V3(
-      activeState.position.x,
-      activeState.position.y,
-      activeState.position.z,
-    );
-    const xOffset = cameraOption.xDistance;
-    const yOffset = cameraOption.yDistance;
-    const zFollow = characterPosition.z;
-    let targetPosition = V3(characterPosition.x + xOffset, characterPosition.y + yOffset, zFollow);
-    if (cameraOption.bounds) {
-      targetPosition = cameraUtils.clampPosition(targetPosition, cameraOption.bounds);
-    }
-    return targetPosition;
+  public override calculateLookAt(prop: any): THREE.Vector3 | undefined {
+    const { worldContext: { activeState }, cameraOption } = prop;
+    return activeStateUtils.getCameraTarget(activeState, cameraOption);
+  }
+
+  public override shouldLerpPosition(): boolean {
+    return true;
   }
 }

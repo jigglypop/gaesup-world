@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CameraOptionType } from '../../types';
+import { CameraOptionType } from '../../types/camera';
 
 interface CameraBlendState {
   position: THREE.Vector3;

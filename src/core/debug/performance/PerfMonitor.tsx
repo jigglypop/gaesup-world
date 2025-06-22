@@ -256,7 +256,7 @@ export function PerfMonitor({
 
     container.innerHTML = `
       <div class="perf-monitor-header">
-        <strong>🔥 Performance Monitor</strong>
+        <strong>Performance Monitor</strong>
         <div class="perf-monitor-timestamp">${new Date().toLocaleTimeString()}</div>
       </div>
       
@@ -280,7 +280,7 @@ export function PerfMonitor({
       </div>
 
       <div class="perf-monitor-section memory-section">
-        <div class="section-title">💾 Memory</div>
+        <div class="section-title">Memory</div>
         <div class="metric-row">
           <span class="metric-label">Used:</span>
           <span style="color: ${getMemoryColor(perfData.memory.percentage)}">${perfData.memory.used}MB</span>
@@ -299,7 +299,7 @@ export function PerfMonitor({
       </div>
 
       <div class="perf-monitor-section webgl-section">
-        <div class="section-title">🎮 WebGL</div>
+        <div class="section-title">WebGL</div>
         <div class="metric-grid">
           <div>Textures: <span class="metric-value">${perfData.webgl.textures}</span></div>
           <div>Geometries: <span class="metric-value">${perfData.webgl.geometries}</span></div>
@@ -314,7 +314,7 @@ export function PerfMonitor({
         perfData.gpu
           ? `
         <div class="perf-monitor-section gpu-section">
-          <div class="section-title">🔧 GPU</div>
+          <div class="section-title">GPU</div>
           <div class="metric-row small">
             <span class="metric-label">Vendor:</span>
             <span class="metric-value-small">${perfData.gpu.vendor.substring(0, 15)}</span>
@@ -336,7 +336,7 @@ export function PerfMonitor({
         perfData.network
           ? `
         <div class="perf-monitor-section network-section">
-          <div class="section-title">🌐 Network</div>
+          <div class="section-title">Network</div>
           <div class="metric-row small">
             <span class="metric-label">Type:</span>
             <span class="metric-value-small">${perfData.network.effectiveType}</span>
@@ -358,7 +358,7 @@ export function PerfMonitor({
         perfData.rapier
           ? `
         <div class="perf-monitor-section physics-section">
-          <div class="section-title">⚡ Physics</div>
+          <div class="section-title">Physics</div>
           <div class="metric-grid">
             <div>Bodies: <span class="metric-value">${perfData.rapier.rigidBodies}</span></div>
             <div>Colliders: <span class="metric-value">${perfData.rapier.colliders}</span></div>

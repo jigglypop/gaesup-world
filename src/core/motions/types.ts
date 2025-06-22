@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import {
   ActiveStateType,
   GameStatesType,
-  CameraOptionType,
 } from '../types';
+import { CameraOptionType, CameraPropType } from '../types/camera';
 import { GroupProps, RootState } from '@react-three/fiber';
 import { ModeType, StoreState } from '../stores/types';
 import { RefObject } from 'react';
@@ -102,13 +102,4 @@ export interface PhysicsState {
   airplaneConfig: airplaneConfigType;
   clickerOption: clickerOptionType;
   modeType: ModeType;
-}
-
-export interface CameraPropType {
-  state: RootState & { delta: number };
-  worldContext: {
-    activeState: ActiveStateType;
-  };
-  cameraOption: CameraOptionType;
-  controllerOptions?: any;
 }

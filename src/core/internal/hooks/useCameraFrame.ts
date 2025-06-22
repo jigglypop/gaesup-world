@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { RootState, useFrame } from '@react-three/fiber';
-import { useGaesupStore } from '@stores/gaesupStore';
-import { CameraOptionType } from '../../types';
+import { useGaesupStore } from '../../stores';
+import { cameraUtils } from '../../utils/camera';
+import { CameraOptionType } from '../../types/camera';
 import { CameraPropType } from '../../types/camera';
 import { useCameraState } from './useCameraState';
 import { CameraBlendManager } from '../systems/CameraBlendManager';

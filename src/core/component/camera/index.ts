@@ -1,5 +1,5 @@
 export { default as Camera } from './Camera';
-export { BaseCameraController } from './BaseCameraController';
+export { CameraController } from './CameraController';
 export { FirstPersonController } from './firstPerson';
 export { ThirdPersonController } from './thirdPerson';
 export { ChaseController } from './chase';
@@ -8,7 +8,7 @@ export { IsometricController } from './isometric';
 export { SideScrollController } from './sideScroll';
 export { FixedController } from './fixed';
 
-import { BaseCameraController } from './BaseCameraController';
+import { CameraController } from './CameraController';
 import { FirstPersonController } from './firstPerson';
 import { ThirdPersonController } from './thirdPerson';
 import { ChaseController } from './chase';
@@ -17,7 +17,7 @@ import { IsometricController } from './isometric';
 import { SideScrollController } from './sideScroll';
 import { FixedController } from './fixed';
 
-export const controllerMap: Record<string, BaseCameraController> = {
+export const controllerMap: Record<string, CameraController> = {
   firstPerson: new FirstPersonController(),
   thirdPerson: new ThirdPersonController(),
   chase: new ChaseController(),

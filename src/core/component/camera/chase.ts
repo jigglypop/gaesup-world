@@ -1,61 +1,46 @@
 import * as THREE from 'three';
-import { ActiveStateType, CameraOptionType } from '../../types';
-import { cameraUtils } from '../../utils/camera';
-import { BaseCameraController } from './BaseCameraController';
+import { ActiveStateType } from '../../types';
+import { CameraOptionType } from '../../types/camera';
+import { cameraUtils, activeStateUtils } from '../../utils/camera';
+import { CameraController } from './CameraController';
 
-export class ChaseController extends BaseCameraController {
+export class ChaseController extends CameraController {
   public calculateTargetPosition(
     activeState: ActiveStateType,
     camera: THREE.Camera,
     cameraOption: CameraOptionType,
   ): THREE.Vector3 {
-    if (!activeState.position || !activeState.euler) return camera.position;
+    const position = activeStateUtils.getPosition(activeState);
+    const euler = activeStateUtils.getEuler(activeState);
+    
+    const offset = activeStateUtils.calculateCameraOffset(position, {
+      xDistance: cameraOption.xDistance,
+      yDistance: cameraOption.yDistance,
+      zDistance: cameraOption.zDistance,
+      euler,
+      mode: 'chase',
+    });
 
-    const xDistance = cameraOption.xDistance ?? 15;
-    const yDistance = cameraOption.yDistance ?? 8;
-    const zDistance = cameraOption.zDistance ?? 15;
-
-    const characterPosition = new THREE.Vector3(
-      activeState.position.x,
-      activeState.position.y,
-      activeState.position.z,
-    );
-    const offsetDirection = new THREE.Vector3(
-      Math.sin(activeState.euler.y),
-      1,
-      Math.cos(activeState.euler.y)
-    ).normalize();
-    const offset = offsetDirection.clone().multiply(
-      new THREE.Vector3(-xDistance, yDistance, -zDistance)
-    );
-    const targetPosition = characterPosition.clone().add(offset);
+    const targetPosition = position.clone().add(offset);
+    
     if (cameraOption.bounds) {
       cameraUtils.clampPosition(targetPosition, cameraOption.bounds);
     }
+    
     return targetPosition;
   }
 
   public override calculateLookAt(prop: any): THREE.Vector3 | undefined {
-    const { worldContext: { activeState } } = prop;
-    if (!activeState?.position) return undefined;
-    return new THREE.Vector3(
-      activeState.position.x,
-      activeState.position.y,
-      activeState.position.z,
-    );
+    const { worldContext: { activeState }, cameraOption } = prop;
+    return activeStateUtils.getCameraTarget(activeState, cameraOption);
   }
 
   public override afterUpdate(prop: any): void {
-    const { state, worldContext: { activeState } } = prop;
+    const { state, worldContext: { activeState }, cameraOption } = prop;
     
-    if (!state?.camera || !activeState?.position) return;
+    if (!state?.camera) return;
 
-    const lookAtTarget = new THREE.Vector3(
-      activeState.position.x,
-      activeState.position.y,
-      activeState.position.z,
-    );
-
+    const lookAtTarget = activeStateUtils.getCameraTarget(activeState, cameraOption);
     state.camera.lookAt(lookAtTarget);
   }
 

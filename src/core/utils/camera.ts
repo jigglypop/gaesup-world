@@ -1,22 +1,13 @@
 import * as THREE from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
-import { CameraOptionType } from '../../component/types';
-import { CameraBounds, CameraConstants, CollisionCheckResult, Obstacle } from '../types/camera';
+import { CameraOptionType, CameraBounds, CollisionCheckResult, Obstacle } from '../types/camera';
+import { CAMERA_CONSTANTS } from '../constants';
 
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
 const tempQuaternion = new THREE.Quaternion();
 
-export const CAMERA_CONSTANTS: CameraConstants = {
-  THROTTLE_MS: 16,
-  POSITION_THRESHOLD: 0.001,
-  TARGET_THRESHOLD: 0.001,
-  DEFAULT_LERP_SPEED: 0.1,
-  DEFAULT_FOV_LERP: 0.05,
-  MIN_FOV: 10,
-  MAX_FOV: 120,
-  FRAME_RATE_LERP_SPEED: 8.0,
-} as const;
+export { CAMERA_CONSTANTS };
 
 export const cameraUtils = {
   tempVectors: {
@@ -248,5 +239,105 @@ export const vectorUtils = {
     if (!rigidBody) return target;
     const translation = rigidBody.translation();
     return vectorUtils.copyFromRapier(target, translation);
+  },
+};
+
+export const activeStateUtils = {
+  getPosition: (activeState: any): THREE.Vector3 => {
+    if (!activeState?.position) {
+      return new THREE.Vector3(0, 0, 0);
+    }
+    
+    if (activeState.position instanceof THREE.Vector3) {
+      return activeState.position;
+    }
+    
+    if (typeof activeState.position === 'object') {
+      return new THREE.Vector3(
+        activeState.position.x || 0,
+        activeState.position.y || 0,
+        activeState.position.z || 0,
+      );
+    }
+    
+    return new THREE.Vector3(0, 0, 0);
+  },
+
+  getEuler: (activeState: any): THREE.Euler => {
+    if (!activeState?.euler) {
+      return new THREE.Euler(0, 0, 0);
+    }
+    
+    if (activeState.euler instanceof THREE.Euler) {
+      return activeState.euler;
+    }
+    
+    if (typeof activeState.euler === 'object') {
+      return new THREE.Euler(
+        activeState.euler.x || 0,
+        activeState.euler.y || 0,
+        activeState.euler.z || 0,
+      );
+    }
+    
+    return new THREE.Euler(0, 0, 0);
+  },
+
+  getVelocity: (activeState: any): THREE.Vector3 => {
+    if (!activeState?.velocity) {
+      return new THREE.Vector3(0, 0, 0);
+    }
+    
+    if (activeState.velocity instanceof THREE.Vector3) {
+      return activeState.velocity;
+    }
+    
+    if (typeof activeState.velocity === 'object') {
+      return new THREE.Vector3(
+        activeState.velocity.x || 0,
+        activeState.velocity.y || 0,
+        activeState.velocity.z || 0,
+      );
+    }
+    
+    return new THREE.Vector3(0, 0, 0);
+  },
+
+  calculateCameraOffset: (
+    position: THREE.Vector3,
+    options: {
+      xDistance?: number;
+      yDistance?: number;
+      zDistance?: number;
+      euler?: THREE.Euler;
+      mode?: 'thirdPerson' | 'chase' | 'fixed';
+    },
+  ): THREE.Vector3 => {
+    const { xDistance = 15, yDistance = 8, zDistance = 15, euler, mode = 'thirdPerson' } = options;
+    
+    switch (mode) {
+      case 'chase':
+        if (euler) {
+          const offsetDirection = new THREE.Vector3(
+            Math.sin(euler.y),
+            1,
+            Math.cos(euler.y)
+          ).normalize();
+          return offsetDirection.multiply(new THREE.Vector3(-xDistance, yDistance, -zDistance));
+        }
+        return new THREE.Vector3(-xDistance, yDistance, -zDistance);
+        
+      case 'thirdPerson':
+      default:
+        return new THREE.Vector3(-xDistance, yDistance, -zDistance);
+    }
+  },
+
+  getCameraTarget: (
+    activeState: any,
+    cameraOption: any,
+  ): THREE.Vector3 => {
+    const position = activeStateUtils.getPosition(activeState);
+    return cameraOption.target || position;
   },
 }; 
