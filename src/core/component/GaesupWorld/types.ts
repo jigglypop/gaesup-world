@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { CameraOptionType } from '../../types/camera';
+import { CameraOptionType } from '../../camera/core/types';
 import { ResourceUrlsType } from '../../types/core';
 
 export interface gaesupWorldPropsType {

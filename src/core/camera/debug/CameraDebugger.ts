@@ -196,4 +196,4 @@ export class CameraDebugger {
     this.disposables.clear();
     this.cleanup();
   }
-}
+} 

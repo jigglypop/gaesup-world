@@ -5962,6 +5962,7 @@ __metadata:
     jotai: "npm:^2.9.3"
     leva: "npm:0.9.35"
     lru-cache: "npm:^11.0.1"
+    mitt: "npm:^3.0.1"
     node-fetch: "npm:3.3.2"
     path: "npm:^0.12.7"
     prettier: "npm:^3.3.3"
@@ -8553,6 +8554,13 @@ __metadata:
   dependencies:
     minipass: "npm:^7.1.2"
   checksum: 10c0/9f3bd35e41d40d02469cb30470c55ccc21cae0db40e08d1d0b1dff01cc8cc89a6f78e9c5d2b7c844e485ec0a8abc2238111213fdc5b2038e6d1012eacf316f78
+  languageName: node
+  linkType: hard
+
+"mitt@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "mitt@npm:3.0.1"
+  checksum: 10c0/3ab4fdecf3be8c5255536faa07064d05caa3dd332bd318ff02e04621f7b3069ca1de9106cfe8e7ced675abfc2bec2ce4c4ef321c4a1bb1fb29df8ae090741913
   languageName: node
   linkType: hard
 

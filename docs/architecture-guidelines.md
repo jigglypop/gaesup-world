@@ -393,6 +393,3 @@ class RigidBodyController extends BasePhysicsController {
 - [ ] 적절한 메모이제이션 적용
 - [ ] 타입 안정성 확보
 
----
-
-**이 가이드라인을 따라 모든 도메인을 구현하면, 성능과 유지보수성이 뛰어난 시스템을 구축할 수 있습니다.** 

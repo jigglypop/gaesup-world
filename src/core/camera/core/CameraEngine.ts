@@ -60,9 +60,7 @@ export class CameraEngine {
     try {
       const controller = this.controllers.get(this.state.config.mode);
       if (!controller) return;
-      
       this.state.activeController = controller;
-      // 기존 방식: Controller가 직접 카메라 업데이트
       controller.update(props, this.state);
     } catch (error) {
       console.error('Camera calculation error:', error);

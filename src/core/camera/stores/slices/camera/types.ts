@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CameraType } from '../../types';
+import { CameraType } from '../../../core/types';
 
 export interface CameraConfig {
   shoulderOffset?: THREE.Vector3;
@@ -52,4 +52,4 @@ export interface CameraSlice {
   setCurrentCameraStateName: (name: string) => void;
   setCameraStateHistory: (history: string[]) => void;
   addCameraState: (name: string, state: CameraState) => void;
-}
+} 

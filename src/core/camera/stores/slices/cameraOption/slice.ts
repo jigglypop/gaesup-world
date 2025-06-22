@@ -1,6 +1,6 @@
 import { StateCreator } from 'zustand';
 import { CameraOptionSlice } from './types';
-import { CAMERA_DEFAULTS } from '../../../constants';
+import { CAMERA_DEFAULTS } from '../../../../constants';
 
 export const createCameraOptionSlice: StateCreator<CameraOptionSlice, [], [], CameraOptionSlice> = (
   set,
@@ -36,4 +36,4 @@ export const createCameraOptionSlice: StateCreator<CameraOptionSlice, [], [], Ca
     set((state) => ({
       cameraOption: { ...state.cameraOption, ...update },
     })),
-});
+}); 

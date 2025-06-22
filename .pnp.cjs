@@ -66,6 +66,7 @@ const RAW_RUNTIME_STATE =
           ["jotai", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:2.12.5"],\
           ["leva", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:0.9.35"],\
           ["lru-cache", "npm:11.1.0"],\
+          ["mitt", "npm:3.0.1"],\
           ["node-fetch", "npm:3.3.2"],\
           ["path", "npm:0.12.7"],\
           ["prettier", "npm:3.5.3"],\
@@ -8034,6 +8035,7 @@ const RAW_RUNTIME_STATE =
           ["jotai", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:2.12.5"],\
           ["leva", "virtual:6f2dc37840194e3d628c363344ca374fbbd19beb51625a4fcf65a4bd85aaf03753b319c555ece4caab3e0f741f848742b5cbd525fda7119486f26425675862c7#npm:0.9.35"],\
           ["lru-cache", "npm:11.1.0"],\
+          ["mitt", "npm:3.0.1"],\
           ["node-fetch", "npm:3.3.2"],\
           ["path", "npm:0.12.7"],\
           ["prettier", "npm:3.5.3"],\
@@ -11017,6 +11019,15 @@ const RAW_RUNTIME_STATE =
         "packageDependencies": [\
           ["minipass", "npm:7.1.2"],\
           ["minizlib", "npm:3.0.2"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["mitt", [\
+      ["npm:3.0.1", {\
+        "packageLocation": "../../AppData/Local/Yarn/Berry/cache/mitt-npm-3.0.1-ce290ffa77-10c0.zip/node_modules/mitt/",\
+        "packageDependencies": [\
+          ["mitt", "npm:3.0.1"]\
         ],\
         "linkType": "HARD"\
       }]\

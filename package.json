@@ -49,6 +49,7 @@
     "jotai": "^2.9.3",
     "leva": "0.9.35",
     "lru-cache": "^11.0.1",
+    "mitt": "^3.0.1",
     "node-fetch": "3.3.2",
     "r3f-perf": "^7.2.3",
     "react-device-detect": "^2.2.3",

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
-import { CameraOptionType, CameraBounds, CollisionCheckResult, Obstacle } from '../types/camera';
+import { CameraOptionType, CameraBounds, CollisionCheckResult, Obstacle } from '../camera/core/types';
 import { CAMERA_CONSTANTS } from '../constants';
 
 const tempVector3 = new THREE.Vector3();

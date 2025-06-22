@@ -3,7 +3,7 @@ import {
   ActiveStateType,
   GameStatesType,
 } from '../types';
-import { CameraOptionType, CameraPropType } from '../types/camera';
+import { CameraOptionType, CameraPropType } from '../camera/core/types';
 import { GroupProps, RootState } from '@react-three/fiber';
 import { ModeType, StoreState } from '../stores/types';
 import { RefObject } from 'react';
