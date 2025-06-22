@@ -1,4 +1,5 @@
-export { Camera } from './Camera';
-export { CameraManager } from './CameraManager';
-export * from './controllers';
-export * from './types'; 
+export { CameraEngine } from './core/CameraEngine';
+export { useCamera } from './hooks/useCamera';
+export { default as Camera } from './Camera';
+export * from './core/types';
+export * from './controllers'; 
