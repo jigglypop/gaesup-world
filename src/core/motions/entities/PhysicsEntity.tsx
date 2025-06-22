@@ -12,7 +12,7 @@ import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
 import { useSetGroundRay } from './setGroundRay';
 import { PhysicsEntityProps } from './types';
-import Camera from '../camera';
+import { Camera } from '../../component/camera';
 
 function RidingAnimation({
   url,

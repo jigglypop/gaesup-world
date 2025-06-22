@@ -3,60 +3,63 @@ import { ActiveStateType, CameraOptionType } from '../../types';
 import { cameraUtils } from '../../utils/camera';
 import { BaseCameraController } from './BaseCameraController';
 
-const tempDirection = new THREE.Vector3();
-const tempCameraOffset = new THREE.Vector3();
-
 export class ChaseController extends BaseCameraController {
-  private fixedOffset = new THREE.Vector3(-15, 8, -15);
-  private smoothedOffset = new THREE.Vector3(-15, 8, -15);
-
   public calculateTargetPosition(
     activeState: ActiveStateType,
     camera: THREE.Camera,
     cameraOption: CameraOptionType,
   ): THREE.Vector3 {
-    const distance = Math.abs(cameraOption.xDistance ?? 15);
-    const height = cameraOption.yDistance ?? 8;
+    if (!activeState.position || !activeState.euler) return camera.position;
 
-    if (!activeState.position) return camera.position;
+    const xDistance = cameraOption.xDistance ?? 15;
+    const yDistance = cameraOption.yDistance ?? 8;
+    const zDistance = cameraOption.zDistance ?? 15;
 
-    if (cameraOption.mode === 'fixed') {
-      this.fixedOffset.set(
-        -(cameraOption.xDistance ?? 15),
-        height,
-        -(cameraOption.zDistance ?? 15),
-      );
-      return this.tempVector.copy(activeState.position).add(this.fixedOffset);
-    }
-
-    if (cameraOption.mode === 'smart' && activeState.velocity) {
-      const velocity = activeState.velocity;
-      if (velocity.length() > 0.1) {
-        tempDirection.copy(velocity).normalize();
-        tempCameraOffset.copy(tempDirection).multiplyScalar(-distance);
-        tempCameraOffset.y = height;
-        this.smoothedOffset.lerp(tempCameraOffset, 0.1);
-      }
-      return this.tempVector.copy(activeState.position).add(this.smoothedOffset);
-    }
-
-    if (activeState.direction && activeState.direction.length() > 0) {
-      tempDirection.copy(activeState.direction).normalize();
-    } else if (activeState.dir && activeState.dir.length() > 0) {
-      tempDirection.copy(activeState.dir).normalize();
-    } else {
-      tempDirection.set(0, 0, -1);
-    }
-
-    tempCameraOffset.copy(tempDirection).multiplyScalar(-distance);
-    tempCameraOffset.y = height;
-
-    const targetPosition = this.tempVector.copy(activeState.position).add(tempCameraOffset);
-
+    const characterPosition = new THREE.Vector3(
+      activeState.position.x,
+      activeState.position.y,
+      activeState.position.z,
+    );
+    const offsetDirection = new THREE.Vector3(
+      Math.sin(activeState.euler.y),
+      1,
+      Math.cos(activeState.euler.y)
+    ).normalize();
+    const offset = offsetDirection.clone().multiply(
+      new THREE.Vector3(-xDistance, yDistance, -zDistance)
+    );
+    const targetPosition = characterPosition.clone().add(offset);
     if (cameraOption.bounds) {
       cameraUtils.clampPosition(targetPosition, cameraOption.bounds);
     }
-
     return targetPosition;
+  }
+
+  public override calculateLookAt(prop: any): THREE.Vector3 | undefined {
+    const { worldContext: { activeState } } = prop;
+    if (!activeState?.position) return undefined;
+    return new THREE.Vector3(
+      activeState.position.x,
+      activeState.position.y,
+      activeState.position.z,
+    );
+  }
+
+  public override afterUpdate(prop: any): void {
+    const { state, worldContext: { activeState } } = prop;
+    
+    if (!state?.camera || !activeState?.position) return;
+
+    const lookAtTarget = new THREE.Vector3(
+      activeState.position.x,
+      activeState.position.y,
+      activeState.position.z,
+    );
+
+    state.camera.lookAt(lookAtTarget);
+  }
+
+  public override shouldLerpPosition(): boolean {
+    return true;
   }
 }
