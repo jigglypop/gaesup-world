@@ -38,18 +38,6 @@ export interface GameStates {
   shouldExitRideable: boolean;
 }
 
-export interface AnimationState {
-  current: string;
-  default: string;
-  store: Record<string, THREE.AnimationAction>;
-}
-
-export interface EntityAnimationStates {
-  character: AnimationState;
-  vehicle: AnimationState;
-  airplane: AnimationState;
-}
-
 export type ActiveStateType = ActiveState;
 export type GameStatesType = GameStates;
 export type ResourceUrlsType = {
