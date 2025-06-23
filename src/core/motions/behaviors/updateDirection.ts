@@ -176,19 +176,39 @@ export class DirectionController {
     characterConfig: PhysicsState['characterConfig'],
     calcProp?: PhysicsCalcProps,
   ): void {
-    if (calcProp?.rigidBodyRef.current) {
-      const currentPos = calcProp.rigidBodyRef.current.translation();
-      const tempCurrentPos = this.vectorCache.getTempVector(0);
-      tempCurrentPos.set(currentPos.x, currentPos.y, currentPos.z);
-      const norm = calcNorm(tempCurrentPos, mouse.target, false);
-
-      if (norm < 1) {
-        this.handleClicker(calcProp, currentPos);
-        return;
+    const { automation } = calcProp.worldContext || {};
+    if (automation?.settings.trackProgress && automation.queue.actions && automation.queue.actions.length > 0) {
+      const Q = automation.queue.actions.shift();
+      if (Q && Q.target) {
+        const currentPosition = calcProp.body.translation();
+        const targetPosition = Q.target;
+        
+        const direction = new THREE.Vector3()
+          .subVectors(targetPosition, currentPosition)
+          .normalize();
+        
+        calcProp.memo.direction = direction.clone();
+        calcProp.memo.directionTarget = targetPosition.clone();
+        
+        if (automation.settings.loop && Q && automation.queue.actions) {
+          automation.queue.actions.push(Q);
+        }
       }
-    }
+    } else {
+      if (calcProp?.rigidBodyRef.current) {
+        const currentPos = calcProp.rigidBodyRef.current.translation();
+        const tempCurrentPos = this.vectorCache.getTempVector(0);
+        tempCurrentPos.set(currentPos.x, currentPos.y, currentPos.z);
+        const norm = calcNorm(tempCurrentPos, mouse.target, false);
 
-    this.applyMouseRotation(activeState, mouse, characterConfig);
+        if (norm < 1) {
+          this.handleClicker(calcProp, currentPos);
+          return;
+        }
+      }
+
+      this.applyMouseRotation(activeState, mouse, characterConfig);
+    }
   }
 
   private handleClicker(calcProp: PhysicsCalcProps, currentPos: any): void {

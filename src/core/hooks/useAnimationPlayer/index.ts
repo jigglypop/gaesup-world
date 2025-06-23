@@ -3,39 +3,44 @@ import { useGaesupStore } from '@stores/gaesupStore';
 import { AnimationActions } from './types';
 
 export function useAnimationPlayer(actions: AnimationActions | undefined, active: boolean) {
+  const keyboard = useGaesupStore((state) => state.interaction?.keyboard);
+  const mouse = useGaesupStore((state) => state.interaction?.mouse);
+  const automation = useGaesupStore((state) => state.automation);
   const states = useGaesupStore((state) => state.states);
-  const input = useGaesupStore((state) => state.input);
 
   const movement = useMemo(() => {
     const isKeyboardMoving =
-      input.keyboard.forward ||
-      input.keyboard.backward ||
-      input.keyboard.leftward ||
-      input.keyboard.rightward;
-    const isPointerMoving = input.pointer.isActive;
+      keyboard?.forward ||
+      keyboard?.backward ||
+      keyboard?.leftward ||
+      keyboard?.rightward;
+    const isPointerMoving = mouse?.isActive || false;
     return {
       isMoving: isKeyboardMoving || isPointerMoving,
       isRunning:
-        (input.keyboard.shift && isKeyboardMoving) ||
-        (input.pointer.shouldRun && isPointerMoving && input.clickerOption.isRun),
+        (keyboard?.shift && isKeyboardMoving) ||
+        (mouse?.shouldRun && isPointerMoving && automation?.queue.isRunning),
     };
-  }, [input]);
+  }, [keyboard, mouse, automation]);
 
   const activeTag = (() => {
-    if (states.isJumping) return 'jump';
-    if (states.isFalling) return 'fall';
-    if (states.isRiding) return 'ride';
-    if (states.isLanding) return 'land';
+    if (states?.isJumping) return 'jump';
+    if (states?.isFalling) return 'fall';
+    if (states?.isRiding) return 'ride';
+    if (states?.isLanding) return 'land';
     if (movement.isRunning) return 'run';
     if (movement.isMoving) return 'walk';
     return 'idle';
   })();
+
   const previousTag = useRef('idle');
 
   useEffect(() => {
     if (!active || !actions || activeTag === previousTag.current) return;
+    
     const currentAction = actions[activeTag];
     const previousAction = actions[previousTag.current];
+    
     if (previousAction && previousAction !== null) {
       previousAction.fadeOut(0.2);
     }
@@ -71,35 +76,3 @@ export function createAnimationController(actions: AnimationActions) {
     },
   };
 }
-
-// export function useAnimationPlayer(actions: AnimationActions | undefined, active: boolean) {
-//   const states = useGaesupStore((state) => state.states, shallow);
-// 
-//   const activeAnimation = (() => {
-//     if (states.isJumping) return 'jump';
-//     if (states.isFalling) return 'fall';
-//     if (states.isRiding) return 'ride';
-//     if (states.isLanding) return 'land';
-//     if (states.isRunning) return 'run';
-//     if (states.isMoving) return 'walk';
-//     return 'idle';
-//   })();
-// 
-//   const previousTag = useRef('idle');
-// 
-//   useEffect(() => {
-//     if (!active || !actions || activeAnimation === previousTag.current) return;
-// 
-//     const currentAction = actions[activeAnimation];
-//     const previousAction = actions[previousTag.current];
-// 
-//     if (previousAction) {
-//       previousAction.fadeOut(0.2);
-//     }
-// 
-//     if (currentAction) {
-//       currentAction.reset().fadeIn(0.2).play();
-//     }
-//     previousTag.current = activeAnimation;
-//   }, [activeAnimation, actions, active]);
-// }

@@ -1,0 +1,229 @@
+.motion-controller-toggle {
+  position: fixed;
+  z-index: 1000;
+}
+
+.motion-controller-toggle--top-left {
+  top: 20px;
+  left: 20px;
+}
+
+.motion-controller-toggle--top-right {
+  top: 20px;
+  right: 20px;
+}
+
+.motion-controller-toggle--bottom-left {
+  bottom: 20px;
+  left: 20px;
+}
+
+.motion-controller-toggle--bottom-right {
+  bottom: 20px;
+  right: 20px;
+}
+
+.motion-controller-toggle__button {
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(32, 1, 34, 0.2), rgba(111, 0, 0, 0.2));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  font-size: 18px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.motion-controller-toggle__button:hover {
+  background: linear-gradient(135deg, rgba(32, 1, 34, 0.4), rgba(111, 0, 0, 0.4));
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.motion-controller {
+  position: fixed;
+  background: linear-gradient(135deg, rgba(32, 1, 34, 0.2), rgba(111, 0, 0, 0.2));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  color: white;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 14px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  min-width: 280px;
+  z-index: 1000;
+}
+
+.motion-controller--compact {
+  min-width: 200px;
+  padding: 12px;
+}
+
+.motion-controller--top-left {
+  top: 20px;
+  left: 20px;
+}
+
+.motion-controller--top-right {
+  top: 20px;
+  right: 20px;
+}
+
+.motion-controller--bottom-left {
+  bottom: 20px;
+  left: 20px;
+}
+
+.motion-controller--bottom-right {
+  bottom: 20px;
+  right: 20px;
+}
+
+.motion-controller__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.motion-controller__title {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.motion-controller__close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.motion-controller__close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.motion-controller__current {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.motion-controller__current-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+}
+
+.motion-controller__current-value {
+  font-weight: 600;
+  color: #4ade80;
+  text-transform: capitalize;
+}
+
+.motion-controller__presets-label {
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.motion-controller__presets-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.motion-controller--compact .motion-controller__presets-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.motion-controller__preset {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+}
+
+.motion-controller--compact .motion-controller__preset {
+  padding: 8px 4px;
+  min-height: 40px;
+}
+
+.motion-controller__preset:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.motion-controller__preset--active {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2));
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #4ade80;
+}
+
+.motion-controller__preset-icon {
+  font-size: 18px;
+  margin-bottom: 2px;
+}
+
+.motion-controller--compact .motion-controller__preset-icon {
+  font-size: 16px;
+  margin-bottom: 0;
+}
+
+.motion-controller__preset-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.motion-controller__info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.motion-controller__info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+}
+
+.motion-controller__info-item span:first-child {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.motion-controller__info-item span:last-child {
+  font-weight: 500;
+  color: white;
+}

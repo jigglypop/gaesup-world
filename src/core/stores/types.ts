@@ -8,6 +8,8 @@ import { MinimapSlice } from '@stores/slices';
 import { InputSlice } from './slices/input';
 import { SizesSlice } from './slices/sizes';
 import { AnimationSlice } from '@stores/slices';
+import { MotionSliceState, MotionActions } from '../motions/stores/types';
+import { InteractionSliceState, InteractionActions } from '../interactions/stores/types';
 import { GameStatesSlice } from '@stores/slices';
 import { RideableSlice } from '@stores/slices';
 import { ActiveStateSlice } from '@stores/slices';
@@ -30,14 +32,16 @@ export type CameraType =
 
 export type StoreState = UrlsSlice &
   ModeSlice &
-  ClickerOptionSlice &
   BlockSlice &
   CameraOptionSlice &
   CameraSlice &
   MinimapSlice &
-  InputSlice &
   SizesSlice &
   AnimationSlice &
+  MotionSliceState &
+  MotionActions &
+  InteractionSliceState &
+  InteractionActions &
   GameStatesSlice &
   RideableSlice &
   ActiveStateSlice & {

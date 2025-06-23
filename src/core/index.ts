@@ -8,4 +8,5 @@ export * from './camera';
 export * from './animation';
 export * from './error';
 export * from './motions';
+export * from './interactions';
 export * from './debug';

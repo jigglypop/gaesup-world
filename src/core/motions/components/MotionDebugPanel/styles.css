@@ -1,0 +1,244 @@
+.motion-debug-toggle {
+  position: fixed;
+  z-index: 1000;
+}
+
+.motion-debug-toggle--top-left {
+  top: 80px;
+  left: 20px;
+}
+
+.motion-debug-toggle--top-right {
+  top: 80px;
+  right: 20px;
+}
+
+.motion-debug-toggle--bottom-left {
+  bottom: 80px;
+  left: 20px;
+}
+
+.motion-debug-toggle--bottom-right {
+  bottom: 80px;
+  right: 20px;
+}
+
+.motion-debug-toggle__button {
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(32, 1, 34, 0.2), rgba(111, 0, 0, 0.2));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  font-size: 18px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.motion-debug-toggle__button:hover {
+  background: linear-gradient(135deg, rgba(32, 1, 34, 0.4), rgba(111, 0, 0, 0.4));
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.motion-debug-panel {
+  position: fixed;
+  background: linear-gradient(135deg, rgba(32, 1, 34, 0.2), rgba(111, 0, 0, 0.2));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  color: white;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  min-width: 300px;
+  max-width: 400px;
+  z-index: 1000;
+  line-height: 1.4;
+}
+
+.motion-debug-panel--compact {
+  min-width: 250px;
+  padding: 12px;
+  font-size: 11px;
+}
+
+.motion-debug-panel--top-left {
+  top: 80px;
+  left: 20px;
+}
+
+.motion-debug-panel--top-right {
+  top: 80px;
+  right: 20px;
+}
+
+.motion-debug-panel--bottom-left {
+  bottom: 80px;
+  left: 20px;
+}
+
+.motion-debug-panel--bottom-right {
+  bottom: 80px;
+  right: 20px;
+}
+
+.motion-debug-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.motion-debug-panel__title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #f59e0b;
+}
+
+.motion-debug-panel__controls {
+  display: flex;
+  gap: 8px;
+}
+
+.motion-debug-panel__customize {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.motion-debug-panel__customize:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.motion-debug-panel__customize--active {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.motion-debug-panel__close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.motion-debug-panel__close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.motion-debug-panel__customization {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.motion-debug-panel__precision {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.motion-debug-panel__precision label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.motion-debug-panel__precision input[type="range"] {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  outline: none;
+}
+
+.motion-debug-panel__precision span {
+  font-size: 11px;
+  color: #4ade80;
+  min-width: 12px;
+}
+
+.motion-debug-panel__fields-title {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 8px;
+}
+
+.motion-debug-panel__fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+}
+
+.motion-debug-panel__field-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.motion-debug-panel__field-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.motion-debug-panel__field-option input[type="checkbox"] {
+  width: 12px;
+  height: 12px;
+}
+
+.motion-debug-panel__content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.motion-debug-panel__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  border-left: 3px solid rgba(34, 197, 94, 0.3);
+}
+
+.motion-debug-panel__label {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  min-width: 100px;
+}
+
+.motion-debug-panel__value {
+  color: #4ade80;
+  font-weight: 600;
+  text-align: right;
+  word-break: break-all;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}

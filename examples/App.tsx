@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { euler, Physics, RigidBody } from '@react-three/rapier';
 import { Suspense } from 'react';
 import * as THREE from 'three';
-import { Clicker, GaesupController, GaeSupProps, GaesupWorld, MiniMap, PerfMonitor, CameraUI, AnimationUI } from '../src';
+import { Clicker, GaesupController, GaeSupProps, GaesupWorld, MiniMap, PerfMonitor, CameraUI, AnimationUI, MotionUI } from '../src';
 import { CameraOptionType } from '../src/core/types/camera';
 import Info from './components/info';
 import { InfoTabs } from './components/infoTabs';
@@ -123,7 +123,7 @@ export default function App() {
           ]
         }}
         controllerProps={{
-          position: 'bottom-left',
+          position: 'top-left',
           visible: true
         }}
         presetsProps={{
@@ -170,6 +170,25 @@ export default function App() {
             { key: 'weight', label: '가중치', format: 'number', enabled: true },
             { key: 'speed', label: '속도', format: 'number', enabled: true },
             { key: 'activeActions', label: '활성 액션', format: 'number', enabled: true }
+          ]
+        }}
+      />
+      <MotionUI
+        showController={true}
+        showDebugPanel={true}
+        controllerProps={{
+          position: 'bottom-left',
+          showLabels: true,
+          compact: false
+        }}
+        debugPanelProps={{
+          position: 'bottom-right',
+          updateInterval: 100,
+          precision: 2,
+          compact: false,
+          customFields: [
+            { key: 'frameRate', label: 'Frame Rate', type: 'number' },
+            { key: 'physicsDelta', label: 'Physics Delta', type: 'number' }
           ]
         }}
       />

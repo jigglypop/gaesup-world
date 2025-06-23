@@ -88,22 +88,23 @@ const QueuePointMarker = memo(({ position }: { position: THREE.Vector3 }) => (
 ));
 
 export const Clicker = memo(() => {
-  const pointer = useGaesupStore((state) => state.input.pointer);
-  const clickerOption = useGaesupStore((state) => state.clickerOption);
+  const mouse = useGaesupStore((state) => state.interaction?.mouse);
+  const automation = useGaesupStore((state) => state.automation);
 
-  if (!clickerOption) return null;
+  if (!mouse || !automation) return null;
 
-  const pointQueue = clickerOption.queue.filter(
-    (item): item is THREE.Vector3 => item instanceof THREE.Vector3,
-  );
+  const pointQueue = automation.queue.actions
+    .filter(action => action.type === 'move' || action.type === 'click')
+    .map(action => action.target)
+    .filter((target): target is THREE.Vector3 => target instanceof THREE.Vector3);
 
   return (
     <>
-      <group position={pointer.target}>
-        {pointer.isActive && <TargetMarker />}
-        {pointer.isActive && clickerOption.isRun && pointer.shouldRun && <RunModeMarker />}
+      <group position={mouse.target}>
+        {mouse.isActive && <TargetMarker />}
+        {mouse.isActive && automation.queue.isRunning && mouse.shouldRun && <RunModeMarker />}
       </group>
-      {clickerOption.line && pointQueue.length > 0 && (
+      {automation.settings.showVisualCues && pointQueue.length > 0 && (
         <group position={[0, 0.1, 0]}>
           {pointQueue.map((queueItem, index) => {
             const current = index;

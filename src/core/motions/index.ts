@@ -7,6 +7,8 @@ import { SizesType } from '../stores/slices/sizes';
 import { PhysicsCalcProps } from './core/types';
 export { GaesupWorld } from '../component/GaesupWorld';
 export { GaesupController } from '../component/GaesupController';
+export * from './components';
+export * from './stores';
 
 const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps): void => {
   const keyboardKeys: (keyof typeof state.keyboard)[] = [
@@ -109,7 +111,7 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
             characterConfig: (physics.worldContext as any).character || {},
             vehicleConfig: (physics.worldContext as any).vehicle || {},
             airplaneConfig: (physics.worldContext as any).airplane || {},
-            clickerOption: (physics.worldContext as any).clickerOption || {},
+            automation: (physics.worldContext as any).automation || {},
             modeType: modeType as 'character' | 'vehicle' | 'airplane',
           };
           

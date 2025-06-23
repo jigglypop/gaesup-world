@@ -1,71 +1,85 @@
-import { useCallback, useEffect, useRef, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
-import { KEY_MAPPING } from '@constants/index';
-import { KeyboardOptions, KeyboardResult } from './types';
 
-const initialKeyState = {
-  forward: false,
-  backward: false,
-  leftward: false,
-  rightward: false,
-  shift: false,
-  space: false,
-  keyZ: false,
-  keyR: false,
-  keyF: false,
-  keyE: false,
-  escape: false,
+const KEY_MAPPING: Record<string, string> = {
+  KeyW: 'forward',
+  KeyA: 'leftward',
+  KeyS: 'backward',
+  KeyD: 'rightward',
+  ShiftLeft: 'shift',
+  Space: 'space',
+  KeyZ: 'keyZ',
+  KeyR: 'keyR',
+  KeyF: 'keyF',
+  KeyE: 'keyE',
+  Escape: 'escape',
 };
 
-export function useKeyboard(options: KeyboardOptions = {}): KeyboardResult {
-  const { preventDefault = true, enableClicker = true, customKeyMapping = {} } = options;
-  const clickerOption = useGaesupStore((state) => state.clickerOption);
-  const setClickerOption = useGaesupStore((state) => state.setClickerOption);
-  const setKeyboard = useGaesupStore((state) => state.setKeyboard);
-  const setPointer = useGaesupStore((state) => state.setPointer);
+export const useKeyboard = (
+  enableDiagonal = true,
+  enableClicker = true,
+  cameraOption?: any,
+) => {
+  const updateKeyboard = useGaesupStore((state) => state.updateKeyboard);
+  const automation = useGaesupStore((state) => state.automation);
+  const stopAutomation = useGaesupStore((state) => state.stopAutomation);
+  const updateMouse = useGaesupStore((state) => state.updateMouse);
+  
   const pressedKeys = useRef<Set<string>>(new Set());
 
-  const keyMapping = useMemo(() => ({ ...KEY_MAPPING, ...customKeyMapping }), [customKeyMapping]);
+  const keyMapping = useMemo(() => ({ ...KEY_MAPPING }), []);
 
   const pushKey = useCallback(
     (key: string, value: boolean): boolean => {
       try {
-        setKeyboard({ [key]: value });
+        updateKeyboard({ [key]: value });
         value ? pressedKeys.current.add(key) : pressedKeys.current.delete(key);
         return true;
       } catch (error) {
-        console.error('Push key failed:', error);
+        console.error('Error updating keyboard state:', error);
         return false;
       }
     },
-    [setKeyboard],
+    [updateKeyboard],
   );
 
   const clearAllKeys = useCallback(() => {
     pressedKeys.current.clear();
-    setKeyboard(initialKeyState);
-  }, [setKeyboard]);
+    updateKeyboard({
+      forward: false,
+      backward: false,
+      leftward: false,
+      rightward: false,
+      shift: false,
+      space: false,
+      keyZ: false,
+      keyR: false,
+      keyF: false,
+      keyE: false,
+      escape: false
+    });
+  }, [updateKeyboard]);
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent, isDown: boolean) => {
-      const mappedKey = keyMapping[event.code as keyof typeof keyMapping];
+      const mappedKey = keyMapping[event.code];
       if (!mappedKey) return;
 
       const wasPressed = pressedKeys.current.has(event.code);
 
       if (isDown && !wasPressed) {
         pressedKeys.current.add(event.code);
-        if (event.code === 'Space' && preventDefault) event.preventDefault();
+        if (event.code === 'Space') event.preventDefault();
 
-        if (enableClicker && event.code === 'KeyS' && clickerOption.isRun) {
-          setClickerOption({ isRun: false });
-          setPointer({ isActive: false, shouldRun: false });
+        if (enableClicker && event.code === 'KeyS' && automation?.queue.isRunning) {
+          stopAutomation();
+          updateMouse({ isActive: false, shouldRun: false });
         }
 
-        setKeyboard({ [mappedKey]: true });
+        updateKeyboard({ [mappedKey]: true });
       } else if (!isDown && wasPressed) {
         pressedKeys.current.delete(event.code);
-        setKeyboard({ [mappedKey]: false });
+        updateKeyboard({ [mappedKey]: false });
       }
     };
 
@@ -84,11 +98,11 @@ export function useKeyboard(options: KeyboardOptions = {}): KeyboardResult {
     };
   }, [
     keyMapping,
-    preventDefault,
     enableClicker,
-    setKeyboard,
-    setClickerOption,
-    setPointer,
+    updateKeyboard,
+    stopAutomation,
+    updateMouse,
+    automation,
     clearAllKeys,
   ]);
 
@@ -98,4 +112,4 @@ export function useKeyboard(options: KeyboardOptions = {}): KeyboardResult {
     isKeyPressed: (key: string) => pressedKeys.current.has(key),
     clearAllKeys,
   };
-}
+};

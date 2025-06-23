@@ -9,11 +9,29 @@ import { ModeType, StoreState } from '../stores/types';
 import { RefObject } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 
-export type clickerOptionType = {
-  autoStart: boolean;
-  track: boolean;
-  queue: (THREE.Vector3)[];
-  loop: boolean;
+export type automationType = {
+  isActive: boolean;
+  queue: {
+    actions: Array<{
+      id: string;
+      type: 'move' | 'click' | 'wait' | 'key' | 'custom';
+      target?: THREE.Vector3;
+      key?: string;
+      duration?: number;
+      delay?: number;
+    }>;
+    currentIndex: number;
+    isRunning: boolean;
+    isPaused: boolean;
+    loop: boolean;
+    maxRetries: number;
+  };
+  settings: {
+    trackProgress: boolean;
+    autoStart: boolean;
+    loop: boolean;
+    showVisualCues: boolean;
+  };
 };
 
 export type airplaneConfigType = {
@@ -100,6 +118,6 @@ export interface PhysicsState {
   characterConfig: characterType;
   vehicleConfig: vehicleConfigType;
   airplaneConfig: airplaneConfigType;
-  clickerOption: clickerOptionType;
+  automationOption: automationType;
   modeType: ModeType;
 }
