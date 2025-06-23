@@ -1,0 +1,224 @@
+.minimap {
+  position: fixed;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  user-select: none;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.minimap--top-left {
+  top: 20px;
+  left: 20px;
+}
+
+.minimap--top-right {
+  top: 20px;
+  right: 20px;
+}
+
+.minimap--bottom-left {
+  bottom: 20px;
+  left: 20px;
+}
+
+.minimap--bottom-right {
+  bottom: 20px;
+  right: 20px;
+}
+
+.minimap__canvas {
+  display: block;
+  border-radius: 8px;
+}
+
+.minimap__controls {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.minimap:hover .minimap__controls {
+  opacity: 1;
+}
+
+.minimap__control-button {
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.minimap__control-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.1);
+}
+
+.minimap__control-button:active {
+  transform: scale(0.95);
+}
+
+.minimap__zoom-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.minimap__compass {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  transition: transform 0.3s ease;
+}
+
+.minimap__scale-info {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: monospace;
+}
+
+.minimap__marker {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  transform: translate(-50%, -50%);
+  transition: all 0.2s ease;
+}
+
+.minimap__marker--player {
+  background: #4CAF50;
+  width: 8px;
+  height: 8px;
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+}
+
+.minimap__marker--target {
+  background: #FF5722;
+  animation: pulse 2s infinite;
+}
+
+.minimap__marker--normal {
+  background: #2196F3;
+}
+
+.minimap__marker--special {
+  background: #FF9800;
+  width: 8px;
+  height: 8px;
+}
+
+.minimap__marker:hover {
+  transform: translate(-50%, -50%) scale(1.5);
+}
+
+.minimap__marker-label {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  margin-bottom: 4px;
+}
+
+.minimap__marker:hover .minimap__marker-label {
+  opacity: 1;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.3);
+    opacity: 0.7;
+  }
+}
+
+.minimap--dragging {
+  cursor: grabbing;
+}
+
+.minimap--dragging .minimap__canvas {
+  cursor: grabbing;
+}
+
+.minimap__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.minimap--compact {
+  opacity: 0.7;
+}
+
+.minimap--compact:hover {
+  opacity: 1;
+}
+
+.minimap__loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+}
+
+.minimap__error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(255, 100, 100, 0.8);
+  font-size: 10px;
+  text-align: center;
+}

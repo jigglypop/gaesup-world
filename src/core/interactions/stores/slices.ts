@@ -284,22 +284,6 @@ export const createInteractionSlice: StateCreator<
       }
     })),
 
-  updateMouse: (updates) =>
-    set((state) => ({
-      interaction: {
-        ...state.interaction,
-        mouse: { ...state.interaction.mouse, ...updates }
-      }
-    })),
-
-  updateKeyboard: (updates) =>
-    set((state) => ({
-      interaction: {
-        ...state.interaction,
-        keyboard: { ...state.interaction.keyboard, ...updates }
-      }
-    })),
-
   updateAutomationConfig: (config) =>
     set((state) => ({
       config: {

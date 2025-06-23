@@ -7,6 +7,7 @@ export interface ClickerResult {
     type: 'normal' | 'ground',
   ) => boolean;
   stopClicker: () => void;
+  onClick: (event: ThreeEvent<MouseEvent>) => void;
   isReady: boolean;
 }
 

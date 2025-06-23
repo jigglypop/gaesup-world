@@ -1,0 +1,216 @@
+.rideable-ui {
+  position: fixed;
+  z-index: 900;
+  pointer-events: none;
+}
+
+.rideable-prompt {
+  position: fixed;
+  bottom: 150px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 16px 24px;
+  color: white;
+  animation: fadeInUp 0.3s ease;
+}
+
+.rideable-prompt__message {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.rideable-prompt__key {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: bold;
+  min-width: 32px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  animation: keyPulse 2s infinite;
+}
+
+.rideable-controls {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 300px;
+}
+
+.rideable-controls__exit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(220, 53, 69, 0.9);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: white;
+}
+
+.rideable-controls__message {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.rideable-controls__key {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: bold;
+  min-width: 24px;
+  text-align: center;
+}
+
+.rideable-controls__info {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  color: white;
+}
+
+.rideable-info__name {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #4CAF50;
+}
+
+.rideable-info__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.stat__label {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 400;
+}
+
+.stat__value {
+  color: white;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.rideable-object {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rideable-object:hover {
+  filter: brightness(1.2);
+}
+
+.rideable-object--occupied {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.rideable-object--occupied:hover {
+  filter: none;
+}
+
+.rideable-object__indicator {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(76, 175, 80, 0.9);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: bold;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.rideable-object:hover .rideable-object__indicator {
+  opacity: 1;
+}
+
+.rideable-object--occupied .rideable-object__indicator {
+  background: rgba(255, 87, 34, 0.9);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes keyPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+  }
+}
+
+.rideable-health-bar {
+  position: absolute;
+  top: -20px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(255, 0, 0, 0.3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.rideable-health-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff4444, #ffaa44, #44ff44);
+  transition: width 0.3s ease;
+}
+
+.rideable-fuel-bar {
+  position: absolute;
+  top: -14px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(0, 150, 255, 0.3);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.rideable-fuel-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0096ff, #00d4ff);
+  transition: width 0.3s ease;
+}

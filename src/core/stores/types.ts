@@ -1,11 +1,9 @@
 import { UrlsSlice } from './slices/urls';
 import { ModeSlice, ModeState } from './slices/mode';
-import { ClickerOptionSlice } from '@stores/slices';
 import { BlockSlice } from './slices/block';
 import { CameraOptionSlice } from '../camera/stores/slices/cameraOption';
 import { CameraSlice } from '../camera/stores/slices/camera';
 import { MinimapSlice } from '@stores/slices';
-import { InputSlice } from './slices/input';
 import { SizesSlice } from './slices/sizes';
 import { AnimationSlice } from '@stores/slices';
 import { MotionSliceState, MotionActions } from '../motions/stores/types';

@@ -5,10 +5,14 @@ import { PhysicsState, PhysicsCalculationProps } from './types';
 import { PhysicsEngine } from './core/Engine';
 import { SizesType } from '../stores/slices/sizes';
 import { PhysicsCalcProps } from './core/types';
-export { GaesupWorld } from '../component/GaesupWorld';
-export { GaesupController } from '../component/GaesupController';
-export * from './components';
+
+export * from './core';
+export * from './bridge';
 export * from './stores';
+export * from './components';
+
+export { WorldContainer as GaesupWorld } from '../world/components/WorldContainer';
+export { ControllerWrapper as GaesupController } from '../interactions/components/ControllerWrapper';
 
 const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps): void => {
   const keyboardKeys: (keyof typeof state.keyboard)[] = [

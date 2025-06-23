@@ -212,27 +212,25 @@ export class DirectionController {
   }
 
   private handleClicker(calcProp: PhysicsCalcProps, currentPos: any): void {
-    const { clickerOption } = calcProp.worldContext || {};
-    if (clickerOption?.track && clickerOption.queue && clickerOption.queue.length > 0) {
-      const Q = clickerOption.queue.shift();
-      if (Q instanceof THREE.Vector3) {
-        const newAngle = Math.atan2(Q.z - currentPos.z, Q.x - currentPos.x);
-        calcProp.setMouseInput?.({ target: Q, angle: newAngle });
-      } else if (Q?.action === 'stop') {
-        const { beforeCB, afterCB, time } = Q;
+    const { automation } = calcProp.worldContext || {};
+    if (automation?.settings.trackProgress && automation.queue.actions && automation.queue.actions.length > 0) {
+      const Q = automation.queue.actions.shift();
+      if (Q && Q.target) {
+        const newAngle = Math.atan2(Q.target.z - currentPos.z, Q.target.x - currentPos.x);
+        calcProp.setMouseInput?.({ target: Q.target, angle: newAngle, isActive: true });
+      } else if (Q && Q.type === 'wait') {
+        const duration = Q.duration || 1000;
         if (calcProp.state) {
           calcProp.state.clock.stop();
-          beforeCB(calcProp.state);
           setTimeout(() => {
             if (calcProp.state) {
               calcProp.state.clock.start();
-              afterCB(calcProp.state);
             }
-          }, time);
+          }, duration);
         }
       }
-      if (clickerOption.loop && Q && clickerOption.queue) {
-        clickerOption.queue.push(Q);
+      if (automation.settings.loop && Q && automation.queue.actions) {
+        automation.queue.actions.push(Q);
       }
     } else {
       calcProp.setMouseInput?.({ isActive: false, shouldRun: false });

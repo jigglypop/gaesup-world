@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useGaesupStore } from '../../stores/gaesupStore';
-import { MinimapProps } from '../../component/minimap/types';
+import { useGaesupStore } from '@stores/gaesupStore';
+import { MinimapProps } from '../../ui/components/Minimap/types';
 import * as THREE from 'three';
 
 const DEFAULT_SCALE = 5;

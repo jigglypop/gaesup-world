@@ -1,12 +1,2 @@
-export * from './clicker';
-export * from './gamepad';
-export * from './minimap';
-export * from './gaesupProps';
-export * from './GaesupWorld';
-export * from './GaesupComponent';
-export * from './GaesupController';
-export * from './rideable';
-export * from './teleport';
-export * from './passive';
-export * from './active';
-
+// 레거시 component 폴더 - 모든 컴포넌트가 도메인별로 마이그레이션됨
+// interactions/, motions/, world/, ui/ 도메인에서 import하세요

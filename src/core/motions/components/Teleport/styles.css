@@ -1,0 +1,69 @@
+.teleport {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  width: 5rem;
+  height: 5rem;
+  cursor: pointer;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  font-weight: 500;
+  transition: all 0.2s ease-in;
+  box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  margin: 1rem;
+  font-size: 0.8rem;
+  border-radius: 50%;
+  border: none;
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.teleport::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+.teleport:hover::before {
+  transform: translateX(100%);
+}
+
+.teleport:hover {
+  box-shadow: 0 0 1rem rgba(0, 150, 255, 0.5);
+  background: rgba(0, 150, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.teleport--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(100, 100, 100, 0.6);
+}
+
+.teleport--disabled:hover {
+  box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.6);
+  transform: none;
+  background: rgba(100, 100, 100, 0.6);
+}
+
+.teleport__cooldown {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  font-size: 1.2rem;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

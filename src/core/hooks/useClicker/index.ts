@@ -2,6 +2,7 @@ import { ThreeEvent } from '@react-three/fiber';
 import { useFrame } from '@react-three/fiber';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { V3 } from '@utils/vector';
+import * as THREE from 'three';
 import { ClickerMoveOptions, ClickerResult } from './types';
 
 export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
@@ -35,6 +36,7 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
       updateMouse({
         target: finalTarget,
         angle: newAngle,
+        position: new THREE.Vector2(finalTarget.x, finalTarget.z),
         isActive: true,
         shouldRun: isRun,
       });
@@ -46,20 +48,29 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
     }
   };
 
-  const stopClicker = () => {
+  const stopClicker = (): void => {
     try {
-      updateMouse({
-        isActive: false,
-        shouldRun: false,
-      });
+      if (!isReady) return;
+      updateMouse({ isActive: false, shouldRun: false });
     } catch (error) {
       console.error('Clicker stop failed:', error);
     }
   };
 
+  const onClick = (event: ThreeEvent<MouseEvent>): void => {
+    console.log('onClick called:', { 
+      point: event.point, 
+      isReady,
+      activeState: activeState?.position 
+    });
+    const result = moveClicker(event, false, 'ground');
+    console.log('moveClicker result:', result);
+  };
+
   return {
     moveClicker,
     stopClicker,
+    onClick,
     isReady,
   };
 }
