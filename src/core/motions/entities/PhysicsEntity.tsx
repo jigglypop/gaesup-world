@@ -6,18 +6,18 @@ import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
-import { useGltfAndSize } from '@utils/gltf';
 import usePhysicsLoop from '../index';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
 import { useSetGroundRay } from './setGroundRay';
 import { PhysicsEntityProps } from './types';
 import { Camera } from '../../camera';
+import { useGltfAndSize } from './useGaesupGltf';
 
 function RidingAnimation({
-  url,
-  active = false,
-}: {
+                           url,
+                           active = false,
+                         }: {
   url: string;
   active?: boolean;
 }) {
@@ -135,13 +135,13 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const mode = useGaesupStore((state) => state.mode);
 
     useAnimationPlayer(actions, props.isActive && !isRiding);
-    
+
     useEffect(() => {
       if (!props.isActive && actions && actions.idle) {
         actions.idle.reset().play();
       }
     }, [actions, props.isActive]);
-    
+
     if (props.onReady) props.onReady();
     if (props.onFrame) props.onFrame();
     if (props.onAnimate && actions) props.onAnimate();

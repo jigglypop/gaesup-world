@@ -9,8 +9,7 @@ export abstract class BaseCameraEngine implements ICameraEngineMonitor {
     totalFrameTime: 0,
     lastUpdateTime: 0,
   };
-
-  constructor(initialConfig: CameraEngineConfig) {
+  protected constructor(initialConfig: CameraEngineConfig) {
     this.emitter = mitt<CameraEngineEvents>();
     this.config = initialConfig;
   }
@@ -22,22 +21,20 @@ export abstract class BaseCameraEngine implements ICameraEngineMonitor {
     Object.keys(newConfig).forEach(key => {
       this.emitter.emit('configChange', { 
         key, 
-        value: newConfig[key as keyof CameraEngineConfig] 
+        value: newConfig[key as keyof CameraEngineConfig]
       });
     });
 
     if (oldConfig.mode !== this.config.mode) {
       this.emitter.emit('modeChange', { 
-        from: oldConfig.mode, 
+        from: oldConfig.mode,
         to: this.config.mode 
       });
     }
   }
-
   public getConfig(): CameraEngineConfig {
     return { ...this.config };
   }
-
   public getState(): any {
     return {
       config: this.getConfig(),

@@ -1,1 +1,1 @@
-/// <reference types="@react-three/fiber" />
+import { extend } from '@react-three/fiber'

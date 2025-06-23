@@ -142,7 +142,7 @@ domain/
 │   ├── SpecificController.ts
 │   └── index.ts
 ├── store/                   # 2레이어 (옵션)
-│   ├── slice.ts            # Zustand slice
+│   ├── slices.ts            # Zustand slice
 │   └── types.ts
 ├── hooks/                   # 2레이어
 │   ├── useDomain.ts        # 메인 훅

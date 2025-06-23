@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CameraCollisionConfig } from '../../types';
+import { CameraCollisionConfig } from '../../camera/core/types';
 
 export class SmartCollisionSystem {
   private raycaster = new THREE.Raycaster();

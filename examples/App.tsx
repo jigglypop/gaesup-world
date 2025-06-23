@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { euler, Physics, RigidBody } from '@react-three/rapier';
 import { Suspense } from 'react';
 import * as THREE from 'three';
-import { Clicker, GaesupController, GaeSupProps, GaesupWorld, MiniMap, PerfMonitor } from '../src';
+import { Clicker, GaesupController, GaeSupProps, GaesupWorld, MiniMap, PerfMonitor, CameraUI, AnimationUI } from '../src';
 import { CameraOptionType } from '../src/core/types/camera';
 import Info from './components/info';
 import { InfoTabs } from './components/infoTabs';
@@ -105,6 +105,32 @@ export default function App() {
           <PerfMonitor position="bottom-right" updateInterval={500} visible={true} zIndex={10001} />
         </Suspense>
       </Canvas>
+      <CameraUI
+        debugPanelProps={{
+          position: 'top-right',
+          visible: false,
+          theme: 'glass',
+          precision: 3,
+          fields: [
+            { key: 'mode', label: 'Camera Mode', enabled: true, format: 'text' },
+            { key: 'position', label: 'Player Position', enabled: true, format: 'vector3', precision: 2 },
+            { key: 'velocity', label: 'Velocity', enabled: true, format: 'vector3', precision: 3 },
+            { key: 'distance', label: 'Camera Distance', enabled: true, format: 'vector3', precision: 1 },
+            { key: 'fov', label: 'Field of View', enabled: true, format: 'angle', precision: 0 },
+            { key: 'rotation', label: 'Rotation', enabled: false, format: 'vector3', precision: 2 },
+            { key: 'zoom', label: 'Zoom Level', enabled: false, format: 'number', precision: 2 },
+            { key: 'activeController', label: 'Active Controller', enabled: true, format: 'text' },
+          ]
+        }}
+        controllerProps={{
+          position: 'bottom-left',
+          visible: true
+        }}
+        presetsProps={{
+          position: 'bottom-right', 
+          visible: true
+        }}
+      />
       <Info />
       <RideableUIRenderer />
       <div
@@ -119,6 +145,34 @@ export default function App() {
       </div>
       <Teleport />
       <InfoTabs />
+      <AnimationUI
+        showController={true}
+        showPlayer={true}
+        showDebugPanel={true}
+        controllerProps={{
+          position: 'top-right',
+          showLabels: true,
+          compact: false
+        }}
+        playerProps={{
+          position: 'bottom-left',
+          showControls: true,
+          compact: false
+        }}
+        debugPanelProps={{
+          position: 'top-left',
+          compact: false,
+          precision: 2,
+          fields: [
+            { key: 'currentAnimation', label: '현재 애니메이션', format: 'text', enabled: true },
+            { key: 'animationType', label: '애니메이션 타입', format: 'text', enabled: true },
+            { key: 'isPlaying', label: '재생 상태', format: 'text', enabled: true },
+            { key: 'weight', label: '가중치', format: 'number', enabled: true },
+            { key: 'speed', label: '속도', format: 'number', enabled: true },
+            { key: 'activeActions', label: '활성 액션', format: 'number', enabled: true }
+          ]
+        }}
+      />
     </GaesupWorld>
   );
 }

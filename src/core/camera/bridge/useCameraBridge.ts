@@ -15,23 +15,18 @@ export function useCameraBridge<T extends BaseCameraEngine>(
   getState: () => any;
   getMetrics: () => any;
 } {
-  const engineRef = useRef<T>();
-  
+  const engineRef = useRef<T>(null);
   if (!engineRef.current) {
     engineRef.current = new EngineClass(initialConfig);
   }
-
   const engine = engineRef.current;
-
   useFrame((_, delta) => {
-    engine.update(delta);
+    engine?.update(delta);
   });
 
   useEffect(() => {
     if (!eventHandlers || !engine) return;
-
     const unsubscribers: Array<() => void> = [];
-
     Object.entries(eventHandlers).forEach(([eventName, handler]) => {
       if (handler) {
         engine.emitter.on(eventName as any, handler as any);
@@ -40,7 +35,6 @@ export function useCameraBridge<T extends BaseCameraEngine>(
         });
       }
     });
-
     return () => {
       unsubscribers.forEach(unsub => unsub());
     };
@@ -48,24 +42,24 @@ export function useCameraBridge<T extends BaseCameraEngine>(
 
   useEffect(() => {
     return () => {
-      engine.destroy();
+      engine?.destroy();
     };
   }, [engine]);
 
   const updateConfig = useCallback((config: Partial<CameraEngineConfig>) => {
-    engine.updateConfig(config);
+    engine?.updateConfig(config);
   }, [engine]);
 
   const getState = useCallback(() => {
-    return engine.getState();
+    return engine?.getState();
   }, [engine]);
 
   const getMetrics = useCallback(() => {
-    return engine.getMetrics();
+    return engine?.getMetrics();
   }, [engine]);
 
   return {
-    engine,
+    engine ,
     updateConfig,
     getState,
     getMetrics,

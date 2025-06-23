@@ -194,6 +194,6 @@ export interface CameraZoomConfig {
   targetFov: number;
   duration: number;
   easing: (t: number) => number;
-}
+} 
 
  

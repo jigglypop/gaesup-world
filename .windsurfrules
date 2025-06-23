@@ -1,0 +1,125 @@
+1. 주석은 작성하지 않을 것
+2. 의미없는 빈 줄 공백 넣지 말것
+3. 파일은 되도록 새로 생성하지 말 것
+4. styles.css, types.ts와 같이 파일 분리하고 로직이 섞이지 않게 할 것
+5. 모든 작업은 기존의 기본 로직 동작이 절대 망가지지 않게 수정할 것
+6. 폴더는 다음 구조를 따라야 합니다
+
+ex)
+├─ Excomponent/
+│  ├─ index.tsx     # AI 가이드라인
+│  ├─ styles.css    # 스타일
+│  └─ types.ts      # 터미널 커맨드 모음
+이렇게 폴더 내에 타입, css 로직이 섞이지 않게 폴더로 패키징 할 것
+
+아래 예시는 **Cursor IDE**(cursor.so)의 AI 에이전트를 위해 준비한 *“.cursor”* 디렉터리 템플릿입니다.
+`rules.md` 는 **프롬프트 규칙**을, `tools.yaml` 은 **실행 도구(Commands)** 를 정의합니다.
+두 파일을 그대로 루트에 추가하면, Cursor AI가 코드 생성‧수정 시 **Gaesup 3‑레이어 아키텍처**를 자동으로 준수하고, 단축키 ⌘⇧R (“Run tool…”)로 품질 검사·시각화도 실행할 수 있습니다.
+
+```
+.
+├─ .cursor/
+│  ├─ rules.md      # AI 가이드라인
+│  └─ tools.yaml    # 터미널 커맨드 모음
+└─ src/
+```
+
+---
+
+## .cursor/rules.md (예시)
+
+```markdown
+# Gaesup Architecture – Cursor Rules
+**❗️반드시 지켜야 할 규칙**
+
+## 1 레이어 구조
+1. **Core(1L)**
+   *순수* TS/JS, Three.js·Rapier 가능.
+   React Hook · zustand · setState **사용 금지**.
+2. **State(2L)**
+   React Hook, zustand slice, Controller.
+   `useFrame` 내 setState **금지**.
+3. **Bridge(2.5L)**
+   Store <-> Core 동기화·이벤트 버스.
+   추상 명령 API(`move`, `jump`…), `snapshot()` 필수.
+4. **Integration(3L)**
+   순수 React UI. 성능 로직은 하위 레이어에 위임.
+
+## 2 파일·폴더 네이밍
+| 계층 | 예시 |
+|------|-----|
+| 1L | `FooEngine.ts`, `BarCalculator.ts` |
+| 2.5L | `FooBridge.ts` |
+| 2L | `foo.store.ts`, `FooController.ts`, `useFoo.ts` |
+| 3L | `FooView.tsx` |
+
+## 3 의존성 방향
+```
+
+3L ➜ 2L ➜ 2.5L ➜ 1L ✅
+1L ✖︎ 2L · 3L import 금지
+
+````
+
+## 4 품질 게이트
+* **Core Coverage ≥ 90 %**, Hook 70 %, UI 50 %.
+* **Frame Time ≤ 16.6 ms**, Core ≤ 6 ms, React ≤ 4 ms.
+* 새 PR 번들 크기 +15 kB(brotli) 초과 시 경고.
+
+## 5 코드 예시
+```ts
+// ✅ 올바른 Core
+export class PhysicsEngine { step(dt:number){ /* … */ } }
+
+// ❌ Core에서 React Hook 사용 금지
+export class BadEngine { const [s] = useState(); }
+````
+
+> **대화형 생성 시** 위 규칙을 위반하는 코드 제안은 하지 않는다.
+
+````
+
+---
+
+## .cursor/tools.yaml (예시)
+
+```yaml
+# Cursor “Run tool” 목록
+# ⌘⇧R → 원하는 명령 실행
+
+- name: lint
+  command: pnpm lint
+  description: ESLint + boundaries 규칙 검사
+  timeout: 300
+
+- name: typecheck
+  command: pnpm tsc -p tsconfig.json --noEmit
+  description: TypeScript 타입 검증
+
+- name: test
+  command: pnpm vitest run
+  description: 단위·통합 테스트
+
+- name: deps-graph
+  command: npx madge --extensions ts src --image deps.svg
+  description: 의존성 그래프 생성 (deps.svg)
+  timeout: 120
+
+- name: coverage
+  command: pnpm vitest run --coverage
+  description: 커버리지 리포트 생성
+````
+
+> **팁** 
+> • `deps-graph` 실행 후 Cursor 파일 트리에서 `deps.svg` 열면 계층 위반을 시각적으로 확인할 수 있습니다.
+> • `lint` 실패 시 Cursor AI는 자동으로 수정 PR 패치를 제안합니다.
+
+---
+
+### 적용 방법 📋
+
+1. 위 두 파일을 `.cursor/` 폴더에 저장.
+2. `pnpm install eslint-plugin-boundaries madge vitest -D` 등 devDeps 추가.
+3. VS Code / Cursor 재시작 → **규칙·툴 활성화**.
+
+이제 Cursor AI가 생성‧수정하는 모든 코드에 Gaesup 아키텍처가 자동으로 반영되고, 단축키 한 번으로 lint/test/graph 툴을 돌릴 수 있습니다.

@@ -1,5 +1,5 @@
-import { useGaesupGltf } from '@utils/gltf';
 import { useGaesupStore } from '@stores/gaesupStore';
+import { useGaesupGltf } from '../entities/useGaesupGltf';
 
 export function usePhysics() {
   const store = useGaesupStore();

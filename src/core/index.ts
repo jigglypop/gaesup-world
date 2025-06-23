@@ -5,6 +5,7 @@ export * from './utils';
 export * from './constants';
 export * from './component';
 export * from './camera';
+export * from './animation';
 export * from './error';
 export * from './motions';
 export * from './debug';

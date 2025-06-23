@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
-import { CameraOptionType, CameraBounds, CollisionCheckResult, Obstacle } from '../camera/core/types';
-import { CAMERA_CONSTANTS } from '../constants';
+import { CameraOptionType, CameraBounds, CollisionCheckResult, Obstacle } from '../core/types';
+import { CAMERA_CONSTANTS } from '../core/constants';
 
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
@@ -20,19 +20,6 @@ export const cameraUtils = {
     return Math.max(min, Math.min(max, value));
   },
 
-  lerpSmooth: (current: number, target: number, factor: number): number => {
-    return current + (target - current) * factor;
-  },
-
-  frameRateIndependentLerp: (
-    current: number,
-    target: number,
-    speed: number,
-    deltaTime: number,
-  ): number => {
-    const factor = 1 - Math.exp(-speed * deltaTime);
-    return current + (target - current) * factor;
-  },
 
   frameRateIndependentLerpVector3: (
     current: THREE.Vector3,

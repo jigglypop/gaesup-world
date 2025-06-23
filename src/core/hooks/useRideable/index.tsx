@@ -2,7 +2,7 @@ import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react
 import { useCallback, useEffect } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { rideableType } from './types';
-import { useGaesupGltf } from '@utils/gltf';
+import { useGaesupGltf } from '@/core/motions/entities/useGaesupGltf';
 
 export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'url' | 'wheelUrl'> =
   {

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { BaseController } from './BaseController';
 import { CameraCalcProps, CameraSystemState, CameraConfig } from '../core/types';
-import { activeStateUtils } from '../../utils/camera';
+import { activeStateUtils } from '../utils/camera';
 
 export class IsometricController extends BaseController {
   name = 'isometric';

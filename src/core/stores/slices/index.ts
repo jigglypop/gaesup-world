@@ -1,5 +1,4 @@
 export * from './activeState';
-export * from './animation';
 export * from './block';
 export * from './clickerOption';
 export * from './gameStates';

@@ -1,11 +1,9 @@
-import * as THREE from 'three';
 import {
   ICameraController,
   CameraSystemState,
   CameraCalcProps,
   CameraConfig,
 } from './types';
-
 import {
   ThirdPersonController,
   FirstPersonController,
@@ -15,12 +13,15 @@ import {
   SideScrollController,
   FixedController
 } from '../controllers';
+import { BaseCameraEngine } from '../bridge/BaseCameraEngine';
+import { CameraEngineConfig } from '../bridge/types';
 
-export class CameraEngine {
+export class CameraEngine extends BaseCameraEngine {
   private controllers: Map<string, ICameraController> = new Map();
   private state: CameraSystemState;
   
-  constructor() {
+  constructor(config: CameraEngineConfig) {
+    super(config);
     this.state = this.createInitialState();
     this.registerControllers();
   }
@@ -56,6 +57,10 @@ export class CameraEngine {
     }
   }
   
+  update(deltaTime: number): void {
+    this.trackFrameMetrics(deltaTime);
+  }
+
   calculate(props: CameraCalcProps): void {
     try {
       const controller = this.controllers.get(this.state.config.mode);
@@ -64,6 +69,7 @@ export class CameraEngine {
       controller.update(props, this.state);
     } catch (error) {
       console.error('Camera calculation error:', error);
+      this.emitError('Camera calculation failed', error);
     }
   }
   

@@ -1,4 +1,4 @@
-import mitt, { Emitter } from 'mitt';
+import { Emitter } from 'mitt';
 
 export type CameraEngineEvents = {
   modeChange: { from: string; to: string };
@@ -19,7 +19,14 @@ export interface CameraEngineConfig {
 }
 
 export interface ICameraEngineMonitor {
-  getState(): any;
+  getState(): {
+    mode: string;
+    distance: { x: number; y: number; z: number };
+    smoothing: { position: number; rotation: number; fov: number };
+    fov: number;
+    zoom: number;
+    enableCollision: boolean;
+  };
   getMetrics(): {
     frameCount: number;
     averageFrameTime: number;
@@ -27,4 +34,4 @@ export interface ICameraEngineMonitor {
   };
 }
 
-export type CameraEngineEmitter = Emitter<CameraEngineEvents>; 
+export type CameraEngineEmitter = Emitter<CameraEngineEvents>;

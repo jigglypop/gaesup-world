@@ -60,11 +60,4 @@ export type ResourceUrlsType = {
   ridingUrl: string;
 };
 
-export interface CameraCollisionConfig {
-  rayCount: number;
-  sphereCastRadius: number;
-  minDistance: number;
-  maxDistance: number;
-  avoidanceSmoothing: number;
-  transparentLayers: number[];
-}
+

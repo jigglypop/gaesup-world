@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ICameraController, CameraCalcProps, CameraSystemState, CameraSystemConfig } from '../core/types';
-import { activeStateUtils, cameraUtils } from '../../utils/camera';
+import { activeStateUtils, cameraUtils } from '../utils/camera';
 
 export abstract class BaseController implements ICameraController {
   abstract name: string;
