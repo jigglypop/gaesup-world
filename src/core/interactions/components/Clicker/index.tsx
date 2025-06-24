@@ -1,57 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Line } from '@react-three/drei';
-import { memo } from 'react';
+import React from 'react';
 import * as THREE from 'three';
-import { useGaesupStore } from '@stores/gaesupStore';
-
-const TargetMarker = memo(() => (
-  <group>
-    <mesh>
-      <sphereGeometry args={[0.2, 16, 16]} />
-      <meshStandardMaterial
-        color="#00ff88"
-        emissive="#00ff88"
-        emissiveIntensity={0.5}
-        transparent
-        opacity={0.9}
-      />
-    </mesh>
-    <mesh rotation={[Math.PI / 2, 0, 0]}>
-      <ringGeometry args={[0.3, 0.5, 8]} />
-      <meshStandardMaterial
-        color="#00ff88"
-        transparent
-        opacity={0.6}
-        side={THREE.DoubleSide}
-      />
-    </mesh>
-  </group>
-));
-
-const PathLine = memo(({ points, color }: { points: THREE.Vector3[], color: string }) => {
-  if (points.length < 2) return null;
-  
-  return (
-    <Line
-      points={points}
-      color={color}
-      lineWidth={2}
-      dashed={false}
-    />
-  );
-});
+import { useGaesupStore } from '../../../stores/gaesupStore';
+import { TargetMarker } from './TargetMarker';
+import { PathLine } from './PathLine';
 
 export function Clicker() {
   const interaction = useGaesupStore((state) => state.interaction);
   const automation = useGaesupStore((state) => state.automation);
-  
-  console.log('Clicker Debug:', { 
-    interaction: !!interaction, 
-    automation: !!automation,
-    mouse: interaction?.mouse ? 'exists' : 'missing',
-    mousePosition: interaction?.mouse?.position ? `x:${interaction.mouse.position.x}, y:${interaction.mouse.position.y}` : 'no position',
-    queue: automation?.queue ? 'exists' : 'missing'
-  });
   
   const mousePos = interaction?.mouse?.position || new THREE.Vector2();
   const queue = automation?.queue || { actions: [], currentIndex: 0 };

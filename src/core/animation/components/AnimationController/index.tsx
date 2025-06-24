@@ -1,6 +1,5 @@
 import React from 'react';
-import { useGaesupStore } from '../../../stores/gaesupStore';
-import { AnimationType } from '../../core/types';
+import { useAnimationBridge } from '../../hooks/useAnimationBridge';
 import './styles.css';
 
 const ANIMATION_MODES = [
@@ -14,17 +13,9 @@ const ANIMATION_MODES = [
 ];
 
 export function AnimationController() {
-  const {
-    mode,
-    animationState,
-    setCurrentAnimation
-  } = useGaesupStore();
-
-  const currentType = mode?.type as AnimationType || 'character';
-  const currentAnimation = animationState?.[currentType]?.current || 'idle';
-
-  const handleAnimationChange = (animation: string) => {
-    setCurrentAnimation(currentType, animation);
+  const { playAnimation, currentType, currentAnimation } = useAnimationBridge();
+  const onAnimationChange = (animation: string) => {
+    playAnimation(currentType, animation);
   };
 
   return (
@@ -36,7 +27,7 @@ export function AnimationController() {
             className={`ac-button ${
               animationMode.value === currentAnimation ? 'active' : ''
             }`}
-            onClick={() => handleAnimationChange(animationMode.value)}
+            onClick={() => onAnimationChange(animationMode.value)}
             title={animationMode.label}
           >
             {animationMode.label}

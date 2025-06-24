@@ -18,9 +18,12 @@ export interface AnimationMetrics {
   blendProgress: number;
 }
 
+export type AnimationEngineCallback = (metrics: AnimationMetrics) => void;
+
 export class AnimationEngine {
   private state: AnimationEngineState;
   private metrics: AnimationMetrics;
+  private callbacks: Set<AnimationEngineCallback>;
 
   constructor() {
     this.state = {
@@ -40,6 +43,17 @@ export class AnimationEngine {
       lastUpdate: 0,
       blendProgress: 0
     };
+
+    this.callbacks = new Set();
+  }
+
+  subscribe(callback: AnimationEngineCallback): () => void {
+    this.callbacks.add(callback);
+    return () => this.callbacks.delete(callback);
+  }
+
+  private notifyCallbacks(): void {
+    this.callbacks.forEach(callback => callback(this.getMetrics()));
   }
 
   initializeMixer(object: THREE.Object3D): void {
@@ -52,6 +66,13 @@ export class AnimationEngine {
     const action = this.state.animationMixer.clipAction(clip);
     this.state.actions.set(name, action);
     this.updateMetrics();
+    this.notifyCallbacks();
+  }
+
+  registerAction(name: string, action: THREE.AnimationAction): void {
+    this.state.actions.set(name, action);
+    this.updateMetrics();
+    this.notifyCallbacks();
   }
 
   playAnimation(name: string, fadeInDuration: number = this.state.blendDuration): void {
@@ -68,6 +89,7 @@ export class AnimationEngine {
     this.state.currentAnimation = name;
     this.state.isPlaying = true;
     this.updateMetrics();
+    this.notifyCallbacks();
   }
 
   stopAnimation(): void {
@@ -76,7 +98,9 @@ export class AnimationEngine {
       currentAction.stop();
     }
     this.state.isPlaying = false;
+    this.state.currentAnimation = 'idle';
     this.updateMetrics();
+    this.notifyCallbacks();
   }
 
   setWeight(weight: number): void {
@@ -85,6 +109,7 @@ export class AnimationEngine {
       currentAction.setWeight(weight);
       this.state.currentWeight = weight;
       this.updateMetrics();
+      this.notifyCallbacks();
     }
   }
 
@@ -92,6 +117,7 @@ export class AnimationEngine {
     const currentAction = this.state.actions.get(this.state.currentAnimation);
     if (currentAction) {
       currentAction.setTimeScale(scale);
+      this.notifyCallbacks();
     }
   }
 
@@ -100,6 +126,11 @@ export class AnimationEngine {
       this.state.animationMixer.update(deltaTime);
       this.metrics.mixerTime += deltaTime;
       this.metrics.lastUpdate = Date.now();
+      
+      if (this.callbacks.size > 0) {
+        this.updateMetrics();
+        this.notifyCallbacks();
+      }
     }
   }
 
@@ -132,5 +163,6 @@ export class AnimationEngine {
       this.state.animationMixer = null;
     }
     this.state.actions.clear();
+    this.callbacks.clear();
   }
 }

@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
+import { getGlobalAnimationBridge } from '../../animation/hooks/useAnimationBridge';
 import usePhysicsLoop from '../index';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
@@ -24,7 +25,7 @@ function RidingAnimation({
   const { animations: ridingAnimations } = useGLTF(url);
   const { actions: ridingActions } = useAnimations(ridingAnimations);
 
-  useAnimationPlayer(ridingActions, active);
+  useAnimationPlayer(active);
 
   return null;
 }
@@ -45,6 +46,15 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       });
       return skel;
     }, [clone]);
+
+    const mode = useGaesupStore((state) => state.mode);
+
+    useEffect(() => {
+      if (actions && mode?.type && props.isActive) {
+        const bridge = getGlobalAnimationBridge();
+        bridge.registerAnimations(mode.type as any, actions);
+      }
+    }, [actions, mode?.type, props.isActive]);
 
     const partsComponents = useMemo(() => {
       if (!props.parts || props.parts.length === 0) return null;
@@ -132,9 +142,8 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     }
 
     const isRiding = useGaesupStore((state) => state.states.isRiding);
-    const mode = useGaesupStore((state) => state.mode);
 
-    useAnimationPlayer(actions, props.isActive && !isRiding);
+    useAnimationPlayer(props.isActive && !isRiding);
 
     useEffect(() => {
       if (!props.isActive && actions && actions.idle) {

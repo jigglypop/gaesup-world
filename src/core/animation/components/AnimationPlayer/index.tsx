@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { useGaesupStore } from '../../../stores/gaesupStore';
-import { AnimationType } from '../../core/types';
+import React, { useEffect, useState } from 'react';
+import { useAnimationBridge } from '../../hooks/useAnimationBridge';
 import './styles.css';
 
 const PlayIcon = () => (
@@ -17,14 +16,38 @@ const SkipNextIcon = () => (
 );
 
 export function AnimationPlayer() {
-  const { mode, animationState, setCurrentAnimation } = useGaesupStore();
-  const [isPlaying, setIsPlaying] = useState(true);
+  const { bridge, playAnimation, stopAnimation, currentType, currentAnimation } = useAnimationBridge();
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [availableAnimations, setAvailableAnimations] = useState<string[]>([]);
   const [progress, setProgress] = useState(30);
+  
+  useEffect(() => {
+    if (!bridge) return;
 
-  const currentType = mode?.type as AnimationType || 'character';
-  const currentAnimation = animationState?.[currentType]?.current || 'idle';
-  const animationStore = animationState?.[currentType]?.store || {};
-  const availableAnimations = Object.keys(animationStore);
+    const updateState = () => {
+      const snapshot = bridge.snapshot(currentType);
+      setIsPlaying(snapshot.isPlaying);
+      setAvailableAnimations(snapshot.availableAnimations);
+    };
+
+    updateState();
+
+    const unsubscribe = bridge.subscribe((snapshot, type) => {
+      if (type === currentType) {
+        updateState();
+      }
+    });
+
+    return unsubscribe;
+  }, [bridge, currentType]);
+
+  const handlePlayPause = () => {
+    if (isPlaying) {
+      stopAnimation(currentType);
+    } else {
+      playAnimation(currentType, currentAnimation);
+    }
+  };
 
   return (
     <div className="ap-panel">
@@ -32,7 +55,7 @@ export function AnimationPlayer() {
         <select 
           className="ap-select"
           value={currentAnimation}
-          onChange={(e) => setCurrentAnimation(currentType, e.target.value)}
+          onChange={(e) => playAnimation(currentType, e.target.value)}
         >
           {availableAnimations.map(anim => (
             <option key={anim} value={anim}>{anim}</option>
@@ -40,7 +63,7 @@ export function AnimationPlayer() {
         </select>
         <div className="ap-buttons">
           <button className="ap-btn"><SkipPreviousIcon /></button>
-          <button className="ap-btn-primary" onClick={() => setIsPlaying(!isPlaying)}>
+          <button className="ap-btn-primary" onClick={handlePlayPause}>
             {isPlaying ? <PauseIcon /> : <PlayIcon />}
           </button>
           <button className="ap-btn"><SkipNextIcon /></button>

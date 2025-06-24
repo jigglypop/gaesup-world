@@ -16,11 +16,9 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
     type: 'normal' | 'ground',
   ): boolean => {
     if (type !== 'ground') {
-      console.warn('Clicker: Only ground type is supported');
       return false;
     }
     if (!activeState?.position) {
-      console.warn('Clicker: Active state position is not available');
       return false;
     }
     try {
@@ -43,7 +41,6 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
 
       return true;
     } catch (error) {
-      console.error('Clicker move failed:', error);
       return false;
     }
   };
@@ -53,18 +50,11 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
       if (!isReady) return;
       updateMouse({ isActive: false, shouldRun: false });
     } catch (error) {
-      console.error('Clicker stop failed:', error);
     }
   };
 
   const onClick = (event: ThreeEvent<MouseEvent>): void => {
-    console.log('onClick called:', { 
-      point: event.point, 
-      isReady,
-      activeState: activeState?.position 
-    });
-    const result = moveClicker(event, false, 'ground');
-    console.log('moveClicker result:', result);
+    moveClicker(event, false, 'ground');
   };
 
   return {

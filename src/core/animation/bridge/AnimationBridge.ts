@@ -1,17 +1,50 @@
 import { AnimationEngine, AnimationMetrics } from '../core/AnimationEngine';
 import { AnimationCommand, AnimationSnapshot, AnimationType } from '../core/types';
+import * as THREE from 'three';
 
 export class AnimationBridge {
   private engines: Map<AnimationType, AnimationEngine>;
-  private eventListeners: Set<(snapshot: AnimationSnapshot) => void>;
+  private eventListeners: Set<(snapshot: AnimationSnapshot, type: AnimationType) => void>;
+  private unsubscribeFunctions: Map<AnimationType, () => void>;
 
   constructor() {
     this.engines = new Map();
     this.eventListeners = new Set();
-    
-    this.engines.set('character', new AnimationEngine());
-    this.engines.set('vehicle', new AnimationEngine());
-    this.engines.set('airplane', new AnimationEngine());
+    this.unsubscribeFunctions = new Map();
+    const characterEngine = new AnimationEngine();
+    const vehicleEngine = new AnimationEngine();
+    const airplaneEngine = new AnimationEngine();
+    this.engines.set('character', characterEngine);
+    this.engines.set('vehicle', vehicleEngine);
+    this.engines.set('airplane', airplaneEngine);
+    this.setupEngineSubscriptions();
+  }
+
+  private setupEngineSubscriptions(): void {
+    this.engines.forEach((engine, type) => {
+      const unsubscribe = engine.subscribe((metrics: AnimationMetrics) => {
+        this.notifyListeners(type);
+      });
+      this.unsubscribeFunctions.set(type, unsubscribe);
+    });
+  }
+
+  registerAnimationAction(type: AnimationType, name: string, action: THREE.AnimationAction): void {
+    const engine = this.engines.get(type);
+    if (engine) {
+      engine.registerAction(name, action);
+    }
+  }
+
+  registerAnimations(type: AnimationType, actions: Record<string, THREE.AnimationAction | null>): void {
+    const engine = this.engines.get(type);
+    if (!engine) return;
+
+    Object.entries(actions).forEach(([name, action]) => {
+      if (action) {
+        engine.registerAction(name, action);
+      }
+    });
   }
 
   execute(type: AnimationType, command: AnimationCommand): void {
@@ -38,8 +71,6 @@ export class AnimationBridge {
         }
         break;
     }
-
-    this.notifyListeners(type);
   }
 
   snapshot(type: AnimationType): AnimationSnapshot {
@@ -71,14 +102,16 @@ export class AnimationBridge {
     return engine ? engine.getMetrics() : null;
   }
 
-  subscribe(listener: (snapshot: AnimationSnapshot) => void): () => void {
+  subscribe(listener: (snapshot: AnimationSnapshot, type: AnimationType) => void): () => void {
     this.eventListeners.add(listener);
     return () => this.eventListeners.delete(listener);
   }
 
   private notifyListeners(type: AnimationType): void {
-    const snapshot = this.snapshot(type);
-    this.eventListeners.forEach(listener => listener(snapshot));
+    if (this.eventListeners.size > 0) {
+      const snapshot = this.snapshot(type);
+      this.eventListeners.forEach(listener => listener(snapshot, type));
+    }
   }
 
   private getEmptySnapshot(): AnimationSnapshot {
@@ -105,6 +138,8 @@ export class AnimationBridge {
   }
 
   dispose(): void {
+    this.unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
+    this.unsubscribeFunctions.clear();
     this.engines.forEach(engine => engine.dispose());
     this.engines.clear();
     this.eventListeners.clear();

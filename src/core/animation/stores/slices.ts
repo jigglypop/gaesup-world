@@ -23,7 +23,7 @@ const initialAnimationState: EntityAnimationStates = {
 export const createAnimationSlice = (set: any, get: any): AnimationSlice => ({
   animationState: initialAnimationState,
 
-  setAnimation: (type: keyof EntityAnimationStates, animation: string) =>
+  setAnimation: (type: keyof EntityAnimationStates, animation: string) => {
     set((state: any) => ({
       animationState: {
         ...state.animationState,
@@ -32,9 +32,22 @@ export const createAnimationSlice = (set: any, get: any): AnimationSlice => ({
           current: animation,
         },
       },
-    })),
+    }));
+  },
 
-  playAnimation: (type: keyof EntityAnimationStates, animation: string) =>
+  playAnimation: (type: keyof EntityAnimationStates, animation: string) => {
+    const state = get();
+    const animationData = state.animationState[type];
+    const targetAction = animationData.store[animation];
+    
+    if (targetAction) {
+      const currentAction = animationData.store[animationData.current];
+      if (currentAction && currentAction !== targetAction) {
+        currentAction.fadeOut(0.3);
+      }
+      targetAction.reset().fadeIn(0.3).play();
+    }
+    
     set((state: any) => ({
       animationState: {
         ...state.animationState,
@@ -43,13 +56,25 @@ export const createAnimationSlice = (set: any, get: any): AnimationSlice => ({
           current: animation,
         },
       },
-    })),
+    }));
+  },
 
   stopAnimation: (type: keyof EntityAnimationStates) => {
-    const animation = get().animationState[type];
+    const state = get();
+    const animation = state.animationState[type];
     if (animation.store[animation.current]) {
       animation.store[animation.current].stop();
     }
+    
+    set((state: any) => ({
+      animationState: {
+        ...state.animationState,
+        [type]: {
+          ...state.animationState[type],
+          current: 'idle',
+        },
+      },
+    }));
   },
 
   resetAnimations: () =>

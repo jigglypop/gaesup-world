@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
-import { AnimationActions } from './types';
+import { useAnimationBridge } from '../../animation/hooks/useAnimationBridge';
 
-export function useAnimationPlayer(actions: AnimationActions | undefined, active: boolean) {
+export function useAnimationPlayer(active: boolean) {
+  const { playAnimation, currentType, currentAnimation } = useAnimationBridge();
   const keyboard = useGaesupStore((state) => state.interaction?.keyboard);
   const mouse = useGaesupStore((state) => state.interaction?.mouse);
   const automation = useGaesupStore((state) => state.automation);
   const states = useGaesupStore((state) => state.states);
-
+  
   const movement = useMemo(() => {
     const isKeyboardMoving =
       keyboard?.forward ||
@@ -23,7 +24,7 @@ export function useAnimationPlayer(actions: AnimationActions | undefined, active
     };
   }, [keyboard, mouse, automation]);
 
-  const activeTag = (() => {
+  const autoActiveTag = useMemo(() => {
     if (states?.isJumping) return 'jump';
     if (states?.isFalling) return 'fall';
     if (states?.isRiding) return 'ride';
@@ -31,24 +32,25 @@ export function useAnimationPlayer(actions: AnimationActions | undefined, active
     if (movement.isRunning) return 'run';
     if (movement.isMoving) return 'walk';
     return 'idle';
-  })();
+  }, [states, movement]);
 
-  const previousTag = useRef('idle');
+  const movementAnimations = useMemo(() => ['idle', 'walk', 'run', 'jump', 'fall', 'ride', 'land'], []);
 
   useEffect(() => {
-    if (!active || !actions || activeTag === previousTag.current) return;
+    if (!active) return;
     
-    const currentAction = actions[activeTag];
-    const previousAction = actions[previousTag.current];
-    
-    if (previousAction && previousAction !== null) {
-      previousAction.fadeOut(0.2);
+    const isMoving = autoActiveTag !== 'idle';
+
+    if (isMoving) {
+      if (autoActiveTag !== currentAnimation) {
+        playAnimation(currentType, autoActiveTag);
+      }
+    } else { 
+      if (movementAnimations.includes(currentAnimation) && currentAnimation !== 'idle') {
+        playAnimation(currentType, 'idle');
+      }
     }
-    if (currentAction && currentAction !== null) {
-      currentAction.reset().fadeIn(0.2).play();
-    }
-    previousTag.current = activeTag;
-  }, [activeTag, actions, active]);
+  }, [active, autoActiveTag, currentAnimation, playAnimation, currentType, movementAnimations]);
 }
 
 export function createAnimationController(actions: AnimationActions) {
