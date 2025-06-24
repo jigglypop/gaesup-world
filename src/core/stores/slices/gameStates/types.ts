@@ -1,4 +1,4 @@
-import { GameStatesType } from '../../../types/core';
+import { GameStatesType } from '../../../world/components/Rideable/types';
 
 export interface GameStatesSlice {
   states: GameStatesType;

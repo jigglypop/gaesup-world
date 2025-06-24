@@ -7,7 +7,6 @@ import { PhysicsCalcProps } from './types';
 import { RapierRigidBody } from '@react-three/rapier';
 import { RefObject } from 'react';
 
-
 export class PhysicsEngine {
   private directionController = new DirectionController();
   private impulseController = new ImpulseController();

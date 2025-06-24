@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RootState } from '@react-three/fiber';
-import { ActiveStateType } from '../../types';
+import { ActiveStateType } from '../../motions/core/types';
 
 export interface CameraConstants {
   THROTTLE_MS: number;

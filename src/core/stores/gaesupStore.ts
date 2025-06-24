@@ -5,14 +5,14 @@ import { createModeSlice } from './slices/mode';
 import { createBlockSlice } from './slices/block';
 import { createCameraOptionSlice } from '../camera/stores/slices/cameraOption';
 import { createCameraSlice } from '../camera/stores/slices/camera';
-import { createMinimapSlice } from '@stores/slices';
+import { createMinimapSlice } from './slices/minimap/slice';
 import { createSizesSlice } from './slices/sizes';
 import { createAnimationSlice } from '../animation/stores/slices';
 import { createMotionSlice } from '../motions/stores/slices';
 import { createInteractionSlice } from '../interactions/stores/slices';
-import { createGameStatesSlice } from '@stores/slices';
-import { createRideableSlice } from '@stores/slices';
-import { createActiveStateSlice } from '@stores/slices';
+import { createGameStatesSlice } from './slices/gameStates/slice';
+import { createRideableSlice } from './slices/rideable/slice';
+import { createActiveStateSlice } from './slices/activeState/slice';
 import { StoreState } from './types';
 
 export const useGaesupStore = create<StoreState>()(

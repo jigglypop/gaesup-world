@@ -37,11 +37,23 @@ export interface AnimationSnapshot {
   };
 }
 
-export type AnimationType = 'character' | 'vehicle' | 'airplane';
+export type AnimationType = 'character' | 'vehicle' | 'airplane' | 'robot';
 
 export interface AnimationConfig {
   type: AnimationType;
   defaultAnimation: string;
   blendDuration: number;
   autoPlay: boolean;
+}
+
+export interface EntityAnimationStates {
+  character: AnimationState;
+  vehicle: AnimationState;
+  airplane: AnimationState;
+}
+
+export interface AnimationState {
+  current: string;
+  default: string;
+  store: Record<string, THREE.AnimationAction>;
 }

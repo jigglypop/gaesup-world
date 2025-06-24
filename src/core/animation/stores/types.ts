@@ -1,33 +1,27 @@
 import * as THREE from 'three';
-import { EntityAnimationStates } from '../../../types/core';
-import { ModeType } from '../../types';
+import { EntityAnimationStates, AnimationState } from '../core/types';
+import { ModeType } from '../../stores/types';
 
 export interface AnimationActions {
-  [key: string]: {
-    fadeOut: (duration: number) => any;
-    reset: () => any;
-    fadeIn: (duration: number) => any;
-    play: () => any;
-  } | null;
+  setAnimation: (type: keyof EntityAnimationStates, animation: string) => void;
+  playAnimation: (type: keyof EntityAnimationStates, animation: string) => void;
+  stopAnimation: (type: keyof EntityAnimationStates) => void;
+  resetAnimations: () => void;
 }
 
 export interface AnimationSlice {
   animationState: EntityAnimationStates;
-  setCurrentAnimation: (type: ModeType, newCurrent: string) => void;
-  setAnimationStore: (
-    type: ModeType,
-    newStore: { [key: string]: AnimationPropType },
+  setAnimation: (type: keyof EntityAnimationStates, animation: string) => void;
+  playAnimation: (type: keyof EntityAnimationStates, animation: string) => void;
+  stopAnimation: (type: keyof EntityAnimationStates) => void;
+  resetAnimations: () => void;
+  setAnimationAction: (
+    type: keyof EntityAnimationStates,
+    animation: string,
+    action: THREE.AnimationAction,
   ) => void;
-  getCurrentAnimation: (type: ModeType) => string;
-  getAnimationStore: (
-    type: ModeType,
-  ) => Record<string, AnimationActions>;
-}
-
-export interface AnimationState {
-  current: string;
-  default: string;
-  store: Record<string, THREE.AnimationAction>;
+  getAnimation: (type: keyof EntityAnimationStates) => AnimationState;
+  getCurrentAnimation: (type: keyof EntityAnimationStates) => string;
 }
 
 export type AnimationPropType = {

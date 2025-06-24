@@ -1,4 +1,4 @@
-import { ActiveStateType } from '../../../types/core';
+import { ActiveStateType } from '../../../motions/core/types';
 
 export interface ActiveStateSlice {
   activeState: ActiveStateType;

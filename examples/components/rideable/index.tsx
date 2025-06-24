@@ -1,46 +1,77 @@
 import { V3 } from '@/core/utils';
-import { Rideable, RideableUI } from '../../../src/core/component/rideable';
+import { RideableObjects, RideableUI } from '../../../src/core/world/components/Rideable';
 import { S3 } from '../../config/constants';
 import { useGaesupContext } from '@/core/stores/gaesupStore';
 
 export function RideableVehicles() {
   return (
     <>
-      <Rideable
-        objectkey="vehicle_main"
-        url={S3 + '/gorani.glb'}
-        objectType="vehicle"
-        enableRiding={true}
-        offset={V3(0, 1, 0)}
-        position={V3(-70, 1, 30)}
-        controllerOptions={{ lerp: { cameraPosition: 0.1, cameraTurn: 0.1 } }}
-        displayName="고라니 차량"
-        rideMessage="F키를 눌러 고라니에 탑승하세요"
-        exitMessage="F키를 눌러 차량에서 내리세요"
-      />
-      <Rideable
-        objectkey="airplane_main"
-        url={S3 + '/gaebird.glb'}
-        objectType="airplane"
-        enableRiding={true}
-        offset={V3(0, 1, 0)}
-        position={V3(70, 1, 40)}
-        controllerOptions={{ lerp: { cameraPosition: 0.1, cameraTurn: 0.1 } }}
-        displayName="비행기"
-        rideMessage="F키를 눌러 비행기에 탑승하세요"
-        exitMessage="F키를 눌러 비행기에서 내리세요"
-      />
-      <Rideable
-        objectkey="airplane_advanced"
-        url={S3 + '/orri.glb'}
-        objectType="airplane"
-        enableRiding={true}
-        offset={V3(0, 1, 0)}
-        position={V3(-30, 1, 80)}
-        controllerOptions={{ lerp: { cameraPosition: 0.1, cameraTurn: 0.1 } }}
-        displayName="오리 전투기"
-        rideMessage="F키를 눌러 전투기에 탑승하세요"
-        exitMessage="F키를 눌러 전투기에서 내리세요"
+      <RideableObjects
+        objects={[
+          {
+            id: "vehicle_main",
+            type: "rideable",
+            position: { x: -70, y: 1, z: 30 },
+            rotation: { x: 0, y: 0, z: 0 },
+            scale: { x: 1, y: 1, z: 1 },
+            maxSpeed: 30,
+            acceleration: 5,
+            deceleration: 3,
+            isOccupied: false,
+            rideMessage: "F키를 눌러 고라니에 탑승하세요",
+            exitMessage: "F키를 눌러 차량에서 내리세요",
+            controls: {
+              forward: false,
+              backward: false,
+              left: false,
+              right: false,
+              brake: false
+            },
+            metadata: { name: "고라니 차량" }
+          },
+          {
+            id: "airplane_main", 
+            type: "rideable",
+            position: { x: 70, y: 1, z: 40 },
+            rotation: { x: 0, y: 0, z: 0 },
+            scale: { x: 1, y: 1, z: 1 },
+            maxSpeed: 50,
+            acceleration: 8,
+            deceleration: 4,
+            isOccupied: false,
+            rideMessage: "F키를 눌러 비행기에 탑승하세요",
+            exitMessage: "F키를 눌러 비행기에서 내리세요",
+            controls: {
+              forward: false,
+              backward: false,
+              left: false,
+              right: false,
+              brake: false
+            },
+            metadata: { name: "비행기" }
+          },
+          {
+            id: "airplane_advanced",
+            type: "rideable", 
+            position: { x: -30, y: 1, z: 80 },
+            rotation: { x: 0, y: 0, z: 0 },
+            scale: { x: 1, y: 1, z: 1 },
+            maxSpeed: 80,
+            acceleration: 12,
+            deceleration: 6,
+            isOccupied: false,
+            rideMessage: "F키를 눌러 전투기에 탑승하세요",
+            exitMessage: "F키를 눌러 전투기에서 내리세요",
+            controls: {
+              forward: false,
+              backward: false,
+              left: false,
+              right: false,
+              brake: false
+            },
+            metadata: { name: "오리 전투기" }
+          }
+        ]}
       />
     </>
   );

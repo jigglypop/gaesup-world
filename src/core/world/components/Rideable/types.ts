@@ -2,6 +2,29 @@ import * as THREE from 'three';
 import { RigidBodyProps } from '@react-three/rapier';
 import { WorldObject } from '../../core/WorldEngine';
 
+export interface GameStatesType {
+  canRide: boolean;
+  isRiding: boolean;
+  nearbyRideable?: RideableObject;
+  currentRideable?: RideableObject;
+  rideableDistance?: number;
+}
+
+export interface GameStates {
+  canRide: boolean;
+  isRiding: boolean;
+  nearbyRideable?: RideableObject;
+  currentRideable?: RideableObject;
+  rideableDistance?: number;
+}
+
+export interface NearbyRideable {
+  id: string;
+  distance: number;
+  object: RideableObject;
+  canInteract: boolean;
+}
+
 export interface RideableObject extends WorldObject {
   type: 'rideable';
   maxSpeed: number;

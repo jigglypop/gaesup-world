@@ -1,4 +1,7 @@
-import { RideableUIProps, RideableObject } from './types';
+import { useEffect } from 'react';
+import { useRideable } from '@hooks/useRideable';
+import { useGaesupStore } from '@stores/gaesupStore';
+import { RideableUIProps, RideablePropType, RideableObject } from './types';
 import './styles.css';
 import React from 'react';
 
@@ -6,6 +9,7 @@ export function RideableUI({ states }: RideableUIProps) {
   if (!states) {
     return null;
   }
+
   if (!states.canRide && !states.isRiding) {
     return null;
   }

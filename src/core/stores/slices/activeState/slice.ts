@@ -1,32 +1,34 @@
 import { StateCreator } from 'zustand';
 import * as THREE from 'three';
-import { ActiveStateSlice } from './types';
+import { ActiveStateSlice, ActiveState } from './types';
 
-const createDefaultActiveState = () => ({
-  position: new THREE.Vector3(0, 0, 0),
-  velocity: new THREE.Vector3(0, 0, 0),
-  quat: new THREE.Quaternion(0, 0, 0, 1),
-  euler: new THREE.Euler(0, 0, 0),
-  dir: new THREE.Vector3(0, 0, 0),
-  direction: new THREE.Vector3(0, 0, 0),
-});
+const initialActiveState: ActiveState = {
+  position: new THREE.Vector3(),
+  quaternion: new THREE.Quaternion(),
+  euler: new THREE.Euler(),
+  velocity: new THREE.Vector3(),
+  direction: new THREE.Vector3(),
+  dir: new THREE.Vector3(),
+  angular: new THREE.Vector3(),
+  isGround: false,
+};
 
 export const createActiveStateSlice: StateCreator<ActiveStateSlice, [], [], ActiveStateSlice> = (
   set,
 ) => ({
-  activeState: createDefaultActiveState(),
+  activeState: initialActiveState,
   setActiveState: (state) =>
     set(() => ({
-      activeState: { ...createDefaultActiveState(), ...state },
+      activeState: { ...initialActiveState, ...state },
     })),
   updateActiveState: (update) =>
     set((state) => ({
       activeState: state.activeState
         ? { ...state.activeState, ...update }
-        : createDefaultActiveState(),
+        : initialActiveState,
     })),
   resetActiveState: () =>
     set(() => ({
-      activeState: createDefaultActiveState(),
+      activeState: initialActiveState,
     })),
 });

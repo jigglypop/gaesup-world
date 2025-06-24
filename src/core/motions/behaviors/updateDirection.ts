@@ -1,12 +1,15 @@
 import { RefObject } from 'react';
 import * as THREE from 'three';
-import { ActiveStateType, ModeType } from '../../types';
+import { ActiveStateType } from '../core/types';
+import { ModeType } from '../../stores/types';
 import {
   getCachedTrig,
+  getCachedVector,
+  quaternionFromEuler,
   MemoizationManager,
   normalizeAngle,
   shouldUpdate,
-} from '../../utils/memoization';
+} from '@utils/index';
 import { calcAngleByVector, calcNorm } from '../../utils/vector';
 import { PhysicsCalcProps, PhysicsState } from '../types';
 import { useGaesupStore } from '@stores/gaesupStore';
@@ -298,8 +301,8 @@ export class DirectionController {
           dir: activeState.dir,
         },
       });
-      this.lastEulerY[entityType] = activeState.euler.y;
       this.lastDirectionLength = currentDirectionLength;
     }
+    this.lastEulerY[entityType] = activeState.euler.y;
   }
 }

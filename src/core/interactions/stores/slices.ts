@@ -135,47 +135,6 @@ export const createInteractionSlice: StateCreator<
     automation: createDefaultAutomationMetrics()
   },
 
-  updateKeyboard: (updates) =>
-    set((state) => ({
-      interaction: {
-        ...state.interaction,
-        keyboard: { ...state.interaction.keyboard, ...updates },
-        lastUpdate: Date.now()
-      }
-    })),
-
-  updateMouse: (updates) =>
-    set((state) => ({
-      interaction: {
-        ...state.interaction,
-        mouse: { ...state.interaction.mouse, ...updates },
-        lastUpdate: Date.now()
-      }
-    })),
-
-  updateGamepad: (updates) =>
-    set((state) => ({
-      interaction: {
-        ...state.interaction,
-        gamepad: { ...state.interaction.gamepad, ...updates },
-        lastUpdate: Date.now()
-      }
-    })),
-
-  updateTouch: (updates) =>
-    set((state) => ({
-      interaction: {
-        ...state.interaction,
-        touch: { ...state.interaction.touch, ...updates },
-        lastUpdate: Date.now()
-      }
-    })),
-
-  setInteractionActive: (active) =>
-    set((state) => ({
-      interaction: { ...state.interaction, isActive: active }
-    })),
-
   addAutomationAction: (actionData) => {
     const id = `action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const action = {
@@ -334,6 +293,46 @@ export const createInteractionSlice: StateCreator<
       metrics: {
         interaction: createDefaultInteractionMetrics(),
         automation: createDefaultAutomationMetrics()
+      }
+    })),
+
+  updateMouse: (updates) =>
+    set((state) => ({
+      interaction: {
+        ...state.interaction,
+        mouse: { ...state.interaction.mouse, ...updates }
+      }
+    })),
+
+  updateKeyboard: (updates) =>
+    set((state) => ({
+      interaction: {
+        ...state.interaction,
+        keyboard: { ...state.interaction.keyboard, ...updates }
+      }
+    })),
+
+  updateGamepad: (updates) =>
+    set((state) => ({
+      interaction: {
+        ...state.interaction,
+        gamepad: { ...state.interaction.gamepad, ...updates }
+      }
+    })),
+
+  updateTouch: (updates) =>
+    set((state) => ({
+      interaction: {
+        ...state.interaction,
+        touch: { ...state.interaction.touch, ...updates }
+      }
+    })),
+
+  setInteractionActive: (active) =>
+    set((state) => ({
+      interaction: {
+        ...state.interaction,
+        isActive: active
       }
     }))
 });

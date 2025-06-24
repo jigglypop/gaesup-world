@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { PhysicsState } from '../types';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { PhysicsCalcProps } from '../core/types';
+import { activeStateUpdater } from '@utils/index';
 
 export class StateChecker {
   private keyStateCache = new Map<string, { lastKeyE: boolean; lastKeyR: boolean }>();

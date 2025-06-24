@@ -1,6 +1,6 @@
-import { StateCreator } from 'zustand';
 import { AnimationSlice } from './types';
-import { EntityAnimationStates } from '../../../types/core';
+import { EntityAnimationStates, AnimationState } from '../core/types';
+import * as THREE from 'three';
 
 const initialAnimationState: EntityAnimationStates = {
   character: {
@@ -20,37 +20,64 @@ const initialAnimationState: EntityAnimationStates = {
   },
 };
 
-export const createAnimationSlice: StateCreator<AnimationSlice, [], [], AnimationSlice> = (
-  set,
-  get,
-) => ({
+export const createAnimationSlice = (set: any, get: any): AnimationSlice => ({
   animationState: initialAnimationState,
-  setCurrentAnimation: (type, newCurrent) =>
-    set((state) => ({
+
+  setAnimation: (type: keyof EntityAnimationStates, animation: string) =>
+    set((state: any) => ({
       animationState: {
         ...state.animationState,
         [type]: {
           ...state.animationState[type],
-          current: newCurrent,
+          current: animation,
         },
       },
     })),
-  setAnimationStore: (type, newStore) =>
-    set((state) => ({
+
+  playAnimation: (type: keyof EntityAnimationStates, animation: string) =>
+    set((state: any) => ({
       animationState: {
         ...state.animationState,
         [type]: {
           ...state.animationState[type],
-          store: newStore,
+          current: animation,
         },
       },
     })),
-  getCurrentAnimation: (type) => {
+
+  stopAnimation: (type: keyof EntityAnimationStates) => {
     const animation = get().animationState[type];
-    return animation.current;
+    if (animation.store[animation.current]) {
+      animation.store[animation.current].stop();
+    }
   },
-  getAnimationStore: (type) => {
-    const animation = get().animationState[type];
-    return animation.store;
-  },
+
+  resetAnimations: () =>
+    set(() => ({
+      animationState: initialAnimationState,
+    })),
+
+  setAnimationAction: (
+    type: keyof EntityAnimationStates,
+    animation: string,
+    action: THREE.AnimationAction,
+  ) =>
+    set((state: any) => ({
+      animationState: {
+        ...state.animationState,
+        [type]: {
+          ...state.animationState[type],
+          store: {
+            ...state.animationState[type].store,
+            [animation]: action,
+          },
+        },
+      },
+    })),
+
+  getAnimation: (type: keyof EntityAnimationStates): AnimationState =>
+    get().animationState[type],
+
+  getCurrentAnimation: (type: keyof EntityAnimationStates): string =>
+    get().animationState[type].current,
 });

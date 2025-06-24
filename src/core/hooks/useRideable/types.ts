@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { NearbyRideable } from '../../types/core';
+import { NearbyRideable } from '../../world/components/Rideable/types';
 
 export type rideableType = {
   objectkey: string;

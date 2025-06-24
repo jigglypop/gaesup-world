@@ -1,6 +1,4 @@
-export * from './stores';
 export * from './hooks';
-export * from './types';
 export * from './utils';
 export * from './camera';
 export * from './animation';
@@ -10,6 +8,7 @@ export * from './interactions';
 export * from './world';
 export * from './ui';
 export * from './debug';
+export * from './stores';
 
 export { WorldProps as GaeSupProps } from './world/components/WorldProps';
 export { WorldContainer as GaesupWorld } from './world/components/WorldContainer';

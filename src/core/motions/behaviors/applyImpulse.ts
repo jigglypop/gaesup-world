@@ -1,6 +1,9 @@
+import * as THREE from 'three';
+import { getVectorAngle } from '@utils/index';
 import { RefObject } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 import { PhysicsState } from '../types';
+import { PhysicsCalcProps } from '../core/types';
 import { useGaesupStore } from '@stores/gaesupStore';
 
 export class ImpulseController {
