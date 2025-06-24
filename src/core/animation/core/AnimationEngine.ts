@@ -111,7 +111,6 @@ export class AnimationEngine {
       this.state.animationMixer.update(deltaTime);
       this.metrics.mixerTime += deltaTime;
       this.metrics.lastUpdate = Date.now();
-      
       if (this.callbacks.size > 0) {
         this.updateMetrics();
         this.notifyCallbacks();

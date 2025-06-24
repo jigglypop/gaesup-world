@@ -1,3 +1,9 @@
+@import '@core/editor/styles/theme.css';
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
 @font-face {
   font-family: 'Pretendard';
   src: url('/fonts/Pretendard-Regular.otf') format('opentype');
@@ -80,4 +86,42 @@ html, body, #root {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+} 
+
+.app-navigation {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 100;
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-border-radius);
+  padding: var(--editor-spacing-xs);
+  display: flex;
+  gap: var(--editor-spacing-xs);
+  box-shadow: var(--editor-shadow);
+}
+
+.app-nav-link {
+  background-color: transparent;
+  border: none;
+  color: var(--editor-text-secondary);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.app-nav-link:hover {
+  background-color: var(--editor-surface-hover);
+  color: var(--editor-text-primary);
+}
+
+.app-nav-link.active {
+  background-color: var(--editor-surface-active);
+  color: var(--editor-text-primary);
+  font-weight: 600;
 } 

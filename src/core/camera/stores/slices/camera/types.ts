@@ -52,4 +52,9 @@ export interface CameraSlice {
   setCurrentCameraStateName: (name: string) => void;
   setCameraStateHistory: (history: string[]) => void;
   addCameraState: (name: string, state: CameraState) => void;
+  updateCurrentCameraState: (newState: Partial<CameraState>) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  setZoom: (zoom: number) => void;
+  setRotation: (rotation: THREE.Euler) => void;
 } 

@@ -60,4 +60,84 @@ export const createCameraSlice: StateCreator<CameraSlice, [], [], CameraSlice> =
       return { cameraStates: newStates };
     });
   },
+  updateCurrentCameraState: (newState: Partial<CameraState>) => {
+    set((state) => {
+      const currentCamera = state.cameraStates.get(state.currentCameraStateName);
+      if (currentCamera) {
+        const updatedCamera = { ...currentCamera, ...newState };
+        const newStates = new Map(state.cameraStates);
+        newStates.set(state.currentCameraStateName, updatedCamera);
+        return { cameraStates: newStates };
+      }
+      return state;
+    });
+  },
+  zoomIn: () => {
+    set((state) => {
+      const currentCamera = state.cameraStates.get(state.currentCameraStateName);
+      if (currentCamera && currentCamera.config.distance) {
+        const newDistance = Math.max(
+          currentCamera.config.distance - 0.5,
+          currentCamera.config.constraints?.minDistance || 1
+        );
+        const newStates = new Map(state.cameraStates);
+        newStates.set(state.currentCameraStateName, {
+          ...currentCamera,
+          config: { ...currentCamera.config, distance: newDistance },
+        });
+        return { cameraStates: newStates };
+      }
+      return state;
+    });
+  },
+  zoomOut: () => {
+    set((state) => {
+      const currentCamera = state.cameraStates.get(state.currentCameraStateName);
+      if (currentCamera && currentCamera.config.distance) {
+        const newDistance = Math.min(
+          currentCamera.config.distance + 0.5,
+          currentCamera.config.constraints?.maxDistance || 20
+        );
+        const newStates = new Map(state.cameraStates);
+        newStates.set(state.currentCameraStateName, {
+          ...currentCamera,
+          config: { ...currentCamera.config, distance: newDistance },
+        });
+        return { cameraStates: newStates };
+      }
+      return state;
+    });
+  },
+  setZoom: (zoom: number) => {
+    set((state) => {
+      const currentCamera = state.cameraStates.get(state.currentCameraStateName);
+      if (currentCamera) {
+        const newDistance = Math.max(
+          currentCamera.config.constraints?.minDistance || 1,
+          Math.min(zoom, currentCamera.config.constraints?.maxDistance || 20)
+        );
+        const newStates = new Map(state.cameraStates);
+        newStates.set(state.currentCameraStateName, {
+          ...currentCamera,
+          config: { ...currentCamera.config, distance: newDistance },
+        });
+        return { cameraStates: newStates };
+      }
+      return state;
+    });
+  },
+  setRotation: (rotation: THREE.Euler) => {
+    set((state) => {
+      const currentCamera = state.cameraStates.get(state.currentCameraStateName);
+      if (currentCamera) {
+        const newStates = new Map(state.cameraStates);
+        newStates.set(state.currentCameraStateName, {
+          ...currentCamera,
+          rotation,
+        });
+        return { cameraStates: newStates };
+      }
+      return state;
+    });
+  },
 }); 

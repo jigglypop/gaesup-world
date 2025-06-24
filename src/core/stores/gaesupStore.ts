@@ -15,6 +15,7 @@ import { createRideableSlice } from './slices/rideable/slice';
 import { createActiveStateSlice } from './slices/activeState/slice';
 import { createPerformanceSlice } from './slices/performance';
 import { StoreState } from './types';
+import { createWorldSlice } from '../world/stores/slices/worldStates/slice';
 
 export const useGaesupStore = create<StoreState>()(
   devtools(
@@ -33,6 +34,7 @@ export const useGaesupStore = create<StoreState>()(
       ...createRideableSlice(set, get, api),
       ...createActiveStateSlice(set, get, api),
       ...createPerformanceSlice(set, get, api),
+      ...createWorldSlice(set, get, api),
       updateState: (updates: Partial<StoreState>) => {
         set((state) => ({ ...state, ...updates }));
       },

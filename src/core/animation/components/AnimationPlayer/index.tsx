@@ -62,11 +62,11 @@ export function AnimationPlayer() {
           ))}
         </select>
         <div className="ap-buttons">
-          <button className="ap-btn"><SkipPreviousIcon /></button>
-          <button className="ap-btn-primary" onClick={handlePlayPause}>
+          <button className="ap-btn" aria-label="previous animation"><SkipPreviousIcon /></button>
+          <button className="ap-btn-primary" onClick={handlePlayPause} aria-label={isPlaying ? 'pause' : 'play'}>
             {isPlaying ? <PauseIcon /> : <PlayIcon />}
           </button>
-          <button className="ap-btn"><SkipNextIcon /></button>
+          <button className="ap-btn" aria-label="next animation"><SkipNextIcon /></button>
         </div>
       </div>
       <div className="ap-timeline">

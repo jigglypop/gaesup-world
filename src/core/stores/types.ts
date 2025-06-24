@@ -14,6 +14,7 @@ import { ActiveStateSlice } from './slices/activeState';
 import { GameStatesType } from '../world/components/Rideable/types';
 import { UrlsState } from './slices/urls';
 import { PerformanceState } from './slices/performance';
+import { WorldSlice } from '../world/stores/slices/worldStates/types';
 
 export type ModeType = 'character' | 'vehicle' | 'airplane';
 export type ControllerType = 'clicker' | 'keyboard' | 'joystick' | 'gamepad';
@@ -44,7 +45,8 @@ export type StoreState = UrlsSlice &
   GameStatesSlice &
   RideableSlice &
   ActiveStateSlice &
-  PerformanceState & {
+  PerformanceState &
+  WorldSlice & {
     updateState: (updates: Partial<StoreState>) => void;
     initialize: (config: Partial<StoreState>) => void;
   };

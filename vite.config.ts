@@ -68,6 +68,7 @@ export default defineConfig(({ mode }) => {
         { find: '@motions', replacement: path.resolve(__dirname, 'src/core/motions') },
         { find: '@debug', replacement: path.resolve(__dirname, 'src/core/debug') },
       ],
+      dedupe: ['react', 'react-dom'],
     },
     server: {
       port: 3000,

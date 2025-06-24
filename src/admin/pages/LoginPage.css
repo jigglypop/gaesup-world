@@ -1,0 +1,75 @@
+/* Import theme variables */
+@import '@core/editor/styles/theme.css';
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background-color: #1a1a1a; /* A dark fallback */
+  background-image: radial-gradient(circle at top left, #4a4a6a, #1a1a1a 50%);
+}
+
+.login-form {
+  /* Use the glass panel effect */
+  background: var(--editor-glass-bg);
+  backdrop-filter: var(--editor-glass-blur);
+  -webkit-backdrop-filter: var(--editor-glass-blur);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-border-radius);
+  box-shadow: var(--editor-shadow);
+  
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-lg);
+  padding: 2rem;
+  width: 100%;
+  max-width: 360px;
+}
+
+.login-container h1 {
+  color: var(--editor-text-primary);
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.login-input {
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-border-radius);
+  padding: var(--editor-spacing-md);
+  font-size: 1rem;
+  color: var(--editor-text-primary);
+  transition: all 0.2s ease;
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: var(--editor-surface-active);
+  box-shadow: 0 0 0 2px rgba(85, 85, 95, 0.5);
+}
+
+.login-button {
+  background-color: var(--editor-surface-active);
+  color: var(--editor-text-primary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-border-radius);
+  padding: var(--editor-spacing-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.login-button:hover {
+  background-color: var(--editor-surface-hover);
+  border-color: var(--editor-surface-active);
+}
+
+.login-error {
+  color: #ff6b6b;
+  text-align: center;
+  font-size: 0.9rem;
+} 

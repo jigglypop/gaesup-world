@@ -11,12 +11,12 @@ export class AnimationBridge {
     this.engines = new Map();
     this.eventListeners = new Set();
     this.unsubscribeFunctions = new Map();
-    const characterEngine = new AnimationEngine();
-    const vehicleEngine = new AnimationEngine();
-    const airplaneEngine = new AnimationEngine();
-    this.engines.set('character', characterEngine);
-    this.engines.set('vehicle', vehicleEngine);
-    this.engines.set('airplane', airplaneEngine);
+
+    const engineTypes: AnimationType[] = ['character', 'vehicle', 'airplane'];
+    engineTypes.forEach(type => {
+      this.engines.set(type, new AnimationEngine());
+    });
+    
     this.setupEngineSubscriptions();
   }
 
