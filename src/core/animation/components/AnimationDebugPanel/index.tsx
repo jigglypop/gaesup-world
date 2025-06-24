@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimationMetrics, DebugField } from './types';
 import { DEFAULT_DEBUG_FIELDS } from './types';
 import { useAnimationBridge } from '../../hooks/useAnimationBridge';
@@ -22,7 +22,6 @@ export function AnimationDebugPanel() {
   
   useEffect(() => {
     if (!bridge) return;
-
     const updateMetrics = () => {
       const snapshot = bridge.snapshot(currentType);
       const bridgeMetrics = bridge.getMetrics(currentType);

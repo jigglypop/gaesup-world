@@ -1,5 +1,5 @@
-import { AnimationEngine, AnimationMetrics } from '../core/AnimationEngine';
-import { AnimationCommand, AnimationSnapshot, AnimationType } from '../core/types';
+import { AnimationEngine } from '../core/AnimationEngine';
+import { AnimationCommand, AnimationMetrics, AnimationSnapshot, AnimationType } from '../core/types';
 import * as THREE from 'three';
 
 export class AnimationBridge {
@@ -22,7 +22,7 @@ export class AnimationBridge {
 
   private setupEngineSubscriptions(): void {
     this.engines.forEach((engine, type) => {
-      const unsubscribe = engine.subscribe((metrics: AnimationMetrics) => {
+      const unsubscribe = engine.subscribe(() => {
         this.notifyListeners(type);
       });
       this.unsubscribeFunctions.set(type, unsubscribe);

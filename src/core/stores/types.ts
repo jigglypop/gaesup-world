@@ -36,7 +36,7 @@ export type StoreState = UrlsSlice &
   CameraSlice &
   MinimapSlice &
   SizesSlice &
-  AnimationSlice &
+  Omit<AnimationSlice, 'getAnimation' | 'getCurrentAnimation'> &
   MotionSliceState &
   MotionActions &
   InteractionSliceState &

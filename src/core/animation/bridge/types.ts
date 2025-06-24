@@ -3,7 +3,7 @@ import { AnimationType, AnimationCommand, AnimationSnapshot } from '../core/type
 export interface AnimationBridgeInterface {
   execute(type: AnimationType, command: AnimationCommand): void;
   snapshot(type: AnimationType): AnimationSnapshot;
-  subscribe(listener: (snapshot: AnimationSnapshot) => void): () => void;
+  subscribe(listener: (snapshot: AnimationSnapshot, type: AnimationType) => void): () => void;
   update(type: AnimationType, deltaTime: number): void;
   dispose(): void;
 }

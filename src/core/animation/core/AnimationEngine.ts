@@ -1,24 +1,9 @@
 import * as THREE from 'three';
-
-export interface AnimationEngineState {
-  currentAnimation: string;
-  animationMixer: THREE.AnimationMixer | null;
-  actions: Map<string, THREE.AnimationAction>;
-  isPlaying: boolean;
-  currentWeight: number;
-  blendDuration: number;
-}
-
-export interface AnimationMetrics {
-  activeAnimations: number;
-  totalActions: number;
-  currentWeight: number;
-  mixerTime: number;
-  lastUpdate: number;
-  blendProgress: number;
-}
-
-export type AnimationEngineCallback = (metrics: AnimationMetrics) => void;
+import {
+  AnimationEngineState,
+  AnimationMetrics,
+  AnimationEngineCallback
+} from './types';
 
 export class AnimationEngine {
   private state: AnimationEngineState;
@@ -106,7 +91,7 @@ export class AnimationEngine {
   setWeight(weight: number): void {
     const currentAction = this.state.actions.get(this.state.currentAnimation);
     if (currentAction) {
-      currentAction.setWeight(weight);
+      currentAction.weight = weight;
       this.state.currentWeight = weight;
       this.updateMetrics();
       this.notifyCallbacks();
@@ -116,7 +101,7 @@ export class AnimationEngine {
   setTimeScale(scale: number): void {
     const currentAction = this.state.actions.get(this.state.currentAnimation);
     if (currentAction) {
-      currentAction.setTimeScale(scale);
+      currentAction.timeScale = scale;
       this.notifyCallbacks();
     }
   }

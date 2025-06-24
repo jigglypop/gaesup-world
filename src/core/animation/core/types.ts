@@ -57,3 +57,23 @@ export interface AnimationState {
   default: string;
   store: Record<string, THREE.AnimationAction>;
 }
+
+export interface AnimationEngineState {
+  currentAnimation: string;
+  animationMixer: THREE.AnimationMixer | null;
+  actions: Map<string, THREE.AnimationAction>;
+  isPlaying: boolean;
+  currentWeight: number;
+  blendDuration: number;
+}
+
+export interface AnimationMetrics {
+  activeAnimations: number;
+  totalActions: number;
+  currentWeight: number;
+  mixerTime: number;
+  lastUpdate: number;
+  blendProgress: number;
+}
+
+export type AnimationEngineCallback = (metrics: AnimationMetrics) => void;
