@@ -5,12 +5,29 @@ import { WorldContainerProps } from './types';
 import { ActiveObjects } from '../ActiveObjects';
 import { PassiveObjects } from '../PassiveObjects';
 import { RideableObjects } from '../Rideable';
+import { PerformanceTracker } from '@debug/performance/PerformanceTracker';
+
+function LoadingIndicator() {
+  return (
+    <group>
+      <mesh position={[0, 1, 0]}>
+        <boxGeometry args={[2, 0.1, 2]} />
+        <meshBasicMaterial color="#444444" />
+      </mesh>
+      <mesh position={[0, 1.1, 0]}>
+        <boxGeometry args={[1.8, 0.05, 1.8]} />
+        <meshBasicMaterial color="#666666" />
+      </mesh>
+    </group>
+  );
+}
 
 export function WorldContainer(props: WorldContainerProps) {
   const setMode = useGaesupStore((state) => state.setMode);
   const setUrls = useGaesupStore((state) => state.setUrls);
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
   const worldSlice = useGaesupStore((state) => state.world);
+  const { debug } = useGaesupStore((state) => state.mode);
 
   useEffect(() => {
     if (props.mode) {
@@ -40,8 +57,10 @@ export function WorldContainer(props: WorldContainerProps) {
   const rideableObjects = worldSlice?.objects?.filter(obj => obj.type === 'rideable') || [];
 
   return (
-    <Suspense fallback={<div>Loading World...</div>}>
+    <Suspense fallback={<LoadingIndicator />}>
       <group name="gaesup-world">
+        {debug && <PerformanceTracker />}
+
         {props.showGrid && (
           <gridHelper args={[100, 100, "#888888", "#444444"]} />
         )}

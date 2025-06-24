@@ -9,3 +9,20 @@ export interface ClickPosition {
   y: number;
   z: number;
 }
+
+export interface EditorMode {
+  enabled: boolean;
+  defaultLayout?: 'full' | 'minimal' | 'custom';
+  panels?: {
+    hierarchy?: boolean;
+    inspector?: boolean;
+    assetBrowser?: boolean;
+    nodeEditor?: boolean;
+  };
+}
+
+export interface ExampleConfig {
+  editor: EditorMode;
+  debug: boolean;
+  showPerformance: boolean;
+}

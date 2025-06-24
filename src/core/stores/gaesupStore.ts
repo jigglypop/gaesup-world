@@ -13,6 +13,7 @@ import { createInteractionSlice } from '../interactions/stores/slices';
 import { createGameStatesSlice } from './slices/gameStates/slice';
 import { createRideableSlice } from './slices/rideable/slice';
 import { createActiveStateSlice } from './slices/activeState/slice';
+import { createPerformanceSlice } from './slices/performance';
 import { StoreState } from './types';
 
 export const useGaesupStore = create<StoreState>()(
@@ -31,6 +32,7 @@ export const useGaesupStore = create<StoreState>()(
       ...createGameStatesSlice(set, get, api),
       ...createRideableSlice(set, get, api),
       ...createActiveStateSlice(set, get, api),
+      ...createPerformanceSlice(set, get, api),
       updateState: (updates: Partial<StoreState>) => {
         set((state) => ({ ...state, ...updates }));
       },

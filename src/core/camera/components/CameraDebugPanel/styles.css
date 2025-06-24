@@ -201,3 +201,37 @@
 .camera-debug-panel--glass .camera-debug-value {
   color: #88ddff;
 }
+
+.cd-panel {
+  width: 100%;
+  padding: 4px;
+}
+
+.cd-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 8px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.cd-item {
+  display: contents; /* Allows grid layout to apply to children */
+}
+
+.cd-label {
+  color: #a0a0a0;
+  font-size: 12px;
+  padding: 4px 8px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cd-value {
+  color: #e0e0e0;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

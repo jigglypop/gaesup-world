@@ -227,3 +227,62 @@
   font-weight: 500;
   color: white;
 }
+
+.mc-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.mc-setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mc-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #a0a0a0;
+  text-transform: uppercase;
+}
+
+.mc-select {
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.mc-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
+}
+
+.mc-preset-btn {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-radius: 4px;
+  padding: 10px 8px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.mc-preset-btn:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.mc-preset-btn.active {
+  background-color: var(--editor-primary);
+  border-color: rgba(59, 130, 246, 0.8);
+  font-weight: 600;
+}

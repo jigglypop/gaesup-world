@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useGaesupStore } from '../../../stores/gaesupStore';
-import { CameraOptionType, CameraType } from '../core/types';
+import { CameraOptionType } from '../core/types';
 import './styles.css';
-import { CameraPreset, CameraPresetsProps } from './types';
+import { CameraPreset } from './types';
 
 const DEFAULT_PRESETS: CameraPreset[] = [
   {
     id: 'classic',
-    name: '클래식',
-    description: '전통적인 3인칭 뷰',
-    icon: '🎮',
+    name: 'Classic',
+    description: 'A traditional third-person view.',
     config: {
       mode: 'thirdPerson',
       distance: { x: 0, y: 8, z: 10 },
@@ -19,9 +18,8 @@ const DEFAULT_PRESETS: CameraPreset[] = [
   },
   {
     id: 'cinematic',
-    name: '시네마틱',
-    description: '영화 같은 카메라 워크',
-    icon: '🎬',
+    name: 'Cinematic',
+    description: 'Smooth, movie-like camera work.',
     config: {
       mode: 'chase',
       distance: { x: 2, y: 7, z: 8 },
@@ -31,9 +29,8 @@ const DEFAULT_PRESETS: CameraPreset[] = [
   },
   {
     id: 'action',
-    name: '액션',
-    description: '빠른 반응 카메라',
-    icon: '⚡',
+    name: 'Action',
+    description: 'Responsive camera for fast gameplay.',
     config: {
       mode: 'thirdPerson',
       distance: { x: 0, y: 6, z: 6 },
@@ -43,9 +40,8 @@ const DEFAULT_PRESETS: CameraPreset[] = [
   },
   {
     id: 'strategy',
-    name: '전략',
-    description: '전체적인 시야 확보',
-    icon: '🗺️',
+    name: 'Strategy',
+    description: 'Top-down view for an overview.',
     config: {
       mode: 'topDown',
       distance: { x: 0, y: 20, z: 0 },
@@ -55,9 +51,8 @@ const DEFAULT_PRESETS: CameraPreset[] = [
   },
   {
     id: 'retro',
-    name: '레트로',
-    description: '클래식 게임 스타일',
-    icon: '🕹️',
+    name: 'Retro',
+    description: 'Classic side-scroller style.',
     config: {
       mode: 'side',
       distance: { x: 15, y: 0, z: 0 },
@@ -67,88 +62,46 @@ const DEFAULT_PRESETS: CameraPreset[] = [
   }
 ];
 
-export function CameraPresets({ position = 'top-left' }: CameraPresetsProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function CameraPresets() {
   const [presets] = useState<CameraPreset[]>(DEFAULT_PRESETS);
-  
   const { 
     setMode,
     setCameraOption,
     mode,
     cameraOption 
   } = useGaesupStore();
-
+  const [currentPresetId, setCurrentPresetId] = useState<string | null>(null);
+  
   const applyPreset = (preset: CameraPreset) => {
     setMode({ control: preset.config.mode });
-    
     const newOptions: CameraOptionType = {
       ...cameraOption,
       distance: preset.config.distance,
       fov: preset.config.fov,
       smoothing: preset.config.smoothing || { position: 0.1, rotation: 0.1, fov: 0.1 }
     };
-    
     setCameraOption(newOptions);
-    setCurrentPresetId(preset.id);
-    setIsOpen(false);
-  };
-
-  const [currentPresetId, setCurrentPresetId] = useState<string | null>(null);
-
-  const checkCurrentPreset = () => {
-    const foundPreset = presets.find(preset => 
-      preset.config.mode === mode?.control &&
-      Math.abs(preset.config.distance.x - (cameraOption?.distance?.x || 0)) < 0.1 &&
-      Math.abs(preset.config.distance.y - (cameraOption?.distance?.y || 0)) < 0.1 &&
-      Math.abs(preset.config.distance.z - (cameraOption?.distance?.z || 0)) < 0.1
-    );
-    if (foundPreset && currentPresetId !== foundPreset.id) {
-      setCurrentPresetId(foundPreset.id);
-    }
   };
 
   useEffect(() => {
-    checkCurrentPreset();
-  }, [mode, cameraOption]);
-
-  if (!isOpen) {
-    return (
-      <button 
-        className={`camera-presets-toggle camera-presets-toggle--${position}`}
-        onClick={() => setIsOpen(true)}
-        title="카메라 프리셋"
-      >
-        🎯
-      </button>
+    const foundPreset = presets.find(p => 
+      p.config.mode === mode?.control &&
+      JSON.stringify(p.config.distance) === JSON.stringify(cameraOption?.distance)
     );
-  }
+    setCurrentPresetId(foundPreset ? foundPreset.id : null);
+  }, [mode, cameraOption, presets]);
 
   return (
-    <div className={`camera-presets camera-presets--${position}`}>
-      <div className="camera-presets__header">
-        <span className="camera-presets__title">카메라 프리셋</span>
-        <button 
-          className="camera-presets__close"
-          onClick={() => setIsOpen(false)}
-        >
-          ✕
-        </button>
-      </div>
-      
-      <div className="camera-presets__grid">
+    <div className="cp-panel">
+      <div className="cp-grid">
         {presets.map((preset) => (
           <button
             key={preset.id}
-            className={`camera-presets__item ${
-              currentPresetId === preset.id ? 'camera-presets__item--active' : ''
-            }`}
+            className={`cp-item ${currentPresetId === preset.id ? 'active' : ''}`}
             onClick={() => applyPreset(preset)}
           >
-            <div className="camera-presets__icon">{preset.icon}</div>
-            <div className="camera-presets__content">
-              <div className="camera-presets__name">{preset.name}</div>
-              <div className="camera-presets__description">{preset.description}</div>
-            </div>
+            <div className="cp-name">{preset.name}</div>
+            <div className="cp-description">{preset.description}</div>
           </button>
         ))}
       </div>
