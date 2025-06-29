@@ -21,15 +21,15 @@
   "scripts": {
     "dev": "vite --force",
     "clean": "rimraf dist/",
-    "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:types",
+    "build": "pnpm clean && pnpm build:esm && pnpm build:cjs && pnpm build:types",
     "build:esm": "vite build --mode esm",
     "build:cjs": "vite build --mode cjs",
-    "build:types": "tsc --emitDeclarationOnly --outDir dist",
+    "build:types": "tsc -p tsconfig.build.json",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "preview": "vite preview",
-    "prepare": "npm run build",
-    "predeploy": "npm run build",
+    "prepare": "pnpm build",
+    "predeploy": "pnpm build",
     "deploy": "gh-pages -d dist",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -38,7 +38,7 @@
     "test:memory:verbose": "node scripts/run-memory-tests.js --verbose",
     "test:memory:ci": "node scripts/run-memory-tests.js --ci",
     "release": "semantic-release",
-    "publish:full": "npm run prepare && npm publish"
+    "publish:full": "pnpm prepare && npm publish"
   },
   "dependencies": {
     "@react-icons/all-files": "^4.1.0",
@@ -82,6 +82,7 @@
     "@testing-library/react-hooks": "^8.0.1",
     "@types/identity-obj-proxy": "^3",
     "@types/jest": "^29.5.12",
+    "@types/node": "^24.0.7",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
     "@vitejs/plugin-react-swc": "^3.7.0",
@@ -108,7 +109,8 @@
     "typescript": "^5.6.2",
     "typescript-eslint": "^8.15.0",
     "vite": "^5.4.4",
-    "vite-plugin-svgr": "^4.2.0"
+    "vite-plugin-svgr": "^4.2.0",
+    "vite-tsconfig-paths": "^5.1.4"
   },
   "peerDependencies": {
     "@dimforge/rapier3d": "^0.14.0",
@@ -137,12 +139,12 @@
   "bugs": {
     "url": "https://github.com/jigglypop/gaesup-world.git/issues"
   },
-  "packageManager": "yarn@4.9.1",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "packageManager": "pnpm@9.15.1+sha512.1acb565e6193efbebda772702950469150cf12bcc764262e7587e71d19dc98a423dff9536e57ea44c49bdf790ff694e83c27be5faa23d67e0c033b583be4bfcf"
 }

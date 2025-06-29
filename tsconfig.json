@@ -15,8 +15,6 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "declaration": true,
-    "outDir": "./dist",
     "baseUrl": ".",
     "strict": true,
     "noImplicitAny": true,
@@ -45,7 +43,7 @@
       "@debug/*": ["src/core/debug/*"]
     }
   },
-  "include": ["src/**/*", "examples/**/*", "*.ts", "*.tsx"],
+  "include": ["src", "examples", "vite.config.ts", "jest.config.cjs", "index.ts", "react-three-fiber.d.ts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"],
   "ts-node": {
     "esm": true

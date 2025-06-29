@@ -133,7 +133,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<WorldPage showEditor={false} />} />
         <Route
-          path="/admin"
+          path="/admin/*"
           element={
             <GaesupAdmin>
               <WorldPage showEditor={true} />

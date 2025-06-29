@@ -1,15 +1,30 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
+import tsconfigPaths from 'vite-tsconfig-paths';
+import svgr from 'vite-plugin-svgr';
 import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const isLibraryBuild = mode === 'esm' || mode === 'cjs';
+  const alias = [
+    { find: '@', replacement: path.resolve(__dirname, 'src') },
+    { find: '@core', replacement: path.resolve(__dirname, 'src/core') },
+    { find: '@hooks', replacement: path.resolve(__dirname, 'src/core/hooks') },
+    { find: '@stores', replacement: path.resolve(__dirname, 'src/core/stores') },
+    { find: '@world', replacement: path.resolve(__dirname, 'src/core/world') },
+    { find: '@interactions', replacement: path.resolve(__dirname, 'src/core/interactions') },
+    { find: '@ui', replacement: path.resolve(__dirname, 'src/core/ui') },
+    { find: '@constants', replacement: path.resolve(__dirname, 'src/core/constants') },
+    { find: '@utils', replacement: path.resolve(__dirname, 'src/core/utils') },
+    { find: '@motions', replacement: path.resolve(__dirname, 'src/core/motions') },
+    { find: '@debug', replacement: path.resolve(__dirname, 'src/core/debug') },
+  ];
   if (isLibraryBuild) {
     return {
-      plugins: [react()],
+      plugins: [react(), tsconfigPaths(), svgr()],
       resolve: {
-        alias: [{ find: '@', replacement: path.resolve(__dirname, 'src') }],
+        alias,
       },
       build: {
         lib: {
@@ -52,22 +67,9 @@ export default defineConfig(({ mode }) => {
     };
   }
   return {
-    plugins: [react()],
+    plugins: [react(), tsconfigPaths(), svgr()],
     resolve: {
-      alias: [
-        { find: '@', replacement: path.resolve(__dirname, 'src') },
-        { find: '@core', replacement: path.resolve(__dirname, 'src/core') },
-        { find: '@hooks', replacement: path.resolve(__dirname, 'src/core/hooks') },
-        { find: '@stores', replacement: path.resolve(__dirname, 'src/core/stores') },
-        { find: '@world', replacement: path.resolve(__dirname, 'src/core/world') },
-        { find: '@interactions', replacement: path.resolve(__dirname, 'src/core/interactions') },
-        { find: '@ui', replacement: path.resolve(__dirname, 'src/core/ui') },
-        { find: '@constants', replacement: path.resolve(__dirname, 'src/core/constants') },
-        { find: '@utils', replacement: path.resolve(__dirname, 'src/core/utils') },
-
-        { find: '@motions', replacement: path.resolve(__dirname, 'src/core/motions') },
-        { find: '@debug', replacement: path.resolve(__dirname, 'src/core/debug') },
-      ],
+      alias,
       dedupe: ['react', 'react-dom'],
     },
     server: {

@@ -1,0 +1,38 @@
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  background: var(--editor-glass-bg);
+  backdrop-filter: var(--editor-glass-blur);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-border-radius);
+  padding: var(--editor-spacing-md);
+  color: var(--editor-text-primary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 200px;
+  box-shadow: var(--editor-shadow);
+}
+
+.toast:hover {
+  background: var(--editor-surface-hover);
+}
+
+.toast-success {
+  border-left: 4px solid #4caf50;
+}
+
+.toast-error {
+  border-left: 4px solid #f44336;
+}
+
+.toast-info {
+  border-left: 4px solid #2196f3;
+} 

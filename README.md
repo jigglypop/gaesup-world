@@ -28,6 +28,7 @@
 - **Extensible Structure**: Customize and extend functionalities as needed.
 - **Lightweight**: Optimized for fast loading and performance.
 - **Utilities**: Includes minimaps, joysticks, and more for enhanced user experience.
+- **Admin System**: Complete admin panel with authentication and world editing capabilities.
 
 ---
 
@@ -44,6 +45,35 @@ npm install @react-three/fiber @react-three/drei three @types/three @react-three
 ```bash
 yarn add @react-three/fiber @react-three/drei three @types/three @react-three/rapier ../../../src
 ```
+
+---
+
+### Admin System
+
+**Gaesup World** includes a comprehensive admin system for managing 3D worlds:
+
+```tsx
+import { GaesupAdmin } from 'gaesup-world/admin';
+
+function AdminApp() {
+  return <GaesupAdmin />;
+}
+```
+
+#### Admin Features
+- **Authentication**: Role-based access control (Admin, Manager, User)  
+- **3D World Editor**: Real-time world editing with property inspector
+- **Modal System**: Settings, notifications, and custom dialogs
+- **Glass Morphism UI**: Modern admin interface design
+
+#### Demo Credentials
+- Username: `admin`
+- Password: `password`
+
+#### Admin Routes
+- `/admin/world/` - Main world exploration
+- `/admin/room/` - Room editing mode (Manager+ required)
+- `/admin/auth/` - Authentication page
 
 ---
 
@@ -840,6 +870,9 @@ This project is distributed under the MIT License. For more details, please refe
 - **확장 가능한 구조**: 필요에 따라 기능을 커스터마이징하고 확장할 수 있습니다.
 - **경량화**: 빠른 로딩과 성능 최적화를 위해 경량화 설계.
 - **유틸리티**: 미니맵, 조이스틱 등 사용자 경험을 향상시키는 다양한 유틸리티 포함.
+- **World building and editing tools**: Ability to create and manage 3D environments.
+- **Admin management system**: Manage users, assets, and settings.
+- **Real-time 3D interactions**: Enable real-time interactions within the 3D environment.
 
 ---
 
@@ -1151,8 +1184,8 @@ export default function App() {
 
 **중요 사항**:
 
-- `objectkey`는 각 Rideable 컴포넌트마다 고유해야 합니다.
-- `objectType`은 `"vehicle"` 또는 `"airplane"`이어야 합니다.
+- The `objectkey` must be unique for each Rideable component.
+- `objectType` should be either `"vehicle"` or `"airplane"`.
 
 ##### Props 설명
 
@@ -1231,7 +1264,7 @@ export default function App() {
               joystickStyle={joystickStyle}
               joystickBallStyle={joystickBallStyle}
             />
-            {/* 다른 컴포넌트 */}
+            {/* Other components */}
           </Physics>
         </Canvas>
       </GaesupWorld>
@@ -1265,16 +1298,16 @@ export default function App() {
 
   export default function App() {
     const keyBoardToolTipInnerStyle = {
-      /* 내부 툴팁 스타일 정의 */
+      /* Define inner tooltip styles */
     };
     const selectedKeyCapStyle = {
-      /* 선택된 키 스타일 정의 */
+      /* Define styles for selected keycaps */
     };
     const notSelectedkeyCapStyle = {
-      /* 선택되지 않은 키 스타일 정의 */
+      /* Define styles for non-selected keycaps */
     };
     const keyCapStyle = {
-      /* 키 캡 기본 스타일 정의 */
+      /* Define default keycap styles */
     };
 
     return (
@@ -1283,7 +1316,7 @@ export default function App() {
           characterUrl: 'https://your-s3-bucket/gaesupyee.glb',
         }}
         mode={{
-          controller: 'keyboard', // 컨트롤러 모드를 'keyboard'로 설정
+          controller: 'keyboard', // Ensure controller mode is set to 'keyboard'
         }}
       >
         <Canvas>
@@ -1294,7 +1327,7 @@ export default function App() {
               notSelectedkeyCapStyle={notSelectedkeyCapStyle}
               keyCapStyle={keyCapStyle}
             />
-            {/* 다른 컴포넌트 */}
+            {/* Other components */}
           </Physics>
         </Canvas>
       </GaesupWorld>
@@ -1331,12 +1364,12 @@ export default function App() {
 
   export default function App() {
     const minimapStyle = {
-      /* 미니맵 스타일 정의 */
+      /* Define MiniMap container styles */
     };
     const innerStyle = {
-      /* 내부 스타일 정의 */
+      /* Define inner MiniMap styles */
     };
-    // 기타 스타일 속성 정의
+    // Define other style properties as needed
 
     return (
       <GaesupWorld
@@ -1352,9 +1385,9 @@ export default function App() {
             <MiniMap
               minimapStyle={minimapStyle}
               innerStyle={innerStyle}
-              // 기타 스타일 속성 전달
+              // Pass other style properties as needed
             />
-            {/* 다른 컴포넌트 */}
+            {/* Other components */}
           </Physics>
         </Canvas>
       </GaesupWorld>
@@ -1392,10 +1425,10 @@ export default function App() {
 
   export default function App() {
     const gamePadStyle = {
-      /* GamePad 컨테이너 스타일 정의 */
+      /* Define GamePad container styles */
     };
     const gamePadButtonStyle = {
-      /* GamePad 버튼 스타일 정의 */
+      /* Define GamePad button styles */
     };
 
     return (
@@ -1404,7 +1437,7 @@ export default function App() {
           characterUrl: 'https://your-s3-bucket/gaesupyee.glb',
         }}
         mode={{
-          controller: 'gameboy', // 컨트롤러 모드를 'gameboy'로 설정
+          controller: 'gameboy', // Ensure controller mode is set to 'gameboy'
         }}
       >
         <Canvas>
@@ -1413,7 +1446,7 @@ export default function App() {
               gamePadStyle={gamePadStyle}
               gamePadButtonStyle={gamePadButtonStyle}
             />
-            {/* 다른 컴포넌트 */}
+            {/* Other components */}
           </Physics>
         </Canvas>
       </GaesupWorld>
@@ -1450,10 +1483,10 @@ export default function App() {
 
   export default function App() {
     const gamePadStyle = {
-      /* GamePad 컨테이너 스타일 정의 */
+      /* Define GamePad container styles */
     };
     const gamePadButtonStyle = {
-      /* GamePad 버튼 스타일 정의 */
+      /* Define GamePad button styles */
     };
 
     return (
@@ -1462,7 +1495,7 @@ export default function App() {
           characterUrl: 'https://your-s3-bucket/gaesupyee.glb',
         }}
         mode={{
-          controller: 'gamepad', // 또는 'joystick', 'gameboy' 등
+          controller: 'gamepad', // or 'joystick', 'gameboy', etc.
         }}
       >
         <Canvas>
@@ -1471,7 +1504,7 @@ export default function App() {
               gamePadStyle={gamePadStyle}
               gamePadButtonStyle={gamePadButtonStyle}
             />
-            {/* 다른 컴포넌트 */}
+            {/* Other components */}
           </Physics>
         </Canvas>
       </GaesupWorld>
@@ -1492,13 +1525,13 @@ export default function App() {
   
 - **Props**:
 
-  | Prop Name         | Type            | Required | Description                           | Default Value |
-  | ----------------- | --------------- | -------- | ------------------------------------- | ------------- |
+  | Prop Name         | Type            | Required | Description                                                | Default Value |
+  | ----------------- | --------------- | -------- | ---------------------------------------------------------- | ------------- |
   | `position`        | THREE.Vector3   | Required | 카메라가 이동할 목표 위치             | None          |
-  | `children`        | React.ReactNode | Optional | 버튼 내에 렌더링할 React 노드         | `undefined`   |
+  | `children`        | React.ReactNode | Optional | 버튼 내에 렌더링할 React 노드             | `undefined`   |
   | `target`          | THREE.Vector3   | Optional | 카메라가 바라볼 타겟 위치             | `undefined`   |
   | `keepBlocking`    | boolean         | Optional | 카메라 이동 중 블로킹을 유지할지 여부 | `undefined`   |
-  | `zoomButtonStyle` | object (styles) | Optional | ZoomButton 컴포넌트의 스타일          | `undefined`   |
+  | `zoomButtonStyle` | object (styles) | Optional | Style for the ZoomButton component                         | `undefined`   |
 
 - **사용 예제**:
 
@@ -1528,7 +1561,7 @@ export default function App() {
             >
               Zoom In
             </ZoomButton>
-            {/* 다른 컴포넌트 */}
+            {/* Other components */}
           </Physics>
         </Canvas>
       </GaesupWorld>
@@ -1549,11 +1582,11 @@ export default function App() {
   
 - **Props**:
 
-  | Prop Name       | Type          | Required | Description                                    | Default Value |
-  | --------------- | ------------- | -------- | ---------------------------------------------- | ------------- |
-  | `text`          | string        | Optional | 포탈에 표시할 텍스트                           | `undefined`   |
-  | `position`      | THREE.Vector3 | Required | 텔레포트할 목표 위치                           | None          |
-  | `teleportStyle` | CSSProperties | Optional | 포탈의 외관을 커스터마이징하기 위한 CSS 스타일 | `undefined`   |
+  | Prop Name       | Type          | Required | Description                                                 | Default Value |
+  | --------------- | ------------- | -------- | ----------------------------------------------------------- | ------------- |
+  | `text`          | string        | Optional | The text to display on the portal.                          | `undefined`   |
+  | `position`      | THREE.Vector3 | Required | The target position to teleport to using a `THREE.Vector3`. | None          |
+  | `teleportStyle` | CSSProperties | Optional | CSS styles for customizing the appearance of the portal.    | `undefined`   |
 
 - **사용 예제**:
 
@@ -1581,7 +1614,7 @@ export default function App() {
               position={new THREE.Vector3(10, 0, 5)}
               teleportStyle={{ backgroundColor: "blue", color: "white" }}
             />
-            {/* 다른 컴포넌트 */}
+            {/* Other components */}
           </Physics>
         </Canvas>
       </GaesupWorld>
@@ -1596,7 +1629,7 @@ export default function App() {
 
 ---
 
-## 기여 방법
+## How to Contribute
 
 **Gaesup World**에 기여하고 싶으신가요? 다음 단계를 따라주세요:
 
@@ -1623,13 +1656,13 @@ export default function App() {
 
 ---
 
-## 라이선스
+## License
 
-이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 [LICENSE](./LICENSE)를 참고하세요.
+This project is distributed under the MIT License. For more details, please refer to the [LICENSE](./LICENSE) file.
 
 ---
 
-## 추가 정보
+## Additional Information
 
 **Gaesup World**는 지속적으로 업데이트되고 있으며, 사용자 피드백을 바탕으로 기능이 개선되고 있습니다. 더 자세한 정보나 도움이 필요하시다면 [GitHub 이슈 트래커](https://github.com/jigglypop/../../../src/issues)를 통해 문의해 주세요.
 
