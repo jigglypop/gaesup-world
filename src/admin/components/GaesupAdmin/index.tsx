@@ -2,10 +2,6 @@ import React from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LoginPage from '../../pages/LoginPage';
-import LegacyApp from '../LegacyApp';
-import { Suspense } from 'react';
-
-// This UI will be overlaid on top of the world when logged in.
 const AdminNav: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -113,12 +109,9 @@ const GaesupAdmin: React.FC<GaesupAdminProps> = ({ children }) => {
 
   return (
     <>
-      <AdminInfo />
       <AdminNav />
-      <Suspense fallback={<div>Loading Admin...</div>}>
-        <LegacyApp />
-      </Suspense>
       {children}
+      <AdminInfo />
     </>
   );
 };

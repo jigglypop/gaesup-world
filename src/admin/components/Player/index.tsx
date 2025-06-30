@@ -2,8 +2,6 @@ import { useRef, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { RigidBody } from "@react-three/rapier";
 import { useAuthStore } from "../../store/authStore";
-import NameTag from "../NameTag";
-import CircleSelector from "../CircleSelector";
 import * as THREE from "three";
 
 export default function Player() {
@@ -69,21 +67,6 @@ export default function Player() {
         </mesh>
       </RigidBody>
       
-      <group position={[position[0], position[1] + 2, position[2]]}>
-        <NameTag
-          text={speechBalloon}
-          fontSize={0.8}
-          color={"rgba(0, 0, 0, 0.8)"}
-          background={"rgba(188, 255, 255, 0.945)"}
-        />
-      </group>
-      
-      <group position={[position[0], position[1] - 1, position[2]]}>
-        <CircleSelector
-          radius={1.5}
-          color="rgba(188, 255, 255, 0.945)"
-        />
-      </group>
     </>
   );
 } 
