@@ -2,11 +2,11 @@ import { Environment, Grid } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { euler, Physics, RigidBody } from '@react-three/rapier';
 import { Suspense } from 'react';
-import { BrowserRouter, Route, Routes, NavLink } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import * as THREE from 'three';
 import { Clicker, GaesupController, GaeSupProps, GaesupWorld, GaesupWorldContent, Editor } from '../src';
 import { BuildingController, useBuildingStore } from '../src';
-import { GaesupAdmin } from '../src/admin';
+import { GaesupAdmin, useAuthStore } from '../src/admin';
 import { CameraOptionType } from '../src/core/types/camera';
 import { Platforms } from './components/platforms';
 import { RideableVehicles } from './components/rideable';
@@ -121,22 +121,34 @@ const WorldPage = ({ showEditor = false }) => {
   );
 };
 
-const Navigation = () => (
-  <nav className="app-navigation">
-    <NavLink
-      to="/"
-      className={({ isActive }) => (isActive ? 'app-nav-link active' : 'app-nav-link')}
-    >
-      World
-    </NavLink>
-    <NavLink
-      to="/admin"
-      className={({ isActive }) => (isActive ? 'app-nav-link active' : 'app-nav-link')}
-    >
-      Admin
-    </NavLink>
-  </nav>
-);
+const Navigation = () => {
+  const { isLoggedIn, user, logout } = useAuthStore();
+  
+  const handleLogout = () => {
+    logout();
+    window.location.href = '/';
+  };
+  
+  return (
+    <nav className="app-navigation">
+      {isLoggedIn && user ? (
+        <>
+          <span className="app-nav-user">Welcome, {user.username}</span>
+          <button className="app-nav-button" onClick={handleLogout}>
+            Logout
+          </button>
+          <a href="/admin" className="app-nav-button">
+            Admin Panel
+          </a>
+        </>
+      ) : (
+        <a href="/admin" className="app-nav-button">
+          Login
+        </a>
+      )}
+    </nav>
+  );
+};
 
 export default function App() {
   return (

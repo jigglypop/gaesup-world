@@ -26,104 +26,114 @@
   position: fixed;
   top: 10px;
   right: 10px;
-  padding: 15px;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  border-radius: 8px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  min-width: 200px;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-  z-index: 1000;
+  z-index: 100;
 }
 
-.building-ui-container.editing {
-  background: rgba(20, 20, 20, 0.95);
-  border-color: #4CAF50;
-  box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+.building-ui-toggle {
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  color: var(--editor-text-secondary);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: var(--editor-border-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--editor-shadow);
+}
+
+.building-ui-toggle:hover {
+  background-color: var(--editor-surface-hover);
+  color: var(--editor-text-primary);
+}
+
+.building-ui-panel {
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-border-radius);
+  padding: var(--editor-spacing-md);
+  box-shadow: var(--editor-shadow);
+  min-width: 200px;
+  backdrop-filter: blur(10px);
+}
+
+.building-ui-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--editor-spacing-md);
 }
 
 .building-ui-title {
-  margin: 0 0 10px 0;
-  font-size: 16px;
+  color: var(--editor-text-primary);
+  font-size: 14px;
   font-weight: 600;
-  text-align: center;
-}
-
-.building-ui-container.editing .building-ui-title {
-  color: #4CAF50;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
-.building-ui-buttons {
+.building-ui-close {
+  background: transparent;
+  border: none;
+  color: var(--editor-text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.building-ui-close:hover {
+  background-color: var(--editor-surface-hover);
+  color: var(--editor-text-primary);
 }
 
 .building-ui-mode-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-  margin-bottom: 8px;
+  margin-bottom: var(--editor-spacing-md);
 }
 
-.building-ui-button {
-  background: #444;
-  color: white;
-  border: none;
+.building-ui-mode-button {
+  background-color: var(--editor-surface-primary);
+  border: 1px solid var(--editor-border-color);
+  color: var(--editor-text-secondary);
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s;
-  font-size: 14px;
+  transition: all 0.2s ease;
+  font-size: 13px;
+  font-weight: 500;
 }
 
-.building-ui-button:hover {
-  background: #555;
+.building-ui-mode-button:hover {
+  background-color: var(--editor-surface-hover);
+  color: var(--editor-text-primary);
 }
 
-.building-ui-button.active {
-  background: #4CAF50;
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
-}
-
-.building-ui-button.active:hover {
-  background: #45a049;
-}
-
-.building-ui-button.primary {
-  background: #2196F3;
-  font-weight: 600;
-}
-
-.building-ui-button.primary:hover {
-  background: #1976D2;
-}
-
-.building-ui-button.danger {
-  background: #f44336;
-}
-
-.building-ui-button.danger:hover {
-  background: #d32f2f;
+.building-ui-mode-button.active {
+  background-color: var(--editor-surface-active);
+  color: var(--editor-text-primary);
+  border-color: var(--editor-accent);
 }
 
 .building-ui-info {
-  margin-top: 12px;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--editor-surface-primary);
+  border: 1px solid var(--editor-border-color);
   border-radius: 4px;
+  padding: var(--editor-spacing-sm);
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .building-ui-info p {
   margin: 4px 0;
-  opacity: 0.8;
+  color: var(--editor-text-secondary);
 } 

@@ -1,274 +1,215 @@
-# Legacy System Architecture Analysis
+프로젝트 구조를 전체적으로 분석해드리겠습니다. 먼저 각 디렉토리의 구조와 내용을 파악하겠습니다.
+Search files...
+Search files...
+Search files...
+Ran tool
+Ran tool
 
-## Overview
-Legacy 시스템은 3D 월드 기반의 메타버스 플랫폼으로, 사용자가 가상 환경에서 캐릭터를 조작하고 월드를 편집할 수 있는 기능을 제공합니다.
+Read file: src/core/index.ts
+Read file: docs/guide/LAYER_GUIDE.md
+Ran tool
+Ran tool
+Ran tool
 
-## Core Technologies
-- **Frontend Framework**: React 18 with TypeScript
-- **3D Rendering**: Three.js + React Three Fiber
-- **Physics Engine**: Rapier (via @react-three/rapier)
-- **State Management**: Jotai (Atom-based)
-- **Server State**: React Query (TanStack Query)
-- **Routing**: React Router v6
-- **Styling**: CSS-in-JS with Vanilla Extract
+Ran tool
+Ran tool
+Ran tool
+Ran tool
+Read file: docs/guide/REFACTOR_GUIDE.md
 
-## Application Structure
+Ran tool
+Ran tool
+Ran tool
+Ran tool
 
-### 1. Entry Point Architecture
+Read file: src/admin/index.ts
+Ran tool
+Ran tool
+Ran tool
+Read file: src/core/editor/README.md
+
+Ran tool
+Ran tool
+Read file: src/legacy/common/mesh/flag/index.tsx
+Ran tool
+
+# Gaesup World 프로젝트 구조 분석 보고서
+
+## 1. 프로젝트 전체 구조 개요
+
+### 현재 구조
+- **`src/core`**: 2계층 + 브릿지 구조를 따르는 핵심 로직
+- **`src/admin`**: 편집 기능을 위한 관리자 모듈  
+- **`src/legacy`**: 다른 프로젝트에서 가져온 레거시 코드
+- **`examples`**: 라이브러리 사용 예제
+
+### 아키텍처 특징
+- **계층형 아키텍처**: Layer 1(Core) → Layer 2(State Management) → Layer 3(Integration) 
+- **브릿지 패턴**: 각 도메인별로 Bridge 클래스를 통해 레거시 코드와 통합
+- **모듈화**: 도메인별로 독립적인 모듈 구조
+
+## 2. 각 디렉토리 상세 분석
+
+### 2.1 Core (`src/core`)
+#### 구조
 ```
-src/legacy/main.tsx
-├── QueryClient Provider (React Query)
-├── Jotai Provider (Global State)
-├── DevTools (Development)
-└── App Component
-```
-
-### 2. Routing System
-The application uses React Router with three main routes:
-
-#### Main Routes
-- `/aggjack/` - Main world exploration mode
-- `/aggjack/room/` - Room editing mode (requires Manager role)
-- `/aggjack/auth/` - Authentication page
-- `/aggjack/denied/` - Access denied page
-
-### 3. Authentication & Authorization
-
-#### User Roles
-1. **Regular User** (role: 0) - Basic access
-2. **Manager** (role: 1) - Room editing access
-3. **Admin** (role: 2) - Full system access
-
-#### Authentication Flow
-```
-checkApi() → Token validation → User data retrieval → Role-based routing
-```
-
-#### Protection Components
-- `RequireLogin` - Requires authenticated user
-- `RequireManager` - Requires Manager role or higher
-- `RequireAdmin` - Requires Admin role
-- `Check` - Global authentication wrapper
-
-## Core Components Architecture
-
-### 1. 3D World System
-
-#### ThreeContainer
-- **Purpose**: Main 3D rendering container
-- **Features**:
-  - Canvas setup with camera configuration
-  - Physics simulation integration
-  - Zoom and rotation controls
-  - GaesupWorld integration
-  - Performance optimization with frameloop="demand"
-
-#### Ground System
-- **Ground Component**: Base invisible plane for physics collision
-- **UpdateGround**: Enhanced ground for room editing mode
-
-#### Player System
-- **Character Controller**: 3D character with movement controls
-- **Features**:
-  - Walk/Run speeds: 15/20 units respectively
-  - Jump mechanics with speech balloon feedback
-  - Greeting system (KeyD interaction)
-  - Visual elements: name tags, circle selector
-  - Costume system with equipment parts
-
-### 2. World Content Management
-
-#### Tile System
-- **API Endpoints**: GET, POST, PATCH, DELETE for tile management
-- **Features**: Grid-based tile placement and management
-- **Types**: Various tile types for world building
-
-#### Wall System
-- **Purpose**: 3D wall placement and management
-- **Integration**: Works with tile system for complete environment
-
-#### 3D Objects (ThreeObjects)
-- **Management**: Dynamic 3D object placement
-- **API**: CRUD operations for object persistence
-- **Features**: GLTF model support
-
-#### NPC System
-- **Purpose**: Non-player character management
-- **Features**: Interactive NPCs with positioning system
-
-### 3. UI/UX Components
-
-#### Slider Systems
-- **LeftSlider**: Tool palette and mesh selection
-- **RightSlider**: Property panels and settings
-- **Features**: Collapsible panels with tab navigation
-
-#### Modal System
-- **Global Modal**: Centralized modal management
-- **Types**: Multiple modal types (board, auth, settings, etc.)
-- **State Management**: Jotai-based modal state
-
-#### Toast Notifications
-- **Purpose**: User feedback system
-- **Features**: Async toast messages with auto-dismiss
-
-## State Management Architecture
-
-### 1. Jotai Atoms Structure
-```
-Global State Atoms:
-├── modalAtom - Modal state management
-├── speechBalloonAtom - Character speech system
-├── zoomAtom - Camera zoom controls
-├── rotationAtom - Camera rotation
-└── Various feature-specific atoms
+core/
+├── animation/     (애니메이션 엔진 및 브릿지)
+├── api/          (공통 API 클라이언트)  
+├── building/     (건물/구조물 관련)
+├── camera/       (카메라 시스템)
+├── debug/        (디버깅 도구)
+├── editor/       ⚠️ (에디터 UI - 위치 재검토 필요)
+├── error/        (에러 처리)
+├── hooks/        (공통 훅)
+├── interactions/ (상호작용 시스템)
+├── motions/      (물리/모션 시스템)
+├── stores/       (Zustand 스토어)
+├── ui/           (공통 UI 컴포넌트)
+├── utils/        (유틸리티)
+└── world/        (월드 관리)
 ```
 
-### 2. React Query Integration
-```
-Query Keys:
-├── ["user"] - User authentication state
-├── Board-related queries
-├── Tile management queries
-└── Asset loading queries
-```
+#### 문제점
+- **`editor` 모듈이 core에 위치**: Editor는 실제로 관리자 기능이므로 `admin`으로 이동 고려
 
-### 3. Store Organization
+### 2.2 Admin (`src/admin`)
+#### 구조
 ```
-src/legacy/store/
-├── auth/ - Authentication state
-├── board/ - Board/guestbook system
-├── check/ - User verification
-├── modal/ - Modal management
-├── toast/ - Notification system
-├── options/ - User preferences
-└── Various entity stores (tile, wall, npc, etc.)
+admin/
+├── api/          (인증 API)
+├── components/   (Admin UI 컴포넌트)
+├── pages/        (로그인 페이지)
+└── store/        (인증/토스트 스토어)
 ```
 
-## API Architecture
+#### 특징
+- 최소한의 인증 시스템 구현
+- Glass morphism UI 디자인
+- Toast 알림 시스템 자체 구현
 
-### 1. API Builder Pattern
-The system uses a custom API builder for consistent HTTP requests:
-```typescript
-APIBuilder.get(endpoint)
-  .baseURL(SERVER_URL)
-  .setAuth()
-  .build()
+### 2.3 Legacy (`src/legacy`)
+#### 구조
+```
+legacy/
+├── api/          (레거시 API들)
+├── common/       (공통 컴포넌트)
+│   └── mesh/     ⭐ (flag, water, grass 셰이더)
+├── components/   (UI 컴포넌트들)
+├── containers/   (컨테이너 컴포넌트)
+├── constants/    (상수)
+├── store/        (Recoil/Jotai 스토어)
+└── styles/       (vanilla-extract 스타일)
 ```
 
-### 2. Main API Categories
+## 3. 주요 발견사항 및 개선 제안
 
-#### Authentication APIs
-- `checkApi()` - Token validation
-- `loginApi()` - User login
-- `registerApi()` - User registration
-- Token caching with localStorage
+### 3.1 Legacy에서 Core로 이동 필요한 항목들
 
-#### Content Management APIs
-- **Tiles**: CRUD operations for tile management
-- **Walls**: Wall placement and modification
-- **ThreeObjects**: 3D object management
-- **NPCs**: Character management
-- **Portals**: Teleportation system
-- **Board**: Guestbook/message system
+#### 🎨 3D 셰이더 컴포넌트 (높은 우선순위)
+- **`src/legacy/common/mesh/flag`** → `src/core/world/components/Flag`
+  - GLSL 셰이더를 사용한 깃발 애니메이션
+  - 재사용 가능한 고품질 3D 컴포넌트
+  
+- **`src/legacy/common/mesh/water`** → `src/core/world/components/Water`
+  - 물 효과 렌더링
+  
+- **`src/legacy/common/mesh/grass`** → `src/core/world/components/Grass`
+  - 잔디 셰이더 효과
 
-#### Save System
-- **Room Saving**: Comprehensive world state persistence
-- **Batch Operations**: Multiple entity type saving
-- **Incremental Updates**: Partial world updates
+#### 🔧 유틸리티 컴포넌트
+- **`src/legacy/common/input`** → `src/core/ui/components/Input`
+- **`src/legacy/common/sliderWrapper`** → `src/core/ui/components/Slider`
+- **`src/legacy/common/progress`** → `src/core/ui/components/Progress`
+- **`src/legacy/common/pointer`** → `src/core/ui/components/Pointer`
 
-## Performance Optimizations
+#### 🏗️ 건물/구조물 관련
+- **`src/legacy/components/tileParents`** → `src/core/building/components`
+- **`src/legacy/components/wallParents`** → `src/core/building/components`
 
-### 1. Rendering Optimizations
-- **Frame Loop Control**: `frameloop="demand"` for Canvas
-- **Memoization**: React.useMemo for expensive components
-- **Lazy Loading**: Code splitting for large components
+### 3.2 위치가 부적절한 항목들
 
-### 2. State Optimizations
-- **Atom Separation**: Granular state management
-- **Query Caching**: Infinite stale time for stable data
-- **Component Isolation**: Separate render cycles
+#### Core에서 Admin으로 이동 필요
+- **`src/core/editor/*`** → `src/admin/editor/*`
+  - Editor는 관리자 기능이므로 admin 모듈이 적절
+  - 일반 사용자는 editor를 사용하지 않음
 
-### 3. Asset Management
-- **GLTF Loading**: Efficient 3D model loading
-- **Texture Caching**: Browser-level asset caching
-- **Progressive Loading**: Lazy component loading
+#### 중복 구현된 컴포넌트
+- **Toast 시스템**: 
+  - `src/admin/store/toastStore.ts` (Zustand)
+  - `src/legacy/store/toast` (Jotai)
+  - → 하나로 통합 필요 (admin의 Zustand 버전 권장)
 
-## Development Patterns
+- **인증 시스템**:
+  - `src/admin/api/auth.ts`
+  - `src/legacy/api/auth.ts`
+  - → admin 버전으로 통합
 
-### 1. Component Structure
+### 3.3 Legacy에서 삭제 가능한 항목들
+
+#### 중복/불필요한 파일
+- `src/legacy/main.tsx` - examples로 대체됨
+- `src/legacy/styles.css` - 새 스타일 시스템 사용
+- `src/legacy/vite-env.d.ts` - 루트에 이미 존재
+
+#### 더 이상 사용되지 않는 스토어
+- `src/legacy/store/save` - 새로운 저장 시스템으로 대체
+- `src/legacy/store/check` - admin의 checkStore로 대체
+
+### 3.4 아키텍처 개선 제안
+
+#### 1. 모듈 경계 명확화
 ```
-ComponentName/
-├── index.tsx - Main component logic
-├── styles.css - Component-specific styles
-└── types.ts - Type definitions (when needed)
+src/
+├── core/      (순수 로직, 3D 엔진, 공통 기능)
+├── admin/     (관리자 기능, 에디터, 인증)
+├── ui/        (재사용 가능한 UI 컴포넌트)
+└── legacy/    (점진적 제거)
 ```
 
-### 2. Hook Patterns
-- Custom hooks for API integration
-- State management hooks
-- Effect hooks for side effects
+#### 2. 브릿지 패턴 확대 적용
+- Legacy 코드 통합 시 각 도메인별 Bridge 클래스 생성
+- 예: `MeshBridge`, `UIBridge` 등
 
-### 3. Error Handling
-- Global error boundaries
-- API error handling with toast notifications
-- Graceful degradation for missing features
+#### 3. 상태 관리 통합
+- Recoil/Jotai → Zustand로 완전 마이그레이션
+- `gaesupStore`를 중심으로 한 슬라이스 구조
 
-## Key Features
+## 4. 우선순위별 액션 아이템
 
-### 1. World Exploration Mode
-- Character movement with physics
-- Real-time 3D interaction
-- Social features (greetings, speech)
-- Minimap navigation
+### 즉시 실행 (High Priority)
+1. **3D 셰이더 컴포넌트 이동**
+   - Flag, Water, Grass를 core/world로 이동
+   - 브릿지 클래스를 통해 레거시 호환성 유지
 
-### 2. Room Editing Mode
-- Real-time world editing
-- Multi-user collaboration potential
-- Asset management interface
-- Save/load system
+2. **Editor 모듈 재배치**
+   - core/editor → admin/editor로 이동
+   - import 경로 업데이트
 
-### 3. Social Features
-- Guestbook/board system
-- Character customization
-- Speech balloon system
-- Interactive elements
+3. **Toast 시스템 통합**
+   - admin의 toastStore를 표준으로 채택
+   - legacy toast 제거
 
-## Technical Debt & Limitations
+### 중기 실행 (Medium Priority)
+1. **UI 컴포넌트 마이그레이션**
+   - legacy/common의 재사용 가능한 UI를 core/ui로 이동
+   - 스타일 시스템 통합 (CSS Variables 사용)
 
-### 1. Architecture Issues
-- Mixed concerns in some components
-- Global state scattered across multiple atoms
-- Inconsistent error handling patterns
+2. **API 레이어 정리**
+   - 중복 API 제거
+   - 도메인별 API 구조 확립
 
-### 2. Performance Concerns
-- No virtual scrolling for large lists
-- Potential memory leaks in 3D scenes
-- Limited asset optimization
+### 장기 실행 (Low Priority)
+1. **Legacy 완전 제거**
+   - 모든 유용한 코드 마이그레이션 완료
+   - legacy 디렉토리 삭제
 
-### 3. Code Quality
-- Some components too large (Player component: 118 lines)
-- API layer could be more abstracted
-- Limited TypeScript strictness in places
+2. **테스트 커버리지**
+   - 마이그레이션된 컴포넌트에 대한 테스트 작성
+   - 통합 테스트 추가
 
-## Migration Considerations
+## 5. 결론
 
-### 1. Core Systems to Preserve
-- Authentication and authorization logic
-- 3D world rendering foundation
-- Physics integration
-- Save/load mechanisms
+현재 프로젝트는 명확한 아키텍처 방향성을 가지고 있으나, legacy 코드의 통합과 일부 모듈의 재배치가 필요합니다. 특히 3D 셰이더 컴포넌트들은 즉시 core로 이동하여 활용해야 하며, editor 모듈은 admin으로 재배치하여 모듈 경계를 명확히 해야 합니다.
 
-### 2. Systems Requiring Refactoring
-- State management consolidation
-- Component separation of concerns
-- API layer abstraction
-- Performance optimization
-
-### 3. Feature Modernization
-- Real-time collaboration
-- Better asset pipeline
-- Enhanced physics system
-- Improved UI/UX patterns
-
-This legacy system represents a functional 3D metaverse platform with solid foundations in 3D rendering, user management, and world editing capabilities, but requires architectural improvements for scalability and maintainability. 
+계층형 아키텍처와 브릿지 패턴을 일관되게 적용하면서 점진적으로 legacy를 제거하면, 유지보수가 용이하고 확장 가능한 구조를 달성할 수 있을 것입니다.

@@ -16,3 +16,72 @@
     - Layer 2 (Controllers, Hooks, Stores): React의 상태 관리 로직을 담당합니다. 하위 레이어(Layer 1)의 불필요한 재렌더링을 유발해서는 안 됩니다.
     - 상위 레이어 로직 혼합 금지: React 상태 관리와 같은 상위 레이어의 코드가 하위 레이어(Core)에 절대 포함되어서는 안 됩니다.
 
+3.핵심 원칙
+- 관심사 분리: 컴포넌트 로직(index.tsx), 스타일(styles.css), 타입(types.ts)을 반드시 별도 파일로 분리
+- CSS 변수만 사용: src/core/editor/styles/theme.css의 CSS 변수만 사용, 하드코딩 절대 금지
+- 독립적 패널: 패널 컴포넌트는 자체 isOpen 상태나 토글 버튼을 가지면 안됨
+- 일관된 스타일링: Glassmorphism 효과를 포함한 전역 스타일 준수
+
+4. 파일 구조
+모든 컴포넌트는 다음 구조를 따름:
+/src/core/editor/components/ComponentName/
+├── index.tsx (React 컴포넌트 로직)
+├── styles.css (CSS 스타일)
+└── types.ts (TypeScript 타입, 필요시)
+
+5. CSS 규칙
+- 클래스 네이밍: [컴포넌트]-[엘리먼트]--[상태] 형식 사용
+- 패널 배경은 반드시 var(--editor-bg-1) 사용
+- 상호작용 요소는 var(--editor-surface-1), var(--editor-surface-hover), var(--editor-surface-active) 사용
+- 텍스트는 var(--editor-text-main), var(--editor-text-muted), var(--editor-text-faint) 사용
+- 테두리는 var(--editor-border-color) 사용
+
+6. 레이어 아키텍처
+Layer 1: core (순수 로직, THREE.js)
+Layer 2: controllers, hooks, stores (상태 관리)
+Layer 3: components (React 컴포넌트)
+
+Import 방향: Layer 3 → Layer 2 → Layer 1만 가능
+Layer 1에서 Layer 2로 import 절대 금지
+
+7. Store 사용법
+- Zustand slice 생성 시 StateCreator 패턴 사용
+- Store 구독 시 필요한 부분만 선택적 구독
+- 전체 store 구독 금지
+
+8. 네이밍 규칙
+- Props 이벤트: on으로 시작 (onClick, onSelect)
+- 내부 핸들러: handle로 시작 (handleClick, handleSelect)
+- 타입명: ComponentNameProps, ComponentNameState 형식
+- 상수: UPPER_SNAKE_CASE 사용
+
+9. 에러 처리
+- Layer 1에서는 에러 throw
+- Layer 2에서는 에러 catch 및 상태 관리
+- 에러 메시지 형식: [모듈명 Error]: 설명
+
+10. 성능 규칙
+- 복잡한 계산은 useMemo 사용
+- 콜백은 useCallback 사용
+- Layer 1 객체는 useRef로 관리
+- Magic Number 사용 금지, 상수로 정의
+
+11.파일 크기 제한
+- 컴포넌트 파일: 최대 200줄
+- 엔진/코어 파일: 최대 500줄
+- 유틸리티 파일: 최대 150줄
+
+12. Bridge 패턴
+레거시 코드 연결 시 DomainBridge 클래스 사용
+convertLegacyData, convertToLegacyData 메서드 구현
+
+13. 비동기 처리
+- 명확한 동사 사용: fetch, load, save
+- AsyncState<T> 타입으로 loading, error 상태 관리
+
+14. 금지사항
+- CSS 하드코딩 값 사용
+- 패널에서 자체 토글 상태 관리
+- Layer 역방향 import
+- Magic Number 사용
+- 전체 store 구독
