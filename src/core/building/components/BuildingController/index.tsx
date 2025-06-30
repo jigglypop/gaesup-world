@@ -18,6 +18,32 @@ export function BuildingController() {
   const editMode = useBuildingStore((state) => state.editMode);
   const isEditing = editMode !== 'none';
   const setHoverPosition = useBuildingStore((state) => state.setHoverPosition);
+  const setWallRotation = useBuildingStore((state) => state.setWallRotation);
+
+  // 화살표 키로 벽 방향 전환
+  useEffect(() => {
+    if (editMode !== 'wall') return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'ArrowUp':
+          setWallRotation(0);
+          break;
+        case 'ArrowRight':
+          setWallRotation(Math.PI / 2);
+          break;
+        case 'ArrowDown':
+          setWallRotation(Math.PI);
+          break;
+        case 'ArrowLeft':
+          setWallRotation(Math.PI * 1.5);
+          break;
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editMode, setWallRotation]);
 
   useEffect(() => {
     const canvas = gl.domElement;

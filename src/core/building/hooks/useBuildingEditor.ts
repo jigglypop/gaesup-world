@@ -26,7 +26,7 @@ export function useBuildingEditor() {
     mouseRef.current.x = (event.clientX / canvas.clientWidth) * 2 - 1;
     mouseRef.current.y = -(event.clientY / canvas.clientHeight) * 2 + 1;
     
-    if (editMode === 'tile') {
+    if (editMode === 'tile' || editMode === 'wall') {
       raycaster.setFromCamera(
         new THREE.Vector2(mouseRef.current.x, mouseRef.current.y),
         camera
@@ -76,7 +76,14 @@ export function useBuildingEditor() {
     const position = getGroundPosition();
     if (!position) return;
     
-    const rotation: Rotation3D = { x: 0, y: 0, z: 0 };
+    const { currentWallRotation, checkWallPosition } = useBuildingStore.getState();
+    
+    if (checkWallPosition(position, currentWallRotation)) {
+      console.warn('Wall already exists at this position');
+      return;
+    }
+    
+    const rotation: Rotation3D = { x: 0, y: currentWallRotation, z: 0 };
     
     addWall(selectedWallGroupId, {
       id: `wall-${Date.now()}`,

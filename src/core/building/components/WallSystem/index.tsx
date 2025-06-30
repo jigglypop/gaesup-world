@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { CuboidCollider } from '@react-three/rapier';
 import { WallGroupConfig, MeshConfig } from '../../types';
 import { MaterialManager } from '../../core/MaterialManager';
+import { TILE_CONSTANTS } from '../../types/constants';
 
 interface WallSystemProps {
   wallGroup: WallGroupConfig;
@@ -20,9 +21,9 @@ export function WallSystem({
   onWallDelete 
 }: WallSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
-  const width = 4;
-  const height = 4;
-  const depth = 0.5;
+  const width = TILE_CONSTANTS.WALL_SIZES.WIDTH;
+  const height = TILE_CONSTANTS.WALL_SIZES.HEIGHT;
+  const depth = TILE_CONSTANTS.WALL_SIZES.THICKNESS;
 
   const geometry = useMemo(() => {
     const geom = new THREE.BoxGeometry(width, height, depth);

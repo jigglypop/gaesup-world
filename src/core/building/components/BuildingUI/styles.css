@@ -182,4 +182,45 @@
   color: var(--editor-text-primary);
   border-color: var(--editor-accent);
   font-weight: 600;
+}
+
+.building-ui-direction-group {
+  margin-bottom: var(--editor-spacing-md);
+  padding: var(--editor-spacing-sm);
+  background: var(--editor-surface-primary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 4px;
+}
+
+.building-ui-direction-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.building-ui-direction-button {
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  color: var(--editor-text-secondary);
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+}
+
+.building-ui-direction-button:hover {
+  background-color: var(--editor-surface-hover);
+  color: var(--editor-text-primary);
+}
+
+.building-ui-direction-button.active {
+  background-color: var(--editor-surface-active);
+  color: var(--editor-text-primary);
+  border-color: var(--editor-accent);
 } 

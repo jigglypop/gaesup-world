@@ -3,6 +3,7 @@ import { WallSystem } from '../WallSystem';
 import { TileSystem } from '../TileSystem';
 import { GridHelper } from '../GridHelper';
 import { PreviewTile } from '../PreviewTile';
+import { PreviewWall } from '../PreviewWall';
 import { useBuildingStore } from '../../stores/buildingStore';
 
 interface BuildingSystemProps {
@@ -33,6 +34,7 @@ export function BuildingSystem({
         {showGrid && <GridHelper size={gridSize} />}
         
         <PreviewTile />
+        <PreviewWall />
         
         {Array.from(wallGroups.values()).map((wallGroup) => (
           <WallSystem

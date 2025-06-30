@@ -10,8 +10,9 @@ export const TILE_CONSTANTS = {
   },
   
   WALL_SIZES: {
-    HEIGHT: 3,
-    THICKNESS: 0.2,
+    WIDTH: 4,      // 벽 길이
+    HEIGHT: 4,     // 벽 높이  
+    THICKNESS: 0.5, // 벽 두께
     MIN_LENGTH: 0.5,
     MAX_LENGTH: 10
   },

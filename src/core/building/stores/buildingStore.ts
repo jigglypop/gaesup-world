@@ -25,7 +25,11 @@ interface BuildingStore extends BuildingSystemState {
   currentTileMultiplier: number;
   setTileMultiplier: (multiplier: number) => void;
   
+  currentWallRotation: number;
+  setWallRotation: (rotation: number) => void;
+  
   checkTilePosition: (position: Position3D) => boolean;
+  checkWallPosition: (position: Position3D, rotation: number) => boolean;
   
   addMesh: (mesh: MeshConfig) => void;
   updateMesh: (id: string, updates: Partial<MeshConfig>) => void;
@@ -70,6 +74,7 @@ export const useBuildingStore = create<BuildingStore>()(
     snapToGrid: true,
     hoverPosition: null,
     currentTileMultiplier: 1,
+    currentWallRotation: 0,
 
     initializeDefaults: () => set((state) => {
       if (state.initialized) return;
@@ -239,6 +244,10 @@ export const useBuildingStore = create<BuildingStore>()(
       state.currentTileMultiplier = multiplier;
     }),
 
+    setWallRotation: (rotation) => set((state) => {
+      state.currentWallRotation = rotation;
+    }),
+
     snapPosition: (position) => {
       const { snapToGrid } = get();
       if (!snapToGrid) return position;
@@ -266,6 +275,25 @@ export const useBuildingStore = create<BuildingStore>()(
           if (
             Math.abs(tile.position.x - position.x) < (halfSize + existingHalfSize - 0.1) &&
             Math.abs(tile.position.z - position.z) < (halfSize + existingHalfSize - 0.1)
+          ) {
+            return true;
+          }
+        }
+      }
+      return false;
+    },
+    
+    checkWallPosition: (position, rotation) => {
+      const { wallGroups } = get();
+      const tolerance = 0.5;
+      
+      for (const group of wallGroups.values()) {
+        for (const wall of group.walls) {
+          // 간단한 근접 체크 (더 정교한 충돌 검사가 필요할 수 있음)
+          if (
+            Math.abs(wall.position.x - position.x) < tolerance &&
+            Math.abs(wall.position.z - position.z) < tolerance &&
+            Math.abs(wall.rotation.y - rotation) < 0.1
           ) {
             return true;
           }

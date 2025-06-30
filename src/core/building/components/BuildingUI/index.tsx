@@ -3,7 +3,15 @@ import { useAuthStore } from '../../../../admin/store/authStore';
 import './styles.css';
 
 export function BuildingUI() {
-  const { setEditMode, editMode, isInEditMode, currentTileMultiplier, setTileMultiplier } = useBuildingStore();
+  const { 
+    setEditMode, 
+    editMode, 
+    isInEditMode, 
+    currentTileMultiplier, 
+    setTileMultiplier,
+    currentWallRotation,
+    setWallRotation
+  } = useBuildingStore();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const isEditing = isInEditMode();
   
@@ -92,10 +100,47 @@ export function BuildingUI() {
             )}
             
             {editMode === 'wall' && (
-              <div className="building-ui-info">
-                <p>Click to place walls</p>
-                <p>Click on boxes to delete</p>
-              </div>
+              <>
+                <div className="building-ui-direction-group">
+                  <span className="building-ui-label">Wall Direction:</span>
+                  <div className="building-ui-direction-buttons">
+                    <button
+                      onClick={() => setWallRotation(0)}
+                      className={`building-ui-direction-button ${currentWallRotation === 0 ? 'active' : ''}`}
+                      title="North"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() => setWallRotation(Math.PI / 2)}
+                      className={`building-ui-direction-button ${currentWallRotation === Math.PI / 2 ? 'active' : ''}`}
+                      title="East"
+                    >
+                      →
+                    </button>
+                    <button
+                      onClick={() => setWallRotation(Math.PI)}
+                      className={`building-ui-direction-button ${currentWallRotation === Math.PI ? 'active' : ''}`}
+                      title="South"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      onClick={() => setWallRotation(Math.PI * 1.5)}
+                      className={`building-ui-direction-button ${currentWallRotation === Math.PI * 1.5 ? 'active' : ''}`}
+                      title="West"
+                    >
+                      ←
+                    </button>
+                  </div>
+                </div>
+                <div className="building-ui-info">
+                  <p>Use arrow keys to rotate</p>
+                  <p>Click to place walls</p>
+                  <p>Red = Occupied, Green = Available</p>
+                  <p>Click red boxes to delete</p>
+                </div>
+              </>
             )}
           </div>
         )}
