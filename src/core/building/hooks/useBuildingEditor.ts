@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
 import { useBuildingStore } from '../stores/buildingStore';
 import { Position3D, Rotation3D } from '../types';
+import { TILE_CONSTANTS } from '../types/constants';
 
 export function useBuildingEditor() {
   const { camera, raycaster, scene } = useThree();
@@ -17,13 +18,37 @@ export function useBuildingEditor() {
     addTile,
     removeWall,
     removeTile,
+    setHoverPosition,
   } = useBuildingStore();
 
   const updateMousePosition = useCallback((event: MouseEvent) => {
     const canvas = event.target as HTMLCanvasElement;
     mouseRef.current.x = (event.clientX / canvas.clientWidth) * 2 - 1;
     mouseRef.current.y = -(event.clientY / canvas.clientHeight) * 2 + 1;
-  }, []);
+    
+    if (editMode === 'tile') {
+      raycaster.setFromCamera(
+        new THREE.Vector2(mouseRef.current.x, mouseRef.current.y),
+        camera
+      );
+
+      const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      const intersection = new THREE.Vector3();
+      
+      if (raycaster.ray.intersectPlane(groundPlane, intersection)) {
+        const snappedPosition = snapPosition({
+          x: intersection.x,
+          y: 0,
+          z: intersection.z,
+        });
+        setHoverPosition(snappedPosition);
+      } else {
+        setHoverPosition(null);
+      }
+    } else {
+      setHoverPosition(null);
+    }
+  }, [camera, raycaster, snapPosition, editMode, setHoverPosition]);
 
   const getGroundPosition = useCallback((): Position3D | null => {
     raycaster.setFromCamera(
@@ -67,10 +92,17 @@ export function useBuildingEditor() {
     const position = getGroundPosition();
     if (!position) return;
     
+    const { checkTilePosition, currentTileMultiplier } = useBuildingStore.getState();
+    if (checkTilePosition(position)) {
+      console.warn('Tile already exists at this position');
+      return;
+    }
+    
     addTile(selectedTileGroupId, {
       id: `tile-${Date.now()}`,
       position,
       tileGroupId: selectedTileGroupId,
+      size: currentTileMultiplier,
     });
   }, [editMode, selectedTileGroupId, getGroundPosition, addTile]);
 

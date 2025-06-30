@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { WallSystem } from '../WallSystem';
 import { TileSystem } from '../TileSystem';
 import { GridHelper } from '../GridHelper';
+import { PreviewTile } from '../PreviewTile';
 import { useBuildingStore } from '../../stores/buildingStore';
 
 interface BuildingSystemProps {
@@ -30,6 +31,8 @@ export function BuildingSystem({
     <Suspense fallback={null}>
       <group name="building-system">
         {showGrid && <GridHelper size={gridSize} />}
+        
+        <PreviewTile />
         
         {Array.from(wallGroups.values()).map((wallGroup) => (
           <WallSystem

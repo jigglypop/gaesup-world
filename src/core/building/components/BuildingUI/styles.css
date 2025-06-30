@@ -136,4 +136,50 @@
 .building-ui-info p {
   margin: 4px 0;
   color: var(--editor-text-secondary);
+}
+
+.building-ui-size-group {
+  margin-bottom: var(--editor-spacing-md);
+  padding: var(--editor-spacing-sm);
+  background: var(--editor-surface-primary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 4px;
+}
+
+.building-ui-label {
+  display: block;
+  color: var(--editor-text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.building-ui-size-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+}
+
+.building-ui-size-button {
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  color: var(--editor-text-secondary);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.building-ui-size-button:hover {
+  background-color: var(--editor-surface-hover);
+  color: var(--editor-text-primary);
+}
+
+.building-ui-size-button.active {
+  background-color: var(--editor-surface-active);
+  color: var(--editor-text-primary);
+  border-color: var(--editor-accent);
+  font-weight: 600;
 } 

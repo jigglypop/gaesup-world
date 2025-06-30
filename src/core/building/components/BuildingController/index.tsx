@@ -17,6 +17,7 @@ export function BuildingController() {
   
   const editMode = useBuildingStore((state) => state.editMode);
   const isEditing = editMode !== 'none';
+  const setHoverPosition = useBuildingStore((state) => state.setHoverPosition);
 
   useEffect(() => {
     const canvas = gl.domElement;
@@ -34,8 +35,9 @@ export function BuildingController() {
     return () => {
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('click', handleClick);
+      setHoverPosition(null);
     };
-  }, [gl, updateMousePosition, placeWall, placeTile, editMode]);
+  }, [gl, updateMousePosition, placeWall, placeTile, editMode, setHoverPosition]);
 
   return (
     <>

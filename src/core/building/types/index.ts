@@ -46,6 +46,7 @@ export interface TileConfig {
   position: Position3D;
   tileGroupId: string;
   size?: number;
+  rotation?: number;
 }
 
 export interface TileGroupConfig {

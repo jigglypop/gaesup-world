@@ -1,3 +1,5 @@
+import { TILE_CONSTANTS } from '../../types/constants';
+
 interface GridHelperProps {
   size?: number;
   divisions?: number;
@@ -6,8 +8,8 @@ interface GridHelperProps {
 }
 
 export function GridHelper({ 
-  size = 100, 
-  divisions = 50,
+  size = TILE_CONSTANTS.DEFAULT_GRID_SIZE, 
+  divisions = size / TILE_CONSTANTS.GRID_CELL_SIZE,
   color1 = '#888888',
   color2 = '#444444'
 }: GridHelperProps) {

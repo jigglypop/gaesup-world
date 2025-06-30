@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { TileGroupConfig, MeshConfig } from '../../types';
 import { MaterialManager } from '../../core/MaterialManager';
 import { GaeSupProps } from '../../../index';
+import { TILE_CONSTANTS } from '../../types/constants';
 
 interface TileSystemProps {
   tileGroup: TileGroupConfig;
@@ -20,7 +21,6 @@ export function TileSystem({
   onTileDelete 
 }: TileSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
-  const tileSize = 4;
 
   const material = useMemo(() => {
     const manager = materialManagerRef.current;
@@ -38,9 +38,11 @@ export function TileSystem({
     let indexOffset = 0;
 
     tileGroup.tiles.forEach((tile) => {
+      const tileMultiplier = tile.size || 1;
+      const tileSize = TILE_CONSTANTS.GRID_CELL_SIZE * tileMultiplier;
       const geometry = new THREE.PlaneGeometry(tileSize, tileSize);
       geometry.rotateX(-Math.PI / 2);
-      geometry.translate(tile.position.x, tile.position.y, tile.position.z);
+      geometry.translate(tile.position.x, tile.position.y + 0.001, tile.position.z);
 
       const vertexPositions = Array.from(
         geometry.attributes.position.array as Float32Array
@@ -68,7 +70,7 @@ export function TileSystem({
     merged.setIndex(indices);
     merged.computeVertexNormals();
     return merged;
-  }, [tileGroup.tiles, tileSize]);
+  }, [tileGroup.tiles]);
 
   useEffect(() => {
     return () => {
@@ -83,18 +85,26 @@ export function TileSystem({
   return (
     <GaeSupProps type="ground">
       <>
-        {isEditMode && tileGroup.tiles.map((tile) => (
-          <group
-            key={tile.id}
-            position={[tile.position.x, tile.position.y + 0.5, tile.position.z]}
-            onClick={() => onTileClick?.(tile.id)}
-          >
-            <mesh>
-              <boxGeometry args={[0.5, 0.1, 0.5]} />
-              <meshStandardMaterial color="#00ff00" transparent opacity={0.5} />
-            </mesh>
-          </group>
-        ))}
+        {isEditMode && tileGroup.tiles.map((tile) => {
+          return (
+            <group
+              key={tile.id}
+              position={[tile.position.x, tile.position.y + 0.3, tile.position.z]}
+              onClick={() => onTileClick?.(tile.id)}
+            >
+              <mesh>
+                <boxGeometry args={[0.8, 0.3, 0.8]} />
+                <meshStandardMaterial 
+                  color="#ff0000" 
+                  transparent 
+                  opacity={0.6}
+                  emissive="#ff0000"
+                  emissiveIntensity={0.2}
+                />
+              </mesh>
+            </group>
+          );
+        })}
         
         <mesh
           castShadow

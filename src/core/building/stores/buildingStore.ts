@@ -10,6 +10,7 @@ import {
   TileConfig,
   Position3D
 } from '../types';
+import { TILE_CONSTANTS } from '../types/constants';
 
 // Enable Map and Set support in Immer
 enableMapSet();
@@ -17,6 +18,14 @@ enableMapSet();
 interface BuildingStore extends BuildingSystemState {
   initialized: boolean;
   initializeDefaults: () => void;
+  
+  hoverPosition: Position3D | null;
+  setHoverPosition: (position: Position3D | null) => void;
+  
+  currentTileMultiplier: number;
+  setTileMultiplier: (multiplier: number) => void;
+  
+  checkTilePosition: (position: Position3D) => boolean;
   
   addMesh: (mesh: MeshConfig) => void;
   updateMesh: (id: string, updates: Partial<MeshConfig>) => void;
@@ -59,6 +68,8 @@ export const useBuildingStore = create<BuildingStore>()(
     showGrid: true,
     gridSize: 100,
     snapToGrid: true,
+    hoverPosition: null,
+    currentTileMultiplier: 1,
 
     initializeDefaults: () => set((state) => {
       if (state.initialized) return;
@@ -220,16 +231,47 @@ export const useBuildingStore = create<BuildingStore>()(
       state.snapToGrid = snap;
     }),
 
+    setHoverPosition: (position) => set((state) => {
+      state.hoverPosition = position;
+    }),
+
+    setTileMultiplier: (multiplier) => set((state) => {
+      state.currentTileMultiplier = multiplier;
+    }),
+
     snapPosition: (position) => {
-      const { snapToGrid, gridSize } = get();
+      const { snapToGrid } = get();
       if (!snapToGrid) return position;
       
-      const cellSize = gridSize / 50; // 50 divisions
+      const snapSize = TILE_CONSTANTS.SNAP_GRID_SIZE;
       return {
-        x: Math.round(position.x / cellSize) * cellSize,
+        x: Math.round(position.x / snapSize) * snapSize,
         y: position.y,
-        z: Math.round(position.z / cellSize) * cellSize,
+        z: Math.round(position.z / snapSize) * snapSize,
       };
+    },
+    
+    checkTilePosition: (position) => {
+      const { tileGroups, currentTileMultiplier } = get();
+      const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
+      const tileSize = cellSize * currentTileMultiplier;
+      const halfSize = tileSize / 2;
+      
+      for (const group of tileGroups.values()) {
+        for (const tile of group.tiles) {
+          const existingTileSize = (tile.size || 1) * cellSize;
+          const existingHalfSize = existingTileSize / 2;
+          
+          // 두 타일의 경계가 겹치는지 확인
+          if (
+            Math.abs(tile.position.x - position.x) < (halfSize + existingHalfSize - 0.1) &&
+            Math.abs(tile.position.z - position.z) < (halfSize + existingHalfSize - 0.1)
+          ) {
+            return true;
+          }
+        }
+      }
+      return false;
     },
     
     isInEditMode: () => {
