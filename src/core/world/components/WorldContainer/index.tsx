@@ -7,39 +7,51 @@ import { PassiveObjects } from '../PassiveObjects';
 import { RideableObjects } from '../Rideable';
 import { PerformanceTracker } from '@debug/performance/PerformanceTracker';
 
-function LoadingIndicator() {
+function WorldContent({ children, showGrid, showAxes }: { 
+  children?: ReactNode; 
+  showGrid?: boolean; 
+  showAxes?: boolean; 
+}) {
+  const worldSlice = useGaesupStore((state) => state.world);
+  const { debug } = useGaesupStore((state) => state.mode);
+
+  const activeObjects = worldSlice?.objects?.filter(obj => obj.type === 'active') || [];
+  const passiveObjects = worldSlice?.objects?.filter(obj => obj.type === 'passive') || [];
+  const rideableObjects = worldSlice?.objects?.filter(obj => obj.type === 'rideable') || [];
+
   return (
-    <div style={{
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      color: 'white',
-      fontSize: '16px',
-      fontFamily: 'Arial, sans-serif',
-      textAlign: 'center',
-      background: 'rgba(0, 0, 0, 0.7)',
-      padding: '20px',
-      borderRadius: '8px',
-      zIndex: 1000
-    }}>
-      <div style={{
-        width: '40px',
-        height: '40px',
-        border: '4px solid rgba(255, 255, 255, 0.3)',
-        borderTop: '4px solid white',
-        borderRadius: '50%',
-        animation: 'spin 1s linear infinite',
-        margin: '0 auto 10px'
-      }} />
-      Loading World...
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
+    <group name="gaesup-world">
+      {debug && <PerformanceTracker />}
+
+      {showGrid && (
+        <gridHelper args={[100, 100, "#888888", "#444444"]} />
+      )}
+      
+      {showAxes && (
+        <axesHelper args={[10]} />
+      )}
+
+      <ActiveObjects
+        objects={activeObjects as any}
+        selectedId={worldSlice?.selectedObjectId}
+        onSelect={worldSlice?.selectObject}
+        showDebugInfo={worldSlice?.showDebugInfo}
+      />
+
+      <PassiveObjects
+        objects={passiveObjects as any}
+        selectedId={worldSlice?.selectedObjectId}
+        onSelect={worldSlice?.selectObject}
+        showDebugInfo={worldSlice?.showDebugInfo}
+      />
+
+      <RideableObjects
+        objects={rideableObjects as any}
+        showDebugInfo={worldSlice?.showDebugInfo}
+      />
+
+      {children}
+    </group>
   );
 }
 
@@ -47,8 +59,6 @@ export function WorldContainer(props: WorldContainerProps) {
   const setMode = useGaesupStore((state) => state.setMode);
   const setUrls = useGaesupStore((state) => state.setUrls);
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
-  const worldSlice = useGaesupStore((state) => state.world);
-  const { debug } = useGaesupStore((state) => state.mode);
 
   useEffect(() => {
     if (props.mode) {
@@ -73,44 +83,19 @@ export function WorldContainer(props: WorldContainerProps) {
     }
   }, [props.cameraOption, setCameraOption]);
 
-  const activeObjects = worldSlice?.objects?.filter(obj => obj.type === 'active') || [];
-  const passiveObjects = worldSlice?.objects?.filter(obj => obj.type === 'passive') || [];
-  const rideableObjects = worldSlice?.objects?.filter(obj => obj.type === 'rideable') || [];
+  return props.children;
+}
 
+export function GaesupWorldContent({ children, showGrid, showAxes }: { 
+  children?: ReactNode; 
+  showGrid?: boolean; 
+  showAxes?: boolean; 
+}) {
   return (
-    <Suspense fallback={<LoadingIndicator />}>
-      <group name="gaesup-world">
-        {debug && <PerformanceTracker />}
-
-        {props.showGrid && (
-          <gridHelper args={[100, 100, "#888888", "#444444"]} />
-        )}
-        
-        {props.showAxes && (
-          <axesHelper args={[10]} />
-        )}
-
-        <ActiveObjects
-          objects={activeObjects as any}
-          selectedId={worldSlice?.selectedObjectId}
-          onSelect={worldSlice?.selectObject}
-          showDebugInfo={worldSlice?.showDebugInfo}
-        />
-
-        <PassiveObjects
-          objects={passiveObjects as any}
-          selectedId={worldSlice?.selectedObjectId}
-          onSelect={worldSlice?.selectObject}
-          showDebugInfo={worldSlice?.showDebugInfo}
-        />
-
-        <RideableObjects
-          objects={rideableObjects as any}
-          showDebugInfo={worldSlice?.showDebugInfo}
-        />
-
-        {props.children}
-      </group>
+    <Suspense fallback={null}>
+      <WorldContent showGrid={showGrid} showAxes={showAxes}>
+        {children}
+      </WorldContent>
     </Suspense>
   );
 }

@@ -25,4 +25,6 @@ export interface ExampleConfig {
   editor: EditorMode;
   debug: boolean;
   showPerformance: boolean;
+  showGrid: boolean;
+  showAxes: boolean;
 }

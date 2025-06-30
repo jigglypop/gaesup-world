@@ -13,5 +13,6 @@ export { Editor, EditorLayout, ResizablePanel } from './editor';
 
 export { WorldProps as GaeSupProps } from './world/components/WorldProps';
 export { WorldContainer as GaesupWorld } from './world/components/WorldContainer';
+export { GaesupWorldContent } from './world/components/WorldContainer';
 export { ControllerWrapper as GaesupController } from './interactions/components/ControllerWrapper';
 export { MiniMap } from './ui/components/Minimap';

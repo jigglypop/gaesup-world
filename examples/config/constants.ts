@@ -18,4 +18,6 @@ export const EXAMPLE_CONFIG: ExampleConfig = {
   },
   debug: false,
   showPerformance: true,
+  showGrid: false,
+  showAxes: false,
 };

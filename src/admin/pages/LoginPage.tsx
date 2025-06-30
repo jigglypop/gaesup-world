@@ -27,6 +27,7 @@ const LoginPage: React.FC = () => {
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Username"
           className="login-input"
+          autoComplete="username"
         />
         <input
           type="password"
@@ -34,6 +35,7 @@ const LoginPage: React.FC = () => {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
           className="login-input"
+          autoComplete="current-password"
         />
         <button type="submit" className="login-button">Login</button>
         {error && <p className="login-error">{error}</p>}

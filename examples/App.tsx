@@ -4,7 +4,7 @@ import { euler, Physics, RigidBody } from '@react-three/rapier';
 import { Suspense } from 'react';
 import { BrowserRouter, Route, Routes, NavLink } from 'react-router-dom';
 import * as THREE from 'three';
-import { Clicker, GaesupController, GaeSupProps, GaesupWorld, Editor } from '../src';
+import { Clicker, GaesupController, GaeSupProps, GaesupWorld, GaesupWorldContent, Editor } from '../src';
 import { GaesupAdmin } from '../src/admin';
 import { CameraOptionType } from '../src/core/types/camera';
 import { Platforms } from './components/platforms';
@@ -66,42 +66,44 @@ const WorldPage = ({ showEditor = false }) => (
           shadow-camera-left={-50}
         />
         <Suspense>
-          <Physics debug interpolate={true}>
-            <GaesupController
-              controllerOptions={{ lerp: { cameraTurn: 0.1, cameraPosition: 0.08 } }}
-              rigidBodyProps={{}}
-              parts={[{ url: 'gltf/ally_cloth_rabbit.glb', color: '#ffe0e0' }]}
-              rotation={euler({ x: 0, y: Math.PI, z: 0 })}
-            />
-            <>
-              <Grid
-                renderOrder={-1}
-                position={[0, 0.2, 0]}
-                infiniteGrid
-                cellSize={2}
-                cellThickness={1}
-                cellColor={'#1d1d1d'}
-                sectionSize={5}
-                sectionThickness={0}
-                fadeDistance={1000}
-                userData={{ intangible: true }}
+          <GaesupWorldContent showGrid={EXAMPLE_CONFIG.showGrid} showAxes={EXAMPLE_CONFIG.showAxes}>
+            <Physics debug interpolate={true}>
+              <GaesupController
+                controllerOptions={{ lerp: { cameraTurn: 0.1, cameraPosition: 0.08 } }}
+                rigidBodyProps={{}}
+                parts={[{ url: 'gltf/ally_cloth_rabbit.glb', color: '#ffe0e0' }]}
+                rotation={euler({ x: 0, y: Math.PI, z: 0 })}
               />
-              <RigidBody type="fixed" userData={{ intangible: true }}>
-                <mesh receiveShadow position={[0, -1, 0]}>
-                  <boxGeometry args={[1000, 2, 1000]} />
-                </mesh>
-                <GaeSupProps type="ground">
-                  <mesh receiveShadow position={[0, 0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                    <planeGeometry args={[1000, 1000]} />
-                    <meshStandardMaterial color="#3d3d3d" />
+              <>
+                <Grid
+                  renderOrder={-1}
+                  position={[0, 0.2, 0]}
+                  infiniteGrid
+                  cellSize={2}
+                  cellThickness={1}
+                  cellColor={'#1d1d1d'}
+                  sectionSize={5}
+                  sectionThickness={0}
+                  fadeDistance={1000}
+                  userData={{ intangible: true }}
+                />
+                <RigidBody type="fixed" userData={{ intangible: true }}>
+                  <mesh receiveShadow position={[0, -1, 0]}>
+                    <boxGeometry args={[1000, 2, 1000]} />
                   </mesh>
-                </GaeSupProps>
-              </RigidBody>
-            </>
-            <Platforms />
-            <Clicker />
-            <RideableVehicles />
-          </Physics>
+                  <GaeSupProps type="ground">
+                    <mesh receiveShadow position={[0, 0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                      <planeGeometry args={[1000, 1000]} />
+                      <meshStandardMaterial color="#3d3d3d" />
+                    </mesh>
+                  </GaeSupProps>
+                </RigidBody>
+              </>
+              <Platforms />
+              <Clicker />
+              <RideableVehicles />
+            </Physics>
+          </GaesupWorldContent>
         </Suspense>
       </Canvas>
     </GaesupWorld>
