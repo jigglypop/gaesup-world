@@ -1,0 +1,129 @@
+.building-edit-mode-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  border: 4px solid #4CAF50;
+  box-shadow: inset 0 0 40px rgba(76, 175, 80, 0.1);
+  z-index: 999;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    border-color: #4CAF50;
+    box-shadow: inset 0 0 40px rgba(76, 175, 80, 0.1);
+  }
+  50% {
+    border-color: #66BB6A;
+    box-shadow: inset 0 0 60px rgba(76, 175, 80, 0.2);
+  }
+}
+
+.building-ui-container {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  z-index: 1000;
+}
+
+.building-ui-container.editing {
+  background: rgba(20, 20, 20, 0.95);
+  border-color: #4CAF50;
+  box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+}
+
+.building-ui-title {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.building-ui-container.editing .building-ui-title {
+  color: #4CAF50;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.building-ui-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.building-ui-mode-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.building-ui-button {
+  background: #444;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.building-ui-button:hover {
+  background: #555;
+}
+
+.building-ui-button.active {
+  background: #4CAF50;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.building-ui-button.active:hover {
+  background: #45a049;
+}
+
+.building-ui-button.primary {
+  background: #2196F3;
+  font-weight: 600;
+}
+
+.building-ui-button.primary:hover {
+  background: #1976D2;
+}
+
+.building-ui-button.danger {
+  background: #f44336;
+}
+
+.building-ui-button.danger:hover {
+  background: #d32f2f;
+}
+
+.building-ui-info {
+  margin-top: 12px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.building-ui-info p {
+  margin: 4px 0;
+  opacity: 0.8;
+} 

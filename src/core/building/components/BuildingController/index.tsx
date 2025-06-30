@@ -1,0 +1,60 @@
+import { useEffect } from 'react';
+import { useThree } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
+import { BuildingSystem } from '../BuildingSystem';
+import { useBuildingStore } from '../../stores/buildingStore';
+import { useBuildingEditor } from '../../hooks/useBuildingEditor';
+
+export function BuildingController() {
+  const { gl } = useThree();
+  const {
+    updateMousePosition,
+    placeWall,
+    placeTile,
+    handleWallClick,
+    handleTileClick,
+  } = useBuildingEditor();
+  
+  const editMode = useBuildingStore((state) => state.editMode);
+  const isEditing = editMode !== 'none';
+
+  useEffect(() => {
+    const canvas = gl.domElement;
+    
+    const handleMouseMove = (e: MouseEvent) => updateMousePosition(e);
+    const handleClick = (e: MouseEvent) => {
+      e.preventDefault();
+      if (editMode === 'wall') placeWall();
+      else if (editMode === 'tile') placeTile();
+    };
+
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('click', handleClick);
+
+    return () => {
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('click', handleClick);
+    };
+  }, [gl, updateMousePosition, placeWall, placeTile, editMode]);
+
+  return (
+    <>
+      {isEditing && (
+        <OrbitControls 
+          enablePan={true} 
+          enableZoom={true} 
+          enableRotate={true}
+          maxPolarAngle={Math.PI / 2.5}
+          minDistance={5}
+          maxDistance={100}
+        />
+      )}
+      <BuildingSystem
+        onWallClick={handleWallClick}
+        onTileClick={handleTileClick}
+        onWallDelete={handleWallClick}
+        onTileDelete={handleTileClick}
+      />
+    </>
+  );
+} 

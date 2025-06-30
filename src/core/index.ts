@@ -10,6 +10,7 @@ export * from './ui';
 export * from './debug';
 export * from './stores';
 export { Editor, EditorLayout, ResizablePanel } from './editor';
+export * from './building';
 
 export { WorldProps as GaeSupProps } from './world/components/WorldProps';
 export { WorldContainer as GaesupWorld } from './world/components/WorldContainer';
