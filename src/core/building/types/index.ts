@@ -56,12 +56,30 @@ export interface TileGroupConfig {
   tiles: TileConfig[];
 }
 
+export interface WallCategory {
+  id: string;
+  name: string;
+  description?: string;
+  wallGroupIds: string[];
+}
+
+export interface TileCategory {
+  id: string;
+  name: string;
+  description?: string;
+  tileGroupIds: string[];
+}
+
 export interface BuildingSystemState {
   meshes: Map<string, MeshConfig>;
   wallGroups: Map<string, WallGroupConfig>;
   tileGroups: Map<string, TileGroupConfig>;
+  wallCategories: Map<string, WallCategory>;
+  tileCategories: Map<string, TileCategory>;
   selectedWallGroupId?: string;
   selectedTileGroupId?: string;
+  selectedWallCategoryId?: string;
+  selectedTileCategoryId?: string;
   editMode: 'none' | 'wall' | 'tile';
   showGrid: boolean;
   gridSize: number;

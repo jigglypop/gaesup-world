@@ -223,4 +223,145 @@
   background-color: var(--editor-surface-active);
   color: var(--editor-text-primary);
   border-color: var(--editor-accent);
+}
+
+.building-ui-category-group {
+  margin-bottom: var(--editor-spacing-sm);
+  padding: var(--editor-spacing-sm);
+  background: var(--editor-surface-primary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 4px;
+}
+
+.building-ui-select {
+  width: 100%;
+  padding: 6px 8px;
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 4px;
+  color: var(--editor-text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 4px;
+}
+
+.building-ui-select:hover {
+  background-color: var(--editor-surface-hover);
+  border-color: var(--editor-accent);
+}
+
+.building-ui-select:focus {
+  outline: none;
+  border-color: var(--editor-accent);
+  box-shadow: 0 0 0 2px rgba(var(--editor-accent-rgb), 0.2);
+}
+
+.building-ui-select option {
+  background-color: var(--editor-surface-secondary);
+  color: var(--editor-text-primary);
+}
+
+.building-ui-custom-toggle {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 4px;
+  color: var(--editor-text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: var(--editor-spacing-sm);
+}
+
+.building-ui-custom-toggle:hover {
+  background-color: var(--editor-surface-hover);
+  color: var(--editor-text-primary);
+}
+
+.building-ui-custom-settings {
+  padding: var(--editor-spacing-md);
+  background: var(--editor-surface-primary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 4px;
+  margin-bottom: var(--editor-spacing-md);
+}
+
+.building-ui-input-group {
+  margin-bottom: var(--editor-spacing-sm);
+}
+
+.building-ui-input {
+  width: 100%;
+  padding: 6px 8px;
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 4px;
+  color: var(--editor-text-primary);
+  font-size: 13px;
+  transition: all 0.2s ease;
+  margin-top: 4px;
+}
+
+.building-ui-input:hover {
+  border-color: var(--editor-accent);
+}
+
+.building-ui-input:focus {
+  outline: none;
+  border-color: var(--editor-accent);
+  box-shadow: 0 0 0 2px rgba(var(--editor-accent-rgb), 0.2);
+}
+
+.building-ui-color-input {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.building-ui-color-picker {
+  width: 40px;
+  height: 32px;
+  padding: 2px;
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.building-ui-color-picker:hover {
+  border-color: var(--editor-accent);
+}
+
+.building-ui-apply-button,
+.building-ui-create-button {
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: var(--editor-spacing-sm);
+}
+
+.building-ui-apply-button {
+  background-color: var(--editor-surface-active);
+  color: var(--editor-text-primary);
+}
+
+.building-ui-apply-button:hover {
+  background-color: var(--editor-accent);
+}
+
+.building-ui-create-button {
+  background-color: var(--editor-accent);
+  color: var(--editor-text-primary);
+}
+
+.building-ui-create-button:hover {
+  opacity: 0.8;
 } 

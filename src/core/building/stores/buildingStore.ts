@@ -8,7 +8,9 @@ import {
   TileGroupConfig,
   WallConfig,
   TileConfig,
-  Position3D
+  Position3D,
+  WallCategory,
+  TileCategory
 } from '../types';
 import { TILE_CONSTANTS } from '../types/constants';
 
@@ -34,6 +36,16 @@ interface BuildingStore extends BuildingSystemState {
   addMesh: (mesh: MeshConfig) => void;
   updateMesh: (id: string, updates: Partial<MeshConfig>) => void;
   removeMesh: (id: string) => void;
+  
+  addWallCategory: (category: WallCategory) => void;
+  updateWallCategory: (id: string, updates: Partial<WallCategory>) => void;
+  removeWallCategory: (id: string) => void;
+  setSelectedWallCategory: (id: string) => void;
+  
+  addTileCategory: (category: TileCategory) => void;
+  updateTileCategory: (id: string, updates: Partial<TileCategory>) => void;
+  removeTileCategory: (id: string) => void;
+  setSelectedTileCategory: (id: string) => void;
   
   addWallGroup: (group: WallGroupConfig) => void;
   updateWallGroup: (id: string, updates: Partial<WallGroupConfig>) => void;
@@ -66,8 +78,12 @@ export const useBuildingStore = create<BuildingStore>()(
     meshes: new Map(),
     wallGroups: new Map(),
     tileGroups: new Map(),
+    wallCategories: new Map(),
+    tileCategories: new Map(),
     selectedWallGroupId: undefined,
     selectedTileGroupId: undefined,
+    selectedWallCategoryId: undefined,
+    selectedTileCategoryId: undefined,
     editMode: 'none',
     showGrid: true,
     gridSize: 100,
@@ -94,33 +110,144 @@ export const useBuildingStore = create<BuildingStore>()(
         transparent: true,
       });
       
+      state.meshes.set('concrete-wall', {
+        id: 'concrete-wall',
+        color: '#808080',
+        material: 'STANDARD',
+        roughness: 0.9,
+      });
+      
       state.meshes.set('wood-floor', {
         id: 'wood-floor',
         color: '#654321',
         material: 'STANDARD',
         roughness: 0.6,
       });
+      
+      state.meshes.set('marble-floor', {
+        id: 'marble-floor',
+        color: '#f0f0f0',
+        material: 'STANDARD',
+        roughness: 0.2,
+        metalness: 0.1,
+      });
+
+      // 기본 벽 카테고리 생성
+      state.wallCategories.set('interior-walls', {
+        id: 'interior-walls',
+        name: 'Interior Walls',
+        description: 'Walls for interior spaces',
+        wallGroupIds: ['plaster-walls', 'painted-walls']
+      });
+      
+      state.wallCategories.set('exterior-walls', {
+        id: 'exterior-walls',
+        name: 'Exterior Walls',
+        description: 'Walls for building exteriors',
+        wallGroupIds: ['brick-walls', 'concrete-walls']
+      });
+      
+      state.wallCategories.set('special-walls', {
+        id: 'special-walls',
+        name: 'Special Walls',
+        description: 'Glass and special material walls',
+        wallGroupIds: ['glass-walls']
+      });
+
+      // 기본 타일 카테고리 생성
+      state.tileCategories.set('wood-floors', {
+        id: 'wood-floors',
+        name: 'Wood Floors',
+        description: 'Various wood flooring options',
+        tileGroupIds: ['oak-floor', 'pine-floor']
+      });
+      
+      state.tileCategories.set('stone-floors', {
+        id: 'stone-floors',
+        name: 'Stone Floors',
+        description: 'Marble and stone flooring',
+        tileGroupIds: ['marble-floor', 'granite-floor']
+      });
 
       // 기본 그룹 생성
-      state.wallGroups.set('default-walls', {
-        id: 'default-walls',
-        name: 'Default Walls',
+      state.wallGroups.set('brick-walls', {
+        id: 'brick-walls',
+        name: 'Brick Walls',
         frontMeshId: 'brick-wall',
         backMeshId: 'brick-wall',
         sideMeshId: 'brick-wall',
         walls: [],
       });
       
-      state.tileGroups.set('default-tiles', {
-        id: 'default-tiles',
-        name: 'Default Tiles',
+      state.wallGroups.set('glass-walls', {
+        id: 'glass-walls',
+        name: 'Glass Walls',
+        frontMeshId: 'glass-wall',
+        backMeshId: 'glass-wall',
+        sideMeshId: 'glass-wall',
+        walls: [],
+      });
+      
+      state.wallGroups.set('concrete-walls', {
+        id: 'concrete-walls',
+        name: 'Concrete Walls',
+        frontMeshId: 'concrete-wall',
+        backMeshId: 'concrete-wall',
+        sideMeshId: 'concrete-wall',
+        walls: [],
+      });
+      
+      state.wallGroups.set('plaster-walls', {
+        id: 'plaster-walls',
+        name: 'Plaster Walls',
+        frontMeshId: 'brick-wall', // 임시로 brick 재질 사용
+        backMeshId: 'brick-wall',
+        sideMeshId: 'brick-wall',
+        walls: [],
+      });
+      
+      state.wallGroups.set('painted-walls', {
+        id: 'painted-walls',
+        name: 'Painted Walls',
+        frontMeshId: 'brick-wall', // 임시로 brick 재질 사용
+        backMeshId: 'brick-wall',
+        sideMeshId: 'brick-wall',
+        walls: [],
+      });
+      
+      state.tileGroups.set('oak-floor', {
+        id: 'oak-floor',
+        name: 'Oak Wood Floor',
         floorMeshId: 'wood-floor',
         tiles: [],
       });
       
+      state.tileGroups.set('pine-floor', {
+        id: 'pine-floor',
+        name: 'Pine Wood Floor',
+        floorMeshId: 'wood-floor',
+        tiles: [],
+      });
+      
+      state.tileGroups.set('marble-floor', {
+        id: 'marble-floor',
+        name: 'Marble Floor',
+        floorMeshId: 'marble-floor',
+        tiles: [],
+      });
+      
+      state.tileGroups.set('granite-floor', {
+        id: 'granite-floor',
+        name: 'Granite Floor',
+        floorMeshId: 'marble-floor', // 임시로 marble 재질 사용
+        tiles: [],
+      });
+      
       // 기본 선택 설정
-      state.selectedWallGroupId = 'default-walls';
-      state.selectedTileGroupId = 'default-tiles';
+      state.selectedWallCategoryId = 'exterior-walls';
+      state.selectedWallGroupId = 'brick-walls';
+      state.selectedTileCategoryId = 'wood-floors';
+      state.selectedTileGroupId = 'oak-floor';
       state.initialized = true;
     }),
 
@@ -306,5 +433,51 @@ export const useBuildingStore = create<BuildingStore>()(
       const { editMode } = get();
       return editMode !== 'none';
     },
+
+    addWallCategory: (category) => set((state) => {
+      state.wallCategories.set(category.id, category);
+    }),
+    
+    updateWallCategory: (id, updates) => set((state) => {
+      const category = state.wallCategories.get(id);
+      if (category) {
+        state.wallCategories.set(id, { ...category, ...updates });
+      }
+    }),
+    
+    removeWallCategory: (id) => set((state) => {
+      state.wallCategories.delete(id);
+    }),
+    
+    setSelectedWallCategory: (id) => set((state) => {
+      state.selectedWallCategoryId = id;
+      const category = state.wallCategories.get(id);
+      if (category && category.wallGroupIds.length > 0) {
+        state.selectedWallGroupId = category.wallGroupIds[0];
+      }
+    }),
+    
+    addTileCategory: (category) => set((state) => {
+      state.tileCategories.set(category.id, category);
+    }),
+    
+    updateTileCategory: (id, updates) => set((state) => {
+      const category = state.tileCategories.get(id);
+      if (category) {
+        state.tileCategories.set(id, { ...category, ...updates });
+      }
+    }),
+    
+    removeTileCategory: (id) => set((state) => {
+      state.tileCategories.delete(id);
+    }),
+    
+    setSelectedTileCategory: (id) => set((state) => {
+      state.selectedTileCategoryId = id;
+      const category = state.tileCategories.get(id);
+      if (category && category.tileGroupIds.length > 0) {
+        state.selectedTileGroupId = category.tileGroupIds[0];
+      }
+    }),
   }))
 ); 
