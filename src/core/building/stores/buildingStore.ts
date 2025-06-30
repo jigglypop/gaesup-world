@@ -63,7 +63,7 @@ interface BuildingStore extends BuildingSystemState {
   updateTile: (groupId: string, tileId: string, updates: Partial<TileConfig>) => void;
   removeTile: (groupId: string, tileId: string) => void;
   
-  setEditMode: (mode: 'none' | 'wall' | 'tile') => void;
+  setEditMode: (mode: 'none' | 'wall' | 'tile' | 'npc') => void;
   setShowGrid: (show: boolean) => void;
   setGridSize: (size: number) => void;
   setSnapToGrid: (snap: boolean) => void;

@@ -80,7 +80,7 @@ export interface BuildingSystemState {
   selectedTileGroupId?: string;
   selectedWallCategoryId?: string;
   selectedTileCategoryId?: string;
-  editMode: 'none' | 'wall' | 'tile';
+  editMode: 'none' | 'wall' | 'tile' | 'npc';
   showGrid: boolean;
   gridSize: number;
   snapToGrid: boolean;

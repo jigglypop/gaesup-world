@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { BuildingSystem } from '../BuildingSystem';
+import { NPCSystem } from '../../../npc/components/NPCSystem';
 import { useBuildingStore } from '../../stores/buildingStore';
 import { useBuildingEditor } from '../../hooks/useBuildingEditor';
 
@@ -50,6 +51,7 @@ export function BuildingController() {
     
     const handleMouseMove = (e: MouseEvent) => updateMousePosition(e);
     const handleClick = (e: MouseEvent) => {
+      if (editMode === 'npc') return; // NPC mode는 NPCSystem에서 처리
       e.preventDefault();
       if (editMode === 'wall') placeWall();
       else if (editMode === 'tile') placeTile();
@@ -83,6 +85,7 @@ export function BuildingController() {
         onWallDelete={handleWallClick}
         onTileDelete={handleTileClick}
       />
+      <NPCSystem />
     </>
   );
 } 

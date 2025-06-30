@@ -145,6 +145,12 @@ html, body, #root {
   color: var(--editor-text-primary);
 }
 
+.app-nav-button.active {
+  background-color: var(--editor-surface-active);
+  color: var(--editor-text-primary);
+  font-weight: 600;
+}
+
 .app-nav-user {
   color: var(--editor-text-primary);
   font-size: 13px;

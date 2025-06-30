@@ -1,7 +1,7 @@
 import { Environment, Grid } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { euler, Physics, RigidBody } from '@react-three/rapier';
-import { Suspense } from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import * as THREE from 'three';
 import { Clicker, GaesupController, GaeSupProps, GaesupWorld, GaesupWorldContent, Editor } from '../src';
