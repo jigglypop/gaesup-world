@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { useBuildingStore } from '../../stores/buildingStore';
 import { TILE_CONSTANTS } from '../../types/constants';
 import './styles.css';

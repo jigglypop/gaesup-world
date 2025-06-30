@@ -9,11 +9,9 @@ export function RideableUI({ states }: RideableUIProps) {
   if (!states) {
     return null;
   }
-
   if (!states.canRide && !states.isRiding) {
     return null;
   }
-
   const rideMessage = states.nearbyRideable?.rideMessage ?? 'Press R to ride';
   const exitMessage = 'Press R to exit';
 
@@ -77,7 +75,6 @@ export function RideableObjects({
     <group name="rideable-objects">
       {objects.map((obj) => {
         const isOccupied = obj.isOccupied;
-        
         return (
           <group
             key={obj.id}
@@ -97,13 +94,13 @@ export function RideableObjects({
                 document.body.style.cursor = 'default';
               }}
             >
-              <boxGeometry args={[2, 1, 4]} />
+              {/* <boxGeometry args={[2, 1, 4]} />
               <meshStandardMaterial 
                 color={isOccupied ? "#666666" : "#4488ff"} 
                 wireframe={showDebugInfo}
                 transparent
                 opacity={isOccupied ? 0.5 : 1}
-              />
+              /> */}
             </mesh>
 
             {showDebugInfo && (

@@ -437,4 +437,36 @@
 .building-ui-remove-part:hover {
   background-color: #ff4444;
   color: white;
+}
+
+.building-ui-clothing-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.building-ui-clothing-button {
+  padding: 6px 12px;
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 4px;
+  color: var(--editor-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.building-ui-clothing-button:hover {
+  background-color: var(--editor-surface-hover);
+  border-color: var(--editor-accent);
+  color: var(--editor-text-primary);
+}
+
+.building-ui-clothing-button.active {
+  background-color: var(--editor-surface-active);
+  color: var(--editor-text-primary);
+  border-color: var(--editor-accent);
+  font-weight: 600;
 } 

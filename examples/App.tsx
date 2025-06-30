@@ -9,7 +9,7 @@ import { BuildingController, useBuildingStore } from '../src';
 import { GaesupAdmin, useAuthStore } from '../src/admin';
 import { CameraOptionType } from '../src/core/types/camera';
 import { Platforms } from './components/platforms';
-import { RideableVehicles } from './components/rideable';
+import { RideableUIRenderer, RideableVehicles } from './components/rideable';
 import { BuildingExample } from './components/building';
 import { AIRPLANE_URL, CHARACTER_URL, S3, VEHICLE_URL, EXAMPLE_CONFIG } from './config/constants';
 import './style.css';

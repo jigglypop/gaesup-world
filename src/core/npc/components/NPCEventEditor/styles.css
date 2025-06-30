@@ -1,0 +1,201 @@
+.npc-event-editor {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-border-radius);
+  box-shadow: var(--editor-shadow);
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+}
+
+.npc-event-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--editor-spacing-md);
+  border-bottom: 1px solid var(--editor-border-color);
+}
+
+.npc-event-editor-header h3 {
+  margin: 0;
+  color: var(--editor-text-primary);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.npc-event-editor-close {
+  background: transparent;
+  border: none;
+  color: var(--editor-text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.npc-event-editor-close:hover {
+  background-color: var(--editor-surface-hover);
+  color: var(--editor-text-primary);
+}
+
+.npc-event-editor-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--editor-spacing-md);
+}
+
+.npc-event-editor-section {
+  margin-bottom: var(--editor-spacing-lg);
+  padding: var(--editor-spacing-md);
+  background: var(--editor-surface-primary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 4px;
+}
+
+.npc-event-editor-section h4 {
+  margin: 0 0 var(--editor-spacing-md) 0;
+  color: var(--editor-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.npc-event-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.npc-event-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--editor-spacing-sm);
+  background: var(--editor-surface-secondary);
+  border-radius: 4px;
+  margin-bottom: var(--editor-spacing-xs);
+}
+
+.npc-event-item span {
+  color: var(--editor-text-secondary);
+  font-size: 13px;
+}
+
+.npc-event-remove {
+  background-color: transparent;
+  border: 1px solid var(--editor-border-color);
+  color: var(--editor-text-secondary);
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.npc-event-remove:hover {
+  background-color: #ff4444;
+  border-color: #ff4444;
+  color: white;
+}
+
+.npc-event-empty {
+  color: var(--editor-text-muted);
+  font-size: 13px;
+  text-align: center;
+  padding: var(--editor-spacing-md);
+  margin: 0;
+}
+
+.npc-event-editor-field {
+  margin-bottom: var(--editor-spacing-md);
+}
+
+.npc-event-editor-field label {
+  display: block;
+  color: var(--editor-text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.npc-event-editor-select {
+  width: 100%;
+  padding: 6px 8px;
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 4px;
+  color: var(--editor-text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.npc-event-editor-select:hover {
+  background-color: var(--editor-surface-hover);
+  border-color: var(--editor-accent);
+}
+
+.npc-event-editor-select:focus {
+  outline: none;
+  border-color: var(--editor-accent);
+  box-shadow: 0 0 0 2px rgba(var(--editor-accent-rgb), 0.2);
+}
+
+.npc-event-editor-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 6px 8px;
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 4px;
+  color: var(--editor-text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  transition: all 0.2s ease;
+}
+
+.npc-event-editor-textarea:hover {
+  border-color: var(--editor-accent);
+}
+
+.npc-event-editor-textarea:focus {
+  outline: none;
+  border-color: var(--editor-accent);
+  box-shadow: 0 0 0 2px rgba(var(--editor-accent-rgb), 0.2);
+}
+
+.npc-event-editor-add-button {
+  width: 100%;
+  padding: 8px 16px;
+  background-color: var(--editor-accent);
+  border: none;
+  border-radius: 4px;
+  color: var(--editor-text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.npc-event-editor-add-button:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.npc-event-editor-add-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+} 

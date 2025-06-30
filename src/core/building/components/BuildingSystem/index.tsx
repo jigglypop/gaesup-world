@@ -1,9 +1,11 @@
+import React from 'react';
 import { Suspense } from 'react';
 import { WallSystem } from '../WallSystem';
 import { TileSystem } from '../TileSystem';
 import { GridHelper } from '../GridHelper';
 import { PreviewTile } from '../PreviewTile';
 import { PreviewWall } from '../PreviewWall';
+import { NPCPreview } from '../../../npc/components/NPCPreview';
 import { useBuildingStore } from '../../stores/buildingStore';
 
 interface BuildingSystemProps {
@@ -35,6 +37,7 @@ export function BuildingSystem({
         
         <PreviewTile />
         <PreviewWall />
+        <NPCPreview />
         
         {Array.from(wallGroups.values()).map((wallGroup) => (
           <WallSystem

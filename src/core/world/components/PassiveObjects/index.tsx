@@ -12,7 +12,6 @@ export function PassiveObjects({
     <group name="passive-objects">
       {objects.map((obj) => {
         const isSelected = obj.id === selectedId;
-        
         return (
           <group
             key={obj.id}

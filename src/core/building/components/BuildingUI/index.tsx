@@ -42,7 +42,11 @@ export function BuildingUI() {
     setSelectedTemplate: setSelectedNPCTemplate,
     addTemplate: addNPCTemplate,
     updateTemplate: updateNPCTemplate,
-    initializeDefaults: initializeNPCDefaults
+    initializeDefaults: initializeNPCDefaults,
+    selectedInstanceId: selectedNPCInstanceId,
+    instances: npcInstances,
+    updateInstancePart,
+    updateInstance: updateNPCInstance
   } = useNPCStore();
   
   const [showCustomSettings, setShowCustomSettings] = React.useState(false);
@@ -55,6 +59,11 @@ export function BuildingUI() {
     url: string;
     color?: string;
   }>>([]);
+  
+  const [selectedAccessories, setSelectedAccessories] = React.useState<{
+    hat?: string;
+    glasses?: string;
+  }>({});
   
   React.useEffect(() => {
     initializeNPCDefaults();
@@ -526,168 +535,144 @@ export function BuildingUI() {
             {editMode === 'npc' && (
               <>
                 <div className="building-ui-category-group">
-                  <span className="building-ui-label">Category:</span>
+                  <span className="building-ui-label">캐릭터:</span>
                   <select 
-                    value={selectedNPCCategoryId || ''} 
-                    onChange={(e) => setSelectedNPCCategory(e.target.value)}
+                    value={selectedNPCTemplateId || ''} 
+                    onChange={(e) => setSelectedNPCTemplate(e.target.value)}
                     className="building-ui-select"
                   >
-                    {Array.from(npcCategories.values()).map(category => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
+                    {Array.from(npcTemplates.values()).map(template => (
+                      <option key={template.id} value={template.id}>
+                        {template.name}
                       </option>
                     ))}
                   </select>
                 </div>
                 
                 <div className="building-ui-category-group">
-                  <span className="building-ui-label">Template:</span>
-                  <select 
-                    value={selectedNPCTemplateId || ''} 
-                    onChange={(e) => setSelectedNPCTemplate(e.target.value)}
-                    className="building-ui-select"
-                  >
-                    {selectedNPCCategoryId && npcCategories.get(selectedNPCCategoryId)?.templateIds.map(templateId => {
-                      const template = npcTemplates.get(templateId);
-                      return template ? (
-                        <option key={template.id} value={template.id}>
-                          {template.name}
-                        </option>
+                  <span className="building-ui-label">옷:</span>
+                  <div className="building-ui-clothing-buttons">
+                    {['rabbit-outfit', 'basic-suit', 'formal-suit'].map(clothingId => {
+                      const clothing = useNPCStore.getState().clothingSets.get(clothingId);
+                      return clothing ? (
+                        <button
+                          key={clothing.id}
+                          onClick={() => useNPCStore.getState().setSelectedClothingSet(clothing.id)}
+                          className={`building-ui-clothing-button ${useNPCStore.getState().selectedClothingSetId === clothing.id ? 'active' : ''}`}
+                        >
+                          {clothing.name}
+                        </button>
                       ) : null;
                     })}
-                  </select>
-                </div>
-                
-                <button 
-                  onClick={() => setShowCustomSettings(!showCustomSettings)}
-                  className="building-ui-custom-toggle"
-                >
-                  {showCustomSettings ? 'Hide' : 'Show'} Custom Settings
-                </button>
-                
-                {showCustomSettings && (
-                  <div className="building-ui-custom-settings">
-                    <div className="building-ui-input-group">
-                      <span className="building-ui-label">Name:</span>
-                      <input
-                        type="text"
-                        value={customName}
-                        onChange={(e) => setCustomName(e.target.value)}
-                        placeholder="Custom NPC Name"
-                        className="building-ui-input"
-                      />
-                    </div>
-                    
-                    <div className="building-ui-parts-section">
-                      <div className="building-ui-parts-header">
-                        <span className="building-ui-label">Parts:</span>
-                        <button onClick={() => {
-                          setCustomNPCParts([...customNPCParts, { type: 'accessory', url: '' }]);
-                        }} className="building-ui-add-part">
-                          + Add Part
-                        </button>
-                      </div>
-                      
-                      {customNPCParts.map((part, index) => (
-                        <div key={index} className="building-ui-part-item">
-                          <select
-                            value={part.type}
-                            onChange={(e) => {
-                              const newParts = [...customNPCParts];
-                              newParts[index] = { ...newParts[index], type: e.target.value };
-                              setCustomNPCParts(newParts);
-                            }}
-                            className="building-ui-part-type"
-                          >
-                            <option value="head">Head</option>
-                            <option value="body">Body</option>
-                            <option value="legs">Legs</option>
-                            <option value="accessory">Accessory</option>
-                            <option value="weapon">Weapon</option>
-                          </select>
-                          
-                          <input
-                            type="text"
-                            value={part.url}
-                            onChange={(e) => {
-                              const newParts = [...customNPCParts];
-                              newParts[index] = { ...newParts[index], url: e.target.value };
-                              setCustomNPCParts(newParts);
-                            }}
-                            placeholder="Model URL"
-                            className="building-ui-input"
-                          />
-                          
-                          <input
-                            type="color"
-                            value={part.color || '#ffffff'}
-                            onChange={(e) => {
-                              const newParts = [...customNPCParts];
-                              newParts[index] = { ...newParts[index], color: e.target.value };
-                              setCustomNPCParts(newParts);
-                            }}
-                            className="building-ui-color-picker"
-                          />
-                          
-                          <button 
-                            onClick={() => {
-                              setCustomNPCParts(customNPCParts.filter((_, i) => i !== index));
-                            }}
-                            className="building-ui-remove-part"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <button 
-                      onClick={() => {
-                        if (customName && customNPCParts.length > 0) {
-                          const newId = `custom-npc-${Date.now()}`;
-                          const newTemplate = {
-                            id: newId,
-                            name: customName,
-                            parts: customNPCParts.map((part, index) => ({
-                              id: `${newId}-part-${index}`,
-                              type: part.type as any,
-                              url: part.url,
-                              color: part.color,
-                              position: [0, 0, 0] as [number, number, number]
-                            })),
-                            defaultAnimation: 'idle'
-                          };
-                          
-                          addNPCTemplate(newTemplate);
-                          
-                          // Add to current category
-                          if (selectedNPCCategoryId) {
-                            const category = npcCategories.get(selectedNPCCategoryId);
-                            if (category) {
-                              useNPCStore.getState().updateCategory(selectedNPCCategoryId, {
-                                templateIds: [...category.templateIds, newId]
-                              });
-                            }
-                          }
-                          
-                          setSelectedNPCTemplate(newId);
-                          setCustomName('');
-                          setCustomNPCParts([]);
-                        }
-                      }}
-                      className="building-ui-create-button"
-                      disabled={!customName || customNPCParts.length === 0}
+                    <button
+                      onClick={() => useNPCStore.getState().setSelectedClothingSet('')}
+                      className={`building-ui-clothing-button ${!useNPCStore.getState().selectedClothingSetId ? 'active' : ''}`}
                     >
-                      Create Template
+                      없음
                     </button>
                   </div>
-                )}
+                </div>
+                
+                <div className="building-ui-category-group">
+                  <span className="building-ui-label">모자:</span>
+                  <div className="building-ui-clothing-buttons">
+                    {['hat-set-a', 'hat-set-b', 'hat-set-c'].map(hatId => {
+                      const hat = useNPCStore.getState().clothingSets.get(hatId);
+                      return hat ? (
+                        <button
+                          key={hat.id}
+                          onClick={() => {
+                            useNPCStore.getState().setPreviewAccessory('hat', hat.id);
+                            const instanceId = useNPCStore.getState().selectedInstanceId;
+                            if (instanceId) {
+                              useNPCStore.getState().updateInstancePart(instanceId, hat.parts[0].id, hat.parts[0]);
+                            }
+                          }}
+                          className={`building-ui-clothing-button ${useNPCStore.getState().previewAccessories.hat === hat.id ? 'active' : ''}`}
+                        >
+                          {hat.name}
+                        </button>
+                      ) : null;
+                    })}
+                    <button
+                      onClick={() => {
+                        useNPCStore.getState().setPreviewAccessory('hat', undefined);
+                        const instanceId = useNPCStore.getState().selectedInstanceId;
+                        if (instanceId) {
+                          const instance = useNPCStore.getState().instances.get(instanceId);
+                          if (instance && instance.customParts) {
+                            const newCustomParts = instance.customParts.filter(p => p.type !== 'hat');
+                            useNPCStore.getState().updateInstance(instanceId, { customParts: newCustomParts });
+                          }
+                        }
+                      }}
+                      className={`building-ui-clothing-button ${!useNPCStore.getState().previewAccessories.hat ? 'active' : ''}`}
+                    >
+                      없음
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="building-ui-category-group">
+                  <span className="building-ui-label">안경:</span>
+                  <div className="building-ui-clothing-buttons">
+                    {['glass-set-a', 'glass-set-b'].map(glassId => {
+                      const glass = useNPCStore.getState().clothingSets.get(glassId);
+                      return glass ? (
+                        <button
+                          key={glass.id}
+                          onClick={() => {
+                            useNPCStore.getState().setPreviewAccessory('glasses', glass.id);
+                            const instanceId = useNPCStore.getState().selectedInstanceId;
+                            if (instanceId) {
+                              useNPCStore.getState().updateInstancePart(instanceId, glass.parts[0].id, glass.parts[0]);
+                            }
+                          }}
+                          className={`building-ui-clothing-button ${useNPCStore.getState().previewAccessories.glasses === glass.id ? 'active' : ''}`}
+                        >
+                          {glass.name}
+                        </button>
+                      ) : null;
+                    })}
+                    <button
+                      onClick={() => {
+                        useNPCStore.getState().setPreviewAccessory('glasses', undefined);
+                        const instanceId = useNPCStore.getState().selectedInstanceId;
+                        if (instanceId) {
+                          const instance = useNPCStore.getState().instances.get(instanceId);
+                          if (instance && instance.customParts) {
+                            const newCustomParts = instance.customParts.filter(p => p.type !== 'glasses');
+                            useNPCStore.getState().updateInstance(instanceId, { customParts: newCustomParts });
+                          }
+                        }
+                      }}
+                      className={`building-ui-clothing-button ${!useNPCStore.getState().previewAccessories.glasses ? 'active' : ''}`}
+                    >
+                      없음
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="building-ui-input-group">
+                  <span className="building-ui-label">NPC 이름:</span>
+                  <input
+                    type="text"
+                    placeholder="NPC 이름 입력"
+                    className="building-ui-input"
+                    onChange={(e) => {
+                      const instanceId = useNPCStore.getState().selectedInstanceId;
+                      if (instanceId) {
+                        useNPCStore.getState().updateInstance(instanceId, { name: e.target.value });
+                      }
+                    }}
+                  />
+                </div>
                 
                 {selectedNPCTemplateId && npcTemplates.get(selectedNPCTemplateId) && (
                   <div className="building-ui-info">
-                    <p>Template: {npcTemplates.get(selectedNPCTemplateId)?.name}</p>
-                    <p>Parts: {npcTemplates.get(selectedNPCTemplateId)?.parts.length}</p>
-                    <p>Click on ground to place NPC</p>
+                    <p>현재 선택: {npcTemplates.get(selectedNPCTemplateId)?.name}</p>
+                    <p>클릭하여 NPC 배치</p>
+                    <p>배치된 NPC를 클릭하여 선택</p>
                   </div>
                 )}
               </>

@@ -3,7 +3,6 @@ import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
 import { useBuildingStore } from '../stores/buildingStore';
 import { Position3D, Rotation3D } from '../types';
-import { TILE_CONSTANTS } from '../types/constants';
 
 export function useBuildingEditor() {
   const { camera, raycaster, scene } = useThree();
@@ -26,7 +25,7 @@ export function useBuildingEditor() {
     mouseRef.current.x = (event.clientX / canvas.clientWidth) * 2 - 1;
     mouseRef.current.y = -(event.clientY / canvas.clientHeight) * 2 + 1;
     
-    if (editMode === 'tile' || editMode === 'wall') {
+    if (editMode === 'tile' || editMode === 'wall' || editMode === 'npc') {
       raycaster.setFromCamera(
         new THREE.Vector2(mouseRef.current.x, mouseRef.current.y),
         camera
@@ -41,6 +40,7 @@ export function useBuildingEditor() {
           y: 0,
           z: intersection.z,
         });
+        console.log('Hover position:', snappedPosition, 'EditMode:', editMode);
         setHoverPosition(snappedPosition);
       } else {
         setHoverPosition(null);
