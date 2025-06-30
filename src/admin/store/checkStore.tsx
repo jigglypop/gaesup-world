@@ -1,13 +1,10 @@
-import { useAuthStore } from "./authStore";
 import Spinner from "../components/Spinner";
-import { useToast } from "./toastStore";
 import { useNavigate } from "react-router-dom";
 import { userType } from "./types";
 import { useEffect, useState } from "react";
 import { checkApi } from "../api/auth";
 
 export const useCheck = () => {
-  const { addToast } = useToast();
   const navigate = useNavigate();
   const [user, setUser] = useState<userType | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
@@ -37,11 +34,11 @@ export const useCheck = () => {
     setUser(null);
     setIsUserSuccess(false);
     navigate("/admin/world/");
-    addToast({ text: "로그아웃이 완료되었습니다" });
   };
 
   return { user, isUerError, isUserLoading, isUserSuccess, onLogout };
 };
+
 
 export function RequireLogin({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useCheck();

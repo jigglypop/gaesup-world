@@ -39,17 +39,7 @@ export default function AuthHeader() {
             })}>
             {roleMap[value][0]}
           </button>
-          <button
-            className={buttonRecipe({
-              color: "gray",
-            })}
-            style={assignInlineVars({
-              fontSize: "1.3rem",
-              width: "5rem",
-            })}
-            onClick={onLogout}>
-            로그아웃
-          </button>
+
         </>
       )}
     </div>

@@ -41,7 +41,7 @@ export default function Auth() {
 
   return (
     <div className="auth-container">
-      <div className="auth-form">
+      {/* <div className="auth-form">
         <h2>{isLogin ? "관리자 로그인" : "회원가입"}</h2>
         <form onSubmit={handleSubmit}>
           <input
@@ -89,7 +89,7 @@ export default function Auth() {
             Demo: admin / password
           </div>
         )}
-      </div>
+      </div> */}
     </div>
   );
 } 
