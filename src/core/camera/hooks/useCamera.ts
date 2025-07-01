@@ -54,6 +54,30 @@ export function useCamera() {
     }
   }, [gl, handleWheel, cameraOption?.enableZoom]);
   
+  const setBlock = useGaesupStore((state) => state.setBlock);
+  
+  // ESC 키로 포커스 해제
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && cameraOption?.focus) {
+        setCameraOption({ 
+          ...cameraOption, 
+          focus: false,
+          focusTarget: undefined 
+        });
+        // 포커싱 해제 시 컨트롤 블록도 해제
+        setBlock({ control: false });
+      }
+    };
+    
+    if (cameraOption?.enableFocus) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [cameraOption, setCameraOption, setBlock]);
+  
   useEffect(() => {
     updateConfig({
       mode: mode?.control || 'thirdPerson',

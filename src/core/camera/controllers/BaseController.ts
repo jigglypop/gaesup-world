@@ -15,20 +15,35 @@ export abstract class BaseController implements ICameraController {
   update(props: CameraCalcProps, state: CameraSystemState): void {
     const { camera, deltaTime, activeState } = props;
     if (!activeState) return;
-    
-    // 설정 적용
     Object.assign(state.config, this.defaultConfig);
-    
-    // 타겟 위치 계산
-    const targetPosition = this.calculateTargetPosition(props, state);
-    const lookAtTarget = this.calculateLookAt(props, state);
-    
-    // 기존 방식대로 preventCameraJitter 사용
+    const cameraOption = state.config as any;
+    let targetPosition: THREE.Vector3;
+    let lookAtTarget: THREE.Vector3;
+    if (cameraOption.focus && cameraOption.focusTarget) {
+      const focusTarget = new THREE.Vector3(
+        cameraOption.focusTarget.x,
+        cameraOption.focusTarget.y,
+        cameraOption.focusTarget.z
+      );
+      lookAtTarget = focusTarget;
+      const distance = cameraOption.focusDistance || 10;
+      const direction = camera.position.clone().sub(focusTarget).normalize();
+      if (direction.length() === 0) {
+        direction.set(1, 1, 1).normalize();
+      }
+      targetPosition = focusTarget.clone().add(direction.multiplyScalar(distance));
+    } else {
+      // 일반 모드
+      targetPosition = this.calculateTargetPosition(props, state);
+      lookAtTarget = this.calculateLookAt(props, state);
+    }
+    const focusLerpSpeed = cameraOption.focusLerpSpeed || 10.0;
+    const smoothing = cameraOption.focus ? focusLerpSpeed : 10.0;
     cameraUtils.preventCameraJitter(
       camera, 
       targetPosition, 
       lookAtTarget, 
-      8.0, 
+      smoothing, 
       deltaTime
     );
     

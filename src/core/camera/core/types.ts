@@ -37,6 +37,11 @@ export interface CameraOption {
   target?: THREE.Vector3;
   position?: THREE.Vector3;
   focus?: boolean;
+  focusTarget?: THREE.Vector3;
+  focusDuration?: number;
+  focusDistance?: number;
+  focusLerpSpeed?: number;
+  enableFocus?: boolean;
   enableCollision?: boolean;
   collisionMargin?: number;
   smoothing?: {

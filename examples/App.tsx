@@ -4,7 +4,7 @@ import { euler, Physics, RigidBody } from '@react-three/rapier';
 import React, { Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import * as THREE from 'three';
-import { Clicker, GaesupController, GaeSupProps, GaesupWorld, GaesupWorldContent, Editor, useGaesupStore } from '../src';
+import { Clicker, GaesupController, GaeSupProps, GaesupWorld, GaesupWorldContent, Editor, useGaesupStore, FocusableObject } from '../src';
 import { BuildingController, useBuildingStore } from '../src';
 import { GaesupAdmin, useAuthStore } from '../src/admin';
 import { CameraOptionType } from '../src/core/types/camera';
@@ -29,6 +29,10 @@ const cameraOption: CameraOptionType = {
   zoomSpeed: 0.001,
   minZoom: 0.5,
   maxZoom: 2.0,
+  enableFocus: true,
+  focusDistance: 15,
+  focusDuration: 1,
+  focusLerpSpeed: 5.0,
   maxDistance: 50,
   distance: 10,
   bounds: { minY: 2, maxY: 50 },
@@ -115,6 +119,21 @@ const WorldPage = ({ showEditor = false }) => {
                 <Clicker />
                 <RideableVehicles />
                 <BuildingController />
+                
+                {/* 포커스 가능한 오브젝트 예시 */}
+                <FocusableObject position={[10, 1, 0]} focusDistance={10}>
+                  <mesh castShadow>
+                    <boxGeometry args={[2, 2, 2]} />
+                    <meshStandardMaterial color="orange" />
+                  </mesh>
+                </FocusableObject>
+                
+                <FocusableObject position={[-10, 2, -10]} focusDistance={15}>
+                  <mesh castShadow>
+                    <sphereGeometry args={[1.5, 32, 32]} />
+                    <meshStandardMaterial color="purple" />
+                  </mesh>
+                </FocusableObject>
               </Physics>
             </GaesupWorldContent>
           </Suspense>
