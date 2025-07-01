@@ -7,7 +7,6 @@ type Tab = 'Player' | 'Controller' | 'Debug';
 
 export function AnimationPanel() {
   const [activeTab, setActiveTab] = useState<Tab>('Player');
-
   const renderContent = () => {
     switch (activeTab) {
       case 'Player':

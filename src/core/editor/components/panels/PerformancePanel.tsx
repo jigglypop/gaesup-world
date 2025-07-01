@@ -1,11 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useGaesupStore } from '../../../stores/gaesupStore';
 
-interface PerformanceMetrics {
-  fps: { current: number; min: number; max: number; avg: number; frameTime: number; history: number[] };
-  memory: { used: number; total: number; limit: number; history: number[] };
-}
-
 // A more robust Sparkline component
 const Sparkline: React.FC<{ data: number[]; color: string; max: number }> = ({ data, color, max }) => {
   const height = 40;
@@ -17,7 +12,6 @@ const Sparkline: React.FC<{ data: number[]; color: string; max: number }> = ({ d
     .map((d, i) => {
       const x = (i / (validData.length - 1)) * 100;
       const y = height - (d / safeMax) * height;
-      // Ensure clean number formatting
       return `${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${y.toFixed(2)}`;
     })
     .join(' ');
@@ -41,7 +35,7 @@ export function PerformancePanel() {
   const lastFrameTime = useRef(0);
   const frameCount = useRef(0);
   const frameTimeHistory = useRef<number[]>([]);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number>(null);
 
   useEffect(() => {
     const now = window.performance.now();
@@ -60,9 +54,7 @@ export function PerformancePanel() {
         frameTimeHistory.current.reduce((a, b) => a + b, 0) /
         frameTimeHistory.current.length;
       setFrameTime(avgFrameTime);
-
       frameCount.current++;
-
       // Update less frequent stats (FPS, Mem) every 500ms
       if (now - lastUpdateTime.current >= 500) {
         const currentFps =

@@ -1,14 +1,9 @@
-import React from 'react';
+import React, { FC } from 'react';
 import { EditorLayout } from '../EditorLayout';
 import '../../styles/theme.css';
+import { EditorProps } from './types';
 
-interface EditorProps {
-  children?: React.ReactNode;
-  className?: string;
-  style?: React.CSSProperties;
-}
-
-export const Editor: React.FC<EditorProps> = ({ 
+export const Editor: FC<EditorProps> = ({ 
   children, 
   className = '', 
   style = {} 

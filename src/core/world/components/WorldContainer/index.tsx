@@ -1,23 +1,17 @@
 import { Suspense, useEffect, ReactNode } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { WorldContainerProps } from './types';
-import { PerformanceTracker } from '@debug/performance/PerformanceTracker';
 
 function WorldContent({ children, showGrid, showAxes }: { 
   children?: ReactNode; 
   showGrid?: boolean; 
   showAxes?: boolean; 
 }) {
-  const worldSlice = useGaesupStore((state) => state.world);
-  const { debug } = useGaesupStore((state) => state.mode);
   return (
     <group name="gaesup-world">
-      {debug && <PerformanceTracker />}
-
       {showGrid && (
         <gridHelper args={[100, 100, "#888888", "#444444"]} />
       )}
-      
       {showAxes && (
         <axesHelper args={[10]} />
       )}

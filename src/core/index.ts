@@ -7,7 +7,6 @@ export * from './motions';
 export * from './interactions';
 export * from './world';
 export * from './ui';
-export * from './debug';
 export * from './stores';
 export { Editor, EditorLayout, ResizablePanel } from './editor';
 export * from './building';

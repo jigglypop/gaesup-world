@@ -11,19 +11,15 @@ interface NPCEventEditorProps {
 export function NPCEventEditor({ instanceId, onClose }: NPCEventEditorProps) {
   const { instances, addInstanceEvent, removeInstanceEvent } = useNPCStore();
   const instance = instances.get(instanceId);
-  
   const [eventType, setEventType] = useState<NPCEvent['type']>('onClick');
   const [actionType, setActionType] = useState<NPCEvent['action']>('dialogue');
   const [dialogue, setDialogue] = useState('');
   const [animationId, setAnimationId] = useState('');
-  
   if (!instance) {
     return null;
   }
-  
   const handleAddEvent = () => {
     let payload: any = {};
-    
     switch (actionType) {
       case 'dialogue':
         payload = { text: dialogue };
@@ -47,8 +43,6 @@ export function NPCEventEditor({ instanceId, onClose }: NPCEventEditorProps) {
     };
     
     addInstanceEvent(instanceId, newEvent);
-    
-    // Reset form
     setDialogue('');
     setAnimationId('');
   };

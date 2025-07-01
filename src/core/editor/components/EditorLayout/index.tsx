@@ -1,54 +1,26 @@
-import React, { useState } from 'react';
-
+import React, { FC, useState } from 'react';
 import '../../styles/theme.css';
 import { 
-  HierarchyPanel,
-  InspectorPanel,
-  AssetBrowserPanel,
   NodeEditorPanel,
-  QuickActionsPanel,
   CameraPanel,
   AnimationPanel,
   MotionPanel,
   PerformancePanel
 } from '../panels';
 import { ResizablePanel } from '../ResizablePanel';
+import { EditorLayoutProps, FloatingPanel, PanelConfig } from './types';
 
-interface EditorLayoutProps {
-  children?: React.ReactNode;
-}
-
-interface PanelConfig {
-  id: string;
-  title: string;
-  component: React.ReactNode;
-  defaultSide?: 'left' | 'right' | 'floating';
-  icon?: string;
-}
-
-interface FloatingPanel {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-export const EditorLayout: React.FC<EditorLayoutProps> = ({ children }) => {
+export const EditorLayout: FC<EditorLayoutProps> = ({ children }) => {
   const [activePanels, setActivePanels] = useState<string[]>(['hierarchy', 'performance']);
   const [floatingPanels, setFloatingPanels] = useState<FloatingPanel[]>([]);
   const [minimizedPanels, setMinimizedPanels] = useState<string[]>([]);
 
   const panelConfigs: PanelConfig[] = [
-    { id: 'hierarchy', title: 'Hierarchy', component: <HierarchyPanel />, defaultSide: 'left' },
-    { id: 'inspector', title: 'Inspector', component: <InspectorPanel />, defaultSide: 'right' },
     { id: 'camera', title: 'Camera', component: <CameraPanel />, defaultSide: 'right' },
     { id: 'animation', title: 'Animation', component: <AnimationPanel />, defaultSide: 'left' },
     { id: 'motion', title: 'Motion', component: <MotionPanel />, defaultSide: 'right' },
     { id: 'performance', title: 'Performance', component: <PerformancePanel />, defaultSide: 'right' },
     { id: 'nodes', title: 'Node Editor', component: <NodeEditorPanel />, defaultSide: 'floating' },
-    { id: 'assets', title: 'Assets', component: <AssetBrowserPanel />, defaultSide: 'right' },
-    { id: 'actions', title: 'Quick Actions', component: <QuickActionsPanel />, defaultSide: 'right' },
   ];
 
   const togglePanel = (panelId: string) => {

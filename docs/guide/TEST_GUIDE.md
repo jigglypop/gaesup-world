@@ -117,5 +117,373 @@ describe('useCounter', () => {
 프로젝트 루트 디렉토리에서 다음 명령어를 실행하여 모든 테스트를 실행할 수 있습니다.
 
 ```bash
+# 테스트 코드 작성 가이드
+
+## 1. 테스트 철학
+
+### 1.1 기본 원칙
+- 테스트는 코드의 동작을 검증하는 문서 역할을 합니다
+- 모든 핵심 로직은 반드시 테스트되어야 합니다
+- 테스트는 독립적이고 격리되어야 합니다
+- 테스트 코드도 프로덕션 코드와 동일한 품질 기준을 적용합니다
+
+### 1.2 테스트 우선순위
+1. **Layer 1 (Core Engine)**: 100% 테스트 커버리지 목표
+2. **Layer 2 (Controllers, Hooks, Stores)**: 핵심 로직 중심 테스트
+3. **Layer 3 (Components)**: 중요한 인터랙션과 렌더링 테스트
+
+## 2. 테스트 구조
+
+### 2.1 파일 구조
+```
+/src/core/domain/
+├── core/
+│   ├── Engine.ts
+│   └── __tests__/
+│       └── Engine.test.ts
+├── hooks/
+│   ├── useFeature.ts
+│   └── __tests__/
+│       └── useFeature.test.ts
+└── components/
+    ├── Feature/
+    │   ├── index.tsx
+    │   └── __tests__/
+    │       └── Feature.test.tsx
+```
+
+### 2.2 네이밍 규칙
+- 테스트 파일: `[대상파일명].test.ts(x)`
+- 테스트 스위트: `describe('[클래스/함수명]', () => {})`
+- 테스트 케이스: `it('should [동작 설명]', () => {})`
+
+## 3. 레이어별 테스트 전략
+
+### 3.1 Layer 1 (Core Engine) 테스트
+```typescript
+describe('AnimationEngine', () => {
+  let engine: AnimationEngine;
+  let mockMixer: jest.Mocked<THREE.AnimationMixer>;
+
+  beforeEach(() => {
+    mockMixer = {
+      clipAction: jest.fn(),
+      update: jest.fn(),
+      stopAllAction: jest.fn(),
+    } as unknown as jest.Mocked<THREE.AnimationMixer>;
+    
+    engine = new AnimationEngine(mockMixer);
+  });
+
+  afterEach(() => {
+    engine.dispose();
+  });
+
+  it('should register animation action', () => {
+    const mockAction = {} as THREE.AnimationAction;
+    engine.registerAction('walk', mockAction);
+    
+    expect(engine.getAnimationList()).toContain('walk');
+  });
+
+  it('should play animation with correct parameters', () => {
+    const mockAction = {
+      reset: jest.fn().mockReturnThis(),
+      fadeIn: jest.fn().mockReturnThis(),
+      play: jest.fn().mockReturnThis(),
+    } as unknown as jest.Mocked<THREE.AnimationAction>;
+    
+    engine.registerAction('walk', mockAction);
+    engine.playAnimation('walk', { fadeInDuration: 0.5 });
+    
+    expect(mockAction.reset).toHaveBeenCalled();
+    expect(mockAction.fadeIn).toHaveBeenCalledWith(0.5);
+    expect(mockAction.play).toHaveBeenCalled();
+  });
+});
+```
+
+### 3.2 Layer 2 (Hooks/Stores) 테스트
+```typescript
+import { renderHook, act } from '@testing-library/react';
+import { useAnimationBridge } from '../useAnimationBridge';
+
+describe('useAnimationBridge', () => {
+  it('should initialize bridge on mount', () => {
+    const { result } = renderHook(() => useAnimationBridge());
+    
+    expect(result.current.bridge).toBeDefined();
+  });
+
+  it('should execute commands correctly', () => {
+    const { result } = renderHook(() => useAnimationBridge());
+    
+    act(() => {
+      result.current.playAnimation('character', 'walk');
+    });
+    
+    const snapshot = result.current.getSnapshot('character');
+    expect(snapshot.currentAnimation).toBe('walk');
+  });
+
+  it('should clean up on unmount', () => {
+    const { result, unmount } = renderHook(() => useAnimationBridge());
+    const disposeSpy = jest.spyOn(result.current.bridge, 'dispose');
+    
+    unmount();
+    
+    expect(disposeSpy).toHaveBeenCalled();
+  });
+});
+```
+
+### 3.3 Layer 3 (Components) 테스트
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react';
+import { AnimationController } from '../AnimationController';
+
+describe('AnimationController', () => {
+  const mockOnPlay = jest.fn();
+  const mockOnStop = jest.fn();
+  
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should render animation list', () => {
+    render(
+      <AnimationController
+        animations={['idle', 'walk', 'run']}
+        currentAnimation="idle"
+        onPlay={mockOnPlay}
+        onStop={mockOnStop}
+      />
+    );
+    
+    expect(screen.getByText('idle')).toBeInTheDocument();
+    expect(screen.getByText('walk')).toBeInTheDocument();
+    expect(screen.getByText('run')).toBeInTheDocument();
+  });
+
+  it('should call onPlay when animation is selected', () => {
+    render(
+      <AnimationController
+        animations={['idle', 'walk']}
+        currentAnimation="idle"
+        onPlay={mockOnPlay}
+        onStop={mockOnStop}
+      />
+    );
+    
+    fireEvent.click(screen.getByText('walk'));
+    
+    expect(mockOnPlay).toHaveBeenCalledWith('walk');
+  });
+});
+```
+
+## 4. 모킹 전략
+
+### 4.1 Three.js 객체 모킹
+```typescript
+export const createMockVector3 = (x = 0, y = 0, z = 0) => ({
+  x, y, z,
+  set: jest.fn().mockReturnThis(),
+  copy: jest.fn().mockReturnThis(),
+  add: jest.fn().mockReturnThis(),
+  sub: jest.fn().mockReturnThis(),
+  multiplyScalar: jest.fn().mockReturnThis(),
+  normalize: jest.fn().mockReturnThis(),
+  distanceTo: jest.fn().mockReturnValue(0),
+  length: jest.fn().mockReturnValue(0),
+});
+
+export const createMockQuaternion = () => ({
+  x: 0, y: 0, z: 0, w: 1,
+  setFromAxisAngle: jest.fn().mockReturnThis(),
+  multiply: jest.fn().mockReturnThis(),
+  slerp: jest.fn().mockReturnThis(),
+});
+```
+
+### 4.2 Store 모킹
+```typescript
+import { useGaesupStore } from '@/core/stores';
+
+jest.mock('@/core/stores', () => ({
+  useGaesupStore: jest.fn(),
+}));
+
+const mockStore = {
+  mode: { type: 'normal' },
+  activeState: { isActive: true },
+  block: { forward: false },
+  setMode: jest.fn(),
+  setActiveState: jest.fn(),
+};
+
+(useGaesupStore as jest.Mock).mockReturnValue(mockStore);
+```
+
+## 5. 테스트 도구
+
+### 5.1 기본 도구
+- **Jest**: 테스트 프레임워크
+- **Testing Library**: React 컴포넌트 테스트
+- **jest-canvas-mock**: Canvas API 모킹
+
+### 5.2 유용한 유틸리티
+```typescript
+export const waitForNextFrame = () => 
+  new Promise(resolve => requestAnimationFrame(resolve));
+
+export const createMockRaf = () => {
+  let callbacks: FrameRequestCallback[] = [];
+  let id = 0;
+  
+  return {
+    requestAnimationFrame: (callback: FrameRequestCallback) => {
+      callbacks.push(callback);
+      return ++id;
+    },
+    cancelAnimationFrame: (id: number) => {
+      callbacks = callbacks.filter((_, i) => i !== id - 1);
+    },
+    triggerNextFrame: (time = 16) => {
+      const cbs = [...callbacks];
+      callbacks = [];
+      cbs.forEach(cb => cb(time));
+    },
+  };
+};
+```
+
+## 6. 성능 테스트
+
+### 6.1 메모리 누수 테스트
+```typescript
+describe('Memory Management', () => {
+  it('should not leak memory on repeated mount/unmount', async () => {
+    const initialHeap = (global as any).gc && process.memoryUsage().heapUsed;
+    
+    for (let i = 0; i < 100; i++) {
+      const engine = new AnimationEngine(mixer);
+      engine.registerAction('test', mockAction);
+      engine.playAnimation('test');
+      engine.dispose();
+    }
+    
+    if ((global as any).gc) {
+      (global as any).gc();
+      const finalHeap = process.memoryUsage().heapUsed;
+      const heapGrowth = finalHeap - initialHeap;
+      
+      expect(heapGrowth).toBeLessThan(1024 * 1024); // 1MB
+    }
+  });
+});
+```
+
+### 6.2 성능 테스트
+```typescript
+describe('Performance', () => {
+  it('should update 1000 entities within 16ms', () => {
+    const entities = Array.from({ length: 1000 }, () => 
+      new Entity(mockMesh)
+    );
+    
+    const start = performance.now();
+    entities.forEach(entity => entity.update(0.016));
+    const duration = performance.now() - start;
+    
+    expect(duration).toBeLessThan(16);
+  });
+});
+```
+
+## 7. 테스트 실행
+
+### 7.1 명령어
+```bash
+# 전체 테스트 실행
 npm test
+
+# 감시 모드
+npm test -- --watch
+
+# 커버리지 확인
+npm test -- --coverage
+
+# 특정 파일 테스트
+npm test -- AnimationEngine.test.ts
+
+# 메모리 누수 감지
+npm test -- --detectLeaks
+```
+
+### 7.2 CI/CD 설정
+```yaml
+test:
+  script:
+    - npm test -- --ci --coverage --maxWorkers=2
+  coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
+```
+
+## 8. 테스트 작성 체크리스트
+
+- [ ] 테스트 파일이 올바른 위치에 있는가?
+- [ ] 테스트 이름이 명확하고 설명적인가?
+- [ ] Setup과 Teardown이 적절히 구성되었는가?
+- [ ] 모든 분기와 엣지 케이스를 테스트했는가?
+- [ ] 외부 의존성이 적절히 모킹되었는가?
+- [ ] 테스트가 독립적으로 실행 가능한가?
+- [ ] 비동기 작업이 올바르게 처리되었는가?
+- [ ] 메모리 누수 가능성을 확인했는가?
+
+## 9. 안티패턴
+
+### 9.1 피해야 할 패턴
+```typescript
+// ❌ 잘못된 예: 구현 세부사항 테스트
+it('should call setState', () => {
+  const setState = jest.spyOn(component, 'setState');
+  component.handleClick();
+  expect(setState).toHaveBeenCalled();
+});
+
+// ✅ 올바른 예: 동작 결과 테스트
+it('should update display when clicked', () => {
+  fireEvent.click(screen.getByRole('button'));
+  expect(screen.getByText('Updated')).toBeInTheDocument();
+});
+```
+
+### 9.2 과도한 모킹 피하기
+```typescript
+// ❌ 잘못된 예: 모든 것을 모킹
+jest.mock('../entire-module');
+
+// ✅ 올바른 예: 필요한 부분만 모킹
+jest.mock('../external-api', () => ({
+  fetchData: jest.fn().mockResolvedValue({ data: 'test' })
+}));
+```
+
+## 10. 문제 해결
+
+### 10.1 일반적인 문제
+- **Canvas 관련 에러**: `jest-canvas-mock`이 setup에 포함되었는지 확인
+- **메모리 누수 경고**: 모든 리소스가 테스트 후 정리되는지 확인
+- **타임아웃 에러**: 비동기 작업에 적절한 대기 시간 설정
+
+### 10.2 디버깅 팁
+```typescript
+// 테스트 디버깅을 위한 로깅
+console.log('Current state:', result.current);
+
+// 특정 테스트만 실행
+it.only('should focus on this test', () => {});
+
+// 특정 테스트 건너뛰기
+it.skip('should skip this test', () => {});
 ``` 
