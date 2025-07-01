@@ -5,6 +5,7 @@ import { BuildingSystem } from '../BuildingSystem';
 import { NPCSystem } from '../../../npc/components/NPCSystem';
 import { useBuildingStore } from '../../stores/buildingStore';
 import { useBuildingEditor } from '../../hooks/useBuildingEditor';
+import { useGaesupStore } from '../../../stores/gaesupStore';
 
 export function BuildingController() {
   const { gl } = useThree();
@@ -20,6 +21,21 @@ export function BuildingController() {
   const isEditing = editMode !== 'none';
   const setHoverPosition = useBuildingStore((state) => state.setHoverPosition);
   const setWallRotation = useBuildingStore((state) => state.setWallRotation);
+  const setBlock = useGaesupStore((state) => state.setBlock);
+  
+  // Building mode일 때 기존 카메라 시스템 블록
+  useEffect(() => {
+    if (isEditing) {
+      setBlock({ camera: true });
+    } else {
+      setBlock({ camera: false });
+    }
+    
+    // cleanup
+    return () => {
+      setBlock({ camera: false });
+    };
+  }, [isEditing, setBlock]);
   useEffect(() => {
     if (editMode !== 'wall') return;
     const handleKeyDown = (e: KeyboardEvent) => {

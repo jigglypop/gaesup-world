@@ -30,17 +30,14 @@ export function useBuildingEditor() {
         new THREE.Vector2(mouseRef.current.x, mouseRef.current.y),
         camera
       );
-
       const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
       const intersection = new THREE.Vector3();
-      
       if (raycaster.ray.intersectPlane(groundPlane, intersection)) {
         const snappedPosition = snapPosition({
           x: intersection.x,
           y: 0,
           z: intersection.z,
         });
-        console.log('Hover position:', snappedPosition, 'EditMode:', editMode);
         setHoverPosition(snappedPosition);
       } else {
         setHoverPosition(null);

@@ -76,15 +76,11 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
     
     const handlePointerOver = () => {
       const hoverEvent = instance.events?.find(e => e.type === 'onHover');
-      if (hoverEvent) {
-        console.log('Hover event:', hoverEvent);
-      }
     };
     
     const handleClick = () => {
       const clickEvent = instance.events?.find(e => e.type === 'onClick');
       if (clickEvent) {
-        console.log('Click event:', clickEvent);
         switch (clickEvent.action) {
           case 'dialogue':
             break;

@@ -59,8 +59,8 @@ export function GaesupWorldContent({ children, showGrid, showAxes }: {
 }) {
   return (
     <Suspense fallback={null}>
+      <Camera/>
       <WorldContent showGrid={showGrid} showAxes={showAxes}>
-        <Camera/>
         {children}
       </WorldContent>
     </Suspense>

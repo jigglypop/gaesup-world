@@ -40,12 +40,6 @@ export class GaesupErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoun
   }
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('[Gaesup Error]', {
-      error: error.toString(),
-      stack: errorInfo.componentStack,
-      timestamp: new Date().toISOString(),
-    });
-
     this.reportError(error, errorInfo);
     this.props.onError?.(error, errorInfo);
   }

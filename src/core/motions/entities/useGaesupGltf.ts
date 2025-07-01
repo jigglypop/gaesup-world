@@ -106,7 +106,6 @@ export const useGaesupGltf = (): GaesupGltfUtils => {
   );
 
   const preloadSizes = useCallback((urls: string[]) => {
-    console.log('GLTF 프리로딩이 비활성화되었습니다:', urls);
   }, []);
 
   return { getSizesByUrls, preloadSizes };

@@ -11,7 +11,7 @@ export const VehiclePanel: FC = () => {
     const newModeConfig = {
       type: newMode,
       controller: 'keyboard',
-      control: newMode === 'airplane' ? 'orbit' : newMode === 'vehicle' ? 'chase' : 'thirdPerson'
+      control: newMode === 'airplane' ? 'chase' : newMode === 'vehicle' ? 'chase' : 'thirdPerson'
     };
     setMode(newModeConfig);
   };

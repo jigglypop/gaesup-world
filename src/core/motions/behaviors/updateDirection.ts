@@ -117,9 +117,9 @@ export class DirectionController {
     const upDown = Number(backward) - Number(forward);
     const leftRight = Number(rightward) - Number(leftward);
     if (controlMode === 'chase') {
-      activeState.euler.y += -leftRight * angleDelta.y * 0.5;
+      activeState.euler.y += leftRight * angleDelta.y * 0.5;
     } else {
-      activeState.euler.y += -leftRight * angleDelta.y;
+      activeState.euler.y += leftRight * angleDelta.y;
     }
     this.applyAirplaneRotation(innerGroupRef.current, upDown, leftRight, maxAngle, activeState);
     activeState.direction.set(
