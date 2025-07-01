@@ -4,6 +4,7 @@ import { TileGroupConfig, MeshConfig } from '../../types';
 import { MaterialManager } from '../../core/MaterialManager';
 import { GaeSupProps } from '../../../index';
 import { TILE_CONSTANTS } from '../../types/constants';
+import { TileObject } from '../TileObject';
 
 interface TileSystemProps {
   tileGroup: TileGroupConfig;
@@ -112,6 +113,10 @@ export function TileSystem({
           geometry={mergedGeometry}
           material={material}
         />
+        
+        {tileGroup.tiles.map((tile) => (
+          <TileObject key={`${tile.id}-object`} tile={tile} />
+        ))}
       </>
     </GaeSupProps>
   );

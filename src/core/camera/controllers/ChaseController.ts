@@ -11,7 +11,6 @@ export class ChaseController extends BaseController {
     enableCollision: true,
   };
 
-
   calculateTargetPosition(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
     const position = activeStateUtils.getPosition(props.activeState);
     const euler = activeStateUtils.getEuler(props.activeState);

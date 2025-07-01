@@ -469,4 +469,42 @@
   color: var(--editor-text-primary);
   border-color: var(--editor-accent);
   font-weight: 600;
+}
+
+.building-ui-object-group {
+  margin-bottom: var(--editor-spacing-md);
+  padding: var(--editor-spacing-sm);
+  background: var(--editor-surface-primary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 4px;
+}
+
+.building-ui-object-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+}
+
+.building-ui-object-button {
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  color: var(--editor-text-secondary);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.building-ui-object-button:hover {
+  background-color: var(--editor-surface-hover);
+  color: var(--editor-text-primary);
+}
+
+.building-ui-object-button.active {
+  background-color: #28a745;
+  color: white;
+  border-color: #28a745;
+  font-weight: 600;
 } 

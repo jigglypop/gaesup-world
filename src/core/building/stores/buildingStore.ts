@@ -30,6 +30,9 @@ interface BuildingStore extends BuildingSystemState {
   currentWallRotation: number;
   setWallRotation: (rotation: number) => void;
   
+  selectedTileObjectType: 'water' | 'grass' | 'flag' | 'none';
+  setSelectedTileObjectType: (type: 'water' | 'grass' | 'flag' | 'none') => void;
+  
   checkTilePosition: (position: Position3D) => boolean;
   checkWallPosition: (position: Position3D, rotation: number) => boolean;
   
@@ -91,6 +94,7 @@ export const useBuildingStore = create<BuildingStore>()(
     hoverPosition: null,
     currentTileMultiplier: 1,
     currentWallRotation: 0,
+    selectedTileObjectType: 'none',
 
     initializeDefaults: () => set((state) => {
       if (state.initialized) return;
@@ -346,7 +350,12 @@ export const useBuildingStore = create<BuildingStore>()(
     addTile: (groupId, tile) => set((state) => {
       const group = state.tileGroups.get(groupId);
       if (group) {
-        group.tiles.push(tile);
+        const tileWithObject = {
+          ...tile,
+          objectType: state.selectedTileObjectType !== 'none' ? state.selectedTileObjectType : undefined,
+          objectConfig: state.selectedTileObjectType === 'grass' ? { grassDensity: 1000 } : undefined
+        };
+        group.tiles.push(tileWithObject);
       }
     }),
 
@@ -501,6 +510,10 @@ export const useBuildingStore = create<BuildingStore>()(
       if (category && category.tileGroupIds.length > 0) {
         state.selectedTileGroupId = category.tileGroupIds[0];
       }
+    }),
+    
+    setSelectedTileObjectType: (type) => set((state) => {
+      state.selectedTileObjectType = type;
     }),
   }))
 ); 

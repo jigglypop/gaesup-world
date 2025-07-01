@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import svgr from 'vite-plugin-svgr';
+import glsl from 'vite-plugin-glsl';
 import path from 'path';
 
 // https://vitejs.dev/config/
@@ -22,7 +23,7 @@ export default defineConfig(({ mode }) => {
   ];
   if (isLibraryBuild) {
     return {
-      plugins: [react(), tsconfigPaths(), svgr()],
+      plugins: [react(), tsconfigPaths(), svgr(), glsl()],
       resolve: {
         alias,
       },
@@ -67,7 +68,7 @@ export default defineConfig(({ mode }) => {
     };
   }
   return {
-    plugins: [react(), tsconfigPaths(), svgr()],
+    plugins: [react(), tsconfigPaths(), svgr(), glsl()],
     resolve: {
       alias,
       dedupe: ['react', 'react-dom'],

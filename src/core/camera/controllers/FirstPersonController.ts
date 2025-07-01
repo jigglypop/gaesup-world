@@ -17,7 +17,7 @@ export class FirstPersonController extends BaseController {
     return position.clone().add(headOffset);
   }
 
-  calculateLookAt(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
+  overridecalculateLookAt(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
     const position = activeStateUtils.getPosition(props.activeState);
     const euler = activeStateUtils.getEuler(props.activeState);
     const lookDirection = new THREE.Vector3(0, 0, -1);

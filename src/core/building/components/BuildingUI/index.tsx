@@ -28,7 +28,9 @@ export function BuildingUI() {
     updateMesh,
     addMesh,
     addWallGroup,
-    addTileGroup
+    addTileGroup,
+    selectedTileObjectType,
+    setSelectedTileObjectType
   } = useBuildingStore();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const isEditing = isInEditMode();
@@ -317,10 +319,42 @@ export function BuildingUI() {
                     </button>
                   </div>
                 </div>
+                
+                <div className="building-ui-object-group">
+                  <span className="building-ui-label">Tile Object:</span>
+                  <div className="building-ui-object-buttons">
+                    <button
+                      onClick={() => setSelectedTileObjectType('none')}
+                      className={`building-ui-object-button ${selectedTileObjectType === 'none' ? 'active' : ''}`}
+                    >
+                      None
+                    </button>
+                    <button
+                      onClick={() => setSelectedTileObjectType('water')}
+                      className={`building-ui-object-button ${selectedTileObjectType === 'water' ? 'active' : ''}`}
+                    >
+                      Water
+                    </button>
+                    <button
+                      onClick={() => setSelectedTileObjectType('grass')}
+                      className={`building-ui-object-button ${selectedTileObjectType === 'grass' ? 'active' : ''}`}
+                    >
+                      Grass
+                    </button>
+                    <button
+                      onClick={() => setSelectedTileObjectType('flag')}
+                      className={`building-ui-object-button ${selectedTileObjectType === 'flag' ? 'active' : ''}`}
+                    >
+                      Flag
+                    </button>
+                  </div>
+                </div>
+                
                 <div className="building-ui-info">
                   <p>Category: {tileCategories.get(selectedTileCategoryId || '')?.name}</p>
                   <p>Type: {tileGroups.get(selectedTileGroupId || '')?.name}</p>
                   <p>Size: {currentTileMultiplier}x{currentTileMultiplier} ({currentTileMultiplier * 4}m)</p>
+                  <p>Object: {selectedTileObjectType === 'none' ? 'None' : selectedTileObjectType}</p>
                   <p>Click to place tiles</p>
                   <p>Red = Occupied, Green = Available</p>
                 </div>

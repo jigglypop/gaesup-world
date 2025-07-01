@@ -5,7 +5,6 @@ import { activeStateUtils, cameraUtils } from '../utils/camera';
 export abstract class BaseController implements ICameraController {
   abstract name: string;
   abstract defaultConfig: Partial<CameraSystemConfig>;
-  
   abstract calculateTargetPosition(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3;
   
   calculateLookAt(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
@@ -33,7 +32,6 @@ export abstract class BaseController implements ICameraController {
       }
       targetPosition = focusTarget.clone().add(direction.multiplyScalar(distance));
     } else {
-      // 일반 모드
       targetPosition = this.calculateTargetPosition(props, state);
       lookAtTarget = this.calculateLookAt(props, state);
     }

@@ -14,7 +14,7 @@ export class FixedController extends BaseController {
     return state.config.fixedPosition || new THREE.Vector3(0, 10, 10);
   }
 
-  calculateLookAt(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
+  overridecalculateLookAt(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
     return state.config.fixedLookAt || new THREE.Vector3(0, 0, 0);
   }
 } 

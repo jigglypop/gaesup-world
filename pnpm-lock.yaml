@@ -65,6 +65,9 @@ importers:
       react-use-refs:
         specifier: ^1.0.1
         version: 1.0.1(react@18.3.1)
+      simplex-noise:
+        specifier: ^4.0.3
+        version: 4.0.3
       stats.js:
         specifier: ^0.17.0
         version: 0.17.0
@@ -207,6 +210,9 @@ importers:
       vite:
         specifier: ^5.4.4
         version: 5.4.19(@types/node@24.0.7)
+      vite-plugin-glsl:
+        specifier: ^1.5.1
+        version: 1.5.1(rollup@4.44.1)(vite@5.4.19(@types/node@24.0.7))
       vite-plugin-svgr:
         specifier: ^4.2.0
         version: 4.3.0(rollup@4.44.1)(typescript@5.8.3)(vite@5.4.19(@types/node@24.0.7))
@@ -4405,6 +4411,9 @@ packages:
     resolution: {integrity: sha512-iuh+gPf28RkltuJC7W5MRi6XAjTDCAPC/prJUpQoG4vIP3MJZ+GTydVnodXA7pwvTKb2cA0m9OFZW/cdWy/I/w==}
     engines: {node: '>=6'}
 
+  simplex-noise@4.0.3:
+    resolution: {integrity: sha512-qSE2I4AngLQG7BXqoZj51jokT4WUXe8mOBrvfOXpci8+6Yu44+/dD5zqDpOx3Ux792eamTd2lLcI8jqFntk/lg==}
+
   sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
 
@@ -4871,6 +4880,12 @@ packages:
 
   validate-npm-package-license@3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}
+
+  vite-plugin-glsl@1.5.1:
+    resolution: {integrity: sha512-kFI8rUItruG2Dfltyhr6tP3jlgCBGda2TnIvUodBHbpdQ7KT0NWyKpS1EqV47DoAl4woKzer7GWd1fiEvzf4nQ==}
+    engines: {node: '>= 20.17.0', npm: '>= 10.8.3'}
+    peerDependencies:
+      vite: '>= 3.x'
 
   vite-plugin-svgr@4.3.0:
     resolution: {integrity: sha512-Jy9qLB2/PyWklpYy0xk0UU3TlU0t2UMpJXZvf+hWII1lAmRHrOUKi11Uw8N3rxoNk7atZNYO3pR3vI1f7oi+6w==}
@@ -9691,6 +9706,8 @@ snapshots:
       figures: 2.0.0
       pkg-conf: 2.1.0
 
+  simplex-noise@4.0.3: {}
+
   sisteransi@1.0.5: {}
 
   skin-tone@2.0.0:
@@ -10099,6 +10116,13 @@ snapshots:
     dependencies:
       spdx-correct: 3.2.0
       spdx-expression-parse: 3.0.1
+
+  vite-plugin-glsl@1.5.1(rollup@4.44.1)(vite@5.4.19(@types/node@24.0.7)):
+    dependencies:
+      '@rollup/pluginutils': 5.2.0(rollup@4.44.1)
+      vite: 5.4.19(@types/node@24.0.7)
+    transitivePeerDependencies:
+      - rollup
 
   vite-plugin-svgr@4.3.0(rollup@4.44.1)(typescript@5.8.3)(vite@5.4.19(@types/node@24.0.7)):
     dependencies:

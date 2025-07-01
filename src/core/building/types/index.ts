@@ -47,6 +47,12 @@ export interface TileConfig {
   tileGroupId: string;
   size?: number;
   rotation?: number;
+  objectType?: 'water' | 'grass' | 'flag' | 'none';
+  objectConfig?: {
+    flagTexture?: string;
+    grassDensity?: number;
+    waterScale?: number;
+  };
 }
 
 export interface TileGroupConfig {

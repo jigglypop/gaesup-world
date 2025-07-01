@@ -89,7 +89,9 @@ export type CameraType =
 
 export interface CameraConfig {
   shoulderOffset?: THREE.Vector3;
-  distance?: number;
+  distance?: { x: number; y: number; z: number; };
+  smoothing?: { position: number; rotation: number; fov: number; };
+  enableCollision?: boolean;
   height?: number;
   lockTarget?: boolean;
   followSpeed?: number;
