@@ -18,11 +18,8 @@ const VEHICLE_PRESETS = [
 
 export function MotionController() {
   const { mode, motion, setCurrentPreset, setMotionType } = useGaesupStore();
-  
-  // Determine current motion type and active preset from the store
   const currentType = motion?.motionType || mode?.type || 'character';
   const activePresetId = motion?.currentPreset || 'normal';
-  
   const presets = currentType === 'vehicle' ? VEHICLE_PRESETS : MOTION_PRESETS;
 
   const handlePresetChange = (presetId: string) => {
@@ -32,7 +29,6 @@ export function MotionController() {
   const handleMotionTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newType = e.target.value as 'character' | 'vehicle';
     setMotionType(newType);
-    // Set a default preset for the new type
     const defaultPreset = newType === 'vehicle' ? 'comfort' : 'normal';
     setCurrentPreset(defaultPreset);
   }

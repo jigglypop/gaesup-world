@@ -14,14 +14,11 @@ export function NPCSystem() {
     removeInstance,
     setSelectedInstance
   } = useNPCStore();
-  
   const editMode = useBuildingStore(state => state.editMode);
   const hoverPosition = useBuildingStore(state => state.hoverPosition);
   const isNPCMode = editMode === 'npc';
-
   useEffect(() => {
     if (!isNPCMode || !selectedTemplateId || !hoverPosition) return;
-
     const handleClick = (event: MouseEvent) => {
       if (hoverPosition) {
         createInstanceFromTemplate(selectedTemplateId, [
@@ -31,7 +28,6 @@ export function NPCSystem() {
         ]);
       }
     };
-
     gl.domElement.addEventListener('click', handleClick);
     return () => gl.domElement.removeEventListener('click', handleClick);
   }, [isNPCMode, selectedTemplateId, hoverPosition, gl, createInstanceFromTemplate]);

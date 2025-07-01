@@ -1,14 +1,12 @@
 import React from 'react';
 import { useGaesupStore } from '../../../stores/gaesupStore';
-import { DebugField, MotionMetrics, DEFAULT_DEBUG_FIELDS } from './types';
+import { DebugField, DEFAULT_DEBUG_FIELDS } from './types';
 import './styles.css';
 
 export function MotionDebugPanel() {
   const { motion, metrics, config } = useGaesupStore();
-
   const formatValue = (field: DebugField, value: any, precision: number = 2): string => {
     if (value === null || value === undefined) return 'N/A';
-
     switch (field.type) {
       case 'vector3':
         if (value.x !== undefined) {
@@ -23,6 +21,7 @@ export function MotionDebugPanel() {
         return String(value);
     }
   };
+
 
   const getCurrentValue = (field: DebugField): any => {
     switch (field.key) {
