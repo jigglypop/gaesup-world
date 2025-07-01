@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { usePhysics } from './core/physics';
+import { useFrame, RootState } from '@react-three/fiber';
+import { usePhysics } from './hooks/usePhysics';
 import { PhysicsState, PhysicsCalculationProps } from './types';
 import { PhysicsEngine } from './core/Engine';
 import { SizesType } from '../stores/slices/sizes';
 import { PhysicsCalcProps } from './core/types';
+import { StoreState } from '../stores/types';
 
 export * from './core';
 export * from './bridge';
 export * from './components';
+export * from './hooks';
 
 
 const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps): void => {
@@ -93,15 +95,16 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
   }, [props.rigidBodyRef]);
 
   const executePhysics = useCallback(
-    (state: any, delta: number) => {
+    (state: RootState, delta: number) => {
       try {
         if (!physics.worldContext || !physics.input) return;
         
         if (!physicsStateRef.current) {
-          const modeType = (physics.worldContext as any)?.mode?.type || 'character';
+          const worldContext = physics.worldContext as StoreState;
+          const modeType = worldContext.mode?.type || 'character';
           physicsStateRef.current = {
             activeState: physics.activeState!,
-            gameStates: (physics.worldContext as any).states!,
+            gameStates: worldContext.states!,
             keyboard: { ...physics.input.keyboard },
             mouse: {
               target: physics.input.mouse.target.clone(),
@@ -109,10 +112,26 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
               isActive: physics.input.mouse.isActive,
               shouldRun: physics.input.mouse.shouldRun,
             },
-            characterConfig: (physics.worldContext as any).character || {},
-            vehicleConfig: (physics.worldContext as any).vehicle || {},
-            airplaneConfig: (physics.worldContext as any).airplane || {},
-            automation: (physics.worldContext as any).automation || {},
+            characterConfig: worldContext.character || {},
+            vehicleConfig: worldContext.vehicle || {},
+            airplaneConfig: worldContext.airplane || {},
+            automationOption: worldContext.automation || {
+              isActive: false,
+              queue: {
+                actions: [],
+                currentIndex: 0,
+                isRunning: false,
+                isPaused: false,
+                loop: false,
+                maxRetries: 3
+              },
+              settings: {
+                trackProgress: false,
+                autoStart: false,
+                loop: false,
+                showVisualCues: false
+              }
+            },
             modeType: modeType as 'character' | 'vehicle' | 'airplane',
           };
           
@@ -131,7 +150,8 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
         } else {
           updateInputState(physicsStateRef.current, physics.input);
           if (physicsStateRef.current) {
-            physicsStateRef.current.gameStates = (physics.worldContext as any).states!;
+            const worldContext = physics.worldContext as StoreState;
+            physicsStateRef.current.gameStates = worldContext.states!;
           }
         }
 

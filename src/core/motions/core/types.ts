@@ -21,6 +21,7 @@ export interface PhysicsCalcProps {
   innerGroupRef?: RefObject<THREE.Group>;
   matchSizes?: THREE.Vector3;
   worldContext?: StoreState;
+  onStateUpdate?: (updates: Partial<ActiveStateType>) => void;
 }
 
 export interface BaseState<T = unknown> {

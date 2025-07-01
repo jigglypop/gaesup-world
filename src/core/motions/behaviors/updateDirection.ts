@@ -9,7 +9,6 @@ import {
 } from '@utils/index';
 import { calcAngleByVector, calcNorm } from '../../utils/vector';
 import { PhysicsCalcProps, PhysicsState } from '../types';
-import { useGaesupStore } from '@stores/gaesupStore';
 
 export class DirectionController {
   private memoManager = MemoizationManager.getInstance();
@@ -25,13 +24,14 @@ export class DirectionController {
     leftward: false,
     rightward: false,
   };
+  private pendingStateUpdates: Array<{ activeState: Partial<ActiveStateType> }> = [];
 
   updateDirection(
     physicsState: PhysicsState,
     controlMode?: string,
     calcProp?: PhysicsCalcProps,
     innerGroupRef?: RefObject<THREE.Group>,
-    matchSizes?: unknown,
+    matchSizes?: THREE.Vector3,
   ): void {
     const { modeType } = physicsState;
 
@@ -100,7 +100,7 @@ export class DirectionController {
   private updateAirplaneDirection(
     physicsState: PhysicsState,
     innerGroupRef?: RefObject<THREE.Group>,
-    matchSizes?: unknown,
+    matchSizes?: THREE.Vector3,
     controlMode?: string,
   ): void {
     const { activeState, keyboard, airplaneConfig } = physicsState;
@@ -128,14 +128,7 @@ export class DirectionController {
       Math.cos(activeState.euler.y) * boost,
     );
     activeState.dir.copy(activeState.direction).normalize();
-    useGaesupStore.getState().updateState({
-      activeState: {
-        ...useGaesupStore.getState().activeState,
-        euler: activeState.euler,
-        direction: activeState.direction,
-        dir: activeState.dir,
-      },
-    });
+    this.emitRotationUpdate(activeState, 'airplane');
   }
 
   private applyAirplaneRotation(
@@ -207,7 +200,7 @@ export class DirectionController {
     }
   }
 
-  private handleClicker(calcProp: PhysicsCalcProps, currentPos: any): void {
+  private handleClicker(calcProp: PhysicsCalcProps, currentPos: { x: number; y: number; z: number }): void {
     const { automation } = calcProp.worldContext || {};
     if (automation?.settings.trackProgress && automation.queue.actions && automation.queue.actions.length > 0) {
       const Q = automation.queue.actions.shift();
@@ -274,14 +267,6 @@ export class DirectionController {
     const eulerChanged = shouldUpdate(activeState.euler.y, this.lastEulerY[entityType], 0.001);
     const directionChanged = shouldUpdate(currentDirectionLength, this.lastDirectionLength, 0.01);
     if (eulerChanged || directionChanged) {
-      useGaesupStore.getState().updateState({
-        activeState: {
-          ...useGaesupStore.getState().activeState,
-          euler: activeState.euler,
-          direction: activeState.direction,
-          dir: activeState.dir,
-        },
-      });
       this.lastDirectionLength = currentDirectionLength;
     }
     this.lastEulerY[entityType] = activeState.euler.y;

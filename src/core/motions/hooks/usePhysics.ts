@@ -1,7 +1,27 @@
 import { useGaesupStore } from '@stores/gaesupStore';
 import { useGaesupGltf } from '../entities/useGaesupGltf';
+import { StoreState } from '../../stores/types';
+import { SizesType } from '../../stores/slices/sizes';
+import { ActiveStateType } from '../core/types';
+import { PhysicsCalculationProps } from '../types';
 
-export function usePhysics() {
+export interface UsePhysicsReturn {
+  worldContext: StoreState;
+  activeState: ActiveStateType | null;
+  input: {
+    keyboard: PhysicsCalculationProps['keyboard'] | undefined;
+    mouse: PhysicsCalculationProps['mouse'] | undefined;
+  };
+  urls: StoreState['urls'];
+  setKeyboardInput: (input: Partial<PhysicsCalculationProps['keyboard']>) => void;
+  setMouseInput: (input: Partial<PhysicsCalculationProps['mouse']>) => void;
+  getSizesByUrls: () => SizesType | undefined;
+  isReady: boolean;
+  blockControl: boolean | undefined;
+  dispatch?: (action: { type: string; payload?: unknown }) => void;
+}
+
+export function usePhysics(): UsePhysicsReturn {
   const store = useGaesupStore();
   const interaction = useGaesupStore((state) => state.interaction);
   const updateKeyboard = useGaesupStore((state) => state.updateKeyboard);
@@ -25,4 +45,4 @@ export function usePhysics() {
     isReady,
     blockControl: block?.control,
   };
-}
+} 
