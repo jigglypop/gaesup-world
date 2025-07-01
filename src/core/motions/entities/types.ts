@@ -25,7 +25,7 @@ export interface SetGroundRay {
   colliderRef: RefObject<RapierCollider>;
 }
 
-export interface InnerGroupRef {
+export interface InnerGroupRefType {
   children?: React.ReactNode;
   objectNode: THREE.Object3D;
   animationRef: RefObject<THREE.Object3D>;
@@ -82,7 +82,7 @@ export interface PhysicsEntityProps {
 export interface ModelRendererProps {
   nodes: Record<string, THREE.Object3D>;
   color?: string;
-  skeleton?: THREE.Skeleton | null;
+  skeleton: THREE.Skeleton;
   url: string;
   offset?: THREE.Vector3;
 }

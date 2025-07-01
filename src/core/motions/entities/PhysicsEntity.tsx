@@ -16,16 +16,61 @@ import { Camera } from '../../camera';
 import { useGltfAndSize } from './useGaesupGltf';
 
 function RidingAnimation({
-                           url,
-                           active = false,
-                         }: {
+  url,
+  active = false,
+}: {
   url: string;
   active?: boolean;
 }) {
   const { animations: ridingAnimations } = useGLTF(url);
   const { actions: ridingActions } = useAnimations(ridingAnimations);
+  // 라이더는 항상 ride 애니메이션만 사용
+  useEffect(() => {
+    if (active && ridingActions.ride) {
+      ridingActions.ride.reset().play();
+    }
+    return () => {
+      if (ridingActions.ride) {
+        ridingActions.ride.stop();
+      }
+    };
+  }, [active, ridingActions]);
+  return null;
+}
 
-  useAnimationPlayer(active);
+function VehicleAnimation({
+  actions,
+  isActive = false,
+  modeType = 'vehicle',
+}: {
+  actions: any;
+  isActive?: boolean;
+  modeType?: string;
+}) {
+  const keyboard = useGaesupStore((state) => state.interaction?.keyboard);
+  useEffect(() => {
+    if (!isActive || !actions) return;
+    const isMoving = keyboard?.forward || keyboard?.backward;
+    const isRunning = keyboard?.shift && isMoving;
+    Object.values(actions).forEach((action: any) => {
+      if (action) action.stop();
+    });
+    if (modeType === 'airplane') {
+      if (actions.fly) {
+        actions.fly.reset().play();
+      } else if (actions.idle) {
+        actions.idle.reset().play();
+      }
+    } else {
+      if (isRunning && actions.run) {
+        actions.run.reset().play();
+      } else if (isMoving && actions.walk) {
+        actions.walk.reset().play();
+      } else if (actions.idle) {
+        actions.idle.reset().play();
+      }
+    }
+  }, [actions, isActive, keyboard, modeType]);
 
   return null;
 }
@@ -82,7 +127,6 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
           clone.traverse((child) => {
             if (child instanceof THREE.Mesh) {
               child.geometry.dispose();
-
               if (Array.isArray(child.material)) {
                 child.material.forEach((material) => {
                   Object.keys(material).forEach((key) => {
@@ -105,11 +149,9 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
             }
           });
         }
-
         if (skeleton) {
           skeleton.dispose();
         }
-
         if (actions) {
           Object.values(actions).forEach((action) => {
             if (action) {
@@ -140,17 +182,8 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
         groundRay: props.groundRay,
       });
     }
-
     const isRiding = useGaesupStore((state) => state.states.isRiding);
-
-    useAnimationPlayer(props.isActive && !isRiding);
-
-    useEffect(() => {
-      if (!props.isActive && actions && actions.idle) {
-        actions.idle.reset().play();
-      }
-    }, [actions, props.isActive]);
-
+    useAnimationPlayer(props.isActive && mode?.type === 'character');
     if (props.onReady) props.onReady();
     if (props.onFrame) props.onFrame();
     if (props.onAnimate && actions) props.onAnimate();
@@ -187,16 +220,18 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
 
     return (
       <group ref={props.outerGroupRef} userData={{ intangible: true }}>
-        {props.isActive && <Camera />}
         {props.ridingUrl && mode.type !== 'character' && (
           <RidingAnimation url={props.ridingUrl} active={isRiding} />
+        )}
+        {(mode?.type === 'vehicle' || mode?.type === 'airplane') && props.isActive && (
+          <VehicleAnimation actions={actions} isActive={true} modeType={mode.type} />
         )}
         <RigidBody
           canSleep={false}
           ccd={true}
           colliders={false}
           ref={rigidBodyRef}
-          name={props.name || (props.isActive ? 'character' : props.componentType)}
+          name={props.name}
           position={props.position}
           rotation={euler().set(0, safeRotationY, 0)}
           userData={props.userData}
@@ -214,7 +249,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
               position={[0, size.x * 1.2, 0]}
             />
           )}
-                      <InnerGroupRef
+          <InnerGroupRef
               objectNode={objectNode as THREE.Object3D}
               animationRef={animationRef as RefObject<THREE.Group | null>}
               nodes={nodes}

@@ -98,11 +98,10 @@ export function ModelRenderer({ nodes, color, skeleton, url }: ModelRendererProp
 }
 
 export function PartsGroupRef({ url, isActive, color, skeleton }: PartsGroupRefProps) {
-  const { scene, animations } = useGLTF(url);
-  const { actions } = useAnimations(animations);
+  const { scene } = useGLTF(url);
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { nodes } = useGraph(clone);
-  useAnimationPlayer(actions, isActive);
+  useAnimationPlayer(isActive);
   return (
     <group>
       <ModelRenderer nodes={nodes} color={color} skeleton={skeleton} url={url} />

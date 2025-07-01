@@ -21,7 +21,7 @@ export default function RiderRef({
   const characterObjectNode = Object.values(characterNodes).find(
     (node) => node.type === 'Object3D',
   );
-  useAnimationPlayer(actions, true);
+  useAnimationPlayer(true);
   return (
     <group position={offset}>
       {characterObjectNode && (

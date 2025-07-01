@@ -1,35 +1,26 @@
-import { Ref, forwardRef, useEffect } from 'react';
+import { Ref, forwardRef } from 'react';
 import * as THREE from 'three';
-import RiderRef from './RiderRef';
 import { ModelRenderer } from './PartsGroupRef';
 import { InnerGroupRefType } from './types';
 
 export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THREE.Group>) => {
-  useEffect(() => {
-    return () => {
-      if (props.objectNode) {
-        props.objectNode.traverse((child: THREE.Object3D) => {
-          if (child instanceof THREE.Mesh) {
-            child.geometry?.dispose();
-            if (child.material) {
-              if (Array.isArray(child.material)) {
-                child.material.forEach((m: THREE.Material) => m.dispose());
-              } else {
-                child.material.dispose();
-              }
-            }
+  if (props.objectNode) {
+    props.objectNode.traverse((child: THREE.Object3D) => {
+      if (child instanceof THREE.Mesh) {
+        child.geometry?.dispose();
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach((m: THREE.Material) => m.dispose());
+          } else {
+            child.material.dispose();
           }
-        });
+        }
       }
-    };
-  }, [props.objectNode]);
+    });
+  }
 
   return (
     <group receiveShadow castShadow ref={ref} userData={{ intangible: true }}>
-      {props.isRiderOn && props.enableRiding && props.isActive && props.ridingUrl && (
-        <RiderRef url={props.ridingUrl} offset={props.offset} />
-      )}
-
       {props.children}
       {props.objectNode && props.animationRef && (
         <primitive
@@ -40,7 +31,7 @@ export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THRE
           ref={props.animationRef}
         />
       )}
-      <ModelRenderer nodes={props.nodes} skeleton={props.skeleton} url={props.url || ''} />
+      <ModelRenderer nodes={props.nodes} skeleton={props.skeleton!!} url={props.url || ''} />
     </group>
   );
 });

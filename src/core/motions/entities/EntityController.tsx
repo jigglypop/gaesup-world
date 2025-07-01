@@ -31,7 +31,6 @@ export function EntityController({ props, children }: EntityControllerProps) {
     () => (rideableId && rideable[rideableId] ? rideable[rideableId].offset : vec3()),
     [rideableId, rideable],
   );
-
   const getEntityProps = () => {
     const baseProps = {
       isActive: true,

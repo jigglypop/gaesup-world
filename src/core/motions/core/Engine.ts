@@ -51,16 +51,12 @@ export class PhysicsEngine {
         );
         innerGroupRef.current.quaternion.setFromEuler(activeState.euler);
       }
-      
-      // 차량 회전 처리
       if (modeType === 'vehicle') {
         rigidBodyRef.current.setEnabledRotations(false, true, false, false);
-        // RigidBody 회전 설정
         const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, physicsState.activeState.euler.y, 0));
         rigidBodyRef.current.setRotation(quat, true);
-        
         if (innerGroupRef?.current) {
-          innerGroupRef.current.rotation.y = 0; // innerGroup는 회전하지 않음
+          innerGroupRef.current.rotation.y = 0; 
         }
       } else {
         rigidBodyRef.current.setEnabledRotations(false, false, false, false);
@@ -74,7 +70,6 @@ export class PhysicsEngine {
     
     if (modeType === 'vehicle') {
       const { linearDamping = 0.9, brakeRatio = 5 } = vehicleConfig || {};
-      // space 키로 브레이크
       const damping = space ? brakeRatio : linearDamping;
       rigidBodyRef.current.setLinearDamping(damping);
     } else if (modeType === 'airplane') {

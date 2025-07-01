@@ -1,6 +1,7 @@
 import { Suspense, useEffect, ReactNode } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { WorldContainerProps } from './types';
+import { Camera } from '@/core/camera';
 
 function WorldContent({ children, showGrid, showAxes }: { 
   children?: ReactNode; 
@@ -58,6 +59,7 @@ export function GaesupWorldContent({ children, showGrid, showAxes }: {
 }) {
   return (
     <Suspense fallback={null}>
+      <Camera/>
       <WorldContent showGrid={showGrid} showAxes={showAxes}>
         {children}
       </WorldContent>
