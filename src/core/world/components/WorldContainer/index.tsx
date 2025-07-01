@@ -1,10 +1,6 @@
 import { Suspense, useEffect, ReactNode } from 'react';
-import * as THREE from 'three';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { WorldContainerProps } from './types';
-import { ActiveObjects } from '../ActiveObjects';
-import { PassiveObjects } from '../PassiveObjects';
-import { RideableObjects } from '../Rideable';
 import { PerformanceTracker } from '@debug/performance/PerformanceTracker';
 
 function WorldContent({ children, showGrid, showAxes }: { 
@@ -14,11 +10,6 @@ function WorldContent({ children, showGrid, showAxes }: {
 }) {
   const worldSlice = useGaesupStore((state) => state.world);
   const { debug } = useGaesupStore((state) => state.mode);
-
-  const activeObjects = worldSlice?.objects?.filter(obj => obj.type === 'active') || [];
-  const passiveObjects = worldSlice?.objects?.filter(obj => obj.type === 'passive') || [];
-  const rideableObjects = worldSlice?.objects?.filter(obj => obj.type === 'rideable') || [];
-
   return (
     <group name="gaesup-world">
       {debug && <PerformanceTracker />}
@@ -30,26 +21,6 @@ function WorldContent({ children, showGrid, showAxes }: {
       {showAxes && (
         <axesHelper args={[10]} />
       )}
-
-      <ActiveObjects
-        objects={activeObjects as any}
-        selectedId={worldSlice?.selectedObjectId}
-        onSelect={worldSlice?.selectObject}
-        showDebugInfo={worldSlice?.showDebugInfo}
-      />
-
-      <PassiveObjects
-        objects={passiveObjects as any}
-        selectedId={worldSlice?.selectedObjectId}
-        onSelect={worldSlice?.selectObject}
-        showDebugInfo={worldSlice?.showDebugInfo}
-      />
-
-      <RideableObjects
-        objects={rideableObjects as any}
-        showDebugInfo={worldSlice?.showDebugInfo}
-      />
-
       {children}
     </group>
   );

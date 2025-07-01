@@ -1,7 +1,7 @@
 import { PhysicsEntity } from '@motions/entities';
 import { activeVehicleInnerType } from './types';
 
-export function Vehicle(props: activeVehicleInnerType) {
+export function VehicleRef(props: activeVehicleInnerType) {
   return (
     <PhysicsEntity
       name="vehicle"

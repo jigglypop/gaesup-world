@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { PhysicsEntity, useGenericRefs } from '@motions/entities';
 import { ObjectComponentProps } from '../types';
 
 export function Character({ 
@@ -6,64 +8,55 @@ export function Character({
   onSelect, 
   showDebugInfo = false 
 }: ObjectComponentProps) {
-  return (
-    <group
-      position={[object.position.x, object.position.y, object.position.z]}
-      rotation={[object.rotation.x, object.rotation.y, object.rotation.z]}
-      scale={[object.scale.x, object.scale.y, object.scale.z]}
-      onClick={() => onSelect?.(object.id)}
-    >
-      <mesh position={[0, 0.5, 0]}>
-        <sphereGeometry args={[0.3, 8, 6]} />
-        <meshStandardMaterial 
-          color={selected ? "#ff4444" : "#ffcc88"} 
-          wireframe={showDebugInfo}
-        />
-      </mesh>
-      
-      <mesh position={[0, -0.2, 0]}>
-        <boxGeometry args={[0.6, 0.8, 0.4]} />
-        <meshStandardMaterial 
-          color={selected ? "#ff2222" : "#4488ff"} 
-          wireframe={showDebugInfo}
-        />
-      </mesh>
-      
-      <mesh position={[-0.35, -0.1, 0]}>
-        <boxGeometry args={[0.15, 0.6, 0.15]} />
-        <meshStandardMaterial color="#ffcc88" />
-      </mesh>
-      <mesh position={[0.35, -0.1, 0]}>
-        <boxGeometry args={[0.15, 0.6, 0.15]} />
-        <meshStandardMaterial color="#ffcc88" />
-      </mesh>
-      
-      <mesh position={[-0.25, -0.8, 0]}>
-        <boxGeometry args={[0.2, 0.6, 0.2]} />
-        <meshStandardMaterial color="#ffcc88" />
-      </mesh>
-      <mesh position={[0.25, -0.8, 0]}>
-        <boxGeometry args={[0.2, 0.6, 0.2]} />
-        <meshStandardMaterial color="#ffcc88" />
-      </mesh>
-      
-      <mesh position={[-0.25, -1.3, 0.1]}>
-        <boxGeometry args={[0.3, 0.1, 0.4]} />
-        <meshStandardMaterial color="#333333" />
-      </mesh>
-      <mesh position={[0.25, -1.3, 0.1]}>
-        <boxGeometry args={[0.3, 0.1, 0.4]} />
-        <meshStandardMaterial color="#333333" />
-      </mesh>
+  const refs = useGenericRefs();
 
-      {showDebugInfo && (
-        <>
-          <axesHelper args={[1]} />
-          {object.boundingBox && (
-            <boxHelper args={[object.boundingBox]} color="#00ff00" />
-          )}
-        </>
+  useEffect(() => {
+    if (refs.rigidBodyRef && refs.rigidBodyRef.current) {
+      refs.rigidBodyRef.current.setEnabledRotations(false, false, false, false);
+    }
+  }, [refs.rigidBodyRef]);
+  
+  // 모델 URL이 없으면 렌더링하지 않음
+  if (!object.metadata?.characterUrl) {
+    return null;
+  }
+  
+  return (
+    <PhysicsEntity
+      url={object.metadata.characterUrl}
+      isActive={false}
+      componentType="character"
+      name={`active-character-${object.id}`}
+      position={object.position}
+      rotation={object.rotation}
+      scale={object.scale}
+      currentAnimation={object.metadata?.currentAnimation || 'idle'}
+      ref={refs.rigidBodyRef}
+      outerGroupRef={refs.outerGroupRef}
+      innerGroupRef={refs.innerGroupRef}
+      colliderRef={refs.colliderRef}
+      userData={{
+        id: object.id,
+        type: 'active',
+        subType: 'character',
+        health: object.health,
+        maxHealth: object.maxHealth,
+        energy: object.energy,
+        maxEnergy: object.maxEnergy,
+        nameTag: object.metadata?.nameTag
+      }}
+      onCollisionEnter={(payload) => {
+        if (onSelect) {
+          onSelect(object.id);
+        }
+      }}
+    >
+      {selected && showDebugInfo && (
+        <mesh position={[0, 3, 0]}>
+          <boxGeometry args={[0.5, 0.5, 0.5]} />
+          <meshStandardMaterial color="#ff0000" transparent opacity={0.6} />
+        </mesh>
       )}
-    </group>
+    </PhysicsEntity>
   );
 }

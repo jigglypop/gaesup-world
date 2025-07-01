@@ -71,10 +71,18 @@ export interface RideablePropType {
   position?: THREE.Vector3;
   rotation?: THREE.Euler;
   scale?: THREE.Vector3;
+  offset?: THREE.Vector3;
   maxSpeed?: number;
   acceleration?: number;
   rideMessage?: string;
   exitMessage?: string;
+  displayName?: string;
+  controllerOptions?: {
+    lerp?: {
+      cameraPosition?: number;
+      cameraTurn?: number;
+    };
+  };
   onRide?: (objectId: string) => void;
   onExit?: (objectId: string) => void;
   physics?: RigidBodyProps;

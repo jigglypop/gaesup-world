@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { ActiveObjectProps } from './types';
 import { Vehicle } from './Vehicle';
 import { Airplane } from './Airplane';
@@ -47,21 +46,7 @@ export function ActiveObjects({
               />
             );
           default:
-            return (
-              <mesh
-                key={obj.id}
-                position={[obj.position.x, obj.position.y, obj.position.z]}
-                rotation={[obj.rotation.x, obj.rotation.y, obj.rotation.z]}
-                scale={[obj.scale.x, obj.scale.y, obj.scale.z]}
-                onClick={() => onSelect?.(obj.id)}
-              >
-                <boxGeometry args={[1, 1, 1]} />
-                <meshStandardMaterial 
-                  color={isSelected ? "#ff4444" : "#4444ff"} 
-                  wireframe={showDebugInfo}
-                />
-              </mesh>
-            );
+            return null;
         }
       })}
     </group>

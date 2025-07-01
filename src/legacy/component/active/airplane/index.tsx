@@ -1,13 +1,13 @@
 import { PhysicsEntity } from '@motions/entities';
-import { activeVehicleInnerType } from './types';
+import { activeAirplaneInnerType } from './type';
 
-export function Vehicle(props: activeVehicleInnerType) {
+export function AirplaneRef(props: activeAirplaneInnerType) {
   return (
     <PhysicsEntity
-      name="vehicle"
+      name="airplane"
       isActive={true}
       currentAnimation="idle"
-      componentType="vehicle"
+      componentType="airplane"
       ridingUrl={props.ridingUrl}
       ref={props.rigidBodyRef}
       outerGroupRef={props.outerGroupRef}

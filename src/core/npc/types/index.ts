@@ -18,6 +18,7 @@ export interface NPCTemplate {
   name: string;
   description?: string;
   category: 'humanoid' | 'creature' | 'robot';
+  fullModelUrl?: string; // 전체 모델 URL (애니메이션 지원)
   baseParts: NPCPart[]; // 기본 파트 (body, hair 등)
   clothingParts: NPCPart[]; // 의상 파트 (top, bottom, shoes 등)
   accessoryParts?: NPCPart[]; // 액세서리 파트 (glasses, hat 등)
@@ -43,7 +44,11 @@ export interface NPCInstance {
   currentAnimation?: string;
   currentClothingSetId?: string;
   customParts?: NPCPart[];
-  metadata?: Record<string, any>;
+  metadata?: {
+    modelUrl?: string; // 인스턴스별 전체 모델 URL
+    nameTag?: string;
+    [key: string]: any;
+  };
   events?: NPCEvent[];
 }
 

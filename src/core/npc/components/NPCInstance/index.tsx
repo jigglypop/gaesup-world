@@ -1,13 +1,18 @@
-import React, { useRef, useEffect } from 'react';
-import { useLoader } from '@react-three/fiber';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import React, { useRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
+import { useGLTF } from '@react-three/drei';
+import { SkeletonUtils } from 'three-stdlib';
+import { extend } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
-import { PassiveCharacter } from 'gaesup-world';
+import { PhysicsEntity } from '@motions/entities';
 import { useNPCStore } from '../../stores/npcStore';
 import { NPCInstance as NPCInstanceType, NPCPart } from '../../types';
 import './styles.css';
-import { PassiveObjects } from '@/core/world';
+
+// Three.js 객체를 R3F JSX로 확장
+extend(THREE);
+
+
 
 interface NPCInstanceProps {
   instance: NPCInstanceType;
@@ -21,37 +26,35 @@ interface NPCPartMeshProps {
 }
 
 function NPCPartMesh({ part, instanceId }: NPCPartMeshProps) {
-  const meshRef = useRef<THREE.Mesh>(null);
+  const hasUrl = part.url && part.url.trim() !== '';
+  const gltf = hasUrl ? useGLTF(part.url) : null;
+  const clone = useMemo(() => gltf ? SkeletonUtils.clone(gltf.scene) : null, [gltf]);
   
-  try {
-    const gltf = useLoader(GLTFLoader, part.url);
-    
-    useEffect(() => {
-      if (meshRef.current && part.color) {
-        meshRef.current.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            const material = child.material as THREE.MeshStandardMaterial;
-            if (material) {
-              material.color = new THREE.Color(part.color);
-            }
-          }
-        });
-      }
-    }, [part.color]);
-    
+  if (!hasUrl) {
     return (
-      <primitive
-        ref={meshRef}
-        object={gltf.scene.clone()}
+      <mesh 
         position={part.position || [0, 0, 0]}
         rotation={part.rotation || [0, 0, 0]}
         scale={part.scale || [1, 1, 1]}
-      />
+      >
+        <boxGeometry args={[0.5, 0.5, 0.5]} />
+        <meshStandardMaterial 
+          color={part.color || '#cccccc'} 
+          transparent 
+          opacity={0.6}
+        />
+      </mesh>
     );
-  } catch (error) {
-    console.warn(`Failed to load part ${part.id}:`, error);
-    return null;
   }
+  
+  return (
+    <primitive 
+      object={clone}
+      position={part.position || [0, 0, 0]}
+      rotation={part.rotation || [0, 0, 0]}
+      scale={part.scale || [1, 1, 1]}
+    />
+  );
 }
 
 export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps) {
@@ -64,13 +67,10 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
     return null;
   }
   
-  // Get all parts to render
   const allParts: NPCPart[] = [];
   
-  // Add base parts (body, hair)
   allParts.push(...template.baseParts);
   
-  // Add clothing parts if a clothing set is selected
   if (instance.currentClothingSetId) {
     const clothingSet = clothingSets.get(instance.currentClothingSetId);
     if (clothingSet) {
@@ -78,12 +78,10 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
     }
   }
   
-  // Add accessory parts
   if (template.accessoryParts) {
     allParts.push(...template.accessoryParts);
   }
   
-  // Override with custom parts if any
   if (instance.customParts) {
     instance.customParts.forEach(customPart => {
       const index = allParts.findIndex(p => p.type === customPart.type);
@@ -99,58 +97,139 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
     if (!instance.events || instance.events.length === 0) return;
     const mesh = groupRef.current;
     if (!mesh) return;
+    
     const handlePointerOver = () => {
       const hoverEvent = instance.events?.find(e => e.type === 'onHover');
+      if (hoverEvent) {
+        console.log('Hover event:', hoverEvent);
+      }
     };
     
     const handleClick = () => {
       const clickEvent = instance.events?.find(e => e.type === 'onClick');
       if (clickEvent) {
         console.log('Click event:', clickEvent);
-        // Handle click event based on action type
         switch (clickEvent.action) {
           case 'dialogue':
-            // Show dialogue
             break;
           case 'animation':
-            // Play animation
             break;
           case 'sound':
-            // Play sound
             break;
           case 'custom':
-            // Execute custom action
             break;
         }
       }
     };
     
-    mesh.addEventListener('pointerover', handlePointerOver);
-    mesh.addEventListener('click', handleClick);
+    const meshElement = mesh as any;
+    meshElement.__handlers = {
+      pointerover: handlePointerOver,
+      click: handleClick
+    };
     
     return () => {
-      mesh.removeEventListener('pointerover', handlePointerOver);
-      mesh.removeEventListener('click', handleClick);
+      delete meshElement.__handlers;
     };
   }, [instance.events]);
   
-  // Find the main body part (usually the first one)
-  const mainPart = allParts.find(part => part.type === 'body') || allParts[0];
+  // NPC 전체 모델 URL이 있으면 사용 (애니메이션 지원)
+  const fullModelUrl = template.fullModelUrl || instance.metadata?.modelUrl;
   
-  if (!mainPart || !mainPart.url) {
-    // Fallback to box if no valid part
+  if (fullModelUrl) {
     return (
-      <group
+      <PhysicsEntity
+        url={fullModelUrl}
+        isActive={false}
+        componentType={"character" as any}
+        name={`npc-${instance.id}`}
         position={instance.position}
         rotation={instance.rotation}
-        scale={instance.scale}
+        currentAnimation={instance.currentAnimation || 'idle'}
+        userData={{
+          instanceId: instance.id,
+          templateId: instance.templateId,
+          nameTag: instance.metadata?.nameTag
+        }}
+        onCollisionEnter={(payload) => {
+          if (onClick) onClick();
+        }}
       >
-        <RigidBody type="fixed" colliders="cuboid">
-          <mesh onClick={onClick}>
-            <boxGeometry args={[0.5, 1.8, 0.5]} />
-            <meshStandardMaterial color="royalblue" />
+        {isEditMode && (
+          <mesh position={[0, 2.5, 0]}>
+            <boxGeometry args={[0.5, 0.5, 0.5]} />
+            <meshStandardMaterial color="#00ff00" transparent opacity={0.6} />
           </mesh>
-        </RigidBody>
+        )}
+      </PhysicsEntity>
+    );
+  }
+  
+  // 개별 파트들로 구성된 NPC (애니메이션 미지원)
+  const mainPartUrl = allParts.find(part => part.url && part.type === 'body')?.url || 
+                      allParts.find(part => part.url)?.url;
+  
+  if (mainPartUrl) {
+    return (
+      <RigidBody
+        type="fixed"
+        position={instance.position}
+        rotation={instance.rotation}
+        colliders="cuboid"
+      >
+        <group
+          ref={groupRef}
+          scale={instance.scale}
+          onClick={onClick}
+          onPointerEnter={(e: any) => {
+            e.stopPropagation();
+            document.body.style.cursor = 'pointer';
+            const handlers = (groupRef.current as any)?.__handlers;
+            if (handlers?.pointerover) handlers.pointerover();
+          }}
+          onPointerLeave={() => {
+            document.body.style.cursor = 'default';
+          }}
+        >
+          {allParts.map((part) => (
+            <NPCPartMesh key={part.id} part={part} instanceId={instance.id} />
+          ))}
+          
+          {isEditMode && (
+            <mesh position={[0, 2.5, 0]}>
+              <boxGeometry args={[0.5, 0.5, 0.5]} />
+              <meshStandardMaterial color="#00ff00" transparent opacity={0.6} />
+            </mesh>
+          )}
+        </group>
+      </RigidBody>
+    );
+  }
+  
+  return (
+    <RigidBody
+      type="fixed"
+      position={instance.position}
+      rotation={instance.rotation}
+      colliders="cuboid"
+    >
+      <group
+        ref={groupRef}
+        scale={instance.scale}
+        onClick={onClick}
+        onPointerEnter={(e: any) => {
+          e.stopPropagation();
+          document.body.style.cursor = 'pointer';
+          const handlers = (groupRef.current as any)?.__handlers;
+          if (handlers?.pointerover) handlers.pointerover();
+        }}
+        onPointerLeave={() => {
+          document.body.style.cursor = 'default';
+        }}
+      >
+        {allParts.map((part) => (
+          <NPCPartMesh key={part.id} part={part} instanceId={instance.id} />
+        ))}
         
         {isEditMode && (
           <mesh position={[0, 2.5, 0]}>
@@ -159,36 +238,6 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
           </mesh>
         )}
       </group>
-    );
-  }
-  
-  // Convert parts for PassiveCharacter
-  const passiveParts = allParts
-    .slice(1)
-    .map(part => part.url ? { url: part.url } : null)
-    .filter(part => part !== null);
-  
-  return (
-    <group
-      ref={groupRef}
-      position={instance.position}
-      rotation={instance.rotation}
-      scale={instance.scale}
-      onClick={onClick}
-    >
-      <PassiveObjects
-        rigidbodyType="fixed"
-        currentAnimation={instance.animation || "idle"}
-        url={mainPart.url}
-        parts={passiveParts}
-      />
-      
-      {isEditMode && (
-        <mesh position={[0, 2.5, 0]}>
-          <boxGeometry args={[0.5, 0.5, 0.5]} />
-          <meshStandardMaterial color="#00ff00" transparent opacity={0.6} />
-        </mesh>
-      )}
-    </group>
+    </RigidBody>
   );
 } 

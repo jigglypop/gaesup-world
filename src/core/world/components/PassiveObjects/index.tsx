@@ -1,87 +1,117 @@
-import { PassiveObjectProps } from './types';
+import { PhysicsEntity, useGenericRefs } from '@motions/entities';
+import { RigidBody, CapsuleCollider } from '@react-three/rapier';
+import { PassiveObjectProps, PassiveObject } from './types';
 import './styles.css';
+
+interface PassiveObjectInstanceProps {
+  object: PassiveObject;
+  isSelected: boolean;
+  onSelect?: (id: string) => void;
+  showDebugInfo?: boolean;
+  enableInteraction?: boolean;
+}
+
+function PassiveObjectInstance({
+  object,
+  isSelected,
+  onSelect,
+  showDebugInfo = false,
+  enableInteraction = true
+}: PassiveObjectInstanceProps) {
+  const refs = useGenericRefs();
+  
+  if (object.metadata?.modelUrl) {
+    return (
+      <PhysicsEntity
+        url={object.metadata.modelUrl}
+        isActive={false}
+        componentType={object.type as any}
+        name={`passive-${object.type}-${object.id}`}
+        position={object.position}
+        rotation={object.rotation}
+        scale={object.scale}
+        ref={refs.rigidBodyRef}
+        outerGroupRef={refs.outerGroupRef}
+        innerGroupRef={refs.innerGroupRef}
+        colliderRef={refs.colliderRef}
+        userData={{
+          id: object.id,
+          type: 'passive',
+          subType: object.type,
+          interactable: object.interactable,
+          onNear: object.metadata?.onNear,
+          onLeave: object.metadata?.onLeave,
+          onInteract: object.metadata?.onInteract
+        }}
+        onCollisionEnter={(payload) => {
+          if (enableInteraction && object.interactable && onSelect) {
+            onSelect(object.id);
+          }
+        }}
+      >
+        {isSelected && showDebugInfo && (
+          <mesh position={[0, 3, 0]}>
+            <boxGeometry args={[0.5, 0.5, 0.5]} />
+            <meshStandardMaterial color="#00ff00" transparent opacity={0.6} />
+          </mesh>
+        )}
+      </PhysicsEntity>
+    );
+  }
+  
+  return (
+    <RigidBody
+      type="fixed"
+      position={object.position}
+      rotation={object.rotation}
+      colliders={false}
+    >
+      <CapsuleCollider args={[1, 0.5]} position={[0, 1, 0]} />
+      <group
+        scale={object.scale}
+        onClick={() => enableInteraction && object.interactable && onSelect?.(object.id)}
+        onPointerEnter={(e) => {
+          if (enableInteraction && object.interactable) {
+            e.stopPropagation();
+            document.body.style.cursor = 'pointer';
+          }
+        }}
+        onPointerLeave={() => {
+          document.body.style.cursor = 'default';
+        }}
+      >
+      </group>
+    </RigidBody>
+  );
+}
 
 export function PassiveObjects({ 
   objects, 
   selectedId, 
   onSelect, 
   showDebugInfo = false,
-  enableInteraction = true
+  enableInteraction = true,
+  showBoundingBoxes = false,
+  showLabels = false,
+  onInteract
 }: PassiveObjectProps) {
   return (
     <group name="passive-objects">
-      {objects.map((obj) => {
-        const isSelected = obj.id === selectedId;
-        return (
-          <group
-            key={obj.id}
-            position={[obj.position.x, obj.position.y, obj.position.z]}
-            rotation={[obj.rotation.x, obj.rotation.y, obj.rotation.z]}
-            scale={[obj.scale.x, obj.scale.y, obj.scale.z]}
-          >
-            <mesh
-              onClick={() => enableInteraction && onSelect?.(obj.id)}
-              onPointerEnter={(e) => {
-                if (enableInteraction) {
-                  e.stopPropagation();
-                  document.body.style.cursor = 'pointer';
-                }
-              }}
-              onPointerLeave={() => {
-                document.body.style.cursor = 'default';
-              }}
-            >
-              {obj.type === 'building' && (
-                <boxGeometry args={[2, 3, 2]} />
-              )}
-              {obj.type === 'tree' && (
-                <>
-                  <cylinderGeometry args={[0.2, 0.3, 2, 8]} />
-                  <mesh position={[0, 2, 0]}>
-                    <sphereGeometry args={[1.5, 8, 6]} />
-                    <meshStandardMaterial color="#228833" />
-                  </mesh>
-                </>
-              )}
-              {obj.type === 'rock' && (
-                <sphereGeometry args={[0.8, 6, 4]} />
-              )}
-              {obj.type === 'item' && (
-                <boxGeometry args={[0.5, 0.5, 0.5]} />
-              )}
-              
-              <meshStandardMaterial 
-                color={isSelected ? "#ff4444" : obj.metadata?.color || "#888888"} 
-                wireframe={showDebugInfo}
-                transparent={obj.metadata?.opacity !== undefined}
-                opacity={obj.metadata?.opacity || 1}
-              />
-            </mesh>
-
-            {showDebugInfo && (
-              <>
-                <axesHelper args={[1]} />
-                {obj.boundingBox && (
-                  <boxHelper 
-                    args={[obj.boundingBox]} 
-                    color={isSelected ? "#ff0000" : "#00ff00"}
-                  />
-                )}
-              </>
-            )}
-
-            {obj.metadata?.label && (
-              <group position={[0, 2, 0]}>
-                <sprite>
-                  <spriteMaterial color="#ffffff" />
-                </sprite>
-              </group>
-            )}
-          </group>
-        );
-      })}
+      {objects.map((obj) => (
+        <PassiveObjectInstance
+          key={obj.id}
+          object={obj}
+          isSelected={obj.id === selectedId}
+          onSelect={onSelect}
+          showDebugInfo={showDebugInfo}
+          enableInteraction={enableInteraction}
+        />
+      ))}
     </group>
   );
 }
 
 export * from './types';
+export * from './Vehicle';
+export * from './Airplane';
+export * from './Character';
