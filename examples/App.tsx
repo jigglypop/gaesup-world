@@ -94,22 +94,12 @@ const WorldPage = ({ showEditor = false }) => {
                     fadeDistance={1000}
                     userData={{ intangible: true }}
                   />
-                  <RigidBody type="fixed" userData={{ intangible: true }}>
+                  <RigidBody type="fixed">
                     <mesh receiveShadow position={[0, -1, 0]}>
                       <boxGeometry args={[1000, 2, 1000]} />
                       <meshStandardMaterial color="#3d3d3d" />
                     </mesh>
                   </RigidBody>
-                  
-                  {/* 바닥 평면 */}
-                  <mesh receiveShadow position={[0, -0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                    <planeGeometry args={[1000, 1000]} />
-                    <meshStandardMaterial 
-                      color="#3d3d3d" 
-                      roughness={0.8}
-                      metalness={0}
-                    />
-                  </mesh>
                 </>
                 <Platforms />
                 <Clicker />

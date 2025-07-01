@@ -248,6 +248,29 @@ export const useBuildingStore = create<BuildingStore>()(
       state.selectedWallGroupId = 'brick-walls';
       state.selectedTileCategoryId = 'wood-floors';
       state.selectedTileGroupId = 'oak-floor';
+      
+      // 기본 바닥 타일 추가 (10x10 그리드)
+      const oakFloorGroup = state.tileGroups.get('oak-floor');
+      if (oakFloorGroup) {
+        const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
+        const startX = -5 * cellSize;
+        const startZ = -5 * cellSize;
+        
+        for (let x = 0; x < 10; x++) {
+          for (let z = 0; z < 10; z++) {
+            oakFloorGroup.tiles.push({
+              id: `default-tile-${x}-${z}`,
+              position: {
+                x: startX + x * cellSize,
+                y: 0,
+                z: startZ + z * cellSize
+              },
+              size: 1
+            });
+          }
+        }
+      }
+      
       state.initialized = true;
     }),
 
