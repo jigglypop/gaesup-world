@@ -6,7 +6,6 @@ import { PhysicsEngine } from './core/Engine';
 import { SizesType } from '../stores/slices/sizes';
 import { PhysicsCalcProps } from './core/types';
 import { StoreState } from '../stores/types';
-import { PhysicsMemoryPool } from './core/PhysicsMemoryPool';
 import * as THREE from 'three';
 
 export * from './core';
@@ -65,8 +64,8 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
   const physicsStateRef = useRef<PhysicsState | null>(null);
   const physicsEngine = useRef(new PhysicsEngine());
   const isInitializedRef = useRef(false);
-  const memoryPool = useRef(PhysicsMemoryPool.getInstance());
   const mouseTargetRef = useRef(new THREE.Vector3());
+  const matchSizesRef = useRef<SizesType | null>(null);
 
   useEffect(() => {
     if (!isInitializedRef.current && physics.worldContext) {
@@ -166,12 +165,13 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
         }
 
         const calcProp: PhysicsCalcProps = {
-          ...props,
+          rigidBodyRef: props.rigidBodyRef,
+          innerGroupRef: props.innerGroupRef,
           state,
           delta,
           worldContext: physics.worldContext,
           dispatch: physics.dispatch,
-          matchSizes: physics.getSizesByUrls() as SizesType,
+          matchSizes: matchSizesRef.current || (matchSizesRef.current = physics.getSizesByUrls() as SizesType),
           inputRef: { current: physics.input },
           setKeyboardInput: physics.setKeyboardInput,
           setMouseInput: physics.setMouseInput,

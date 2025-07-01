@@ -1,9 +1,7 @@
-import * as THREE from 'three';
-import { getVectorAngle } from '@utils/index';
+
 import { RefObject } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 import { PhysicsState } from '../types';
-import { PhysicsCalcProps } from '../core/types';
 import { useGaesupStore } from '@stores/gaesupStore';
 
 export class ImpulseController {
@@ -65,23 +63,19 @@ export class ImpulseController {
     const { activeState, vehicleConfig, keyboard } = physicsState;
     const { maxSpeed = 10, accelRatio = 2 } = vehicleConfig;
     const { shift } = keyboard;
-    
     // 현재 속도 확인
     const velocity = rigidBodyRef.current.linvel();
     const currentSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
-    
     // maxSpeed 이하일 때만 가속
     if (currentSpeed < maxSpeed) {
       const M = rigidBodyRef.current.mass();
       const speed = shift ? accelRatio : 1;
-      
       // impulse = mass * velocity * speed
       const impulse = {
         x: activeState.dir.x * M * speed,
         y: 0,
         z: activeState.dir.z * M * speed
       };
-      
       rigidBodyRef.current.applyImpulse(impulse, true);
     }
   }
@@ -91,8 +85,18 @@ export class ImpulseController {
     physicsState: PhysicsState,
   ): void {
     const { activeState, airplaneConfig } = physicsState;
-    const { maxSpeed = 5 } = airplaneConfig;
-    const impulse = activeState.direction.clone().multiplyScalar(maxSpeed);
-    rigidBodyRef.current.applyImpulse({ x: impulse.x, y: impulse.y, z: impulse.z }, true);
+    const { maxSpeed = 20 } = airplaneConfig;
+    
+    const velocity = rigidBodyRef.current.linvel();
+    const currentSpeed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
+    if (currentSpeed < maxSpeed) {
+      const M = rigidBodyRef.current.mass();
+      const impulse = {
+        x: activeState.direction.x * M,
+        y: activeState.direction.y * M,
+        z: activeState.direction.z * M
+      };
+      rigidBodyRef.current.applyImpulse(impulse, true);
+    }
   }
 }

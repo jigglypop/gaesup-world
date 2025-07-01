@@ -42,7 +42,6 @@ export function useCamera() {
       clock: state.clock,
       excludeObjects: [],
     };
-    
     engine.calculate(calcProps);
   });
   

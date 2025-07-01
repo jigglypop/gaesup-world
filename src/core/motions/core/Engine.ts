@@ -7,14 +7,12 @@ import { PhysicsCalcProps } from './types';
 import { RapierRigidBody } from '@react-three/rapier';
 import { RefObject } from 'react';
 import * as THREE from 'three';
-import { PhysicsMemoryPool } from './PhysicsMemoryPool';
 
 export class PhysicsEngine {
   private directionController = new DirectionController();
   private impulseController = new ImpulseController();
   private gravityController = new GravityController();
   private stateChecker = new StateChecker();
-  private memoryPool = PhysicsMemoryPool.getInstance();
   private tempQuaternion = new THREE.Quaternion();
   private tempEuler = new THREE.Euler();
 

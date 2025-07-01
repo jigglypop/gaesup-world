@@ -106,9 +106,9 @@ export class DirectionController {
     const { activeState, keyboard, airplaneConfig } = physicsState;
     const { forward, backward, leftward, rightward, shift, space } = keyboard;
     const {
-      angleDelta = { x: 0, y: 0, z: 0 },
-      maxAngle = { x: 0, y: 0, z: 0 },
-      accelRatio = 1,
+      angleDelta = { x: 0.02, y: 0.02, z: 0.02 },
+      maxAngle = { x: Math.PI / 6, y: Math.PI, z: Math.PI / 6 },
+      accelRatio = 1.5,
     } = airplaneConfig || {};
     if (!innerGroupRef?.current) return;
     let boost = 1;
@@ -255,9 +255,7 @@ export class DirectionController {
     const { forward, backward, leftward, rightward } = keyboard;
     const dirX = Number(leftward) - Number(rightward);
     const dirZ = Number(forward) - Number(backward);
-
     if (dirX === 0 && dirZ === 0) return;
-
     // 원래의 간단한 로직으로 복원
     const tempVector3 = this.vectorCache.getTempVector(5);
     tempVector3.set(dirX, 0, dirZ);

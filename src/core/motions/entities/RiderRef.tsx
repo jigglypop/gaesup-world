@@ -15,7 +15,7 @@ export default function RiderRef({
 }: riderRefType) {
   const { gltf } = useGltfAndSize({ url });
   const { animations, scene } = gltf;
-  const { actions, ref: animationRef } = useAnimations(animations);
+  const { ref: animationRef } = useAnimations(animations);
   const characterClone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { nodes: characterNodes } = useGraph(characterClone);
   const characterObjectNode = Object.values(characterNodes).find(

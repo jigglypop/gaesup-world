@@ -68,7 +68,6 @@ export class CameraEngine extends BaseCameraEngine {
       this.state.activeController = controller;
       controller.update(props, this.state);
     } catch (error) {
-      console.error('Camera calculation error:', error);
       this.emitError('Camera calculation failed', error);
     }
   }

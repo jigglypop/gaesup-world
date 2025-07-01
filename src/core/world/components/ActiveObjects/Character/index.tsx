@@ -15,8 +15,6 @@ export function Character({
       refs.rigidBodyRef.current.setEnabledRotations(false, false, false, false);
     }
   }, [refs.rigidBodyRef]);
-  
-  // 모델 URL이 없으면 렌더링하지 않음
   if (!object.metadata?.characterUrl) {
     return null;
   }

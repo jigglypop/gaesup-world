@@ -45,6 +45,14 @@ const WorldPage = ({ showEditor = false }) => {
         }}
         debug={EXAMPLE_CONFIG.debug}
         cameraOption={cameraOption}
+        airplane={{
+          maxSpeed: 30,
+          accelRatio: 2,
+          linearDamping: 0.8,
+          gravityScale: 0.3,
+          angleDelta: { x: 0.02, y: 0.02, z: 0.02 },
+          maxAngle: { x: Math.PI / 6, y: Math.PI, z: Math.PI / 6 }
+        }}
       >
         <Canvas
           shadows
