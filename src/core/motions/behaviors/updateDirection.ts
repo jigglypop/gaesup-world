@@ -176,8 +176,16 @@ export class DirectionController {
           .subVectors(targetPosition, currentPosition)
           .normalize();
         
-        calcProp.memo.direction = direction.clone();
-        calcProp.memo.directionTarget = targetPosition.clone();
+        if (calcProp.memo) {
+          if (!calcProp.memo.direction) {
+            calcProp.memo.direction = new THREE.Vector3();
+          }
+          if (!calcProp.memo.directionTarget) {
+            calcProp.memo.directionTarget = new THREE.Vector3();
+          }
+          calcProp.memo.direction.copy(direction);
+          calcProp.memo.directionTarget.copy(targetPosition);
+        }
         
         if (automation.settings.loop && Q && automation.queue.actions) {
           automation.queue.actions.push(Q);

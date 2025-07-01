@@ -87,5 +87,10 @@ export function EntityController({ props, children }: EntityControllerProps) {
     }
   };
   const entityProps = getEntityProps();
+  
+  if (mode.type === 'character' && states.isRiding) {
+    return null;
+  }
+  
   return <PhysicsEntity {...entityProps} groundRay={props.groundRay as any} />;
 }

@@ -6,12 +6,25 @@ import { PhysicsEngine } from './core/Engine';
 import { SizesType } from '../stores/slices/sizes';
 import { PhysicsCalcProps } from './core/types';
 import { StoreState } from '../stores/types';
+import { PhysicsMemoryPool } from './core/PhysicsMemoryPool';
+import * as THREE from 'three';
 
 export * from './core';
 export * from './bridge';
 export * from './components';
 export * from './hooks';
 
+
+const KEYBOARD_KEY_INDICES = {
+  forward: 0,
+  backward: 1,
+  leftward: 2,
+  rightward: 3,
+  shift: 4,
+  space: 5,
+  keyE: 6,
+  keyR: 7,
+} as const;
 
 const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps): void => {
   const keyboardKeys: (keyof typeof state.keyboard)[] = [
@@ -25,31 +38,26 @@ const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps): 
     'keyR',
   ];
   
-  let hasKeyboardChange = false;
-  keyboardKeys.forEach((key) => {
+  for (let i = 0; i < keyboardKeys.length; i++) {
+    const key = keyboardKeys[i];
     if (state.keyboard[key] !== input.keyboard[key]) {
       state.keyboard[key] = input.keyboard[key];
-      hasKeyboardChange = true;
     }
-  });
+  }
 
   if (!state.mouse.target.equals(input.mouse.target)) {
     state.mouse.target.copy(input.mouse.target);
   }
 
-  const mouseKeys: Exclude<keyof typeof state.mouse, 'target'>[] = [
-    'angle',
-    'isActive',
-    'shouldRun',
-  ];
-  
-  let hasMouseChange = false;
-  mouseKeys.forEach((prop) => {
-    if (state.mouse[prop] !== input.mouse[prop]) {
-      state.mouse[prop] = input.mouse[prop];
-      hasMouseChange = true;
-    }
-  });
+  if (state.mouse.angle !== input.mouse.angle) {
+    state.mouse.angle = input.mouse.angle;
+  }
+  if (state.mouse.isActive !== input.mouse.isActive) {
+    state.mouse.isActive = input.mouse.isActive;
+  }
+  if (state.mouse.shouldRun !== input.mouse.shouldRun) {
+    state.mouse.shouldRun = input.mouse.shouldRun;
+  }
 };
 
 const usePhysicsLoop = (props: PhysicsCalculationProps) => {
@@ -57,6 +65,8 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
   const physicsStateRef = useRef<PhysicsState | null>(null);
   const physicsEngine = useRef(new PhysicsEngine());
   const isInitializedRef = useRef(false);
+  const memoryPool = useRef(PhysicsMemoryPool.getInstance());
+  const mouseTargetRef = useRef(new THREE.Vector3());
 
   useEffect(() => {
     if (!isInitializedRef.current && physics.worldContext) {
@@ -107,7 +117,7 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
             gameStates: worldContext.states!,
             keyboard: { ...physics.input.keyboard },
             mouse: {
-              target: physics.input.mouse.target.clone(),
+              target: mouseTargetRef.current.copy(physics.input.mouse.target),
               angle: physics.input.mouse.angle,
               isActive: physics.input.mouse.isActive,
               shouldRun: physics.input.mouse.shouldRun,

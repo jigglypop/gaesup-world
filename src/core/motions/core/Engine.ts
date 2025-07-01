@@ -7,12 +7,16 @@ import { PhysicsCalcProps } from './types';
 import { RapierRigidBody } from '@react-three/rapier';
 import { RefObject } from 'react';
 import * as THREE from 'three';
+import { PhysicsMemoryPool } from './PhysicsMemoryPool';
 
 export class PhysicsEngine {
   private directionController = new DirectionController();
   private impulseController = new ImpulseController();
   private gravityController = new GravityController();
   private stateChecker = new StateChecker();
+  private memoryPool = PhysicsMemoryPool.getInstance();
+  private tempQuaternion = new THREE.Quaternion();
+  private tempEuler = new THREE.Euler();
 
   calculate(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
     if (!physicsState || !calcProp.rigidBodyRef.current) return;
@@ -53,8 +57,9 @@ export class PhysicsEngine {
       }
       if (modeType === 'vehicle') {
         rigidBodyRef.current.setEnabledRotations(false, true, false, false);
-        const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, physicsState.activeState.euler.y, 0));
-        rigidBodyRef.current.setRotation(quat, true);
+        this.tempEuler.set(0, physicsState.activeState.euler.y, 0);
+        this.tempQuaternion.setFromEuler(this.tempEuler);
+        rigidBodyRef.current.setRotation(this.tempQuaternion, true);
         if (innerGroupRef?.current) {
           innerGroupRef.current.rotation.y = 0; 
         }

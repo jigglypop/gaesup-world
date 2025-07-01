@@ -2,6 +2,7 @@ import { ActiveObjectProps } from './types';
 import { Vehicle } from './Vehicle';
 import { Airplane } from './Airplane';
 import { Character } from './Character';
+import { useGaesupStore } from '@stores/gaesupStore';
 
 export function ActiveObjects({ 
   objects, 
@@ -9,10 +10,17 @@ export function ActiveObjects({
   onSelect, 
   showDebugInfo = false 
 }: ActiveObjectProps) {
+  const states = useGaesupStore((state) => state.states);
+  const mode = useGaesupStore((state) => state.mode);
+  
   return (
     <group name="active-objects">
       {objects.map((obj) => {
         const isSelected = obj.id === selectedId;
+        
+        if (obj.type === 'character' && states?.isRiding && mode?.type !== 'character') {
+          return null;
+        }
         
         switch (obj.type) {
           case 'vehicle':

@@ -33,6 +33,7 @@ const cameraOption: CameraOptionType = {
 const WorldPage = ({ showEditor = false }) => {
   const isInBuildingMode = useBuildingStore((state) => state.isInEditMode());
   const mode = useGaesupStore((state) => state.mode);
+  const states = useGaesupStore((state) => state.states);
   
   return (
     <>
@@ -69,12 +70,12 @@ const WorldPage = ({ showEditor = false }) => {
           <Suspense>
             <GaesupWorldContent showGrid={EXAMPLE_CONFIG.showGrid} showAxes={EXAMPLE_CONFIG.showAxes}>
               <Physics debug interpolate={true}>
-                {!isInBuildingMode && (
+                {!isInBuildingMode && !states?.isRiding && (
                   <GaesupController
                     key={`controller-${mode.type}`}
                     controllerOptions={{ lerp: { cameraTurn: 0.1, cameraPosition: 0.08 } }}
                     rigidBodyProps={{}}
-                    parts={[{ url: 'gltf/ally_cloth_rabbit.glb', color: '#ffe0e0' }]}
+                    parts={mode?.type === 'character' ? [{ url: 'gltf/ally_cloth_rabbit.glb', color: '#ffe0e0' }] : []}
                     rotation={euler({ x: 0, y: Math.PI, z: 0 })}
                   />
                 )}
