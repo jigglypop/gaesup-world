@@ -30,6 +30,10 @@ export interface CameraOption {
   yDistance?: number;
   zDistance?: number;
   zoom?: number;
+  enableZoom?: boolean;
+  zoomSpeed?: number;
+  minZoom?: number;
+  maxZoom?: number;
   target?: THREE.Vector3;
   position?: THREE.Vector3;
   focus?: boolean;

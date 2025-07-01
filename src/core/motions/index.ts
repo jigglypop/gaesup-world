@@ -56,7 +56,7 @@ const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps): 
   }
   if (state.mouse.shouldRun !== input.mouse.shouldRun) {
     state.mouse.shouldRun = input.mouse.shouldRun;
-  }
+    }
 };
 
 const usePhysicsLoop = (props: PhysicsCalculationProps) => {

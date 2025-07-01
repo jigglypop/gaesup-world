@@ -14,10 +14,11 @@ export class ChaseController extends BaseController {
   calculateTargetPosition(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
     const position = activeStateUtils.getPosition(props.activeState);
     const euler = activeStateUtils.getEuler(props.activeState);
+    const zoom = state.config.zoom || 1;
     const offset = activeStateUtils.calculateCameraOffset(position, {
-      xDistance: state.config.distance.x,
-      yDistance: state.config.distance.y,
-      zDistance: state.config.distance.z,
+      xDistance: state.config.distance.x * zoom,
+      yDistance: state.config.distance.y * zoom,
+      zDistance: state.config.distance.z * zoom,
       euler,
       mode: 'chase',
     });
