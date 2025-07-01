@@ -6,6 +6,7 @@ import { StateChecker } from '../behaviors/checkState';
 import { PhysicsCalcProps } from './types';
 import { RapierRigidBody } from '@react-three/rapier';
 import { RefObject } from 'react';
+import * as THREE from 'three';
 
 export class PhysicsEngine {
   private directionController = new DirectionController();
@@ -50,19 +51,34 @@ export class PhysicsEngine {
         );
         innerGroupRef.current.quaternion.setFromEuler(activeState.euler);
       }
-      rigidBodyRef.current.setEnabledRotations(false, false, false, false);
+      
+      // 차량 회전 처리
+      if (modeType === 'vehicle') {
+        rigidBodyRef.current.setEnabledRotations(false, true, false, false);
+        // RigidBody 회전 설정
+        const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, physicsState.activeState.euler.y, 0));
+        rigidBodyRef.current.setRotation(quat, true);
+        
+        if (innerGroupRef?.current) {
+          innerGroupRef.current.rotation.y = 0; // innerGroup는 회전하지 않음
+        }
+      } else {
+        rigidBodyRef.current.setEnabledRotations(false, false, false, false);
+      }
     }
   }
   private applyDamping(rigidBodyRef: RefObject<RapierRigidBody>, physicsState: PhysicsState): void {
     if (!rigidBodyRef?.current || !physicsState) return;
-    const { modeType, vehicleConfig, airplaneConfig } = physicsState;
-    let damping = 0;
+    const { modeType, vehicleConfig, airplaneConfig, keyboard } = physicsState;
+    const { space } = keyboard;
+    
     if (modeType === 'vehicle') {
-      damping = vehicleConfig?.linearDamping || 0.9;
+      const { linearDamping = 0.9, brakeRatio = 5 } = vehicleConfig || {};
+      // space 키로 브레이크
+      const damping = space ? brakeRatio : linearDamping;
+      rigidBodyRef.current.setLinearDamping(damping);
     } else if (modeType === 'airplane') {
-      damping = airplaneConfig?.linearDamping || 0.8;
-    }
-    if (damping > 0) {
+      const damping = airplaneConfig?.linearDamping || 0.8;
       rigidBodyRef.current.setLinearDamping(damping);
     }
   }

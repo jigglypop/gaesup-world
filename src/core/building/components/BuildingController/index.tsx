@@ -20,11 +20,8 @@ export function BuildingController() {
   const isEditing = editMode !== 'none';
   const setHoverPosition = useBuildingStore((state) => state.setHoverPosition);
   const setWallRotation = useBuildingStore((state) => state.setWallRotation);
-
-  // 화살표 키로 벽 방향 전환
   useEffect(() => {
     if (editMode !== 'wall') return;
-    
     const handleKeyDown = (e: KeyboardEvent) => {
       switch (e.key) {
         case 'ArrowUp':
@@ -41,25 +38,21 @@ export function BuildingController() {
           break;
       }
     };
-    
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [editMode, setWallRotation]);
 
   useEffect(() => {
     const canvas = gl.domElement;
-    
     const handleMouseMove = (e: MouseEvent) => updateMousePosition(e);
     const handleClick = (e: MouseEvent) => {
-      if (editMode === 'npc') return; // NPC mode는 NPCSystem에서 처리
+      if (editMode === 'npc') return; 
       e.preventDefault();
       if (editMode === 'wall') placeWall();
       else if (editMode === 'tile') placeTile();
     };
-
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('click', handleClick);
-
     return () => {
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('click', handleClick);

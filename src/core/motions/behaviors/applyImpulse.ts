@@ -62,10 +62,28 @@ export class ImpulseController {
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: PhysicsState,
   ): void {
-    const { activeState, vehicleConfig } = physicsState;
-    const { maxSpeed = 10 } = vehicleConfig;
-    const impulse = activeState.direction.clone().multiplyScalar(maxSpeed);
-    rigidBodyRef.current.applyImpulse({ x: impulse.x, y: 0, z: impulse.z }, true);
+    const { activeState, vehicleConfig, keyboard } = physicsState;
+    const { maxSpeed = 10, accelRatio = 2 } = vehicleConfig;
+    const { shift } = keyboard;
+    
+    // 현재 속도 확인
+    const velocity = rigidBodyRef.current.linvel();
+    const currentSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
+    
+    // maxSpeed 이하일 때만 가속
+    if (currentSpeed < maxSpeed) {
+      const M = rigidBodyRef.current.mass();
+      const speed = shift ? accelRatio : 1;
+      
+      // impulse = mass * velocity * speed
+      const impulse = {
+        x: activeState.dir.x * M * speed,
+        y: 0,
+        z: activeState.dir.z * M * speed
+      };
+      
+      rigidBodyRef.current.applyImpulse(impulse, true);
+    }
   }
 
   private applyAirplaneImpulse(

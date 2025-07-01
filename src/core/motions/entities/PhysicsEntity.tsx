@@ -214,18 +214,19 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
               position={[0, size.x * 1.2, 0]}
             />
           )}
-          <InnerGroupRef
-            objectNode={objectNode as THREE.Object3D}
-            animationRef={animationRef as RefObject<THREE.Group | null>}
-            nodes={nodes}
-            ref={props.innerGroupRef as RefObject<THREE.Group | null>}
-            isActive={props.isActive}
-            isRiderOn={props.isRiderOn}
-            enableRiding={props.enableRiding}
-            ridingUrl={props.ridingUrl}
-            offset={props.offset}
-            parts={props.parts}
-          >
+                      <InnerGroupRef
+              objectNode={objectNode as THREE.Object3D}
+              animationRef={animationRef as RefObject<THREE.Group | null>}
+              nodes={nodes}
+              ref={props.innerGroupRef as RefObject<THREE.Group | null>}
+              isActive={props.isActive}
+              isRiderOn={props.isRiderOn}
+              enableRiding={props.enableRiding}
+              ridingUrl={props.ridingUrl}
+              offset={props.offset}
+              parts={props.parts}
+              frustumCulled={false}
+            >
             {props.children}
             {partsComponents}
           </InnerGroupRef>

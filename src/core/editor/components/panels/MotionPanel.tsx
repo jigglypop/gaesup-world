@@ -6,7 +6,6 @@ type Tab = 'Controller' | 'Debug';
 
 export function MotionPanel() {
   const [activeTab, setActiveTab] = useState<Tab>('Controller');
-
   const renderContent = () => {
     switch (activeTab) {
       case 'Controller':

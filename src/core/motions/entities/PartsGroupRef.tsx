@@ -78,6 +78,7 @@ export function ModelRenderer({ nodes, color, skeleton, url }: ModelRendererProp
               geometry={nodeData.geometry}
               skeleton={nodeData.skeleton}
               key={nodeData.key}
+              frustumCulled={false}
             />
           );
         } else {

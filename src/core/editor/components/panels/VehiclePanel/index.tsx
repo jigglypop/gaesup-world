@@ -8,14 +8,11 @@ export const VehiclePanel: FC = () => {
   const setMode = useGaesupStore((state) => state.setMode);
 
   const handleModeChange = (newMode: ModeType) => {
-    // 전체 mode 객체를 새로 생성하여 설정
     const newModeConfig = {
       type: newMode,
       controller: 'keyboard',
       control: newMode === 'airplane' ? 'orbit' : newMode === 'vehicle' ? 'chase' : 'thirdPerson'
     };
-    
-    console.log('Changing mode from:', mode, 'to:', newModeConfig);
     setMode(newModeConfig);
   };
 

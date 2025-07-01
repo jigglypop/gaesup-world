@@ -4,11 +4,11 @@ import { ActiveStateType } from '../core/types';
 import { ModeType } from '../../stores/types';
 import {
   getCachedTrig,
-  getCachedVector,
   quaternionFromEuler,
   MemoizationManager,
   normalizeAngle,
   shouldUpdate,
+  V3,
 } from '@utils/index';
 import { calcAngleByVector, calcNorm } from '../../utils/vector';
 import { PhysicsCalcProps, PhysicsState } from '../types';
@@ -89,19 +89,15 @@ export class DirectionController {
     const xAxis = Number(leftward) - Number(rightward);
     const zAxis = Number(forward) - Number(backward);
 
-    if (xAxis !== 0) {
-      if (controlMode === 'chase') {
-        activeState.euler.y += xAxis * (Math.PI / 120);
-      } else {
-        activeState.euler.y += xAxis * (Math.PI / 64);
-      }
+    // 좌우 회전
+    activeState.euler.y += xAxis * (Math.PI / 64);
 
-      this.emitRotationUpdate(activeState, 'vehicle');
-    }
-
+    // 전진/후진 방향 계산
     const { sin: sinY, cos: cosY } = getCachedTrig(activeState.euler.y);
     activeState.direction.set(sinY * zAxis, 0, cosY * zAxis);
-    activeState.dir.copy(activeState.direction).normalize();
+    activeState.dir.copy(activeState.direction);
+
+    this.emitRotationUpdate(activeState, 'vehicle');
   }
 
   private updateAirplaneDirection(
@@ -245,17 +241,11 @@ export class DirectionController {
     mouse: PhysicsState['mouse'],
     characterConfig: PhysicsState['characterConfig'],
   ): void {
-    const { turnSpeed = 10 } = characterConfig;
-    const targetAngle = Math.PI / 2 - mouse.angle;
-    let angleDiff = normalizeAngle(targetAngle - activeState.euler.y);
-    const rotationSpeed = (turnSpeed * Math.PI) / 80;
-    const rotationStep = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), rotationSpeed);
-    activeState.euler.y += rotationStep;
+    // 원래의 간단한 클릭 로직으로 복원
+    activeState.euler.y = Math.PI / 2 - mouse.angle;
     const { sin: sinY, cos: cosY } = getCachedTrig(activeState.euler.y);
-    const tempDirection = this.vectorCache.getTempVector(2);
-    tempDirection.set(-sinY, 0, -cosY);
-    activeState.direction.copy(tempDirection);
-    activeState.dir.copy(tempDirection).normalize();
+    activeState.dir.set(-sinY, 0, -cosY);
+    activeState.direction.copy(activeState.dir);
   }
 
   private handleKeyboardDirection(
@@ -265,22 +255,16 @@ export class DirectionController {
     controlMode?: string,
   ): void {
     const { forward, backward, leftward, rightward } = keyboard;
-    const { turnSpeed = 10 } = characterConfig;
     const dirX = Number(leftward) - Number(rightward);
     const dirZ = Number(forward) - Number(backward);
 
     if (dirX === 0 && dirZ === 0) return;
 
+    // 원래의 간단한 로직으로 복원
     const tempVector3 = this.vectorCache.getTempVector(5);
     tempVector3.set(dirX, 0, dirZ);
-    const targetAngle = calcAngleByVector(tempVector3);
-    let angleDiff = normalizeAngle(targetAngle - activeState.euler.y);
-
-    const rotationSpeed =
-      controlMode === 'chase' ? (turnSpeed * Math.PI) / 160 : (turnSpeed * Math.PI) / 160;
-    const rotationStep = Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), rotationSpeed);
-    activeState.euler.y += rotationStep;
-
+    const angle = calcAngleByVector(tempVector3);
+    activeState.euler.y = angle;
     activeState.dir.set(dirX, 0, dirZ);
     activeState.direction.copy(activeState.dir);
   }
