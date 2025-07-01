@@ -4,11 +4,8 @@ import { ActiveStateType } from '../core/types';
 import { ModeType } from '../../stores/types';
 import {
   getCachedTrig,
-  quaternionFromEuler,
   MemoizationManager,
-  normalizeAngle,
   shouldUpdate,
-  V3,
 } from '@utils/index';
 import { calcAngleByVector, calcNorm } from '../../utils/vector';
 import { PhysicsCalcProps, PhysicsState } from '../types';
