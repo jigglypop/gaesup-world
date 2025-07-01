@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
+import { useBuildingStore } from '../../building/stores/buildingStore';
 import { MinimapProps } from '../../ui/components/Minimap/types';
 import * as THREE from 'three';
 
@@ -25,6 +26,8 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
   const mode = useGaesupStore((state) => state.mode);
   const activeState = useGaesupStore((state) => state.activeState);
   const minimap = useGaesupStore((state) => state.minimap);
+  const tileGroups = useBuildingStore((state) => state.tileGroups);
+  const sceneObjectsRef = useRef<Map<string, { position: THREE.Vector3; size: THREE.Vector3 }>>(new Map());
   const {
     size = 200,
     scale: initialScale = DEFAULT_SCALE,
@@ -77,10 +80,20 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
 
   const updateCanvas = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !minimap) return;
+    if (!canvas) {
+      console.log('No canvas');
+      return;
+    }
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      console.log('No context');
+      return;
+    }
     const { position, euler } = activeState;
+    if (!position || !euler) {
+      console.log('No position or euler', position, euler);
+      return;
+    }
     const rotation = euler.y;
     ctx.clearRect(0, 0, MINIMAP_SIZE_PX, MINIMAP_SIZE_PX);
     ctx.save();
@@ -99,10 +112,9 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
     gradient.addColorStop(1, 'rgba(10, 20, 30, 0.95)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, MINIMAP_SIZE_PX, MINIMAP_SIZE_PX);
-    const displayRotation =
-      blockRotate || mode?.control === 'normal' ? 180 : (rotation * 180) / Math.PI + 180;
+    const displayRotation = (rotation * 180) / Math.PI;
     ctx.translate(MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2);
-    ctx.rotate((displayRotation * Math.PI) / 180);
+    ctx.rotate((-displayRotation * Math.PI) / 180);
     ctx.translate(-MINIMAP_SIZE_PX / 2, -MINIMAP_SIZE_PX / 2);
     ctx.save();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
@@ -134,13 +146,68 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
       ctx.save();
       ctx.fillStyle = color;
       ctx.translate(x, y);
-      ctx.rotate((-displayRotation * Math.PI) / 180);
+      ctx.rotate((displayRotation * Math.PI) / 180);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(text, 0, 0);
       ctx.restore();
     });
     ctx.restore();
+
+    // Render tiles
+    if (tileGroups && tileGroups.size > 0) {
+      const tileGroupsArray = Array.from(tileGroups.values());
+      tileGroupsArray.forEach((tileGroup) => {
+        if (tileGroup && tileGroup.tiles && Array.isArray(tileGroup.tiles)) {
+          tileGroup.tiles.forEach((tile) => {
+            if (!tile || !tile.position) return;
+            
+            const posX = (tile.position.x - position.x) * scale;
+            const posZ = (tile.position.z - position.z) * scale;
+            const tileSize = (tile.size || 1) * 4 * scale;
+            
+            ctx.save();
+            const x = MINIMAP_SIZE_PX / 2 - posX - tileSize / 2;
+            const y = MINIMAP_SIZE_PX / 2 - posZ - tileSize / 2;
+            
+            if (tile.objectType === 'water') {
+              ctx.fillStyle = 'rgba(0, 150, 255, 0.6)';
+            } else if (tile.objectType === 'grass') {
+              ctx.fillStyle = 'rgba(50, 200, 50, 0.4)';
+            } else {
+              ctx.fillStyle = 'rgba(150, 150, 150, 0.3)';
+            }
+            
+            ctx.fillRect(x, y, tileSize, tileSize);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 0.5;
+            ctx.strokeRect(x, y, tileSize, tileSize);
+            ctx.restore();
+          });
+        }
+      });
+    }
+
+    // Render scene objects
+    sceneObjectsRef.current.forEach((obj, id) => {
+      if (!obj?.position || !obj?.size) return;
+      
+      const posX = (obj.position.x - position.x) * scale;
+      const posZ = (obj.position.z - position.z) * scale;
+      const objWidth = obj.size.x * scale;
+      const objHeight = obj.size.z * scale;
+      
+      ctx.save();
+      const x = MINIMAP_SIZE_PX / 2 - posX - objWidth / 2;
+      const y = MINIMAP_SIZE_PX / 2 - posZ - objHeight / 2;
+      
+      ctx.fillStyle = 'rgba(100, 150, 200, 0.4)';
+      ctx.fillRect(x, y, objWidth, objHeight);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, objWidth, objHeight);
+      ctx.restore();
+    });
 
     if (minimap && minimap.props) {
       Object.values(minimap.props).forEach((obj) => {
@@ -222,7 +289,7 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
 
     ctx.restore();
     ctx.restore();
-  }, [activeState, minimap, mode, scale, angle, blockRotate]);
+  }, [activeState, minimap, mode, scale, angle, blockRotate, tileGroups]);
 
   const checkForUpdates = useCallback(() => {
     const { position, euler } = activeState;

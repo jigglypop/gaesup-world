@@ -15,19 +15,46 @@ export function WorldProps({
 }: WorldPropsType) {
   const groupRef = useRef<THREE.Group>(null);
   const addMinimapMarker = useGaesupStore((state) => state.addMinimapMarker);
+  const removeMinimapMarker = useGaesupStore((state) => state.removeMinimapMarker);
   const clickerStates = useClicker();
+  const markerId = useRef<string>(`world-prop-${Date.now()}-${Math.random()}`);
 
   useEffect(() => {
-    if (showMinimap && groupRef.current && position) {
-      const marker = {
-        id: `prop-${Date.now()}`,
-        position: vec3(position),
-        type: type as 'normal' | 'target' | 'special',
-        label: text || 'Prop'
+    if (showMinimap && groupRef.current) {
+      const updateMinimapMarker = () => {
+        const group = groupRef.current;
+        if (!group) return;
+        
+        const box = new THREE.Box3();
+        box.setFromObject(group);
+        
+        if (!box.isEmpty()) {
+          const center = new THREE.Vector3();
+          const size = new THREE.Vector3();
+          box.getCenter(center);
+          box.getSize(size);
+          
+          if (position) {
+            center.add(new THREE.Vector3(position[0], position[1], position[2]));
+          }
+          
+          addMinimapMarker(markerId.current, {
+            type: type as 'normal' | 'ground',
+            text: text || '',
+            center,
+            size,
+          });
+        }
       };
-      addMinimapMarker(marker);
+      
+      const timer = setTimeout(updateMinimapMarker, 100);
+      
+      return () => {
+        clearTimeout(timer);
+        removeMinimapMarker(markerId.current);
+      };
     }
-  }, [addMinimapMarker, position, type, text, showMinimap]);
+  }, [addMinimapMarker, removeMinimapMarker, position, type, text, showMinimap]);
 
   return (
     <group 

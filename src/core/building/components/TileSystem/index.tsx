@@ -5,6 +5,7 @@ import { MaterialManager } from '../../core/MaterialManager';
 import { GaeSupProps } from '../../../index';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { TileObject } from '../TileObject';
+import { useGaesupStore } from '../../../stores/gaesupStore';
 
 interface TileSystemProps {
   tileGroup: TileGroupConfig;
@@ -22,6 +23,8 @@ export function TileSystem({
   onTileDelete 
 }: TileSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
+  const addMinimapMarker = useGaesupStore((state) => state.addMinimapMarker);
+  const removeMinimapMarker = useGaesupStore((state) => state.removeMinimapMarker);
 
   const material = useMemo(() => {
     const manager = materialManagerRef.current;
@@ -72,6 +75,44 @@ export function TileSystem({
     merged.computeVertexNormals();
     return merged;
   }, [tileGroup.tiles]);
+
+  useEffect(() => {
+    if (tileGroup.tiles.length > 0) {
+      const bounds = new THREE.Box3();
+      
+      tileGroup.tiles.forEach((tile) => {
+        const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+        const halfSize = tileSize / 2;
+        
+        bounds.expandByPoint(new THREE.Vector3(
+          tile.position.x - halfSize,
+          tile.position.y,
+          tile.position.z - halfSize
+        ));
+        bounds.expandByPoint(new THREE.Vector3(
+          tile.position.x + halfSize,
+          tile.position.y,
+          tile.position.z + halfSize
+        ));
+      });
+      
+      const center = new THREE.Vector3();
+      const size = new THREE.Vector3();
+      bounds.getCenter(center);
+      bounds.getSize(size);
+      
+      addMinimapMarker(`tile-group-${tileGroup.id}`, {
+        type: 'ground',
+        text: tileGroup.name || 'Tiles',
+        center,
+        size,
+      });
+      
+      return () => {
+        removeMinimapMarker(`tile-group-${tileGroup.id}`);
+      };
+    }
+  }, [tileGroup, addMinimapMarker, removeMinimapMarker]);
 
   useEffect(() => {
     return () => {

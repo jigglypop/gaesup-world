@@ -42,59 +42,58 @@ export function MiniMap({
   const positionClass = position ? `minimap--${position}` : '';
 
   return (
-    <div className={`minimap-container ${positionClass}`} style={minimapStyle}>
-      <div className="minimap-wrapper">
-        <canvas
-          ref={canvasRef}
-          className="minimap-canvas"
-          width={MINIMAP_SIZE_PX}
-          height={MINIMAP_SIZE_PX}
-          onWheel={handleWheel}
-        />
-        
-        {showCompass && (
-          <div className="minimap-compass">
-            <div className="compass-needle" style={{ transform: `rotate(${angle}deg)` }}>
-              ↑
-            </div>
+    <div className={`minimap ${positionClass}`} style={minimapStyle}>
+      <canvas
+        ref={canvasRef}
+        className="minimap__canvas"
+        width={MINIMAP_SIZE_PX}
+        height={MINIMAP_SIZE_PX}
+        onWheel={handleWheel}
+      />
+      
+      {showCompass && (
+        <div className="minimap__compass">
+          <div style={{ transform: `rotate(${angle}deg)` }}>
+            N
           </div>
-        )}
+        </div>
+      )}
 
-        {markers.map((marker, index) => (
-          <div
-            key={marker.id || index}
-            className={`minimap-marker minimap-marker--${marker.type}`}
-            style={{
-              left: `${marker.x}%`,
-              top: `${marker.y}%`,
-              transform: 'translate(-50%, -50%)',
-            }}
-            title={marker.label}
-          >
-            {marker.icon || '●'}
-          </div>
-        ))}
-      </div>
+      {markers.map((marker, index) => (
+        <div
+          key={marker.id || index}
+          className={`minimap__marker minimap__marker--${marker.type || 'normal'}`}
+          style={{
+            left: `${marker.x}%`,
+            top: `${marker.y}%`,
+          }}
+        >
+          {marker.label && (
+            <div className="minimap__marker-label">{marker.label}</div>
+          )}
+        </div>
+      ))}
 
       {showZoom && !blockScaleControl && (
-        <div className="minimap-controls" style={scaleStyle}>
-          <button
-            className="minimap-button"
-            onClick={upscale}
-            disabled={scale >= maxScale}
-            style={plusMinusStyle}
-          >
-            +
-          </button>
-          <span className="minimap-scale">{scale.toFixed(1)}x</span>
-          <button
-            className="minimap-button"
-            onClick={downscale}
-            disabled={scale <= minScale}
-            style={plusMinusStyle}
-          >
-            -
-          </button>
+        <div className="minimap__controls" style={scaleStyle}>
+          <div className="minimap__zoom-controls">
+            <button
+              className="minimap__control-button"
+              onClick={upscale}
+              disabled={scale >= maxScale}
+              style={plusMinusStyle}
+            >
+              +
+            </button>
+            <button
+              className="minimap__control-button"
+              onClick={downscale}
+              disabled={scale <= minScale}
+              style={plusMinusStyle}
+            >
+              -
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -4,7 +4,7 @@ import { euler, Physics, RigidBody } from '@react-three/rapier';
 import React, { Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import * as THREE from 'three';
-import { Clicker, GaesupController, GaeSupProps, GaesupWorld, GaesupWorldContent, Editor, useGaesupStore, FocusableObject } from '../src';
+import { Clicker, GaesupController, GaeSupProps, GaesupWorld, GaesupWorldContent, Editor, useGaesupStore, FocusableObject, MiniMap } from '../src';
 import { BuildingController, useBuildingStore } from '../src';
 import { GaesupAdmin, useAuthStore } from '../src/admin';
 import { CameraOptionType } from '../src/core/types/camera';
@@ -121,23 +121,33 @@ const WorldPage = ({ showEditor = false }) => {
                 <BuildingController />
                 
                 {/* 포커스 가능한 오브젝트 예시 */}
-                <FocusableObject position={[10, 1, 0]} focusDistance={10}>
-                  <mesh castShadow>
-                    <boxGeometry args={[2, 2, 2]} />
-                    <meshStandardMaterial color="orange" />
-                  </mesh>
-                </FocusableObject>
+                <GaeSupProps type="normal" text="Orange Box" position={[10, 1, 0]} showMinimap={true}>
+                  <FocusableObject position={[0, 0, 0]} focusDistance={10}>
+                    <mesh castShadow>
+                      <boxGeometry args={[2, 2, 2]} />
+                      <meshStandardMaterial color="orange" />
+                    </mesh>
+                  </FocusableObject>
+                </GaeSupProps>
                 
-                <FocusableObject position={[-10, 2, -10]} focusDistance={15}>
-                  <mesh castShadow>
-                    <sphereGeometry args={[1.5, 32, 32]} />
-                    <meshStandardMaterial color="purple" />
-                  </mesh>
-                </FocusableObject>
+                <GaeSupProps type="normal" text="Purple Sphere" position={[-10, 2, -10]} showMinimap={true}>
+                  <FocusableObject position={[0, 0, 0]} focusDistance={15}>
+                    <mesh castShadow>
+                      <sphereGeometry args={[1.5, 32, 32]} />
+                      <meshStandardMaterial color="purple" />
+                    </mesh>
+                  </FocusableObject>
+                </GaeSupProps>
               </Physics>
             </GaesupWorldContent>
           </Suspense>
         </Canvas>
+        <MiniMap 
+          position="bottom-left"
+          scale={5}
+          showZoom={false}
+          showCompass={false}
+        />
       </GaesupWorld>
       {showEditor && <Editor />}
       <BuildingExample />
