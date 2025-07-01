@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { useGLTF } from '@react-three/drei';
 import { SkeletonUtils } from 'three-stdlib';
@@ -6,30 +6,15 @@ import { extend } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import { PhysicsEntity } from '@motions/entities';
 import { useNPCStore } from '../../stores/npcStore';
-import { NPCInstance as NPCInstanceType, NPCPart } from '../../types';
+import { NPCPart } from '../../types';
 import './styles.css';
+import { NPCPartMeshProps, NPCInstanceProps } from './types';
 
-// Three.js 객체를 R3F JSX로 확장
 extend(THREE);
-
-
-
-interface NPCInstanceProps {
-  instance: NPCInstanceType;
-  isEditMode?: boolean;
-  onClick?: () => void;
-}
-
-interface NPCPartMeshProps {
-  part: NPCPart;
-  instanceId: string;
-}
-
 function NPCPartMesh({ part, instanceId }: NPCPartMeshProps) {
   const hasUrl = part.url && part.url.trim() !== '';
   const gltf = hasUrl ? useGLTF(part.url) : null;
   const clone = useMemo(() => gltf ? SkeletonUtils.clone(gltf.scene) : null, [gltf]);
-  
   if (!hasUrl) {
     return (
       <mesh 
@@ -46,7 +31,6 @@ function NPCPartMesh({ part, instanceId }: NPCPartMeshProps) {
       </mesh>
     );
   }
-  
   return (
     <primitive 
       object={clone}
@@ -61,27 +45,20 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
   const groupRef = useRef<THREE.Group>(null);
   const { templates, clothingSets } = useNPCStore();
   const template = templates.get(instance.templateId);
-  
   if (!template) {
-    console.warn(`Template ${instance.templateId} not found`);
     return null;
   }
-  
   const allParts: NPCPart[] = [];
-  
   allParts.push(...template.baseParts);
-  
   if (instance.currentClothingSetId) {
     const clothingSet = clothingSets.get(instance.currentClothingSetId);
     if (clothingSet) {
       allParts.push(...clothingSet.parts);
     }
   }
-  
   if (template.accessoryParts) {
     allParts.push(...template.accessoryParts);
   }
-  
   if (instance.customParts) {
     instance.customParts.forEach(customPart => {
       const index = allParts.findIndex(p => p.type === customPart.type);
@@ -92,7 +69,6 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
       }
     });
   }
-  
   useEffect(() => {
     if (!instance.events || instance.events.length === 0) return;
     const mesh = groupRef.current;
@@ -127,13 +103,10 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
       pointerover: handlePointerOver,
       click: handleClick
     };
-    
     return () => {
       delete meshElement.__handlers;
     };
   }, [instance.events]);
-  
-  // NPC 전체 모델 URL이 있으면 사용 (애니메이션 지원)
   const fullModelUrl = template.fullModelUrl || instance.metadata?.modelUrl;
   
   if (fullModelUrl) {

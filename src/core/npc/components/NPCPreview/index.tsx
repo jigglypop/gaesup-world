@@ -1,6 +1,4 @@
-import  { useState, useEffect } from 'react';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import * as THREE from 'three';
+
 import { useBuildingStore } from '../../../building/stores/buildingStore';
 import { useNPCStore } from '../../stores/npcStore';
 import { NPCPart } from '../../types';

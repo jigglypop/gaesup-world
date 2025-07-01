@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNPCStore } from '../../stores/npcStore';
 import { NPCEvent } from '../../types';
 import './styles.css';
