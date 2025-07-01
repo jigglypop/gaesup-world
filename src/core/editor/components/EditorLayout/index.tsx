@@ -5,13 +5,14 @@ import {
   CameraPanel,
   AnimationPanel,
   MotionPanel,
-  PerformancePanel
+  PerformancePanel,
+  VehiclePanel
 } from '../panels';
 import { ResizablePanel } from '../ResizablePanel';
 import { EditorLayoutProps, FloatingPanel, PanelConfig } from './types';
 
 export const EditorLayout: FC<EditorLayoutProps> = ({ children }) => {
-  const [activePanels, setActivePanels] = useState<string[]>(['hierarchy', 'performance']);
+  const [activePanels, setActivePanels] = useState<string[]>(['vehicle', 'performance']);
   const [floatingPanels, setFloatingPanels] = useState<FloatingPanel[]>([]);
   const [minimizedPanels, setMinimizedPanels] = useState<string[]>([]);
 
@@ -20,6 +21,7 @@ export const EditorLayout: FC<EditorLayoutProps> = ({ children }) => {
     { id: 'animation', title: 'Animation', component: <AnimationPanel />, defaultSide: 'left' },
     { id: 'motion', title: 'Motion', component: <MotionPanel />, defaultSide: 'right' },
     { id: 'performance', title: 'Performance', component: <PerformancePanel />, defaultSide: 'right' },
+    { id: 'vehicle', title: 'Vehicle', component: <VehiclePanel />, defaultSide: 'left' },
     { id: 'nodes', title: 'Node Editor', component: <NodeEditorPanel />, defaultSide: 'floating' },
   ];
 

@@ -4,7 +4,7 @@ import { euler, Physics, RigidBody } from '@react-three/rapier';
 import React, { Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import * as THREE from 'three';
-import { Clicker, GaesupController, GaeSupProps, GaesupWorld, GaesupWorldContent, Editor } from '../src';
+import { Clicker, GaesupController, GaeSupProps, GaesupWorld, GaesupWorldContent, Editor, useGaesupStore } from '../src';
 import { BuildingController, useBuildingStore } from '../src';
 import { GaesupAdmin, useAuthStore } from '../src/admin';
 import { CameraOptionType } from '../src/core/types/camera';
@@ -32,6 +32,7 @@ const cameraOption: CameraOptionType = {
 
 const WorldPage = ({ showEditor = false }) => {
   const isInBuildingMode = useBuildingStore((state) => state.isInEditMode());
+  const mode = useGaesupStore((state) => state.mode);
   
   return (
     <>
@@ -40,11 +41,6 @@ const WorldPage = ({ showEditor = false }) => {
           characterUrl: CHARACTER_URL,
           vehicleUrl: VEHICLE_URL,
           airplaneUrl: AIRPLANE_URL,
-        }}
-        mode={{
-          type: 'character',
-          controller: 'keyboard',
-          control: 'thirdPerson',
         }}
         debug={EXAMPLE_CONFIG.debug}
         cameraOption={cameraOption}
@@ -75,6 +71,7 @@ const WorldPage = ({ showEditor = false }) => {
               <Physics debug interpolate={true}>
                 {!isInBuildingMode && (
                   <GaesupController
+                    key={`controller-${mode.type}`}
                     controllerOptions={{ lerp: { cameraTurn: 0.1, cameraPosition: 0.08 } }}
                     rigidBodyProps={{}}
                     parts={[{ url: 'gltf/ally_cloth_rabbit.glb', color: '#ffe0e0' }]}

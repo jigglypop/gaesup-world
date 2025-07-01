@@ -13,13 +13,22 @@
   --editor-border-radius: 6px;
   --editor-surface: rgba(45, 45, 45, 0.95);
   --editor-text: #ffffff;
+  --editor-text-main: #ffffff;
   --editor-text-muted: #c0c0c0;
+  --editor-text-faint: #808080;
   --editor-glass-blur: blur(15px);
   --editor-spacing-xs: 4px;
   --editor-spacing-sm: 8px;
   --editor-spacing-md: 12px;
   --editor-spacing-lg: 16px;
   --editor-border: rgba(85, 85, 85, 0.8);
+  --editor-bg-1: rgba(30, 30, 35, 0.95);
+  --editor-bg-2: rgba(40, 40, 45, 0.95);
+  --editor-surface-1: rgba(50, 50, 55, 0.9);
+  --editor-accent: #0078d4;
+  --editor-radius-sm: 4px;
+  --editor-radius-md: 6px;
+  --editor-radius-lg: 8px;
 }
 
 /* Glass Theme */
