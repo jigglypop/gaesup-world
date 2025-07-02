@@ -2,6 +2,10 @@ import * as THREE from 'three';
 import { PhysicsState } from '../types';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { PhysicsCalcProps } from '../core/types';
+import { ActiveStateType } from '../core/types';
+
+type CheckAllPhysicsState = Pick<PhysicsState, 'activeState'>;
+type RotateActiveState = Pick<ActiveStateType, 'euler'> & { isMoving?: boolean };
 
 export class StateChecker {
   private keyStateCache = new Map<string, { lastKeyE: boolean; lastKeyR: boolean }>();
@@ -9,7 +13,7 @@ export class StateChecker {
   private lastMovingState = false;
   private lastRunningState = false;
 
-  checkAll(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
+  checkAll(calcProp: PhysicsCalcProps, physicsState: CheckAllPhysicsState): void {
     const instanceId = `physics-${calcProp.rigidBodyRef.current?.handle || 'unknown'}`;
     this.checkGround(calcProp);
     this.checkMoving(calcProp);
@@ -106,7 +110,7 @@ export class StateChecker {
 
   private checkRotate(
     prop: PhysicsCalcProps,
-    currentActiveState: { euler: THREE.Euler; isMoving?: boolean },
+    currentActiveState: RotateActiveState,
   ): void {
     const { outerGroupRef } = prop;
     if (!currentActiveState.isMoving || !outerGroupRef?.current) {

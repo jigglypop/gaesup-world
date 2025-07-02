@@ -1,11 +1,27 @@
-
 import { RefObject } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
-import { PhysicsState } from '../types';
+import {
+  PhysicsState,
+  characterConfigType,
+  vehicleConfigType,
+  airplaneConfigType
+} from '../types';
 import { useGaesupStore } from '@stores/gaesupStore';
 
+type ImpulsePhysicsState = Pick<
+  PhysicsState,
+  'modeType' | 'gameStates' | 'activeState' | 'keyboard'
+> & {
+  characterConfig: characterConfigType;
+  vehicleConfig: vehicleConfigType;
+  airplaneConfig: airplaneConfigType;
+};
+
 export class ImpulseController {
-  applyImpulse(rigidBodyRef: RefObject<RapierRigidBody>, physicsState: PhysicsState): void {
+  applyImpulse(
+    rigidBodyRef: RefObject<RapierRigidBody>,
+    physicsState: ImpulsePhysicsState
+  ): void {
     if (!rigidBodyRef.current) return;
     const { modeType } = physicsState;
     switch (modeType) {
@@ -25,7 +41,7 @@ export class ImpulseController {
 
   private applyCharacterImpulse(
     rigidBodyRef: RefObject<RapierRigidBody>,
-    physicsState: PhysicsState,
+    physicsState: ImpulsePhysicsState
   ): void {
     const {
       gameStates: { isMoving, isRunning, isOnTheGround, isJumping },
@@ -58,19 +74,18 @@ export class ImpulseController {
 
   private applyVehicleImpulse(
     rigidBodyRef: RefObject<RapierRigidBody>,
-    physicsState: PhysicsState,
+    physicsState: ImpulsePhysicsState
   ): void {
     const { activeState, vehicleConfig, keyboard } = physicsState;
     const { maxSpeed = 10, accelRatio = 2 } = vehicleConfig;
     const { shift } = keyboard;
-    // 현재 속도 확인
     const velocity = rigidBodyRef.current.linvel();
-    const currentSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
-    // maxSpeed 이하일 때만 가속
+    const currentSpeed = Math.sqrt(
+      velocity.x * velocity.x + velocity.z * velocity.z
+    );
     if (currentSpeed < maxSpeed) {
       const M = rigidBodyRef.current.mass();
       const speed = shift ? accelRatio : 1;
-      // impulse = mass * velocity * speed
       const impulse = {
         x: activeState.dir.x * M * speed,
         y: 0,
@@ -82,13 +97,17 @@ export class ImpulseController {
 
   private applyAirplaneImpulse(
     rigidBodyRef: RefObject<RapierRigidBody>,
-    physicsState: PhysicsState,
+    physicsState: ImpulsePhysicsState
   ): void {
     const { activeState, airplaneConfig } = physicsState;
     const { maxSpeed = 20 } = airplaneConfig;
     
     const velocity = rigidBodyRef.current.linvel();
-    const currentSpeed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
+    const currentSpeed = Math.sqrt(
+      velocity.x * velocity.x +
+        velocity.y * velocity.y +
+        velocity.z * velocity.z
+    );
     if (currentSpeed < maxSpeed) {
       const M = rigidBodyRef.current.mass();
       const impulse = {

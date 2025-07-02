@@ -20,5 +20,4 @@ dist/*
 image/
 image
 pnpm-lock.yaml
-jest.config.cjs
 public

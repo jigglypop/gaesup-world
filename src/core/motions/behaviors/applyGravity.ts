@@ -1,9 +1,20 @@
-import { PhysicsState } from '../types';
+import { PhysicsState, characterConfigType, airplaneConfigType } from '../types';
 import { RefObject } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 
+type GravityPhysicsState = Pick<
+  PhysicsState,
+  'modeType' | 'gameStates'
+> & {
+  characterConfig: characterConfigType;
+  airplaneConfig: airplaneConfigType;
+};
+
 export class GravityController {
-  applyGravity(rigidBodyRef: RefObject<RapierRigidBody>, physicsState: PhysicsState): void {
+  applyGravity(
+    rigidBodyRef: RefObject<RapierRigidBody>,
+    physicsState: GravityPhysicsState
+  ): void {
     if (!rigidBodyRef.current) return;
     const { modeType } = physicsState;
     switch (modeType) {
@@ -22,7 +33,7 @@ export class GravityController {
 
   private applyCharacterGravity(
     rigidBodyRef: RefObject<RapierRigidBody>,
-    physicsState: PhysicsState,
+    physicsState: GravityPhysicsState
   ): void {
     const {
       gameStates: { isJumping, isFalling },
@@ -37,7 +48,7 @@ export class GravityController {
 
   private applyAirplaneGravity(
     rigidBodyRef: RefObject<RapierRigidBody>,
-    physicsState: PhysicsState,
+    physicsState: GravityPhysicsState
   ): void {
     const { airplaneConfig: { gravityScale = 0.3 } = {} } = physicsState;
     rigidBodyRef.current.setGravityScale(gravityScale, false);

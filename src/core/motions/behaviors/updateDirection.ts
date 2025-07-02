@@ -8,7 +8,20 @@ import {
   shouldUpdate,
 } from '@utils/index';
 import { calcAngleByVector, calcNorm } from '../../utils/vector';
-import { PhysicsCalcProps, PhysicsState } from '../types';
+import {
+  PhysicsCalcProps,
+  PhysicsState,
+  characterConfigType,
+  airplaneConfigType
+} from '../types';
+
+type DirectionPhysicsState = Pick<
+  PhysicsState,
+  'modeType' | 'activeState' | 'keyboard' | 'mouse'
+> & {
+  characterConfig: characterConfigType;
+  airplaneConfig: airplaneConfigType;
+};
 
 export class DirectionController {
   private memoManager = MemoizationManager.getInstance();
@@ -28,7 +41,7 @@ export class DirectionController {
   private timers = new Set<NodeJS.Timeout>();
 
   updateDirection(
-    physicsState: PhysicsState,
+    physicsState: DirectionPhysicsState,
     controlMode?: string,
     calcProp?: PhysicsCalcProps,
     innerGroupRef?: RefObject<THREE.Group>,
@@ -52,7 +65,7 @@ export class DirectionController {
   }
 
   private updateCharacterDirection(
-    physicsState: PhysicsState,
+    physicsState: DirectionPhysicsState,
     controlMode?: string,
     calcProp?: PhysicsCalcProps,
   ): void {
@@ -81,16 +94,17 @@ export class DirectionController {
     this.emitRotationUpdate(activeState, 'character');
   }
 
-  private updateVehicleDirection(physicsState: PhysicsState, controlMode?: string): void {
+  private updateVehicleDirection(
+    physicsState: DirectionPhysicsState,
+    controlMode?: string
+  ): void {
     const { activeState, keyboard } = physicsState;
     const { forward, backward, leftward, rightward } = keyboard;
     const xAxis = Number(leftward) - Number(rightward);
     const zAxis = Number(forward) - Number(backward);
 
-    // 좌우 회전
     activeState.euler.y += xAxis * (Math.PI / 64);
 
-    // 전진/후진 방향 계산
     const { sin: sinY, cos: cosY } = getCachedTrig(activeState.euler.y);
     activeState.direction.set(sinY * zAxis, 0, cosY * zAxis);
     activeState.dir.copy(activeState.direction);
@@ -99,7 +113,7 @@ export class DirectionController {
   }
 
   private updateAirplaneDirection(
-    physicsState: PhysicsState,
+    physicsState: DirectionPhysicsState,
     innerGroupRef?: RefObject<THREE.Group>,
     matchSizes?: THREE.Vector3,
     controlMode?: string,
@@ -162,8 +176,8 @@ export class DirectionController {
 
   private handleMouseDirection(
     activeState: ActiveStateType,
-    mouse: PhysicsState['mouse'],
-    characterConfig: PhysicsState['characterConfig'],
+    mouse: DirectionPhysicsState['mouse'],
+    characterConfig: DirectionPhysicsState['characterConfig'],
     calcProp?: PhysicsCalcProps,
   ): void {
     const { automation } = calcProp.worldContext || {};
@@ -239,8 +253,8 @@ export class DirectionController {
 
   private applyMouseRotation(
     activeState: ActiveStateType,
-    mouse: PhysicsState['mouse'],
-    characterConfig: PhysicsState['characterConfig'],
+    mouse: DirectionPhysicsState['mouse'],
+    characterConfig: DirectionPhysicsState['characterConfig'],
   ): void {
     // 원래의 간단한 클릭 로직으로 복원
     activeState.euler.y = Math.PI / 2 - mouse.angle;
@@ -251,8 +265,8 @@ export class DirectionController {
 
   private handleKeyboardDirection(
     activeState: ActiveStateType,
-    keyboard: PhysicsState['keyboard'],
-    characterConfig: PhysicsState['characterConfig'],
+    keyboard: DirectionPhysicsState['keyboard'],
+    characterConfig: DirectionPhysicsState['characterConfig'],
     controlMode?: string,
   ): void {
     const { forward, backward, leftward, rightward } = keyboard;
