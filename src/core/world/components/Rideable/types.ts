@@ -5,6 +5,13 @@ import { WorldObject } from '../../core/WorldEngine';
 export interface GameStatesType {
   canRide: boolean;
   isRiding: boolean;
+  isJumping: boolean;
+  isFalling: boolean;
+  isMoving: boolean;
+  isRunning: boolean;
+  isNotMoving: boolean;
+  isNotRunning: boolean;
+  isOnTheGround: boolean;
   nearbyRideable?: RideableObject;
   currentRideable?: RideableObject;
   rideableDistance?: number;

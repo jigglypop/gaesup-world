@@ -1,5 +1,21 @@
 import { GravityController } from '../applyGravity';
 import { RapierRigidBody } from '@react-three/rapier';
+import { ModeType } from '../../../stores/types';
+
+type GravityPhysicsState = {
+  modeType: ModeType;
+  gameStates: {
+    isJumping: boolean;
+    isFalling: boolean;
+  };
+  characterConfig: {
+    jumpGravityScale?: number;
+    normalGravityScale?: number;
+  };
+  airplaneConfig: {
+    gravityScale?: number;
+  };
+};
 
 describe('GravityController', () => {
   let gravityController: GravityController;
@@ -13,10 +29,10 @@ describe('GravityController', () => {
   });
 
   const createMockState = (
-    modeType: 'character' | 'airplane' | 'vehicle',
+    modeType: ModeType,
     isJumping = false,
     isFalling = false
-  ) => ({
+  ): GravityPhysicsState => ({
     modeType,
     gameStates: { isJumping, isFalling },
     characterConfig: { jumpGravityScale: 2.0, normalGravityScale: 1.0 },

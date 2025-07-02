@@ -1,5 +1,5 @@
 import { StateChecker } from '../checkState';
-import { useGaesupStore } from '@stores/gaesupStore';
+import { useGaesupStore } from '../../../stores/gaesupStore';
 import * as THREE from 'three';
 
 jest.mock('@stores/gaesupStore', () => ({

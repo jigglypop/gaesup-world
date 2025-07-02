@@ -1,6 +1,5 @@
 import { ImpulseController } from '../applyImpulse';
 import { RapierRigidBody } from '@react-three/rapier';
-import { useGaesupStore } from '@stores/gaesupStore';
 import * as THREE from 'three';
 
 const mockSetStates = jest.fn();

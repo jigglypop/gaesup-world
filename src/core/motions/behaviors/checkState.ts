@@ -34,11 +34,6 @@ export class StateChecker {
     const velocity = rigidBodyRef.current.linvel();
     const position = rigidBodyRef.current.translation();
     let groundCheckDistance = 1.0;
-    if (matchSizes && matchSizes.characterUrl) {
-      const characterSize = matchSizes.characterUrl;
-      groundCheckDistance = characterSize.y * 0.1;
-    }
-
     const isNearGround = position.y <= groundCheckDistance;
     const isNotFalling = Math.abs(velocity.y) < 0.5;
     const isOnTheGround = isNearGround && isNotFalling;
@@ -67,7 +62,6 @@ export class StateChecker {
     if (!inputRef || !inputRef.current) {
       return;
     }
-
     const keyboard = inputRef.current.keyboard;
     const mouse = inputRef.current.mouse;
     const shift = keyboard.shift;
