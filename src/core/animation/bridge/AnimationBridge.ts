@@ -47,6 +47,13 @@ export class AnimationBridge {
     });
   }
 
+  unregisterAnimations(type: AnimationType): void {
+    const engine = this.engines.get(type);
+    if (!engine) return;
+    
+    engine.clearActions();
+  }
+
   execute(type: AnimationType, command: AnimationCommand): void {
     const engine = this.engines.get(type);
     if (!engine) return;

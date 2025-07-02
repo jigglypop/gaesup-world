@@ -10,6 +10,9 @@ lerna-debug.log*
 node_modules
 *.local
 
+# Test coverage
+coverage/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

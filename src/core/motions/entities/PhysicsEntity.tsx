@@ -1,7 +1,7 @@
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
 import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three/rapier';
-import { RefObject, forwardRef, useEffect, useMemo } from 'react';
+import { RefObject, forwardRef, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import { useGaesupStore } from '@stores/gaesupStore';
@@ -24,7 +24,7 @@ function RidingAnimation({
 }) {
   const { animations: ridingAnimations } = useGLTF(url);
   const { actions: ridingActions } = useAnimations(ridingAnimations);
-  // 라이더는 항상 ride 애니메이션만 사용
+  
   useEffect(() => {
     if (active && ridingActions.ride) {
       ridingActions.ride.reset().play();
@@ -35,6 +35,7 @@ function RidingAnimation({
       }
     };
   }, [active, ridingActions]);
+  
   return null;
 }
 
@@ -48,13 +49,25 @@ function VehicleAnimation({
   modeType?: string;
 }) {
   const keyboard = useGaesupStore((state) => state.interaction?.keyboard);
+  const prevStateRef = useRef({ isMoving: false, isRunning: false });
+  
   useEffect(() => {
     if (!isActive || !actions) return;
+    
     const isMoving = keyboard?.forward || keyboard?.backward;
     const isRunning = keyboard?.shift && isMoving;
+    const prevState = prevStateRef.current;
+    
+    if (prevState.isMoving === isMoving && prevState.isRunning === isRunning) {
+      return;
+    }
+    
+    prevStateRef.current = { isMoving, isRunning };
+    
     Object.values(actions).forEach((action: any) => {
       if (action) action.stop();
     });
+    
     if (modeType === 'airplane') {
       if (actions.fly) {
         actions.fly.reset().play();
@@ -70,7 +83,7 @@ function VehicleAnimation({
         actions.idle.reset().play();
       }
     }
-  }, [actions, isActive, keyboard, modeType]);
+  }, [actions, isActive, keyboard?.forward, keyboard?.backward, keyboard?.shift, modeType]);
 
   return null;
 }
@@ -81,6 +94,8 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const setGroundRay = useSetGroundRay();
     const { scene, animations } = useGLTF(props.url);
     const { actions, ref: animationRef } = useAnimations(animations);
+    const animationBridgeRef = useRef<boolean>(false);
+    
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
     const skeleton = useMemo(() => {
       let skel: THREE.Skeleton | null = null;
@@ -93,11 +108,18 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     }, [clone]);
 
     const mode = useGaesupStore((state) => state.mode);
+    const isRiding = useGaesupStore((state) => state.states.isRiding);
 
     useEffect(() => {
-      if (actions && mode?.type && props.isActive) {
+      if (actions && mode?.type && props.isActive && !animationBridgeRef.current) {
         const bridge = getGlobalAnimationBridge();
         bridge.registerAnimations(mode.type as any, actions);
+        animationBridgeRef.current = true;
+        
+        return () => {
+          bridge.unregisterAnimations(mode.type as any);
+          animationBridgeRef.current = false;
+        };
       }
     }, [actions, mode?.type, props.isActive]);
 
@@ -182,41 +204,55 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
         groundRay: props.groundRay,
       });
     }
-    const isRiding = useGaesupStore((state) => state.states.isRiding);
+    
     useAnimationPlayer(props.isActive && mode?.type === 'character');
-    if (props.onReady) props.onReady();
-    if (props.onFrame) props.onFrame();
-    if (props.onAnimate && actions) props.onAnimate();
+    
+    useEffect(() => {
+      if (props.onReady) props.onReady();
+    }, [props.onReady]);
+    
+    useEffect(() => {
+      const frameHandler = () => {
+        if (props.onFrame) props.onFrame();
+        if (props.onAnimate && actions) props.onAnimate();
+      };
+      
+      if (props.onFrame || (props.onAnimate && actions)) {
+        const intervalId = requestAnimationFrame(frameHandler);
+        return () => cancelAnimationFrame(intervalId);
+      }
+    }, [props.onFrame, props.onAnimate, actions]);
+    
     const { nodes } = useGraph(clone);
     const objectNode = Object.values(nodes).find((node) => node.type === 'Object3D');
     const safeRotationY = props.rotation instanceof THREE.Euler ? props.rotation.y : 0;
 
-    const handleIntersectionEnter = async (payload: any) => {
+    const handleIntersectionEnter = useMemo(() => async (payload: any) => {
       if (props.onIntersectionEnter) {
         await props.onIntersectionEnter(payload);
       }
       if (props.userData?.onNear) {
         await props.userData.onNear(payload, props.userData);
       }
-    };
+    }, [props.onIntersectionEnter, props.userData]);
 
-    const handleIntersectionExit = async (payload: any) => {
+    const handleIntersectionExit = useMemo(() => async (payload: any) => {
       if (props.onIntersectionExit) {
         await props.onIntersectionExit(payload);
       }
       if (props.userData?.onLeave) {
         await props.userData.onLeave(payload);
       }
-    };
+    }, [props.onIntersectionExit, props.userData]);
 
-    const handleCollisionEnter = async (payload: any) => {
+    const handleCollisionEnter = useMemo(() => async (payload: any) => {
       if (props.onCollisionEnter) {
         await props.onCollisionEnter(payload);
       }
       if (props.userData?.onNear) {
         await props.userData.onNear(payload, props.userData);
       }
-    };
+    }, [props.onCollisionEnter, props.userData]);
 
     return (
       <group ref={props.outerGroupRef} userData={{ intangible: true }}>

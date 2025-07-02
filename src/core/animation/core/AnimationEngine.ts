@@ -141,6 +141,19 @@ export class AnimationEngine {
     this.metrics.currentWeight = this.state.currentWeight;
   }
 
+  clearActions(): void {
+    this.state.actions.forEach(action => {
+      if (action.isRunning()) {
+        action.stop();
+      }
+    });
+    this.state.actions.clear();
+    this.state.currentAnimation = 'idle';
+    this.state.isPlaying = false;
+    this.updateMetrics();
+    this.notifyCallbacks();
+  }
+
   dispose(): void {
     if (this.state.animationMixer) {
       this.state.animationMixer.stopAllAction();
