@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useGaesupStore } from '../../../stores/gaesupStore';
 import './styles.css';
 
@@ -26,16 +26,16 @@ export function MotionController() {
   const activePresetId = motion?.currentPreset || 'normal';
   const presets = currentType === 'vehicle' ? VEHICLE_PRESETS : MOTION_PRESETS;
 
-  const handlePresetChange = (presetId: string) => {
+  const handlePresetChange = useCallback((presetId: string) => {
     setCurrentPreset(presetId);
-  };
+  }, [setCurrentPreset]);
   
-  const handleMotionTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleMotionTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const newType = e.target.value as 'character' | 'vehicle';
     setMotionType(newType);
     const defaultPreset = newType === 'vehicle' ? 'comfort' : 'normal';
     setCurrentPreset(defaultPreset);
-  }
+  }, [setMotionType, setCurrentPreset]);
 
   return (
     <div className="mc-panel">

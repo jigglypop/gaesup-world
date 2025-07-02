@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useGaesupStore } from '../../../stores/gaesupStore';
 import { CameraOptionType } from '../core/types';
 import './styles.css';
@@ -62,6 +62,11 @@ const DEFAULT_PRESETS: CameraPreset[] = [
   }
 ];
 
+function compareDistance(a: { x: number; y: number; z: number } | undefined, b: { x: number; y: number; z: number } | undefined): boolean {
+  if (!a || !b) return false;
+  return a.x === b.x && a.y === b.y && a.z === b.z;
+}
+
 export function CameraPresets() {
   const [presets] = useState<CameraPreset[]>(DEFAULT_PRESETS);
   const setMode = useGaesupStore((state) => state.setMode);
@@ -70,7 +75,7 @@ export function CameraPresets() {
   const cameraOption = useGaesupStore((state) => state.cameraOption);
   const [currentPresetId, setCurrentPresetId] = useState<string | null>(null);
   
-  const applyPreset = (preset: CameraPreset) => {
+  const applyPreset = useCallback((preset: CameraPreset) => {
     setMode({ control: preset.config.mode });
     const newOptions: CameraOptionType = {
       ...cameraOption,
@@ -79,12 +84,12 @@ export function CameraPresets() {
       smoothing: preset.config.smoothing || { position: 0.1, rotation: 0.1, fov: 0.1 }
     };
     setCameraOption(newOptions);
-  };
+  }, [setMode, setCameraOption, cameraOption]);
 
   useEffect(() => {
     const foundPreset = presets.find(p => 
       p.config.mode === mode?.control &&
-      JSON.stringify(p.config.distance) === JSON.stringify(cameraOption?.distance)
+      compareDistance(p.config.distance, cameraOption?.distance)
     );
     setCurrentPresetId(foundPreset ? foundPreset.id : null);
   }, [mode, cameraOption, presets]);

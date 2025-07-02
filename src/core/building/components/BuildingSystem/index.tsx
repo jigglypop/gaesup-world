@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Suspense } from 'react';
 import { WallSystem } from '../WallSystem';
 import { TileSystem } from '../TileSystem';
@@ -29,6 +29,9 @@ export function BuildingSystem({
     showGrid,
     gridSize,
   } = useBuildingStore();
+  
+  const wallGroupsArray = useMemo(() => Array.from(wallGroups.values()), [wallGroups]);
+  const tileGroupsArray = useMemo(() => Array.from(tileGroups.values()), [tileGroups]);
 
   return (
     <Suspense fallback={null}>
@@ -39,7 +42,7 @@ export function BuildingSystem({
         <PreviewWall />
         <NPCPreview />
         
-        {Array.from(wallGroups.values()).map((wallGroup) => (
+        {wallGroupsArray.map((wallGroup) => (
           <WallSystem
             key={wallGroup.id}
             wallGroup={wallGroup}
@@ -50,7 +53,7 @@ export function BuildingSystem({
           />
         ))}
         
-        {Array.from(tileGroups.values()).map((tileGroup) => (
+        {tileGroupsArray.map((tileGroup) => (
           <TileSystem
             key={tileGroup.id}
             tileGroup={tileGroup}

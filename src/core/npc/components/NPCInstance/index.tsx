@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo, useCallback } from 'react';
 import * as THREE from 'three';
 import { useGLTF } from '@react-three/drei';
 import { SkeletonUtils } from 'three-stdlib';
@@ -45,6 +45,18 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
   const groupRef = useRef<THREE.Group>(null);
   const { templates, clothingSets } = useNPCStore();
   const template = templates.get(instance.templateId);
+  
+  const handlePointerEnter = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation();
+    document.body.style.cursor = 'pointer';
+    const handlers = (groupRef.current as any)?.__handlers;
+    if (handlers?.pointerover) handlers.pointerover();
+  }, []);
+  
+  const handlePointerLeave = useCallback(() => {
+    document.body.style.cursor = 'default';
+  }, []);
+  
   if (!template) {
     return null;
   }
@@ -150,15 +162,8 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
           ref={groupRef}
           scale={instance.scale}
           onClick={onClick}
-          onPointerEnter={(e: any) => {
-            e.stopPropagation();
-            document.body.style.cursor = 'pointer';
-            const handlers = (groupRef.current as any)?.__handlers;
-            if (handlers?.pointerover) handlers.pointerover();
-          }}
-          onPointerLeave={() => {
-            document.body.style.cursor = 'default';
-          }}
+          onPointerEnter={handlePointerEnter}
+          onPointerLeave={handlePointerLeave}
         >
           {allParts.map((part) => (
             <NPCPartMesh key={part.id} part={part} instanceId={instance.id} />
@@ -186,15 +191,8 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
         ref={groupRef}
         scale={instance.scale}
         onClick={onClick}
-        onPointerEnter={(e: any) => {
-          e.stopPropagation();
-          document.body.style.cursor = 'pointer';
-          const handlers = (groupRef.current as any)?.__handlers;
-          if (handlers?.pointerover) handlers.pointerover();
-        }}
-        onPointerLeave={() => {
-          document.body.style.cursor = 'default';
-        }}
+        onPointerEnter={handlePointerEnter}
+        onPointerLeave={handlePointerLeave}
       >
         {allParts.map((part) => (
           <NPCPartMesh key={part.id} part={part} instanceId={instance.id} />

@@ -1,4 +1,4 @@
-import { Suspense, useEffect, ReactNode } from 'react';
+import { Suspense, useEffect, ReactNode, useMemo } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { WorldContainerProps } from './types';
 import { Camera } from '@/core/camera';
@@ -32,16 +32,17 @@ export function WorldContainer(props: WorldContainerProps) {
     }
   }, [props.mode, setMode]);
 
+  const urlUpdates = useMemo(() => {
+    if (!props.urls) return null;
+    const entries = Object.entries(props.urls).filter(([, value]) => value !== undefined);
+    return entries.length > 0 ? Object.fromEntries(entries) : null;
+  }, [props.urls]);
+  
   useEffect(() => {
-    if (props.urls) {
-      const urlUpdates = Object.fromEntries(
-        Object.entries(props.urls).filter(([, value]) => value !== undefined),
-      );
-      if (Object.keys(urlUpdates).length > 0) {
-        setUrls(urlUpdates);
-      }
+    if (urlUpdates) {
+      setUrls(urlUpdates);
     }
-  }, [props.urls, setUrls]);
+  }, [urlUpdates, setUrls]);
 
   useEffect(() => {
     if (props.cameraOption) {

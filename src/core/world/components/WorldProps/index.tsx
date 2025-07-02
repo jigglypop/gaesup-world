@@ -1,5 +1,5 @@
 import { vec3 } from '@react-three/rapier';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { useClicker } from '@hooks/useClicker';
@@ -17,7 +17,14 @@ export function WorldProps({
   const addMinimapMarker = useGaesupStore((state) => state.addMinimapMarker);
   const removeMinimapMarker = useGaesupStore((state) => state.removeMinimapMarker);
   const clickerStates = useClicker();
-  const markerId = useRef<string>(`world-prop-${Date.now()}-${Math.random()}`);
+  const markerId = useMemo(() => `world-prop-${Date.now()}-${Math.random()}`, []);
+  
+  // Reusable THREE.js objects
+  const vectorsRef = useRef({
+    center: new THREE.Vector3(),
+    size: new THREE.Vector3(),
+    positionAdd: new THREE.Vector3()
+  });
 
   useEffect(() => {
     if (showMinimap && groupRef.current) {
@@ -29,20 +36,20 @@ export function WorldProps({
         box.setFromObject(group);
         
         if (!box.isEmpty()) {
-          const center = new THREE.Vector3();
-          const size = new THREE.Vector3();
+          const { center, size, positionAdd } = vectorsRef.current;
           box.getCenter(center);
           box.getSize(size);
           
           if (position) {
-            center.add(new THREE.Vector3(position[0], position[1], position[2]));
+            positionAdd.set(position[0], position[1], position[2]);
+            center.add(positionAdd);
           }
           
-          addMinimapMarker(markerId.current, {
+          addMinimapMarker(markerId, {
             type: type as 'normal' | 'ground',
             text: text || '',
-            center,
-            size,
+            center: center.clone(), // Clone only when passing to store
+            size: size.clone(), // Clone only when passing to store
           });
         }
       };
@@ -51,10 +58,10 @@ export function WorldProps({
       
       return () => {
         clearTimeout(timer);
-        removeMinimapMarker(markerId.current);
+        removeMinimapMarker(markerId);
       };
     }
-  }, [addMinimapMarker, removeMinimapMarker, position, type, text, showMinimap]);
+  }, [addMinimapMarker, removeMinimapMarker, position, type, text, showMinimap, markerId]);
 
   return (
     <group 

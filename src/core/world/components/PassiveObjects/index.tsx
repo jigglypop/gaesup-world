@@ -1,6 +1,7 @@
 import { PhysicsEntity, useGenericRefs } from '@motions/entities';
 import { RigidBody, CapsuleCollider } from '@react-three/rapier';
 import { PassiveObjectProps, PassiveObject } from './types';
+import { useMemo, memo, useCallback } from 'react';
 import './styles.css';
 
 interface PassiveObjectInstanceProps {
@@ -11,7 +12,7 @@ interface PassiveObjectInstanceProps {
   enableInteraction?: boolean;
 }
 
-function PassiveObjectInstance({
+const PassiveObjectInstance = memo(function PassiveObjectInstance({
   object,
   isSelected,
   onSelect,
@@ -19,6 +20,23 @@ function PassiveObjectInstance({
   enableInteraction = true
 }: PassiveObjectInstanceProps) {
   const refs = useGenericRefs();
+  
+  const handleClick = useCallback(() => {
+    if (enableInteraction && object.interactable && onSelect) {
+      onSelect(object.id);
+    }
+  }, [enableInteraction, object.interactable, object.id, onSelect]);
+  
+  const handlePointerEnter = useCallback((e: React.PointerEvent) => {
+    if (enableInteraction && object.interactable) {
+      e.stopPropagation();
+      document.body.style.cursor = 'pointer';
+    }
+  }, [enableInteraction, object.interactable]);
+  
+  const handlePointerLeave = useCallback(() => {
+    document.body.style.cursor = 'default';
+  }, []);
   
   if (object.metadata?.modelUrl) {
     return (
@@ -69,21 +87,14 @@ function PassiveObjectInstance({
       <CapsuleCollider args={[1, 0.5]} position={[0, 1, 0]} />
       <group
         scale={object.scale}
-        onClick={() => enableInteraction && object.interactable && onSelect?.(object.id)}
-        onPointerEnter={(e) => {
-          if (enableInteraction && object.interactable) {
-            e.stopPropagation();
-            document.body.style.cursor = 'pointer';
-          }
-        }}
-        onPointerLeave={() => {
-          document.body.style.cursor = 'default';
-        }}
+        onClick={handleClick}
+        onPointerEnter={handlePointerEnter}
+        onPointerLeave={handlePointerLeave}
       >
       </group>
     </RigidBody>
   );
-}
+});
 
 export function PassiveObjects({ 
   objects, 
@@ -95,18 +106,23 @@ export function PassiveObjects({
   showLabels = false,
   onInteract
 }: PassiveObjectProps) {
+  const objectElements = useMemo(() => 
+    objects.map((obj) => (
+      <PassiveObjectInstance
+        key={obj.id}
+        object={obj}
+        isSelected={obj.id === selectedId}
+        onSelect={onSelect}
+        showDebugInfo={showDebugInfo}
+        enableInteraction={enableInteraction}
+      />
+    )), 
+    [objects, selectedId, onSelect, showDebugInfo, enableInteraction]
+  );
+
   return (
     <group name="passive-objects">
-      {objects.map((obj) => (
-        <PassiveObjectInstance
-          key={obj.id}
-          object={obj}
-          isSelected={obj.id === selectedId}
-          onSelect={onSelect}
-          showDebugInfo={showDebugInfo}
-          enableInteraction={enableInteraction}
-        />
-      ))}
+      {objectElements}
     </group>
   );
 }

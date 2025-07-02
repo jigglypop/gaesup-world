@@ -8,7 +8,7 @@ export const useCheck = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<userType | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
-  const [isUerError, setIsUserError] = useState(false);
+  const [isUserError, setIsUserError] = useState(false);
   const [isUserSuccess, setIsUserSuccess] = useState(false);
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export const useCheck = () => {
     navigate("/admin/world/");
   };
 
-  return { user, isUerError, isUserLoading, isUserSuccess, onLogout };
+  return { user, isUserError, isUserLoading, isUserSuccess, onLogout };
 };
 
 

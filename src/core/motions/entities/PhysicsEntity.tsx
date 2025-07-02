@@ -15,6 +15,15 @@ import { PhysicsEntityProps } from './types';
 import { Camera } from '../../camera';
 import { useGltfAndSize } from './useGaesupGltf';
 
+// AnimationActions 타입 정의
+type AnimationActions = {
+  [key: string]: THREE.AnimationAction | undefined;
+  idle?: THREE.AnimationAction;
+  walk?: THREE.AnimationAction;
+  run?: THREE.AnimationAction;
+  fly?: THREE.AnimationAction;
+};
+
 function RidingAnimation({
   url,
   active = false,
@@ -44,7 +53,7 @@ function VehicleAnimation({
   isActive = false,
   modeType = 'vehicle',
 }: {
-  actions: any;
+  actions: AnimationActions;
   isActive?: boolean;
   modeType?: string;
 }) {
@@ -64,7 +73,7 @@ function VehicleAnimation({
     
     prevStateRef.current = { isMoving, isRunning };
     
-    Object.values(actions).forEach((action: any) => {
+    Object.values(actions).forEach((action) => {
       if (action) action.stop();
     });
     
@@ -212,14 +221,24 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     }, [props.onReady]);
     
     useEffect(() => {
+      let animationId: number;
+      
       const frameHandler = () => {
         if (props.onFrame) props.onFrame();
         if (props.onAnimate && actions) props.onAnimate();
+        
+        // 계속해서 다음 프레임을 요청
+        animationId = requestAnimationFrame(frameHandler);
       };
       
       if (props.onFrame || (props.onAnimate && actions)) {
-        const intervalId = requestAnimationFrame(frameHandler);
-        return () => cancelAnimationFrame(intervalId);
+        animationId = requestAnimationFrame(frameHandler);
+        
+        return () => {
+          if (animationId) {
+            cancelAnimationFrame(animationId);
+          }
+        };
       }
     }, [props.onFrame, props.onAnimate, actions]);
     

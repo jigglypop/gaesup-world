@@ -81,17 +81,14 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
   const updateCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
-      console.log('No canvas');
       return;
     }
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      console.log('No context');
       return;
     }
     const { position, euler } = activeState;
     if (!position || !euler) {
-      console.log('No position or euler', position, euler);
       return;
     }
     const rotation = euler.y;

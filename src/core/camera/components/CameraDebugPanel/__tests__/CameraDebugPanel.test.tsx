@@ -3,7 +3,6 @@ import ReactThreeTestRenderer from '@react-three/test-renderer';
 import { CameraDebugPanel } from '../index';
 import { useGaesupStore } from '../../../../stores';
 import * as THREE from 'three';
-
 jest.mock('../../../../stores');
 
 describe('CameraDebugPanel 성능 테스트', () => {

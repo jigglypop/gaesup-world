@@ -3,6 +3,12 @@ import ReactThreeTestRenderer from '@react-three/test-renderer';
 import { SpeechBalloon } from '../index';
 import * as THREE from 'three';
 
+// cleanup 함수 추가
+afterEach(() => {
+  jest.clearAllMocks();
+  jest.clearAllTimers();
+});
+
 describe('SpeechBalloon 성능 테스트', () => {
   describe('메모리 최적화', () => {
     it('렌더링마다 새로운 Vector3를 생성하지 않아야 함', async () => {

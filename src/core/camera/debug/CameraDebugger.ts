@@ -55,12 +55,12 @@ export class CameraDebugger {
     this.disposables.add(() => window.removeEventListener('resize', handleResize));
   }
 
-  private handleResize(): void {
-    if (this.isEnabled) {
-      console.error('[CameraDebugger] Window resized, clearing debug info');
-      this.clearDebugInfo();
+  private handleResize = () => {
+    this.clearDebugInfo();
+    if (this.debugInfo.lastUpdate) {
+      this.debugInfo.lastUpdate = Date.now();
     }
-  }
+  };
 
   update(camera: THREE.Camera, deltaTime: number, state?: string): void {
     if (!this.isEnabled) return;

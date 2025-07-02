@@ -20,6 +20,7 @@ export class SmartCollisionSystem {
   private tempVector3 = new THREE.Vector3();
   private tempQuaternion = new THREE.Quaternion();
   private tempDirection = new THREE.Vector3(0, 0, -1);
+  private bestPositionTemp = new THREE.Vector3();
 
   constructor(config?: Partial<CameraCollisionConfig>) {
     this.config = { ...this.config, ...config };
@@ -70,7 +71,7 @@ export class SmartCollisionSystem {
     scene: THREE.Scene,
     excludeObjects?: THREE.Object3D[],
   ): THREE.Vector3 {
-    let bestPosition = to.clone();
+    this.bestPositionTemp.copy(to);
     let shortestDistance = distance;
 
     this.tempQuaternion.setFromUnitVectors(this.tempDirection, direction);
@@ -100,17 +101,17 @@ export class SmartCollisionSystem {
             hitDistance - this.config.minDistance,
             this.config.minDistance,
           );
-          bestPosition = from.clone().add(direction.clone().multiplyScalar(shortestDistance));
+          this.bestPositionTemp.copy(from).add(direction.clone().multiplyScalar(shortestDistance));
         }
       }
     }
     if (shortestDistance < distance * 0.5) {
-      const slidePosition = this.calculateWallSlide(from, bestPosition, scene);
+      const slidePosition = this.calculateWallSlide(from, this.bestPositionTemp, scene);
       if (slidePosition) {
-        bestPosition = slidePosition;
+        this.bestPositionTemp.copy(slidePosition);
       }
     }
-    return bestPosition;
+    return this.bestPositionTemp.clone();
   }
 
   private calculateWallSlide(

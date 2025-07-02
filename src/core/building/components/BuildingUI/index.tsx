@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useBuildingStore } from '../../stores/buildingStore';
 import { useAuthStore } from '../../../../admin/store/authStore';
 import { useNPCStore } from '../../../npc/stores/npcStore';
@@ -67,6 +67,15 @@ export function BuildingUI() {
     glasses?: string;
   }>({});
   
+  // Memoize arrays
+  const tileCategoriesArray = useMemo(() => Array.from(tileCategories.values()), [tileCategories]);
+  const wallCategoriesArray = useMemo(() => Array.from(wallCategories.values()), [wallCategories]);
+  const npcTemplatesArray = useMemo(() => Array.from(npcTemplates.values()), [npcTemplates]);
+  
+  // Callbacks
+  const handleEditModeClose = useCallback(() => setEditMode('none'), [setEditMode]);
+  const handleToggleCustomSettings = useCallback(() => setShowCustomSettings(prev => !prev), []);
+  
   React.useEffect(() => {
     initializeNPCDefaults();
   }, [initializeNPCDefaults]);
@@ -116,7 +125,7 @@ export function BuildingUI() {
             <div className="building-ui-header">
               <span className="building-ui-title">Building Mode</span>
               <button 
-                onClick={() => setEditMode('none')}
+                onClick={handleEditModeClose}
                 className="building-ui-close"
               >
                 ×
@@ -153,7 +162,7 @@ export function BuildingUI() {
                     onChange={(e) => setSelectedTileCategory(e.target.value)}
                     className="building-ui-select"
                   >
-                    {Array.from(tileCategories.values()).map(category => (
+                    {tileCategoriesArray.map(category => (
                       <option key={category.id} value={category.id}>
                         {category.name}
                       </option>
@@ -180,7 +189,7 @@ export function BuildingUI() {
                 </div>
                 
                 <button 
-                  onClick={() => setShowCustomSettings(!showCustomSettings)}
+                  onClick={handleToggleCustomSettings}
                   className="building-ui-custom-toggle"
                 >
                   {showCustomSettings ? 'Hide' : 'Show'} Custom Settings
@@ -370,7 +379,7 @@ export function BuildingUI() {
                     onChange={(e) => setSelectedWallCategory(e.target.value)}
                     className="building-ui-select"
                   >
-                    {Array.from(wallCategories.values()).map(category => (
+                    {wallCategoriesArray.map(category => (
                       <option key={category.id} value={category.id}>
                         {category.name}
                       </option>
@@ -397,7 +406,7 @@ export function BuildingUI() {
                 </div>
                 
                 <button 
-                  onClick={() => setShowCustomSettings(!showCustomSettings)}
+                  onClick={handleToggleCustomSettings}
                   className="building-ui-custom-toggle"
                 >
                   {showCustomSettings ? 'Hide' : 'Show'} Custom Settings
@@ -575,7 +584,7 @@ export function BuildingUI() {
                     onChange={(e) => setSelectedNPCTemplate(e.target.value)}
                     className="building-ui-select"
                   >
-                    {Array.from(npcTemplates.values()).map(template => (
+                    {npcTemplatesArray.map(template => (
                       <option key={template.id} value={template.id}>
                         {template.name}
                       </option>

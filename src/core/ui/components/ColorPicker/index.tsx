@@ -99,7 +99,13 @@ export function ColorPicker({
   const [isOpen, setIsOpen] = useState(false);
   const [hsl, setHsl] = useState(() => hexToHsl(color));
   const popupRef = useRef<HTMLDivElement>(null);
-  const slidersRef = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const slidersRef = useRef<{ [key: string]: HTMLDivElement | null }>(null);
+
+  useEffect(() => {
+    if (!slidersRef.current) {
+      slidersRef.current = {};
+    }
+  }, []);
 
   useEffect(() => {
     setHsl(hexToHsl(color));
@@ -120,6 +126,8 @@ export function ColorPicker({
   }, [isOpen, onClose]);
 
   const handleSliderChange = useCallback((type: 'h' | 's' | 'l' | 'a', event: React.MouseEvent | MouseEvent) => {
+    if (!slidersRef.current) return;
+    
     const slider = slidersRef.current[type];
     if (!slider) return;
 
@@ -185,7 +193,11 @@ export function ColorPicker({
               <div className="color-picker__slider-row">
                 <span className="color-picker__slider-label">H</span>
                 <div
-                  ref={el => slidersRef.current.h = el}
+                  ref={el => {
+                    if (slidersRef.current) {
+                      slidersRef.current.h = el;
+                    }
+                  }}
                   className="color-picker__slider color-picker__slider--hue"
                   onMouseDown={handleSliderMouseDown('h')}
                 >
@@ -199,7 +211,11 @@ export function ColorPicker({
               <div className="color-picker__slider-row">
                 <span className="color-picker__slider-label">S</span>
                 <div
-                  ref={el => slidersRef.current.s = el}
+                  ref={el => {
+                    if (slidersRef.current) {
+                      slidersRef.current.s = el;
+                    }
+                  }}
                   className="color-picker__slider color-picker__slider--saturation"
                   style={{ '--current-hue-color': hueColor } as React.CSSProperties}
                   onMouseDown={handleSliderMouseDown('s')}
@@ -214,7 +230,11 @@ export function ColorPicker({
               <div className="color-picker__slider-row">
                 <span className="color-picker__slider-label">L</span>
                 <div
-                  ref={el => slidersRef.current.l = el}
+                  ref={el => {
+                    if (slidersRef.current) {
+                      slidersRef.current.l = el;
+                    }
+                  }}
                   className="color-picker__slider color-picker__slider--lightness"
                   style={{ '--current-hsl-color': hslToHex(hsl.h, hsl.s, 50, 1) } as React.CSSProperties}
                   onMouseDown={handleSliderMouseDown('l')}
@@ -230,7 +250,11 @@ export function ColorPicker({
                 <div className="color-picker__slider-row">
                   <span className="color-picker__slider-label">A</span>
                   <div
-                    ref={el => slidersRef.current.a = el}
+                    ref={el => {
+                      if (slidersRef.current) {
+                        slidersRef.current.a = el;
+                      }
+                    }}
                     className="color-picker__slider color-picker__slider--alpha"
                     style={{ '--current-color': hslToHex(hsl.h, hsl.s, hsl.l, 1) } as React.CSSProperties}
                     onMouseDown={handleSliderMouseDown('a')}

@@ -6,10 +6,7 @@ export function Teleport({ text, position, teleportStyle }: TeleportProps) {
   const { teleport, canTeleport } = useTeleport();
 
   const handleTeleport = () => {
-    const success = teleport(position);
-    if (!success) {
-      console.warn('이동에 실패했습니다.');
-    }
+    teleport(position);
   };
 
   return (

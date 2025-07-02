@@ -25,6 +25,7 @@ export class DirectionController {
     rightward: false,
   };
   private pendingStateUpdates: Array<{ activeState: Partial<ActiveStateType> }> = [];
+  private timers = new Set<NodeJS.Timeout>();
 
   updateDirection(
     physicsState: PhysicsState,
@@ -219,11 +220,13 @@ export class DirectionController {
         const duration = Q.duration || 1000;
         if (calcProp.state) {
           calcProp.state.clock.stop();
-          setTimeout(() => {
+          const timer = setTimeout(() => {
             if (calcProp.state) {
               calcProp.state.clock.start();
             }
+            this.timers.delete(timer);
           }, duration);
+          this.timers.add(timer);
         }
       }
       if (automation.settings.loop && Q && automation.queue.actions) {
@@ -276,5 +279,10 @@ export class DirectionController {
       this.lastDirectionLength = currentDirectionLength;
     }
     this.lastEulerY[entityType] = activeState.euler.y;
+  }
+
+  dispose(): void {
+    this.timers.forEach(timer => clearTimeout(timer));
+    this.timers.clear();
   }
 }

@@ -89,15 +89,27 @@ export function PerformancePanel() {
           };
         });
 
-        const memoryInfo = (window.performance as any).memory;
-        if (memoryInfo) {
-          setMem((prev) => {
-            const used = Math.round(memoryInfo.usedJSHeapSize / 1048576);
-            const limit = Math.round(memoryInfo.jsHeapSizeLimit / 1048576);
-            const newHistory = [...prev.history.slice(1), used];
-            return { used, limit, history: newHistory };
-          });
-        }
+        const updateMemory = () => {
+          // performance.memory 타입 정의
+          const memoryInfo = (window.performance as Performance & {
+            memory?: {
+              usedJSHeapSize: number;
+              totalJSHeapSize: number;
+              jsHeapSizeLimit: number;
+            };
+          }).memory;
+
+          if (memoryInfo) {
+            setMem((prev) => {
+              const used = Math.round(memoryInfo.usedJSHeapSize / 1048576);
+              const limit = Math.round(memoryInfo.jsHeapSizeLimit / 1048576);
+              const newHistory = [...prev.history.slice(1), used];
+              return { used, limit, history: newHistory };
+            });
+          }
+        };
+
+        updateMemory();
 
         lastUpdateTime.current = now;
         frameCount.current = 0;

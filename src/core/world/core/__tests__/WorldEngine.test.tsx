@@ -14,6 +14,7 @@ describe('WorldEngine', () => {
     engine.cleanup();
     // Three.js 객체들 정리
     jest.clearAllMocks();
+    jest.clearAllTimers();
   });
 
   describe('기본 기능', () => {
