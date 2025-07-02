@@ -1,14 +1,32 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { RefObject, useEffect, useMemo, useRef } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { getGlobalAnimationBridge } from '../../animation/hooks/useAnimationBridge';
 import { MotionBridge } from '../bridge/MotionBridge';
+import { useGaesupStore } from '../../stores';
+import { PhysicsEntityProps } from '../entities/types';
+import usePhysicsLoop from '..';
+import { useAnimationPlayer } from '../../hooks';
 
-interface UsePhysicsEntityProps {
-  isActive: boolean;
+interface UsePhysicsEntityProps
+  extends Pick<
+    PhysicsEntityProps,
+    | 'onIntersectionEnter'
+    | 'onIntersectionExit'
+    | 'onCollisionEnter'
+    | 'userData'
+    | 'outerGroupRef'
+    | 'innerGroupRef'
+    | 'colliderRef'
+    | 'groundRay'
+    | 'onFrame'
+    | 'onAnimate'
+    | 'onReady'
+  > {
+  rigidBodyRef?: RefObject<RapierRigidBody | null>;
   actions: Record<string, THREE.AnimationAction | null>;
-  modeType?: string;
-  rigidBody?: RapierRigidBody | null;
+  name?: string;
+  isActive?: boolean;
 }
 
 let globalMotionBridge: MotionBridge | null = null;
@@ -21,14 +39,31 @@ function getGlobalMotionBridge(): MotionBridge {
 }
 
 export function usePhysicsEntity({
-  isActive,
+  rigidBodyRef,
   actions,
-  modeType,
-  rigidBody
+  name,
+  isActive,
+  onIntersectionEnter,
+  onIntersectionExit,
+  onCollisionEnter,
+  userData,
+  outerGroupRef,
+  innerGroupRef,
+  colliderRef,
+  groundRay,
+  onFrame,
+  onAnimate,
+  onReady
 }: UsePhysicsEntityProps) {
   const animationBridgeRef = useRef<boolean>(false);
-  const entityIdRef = useRef<string>(`entity-${Date.now()}-${Math.random()}`);
+  const entityIdRef = useRef<string>(
+    name || `entity-${Date.now()}-${Math.random()}`
+  );
   const registeredRef = useRef<boolean>(false);
+
+  const mode = useGaesupStore((state) => state.mode);
+  const isRiding = useGaesupStore((state) => state.states.isRiding);
+  const modeType = mode?.type;
 
   useEffect(() => {
     if (actions && modeType && isActive && !animationBridgeRef.current) {
@@ -46,12 +81,14 @@ export function usePhysicsEntity({
   }, [actions, modeType, isActive]);
 
   useEffect(() => {
-    if (isActive && rigidBody && !registeredRef.current) {
+    if (isActive && rigidBodyRef && !registeredRef.current) {
       const motionBridge = getGlobalMotionBridge();
       motionBridge.registerEntity(
         entityIdRef.current,
-        modeType === 'vehicle' || modeType === 'airplane' ? 'vehicle' : 'character',
-        rigidBody
+        modeType === 'vehicle' || modeType === 'airplane'
+          ? 'vehicle'
+          : 'character',
+        rigidBodyRef.current
       );
       registeredRef.current = true;
 
@@ -62,7 +99,76 @@ export function usePhysicsEntity({
         }
       };
     }
-  }, [isActive, rigidBody, modeType]);
+  }, [isActive, rigidBodyRef, modeType]);
+
+  const handleIntersectionEnter = useMemo(
+    () => async (payload: any) => {
+      if (onIntersectionEnter) {
+        await onIntersectionEnter(payload);
+      }
+      if (userData?.onNear) {
+        await userData.onNear(payload, userData);
+      }
+    },
+    [onIntersectionEnter, userData]
+  );
+
+  const handleIntersectionExit = useMemo(
+    () => async (payload: any) => {
+      if (onIntersectionExit) {
+        await onIntersectionExit(payload);
+      }
+      if (userData?.onLeave) {
+        await userData.onLeave(payload);
+      }
+    },
+    [onIntersectionExit, userData]
+  );
+
+  const handleCollisionEnter = useMemo(
+    () => async (payload: any) => {
+      if (onCollisionEnter) {
+        await onCollisionEnter(payload);
+      }
+      if (userData?.onNear) {
+        await userData.onNear(payload, userData);
+      }
+    },
+    [onCollisionEnter, userData]
+  );
+
+  if (isActive) {
+    usePhysicsLoop({
+      outerGroupRef,
+      innerGroupRef,
+      rigidBodyRef: rigidBodyRef as RefObject<RapierRigidBody>,
+      colliderRef,
+      groundRay
+    });
+  }
+
+  useAnimationPlayer(isActive && modeType === 'character');
+
+  useEffect(() => {
+    if (onReady) onReady();
+  }, [onReady]);
+
+  useEffect(() => {
+    let animationId: number;
+    const frameHandler = () => {
+      if (onFrame) onFrame();
+      if (onAnimate && actions) onAnimate();
+      animationId = requestAnimationFrame(frameHandler);
+    };
+    if (onFrame || (onAnimate && actions)) {
+      animationId = requestAnimationFrame(frameHandler);
+      return () => {
+        if (animationId) {
+          cancelAnimationFrame(animationId);
+        }
+      };
+    }
+  }, [onFrame, onAnimate, actions]);
 
   const executeMotionCommand = useMemo(
     () => (command: any) => {
@@ -98,6 +204,11 @@ export function usePhysicsEntity({
   return {
     executeMotionCommand,
     updateMotion,
-    getMotionSnapshot
+    getMotionSnapshot,
+    mode,
+    isRiding,
+    handleIntersectionEnter,
+    handleIntersectionExit,
+    handleCollisionEnter
   };
 } 

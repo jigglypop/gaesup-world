@@ -5,15 +5,12 @@ import { RefObject, forwardRef, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import { useGaesupStore } from '../../stores';
-import { useAnimationPlayer } from '../../hooks';
-import { getGlobalAnimationBridge } from '../../animation/hooks/useAnimationBridge';
-import usePhysicsLoop from '../index';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
 import { useSetGroundRay } from './setGroundRay';
 import { PhysicsEntityProps } from './types';
-import { Camera } from '../../camera';
 import { useGltfAndSize } from './useGaesupGltf';
+import { usePhysicsEntity } from '../hooks/usePhysicsEntity';
 
 // AnimationActions 타입 정의
 type AnimationActions = {
@@ -59,8 +56,6 @@ function VehicleAnimation({
 }) {
   const keyboard = useGaesupStore((state) => state.interaction?.keyboard);
   const prevStateRef = useRef({ isMoving: false, isRunning: false });
-  
-  useEffect(() => {
     if (!isActive || !actions) return;
     
     const isMoving = keyboard?.forward || keyboard?.backward;
@@ -92,9 +87,6 @@ function VehicleAnimation({
         actions.idle.reset().play();
       }
     }
-  }, [actions, isActive, keyboard?.forward, keyboard?.backward, keyboard?.shift, modeType]);
-
-  return null;
 }
 
 export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
@@ -103,9 +95,20 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const setGroundRay = useSetGroundRay();
     const { scene, animations } = useGLTF(props.url);
     const { actions, ref: animationRef } = useAnimations(animations);
-    const animationBridgeRef = useRef<boolean>(false);
-    
+    const {
+      mode,
+      isRiding,
+      handleIntersectionEnter,
+      handleIntersectionExit,
+      handleCollisionEnter
+    } = usePhysicsEntity({
+      ...props,
+      rigidBodyRef: rigidBodyRef as RefObject<RapierRigidBody>,
+      actions
+    });
+
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
+
     const skeleton = useMemo(() => {
       let skel: THREE.Skeleton | null = null;
       clone.traverse((child) => {
@@ -115,22 +118,6 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       });
       return skel;
     }, [clone]);
-
-    const mode = useGaesupStore((state) => state.mode);
-    const isRiding = useGaesupStore((state) => state.states.isRiding);
-
-    useEffect(() => {
-      if (actions && mode?.type && props.isActive && !animationBridgeRef.current) {
-        const bridge = getGlobalAnimationBridge();
-        bridge.registerAnimations(mode.type as any, actions);
-        animationBridgeRef.current = true;
-        
-        return () => {
-          bridge.unregisterAnimations(mode.type as any);
-          animationBridgeRef.current = false;
-        };
-      }
-    }, [actions, mode?.type, props.isActive]);
 
     const partsComponents = useMemo(() => {
       if (!props.parts || props.parts.length === 0) return null;
@@ -152,126 +139,17 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
         .filter(Boolean);
     }, [props.parts, props.componentType, props.currentAnimation, skeleton]);
 
-    useEffect(() => {
-      return () => {
-        if (clone) {
-          clone.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-              child.geometry.dispose();
-              if (Array.isArray(child.material)) {
-                child.material.forEach((material) => {
-                  Object.keys(material).forEach((key) => {
-                    const prop = material[key];
-                    if (prop?.isTexture) {
-                      prop.dispose();
-                    }
-                  });
-                  material.dispose();
-                });
-              } else if (child.material) {
-                const material = child.material;
-                Object.keys(material).forEach((key) => {
-                  if (material[key]?.isTexture) {
-                    material[key].dispose();
-                  }
-                });
-                material.dispose();
-              }
-            }
-          });
-        }
-        if (skeleton) {
-          skeleton.dispose();
-        }
-        if (actions) {
-          Object.values(actions).forEach((action) => {
-            if (action) {
-              action.stop();
-              action.getMixer().uncacheAction(action.getClip());
-            }
-          });
-        }
-      };
-    }, [clone, skeleton, actions]);
-
-    useEffect(() => {
-      if (props.groundRay && props.colliderRef) {
-        setGroundRay({
-          groundRay: props.groundRay,
-          length: 2.0,
-          colliderRef: props.colliderRef,
-        });
-      }
-    }, [props.groundRay, props.colliderRef, setGroundRay]);
-
-    if (props.isActive) {
-      usePhysicsLoop({
-        outerGroupRef: props.outerGroupRef,
-        innerGroupRef: props.innerGroupRef,
-        rigidBodyRef: rigidBodyRef as RefObject<RapierRigidBody>,
-        colliderRef: props.colliderRef,
+    if (props.groundRay && props.colliderRef) {
+      setGroundRay({
         groundRay: props.groundRay,
+        length: 2.0,
+        colliderRef: props.colliderRef
       });
     }
-    
-    useAnimationPlayer(props.isActive && mode?.type === 'character');
-    
-    useEffect(() => {
-      if (props.onReady) props.onReady();
-    }, [props.onReady]);
-    
-    useEffect(() => {
-      let animationId: number;
-      
-      const frameHandler = () => {
-        if (props.onFrame) props.onFrame();
-        if (props.onAnimate && actions) props.onAnimate();
-        
-        // 계속해서 다음 프레임을 요청
-        animationId = requestAnimationFrame(frameHandler);
-      };
-      
-      if (props.onFrame || (props.onAnimate && actions)) {
-        animationId = requestAnimationFrame(frameHandler);
-        
-        return () => {
-          if (animationId) {
-            cancelAnimationFrame(animationId);
-          }
-        };
-      }
-    }, [props.onFrame, props.onAnimate, actions]);
-    
+
     const { nodes } = useGraph(clone);
     const objectNode = Object.values(nodes).find((node) => node.type === 'Object3D');
     const safeRotationY = props.rotation instanceof THREE.Euler ? props.rotation.y : 0;
-
-    const handleIntersectionEnter = useMemo(() => async (payload: any) => {
-      if (props.onIntersectionEnter) {
-        await props.onIntersectionEnter(payload);
-      }
-      if (props.userData?.onNear) {
-        await props.userData.onNear(payload, props.userData);
-      }
-    }, [props.onIntersectionEnter, props.userData]);
-
-    const handleIntersectionExit = useMemo(() => async (payload: any) => {
-      if (props.onIntersectionExit) {
-        await props.onIntersectionExit(payload);
-      }
-      if (props.userData?.onLeave) {
-        await props.userData.onLeave(payload);
-      }
-    }, [props.onIntersectionExit, props.userData]);
-
-    const handleCollisionEnter = useMemo(() => async (payload: any) => {
-      if (props.onCollisionEnter) {
-        await props.onCollisionEnter(payload);
-      }
-      if (props.userData?.onNear) {
-        await props.userData.onNear(payload, props.userData);
-      }
-    }, [props.onCollisionEnter, props.userData]);
 
     return (
       <group ref={props.outerGroupRef} userData={{ intangible: true }}>
@@ -315,7 +193,8 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
             ridingUrl={props.ridingUrl}
             offset={props.offset}
             parts={props.parts}
-            frustumCulled={false}>
+            frustumCulled={false}
+          >
             {props.children}
             {partsComponents}
           </InnerGroupRef>
