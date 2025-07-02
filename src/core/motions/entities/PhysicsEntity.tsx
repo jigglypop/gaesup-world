@@ -11,83 +11,8 @@ import { useSetGroundRay } from './setGroundRay';
 import { PhysicsEntityProps } from './types';
 import { useGltfAndSize } from './useGaesupGltf';
 import { usePhysicsEntity } from '../hooks/usePhysicsEntity';
-
-// AnimationActions 타입 정의
-type AnimationActions = {
-  [key: string]: THREE.AnimationAction | undefined;
-  idle?: THREE.AnimationAction;
-  walk?: THREE.AnimationAction;
-  run?: THREE.AnimationAction;
-  fly?: THREE.AnimationAction;
-};
-
-function RidingAnimation({
-  url,
-  active = false,
-}: {
-  url: string;
-  active?: boolean;
-}) {
-  const { animations: ridingAnimations } = useGLTF(url);
-  const { actions: ridingActions } = useAnimations(ridingAnimations);
-  
-  useEffect(() => {
-    if (active && ridingActions.ride) {
-      ridingActions.ride.reset().play();
-    }
-    return () => {
-      if (ridingActions.ride) {
-        ridingActions.ride.stop();
-      }
-    };
-  }, [active, ridingActions]);
-  
-  return null;
-}
-
-function VehicleAnimation({
-  actions,
-  isActive = false,
-  modeType = 'vehicle',
-}: {
-  actions: AnimationActions;
-  isActive?: boolean;
-  modeType?: string;
-}) {
-  const keyboard = useGaesupStore((state) => state.interaction?.keyboard);
-  const prevStateRef = useRef({ isMoving: false, isRunning: false });
-    if (!isActive || !actions) return;
-    
-    const isMoving = keyboard?.forward || keyboard?.backward;
-    const isRunning = keyboard?.shift && isMoving;
-    const prevState = prevStateRef.current;
-    
-    if (prevState.isMoving === isMoving && prevState.isRunning === isRunning) {
-      return;
-    }
-    
-    prevStateRef.current = { isMoving, isRunning };
-    
-    Object.values(actions).forEach((action) => {
-      if (action) action.stop();
-    });
-    
-    if (modeType === 'airplane') {
-      if (actions.fly) {
-        actions.fly.reset().play();
-      } else if (actions.idle) {
-        actions.idle.reset().play();
-      }
-    } else {
-      if (isRunning && actions.run) {
-        actions.run.reset().play();
-      } else if (isMoving && actions.walk) {
-        actions.walk.reset().play();
-      } else if (actions.idle) {
-        actions.idle.reset().play();
-      }
-    }
-}
+import { RidingAnimation } from './RidingAnimation';
+import { VehicleAnimation } from './VehicleAnimation';
 
 export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
   (props, rigidBodyRef) => {

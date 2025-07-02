@@ -132,9 +132,6 @@ export interface PhysicsState {
     isActive: boolean;
     shouldRun: boolean;
   };
-  characterConfig: characterType;
-  vehicleConfig: vehicleConfigType;
-  airplaneConfig: airplaneConfigType;
   automationOption: automationType;
   modeType: ModeType;
 }

@@ -1,4 +1,4 @@
-import { MotionEngine, MotionState, MotionMetrics, MotionType } from '../core/MotionEngine';
+import { MotionEngine, MotionType } from '../core/MotionEngine';
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 

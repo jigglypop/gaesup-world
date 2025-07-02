@@ -62,16 +62,35 @@ const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps): 
 const usePhysicsLoop = (props: PhysicsCalculationProps) => {
   const physics = usePhysics();
   const physicsStateRef = useRef<PhysicsState | null>(null);
-  const physicsEngine = useRef(new PhysicsEngine());
+  const physicsEngine = useRef<PhysicsEngine | null>(null);
   const isInitializedRef = useRef(false);
   const mouseTargetRef = useRef(new THREE.Vector3());
   const matchSizesRef = useRef<SizesType | null>(null);
 
   useEffect(() => {
     if (!isInitializedRef.current && physics.worldContext) {
+      physicsEngine.current = new PhysicsEngine({
+        character: physics.worldContext.character,
+        vehicle: physics.worldContext.vehicle,
+        airplane: physics.worldContext.airplane
+      });
       isInitializedRef.current = true;
     }
   }, [physics.worldContext]);
+
+  useEffect(() => {
+    if (physicsEngine.current && physics.worldContext) {
+      physicsEngine.current.updateConfig({
+        character: physics.worldContext.character,
+        vehicle: physics.worldContext.vehicle,
+        airplane: physics.worldContext.airplane
+      });
+    }
+  }, [
+    physics.worldContext?.character,
+    physics.worldContext?.vehicle,
+    physics.worldContext?.airplane
+  ]);
 
   useEffect(() => {
     const handleTeleport = (event: CustomEvent) => {
@@ -106,8 +125,9 @@ const usePhysicsLoop = (props: PhysicsCalculationProps) => {
   const executePhysics = useCallback(
     (state: RootState, delta: number) => {
       try {
-        if (!physics.worldContext || !physics.input) return;
-        
+        if (!physics.worldContext || !physics.input || !physicsEngine.current)
+          return;
+
         if (!physicsStateRef.current) {
           const worldContext = physics.worldContext as StoreState;
           const modeType = worldContext.mode?.type || 'character';
