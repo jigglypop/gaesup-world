@@ -4,7 +4,10 @@ import { DebugField, DEFAULT_DEBUG_FIELDS } from './types';
 import './styles.css';
 
 export function MotionDebugPanel() {
-  const { motion, metrics, config } = useGaesupStore();
+  const motion = useGaesupStore((state) => state.motion);
+  const metrics = useGaesupStore((state) => state.metrics);
+  const config = useGaesupStore((state) => state.config);
+  
   const formatValue = (field: DebugField, value: any, precision: number = 2): string => {
     if (value === null || value === undefined) return 'N/A';
     switch (field.type) {

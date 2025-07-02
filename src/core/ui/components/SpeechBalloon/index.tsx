@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
-import { useThree } from '@react-three/fiber';
+import { useThree, useFrame } from '@react-three/fiber';
 import { SpeechBalloonProps } from './types';
 import './styles.css';
 
@@ -103,10 +103,17 @@ function createTextTexture({
   const texture = new THREE.CanvasTexture(canvas);
   texture.needsUpdate = true;
 
+  const cleanup = () => {
+    texture.dispose();
+    canvas.width = 0;
+    canvas.height = 0;
+  };
+
   return {
     texture,
     width: canvas.width,
     height: canvas.height,
+    cleanup
   };
 }
 
@@ -126,9 +133,11 @@ export function SpeechBalloon({
 }: SpeechBalloonProps) {
   const spriteRef = useRef<THREE.Sprite>(null);
   const { camera } = useThree();
+  const prevDistanceRef = useRef<number>(0);
+  const finalPositionRef = useRef(new THREE.Vector3());
 
   const textureData = useMemo(() => {
-    if (!text) return null;
+    if (!text || !visible) return null;
     return createTextTexture({
       text,
       backgroundColor,
@@ -138,7 +147,7 @@ export function SpeechBalloon({
       borderRadius,
       maxWidth,
     });
-  }, [text, backgroundColor, textColor, fontSize, padding, borderRadius, maxWidth]);
+  }, [text, backgroundColor, textColor, fontSize, padding, borderRadius, maxWidth, visible]);
 
   const spriteMaterial = useMemo(() => {
     if (!textureData) return null;
@@ -151,25 +160,36 @@ export function SpeechBalloon({
     });
   }, [textureData, opacity]);
 
-  useEffect(() => {
-    if (spriteRef.current && textureData) {
-      const distance = camera.position.distanceTo(position);
+  useFrame(() => {
+    if (!spriteRef.current || !textureData || !visible) return;
+    
+    const distance = camera.position.distanceTo(position);
+    
+    if (Math.abs(distance - prevDistanceRef.current) > 0.1) {
       const scale = distance * 0.01;
       const aspectRatio = textureData.width / textureData.height;
       spriteRef.current.scale.set(scale * aspectRatio, scale, 1);
+      prevDistanceRef.current = distance;
     }
   });
 
   useEffect(() => {
     return () => {
-      textureData?.texture.dispose();
-      spriteMaterial?.dispose();
+      if (textureData?.cleanup) {
+        textureData.cleanup();
+      }
+      if (spriteMaterial) {
+        spriteMaterial.dispose();
+      }
     };
   }, [textureData, spriteMaterial]);
 
-  if (!visible || !textureData || !spriteMaterial) return null;
+  const finalPosition = useMemo(() => {
+    finalPositionRef.current.copy(position).add(offset);
+    return finalPositionRef.current;
+  }, [position, offset]);
 
-  const finalPosition = position.clone().add(offset);
+  if (!visible || !textureData || !spriteMaterial) return null;
 
   return (
     <group className="speech-balloon">

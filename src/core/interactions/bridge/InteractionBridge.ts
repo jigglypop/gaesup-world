@@ -30,6 +30,9 @@ export class InteractionBridge {
   private eventSubscribers: Map<string, Function[]>;
   private eventQueue: BridgeEvent[];
   private syncInterval: number | null;
+  private readonly MAX_COMMAND_HISTORY = 1000;
+  private readonly MAX_EVENT_QUEUE = 500;
+  private engineListenerCleanups: Array<() => void> = [];
 
   constructor() {
     this.interactionEngine = new InteractionEngine();
@@ -49,29 +52,39 @@ export class InteractionBridge {
   }
 
   private setupEngineListeners(): void {
-    this.automationEngine.addEventListener('moveRequested', (target: THREE.Vector3) => {
+    const moveListener = (target: THREE.Vector3) => {
       this.executeCommand({
         type: 'input',
         action: 'moveTo',
         data: { target }
       });
-    });
-
-    this.automationEngine.addEventListener('clickRequested', (target: THREE.Vector3) => {
+    };
+    
+    const clickListener = (target: THREE.Vector3) => {
       this.executeCommand({
         type: 'input',
         action: 'clickAt',
         data: { target }
       });
-    });
-
-    this.automationEngine.addEventListener('keyRequested', (key: string) => {
+    };
+    
+    const keyListener = (key: string) => {
       this.executeCommand({
         type: 'input',
         action: 'keyPress',
         data: { key }
       });
-    });
+    };
+
+    this.automationEngine.addEventListener('moveRequested', moveListener);
+    this.automationEngine.addEventListener('clickRequested', clickListener);
+    this.automationEngine.addEventListener('keyRequested', keyListener);
+    
+    this.engineListenerCleanups.push(
+      () => this.automationEngine.removeEventListener('moveRequested', moveListener),
+      () => this.automationEngine.removeEventListener('clickRequested', clickListener),
+      () => this.automationEngine.removeEventListener('keyRequested', keyListener)
+    );
   }
 
   executeCommand(command: Omit<BridgeCommand, 'timestamp'>): void {
@@ -82,6 +95,10 @@ export class InteractionBridge {
 
     this.state.lastCommand = fullCommand;
     this.state.commandHistory.push(fullCommand);
+    
+    if (this.state.commandHistory.length > this.MAX_COMMAND_HISTORY) {
+      this.state.commandHistory = this.state.commandHistory.slice(-this.MAX_COMMAND_HISTORY);
+    }
     
     this.emitEvent({
       type: 'sync',
@@ -211,20 +228,39 @@ export class InteractionBridge {
       if (index > -1) {
         callbacks.splice(index, 1);
       }
+      if (callbacks.length === 0) {
+        this.eventSubscribers.delete(event);
+      }
     }
   }
 
   private emitEvent(event: BridgeEvent): void {
     this.eventQueue.push(event);
     
+    if (this.eventQueue.length > this.MAX_EVENT_QUEUE) {
+      this.eventQueue = this.eventQueue.slice(-this.MAX_EVENT_QUEUE);
+    }
+    
     const callbacks = this.eventSubscribers.get(event.event);
     if (callbacks) {
-      callbacks.forEach(callback => callback(event));
+      callbacks.forEach(callback => {
+        try {
+          callback(event);
+        } catch (error) {
+          console.error('Event callback error:', error);
+        }
+      });
     }
     
     const allCallbacks = this.eventSubscribers.get('*');
     if (allCallbacks) {
-      allCallbacks.forEach(callback => callback(event));
+      allCallbacks.forEach(callback => {
+        try {
+          callback(event);
+        } catch (error) {
+          console.error('Event callback error:', error);
+        }
+      });
     }
   }
 
@@ -232,8 +268,13 @@ export class InteractionBridge {
     this.syncInterval = window.setInterval(() => {
       this.state.syncStatus = 'syncing';
       
-      this.processEventQueue();
-      this.updateMetrics();
+      try {
+        this.processEventQueue();
+        this.updateMetrics();
+      } catch (error) {
+        this.state.syncStatus = 'error';
+        console.error('Sync error:', error);
+      }
       
       this.state.syncStatus = 'idle';
     }, 16);
@@ -285,14 +326,18 @@ export class InteractionBridge {
   }
 
   dispose(): void {
-    if (this.syncInterval) {
+    if (this.syncInterval !== null) {
       clearInterval(this.syncInterval);
       this.syncInterval = null;
     }
+    
+    this.engineListenerCleanups.forEach(cleanup => cleanup());
+    this.engineListenerCleanups = [];
     
     this.interactionEngine.dispose();
     this.automationEngine.dispose();
     this.eventSubscribers.clear();
     this.eventQueue = [];
+    this.state.commandHistory = [];
   }
 }

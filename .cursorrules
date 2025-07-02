@@ -85,3 +85,9 @@ convertLegacyData, convertToLegacyData 메서드 구현
 - Layer 역방향 import
 - Magic Number 사용
 - 전체 store 구독
+
+
+14. 테스트 룰
+- react-test-renderer 사용
+- 한글로 테스트 내용 적기
+- 타입 체그 확실히 하기

@@ -6,7 +6,6 @@ import { usePhysicsEntity } from '../../hooks/usePhysicsEntity';
 import * as THREE from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
 import { getGlobalAnimationBridge } from '../../../animation/hooks/useAnimationBridge';
-import { MotionBridge } from '../../bridge/MotionBridge';
 
 jest.mock('@react-three/drei', () => ({
   useGLTF: jest.fn(() => ({
@@ -25,7 +24,7 @@ jest.mock('@react-three/fiber', () => ({
   })),
 }));
 
-jest.mock('@stores/gaesupStore', () => ({
+jest.mock('../../../stores/gaesupStore', () => ({
   useGaesupStore: jest.fn((selector) => {
     const mockStore = {
       mode: { type: 'character' },
@@ -46,6 +45,14 @@ jest.mock('../../../animation/hooks/useAnimationBridge', () => ({
 jest.mock('../../index', () => jest.fn());
 jest.mock('../useGaesupGltf', () => ({
   useGltfAndSize: jest.fn(() => ({ size: { x: 1, y: 2, z: 1 } })),
+}));
+
+jest.mock('../setGroundRay', () => ({
+  useSetGroundRay: jest.fn(() => jest.fn()),
+}));
+
+jest.mock('../../../hooks/useAnimationPlayer', () => ({
+  useAnimationPlayer: jest.fn(),
 }));
 
 describe('PhysicsEntity', () => {

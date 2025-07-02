@@ -23,7 +23,7 @@ jest.mock('@react-three/fiber', () => ({
   })),
 }));
 
-jest.mock('@stores/gaesupStore', () => ({
+jest.mock('../../../stores/gaesupStore', () => ({
   useGaesupStore: jest.fn((selector) => {
     const mockStore = {
       mode: { type: 'character' },
@@ -79,17 +79,22 @@ describe('PhysicsEntity 메모리 누수 테스트', () => {
 
   it('반복적인 마운트/언마운트 시 메모리 누수가 발생하지 않아야 함', async () => {
     const iterations = 10;
+    
     for (let i = 0; i < iterations; i++) {
       const { unmount } = render(
         <PhysicsEntity {...defaultProps} ref={mockRigidBodyRef} />
       );
+      
       await waitFor(() => {
         expect(mockOuterGroupRef.current).toBeTruthy();
       }, { timeout: 100 });
+      
       unmount();
+      
       await waitFor(() => {
         expect(mockOuterGroupRef.current).toBeFalsy();
       }, { timeout: 100 });
+      
       memorySnapshots.push(measureMemory());
     }
     

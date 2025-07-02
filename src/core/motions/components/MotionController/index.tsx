@@ -17,7 +17,11 @@ const VEHICLE_PRESETS = [
 ];
 
 export function MotionController() {
-  const { mode, motion, setCurrentPreset, setMotionType } = useGaesupStore();
+  const mode = useGaesupStore((state) => state.mode);
+  const motion = useGaesupStore((state) => state.motion);
+  const setCurrentPreset = useGaesupStore((state) => state.setCurrentPreset);
+  const setMotionType = useGaesupStore((state) => state.setMotionType);
+  
   const currentType = motion?.motionType || mode?.type || 'character';
   const activePresetId = motion?.currentPreset || 'normal';
   const presets = currentType === 'vehicle' ? VEHICLE_PRESETS : MOTION_PRESETS;

@@ -4,8 +4,8 @@ import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three
 import { RefObject, forwardRef, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
-import { useGaesupStore } from '@stores/gaesupStore';
-import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
+import { useGaesupStore } from '../../stores';
+import { useAnimationPlayer } from '../../hooks';
 import { getGlobalAnimationBridge } from '../../animation/hooks/useAnimationBridge';
 import usePhysicsLoop from '../index';
 import { InnerGroupRef } from './InnerGroupRef';

@@ -15,3 +15,10 @@ dist/
 coverage/
 .next/
 .cache/
+dist
+dist/*
+image/
+image
+pnpm-lock.yaml
+jest.config.cjs
+public

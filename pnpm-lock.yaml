@@ -99,6 +99,9 @@ importers:
       '@react-three/rapier':
         specifier: ^1.4.0
         version: 1.5.0(@react-three/fiber@8.18.0(@types/react@19.1.8)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(three@0.168.0))(react@18.3.1)(three@0.168.0)
+      '@react-three/test-renderer':
+        specifier: ^9.1.0
+        version: 9.1.0(@react-three/fiber@8.18.0(@types/react@19.1.8)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(three@0.168.0))(react@18.3.1)(three@0.168.0)
       '@semantic-release/changelog':
         specifier: ^6.0.3
         version: 6.0.3(semantic-release@23.1.1(typescript@5.8.3))
@@ -1159,6 +1162,13 @@ packages:
       '@react-three/fiber': '>=8.9.0'
       react: '>=18.0.0'
       three: '>=0.139.0'
+
+  '@react-three/test-renderer@9.1.0':
+    resolution: {integrity: sha512-bLjG+cdpVW69wG1W3TuziHrHvA1JQbLesYddY94QMaFF8yzpgwovWK8hGaHWBET1dvsCPIOWVNYHbKAbRj2xSg==}
+    peerDependencies:
+      '@react-three/fiber': '>=9.0.0'
+      react: ^19.0.0
+      three: '>=0.156'
 
   '@rolldown/pluginutils@1.0.0-beta.11':
     resolution: {integrity: sha512-L/gAA/hyCSuzTF1ftlzUSI/IKr2POHsv1Dd78GfqkR83KMNuswWD61JxGV2L7nRwBBBSDr6R1gCkdTmoN7W4ag==}
@@ -6130,6 +6140,12 @@ snapshots:
       suspend-react: 0.1.3(react@18.3.1)
       three: 0.168.0
       three-stdlib: 2.36.0(three@0.168.0)
+
+  '@react-three/test-renderer@9.1.0(@react-three/fiber@8.18.0(@types/react@19.1.8)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(three@0.168.0))(react@18.3.1)(three@0.168.0)':
+    dependencies:
+      '@react-three/fiber': 8.18.0(@types/react@19.1.8)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(three@0.168.0)
+      react: 18.3.1
+      three: 0.168.0
 
   '@rolldown/pluginutils@1.0.0-beta.11': {}
 

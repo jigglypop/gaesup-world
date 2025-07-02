@@ -95,6 +95,8 @@ export class WorldEngine {
   private objects: Map<string, WorldObject> = new Map();
   private interactionEvents: InteractionEvent[] = [];
   private spatial: SpatialGrid = new SpatialGrid(10);
+  private raycaster: THREE.Raycaster = new THREE.Raycaster();
+  private tempVector: THREE.Vector3 = new THREE.Vector3();
 
   addObject(object: WorldObject): void {
     this.objects.set(object.id, object);
@@ -165,18 +167,20 @@ export class WorldEngine {
     distance: number;
     point: THREE.Vector3;
   } | null {
-    const raycaster = new THREE.Raycaster(origin, direction, 0, maxDistance);
+    this.raycaster.set(origin, direction);
+    this.raycaster.near = 0;
+    this.raycaster.far = maxDistance;
     
     const nearbyIds = this.spatial.getNearbyObjects(origin, maxDistance);
     for (const id of nearbyIds) {
       const object = this.objects.get(id);
       if (object && object.boundingBox) {
-        const intersect = raycaster.ray.intersectBox(object.boundingBox, new THREE.Vector3());
+        const intersect = this.raycaster.ray.intersectBox(object.boundingBox, this.tempVector);
         if (intersect) {
           return {
             object,
             distance: origin.distanceTo(intersect),
-            point: intersect
+            point: intersect.clone()
           };
         }
       }

@@ -64,12 +64,10 @@ const DEFAULT_PRESETS: CameraPreset[] = [
 
 export function CameraPresets() {
   const [presets] = useState<CameraPreset[]>(DEFAULT_PRESETS);
-  const { 
-    setMode,
-    setCameraOption,
-    mode,
-    cameraOption 
-  } = useGaesupStore();
+  const setMode = useGaesupStore((state) => state.setMode);
+  const setCameraOption = useGaesupStore((state) => state.setCameraOption);
+  const mode = useGaesupStore((state) => state.mode);
+  const cameraOption = useGaesupStore((state) => state.cameraOption);
   const [currentPresetId, setCurrentPresetId] = useState<string | null>(null);
   
   const applyPreset = (preset: CameraPreset) => {

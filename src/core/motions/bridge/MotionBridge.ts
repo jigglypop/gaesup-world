@@ -38,11 +38,19 @@ export class MotionBridge {
   private engines: Map<string, MotionEngine>;
   private eventListeners: Set<(snapshot: MotionSnapshot) => void>;
   private rigidBodies: Map<string, RapierRigidBody>;
+  private tempPosition: THREE.Vector3;
+  private tempVelocity: THREE.Vector3;
+  private tempQuaternion: THREE.Quaternion;
+  private tempEuler: THREE.Euler;
 
   constructor() {
     this.engines = new Map();
     this.eventListeners = new Set();
     this.rigidBodies = new Map();
+    this.tempPosition = new THREE.Vector3();
+    this.tempVelocity = new THREE.Vector3();
+    this.tempQuaternion = new THREE.Quaternion();
+    this.tempEuler = new THREE.Euler();
   }
 
   registerEntity(id: string, type: MotionType, rigidBody: RapierRigidBody): void {
@@ -103,15 +111,19 @@ export class MotionBridge {
     
     if (!engine || !rigidBody) return;
 
-    const position = new THREE.Vector3().copy(rigidBody.translation() as THREE.Vector3);
-    const velocity = new THREE.Vector3().copy(rigidBody.linvel() as THREE.Vector3);
-    const rotation = new THREE.Euler().setFromQuaternion(
-      new THREE.Quaternion().copy(rigidBody.rotation() as THREE.Quaternion)
-    );
+    const translation = rigidBody.translation();
+    this.tempPosition.set(translation.x, translation.y, translation.z);
+    
+    const linvel = rigidBody.linvel();
+    this.tempVelocity.set(linvel.x, linvel.y, linvel.z);
+    
+    const rotation = rigidBody.rotation();
+    this.tempQuaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
+    this.tempEuler.setFromQuaternion(this.tempQuaternion);
 
-    engine.updatePosition(position);
-    engine.updateVelocity(velocity);
-    engine.updateRotation(rotation);
+    engine.updatePosition(this.tempPosition);
+    engine.updateVelocity(this.tempVelocity);
+    engine.updateRotation(this.tempEuler);
     engine.update(deltaTime);
   }
 

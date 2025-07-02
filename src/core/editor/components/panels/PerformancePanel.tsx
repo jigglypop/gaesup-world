@@ -36,6 +36,8 @@ export function PerformancePanel() {
   const frameCount = useRef(0);
   const frameTimeHistory = useRef<number[]>([]);
   const animationFrameRef = useRef<number>(null);
+  const frameTimeAccumulator = useRef(0);
+  const frameTimeUpdateCounter = useRef(0);
 
   useEffect(() => {
     const now = window.performance.now();
@@ -43,17 +45,26 @@ export function PerformancePanel() {
     lastFrameTime.current = now;
 
     const updatePerformance = (now: number) => {
-      // Calculate responsive frame time on every frame
+      // Calculate frame time
       const delta = now - lastFrameTime.current;
       lastFrameTime.current = now;
       frameTimeHistory.current.push(delta);
       if (frameTimeHistory.current.length > 30) {
         frameTimeHistory.current.shift();
       }
-      const avgFrameTime =
-        frameTimeHistory.current.reduce((a, b) => a + b, 0) /
-        frameTimeHistory.current.length;
-      setFrameTime(avgFrameTime);
+      
+      // Accumulate frame time updates
+      frameTimeAccumulator.current += delta;
+      frameTimeUpdateCounter.current++;
+      
+      // Update frame time every 10 frames (throttle)
+      if (frameTimeUpdateCounter.current >= 10) {
+        const avgFrameTime = frameTimeAccumulator.current / frameTimeUpdateCounter.current;
+        setFrameTime(avgFrameTime);
+        frameTimeAccumulator.current = 0;
+        frameTimeUpdateCounter.current = 0;
+      }
+      
       frameCount.current++;
       // Update less frequent stats (FPS, Mem) every 500ms
       if (now - lastUpdateTime.current >= 500) {
