@@ -20,5 +20,6 @@ export declare class AnimationEngine {
     getMetrics(): AnimationMetrics;
     getState(): Readonly<AnimationEngineState>;
     private updateMetrics;
+    clearActions(): void;
     dispose(): void;
 }

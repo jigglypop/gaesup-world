@@ -1,1 +1,2 @@
-export declare function AnimationPanel(): import("react/jsx-runtime").JSX.Element;
+import React from 'react';
+export declare function AnimationPanel(): React.JSX.Element;

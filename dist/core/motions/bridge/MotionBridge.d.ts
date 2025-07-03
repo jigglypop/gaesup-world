@@ -35,6 +35,10 @@ export declare class MotionBridge {
     private engines;
     private eventListeners;
     private rigidBodies;
+    private tempPosition;
+    private tempVelocity;
+    private tempQuaternion;
+    private tempEuler;
     constructor();
     registerEntity(id: string, type: MotionType, rigidBody: RapierRigidBody): void;
     unregisterEntity(id: string): void;

@@ -2,19 +2,19 @@ export interface FSMState {
     onEnter?: {
         action: string;
         args?: any[];
-    }[];
+    }[] | undefined;
     onUpdate?: {
         action: string;
         args?: any[];
-    }[];
+    }[] | undefined;
     onExit?: {
         action: string;
         args?: any[];
-    }[];
+    }[] | undefined;
     transitions?: {
         to: string;
         condition: string;
-    }[];
+    }[] | undefined;
 }
 export interface CompiledFSM {
     initialState: string;

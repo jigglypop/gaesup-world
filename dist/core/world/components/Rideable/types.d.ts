@@ -4,6 +4,13 @@ import { WorldObject } from '../../core/WorldEngine';
 export interface GameStatesType {
     canRide: boolean;
     isRiding: boolean;
+    isJumping: boolean;
+    isFalling: boolean;
+    isMoving: boolean;
+    isRunning: boolean;
+    isNotMoving: boolean;
+    isNotRunning: boolean;
+    isOnTheGround: boolean;
     nearbyRideable?: RideableObject;
     currentRideable?: RideableObject;
     rideableDistance?: number;
@@ -65,10 +72,18 @@ export interface RideablePropType {
     position?: THREE.Vector3;
     rotation?: THREE.Euler;
     scale?: THREE.Vector3;
+    offset?: THREE.Vector3;
     maxSpeed?: number;
     acceleration?: number;
     rideMessage?: string;
     exitMessage?: string;
+    displayName?: string;
+    controllerOptions?: {
+        lerp?: {
+            cameraPosition?: number;
+            cameraTurn?: number;
+        };
+    };
     onRide?: (objectId: string) => void;
     onExit?: (objectId: string) => void;
     physics?: RigidBodyProps;

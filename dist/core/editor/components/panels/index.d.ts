@@ -1,9 +1,6 @@
-export { HierarchyPanel } from './HierarchyPanel';
-export { InspectorPanel } from './InspectorPanel';
 export { NodeEditorPanel } from './NodeEditorPanel';
-export { AssetBrowserPanel } from './AssetBrowserPanel';
-export { QuickActionsPanel } from './QuickActionsPanel';
 export { CameraPanel } from './CameraPanel';
 export { AnimationPanel } from './AnimationPanel';
 export { MotionPanel } from './MotionPanel';
 export { PerformancePanel } from './PerformancePanel';
+export { VehiclePanel } from './VehiclePanel';

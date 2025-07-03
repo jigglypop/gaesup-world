@@ -34,6 +34,8 @@ export declare class WorldEngine {
     private objects;
     private interactionEvents;
     private spatial;
+    private raycaster;
+    private tempVector;
     addObject(object: WorldObject): void;
     removeObject(id: string): boolean;
     getObject(id: string): WorldObject | undefined;

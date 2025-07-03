@@ -8,6 +8,7 @@ export declare class AnimationBridge {
     private setupEngineSubscriptions;
     registerAnimationAction(type: AnimationType, name: string, action: THREE.AnimationAction): void;
     registerAnimations(type: AnimationType, actions: Record<string, THREE.AnimationAction | null>): void;
+    unregisterAnimations(type: AnimationType): void;
     execute(type: AnimationType, command: AnimationCommand): void;
     snapshot(type: AnimationType): AnimationSnapshot;
     getMetrics(type: AnimationType): AnimationMetrics | null;

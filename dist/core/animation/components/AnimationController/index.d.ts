@@ -1,2 +1,3 @@
+import React from 'react';
 import './styles.css';
-export declare function AnimationController(): import("react/jsx-runtime").JSX.Element;
+export declare function AnimationController(): React.JSX.Element;

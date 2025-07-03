@@ -5,8 +5,9 @@ import { ModeType } from '../../stores/types';
 import {
   getCachedTrig,
   MemoizationManager,
-  shouldUpdate,
+  shouldUpdate
 } from '@utils/index';
+import { threeObjectPool } from '../../utils/objectPool';
 import { calcAngleByVector, calcNorm } from '../../utils/vector';
 import {
   PhysicsCalcProps,
@@ -26,9 +27,6 @@ type DirectionPhysicsState = Pick<
 export class DirectionController {
   private memoManager = MemoizationManager.getInstance();
   private vectorCache = this.memoManager.getVectorCache('direction');
-  private tempEuler = new THREE.Euler();
-  private tempQuaternion = new THREE.Quaternion();
-  private targetQuaternion = new THREE.Quaternion();
   private lastEulerY = { character: 0, vehicle: 0, airplane: 0 };
   private lastDirectionLength = 0;
   private lastKeyboardState = {
@@ -167,11 +165,18 @@ export class DirectionController {
     else if (targetZ > maxZ) targetZ = maxZ;
     activeState.euler.x = targetX;
     activeState.euler.z = targetZ;
-    this.tempEuler.set(targetX, 0, targetZ);
-    this.tempQuaternion.setFromEuler(innerGroup.rotation);
-    this.targetQuaternion.setFromEuler(this.tempEuler);
-    this.tempQuaternion.slerp(this.targetQuaternion, 0.2);
-    innerGroup.setRotationFromQuaternion(this.tempQuaternion);
+    
+    threeObjectPool.withEuler((tempEuler) => {
+      threeObjectPool.withQuaternion((tempQuaternion) => {
+        threeObjectPool.withQuaternion((targetQuaternion) => {
+          tempEuler.set(targetX, 0, targetZ);
+          tempQuaternion.setFromEuler(innerGroup.rotation);
+          targetQuaternion.setFromEuler(tempEuler);
+          tempQuaternion.slerp(targetQuaternion, 0.2);
+          innerGroup.setRotationFromQuaternion(tempQuaternion);
+        });
+      });
+    });
   }
 
   private handleMouseDirection(
@@ -180,27 +185,27 @@ export class DirectionController {
     characterConfig: DirectionPhysicsState['characterConfig'],
     calcProp?: PhysicsCalcProps,
   ): void {
-    const { automation } = calcProp.worldContext || {};
+    const { automation } = calcProp?.worldContext || {};
     if (automation?.settings.trackProgress && automation.queue.actions && automation.queue.actions.length > 0) {
       const Q = automation.queue.actions.shift();
       if (Q && Q.target) {
         const currentPosition = calcProp.body.translation();
         const targetPosition = Q.target;
         
-        const direction = new THREE.Vector3()
-          .subVectors(targetPosition, currentPosition)
-          .normalize();
-        
-        if (calcProp.memo) {
-          if (!calcProp.memo.direction) {
-            calcProp.memo.direction = new THREE.Vector3();
+        threeObjectPool.withVector3((direction) => {
+          direction.subVectors(targetPosition, currentPosition).normalize();
+          
+          if (calcProp.memo) {
+            if (!calcProp.memo.direction) {
+              calcProp.memo.direction = new THREE.Vector3();
+            }
+            if (!calcProp.memo.directionTarget) {
+              calcProp.memo.directionTarget = new THREE.Vector3();
+            }
+            calcProp.memo.direction.copy(direction);
+            calcProp.memo.directionTarget.copy(targetPosition);
           }
-          if (!calcProp.memo.directionTarget) {
-            calcProp.memo.directionTarget = new THREE.Vector3();
-          }
-          calcProp.memo.direction.copy(direction);
-          calcProp.memo.directionTarget.copy(targetPosition);
-        }
+        });
         
         if (automation.settings.loop && Q && automation.queue.actions) {
           automation.queue.actions.push(Q);

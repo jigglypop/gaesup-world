@@ -1,6 +1,10 @@
 import { RefObject } from 'react';
 import * as THREE from 'three';
-import { PhysicsCalcProps, PhysicsState } from '../types';
+import { PhysicsCalcProps, PhysicsState, characterConfigType, airplaneConfigType } from '../types';
+type DirectionPhysicsState = Pick<PhysicsState, 'modeType' | 'activeState' | 'keyboard' | 'mouse'> & {
+    characterConfig: characterConfigType;
+    airplaneConfig: airplaneConfigType;
+};
 export declare class DirectionController {
     private memoManager;
     private vectorCache;
@@ -10,7 +14,9 @@ export declare class DirectionController {
     private lastEulerY;
     private lastDirectionLength;
     private lastKeyboardState;
-    updateDirection(physicsState: PhysicsState, controlMode?: string, calcProp?: PhysicsCalcProps, innerGroupRef?: RefObject<THREE.Group>, matchSizes?: unknown): void;
+    private pendingStateUpdates;
+    private timers;
+    updateDirection(physicsState: DirectionPhysicsState, controlMode?: string, calcProp?: PhysicsCalcProps, innerGroupRef?: RefObject<THREE.Group>, matchSizes?: THREE.Vector3): void;
     private updateCharacterDirection;
     private updateVehicleDirection;
     private updateAirplaneDirection;
@@ -20,4 +26,6 @@ export declare class DirectionController {
     private applyMouseRotation;
     private handleKeyboardDirection;
     private emitRotationUpdate;
+    dispose(): void;
 }
+export {};

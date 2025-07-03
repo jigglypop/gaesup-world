@@ -1,7 +1,4 @@
-import React from 'react';
+import { FC } from 'react';
 import '../../styles/theme.css';
-interface EditorLayoutProps {
-    children?: React.ReactNode;
-}
-export declare const EditorLayout: React.FC<EditorLayoutProps>;
-export {};
+import { EditorLayoutProps } from './types';
+export declare const EditorLayout: FC<EditorLayoutProps>;

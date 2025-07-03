@@ -28,7 +28,7 @@ export declare class GaesupErrorBoundary extends Component<ErrorBoundaryProps, E
     static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState>;
     componentDidCatch(error: Error, errorInfo: ErrorInfo): void;
     private reportError;
-    render(): string | number | bigint | boolean | Iterable<ReactNode> | Promise<string | number | bigint | boolean | import("react").ReactPortal | import("react").ReactElement<unknown, string | import("react").JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | import("react/jsx-runtime").JSX.Element | null | undefined;
+    render(): string | number | bigint | boolean | Iterable<ReactNode> | Promise<string | number | bigint | boolean | import("react").ReactPortal | import("react").ReactElement<unknown, string | import("react").JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | import("react").JSX.Element | null | undefined;
 }
 export declare function createGaesupError(type: ErrorType, code: string, message: string, context?: unknown, recoverable?: boolean): GaesupError;
 export {};

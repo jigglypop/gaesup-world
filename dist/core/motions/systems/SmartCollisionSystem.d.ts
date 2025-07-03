@@ -11,6 +11,7 @@ export declare class SmartCollisionSystem {
     private tempVector3;
     private tempQuaternion;
     private tempDirection;
+    private bestPositionTemp;
     constructor(config?: Partial<CameraCollisionConfig>);
     private initializeRayDirections;
     checkCollision(from: THREE.Vector3, to: THREE.Vector3, scene: THREE.Scene, excludeObjects?: THREE.Object3D[]): THREE.Vector3;

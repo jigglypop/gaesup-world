@@ -27,9 +27,18 @@ export interface CameraOption {
     yDistance?: number;
     zDistance?: number;
     zoom?: number;
+    enableZoom?: boolean;
+    zoomSpeed?: number;
+    minZoom?: number;
+    maxZoom?: number;
     target?: THREE.Vector3;
     position?: THREE.Vector3;
     focus?: boolean;
+    focusTarget?: THREE.Vector3;
+    focusDuration?: number;
+    focusDistance?: number;
+    focusLerpSpeed?: number;
+    enableFocus?: boolean;
     enableCollision?: boolean;
     collisionMargin?: number;
     smoothing?: {
@@ -67,7 +76,17 @@ export type CameraOptionType = CameraOption;
 export type CameraType = 'thirdPerson' | 'firstPerson' | 'topDown' | 'sideScroll' | 'isometric' | 'fixed' | 'chase';
 export interface CameraConfig {
     shoulderOffset?: THREE.Vector3;
-    distance?: number;
+    distance?: {
+        x: number;
+        y: number;
+        z: number;
+    };
+    smoothing?: {
+        position: number;
+        rotation: number;
+        fov: number;
+    };
+    enableCollision?: boolean;
     height?: number;
     lockTarget?: boolean;
     followSpeed?: number;

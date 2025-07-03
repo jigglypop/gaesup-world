@@ -1,2 +1,3 @@
-export declare function Clicker(): import("react/jsx-runtime").JSX.Element;
+import React from 'react';
+export declare function Clicker(): React.JSX.Element;
 export default Clicker;

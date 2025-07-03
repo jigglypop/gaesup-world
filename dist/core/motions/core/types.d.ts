@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
 import { StoreState } from '../../stores/types';
 import { RefObject } from "react";
+import { PhysicsCalculationProps } from '../types';
 export interface ActiveStateType {
     euler: THREE.Euler;
     position: THREE.Vector3;
@@ -17,8 +18,11 @@ export interface ActiveState extends ActiveStateType {
 export interface PhysicsCalcProps {
     rigidBodyRef: RefObject<RapierRigidBody>;
     innerGroupRef?: RefObject<THREE.Group>;
+    outerGroupRef?: RefObject<THREE.Group>;
+    inputRef?: RefObject<PhysicsCalculationProps>;
     matchSizes?: THREE.Vector3;
     worldContext?: StoreState;
+    onStateUpdate?: (updates: Partial<ActiveStateType>) => void;
 }
 export interface BaseState<T = unknown> {
     isLoading: boolean;

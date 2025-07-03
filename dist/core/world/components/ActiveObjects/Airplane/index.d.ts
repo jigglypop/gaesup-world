@@ -1,2 +1,2 @@
-import { ObjectComponentProps } from '../types';
-export declare function Airplane({ object, selected, onSelect, showDebugInfo }: ObjectComponentProps): import("react/jsx-runtime").JSX.Element;
+import { activeAirplaneInnerType } from './type';
+export declare function Airplane(props: activeAirplaneInnerType): import("react").JSX.Element;

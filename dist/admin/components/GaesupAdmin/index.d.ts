@@ -1,6 +1,4 @@
-import React from 'react';
-interface GaesupAdminProps {
-    children: React.ReactNode;
-}
-declare const GaesupAdmin: React.FC<GaesupAdminProps>;
+import { FC } from 'react';
+import { GaesupAdminProps } from './types';
+declare const GaesupAdmin: FC<GaesupAdminProps>;
 export default GaesupAdmin;

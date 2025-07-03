@@ -25,6 +25,9 @@ export declare class InteractionBridge {
     private eventSubscribers;
     private eventQueue;
     private syncInterval;
+    private readonly MAX_COMMAND_HISTORY;
+    private readonly MAX_EVENT_QUEUE;
+    private engineListenerCleanups;
     constructor();
     private setupEngineListeners;
     executeCommand(command: Omit<BridgeCommand, 'timestamp'>): void;
