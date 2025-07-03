@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { useMinimap } from '@hooks/useMinimap';
+import { useMinimap } from '../../hooks';
 import './styles.css';
 import { MinimapProps } from './types';
 
@@ -21,7 +20,7 @@ export function MiniMap({
   showCompass = true,
   markers = [],
 }: MinimapProps) {
-  const { canvasRef, scale, upscale, downscale, handleWheel, setupWheelListener, isReady } =
+  const { canvasRef, scale, upscale, downscale, handleWheel } =
     useMinimap({
       size: MINIMAP_SIZE_PX,
       initialScale,
@@ -31,14 +30,6 @@ export function MiniMap({
       blockRotate,
       angle,
     });
-
-  useEffect(() => {
-    if (!blockScaleControl) {
-      const cleanup = setupWheelListener();
-      return cleanup;
-    }
-  }, [blockScaleControl, setupWheelListener]);
-
   const positionClass = position ? `minimap--${position}` : '';
 
   return (

@@ -8,14 +8,9 @@ export const FocusableObject = forwardRef<THREE.Group, FocusableObjectProps>(
   ({ children, position, focusDistance = 10, focusDuration = 1, onFocus, onBlur, ...props }, ref) => {
     const setCameraOption = useGaesupStore((state) => state.setCameraOption);
     const cameraOption = useGaesupStore((state) => state.cameraOption);
-    
-    const setBlock = useGaesupStore((state) => state.setBlock);
-    
     const handleClick = (event: ThreeEvent<MouseEvent>) => {
       event.stopPropagation();
-      
       if (!cameraOption?.enableFocus) return;
-      
       const objectPosition = event.object.getWorldPosition(new THREE.Vector3());
       
       setCameraOption({
@@ -25,10 +20,6 @@ export const FocusableObject = forwardRef<THREE.Group, FocusableObjectProps>(
         focusDistance: focusDistance,
         focus: true
       });
-      
-      // 포커싱 모드일 때 캐릭터 컨트롤 블록
-      setBlock({ control: true });
-      
       if (onFocus) {
         onFocus(event);
       }

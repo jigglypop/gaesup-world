@@ -1,9 +1,7 @@
 import { UrlsSlice } from './slices/urls';
 import { ModeSlice, ModeState } from './slices/mode';
-import { BlockSlice } from './slices/block';
 import { CameraOptionSlice } from '../camera/stores/slices/cameraOption';
 import { CameraSlice } from '../camera/stores/slices/camera';
-import { MinimapSlice } from './slices/minimap';
 import { SizesSlice } from './slices/sizes';
 import { AnimationSlice } from '../animation/stores/types';
 import { MotionSliceState, MotionActions } from '../motions/stores/types';
@@ -32,10 +30,8 @@ export type CameraType =
 
 export type StoreState = UrlsSlice &
   ModeSlice &
-  BlockSlice &
   CameraOptionSlice &
   CameraSlice &
-  MinimapSlice &
   SizesSlice &
   Omit<AnimationSlice, 'getAnimation' | 'getCurrentAnimation'> &
   MotionSliceState &

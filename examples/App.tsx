@@ -121,7 +121,23 @@ const WorldPage = ({ showEditor = false }) => {
                 <BuildingController />
                 
                 {/* 포커스 가능한 오브젝트 예시 */}
-
+                <GaeSupProps type="normal" text="Orange Box" position={[10, 1, 0]} showMinimap={true}>
+                  <FocusableObject position={[0, 0, 0]} focusDistance={10}>
+                    <mesh castShadow>
+                      <boxGeometry args={[2, 2, 2]} />
+                      <meshStandardMaterial color="orange" />
+                    </mesh>
+                  </FocusableObject>
+                </GaeSupProps>
+                
+                <GaeSupProps type="normal" text="Purple Sphere" position={[-10, 2, -10]} showMinimap={true}>
+                  <FocusableObject position={[0, 0, 0]} focusDistance={15}>
+                    <mesh castShadow>
+                      <sphereGeometry args={[1.5, 32, 32]} />
+                      <meshStandardMaterial color="purple" />
+                    </mesh>
+                  </FocusableObject>
+                </GaeSupProps>
               </Physics>
             </GaesupWorldContent>
           </Suspense>

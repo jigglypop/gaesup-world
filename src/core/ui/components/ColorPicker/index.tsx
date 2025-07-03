@@ -11,8 +11,7 @@ const DEFAULT_PRESET_COLORS = [
 
 function hexToHsl(hex: string): { h: number; s: number; l: number; a: number } {
   let r = 0, g = 0, b = 0, a = 1;
-  
-  if (hex.length === 4) {
+  if (hex.length === 4 && hex[1] && hex[2] && hex[3]) {
     r = parseInt(hex[1] + hex[1], 16);
     g = parseInt(hex[2] + hex[2], 16);
     b = parseInt(hex[3] + hex[3], 16);
@@ -26,26 +25,21 @@ function hexToHsl(hex: string): { h: number; s: number; l: number; a: number } {
     b = parseInt(hex.slice(5, 7), 16);
     a = parseInt(hex.slice(7, 9), 16) / 255;
   }
-  
   r /= 255;
   g /= 255;
   b /= 255;
-  
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   let h = 0, s = 0, l = (max + min) / 2;
-  
   if (max !== min) {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    
     switch (max) {
       case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
       case g: h = ((b - r) / d + 2) / 6; break;
       case b: h = ((r - g) / d + 4) / 6; break;
     }
   }
-  
   return { h: h * 360, s: s * 100, l: l * 100, a };
 }
 
@@ -53,9 +47,7 @@ function hslToHex(h: number, s: number, l: number, a: number = 1): string {
   h = h / 360;
   s = s / 100;
   l = l / 100;
-  
   let r, g, b;
-  
   if (s === 0) {
     r = g = b = l;
   } else {
@@ -67,7 +59,6 @@ function hslToHex(h: number, s: number, l: number, a: number = 1): string {
       if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
       return p;
     };
-    
     const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
     const p = 2 * l - q;
     r = hue2rgb(p, q, h + 1/3);
@@ -118,32 +109,26 @@ export function ColorPicker({
         onClose?.();
       }
     };
-
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onClose]);
 
   const handleSliderChange = useCallback((type: 'h' | 's' | 'l' | 'a', event: React.MouseEvent | MouseEvent) => {
     if (!slidersRef.current) return;
-    
     const slider = slidersRef.current[type];
     if (!slider) return;
-
     const rect = slider.getBoundingClientRect();
     const x = Math.max(0, Math.min(event.clientX - rect.left, rect.width));
     const percentage = x / rect.width;
-
     const newHsl = { ...hsl };
-    
     switch (type) {
       case 'h': newHsl.h = percentage * 360; break;
       case 's': newHsl.s = percentage * 100; break;
       case 'l': newHsl.l = percentage * 100; break;
       case 'a': newHsl.a = percentage; break;
     }
-
     setHsl(newHsl);
     onChange(hslToHex(newHsl.h, newHsl.s, newHsl.l, newHsl.a));
   }, [hsl, onChange]);
@@ -195,7 +180,7 @@ export function ColorPicker({
                 <div
                   ref={el => {
                     if (slidersRef.current) {
-                      slidersRef.current.h = el;
+                      slidersRef.current["h"] = el;
                     }
                   }}
                   className="color-picker__slider color-picker__slider--hue"
@@ -213,7 +198,7 @@ export function ColorPicker({
                 <div
                   ref={el => {
                     if (slidersRef.current) {
-                      slidersRef.current.s = el;
+                      slidersRef.current["s"] = el;
                     }
                   }}
                   className="color-picker__slider color-picker__slider--saturation"
@@ -232,7 +217,7 @@ export function ColorPicker({
                 <div
                   ref={el => {
                     if (slidersRef.current) {
-                      slidersRef.current.l = el;
+                      slidersRef.current["l"] = el;
                     }
                   }}
                   className="color-picker__slider color-picker__slider--lightness"
@@ -252,7 +237,7 @@ export function ColorPicker({
                   <div
                     ref={el => {
                       if (slidersRef.current) {
-                        slidersRef.current.a = el;
+                        slidersRef.current["a"] = el;
                       }
                     }}
                     className="color-picker__slider color-picker__slider--alpha"

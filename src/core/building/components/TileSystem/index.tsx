@@ -5,7 +5,7 @@ import { MaterialManager } from '../../core/MaterialManager';
 import { GaeSupProps } from '../../../index';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { TileObject } from '../TileObject';
-import { useGaesupStore } from '../../../stores/gaesupStore';
+import { MinimapEngine } from '../../../ui/core';
 
 interface TileSystemProps {
   tileGroup: TileGroupConfig;
@@ -23,8 +23,6 @@ export function TileSystem({
   onTileDelete 
 }: TileSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
-  const addMinimapMarker = useGaesupStore((state) => state.addMinimapMarker);
-  const removeMinimapMarker = useGaesupStore((state) => state.removeMinimapMarker);
 
   const material = useMemo(() => {
     const manager = materialManagerRef.current;
@@ -78,6 +76,7 @@ export function TileSystem({
 
   useEffect(() => {
     if (tileGroup.tiles.length > 0) {
+      const engine = MinimapEngine.getInstance();
       const bounds = new THREE.Box3();
       
       tileGroup.tiles.forEach((tile) => {
@@ -101,18 +100,19 @@ export function TileSystem({
       bounds.getCenter(center);
       bounds.getSize(size);
       
-      addMinimapMarker(`tile-group-${tileGroup.id}`, {
-        type: 'ground',
-        text: tileGroup.name || 'Tiles',
+      engine.addMarker(
+        `tile-group-${tileGroup.id}`,
+        'ground',
+        tileGroup.name || 'Tiles',
         center,
-        size,
-      });
+        size
+      );
       
       return () => {
-        removeMinimapMarker(`tile-group-${tileGroup.id}`);
+        engine.removeMarker(`tile-group-${tileGroup.id}`);
       };
     }
-  }, [tileGroup, addMinimapMarker, removeMinimapMarker]);
+  }, [tileGroup]);
 
   useEffect(() => {
     return () => {

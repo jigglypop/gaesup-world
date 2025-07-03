@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { useBuildingStore } from '../../building/stores/buildingStore';
-import { MinimapProps } from '../../ui/components/Minimap/types';
+import { MinimapProps, MinimapResult } from '../components/Minimap/types';
+import { MinimapEngine } from '../core';
 import * as THREE from 'three';
 
 const DEFAULT_SCALE = 5;
@@ -11,37 +12,42 @@ const UPDATE_THRESHOLD = 0.1;
 const ROTATION_THRESHOLD = 0.01;
 const MINIMAP_SIZE_PX = 200;
 
-export interface MinimapResult {
-  canvasRef: React.RefObject<HTMLCanvasElement>;
-  scale: number;
-  upscale: () => void;
-  downscale: () => void;
-  handleWheel: (e: React.WheelEvent) => void;
-  setupWheelListener: () => (() => void) | undefined;
-  updateCanvas: () => void;
-  isReady: boolean;
-}
-
 export const useMinimap = (props: MinimapProps): MinimapResult => {
   const mode = useGaesupStore((state) => state.mode);
   const activeState = useGaesupStore((state) => state.activeState);
-  const minimap = useGaesupStore((state) => state.minimap);
   const tileGroups = useBuildingStore((state) => state.tileGroups);
   const sceneObjectsRef = useRef<Map<string, { position: THREE.Vector3; size: THREE.Vector3 }>>(new Map());
+  const [minimapMarkers, setMinimapMarkers] = useState<Map<string, any>>(new Map());
   const {
-    size = 200,
     scale: initialScale = DEFAULT_SCALE,
-    zoom = 2,
     blockRotate = false,
     angle = 0,
     updateInterval = 33,
   } = props;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [scale, setScale] = useState(initialScale);
-  const lastPositionRef = useRef<THREE.Vector3 | null>(null);
+  const lastPositionRef = useRef<{ x: number; z: number } | null>(null);
   const lastRotationRef = useRef<number | null>(null);
-
+  const gradientCacheRef = useRef<{
+    background: CanvasGradient | null;
+    avatar: CanvasGradient | null;
+  }>({ background: null, avatar: null });
+  const isDirtyRef = useRef(true);
   const isReady = !!(activeState.position && props);
+
+  // Subscribe to MinimapEngine
+  useEffect(() => {
+    const engine = MinimapEngine.getInstance();
+    const unsubscribe = engine.subscribe((markers) => {
+      setMinimapMarkers(markers);
+      isDirtyRef.current = true;
+    });
+    
+    // Initial load
+    setMinimapMarkers(engine.getMarkers());
+    
+    return unsubscribe;
+  }, []);
 
   const upscale = useCallback(() => {
     if (props.blockScale) return;
@@ -97,17 +103,21 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
     ctx.beginPath();
     ctx.arc(MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2, 0, Math.PI * 2);
     ctx.clip();
-    const gradient = ctx.createRadialGradient(
-      MINIMAP_SIZE_PX / 2,
-      MINIMAP_SIZE_PX / 2,
-      0,
-      MINIMAP_SIZE_PX / 2,
-      MINIMAP_SIZE_PX / 2,
-      MINIMAP_SIZE_PX / 2,
-    );
-    gradient.addColorStop(0, 'rgba(20, 30, 40, 0.9)');
-    gradient.addColorStop(1, 'rgba(10, 20, 30, 0.95)');
-    ctx.fillStyle = gradient;
+    
+    if (!gradientCacheRef.current.background) {
+      const gradient = ctx.createRadialGradient(
+        MINIMAP_SIZE_PX / 2,
+        MINIMAP_SIZE_PX / 2,
+        0,
+        MINIMAP_SIZE_PX / 2,
+        MINIMAP_SIZE_PX / 2,
+        MINIMAP_SIZE_PX / 2,
+      );
+      gradient.addColorStop(0, 'rgba(20, 30, 40, 0.9)');
+      gradient.addColorStop(1, 'rgba(10, 20, 30, 0.95)');
+      gradientCacheRef.current.background = gradient;
+    }
+    ctx.fillStyle = gradientCacheRef.current.background;
     ctx.fillRect(0, 0, MINIMAP_SIZE_PX, MINIMAP_SIZE_PX);
     const displayRotation = (rotation * 180) / Math.PI;
     ctx.translate(MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2);
@@ -188,16 +198,13 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
     // Render scene objects
     sceneObjectsRef.current.forEach((obj, id) => {
       if (!obj?.position || !obj?.size) return;
-      
       const posX = (obj.position.x - position.x) * scale;
       const posZ = (obj.position.z - position.z) * scale;
       const objWidth = obj.size.x * scale;
       const objHeight = obj.size.z * scale;
-      
       ctx.save();
       const x = MINIMAP_SIZE_PX / 2 - posX - objWidth / 2;
       const y = MINIMAP_SIZE_PX / 2 - posZ - objHeight / 2;
-      
       ctx.fillStyle = 'rgba(100, 150, 200, 0.4)';
       ctx.fillRect(x, y, objWidth, objHeight);
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
@@ -206,14 +213,12 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
       ctx.restore();
     });
 
-    if (minimap && minimap.props) {
-      Object.values(minimap.props).forEach((obj) => {
-        if (!obj?.center || !obj?.size) return;
-
-        const { center, size, text } = obj;
+    if (minimapMarkers.size > 0) {
+      minimapMarkers.forEach((marker) => {
+        if (!marker?.center || !marker?.size) return;
+        const { center, size, text } = marker;
         const posX = (center.x - position.x) * scale;
         const posZ = (center.z - position.z) * scale;
-
         ctx.save();
         const width = size.x * scale;
         const height = size.z * scale;
@@ -250,32 +255,32 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
         ctx.restore();
       });
     }
-
     ctx.save();
-    const avatarGradient = ctx.createRadialGradient(
-      MINIMAP_SIZE_PX / 2,
-      MINIMAP_SIZE_PX / 2,
-      0,
-      MINIMAP_SIZE_PX / 2,
-      MINIMAP_SIZE_PX / 2,
-      12,
-    );
-    avatarGradient.addColorStop(0, '#01fff7');
-    avatarGradient.addColorStop(0.7, '#01fff7');
-    avatarGradient.addColorStop(1, 'transparent');
+    if (!gradientCacheRef.current.avatar) {
+      const avatarGradient = ctx.createRadialGradient(
+        MINIMAP_SIZE_PX / 2,
+        MINIMAP_SIZE_PX / 2,
+        0,
+        MINIMAP_SIZE_PX / 2,
+        MINIMAP_SIZE_PX / 2,
+        12,
+      );
+      avatarGradient.addColorStop(0, '#01fff7');
+      avatarGradient.addColorStop(0.7, '#01fff7');
+      avatarGradient.addColorStop(1, 'transparent');
+      gradientCacheRef.current.avatar = avatarGradient;
+    }
 
-    ctx.fillStyle = avatarGradient;
+    ctx.fillStyle = gradientCacheRef.current.avatar;
     ctx.beginPath();
     ctx.arc(MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2, 12, 0, Math.PI * 2);
     ctx.fill();
-
     ctx.fillStyle = '#01fff7';
     ctx.shadowColor = '0 0 10px rgba(1,255,247,0.7)';
     ctx.shadowBlur = 8;
     ctx.beginPath();
     ctx.arc(MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2, 6, 0, Math.PI * 2);
     ctx.fill();
-
     ctx.shadowColor = 'transparent';
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.lineWidth = 2;
@@ -283,20 +288,21 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
     ctx.moveTo(MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2);
     ctx.lineTo(MINIMAP_SIZE_PX / 2, MINIMAP_SIZE_PX / 2 - 12);
     ctx.stroke();
-
     ctx.restore();
     ctx.restore();
-  }, [activeState, minimap, mode, scale, angle, blockRotate, tileGroups]);
+  }, [activeState, minimapMarkers, mode, scale, angle, blockRotate, tileGroups]);
 
   const checkForUpdates = useCallback(() => {
+    if (!activeState.position || !activeState.euler) return;
+    
     const { position, euler } = activeState;
     const rotation = euler.y;
     const lastPos = lastPositionRef.current;
     const lastRotation = lastRotationRef.current;
 
     if (!lastPos || lastRotation === null) {
-      updateCanvas();
-      lastPositionRef.current = position.clone();
+      isDirtyRef.current = true;
+      lastPositionRef.current = { x: position.x, z: position.z };
       lastRotationRef.current = rotation;
       return;
     }
@@ -308,20 +314,31 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
     const rotationChanged = Math.abs(rotation - lastRotation) > ROTATION_THRESHOLD;
 
     if (positionChanged || rotationChanged) {
-      updateCanvas();
-      lastPositionRef.current = position.clone();
+      isDirtyRef.current = true;
+      lastPositionRef.current = { x: position.x, z: position.z };
       lastRotationRef.current = rotation;
     }
-  }, [activeState, updateCanvas]);
+  }, [activeState]);
 
   useEffect(() => {
-    updateCanvas();
-    const interval = setInterval(checkForUpdates, updateInterval);
+    if (!isReady) return;
+    
+    const renderLoop = () => {
+      if (isDirtyRef.current) {
+        updateCanvas();
+        isDirtyRef.current = false;
+      }
+    };
+    
+    const interval = setInterval(() => {
+      checkForUpdates();
+      renderLoop();
+    }, updateInterval);
 
     return () => {
       clearInterval(interval);
     };
-  }, [updateCanvas, checkForUpdates, updateInterval]);
+  }, [updateCanvas, checkForUpdates, updateInterval, isReady]);
 
   useEffect(() => {
     updateCanvas();

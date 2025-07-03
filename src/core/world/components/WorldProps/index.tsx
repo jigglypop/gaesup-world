@@ -1,7 +1,7 @@
 import { vec3 } from '@react-three/rapier';
 import { useEffect, useRef, useMemo } from 'react';
 import * as THREE from 'three';
-import { useGaesupStore } from '@stores/gaesupStore';
+import { MinimapEngine } from '../../../ui/core';
 import { useClicker } from '@hooks/useClicker';
 import { WorldPropsType } from './types';
 
@@ -14,8 +14,6 @@ export function WorldProps({
   showMinimap = true 
 }: WorldPropsType) {
   const groupRef = useRef<THREE.Group>(null);
-  const addMinimapMarker = useGaesupStore((state) => state.addMinimapMarker);
-  const removeMinimapMarker = useGaesupStore((state) => state.removeMinimapMarker);
   const clickerStates = useClicker();
   const markerId = useMemo(() => `world-prop-${Date.now()}-${Math.random()}`, []);
   
@@ -28,6 +26,7 @@ export function WorldProps({
 
   useEffect(() => {
     if (showMinimap && groupRef.current) {
+      const engine = MinimapEngine.getInstance();
       const updateMinimapMarker = () => {
         const group = groupRef.current;
         if (!group) return;
@@ -45,12 +44,13 @@ export function WorldProps({
             center.add(positionAdd);
           }
           
-          addMinimapMarker(markerId, {
-            type: type as 'normal' | 'ground',
-            text: text || '',
-            center: center.clone(), // Clone only when passing to store
-            size: size.clone(), // Clone only when passing to store
-          });
+          engine.addMarker(
+            markerId,
+            type as 'normal' | 'ground',
+            text || '',
+            center.clone(), // Clone only when passing to engine
+            size.clone() // Clone only when passing to engine
+          );
         }
       };
       
@@ -58,10 +58,10 @@ export function WorldProps({
       
       return () => {
         clearTimeout(timer);
-        removeMinimapMarker(markerId);
+        engine.removeMarker(markerId);
       };
     }
-  }, [addMinimapMarker, removeMinimapMarker, position, type, text, showMinimap, markerId]);
+  }, [position, type, text, showMinimap, markerId]);
 
   return (
     <group 

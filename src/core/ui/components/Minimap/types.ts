@@ -1,4 +1,4 @@
-import { CSSProperties, ReactElement } from 'react';
+import { CSSProperties, ReactElement, RefObject, WheelEventHandler } from 'react';
 import * as THREE from 'three';
 
 export interface MinimapMarker {
@@ -12,7 +12,20 @@ export interface MinimapMarker {
   size?: 'small' | 'medium' | 'large';
 }
 
+export interface MinimapResult {
+  canvasRef: RefObject<HTMLCanvasElement | null>;
+  scale: number;
+  upscale: () => void;
+  downscale: () => void;
+  handleWheel: WheelEventHandler<HTMLCanvasElement>;
+  setupWheelListener: () => (() => void) | undefined;
+  updateCanvas: () => void;
+  isReady: boolean;
+}
+
+
 export interface MinimapProps {
+  initialScale?: number;
   scale?: number;
   minScale?: number;
   maxScale?: number;

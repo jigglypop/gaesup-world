@@ -8,7 +8,6 @@ import { useGaesupStore } from '../../stores/gaesupStore';
 
 export function useCamera() {
   const { gl } = useThree();
-  const block = useGaesupStore((state) => state.block);
   const activeState = useGaesupStore((state) => state.activeState);
   const cameraOption = useGaesupStore((state) => state.cameraOption);
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
@@ -27,7 +26,7 @@ export function useCamera() {
   );
   
   const handleWheel = useCallback((event: WheelEvent) => {
-    if (!cameraOption?.enableZoom || block.camera) {
+    if (!cameraOption?.enableZoom ) {
       return;
     }
     
@@ -42,7 +41,7 @@ export function useCamera() {
     const newZoom = Math.min(Math.max(currentZoom + delta, minZoom), maxZoom);
     
     setCameraOption({ ...cameraOption, zoom: newZoom });
-  }, [cameraOption, setCameraOption, block.camera]);
+  }, [cameraOption, setCameraOption]);
   
   useEffect(() => {
     const canvas = gl.domElement;
@@ -54,7 +53,6 @@ export function useCamera() {
     }
   }, [gl, handleWheel, cameraOption?.enableZoom]);
   
-  const setBlock = useGaesupStore((state) => state.setBlock);
   
   // ESC 키로 포커스 해제
   useEffect(() => {
@@ -65,8 +63,6 @@ export function useCamera() {
           focus: false,
           focusTarget: undefined 
         });
-        // 포커싱 해제 시 컨트롤 블록도 해제
-        setBlock({ control: false });
       }
     };
     
@@ -76,7 +72,7 @@ export function useCamera() {
         window.removeEventListener('keydown', handleKeyDown);
       };
     }
-  }, [cameraOption, setCameraOption, setBlock]);
+  }, [cameraOption, setCameraOption]);
   
   useEffect(() => {
     updateConfig({
@@ -86,7 +82,7 @@ export function useCamera() {
   }, [cameraOption, mode, updateConfig]);
   
   useFrame((state, delta) => {
-    if (!engine || block.camera) return;
+    if (!engine ) return;
     
     const calcProps: CameraCalcProps = {
       camera: state.camera,

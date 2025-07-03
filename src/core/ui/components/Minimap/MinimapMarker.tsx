@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import * as THREE from 'three';
-import { useGaesupStore } from '@stores/gaesupStore';
-import { InternalMinimapMarkerProps } from './types';
+import { MinimapEngine } from '../../core';
+import { InternalMinimapMarkerProps, MinimapObjectProps, MinimapPlatformProps } from './types';
 
 function MinimapMarker({
   id,
@@ -11,24 +11,23 @@ function MinimapMarker({
   type = 'normal',
   children,
 }: InternalMinimapMarkerProps) {
-  const addMinimapMarker = useGaesupStore((state) => state.addMinimapMarker);
-  const removeMinimapMarker = useGaesupStore((state) => state.removeMinimapMarker);
-
-  useEffect(() => {
-    const pos = Array.isArray(position) ? position : [position.x, position.y, position.z];
-    const sizeVec = Array.isArray(size) ? size : [size.x, size.y, size.z];
-    
-    addMinimapMarker(id, {
-      type,
-      text: text || '',
-      center: new THREE.Vector3(pos[0], pos[1], pos[2]),
-      size: new THREE.Vector3(sizeVec[0], sizeVec[1], sizeVec[2]),
-    });
-
-    return () => {
-      removeMinimapMarker(id);
-    };
-  }, [id, position, size, type, text, addMinimapMarker, removeMinimapMarker]);
+//   useEffect(() => {
+//     const engine = MinimapEngine.getInstance();
+//     const pos = Array.isArray(position) ? position : [position.x, position.y, position.z];
+//     const sizeVec = Array.isArray(size) ? size : [size.x, size.y, size.z];
+//     
+//     engine.addMarker(
+//       id,
+//       type,
+//       text || '',
+//       new THREE.Vector3(pos[0], pos[1], pos[2]),
+//       new THREE.Vector3(sizeVec[0], sizeVec[1], sizeVec[2])
+//     );
+// 
+//     return () => {
+//       engine.removeMarker(id);
+//     };
+//   }, [id, position, size, type, text]);
 
   return <>{children}</>;
 }
@@ -39,13 +38,7 @@ export function MinimapPlatform({
   size,
   label,
   children,
-}: {
-  id: string;
-  position: THREE.Vector3 | [number, number, number];
-  size: THREE.Vector3 | [number, number, number];
-  label: string;
-  children?: React.ReactNode;
-}) {
+}: MinimapPlatformProps) {
   return (
     <MinimapMarker id={id} position={position} size={size} text={label} type="ground">
       {children}
@@ -59,15 +52,9 @@ export function MinimapObject({
   emoji,
   size = [3, 3, 3],
   children,
-}: {
-  id: string;
-  position: THREE.Vector3 | [number, number, number];
-  emoji: string;
-  size?: THREE.Vector3 | [number, number, number];
-  children?: React.ReactNode;
-}) {
+}: MinimapObjectProps) {
   return (
-    <MinimapMarker id={id} position={position} size={size} text={emoji} type="special">
+    <MinimapMarker id={id} position={position} size={size} text={emoji} type="normal">
       {children}
     </MinimapMarker>
   );

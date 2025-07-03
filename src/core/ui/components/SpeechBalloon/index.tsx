@@ -135,6 +135,7 @@ export function SpeechBalloon({
   const { camera } = useThree();
   const prevDistanceRef = useRef<number>(0);
   const finalPositionRef = useRef(new THREE.Vector3());
+  const frameCountRef = useRef(0);
 
   const textureData = useMemo(() => {
     if (!text || !visible) return null;
@@ -163,9 +164,12 @@ export function SpeechBalloon({
   useFrame(() => {
     if (!spriteRef.current || !textureData || !visible) return;
     
+    frameCountRef.current++;
+    if (frameCountRef.current % 3 !== 0) return;
+    
     const distance = camera.position.distanceTo(position);
     
-    if (Math.abs(distance - prevDistanceRef.current) > 0.1) {
+    if (Math.abs(distance - prevDistanceRef.current) > 0.5) {
       const scale = distance * 0.01;
       const aspectRatio = textureData.width / textureData.height;
       spriteRef.current.scale.set(scale * aspectRatio, scale, 1);
