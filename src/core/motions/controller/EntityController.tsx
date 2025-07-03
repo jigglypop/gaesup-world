@@ -1,9 +1,9 @@
 import { useMemo, useEffect, useRef } from 'react';
 import { vec3 } from '@react-three/rapier';
 import { useGaesupStore } from '../../stores/gaesupStore';
-import { useGenericRefs } from './useGenericRefs';
+import { PhysicsEntity } from '../entities/refs/PhysicsEntity';
 import { EntityControllerProps } from './types';
-import { PhysicsEntity } from './PhysicsEntity';
+import { useGenericRefs } from '../entities/utils/useGenericRefs';
 
 export function EntityController({ props, children }: EntityControllerProps) {
   const mode = useGaesupStore((state) => state.mode);

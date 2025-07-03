@@ -1,8 +1,6 @@
-import { quat, euler, vec3 } from '@react-three/rapier';
-import { PhysicsEntity, useGenericRefs } from '@motions/entities';
-import { useFrame } from '@react-three/fiber';
+import { useGenericRefs } from '@motions/entities';
 import { passiveAirplanePropsType } from './types';
-import { useMemo } from 'react';
+import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
 
 export function PassiveAirplane(props: passiveAirplanePropsType) {
   const refs = useGenericRefs();

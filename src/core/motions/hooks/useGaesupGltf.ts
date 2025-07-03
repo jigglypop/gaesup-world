@@ -85,6 +85,7 @@ export const useGltfAndSize = ({ url }: GltfAndSizeOptions): GltfAndSizeResult =
   return { gltf, size, setSize, getSize };
 };
 
+
 export const useGaesupGltf = (): GaesupGltfUtils => {
   const sizes = useGaesupStore((state) => state.sizes);
   const getSizesByUrls = useCallback(

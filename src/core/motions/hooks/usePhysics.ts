@@ -1,9 +1,9 @@
 import { useGaesupStore } from '@stores/gaesupStore';
-import { useGaesupGltf } from '../entities/useGaesupGltf';
 import { StoreState } from '../../stores/types';
 import { SizesType } from '../../stores/slices/sizes';
 import { ActiveStateType } from '../core/types';
 import { PhysicsCalculationProps } from '../types';
+import { useGaesupGltf } from './useGaesupGltf';
 
 export interface UsePhysicsReturn {
   worldContext: StoreState;

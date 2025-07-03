@@ -1,6 +1,6 @@
+import { useGaesupStore } from '@/core/stores/gaesupStore';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { useGaesupStore } from '../../stores';
 
 type AnimationActions = {
   [key: string]: THREE.AnimationAction | undefined;

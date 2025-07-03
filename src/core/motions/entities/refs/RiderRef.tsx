@@ -5,8 +5,8 @@ import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import { useAnimationPlayer } from '@/core/hooks';
 import { ModelRenderer } from './PartsGroupRef';
-import { riderRefType } from './types';
-import { useGltfAndSize } from './useGaesupGltf';
+import { riderRefType } from '../types';
+import { useGltfAndSize } from '../utils';
 
 export default function RiderRef({
   url,

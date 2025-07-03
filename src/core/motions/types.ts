@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { ActiveStateType } from './core/types';
 import { GameStatesType } from '../world/components/Rideable/types';
-import { CameraOptionType, CameraPropType } from '../camera/core/types';
 import { GroupProps, RootState } from '@react-three/fiber';
 import { ModeType, StoreState } from '../stores/types';
 import { RefObject } from 'react';

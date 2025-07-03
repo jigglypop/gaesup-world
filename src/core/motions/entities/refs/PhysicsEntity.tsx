@@ -1,18 +1,16 @@
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
 import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three/rapier';
-import { RefObject, forwardRef, useEffect, useMemo, useRef } from 'react';
+import { RefObject, forwardRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
-import { useGaesupStore } from '../../stores';
+import { PhysicsEntityProps } from './types';
+import { usePhysicsEntity } from '../../hooks';
+import { RidingAnimation, VehicleAnimation } from '../animations';
+import { useGltfAndSize, useSetGroundRay } from '../utils';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
-import { useSetGroundRay } from './setGroundRay';
-import { PhysicsEntityProps } from './types';
-import { useGltfAndSize } from './useGaesupGltf';
-import { usePhysicsEntity } from '../hooks/usePhysicsEntity';
-import { RidingAnimation } from './RidingAnimation';
-import { VehicleAnimation } from './VehicleAnimation';
+
 
 export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
   (props, rigidBodyRef) => {
@@ -31,7 +29,6 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       rigidBodyRef: rigidBodyRef as RefObject<RapierRigidBody>,
       actions
     });
-
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
 
     const skeleton = useMemo(() => {

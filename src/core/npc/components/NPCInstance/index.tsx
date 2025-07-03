@@ -4,7 +4,7 @@ import { useGLTF } from '@react-three/drei';
 import { SkeletonUtils } from 'three-stdlib';
 import { extend } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
-import { PhysicsEntity } from '@motions/entities';
+import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
 import { useNPCStore } from '../../stores/npcStore';
 import { NPCPart } from '../../types';
 import './styles.css';

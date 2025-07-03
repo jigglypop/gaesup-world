@@ -8,17 +8,6 @@ import { PhysicsCalcProps } from '../core/types';
 import { StoreState } from '../../stores/types';
 import * as THREE from 'three';
 
-const KEYBOARD_KEY_INDICES = {
-  forward: 0,
-  backward: 1,
-  leftward: 2,
-  rightward: 3,
-  shift: 4,
-  space: 5,
-  keyE: 6,
-  keyR: 7,
-} as const;
-
 const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps): void => {
   const keyboardKeys: (keyof typeof state.keyboard)[] = [
     'forward',

@@ -1,12 +1,12 @@
-import { RefObject, useEffect, useMemo, useRef } from 'react';
+import { RefObject, useEffect, useRef } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { getGlobalAnimationBridge } from '../../animation/hooks/useAnimationBridge';
 import { MotionBridge } from '../bridge/MotionBridge';
 import { useGaesupStore } from '../../stores';
-import { PhysicsEntityProps } from '../entities/types';
 import usePhysicsLoop from '..';
 import { useAnimationPlayer } from '../../hooks';
+import { PhysicsEntityProps } from '../entities/refs/types';
 
 interface UsePhysicsEntityProps
   extends Pick<
@@ -101,41 +101,32 @@ export function usePhysicsEntity({
     }
   }, [isActive, rigidBodyRef, modeType]);
 
-  const handleIntersectionEnter = useMemo(
-    () => async (payload: any) => {
-      if (onIntersectionEnter) {
-        await onIntersectionEnter(payload);
-      }
-      if (userData?.onNear) {
-        await userData.onNear(payload, userData);
-      }
-    },
-    [onIntersectionEnter, userData]
-  );
+  const handleIntersectionEnter = async (payload: any) => {
+    if (onIntersectionEnter) {
+      await onIntersectionEnter(payload);
+    }
+    if (userData?.onNear) {
+      await userData.onNear(payload, userData);
+    }
+  };
 
-  const handleIntersectionExit = useMemo(
-    () => async (payload: any) => {
-      if (onIntersectionExit) {
-        await onIntersectionExit(payload);
-      }
-      if (userData?.onLeave) {
-        await userData.onLeave(payload);
-      }
-    },
-    [onIntersectionExit, userData]
-  );
+  const handleIntersectionExit = async (payload: any) => {
+    if (onIntersectionExit) {
+      await onIntersectionExit(payload);
+    }
+    if (userData?.onLeave) {
+      await userData.onLeave(payload);
+    }
+  };
 
-  const handleCollisionEnter = useMemo(
-    () => async (payload: any) => {
-      if (onCollisionEnter) {
-        await onCollisionEnter(payload);
-      }
-      if (userData?.onNear) {
-        await userData.onNear(payload, userData);
-      }
-    },
-    [onCollisionEnter, userData]
-  );
+  const handleCollisionEnter = async (payload: any) => {
+    if (onCollisionEnter) {
+      await onCollisionEnter(payload);
+    }
+    if (userData?.onNear) {
+      await userData.onNear(payload, userData);
+    }
+  };
 
   if (isActive) {
     usePhysicsLoop({
@@ -170,36 +161,27 @@ export function usePhysicsEntity({
     }
   }, [onFrame, onAnimate, actions]);
 
-  const executeMotionCommand = useMemo(
-    () => (command: any) => {
-      if (registeredRef.current && isActive) {
-        const motionBridge = getGlobalMotionBridge();
-        motionBridge.execute(entityIdRef.current, command);
-      }
-    },
-    [isActive]
-  );
+  const executeMotionCommand = (command: any) => {
+    if (registeredRef.current && isActive) {
+      const motionBridge = getGlobalMotionBridge();
+      motionBridge.execute(entityIdRef.current, command);
+    }
+  };
 
-  const updateMotion = useMemo(
-    () => (deltaTime: number) => {
-      if (registeredRef.current && isActive) {
-        const motionBridge = getGlobalMotionBridge();
-        motionBridge.updateEntity(entityIdRef.current, deltaTime);
-      }
-    },
-    [isActive]
-  );
+  const updateMotion = (deltaTime: number) => {
+    if (registeredRef.current && isActive) {
+      const motionBridge = getGlobalMotionBridge();
+      motionBridge.updateEntity(entityIdRef.current, deltaTime);
+    }
+  };
 
-  const getMotionSnapshot = useMemo(
-    () => () => {
-      if (registeredRef.current && isActive) {
-        const motionBridge = getGlobalMotionBridge();
-        return motionBridge.snapshot(entityIdRef.current);
-      }
-      return null;
-    },
-    [isActive]
-  );
+  const getMotionSnapshot = () => {
+    if (registeredRef.current && isActive) {
+      const motionBridge = getGlobalMotionBridge();
+      return motionBridge.snapshot(entityIdRef.current);
+    }
+    return null;
+  };
 
   return {
     executeMotionCommand,
