@@ -50,17 +50,13 @@ function createTextTexture({
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
   if (!context) return null;
-
   context.font = `${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-
   const words = text.split(' ');
   const lines: string[] = [];
   let currentLine = '';
-
   for (const word of words) {
     const testLine = currentLine ? `${currentLine} ${word}` : word;
     const metrics = context.measureText(testLine);
-    
     if (metrics.width > maxWidth - padding * 2 && currentLine) {
       lines.push(currentLine);
       currentLine = word;
@@ -74,41 +70,32 @@ function createTextTexture({
 
   const lineHeight = fontSize * 1.2;
   const textHeight = lines.length * lineHeight;
-  
   let maxLineWidth = 0;
   lines.forEach(line => {
     const metrics = context.measureText(line);
     maxLineWidth = Math.max(maxLineWidth, metrics.width);
   });
-
   canvas.width = maxLineWidth + padding * 2;
   canvas.height = textHeight + padding * 2;
-
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.font = `${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-
   context.fillStyle = backgroundColor;
   createRoundedRect(context, 0, 0, canvas.width, canvas.height, borderRadius);
   context.fill();
-
   context.fillStyle = textColor;
   context.textAlign = 'center';
   context.textBaseline = 'middle';
-
   lines.forEach((line, index) => {
     const y = padding + (index + 0.5) * lineHeight;
     context.fillText(line, canvas.width / 2, y);
   });
-
   const texture = new THREE.CanvasTexture(canvas);
   texture.needsUpdate = true;
-
   const cleanup = () => {
     texture.dispose();
     canvas.width = 0;
     canvas.height = 0;
   };
-
   return {
     texture,
     width: canvas.width,

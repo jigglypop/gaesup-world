@@ -1,6 +1,3 @@
-import { useEffect } from 'react';
-import * as THREE from 'three';
-import { MinimapEngine } from '../../core';
 import { InternalMinimapMarkerProps, MinimapObjectProps, MinimapPlatformProps } from './types';
 
 function MinimapMarker({

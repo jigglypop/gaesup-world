@@ -42,10 +42,7 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
       setMinimapMarkers(markers);
       isDirtyRef.current = true;
     });
-    
-    // Initial load
     setMinimapMarkers(engine.getMarkers());
-    
     return unsubscribe;
   }, []);
 

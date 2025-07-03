@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
+import { MotionConfig, MotionMetrics } from '../stores/types';
 
 export interface MotionState {
   position: THREE.Vector3;
@@ -10,28 +11,6 @@ export interface MotionState {
   speed: number;
   direction: THREE.Vector3;
   lastUpdate: number;
-}
-
-export interface MotionConfig {
-  maxSpeed: number;
-  acceleration: number;
-  deceleration: number;
-  turnSpeed: number;
-  jumpForce: number;
-  gravity: number;
-  linearDamping: number;
-  angularDamping: number;
-}
-
-export interface MotionMetrics {
-  currentSpeed: number;
-  averageSpeed: number;
-  totalDistance: number;
-  frameTime: number;
-  physicsTime: number;
-  lastPosition: THREE.Vector3;
-  isAccelerating: boolean;
-  groundContact: boolean;
 }
 
 export type MotionType = 'character' | 'vehicle' | 'airplane';
