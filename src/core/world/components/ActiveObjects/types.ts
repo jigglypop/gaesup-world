@@ -1,7 +1,7 @@
-import { WorldObject } from '../../core/WorldEngine';
+import { WorldObject } from '@core/world/types';
 
 export interface ActiveObject extends WorldObject {
-  type: 'vehicle' | 'airplane' | 'character';
+  type: 'character' | 'vehicle' | 'airplane';
   health: number;
   maxHealth: number;
   energy: number;

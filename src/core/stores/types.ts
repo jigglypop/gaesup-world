@@ -1,17 +1,20 @@
+import { GaesupWorldSlice } from '@core/world/stores/types';
 import { ModeSlice } from './slices/mode';
 import { UrlsSlice } from './slices/urls';
-import { SizesSlice } from './slices/sizes';
+import { SizeSlice } from './slices/sizes';
 import { RideableSlice } from './slices/rideable';
-import { PerformanceState } from './slices/performance';
+import { PerformanceSlice } from './slices/performance';
 import { CameraOptionSlice } from '@core/camera/stores/slices/cameraOption';
+import { PhysicsSlice } from './slices/mode copy';
 
-export type StoreState =
+export type GaesupState = GaesupWorldSlice &
   ModeSlice &
   UrlsSlice &
-  SizesSlice &
+  SizeSlice &
   RideableSlice &
-  PerformanceState &
-  CameraOptionSlice;
+  PerformanceSlice &
+  CameraOptionSlice &
+  PhysicsSlice;
 
 export * from './slices/mode/types';
 export * from './slices/urls/types';

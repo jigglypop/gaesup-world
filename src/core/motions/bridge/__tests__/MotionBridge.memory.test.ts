@@ -57,8 +57,9 @@ describe('MotionBridge 메모리 누수 테스트', () => {
     const listenerCount = 10;
 
     for (let i = 0; i < listenerCount; i++) {
-      const unsubscribe = motionBridge.subscribe((snapshot) => {
-        console.log(snapshot);
+      const unsubscribe = motionBridge.subscribe((snapshot, id) => {
+        // The test just ensures listeners can be added and removed,
+        // so the callback body can be empty.
       });
       listeners.push(unsubscribe);
     }

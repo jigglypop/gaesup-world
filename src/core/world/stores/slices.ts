@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { WorldSlice, WorldSliceState } from './types';
+import { WorldSlice } from './types';
 import { WorldBridge } from '../bridge/WorldBridge';
 
 const worldBridge = new WorldBridge();

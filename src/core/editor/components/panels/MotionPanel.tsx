@@ -1,6 +1,6 @@
+import { MotionController, MotionDebugPanel } from '@/core';
 import React, { useState } from 'react';
-import { MotionController } from '../../../motions/components/MotionController';
-import { MotionDebugPanel } from '../../../motions/components/MotionDebugPanel';
+
 
 type Tab = 'Controller' | 'Debug';
 

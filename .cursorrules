@@ -111,6 +111,12 @@ convertLegacyData, convertToLegacyData 메서드 구현
 - 파일명: ComponentName.test.ts(x) 형식
 - 테스트 커버리지: Core 레이어 100% 목표
 
+
+16. 타입 규칙
+- 타입 파일 생성 시 파일명 끝에 .ts 확장자 붙이기
+- tsx, 등 다른 파일에 절대 타입을 넣지 않는다
+- export type 를 쓰고, interface 는 쓰지 않는다
+
 18. 의존성 관리
 - 새 패키지 추가 시 팀 리뷰 필수
 - peerDependencies 정확히 명시

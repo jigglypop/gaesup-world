@@ -1,5 +1,37 @@
-import { MotionCommand, MotionSnapshot } from './MotionBridge';
 import { MotionType } from '../core/engine/MotionEngine';
+import * as THREE from 'three';
+
+export type MotionCommand = {
+  type: 'move' | 'jump' | 'stop' | 'turn' | 'setConfig' | 'reset';
+  data?: {
+    movement?: THREE.Vector3;
+    direction?: number;
+    force?: THREE.Vector3;
+    config?: any;
+  };
+};
+
+export type MotionSnapshot = {
+  type: MotionType;
+  position: THREE.Vector3;
+  velocity: THREE.Vector3;
+  rotation: THREE.Euler;
+  isGrounded: boolean;
+  isMoving: boolean;
+  speed: number;
+  metrics: {
+    currentSpeed: number;
+    averageSpeed: number;
+    totalDistance: number;
+    frameTime: number;
+    isAccelerating: boolean;
+  };
+  config: {
+    maxSpeed: number;
+    acceleration: number;
+    jumpForce: number;
+  };
+};
 
 export interface MotionBridgeInterface {
   registerEntity(id: string, type: MotionType, rigidBody: any): void;

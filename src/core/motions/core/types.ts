@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
 import { RefObject } from "react"
 import { PhysicsCalculationProps } from '../types';
-import { StoreState } from '@stores/types';
+import { ModeType, PhysicsConfigType } from '@stores/slices';
 
 
 export interface ActiveStateType {
@@ -52,7 +52,7 @@ export interface PhysicsLayerStatus {
   isPaused: boolean;
 }
 
-export interface PhysicsState {
+export type PhysicsState = {
   rigidBody: RapierRigidBody;
   outerGroup: THREE.Group;
   innerGroup: THREE.Group;
@@ -62,7 +62,7 @@ export interface PhysicsState {
     leftward: boolean;
     rightward: boolean;
   };
-}
+} & PhysicsConfigType
 
 export type PhysicsConnector = (state: StoreState) => (delta: number) => void;
 export type PhysicsConnectors = Record<string, PhysicsConnector>;
@@ -79,5 +79,5 @@ export interface PhysicsStatus extends BaseState<PhysicsLayerStatus> {
 }
 
 export interface PhysicsResult extends PhysicsStatus {
-  bridgeRef: React.RefObject<PhysicsBridgeData>;
+  bridgeRef: RefObject<PhysicsBridgeData>;
 }

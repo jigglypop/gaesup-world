@@ -1,51 +1,19 @@
 import * as THREE from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
-import { StateEngine } from './StateEngine';
 import { ActiveStateType } from '../types';
-import { GameStatesType } from '../../../world/components/Rideable/types';
-
-export interface MotionState {
-  position: THREE.Vector3;
-  velocity: THREE.Vector3;
-  rotation: THREE.Euler;
-  isGrounded: boolean;
-  isMoving: boolean;
-  speed: number;
-  direction: THREE.Vector3;
-  lastUpdate: number;
-}
-export type MotionConfig = {
-  maxSpeed: number;
-  acceleration: number;
-  deceleration: number;
-  turnSpeed: number;
-  jumpForce: number;
-  gravity: number;
-  linearDamping: number;
-  angularDamping: number;
-};
-export type MotionMetrics = {
-  currentSpeed: number;
-  averageSpeed: number;
-  totalDistance: number;
-  frameTime: number;
-  physicsTime: number;
-  lastPosition: THREE.Vector3;
-  isAccelerating: boolean;
-  groundContact: boolean;
-};
-export type MotionType = 'character' | 'vehicle' | 'airplane';
+import { GameStatesType } from '@core/world/components/Rideable/types';
+import { PhysicsConfigType } from '@/core/stores/slices/mode copy/types';
+import { MotionMetrics, MotionState, MotionType } from './types';
+import { ForceComponent } from '../forces/ForceComponent';
 
 export class MotionEngine {
   private state: MotionState;
-  private config: MotionConfig;
   private metrics: MotionMetrics;
   private type: MotionType;
-  private stateEngine: StateEngine;
+  private forceComponents: ForceComponent[] = [];
 
-  constructor(type: MotionType, config: Partial<MotionConfig> = {}) {
+  constructor(type: MotionType) {
     this.type = type;
-    this.stateEngine = StateEngine.getInstance();
     
     this.state = {
       position: new THREE.Vector3(),
@@ -56,18 +24,6 @@ export class MotionEngine {
       speed: 0,
       direction: new THREE.Vector3(),
       lastUpdate: 0
-    };
-
-    this.config = {
-      maxSpeed: 10,
-      acceleration: 15,
-      deceleration: 10,
-      turnSpeed: 8,
-      jumpForce: 12,
-      gravity: -30,
-      linearDamping: 0.95,
-      angularDamping: 0.85,
-      ...config
     };
 
     this.metrics = {
@@ -82,45 +38,53 @@ export class MotionEngine {
     };
   }
 
-  getActiveStateRef(): ActiveStateType {
-    return this.stateEngine.getActiveStateRef();
+  addForceComponent(component: ForceComponent): void {
+    this.forceComponents.push(component);
   }
 
-  getGameStatesRef(): GameStatesType {
-    return this.stateEngine.getGameStatesRef();
+  updateForces(rigidBody: RapierRigidBody, delta: number): void {
+    for (const component of this.forceComponents) {
+      component.update(rigidBody, delta);
+    }
   }
 
-  updatePosition(position: THREE.Vector3): void {
+  updatePosition(
+    position: THREE.Vector3, 
+    activeState: ActiveStateType
+  ): void {
     this.metrics.lastPosition.copy(this.state.position);
     this.state.position.copy(position);
     this.calculateSpeed();
-    this.stateEngine.updateActiveState({ position });
+    activeState.position.copy(position);
   }
 
-  updateVelocity(velocity: THREE.Vector3): void {
+  updateVelocity(
+    velocity: THREE.Vector3,
+    activeState: ActiveStateType,
+    gameStates: GameStatesType
+  ): void {
     this.state.velocity.copy(velocity);
     this.state.speed = velocity.length();
     this.state.isMoving = this.state.speed > 0.1;
-    this.stateEngine.updateActiveState({ velocity });
-    this.stateEngine.updateGameStates({
-      isMoving: this.state.isMoving,
-      isNotMoving: !this.state.isMoving
-    });
+    activeState.velocity.copy(velocity);
+    gameStates.isMoving = this.state.isMoving;
+    gameStates.isNotMoving = !this.state.isMoving;
   }
 
-  updateRotation(rotation: THREE.Euler): void {
+  updateRotation(rotation: THREE.Euler, activeState: ActiveStateType): void {
     this.state.rotation.copy(rotation);
-    // Update activeState ref
-    this.stateEngine.updateActiveState({ euler: rotation });
+    activeState.euler.copy(rotation);
   }
 
-  setGrounded(grounded: boolean): void {
+  setGrounded(
+    grounded: boolean,
+    activeState: ActiveStateType,
+    gameStates: GameStatesType
+  ): void {
     this.state.isGrounded = grounded;
     this.metrics.groundContact = grounded;
-    // Update activeState ref
-    this.stateEngine.updateActiveState({ isGround: grounded });
-    // Update gameStates ref
-    this.stateEngine.updateGameStates({ isOnTheGround: grounded });
+    activeState.isGround = grounded;
+    gameStates.isOnTheGround = grounded;
   }
 
   applyForce(force: THREE.Vector3, rigidBody: RapierRigidBody): void {
@@ -133,17 +97,22 @@ export class MotionEngine {
     rigidBody.setLinvel(newVel, true);
   }
 
-  calculateMovement(input: {
-    forward: boolean;
-    backward: boolean;
-    leftward: boolean;
-    rightward: boolean;
-    shift: boolean;
-    space: boolean;
-  }, deltaTime: number): THREE.Vector3 {
+  calculateMovement(
+    input: {
+      forward: boolean;
+      backward: boolean;
+      leftward: boolean;
+      rightward: boolean;
+      shift: boolean;
+      space: boolean;
+    },
+    config: PhysicsConfigType,
+    gameStates: GameStatesType,
+    deltaTime: number
+  ): THREE.Vector3 {
     const movement = new THREE.Vector3();
     const speedMultiplier = input.shift ? 2 : 1;
-    const targetSpeed = this.config.maxSpeed * speedMultiplier;
+    const targetSpeed = (config.maxSpeed ?? 10) * speedMultiplier;
     if (input.forward) movement.z -= 1;
     if (input.backward) movement.z += 1;
     if (input.leftward) movement.x -= 1;
@@ -151,23 +120,23 @@ export class MotionEngine {
     if (movement.length() > 0) {
       movement.normalize();
       movement.multiplyScalar(targetSpeed * deltaTime);
-      // Update gameStates for running
-      this.stateEngine.updateGameStates({
-        isRunning: input.shift,
-        isNotRunning: !input.shift
-      });
+      gameStates.isRunning = input.shift;
+      gameStates.isNotRunning = !input.shift;
     }
     return movement;
   }
 
-  calculateJump(): THREE.Vector3 {
+  calculateJump(
+    config: PhysicsConfigType,
+    gameStates: GameStatesType,
+  ): THREE.Vector3 {
     if (!this.state.isGrounded) return new THREE.Vector3();
-    // Update gameStates for jumping
-    this.stateEngine.updateGameStates({ isJumping: true });
-    return new THREE.Vector3(0, this.config.jumpForce, 0);
+    gameStates.isJumping = true;
+    return new THREE.Vector3(0, config.jumpSpeed, 0);
   }
 
-  update(deltaTime: number): void {
+  update(rigidBody: RapierRigidBody, deltaTime: number): void {
+    this.updateForces(rigidBody, deltaTime);
     this.state.lastUpdate = Date.now();
     this.metrics.frameTime = deltaTime;
     this.updateMetrics(deltaTime);
@@ -192,14 +161,6 @@ export class MotionEngine {
     return { ...this.metrics };
   }
 
-  getConfig(): Readonly<MotionConfig> {
-    return { ...this.config };
-  }
-
-  updateConfig(newConfig: Partial<MotionConfig>): void {
-    this.config = { ...this.config, ...newConfig };
-  }
-
   reset(): void {
     this.state.position.set(0, 0, 0);
     this.state.velocity.set(0, 0, 0);
@@ -210,9 +171,6 @@ export class MotionEngine {
     this.metrics.totalDistance = 0;
     this.metrics.currentSpeed = 0;
     this.metrics.averageSpeed = 0;
-    // Reset StateEngine refs
-    this.stateEngine.resetActiveState();
-    this.stateEngine.resetGameStates();
   }
 
   dispose(): void {

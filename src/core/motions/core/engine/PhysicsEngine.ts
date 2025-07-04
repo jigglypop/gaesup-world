@@ -4,21 +4,12 @@ import { RapierRigidBody } from '@react-three/rapier';
 import { RefObject } from 'react';
 import * as THREE from 'three';
 import { AnimationController } from '../../controller/AnimationController';
-import {
-  characterConfigType,
-  vehicleConfigType,
-  airplaneConfigType
-} from '../../types';
 import { StateEngine } from './StateEngine';
 import { InteractionEngine } from '../../../interactions/core/InteractionEngine';
 import { GravityComponent } from '../forces';
 import { DirectionComponent, ImpulseComponent } from '../movement';
-
-export interface PhysicsConfig {
-  character: characterConfigType;
-  vehicle: vehicleConfigType;
-  airplane: airplaneConfigType;
-}
+import { useGaesupStore } from '@core/stores/gaesupStore';
+import { PhysicsConfigType } from '@/core/stores/slices/mode copy/types';
 
 export class PhysicsEngine {
   private directionComponent = new DirectionComponent();
@@ -33,26 +24,31 @@ export class PhysicsEngine {
 
   private tempQuaternion = new THREE.Quaternion();
   private tempEuler = new THREE.Euler();
-  private config: PhysicsConfig;
+  private config: PhysicsConfigType;
   private stateEngine: StateEngine;
   private interactionEngine: InteractionEngine;
+  private unsubscribe: () => void;
 
-  constructor(config?: Partial<PhysicsConfig>) {
-    this.config = {
-      character: { ...config?.character },
-      vehicle: { ...config?.vehicle },
-      airplane: { ...config?.airplane }
-    };
+  constructor(config?: Partial<PhysicsConfigType>) {
+    const initialState = useGaesupStore.getState().physics;
+    this.config = { ...initialState, ...config };
     this.stateEngine = StateEngine.getInstance();
     this.interactionEngine = InteractionEngine.getInstance();
+
+    this.unsubscribe = useGaesupStore.subscribe(
+      (state) => state.physics,
+      (physics) => {
+        this.updateConfig(physics);
+      }
+    );
   }
 
-  public updateConfig(newConfig: Partial<PhysicsConfig>) {
-    this.config = {
-      character: { ...this.config.character, ...newConfig.character },
-      vehicle: { ...this.config.vehicle, ...newConfig.vehicle },
-      airplane: { ...this.config.airplane, ...newConfig.airplane }
-    };
+  public updateConfig(newConfig: Partial<PhysicsConfigType>) {
+    this.config = { ...this.config, ...newConfig };
+  }
+
+  public destroy() {
+    this.unsubscribe();
   }
 
   calculate(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
@@ -188,10 +184,10 @@ export class PhysicsEngine {
       const activeStateRef = this.stateEngine.getActiveStateRef();
       const { isJumping, isFalling, isNotMoving } = gameStatesRef;
       const {
-        linearDamping = 0.2,
-        airDamping = 0.1,
-        stopDamping = 2
-      } = this.config.character;
+        linearDamping,
+        airDamping,
+        stopDamping,
+      } = this.config;
       rigidBodyRef.current.setLinearDamping(
         isJumping || isFalling
           ? airDamping
@@ -253,12 +249,12 @@ export class PhysicsEngine {
     const { space } = keyboard;
     
     if (modeType === 'vehicle') {
-      const { linearDamping = 0.9, brakeRatio = 5 } = this.config.vehicle;
+      const { linearDamping, brakeRatio } = this.config;
       const damping = space ? brakeRatio : linearDamping;
       rigidBodyRef.current.setLinearDamping(damping);
     } else if (modeType === 'airplane') {
-      const damping = this.config.airplane?.linearDamping || 0.8;
-      rigidBodyRef.current.setLinearDamping(damping);
+      const { linearDamping } = this.config;
+      rigidBodyRef.current.setLinearDamping(linearDamping);
     }
   }
 }
