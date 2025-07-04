@@ -3,7 +3,6 @@ import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createUrlsSlice } from './slices/urls';
 import { createModeSlice } from './slices/mode';
 import { createCameraOptionSlice } from '../camera/stores/slices/cameraOption';
-import { createCameraSlice } from '../camera/stores/slices/camera';
 import { createSizesSlice } from './slices/sizes';
 import { createAnimationSlice } from '../animation/stores/slices';
 import { createInteractionSlice } from '../interactions/stores/slices';
@@ -18,7 +17,6 @@ export const useGaesupStore = create<StoreState>()(
       ...createUrlsSlice(set, get, api),
       ...createModeSlice(set, get, api),
       ...createCameraOptionSlice(set, get, api),
-      ...createCameraSlice(set, get, api),
       ...createSizesSlice(set, get, api),
       ...createAnimationSlice(set, get, api),
       ...createInteractionSlice(set, get, api),

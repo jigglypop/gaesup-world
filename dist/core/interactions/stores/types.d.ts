@@ -1,4 +1,5 @@
 import { InteractionState, AutomationState, InteractionConfig, AutomationConfig, InteractionMetrics, AutomationMetrics, BridgeState } from '../bridge/types';
+import { MouseState } from '../core/InteractionEngine';
 export interface InteractionSliceState {
     interaction: InteractionState;
     automation: AutomationState;
@@ -33,4 +34,5 @@ export interface InteractionActions {
     resetInteractions: () => void;
     setBridgeStatus: (status: BridgeState['syncStatus']) => void;
     addCommandToHistory: (command: BridgeState['commandHistory'][0]) => void;
+    dispatchInput: (updates: Partial<MouseState>) => void;
 }

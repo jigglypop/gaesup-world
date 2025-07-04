@@ -8,14 +8,14 @@ type DirectionPhysicsState = Pick<PhysicsState, 'modeType' | 'activeState' | 'ke
 export declare class DirectionController {
     private memoManager;
     private vectorCache;
-    private tempEuler;
-    private tempQuaternion;
-    private targetQuaternion;
     private lastEulerY;
     private lastDirectionLength;
     private lastKeyboardState;
     private pendingStateUpdates;
     private timers;
+    private tempQuaternion;
+    private interactionEngine;
+    constructor();
     updateDirection(physicsState: DirectionPhysicsState, controlMode?: string, calcProp?: PhysicsCalcProps, innerGroupRef?: RefObject<THREE.Group>, matchSizes?: THREE.Vector3): void;
     private updateCharacterDirection;
     private updateVehicleDirection;

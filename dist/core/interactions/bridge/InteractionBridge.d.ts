@@ -1,5 +1,6 @@
-import { InteractionEngine } from '../core/InteractionEngine';
+import { InteractionEngine, KeyboardState, MouseState } from '../core/InteractionEngine';
 import { AutomationEngine } from '../core/AutomationEngine';
+import { InteractionSnapshot } from './types';
 export interface BridgeCommand {
     type: 'input' | 'automation';
     action: string;
@@ -28,18 +29,18 @@ export declare class InteractionBridge {
     private readonly MAX_COMMAND_HISTORY;
     private readonly MAX_EVENT_QUEUE;
     private engineListenerCleanups;
+    private eventListeners;
     constructor();
     private setupEngineListeners;
     executeCommand(command: Omit<BridgeCommand, 'timestamp'>): void;
     private handleInputCommand;
     private handleAutomationCommand;
-    snapshot(): {
-        interaction: any;
-        automation: any;
-        bridge: BridgeState;
-    };
-    subscribe(event: string, callback: Function): void;
-    unsubscribe(event: string, callback: Function): void;
+    snapshot(): InteractionSnapshot;
+    subscribe(listener: (state: {
+        keyboard: KeyboardState;
+        mouse: MouseState;
+    }) => void): () => void;
+    private notifyListeners;
     private emitEvent;
     private startSync;
     private processEventQueue;
@@ -48,4 +49,6 @@ export declare class InteractionBridge {
     getAutomationEngine(): AutomationEngine;
     reset(): void;
     dispose(): void;
+    getKeyboardState(): KeyboardState;
+    getMouseState(): MouseState;
 }

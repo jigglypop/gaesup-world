@@ -1,7 +1,6 @@
-import { PhysicsCalculationProps } from './types';
 export * from './core';
 export * from './bridge';
 export * from './components';
 export * from './hooks';
-declare const usePhysicsLoop: (props: PhysicsCalculationProps) => void;
-export default usePhysicsLoop;
+export * from './entities';
+export { usePhysicsLoop as default } from './hooks/usePhysicsLoop';

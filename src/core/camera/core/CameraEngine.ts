@@ -3,6 +3,8 @@ import {
   CameraSystemState,
   CameraCalcProps,
   CameraConfig,
+  CameraState,
+  CameraTransition,
 } from './types';
 import {
   ThirdPersonController,
@@ -15,15 +17,20 @@ import {
 } from '../controllers';
 import { BaseCameraEngine } from '../bridge/BaseCameraEngine';
 import { CameraEngineConfig } from '../bridge/types';
+import * as THREE from 'three';
 
 export class CameraEngine extends BaseCameraEngine {
   private controllers: Map<string, ICameraController> = new Map();
   private state: CameraSystemState;
+  private cameraStates: Map<string, CameraState> = new Map();
+  private currentCameraStateName: string = 'default';
+  private cameraTransitions: CameraTransition[] = [];
   
   constructor(config: CameraEngineConfig) {
     super(config);
     this.state = this.createInitialState();
     this.registerControllers();
+    this.initializeCameraStates();
   }
   
   private createInitialState(): CameraSystemState {
@@ -39,6 +46,25 @@ export class CameraEngine extends BaseCameraEngine {
       },
       activeController: undefined,
     };
+  }
+  
+  private initializeCameraStates(): void {
+    const defaultState: CameraState = {
+      name: 'default',
+      type: 'thirdPerson',
+      position: new THREE.Vector3(0, 5, 10),
+      rotation: new THREE.Euler(0, 0, 0),
+      fov: 75,
+      config: {
+        distance: { x: 15, y: 8, z: 15 },
+        height: 5,
+        followSpeed: 0.1,
+        rotationSpeed: 0.1,
+      },
+      priority: 0,
+      tags: [],
+    };
+    this.cameraStates.set('default', defaultState);
   }
   
   registerController(controller: ICameraController): void {
@@ -76,7 +102,33 @@ export class CameraEngine extends BaseCameraEngine {
     return this.state;
   }
   
-
+  getCameraState(name: string): CameraState | undefined {
+    return this.cameraStates.get(name);
+  }
+  
+  getCurrentCameraState(): CameraState | undefined {
+    return this.cameraStates.get(this.currentCameraStateName);
+  }
+  
+  addCameraState(name: string, state: CameraState): void {
+    this.cameraStates.set(name, state);
+  }
+  
+  setCameraTransitions(transitions: CameraTransition[]): void {
+    this.cameraTransitions = transitions;
+  }
+  
+  switchCameraState(name: string): void {
+    if (this.cameraStates.has(name)) {
+      this.currentCameraStateName = name;
+      const newState = this.cameraStates.get(name)!;
+      this.state.config.mode = newState.type;
+      if (newState.config.distance) {
+        this.state.config.distance = newState.config.distance;
+      }
+      this.state.config.fov = newState.fov;
+    }
+  }
   
   private registerControllers(): void {
     this.registerController(new ThirdPersonController());

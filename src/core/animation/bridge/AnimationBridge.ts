@@ -11,12 +11,10 @@ export class AnimationBridge {
     this.engines = new Map();
     this.eventListeners = new Set();
     this.unsubscribeFunctions = new Map();
-
     const engineTypes: AnimationType[] = ['character', 'vehicle', 'airplane'];
     engineTypes.forEach(type => {
       this.engines.set(type, new AnimationEngine());
     });
-    
     this.setupEngineSubscriptions();
   }
 
@@ -28,18 +26,15 @@ export class AnimationBridge {
       this.unsubscribeFunctions.set(type, unsubscribe);
     });
   }
-
   registerAnimationAction(type: AnimationType, name: string, action: THREE.AnimationAction): void {
     const engine = this.engines.get(type);
     if (engine) {
       engine.registerAction(name, action);
     }
   }
-
   registerAnimations(type: AnimationType, actions: Record<string, THREE.AnimationAction | null>): void {
     const engine = this.engines.get(type);
     if (!engine) return;
-
     Object.entries(actions).forEach(([name, action]) => {
       if (action) {
         engine.registerAction(name, action);
@@ -50,14 +45,12 @@ export class AnimationBridge {
   unregisterAnimations(type: AnimationType): void {
     const engine = this.engines.get(type);
     if (!engine) return;
-    
     engine.clearActions();
   }
 
   execute(type: AnimationType, command: AnimationCommand): void {
     const engine = this.engines.get(type);
     if (!engine) return;
-
     switch (command.type) {
       case 'play':
         if (command.animation) {
@@ -85,7 +78,6 @@ export class AnimationBridge {
     if (!engine) {
       return this.getEmptySnapshot();
     }
-
     const state = engine.getState();
     const metrics = engine.getMetrics();
 

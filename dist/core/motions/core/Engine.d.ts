@@ -11,9 +11,11 @@ export declare class PhysicsEngine {
     private impulseController;
     private gravityController;
     private stateChecker;
+    private animationController;
     private tempQuaternion;
     private tempEuler;
     private config;
+    private stateEngine;
     constructor(config?: Partial<PhysicsConfig>);
     updateConfig(newConfig: Partial<PhysicsConfig>): void;
     calculate(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void;

@@ -17,7 +17,7 @@
     - Layer 2 (Controllers, Hooks, Stores): React의 상태 관리 로직을 담당합니다. 하위 레이어(Layer 1)의 불필요한 재렌더링을 유발해서는 안 됩니다.
     - 상위 레이어 로직 혼합 금지: React 상태 관리와 같은 상위 레이어의 코드가 하위 레이어(Core)에 절대 포함되어서는 안 됩니다.
 
-3.핵심 원칙
+3. 핵심 원칙
 - 관심사 분리: 컴포넌트 로직(index.tsx), 스타일(styles.css), 타입(types.ts)을 반드시 별도 파일로 분리
 - CSS 변수만 사용: src/core/editor/styles/theme.css의 CSS 변수만 사용, 하드코딩 절대 금지
 - 독립적 패널: 패널 컴포넌트는 자체 isOpen 상태나 토글 버튼을 가지면 안됨
@@ -68,7 +68,7 @@ Layer 1에서 Layer 2로 import 절대 금지
 - Layer 1 객체는 useRef로 관리
 - Magic Number 사용 금지, 상수로 정의
 
-11.파일 크기 제한
+11. 파일 크기 제한
 - 컴포넌트 파일: 최대 200줄
 - 엔진/코어 파일: 최대 500줄
 - 유틸리티 파일: 최대 150줄
@@ -82,16 +82,103 @@ convertLegacyData, convertToLegacyData 메서드 구현
 - AsyncState<T> 타입으로 loading, error 상태 관리
 
 14. 금지사항
-- console.log 사용 금지
+- console.log 사용 금지 (Logger 유틸리티 사용)
 - CSS 하드코딩 값 사용 금지
 - 패널에서 자체 토글 상태 관리
 - Layer 역방향 import
 - Magic Number 사용
 - 전체 store 구독
+- 클라이언트에 민감한 정보 하드코딩
 
-
-14. 테스트 룰
+15. 테스트 규칙
 - react-test-renderer 사용
-- 한글로 테스트 내용 적기
-- 타입 체그 확실히 하기
-- 이름은 Example.test.ts 형식으로, 불필요한 이름을 사용하지 않기
+- 한글로 테스트 내용 작성
+- 타입 체크 확실히 하기
+- 파일명: ComponentName.test.ts(x) 형식
+- 테스트 커버리지: Core 레이어 100% 목표
+
+16. 보안 규칙
+- 인증 정보는 환경 변수로 관리
+- API 키, 비밀번호 등 민감한 정보 하드코딩 금지
+- XSS 방지: 사용자 입력값 sanitize
+- localStorage 사용 시 민감한 정보 암호화
+- CORS 정책 준수
+- 입력값 검증 필수 (타입, 범위, 형식)
+
+17. 디버깅 및 로깅
+- console.log 대신 Logger 유틸리티 사용:
+  ```typescript
+  import { Logger } from '@/core/utils/logger';
+  Logger.log('디버그 메시지');
+  Logger.warn('경고 메시지');
+  Logger.error('에러 메시지');
+  ```
+- 프로덕션 빌드에서는 log, warn 자동 제거
+- 에러 로그는 프로덕션에서도 유지
+- 성능 측정 시 Performance API 사용
+
+18. 의존성 관리
+- 새 패키지 추가 시 팀 리뷰 필수
+- peerDependencies 정확히 명시
+- 불필요한 의존성 제거
+- 보안 취약점 정기 점검 (npm audit)
+- 메이저 버전 업데이트 시 충분한 테스트
+
+19. API 설계 규칙
+- RESTful 원칙 준수
+- 에러 응답 형식 통일
+- 페이지네이션 지원
+- 버전 관리 (/api/v1/)
+- 응답 시간 3초 이내 목표
+
+20. Git 커밋 규칙
+- 커밋 메시지: type(scope): description
+- type: feat, fix, docs, style, refactor, test, chore
+- scope: 영향받는 모듈명
+- 예시: feat(motions): add jump ability
+- 한 커밋에 한 가지 변경사항만 포함
+
+21. 문서화 규칙
+- 공개 API는 JSDoc으로 문서화
+- README 최신 상태 유지
+- 변경사항은 CHANGELOG 업데이트
+- 복잡한 로직은 다이어그램 포함
+- 예제 코드 제공
+
+22. 코드 리뷰 체크리스트
+- [ ] 레이어 아키텍처 준수 여부
+- [ ] 테스트 코드 포함 여부
+- [ ] 성능 영향 검토
+- [ ] 보안 취약점 검토
+- [ ] 문서 업데이트 여부
+- [ ] 하위 호환성 유지
+
+23. 성능 최적화 추가 규칙
+- 렌더링 최적화: React.memo, useMemo 적극 활용
+- 이미지/3D 모델: 지연 로딩 구현
+- 번들 크기: 코드 스플리팅 적용
+- Web Worker 활용 검토
+- 메모리 누수 방지: cleanup 함수 필수
+
+24. 접근성 (a11y)
+- 시맨틱 HTML 사용
+- ARIA 레이블 적절히 사용
+- 키보드 네비게이션 지원
+- 색상 대비 WCAG 기준 준수
+- 스크린 리더 테스트
+
+25. 국제화 (i18n) 준비
+- 하드코딩된 텍스트 금지
+- 날짜/숫자 형식 로케일 대응
+- RTL 언어 고려한 CSS 작성
+- 번역 키 네이밍: module.feature.element
+
+26. 배포 규칙
+- 스테이징 환경 테스트 필수
+- 롤백 계획 수립
+- 배포 전 체크리스트 확인
+- 모니터링 알림 설정
+- 배포 후 스모크 테스트
+
+이 규칙들은 Gaesup World 프로젝트의 품질과 일관성을 유지하기 위한 가이드라인입니다.
+모든 기여자는 이 규칙을 숙지하고 준수해야 합니다.

@@ -6,6 +6,9 @@ export declare class StateChecker {
     private isCurrentlyJumping;
     private lastMovingState;
     private lastRunningState;
+    private stateEngine;
+    private interactionEngine;
+    constructor();
     checkAll(calcProp: PhysicsCalcProps, physicsState: CheckAllPhysicsState): void;
     private checkGround;
     private checkMoving;

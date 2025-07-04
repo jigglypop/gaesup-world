@@ -5,3 +5,4 @@ export declare const gamepadDefault: {
 };
 export declare function GamePad(props: gamepadType): import("react").JSX.Element;
 export default GamePad;
+export { GamePad as Gamepad };

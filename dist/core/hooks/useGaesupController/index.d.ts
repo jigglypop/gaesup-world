@@ -1,2 +1,2 @@
-import { gaesupPassivePropsType } from './types';
-export declare function useGaesupController(): gaesupPassivePropsType;
+import { UseGaesupControllerResult } from './types';
+export declare function useGaesupController(): UseGaesupControllerResult;

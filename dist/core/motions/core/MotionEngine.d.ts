@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
+import { MotionConfig, MotionMetrics } from '../stores/types';
+import { ActiveStateType } from './types';
+import { GameStatesType } from '../../world/components/Rideable/types';
 export interface MotionState {
     position: THREE.Vector3;
     velocity: THREE.Vector3;
@@ -10,33 +13,16 @@ export interface MotionState {
     direction: THREE.Vector3;
     lastUpdate: number;
 }
-export interface MotionConfig {
-    maxSpeed: number;
-    acceleration: number;
-    deceleration: number;
-    turnSpeed: number;
-    jumpForce: number;
-    gravity: number;
-    linearDamping: number;
-    angularDamping: number;
-}
-export interface MotionMetrics {
-    currentSpeed: number;
-    averageSpeed: number;
-    totalDistance: number;
-    frameTime: number;
-    physicsTime: number;
-    lastPosition: THREE.Vector3;
-    isAccelerating: boolean;
-    groundContact: boolean;
-}
 export type MotionType = 'character' | 'vehicle' | 'airplane';
 export declare class MotionEngine {
     private state;
     private config;
     private metrics;
     private type;
+    private stateEngine;
     constructor(type: MotionType, config?: Partial<MotionConfig>);
+    getActiveStateRef(): ActiveStateType;
+    getGameStatesRef(): GameStatesType;
     updatePosition(position: THREE.Vector3): void;
     updateVelocity(velocity: THREE.Vector3): void;
     updateRotation(rotation: THREE.Euler): void;

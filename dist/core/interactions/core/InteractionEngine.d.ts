@@ -84,18 +84,24 @@ export interface InteractionMetrics {
     performanceScore: number;
 }
 export declare class InteractionEngine {
-    private state;
+    private static instance;
+    private stateRef;
     private config;
     private metrics;
     private eventCallbacks;
-    constructor();
+    private constructor();
+    static getInstance(): InteractionEngine;
     private createDefaultState;
     private createDefaultConfig;
     private createDefaultMetrics;
+    getStateRef(): InteractionState;
+    getKeyboardRef(): KeyboardState;
+    getMouseRef(): MouseState;
     updateKeyboard(updates: Partial<KeyboardState>): void;
     updateMouse(updates: Partial<MouseState>): void;
     updateGamepad(updates: Partial<GamepadState>): void;
     updateTouch(updates: Partial<TouchState>): void;
+    dispatchInput(updates: Partial<MouseState>): void;
     setConfig(updates: Partial<InteractionConfig>): void;
     getState(): InteractionState;
     getConfig(): InteractionConfig;

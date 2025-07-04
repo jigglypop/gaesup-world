@@ -1,11 +1,10 @@
-export declare const useGaesupContext: () => {
-    activeState: any;
+export declare function useGaesupContext(): {
+    activeState: import("../..").ActiveStateType;
+    states: import("../../stores/types").GameStatesType;
+    sizes: any;
     mode: any;
-    animationState: any;
-    states: any;
+    control: any;
     urls: any;
-    rideable: any;
-    block: any;
-    cameraOption: any;
     minimap: any;
+    animationState: any;
 };

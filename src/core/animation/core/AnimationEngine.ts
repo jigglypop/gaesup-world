@@ -63,13 +63,10 @@ export class AnimationEngine {
   playAnimation(name: string, fadeInDuration: number = this.state.blendDuration): void {
     const targetAction = this.state.actions.get(name);
     if (!targetAction) return;
-
     const currentAction = this.state.actions.get(this.state.currentAnimation);
-    
     if (currentAction && currentAction !== targetAction) {
       currentAction.fadeOut(fadeInDuration);
     }
-    
     targetAction.reset().fadeIn(fadeInDuration).play();
     this.state.currentAnimation = name;
     this.state.isPlaying = true;
