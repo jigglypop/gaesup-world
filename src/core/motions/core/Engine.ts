@@ -7,6 +7,7 @@ import { PhysicsCalcProps } from './types';
 import { RapierRigidBody } from '@react-three/rapier';
 import { RefObject } from 'react';
 import * as THREE from 'three';
+import { AnimationController } from './AnimationController';
 import {
   characterConfigType,
   vehicleConfigType,
@@ -25,6 +26,7 @@ export class PhysicsEngine {
   private impulseController = new ImpulseController();
   private gravityController = new GravityController();
   private stateChecker = new StateChecker();
+  private animationController = new AnimationController();
   private tempQuaternion = new THREE.Quaternion();
   private tempEuler = new THREE.Euler();
   private config: PhysicsConfig;
@@ -62,6 +64,7 @@ export class PhysicsEngine {
     physicsState.gameStates = this.stateEngine.getGameStatesRef();
     
     this.stateChecker.checkAll(calcProp, physicsState);
+    this.animationController.update(physicsState.gameStates);
 
     const { modeType = 'character' } = physicsState;
 

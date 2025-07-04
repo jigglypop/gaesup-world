@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
-import { InteractionEngine } from '../../interactions/core/InteractionEngine';
+import { InteractionBridge } from '../../interactions/bridge/InteractionBridge';
 import { KeyboardState, MouseState } from '../../interactions/core/InteractionEngine';
 
 export interface UseInteractionEngineResult {
@@ -10,41 +10,65 @@ export interface UseInteractionEngineResult {
   dispatchInput: (updates: Partial<MouseState>) => void;
 }
 
+let globalBridge: InteractionBridge | null = null;
+
+function getGlobalBridge(): InteractionBridge {
+  if (!globalBridge) {
+    globalBridge = new InteractionBridge();
+  }
+  return globalBridge;
+}
+
 export function useInteractionEngine(): UseInteractionEngineResult {
-  const engineRef = useRef<InteractionEngine | null>(null);
-  const [, forceUpdate] = useState({});
+  const bridgeRef = useRef<InteractionBridge | null>(null);
+  const [state, setState] = useState<{ keyboard: KeyboardState; mouse: MouseState }>(() => {
+    const bridge = getGlobalBridge();
+    return {
+      keyboard: bridge.getKeyboardState(),
+      mouse: bridge.getMouseState()
+    };
+  });
   
-  if (!engineRef.current) {
-    engineRef.current = InteractionEngine.getInstance();
+  if (!bridgeRef.current) {
+    bridgeRef.current = getGlobalBridge();
   }
   
-  const keyboard = engineRef.current.getKeyboardRef();
-  const mouse = engineRef.current.getMouseRef();
+  useEffect(() => {
+    const bridge = bridgeRef.current!;
+    const unsubscribe = bridge.subscribe((newState) => {
+      setState(newState);
+    });
+    
+    return unsubscribe;
+  }, []);
   
   const updateKeyboard = useCallback((updates: Partial<KeyboardState>) => {
-    engineRef.current?.updateKeyboard(updates);
-    forceUpdate({});
+    bridgeRef.current?.executeCommand({
+      type: 'input',
+      action: 'updateKeyboard',
+      data: updates
+    });
   }, []);
   
   const updateMouse = useCallback((updates: Partial<MouseState>) => {
-    engineRef.current?.updateMouse(updates);
-    forceUpdate({});
+    bridgeRef.current?.executeCommand({
+      type: 'input',
+      action: 'updateMouse',
+      data: updates
+    });
   }, []);
   
   const dispatchInput = useCallback((updates: Partial<MouseState>) => {
-    engineRef.current?.dispatchInput(updates);
-    forceUpdate({});
-  }, []);
-  
-  useEffect(() => {
-    return () => {
-      engineRef.current = null;
-    };
+    bridgeRef.current?.executeCommand({
+      type: 'input',
+      action: 'updateMouse',
+      data: updates
+    });
   }, []);
   
   return {
-    keyboard,
-    mouse,
+    keyboard: state.keyboard,
+    mouse: state.mouse,
     updateKeyboard,
     updateMouse,
     dispatchInput,

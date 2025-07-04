@@ -202,3 +202,18 @@ export interface AutomationMetrics {
   memoryUsage: number;
   errorRate: number;
 }
+
+export interface InteractionCommand {
+  type: 'updateKeyboard' | 'updateMouse' | 'updateGamepad' | 'updateTouch' | 'reset' | 'setConfig';
+  payload?: unknown;
+}
+
+export interface InteractionSnapshot {
+  keyboard: KeyboardState;
+  mouse: MouseState;
+  gamepad: GamepadState;
+  touch: TouchState;
+  isActive: boolean;
+  config: InteractionConfig;
+  metrics: InteractionMetrics;
+}

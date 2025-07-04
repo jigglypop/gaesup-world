@@ -1,15 +1,23 @@
 import { ThreeEvent } from '@react-three/fiber';
-import { useFrame } from '@react-three/fiber';
 import { V3 } from '@utils/vector';
 import * as THREE from 'three';
 import { ClickerMoveOptions, ClickerResult } from './types';
 import { useStateEngine } from '../../motions/hooks/useStateEngine';
-import { InteractionEngine } from '../../interactions/core/InteractionEngine';
+import { InteractionBridge } from '../../interactions/bridge/InteractionBridge';
+
+let globalBridge: InteractionBridge | null = null;
+
+function getGlobalBridge(): InteractionBridge {
+  if (!globalBridge) {
+    globalBridge = new InteractionBridge();
+  }
+  return globalBridge;
+}
 
 export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
   const { minHeight = 0.5, offsetY = 0.5 } = options;
   const { activeState } = useStateEngine();
-  const interactionEngine = InteractionEngine.getInstance();
+  const bridge = getGlobalBridge();
   const isReady = Boolean(activeState?.position);
   
   const moveClicker = (
@@ -43,12 +51,16 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
         shouldRun: isRun,
       });
 
-      interactionEngine.dispatchInput({
-        target: finalTarget,
-        angle: newAngle,
-        position: new THREE.Vector2(finalTarget.x, finalTarget.z),
-        isActive: true,
-        shouldRun: isRun,
+      bridge.executeCommand({
+        type: 'input',
+        action: 'updateMouse',
+        data: {
+          target: finalTarget,
+          angle: newAngle,
+          position: new THREE.Vector2(finalTarget.x, finalTarget.z),
+          isActive: true,
+          shouldRun: isRun,
+        }
       });
 
       return true;
@@ -61,7 +73,11 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
   const stopClicker = (): void => {
     try {
       if (!isReady) return;
-      interactionEngine.dispatchInput({ isActive: false, shouldRun: false });
+      bridge.executeCommand({
+        type: 'input',
+        action: 'updateMouse',
+        data: { isActive: false, shouldRun: false }
+      });
     } catch (error) {
     }
   };

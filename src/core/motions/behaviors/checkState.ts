@@ -59,25 +59,6 @@ export class StateChecker {
     const keyboard = this.interactionEngine.getKeyboardRef();
     const mouse = this.interactionEngine.getMouseRef();
     
-    // Debug logging
-    if (keyboard.forward || keyboard.backward || keyboard.leftward || keyboard.rightward || keyboard.space || mouse.isActive) {
-      console.log('Input state:', {
-        keyboard: {
-          forward: keyboard.forward,
-          backward: keyboard.backward,
-          leftward: keyboard.leftward,
-          rightward: keyboard.rightward,
-          space: keyboard.space,
-          shift: keyboard.shift
-        },
-        mouse: {
-          isActive: mouse.isActive,
-          shouldRun: mouse.shouldRun,
-          target: mouse.target
-        }
-      });
-    }
-    
     const shift = keyboard.shift;
     const space = keyboard.space;
     const forward = keyboard.forward;

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { InteractionEngine } from '../core/InteractionEngine';
+import { InteractionEngine, KeyboardState, MouseState } from '../core/InteractionEngine';
 import { AutomationEngine } from '../core/AutomationEngine';
+import { InteractionSnapshot, InteractionCommand } from './types';
 
 export interface BridgeCommand {
   type: 'input' | 'automation';
@@ -33,9 +34,10 @@ export class InteractionBridge {
   private readonly MAX_COMMAND_HISTORY = 1000;
   private readonly MAX_EVENT_QUEUE = 500;
   private engineListenerCleanups: Array<() => void> = [];
+  private eventListeners: Set<(state: { keyboard: KeyboardState; mouse: MouseState }) => void>;
 
   constructor() {
-    this.interactionEngine = new InteractionEngine();
+    this.interactionEngine = InteractionEngine.getInstance();
     this.automationEngine = new AutomationEngine();
     this.state = {
       isActive: true,
@@ -46,6 +48,7 @@ export class InteractionBridge {
     this.eventSubscribers = new Map();
     this.eventQueue = [];
     this.syncInterval = null;
+    this.eventListeners = new Set();
     
     this.setupEngineListeners();
     this.startSync();
@@ -122,10 +125,12 @@ export class InteractionBridge {
     
     switch (action) {
       case 'updateKeyboard':
-        this.interactionEngine.updateKeyboard(data as any);
+        this.interactionEngine.updateKeyboard(data as Partial<KeyboardState>);
+        this.notifyListeners();
         break;
       case 'updateMouse':
-        this.interactionEngine.updateMouse(data as any);
+        this.interactionEngine.updateMouse(data as Partial<MouseState>);
+        this.notifyListeners();
         break;
       case 'updateGamepad':
         this.interactionEngine.updateGamepad(data as any);
@@ -194,44 +199,31 @@ export class InteractionBridge {
     }
   }
 
-  snapshot(): {
-    interaction: any;
-    automation: any;
-    bridge: BridgeState;
-  } {
+  snapshot(): InteractionSnapshot {
+    const state = this.interactionEngine.getState();
+    const config = this.interactionEngine.getConfig();
+    const metrics = this.interactionEngine.getMetrics();
+
     return {
-      interaction: {
-        state: this.interactionEngine.getState(),
-        config: this.interactionEngine.getConfig(),
-        metrics: this.interactionEngine.getMetrics()
-      },
-      automation: {
-        state: this.automationEngine.getState(),
-        config: this.automationEngine.getConfig(),
-        metrics: this.automationEngine.getMetrics()
-      },
-      bridge: { ...this.state }
+      keyboard: state.keyboard,
+      mouse: state.mouse,
+      gamepad: state.gamepad,
+      touch: state.touch,
+      isActive: state.isActive,
+      config,
+      metrics
     };
   }
 
-  subscribe(event: string, callback: Function): void {
-    if (!this.eventSubscribers.has(event)) {
-      this.eventSubscribers.set(event, []);
-    }
-    this.eventSubscribers.get(event)!.push(callback);
+  subscribe(listener: (state: { keyboard: KeyboardState; mouse: MouseState }) => void): () => void {
+    this.eventListeners.add(listener);
+    return () => this.eventListeners.delete(listener);
   }
 
-  unsubscribe(event: string, callback: Function): void {
-    const callbacks = this.eventSubscribers.get(event);
-    if (callbacks) {
-      const index = callbacks.indexOf(callback);
-      if (index > -1) {
-        callbacks.splice(index, 1);
-      }
-      if (callbacks.length === 0) {
-        this.eventSubscribers.delete(event);
-      }
-    }
+  private notifyListeners(): void {
+    const keyboard = this.interactionEngine.getKeyboardRef();
+    const mouse = this.interactionEngine.getMouseRef();
+    this.eventListeners.forEach(listener => listener({ keyboard, mouse }));
   }
 
   private emitEvent(event: BridgeEvent): void {
@@ -323,6 +315,7 @@ export class InteractionBridge {
     this.state.commandHistory = [];
     this.state.lastCommand = null;
     this.eventQueue = [];
+    this.notifyListeners();
   }
 
   dispose(): void {
@@ -339,5 +332,14 @@ export class InteractionBridge {
     this.eventSubscribers.clear();
     this.eventQueue = [];
     this.state.commandHistory = [];
+    this.eventListeners.clear();
+  }
+
+  getKeyboardState(): KeyboardState {
+    return this.interactionEngine.getKeyboardRef();
+  }
+
+  getMouseState(): MouseState {
+    return this.interactionEngine.getMouseRef();
   }
 }

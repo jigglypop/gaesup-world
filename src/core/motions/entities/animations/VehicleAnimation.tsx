@@ -24,21 +24,16 @@ export function VehicleAnimation({
 
   useEffect(() => {
     if (!isActive || !actions) return;
-
     const isMoving = keyboard?.forward || keyboard?.backward;
     const isRunning = keyboard?.shift && isMoving;
     const prevState = prevStateRef.current;
-
     if (prevState.isMoving === isMoving && prevState.isRunning === isRunning) {
       return;
     }
-
     prevStateRef.current = { isMoving, isRunning };
-
     Object.values(actions).forEach((action) => {
       if (action) action.stop();
     });
-
     if (modeType === 'airplane') {
       if (actions.fly) {
         actions.fly.reset().play();

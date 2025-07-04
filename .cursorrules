@@ -82,7 +82,8 @@ convertLegacyData, convertToLegacyData 메서드 구현
 - AsyncState<T> 타입으로 loading, error 상태 관리
 
 14. 금지사항
-- CSS 하드코딩 값 사용
+- console.log 사용 금지
+- CSS 하드코딩 값 사용 금지
 - 패널에서 자체 토글 상태 관리
 - Layer 역방향 import
 - Magic Number 사용

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
-import { InteractionEngine } from '../../interactions/core/InteractionEngine';
+import { InteractionBridge } from '../../interactions/bridge/InteractionBridge';
 
 const KEY_MAPPING: Record<string, string> = {
   KeyW: 'forward',
@@ -16,6 +16,15 @@ const KEY_MAPPING: Record<string, string> = {
   Escape: 'escape',
 };
 
+let globalBridge: InteractionBridge | null = null;
+
+function getGlobalBridge(): InteractionBridge {
+  if (!globalBridge) {
+    globalBridge = new InteractionBridge();
+  }
+  return globalBridge;
+}
+
 export const useKeyboard = (
   enableDiagonal = true,
   enableClicker = true,
@@ -23,7 +32,11 @@ export const useKeyboard = (
 ) => {
   const automation = useGaesupStore((state) => state.automation);
   const stopAutomation = useGaesupStore((state) => state.stopAutomation);
-  const interactionEngine = InteractionEngine.getInstance();
+  const bridgeRef = useRef<InteractionBridge | null>(null);
+  
+  if (!bridgeRef.current) {
+    bridgeRef.current = getGlobalBridge();
+  }
   
   const pressedKeys = useRef<Set<string>>(new Set());
 
@@ -32,7 +45,11 @@ export const useKeyboard = (
   const pushKey = useCallback(
     (key: string, value: boolean): boolean => {
       try {
-        interactionEngine.updateKeyboard({ [key]: value });
+        bridgeRef.current?.executeCommand({
+          type: 'input',
+          action: 'updateKeyboard',
+          data: { [key]: value }
+        });
         value ? pressedKeys.current.add(key) : pressedKeys.current.delete(key);
         return true;
       } catch (error) {
@@ -45,18 +62,22 @@ export const useKeyboard = (
 
   const clearAllKeys = useCallback(() => {
     pressedKeys.current.clear();
-    interactionEngine.updateKeyboard({
-      forward: false,
-      backward: false,
-      leftward: false,
-      rightward: false,
-      shift: false,
-      space: false,
-      keyZ: false,
-      keyR: false,
-      keyF: false,
-      keyE: false,
-      escape: false
+    bridgeRef.current?.executeCommand({
+      type: 'input',
+      action: 'updateKeyboard',
+      data: {
+        forward: false,
+        backward: false,
+        leftward: false,
+        rightward: false,
+        shift: false,
+        space: false,
+        keyZ: false,
+        keyR: false,
+        keyF: false,
+        keyE: false,
+        escape: false
+      }
     });
   }, []);
 
@@ -73,15 +94,27 @@ export const useKeyboard = (
 
         if (enableClicker && event.code === 'KeyS' && automation?.queue.isRunning) {
           stopAutomation();
-          interactionEngine.updateMouse({ isActive: false, shouldRun: false });
+          bridgeRef.current?.executeCommand({
+            type: 'input',
+            action: 'updateMouse',
+            data: { isActive: false, shouldRun: false }
+          });
         }
 
         console.log('Key pressed:', event.code, '->', mappedKey);
-        interactionEngine.updateKeyboard({ [mappedKey]: true });
+        bridgeRef.current?.executeCommand({
+          type: 'input',
+          action: 'updateKeyboard',
+          data: { [mappedKey]: true }
+        });
       } else if (!isDown && wasPressed) {
         pressedKeys.current.delete(event.code);
         console.log('Key released:', event.code, '->', mappedKey);
-        interactionEngine.updateKeyboard({ [mappedKey]: false });
+        bridgeRef.current?.executeCommand({
+          type: 'input',
+          action: 'updateKeyboard',
+          data: { [mappedKey]: false }
+        });
       }
     };
 
