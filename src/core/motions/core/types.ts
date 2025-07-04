@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
-import {StoreState } from '../../stores/types';
 import { RefObject } from "react"
 import { PhysicsCalculationProps } from '../types';
+import { StoreState } from '@stores/types';
+
 
 export interface ActiveStateType {
   euler: THREE.Euler;

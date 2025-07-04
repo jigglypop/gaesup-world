@@ -199,8 +199,6 @@ describe('ThreeObjectPool', () => {
         pool.releaseVector3(v);
       }
       const poolTime = performance.now() - poolStart;
-      
-      console.log(`직접 생성: ${directTime.toFixed(2)}ms, 풀링: ${poolTime.toFixed(2)}ms`);
       expect(poolTime).toBeLessThan(directTime * 2);
     });
   });

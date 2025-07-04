@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
-import { StateEngine } from '../core/StateEngine';
+import { StateEngine } from '../core/engine/StateEngine';
 import { ActiveStateType } from '../core/types';
 import { GameStatesType } from '../../world/components/Rideable/types';
 

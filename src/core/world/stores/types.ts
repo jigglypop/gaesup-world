@@ -1,4 +1,5 @@
-import { WorldObject, InteractionEvent } from '../core/WorldEngine';
+import { WorldObject } from '@core/world/types';
+import { InteractionEvent } from '@core/world/core/WorldEngine';
 
 export interface WorldSliceState {
   objects: WorldObject[];
@@ -10,16 +11,19 @@ export interface WorldSliceState {
   error?: string;
 }
 
-export interface WorldSliceActions {
+export interface WorldSlice extends WorldSliceState {
   addObject: (object: Omit<WorldObject, 'id'>) => string;
-  removeObject: (id: string) => boolean;
-  updateObject: (id: string, updates: Partial<WorldObject>) => boolean;
-  selectObject: (id?: string) => void;
-  setInteractionMode: (mode: WorldSliceState['interactionMode']) => void;
+  removeObject: (objectId: string) => void;
+  updateObject: (
+    objectId: string,
+    updates: Partial<Omit<WorldObject, 'id'>>
+  ) => void;
+  selectObject: (objectId?: string) => void;
+  setInteractionMode: (mode: 'view' | 'edit' | 'interact') => void;
   toggleDebugInfo: () => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error?: string) => void;
+  addEvent: (event: InteractionEvent) => void;
+  loadState: (state: Partial<WorldSliceState>) => void;
+  saveState: () => Partial<WorldSliceState>;
   clearEvents: () => void;
+  setError: (error?: string) => void;
 }
-
-export type WorldSlice = WorldSliceState & WorldSliceActions;

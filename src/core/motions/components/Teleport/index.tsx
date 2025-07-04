@@ -4,7 +4,6 @@ import './styles.css';
 
 export function Teleport({ text, position, teleportStyle }: TeleportProps) {
   const { teleport, canTeleport } = useTeleport();
-
   const handleTeleport = () => {
     teleport(position);
   };

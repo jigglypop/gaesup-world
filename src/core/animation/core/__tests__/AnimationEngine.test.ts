@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 
-// Define mocks at the top level for reuse, but apply them within tests
 const mockAnimationAction = {
   play: jest.fn().mockReturnThis(),
   stop: jest.fn().mockReturnThis(),
@@ -24,7 +23,6 @@ describe('AnimationEngine', () => {
   let mockObject: THREE.Object3D;
 
   beforeEach(async () => {
-    // Dynamically mock and import the modules before each test
     jest.doMock('three', () => {
       const originalThree = jest.requireActual('three');
       return {
@@ -52,19 +50,19 @@ describe('AnimationEngine', () => {
     jest.resetModules();
   });
 
-  it('should initialize with default state', () => {
+  it('반드시 기본 애니메이션이 있어야 함', () => {
     const state = engine.getState();
     expect(state.currentAnimation).toBe('idle');
     expect(state.isPlaying).toBe(false);
   });
 
-  it('should register an animation action', () => {
+  it('애니메이션 액션을 등록할 수 있어야 함', () => {
     engine.registerAction('testAnim', mockAnimationAction);
     expect(engine.getAnimationList()).toContain('testAnim');
     expect(engine.getState().actions.get('testAnim')).toBe(mockAnimationAction);
   });
 
-  it('should play an animation', () => {
+  it('애니메이션을 재생할 수 있어야 함', () => {
     engine.registerAction('testAnim', mockAnimationAction);
     engine.playAnimation('testAnim');
 
@@ -74,7 +72,7 @@ describe('AnimationEngine', () => {
     expect(mockAnimationAction.play).toHaveBeenCalled();
   });
 
-  it('should stop the current animation', () => {
+  it('현재 애니메이션을 정지할 수 있어야 함', () => {
     engine.registerAction('testAnim', mockAnimationAction);
     engine.playAnimation('testAnim');
     engine.stopAnimation();
@@ -84,13 +82,11 @@ describe('AnimationEngine', () => {
     expect(mockAnimationAction.stop).toHaveBeenCalled();
   });
 
-  it('should notify subscribers on state change', () => {
+  it('상태 변경 시 구독자에게 알림을 보낼 수 있어야 함', () => {
     const callback = jest.fn();
     engine.subscribe(callback);
-
     engine.registerAction('testAnim', mockAnimationAction);
     expect(callback).toHaveBeenCalledTimes(1);
-
     engine.playAnimation('testAnim');
     expect(callback).toHaveBeenCalledTimes(2);
   });

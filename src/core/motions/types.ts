@@ -133,4 +133,7 @@ export interface PhysicsState {
   };
   automationOption: automationType;
   modeType: ModeType;
+  characterConfig: characterConfigType;
+  vehicleConfig: vehicleConfigType;
+  airplaneConfig: airplaneConfigType;
 }

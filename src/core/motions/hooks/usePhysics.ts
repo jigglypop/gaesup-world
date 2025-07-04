@@ -57,7 +57,6 @@ export function usePhysics(): UsePhysicsReturn {
       interactionEngine.updateMouse(input);
     },
     dispatch: (action: { type: string; payload?: unknown }) => {
-      console.log('dispatch', action);
     },
     isReady,
   };

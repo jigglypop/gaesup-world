@@ -1,13 +1,20 @@
-import { ModeType, ControllerType, CameraType } from "../../types";
+export type ModeType = 'character' | 'vehicle' | 'airplane';
+export type ControllerType = 'keyboard' | 'clicker' | 'gamepad';
+export type CameraType =
+  | 'chase'
+  | 'first-person'
+  | 'third-person'
+  | 'fixed'
+  | 'isometric'
+  | 'top-down'
+  | 'side-scroll';
 
-export interface ModeSlice {
-  mode: ModeState;
-  setMode: (mode: Partial<ModeState>) => void;
-  resetMode: () => void;
-}
+export type ControllerOptionsType = {
+  [key: string]: any;
+};
 
 export interface ModeState {
-  type: ModeType;
+  modeType: ModeType;
   controller: ControllerOptionsType;
   camera: CameraType;
   settings: {
@@ -18,9 +25,10 @@ export interface ModeState {
   };
 }
 
-export interface ControllerOptionsType {
-  lerp: {
-    cameraTurn: number;
-    cameraPosition: number;
-  };
+export interface ModeSlice {
+  mode: ModeState;
+  controllerOptions: ControllerOptionsType;
+  setMode: (update: Partial<ModeState>) => void;
+  setControllerOptions: (update: Partial<ControllerOptionsType>) => void;
+  resetMode: () => void;
 }

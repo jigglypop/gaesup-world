@@ -100,8 +100,6 @@ export const useKeyboard = (
             data: { isActive: false, shouldRun: false }
           });
         }
-
-        console.log('Key pressed:', event.code, '->', mappedKey);
         bridgeRef.current?.executeCommand({
           type: 'input',
           action: 'updateKeyboard',
@@ -109,7 +107,6 @@ export const useKeyboard = (
         });
       } else if (!isDown && wasPressed) {
         pressedKeys.current.delete(event.code);
-        console.log('Key released:', event.code, '->', mappedKey);
         bridgeRef.current?.executeCommand({
           type: 'input',
           action: 'updateKeyboard',

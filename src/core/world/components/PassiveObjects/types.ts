@@ -1,7 +1,9 @@
 import { WorldObject } from '../../core/WorldEngine';
 import { ReactNode } from 'react';
 import { Vector3Tuple, QuaternionTuple } from 'three';
-import { RigidBodyApi } from '@react-three/rapier';
+import { RigidBody } from '@react-three/rapier';
+import { Euler, Group, Vector3, Quaternion } from 'three';
+import { RapierRigidBody, RigidBodyProps } from '@react-three/rapier';
 
 export interface PassiveObject extends WorldObject {
   type: 'building' | 'tree' | 'rock' | 'item' | 'decoration' | 'terrain';
@@ -16,6 +18,7 @@ export interface PassiveObject extends WorldObject {
   interactable?: boolean;
   destructible?: boolean;
   collectable?: boolean;
+  modelUrl: string;
 }
 
 export interface PassiveObjectProps {
@@ -57,7 +60,7 @@ export type passivePropsType = {
   onCollisionExit?: (payload: any) => void;
   onIntersectionEnter?: (payload: any) => void;
   onIntersectionExit?: (payload: any) => void;
-  ref?: React.RefObject<RigidBodyApi>;
+  ref?: React.RefObject<RigidBody>;
   outerGroupRef?: React.RefObject<any>;
   innerGroupRef?: React.RefObject<any>;
   colliderRef?: React.RefObject<any>;

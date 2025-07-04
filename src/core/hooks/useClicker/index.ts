@@ -19,19 +19,15 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
   const { activeState } = useStateEngine();
   const bridge = getGlobalBridge();
   const isReady = Boolean(activeState?.position);
-  
   const moveClicker = (
     event: ThreeEvent<MouseEvent>,
     isRun: boolean,
     type: 'normal' | 'ground',
   ): boolean => {
-    console.log('moveClicker called:', { type, isRun, point: event.point });
-    
     if (type !== 'ground') {
       return false;
     }
     if (!activeState?.position) {
-      console.log('No active state position');
       return false;
     }
     try {
@@ -43,14 +39,6 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
       );
       const adjustedY = Math.max(targetPoint.y + offsetY, minHeight);
       const finalTarget = V3(targetPoint.x, adjustedY, targetPoint.z);
-
-      console.log('Dispatching mouse input:', {
-        target: finalTarget,
-        angle: newAngle,
-        isActive: true,
-        shouldRun: isRun,
-      });
-
       bridge.executeCommand({
         type: 'input',
         action: 'updateMouse',

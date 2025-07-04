@@ -1,5 +1,5 @@
 import { MotionCommand, MotionSnapshot } from './MotionBridge';
-import { MotionType } from '../core/MotionEngine';
+import { MotionType } from '../core/engine/MotionEngine';
 
 export interface MotionBridgeInterface {
   registerEntity(id: string, type: MotionType, rigidBody: any): void;

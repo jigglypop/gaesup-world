@@ -30,6 +30,19 @@
 ├── styles.css (CSS 스타일)
 └── types.ts (TypeScript 타입, 필요시)
 
+(예시 2) 통합 파일 구조를
+/src/core/motions/entities/refs/PhysicsEntity.tsx
+같이 여러 tsx 파일이 혼재된 경우 types는 동일 폴더의 types.ts 파일을 모을 것
+마찬가지로 styles.css 파일도 동일 폴더의 styles.css 파일을 모을 것
+/src/core/motions/components/movement/
+├── index.tsx (React 컴포넌트 로직)
+├── DirectionComponent.tsx (방향 컴포넌트)
+├── ImpulseComponent.tsx (충격 컴포넌트)
+├── GravityComponent.tsx (중력 컴포넌트)
+├── AnimationController.tsx (애니메이션 컴포넌트)
+├── styles.css (CSS 스타일)
+└── types.ts (TypeScript 타입, 필요시)
+
 5. CSS 규칙
 - 클래스 네이밍: [컴포넌트]-[엘리먼트]--[상태] 형식 사용
 - 패널 배경은 반드시 var(--editor-bg-1) 사용
@@ -47,7 +60,7 @@ Import 방향: Layer 3 → Layer 2 → Layer 1만 가능
 Layer 1에서 Layer 2로 import 절대 금지
 
 7. Store 사용법
-- Zustand slice 생성 시 StateCreator 패턴 사용
+- store에는 전역 config성 정보 저장, interaction 정보가 핵심
 - Store 구독 시 필요한 부분만 선택적 구독
 - 전체 store 구독 금지
 
@@ -88,7 +101,8 @@ convertLegacyData, convertToLegacyData 메서드 구현
 - Layer 역방향 import
 - Magic Number 사용
 - 전체 store 구독
-- 클라이언트에 민감한 정보 하드코딩
+- 클라이언트에 민감한 정보 하드코딩 금지
+
 
 15. 테스트 규칙
 - react-test-renderer 사용
@@ -97,26 +111,6 @@ convertLegacyData, convertToLegacyData 메서드 구현
 - 파일명: ComponentName.test.ts(x) 형식
 - 테스트 커버리지: Core 레이어 100% 목표
 
-16. 보안 규칙
-- 인증 정보는 환경 변수로 관리
-- API 키, 비밀번호 등 민감한 정보 하드코딩 금지
-- XSS 방지: 사용자 입력값 sanitize
-- localStorage 사용 시 민감한 정보 암호화
-- CORS 정책 준수
-- 입력값 검증 필수 (타입, 범위, 형식)
-
-17. 디버깅 및 로깅
-- console.log 대신 Logger 유틸리티 사용:
-  ```typescript
-  import { Logger } from '@/core/utils/logger';
-  Logger.log('디버그 메시지');
-  Logger.warn('경고 메시지');
-  Logger.error('에러 메시지');
-  ```
-- 프로덕션 빌드에서는 log, warn 자동 제거
-- 에러 로그는 프로덕션에서도 유지
-- 성능 측정 시 Performance API 사용
-
 18. 의존성 관리
 - 새 패키지 추가 시 팀 리뷰 필수
 - peerDependencies 정확히 명시
@@ -124,19 +118,6 @@ convertLegacyData, convertToLegacyData 메서드 구현
 - 보안 취약점 정기 점검 (npm audit)
 - 메이저 버전 업데이트 시 충분한 테스트
 
-19. API 설계 규칙
-- RESTful 원칙 준수
-- 에러 응답 형식 통일
-- 페이지네이션 지원
-- 버전 관리 (/api/v1/)
-- 응답 시간 3초 이내 목표
-
-20. Git 커밋 규칙
-- 커밋 메시지: type(scope): description
-- type: feat, fix, docs, style, refactor, test, chore
-- scope: 영향받는 모듈명
-- 예시: feat(motions): add jump ability
-- 한 커밋에 한 가지 변경사항만 포함
 
 21. 문서화 규칙
 - 공개 API는 JSDoc으로 문서화
@@ -159,26 +140,3 @@ convertLegacyData, convertToLegacyData 메서드 구현
 - 번들 크기: 코드 스플리팅 적용
 - Web Worker 활용 검토
 - 메모리 누수 방지: cleanup 함수 필수
-
-24. 접근성 (a11y)
-- 시맨틱 HTML 사용
-- ARIA 레이블 적절히 사용
-- 키보드 네비게이션 지원
-- 색상 대비 WCAG 기준 준수
-- 스크린 리더 테스트
-
-25. 국제화 (i18n) 준비
-- 하드코딩된 텍스트 금지
-- 날짜/숫자 형식 로케일 대응
-- RTL 언어 고려한 CSS 작성
-- 번역 키 네이밍: module.feature.element
-
-26. 배포 규칙
-- 스테이징 환경 테스트 필수
-- 롤백 계획 수립
-- 배포 전 체크리스트 확인
-- 모니터링 알림 설정
-- 배포 후 스모크 테스트
-
-이 규칙들은 Gaesup World 프로젝트의 품질과 일관성을 유지하기 위한 가이드라인입니다.
-모든 기여자는 이 규칙을 숙지하고 준수해야 합니다.

@@ -1,22 +1,31 @@
-import { EntityWrapper } from '../../../motions/components/EntityWrapper';
-import { useKeyboard } from '@hooks/useKeyboard';
-import { ControllerWrapperProps } from './types';
+import { Group, Object3DEventMap } from 'three';
+import { MutableRefObject, forwardRef, Ref, ReactNode } from 'react';
+import { GaesupControllerProps } from '@hooks/useGaesupController/types';
+import { EntityController } from '../../../motions/entities';
+import { GroundClicker } from '../GroundClicker';
+import { Clicker } from '../Clicker';
 
-export function ControllerWrapper({ 
-  children,
-  ...props 
-}: ControllerWrapperProps) {
-  useKeyboard();
+type ControllerWrapperProps = GaesupControllerProps & {
+  children?: ReactNode;
+};
 
+export const ControllerWrapper = forwardRef<
+  MutableRefObject<Group<Object3DEventMap> | undefined>,
+  ControllerWrapperProps
+>((props, ref) => {
+  const { clickToMove, children, ...rest } = props;
   return (
-    <EntityWrapper 
-      props={{
-        children,
-        ...props
-      }}
-    />
+    <EntityController props={rest} ref={ref}>
+      {clickToMove && (
+        <>
+          <GroundClicker />
+          <Clicker />
+        </>
+      )}
+      {children}
+    </EntityController>
   );
-}
+});
 
 export * from './types';
 export { ControllerWrapper as GaesupController };

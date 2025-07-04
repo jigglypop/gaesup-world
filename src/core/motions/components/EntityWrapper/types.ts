@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 
 export interface EntityWrapperProps {
   props: {
-    children?: ReactNode;
+    children: ReactNode;
     entityType?: 'character' | 'vehicle' | 'airplane';
     controllerId?: string;
     position?: [number, number, number];

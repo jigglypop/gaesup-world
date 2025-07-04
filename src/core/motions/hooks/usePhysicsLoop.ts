@@ -2,12 +2,12 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useFrame, RootState } from '@react-three/fiber';
 import { usePhysics } from './usePhysics';
 import { PhysicsState, PhysicsCalculationProps } from '../types';
-import { PhysicsEngine } from '../core/Engine';
+import { PhysicsEngine } from '../core/engine/PhysicsEngine';
 import { SizesType } from '../../stores/slices/sizes';
 import { PhysicsCalcProps } from '../core/types';
 import { StoreState } from '../../stores/types';
 import * as THREE from 'three';
-import { StateEngine } from '../core/StateEngine';
+import { StateEngine } from '../core/engine/StateEngine';
 
 const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps): void => {
   const keyboardKeys: (keyof typeof state.keyboard)[] = [

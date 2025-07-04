@@ -1,1 +1,0 @@
-export { GaesupErrorBoundary } from './ErrorBoundary';
