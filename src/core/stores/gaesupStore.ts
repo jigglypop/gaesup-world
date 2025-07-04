@@ -2,12 +2,10 @@ import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { createUrlsSlice } from './slices/urls';
 import { createModeSlice } from './slices/mode';
-
 import { createCameraOptionSlice } from '../camera/stores/slices/cameraOption';
 import { createCameraSlice } from '../camera/stores/slices/camera';
 import { createSizesSlice } from './slices/sizes';
 import { createAnimationSlice } from '../animation/stores/slices';
-import { createMotionSlice } from '../motions/stores/slices';
 import { createInteractionSlice } from '../interactions/stores/slices';
 import { createRideableSlice } from './slices/rideable/slice';
 import { createPerformanceSlice } from './slices/performance';
@@ -23,7 +21,6 @@ export const useGaesupStore = create<StoreState>()(
       ...createCameraSlice(set, get, api),
       ...createSizesSlice(set, get, api),
       ...createAnimationSlice(set, get, api),
-      ...createMotionSlice(set, get, api),
       ...createInteractionSlice(set, get, api),
       ...createRideableSlice(set, get, api),
       ...createPerformanceSlice(set, get, api),

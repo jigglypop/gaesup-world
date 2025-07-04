@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { PhysicsState } from '../types';
 import { PhysicsCalcProps } from '../core/types';
 import { ActiveStateType } from '../core/types';
@@ -58,7 +57,6 @@ export class StateChecker {
     const gameStatesRef = this.stateEngine.getGameStatesRef();
     const keyboard = this.interactionEngine.getKeyboardRef();
     const mouse = this.interactionEngine.getMouseRef();
-    
     const shift = keyboard.shift;
     const space = keyboard.space;
     const forward = keyboard.forward;
@@ -69,19 +67,16 @@ export class StateChecker {
     const clickerIsRun = mouse.shouldRun;
     const isKeyboardMoving = forward || backward || leftward || rightward;
     const isMoving = isKeyboardMoving || isClickerMoving;
-
     let isRunning = false;
     if (isKeyboardMoving && shift) {
       isRunning = true;
     } else if (isClickerMoving && clickerIsRun) {
       isRunning = true;
     }
-
     if (space && !this.isCurrentlyJumping) {
       this.isCurrentlyJumping = true;
       gameStatesRef.isJumping = true;
     }
-
     if (this.lastMovingState !== isMoving || this.lastRunningState !== isRunning) {
       this.lastMovingState = isMoving;
       this.lastRunningState = isRunning;

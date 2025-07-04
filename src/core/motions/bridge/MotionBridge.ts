@@ -71,9 +71,7 @@ export class MotionBridge {
   execute(entityId: string, command: MotionCommand): void {
     const engine = this.engines.get(entityId);
     const rigidBody = this.rigidBodies.get(entityId);
-    
     if (!engine || !rigidBody) return;
-
     switch (command.type) {
       case 'move':
         if (command.data?.movement) {
@@ -101,22 +99,17 @@ export class MotionBridge {
         rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
         break;
     }
-
     this.notifyListeners(entityId);
   }
 
   updateEntity(entityId: string, deltaTime: number): void {
     const engine = this.engines.get(entityId);
     const rigidBody = this.rigidBodies.get(entityId);
-    
     if (!engine || !rigidBody) return;
-
     const translation = rigidBody.translation();
     this.tempPosition.set(translation.x, translation.y, translation.z);
-    
     const linvel = rigidBody.linvel();
     this.tempVelocity.set(linvel.x, linvel.y, linvel.z);
-    
     const rotation = rigidBody.rotation();
     this.tempQuaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
     this.tempEuler.setFromQuaternion(this.tempQuaternion);
@@ -160,14 +153,12 @@ export class MotionBridge {
 
   getAllSnapshots(): Map<string, MotionSnapshot> {
     const snapshots = new Map<string, MotionSnapshot>();
-    
     this.engines.forEach((_, entityId) => {
       const snapshot = this.snapshot(entityId);
       if (snapshot) {
         snapshots.set(entityId, snapshot);
       }
     });
-
     return snapshots;
   }
 
