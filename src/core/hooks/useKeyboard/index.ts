@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
+import { InteractionEngine } from '../../interactions/core/InteractionEngine';
 
 const KEY_MAPPING: Record<string, string> = {
   KeyW: 'forward',
@@ -20,10 +21,9 @@ export const useKeyboard = (
   enableClicker = true,
   cameraOption?: any,
 ) => {
-  const updateKeyboard = useGaesupStore((state) => state.updateKeyboard);
   const automation = useGaesupStore((state) => state.automation);
   const stopAutomation = useGaesupStore((state) => state.stopAutomation);
-  const updateMouse = useGaesupStore((state) => state.updateMouse);
+  const interactionEngine = InteractionEngine.getInstance();
   
   const pressedKeys = useRef<Set<string>>(new Set());
 
@@ -32,7 +32,7 @@ export const useKeyboard = (
   const pushKey = useCallback(
     (key: string, value: boolean): boolean => {
       try {
-        updateKeyboard({ [key]: value });
+        interactionEngine.updateKeyboard({ [key]: value });
         value ? pressedKeys.current.add(key) : pressedKeys.current.delete(key);
         return true;
       } catch (error) {
@@ -40,12 +40,12 @@ export const useKeyboard = (
         return false;
       }
     },
-    [updateKeyboard],
+    [],
   );
 
   const clearAllKeys = useCallback(() => {
     pressedKeys.current.clear();
-    updateKeyboard({
+    interactionEngine.updateKeyboard({
       forward: false,
       backward: false,
       leftward: false,
@@ -58,7 +58,7 @@ export const useKeyboard = (
       keyE: false,
       escape: false
     });
-  }, [updateKeyboard]);
+  }, []);
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent, isDown: boolean) => {
@@ -73,13 +73,15 @@ export const useKeyboard = (
 
         if (enableClicker && event.code === 'KeyS' && automation?.queue.isRunning) {
           stopAutomation();
-          updateMouse({ isActive: false, shouldRun: false });
+          interactionEngine.updateMouse({ isActive: false, shouldRun: false });
         }
 
-        updateKeyboard({ [mappedKey]: true });
+        console.log('Key pressed:', event.code, '->', mappedKey);
+        interactionEngine.updateKeyboard({ [mappedKey]: true });
       } else if (!isDown && wasPressed) {
         pressedKeys.current.delete(event.code);
-        updateKeyboard({ [mappedKey]: false });
+        console.log('Key released:', event.code, '->', mappedKey);
+        interactionEngine.updateKeyboard({ [mappedKey]: false });
       }
     };
 
@@ -99,9 +101,7 @@ export const useKeyboard = (
   }, [
     keyMapping,
     enableClicker,
-    updateKeyboard,
     stopAutomation,
-    updateMouse,
     automation,
     clearAllKeys,
   ]);

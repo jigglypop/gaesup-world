@@ -15,6 +15,7 @@ import {
   characterConfigType,
   airplaneConfigType
 } from '../types';
+import { InteractionEngine } from '../../interactions/core/InteractionEngine';
 
 type DirectionPhysicsState = Pick<
   PhysicsState,
@@ -37,6 +38,12 @@ export class DirectionController {
   };
   private pendingStateUpdates: Array<{ activeState: Partial<ActiveStateType> }> = [];
   private timers = new Set<NodeJS.Timeout>();
+  private tempQuaternion = new THREE.Quaternion();
+  private interactionEngine: InteractionEngine;
+
+  constructor() {
+    this.interactionEngine = InteractionEngine.getInstance();
+  }
 
   updateDirection(
     physicsState: DirectionPhysicsState,
@@ -67,7 +74,9 @@ export class DirectionController {
     controlMode?: string,
     calcProp?: PhysicsCalcProps,
   ): void {
-    const { activeState, keyboard, mouse, characterConfig } = physicsState;
+    const { activeState, characterConfig } = physicsState;
+    const keyboard = this.interactionEngine.getKeyboardRef();
+    const mouse = this.interactionEngine.getMouseRef();
     const keyboardChanged =
       this.lastKeyboardState.forward !== keyboard.forward ||
       this.lastKeyboardState.backward !== keyboard.backward ||
@@ -96,7 +105,8 @@ export class DirectionController {
     physicsState: DirectionPhysicsState,
     controlMode?: string
   ): void {
-    const { activeState, keyboard } = physicsState;
+    const { activeState } = physicsState;
+    const keyboard = this.interactionEngine.getKeyboardRef();
     const { forward, backward, leftward, rightward } = keyboard;
     const xAxis = Number(leftward) - Number(rightward);
     const zAxis = Number(forward) - Number(backward);
@@ -116,7 +126,8 @@ export class DirectionController {
     matchSizes?: THREE.Vector3,
     controlMode?: string,
   ): void {
-    const { activeState, keyboard, airplaneConfig } = physicsState;
+    const { activeState, airplaneConfig } = physicsState;
+    const keyboard = this.interactionEngine.getKeyboardRef();
     const { forward, backward, leftward, rightward, shift, space } = keyboard;
     const {
       angleDelta = { x: 0.02, y: 0.02, z: 0.02 },

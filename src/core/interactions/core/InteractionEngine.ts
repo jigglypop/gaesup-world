@@ -86,16 +86,25 @@ export interface InteractionMetrics {
 }
 
 export class InteractionEngine {
-  private state: InteractionState;
+  private static instance: InteractionEngine | null = null;
+  
+  private stateRef: InteractionState;
   private config: InteractionConfig;
   private metrics: InteractionMetrics;
   private eventCallbacks: Map<string, Function[]>;
 
-  constructor() {
-    this.state = this.createDefaultState();
+  private constructor() {
+    this.stateRef = this.createDefaultState();
     this.config = this.createDefaultConfig();
     this.metrics = this.createDefaultMetrics();
     this.eventCallbacks = new Map();
+  }
+
+  static getInstance(): InteractionEngine {
+    if (!InteractionEngine.instance) {
+      InteractionEngine.instance = new InteractionEngine();
+    }
+    return InteractionEngine.instance;
   }
 
   private createDefaultState(): InteractionState {
@@ -163,24 +172,40 @@ export class InteractionEngine {
     };
   }
 
+  getStateRef(): InteractionState {
+    return this.stateRef;
+  }
+
+  getKeyboardRef(): KeyboardState {
+    return this.stateRef.keyboard;
+  }
+
+  getMouseRef(): MouseState {
+    return this.stateRef.mouse;
+  }
+
   updateKeyboard(updates: Partial<KeyboardState>): void {
-    Object.assign(this.state.keyboard, updates);
+    Object.assign(this.stateRef.keyboard, updates);
     this.updateMetrics();
   }
 
   updateMouse(updates: Partial<MouseState>): void {
-    Object.assign(this.state.mouse, updates);
+    Object.assign(this.stateRef.mouse, updates);
     this.updateMetrics();
   }
 
   updateGamepad(updates: Partial<GamepadState>): void {
-    Object.assign(this.state.gamepad, updates);
+    Object.assign(this.stateRef.gamepad, updates);
     this.updateMetrics();
   }
 
   updateTouch(updates: Partial<TouchState>): void {
-    Object.assign(this.state.touch, updates);
+    Object.assign(this.stateRef.touch, updates);
     this.updateMetrics();
+  }
+
+  dispatchInput(updates: Partial<MouseState>): void {
+    this.updateMouse(updates);
   }
 
   setConfig(updates: Partial<InteractionConfig>): void {
@@ -188,7 +213,7 @@ export class InteractionEngine {
   }
 
   getState(): InteractionState {
-    return { ...this.state };
+    return { ...this.stateRef };
   }
 
   getConfig(): InteractionConfig {
@@ -225,32 +250,33 @@ export class InteractionEngine {
   private getActiveInputs(): string[] {
     const active: string[] = [];
     
-    Object.entries(this.state.keyboard).forEach(([key, value]) => {
+    Object.entries(this.stateRef.keyboard).forEach(([key, value]) => {
       if (value) active.push(`keyboard:${key}`);
     });
     
-    Object.entries(this.state.mouse.buttons).forEach(([key, value]) => {
+    Object.entries(this.stateRef.mouse.buttons).forEach(([key, value]) => {
       if (value) active.push(`mouse:${key}`);
     });
     
-    if (this.state.gamepad.connected) {
+    if (this.stateRef.gamepad.connected) {
       active.push('gamepad:connected');
     }
     
-    if (this.state.touch.touches.length > 0) {
-      active.push(`touch:${this.state.touch.touches.length}`);
+    if (this.stateRef.touch.touches.length > 0) {
+      active.push(`touch:${this.stateRef.touch.touches.length}`);
     }
     
     return active;
   }
 
   reset(): void {
-    this.state = this.createDefaultState();
+    this.stateRef = this.createDefaultState();
     this.metrics = this.createDefaultMetrics();
     this.eventCallbacks.clear();
   }
 
   dispose(): void {
     this.reset();
+    InteractionEngine.instance = null;
   }
 }

@@ -4,7 +4,7 @@ import { euler, Physics, RigidBody } from '@react-three/rapier';
 import React, { Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import * as THREE from 'three';
-import { Clicker, GaesupController, GaeSupProps, GaesupWorld, GaesupWorldContent, Editor, useGaesupStore, FocusableObject, MiniMap } from '../src';
+import { Clicker, GroundClicker, GaesupController, GaeSupProps, GaesupWorld, GaesupWorldContent, Editor, useGaesupStore, FocusableObject, MiniMap } from '../src';
 import { BuildingController, useBuildingStore } from '../src';
 import { GaesupAdmin, useAuthStore } from '../src/admin';
 import { CameraOptionType } from '../src/core/types/camera';
@@ -14,6 +14,7 @@ import { BuildingExample } from './components/building';
 import { AIRPLANE_URL, CHARACTER_URL, S3, VEHICLE_URL, EXAMPLE_CONFIG } from './config/constants';
 import './style.css';
 import { useStateEngine } from '../src/core/motions/hooks/useStateEngine';
+import { useKeyboard } from '../src/core/hooks/useKeyboard';
 
 export { S3 };
 
@@ -44,6 +45,9 @@ const WorldPage = ({ showEditor = false }) => {
   const mode = useGaesupStore((state) => state.mode);
   const { gameStates } = useStateEngine();
   
+  // Initialize keyboard listener
+  useKeyboard();
+  
   return (
     <>
       <GaesupWorld
@@ -68,7 +72,7 @@ const WorldPage = ({ showEditor = false }) => {
           dpr={[1, 2]}
           camera={{ position: [0, 10, 20], fov: 75, near: 0.1, far: 1000 }}
           style={{ width: '100vw', height: '100vh', position: 'fixed', top: 0, left: 0, zIndex: 0 }}
-          frameloop="demand"
+          frameloop="always"
         >
           <Environment background preset="sunset" backgroundBlurriness={1} />
           <directionalLight
@@ -118,6 +122,7 @@ const WorldPage = ({ showEditor = false }) => {
                 </>
                 <Platforms />
                 <Clicker />
+                <GroundClicker />
                 <RideableVehicles />
                 <BuildingController />
                 

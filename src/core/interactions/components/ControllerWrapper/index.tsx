@@ -19,3 +19,4 @@ export function ControllerWrapper({
 }
 
 export * from './types';
+export { ControllerWrapper as GaesupController };

@@ -1,25 +1,29 @@
 import { ThreeEvent } from '@react-three/fiber';
 import { useFrame } from '@react-three/fiber';
-import { useGaesupStore } from '@stores/gaesupStore';
 import { V3 } from '@utils/vector';
 import * as THREE from 'three';
 import { ClickerMoveOptions, ClickerResult } from './types';
 import { useStateEngine } from '../../motions/hooks/useStateEngine';
+import { InteractionEngine } from '../../interactions/core/InteractionEngine';
 
 export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
   const { minHeight = 0.5, offsetY = 0.5 } = options;
   const { activeState } = useStateEngine();
-  const dispatchInput = useGaesupStore((state) => state.dispatchInput);
+  const interactionEngine = InteractionEngine.getInstance();
   const isReady = Boolean(activeState?.position);
+  
   const moveClicker = (
     event: ThreeEvent<MouseEvent>,
     isRun: boolean,
     type: 'normal' | 'ground',
   ): boolean => {
+    console.log('moveClicker called:', { type, isRun, point: event.point });
+    
     if (type !== 'ground') {
       return false;
     }
     if (!activeState?.position) {
+      console.log('No active state position');
       return false;
     }
     try {
@@ -32,7 +36,14 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
       const adjustedY = Math.max(targetPoint.y + offsetY, minHeight);
       const finalTarget = V3(targetPoint.x, adjustedY, targetPoint.z);
 
-      dispatchInput({
+      console.log('Dispatching mouse input:', {
+        target: finalTarget,
+        angle: newAngle,
+        isActive: true,
+        shouldRun: isRun,
+      });
+
+      interactionEngine.dispatchInput({
         target: finalTarget,
         angle: newAngle,
         position: new THREE.Vector2(finalTarget.x, finalTarget.z),
@@ -42,6 +53,7 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
 
       return true;
     } catch (error) {
+      console.error('moveClicker error:', error);
       return false;
     }
   };
@@ -49,7 +61,7 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
   const stopClicker = (): void => {
     try {
       if (!isReady) return;
-      dispatchInput({ isActive: false, shouldRun: false });
+      interactionEngine.dispatchInput({ isActive: false, shouldRun: false });
     } catch (error) {
     }
   };

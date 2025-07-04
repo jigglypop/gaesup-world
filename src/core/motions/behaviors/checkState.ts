@@ -3,6 +3,7 @@ import { PhysicsState } from '../types';
 import { PhysicsCalcProps } from '../core/types';
 import { ActiveStateType } from '../core/types';
 import { StateEngine } from '../core/StateEngine';
+import { InteractionEngine } from '../../interactions/core/InteractionEngine';
 
 type CheckAllPhysicsState = Pick<PhysicsState, 'activeState'>;
 type RotateActiveState = Pick<ActiveStateType, 'euler'> & { isMoving?: boolean };
@@ -13,17 +14,19 @@ export class StateChecker {
   private lastMovingState = false;
   private lastRunningState = false;
   private stateEngine: StateEngine;
+  private interactionEngine: InteractionEngine;
 
   constructor() {
     this.stateEngine = StateEngine.getInstance();
+    this.interactionEngine = InteractionEngine.getInstance();
   }
 
   checkAll(calcProp: PhysicsCalcProps, physicsState: CheckAllPhysicsState): void {
     const instanceId = `physics-${calcProp.rigidBodyRef.current?.handle || 'unknown'}`;
     this.checkGround(calcProp);
-    this.checkMoving(calcProp);
+    this.checkMoving();
     this.checkRotate(calcProp, physicsState.activeState);
-    this.checkRiding(calcProp, instanceId);
+    this.checkRiding(instanceId);
   }
 
   private checkGround(prop: PhysicsCalcProps): void {
@@ -51,14 +54,30 @@ export class StateChecker {
     activeStateRef.velocity.set(velocity.x, velocity.y, velocity.z);
   }
 
-  private checkMoving(prop: PhysicsCalcProps): void {
-    const { inputRef } = prop;
-    if (!inputRef || !inputRef.current) {
-      return;
-    }
+  private checkMoving(): void {
     const gameStatesRef = this.stateEngine.getGameStatesRef();
-    const keyboard = inputRef.current.keyboard;
-    const mouse = inputRef.current.mouse;
+    const keyboard = this.interactionEngine.getKeyboardRef();
+    const mouse = this.interactionEngine.getMouseRef();
+    
+    // Debug logging
+    if (keyboard.forward || keyboard.backward || keyboard.leftward || keyboard.rightward || keyboard.space || mouse.isActive) {
+      console.log('Input state:', {
+        keyboard: {
+          forward: keyboard.forward,
+          backward: keyboard.backward,
+          leftward: keyboard.leftward,
+          rightward: keyboard.rightward,
+          space: keyboard.space,
+          shift: keyboard.shift
+        },
+        mouse: {
+          isActive: mouse.isActive,
+          shouldRun: mouse.shouldRun,
+          target: mouse.target
+        }
+      });
+    }
+    
     const shift = keyboard.shift;
     const space = keyboard.space;
     const forward = keyboard.forward;
@@ -102,18 +121,15 @@ export class StateChecker {
     }
   }
 
-  private checkRiding(prop: PhysicsCalcProps, instanceId: string = 'default'): void {
-    const { inputRef } = prop;
-    if (!inputRef || !inputRef.current) {
-      return;
-    }
-
+  private checkRiding(instanceId: string = 'default'): void {
+    const keyboard = this.interactionEngine.getKeyboardRef();
+    
     if (!this.keyStateCache.has(instanceId)) {
       this.keyStateCache.set(instanceId, { lastKeyE: false, lastKeyR: false });
     }
 
     const keyState = this.keyStateCache.get(instanceId)!;
-    const keyF = inputRef.current.keyboard.keyF;
+    const keyF = keyboard.keyF;
     const gameStatesRef = this.stateEngine.getGameStatesRef();
 
     if (keyF && !keyState.lastKeyE) {

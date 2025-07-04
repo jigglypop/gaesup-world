@@ -61,3 +61,4 @@ export function GamePad(props: gamepadType) {
 }
 
 export default GamePad;
+export { GamePad as Gamepad };

@@ -7,10 +7,11 @@ import {
   airplaneConfigType
 } from '../types';
 import { StateEngine } from '../core/StateEngine';
+import { InteractionEngine } from '../../interactions/core/InteractionEngine';
 
 type ImpulsePhysicsState = Pick<
   PhysicsState,
-  'modeType' | 'gameStates' | 'activeState' | 'keyboard'
+  'modeType' | 'gameStates' | 'activeState'
 > & {
   characterConfig: characterConfigType;
   vehicleConfig: vehicleConfigType;
@@ -22,9 +23,11 @@ export class ImpulseController {
   private readonly EPSILON_VERTICAL = 0.1;
   private readonly BRAKE_THRESHOLD = 0.2;
   private stateEngine: StateEngine;
+  private interactionEngine: InteractionEngine;
 
   constructor() {
     this.stateEngine = StateEngine.getInstance();
+    this.interactionEngine = InteractionEngine.getInstance();
   }
 
   applyImpulse(
@@ -84,7 +87,8 @@ export class ImpulseController {
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: ImpulsePhysicsState
   ): void {
-    const { activeState, vehicleConfig, keyboard } = physicsState;
+    const { activeState, vehicleConfig } = physicsState;
+    const keyboard = this.interactionEngine.getKeyboardRef();
     const { maxSpeed = 10, accelRatio = 2 } = vehicleConfig;
     const { shift } = keyboard;
     const velocity = rigidBodyRef.current.linvel();
