@@ -4,6 +4,7 @@ import { useBuildingStore } from '../../building/stores/buildingStore';
 import { MinimapProps, MinimapResult } from '../components/Minimap/types';
 import { MinimapEngine } from '../core';
 import * as THREE from 'three';
+import { useStateEngine } from '../../motions/hooks/useStateEngine';
 
 const DEFAULT_SCALE = 5;
 const MIN_SCALE = 0.5;
@@ -12,9 +13,20 @@ const UPDATE_THRESHOLD = 0.1;
 const ROTATION_THRESHOLD = 0.01;
 const MINIMAP_SIZE_PX = 200;
 
+export interface UseMinimapReturnType {
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  scale: number;
+  upscale: () => void;
+  downscale: () => void;
+  handleWheel: (e: React.WheelEvent) => void;
+  setupWheelListener: () => void;
+  updateCanvas: () => void;
+  isReady: boolean;
+}
+
 export const useMinimap = (props: MinimapProps): MinimapResult => {
-  const mode = useGaesupStore((state) => state.mode);
-  const activeState = useGaesupStore((state) => state.activeState);
+  const { activeState } = useStateEngine();
+  const minimapOption = useGaesupStore((state) => state.minimap);
   const tileGroups = useBuildingStore((state) => state.tileGroups);
   const sceneObjectsRef = useRef<Map<string, { position: THREE.Vector3; size: THREE.Vector3 }>>(new Map());
   const [minimapMarkers, setMinimapMarkers] = useState<Map<string, any>>(new Map());
@@ -239,7 +251,7 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
           ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
           ctx.shadowBlur = 2;
           ctx.translate(x + width / 2, y + height / 2);
-          if (blockRotate || mode?.control === 'normal') {
+          if (blockRotate || minimapOption?.control === 'normal') {
             ctx.rotate(Math.PI);
           } else {
             ctx.rotate((-displayRotation * Math.PI) / 180);
@@ -287,7 +299,7 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
     ctx.stroke();
     ctx.restore();
     ctx.restore();
-  }, [activeState, minimapMarkers, mode, scale, angle, blockRotate, tileGroups]);
+  }, [activeState, minimapMarkers, minimapOption, scale, angle, blockRotate, tileGroups]);
 
   const checkForUpdates = useCallback(() => {
     if (!activeState.position || !activeState.euler) return;

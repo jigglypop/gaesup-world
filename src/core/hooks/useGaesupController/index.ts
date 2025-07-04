@@ -1,21 +1,23 @@
 import { useGaesupStore } from '@stores/gaesupStore';
-import { gaesupPassivePropsType } from './types';
+import { UseGaesupControllerResult } from './types';
+import { useStateEngine } from '../../motions/hooks/useStateEngine';
 
-export function useGaesupController(): gaesupPassivePropsType {
-  const activeState = useGaesupStore((state) => state.activeState);
-  const mode = useGaesupStore((state) => state.mode);
-  const animationState = useGaesupStore((state) => state.animationState);
-  const urls = useGaesupStore((state) => state.urls);
+export function useGaesupController(): UseGaesupControllerResult {
+  const { activeState, gameStates } = useStateEngine();
+  const worldContext = useGaesupStore((state) => ({
+    mode: state.mode,
+    states: gameStates,
+    control: state.control,
+  }));
 
-  const currentAnimation =
-    mode?.type && animationState
-      ? animationState[mode.type].current
-      : 'idle';
+  const controllerContext = useGaesupStore();
 
   return {
     state: activeState || null,
-    mode: mode || null,
-    urls: urls,
-    currentAnimation,
+    mode: worldContext.mode,
+    states: worldContext.states,
+    control: worldContext.control,
+    context: worldContext,
+    controller: controllerContext,
   };
 }

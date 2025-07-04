@@ -9,9 +9,7 @@ import { createSizesSlice } from './slices/sizes';
 import { createAnimationSlice } from '../animation/stores/slices';
 import { createMotionSlice } from '../motions/stores/slices';
 import { createInteractionSlice } from '../interactions/stores/slices';
-import { createGameStatesSlice } from './slices/gameStates/slice';
 import { createRideableSlice } from './slices/rideable/slice';
-import { createActiveStateSlice } from './slices/activeState/slice';
 import { createPerformanceSlice } from './slices/performance';
 import { StoreState } from './types';
 import { createWorldSlice } from '../world/stores/slices/worldStates/slice';
@@ -27,9 +25,7 @@ export const useGaesupStore = create<StoreState>()(
       ...createAnimationSlice(set, get, api),
       ...createMotionSlice(set, get, api),
       ...createInteractionSlice(set, get, api),
-      ...createGameStatesSlice(set, get, api),
       ...createRideableSlice(set, get, api),
-      ...createActiveStateSlice(set, get, api),
       ...createPerformanceSlice(set, get, api),
       ...createWorldSlice(set, get, api),
       updateState: (updates: Partial<StoreState>) => {

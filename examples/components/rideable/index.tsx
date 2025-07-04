@@ -1,7 +1,7 @@
 import { V3 } from '@/core/utils';
 import { Rideable, RideableUI } from '@/core/world/components/Rideable';
 import { S3 } from '../../config/constants';
-import { useGaesupStore } from '@/core/stores/gaesupStore';
+import { useStateEngine } from '@/core/motions/hooks/useStateEngine';
 
 export function RideableVehicles() {
   return (
@@ -35,6 +35,6 @@ export function RideableVehicles() {
 }
 
 export function RideableUIRenderer() {
-  const states = useGaesupStore((state) => state.states);
-  return <RideableUI states={states} />;
+  const { gameStates } = useStateEngine();
+  return <RideableUI states={gameStates} />;
 }

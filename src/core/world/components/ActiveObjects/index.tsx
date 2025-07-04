@@ -3,6 +3,7 @@ import { Vehicle } from './Vehicle';
 import { Airplane } from './Airplane';
 import { Character } from './Character';
 import { useGaesupStore } from '@stores/gaesupStore';
+import { useStateEngine } from '../../../motions/hooks/useStateEngine';
 
 export function ActiveObjects({ 
   objects, 
@@ -10,7 +11,7 @@ export function ActiveObjects({
   onSelect, 
   showDebugInfo = false 
 }: ActiveObjectProps) {
-  const states = useGaesupStore((state) => state.states);
+  const { gameStates } = useStateEngine();
   const mode = useGaesupStore((state) => state.mode);
   
   return (
@@ -18,7 +19,7 @@ export function ActiveObjects({
       {objects.map((obj) => {
         const isSelected = obj.id === selectedId;
         
-        if (obj.type === 'character' && states?.isRiding && mode?.type !== 'character') {
+        if (obj.type === 'character' && gameStates?.isRiding && mode?.type !== 'character') {
           return null;
         }
         

@@ -7,6 +7,7 @@ import { SizesType } from '../../stores/slices/sizes';
 import { PhysicsCalcProps } from '../core/types';
 import { StoreState } from '../../stores/types';
 import * as THREE from 'three';
+import { StateEngine } from '../core/StateEngine';
 
 const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps): void => {
   const keyboardKeys: (keyof typeof state.keyboard)[] = [
@@ -49,6 +50,7 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
   const isInitializedRef = useRef(false);
   const mouseTargetRef = useRef(new THREE.Vector3());
   const matchSizesRef = useRef<SizesType | null>(null);
+  const stateEngineRef = useRef<StateEngine | null>(null);
 
   useEffect(() => {
     if (!isInitializedRef.current && physics.worldContext) {
@@ -57,6 +59,7 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
         vehicle: physics.worldContext.vehicle,
         airplane: physics.worldContext.airplane
       });
+      stateEngineRef.current = StateEngine.getInstance();
       isInitializedRef.current = true;
     }
   }, [physics.worldContext]);
@@ -108,15 +111,18 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
   const executePhysics = useCallback(
     (state: RootState, delta: number) => {
       try {
-        if (!physics.worldContext || !physics.input || !physicsEngine.current)
+        if (!physics.worldContext || !physics.input || !physicsEngine.current || !stateEngineRef.current)
           return;
 
         if (!physicsStateRef.current) {
           const worldContext = physics.worldContext as StoreState;
           const modeType = worldContext.mode?.type || 'character';
+          const activeStateRef = stateEngineRef.current.getActiveStateRef();
+          const gameStatesRef = stateEngineRef.current.getGameStatesRef();
+          
           physicsStateRef.current = {
-            activeState: physics.activeState!,
-            gameStates: worldContext.states!,
+            activeState: activeStateRef,
+            gameStates: gameStatesRef,
             keyboard: { ...physics.input.keyboard },
             mouse: {
               target: mouseTargetRef.current.copy(physics.input.mouse.target),
@@ -147,23 +153,23 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
             modeType: modeType as 'character' | 'vehicle' | 'airplane',
           };
           
-          if (props.rigidBodyRef?.current && physics.activeState) {
+          if (props.rigidBodyRef?.current && activeStateRef) {
             props.rigidBodyRef.current.lockRotations(false, true);
-            physics.activeState.euler.set(0, 0, 0);
+            activeStateRef.euler.set(0, 0, 0);
             props.rigidBodyRef.current.setTranslation(
               {
-                x: physics.activeState.position.x,
-                y: physics.activeState.position.y + 5,
-                z: physics.activeState.position.z,
+                x: activeStateRef.position.x,
+                y: activeStateRef.position.y + 5,
+                z: activeStateRef.position.z,
               },
               true,
             );
           }
         } else {
           updateInputState(physicsStateRef.current, physics.input);
-          if (physicsStateRef.current) {
-            const worldContext = physics.worldContext as StoreState;
-            physicsStateRef.current.gameStates = worldContext.states!;
+          if (physicsStateRef.current && stateEngineRef.current) {
+            physicsStateRef.current.activeState = stateEngineRef.current.getActiveStateRef();
+            physicsStateRef.current.gameStates = stateEngineRef.current.getGameStatesRef();
           }
         }
 

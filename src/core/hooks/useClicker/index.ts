@@ -4,11 +4,12 @@ import { useGaesupStore } from '@stores/gaesupStore';
 import { V3 } from '@utils/vector';
 import * as THREE from 'three';
 import { ClickerMoveOptions, ClickerResult } from './types';
+import { useStateEngine } from '../../motions/hooks/useStateEngine';
 
 export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
   const { minHeight = 0.5, offsetY = 0.5 } = options;
-  const { activeState } = useGaesupStore();
-  const updateMouse = useGaesupStore((state) => state.updateMouse);
+  const { activeState } = useStateEngine();
+  const dispatchInput = useGaesupStore((state) => state.dispatchInput);
   const isReady = Boolean(activeState?.position);
   const moveClicker = (
     event: ThreeEvent<MouseEvent>,
@@ -31,7 +32,7 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
       const adjustedY = Math.max(targetPoint.y + offsetY, minHeight);
       const finalTarget = V3(targetPoint.x, adjustedY, targetPoint.z);
 
-      updateMouse({
+      dispatchInput({
         target: finalTarget,
         angle: newAngle,
         position: new THREE.Vector2(finalTarget.x, finalTarget.z),
@@ -48,7 +49,7 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
   const stopClicker = (): void => {
     try {
       if (!isReady) return;
-      updateMouse({ isActive: false, shouldRun: false });
+      dispatchInput({ isActive: false, shouldRun: false });
     } catch (error) {
     }
   };

@@ -1,54 +1,52 @@
 import { UrlsSlice } from './slices/urls';
-import { ModeSlice, ModeState } from './slices/mode';
-import { CameraOptionSlice } from '../camera/stores/slices/cameraOption';
+import { ModeSlice } from './slices/mode';
 import { CameraSlice } from '../camera/stores/slices/camera';
+import { CameraOptionSlice } from '../camera/stores/slices/cameraOption';
 import { SizesSlice } from './slices/sizes';
-import { AnimationSlice } from '../animation/stores/types';
-import { MotionSliceState, MotionActions } from '../motions/stores/types';
-import { InteractionSliceState, InteractionActions } from '../interactions/stores/types';
-import { GameStatesSlice } from './slices/gameStates';
+import { AnimationSlice } from '../animation/stores/slices';
+import { MotionSlice } from '../motions/stores/slices';
+import { InteractionSlice } from '../interactions/stores/slices';
 import { RideableSlice } from './slices/rideable';
-import { ActiveStateSlice } from './slices/activeState';
+import { PerformanceSlice } from './slices/performance';
+import { WorldStatesSlice } from '../world/stores/slices/worldStates';
+import { ControlSlice } from './slices/control';
+import { BlockSlice } from './slices/block';
 import { GameStatesType } from '../world/components/Rideable/types';
-import { UrlsState } from './slices/urls';
-import { PerformanceState } from './slices/performance';
-import { WorldSlice } from '../world/stores/slices/worldStates/types';
-
-export type ModeType = 'character' | 'vehicle' | 'airplane';
-export type ControllerType = 'clicker' | 'keyboard' | 'joystick' | 'gamepad';
-export type CameraType =
-  | 'thirdPerson'
-  | 'shoulder'
-  | 'fixed'
-  | 'isometric'
-  | 'firstPerson'
-  | 'topDown'
-  | 'chase'
-  | 'orbit'
-  | 'free'
-  | 'custom';
+import { PerformanceMetrics } from './slices/performance';
+import { UrlsType } from './slices/urls';
+import { ModeType } from './slices/mode';
+import { cameraOptionType } from '../camera/stores/slices/cameraOption';
+import { SizesType } from './slices/sizes';
+import { AnimationType } from '../animation/stores/slices';
+import { controlType } from './slices/control';
+import { BlockType } from './slices/block';
 
 export type StoreState = UrlsSlice &
+  ControlSlice &
   ModeSlice &
-  CameraOptionSlice &
   CameraSlice &
+  CameraOptionSlice &
   SizesSlice &
-  Omit<AnimationSlice, 'getAnimation' | 'getCurrentAnimation'> &
-  MotionSliceState &
-  MotionActions &
-  InteractionSliceState &
-  InteractionActions &
-  GameStatesSlice &
+  AnimationSlice &
+  MotionSlice &
+  InteractionSlice &
   RideableSlice &
-  ActiveStateSlice &
-  PerformanceState &
-  WorldSlice & {
+  BlockSlice &
+  PerformanceSlice &
+  WorldStatesSlice & {
     updateState: (updates: Partial<StoreState>) => void;
     initialize: (config: Partial<StoreState>) => void;
   };
 
-export type GaesupAction =
-  | { type: 'setMode'; payload: Partial<ModeState> }
-  | { type: 'setUrls'; payload: Partial<UrlsState> }
-  | { type: 'setStates'; payload: Partial<GameStatesType> }
-  | { type: 'update'; payload: Partial<StoreState> };
+export type StoreAction =
+  | { type: 'setUrls'; payload: Partial<UrlsType> }
+  | { type: 'setMode'; payload: ModeType }
+  | { type: 'setCameraOption'; payload: cameraOptionType }
+  | { type: 'setSizes'; payload: SizesType }
+  | { type: 'setAnimation'; payload: AnimationType }
+  | { type: 'setControl'; payload: Partial<controlType> }
+  | { type: 'setBlock'; payload: Partial<BlockType> }
+  | { type: 'setPerformance'; payload: PerformanceMetrics }
+  | { type: 'initialize'; payload: Partial<StoreState> };
+
+export type { GameStatesType };

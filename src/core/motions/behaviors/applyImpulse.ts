@@ -6,7 +6,7 @@ import {
   vehicleConfigType,
   airplaneConfigType
 } from '../types';
-import { useGaesupStore } from '@stores/gaesupStore';
+import { StateEngine } from '../core/StateEngine';
 
 type ImpulsePhysicsState = Pick<
   PhysicsState,
@@ -18,6 +18,15 @@ type ImpulsePhysicsState = Pick<
 };
 
 export class ImpulseController {
+  private readonly EPSILON = 0.01;
+  private readonly EPSILON_VERTICAL = 0.1;
+  private readonly BRAKE_THRESHOLD = 0.2;
+  private stateEngine: StateEngine;
+
+  constructor() {
+    this.stateEngine = StateEngine.getInstance();
+  }
+
   applyImpulse(
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: ImpulsePhysicsState
@@ -52,9 +61,8 @@ export class ImpulseController {
     if (isJumping && isOnTheGround) {
       const currentVel = rigidBodyRef.current.linvel();
       rigidBodyRef.current.setLinvel({ x: currentVel.x, y: jumpSpeed, z: currentVel.z }, true);
-      useGaesupStore.getState().setStates({
-        isJumping: false,
-        isOnTheGround: true,
+      this.stateEngine.updateGameStates({
+        isOnTheGround: false,
       });
     }
     if (isMoving) {

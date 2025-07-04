@@ -12,6 +12,7 @@ import {
   vehicleConfigType,
   airplaneConfigType
 } from '../types';
+import { StateEngine } from './StateEngine';
 
 export interface PhysicsConfig {
   character: characterConfigType;
@@ -27,6 +28,7 @@ export class PhysicsEngine {
   private tempQuaternion = new THREE.Quaternion();
   private tempEuler = new THREE.Euler();
   private config: PhysicsConfig;
+  private stateEngine: StateEngine;
 
   constructor(config?: Partial<PhysicsConfig>) {
     this.config = {
@@ -34,6 +36,7 @@ export class PhysicsEngine {
       vehicle: { ...config?.vehicle },
       airplane: { ...config?.airplane }
     };
+    this.stateEngine = StateEngine.getInstance();
   }
 
   public updateConfig(newConfig: Partial<PhysicsConfig>) {
@@ -47,11 +50,17 @@ export class PhysicsEngine {
   calculate(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
     if (!physicsState || !calcProp.rigidBodyRef.current) return;
     const currentVelocity = calcProp.rigidBodyRef.current.linvel();
-    physicsState.activeState.velocity.set(
+    const activeStateRef = this.stateEngine.getActiveStateRef();
+    activeStateRef.velocity.set(
       currentVelocity.x,
       currentVelocity.y,
       currentVelocity.z
     );
+    
+    // Update physicsState with refs
+    physicsState.activeState = activeStateRef;
+    physicsState.gameStates = this.stateEngine.getGameStatesRef();
+    
     this.stateChecker.checkAll(calcProp, physicsState);
 
     const { modeType = 'character' } = physicsState;
@@ -79,10 +88,10 @@ export class PhysicsEngine {
     this.gravityController.applyGravity(rigidBodyRef, physicsState);
 
     if (rigidBodyRef?.current) {
-      const {
-        gameStates: { isJumping, isFalling, isNotMoving },
-        activeState
-      } = physicsState;
+      const gameStatesRef = this.stateEngine.getGameStatesRef();
+      const activeStateRef = this.stateEngine.getActiveStateRef();
+      const { isJumping, isFalling, isNotMoving } = gameStatesRef;
+      
       const {
         linearDamping = 0.2,
         airDamping = 0.1,
@@ -97,7 +106,7 @@ export class PhysicsEngine {
       );
       rigidBodyRef.current.setEnabledRotations(false, false, false, false);
       if (innerGroupRef?.current) {
-        innerGroupRef.current.quaternion.setFromEuler(activeState.euler);
+        innerGroupRef.current.quaternion.setFromEuler(activeStateRef.euler);
       }
     }
   }
@@ -112,8 +121,9 @@ export class PhysicsEngine {
     this.applyDamping(rigidBodyRef, physicsState);
 
     if (rigidBodyRef?.current) {
+      const activeStateRef = this.stateEngine.getActiveStateRef();
       rigidBodyRef.current.setEnabledRotations(false, true, false, false);
-      this.tempEuler.set(0, physicsState.activeState.euler.y, 0);
+      this.tempEuler.set(0, activeStateRef.euler.y, 0);
       this.tempQuaternion.setFromEuler(this.tempEuler);
       rigidBodyRef.current.setRotation(this.tempQuaternion, true);
       if (innerGroupRef?.current) {

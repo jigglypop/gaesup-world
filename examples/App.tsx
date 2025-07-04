@@ -13,6 +13,7 @@ import { RideableUIRenderer, RideableVehicles } from './components/rideable';
 import { BuildingExample } from './components/building';
 import { AIRPLANE_URL, CHARACTER_URL, S3, VEHICLE_URL, EXAMPLE_CONFIG } from './config/constants';
 import './style.css';
+import { useStateEngine } from '../src/core/motions/hooks/useStateEngine';
 
 export { S3 };
 
@@ -41,7 +42,7 @@ const cameraOption: CameraOptionType = {
 const WorldPage = ({ showEditor = false }) => {
   const isInBuildingMode = useBuildingStore((state) => state.isInEditMode());
   const mode = useGaesupStore((state) => state.mode);
-  const states = useGaesupStore((state) => state.states);
+  const { gameStates } = useStateEngine();
   
   return (
     <>
@@ -86,7 +87,7 @@ const WorldPage = ({ showEditor = false }) => {
           <Suspense>
             <GaesupWorldContent showGrid={EXAMPLE_CONFIG.showGrid} showAxes={EXAMPLE_CONFIG.showAxes}>
               <Physics debug interpolate={true}>
-                {!isInBuildingMode && !states?.isRiding && (
+                {!isInBuildingMode && !gameStates?.isRiding && (
                   <GaesupController
                     key={`controller-${mode.type}`}
                     controllerOptions={{ lerp: { cameraTurn: 0.1, cameraPosition: 0.08 } }}
@@ -148,6 +149,7 @@ const WorldPage = ({ showEditor = false }) => {
           showZoom={false}
           showCompass={false}
         />
+        <RideableUIRenderer />
       </GaesupWorld>
       {showEditor && <Editor />}
       <BuildingExample />

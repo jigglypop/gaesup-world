@@ -1,44 +1,37 @@
-import * as THREE from 'three';
+import { useCallback } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
+import { Vector3, Euler } from 'three';
+import { useStateEngine } from '../../motions/hooks/useStateEngine';
 
 export interface TeleportResult {
-  teleport: (position: THREE.Vector3) => boolean;
+  teleport: (position: Vector3, rotation?: Euler) => void;
   canTeleport: boolean;
 }
 
 export function useTeleport(): TeleportResult {
-  const activeState = useGaesupStore((state) => state.activeState);
-  const setActiveState = useGaesupStore((state) => state.setActiveState);
+  const { activeState, updateActiveState } = useStateEngine();
+  const setState = useGaesupStore((state) => state.updateState);
+  
   const canTeleport = Boolean(activeState);
 
-  const teleport = (position: THREE.Vector3): boolean => {
+  const teleport = useCallback((position: Vector3, rotation?: Euler) => {
     if (!activeState) {
-      return false;
+      console.warn('[useTeleport]: Cannot teleport - activeState not available');
+      return;
     }
-    try {
-      setActiveState({
-        ...activeState,
-        position: position.clone(),
-        velocity: new THREE.Vector3(0, 0, 0),
-      });
-      const teleportEvent = new CustomEvent('gaesup:teleport', {
-        detail: {
-          position: position.clone(),
-          timestamp: Date.now(),
-        },
-      });
-      window.dispatchEvent(teleportEvent);
-      document.dispatchEvent(
-        new CustomEvent('teleport-request', {
-          detail: { position: position.clone() },
-        }),
-      );
-      return true;
-    } catch (error) {
-      console.error('Teleport failed:', error);
-      return false;
-    }
-  };
+    
+    updateActiveState({
+      position: position.clone(),
+      euler: rotation || activeState.euler,
+    });
+    
+    setState({
+      control: {
+        isLocked: false,
+        isMoving: false,
+      },
+    });
+  }, [activeState, updateActiveState, setState]);
 
   return {
     teleport,

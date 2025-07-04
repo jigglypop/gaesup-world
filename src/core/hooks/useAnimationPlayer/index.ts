@@ -1,13 +1,14 @@
 import { useEffect, useMemo } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { useAnimationBridge } from '../../animation/hooks/useAnimationBridge';
+import { useStateEngine } from '../../motions/hooks/useStateEngine';
 
 export function useAnimationPlayer(active: boolean) {
   const { playAnimation, currentType, currentAnimation } = useAnimationBridge();
   const keyboard = useGaesupStore((state) => state.interaction?.keyboard);
   const mouse = useGaesupStore((state) => state.interaction?.mouse);
   const automation = useGaesupStore((state) => state.automation);
-  const states = useGaesupStore((state) => state.states);
+  const { gameStates } = useStateEngine();
   
   const movement = useMemo(() => {
     const isKeyboardMoving =
@@ -25,14 +26,13 @@ export function useAnimationPlayer(active: boolean) {
   }, [keyboard, mouse, automation]);
 
   const autoActiveTag = useMemo(() => {
-    if (states?.isJumping) return 'jump';
-    if (states?.isFalling) return 'fall';
-    if (states?.isRiding) return 'ride';
-    if (states?.isLanding) return 'land';
+    if (gameStates?.isJumping) return 'jump';
+    if (gameStates?.isFalling) return 'fall';
+    if (gameStates?.isRiding) return 'ride';
     if (movement.isRunning) return 'run';
     if (movement.isMoving) return 'walk';
     return 'idle';
-  }, [states, movement]);
+  }, [gameStates, movement]);
 
   const movementAnimations = useMemo(() => ['idle', 'walk', 'run', 'jump', 'fall', 'ride', 'land'], []);
 

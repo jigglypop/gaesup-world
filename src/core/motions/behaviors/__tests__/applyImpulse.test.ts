@@ -1,23 +1,22 @@
 import { ImpulseController } from '../applyImpulse';
 import { RapierRigidBody } from '@react-three/rapier';
+import { StateEngine } from '../../core/StateEngine';
 import * as THREE from 'three';
 
-const mockSetStates = jest.fn();
-
-jest.mock('@stores/gaesupStore', () => ({
-  useGaesupStore: {
-    getState: jest.fn(() => ({
-      setStates: mockSetStates
-    }))
-  }
-}));
+jest.mock('../../core/StateEngine');
 
 describe('ImpulseController', () => {
   let impulseController: ImpulseController;
   let mockRigidBody: jest.Mocked<RapierRigidBody>;
+  let mockStateEngine: jest.Mocked<StateEngine>;
 
   beforeEach(() => {
-    mockSetStates.mockClear();
+    mockStateEngine = {
+      updateGameStates: jest.fn(),
+    } as any;
+    
+    (StateEngine.getInstance as jest.Mock).mockReturnValue(mockStateEngine);
+    
     impulseController = new ImpulseController();
     mockRigidBody = {
       applyImpulse: jest.fn(),
@@ -52,7 +51,7 @@ describe('ImpulseController', () => {
     expect(mockRigidBody.applyImpulse).toHaveBeenCalled();
   });
 
-  it('캐릭터가 점프할 때, linvel을 설정하고 store 상태를 변경해야 합니다.', () => {
+  it('캐릭터가 점프할 때, linvel을 설정하고 isOnTheGround를 false로 변경해야 합니다.', () => {
     const state = createMockState('character');
     state.gameStates.isJumping = true;
     impulseController.applyImpulse({ current: mockRigidBody }, state as any);
@@ -60,9 +59,8 @@ describe('ImpulseController', () => {
       { x: 0, y: 10, z: 0 },
       true
     );
-    expect(mockSetStates).toHaveBeenCalledWith({
-      isJumping: false,
-      isOnTheGround: true
+    expect(mockStateEngine.updateGameStates).toHaveBeenCalledWith({
+      isOnTheGround: false
     });
   });
 

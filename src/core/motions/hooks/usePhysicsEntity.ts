@@ -7,6 +7,7 @@ import { useGaesupStore } from '../../stores';
 import usePhysicsLoop from '..';
 import { useAnimationPlayer } from '../../hooks';
 import { PhysicsEntityProps } from '../entities/refs/types';
+import { useStateEngine } from './useStateEngine';
 
 interface UsePhysicsEntityProps
   extends Pick<
@@ -61,9 +62,10 @@ export function usePhysicsEntity({
   );
   const registeredRef = useRef<boolean>(false);
 
-  const mode = useGaesupStore((state) => state.mode);
-  const isRiding = useGaesupStore((state) => state.states.isRiding);
-  const modeType = mode?.type;
+  const activeMode = useGaesupStore((state) => state.mode);
+  const { gameStates } = useStateEngine();
+  const isRiding = gameStates.isRiding;
+  const modeType = activeMode?.type;
 
   useEffect(() => {
     if (actions && modeType && isActive && !animationBridgeRef.current) {
@@ -187,7 +189,7 @@ export function usePhysicsEntity({
     executeMotionCommand,
     updateMotion,
     getMotionSnapshot,
-    mode,
+    mode: activeMode,
     isRiding,
     handleIntersectionEnter,
     handleIntersectionExit,

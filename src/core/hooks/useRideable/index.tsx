@@ -3,6 +3,7 @@ import { useCallback, useEffect } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { rideableType } from './types';
 import { useGaesupGltf } from '@/core/motions/hooks/useGaesupGltf';
+import { useStateEngine } from '../../motions/hooks/useStateEngine';
 
 export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'url' | 'wheelUrl'> =
   {
@@ -14,11 +15,9 @@ export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'u
   };
 
 export function useRideable() {
-  const states = useGaesupStore((state) => state.states);
+  const { gameStates, updateGameStates, activeState } = useStateEngine();
   const rideable = useGaesupStore((state) => state.rideable);
-  const activeState = useGaesupStore((state) => state.activeState);
   const urls = useGaesupStore((state) => state.urls);
-  const setStates = useGaesupStore((state) => state.setStates);
   const setMode = useGaesupStore((state) => state.setMode);
   const setRideable = useGaesupStore((state) => state.setRideable);
   const setUrls = useGaesupStore((state) => state.setUrls);
@@ -50,10 +49,10 @@ export function useRideable() {
       const mySize = characterUrl;
       if (!size || !mySize) return;
 
-      setStates({
-        enableRiding: false,
-        isRiderOn: false,
-        rideableId: '',
+      updateGameStates({
+        canRide: false,
+        isRiding: false,
+        currentRideable: undefined,
       });
 
       setRideable(objectkey, {
@@ -66,26 +65,24 @@ export function useRideable() {
       rideable,
       getSizesByUrls,
       urls,
-      setStates,
+      updateGameStates,
       setRideable,
       activeState.position,
     ],
   );
 
   const enterRideable = useCallback(async () => {
-    if (states.canRide && states.nearbyRideable && !states.isRiding) {
-      const { objectkey, objectType } = states.nearbyRideable;
+    if (gameStates.canRide && gameStates.nearbyRideable && !gameStates.isRiding) {
+      const { objectkey, objectType } = gameStates.nearbyRideable;
       const rideableItem = rideable[objectkey];
       if (!rideableItem) return;
       setUrl(rideableItem);
       setMode({ type: objectType });
-      setStates({
-        rideableId: objectkey,
+      updateGameStates({
+        currentRideable: gameStates.nearbyRideable,
         isRiding: true,
         canRide: false,
-        nearbyRideable: null,
-        enableRiding: rideableItem.enableRiding,
-        isRiderOn: true,
+        nearbyRideable: undefined,
       });
       setRideable(objectkey, {
         ...rideableItem,
@@ -93,59 +90,45 @@ export function useRideable() {
       });
     }
   }, [
-    states.canRide,
-    states.nearbyRideable,
-    states.isRiding,
+    gameStates.canRide,
+    gameStates.nearbyRideable,
+    gameStates.isRiding,
     rideable,
     setUrl,
     setMode,
-    setStates,
+    updateGameStates,
     setRideable,
   ]);
 
   const exitRideable = useCallback(async () => {
-    if (states.isRiding && states.rideableId) {
-      landing(states.rideableId);
+    if (gameStates.isRiding && gameStates.currentRideable) {
+      landing(gameStates.currentRideable.objectkey);
       setMode({ type: 'character' });
-      setStates({
+      updateGameStates({
         isRiding: false,
-        rideableId: '',
+        currentRideable: undefined,
       });
     }
-  }, [states.isRiding, states.rideableId, landing, setMode, setStates]);
+  }, [gameStates.isRiding, gameStates.currentRideable, landing, setMode, updateGameStates]);
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.code !== 'KeyF') return;
-      if (states.canRide && states.nearbyRideable) {
+      if (gameStates.canRide && gameStates.nearbyRideable) {
         void enterRideable();
-      } else if (states.isRiding) {
+      } else if (gameStates.isRiding) {
         void exitRideable();
       }
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [
-    states.canRide,
-    states.nearbyRideable,
-    states.isRiding,
+    gameStates.canRide,
+    gameStates.nearbyRideable,
+    gameStates.isRiding,
     enterRideable,
     exitRideable,
   ]);
-
-  useEffect(() => {
-    if (states.shouldEnterRideable) {
-      void enterRideable();
-      setStates({ shouldEnterRideable: false });
-    }
-  }, [states.shouldEnterRideable, enterRideable, setStates]);
-
-  useEffect(() => {
-    if (states.shouldExitRideable) {
-      void exitRideable();
-      setStates({ shouldExitRideable: false });
-    }
-  }, [states.shouldExitRideable, exitRideable, setStates]);
 
   const initRideable = useCallback(
     (props: rideableType) => {
@@ -175,12 +158,25 @@ export function useRideable() {
           e.other.rigidBodyObject.name === 'character') ||
         (e.other.rigidBodyObject && !e.other.rigidBodyObject.name) ||
         e.other.rigidBody;
-      if (isCharacterCollision && !states.isRiding) {
+      if (isCharacterCollision && !gameStates.isRiding) {
         if (!props.objectType) return;
-        setStates({
+        updateGameStates({
           nearbyRideable: {
+            id: props.objectkey,
             objectkey: props.objectkey,
             objectType: props.objectType,
+            type: 'rideable',
+            maxSpeed: 0,
+            acceleration: 0,
+            deceleration: 0,
+            isOccupied: false,
+            controls: {
+              forward: false,
+              backward: false,
+              left: false,
+              right: false,
+              brake: false,
+            },
             name: props.objectType === 'vehicle' ? '차량' : '비행기',
             rideMessage: props.rideMessage,
             exitMessage: props.exitMessage,
@@ -190,7 +186,7 @@ export function useRideable() {
         });
       }
     },
-    [states.isRiding, setStates],
+    [gameStates.isRiding, updateGameStates],
   );
 
   const onRideableLeave = useCallback(
@@ -202,13 +198,13 @@ export function useRideable() {
         e.other.rigidBody;
 
       if (isCharacterCollision) {
-        setStates({
-          nearbyRideable: null,
+        updateGameStates({
+          nearbyRideable: undefined,
           canRide: false,
         });
       }
     },
-    [setStates],
+    [updateGameStates],
   );
 
   return {

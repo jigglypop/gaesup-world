@@ -1,16 +1,18 @@
 import { useGaesupStore } from '../../stores/gaesupStore';
+import { useStateEngine } from '../../motions/hooks/useStateEngine';
 
-export const useGaesupContext = () => {
+export function useGaesupContext() {
+  const { activeState, gameStates } = useStateEngine();
   const store = useGaesupStore();
+  
   return {
-    activeState: store.activeState,
+    activeState,
+    states: gameStates,
+    sizes: store.sizes,
     mode: store.mode,
-    animationState: store.animationState,
-    states: store.states,
+    control: store.control,
     urls: store.urls,
-    rideable: store.rideable,
-    block: store.block,
-    cameraOption: store.cameraOption,
     minimap: store.minimap,
+    animationState: store.animationState,
   };
-}; 
+} 

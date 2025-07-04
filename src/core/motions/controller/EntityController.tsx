@@ -4,10 +4,11 @@ import { useGaesupStore } from '../../stores/gaesupStore';
 import { PhysicsEntity } from '../entities/refs/PhysicsEntity';
 import { EntityControllerProps } from './types';
 import { useGenericRefs } from '../entities/utils/useGenericRefs';
+import { useStateEngine } from '../hooks/useStateEngine';
 
 export function EntityController({ props, children }: EntityControllerProps) {
   const mode = useGaesupStore((state) => state.mode);
-  const states = useGaesupStore((state) => state.states);
+  const { gameStates } = useStateEngine();
   const rideable = useGaesupStore((state) => state.rideable);
   const urls = useGaesupStore((state) => state.urls);
   const setRefs = useGaesupStore((state) => state.setRefs);
@@ -25,8 +26,9 @@ export function EntityController({ props, children }: EntityControllerProps) {
       refsSetRef.current = true;
     }
   }, [setRefs, refs]);
-  if (!mode || !states || !rideable || !urls) return null;
-  const { enableRiding, isRiderOn, rideableId } = states;
+  if (!mode || !gameStates || !rideable || !urls) return null;
+  const { canRide, isRiding, currentRideable } = gameStates;
+  const rideableId = currentRideable?.id;
   const offset = useMemo(
     () => (rideableId && rideable[rideableId] ? rideable[rideableId].offset : vec3()),
     [rideableId, rideable],
@@ -36,8 +38,8 @@ export function EntityController({ props, children }: EntityControllerProps) {
       isActive: true,
       componentType: mode.type,
       controllerOptions: props.controllerOptions,
-      enableRiding,
-      isRiderOn,
+      enableRiding: canRide,
+      isRiderOn: isRiding,
       groundRay: props.groundRay,
       offset,
       children,
@@ -56,7 +58,7 @@ export function EntityController({ props, children }: EntityControllerProps) {
     };
 
     const ridingProps =
-      isRiderOn && mode.type !== 'character'
+      isRiding && mode.type !== 'character'
         ? { ridingUrl: urls.ridingUrl }
         : { ridingUrl: undefined };
 
@@ -87,7 +89,7 @@ export function EntityController({ props, children }: EntityControllerProps) {
     }
   };
   const entityProps = getEntityProps();
-  if (mode.type === 'character' && states.isRiding) {
+  if (mode.type === 'character' && gameStates.isRiding) {
     return null;
   }
   return <PhysicsEntity {...entityProps} groundRay={props.groundRay as any} />;

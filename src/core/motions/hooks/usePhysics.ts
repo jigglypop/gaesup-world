@@ -4,6 +4,7 @@ import { SizesType } from '../../stores/slices/sizes';
 import { ActiveStateType } from '../core/types';
 import { PhysicsCalculationProps } from '../types';
 import { useGaesupGltf } from './useGaesupGltf';
+import { useStateEngine } from './useStateEngine';
 
 export interface UsePhysicsReturn {
   worldContext: StoreState;
@@ -22,17 +23,16 @@ export interface UsePhysicsReturn {
 }
 
 export function usePhysics(): UsePhysicsReturn {
-  const store = useGaesupStore();
+  const { activeState } = useStateEngine();
   const interaction = useGaesupStore((state) => state.interaction);
   const updateKeyboard = useGaesupStore((state) => state.updateKeyboard);
   const updateMouse = useGaesupStore((state) => state.updateMouse);
   const urls = useGaesupStore((state) => state.urls);
-  const activeState = useGaesupStore((state) => state.activeState);
   const block = useGaesupStore((state) => state.block);
   const { getSizesByUrls } = useGaesupGltf();
   const isReady = !!(interaction && urls && activeState);
   return {
-    worldContext: store,
+    worldContext: useGaesupStore.getState(),
     activeState,
     input: {
       keyboard: interaction?.keyboard,
