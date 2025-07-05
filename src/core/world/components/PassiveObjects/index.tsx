@@ -1,9 +1,9 @@
-import { useGenericRefs } from '@motions/entities';
 import { RigidBody, CapsuleCollider } from '@react-three/rapier';
 import { PassiveObjectProps, PassiveObject } from './types';
 import { useMemo, memo, useCallback } from 'react';
 import { PhysicsEntity } from "@motions/entities/refs/PhysicsEntity"
 import './styles.css';
+import { useGenericRefs } from '@hooks/useGenericRefs';
 
 interface PassiveObjectInstanceProps {
   object: PassiveObject;

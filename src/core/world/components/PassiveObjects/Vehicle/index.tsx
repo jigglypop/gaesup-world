@@ -1,4 +1,4 @@
-import { useGenericRefs } from '@motions/entities';
+import { useGenericRefs } from '@hooks/useGenericRefs';
 import { passiveVehiclePropsType } from './types';
 import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
 

@@ -32,7 +32,6 @@ export const useGltfAndSize = ({ url }: GltfAndSizeOptions): GltfAndSizeResult =
   const isValidUrl = Boolean(url?.trim());
   const gltf = useGLTF(safeUrl) as GLTF;
   const isInitialized = useRef(false);
-
   const calculateSize = useCallback(
     () => (isValidUrl && gltf.scene ? calculateSizeFromScene(gltf.scene) : defaultSize.clone()),
     [gltf.scene, isValidUrl],
@@ -72,7 +71,6 @@ export const useGltfAndSize = ({ url }: GltfAndSizeOptions): GltfAndSizeResult =
     },
     [url, setSizes, isValidUrl],
   );
-
   const getSize = useCallback(
     (keyName?: string) => {
       if (!isValidUrl) return null;
@@ -85,14 +83,12 @@ export const useGltfAndSize = ({ url }: GltfAndSizeOptions): GltfAndSizeResult =
   return { gltf, size, setSize, getSize };
 };
 
-
 export const useGaesupGltf = (): GaesupGltfUtils => {
   const sizes = useGaesupStore((state) => state.sizes);
   const getSizesByUrls = useCallback(
     (urls?: ResourceUrlsType) => {
       if (!urls) return {};
       const result: Record<string, THREE.Vector3 | null> = {};
-
       Object.entries(urls as Record<string, string>).forEach(([key, url]) => {
         if (typeof url === 'string') {
           result[key] = sizes[url] ?? null;
@@ -105,7 +101,6 @@ export const useGaesupGltf = (): GaesupGltfUtils => {
     },
     [sizes],
   );
-
   const preloadSizes = useCallback((urls: string[]) => {
   }, []);
 

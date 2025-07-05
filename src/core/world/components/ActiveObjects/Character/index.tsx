@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { useGenericRefs } from '@motions/entities';
 import { ObjectComponentProps } from '../types';
 import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
+import { useGenericRefs } from '@hooks/useGenericRefs';
 
 export function Character({ 
   object, 

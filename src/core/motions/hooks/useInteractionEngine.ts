@@ -11,7 +11,6 @@ export interface UseInteractionEngineResult {
 }
 
 let globalBridge: InteractionBridge | null = null;
-
 function getGlobalBridge(): InteractionBridge {
   if (!globalBridge) {
     globalBridge = new InteractionBridge();

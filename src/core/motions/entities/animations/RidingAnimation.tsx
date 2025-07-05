@@ -10,17 +10,15 @@ export function RidingAnimation({
 }) {
   const { animations: ridingAnimations } = useGLTF(url);
   const { actions: ridingActions } = useAnimations(ridingAnimations);
-
   useEffect(() => {
-    if (active && ridingActions.ride) {
-      ridingActions.ride.reset().play();
+    if (active && ridingActions['ride']) {
+      ridingActions['ride'].reset().play();
     }
     return () => {
-      if (ridingActions.ride) {
-        ridingActions.ride.stop();
+      if (ridingActions['ride']) {
+        ridingActions['ride'].stop();
       }
     };
   }, [active, ridingActions]);
-
   return null;
 } 

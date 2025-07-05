@@ -4,12 +4,25 @@ import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three
 import { RefObject, forwardRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
-import { PhysicsEntityProps } from './types';
-import { usePhysicsEntity } from '../../hooks';
+import { useGltfAndSize, usePhysicsEntity } from '../../hooks';
 import { RidingAnimation, VehicleAnimation } from '../animations';
-import { useGltfAndSize, useSetGroundRay } from '../utils';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
+import { PhysicsEntityProps, SetGroundRayType } from '../types';
+
+export function useSetGroundRay() {
+  return ({ groundRay, length, colliderRef }: SetGroundRayType) => {
+    if (!colliderRef.current || !groundRay) return;
+    if (!groundRay.origin || !groundRay.dir) return;
+    const raycaster = new THREE.Raycaster();
+    raycaster.set(groundRay.origin, groundRay.dir);
+    raycaster.far = length;
+    const intersections = raycaster.intersectObjects([], true);
+    if (intersections.length > 0) {
+      colliderRef.current.setActiveEvents(1);
+    }
+  };
+}
 
 
 export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
@@ -26,11 +39,10 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       handleCollisionEnter
     } = usePhysicsEntity({
       ...props,
-      rigidBodyRef: rigidBodyRef as RefObject<RapierRigidBody>,
+      rigidBodyRef,
       actions
     });
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
-
     const skeleton = useMemo(() => {
       let skel: THREE.Skeleton | null = null;
       clone.traverse((child) => {
@@ -99,16 +111,16 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
         >
           {!props.isNotColliding && (
             <CapsuleCollider
-              ref={props.colliderRef as any}
+              ref={props.colliderRef}
               args={[(size.y / 2 - size.x) * 1.2, size.x * 1.2]}
               position={[0, size.x * 1.2, 0]}
             />
           )}
           <InnerGroupRef
-            objectNode={objectNode as THREE.Object3D}
-            animationRef={animationRef as RefObject<THREE.Group | null>}
+            objectNode={objectNode}
+            animationRef={animationRef}
             nodes={nodes}
-            ref={props.innerGroupRef as RefObject<THREE.Group | null>}
+            ref={props.innerGroupRef}
             isActive={props.isActive}
             isRiderOn={props.isRiderOn}
             enableRiding={props.enableRiding}

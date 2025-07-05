@@ -1,37 +1,14 @@
 import { RefObject, useEffect, useRef } from 'react';
-import { RapierRigidBody } from '@react-three/rapier';
-import * as THREE from 'three';
+import { CollisionEnterPayload, CollisionExitPayload, RapierRigidBody } from '@react-three/rapier';
 import { getGlobalAnimationBridge } from '../../animation/hooks/useAnimationBridge';
 import { MotionBridge } from '../bridge/MotionBridge';
 import { useGaesupStore } from '../../stores';
-import usePhysicsLoop from '..';
 import { useAnimationPlayer } from '../../hooks';
-import { PhysicsEntityProps } from '../entities/refs/types';
 import { useStateEngine } from './useStateEngine';
-
-interface UsePhysicsEntityProps
-  extends Pick<
-    PhysicsEntityProps,
-    | 'onIntersectionEnter'
-    | 'onIntersectionExit'
-    | 'onCollisionEnter'
-    | 'userData'
-    | 'outerGroupRef'
-    | 'innerGroupRef'
-    | 'colliderRef'
-    | 'groundRay'
-    | 'onFrame'
-    | 'onAnimate'
-    | 'onReady'
-  > {
-  rigidBodyRef?: RefObject<RapierRigidBody | null>;
-  actions: Record<string, THREE.AnimationAction | null>;
-  name?: string;
-  isActive?: boolean;
-}
+import { UsePhysicsEntityProps } from './types';
+import { usePhysicsLoop } from './usePhysicsLoop';
 
 let globalMotionBridge: MotionBridge | null = null;
-
 function getGlobalMotionBridge(): MotionBridge {
   if (!globalMotionBridge) {
     globalMotionBridge = new MotionBridge();
@@ -61,7 +38,6 @@ export function usePhysicsEntity({
     name || `entity-${Date.now()}-${Math.random()}`
   );
   const registeredRef = useRef<boolean>(false);
-
   const activeMode = useGaesupStore((state) => state.mode);
   const { gameStates } = useStateEngine();
   const isRiding = gameStates.isRiding;
@@ -72,7 +48,6 @@ export function usePhysicsEntity({
       const animationBridge = getGlobalAnimationBridge();
       animationBridge.registerAnimations(modeType as any, actions);
       animationBridgeRef.current = true;
-      
       return () => {
         if (animationBridgeRef.current) {
           animationBridge.unregisterAnimations(modeType as any);
@@ -83,7 +58,7 @@ export function usePhysicsEntity({
   }, [actions, modeType, isActive]);
 
   useEffect(() => {
-    if (isActive && rigidBodyRef && !registeredRef.current) {
+    if (isActive && rigidBodyRef && !registeredRef.current && rigidBodyRef.current) {
       const motionBridge = getGlobalMotionBridge();
       motionBridge.registerEntity(
         entityIdRef.current,
@@ -93,40 +68,31 @@ export function usePhysicsEntity({
         rigidBodyRef.current
       );
       registeredRef.current = true;
-
       return () => {
-        if (registeredRef.current) {
-          motionBridge.unregisterEntity(entityIdRef.current);
-          registeredRef.current = false;
-        }
+        motionBridge.unregisterEntity(entityIdRef.current);
+        registeredRef.current = false;
       };
     }
   }, [isActive, rigidBodyRef, modeType]);
 
-  const handleIntersectionEnter = async (payload: any) => {
-    if (onIntersectionEnter) {
-      await onIntersectionEnter(payload);
-    }
-    if (userData?.onNear) {
-      await userData.onNear(payload, userData);
+  const handleIntersectionEnter = async (payload: CollisionEnterPayload) => {
+    if (onIntersectionEnter) onIntersectionEnter(payload);
+    if (userData?.['onNear'] && typeof userData['onNear'] === 'function') {
+      await userData['onNear'](payload, userData);
     }
   };
 
-  const handleIntersectionExit = async (payload: any) => {
-    if (onIntersectionExit) {
-      await onIntersectionExit(payload);
-    }
-    if (userData?.onLeave) {
-      await userData.onLeave(payload);
+  const handleIntersectionExit = async (payload: CollisionExitPayload) => {
+    if (onIntersectionExit)  onIntersectionExit(payload);
+    if (userData?.['onLeave'] && typeof userData['onLeave'] === 'function') {
+      await userData['onLeave'](payload);
     }
   };
 
-  const handleCollisionEnter = async (payload: any) => {
-    if (onCollisionEnter) {
-      await onCollisionEnter(payload);
-    }
-    if (userData?.onNear) {
-      await userData.onNear(payload, userData);
+  const handleCollisionEnter = async (payload: CollisionEnterPayload) => {
+    if (onCollisionEnter) onCollisionEnter(payload);
+    if (userData?.['onNear'] && typeof userData['onNear'] === 'function') {
+      await userData['onNear'](payload, userData);
     }
   };
 

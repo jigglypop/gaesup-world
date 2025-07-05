@@ -10,199 +10,192 @@ import * as THREE from 'three';
 import { StateEngine } from '../core/engine/StateEngine';
 
 const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps): void => {
-  const keyboardKeys: (keyof typeof state.keyboard)[] = [
-    'forward',
-    'backward',
-    'leftward',
-    'rightward',
-    'shift',
-    'space',
-    'keyE',
-    'keyR',
-  ];
-  
-  for (let i = 0; i < keyboardKeys.length; i++) {
-    const key = keyboardKeys[i];
-    if (state.keyboard[key] !== input.keyboard[key]) {
-      state.keyboard[key] = input.keyboard[key];
+    const keyboardKeys: (keyof typeof state.keyboard)[] = [
+        'forward',
+        'backward',
+        'leftward',
+        'rightward',
+        'shift',
+        'space',
+        'keyE',
+        'keyR',
+    ];
+
+    for (let i = 0; i < keyboardKeys.length; i++) {
+        const key = keyboardKeys[i];
+        if (state.keyboard[key] !== input.keyboard[key]) {
+            state.keyboard[key] = input.keyboard[key];
+        }
     }
-  }
 
-  if (!state.mouse.target.equals(input.mouse.target)) {
-    state.mouse.target.copy(input.mouse.target);
-  }
+    if (!state.mouse.target.equals(input.mouse.target)) {
+        state.mouse.target.copy(input.mouse.target);
+    }
 
-  if (state.mouse.angle !== input.mouse.angle) {
-    state.mouse.angle = input.mouse.angle;
-  }
-  if (state.mouse.isActive !== input.mouse.isActive) {
-    state.mouse.isActive = input.mouse.isActive;
-  }
-  if (state.mouse.shouldRun !== input.mouse.shouldRun) {
-    state.mouse.shouldRun = input.mouse.shouldRun;
-  }
+    if (state.mouse.angle !== input.mouse.angle) {
+        state.mouse.angle = input.mouse.angle;
+    }
+    if (state.mouse.isActive !== input.mouse.isActive) {
+        state.mouse.isActive = input.mouse.isActive;
+    }
+    if (state.mouse.shouldRun !== input.mouse.shouldRun) {
+        state.mouse.shouldRun = input.mouse.shouldRun;
+    }
 };
 
 export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
-  const physics = usePhysics();
-  const physicsStateRef = useRef<PhysicsState | null>(null);
-  const physicsEngine = useRef<PhysicsEngine | null>(null);
-  const isInitializedRef = useRef(false);
-  const mouseTargetRef = useRef(new THREE.Vector3());
-  const matchSizesRef = useRef<SizesType | null>(null);
-  const stateEngineRef = useRef<StateEngine | null>(null);
+    const physics = usePhysics();
+    const physicsStateRef = useRef<PhysicsState | null>(null);
+    const physicsEngine = useRef<PhysicsEngine | null>(null);
+    const isInitializedRef = useRef(false);
+    const mouseTargetRef = useRef(new THREE.Vector3());
+    const matchSizesRef = useRef<SizesType | null>(null);
+    const stateEngineRef = useRef<StateEngine | null>(null);
 
-  useEffect(() => {
-    if (!isInitializedRef.current && physics.worldContext) {
-      physicsEngine.current = new PhysicsEngine({
-        character: physics.worldContext.character,
-        vehicle: physics.worldContext.vehicle,
-        airplane: physics.worldContext.airplane
-      });
-      stateEngineRef.current = StateEngine.getInstance();
-      isInitializedRef.current = true;
-    }
-  }, [physics.worldContext]);
-
-  useEffect(() => {
-    if (physicsEngine.current && physics.worldContext) {
-      physicsEngine.current.updateConfig({
-        character: physics.worldContext.character,
-        vehicle: physics.worldContext.vehicle,
-        airplane: physics.worldContext.airplane
-      });
-    }
-  }, [
-    physics.worldContext?.character,
-    physics.worldContext?.vehicle,
-    physics.worldContext?.airplane
-  ]);
-
-  useEffect(() => {
-    const handleTeleport = (event: CustomEvent) => {
-      try {
-        const { position } = event.detail;
-        if (props.rigidBodyRef.current && position) {
-          props.rigidBodyRef.current.setTranslation(
-            {
-              x: position.x,
-              y: position.y,
-              z: position.z,
-            },
-            true,
-          );
-          props.rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
-          props.rigidBodyRef.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    useEffect(() => {
+        if (!isInitializedRef.current && physics.worldContext) {
+            physicsEngine.current = new PhysicsEngine({
+                character: physics.worldContext.character,
+                vehicle: physics.worldContext.vehicle,
+                airplane: physics.worldContext.airplane
+            });
+            stateEngineRef.current = StateEngine.getInstance();
+            isInitializedRef.current = true;
         }
-      } catch (error) {
-        console.error('Teleport error:', error);
-      }
-    };
+    }, [physics.worldContext]);
 
-    window.addEventListener('gaesup:teleport', handleTeleport as EventListener);
-    document.addEventListener('teleport-request', handleTeleport as EventListener);
-
-    return () => {
-      window.removeEventListener('gaesup:teleport', handleTeleport as EventListener);
-      document.removeEventListener('teleport-request', handleTeleport as EventListener);
-    };
-  }, [props.rigidBodyRef]);
-
-  const executePhysics = useCallback(
-    (state: RootState, delta: number) => {
-      try {
-        if (!physics.worldContext || !physics.input || !physicsEngine.current || !stateEngineRef.current)
-          return;
-
-        if (!physicsStateRef.current) {
-          const worldContext = physics.worldContext as StoreState;
-          const modeType = worldContext.mode?.type || 'character';
-          const activeStateRef = stateEngineRef.current.getActiveStateRef();
-          const gameStatesRef = stateEngineRef.current.getGameStatesRef();
-          
-          physicsStateRef.current = {
-            activeState: activeStateRef,
-            gameStates: gameStatesRef,
-            keyboard: { ...physics.input.keyboard },
-            mouse: {
-              target: mouseTargetRef.current.copy(physics.input.mouse.target),
-              angle: physics.input.mouse.angle,
-              isActive: physics.input.mouse.isActive,
-              shouldRun: physics.input.mouse.shouldRun,
-            },
-            characterConfig: worldContext.character || {},
-            vehicleConfig: worldContext.vehicle || {},
-            airplaneConfig: worldContext.airplane || {},
-            automationOption: worldContext.automation || {
-              isActive: false,
-              queue: {
-                actions: [],
-                currentIndex: 0,
-                isRunning: false,
-                isPaused: false,
-                loop: false,
-                maxRetries: 3
-              },
-              settings: {
-                trackProgress: false,
-                autoStart: false,
-                loop: false,
-                showVisualCues: false
-              }
-            },
-            modeType: modeType as 'character' | 'vehicle' | 'airplane',
-          };
-          
-          if (props.rigidBodyRef?.current && activeStateRef) {
-            props.rigidBodyRef.current.lockRotations(false, true);
-            activeStateRef.euler.set(0, 0, 0);
-            props.rigidBodyRef.current.setTranslation(
-              {
-                x: activeStateRef.position.x,
-                y: activeStateRef.position.y + 5,
-                z: activeStateRef.position.z,
-              },
-              true,
-            );
-          }
-        } else {
-          updateInputState(physicsStateRef.current, physics.input);
-          if (physicsStateRef.current && stateEngineRef.current) {
-            physicsStateRef.current.activeState = stateEngineRef.current.getActiveStateRef();
-            physicsStateRef.current.gameStates = stateEngineRef.current.getGameStatesRef();
-          }
+    useEffect(() => {
+        if (physicsEngine.current && physics.worldContext) {
+            physicsEngine.current.updateConfig({
+                character: physics.worldContext.character,
+                vehicle: physics.worldContext.vehicle,
+                airplane: physics.worldContext.airplane
+            });
         }
+    }, [
+        physics.worldContext?.character,
+        physics.worldContext?.vehicle,
+        physics.worldContext?.airplane
+    ]);
 
-        const calcProp: PhysicsCalcProps = {
-          rigidBodyRef: props.rigidBodyRef,
-          innerGroupRef: props.innerGroupRef,
-          state,
-          delta,
-          worldContext: physics.worldContext,
-          dispatch: physics.dispatch,
-          matchSizes: matchSizesRef.current || (matchSizesRef.current = physics.getSizesByUrls() as SizesType),
-          inputRef: { current: physics.input },
-          setKeyboardInput: physics.setKeyboardInput,
-          setMouseInput: physics.setMouseInput,
+    useEffect(() => {
+        const handleTeleport = (event: CustomEvent) => {
+            try {
+                const { position } = event.detail;
+                if (props.rigidBodyRef.current && position) {
+                    props.rigidBodyRef.current.setTranslation(
+                        {
+                            x: position.x,
+                            y: position.y,
+                            z: position.z,
+                        },
+                        true,
+                    );
+                    props.rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+                    props.rigidBodyRef.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
+                }
+            } catch (error) {
+                console.error('Teleport error:', error);
+            }
         };
 
-        physicsEngine.current.calculate(calcProp, physicsStateRef.current);
-      } catch (error) {
-        console.error('Physics execution error:', error);
-      }
-    },
-    [physics, props],
-  );
+        window.addEventListener('gaesup:teleport', handleTeleport as EventListener);
+        document.addEventListener('teleport-request', handleTeleport as EventListener);
 
-  useFrame((state, delta) => {
-    if (!physics.isReady || !isInitializedRef.current) return;
-    
-    if (physics.blockControl) {
-      props.rigidBodyRef?.current?.resetForces(false);
-      props.rigidBodyRef?.current?.resetTorques(false);
-      return;
-    }
-    
-    executePhysics(state, delta);
-  });
+        return () => {
+            window.removeEventListener('gaesup:teleport', handleTeleport as EventListener);
+            document.removeEventListener('teleport-request', handleTeleport as EventListener);
+        };
+    }, [props.rigidBodyRef]);
+
+    const executePhysics = useCallback(
+        (state: RootState, delta: number) => {
+            try {
+                if (!physics.worldContext || !physics.input || !physicsEngine.current || !stateEngineRef.current)
+                    return;
+
+                if (!physicsStateRef.current) {
+                    const worldContext = physics.worldContext as StoreState;
+                    const modeType = worldContext.mode?.type || 'character';
+                    const activeStateRef = stateEngineRef.current.getActiveStateRef();
+                    const gameStatesRef = stateEngineRef.current.getGameStatesRef();
+
+                    physicsStateRef.current = {
+                        activeState: activeStateRef,
+                        gameStates: gameStatesRef,
+                        keyboard: { ...physics.input.keyboard },
+                        mouse: {
+                            target: mouseTargetRef.current.copy(physics.input.mouse.target),
+                            angle: physics.input.mouse.angle,
+                            isActive: physics.input.mouse.isActive,
+                            shouldRun: physics.input.mouse.shouldRun,
+                        },
+                        characterConfig: worldContext.character || {},
+                        vehicleConfig: worldContext.vehicle || {},
+                        airplaneConfig: worldContext.airplane || {},
+                        automationOption: worldContext.automation || {
+                            isActive: false,
+                            queue: {
+                                actions: [],
+                                currentIndex: 0,
+                                isRunning: false,
+                                isPaused: false,
+                                loop: false,
+                                maxRetries: 3
+                            },
+                            settings: {
+                                trackProgress: false,
+                                autoStart: false,
+                                loop: false,
+                                showVisualCues: false
+                            }
+                        },
+                        modeType: modeType as 'character' | 'vehicle' | 'airplane',
+                    };
+
+                    if (props.rigidBodyRef?.current && activeStateRef) {
+                        props.rigidBodyRef.current.lockRotations(false, true);
+                        activeStateRef.euler.set(0, 0, 0);
+                        props.rigidBodyRef.current.setTranslation(
+                            {
+                                x: activeStateRef.position.x,
+                                y: activeStateRef.position.y + 5,
+                                z: activeStateRef.position.z,
+                            },
+                            true,
+                        );
+                    }
+                } else {
+                    updateInputState(physicsStateRef.current, physics.input);
+                    if (physicsStateRef.current && stateEngineRef.current) {
+                        physicsStateRef.current.activeState = stateEngineRef.current.getActiveStateRef();
+                        physicsStateRef.current.gameStates = stateEngineRef.current.getGameStatesRef();
+                    }
+                }
+
+                const calcProp: PhysicsCalcProps = {
+                    rigidBodyRef: props.rigidBodyRef,
+                    innerGroupRef: props.innerGroupRef,
+                    state,
+                    delta,
+                    worldContext: physics.worldContext,
+                    dispatch: physics.dispatch,
+                    matchSizes: matchSizesRef.current || (matchSizesRef.current = physics.getSizesByUrls() as SizesType),
+                    inputRef: { current: physics.input },
+                    setKeyboardInput: physics.setKeyboardInput,
+                    setMouseInput: physics.setMouseInput,
+                };
+
+                physicsEngine.current.calculate(calcProp, physicsStateRef.current);
+            } catch (error) {
+                console.error('Physics execution error:', error);
+            }
+        },
+        [physics, props],
+    );
+
+    useFrame((state, delta) => {
+        if (!physics.isReady || !isInitializedRef.current) return;
+        executePhysics(state, delta);
+    });
 }; 

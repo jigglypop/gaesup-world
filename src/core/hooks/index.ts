@@ -6,3 +6,4 @@ export * from './useRideable';
 export * from './useTeleport';
 export * from './useGaesupContext';
 export * from './useCursorState';
+export * from './useGenericRefs';

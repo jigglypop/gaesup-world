@@ -3,8 +3,8 @@ import { vec3 } from '@react-three/rapier';
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { PhysicsEntity } from '../entities/refs/PhysicsEntity';
 import { EntityControllerProps } from './types';
-import { useGenericRefs } from '../entities/utils/useGenericRefs';
 import { useStateEngine } from '../hooks/useStateEngine';
+import { useGenericRefs } from '@hooks/useGenericRefs';
 
 export function EntityController({ props, children }: EntityControllerProps) {
   const mode = useGaesupStore((state) => state.mode);
