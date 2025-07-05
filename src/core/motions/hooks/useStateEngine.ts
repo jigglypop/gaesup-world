@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
-import { StateEngine } from '../core/engine/StateEngine';
+import { EntityStateManager } from '../core/engine/EntityStateManager';
 import { ActiveStateType } from '../core/types';
 import { GameStatesType } from '../../world/components/Rideable/types';
 
@@ -12,41 +12,48 @@ export interface UseStateEngineResult {
     resetGameStates: () => void;
 }
 
+let globalStateManager: EntityStateManager | null = null;
+
+export function getGlobalStateManager(): EntityStateManager {
+    if (!globalStateManager) {
+        globalStateManager = new EntityStateManager();
+    }
+    return globalStateManager;
+}
 
 export function useStateEngine(): UseStateEngineResult {
-    const stateEngineRef = useRef<StateEngine | null>(null);
+    const stateManagerRef = useRef<EntityStateManager | null>(null);
     const [, forceUpdate] = useState({});
-
-    if (!stateEngineRef.current) {
-        stateEngineRef.current = StateEngine.getInstance();
+    if (!stateManagerRef.current) {
+        stateManagerRef.current = getGlobalStateManager();
     }
 
-    const activeState = stateEngineRef.current.getActiveStateRef();
-    const gameStates = stateEngineRef.current.getGameStatesRef();
+    const activeState = stateManagerRef.current.getActiveState();
+    const gameStates = stateManagerRef.current.getGameStates();
 
     const updateActiveState = useCallback((updates: Partial<ActiveStateType>) => {
-        stateEngineRef.current?.updateActiveState(updates);
+        stateManagerRef.current?.updateActiveState(updates);
         forceUpdate({});
     }, []);
 
     const updateGameStates = useCallback((updates: Partial<GameStatesType>) => {
-        stateEngineRef.current?.updateGameStates(updates);
+        stateManagerRef.current?.updateGameStates(updates);
         forceUpdate({});
     }, []);
 
     const resetActiveState = useCallback(() => {
-        stateEngineRef.current?.resetActiveState();
+        stateManagerRef.current?.resetActiveState();
         forceUpdate({});
     }, []);
 
     const resetGameStates = useCallback(() => {
-        stateEngineRef.current?.resetGameStates();
+        stateManagerRef.current?.resetGameStates();
         forceUpdate({});
     }, []);
 
     useEffect(() => {
         return () => {
-            stateEngineRef.current = null;
+            stateManagerRef.current = null;
         };
     }, []);
 

@@ -1,59 +1,49 @@
 import * as THREE from 'three';
+import { EntityStateRefs } from './types';
 import { ActiveStateType } from '../types';
-import { GameStatesType } from '../../../world/components/Rideable/types';
+import { GameStatesType } from '@core/world/components/Rideable/types';
 
-export interface StateEngineRefs {
-  activeState: ActiveStateType;
-  gameStates: GameStatesType;
-}
+export class EntityStateManager {
+  private refs: EntityStateRefs;
 
-export class StateEngine {
-  private static instance: StateEngine | null = null;
-  private refs: StateEngineRefs = {
-    activeState: {
-      position: new THREE.Vector3(),
-      quaternion: new THREE.Quaternion(),
-      euler: new THREE.Euler(),
-      velocity: new THREE.Vector3(),
-      direction: new THREE.Vector3(),
-      dir: new THREE.Vector3(),
-      angular: new THREE.Vector3(),
-      isGround: false,
-    },
-    gameStates: {
-      canRide: false,
-      isRiding: false,
-      isJumping: false,
-      isFalling: false,
-      isMoving: false,
-      isRunning: false,
-      isNotMoving: true,
-      isNotRunning: true,
-      isOnTheGround: true,
-      nearbyRideable: undefined,
-      currentRideable: undefined,
-      rideableDistance: undefined,
-    },
-  };
-  
-  private constructor() {}
-  
-  static getInstance(): StateEngine {
-    if (!StateEngine.instance) {
-      StateEngine.instance = new StateEngine();
-    }
-    return StateEngine.instance;
+  constructor() {
+    this.refs = {
+      activeState: {
+        position: new THREE.Vector3(),
+        quaternion: new THREE.Quaternion(),
+        euler: new THREE.Euler(),
+        velocity: new THREE.Vector3(),
+        direction: new THREE.Vector3(),
+        dir: new THREE.Vector3(),
+        angular: new THREE.Vector3(),
+        isGround: false,
+      },
+      gameStates: {
+        canRide: false,
+        isRiding: false,
+        isJumping: false,
+        isFalling: false,
+        isMoving: false,
+        isRunning: false,
+        isNotMoving: true,
+        isNotRunning: true,
+        isOnTheGround: true,
+        nearbyRideable: undefined,
+        currentRideable: undefined,
+        rideableDistance: undefined,
+      },
+    };
   }
   
-  getActiveStateRef(): ActiveStateType {
+  getActiveState(): ActiveStateType {
     return this.refs.activeState;
   }
   
-  getGameStatesRef(): GameStatesType {
+  getGameStates(): GameStatesType {
     return this.refs.gameStates;
   }
   
-  getRefs(): StateEngineRefs {
+  getState(): EntityStateRefs {
     return this.refs;
   }
   
@@ -91,9 +81,12 @@ export class StateEngine {
     this.refs.gameStates.rideableDistance = undefined;
   }
   
-  dispose(): void {
+  reset(): void {
     this.resetActiveState();
     this.resetGameStates();
-    StateEngine.instance = null;
+  }
+  
+  dispose(): void {
+    this.reset();
   }
 } 

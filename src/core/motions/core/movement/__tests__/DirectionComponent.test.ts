@@ -34,7 +34,7 @@ describe('DirectionComponent', () => {
         wheel: 0,
         position: new THREE.Vector2()
       })
-    } as any;
+    } as unknown as jest.Mocked<InteractionEngine>;
     
     (InteractionEngine.getInstance as jest.Mock).mockReturnValue(mockInteractionEngine);
     directionComponent = new DirectionComponent();
@@ -42,8 +42,8 @@ describe('DirectionComponent', () => {
 
   const createMockState = (
     modeType: 'character' | 'vehicle' | 'airplane',
-    keyboard: any = {},
-    mouse: any = {}
+    keyboard: Partial<PhysicsState['keyboard']> = {},
+    mouse: Partial<PhysicsState['mouse']> = {}
   ): PhysicsState => ({
     modeType,
     keyboard,
@@ -57,7 +57,7 @@ describe('DirectionComponent', () => {
     characterConfig: {},
     vehicleConfig: {},
     airplaneConfig: {}
-  } as any);
+  } as PhysicsState);
 
   it('캐릭터 모드 + 키보드 입력 시 activeState.dir과 euler.y가 변경되어야 합니다.', () => {
     mockInteractionEngine.getKeyboardRef.mockReturnValue({

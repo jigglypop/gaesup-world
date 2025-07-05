@@ -47,7 +47,10 @@ export interface NPCInstance {
   metadata?: {
     modelUrl?: string; // 인스턴스별 전체 모델 URL
     nameTag?: string;
-    [key: string]: any;
+    health?: number;
+    level?: number;
+    faction?: string;
+    dialogue?: string[];
   };
   events?: NPCEvent[];
 }

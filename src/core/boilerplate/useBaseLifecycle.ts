@@ -1,12 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { AbstractBridge, IDisposable } from './AbstractBridge';
-
-export interface UseBaseLifecycleOptions<EngineType> {
-  onRegister?: (engine: EngineType) => void | (() => void);
-  onUnregister?: (engine: EngineType) => void;
-  dependencies?: any[];
-  enabled?: boolean;
-}
+import { AbstractBridge } from './AbstractBridge';
+import { IDisposable, UseBaseLifecycleOptions } from './types';
 
 /**
  * 엔티티의 생명주기에 맞춰 Bridge에 등록/해제하는 로직을 캡슐화한 제네릭 훅.

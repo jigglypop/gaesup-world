@@ -8,11 +8,11 @@ export function MotionDebugPanel() {
   const metrics = useGaesupStore((state) => state.metrics);
   const config = useGaesupStore((state) => state.config);
   
-  const formatValue = (field: DebugField, value: any, precision: number = 2): string => {
+  const formatValue = (field: DebugField, value: string | number | { x: number; y: number; z: number } | boolean | null | undefined, precision: number = 2): string => {
     if (value === null || value === undefined) return 'N/A';
     switch (field.type) {
       case 'vector3':
-        if (value.x !== undefined) {
+        if (typeof value === 'object' && value !== null && 'x' in value && 'y' in value && 'z' in value) {
           return `X:${value.x.toFixed(precision)} Y:${value.y.toFixed(precision)} Z:${value.z.toFixed(precision)}`;
         }
         return String(value);
@@ -26,7 +26,7 @@ export function MotionDebugPanel() {
   };
 
 
-  const getCurrentValue = (field: DebugField): any => {
+  const getCurrentValue = (field: DebugField): string | number | { x: number; y: number; z: number } | boolean => {
     switch (field.key) {
       case 'motionType':
         return motion?.type || 'character';
@@ -41,7 +41,9 @@ export function MotionDebugPanel() {
       case 'isMoving':
         return motion?.velocity ? Math.abs(motion.velocity.x) + Math.abs(motion.velocity.z) > 0.1 : false;
       default:
-        return (metrics as any)[field.key] || (config as any)[field.key] || 'N/A';
+        const metricsValue = metrics && field.key in metrics ? (metrics as Record<string, unknown>)[field.key] : undefined;
+        const configValue = config && field.key in config ? (config as Record<string, unknown>)[field.key] : undefined;
+        return metricsValue || configValue || 'N/A';
     }
   };
 

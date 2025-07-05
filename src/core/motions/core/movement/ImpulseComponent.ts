@@ -1,18 +1,15 @@
 import { RefObject } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
-import { StateEngine } from '../engine/StateEngine';
+import { EntityStateManager } from '../engine/EntityStateManager';
 import { InteractionEngine } from '@core/interactions/core/InteractionEngine';
 import { PhysicsState } from '../../types';
 
 export class ImpulseComponent {
-  private readonly EPSILON = 0.01;
-  private readonly EPSILON_VERTICAL = 0.1;
-  private readonly BRAKE_THRESHOLD = 0.2;
-  private stateEngine: StateEngine;
+  private stateEngine: EntityStateManager;
   private interactionEngine: InteractionEngine;
 
   constructor() {
-    this.stateEngine = StateEngine.getInstance();
+    this.stateEngine = new EntityStateManager();
     this.interactionEngine = InteractionEngine.getInstance();
   }
 

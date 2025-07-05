@@ -6,17 +6,19 @@ import { RefObject, useEffect, useRef } from 'react';
 import { CollisionEnterPayload, CollisionExitPayload, RapierRigidBody } from '@react-three/rapier';
 import { getGlobalAnimationBridge } from '../../animation/hooks/useAnimationBridge';
 import { MotionBridge } from '../bridge/MotionBridge';
+import { MotionCommand } from '../bridge/types';
 import { useAnimationPlayer } from '../../hooks';
 import { UsePhysicsEntityProps } from './types';
 import { useCallback} from 'react';
 import { useFrame, RootState } from '@react-three/fiber';
 import { PhysicsState, PhysicsCalculationProps } from '../types';
-import { PhysicsEngine } from '../core/engine/PhysicsEngine';
+import { PhysicsSystem } from '../core/engine/PhysicsSystem';
 import { SizesType } from '../../stores/slices/sizes';
 import { PhysicsCalcProps } from '../core/types';
 import { StoreState } from '../../stores/types';
 import * as THREE from 'three';
-import { StateEngine } from '../core/engine/StateEngine';
+import { EntityStateManager } from '../core/engine/EntityStateManager';
+import { getGlobalStateManager } from './useStateEngine';
 
 const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps): void => {
     const keyboardKeys: (keyof typeof state.keyboard)[] = [
@@ -32,6 +34,7 @@ const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps): 
 
     for (let i = 0; i < keyboardKeys.length; i++) {
         const key = keyboardKeys[i];
+        if (!key) continue;
         if (state.keyboard[key] !== input.keyboard[key]) {
             state.keyboard[key] = input.keyboard[key];
         }
@@ -53,37 +56,28 @@ const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps): 
 export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
     const physics = usePhysics();
     const physicsStateRef = useRef<PhysicsState | null>(null);
-    const physicsEngine = useRef<PhysicsEngine | null>(null);
+    const physicsSystem = useRef<PhysicsSystem | null>(null);
     const isInitializedRef = useRef(false);
     const mouseTargetRef = useRef(new THREE.Vector3());
     const matchSizesRef = useRef<SizesType | null>(null);
-    const stateEngineRef = useRef<StateEngine | null>(null);
+    const stateManagerRef = useRef<EntityStateManager | null>(null);
+    const store = useGaesupStore();
 
     useEffect(() => {
-        if (!isInitializedRef.current && physics.worldContext) {
-            physicsEngine.current = new PhysicsEngine({
-                character: physics.worldContext.character,
-                vehicle: physics.worldContext.vehicle,
-                airplane: physics.worldContext.airplane
+        if (!isInitializedRef.current) {
+            physicsSystem.current = new PhysicsSystem({
+                config: store.physics
             });
-            stateEngineRef.current = StateEngine.getInstance();
+            stateManagerRef.current = getGlobalStateManager();
             isInitializedRef.current = true;
         }
-    }, [physics.worldContext]);
+    }, [store.physics]);
 
     useEffect(() => {
-        if (physicsEngine.current && physics.worldContext) {
-            physicsEngine.current.updateConfig({
-                character: physics.worldContext.character,
-                vehicle: physics.worldContext.vehicle,
-                airplane: physics.worldContext.airplane
-            });
+        if (physicsSystem.current) {
+            physicsSystem.current.updateConfig(store.physics);
         }
-    }, [
-        physics.worldContext?.character,
-        physics.worldContext?.vehicle,
-        physics.worldContext?.airplane
-    ]);
+    }, [store.physics]);
 
     useEffect(() => {
         const handleTeleport = (event: CustomEvent) => {
@@ -118,14 +112,14 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
     const executePhysics = useCallback(
         (state: RootState, delta: number) => {
             try {
-                if (!physics.worldContext || !physics.input || !physicsEngine.current || !stateEngineRef.current)
+                if (!physics.isReady || !physicsSystem.current || !stateManagerRef.current)
                     return;
 
                 if (!physicsStateRef.current) {
                     const worldContext = physics.worldContext as StoreState;
                     const modeType = worldContext.mode?.type || 'character';
-                    const activeStateRef = stateEngineRef.current.getActiveStateRef();
-                    const gameStatesRef = stateEngineRef.current.getGameStatesRef();
+                    const activeStateRef = stateManagerRef.current.getActiveState();
+                    const gameStatesRef = stateManagerRef.current.getGameStates();
 
                     physicsStateRef.current = {
                         activeState: activeStateRef,
@@ -158,6 +152,7 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
                             }
                         },
                         modeType: modeType as 'character' | 'vehicle' | 'airplane',
+                        delta,
                     };
 
                     if (props.rigidBodyRef?.current && activeStateRef) {
@@ -174,9 +169,10 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
                     }
                 } else {
                     updateInputState(physicsStateRef.current, physics.input);
-                    if (physicsStateRef.current && stateEngineRef.current) {
-                        physicsStateRef.current.activeState = stateEngineRef.current.getActiveStateRef();
-                        physicsStateRef.current.gameStates = stateEngineRef.current.getGameStatesRef();
+                    if (physicsStateRef.current && stateManagerRef.current) {
+                        physicsStateRef.current.activeState = stateManagerRef.current.getActiveState();
+                        physicsStateRef.current.gameStates = stateManagerRef.current.getGameStates();
+                        physicsStateRef.current.delta = delta;
                     }
                 }
 
@@ -193,7 +189,11 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
                     setMouseInput: physics.setMouseInput,
                 };
 
-                physicsEngine.current.calculate(calcProp, physicsStateRef.current);
+                physicsSystem.current.update({
+                  deltaTime: delta,
+                  calcProp,
+                  physicsState: physicsStateRef.current
+                });
             } catch (error) {
                 console.error('Physics execution error:', error);
             }
@@ -245,11 +245,11 @@ export function usePhysicsEntity({
     useEffect(() => {
         if (actions && modeType && isActive && !animationBridgeRef.current) {
             const animationBridge = getGlobalAnimationBridge();
-            animationBridge.registerAnimations(modeType as any, actions);
+            animationBridge.registerAnimations(modeType as 'character' | 'vehicle' | 'airplane', actions);
             animationBridgeRef.current = true;
             return () => {
                 if (animationBridgeRef.current) {
-                    animationBridge.unregisterAnimations(modeType as any);
+                    animationBridge.unregisterAnimations(modeType as 'character' | 'vehicle' | 'airplane');
                     animationBridgeRef.current = false;
                 }
             };
@@ -328,7 +328,7 @@ export function usePhysicsEntity({
         }
     }, [onFrame, onAnimate, actions]);
 
-    const executeMotionCommand = (command: any) => {
+    const executeMotionCommand = (command: MotionCommand) => {
         if (registeredRef.current && isActive) {
             const motionBridge = getGlobalMotionBridge();
             motionBridge.execute(entityIdRef.current, command);
@@ -375,7 +375,7 @@ export function usePhysics() {
         input: {
             keyboard: interaction.keyboard,
             mouse: interaction.mouse,
-            rigidBodyRef: { current: null } as any,
+            rigidBodyRef: { current: null } as RefObject<RapierRigidBody>,
         },
         interaction,
         urls,

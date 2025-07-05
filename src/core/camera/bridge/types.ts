@@ -15,7 +15,12 @@ export interface CameraEngineConfig {
   fov: number;
   zoom: number;
   enableCollision: boolean;
-  [key: string]: any;
+  minDistance?: number;
+  maxDistance?: number;
+  offset?: { x: number; y: number; z: number };
+  lookAt?: { x: number; y: number; z: number };
+  damping?: number;
+  enableDamping?: boolean;
 }
 
 export interface ICameraEngineMonitor {

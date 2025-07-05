@@ -1,16 +1,10 @@
 import { useMemo, RefObject, useCallback, useRef } from 'react';
-import { AbstractBridge, IDisposable } from './AbstractBridge';
-import { ManagedEntity, ManagedEntityOptions } from './ManagedEntity';
+import { AbstractBridge } from './AbstractBridge';
+import { ManagedEntity} from './ManagedEntity';
 import { useBaseLifecycle } from './useBaseLifecycle';
 import { useBaseFrame } from './useBaseFrame';
+import { IDisposable, UseManagedEntityOptions } from './types';
 
-export interface UseManagedEntityOptions extends ManagedEntityOptions {
-  onInit?: <T extends ManagedEntity<any, any, any>>(entity: T) => void;
-  onDispose?: <T extends ManagedEntity<any, any, any>>(entity: T) => void;
-  skipLifecycle?: boolean;
-  skipFrame?: boolean;
-  frameCallback?: () => void;
-}
 
 /**
  * 엔티티 관리에 필요한 모든 것을 생성하고 연결하는 팩토리 훅.

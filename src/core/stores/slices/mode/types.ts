@@ -9,9 +9,15 @@ export type CameraType =
   | 'top-down'
   | 'side-scroll';
 
-export type ControllerOptionsType = {
-  [key: string]: any;
-};
+export interface ControllerOptionsType {
+  sensitivity?: number;
+  invertY?: boolean;
+  deadzone?: number;
+  acceleration?: number;
+  maxSpeed?: number;
+  jumpHeight?: number;
+  enableVibration?: boolean;
+}
 
 export interface ModeState {
   modeType: ModeType;

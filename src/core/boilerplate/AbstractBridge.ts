@@ -1,25 +1,4 @@
-export type IDisposable = {
-  dispose(): void;
-};
-
-export type BridgeEventType = 'register' | 'unregister' | 'execute' | 'snapshot' | 'error';
-
-export interface BridgeEvent<EngineType, SnapshotType, CommandType> {
-  type: BridgeEventType;
-  id: string;
-  timestamp: number;
-  data?: {
-    engine?: EngineType;
-    command?: CommandType;
-    snapshot?: SnapshotType;
-    error?: Error;
-  };
-}
-
-export type BridgeMiddleware<EngineType, SnapshotType, CommandType> = (
-  event: BridgeEvent<EngineType, SnapshotType, CommandType>,
-  next: () => void
-) => void;
+import { IDisposable, BridgeEventType, BridgeEvent, BridgeMiddleware } from './types';
 
 /**
  * 도메인 브릿지의 추상 클래스.

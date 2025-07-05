@@ -1,11 +1,5 @@
-import { AbstractBridge, IDisposable, BridgeEvent } from './AbstractBridge';
-
-export interface ManagedEntityOptions {
-  enableCommandQueue?: boolean;
-  maxQueueSize?: number;
-  enableStateCache?: boolean;
-  cacheTimeout?: number;
-}
+import { AbstractBridge } from './AbstractBridge';
+import { BridgeEvent, IDisposable, ManagedEntityOptions } from './types';
 
 /**
  * 브릿지를 통해 엔진/ref를 관리하는 제네릭 유틸리티 클래스.

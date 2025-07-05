@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { MotionType } from '@core/motions/core/engine/types';
 import { RapierRigidBody } from '@react-three/rapier';
-import { MotionEngine } from '@core/motions/core/engine/MotionEngine';
+import { MotionSystem } from '@/core/motions/core/engine/MotionSystem';
 
 export type MotionEntity = {
-  engine: MotionEngine;
+  engine: MotionSystem;
   rigidBody: RapierRigidBody;
   type: MotionType;
   dispose: () => void;

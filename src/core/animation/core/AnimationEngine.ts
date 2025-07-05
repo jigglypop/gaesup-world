@@ -101,6 +101,7 @@ export class AnimationEngine {
       currentAction.timeScale = scale;
       this.notifyCallbacks();
     }
+
   }
 
   update(deltaTime: number): void {
@@ -160,3 +161,4 @@ export class AnimationEngine {
     this.callbacks.clear();
   }
 }
+

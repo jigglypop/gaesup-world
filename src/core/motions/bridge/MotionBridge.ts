@@ -1,5 +1,5 @@
 import { AbstractBridge } from '@core/boilerplate';
-import { MotionEngine } from '@core/motions/core/engine/MotionEngine';
+import { MotionSystem } from '@/core/motions/core/engine/MotionSystem';
 import { euler, RapierRigidBody, vec3 } from '@react-three/rapier';
 import { MotionCommand, MotionEntity, MotionSnapshot } from './types';
 import { MotionType } from '@core/motions/core/engine/types';
@@ -8,7 +8,7 @@ import { GameStatesType } from '@/core/world/components/Rideable/types';
 export class MotionBridge extends AbstractBridge<MotionEntity, MotionSnapshot, MotionCommand> {
   protected buildEngine(_: string, type: MotionType, rigidBody: RapierRigidBody): MotionEntity | null {
     if (!type || !rigidBody) return null;
-    const engine = new MotionEngine(type);
+    const engine = new MotionSystem({ type });
     return {
       engine,
       rigidBody,

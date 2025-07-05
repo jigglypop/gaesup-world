@@ -1,13 +1,7 @@
 import { useFrame } from '@react-three/fiber';
-import { AbstractBridge, IDisposable } from './AbstractBridge';
+import { AbstractBridge } from './AbstractBridge';
 import { useRef, useCallback } from 'react';
-
-export interface UseBaseFrameOptions {
-  priority?: number;
-  enabled?: boolean;
-  throttle?: number;
-  skipWhenHidden?: boolean;
-}
+import { IDisposable, UseBaseFrameOptions } from './types';
 
 /**
  * 매 프레임마다 Bridge에 스냅샷 업데이트를 요청하는 제네릭 훅.
