@@ -85,19 +85,30 @@ export abstract class AbstractBridge<
   }
 
   /**
-   * 엔진/ref를 브릿지에 등록합니다.
+   * 엔진/ref를 빌드하고 브릿지에 등록합니다.
    * @param id - 엔티티의 고유 ID.
-   * @param engine - 관리할 엔진 또는 ref 객체.
+   * @param args - 엔진 빌드에 필요한 인자들.
    */
-  register(id: string, engine: EngineType): void {
-    this.engines.set(id, engine);
-    this.emit({
-      type: 'register',
-      id,
-      timestamp: Date.now(),
-      data: { engine }
-    });
+  register(id: string, ...args: any[]): void {
+    const engine = this.buildEngine(id, ...args);
+    if (engine) {
+      this.engines.set(id, engine);
+      this.emit({
+        type: 'register',
+        id,
+        timestamp: Date.now(),
+        data: { engine }
+      });
+    }
   }
+
+  /**
+   * 엔진 인스턴스를 생성합니다. 하위 클래스에서 구현해야 합니다.
+   * @param id - 엔티티 ID.
+   * @param args - 생성에 필요한 인자들.
+   * @returns 생성된 엔진 인스턴스 또는 null.
+   */
+  protected abstract buildEngine(id: string, ...args: any[]): EngineType | null;
 
   /**
    * 등록된 엔진/ref를 제거하고 dispose를 호출합니다.
@@ -123,15 +134,45 @@ export abstract class AbstractBridge<
   }
 
   /**
-   * 특정 엔진/ref에 명령을 실행합니다. (구현 필요)
+   * 특정 엔진/ref에 명령을 실행합니다.
+   * 이 메서드는 보일러플레이트 로직을 처리하고,
+   * 하위 클래스는 `executeCommand`를 구현해야 합니다.
    */
-  abstract execute(id: string, command: CommandType): void;
+  execute(id: string, command: CommandType): void {
+    const engine = this.getEngine(id);
+    if (!engine) return;
+
+    this.emit({ type: 'execute', id, timestamp: Date.now(), data: { command } });
+    this.executeCommand(engine, command, id);
+    this.notifyListeners(id);
+  }
 
   /**
-   * 특정 엔진/ref의 현재 상태 스냅샷을 반환합니다. (구현 필요)
+   * 실제 명령 실행 로직. 하위 클래스에서 구현해야 합니다.
    */
-  abstract snapshot(id: string): Readonly<SnapshotType> | null;
-  
+  protected abstract executeCommand(engine: EngineType, command: CommandType, id: string): void;
+
+  /**
+   * 특정 엔진/ref의 현재 상태 스냅샷을 반환합니다.
+   * 이 메서드는 보일러플레이트 로직을 처리하고,
+   * 하위 클래스는 `createSnapshot`을 구현해야 합니다.
+   */
+  snapshot(id: string): Readonly<SnapshotType> | null {
+    const engine = this.getEngine(id);
+    if (!engine) return null;
+
+    const snapshot = this.createSnapshot(engine, id);
+    if (snapshot) {
+      this.emit({ type: 'snapshot', id, timestamp: Date.now(), data: { snapshot } });
+    }
+    return snapshot;
+  }
+
+  /**
+   * 실제 스냅샷 생성 로직. 하위 클래스에서 구현해야 합니다.
+   */
+  protected abstract createSnapshot(engine: EngineType, id: string): SnapshotType | null;
+
   /**
    * 캐시된 스냅샷을 가져옵니다.
    */

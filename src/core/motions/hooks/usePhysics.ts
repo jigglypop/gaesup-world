@@ -259,7 +259,7 @@ export function usePhysicsEntity({
     useEffect(() => {
         if (isActive && rigidBodyRef && !registeredRef.current && rigidBodyRef.current) {
             const motionBridge = getGlobalMotionBridge();
-            motionBridge.registerEntity(
+            motionBridge.register(
                 entityIdRef.current,
                 modeType === 'vehicle' || modeType === 'airplane'
                     ? 'vehicle'
@@ -268,7 +268,7 @@ export function usePhysicsEntity({
             );
             registeredRef.current = true;
             return () => {
-                motionBridge.unregisterEntity(entityIdRef.current);
+                motionBridge.unregister(entityIdRef.current);
                 registeredRef.current = false;
             };
         }

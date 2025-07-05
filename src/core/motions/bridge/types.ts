@@ -1,5 +1,15 @@
-import { MotionType } from '../core/engine/MotionEngine';
 import * as THREE from 'three';
+import { MotionType } from '@core/motions/core/engine/types';
+import { RapierRigidBody } from '@react-three/rapier';
+import { MotionEngine } from '@core/motions/core/engine/MotionEngine';
+
+export type MotionEntity = {
+  engine: MotionEngine;
+  rigidBody: RapierRigidBody;
+  type: MotionType;
+  dispose: () => void;
+}
+
 
 export type MotionCommand = {
   type: 'move' | 'jump' | 'stop' | 'turn' | 'setConfig' | 'reset';

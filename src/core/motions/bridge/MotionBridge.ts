@@ -1,48 +1,24 @@
-import { MotionEngine, MotionType } from '../core/engine/MotionEngine';
-import { RapierRigidBody } from '@react-three/rapier';
-import * as THREE from 'three';
-import { BaseBridge } from '@utils/BaseBridge';
-import { MotionCommand, MotionSnapshot } from './types';
+import { AbstractBridge } from '@core/boilerplate';
+import { MotionEngine } from '@core/motions/core/engine/MotionEngine';
+import { euler, RapierRigidBody, vec3 } from '@react-three/rapier';
+import { MotionCommand, MotionEntity, MotionSnapshot } from './types';
+import { MotionType } from '@core/motions/core/engine/types';
+import { GameStatesType } from '@/core/world/components/Rideable/types';
 
-export class MotionBridge extends BaseBridge<
-  MotionEngine,
-  MotionSnapshot,
-  MotionCommand
-> {
-  private rigidBodies: Map<string, RapierRigidBody>;
-  private tempPosition: THREE.Vector3;
-  private tempVelocity: THREE.Vector3;
-  private tempQuaternion: THREE.Quaternion;
-  private tempEuler: THREE.Euler;
-
-  constructor() {
-    super();
-    this.rigidBodies = new Map();
-    this.tempPosition = new THREE.Vector3();
-    this.tempVelocity = new THREE.Vector3();
-    this.tempQuaternion = new THREE.Quaternion();
-    this.tempEuler = new THREE.Euler();
-  }
-
-  registerEntity(
-    id: string,
-    type: MotionType,
-    rigidBody: RapierRigidBody
-  ): void {
+export class MotionBridge extends AbstractBridge<MotionEntity, MotionSnapshot, MotionCommand> {
+  protected buildEngine(_: string, type: MotionType, rigidBody: RapierRigidBody): MotionEntity | null {
+    if (!type || !rigidBody) return null;
     const engine = new MotionEngine(type);
-    this.addEngine(id, engine);
-    this.rigidBodies.set(id, rigidBody);
+    return {
+      engine,
+      rigidBody,
+      type,
+      dispose: () => engine.dispose()
+    };
   }
 
-  unregisterEntity(id: string): void {
-    this.removeEngine(id);
-    this.rigidBodies.delete(id);
-  }
-
-  execute(entityId: string, command: MotionCommand): void {
-    const engine = this.getEngine(entityId);
-    const rigidBody = this.rigidBodies.get(entityId);
-    if (!engine || !rigidBody) return;
+  protected executeCommand(entity: MotionEntity, command: MotionCommand, _: string): void {
+    const { engine, rigidBody } = entity;
     switch (command.type) {
       case 'move':
         if (command.data?.movement) {
@@ -50,19 +26,14 @@ export class MotionBridge extends BaseBridge<
         }
         break;
       case 'jump':
-        const jumpForce = engine.calculateJump();
+        const jumpForce = engine.calculateJump({ jumpSpeed: 12 }, {} as GameStatesType);
         if (jumpForce.length() > 0) {
           engine.applyForce(jumpForce, rigidBody);
         }
         break;
       case 'stop':
-        const currentVel = rigidBody.linvel();
-        rigidBody.setLinvel({ x: 0, y: currentVel.y, z: 0 }, true);
-        break;
-      case 'setConfig':
-        if (command.data?.config) {
-          engine.updateConfig(command.data.config);
-        }
+        const vel = rigidBody.linvel();
+        rigidBody.setLinvel({ x: 0, y: vel.y, z: 0 }, true);
         break;
       case 'reset':
         engine.reset();
@@ -70,75 +41,32 @@ export class MotionBridge extends BaseBridge<
         rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
         break;
     }
-    this.notifyListeners(entityId);
   }
 
-  updateEntity(entityId: string, deltaTime: number): void {
-    const engine = this.getEngine(entityId);
-    const rigidBody = this.rigidBodies.get(entityId);
-    if (!engine || !rigidBody) return;
+  protected createSnapshot(entity: MotionEntity, _: string): MotionSnapshot {
+    const { engine, rigidBody, type } = entity;
     const translation = rigidBody.translation();
-    this.tempPosition.set(translation.x, translation.y, translation.z);
-    const linvel = rigidBody.linvel();
-    this.tempVelocity.set(linvel.x, linvel.y, linvel.z);
+    const velocity = rigidBody.linvel();
     const rotation = rigidBody.rotation();
-    this.tempQuaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
-    this.tempEuler.setFromQuaternion(this.tempQuaternion);
-
-    engine.updatePosition(this.tempPosition);
-    engine.updateVelocity(this.tempVelocity);
-    engine.updateRotation(this.tempEuler);
-    engine.update(deltaTime);
-  }
-
-  snapshot(entityId: string): MotionSnapshot | null {
-    const engine = this.getEngine(entityId);
-    if (!engine) return null;
-
-    const state = engine.getState();
-    const metrics = engine.getMetrics();
-    const config = engine.getConfig();
-
-    return {
-      type: 'character',
-      position: state.position.clone(),
-      velocity: state.velocity.clone(),
-      rotation: state.rotation.clone(),
-      isGrounded: state.isGrounded,
-      isMoving: state.isMoving,
-      speed: state.speed,
-      metrics: {
-        currentSpeed: metrics.currentSpeed,
-        averageSpeed: metrics.averageSpeed,
-        totalDistance: metrics.totalDistance,
-        frameTime: metrics.frameTime,
-        isAccelerating: metrics.isAccelerating
-      },
-      config: {
-        maxSpeed: config.maxSpeed,
-        acceleration: config.acceleration,
-        jumpForce: config.jumpForce
-      }
+    const snapshot: MotionSnapshot = {
+      type,
+      position: vec3({ x: translation.x, y: translation.y, z: translation.z }),
+      velocity: vec3({ x: velocity.x, y: velocity.y, z: velocity.z }),
+      rotation: euler({ x: rotation.x, y: rotation.y, z: rotation.z }),
+      isGrounded: engine.getState().isGrounded,
+      isMoving: engine.getState().isMoving,
+      speed: engine.getState().speed,
+      metrics: { ...engine.getMetrics() },
+      config: { maxSpeed: 10, acceleration: 5, jumpForce: 12 } 
     };
-  }
-
-  getAllSnapshots(): Map<string, MotionSnapshot> {
-    const snapshots = new Map<string, MotionSnapshot>();
-    this.engines.forEach((_, entityId) => {
-      const snapshot = this.snapshot(entityId);
-      if (snapshot) {
-        snapshots.set(entityId, snapshot);
-      }
-    });
-    return snapshots;
+    return snapshot;
   }
 
   getActiveEntities(): string[] {
     return Array.from(this.engines.keys());
   }
 
-  dispose(): void {
-    super.dispose();
-    this.rigidBodies.clear();
+  getRigidBody(entityId: string): RapierRigidBody | undefined {
+    return this.getEngine(entityId)?.rigidBody;
   }
 }

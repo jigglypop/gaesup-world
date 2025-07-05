@@ -1,5 +1,6 @@
-import { getGlobalAnimationBridge } from "@hooks/useAnimationBridge";
-import { GameStatesType } from "@stores/types";
+import { getGlobalAnimationBridge } from "@/core/animation/hooks/useAnimationBridge";
+import { GameStatesType } from "@/core/world/components/Rideable/types";
+
 
 export class AnimationController {
   private animationBridge = getGlobalAnimationBridge();
@@ -7,7 +8,6 @@ export class AnimationController {
   update(gameStates: GameStatesType) {
     const { isMoving, isRunning, isJumping, isFalling } = gameStates;
     let newAnimation = "idle";
-
     if (isJumping) {
       newAnimation = "jump_up";
     } else if (isFalling) {
