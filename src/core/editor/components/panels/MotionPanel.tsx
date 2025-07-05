@@ -1,4 +1,5 @@
-import { MotionController, MotionDebugPanel } from '@/core';
+import { MotionDebugPanel } from '@/core';
+import { MotionController } from '@motions/controller/MotionController';
 import React, { useState } from 'react';
 
 

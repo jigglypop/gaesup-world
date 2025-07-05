@@ -35,27 +35,6 @@ export type riderRefType = {
   children ? : React.ReactNode;
   offset ? : THREE.Vector3;
 }
-
-export type InnerGroupRefType = {
-  children ? : React.ReactNode;
-  objectNode: THREE.Object3D;
-  animationRef: RefObject < THREE.Object3D > ;
-  nodes: Record < string, THREE.Object3D > ;
-  url ? : string;
-  skeleton ? : THREE.Skeleton | null;
-  isActive ? : boolean;
-  ridingUrl ? : string;
-  offset ? : THREE.Vector3;
-  parts ? : Part;
-  isRiderOn ? : boolean;
-  enableRiding ? : boolean;
-}
-
-export type Part = {
-  url: string;
-  color ? : string;
-}
-
 export type GroundRay = {
   origin: THREE.Vector3;
   direction: THREE.Vector3;

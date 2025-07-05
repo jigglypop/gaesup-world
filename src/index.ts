@@ -2,7 +2,7 @@ export {
   GaesupWorld,
   GaesupController,
   // Animation
-  AnimationController,
+  
   AnimationDebugPanel,
   // Camera
   Camera,

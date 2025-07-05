@@ -1,0 +1,22 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`WorldEngine R3F Tests should test raycast without creating new objects 1`] = `
+[
+  {
+    "children": [
+      {
+        "children": [],
+        "name": "",
+        "type": "BoxGeometry",
+      },
+      {
+        "children": [],
+        "name": "",
+        "type": "MeshBasicMaterial",
+      },
+    ],
+    "name": "",
+    "type": "Mesh",
+  },
+]
+`;

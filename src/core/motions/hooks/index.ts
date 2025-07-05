@@ -1,5 +1,4 @@
-export * from './usePhysicsLoop';
-export * from './usePhysicsEntity';
+export * from './usePhysics';
 export * from './useGaesupGltf';
+export * from './useInteractionEngine';
 export * from './useStateEngine';
-export * from './useInteractionEngine'; 

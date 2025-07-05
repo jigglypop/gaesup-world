@@ -103,6 +103,5 @@ export const useGaesupGltf = (): GaesupGltfUtils => {
   );
   const preloadSizes = useCallback((urls: string[]) => {
   }, []);
-
   return { getSizesByUrls, preloadSizes };
 };

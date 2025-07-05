@@ -18,7 +18,6 @@ export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THRE
       }
     });
   }
-
   return (
     <group receiveShadow castShadow ref={ref} userData={{ intangible: true }}>
       {props.children}
@@ -31,7 +30,7 @@ export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THRE
           ref={props.animationRef}
         />
       )}
-      <ModelRenderer nodes={props.nodes} skeleton={props.skeleton!!} url={props.url || ''} />
+      <ModelRenderer nodes={props.nodes} skeleton={props.skeleton!!} url={props.url || ''} color={props?.parts?.color} />
     </group>
   );
 });

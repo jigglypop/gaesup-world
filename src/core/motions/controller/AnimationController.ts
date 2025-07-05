@@ -1,10 +1,9 @@
-import { getGlobalAnimationBridge } from "@/core/animation/hooks/useAnimationBridge";
+import { getGlobalAnimationBridge } from "@hooks/useAnimationBridge";
 import { GameStatesType } from "@stores/types";
 
 export class AnimationController {
   private animationBridge = getGlobalAnimationBridge();
   private lastAnimation = "idle";
-
   update(gameStates: GameStatesType) {
     const { isMoving, isRunning, isJumping, isFalling } = gameStates;
     let newAnimation = "idle";

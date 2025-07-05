@@ -1,11 +1,10 @@
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
 import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three/rapier';
-import { RefObject, forwardRef, useMemo } from 'react';
+import { forwardRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 import { useGltfAndSize, usePhysicsEntity } from '../../hooks';
-import { RidingAnimation, VehicleAnimation } from '../animations';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
 import { PhysicsEntityProps, SetGroundRayType } from '../types';
@@ -24,7 +23,6 @@ export function useSetGroundRay() {
   };
 }
 
-
 export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
   (props, rigidBodyRef) => {
     const { size } = useGltfAndSize({ url: props.url || '' });
@@ -32,8 +30,6 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const { scene, animations } = useGLTF(props.url);
     const { actions, ref: animationRef } = useAnimations(animations);
     const {
-      mode,
-      isRiding,
       handleIntersectionEnter,
       handleIntersectionExit,
       handleCollisionEnter
@@ -87,12 +83,12 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
 
     return (
       <group ref={props.outerGroupRef} userData={{ intangible: true }}>
-        {props.ridingUrl && mode.type !== 'character' && (
+        {/* {props.ridingUrl && mode.type !== 'character' && (
           <RidingAnimation url={props.ridingUrl} active={isRiding} />
         )}
         {(mode?.type === 'vehicle' || mode?.type === 'airplane') && props.isActive && (
           <VehicleAnimation actions={actions} isActive={true} modeType={mode.type} />
-        )}
+        )} */}
         <RigidBody
           canSleep={false}
           ccd={true}

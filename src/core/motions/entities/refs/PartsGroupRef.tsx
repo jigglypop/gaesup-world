@@ -3,8 +3,8 @@ import { useGraph } from '@react-three/fiber';
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
+import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
 import { ModelRendererProps, PartsGroupRefProps } from './types';
-import { useAnimationPlayer } from '@/core/hooks';
 
 export function ModelRenderer({ nodes, color, skeleton, url }: ModelRendererProps) {
   const processedNodes = useMemo(() => {
@@ -68,7 +68,6 @@ export function ModelRenderer({ nodes, color, skeleton, url }: ModelRendererProp
     <>
       {processedNodes.map((nodeData) => {
         if (!nodeData) return null;
-
         if (nodeData.type === 'skinnedMesh') {
           return (
             <skinnedMesh
@@ -98,7 +97,7 @@ export function ModelRenderer({ nodes, color, skeleton, url }: ModelRendererProp
 }
 
 export function PartsGroupRef({ url, isActive, color, skeleton }: PartsGroupRefProps) {
-  const { scene } = useGLTF(url);
+  const { scene } = useGLTF(url) as { scene: THREE.Object3D };
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { nodes } = useGraph(clone);
   useAnimationPlayer(isActive);

@@ -1,4 +1,4 @@
-import { MotionControllerProps } from '../MotionController/types';
+import { MotionControllerProps } from '../../controller/MotionController/types';
 import { MotionDebugPanelProps } from '../MotionDebugPanel/types';
 
 export interface MotionUIProps {
