@@ -17,8 +17,8 @@ const mockAnimationMixer = {
   stopAllAction: jest.fn(),
 };
 
-describe('AnimationEngine', () => {
-  let AnimationEngine: any;
+describe('AnimationSystem', () => {
+  let AnimationSystem: any;
   let engine: any;
   let mockObject: THREE.Object3D;
 
@@ -33,14 +33,14 @@ describe('AnimationEngine', () => {
     });
 
     // Import the class to be tested
-    const module = await import('../AnimationEngine');
-    AnimationEngine = module.AnimationEngine;
+    const module = await import('../AnimationSystem');
+    AnimationSystem = module.AnimationSystem;
 
     // Reset mocks
     jest.clearAllMocks();
 
     // Create a new instance for each test
-    engine = new AnimationEngine();
+    engine = new AnimationSystem();
     mockObject = new THREE.Object3D();
     engine.initializeMixer(mockObject);
   });

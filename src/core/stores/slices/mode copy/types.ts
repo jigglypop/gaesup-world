@@ -12,7 +12,6 @@ export type PhysicsConfigType = {
   turnSpeed?: number;
   walkSpeed?: number;
   runSpeed?: number;
-  linearDamping?: number;
   jumpGravityScale?: number;
   normalGravityScale?: number;
   airDamping?: number;

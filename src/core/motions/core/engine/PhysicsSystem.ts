@@ -3,9 +3,9 @@ import { RapierRigidBody } from '@react-three/rapier';
 import { RefObject } from 'react';
 import { GravityComponent } from '../forces';
 import { ForceComponent } from '../forces/ForceComponent';
-import { EntityStateManager } from './EntityStateManager';
 import { AnimationController } from '../../controller/AnimationController';
 import { PhysicsState, PhysicsCalcProps } from '../types';
+import { GameStatesType } from '@core/world/components/Rideable/types';
 import { PhysicsConfigType } from '@/core/stores/slices/mode copy/types';
 import { AbstractSystem, SystemUpdateArgs } from '@core/boilerplate';
 import { DirectionComponent, ImpulseComponent } from '../movement';
@@ -30,9 +30,9 @@ export interface PhysicsUpdateArgs extends SystemUpdateArgs {
 }
 
 export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSystemMetrics, PhysicsSystemOptions, PhysicsUpdateArgs> {
-  private directionComponent = new DirectionComponent();
-  private impulseComponent = new ImpulseComponent();
-  private gravityComponent = new GravityComponent();
+  private directionComponent: DirectionComponent;
+  private impulseComponent: ImpulseComponent;
+  private gravityComponent: GravityComponent;
   private animationController = new AnimationController();
   private forceComponents: ForceComponent[] = [];
 
@@ -45,9 +45,12 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   private tempEuler = new THREE.Euler();
   private config: PhysicsConfigType;
 
-  constructor(options: PhysicsSystemOptions = {}) {
+  constructor(config: PhysicsConfigType, options: PhysicsSystemOptions = {}) {
     super(defaultState, defaultMetrics, options);
-    this.config = { ...options.config };
+    this.config = config;
+    this.directionComponent = new DirectionComponent(this.config);
+    this.impulseComponent = new ImpulseComponent(this.config);
+    this.gravityComponent = new GravityComponent(this.config);
   }
 
   public updateConfig(newConfig: Partial<PhysicsConfigType>) {
@@ -154,14 +157,14 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
       this.keyStateCache.set(instanceId, { lastKeyE: false, lastKeyR: false });
     }
     const keyState = this.keyStateCache.get(instanceId)!;
-    const keyF = keyboard.keyF;
+    const keyE = keyboard.keyE;
     const gameStatesRef = physicsState.gameStates;
-    if (keyF && !keyState.lastKeyE) {
+    if (keyE && !keyState.lastKeyE) {
       if (gameStatesRef.canRide && !gameStatesRef.isRiding) {
       } else if (gameStatesRef.isRiding) {
       }
     }
-    keyState.lastKeyE = keyF;
+    keyState.lastKeyE = keyE;
     keyState.lastKeyR = false;
   }
 
@@ -278,7 +281,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   public calculateMovement(
     input: { forward: boolean; backward: boolean; leftward: boolean; rightward: boolean; shift: boolean; space: boolean },
     config: PhysicsConfigType,
-    gameStates: ReturnType<EntityStateManager['getGameStatesRef']>,
+    gameStates: GameStatesType,
     deltaTime: number
   ): THREE.Vector3 {
     const movement = new THREE.Vector3();
@@ -296,7 +299,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     return movement;
   }
 
-  public calculateJump(config: PhysicsConfigType, gameStates: ReturnType<EntityStateManager['getGameStatesRef']>, isGrounded: boolean): THREE.Vector3 {
+  public calculateJump(config: PhysicsConfigType, gameStates: GameStatesType, isGrounded: boolean): THREE.Vector3 {
     if (!isGrounded) return new THREE.Vector3();
     gameStates.isJumping = true;
     return new THREE.Vector3(0, config.jumpSpeed, 0);

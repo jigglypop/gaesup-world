@@ -14,6 +14,7 @@ import {
 } from '../../types';
 import { InteractionEngine } from '../../../interactions/core/InteractionEngine';
 import { ModeType } from '@stores/slices/mode/types';
+import { PhysicsConfigType } from '@stores/slices';
 
 export class DirectionComponent {
   private memoManager = MemoizationManager.getInstance();
@@ -28,9 +29,11 @@ export class DirectionComponent {
   };
   private timers = new Set<NodeJS.Timeout>();
   private interactionEngine: InteractionEngine;
+  private config: PhysicsConfigType;
 
-  constructor() {
+  constructor(config: PhysicsConfigType) {
     this.interactionEngine = InteractionEngine.getInstance();
+    this.config = config;
   }
 
   updateDirection(
@@ -71,12 +74,12 @@ export class DirectionComponent {
       this.lastKeyboardState.leftward !== keyboard.leftward ||
       this.lastKeyboardState.rightward !== keyboard.rightward;
     if (mouse.isActive) {
-      this.handleMouseDirection(activeState, mouse, characterConfig, calcProp);
+      this.handleMouseDirection(activeState, mouse, this.config, calcProp);
     } else if (keyboardChanged) {
       const hasKeyboardInput =
         keyboard.forward || keyboard.backward || keyboard.leftward || keyboard.rightward;
       if (hasKeyboardInput) {
-        this.handleKeyboardDirection(activeState, keyboard, characterConfig, controlMode);
+        this.handleKeyboardDirection(activeState, keyboard, this.config, controlMode);
       }
       this.lastKeyboardState = {
         forward: keyboard.forward,
@@ -121,7 +124,7 @@ export class DirectionComponent {
       angleDelta = { x: 0.02, y: 0.02, z: 0.02 },
       maxAngle = { x: Math.PI / 6, y: Math.PI, z: Math.PI / 6 },
       accelRatio = 1.5,
-    } = airplaneConfig || {};
+    } = this.config || {};
     if (!innerGroupRef?.current) return;
     let boost = 1;
     if (shift) boost *= accelRatio;
@@ -181,7 +184,7 @@ export class DirectionComponent {
   private handleMouseDirection(
     activeState: ActiveStateType,
     mouse: PhysicsState['mouse'],
-    characterConfig: PhysicsState['characterConfig'],
+    characterConfig: PhysicsConfigType,
     calcProp?: PhysicsCalcProps,
   ): void {
     const { automation } = calcProp?.worldContext || {};
@@ -256,7 +259,7 @@ export class DirectionComponent {
   private applyMouseRotation(
     activeState: ActiveStateType,
     mouse: PhysicsState['mouse'],
-    characterConfig: PhysicsState['characterConfig'],
+    characterConfig: PhysicsConfigType,
   ): void {
     // 원래의 간단한 클릭 로직으로 복원
     activeState.euler.y = Math.PI / 2 - mouse.angle;
@@ -268,7 +271,7 @@ export class DirectionComponent {
   private handleKeyboardDirection(
     activeState: ActiveStateType,
     keyboard: PhysicsState['keyboard'],
-    characterConfig: PhysicsState['characterConfig'],
+    characterConfig: PhysicsConfigType,
     controlMode?: string,
   ): void {
     const { forward, backward, leftward, rightward } = keyboard;

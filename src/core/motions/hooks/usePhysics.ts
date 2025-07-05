@@ -9,7 +9,7 @@ import { MotionBridge } from '../bridge/MotionBridge';
 import { MotionCommand } from '../bridge/types';
 import { useAnimationPlayer } from '../../hooks';
 import { UsePhysicsEntityProps } from './types';
-import { useCallback} from 'react';
+import { useCallback } from 'react';
 import { useFrame, RootState } from '@react-three/fiber';
 import { PhysicsState, PhysicsCalculationProps } from '../types';
 import { PhysicsSystem } from '../core/engine/PhysicsSystem';
@@ -19,6 +19,9 @@ import { StoreState } from '../../stores/types';
 import * as THREE from 'three';
 import { EntityStateManager } from '../core/engine/EntityStateManager';
 import { getGlobalStateManager } from './useStateEngine';
+import { createInitialPhysicsState } from './state/physicsStateFactory';
+import { useAnimationSetup } from './setup/useAnimationSetup';
+import { useMotionSetup } from './setup/useMotionSetup';
 
 const updateInputState = (state: PhysicsState, input: PhysicsCalculationProps): void => {
     const keyboardKeys: (keyof typeof state.keyboard)[] = [
@@ -65,9 +68,7 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
 
     useEffect(() => {
         if (!isInitializedRef.current) {
-            physicsSystem.current = new PhysicsSystem({
-                config: store.physics
-            });
+            physicsSystem.current = new PhysicsSystem(store.physics);
             stateManagerRef.current = getGlobalStateManager();
             isInitializedRef.current = true;
         }
@@ -83,7 +84,7 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
         const handleTeleport = (event: CustomEvent) => {
             try {
                 const { position } = event.detail;
-                if (props.rigidBodyRef.current && position) {
+                if (props.rigidBodyRef?.current && position) {
                     props.rigidBodyRef.current.setTranslation(
                         {
                             x: position.x,
@@ -117,52 +118,23 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
 
                 if (!physicsStateRef.current) {
                     const worldContext = physics.worldContext as StoreState;
-                    const modeType = worldContext.mode?.type || 'character';
-                    const activeStateRef = stateManagerRef.current.getActiveState();
-                    const gameStatesRef = stateManagerRef.current.getGameStates();
-
-                    physicsStateRef.current = {
-                        activeState: activeStateRef,
-                        gameStates: gameStatesRef,
-                        keyboard: { ...physics.input.keyboard },
-                        mouse: {
-                            target: mouseTargetRef.current.copy(physics.input.mouse.target),
-                            angle: physics.input.mouse.angle,
-                            isActive: physics.input.mouse.isActive,
-                            shouldRun: physics.input.mouse.shouldRun,
-                        },
-                        characterConfig: worldContext.character || {},
-                        vehicleConfig: worldContext.vehicle || {},
-                        airplaneConfig: worldContext.airplane || {},
-                        automationOption: worldContext.automation || {
-                            isActive: false,
-                            queue: {
-                                actions: [],
-                                currentIndex: 0,
-                                isRunning: false,
-                                isPaused: false,
-                                loop: false,
-                                maxRetries: 3
-                            },
-                            settings: {
-                                trackProgress: false,
-                                autoStart: false,
-                                loop: false,
-                                showVisualCues: false
-                            }
-                        },
-                        modeType: modeType as 'character' | 'vehicle' | 'airplane',
+                    physicsStateRef.current = createInitialPhysicsState(
+                        worldContext,
+                        stateManagerRef.current,
+                        physics.input,
                         delta,
-                    };
+                        mouseTargetRef.current
+                    );
 
-                    if (props.rigidBodyRef?.current && activeStateRef) {
+                    if (props.rigidBodyRef?.current && physicsStateRef.current.activeState) {
+                        const { activeState } = physicsStateRef.current;
                         props.rigidBodyRef.current.lockRotations(false, true);
-                        activeStateRef.euler.set(0, 0, 0);
+                        activeState.euler.set(0, 0, 0);
                         props.rigidBodyRef.current.setTranslation(
                             {
-                                x: activeStateRef.position.x,
-                                y: activeStateRef.position.y + 5,
-                                z: activeStateRef.position.z,
+                                x: activeState.position.x,
+                                y: activeState.position.y + 5,
+                                z: activeState.position.z,
                             },
                             true,
                         );
@@ -205,15 +177,7 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
         if (!physics.isReady || !isInitializedRef.current) return;
         executePhysics(state, delta);
     });
-}; 
-
-let globalMotionBridge: MotionBridge | null = null;
-function getGlobalMotionBridge(): MotionBridge {
-    if (!globalMotionBridge) {
-        globalMotionBridge = new MotionBridge();
-    }
-    return globalMotionBridge;
-}
+};
 
 export function usePhysicsEntity({
     rigidBodyRef,
@@ -232,68 +196,41 @@ export function usePhysicsEntity({
     onAnimate,
     onReady
 }: UsePhysicsEntityProps) {
-    const animationBridgeRef = useRef<boolean>(false);
-    const entityIdRef = useRef<string>(
+    const entityId = useRef<string>(
         name || `entity-${Date.now()}-${Math.random()}`
-    );
-    const registeredRef = useRef<boolean>(false);
+    ).current;
     const activeMode = useGaesupStore((state) => state.mode);
     const { gameStates } = useStateEngine();
     const isRiding = gameStates.isRiding;
     const modeType = activeMode?.type;
 
-    useEffect(() => {
-        if (actions && modeType && isActive && !animationBridgeRef.current) {
-            const animationBridge = getGlobalAnimationBridge();
-            animationBridge.registerAnimations(modeType as 'character' | 'vehicle' | 'airplane', actions);
-            animationBridgeRef.current = true;
-            return () => {
-                if (animationBridgeRef.current) {
-                    animationBridge.unregisterAnimations(modeType as 'character' | 'vehicle' | 'airplane');
-                    animationBridgeRef.current = false;
-                }
-            };
-        }
-    }, [actions, modeType, isActive]);
+    useAnimationSetup(actions, modeType, isActive);
+    const { 
+      executeMotionCommand, 
+      updateMotion, 
+      getMotionSnapshot 
+    } = useMotionSetup(entityId, rigidBodyRef, modeType, isActive);
 
-    useEffect(() => {
-        if (isActive && rigidBodyRef && !registeredRef.current && rigidBodyRef.current) {
-            const motionBridge = getGlobalMotionBridge();
-            motionBridge.register(
-                entityIdRef.current,
-                modeType === 'vehicle' || modeType === 'airplane'
-                    ? 'vehicle'
-                    : 'character',
-                rigidBodyRef.current
-            );
-            registeredRef.current = true;
-            return () => {
-                motionBridge.unregister(entityIdRef.current);
-                registeredRef.current = false;
-            };
-        }
-    }, [isActive, rigidBodyRef, modeType]);
-
-    const handleIntersectionEnter = async (payload: CollisionEnterPayload) => {
+    const handleIntersectionEnter = useCallback(async (payload: CollisionEnterPayload) => {
         if (onIntersectionEnter) onIntersectionEnter(payload);
         if (userData?.['onNear'] && typeof userData['onNear'] === 'function') {
             await userData['onNear'](payload, userData);
         }
-    };
+    }, [onIntersectionEnter, userData]);
 
-    const handleIntersectionExit = async (payload: CollisionExitPayload) => {
+    const handleIntersectionExit = useCallback(async (payload: CollisionExitPayload) => {
         if (onIntersectionExit) onIntersectionExit(payload);
         if (userData?.['onLeave'] && typeof userData['onLeave'] === 'function') {
             await userData['onLeave'](payload);
         }
-    };
+    }, [onIntersectionExit, userData]);
 
-    const handleCollisionEnter = async (payload: CollisionEnterPayload) => {
+    const handleCollisionEnter = useCallback(async (payload: CollisionEnterPayload) => {
         if (onCollisionEnter) onCollisionEnter(payload);
         if (userData?.['onNear'] && typeof userData['onNear'] === 'function') {
             await userData['onNear'](payload, userData);
         }
-    };
+    }, [onCollisionEnter, userData]);
 
     if (isActive) {
         usePhysicsLoop({
@@ -321,34 +258,10 @@ export function usePhysicsEntity({
         if (onFrame || (onAnimate && actions)) {
             animationId = requestAnimationFrame(frameHandler);
             return () => {
-                if (animationId) {
-                    cancelAnimationFrame(animationId);
-                }
+                cancelAnimationFrame(animationId);
             };
         }
     }, [onFrame, onAnimate, actions]);
-
-    const executeMotionCommand = (command: MotionCommand) => {
-        if (registeredRef.current && isActive) {
-            const motionBridge = getGlobalMotionBridge();
-            motionBridge.execute(entityIdRef.current, command);
-        }
-    };
-
-    const updateMotion = (deltaTime: number) => {
-        if (registeredRef.current && isActive) {
-            const motionBridge = getGlobalMotionBridge();
-            motionBridge.updateEntity(entityIdRef.current, deltaTime);
-        }
-    };
-
-    const getMotionSnapshot = () => {
-        if (registeredRef.current && isActive) {
-            const motionBridge = getGlobalMotionBridge();
-            return motionBridge.snapshot(entityIdRef.current);
-        }
-        return null;
-    };
 
     return {
         executeMotionCommand,

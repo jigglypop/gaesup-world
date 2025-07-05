@@ -41,7 +41,6 @@ export interface PhysicsSystemMetrics extends BaseMetrics {
 }
 
 export interface PhysicsSystemOptions extends SystemOptions {
-  config?: Partial<PhysicsConfigType>;
 }
 
 export interface EntityStateRefs {

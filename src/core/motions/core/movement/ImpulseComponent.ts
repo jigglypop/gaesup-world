@@ -3,14 +3,17 @@ import { RapierRigidBody } from '@react-three/rapier';
 import { EntityStateManager } from '../engine/EntityStateManager';
 import { InteractionEngine } from '@core/interactions/core/InteractionEngine';
 import { PhysicsState } from '../../types';
+import { PhysicsConfigType } from '@stores/slices';
 
 export class ImpulseComponent {
   private stateEngine: EntityStateManager;
   private interactionEngine: InteractionEngine;
+  private config: PhysicsConfigType;
 
-  constructor() {
+  constructor(config: PhysicsConfigType) {
     this.stateEngine = new EntityStateManager();
     this.interactionEngine = InteractionEngine.getInstance();
+    this.config = config;
   }
 
   applyImpulse(
@@ -41,9 +44,8 @@ export class ImpulseComponent {
     const {
       gameStates: { isMoving, isRunning, isOnTheGround, isJumping },
       activeState,
-      characterConfig,
     } = physicsState;
-    const { walkSpeed = 10, runSpeed = 20, jumpSpeed = 15 } = characterConfig;
+    const { walkSpeed = 10, runSpeed = 20, jumpSpeed = 15 } = this.config;
     if (isJumping && isOnTheGround) {
       const currentVel = rigidBodyRef.current.linvel();
       rigidBodyRef.current.setLinvel({ x: currentVel.x, y: jumpSpeed, z: currentVel.z }, true);
@@ -70,9 +72,9 @@ export class ImpulseComponent {
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: PhysicsState
   ): void {
-    const { activeState, vehicleConfig } = physicsState;
+    const { activeState } = physicsState;
     const keyboard = this.interactionEngine.getKeyboardRef();
-    const { maxSpeed = 10, accelRatio = 2 } = vehicleConfig;
+    const { maxSpeed = 10, accelRatio = 2 } = this.config;
     const { shift } = keyboard;
     const velocity = rigidBodyRef.current.linvel();
     const currentSpeed = Math.sqrt(
@@ -94,8 +96,8 @@ export class ImpulseComponent {
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: PhysicsState
   ): void {
-    const { activeState, airplaneConfig } = physicsState;
-    const { maxSpeed = 20 } = airplaneConfig;
+    const { activeState } = physicsState;
+    const { maxSpeed = 20 } = this.config;
     
     const velocity = rigidBodyRef.current.linvel();
     const currentSpeed = Math.sqrt(

@@ -4,6 +4,17 @@ import { RefObject } from "react"
 import { PhysicsCalculationProps } from '../types';
 import { ModeType, PhysicsConfigType } from '@stores/slices';
 
+export type characterConfigType = Pick<PhysicsConfigType, 
+  'walkSpeed' | 'runSpeed' | 'jumpSpeed' | 'jumpGravityScale' | 'normalGravityScale' | 'airDamping' | 'stopDamping'
+>;
+
+export type vehicleConfigType = Pick<PhysicsConfigType,
+  'maxSpeed' | 'accelRatio' | 'brakeRatio' | 'linearDamping'
+>;
+
+export type airplaneConfigType = Pick<PhysicsConfigType,
+  'gravityScale' | 'angleDelta' | 'maxAngle' | 'maxSpeed' | 'accelRatio'
+>;
 
 export interface ActiveStateType {
   euler: THREE.Euler;

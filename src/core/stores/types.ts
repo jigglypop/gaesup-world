@@ -15,6 +15,8 @@ export type GaesupState =
   CameraOptionSlice &
   PhysicsSlice;
 
+export type StoreState = GaesupState;
+
 export * from './slices/mode/types';
 export * from './slices/urls/types';
 export * from './slices/sizes/types';

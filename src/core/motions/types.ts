@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ActiveStateType } from './core/types';
+import { ActiveStateType, characterConfigType, vehicleConfigType, airplaneConfigType } from './core/types';
 import { GameStatesType } from '../world/components/Rideable/types';
 import { RootState } from '@react-three/fiber';
 import { ModeType, StoreState } from '../stores/types';
@@ -79,7 +79,5 @@ export interface PhysicsState {
   };
   automationOption: automationType;
   modeType: ModeType;
-  characterConfig: characterConfigType;
-  vehicleConfig: vehicleConfigType;
-  airplaneConfig: airplaneConfigType;
+  delta?: number;
 }

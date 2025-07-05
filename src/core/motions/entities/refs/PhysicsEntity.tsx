@@ -4,10 +4,11 @@ import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three
 import { forwardRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
-import { useGltfAndSize, usePhysicsEntity } from '../../hooks';
+import { useGltfAndSize } from '../../hooks';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
 import { PhysicsEntityProps, SetGroundRayType } from '../types';
+import { usePhysicsEntity } from '../../hooks/usePhysics';
 
 export function useSetGroundRay() {
   return ({ groundRay, length, colliderRef }: SetGroundRayType) => {
