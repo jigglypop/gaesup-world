@@ -84,12 +84,6 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
 
     return (
       <group ref={props.outerGroupRef} userData={{ intangible: true }}>
-        {/* {props.ridingUrl && mode.type !== 'character' && (
-          <RidingAnimation url={props.ridingUrl} active={isRiding} />
-        )}
-        {(mode?.type === 'vehicle' || mode?.type === 'airplane') && props.isActive && (
-          <VehicleAnimation actions={actions} isActive={true} modeType={mode.type} />
-        )} */}
         <RigidBody
           canSleep={false}
           ccd={true}

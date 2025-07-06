@@ -1,8 +1,6 @@
 import { useRef, useEffect, RefObject } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 import { getGlobalAnimationBridge } from '../../../animation/hooks/useAnimationBridge';
-import { useGaesupStore } from '@stores/gaesupStore';
-import { UsePhysicsEntityProps } from '../types';
 import { ModeType } from '@stores/slices';
 import { AnimationAction } from 'three';
 

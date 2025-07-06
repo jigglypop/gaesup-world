@@ -311,4 +311,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
       component.update(rigidBodyRef.current, delta);
     }
   }
+
+
 } 
