@@ -71,7 +71,12 @@ export class DIContainer {
     const autowiredProps = Reflect.getMetadata('autowired', prototype) || []
     autowiredProps.forEach((prop: string) => {
       const propertyType = Reflect.getMetadata('design:type', prototype, prop)
-      // propertyType is kept for future resolve logic
+      if (propertyType) {
+        try {
+          ;(instance as Record<string, unknown>)[prop] = this.resolve(propertyType)
+        } catch {
+        }
+      }
     })
   }
 

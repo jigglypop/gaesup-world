@@ -13,7 +13,7 @@ export function useManagedEntity<
   bridge: AbstractBridge<EngineType, SnapshotType, CommandType> | null,
   id: string,
   ref: RefObject<EngineType>,
-  options: UseManagedEntityOptions = {}
+  options: UseManagedEntityOptions<EngineType, SnapshotType, CommandType> = {}
 ): ManagedEntity<EngineType, SnapshotType, CommandType> | null {
   const [entity, setEntity] = useState<ManagedEntity<EngineType, SnapshotType, CommandType> | null>(null);
   const entityRef = useRef<ManagedEntity<EngineType, SnapshotType, CommandType> | null>(null);
@@ -47,7 +47,7 @@ export function useManagedEntity<
   useBaseLifecycle(bridge, id, ref.current, {
     ...(onRegister && { onRegister }),
     ...(onUnregister && { onUnregister }),
-    ...(dependencies && { dependencies }),
+    dependencies: dependencies || [],
     enabled: enabled && !!entity
   });
   useBaseFrame(bridge, id, frameCallback, {
@@ -66,7 +66,7 @@ export function useBatchManagedEntities<
 >(
   bridge: AbstractBridge<EngineType, SnapshotType, CommandType> | null,
   entries: Array<{ id: string; ref: RefObject<EngineType> }>,
-  options: UseManagedEntityOptions = {}
+  options: UseManagedEntityOptions<EngineType, SnapshotType, CommandType> = {}
 ): Array<ManagedEntity<EngineType, SnapshotType, CommandType> | null> {
   return entries.map(({ id, ref }) => 
     useManagedEntity(bridge, id, ref, options)

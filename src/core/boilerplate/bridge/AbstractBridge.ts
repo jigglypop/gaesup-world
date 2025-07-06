@@ -44,7 +44,7 @@ export abstract class AbstractBridge<
       this.eventHandlers.get(type)?.delete(handler);
     };
   }
-  register(id: string, ...args: any[]): void {
+  register(id: string, ...args: unknown[]): void {
     const engine = this.buildEngine(id, ...args);
     if (engine) {
       this.engines.set(id, engine);
@@ -56,7 +56,7 @@ export abstract class AbstractBridge<
       });
     }
   }
-  protected abstract buildEngine(id: string, ...args: any[]): EngineType | null;
+  protected abstract buildEngine(id: string, ...args: unknown[]): EngineType | null;
   unregister(id: string): void {
     const engine = this.engines.get(id);
     if (engine) {

@@ -1,15 +1,12 @@
+import { BridgeConstructor, BridgeInstance } from '../types'
 import { BridgeRegistry } from './BridgeRegistry'
-import { CoreBridge } from './CoreBridge'
-
-type BridgeInstance = CoreBridge<any, any, any>
-type BridgeConstructor = new (...args: unknown[]) => BridgeInstance
+import { DIContainer } from '../di'
 
 const isProduction = process.env['NODE_ENV'] === 'production'
 const enableLogs = !isProduction && process.env['VITE_ENABLE_BRIDGE_LOGS'] !== 'false'
 
 export class BridgeFactory {
     private static instances = new Map<string, BridgeInstance>()
-    
     static create<T extends BridgeInstance>(domain: string): T | null {
         const existing = BridgeFactory.instances.get(domain)
         if (existing) {
@@ -23,7 +20,7 @@ export class BridgeFactory {
             return null
         }
         try {
-            const instance = new BridgeClass() as T
+            const instance = DIContainer.getInstance().resolve(BridgeClass) as T
             BridgeFactory.instances.set(domain, instance)
             if (enableLogs) {
                 console.log(`[BridgeFactory] Created bridge instance for domain: ${domain}`)
@@ -36,7 +33,6 @@ export class BridgeFactory {
             return null
         }
     }
-    
     static get<T extends BridgeInstance>(domain: string): T | null {
         const instance = BridgeFactory.instances.get(domain)
         return instance ? (instance as T) : null

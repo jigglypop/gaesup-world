@@ -1,11 +1,13 @@
 import 'reflect-metadata'
 import { BridgeRegistry } from '../bridge/BridgeRegistry'
+import { DIContainer } from '../di'
 import { Constructor } from './types'
 
 export function DomainBridge(domain: string) {
     return function <T extends Constructor>(target: T) {
         Reflect.defineMetadata('domain', domain, target)
         BridgeRegistry.register(domain, target)
+        DIContainer.getInstance().registerClass(target)
     }
 }
 
@@ -31,6 +33,5 @@ export function EnableMetrics() {
     }
 }
 
-export * from './di';
 export * from './blueprint';
 export * from './types'; 

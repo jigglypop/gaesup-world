@@ -1,4 +1,4 @@
-import { useFrame } from '@react-three/fiber';
+import { useFrame, RootState } from '@react-three/fiber';
 import { AbstractBridge } from '../bridge/AbstractBridge';
 import { useRef, useCallback } from 'react';
 import { IDisposable, UseBaseFrameOptions } from '../types';
@@ -20,7 +20,7 @@ export function useBaseFrame<
     throttle = 0,
     skipWhenHidden = true 
   } = options;
-  const frameHandler = useCallback((state: any, delta: number) => {
+  const frameHandler = useCallback((state: RootState, delta: number) => {
     if (!enabled || !bridge) return;
     if (skipWhenHidden && document.hidden) return;
     if (throttle > 0) {

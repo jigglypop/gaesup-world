@@ -16,7 +16,7 @@ export class ManagedEntity<
     private bridge: AbstractBridge<EngineType, SnapshotType, CommandType>,
     private id: string,
     public engine: EngineType,
-    private options: ManagedEntityOptions = {}
+    private options: ManagedEntityOptions<EngineType, SnapshotType, CommandType> = {}
   ) {
     this.bridge.register(this.id, this.engine);
     this.setupEventHandlers();

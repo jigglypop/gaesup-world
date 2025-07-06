@@ -1,7 +1,5 @@
 import 'reflect-metadata'
-
-type BridgeClass = new (...args: unknown[]) => unknown
-
+import { BridgeClass } from '../types'
 export class BridgeRegistry {
     private static registry: Map<string, BridgeClass> = new Map()
     static register(domain: string, clazz: BridgeClass): void {
