@@ -14,15 +14,18 @@ export function useBaseLifecycle<
 ) {
   const { onRegister, onUnregister, dependencies = [], enabled = true } = options;
   const cleanupRef = useRef<(() => void) | null>(null);
+
   useEffect(() => {
     if (!bridge || !engine || !enabled) return;
     bridge.register(id, engine);
+
     if (onRegister) {
       const cleanup = onRegister(engine);
       if (typeof cleanup === 'function') {
         cleanupRef.current = cleanup;
       }
     }
+
     return () => {
       if (cleanupRef.current) {
         cleanupRef.current();
@@ -48,18 +51,4 @@ export function useDelayedLifecycle<
 ) {
   const engine = engineGetter();
   useBaseLifecycle(bridge, id, engine, options);
-}
-
-export function useBatchLifecycle<
-  EngineType extends IDisposable,
-  SnapshotType,
-  CommandType
->(
-  bridge: AbstractBridge<EngineType, SnapshotType, CommandType> | null,
-  entries: Array<{ id: string; engine: EngineType | null }>,
-  options: UseBaseLifecycleOptions<EngineType> = {}
-) {
-  entries.forEach(({ id, engine }) => {
-    useBaseLifecycle(bridge, id, engine, options);
-  });
 } 

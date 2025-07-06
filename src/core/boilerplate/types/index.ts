@@ -78,9 +78,15 @@ export type UseManagedEntityOptions<
     frameCallback?: () => void;
   };
 
+export const DEFAULT_CACHE_TIMEOUT_MS = 16;
+export const DEFAULT_COMMAND_QUEUE_SIZE = 100;
+export const MILLISECONDS_IN_SECOND = 1000;
+
 export type Constructor<T = unknown> = new (...args: unknown[]) => T;
+export type AbstractConstructor<T = unknown> = abstract new (...args: unknown[]) => T;
+export type ServiceTarget<T = unknown> = Constructor<T> | AbstractConstructor<T>;
 export type Factory<T> = () => T;
-export type Token<T> = Constructor<T> | string | symbol;
+export type Token<T> = ServiceTarget<T> | string | symbol;
 export type BridgeClass = new (...args: unknown[]) => unknown
 export type BridgeInstance = CoreBridge<IDisposable, unknown, unknown>;
 export type BridgeConstructor = new (...args: unknown[]) => BridgeInstance; 

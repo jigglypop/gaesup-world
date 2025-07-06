@@ -1,9 +1,10 @@
 import { RefObject, useRef, useState, useEffect } from 'react';
-import { AbstractBridge } from '../bridge/AbstractBridge';
 import { ManagedEntity } from '../entity/ManagedEntity';
 import { IDisposable, UseManagedEntityOptions } from '../types';
 import { useBaseLifecycle } from './useBaseLifecycle';
 import { useBaseFrame } from './useBaseFrame';
+import { DIContainer } from '../di';
+import { AbstractBridge } from '../bridge/AbstractBridge';
 
 export function useManagedEntity<
   EngineType extends IDisposable,
@@ -30,32 +31,42 @@ export function useManagedEntity<
     skipWhenHidden,
     ...entityOptions 
   } = options;
+
   useEffect(() => {
     if (!bridge || !ref.current || !enabled) return;
-    const managedEntity = new ManagedEntity(bridge, id, ref.current, entityOptions);
+
+    const managedEntity = new ManagedEntity<EngineType, SnapshotType, CommandType>(id, ref.current, entityOptions);
+    DIContainer.getInstance().injectProperties(managedEntity);
+    managedEntity.initialize(); 
+
     entityRef.current = managedEntity;
     setEntity(managedEntity);
+    
     if (onInit) {
       onInit(managedEntity);
     }
+
     return () => {
       managedEntity.dispose();
       entityRef.current = null;
       setEntity(null);
     };
   }, [bridge, id, ref, enabled, ...(dependencies || [])]);
+
   useBaseLifecycle(bridge, id, ref.current, {
     ...(onRegister && { onRegister }),
     ...(onUnregister && { onUnregister }),
     dependencies: dependencies || [],
     enabled: enabled && !!entity
   });
+
   useBaseFrame(bridge, id, frameCallback, {
     ...(priority !== undefined && { priority }),
     enabled: enabled && !!entity,
     ...(throttle !== undefined && { throttle }),
     ...(skipWhenHidden !== undefined && { skipWhenHidden })
   });
+  
   return entity;
 }
 

@@ -1,7 +1,7 @@
 import { useFrame, RootState } from '@react-three/fiber';
 import { AbstractBridge } from '../bridge/AbstractBridge';
 import { useRef, useCallback } from 'react';
-import { IDisposable, UseBaseFrameOptions } from '../types';
+import { IDisposable, MILLISECONDS_IN_SECOND, UseBaseFrameOptions } from '../types';
 
 export function useBaseFrame<
   EngineType extends IDisposable,
@@ -66,6 +66,6 @@ export function useThrottledFrame<
   callback?: () => void,
   options?: Omit<UseBaseFrameOptions, 'throttle'>
 ) {
-  const throttle = 1000 / fps;
+  const throttle = MILLISECONDS_IN_SECOND / fps;
   useBaseFrame(bridge, id, callback, { ...options, throttle });
 } 

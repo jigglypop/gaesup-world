@@ -1,6 +1,7 @@
 import { BridgeConstructor, BridgeInstance } from '../types'
 import { BridgeRegistry } from './BridgeRegistry'
 import { DIContainer } from '../di'
+import { logger } from '../../utils/logger'
 
 const isProduction = process.env['NODE_ENV'] === 'production'
 const enableLogs = !isProduction && process.env['VITE_ENABLE_BRIDGE_LOGS'] !== 'false'
@@ -14,22 +15,16 @@ export class BridgeFactory {
         }
         const BridgeClass = BridgeRegistry.get(domain) as BridgeConstructor | undefined
         if (!BridgeClass) {
-            if (!isProduction) {
-                console.error(`[BridgeFactory] No bridge registered for domain: ${domain}`)
-            }
+            logger.error(`[BridgeFactory] No bridge registered for domain: ${domain}`)
             return null
         }
         try {
             const instance = DIContainer.getInstance().resolve(BridgeClass) as T
             BridgeFactory.instances.set(domain, instance)
-            if (enableLogs) {
-                console.log(`[BridgeFactory] Created bridge instance for domain: ${domain}`)
-            }
+            logger.info(`[BridgeFactory] Created bridge instance for domain: ${domain}`)
             return instance
         } catch (error) {
-            if (!isProduction) {
-                console.error(`[BridgeFactory] Failed to create bridge for domain: ${domain}`, error)
-            }
+            logger.error(`[BridgeFactory] Failed to create bridge for domain: ${domain}`, error)
             return null
         }
     }
@@ -45,22 +40,16 @@ export class BridgeFactory {
     static dispose(domain: string): void {
         const instance = BridgeFactory.instances.get(domain)
         if (instance) {
-            if (enableLogs) {
-                console.log(`[BridgeFactory] Disposing bridge instance for domain: ${domain}`)
-            }
+            logger.info(`[BridgeFactory] Disposing bridge instance for domain: ${domain}`)
             instance.dispose()
             BridgeFactory.instances.delete(domain)
         }
     }
     
     static disposeAll(): void {
-        if (enableLogs) {
-            console.log(`[BridgeFactory] Disposing all bridge instances (${BridgeFactory.instances.size} total)`)
-        }
+        logger.info(`[BridgeFactory] Disposing all bridge instances (${BridgeFactory.instances.size} total)`)
         BridgeFactory.instances.forEach((instance, domain) => {
-            if (enableLogs) {
-                console.log(`[BridgeFactory] Disposing: ${domain}`)
-            }
+            logger.info(`[BridgeFactory] Disposing: ${domain}`)
             instance.dispose()
         })
         BridgeFactory.instances.clear()

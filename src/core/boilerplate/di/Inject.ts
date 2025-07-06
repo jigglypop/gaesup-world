@@ -1,17 +1,18 @@
 import 'reflect-metadata'
+import { Token } from '../types'
 
-export function Inject(token?: string | symbol) {
-  return function (target: any, propertyKey: string | symbol | undefined, parameterIndex?: number) {
-    if (parameterIndex !== undefined) {
-      // Constructor parameter injection
-      const existingTokens = Reflect.getMetadata('inject:tokens', target) || []
+export function Inject(token: Token<unknown>) {
+  return function (target: object, propertyKey: string | symbol | undefined, parameterIndex?: number) {
+    if (typeof parameterIndex === 'number') {
+      const constructor = target as new (...args: unknown[]) => unknown
+      const existingTokens = Reflect.getMetadata('di:paramtypes', constructor) || []
       existingTokens[parameterIndex] = token
-      Reflect.defineMetadata('inject:tokens', existingTokens, target)
+      Reflect.defineMetadata('di:paramtypes', existingTokens, constructor)
     } else if (propertyKey) {
-      // Property injection
-      const injectedProps = Reflect.getMetadata('inject:properties', target) || []
-      injectedProps.push({ propertyKey, token })
-      Reflect.defineMetadata('inject:properties', injectedProps, target)
+      const constructor = target.constructor as new (...args: unknown[]) => unknown
+      const injectedProperties = Reflect.getMetadata('di:properties', constructor) || {}
+      injectedProperties[propertyKey] = token
+      Reflect.defineMetadata('di:properties', injectedProperties, constructor)
     }
   }
 } 
