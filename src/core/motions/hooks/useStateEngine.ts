@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
-import { EntityStateManager } from '../core/engine/EntityStateManager';
+import { EntityStateManager } from '../core/system/EntityStateManager';
 import { ActiveStateType } from '../core/types';
 import { GameStatesType } from '../../world/components/Rideable/types';
 

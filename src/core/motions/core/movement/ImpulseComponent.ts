@@ -1,6 +1,6 @@
 import { RefObject } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
-import { EntityStateManager } from '../engine/EntityStateManager';
+import { EntityStateManager } from '../system/EntityStateManager';
 import { InteractionEngine } from '@core/interactions/core/InteractionEngine';
 import { PhysicsState } from '../../types';
 import { PhysicsConfigType } from '@stores/slices';

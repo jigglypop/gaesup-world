@@ -1,8 +1,7 @@
 import { AbstractBridge } from '@core/boilerplate';
-import { IDisposable } from '@core/boilerplate';
-import { PhysicsSystem } from '../core/engine/PhysicsSystem';
-import { PhysicsConfigType } from '@/core/stores/slices/mode copy/types';
-import { PhysicsUpdateArgs } from '../core/engine/PhysicsSystem';
+import { PhysicsSystem } from '../core/system/PhysicsSystem';
+import { PhysicsConfigType } from '@/core/stores/slices/physics/types';
+import { PhysicsUpdateArgs } from '../core/system/PhysicsSystem';
 
 export type PhysicsEntity = {
   engine: PhysicsSystem;

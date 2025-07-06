@@ -1,7 +1,8 @@
-import { AbstractSystem, SystemUpdateArgs } from '@core/boilerplate';
+import { AbstractSystem, SystemUpdateArgs, Autowired } from '@core/boilerplate';
 import * as THREE from 'three';
 import { vec3, quat, RapierRigidBody } from '@react-three/rapier';
 import { MotionState, MotionMetrics, MotionSystemOptions, ActiveStateType, GameStatesType } from './types';
+import { MotionService } from '../services/MotionService';
 
 const defaultState: MotionState = {
   position: new THREE.Vector3(),
@@ -32,6 +33,9 @@ export interface MotionUpdateArgs extends SystemUpdateArgs {
 }
 
 export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, MotionSystemOptions, MotionUpdateArgs> {
+  @Autowired()
+  private motionService!: MotionService;
+
   constructor(options: MotionSystemOptions) {
     super(defaultState, defaultMetrics, options);
   }
@@ -90,7 +94,17 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
   private calculateSpeed(deltaTime: number): void {
     const distance = this.state.position.distanceTo(this.metrics.lastPosition);
     this.metrics.totalDistance += distance;
-    this.metrics.currentSpeed = distance / (deltaTime || 0.016);
+    this.metrics.currentSpeed = this.motionService.calculateSpeed(this.state.velocity);
+  }
+
+  public calculateJump(config: { jumpSpeed: number }, gameStates: GameStatesType): THREE.Vector3 {
+    return this.motionService.calculateJumpForce(this.state.isGrounded, config.jumpSpeed, gameStates);
+  }
+
+  public applyForce(movement: THREE.Vector3, rigidBody: RapierRigidBody): void {
+    const config = this.motionService.getDefaultConfig();
+    const force = this.motionService.calculateMovementForce(movement, this.state.velocity, config);
+    rigidBody.applyImpulse(force, true);
   }
 
   protected onDispose(): void {

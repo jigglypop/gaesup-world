@@ -1,14 +1,21 @@
-import { AbstractBridge } from '@core/boilerplate';
-import { MotionSystem } from '@/core/motions/core/engine/MotionSystem';
+import { AbstractBridge, DomainBridge, Autowired } from '@core/boilerplate';
+import { MotionSystem } from '@/core/motions/core/system/MotionSystem';
 import { euler, RapierRigidBody, vec3 } from '@react-three/rapier';
 import { MotionCommand, MotionEntity, MotionSnapshot } from './types';
-import { MotionType } from '@core/motions/core/engine/types';
+import { MotionType } from '@/core/motions/core/system/types';
 import { GameStatesType } from '@/core/world/components/Rideable/types';
+import { MotionService } from '@/core/motions/core/services/MotionService';
+import { DIContainer } from '@core/boilerplate';
 
+@DomainBridge('motion')
 export class MotionBridge extends AbstractBridge<MotionEntity, MotionSnapshot, MotionCommand> {
+  @Autowired()
+  private motionService!: MotionService;
+
   protected buildEngine(_: string, type: MotionType, rigidBody: RapierRigidBody): MotionEntity | null {
     if (!type || !rigidBody) return null;
     const engine = new MotionSystem({ type });
+    DIContainer.getInstance().injectProperties(engine);
     return {
       engine,
       rigidBody,
