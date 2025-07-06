@@ -20,6 +20,7 @@ import { createInitialPhysicsState } from './state/physicsStateFactory';
 import { useMotionSetup } from './setup/useMotionSetup';
 import { useAnimationSetup } from './setup/useAnimationSetup';
 import { updateInputState } from '../bridge';
+import { PhysicsBridge } from '../bridge/PhysicsBridge';
 
 export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
     const physics = usePhysics();
@@ -30,15 +31,17 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
     const matchSizesRef = useRef<SizesType | null>(null);
     const stateManagerRef = useRef<EntityStateManager | null>(null);
     const store = useGaesupStore();
+    const physicsBridgeRef = useRef<PhysicsBridge | null>(null);
 
     useEffect(() => {
         if (!isInitializedRef.current) {
-            physicsSystem.current = new PhysicsSystem(store.physics);
+            physicsBridgeRef.current = physicsBridgeRef.current ?? new PhysicsBridge();
+            physicsBridgeRef.current.register('global-physics', store.physics);
             stateManagerRef.current = getGlobalStateManager();
             isInitializedRef.current = true;
         }
-        if (physicsSystem.current && store.physics) {
-            physicsSystem.current.updateConfig(store.physics);
+        if (physicsBridgeRef.current && store.physics) {
+            physicsBridgeRef.current.execute('global-physics', { type: 'updateConfig', data: store.physics });
         }
     }, [store.physics]);
 
@@ -68,7 +71,7 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
 
     const executePhysics = useCallback(
         (state: RootState, delta: number) => {
-            if (!physics.isReady || !physicsSystem.current || !stateManagerRef.current)
+            if (!physics.isReady || !physicsBridgeRef.current || !stateManagerRef.current)
                 return;
 
             if (!physicsStateRef.current) {
@@ -116,7 +119,7 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
                 setMouseInput: physics.setMouseInput,
             };
 
-            physicsSystem.current.update({
+            physicsBridgeRef.current.updateEntity('global-physics', {
                 deltaTime: delta,
                 calcProp,
                 physicsState: physicsStateRef.current

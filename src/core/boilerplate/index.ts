@@ -28,4 +28,6 @@ export {
 export { 
   useManagedEntity,
   useManagedEntities,
-} from './useManagedEntity'; 
+} from './useManagedEntity';
+
+export { createBridge } from './createBridge'; 
