@@ -1,16 +1,14 @@
-import { useRef, useEffect, RefObject } from 'react';
-import { RapierRigidBody } from '@react-three/rapier';
+import { useRef, useEffect } from 'react';
 import { getGlobalAnimationBridge } from '../../../animation/hooks/useAnimationBridge';
 import { ModeType } from '@stores/slices';
 import { AnimationAction } from 'three';
 
-function useAnimationSetup(
+export function useAnimationSetup(
   actions: Record<string, AnimationAction>,
   modeType: ModeType,
   isActive: boolean
 ) {
   const animationBridgeRef = useRef<boolean>(false);
-
   useEffect(() => {
     if (actions && modeType && isActive && !animationBridgeRef.current) {
       const animationBridge = getGlobalAnimationBridge();
@@ -26,4 +24,3 @@ function useAnimationSetup(
   }, [actions, modeType, isActive]);
 }
 
-export { useAnimationSetup }; 

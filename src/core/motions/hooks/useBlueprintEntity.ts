@@ -31,7 +31,6 @@ export function useBlueprintEntity({
 
   useEffect(() => {
     if (!enabled || !rigidBodyRef.current) return;
-
     const blueprintDef = typeof blueprint === 'string' 
       ? { id: blueprint, name: blueprint, type: 'character' as const, components: [] }
       : blueprint;

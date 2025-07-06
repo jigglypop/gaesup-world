@@ -45,4 +45,13 @@ export class PhysicsBridge extends AbstractBridge<PhysicsEntity, PhysicsSnapshot
     entity.engine.update(args);
     this.notifyListeners(id);
   }
+}
+
+let globalPhysicsBridge: PhysicsBridge | null = null;
+
+export function getGlobalPhysicsBridge(): PhysicsBridge {
+  if (!globalPhysicsBridge) {
+    globalPhysicsBridge = new PhysicsBridge();
+  }
+  return globalPhysicsBridge;
 } 

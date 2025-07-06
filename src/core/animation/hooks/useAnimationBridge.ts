@@ -1,8 +1,9 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { AnimationBridge } from '../bridge/AnimationBridge';
-import { AnimationType, AnimationCommand } from '../core/types';
+import { AnimationType } from '../core/types';
 import * as THREE from 'three';
+import { AnimationCommand } from '../bridge/types';
 
 let globalAnimationBridge: AnimationBridge | null = null;
 
@@ -18,11 +19,10 @@ export function useAnimationBridge() {
   const mode = useGaesupStore((state) => state.mode);
   const animationState = useGaesupStore((state) => state.animationState);
   const setAnimation = useGaesupStore((state) => state.setAnimation);
+  const bridge = getGlobalAnimationBridge();
 
   useEffect(() => {
-    const bridge = getGlobalAnimationBridge();
     bridgeRef.current = bridge;
-
     const unsubscribe = bridge.subscribe((snapshot, type) => {
       const currentStoreAnimation =
         useGaesupStore.getState().animationState?.[type]?.current;
@@ -70,9 +70,7 @@ export function useAnimationBridge() {
     },
     [],
   );
-
   const currentType = (mode?.type as AnimationType) || 'character';
-
   return {
     bridge: bridgeRef.current,
     playAnimation,

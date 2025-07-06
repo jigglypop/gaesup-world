@@ -3,5 +3,4 @@ export * from './mode';
 export * from './sizes';
 export * from './rideable';
 export * from './performance';
-export * from './mode copy';
-export * from './sizes'
+export * from './physics';

@@ -57,7 +57,6 @@ export abstract class AbstractBridge<
       this.eventHandlers.set(type, new Set());
     }
     this.eventHandlers.get(type)!.add(handler);
-    
     return () => {
       this.eventHandlers.get(type)?.delete(handler);
     };
@@ -80,7 +79,6 @@ export abstract class AbstractBridge<
       });
     }
   }
-
   /**
    * 엔진 인스턴스를 생성합니다. 하위 클래스에서 구현해야 합니다.
    * @param id - 엔티티 ID.
@@ -88,7 +86,6 @@ export abstract class AbstractBridge<
    * @returns 생성된 엔진 인스턴스 또는 null.
    */
   protected abstract buildEngine(id: string, ...args: any[]): EngineType | null;
-
   /**
    * 등록된 엔진/ref를 제거하고 dispose를 호출합니다.
    * @param id - 엔티티의 고유 ID.
@@ -107,7 +104,6 @@ export abstract class AbstractBridge<
       });
     }
   }
-  
   getEngine(id: string): EngineType | undefined {
     return this.engines.get(id);
   }
@@ -120,12 +116,10 @@ export abstract class AbstractBridge<
   execute(id: string, command: CommandType): void {
     const engine = this.getEngine(id);
     if (!engine) return;
-
     this.emit({ type: 'execute', id, timestamp: Date.now(), data: { command } });
     this.executeCommand(engine, command, id);
     this.notifyListeners(id);
   }
-
   /**
    * 실제 명령 실행 로직. 하위 클래스에서 구현해야 합니다.
    */
@@ -139,33 +133,28 @@ export abstract class AbstractBridge<
   snapshot(id: string): Readonly<SnapshotType> | null {
     const engine = this.getEngine(id);
     if (!engine) return null;
-
     const snapshot = this.createSnapshot(engine, id);
     if (snapshot) {
       this.emit({ type: 'snapshot', id, timestamp: Date.now(), data: { snapshot } });
     }
     return snapshot;
   }
-
   /**
    * 실제 스냅샷 생성 로직. 하위 클래스에서 구현해야 합니다.
    */
   protected abstract createSnapshot(engine: EngineType, id: string): SnapshotType | null;
-
   /**
    * 캐시된 스냅샷을 가져옵니다.
    */
   getCachedSnapshot(id: string): Readonly<SnapshotType> | undefined {
     return this.snapshots.get(id);
   }
-
   /**
    * 스냅샷을 캐시합니다.
    */
   protected cacheSnapshot(id: string, snapshot: Readonly<SnapshotType>): void {
     this.snapshots.set(id, snapshot);
   }
-  
   /**
    * 브릿지의 상태 변경을 구독합니다.
    * @param listener - 스냅샷과 ID를 인자로 받는 콜백 함수.
@@ -175,7 +164,6 @@ export abstract class AbstractBridge<
     this.eventListeners.add(listener);
     return () => this.eventListeners.delete(listener);
   }
-
   /**
    * 모든 구독자에게 현재 스냅샷을 알립니다.
    * @param id - 알림을 보낼 엔티티의 ID.
@@ -188,7 +176,6 @@ export abstract class AbstractBridge<
       this.eventListeners.forEach(listener => listener(snapshot, id));
     }
   }
-
   /**
    * 모든 등록된 엔진의 스냅샷을 반환합니다.
    */
@@ -202,7 +189,6 @@ export abstract class AbstractBridge<
     });
     return allSnapshots;
   }
-
   /**
    * 브릿지와 모든 관리 대상 엔진을 정리합니다.
    */
@@ -214,4 +200,5 @@ export abstract class AbstractBridge<
     this.eventHandlers.clear();
     this.middlewares = [];
   }
+
 } 

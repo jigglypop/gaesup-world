@@ -20,12 +20,11 @@ import { createInitialPhysicsState } from './state/physicsStateFactory';
 import { useMotionSetup } from './setup/useMotionSetup';
 import { useAnimationSetup } from './setup/useAnimationSetup';
 import { updateInputState } from '../bridge';
-import { PhysicsBridge } from '../bridge/PhysicsBridge';
+import { PhysicsBridge, getGlobalPhysicsBridge } from '../bridge/PhysicsBridge';
 
 export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
     const physics = usePhysics();
     const physicsStateRef = useRef<PhysicsState | null>(null);
-    const physicsSystem = useRef<PhysicsSystem | null>(null);
     const isInitializedRef = useRef(false);
     const mouseTargetRef = useRef(new THREE.Vector3());
     const matchSizesRef = useRef<SizesType | null>(null);
@@ -35,7 +34,7 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
 
     useEffect(() => {
         if (!isInitializedRef.current) {
-            physicsBridgeRef.current = physicsBridgeRef.current ?? new PhysicsBridge();
+            physicsBridgeRef.current = physicsBridgeRef.current ?? getGlobalPhysicsBridge();
             physicsBridgeRef.current.register('global-physics', store.physics);
             stateManagerRef.current = getGlobalStateManager();
             isInitializedRef.current = true;
