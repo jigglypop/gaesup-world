@@ -9,7 +9,6 @@ import { UsePhysicsEntityProps } from './types';
 import { useCallback } from 'react';
 import { useFrame, RootState } from '@react-three/fiber';
 import { PhysicsState, PhysicsCalculationProps } from '../types';
-import { PhysicsSystem } from '../core/system/PhysicsSystem';
 import { SizesType } from '../../stores/slices/sizes';
 import { PhysicsCalcProps } from '../core/types';
 import { StoreState } from '../../stores/types';
@@ -20,7 +19,8 @@ import { createInitialPhysicsState } from './state/physicsStateFactory';
 import { useMotionSetup } from './setup/useMotionSetup';
 import { useAnimationSetup } from './setup/useAnimationSetup';
 import { updateInputState } from '../bridge';
-import { PhysicsBridge, getGlobalPhysicsBridge } from '../bridge/PhysicsBridge';
+import { PhysicsBridge } from '../bridge/PhysicsBridge';
+import { BridgeFactory } from '@core/boilerplate';
 
 export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
     const physics = usePhysics();
@@ -34,8 +34,14 @@ export const usePhysicsLoop = (props: PhysicsCalculationProps) => {
 
     useEffect(() => {
         if (!isInitializedRef.current) {
-            physicsBridgeRef.current = physicsBridgeRef.current ?? getGlobalPhysicsBridge();
-            physicsBridgeRef.current.register('global-physics', store.physics);
+            // BridgeFactory에서 physics 브릿지 가져오기
+            const bridge = BridgeFactory.get('physics') as PhysicsBridge | null;
+            if (bridge) {
+                physicsBridgeRef.current = bridge;
+                physicsBridgeRef.current.register('global-physics', store.physics);
+            } else {
+                console.error('[usePhysics] PhysicsBridge not found in BridgeFactory');
+            }
             stateManagerRef.current = getGlobalStateManager();
             isInitializedRef.current = true;
         }
