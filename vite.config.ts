@@ -8,6 +8,7 @@ import path from 'path';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const isLibraryBuild = mode === 'esm' || mode === 'cjs';
+
   const alias = [
     { find: '@', replacement: path.resolve(__dirname, 'src') },
     { find: '@core', replacement: path.resolve(__dirname, 'src/core') },
@@ -23,7 +24,24 @@ export default defineConfig(({ mode }) => {
   ];
   if (isLibraryBuild) {
     return {
-      plugins: [react(), tsconfigPaths(), svgr(), glsl()],
+      plugins: [
+        react({
+          parserConfig: (id) => {
+            // Enable decorators for all TypeScript files
+            if (id.endsWith('.ts') || id.endsWith('.tsx')) {
+              return {
+                syntax: 'typescript',
+                tsx: id.endsWith('.tsx'),
+                decorators: true,
+              };
+            }
+          },
+          tsDecorators: true,
+        }),
+        tsconfigPaths(),
+        svgr(),
+        glsl()
+      ],
       resolve: {
         alias,
       },
@@ -68,7 +86,24 @@ export default defineConfig(({ mode }) => {
     };
   }
   return {
-    plugins: [react(), tsconfigPaths(), svgr(), glsl()],
+    plugins: [
+      react({
+        parserConfig: (id) => {
+          // Enable decorators for all TypeScript files
+          if (id.endsWith('.ts') || id.endsWith('.tsx')) {
+            return {
+              syntax: 'typescript',
+              tsx: id.endsWith('.tsx'),
+              decorators: true,
+            };
+          }
+        },
+        tsDecorators: true,
+      }),
+      tsconfigPaths(),
+      svgr(),
+      glsl()
+    ],
     resolve: {
       alias,
       dedupe: ['react', 'react-dom'],

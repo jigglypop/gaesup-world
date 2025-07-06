@@ -93,4 +93,33 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     this.metrics.currentSpeed = distance / (deltaTime || 0.016);
   }
 
+  protected onDispose(): void {
+    this.metrics.lastPosition.set(0, 0, 0);
+  }
+
+  /**
+   * Vector3 헬퍼 - 한 벡터를 다른 벡터로 복사
+   */
+  private copyVector3<T extends { set: (x: number, y: number, z: number) => void }>(
+    target: T, 
+    source: { x: number; y: number; z: number }
+  ): void {
+    target.set(source.x, source.y, source.z);
+  }
+
+  /**
+   * 조건부 상태 업데이트 - 변경된 경우에만 업데이트
+   */
+  private updateStateIfChanged<K extends keyof MotionState>(
+    key: K,
+    newValue: MotionState[K],
+    callback?: () => void
+  ): boolean {
+    if (this.state[key] !== newValue) {
+      this.state[key] = newValue;
+      callback?.();
+      return true;
+    }
+    return false;
+  }
 }

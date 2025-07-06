@@ -1,21 +1,21 @@
-import { ManagedEntity } from "./ManagedEntity";
+import { ManagedEntity } from "../entity/ManagedEntity";
 
-export interface BaseState {
+export type BaseState = {
     lastUpdate: number;
-}
+};
 
-export interface BaseMetrics {
+export type BaseMetrics = {
     frameTime: number;
-}
+};
 
-export interface SystemOptions {
+export type SystemOptions = {
     initialState?: Record<string, unknown>;
     initialMetrics?: Record<string, unknown>;
-}
+};
 
-export interface SystemUpdateArgs {
+export type SystemUpdateArgs = {
     deltaTime: number;
-}
+};
 
 export type IDisposable = {
   dispose(): void;
@@ -23,7 +23,7 @@ export type IDisposable = {
 
 export type BridgeEventType = 'register' | 'unregister' | 'execute' | 'snapshot' | 'error';
 
-export interface BridgeEvent<EngineType, SnapshotType, CommandType> {
+export type BridgeEvent<EngineType, SnapshotType, CommandType> = {
   type: BridgeEventType;
   id: string;
   timestamp: number;
@@ -45,6 +45,8 @@ export type ManagedEntityOptions = {
   maxQueueSize?: number;
   enableStateCache?: boolean;
   cacheTimeout?: number;
+  onInit?: <T extends ManagedEntity<any, any, any>>(entity: T) => void;
+  onDispose?: <T extends ManagedEntity<any, any, any>>(entity: T) => void;
 };
 
 export type UseBaseFrameOptions = {
@@ -61,10 +63,12 @@ export type UseBaseLifecycleOptions<EngineType> = {
     enabled?: boolean;
 }
 
-export interface UseManagedEntityOptions extends ManagedEntityOptions {
-    onInit?: <T extends ManagedEntity<any, any, any>>(entity: T) => void;
-    onDispose?: <T extends ManagedEntity<any, any, any>>(entity: T) => void;
-    skipLifecycle?: boolean;
-    skipFrame?: boolean;
+export type UseManagedEntityOptions = ManagedEntityOptions & 
+    UseBaseFrameOptions & 
+    UseBaseLifecycleOptions<any> & {
     frameCallback?: () => void;
-}
+};
+
+export type Constructor<T = unknown> = new (...args: unknown[]) => T;
+export type Factory<T> = () => T;
+export type Token<T> = Constructor<T> | string | symbol; 

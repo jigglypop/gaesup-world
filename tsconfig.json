@@ -3,6 +3,7 @@
     "target": "ES2020",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
+    "experimentalDecorators": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -41,7 +42,8 @@
       "@types/*": ["src/core/types/*"],
       "@motions/*": ["src/core/motions/*"],
       "@debug/*": ["src/core/debug/*"]
-    }
+    },
+    "emitDecoratorMetadata": false
   },
   "include": ["src", "examples", "vite.config.ts", "jest.config.cjs", "index.ts", "react-three-fiber.d.ts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"],

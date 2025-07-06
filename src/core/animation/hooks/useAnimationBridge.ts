@@ -1,17 +1,17 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { useGaesupStore } from '../../stores/gaesupStore';
+import { BridgeFactory } from '../../boilerplate';
 import { AnimationBridge } from '../bridge/AnimationBridge';
 import { AnimationType } from '../core/types';
 import * as THREE from 'three';
 import { AnimationCommand } from '../bridge/types';
 
-let globalAnimationBridge: AnimationBridge | null = null;
-
 export function getGlobalAnimationBridge(): AnimationBridge {
-  if (!globalAnimationBridge) {
-    globalAnimationBridge = new AnimationBridge();
+  let bridge = BridgeFactory.get<AnimationBridge>('animation');
+  if (!bridge) {
+    bridge = BridgeFactory.create<AnimationBridge>('animation');
   }
-  return globalAnimationBridge;
+  return bridge!;
 }
 
 export function useAnimationBridge() {
@@ -24,6 +24,7 @@ export function useAnimationBridge() {
   useEffect(() => {
     bridgeRef.current = bridge;
     const unsubscribe = bridge.subscribe((snapshot, type) => {
+      if (!snapshot) return;
       const currentStoreAnimation =
         useGaesupStore.getState().animationState?.[type]?.current;
       if (snapshot.currentAnimation !== currentStoreAnimation) {
@@ -34,7 +35,7 @@ export function useAnimationBridge() {
     return () => {
       unsubscribe();
     };
-  }, [setAnimation]);
+  }, [setAnimation, bridge]);
 
   const executeCommand = useCallback(
     (type: AnimationType, command: AnimationCommand) => {
@@ -70,7 +71,9 @@ export function useAnimationBridge() {
     },
     [],
   );
+  
   const currentType = (mode?.type as AnimationType) || 'character';
+  
   return {
     bridge: bridgeRef.current,
     playAnimation,
