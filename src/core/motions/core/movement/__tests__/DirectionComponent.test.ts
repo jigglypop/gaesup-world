@@ -1,17 +1,17 @@
 import { DirectionComponent } from '@core/motions/core/movement/DirectionComponent';
 import * as THREE from 'three';
 import { PhysicsState } from '@core/motions/types';
-import { InteractionEngine } from '@core/interactions/core/InteractionEngine';
+import { InteractionSystem } from '@core/interactions/core/InteractionSystem';
 
-jest.mock('@core/interactions/core/InteractionEngine');
+jest.mock('@core/interactions/core/InteractionSystem');
 
 describe('DirectionComponent', () => {
   let directionComponent: DirectionComponent;
-  let mockInteractionEngine: jest.Mocked<InteractionEngine>;
+  let mockInteractionSystem: jest.Mocked<InteractionSystem>;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockInteractionEngine = {
+    mockInteractionSystem = {
       getKeyboardRef: jest.fn().mockReturnValue({
         forward: false,
         backward: false,
@@ -34,9 +34,9 @@ describe('DirectionComponent', () => {
         wheel: 0,
         position: new THREE.Vector2()
       })
-    } as unknown as jest.Mocked<InteractionEngine>;
+    } as unknown as jest.Mocked<InteractionSystem>;
     
-    (InteractionEngine.getInstance as jest.Mock).mockReturnValue(mockInteractionEngine);
+    (InteractionSystem.getInstance as jest.Mock).mockReturnValue(mockInteractionSystem);
     directionComponent = new DirectionComponent();
   });
 
@@ -60,7 +60,7 @@ describe('DirectionComponent', () => {
   } as PhysicsState);
 
   it('캐릭터 모드 + 키보드 입력 시 activeState.dir과 euler.y가 변경되어야 합니다.', () => {
-    mockInteractionEngine.getKeyboardRef.mockReturnValue({
+    mockInteractionSystem.getKeyboardRef.mockReturnValue({
       forward: true,
       leftward: true,
       backward: false,
@@ -81,7 +81,7 @@ describe('DirectionComponent', () => {
   });
 
   it('캐릭터 모드 + 마우스 입력 시 activeState.dir과 euler.y가 변경되어야 합니다.', () => {
-    mockInteractionEngine.getMouseRef.mockReturnValue({
+    mockInteractionSystem.getMouseRef.mockReturnValue({
       isActive: true,
       angle: Math.PI / 4,
       target: new THREE.Vector3(10, 0, 10),
@@ -102,7 +102,7 @@ describe('DirectionComponent', () => {
   });
 
   it('차량 모드 + 키보드 입력 시 activeState.direction과 euler.y가 변경되어야 합니다.', () => {
-    mockInteractionEngine.getKeyboardRef.mockReturnValue({
+    mockInteractionSystem.getKeyboardRef.mockReturnValue({
       forward: true,
       rightward: true,
       backward: false,
@@ -123,7 +123,7 @@ describe('DirectionComponent', () => {
   });
 
   it('비행기 모드 + 키보드 입력 시 activeState.direction과 euler가 변경되어야 합니다.', () => {
-    mockInteractionEngine.getKeyboardRef.mockReturnValue({
+    mockInteractionSystem.getKeyboardRef.mockReturnValue({
       forward: true,
       leftward: true,
       backward: false,
@@ -144,7 +144,7 @@ describe('DirectionComponent', () => {
   });
 
   it('자동화(automation) 큐가 있을 때 마우스 방향을 덮어써야 합니다.', () => {
-    mockInteractionEngine.getMouseRef.mockReturnValue({
+    mockInteractionSystem.getMouseRef.mockReturnValue({
       isActive: true,
       angle: 0,
       target: new THREE.Vector3(),

@@ -1,4 +1,4 @@
 export * from './usePhysics';
-export * from './useInteractionEngine';
+export * from './useInteractionSystem';
 export * from './useGaesupGltf';
 export * from './useMotion';

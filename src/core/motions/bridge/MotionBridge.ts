@@ -1,4 +1,4 @@
-import { CoreBridge, DomainBridge, EnableEventLog, Autowired } from '@core/boilerplate';
+import { CoreBridge, DomainBridge, EnableEventLog } from '@core/boilerplate';
 import { MotionSystem } from '@/core/motions/core/system/MotionSystem';
 import { euler, RapierRigidBody, vec3 } from '@react-three/rapier';
 import { MotionCommand, MotionEntity, MotionSnapshot } from './types';

@@ -1,68 +1,6 @@
 import * as THREE from 'three';
 
-export interface AutomationAction {
-  id: string;
-  type: 'move' | 'click' | 'wait' | 'key' | 'custom';
-  target?: THREE.Vector3;
-  key?: string;
-  duration?: number;
-  delay?: number;
-  beforeCallback?: () => void;
-  afterCallback?: () => void;
-  data?: Record<string, unknown>;
-  timestamp?: number;
-}
-
-export interface AutomationQueue {
-  actions: AutomationAction[];
-  currentIndex: number;
-  isRunning: boolean;
-  isPaused: boolean;
-  loop: boolean;
-  maxRetries: number;
-}
-
-export interface AutomationState {
-  isActive: boolean;
-  queue: AutomationQueue;
-  currentAction: AutomationAction | null;
-  executionStats: {
-    totalExecuted: number;
-    successRate: number;
-    averageTime: number;
-    errors: string[];
-  };
-  settings: {
-    throttle: number;
-    autoStart: boolean;
-    trackProgress: boolean;
-    showVisualCues: boolean;
-  };
-}
-
-export interface AutomationConfig {
-  maxConcurrentActions: number;
-  defaultDelay: number;
-  retryDelay: number;
-  timeoutDuration: number;
-  enableLogging: boolean;
-  visualCues: {
-    showPath: boolean;
-    showTargets: boolean;
-    lineColor: string;
-    targetColor: string;
-  };
-}
-
-export interface AutomationMetrics {
-  queueLength: number;
-  executionTime: number;
-  performance: number;
-  memoryUsage: number;
-  errorRate: number;
-}
-
-export class AutomationEngine {
+export class AutomationSystem {
   private state: AutomationState;
   private config: AutomationConfig;
   private metrics: AutomationMetrics;

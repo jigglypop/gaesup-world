@@ -1,7 +1,7 @@
 import { useGaesupStore } from '@stores/gaesupStore';
 import { useGaesupGltf } from './useGaesupGltf';
 import { useStateEngine } from './useStateEngine';
-import { InteractionEngine } from '../../interactions/core/InteractionEngine';
+import { InteractionSystem } from '../../interactions/core/InteractionSystem';
 import { RefObject, useEffect, useRef } from 'react';
 import { CollisionEnterPayload, CollisionExitPayload, RapierRigidBody } from '@react-three/rapier';
 import { useAnimationPlayer } from '../../hooks';
@@ -235,7 +235,7 @@ export function usePhysicsEntity({
 }
 export function usePhysics() {
     const { activeState } = useStateEngine();
-    const interactionEngine = InteractionEngine.getInstance();
+    const interactionEngine = InteractionSystem.getInstance();
     const interaction = interactionEngine.getStateRef();
     const urls = useGaesupStore((state) => state.urls);
     const { getSizesByUrls } = useGaesupGltf();

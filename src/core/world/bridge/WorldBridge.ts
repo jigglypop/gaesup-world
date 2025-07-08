@@ -1,4 +1,4 @@
-import { WorldEngine, WorldObject, InteractionEvent } from '../core/WorldEngine';
+import { WorldSystem, WorldObject, InteractionEvent } from '../core/WorldSystem';
 import * as THREE from 'three';
 
 export interface WorldState {
@@ -21,12 +21,12 @@ export interface WorldActions {
 }
 
 export class WorldBridge {
-  private engine: WorldEngine;
+  private engine: WorldSystem;
   private state: WorldState;
   private stateUpdateCallback?: (state: WorldState) => void;
 
   constructor() {
-    this.engine = new WorldEngine();
+    this.engine = new WorldSystem();
     this.state = {
       objects: [],
       interactionMode: 'view',

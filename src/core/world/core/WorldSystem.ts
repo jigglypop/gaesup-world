@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { BaseSystem } from '@core/boilerplate/entity/BaseSystem';
 
 export interface WorldObject {
   id: string;
@@ -91,12 +92,26 @@ class SpatialGrid {
   }
 }
 
-export class WorldEngine {
+export class WorldSystem implements BaseSystem {
   private objects: Map<string, WorldObject> = new Map();
   private interactionEvents: InteractionEvent[] = [];
   private spatial: SpatialGrid = new SpatialGrid(10);
   private raycaster: THREE.Raycaster = new THREE.Raycaster();
   private tempVector: THREE.Vector3 = new THREE.Vector3();
+
+  async init(): Promise<void> {
+    // 초기화 로직이 필요한 경우 여기에 추가
+    // 현재는 특별한 초기화가 필요없음
+  }
+
+  update(dt: number): void {
+    // 월드 업데이트 로직
+    // 현재는 이벤트 기반으로 동작하므로 특별한 업데이트 로직 없음
+  }
+
+  dispose(): void {
+    this.cleanup();
+  }
 
   addObject(object: WorldObject): void {
     this.objects.set(object.id, object);

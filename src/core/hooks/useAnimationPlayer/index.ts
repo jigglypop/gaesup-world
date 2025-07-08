@@ -2,11 +2,11 @@ import { useEffect, useMemo } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { useAnimationBridge } from '../../animation/hooks/useAnimationBridge';
 import { useStateEngine } from '../../motions/hooks/useStateEngine';
-import { useInteractionEngine } from '../../motions/hooks/useInteractionEngine';
+import { useInteractionSystem } from '@/core/motions/hooks/useInteractionSystem';
 
 export function useAnimationPlayer(active: boolean) {
   const { playAnimation, currentType, currentAnimation } = useAnimationBridge();
-  const { keyboard, mouse } = useInteractionEngine();
+  const { keyboard, mouse } = useInteractionSystem();
   const automation = useGaesupStore((state) => state.automation);
   const { gameStates } = useStateEngine();
   

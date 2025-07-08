@@ -1,8 +1,8 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { InteractionBridge } from '../../interactions/bridge/InteractionBridge';
-import { KeyboardState, MouseState } from '../../interactions/core/InteractionEngine';
+import { KeyboardState, MouseState } from '../../interactions/core/InteractionSystem';
 
-export interface UseInteractionEngineResult {
+export interface UseInteractionSystemResult {
   keyboard: KeyboardState;
   mouse: MouseState;
   updateKeyboard: (updates: Partial<KeyboardState>) => void;
@@ -18,7 +18,7 @@ function getGlobalBridge(): InteractionBridge {
   return globalBridge;
 }
 
-export function useInteractionEngine(): UseInteractionEngineResult {
+export function useInteractionSystem(): UseInteractionSystemResult {
   const bridgeRef = useRef<InteractionBridge | null>(null);
   const [state, setState] = useState<{ keyboard: KeyboardState; mouse: MouseState }>(() => {
     const bridge = getGlobalBridge();

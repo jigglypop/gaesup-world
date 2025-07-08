@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { InteractionEngine, KeyboardState, MouseState } from '../core/InteractionEngine';
-import { AutomationEngine } from '../core/AutomationEngine';
-import { InteractionSnapshot, InteractionCommand } from './types';
+import { InteractionSystem, KeyboardState, MouseState } from '../core/InteractionSystem';
+import { AutomationSystem } from '../core/AutomationSystem';
+import { InteractionSnapshot } from './types';
 
 export interface BridgeCommand {
   type: 'input' | 'automation';
@@ -25,8 +25,8 @@ export interface BridgeEvent {
 }
 
 export class InteractionBridge {
-  private interactionEngine: InteractionEngine;
-  private automationEngine: AutomationEngine;
+  private interactionSystem: InteractionSystem;
+  private automationSystem: AutomationSystem;
   private state: BridgeState;
   private eventSubscribers: Map<string, Function[]>;
   private eventQueue: BridgeEvent[];
@@ -37,8 +37,8 @@ export class InteractionBridge {
   private eventListeners: Set<(state: { keyboard: KeyboardState; mouse: MouseState }) => void>;
 
   constructor() {
-    this.interactionEngine = InteractionEngine.getInstance();
-    this.automationEngine = new AutomationEngine();
+    this.interactionSystem = InteractionSystem.getInstance();
+    this.automationSystem = new AutomationSystem();
     this.state = {
       isActive: true,
       lastCommand: null,
@@ -79,14 +79,14 @@ export class InteractionBridge {
       });
     };
 
-    this.automationEngine.addEventListener('moveRequested', moveListener);
-    this.automationEngine.addEventListener('clickRequested', clickListener);
-    this.automationEngine.addEventListener('keyRequested', keyListener);
+    this.automationSystem.addEventListener('moveRequested', moveListener);
+    this.automationSystem.addEventListener('clickRequested', clickListener);
+    this.automationSystem.addEventListener('keyRequested', keyListener);
     
     this.engineListenerCleanups.push(
-      () => this.automationEngine.removeEventListener('moveRequested', moveListener),
-      () => this.automationEngine.removeEventListener('clickRequested', clickListener),
-      () => this.automationEngine.removeEventListener('keyRequested', keyListener)
+      () => this.automationSystem.removeEventListener('moveRequested', moveListener),
+      () => this.automationSystem.removeEventListener('clickRequested', clickListener),
+      () => this.automationSystem.removeEventListener('keyRequested', keyListener)
     );
   }
 
@@ -125,21 +125,21 @@ export class InteractionBridge {
     
     switch (action) {
       case 'updateKeyboard':
-        this.interactionEngine.updateKeyboard(data as Partial<KeyboardState>);
+        this.interactionSystem.updateKeyboard(data as Partial<KeyboardState>);
         this.notifyListeners();
         break;
       case 'updateMouse':
-        this.interactionEngine.updateMouse(data as Partial<MouseState>);
+        this.interactionSystem.updateMouse(data as Partial<MouseState>);
         this.notifyListeners();
         break;
       case 'updateGamepad':
-        this.interactionEngine.updateGamepad(data as any);
+        this.interactionSystem.updateGamepad(data as any);
         break;
       case 'updateTouch':
-        this.interactionEngine.updateTouch(data as any);
+        this.interactionSystem.updateTouch(data as any);
         break;
       case 'setConfig':
-        this.interactionEngine.setConfig(data as any);
+        this.interactionSystem.setConfig(data as any);
         break;
       case 'moveTo':
         this.emitEvent({
@@ -173,36 +173,36 @@ export class InteractionBridge {
     
     switch (action) {
       case 'addAction':
-        this.automationEngine.addAction(data as any);
+        this.automationSystem.addAction(data as any);
         break;
       case 'removeAction':
-        this.automationEngine.removeAction(data as string);
+        this.automationSystem.removeAction(data as string);
         break;
       case 'start':
-        this.automationEngine.start();
+        this.automationSystem.start();
         break;
       case 'pause':
-        this.automationEngine.pause();
+        this.automationSystem.pause();
         break;
       case 'resume':
-        this.automationEngine.resume();
+        this.automationSystem.resume();
         break;
       case 'stop':
-        this.automationEngine.stop();
+        this.automationSystem.stop();
         break;
       case 'clearQueue':
-        this.automationEngine.clearQueue();
+        this.automationSystem.clearQueue();
         break;
       case 'updateSettings':
-        this.automationEngine.updateSettings(data as any);
+        this.automationSystem.updateSettings(data as any);
         break;
     }
   }
 
   snapshot(): InteractionSnapshot {
-    const state = this.interactionEngine.getState();
-    const config = this.interactionEngine.getConfig();
-    const metrics = this.interactionEngine.getMetrics();
+    const state = this.interactionSystem.getState();
+    const config = this.interactionSystem.getConfig();
+    const metrics = this.interactionSystem.getMetrics();
 
     return {
       keyboard: state.keyboard,
@@ -221,8 +221,8 @@ export class InteractionBridge {
   }
 
   private notifyListeners(): void {
-    const keyboard = this.interactionEngine.getKeyboardRef();
-    const mouse = this.interactionEngine.getMouseRef();
+    const keyboard = this.interactionSystem.getKeyboardRef();
+    const mouse = this.interactionSystem.getMouseRef();
     this.eventListeners.forEach(listener => listener({ keyboard, mouse }));
   }
 
@@ -287,8 +287,8 @@ export class InteractionBridge {
   }
 
   private updateMetrics(): void {
-    const interactionMetrics = this.interactionEngine.getMetrics();
-    const automationMetrics = this.automationEngine.getMetrics();
+    const interactionMetrics = this.interactionSystem.getMetrics();
+    const automationMetrics = this.automationSystem.getMetrics();
     
     this.emitEvent({
       type: 'sync',
@@ -301,17 +301,17 @@ export class InteractionBridge {
     });
   }
 
-  getInteractionEngine(): InteractionEngine {
-    return this.interactionEngine;
+  getInteractionSystem(): InteractionSystem {
+    return this.interactionSystem;
   }
 
-  getAutomationEngine(): AutomationEngine {
-    return this.automationEngine;
+  getAutomationSystem(): AutomationSystem {
+    return this.automationSystem;
   }
 
   reset(): void {
-    this.interactionEngine.reset();
-    this.automationEngine.reset();
+    this.interactionSystem.reset();
+    this.automationSystem.reset();
     this.state.commandHistory = [];
     this.state.lastCommand = null;
     this.eventQueue = [];
@@ -327,8 +327,8 @@ export class InteractionBridge {
     this.engineListenerCleanups.forEach(cleanup => cleanup());
     this.engineListenerCleanups = [];
     
-    this.interactionEngine.dispose();
-    this.automationEngine.dispose();
+    this.interactionSystem.dispose();
+    this.automationSystem.dispose();
     this.eventSubscribers.clear();
     this.eventQueue = [];
     this.state.commandHistory = [];
@@ -336,10 +336,10 @@ export class InteractionBridge {
   }
 
   getKeyboardState(): KeyboardState {
-    return this.interactionEngine.getKeyboardRef();
+    return this.interactionSystem.getKeyboardRef();
   }
 
   getMouseState(): MouseState {
-    return this.interactionEngine.getMouseRef();
+    return this.interactionSystem.getMouseRef();
   }
 }

@@ -7,4 +7,12 @@ declare global {
     function getMetadata(metadataKey: string | symbol, target: unknown): unknown
     function getMetadata(metadataKey: string | symbol, target: unknown, propertyKey: string | symbol): unknown
   }
+}
+
+interface Performance {
+  memory: {
+    totalJSHeapSize: number;
+    usedJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
 } 

@@ -2,7 +2,6 @@ import { CoreBridge, DomainBridge, EnableEventLog } from '@core/boilerplate';
 import { PhysicsSystem } from '../core/system/PhysicsSystem';
 import { PhysicsConfigType } from '@/core/stores/slices/physics/types';
 import { PhysicsUpdateArgs } from '../core/system/PhysicsSystem';
-import { BridgeFactory } from '@core/boilerplate';
 
 export type PhysicsBridgeEntity = {
   engine: PhysicsSystem;

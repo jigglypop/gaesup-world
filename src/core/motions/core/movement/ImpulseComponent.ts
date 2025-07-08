@@ -1,18 +1,18 @@
 import { RefObject } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 import { EntityStateManager } from '../system/EntityStateManager';
-import { InteractionEngine } from '@core/interactions/core/InteractionEngine';
+import { InteractionSystem } from '@/core/interactions/core/InteractionSystem';
 import { PhysicsState } from '../../types';
 import { PhysicsConfigType } from '@stores/slices';
 
 export class ImpulseComponent {
   private stateEngine: EntityStateManager;
-  private interactionEngine: InteractionEngine;
+  private interactionEngine: InteractionSystem;
   private config: PhysicsConfigType;
 
   constructor(config: PhysicsConfigType) {
     this.stateEngine = new EntityStateManager();
-    this.interactionEngine = InteractionEngine.getInstance();
+    this.interactionEngine = InteractionSystem.getInstance();
     this.config = config;
   }
 

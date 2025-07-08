@@ -21,3 +21,45 @@ image/
 image
 pnpm-lock.yaml
 public
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+*.local
+
+# Test coverage
+coverage/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# IDE
+.yarn/*
+!.yarn/cache // Zero-Install 
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+dist
+dist/*
+.cursor/*
+coverage
+coverage/*
+.cursor

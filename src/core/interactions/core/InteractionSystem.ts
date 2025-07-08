@@ -1,92 +1,9 @@
+import { BaseSystem } from '@/core/boilerplate/entity/BaseSystem';
 import * as THREE from 'three';
+import { InteractionState, InteractionConfig, InteractionMetrics, KeyboardState, MouseState, GamepadState, TouchState } from '../bridge';
 
-export interface KeyboardState {
-  forward: boolean;
-  backward: boolean;
-  leftward: boolean;
-  rightward: boolean;
-  shift: boolean;
-  space: boolean;
-  keyZ: boolean;
-  keyR: boolean;
-  keyF: boolean;
-  keyE: boolean;
-  escape: boolean;
-}
-
-export interface MouseState {
-  target: THREE.Vector3;
-  angle: number;
-  isActive: boolean;
-  shouldRun: boolean;
-  buttons: {
-    left: boolean;
-    right: boolean;
-    middle: boolean;
-  };
-  wheel: number;
-  position: THREE.Vector2;
-}
-
-export interface GamepadState {
-  connected: boolean;
-  leftStick: THREE.Vector2;
-  rightStick: THREE.Vector2;
-  triggers: { left: number; right: number };
-  buttons: Record<string, boolean>;
-  vibration: { weak: number; strong: number };
-}
-
-export interface TouchState {
-  touches: Array<{
-    id: number;
-    position: THREE.Vector2;
-    force: number;
-  }>;
-  gestures: {
-    pinch: number;
-    rotation: number;
-    pan: THREE.Vector2;
-  };
-}
-
-export interface InteractionState {
-  keyboard: KeyboardState;
-  mouse: MouseState;
-  gamepad: GamepadState;
-  touch: TouchState;
-  lastUpdate: number;
-  isActive: boolean;
-}
-
-export interface InteractionConfig {
-  sensitivity: {
-    mouse: number;
-    gamepad: number;
-    touch: number;
-  };
-  deadzone: {
-    gamepad: number;
-    touch: number;
-  };
-  smoothing: {
-    mouse: number;
-    gamepad: number;
-  };
-  invertY: boolean;
-  enableVibration: boolean;
-}
-
-export interface InteractionMetrics {
-  inputLatency: number;
-  frameTime: number;
-  eventCount: number;
-  activeInputs: string[];
-  performanceScore: number;
-}
-
-export class InteractionEngine {
-  private static instance: InteractionEngine | null = null;
+export class InteractionSystem implements BaseSystem {
+  private static instance: InteractionSystem | null = null;
   
   private stateRef: InteractionState;
   private config: InteractionConfig;
@@ -100,11 +17,18 @@ export class InteractionEngine {
     this.eventCallbacks = new Map();
   }
 
-  static getInstance(): InteractionEngine {
-    if (!InteractionEngine.instance) {
-      InteractionEngine.instance = new InteractionEngine();
+  static getInstance(): InteractionSystem {
+    if (!InteractionSystem.instance) {
+      InteractionSystem.instance = new InteractionSystem();
     }
-    return InteractionEngine.instance;
+    return InteractionSystem.instance;
+  }
+
+  async init(): Promise<void> {
+  }
+
+  update(dt: number): void {
+    this.stateRef.lastUpdate = Date.now();
   }
 
   private createDefaultState(): InteractionState {
@@ -168,7 +92,8 @@ export class InteractionEngine {
       frameTime: 0,
       eventCount: 0,
       activeInputs: [],
-      performanceScore: 100
+      performanceScore: 100,
+      lastUpdate: 0
     };
   }
 
@@ -277,6 +202,8 @@ export class InteractionEngine {
 
   dispose(): void {
     this.reset();
-    InteractionEngine.instance = null;
+    InteractionSystem.instance = null;
   }
 }
+
+export type { KeyboardState, MouseState } from '../bridge';

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { InteractionState, AutomationState, InteractionConfig, AutomationConfig, InteractionMetrics, AutomationMetrics, BridgeState } from '../bridge/types';
-import { MouseState } from '../core/InteractionEngine';
+import { MouseState } from '../core/InteractionSystem';
 
 export interface InteractionSliceState {
   interaction: InteractionState;

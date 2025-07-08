@@ -154,6 +154,7 @@ export interface InteractionConfig {
 }
 
 export interface InteractionMetrics {
+  lastUpdate: number;
   inputLatency: number;
   frameTime: number;
   eventCount: number;

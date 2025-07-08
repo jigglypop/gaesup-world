@@ -3,7 +3,7 @@ import { StoreState } from '../../stores/types';
 import { InteractionSliceState, InteractionActions } from './types';
 import { InteractionState, AutomationState, InteractionConfig, AutomationConfig, InteractionMetrics, AutomationMetrics, BridgeState } from '../bridge/types';
 import * as THREE from 'three';
-import { InteractionEngine } from '../core/InteractionEngine';
+import { InteractionSystem } from '../core/InteractionSystem';
 
 const createDefaultInteractionState = (): InteractionState => ({
   keyboard: {
@@ -137,7 +137,7 @@ export const createInteractionSlice: StateCreator<
   },
 
   dispatchInput: (updates) => {
-    const engine = InteractionEngine.getInstance();
+    const engine = InteractionSystem.getInstance();
     engine.dispatchInput(updates);
   },
 

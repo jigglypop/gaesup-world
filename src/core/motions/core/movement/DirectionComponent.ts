@@ -12,7 +12,7 @@ import {
   PhysicsCalcProps,
   PhysicsState,
 } from '../../types';
-import { InteractionEngine } from '../../../interactions/core/InteractionEngine';
+import { InteractionSystem } from '../../../interactions/core/InteractionSystem';
 import { ModeType } from '@stores/slices/mode/types';
 import { PhysicsConfigType } from '@stores/slices';
 
@@ -28,11 +28,11 @@ export class DirectionComponent {
     rightward: false,
   };
   private timers = new Set<NodeJS.Timeout>();
-  private interactionEngine: InteractionEngine;
+  private interactionEngine: InteractionSystem;
   private config: PhysicsConfigType;
 
   constructor(config: PhysicsConfigType) {
-    this.interactionEngine = InteractionEngine.getInstance();
+    this.interactionEngine = InteractionSystem.getInstance();
     this.config = config;
   }
 
