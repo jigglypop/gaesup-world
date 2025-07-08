@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { InteractionSystem, KeyboardState, MouseState } from '../core/InteractionSystem';
 import { AutomationSystem } from '../core/AutomationSystem';
 import { InteractionSnapshot } from './types';
+import { Profile, HandleError, LogSnapshot, ValidateCommand, TrackCalls } from '@/core/boilerplate/decorators';
+import { logger } from '@/core/utils/logger';
 
 export interface BridgeCommand {
   type: 'input' | 'automation';
@@ -90,7 +92,20 @@ export class InteractionBridge {
     );
   }
 
+  @HandleError()
+  @Profile()
   executeCommand(command: Omit<BridgeCommand, 'timestamp'>): void {
+    // 명령어 검증
+    if (!command || typeof command !== 'object') {
+      logger.warn(`[${this.constructor.name}] Invalid command passed to executeCommand`);
+      return;
+    }
+    
+    if (!command.type || !command.action) {
+      logger.warn(`[${this.constructor.name}] Command missing required fields: type or action`);
+      return;
+    }
+
     const fullCommand: BridgeCommand = {
       ...command,
       timestamp: Date.now()
@@ -112,14 +127,15 @@ export class InteractionBridge {
 
     switch (command.type) {
       case 'input':
-        this.handleInputCommand(command);
+        this.handleInputCommand(fullCommand);
         break;
       case 'automation':
-        this.handleAutomationCommand(command);
+        this.handleAutomationCommand(fullCommand);
         break;
     }
   }
 
+  @HandleError()
   private handleInputCommand(command: BridgeCommand): void {
     const { action, data } = command;
     
@@ -168,6 +184,7 @@ export class InteractionBridge {
     }
   }
 
+  @HandleError()
   private handleAutomationCommand(command: BridgeCommand): void {
     const { action, data } = command;
     
@@ -199,6 +216,7 @@ export class InteractionBridge {
     }
   }
 
+  @LogSnapshot()
   snapshot(): InteractionSnapshot {
     const state = this.interactionSystem.getState();
     const config = this.interactionSystem.getConfig();
@@ -220,12 +238,15 @@ export class InteractionBridge {
     return () => this.eventListeners.delete(listener);
   }
 
+  @Profile()
   private notifyListeners(): void {
     const keyboard = this.interactionSystem.getKeyboardRef();
     const mouse = this.interactionSystem.getMouseRef();
     this.eventListeners.forEach(listener => listener({ keyboard, mouse }));
   }
 
+  @HandleError()
+  @TrackCalls()
   private emitEvent(event: BridgeEvent): void {
     this.eventQueue.push(event);
     
@@ -256,6 +277,7 @@ export class InteractionBridge {
     }
   }
 
+  @HandleError()
   private startSync(): void {
     this.syncInterval = window.setInterval(() => {
       this.state.syncStatus = 'syncing';
@@ -272,6 +294,7 @@ export class InteractionBridge {
     }, 16);
   }
 
+  @Profile()
   private processEventQueue(): void {
     const batchSize = 10;
     const processed = this.eventQueue.splice(0, batchSize);
@@ -286,6 +309,7 @@ export class InteractionBridge {
     }
   }
 
+  @Profile()
   private updateMetrics(): void {
     const interactionMetrics = this.interactionSystem.getMetrics();
     const automationMetrics = this.automationSystem.getMetrics();
@@ -309,6 +333,7 @@ export class InteractionBridge {
     return this.automationSystem;
   }
 
+  @HandleError()
   reset(): void {
     this.interactionSystem.reset();
     this.automationSystem.reset();
@@ -318,6 +343,7 @@ export class InteractionBridge {
     this.notifyListeners();
   }
 
+  @HandleError()
   dispose(): void {
     if (this.syncInterval !== null) {
       clearInterval(this.syncInterval);

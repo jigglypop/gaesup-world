@@ -4,6 +4,7 @@ import {
   AnimationMetrics,
   AnimationEngineCallback
 } from './types';
+import { Profile, HandleError, MonitorMemory, TrackCalls } from '@/core/boilerplate/decorators';
 
 export class AnimationEngine {
   private state: AnimationEngineState;
@@ -37,14 +38,17 @@ export class AnimationEngine {
     return () => this.callbacks.delete(callback);
   }
 
+  @Profile()
   private notifyCallbacks(): void {
     this.callbacks.forEach(callback => callback(this.getMetrics()));
   }
 
+  @HandleError()
   initializeMixer(object: THREE.Object3D): void {
     this.state.animationMixer = new THREE.AnimationMixer(object);
   }
 
+  @HandleError()
   addAnimation(name: string, clip: THREE.AnimationClip): void {
     if (!this.state.animationMixer) return;
     
@@ -54,12 +58,15 @@ export class AnimationEngine {
     this.notifyCallbacks();
   }
 
+  @HandleError()
   registerAction(name: string, action: THREE.AnimationAction): void {
     this.state.actions.set(name, action);
     this.updateMetrics();
     this.notifyCallbacks();
   }
 
+  @HandleError()
+  @Profile()
   playAnimation(name: string, fadeInDuration: number = this.state.blendDuration): void {
     const targetAction = this.state.actions.get(name);
     if (!targetAction) return;
@@ -74,6 +81,7 @@ export class AnimationEngine {
     this.notifyCallbacks();
   }
 
+  @HandleError()
   stopAnimation(): void {
     const currentAction = this.state.actions.get(this.state.currentAnimation);
     if (currentAction) {
@@ -85,6 +93,7 @@ export class AnimationEngine {
     this.notifyCallbacks();
   }
 
+  @HandleError()
   setWeight(weight: number): void {
     const currentAction = this.state.actions.get(this.state.currentAnimation);
     if (currentAction) {
@@ -95,6 +104,7 @@ export class AnimationEngine {
     }
   }
 
+  @HandleError()
   setTimeScale(scale: number): void {
     const currentAction = this.state.actions.get(this.state.currentAnimation);
     if (currentAction) {
@@ -104,6 +114,8 @@ export class AnimationEngine {
 
   }
 
+  @Profile()
+  @TrackCalls()
   update(deltaTime: number): void {
     if (this.state.animationMixer) {
       this.state.animationMixer.update(deltaTime);
@@ -124,14 +136,17 @@ export class AnimationEngine {
     return Array.from(this.state.actions.keys());
   }
 
+  @MonitorMemory(5)
   getMetrics(): AnimationMetrics {
     return { ...this.metrics };
   }
 
+  @MonitorMemory(5)
   getState(): Readonly<AnimationEngineState> {
     return { ...this.state };
   }
 
+  @Profile()
   private updateMetrics(): void {
     this.metrics.activeAnimations = Array.from(this.state.actions.values())
       .filter(action => action.isRunning()).length;
@@ -139,6 +154,7 @@ export class AnimationEngine {
     this.metrics.currentWeight = this.state.currentWeight;
   }
 
+  @HandleError()
   clearActions(): void {
     this.state.actions.forEach(action => {
       if (action.isRunning()) {
@@ -152,6 +168,7 @@ export class AnimationEngine {
     this.notifyCallbacks();
   }
 
+  @HandleError()
   dispose(): void {
     if (this.state.animationMixer) {
       this.state.animationMixer.stopAllAction();

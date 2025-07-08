@@ -5,6 +5,7 @@ import {
   SaveLoadResult,
   SaveMetadata
 } from './types';
+import { Profile, HandleError, MonitorMemory, Timeout } from '@/core/boilerplate/decorators';
 
 const SAVE_VERSION = '1.0.0';
 const STORAGE_KEY_PREFIX = 'gaesup_world_save_';
@@ -16,6 +17,9 @@ export class SaveLoadManager {
     this.version = SAVE_VERSION;
   }
 
+  @HandleError()
+  @Profile()
+  @Timeout(5000) // 5초 타임아웃
   async save(
     worldData: WorldSaveData,
     metadata?: Partial<SaveMetadata>,
@@ -46,6 +50,9 @@ export class SaveLoadManager {
     }
   }
 
+  @HandleError()
+  @Profile()
+  @Timeout(5000)
   async load(saveId: string, options: SaveLoadOptions = {}): Promise<SaveLoadResult> {
     try {
       const storageKey = `${STORAGE_KEY_PREFIX}${saveId}`;
@@ -82,6 +89,8 @@ export class SaveLoadManager {
     }
   }
 
+  @HandleError()
+  @Profile()
   async saveToFile(
     worldData: WorldSaveData,
     filename: string,
@@ -118,6 +127,8 @@ export class SaveLoadManager {
     }
   }
 
+  @HandleError()
+  @Profile()
   async loadFromFile(file: File, options: SaveLoadOptions = {}): Promise<SaveLoadResult> {
     try {
       const text = await file.text();
@@ -142,6 +153,7 @@ export class SaveLoadManager {
     }
   }
 
+  @MonitorMemory(10)
   listSaves(): Array<{ id: string; timestamp: number; metadata?: SaveMetadata }> {
     const saves: Array<{ id: string; timestamp: number; metadata?: SaveMetadata }> = [];
 
@@ -168,6 +180,7 @@ export class SaveLoadManager {
     return saves.sort((a, b) => b.timestamp - a.timestamp);
   }
 
+  @HandleError()
   deleteSave(saveId: string): boolean {
     try {
       const storageKey = `${STORAGE_KEY_PREFIX}${saveId}`;
@@ -179,6 +192,7 @@ export class SaveLoadManager {
     }
   }
 
+  @Profile()
   private filterWorldData(world: WorldSaveData, options: SaveLoadOptions): WorldSaveData {
     const filtered = { ...world };
 
@@ -211,6 +225,7 @@ export class SaveLoadManager {
     return filtered;
   }
 
+  @HandleError()
   private async saveUncompressed(saveData: SaveData): Promise<SaveLoadResult> {
     const saveId = `${saveData.world.id}_${saveData.timestamp}`;
     const storageKey = `${STORAGE_KEY_PREFIX}${saveId}`;
@@ -226,6 +241,7 @@ export class SaveLoadManager {
     }
   }
 
+  @HandleError()
   private async saveCompressed(saveData: SaveData): Promise<SaveLoadResult> {
     const compressed = await this.compressData(saveData);
     const saveId = `${saveData.world.id}_${saveData.timestamp}`;
@@ -242,6 +258,7 @@ export class SaveLoadManager {
     }
   }
 
+  @Profile()
   private async compressData(data: SaveData): Promise<string> {
     const jsonStr = JSON.stringify(data);
     const encoder = new TextEncoder();
@@ -249,6 +266,7 @@ export class SaveLoadManager {
     return btoa(String.fromCharCode(...compressed));
   }
 
+  @Profile()
   private async decompressData(compressed: string): Promise<SaveData> {
     const decoded = atob(compressed);
     const bytes = new Uint8Array(decoded.split('').map(char => char.charCodeAt(0)));

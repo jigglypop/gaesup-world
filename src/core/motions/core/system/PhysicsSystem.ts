@@ -8,6 +8,7 @@ import { PhysicsState, PhysicsCalcProps } from '../types';
 import { GameStatesType } from '@core/world/components/Rideable/types';
 import { PhysicsConfigType } from '@/core/stores/slices/mode copy/types';
 import { AbstractSystem, SystemUpdateArgs } from '@core/boilerplate';
+import { Profile, HandleError } from '@core/boilerplate';
 import { DirectionComponent, ImpulseComponent } from '../movement';
 import { PhysicsSystemState, PhysicsSystemMetrics, PhysicsSystemOptions } from './types';
 
@@ -53,20 +54,25 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     this.gravityComponent = new GravityComponent(this.config);
   }
 
+  @HandleError()
   public updateConfig(newConfig: Partial<PhysicsConfigType>) {
     this.config = { ...this.config, ...newConfig };
   }
 
+  @Profile()
   protected performUpdate(args: PhysicsUpdateArgs): void {
     this.calculate(args.calcProp, args.physicsState);
   }
 
+  @Profile()
   protected override updateMetrics(deltaTime: number): void {
     this.state.isJumping = this.isCurrentlyJumping;
     this.state.isMoving = this.lastMovingState;
     this.state.isRunning = this.lastRunningState;
   }
 
+  @HandleError()
+  @Profile()
   calculate(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
     if (!physicsState || !calcProp.rigidBodyRef.current) return;
     const currentVelocity = calcProp.rigidBodyRef.current.linvel();
@@ -92,6 +98,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     }
   }
 
+  @Profile()
   private checkAllStates(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
     const instanceId = `physics-${calcProp.rigidBodyRef.current?.handle || 'unknown'}`;
     this.checkGround(calcProp, physicsState);
@@ -99,6 +106,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     this.checkRiding(instanceId, physicsState);
   }
 
+  @Profile()
   private checkGround(prop: PhysicsCalcProps, physicsState: PhysicsState): void {
     const { rigidBodyRef } = prop;
     const gameStatesRef = physicsState.gameStates;
@@ -124,6 +132,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     this.copyVector3(activeStateRef.velocity, velocity);
   }
 
+  @Profile()
   private checkMoving(physicsState: PhysicsState): void {
     const gameStatesRef = physicsState.gameStates;
     const keyboard = physicsState.keyboard;
@@ -173,6 +182,8 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     physicsState.gameStates.isJumping = false;
   }
 
+  @HandleError()
+  @Profile()
   private calculateCharacter(
     calcProp: PhysicsCalcProps,
     physicsState: PhysicsState
@@ -205,6 +216,8 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     }
   }
 
+  @HandleError()
+  @Profile()
   private calculateVehicle(
     calcProp: PhysicsCalcProps,
     physicsState: PhysicsState
@@ -227,6 +240,8 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     }
   }
 
+  @HandleError()
+  @Profile()
   private calculateAirplane(
     calcProp: PhysicsCalcProps,
     physicsState: PhysicsState
@@ -248,6 +263,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     }
   }
 
+  @Profile()
   private applyDamping(rigidBodyRef: RefObject<RapierRigidBody>, physicsState: PhysicsState): void {
     if (!rigidBodyRef?.current || !physicsState) return;
     const { modeType, keyboard } = physicsState;
@@ -267,6 +283,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     this.forceComponents.push(component);
   }
 
+  @HandleError()
   public applyForce(force: THREE.Vector3, rigidBody: RapierRigidBody): void {
     if (!rigidBody) return;
     const currentVel = rigidBody.linvel();
@@ -278,6 +295,8 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     rigidBody.setLinvel(newVel, true);
   }
 
+  @HandleError()
+  @Profile()
   public calculateMovement(
     input: { forward: boolean; backward: boolean; leftward: boolean; rightward: boolean; shift: boolean; space: boolean },
     config: PhysicsConfigType,
@@ -299,12 +318,14 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     return movement;
   }
 
+  @HandleError()
   public calculateJump(config: PhysicsConfigType, gameStates: GameStatesType, isGrounded: boolean): THREE.Vector3 {
     if (!isGrounded) return new THREE.Vector3();
     gameStates.isJumping = true;
     return new THREE.Vector3(0, config.jumpSpeed, 0);
   }
 
+  @Profile()
   private updateForces(rigidBodyRef: RefObject<RapierRigidBody>, delta: number): void {
     if (!rigidBodyRef.current) return;
     for (const component of this.forceComponents) {

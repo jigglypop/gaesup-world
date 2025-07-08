@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Profile, HandleError, MonitorMemory } from '@/core/boilerplate/decorators';
 
 export interface CameraDebugInfo {
   position: THREE.Vector3;
@@ -23,6 +24,7 @@ export class CameraDebugger {
     this.scene = scene || null;
   }
 
+  @HandleError()
   enable(scene?: THREE.Scene): void {
     this.isEnabled = true;
     if (scene) this.scene = scene;
@@ -30,6 +32,7 @@ export class CameraDebugger {
     this.setupEventListeners();
   }
 
+  @HandleError()
   disable(): void {
     this.isEnabled = false;
     this.cleanup();
@@ -62,6 +65,7 @@ export class CameraDebugger {
     }
   };
 
+  @Profile()
   update(camera: THREE.Camera, deltaTime: number, state?: string): void {
     if (!this.isEnabled) return;
 
@@ -102,6 +106,7 @@ export class CameraDebugger {
     }
   }
 
+  @Profile()
   private updateDebugVisuals(camera: THREE.Camera): void {
     if (!this.scene) return;
 
@@ -137,6 +142,7 @@ export class CameraDebugger {
     }
   }
 
+  @HandleError()
   private clearDebugLines(): void {
     this.debugLines.forEach((line) => {
       if (line.geometry) line.geometry.dispose();
@@ -150,6 +156,7 @@ export class CameraDebugger {
     this.debugLines.length = 0;
   }
 
+  @Profile()
   private cleanupOldHistory(): void {
     const now = Date.now();
     const maxAge = 10000;
@@ -162,14 +169,17 @@ export class CameraDebugger {
     }
   }
 
+  @MonitorMemory(5)
   getDebugInfo(): CameraDebugInfo[] {
     return [...this.debugInfo];
   }
 
+  @MonitorMemory(5)
   getPositionHistory(): THREE.Vector3[] {
     return [...this.positionHistory];
   }
 
+  @MonitorMemory(10)
   exportData(): string {
     const data = {
       debugInfo: this.debugInfo,
@@ -179,6 +189,7 @@ export class CameraDebugger {
     return JSON.stringify(data, null, 2);
   }
 
+  @HandleError()
   clearDebugInfo(): void {
     this.debugInfo.length = 0;
     this.positionHistory.length = 0;
@@ -190,6 +201,7 @@ export class CameraDebugger {
     this.clearDebugLines();
   }
 
+  @HandleError()
   dispose(): void {
     this.disable();
     this.disposables.forEach((dispose) => dispose());

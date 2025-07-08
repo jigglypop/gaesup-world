@@ -1,4 +1,5 @@
 import { WorldSystem, WorldObject, InteractionEvent } from '../core/WorldSystem';
+import { Profile, HandleError, ValidateCommand, LogSnapshot } from '@/core/boilerplate/decorators';
 import * as THREE from 'three';
 
 export interface WorldState {
@@ -39,6 +40,8 @@ export class WorldBridge {
     this.stateUpdateCallback = callback;
   }
 
+  @HandleError()
+  @Profile()
   addObject(object: Omit<WorldObject, 'id'>): string {
     const id = this.generateId();
     const worldObject: WorldObject = { ...object, id };
@@ -49,17 +52,21 @@ export class WorldBridge {
     return id;
   }
 
+  @HandleError()
+  @Profile()
   removeObject(id: string): boolean {
     const success = this.engine.removeObject(id);
     if (success) {
       if (this.state.selectedObjectId === id) {
-        this.state.selectedObjectId = undefined;
+        delete this.state.selectedObjectId;
       }
       this.updateState();
     }
     return success;
   }
 
+  @HandleError()
+  @Profile()
   updateObject(id: string, updates: Partial<WorldObject>): boolean {
     const success = this.engine.updateObject(id, updates);
     if (success) {
@@ -68,11 +75,17 @@ export class WorldBridge {
     return success;
   }
 
+  @HandleError()
   selectObject(id?: string): void {
-    this.state.selectedObjectId = id;
+    if (id === undefined) {
+      delete this.state.selectedObjectId;
+    } else {
+      this.state.selectedObjectId = id;
+    }
     this.updateState();
   }
 
+  @HandleError()
   setInteractionMode(mode: WorldState['interactionMode']): void {
     this.state.interactionMode = mode;
     this.updateState();
@@ -83,26 +96,29 @@ export class WorldBridge {
     this.updateState();
   }
 
+  @HandleError()
   interact(objectId: string, action: string): void {
     const object = this.engine.getObject(objectId);
     if (!object || !object.canInteract) return;
 
     const event: InteractionEvent = {
-      type: 'interact',
-      objectId,
-      position: object.position.clone(),
-      timestamp: Date.now()
+      type: 'custom' as const,
+      object1Id: objectId,
+      timestamp: Date.now(),
+      data: { action }
     };
 
     this.engine.processInteraction(event);
     this.updateState();
   }
 
+  @Profile()
   raycast(origin: THREE.Vector3, direction: THREE.Vector3): WorldObject | null {
     const result = this.engine.raycast(origin, direction);
     return result?.object || null;
   }
 
+  @Profile()
   getObjectsInRadius(center: THREE.Vector3, radius: number): WorldObject[] {
     return this.engine.getObjectsInRadius(center, radius);
   }
@@ -111,10 +127,12 @@ export class WorldBridge {
     return this.engine.getObjectsByType(type);
   }
 
+  @LogSnapshot()
   getState(): WorldState {
     return { ...this.state };
   }
 
+  @HandleError()
   cleanup(): void {
     this.engine.cleanup();
     this.state = {
@@ -126,6 +144,7 @@ export class WorldBridge {
     this.updateState();
   }
 
+  @Profile()
   private updateState(): void {
     this.state.objects = this.engine.getAllObjects();
     this.state.events = this.engine.getRecentEvents();

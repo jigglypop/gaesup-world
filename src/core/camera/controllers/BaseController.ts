@@ -1,16 +1,20 @@
 import * as THREE from 'three';
 import { ICameraController, CameraCalcProps, CameraSystemState, CameraSystemConfig } from '../core/types';
 import { activeStateUtils, cameraUtils } from '../utils/camera';
+import { Profile, HandleError } from '@/core/boilerplate/decorators';
 
 export abstract class BaseController implements ICameraController {
   abstract name: string;
   abstract defaultConfig: Partial<CameraSystemConfig>;
   abstract calculateTargetPosition(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3;
   
+  @Profile()
   calculateLookAt(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
     return activeStateUtils.getPosition(props.activeState);
   }
   
+  @HandleError()
+  @Profile()
   update(props: CameraCalcProps, state: CameraSystemState): void {
     const { camera, deltaTime, activeState } = props;
     if (!activeState) return;

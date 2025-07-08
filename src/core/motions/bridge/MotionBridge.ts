@@ -1,4 +1,5 @@
 import { CoreBridge, DomainBridge, EnableEventLog } from '@core/boilerplate';
+import { LogSnapshot, ValidateCommand, CacheSnapshot } from '@core/boilerplate';
 import { MotionSystem } from '@/core/motions/core/system/MotionSystem';
 import { euler, RapierRigidBody, vec3 } from '@react-three/rapier';
 import { MotionCommand, MotionEntity, MotionSnapshot } from './types';
@@ -22,6 +23,7 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
     };
   }
 
+  @ValidateCommand()
   protected executeCommand(entity: MotionEntity, command: MotionCommand, _: string): void {
     const { engine, rigidBody } = entity;
     switch (command.type) {
@@ -48,6 +50,8 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
     }
   }
 
+  @LogSnapshot()
+  @CacheSnapshot(16) // 60fps 캐싱
   protected createSnapshot(entity: MotionEntity, _: string): MotionSnapshot {
     const { engine, rigidBody, type } = entity;
     const translation = rigidBody.translation();

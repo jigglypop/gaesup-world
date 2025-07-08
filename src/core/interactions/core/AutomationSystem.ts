@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { Profile, HandleError, MonitorMemory, TrackCalls } from '@/core/boilerplate/decorators';
+import { AutomationState, AutomationConfig, AutomationMetrics, AutomationAction } from '../bridge/types';
 
 export class AutomationSystem {
   private state: AutomationState;
@@ -68,6 +70,8 @@ export class AutomationSystem {
     };
   }
 
+  @HandleError()
+  @Profile()
   addAction(action: Omit<AutomationAction, 'id' | 'timestamp'>): string {
     const id = `action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const fullAction: AutomationAction = {
@@ -87,6 +91,7 @@ export class AutomationSystem {
     return id;
   }
 
+  @HandleError()
   removeAction(id: string): boolean {
     const index = this.state.queue.actions.findIndex(action => action.id === id);
     if (index > -1) {
@@ -98,6 +103,7 @@ export class AutomationSystem {
     return false;
   }
 
+  @HandleError()
   clearQueue(): void {
     this.state.queue.actions = [];
     this.state.queue.currentIndex = 0;
@@ -105,6 +111,8 @@ export class AutomationSystem {
     this.emit('queueCleared');
   }
 
+  @HandleError()
+  @Profile()
   start(): void {
     if (this.state.queue.actions.length === 0) return;
     
@@ -142,6 +150,9 @@ export class AutomationSystem {
     this.emit('automationStopped');
   }
 
+  @HandleError()
+  @Profile()
+  @TrackCalls()
   private async executeNext(): Promise<void> {
     if (!this.state.queue.isRunning || this.state.queue.isPaused) return;
     
@@ -175,6 +186,8 @@ export class AutomationSystem {
     }
   }
 
+  @HandleError()
+  @Profile()
   private async executeAction(action: AutomationAction): Promise<void> {
     if (action.beforeCallback) {
       action.beforeCallback();
@@ -233,6 +246,7 @@ export class AutomationSystem {
     stats.averageTime = (stats.averageTime * stats.totalExecuted + executionTime) / (stats.totalExecuted + 1);
   }
 
+  @Profile()
   private updateMetrics(): void {
     this.metrics.queueLength = this.state.queue.actions.length;
     this.metrics.errorRate = this.state.executionStats.errors.length / Math.max(this.state.executionStats.totalExecuted, 1) * 100;
@@ -262,6 +276,7 @@ export class AutomationSystem {
     }
   }
 
+  @MonitorMemory(10) // 10MB threshold
   getState(): AutomationState {
     return { ...this.state };
   }
@@ -282,6 +297,7 @@ export class AutomationSystem {
     Object.assign(this.state.settings, updates);
   }
 
+  @HandleError()
   reset(): void {
     this.stop();
     this.clearQueue();
@@ -289,6 +305,7 @@ export class AutomationSystem {
     this.metrics = this.createDefaultMetrics();
   }
 
+  @HandleError()
   dispose(): void {
     this.stop();
     this.eventCallbacks.clear();

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { BaseSystem } from '@core/boilerplate/entity/BaseSystem';
+import { BaseSystem, SystemContext } from '@core/boilerplate/entity/BaseSystem';
+import { ManageRuntime, Profile, HandleError } from '@core/boilerplate/decorators';
 
 export interface WorldObject {
   id: string;
@@ -92,6 +93,7 @@ class SpatialGrid {
   }
 }
 
+@ManageRuntime({ autoStart: true })
 export class WorldSystem implements BaseSystem {
   private objects: Map<string, WorldObject> = new Map();
   private interactionEvents: InteractionEvent[] = [];
@@ -99,16 +101,19 @@ export class WorldSystem implements BaseSystem {
   private raycaster: THREE.Raycaster = new THREE.Raycaster();
   private tempVector: THREE.Vector3 = new THREE.Vector3();
 
+  @HandleError()
   async init(): Promise<void> {
-    // 초기화 로직이 필요한 경우 여기에 추가
-    // 현재는 특별한 초기화가 필요없음
+    console.log('[WorldSystem] Initialized');
   }
 
-  update(dt: number): void {
+  @Profile()
+  @HandleError()
+  update(context: SystemContext): void {
     // 월드 업데이트 로직
-    // 현재는 이벤트 기반으로 동작하므로 특별한 업데이트 로직 없음
+    // 예: checkCollisions 등 주기적인 검사가 필요할 때 여기에 로직 추가
   }
 
+  @HandleError()
   dispose(): void {
     this.cleanup();
   }
@@ -155,11 +160,14 @@ export class WorldSystem implements BaseSystem {
     if (!object || !object.boundingBox) return [];
 
     const nearbyIds = this.spatial.getNearbyObjects(object.position, object.boundingBox.max.distanceTo(object.boundingBox.min));
-    return nearbyIds.map(id => this.objects.get(id)).filter(other => 
-      other.id !== objectId && 
-      other.boundingBox &&
-      object.boundingBox.intersectsBox(other.boundingBox)
-    ) as WorldObject[];
+    return nearbyIds
+      .map(id => this.objects.get(id))
+      .filter((other): other is WorldObject => 
+        other !== undefined &&
+        other.id !== objectId && 
+        other.boundingBox !== undefined &&
+        object.boundingBox!.intersectsBox(other.boundingBox)
+      );
   }
 
   processInteraction(event: InteractionEvent): void {

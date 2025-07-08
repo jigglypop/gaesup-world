@@ -1,22 +1,31 @@
 import { Position3D, Rotation3D, WallConfig, TileConfig, MeshConfig } from '../types';
+import { Profile, HandleError } from '@/core/boilerplate/decorators';
 
 export class BuildingBridge {
+  @HandleError()
+  @Profile()
   static convertLegacyPosition(position: [number, number, number]): Position3D {
     return { x: position[0], y: position[1], z: position[2] };
   }
 
+  @HandleError()
+  @Profile()
   static convertLegacyRotation(rotation: [number, number, number]): Rotation3D {
     return { x: rotation[0], y: rotation[1], z: rotation[2] };
   }
 
+  @HandleError()
   static convertToLegacyPosition(position: Position3D): [number, number, number] {
     return [position.x, position.y, position.z];
   }
 
+  @HandleError()
   static convertToLegacyRotation(rotation: Rotation3D): [number, number, number] {
     return [rotation.x, rotation.y, rotation.z];
   }
 
+  @HandleError()
+  @Profile()
   static convertLegacyWall(legacyWall: any): WallConfig {
     return {
       id: legacyWall.id || `wall-${Date.now()}`,
@@ -29,6 +38,8 @@ export class BuildingBridge {
     };
   }
 
+  @HandleError()
+  @Profile()
   static convertLegacyTile(legacyTile: any): TileConfig {
     return {
       id: legacyTile.id || `tile-${Date.now()}`,
@@ -38,6 +49,8 @@ export class BuildingBridge {
     };
   }
 
+  @HandleError()
+  @Profile()
   static convertLegacyMesh(legacyMesh: any): MeshConfig {
     return {
       id: legacyMesh.id || `mesh-${Date.now()}`,

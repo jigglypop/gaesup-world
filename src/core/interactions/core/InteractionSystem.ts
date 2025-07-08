@@ -1,4 +1,5 @@
-import { BaseSystem } from '@/core/boilerplate/entity/BaseSystem';
+import { BaseSystem, SystemContext } from '@/core/boilerplate/entity/BaseSystem';
+import { Profile, HandleError } from '@/core/boilerplate/decorators';
 import * as THREE from 'three';
 import { InteractionState, InteractionConfig, InteractionMetrics, KeyboardState, MouseState, GamepadState, TouchState } from '../bridge';
 
@@ -24,11 +25,17 @@ export class InteractionSystem implements BaseSystem {
     return InteractionSystem.instance;
   }
 
+  @Profile()
+  @HandleError()
   async init(): Promise<void> {
+    // 초기화 로직이 필요한 경우 여기에 추가
   }
 
-  update(dt: number): void {
+  @Profile()
+  @HandleError()
+  update(context: SystemContext): void {
     this.stateRef.lastUpdate = Date.now();
+    // 추가 업데이트 로직이 필요한 경우 여기에 추가
   }
 
   private createDefaultState(): InteractionState {
@@ -109,26 +116,31 @@ export class InteractionSystem implements BaseSystem {
     return this.stateRef.mouse;
   }
 
+  @HandleError()
   updateKeyboard(updates: Partial<KeyboardState>): void {
     Object.assign(this.stateRef.keyboard, updates);
     this.updateMetrics();
   }
 
+  @HandleError()
   updateMouse(updates: Partial<MouseState>): void {
     Object.assign(this.stateRef.mouse, updates);
     this.updateMetrics();
   }
 
+  @HandleError()
   updateGamepad(updates: Partial<GamepadState>): void {
     Object.assign(this.stateRef.gamepad, updates);
     this.updateMetrics();
   }
 
+  @HandleError()
   updateTouch(updates: Partial<TouchState>): void {
     Object.assign(this.stateRef.touch, updates);
     this.updateMetrics();
   }
 
+  @HandleError()
   dispatchInput(updates: Partial<MouseState>): void {
     this.updateMouse(updates);
   }
@@ -166,6 +178,7 @@ export class InteractionSystem implements BaseSystem {
     }
   }
 
+  @Profile()
   private updateMetrics(): void {
     this.metrics.eventCount++;
     this.metrics.lastUpdate = Date.now();
@@ -194,12 +207,14 @@ export class InteractionSystem implements BaseSystem {
     return active;
   }
 
+  @HandleError()
   reset(): void {
     this.stateRef = this.createDefaultState();
     this.metrics = this.createDefaultMetrics();
     this.eventCallbacks.clear();
   }
 
+  @HandleError()
   dispose(): void {
     this.reset();
     InteractionSystem.instance = null;

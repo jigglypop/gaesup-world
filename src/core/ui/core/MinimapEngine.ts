@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { MinimapMarker, MinimapEngineState } from './types';
+import { Profile, HandleError, MonitorMemory } from '@/core/boilerplate/decorators';
 
 export class MinimapEngine {
   private static instance: MinimapEngine | null = null;
@@ -20,17 +21,22 @@ export class MinimapEngine {
     return MinimapEngine.instance;
   }
 
+  @HandleError()
+  @Profile()
   addMarker(id: string, type: 'normal' | 'ground', text: string, center: THREE.Vector3, size: THREE.Vector3): void {
     const marker: MinimapMarker = { id, type, text, center, size };
     this.state.markers.set(id, marker);
     this.notifyListeners();
   }
 
+  @HandleError()
   removeMarker(id: string): void {
     this.state.markers.delete(id);
     this.notifyListeners();
   }
 
+  @HandleError()
+  @Profile()
   updateMarker(id: string, updates: Partial<Omit<MinimapMarker, 'id'>>): void {
     const existing = this.state.markers.get(id);
     if (existing) {
@@ -39,6 +45,7 @@ export class MinimapEngine {
     }
   }
 
+  @MonitorMemory(5)
   getMarkers(): Map<string, MinimapMarker> {
     return new Map(this.state.markers);
   }
@@ -47,6 +54,7 @@ export class MinimapEngine {
     return this.state.markers.get(id);
   }
 
+  @HandleError()
   clear(): void {
     this.state.markers.clear();
     this.notifyListeners();
@@ -57,11 +65,13 @@ export class MinimapEngine {
     return () => this.listeners.delete(listener);
   }
 
+  @Profile()
   private notifyListeners(): void {
     const markers = this.getMarkers();
     this.listeners.forEach(listener => listener(markers));
   }
 
+  @HandleError()
   dispose(): void {
     this.clear();
     this.listeners.clear();

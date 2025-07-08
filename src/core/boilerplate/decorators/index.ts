@@ -25,6 +25,6 @@ export * from '../di/Autowired'
 export * from '../di/Inject'
 export * from '../di/Service'
 export * from './blueprint';
-export * from './SystemDecorator';
-export * from './RuntimeManagerDecorator';
-export * from './LoggingDecorator';
+export * from './system';
+export * from './bridge';
+export * from './monitoring';

@@ -1,4 +1,5 @@
 import { CoreBridge, DomainBridge, EnableEventLog } from '@core/boilerplate';
+import { LogSnapshot, ValidateCommand, CacheSnapshot } from '@core/boilerplate';
 import { PhysicsSystem } from '../core/system/PhysicsSystem';
 import { PhysicsConfigType } from '@/core/stores/slices/physics/types';
 import { PhysicsUpdateArgs } from '../core/system/PhysicsSystem';
@@ -25,6 +26,7 @@ export class PhysicsBridge extends CoreBridge<PhysicsBridgeEntity, PhysicsSnapsh
     return { engine, dispose: () => engine.dispose() };
   }
 
+  @ValidateCommand()
   protected executeCommand(entity: PhysicsBridgeEntity, command: PhysicsCommand, _id: string): void {
     switch (command.type) {
       case 'updateConfig':
@@ -33,6 +35,8 @@ export class PhysicsBridge extends CoreBridge<PhysicsBridgeEntity, PhysicsSnapsh
     }
   }
 
+  @LogSnapshot()
+  @CacheSnapshot(16) // 60fps 캐싱
   protected createSnapshot(entity: PhysicsBridgeEntity): PhysicsSnapshot {
     return {
       ...entity.engine.getState(),

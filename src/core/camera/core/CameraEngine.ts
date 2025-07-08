@@ -18,6 +18,7 @@ import {
 import { BaseCameraEngine } from '../bridge/BaseCameraEngine';
 import { CameraEngineConfig } from '../bridge/types';
 import * as THREE from 'three';
+import { Profile, HandleError, MonitorMemory } from '@/core/boilerplate/decorators';
 
 export class CameraEngine extends BaseCameraEngine {
   private controllers: Map<string, ICameraController> = new Map();
@@ -67,10 +68,12 @@ export class CameraEngine extends BaseCameraEngine {
     this.cameraStates.set('default', defaultState);
   }
   
+  @HandleError()
   registerController(controller: ICameraController): void {
     this.controllers.set(controller.name, controller);
   }
   
+  @HandleError()
   updateConfig(config: Partial<CameraConfig>): void {
     Object.assign(this.state.config, config);
     
@@ -83,10 +86,13 @@ export class CameraEngine extends BaseCameraEngine {
     }
   }
   
+  @Profile()
   update(deltaTime: number): void {
     this.trackFrameMetrics(deltaTime);
   }
 
+  @HandleError()
+  @Profile()
   calculate(props: CameraCalcProps): void {
     try {
       const controller = this.controllers.get(this.state.config.mode);
@@ -98,6 +104,7 @@ export class CameraEngine extends BaseCameraEngine {
     }
   }
   
+  @MonitorMemory(5)
   getState(): CameraSystemState {
     return this.state;
   }
@@ -110,6 +117,7 @@ export class CameraEngine extends BaseCameraEngine {
     return this.cameraStates.get(this.currentCameraStateName);
   }
   
+  @HandleError()
   addCameraState(name: string, state: CameraState): void {
     this.cameraStates.set(name, state);
   }
@@ -118,6 +126,8 @@ export class CameraEngine extends BaseCameraEngine {
     this.cameraTransitions = transitions;
   }
   
+  @HandleError()
+  @Profile()
   switchCameraState(name: string): void {
     if (this.cameraStates.has(name)) {
       this.currentCameraStateName = name;

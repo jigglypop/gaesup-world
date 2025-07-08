@@ -1,10 +1,13 @@
 import { getGlobalAnimationBridge } from "@/core/animation/hooks/useAnimationBridge";
 import { GameStatesType } from "@/core/world/components/Rideable/types";
-
+import { Profile, HandleError } from '@/core/boilerplate/decorators';
 
 export class AnimationController {
   private animationBridge = getGlobalAnimationBridge();
   private lastAnimation = "idle";
+  
+  @HandleError()
+  @Profile()
   update(gameStates: GameStatesType) {
     const { isMoving, isRunning, isJumping, isFalling } = gameStates;
     let newAnimation = "idle";

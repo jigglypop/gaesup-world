@@ -2,6 +2,7 @@ import { AnimationEngine } from '../core/AnimationEngine'
 import { AnimationType } from '../core/types'
 import { AnimationCommand, AnimationSnapshot, AnimationMetrics } from './types'
 import { DomainBridge, EnableMetrics, Command } from '../../boilerplate/decorators'
+import { LogSnapshot, ValidateCommand, RequireEngineById, CacheSnapshot } from '../../boilerplate/decorators'
 import * as THREE from 'three'
 import { CoreBridge } from '@/core/boilerplate'
 
@@ -33,6 +34,7 @@ export class AnimationBridge extends CoreBridge<
     return new AnimationEngine()
   }
 
+  @RequireEngineById()
   registerAnimationAction(type: AnimationType, name: string, action: THREE.AnimationAction): void {
     const engine = this.getEngine(type)
     if (engine) {
@@ -50,6 +52,7 @@ export class AnimationBridge extends CoreBridge<
     })
   }
 
+  @RequireEngineById()
   unregisterAnimations(type: AnimationType): void {
     const engine = this.getEngine(type)
     if (!engine) return
@@ -57,6 +60,7 @@ export class AnimationBridge extends CoreBridge<
   }
 
   @Command('play')
+  @ValidateCommand()
   protected executeCommand(engine: AnimationEngine, command: AnimationCommand): void {
     switch (command.type) {
       case 'play':
@@ -74,6 +78,8 @@ export class AnimationBridge extends CoreBridge<
     }
   }
 
+  @LogSnapshot()
+  @CacheSnapshot(16) // 60fps 캐싱
   protected createSnapshot(engine: AnimationEngine): AnimationSnapshot {
     const state = engine.getState()
     const metrics = engine.getMetrics()
@@ -92,11 +98,13 @@ export class AnimationBridge extends CoreBridge<
     }
   }
 
+  @RequireEngineById()
   getMetrics(type: AnimationType): AnimationMetrics | null {
     const engine = this.getEngine(type)
     return engine ? engine.getMetrics() : null
   }
 
+  @RequireEngineById()
   update(type: AnimationType, deltaTime: number): void {
     const engine = this.getEngine(type)
     if (engine) {
@@ -108,6 +116,8 @@ export class AnimationBridge extends CoreBridge<
     super.execute(type, command)
   }
 
+  @LogSnapshot()
+  @CacheSnapshot(16)
   override snapshot(type: AnimationType): AnimationSnapshot | null {
     const result = super.snapshot(type)
     if (!result) {

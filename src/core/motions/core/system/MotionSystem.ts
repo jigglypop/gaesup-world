@@ -1,4 +1,5 @@
 import { AbstractSystem, SystemUpdateArgs, Autowired } from '@core/boilerplate';
+import { Profile, HandleError } from '@core/boilerplate';
 import * as THREE from 'three';
 import { vec3, quat, RapierRigidBody } from '@react-three/rapier';
 import { MotionState, MotionMetrics, MotionSystemOptions, ActiveStateType, GameStatesType } from './types';
@@ -40,6 +41,7 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     super(defaultState, defaultMetrics, options);
   }
 
+  @Profile()
   protected performUpdate(args: MotionUpdateArgs): void {
     if (!args.rigidBody) return;
     const { position, velocity, rotation } = this.extractPhysicsState(args.rigidBody);
@@ -48,6 +50,7 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     this.updateRotation(rotation, args.activeState);
   }
 
+  @Profile()
   protected override updateMetrics(deltaTime: number): void {
     this.calculateSpeed(deltaTime);
     this.updateMultipleStates({
@@ -63,12 +66,14 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     return { position, velocity, rotation };
   }
 
+  @HandleError()
   public updatePosition(position: THREE.Vector3, activeState: ActiveStateType): void {
     this.metrics.lastPosition.copy(this.state.position);
     this.state.position.copy(position);
     this.copyVector3(activeState.position, position);
   }
 
+  @HandleError()
   public updateVelocity(velocity: THREE.Vector3, activeState: ActiveStateType, gameStates: GameStatesType): void {
     this.state.velocity.copy(velocity);
     this.state.speed = velocity.length();
@@ -79,11 +84,13 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     this.copyVector3(activeState.velocity, velocity);
   }
 
+  @HandleError()
   public updateRotation(rotation: THREE.Euler, activeState: ActiveStateType): void {
     this.state.rotation.copy(rotation);
     activeState.euler.copy(rotation);
   }
   
+  @HandleError()
   public setGrounded(grounded: boolean, activeState: ActiveStateType, gameStates: GameStatesType): void {
     this.state.isGrounded = grounded;
     this.metrics.groundContact = grounded;
@@ -91,16 +98,19 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     gameStates.isOnTheGround = grounded;
   }
 
+  @Profile()
   private calculateSpeed(deltaTime: number): void {
     const distance = this.state.position.distanceTo(this.metrics.lastPosition);
     this.metrics.totalDistance += distance;
     this.metrics.currentSpeed = this.motionService.calculateSpeed(this.state.velocity);
   }
 
+  @HandleError()
   public calculateJump(config: { jumpSpeed: number }, gameStates: GameStatesType): THREE.Vector3 {
     return this.motionService.calculateJumpForce(this.state.isGrounded, config.jumpSpeed, gameStates);
   }
 
+  @HandleError()
   public applyForce(movement: THREE.Vector3, rigidBody: RapierRigidBody): void {
     const config = this.motionService.getDefaultConfig();
     const force = this.motionService.calculateMovementForce(movement, this.state.velocity, config);

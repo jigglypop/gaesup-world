@@ -1,11 +1,19 @@
 import { BaseState, BaseMetrics, SystemOptions, SystemUpdateArgs, IDisposable } from '../types';
+import { BaseSystem, SystemContext } from './BaseSystem';
 
 export abstract class AbstractSystem<
     StateType extends BaseState = BaseState,
     MetricsType extends BaseMetrics = BaseMetrics,
     OptionsType extends SystemOptions = SystemOptions,
     UpdateArgsType extends SystemUpdateArgs = SystemUpdateArgs
-> implements IDisposable {
+> implements BaseSystem<StateType, MetricsType> {
+    readonly id?: string;
+    readonly capabilities = {
+        hasAsync: true,
+        hasMetrics: true,
+        hasState: true,
+        hasEvents: false
+    };
     protected state: StateType;
     protected metrics: MetricsType;
     protected options: OptionsType;
@@ -41,7 +49,35 @@ export abstract class AbstractSystem<
             frameTime: 0,
         };
     }
-    public update(args: UpdateArgsType): void {
+    async init(): Promise<void> {
+        // 서브클래스에서 필요시 오버라이드
+    }
+    
+    async start(): Promise<void> {
+        // 서브클래스에서 필요시 오버라이드
+    }
+    
+    pause(): void {
+        // 서브클래스에서 필요시 오버라이드
+    }
+    
+    resume(): void {
+        // 서브클래스에서 필요시 오버라이드
+    }
+    
+    update(context: SystemContext): void {
+        const args = this.createUpdateArgs(context);
+        this.performUpdateWithArgs(args);
+    }
+    
+    protected createUpdateArgs(context: SystemContext): UpdateArgsType {
+        return {
+            deltaTime: context.deltaTime,
+            ...context
+        } as UpdateArgsType;
+    }
+    
+    protected performUpdateWithArgs(args: UpdateArgsType): void {
         if (this._isDisposed) {
             throw new Error(`Cannot update disposed system`);
         }
