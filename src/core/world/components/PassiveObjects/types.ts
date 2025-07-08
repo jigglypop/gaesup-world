@@ -65,3 +65,11 @@ export type passivePropsType = {
   innerGroupRef?: React.RefObject<any>;
   colliderRef?: React.RefObject<any>;
 };
+
+export type PassiveObjectInstanceProps = {
+  object: PassiveObject;
+  isSelected: boolean;
+  onSelect?: (id: string) => void;
+  showDebugInfo?: boolean;
+  enableInteraction?: boolean;
+}

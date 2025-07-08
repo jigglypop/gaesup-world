@@ -191,7 +191,7 @@ export interface CameraPropType {
     activeState: ActiveStateType;
   };
   cameraOption: CameraOptionType;
-  controllerOptions?: any;
+  controllerOptions?: Record<string, unknown>;
 }
 
 export interface CameraShakeConfig {

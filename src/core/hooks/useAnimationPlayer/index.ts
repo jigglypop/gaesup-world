@@ -33,7 +33,6 @@ export function useAnimationPlayer(active: boolean) {
     if (movement.isMoving) return 'walk';
     return 'idle';
   }, [gameStates.isJumping, gameStates.isFalling, gameStates.isRiding, movement.isRunning, movement.isMoving]);
-
   const movementAnimations = useMemo(() => ['idle', 'walk', 'run', 'jump', 'fall', 'ride', 'land'], []);
 
   useEffect(() => {

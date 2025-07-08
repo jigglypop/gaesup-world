@@ -2,14 +2,11 @@ import { lazy, Suspense } from 'react';
 import * as THREE from 'three';
 import { TileConfig } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
+import { TileObjectProps } from './types';
 
 const Water = lazy(() => import('../mesh/water'));
 const Grass = lazy(() => import('../mesh/grass/Grass'));
 const Flag = lazy(() => import('../mesh/flag').then(module => ({ default: module.FlagMesh })));
-
-interface TileObjectProps {
-  tile: TileConfig;
-}
 
 export function TileObject({ tile }: TileObjectProps) {
   if (!tile.objectType || tile.objectType === 'none') return null;

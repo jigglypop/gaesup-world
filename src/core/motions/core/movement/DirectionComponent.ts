@@ -15,6 +15,7 @@ import {
 import { InteractionSystem } from '../../../interactions/core/InteractionSystem';
 import { ModeType } from '@stores/slices/mode/types';
 import { PhysicsConfigType } from '@stores/slices';
+import { Profile, HandleError } from '@/core/boilerplate/decorators';
 
 export class DirectionComponent {
   private memoManager = MemoizationManager.getInstance();
@@ -36,6 +37,7 @@ export class DirectionComponent {
     this.config = config;
   }
 
+  @Profile()
   updateDirection(
     physicsState: PhysicsState,
     controlMode?: string,
@@ -60,6 +62,7 @@ export class DirectionComponent {
     }
   }
 
+  @Profile()
   private updateCharacterDirection(
     physicsState: PhysicsState,
     controlMode?: string,
@@ -92,6 +95,7 @@ export class DirectionComponent {
     this.emitRotationUpdate(activeState, 'character');
   }
 
+  @Profile()
   private updateVehicleDirection(
     physicsState: PhysicsState,
     controlMode?: string
@@ -111,6 +115,7 @@ export class DirectionComponent {
     this.emitRotationUpdate(activeState, 'vehicle');
   }
 
+  @Profile()
   private updateAirplaneDirection(
     physicsState: PhysicsState,
     innerGroupRef?: RefObject<THREE.Group>,
@@ -300,6 +305,7 @@ export class DirectionComponent {
     this.lastEulerY[entityType] = activeState.euler.y;
   }
 
+  @HandleError()
   dispose(): void {
     this.timers.forEach(timer => clearTimeout(timer));
     this.timers.clear();

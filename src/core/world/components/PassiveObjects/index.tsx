@@ -1,17 +1,9 @@
 import { RigidBody, CapsuleCollider } from '@react-three/rapier';
-import { PassiveObjectProps, PassiveObject } from './types';
+import { PassiveObjectProps, PassiveObject, PassiveObjectInstanceProps } from './types';
 import { useMemo, memo, useCallback } from 'react';
 import { PhysicsEntity } from "@motions/entities/refs/PhysicsEntity"
 import './styles.css';
 import { useGenericRefs } from '@hooks/useGenericRefs';
-
-interface PassiveObjectInstanceProps {
-  object: PassiveObject;
-  isSelected: boolean;
-  onSelect?: (id: string) => void;
-  showDebugInfo?: boolean;
-  enableInteraction?: boolean;
-}
 
 const PassiveObjectInstance = memo(function PassiveObjectInstance({
   object,

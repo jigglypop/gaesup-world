@@ -1,12 +1,8 @@
-
 import { useBuildingStore } from '../../../building/stores/buildingStore';
 import { useNPCStore } from '../../stores/npcStore';
 import { NPCPart } from '../../types';
+import { NPCPartPreviewProps } from './types';
 import './styles.css';
-
-interface NPCPartPreviewProps {
-  part: NPCPart;
-}
 
 function NPCPartPreview({ part }: NPCPartPreviewProps) {
   return (

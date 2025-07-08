@@ -1,5 +1,6 @@
 import { StateCreator } from 'zustand';
-import { SaveLoadManager, SaveData, SaveLoadOptions, SaveMetadata } from '../persistence';
+import { SaveLoadManager } from '../persistence/SaveLoadManager';
+import { SaveData, SaveLoadOptions, SaveMetadata } from '../persistence/types';
 
 export interface PersistenceState {
   saveLoadManager: SaveLoadManager;

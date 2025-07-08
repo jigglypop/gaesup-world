@@ -4,14 +4,7 @@ import { CuboidCollider } from '@react-three/rapier';
 import { WallGroupConfig, MeshConfig } from '../../types';
 import { MaterialManager } from '../../core/MaterialManager';
 import { TILE_CONSTANTS } from '../../types/constants';
-
-interface WallSystemProps {
-  wallGroup: WallGroupConfig;
-  meshes: Map<string, MeshConfig>;
-  isEditMode?: boolean;
-  onWallClick?: (wallId: string) => void;
-  onWallDelete?: (wallId: string) => void;
-}
+import { WallSystemProps } from './types';
 
 export function WallSystem({ 
   wallGroup, 

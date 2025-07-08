@@ -1,11 +1,5 @@
 import { TILE_CONSTANTS } from '../../types/constants';
-
-interface GridHelperProps {
-  size?: number;
-  divisions?: number;
-  color1?: string;
-  color2?: string;
-}
+import { GridHelperProps } from './types';
 
 export function GridHelper({ 
   size = TILE_CONSTANTS.DEFAULT_GRID_SIZE, 

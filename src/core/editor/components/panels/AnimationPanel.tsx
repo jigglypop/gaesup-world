@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import { AnimationController } from '../../../animation/components/AnimationController';
 import { AnimationPlayer } from '../../../animation/components/AnimationPlayer';
 import { AnimationDebugPanel } from '../../../animation/components/AnimationDebugPanel';
-
-type Tab = 'Player' | 'Controller' | 'Debug';
+import { AnimationPanelTab } from './types';
 
 export function AnimationPanel() {
-  const [activeTab, setActiveTab] = useState<Tab>('Player');
+  const [activeTab, setActiveTab] = useState<AnimationPanelTab>('Player');
   const renderContent = () => {
     switch (activeTab) {
       case 'Player':

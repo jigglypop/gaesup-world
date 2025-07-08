@@ -4,6 +4,7 @@ import { EntityStateManager } from '../system/EntityStateManager';
 import { InteractionSystem } from '@/core/interactions/core/InteractionSystem';
 import { PhysicsState } from '../../types';
 import { PhysicsConfigType } from '@stores/slices';
+import { Profile } from '@/core/boilerplate/decorators';
 
 export class ImpulseComponent {
   private stateEngine: EntityStateManager;
@@ -16,6 +17,7 @@ export class ImpulseComponent {
     this.config = config;
   }
 
+  @Profile()
   applyImpulse(
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: PhysicsState
@@ -37,6 +39,7 @@ export class ImpulseComponent {
     }
   }
 
+  @Profile()
   private applyCharacterImpulse(
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: PhysicsState

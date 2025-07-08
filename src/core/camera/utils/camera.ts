@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
 import { CameraOptionType, CameraBounds, CollisionCheckResult, Obstacle } from '../core/types';
 import { CAMERA_CONSTANTS } from '../core/constants';
+import { ActiveStateType } from '../../motions/core/types';
 
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
@@ -230,7 +231,7 @@ export const vectorUtils = {
 };
 
 export const activeStateUtils = {
-  getPosition: (activeState: any): THREE.Vector3 => {
+  getPosition: (activeState: ActiveStateType): THREE.Vector3 => {
     if (!activeState?.position) {
       return new THREE.Vector3(0, 0, 0);
     }
@@ -250,7 +251,7 @@ export const activeStateUtils = {
     return new THREE.Vector3(0, 0, 0);
   },
 
-  getEuler: (activeState: any): THREE.Euler => {
+  getEuler: (activeState: ActiveStateType): THREE.Euler => {
     if (!activeState?.euler) {
       return new THREE.Euler(0, 0, 0);
     }
@@ -270,7 +271,7 @@ export const activeStateUtils = {
     return new THREE.Euler(0, 0, 0);
   },
 
-  getVelocity: (activeState: any): THREE.Vector3 => {
+  getVelocity: (activeState: ActiveStateType): THREE.Vector3 => {
     if (!activeState?.velocity) {
       return new THREE.Vector3(0, 0, 0);
     }
@@ -321,8 +322,8 @@ export const activeStateUtils = {
   },
 
   getCameraTarget: (
-    activeState: any,
-    cameraOption: any,
+    activeState: ActiveStateType,
+    cameraOption: CameraOptionType,
   ): THREE.Vector3 => {
     const position = activeStateUtils.getPosition(activeState);
     return cameraOption.target || position;

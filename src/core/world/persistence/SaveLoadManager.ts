@@ -275,14 +275,18 @@ export class SaveLoadManager {
     return JSON.parse(jsonStr);
   }
 
-  private validateSaveData(data: any): data is SaveData {
+  private validateSaveData(data: unknown): data is SaveData {
     return (
-      data &&
-      typeof data.version === 'string' &&
-      typeof data.timestamp === 'number' &&
-      data.world &&
-      typeof data.world.id === 'string' &&
-      typeof data.world.name === 'string'
+      data !== null &&
+      typeof data === 'object' &&
+      'version' in data &&
+      'timestamp' in data &&
+      'world' in data &&
+      typeof (data as SaveData).version === 'string' &&
+      typeof (data as SaveData).timestamp === 'number' &&
+      (data as SaveData).world &&
+      typeof (data as SaveData).world.id === 'string' &&
+      typeof (data as SaveData).world.name === 'string'
     );
   }
 } 

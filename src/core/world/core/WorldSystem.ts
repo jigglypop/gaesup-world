@@ -8,7 +8,7 @@ export interface WorldObject {
   rotation: THREE.Euler;
   scale: THREE.Vector3;
   type: 'active' | 'passive' | 'rideable' | 'static';
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   boundingBox?: THREE.Box3;
   isActive?: boolean;
   canInteract?: boolean;
@@ -33,7 +33,7 @@ export interface InteractionEvent {
   object1Id: string;
   object2Id?: string;
   timestamp: number;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 class SpatialGrid {

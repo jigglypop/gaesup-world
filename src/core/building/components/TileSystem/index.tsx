@@ -6,14 +6,7 @@ import { GaeSupProps } from '../../../index';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { TileObject } from '../TileObject';
 import { MinimapEngine } from '../../../ui/core';
-
-interface TileSystemProps {
-  tileGroup: TileGroupConfig;
-  meshes: Map<string, MeshConfig>;
-  isEditMode?: boolean;
-  onTileClick?: (tileId: string) => void;
-  onTileDelete?: (tileId: string) => void;
-}
+import { TileSystemProps } from './types';
 
 export function TileSystem({ 
   tileGroup, 

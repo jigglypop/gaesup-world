@@ -7,13 +7,7 @@ import { PreviewTile } from '../PreviewTile';
 import { PreviewWall } from '../PreviewWall';
 import { NPCPreview } from '../../../npc/components/NPCPreview';
 import { useBuildingStore } from '../../stores/buildingStore';
-
-interface BuildingSystemProps {
-  onWallClick?: (wallId: string) => void;
-  onTileClick?: (tileId: string) => void;
-  onWallDelete?: (wallId: string) => void;
-  onTileDelete?: (tileId: string) => void;
-}
+import { BuildingSystemProps } from './types';
 
 export function BuildingSystem({
   onWallClick,

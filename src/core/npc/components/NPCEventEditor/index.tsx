@@ -1,12 +1,8 @@
 import { useState } from 'react';
 import { useNPCStore } from '../../stores/npcStore';
 import { NPCEvent } from '../../types';
+import { NPCEventEditorProps } from './types';
 import './styles.css';
-
-interface NPCEventEditorProps {
-  instanceId: string;
-  onClose: () => void;
-}
 
 export function NPCEventEditor({ instanceId, onClose }: NPCEventEditorProps) {
   const { instances, addInstanceEvent, removeInstanceEvent } = useNPCStore();
@@ -19,7 +15,7 @@ export function NPCEventEditor({ instanceId, onClose }: NPCEventEditorProps) {
     return null;
   }
   const handleAddEvent = () => {
-    let payload: any = {};
+    let payload: NPCEvent['payload'] = {};
     switch (actionType) {
       case 'dialogue':
         payload = { text: dialogue };

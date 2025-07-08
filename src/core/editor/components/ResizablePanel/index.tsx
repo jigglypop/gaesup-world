@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { ResizablePanelProps } from './types';
 
-// New SVG Icons for panel controls
 const MinimizeIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -12,25 +12,6 @@ const CloseIcon = () => (
     <line x1="6" y1="6" x2="18" y2="18"></line>
   </svg>
 );
-
-interface ResizablePanelProps {
-  children: React.ReactNode;
-  title: string;
-  initialWidth?: number;
-  initialHeight?: number;
-  minWidth?: number;
-  minHeight?: number;
-  maxWidth?: number;
-  maxHeight?: number;
-  resizeHandles?: ('right' | 'bottom' | 'corner')[];
-  className?: string;
-  style?: React.CSSProperties;
-  onClose?: () => void;
-  onMinimize?: () => void;
-  draggable?: boolean;
-  icon?: string;
-  onDrop?: (x: number, y: number) => void;
-}
 
 export const ResizablePanel: React.FC<ResizablePanelProps> = ({
   children,

@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
-
-interface FSMNode {
-  id: string;
-  label: string;
-  position: { x: number; y: number };
-}
+import { FSMNode } from './types';
 
 const initialNodes: FSMNode[] = [
   { id: '1', label: 'Start State', position: { x: 250, y: 25 } },

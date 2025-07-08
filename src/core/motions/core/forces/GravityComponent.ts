@@ -2,6 +2,7 @@ import { PhysicsState, characterConfigType, airplaneConfigType, vehicleConfigTyp
 import { RefObject } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 import { PhysicsConfigType } from '@stores/slices';
+import { Profile } from '@/core/boilerplate/decorators';
 
 type GravityPhysicsState = Pick<
   PhysicsState,
@@ -19,6 +20,7 @@ export class GravityComponent {
     this.config = config;
   }
 
+  @Profile()
   applyGravity(
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: GravityPhysicsState
@@ -40,6 +42,7 @@ export class GravityComponent {
     }
   }
 
+  @Profile()
   private applyCharacterGravity(
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: GravityPhysicsState
@@ -55,6 +58,7 @@ export class GravityComponent {
     }
   }
 
+  @Profile()
   private applyAirplaneGravity(
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: GravityPhysicsState
@@ -63,6 +67,7 @@ export class GravityComponent {
     rigidBodyRef.current.setGravityScale(gravityScale, false);
   }
 
+  @Profile()
   private applyVehicleGravity(
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: GravityPhysicsState
