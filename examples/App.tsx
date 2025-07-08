@@ -196,7 +196,7 @@ export default function App() {
     <BrowserRouter>
       <Navigation />
       <Routes>
-        <Route path="/" element={<WorldPage showEditor={false} />} />
+        <Route path="/" element={<WorldPage showEditor={true} />} />
         <Route
           path="/admin/*"
           element={

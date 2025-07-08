@@ -1,9 +1,9 @@
 import React, { FC, useState } from 'react';
 import '../../styles/theme.css';
 import { 
-  NodeEditorPanel,
-  CameraPanel,
   AnimationPanel,
+  BlueprintPanel,
+  CameraPanel,
   MotionPanel,
   PerformancePanel,
   VehiclePanel
@@ -12,17 +12,17 @@ import { ResizablePanel } from '../ResizablePanel';
 import { EditorLayoutProps, FloatingPanel, PanelConfig } from './types';
 
 export const EditorLayout: FC<EditorLayoutProps> = ({ children }) => {
-  const [activePanels, setActivePanels] = useState<string[]>(['vehicle', 'performance']);
+  const [activePanels, setActivePanels] = useState<string[]>(['vehicle', 'performance', 'blueprints']);
   const [floatingPanels, setFloatingPanels] = useState<FloatingPanel[]>([]);
   const [minimizedPanels, setMinimizedPanels] = useState<string[]>([]);
 
   const panelConfigs: PanelConfig[] = [
-    { id: 'camera', title: 'Camera', component: <CameraPanel />, defaultSide: 'right' },
     { id: 'animation', title: 'Animation', component: <AnimationPanel />, defaultSide: 'left' },
+    { id: 'camera', title: 'Camera', component: <CameraPanel />, defaultSide: 'left' },
     { id: 'motion', title: 'Motion', component: <MotionPanel />, defaultSide: 'right' },
     { id: 'performance', title: 'Performance', component: <PerformancePanel />, defaultSide: 'right' },
     { id: 'vehicle', title: 'Vehicle', component: <VehiclePanel />, defaultSide: 'left' },
-    { id: 'nodes', title: 'Node Editor', component: <NodeEditorPanel />, defaultSide: 'floating' },
+    { id: 'blueprints', title: 'Blueprints', component: <BlueprintPanel />, defaultSide: 'left' },
   ];
 
   const togglePanel = (panelId: string) => {

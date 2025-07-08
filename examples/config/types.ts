@@ -17,7 +17,7 @@ export interface EditorMode {
     hierarchy?: boolean;
     inspector?: boolean;
     assetBrowser?: boolean;
-    nodeEditor?: boolean;
+    blueprints?: boolean;
   };
 }
 
@@ -28,3 +28,24 @@ export interface ExampleConfig {
   showGrid: boolean;
   showAxes: boolean;
 }
+
+export type DevMode = {
+  enable?: boolean;
+  showStats?: boolean;
+  showDebugInfo?: boolean;
+  showGrid?: boolean;
+  showAxes?: boolean;
+  showColliders?: boolean;
+};
+
+export type EditorConfig = {
+  enable?: boolean;
+  panels?: {
+    animation?: boolean;
+    camera?: boolean;
+    motion?: boolean;
+    performance?: boolean;
+    vehicle?: boolean;
+    blueprints?: boolean;
+  };
+};

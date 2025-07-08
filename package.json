@@ -60,6 +60,7 @@
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.6.3",
     "react-use-refs": "^1.0.1",
+    "reactflow": "^11.11.4",
     "reflect-metadata": "^0.2.2",
     "simplex-noise": "^4.0.3",
     "stats.js": "^0.17.0",
