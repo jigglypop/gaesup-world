@@ -1,5 +1,6 @@
 import { BaseState, BaseMetrics, SystemOptions, SystemUpdateArgs, IDisposable } from '../types';
 import { BaseSystem, SystemContext } from './BaseSystem';
+import { Profile, HandleError } from '../decorators';
 
 export abstract class AbstractSystem<
     StateType extends BaseState = BaseState,
@@ -49,10 +50,13 @@ export abstract class AbstractSystem<
             frameTime: 0,
         };
     }
+    
+    @HandleError()
     async init(): Promise<void> {
         // 서브클래스에서 필요시 오버라이드
     }
     
+    @HandleError()
     async start(): Promise<void> {
         // 서브클래스에서 필요시 오버라이드
     }
@@ -65,6 +69,7 @@ export abstract class AbstractSystem<
         // 서브클래스에서 필요시 오버라이드
     }
     
+    @Profile()
     update(context: SystemContext): void {
         const args = this.createUpdateArgs(context);
         this.performUpdateWithArgs(args);
@@ -72,11 +77,12 @@ export abstract class AbstractSystem<
     
     protected createUpdateArgs(context: SystemContext): UpdateArgsType {
         return {
-            deltaTime: context.deltaTime,
-            ...context
-        } as UpdateArgsType;
+            ...context,
+            deltaTime: context.deltaTime
+        } as unknown as UpdateArgsType;
     }
     
+    @Profile()
     protected performUpdateWithArgs(args: UpdateArgsType): void {
         if (this._isDisposed) {
             throw new Error(`Cannot update disposed system`);
@@ -107,6 +113,8 @@ export abstract class AbstractSystem<
     public get updateCount(): number {
         return this._updateCount;
     }
+    
+    @HandleError()
     public reset(): void {
         this.state = this.createInitialState(this.state, this.options.initialState);
         this.metrics = this.createInitialMetrics(this.metrics, this.options.initialMetrics);
@@ -114,6 +122,8 @@ export abstract class AbstractSystem<
         this.onReset();
     }
     protected onReset(): void {}
+    
+    @HandleError()
     public dispose(): void {
         if (this._isDisposed) return;
         this.onDispose();

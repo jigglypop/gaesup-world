@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Profile, HandleError, MonitorMemory } from '../boilerplate/decorators';
 
 const MAX_CACHE_SIZE = 100;
 const MAX_TRIG_CACHE_SIZE = 1000;
@@ -69,6 +70,7 @@ export class MemoizationManager {
     return (this.instance ??= new MemoizationManager());
   }
 
+  @Profile()
   getVectorCache(id: string) {
     return (
       this.vectorCaches.get(id) ??
@@ -76,11 +78,13 @@ export class MemoizationManager {
     );
   }
 
+  @HandleError()
   clearAll() {
     this.vectorCaches.forEach((cache) => cache.clear());
     clearTrigCache();
   }
 
+  @MonitorMemory(10)
   getStats() {
     return {
       vectorCaches: Array.from(this.vectorCaches.entries()).map(([id, cache]) => ({

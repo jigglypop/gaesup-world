@@ -1,5 +1,6 @@
 import mitt from 'mitt';
 import { CameraEngineEvents, CameraEngineConfig, ICameraEngineMonitor, CameraEngineEmitter } from './types';
+import { Profile, HandleError } from '../../boilerplate/decorators';
 
 export abstract class BaseCameraEngine implements ICameraEngineMonitor {
   public emitter: CameraEngineEmitter;
@@ -14,6 +15,7 @@ export abstract class BaseCameraEngine implements ICameraEngineMonitor {
     this.config = initialConfig;
   }
 
+  @HandleError()
   public updateConfig(newConfig: Partial<CameraEngineConfig>): void {
     const oldConfig = { ...this.config };
     this.config = { ...this.config, ...newConfig };
@@ -52,6 +54,7 @@ export abstract class BaseCameraEngine implements ICameraEngineMonitor {
     };
   }
 
+  @Profile()
   protected trackFrameMetrics(deltaTime: number): void {
     this.metrics.frameCount++;
     this.metrics.totalFrameTime += deltaTime;
@@ -62,6 +65,7 @@ export abstract class BaseCameraEngine implements ICameraEngineMonitor {
     this.emitter.emit('error', { message, details });
   }
 
+  @HandleError()
   public destroy(): void {
     this.emitter.all.clear();
   }

@@ -6,6 +6,7 @@ import { useCameraBridge } from '../bridge/useCameraBridge';
 import { CameraEngineConfig } from '../bridge/types';
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { useStateEngine } from '../../motions/hooks/useStateEngine';
+import { useBuildingStore } from '../../building/stores/buildingStore';
 
 export function useCamera() {
   const { gl } = useThree();
@@ -13,6 +14,7 @@ export function useCamera() {
   const cameraOption = useGaesupStore((state) => state.cameraOption);
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
   const mode = useGaesupStore((state) => state.mode);
+  const isInEditMode = useBuildingStore((state) => state.isInEditMode());
   
   const initialConfig: CameraEngineConfig = useMemo(() => ({
     mode: mode?.control || 'thirdPerson',
@@ -27,7 +29,7 @@ export function useCamera() {
   );
   
   const handleWheel = useCallback((event: WheelEvent) => {
-    if (!cameraOption?.enableZoom ) {
+    if (!cameraOption?.enableZoom || isInEditMode) {
       return;
     }
     
@@ -42,17 +44,17 @@ export function useCamera() {
     const newZoom = Math.min(Math.max(currentZoom + delta, minZoom), maxZoom);
     
     setCameraOption({ ...cameraOption, zoom: newZoom });
-  }, [cameraOption, setCameraOption]);
+  }, [cameraOption, setCameraOption, isInEditMode]);
   
   useEffect(() => {
     const canvas = gl.domElement;
-    if (cameraOption?.enableZoom) {
+    if (cameraOption?.enableZoom && !isInEditMode) {
       canvas.addEventListener('wheel', handleWheel, { passive: false });
       return () => {
         canvas.removeEventListener('wheel', handleWheel);
       };
     }
-  }, [gl, handleWheel, cameraOption?.enableZoom]);
+  }, [gl, handleWheel, cameraOption?.enableZoom, isInEditMode]);
   
   
   // ESC 키로 포커스 해제
@@ -67,13 +69,13 @@ export function useCamera() {
       }
     };
     
-    if (cameraOption?.enableFocus) {
+    if (cameraOption?.enableFocus && !isInEditMode) {
       window.addEventListener('keydown', handleKeyDown);
       return () => {
         window.removeEventListener('keydown', handleKeyDown);
       };
     }
-  }, [cameraOption, setCameraOption]);
+  }, [cameraOption, setCameraOption, isInEditMode]);
   
   useEffect(() => {
     updateConfig({
@@ -83,7 +85,7 @@ export function useCamera() {
   }, [cameraOption, mode, updateConfig]);
   
   useFrame((state, delta) => {
-    if (!engine ) return;
+    if (!engine || isInEditMode) return;
     
     const calcProps: CameraCalcProps = {
       camera: state.camera,

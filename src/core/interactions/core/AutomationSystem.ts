@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { Profile, HandleError, MonitorMemory, TrackCalls } from '@/core/boilerplate/decorators';
 import { AutomationState, AutomationConfig, AutomationMetrics, AutomationAction } from '../bridge/types';
 

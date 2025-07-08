@@ -2,6 +2,7 @@ import { Service } from '@core/boilerplate';
 import * as THREE from 'three';
 import { RapierRigidBody } from '@react-three/rapier';
 import { GameStatesType } from '@/core/world/components/Rideable/types';
+import { Profile } from '@/core/boilerplate/decorators';
 
 @Service()
 export class MotionService {
@@ -11,6 +12,7 @@ export class MotionService {
   private readonly DEFAULT_ACCELERATION = 5;
   private readonly GROUND_THRESHOLD = 0.1;
 
+  @Profile()
   public calculateMovementForce(
     movement: THREE.Vector3,
     currentVelocity: THREE.Vector3,
@@ -22,6 +24,7 @@ export class MotionService {
     return velocityDiff.multiplyScalar(acceleration);
   }
 
+  @Profile()
   public calculateJumpForce(
     isGrounded: boolean,
     jumpSpeed: number = this.DEFAULT_JUMP_FORCE,
@@ -49,6 +52,7 @@ export class MotionService {
     return velocity.clone().multiplyScalar(damping);
   }
 
+  @Profile()
   public limitVelocity(velocity: THREE.Vector3, maxSpeed: number): THREE.Vector3 {
     const speed = this.calculateSpeed(velocity);
     if (speed > maxSpeed) {
@@ -59,6 +63,7 @@ export class MotionService {
     return velocity;
   }
 
+  @Profile()
   public calculateRotationToTarget(
     currentPosition: THREE.Vector3,
     targetPosition: THREE.Vector3
@@ -67,6 +72,7 @@ export class MotionService {
     return Math.atan2(direction.x, direction.z);
   }
 
+  @Profile()
   public smoothRotation(
     currentRotation: number,
     targetRotation: number,
@@ -78,6 +84,7 @@ export class MotionService {
     return currentRotation + diff * smoothing;
   }
 
+  @Profile()
   public calculateMetrics(
     velocity: THREE.Vector3,
     previousVelocity: THREE.Vector3,
