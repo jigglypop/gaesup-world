@@ -1,1 +1,2 @@
-export * from './BridgeDecorators'; 
+export * from './BridgeDecorators';
+export * from './BlueprintDecorators'; 

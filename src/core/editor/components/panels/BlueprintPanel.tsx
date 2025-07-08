@@ -271,6 +271,23 @@ export const BlueprintPanel: React.FC = () => {
     }
   };
 
+  const handleSpawnEntity = () => {
+    if (!selectedBlueprint) return;
+    
+    const blueprint = blueprintRegistry.get(selectedBlueprint);
+    if (!blueprint) return;
+    
+    console.log('Spawning entity from blueprint:', blueprint);
+    
+    // TODO: 실제 엔티티 생성 로직 연결
+    // 예: 
+    // - Character 타입이면 GaesupController에 blueprint 전달
+    // - Vehicle 타입이면 Rideable 컴포넌트 생성
+    // - 등등...
+    
+    alert(`Blueprint "${blueprint.name}" (${blueprint.type}) would be spawned here!\n\nCheck console for blueprint data.`);
+  };
+
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <h3 className="editor-title">📘 Blueprint Library</h3>
@@ -422,6 +439,7 @@ export const BlueprintPanel: React.FC = () => {
             {showGraph ? 'Show List' : 'Show Graph'}
           </button>
           <button
+            onClick={handleSpawnEntity}
             style={{
               flex: 1,
               padding: '6px',
