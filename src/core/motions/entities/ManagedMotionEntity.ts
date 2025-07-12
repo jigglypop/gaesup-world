@@ -1,6 +1,6 @@
 import { ManagedEntity, Autowired } from '@core/boilerplate';
 import { MotionBridge } from '../bridge/MotionBridge';
-import { MotionCommand, MotionEntity, MotionSnapshot } from '../bridge/types';
+import { MotionCommand, MotionEntity, MotionSnapshot, MotionConfig } from '../bridge/types';
 import { MotionType } from '../core/system/types';
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
@@ -53,7 +53,7 @@ export class ManagedMotionEntity extends ManagedEntity<MotionEntity, MotionSnaps
     this.execute({ type: 'reset' });
   }
 
-  public setConfig(config: any): void {
+  public setConfig(config: MotionConfig): void {
     this.execute({ type: 'setConfig', data: { config } });
   }
 

@@ -1,25 +1,54 @@
 import { logger } from '../../utils/logger';
-import { BaseSystem, SystemContext } from '../entity/BaseSystem';
 
-type Constructor<T = {}> = new (...args: any[]) => T;
+type DecoratorTarget = object;
+type AnyConstructor<T = {}> = new (...args: any[]) => T;
+type PropertyDescriptorExtended = PropertyDescriptor & {
+  value?: (...args: unknown[]) => unknown;
+};
 
 /**
- * 메서드 실행 시간을 측정하는 데코레이터
+ * 시스템 메서드의 에러를 자동으로 처리하는 데코레이터
  */
-export function Profile() {
+export function HandleError(defaultReturn?: unknown) {
   return function (
-    target: any,
+    target: DecoratorTarget,
     propertyKey: string,
-    descriptor: PropertyDescriptor
+    descriptor: PropertyDescriptorExtended
   ) {
     const originalMethod = descriptor.value;
 
-    descriptor.value = function (...args: any[]) {
+    descriptor.value = function (...args: unknown[]) {
+      try {
+        return originalMethod!.apply(this, args);
+      } catch (error) {
+        logger.error(`[${this.constructor.name}] Error in ${propertyKey}:`, error);
+        return defaultReturn;
+      }
+    };
+
+    return descriptor;
+  };
+}
+
+/**
+ * 시스템 초기화를 로깅하는 데코레이터
+ */
+export function LogInitialization() {
+  return function (
+    target: DecoratorTarget,
+    propertyKey: string,
+    descriptor: PropertyDescriptorExtended
+  ) {
+    const originalMethod = descriptor.value;
+
+    descriptor.value = function (...args: unknown[]) {
+      logger.info(`[${this.constructor.name}] Initializing...`);
       const startTime = performance.now();
-      const result = originalMethod.apply(this, args);
-      const endTime = performance.now();
       
-      logger.log(`[${this.constructor.name}] ${propertyKey} took ${(endTime - startTime).toFixed(2)}ms`);
+      const result = originalMethod!.apply(this, args);
+      
+      const endTime = performance.now();
+      logger.info(`[${this.constructor.name}] Initialized in ${(endTime - startTime).toFixed(2)}ms`);
       
       return result;
     };
@@ -29,36 +58,21 @@ export function Profile() {
 }
 
 /**
- * 에러 처리를 자동으로 수행하는 데코레이터
+ * 시스템을 자동으로 등록하는 클래스 데코레이터
  */
-export function HandleError() {
-  return function (
-    target: any,
-    propertyKey: string,
-    descriptor: PropertyDescriptor
-  ) {
-    const originalMethod = descriptor.value;
-
-    descriptor.value = function (...args: any[]) {
-      try {
-        const result = originalMethod.apply(this, args);
+export function RegisterSystem(systemType: string) {
+  return function <T extends AnyConstructor>(constructor: T) {
+    return class extends constructor {
+      constructor(...args: any[]) {
+        super(...args);
         
-        // Promise 처리
-        if (result instanceof Promise) {
-          return result.catch((error: Error) => {
-            logger.error(`[${this.constructor.name}] Error in ${propertyKey}:`, error);
-            throw error;
-          });
+        const registryModule = require('../entity/SystemRegistry');
+        if (registryModule && registryModule.SystemRegistry) {
+          registryModule.SystemRegistry.register(systemType, this);
+          logger.info(`[${constructor.name}] Registered as ${systemType} system`);
         }
-        
-        return result;
-      } catch (error) {
-        logger.error(`[${this.constructor.name}] Error in ${propertyKey}:`, error);
-        throw error;
       }
     };
-
-    return descriptor;
   };
 }
 
@@ -66,7 +80,7 @@ export function HandleError() {
  * 시스템의 런타임을 자동으로 관리하는 클래스 데코레이터
  */
 export function ManageRuntime(options: { autoStart?: boolean } = {}) {
-  return function <T extends Constructor<BaseSystem>>(constructor: T) {
+  return function <T extends AnyConstructor>(constructor: T) {
     return class extends constructor {
       private animationFrameId: number | null = null;
       private lastTime: number = 0;
@@ -92,13 +106,17 @@ export function ManageRuntime(options: { autoStart?: boolean } = {}) {
           this.totalTime += deltaTime;
           this.frameCount++;
           
-          const context: SystemContext = {
+          const context = {
             deltaTime,
             totalTime: this.totalTime,
             frameCount: this.frameCount
           };
           
-          this.update(context);
+          // Type-safe update method call
+          const instance = this as unknown as { update?: (context: unknown) => void };
+          if (instance.update && typeof instance.update === 'function') {
+            instance.update(context);
+          }
           
           this.animationFrameId = requestAnimationFrame(loop);
         };
@@ -114,8 +132,9 @@ export function ManageRuntime(options: { autoStart?: boolean } = {}) {
           logger.info(`[${constructor.name}] Runtime stopped`);
         }
         
-        if (super.dispose) {
-          super.dispose();
+        const base = Object.getPrototypeOf(this);
+        if (base && typeof base.dispose === 'function') {
+          base.dispose.call(this);
         }
       }
     };

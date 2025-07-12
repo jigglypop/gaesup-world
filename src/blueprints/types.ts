@@ -168,6 +168,16 @@ export type ItemBlueprint = Blueprint & {
   };
 };
 
+export type BlueprintComponent = {
+  id: string;
+  type: string;
+  [key: string]: unknown;
+};
+
+export type BlueprintWithComponents = AnyBlueprint & {
+  components?: BlueprintComponent[];
+};
+
 export type AnyBlueprint = 
   | CharacterBlueprint 
   | VehicleBlueprint 

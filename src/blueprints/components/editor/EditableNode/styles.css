@@ -1,0 +1,132 @@
+.editable-node {
+  background: var(--editor-surface-1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  min-width: 180px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.editable-node__header {
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: var(--editor-text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -12px -12px 8px -12px;
+  padding: 8px 12px;
+  border-radius: 8px 8px 0 0;
+  border-bottom: 1px solid var(--editor-border-color);
+}
+
+.editable-node__header--physics {
+  background: var(--editor-success-bg);
+}
+
+.editable-node__header--animation {
+  background: var(--editor-warning-bg);
+}
+
+.editable-node__header--movement {
+  background: var(--editor-accent-bg);
+}
+
+.editable-node__header--behavior {
+  background: var(--editor-info-bg);
+}
+
+.editable-node__header--audio {
+  background: var(--editor-warning-bg-hover);
+}
+
+.editable-node__header--visual {
+  background: var(--editor-danger-bg-hover);
+}
+
+.editable-node__header--stats {
+  background: var(--editor-danger-bg);
+}
+
+.editable-node__header--collision {
+  background: var(--editor-surface-hover);
+}
+
+.editable-node__header--default {
+  background: var(--editor-surface-1);
+}
+
+.editable-node__delete-button {
+  margin-left: auto;
+  padding: 2px 6px;
+  background: var(--editor-danger-bg);
+  border: 1px solid var(--editor-danger-border);
+  border-radius: 4px;
+  color: var(--editor-text-main);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.editable-node__field {
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.editable-node__field-view {
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  color: var(--editor-text-muted);
+  transition: all 0.2s ease;
+}
+
+.editable-node__field-view:hover {
+  background: var(--editor-surface-1);
+  color: var(--editor-text-main);
+}
+
+.editable-node__field-label {
+  color: var(--editor-text-faint);
+}
+
+.editable-node__field-edit {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.editable-node__field-input {
+  flex: 1;
+  padding: 4px 6px;
+  background: var(--editor-surface-1);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 4px;
+  color: var(--editor-text-main);
+  font-size: 11px;
+  outline: none;
+}
+
+.editable-node__field-button {
+  padding: 4px 8px;
+  font-size: 10px;
+  border-radius: 4px;
+  color: var(--editor-text-main);
+  cursor: pointer;
+}
+
+.editable-node__field-button--save {
+  background: var(--editor-success-bg);
+  border: 1px solid var(--editor-success-border);
+}
+
+.editable-node__field-button--cancel {
+  background: var(--editor-danger-bg);
+  border: 1px solid var(--editor-danger-border);
+}
+
+.editable-node__handle {
+  background: var(--editor-accent-color);
+} 

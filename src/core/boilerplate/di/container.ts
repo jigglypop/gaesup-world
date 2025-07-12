@@ -99,8 +99,9 @@ export class DIContainer {
       }
       try {
         return this.resolve(token)
-      } catch (error: any) {
-        logger.error(`DIContainer: Failed to resolve parameter ${index} (${getTokenName(token)}) for ${ClassConstructor.name}.`, error.message)
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        logger.error(`DIContainer: Failed to resolve parameter ${index} (${getTokenName(token)}) for ${ClassConstructor.name}.`, errorMessage)
         throw new Error(`Could not construct ${ClassConstructor.name}.`)
       }
     })
@@ -123,8 +124,9 @@ export class DIContainer {
         if (propertyType) {
             try {
                 (instance as Record<string, unknown>)[prop] = this.resolve(propertyType)
-            } catch (error: any) {
-                logger.warn(`DIContainer: Failed to autowire property '${prop}' on '${constructor.name}'.`, error.message)
+            } catch (error: unknown) {
+                const errorMessage = error instanceof Error ? error.message : String(error)
+                logger.warn(`DIContainer: Failed to autowire property '${prop}' on '${constructor.name}'.`, errorMessage)
             }
         }
     }
@@ -134,8 +136,9 @@ export class DIContainer {
         const token = injectedProps[prop]
         try {
             (instance as Record<string, unknown>)[prop] = this.resolve(token)
-        } catch (error: any) {
-            logger.warn(`DIContainer: Failed to inject property '${prop}' with token '${String(token)}' on '${constructor.name}'.`, error.message)
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error)
+            logger.warn(`DIContainer: Failed to inject property '${prop}' with token '${String(token)}' on '${constructor.name}'.`, errorMessage)
         }
     }
   }

@@ -1,0 +1,65 @@
+body {
+  overflow: hidden; /* Prevent scrolling on the body when editor is open */
+}
+
+.blueprint-editor-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.blueprint-editor-page__panel {
+  width: 95vw;
+  height: 90vh;
+  max-width: 1800px;
+  background-color: var(--editor-bg-1);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-border-radius);
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.blueprint-editor-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--editor-border-color);
+  background-color: var(--editor-surface-secondary);
+  flex-shrink: 0;
+}
+
+.blueprint-editor-page__title {
+  margin: 0;
+  color: var(--editor-text-primary);
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.blueprint-editor-page__close {
+  background: transparent;
+  border: none;
+  color: var(--editor-text-secondary);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 8px;
+  border-radius: var(--editor-radius-sm);
+  transition: all 0.2s ease;
+}
+
+.blueprint-editor-page__close:hover {
+  background-color: var(--editor-surface-hover);
+  color: var(--editor-text-primary);
+} 

@@ -1,5 +1,5 @@
 import mitt from 'mitt';
-import { CameraEngineEvents, CameraEngineConfig, ICameraEngineMonitor, CameraEngineEmitter } from './types';
+import { CameraEngineEvents, CameraEngineConfig, ICameraEngineMonitor, CameraEngineEmitter, CameraEngineState } from './types';
 import { Profile, HandleError } from '../../boilerplate/decorators';
 
 export abstract class BaseCameraEngine implements ICameraEngineMonitor {
@@ -37,7 +37,7 @@ export abstract class BaseCameraEngine implements ICameraEngineMonitor {
   public getConfig(): CameraEngineConfig {
     return { ...this.config };
   }
-  public getState(): any {
+  public getState(): CameraEngineState {
     return {
       config: this.getConfig(),
       metrics: this.getMetrics(),
@@ -61,7 +61,7 @@ export abstract class BaseCameraEngine implements ICameraEngineMonitor {
     this.metrics.lastUpdateTime = Date.now();
   }
 
-  protected emitError(message: string, details?: any): void {
+  protected emitError(message: string, details?: unknown): void {
     this.emitter.emit('error', { message, details });
   }
 

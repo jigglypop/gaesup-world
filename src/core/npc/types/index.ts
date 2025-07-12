@@ -55,11 +55,17 @@ export interface NPCInstance {
   events?: NPCEvent[];
 }
 
+export type NPCEventPayload = 
+  | { type: 'dialogue'; text: string; duration?: number }
+  | { type: 'animation'; animationId: string; loop?: boolean }
+  | { type: 'sound'; soundUrl: string; volume?: number }
+  | { type: 'custom'; data: unknown };
+
 export interface NPCEvent {
   id: string;
   type: 'onClick' | 'onHover' | 'onInteract' | 'onProximity';
   action: 'dialogue' | 'animation' | 'sound' | 'custom';
-  payload?: any;
+  payload?: NPCEventPayload;
 }
 
 export interface NPCCategory {

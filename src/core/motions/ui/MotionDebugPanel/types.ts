@@ -1,10 +1,16 @@
 export type DebugFieldType = 'text' | 'number' | 'vector3' | 'angle';
 
+export type DebugFieldValue = 
+  | string  // for 'text'
+  | number  // for 'number' and 'angle'
+  | [number, number, number]  // for 'vector3'
+  | { x: number; y: number; z: number };  // alternative vector3 format
+
 export interface DebugField {
   key: string;
   label: string;
   type: DebugFieldType;
-  value?: any;
+  value?: DebugFieldValue;
 }
 
 export interface MotionMetrics {

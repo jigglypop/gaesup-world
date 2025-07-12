@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { BaseSystem, SystemContext } from '@core/boilerplate/entity/BaseSystem';
 import { ManageRuntime, Profile, HandleError } from '@core/boilerplate/decorators';
+import { SpatialGrid } from './SpatialGrid';
 
 export interface WorldObject {
   id: string;
@@ -36,68 +37,13 @@ export interface InteractionEvent {
   data?: Record<string, unknown>;
 }
 
-class SpatialGrid {
-  private cellSize: number;
-  private cells: Map<string, Set<string>> = new Map();
 
-  constructor(cellSize: number = 10) {
-    this.cellSize = cellSize;
-  }
-
-  private getCellKey(x: number, z: number): string {
-    const cellX = Math.floor(x / this.cellSize);
-    const cellZ = Math.floor(z / this.cellSize);
-    return `${cellX},${cellZ}`;
-  }
-
-  addObject(id: string, position: THREE.Vector3): void {
-    const key = this.getCellKey(position.x, position.z);
-    if (!this.cells.has(key)) {
-      this.cells.set(key, new Set());
-    }
-    this.cells.get(key)!.add(id);
-  }
-
-  removeObject(id: string, position: THREE.Vector3): void {
-    const key = this.getCellKey(position.x, position.z);
-    const cell = this.cells.get(key);
-    if (cell) {
-      cell.delete(id);
-      if (cell.size === 0) {
-        this.cells.delete(key);
-      }
-    }
-  }
-
-  getNearbyObjects(position: THREE.Vector3, radius: number = 1): string[] {
-    const result: Set<string> = new Set();
-    const cellRadius = Math.ceil(radius / this.cellSize);
-    const centerX = Math.floor(position.x / this.cellSize);
-    const centerZ = Math.floor(position.z / this.cellSize);
-
-    for (let x = centerX - cellRadius; x <= centerX + cellRadius; x++) {
-      for (let z = centerZ - cellRadius; z <= centerZ + cellRadius; z++) {
-        const key = `${x},${z}`;
-        const cell = this.cells.get(key);
-        if (cell) {
-          cell.forEach(id => result.add(id));
-        }
-      }
-    }
-
-    return Array.from(result);
-  }
-
-  clear(): void {
-    this.cells.clear();
-  }
-}
 
 @ManageRuntime({ autoStart: true })
 export class WorldSystem implements BaseSystem {
   private objects: Map<string, WorldObject> = new Map();
   private interactionEvents: InteractionEvent[] = [];
-  private spatial: SpatialGrid = new SpatialGrid(10);
+  private spatial: SpatialGrid = new SpatialGrid({ cellSize: 10 });
   private raycaster: THREE.Raycaster = new THREE.Raycaster();
   private tempVector: THREE.Vector3 = new THREE.Vector3();
 
@@ -120,11 +66,14 @@ export class WorldSystem implements BaseSystem {
 
   addObject(object: WorldObject): void {
     this.objects.set(object.id, object);
-    this.spatial.addObject(object.id, object.position);
+    this.spatial.add(object.id, object.position);
   }
 
   removeObject(id: string): boolean {
-    this.spatial.removeObject(id, this.objects.get(id)?.position as THREE.Vector3);
+    const object = this.objects.get(id);
+    if (object) {
+      this.spatial.remove(id);
+    }
     return this.objects.delete(id);
   }
 
@@ -145,23 +94,24 @@ export class WorldSystem implements BaseSystem {
     if (!object) return false;
 
     Object.assign(object, updates);
-    this.spatial.removeObject(id, object.position);
-    this.spatial.addObject(id, object.position);
+    if (updates.position) {
+      this.spatial.update(id, updates.position);
+    }
     return true;
   }
 
   getObjectsInRadius(center: THREE.Vector3, radius: number): WorldObject[] {
-    const nearbyIds = this.spatial.getNearbyObjects(center, radius);
-    return nearbyIds.map(id => this.objects.get(id)).filter(obj => obj !== undefined) as WorldObject[];
+    const nearbyIds = this.spatial.getNearby(center, radius);
+    return nearbyIds.map((id: string) => this.objects.get(id)).filter((obj): obj is WorldObject => obj !== undefined);
   }
 
   checkCollisions(objectId: string): WorldObject[] {
     const object = this.objects.get(objectId);
     if (!object || !object.boundingBox) return [];
 
-    const nearbyIds = this.spatial.getNearbyObjects(object.position, object.boundingBox.max.distanceTo(object.boundingBox.min));
+    const nearbyIds = this.spatial.getNearby(object.position, object.boundingBox.max.distanceTo(object.boundingBox.min));
     return nearbyIds
-      .map(id => this.objects.get(id))
+      .map((id: string) => this.objects.get(id))
       .filter((other): other is WorldObject => 
         other !== undefined &&
         other.id !== objectId && 
@@ -194,7 +144,7 @@ export class WorldSystem implements BaseSystem {
     this.raycaster.near = 0;
     this.raycaster.far = maxDistance;
     
-    const nearbyIds = this.spatial.getNearbyObjects(origin, maxDistance);
+    const nearbyIds = this.spatial.getNearby(origin, maxDistance);
     for (const id of nearbyIds) {
       const object = this.objects.get(id);
       if (object && object.boundingBox) {

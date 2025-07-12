@@ -28,7 +28,7 @@ function getGlobalBridge(): InteractionBridge {
 export const useKeyboard = (
   enableDiagonal = true,
   enableClicker = true,
-  cameraOption?: any,
+  cameraOption?: unknown,
 ) => {
   const automation = useGaesupStore((state) => state.automation);
   const stopAutomation = useGaesupStore((state) => state.stopAutomation);

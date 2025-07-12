@@ -5,7 +5,11 @@ import { useNPCStore } from '../../../npc/stores/npcStore';
 import { TILE_CONSTANTS } from '../../types/constants';
 import './styles.css';
 
-export function BuildingUI() {
+export type BuildingUIProps = {
+  onClose?: () => void;
+};
+
+export function BuildingUI({ onClose }: BuildingUIProps) {
   const { 
     setEditMode, 
     editMode, 
@@ -73,7 +77,10 @@ export function BuildingUI() {
   const npcTemplatesArray = useMemo(() => Array.from(npcTemplates.values()), [npcTemplates]);
   
   // Callbacks
-  const handleEditModeClose = useCallback(() => setEditMode('none'), [setEditMode]);
+  const handleEditModeClose = useCallback(() => {
+    setEditMode('none');
+    onClose?.();
+  }, [setEditMode, onClose]);
   const handleToggleCustomSettings = useCallback(() => setShowCustomSettings(prev => !prev), []);
   
   React.useEffect(() => {
@@ -113,14 +120,7 @@ export function BuildingUI() {
       )}
       
       <div className="building-ui-container">
-        {!isEditing ? (
-          <button 
-            onClick={() => setEditMode('wall')} 
-            className="building-ui-toggle"
-          >
-            Building Editor
-          </button>
-        ) : (
+        {isEditing ? (
           <div className="building-ui-panel">
             <div className="building-ui-header">
               <span className="building-ui-title">Building Mode</span>
@@ -638,17 +638,7 @@ export function BuildingUI() {
                       ) : null;
                     })}
                     <button
-                      onClick={() => {
-                        useNPCStore.getState().setPreviewAccessory('hat', undefined);
-                        const instanceId = useNPCStore.getState().selectedInstanceId;
-                        if (instanceId) {
-                          const instance = useNPCStore.getState().instances.get(instanceId);
-                          if (instance && instance.customParts) {
-                            const newCustomParts = instance.customParts.filter(p => p.type !== 'hat');
-                            useNPCStore.getState().updateInstance(instanceId, { customParts: newCustomParts });
-                          }
-                        }
-                      }}
+                      onClick={() => useNPCStore.getState().setPreviewAccessory('hat', '')}
                       className={`building-ui-clothing-button ${!useNPCStore.getState().previewAccessories.hat ? 'active' : ''}`}
                     >
                       없음
@@ -659,36 +649,20 @@ export function BuildingUI() {
                 <div className="building-ui-category-group">
                   <span className="building-ui-label">안경:</span>
                   <div className="building-ui-clothing-buttons">
-                    {['glass-set-a', 'glass-set-b'].map(glassId => {
-                      const glass = useNPCStore.getState().clothingSets.get(glassId);
-                      return glass ? (
+                    {['glasses-set-a', 'glasses-set-b'].map(glassesId => {
+                      const glasses = useNPCStore.getState().clothingSets.get(glassesId);
+                      return glasses ? (
                         <button
-                          key={glass.id}
-                          onClick={() => {
-                            useNPCStore.getState().setPreviewAccessory('glasses', glass.id);
-                            const instanceId = useNPCStore.getState().selectedInstanceId;
-                            if (instanceId) {
-                              useNPCStore.getState().updateInstancePart(instanceId, glass.parts[0].id, glass.parts[0]);
-                            }
-                          }}
-                          className={`building-ui-clothing-button ${useNPCStore.getState().previewAccessories.glasses === glass.id ? 'active' : ''}`}
+                          key={glasses.id}
+                          onClick={() => useNPCStore.getState().setPreviewAccessory('glasses', glasses.id)}
+                          className={`building-ui-clothing-button ${useNPCStore.getState().previewAccessories.glasses === glasses.id ? 'active' : ''}`}
                         >
-                          {glass.name}
+                          {glasses.name}
                         </button>
                       ) : null;
                     })}
                     <button
-                      onClick={() => {
-                        useNPCStore.getState().setPreviewAccessory('glasses', undefined);
-                        const instanceId = useNPCStore.getState().selectedInstanceId;
-                        if (instanceId) {
-                          const instance = useNPCStore.getState().instances.get(instanceId);
-                          if (instance && instance.customParts) {
-                            const newCustomParts = instance.customParts.filter(p => p.type !== 'glasses');
-                            useNPCStore.getState().updateInstance(instanceId, { customParts: newCustomParts });
-                          }
-                        }
-                      }}
+                      onClick={() => useNPCStore.getState().setPreviewAccessory('glasses', '')}
                       className={`building-ui-clothing-button ${!useNPCStore.getState().previewAccessories.glasses ? 'active' : ''}`}
                     >
                       없음
@@ -696,19 +670,9 @@ export function BuildingUI() {
                   </div>
                 </div>
                 
-                <div className="building-ui-input-group">
-                  <span className="building-ui-label">NPC 이름:</span>
-                  <input
-                    type="text"
-                    placeholder="NPC 이름 입력"
-                    className="building-ui-input"
-                    onChange={(e) => {
-                      const instanceId = useNPCStore.getState().selectedInstanceId;
-                      if (instanceId) {
-                        useNPCStore.getState().updateInstance(instanceId, { name: e.target.value });
-                      }
-                    }}
-                  />
+                <div className="building-ui-category-group">
+                  <span className="building-ui-label">Selected Instance:</span>
+                  <span className="building-ui-info-value">{selectedNPCInstanceId || 'None'}</span>
                 </div>
                 
                 {selectedNPCTemplateId && npcTemplates.get(selectedNPCTemplateId) && (
@@ -721,7 +685,7 @@ export function BuildingUI() {
               </>
             )}
           </div>
-        )}
+        ) : null}
       </div>
     </>
   );

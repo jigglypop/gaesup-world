@@ -1,4 +1,3 @@
-import { vec3 } from '@react-three/rapier';
 import { useEffect, useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { MinimapEngine } from '../../../ui/core';

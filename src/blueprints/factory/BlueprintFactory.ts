@@ -1,11 +1,11 @@
 import { AnyBlueprint, CharacterBlueprint, VehicleBlueprint, AirplaneBlueprint } from '../types';
 import { BlueprintConverter } from './BlueprintConverter';
-import { BlueprintDefinition } from '../../core/motions/core/blueprint/types';
-import { ComponentRegistry } from '../../core/motions/core/blueprint/ComponentRegistry';
+import { BlueprintDefinition } from '../core/types';
+import { ComponentRegistry } from '../core/ComponentRegistry';
 import { RefObject } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 import { Group } from 'three';
-import { BlueprintEntity } from '../../core/motions/core/blueprint/BlueprintEntity';
+import { BlueprintEntity } from '../core/BlueprintEntity';
 
 export type BlueprintEntityConfig = {
   rigidBodyRef: RefObject<RapierRigidBody>;

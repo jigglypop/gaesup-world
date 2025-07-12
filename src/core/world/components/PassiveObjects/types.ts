@@ -4,8 +4,9 @@ import { Vector3Tuple, QuaternionTuple } from 'three';
 import { RigidBody } from '@react-three/rapier';
 import { Euler, Group, Vector3, Quaternion } from 'three';
 import { RapierRigidBody, RigidBodyProps } from '@react-three/rapier';
+import { PayloadData } from '@core/types/common';
 
-export interface PassiveObject extends WorldObject {
+export type PassiveObject = WorldObject & {
   type: 'building' | 'tree' | 'rock' | 'item' | 'decoration' | 'terrain';
   durability?: number;
   maxDurability?: number;
@@ -21,7 +22,7 @@ export interface PassiveObject extends WorldObject {
   modelUrl: string;
 }
 
-export interface PassiveObjectProps {
+export type PassiveObjectProps = {
   objects: PassiveObject[];
   selectedId?: string;
   onSelect?: (id: string) => void;
@@ -32,7 +33,7 @@ export interface PassiveObjectProps {
   onInteract?: (object: PassiveObject, action: string) => void;
 }
 
-export interface ObjectInteraction {
+export type ObjectInteraction = {
   type: 'collect' | 'harvest' | 'examine' | 'use' | 'destroy';
   requirements?: {
     tool?: string;
@@ -55,15 +56,15 @@ export type passivePropsType = {
   scale?: Vector3Tuple | number;
   visible?: boolean;
   sensor?: boolean;
-  userData?: any;
-  onCollisionEnter?: (payload: any) => void;
-  onCollisionExit?: (payload: any) => void;
-  onIntersectionEnter?: (payload: any) => void;
-  onIntersectionExit?: (payload: any) => void;
+  userData?: Record<string, unknown>;
+  onCollisionEnter?: (payload: PayloadData) => void;
+  onCollisionExit?: (payload: PayloadData) => void;
+  onIntersectionEnter?: (payload: PayloadData) => void;
+  onIntersectionExit?: (payload: PayloadData) => void;
   ref?: React.RefObject<RigidBody>;
-  outerGroupRef?: React.RefObject<any>;
-  innerGroupRef?: React.RefObject<any>;
-  colliderRef?: React.RefObject<any>;
+  outerGroupRef?: React.RefObject<Group>;
+  innerGroupRef?: React.RefObject<Group>;
+  colliderRef?: React.RefObject<RapierRigidBody>;
 };
 
 export type PassiveObjectInstanceProps = {

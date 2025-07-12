@@ -1,5 +1,28 @@
 import { ReactNode } from 'react';
 
+export type WorldData = {
+  id: string;
+  size: {
+    width: number;
+    height: number;
+    depth: number;
+  };
+  objects: {
+    total: number;
+    active: number;
+    passive: number;
+  };
+  physics: {
+    enabled: boolean;
+    gravity: [number, number, number];
+  };
+  debug: boolean;
+  environment: {
+    fogEnabled: boolean;
+    lightsCount: number;
+  };
+};
+
 export interface WorldContainerProps {
   children?: ReactNode;
   urls?: Partial<{
@@ -49,7 +72,7 @@ export interface WorldContainerProps {
       castShadow?: boolean;
     };
   };
-  onWorldReady?: (worldData: any) => void;
+  onWorldReady?: (worldData: WorldData) => void;
   onObjectSelect?: (objectId: string) => void;
   onObjectInteract?: (objectId: string, action: string) => void;
 }

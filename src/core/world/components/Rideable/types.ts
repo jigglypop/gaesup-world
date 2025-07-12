@@ -1,21 +1,9 @@
 import * as THREE from 'three';
 import { RigidBodyProps } from '@react-three/rapier';
 import { WorldObject } from '../../core/WorldEngine';
+import { CollisionEvent } from '@core/types/common';
 
-export interface GameStatesType {
-      //   canRide: false,
-      // isRiding: false,
-      // isJumping: false,
-      // isFalling: false,
-      // isMoving: false,
-      // isRunning: false,
-      // isNotMoving: true,
-      // isNotRunning: true,
-      // isOnTheGround: true,
-      // nearbyRideable: undefined,
-      // currentRideable: undefined,
-      // rideableDistance: undefined,
-    
+export type GameStatesType = {
     canRide: boolean;
     isRiding: boolean;
     isJumping: boolean;
@@ -30,7 +18,7 @@ export interface GameStatesType {
     rideableDistance?: number | undefined;
 }
 
-export interface GameStates {
+export type GameStates = {
   canRide: boolean;
   isRiding: boolean;
   nearbyRideable?: RideableObject;
@@ -38,14 +26,14 @@ export interface GameStates {
   rideableDistance?: number;
 }
 
-export interface NearbyRideable {
+export type NearbyRideable = {
   id: string;
   distance: number;
   object: RideableObject;
   canInteract: boolean;
 }
 
-export interface RideableObject extends WorldObject {
+export type RideableObject = WorldObject & {
   type: 'rideable';
   maxSpeed: number;
   acceleration: number;
@@ -70,7 +58,7 @@ export interface RideableObject extends WorldObject {
   };
 }
 
-export interface RideableUIProps {
+export type RideableUIProps = {
   states: {
     canRide: boolean;
     isRiding: boolean;
@@ -79,7 +67,7 @@ export interface RideableUIProps {
   };
 }
 
-export interface RideablePropType {
+export type RideablePropType = {
   objectkey: string;
   objectType?: 'vehicle' | 'airplane' | 'boat' | 'bike';
   enableRiding?: boolean;
@@ -108,7 +96,7 @@ export interface RideablePropType {
   physics?: RigidBodyProps;
 }
 
-export interface RideableState {
+export type RideableState = {
   currentSpeed: number;
   targetSpeed: number;
   steering: number;
@@ -120,7 +108,7 @@ export interface RideableState {
   maxDurability?: number;
 }
 
-export interface RideableControls {
+export type RideableControls = {
   forward: boolean;
   backward: boolean;
   left: boolean;
@@ -130,11 +118,11 @@ export interface RideableControls {
   horn?: boolean;
 }
 
-export interface RideableEvents {
+export type RideableEvents = {
   onMount: (objectId: string, riderId: string) => void;
   onDismount: (objectId: string, riderId: string) => void;
   onSpeedChange: (objectId: string, speed: number) => void;
-  onCollision: (objectId: string, collisionData: any) => void;
+  onCollision: (objectId: string, collisionData: CollisionEvent) => void;
   onFuelEmpty?: (objectId: string) => void;
   onDamage?: (objectId: string, damage: number) => void;
 }

@@ -4,6 +4,5 @@ export * from './system/types';
 export * from './system/EntityStateManager';
 export * from './forces';
 export * from './movement';
-export * from './blueprint';
 export * from './types';
 export * from './services';

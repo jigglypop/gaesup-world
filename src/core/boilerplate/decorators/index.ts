@@ -2,7 +2,7 @@ import 'reflect-metadata'
 import { BridgeRegistry } from '../bridge/BridgeRegistry'
 import { DIContainer } from '../di'
 import { Constructor } from '../types'
-import { EnableEventLog, Log, Performance } from './advanced'
+import { EnableEventLog, DebugLog, PerformanceLog } from './advanced'
 
 export function DomainBridge(domain: string) {
     return function <T extends Constructor>(target: T) {
@@ -20,7 +20,7 @@ export function Command(name: string) {
     }
 }
 
-export { EnableEventLog, Log, Performance }
+export { EnableEventLog, DebugLog, PerformanceLog }
 export * from '../di/Autowired'
 export * from '../di/Inject'
 export * from '../di/Service'

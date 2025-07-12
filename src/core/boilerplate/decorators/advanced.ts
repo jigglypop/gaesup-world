@@ -16,7 +16,7 @@ export function Validate() {
     }
 }
 
-export function Log() {
+export function DebugLog() {
     return function (target: object, propertyKey: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value
         descriptor.value = function (this: unknown, ...args: unknown[]) {
@@ -28,7 +28,7 @@ export function Log() {
     }
 }
 
-export function Performance() {
+export function PerformanceLog() {
     return function (target: object, propertyKey: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value
         descriptor.value = function (this: unknown, ...args: unknown[]) {

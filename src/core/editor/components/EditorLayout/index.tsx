@@ -2,7 +2,6 @@ import React, { FC, useState } from 'react';
 import '../../styles/theme.css';
 import { 
   AnimationPanel,
-  BlueprintPanel,
   CameraPanel,
   MotionPanel,
   PerformancePanel,
@@ -12,7 +11,7 @@ import { ResizablePanel } from '../ResizablePanel';
 import { EditorLayoutProps, FloatingPanel, PanelConfig } from './types';
 
 export const EditorLayout: FC<EditorLayoutProps> = ({ children }) => {
-  const [activePanels, setActivePanels] = useState<string[]>(['vehicle', 'performance', 'blueprints']);
+  const [activePanels, setActivePanels] = useState<string[]>(['vehicle', 'performance']);
   const [floatingPanels, setFloatingPanels] = useState<FloatingPanel[]>([]);
   const [minimizedPanels, setMinimizedPanels] = useState<string[]>([]);
 
@@ -22,7 +21,6 @@ export const EditorLayout: FC<EditorLayoutProps> = ({ children }) => {
     { id: 'motion', title: 'Motion', component: <MotionPanel />, defaultSide: 'right' },
     { id: 'performance', title: 'Performance', component: <PerformancePanel />, defaultSide: 'right' },
     { id: 'vehicle', title: 'Vehicle', component: <VehiclePanel />, defaultSide: 'left' },
-    { id: 'blueprints', title: 'Blueprints', component: <BlueprintPanel />, defaultSide: 'left' },
   ];
 
   const togglePanel = (panelId: string) => {

@@ -3,6 +3,7 @@ import { useGaesupStore } from '../../../stores/gaesupStore';
 import './styles.css';
 import { CameraMetrics, DEFAULT_DEBUG_FIELDS } from './types';
 import { useStateEngine } from '../../../motions/hooks/useStateEngine';
+import { DebugValue } from '@core/types/common';
 
 export function CameraDebugPanel() {
   const [metrics, setMetrics] = useState<CameraMetrics>({});
@@ -65,7 +66,7 @@ export function CameraDebugPanel() {
     };
   }, [updateMetrics]);
 
-  const formatValue = useCallback((value: any, precision: number = 2) => {
+  const formatValue = useCallback((value: DebugValue, precision: number = 2) => {
     if (value === null || value === undefined) return 'N/A';
     if (typeof value === 'object' && value.x !== undefined) {
       return `X:${value.x.toFixed(precision)} Y:${value.y.toFixed(precision)} Z:${value.z.toFixed(precision)}`;
@@ -82,7 +83,7 @@ export function CameraDebugPanel() {
         {DEFAULT_DEBUG_FIELDS.map((field) => (
           <div key={field.key} className="cd-item">
             <span className="cd-label">{field.label}</span>
-            <span className="cd-value">{formatValue((metrics as any)[field.key])}</span>
+            <span className="cd-value">{formatValue(metrics[field.key as keyof CameraMetrics] as DebugValue)}</span>
           </div>
         ))}
       </div>

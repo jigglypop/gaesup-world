@@ -1,6 +1,7 @@
 import { AnimationSlice } from './types';
 import { EntityAnimationStates } from '../core/types';
 import * as THREE from 'three';
+import { StateCreator } from 'zustand';
 
 const initialAnimationState: EntityAnimationStates = {
   character: {
@@ -20,11 +21,18 @@ const initialAnimationState: EntityAnimationStates = {
   },
 };
 
-export const createAnimationSlice = (set: any, get: any): Omit<AnimationSlice, 'getAnimation' | 'getCurrentAnimation'> => ({
+type SliceState = { animationState: EntityAnimationStates };
+
+export const createAnimationSlice: StateCreator<
+  SliceState,
+  [],
+  [],
+  Omit<AnimationSlice, 'getAnimation' | 'getCurrentAnimation'>
+> = (set, get) => ({
   animationState: initialAnimationState,
 
   setAnimation: (type: keyof EntityAnimationStates, animation: string) => {
-    set((state: { animationState: EntityAnimationStates }) => ({
+    set((state) => ({
       animationState: {
         ...state.animationState,
         [type]: {
@@ -45,7 +53,7 @@ export const createAnimationSlice = (set: any, get: any): Omit<AnimationSlice, '
     animation: string,
     action: THREE.AnimationAction,
   ) =>
-    set((state: { animationState: EntityAnimationStates }) => ({
+    set((state) => ({
       animationState: {
         ...state.animationState,
         [type]: {

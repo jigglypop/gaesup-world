@@ -1,32 +1,60 @@
 import { Position3D, Rotation3D, WallConfig, TileConfig, MeshConfig } from '../types';
 import { Profile, HandleError } from '@/core/boilerplate/decorators';
 
+type LegacyPosition = [number, number, number];
+type LegacyRotation = [number, number, number];
+
+type LegacyWall = {
+  id?: string;
+  position: LegacyPosition;
+  rotation: LegacyRotation;
+  wall_parent_id?: string;
+};
+
+type LegacyTile = {
+  id?: string;
+  position: LegacyPosition;
+  tile_parent_id?: string;
+};
+
+type LegacyMesh = {
+  id?: string;
+  color?: string;
+  material?: string;
+  map_texture_url?: string;
+  normal_texture_url?: string;
+  roughness?: number;
+  metalness?: number;
+  opacity?: number;
+  transparent?: boolean;
+};
+
 export class BuildingBridge {
   @HandleError()
   @Profile()
-  static convertLegacyPosition(position: [number, number, number]): Position3D {
+  static convertLegacyPosition(position: LegacyPosition): Position3D {
     return { x: position[0], y: position[1], z: position[2] };
   }
 
   @HandleError()
   @Profile()
-  static convertLegacyRotation(rotation: [number, number, number]): Rotation3D {
+  static convertLegacyRotation(rotation: LegacyRotation): Rotation3D {
     return { x: rotation[0], y: rotation[1], z: rotation[2] };
   }
 
   @HandleError()
-  static convertToLegacyPosition(position: Position3D): [number, number, number] {
+  static convertToLegacyPosition(position: Position3D): LegacyPosition {
     return [position.x, position.y, position.z];
   }
 
   @HandleError()
-  static convertToLegacyRotation(rotation: Rotation3D): [number, number, number] {
+  static convertToLegacyRotation(rotation: Rotation3D): LegacyRotation {
     return [rotation.x, rotation.y, rotation.z];
   }
 
   @HandleError()
   @Profile()
-  static convertLegacyWall(legacyWall: any): WallConfig {
+  static convertLegacyWall(legacyWall: LegacyWall): WallConfig {
     return {
       id: legacyWall.id || `wall-${Date.now()}`,
       position: this.convertLegacyPosition(legacyWall.position),
@@ -40,7 +68,7 @@ export class BuildingBridge {
 
   @HandleError()
   @Profile()
-  static convertLegacyTile(legacyTile: any): TileConfig {
+  static convertLegacyTile(legacyTile: LegacyTile): TileConfig {
     return {
       id: legacyTile.id || `tile-${Date.now()}`,
       position: this.convertLegacyPosition(legacyTile.position),
@@ -51,7 +79,7 @@ export class BuildingBridge {
 
   @HandleError()
   @Profile()
-  static convertLegacyMesh(legacyMesh: any): MeshConfig {
+  static convertLegacyMesh(legacyMesh: LegacyMesh): MeshConfig {
     return {
       id: legacyMesh.id || `mesh-${Date.now()}`,
       color: legacyMesh.color || '#ffffff',

@@ -5,6 +5,7 @@
   --editor-surface-secondary: rgba(45, 45, 55, 0.7);
   --editor-surface-hover: rgba(65, 65, 75, 0.85); /* For hover */
   --editor-surface-active: rgba(85, 85, 95, 0.95); /* For active states, high opacity */
+  --editor-surface-disabled: rgba(45, 45, 55, 0.5);
   --editor-border-color: rgba(255, 255, 255, 0.1);
   --editor-text-primary: #f1f1f1;
   --editor-text-secondary: #a1a1a1;
@@ -26,6 +27,23 @@
   --editor-bg-2: rgba(40, 40, 45, 0.95);
   --editor-surface-1: rgba(50, 50, 55, 0.9);
   --editor-accent: #0078d4;
+  --editor-accent-color: #0078d4;
+  --editor-accent-bg: rgba(0, 120, 212, 0.2);
+  --editor-accent-bg-hover: rgba(0, 120, 212, 0.3);
+  --editor-accent-bg-faded: rgba(0, 120, 212, 0.1);
+  --editor-accent-border: rgba(0, 120, 212, 0.5);
+  --editor-success-bg: rgba(76, 175, 80, 0.2);
+  --editor-success-bg-hover: rgba(76, 175, 80, 0.3);
+  --editor-success-border: rgba(76, 175, 80, 0.5);
+  --editor-warning-bg: rgba(255, 152, 0, 0.2);
+  --editor-warning-bg-hover: rgba(255, 152, 0, 0.3);
+  --editor-warning-border: rgba(255, 152, 0, 0.5);
+  --editor-danger-bg: rgba(244, 67, 54, 0.2);
+  --editor-danger-bg-hover: rgba(244, 67, 54, 0.3);
+  --editor-danger-border: rgba(244, 67, 54, 0.5);
+  --editor-info-bg: rgba(156, 39, 176, 0.2);
+  --editor-info-bg-hover: rgba(156, 39, 176, 0.3);
+  --editor-info-border: rgba(156, 39, 176, 0.5);
   --editor-radius-sm: 4px;
   --editor-radius-md: 6px;
   --editor-radius-lg: 8px;
@@ -113,14 +131,14 @@
 /* Panel Bar */
 .editor-panel-bar {
   position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 60px;
+  right: 10px;
   background: var(--editor-surface-secondary);
   backdrop-filter: none;
   border-radius: var(--editor-border-radius);
   padding: 4px;
   display: flex;
+  flex-direction: column;
   gap: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   border: 1px solid var(--editor-border-color);

@@ -2,7 +2,7 @@ import { useRef, useEffect, RefObject } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 import { Group } from 'three';
 import { useFrame } from '@react-three/fiber';
-import { BlueprintEntity, BlueprintDefinition, registerDefaultComponents } from '../core/blueprint';
+import { BlueprintEntity, BlueprintDefinition, registerDefaultComponents, IComponent } from '../../../blueprints/core';
 
 export interface UseBlueprintEntityProps {
   blueprint: BlueprintDefinition | string;
@@ -59,7 +59,7 @@ export function useBlueprintEntity({
   return {
     entity: entityRef.current,
     getComponent: <T>(type: string) => entityRef.current?.getComponent<T>(type),
-    addComponent: (component: any) => entityRef.current?.addComponent(component),
+    addComponent: (component: IComponent) => entityRef.current?.addComponent(component),
     removeComponent: (type: string) => entityRef.current?.removeComponent(type),
   };
 } 

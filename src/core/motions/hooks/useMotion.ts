@@ -3,6 +3,7 @@ import { useManagedEntity, BridgeFactory } from '@core/boilerplate';
 import { MotionBridge } from '../bridge/MotionBridge';
 import { ManagedMotionEntity } from '../entities/ManagedMotionEntity';
 import { MotionType } from '../core/system/types';
+import { MotionConfig } from '../bridge/types';
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
@@ -20,7 +21,7 @@ export type UseMotionReturn = {
   stop: () => void;
   turn: (direction: number) => void;
   reset: () => void;
-  setConfig: (config: any) => void;
+  setConfig: (config: MotionConfig) => void;
   enableAutomation: (targetPosition: THREE.Vector3) => void;
   disableAutomation: () => void;
   isGrounded: boolean;
@@ -67,7 +68,7 @@ export function useMotion(
     entity?.reset();
   };
 
-  const setConfig = (config: any) => {
+  const setConfig = (config: MotionConfig) => {
     entity?.setConfig(config);
   };
 

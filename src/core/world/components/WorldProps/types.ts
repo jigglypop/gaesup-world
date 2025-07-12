@@ -1,13 +1,14 @@
 import { ReactNode } from 'react';
+import { ClickEvent } from '@core/types/common';
 
-export interface WorldPropsType {
+export type WorldPropsType = {
   type?: 'normal' | 'ground' | 'target' | 'special';
   text?: string;
   position?: [number, number, number];
   children: ReactNode;
   interactive?: boolean;
   showMinimap?: boolean;
-  onClick?: (event: any) => void;
-  onHover?: (event: any) => void;
+  onClick?: (event: ClickEvent) => void;
+  onHover?: (event: ClickEvent) => void;
   onInteract?: (action: string) => void;
 }

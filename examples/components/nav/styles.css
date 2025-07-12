@@ -1,0 +1,38 @@
+.app-navigation {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+  display: flex;
+  gap: 10px;
+}
+
+.app-nav-button {
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  color: var(--editor-text-secondary);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: var(--editor-border-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--editor-shadow);
+}
+
+.app-nav-button:hover {
+  background-color: var(--editor-surface-hover);
+  color: var(--editor-text-primary);
+}
+
+.app-nav-user {
+  background-color: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  color: var(--editor-text-main);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--editor-border-radius);
+  box-shadow: var(--editor-shadow);
+} 

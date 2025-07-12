@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { AnyBlueprint } from '../../types';
-import { BlueprintEntity } from '../../../core/motions/core/blueprint/BlueprintEntity';
+import { BlueprintEntity } from '../../core/BlueprintEntity';
 
 export type BlueprintSpawnerProps = {
   blueprint?: AnyBlueprint;
