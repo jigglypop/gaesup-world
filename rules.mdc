@@ -18,7 +18,18 @@ alwaysApply: true
 - interface 사용 금지: 모든 타입은 type으로 정의합니다
 - any는 절대 사용하지 않습니다.
 
-2. 아키텍처 및 파일 구조
+2. DRY (Don't Repeat Yourself)
+- 중복 코드 제거
+- 공통 로직은 함수나 모듈로 추출
+- 상수는 한 곳에서 관리
+
+KISS (Keep It Simple, Stupid)
+- 과도한 추상화 지양
+- 단순하고 직관적인 해결책 선호
+- 필요 이상으로 복잡하게 만들지 않기
+
+
+1. 아키텍처 및 파일 구조
 - 기존 로직 보호: 새로운 코드를 추가하거나 수정할 때, 기존의 핵심 기능이 절대 손상되지 않도록 주의합니다.
 - 로직(`index.tsx`), 스타일(`styles.css`), 타입(`types.ts`)은 반드시 파일을 분리하여 관리합니다. 
 - 여러 관심사의 로직이 한 파일에 섞이지 않도록 합니다.
@@ -29,13 +40,13 @@ alwaysApply: true
     - Layer 2 (Controllers, Hooks, Stores): React의 상태 관리 로직을 담당합니다. 하위 레이어(Layer 1)의 불필요한 재렌더링을 유발해서는 안 됩니다.
     - 상위 레이어 로직 혼합 금지: React 상태 관리와 같은 상위 레이어의 코드가 하위 레이어(Core)에 절대 포함되어서는 안 됩니다.
 
-3. 핵심 원칙
+1. 핵심 원칙
 - 관심사 분리: 컴포넌트 로직(index.tsx), 스타일(styles.css), 타입(types.ts)을 반드시 별도 파일로 분리
 - CSS 변수만 사용: src/core/editor/styles/theme.css의 CSS 변수만 사용, 하드코딩 절대 금지
 - 독립적 패널: 패널 컴포넌트는 자체 isOpen 상태나 토글 버튼을 가지면 안됨
 - 일관된 스타일링: Glassmorphism 효과를 포함한 전역 스타일 준수
 
-4. 파일 구조
+1. 파일 구조
 모든 컴포넌트는 다음 구조를 따름:
 /src/core/editor/components/ComponentName/
 ├── index.tsx (React 컴포넌트 로직)

@@ -8,7 +8,6 @@ export type BlueprintCategory = {
   id: string;
   name: string;
   type: BlueprintType;
-  icon: string;
   count: number;
 };
 

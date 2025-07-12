@@ -1,0 +1,50 @@
+/* BlueprintPanel ReactFlow Controls Styling */
+.blueprint-panel .react-flow__controls {
+  background: var(--editor-bg-1);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.blueprint-panel .react-flow__controls-button {
+  background: var(--editor-surface-1);
+  border: 1px solid var(--editor-border-color);
+  color: var(--editor-text-main);
+  width: 28px;
+  height: 28px;
+  transition: all 0.2s ease;
+}
+
+.blueprint-panel .react-flow__controls-button:hover {
+  background: var(--editor-surface-hover);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.blueprint-panel .react-flow__controls-button:active {
+  background: var(--editor-surface-active);
+}
+
+.blueprint-panel .react-flow__controls-button svg {
+  fill: var(--editor-text-main);
+}
+
+/* ReactFlow Background */
+.blueprint-panel .react-flow__background {
+  background: var(--editor-bg-1);
+}
+
+/* ReactFlow Minimap */
+.blueprint-panel .react-flow__minimap {
+  background: var(--editor-bg-1);
+  border: 1px solid var(--editor-border-color);
+}
+
+.blueprint-panel .react-flow__minimap-mask {
+  fill: var(--editor-surface-1);
+  fill-opacity: 0.3;
+}
+
+.blueprint-panel .react-flow__minimap-node {
+  fill: var(--editor-surface-hover);
+  stroke: var(--editor-border-color);
+} 
