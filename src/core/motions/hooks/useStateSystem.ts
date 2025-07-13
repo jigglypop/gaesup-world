@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback, useEffect, useSyncExternalStore } from 'react';
 import { EntityStateManager } from '../core/system/EntityStateManager';
 import { ActiveStateType } from '../core/types';
 import { GameStatesType } from '../../world/components/Rideable/types';
@@ -13,6 +13,7 @@ export interface UseStateSystemResult {
 }
 
 let globalStateManager: EntityStateManager | null = null;
+const listeners = new Set<() => void>();
 
 export function getGlobalStateManager(): EntityStateManager {
     if (!globalStateManager) {
@@ -21,34 +22,57 @@ export function getGlobalStateManager(): EntityStateManager {
     return globalStateManager;
 }
 
+// Subscribe 함수
+const subscribe = (callback: () => void) => {
+    listeners.add(callback);
+    return () => {
+        listeners.delete(callback);
+    };
+};
+
+// Notify 함수
+const notifyListeners = () => {
+    listeners.forEach(listener => listener());
+};
+
 export function useStateSystem(): UseStateSystemResult {
     const stateManagerRef = useRef<EntityStateManager | null>(null);
-    const [, forceUpdate] = useState({});
+    
     if (!stateManagerRef.current) {
         stateManagerRef.current = getGlobalStateManager();
     }
 
-    const activeState = stateManagerRef.current.getActiveState();
-    const gameStates = stateManagerRef.current.getGameStates();
+    // useSyncExternalStore를 사용하여 외부 상태 구독
+    const activeState = useSyncExternalStore(
+        subscribe,
+        () => stateManagerRef.current!.getActiveState(),
+        () => stateManagerRef.current!.getActiveState()
+    );
+
+    const gameStates = useSyncExternalStore(
+        subscribe,
+        () => stateManagerRef.current!.getGameStates(),
+        () => stateManagerRef.current!.getGameStates()
+    );
 
     const updateActiveState = useCallback((updates: Partial<ActiveStateType>) => {
         stateManagerRef.current?.updateActiveState(updates);
-        forceUpdate({});
+        notifyListeners();
     }, []);
 
     const updateGameStates = useCallback((updates: Partial<GameStatesType>) => {
         stateManagerRef.current?.updateGameStates(updates);
-        forceUpdate({});
+        notifyListeners();
     }, []);
 
     const resetActiveState = useCallback(() => {
         stateManagerRef.current?.resetActiveState();
-        forceUpdate({});
+        notifyListeners();
     }, []);
 
     const resetGameStates = useCallback(() => {
         stateManagerRef.current?.resetGameStates();
-        forceUpdate({});
+        notifyListeners();
     }, []);
 
     useEffect(() => {

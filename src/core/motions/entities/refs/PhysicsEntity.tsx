@@ -8,7 +8,7 @@ import { useGltfAndSize } from '../../hooks';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
 import { PhysicsEntityProps, SetGroundRayType } from '../types';
-import { usePhysicsEntity } from '../../hooks/usePhysics';
+import { usePhysicsEntity } from '../../hooks/usePhysicsEntity';
 
 export function useSetGroundRay() {
   return ({ groundRay, length, colliderRef }: SetGroundRayType) => {

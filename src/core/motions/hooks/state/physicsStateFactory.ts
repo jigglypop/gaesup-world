@@ -1,7 +1,7 @@
 import { PhysicsState, PhysicsCalculationProps, automationType } from '../types';
 import { StoreState } from '@core/stores/types';
 import * as THREE from 'three';
-import { EntityStateManager } from '../core/engine/EntityStateManager';
+import { EntityStateManager } from '../../core/system/EntityStateManager';
 
 function createInitialPhysicsState(
   worldContext: StoreState,
