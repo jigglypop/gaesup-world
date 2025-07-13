@@ -1,6 +1,5 @@
 import { Service } from '@core/boilerplate';
 import * as THREE from 'three';
-import { RapierRigidBody } from '@react-three/rapier';
 import { GameStatesType } from '@/core/world/components/Rideable/types';
 import { Profile } from '@/core/boilerplate/decorators';
 

@@ -5,7 +5,7 @@ import { useBuildingStore } from '../stores/buildingStore';
 import { Position3D, Rotation3D } from '../types';
 
 export function useBuildingEditor() {
-  const { camera, raycaster, scene } = useThree();
+  const { camera, raycaster } = useThree();
   const mouseRef = useRef({ x: 0, y: 0 });
   
   const {
@@ -69,19 +69,14 @@ export function useBuildingEditor() {
 
   const placeWall = useCallback(() => {
     if (editMode !== 'wall' || !selectedWallGroupId) return;
-    
     const position = getGroundPosition();
     if (!position) return;
-    
     const { currentWallRotation, checkWallPosition } = useBuildingStore.getState();
-    
     if (checkWallPosition(position, currentWallRotation)) {
       console.warn('Wall already exists at this position');
       return;
     }
-    
     const rotation: Rotation3D = { x: 0, y: currentWallRotation, z: 0 };
-    
     addWall(selectedWallGroupId, {
       id: `wall-${Date.now()}`,
       position,

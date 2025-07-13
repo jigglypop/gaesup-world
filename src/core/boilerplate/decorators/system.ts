@@ -1,11 +1,10 @@
 import { logger } from '../../utils/logger';
 import { SystemRegistry } from '../entity/SystemRegistry';
-
-type DecoratorTarget = object;
-type AnyConstructor<T = {}> = new (...args: any[]) => T;
-type PropertyDescriptorExtended = PropertyDescriptor & {
-  value?: (...args: unknown[]) => unknown;
-};
+import {
+  DecoratorTarget,
+  PropertyDescriptorExtended,
+  AnyConstructor
+} from './types';
 
 /**
  * 시스템 메서드의 에러를 자동으로 처리하는 데코레이터
@@ -60,7 +59,7 @@ export function RegisterSystem(systemType: string) {
     const decoratedClass = class extends constructor {
       constructor(...args: any[]) {
         super(...args);
-        SystemRegistry.register(systemType, this);
+        SystemRegistry.register(systemType, this as any);
         logger.info(`[${constructor.name}] Registered as ${systemType} system`);
       }
     };

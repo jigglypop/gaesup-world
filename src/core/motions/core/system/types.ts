@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { BaseState, BaseMetrics, SystemOptions } from '@core/boilerplate';
-import { PhysicsConfigType } from '@/core/stores/slices/mode copy/types';
 
 export type MotionType = 'character' | 'vehicle' | 'airplane';
 

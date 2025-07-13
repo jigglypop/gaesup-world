@@ -46,7 +46,6 @@ export class DirectionComponent {
     matchSizes?: THREE.Vector3,
   ): void {
     const { modeType } = physicsState;
-
     switch (modeType) {
       case 'character':
         this.updateCharacterDirection(physicsState, controlMode, calcProp);
@@ -68,7 +67,7 @@ export class DirectionComponent {
     controlMode?: string,
     calcProp?: PhysicsCalcProps,
   ): void {
-    const { activeState, characterConfig } = physicsState;
+    const { activeState } = physicsState;
     const keyboard = this.interactionSystem.getKeyboardRef();
     const mouse = this.interactionSystem.getMouseRef();
     const keyboardChanged =
@@ -122,7 +121,7 @@ export class DirectionComponent {
     matchSizes?: THREE.Vector3,
     controlMode?: string,
   ): void {
-    const { activeState, airplaneConfig } = physicsState;
+    const { activeState } = physicsState;
     const keyboard = this.interactionSystem.getKeyboardRef();
     const { forward, backward, leftward, rightward, shift, space } = keyboard;
     const {

@@ -7,8 +7,10 @@ export type LoggingOptions = {
 
 export type DecoratorTarget = object;
 
+export type AnyConstructor<T = {}> = new (...args: any[]) => T;
+
 export type PropertyDescriptorExtended = PropertyDescriptor & {
-  value?: (...args: unknown[]) => unknown;
+  value?: Function;
 };
 
 export type PerformanceMemory = {
