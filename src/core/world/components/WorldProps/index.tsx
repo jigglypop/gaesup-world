@@ -1,6 +1,6 @@
 import { useEffect, useRef, useMemo } from 'react';
 import * as THREE from 'three';
-import { MinimapEngine } from '../../../ui/core';
+import { MinimapSystem } from '../../../ui/core';
 import { useClicker } from '@hooks/useClicker';
 import { WorldPropsType } from './types';
 
@@ -25,7 +25,7 @@ export function WorldProps({
 
   useEffect(() => {
     if (showMinimap && groupRef.current) {
-      const engine = MinimapEngine.getInstance();
+      const engine = MinimapSystem.getInstance();
       const updateMinimapMarker = () => {
         const group = groupRef.current;
         if (!group) return;

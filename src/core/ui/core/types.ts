@@ -8,6 +8,6 @@ export interface MinimapMarker {
   size: THREE.Vector3;
 }
 
-export interface MinimapEngineState {
+export interface MinimapSystemState {
   markers: Map<string, MinimapMarker>;
 } 

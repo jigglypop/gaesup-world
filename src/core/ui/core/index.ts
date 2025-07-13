@@ -1,2 +1,2 @@
-export { MinimapEngine } from './MinimapEngine';
+export { MinimapSystem } from './MinimapSystem';
 export * from './types'; 

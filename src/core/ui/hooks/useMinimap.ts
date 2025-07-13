@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { useBuildingStore } from '../../building/stores/buildingStore';
 import { MinimapProps, MinimapResult } from '../components/Minimap/types';
-import { MinimapEngine } from '../core';
+import { MinimapSystem } from '../core';
 import * as THREE from 'three';
 import { useStateEngine } from '../../motions/hooks/useStateEngine';
 
@@ -47,9 +47,9 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
   const isDirtyRef = useRef(true);
   const isReady = !!(activeState.position && props);
 
-  // Subscribe to MinimapEngine
-  useEffect(() => {
-    const engine = MinimapEngine.getInstance();
+      // Subscribe to MinimapSystem
+    useEffect(() => {
+      const engine = MinimapSystem.getInstance();
     const unsubscribe = engine.subscribe((markers) => {
       setMinimapMarkers(markers);
       isDirtyRef.current = true;

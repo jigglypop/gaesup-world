@@ -5,7 +5,7 @@ import { MaterialManager } from '../../core/MaterialManager';
 import { GaeSupProps } from '../../../index';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { TileObject } from '../TileObject';
-import { MinimapEngine } from '../../../ui/core';
+import { MinimapSystem } from '../../../ui/core';
 import { TileSystemProps } from './types';
 
 export function TileSystem({ 
@@ -69,7 +69,7 @@ export function TileSystem({
 
   useEffect(() => {
     if (tileGroup.tiles.length > 0) {
-      const engine = MinimapEngine.getInstance();
+      const engine = MinimapSystem.getInstance();
       const bounds = new THREE.Box3();
       
       tileGroup.tiles.forEach((tile) => {

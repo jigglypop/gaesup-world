@@ -9,7 +9,7 @@ function MinimapMarker({
   children,
 }: InternalMinimapMarkerProps) {
 //   useEffect(() => {
-//     const engine = MinimapEngine.getInstance();
+//     const engine = MinimapSystem.getInstance();
 //     const pos = Array.isArray(position) ? position : [position.x, position.y, position.z];
 //     const sizeVec = Array.isArray(size) ? size : [size.x, size.y, size.z];
 //     
