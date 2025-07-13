@@ -1,20 +1,42 @@
-import { BaseSystem, SystemContext } from '@/core/boilerplate/entity/BaseSystem';
-import { Profile, HandleError } from '@/core/boilerplate/decorators';
+import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
+import { BaseState, BaseMetrics, SystemUpdateArgs } from '@/core/boilerplate/types';
+import { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
+import { RegisterSystem, ManageRuntime, Profile } from '@/core/boilerplate/decorators';
 import * as THREE from 'three';
 import { InteractionState, InteractionConfig, InteractionMetrics, KeyboardState, MouseState, GamepadState, TouchState } from '../bridge';
 
-export class InteractionSystem implements BaseSystem {
+interface InteractionSystemState extends BaseState, InteractionState {}
+interface InteractionSystemMetrics extends BaseMetrics, InteractionMetrics {}
+
+@RegisterSystem('interaction')
+@ManageRuntime({ autoStart: true })
+export class InteractionSystem extends AbstractSystem<InteractionSystemState, InteractionSystemMetrics> {
   private static instance: InteractionSystem | null = null;
-  
-  private stateRef: InteractionState;
   private config: InteractionConfig;
-  private metrics: InteractionMetrics;
   private eventCallbacks: Map<string, Function[]>;
 
-  private constructor() {
-    this.stateRef = this.createDefaultState();
+  // public으로 변경
+  public constructor() {
+    // ... super() 호출은 동일
+    super(
+      {
+        keyboard: { forward: false, backward: false, leftward: false, rightward: false, shift: false, space: false, keyZ: false, keyR: false, keyF: false, keyE: false, escape: false },
+        mouse: { target: new THREE.Vector3(), angle: 0, isActive: false, shouldRun: false, buttons: { left: false, right: false, middle: false }, wheel: 0, position: new THREE.Vector2() },
+        gamepad: { connected: false, leftStick: new THREE.Vector2(), rightStick: new THREE.Vector2(), triggers: { left: 0, right: 0 }, buttons: {}, vibration: { weak: 0, strong: 0 } },
+        touch: { touches: [], gestures: { pinch: 1, rotation: 0, pan: new THREE.Vector2() } },
+        lastUpdate: 0,
+        isActive: true
+      },
+      {
+        inputLatency: 0,
+        frameTime: 0,
+        eventCount: 0,
+        activeInputs: [],
+        performanceScore: 100,
+        lastUpdate: 0
+      }
+    );
     this.config = this.createDefaultConfig();
-    this.metrics = this.createDefaultMetrics();
     this.eventCallbacks = new Map();
   }
 
@@ -24,64 +46,10 @@ export class InteractionSystem implements BaseSystem {
     }
     return InteractionSystem.instance;
   }
+  
+  // ... 나머지 코드는 거의 동일
 
-  @Profile()
-  @HandleError()
-  async init(): Promise<void> {
-    // 초기화 로직이 필요한 경우 여기에 추가
-  }
-
-  @Profile()
-  @HandleError()
-  update(context: SystemContext): void {
-    this.stateRef.lastUpdate = Date.now();
-    // 추가 업데이트 로직이 필요한 경우 여기에 추가
-  }
-
-  private createDefaultState(): InteractionState {
-    return {
-      keyboard: {
-        forward: false,
-        backward: false,
-        leftward: false,
-        rightward: false,
-        shift: false,
-        space: false,
-        keyZ: false,
-        keyR: false,
-        keyF: false,
-        keyE: false,
-        escape: false
-      },
-      mouse: {
-        target: new THREE.Vector3(),
-        angle: 0,
-        isActive: false,
-        shouldRun: false,
-        buttons: { left: false, right: false, middle: false },
-        wheel: 0,
-        position: new THREE.Vector2()
-      },
-      gamepad: {
-        connected: false,
-        leftStick: new THREE.Vector2(),
-        rightStick: new THREE.Vector2(),
-        triggers: { left: 0, right: 0 },
-        buttons: {},
-        vibration: { weak: 0, strong: 0 }
-      },
-      touch: {
-        touches: [],
-        gestures: {
-          pinch: 1,
-          rotation: 0,
-          pan: new THREE.Vector2()
-        }
-      },
-      lastUpdate: 0,
-      isActive: true
-    };
-  }
+  protected performUpdate(context: SystemContext): void {}
 
   private createDefaultConfig(): InteractionConfig {
     return {
@@ -93,54 +61,34 @@ export class InteractionSystem implements BaseSystem {
     };
   }
 
-  private createDefaultMetrics(): InteractionMetrics {
-    return {
-      inputLatency: 0,
-      frameTime: 0,
-      eventCount: 0,
-      activeInputs: [],
-      performanceScore: 100,
-      lastUpdate: 0
-    };
-  }
-
-  getStateRef(): InteractionState {
-    return this.stateRef;
-  }
-
   getKeyboardRef(): KeyboardState {
-    return this.stateRef.keyboard;
+    return this.state.keyboard;
   }
 
   getMouseRef(): MouseState {
-    return this.stateRef.mouse;
+    return this.state.mouse;
   }
 
-  @HandleError()
   updateKeyboard(updates: Partial<KeyboardState>): void {
-    Object.assign(this.stateRef.keyboard, updates);
-    this.updateMetrics();
+    Object.assign(this.state.keyboard, updates);
+    this.updateMetrics(0);
   }
 
-  @HandleError()
   updateMouse(updates: Partial<MouseState>): void {
-    Object.assign(this.stateRef.mouse, updates);
-    this.updateMetrics();
+    Object.assign(this.state.mouse, updates);
+    this.updateMetrics(0);
   }
 
-  @HandleError()
   updateGamepad(updates: Partial<GamepadState>): void {
-    Object.assign(this.stateRef.gamepad, updates);
-    this.updateMetrics();
+    Object.assign(this.state.gamepad, updates);
+    this.updateMetrics(0);
   }
 
-  @HandleError()
   updateTouch(updates: Partial<TouchState>): void {
-    Object.assign(this.stateRef.touch, updates);
-    this.updateMetrics();
+    Object.assign(this.state.touch, updates);
+    this.updateMetrics(0);
   }
 
-  @HandleError()
   dispatchInput(updates: Partial<MouseState>): void {
     this.updateMouse(updates);
   }
@@ -149,17 +97,11 @@ export class InteractionSystem implements BaseSystem {
     Object.assign(this.config, updates);
   }
 
-  getState(): InteractionState {
-    return { ...this.stateRef };
-  }
-
   getConfig(): InteractionConfig {
     return { ...this.config };
   }
-
-  getMetrics(): InteractionMetrics {
-    return { ...this.metrics };
-  }
+  
+  // getState, getMetrics는 AbstractSystem에 이미 있으므로 제거
 
   addEventListener(event: string, callback: Function): void {
     if (!this.eventCallbacks.has(event)) {
@@ -178,45 +120,41 @@ export class InteractionSystem implements BaseSystem {
     }
   }
 
-  @Profile()
-  private updateMetrics(): void {
+  protected override updateMetrics(deltaTime: number): void {
+    super.updateMetrics(deltaTime);
     this.metrics.eventCount++;
-    this.metrics.lastUpdate = Date.now();
     this.metrics.activeInputs = this.getActiveInputs();
   }
 
   private getActiveInputs(): string[] {
     const active: string[] = [];
     
-    Object.entries(this.stateRef.keyboard).forEach(([key, value]) => {
+    Object.entries(this.state.keyboard).forEach(([key, value]) => {
       if (value) active.push(`keyboard:${key}`);
     });
     
-    Object.entries(this.stateRef.mouse.buttons).forEach(([key, value]) => {
+    Object.entries(this.state.mouse.buttons).forEach(([key, value]) => {
       if (value) active.push(`mouse:${key}`);
     });
     
-    if (this.stateRef.gamepad.connected) {
+    if (this.state.gamepad.connected) {
       active.push('gamepad:connected');
     }
     
-    if (this.stateRef.touch.touches.length > 0) {
-      active.push(`touch:${this.stateRef.touch.touches.length}`);
+    if (this.state.touch.touches.length > 0) {
+      active.push(`touch:${this.state.touch.touches.length}`);
     }
     
     return active;
   }
 
-  @HandleError()
-  reset(): void {
-    this.stateRef = this.createDefaultState();
-    this.metrics = this.createDefaultMetrics();
+  protected override onReset(): void {
+    super.onReset();
     this.eventCallbacks.clear();
   }
-
-  @HandleError()
-  dispose(): void {
-    this.reset();
+  
+  protected override onDispose(): void {
+    super.onDispose();
     InteractionSystem.instance = null;
   }
 }

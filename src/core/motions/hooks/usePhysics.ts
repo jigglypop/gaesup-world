@@ -236,7 +236,7 @@ export function usePhysicsEntity({
 export function usePhysics() {
     const { activeState } = useStateSystem();
     const interactionEngine = InteractionSystem.getInstance();
-    const interaction = interactionEngine.getStateRef();
+    const interaction = interactionEngine.getState();
     const urls = useGaesupStore((state) => state.urls);
     const { getSizesByUrls } = useGaesupGltf();
     const isReady = !!(interaction && urls && activeState);
