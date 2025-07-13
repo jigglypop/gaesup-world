@@ -3,33 +3,42 @@ import {
   AnimationSystemState,
   AnimationSystemCallback
 } from './types';
-import { Profile, HandleError, MonitorMemory, TrackCalls } from '@/core/boilerplate/decorators';
 import { AnimationMetrics } from '../bridge/types';
+import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
+import { BaseState, BaseMetrics } from '@/core/boilerplate/types';
+import { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
+import { RegisterSystem, ManageRuntime } from '@/core/boilerplate/decorators';
 
-export class AnimationSystem {
-  private state: AnimationSystemState;
-  private metrics: AnimationMetrics;
+interface AnimationSystemMetrics extends BaseMetrics, AnimationMetrics {}
+interface AnimationSystemStateExt extends BaseState, AnimationSystemState {}
+
+@RegisterSystem('animation')
+@ManageRuntime({ autoStart: false })
+export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, AnimationSystemMetrics> {
   private callbacks: Set<AnimationSystemCallback>;
 
   constructor() {
-    this.state = {
+    const defaultState: AnimationSystemStateExt = {
       currentAnimation: 'idle',
       animationMixer: null,
       actions: new Map(),
       isPlaying: false,
       currentWeight: 1.0,
-      blendDuration: 0.3
+      blendDuration: 0.3,
+      lastUpdate: Date.now()
     };
 
-    this.metrics = {
+    const defaultMetrics: AnimationSystemMetrics = {
       activeAnimations: 0,
       totalActions: 0,
       currentWeight: 1.0,
       mixerTime: 0,
       lastUpdate: 0,
-      blendProgress: 0
+      blendProgress: 0,
+      frameTime: 0
     };
 
+    super(defaultState, defaultMetrics);
     this.callbacks = new Set();
   }
 
@@ -38,50 +47,45 @@ export class AnimationSystem {
     return () => this.callbacks.delete(callback);
   }
 
-  @Profile()
   private notifyCallbacks(): void {
     this.callbacks.forEach(callback => callback(this.getMetrics()));
   }
 
-  @HandleError()
   initializeMixer(object: THREE.Object3D): void {
     this.state.animationMixer = new THREE.AnimationMixer(object);
   }
 
-  @HandleError()
   addAnimation(name: string, clip: THREE.AnimationClip): void {
     if (!this.state.animationMixer) return;
     
     const action = this.state.animationMixer.clipAction(clip);
     this.state.actions.set(name, action);
-    this.updateMetrics();
+    this.updateMetrics(0);
     this.notifyCallbacks();
   }
 
-  @HandleError()
   registerAction(name: string, action: THREE.AnimationAction): void {
     this.state.actions.set(name, action);
-    this.updateMetrics();
+    this.updateMetrics(0);
     this.notifyCallbacks();
   }
 
-  @HandleError()
-  @Profile()
   playAnimation(name: string, fadeInDuration: number = this.state.blendDuration): void {
     const targetAction = this.state.actions.get(name);
     if (!targetAction) return;
+    
     const currentAction = this.state.actions.get(this.state.currentAnimation);
     if (currentAction && currentAction !== targetAction) {
       currentAction.fadeOut(fadeInDuration);
     }
+    
     targetAction.reset().fadeIn(fadeInDuration).play();
     this.state.currentAnimation = name;
     this.state.isPlaying = true;
-    this.updateMetrics();
+    this.updateMetrics(0);
     this.notifyCallbacks();
   }
 
-  @HandleError()
   stopAnimation(): void {
     const currentAction = this.state.actions.get(this.state.currentAnimation);
     if (currentAction) {
@@ -89,42 +93,47 @@ export class AnimationSystem {
     }
     this.state.isPlaying = false;
     this.state.currentAnimation = 'idle';
-    this.updateMetrics();
+    this.updateMetrics(0);
     this.notifyCallbacks();
   }
 
-  @HandleError()
   setWeight(weight: number): void {
     const currentAction = this.state.actions.get(this.state.currentAnimation);
     if (currentAction) {
       currentAction.weight = weight;
       this.state.currentWeight = weight;
-      this.updateMetrics();
+      this.updateMetrics(0);
       this.notifyCallbacks();
     }
   }
 
-  @HandleError()
   setTimeScale(scale: number): void {
     const currentAction = this.state.actions.get(this.state.currentAnimation);
     if (currentAction) {
       currentAction.timeScale = scale;
       this.notifyCallbacks();
     }
-
   }
 
-  @Profile()
-  @TrackCalls()
-  update(deltaTime: number): void {
+  // AbstractSystem의 추상 메서드 구현
+  protected performUpdate(context: SystemContext): void {
     if (this.state.animationMixer) {
-      this.state.animationMixer.update(deltaTime);
-      this.metrics.mixerTime += deltaTime;
-      this.metrics.lastUpdate = Date.now();
-      if (this.callbacks.size > 0) {
-        this.updateMetrics();
-        this.notifyCallbacks();
-      }
+      this.state.animationMixer.update(context.deltaTime / 1000); // ms to seconds
+      this.metrics.mixerTime += context.deltaTime / 1000;
+    }
+  }
+
+  // AnimationBridge에서 호출하는 update 메서드 (deltaTime 파라미터 유지)
+  updateAnimation(deltaTime: number): void {
+    const context: SystemContext = {
+      deltaTime: deltaTime * 1000, // seconds to ms
+      totalTime: 0,
+      frameCount: 0
+    };
+    super.update(context);
+    
+    if (this.callbacks.size > 0) {
+      this.notifyCallbacks();
     }
   }
 
@@ -136,25 +145,22 @@ export class AnimationSystem {
     return Array.from(this.state.actions.keys());
   }
 
-  @MonitorMemory(5)
-  getMetrics(): AnimationMetrics {
+  override getMetrics(): AnimationSystemMetrics {
     return { ...this.metrics };
   }
 
-  @MonitorMemory(5)
-  getState(): Readonly<AnimationSystemState> {
+  override getState(): Readonly<AnimationSystemStateExt> {
     return { ...this.state };
   }
 
-  @Profile()
-  private updateMetrics(): void {
+  protected override updateMetrics(deltaTime: number): void {
     this.metrics.activeAnimations = Array.from(this.state.actions.values())
       .filter(action => action.isRunning()).length;
     this.metrics.totalActions = this.state.actions.size;
     this.metrics.currentWeight = this.state.currentWeight;
+    this.metrics.lastUpdate = Date.now();
   }
 
-  @HandleError()
   clearActions(): void {
     this.state.actions.forEach(action => {
       if (action.isRunning()) {
@@ -164,12 +170,11 @@ export class AnimationSystem {
     this.state.actions.clear();
     this.state.currentAnimation = 'idle';
     this.state.isPlaying = false;
-    this.updateMetrics();
+    this.updateMetrics(0);
     this.notifyCallbacks();
   }
 
-  @HandleError()
-  dispose(): void {
+  protected override onDispose(): void {
     if (this.state.animationMixer) {
       this.state.animationMixer.stopAllAction();
       this.state.animationMixer = null;

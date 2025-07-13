@@ -108,7 +108,7 @@ export class AnimationBridge extends CoreBridge<
   update(type: AnimationType, deltaTime: number): void {
     const engine = this.getEngine(type)
     if (engine) {
-      engine.update(deltaTime)
+      engine.updateAnimation(deltaTime)
     }
   }
 

@@ -1,4 +1,5 @@
 import { logger } from '../../utils/logger';
+import { SystemRegistry } from '../entity/SystemRegistry';
 
 type DecoratorTarget = object;
 type AnyConstructor<T = {}> = new (...args: any[]) => T;
@@ -59,11 +60,8 @@ export function RegisterSystem(systemType: string) {
     return class extends constructor {
       constructor(...args: any[]) {
         super(...args);
-        const registryModule = require('../entity/SystemRegistry');
-        if (registryModule && registryModule.SystemRegistry) {
-          registryModule.SystemRegistry.register(systemType, this);
-          logger.info(`[${constructor.name}] Registered as ${systemType} system`);
-        }
+        SystemRegistry.register(systemType, this);
+        logger.info(`[${constructor.name}] Registered as ${systemType} system`);
       }
     };
   };
