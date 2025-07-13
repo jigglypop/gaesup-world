@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { blueprintRegistry } from '../registry';
 import { AnyBlueprint } from '../types';
 import { useGaesupStore } from '../../core/stores/gaesupStore';
+import { BridgeFactory } from '../../core/boilerplate';
 import { WorldBridge } from '../../core/world/bridge/WorldBridge';
 import * as THREE from 'three';
 
@@ -22,10 +23,11 @@ export type SpawnedEntity = {
   metadata?: Record<string, unknown>;
 };
 
+const DEFAULT_WORLD_ID = 'default';
+
 export function useSpawnFromBlueprint() {
   const [isSpawning, setIsSpawning] = useState(false);
   const [lastSpawnedEntity, setLastSpawnedEntity] = useState<SpawnedEntity | null>(null);
-  const worldBridge = new WorldBridge();
   const setMode = useGaesupStore((state) => state.setMode);
 
   const spawnEntity = useCallback(async (
@@ -48,7 +50,14 @@ export function useSpawnFromBlueprint() {
 
       const worldObject = createWorldObject(entityId, blueprint, position, rotation, scale, options.metadata);
       
-      worldBridge.addObject(worldObject);
+      // BridgeFactory를 통해 WorldBridge 인스턴스 가져오기
+      const worldBridge = BridgeFactory.get<WorldBridge>('world');
+      if (!worldBridge) {
+        console.error('WorldBridge not found. Make sure it is properly initialized.');
+        return null;
+      }
+
+      worldBridge.addObject(DEFAULT_WORLD_ID, worldObject);
       
       if (blueprint.type === 'character') {
         setMode({ type: 'character', characterUrl: blueprint.metadata?.['modelUrl'] as string || '' });

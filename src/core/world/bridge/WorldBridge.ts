@@ -1,157 +1,164 @@
 import { WorldSystem, WorldObject, InteractionEvent } from '../core/WorldSystem';
-import { Profile, HandleError, ValidateCommand, LogSnapshot } from '@/core/boilerplate/decorators';
+import { CoreBridge, DomainBridge, EnableEventLog } from '@core/boilerplate';
+import { ValidateCommand, LogSnapshot, CacheSnapshot } from '@core/boilerplate/decorators';
+import { WorldCommand, WorldSnapshot, WorldBridgeState } from './types';
 import * as THREE from 'three';
 
-export interface WorldState {
-  objects: WorldObject[];
-  selectedObjectId?: string;
-  interactionMode: 'view' | 'edit' | 'interact';
-  showDebugInfo: boolean;
-  events: InteractionEvent[];
+interface WorldEngineEntity {
+  engine: WorldSystem;
+  state: WorldBridgeState;
+  dispose: () => void;
 }
 
-export interface WorldActions {
-  addObject: (object: Omit<WorldObject, 'id'>) => string;
-  removeObject: (id: string) => boolean;
-  updateObject: (id: string, updates: Partial<WorldObject>) => boolean;
-  selectObject: (id?: string) => void;
-  setInteractionMode: (mode: WorldState['interactionMode']) => void;
-  toggleDebugInfo: () => void;
-  interact: (objectId: string, action: string) => void;
-  raycast: (origin: THREE.Vector3, direction: THREE.Vector3) => WorldObject | null;
-}
-
-export class WorldBridge {
-  private engine: WorldSystem;
-  private state: WorldState;
-  private stateUpdateCallback?: (state: WorldState) => void;
-
-  constructor() {
-    this.engine = new WorldSystem();
-    this.state = {
-      objects: [],
-      interactionMode: 'view',
-      showDebugInfo: false,
-      events: []
+@DomainBridge('world')
+@EnableEventLog()
+export class WorldBridge extends CoreBridge<WorldEngineEntity, WorldSnapshot, WorldCommand> {
+  
+  protected buildEngine(id: string, initialState?: Partial<WorldBridgeState>): WorldEngineEntity | null {
+    const engine = new WorldSystem();
+    const state: WorldBridgeState = {
+      selectedObjectId: initialState?.selectedObjectId,
+      interactionMode: initialState?.interactionMode || 'view',
+      showDebugInfo: initialState?.showDebugInfo || false,
+    };
+    
+    return {
+      engine,
+      state,
+      dispose: () => engine.dispose()
     };
   }
 
-  setStateUpdateCallback(callback: (state: WorldState) => void): void {
-    this.stateUpdateCallback = callback;
-  }
-
-  @HandleError()
-  @Profile()
-  addObject(object: Omit<WorldObject, 'id'>): string {
-    const id = this.generateId();
-    const worldObject: WorldObject = { ...object, id };
+  @ValidateCommand()
+  protected executeCommand(entity: WorldEngineEntity, command: WorldCommand, id: string): void {
+    const { engine, state } = entity;
     
-    this.engine.addObject(worldObject);
-    this.updateState();
-    
-    return id;
-  }
-
-  @HandleError()
-  @Profile()
-  removeObject(id: string): boolean {
-    const success = this.engine.removeObject(id);
-    if (success) {
-      if (this.state.selectedObjectId === id) {
-        delete this.state.selectedObjectId;
-      }
-      this.updateState();
+    switch (command.type) {
+      case 'addObject':
+        const objectId = this.generateId();
+        const worldObject: WorldObject = { ...command.data, id: objectId };
+        engine.addObject(worldObject);
+        break;
+        
+      case 'removeObject':
+        engine.removeObject(command.data.id);
+        if (state.selectedObjectId === command.data.id) {
+          state.selectedObjectId = undefined;
+        }
+        break;
+        
+      case 'updateObject':
+        engine.updateObject(command.data.id, command.data.updates);
+        break;
+        
+      case 'selectObject':
+        state.selectedObjectId = command.data.id;
+        break;
+        
+      case 'setInteractionMode':
+        state.interactionMode = command.data.mode;
+        break;
+        
+      case 'toggleDebugInfo':
+        state.showDebugInfo = !state.showDebugInfo;
+        break;
+        
+      case 'interact':
+        const object = engine.getObject(command.data.objectId);
+        if (object && object.canInteract) {
+          const event: InteractionEvent = {
+            type: 'custom',
+            object1Id: command.data.objectId,
+            timestamp: Date.now(),
+            data: { action: command.data.action }
+          };
+          engine.processInteraction(event);
+        }
+        break;
+        
+      case 'cleanup':
+        engine.cleanup();
+        state.selectedObjectId = undefined;
+        state.interactionMode = 'view';
+        state.showDebugInfo = false;
+        break;
     }
-    return success;
-  }
-
-  @HandleError()
-  @Profile()
-  updateObject(id: string, updates: Partial<WorldObject>): boolean {
-    const success = this.engine.updateObject(id, updates);
-    if (success) {
-      this.updateState();
-    }
-    return success;
-  }
-
-  @HandleError()
-  selectObject(id?: string): void {
-    if (id === undefined) {
-      delete this.state.selectedObjectId;
-    } else {
-      this.state.selectedObjectId = id;
-    }
-    this.updateState();
-  }
-
-  @HandleError()
-  setInteractionMode(mode: WorldState['interactionMode']): void {
-    this.state.interactionMode = mode;
-    this.updateState();
-  }
-
-  toggleDebugInfo(): void {
-    this.state.showDebugInfo = !this.state.showDebugInfo;
-    this.updateState();
-  }
-
-  @HandleError()
-  interact(objectId: string, action: string): void {
-    const object = this.engine.getObject(objectId);
-    if (!object || !object.canInteract) return;
-
-    const event: InteractionEvent = {
-      type: 'custom' as const,
-      object1Id: objectId,
-      timestamp: Date.now(),
-      data: { action }
-    };
-
-    this.engine.processInteraction(event);
-    this.updateState();
-  }
-
-  @Profile()
-  raycast(origin: THREE.Vector3, direction: THREE.Vector3): WorldObject | null {
-    const result = this.engine.raycast(origin, direction);
-    return result?.object || null;
-  }
-
-  @Profile()
-  getObjectsInRadius(center: THREE.Vector3, radius: number): WorldObject[] {
-    return this.engine.getObjectsInRadius(center, radius);
-  }
-
-  getObjectsByType(type: WorldObject['type']): WorldObject[] {
-    return this.engine.getObjectsByType(type);
   }
 
   @LogSnapshot()
-  getState(): WorldState {
-    return { ...this.state };
-  }
-
-  @HandleError()
-  cleanup(): void {
-    this.engine.cleanup();
-    this.state = {
-      objects: [],
-      interactionMode: 'view',
-      showDebugInfo: false,
-      events: []
-    };
-    this.updateState();
-  }
-
-  @Profile()
-  private updateState(): void {
-    this.state.objects = this.engine.getAllObjects();
-    this.state.events = this.engine.getRecentEvents();
+  @CacheSnapshot(16) // 60fps 캐싱
+  protected createSnapshot(entity: WorldEngineEntity, id: string): WorldSnapshot {
+    const { engine, state } = entity;
     
-    if (this.stateUpdateCallback) {
-      this.stateUpdateCallback({ ...this.state });
-    }
+    return {
+      objects: engine.getAllObjects(),
+      selectedObjectId: state.selectedObjectId,
+      interactionMode: state.interactionMode,
+      showDebugInfo: state.showDebugInfo,
+      events: engine.getRecentEvents(),
+      // 추가 조회 기능들을 함수로 제공
+      objectsInRadius: (center: THREE.Vector3, radius: number) => 
+        engine.getObjectsInRadius(center, radius),
+      objectsByType: (type: WorldObject['type']) => 
+        engine.getObjectsByType(type),
+      raycast: (origin: THREE.Vector3, direction: THREE.Vector3) => {
+        const result = engine.raycast(origin, direction);
+        return result?.object || null;
+      }
+    };
+  }
+
+  // 편의 메서드들 (기존 API 호환성 유지)
+  addObject(id: string, object: Omit<WorldObject, 'id'>): void {
+    this.execute(id, { type: 'addObject', data: object });
+  }
+
+  removeObject(id: string, objectId: string): void {
+    this.execute(id, { type: 'removeObject', data: { id: objectId } });
+  }
+
+  updateObject(id: string, objectId: string, updates: Partial<WorldObject>): void {
+    this.execute(id, { type: 'updateObject', data: { id: objectId, updates } });
+  }
+
+  selectObject(id: string, objectId?: string): void {
+    this.execute(id, { type: 'selectObject', data: { id: objectId } });
+  }
+
+  setInteractionMode(id: string, mode: 'view' | 'edit' | 'interact'): void {
+    this.execute(id, { type: 'setInteractionMode', data: { mode } });
+  }
+
+  toggleDebugInfo(id: string): void {
+    this.execute(id, { type: 'toggleDebugInfo' });
+  }
+
+  interact(id: string, objectId: string, action: string): void {
+    this.execute(id, { type: 'interact', data: { objectId, action } });
+  }
+
+  cleanup(id: string): void {
+    this.execute(id, { type: 'cleanup' });
+  }
+
+  // 조회 메서드들
+  getObjectsInRadius(id: string, center: THREE.Vector3, radius: number): WorldObject[] {
+    const entity = this.getEngine(id);
+    if (!entity) return [];
+    return entity.engine.getObjectsInRadius(center, radius);
+  }
+
+  getObjectsByType(id: string, type: WorldObject['type']): WorldObject[] {
+    const entity = this.getEngine(id);
+    if (!entity) return [];
+    return entity.engine.getObjectsByType(type);
+  }
+
+  raycast(id: string, origin: THREE.Vector3, direction: THREE.Vector3): WorldObject | null {
+    const entity = this.getEngine(id);
+    if (!entity) return null;
+    const result = entity.engine.raycast(origin, direction);
+    return result?.object || null;
   }
 
   private generateId(): string {
