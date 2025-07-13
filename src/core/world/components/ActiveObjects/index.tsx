@@ -3,7 +3,7 @@ import { Vehicle } from './Vehicle';
 import { Airplane } from './Airplane';
 import { Character } from './Character';
 import { useGaesupStore } from '@stores/gaesupStore';
-import { useStateEngine } from '../../../motions/hooks/useStateEngine';
+import { useStateSystem } from '../../../motions/hooks/useStateSystem';
 
 export function ActiveObjects({ 
   objects, 
@@ -11,7 +11,7 @@ export function ActiveObjects({
   onSelect, 
   showDebugInfo = false 
 }: ActiveObjectProps) {
-  const { gameStates } = useStateEngine();
+  const { gameStates } = useStateSystem();
   const mode = useGaesupStore((state) => state.mode);
   
   return (

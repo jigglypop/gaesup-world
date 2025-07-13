@@ -1,7 +1,7 @@
 import { V3 } from '@/core/utils';
 import { Rideable, RideableUI } from '@/core/world/components/Rideable';
 import { S3 } from '../../config/constants';
-import { useStateEngine } from '@/core/motions/hooks/useStateEngine';
+import { useStateSystem } from '@/core/motions/hooks/useStateSystem';
 
 export function RideableVehicles() {
   return (
@@ -35,6 +35,6 @@ export function RideableVehicles() {
 }
 
 export function RideableUIRenderer() {
-  const { gameStates } = useStateEngine();
+  const { gameStates } = useStateSystem();
   return <RideableUI states={gameStates} />;
 }

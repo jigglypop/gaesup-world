@@ -3,7 +3,7 @@ import { EntityStateManager } from '../core/system/EntityStateManager';
 import { ActiveStateType } from '../core/types';
 import { GameStatesType } from '../../world/components/Rideable/types';
 
-export interface UseStateEngineResult {
+export interface UseStateSystemResult {
     activeState: ActiveStateType;
     gameStates: GameStatesType;
     updateActiveState: (updates: Partial<ActiveStateType>) => void;
@@ -21,7 +21,7 @@ export function getGlobalStateManager(): EntityStateManager {
     return globalStateManager;
 }
 
-export function useStateEngine(): UseStateEngineResult {
+export function useStateSystem(): UseStateSystemResult {
     const stateManagerRef = useRef<EntityStateManager | null>(null);
     const [, forceUpdate] = useState({});
     if (!stateManagerRef.current) {

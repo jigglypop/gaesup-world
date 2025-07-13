@@ -4,7 +4,7 @@ import { useBuildingStore } from '../../building/stores/buildingStore';
 import { MinimapProps, MinimapResult } from '../components/Minimap/types';
 import { MinimapSystem } from '../core';
 import * as THREE from 'three';
-import { useStateEngine } from '../../motions/hooks/useStateEngine';
+import { useStateSystem } from '../../motions/hooks/useStateSystem';
 
 const DEFAULT_SCALE = 5;
 const MIN_SCALE = 0.5;
@@ -25,7 +25,7 @@ export interface UseMinimapReturnType {
 }
 
 export const useMinimap = (props: MinimapProps): MinimapResult => {
-  const { activeState } = useStateEngine();
+      const { activeState } = useStateSystem();
   const minimapOption = useGaesupStore((state) => state.minimap);
   const tileGroups = useBuildingStore((state) => state.tileGroups);
   const sceneObjectsRef = useRef<Map<string, { position: THREE.Vector3; size: THREE.Vector3 }>>(new Map());

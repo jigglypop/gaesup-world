@@ -5,12 +5,12 @@ import { CameraCalcProps } from '../core/types';
 import { useCameraBridge } from '../bridge/useCameraBridge';
 import { CameraEngineConfig } from '../bridge/types';
 import { useGaesupStore } from '../../stores/gaesupStore';
-import { useStateEngine } from '../../motions/hooks/useStateEngine';
+import { useStateSystem } from '../../motions/hooks/useStateSystem';
 import { useBuildingStore } from '../../building/stores/buildingStore';
 
 export function useCamera() {
   const { gl } = useThree();
-  const { activeState } = useStateEngine();
+  const { activeState } = useStateSystem();
   const cameraOption = useGaesupStore((state) => state.cameraOption);
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
   const mode = useGaesupStore((state) => state.mode);

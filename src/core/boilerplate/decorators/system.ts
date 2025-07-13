@@ -61,7 +61,9 @@ export function RegisterSystem(systemType: string) {
       constructor(...args: any[]) {
         super(...args);
         SystemRegistry.register(systemType, this);
-        logger.info(`[${constructor.name}] Registered as ${systemType} system`);
+        // 원래 클래스 이름을 가져오기 위해 constructor.name 사용
+        const className = constructor.name || this.constructor.name;
+        logger.info(`[${className}] Registered as ${systemType} system`);
       }
     };
   };

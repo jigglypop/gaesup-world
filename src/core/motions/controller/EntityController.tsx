@@ -3,12 +3,12 @@ import { vec3 } from '@react-three/rapier';
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { PhysicsEntity } from '../entities/refs/PhysicsEntity';
 import { EntityControllerProps } from './types';
-import { useStateEngine } from '../hooks/useStateEngine';
+import { useStateSystem } from '../hooks/useStateSystem';
 import { useGenericRefs } from '@hooks/useGenericRefs';
 
 export function EntityController({ props, children }: EntityControllerProps) {
   const mode = useGaesupStore((state) => state.mode);
-  const { gameStates } = useStateEngine();
+  const { gameStates } = useStateSystem();
   const rideable = useGaesupStore((state) => state.rideable);
   const urls = useGaesupStore((state) => state.urls);
   const setRefs = useGaesupStore((state) => state.setRefs);

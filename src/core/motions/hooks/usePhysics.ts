@@ -1,6 +1,6 @@
 import { useGaesupStore } from '@stores/gaesupStore';
 import { useGaesupGltf } from './useGaesupGltf';
-import { useStateEngine } from './useStateEngine';
+import { useStateSystem } from './useStateSystem';
 import { InteractionSystem } from '../../interactions/core/InteractionSystem';
 import { RefObject, useEffect, useRef } from 'react';
 import { CollisionEnterPayload, CollisionExitPayload, RapierRigidBody } from '@react-three/rapier';
@@ -14,7 +14,7 @@ import { PhysicsCalcProps } from '../core/types';
 import { StoreState } from '../../stores/types';
 import * as THREE from 'three';
 import { EntityStateManager } from '../core/system/EntityStateManager';
-import { getGlobalStateManager } from './useStateEngine';
+import { getGlobalStateManager } from './useStateSystem';
 import { createInitialPhysicsState } from './state/physicsStateFactory';
 import { useMotionSetup } from './setup/useMotionSetup';
 import { useAnimationSetup } from './setup/useAnimationSetup';
@@ -160,7 +160,7 @@ export function usePhysicsEntity({
         name || `entity-${Date.now()}-${Math.random()}`
     ).current;
     const activeMode = useGaesupStore((state) => state.mode);
-    const { gameStates } = useStateEngine();
+    const { gameStates } = useStateSystem();
     const isRiding = gameStates.isRiding;
     const modeType = activeMode?.type;
     useAnimationSetup(actions, modeType, isActive);
@@ -234,7 +234,7 @@ export function usePhysicsEntity({
     };
 }
 export function usePhysics() {
-    const { activeState } = useStateEngine();
+    const { activeState } = useStateSystem();
     const interactionEngine = InteractionSystem.getInstance();
     const interaction = interactionEngine.getStateRef();
     const urls = useGaesupStore((state) => state.urls);

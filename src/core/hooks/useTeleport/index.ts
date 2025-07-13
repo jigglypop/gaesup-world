@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { Vector3, Euler } from 'three';
-import { useStateEngine } from '../../motions/hooks/useStateEngine';
+import { useStateSystem } from '../../motions/hooks/useStateSystem';
 
 export interface TeleportResult {
   teleport: (position: Vector3, rotation?: Euler) => void;
@@ -9,7 +9,7 @@ export interface TeleportResult {
 }
 
 export function useTeleport(): TeleportResult {
-  const { activeState, updateActiveState } = useStateEngine();
+  const { activeState, updateActiveState } = useStateSystem();
   const setState = useGaesupStore((state) => state.updateState);
   
   const canTeleport = Boolean(activeState);

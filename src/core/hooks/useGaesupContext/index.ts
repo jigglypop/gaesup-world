@@ -1,8 +1,8 @@
 import { useGaesupStore } from '../../stores/gaesupStore';
-import { useStateEngine } from '../../motions/hooks/useStateEngine';
+import { useStateSystem } from '../../motions/hooks/useStateSystem';
 
 export function useGaesupContext() {
-  const { activeState, gameStates } = useStateEngine();
+  const { activeState, gameStates } = useStateSystem();
   const store = useGaesupStore();
   
   return {

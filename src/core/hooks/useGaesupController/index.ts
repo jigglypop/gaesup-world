@@ -1,9 +1,9 @@
 import { useGaesupStore } from '@stores/gaesupStore';
 import { UseGaesupControllerResult } from './types';
-import { useStateEngine } from '../../motions/hooks/useStateEngine';
+import { useStateSystem } from '../../motions/hooks/useStateSystem';
 
 export function useGaesupController(): UseGaesupControllerResult {
-  const { activeState, gameStates } = useStateEngine();
+  const { activeState, gameStates } = useStateSystem();
   const worldContext = useGaesupStore((state) => ({
     mode: state.mode,
     states: gameStates,

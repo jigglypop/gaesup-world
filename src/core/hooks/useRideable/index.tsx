@@ -3,7 +3,7 @@ import { useCallback, useEffect } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { rideableType } from './types';
 import { useGaesupGltf } from '@/core/motions/hooks/useGaesupGltf';
-import { useStateEngine } from '../../motions/hooks/useStateEngine';
+import { useStateSystem } from '../../motions/hooks/useStateSystem';
 
 export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'url' | 'wheelUrl'> =
   {
@@ -15,7 +15,7 @@ export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'u
   };
 
 export function useRideable() {
-  const { gameStates, updateGameStates, activeState } = useStateEngine();
+  const { gameStates, updateGameStates, activeState } = useStateSystem();
   const rideable = useGaesupStore((state) => state.rideable);
   const urls = useGaesupStore((state) => state.urls);
   const setMode = useGaesupStore((state) => state.setMode);

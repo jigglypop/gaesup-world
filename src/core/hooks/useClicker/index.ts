@@ -2,7 +2,7 @@ import { ThreeEvent } from '@react-three/fiber';
 import { V3 } from '@utils/vector';
 import * as THREE from 'three';
 import { ClickerMoveOptions, ClickerResult } from './types';
-import { useStateEngine } from '../../motions/hooks/useStateEngine';
+import { useStateSystem } from '../../motions/hooks/useStateSystem';
 import { InteractionBridge } from '../../interactions/bridge/InteractionBridge';
 
 let globalBridge: InteractionBridge | null = null;
@@ -16,7 +16,7 @@ function getGlobalBridge(): InteractionBridge {
 
 export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
   const { minHeight = 0.5, offsetY = 0.5 } = options;
-  const { activeState } = useStateEngine();
+  const { activeState } = useStateSystem();
   const bridge = getGlobalBridge();
   const isReady = Boolean(activeState?.position);
   const moveClicker = (

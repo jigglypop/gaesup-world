@@ -12,7 +12,7 @@ import { RideableUIRenderer, RideableVehicles } from '../components/rideable';
 import { BuildingExample } from '../components/building';
 import { AIRPLANE_URL, CHARACTER_URL, S3, VEHICLE_URL, EXAMPLE_CONFIG } from '../config/constants';
 import '../style.css';
-import { useStateEngine } from '../../src/core/motions/hooks/useStateEngine';
+import { useStateSystem } from '../../src/core/motions/hooks/useStateSystem';
 import { useKeyboard } from '../../src/core/hooks/useKeyboard';
 import { WorldPageProps } from './types';
 
@@ -43,7 +43,7 @@ const cameraOption: CameraOptionType = {
 export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
   const isInBuildingMode = useBuildingStore((state) => state.isInEditMode());
   const mode = useGaesupStore((state) => state.mode);
-  const { gameStates } = useStateEngine();
+      const { gameStates } = useStateSystem();
   
   useKeyboard();
   

@@ -2,14 +2,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useGaesupStore } from '../../../stores/gaesupStore';
 import './styles.css';
 import { CameraMetrics, DEFAULT_DEBUG_FIELDS } from './types';
-import { useStateEngine } from '../../../motions/hooks/useStateEngine';
+import { useStateSystem } from '../../../motions/hooks/useStateSystem';
 import { DebugValue } from '@core/types/common';
 
 export function CameraDebugPanel() {
   const [metrics, setMetrics] = useState<CameraMetrics>({});
   const mode = useGaesupStore((state) => state.mode);
   const cameraOption = useGaesupStore((state) => state.cameraOption);
-  const { activeState } = useStateEngine();
+  const { activeState } = useStateSystem();
   const characterPosition = useGaesupStore((state) => state.characterPosition);
   const characterVelocity = useGaesupStore((state) => state.characterVelocity);
   const characterRotation = useGaesupStore((state) => state.characterRotation);
