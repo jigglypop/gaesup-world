@@ -46,4 +46,60 @@
 
 .blueprint-preview__stat span:last-child {
   font-weight: 600;
+  color: var(--editor-text-primary);
+}
+
+.blueprint-preview__controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 8px;
+  border-radius: 6px;
+  backdrop-filter: blur(10px);
+}
+
+.blueprint-preview__control-btn {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.6);
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.blueprint-preview__control-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.blueprint-preview__control-btn.active {
+  background: var(--editor-accent);
+  border-color: var(--editor-accent);
+  color: white;
+}
+
+.blueprint-preview__controls-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.blueprint-preview__control-item {
+  font-size: 11px;
+  color: var(--editor-text-muted);
+}
+
+.blueprint-preview__zoom-info {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--editor-text-muted);
 } 

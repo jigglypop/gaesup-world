@@ -1,191 +1,177 @@
-import React, { useRef, useEffect, Suspense, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Grid, Environment, useGLTF, useAnimations } from '@react-three/drei';
-import * as THREE from 'three';
+import React, { useState, useEffect } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { Environment, Grid } from '@react-three/drei';
+import { Physics, RigidBody, euler } from "@react-three/rapier";
 import { BlueprintPreviewProps } from './types';
 import './styles.css';
-import { CHARACTER_URL } from '../../../../examples/config/constants';
+import { 
+  GaesupController, 
+  Camera, 
+  useGaesupStore, 
+  useKeyboard,
+  Clicker,
+  GroundClicker 
+} from '../../../core';
+import * as THREE from 'three';
 
-function cloneScene(scene: THREE.Group) {
-  const clonedScene = scene.clone(true);
-  const skinnedMeshes: Record<string, THREE.SkinnedMesh> = {};
-
-  scene.traverse(node => {
-    if (node instanceof THREE.SkinnedMesh) {
-      skinnedMeshes[node.name] = node;
-    }
-  });
-
-  clonedScene.traverse(node => {
-    if (node instanceof THREE.SkinnedMesh && skinnedMeshes[node.name]) {
-      const originalSkinnedMesh = skinnedMeshes[node.name];
-      const newSkinnedMesh = node as THREE.SkinnedMesh;
-      newSkinnedMesh.skeleton = originalSkinnedMesh.skeleton;
-    }
-  });
-
-  return clonedScene;
-}
-
-function PreviewModel({ blueprint }: { blueprint: any }) {
-  const group = useRef<THREE.Group>(null);
+export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {
+  const setUrls = useGaesupStore((state) => state.setUrls);
+  const setCameraOption = useGaesupStore((state) => state.setCameraOption);
+  const setMode = useGaesupStore((state) => state.setMode);
+  const mode = useGaesupStore((state) => state.mode);
   
-  if (!blueprint) return null;
-
-  if (blueprint.type === 'character') {
-    return <CharacterPreview blueprint={blueprint} group={group} />;
-  } else if (blueprint.type === 'vehicle') {
-    return <VehiclePreview blueprint={blueprint} group={group} />;
-  } else if (blueprint.type === 'airplane') {
-    return <AirplanePreview blueprint={blueprint} group={group} />;
-  }
+  const [cameraDistance, setCameraDistance] = useState(20);
   
-  return null;
-}
-
-function CharacterPreview({ blueprint, group }: { blueprint: any; group: React.RefObject<THREE.Group> }) {
-  const { scene: characterScene, animations } = useGLTF(CHARACTER_URL);
-  const { scene: clothingScene } = useGLTF('gltf/ally_cloth_rabbit.glb');
-
-  const characterModel = useMemo(() => cloneScene(characterScene), [characterScene]);
-  const clothingModel = useMemo(() => cloneScene(clothingScene), [clothingScene]);
-  
-  const { actions } = useAnimations(animations, group);
+  // Enable keyboard controls
+  useKeyboard(true, true);
 
   useEffect(() => {
-    if (actions?.idle) {
-      actions.idle.reset().play();
-    }
-    return () => {
-      if (actions?.idle) {
-        actions.idle.stop();
-      }
-    };
-  }, [actions, blueprint]);
+    // Set preview mode
+    setMode({
+      type: 'character',
+      control: blueprint?.camera?.mode || 'thirdPerson'
+    });
+    
+    // Set camera options from blueprint or defaults
+    const cameraConfig = blueprint?.camera || {};
+    setCameraOption({
+      xDistance: cameraConfig.distance?.x || cameraDistance,
+      yDistance: cameraConfig.distance?.y || cameraDistance * 0.5,
+      zDistance: cameraConfig.distance?.z || cameraDistance,
+      offset: new THREE.Vector3(0, 0, 0),
+      enableCollision: cameraConfig.enableCollision ?? false,
+      smoothing: cameraConfig.smoothing || { position: 0.25, rotation: 0.3, fov: 0.2 },
+      fov: cameraConfig.fov || 50,
+      zoom: 1,
+      enableZoom: cameraConfig.enableZoom ?? true,
+      zoomSpeed: cameraConfig.zoomSpeed || 0.001,
+      minZoom: cameraConfig.minZoom || 0.5,
+      maxZoom: cameraConfig.maxZoom || 3.0,
+      enableFocus: false,
+      maxDistance: 50,
+      distance: 10,
+      bounds: { minY: 2, maxY: 50 },
+    });
+  }, [setMode, setCameraOption, cameraDistance, blueprint?.camera]);
 
   useEffect(() => {
-    if (characterModel && clothingModel) {
-      const characterSkeleton = (characterModel.children[0] as THREE.SkinnedMesh)?.parent?.children.find(
-        (child) => child instanceof THREE.SkeletonHelper
-      )?.parent?.children.find((child) => (child as THREE.SkinnedMesh).isSkinnedMesh) as THREE.SkinnedMesh | undefined;
-
-      if(characterSkeleton) {
-        clothingModel.traverse((object) => {
-          if ((object as THREE.SkinnedMesh).isSkinnedMesh) {
-            (object as THREE.SkinnedMesh).bind(characterSkeleton.skeleton, characterSkeleton.matrixWorld);
-          }
-        });
-        if (group.current) {
-          group.current.add(clothingModel);
+    // Set character URL based on blueprint
+    if (blueprint?.visuals) {
+      if (blueprint.visuals.model) {
+        // Legacy model
+        setUrls({ characterUrl: blueprint.visuals.model });
+      } else if (blueprint.visuals.parts?.length > 0) {
+        // New parts system - use body part as main model
+        const bodyPart = blueprint.visuals.parts.find((p: any) => p.type === 'body');
+        if (bodyPart) {
+          setUrls({ characterUrl: bodyPart.url });
         }
       }
     }
-  }, [characterModel, clothingModel]);
-  
-  return (
-    <Suspense fallback={null}>
-      <group ref={group}>
-        <primitive object={characterModel} scale={1.5} position-y={0} />
-      </group>
-    </Suspense>
-  );
-}
+  }, [blueprint, setUrls]);
 
-function VehiclePreview({ blueprint, group }: { blueprint: any; group: React.RefObject<THREE.Group> }) {
-  useFrame((state) => {
-    if (group.current) {
-      group.current.rotation.y += 0.01;
-    }
-  });
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (blueprint?.camera?.enableZoom === false) return;
+      e.preventDefault();
+      const delta = e.deltaY * 0.01;
+      setCameraDistance(prev => Math.max(10, Math.min(40, prev + delta)));
+    };
 
-  return (
-    <group ref={group}>
-      <mesh scale={[2, 1, 1.5]} position-y={0.5}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#ff6b6b" />
-      </mesh>
-      <mesh scale={[0.8, 0.8, 0.8]} position={[-1.2, 0.4, 1]}>
-        <cylinderGeometry args={[0.4, 0.4, 0.2, 16]} />
-        <meshStandardMaterial color="#333" />
-      </mesh>
-      <mesh scale={[0.8, 0.8, 0.8]} position={[1.2, 0.4, 1]}>
-        <cylinderGeometry args={[0.4, 0.4, 0.2, 16]} />
-        <meshStandardMaterial color="#333" />
-      </mesh>
-      <mesh scale={[0.8, 0.8, 0.8]} position={[-1.2, 0.4, -1]}>
-        <cylinderGeometry args={[0.4, 0.4, 0.2, 16]} />
-        <meshStandardMaterial color="#333" />
-      </mesh>
-      <mesh scale={[0.8, 0.8, 0.8]} position={[1.2, 0.4, -1]}>
-        <cylinderGeometry args={[0.4, 0.4, 0.2, 16]} />
-        <meshStandardMaterial color="#333" />
-      </mesh>
-    </group>
-  );
-}
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [blueprint?.camera?.enableZoom]);
 
-function AirplanePreview({ blueprint, group }: { blueprint: any; group: React.RefObject<THREE.Group> }) {
-  useFrame((state) => {
-    if (group.current) {
-      group.current.rotation.y += 0.005;
-      group.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.3 + 1;
-    }
-  });
+  // Get parts for character
+  const getParts = () => {
+    if (!blueprint?.visuals?.parts) return [];
+    
+    return blueprint.visuals.parts
+      .filter((p: any) => p.type !== 'body')
+      .map((p: any) => ({ url: p.url, color: p.color }));
+  };
 
-  return (
-    <group ref={group}>
-      <mesh scale={[3, 0.5, 0.5]} position-y={0}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#4ecdc4" />
-      </mesh>
-      <mesh scale={[0.2, 0.2, 2]} position={[0, 0, 0]}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#4ecdc4" />
-      </mesh>
-      <mesh scale={[2, 0.1, 0.5]} position={[0, 0, 0]}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#45b7aa" />
-      </mesh>
-      <mesh scale={[0.5, 0.1, 1]} position={[0, 0, -1.5]}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#45b7aa" />
-      </mesh>
-    </group>
-  );
-}
+  const enableClickToMove = blueprint?.controls?.clickToMove ?? true;
+  const enableKeyboard = blueprint?.controls?.enableKeyboard ?? true;
 
-export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {
   return (
     <div className="blueprint-preview">
-      <Canvas camera={{ position: [5, 5, 5], fov: 50 }}>
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 10, 5]} intensity={1} />
+      <Canvas 
+        shadows
+        camera={{ position: [0, 10, 20], fov: 50 }}
+        style={{ width: '100%', height: '100%' }}
+      >
+        <Camera />
         <Environment preset="sunset" />
-        
-        <Grid 
-          args={[10, 10]} 
-          cellSize={1} 
-          cellThickness={0.5} 
-          cellColor="#6e6e6e" 
-          sectionSize={5} 
-          sectionThickness={1} 
-          sectionColor="#9e9e9e" 
-          fadeDistance={20} 
-          fadeStrength={1} 
-          followCamera={false} 
+        <ambientLight intensity={0.5} />
+        <directionalLight
+          castShadow
+          position={[20, 30, 10]}
+          intensity={0.5}
+          shadow-mapSize={[1024, 1024]}
+          shadow-camera-near={1}
+          shadow-camera-far={50}
+          shadow-camera-top={50}
+          shadow-camera-right={50}
+          shadow-camera-bottom={-50}
+          shadow-camera-left={-50}
         />
         
-        {blueprint && <PreviewModel blueprint={blueprint} />}
-        
-        <OrbitControls 
-          enablePan={false}
-          enableZoom={true}
-          minDistance={3}
-          maxDistance={15}
-          maxPolarAngle={Math.PI / 2.1}
-        />
+        <Physics debug={false} gravity={[0, -9.81, 0]}>
+          {blueprint && mode?.type === 'character' && (
+            <GaesupController
+              key={`preview-${blueprint.id}`}
+              controllerOptions={{ 
+                lerp: { 
+                  cameraTurn: 0.1, 
+                  cameraPosition: 0.08 
+                } 
+              }}
+              rigidBodyProps={{
+                lockRotations: true,
+              }}
+              parts={getParts()}
+              position={[0, 1, 0]}
+              rotation={euler({ x: 0, y: Math.PI, z: 0 })}
+            />
+          )}
+          
+          {/* Click to move controls */}
+          {enableClickToMove && (
+            <>
+              <Clicker />
+              <GroundClicker />
+            </>
+          )}
+          
+          {/* Ground */}
+          <RigidBody type="fixed">
+            <mesh receiveShadow position={[0, -0.5, 0]}>
+              <boxGeometry args={[100, 1, 100]} />
+              <meshStandardMaterial color="#303030" />
+            </mesh>
+          </RigidBody>
+          
+          {/* Grid */}
+          <Grid
+            renderOrder={-1}
+            position={[0, 0.01, 0]}
+            infiniteGrid
+            cellSize={1}
+            cellThickness={0.5}
+            cellColor={'#404040'}
+            sectionSize={5}
+            sectionThickness={1}
+            sectionColor={'#606060'}
+            fadeDistance={50}
+            fadeStrength={1}
+            followCamera={false}
+            userData={{ intangible: true }}
+          />
+        </Physics>
       </Canvas>
       
+      {/* UI Overlay */}
       {blueprint && (
         <div className="blueprint-preview__info">
           <h4 className="blueprint-preview__name">{blueprint.name}</h4>
@@ -196,14 +182,31 @@ export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {
                 <span>Mass:</span>
                 <span>{blueprint.physics.mass}kg</span>
               </div>
-              {blueprint.physics.maxSpeed && (
+              {blueprint.physics.moveSpeed && (
                 <div className="blueprint-preview__stat">
-                  <span>Max Speed:</span>
-                  <span>{blueprint.physics.maxSpeed}m/s</span>
+                  <span>Move Speed:</span>
+                  <span>{blueprint.physics.moveSpeed}m/s</span>
+                </div>
+              )}
+              {blueprint.physics.jumpForce && (
+                <div className="blueprint-preview__stat">
+                  <span>Jump Force:</span>
+                  <span>{blueprint.physics.jumpForce}N</span>
                 </div>
               )}
             </div>
           )}
+          <div className="blueprint-preview__controls-info">
+            <div className="blueprint-preview__control-item">
+              Camera: {blueprint.camera?.mode || 'thirdPerson'}
+            </div>
+            <div className="blueprint-preview__control-item">
+              Controls: {enableKeyboard ? 'WASD + ' : ''}{enableClickToMove ? 'Click' : ''}
+            </div>
+            <div className="blueprint-preview__zoom-info">
+              Zoom: {Math.round((40 - cameraDistance) / 30 * 100)}%
+            </div>
+          </div>
         </div>
       )}
     </div>

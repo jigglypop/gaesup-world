@@ -70,8 +70,37 @@ export const WARRIOR_BLUEPRINT: CharacterBlueprint = {
   },
   
   visuals: {
-    model: 'warrior_model.glb',
-    textures: ['warrior_diffuse.png', 'warrior_normal.png'],
+    parts: [
+      {
+        id: 'warrior-body',
+        type: 'body' as const,
+        url: 'gltf/ally_body.glb'
+      },
+      {
+        id: 'warrior-cloth',
+        type: 'top' as const,
+        url: 'gltf/ally_cloth_rabbit.glb'
+      }
+    ],
     scale: 1.0
+  },
+  
+  camera: {
+    mode: 'thirdPerson',
+    distance: { x: 15, y: 8, z: 15 },
+    fov: 50,
+    smoothing: { position: 0.1, rotation: 0.1, fov: 0.1 },
+    enableCollision: true,
+    enableZoom: true,
+    zoomSpeed: 0.001,
+    minZoom: 0.5,
+    maxZoom: 2.0
+  },
+  
+  controls: {
+    enableKeyboard: true,
+    enableMouse: true,
+    enableGamepad: false,
+    clickToMove: true
   }
 }; 

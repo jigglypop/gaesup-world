@@ -7,6 +7,26 @@ export type Blueprint = {
   metadata?: Record<string, unknown>;
 };
 
+export type CameraConfig = {
+  mode?: 'firstPerson' | 'thirdPerson' | 'chase' | 'topDown' | 'sideScroll' | 'fixed';
+  distance?: { x: number; y: number; z: number };
+  fov?: number;
+  smoothing?: { position: number; rotation: number; fov: number };
+  enableCollision?: boolean;
+  enableZoom?: boolean;
+  zoomSpeed?: number;
+  minZoom?: number;
+  maxZoom?: number;
+};
+
+export type ControlConfig = {
+  enableKeyboard?: boolean;
+  enableMouse?: boolean;
+  enableGamepad?: boolean;
+  clickToMove?: boolean;
+  keyMapping?: Record<string, string>;
+};
+
 export type CharacterBlueprint = Blueprint & {
   type: 'character';
   
@@ -48,11 +68,24 @@ export type CharacterBlueprint = Blueprint & {
   };
   
   visuals?: {
-    model: string;
+    parts?: BlueprintPart[];
+    model?: string;
     textures?: string[];
     materials?: Record<string, unknown>;
     scale?: number;
   };
+  
+  camera?: CameraConfig;
+  controls?: ControlConfig;
+};
+
+export type BlueprintPart = {
+  id: string;
+  type: 'body' | 'hair' | 'top' | 'bottom' | 'shoes' | 'glasses' | 'hat' | 'accessory' | 'weapon';
+  url: string;
+  position?: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: [number, number, number];
 };
 
 export type VehicleBlueprint = Blueprint & {
