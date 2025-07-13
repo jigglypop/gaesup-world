@@ -1,17 +1,39 @@
-import { Profile, HandleError, MonitorMemory, TrackCalls } from '@/core/boilerplate/decorators';
+import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
+import { BaseState, BaseMetrics, SystemUpdateArgs } from '@/core/boilerplate/types';
+import { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
+import { RegisterSystem, ManageRuntime, Profile, HandleError } from '@/core/boilerplate/decorators';
 import { AutomationState, AutomationConfig, AutomationMetrics, AutomationAction } from '../bridge/types';
 
-export class AutomationSystem {
-  private state: AutomationState;
+interface AutomationSystemState extends BaseState, AutomationState {}
+interface AutomationSystemMetrics extends BaseMetrics, AutomationMetrics {}
+
+@RegisterSystem('automation')
+@ManageRuntime({ autoStart: false })
+export class AutomationSystem extends AbstractSystem<AutomationSystemState, AutomationSystemMetrics> {
   private config: AutomationConfig;
-  private metrics: AutomationMetrics;
   private executionTimer: number | null;
   private eventCallbacks: Map<string, Function[]>;
 
   constructor() {
-    this.state = this.createDefaultState();
+    super(
+      {
+        isActive: false,
+        queue: { actions: [], currentIndex: 0, isRunning: false, isPaused: false, loop: false, maxRetries: 3 },
+        currentAction: null,
+        executionStats: { totalExecuted: 0, successRate: 100, averageTime: 0, errors: [] },
+        settings: { throttle: 100, autoStart: false, trackProgress: true, showVisualCues: true },
+        lastUpdate: Date.now()
+      },
+      {
+        queueLength: 0,
+        executionTime: 0,
+        performance: 100,
+        memoryUsage: 0,
+        errorRate: 0,
+        frameTime: 0
+      }
+    );
     this.config = this.createDefaultConfig();
-    this.metrics = this.createDefaultMetrics();
     this.executionTimer = null;
     this.eventCallbacks = new Map();
   }
@@ -80,7 +102,7 @@ export class AutomationSystem {
     };
     
     this.state.queue.actions.push(fullAction);
-    this.updateMetrics();
+    this.updateMetrics(0);
     this.emit('actionAdded', fullAction);
     
     if (this.state.settings.autoStart && !this.state.queue.isRunning) {
@@ -95,7 +117,7 @@ export class AutomationSystem {
     const index = this.state.queue.actions.findIndex(action => action.id === id);
     if (index > -1) {
       this.state.queue.actions.splice(index, 1);
-      this.updateMetrics();
+      this.updateMetrics(0);
       this.emit('actionRemoved', id);
       return true;
     }
@@ -106,7 +128,7 @@ export class AutomationSystem {
   clearQueue(): void {
     this.state.queue.actions = [];
     this.state.queue.currentIndex = 0;
-    this.updateMetrics();
+    this.updateMetrics(0);
     this.emit('queueCleared');
   }
 
@@ -151,7 +173,6 @@ export class AutomationSystem {
 
   @HandleError()
   @Profile()
-  @TrackCalls()
   private async executeNext(): Promise<void> {
     if (!this.state.queue.isRunning || this.state.queue.isPaused) return;
     
@@ -245,8 +266,8 @@ export class AutomationSystem {
     stats.averageTime = (stats.averageTime * stats.totalExecuted + executionTime) / (stats.totalExecuted + 1);
   }
 
-  @Profile()
-  private updateMetrics(): void {
+  protected override updateMetrics(deltaTime: number): void {
+    super.updateMetrics(deltaTime);
     this.metrics.queueLength = this.state.queue.actions.length;
     this.metrics.errorRate = this.state.executionStats.errors.length / Math.max(this.state.executionStats.totalExecuted, 1) * 100;
   }
@@ -275,38 +296,19 @@ export class AutomationSystem {
     }
   }
 
-  @MonitorMemory(10) // 10MB threshold
-  getState(): AutomationState {
-    return { ...this.state };
-  }
-
-  getConfig(): AutomationConfig {
-    return { ...this.config };
-  }
-
-  getMetrics(): AutomationMetrics {
-    return { ...this.metrics };
-  }
-
-  setConfig(updates: Partial<AutomationConfig>): void {
-    Object.assign(this.config, updates);
-  }
-
   updateSettings(updates: Partial<AutomationState['settings']>): void {
     Object.assign(this.state.settings, updates);
   }
 
-  @HandleError()
-  reset(): void {
+  protected override onReset(): void {
     this.stop();
     this.clearQueue();
-    this.state = this.createDefaultState();
-    this.metrics = this.createDefaultMetrics();
+    super.onReset();
   }
 
-  @HandleError()
-  dispose(): void {
+  protected override onDispose(): void {
     this.stop();
     this.eventCallbacks.clear();
+    super.onDispose();
   }
 }
