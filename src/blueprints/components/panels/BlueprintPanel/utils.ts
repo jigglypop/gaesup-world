@@ -52,11 +52,26 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
   if (blueprint.type === 'character') {
     const charBlueprint = blueprint as CharacterBlueprint;
     
+    // System core node
+    nodes.push({
+      id: 'system',
+      type: 'editable',
+      position: { x: 250, y: 250 },
+      data: { 
+        title: 'System Core',
+        fields: {
+          type: 'Character Controller'
+        },
+        onEdit: onNodeEdit,
+        onDelete: onNodeDelete
+      }
+    });
+    
     // Physics node
     nodes.push({
       id: 'physics',
       type: 'editable',
-      position: { x: 50, y: 150 },
+      position: { x: 50, y: 350 },
       data: { 
         title: 'Physics',
         fields: {
@@ -77,7 +92,7 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
     nodes.push({
       id: 'stats',
       type: 'editable',
-      position: { x: 450, y: 150 },
+      position: { x: 450, y: 350 },
       data: { 
         title: 'Stats',
         fields: {
@@ -97,7 +112,7 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
     nodes.push({
       id: 'animations',
       type: 'editable',
-      position: { x: 250, y: 150 },
+      position: { x: 250, y: 350 },
       data: { 
         title: 'Animations',
         fields: {
@@ -118,7 +133,7 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
       nodes.push({
         id: 'behaviors',
         type: 'editable',
-        position: { x: 250, y: 250 },
+        position: { x: 250, y: 450 },
         data: { 
           title: 'Behaviors',
           fields: {
@@ -131,31 +146,60 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
       });
     }
     
-    // Camera node (if exists)
-    if (charBlueprint.camera) {
-      nodes.push({
-        id: 'camera',
-        type: 'camera',
-        position: { x: 50, y: 350 },
-        data: {
-          ...charBlueprint.camera,
-          onChange: onNodeEdit
-        }
-      });
-    }
+    // Camera node (always create)
+    nodes.push({
+      id: 'camera',
+      type: 'camera',
+      position: { x: 50, y: 150 },
+      data: {
+        ...(charBlueprint.camera || {}),
+        onChange: onNodeEdit
+      }
+    });
     
-    // Input node (if exists)
-    if (charBlueprint.controls) {
-      nodes.push({
-        id: 'controls',
-        type: 'input',
-        position: { x: 450, y: 350 },
-        data: {
-          ...charBlueprint.controls,
-          onChange: onNodeEdit
-        }
-      });
-    }
+    // Camera components
+    nodes.push({
+      id: 'camera-controller',
+      type: 'editable',
+      position: { x: -150, y: 50 },
+      data: { 
+        title: 'Camera Controller',
+        fields: {
+          smoothing: charBlueprint.camera?.smoothing?.position || 0.25,
+          collision: charBlueprint.camera?.enableCollision || false
+        },
+        onEdit: onNodeEdit,
+        onDelete: onNodeDelete
+      }
+    });
+    
+    nodes.push({
+      id: 'camera-zoom',
+      type: 'editable',
+      position: { x: -150, y: 150 },
+      data: { 
+        title: 'Zoom Component',
+        fields: {
+          enabled: charBlueprint.camera?.enableZoom || true,
+          speed: charBlueprint.camera?.zoomSpeed || 1,
+          min: charBlueprint.camera?.minZoom || 5,
+          max: charBlueprint.camera?.maxZoom || 50
+        },
+        onEdit: onNodeEdit,
+        onDelete: onNodeDelete
+      }
+    });
+    
+    // Input node (always create)
+    nodes.push({
+      id: 'controls',
+      type: 'input',
+      position: { x: 450, y: 150 },
+      data: {
+        ...(charBlueprint.controls || {}),
+        onChange: onNodeEdit
+      }
+    });
   } else if (blueprint.type === 'vehicle') {
     const vehicleBlueprint = blueprint as VehicleBlueprint;
     
@@ -214,19 +258,85 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
     });
   }
   
-  // Add edges for all node types
-  nodes.forEach(node => {
-    if (node.id !== 'root') {
-      edges.push({
-        id: `root-${node.id}`,
-        source: 'root',
-        target: node.id,
-        animated: true,
-        style: EDGE_STYLE,
-        markerEnd: MARKER_STYLE
-      });
-    }
-  });
+  // Add edges with proper hierarchy
+  if (blueprint.type === 'character') {
+    // Root to System
+    edges.push({
+      id: 'root-system',
+      source: 'root',
+      target: 'system',
+      animated: true,
+      style: EDGE_STYLE,
+      markerEnd: MARKER_STYLE
+    });
+    
+    // System to Camera and Input
+    edges.push({
+      id: 'system-camera',
+      source: 'system',
+      target: 'camera',
+      animated: true,
+      style: EDGE_STYLE,
+      markerEnd: MARKER_STYLE
+    });
+    
+    edges.push({
+      id: 'system-controls',
+      source: 'system',
+      target: 'controls',
+      animated: true,
+      style: EDGE_STYLE,
+      markerEnd: MARKER_STYLE
+    });
+    
+    // Camera to its components
+    edges.push({
+      id: 'camera-controller',
+      source: 'camera',
+      target: 'camera-controller',
+      animated: true,
+      style: EDGE_STYLE,
+      markerEnd: MARKER_STYLE
+    });
+    
+    edges.push({
+      id: 'camera-zoom',
+      source: 'camera',
+      target: 'camera-zoom',
+      animated: true,
+      style: EDGE_STYLE,
+      markerEnd: MARKER_STYLE
+    });
+    
+    // System to other nodes
+    ['physics', 'stats', 'animations', 'behaviors'].forEach(nodeId => {
+      const node = nodes.find(n => n.id === nodeId);
+      if (node) {
+        edges.push({
+          id: `system-${nodeId}`,
+          source: 'system',
+          target: nodeId,
+          animated: true,
+          style: EDGE_STYLE,
+          markerEnd: MARKER_STYLE
+        });
+      }
+    });
+  } else {
+    // For other blueprint types, keep original edge logic
+    nodes.forEach(node => {
+      if (node.id !== 'root') {
+        edges.push({
+          id: `root-${node.id}`,
+          source: 'root',
+          target: node.id,
+          animated: true,
+          style: EDGE_STYLE,
+          markerEnd: MARKER_STYLE
+        });
+      }
+    });
+  }
   
   return { nodes, edges };
 }; 

@@ -13,6 +13,7 @@ import {
   GroundClicker 
 } from '../../../core';
 import * as THREE from 'three';
+import { CharacterBlueprint } from '../../types';
 
 export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {
   const setUrls = useGaesupStore((state) => state.setUrls);
@@ -22,18 +23,28 @@ export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {
   
   const [cameraDistance, setCameraDistance] = useState(20);
   
-  // Enable keyboard controls
-  useKeyboard(true, true);
+  // Type guard for CharacterBlueprint
+  const isCharacterBlueprint = (bp: any): bp is CharacterBlueprint => {
+    return bp?.type === 'character';
+  };
+  
+  // Get control settings from blueprint
+  const enableClickToMove = isCharacterBlueprint(blueprint) ? (blueprint.controls?.clickToMove ?? true) : false;
+  const enableKeyboard = isCharacterBlueprint(blueprint) ? (blueprint.controls?.enableKeyboard ?? true) : false;
+  const enableMouse = isCharacterBlueprint(blueprint) ? (blueprint.controls?.enableMouse ?? true) : false;
+  
+  // Enable keyboard controls based on blueprint settings
+  useKeyboard(enableKeyboard, enableKeyboard);
 
   useEffect(() => {
     // Set preview mode
     setMode({
       type: 'character',
-      control: blueprint?.camera?.mode || 'thirdPerson'
+      control: isCharacterBlueprint(blueprint) ? (blueprint.camera?.mode || 'thirdPerson') : 'thirdPerson'
     });
     
     // Set camera options from blueprint or defaults
-    const cameraConfig = blueprint?.camera || {};
+    const cameraConfig = isCharacterBlueprint(blueprint) ? (blueprint.camera || {}) : {};
     setCameraOption({
       xDistance: cameraConfig.distance?.x || cameraDistance,
       yDistance: cameraConfig.distance?.y || cameraDistance * 0.5,
@@ -52,16 +63,16 @@ export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {
       distance: 10,
       bounds: { minY: 2, maxY: 50 },
     });
-  }, [setMode, setCameraOption, cameraDistance, blueprint?.camera]);
+  }, [setMode, setCameraOption, cameraDistance, blueprint]);
 
   useEffect(() => {
-    // Set character URL based on blueprint
-    if (blueprint?.visuals) {
-      if (blueprint.visuals.model) {
-        // Legacy model
+    if (isCharacterBlueprint(blueprint)) {
+      // Handle legacy model property
+      if (blueprint.visuals?.model) {
         setUrls({ characterUrl: blueprint.visuals.model });
-      } else if (blueprint.visuals.parts?.length > 0) {
-        // New parts system - use body part as main model
+      }
+      // Handle parts - use the first part as character URL
+      else if (blueprint.visuals?.parts && blueprint.visuals.parts.length > 0) {
         const bodyPart = blueprint.visuals.parts.find((p: any) => p.type === 'body');
         if (bodyPart) {
           setUrls({ characterUrl: bodyPart.url });
@@ -72,7 +83,7 @@ export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      if (blueprint?.camera?.enableZoom === false) return;
+      if (isCharacterBlueprint(blueprint) && blueprint.camera?.enableZoom === false) return;
       e.preventDefault();
       const delta = e.deltaY * 0.01;
       setCameraDistance(prev => Math.max(10, Math.min(40, prev + delta)));
@@ -80,19 +91,16 @@ export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {
 
     window.addEventListener('wheel', handleWheel, { passive: false });
     return () => window.removeEventListener('wheel', handleWheel);
-  }, [blueprint?.camera?.enableZoom]);
+  }, [blueprint]);
 
   // Get parts for character
   const getParts = () => {
-    if (!blueprint?.visuals?.parts) return [];
+    if (!isCharacterBlueprint(blueprint) || !blueprint.visuals?.parts) return [];
     
     return blueprint.visuals.parts
       .filter((p: any) => p.type !== 'body')
       .map((p: any) => ({ url: p.url, color: p.color }));
   };
-
-  const enableClickToMove = blueprint?.controls?.clickToMove ?? true;
-  const enableKeyboard = blueprint?.controls?.enableKeyboard ?? true;
 
   return (
     <div className="blueprint-preview">
@@ -125,7 +133,9 @@ export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {
                 lerp: { 
                   cameraTurn: 0.1, 
                   cameraPosition: 0.08 
-                } 
+                },
+                disableKeyboard: !enableKeyboard,
+                disableMouse: !enableMouse
               }}
               rigidBodyProps={{
                 lockRotations: true,
@@ -176,36 +186,17 @@ export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {
         <div className="blueprint-preview__info">
           <h4 className="blueprint-preview__name">{blueprint.name}</h4>
           <p className="blueprint-preview__type">{blueprint.type}</p>
-          {blueprint.physics && (
+          {isCharacterBlueprint(blueprint) && blueprint.physics && (
             <div className="blueprint-preview__stats">
-              <div className="blueprint-preview__stat">
-                <span>Mass:</span>
-                <span>{blueprint.physics.mass}kg</span>
-              </div>
-              {blueprint.physics.moveSpeed && (
-                <div className="blueprint-preview__stat">
-                  <span>Move Speed:</span>
-                  <span>{blueprint.physics.moveSpeed}m/s</span>
-                </div>
-              )}
-              {blueprint.physics.jumpForce && (
-                <div className="blueprint-preview__stat">
-                  <span>Jump Force:</span>
-                  <span>{blueprint.physics.jumpForce}N</span>
-                </div>
-              )}
+              <div>Move Speed: {blueprint.physics.moveSpeed}</div>
+              <div>Jump Force: {blueprint.physics.jumpForce}</div>
             </div>
           )}
-          <div className="blueprint-preview__controls-info">
-            <div className="blueprint-preview__control-item">
-              Camera: {blueprint.camera?.mode || 'thirdPerson'}
-            </div>
-            <div className="blueprint-preview__control-item">
-              Controls: {enableKeyboard ? 'WASD + ' : ''}{enableClickToMove ? 'Click' : ''}
-            </div>
-            <div className="blueprint-preview__zoom-info">
-              Zoom: {Math.round((40 - cameraDistance) / 30 * 100)}%
-            </div>
+          <div className="blueprint-preview__controls">
+            <div>Camera: {isCharacterBlueprint(blueprint) ? (blueprint.camera?.mode || 'thirdPerson') : 'N/A'}</div>
+            <div>Keyboard: {enableKeyboard ? 'Enabled' : 'Disabled'}</div>
+            <div>Mouse: {enableMouse ? 'Enabled' : 'Disabled'}</div>
+            <div>Click to Move: {enableClickToMove ? 'Enabled' : 'Disabled'}</div>
           </div>
         </div>
       )}

@@ -36,6 +36,13 @@ const blueprintCategories: BlueprintCategory[] = [
   { id: 'items', name: 'Items', type: 'item', count: 0 },
 ];
 
+// Define nodeTypes outside component to prevent recreation
+const nodeTypes = {
+  editable: EditableNode,
+  camera: CameraNode,
+  input: InputNode,
+};
+
 export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => {
   const [selectedCategory, setSelectedCategory] = useState<BlueprintType>('character');
   const [selectedBlueprint, setSelectedBlueprint] = useState<string | null>(null);
@@ -47,12 +54,6 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const { spawnAtCursor, isSpawning } = useSpawnFromBlueprint();
-
-  const nodeTypes = useMemo(() => ({
-    editable: EditableNode,
-    camera: CameraNode,
-    input: InputNode,
-  }), []);
 
   const onConnect = useCallback((params: Connection) => {
     setEdges((eds) => addEdge(params, eds));
@@ -130,6 +131,35 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
               (newBlueprint as any).controls = {};
             }
             (newBlueprint as any).controls[field] = value;
+          }
+        } else if (nodeId === 'camera-controller') {
+          if ('camera' in newBlueprint) {
+            if (!newBlueprint.camera) {
+              (newBlueprint as any).camera = {};
+            }
+            if (field === 'smoothing') {
+              if (!(newBlueprint as any).camera.smoothing) {
+                (newBlueprint as any).camera.smoothing = { position: 0.25, rotation: 0.3, fov: 0.2 };
+              }
+              (newBlueprint as any).camera.smoothing.position = value;
+            } else if (field === 'collision') {
+              (newBlueprint as any).camera.enableCollision = value;
+            }
+          }
+        } else if (nodeId === 'camera-zoom') {
+          if ('camera' in newBlueprint) {
+            if (!newBlueprint.camera) {
+              (newBlueprint as any).camera = {};
+            }
+            if (field === 'enabled') {
+              (newBlueprint as any).camera.enableZoom = value;
+            } else if (field === 'speed') {
+              (newBlueprint as any).camera.zoomSpeed = value;
+            } else if (field === 'min') {
+              (newBlueprint as any).camera.minZoom = value;
+            } else if (field === 'max') {
+              (newBlueprint as any).camera.maxZoom = value;
+            }
           }
         }
         return newBlueprint;
