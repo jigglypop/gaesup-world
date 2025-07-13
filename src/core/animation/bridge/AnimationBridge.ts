@@ -17,7 +17,7 @@ export class AnimationBridge extends CoreBridge<
     super()
     const engineTypes: AnimationType[] = ['character', 'vehicle', 'airplane']
     engineTypes.forEach(type => {
-      this.register(type, new AnimationSystem())
+      this.register(type, new AnimationSystem(type))
     })
     this.setupEngineSubscriptions()
   }
@@ -31,7 +31,7 @@ export class AnimationBridge extends CoreBridge<
   }
 
   protected buildEngine(id: string): AnimationSystem | null {
-    return new AnimationSystem()
+    return new AnimationSystem(id)
   }
 
   @RequireEngineById()

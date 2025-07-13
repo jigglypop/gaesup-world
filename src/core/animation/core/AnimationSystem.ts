@@ -12,12 +12,12 @@ import { RegisterSystem, ManageRuntime } from '@/core/boilerplate/decorators';
 interface AnimationSystemMetrics extends BaseMetrics, AnimationMetrics {}
 interface AnimationSystemStateExt extends BaseState, AnimationSystemState {}
 
-@RegisterSystem('animation')
 @ManageRuntime({ autoStart: false })
 export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, AnimationSystemMetrics> {
   private callbacks: Set<AnimationSystemCallback>;
+  private systemType: string;
 
-  constructor() {
+  constructor(type: string = 'default') {
     const defaultState: AnimationSystemStateExt = {
       currentAnimation: 'idle',
       animationMixer: null,
@@ -40,6 +40,7 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
 
     super(defaultState, defaultMetrics);
     this.callbacks = new Set();
+    this.systemType = type;
   }
 
   subscribe(callback: AnimationSystemCallback): () => void {

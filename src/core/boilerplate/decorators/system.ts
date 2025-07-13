@@ -57,15 +57,16 @@ export function LogInitialization() {
  */
 export function RegisterSystem(systemType: string) {
   return function <T extends AnyConstructor>(constructor: T) {
-    return class extends constructor {
+    const decoratedClass = class extends constructor {
       constructor(...args: any[]) {
         super(...args);
         SystemRegistry.register(systemType, this);
-        // 원래 클래스 이름을 가져오기 위해 constructor.name 사용
-        const className = constructor.name || this.constructor.name;
-        logger.info(`[${className}] Registered as ${systemType} system`);
+        logger.info(`[${constructor.name}] Registered as ${systemType} system`);
       }
     };
+    // 원래 클래스의 이름을 유지
+    Object.defineProperty(decoratedClass, 'name', { value: constructor.name });
+    return decoratedClass as T;
   };
 }
 
@@ -74,7 +75,7 @@ export function RegisterSystem(systemType: string) {
  */
 export function ManageRuntime(options: { autoStart?: boolean } = {}) {
   return function <T extends AnyConstructor>(constructor: T) {
-    return class extends constructor {
+    const decoratedClass = class extends constructor {
       private animationFrameId: number | null = null;
       private lastTime: number = 0;
       private totalTime: number = 0;
@@ -131,5 +132,8 @@ export function ManageRuntime(options: { autoStart?: boolean } = {}) {
         }
       }
     };
+    // 원래 클래스의 이름을 유지
+    Object.defineProperty(decoratedClass, 'name', { value: constructor.name });
+    return decoratedClass as T;
   };
 } 
