@@ -1,5 +1,5 @@
 import { WorldObject } from '@core/world/types';
-import { InteractionEvent } from '@core/world/core/WorldEngine';
+import { InteractionEvent } from '@core/world/core/WorldSystem';
 import { WorldBridge } from '../bridge/WorldBridge';
 import * as THREE from 'three';
 

@@ -1,19 +1,19 @@
 import { ImpulseComponent } from '@core/motions/core/movement/ImpulseComponent';
-import { StateEngine } from '@core/motions/core/StateEngine';
+import { EntityStateManager } from '@core/motions/core/system/EntityStateManager';
 import { RapierRigidBody } from '@react-three/rapier';
 
-jest.mock('@core/motions/core/StateEngine');
+jest.mock('@core/motions/core/system/EntityStateManager');
 
 describe('ImpulseComponent', () => {
   let impulseComponent: ImpulseComponent;
-  let mockStateEngine: jest.Mocked<StateEngine>;
+  let mockStateManager: jest.Mocked<EntityStateManager>;
   let mockRigidBody: jest.Mocked<RapierRigidBody>;
 
   beforeEach(() => {
-    mockStateEngine = {
+    mockStateManager = {
       updateGameStates: jest.fn()
     } as any;
-    (StateEngine.getInstance as jest.Mock).mockReturnValue(mockStateEngine);
+    (EntityStateManager.getInstance as jest.Mock).mockReturnValue(mockStateManager);
     
     impulseComponent = new ImpulseComponent();
     mockRigidBody = {
@@ -44,7 +44,7 @@ describe('ImpulseComponent', () => {
     } as any;
     impulseComponent.applyImpulse({ current: mockRigidBody }, state);
     expect(mockRigidBody.setLinvel).toHaveBeenCalledWith({ x: 0, y: 15, z: 0 }, true);
-    expect(mockStateEngine.updateGameStates).toHaveBeenCalledWith({ isOnTheGround: false });
+    expect(mockStateManager.updateGameStates).toHaveBeenCalledWith({ isOnTheGround: false });
   });
 
   it('차량이 최대 속도보다 느릴 때, impulse를 적용해야 합니다.', () => {

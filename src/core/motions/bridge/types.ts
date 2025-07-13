@@ -4,7 +4,7 @@ import { RapierRigidBody } from '@react-three/rapier';
 import { MotionSystem } from '@/core/motions/core/system/MotionSystem';
 
 export type MotionEntity = {
-  engine: MotionSystem;
+  system: MotionSystem;
   rigidBody: RapierRigidBody;
   type: MotionType;
   dispose: () => void;

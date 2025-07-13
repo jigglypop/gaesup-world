@@ -13,29 +13,29 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
 
   protected buildEngine(_: string, type: MotionType, rigidBody: RapierRigidBody): MotionEntity | null {
     if (!type || !rigidBody) return null;
-    const engine = new MotionSystem({ type });
-    DIContainer.getInstance().injectProperties(engine);
+    const system = new MotionSystem({ type });
+    DIContainer.getInstance().injectProperties(system);
     return {
-      engine,
+      system,
       rigidBody,
       type,
-      dispose: () => engine.dispose()
+      dispose: () => system.dispose()
     };
   }
 
   @ValidateCommand()
   protected executeCommand(entity: MotionEntity, command: MotionCommand, _: string): void {
-    const { engine, rigidBody } = entity;
+    const { system, rigidBody } = entity;
     switch (command.type) {
       case 'move':
         if (command.data?.movement) {
-          engine.applyForce(command.data.movement, rigidBody);
+          system.applyForce(command.data.movement, rigidBody);
         }
         break;
       case 'jump':
-        const jumpForce = engine.calculateJump({ jumpSpeed: 12 }, {} as GameStatesType);
+        const jumpForce = system.calculateJump({ jumpSpeed: 12 }, {} as GameStatesType);
         if (jumpForce.length() > 0) {
-          engine.applyForce(jumpForce, rigidBody);
+          system.applyForce(jumpForce, rigidBody);
         }
         break;
       case 'stop':
@@ -43,7 +43,7 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
         rigidBody.setLinvel({ x: 0, y: vel.y, z: 0 }, true);
         break;
       case 'reset':
-        engine.reset();
+        system.reset();
         rigidBody.setTranslation({ x: 0, y: 0, z: 0 }, true);
         rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
         break;
@@ -53,7 +53,7 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
   @LogSnapshot()
   @CacheSnapshot(16) // 60fps 캐싱
   protected createSnapshot(entity: MotionEntity, _: string): MotionSnapshot {
-    const { engine, rigidBody, type } = entity;
+    const { system, rigidBody, type } = entity;
     const translation = rigidBody.translation();
     const velocity = rigidBody.linvel();
     const rotation = rigidBody.rotation();
@@ -62,10 +62,10 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
       position: vec3({ x: translation.x, y: translation.y, z: translation.z }),
       velocity: vec3({ x: velocity.x, y: velocity.y, z: velocity.z }),
       rotation: euler({ x: rotation.x, y: rotation.y, z: rotation.z }),
-      isGrounded: engine.getState().isGrounded,
-      isMoving: engine.getState().isMoving,
-      speed: engine.getState().speed,
-      metrics: { ...engine.getMetrics() },
+      isGrounded: system.getState().isGrounded,
+      isMoving: system.getState().isMoving,
+      speed: system.getState().speed,
+      metrics: { ...system.getMetrics() },
       config: { maxSpeed: 10, acceleration: 5, jumpForce: 12 } 
     };
     return snapshot;

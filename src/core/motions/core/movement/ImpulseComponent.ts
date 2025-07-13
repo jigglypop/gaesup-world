@@ -7,13 +7,13 @@ import { PhysicsConfigType } from '@stores/slices';
 import { Profile } from '@/core/boilerplate/decorators';
 
 export class ImpulseComponent {
-  private stateEngine: EntityStateManager;
-  private interactionEngine: InteractionSystem;
+  private stateManager: EntityStateManager;
+  private interactionSystem: InteractionSystem;
   private config: PhysicsConfigType;
 
   constructor(config: PhysicsConfigType) {
-    this.stateEngine = new EntityStateManager();
-    this.interactionEngine = InteractionSystem.getInstance();
+    this.stateManager = new EntityStateManager();
+    this.interactionSystem = InteractionSystem.getInstance();
     this.config = config;
   }
 
@@ -52,7 +52,7 @@ export class ImpulseComponent {
     if (isJumping && isOnTheGround) {
       const currentVel = rigidBodyRef.current.linvel();
       rigidBodyRef.current.setLinvel({ x: currentVel.x, y: jumpSpeed, z: currentVel.z }, true);
-      this.stateEngine.updateGameStates({
+      this.stateManager.updateGameStates({
         isOnTheGround: false,
       });
     }
@@ -76,7 +76,7 @@ export class ImpulseComponent {
     physicsState: PhysicsState
   ): void {
     const { activeState } = physicsState;
-    const keyboard = this.interactionEngine.getKeyboardRef();
+    const keyboard = this.interactionSystem.getKeyboardRef();
     const { maxSpeed = 10, accelRatio = 2 } = this.config;
     const { shift } = keyboard;
     const velocity = rigidBodyRef.current.linvel();

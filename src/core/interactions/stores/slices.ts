@@ -137,8 +137,8 @@ export const createInteractionSlice: StateCreator<
   },
 
   dispatchInput: (updates) => {
-    const engine = InteractionSystem.getInstance();
-    engine.dispatchInput(updates);
+    const system = InteractionSystem.getInstance();
+    system.dispatchInput(updates);
   },
 
   addAutomationAction: (actionData) => {

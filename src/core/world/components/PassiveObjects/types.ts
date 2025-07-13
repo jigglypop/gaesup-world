@@ -1,4 +1,4 @@
-import { WorldObject } from '../../core/WorldEngine';
+import { WorldObject } from '../../core/WorldSystem';
 import { ReactNode } from 'react';
 import { Vector3Tuple, QuaternionTuple } from 'three';
 import { RigidBody } from '@react-three/rapier';

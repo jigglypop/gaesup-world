@@ -235,8 +235,8 @@ export function usePhysicsEntity({
 }
 export function usePhysics() {
     const { activeState } = useStateSystem();
-    const interactionEngine = InteractionSystem.getInstance();
-    const interaction = interactionEngine.getState();
+    const interactionSystem = InteractionSystem.getInstance();
+    const interaction = interactionSystem.getState();
     const urls = useGaesupStore((state) => state.urls);
     const { getSizesByUrls } = useGaesupGltf();
     const isReady = !!(interaction && urls && activeState);
@@ -253,10 +253,10 @@ export function usePhysics() {
         urls,
         getSizesByUrls,
         setKeyboardInput: (input: Partial<typeof interaction.keyboard>) => {
-            interactionEngine.updateKeyboard(input);
+            interactionSystem.updateKeyboard(input);
         },
         setMouseInput: (input: Partial<typeof interaction.mouse>) => {
-            interactionEngine.updateMouse(input);
+            interactionSystem.updateMouse(input);
         },
         dispatch: (action: { type: string; payload?: unknown }) => {
         },

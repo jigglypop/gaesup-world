@@ -29,11 +29,11 @@ export class DirectionComponent {
     rightward: false,
   };
   private timers = new Set<NodeJS.Timeout>();
-  private interactionEngine: InteractionSystem;
+  private interactionSystem: InteractionSystem;
   private config: PhysicsConfigType;
 
   constructor(config: PhysicsConfigType) {
-    this.interactionEngine = InteractionSystem.getInstance();
+    this.interactionSystem = InteractionSystem.getInstance();
     this.config = config;
   }
 
@@ -69,8 +69,8 @@ export class DirectionComponent {
     calcProp?: PhysicsCalcProps,
   ): void {
     const { activeState, characterConfig } = physicsState;
-    const keyboard = this.interactionEngine.getKeyboardRef();
-    const mouse = this.interactionEngine.getMouseRef();
+    const keyboard = this.interactionSystem.getKeyboardRef();
+    const mouse = this.interactionSystem.getMouseRef();
     const keyboardChanged =
       this.lastKeyboardState.forward !== keyboard.forward ||
       this.lastKeyboardState.backward !== keyboard.backward ||
@@ -101,7 +101,7 @@ export class DirectionComponent {
     controlMode?: string
   ): void {
     const { activeState } = physicsState;
-    const keyboard = this.interactionEngine.getKeyboardRef();
+    const keyboard = this.interactionSystem.getKeyboardRef();
     const { forward, backward, leftward, rightward } = keyboard;
     const xAxis = Number(leftward) - Number(rightward);
     const zAxis = Number(forward) - Number(backward);
@@ -123,7 +123,7 @@ export class DirectionComponent {
     controlMode?: string,
   ): void {
     const { activeState, airplaneConfig } = physicsState;
-    const keyboard = this.interactionEngine.getKeyboardRef();
+    const keyboard = this.interactionSystem.getKeyboardRef();
     const { forward, backward, leftward, rightward, shift, space } = keyboard;
     const {
       angleDelta = { x: 0.02, y: 0.02, z: 0.02 },

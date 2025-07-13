@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RigidBodyProps } from '@react-three/rapier';
-import { WorldObject } from '../../core/WorldEngine';
+import { WorldObject } from '../../core/WorldSystem';
 import { CollisionEvent } from '@core/types/common';
 
 export type GameStatesType = {

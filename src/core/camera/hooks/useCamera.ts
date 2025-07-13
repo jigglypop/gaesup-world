@@ -23,7 +23,7 @@ export function useCamera() {
     ...cameraOption,
   }), []);
   
-  const { engine, updateConfig } = useCameraBridge(
+  const { system, updateConfig } = useCameraBridge(
     CameraSystem,
     initialConfig
   );
@@ -85,7 +85,7 @@ export function useCamera() {
   }, [cameraOption, mode, updateConfig]);
   
   useFrame((state, delta) => {
-    if (!engine || isInEditMode) return;
+    if (!system || isInEditMode) return;
     
     const calcProps: CameraCalcProps = {
       camera: state.camera,
@@ -95,10 +95,10 @@ export function useCamera() {
       clock: state.clock,
       excludeObjects: [],
     };
-    engine.calculate(calcProps);
+    system.calculate(calcProps);
   });
   
   return {
-    engine,
+    system,
   };
 } 

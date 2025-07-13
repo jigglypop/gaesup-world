@@ -49,12 +49,12 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
 
       // Subscribe to MinimapSystem
     useEffect(() => {
-      const engine = MinimapSystem.getInstance();
-    const unsubscribe = engine.subscribe((markers) => {
+      const system = MinimapSystem.getInstance();
+    const unsubscribe = system.subscribe((markers) => {
       setMinimapMarkers(markers);
       isDirtyRef.current = true;
     });
-    setMinimapMarkers(engine.getMarkers());
+    setMinimapMarkers(system.getMarkers());
     return unsubscribe;
   }, []);
 
