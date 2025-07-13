@@ -1,5 +1,4 @@
 export * from './usePhysics';
-export * from './usePhysicsEntity';
 export * from './usePhysicsBridge';
 export * from './useMotion';
 export * from './useGaesupGltf';

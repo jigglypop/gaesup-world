@@ -1,6 +1,11 @@
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
-import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three/rapier';
+import {
+  CapsuleCollider,
+  RapierRigidBody,
+  RigidBody,
+  euler,
+} from '@react-three/rapier';
 import { forwardRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
@@ -8,7 +13,7 @@ import { useGltfAndSize } from '../../hooks';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
 import { PhysicsEntityProps, SetGroundRayType } from '../types';
-import { usePhysicsEntity } from '../../hooks/usePhysicsEntity';
+import { useEntity } from '@core/boilerplate/hooks/useEntity';
 
 export function useSetGroundRay() {
   return ({ groundRay, length, colliderRef }: SetGroundRayType) => {
@@ -30,15 +35,18 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const setGroundRay = useSetGroundRay();
     const { scene, animations } = useGLTF(props.url);
     const { actions, ref: animationRef } = useAnimations(animations);
+    
     const {
       handleIntersectionEnter,
       handleIntersectionExit,
-      handleCollisionEnter
-    } = usePhysicsEntity({
+      handleCollisionEnter,
+    } = useEntity({
       ...props,
+      id: props.name,
       rigidBodyRef,
-      actions
+      actions,
     });
+
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
     const skeleton = useMemo(() => {
       let skel: THREE.Skeleton | null = null;
