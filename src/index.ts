@@ -1,4 +1,5 @@
 import 'reflect-metadata'
+import './core/initializeBridges';
 
 export {
   GaesupWorld,

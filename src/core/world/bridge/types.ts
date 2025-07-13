@@ -1,7 +1,6 @@
 import { WorldObject, InteractionEvent } from '../core/WorldSystem';
 import * as THREE from 'three';
 
-// WorldBridge Commands
 export type WorldCommand = 
   | AddObjectCommand
   | RemoveObjectCommand
@@ -57,13 +56,11 @@ export interface WorldSnapshot {
   interactionMode: 'view' | 'edit' | 'interact';
   showDebugInfo: boolean;
   events: InteractionEvent[];
-  // 추가 조회 기능들
   objectsInRadius?: (center: THREE.Vector3, radius: number) => WorldObject[];
   objectsByType?: (type: WorldObject['type']) => WorldObject[];
   raycast?: (origin: THREE.Vector3, direction: THREE.Vector3) => WorldObject | null;
 }
 
-// WorldBridge 관련 유틸리티 타입들
 export interface WorldBridgeState {
   selectedObjectId?: string;
   interactionMode: 'view' | 'edit' | 'interact';
