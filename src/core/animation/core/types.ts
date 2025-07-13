@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { AnimationMetrics } from '../bridge/types';
 
 export type AnimationPreset = {
   id: string;
@@ -36,7 +37,7 @@ export interface AnimationState {
   store: Record<string, THREE.AnimationAction>;
 }
 
-export interface AnimationEngineState {
+export interface AnimationSystemState {
   currentAnimation: string;
   animationMixer: THREE.AnimationMixer | null;
   actions: Map<string, THREE.AnimationAction>;
@@ -45,4 +46,4 @@ export interface AnimationEngineState {
   blendDuration: number;
 }
 
-export type AnimationEngineCallback = (metrics: AnimationMetrics) => void;
+export type AnimationSystemCallback = (metrics: AnimationMetrics) => void;

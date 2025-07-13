@@ -1,4 +1,4 @@
-import { AnimationEngine } from '../core/AnimationEngine'
+import { AnimationSystem } from '../core/AnimationSystem'
 import { AnimationType } from '../core/types'
 import { AnimationCommand, AnimationSnapshot, AnimationMetrics } from './types'
 import { DomainBridge, EnableMetrics, Command } from '../../boilerplate/decorators'
@@ -9,7 +9,7 @@ import { CoreBridge } from '@/core/boilerplate'
 @DomainBridge('animation')
 @EnableMetrics()
 export class AnimationBridge extends CoreBridge<
-  AnimationEngine,
+  AnimationSystem,
   AnimationSnapshot,
   AnimationCommand
 > {
@@ -17,7 +17,7 @@ export class AnimationBridge extends CoreBridge<
     super()
     const engineTypes: AnimationType[] = ['character', 'vehicle', 'airplane']
     engineTypes.forEach(type => {
-      this.register(type, new AnimationEngine())
+      this.register(type, new AnimationSystem())
     })
     this.setupEngineSubscriptions()
   }
@@ -30,8 +30,8 @@ export class AnimationBridge extends CoreBridge<
     })
   }
 
-  protected buildEngine(id: string): AnimationEngine | null {
-    return new AnimationEngine()
+  protected buildEngine(id: string): AnimationSystem | null {
+    return new AnimationSystem()
   }
 
   @RequireEngineById()
@@ -61,7 +61,7 @@ export class AnimationBridge extends CoreBridge<
 
   @Command('play')
   @ValidateCommand()
-  protected executeCommand(engine: AnimationEngine, command: AnimationCommand): void {
+  protected executeCommand(engine: AnimationSystem, command: AnimationCommand): void {
     switch (command.type) {
       case 'play':
         if (command.animation) engine.playAnimation(command.animation, command.duration)
@@ -80,7 +80,7 @@ export class AnimationBridge extends CoreBridge<
 
   @LogSnapshot()
   @CacheSnapshot(16) // 60fps 캐싱
-  protected createSnapshot(engine: AnimationEngine): AnimationSnapshot {
+  protected createSnapshot(engine: AnimationSystem): AnimationSnapshot {
     const state = engine.getState()
     const metrics = engine.getMetrics()
     return {

@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 import {
-  AnimationEngineState,
-  AnimationMetrics,
-  AnimationEngineCallback
+  AnimationSystemState,
+  AnimationSystemCallback
 } from './types';
 import { Profile, HandleError, MonitorMemory, TrackCalls } from '@/core/boilerplate/decorators';
+import { AnimationMetrics } from '../bridge/types';
 
-export class AnimationEngine {
-  private state: AnimationEngineState;
+export class AnimationSystem {
+  private state: AnimationSystemState;
   private metrics: AnimationMetrics;
-  private callbacks: Set<AnimationEngineCallback>;
+  private callbacks: Set<AnimationSystemCallback>;
 
   constructor() {
     this.state = {
@@ -33,7 +33,7 @@ export class AnimationEngine {
     this.callbacks = new Set();
   }
 
-  subscribe(callback: AnimationEngineCallback): () => void {
+  subscribe(callback: AnimationSystemCallback): () => void {
     this.callbacks.add(callback);
     return () => this.callbacks.delete(callback);
   }
@@ -142,7 +142,7 @@ export class AnimationEngine {
   }
 
   @MonitorMemory(5)
-  getState(): Readonly<AnimationEngineState> {
+  getState(): Readonly<AnimationSystemState> {
     return { ...this.state };
   }
 
