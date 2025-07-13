@@ -207,6 +207,28 @@ export type BlueprintComponent = {
   [key: string]: unknown;
 };
 
+export type EditableNode = BlueprintComponent & {
+  type: 'editable';
+  data: {
+    label: string;
+    value: string | number | boolean;
+    options?: (string | number)[];
+    onChange: (value: string | number | boolean) => void;
+  };
+};
+
+export type CameraNode = BlueprintComponent & {
+  type: 'camera';
+  data: Partial<CameraConfig>;
+};
+
+export type InputNode = BlueprintComponent & {
+  type: 'input';
+  data: Partial<ControlConfig>;
+};
+
+export type AnyBlueprintNode = EditableNode | CameraNode | InputNode;
+
 export type BlueprintWithComponents = AnyBlueprint & {
   components?: BlueprintComponent[];
 };

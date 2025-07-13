@@ -1,22 +1,31 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import ReactFlow, { 
-  Controls, 
-  Background, 
-  useNodesState, 
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import ReactFlow, {
+  Controls,
+  Background,
+  useNodesState,
   useEdgesState,
   addEdge,
   Connection,
   BackgroundVariant,
-  ReactFlowProvider
+  ReactFlowProvider,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import './styles.css';
-import { BlueprintType, BlueprintCategory, BlueprintEditorProps } from './types';
+import {
+  BlueprintType,
+  BlueprintCategory,
+  BlueprintEditorProps,
+} from './types';
 import { blueprintRegistry, AnyBlueprint } from '../../';
 import { useSpawnFromBlueprint } from '../../hooks/useSpawnFromBlueprint';
-import { convertBlueprintToItem, generateNodesFromBlueprint } from '../panels/BlueprintPanel/utils';
+import {
+  convertBlueprintToItem,
+  generateNodesFromBlueprint,
+} from '../panels/BlueprintPanel/utils';
 import { EditableNode } from '../editor/EditableNode';
 import { BlueprintPreview } from '../BlueprintPreview';
+import { CameraNode } from '../editor/CameraNode';
+import { InputNode } from '../editor/InputNode';
+import './styles.css';
 
 const blueprintCategories: BlueprintCategory[] = [
   { id: 'characters', name: 'Characters', type: 'character', count: 0 },
@@ -27,21 +36,23 @@ const blueprintCategories: BlueprintCategory[] = [
   { id: 'items', name: 'Items', type: 'item', count: 0 },
 ];
 
-const nodeTypes = {
-  editable: EditableNode,
-};
-
 export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => {
   const [selectedCategory, setSelectedCategory] = useState<BlueprintType>('character');
   const [selectedBlueprint, setSelectedBlueprint] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingBlueprint, setEditingBlueprint] = useState<AnyBlueprint | null>(null);
   const [showPreview, setShowPreview] = useState(true);
-  
+
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  
+
   const { spawnAtCursor, isSpawning } = useSpawnFromBlueprint();
+
+  const nodeTypes = useMemo(() => ({
+    editable: EditableNode,
+    camera: CameraNode,
+    input: InputNode,
+  }), []);
 
   const onConnect = useCallback((params: Connection) => {
     setEdges((eds) => addEdge(params, eds));
@@ -76,7 +87,7 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
   const filteredBlueprints = useMemo(() => {
     return allBlueprints.filter(blueprint => {
       const matchesCategory = blueprint.type === selectedCategory;
-      const matchesSearch = searchQuery === '' || 
+      const matchesSearch = searchQuery === '' ||
         blueprint.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         blueprint.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesCategory && matchesSearch;
@@ -88,33 +99,64 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
     setEdges((eds) => eds.filter(edge => edge.source !== nodeId && edge.target !== nodeId));
   }, [setNodes, setEdges]);
 
-  const handleNodeEdit = useCallback((nodeId: string, field: string, value: any) => {
-    setEditingBlueprint(currentBlueprint => {
-      if (!currentBlueprint) return null;
-      const newBlueprint = JSON.parse(JSON.stringify(currentBlueprint));
+  const handleNodeEditCallback = useCallback(
+    (nodeId: string, field: string, value: any) => {
+      setEditingBlueprint(currentBlueprint => {
+        if (!currentBlueprint) return null;
 
-      if (nodeId === 'root') {
-        if (field === 'version') newBlueprint.version = value;
-        else if (field === 'name') newBlueprint.name = value;
-      } else if (nodeId === 'physics' || nodeId === 'vehicle-physics' || nodeId === 'airplane-physics') {
-        if (newBlueprint.physics) {
-          (newBlueprint.physics as any)[field] = value;
+        const newBlueprint = JSON.parse(JSON.stringify(currentBlueprint));
+
+        if (nodeId === 'root') {
+          if (field === 'version') newBlueprint.version = value;
+          else if (field === 'name') newBlueprint.name = value;
+        } else if (
+          nodeId === 'physics' ||
+          nodeId === 'vehicle-physics' ||
+          nodeId === 'airplane-physics'
+        ) {
+          if ('physics' in newBlueprint && newBlueprint.physics) {
+            (newBlueprint.physics as any)[field] = value;
+          }
+        } else if (nodeId === 'camera') {
+          if ('camera' in newBlueprint) {
+            if (!newBlueprint.camera) {
+              (newBlueprint as any).camera = {};
+            }
+            (newBlueprint as any).camera[field] = value;
+          }
+        } else if (nodeId === 'controls') {
+          if ('controls' in newBlueprint) {
+            if (!newBlueprint.controls) {
+              (newBlueprint as any).controls = {};
+            }
+            (newBlueprint as any).controls[field] = value;
+          }
         }
-      }
-      return newBlueprint;
-    });
-  }, []);
+        return newBlueprint;
+      });
+    },
+    [setEditingBlueprint],
+  );
+
+  const handleNodeEdit = useRef(handleNodeEditCallback);
+  useEffect(() => {
+    handleNodeEdit.current = handleNodeEditCallback;
+  }, [handleNodeEditCallback]);
 
   useEffect(() => {
     if (editingBlueprint) {
-      const { nodes: newNodes, edges: newEdges } = generateNodesFromBlueprint(editingBlueprint, handleNodeEdit, handleNodeDelete);
+      const { nodes: newNodes, edges: newEdges } = generateNodesFromBlueprint(
+        editingBlueprint,
+        (...args) => handleNodeEdit.current(...args),
+        handleNodeDelete,
+      );
       setNodes(newNodes);
       setEdges(newEdges);
     } else {
       setNodes([]);
       setEdges([]);
     }
-  }, [editingBlueprint, handleNodeEdit, handleNodeDelete, setNodes, setEdges]);
+  }, [editingBlueprint, handleNodeDelete, setNodes, setEdges]);
 
   const handleBlueprintSelect = useCallback((blueprintId: string | null) => {
     setSelectedBlueprint(blueprintId);
@@ -130,8 +172,7 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
 
   useEffect(() => {
     const isSelectedInList = filteredBlueprints.some(b => b.id === selectedBlueprint);
-
-    if (filteredBlueprints.length > 0 && !isSelectedInList) {
+    if (filteredBlueprints[0]?.id && filteredBlueprints.length > 0 && !isSelectedInList) {
       handleBlueprintSelect(filteredBlueprints[0].id);
     } else if (filteredBlueprints.length === 0) {
       handleBlueprintSelect(null);
@@ -140,9 +181,9 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
 
   const handleSpawnEntity = async () => {
     if (!selectedBlueprint) return;
-    
+
     const spawnedEntity = await spawnAtCursor(selectedBlueprint);
-    
+
     if (spawnedEntity) {
       console.log('Successfully spawned entity:', spawnedEntity);
       onClose();
@@ -161,7 +202,7 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
             className="blueprint-editor__search-input"
           />
         </div>
-        
+
         <div className="blueprint-editor__categories">
           {categoriesWithCounts.map((category) => (
             <button
@@ -174,7 +215,7 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
             </button>
           ))}
         </div>
-        
+
         <div className="blueprint-editor__list">
           {filteredBlueprints.map((blueprint) => (
             <div
@@ -191,7 +232,7 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
             </div>
           ))}
         </div>
-        
+
         <div className="blueprint-editor__actions">
           <button
             onClick={handleSpawnEntity}
@@ -202,7 +243,7 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
           </button>
         </div>
       </div>
-      
+
       <div className="blueprint-editor__main">
         <div className="blueprint-editor__preview-section">
           <div className="blueprint-editor__preview-header">
@@ -216,11 +257,14 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
           </div>
           {showPreview && (
             <div className="blueprint-editor__preview-container">
-              <BlueprintPreview blueprint={editingBlueprint} />
+              <BlueprintPreview
+                key={editingBlueprint ? editingBlueprint.id : 'no-blueprint'}
+                blueprint={editingBlueprint}
+              />
             </div>
           )}
         </div>
-        
+
         <div className="blueprint-editor__graph-section">
           <ReactFlowProvider>
             <ReactFlow

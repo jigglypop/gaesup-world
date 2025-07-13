@@ -130,6 +130,32 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
         }
       });
     }
+    
+    // Camera node (if exists)
+    if (charBlueprint.camera) {
+      nodes.push({
+        id: 'camera',
+        type: 'camera',
+        position: { x: 50, y: 350 },
+        data: {
+          ...charBlueprint.camera,
+          onChange: onNodeEdit
+        }
+      });
+    }
+    
+    // Input node (if exists)
+    if (charBlueprint.controls) {
+      nodes.push({
+        id: 'controls',
+        type: 'input',
+        position: { x: 450, y: 350 },
+        data: {
+          ...charBlueprint.controls,
+          onChange: onNodeEdit
+        }
+      });
+    }
   } else if (blueprint.type === 'vehicle') {
     const vehicleBlueprint = blueprint as VehicleBlueprint;
     

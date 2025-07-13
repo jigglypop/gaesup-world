@@ -1,0 +1,108 @@
+.editable-node {
+  background: #2b2b2b;
+  border: 1px solid #555;
+  border-radius: 8px;
+  width: 250px;
+  font-family: 'Inter', sans-serif;
+  color: #f0f0f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: box-shadow 0.3s ease;
+}
+
+.editable-node:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.node-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  background: #3c3c3c;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  border-bottom: 1px solid #555;
+}
+
+.node-header svg {
+  margin-right: 10px;
+  font-size: 1.2rem;
+  color: #a0a0a0;
+}
+
+.node-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.node-content {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.node-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.node-field label {
+  font-size: 0.875rem;
+  color: #b0b0b0;
+  font-weight: 500;
+}
+
+.node-input {
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 6px 10px;
+  color: #f0f0f0;
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease;
+}
+
+.node-input:hover {
+  border-color: #666;
+}
+
+.node-input:focus {
+  outline: none;
+  border-color: #888;
+  background: #222;
+}
+
+.node-field input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.editable-node .react-flow__handle {
+  background: #7a7a7a;
+  border: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.editable-node .react-flow__handle-top {
+  top: -6px;
+}
+
+.editable-node .react-flow__handle-right {
+  right: -6px;
+}
+
+.editable-node .react-flow__handle-bottom {
+  bottom: -6px;
+}
+
+.editable-node .react-flow__handle-left {
+  left: -6px;
+}
+
+.nodrag {
+  user-select: none;
+} 
