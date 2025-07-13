@@ -40,7 +40,7 @@ export function TileSystem({
       geometry.translate(tile.position.x, tile.position.y + 0.001, tile.position.z);
 
       const vertexPositions = Array.from(
-        geometry.attributes.position.array as Float32Array
+        geometry.attributes["position"]?.array || []
       );
       positions.push(...vertexPositions);
 
@@ -48,11 +48,9 @@ export function TileSystem({
         ? Array.from(geometry.index.array as Uint16Array)
         : [];
       indices.push(...vertexIndices.map((idx) => idx + indexOffset));
-
       const tileUvs = [0, 0, 1, 0, 1, 1, 0, 1];
       uvs.push(...tileUvs);
-
-      indexOffset += geometry.attributes.position.count;
+      indexOffset += geometry.attributes["position"]?.count || 0;
       geometry.dispose();
     });
 

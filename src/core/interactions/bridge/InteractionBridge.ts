@@ -246,7 +246,6 @@ export class InteractionBridge {
   }
 
   @HandleError()
-  @TrackCalls()
   private emitEvent(event: BridgeEvent): void {
     this.eventQueue.push(event);
     

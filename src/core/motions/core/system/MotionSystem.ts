@@ -1,5 +1,5 @@
 import { AbstractSystem, SystemUpdateArgs, Autowired } from '@core/boilerplate';
-import { Profile, HandleError } from '@core/boilerplate';
+import { Profile, HandleError, RegisterSystem, ManageRuntime } from '@core/boilerplate';
 import * as THREE from 'three';
 import { vec3, quat, RapierRigidBody } from '@react-three/rapier';
 import { MotionState, MotionMetrics, MotionSystemOptions, ActiveStateType, GameStatesType } from './types';
@@ -33,6 +33,7 @@ export interface MotionUpdateArgs extends SystemUpdateArgs {
   gameStates: GameStatesType;
 }
 
+@ManageRuntime({ autoStart: false })
 export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, MotionSystemOptions, MotionUpdateArgs> {
   @Autowired()
   private motionService!: MotionService;

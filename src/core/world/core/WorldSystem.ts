@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { BaseSystem, SystemContext } from '@core/boilerplate/entity/BaseSystem';
-import { ManageRuntime, Profile, HandleError } from '@core/boilerplate/decorators';
+import { RegisterSystem, ManageRuntime, Profile, HandleError } from '@core/boilerplate/decorators';
 import { SpatialGrid } from './SpatialGrid';
 
 export interface WorldObject {
@@ -39,6 +39,7 @@ export interface InteractionEvent {
 
 
 
+@RegisterSystem('world')
 @ManageRuntime({ autoStart: true })
 export class WorldSystem implements BaseSystem {
   private objects: Map<string, WorldObject> = new Map();

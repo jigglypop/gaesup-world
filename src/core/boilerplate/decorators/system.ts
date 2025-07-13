@@ -126,9 +126,10 @@ export function ManageRuntime(options: { autoStart?: boolean } = {}) {
           logger.info(`[${constructor.name}] Runtime stopped`);
         }
         
-        const base = Object.getPrototypeOf(this);
-        if (base && typeof base.dispose === 'function') {
-          base.dispose.call(this);
+        // 원래 클래스의 dispose 메서드 호출
+        const originalDispose = constructor.prototype.dispose;
+        if (originalDispose && typeof originalDispose === 'function') {
+          originalDispose.call(this);
         }
       }
     };

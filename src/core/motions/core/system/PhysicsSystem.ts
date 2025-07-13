@@ -8,7 +8,7 @@ import { PhysicsState, PhysicsCalcProps } from '../types';
 import { GameStatesType } from '@core/world/components/Rideable/types';
 import { PhysicsConfigType } from '@/core/stores/slices/mode copy/types';
 import { AbstractSystem, SystemUpdateArgs } from '@core/boilerplate';
-import { Profile, HandleError } from '@core/boilerplate';
+import { Profile, HandleError, RegisterSystem, ManageRuntime } from '@core/boilerplate';
 import { DirectionComponent, ImpulseComponent } from '../movement';
 import { PhysicsSystemState, PhysicsSystemMetrics, PhysicsSystemOptions } from './types';
 
@@ -30,6 +30,7 @@ export interface PhysicsUpdateArgs extends SystemUpdateArgs {
   physicsState: PhysicsState;
 }
 
+@ManageRuntime({ autoStart: false })
 export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSystemMetrics, PhysicsSystemOptions, PhysicsUpdateArgs> {
   private directionComponent: DirectionComponent;
   private impulseComponent: ImpulseComponent;
