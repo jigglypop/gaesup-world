@@ -20,13 +20,10 @@ export function Command(name: string) {
     }
 }
 
-export { EnableEventLog, DebugLog, PerformanceLog }
-export * from '../di/Autowired'
-export * from '../di/Inject'
-export * from '../di/Service'
-export * from './advanced'
-export * from './bridge'
-export * from './system'
-export * from './monitoring'
-export * from './blueprint'
-export * from './types'
+export { EnableEventLog, DebugLog, PerformanceLog };
+export * from './advanced';
+export * from './bridge';
+export * from './system';
+export * from './monitoring';
+export * from './blueprint';
+export * from './types';

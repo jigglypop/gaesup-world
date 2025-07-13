@@ -48,8 +48,12 @@ export class DIContainer {
 
   resolve<T>(token: Token<T>): T {
     if (this.resolving.has(token)) {
-      const path = Array.from(this.resolving).map(getTokenName).join(' -> ')
-      throw new Error(`DIContainer: Circular dependency detected: ${path} -> ${getTokenName(token)}`)
+      const path = Array.from(this.resolving).map(getTokenName).join(' -> ');
+      const errorMessage = `DIContainer: Circular dependency detected: ${path} -> ${getTokenName(
+        token
+      )}`;
+      logger.error(errorMessage);
+      throw new Error(errorMessage);
     }
 
     const isSingleton = !this.singletons.has(token)

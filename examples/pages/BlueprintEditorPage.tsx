@@ -19,13 +19,10 @@ export function BlueprintEditorPage() {
 
   return (
     <div className="blueprint-editor-page">
-      <div className="blueprint-editor-page__panel">
-        <div className="blueprint-editor-page__header">
-          <h1 className="blueprint-editor-page__title">Blueprint Editor</h1>
-          <button onClick={handleClose} className="blueprint-editor-page__close">×</button>
-        </div>
-        <BlueprintEditor onClose={handleClose} />
+      <div className="blueprint-editor-page__header">
+        <button onClick={handleClose} className="blueprint-editor-page__close">×</button>
       </div>
+      <BlueprintEditor onClose={handleClose} />
     </div>
   );
 } 

@@ -1,24 +1,10 @@
 import { logger } from '../../utils/logger';
+import {
+  DecoratorTarget,
+  PerformanceWithMemory,
+  PropertyDescriptorExtended
+} from './types';
 
-type DecoratorTarget = object;
-type PropertyDescriptorExtended = PropertyDescriptor & {
-  value?: (...args: unknown[]) => unknown;
-};
-
-// Chrome/Edge의 비표준 performance.memory API 타입 정의
-interface PerformanceMemory {
-  jsHeapSizeLimit: number;
-  totalJSHeapSize: number;
-  usedJSHeapSize: number;
-}
-
-interface PerformanceWithMemory extends Performance {
-  memory?: PerformanceMemory;
-}
-
-/**
- * 메서드 실행 시간을 로깅하는 데코레이터
- */
 export function Profile(label?: string) {
   return function (
     target: DecoratorTarget,
@@ -43,9 +29,6 @@ export function Profile(label?: string) {
   };
 }
 
-/**
- * 메서드 호출을 로깅하는 데코레이터
- */
 export function Log(level: 'log' | 'info' | 'warn' | 'error' = 'log') {
   return function (
     target: DecoratorTarget,
@@ -65,9 +48,6 @@ export function Log(level: 'log' | 'info' | 'warn' | 'error' = 'log') {
   };
 }
 
-/**
- * 메서드 실행을 지연시키는 데코레이터
- */
 export function Delay(milliseconds: number) {
   return function (
     target: DecoratorTarget,
@@ -86,9 +66,6 @@ export function Delay(milliseconds: number) {
   };
 }
 
-/**
- * 메서드 호출 횟수를 제한하는 데코레이터
- */
 export function RateLimit(maxCalls: number, windowMs: number) {
   const callCounts = new Map<string, { count: number; resetTime: number }>();
 
@@ -124,9 +101,6 @@ export function RateLimit(maxCalls: number, windowMs: number) {
   };
 }
 
-/**
- * 메서드 실행 전후에 커스텀 로직을 실행하는 데코레이터
- */
 export function Hook(before?: () => void, after?: () => void) {
   return function (
     target: DecoratorTarget,
@@ -146,9 +120,6 @@ export function Hook(before?: () => void, after?: () => void) {
   };
 }
 
-/**
- * 메모리 사용량을 모니터링하는 데코레이터
- */
 export function MonitorMemory(threshold: number = 100) { // MB 단위
   return function (
     target: DecoratorTarget,
@@ -166,7 +137,11 @@ export function MonitorMemory(threshold: number = 100) { // MB 단위
       const memoryDelta = (afterMemory - beforeMemory) / (1024 * 1024); // MB 변환
       
       if (memoryDelta > threshold) {
-        logger.warn(`[${this.constructor.name}] ${propertyKey} allocated ${memoryDelta.toFixed(2)}MB of memory`);
+        logger.warn(
+          `[${
+            this.constructor.name
+          }] ${propertyKey} allocated ${memoryDelta.toFixed(2)}MB of memory`
+        );
       }
 
       return result;
@@ -176,9 +151,6 @@ export function MonitorMemory(threshold: number = 100) { // MB 단위
   };
 }
 
-/**
- * 메서드 호출 횟수를 추적하는 데코레이터
- */
 export function TrackCalls() {
   const callCounts = new Map<string, number>();
   
@@ -205,9 +177,6 @@ export function TrackCalls() {
   };
 }
 
-/**
- * 비동기 메서드의 타임아웃을 설정하는 데코레이터
- */
 export function Timeout(ms: number) {
   return function (
     target: DecoratorTarget,

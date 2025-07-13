@@ -16,7 +16,6 @@ export function HandleError(defaultReturn?: unknown) {
     descriptor: PropertyDescriptorExtended
   ) {
     const originalMethod = descriptor.value;
-
     descriptor.value = function (...args: unknown[]) {
       try {
         return originalMethod!.apply(this, args);
@@ -40,19 +39,14 @@ export function LogInitialization() {
     descriptor: PropertyDescriptorExtended
   ) {
     const originalMethod = descriptor.value;
-
     descriptor.value = function (...args: unknown[]) {
-      logger.info(`[${this.constructor.name}] Initializing...`);
+      logger.info(`[${this.constructor.name}] Initializing`);
       const startTime = performance.now();
-      
       const result = originalMethod!.apply(this, args);
-      
       const endTime = performance.now();
       logger.info(`[${this.constructor.name}] Initialized in ${(endTime - startTime).toFixed(2)}ms`);
-      
       return result;
     };
-
     return descriptor;
   };
 }
@@ -65,7 +59,6 @@ export function RegisterSystem(systemType: string) {
     return class extends constructor {
       constructor(...args: any[]) {
         super(...args);
-        
         const registryModule = require('../entity/SystemRegistry');
         if (registryModule && registryModule.SystemRegistry) {
           registryModule.SystemRegistry.register(systemType, this);
