@@ -133,6 +133,7 @@ export interface CameraTransition {
 export interface CameraSystemState {
   config: CameraSystemConfig;
   activeController?: ICameraController;
+  lastUpdate: number; // 추가
 }
 
 export interface CameraSystemConfig {
@@ -142,7 +143,7 @@ export interface CameraSystemConfig {
     y: number;
     z: number;
   };
-  bounds?: CameraBounds;
+  bounds?: CameraBounds; // optional로 변경
   enableCollision: boolean;
   smoothing?: {
     position: number;

@@ -1,29 +1,29 @@
 import mitt from 'mitt';
-import { CameraEngineEvents, CameraEngineConfig, ICameraEngineMonitor, CameraEngineEmitter, CameraEngineState } from './types';
+import { CameraSystemEvents, CameraSystemConfig, ICameraSystemMonitor, CameraSystemEmitter, CameraSystemState } from './types';
 import { Profile, HandleError } from '../../boilerplate/decorators';
 
-export abstract class BaseCameraEngine implements ICameraEngineMonitor {
-  public emitter: CameraEngineEmitter;
-  protected config: CameraEngineConfig;
+export abstract class BaseCameraSystem implements ICameraSystemMonitor {
+  public emitter: CameraSystemEmitter;
+  protected config: CameraSystemConfig;
   private metrics = {
     frameCount: 0,
     totalFrameTime: 0,
     lastUpdateTime: 0,
   };
-  protected constructor(initialConfig: CameraEngineConfig) {
-    this.emitter = mitt<CameraEngineEvents>();
+  protected constructor(initialConfig: CameraSystemConfig) {
+    this.emitter = mitt<CameraSystemEvents>();
     this.config = initialConfig;
   }
 
   @HandleError()
-  public updateConfig(newConfig: Partial<CameraEngineConfig>): void {
+  public updateConfig(newConfig: Partial<CameraSystemConfig>): void {
     const oldConfig = { ...this.config };
     this.config = { ...this.config, ...newConfig };
     
     Object.keys(newConfig).forEach(key => {
       this.emitter.emit('configChange', { 
         key, 
-        value: newConfig[key as keyof CameraEngineConfig]
+        value: newConfig[key as keyof CameraSystemConfig]
       });
     });
 
@@ -34,10 +34,10 @@ export abstract class BaseCameraEngine implements ICameraEngineMonitor {
       });
     }
   }
-  public getConfig(): CameraEngineConfig {
+  public getConfig(): CameraSystemConfig {
     return { ...this.config };
   }
-  public getState(): CameraEngineState {
+  public getState(): CameraSystemState {
     return {
       config: this.getConfig(),
       metrics: this.getMetrics(),

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useCallback } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { CameraEngine } from '../core/CameraEngine';
+import { CameraSystem } from '../core/CameraSystem';
 import { CameraCalcProps } from '../core/types';
 import { useCameraBridge } from '../bridge/useCameraBridge';
-import { CameraEngineConfig } from '../bridge/types';
+import { CameraSystemConfig } from '../bridge/types';
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
 import { useBuildingStore } from '../../building/stores/buildingStore';
@@ -16,7 +16,7 @@ export function useCamera() {
   const mode = useGaesupStore((state) => state.mode);
   const isInEditMode = useBuildingStore((state) => state.isInEditMode());
   
-  const initialConfig: CameraEngineConfig = useMemo(() => ({
+  const initialConfig: CameraSystemConfig = useMemo(() => ({
     mode: mode?.control || 'thirdPerson',
     enableMetrics: true,
     autoUpdate: true,
@@ -24,7 +24,7 @@ export function useCamera() {
   }), []);
   
   const { engine, updateConfig } = useCameraBridge(
-    CameraEngine,
+    CameraSystem,
     initialConfig
   );
   

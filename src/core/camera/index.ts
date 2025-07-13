@@ -1,4 +1,4 @@
-export { CameraEngine } from './core/CameraEngine';
+export { CameraSystem } from './core/CameraSystem';
 export { useCamera } from './hooks/useCamera';
 export { default as Camera } from './Camera';
 export * from './core/types';

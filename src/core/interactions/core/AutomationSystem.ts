@@ -1,6 +1,5 @@
 import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
-import { BaseState, BaseMetrics, SystemUpdateArgs } from '@/core/boilerplate/types';
-import { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
+import { BaseState, BaseMetrics } from '@/core/boilerplate/types';
 import { RegisterSystem, ManageRuntime, Profile, HandleError } from '@/core/boilerplate/decorators';
 import { AutomationState, AutomationConfig, AutomationMetrics, AutomationAction } from '../bridge/types';
 

@@ -1,17 +1,17 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { BaseCameraEngine } from './BaseCameraEngine';
-import { CameraEngineConfig, CameraEngineEvents } from './types';
+import { BaseCameraSystem } from './BaseCameraSystem';
+import { CameraSystemConfig, CameraSystemEvents } from './types';
 
-export function useCameraBridge<T extends BaseCameraEngine>(
-  EngineClass: new (config: CameraEngineConfig) => T,
-  initialConfig: CameraEngineConfig,
+export function useCameraBridge<T extends BaseCameraSystem>(
+  EngineClass: new (config: CameraSystemConfig) => T,
+  initialConfig: CameraSystemConfig,
   eventHandlers?: Partial<{
-    [K in keyof CameraEngineEvents]: (data: CameraEngineEvents[K]) => void;
+    [K in keyof CameraSystemEvents]: (data: CameraSystemEvents[K]) => void;
   }>
 ): {
   engine: T;
-  updateConfig: (config: Partial<CameraEngineConfig>) => void;
+  updateConfig: (config: Partial<CameraSystemConfig>) => void;
   getState: () => any;
   getMetrics: () => any;
 } {
@@ -46,7 +46,7 @@ export function useCameraBridge<T extends BaseCameraEngine>(
     };
   }, [engine]);
 
-  const updateConfig = useCallback((config: Partial<CameraEngineConfig>) => {
+  const updateConfig = useCallback((config: Partial<CameraSystemConfig>) => {
     engine?.updateConfig(config);
   }, [engine]);
 

@@ -1,6 +1,6 @@
 import { Emitter } from 'mitt';
 
-export type CameraEngineEvents = {
+export type CameraSystemEvents = {
   modeChange: { from: string; to: string };
   positionUpdate: { position: [number, number, number]; target: [number, number, number] };
   configChange: { key: string; value: unknown };
@@ -8,7 +8,7 @@ export type CameraEngineEvents = {
   error: { message: string; details?: unknown };
 };
 
-export interface CameraEngineConfig {
+export interface CameraSystemConfig {
   mode: string;
   distance: { x: number; y: number; z: number };
   smoothing: { position: number; rotation: number; fov: number };
@@ -23,8 +23,8 @@ export interface CameraEngineConfig {
   enableDamping?: boolean;
 }
 
-export type CameraEngineState = {
-  config: CameraEngineConfig;
+export type CameraSystemState = {
+  config: CameraSystemConfig;
   metrics: {
     frameCount: number;
     averageFrameTime: number;
@@ -32,8 +32,8 @@ export type CameraEngineState = {
   };
 };
 
-export interface ICameraEngineMonitor {
-  getState(): CameraEngineState;
+export interface ICameraSystemMonitor {
+  getState(): CameraSystemState;
   getMetrics(): {
     frameCount: number;
     averageFrameTime: number;
@@ -41,4 +41,4 @@ export interface ICameraEngineMonitor {
   };
 }
 
-export type CameraEngineEmitter = Emitter<CameraEngineEvents>;
+export type CameraSystemEmitter = Emitter<CameraSystemEvents>;

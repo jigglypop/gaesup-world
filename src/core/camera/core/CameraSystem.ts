@@ -15,19 +15,21 @@ import {
   SideScrollController,
   FixedController
 } from '../controllers';
-import { BaseCameraEngine } from '../bridge/BaseCameraEngine';
-import { CameraEngineConfig } from '../bridge/types';
+import { BaseCameraSystem } from '../bridge/BaseCameraSystem';
+import { CameraSystemConfig } from '../bridge/types';
 import * as THREE from 'three';
 import { Profile, HandleError, MonitorMemory } from '@/core/boilerplate/decorators';
+import { ManageRuntime } from '@/core/boilerplate/decorators';
 
-export class CameraEngine extends BaseCameraEngine {
+@ManageRuntime({ autoStart: false })
+export class CameraSystem extends BaseCameraSystem {
   private controllers: Map<string, ICameraController> = new Map();
   private state: CameraSystemState;
   private cameraStates: Map<string, CameraState> = new Map();
   private currentCameraStateName: string = 'default';
   private cameraTransitions: CameraTransition[] = [];
   
-  constructor(config: CameraEngineConfig) {
+  constructor(config: CameraSystemConfig) {
     super(config);
     this.state = this.createInitialState();
     this.registerControllers();
@@ -39,13 +41,14 @@ export class CameraEngine extends BaseCameraEngine {
       config: {
         mode: 'thirdPerson',
         distance: { x: 15, y: 8, z: 15 },
-        bounds: undefined,
+        bounds: undefined as any,
         enableCollision: true,
         smoothing: { position: 0.1, rotation: 0.1, fov: 0.1 },
         fov: 75,
         zoom: 1,
       },
-      activeController: undefined,
+      activeController: undefined as any,
+      lastUpdate: Date.now(),
     };
   }
   
@@ -68,31 +71,18 @@ export class CameraEngine extends BaseCameraEngine {
     this.cameraStates.set('default', defaultState);
   }
   
-  @HandleError()
   registerController(controller: ICameraController): void {
     this.controllers.set(controller.name, controller);
   }
   
-  @HandleError()
-  updateConfig(config: Partial<CameraConfig>): void {
+  override updateConfig(config: Partial<CameraConfig>): void {
     Object.assign(this.state.config, config);
-    
-    if (config.xDistance !== undefined || config.yDistance !== undefined || config.zDistance !== undefined) {
-      this.state.config.distance = {
-        x: config.xDistance || this.state.config.distance.x,
-        y: config.yDistance || this.state.config.distance.y,
-        z: config.zDistance || this.state.config.distance.z,
-      };
-    }
   }
   
-  @Profile()
   update(deltaTime: number): void {
     this.trackFrameMetrics(deltaTime);
   }
 
-  @HandleError()
-  @Profile()
   calculate(props: CameraCalcProps): void {
     try {
       const controller = this.controllers.get(this.state.config.mode);
@@ -104,9 +94,11 @@ export class CameraEngine extends BaseCameraEngine {
     }
   }
   
-  @MonitorMemory(5)
-  getState(): CameraSystemState {
-    return this.state;
+  override getState(): any {
+    return {
+      config: this.state.config,
+      metrics: this.getMetrics(),
+    };
   }
   
   getCameraState(name: string): CameraState | undefined {
@@ -117,7 +109,6 @@ export class CameraEngine extends BaseCameraEngine {
     return this.cameraStates.get(this.currentCameraStateName);
   }
   
-  @HandleError()
   addCameraState(name: string, state: CameraState): void {
     this.cameraStates.set(name, state);
   }
@@ -126,8 +117,6 @@ export class CameraEngine extends BaseCameraEngine {
     this.cameraTransitions = transitions;
   }
   
-  @HandleError()
-  @Profile()
   switchCameraState(name: string): void {
     if (this.cameraStates.has(name)) {
       this.currentCameraStateName = name;
