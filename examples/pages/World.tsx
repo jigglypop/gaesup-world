@@ -1,7 +1,7 @@
 import { Environment, Grid } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { euler, Physics, RigidBody } from '@react-three/rapier';
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import * as THREE from 'three';
 import { Clicker, GroundClicker, GaesupController, GaeSupProps, GaesupWorld, GaesupWorldContent, Editor, useGaesupStore, FocusableObject, MiniMap } from '../../src';
 import { BuildingController, useBuildingStore } from '../../src';
@@ -15,6 +15,8 @@ import '../style.css';
 import { useStateSystem } from '../../src/core/motions/hooks/useStateSystem';
 import { useKeyboard } from '../../src/core/hooks/useKeyboard';
 import { WorldPageProps } from './types';
+import { SpeechBalloon } from '../../src/core/ui/components/SpeechBalloon';
+import { useUIConfigStore } from '../../src/core/ui/stores/UIConfigStore';
 
 export { S3 };
 
@@ -39,6 +41,56 @@ const cameraOption: CameraOptionType = {
   distance: 10,
   bounds: { minY: 2, maxY: 50 },
 };
+
+function CharacterWithSpeechBalloon() {
+  const [showBalloon, setShowBalloon] = useState(true);
+  const [speechText, setSpeechText] = useState("안녕하세요! 👋");
+  const refs = useGaesupStore((state) => state.refs);
+  const [characterPosition, setCharacterPosition] = useState(new THREE.Vector3(0, 0, 0));
+  
+  // Update character position from rigidBody
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      if (refs?.rigidBodyRef?.current) {
+        const position = refs.rigidBodyRef.current.translation();
+        setCharacterPosition(new THREE.Vector3(position.x, position.y, position.z));
+      }
+    }, 50); // Update every 50ms
+    
+    return () => clearInterval(interval);
+  }, [refs]);
+  
+  // Toggle speech balloon with 'T' key
+  React.useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 't' || e.key === 'T') {
+        setShowBalloon(!showBalloon);
+      } else if (e.key === '1') {
+        setSpeechText("안녕하세요! 👋");
+      } else if (e.key === '2') {
+        setSpeechText("이 세계에 오신 것을 환영합니다!");
+      } else if (e.key === '3') {
+        setSpeechText("함께 모험을 떠나볼까요?");
+      }
+    };
+    
+    window.addEventListener('keypress', handleKeyPress);
+    return () => window.removeEventListener('keypress', handleKeyPress);
+  }, [showBalloon]);
+  
+  return (
+    <>
+      {showBalloon && (
+        <SpeechBalloon
+          text={speechText}
+          position={characterPosition}
+          offset={new THREE.Vector3(0, 3, 0)}
+          visible={showBalloon}
+        />
+      )}
+    </>
+  );
+}
 
 export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
   const isInBuildingMode = useBuildingStore((state) => state.isInEditMode());
@@ -125,6 +177,9 @@ export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
                 <RideableVehicles />
                 <BuildingController />
                 
+                {/* Character Speech Balloon */}
+                <CharacterWithSpeechBalloon />
+                
                 <GaeSupProps type="normal" text="Orange Box" position={[10, 1, 0]} showMinimap={true}>
                   <FocusableObject position={[0, 0, 0]} focusDistance={10}>
                     <mesh castShadow>
@@ -153,6 +208,28 @@ export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
           showCompass={false}
         />
         <RideableUIRenderer />
+        
+        {/* Speech Balloon Info Panel */}
+        <div style={{ 
+          position: 'fixed', 
+          top: '20px', 
+          right: '20px', 
+          background: 'rgba(0,0,0,0.8)', 
+          color: 'white', 
+          padding: '15px',
+          borderRadius: '10px',
+          fontSize: '14px',
+          maxWidth: '250px',
+          zIndex: 1000
+        }}>
+          <h4 style={{ margin: '0 0 10px 0' }}>Speech Balloon 조작법</h4>
+          <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6' }}>
+            <li><strong>T</strong>: 말풍선 켜기/끄기</li>
+            <li><strong>1</strong>: "안녕하세요! 👋"</li>
+            <li><strong>2</strong>: "이 세계에 오신 것을 환영합니다!"</li>
+            <li><strong>3</strong>: "함께 모험을 떠나볼까요?"</li>
+          </ul>
+        </div>
       </GaesupWorld>
       {showEditor && <Editor />}
       {children}

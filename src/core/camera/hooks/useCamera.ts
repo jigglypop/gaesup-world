@@ -40,7 +40,8 @@ export function useCamera() {
     const maxZoom = cameraOption.maxZoom || 2.0;
     const currentZoom = cameraOption.zoom || 1;
     
-    const delta = event.deltaY * -zoomSpeed;
+    // 스크롤 방향 반대로 수정 (양수로 변경)
+    const delta = event.deltaY * zoomSpeed;
     const newZoom = Math.min(Math.max(currentZoom + delta, minZoom), maxZoom);
     
     setCameraOption({ ...cameraOption, zoom: newZoom });

@@ -83,4 +83,16 @@ export interface UIConfig {
     autoHideDuration: number;
     position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   };
+  speechBalloon: {
+    enabled: boolean;
+    fontSize: number;
+    padding: number;
+    borderRadius: number;
+    maxWidth: number;
+    backgroundColor: string;
+    textColor: string;
+    fadeDistance: number;
+    scaleMultiplier: number;
+    defaultOffset: { x: number; y: number; z: number };
+  };
 } 

@@ -2,12 +2,8 @@ import React, { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { useThree, useFrame } from '@react-three/fiber';
 import { SpeechBalloonProps } from './types';
+import { useUIConfigStore } from '../../stores/UIConfigStore';
 import './styles.css';
-
-const DEFAULT_FONT_SIZE = 48;
-const DEFAULT_PADDING = 20;
-const DEFAULT_BORDER_RADIUS = 15;
-const DEFAULT_MAX_WIDTH = 300;
 
 function createRoundedRect(
   ctx: CanvasRenderingContext2D,
@@ -32,20 +28,20 @@ function createRoundedRect(
 
 function createTextTexture({
   text,
-  backgroundColor = 'rgba(0, 0, 0, 0.8)',
-  textColor = 'white',
-  fontSize = DEFAULT_FONT_SIZE,
-  padding = DEFAULT_PADDING,
-  borderRadius = DEFAULT_BORDER_RADIUS,
-  maxWidth = DEFAULT_MAX_WIDTH,
+  backgroundColor,
+  textColor,
+  fontSize,
+  padding,
+  borderRadius,
+  maxWidth,
 }: {
   text: string;
-  backgroundColor?: string;
-  textColor?: string;
-  fontSize?: number;
-  padding?: number;
-  borderRadius?: number;
-  maxWidth?: number;
+  backgroundColor: string;
+  textColor: string;
+  fontSize: number;
+  padding: number;
+  borderRadius: number;
+  maxWidth: number;
 }) {
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
@@ -107,7 +103,7 @@ function createTextTexture({
 export function SpeechBalloon({
   text,
   position = new THREE.Vector3(0, 2, 0),
-  offset = new THREE.Vector3(0, 1, 0),
+  offset,
   backgroundColor,
   textColor,
   fontSize,
@@ -123,19 +119,23 @@ export function SpeechBalloon({
   const prevDistanceRef = useRef<number>(0);
   const finalPositionRef = useRef(new THREE.Vector3());
   const frameCountRef = useRef(0);
+  const config = useUIConfigStore((state) => state.config.speechBalloon);
+  
+  // Use config values with prop overrides
+  const finalOffset = offset || new THREE.Vector3(config.defaultOffset.x, config.defaultOffset.y, config.defaultOffset.z);
 
   const textureData = useMemo(() => {
-    if (!text || !visible) return null;
+    if (!text || !visible || !config.enabled) return null;
     return createTextTexture({
       text,
-      backgroundColor,
-      textColor,
-      fontSize,
-      padding,
-      borderRadius,
-      maxWidth,
+      backgroundColor: backgroundColor || config.backgroundColor,
+      textColor: textColor || config.textColor,
+      fontSize: fontSize || config.fontSize,
+      padding: padding || config.padding,
+      borderRadius: borderRadius || config.borderRadius,
+      maxWidth: maxWidth || config.maxWidth,
     });
-  }, [text, backgroundColor, textColor, fontSize, padding, borderRadius, maxWidth, visible]);
+  }, [text, backgroundColor, textColor, fontSize, padding, borderRadius, maxWidth, visible, config]);
 
   const spriteMaterial = useMemo(() => {
     if (!textureData) return null;
@@ -157,7 +157,7 @@ export function SpeechBalloon({
     const distance = camera.position.distanceTo(position);
     
     if (Math.abs(distance - prevDistanceRef.current) > 0.5) {
-      const scale = distance * 0.01;
+      const scale = distance * config.scaleMultiplier;
       const aspectRatio = textureData.width / textureData.height;
       spriteRef.current.scale.set(scale * aspectRatio, scale, 1);
       prevDistanceRef.current = distance;
@@ -176,14 +176,14 @@ export function SpeechBalloon({
   }, [textureData, spriteMaterial]);
 
   const finalPosition = useMemo(() => {
-    finalPositionRef.current.copy(position).add(offset);
+    finalPositionRef.current.copy(position).add(finalOffset);
     return finalPositionRef.current;
-  }, [position, offset]);
+  }, [position, finalOffset]);
 
   if (!visible || !textureData || !spriteMaterial) return null;
 
   return (
-    <group className="speech-balloon">
+    <group>
       <sprite
         ref={spriteRef}
         position={finalPosition}
