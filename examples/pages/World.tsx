@@ -13,6 +13,7 @@ import { BuildingExample } from '../components/building';
 import { AIRPLANE_URL, CHARACTER_URL, S3, VEHICLE_URL, EXAMPLE_CONFIG } from '../config/constants';
 import '../style.css';
 import { useStateSystem } from '../../src/core/motions/hooks/useStateSystem';
+import { usePlayerWorldPosition } from '../../src/core/motions/hooks/usePlayerPosition';
 import { useKeyboard } from '../../src/core/hooks/useKeyboard';
 import { WorldPageProps } from './types';
 import { SpeechBalloon } from '../../src/core/ui/components/SpeechBalloon';
@@ -45,20 +46,9 @@ const cameraOption: CameraOptionType = {
 function CharacterWithSpeechBalloon() {
   const [showBalloon, setShowBalloon] = useState(true);
   const [speechText, setSpeechText] = useState("안녕하세요! 👋");
-  const refs = useGaesupStore((state) => state.refs);
-  const [characterPosition, setCharacterPosition] = useState(new THREE.Vector3(0, 0, 0));
   
-  // Update character position from rigidBody
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      if (refs?.rigidBodyRef?.current) {
-        const position = refs.rigidBodyRef.current.translation();
-        setCharacterPosition(new THREE.Vector3(position.x, position.y, position.z));
-      }
-    }, 50); // Update every 50ms
-    
-    return () => clearInterval(interval);
-  }, [refs]);
+  // Use the player position hook
+  const playerPosition = usePlayerWorldPosition();
   
   // Toggle speech balloon with 'T' key
   React.useEffect(() => {
@@ -83,7 +73,7 @@ function CharacterWithSpeechBalloon() {
       {showBalloon && (
         <SpeechBalloon
           text={speechText}
-          position={characterPosition}
+          position={playerPosition}
           offset={new THREE.Vector3(0, 3, 0)}
           visible={showBalloon}
         />

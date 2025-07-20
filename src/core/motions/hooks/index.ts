@@ -1,5 +1,6 @@
 export * from './usePhysics';
 export * from './usePhysicsBridge';
+export * from './usePlayerPosition';
 export * from './useMotion';
 export * from './useGaesupGltf';
 export * from './useStateSystem';

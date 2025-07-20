@@ -1,32 +1,37 @@
 import React from 'react';
 import * as THREE from 'three';
 import { useGaesupStore } from '../../../stores/gaesupStore';
+import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
+import { useInteractionSystem } from '../../../motions/hooks/useInteractionSystem';
 import { TargetMarker } from './TargetMarker';
 import { PathLine } from './PathLine';
 
 export function Clicker() {
-  const interaction = useGaesupStore((state) => state.interaction);
   const automation = useGaesupStore((state) => state.automation);
+  const { position: playerPosition } = usePlayerPosition();
+  const { mouse } = useInteractionSystem();
   
-  const mousePos = interaction?.mouse?.position || new THREE.Vector2();
+  // Use 3D target position from InteractionSystem
+  const mouseTarget = mouse?.target || new THREE.Vector3();
+  const isActive = mouse?.isActive || false;
   const queue = automation?.queue || { actions: [], currentIndex: 0 };
   const actions = queue.actions || [];
   const currentIndex = queue.currentIndex || 0;
-
-  const mousePosition = new THREE.Vector3(mousePos.x, 0.5, mousePos.y);
   
   const queuePoints = actions.map(action => {
     if (action.type === 'move' && action.target) {
       return new THREE.Vector3(action.target.x, action.target.y, action.target.z);
     }
-    return mousePosition;
+    return null;
   }).filter(Boolean);
 
-  const allPoints = [mousePosition, ...queuePoints];
+  // Start from player position
+  const allPoints = isActive ? [playerPosition, mouseTarget, ...queuePoints] : queuePoints.length > 0 ? [playerPosition, ...queuePoints] : [];
 
   return (
     <group>
-      <group position={[mousePos.x, 0.5, mousePos.y]}>
+      {/* Show target marker at mouse target position */}
+      <group position={mouseTarget}>
         <TargetMarker />
       </group>
 
