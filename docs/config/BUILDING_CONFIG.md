@@ -1,372 +1,305 @@
-# Building Domain Config Classification
+# Building System Settings
 
-## Store Config (유저 설정값)
+> 언리얼 엔진의 Construction Script와 유니티의 ProBuilder를 참고한 건축 시스템 설정
 
-초기 설정 또는 유저가 설정 페이지에서 변경하는 값들입니다.
+## Core Settings
+
+### Construction Settings
+```typescript
+interface ConstructionSettings {
+  // Grid Settings (유니티: ProBuilder Grid)
+  gridSize: number;                 // 기본: 100 (Grid Unit Size)
+  snapToGrid: boolean;              // 그리드 스냅 활성화
+  showGrid: boolean;                // 그리드 표시
+  gridOpacity: number;              // 기본: 0.3 (그리드 투명도)
+  
+  // Snap Settings
+  snapDistance: number;             // 기본: 10 (Snap Distance)
+  enableVertexSnap: boolean;        // 버텍스 스냅
+  enableEdgeSnap: boolean;          // 엣지 스냅
+  enableFaceSnap: boolean;          // 면 스냅
+  
+  // Precision
+  positionPrecision: number;        // 기본: 0.01 (Position Precision)
+  rotationPrecision: number;        // 기본: 1.0 (degrees)
+  scalePrecision: number;           // 기본: 0.01 (Scale Precision)
+}
+```
+
+### Material Settings (언리얼: Material Instance)
+```typescript
+interface BuildingMaterialSettings {
+  // Rendering
+  defaultMaterial: 'standard' | 'glass' | 'metal' | 'wood' | 'concrete';
+  enablePBR: boolean;               // PBR 렌더링 활성화
+  textureResolution: 'low' | 'medium' | 'high' | 'ultra';
+  
+  // Lighting
+  receiveShadows: boolean;          // 그림자 받기
+  castShadows: boolean;             // 그림자 투사
+  enableEmission: boolean;          // 발광 활성화
+  
+  // Performance
+  enableLOD: boolean;               // LOD 활성화
+  lodDistance: number;              // 기본: 100 (LOD Distance)
+  occlusionCulling: boolean;        // 오클루전 컬링
+}
+```
+
+### Building Tools Settings
+```typescript
+interface BuildingToolSettings {
+  // Tool Modes
+  defaultTool: 'wall' | 'floor' | 'door' | 'window' | 'stairs';
+  enableMultiSelect: boolean;       // 다중 선택
+  enableGroupSelect: boolean;       // 그룹 선택
+  
+  // Construction Assistance
+  enableGuidelines: boolean;        // 가이드라인 표시
+  enableMeasurement: boolean;       // 측정 도구
+  enableCollisionCheck: boolean;    // 충돌 검사
+  
+  // Undo/Redo
+  maxUndoSteps: number;             // 기본: 50 (최대 되돌리기 단계)
+  autoSave: boolean;                // 자동 저장
+  autoSaveInterval: number;         // 기본: 300 (초)
+}
+```
+
+### Wall System Settings
+```typescript
+interface WallSystemSettings {
+  // Default Dimensions
+  defaultWallHeight: number;        // 기본: 300 (Wall Height)
+  defaultWallThickness: number;     // 기본: 20 (Wall Thickness)
+  defaultWallLength: number;        // 기본: 400 (Wall Length)
+  
+  // Connection Settings
+  enableAutoConnect: boolean;       // 자동 연결
+  connectionTolerance: number;      // 기본: 5.0 (Connection Tolerance)
+  enableCornerGeneration: boolean;  // 코너 자동 생성
+  
+  // Door/Window Settings
+  enableAutoOpenings: boolean;      // 문/창문 자동 생성
+  doorWidth: number;                // 기본: 90 (Door Width)
+  doorHeight: number;               // 기본: 200 (Door Height)
+  windowWidth: number;              // 기본: 120 (Window Width)
+  windowHeight: number;             // 기본: 100 (Window Height)
+}
+```
+
+### Floor System Settings
+```typescript
+interface FloorSystemSettings {
+  // Default Settings
+  defaultFloorThickness: number;    // 기본: 10 (Floor Thickness)
+  defaultTileSize: number;          // 기본: 100 (Tile Size)
+  
+  // Tiling
+  enableAutoTiling: boolean;        // 자동 타일링
+  tilePattern: 'square' | 'hexagon' | 'triangle' | 'custom';
+  groutWidth: number;               // 기본: 2 (Grout Width)
+  
+  // Surface
+  enableTextureTiling: boolean;     // 텍스처 타일링
+  textureScale: number;             // 기본: 1.0 (Texture Scale)
+  enableNormalMap: boolean;         // 노말맵 활성화
+}
+```
+
+## Quality Settings
+
+### Rendering Quality Settings
+```typescript
+interface BuildingRenderQuality {
+  // Geometry Quality
+  geometryComplexity: 'low' | 'medium' | 'high' | 'ultra';
+  enableDetailMeshes: boolean;      // 디테일 메시
+  maxTrianglesPerChunk: number;     // 기본: 10000
+  
+  // Lighting Quality
+  lightmapResolution: number;       // 기본: 1024
+  enableRealTimeLighting: boolean;  // 실시간 조명
+  shadowQuality: 'low' | 'medium' | 'high';
+  
+  // Performance
+  enableInstancing: boolean;        // 인스턴싱 활성화
+  enableBatching: boolean;          // 배칭 활성화
+  cullingDistance: number;          // 기본: 1000
+}
+```
+
+## User Controls
+
+### Editor Preferences
+```typescript
+interface BuildingEditorSettings {
+  // Interface
+  showToolbar: boolean;             // 툴바 표시
+  showPropertyPanel: boolean;       // 속성 패널 표시
+  showMaterialLibrary: boolean;     // 재질 라이브러리 표시
+  
+  // Workflow
+  enableQuickAccess: boolean;       // 빠른 액세스
+  enableHotkeys: boolean;           // 단축키 활성화
+  enableContextMenu: boolean;       // 컨텍스트 메뉴
+  
+  // Visual Aids
+  showBoundingBoxes: boolean;       // 바운딩 박스 표시
+  showNormals: boolean;             // 노말 벡터 표시
+  showWireframe: boolean;           // 와이어프레임 모드
+  
+  // Assistance
+  enableSmartSnap: boolean;         // 스마트 스냅
+  enablePredictiveText: boolean;    // 예측 텍스트
+  showTips: boolean;                // 팁 표시
+}
+```
+
+## Default Configuration
 
 ```typescript
-type BuildingConfig = {
-  gridSize: number
-  snapToGrid: boolean
-  enablePhysics: boolean
-  autoSave: boolean
-  maxUndoStack: number
-  renderDistance: number
-  lodEnabled: boolean
-  shadows: boolean
-  lighting: boolean
-  showGrid: boolean
-  showBlockOutlines: boolean
-  enableCollisionPreview: boolean
-  autoSaveInterval: number
-  chunkSize: number
-  maxBuildHeight: number
-  enableMultiselect: boolean
-  doubleClickToBuild: boolean
-  confirmDestructiveActions: boolean
-}
+export const DEFAULT_CONSTRUCTION_SETTINGS: ConstructionSettings = {
+  gridSize: 100,
+  snapToGrid: true,
+  showGrid: true,
+  gridOpacity: 0.3,
+  snapDistance: 10,
+  enableVertexSnap: true,
+  enableEdgeSnap: true,
+  enableFaceSnap: true,
+  positionPrecision: 0.01,
+  rotationPrecision: 1.0,
+  scalePrecision: 0.01,
+};
+
+export const DEFAULT_MATERIAL_SETTINGS: BuildingMaterialSettings = {
+  defaultMaterial: 'standard',
+  enablePBR: true,
+  textureResolution: 'high',
+  receiveShadows: true,
+  castShadows: true,
+  enableEmission: false,
+  enableLOD: true,
+  lodDistance: 100,
+  occlusionCulling: true,
+};
+
+export const DEFAULT_WALL_SETTINGS: WallSystemSettings = {
+  defaultWallHeight: 300,
+  defaultWallThickness: 20,
+  defaultWallLength: 400,
+  enableAutoConnect: true,
+  connectionTolerance: 5.0,
+  enableCornerGeneration: true,
+  enableAutoOpenings: false,
+  doorWidth: 90,
+  doorHeight: 200,
+  windowWidth: 120,
+  windowHeight: 100,
+};
 ```
 
-**언제 변경되는가:**
-- 유저가 Building Settings에서 조정
-- 게임 시작 시 초기 설정
-- 성능 설정 변경 시
-- 디버그 모드 토글 시
+## Settings Overview
 
-**데이터 플로우:**
-```
-Building Settings UI → Store → Bridge → Core BuildingSystem (1회성 전달)
-```
+### Construction Settings
+| 설정 | 기본값 | 범위 | 설명 |
+|------|--------|------|------|
+| gridSize | 100 | 1 - 1000 | 그리드 단위 크기 |
+| snapToGrid | true | true/false | 그리드 스냅 활성화 |
+| showGrid | true | true/false | 그리드 표시 |
+| gridOpacity | 0.3 | 0.0 - 1.0 | 그리드 투명도 |
+| snapDistance | 10 | 1 - 100 | 스냅 거리 |
+| positionPrecision | 0.01 | 0.001 - 1.0 | 위치 정밀도 |
+| rotationPrecision | 1.0 | 0.1 - 45.0 | 회전 정밀도 (degrees) |
 
-## Constants (절대 불변값)
+### Material Settings
+| 설정 | 기본값 | 옵션 | 설명 |
+|------|--------|------|------|
+| defaultMaterial | 'standard' | standard/glass/metal/wood/concrete | 기본 재질 |
+| enablePBR | true | true/false | PBR 렌더링 활성화 |
+| textureResolution | 'high' | low/medium/high/ultra | 텍스처 해상도 |
+| receiveShadows | true | true/false | 그림자 받기 |
+| castShadows | true | true/false | 그림자 투사 |
+| enableLOD | true | true/false | LOD 활성화 |
+| lodDistance | 100 | 10 - 1000 | LOD 거리 |
 
-건축 시스템에서 절대 변하지 않는 상수들입니다.
+### Wall System Settings
+| 설정 | 기본값 | 범위 | 설명 |
+|------|--------|------|------|
+| defaultWallHeight | 300 | 50 - 1000 | 기본 벽 높이 |
+| defaultWallThickness | 20 | 5 - 100 | 기본 벽 두께 |
+| defaultWallLength | 400 | 100 - 2000 | 기본 벽 길이 |
+| connectionTolerance | 5.0 | 1.0 - 50.0 | 연결 허용 오차 |
+| doorWidth | 90 | 60 - 150 | 문 너비 |
+| doorHeight | 200 | 150 - 300 | 문 높이 |
+| windowWidth | 120 | 80 - 200 | 창문 너비 |
+| windowHeight | 100 | 60 - 150 | 창문 높이 |
+
+### Building Tool Settings
+| 설정 | 기본값 | 옵션 | 설명 |
+|------|--------|------|------|
+| defaultTool | 'wall' | wall/floor/door/window/stairs | 기본 도구 |
+| maxUndoSteps | 50 | 10 - 200 | 최대 되돌리기 단계 |
+| autoSave | true | true/false | 자동 저장 |
+| autoSaveInterval | 300 | 60 - 1800 | 자동 저장 간격 (초) |
+
+### Rendering Quality
+| 품질 레벨 | 지오메트리 복잡도 | 라이트맵 해상도 | 그림자 품질 | 권장 환경 |
+|----------|------------------|----------------|-------------|-----------|
+| low | 단순화된 메시 | 256 | low | 저사양 디바이스 |
+| medium | 기본 메시 | 512 | medium | 일반 PC |
+| high | 디테일 메시 | 1024 | high | 고사양 PC |
+| ultra | 최고 디테일 | 2048 | ultra | 최고사양 PC |
+
+### Building Presets Comparison
+| 프리셋 | 그리드 크기 | 위치 정밀도 | PBR | 지오메트리 | 사용 용도 |
+|--------|-------------|-------------|-----|------------|-----------|
+| architectural | 100 | 0.01 | true | ultra | 건축 설계 |
+| gameLevel | 200 | 0.1 | false | medium | 게임 레벨 |
+| prototype | 500 | 1.0 | false | low | 프로토타입 |
+
+## Usage Example
 
 ```typescript
-export const BUILDING_CONSTANTS = {
-  MIN_GRID_SIZE: 0.1,
-  MAX_GRID_SIZE: 10.0,
-  MAX_BLOCKS_PER_CHUNK: 4096,
-  DEFAULT_CHUNK_SIZE: 16,
-  MAX_BUILD_HEIGHT: 256,
-  MIN_BUILD_HEIGHT: -64,
-  BLOCK_RAYCAST_DISTANCE: 100,
-  MAX_UNDO_STACK_SIZE: 1000,
-  COLLISION_EPSILON: 0.01,
-  MESH_COMBINE_THRESHOLD: 100,
-  INSTANCED_MESH_LIMIT: 1000,
-  OCTREE_MAX_DEPTH: 8,
-  SPATIAL_HASH_CELL_SIZE: 16
-} as const
+// 건축 설정 변경
+const { updateBuildingSettings } = useBuildingStore();
+
+updateBuildingSettings({
+  gridSize: 50,                     // 더 세밀한 그리드
+  enableAutoConnect: true,          // 자동 연결 활성화
+  textureResolution: 'ultra',       // 고해상도 텍스처
+  geometryComplexity: 'high'        // 고품질 지오메트리
+});
 ```
 
-**특징:**
-- 메모리 한계값
-- WebGL 인스턴싱 제약
-- 공간 분할 최적화 값
-
-## Realtime State (매 프레임 변화)
-
-Core Layer에서 관리하며 Store에 절대 저장하면 안 되는 값들입니다.
+## Building Presets
 
 ```typescript
-type BuildingState = {
-  blocks: Map<string, Block>
-  chunks: Map<string, Chunk>
-  visibleChunks: Set<string>
-  selectedBlocks: Set<string>
-  hoveredBlock: string | null
-  activeTool: BuildingTool
-  clipboard: Block[]
-  undoStack: BuildAction[]
-  redoStack: BuildAction[]
-  currentSelection: BoundingBox | null
-  buildPreview: Block | null
-  toolPreview: THREE.Object3D | null
-  spatialGrid: SpatialGrid<Block>
-  dirtyChunks: Set<string>
-  meshCombineQueue: Set<string>
-}
-
-type Block = {
-  id: string
-  position: THREE.Vector3
-  type: BlockType
-  rotation: THREE.Euler
-  scale: THREE.Vector3
-  chunkId: string
-  mesh: THREE.Mesh | null
-  collider: any
-  properties: BlockProperties
-  metadata: Record<string, unknown>
-  timestamp: number
-}
-
-type BuildingMetrics = {
-  totalBlocks: number
-  visibleBlocks: number
-  activeChunks: number
-  memoryUsage: number
-  renderTime: number
-  buildTime: number
-  undoStackSize: number
-  meshCombineCount: number
-}
-```
-
-**특징:**
-- 매 프레임 또는 사용자 액션마다 업데이트
-- 공간 분할 구조에서 관리
-- 메시 최적화 큐 관리
-- React 상태 관리 절대 금지
-
-## 잘못된 분류 예시
-
-```typescript
-// ❌ 잘못된 분류 - 이런 값들이 Store에 있으면 안됨
-type WrongConfig = {
-  currentBlocks: Block[]              // 실시간 데이터 → Realtime State
-  selectedBlocks: string[]            // 실시간 선택 → Realtime State  
-  hoveredPosition: THREE.Vector3      // 실시간 상태 → Realtime State
-  MAX_BLOCKS: number                  // 절대 불변 → Constants
-}
-```
-
-## 올바른 구현 패턴
-
-### Config 변경 시 (1회성)
-```typescript
-// Settings에서 grid size 변경
-const updateGridSize = (size: number) => {
-  buildingStore.setConfig({ gridSize: size })
-}
-
-// Hook에서 감지하여 Core로 전달
-useEffect(() => {
-  buildingSystem.updateConfig(buildingStore.config)
-}, [buildingStore.config.gridSize])
-
-// Core에서 적용
-class BuildingSystem {
-  updateConfig(config: BuildingConfig) {
-    this.gridSize = config.gridSize
-    this.snapToGrid = config.snapToGrid
-    this.chunkSize = config.chunkSize
-    
-    if (config.lodEnabled) {
-      this.enableLOD()
-    }
-    
-    this.updateGrid()
-  }
+// 미리 정의된 건축 프리셋
+export const BUILDING_PRESETS = {
+  architectural: {
+    gridSize: 100,
+    positionPrecision: 0.01,
+    enablePBR: true,
+    geometryComplexity: 'ultra',
+    shadowQuality: 'high',
+  },
   
-  private updateGrid() {
-    this.gridHelper.setSize(this.gridSize)
-    this.gridHelper.visible = this.showGrid
-  }
-}
-```
-
-### 실시간 건축 처리 (이벤트 드리븐)
-```typescript
-// Core Layer - Store 접근 없이 기존 설정값 사용
-class BuildingSystem {
-  placeBlock(position: THREE.Vector3, blockType: BlockType): Block | null {
-    const snappedPosition = this.snapToGrid 
-      ? this.snapPositionToGrid(position, this.gridSize)
-      : position
-    
-    if (!this.canPlaceBlockAt(snappedPosition)) {
-      return null
-    }
-    
-    const block = this.createBlock(snappedPosition, blockType)
-    this.addBlockToChunk(block)
-    this.addToUndoStack('place', block)
-    
-    if (this.enablePhysics) {
-      this.createPhysicsBody(block)
-    }
-    
-    this.markChunkDirty(block.chunkId)
-    return block
-  }
+  gameLevel: {
+    gridSize: 200,
+    positionPrecision: 0.1,
+    enablePBR: false,
+    geometryComplexity: 'medium',
+    shadowQuality: 'medium',
+  },
   
-  private snapPositionToGrid(position: THREE.Vector3, gridSize: number): THREE.Vector3 {
-    return new THREE.Vector3(
-      Math.round(position.x / gridSize) * gridSize,
-      Math.round(position.y / gridSize) * gridSize,
-      Math.round(position.z / gridSize) * gridSize
-    )
+  prototype: {
+    gridSize: 500,
+    positionPrecision: 1.0,
+    enablePBR: false,
+    geometryComplexity: 'low',
+    shadowQuality: 'low',
   }
-  
-  private addBlockToChunk(block: Block) {
-    const chunkKey = this.getChunkKey(block.position, this.chunkSize)
-    let chunk = this.chunks.get(chunkKey)
-    
-    if (!chunk) {
-      chunk = this.createChunk(chunkKey)
-      this.chunks.set(chunkKey, chunk)
-    }
-    
-    chunk.blocks.set(block.id, block)
-    this.blocks.set(block.id, block)
-    this.spatialGrid.insert(block, block.position)
-  }
-}
-```
-
-### 청크 기반 렌더링 최적화
-```typescript
-// Core Layer - 청크 기반 메시 최적화
-class ChunkMeshOptimizer {
-  optimizeChunk(chunkId: string) {
-    const chunk = this.chunks.get(chunkId)
-    if (!chunk || chunk.blocks.size === 0) return
-    
-    if (chunk.blocks.size >= BUILDING_CONSTANTS.MESH_COMBINE_THRESHOLD) {
-      this.combineChunkMeshes(chunk)
-    } else {
-      this.useInstancedMeshes(chunk)
-    }
-  }
-  
-  private combineChunkMeshes(chunk: Chunk) {
-    const geometries: THREE.BufferGeometry[] = []
-    const materials: THREE.Material[] = []
-    
-    chunk.blocks.forEach(block => {
-      if (block.mesh) {
-        geometries.push(block.mesh.geometry)
-        materials.push(block.mesh.material)
-      }
-    })
-    
-    const combinedGeometry = BufferGeometryUtils.mergeBufferGeometries(geometries)
-    const combinedMesh = new THREE.Mesh(combinedGeometry, materials[0])
-    
-    chunk.combinedMesh = combinedMesh
-    chunk.isOptimized = true
-  }
-  
-  private useInstancedMeshes(chunk: Chunk) {
-    const blocksByType = new Map<BlockType, Block[]>()
-    
-    chunk.blocks.forEach(block => {
-      if (!blocksByType.has(block.type)) {
-        blocksByType.set(block.type, [])
-      }
-      blocksByType.get(block.type)!.push(block)
-    })
-    
-    blocksByType.forEach((blocks, blockType) => {
-      const instancedMesh = this.createInstancedMesh(blockType, blocks.length)
-      
-      blocks.forEach((block, index) => {
-        const matrix = new THREE.Matrix4()
-        matrix.compose(block.position, new THREE.Quaternion().setFromEuler(block.rotation), block.scale)
-        instancedMesh.setMatrixAt(index, matrix)
-      })
-      
-      instancedMesh.instanceMatrix.needsUpdate = true
-      chunk.instancedMeshes.set(blockType, instancedMesh)
-    })
-  }
-}
-```
-
-### 공간 쿼리 시스템 (성능 최적화)
-```typescript
-// Core Layer - 공간 분할을 통한 빠른 쿼리
-class SpatialGrid<T> {
-  private grid = new Map<string, Set<T>>()
-  private itemToCell = new Map<T, string>()
-  
-  insert(item: T, position: THREE.Vector3) {
-    const cellKey = this.getCellKey(position)
-    
-    if (!this.grid.has(cellKey)) {
-      this.grid.set(cellKey, new Set())
-    }
-    
-    this.grid.get(cellKey)!.add(item)
-    this.itemToCell.set(item, cellKey)
-  }
-  
-  query(bounds: BoundingBox): T[] {
-    const results: T[] = []
-    const minCell = this.getCellKey(bounds.min)
-    const maxCell = this.getCellKey(bounds.max)
-    
-    const [minX, minY, minZ] = this.parseCellKey(minCell)
-    const [maxX, maxY, maxZ] = this.parseCellKey(maxCell)
-    
-    for (let x = minX; x <= maxX; x++) {
-      for (let y = minY; y <= maxY; y++) {
-        for (let z = minZ; z <= maxZ; z++) {
-          const cellKey = `${x}_${y}_${z}`
-          const cell = this.grid.get(cellKey)
-          
-          if (cell) {
-            results.push(...Array.from(cell))
-          }
-        }
-      }
-    }
-    
-    return results
-  }
-  
-  private getCellKey(position: THREE.Vector3): string {
-    const x = Math.floor(position.x / BUILDING_CONSTANTS.SPATIAL_HASH_CELL_SIZE)
-    const y = Math.floor(position.y / BUILDING_CONSTANTS.SPATIAL_HASH_CELL_SIZE)
-    const z = Math.floor(position.z / BUILDING_CONSTANTS.SPATIAL_HASH_CELL_SIZE)
-    return `${x}_${y}_${z}`
-  }
-}
-```
-
-### 실행 취소/다시 실행 시스템
-```typescript
-// Core Layer - 메모리 효율적인 실행 취소
-class UndoRedoManager {
-  private undoStack: BuildAction[] = []
-  private redoStack: BuildAction[] = []
-  
-  executeAction(action: BuildAction) {
-    action.execute()
-    this.addToUndoStack(action)
-    this.redoStack.length = 0
-  }
-  
-  undo(): boolean {
-    if (this.undoStack.length === 0) return false
-    
-    const action = this.undoStack.pop()!
-    action.undo()
-    this.redoStack.push(action)
-    
-    return true
-  }
-  
-  redo(): boolean {
-    if (this.redoStack.length === 0) return false
-    
-    const action = this.redoStack.pop()!
-    action.execute()
-    this.undoStack.push(action)
-    
-    return true
-  }
-  
-  private addToUndoStack(action: BuildAction) {
-    this.undoStack.push(action)
-    
-    if (this.undoStack.length > this.maxUndoStack) {
-      this.undoStack.shift()
-    }
-  }
-}
-```
-
-이 분류를 통해 대규모 건축 작업에서도 안정적인 성능과 메모리 효율성을 보장합니다. 
+};
+``` 

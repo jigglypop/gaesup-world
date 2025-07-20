@@ -1,241 +1,231 @@
-# Camera Domain Config Classification
+# Camera Component Settings
 
-## Store Config (유저 설정값)
+> 언리얼 엔진의 Camera Component와 유니티의 Camera를 참고한 카메라 설정
 
-초기 설정 또는 유저가 설정 페이지에서 변경하는 값들입니다.
+## Core Settings
 
+### Camera Component Config
 ```typescript
-type CameraConfig = {
-  defaultController: string
-  smoothing: number
-  distance: number
-  height: number
-  angle: number
-  bobbing: boolean
-  bobbingIntensity: number
-  rotation: number
-  collisionChecks: boolean
-  anticipation: number
-  lag: number
-  leadDistance: number
-  updateFrequency: number
-  enableLOD: boolean
-  fovPreference: number
-  mouseLookSensitivity: number
-  invertY: boolean
-  autoSwitchDistance: number
-}
-```
-
-**언제 변경되는가:**
-- 유저가 Camera Settings에서 조정
-- 게임 시작 시 초기 설정
-- 게임 모드 변경 시 (1인칭/3인칭)
-- 접근성 설정 변경 시
-
-**데이터 플로우:**
-```
-Camera Settings UI → Store → Bridge → Core CameraSystem (1회성 전달)
-```
-
-## Constants (절대 불변값)
-
-카메라 시스템에서 절대 변하지 않는 상수들입니다.
-
-```typescript
-export const CAMERA_CONSTANTS = {
-  MIN_DISTANCE: 1.0,
-  MAX_DISTANCE: 100.0,
-  MIN_HEIGHT: -10.0,
-  MAX_HEIGHT: 50.0,
-  MIN_FOV: 10,
-  MAX_FOV: 120,
-  MIN_SMOOTHING: 0.01,
-  MAX_SMOOTHING: 1.0,
-  COLLISION_PADDING: 0.5,
-  RAYCAST_LAYERS: 1,
-  FRUSTUM_CULL_MARGIN: 1.0,
-  LOD_DISTANCE_NEAR: 10,
-  LOD_DISTANCE_FAR: 100,
-  MATRIX_EPSILON: 0.0001
-} as const
-```
-
-**특징:**
-- 카메라 하드웨어 제약
-- Three.js 엔진 한계값
-- 성능 최적화 임계값
-
-## Realtime State (매 프레임 변화)
-
-Core Layer에서 관리하며 Store에 절대 저장하면 안 되는 값들입니다.
-
-```typescript
-type CameraState = {
-  currentController: string
-  position: THREE.Vector3
-  lookAt: THREE.Vector3
-  up: THREE.Vector3
-  worldMatrix: THREE.Matrix4
-  projectionMatrix: THREE.Matrix4
-  viewMatrix: THREE.Matrix4
-  frustum: THREE.Frustum
-  isTransitioning: boolean
-  transitionProgress: number
-  lastUpdateTime: number
-  culledObjects: Set<string>
-  visibleObjects: Set<string>
-  renderDistance: number
-  screenBounds: {
-    left: number
-    right: number
-    top: number
-    bottom: number
-  }
-}
-
-type CameraMetrics = {
-  frameTime: number
-  cullingTime: number
-  matrixCalculationTime: number
-  visibleObjectCount: number
-  culledObjectCount: number
-  frustumTestCount: number
-}
-```
-
-**특징:**
-- 매 프레임(60fps) 업데이트
-- Three.js Camera에서 직접 계산
-- 매트릭스 연산 결과
-- React 상태 관리 절대 금지
-
-## 잘못된 분류 예시
-
-```typescript
-// ❌ 잘못된 분류 - 이런 값들이 Store에 있으면 안됨
-type WrongConfig = {
-  currentPosition: THREE.Vector3      // 매 프레임 변화 → Realtime State
-  isTransitioning: boolean            // 실시간 상태 → Realtime State  
-  visibleObjects: string[]            // 컬링 결과 → Realtime State
-  VIEWPORT_WIDTH: number              // 절대 불변 → Constants
-}
-```
-
-## 올바른 구현 패턴
-
-### Config 변경 시 (1회성)
-```typescript
-// Settings에서 camera distance 변경
-const updateCameraDistance = (distance: number) => {
-  cameraStore.setConfig({ distance })
-}
-
-// Hook에서 감지하여 Core로 전달
-useEffect(() => {
-  cameraSystem.updateConfig(cameraStore.config)
-}, [cameraStore.config.distance])
-
-// Core에서 적용
-class CameraSystem {
-  updateConfig(config: CameraConfig) {
-    this.distance = config.distance
-    this.smoothing = config.smoothing
-    this.activeController = this.controllers.get(config.defaultController)
-  }
-}
-```
-
-### 실시간 카메라 계산 (매 프레임)
-```typescript
-// Core Layer - Store 접근 없이 기존 설정값 사용
-class CameraSystem {
-  update(deltaTime: number, targetPosition: THREE.Vector3) {
-    const controller = this.activeController
-    
-    const targetCameraPosition = controller.calculatePosition(
-      targetPosition,
-      this.distance,
-      this.height,
-      this.angle
-    )
-    
-    this.position.lerp(targetCameraPosition, this.smoothing * deltaTime)
-    this.lookAt.copy(targetPosition)
-    
-    this.camera.position.copy(this.position)
-    this.camera.lookAt(this.lookAt)
-    this.camera.updateMatrixWorld()
-    
-    this.updateFrustum()
-    this.performCulling()
-  }
+interface CameraSettings {
+  // Projection Settings (유니티: Camera Component)
+  fieldOfView: number;              // 기본: 75 (유니티: Field of View)
+  nearClipPlane: number;            // 기본: 0.1 (유니티: Near)
+  farClipPlane: number;             // 기본: 1000 (유니티: Far)
+  orthographicSize: number;         // 유니티: Size (Orthographic)
   
-  private updateFrustum() {
-    this.frustum.setFromProjectionMatrix(
-      this.camera.projectionMatrix.clone().multiply(this.camera.matrixWorldInverse)
-    )
-  }
-}
-```
-
-### 카메라 전환 (상태 기반)
-```typescript
-// Core Layer - 부드러운 카메라 전환
-class CameraTransitionManager {
-  startTransition(fromController: string, toController: string) {
-    this.isTransitioning = true
-    this.transitionProgress = 0
-    this.fromPosition = this.camera.position.clone()
-    this.toController = this.controllers.get(toController)
-  }
+  // Transform Settings
+  position: Vector3;                // 카메라 위치
+  rotation: Euler;                  // 카메라 회전
+  target: Vector3;                  // 바라볼 대상 (언리얼: Look At)
   
-  updateTransition(deltaTime: number) {
-    if (!this.isTransitioning) return
-    
-    this.transitionProgress += deltaTime / this.transitionDuration
-    
-    if (this.transitionProgress >= 1) {
-      this.completeTransition()
-    } else {
-      this.interpolateTransition()
-    }
-  }
+  // Follow Settings (Third Person)
+  followDistance: number;           // 기본: 10 (언리얼: Target Distance)
+  followHeight: number;             // 기본: 5 (수직 오프셋)
+  followSpeed: number;              // 기본: 5.0 (따라가기 속도)
 }
 ```
 
-### 카메라 컬링 시스템 (성능 최적화)
+### Camera Controller Settings  
 ```typescript
-// Core Layer - 절두체 컬링
-class CameraFrustumCuller {
-  performCulling(objects: THREE.Object3D[]) {
-    this.visibleObjects.clear()
-    this.culledObjects.clear()
-    
-    objects.forEach(object => {
-      object.updateMatrixWorld()
-      const boundingSphere = object.geometry?.boundingSphere
-      
-      if (boundingSphere && this.frustum.intersectsSphere(boundingSphere)) {
-        this.visibleObjects.add(object.uuid)
-        object.visible = true
-      } else {
-        this.culledObjects.add(object.uuid)
-        object.visible = false
-      }
-    })
-  }
+interface CameraControllerSettings {
+  // Control Mode (언리얼: Camera Style)
+  cameraMode: 'thirdPerson' | 'firstPerson' | 'topDown' | 'sideScroll' | 'free';
   
-  applyLOD(object: THREE.Object3D, distance: number) {
-    if (distance > CAMERA_CONSTANTS.LOD_DISTANCE_FAR) {
-      object.material = this.lowQualityMaterial
-    } else if (distance > CAMERA_CONSTANTS.LOD_DISTANCE_NEAR) {
-      object.material = this.mediumQualityMaterial
-    } else {
-      object.material = this.highQualityMaterial
-    }
-  }
+  // Input Settings (언리얼: Input Settings)
+  mouseSensitivity: number;         // 기본: 1.0 (마우스 민감도)
+  invertY: boolean;                 // Y축 반전
+  smoothing: number;                // 기본: 0.1 (카메라 부드러움)
+  
+  // Collision Settings (언리얼: Camera Collision)
+  enableCollision: boolean;         // 충돌 감지 활성화
+  collisionRadius: number;          // 기본: 0.5 (충돌 반지름)
+  collisionOffset: number;          // 기본: 0.1 (충돌 오프셋)
 }
 ```
 
-이 분류를 통해 카메라 성능 최적화와 부드러운 사용자 경험을 보장합니다. 
+### Third Person Camera Settings
+```typescript
+interface ThirdPersonCameraSettings {
+  // Distance Settings (언리얼: Spring Arm)
+  targetArmLength: number;          // 기본: 300 (언리얼: Target Arm Length)
+  minDistance: number;              // 기본: 2.0 (최소 거리)
+  maxDistance: number;              // 기본: 50.0 (최대 거리)
+  
+  // Angle Settings
+  pitchMin: number;                 // 기본: -80 (최소 피치)
+  pitchMax: number;                 // 기본: 80 (최대 피치)
+  yawSpeed: number;                 // 기본: 2.0 (요 속도)
+  pitchSpeed: number;               // 기본: 1.5 (피치 속도)
+  
+  // Lag Settings (언리얼: Camera Lag)
+  enableCameraLag: boolean;         // 카메라 지연 활성화
+  cameraLagSpeed: number;           // 기본: 10.0 (지연 속도)
+  cameraRotationLag: boolean;       // 회전 지연
+  cameraRotationLagSpeed: number;   // 기본: 10.0 (회전 지연 속도)
+}
+```
+
+## Quality Settings
+
+### Rendering Settings
+```typescript
+interface CameraRenderingSettings {
+  // Quality (유니티: Quality Settings)
+  renderQuality: 'low' | 'medium' | 'high' | 'ultra';
+  antiAliasing: 'none' | 'fxaa' | 'smaa' | 'msaa_2x' | 'msaa_4x';
+  
+  // Effects
+  enablePostProcessing: boolean;    // 포스트 프로세싱 활성화
+  enableBloom: boolean;             // 블룸 효과
+  enableVignette: boolean;          // 비네트 효과
+  enableMotionBlur: boolean;        // 모션 블러
+  
+  // Performance
+  cullingMask: string[];            // 렌더링할 레이어 (유니티: Culling Mask)
+  renderDistance: number;           // 렌더링 거리
+}
+```
+
+## User Controls
+
+### Player Camera Preferences
+```typescript
+interface PlayerCameraSettings {
+  // Accessibility
+  fieldOfViewScale: number;         // 기본: 1.0 (FOV 스케일)
+  uiScale: number;                  // 기본: 1.0 (UI 스케일)
+  enableCameraShake: boolean;       // 카메라 흔들림
+  
+  // Comfort Settings
+  motionSickness: 'none' | 'reduced' | 'comfort';
+  enableHeadBob: boolean;           // 머리 흔들림
+  mouseSmoothness: number;          // 마우스 부드러움
+  
+  // Debug
+  showCameraInfo: boolean;          // 카메라 정보 표시
+  showFrustum: boolean;             // 절두체 표시
+}
+```
+
+## Default Configuration
+
+```typescript
+export const DEFAULT_CAMERA_SETTINGS: CameraSettings = {
+  fieldOfView: 75,
+  nearClipPlane: 0.1,
+  farClipPlane: 1000,
+  orthographicSize: 5,
+  position: { x: 0, y: 5, z: 10 },
+  rotation: { x: -15, y: 0, z: 0 },
+  target: { x: 0, y: 0, z: 0 },
+  followDistance: 10,
+  followHeight: 5,
+  followSpeed: 5.0,
+};
+
+export const DEFAULT_CONTROLLER_SETTINGS: CameraControllerSettings = {
+  cameraMode: 'thirdPerson',
+  mouseSensitivity: 1.0,
+  invertY: false,
+  smoothing: 0.1,
+  enableCollision: true,
+  collisionRadius: 0.5,
+  collisionOffset: 0.1,
+};
+
+export const DEFAULT_THIRD_PERSON_SETTINGS: ThirdPersonCameraSettings = {
+  targetArmLength: 300,
+  minDistance: 2.0,
+  maxDistance: 50.0,
+  pitchMin: -80,
+  pitchMax: 80,
+  yawSpeed: 2.0,
+  pitchSpeed: 1.5,
+  enableCameraLag: true,
+  cameraLagSpeed: 10.0,
+  cameraRotationLag: true,
+  cameraRotationLagSpeed: 10.0,
+};
+```
+
+## Settings Overview
+
+### Camera Core Settings
+| 설정 | 기본값 | 범위 | 설명 |
+|------|--------|------|------|
+| fieldOfView | 75 | 10 - 120 | 시야각 (degrees) |
+| nearClipPlane | 0.1 | 0.01 - 10 | 근거리 클리핑 평면 |
+| farClipPlane | 1000 | 100 - 10000 | 원거리 클리핑 평면 |
+| followDistance | 10 | 2 - 50 | 추적 거리 |
+| followHeight | 5 | 0 - 20 | 수직 오프셋 |
+| followSpeed | 5.0 | 0.1 - 20.0 | 따라가기 속도 |
+
+### Camera Controller Settings
+| 설정 | 기본값 | 옵션 | 설명 |
+|------|--------|------|------|
+| cameraMode | 'thirdPerson' | thirdPerson/firstPerson/topDown/sideScroll/free | 카메라 모드 |
+| mouseSensitivity | 1.0 | 0.1 - 5.0 | 마우스 민감도 |
+| invertY | false | true/false | Y축 반전 |
+| smoothing | 0.1 | 0.0 - 1.0 | 카메라 부드러움 |
+| enableCollision | true | true/false | 충돌 감지 활성화 |
+| collisionRadius | 0.5 | 0.1 - 2.0 | 충돌 반지름 |
+
+### Third Person Settings
+| 설정 | 기본값 | 범위 | 설명 |
+|------|--------|------|------|
+| targetArmLength | 300 | 50 - 1000 | 타겟 암 길이 |
+| minDistance | 2.0 | 0.5 - 10.0 | 최소 거리 |
+| maxDistance | 50.0 | 10.0 - 200.0 | 최대 거리 |
+| pitchMin | -80 | -89 - 0 | 최소 피치 각도 |
+| pitchMax | 80 | 0 - 89 | 최대 피치 각도 |
+| enableCameraLag | true | true/false | 카메라 지연 활성화 |
+| cameraLagSpeed | 10.0 | 1.0 - 50.0 | 지연 속도 |
+
+### Rendering Quality
+| 품질 레벨 | Anti-aliasing | Post-processing | 권장 환경 |
+|----------|---------------|-----------------|-----------|
+| low | none | false | 저사양 디바이스 |
+| medium | fxaa | basic | 일반 PC |
+| high | smaa | enabled | 고사양 PC |
+| ultra | msaa_4x | full | 최고사양 PC |
+
+## Usage Example
+
+```typescript
+// 카메라 설정 변경
+const { updateCameraSettings } = useCameraStore();
+
+updateCameraSettings({
+  fieldOfView: 90,              // 더 넓은 시야각
+  mouseSensitivity: 1.5,        // 더 민감한 마우스
+  enableCollision: false        // 충돌 감지 비활성화
+});
+```
+
+## Camera Presets
+
+```typescript
+// 미리 정의된 카메라 프리셋
+export const CAMERA_PRESETS = {
+  cinematic: {
+    fieldOfView: 35,
+    followDistance: 15,
+    enableMotionBlur: true,
+    cameraLagSpeed: 5.0,
+  },
+  
+  action: {
+    fieldOfView: 90,
+    followDistance: 8,
+    enableMotionBlur: false,
+    cameraLagSpeed: 15.0,
+  },
+  
+  exploration: {
+    fieldOfView: 75,
+    followDistance: 12,
+    enableCollision: true,
+    renderDistance: 100,
+  }
+};
+``` 
