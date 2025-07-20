@@ -13,11 +13,9 @@ import { BuildingExample } from '../components/building';
 import { AIRPLANE_URL, CHARACTER_URL, S3, VEHICLE_URL, EXAMPLE_CONFIG } from '../config/constants';
 import '../style.css';
 import { useStateSystem } from '../../src/core/motions/hooks/useStateSystem';
-import { usePlayerWorldPosition } from '../../src/core/motions/hooks/usePlayerPosition';
-import { useKeyboard } from '../../src/core/hooks/useKeyboard';
+import { usePlayerPosition } from '../../src/core/motions/hooks/usePlayerPosition';
 import { WorldPageProps } from './types';
 import { SpeechBalloon } from '../../src/core/ui/components/SpeechBalloon';
-import { useUIConfigStore } from '../../src/core/ui/stores/UIConfigStore';
 
 export { S3 };
 
@@ -45,22 +43,15 @@ const cameraOption: CameraOptionType = {
 
 function CharacterWithSpeechBalloon() {
   const [showBalloon, setShowBalloon] = useState(true);
-  const [speechText, setSpeechText] = useState("안녕하세요! 👋");
   
-  // Use the player position hook
-  const playerPosition = usePlayerWorldPosition();
+  // Use motion bridge for real-time position updates
+  const { position: playerPosition } = usePlayerPosition({ updateInterval: 16 }); // ~60fps
   
   // Toggle speech balloon with 'T' key
   React.useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === 't' || e.key === 'T') {
         setShowBalloon(!showBalloon);
-      } else if (e.key === '1') {
-        setSpeechText("안녕하세요! 👋");
-      } else if (e.key === '2') {
-        setSpeechText("이 세계에 오신 것을 환영합니다!");
-      } else if (e.key === '3') {
-        setSpeechText("함께 모험을 떠나볼까요?");
       }
     };
     
@@ -72,9 +63,9 @@ function CharacterWithSpeechBalloon() {
     <>
       {showBalloon && (
         <SpeechBalloon
-          text={speechText}
+          text="안녕"
           position={playerPosition}
-          offset={new THREE.Vector3(0, 3, 0)}
+          offset={new THREE.Vector3(0, 5, 0)} // 고정 높이로 캐릭터 훨씬 위에
           visible={showBalloon}
         />
       )}
@@ -85,9 +76,7 @@ function CharacterWithSpeechBalloon() {
 export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
   const isInBuildingMode = useBuildingStore((state) => state.isInEditMode());
   const mode = useGaesupStore((state) => state.mode);
-      const { gameStates } = useStateSystem();
-  
-  useKeyboard();
+  const { gameStates } = useStateSystem();
   
   return (
     <>
@@ -199,27 +188,7 @@ export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
         />
         <RideableUIRenderer />
         
-        {/* Speech Balloon Info Panel */}
-        <div style={{ 
-          position: 'fixed', 
-          top: '20px', 
-          right: '20px', 
-          background: 'rgba(0,0,0,0.8)', 
-          color: 'white', 
-          padding: '15px',
-          borderRadius: '10px',
-          fontSize: '14px',
-          maxWidth: '250px',
-          zIndex: 1000
-        }}>
-          <h4 style={{ margin: '0 0 10px 0' }}>Speech Balloon 조작법</h4>
-          <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6' }}>
-            <li><strong>T</strong>: 말풍선 켜기/끄기</li>
-            <li><strong>1</strong>: "안녕하세요! 👋"</li>
-            <li><strong>2</strong>: "이 세계에 오신 것을 환영합니다!"</li>
-            <li><strong>3</strong>: "함께 모험을 떠나볼까요?"</li>
-          </ul>
-        </div>
+
       </GaesupWorld>
       {showEditor && <Editor />}
       {children}

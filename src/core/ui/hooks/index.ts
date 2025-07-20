@@ -1,1 +1,2 @@
-export { useMinimap } from './useMinimap'; 
+export { useMinimap } from './useMinimap';
+export { useSpeechBalloonPosition } from './useSpeechBalloonPosition'; 

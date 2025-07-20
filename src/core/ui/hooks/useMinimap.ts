@@ -22,7 +22,7 @@ export interface UseMinimapReturnType {
 }
 
 export const useMinimap = (props: MinimapProps): MinimapResult => {
-  const { activeState } = useStateSystem();
+      const { activeState } = useStateSystem();
   const minimapOption = useGaesupStore((state) => state.minimap);
   const tileGroups = useBuildingStore((state) => state.tileGroups);
   const sceneObjectsRef = useRef<Map<string, { position: THREE.Vector3; size: THREE.Vector3 }>>(new Map());
@@ -39,7 +39,7 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
   const isReady = !!(activeState.position && props);
 
   // Initialize MinimapSystem canvas
-  useEffect(() => {
+    useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas) {
       minimapSystem.current.setCanvas(canvas);

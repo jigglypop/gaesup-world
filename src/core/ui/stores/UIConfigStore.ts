@@ -49,15 +49,15 @@ const defaultConfig: UIConfig = {
   },
   speechBalloon: {
     enabled: true,
-    fontSize: 48,
-    padding: 20,
-    borderRadius: 15,
-    maxWidth: 300,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    textColor: 'white',
+    fontSize: 120,
+    padding: 30,
+    borderRadius: 80,
+    maxWidth: 100,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    textColor: '#000000',
     fadeDistance: 20,
-    scaleMultiplier: 0.01,
-    defaultOffset: { x: 0, y: 1, z: 0 },
+    scaleMultiplier: 2.0,
+    defaultOffset: { x: 0, y: 4.5, z: 0 },
   },
 };
 
