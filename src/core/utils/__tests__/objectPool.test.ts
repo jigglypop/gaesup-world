@@ -1,234 +1,441 @@
-import * as THREE from 'three';
-import { ThreeObjectPool } from '../objectPool';
+import { ObjectPool, PooledObject, ObjectPoolOptions } from '../objectPool';
 
-describe('ThreeObjectPool', () => {
-  let pool: ThreeObjectPool;
-  
-  beforeEach(() => {
-    pool = ThreeObjectPool.getInstance();
-    pool.clear();
-  });
-  
-  afterEach(() => {
-    pool.clear();
-  });
-  
-  describe('싱글톤 패턴', () => {
-    it('항상 같은 인스턴스를 반환해야 함', () => {
-      const instance1 = ThreeObjectPool.getInstance();
-      const instance2 = ThreeObjectPool.getInstance();
-      expect(instance1).toBe(instance2);
+// Mock classes for testing
+class MockPooledObject implements PooledObject {
+  public isInUse = false;
+  public data: string = '';
+
+  constructor(data: string = '') {
+    this.data = data;
+  }
+
+  reset(): void {
+    this.data = '';
+    this.isInUse = false;
+  }
+
+  dispose(): void {
+    this.data = '';
+  }
+}
+
+class MockComplexObject implements PooledObject {
+  public isInUse = false;
+  public value = 0;
+  public items: number[] = [];
+
+  constructor(value: number = 0) {
+    this.value = value;
+  }
+
+  reset(): void {
+    this.value = 0;
+    this.items = [];
+    this.isInUse = false;
+  }
+
+  dispose(): void {
+    this.items = [];
+  }
+}
+
+describe('ObjectPool', () => {
+  describe('Basic Pool Operations', () => {
+    test('should create pool with default options', () => {
+      const pool = new ObjectPool(() => new MockPooledObject());
+      
+      expect(pool.size).toBe(0);
+      expect(pool.available).toBe(0);
+      expect(pool.used).toBe(0);
     });
-  });
-  
-  describe('Vector3 풀링', () => {
-    it('Vector3 객체를 획득하고 반환할 수 있어야 함', () => {
-      const v1 = pool.acquireVector3();
-      expect(v1).toBeInstanceOf(THREE.Vector3);
-      expect(v1.x).toBe(0);
-      expect(v1.y).toBe(0);
-      expect(v1.z).toBe(0);
-      
-      v1.set(1, 2, 3);
-      pool.releaseVector3(v1);
-      
-      const v2 = pool.acquireVector3();
-      expect(v2).toBe(v1);
-      expect(v2.x).toBe(0);
-      expect(v2.y).toBe(0);
-      expect(v2.z).toBe(0);
-    });
-    
-    it('withVector3 헬퍼 메서드가 자동으로 객체를 반환해야 함', () => {
-      const result = pool.withVector3((v) => {
-        v.set(10, 20, 30);
-        return v.length();
-      });
-      
-      expect(result).toBeCloseTo(37.416, 2);
-      
-      const stats = pool.getStats();
-      expect(stats.vector3.inUse).toBe(0);
-    });
-    
-    it('풀이 비어있을 때 자동으로 확장되어야 함', () => {
-      const vectors: THREE.Vector3[] = [];
-      const initialStats = pool.getStats();
-      
-      for (let i = 0; i < initialStats.vector3.total + 5; i++) {
-        vectors.push(pool.acquireVector3());
-      }
-      
-      const expandedStats = pool.getStats();
-      expect(expandedStats.vector3.total).toBeGreaterThan(initialStats.vector3.total);
-      
-      vectors.forEach(v => pool.releaseVector3(v));
-    });
-    
-    it('최대 크기를 초과하지 않아야 함', () => {
-      const vectors: THREE.Vector3[] = [];
-      
-      for (let i = 0; i < 200; i++) {
-        vectors.push(pool.acquireVector3());
-      }
-      
-      const stats = pool.getStats();
-      expect(stats.vector3.total).toBe(200);
-      
-      expect(() => {
-        pool.acquireVector3();
-      }).toThrow('ObjectPool: Maximum size 200 reached');
-      
-      vectors.forEach(v => pool.releaseVector3(v));
-    });
-  });
-  
-  describe('Quaternion 풀링', () => {
-    it('Quaternion 객체를 올바르게 초기화해야 함', () => {
-      const q = pool.acquireQuaternion();
-      expect(q).toBeInstanceOf(THREE.Quaternion);
-      expect(q.x).toBe(0);
-      expect(q.y).toBe(0);
-      expect(q.z).toBe(0);
-      expect(q.w).toBe(1);
-      
-      q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
-      pool.releaseQuaternion(q);
-      
-      const q2 = pool.acquireQuaternion();
-      expect(q2).toBe(q);
-      expect(q2.w).toBe(1);
-    });
-    
-    it('withQuaternion 헬퍼가 예외 발생 시에도 객체를 반환해야 함', () => {
-      expect(() => {
-        pool.withQuaternion((q) => {
-          throw new Error('테스트 에러');
-        });
-      }).toThrow('테스트 에러');
-      
-      const stats = pool.getStats();
-      expect(stats.quaternion.inUse).toBe(0);
-    });
-  });
-  
-  describe('Euler 풀링', () => {
-    it('Euler 객체를 올바르게 재사용해야 함', () => {
-      const e1 = pool.acquireEuler();
-      e1.set(Math.PI, Math.PI / 2, Math.PI / 4);
-      
-      const rotationOrder = e1.order;
-      pool.releaseEuler(e1);
-      
-      const e2 = pool.acquireEuler();
-      expect(e2).toBe(e1);
-      expect(e2.x).toBe(0);
-      expect(e2.y).toBe(0);
-      expect(e2.z).toBe(0);
-      expect(e2.order).toBe(rotationOrder);
-    });
-  });
-  
-  describe('Matrix4 풀링', () => {
-    it('Matrix4 객체를 identity로 초기화해야 함', () => {
-      const m = pool.acquireMatrix4();
-      expect(m).toBeInstanceOf(THREE.Matrix4);
-      
-      const identity = new THREE.Matrix4();
-      expect(m.equals(identity)).toBe(true);
-      
-      m.makeRotationX(Math.PI / 2);
-      pool.releaseMatrix4(m);
-      
-      const m2 = pool.acquireMatrix4();
-      expect(m2).toBe(m);
-      expect(m2.equals(identity)).toBe(true);
-    });
-  });
-  
-  describe('동시성 테스트', () => {
-    it('여러 객체를 동시에 사용할 수 있어야 함', () => {
-      const objects = {
-        vectors: [] as THREE.Vector3[],
-        quaternions: [] as THREE.Quaternion[],
-        eulers: [] as THREE.Euler[],
-        matrices: [] as THREE.Matrix4[]
+
+    test('should create pool with custom options', () => {
+      const options: ObjectPoolOptions = {
+        initialSize: 5,
+        maxSize: 20,
+        growthSize: 3,
+        autoShrink: true,
+        shrinkThreshold: 0.25
       };
       
-      for (let i = 0; i < 10; i++) {
-        objects.vectors.push(pool.acquireVector3());
-        objects.quaternions.push(pool.acquireQuaternion());
-        objects.eulers.push(pool.acquireEuler());
-        objects.matrices.push(pool.acquireMatrix4());
-      }
+      const pool = new ObjectPool(() => new MockPooledObject(), options);
       
-      const stats = pool.getStats();
-      expect(stats.vector3.inUse).toBe(10);
-      expect(stats.quaternion.inUse).toBe(10);
-      expect(stats.euler.inUse).toBe(10);
-      expect(stats.matrix4.inUse).toBe(10);
+      expect(pool.size).toBe(5);
+      expect(pool.available).toBe(5);
+      expect(pool.used).toBe(0);
+    });
+
+    test('should acquire and release objects correctly', () => {
+      const pool = new ObjectPool(() => new MockPooledObject('test'));
       
-      objects.vectors.forEach(v => pool.releaseVector3(v));
-      objects.quaternions.forEach(q => pool.releaseQuaternion(q));
-      objects.eulers.forEach(e => pool.releaseEuler(e));
-      objects.matrices.forEach(m => pool.releaseMatrix4(m));
+      const obj1 = pool.acquire();
+      expect(obj1).toBeInstanceOf(MockPooledObject);
+      expect(obj1.isInUse).toBe(true);
+      expect(pool.used).toBe(1);
+      expect(pool.available).toBe(0);
       
-      const finalStats = pool.getStats();
-      expect(finalStats.vector3.inUse).toBe(0);
-      expect(finalStats.quaternion.inUse).toBe(0);
-      expect(finalStats.euler.inUse).toBe(0);
-      expect(finalStats.matrix4.inUse).toBe(0);
+      pool.release(obj1);
+      expect(obj1.isInUse).toBe(false);
+      expect(pool.used).toBe(0);
+      expect(pool.available).toBe(1);
+    });
+
+    test('should reuse released objects', () => {
+      const pool = new ObjectPool(() => new MockPooledObject());
+      
+      const obj1 = pool.acquire();
+      obj1.data = 'modified';
+      pool.release(obj1);
+      
+      const obj2 = pool.acquire();
+      expect(obj2).toBe(obj1); // Same object instance
+      expect(obj2.data).toBe(''); // Should be reset
     });
   });
-  
-  describe('성능 테스트', () => {
-    it('객체 풀링이 직접 생성보다 빨라야 함', () => {
+
+  describe('Pool Growth and Shrinking', () => {
+    test('should grow pool when all objects are in use', () => {
+      const pool = new ObjectPool(() => new MockPooledObject(), {
+        initialSize: 2,
+        growthSize: 3
+      });
+      
+      expect(pool.size).toBe(2);
+      
+      // Acquire all initial objects
+      const obj1 = pool.acquire();
+      const obj2 = pool.acquire();
+      
+      // This should trigger growth
+      const obj3 = pool.acquire();
+      
+      expect(pool.size).toBe(5); // 2 + 3 growth
+      expect(pool.used).toBe(3);
+      expect(pool.available).toBe(2);
+    });
+
+    test('should respect max size limit', () => {
+      const pool = new ObjectPool(() => new MockPooledObject(), {
+        initialSize: 1,
+        maxSize: 3,
+        growthSize: 5 // Larger than max would allow
+      });
+      
+      // Acquire objects to trigger growth
+      const obj1 = pool.acquire();
+      const obj2 = pool.acquire();
+      const obj3 = pool.acquire();
+      
+      expect(pool.size).toBe(3); // Should not exceed maxSize
+      
+      // Try to acquire one more - should still work but not grow
+      const obj4 = pool.acquire();
+      expect(obj4).toBeInstanceOf(MockPooledObject);
+      expect(pool.size).toBe(3);
+    });
+
+    test('should auto-shrink when enabled', () => {
+      const pool = new ObjectPool(() => new MockPooledObject(), {
+        initialSize: 10,
+        autoShrink: true,
+        shrinkThreshold: 0.3
+      });
+      
+      expect(pool.size).toBe(10);
+      
+      // Use only 2 objects, leaving 8 available (80% unused)
+      const obj1 = pool.acquire();
+      const obj2 = pool.acquire();
+      
+      // Trigger shrink check
+      pool.shrinkIfNeeded();
+      
+      expect(pool.size).toBeLessThan(10);
+    });
+
+    test('should not shrink below minimum threshold', () => {
+      const pool = new ObjectPool(() => new MockPooledObject(), {
+        initialSize: 5,
+        autoShrink: true,
+        shrinkThreshold: 0.8 // 80% unused threshold
+      });
+      
+      const obj = pool.acquire();
+      pool.shrinkIfNeeded();
+      
+      // Should maintain some minimum size
+      expect(pool.size).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Pool Statistics and Monitoring', () => {
+    test('should track pool statistics correctly', () => {
+      const pool = new ObjectPool(() => new MockPooledObject(), {
+        initialSize: 5
+      });
+      
+      expect(pool.size).toBe(5);
+      expect(pool.available).toBe(5);
+      expect(pool.used).toBe(0);
+      expect(pool.utilizationRate).toBe(0);
+      
+      const obj1 = pool.acquire();
+      const obj2 = pool.acquire();
+      
+      expect(pool.used).toBe(2);
+      expect(pool.available).toBe(3);
+      expect(pool.utilizationRate).toBeCloseTo(0.4);
+      
+      pool.release(obj1);
+      
+      expect(pool.used).toBe(1);
+      expect(pool.available).toBe(4);
+      expect(pool.utilizationRate).toBeCloseTo(0.2);
+    });
+
+    test('should provide performance metrics', () => {
+      const pool = new ObjectPool(() => new MockPooledObject());
+      
+      // Generate some activity
+      const objects: MockPooledObject[] = [];
+      for (let i = 0; i < 10; i++) {
+        objects.push(pool.acquire());
+      }
+      
+      objects.forEach(obj => pool.release(obj));
+      
+      const stats = pool.getStats();
+      expect(stats.totalAcquired).toBe(10);
+      expect(stats.totalReleased).toBe(10);
+      expect(stats.currentSize).toBeGreaterThan(0);
+      expect(stats.peakSize).toBeGreaterThanOrEqual(stats.currentSize);
+    });
+  });
+
+  describe('Object Lifecycle Management', () => {
+    test('should properly reset objects on release', () => {
+      const pool = new ObjectPool(() => new MockComplexObject());
+      
+      const obj = pool.acquire();
+      obj.value = 42;
+      obj.items = [1, 2, 3];
+      
+      pool.release(obj);
+      
+      expect(obj.value).toBe(0);
+      expect(obj.items).toEqual([]);
+      expect(obj.isInUse).toBe(false);
+    });
+
+    test('should dispose objects when pool is disposed', () => {
+      const pool = new ObjectPool(() => new MockPooledObject('test'));
+      
+      const obj1 = pool.acquire();
+      const obj2 = pool.acquire();
+      
+      pool.release(obj1);
+      
+      const disposeSpy = jest.spyOn(obj1, 'dispose');
+      const disposeSpy2 = jest.spyOn(obj2, 'dispose');
+      
+      pool.dispose();
+      
+      expect(disposeSpy).toHaveBeenCalled();
+      expect(disposeSpy2).toHaveBeenCalled();
+      expect(pool.size).toBe(0);
+    });
+
+    test('should handle objects without dispose method', () => {
+      class SimpleObject implements PooledObject {
+        isInUse = false;
+        reset() { this.isInUse = false; }
+      }
+      
+      const pool = new ObjectPool(() => new SimpleObject());
+      const obj = pool.acquire();
+      
+      expect(() => pool.dispose()).not.toThrow();
+    });
+  });
+
+  describe('Concurrent Access and Thread Safety', () => {
+    test('should handle rapid acquire/release cycles', () => {
+      const pool = new ObjectPool(() => new MockPooledObject(), {
+        initialSize: 1,
+        growthSize: 1
+      });
+      
+      const operations = 1000;
+      const objects: MockPooledObject[] = [];
+      
+      // Rapid acquisition
+      for (let i = 0; i < operations; i++) {
+        objects.push(pool.acquire());
+      }
+      
+      expect(pool.used).toBe(operations);
+      expect(pool.size).toBeGreaterThanOrEqual(operations);
+      
+      // Rapid release
+      objects.forEach(obj => pool.release(obj));
+      
+      expect(pool.used).toBe(0);
+      expect(pool.available).toBe(pool.size);
+    });
+
+    test('should maintain consistency under stress', () => {
+      const pool = new ObjectPool(() => new MockPooledObject(), {
+        initialSize: 10,
+        maxSize: 100
+      });
+      
+      const iterations = 100;
+      
+      for (let i = 0; i < iterations; i++) {
+        const acquired: MockPooledObject[] = [];
+        
+        // Acquire random number of objects
+        const acquireCount = Math.floor(Math.random() * 20) + 1;
+        for (let j = 0; j < acquireCount; j++) {
+          acquired.push(pool.acquire());
+        }
+        
+        // Release half of them
+        const releaseCount = Math.floor(acquired.length / 2);
+        for (let j = 0; j < releaseCount; j++) {
+          pool.release(acquired[j]);
+        }
+        
+        // Verify consistency
+        expect(pool.used + pool.available).toBe(pool.size);
+      }
+    });
+  });
+
+  describe('Custom Factory Functions', () => {
+    test('should work with parameterized factory', () => {
+      let counter = 0;
+      const pool = new ObjectPool(() => new MockPooledObject(`object-${++counter}`));
+      
+      const obj1 = pool.acquire();
+      const obj2 = pool.acquire();
+      
+      expect(obj1.data).toBe('object-1');
+      expect(obj2.data).toBe('object-2');
+    });
+
+    test('should handle factory that throws errors', () => {
+      let shouldThrow = false;
+      const pool = new ObjectPool(() => {
+        if (shouldThrow) throw new Error('Factory error');
+        return new MockPooledObject();
+      });
+      
+      // Normal operation
+      const obj1 = pool.acquire();
+      expect(obj1).toBeInstanceOf(MockPooledObject);
+      
+      // Factory throws
+      shouldThrow = true;
+      expect(() => pool.acquire()).toThrow('Factory error');
+    });
+  });
+
+  describe('Memory Management', () => {
+    test('should not cause memory leaks', () => {
+      const pool = new ObjectPool(() => new MockPooledObject());
+      
+      // Create and release many objects
+      for (let i = 0; i < 1000; i++) {
+        const obj = pool.acquire();
+        obj.data = `test-${i}`;
+        pool.release(obj);
+      }
+      
+      // Pool should not grow indefinitely
+      expect(pool.size).toBeLessThan(100);
+    });
+
+    test('should properly clean up references', () => {
+      const pool = new ObjectPool(() => new MockComplexObject());
+      
+      const obj = pool.acquire();
+      obj.items = new Array(1000).fill(0).map((_, i) => i);
+      
+      pool.release(obj);
+      
+      // Items should be cleared to prevent memory leaks
+      expect(obj.items).toEqual([]);
+    });
+  });
+
+  describe('Edge Cases and Error Handling', () => {
+    test('should handle releasing objects not from pool', () => {
+      const pool = new ObjectPool(() => new MockPooledObject());
+      const foreignObject = new MockPooledObject();
+      
+      expect(() => pool.release(foreignObject)).not.toThrow();
+    });
+
+    test('should handle double release gracefully', () => {
+      const pool = new ObjectPool(() => new MockPooledObject());
+      
+      const obj = pool.acquire();
+      pool.release(obj);
+      
+      expect(() => pool.release(obj)).not.toThrow();
+      expect(pool.used).toBe(0);
+      expect(pool.available).toBe(1);
+    });
+
+    test('should handle null/undefined factory', () => {
+      expect(() => new ObjectPool(null as any)).toThrow();
+      expect(() => new ObjectPool(undefined as any)).toThrow();
+    });
+
+    test('should handle invalid options gracefully', () => {
+      const invalidOptions = {
+        initialSize: -1,
+        maxSize: 0,
+        growthSize: -5
+      };
+      
+      const pool = new ObjectPool(() => new MockPooledObject(), invalidOptions);
+      
+      // Should still work with corrected values
+      expect(pool.size).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('Performance Benchmarks', () => {
+    test('pool should be faster than new object creation', () => {
       const iterations = 10000;
       
-      const directStart = performance.now();
-      for (let i = 0; i < iterations; i++) {
-        const v = new THREE.Vector3();
-        v.set(i, i, i);
-      }
-      const directTime = performance.now() - directStart;
+      // Measure pool performance
+      const pool = new ObjectPool(() => new MockPooledObject(), {
+        initialSize: 100
+      });
       
       const poolStart = performance.now();
       for (let i = 0; i < iterations; i++) {
-        const v = pool.acquireVector3();
-        v.set(i, i, i);
-        pool.releaseVector3(v);
+        const obj = pool.acquire();
+        pool.release(obj);
       }
-      const poolTime = performance.now() - poolStart;
+      const poolEnd = performance.now();
+      
+      // Measure direct creation performance
+      const directStart = performance.now();
+      for (let i = 0; i < iterations; i++) {
+        const obj = new MockPooledObject();
+        obj.dispose();
+      }
+      const directEnd = performance.now();
+      
+      const poolTime = poolEnd - poolStart;
+      const directTime = directEnd - directStart;
+      
+      // Pool should be faster (or at least not significantly slower)
       expect(poolTime).toBeLessThan(directTime * 2);
-    });
-  });
-  
-  describe('메모리 누수 방지', () => {
-    it('clear 메서드가 모든 객체를 정리해야 함', () => {
-      for (let i = 0; i < 50; i++) {
-        pool.acquireVector3();
-        pool.acquireQuaternion();
-      }
-      
-      pool.clear();
-      
-      const stats = pool.getStats();
-      expect(stats.vector3.total).toBe(0);
-      expect(stats.quaternion.total).toBe(0);
-      expect(stats.euler.total).toBe(0);
-      expect(stats.matrix4.total).toBe(0);
-    });
-    
-    it('이미 반환된 객체를 다시 반환해도 안전해야 함', () => {
-      const v = pool.acquireVector3();
-      pool.releaseVector3(v);
-      
-      expect(() => {
-        pool.releaseVector3(v);
-      }).not.toThrow();
-      
-      const stats = pool.getStats();
-      expect(stats.vector3.available).toBe(stats.vector3.total);
     });
   });
 }); 
