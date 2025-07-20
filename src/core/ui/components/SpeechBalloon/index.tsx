@@ -27,7 +27,7 @@ function createRoundedRect(
   ctx.closePath();
 }
 
-// 간단한 흰 배경 생성 함수
+// 성능 최적화된 배경 생성 함수
 function createSimpleBackground(
   context: CanvasRenderingContext2D,
   x: number,
@@ -35,17 +35,20 @@ function createSimpleBackground(
   width: number,
   height: number,
   radius: number,
-  backgroundColor: string
+  backgroundColor: string,
+  borderWidth: number = 8,
+  borderColor: string = '#000000'
 ) {
   // 간단한 흰색 배경
   context.fillStyle = backgroundColor;
   createRoundedRect(context, x, y, width, height, radius);
   context.fill();
   
-  // 굵은 검정색 테두리
-  context.strokeStyle = '#000000';
-  context.lineWidth = 12;
-  createRoundedRect(context, x + 6, y + 6, width - 12, height - 12, radius);
+  // 설정 가능한 테두리
+  context.strokeStyle = borderColor;
+  context.lineWidth = borderWidth;
+  const halfBorder = borderWidth / 2;
+  createRoundedRect(context, x + halfBorder, y + halfBorder, width - borderWidth, height - borderWidth, radius);
   context.stroke();
 }
 
@@ -56,6 +59,8 @@ function createTextTexture({
   fontSize,
   padding,
   borderRadius,
+  borderWidth,
+  borderColor,
   maxWidth,
 }: {
   text: string;
@@ -64,6 +69,8 @@ function createTextTexture({
   fontSize: number;
   padding: number;
   borderRadius: number;
+  borderWidth: number;
+  borderColor: string;
   maxWidth: number;
 }): {
   texture: THREE.CanvasTexture;
@@ -74,12 +81,12 @@ function createTextTexture({
   try {
     // 매우 안전한 기본값 설정
     const safeText = String(text || "안녕");
-    const safeFontSize = Math.max(Math.floor(fontSize || 120), 40);
-    const safePadding = Math.max(Math.floor(padding || 30), 15);
+    const safeFontSize = Math.max(Math.floor(fontSize ?? 120), 40);
+    const safePadding = Math.max(Math.floor(padding ?? 30), 15);
     
-    // 더 큰 캔버스로 고해상도 - 큰 글씨에 맞춰 조정
-    const canvasWidth = 1024;  // 2^10
-    const canvasHeight = 512; // 2^9
+    // 성능 최적화를 위한 적당한 크기 캔버스
+    const canvasWidth = 512;  // 2^9
+    const canvasHeight = 256; // 2^8
     
     const canvas = document.createElement('canvas');
     canvas.width = canvasWidth;
@@ -94,37 +101,35 @@ function createTextTexture({
     // 캔버스 완전 초기화
     context.clearRect(0, 0, canvasWidth, canvasHeight);
     
-    // 간단한 배경 영역 - 큰 캔버스에 맞춰 조정
-    const boxWidth = canvasWidth - 120;
-    const boxHeight = canvasHeight - 120;
-    const boxX = 60;
-    const boxY = 60;
+    // 간단한 배경 영역 - 최적화된 크기
+    const boxWidth = canvasWidth - 60;
+    const boxHeight = canvasHeight - 60;
+    const boxX = 30;
+    const boxY = 30;
     
     // 간단한 흰색 배경 그리기
-    createSimpleBackground(context, boxX, boxY, boxWidth, boxHeight, borderRadius || 80, backgroundColor || 'rgba(255, 255, 255, 0.95)');
+    createSimpleBackground(
+      context, 
+      boxX, 
+      boxY, 
+      boxWidth, 
+      boxHeight, 
+      borderRadius ?? 80, 
+      backgroundColor ?? 'rgba(255, 255, 255, 0.95)',
+      borderWidth ?? 12,
+      borderColor ?? '#000000'
+    );
     
     // 텍스트 설정 - 기본 폰트 사용
     const fontFamily = 'Arial Black, Arial, sans-serif';
     
-    context.fillStyle = textColor || '#000000';
+    context.fillStyle = textColor ?? '#000000';
     context.font = `bold ${safeFontSize}px ${fontFamily}`;
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     
-    // 텍스트 그림자 효과 - 가독성을 위한 약간의 그림자
-    context.shadowColor = 'rgba(128, 128, 128, 0.3)';
-    context.shadowBlur = 2;
-    context.shadowOffsetX = 1;
-    context.shadowOffsetY = 1;
-    
-    // 텍스트를 캔버스 중앙에 그리기
+    // 성능 최적화: 그림자 제거, 단순 텍스트만 렌더링
     context.fillText(safeText, canvasWidth / 2, canvasHeight / 2);
-    
-    // 그림자 리셋
-    context.shadowColor = 'transparent';
-    context.shadowBlur = 0;
-    context.shadowOffsetX = 0;
-    context.shadowOffsetY = 0;
     
     // 텍스처 생성 - 뒤집힘 문제 해결
     const texture = new THREE.CanvasTexture(canvas);
@@ -165,6 +170,8 @@ export function SpeechBalloon({
   fontSize,
   padding,
   borderRadius,
+  borderWidth,
+  borderColor,
   maxWidth,
   visible = true,
   opacity = 1,
@@ -210,12 +217,14 @@ export function SpeechBalloon({
     
     const result = createTextTexture({
       text: safeText,
-      backgroundColor: backgroundColor || config.backgroundColor,
-      textColor: textColor || config.textColor,
-      fontSize: fontSize || config.fontSize,
-      padding: padding || config.padding,
-      borderRadius: borderRadius || config.borderRadius,
-      maxWidth: maxWidth || config.maxWidth,
+      backgroundColor: backgroundColor ?? config.backgroundColor,
+      textColor: textColor ?? config.textColor,
+      fontSize: fontSize ?? config.fontSize,
+      padding: padding ?? config.padding,
+      borderRadius: borderRadius ?? config.borderRadius,
+      borderWidth: borderWidth ?? config.borderWidth,
+      borderColor: borderColor ?? config.borderColor,
+      maxWidth: maxWidth ?? config.maxWidth,
     });
     
     if (result) {
@@ -230,7 +239,19 @@ export function SpeechBalloon({
         textureRef.current = null;
       }
     };
-  }, [text, backgroundColor, textColor, fontSize, padding, borderRadius, maxWidth, visible, config]);
+  }, [
+    text, 
+    backgroundColor ?? config.backgroundColor, 
+    textColor ?? config.textColor, 
+    fontSize ?? config.fontSize, 
+    padding ?? config.padding, 
+    borderRadius ?? config.borderRadius, 
+    borderWidth ?? config.borderWidth,
+    borderColor ?? config.borderColor,
+    maxWidth ?? config.maxWidth, 
+    visible, 
+    config.enabled
+  ]);
 
   const spriteMaterial = useMemo(() => {
     if (!textureData?.texture) return null;
@@ -247,31 +268,35 @@ export function SpeechBalloon({
     return material;
   }, [textureData, opacity]);
 
-  // Set initial scale once
+  // Set initial scale - config 변경 시 즉시 반영
   React.useEffect(() => {
     if (spriteRef.current && textureData) {
-      const baseScale = config.scaleMultiplier || 1.5;
-      // 새로운 캔버스 비율로 설정 (1024/512 = 2.0)
+      const baseScale = config.scaleMultiplier;
+      // 새로운 캔버스 비율로 설정 (512/256 = 2.0)
       const aspectRatio = 2.0;
       spriteRef.current.scale.set(baseScale * aspectRatio, baseScale, 1);
+      
+      // 이전 거리값 초기화하여 새 스케일이 즉시 적용되도록
+      prevDistanceRef.current = 0;
     }
   }, [textureData, config.scaleMultiplier]);
 
-  // 간단한 거리 기반 스케일링
-  useFrame(() => {
+    // Delta 기반 안정적인 스케일링 (미세진동 완전 제거)
+  useFrame((state, delta) => {
     if (!spriteRef.current || !textureData || !visible) return;
     
     frameCountRef.current++;
-    if (frameCountRef.current % 10 !== 0) return; // 더 적은 업데이트
+    if (frameCountRef.current % 30 !== 0) return; // 30프레임마다 체크 (약 0.5초)
     
     try {
       const currentPosition = spriteRef.current.position;
       const distance = camera.position.distanceTo(currentPosition);
       
-      if (Math.abs(distance - prevDistanceRef.current) > 1.0) {
-        const baseScale = config.scaleMultiplier || 1.5;
-        const distanceScale = Math.max(0.8, Math.min(1.5, 1 + distance * 0.01));
-        const scale = baseScale * distanceScale;
+      // 매우 큰 거리 변화에만 반응 (미세진동 완전 방지)
+      if (Math.abs(distance - prevDistanceRef.current) > 5.0) {
+        const baseScale = config.scaleMultiplier;
+        // 고정 스케일로 안정성 확보
+        const scale = baseScale;
         
         // 새로운 캔버스 비율 사용
         const aspectRatio = 2.0;

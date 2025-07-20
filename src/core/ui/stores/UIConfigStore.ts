@@ -49,9 +49,11 @@ const defaultConfig: UIConfig = {
   },
   speechBalloon: {
     enabled: true,
-    fontSize: 120,
+    fontSize: 80,
     padding: 30,
     borderRadius: 80,
+    borderWidth: 1,
+    borderColor: '#000000',
     maxWidth: 100,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     textColor: '#000000',

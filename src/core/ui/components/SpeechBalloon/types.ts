@@ -9,6 +9,8 @@ export interface SpeechBalloonProps {
   fontSize?: number;
   padding?: number;
   borderRadius?: number;
+  borderWidth?: number;
+  borderColor?: string;
   maxWidth?: number;
   visible?: boolean;
   opacity?: number;

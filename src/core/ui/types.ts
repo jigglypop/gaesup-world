@@ -88,6 +88,8 @@ export interface UIConfig {
     fontSize: number;
     padding: number;
     borderRadius: number;
+    borderWidth: number;
+    borderColor: string;
     maxWidth: number;
     backgroundColor: string;
     textColor: string;
