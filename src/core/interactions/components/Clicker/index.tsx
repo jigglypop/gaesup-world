@@ -18,6 +18,11 @@ export function Clicker() {
   const actions = queue.actions || [];
   const currentIndex = queue.currentIndex || 0;
   
+  // Check if player has reached the target (within 1 unit distance)
+  const distanceToTarget = playerPosition.distanceTo(mouseTarget);
+  const hasReachedTarget = distanceToTarget < 1.0;
+  const shouldShowMarker = isActive && !hasReachedTarget;
+  
   const queuePoints = actions.map(action => {
     if (action.type === 'move' && action.target) {
       return new THREE.Vector3(action.target.x, action.target.y, action.target.z);
@@ -26,14 +31,16 @@ export function Clicker() {
   }).filter(Boolean);
 
   // Start from player position
-  const allPoints = isActive ? [playerPosition, mouseTarget, ...queuePoints] : queuePoints.length > 0 ? [playerPosition, ...queuePoints] : [];
+  const allPoints = shouldShowMarker ? [playerPosition, mouseTarget, ...queuePoints] : queuePoints.length > 0 ? [playerPosition, ...queuePoints] : [];
 
   return (
     <group>
-      {/* Show target marker at mouse target position */}
-      <group position={mouseTarget}>
-        <TargetMarker />
-      </group>
+      {/* Show target marker only when active and not reached */}
+      {shouldShowMarker && (
+        <group position={mouseTarget}>
+          <TargetMarker />
+        </group>
+      )}
 
       {allPoints.length > 1 && (
         <PathLine 
