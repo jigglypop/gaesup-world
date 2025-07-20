@@ -300,6 +300,6 @@ export const BUILDING_PRESETS = {
     enablePBR: false,
     geometryComplexity: 'low',
     shadowQuality: 'low',
-  }
+    }
 };
 ``` 

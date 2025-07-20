@@ -1,4 +1,7 @@
+import { useEffect } from 'react';
+import * as THREE from 'three';
 import { InternalMinimapMarkerProps, MinimapObjectProps, MinimapPlatformProps } from './types';
+import { MinimapSystem } from '../../core/MinimapSystem';
 
 function MinimapMarker({
   id,
@@ -8,23 +11,23 @@ function MinimapMarker({
   type = 'normal',
   children,
 }: InternalMinimapMarkerProps) {
-//   useEffect(() => {
-//     const engine = MinimapSystem.getInstance();
-//     const pos = Array.isArray(position) ? position : [position.x, position.y, position.z];
-//     const sizeVec = Array.isArray(size) ? size : [size.x, size.y, size.z];
-//     
-//     engine.addMarker(
-//       id,
-//       type,
-//       text || '',
-//       new THREE.Vector3(pos[0], pos[1], pos[2]),
-//       new THREE.Vector3(sizeVec[0], sizeVec[1], sizeVec[2])
-//     );
-// 
-//     return () => {
-//       engine.removeMarker(id);
-//     };
-//   }, [id, position, size, type, text]);
+  useEffect(() => {
+    const engine = MinimapSystem.getInstance();
+    const pos = Array.isArray(position) ? position : [position.x, position.y, position.z];
+    const sizeVec = Array.isArray(size) ? size : [size.x, size.y, size.z];
+    
+    engine.addMarker(
+      id,
+      type,
+      text || '',
+      new THREE.Vector3(pos[0], pos[1], pos[2]),
+      new THREE.Vector3(sizeVec[0], sizeVec[1], sizeVec[2])
+    );
+
+    return () => {
+      engine.removeMarker(id);
+    };
+  }, [id, position, size, type, text]);
 
   return <>{children}</>;
 }

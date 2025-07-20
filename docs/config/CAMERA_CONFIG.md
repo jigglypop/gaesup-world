@@ -226,6 +226,6 @@ export const CAMERA_PRESETS = {
     followDistance: 12,
     enableCollision: true,
     renderDistance: 100,
-  }
+    }
 };
 ``` 
