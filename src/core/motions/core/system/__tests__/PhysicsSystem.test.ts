@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { PhysicsSystem, PhysicsUpdateArgs } from '../PhysicsSystem';
 import { PhysicsCalcProps, PhysicsState } from '../types';
-import { PhysicsConfigType } from '@/core/stores/slices/mode copy/types';
+import { PhysicsConfigType } from '@/core/stores/slices/physics/types';
 import { GameStatesType } from '@core/world/components/Rideable/types';
 
 // Mock dependencies

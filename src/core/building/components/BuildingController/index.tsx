@@ -21,6 +21,15 @@ export function BuildingController() {
   const isEditing = editMode !== 'none';
   const setHoverPosition = useBuildingStore((state) => state.setHoverPosition);
   const setWallRotation = useBuildingStore((state) => state.setWallRotation);
+  const initialized = useBuildingStore((state) => state.initialized);
+  const initializeDefaults = useBuildingStore((state) => state.initializeDefaults);
+  
+  // Initialize building data if not already initialized
+  useEffect(() => {
+    if (!initialized) {
+      initializeDefaults();
+    }
+  }, [initialized, initializeDefaults]);
 
   useEffect(() => {
     if (editMode !== 'wall') return;

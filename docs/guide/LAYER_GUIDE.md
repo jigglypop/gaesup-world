@@ -21,7 +21,7 @@ Layer 3 (UI)        Layer 2 (Hooks/Zustand)       Bridge        Layer 1 (Rapier/
 (Click) ──────────> | handleJump()          |
                     |                       |
                     | bridge.execute(JUMP)──+──────────────────> | ref.applyImpulse()          |
-                                                                 |                             |
+                                                                |                             |
 (useFrame) ~~~~~~~> | const snap =          |                    |                             |
                     | bridge.snapshot() <───+─────────────────── | ref.translation()           |
                     |                       |                    |                             |
@@ -39,9 +39,9 @@ Layer 3 (UI)        Layer 2 (Hooks/Zustand)       Bridge        Layer 1 (Rapier/
 
 ### **Layer 1: Core Layer (순수 로직)**
 
--   **역할**: 물리 계산, 3D 객체 조작 등 React와 무관한 모든 핵심 로직.
+-   **역할**: 물리 계산, 3D 객체 조작, 네트워크 통신 등 React와 무관한 모든 핵심 로직.
 -   **구성 요소**: `core/`, `behavior/`
--   **허용**: 순수 TS/JS 클래스, `THREE.js`, `Rapier`, `ref` 조작, `useFrame` 로직.
+-   **허용**: 순수 TS/JS 클래스, `THREE.js`, `Rapier`, `WebSocket`, `ref` 조작, `useFrame` 로직.
 -   **금지**: **React Hooks, Zustand Store 직접 접근, React 컴포넌트 import.**
 
 ### **Layer 2: State Management Layer (상태 관리)**
@@ -69,6 +69,7 @@ src/
 ├── core/                    # ❤️ Domain Layer: 각 도메인의 핵심 로직
 │   ├── motions/
 │   ├── animation/
+│   ├── networks/
 │   └── ...
 │
 ├── admin/
@@ -77,6 +78,6 @@ src/
 ```
 
 -   **`blueprints/`**: 캐릭터 스탯, 애니메이션 목록 등 게임의 모든 데이터를 정의하는 순수 TS 객체.
--   **`core/`**: 각 도메인(모션, 애니메이션 등)이 `blueprints`의 데이터를 "소비"하여 실제 로직을 구현하는 곳.
+-   **`core/`**: 각 도메인(모션, 애니메이션, 네트워크 등)이 `blueprints`의 데이터를 "소비"하여 실제 로직을 구현하는 곳.
 
 (상세한 가이드는 `BLUEPRINT_GUIDE.md`, `BRIDGE_GUIDE.md`, `HOOK_GUIDE.md` 참조)

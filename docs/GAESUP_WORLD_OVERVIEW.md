@@ -2,7 +2,7 @@
 
 ## 프로젝트 소개
 
-Gaesup World는 **React Three Fiber 기반의 3D 게임 엔진 프레임워크**입니다. 고성능 물리 시뮬레이션, 실시간 캐릭터 제어, 건축 시스템을 제공하며, Blueprint 기반의 데이터 중심 엔티티 관리 시스템을 특징으로 합니다.
+Gaesup World는 **React Three Fiber 기반의 3D 게임 엔진 프레임워크**입니다. 고성능 물리 시뮬레이션, 실시간 캐릭터 제어, 건축 시스템, 그리고 실시간 멀티플레이어 네트워킹을 제공하며, Blueprint 기반의 데이터 중심 엔티티 관리 시스템을 특징으로 합니다.
 
 ## 핵심 아키텍처
 
@@ -58,22 +58,27 @@ Layer 1 (Core/Engine)       → Three.js, Rapier Physics, 순수 로직
 - **시스템**: `BuildingSystem`, `TileSystem`, `WallSystem`
 - **컴포넌트**: `BuildingController`, `BuildingUI`, `GridHelper`
 
-### 8. **Blueprints Domain** (`src/blueprints/`)
+### 8. **Networks Domain** (`src/core/networks/`)
+- **역할**: 실시간 멀티플레이어 네트워킹
+- **시스템**: WebSocket 기반 플레이어 상태 동기화
+- **컴포넌트**: `ConnectionForm`, `MultiplayerCanvas`, `PlayerInfoOverlay`
+
+### 9. **Blueprints Domain** (`src/blueprints/`)
 - **역할**: 모든 게임 엔티티의 데이터 중심 정의 시스템
 - **구성요소**: `BlueprintRegistry`, `BlueprintFactory`, `BlueprintConverter`
 - **지원 타입**: Character, Vehicle, Airplane, Animation, Behavior, Item
 
-### 9. **Editor Domain** (`src/core/editor/`)
+### 10. **Editor Domain** (`src/core/editor/`)
 - **역할**: 개발자 도구 및 에디터 인터페이스
 - **컴포넌트**: `EditorLayout`, `ResizablePanel`, 각종 디버그 패널
 
-### 10. **Admin Domain** (`src/admin/`)
+### 11. **Admin Domain** (`src/admin/`)
 - **역할**: 관리자 인터페이스 및 인증 시스템
 - **기능**: 로그인, 사용자 관리, 시스템 모니터링
 
-### 11. **Examples** (`examples/`)
+### 12. **Examples** (`examples/`)
 - **역할**: 실제 사용 예제 및 데모
-- **페이지**: World, BuildingEditor, BlueprintEditor
+- **페이지**: World, BuildingEditor, BlueprintEditor, NetworkMultiplayer
 
 ## 주요 특징
 
@@ -131,6 +136,7 @@ const entity = useManagedEntity(bridge, id, ref, options);
 - [Interactions Domain](./INTERACTIONS_DOMAIN.md)
 - [World Domain](./WORLD_DOMAIN.md)
 - [Building Domain](./BUILDING_DOMAIN.md)
+- [Networks Domain](./NETWORKS_DOMAIN.md)
 - [Blueprints Domain](./BLUEPRINTS_DOMAIN.md)
 - [Editor Domain](./EDITOR_DOMAIN.md)
 - [Admin Domain](./ADMIN_DOMAIN.md)

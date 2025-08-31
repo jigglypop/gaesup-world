@@ -1,5 +1,16 @@
 import * as THREE from 'three';
 
+// 플레이어 상태 정보
+export interface PlayerState {
+  name: string;
+  color: string;
+  position: [number, number, number];
+  rotation: [number, number, number, number]; // Quaternion (w, x, y, z)
+  animation?: string;
+  velocity?: [number, number, number];
+  modelUrl?: string;
+}
+
 // NPC 네트워크 노드
 export interface NPCNetworkNode {
   id: string;
@@ -149,5 +160,48 @@ export interface NetworkConfig {
   // 메모리 관리
   messageGCInterval: number;
   connectionTimeout: number;
-  inactiveNodeCleanup: number;
+    inactiveNodeCleanup: number;
+}
+
+// 플레이어 상태는 이미 위에 정의됨
+
+// 멀티플레이어 설정 (기존 NetworkConfig 확장)
+export interface MultiplayerConfig extends NetworkConfig {
+  websocket: {
+    url: string;
+    reconnectAttempts: number;
+    reconnectDelay: number;
+    pingInterval: number;
+  };
+  tracking: {
+    updateRate: number;
+    velocityThreshold: number;
+    sendRateLimit: number;
+    interpolationSpeed: number;
+  };
+  rendering: {
+    nameTagHeight: number;
+    nameTagSize: number;
+    characterScale: number;
+  };
+}
+
+// 멀티플레이어 연결 옵션
+export interface MultiplayerConnectionOptions {
+  roomId: string;
+  playerName: string;
+  playerColor: string;
+  characterUrl?: string;
+}
+
+// 멀티플레이어 상태
+export interface MultiplayerState {
+  isConnected: boolean;
+  connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
+  players: Map<string, PlayerState>;
+  localPlayerId: string | null;
+  roomId: string | null;
+  error: string | null;
+  ping: number;
+  lastUpdate: number;
 } 

@@ -102,8 +102,8 @@ export class DirectionComponent {
     const { activeState } = physicsState;
     const keyboard = this.interactionSystem.getKeyboardRef();
     const { forward, backward, leftward, rightward } = keyboard;
-    const xAxis = Number(leftward) - Number(rightward);
-    const zAxis = Number(forward) - Number(backward);
+    const xAxis = Number(rightward) - Number(leftward);
+    const zAxis = Number(backward) - Number(forward);
 
     activeState.euler.y += xAxis * (Math.PI / 64);
 
@@ -133,8 +133,8 @@ export class DirectionComponent {
     let boost = 1;
     if (shift) boost *= accelRatio;
     if (space) boost *= 1.5;
-    const upDown = Number(backward) - Number(forward);
-    const leftRight = Number(rightward) - Number(leftward);
+    const upDown = Number(forward) - Number(backward);
+    const leftRight = Number(leftward) - Number(rightward);
     if (controlMode === 'chase') {
       activeState.euler.y += leftRight * angleDelta.y * 0.5;
     } else {
@@ -279,8 +279,8 @@ export class DirectionComponent {
     controlMode?: string,
   ): void {
     const { forward, backward, leftward, rightward } = keyboard;
-    const dirX = Number(leftward) - Number(rightward);
-    const dirZ = Number(forward) - Number(backward);
+    const dirX = Number(rightward) - Number(leftward);
+    const dirZ = Number(backward) - Number(forward);
     if (dirX === 0 && dirZ === 0) return;
     // 원래의 간단한 로직으로 복원
     const tempVector3 = this.vectorCache.getTempVector(5);

@@ -1,334 +1,78 @@
-# Blueprint Architecture
+# Blueprint 아키텍처 가이드
 
-## 개요
+이 문서는 `src/blueprints`에 위치한 데이터 중심 설계와 `src/core`의 각 도메인이 이 데이터를 어떻게 활용하여 상호작용하는지에 대한 가이드입니다.
 
-Blueprint는 게임 내 모든 엔티티(캐릭터, 차량, 아이템 등)의 데이터 정의를 중앙화한 시스템입니다. 도메인 독립적이며, 각 도메인은 필요한 부분만 선택적으로 소비합니다.
+## 1. 핵심 철학: 데이터 중심 설계 (Data-Driven Design)
 
-## 위치 및 구조
+-   **"코드가 아닌 데이터를 수정하라"**: 게임의 동작(캐릭터 스탯, 애니메이션, 물리 속성 등)을 변경할 때 코드를 수정하는 대신, **순수 데이터 파일(`Blueprint`)**을 수정하는 것을 원칙으로 합니다.
+-   **명확한 역할 분리**:
+    -   `src/blueprints`: 게임의 모든 것을 정의하는 **"설계도"**. 순수 TypeScript 객체로만 구성됩니다.
+    -   `src/core`: 설계도를 읽어 실제 로직을 실행하는 **"엔진"**.
 
-```
-src/blueprints/              # 최상위 레벨 (도메인 독립적)
-├── characters/              # 캐릭터 정의
-│   ├── warrior.ts
-│   ├── mage.ts
-│   ├── archer.ts
-│   └── types.ts
-├── vehicles/                # 탈것 정의
-│   ├── car.ts
-│   ├── airplane.ts
-│   ├── bike.ts
-│   └── types.ts
-├── animations/              # 애니메이션 시퀀스
-│   ├── combat/
-│   │   ├── sword-combo.ts
-│   │   └── magic-cast.ts
-│   ├── movement/
-│   │   ├── walk-cycle.ts
-│   │   └── jump-sequence.ts
-│   └── types.ts
-├── behaviors/               # AI/행동 패턴
-│   ├── npc/
-│   │   ├── merchant.ts
-│   │   └── guard.ts
-│   ├── enemy/
-│   │   ├── patrol.ts
-│   │   └── aggressive.ts
-│   └── types.ts
-├── items/                   # 아이템 정의
-│   ├── weapons/
-│   ├── consumables/
-│   └── types.ts
-├── types.ts                 # 공통 타입 정의
-└── index.ts                 # 공개 API
-```
+## 2. Blueprint 시스템의 구성 요소
 
-## 핵심 타입 정의
+### 가. `blueprints/types.ts`
+-   모든 Blueprint 타입(e.g., `CharacterBlueprint`, `VehicleBlueprint`)을 정의하는 중앙 허브입니다.
+-   새로운 종류의 엔티티를 추가하고 싶다면, 먼저 이곳에 타입을 정의해야 합니다.
 
-```typescript
-// types.ts
-export type Blueprint = {
-  id: string;                // 고유 식별자
-  name: string;              // 표시 이름
-  description?: string;      // 설명
-  version: string;           // 버전 관리
-  tags?: string[];           // 검색/필터링용 태그
-  metadata?: Record<string, unknown>;
-};
+### 나. `blueprints/characters`, `blueprints/vehicles` 등
+-   실제 데이터 파일이 위치하는 곳입니다.
+-   예: `warrior.ts`는 `CharacterBlueprint` 타입에 맞는 전사 캐릭터의 모든 데이터를 정의합니다.
 
-export type CharacterBlueprint = Blueprint & {
-  type: 'character';
-  
-  // 물리 속성 (motions 도메인에서 사용)
-  physics: {
-    mass: number;
-    height: number;
-    radius: number;
-    jumpForce: number;
-    moveSpeed: number;
-    runSpeed: number;
-    airControl: number;
-  };
-  
-  // 애니메이션 (animation 도메인에서 사용)
-  animations: {
-    idle: string | string[];
-    walk: string | string[];
-    run: string | string[];
-    jump: {
-      start: string;
-      loop: string;
-      land: string;
+    ```typescript
+    // src/blueprints/characters/warrior.ts
+    export const WARRIOR_BLUEPRINT: CharacterBlueprint = {
+      id: 'warrior',
+      type: 'character',
+      physics: { mass: 80, moveSpeed: 5 },
+      animations: { idle: 'warrior_idle.glb' },
+      // ...
     };
-    combat?: Record<string, string | string[]>;
-    special?: Record<string, string | string[]>;
-  };
-  
-  // 행동 트리 (npc/ai 도메인에서 사용)
-  behaviors?: {
-    type: 'state-machine' | 'behavior-tree';
-    data: unknown;
-  };
-  
-  // 능력치 (game-logic 도메인에서 사용)
-  stats: {
-    health: number;
-    stamina: number;
-    mana?: number;
-    strength: number;
-    defense: number;
-    speed: number;
-  };
-  
-  // 시각적 요소 (rendering 도메인에서 사용)
-  visuals?: {
-    model: string;
-    textures?: string[];
-    materials?: Record<string, unknown>;
-    scale?: number;
-  };
-};
+    ```
 
-export type VehicleBlueprint = Blueprint & {
-  type: 'vehicle';
-  
-  physics: {
-    mass: number;
-    maxSpeed: number;
-    acceleration: number;
-    braking: number;
-    turning: number;
-    suspension?: unknown;
-  };
-  
-  seats: Array<{
-    position: [number, number, number];
-    rotation?: [number, number, number];
-    isDriver: boolean;
-  }>;
-  
-  animations: {
-    idle: string;
-    moving?: string;
-    wheels?: string[];
-  };
-};
+### 다. `blueprints/registry.ts`
+-   프로젝트 내의 모든 Blueprint를 한곳에 모아 등록하는 **중앙 등록소**입니다.
+-   엔진이 특정 Blueprint를 찾을 때 이 등록소를 사용합니다. `BlueprintRegistry.get('warrior')`와 같이 ID로 쉽게 조회할 수 있습니다.
 
-export type AnimationSequence = Blueprint & {
-  type: 'animation-sequence';
-  
-  clips: Array<{
-    name: string;
-    file: string;
-    duration: number;
-    loop?: boolean;
-    events?: Array<{
-      time: number;
-      type: string;
-      data?: unknown;
-    }>;
-  }>;
-  
-  transitions?: Array<{
-    from: string;
-    to: string;
-    duration: number;
-    condition?: string;
-  }>;
-};
+### 라. `blueprints/factory/BlueprintFactory.ts`
+-   Blueprint 데이터를 기반으로 실제 게임 엔티티(Three.js 객체, Rapier Body 등)를 생성하는 **팩토리 클래스**입니다.
+-   `createCharacter(blueprint)`와 같은 메서드를 통해 데이터와 실제 월드 객체를 연결합니다.
 
-export type BehaviorTree = Blueprint & {
-  type: 'behavior-tree';
-  
-  root: BehaviorNode;
-  blackboard?: Record<string, unknown>;
-};
+## 3. 작동 흐름
 
-type BehaviorNode = {
-  type: 'sequence' | 'selector' | 'parallel' | 'action' | 'condition';
-  children?: BehaviorNode[];
-  action?: string;
-  condition?: string;
-  parameters?: Record<string, unknown>;
-};
+```mermaid
+graph TD
+    subgraph "1. Data Definition (blueprints)"
+        A[Blueprint Types<br/>(types.ts)] --> B{Character & Vehicle<br/>Blueprints};
+        B --> C[Blueprint Registry<br/>(registry.ts)];
+    end
+
+    subgraph "2. Entity Creation (core)"
+        D[useSpawnFromBlueprint<br/>(hook)] -- requests --> E[BlueprintFactory];
+        C -- provides data --> E;
+        E -- creates --> F[Character/Vehicle<br/>Entity];
+    end
+
+    subgraph "3. World"
+        F -- is added to --> G[3D World];
+    end
+
+    style B fill:#cde4ff
+    style C fill:#cde4ff
+    style E fill:#d5e8d4
+    style F fill:#d5e8d4
 ```
 
-## Blueprint 예시
+1.  **정의 (Definition)**: `blueprints` 폴더에서 캐릭터, 차량 등의 속성을 데이터로 정의하고 `BlueprintRegistry`에 등록합니다.
+2.  **생성 요청 (Request)**: React 컴포넌트에서 `useSpawnFromBlueprint` 같은 훅을 사용하여 'warrior' ID를 가진 엔티티 생성을 요청합니다.
+3.  **팩토리 작동 (Factory)**: `BlueprintFactory`는 `BlueprintRegistry`에서 'warrior' 데이터를 조회합니다.
+4.  **인스턴스화 (Instantiation)**: 조회된 데이터를 바탕으로 `MotionSystem`, `AnimationSystem` 등에 필요한 컴포넌트와 설정을 포함한 실제 게임 엔티티를 생성하여 월드에 추가합니다.
 
-```typescript
-// characters/warrior.ts
-export const WARRIOR_BLUEPRINT: CharacterBlueprint = {
-  id: 'char_warrior_basic',
-  name: 'Basic Warrior',
-  type: 'character',
-  version: '1.0.0',
-  tags: ['melee', 'tank', 'starter'],
-  
-  physics: {
-    mass: 80,
-    height: 1.8,
-    radius: 0.3,
-    jumpForce: 350,
-    moveSpeed: 5,
-    runSpeed: 10,
-    airControl: 0.2
-  },
-  
-  animations: {
-    idle: 'warrior_idle.glb',
-    walk: 'warrior_walk.glb',
-    run: 'warrior_run.glb',
-    jump: {
-      start: 'warrior_jump_start.glb',
-      loop: 'warrior_jump_loop.glb',
-      land: 'warrior_jump_land.glb'
-    },
-    combat: {
-      attack_light: ['attack_1.glb', 'attack_2.glb', 'attack_3.glb'],
-      attack_heavy: 'attack_heavy.glb',
-      block: 'block.glb',
-      parry: 'parry.glb'
-    }
-  },
-  
-  behaviors: {
-    type: 'state-machine',
-    data: {
-      initial: 'idle',
-      states: {
-        idle: {
-          on: {
-            MOVE: 'moving',
-            ATTACK: 'combat'
-          }
-        },
-        moving: {
-          on: {
-            STOP: 'idle',
-            ATTACK: 'combat'
-          }
-        },
-        combat: {
-          on: {
-            FINISH: 'idle'
-          }
-        }
-      }
-    }
-  },
-  
-  stats: {
-    health: 100,
-    stamina: 50,
-    strength: 15,
-    defense: 12,
-    speed: 10
-  },
-  
-  visuals: {
-    model: 'warrior_model.glb',
-    textures: ['warrior_diffuse.png', 'warrior_normal.png'],
-    scale: 1.0
-  }
-};
-```
+## 4. 왜 이 구조를 사용하는가?
 
-## 도메인별 Blueprint 사용
+-   **생산성**: 기획자나 디자이너가 코드 베이스를 깊이 이해하지 않고도 `blueprints` 폴더의 데이터만 수정하여 게임 밸런스를 맞추거나 콘텐츠를 추가할 수 있습니다.
+-   **유지보수**: 로직과 데이터가 분리되어 있어, 특정 캐릭터의 움직임을 수정하고 싶을 때 `motions` 코드를 건드리는 대신 해당 캐릭터의 `Blueprint` 파일만 변경하면 됩니다.
+-   **확장성**: 새로운 종류의 자동차를 추가하고 싶다면, `VehicleBlueprint` 형식에 맞는 데이터 파일을 추가하고 `registry`에 등록하기만 하면 됩니다. 코어 로직 변경이 필요 없습니다.
+-   **협업**: 프론트엔드 개발자는 코어 로직에, 게임 디자이너는 데이터에 집중하여 효율적인 협업이 가능합니다.
 
-### Motions 도메인
-```typescript
-// src/core/motions/hooks/useCharacterMotion.ts
-import { WARRIOR_BLUEPRINT } from '@blueprints/characters/warrior';
-
-function useCharacterMotion(blueprintId: string) {
-  const blueprint = getBlueprint(blueprintId);
-  
-  // physics 속성만 사용
-  return usePhysicsEntity({
-    mass: blueprint.physics.mass,
-    jumpForce: blueprint.physics.jumpForce,
-    moveSpeed: blueprint.physics.moveSpeed
-  });
-}
-```
-
-### Animation 도메인
-```typescript
-// src/core/animation/hooks/useCharacterAnimation.ts
-import { WARRIOR_BLUEPRINT } from '@blueprints/characters/warrior';
-
-function useCharacterAnimation(blueprintId: string) {
-  const blueprint = getBlueprint(blueprintId);
-  
-  // animations 속성만 사용
-  return useAnimationPlayer({
-    clips: blueprint.animations,
-    defaultClip: 'idle'
-  });
-}
-```
-
-### NPC 도메인
-```typescript
-// src/core/npc/hooks/useNPCBehavior.ts
-import { MERCHANT_BLUEPRINT } from '@blueprints/behaviors/npc/merchant';
-
-function useNPCBehavior(blueprintId: string) {
-  const blueprint = getBlueprint(blueprintId);
-  
-  // behaviors 속성만 사용
-  return useBehaviorTree(blueprint.behaviors);
-}
-```
-
-## Blueprint 시스템의 장점
-
-1. **중앙 집중화**: 모든 게임 데이터가 한 곳에
-2. **재사용성**: 동일한 데이터를 여러 시스템에서 공유
-3. **유지보수성**: 데이터 변경이 한 곳에서만 필요
-4. **확장성**: 새로운 Blueprint 타입 추가가 쉬움
-5. **타입 안정성**: TypeScript로 완전한 타입 정의
-6. **버전 관리**: 각 Blueprint에 버전 정보 포함
-7. **도메인 독립성**: 각 도메인은 필요한 부분만 선택적 사용
-
-## 모범 사례
-
-1. **명명 규칙**
-   - ID: `{type}_{category}_{name}` (예: `char_warrior_basic`)
-   - 파일명: kebab-case (예: `warrior-basic.ts`)
-   - 상수명: UPPER_SNAKE_CASE (예: `WARRIOR_BLUEPRINT`)
-
-2. **버전 관리**
-   - Semantic Versioning 사용 (예: `1.0.0`)
-   - Breaking changes는 major 버전 증가
-
-3. **데이터 검증**
-   - Blueprint 로드 시 스키마 검증
-   - 필수 필드 누락 검사
-
-4. **성능 최적화**
-   - Blueprint는 빌드 타임에 번들링
-   - 런타임에는 읽기 전용으로 사용
-
-5. **확장성**
-   - 새 필드는 optional로 추가
-   - 기존 필드 제거 시 deprecation 경고 
+이 아키텍처는 프로젝트가 커지고 복잡해지더라도 일관성과 유지보수 용이성을 유지하는 핵심적인 역할을 합니다. 

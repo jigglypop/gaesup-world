@@ -11,4 +11,10 @@ export * from './useNetworkMessage';
 export * from './useNetworkGroup';
 
 // 네트워크 통계 훅
-export * from './useNetworkStats'; 
+export * from './useNetworkStats';
+
+// 플레이어 네트워크 훅
+export * from './usePlayerNetwork';
+
+// 통합 멀티플레이어 훅
+export * from './useMultiplayer'; 

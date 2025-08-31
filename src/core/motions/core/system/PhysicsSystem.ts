@@ -6,7 +6,7 @@ import { ForceComponent } from '../forces/ForceComponent';
 import { AnimationController } from '../../controller/AnimationController';
 import { PhysicsState, PhysicsCalcProps } from '../types';
 import { GameStatesType } from '@core/world/components/Rideable/types';
-import { PhysicsConfigType } from '@/core/stores/slices/mode copy/types';
+import { PhysicsConfigType } from '@/core/stores/slices/physics/types';
 import { AbstractSystem, SystemUpdateArgs } from '@core/boilerplate';
 import { Profile, HandleError, RegisterSystem, ManageRuntime } from '@core/boilerplate';
 import { DirectionComponent, ImpulseComponent } from '../movement';
@@ -307,10 +307,10 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     const movement = new THREE.Vector3();
     const speedMultiplier = input.shift ? 2 : 1;
     const targetSpeed = (config.maxSpeed ?? 10) * speedMultiplier;
-    if (input.forward) movement.z -= 1;
-    if (input.backward) movement.z += 1;
-    if (input.leftward) movement.x -= 1;
-    if (input.rightward) movement.x += 1;
+    if (input.forward) movement.z += 1;
+    if (input.backward) movement.z -= 1;
+    if (input.leftward) movement.x += 1;
+    if (input.rightward) movement.x -= 1;
     if (movement.length() > 0) {
       movement.normalize().multiplyScalar(targetSpeed * deltaTime);
       gameStates.isRunning = input.shift;

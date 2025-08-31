@@ -5,6 +5,7 @@ import { PhysicsEntity } from '../entities/refs/PhysicsEntity';
 import { EntityControllerProps } from './types';
 import { useStateSystem } from '../hooks/useStateSystem';
 import { useGenericRefs } from '@hooks/useGenericRefs';
+import { useKeyboard } from '@hooks/useKeyboard';
 
 export function EntityController({ props, children }: EntityControllerProps) {
   const mode = useGaesupStore((state) => state.mode);
@@ -14,6 +15,9 @@ export function EntityController({ props, children }: EntityControllerProps) {
   const setRefs = useGaesupStore((state) => state.setRefs);
   const refs = useGenericRefs();
   const refsSetRef = useRef(false);
+  
+  // Initialize keyboard event listeners
+  useKeyboard();
 
   useEffect(() => {
     if (setRefs && !refsSetRef.current) {
