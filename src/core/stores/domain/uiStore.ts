@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+
 import { ModeSlice, UrlsSlice, SizesSlice, PerformanceState } from '../slices';
 import { createModeSlice, createUrlsSlice, createSizesSlice, createPerformanceSlice } from '../slices';
 

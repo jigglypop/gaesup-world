@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+
 import { CollisionEnterPayload, CollisionExitPayload } from '@react-three/rapier';
 
 export interface CollisionHandlerOptions {

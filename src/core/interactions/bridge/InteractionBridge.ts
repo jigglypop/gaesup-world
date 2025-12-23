@@ -1,30 +1,11 @@
 import * as THREE from 'three';
-import { InteractionSystem, KeyboardState, MouseState } from '../core/InteractionSystem';
-import { AutomationSystem } from '../core/AutomationSystem';
-import { InteractionSnapshot } from './types';
-import { Profile, HandleError, LogSnapshot, ValidateCommand, TrackCalls } from '@/core/boilerplate/decorators';
+
+import { HandleError, LogSnapshot, Profile } from '@/core/boilerplate/decorators';
 import { logger } from '@/core/utils/logger';
 
-export interface BridgeCommand {
-  type: 'input' | 'automation';
-  action: string;
-  data?: unknown;
-  timestamp?: number;
-}
-
-export interface BridgeState {
-  isActive: boolean;
-  lastCommand: BridgeCommand | null;
-  commandHistory: BridgeCommand[];
-  syncStatus: 'idle' | 'syncing' | 'error';
-}
-
-export interface BridgeEvent {
-  type: 'input' | 'automation' | 'sync';
-  event: string;
-  data?: unknown;
-  timestamp: number;
-}
+import type { BridgeCommand, BridgeEvent, BridgeState, InteractionSnapshot } from './types';
+import { AutomationSystem } from '../core/AutomationSystem';
+import { InteractionSystem, KeyboardState, MouseState } from '../core/InteractionSystem';
 
 export class InteractionBridge {
   private interactionSystem: InteractionSystem;

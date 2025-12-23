@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { useUIConfigStore } from '../../../src/core/ui/stores/UIConfigStore';
 
 export const SpeechBalloonSettings = () => {
@@ -12,9 +13,9 @@ export const SpeechBalloonSettings = () => {
         <p>키 조작:</p>
         <ul style={{ fontSize: '12px', margin: '5px 0' }}>
           <li>T: 말풍선 켜기/끄기</li>
-          <li>1: "안녕하세요! 👋"</li>
-          <li>2: "이 세계에 오신 것을 환영합니다!"</li>
-          <li>3: "함께 모험을 떠나볼까요?"</li>
+          <li>1: &quot;안녕하세요!&quot;</li>
+          <li>2: &quot;이 세계에 오신 것을 환영합니다!&quot;</li>
+          <li>3: &quot;함께 모험을 떠나볼까요?&quot;</li>
         </ul>
       </div>
       

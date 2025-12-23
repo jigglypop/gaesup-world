@@ -1,4 +1,7 @@
 import React, { useRef } from 'react';
+
+import type { RapierRigidBody } from '@react-three/rapier';
+
 import { 
   useMultiplayer,
   ConnectionForm,
@@ -9,7 +12,7 @@ import {
 import { CHARACTER_URL, VEHICLE_URL, AIRPLANE_URL } from '../config/constants';
 
 export function NetworkMultiplayerPage() {
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<RapierRigidBody | null>(null);
   const playerNameRef = useRef<string>('');
   
   const multiplayer = useMultiplayer({

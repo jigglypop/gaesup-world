@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { CameraController } from '../../../camera/components/CameraController';
-import { CameraPresets } from '../../../camera/components/CameraPresets';
-import { CameraDebugPanel } from '../../../camera/components/CameraDebugPanel';
+
 import { CameraPanelTab } from './types';
+import { CameraController } from '../../../camera/components/CameraController';
+import { CameraDebugPanel } from '../../../camera/components/CameraDebugPanel';
+import { CameraPresets } from '../../../camera/components/CameraPresets';
 
 export function CameraPanel() {
   const [activeTab, setActiveTab] = useState<CameraPanelTab>('Controller');

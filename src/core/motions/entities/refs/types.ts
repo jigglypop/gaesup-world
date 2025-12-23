@@ -1,4 +1,5 @@
 import { ComponentType, RefObject } from "react";
+
 import * as THREE from 'three';
 
 export type PartsGroupRefProps = {
@@ -28,6 +29,8 @@ export type InnerGroupRefType = {
     nodes: Record<string, THREE.Object3D>;
     url?: string;
     skeleton?: THREE.Skeleton | null;
+    componentType?: string;
+    modelYawOffset?: number;
     isActive?: boolean;
     ridingUrl?: string;
     offset?: THREE.Vector3;

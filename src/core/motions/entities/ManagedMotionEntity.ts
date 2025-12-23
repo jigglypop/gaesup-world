@@ -1,9 +1,11 @@
+import { RapierRigidBody } from '@react-three/rapier';
+import * as THREE from 'three';
+
 import { ManagedEntity, Autowired } from '@core/boilerplate';
+
 import { MotionBridge } from '../bridge/MotionBridge';
 import { MotionCommand, MotionEntity, MotionSnapshot, MotionConfig } from '../bridge/types';
 import { MotionType } from '../core/system/types';
-import { RapierRigidBody } from '@react-three/rapier';
-import * as THREE from 'three';
 
 export class ManagedMotionEntity extends ManagedEntity<MotionEntity, MotionSnapshot, MotionCommand> {
   @Autowired()

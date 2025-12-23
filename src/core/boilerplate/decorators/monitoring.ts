@@ -1,9 +1,9 @@
-import { logger } from '../../utils/logger';
 import {
   DecoratorTarget,
   PerformanceWithMemory,
   PropertyDescriptorExtended
 } from './types';
+import { logger } from '../../utils/logger';
 
 export function Profile(label?: string) {
   return function (
@@ -183,6 +183,7 @@ export function Timeout(ms: number) {
     propertyKey: string,
     descriptor: PropertyDescriptorExtended
   ) {
+    void target;
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: unknown[]) {

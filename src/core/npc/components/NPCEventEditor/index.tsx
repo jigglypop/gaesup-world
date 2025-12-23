@@ -1,7 +1,8 @@
 import { useState } from 'react';
+
+import { NPCEventEditorProps } from './types';
 import { useNPCStore } from '../../stores/npcStore';
 import { NPCEvent } from '../../types';
-import { NPCEventEditorProps } from './types';
 import './styles.css';
 
 export function NPCEventEditor({ instanceId, onClose }: NPCEventEditorProps) {

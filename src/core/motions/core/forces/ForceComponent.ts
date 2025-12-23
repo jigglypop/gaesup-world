@@ -1,8 +1,9 @@
 import { RapierRigidBody } from '@react-three/rapier';
-import { MotionConfig } from '../types';
+
+import type { PhysicsConfigType } from '@stores/slices';
 
 export abstract class ForceComponent {
-  protected abstract config: MotionConfig;
+  protected abstract config: PhysicsConfigType;
 
   public abstract update(
     rigidBody: RapierRigidBody,

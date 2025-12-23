@@ -1,9 +1,11 @@
 import { ThreeEvent } from '@react-three/fiber';
-import { V3 } from '@utils/vector';
 import * as THREE from 'three';
+
+import { V3 } from '@utils/vector';
+
 import { ClickerMoveOptions, ClickerResult } from './types';
-import { useStateSystem } from '../../motions/hooks/useStateSystem';
 import { InteractionBridge } from '../../interactions/bridge/InteractionBridge';
+import { useStateSystem } from '../../motions/hooks/useStateSystem';
 
 let globalBridge: InteractionBridge | null = null;
 

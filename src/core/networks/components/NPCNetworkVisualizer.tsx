@@ -1,7 +1,9 @@
 import React, { useRef, useEffect, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
+
 import { Line, Sphere, Text } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+
 import { useNetworkBridge } from '../hooks';
 import { NPCNetworkNode, NetworkConnection } from '../types';
 

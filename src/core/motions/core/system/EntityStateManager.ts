@@ -1,8 +1,10 @@
 import * as THREE from 'three';
+
+import { Profile, HandleError } from '@/core/boilerplate/decorators';
+import { GameStatesType } from '@core/world/components/Rideable/types';
+
 import { EntityStateRefs } from './types';
 import { ActiveStateType } from '../types';
-import { GameStatesType } from '@core/world/components/Rideable/types';
-import { Profile, HandleError } from '@/core/boilerplate/decorators';
 
 export class EntityStateManager {
   private refs: EntityStateRefs;

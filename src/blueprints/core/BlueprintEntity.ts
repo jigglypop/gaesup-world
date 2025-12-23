@@ -1,8 +1,10 @@
-import { BlueprintDefinition, IComponent, ComponentContext } from './types';
-import { ComponentRegistry } from './ComponentRegistry';
 import { RefObject } from 'react';
+
 import { RapierRigidBody } from '@react-three/rapier';
 import { Group } from 'three';
+
+import { ComponentRegistry } from './ComponentRegistry';
+import { BlueprintDefinition, IComponent, ComponentContext } from './types';
 
 export class BlueprintEntity {
   private id: string;

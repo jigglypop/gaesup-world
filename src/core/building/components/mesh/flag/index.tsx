@@ -1,7 +1,9 @@
+import { FC, useEffect, useRef } from "react";
+
 import { shaderMaterial, useTexture } from "@react-three/drei";
 import { extend, useFrame } from "@react-three/fiber";
-import { FC, useEffect, useRef } from "react";
 import * as THREE from "three";
+
 import fragmentShader from "./frag.glsl";
 import { FlagMeshProps } from "./type";
 import vertexShader from "./vert.glsl";
@@ -20,8 +22,8 @@ const FlagMaterial = shaderMaterial(
 
 extend({ FlagMaterial });
 
-export const FlagMesh: FC<FlagMeshProps> = ({ geometry, pamplet_url }) => {
-  const materialRef = useRef<any>();
+export const FlagMesh: FC<FlagMeshProps> = ({ geometry, pamplet_url, ...meshProps }) => {
+  const materialRef = useRef<any>(null);
 
   const texture = useTexture(
     pamplet_url || `./image/main/aggjack.webp`,
@@ -45,7 +47,7 @@ export const FlagMesh: FC<FlagMeshProps> = ({ geometry, pamplet_url }) => {
   }, [texture]);
 
   return (
-    <mesh geometry={geometry}>
+    <mesh geometry={geometry} {...meshProps}>
       <flagMaterial
         ref={materialRef}
         map={texture}
@@ -55,14 +57,6 @@ export const FlagMesh: FC<FlagMeshProps> = ({ geometry, pamplet_url }) => {
         side={THREE.DoubleSide}
         transparent
       />
-      {/* <meshStandardMaterial
-        ref={materialRef}
-        map={texture}
-        roughness={0.8}
-        envMapIntensity={1}
-        side={THREE.DoubleSide}
-        transparent
-      /> */}
     </mesh>
   );
 };

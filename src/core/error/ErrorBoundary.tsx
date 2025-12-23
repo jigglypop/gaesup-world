@@ -29,7 +29,7 @@ interface ErrorBoundaryProps {
 }
 
 export class GaesupErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = {
+  override state: ErrorBoundaryState = {
     hasError: false,
     error: null,
     errorInfo: null,

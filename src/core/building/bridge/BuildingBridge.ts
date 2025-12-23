@@ -1,5 +1,6 @@
-import { Position3D, Rotation3D, WallConfig, TileConfig, MeshConfig } from '../types';
 import { Profile, HandleError } from '@/core/boilerplate/decorators';
+
+import { Position3D, Rotation3D, WallConfig, TileConfig, MeshConfig } from '../types';
 
 type LegacyPosition = [number, number, number];
 type LegacyRotation = [number, number, number];
@@ -80,16 +81,21 @@ export class BuildingBridge {
   @HandleError()
   @Profile()
   static convertLegacyMesh(legacyMesh: LegacyMesh): MeshConfig {
-    return {
+    const mesh: MeshConfig = {
       id: legacyMesh.id || `mesh-${Date.now()}`,
       color: legacyMesh.color || '#ffffff',
       material: legacyMesh.material === 'GLASS' ? 'GLASS' : 'STANDARD',
-      mapTextureUrl: legacyMesh.map_texture_url,
-      normalTextureUrl: legacyMesh.normal_texture_url,
       roughness: legacyMesh.roughness || 0.5,
       metalness: legacyMesh.metalness || 0,
       opacity: legacyMesh.opacity || 1,
       transparent: legacyMesh.transparent || false,
     };
+    if (legacyMesh.map_texture_url) {
+      mesh.mapTextureUrl = legacyMesh.map_texture_url;
+    }
+    if (legacyMesh.normal_texture_url) {
+      mesh.normalTextureUrl = legacyMesh.normal_texture_url;
+    }
+    return mesh;
   }
 } 

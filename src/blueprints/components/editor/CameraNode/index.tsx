@@ -1,5 +1,5 @@
-import { Handle, Position } from 'reactflow';
 import { VscSymbolStructure } from 'react-icons/vsc';
+import { Handle, Position } from 'reactflow';
 import './styles.css';
 
 export function CameraNode({ data, id }: { data: any; id: string }) {

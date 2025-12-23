@@ -1,4 +1,5 @@
 import { StateCreator } from 'zustand';
+
 import { CameraOptionSlice } from './types';
 import { CAMERA_DEFAULTS } from '../../../core/constants';
 

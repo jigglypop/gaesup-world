@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
+
 import { useRideable } from '@hooks/useRideable';
 import { useGaesupStore } from '@stores/gaesupStore';
+
 import { RideableUIProps, RideablePropType } from './types';
-import { PassiveVehicle } from '../PassiveObjects/Vehicle';
 import { PassiveAirplane } from '../PassiveObjects/Airplane';
+import { PassiveVehicle } from '../PassiveObjects/Vehicle';
 import './styles.css';
 
 export function RideableUI({ states }: RideableUIProps) {

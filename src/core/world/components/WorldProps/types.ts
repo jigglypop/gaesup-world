@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+
 import { ClickEvent } from '@core/types/common';
 
 export type WorldPropsType = {

@@ -1,7 +1,8 @@
-import { AbstractBridge } from './AbstractBridge'
-import { IDisposable } from '../types'
 import 'reflect-metadata'
+
 import { logger } from '../../utils/logger'
+import { IDisposable } from '../types'
+import { AbstractBridge } from './AbstractBridge'
 
 const isProduction = process.env['NODE_ENV'] === 'production'
 const enableLogs = !isProduction && process.env['VITE_ENABLE_BRIDGE_LOGS'] !== 'false'

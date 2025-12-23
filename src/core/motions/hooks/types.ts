@@ -1,7 +1,11 @@
 import { RefObject } from 'react';
+
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
+
 import { PhysicsEntityProps } from '../entities/types';
+
+export type ResourceUrlsType = Record<string, string | undefined>;
 
 export interface UsePhysicsEntityProps
     extends Pick<

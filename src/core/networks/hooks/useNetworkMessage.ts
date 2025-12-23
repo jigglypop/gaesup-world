@@ -1,4 +1,5 @@
 import { useCallback, useRef, useEffect, useState } from 'react';
+
 import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
 import { NetworkMessage } from '../types';
 

@@ -1,4 +1,5 @@
 import { StateCreator } from 'zustand';
+
 import { RideableSlice } from './types';
 
 export const createRideableSlice: StateCreator<RideableSlice, [], [], RideableSlice> = (set) => ({
@@ -9,7 +10,8 @@ export const createRideableSlice: StateCreator<RideableSlice, [], [], RideableSl
     })),
   removeRideable: (key) =>
     set((state) => {
-      const { [key]: removed, ...rest } = state.rideable;
+      const rest = { ...state.rideable };
+      delete rest[key];
       return { rideable: rest };
     }),
 });

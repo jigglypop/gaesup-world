@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+
 import ReactFlow, { 
   Node, 
   Edge, 
@@ -12,12 +13,13 @@ import ReactFlow, {
   MarkerType,
   ReactFlowProvider
 } from 'reactflow';
+
 import 'reactflow/dist/style.css';
 import './styles.css';
 import { BlueprintType, BlueprintCategory } from './types';
+import { convertBlueprintToItem, generateNodesFromBlueprint } from './utils';
 import { blueprintRegistry, AnyBlueprint, CharacterBlueprint, VehicleBlueprint, AirplaneBlueprint, BlueprintWithComponents, BlueprintComponent } from '../../../';
 import { useSpawnFromBlueprint } from '../../../hooks/useSpawnFromBlueprint';
-import { convertBlueprintToItem, generateNodesFromBlueprint } from './utils';
 import { EditableNode } from '../../editor/EditableNode';
 import { NodeFieldValue, EditableNodeData } from '../../editor/EditableNode/types';
 
@@ -452,7 +454,7 @@ export const BlueprintPanel: React.FC = () => {
     
     const position = { x: centerX, y: centerY };
     
-    let nodeData: EditableNodeData = {
+    const nodeData: EditableNodeData = {
       title: availableNodeTypes.find(n => n.id === nodeType)?.name || nodeType,
       fields: {},
       onEdit: handleNodeEdit,

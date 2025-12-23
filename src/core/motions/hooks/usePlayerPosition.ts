@@ -1,10 +1,13 @@
 import { useRef, useState, useEffect } from 'react';
+
 import { useFrame } from '@react-three/fiber';
-import { BridgeFactory } from '@core/boilerplate';
-import { MotionBridge } from '../bridge/MotionBridge';
-import { useGaesupStore } from '@stores/gaesupStore';
-import { useStateSystem } from './useStateSystem';
 import * as THREE from 'three';
+
+import { BridgeFactory } from '@core/boilerplate';
+import { useGaesupStore } from '@stores/gaesupStore';
+
+import { useStateSystem } from './useStateSystem';
+import { MotionBridge } from '../bridge/MotionBridge';
 
 export interface UsePlayerPositionOptions {
   updateInterval?: number; // milliseconds, 0 means every frame

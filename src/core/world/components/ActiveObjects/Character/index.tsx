@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
-import { ObjectComponentProps } from '../types';
-import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
+
 import { useGenericRefs } from '@hooks/useGenericRefs';
+import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
+
+import { ObjectComponentProps } from '../types';
 
 export function Character({ 
   object, 
@@ -16,20 +18,26 @@ export function Character({
       refs.rigidBodyRef.current.setEnabledRotations(false, false, false, false);
     }
   }, [refs.rigidBodyRef]);
-  if (!object.metadata?.characterUrl) {
-    return null;
-  }
+
+  const characterUrl = object.metadata?.['characterUrl'];
+  if (typeof characterUrl !== 'string' || characterUrl.length === 0) return null;
+
+  const currentAnimationValue = object.metadata?.['currentAnimation'];
+  const currentAnimation = typeof currentAnimationValue === 'string' ? currentAnimationValue : 'idle';
+
+  const nameTagValue = object.metadata?.['nameTag'];
+  const nameTag = typeof nameTagValue === 'string' ? nameTagValue : undefined;
   
   return (
     <PhysicsEntity
-      url={object.metadata.characterUrl}
+      url={characterUrl}
       isActive={false}
       componentType="character"
       name={`active-character-${object.id}`}
       position={object.position}
       rotation={object.rotation}
       scale={object.scale}
-      currentAnimation={object.metadata?.currentAnimation || 'idle'}
+      currentAnimation={currentAnimation}
       ref={refs.rigidBodyRef}
       outerGroupRef={refs.outerGroupRef}
       innerGroupRef={refs.innerGroupRef}
@@ -42,9 +50,9 @@ export function Character({
         maxHealth: object.maxHealth,
         energy: object.energy,
         maxEnergy: object.maxEnergy,
-        nameTag: object.metadata?.nameTag
+        nameTag,
       }}
-      onCollisionEnter={(payload) => {
+      onCollisionEnter={() => {
         if (onSelect) {
           onSelect(object.id);
         }

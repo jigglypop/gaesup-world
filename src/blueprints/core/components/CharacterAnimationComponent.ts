@@ -1,5 +1,6 @@
-import { IComponent, ComponentContext } from '../types';
 import * as THREE from 'three';
+
+import { IComponent, ComponentContext } from '../types';
 
 export type CharacterAnimationProps = {
   animations: {

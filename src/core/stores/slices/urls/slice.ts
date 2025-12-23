@@ -1,4 +1,5 @@
 import { StateCreator } from 'zustand';
+
 import { UrlsSlice, UrlsState } from './types';
 
 const initialUrlsState: UrlsState = {

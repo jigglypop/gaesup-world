@@ -1,8 +1,8 @@
-import { GroupProps, ThreeEvent } from '@react-three/fiber';
+import type { ThreeElements, ThreeEvent } from '@react-three/fiber';
 
-export interface FocusableObjectProps extends GroupProps {
+export type FocusableObjectProps = ThreeElements['group'] & {
   focusDistance?: number;
   focusDuration?: number;
   onFocus?: (event: ThreeEvent<MouseEvent>) => void;
   onBlur?: (event: ThreeEvent<PointerEvent>) => void;
-} 
+};

@@ -1,16 +1,21 @@
 /// <reference types="vite/client" />
-/// <reference types="@react-three/fiber" />
-/// <reference types="three/examples/jsm/nodes/Nodes.js" />
 
-import { ThreeElements } from '@react-three/fiber'
+type ThreeElements = import("@react-three/fiber").ThreeElements;
 
-declare global {
-    namespace React {
-        namespace JSX {
-            interface IntrinsicElements extends ThreeElements {
-            }
-        }
+declare namespace JSX {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  interface IntrinsicElements extends ThreeElements {
+    water: any;
+  }
+}
+
+declare namespace React {
+  namespace JSX {
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+    interface IntrinsicElements extends ThreeElements {
+      water: any;
     }
+  }
 }
 
 declare module '*.glsl' {

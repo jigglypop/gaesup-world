@@ -1,19 +1,28 @@
-import { ModeSlice } from './slices/mode';
-import { UrlsSlice } from './slices/urls';
-import { SizesSlice } from './slices/sizes';
-import { RideableSlice } from './slices/rideable';
-import { PerformanceState } from './slices/performance';
 import { CameraOptionSlice } from '@core/camera/stores/slices/cameraOption';
-import { PhysicsSlice } from './slices/physics';
+import { AnimationSlice } from '@core/animation/stores/types';
+import { InteractionActions, InteractionSliceState } from '@core/interactions/stores/types';
+import { WorldSlice as WorldStateSlice } from '@core/world/stores/slices/worldStates/types';
 
-export type GaesupState = 
+import { ModeSlice } from './slices/mode';
+import { PerformanceState } from './slices/performance';
+import { PhysicsSlice } from './slices/physics';
+import { RideableSlice } from './slices/rideable';
+import { SizesSlice } from './slices/sizes';
+import { UrlsSlice } from './slices/urls';
+
+type AnimationStoreSlice = Omit<AnimationSlice, 'getAnimation' | 'getCurrentAnimation'>;
+
+export type GaesupState =
   ModeSlice &
   UrlsSlice &
   SizesSlice &
   RideableSlice &
   PerformanceState &
   CameraOptionSlice &
-  PhysicsSlice;
+  PhysicsSlice &
+  AnimationStoreSlice &
+  (InteractionSliceState & InteractionActions) &
+  WorldStateSlice;
 
 export type StoreState = GaesupState;
 

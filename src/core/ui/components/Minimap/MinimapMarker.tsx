@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
+
 import * as THREE from 'three';
+
 import { InternalMinimapMarkerProps, MinimapObjectProps, MinimapPlatformProps } from './types';
 import { MinimapSystem } from '../../core/MinimapSystem';
 

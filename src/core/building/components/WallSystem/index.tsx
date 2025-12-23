@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useRef } from 'react';
-import * as THREE from 'three';
+
 import { CuboidCollider } from '@react-three/rapier';
-import { WallGroupConfig, MeshConfig } from '../../types';
-import { MaterialManager } from '../../core/MaterialManager';
-import { TILE_CONSTANTS } from '../../types/constants';
+import * as THREE from 'three';
+
 import { WallSystemProps } from './types';
+import { MaterialManager } from '../../core/MaterialManager';
+import { MeshConfig } from '../../types';
+import { TILE_CONSTANTS } from '../../types/constants';
 
 export function WallSystem({ 
   wallGroup, 
   meshes, 
   isEditMode = false,
   onWallClick,
-  onWallDelete 
 }: WallSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
   const width = TILE_CONSTANTS.WALL_SIZES.WIDTH;
@@ -72,7 +73,7 @@ export function WallSystem({
 
   return (
     <>
-      {!isEditMode && wallGroup.walls.map((wall, index) => {
+      {!isEditMode && wallGroup.walls.map((wall) => {
         const rotationMatrix = new THREE.Matrix4().makeRotationY(wall.rotation.y);
         const centerPoint = new THREE.Vector3(0, 0, width / 2);
         centerPoint.applyMatrix4(rotationMatrix);

@@ -1,6 +1,40 @@
 import { StateCreator } from 'zustand';
+
 import { SaveLoadManager } from '../persistence/SaveLoadManager';
-import { SaveData, SaveLoadOptions, SaveMetadata } from '../persistence/types';
+import { SaveData, SaveLoadOptions, SaveMetadata, WorldSaveData } from '../persistence/types';
+
+type StoreApi<TState> = {
+  getState: () => TState;
+};
+
+type BuildingStoreState = {
+  wallGroups: Map<string, unknown>;
+  tileGroups: Map<string, unknown>;
+  meshes: Map<string, unknown>;
+};
+
+type NPCStoreState = {
+  instances: Map<string, unknown>;
+};
+
+type CameraStoreState = {
+  position: unknown;
+  rotation: unknown;
+  mode: unknown;
+  settings: unknown;
+};
+
+type GaesupStores = {
+  buildingStore?: StoreApi<BuildingStoreState>;
+  npcStore?: StoreApi<NPCStoreState>;
+  cameraStore?: StoreApi<CameraStoreState> & { setState: (state: Partial<CameraStoreState>) => void };
+};
+
+declare global {
+  interface Window {
+    __gaesupStores?: GaesupStores;
+  }
+}
 
 export interface PersistenceState {
   saveLoadManager: SaveLoadManager;
@@ -31,7 +65,7 @@ export const createPersistenceSlice: StateCreator<PersistenceState> = (set, get)
     set({ isSaving: true, lastError: null });
     
     try {
-      const { buildingStore, npcStore, cameraStore } = (window as any).__gaesupStores || {};
+      const { buildingStore, npcStore, cameraStore } = window.__gaesupStores || {};
       
       if (!buildingStore) {
         throw new Error('Building store not initialized');
@@ -59,7 +93,7 @@ export const createPersistenceSlice: StateCreator<PersistenceState> = (set, get)
           mode: cameraStore.getState().mode,
           settings: cameraStore.getState().settings
         } : undefined
-      };
+      } as WorldSaveData;
 
       const result = await get().saveLoadManager.save(worldData, metadata, options);
       
@@ -85,7 +119,7 @@ export const createPersistenceSlice: StateCreator<PersistenceState> = (set, get)
       const result = await get().saveLoadManager.load(saveId, options);
       
       if (result.success && result.data) {
-        const { buildingStore, npcStore, cameraStore } = (window as any).__gaesupStores || {};
+        const { buildingStore, npcStore, cameraStore } = window.__gaesupStores || {};
         
         if (buildingStore && result.data.world.buildings) {
           const state = buildingStore.getState();
@@ -141,7 +175,7 @@ export const createPersistenceSlice: StateCreator<PersistenceState> = (set, get)
     set({ isSaving: true, lastError: null });
     
     try {
-      const { buildingStore, npcStore, cameraStore } = (window as any).__gaesupStores || {};
+      const { buildingStore, npcStore, cameraStore } = window.__gaesupStores || {};
       
       if (!buildingStore) {
         throw new Error('Building store not initialized');
@@ -169,7 +203,7 @@ export const createPersistenceSlice: StateCreator<PersistenceState> = (set, get)
           mode: cameraStore.getState().mode,
           settings: cameraStore.getState().settings
         } : undefined
-      };
+      } as WorldSaveData;
 
       const result = await get().saveLoadManager.saveToFile(worldData, filename, metadata, options);
       
@@ -191,7 +225,7 @@ export const createPersistenceSlice: StateCreator<PersistenceState> = (set, get)
       const result = await get().saveLoadManager.loadFromFile(file, options);
       
       if (result.success && result.data) {
-        const { buildingStore, npcStore, cameraStore } = (window as any).__gaesupStores || {};
+        const { buildingStore, npcStore, cameraStore } = window.__gaesupStores || {};
         
         if (buildingStore && result.data.world.buildings) {
           const state = buildingStore.getState();

@@ -1,8 +1,13 @@
 import { useEffect, useMemo } from 'react';
+
+import { useInteractionSystem } from '@/core/motions/hooks/useInteractionSystem';
 import { useGaesupStore } from '@stores/gaesupStore';
+import type { AnimationAction } from 'three';
+
 import { useAnimationBridge } from '../../animation/hooks/useAnimationBridge';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
-import { useInteractionSystem } from '@/core/motions/hooks/useInteractionSystem';
+
+type AnimationActions = Record<string, AnimationAction | null | undefined>;
 
 export function useAnimationPlayer(active: boolean) {
   const { playAnimation, currentType, currentAnimation } = useAnimationBridge();

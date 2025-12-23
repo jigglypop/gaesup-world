@@ -1,10 +1,14 @@
 import { RefObject } from 'react';
+
 import { RapierRigidBody } from '@react-three/rapier';
-import { EntityStateManager } from '../system/EntityStateManager';
-import { InteractionSystem } from '@/core/interactions/core/InteractionSystem';
-import { PhysicsState } from '../../types';
-import { PhysicsConfigType } from '@stores/slices';
+
 import { Profile } from '@/core/boilerplate/decorators';
+import { InteractionSystem } from '@/core/interactions/core/InteractionSystem';
+import { PhysicsConfigType } from '@stores/slices';
+
+import { PhysicsState } from '../../types';
+import { EntityStateManager } from '../system/EntityStateManager';
+
 
 export class ImpulseComponent {
   private stateManager: EntityStateManager;

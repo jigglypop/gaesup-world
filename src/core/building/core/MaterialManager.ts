@@ -1,6 +1,8 @@
 import * as THREE from 'three';
-import { MeshConfig } from '../types';
+
 import { Profile, HandleError, MonitorMemory } from '@/core/boilerplate/decorators';
+
+import { MeshConfig } from '../types';
 
 export class MaterialManager {
   private materials: Map<string, THREE.Material> = new Map();

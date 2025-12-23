@@ -1,10 +1,14 @@
-import { AnimationSystem } from '../core/AnimationSystem'
-import { AnimationType } from '../core/types'
+import * as THREE from 'three'
+
+import { CoreBridge } from '@/core/boilerplate'
+
 import { AnimationCommand, AnimationSnapshot, AnimationMetrics } from './types'
 import { DomainBridge, EnableMetrics, Command } from '../../boilerplate/decorators'
 import { LogSnapshot, ValidateCommand, RequireEngineById, CacheSnapshot } from '../../boilerplate/decorators'
-import * as THREE from 'three'
-import { CoreBridge } from '@/core/boilerplate'
+import { AnimationSystem } from '../core/AnimationSystem'
+import { AnimationType } from '../core/types'
+
+
 
 @DomainBridge('animation')
 @EnableMetrics()

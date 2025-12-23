@@ -1,9 +1,8 @@
-import * as THREE from 'three';
 import {
-  ComponentType,
   ReactNode,
   RefObject
 } from 'react';
+
 import {
   CollisionEnterPayload,
   CollisionExitPayload,
@@ -12,6 +11,7 @@ import {
   RigidBodyProps,
   RigidBodyTypeString
 } from '@react-three/rapier';
+import * as THREE from 'three';
 
 export type ModelRendererProps = {
   nodes: Record < string, THREE.Object3D > ;
@@ -24,7 +24,7 @@ export type ModelRendererProps = {
 export type PartsGroupRefProps = {
   url: string;
   isActive: boolean;
-  componentType: ComponentType;
+  componentType: string;
   currentAnimation ? : string;
   color ? : string;
   skeleton ? : THREE.Skeleton | null;
@@ -51,9 +51,10 @@ export type PhysicsEntityProps = {
   name ? : string;
   position ? : THREE.Vector3 | [number, number, number];
   rotation ? : THREE.Euler | [number, number, number];
+  scale?: THREE.Vector3 | [number, number, number] | number;
   size?: { x: number; y: number; z: number };
   isActive: boolean;
-  componentType: ComponentType;
+  componentType: string;
   rigidbodyType ? : RigidBodyTypeString;
   groundRay ? : GroundRay;
   rigidBodyProps ? : RigidBodyProps;
@@ -73,6 +74,11 @@ export type PhysicsEntityProps = {
   enableRiding ? : boolean;
   ridingUrl ? : string;
   offset ? : THREE.Vector3;
+  /**
+   * 모델 자체의 전방축이 뒤집혀있는(GLTF 전방 -Z) 경우 보정용 yaw 오프셋
+   * - 기본값: componentType === 'character' ? Math.PI : 0 (InnerGroupRef에서 처리)
+   */
+  modelYawOffset?: number;
   currentAnimation ? : string;
   controllerOptions ? : {
     lerp: {

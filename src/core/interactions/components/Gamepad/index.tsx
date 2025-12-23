@@ -1,6 +1,7 @@
 import GamePadButton from './GamePadButton';
 import './styles.css';
-import { gameBoyDirectionType, gamepadType, GamepadProps } from './types';
+import { gamepadType } from './types';
+
 import { useKeyboard } from '@hooks/useKeyboard';
 import { useGaesupStore } from '@stores/gaesupStore';
 
@@ -44,16 +45,15 @@ export function GamePad(props: gamepadType) {
       className="gamepad-container"
       style={{
         ...gamePadStyle,
-        display: mode?.gamepad?.on ? 'flex' : 'none',
+        display: mode?.controller === 'gamepad' ? 'flex' : 'none',
       }}
     >
       {GamePadDirections.map((direction) => (
         <GamePadButton
           key={direction.key}
+          value={direction.key}
           name={direction.name}
-          type={direction.type as gameBoyDirectionType}
-          active={direction.active}
-          style={gamePadButtonStyle}
+          gamePadButtonStyle={gamePadButtonStyle}
         />
       ))}
     </div>

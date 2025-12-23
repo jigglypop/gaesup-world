@@ -1,10 +1,8 @@
-import { StateCreator } from 'zustand';
+  import { StateCreator } from 'zustand';
+
 import { WorldSlice, MeshType, TileType, WallType, NpcType, InteractableObjectType, TileGroupType, WallGroupType } from './types';
 
-export const createWorldSlice: StateCreator<WorldSlice, [], [], WorldSlice> = (
-  set,
-  get
-) => ({
+export const createWorldSlice: StateCreator<WorldSlice, [], [], WorldSlice> = (set) => ({
   meshes: new Map(),
   currentMeshId: null,
   addMesh: (mesh: MeshType) => {

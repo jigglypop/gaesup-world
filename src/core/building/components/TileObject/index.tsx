@@ -1,8 +1,9 @@
 import { lazy, Suspense } from 'react';
+
 import * as THREE from 'three';
-import { TileConfig } from '../../types';
-import { TILE_CONSTANTS } from '../../types/constants';
+
 import { TileObjectProps } from './types';
+import { TILE_CONSTANTS } from '../../types/constants';
 
 const Water = lazy(() => import('../mesh/water'));
 const Grass = lazy(() => import('../mesh/grass/Grass'));
@@ -39,7 +40,7 @@ export function TileObject({ tile }: TileObjectProps) {
             </mesh>
             <Flag 
               geometry={new THREE.PlaneGeometry(1.5, 1)}
-              pamplet_url={tile.objectConfig?.flagTexture}
+              pamplet_url={tile.objectConfig?.flagTexture ?? null}
               position={[0.75, 3, 0]}
             />
           </group>

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+
 import { rideableType } from '@hooks/useRideable/types';
 
 export interface RideableState {

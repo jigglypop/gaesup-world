@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+
 import { EntityAnimationStates, AnimationState } from '../core/types';
 
 export interface AnimationSlice {

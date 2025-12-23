@@ -1,5 +1,6 @@
-import { WorldObject, InteractionEvent } from '../core/WorldSystem';
 import * as THREE from 'three';
+
+import { WorldObject, InteractionEvent } from '../core/WorldSystem';
 
 export type WorldCommand = 
   | AddObjectCommand

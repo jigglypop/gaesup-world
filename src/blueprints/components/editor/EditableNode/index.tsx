@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+
 import { Handle, Position, NodeProps } from 'reactflow';
+
 import './styles.css';
 import { EditableNodeData, NodeFieldValue } from './types';
 

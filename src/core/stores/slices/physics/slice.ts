@@ -1,6 +1,7 @@
-import { StateCreator } from 'zustand';
-import { PhysicsSlice, PhysicsConfigType } from './types';
 import { Vector3 } from 'three';
+import { StateCreator } from 'zustand';
+
+import { PhysicsSlice, PhysicsConfigType } from './types';
 
 const initialState: PhysicsConfigType = {
     // character

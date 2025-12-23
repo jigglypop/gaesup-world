@@ -1,14 +1,17 @@
 import { useRef, useEffect, useMemo, useCallback } from 'react';
-import * as THREE from 'three';
+
 import { useGLTF } from '@react-three/drei';
-import { SkeletonUtils } from 'three-stdlib';
 import { extend } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
+import * as THREE from 'three';
+import { SkeletonUtils } from 'three-stdlib';
+
 import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
+
+import { NPCPartMeshProps, NPCInstanceProps } from './types';
 import { useNPCStore } from '../../stores/npcStore';
 import { NPCPart } from '../../types';
 import './styles.css';
-import { NPCPartMeshProps, NPCInstanceProps } from './types';
 
 extend(THREE);
 function NPCPartMesh({ part, instanceId }: NPCPartMeshProps) {
@@ -122,7 +125,7 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
       <PhysicsEntity
         url={fullModelUrl}
         isActive={false}
-        componentType={"character" as any}
+        componentType="character"
         name={`npc-${instance.id}`}
         position={instance.position}
         rotation={instance.rotation}
@@ -132,7 +135,7 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
           templateId: instance.templateId,
           nameTag: instance.metadata?.nameTag
         }}
-        onCollisionEnter={(payload) => {
+        onCollisionEnter={() => {
           if (onClick) onClick();
         }}
       >

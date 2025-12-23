@@ -1,33 +1,24 @@
 export type ModeType = 'character' | 'vehicle' | 'airplane';
 export type ControllerType = 'keyboard' | 'clicker' | 'gamepad';
-export type CameraType =
-  | 'chase'
-  | 'first-person'
-  | 'third-person'
-  | 'fixed'
+export type ControlType =
+  | 'thirdPerson'
+  | 'firstPerson'
+  | 'topDown'
+  | 'sideScroll'
   | 'isometric'
-  | 'top-down'
-  | 'side-scroll';
-
-export interface ControllerOptionsType {
-  sensitivity?: number;
-  invertY?: boolean;
-  deadzone?: number;
-  acceleration?: number;
-  maxSpeed?: number;
-  jumpHeight?: number;
-  enableVibration?: boolean;
-}
+  | 'fixed'
+  | 'chase';
 
 export interface ModeState {
-  modeType: ModeType;
-  controller: ControllerOptionsType;
-  camera: CameraType;
-  settings: {
-    showDebug: boolean;
-    enablePhysics: boolean;
-    enableAnimation: boolean;
-    qualityLevel: 'low' | 'medium' | 'high';
+  type: ModeType;
+  controller: ControllerType;
+  control: ControlType;
+}
+
+export interface ControllerOptionsType {
+  lerp: {
+    cameraTurn: number;
+    cameraPosition: number;
   };
 }
 

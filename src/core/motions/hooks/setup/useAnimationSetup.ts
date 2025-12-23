@@ -1,10 +1,13 @@
 import { useRef, useEffect } from 'react';
-import { getGlobalAnimationBridge } from '../../../animation/hooks/useAnimationBridge';
+
+import type { AnimationAction } from 'three';
+
 import { ModeType } from '@stores/slices';
-import { AnimationAction } from 'three';
+
+import { getGlobalAnimationBridge } from '../../../animation/hooks/useAnimationBridge';
 
 export function useAnimationSetup(
-  actions: Record<string, AnimationAction>,
+  actions: Record<string, AnimationAction | null> | undefined,
   modeType: ModeType,
   isActive: boolean
 ) {

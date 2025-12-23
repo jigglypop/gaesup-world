@@ -1,5 +1,3 @@
-import { NetworkMessage, NPCNetworkNode, NetworkConnection, NetworkGroup } from '../types';
-
 // 메시지 처리 결과
 export interface MessageProcessResult {
   success: boolean;
@@ -29,7 +27,7 @@ export interface GroupCreateOptions {
 export interface NetworkEvent {
   type: 'nodeConnected' | 'nodeDisconnected' | 'messageReceived' | 'groupJoined' | 'groupLeft';
   nodeId: string;
-  data?: any;
+  data?: unknown;
   timestamp: number;
 }
 

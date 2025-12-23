@@ -1,10 +1,12 @@
 import { useRef, useCallback, useEffect } from 'react';
-import { useGaesupStore } from '../../stores/gaesupStore';
-import { BridgeFactory } from '../../boilerplate';
-import { AnimationBridge } from '../bridge/AnimationBridge';
-import { AnimationType } from '../core/types';
+
 import * as THREE from 'three';
+
+import { BridgeFactory } from '../../boilerplate';
+import { useGaesupStore } from '../../stores/gaesupStore';
+import { AnimationBridge } from '../bridge/AnimationBridge';
 import { AnimationCommand } from '../bridge/types';
+import { AnimationType } from '../core/types';
 
 export function getGlobalAnimationBridge(): AnimationBridge {
   let bridge = BridgeFactory.get<AnimationBridge>('animation');

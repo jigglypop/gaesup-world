@@ -1,4 +1,3 @@
-import { ICameraController } from '../core/types';
 import {
   ThirdPersonController,
   FirstPersonController,
@@ -8,6 +7,7 @@ import {
   SideScrollController,
   FixedController
 } from '../controllers';
+import { ICameraController } from '../core/types';
 
 export type CameraControllerType = 
   | 'third-person'

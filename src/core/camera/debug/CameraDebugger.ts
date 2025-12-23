@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+
 import { Profile, HandleError, MonitorMemory } from '@/core/boilerplate/decorators';
 
 export interface CameraDebugInfo {

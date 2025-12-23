@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { AnimationController } from '../../../animation/components/AnimationController';
-import { AnimationPlayer } from '../../../animation/components/AnimationPlayer';
-import { AnimationDebugPanel } from '../../../animation/components/AnimationDebugPanel';
+
 import { AnimationPanelTab } from './types';
+import { AnimationController } from '../../../animation/components/AnimationController';
+import { AnimationDebugPanel } from '../../../animation/components/AnimationDebugPanel';
+import { AnimationPlayer } from '../../../animation/components/AnimationPlayer';
 
 export function AnimationPanel() {
   const [activeTab, setActiveTab] = useState<AnimationPanelTab>('Player');

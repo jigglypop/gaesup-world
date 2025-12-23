@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useGaesupStore } from '@stores/gaesupStore';
+
+import type { Vector3 } from 'three';
+
 import { useBuildingStore } from '../../building/stores/buildingStore';
+import { useStateSystem } from '../../motions/hooks/useStateSystem';
 import { MinimapProps, MinimapResult } from '../components/Minimap/types';
 import { MinimapSystem } from '../core';
-import { useStateSystem } from '../../motions/hooks/useStateSystem';
 
 const DEFAULT_SCALE = 5;
 const MIN_SCALE = 0.5;
@@ -23,15 +25,13 @@ export interface UseMinimapReturnType {
 
 export const useMinimap = (props: MinimapProps): MinimapResult => {
       const { activeState } = useStateSystem();
-  const minimapOption = useGaesupStore((state) => state.minimap);
   const tileGroups = useBuildingStore((state) => state.tileGroups);
-  const sceneObjectsRef = useRef<Map<string, { position: THREE.Vector3; size: THREE.Vector3 }>>(new Map());
+  const sceneObjectsRef = useRef<Map<string, { position: Vector3; size: Vector3 }>>(new Map());
   const minimapSystem = useRef(MinimapSystem.getInstance());
   
   const {
     scale: initialScale = DEFAULT_SCALE,
     blockRotate = false,
-    angle = 0,
     updateInterval = 33,
   } = props;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);

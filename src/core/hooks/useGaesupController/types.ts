@@ -1,11 +1,25 @@
-import { ModeType } from '../../stores/types';
-import { ActiveStateType } from '../../motions/core/types';
-import { ResourceUrlsType } from '../../motions/entities/types';
+import type { ActiveStateType } from '../../motions/core/types';
+import type { PhysicsEntityProps } from '../../motions/entities/types';
+import type { GameStatesType } from '../../world/components/Rideable/types';
+import type { ModeState, ControllerOptionsType } from '../../stores/slices/mode/types';
+import type { GaesupState } from '../../stores/types';
 
-export type gaesupPassivePropsType = {
-  state: ActiveStateType | null;
-  mode: ModeType | null;
-  urls: ResourceUrlsType;
-  currentAnimation: string;
-  children?: React.ReactNode;
+export type GaesupControllerProps = Omit<
+  PhysicsEntityProps,
+  'url' | 'isActive' | 'componentType'
+> & {
+  clickToMove?: boolean;
 };
+
+export interface UseGaesupControllerResult {
+  state: ActiveStateType | null;
+  mode: ModeState | null;
+  states: GameStatesType;
+  control: ControllerOptionsType;
+  context: {
+    mode: ModeState | null;
+    states: GameStatesType;
+    control: ControllerOptionsType;
+  };
+  controller: GaesupState;
+}

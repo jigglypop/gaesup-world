@@ -1,6 +1,8 @@
 import * as THREE from 'three';
-import { BaseSystem, SystemContext } from '@core/boilerplate/entity/BaseSystem';
+
 import { RegisterSystem, ManageRuntime, Profile, HandleError } from '@core/boilerplate/decorators';
+import { BaseSystem, SystemContext } from '@core/boilerplate/entity/BaseSystem';
+
 import { SpatialGrid } from './SpatialGrid';
 
 export interface WorldObject {
@@ -8,7 +10,7 @@ export interface WorldObject {
   position: THREE.Vector3;
   rotation: THREE.Euler;
   scale: THREE.Vector3;
-  type: 'active' | 'passive' | 'rideable' | 'static';
+  type: string;
   metadata?: Record<string, unknown>;
   boundingBox?: THREE.Box3;
   isActive?: boolean;
@@ -56,6 +58,7 @@ export class WorldSystem implements BaseSystem {
   @Profile()
   @HandleError()
   update(context: SystemContext): void {
+    void context;
     // 월드 업데이트 로직
     // 예: checkCollisions 등 주기적인 검사가 필요할 때 여기에 로직 추가
   }

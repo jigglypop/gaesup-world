@@ -1,4 +1,5 @@
 import { useState } from 'react';
+
 import { TABS, CONTROL_ITEMS, FEATURES, LOCATIONS } from './constants';
 import { TabId } from './types';
 import './styles.css';

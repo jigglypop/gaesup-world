@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { BlueprintCategory, BlueprintType } from '../types';
 
 export type CategoryTabsProps = {

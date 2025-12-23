@@ -1,5 +1,5 @@
-import { Handle, Position } from 'reactflow';
 import { VscVm } from 'react-icons/vsc';
+import { Handle, Position } from 'reactflow';
 import './styles.css';
 
 export function InputNode({ data, id }: { data: any; id: string }) {

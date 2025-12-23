@@ -1,10 +1,12 @@
-import { useGLTF } from '@react-three/drei';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+
+import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import { getPooledVector } from '../../utils/vector';
-import { useGaesupStore } from '../../stores/gaesupStore';
 import { GLTF } from 'three-stdlib';
+
 import { GltfAndSizeOptions, GltfAndSizeResult, GaesupGltfUtils, ResourceUrlsType } from './types';
+import { useGaesupStore } from '../../stores/gaesupStore';
+import { getPooledVector } from '../../utils/vector';
 
 const gltfCache = new Map<string, { gltf: GLTF; refCount: number; size: THREE.Vector3 }>();
 const defaultSize = new THREE.Vector3(1, 1, 1);

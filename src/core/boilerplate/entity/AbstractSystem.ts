@@ -1,4 +1,4 @@
-import { BaseState, BaseMetrics, SystemOptions, SystemUpdateArgs, IDisposable } from '../types';
+import { BaseState, BaseMetrics, SystemOptions, SystemUpdateArgs } from '../types';
 import { BaseSystem, SystemContext } from './BaseSystem';
 import { Profile, HandleError } from '../decorators';
 
@@ -97,10 +97,16 @@ export abstract class AbstractSystem<
         this.updateMetrics(args.deltaTime);
         this.afterUpdate(args);
     }
-    protected beforeUpdate(args: UpdateArgsType): void {}
+    protected beforeUpdate(args: UpdateArgsType): void {
+        void args;
+    }
     protected abstract performUpdate(args: UpdateArgsType): void;
-    protected afterUpdate(args: UpdateArgsType): void {}
-    protected updateMetrics(deltaTime: number): void {}
+    protected afterUpdate(args: UpdateArgsType): void {
+        void args;
+    }
+    protected updateMetrics(deltaTime: number): void {
+        void deltaTime;
+    }
     public getState(): Readonly<StateType> {
         return this.state;
     }

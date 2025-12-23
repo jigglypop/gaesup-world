@@ -11,7 +11,7 @@ export type gameBoyDirectionType = 'direction' | 'action';
 export type GamePadButtonType = {
   value: string;
   name: string;
-  gamePadButtonStyle?: CSSProperties;
+  gamePadButtonStyle?: CSSProperties | undefined;
 };
 
 export type GamepadProps = {

@@ -1,11 +1,13 @@
 import React from 'react';
+
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+
 import { GaesupAdmin } from '../src/admin';
 import './style.css';
 import { Navigation } from './components/nav/Navigation';
-import { WorldPage } from './pages/World';
-import { BuildingEditorPage } from './pages/BuildingEditorPage';
 import { BlueprintEditorPage } from './pages/BlueprintEditorPage';
+import { BuildingEditorPage } from './pages/BuildingEditorPage';
+import { WorldPage } from './pages/World';
 
 export default function App() {
   return (

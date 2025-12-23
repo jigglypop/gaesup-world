@@ -1,13 +1,16 @@
 import * as THREE from 'three';
+
+import { ManageRuntime } from '@/core/boilerplate/decorators';
+import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
+import { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
+import { BaseState, BaseMetrics } from '@/core/boilerplate/types';
+
 import {
   AnimationSystemState,
   AnimationSystemCallback
 } from './types';
 import { AnimationMetrics } from '../bridge/types';
-import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
-import { BaseState, BaseMetrics } from '@/core/boilerplate/types';
-import { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
-import { RegisterSystem, ManageRuntime } from '@/core/boilerplate/decorators';
+
 
 interface AnimationSystemMetrics extends BaseMetrics, AnimationMetrics {}
 interface AnimationSystemStateExt extends BaseState, AnimationSystemState {}
@@ -155,6 +158,7 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
   }
 
   protected override updateMetrics(deltaTime: number): void {
+    this.metrics.frameTime = deltaTime;
     this.metrics.activeAnimations = Array.from(this.state.actions.values())
       .filter(action => action.isRunning()).length;
     this.metrics.totalActions = this.state.actions.size;

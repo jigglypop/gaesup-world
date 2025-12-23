@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useRef } from 'react';
+
 import * as THREE from 'three';
-import { TileGroupConfig, MeshConfig } from '../../types';
-import { MaterialManager } from '../../core/MaterialManager';
+
+import { TileSystemProps } from './types';
 import { GaeSupProps } from '../../../index';
+import { MinimapSystem } from '../../../ui/core';
+import { MaterialManager } from '../../core/MaterialManager';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { TileObject } from '../TileObject';
-import { MinimapSystem } from '../../../ui/core';
-import { TileSystemProps } from './types';
 
 export function TileSystem({ 
   tileGroup, 
   meshes, 
   isEditMode = false,
   onTileClick,
-  onTileDelete 
 }: TileSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
 
@@ -66,43 +66,42 @@ export function TileSystem({
   }, [tileGroup.tiles]);
 
   useEffect(() => {
-    if (tileGroup.tiles.length > 0) {
-      const engine = MinimapSystem.getInstance();
-      const bounds = new THREE.Box3();
+    if (tileGroup.tiles.length === 0) return undefined;
+    const engine = MinimapSystem.getInstance();
+    const bounds = new THREE.Box3();
+    
+    tileGroup.tiles.forEach((tile) => {
+      const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+      const halfSize = tileSize / 2;
       
-      tileGroup.tiles.forEach((tile) => {
-        const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
-        const halfSize = tileSize / 2;
-        
-        bounds.expandByPoint(new THREE.Vector3(
-          tile.position.x - halfSize,
-          tile.position.y,
-          tile.position.z - halfSize
-        ));
-        bounds.expandByPoint(new THREE.Vector3(
-          tile.position.x + halfSize,
-          tile.position.y,
-          tile.position.z + halfSize
-        ));
-      });
-      
-      const center = new THREE.Vector3();
-      const size = new THREE.Vector3();
-      bounds.getCenter(center);
-      bounds.getSize(size);
-      
-      engine.addMarker(
-        `tile-group-${tileGroup.id}`,
-        'ground',
-        tileGroup.name || 'Tiles',
-        center,
-        size
-      );
-      
-      return () => {
-        engine.removeMarker(`tile-group-${tileGroup.id}`);
-      };
-    }
+      bounds.expandByPoint(new THREE.Vector3(
+        tile.position.x - halfSize,
+        tile.position.y,
+        tile.position.z - halfSize
+      ));
+      bounds.expandByPoint(new THREE.Vector3(
+        tile.position.x + halfSize,
+        tile.position.y,
+        tile.position.z + halfSize
+      ));
+    });
+    
+    const center = new THREE.Vector3();
+    const size = new THREE.Vector3();
+    bounds.getCenter(center);
+    bounds.getSize(size);
+    
+    engine.addMarker(
+      `tile-group-${tileGroup.id}`,
+      'ground',
+      tileGroup.name || 'Tiles',
+      center,
+      size
+    );
+    
+    return () => {
+      engine.removeMarker(`tile-group-${tileGroup.id}`);
+    };
   }, [tileGroup]);
 
   useEffect(() => {

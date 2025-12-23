@@ -1,7 +1,8 @@
-import { AnimationSlice } from './types';
-import { EntityAnimationStates } from '../core/types';
 import * as THREE from 'three';
 import { StateCreator } from 'zustand';
+
+import { AnimationSlice } from './types';
+import { EntityAnimationStates } from '../core/types';
 
 const initialAnimationState: EntityAnimationStates = {
   character: {
@@ -28,7 +29,7 @@ export const createAnimationSlice: StateCreator<
   [],
   [],
   Omit<AnimationSlice, 'getAnimation' | 'getCurrentAnimation'>
-> = (set, get) => ({
+> = (set) => ({
   animationState: initialAnimationState,
 
   setAnimation: (type: keyof EntityAnimationStates, animation: string) => {

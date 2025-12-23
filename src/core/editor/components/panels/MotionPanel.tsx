@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+
+import { MotionPanelTab } from './types';
 import { MotionController } from '../../../motions/controller/MotionController';
 import { MotionDebugPanel } from '../../../motions/ui/MotionDebugPanel';
-import { MotionPanelTab } from './types';
 
 export function MotionPanel() {
   const [activeTab, setActiveTab] = useState<MotionPanelTab>('Controller');

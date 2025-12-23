@@ -1,21 +1,21 @@
+import React, { Suspense, useState } from 'react';
+
 import { Environment, Grid } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { euler, Physics, RigidBody } from '@react-three/rapier';
-import React, { Suspense, useState } from 'react';
 import * as THREE from 'three';
+
+import { WorldPageProps } from './types';
 import { Clicker, GroundClicker, GaesupController, GaeSupProps, GaesupWorld, GaesupWorldContent, Editor, useGaesupStore, FocusableObject, MiniMap } from '../../src';
 import { BuildingController, useBuildingStore } from '../../src';
-import { BlueprintUI } from '../../src/blueprints';
+import { usePlayerPosition } from '../../src/core/motions/hooks/usePlayerPosition';
+import { useStateSystem } from '../../src/core/motions/hooks/useStateSystem';
 import { CameraOptionType } from '../../src/core/types/camera';
+import { SpeechBalloon } from '../../src/core/ui/components/SpeechBalloon';
 import { Platforms } from '../components/platforms';
 import { RideableUIRenderer, RideableVehicles } from '../components/rideable';
-import { BuildingExample } from '../components/building';
 import { AIRPLANE_URL, CHARACTER_URL, S3, VEHICLE_URL, EXAMPLE_CONFIG } from '../config/constants';
 import '../style.css';
-import { useStateSystem } from '../../src/core/motions/hooks/useStateSystem';
-import { usePlayerPosition } from '../../src/core/motions/hooks/usePlayerPosition';
-import { WorldPageProps } from './types';
-import { SpeechBalloon } from '../../src/core/ui/components/SpeechBalloon';
 
 export { S3 };
 

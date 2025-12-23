@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+
 import { NetworkConfig } from '../types';
 
 interface NetworkConfigStore {

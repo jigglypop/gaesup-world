@@ -1,10 +1,11 @@
 import { RefObject, useRef, useState, useEffect } from 'react';
+
 import { ManagedEntity } from '../entity/ManagedEntity';
 import { IDisposable, UseManagedEntityOptions } from '../types';
-import { useBaseLifecycle } from './useBaseLifecycle';
 import { useBaseFrame } from './useBaseFrame';
-import { DIContainer } from '../di';
+import { useBaseLifecycle } from './useBaseLifecycle';
 import { AbstractBridge } from '../bridge/AbstractBridge';
+import { DIContainer } from '../di';
 
 export function useManagedEntity<
   EngineType extends IDisposable,

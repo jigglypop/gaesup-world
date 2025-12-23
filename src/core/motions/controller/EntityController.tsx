@@ -1,52 +1,39 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo } from 'react';
+
 import { vec3 } from '@react-three/rapier';
-import { useGaesupStore } from '../../stores/gaesupStore';
-import { PhysicsEntity } from '../entities/refs/PhysicsEntity';
-import { EntityControllerProps } from './types';
-import { useStateSystem } from '../hooks/useStateSystem';
+
 import { useGenericRefs } from '@hooks/useGenericRefs';
 import { useKeyboard } from '@hooks/useKeyboard';
+
+import { EntityControllerProps } from './types';
+import { useGaesupStore } from '../../stores/gaesupStore';
+import { PhysicsEntity } from '../entities/refs/PhysicsEntity';
+import { useStateSystem } from '../hooks/useStateSystem';
+
 
 export function EntityController({ props, children }: EntityControllerProps) {
   const mode = useGaesupStore((state) => state.mode);
   const { gameStates } = useStateSystem();
   const rideable = useGaesupStore((state) => state.rideable);
   const urls = useGaesupStore((state) => state.urls);
-  const setRefs = useGaesupStore((state) => state.setRefs);
   const refs = useGenericRefs();
-  const refsSetRef = useRef(false);
   
   // Initialize keyboard event listeners
   useKeyboard();
-
-  useEffect(() => {
-    if (setRefs && !refsSetRef.current) {
-      setRefs({
-        rigidBodyRef: refs.rigidBodyRef,
-        colliderRef: refs.colliderRef,
-        outerGroupRef: refs.outerGroupRef,
-        innerGroupRef: refs.innerGroupRef,
-      });
-      refsSetRef.current = true;
-    }
-  }, [setRefs, refs]);
   if (!mode || !gameStates || !rideable || !urls) return null;
   const { canRide, isRiding, currentRideable } = gameStates;
   const rideableId = currentRideable?.id;
   const offset = useMemo(
-    () => (rideableId && rideable[rideableId] ? rideable[rideableId].offset : vec3()),
+    () => (rideableId ? rideable[rideableId]?.offset : undefined) ?? vec3(),
     [rideableId, rideable],
   );
   const getEntityProps = () => {
     const baseProps = {
       isActive: true,
       componentType: mode.type,
-      controllerOptions: props.controllerOptions,
       enableRiding: canRide,
       isRiderOn: isRiding,
-      groundRay: props.groundRay,
       offset,
-      children,
       ref: refs.rigidBodyRef,
       outerGroupRef: refs.outerGroupRef,
       innerGroupRef: refs.innerGroupRef,
@@ -55,16 +42,20 @@ export function EntityController({ props, children }: EntityControllerProps) {
       onFrame: props.onFrame || (() => {}),
       onReady: props.onReady || (() => {}),
       onDestory: props.onDestory || (() => {}),
-      rigidBodyProps: props.rigidBodyProps,
       parts: (props.parts || [])
         .filter((part): part is { url: string; color?: string } => !!part.url)
         .map((part) => ({ ...part, url: part.url })),
+      ...(props.rigidBodyProps ? { rigidBodyProps: props.rigidBodyProps } : {}),
+      ...(props.controllerOptions ? { controllerOptions: props.controllerOptions } : {}),
+      ...(props.groundRay ? { groundRay: props.groundRay } : {}),
+      ...(props.position ? { position: props.position } : {}),
+      ...(props.rotation ? { rotation: props.rotation } : {}),
+      ...(props.scale ? { scale: props.scale } : {}),
     };
 
+    const ridingUrl = isRiding && mode.type !== 'character' ? urls.ridingUrl : undefined;
     const ridingProps =
-      isRiding && mode.type !== 'character'
-        ? { ridingUrl: urls.ridingUrl }
-        : { ridingUrl: undefined };
+      typeof ridingUrl === 'string' && ridingUrl.length > 0 ? { ridingUrl } : {};
 
     switch (mode.type) {
       case 'character':
@@ -96,5 +87,5 @@ export function EntityController({ props, children }: EntityControllerProps) {
   if (mode.type === 'character' && gameStates.isRiding) {
     return null;
   }
-  return <PhysicsEntity {...entityProps} groundRay={props.groundRay as any} />;
+  return <PhysicsEntity {...entityProps}>{children}</PhysicsEntity>;
 }

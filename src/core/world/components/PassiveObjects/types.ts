@@ -1,10 +1,11 @@
-import { WorldObject } from '../../core/WorldSystem';
 import { ReactNode } from 'react';
-import { Vector3Tuple, QuaternionTuple } from 'three';
-import { RigidBody } from '@react-three/rapier';
-import { Euler, Group, Vector3, Quaternion } from 'three';
-import { RapierRigidBody, RigidBodyProps } from '@react-three/rapier';
+
+import type { RapierRigidBody, RigidBody } from '@react-three/rapier';
+import type { Group, QuaternionTuple, Vector3Tuple } from 'three';
+
 import { PayloadData } from '@core/types/common';
+
+import { WorldObject } from '../../core/WorldSystem';
 
 export type PassiveObject = WorldObject & {
   type: 'building' | 'tree' | 'rock' | 'item' | 'decoration' | 'terrain';

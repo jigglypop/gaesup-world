@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+
 import { useGaesupStore } from '@stores/gaesupStore';
+
 import { InteractionBridge } from '../../interactions/bridge/InteractionBridge';
 
 const KEY_MAPPING: Record<string, string> = {
-  KeyW: 'forward',
+  KeyW: 'backward',
   KeyA: 'leftward',
-  KeyS: 'backward',
+  KeyS: 'forward',
   KeyD: 'rightward',
   ShiftLeft: 'shift',
   Space: 'space',
@@ -30,6 +32,8 @@ export const useKeyboard = (
   enableClicker = true,
   cameraOption?: unknown,
 ) => {
+  void enableDiagonal;
+  void cameraOption;
   const automation = useGaesupStore((state) => state.automation);
   const stopAutomation = useGaesupStore((state) => state.stopAutomation);
   const bridgeRef = useRef<InteractionBridge | null>(null);
@@ -50,7 +54,11 @@ export const useKeyboard = (
           action: 'updateKeyboard',
           data: { [key]: value }
         });
-        value ? pressedKeys.current.add(key) : pressedKeys.current.delete(key);
+        if (value) {
+          pressedKeys.current.add(key);
+        } else {
+          pressedKeys.current.delete(key);
+        }
         return true;
       } catch (error) {
         console.error('Error updating keyboard state:', error);

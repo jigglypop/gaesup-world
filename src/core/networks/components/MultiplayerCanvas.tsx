@@ -1,7 +1,10 @@
-import React, { Suspense, useRef, useEffect } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React, { Suspense, useEffect } from 'react';
+
 import { Environment, Grid } from '@react-three/drei';
-import { Physics, euler, RigidBody } from '@react-three/rapier';
+import { Canvas } from '@react-three/fiber';
+import { Physics, euler, RigidBody, type RapierRigidBody } from '@react-three/rapier';
+
+import { RemotePlayer } from './RemotePlayer';
 import { 
   GaesupController, 
   GaesupWorld, 
@@ -9,15 +12,20 @@ import {
   Clicker, 
   GroundClicker
 } from '../../../index';
-import { RemotePlayer } from './RemotePlayer';
 import { PlayerState, MultiplayerConfig } from '../types';
+
+declare global {
+  interface Window {
+    CHARACTER_URL?: string;
+  }
+}
 
 interface MultiplayerCanvasProps {
   players: Map<string, PlayerState>;
   characterUrl: string;
   vehicleUrl: string;
   airplaneUrl: string;
-  playerRef: React.RefObject<any>;
+  playerRef: React.RefObject<RapierRigidBody>;
   config: MultiplayerConfig;
 }
 
@@ -32,7 +40,7 @@ export function MultiplayerCanvas({
   
   // CHARACTER_URL을 window에 설정
   useEffect(() => {
-    (window as any).CHARACTER_URL = characterUrl;
+    window.CHARACTER_URL = characterUrl;
   }, [characterUrl]);
 
   return (

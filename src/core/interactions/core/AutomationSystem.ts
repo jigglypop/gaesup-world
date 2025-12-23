@@ -1,6 +1,7 @@
-import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
-import { BaseState, BaseMetrics } from '@/core/boilerplate/types';
 import { RegisterSystem, ManageRuntime, Profile, HandleError } from '@/core/boilerplate/decorators';
+import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
+import type { BaseState, BaseMetrics, SystemUpdateArgs } from '@/core/boilerplate/types';
+
 import { AutomationState, AutomationConfig, AutomationMetrics, AutomationAction } from '../bridge/types';
 
 interface AutomationSystemState extends BaseState, AutomationState {}
@@ -37,31 +38,8 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
     this.eventCallbacks = new Map();
   }
 
-  private createDefaultState(): AutomationState {
-    return {
-      isActive: false,
-      queue: {
-        actions: [],
-        currentIndex: 0,
-        isRunning: false,
-        isPaused: false,
-        loop: false,
-        maxRetries: 3
-      },
-      currentAction: null,
-      executionStats: {
-        totalExecuted: 0,
-        successRate: 100,
-        averageTime: 0,
-        errors: []
-      },
-      settings: {
-        throttle: 100,
-        autoStart: false,
-        trackProgress: true,
-        showVisualCues: true
-      }
-    };
+  protected performUpdate(args: SystemUpdateArgs): void {
+    void args;
   }
 
   private createDefaultConfig(): AutomationConfig {
@@ -77,16 +55,6 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
         lineColor: '#00ff00',
         targetColor: '#ff0000'
       }
-    };
-  }
-
-  private createDefaultMetrics(): AutomationMetrics {
-    return {
-      queueLength: 0,
-      executionTime: 0,
-      performance: 100,
-      memoryUsage: 0,
-      errorRate: 0
     };
   }
 
@@ -133,16 +101,16 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
 
   @HandleError()
   @Profile()
-  start(): void {
+  override async start(): Promise<void> {
     if (this.state.queue.actions.length === 0) return;
     
     this.state.queue.isRunning = true;
     this.state.queue.isPaused = false;
     this.emit('automationStarted');
-    this.executeNext();
+    await this.executeNext();
   }
 
-  pause(): void {
+  override pause(): void {
     this.state.queue.isPaused = true;
     if (this.executionTimer) {
       clearTimeout(this.executionTimer);
@@ -151,7 +119,7 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
     this.emit('automationPaused');
   }
 
-  resume(): void {
+  override resume(): void {
     if (this.state.queue.isPaused) {
       this.state.queue.isPaused = false;
       this.emit('automationResumed');
@@ -250,7 +218,7 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
     this.state.executionStats.errors.push(`${action.id}: ${error.message}`);
     this.emit('actionError', { action, error });
     
-    const retryCount = (action.data?.retryCount as number) || 0;
+    const retryCount = (action.data?.['retryCount'] as number | undefined) ?? 0;
     if (retryCount < this.state.queue.maxRetries) {
       action.data = { ...action.data, retryCount: retryCount + 1 };
       this.executionTimer = window.setTimeout(() => this.executeNext(), this.config.retryDelay);

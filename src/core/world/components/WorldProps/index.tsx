@@ -1,8 +1,11 @@
 import { useEffect, useRef, useMemo } from 'react';
+
 import * as THREE from 'three';
-import { MinimapSystem } from '../../../ui/core';
+
 import { useClicker } from '@hooks/useClicker';
+
 import { WorldPropsType } from './types';
+import { MinimapSystem } from '../../../ui/core';
 
 export function WorldProps({ 
   type = 'normal', 

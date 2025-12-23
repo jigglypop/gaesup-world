@@ -1,12 +1,14 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, type RefObject } from 'react';
+
 import { useFrame } from '@react-three/fiber';
+import type { RapierRigidBody } from '@react-three/rapier';
+
 import { PlayerNetworkManager } from '../core/PlayerNetworkManager';
 import { PlayerPositionTracker, PlayerTrackingConfig } from '../core/PlayerPositionTracker';
 import { 
   MultiplayerConnectionOptions, 
   MultiplayerState, 
-  MultiplayerConfig, 
-  PlayerState 
+  MultiplayerConfig
 } from '../types';
 
 interface UseMultiplayerOptions {
@@ -17,7 +19,7 @@ interface UseMultiplayerOptions {
 interface UseMultiplayerResult extends MultiplayerState {
   connect: (options: MultiplayerConnectionOptions) => void;
   disconnect: () => void;
-  startTracking: (playerRef: React.RefObject<any>) => void;
+  startTracking: (playerRef: RefObject<RapierRigidBody>) => void;
   stopTracking: () => void;
   updateConfig: (config: Partial<MultiplayerConfig>) => void;
 }
@@ -46,7 +48,7 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
   // 매니저들
   const networkManagerRef = useRef<PlayerNetworkManager | null>(null);
   const positionTrackerRef = useRef<PlayerPositionTracker | null>(null);
-  const trackingPlayerRef = useRef<React.RefObject<any> | null>(null);
+  const trackingPlayerRef = useRef<RefObject<RapierRigidBody> | null>(null);
   const configRef = useRef<MultiplayerConfig>(config);
 
   // 위치 추적 초기화
@@ -168,7 +170,7 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
   }, []);
 
   // 위치 추적 시작
-  const startTracking = useCallback((playerRef: React.RefObject<any>) => {
+  const startTracking = useCallback((playerRef: RefObject<RapierRigidBody>) => {
     trackingPlayerRef.current = playerRef;
   }, []);
 

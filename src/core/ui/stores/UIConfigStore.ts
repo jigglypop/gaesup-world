@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+
 import { UIConfig } from '../types';
 
 interface UIConfigStore {

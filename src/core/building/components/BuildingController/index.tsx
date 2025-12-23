@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
-import { useThree } from '@react-three/fiber';
+
 import { OrbitControls } from '@react-three/drei';
-import { BuildingSystem } from '../BuildingSystem';
+import { useThree } from '@react-three/fiber';
+
 import { NPCSystem } from '../../../npc/components/NPCSystem';
-import { useBuildingStore } from '../../stores/buildingStore';
 import { useBuildingEditor } from '../../hooks/useBuildingEditor';
-import { useGaesupStore } from '../../../stores/gaesupStore';
+import { useBuildingStore } from '../../stores/buildingStore';
+import { BuildingSystem } from '../BuildingSystem';
 
 export function BuildingController() {
   const { gl } = useThree();
@@ -24,7 +25,6 @@ export function BuildingController() {
   const initialized = useBuildingStore((state) => state.initialized);
   const initializeDefaults = useBuildingStore((state) => state.initializeDefaults);
   
-  // Initialize building data if not already initialized
   useEffect(() => {
     if (!initialized) {
       initializeDefaults();

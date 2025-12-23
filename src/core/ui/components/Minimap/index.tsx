@@ -1,6 +1,6 @@
+import { MinimapProps } from './types';
 import { useMinimap } from '../../hooks';
 import './styles.css';
-import { MinimapProps } from './types';
 
 const MINIMAP_SIZE_PX = 200;
 

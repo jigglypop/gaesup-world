@@ -1,9 +1,11 @@
 import React, { useRef, useEffect } from 'react';
+
 import { RigidBody, RapierRigidBody } from '@react-three/rapier';
 import { Group } from 'three';
+
+import { BlueprintSpawnerProps } from './types';
 import { BlueprintFactory } from '../../factory/BlueprintFactory';
 import { AnyBlueprint } from '../../types';
-import { BlueprintSpawnerProps } from './types';
 
 export function BlueprintSpawner({
   blueprint,

@@ -1,6 +1,8 @@
 import { useCallback, useRef } from 'react';
-import * as THREE from 'three';
+
 import { useThree } from '@react-three/fiber';
+import * as THREE from 'three';
+
 import { useBuildingStore } from '../stores/buildingStore';
 import { Position3D, Rotation3D } from '../types';
 

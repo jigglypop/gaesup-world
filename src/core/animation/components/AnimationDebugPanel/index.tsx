@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+
 import { AnimationMetrics, DebugField } from './types';
 import { DEFAULT_DEBUG_FIELDS } from './types';
 import { useAnimationBridge } from '../../hooks/useAnimationBridge';

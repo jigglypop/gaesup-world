@@ -1,9 +1,12 @@
+import { useMemo } from 'react';
+
 import { useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
-import { useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
+
 import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
+
 import { ModelRendererProps, PartsGroupRefProps } from './types';
 
 export function ModelRenderer({ nodes, color, skeleton, url }: ModelRendererProps) {

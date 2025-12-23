@@ -1,8 +1,12 @@
-import * as THREE from 'three';
+import type { ReactNode, RefObject } from 'react';
+
 import { RapierRigidBody } from '@react-three/rapier';
-import { RefObject } from "react"
-import { PhysicsCalculationProps } from '../types';
-import { ModeType, PhysicsConfigType } from '@stores/slices';
+import * as THREE from 'three';
+
+import { PhysicsConfigType } from '@stores/slices';
+import type { StoreState } from '@stores/types';
+
+import type { PhysicsInputState } from '../types';
 
 export type characterConfigType = Pick<PhysicsConfigType, 
   'walkSpeed' | 'runSpeed' | 'jumpSpeed' | 'jumpGravityScale' | 'normalGravityScale' | 'airDamping' | 'stopDamping'
@@ -33,7 +37,7 @@ export interface PhysicsCalcProps {
   rigidBodyRef: RefObject<RapierRigidBody>;
   innerGroupRef?: RefObject<THREE.Group>;
   outerGroupRef?: RefObject<THREE.Group>;
-  inputRef?: RefObject<PhysicsCalculationProps>;
+  inputRef?: RefObject<PhysicsInputState>;
   matchSizes?: THREE.Vector3;
   worldContext?: StoreState;
   onStateUpdate?: (updates: Partial<ActiveStateType>) => void;
@@ -52,8 +56,8 @@ export interface PhysicsBridgeData {
 }
 
 export interface PhysicsLayerProps {
-  children: React.ReactNode;
-  bridgeRef: React.RefObject<PhysicsBridgeData>;
+  children: ReactNode;
+  bridgeRef: RefObject<PhysicsBridgeData>;
 }
 
 export interface PhysicsLayerStatus {

@@ -1,11 +1,14 @@
 import { useRef, useEffect, useMemo } from 'react';
-import { useManagedEntity, BridgeFactory } from '@core/boilerplate';
-import { MotionBridge } from '../bridge/MotionBridge';
-import { ManagedMotionEntity } from '../entities/ManagedMotionEntity';
-import { MotionType } from '../core/system/types';
-import { MotionConfig } from '../bridge/types';
+
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
+
+import { useManagedEntity, BridgeFactory } from '@core/boilerplate';
+
+import { MotionBridge } from '../bridge/MotionBridge';
+import { MotionConfig } from '../bridge/types';
+import { MotionType } from '../core/system/types';
+import { ManagedMotionEntity } from '../entities/ManagedMotionEntity';
 
 export type UseMotionOptions = {
   motionType: MotionType;

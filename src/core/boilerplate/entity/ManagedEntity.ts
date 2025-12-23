@@ -46,7 +46,9 @@ export class ManagedEntity<
     });
     this.unsubscribers.push(unsubSnapshot);
   }
-  protected onCommandExecuted(command: CommandType): void {}
+  protected onCommandExecuted(command: CommandType): void {
+    void command;
+  }
   protected onSnapshotTaken(snapshot: SnapshotType): void {
     if (this.options.enableStateCache) {
       this.lastSnapshot = snapshot as Readonly<SnapshotType>;

@@ -1,3 +1,3 @@
 export * from './EntityController';
-export * from './AnimationController';
+export { AnimationController as MotionAnimationController } from './AnimationController';
 export * from './MotionController';

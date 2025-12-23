@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { UIState, UICommand, UINotification } from '../types';
+
+import { UIState, UICommand } from '../types';
 import { MinimapSystem } from './MinimapSystem';
 
 export class UISystem {

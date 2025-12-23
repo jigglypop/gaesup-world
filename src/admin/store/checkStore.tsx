@@ -1,8 +1,10 @@
-import Spinner from "../components/Spinner";
-import { useNavigate } from "react-router-dom";
-import { userType } from "./types";
 import { useEffect, useState } from "react";
+
+import { useNavigate } from "react-router-dom";
+
+import { userType } from "./types";
 import { checkApi } from "../api/auth";
+import Spinner from "../components/Spinner";
 
 export const useCheck = () => {
   const navigate = useNavigate();
@@ -18,7 +20,7 @@ export const useCheck = () => {
         setUser(userData);
         setIsUserSuccess(true);
         setIsUserError(false);
-      } catch (error) {
+      } catch {
         setIsUserError(true);
         setIsUserSuccess(false);
         setUser(null);

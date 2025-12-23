@@ -1,10 +1,7 @@
 import { BridgeConstructor, BridgeInstance } from '../types'
 import { BridgeRegistry } from './BridgeRegistry'
-import { DIContainer } from '../di'
 import { logger } from '../../utils/logger'
-
-const isProduction = process.env['NODE_ENV'] === 'production'
-const enableLogs = !isProduction && process.env['VITE_ENABLE_BRIDGE_LOGS'] !== 'false'
+import { DIContainer } from '../di'
 
 export class BridgeFactory {
     private static instances = new Map<string, BridgeInstance>()

@@ -1,4 +1,5 @@
 import { StateCreator } from 'zustand';
+
 import { PerformanceState, RenderState, EngineState } from './types';
 
 export const initialPerformanceState = {

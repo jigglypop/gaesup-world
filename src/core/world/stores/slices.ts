@@ -1,11 +1,13 @@
 import { StateCreator } from 'zustand';
-import { WorldSlice } from './types';
+
 import { BridgeFactory } from '@core/boilerplate';
+
+import { WorldSlice } from './types';
 import { WorldBridge } from '../bridge/WorldBridge';
 
 const DEFAULT_WORLD_ID = 'default';
 
-export const createWorldSlice: StateCreator<WorldSlice> = (set, get) => {
+export const createWorldSlice: StateCreator<WorldSlice> = (set) => {
   // BridgeFactory에서 WorldBridge 인스턴스 생성
   const worldBridge = BridgeFactory.create<WorldBridge>('world');
   

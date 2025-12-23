@@ -1,6 +1,7 @@
+import { enableMapSet } from 'immer';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { enableMapSet } from 'immer';
+
 import { 
   BuildingSystemState, 
   MeshConfig, 
@@ -83,10 +84,6 @@ export const useBuildingStore = create<BuildingStore>()(
     tileGroups: new Map(),
     wallCategories: new Map(),
     tileCategories: new Map(),
-    selectedWallGroupId: undefined,
-    selectedTileGroupId: undefined,
-    selectedWallCategoryId: undefined,
-    selectedTileCategoryId: undefined,
     editMode: 'none',
     showGrid: true,
     gridSize: 100,
@@ -269,6 +266,7 @@ export const useBuildingStore = create<BuildingStore>()(
                 y: 0,
                 z: startZ + z * cellSize
               },
+              tileGroupId: oakFloorGroup.id,
               size: 1
             });
           }
@@ -320,7 +318,10 @@ export const useBuildingStore = create<BuildingStore>()(
       if (group) {
         const wallIndex = group.walls.findIndex(w => w.id === wallId);
         if (wallIndex !== -1) {
-          group.walls[wallIndex] = { ...group.walls[wallIndex], ...updates };
+          const wall = group.walls[wallIndex];
+          if (wall) {
+            Object.assign(wall, updates);
+          }
         }
       }
     }),
@@ -350,10 +351,12 @@ export const useBuildingStore = create<BuildingStore>()(
     addTile: (groupId, tile) => set((state) => {
       const group = state.tileGroups.get(groupId);
       if (group) {
-        const tileWithObject = {
+        const tileWithObject: TileConfig = {
           ...tile,
-          objectType: state.selectedTileObjectType !== 'none' ? state.selectedTileObjectType : undefined,
-          objectConfig: state.selectedTileObjectType === 'grass' ? { grassDensity: 1000 } : undefined
+          objectType: state.selectedTileObjectType,
+          ...(state.selectedTileObjectType === 'grass'
+            ? { objectConfig: { grassDensity: 1000 } }
+            : {}),
         };
         group.tiles.push(tileWithObject);
       }
@@ -364,7 +367,10 @@ export const useBuildingStore = create<BuildingStore>()(
       if (group) {
         const tileIndex = group.tiles.findIndex(t => t.id === tileId);
         if (tileIndex !== -1) {
-          group.tiles[tileIndex] = { ...group.tiles[tileIndex], ...updates };
+          const tile = group.tiles[tileIndex];
+          if (tile) {
+            Object.assign(tile, updates);
+          }
         }
       }
     }),
@@ -485,7 +491,10 @@ export const useBuildingStore = create<BuildingStore>()(
       state.selectedWallCategoryId = id;
       const category = state.wallCategories.get(id);
       if (category && category.wallGroupIds.length > 0) {
-        state.selectedWallGroupId = category.wallGroupIds[0];
+        const firstWallGroupId = category.wallGroupIds[0];
+        if (firstWallGroupId) {
+          state.selectedWallGroupId = firstWallGroupId;
+        }
       }
     }),
     
@@ -508,7 +517,10 @@ export const useBuildingStore = create<BuildingStore>()(
       state.selectedTileCategoryId = id;
       const category = state.tileCategories.get(id);
       if (category && category.tileGroupIds.length > 0) {
-        state.selectedTileGroupId = category.tileGroupIds[0];
+        const firstTileGroupId = category.tileGroupIds[0];
+        if (firstTileGroupId) {
+          state.selectedTileGroupId = firstTileGroupId;
+        }
       }
     }),
     

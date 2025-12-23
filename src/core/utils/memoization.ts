@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+
 import { Profile, HandleError, MonitorMemory } from '../boilerplate/decorators';
 
 const MAX_CACHE_SIZE = 100;

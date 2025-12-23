@@ -1,12 +1,14 @@
-import { PhysicsState, PhysicsCalculationProps, automationType } from '../types';
-import { StoreState } from '@core/stores/types';
 import * as THREE from 'three';
+
+import { StoreState } from '@core/stores/types';
+
 import { EntityStateManager } from '../../core/system/EntityStateManager';
+import { PhysicsInputState, PhysicsState } from '../types';
 
 function createInitialPhysicsState(
   worldContext: StoreState,
   stateManager: EntityStateManager,
-  input: PhysicsCalculationProps,
+  input: PhysicsInputState,
   delta: number,
   mouseTarget: THREE.Vector3
 ): PhysicsState {
@@ -14,23 +16,7 @@ function createInitialPhysicsState(
   const activeStateRef = stateManager.getActiveState();
   const gameStatesRef = stateManager.getGameStates();
 
-  const automationOption: automationType = worldContext.automation || {
-    isActive: false,
-    queue: {
-      actions: [],
-      currentIndex: 0,
-      isRunning: false,
-      isPaused: false,
-      loop: false,
-      maxRetries: 3,
-    },
-    settings: {
-      trackProgress: false,
-      autoStart: false,
-      loop: false,
-      showVisualCues: false,
-    },
-  };
+  const automationOption = worldContext.automation;
 
   return {
     activeState: activeStateRef,

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+
 import { NPCNetworkNode, NetworkMessage, NetworkGroup } from '../types';
 import { PerformanceMetrics, NetworkEvent } from './types';
 

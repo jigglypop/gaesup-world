@@ -1,25 +1,28 @@
 import { useRef, useEffect, useCallback } from 'react';
-import { useFrame, RootState } from '@react-three/fiber';
-import { BridgeFactory } from '@core/boilerplate';
-import { PhysicsBridge } from '../bridge/PhysicsBridge';
-import { PhysicsCalculationProps, PhysicsState } from '../types';
-import { createInitialPhysicsState } from './state/physicsStateFactory';
-import { updateInputState } from '../bridge';
-import { useGaesupStore } from '@stores/gaesupStore';
-import { useStateSystem } from './useStateSystem';
-import { useGaesupGltf } from './useGaesupGltf';
+
 import { InteractionSystem } from '@interactions/core/InteractionSystem';
+import { useFrame, RootState } from '@react-three/fiber';
+import * as THREE from 'three';
+
+import { BridgeFactory } from '@core/boilerplate';
+import { useGaesupStore } from '@stores/gaesupStore';
+import { StoreState } from '@stores/types';
+
+import { updateInputState } from '../bridge';
+import { PhysicsBridge } from '../bridge/PhysicsBridge';
+import { PhysicsCalculationProps, PhysicsInputState, PhysicsState } from '../types';
+import { createInitialPhysicsState } from './state/physicsStateFactory';
+import { useGaesupGltf } from './useGaesupGltf';
+import { useStateSystem } from './useStateSystem';
 import { getGlobalStateManager } from './useStateSystem';
 import { EntityStateManager } from '../core/system/EntityStateManager';
-import { PhysicsCalcProps } from '../core/types';
-import { SizesType } from '@stores/slices/sizes';
-import { StoreState } from '@stores/types';
-import * as THREE from 'three';
+import { PhysicsCalcProps } from '../types';
+
+
 
 export function usePhysicsBridge(props: PhysicsCalculationProps) {
   const physicsStateRef = useRef<PhysicsState | null>(null);
   const mouseTargetRef = useRef(new THREE.Vector3());
-  const matchSizesRef = useRef<SizesType | null>(null);
   const stateManagerRef = useRef<EntityStateManager | null>(null);
   const physicsBridgeRef = useRef<PhysicsBridge | null>(null);
   
@@ -85,10 +88,9 @@ export function usePhysicsBridge(props: PhysicsCalculationProps) {
   const executePhysics = useCallback((state: RootState, delta: number) => {
     if (!isReady || !physicsBridgeRef.current || !stateManagerRef.current) return;
 
-    const input = {
+    const input: PhysicsInputState = {
       keyboard: interaction.keyboard,
       mouse: interaction.mouse,
-      rigidBodyRef: { current: null },
     };
 
     // 물리 상태 초기화
@@ -131,7 +133,6 @@ export function usePhysicsBridge(props: PhysicsCalculationProps) {
       delta,
       worldContext: useGaesupStore.getState(),
       dispatch: () => {},
-      matchSizes: matchSizesRef.current || (matchSizesRef.current = getSizesByUrls(urls) as SizesType),
       inputRef: { current: input },
       setKeyboardInput: (input) => interactionSystem.updateKeyboard(input),
       setMouseInput: (input) => interactionSystem.updateMouse(input),

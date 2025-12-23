@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+
 import { useFrame } from '@react-three/fiber';
 import { Sprite } from 'three';
 import * as THREE from 'three';
@@ -14,7 +15,6 @@ export function useSpeechBalloonPosition({
 }: UseSpeechBalloonPositionProps) {
   const spriteRef = useRef<Sprite>(null);
   const currentPositionRef = useRef(new THREE.Vector3());
-  const velocityRef = useRef(new THREE.Vector3());
   const targetPositionRef = useRef(new THREE.Vector3());
   const isInitializedRef = useRef(false);
 

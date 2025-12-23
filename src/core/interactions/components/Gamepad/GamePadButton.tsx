@@ -1,5 +1,7 @@
 import { useState } from 'react';
+
 import { useKeyboard } from '@hooks/useKeyboard';
+
 import './styles.css';
 import { GamePadButtonType } from './types';
 

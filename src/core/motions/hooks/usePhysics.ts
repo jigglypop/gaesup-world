@@ -1,9 +1,12 @@
+import { RefObject } from 'react';
+
+import { RapierRigidBody } from '@react-three/rapier';
+
 import { useGaesupStore } from '@stores/gaesupStore';
+
 import { useGaesupGltf } from './useGaesupGltf';
 import { useStateSystem } from './useStateSystem';
 import { InteractionSystem } from '../../interactions/core/InteractionSystem';
-import { RefObject } from 'react';
-import { RapierRigidBody } from '@react-three/rapier';
 
 /**
  * @deprecated usePhysicsBridge와 useMotion을 대신 사용하세요

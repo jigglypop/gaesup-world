@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+
 import { ResizablePanelProps } from './types';
 
 const MinimizeIcon = () => (

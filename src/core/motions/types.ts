@@ -1,37 +1,20 @@
-import * as THREE from 'three';
-import { ActiveStateType, characterConfigType, vehicleConfigType, airplaneConfigType } from './core/types';
-import { GameStatesType } from '../world/components/Rideable/types';
-import { RootState } from '@react-three/fiber';
-import { ModeType, StoreState } from '../stores/types';
 import { RefObject } from 'react';
-import { RapierRigidBody } from '@react-three/rapier';
-import { SizesType } from '../stores/slices/sizes';
-import { PhysicsEntityProps } from './entities';
 
-export type automationType = {
-  isActive: boolean;
-  queue: {
-    actions: Array<{
-      id: string;
-      type: 'move' | 'click' | 'wait' | 'key' | 'custom';
-      target?: THREE.Vector3;
-      key?: string;
-      duration?: number;
-      delay?: number;
-    }>;
-    currentIndex: number;
-    isRunning: boolean;
-    isPaused: boolean;
-    loop: boolean;
-    maxRetries: number;
-  };
-  settings: {
-    trackProgress: boolean;
-    autoStart: boolean;
-    loop: boolean;
-    showVisualCues: boolean;
-  };
-};
+import { RootState } from '@react-three/fiber';
+import { RapierRigidBody } from '@react-three/rapier';
+import * as THREE from 'three';
+
+import type { AutomationState, InteractionState } from '@core/interactions/bridge/types';
+
+import { ActiveStateType, characterConfigType, vehicleConfigType, airplaneConfigType } from './core/types';
+import { PhysicsEntityProps } from './entities';
+import { ModeType, StoreState } from '../stores/types';
+import { GameStatesType } from '../world/components/Rideable/types';
+
+
+
+
+export type PhysicsInputState = Pick<InteractionState, 'keyboard' | 'mouse'>;
 
 
 export interface PhysicsCalcProps {
@@ -41,10 +24,9 @@ export interface PhysicsCalcProps {
   delta: number;
   worldContext: StoreState;
   dispatch: (action: { type: string; payload?: unknown }) => void;
-  matchSizes: SizesType;
-  inputRef: { current: PhysicsCalculationProps };
-  setKeyboardInput: (input: Partial<PhysicsCalculationProps['keyboard']>) => void;
-  setMouseInput: (input: Partial<PhysicsCalculationProps['mouse']>) => void;
+  inputRef: { current: PhysicsInputState };
+  setKeyboardInput: (input: Partial<PhysicsInputState['keyboard']>) => void;
+  setMouseInput: (input: Partial<PhysicsInputState['mouse']>) => void;
   body?: RapierRigidBody;
   memo?: {
     direction?: THREE.Vector3;
@@ -77,7 +59,7 @@ export interface PhysicsState {
     isActive: boolean;
     shouldRun: boolean;
   };
-  automationOption: automationType;
+  automationOption: AutomationState;
   modeType: ModeType;
   delta?: number;
 }

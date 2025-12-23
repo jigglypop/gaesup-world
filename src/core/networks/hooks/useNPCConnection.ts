@@ -1,6 +1,8 @@
 import { useCallback, useRef, useEffect } from 'react';
-import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
+
 import { Vector3 } from 'three';
+
+import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
 
 export interface NPCConnectionOptions {
   position: Vector3;

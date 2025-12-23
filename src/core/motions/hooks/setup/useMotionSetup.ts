@@ -1,9 +1,12 @@
 import { useRef, useEffect, RefObject } from 'react';
+
 import { RapierRigidBody } from '@react-three/rapier';
+
+import { BridgeFactory } from '@core/boilerplate';
+import { ModeType } from '@stores/slices';
+
 import { MotionBridge } from '../../bridge/MotionBridge';
 import { MotionCommand } from '../../bridge/types';
-import { ModeType } from '@stores/slices';
-import { BridgeFactory } from '@core/boilerplate';
 
 export function useMotionSetup(
   entityId: string,

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+
 import { EditorState, createEditorSlice } from '../stores/editorSlice';
 
 export const useEditorStore = create<EditorState>(createEditorSlice);

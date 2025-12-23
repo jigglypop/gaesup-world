@@ -1,3 +1,5 @@
+import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
 import {
@@ -6,14 +8,16 @@ import {
   RigidBody,
   euler,
 } from '@react-three/rapier';
-import { forwardRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
-import { useGltfAndSize } from '../../hooks';
+
+import { useEntity } from '@core/boilerplate/hooks/useEntity';
+
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
+import { useGltfAndSize } from '../../hooks';
 import { PhysicsEntityProps, SetGroundRayType } from '../types';
-import { useEntity } from '@core/boilerplate/hooks/useEntity';
+
 
 export function useSetGroundRay() {
   return ({ groundRay, length, colliderRef }: SetGroundRayType) => {
@@ -30,7 +34,9 @@ export function useSetGroundRay() {
 }
 
 export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
-  (props, rigidBodyRef) => {
+  (props, forwardedRef) => {
+    const rigidBodyRef = useRef<RapierRigidBody>(null!);
+    useImperativeHandle(forwardedRef, () => rigidBodyRef.current);
     const { size } = useGltfAndSize({ url: props.url || '' });
     const setGroundRay = useSetGroundRay();
     const { scene, animations } = useGLTF(props.url);
@@ -121,6 +127,8 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
             nodes={nodes}
             ref={props.innerGroupRef}
             isActive={props.isActive}
+            componentType={props.componentType}
+            modelYawOffset={props.modelYawOffset}
             isRiderOn={props.isRiderOn}
             enableRiding={props.enableRiding}
             ridingUrl={props.ridingUrl}

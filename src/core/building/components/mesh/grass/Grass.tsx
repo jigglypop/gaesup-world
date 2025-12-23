@@ -1,6 +1,7 @@
+import { FC, memo, useEffect, useMemo, useRef } from "react";
+
 import { shaderMaterial } from "@react-three/drei";
 import { extend, useFrame, useLoader, useThree } from "@react-three/fiber";
-import { FC, memo, useEffect, useMemo, useRef } from "react";
 import { createNoise2D } from "simplex-noise";
 import * as THREE from "three";
 
@@ -35,7 +36,7 @@ const Grass: FC<GrassMeshProps> = memo(
     ...props
   }) => {
     const { bW, bH, joints } = options;
-    const materialRef = useRef<THREE.ShaderMaterial>(null);
+    const materialRef = useRef<THREE.ShaderMaterial | null>(null);
     const [texture, alphaMap] = useLoader(THREE.TextureLoader, [
       bladeDiffuse,
       bladeAlpha,
@@ -50,7 +51,7 @@ const Grass: FC<GrassMeshProps> = memo(
       );
 
       const groundGeo = new THREE.PlaneGeometry(width, width, 32, 32);
-      const positions = groundGeo.attributes.position as THREE.BufferAttribute;
+      const positions = groundGeo.getAttribute("position") as THREE.BufferAttribute;
       for (let i = 0; i < positions.count; i++) {
         const x = positions.getX(i);
         const z = positions.getZ(i);
@@ -68,9 +69,8 @@ const Grass: FC<GrassMeshProps> = memo(
     }, [gl]);
 
     useFrame((state) => {
-      if (materialRef.current) {
-        materialRef.current.uniforms.time.value = state.clock.elapsedTime / 4;
-      }
+      const time = materialRef.current?.uniforms?.["time"];
+      if (time) time.value = state.clock.elapsedTime / 4;
     });
 
     return (
@@ -78,8 +78,8 @@ const Grass: FC<GrassMeshProps> = memo(
         <mesh>
           <instancedBufferGeometry
             index={baseGeom.index}
-            attributes-position={baseGeom.attributes.position}
-            attributes-uv={baseGeom.attributes.uv}>
+            attributes-position={baseGeom.getAttribute("position")}
+            attributes-uv={baseGeom.getAttribute("uv")}>
             <instancedBufferAttribute
               attach="attributes-offset"
               args={[new Float32Array(attributeData.offsets), 3]}
@@ -103,8 +103,8 @@ const Grass: FC<GrassMeshProps> = memo(
           </instancedBufferGeometry>
           <grassMaterial
             ref={materialRef}
-            map={texture}
-            alphaMap={alphaMap}
+            map={texture ?? null}
+            alphaMap={alphaMap ?? null}
             toneMapped={false}
             side={THREE.DoubleSide}
             transparent
@@ -150,7 +150,7 @@ function getAttributeData(instances: number, width: number) {
       i += 3;
 
       // Orientation
-      let angle = Math.PI - Math.random() * (Math.PI / 6); // Reduced angle variation
+      const angle = Math.PI - Math.random() * (Math.PI / 6); // Reduced angle variation
       halfRootAngleSin[k] = Math.sin(0.5 * angle);
       halfRootAngleCos[k] = Math.cos(0.5 * angle);
 

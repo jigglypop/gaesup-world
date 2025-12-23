@@ -1,8 +1,10 @@
-import { CoreBridge } from '@core/boilerplate';
-import { UISnapshot, UICommand } from '../types';
-import { UISystem } from '../core/UISystem';
-import { DomainBridge, EnableMetrics, Command, ValidateCommand, LogSnapshot, CacheSnapshot, RequireEngineById } from '@core/boilerplate/decorators';
 import * as THREE from 'three';
+
+import { CoreBridge } from '@core/boilerplate';
+import { DomainBridge, EnableMetrics, Command, ValidateCommand, LogSnapshot, CacheSnapshot, RequireEngineById } from '@core/boilerplate/decorators';
+
+import { UISystem } from '../core/UISystem';
+import { UISnapshot, UICommand } from '../types';
 
 @DomainBridge('ui')
 @EnableMetrics()
@@ -113,7 +115,7 @@ export class UIBridge extends CoreBridge<UISystem, UISnapshot, UICommand> {
   }
 
   @RequireEngineById()
-  public getUIMetrics(): any {
+  public getUIMetrics(): ReturnType<UISystem['getMetrics']> | null {
     const system = this.getEngine('main');
     return system ? system.getMetrics() : null;
   }

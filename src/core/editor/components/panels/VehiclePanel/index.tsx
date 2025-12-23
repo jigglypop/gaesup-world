@@ -1,4 +1,5 @@
 import React, { FC } from 'react';
+
 import { useGaesupStore } from '../../../../stores/gaesupStore';
 import { ModeType } from '../../../../stores/types';
 import './styles.css';

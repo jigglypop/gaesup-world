@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+
+import { createCameraOptionSlice } from '@core/camera/stores/slices/cameraOption';
+
 import {
   createModeSlice,
   createUrlsSlice,
@@ -10,7 +13,6 @@ import {
   createSizesSlice,
 } from './slices';
 import { GaesupState } from './types';
-import { createCameraOptionSlice } from '@core/camera/stores/slices/cameraOption';
 import { createAnimationSlice } from '../animation/stores/slices';
 import { createInteractionSlice } from '../interactions/stores/slices';
 import { createWorldSlice } from '../world/stores/slices/worldStates/slice';

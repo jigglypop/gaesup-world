@@ -1,6 +1,7 @@
 import React from 'react';
-import { useGaesupStore } from '../../../stores/gaesupStore';
+
 import { DebugField, DEFAULT_DEBUG_FIELDS } from './types';
+import { useGaesupStore } from '../../../stores/gaesupStore';
 import './styles.css';
 
 export function MotionDebugPanel() {

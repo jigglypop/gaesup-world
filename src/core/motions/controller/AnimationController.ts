@@ -1,6 +1,6 @@
 import { getGlobalAnimationBridge } from "@/core/animation/hooks/useAnimationBridge";
-import { GameStatesType } from "@/core/world/components/Rideable/types";
 import { Profile, HandleError } from '@/core/boilerplate/decorators';
+import { GameStatesType } from "@/core/world/components/Rideable/types";
 
 export class AnimationController {
   private animationBridge = getGlobalAnimationBridge();

@@ -1,8 +1,9 @@
-import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
-import { BaseState, BaseMetrics, SystemUpdateArgs } from '@/core/boilerplate/types';
-import { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
-import { RegisterSystem, ManageRuntime, Profile } from '@/core/boilerplate/decorators';
 import * as THREE from 'three';
+
+import { RegisterSystem, ManageRuntime } from '@/core/boilerplate/decorators';
+import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
+import type { BaseState, BaseMetrics, SystemUpdateArgs } from '@/core/boilerplate/types';
+
 import { InteractionState, InteractionConfig, InteractionMetrics, KeyboardState, MouseState, GamepadState, TouchState } from '../bridge';
 
 interface InteractionSystemState extends BaseState, InteractionState {}
@@ -49,7 +50,9 @@ export class InteractionSystem extends AbstractSystem<InteractionSystemState, In
   
   // ... 나머지 코드는 거의 동일
 
-  protected performUpdate(context: SystemContext): void {}
+  protected performUpdate(args: SystemUpdateArgs): void {
+    void args;
+  }
 
   private createDefaultConfig(): InteractionConfig {
     return {

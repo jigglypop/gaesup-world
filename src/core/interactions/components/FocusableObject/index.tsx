@@ -1,8 +1,10 @@
-import React, { forwardRef } from 'react';
+import { forwardRef } from 'react';
+
 import { ThreeEvent } from '@react-three/fiber';
-import { useGaesupStore } from '../../../stores/gaesupStore';
 import * as THREE from 'three';
+
 import { FocusableObjectProps } from './types';
+import { useGaesupStore } from '../../../stores/gaesupStore';
 
 export const FocusableObject = forwardRef<THREE.Group, FocusableObjectProps>(
   ({ children, position, focusDistance = 10, focusDuration = 1, onFocus, onBlur, ...props }, ref) => {
@@ -25,7 +27,7 @@ export const FocusableObject = forwardRef<THREE.Group, FocusableObjectProps>(
       }
     };
     
-    const handlePointerOver = (event: ThreeEvent<PointerEvent>) => {
+    const handlePointerOver = () => {
       if (cameraOption?.enableFocus) {
         document.body.style.cursor = 'pointer';
       }
@@ -38,14 +40,18 @@ export const FocusableObject = forwardRef<THREE.Group, FocusableObjectProps>(
       }
     };
     
+    const groupProps = {
+      ...props,
+      ...(position ? { position } : {}),
+    };
+
     return (
       <group 
         ref={ref}
-        position={position}
         onClick={handleClick}
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
-        {...props}
+        {...groupProps}
       >
         {children}
       </group>

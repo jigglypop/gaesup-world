@@ -1,16 +1,19 @@
-import * as THREE from 'three';
-import { RapierRigidBody } from '@react-three/rapier';
 import { RefObject } from 'react';
-import { GravityComponent } from '../forces';
-import { ForceComponent } from '../forces/ForceComponent';
-import { AnimationController } from '../../controller/AnimationController';
-import { PhysicsState, PhysicsCalcProps } from '../types';
-import { GameStatesType } from '@core/world/components/Rideable/types';
+
+import { RapierRigidBody } from '@react-three/rapier';
+import * as THREE from 'three';
+
 import { PhysicsConfigType } from '@/core/stores/slices/physics/types';
 import { AbstractSystem, SystemUpdateArgs } from '@core/boilerplate';
-import { Profile, HandleError, RegisterSystem, ManageRuntime } from '@core/boilerplate';
-import { DirectionComponent, ImpulseComponent } from '../movement';
+import { Profile, HandleError, ManageRuntime } from '@core/boilerplate';
+import { GameStatesType } from '@core/world/components/Rideable/types';
+
+import { AnimationController } from '../../controller/AnimationController';
+import { GravityComponent } from '../forces';
 import { PhysicsSystemState, PhysicsSystemMetrics, PhysicsSystemOptions } from './types';
+import { ForceComponent } from '../forces/ForceComponent';
+import { DirectionComponent, ImpulseComponent } from '../movement';
+import type { PhysicsCalcProps, PhysicsState } from '../../types';
 
 const defaultState: PhysicsSystemState = {
   isJumping: false,
@@ -67,9 +70,14 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
 
   @Profile()
   protected override updateMetrics(deltaTime: number): void {
+    void deltaTime;
     this.state.isJumping = this.isCurrentlyJumping;
     this.state.isMoving = this.lastMovingState;
     this.state.isRunning = this.lastRunningState;
+  }
+
+  public updateWithArgs(args: PhysicsUpdateArgs): void {
+    this.performUpdateWithArgs(args);
   }
 
   @HandleError()
@@ -199,9 +207,9 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
       const activeStateRef = physicsState.activeState;
       const { isJumping, isFalling, isNotMoving } = gameStatesRef;
       const {
-        linearDamping,
-        airDamping,
-        stopDamping,
+        linearDamping = 0.9,
+        airDamping = 0.2,
+        stopDamping = 1,
       } = this.config;
       rigidBodyRef.current.setLinearDamping(
         isJumping || isFalling
@@ -247,13 +255,12 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     calcProp: PhysicsCalcProps,
     physicsState: PhysicsState
   ) {
-    const { rigidBodyRef, innerGroupRef, matchSizes } = calcProp;
+    const { rigidBodyRef, innerGroupRef } = calcProp;
     this.directionComponent.updateDirection(
       physicsState,
       'normal',
       calcProp,
-      innerGroupRef,
-      matchSizes
+      innerGroupRef
     );
     this.impulseComponent.applyImpulse(rigidBodyRef, physicsState);
     this.gravityComponent.applyGravity(rigidBodyRef, physicsState);
@@ -271,11 +278,11 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     const { space } = keyboard;
     
     if (modeType === 'vehicle') {
-      const { linearDamping, brakeRatio } = this.config;
+      const { linearDamping = 0.9, brakeRatio = linearDamping } = this.config;
       const damping = space ? brakeRatio : linearDamping;
       rigidBodyRef.current.setLinearDamping(damping);
     } else if (modeType === 'airplane') {
-      const { linearDamping } = this.config;
+      const { linearDamping = 0.2 } = this.config;
       rigidBodyRef.current.setLinearDamping(linearDamping);
     }
   }

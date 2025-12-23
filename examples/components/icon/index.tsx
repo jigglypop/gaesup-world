@@ -13,8 +13,8 @@ export const Icon = ({
   ToolTip: React.ReactNode;
   onClick?: (e: MouseEvent<HTMLDivElement>) => void;
   id?: string;
-  toolTipStyles?: { [K in keyof CSSProperties]: string };
-  iconStyle?: { [K in keyof CSSProperties]: string };
+  toolTipStyles?: CSSProperties;
+  iconStyle?: CSSProperties;
 }) => {
   const [closet, setCloset] = useState(true);
   return (
@@ -23,7 +23,7 @@ export const Icon = ({
       onMouseOver={() => setCloset(false)}
       onMouseLeave={() => setCloset(true)}
       onClick={(e) => {
-        onClick && onClick(e);
+        if (onClick) onClick(e);
       }}
       style={iconStyle}
       id={id}

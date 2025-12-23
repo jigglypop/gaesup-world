@@ -1,10 +1,10 @@
-import { logger } from '../../utils/logger';
-import { SystemRegistry } from '../entity/SystemRegistry';
 import {
   DecoratorTarget,
   PropertyDescriptorExtended,
   AnyConstructor
 } from './types';
+import { logger } from '../../utils/logger';
+import { SystemRegistry } from '../entity/SystemRegistry';
 
 /**
  * 시스템 메서드의 에러를 자동으로 처리하는 데코레이터
@@ -15,6 +15,7 @@ export function HandleError(defaultReturn?: unknown) {
     propertyKey: string,
     descriptor: PropertyDescriptorExtended
   ) {
+    void target;
     const originalMethod = descriptor.value;
     descriptor.value = function (...args: unknown[]) {
       try {
@@ -38,6 +39,8 @@ export function LogInitialization() {
     propertyKey: string,
     descriptor: PropertyDescriptorExtended
   ) {
+    void target;
+    void propertyKey;
     const originalMethod = descriptor.value;
     descriptor.value = function (...args: unknown[]) {
       logger.info(`[${this.constructor.name}] Initializing`);

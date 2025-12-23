@@ -1,7 +1,10 @@
-import { WorldObject } from '@core/world/types';
-import { InteractionEvent } from '@core/world/core/WorldSystem';
-import { WorldBridge } from '../bridge/WorldBridge';
 import * as THREE from 'three';
+
+import { InteractionEvent } from '@core/world/core/WorldSystem';
+import { WorldObject } from '@core/world/types';
+
+import { WorldBridge } from '../bridge/WorldBridge';
+
 
 export interface WorldSliceState {
   objects: WorldObject[];

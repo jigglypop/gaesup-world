@@ -1,4 +1,4 @@
-import cache from "../utils/cache";
+import cache from "@core/utils/cache";
 
 interface APIResponse<T> {
   data: T;
@@ -10,7 +10,7 @@ class APIBuilder {
   private method: string = 'GET';
   private url: string = '';
   private baseUrl: string = '';
-  private body: any = null;
+  private body: unknown = null;
   private headers: { [key: string]: string } = {};
   private withAuth: boolean = false;
 
@@ -21,7 +21,7 @@ class APIBuilder {
     return builder;
   }
 
-  static post(url: string, body?: any) {
+  static post(url: string, body?: unknown) {
     const builder = new APIBuilder();
     builder.method = 'POST';
     builder.url = url;
@@ -29,7 +29,7 @@ class APIBuilder {
     return builder;
   }
 
-  static patch(url: string, body?: any) {
+  static patch(url: string, body?: unknown) {
     const builder = new APIBuilder();
     builder.method = 'PATCH';
     builder.url = url;
@@ -37,7 +37,7 @@ class APIBuilder {
     return builder;
   }
 
-  static delete(url: string, body?: any) {
+  static delete(url: string, body?: unknown) {
     const builder = new APIBuilder();
     builder.method = 'DELETE';
     builder.url = url;
@@ -81,7 +81,7 @@ class APIBuilder {
         }
 
         const response = await fetch(fullUrl, options);
-        const data = await response.json();
+        const data = (await response.json()) as T;
 
         const responseHeaders: { [key: string]: string } = {};
         response.headers.forEach((value, key) => {

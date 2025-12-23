@@ -1,8 +1,10 @@
 import { useRef } from 'react';
-import { useMotion } from '@/core/motions';
-import { RigidBody, CapsuleCollider, RapierRigidBody } from '@react-three/rapier';
+
 import { Box } from '@react-three/drei';
+import { RigidBody, CapsuleCollider, RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
+
+import { useMotion } from '@/core/motions';
 
 export function MotionExample() {
   const rigidBodyRef = useRef<RapierRigidBody>(null);

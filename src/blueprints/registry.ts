@@ -1,6 +1,6 @@
-import { AnyBlueprint } from './types';
-import { WARRIOR_BLUEPRINT } from './characters/warrior';
 import { FIRE_MAGE_BLUEPRINT } from './characters/mage';
+import { WARRIOR_BLUEPRINT } from './characters/warrior';
+import { AnyBlueprint } from './types';
 import { BASIC_KART_BLUEPRINT } from './vehicles/kart';
 
 class BlueprintRegistry {

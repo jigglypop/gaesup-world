@@ -1,9 +1,11 @@
 import React, { useMemo, useRef, useEffect } from 'react';
-import * as THREE from 'three';
+
 import { useThree, useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
+
 import { SpeechBalloonProps } from './types';
-import { useUIConfigStore } from '../../stores/UIConfigStore';
 import { useSpeechBalloonPosition } from '../../hooks/useSpeechBalloonPosition';
+import { useUIConfigStore } from '../../stores/UIConfigStore';
 import './styles.css';
 
 function createRoundedRect(
@@ -101,11 +103,11 @@ function createTextTexture({
     // 캔버스 완전 초기화
     context.clearRect(0, 0, canvasWidth, canvasHeight);
     
-    // 간단한 배경 영역 - 최적화된 크기
-    const boxWidth = canvasWidth - 60;
-    const boxHeight = canvasHeight - 60;
-    const boxX = 30;
-    const boxY = 30;
+    // 간단한 배경 영역 - padding/maxWidth 반영
+    const boxX = safePadding;
+    const boxY = safePadding;
+    const boxWidth = canvasWidth - safePadding * 2;
+    const boxHeight = canvasHeight - safePadding * 2;
     
     // 간단한 흰색 배경 그리기
     createSimpleBackground(
@@ -128,6 +130,15 @@ function createTextTexture({
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     
+    // maxWidth에 맞게 폰트 크기 자동 조절 (단순 1줄 렌더링)
+    const availableTextWidth = Math.max(10, Math.min(boxWidth - safePadding * 2, maxWidth));
+    const measuredWidth = context.measureText(safeText).width;
+    if (measuredWidth > availableTextWidth) {
+      const scale = availableTextWidth / measuredWidth;
+      const adjustedFontSize = Math.max(12, Math.floor(safeFontSize * scale));
+      context.font = `bold ${adjustedFontSize}px ${fontFamily}`;
+    }
+
     // 성능 최적화: 그림자 제거, 단순 텍스트만 렌더링
     context.fillText(safeText, canvasWidth / 2, canvasHeight / 2);
     
@@ -282,7 +293,7 @@ export function SpeechBalloon({
   }, [textureData, config.scaleMultiplier]);
 
     // Delta 기반 안정적인 스케일링 (미세진동 완전 제거)
-  useFrame((state, delta) => {
+  useFrame(() => {
     if (!spriteRef.current || !textureData || !visible) return;
     
     frameCountRef.current++;

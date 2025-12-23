@@ -1,5 +1,5 @@
 // Jest setup file for polyfills and global mocks
-require('@testing-library/jest-dom');
+import "@testing-library/jest-dom";
 
 // ResizeObserver polyfill for jsdom environment
 global.ResizeObserver = class ResizeObserver {

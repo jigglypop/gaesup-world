@@ -1,9 +1,11 @@
 import React, { useRef, useEffect, useMemo } from 'react';
-import { useFrame, useGraph } from '@react-three/fiber';
+
 import { Text, useGLTF, useAnimations } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
+import { CapsuleCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
-import { RigidBody, CapsuleCollider } from '@react-three/rapier';
 import { SkeletonUtils } from 'three-stdlib';
+
 import { PlayerState, MultiplayerConfig } from '../types';
 
 interface RemotePlayerProps {
@@ -13,9 +15,9 @@ interface RemotePlayerProps {
   config?: MultiplayerConfig;
 }
 
-export function RemotePlayer({ playerId, state, characterUrl, config }: RemotePlayerProps) {
-  const bodyRef = useRef<any>(null);
-  const meshRef = useRef<THREE.Group>(null);
+export function RemotePlayer({ state, characterUrl, config }: RemotePlayerProps) {
+  const bodyRef = useRef<RapierRigidBody | null>(null);
+  const meshRef = useRef<THREE.Group | null>(null);
   
   // 목표 위치와 회전
   const targetPosition = useRef(new THREE.Vector3());
@@ -34,7 +36,6 @@ export function RemotePlayer({ playerId, state, characterUrl, config }: RemotePl
   // 모델 로드
   const { scene, animations } = useGLTF(modelUrl);
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
-  const { nodes } = useGraph(clone);
   const { actions, ref: animationRef } = useAnimations(animations, meshRef);
   
   // 애니메이션 업데이트
@@ -83,7 +84,7 @@ export function RemotePlayer({ playerId, state, characterUrl, config }: RemotePl
   }, [state.position, state.rotation, state.velocity]);
 
   // 부드러운 보간
-  useFrame((_, delta) => {
+  useFrame(() => {
     if (!bodyRef.current || !meshRef.current) return;
 
     // RigidBody의 현재 위치와 회전

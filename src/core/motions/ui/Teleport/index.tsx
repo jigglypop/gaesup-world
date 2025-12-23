@@ -1,4 +1,5 @@
 import { useTeleport } from '@hooks/useTeleport';
+
 import { TeleportProps } from './types';
 import './styles.css';
 

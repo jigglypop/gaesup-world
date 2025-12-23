@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { PlayerState } from '../types';
 
 export interface PlayerNetworkManagerOptions {
@@ -72,7 +71,7 @@ export class PlayerNetworkManager {
     };
 
     this.ws.onmessage = (event) => {
-      const message = JSON.parse(event.data);
+      const message = JSON.parse(event.data) as ServerMessage;
       this.handleServerMessage(message);
     };
 
@@ -115,7 +114,7 @@ export class PlayerNetworkManager {
     }));
   }
 
-  private handleServerMessage(message: any): void {
+  private handleServerMessage(message: ServerMessage): void {
     console.log('[PlayerNetworkManager] 서버 메시지 수신:', message.type, message);
     
     switch (message.type) {
@@ -128,9 +127,9 @@ export class PlayerNetworkManager {
           for (const [id, state] of Object.entries(message.room_state)) {
             console.log('[PlayerNetworkManager] 방에 있는 플레이어:', id, state);
             if (id !== this.localPlayerId) {
-              this.players.set(id, state as PlayerState);
+              this.players.set(id, state);
               if (this.onPlayerJoin) {
-                this.onPlayerJoin(id, state as PlayerState);
+                this.onPlayerJoin(id, state);
               }
             }
           }
@@ -190,3 +189,28 @@ export class PlayerNetworkManager {
     return new Map(this.players);
   }
 } 
+
+type WelcomeMessage = {
+  type: 'Welcome';
+  client_id: string;
+  room_state?: Record<string, PlayerState>;
+};
+
+type PlayerJoinedMessage = {
+  type: 'PlayerJoined';
+  client_id: string;
+  state: PlayerState;
+};
+
+type PlayerLeftMessage = {
+  type: 'PlayerLeft';
+  client_id: string;
+};
+
+type PlayerUpdateMessage = {
+  type: 'PlayerUpdate';
+  client_id: string;
+  state: Partial<PlayerState>;
+};
+
+type ServerMessage = WelcomeMessage | PlayerJoinedMessage | PlayerLeftMessage | PlayerUpdateMessage;

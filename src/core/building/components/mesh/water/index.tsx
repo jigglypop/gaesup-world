@@ -1,6 +1,7 @@
-import { extend, Object3DNode, useFrame } from "@react-three/fiber";
+import { useEffect, useMemo, useRef } from "react";
+
 import { useTexture } from "@react-three/drei";
-import { useMemo, useRef } from "react";
+import { extend, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { Water } from "three-stdlib";
 
@@ -9,16 +10,16 @@ extend({ Water });
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      water: Object3DNode<Water, typeof Water>;
+      water: any;
     }
   }
 }
 
 export default function Ocean() {
-  const waterRef = useRef<Water>(null);
+  const waterRef = useRef<Water | null>(null);
   const waterNormals = useTexture("/resources/waternormals.jpeg");
   
-  useMemo(() => {
+  useEffect(() => {
     if (waterNormals) {
       waterNormals.wrapS = waterNormals.wrapT = THREE.RepeatWrapping;
       waterNormals.repeat.set(4, 4);
@@ -41,9 +42,8 @@ export default function Ocean() {
   const geom = useMemo(() => new THREE.PlaneGeometry(16, 16), []);
   
   useFrame((_, delta) => {
-    if (waterRef.current) {
-      waterRef.current.material.uniforms.time.value += delta * 0.3;
-    }
+    const time = waterRef.current?.material.uniforms?.["time"];
+    if (time) time.value += delta * 0.3;
   });
 
   return (

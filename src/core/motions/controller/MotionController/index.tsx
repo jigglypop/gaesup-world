@@ -1,4 +1,5 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
+
 import { useGaesupStore } from '../../../stores/gaesupStore';
 import './styles.css';
 
@@ -18,24 +19,47 @@ const VEHICLE_PRESETS = [
 
 export function MotionController() {
   const mode = useGaesupStore((state) => state.mode);
-  const motion = useGaesupStore((state) => state.motion);
-  const setCurrentPreset = useGaesupStore((state) => state.setCurrentPreset);
-  const setMotionType = useGaesupStore((state) => state.setMotionType);
+  const setMode = useGaesupStore((state) => state.setMode);
+  const setPhysics = useGaesupStore((state) => state.setPhysics);
   
-  const currentType = motion?.motionType || mode?.type || 'character';
-  const activePresetId = motion?.currentPreset || 'normal';
+  const currentType: 'character' | 'vehicle' = mode?.type === 'vehicle' ? 'vehicle' : 'character';
   const presets = currentType === 'vehicle' ? VEHICLE_PRESETS : MOTION_PRESETS;
+  const [activePresetId, setActivePresetId] = useState<string>(
+    currentType === 'vehicle' ? 'comfort' : 'normal',
+  );
+
+  const applyPreset = useCallback(
+    (motionType: 'character' | 'vehicle', presetId: string) => {
+      const list = motionType === 'vehicle' ? VEHICLE_PRESETS : MOTION_PRESETS;
+      const preset = list.find((p) => p.id === presetId);
+      if (!preset) return;
+
+      if (motionType === 'vehicle') {
+        setPhysics({ maxSpeed: preset.maxSpeed, accelRatio: preset.acceleration });
+        return;
+      }
+
+      setPhysics({
+        walkSpeed: Math.max(1, preset.maxSpeed * 0.5),
+        runSpeed: preset.maxSpeed,
+        accelRatio: preset.acceleration,
+      });
+    },
+    [setPhysics],
+  );
 
   const handlePresetChange = useCallback((presetId: string) => {
-    setCurrentPreset(presetId);
-  }, [setCurrentPreset]);
+    setActivePresetId(presetId);
+    applyPreset(currentType, presetId);
+  }, [applyPreset, currentType]);
   
   const handleMotionTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const newType = e.target.value as 'character' | 'vehicle';
-    setMotionType(newType);
+    setMode({ type: newType });
     const defaultPreset = newType === 'vehicle' ? 'comfort' : 'normal';
-    setCurrentPreset(defaultPreset);
-  }, [setMotionType, setCurrentPreset]);
+    setActivePresetId(defaultPreset);
+    applyPreset(newType, defaultPreset);
+  }, [applyPreset, setMode]);
 
   return (
     <div className="mc-panel">

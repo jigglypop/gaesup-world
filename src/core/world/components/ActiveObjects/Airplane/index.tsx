@@ -1,4 +1,5 @@
 import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
+
 import { activeAirplaneInnerType } from './type';
 
 export function Airplane(props: activeAirplaneInnerType) {

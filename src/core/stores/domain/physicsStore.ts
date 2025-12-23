@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+
 import { PhysicsSlice, createPhysicsSlice } from '../slices/physics';
 
 export type PhysicsStore = PhysicsSlice;

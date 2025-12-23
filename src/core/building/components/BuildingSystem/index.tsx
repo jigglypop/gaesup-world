@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
 import { Suspense } from 'react';
-import { WallSystem } from '../WallSystem';
-import { TileSystem } from '../TileSystem';
+
+import { NPCPreview } from '../../../npc/components/NPCPreview';
+import { useBuildingStore } from '../../stores/buildingStore';
 import { GridHelper } from '../GridHelper';
 import { PreviewTile } from '../PreviewTile';
 import { PreviewWall } from '../PreviewWall';
-import { NPCPreview } from '../../../npc/components/NPCPreview';
-import { useBuildingStore } from '../../stores/buildingStore';
+import { TileSystem } from '../TileSystem';
+import { WallSystem } from '../WallSystem';
 import { BuildingSystemProps } from './types';
 
 export function BuildingSystem({
@@ -42,8 +43,8 @@ export function BuildingSystem({
             wallGroup={wallGroup}
             meshes={meshes}
             isEditMode={editMode === 'wall'}
-            onWallClick={onWallClick}
-            onWallDelete={onWallDelete}
+            {...(onWallClick ? { onWallClick } : {})}
+            {...(onWallDelete ? { onWallDelete } : {})}
           />
         ))}
         
@@ -53,8 +54,8 @@ export function BuildingSystem({
             tileGroup={tileGroup}
             meshes={meshes}
             isEditMode={editMode === 'tile'}
-            onTileClick={onTileClick}
-            onTileDelete={onTileDelete}
+            {...(onTileClick ? { onTileClick } : {})}
+            {...(onTileDelete ? { onTileDelete } : {})}
           />
         ))}
       </group>

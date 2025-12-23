@@ -1,6 +1,13 @@
-import { PhysicsEntityProps } from '../entities/types';
+import type { ReactNode } from 'react';
+
+import type { PhysicsEntityProps } from '../entities/types';
+
+export type EntityControllerOptions = Omit<
+  PhysicsEntityProps,
+  'url' | 'isActive' | 'componentType'
+>;
 
 export interface EntityControllerProps {
-    props: PhysicsEntityProps;
-    children: React.ReactElement
+  props: EntityControllerOptions;
+  children?: ReactNode;
 }

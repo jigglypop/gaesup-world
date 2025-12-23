@@ -1,6 +1,10 @@
 import { RefObject } from 'react';
+
 import * as THREE from 'three';
-import { ActiveStateType } from '../../core/types';
+
+import { Profile, HandleError } from '@/core/boilerplate/decorators';
+import { PhysicsConfigType } from '@stores/slices';
+import { ModeType } from '@stores/slices/mode/types';
 import {
   getCachedTrig,
   MemoizationManager,
@@ -8,14 +12,14 @@ import {
 } from '@utils/memoization';
 import { threeObjectPool } from '@utils/objectPool';
 import { calcAngleByVector, calcNorm } from '@utils/vector';
+
+import { InteractionSystem } from '../../../interactions/core/InteractionSystem';
+import { ActiveStateType } from '../../core/types';
 import {
   PhysicsCalcProps,
   PhysicsState,
 } from '../../types';
-import { InteractionSystem } from '../../../interactions/core/InteractionSystem';
-import { ModeType } from '@stores/slices/mode/types';
-import { PhysicsConfigType } from '@stores/slices';
-import { Profile, HandleError } from '@/core/boilerplate/decorators';
+
 
 export class DirectionComponent {
   private memoManager = MemoizationManager.getInstance();
@@ -43,7 +47,6 @@ export class DirectionComponent {
     controlMode?: string,
     calcProp?: PhysicsCalcProps,
     innerGroupRef?: RefObject<THREE.Group>,
-    matchSizes?: THREE.Vector3,
   ): void {
     const { modeType } = physicsState;
     switch (modeType) {
@@ -54,7 +57,7 @@ export class DirectionComponent {
         this.updateVehicleDirection(physicsState, controlMode);
         break;
       case 'airplane':
-        this.updateAirplaneDirection(physicsState, innerGroupRef, matchSizes, controlMode);
+        this.updateAirplaneDirection(physicsState, innerGroupRef, controlMode);
         break;
       default:
         this.updateCharacterDirection(physicsState, controlMode, calcProp);
@@ -99,6 +102,7 @@ export class DirectionComponent {
     physicsState: PhysicsState,
     controlMode?: string
   ): void {
+    void controlMode;
     const { activeState } = physicsState;
     const keyboard = this.interactionSystem.getKeyboardRef();
     const { forward, backward, leftward, rightward } = keyboard;
@@ -118,7 +122,6 @@ export class DirectionComponent {
   private updateAirplaneDirection(
     physicsState: PhysicsState,
     innerGroupRef?: RefObject<THREE.Group>,
-    matchSizes?: THREE.Vector3,
     controlMode?: string,
   ): void {
     const { activeState } = physicsState;
@@ -211,7 +214,7 @@ export class DirectionComponent {
           }
         });
         
-        if (automation.settings.loop && Q && automation.queue.actions) {
+        if (automation.queue.loop && Q && automation.queue.actions) {
           automation.queue.actions.push(Q);
         }
       }
@@ -252,7 +255,7 @@ export class DirectionComponent {
           this.timers.add(timer);
         }
       }
-      if (automation.settings.loop && Q && automation.queue.actions) {
+      if (automation.queue.loop && Q && automation.queue.actions) {
         automation.queue.actions.push(Q);
       }
     } else {
@@ -265,7 +268,7 @@ export class DirectionComponent {
     mouse: PhysicsState['mouse'],
     characterConfig: PhysicsConfigType,
   ): void {
-    // 원래의 간단한 클릭 로직으로 복원
+    void characterConfig;
     activeState.euler.y = Math.PI / 2 - mouse.angle;
     const { sin: sinY, cos: cosY } = getCachedTrig(activeState.euler.y);
     activeState.dir.set(-sinY, 0, -cosY);
@@ -278,6 +281,8 @@ export class DirectionComponent {
     characterConfig: PhysicsConfigType,
     controlMode?: string,
   ): void {
+    void characterConfig;
+    void controlMode;
     const { forward, backward, leftward, rightward } = keyboard;
     const dirX = Number(rightward) - Number(leftward);
     const dirZ = Number(backward) - Number(forward);

@@ -1,7 +1,8 @@
 import { useRef, useCallback, useEffect, useSyncExternalStore } from 'react';
+
+import { GameStatesType } from '../../world/components/Rideable/types';
 import { EntityStateManager } from '../core/system/EntityStateManager';
 import { ActiveStateType } from '../core/types';
-import { GameStatesType } from '../../world/components/Rideable/types';
 
 export interface UseStateSystemResult {
     activeState: ActiveStateType;

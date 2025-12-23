@@ -1,10 +1,11 @@
 import { useState } from 'react';
+
 import { useGaesupStore } from '../../../src/core';
 import { Icon } from '../icon';
 import { CameraSettings } from './CameraSettings';
+import { CAMERA_PRESETS } from './constants';
 import { SelectionTooltip } from './SelectionTooltip';
 import './styles.css';
-import { CAMERA_PRESETS } from './constants';
 
 export default function Info() {
   const mode = useGaesupStore((state) => state.mode);

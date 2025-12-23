@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+
 import { BuildingUI, useBuildingStore } from '../../../src';
 
 export type BuildingExampleProps = {

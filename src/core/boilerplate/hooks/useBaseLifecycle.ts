@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+
 import { AbstractBridge } from '../bridge/AbstractBridge';
 import { IDisposable, UseBaseLifecycleOptions } from '../types';
 

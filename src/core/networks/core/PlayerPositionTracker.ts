@@ -1,4 +1,6 @@
+import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
+
 
 export interface PlayerUpdateData {
   name: string;
@@ -29,7 +31,7 @@ export class PlayerPositionTracker {
   }
 
   trackPosition(
-    playerRef: any,
+    playerRef: { current: RapierRigidBody | null },
     playerName: string,
     playerColor: string,
     modelUrl?: string

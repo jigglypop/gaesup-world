@@ -1,4 +1,5 @@
 import mitt from 'mitt';
+
 import { CameraSystemEvents, CameraSystemConfig, ICameraSystemMonitor, CameraSystemEmitter, CameraSystemState } from './types';
 import { Profile, HandleError } from '../../boilerplate/decorators';
 

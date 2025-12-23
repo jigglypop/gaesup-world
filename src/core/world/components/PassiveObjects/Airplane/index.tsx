@@ -1,6 +1,7 @@
 import { useGenericRefs } from '@hooks/useGenericRefs';
-import { passiveAirplanePropsType } from './types';
 import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
+
+import { passiveAirplanePropsType } from './types';
 
 export function PassiveAirplane(props: passiveAirplanePropsType) {
   const refs = useGenericRefs();

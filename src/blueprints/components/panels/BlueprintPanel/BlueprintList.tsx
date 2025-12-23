@@ -1,6 +1,7 @@
 import React from 'react';
-import { BlueprintItem } from '../types';
+
 import { BlueprintCard } from '../../BlueprintCard';
+import { BlueprintItem } from '../types';
 
 export type BlueprintListProps = {
   blueprints: BlueprintItem[];

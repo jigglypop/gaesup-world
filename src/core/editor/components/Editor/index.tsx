@@ -1,4 +1,5 @@
 import React, { FC } from 'react';
+
 import { EditorLayout } from '../EditorLayout';
 import '../../styles/theme.css';
 import { EditorProps } from './types';

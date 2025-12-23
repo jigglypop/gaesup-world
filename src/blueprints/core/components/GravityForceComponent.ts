@@ -1,7 +1,8 @@
+import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
+
 import { BaseComponent } from '../BaseComponent';
 import { ComponentContext, IForceComponent } from '../types';
-import { RapierRigidBody } from '@react-three/rapier';
 
 export interface GravityForceProperties {
   gravity?: number;

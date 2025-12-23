@@ -1,8 +1,13 @@
-import { AbstractSystem, SystemUpdateArgs, Autowired } from '@core/boilerplate';
-import { Profile, HandleError, RegisterSystem, ManageRuntime } from '@core/boilerplate';
-import * as THREE from 'three';
 import { vec3, quat, RapierRigidBody } from '@react-three/rapier';
-import { MotionState, MotionMetrics, MotionSystemOptions, ActiveStateType, GameStatesType } from './types';
+import * as THREE from 'three';
+
+import { AbstractSystem, SystemUpdateArgs, Autowired } from '@core/boilerplate';
+import { Profile, HandleError, ManageRuntime } from '@core/boilerplate';
+
+import type { GameStatesType } from '@core/world/components/Rideable/types';
+
+import type { ActiveStateType } from '../types';
+import { MotionState, MotionMetrics, MotionSystemOptions } from './types';
 import { MotionService } from '../services/MotionService';
 
 const defaultState: MotionState = {
@@ -53,10 +58,10 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
 
   @Profile()
   protected override updateMetrics(deltaTime: number): void {
-    this.calculateSpeed(deltaTime);
-    this.updateMultipleStates({
-      isAccelerating: this.state.speed > this.metrics.currentSpeed
-    } as Partial<MotionState>);
+    void deltaTime;
+    const previousSpeed = this.metrics.currentSpeed;
+    this.calculateSpeed();
+    this.state.isAccelerating = this.metrics.currentSpeed > previousSpeed;
     this.metrics.averageSpeed = this.metrics.totalDistance / (this.state.lastUpdate / 1000 || 1);
   }
 
@@ -100,7 +105,7 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
   }
 
   @Profile()
-  private calculateSpeed(deltaTime: number): void {
+  private calculateSpeed(): void {
     const distance = this.state.position.distanceTo(this.metrics.lastPosition);
     this.metrics.totalDistance += distance;
     this.metrics.currentSpeed = this.motionService.calculateSpeed(this.state.velocity);
@@ -118,7 +123,7 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     rigidBody.applyImpulse(force, true);
   }
 
-  protected onDispose(): void {
+  protected override onDispose(): void {
     this.metrics.lastPosition.set(0, 0, 0);
   }
 

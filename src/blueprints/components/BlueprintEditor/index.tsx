@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+
 import ReactFlow, {
   Controls,
   Background,
@@ -9,6 +10,7 @@ import ReactFlow, {
   BackgroundVariant,
   ReactFlowProvider,
 } from 'reactflow';
+
 import 'reactflow/dist/style.css';
 import {
   BlueprintType,
@@ -17,14 +19,14 @@ import {
 } from './types';
 import { blueprintRegistry, AnyBlueprint } from '../../';
 import { useSpawnFromBlueprint } from '../../hooks/useSpawnFromBlueprint';
+import { BlueprintPreview } from '../BlueprintPreview';
+import { CameraNode } from '../editor/CameraNode';
+import { EditableNode } from '../editor/EditableNode';
+import { InputNode } from '../editor/InputNode';
 import {
   convertBlueprintToItem,
   generateNodesFromBlueprint,
 } from '../panels/BlueprintPanel/utils';
-import { EditableNode } from '../editor/EditableNode';
-import { BlueprintPreview } from '../BlueprintPreview';
-import { CameraNode } from '../editor/CameraNode';
-import { InputNode } from '../editor/InputNode';
 import './styles.css';
 
 const blueprintCategories: BlueprintCategory[] = [

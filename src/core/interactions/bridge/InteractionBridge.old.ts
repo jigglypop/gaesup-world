@@ -1,9 +1,11 @@
 import * as THREE from 'three';
-import { InteractionSystem, KeyboardState, MouseState } from '../core/InteractionSystem';
-import { AutomationSystem } from '../core/AutomationSystem';
-import { InteractionSnapshot } from './types';
+
 import { Profile, HandleError, LogSnapshot, ValidateCommand, TrackCalls } from '@/core/boilerplate/decorators';
 import { logger } from '@/core/utils/logger';
+
+import { InteractionSnapshot } from './types';
+import { AutomationSystem } from '../core/AutomationSystem';
+import { InteractionSystem, KeyboardState, MouseState } from '../core/InteractionSystem';
 
 export interface BridgeCommand {
   type: 'input' | 'automation';

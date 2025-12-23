@@ -1,10 +1,10 @@
-import { useGaesupStore } from '../../../src/core';
+import { CheckboxInput } from './CheckboxInput';
 import { CAMERA_PRESETS } from './constants';
 import { RangeInput } from './RangeInput';
-import { CheckboxInput } from './CheckboxInput';
+import { useGaesupStore } from '../../../src/core';
 
 interface CameraSettingsProps {
-  mode: any;
+  mode: { control: string };
   onControlChange: (control: string) => void;
   onClose?: () => void;
 }
@@ -45,6 +45,11 @@ export function CameraSettings({ mode, onControlChange, onClose }: CameraSetting
         <button onClick={resetToPreset} className="reset-button">
           Reset to Preset
         </button>
+        {onClose && (
+          <button onClick={onClose} className="reset-button">
+            Close
+          </button>
+        )}
       </div>
       <div className="settings-grid">
         <div className="setting-group">

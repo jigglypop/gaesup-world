@@ -1,5 +1,4 @@
 import { NetworkMessage } from '../types';
-import { MessageProcessResult } from './types';
 
 export class MessageQueue {
   private queues: Map<string, NetworkMessage[]> = new Map();

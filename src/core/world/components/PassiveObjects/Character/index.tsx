@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
-import { passiveCharacterPropsType } from './types';
-import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
+
 import { useGenericRefs } from '@hooks/useGenericRefs';
+import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
+
+import { passiveCharacterPropsType } from './types';
 
 export function PassiveCharacter(props: passiveCharacterPropsType) {
   const refs = useGenericRefs();

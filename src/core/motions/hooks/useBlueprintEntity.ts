@@ -1,7 +1,9 @@
 import { useRef, useEffect, RefObject } from 'react';
+
+import { useFrame } from '@react-three/fiber';
 import { RapierRigidBody } from '@react-three/rapier';
 import { Group } from 'three';
-import { useFrame } from '@react-three/fiber';
+
 import { BlueprintEntity, BlueprintDefinition, registerDefaultComponents, IComponent } from '../../../blueprints/core';
 
 export interface UseBlueprintEntityProps {

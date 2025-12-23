@@ -1,7 +1,7 @@
 import { NetworkSystemState, NetworkConfig, NetworkCommand, NetworkSnapshot } from '../types';
-import { NPCNetworkManager } from './NPCNetworkManager';
-import { MessageQueue } from './MessageQueue';
 import { ConnectionPool } from './ConnectionPool';
+import { MessageQueue } from './MessageQueue';
+import { NPCNetworkManager } from './NPCNetworkManager';
 import { PerformanceMetrics } from './types';
 
 export class NetworkSystem {

@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { useAnimationBridge } from '../../hooks/useAnimationBridge';
 import './styles.css';
 

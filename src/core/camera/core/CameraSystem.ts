@@ -1,3 +1,7 @@
+import * as THREE from 'three';
+
+import { ManageRuntime } from '@/core/boilerplate/decorators';
+
 import {
   ICameraController,
   CameraSystemState,
@@ -6,6 +10,8 @@ import {
   CameraState,
   CameraTransition,
 } from './types';
+import { BaseCameraSystem } from '../bridge/BaseCameraSystem';
+import { CameraSystemConfig } from '../bridge/types';
 import {
   ThirdPersonController,
   FirstPersonController,
@@ -15,10 +21,6 @@ import {
   SideScrollController,
   FixedController
 } from '../controllers';
-import { BaseCameraSystem } from '../bridge/BaseCameraSystem';
-import { CameraSystemConfig } from '../bridge/types';
-import * as THREE from 'three';
-import { ManageRuntime } from '@/core/boilerplate/decorators';
 
 @ManageRuntime({ autoStart: false })
 export class CameraSystem extends BaseCameraSystem {

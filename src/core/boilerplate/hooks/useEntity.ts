@@ -1,11 +1,16 @@
 import { useRef, RefObject } from 'react';
-import { RapierRigidBody } from '@react-three/rapier';
-import { useGaesupStore } from '@stores/gaesupStore';
-import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
+
+import type { RapierCollider, RapierRigidBody } from '@react-three/rapier';
+import type { Group } from 'three';
+
 import { useAnimationSetup } from '@core/motions/hooks/setup/useAnimationSetup';
 import { useMotionSetup } from '@core/motions/hooks/setup/useMotionSetup';
 import { usePhysicsBridge } from '@core/motions/hooks/usePhysicsBridge';
-import { PhysicsCalculationProps } from '@core/motions/types';
+import type { PhysicsCalculationProps } from '@core/motions/types';
+import type { GroundRay } from '@core/motions/entities/types';
+import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
+import { useGaesupStore } from '@stores/gaesupStore';
+
 import {
   useCollisionHandler,
   CollisionHandlerOptions,
@@ -21,10 +26,10 @@ export interface UseEntityOptions
   id?: string;
   rigidBodyRef: RefObject<RapierRigidBody>;
   isActive?: boolean;
-  outerGroupRef?: RefObject<THREE.Group>;
-  innerGroupRef?: RefObject<THREE.Group>;
-  colliderRef?: RefObject<any>;
-  groundRay?: any;
+  outerGroupRef?: RefObject<Group>;
+  innerGroupRef?: RefObject<Group>;
+  colliderRef?: RefObject<RapierCollider>;
+  groundRay?: GroundRay;
 }
 
 export function useEntity(options: UseEntityOptions) {
@@ -44,28 +49,29 @@ export function useEntity(options: UseEntityOptions) {
   ).current;
 
   const activeMode = useGaesupStore((state) => state.mode);
-  const modeType = activeMode?.type;
+  const modeType = activeMode?.type ?? 'character';
+  const active = isActive === true;
 
   // 1. Animation Logic
-  useAnimationSetup(actions, modeType, isActive);
-  useAnimationPlayer(isActive && modeType === 'character');
+  useAnimationSetup(actions, modeType, active);
+  useAnimationPlayer(active && modeType === 'character');
 
   // 2. Motion Logic
   const { executeMotionCommand, getMotionSnapshot } = useMotionSetup(
     entityId,
     rigidBodyRef,
     modeType,
-    isActive,
+    active,
   );
 
   // 3. Physics Logic
-  if (isActive) {
+  if (active) {
     const physicsProps: PhysicsCalculationProps = {
-      outerGroupRef,
-      innerGroupRef,
-      rigidBodyRef: rigidBodyRef as RefObject<RapierRigidBody>,
-      colliderRef,
-      groundRay,
+      rigidBodyRef,
+      ...(outerGroupRef ? { outerGroupRef } : {}),
+      ...(innerGroupRef ? { innerGroupRef } : {}),
+      ...(colliderRef ? { colliderRef } : {}),
+      ...(groundRay ? { groundRay } : {}),
     };
     usePhysicsBridge(physicsProps);
   }

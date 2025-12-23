@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+
 import { PlayerNetworkManager, PlayerState } from '../core/PlayerNetworkManager';
 
 interface UsePlayerNetworkOptions {

@@ -1,6 +1,6 @@
+import APIBuilder from "./builder";
 import { loginFormType, registerFormType, userType } from "../store/types";
 import cache from "../utils/cache";
-import APIBuilder from "./builder";
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:3001";
 

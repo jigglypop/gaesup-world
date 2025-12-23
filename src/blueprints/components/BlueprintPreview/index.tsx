@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Canvas } from '@react-three/fiber';
+
 import { Environment, Grid } from '@react-three/drei';
+import { Canvas } from '@react-three/fiber';
 import { Physics, RigidBody, euler } from "@react-three/rapier";
+
 import { BlueprintPreviewProps } from './types';
 import './styles.css';
 import { 
@@ -12,7 +14,9 @@ import {
   Clicker,
   GroundClicker 
 } from '../../../core';
+
 import * as THREE from 'three';
+
 import { CharacterBlueprint } from '../../types';
 
 export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {

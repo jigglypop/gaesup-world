@@ -1,4 +1,5 @@
 import { StateCreator } from 'zustand';
+
 import { ModeSlice, ModeState, ControllerOptionsType } from './types';
 
 const initialModeState: ModeState = {
@@ -24,5 +25,10 @@ export const createModeSlice: StateCreator<ModeSlice, [], [], ModeSlice> = (set)
   setControllerOptions: (update) =>
     set((state) => ({
       controllerOptions: { ...state.controllerOptions, ...update },
+    })),
+  resetMode: () =>
+    set(() => ({
+      mode: initialModeState,
+      controllerOptions: initialControllerOptions,
     })),
 });

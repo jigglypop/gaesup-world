@@ -1,7 +1,8 @@
-import * as THREE from 'three';
 import { RigidBodyProps } from '@react-three/rapier';
-import { WorldObject } from '../../core/WorldSystem';
+import * as THREE from 'three';
+
 import { CollisionEvent } from '@core/types/common';
+
 
 export type GameStatesType = {
     canRide: boolean;
@@ -33,8 +34,16 @@ export type NearbyRideable = {
   canInteract: boolean;
 }
 
-export type RideableObject = WorldObject & {
+export type RideableObject = {
+  id: string;
   type: 'rideable';
+  objectkey: string;
+  objectType: 'vehicle' | 'airplane' | 'boat' | 'bike';
+  position?: THREE.Vector3;
+  rotation?: THREE.Euler;
+  scale?: THREE.Vector3;
+  name?: string;
+  displayName?: string;
   maxSpeed: number;
   acceleration: number;
   deceleration: number;
@@ -56,7 +65,7 @@ export type RideableObject = WorldObject & {
     linearDamping: number;
     angularDamping: number;
   };
-}
+};
 
 export type RideableUIProps = {
   states: {

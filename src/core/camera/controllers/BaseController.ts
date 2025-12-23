@@ -1,7 +1,9 @@
 import * as THREE from 'three';
+
+import { Profile, HandleError } from '@/core/boilerplate/decorators';
+
 import { ICameraController, CameraCalcProps, CameraSystemState, CameraSystemConfig } from '../core/types';
 import { activeStateUtils, cameraUtils } from '../utils/camera';
-import { Profile, HandleError } from '@/core/boilerplate/decorators';
 
 export abstract class BaseController implements ICameraController {
   abstract name: string;

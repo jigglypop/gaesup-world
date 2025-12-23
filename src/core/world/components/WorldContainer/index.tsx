@@ -1,7 +1,9 @@
 import { Suspense, useEffect, ReactNode, useMemo } from 'react';
-import { useGaesupStore } from '@stores/gaesupStore';
-import { WorldContainerProps } from './types';
+
 import { Camera } from '@/core/camera';
+import { useGaesupStore } from '@stores/gaesupStore';
+
+import { WorldContainerProps } from './types';
 
 function WorldContent({ children, showGrid, showAxes }: { 
   children?: ReactNode; 

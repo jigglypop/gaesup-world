@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
+
 import { useNavigate } from 'react-router-dom';
+
+import { WorldPage } from './World';
 import { useBuildingStore } from '../../src';
 import { BuildingExample } from '../components/building';
-import { WorldPage } from './World';
 
 export function BuildingEditorPage() {
   const setEditMode = useBuildingStore(state => state.setEditMode);

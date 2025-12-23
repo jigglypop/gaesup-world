@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+
 import { BaseState, BaseMetrics, SystemOptions } from '@core/boilerplate';
 
 export type MotionType = 'character' | 'vehicle' | 'airplane';
@@ -47,5 +48,6 @@ export interface EntityStateRefs {
   gameStates: GameStatesType;
 }
 
-import { ActiveStateType } from '../types';
 import { GameStatesType } from '@core/world/components/Rideable/types';
+
+import { ActiveStateType } from '../types';

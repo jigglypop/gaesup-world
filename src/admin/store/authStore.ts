@@ -42,7 +42,7 @@ export const useAuthStore = create<AuthState>()(
           }
           set({ loading: false });
           return false;
-        } catch (error) {
+        } catch {
           set({ loading: false });
           return false;
         }

@@ -1,8 +1,8 @@
 import React, { useMemo, useCallback } from 'react';
-import { useBuildingStore } from '../../stores/buildingStore';
+
 import { useAuthStore } from '../../../../admin/store/authStore';
 import { useNPCStore } from '../../../npc/stores/npcStore';
-import { TILE_CONSTANTS } from '../../types/constants';
+import { useBuildingStore } from '../../stores/buildingStore';
 import './styles.css';
 
 export type BuildingUIProps = {
@@ -40,38 +40,18 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
   const isEditing = isInEditMode();
   
   const {
-    categories: npcCategories,
     templates: npcTemplates,
-    selectedCategoryId: selectedNPCCategoryId,
     selectedTemplateId: selectedNPCTemplateId,
-    setSelectedCategory: setSelectedNPCCategory,
     setSelectedTemplate: setSelectedNPCTemplate,
-    addTemplate: addNPCTemplate,
-    updateTemplate: updateNPCTemplate,
     initializeDefaults: initializeNPCDefaults,
     selectedInstanceId: selectedNPCInstanceId,
-    instances: npcInstances,
-    updateInstancePart,
-    updateInstance: updateNPCInstance
   } = useNPCStore();
   
   const [showCustomSettings, setShowCustomSettings] = React.useState(false);
   const [customName, setCustomName] = React.useState('');
   const [customColor, setCustomColor] = React.useState('#808080');
   const [customTexture, setCustomTexture] = React.useState('');
-  
-  const [customNPCParts, setCustomNPCParts] = React.useState<Array<{
-    type: string;
-    url: string;
-    color?: string;
-  }>>([]);
-  
-  const [selectedAccessories, setSelectedAccessories] = React.useState<{
-    hat?: string;
-    glasses?: string;
-  }>({});
-  
-  // Memoize arrays
+
   const tileCategoriesArray = useMemo(() => Array.from(tileCategories.values()), [tileCategories]);
   const wallCategoriesArray = useMemo(() => Array.from(wallCategories.values()), [wallCategories]);
   const npcTemplatesArray = useMemo(() => Array.from(npcTemplates.values()), [npcTemplates]);
@@ -245,7 +225,7 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                           if (tileGroup && tileGroup.floorMeshId) {
                             updateMesh(tileGroup.floorMeshId, {
                               color: customColor,
-                              mapTextureUrl: customTexture || undefined
+                              ...(customTexture ? { mapTextureUrl: customTexture } : {}),
                             });
                           }
                         }
@@ -266,7 +246,7 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                             id: newMeshId,
                             color: customColor,
                             material: 'STANDARD',
-                            mapTextureUrl: customTexture || undefined,
+                            ...(customTexture ? { mapTextureUrl: customTexture } : {}),
                             roughness: 0.6
                           });
                           
@@ -460,21 +440,22 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                         if (selectedWallGroupId) {
                           const wallGroup = wallGroups.get(selectedWallGroupId);
                           if (wallGroup && wallGroup.frontMeshId) {
-                            updateMesh(wallGroup.frontMeshId, {
+                            const meshUpdate = {
                               color: customColor,
-                              mapTextureUrl: customTexture || undefined
+                              ...(customTexture ? { mapTextureUrl: customTexture } : {}),
+                            };
+                            updateMesh(wallGroup.frontMeshId, {
+                              ...meshUpdate,
                             });
                             // Update back and side meshes too
                             if (wallGroup.backMeshId) {
                               updateMesh(wallGroup.backMeshId, {
-                                color: customColor,
-                                mapTextureUrl: customTexture || undefined
+                                ...meshUpdate,
                               });
                             }
                             if (wallGroup.sideMeshId) {
                               updateMesh(wallGroup.sideMeshId, {
-                                color: customColor,
-                                mapTextureUrl: customTexture || undefined
+                                ...meshUpdate,
                               });
                             }
                           }
@@ -496,7 +477,7 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                             id: newMeshId,
                             color: customColor,
                             material: 'STANDARD',
-                            mapTextureUrl: customTexture || undefined,
+                            ...(customTexture ? { mapTextureUrl: customTexture } : {}),
                             roughness: 0.7
                           });
                           
@@ -627,8 +608,9 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                           onClick={() => {
                             useNPCStore.getState().setPreviewAccessory('hat', hat.id);
                             const instanceId = useNPCStore.getState().selectedInstanceId;
-                            if (instanceId) {
-                              useNPCStore.getState().updateInstancePart(instanceId, hat.parts[0].id, hat.parts[0]);
+                            const part = hat.parts[0];
+                            if (instanceId && part) {
+                              useNPCStore.getState().updateInstancePart(instanceId, part.id, part);
                             }
                           }}
                           className={`building-ui-clothing-button ${useNPCStore.getState().previewAccessories.hat === hat.id ? 'active' : ''}`}

@@ -1,5 +1,5 @@
 import 'reflect-metadata'
-import { BridgeConstructor, ServiceTarget } from '../types'
+import { ServiceTarget } from '../types'
 
 export class BridgeRegistry {
     private static registry = new Map<string, ServiceTarget>()

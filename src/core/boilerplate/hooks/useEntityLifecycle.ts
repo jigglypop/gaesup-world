@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+
 import * as THREE from 'three';
 
 export interface EntityLifecycleOptions {
@@ -25,11 +26,11 @@ export function useEntityLifecycle(options: EntityLifecycleOptions) {
       animationId = requestAnimationFrame(frameHandler);
     };
 
-    if (onFrame || (onAnimate && actions)) {
-      animationId = requestAnimationFrame(frameHandler);
-      return () => {
-        cancelAnimationFrame(animationId);
-      };
-    }
+    if (!onFrame && !(onAnimate && actions)) return undefined;
+
+    animationId = requestAnimationFrame(frameHandler);
+    return () => {
+      cancelAnimationFrame(animationId);
+    };
   }, [onFrame, onAnimate, actions]);
 } 

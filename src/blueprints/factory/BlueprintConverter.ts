@@ -1,5 +1,5 @@
-import { AnyBlueprint, CharacterBlueprint, VehicleBlueprint, AirplaneBlueprint } from '../types';
 import { BlueprintDefinition, ComponentDefinition } from '../core/types';
+import { AnyBlueprint, CharacterBlueprint, VehicleBlueprint, AirplaneBlueprint } from '../types';
 
 export class BlueprintConverter {
   convert(blueprint: AnyBlueprint): BlueprintDefinition {

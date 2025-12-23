@@ -1,6 +1,7 @@
 import { Node, Edge, MarkerType } from 'reactflow';
-import { AnyBlueprint, CharacterBlueprint, VehicleBlueprint, AirplaneBlueprint } from '../../../types';
+
 import { BlueprintItem, BlueprintType } from './types';
+import { AnyBlueprint, CharacterBlueprint, VehicleBlueprint, AirplaneBlueprint } from '../../../types';
 
 // Edge style constants
 const EDGE_STYLE = {

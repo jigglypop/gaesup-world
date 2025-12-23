@@ -1,7 +1,7 @@
 import { ComponentRegistry } from './ComponentRegistry';
-import { GravityForceComponent } from './components/GravityForceComponent';
-import { CharacterMovementComponent } from './components/CharacterMovementComponent';
 import { CharacterAnimationComponent } from './components/CharacterAnimationComponent';
+import { CharacterMovementComponent } from './components/CharacterMovementComponent';
+import { GravityForceComponent } from './components/GravityForceComponent';
 
 export function registerDefaultComponents(): void {
   const registry = ComponentRegistry.getInstance();

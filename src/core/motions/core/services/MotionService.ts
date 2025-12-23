@@ -1,7 +1,8 @@
-import { Service } from '@core/boilerplate';
 import * as THREE from 'three';
-import { GameStatesType } from '@/core/world/components/Rideable/types';
+
 import { Profile } from '@/core/boilerplate/decorators';
+import { GameStatesType } from '@/core/world/components/Rideable/types';
+import { Service } from '@core/boilerplate';
 
 @Service()
 export class MotionService {

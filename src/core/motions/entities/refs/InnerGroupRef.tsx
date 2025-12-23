@@ -1,5 +1,7 @@
 import { Ref, forwardRef } from 'react';
+
 import * as THREE from 'three';
+
 import { ModelRenderer } from './PartsGroupRef';
 import { InnerGroupRefType } from './types';
 
@@ -18,19 +20,27 @@ export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THRE
       }
     });
   }
+  const modelYawOffset =
+    typeof props.modelYawOffset === 'number'
+      ? props.modelYawOffset
+      : props.componentType === 'character'
+        ? Math.PI
+        : 0;
   return (
     <group receiveShadow castShadow ref={ref} userData={{ intangible: true }}>
-      {props.children}
-      {props.objectNode && props.animationRef && (
-        <primitive
-          object={props.objectNode}
-          visible={false}
-          receiveShadow
-          castShadow
-          ref={props.animationRef}
-        />
-      )}
-      <ModelRenderer nodes={props.nodes} skeleton={props.skeleton!!} url={props.url || ''} color={props?.parts?.color} />
+      <group rotation-y={modelYawOffset}>
+        {props.children}
+        {props.objectNode && props.animationRef && (
+          <primitive
+            object={props.objectNode}
+            visible={false}
+            receiveShadow
+            castShadow
+            ref={props.animationRef}
+          />
+        )}
+        <ModelRenderer nodes={props.nodes} skeleton={props.skeleton!} url={props.url || ''} color={props?.parts?.color} />
+      </group>
     </group>
   );
 });

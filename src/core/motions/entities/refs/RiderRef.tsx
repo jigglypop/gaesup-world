@@ -1,12 +1,15 @@
+import { useMemo } from 'react';
+
 import { useAnimations } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
-import { useMemo } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
+
 import { useAnimationPlayer } from '@/core/hooks';
+
 import { ModelRenderer } from './PartsGroupRef';
-import { riderRefType } from '../types';
 import { useGltfAndSize } from '../../hooks';
+import { riderRefType } from '../types';
 
 export default function RiderRef({
   url,

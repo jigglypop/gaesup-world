@@ -1,9 +1,11 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react-swc';
-import tsconfigPaths from 'vite-tsconfig-paths';
-import svgr from 'vite-plugin-svgr';
-import glsl from 'vite-plugin-glsl';
 import path from 'path';
+
+import react from '@vitejs/plugin-react-swc';
+import { defineConfig } from 'vite';
+import glsl from 'vite-plugin-glsl';
+import svgr from 'vite-plugin-svgr';
+import tsconfigPaths from 'vite-tsconfig-paths';
+
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {

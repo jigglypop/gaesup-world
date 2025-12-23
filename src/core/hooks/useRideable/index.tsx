@@ -1,8 +1,11 @@
-import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
 import { useCallback, useEffect } from 'react';
-import { useGaesupStore } from '@stores/gaesupStore';
-import { rideableType } from './types';
+
+import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
+
 import { useGaesupGltf } from '@/core/motions/hooks/useGaesupGltf';
+import { useGaesupStore } from '@stores/gaesupStore';
+
+import { rideableType } from './types';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
 
 export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'url' | 'wheelUrl'> =
@@ -23,15 +26,29 @@ export function useRideable() {
   const setUrls = useGaesupStore((state) => state.setUrls);
   const { getSizesByUrls } = useGaesupGltf();
 
+  const toModeType = useCallback(
+    (objectType: rideableType['objectType']) =>
+      objectType === 'airplane' ? 'airplane' : 'vehicle',
+    [],
+  );
+
   const setUrl = useCallback(
     (props: rideableType) => {
       const newUrls: Partial<typeof urls> = {};
-      newUrls.ridingUrl = props.ridingUrl ?? urls.characterUrl;
-      if (props.objectType === 'vehicle') {
+      const ridingUrl = props.ridingUrl ?? urls.characterUrl;
+      if (typeof ridingUrl === 'string' && ridingUrl.length > 0) {
+        newUrls.ridingUrl = ridingUrl;
+      }
+
+      if (props.objectType === 'airplane') {
+        newUrls.airplaneUrl = props.url ?? '';
+        setUrls(newUrls);
+        return;
+      }
+
+      if (props.objectType) {
         newUrls.vehicleUrl = props.url ?? '';
         newUrls.wheelUrl = props.wheelUrl ?? '';
-      } else if (props.objectType === 'airplane') {
-        newUrls.airplaneUrl = props.url ?? '';
       }
       setUrls(newUrls);
     },
@@ -45,7 +62,7 @@ export function useRideable() {
 
       const modeType = rideableItem.objectType;
       const { vehicleUrl, airplaneUrl, characterUrl } = getSizesByUrls(urls);
-      const size = modeType === 'vehicle' ? vehicleUrl : airplaneUrl;
+      const size = modeType === 'airplane' ? airplaneUrl : vehicleUrl;
       const mySize = characterUrl;
       if (!size || !mySize) return;
 
@@ -77,7 +94,7 @@ export function useRideable() {
       const rideableItem = rideable[objectkey];
       if (!rideableItem) return;
       setUrl(rideableItem);
-      setMode({ type: objectType });
+      setMode({ type: toModeType(objectType) });
       updateGameStates({
         currentRideable: gameStates.nearbyRideable,
         isRiding: true,
@@ -96,6 +113,7 @@ export function useRideable() {
     rideable,
     setUrl,
     setMode,
+    toModeType,
     updateGameStates,
     setRideable,
   ]);
@@ -178,9 +196,9 @@ export function useRideable() {
               brake: false,
             },
             name: props.objectType === 'vehicle' ? '차량' : '비행기',
-            rideMessage: props.rideMessage,
-            exitMessage: props.exitMessage,
-            displayName: props.displayName,
+            ...(props.rideMessage ? { rideMessage: props.rideMessage } : {}),
+            ...(props.exitMessage ? { exitMessage: props.exitMessage } : {}),
+            ...(props.displayName ? { displayName: props.displayName } : {}),
           },
           canRide: true,
         });

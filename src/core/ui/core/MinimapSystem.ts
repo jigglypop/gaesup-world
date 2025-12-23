@@ -1,9 +1,12 @@
 import * as THREE from 'three';
-import { MinimapMarker } from './types';
-import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
-import { BaseState, BaseMetrics } from '@/core/boilerplate/types';
-import { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
+
 import { RegisterSystem, ManageRuntime } from '@/core/boilerplate/decorators';
+import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
+import { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
+import { BaseState, BaseMetrics } from '@/core/boilerplate/types';
+
+import { MinimapMarker } from './types';
+
 
 interface MinimapSystemState extends BaseState {
   markers: Map<string, MinimapMarker>;
@@ -29,9 +32,19 @@ interface MinimapRenderOptions {
   position: THREE.Vector3;
   rotation: number;
   blockRotate?: boolean;
-  tileGroups?: Map<string, any>;
+  tileGroups?: Map<string, TileGroupLike>;
   sceneObjects?: Map<string, { position: THREE.Vector3; size: THREE.Vector3 }>;
 }
+
+type TileLike = {
+  position: { x: number; y: number; z: number };
+  size?: number;
+  objectType?: string;
+};
+
+type TileGroupLike = {
+  tiles?: TileLike[];
+};
 
 @RegisterSystem('minimap')
 @ManageRuntime({ autoStart: false })
@@ -248,11 +261,11 @@ export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSys
     ctx.restore();
   }
 
-  private renderTiles(ctx: CanvasRenderingContext2D, size: number, scale: number, position: THREE.Vector3, tileGroups: Map<string, any>): void {
+  private renderTiles(ctx: CanvasRenderingContext2D, size: number, scale: number, position: THREE.Vector3, tileGroups: Map<string, TileGroupLike>): void {
     const tileGroupsArray = Array.from(tileGroups.values());
     tileGroupsArray.forEach((tileGroup) => {
       if (tileGroup && tileGroup.tiles && Array.isArray(tileGroup.tiles)) {
-        tileGroup.tiles.forEach((tile: any) => {
+        tileGroup.tiles.forEach((tile) => {
           if (!tile || !tile.position) return;
           
           const posX = (tile.position.x - position.x) * scale;
@@ -380,10 +393,12 @@ export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSys
   // AbstractSystem의 추상 메서드 구현
   protected performUpdate(context: SystemContext): void {
     // 미니맵은 매 프레임 업데이트가 필요없음
+    void context;
   }
 
   protected override updateMetrics(deltaTime: number): void {
     this.metrics.markerCount = this.state.markers.size;
+    this.metrics.frameTime = deltaTime;
   }
 
   protected override onDispose(): void {

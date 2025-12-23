@@ -1,9 +1,13 @@
-import { RigidBody, CapsuleCollider } from '@react-three/rapier';
-import { PassiveObjectProps, PassiveObject, PassiveObjectInstanceProps } from './types';
-import { useMemo, memo, useCallback } from 'react';
-import { PhysicsEntity } from "@motions/entities/refs/PhysicsEntity"
-import './styles.css';
+import { memo, useCallback, useMemo } from 'react';
+
+import { CapsuleCollider, RigidBody } from '@react-three/rapier';
+
 import { useGenericRefs } from '@hooks/useGenericRefs';
+import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
+
+import { PassiveObjectInstanceProps, PassiveObjectProps } from './types';
+
+import './styles.css';
 
 const PassiveObjectInstance = memo(function PassiveObjectInstance({
   object,
@@ -36,7 +40,7 @@ const PassiveObjectInstance = memo(function PassiveObjectInstance({
       <PhysicsEntity
         url={object.metadata.modelUrl}
         isActive={false}
-        componentType={object.type as any}
+        componentType={object.type}
         name={`passive-${object.type}-${object.id}`}
         position={object.position}
         rotation={object.rotation}
@@ -54,7 +58,7 @@ const PassiveObjectInstance = memo(function PassiveObjectInstance({
           onLeave: object.metadata?.onLeave,
           onInteract: object.metadata?.onInteract
         }}
-        onCollisionEnter={(payload) => {
+        onCollisionEnter={() => {
           if (enableInteraction && object.interactable && onSelect) {
             onSelect(object.id);
           }
@@ -94,10 +98,7 @@ export function PassiveObjects({
   selectedId, 
   onSelect, 
   showDebugInfo = false,
-  enableInteraction = true,
-  showBoundingBoxes = false,
-  showLabels = false,
-  onInteract
+  enableInteraction = true
 }: PassiveObjectProps) {
   const objectElements = useMemo(() => 
     objects.map((obj) => (

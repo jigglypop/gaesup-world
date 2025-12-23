@@ -1,4 +1,5 @@
 import { PhysicsEntity } from '@/core/motions/entities/refs/PhysicsEntity';
+
 import { activeVehicleInnerType } from './types';
 
 export function Vehicle(props: activeVehicleInnerType) {

@@ -1,7 +1,8 @@
-import * as THREE from 'three';
-import { MotionType } from '@/core/motions/core/system/types';
 import { RapierRigidBody } from '@react-three/rapier';
+import * as THREE from 'three';
+
 import { MotionSystem } from '@/core/motions/core/system/MotionSystem';
+import { MotionType } from '@/core/motions/core/system/types';
 
 export type MotionEntity = {
   system: MotionSystem;

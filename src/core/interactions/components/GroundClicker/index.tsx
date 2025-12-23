@@ -1,5 +1,6 @@
-import { useClicker } from '../../../hooks/useClicker';
 import { ThreeEvent } from '@react-three/fiber';
+
+import { useClicker } from '../../../hooks/useClicker';
 
 export function GroundClicker() {
   const { onClick } = useClicker();

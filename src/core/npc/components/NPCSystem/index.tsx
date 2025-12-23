@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
+
 import { useThree } from '@react-three/fiber';
-import { useNPCStore } from '../../stores/npcStore';
+
 import { useBuildingStore } from '../../../building/stores/buildingStore';
+import { useNPCStore } from '../../stores/npcStore';
 import { NPCInstance } from '../NPCInstance';
 import './styles.css';
 
@@ -11,7 +13,6 @@ export function NPCSystem() {
     instances,
     selectedTemplateId,
     createInstanceFromTemplate,
-    removeInstance,
     setSelectedInstance
   } = useNPCStore();
   const editMode = useBuildingStore(state => state.editMode);
@@ -19,7 +20,7 @@ export function NPCSystem() {
   const isNPCMode = editMode === 'npc';
   useEffect(() => {
     if (!isNPCMode || !selectedTemplateId || !hoverPosition) return;
-    const handleClick = (event: MouseEvent) => {
+    const handleClick = () => {
       if (hoverPosition) {
         createInstanceFromTemplate(selectedTemplateId, [
           hoverPosition.x,

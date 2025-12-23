@@ -1,5 +1,6 @@
+import { useState, useCallback } from 'react';
+
 import { useCursor } from '@react-three/drei';
-import { useState, useCallback, useEffect } from 'react';
 
 /**
  * A hook to manage cursor hover state and update the cursor style.

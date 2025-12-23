@@ -1,5 +1,6 @@
-import * as THREE from 'three';
 import { RootState } from '@react-three/fiber';
+import * as THREE from 'three';
+
 import { ActiveStateType } from '../../motions/core/types';
 
 export interface CameraConstants {
