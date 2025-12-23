@@ -8,14 +8,24 @@ import { useStateSystem } from '../../../motions/hooks/useStateSystem';
 import { DebugValue } from '@core/types/common';
 
 export function CameraDebugPanel() {
-  const [metrics, setMetrics] = useState<CameraMetrics>({});
+  const initialMetrics: CameraMetrics = {
+    frameCount: 0,
+    averageFrameTime: 0,
+    lastUpdateTime: Date.now(),
+    mode: 'unknown',
+    activeController: 'unknown',
+    distance: null,
+    fov: 0,
+    position: null,
+    targetPosition: null,
+    velocity: null,
+    rotation: null,
+  };
+  const [metrics, setMetrics] = useState<CameraMetrics>(initialMetrics);
   const mode = useGaesupStore((state) => state.mode);
   const cameraOption = useGaesupStore((state) => state.cameraOption);
   const { activeState } = useStateSystem();
-  const characterPosition = useGaesupStore((state) => state.characterPosition);
-  const characterVelocity = useGaesupStore((state) => state.characterVelocity);
-  const characterRotation = useGaesupStore((state) => state.characterRotation);
-  const metricsRef = useRef<CameraMetrics>({});
+  const metricsRef = useRef<CameraMetrics>(initialMetrics);
   const checkMetricChange = useCallback((
     newValue: any, 
     oldValue: any
@@ -34,15 +44,37 @@ export function CameraDebugPanel() {
     return JSON.stringify(newValue) !== JSON.stringify(oldValue);
   }, []);
 
+  const toVec3 = useCallback((value: any): { x: number; y: number; z: number } | null => {
+    if (!value) return null;
+    if (typeof value.x !== 'number' || typeof value.y !== 'number' || typeof value.z !== 'number') {
+      return null;
+    }
+    return { x: value.x, y: value.y, z: value.z };
+  }, []);
+
   const updateMetrics = useCallback(() => {
+    const distance =
+      cameraOption?.xDistance !== undefined &&
+      cameraOption?.yDistance !== undefined &&
+      cameraOption?.zDistance !== undefined
+        ? {
+            x: cameraOption.xDistance,
+            y: cameraOption.yDistance,
+            z: cameraOption.zDistance,
+          }
+        : null;
     const newMetrics: CameraMetrics = {
-      mode: mode?.control,
-      distance: cameraOption?.distance,
-      fov: cameraOption?.fov,
-      position: characterPosition || activeState?.position,
-      velocity: characterVelocity,
-      rotation: characterRotation,
-      zoom: cameraOption?.zoom,
+      ...metricsRef.current,
+      mode: mode?.control ?? 'unknown',
+      activeController: cameraOption?.mode ?? mode?.control ?? 'unknown',
+      distance,
+      fov: cameraOption?.fov ?? 0,
+      position: toVec3(activeState?.position),
+      targetPosition: toVec3(cameraOption?.target),
+      velocity: toVec3(activeState?.velocity),
+      rotation: toVec3(activeState?.euler),
+      lastUpdateTime: Date.now(),
+      ...(cameraOption?.zoom !== undefined ? { zoom: cameraOption.zoom } : {}),
     };
     
     const hasChanged = Object.keys(newMetrics).some(
@@ -56,7 +88,7 @@ export function CameraDebugPanel() {
       metricsRef.current = newMetrics;
       setMetrics(newMetrics);
     }
-  }, [mode, cameraOption, activeState, characterPosition, characterVelocity, characterRotation, checkMetricChange]);
+  }, [mode, cameraOption, activeState, checkMetricChange, toVec3]);
   
   useEffect(() => {
     updateMetrics();

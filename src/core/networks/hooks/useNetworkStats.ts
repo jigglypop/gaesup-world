@@ -74,6 +74,7 @@ export function useNetworkStats(options: UseNetworkStatsOptions = {}): UseNetwor
   const {
     getSnapshot,
     getNetworkStats,
+    getSystemState,
     isReady
   } = useNetworkBridge(bridgeOptions);
 
@@ -88,42 +89,36 @@ export function useNetworkStats(options: UseNetworkStatsOptions = {}): UseNetwor
 
     const snapshot = getSnapshot();
     const networkStats = getNetworkStats();
+    const systemState = getSystemState() as any;
     
     if (!snapshot || !networkStats) return null;
 
     // 기본 통계
-    const totalNodes = snapshot.nodes.size;
-    const totalConnections = snapshot.connections.size;
-    const totalMessages = snapshot.messages.length;
+    const totalNodes = snapshot.nodeCount;
+    const totalConnections = snapshot.connectionCount;
+    const totalMessages = networkStats.totalMessages ?? 0;
 
-    // 연결 통계
-    const activeConnections = Array.from(snapshot.connections.values())
-      .filter(conn => conn.state === 'connected').length;
-    const failedConnections = Array.from(snapshot.connections.values())
-      .filter(conn => conn.state === 'failed').length;
-    const connectionSuccessRate = totalConnections > 0 
-      ? (activeConnections / totalConnections) * 100 
-      : 100;
+    // 연결 통계 (현재 구현에서는 실패/성공 세분화 없음)
+    const activeConnections = totalConnections;
+    const failedConnections = 0;
+    const connectionSuccessRate = totalConnections > 0 ? 100 : 100;
 
     // 메시지 통계
-    const recentMessages = snapshot.messages.filter(msg => 
-      Date.now() - msg.timestamp < updateInterval
-    );
-    const messagesPerSecond = (recentMessages.length / updateInterval) * 1000;
+    const messagesPerSecond = snapshot.messagesPerSecond;
 
-    // 성능 통계
-    const performance = snapshot.performance || {
+    // 성능 통계 (스냅샷에는 세부 처리시간이 없음)
+    const performance = {
       updateTime: 0,
       messageProcessingTime: 0,
       connectionProcessingTime: 0
     };
 
     // 그룹 통계
-    const totalGroups = snapshot.groups.size;
-    const groups = Array.from(snapshot.groups.values());
-    const activeGroups = groups.filter(group => group.members.length > 1).length;
-    const averageGroupSize = totalGroups > 0 
-      ? groups.reduce((sum, group) => sum + group.members.length, 0) / totalGroups 
+    const groups = systemState?.groups ? Array.from(systemState.groups.values()) : [];
+    const totalGroups = systemState?.groups ? systemState.groups.size : snapshot.activeGroups;
+    const activeGroups = totalGroups;
+    const averageGroupSize = totalGroups > 0
+      ? groups.reduce((sum: number, group: any) => sum + (group.members?.size ?? 0), 0) / totalGroups
       : 0;
 
     return {
@@ -131,7 +126,7 @@ export function useNetworkStats(options: UseNetworkStatsOptions = {}): UseNetwor
       totalNodes,
       totalConnections,
       totalMessages,
-      averageLatency: networkStats.averageLatency || 0,
+      averageLatency: snapshot.averageLatency,
       messagesPerSecond,
       
       // 연결 통계
@@ -140,8 +135,8 @@ export function useNetworkStats(options: UseNetworkStatsOptions = {}): UseNetwor
       connectionSuccessRate,
       
       // 메시지 통계
-      sentMessages: networkStats.totalMessages || 0,
-      receivedMessages: networkStats.totalMessages || 0,
+      sentMessages: totalMessages,
+      receivedMessages: totalMessages,
       failedMessages: 0,
       messageSuccessRate: 100,
       
@@ -155,7 +150,7 @@ export function useNetworkStats(options: UseNetworkStatsOptions = {}): UseNetwor
       activeGroups,
       averageGroupSize
     };
-  }, [isReady, getSnapshot, getNetworkStats, updateInterval]);
+  }, [isReady, getSnapshot, getNetworkStats, getSystemState, updateInterval]);
 
   // 통계 새로고침
   const refreshStats = useCallback(() => {

@@ -1,9 +1,9 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
-import { useManagedEntity, BridgeFactory } from '@core/boilerplate';
+import { BridgeFactory } from '@core/boilerplate';
 
 import { MotionBridge } from '../bridge/MotionBridge';
 import { MotionConfig } from '../bridge/types';
@@ -12,7 +12,7 @@ import { ManagedMotionEntity } from '../entities/ManagedMotionEntity';
 
 export type UseMotionOptions = {
   motionType: MotionType;
-  rigidBodyRef: React.RefObject<RapierRigidBody>;
+  rigidBodyRef: React.RefObject<RapierRigidBody | null>;
   position?: THREE.Vector3;
   autoStart?: boolean;
 };
@@ -39,15 +39,30 @@ export function useMotion(
   options: UseMotionOptions
 ): UseMotionReturn {
   const { motionType, rigidBodyRef, position, autoStart = true } = options;
-  const bridge = useMemo(() => BridgeFactory.get<MotionBridge>('motion'), []);
-  const entity = useManagedEntity(bridge, id, rigidBodyRef, { motionType });
+  const bridge = useMemo(
+    () =>
+      (BridgeFactory.get('motion') as MotionBridge | null) ??
+      (BridgeFactory.create('motion') as MotionBridge | null),
+    [],
+  );
+  const entity = useMemo(
+    () => (bridge ? new ManagedMotionEntity(id, motionType, bridge) : null),
+    [bridge, id, motionType],
+  );
 
   useEffect(() => {
-    if (entity && rigidBodyRef.current && autoStart) {
-      entity.setRigidBody(rigidBodyRef.current);
-      if (position) {
-        rigidBodyRef.current.setTranslation(position, true);
-      }
+    if (!entity) return undefined;
+    entity.initialize();
+    return () => entity.dispose();
+  }, [entity]);
+
+  useEffect(() => {
+    const rigidBody = rigidBodyRef.current;
+    if (!entity || !rigidBody || !autoStart) return;
+
+    entity.setRigidBody(rigidBody);
+    if (position) {
+      rigidBody.setTranslation(position, true);
     }
   }, [entity, rigidBodyRef, position, autoStart]);
 
@@ -86,7 +101,7 @@ export function useMotion(
   const snapshot = entity?.getSnapshot();
 
   return {
-    entity: entity as ManagedMotionEntity | null,
+    entity,
     move,
     jump,
     stop,

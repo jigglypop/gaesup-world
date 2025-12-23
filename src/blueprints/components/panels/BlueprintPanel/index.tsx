@@ -11,7 +11,6 @@ import ReactFlow, {
   Connection,
   BackgroundVariant,
   MarkerType,
-  ReactFlowProvider
 } from 'reactflow';
 
 import 'reactflow/dist/style.css';
@@ -45,13 +44,12 @@ export const BlueprintPanel: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingBlueprint, setEditingBlueprint] = useState<AnyBlueprint | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
-  const [showNodeMenu, setShowNodeMenu] = useState(false);
   const [selectedNodeCategory, setSelectedNodeCategory] = useState<string>('physics');
   
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   
-  const { spawnEntity, spawnAtCursor, isSpawning } = useSpawnFromBlueprint();
+  const { spawnAtCursor, isSpawning } = useSpawnFromBlueprint();
 
   const onConnect = useCallback((params: Connection) => {
     setEdges((eds) => addEdge(params, eds));
@@ -304,15 +302,17 @@ export const BlueprintPanel: React.FC = () => {
     if (!editingBlueprint) return;
     
     const newBlueprint = JSON.parse(JSON.stringify(editingBlueprint));
-    let current: Record<string, unknown> = newBlueprint as Record<string, unknown>;
+    let current: any = newBlueprint;
     
     for (let i = 0; i < path.length - 1; i++) {
-      if (current === undefined) return;
-      current = current[path[i]];
+      const key = path[i];
+      if (!key) return;
+      current = current[key];
     }
     
-    if (current === undefined) return;
-    current[path[path.length - 1]] = value;
+    const lastKey = path[path.length - 1];
+    if (!lastKey) return;
+    current[lastKey] = value;
     setEditingBlueprint(newBlueprint);
   };
 

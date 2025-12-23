@@ -1,4 +1,4 @@
-import { CameraType } from '../core/types';
+import type { CameraType } from '../../core/types';
 
 export interface CameraControllerProps {
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';

@@ -49,8 +49,8 @@ export function useNetworkBridge(options: UseNetworkBridgeOptions = {}): UseNetw
         // 설정이 제공된 경우 시스템에 적용
         if (config) {
           bridgeRef.current.execute(systemId, {
-            type: 'updateConfig',
-            data: { config }
+            type: 'updateSettings',
+            settings: config
           });
         }
         isReadyRef.current = true;

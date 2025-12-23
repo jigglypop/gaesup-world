@@ -8,12 +8,12 @@ import { WorldBridge } from '../bridge/WorldBridge';
 
 export interface WorldSliceState {
   objects: WorldObject[];
-  selectedObjectId?: string;
+  selectedObjectId?: string | undefined;
   interactionMode: 'view' | 'edit' | 'interact';
   showDebugInfo: boolean;
   events: InteractionEvent[];
   loading: boolean;
-  error?: string;
+  error?: string | undefined;
 }
 
 export interface WorldSlice extends WorldSliceState {

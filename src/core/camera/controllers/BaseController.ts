@@ -12,6 +12,7 @@ export abstract class BaseController implements ICameraController {
   
   @Profile()
   calculateLookAt(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
+    void state;
     return activeStateUtils.getPosition(props.activeState);
   }
   

@@ -33,7 +33,7 @@ export interface ActiveStateType {
 
 export interface ActiveState extends ActiveStateType {}
 
-export interface PhysicsCalcProps {
+export interface PhysicsCalcPropsLegacy {
   rigidBodyRef: RefObject<RapierRigidBody>;
   innerGroupRef?: RefObject<THREE.Group>;
   outerGroupRef?: RefObject<THREE.Group>;
@@ -67,7 +67,7 @@ export interface PhysicsLayerStatus {
   isPaused: boolean;
 }
 
-export type PhysicsState = {
+export type PhysicsStateLegacy = {
   rigidBody: RapierRigidBody;
   outerGroup: THREE.Group;
   innerGroup: THREE.Group;

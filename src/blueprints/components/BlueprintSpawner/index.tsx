@@ -5,7 +5,6 @@ import { Group } from 'three';
 
 import { BlueprintSpawnerProps } from './types';
 import { BlueprintFactory } from '../../factory/BlueprintFactory';
-import { AnyBlueprint } from '../../types';
 
 export function BlueprintSpawner({
   blueprint,
@@ -17,9 +16,9 @@ export function BlueprintSpawner({
   onDestroy,
   children
 }: BlueprintSpawnerProps) {
-  const rigidBodyRef = useRef<RapierRigidBody>(null);
-  const innerGroupRef = useRef<Group>(null);
-  const outerGroupRef = useRef<Group>(null);
+  const rigidBodyRef = useRef<RapierRigidBody>(null!);
+  const innerGroupRef = useRef<Group>(null!);
+  const outerGroupRef = useRef<Group>(null!);
   const entityRef = useRef<any>(null);
 
   useEffect(() => {
@@ -94,7 +93,7 @@ function getPhysicsConfig(type: string) {
         restitution: 0,
         linearDamping: 4,
         angularDamping: 10,
-        enabledRotations: [false, false, false]
+        enabledRotations: [false, false, false] as [boolean, boolean, boolean]
       };
     case 'vehicle':
       return {

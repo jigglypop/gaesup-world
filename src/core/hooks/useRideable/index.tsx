@@ -61,7 +61,9 @@ export function useRideable() {
       if (!rideableItem?.position) return;
 
       const modeType = rideableItem.objectType;
-      const { vehicleUrl, airplaneUrl, characterUrl } = getSizesByUrls(urls);
+      const { vehicleUrl, airplaneUrl, characterUrl } = getSizesByUrls(
+        urls as unknown as Record<string, string | undefined>,
+      );
       const size = modeType === 'airplane' ? airplaneUrl : vehicleUrl;
       const mySize = characterUrl;
       if (!size || !mySize) return;

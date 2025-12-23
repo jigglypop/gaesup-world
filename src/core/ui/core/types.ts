@@ -1,12 +1,4 @@
-import * as THREE from 'three';
-
-export interface MinimapMarker {
-  id: string;
-  type: 'normal' | 'ground';
-  text: string;
-  center: THREE.Vector3;
-  size: THREE.Vector3;
-}
+import type { MinimapMarker } from '../types';
 
 export interface MinimapSystemState {
   markers: Map<string, MinimapMarker>;

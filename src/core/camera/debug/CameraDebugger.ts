@@ -61,14 +61,12 @@ export class CameraDebugger {
 
   private handleResize = () => {
     this.clearDebugInfo();
-    if (this.debugInfo.lastUpdate) {
-      this.debugInfo.lastUpdate = Date.now();
-    }
   };
 
   @Profile()
   update(camera: THREE.Camera, deltaTime: number, state?: string): void {
     if (!this.isEnabled) return;
+    void deltaTime;
 
     const position = camera.position.clone();
     const target = new THREE.Vector3();
@@ -110,6 +108,7 @@ export class CameraDebugger {
   @Profile()
   private updateDebugVisuals(camera: THREE.Camera): void {
     if (!this.scene) return;
+    void camera;
 
     this.clearDebugLines();
 

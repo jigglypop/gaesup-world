@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { useGaesupStore } from '../../../stores/gaesupStore';
-import { CameraType } from '../core/types';
+import type { CameraType } from '../../core/types';
 import './styles.css';
 
 const CAMERA_MODES: Array<{ value: CameraType; label: string }> = [
@@ -10,7 +10,7 @@ const CAMERA_MODES: Array<{ value: CameraType; label: string }> = [
   { value: 'chase', label: 'Chase' },
   { value: 'topDown', label: 'Top Down' },
   { value: 'isometric', label: 'Isometric' },
-  { value: 'side', label: 'Side-Scroller' },
+  { value: 'sideScroll', label: 'Side-Scroller' },
   { value: 'fixed', label: 'Fixed' },
 ];
 

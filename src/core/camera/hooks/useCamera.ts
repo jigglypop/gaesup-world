@@ -20,9 +20,26 @@ export function useCamera() {
   
   const initialConfig: CameraSystemConfig = useMemo(() => ({
     mode: mode?.control || 'thirdPerson',
-    enableMetrics: true,
-    autoUpdate: true,
-    ...cameraOption,
+    distance: {
+      x: cameraOption?.xDistance ?? 0,
+      y: cameraOption?.yDistance ?? 0,
+      z: cameraOption?.zDistance ?? 0,
+    },
+    smoothing: {
+      position: cameraOption?.smoothing?.position ?? 0.1,
+      rotation: cameraOption?.smoothing?.rotation ?? 0.1,
+      fov: cameraOption?.smoothing?.fov ?? 0.1,
+    },
+    fov: cameraOption?.fov ?? 75,
+    zoom: cameraOption?.zoom ?? 1,
+    enableCollision: cameraOption?.enableCollision ?? true,
+    ...(cameraOption?.maxDistance !== undefined ? { maxDistance: cameraOption.maxDistance } : {}),
+    ...(cameraOption?.offset
+      ? { offset: { x: cameraOption.offset.x, y: cameraOption.offset.y, z: cameraOption.offset.z } }
+      : {}),
+    ...(cameraOption?.target
+      ? { lookAt: { x: cameraOption.target.x, y: cameraOption.target.y, z: cameraOption.target.z } }
+      : {}),
   }), []);
   
   const { system, updateConfig } = useCameraBridge(
@@ -46,7 +63,7 @@ export function useCamera() {
     const delta = event.deltaY * zoomSpeed;
     const newZoom = Math.min(Math.max(currentZoom + delta, minZoom), maxZoom);
     
-    setCameraOption({ ...cameraOption, zoom: newZoom });
+    setCameraOption({ zoom: newZoom });
   }, [cameraOption, setCameraOption, isInEditMode]);
   
   useEffect(() => {
@@ -57,6 +74,7 @@ export function useCamera() {
         canvas.removeEventListener('wheel', handleWheel);
       };
     }
+    return undefined;
   }, [gl, handleWheel, cameraOption?.enableZoom, isInEditMode]);
   
   
@@ -64,11 +82,7 @@ export function useCamera() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && cameraOption?.focus) {
-        setCameraOption({ 
-          ...cameraOption, 
-          focus: false,
-          focusTarget: undefined 
-        });
+        setCameraOption({ focus: false });
       }
     };
     
@@ -78,12 +92,32 @@ export function useCamera() {
         window.removeEventListener('keydown', handleKeyDown);
       };
     }
+    return undefined;
   }, [cameraOption, setCameraOption, isInEditMode]);
   
   useEffect(() => {
     updateConfig({
       mode: mode?.control || 'thirdPerson',
-      ...cameraOption,
+      distance: {
+        x: cameraOption?.xDistance ?? 0,
+        y: cameraOption?.yDistance ?? 0,
+        z: cameraOption?.zDistance ?? 0,
+      },
+      smoothing: {
+        position: cameraOption?.smoothing?.position ?? 0.1,
+        rotation: cameraOption?.smoothing?.rotation ?? 0.1,
+        fov: cameraOption?.smoothing?.fov ?? 0.1,
+      },
+      fov: cameraOption?.fov ?? 75,
+      zoom: cameraOption?.zoom ?? 1,
+      enableCollision: cameraOption?.enableCollision ?? true,
+      ...(cameraOption?.maxDistance !== undefined ? { maxDistance: cameraOption.maxDistance } : {}),
+      ...(cameraOption?.offset
+        ? { offset: { x: cameraOption.offset.x, y: cameraOption.offset.y, z: cameraOption.offset.z } }
+        : {}),
+      ...(cameraOption?.target
+        ? { lookAt: { x: cameraOption.target.x, y: cameraOption.target.y, z: cameraOption.target.z } }
+        : {}),
     });
   }, [cameraOption, mode, updateConfig]);
   

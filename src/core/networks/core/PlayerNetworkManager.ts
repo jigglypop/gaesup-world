@@ -36,12 +36,16 @@ export class PlayerNetworkManager {
     this.roomId = options.roomId;
     this.playerName = options.playerName;
     this.playerColor = options.playerColor;
-    this.onConnect = options.onConnect;
-    this.onDisconnect = options.onDisconnect;
-    this.onPlayerJoin = options.onPlayerJoin;
-    this.onPlayerUpdate = options.onPlayerUpdate;
-    this.onPlayerLeave = options.onPlayerLeave;
-    this.onError = options.onError;
+    if (options.onConnect) this.onConnect = options.onConnect;
+    if (options.onDisconnect) this.onDisconnect = options.onDisconnect;
+    if (options.onPlayerJoin) this.onPlayerJoin = options.onPlayerJoin;
+    if (options.onPlayerUpdate) this.onPlayerUpdate = options.onPlayerUpdate;
+    if (options.onPlayerLeave) this.onPlayerLeave = options.onPlayerLeave;
+    if (options.onError) this.onError = options.onError;
+  }
+
+  getConnectionStatus(): boolean {
+    return this.isConnected;
   }
 
   connect(): void {

@@ -7,7 +7,7 @@ import { BlueprintConverter } from './BlueprintConverter';
 import { BlueprintEntity } from '../core/BlueprintEntity';
 import { ComponentRegistry } from '../core/ComponentRegistry';
 import { BlueprintDefinition } from '../core/types';
-import { AnyBlueprint, CharacterBlueprint, VehicleBlueprint, AirplaneBlueprint } from '../types';
+import { AnyBlueprint } from '../types';
 
 export type BlueprintEntityConfig = {
   rigidBodyRef: RefObject<RapierRigidBody>;
@@ -44,6 +44,7 @@ export class BlueprintFactory {
 
   private registerCharacterFactories(): void {
     this.componentRegistry.register('CharacterMovement', (props) => ({
+      type: 'CharacterMovement',
       enabled: true,
       initialize: () => {},
       update: () => {},
@@ -52,6 +53,7 @@ export class BlueprintFactory {
     }));
 
     this.componentRegistry.register('CharacterAnimation', (props) => ({
+      type: 'CharacterAnimation',
       enabled: true,
       initialize: () => {},
       update: () => {},
@@ -60,6 +62,7 @@ export class BlueprintFactory {
     }));
 
     this.componentRegistry.register('CharacterPhysics', (props) => ({
+      type: 'CharacterPhysics',
       enabled: true,
       initialize: () => {},
       update: () => {},
@@ -70,6 +73,7 @@ export class BlueprintFactory {
 
   private registerVehicleFactories(): void {
     this.componentRegistry.register('VehicleMovement', (props) => ({
+      type: 'VehicleMovement',
       enabled: true,
       initialize: () => {},
       update: () => {},
@@ -78,6 +82,7 @@ export class BlueprintFactory {
     }));
 
     this.componentRegistry.register('VehiclePhysics', (props) => ({
+      type: 'VehiclePhysics',
       enabled: true,
       initialize: () => {},
       update: () => {},
@@ -88,6 +93,7 @@ export class BlueprintFactory {
 
   private registerAirplaneFactories(): void {
     this.componentRegistry.register('AirplaneMovement', (props) => ({
+      type: 'AirplaneMovement',
       enabled: true,
       initialize: () => {},
       update: () => {},
@@ -96,6 +102,7 @@ export class BlueprintFactory {
     }));
 
     this.componentRegistry.register('AirplanePhysics', (props) => ({
+      type: 'AirplanePhysics',
       enabled: true,
       initialize: () => {},
       update: () => {},

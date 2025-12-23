@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 
 import { useGaesupStore } from '../../../stores/gaesupStore';
 import './styles.css';
+import type { MotionControllerProps } from './types';
 
 const MOTION_PRESETS = [
   { id: 'slow', name: 'Slow', maxSpeed: 5, acceleration: 8 },
@@ -17,7 +18,21 @@ const VEHICLE_PRESETS = [
   { id: 'turbo', name: 'Turbo', maxSpeed: 60, acceleration: 50 }
 ];
 
-export function MotionController() {
+function getPanelStyle(position: MotionControllerProps['position'] | undefined, zIndex: number | undefined) {
+  const pos = position ?? 'bottom-left';
+  const style: React.CSSProperties = {
+    position: 'fixed',
+    zIndex: zIndex ?? 10000,
+  };
+  if (pos.includes('top')) style.top = 12;
+  if (pos.includes('bottom')) style.bottom = 12;
+  if (pos.includes('left')) style.left = 12;
+  if (pos.includes('right')) style.right = 12;
+  return style;
+}
+
+export function MotionController(props: MotionControllerProps) {
+  const panelStyle = getPanelStyle(props.position, props.zIndex);
   const mode = useGaesupStore((state) => state.mode);
   const setMode = useGaesupStore((state) => state.setMode);
   const setPhysics = useGaesupStore((state) => state.setPhysics);
@@ -51,7 +66,8 @@ export function MotionController() {
   const handlePresetChange = useCallback((presetId: string) => {
     setActivePresetId(presetId);
     applyPreset(currentType, presetId);
-  }, [applyPreset, currentType]);
+    props.onPresetChange?.(presetId);
+  }, [applyPreset, currentType, props]);
   
   const handleMotionTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const newType = e.target.value as 'character' | 'vehicle';
@@ -59,10 +75,11 @@ export function MotionController() {
     const defaultPreset = newType === 'vehicle' ? 'comfort' : 'normal';
     setActivePresetId(defaultPreset);
     applyPreset(newType, defaultPreset);
-  }, [applyPreset, setMode]);
+    props.onPresetChange?.(defaultPreset);
+  }, [applyPreset, setMode, props]);
 
   return (
-    <div className="mc-panel">
+    <div className={`mc-panel ${props.compact ? 'compact' : ''}`} style={panelStyle}>
       <div className="mc-setting-row">
         <label htmlFor="motion-type-select" className="mc-label">Motion Type</label>
         <select 

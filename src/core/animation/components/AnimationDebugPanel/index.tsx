@@ -25,6 +25,7 @@ export function AnimationDebugPanel() {
     if (!bridge) return;
     const updateMetrics = () => {
       const snapshot = bridge.snapshot(currentType);
+      if (!snapshot) return;
       const bridgeMetrics = bridge.getMetrics(currentType);
       
       setMetrics(prevMetrics => ({
@@ -44,7 +45,7 @@ export function AnimationDebugPanel() {
 
     updateMetrics();
     
-    const unsubscribe = bridge.subscribe((snapshot, type) => {
+    const unsubscribe = bridge.subscribe((_, type) => {
       if (type === currentType) {
         updateMetrics();
       }

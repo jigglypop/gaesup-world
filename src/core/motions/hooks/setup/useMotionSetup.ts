@@ -19,24 +19,24 @@ export function useMotionSetup(
   
   // Bridge 인스턴스 한번만 가져오기
   if (!motionBridgeRef.current) {
-    motionBridgeRef.current = BridgeFactory.get('motion') as MotionBridge;
+    motionBridgeRef.current = BridgeFactory.get('motion') as unknown as MotionBridge;
   }
   
   useEffect(() => {
-    if (rigidBodyRef.current && !registeredRef.current && motionBridgeRef.current) {
-      motionBridgeRef.current.register(
-        entityId,
-        modeType === 'vehicle' || modeType === 'airplane'
-          ? 'vehicle'
-          : 'character',
-        rigidBodyRef.current
-      );
-      registeredRef.current = true;
-      return () => {
-        motionBridgeRef.current?.unregister(entityId);
-        registeredRef.current = false;
-      };
-    }
+    if (!rigidBodyRef.current || registeredRef.current || !motionBridgeRef.current) return undefined;
+
+    motionBridgeRef.current.register(
+      entityId,
+      modeType === 'vehicle' || modeType === 'airplane'
+        ? 'vehicle'
+        : 'character',
+      rigidBodyRef.current
+    );
+    registeredRef.current = true;
+    return () => {
+      motionBridgeRef.current?.unregister(entityId);
+      registeredRef.current = false;
+    };
   }, [rigidBodyRef, modeType, entityId]);
   
   const executeMotionCommand = (command: MotionCommand) => {

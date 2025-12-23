@@ -1,6 +1,6 @@
-export * from './types';
+export type * from './types';
 export * from './stores/npcStore';
 export * from './components/NPCSystem';
-export * from './components/NPCInstance';
-export * from './components/NPCPreview';
-export * from './components/NPCEventEditor'; 
+export { NPCInstance } from './components/NPCInstance';
+export { NPCPreview } from './components/NPCPreview';
+export { NPCEventEditor } from './components/NPCEventEditor'; 

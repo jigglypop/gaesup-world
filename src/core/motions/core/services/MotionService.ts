@@ -6,7 +6,6 @@ import { Service } from '@core/boilerplate';
 
 @Service()
 export class MotionService {
-  private readonly GRAVITY = -9.81;
   private readonly DEFAULT_JUMP_FORCE = 12;
   private readonly DEFAULT_MAX_SPEED = 10;
   private readonly DEFAULT_ACCELERATION = 5;

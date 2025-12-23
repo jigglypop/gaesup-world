@@ -47,10 +47,21 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       handleIntersectionExit,
       handleCollisionEnter,
     } = useEntity({
-      ...props,
-      id: props.name,
       rigidBodyRef,
+      ...(props.name ? { id: props.name } : {}),
+      ...(props.userData ? { userData: props.userData } : {}),
+      ...(props.onIntersectionEnter ? { onIntersectionEnter: props.onIntersectionEnter } : {}),
+      ...(props.onIntersectionExit ? { onIntersectionExit: props.onIntersectionExit } : {}),
+      ...(props.onCollisionEnter ? { onCollisionEnter: props.onCollisionEnter } : {}),
+      ...(props.onReady ? { onReady: props.onReady } : {}),
+      ...(props.onFrame ? { onFrame: props.onFrame } : {}),
+      ...(props.onAnimate ? { onAnimate: props.onAnimate } : {}),
       actions,
+      isActive: props.isActive,
+      ...(props.outerGroupRef ? { outerGroupRef: props.outerGroupRef } : {}),
+      ...(props.innerGroupRef ? { innerGroupRef: props.innerGroupRef } : {}),
+      ...(props.colliderRef ? { colliderRef: props.colliderRef } : {}),
+      ...(props.groundRay ? { groundRay: props.groundRay } : {}),
     });
 
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
@@ -74,10 +85,10 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
               url={url}
               isActive={true}
               componentType={props.componentType}
-              currentAnimation={props.currentAnimation}
-              color={color}
+              {...(props.currentAnimation ? { currentAnimation: props.currentAnimation } : {})}
+              {...(color ? { color } : {})}
               key={`${props.componentType}-${url}-${color || 'default'}-${index}`}
-              skeleton={skeleton}
+              {...(skeleton ? { skeleton } : {})}
             />
           );
         })
@@ -95,20 +106,22 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const { nodes } = useGraph(clone);
     const objectNode = Object.values(nodes).find((node) => node.type === 'Object3D');
     const safeRotationY = props.rotation instanceof THREE.Euler ? props.rotation.y : 0;
+    const outerGroupProps = props.outerGroupRef ? { ref: props.outerGroupRef } : {};
+    const innerGroupProps = props.innerGroupRef ? { ref: props.innerGroupRef } : {};
 
     return (
-      <group ref={props.outerGroupRef} userData={{ intangible: true }}>
+      <group {...outerGroupProps} userData={{ intangible: true }}>
         <RigidBody
           canSleep={false}
           ccd={true}
           colliders={false}
           ref={rigidBodyRef}
-          name={props.name}
+          {...(props.name ? { name: props.name } : {})}
           position={props.position}
           rotation={euler().set(0, safeRotationY, 0)}
           userData={props.userData}
           type={props.rigidbodyType || (props.isActive ? 'dynamic' : 'fixed')}
-          sensor={props.sensor}
+          {...(props.sensor !== undefined ? { sensor: props.sensor } : {})}
           onIntersectionEnter={handleIntersectionEnter}
           onIntersectionExit={handleIntersectionExit}
           onCollisionEnter={handleCollisionEnter}
@@ -122,19 +135,18 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
             />
           )}
           <InnerGroupRef
-            objectNode={objectNode}
             animationRef={animationRef}
             nodes={nodes}
-            ref={props.innerGroupRef}
+            {...innerGroupProps}
             isActive={props.isActive}
             componentType={props.componentType}
-            modelYawOffset={props.modelYawOffset}
-            isRiderOn={props.isRiderOn}
-            enableRiding={props.enableRiding}
-            ridingUrl={props.ridingUrl}
-            offset={props.offset}
-            parts={props.parts}
-            frustumCulled={false}
+            {...(objectNode ? { objectNode } : {})}
+            {...(props.modelYawOffset !== undefined ? { modelYawOffset: props.modelYawOffset } : {})}
+            {...(props.isRiderOn !== undefined ? { isRiderOn: props.isRiderOn } : {})}
+            {...(props.enableRiding !== undefined ? { enableRiding: props.enableRiding } : {})}
+            {...(props.ridingUrl ? { ridingUrl: props.ridingUrl } : {})}
+            {...(props.offset ? { offset: props.offset } : {})}
+            {...(props.parts ? { parts: props.parts } : {})}
           >
             {props.children}
             {partsComponents}

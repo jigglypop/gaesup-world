@@ -17,7 +17,7 @@ export type AnimationPreset = {
   };
 }
 
-export type AnimationType = 'character' | 'vehicle' | 'airplane' | 'robot';
+export type AnimationType = 'character' | 'vehicle' | 'airplane';
 
 export type AnimationConfig = {
   type: AnimationType;

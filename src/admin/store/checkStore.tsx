@@ -4,7 +4,10 @@ import { useNavigate } from "react-router-dom";
 
 import { userType } from "./types";
 import { checkApi } from "../api/auth";
-import Spinner from "../components/Spinner";
+
+function Spinner() {
+  return <div>Loading...</div>;
+}
 
 export const useCheck = () => {
   const navigate = useNavigate();

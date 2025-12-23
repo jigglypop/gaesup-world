@@ -4,7 +4,6 @@ import { RapierRigidBody } from '@react-three/rapier';
 
 import { useGaesupStore } from '@stores/gaesupStore';
 
-import { useGaesupGltf } from './useGaesupGltf';
 import { useStateSystem } from './useStateSystem';
 import { InteractionSystem } from '../../interactions/core/InteractionSystem';
 
@@ -21,7 +20,6 @@ export function usePhysics() {
     const interactionSystem = InteractionSystem.getInstance();
     const interaction = interactionSystem.getState();
     const urls = useGaesupStore((state) => state.urls);
-    const { getSizesByUrls } = useGaesupGltf();
     const isReady = !!(interaction && urls && activeState);
 
     return {
@@ -30,11 +28,10 @@ export function usePhysics() {
         input: {
             keyboard: interaction.keyboard,
             mouse: interaction.mouse,
-            rigidBodyRef: { current: null } as RefObject<RapierRigidBody>,
+            rigidBodyRef: { current: null } as unknown as RefObject<RapierRigidBody>,
         },
-        interaction,
+        interaction: interaction as unknown,
         urls,
-        getSizesByUrls,
         setKeyboardInput: (input: Partial<typeof interaction.keyboard>) => {
             interactionSystem.updateKeyboard(input);
         },
@@ -42,6 +39,7 @@ export function usePhysics() {
             interactionSystem.updateMouse(input);
         },
         dispatch: (action: { type: string; payload?: unknown }) => {
+            void action;
         },
         isReady,
     };

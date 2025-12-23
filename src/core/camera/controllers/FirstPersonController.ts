@@ -13,12 +13,14 @@ export class FirstPersonController extends BaseController {
   };
 
   calculateTargetPosition(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
+    void state;
     const position = activeStateUtils.getPosition(props.activeState);
     const headOffset = new THREE.Vector3(0, 1.7, 0);
     return position.clone().add(headOffset);
   }
 
-  overridecalculateLookAt(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
+  override calculateLookAt(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
+    void state;
     const position = activeStateUtils.getPosition(props.activeState);
     const euler = activeStateUtils.getEuler(props.activeState);
     const lookDirection = new THREE.Vector3(0, 0, -1);

@@ -1,7 +1,7 @@
 import { useCallback, useRef, useEffect, useState } from 'react';
 
 import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
-import { NetworkGroup, NetworkMessage } from '../types';
+import type { NetworkGroup, NetworkMessage, NetworkSystemState } from '../types';
 
 export interface GroupCreateOptions {
   maxSize?: number;
@@ -62,7 +62,7 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
 
   const {
     executeCommand,
-    getSnapshot,
+    getSystemState,
     isReady
   } = useNetworkBridge(bridgeOptions);
 
@@ -72,72 +72,86 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
   const [groupMessages, setGroupMessages] = useState<Map<string, NetworkMessage[]>>(new Map());
 
   const messageCounterRef = useRef<number>(0);
+  const groupMembersRef = useRef<Map<string, Set<string>>>(new Map());
+  const seenMessageIdsRef = useRef<Set<string>>(new Set());
 
-  // 그룹 상태 업데이트 (스냅샷에서 그룹 정보 가져오기)
+  // 그룹 상태 업데이트 (시스템 상태에서 그룹 정보 가져오기)
   useEffect(() => {
     if (!isReady) return;
 
+    const nodeId = `node_${npcId}`;
+
     const interval = setInterval(() => {
-      const snapshot = getSnapshot();
-      if (snapshot && snapshot.groups) {
-        const groups = Array.from(snapshot.groups.values());
-        setAvailableGroups(groups);
+      const state = getSystemState() as NetworkSystemState | null;
+      if (!state) return;
 
-        // 참여 중인 그룹 업데이트
-        const currentJoinedGroups = groups
-          .filter(group => group.members.includes(npcId))
-          .map(group => group.id);
-        
-        const newJoinedGroups = currentJoinedGroups.filter(groupId => !joinedGroups.includes(groupId));
-        const leftGroups = joinedGroups.filter(groupId => !currentJoinedGroups.includes(groupId));
+      const groups = Array.from(state.groups.values());
+      setAvailableGroups(groups);
 
-        if (newJoinedGroups.length > 0 || leftGroups.length > 0) {
-          setJoinedGroups(currentJoinedGroups);
-          
-          // 콜백 호출
-          newJoinedGroups.forEach(groupId => {
-            const group = groups.find(g => g.id === groupId);
-            if (group) {
-              onGroupJoined?.(groupId, group);
-            }
-          });
-          
-          leftGroups.forEach(groupId => {
-            onGroupLeft?.(groupId);
-          });
-        }
+      // 참여 중인 그룹 업데이트
+      const currentJoinedGroups = groups
+        .filter(group => group.members.has(nodeId))
+        .map(group => group.id);
 
-        // 소유 중인 그룹 업데이트
-        const currentOwnedGroups = groups
-          .filter(group => group.ownerId === npcId)
-          .map(group => group.id);
-        setOwnedGroups(currentOwnedGroups);
+      const newJoinedGroups = currentJoinedGroups.filter(groupId => !joinedGroups.includes(groupId));
+      const leftGroups = joinedGroups.filter(groupId => !currentJoinedGroups.includes(groupId));
 
-        // 그룹 메시지 업데이트
-        if (snapshot.messages) {
-          const newGroupMessages = new Map(groupMessages);
-          
-          snapshot.messages
-            .filter(msg => msg.receiverId.startsWith('group:'))
-            .forEach(msg => {
-              const groupId = msg.receiverId.replace('group:', '');
-              if (currentJoinedGroups.includes(groupId)) {
-                const messages = newGroupMessages.get(groupId) || [];
-                if (!messages.find(existing => existing.id === msg.id)) {
-                  messages.push(msg);
-                  newGroupMessages.set(groupId, messages);
-                  onGroupMessage?.(msg, groupId);
-                }
-              }
-            });
-          
-          setGroupMessages(newGroupMessages);
-        }
+      if (newJoinedGroups.length > 0 || leftGroups.length > 0) {
+        setJoinedGroups(currentJoinedGroups);
+        // "owner" 개념이 없어서, 일단 내가 속한 그룹을 제어 가능 그룹으로 취급
+        setOwnedGroups(currentJoinedGroups);
+
+        newJoinedGroups.forEach(groupId => {
+          const group = groups.find(g => g.id === groupId);
+          if (group) onGroupJoined?.(groupId, group);
+        });
+
+        leftGroups.forEach(groupId => onGroupLeft?.(groupId));
       }
-    }, 100); // 100ms마다 체크
+
+      // 멤버 변화 콜백
+      for (const group of groups) {
+        const currentMembers = new Set(
+          Array.from(group.members).map((memberNodeId) =>
+            memberNodeId.startsWith('node_') ? memberNodeId.slice(5) : memberNodeId
+          ),
+        );
+
+        const prevMembers = groupMembersRef.current.get(group.id);
+        if (prevMembers) {
+          for (const memberId of currentMembers) {
+            if (!prevMembers.has(memberId)) onGroupMemberJoined?.(memberId, group.id);
+          }
+          for (const memberId of prevMembers) {
+            if (!currentMembers.has(memberId)) onGroupMemberLeft?.(memberId, group.id);
+          }
+        }
+        groupMembersRef.current.set(group.id, currentMembers);
+      }
+
+      // 메시지 업데이트 (현재 노드 큐 기준)
+      const queue = state.messageQueues.get(nodeId) ?? [];
+      if (queue.length === 0) return;
+
+      setGroupMessages((prev) => {
+        const next = new Map(prev);
+        for (const msg of queue) {
+          if (msg.to !== 'group' || !msg.groupId) continue;
+          if (!currentJoinedGroups.includes(msg.groupId)) continue;
+          if (seenMessageIdsRef.current.has(msg.id)) continue;
+
+          seenMessageIdsRef.current.add(msg.id);
+          const list = next.get(msg.groupId) ?? [];
+          list.push(msg);
+          next.set(msg.groupId, list);
+          onGroupMessage?.(msg, msg.groupId);
+        }
+        return next;
+      });
+    }, 250);
 
     return () => clearInterval(interval);
-  }, [isReady, getSnapshot, npcId, joinedGroups, groupMessages, onGroupJoined, onGroupLeft, onGroupMessage]);
+  }, [isReady, getSystemState, npcId, joinedGroups, onGroupJoined, onGroupLeft, onGroupMessage, onGroupMemberJoined, onGroupMemberLeft]);
 
   const createGroup = useCallback((
     groupId: string,
@@ -145,24 +159,22 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
     groupOptions?: GroupCreateOptions
   ) => {
     if (!isReady) return;
+    void groupId;
+    void initialMembers;
 
-    const members = [npcId, ...initialMembers.filter(id => id !== npcId)];
-
+    const now = Date.now();
     executeCommand({
       type: 'createGroup',
-      data: {
-        groupId,
-        npcIds: members,
-        options: {
-          maxSize: groupOptions?.maxSize || 20,
-          isPrivate: groupOptions?.isPrivate || false,
-          requireInvite: groupOptions?.requireInvite || false,
-          metadata: groupOptions?.metadata || {}
-        }
-      }
+      group: {
+        type: 'party',
+        members: new Set<string>(),
+        maxMembers: groupOptions?.maxSize ?? 20,
+        range: 1000,
+        persistent: false,
+        createdAt: now,
+        lastActivity: now,
+      },
     });
-
-    setOwnedGroups(prev => [...prev, groupId]);
   }, [isReady, executeCommand, npcId]);
 
   const joinGroup = useCallback((groupId: string) => {
@@ -170,10 +182,8 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
 
     executeCommand({
       type: 'joinGroup',
-      data: {
-        npcId,
-        groupId
-      }
+      npcId,
+      groupId
     });
   }, [isReady, executeCommand, npcId]);
 
@@ -182,17 +192,15 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
 
     executeCommand({
       type: 'leaveGroup',
-      data: {
-        npcId,
-        groupId
-      }
+      npcId,
+      groupId
     });
   }, [isReady, executeCommand, npcId]);
 
   const sendGroupMessage = useCallback((
     groupId: string,
     content: any,
-    type: string = 'group-chat'
+    type: string = 'chat'
   ): string => {
     if (!isReady || !joinedGroups.includes(groupId)) return '';
 
@@ -201,20 +209,19 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
 
     const message: NetworkMessage = {
       id: messageId,
-      type,
-      content,
+      from: npcId,
+      to: 'group',
+      groupId,
+      type: type === 'action' || type === 'state' || type === 'system' ? type : 'chat',
+      payload: content,
+      priority: 'normal',
       timestamp,
-      senderId: npcId,
-      receiverId: `group:${groupId}`
+      reliability: 'reliable',
     };
 
     executeCommand({
       type: 'sendMessage',
-      data: {
-        fromId: npcId,
-        toId: `group:${groupId}`,
-        message
-      }
+      message
     });
 
     return messageId;
@@ -224,20 +231,19 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
     if (!isReady || !ownedGroups.includes(groupId)) return;
 
     // 그룹 초대는 시스템 메시지로 처리
+    const message: NetworkMessage = {
+      id: `invite-${Date.now()}`,
+      from: npcId,
+      to: targetNpcId,
+      type: 'system',
+      payload: { groupId, inviterId: npcId },
+      priority: 'normal',
+      timestamp: Date.now(),
+      reliability: 'reliable',
+    };
     executeCommand({
       type: 'sendMessage',
-      data: {
-        fromId: npcId,
-        toId: targetNpcId,
-        message: {
-          id: `invite-${Date.now()}`,
-          type: 'group-invite',
-          content: { groupId, inviterId: npcId },
-          timestamp: Date.now(),
-          senderId: npcId,
-          receiverId: targetNpcId
-        }
-      }
+      message
     });
   }, [isReady, executeCommand, npcId, ownedGroups]);
 
@@ -246,10 +252,8 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
 
     executeCommand({
       type: 'leaveGroup',
-      data: {
-        npcId: targetNpcId,
-        groupId
-      }
+      npcId: targetNpcId,
+      groupId
     });
   }, [isReady, executeCommand, ownedGroups]);
 
@@ -259,7 +263,10 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
 
   const getGroupMembers = useCallback((groupId: string): string[] => {
     const group = getGroupInfo(groupId);
-    return group ? group.members : [];
+    if (!group) return [];
+    return Array.from(group.members).map((memberNodeId) =>
+      memberNodeId.startsWith('node_') ? memberNodeId.slice(5) : memberNodeId
+    );
   }, [getGroupInfo]);
 
   const getGroupMessages = useCallback((groupId: string): NetworkMessage[] => {

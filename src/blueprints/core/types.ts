@@ -1,7 +1,7 @@
 import { RefObject } from 'react';
 
 import { RapierRigidBody } from '@react-three/rapier';
-import { Group } from 'three';
+import type { Group, Vector3 } from 'three';
 
 export interface ComponentDefinition {
   type: string;
@@ -41,12 +41,12 @@ export interface IComponent {
 }
 
 export interface IForceComponent extends IComponent {
-  getForce(): THREE.Vector3;
+  getForce(): Vector3;
   applyForce(rigidBody: RapierRigidBody, deltaTime: number): void;
 }
 
 export interface IMovementComponent extends IComponent {
-  calculateMovement(input: any, context: ComponentContext): THREE.Vector3;
+  calculateMovement(input: unknown, context: ComponentContext): Vector3;
 }
 
 export interface ComponentRegistry {

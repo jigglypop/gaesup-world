@@ -7,6 +7,7 @@ import { useGaesupStore } from '../../stores/gaesupStore';
 import { AnimationBridge } from '../bridge/AnimationBridge';
 import { AnimationCommand } from '../bridge/types';
 import { AnimationType } from '../core/types';
+import type { EntityAnimationStates } from '../core/types';
 
 export function getGlobalAnimationBridge(): AnimationBridge {
   let bridge = BridgeFactory.get<AnimationBridge>('animation');
@@ -27,10 +28,11 @@ export function useAnimationBridge() {
     bridgeRef.current = bridge;
     const unsubscribe = bridge.subscribe((snapshot, type) => {
       if (!snapshot) return;
+      const engineType = type as keyof EntityAnimationStates;
       const currentStoreAnimation =
-        useGaesupStore.getState().animationState?.[type]?.current;
+        useGaesupStore.getState().animationState?.[engineType]?.current;
       if (snapshot.currentAnimation !== currentStoreAnimation) {
-        setAnimation(type, snapshot.currentAnimation);
+        setAnimation(engineType, snapshot.currentAnimation);
       }
     });
 

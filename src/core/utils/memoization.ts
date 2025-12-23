@@ -11,11 +11,16 @@ export function createVectorCache() {
   const tempVectors = Array.from({ length: MAX_TEMP_VECTORS }, () => new THREE.Vector3());
 
   return {
-    getTempVector: (index: number) => tempVectors[index % MAX_TEMP_VECTORS].set(0, 0, 0),
+    getTempVector: (index: number) => {
+      const v = tempVectors[index % MAX_TEMP_VECTORS];
+      if (!v) return new THREE.Vector3();
+      return v.set(0, 0, 0);
+    },
     getCached: (key: string, factory: () => THREE.Vector3) => {
       if (!cache.has(key)) {
         if (cache.size >= MAX_CACHE_SIZE) {
-          cache.delete(cache.keys().next().value);
+          const firstKey = cache.keys().next().value;
+          if (firstKey !== undefined) cache.delete(firstKey);
         }
         cache.set(key, factory());
       }
@@ -32,7 +37,8 @@ export const getCachedTrig = (angle: number) => {
   const key = Math.round(angle * 100) / 100;
   if (!trigCache.has(key)) {
     if (trigCache.size >= MAX_TRIG_CACHE_SIZE) {
-      trigCache.delete(trigCache.keys().next().value);
+      const firstKey = trigCache.keys().next().value;
+      if (firstKey !== undefined) trigCache.delete(firstKey);
     }
     trigCache.set(key, { sin: Math.sin(angle), cos: Math.cos(angle) });
   }

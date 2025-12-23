@@ -19,6 +19,7 @@ export type CharacterAnimationProps = {
 };
 
 export class CharacterAnimationComponent implements IComponent {
+  type: string = 'CharacterAnimation';
   enabled: boolean = true;
   private props: CharacterAnimationProps;
   private currentAnimation: string;
@@ -38,6 +39,7 @@ export class CharacterAnimationComponent implements IComponent {
   }
 
   private setupAnimations(context: ComponentContext): void {
+    void context;
     const animations = (window as any).__loadedAnimations || {};
     
     Object.entries(this.props.animations).forEach(([key, value]) => {
@@ -65,7 +67,6 @@ export class CharacterAnimationComponent implements IComponent {
     
     this.animationMixer.update(context.deltaTime);
     
-    const keyboard = (window as any).__keyboardState || {};
     const rigidBody = context.rigidBodyRef.current;
     
     if (!rigidBody) return;

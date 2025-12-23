@@ -32,6 +32,7 @@ export function useSpawnFromBlueprint() {
   const [isSpawning, setIsSpawning] = useState(false);
   const [lastSpawnedEntity, setLastSpawnedEntity] = useState<SpawnedEntity | null>(null);
   const setMode = useGaesupStore((state) => state.setMode);
+  const setUrls = useGaesupStore((state) => state.setUrls);
 
   const spawnEntity = useCallback(async (
     blueprintId: string,
@@ -54,7 +55,7 @@ export function useSpawnFromBlueprint() {
       const worldObject = createWorldObject(entityId, blueprint, position, rotation, scale, options.metadata);
       
       // BridgeFactory를 통해 WorldBridge 인스턴스 가져오기
-      const worldBridge = BridgeFactory.get<WorldBridge>('world');
+      const worldBridge = BridgeFactory.get('world') as unknown as WorldBridge | null;
       if (!worldBridge) {
         console.error('WorldBridge not found. Make sure it is properly initialized.');
         return null;
@@ -63,11 +64,14 @@ export function useSpawnFromBlueprint() {
       worldBridge.addObject(DEFAULT_WORLD_ID, worldObject);
       
       if (blueprint.type === 'character') {
-        setMode({ type: 'character', characterUrl: blueprint.metadata?.['modelUrl'] as string || '' });
+        setMode({ type: 'character' });
+        setUrls({ characterUrl: (blueprint.metadata?.['modelUrl'] as string) || '' });
       } else if (blueprint.type === 'vehicle') {
-        setMode({ type: 'vehicle', vehicleUrl: blueprint.metadata?.['modelUrl'] as string || '' });
+        setMode({ type: 'vehicle' });
+        setUrls({ vehicleUrl: (blueprint.metadata?.['modelUrl'] as string) || '' });
       } else if (blueprint.type === 'airplane') {
-        setMode({ type: 'airplane', airplaneUrl: blueprint.metadata?.['modelUrl'] as string || '' });
+        setMode({ type: 'airplane' });
+        setUrls({ airplaneUrl: (blueprint.metadata?.['modelUrl'] as string) || '' });
       }
 
       const spawnedEntity: SpawnedEntity = {
@@ -88,7 +92,7 @@ export function useSpawnFromBlueprint() {
     } finally {
       setIsSpawning(false);
     }
-  }, [setMode]);
+  }, [setMode, setUrls]);
 
   const spawnAtCursor = useCallback(async (blueprintId: string): Promise<SpawnedEntity | null> => {
     const camera = (window as any).__camera;
@@ -100,8 +104,9 @@ export function useSpawnFromBlueprint() {
     const intersects = scene ? raycaster.intersectObjects(scene.children, true) : [];
     
     let position: [number, number, number] = [0, 0, 0];
-    if (intersects.length > 0 && intersects[0].point) {
-      const point = intersects[0].point;
+    const first = intersects[0];
+    if (first?.point) {
+      const point = first.point;
       position = [point.x, point.y, point.z];
     }
     

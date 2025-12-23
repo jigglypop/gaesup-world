@@ -77,7 +77,7 @@ export function MultiplayerCanvas({
             <Physics>
               {/* 로컬 플레이어 */}
               <GaesupController
-                innerRef={playerRef}
+                rigidBodyRef={playerRef}
                 rotation={euler({ x: 0, y: Math.PI, z: 0 })}
                 parts={[{ url: characterUrl }]}
               />

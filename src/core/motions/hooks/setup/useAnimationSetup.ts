@@ -13,17 +13,17 @@ export function useAnimationSetup(
 ) {
   const animationBridgeRef = useRef<boolean>(false);
   useEffect(() => {
-    if (actions && modeType && isActive && !animationBridgeRef.current) {
-      const animationBridge = getGlobalAnimationBridge();
-      animationBridge.registerAnimations(modeType as 'character' | 'vehicle' | 'airplane', actions);
-      animationBridgeRef.current = true;
-      return () => {
-        if (animationBridgeRef.current) {
-          animationBridge.unregisterAnimations(modeType as 'character' | 'vehicle' | 'airplane');
-          animationBridgeRef.current = false;
-        }
-      };
-    }
+    if (!actions || !isActive || animationBridgeRef.current) return undefined;
+    const animationBridge = getGlobalAnimationBridge();
+    animationBridge.registerAnimations(modeType as 'character' | 'vehicle' | 'airplane', actions);
+    animationBridgeRef.current = true;
+
+    return () => {
+      if (animationBridgeRef.current) {
+        animationBridge.unregisterAnimations(modeType as 'character' | 'vehicle' | 'airplane');
+        animationBridgeRef.current = false;
+      }
+    };
   }, [actions, modeType, isActive]);
 }
 

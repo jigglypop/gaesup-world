@@ -106,7 +106,12 @@ export function PartsGroupRef({ url, isActive, color, skeleton }: PartsGroupRefP
   useAnimationPlayer(isActive);
   return (
     <group>
-      <ModelRenderer nodes={nodes} color={color} skeleton={skeleton} url={url} />
+      <ModelRenderer
+        nodes={nodes}
+        url={url}
+        {...(color ? { color } : {})}
+        {...(skeleton ? { skeleton } : {})}
+      />
     </group>
   );
 }

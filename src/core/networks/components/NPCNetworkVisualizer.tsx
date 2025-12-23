@@ -1,11 +1,11 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useMemo } from 'react';
 
 import { Line, Sphere, Text } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { useNetworkBridge } from '../hooks';
-import { NPCNetworkNode, NetworkConnection } from '../types';
+import type { NPCNetworkNode, NetworkConnection, NetworkSystemState } from '../types';
 
 interface NPCNetworkVisualizerProps {
   systemId?: string;
@@ -35,7 +35,7 @@ export const NPCNetworkVisualizer: React.FC<NPCNetworkVisualizerProps> = ({
   updateInterval = 100,
   maxRenderDistance = 100
 }) => {
-  const { getSnapshot, isReady } = useNetworkBridge({ systemId });
+  const { getSystemState, isReady } = useNetworkBridge({ systemId });
   const groupRef = useRef<THREE.Group>(null);
   const lastUpdateRef = useRef<number>(0);
   
@@ -50,12 +50,15 @@ export const NPCNetworkVisualizer: React.FC<NPCNetworkVisualizerProps> = ({
     const now = Date.now();
     if (!isReady || now - lastUpdateRef.current < updateInterval) return;
     
-    const snapshot = getSnapshot();
-    if (!snapshot) return;
+    const system = getSystemState() as NetworkSystemState | null;
+    if (!system) return;
 
-    const nodes = Array.from(snapshot.nodes.values());
-    const connections = Array.from(snapshot.connections.values());
-    const groups = snapshot.groups;
+    const nodes = Array.from(system.nodes.values());
+    const connections = Array.from(system.connections.values());
+    const groups = new Map<string, string[]>();
+    system.groups.forEach((group, groupId) => {
+      groups.set(groupId, Array.from(group.members));
+    });
 
     setVisualState({
       nodes,
@@ -76,7 +79,8 @@ export const NPCNetworkVisualizer: React.FC<NPCNetworkVisualizerProps> = ({
     
     let colorIndex = 0;
     visualState.groups.forEach((_, groupId) => {
-      colors.set(groupId, colorPalette[colorIndex % colorPalette.length]);
+      const color = colorPalette[colorIndex % colorPalette.length] ?? '#cccccc';
+      colors.set(groupId, color);
       colorIndex++;
     });
     
@@ -84,35 +88,41 @@ export const NPCNetworkVisualizer: React.FC<NPCNetworkVisualizerProps> = ({
   }, [visualState.groups]);
 
   // 노드 색상 결정
+  const getNodeGroups = (nodeId: string): string[] => {
+    const result: string[] = [];
+    for (const [groupId, members] of visualState.groups.entries()) {
+      if (members.includes(nodeId)) result.push(groupId);
+    }
+    return result;
+  };
+
   const getNodeColor = (node: NPCNetworkNode): string => {
-    if (showGroups && node.groups.length > 0) {
-      const firstGroup = node.groups[0];
-      return groupColors.get(firstGroup) || '#cccccc';
+    const groups = getNodeGroups(node.id);
+    if (showGroups && groups.length > 0) {
+      const firstGroup = groups[0];
+      return firstGroup ? groupColors.get(firstGroup) || '#cccccc' : '#cccccc';
     }
     return '#4a90e2';
   };
 
   // 연결선 색상 결정
   const getConnectionColor = (connection: NetworkConnection): string => {
-    switch (connection.state) {
-      case 'connected': return '#00ff00';
-      case 'connecting': return '#ffff00';
-      case 'failed': return '#ff0000';
+    switch (connection.status) {
+      case 'active': return '#00ff00';
+      case 'establishing': return '#ffff00';
+      case 'unstable': return '#ff9f43';
       case 'disconnected': return '#cccccc';
       default: return '#666666';
     }
-  };
-
-  // 카메라로부터의 거리 확인
-  const isWithinRenderDistance = (position: THREE.Vector3, camera: THREE.Camera): boolean => {
-    return position.distanceTo(camera.position) <= maxRenderDistance;
   };
 
   // 노드 렌더링
   const renderNodes = () => {
     return visualState.nodes.map(node => {
       const position = new THREE.Vector3(node.position.x, node.position.y, node.position.z);
+      void maxRenderDistance;
       const color = getNodeColor(node);
+      const groups = getNodeGroups(node.id);
       
       return (
         <group key={node.id} position={position}>
@@ -122,7 +132,7 @@ export const NPCNetworkVisualizer: React.FC<NPCNetworkVisualizerProps> = ({
           </Sphere>
           
           {/* 연결 개수 표시 */}
-          {node.connections.length > 0 && (
+          {node.connections.size > 0 && (
             <Sphere args={[nodeSize * 0.3]} position={[0, nodeSize + 0.2, 0]}>
               <meshBasicMaterial color="#ffffff" />
             </Sphere>
@@ -142,7 +152,7 @@ export const NPCNetworkVisualizer: React.FC<NPCNetworkVisualizerProps> = ({
           )}
           
           {/* 그룹 표시 */}
-          {showGroups && node.groups.length > 0 && (
+          {showGroups && groups.length > 0 && (
             <Text
               position={[0, nodeSize + 0.8, 0]}
               fontSize={0.2}
@@ -150,7 +160,7 @@ export const NPCNetworkVisualizer: React.FC<NPCNetworkVisualizerProps> = ({
               anchorX="center"
               anchorY="middle"
             >
-              {node.groups.join(', ')}
+              {groups.join(', ')}
             </Text>
           )}
         </group>
@@ -163,8 +173,8 @@ export const NPCNetworkVisualizer: React.FC<NPCNetworkVisualizerProps> = ({
     if (!showConnectionLines) return null;
 
     return visualState.connections.map(connection => {
-      const fromNode = visualState.nodes.find(n => n.id === connection.fromNodeId);
-      const toNode = visualState.nodes.find(n => n.id === connection.toNodeId);
+      const fromNode = visualState.nodes.find(n => n.id === connection.nodeA);
+      const toNode = visualState.nodes.find(n => n.id === connection.nodeB);
       
       if (!fromNode || !toNode) return null;
       
@@ -180,7 +190,7 @@ export const NPCNetworkVisualizer: React.FC<NPCNetworkVisualizerProps> = ({
           color={color}
           lineWidth={connectionWidth}
           transparent={true}
-          opacity={connection.state === 'connected' ? 0.8 : 0.4}
+          opacity={connection.status === 'active' ? 0.8 : 0.4}
         />
       );
     });

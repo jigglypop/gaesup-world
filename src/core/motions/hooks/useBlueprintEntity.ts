@@ -53,6 +53,7 @@ export function useBlueprintEntity({
   }, [blueprint, rigidBodyRef, innerGroupRef, outerGroupRef, enabled]);
 
   useFrame((state, delta) => {
+    void state;
     if (enabled && entityRef.current) {
       entityRef.current.update(delta);
     }
@@ -60,7 +61,8 @@ export function useBlueprintEntity({
 
   return {
     entity: entityRef.current,
-    getComponent: <T>(type: string) => entityRef.current?.getComponent<T>(type),
+    getComponent: <T extends IComponent>(type: string) =>
+      entityRef.current?.getComponent<T>(type),
     addComponent: (component: IComponent) => entityRef.current?.addComponent(component),
     removeComponent: (type: string) => entityRef.current?.removeComponent(type),
   };

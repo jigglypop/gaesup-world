@@ -36,7 +36,7 @@ export default function RiderRef({
           ref={animationRef}
         />
       )}
-      <ModelRenderer nodes={characterNodes} url={url} />
+      <ModelRenderer nodes={characterNodes} url={url} color={undefined} skeleton={null} />
       {children}
     </group>
   );

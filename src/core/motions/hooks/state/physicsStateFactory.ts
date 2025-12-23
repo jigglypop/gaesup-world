@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { StoreState } from '@core/stores/types';
 
 import { EntityStateManager } from '../../core/system/EntityStateManager';
-import { PhysicsInputState, PhysicsState } from '../types';
+import { PhysicsInputState, PhysicsState } from '../../types';
 
 function createInitialPhysicsState(
   worldContext: StoreState,

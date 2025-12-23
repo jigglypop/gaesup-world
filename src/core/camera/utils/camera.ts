@@ -86,11 +86,12 @@ export const cameraUtils = {
       if (!object.geometry?.boundingSphere) return;
 
       const intersects = raycaster.intersectObject(object, false);
-      if (intersects.length > 0) {
+      const hit = intersects[0];
+      if (hit) {
         obstacles.push({
           object,
-          distance: intersects[0].distance,
-          point: intersects[0].point,
+          distance: hit.distance,
+          point: hit.point,
         });
       }
     });
@@ -143,6 +144,7 @@ export const cameraUtils = {
     radius: number,
     bounds?: CameraBounds,
   ): THREE.Vector3 => {
+    void radius;
     if (!bounds) return center;
     const x = bounds.minX !== undefined ? Math.max(bounds.minX, center.x) : center.x;
     const y = bounds.minY !== undefined ? Math.max(bounds.minY, center.y) : center.y;
@@ -210,7 +212,10 @@ export const cameraUtils = {
 
   isPositionValid: (position: THREE.Vector3, bounds?: CameraOptionType['bounds']): boolean => {
     if (!bounds) return true;
-    return position.y >= bounds.minY && position.y <= bounds.maxY;
+    return (
+      position.y >= (bounds.minY ?? -Infinity) &&
+      position.y <= (bounds.maxY ?? Infinity)
+    );
   },
 };
 
@@ -233,63 +238,15 @@ export const vectorUtils = {
 
 export const activeStateUtils = {
   getPosition: (activeState: ActiveStateType): THREE.Vector3 => {
-    if (!activeState?.position) {
-      return new THREE.Vector3(0, 0, 0);
-    }
-    
-    if (activeState.position instanceof THREE.Vector3) {
-      return activeState.position;
-    }
-    
-    if (typeof activeState.position === 'object') {
-      return new THREE.Vector3(
-        activeState.position.x || 0,
-        activeState.position.y || 0,
-        activeState.position.z || 0,
-      );
-    }
-    
-    return new THREE.Vector3(0, 0, 0);
+    return activeState?.position ? activeState.position : new THREE.Vector3(0, 0, 0);
   },
 
   getEuler: (activeState: ActiveStateType): THREE.Euler => {
-    if (!activeState?.euler) {
-      return new THREE.Euler(0, 0, 0);
-    }
-    
-    if (activeState.euler instanceof THREE.Euler) {
-      return activeState.euler;
-    }
-    
-    if (typeof activeState.euler === 'object') {
-      return new THREE.Euler(
-        activeState.euler.x || 0,
-        activeState.euler.y || 0,
-        activeState.euler.z || 0,
-      );
-    }
-    
-    return new THREE.Euler(0, 0, 0);
+    return activeState?.euler ? activeState.euler : new THREE.Euler(0, 0, 0);
   },
 
   getVelocity: (activeState: ActiveStateType): THREE.Vector3 => {
-    if (!activeState?.velocity) {
-      return new THREE.Vector3(0, 0, 0);
-    }
-    
-    if (activeState.velocity instanceof THREE.Vector3) {
-      return activeState.velocity;
-    }
-    
-    if (typeof activeState.velocity === 'object') {
-      return new THREE.Vector3(
-        activeState.velocity.x || 0,
-        activeState.velocity.y || 0,
-        activeState.velocity.z || 0,
-      );
-    }
-    
-    return new THREE.Vector3(0, 0, 0);
+    return activeState?.velocity ? activeState.velocity : new THREE.Vector3(0, 0, 0);
   },
 
   calculateCameraOffset: (
@@ -302,6 +259,7 @@ export const activeStateUtils = {
       mode?: 'thirdPerson' | 'chase' | 'fixed';
     },
   ): THREE.Vector3 => {
+    void position;
     const { xDistance = 15, yDistance = 8, zDistance = 15, euler, mode = 'thirdPerson' } = options;
     
     switch (mode) {

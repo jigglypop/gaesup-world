@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback } from 'react';
 
-import { InteractionSystem } from '@interactions/core/InteractionSystem';
+import { InteractionSystem } from '@core/interactions/core/InteractionSystem';
 import { useFrame, RootState } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -12,7 +12,6 @@ import { updateInputState } from '../bridge';
 import { PhysicsBridge } from '../bridge/PhysicsBridge';
 import { PhysicsCalculationProps, PhysicsInputState, PhysicsState } from '../types';
 import { createInitialPhysicsState } from './state/physicsStateFactory';
-import { useGaesupGltf } from './useGaesupGltf';
 import { useStateSystem } from './useStateSystem';
 import { getGlobalStateManager } from './useStateSystem';
 import { EntityStateManager } from '../core/system/EntityStateManager';
@@ -29,7 +28,6 @@ export function usePhysicsBridge(props: PhysicsCalculationProps) {
   const store = useGaesupStore();
   const { activeState } = useStateSystem();
   const interactionSystem = InteractionSystem.getInstance();
-  const { getSizesByUrls } = useGaesupGltf();
   
   const interaction = interactionSystem.getState();
   const urls = useGaesupStore((state) => state.urls);
@@ -93,19 +91,21 @@ export function usePhysicsBridge(props: PhysicsCalculationProps) {
       mouse: interaction.mouse,
     };
 
+    let physicsState = physicsStateRef.current;
     // 물리 상태 초기화
-    if (!physicsStateRef.current) {
+    if (!physicsState) {
       const worldContext = useGaesupStore.getState() as StoreState;
-      physicsStateRef.current = createInitialPhysicsState(
+      physicsState = createInitialPhysicsState(
         worldContext,
         stateManagerRef.current,
         input,
         delta,
         mouseTargetRef.current
       );
+      physicsStateRef.current = physicsState;
 
-      if (props.rigidBodyRef?.current && physicsStateRef.current.activeState) {
-        const { activeState } = physicsStateRef.current;
+      if (physicsState.activeState) {
+        const { activeState } = physicsState;
         props.rigidBodyRef.current.lockRotations(false, true);
         activeState.euler.set(0, 0, 0);
         props.rigidBodyRef.current.setTranslation(
@@ -119,16 +119,15 @@ export function usePhysicsBridge(props: PhysicsCalculationProps) {
       }
     } else {
       // 입력 상태 업데이트
-      updateInputState(physicsStateRef.current, input);
-      physicsStateRef.current.activeState = stateManagerRef.current.getActiveState();
-      physicsStateRef.current.gameStates = stateManagerRef.current.getGameStates();
-      physicsStateRef.current.delta = delta;
+      updateInputState(physicsState, input);
+      physicsState.activeState = stateManagerRef.current.getActiveState();
+      physicsState.gameStates = stateManagerRef.current.getGameStates();
+      physicsState.delta = delta;
     }
 
     // 물리 계산 속성
     const calcProp: PhysicsCalcProps = {
       rigidBodyRef: props.rigidBodyRef,
-      innerGroupRef: props.innerGroupRef,
       state,
       delta,
       worldContext: useGaesupStore.getState(),
@@ -136,15 +135,16 @@ export function usePhysicsBridge(props: PhysicsCalculationProps) {
       inputRef: { current: input },
       setKeyboardInput: (input) => interactionSystem.updateKeyboard(input),
       setMouseInput: (input) => interactionSystem.updateMouse(input),
+      ...(props.innerGroupRef ? { innerGroupRef: props.innerGroupRef } : {}),
     };
 
     // 브릿지를 통해 물리 업데이트
     physicsBridgeRef.current.updateEntity('global-physics', {
       deltaTime: delta,
       calcProp,
-      physicsState: physicsStateRef.current
+      physicsState
     });
-  }, [isReady, interaction, urls, getSizesByUrls, props]);
+  }, [isReady, interaction, urls, interactionSystem, props]);
 
   // 프레임 루프
   useFrame((state, delta) => {

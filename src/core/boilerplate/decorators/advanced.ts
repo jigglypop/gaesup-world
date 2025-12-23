@@ -18,6 +18,7 @@ export function Validate() {
 
 export function DebugLog() {
     return function (target: object, propertyKey: string, descriptor: PropertyDescriptor) {
+        void target
         const originalMethod = descriptor.value
         descriptor.value = function (this: unknown, ...args: unknown[]) {
             console.log(`[${propertyKey}] called with:`, args)
@@ -30,6 +31,7 @@ export function DebugLog() {
 
 export function PerformanceLog() {
     return function (target: object, propertyKey: string, descriptor: PropertyDescriptor) {
+        void target
         const originalMethod = descriptor.value
         descriptor.value = function (this: unknown, ...args: unknown[]) {
             const start = performance.now()

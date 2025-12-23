@@ -24,7 +24,7 @@ export const convertBlueprintToItem = (blueprint: AnyBlueprint): BlueprintItem =
     version: blueprint.version,
     tags: blueprint.tags || [],
     description: blueprint.description ?? '',
-    lastModified: new Date().toISOString().split('T')[0],
+    lastModified: new Date().toISOString().split('T')[0] ?? '',
   };
 };
 

@@ -1,7 +1,7 @@
 import { useRef, useEffect, useMemo, useCallback } from 'react';
 
 import { useGLTF } from '@react-three/drei';
-import { extend } from '@react-three/fiber';
+import type { ThreeEvent } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
@@ -13,8 +13,8 @@ import { useNPCStore } from '../../stores/npcStore';
 import { NPCPart } from '../../types';
 import './styles.css';
 
-extend(THREE);
 function NPCPartMesh({ part, instanceId }: NPCPartMeshProps) {
+  void instanceId;
   const hasUrl = part.url && part.url.trim() !== '';
   const gltf = hasUrl ? useGLTF(part.url) : null;
   const clone = useMemo(() => gltf ? SkeletonUtils.clone(gltf.scene) : null, [gltf]);
@@ -34,6 +34,7 @@ function NPCPartMesh({ part, instanceId }: NPCPartMeshProps) {
       </mesh>
     );
   }
+  if (!clone) return null;
   return (
     <primitive 
       object={clone}
@@ -90,7 +91,7 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
     if (!mesh) return;
     
     const handlePointerOver = () => {
-      const hoverEvent = instance.events?.find(e => e.type === 'onHover');
+      void instance.events?.find(e => e.type === 'onHover');
     };
     
     const handleClick = () => {
@@ -164,7 +165,14 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
         <group
           ref={groupRef}
           scale={instance.scale}
-          onClick={onClick}
+          {...(onClick
+            ? {
+                onClick: (e: ThreeEvent<MouseEvent>) => {
+                  e.stopPropagation();
+                  onClick();
+                },
+              }
+            : {})}
           onPointerEnter={handlePointerEnter}
           onPointerLeave={handlePointerLeave}
         >
@@ -193,7 +201,14 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
       <group
         ref={groupRef}
         scale={instance.scale}
-        onClick={onClick}
+        {...(onClick
+          ? {
+              onClick: (e: ThreeEvent<MouseEvent>) => {
+                e.stopPropagation();
+                onClick();
+              },
+            }
+          : {})}
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
       >

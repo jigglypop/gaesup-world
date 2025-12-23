@@ -29,7 +29,6 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
   onClose,
   onMinimize,
   draggable = true,
-  icon,
   onDrop
 }) => {
   const [size, setSize] = useState({ width: initialWidth, height: initialHeight });
@@ -107,6 +106,7 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
+    return undefined;
   }, [isResizing, isDragging, handleMouseMove, handleMouseUp]);
 
   return (

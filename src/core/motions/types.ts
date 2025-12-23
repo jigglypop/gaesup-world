@@ -6,7 +6,7 @@ import * as THREE from 'three';
 
 import type { AutomationState, InteractionState } from '@core/interactions/bridge/types';
 
-import { ActiveStateType, characterConfigType, vehicleConfigType, airplaneConfigType } from './core/types';
+import type { ActiveStateType } from './core/types';
 import { PhysicsEntityProps } from './entities';
 import { ModeType, StoreState } from '../stores/types';
 import { GameStatesType } from '../world/components/Rideable/types';
@@ -34,8 +34,9 @@ export interface PhysicsCalcProps {
   };
 }
 
-export type PhysicsCalculationProps = Pick<PhysicsEntityProps,
-  'innerGroupRef' | 'outerGroupRef' | 'colliderRef' | 'groundRay' | 'rigidBodyRef'>;
+export type PhysicsCalculationProps =
+  Required<Pick<PhysicsEntityProps, 'rigidBodyRef'>> &
+  Pick<PhysicsEntityProps, 'innerGroupRef' | 'outerGroupRef' | 'colliderRef' | 'groundRay'>;
 
 export interface PhysicsState {
   activeState: ActiveStateType;

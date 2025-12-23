@@ -10,6 +10,7 @@ export type CharacterMovementProps = {
 };
 
 export class CharacterMovementComponent implements IComponent {
+  type: string = 'CharacterMovement';
   enabled: boolean = true;
   private props: CharacterMovementProps;
   private velocity: THREE.Vector3 = new THREE.Vector3();

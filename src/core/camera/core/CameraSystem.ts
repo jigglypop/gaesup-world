@@ -116,6 +116,7 @@ export class CameraSystem extends BaseCameraSystem {
   
   setCameraTransitions(transitions: CameraTransition[]): void {
     this.cameraTransitions = transitions;
+    void this.cameraTransitions.length;
   }
   
   switchCameraState(name: string): void {

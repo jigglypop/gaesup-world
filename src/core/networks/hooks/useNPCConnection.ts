@@ -78,11 +78,11 @@ export function useNPCConnection(options: UseNPCConnectionOptions): UseNPCConnec
 
     executeCommand({
       type: 'registerNPC',
-      data: {
-        npcId,
-        position: npcOptions.position,
-        metadata: npcOptions.metadata || {}
-      }
+      npcId,
+      position: npcOptions.position,
+      ...(npcOptions.connectionRange !== undefined
+        ? { options: { communicationRange: npcOptions.connectionRange } }
+        : {})
     });
 
     isRegisteredRef.current = true;
@@ -99,7 +99,7 @@ export function useNPCConnection(options: UseNPCConnectionOptions): UseNPCConnec
 
     executeCommand({
       type: 'unregisterNPC',
-      data: { npcId }
+      npcId
     });
 
     isRegisteredRef.current = false;
@@ -112,10 +112,8 @@ export function useNPCConnection(options: UseNPCConnectionOptions): UseNPCConnec
 
     executeCommand({
       type: 'updateNPCPosition',
-      data: {
-        npcId,
-        position
-      }
+      npcId,
+      position
     });
 
     currentPositionRef.current = position.clone();
@@ -123,14 +121,12 @@ export function useNPCConnection(options: UseNPCConnectionOptions): UseNPCConnec
 
   const connectTo = useCallback((targetId: string, connectionOptions?: ConnectionOptions) => {
     if (!isReady || !isRegisteredRef.current) return;
+    void connectionOptions;
 
     executeCommand({
-      type: 'connectNPCs',
-      data: {
-        fromId: npcId,
-        toId: targetId,
-        options: connectionOptions || {}
-      }
+      type: 'connect',
+      npcId,
+      targetId
     });
 
     connectionsRef.current.add(targetId);
@@ -140,11 +136,9 @@ export function useNPCConnection(options: UseNPCConnectionOptions): UseNPCConnec
     if (!isReady || !isRegisteredRef.current) return;
 
     executeCommand({
-      type: 'disconnectNPCs',
-      data: {
-        fromId: npcId,
-        toId: targetId
-      }
+      type: 'disconnect',
+      npcId,
+      targetId
     });
 
     connectionsRef.current.delete(targetId);

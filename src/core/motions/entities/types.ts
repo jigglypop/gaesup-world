@@ -4,14 +4,19 @@ import {
 } from 'react';
 
 import {
+  CollisionPayload,
   CollisionEnterPayload,
-  CollisionExitPayload,
   RapierCollider,
   RapierRigidBody,
   RigidBodyProps,
   RigidBodyTypeString
 } from '@react-three/rapier';
 import * as THREE from 'three';
+
+export type Part = {
+  url: string;
+  color?: string;
+};
 
 export type ModelRendererProps = {
   nodes: Record < string, THREE.Object3D > ;
@@ -66,8 +71,8 @@ export type PhysicsEntityProps = {
   children ? : ReactNode;
   userData ? : Record < string, unknown > ;
   sensor ? : boolean;
-  onIntersectionEnter ? : (payload: CollisionEnterPayload) => void;
-  onIntersectionExit ? : (payload: CollisionExitPayload) => void;
+  onIntersectionEnter ? : (payload: CollisionPayload) => void;
+  onIntersectionExit ? : (payload: CollisionPayload) => void;
   onCollisionEnter ? : (payload: CollisionEnterPayload) => void;
   isNotColliding ? : boolean;
   isRiderOn ? : boolean;

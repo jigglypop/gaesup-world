@@ -137,9 +137,7 @@ export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {
                 lerp: { 
                   cameraTurn: 0.1, 
                   cameraPosition: 0.08 
-                },
-                disableKeyboard: !enableKeyboard,
-                disableMouse: !enableMouse
+                }
               }}
               rigidBodyProps={{
                 lockRotations: true,

@@ -9,12 +9,11 @@ export const VehiclePanel: FC = () => {
   const setMode = useGaesupStore((state) => state.setMode);
 
   const handleModeChange = (newMode: ModeType) => {
-    const newModeConfig = {
+    setMode({
       type: newMode,
       controller: 'keyboard',
-      control: newMode === 'airplane' ? 'chase' : newMode === 'vehicle' ? 'chase' : 'thirdPerson'
-    };
-    setMode(newModeConfig);
+      control: newMode === 'airplane' ? 'chase' : newMode === 'vehicle' ? 'chase' : 'thirdPerson',
+    });
   };
 
   const modes: { type: ModeType; label: string; description: string }[] = [

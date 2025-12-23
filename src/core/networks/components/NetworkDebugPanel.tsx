@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 import { useNetworkBridge, useNetworkStats } from '../hooks';
-import { NetworkSnapshot, NetworkMessage } from '../types';
+import type { NetworkSnapshot, NetworkMessage, NetworkSystemState, NetworkConnection, NPCNetworkNode } from '../types';
 
 interface NetworkDebugPanelProps {
   systemId?: string;
@@ -12,6 +12,7 @@ interface NetworkDebugPanelProps {
 
 interface NetworkDebugState {
   snapshot: NetworkSnapshot | null;
+  system: NetworkSystemState | null;
   messages: NetworkMessage[];
   isExpanded: boolean;
   activeTab: 'overview' | 'nodes' | 'connections' | 'messages' | 'stats';
@@ -23,11 +24,12 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
   style,
   onClose
 }) => {
-  const { getSnapshot, isReady } = useNetworkBridge({ systemId });
+  const { getSnapshot, getSystemState, isReady } = useNetworkBridge({ systemId });
   const { stats, refreshStats } = useNetworkStats({ systemId, enableRealTime: true });
   
   const [debugState, setDebugState] = useState<NetworkDebugState>({
     snapshot: null,
+    system: null,
     messages: [],
     isExpanded: true,
     activeTab: 'overview'
@@ -39,38 +41,45 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
 
     const interval = setInterval(() => {
       const snapshot = getSnapshot();
-      if (snapshot) {
-        setDebugState(prev => ({
-          ...prev,
-          snapshot,
-          messages: snapshot.messages.slice(-50) // 최근 50개 메시지만 보관
-        }));
-      }
+      const system = getSystemState() as NetworkSystemState | null;
+      if (!snapshot && !system) return;
+
+      const messages = system
+        ? Array.from(system.messageQueues.values()).flat().slice(-50)
+        : [];
+
+      setDebugState(prev => ({
+        ...prev,
+        snapshot: snapshot ?? prev.snapshot,
+        system: system ?? prev.system,
+        messages
+      }));
     }, 500);
 
     return () => clearInterval(interval);
-  }, [isReady, getSnapshot]);
+  }, [isReady, getSnapshot, getSystemState]);
 
   const renderOverview = () => {
     if (!debugState.snapshot) return <div>No data available</div>;
 
     const { snapshot } = debugState;
+    const totalGroups = debugState.system?.groups.size ?? snapshot.activeGroups;
     
     return (
       <div style={{ padding: '10px' }}>
         <h4>Network Overview</h4>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <div>
-            <strong>Total Nodes:</strong> {snapshot.nodes.size}
+            <strong>Total Nodes:</strong> {snapshot.nodeCount}
           </div>
           <div>
-            <strong>Total Connections:</strong> {snapshot.connections.size}
+            <strong>Total Connections:</strong> {snapshot.connectionCount}
           </div>
           <div>
-            <strong>Total Groups:</strong> {snapshot.groups.size}
+            <strong>Total Groups:</strong> {totalGroups}
           </div>
           <div>
-            <strong>Total Messages:</strong> {snapshot.messages.length}
+            <strong>Recent Messages:</strong> {debugState.messages.length}
           </div>
         </div>
         
@@ -98,9 +107,10 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
   };
 
   const renderNodes = () => {
-    if (!debugState.snapshot) return <div>No data available</div>;
+    const system = debugState.system;
+    if (!system) return <div>No data available</div>;
 
-    const nodes = Array.from(debugState.snapshot.nodes.values());
+    const nodes: NPCNetworkNode[] = Array.from(system.nodes.values());
     
     return (
       <div style={{ padding: '10px' }}>
@@ -118,8 +128,14 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
             >
               <div><strong>ID:</strong> {node.id}</div>
               <div><strong>Position:</strong> ({node.position.x.toFixed(1)}, {node.position.y.toFixed(1)}, {node.position.z.toFixed(1)})</div>
-              <div><strong>Connections:</strong> {node.connections.length}</div>
-              <div><strong>Groups:</strong> {node.groups.join(', ') || 'None'}</div>
+              <div><strong>Connections:</strong> {node.connections.size}</div>
+              <div>
+                <strong>Groups:</strong>{' '}
+                {Array.from(system.groups.values())
+                  .filter((group) => group.members.has(node.id))
+                  .map((group) => group.id)
+                  .join(', ') || 'None'}
+              </div>
             </div>
           ))}
         </div>
@@ -128,9 +144,10 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
   };
 
   const renderConnections = () => {
-    if (!debugState.snapshot) return <div>No data available</div>;
+    const system = debugState.system;
+    if (!system) return <div>No data available</div>;
 
-    const connections = Array.from(debugState.snapshot.connections.values());
+    const connections: NetworkConnection[] = Array.from(system.connections.values());
     
     return (
       <div style={{ padding: '10px' }}>
@@ -147,9 +164,9 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
               }}
             >
               <div><strong>ID:</strong> {connection.id}</div>
-              <div><strong>From:</strong> {connection.fromNodeId} → <strong>To:</strong> {connection.toNodeId}</div>
-              <div><strong>State:</strong> {connection.state}</div>
-              <div><strong>Reliability:</strong> {connection.options.reliable ? 'Yes' : 'No'}</div>
+              <div><strong>From:</strong> {connection.nodeA} → <strong>To:</strong> {connection.nodeB}</div>
+              <div><strong>Status:</strong> {connection.status}</div>
+              <div><strong>Latency:</strong> {connection.latency.toFixed(1)}ms</div>
               <div><strong>Last Activity:</strong> {new Date(connection.lastActivity).toLocaleTimeString()}</div>
             </div>
           ))}
@@ -176,9 +193,9 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
             >
               <div><strong>ID:</strong> {message.id}</div>
               <div><strong>Type:</strong> {message.type}</div>
-              <div><strong>From:</strong> {message.senderId} → <strong>To:</strong> {message.receiverId}</div>
+              <div><strong>From:</strong> {message.from} → <strong>To:</strong> {message.to === 'group' ? `group:${message.groupId ?? 'unknown'}` : message.to}</div>
               <div><strong>Time:</strong> {new Date(message.timestamp).toLocaleTimeString()}</div>
-              <div><strong>Content:</strong> {JSON.stringify(message.content)}</div>
+              <div><strong>Payload:</strong> {JSON.stringify(message.payload)}</div>
             </div>
           ))}
         </div>

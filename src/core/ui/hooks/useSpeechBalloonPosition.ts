@@ -19,7 +19,7 @@ export function useSpeechBalloonPosition({
   const isInitializedRef = useRef(false);
 
   // Delta 기반 부드러운 움직임 - 미세진동 완전 제거
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     if (!spriteRef.current) return;
     
     const targetPosition = new THREE.Vector3(

@@ -8,7 +8,7 @@ export class BlueprintConverter {
       name: blueprint.name,
       type: blueprint.type as 'character' | 'vehicle' | 'airplane' | 'object',
       components: [],
-      metadata: blueprint.metadata
+      ...(blueprint.metadata ? { metadata: blueprint.metadata } : {})
     };
 
     switch (blueprint.type) {

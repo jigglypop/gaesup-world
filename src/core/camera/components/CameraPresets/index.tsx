@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
 import { useGaesupStore } from '../../../stores/gaesupStore';
-import { CameraOptionType } from '../core/types';
+import type { CameraOptionType } from '../../core/types';
 import './styles.css';
 import { CameraPreset } from './types';
 
@@ -10,6 +10,7 @@ const DEFAULT_PRESETS: CameraPreset[] = [
     id: 'classic',
     name: 'Classic',
     description: 'A traditional third-person view.',
+    icon: 'camera',
     config: {
       mode: 'thirdPerson',
       distance: { x: 0, y: 8, z: 10 },
@@ -21,6 +22,7 @@ const DEFAULT_PRESETS: CameraPreset[] = [
     id: 'cinematic',
     name: 'Cinematic',
     description: 'Smooth, movie-like camera work.',
+    icon: 'camera',
     config: {
       mode: 'chase',
       distance: { x: 2, y: 7, z: 8 },
@@ -32,6 +34,7 @@ const DEFAULT_PRESETS: CameraPreset[] = [
     id: 'action',
     name: 'Action',
     description: 'Responsive camera for fast gameplay.',
+    icon: 'camera',
     config: {
       mode: 'thirdPerson',
       distance: { x: 0, y: 6, z: 6 },
@@ -43,6 +46,7 @@ const DEFAULT_PRESETS: CameraPreset[] = [
     id: 'strategy',
     name: 'Strategy',
     description: 'Top-down view for an overview.',
+    icon: 'camera',
     config: {
       mode: 'topDown',
       distance: { x: 0, y: 20, z: 0 },
@@ -54,8 +58,9 @@ const DEFAULT_PRESETS: CameraPreset[] = [
     id: 'retro',
     name: 'Retro',
     description: 'Classic side-scroller style.',
+    icon: 'camera',
     config: {
-      mode: 'side',
+      mode: 'sideScroll',
       distance: { x: 15, y: 0, z: 0 },
       fov: 75,
       smoothing: { position: 0.15, rotation: 0.15, fov: 0.15 }
@@ -68,6 +73,14 @@ function compareDistance(a: { x: number; y: number; z: number } | undefined, b: 
   return a.x === b.x && a.y === b.y && a.z === b.z;
 }
 
+function getOptionDistance(option: CameraOptionType | undefined) {
+  const x = option?.xDistance;
+  const y = option?.yDistance;
+  const z = option?.zDistance;
+  if (x === undefined || y === undefined || z === undefined) return undefined;
+  return { x, y, z };
+}
+
 export function CameraPresets() {
   const [presets] = useState<CameraPreset[]>(DEFAULT_PRESETS);
   const setMode = useGaesupStore((state) => state.setMode);
@@ -78,19 +91,19 @@ export function CameraPresets() {
   
   const applyPreset = useCallback((preset: CameraPreset) => {
     setMode({ control: preset.config.mode });
-    const newOptions: CameraOptionType = {
-      ...cameraOption,
-      distance: preset.config.distance,
+    setCameraOption({
+      xDistance: preset.config.distance.x,
+      yDistance: preset.config.distance.y,
+      zDistance: preset.config.distance.z,
       fov: preset.config.fov,
-      smoothing: preset.config.smoothing || { position: 0.1, rotation: 0.1, fov: 0.1 }
-    };
-    setCameraOption(newOptions);
+      smoothing: preset.config.smoothing || { position: 0.1, rotation: 0.1, fov: 0.1 },
+    });
   }, [setMode, setCameraOption, cameraOption]);
 
   useEffect(() => {
     const foundPreset = presets.find(p => 
       p.config.mode === mode?.control &&
-      compareDistance(p.config.distance, cameraOption?.distance)
+      compareDistance(p.config.distance, getOptionDistance(cameraOption))
     );
     setCurrentPresetId(foundPreset ? foundPreset.id : null);
   }, [mode, cameraOption, presets]);

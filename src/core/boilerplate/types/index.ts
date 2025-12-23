@@ -1,4 +1,3 @@
-import { CoreBridge } from "../bridge/CoreBridge";
 import { ManagedEntity } from "../entity/ManagedEntity";
 
 export type BaseState = {
@@ -88,5 +87,5 @@ export type ServiceTarget<T = unknown> = Constructor<T> | AbstractConstructor<T>
 export type Factory<T> = () => T;
 export type Token<T> = ServiceTarget<T> | string | symbol;
 export type BridgeClass = new (...args: unknown[]) => unknown
-export type BridgeInstance = CoreBridge<IDisposable, unknown, unknown>;
+export type BridgeInstance = IDisposable;
 export type BridgeConstructor = new (...args: unknown[]) => BridgeInstance; 

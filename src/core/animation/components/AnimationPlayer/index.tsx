@@ -27,13 +27,14 @@ export function AnimationPlayer() {
 
     const updateState = () => {
       const snapshot = bridge.snapshot(currentType);
+      if (!snapshot) return;
       setIsPlaying(snapshot.isPlaying);
       setAvailableAnimations(snapshot.availableAnimations);
     };
 
     updateState();
 
-    const unsubscribe = bridge.subscribe((snapshot, type) => {
+    const unsubscribe = bridge.subscribe((_, type) => {
       if (type === currentType) {
         updateState();
       }

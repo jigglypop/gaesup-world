@@ -81,11 +81,6 @@ export const useNPCStore = create<NPCStore>()(
     clothingSets: new Map(),
     clothingCategories: new Map(),
     animations: new Map(),
-    selectedTemplateId: undefined,
-    selectedCategoryId: undefined,
-    selectedClothingSetId: undefined,
-    selectedClothingCategoryId: undefined,
-    selectedInstanceId: undefined,
     editMode: false,
     previewAccessories: {},
 
@@ -358,8 +353,8 @@ export const useNPCStore = create<NPCStore>()(
       state.categories.delete(id);
     }),
 
-    addClothingSet: (set) => set((state) => {
-      state.clothingSets.set(set.id, set);
+    addClothingSet: (clothingSet) => set((state) => {
+      state.clothingSets.set(clothingSet.id, clothingSet);
     }),
 
     updateClothingSet: (id, updates) => set((state) => {
@@ -411,7 +406,10 @@ export const useNPCStore = create<NPCStore>()(
       state.selectedCategoryId = id;
       const category = state.categories.get(id);
       if (category && category.templateIds.length > 0) {
-        state.selectedTemplateId = category.templateIds[0];
+        const firstTemplateId = category.templateIds[0];
+        if (firstTemplateId) state.selectedTemplateId = firstTemplateId;
+      } else {
+        delete state.selectedTemplateId;
       }
     }),
 
@@ -427,7 +425,10 @@ export const useNPCStore = create<NPCStore>()(
       state.selectedClothingCategoryId = id;
       const category = state.clothingCategories.get(id);
       if (category && category.clothingSetIds.length > 0) {
-        state.selectedClothingSetId = category.clothingSetIds[0];
+        const firstSetId = category.clothingSetIds[0];
+        if (firstSetId) state.selectedClothingSetId = firstSetId;
+      } else {
+        delete state.selectedClothingSetId;
       }
     }),
 
@@ -445,18 +446,18 @@ export const useNPCStore = create<NPCStore>()(
       // Create custom parts from preview accessories
       const customParts: NPCPart[] = [];
       
-      if (get().previewAccessories.hat) {
-        const hatSet = get().clothingSets.get(get().previewAccessories.hat);
-        if (hatSet && hatSet.parts.length > 0) {
-          customParts.push(hatSet.parts[0]);
-        }
+      const hatId = get().previewAccessories.hat;
+      if (hatId) {
+        const hatSet = get().clothingSets.get(hatId);
+        const part = hatSet?.parts[0];
+        if (part) customParts.push(part);
       }
       
-      if (get().previewAccessories.glasses) {
-        const glassesSet = get().clothingSets.get(get().previewAccessories.glasses);
-        if (glassesSet && glassesSet.parts.length > 0) {
-          customParts.push(glassesSet.parts[0]);
-        }
+      const glassesId = get().previewAccessories.glasses;
+      if (glassesId) {
+        const glassesSet = get().clothingSets.get(glassesId);
+        const part = glassesSet?.parts[0];
+        if (part) customParts.push(part);
       }
       
       const instance: NPCInstance = {
@@ -466,10 +467,10 @@ export const useNPCStore = create<NPCStore>()(
         position,
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
-        currentAnimation: template.defaultAnimation,
-        currentClothingSetId: selectedClothingSetId,
-        customParts: customParts.length > 0 ? customParts : undefined,
-        events: []
+        ...(template.defaultAnimation ? { currentAnimation: template.defaultAnimation } : {}),
+        ...(selectedClothingSetId ? { currentClothingSetId: selectedClothingSetId } : {}),
+        ...(customParts.length > 0 ? { customParts } : {}),
+        events: [],
       };
 
       get().addInstance(instance);
@@ -484,9 +485,28 @@ export const useNPCStore = create<NPCStore>()(
       const existingPartIndex = customParts.findIndex(p => p.id === partId);
       
       if (existingPartIndex >= 0) {
-        customParts[existingPartIndex] = { ...customParts[existingPartIndex], ...updates };
+        const existing = customParts[existingPartIndex]!;
+        customParts[existingPartIndex] = {
+          ...existing,
+          ...updates,
+          id: existing.id,
+          type: existing.type,
+          url: existing.url,
+        };
       } else {
-        customParts.push({ id: partId, ...updates } as NPCPart);
+        const type = updates.type ?? 'accessory';
+        const url = updates.url ?? '';
+        customParts.push({
+          id: partId,
+          type,
+          url,
+          ...(updates.category !== undefined ? { category: updates.category } : {}),
+          ...(updates.position !== undefined ? { position: updates.position } : {}),
+          ...(updates.rotation !== undefined ? { rotation: updates.rotation } : {}),
+          ...(updates.scale !== undefined ? { scale: updates.scale } : {}),
+          ...(updates.color !== undefined ? { color: updates.color } : {}),
+          ...(updates.metadata !== undefined ? { metadata: updates.metadata } : {}),
+        });
       }
       
       state.instances.set(instanceId, { ...instance, customParts });

@@ -1,8 +1,25 @@
 import APIBuilder from "./builder";
 import { loginFormType, registerFormType, userType } from "../store/types";
-import cache from "../utils/cache";
 
-const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:3001";
+const cache = {
+  get(key: string) {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  set(key: string, value: string | null | undefined) {
+    try {
+      if (value == null) return;
+      localStorage.setItem(key, value);
+    } catch {
+      // ignore
+    }
+  },
+};
+
+const SERVER_URL = process.env["REACT_APP_SERVER_URL"] || "http://localhost:3001";
 
 export const tokenAsync = async () => {
   const token = cache.get("token");
@@ -25,7 +42,7 @@ export const loginApi = async (loginForm: loginFormType) => {
     .build();
   const result = await api.call<userType>();
   const { data } = result;
-  cache.set("token", result.headers.token);
+  cache.set("token", result.headers['token']);
   return data;
 };
 
@@ -35,6 +52,6 @@ export const registerApi = async (registerForm: registerFormType) => {
     .build();
   const result = await api.call<userType>();
   const { data } = result;
-  cache.set("token", result.headers.token);
+  cache.set("token", result.headers['token']);
   return data;
 }; 

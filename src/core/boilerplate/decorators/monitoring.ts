@@ -54,6 +54,8 @@ export function Delay(milliseconds: number) {
     propertyKey: string,
     descriptor: PropertyDescriptorExtended
   ) {
+    void target;
+    void propertyKey;
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: unknown[]) {
@@ -107,6 +109,8 @@ export function Hook(before?: () => void, after?: () => void) {
     propertyKey: string,
     descriptor: PropertyDescriptorExtended
   ) {
+    void target;
+    void propertyKey;
     const originalMethod = descriptor.value;
 
     descriptor.value = function (...args: unknown[]) {
@@ -126,6 +130,7 @@ export function MonitorMemory(threshold: number = 100) { // MB 단위
     propertyKey: string,
     descriptor: PropertyDescriptorExtended
   ) {
+    void target;
     const originalMethod = descriptor.value;
 
     descriptor.value = function (...args: unknown[]) {
@@ -159,6 +164,7 @@ export function TrackCalls() {
     propertyKey: string,
     descriptor: PropertyDescriptorExtended
   ) {
+    void target;
     const originalMethod = descriptor.value;
 
     descriptor.value = function (...args: unknown[]) {

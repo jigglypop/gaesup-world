@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { StateCreator } from 'zustand';
 
 import { InteractionSliceState, InteractionActions } from './types';
-import { StoreState } from '../../stores/types';
 import { InteractionState, AutomationState, InteractionConfig, AutomationConfig, InteractionMetrics, AutomationMetrics, BridgeState } from '../bridge/types';
 import { InteractionSystem } from '../core/InteractionSystem';
 
@@ -120,12 +119,9 @@ const createDefaultAutomationMetrics = (): AutomationMetrics => ({
   errorRate: 0
 });
 
-export const createInteractionSlice: StateCreator<
-  StoreState,
-  [],
-  [],
-  InteractionSliceState & InteractionActions
-> = (set) => ({
+type Slice = InteractionSliceState & InteractionActions;
+
+export const createInteractionSlice: StateCreator<Slice, [], [], Slice> = (set) => ({
   interaction: createDefaultInteractionState(),
   automation: createDefaultAutomationState(),
   bridge: createDefaultBridgeState(),

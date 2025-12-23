@@ -46,6 +46,10 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
     this.systemType = type;
   }
 
+  getSystemType(): string {
+    return this.systemType;
+  }
+
   subscribe(callback: AnimationSystemCallback): () => void {
     this.callbacks.add(callback);
     return () => this.callbacks.delete(callback);

@@ -49,14 +49,16 @@ export function NPCPreview() {
   if (previewAccessories.hat) {
     const hatSet = clothingSets.get(previewAccessories.hat);
     if (hatSet && hatSet.parts.length > 0) {
-      allParts.push(hatSet.parts[0]);
+      const part = hatSet.parts[0];
+      if (part) allParts.push(part);
     }
   }
   
   if (previewAccessories.glasses) {
     const glassesSet = clothingSets.get(previewAccessories.glasses);
     if (glassesSet && glassesSet.parts.length > 0) {
-      allParts.push(glassesSet.parts[0]);
+      const part = glassesSet.parts[0];
+      if (part) allParts.push(part);
     }
   }
   

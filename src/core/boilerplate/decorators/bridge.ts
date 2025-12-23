@@ -5,10 +5,11 @@ import { logger } from '../../utils/logger';
  */
 export function LogSnapshot() {
   return function (
-    target: any,
+    target: unknown,
     propertyKey: string,
     descriptor: PropertyDescriptor
   ) {
+    void target;
     const originalMethod = descriptor.value;
 
     descriptor.value = function (...args: any[]) {
@@ -31,10 +32,11 @@ export function LogSnapshot() {
  */
 export function ValidateCommand() {
   return function (
-    target: any,
+    target: unknown,
     propertyKey: string,
     descriptor: PropertyDescriptor
   ) {
+    void target;
     const originalMethod = descriptor.value;
 
     descriptor.value = function (engine: any, command: any, ...args: any[]) {
@@ -76,10 +78,11 @@ export function RegisterBridge(domain: string) {
  */
 export function RequireEngine() {
   return function (
-    target: any,
+    target: unknown,
     propertyKey: string,
     descriptor: PropertyDescriptor
   ) {
+    void target;
     const originalMethod = descriptor.value;
 
     descriptor.value = function (...args: any[]) {
@@ -102,10 +105,11 @@ export function RequireEngine() {
  */
 export function RequireEngineById() {
   return function (
-    target: any,
+    target: unknown,
     propertyKey: string,
     descriptor: PropertyDescriptor
   ) {
+    void target;
     const originalMethod = descriptor.value;
 
     descriptor.value = function (this: any, ...args: any[]) {
@@ -146,6 +150,7 @@ export function CacheSnapshot(ttl: number = 16) { // 기본 16ms (60fps)
     propertyKey: string,
     descriptor: PropertyDescriptor
   ) {
+    void target;
     const originalMethod = descriptor.value;
 
     descriptor.value = function (...args: any[]) {

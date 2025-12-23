@@ -78,7 +78,9 @@ export const createWorldSlice: StateCreator<WorldSlice, [], [], WorldSlice> = (s
       const newTiles = new Map(state.tiles);
       newTiles.forEach((tile) => {
         if (tile.groupId === groupId) {
-          newTiles.set(tile.id, { ...tile, groupId: undefined });
+          const { groupId: _groupId, ...rest } = tile;
+          void _groupId;
+          newTiles.set(tile.id, rest);
         }
       });
       return { tileGroups: newGroups, tiles: newTiles };
@@ -112,7 +114,9 @@ export const createWorldSlice: StateCreator<WorldSlice, [], [], WorldSlice> = (s
       const tile = state.tiles.get(tileId);
       if (tile?.groupId) {
         const newTiles = new Map(state.tiles);
-        newTiles.set(tileId, { ...tile, groupId: undefined });
+        const { groupId: _groupId, ...rest } = tile;
+        void _groupId;
+        newTiles.set(tileId, rest);
         return { tiles: newTiles };
       }
       return state;
@@ -162,7 +166,9 @@ export const createWorldSlice: StateCreator<WorldSlice, [], [], WorldSlice> = (s
       const newWalls = new Map(state.walls);
       newWalls.forEach((wall) => {
         if (wall.groupId === groupId) {
-          newWalls.set(wall.id, { ...wall, groupId: undefined });
+          const { groupId: _groupId, ...rest } = wall;
+          void _groupId;
+          newWalls.set(wall.id, rest);
         }
       });
       return { wallGroups: newGroups, walls: newWalls };
@@ -196,7 +202,9 @@ export const createWorldSlice: StateCreator<WorldSlice, [], [], WorldSlice> = (s
       const wall = state.walls.get(wallId);
       if (wall?.groupId) {
         const newWalls = new Map(state.walls);
-        newWalls.set(wallId, { ...wall, groupId: undefined });
+        const { groupId: _groupId, ...rest } = wall;
+        void _groupId;
+        newWalls.set(wallId, rest);
         return { walls: newWalls };
       }
       return state;

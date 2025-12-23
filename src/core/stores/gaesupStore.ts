@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
-import { immer } from 'zustand/middleware/immer';
 
 import { createCameraOptionSlice } from '@core/camera/stores/slices/cameraOption';
 
@@ -20,7 +19,7 @@ import { createWorldSlice } from '../world/stores/slices/worldStates/slice';
 export const useGaesupStore = create<GaesupState>()(
   devtools(
     subscribeWithSelector(
-      immer((...a) => ({
+      (...a) => ({
         ...createModeSlice(...a),
         ...createUrlsSlice(...a),
         ...createSizesSlice(...a),
@@ -31,7 +30,7 @@ export const useGaesupStore = create<GaesupState>()(
         ...createAnimationSlice(...a),
         ...createInteractionSlice(...a),
         ...createWorldSlice(...a),
-      }))
+      })
     )
   )
 );

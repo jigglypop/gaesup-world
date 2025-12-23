@@ -26,6 +26,7 @@ export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THRE
       : props.componentType === 'character'
         ? Math.PI
         : 0;
+  const baseColor = props.parts?.[0]?.color;
   return (
     <group receiveShadow castShadow ref={ref} userData={{ intangible: true }}>
       <group rotation-y={modelYawOffset}>
@@ -39,7 +40,12 @@ export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THRE
             ref={props.animationRef}
           />
         )}
-        <ModelRenderer nodes={props.nodes} skeleton={props.skeleton!} url={props.url || ''} color={props?.parts?.color} />
+        <ModelRenderer
+          nodes={props.nodes}
+          skeleton={props.skeleton}
+          url={props.url || ''}
+          {...(baseColor ? { color: baseColor } : {})}
+        />
       </group>
     </group>
   );

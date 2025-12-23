@@ -1,10 +1,10 @@
 import { useCallback } from 'react';
 
-import { CollisionEnterPayload, CollisionExitPayload } from '@react-three/rapier';
+import type { CollisionEnterPayload, CollisionPayload } from '@react-three/rapier';
 
 export interface CollisionHandlerOptions {
-  onIntersectionEnter?: (payload: CollisionEnterPayload) => void;
-  onIntersectionExit?: (payload: CollisionExitPayload) => void;
+  onIntersectionEnter?: (payload: CollisionPayload) => void;
+  onIntersectionExit?: (payload: CollisionPayload) => void;
   onCollisionEnter?: (payload: CollisionEnterPayload) => void;
   userData?: Record<string, unknown>;
 }
@@ -18,30 +18,30 @@ export function useCollisionHandler(options: CollisionHandlerOptions) {
   } = options;
 
   const handleIntersectionEnter = useCallback(
-    async (payload: CollisionEnterPayload) => {
+    (payload: CollisionPayload) => {
       if (onIntersectionEnter) onIntersectionEnter(payload);
       if (userData?.['onNear'] && typeof userData['onNear'] === 'function') {
-        await userData['onNear'](payload, userData);
+        void userData['onNear'](payload, userData);
       }
     },
     [onIntersectionEnter, userData],
   );
 
   const handleIntersectionExit = useCallback(
-    async (payload: CollisionExitPayload) => {
+    (payload: CollisionPayload) => {
       if (onIntersectionExit) onIntersectionExit(payload);
       if (userData?.['onLeave'] && typeof userData['onLeave'] === 'function') {
-        await userData['onLeave'](payload);
+        void userData['onLeave'](payload);
       }
     },
     [onIntersectionExit, userData],
   );
 
   const handleCollisionEnter = useCallback(
-    async (payload: CollisionEnterPayload) => {
+    (payload: CollisionEnterPayload) => {
       if (onCollisionEnter) onCollisionEnter(payload);
       if (userData?.['onNear'] && typeof userData['onNear'] === 'function') {
-        await userData['onNear'](payload, userData);
+        void userData['onNear'](payload, userData);
       }
     },
     [onCollisionEnter, userData],

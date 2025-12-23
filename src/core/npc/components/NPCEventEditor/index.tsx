@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { NPCEventEditorProps } from './types';
 import { useNPCStore } from '../../stores/npcStore';
-import { NPCEvent } from '../../types';
+import type { NPCEvent, NPCEventPayload } from '../../types';
 import './styles.css';
 
 export function NPCEventEditor({ instanceId, onClose }: NPCEventEditorProps) {
@@ -16,19 +16,19 @@ export function NPCEventEditor({ instanceId, onClose }: NPCEventEditorProps) {
     return null;
   }
   const handleAddEvent = () => {
-    let payload: NPCEvent['payload'] = {};
+    let payload: NPCEventPayload | undefined;
     switch (actionType) {
       case 'dialogue':
-        payload = { text: dialogue };
+        payload = { type: 'dialogue', text: dialogue };
         break;
       case 'animation':
-        payload = { animationId };
+        payload = { type: 'animation', animationId };
         break;
       case 'sound':
-        payload = { soundUrl: '' };
+        payload = { type: 'sound', soundUrl: '' };
         break;
       case 'custom':
-        payload = { script: '' };
+        payload = { type: 'custom', data: { script: '' } };
         break;
     }
     
@@ -36,7 +36,7 @@ export function NPCEventEditor({ instanceId, onClose }: NPCEventEditorProps) {
       id: `event-${Date.now()}`,
       type: eventType,
       action: actionType,
-      payload
+      ...(payload ? { payload } : {})
     };
     
     addInstanceEvent(instanceId, newEvent);

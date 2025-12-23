@@ -1,4 +1,5 @@
 import { NetworkSystemState, NetworkConfig, NetworkCommand, NetworkSnapshot } from '../types';
+import * as THREE from 'three';
 import { ConnectionPool } from './ConnectionPool';
 import { MessageQueue } from './MessageQueue';
 import { NPCNetworkManager } from './NPCNetworkManager';
@@ -11,7 +12,7 @@ export class NetworkSystem {
   private connectionPool: ConnectionPool;
   private config: NetworkConfig;
   private lastUpdate: number = 0;
-  private updateTimer?: NodeJS.Timeout;
+  private updateTimer: NodeJS.Timeout | undefined;
 
   constructor(config: NetworkConfig) {
     this.config = { ...config };
@@ -80,6 +81,7 @@ export class NetworkSystem {
     const now = Date.now();
     const deltaTime = now - this.lastUpdate;
     this.lastUpdate = now;
+    void deltaTime;
 
     // 메시지 배치 처리
     this.processMessageBatch();
@@ -119,6 +121,7 @@ export class NetworkSystem {
     const networkStats = this.npcManager.getNetworkStats();
     const performanceMetrics = this.npcManager.getPerformanceMetrics();
     const poolStats = this.connectionPool.getPoolStats();
+    void poolStats;
 
     this.state.stats = {
       totalNodes: networkStats.nodeCount,
@@ -163,6 +166,16 @@ export class NetworkSystem {
   executeCommand(command: NetworkCommand): boolean {
     try {
       switch (command.type) {
+        case 'registerNPC':
+          this.registerNPC(command.npcId, command.position, command.options);
+          return true;
+
+        case 'unregisterNPC':
+          return this.unregisterNPC(command.npcId);
+
+        case 'updateNPCPosition':
+          return this.updateNPCPosition(command.npcId, command.position);
+
         case 'connect':
           return this.npcManager.connectNodes(command.npcId, command.targetId);
 
@@ -261,12 +274,11 @@ export class NetworkSystem {
   }
 
   // NPC 등록
-  registerNPC(npcId: string, position: { x: number; y: number; z: number }, options?: {
+  registerNPC(npcId: string, position: THREE.Vector3, options?: {
     communicationRange?: number;
     signalStrength?: number;
   }) {
-    const threePosition = new (globalThis as any).THREE.Vector3(position.x, position.y, position.z);
-    return this.npcManager.registerNode(npcId, threePosition, options);
+    return this.npcManager.registerNode(npcId, position, options);
   }
 
   // NPC 제거
@@ -275,9 +287,8 @@ export class NetworkSystem {
   }
 
   // NPC 위치 업데이트
-  updateNPCPosition(npcId: string, position: { x: number; y: number; z: number }): boolean {
-    const threePosition = new (globalThis as any).THREE.Vector3(position.x, position.y, position.z);
-    return this.npcManager.updateNodePosition(npcId, threePosition);
+  updateNPCPosition(npcId: string, position: THREE.Vector3): boolean {
+    return this.npcManager.updateNodePosition(npcId, position);
   }
 
   // 메시지 가져오기

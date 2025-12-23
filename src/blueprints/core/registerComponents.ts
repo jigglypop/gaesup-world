@@ -13,6 +13,7 @@ export function registerDefaultComponents(): void {
   registry.register('CharacterMovement', (props) => new CharacterMovementComponent(props as any));
   registry.register('CharacterAnimation', (props) => new CharacterAnimationComponent(props as any));
   registry.register('CharacterPhysics', (props) => ({
+    type: 'CharacterPhysics',
     enabled: true,
     initialize: () => {},
     update: () => {},
@@ -20,6 +21,7 @@ export function registerDefaultComponents(): void {
     ...props
   }));
   registry.register('CharacterStats', (props) => ({
+    type: 'CharacterStats',
     enabled: true,
     initialize: () => {},
     update: () => {},
@@ -27,6 +29,7 @@ export function registerDefaultComponents(): void {
     ...props
   }));
   registry.register('CharacterBehavior', (props) => ({
+    type: 'CharacterBehavior',
     enabled: true,
     initialize: () => {},
     update: () => {},
@@ -36,6 +39,7 @@ export function registerDefaultComponents(): void {
   
   // Vehicle Components
   registry.register('VehicleMovement', (props) => ({
+    type: 'VehicleMovement',
     enabled: true,
     initialize: () => {},
     update: () => {},
@@ -43,6 +47,7 @@ export function registerDefaultComponents(): void {
     ...props
   }));
   registry.register('VehiclePhysics', (props) => ({
+    type: 'VehiclePhysics',
     enabled: true,
     initialize: () => {},
     update: () => {},
@@ -50,6 +55,7 @@ export function registerDefaultComponents(): void {
     ...props
   }));
   registry.register('VehicleSeats', (props) => ({
+    type: 'VehicleSeats',
     enabled: true,
     initialize: () => {},
     update: () => {},
@@ -57,6 +63,7 @@ export function registerDefaultComponents(): void {
     ...props
   }));
   registry.register('VehicleAnimation', (props) => ({
+    type: 'VehicleAnimation',
     enabled: true,
     initialize: () => {},
     update: () => {},
@@ -66,6 +73,7 @@ export function registerDefaultComponents(): void {
   
   // Airplane Components
   registry.register('AirplaneMovement', (props) => ({
+    type: 'AirplaneMovement',
     enabled: true,
     initialize: () => {},
     update: () => {},
@@ -73,6 +81,7 @@ export function registerDefaultComponents(): void {
     ...props
   }));
   registry.register('AirplanePhysics', (props) => ({
+    type: 'AirplanePhysics',
     enabled: true,
     initialize: () => {},
     update: () => {},
@@ -80,6 +89,7 @@ export function registerDefaultComponents(): void {
     ...props
   }));
   registry.register('AirplaneSeats', (props) => ({
+    type: 'AirplaneSeats',
     enabled: true,
     initialize: () => {},
     update: () => {},
@@ -87,6 +97,7 @@ export function registerDefaultComponents(): void {
     ...props
   }));
   registry.register('AirplaneAnimation', (props) => ({
+    type: 'AirplaneAnimation',
     enabled: true,
     initialize: () => {},
     update: () => {},

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
 import { NetworkMessage } from '../types';
@@ -63,10 +63,12 @@ export function useNetworkMessage(options: UseNetworkMessageOptions): UseNetwork
     messageFilter,
     ...bridgeOptions
   } = options;
+  void onMessageReceived;
+  void onMessageFailed;
+  void messageFilter;
 
   const {
     executeCommand,
-    getSnapshot,
     isReady
   } = useNetworkBridge(bridgeOptions);
 
@@ -89,20 +91,19 @@ export function useNetworkMessage(options: UseNetworkMessageOptions): UseNetwork
 
     const message: NetworkMessage = {
       id: messageId,
-      type,
-      content,
+      from: senderId,
+      to: receiverId,
+      type: type === 'action' || type === 'state' || type === 'system' ? type : 'chat',
+      payload: content,
+      priority: messageOptions?.priority ?? 'normal',
       timestamp,
-      senderId,
-      receiverId
+      reliability: messageOptions?.reliable ? 'reliable' : 'unreliable',
+      ...(messageOptions?.retries !== undefined ? { retryCount: messageOptions.retries } : {})
     };
 
     executeCommand({
       type: 'sendMessage',
-      data: {
-        fromId: senderId,
-        toId: receiverId,
-        message
-      }
+      message
     });
 
     setSentMessages(prev => [...prev, message]);
@@ -113,7 +114,7 @@ export function useNetworkMessage(options: UseNetworkMessageOptions): UseNetwork
 
   const broadcastMessage = useCallback((
     content: any,
-    type: string = 'broadcast',
+    type: string = 'chat',
     broadcastOptions?: BroadcastOptions
   ): string => {
     if (!isReady) return '';
@@ -121,26 +122,27 @@ export function useNetworkMessage(options: UseNetworkMessageOptions): UseNetwork
     const messageId = `${senderId}-broadcast-${++messageCounterRef.current}-${Date.now()}`;
     const timestamp = Date.now();
 
-    const message: NetworkMessage = {
+    const message: Omit<NetworkMessage, 'to'> = {
       id: messageId,
-      type,
-      content,
+      from: senderId,
+      type: type === 'action' || type === 'state' || type === 'system' ? type : 'chat',
+      payload: content,
+      priority: broadcastOptions?.priority ?? 'normal',
       timestamp,
-      senderId,
-      receiverId: 'broadcast'
+      reliability: broadcastOptions?.reliable ? 'reliable' : 'unreliable',
+      ...(broadcastOptions?.groupId ? { groupId: broadcastOptions.groupId } : {}),
+      ...(broadcastOptions?.retries !== undefined ? { retryCount: broadcastOptions.retries } : {})
     };
 
     executeCommand({
-      type: 'broadcastMessage',
-      data: {
-        fromId: senderId,
-        message,
-        options: broadcastOptions || {}
-      }
+      type: 'broadcast',
+      message
     });
 
-    setSentMessages(prev => [...prev, message]);
-    onMessageSent?.(message);
+    // broadcast는 시스템에서 to를 추가하므로, UI용으로는 가상 to를 채워서 저장
+    const localMessage: NetworkMessage = { ...message, to: 'broadcast' };
+    setSentMessages(prev => [...prev, localMessage]);
+    onMessageSent?.(localMessage);
 
     return messageId;
   }, [isReady, executeCommand, senderId, onMessageSent]);
@@ -158,10 +160,10 @@ export function useNetworkMessage(options: UseNetworkMessageOptions): UseNetwork
 
     return [...receivedMessages, ...sentMessages]
       .filter(msg => 
-        msg.senderId === withUserId || 
-        msg.receiverId === withUserId ||
-        (msg.senderId === senderId && msg.receiverId === withUserId) ||
-        (msg.receiverId === senderId && msg.senderId === withUserId)
+        msg.from === withUserId || 
+        msg.to === withUserId ||
+        (msg.from === senderId && msg.to === withUserId) ||
+        (msg.to === senderId && msg.from === withUserId)
       )
       .sort((a, b) => a.timestamp - b.timestamp);
   }, [receivedMessages, sentMessages, senderId]);

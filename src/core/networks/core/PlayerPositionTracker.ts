@@ -45,6 +45,8 @@ export class PlayerPositionTracker {
 
     const currentPos = playerRef.current.translation();
     const currentRot = playerRef.current.rotation();
+    const currentPosVec = new THREE.Vector3(currentPos.x, currentPos.y, currentPos.z);
+    const currentQuat = new THREE.Quaternion(currentRot.x, currentRot.y, currentRot.z, currentRot.w);
 
     // 속도 계산
     const deltaTime = (now - this.lastUpdateTime) / 1000;
@@ -61,8 +63,8 @@ export class PlayerPositionTracker {
     const currentAnimation = speed > this.config.velocityThreshold ? 'run' : 'idle';
 
     // 위치, 회전 또는 애니메이션이 변경되었을 때만 업데이트
-    const hasPositionChanged = !this.lastPosition.equals(currentPos);
-    const hasRotationChanged = !this.lastRotation.equals(currentRot);
+    const hasPositionChanged = !this.lastPosition.equals(currentPosVec);
+    const hasRotationChanged = !this.lastRotation.equals(currentQuat);
     const hasAnimationChanged = this.lastAnimation !== currentAnimation;
 
     if (!hasPositionChanged && !hasRotationChanged && !hasAnimationChanged) {
@@ -73,15 +75,15 @@ export class PlayerPositionTracker {
       name: playerName,
       color: playerColor,
       position: [currentPos.x, currentPos.y, currentPos.z],
-      rotation: [currentRot.w, currentRot.x, currentRot.y, currentRot.z],
+      rotation: [currentQuat.w, currentQuat.x, currentQuat.y, currentQuat.z],
       animation: currentAnimation,
       velocity: [this.velocity.x, this.velocity.y, this.velocity.z],
-      modelUrl
+      ...(modelUrl !== undefined ? { modelUrl } : {})
     };
 
     // 상태 업데이트
-    this.lastPosition.copy(currentPos);
-    this.lastRotation.copy(currentRot);
+    this.lastPosition.copy(currentPosVec);
+    this.lastRotation.copy(currentQuat);
     this.lastAnimation = currentAnimation;
     this.lastUpdateTime = now;
 

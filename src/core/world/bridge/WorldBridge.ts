@@ -18,11 +18,14 @@ interface WorldSystemEntity {
 export class WorldBridge extends CoreBridge<WorldSystemEntity, WorldSnapshot, WorldCommand> {
   
   protected buildEngine(id: string, initialState?: Partial<WorldBridgeState>): WorldSystemEntity | null {
+    void id;
     const system = new WorldSystem();
     const state: WorldBridgeState = {
-      selectedObjectId: initialState?.selectedObjectId,
-      interactionMode: initialState?.interactionMode || 'view',
-      showDebugInfo: initialState?.showDebugInfo || false,
+      ...(initialState?.selectedObjectId !== undefined
+        ? { selectedObjectId: initialState.selectedObjectId }
+        : {}),
+      interactionMode: initialState?.interactionMode ?? 'view',
+      showDebugInfo: initialState?.showDebugInfo ?? false,
     };
     
     return {
@@ -47,7 +50,7 @@ export class WorldBridge extends CoreBridge<WorldSystemEntity, WorldSnapshot, Wo
       case 'removeObject':
         system.removeObject(command.data.id);
         if (state.selectedObjectId === command.data.id) {
-          state.selectedObjectId = undefined;
+          delete state.selectedObjectId;
         }
         break;
         
@@ -56,7 +59,11 @@ export class WorldBridge extends CoreBridge<WorldSystemEntity, WorldSnapshot, Wo
         break;
         
       case 'selectObject':
-        state.selectedObjectId = command.data.id;
+        if (command.data.id !== undefined) {
+          state.selectedObjectId = command.data.id;
+        } else {
+          delete state.selectedObjectId;
+        }
         break;
         
       case 'setInteractionMode':
@@ -82,7 +89,7 @@ export class WorldBridge extends CoreBridge<WorldSystemEntity, WorldSnapshot, Wo
         
       case 'cleanup':
         system.cleanup();
-        state.selectedObjectId = undefined;
+        delete state.selectedObjectId;
         state.interactionMode = 'view';
         state.showDebugInfo = false;
         break;
@@ -97,7 +104,7 @@ export class WorldBridge extends CoreBridge<WorldSystemEntity, WorldSnapshot, Wo
     
     return {
       objects: system.getAllObjects(),
-      selectedObjectId: state.selectedObjectId,
+      ...(state.selectedObjectId !== undefined ? { selectedObjectId: state.selectedObjectId } : {}),
       interactionMode: state.interactionMode,
       showDebugInfo: state.showDebugInfo,
       events: system.getRecentEvents(),
@@ -127,7 +134,10 @@ export class WorldBridge extends CoreBridge<WorldSystemEntity, WorldSnapshot, Wo
   }
 
   selectObject(id: string, objectId?: string): void {
-    this.execute(id, { type: 'selectObject', data: { id: objectId } });
+    this.execute(
+      id,
+      { type: 'selectObject', data: objectId !== undefined ? { id: objectId } : {} },
+    );
   }
 
   setInteractionMode(id: string, mode: 'view' | 'edit' | 'interact'): void {

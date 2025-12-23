@@ -1,4 +1,4 @@
-import { CameraOptionType, CameraType } from '../core/types';
+import type { CameraType } from '../../core/types';
 
 export interface CameraPreset {
   id: string;

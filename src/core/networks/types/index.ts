@@ -85,6 +85,17 @@ export interface NetworkSystemState {
 
 // Bridge Commands
 export type NetworkCommand = 
+  | {
+      type: 'registerNPC';
+      npcId: string;
+      position: THREE.Vector3;
+      options?: {
+        communicationRange?: number;
+        signalStrength?: number;
+      };
+    }
+  | { type: 'unregisterNPC'; npcId: string }
+  | { type: 'updateNPCPosition'; npcId: string; position: THREE.Vector3 }
   | { type: 'connect'; npcId: string; targetId: string }
   | { type: 'disconnect'; npcId: string; targetId?: string }
   | { type: 'sendMessage'; message: NetworkMessage }

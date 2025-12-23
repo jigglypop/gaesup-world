@@ -1,7 +1,6 @@
 import React from 'react';
 
-import { BlueprintCard } from '../../BlueprintCard';
-import { BlueprintItem } from '../types';
+import { BlueprintItem } from './types';
 
 export type BlueprintListProps = {
   blueprints: BlueprintItem[];
@@ -21,14 +20,32 @@ export const BlueprintList: React.FC<BlueprintListProps> = ({
   return (
     <div className="blueprint-list">
       {blueprints.map((blueprint) => (
-        <BlueprintCard
+        <div
           key={blueprint.id}
-          blueprint={blueprint}
-          isSelected={selectedId === blueprint.id}
-          onClick={() => onSelect(blueprint.id)}
-          onSpawn={onSpawn ? () => onSpawn(blueprint.id) : undefined}
-          isSpawning={isSpawning}
-        />
+          className={`blueprint-list__item ${selectedId === blueprint.id ? 'blueprint-list__item--selected' : ''}`}
+        >
+          <button
+            type="button"
+            className="blueprint-list__select"
+            onClick={() => onSelect(blueprint.id)}
+          >
+            <div className="blueprint-list__name">{blueprint.name}</div>
+            <div className="blueprint-list__meta">
+              <span className="blueprint-list__type">{blueprint.type}</span>
+              <span className="blueprint-list__version">{blueprint.version}</span>
+            </div>
+          </button>
+          {onSpawn && (
+            <button
+              type="button"
+              className="blueprint-list__spawn"
+              disabled={isSpawning}
+              onClick={() => onSpawn(blueprint.id)}
+            >
+              Spawn
+            </button>
+          )}
+        </div>
       ))}
       {blueprints.length === 0 && (
         <div className="blueprint-list__empty">

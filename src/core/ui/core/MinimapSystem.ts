@@ -5,7 +5,7 @@ import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
 import { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
 import { BaseState, BaseMetrics } from '@/core/boilerplate/types';
 
-import { MinimapMarker } from './types';
+import type { MinimapMarker } from '../types';
 
 
 interface MinimapSystemState extends BaseState {

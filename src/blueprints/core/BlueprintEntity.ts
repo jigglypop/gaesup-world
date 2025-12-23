@@ -22,10 +22,10 @@ export class BlueprintEntity {
     this.blueprint = blueprint;
     this.context = {
       rigidBodyRef,
-      innerGroupRef,
-      outerGroupRef,
       deltaTime: 0,
       entityId: blueprint.id,
+      ...(innerGroupRef ? { innerGroupRef } : {}),
+      ...(outerGroupRef ? { outerGroupRef } : {}),
     };
     
     this.createComponents();
@@ -69,7 +69,10 @@ export class BlueprintEntity {
   removeComponent(type: string): void {
     const index = this.components.findIndex(c => c.type === type);
     if (index !== -1) {
-      this.components[index].dispose();
+      const component = this.components[index];
+      if (component) {
+        component.dispose();
+      }
       this.components.splice(index, 1);
     }
   }

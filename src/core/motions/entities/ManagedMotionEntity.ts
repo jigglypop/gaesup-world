@@ -1,29 +1,36 @@
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
-import { ManagedEntity, Autowired } from '@core/boilerplate';
-
+import { BridgeFactory } from '@core/boilerplate';
 import { MotionBridge } from '../bridge/MotionBridge';
-import { MotionCommand, MotionEntity, MotionSnapshot, MotionConfig } from '../bridge/types';
+import { MotionCommand, MotionSnapshot, MotionConfig } from '../bridge/types';
 import { MotionType } from '../core/system/types';
 
-export class ManagedMotionEntity extends ManagedEntity<MotionEntity, MotionSnapshot, MotionCommand> {
-  @Autowired()
-  protected bridge!: MotionBridge;
-
-  private motionType: MotionType;
+export class ManagedMotionEntity {
+  private readonly id: string;
+  private readonly bridge: MotionBridge;
+  private readonly motionType: MotionType;
   private rigidBody: RapierRigidBody | null = null;
   private targetPosition: THREE.Vector3 | null = null;
   private isAutomated = false;
+  private unsubscribe: (() => void) | null = null;
 
-  constructor(id: string, motionType: MotionType) {
-    super(id);
+  constructor(id: string, motionType: MotionType, bridge?: MotionBridge | null) {
+    this.id = id;
+    this.bridge =
+      bridge ??
+      (BridgeFactory.get('motion') as MotionBridge | null) ??
+      (BridgeFactory.create('motion') as MotionBridge | null) ??
+      (() => {
+        throw new Error(`[ManagedMotionEntity] MotionBridge not available for id: ${id}`);
+      })();
     this.motionType = motionType;
   }
 
   public initialize(): void {
-    super.initialize();
-    this.subscribe((snapshot) => {
+    if (this.unsubscribe) return;
+    this.unsubscribe = this.bridge.subscribe((snapshot, entityId) => {
+      if (entityId !== this.id) return;
       if (this.isAutomated && this.targetPosition) {
         this.handleAutomatedMovement(snapshot);
       }
@@ -33,6 +40,10 @@ export class ManagedMotionEntity extends ManagedEntity<MotionEntity, MotionSnaps
   public setRigidBody(rigidBody: RapierRigidBody): void {
     this.rigidBody = rigidBody;
     this.bridge.register(this.id, this.motionType, rigidBody);
+  }
+
+  private execute(command: MotionCommand): void {
+    this.bridge.execute(this.id, command);
   }
 
   public move(movement: THREE.Vector3): void {
@@ -93,24 +104,26 @@ export class ManagedMotionEntity extends ManagedEntity<MotionEntity, MotionSnaps
   }
 
   public getSnapshot(): MotionSnapshot | null {
-    return this.snapshot();
+    return this.bridge.snapshot(this.id);
   }
 
   public isGrounded(): boolean {
-    return this.snapshot()?.isGrounded ?? false;
+    return this.getSnapshot()?.isGrounded ?? false;
   }
 
   public isMoving(): boolean {
-    return this.snapshot()?.isMoving ?? false;
+    return this.getSnapshot()?.isMoving ?? false;
   }
 
   public getSpeed(): number {
-    return this.snapshot()?.speed ?? 0;
+    return this.getSnapshot()?.speed ?? 0;
   }
 
   public dispose(): void {
     this.stop();
     this.disableAutomation();
-    super.dispose();
+    this.unsubscribe?.();
+    this.unsubscribe = null;
+    this.bridge.unregister(this.id);
   }
 } 

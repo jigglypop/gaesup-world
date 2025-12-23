@@ -2,7 +2,6 @@ import { CoreBridge, DomainBridge, EnableMetrics, ValidateCommand, LogSnapshot, 
 
 import { NetworkSystem } from '../core/NetworkSystem';
 import { NetworkSnapshot, NetworkCommand, NetworkConfig } from '../types';
-import { NetworkConfigStore } from './types';
 
 export interface NetworkBridgeEntity {
   system: NetworkSystem;
@@ -19,8 +18,10 @@ export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapsh
   }
 
   protected buildEngine(_: string, config?: NetworkConfig): NetworkBridgeEntity | null {
+    void _;
     try {
-      const system = new NetworkSystem(config);
+      const system = new NetworkSystem(config ?? this.createDefaultConfig());
+      system.start();
       return {
         system,
         dispose: () => system.dispose()
@@ -34,74 +35,15 @@ export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapsh
   @ValidateCommand()
   protected executeCommand(entity: NetworkBridgeEntity, command: NetworkCommand, id: string): void {
     const { system } = entity;
-    
-    switch (command.type) {
-      case 'registerNPC':
-        system.registerNPC(command.data.npcId, command.data.position, command.data.metadata);
-        break;
-        
-      case 'unregisterNPC':
-        system.unregisterNPC(command.data.npcId);
-        break;
-        
-      case 'updateNPCPosition':
-        system.updateNPCPosition(command.data.npcId, command.data.position);
-        break;
-        
-      case 'connectNPCs':
-        system.connectNPCs(command.data.fromId, command.data.toId, command.data.options);
-        break;
-        
-      case 'disconnectNPCs':
-        system.disconnectNPCs(command.data.fromId, command.data.toId);
-        break;
-        
-      case 'sendMessage':
-        system.sendMessage(command.data.fromId, command.data.toId, command.data.message);
-        break;
-        
-      case 'broadcastMessage':
-        system.broadcastMessage(command.data.fromId, command.data.message, command.data.options);
-        break;
-        
-      case 'createGroup':
-        system.createGroup(command.data.groupId, command.data.npcIds, command.data.options);
-        break;
-        
-      case 'joinGroup':
-        system.joinGroup(command.data.npcId, command.data.groupId);
-        break;
-        
-      case 'leaveGroup':
-        system.leaveGroup(command.data.npcId, command.data.groupId);
-        break;
-        
-      case 'updateConfig':
-        system.updateConfig(command.data.config);
-        break;
-        
-      case 'start':
-        system.start();
-        break;
-        
-      case 'stop':
-        system.stop();
-        break;
-        
-      case 'pause':
-        system.pause();
-        break;
-        
-      case 'resume':
-        system.resume();
-        break;
-    }
+    void id;
+    system.executeCommand(command);
   }
 
   @LogSnapshot()
   @CacheSnapshot(16) // 60fps에서 16프레임마다 캐싱
   protected createSnapshot(entity: NetworkBridgeEntity, id: string): NetworkSnapshot {
     const { system } = entity;
+    void id;
     return system.createSnapshot();
   }
 
@@ -111,8 +53,7 @@ export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapsh
   updateSystem(id: string, deltaTime: number): void {
     const entity = this.getEngine(id);
     if (!entity) return;
-    
-    entity.system.update(deltaTime);
+    void deltaTime;
     this.notifyListeners(id);
   }
 
@@ -183,6 +124,7 @@ export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapsh
   private setupEngineSubscriptions(): void {
     // 스냅샷 변경 시 자동 알림
     this.on('snapshot', (event) => {
+      void event;
       // 추가적인 이벤트 처리 로직
     });
   }
@@ -194,7 +136,7 @@ export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapsh
     const entity = this.getEngine(id);
     if (!entity) return null;
     
-    return entity.system.getNetworkStats();
+    return entity.system.getDebugInfo()?.networkStats ?? null;
   }
 
   /**

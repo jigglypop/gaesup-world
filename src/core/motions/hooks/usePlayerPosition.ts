@@ -4,7 +4,6 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { BridgeFactory } from '@core/boilerplate';
-import { useGaesupStore } from '@stores/gaesupStore';
 
 import { useStateSystem } from './useStateSystem';
 import { MotionBridge } from '../bridge/MotionBridge';
@@ -39,7 +38,6 @@ export function usePlayerPosition(options: UsePlayerPositionOptions = {}): UsePl
   const [state, setState] = useState<UsePlayerPositionResult>(defaultResult);
   const lastUpdateRef = useRef<number>(0);
   const bridgeRef = useRef<MotionBridge | null>(null);
-  const refs = useGaesupStore((state) => state.refs);
   const { activeState, gameStates } = useStateSystem();
 
   // Initialize Motion Bridge
@@ -89,38 +87,6 @@ export function usePlayerPosition(options: UsePlayerPositionOptions = {}): UsePl
           return;
         }
       }
-    }
-
-    // Fallback to rigidBody refs
-    if (refs?.rigidBodyRef?.current) {
-      const rigidBody = refs.rigidBodyRef.current;
-      const translation = rigidBody.translation();
-      const linvel = rigidBody.linvel();
-      const rotationQ = rigidBody.rotation();
-
-      position = new THREE.Vector3(translation.x, translation.y, translation.z);
-      velocity = new THREE.Vector3(linvel.x, linvel.y, linvel.z);
-      const quaternion = new THREE.Quaternion(rotationQ.x, rotationQ.y, rotationQ.z, rotationQ.w);
-      rotation = new THREE.Euler().setFromQuaternion(quaternion);
-
-      // Try to get height from character model
-      let characterHeight = 2.0; // Default height
-      if (refs?.innerGroupRef?.current) {
-        const bbox = new THREE.Box3().setFromObject(refs.innerGroupRef.current);
-        const size = bbox.getSize(new THREE.Vector3());
-        characterHeight = Math.max(size.y, 2.0); // Ensure minimum height
-      }
-
-      setState({
-        position,
-        velocity,
-        rotation,
-        isMoving: gameStates?.isMoving || false,
-        isGrounded: gameStates?.isOnTheGround || false,
-        speed: velocity.length(),
-        height: characterHeight,
-      });
-      return;
     }
 
     // Final fallback to activeState
