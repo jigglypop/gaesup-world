@@ -1,8 +1,8 @@
-import type { ReactNode, RefObject } from 'react';
 
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
+import type { RefObject } from '@core/boilerplate';
 import { PhysicsConfigType } from '@stores/slices';
 import type { StoreState } from '@stores/types';
 
@@ -31,7 +31,7 @@ export interface ActiveStateType {
   angular: THREE.Vector3;
 }
 
-export interface ActiveState extends ActiveStateType {}
+export type ActiveState = ActiveStateType;
 
 export interface PhysicsCalcPropsLegacy {
   rigidBodyRef: RefObject<RapierRigidBody>;
@@ -56,7 +56,7 @@ export interface PhysicsBridgeData {
 }
 
 export interface PhysicsLayerProps {
-  children: ReactNode;
+  children: unknown;
   bridgeRef: RefObject<PhysicsBridgeData>;
 }
 

@@ -1,5 +1,5 @@
-import * as THREE from "three";
 import type { ThreeElements } from "@react-three/fiber";
+import * as THREE from "three";
 
 export type GrassMeshProps = ThreeElements["group"] & {
   options?: {

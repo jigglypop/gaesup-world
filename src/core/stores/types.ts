@@ -1,5 +1,5 @@
-import { CameraOptionSlice } from '@core/camera/stores/slices/cameraOption';
 import { AnimationSlice } from '@core/animation/stores/types';
+import { CameraOptionSlice } from '@core/camera/stores/slices/cameraOption';
 import { InteractionActions, InteractionSliceState } from '@core/interactions/stores/types';
 import { WorldSlice as WorldStateSlice } from '@core/world/stores/slices/worldStates/types';
 

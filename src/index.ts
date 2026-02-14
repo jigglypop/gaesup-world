@@ -25,6 +25,13 @@ export {
   WorldContainer,
   // UI
   SpeechBalloon,
+  // Networks (multiplayer)
+  useMultiplayer,
+  defaultMultiplayerConfig,
+  MultiplayerCanvas,
+  RemotePlayer,
+  ConnectionForm,
+  PlayerInfoOverlay,
   // Building
   MiniMap,
   MinimapPlatform,

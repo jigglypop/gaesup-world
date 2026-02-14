@@ -4,6 +4,7 @@ import {
   AnyConstructor
 } from './types';
 import { logger } from '../../utils/logger';
+import type { BaseSystem } from '../entity/BaseSystem';
 import { SystemRegistry } from '../entity/SystemRegistry';
 
 /**
@@ -60,9 +61,11 @@ export function LogInitialization() {
 export function RegisterSystem(systemType: string) {
   return function <T extends AnyConstructor>(constructor: T) {
     const decoratedClass = class extends constructor {
+      // TS mixin requirement: rest args must be `any[]`.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       constructor(...args: any[]) {
-        super(...args);
-        SystemRegistry.register(systemType, this as any);
+        super(...(args as unknown as ConstructorParameters<T>));
+        SystemRegistry.register(systemType, this as unknown as BaseSystem);
         logger.info(`[${constructor.name}] Registered as ${systemType} system`);
       }
     };
@@ -83,8 +86,10 @@ export function ManageRuntime(options: { autoStart?: boolean } = {}) {
       private totalTime: number = 0;
       private frameCount: number = 0;
 
+      // TS mixin requirement: rest args must be `any[]`.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       constructor(...args: any[]) {
-        super(...args);
+        super(...(args as unknown as ConstructorParameters<T>));
         
         if (options.autoStart) {
           this.startRuntime();

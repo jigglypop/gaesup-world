@@ -1,10 +1,10 @@
 import React from 'react';
 
+import type { MotionDebugPanelProps, DebugFieldValue } from './types';
 import { DebugField, DEFAULT_DEBUG_FIELDS } from './types';
 import { useGaesupStore } from '../../../stores/gaesupStore';
-import './styles.css';
-import type { MotionDebugPanelProps, DebugFieldValue } from './types';
 import { useStateSystem } from '../../hooks/useStateSystem';
+import './styles.css';
 
 function getPanelStyle(
   position: MotionDebugPanelProps['position'] | undefined,

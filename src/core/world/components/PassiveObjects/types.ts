@@ -1,9 +1,4 @@
-import { ReactNode } from 'react';
-
-import type { RapierRigidBody, RigidBody } from '@react-three/rapier';
-import type { Group, QuaternionTuple, Vector3Tuple } from 'three';
-
-import { PayloadData } from '@core/types/common';
+import type { PhysicsEntityProps } from '@motions/entities/types';
 
 import { WorldObject } from '../../core/WorldSystem';
 
@@ -48,24 +43,19 @@ export type ObjectInteraction = {
   };
 }
 
-export type passivePropsType = {
-  children?: ReactNode;
+export type passivePropsType = Omit<
+  PhysicsEntityProps,
+  | 'isActive'
+  | 'componentType'
+  | 'url'
+  | 'rigidBodyRef'
+  | 'colliderRef'
+  | 'outerGroupRef'
+  | 'innerGroupRef'
+> & {
   url?: string;
   componentType?: 'vehicle' | 'airplane' | 'character';
-  position?: Vector3Tuple;
-  rotation?: QuaternionTuple;
-  scale?: Vector3Tuple | number;
   visible?: boolean;
-  sensor?: boolean;
-  userData?: Record<string, unknown>;
-  onCollisionEnter?: (payload: PayloadData) => void;
-  onCollisionExit?: (payload: PayloadData) => void;
-  onIntersectionEnter?: (payload: PayloadData) => void;
-  onIntersectionExit?: (payload: PayloadData) => void;
-  ref?: React.RefObject<RigidBody>;
-  outerGroupRef?: React.RefObject<Group>;
-  innerGroupRef?: React.RefObject<Group>;
-  colliderRef?: React.RefObject<RapierRigidBody>;
 };
 
 export type PassiveObjectInstanceProps = {

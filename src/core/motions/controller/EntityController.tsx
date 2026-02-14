@@ -21,6 +21,10 @@ export function EntityController({ props, children }: EntityControllerProps) {
   // Initialize keyboard event listeners
   useKeyboard();
   if (!mode || !gameStates || !rideable || !urls) return null;
+  // Avoid rendering PhysicsEntity until the required model URL exists.
+  if (mode.type === 'character' && !urls.characterUrl) return null;
+  if (mode.type === 'vehicle' && !urls.vehicleUrl) return null;
+  if (mode.type === 'airplane' && !urls.airplaneUrl) return null;
   const { canRide, isRiding, currentRideable } = gameStates;
   const rideableId = currentRideable?.id;
   const offset = useMemo(
@@ -28,16 +32,21 @@ export function EntityController({ props, children }: EntityControllerProps) {
     [rideableId, rideable],
   );
   const getEntityProps = () => {
+    const rigidBodyRef = props.rigidBodyRef ?? refs.rigidBodyRef;
+    const outerGroupRef = props.outerGroupRef ?? refs.outerGroupRef;
+    const innerGroupRef = props.innerGroupRef ?? refs.innerGroupRef;
+    const colliderRef = props.colliderRef ?? refs.colliderRef;
+
     const baseProps = {
       isActive: true,
       componentType: mode.type,
       enableRiding: canRide,
       isRiderOn: isRiding,
       offset,
-      ref: refs.rigidBodyRef,
-      outerGroupRef: refs.outerGroupRef,
-      innerGroupRef: refs.innerGroupRef,
-      colliderRef: refs.colliderRef,
+      ref: rigidBodyRef,
+      outerGroupRef,
+      innerGroupRef,
+      colliderRef,
       onAnimate: props.onAnimate || (() => {}),
       onFrame: props.onFrame || (() => {}),
       onReady: props.onReady || (() => {}),

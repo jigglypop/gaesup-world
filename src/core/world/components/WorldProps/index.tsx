@@ -27,48 +27,48 @@ export function WorldProps({
   });
 
   useEffect(() => {
-    if (showMinimap && groupRef.current) {
-      const engine = MinimapSystem.getInstance();
-      const updateMinimapMarker = () => {
-        const group = groupRef.current;
-        if (!group) return;
-        
-        const box = new THREE.Box3();
-        box.setFromObject(group);
-        
-        if (!box.isEmpty()) {
-          const { center, size, positionAdd } = vectorsRef.current;
-          box.getCenter(center);
-          box.getSize(size);
-          
-          if (position) {
-            positionAdd.set(position[0], position[1], position[2]);
-            center.add(positionAdd);
-          }
-          
-          engine.addMarker(
-            markerId,
-            type as 'normal' | 'ground',
-            text || '',
-            center.clone(), // Clone only when passing to engine
-            size.clone() // Clone only when passing to engine
-          );
+    if (!showMinimap || !groupRef.current) return undefined;
+
+    const engine = MinimapSystem.getInstance();
+    const updateMinimapMarker = () => {
+      const group = groupRef.current;
+      if (!group) return;
+
+      const box = new THREE.Box3();
+      box.setFromObject(group);
+
+      if (!box.isEmpty()) {
+        const { center, size, positionAdd } = vectorsRef.current;
+        box.getCenter(center);
+        box.getSize(size);
+
+        if (position) {
+          positionAdd.set(position[0], position[1], position[2]);
+          center.add(positionAdd);
         }
-      };
-      
-      const timer = setTimeout(updateMinimapMarker, 100);
-      
-      return () => {
-        clearTimeout(timer);
-        engine.removeMarker(markerId);
-      };
-    }
+
+        engine.addMarker(
+          markerId,
+          type as 'normal' | 'ground',
+          text || '',
+          center.clone(), // Clone only when passing to engine
+          size.clone(), // Clone only when passing to engine
+        );
+      }
+    };
+
+    const timer = setTimeout(updateMinimapMarker, 100);
+
+    return () => {
+      clearTimeout(timer);
+      engine.removeMarker(markerId);
+    };
   }, [position, type, text, showMinimap, markerId]);
 
   return (
     <group 
       ref={groupRef}
-      position={position}
+      {...(position ? { position } : {})}
       onClick={(e) => {
         if (interactive) {
           e.stopPropagation();

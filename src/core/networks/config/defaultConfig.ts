@@ -57,7 +57,7 @@ export const defaultMultiplayerConfig: MultiplayerConfig = {
 
   // 멀티플레이어 전용 설정
   websocket: {
-    url: 'ws://localhost:8080',
+    url: 'ws://localhost:8090',
     reconnectAttempts: 5,
     reconnectDelay: 1000,
     pingInterval: 30000
@@ -71,6 +71,6 @@ export const defaultMultiplayerConfig: MultiplayerConfig = {
   rendering: {
     nameTagHeight: 3.5,
     nameTagSize: 0.5,
-    characterScale: 0.5
+    characterScale: 1
   }
 }; 

@@ -22,7 +22,14 @@ export abstract class BaseController implements ICameraController {
     const { camera, deltaTime, activeState } = props;
     if (!activeState) return;
     Object.assign(state.config, this.defaultConfig);
-    const cameraOption = state.config as any;
+    type FocusTarget = { x: number; y: number; z: number };
+    type CameraConfigWithFocus = CameraSystemConfig & {
+      focus?: boolean;
+      focusTarget?: FocusTarget;
+      focusDistance?: number;
+      focusLerpSpeed?: number;
+    };
+    const cameraOption = state.config as CameraConfigWithFocus;
     let targetPosition: THREE.Vector3;
     let lookAtTarget: THREE.Vector3;
     if (cameraOption.focus && cameraOption.focusTarget) {

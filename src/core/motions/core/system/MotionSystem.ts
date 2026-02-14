@@ -3,7 +3,6 @@ import * as THREE from 'three';
 
 import { AbstractSystem, SystemUpdateArgs, Autowired } from '@core/boilerplate';
 import { Profile, HandleError, ManageRuntime } from '@core/boilerplate';
-
 import type { GameStatesType } from '@core/world/components/Rideable/types';
 
 import type { ActiveStateType } from '../types';

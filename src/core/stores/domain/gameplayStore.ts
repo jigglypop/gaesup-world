@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 
-import type { AnimationSlice } from '@core/animation/stores/types';
 import { createAnimationSlice } from '@core/animation/stores/slices';
-import type { InteractionActions, InteractionSliceState } from '@core/interactions/stores/types';
+import type { AnimationSlice } from '@core/animation/stores/types';
 import { createInteractionSlice } from '@core/interactions/stores/slices';
+import type { InteractionActions, InteractionSliceState } from '@core/interactions/stores/types';
 
 import { RideableSlice, createRideableSlice } from '../slices';
 

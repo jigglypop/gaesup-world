@@ -1,11 +1,23 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-
-import { useGaesupStore } from '../../../stores/gaesupStore';
-import './styles.css';
-import { CameraMetrics, DEFAULT_DEBUG_FIELDS } from './types';
-import { useStateSystem } from '../../../motions/hooks/useStateSystem';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { DebugValue } from '@core/types/common';
+
+import { CameraMetrics, DEFAULT_DEBUG_FIELDS } from './types';
+import { useStateSystem } from '../../../motions/hooks/useStateSystem';
+import { useGaesupStore } from '../../../stores/gaesupStore';
+
+import './styles.css';
+
+type Vec3Like = { x: number; y: number; z: number };
+function isVec3Like(value: unknown): value is Vec3Like {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v['x'] === 'number' &&
+    typeof v['y'] === 'number' &&
+    typeof v['z'] === 'number'
+  );
+}
 
 export function CameraDebugPanel() {
   const initialMetrics: CameraMetrics = {
@@ -27,28 +39,26 @@ export function CameraDebugPanel() {
   const { activeState } = useStateSystem();
   const metricsRef = useRef<CameraMetrics>(initialMetrics);
   const checkMetricChange = useCallback((
-    newValue: any, 
-    oldValue: any
+    newValue: unknown, 
+    oldValue: unknown
   ): boolean => {
     if (newValue === oldValue) return false;
-    if (typeof newValue !== 'object' || newValue === null) return true;
     
     // Vector3 비교
-    if (newValue.x !== undefined) {
-      return newValue.x !== oldValue?.x || 
-             newValue.y !== oldValue?.y || 
-             newValue.z !== oldValue?.z;
+    if (isVec3Like(newValue)) {
+      if (!isVec3Like(oldValue)) return true;
+      return newValue.x !== oldValue.x ||
+             newValue.y !== oldValue.y ||
+             newValue.z !== oldValue.z;
     }
     
     // 기타 객체 비교
+    if (typeof newValue !== 'object' || newValue === null) return true;
     return JSON.stringify(newValue) !== JSON.stringify(oldValue);
   }, []);
 
-  const toVec3 = useCallback((value: any): { x: number; y: number; z: number } | null => {
-    if (!value) return null;
-    if (typeof value.x !== 'number' || typeof value.y !== 'number' || typeof value.z !== 'number') {
-      return null;
-    }
+  const toVec3 = useCallback((value: unknown): Vec3Like | null => {
+    if (!isVec3Like(value)) return null;
     return { x: value.x, y: value.y, z: value.z };
   }, []);
 

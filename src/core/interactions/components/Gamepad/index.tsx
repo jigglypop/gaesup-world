@@ -1,9 +1,9 @@
+import { useKeyboard } from '@hooks/useKeyboard';
+import { useGaesupStore } from '@stores/gaesupStore';
+
 import GamePadButton from './GamePadButton';
 import './styles.css';
 import { gamepadType } from './types';
-
-import { useKeyboard } from '@hooks/useKeyboard';
-import { useGaesupStore } from '@stores/gaesupStore';
 
 export const gamepadDefault = {
   on: true,

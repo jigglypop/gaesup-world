@@ -3,21 +3,47 @@ import * as THREE from 'three';
 import { HandleError, LogSnapshot, Profile } from '@/core/boilerplate/decorators';
 import { logger } from '@/core/utils/logger';
 
-import type { BridgeCommand, BridgeEvent, BridgeState, InteractionSnapshot } from './types';
+import type {
+  AutomationAction,
+  AutomationSettings,
+  BridgeCommand,
+  BridgeEvent,
+  BridgeState,
+  BridgeSnapshot,
+  GamepadState,
+  InteractionConfig,
+  TouchState,
+} from './types';
 import { AutomationSystem } from '../core/AutomationSystem';
 import { InteractionSystem, KeyboardState, MouseState } from '../core/InteractionSystem';
 
 export class InteractionBridge {
+  private static globalInstance: InteractionBridge | null = null;
+
+  static getGlobal(): InteractionBridge {
+    if (!InteractionBridge.globalInstance) {
+      InteractionBridge.globalInstance = new InteractionBridge();
+    }
+    return InteractionBridge.globalInstance;
+  }
+
+  static disposeGlobal(): void {
+    InteractionBridge.globalInstance?.dispose();
+    InteractionBridge.globalInstance = null;
+  }
+
   private interactionSystem: InteractionSystem;
   private automationSystem: AutomationSystem;
   private state: BridgeState;
-  private eventSubscribers: Map<string, Function[]>;
+  private eventSubscribers: Map<string, Array<(event: BridgeEvent) => void>>;
   private eventQueue: BridgeEvent[];
   private syncInterval: number | null;
   private readonly MAX_COMMAND_HISTORY = 1000;
   private readonly MAX_EVENT_QUEUE = 500;
   private engineListenerCleanups: Array<() => void> = [];
   private eventListeners: Set<(state: { keyboard: KeyboardState; mouse: MouseState }) => void>;
+  private interactables: Map<string, { id: string; active?: boolean; onPointerOver?: () => void; onPointerOut?: () => void; onClick?: () => void }>;
+  private hoveredInteractableIds: Set<string>;
 
   constructor() {
     this.interactionSystem = InteractionSystem.getInstance();
@@ -32,13 +58,17 @@ export class InteractionBridge {
     this.eventQueue = [];
     this.syncInterval = null;
     this.eventListeners = new Set();
+    this.interactables = new Map();
+    this.hoveredInteractableIds = new Set();
     
     this.setupEngineListeners();
     this.startSync();
   }
 
   private setupEngineListeners(): void {
-    const moveListener = (target: THREE.Vector3) => {
+    const moveListener = (data: unknown) => {
+      if (!(data instanceof THREE.Vector3)) return;
+      const target = data;
       this.executeCommand({
         type: 'input',
         action: 'moveTo',
@@ -46,7 +76,9 @@ export class InteractionBridge {
       });
     };
     
-    const clickListener = (target: THREE.Vector3) => {
+    const clickListener = (data: unknown) => {
+      if (!(data instanceof THREE.Vector3)) return;
+      const target = data;
       this.executeCommand({
         type: 'input',
         action: 'clickAt',
@@ -54,7 +86,9 @@ export class InteractionBridge {
       });
     };
     
-    const keyListener = (key: string) => {
+    const keyListener = (data: unknown) => {
+      if (typeof data !== 'string') return;
+      const key = data;
       this.executeCommand({
         type: 'input',
         action: 'keyPress',
@@ -100,7 +134,7 @@ export class InteractionBridge {
     }
     
     this.emitEvent({
-      type: 'sync',
+      type: fullCommand.type,
       event: 'commandExecuted',
       data: fullCommand,
       timestamp: Date.now()
@@ -130,13 +164,13 @@ export class InteractionBridge {
         this.notifyListeners();
         break;
       case 'updateGamepad':
-        this.interactionSystem.updateGamepad(data as any);
+        this.interactionSystem.updateGamepad(data as Partial<GamepadState>);
         break;
       case 'updateTouch':
-        this.interactionSystem.updateTouch(data as any);
+        this.interactionSystem.updateTouch(data as Partial<TouchState>);
         break;
       case 'setConfig':
-        this.interactionSystem.setConfig(data as any);
+        this.interactionSystem.setConfig(data as Partial<InteractionConfig>);
         break;
       case 'moveTo':
         this.emitEvent({
@@ -171,7 +205,7 @@ export class InteractionBridge {
     
     switch (action) {
       case 'addAction':
-        this.automationSystem.addAction(data as any);
+        this.automationSystem.addAction(data as Omit<AutomationAction, 'id' | 'timestamp'>);
         break;
       case 'removeAction':
         this.automationSystem.removeAction(data as string);
@@ -192,31 +226,68 @@ export class InteractionBridge {
         this.automationSystem.clearQueue();
         break;
       case 'updateSettings':
-        this.automationSystem.updateSettings(data as any);
+        this.automationSystem.updateSettings(data as Partial<AutomationSettings>);
         break;
     }
   }
 
   @LogSnapshot()
-  snapshot(): InteractionSnapshot {
+  snapshot(): BridgeSnapshot {
     const state = this.interactionSystem.getState();
     const config = this.interactionSystem.getConfig();
     const metrics = this.interactionSystem.getMetrics();
+    const automationState = this.automationSystem.getState();
+    const automationConfig = this.automationSystem.getConfig();
+    const automationMetrics = this.automationSystem.getMetrics();
 
     return {
-      keyboard: state.keyboard,
-      mouse: state.mouse,
-      gamepad: state.gamepad,
-      touch: state.touch,
-      isActive: state.isActive,
-      config,
-      metrics
+      interaction: {
+        state,
+        config,
+        metrics,
+      },
+      automation: {
+        state: automationState,
+        config: automationConfig,
+        metrics: automationMetrics,
+      },
+      bridge: this.state,
     };
   }
 
-  subscribe(listener: (state: { keyboard: KeyboardState; mouse: MouseState }) => void): () => void {
+  subscribe(listener: (state: { keyboard: KeyboardState; mouse: MouseState }) => void): () => void;
+  subscribe(event: string, callback: (event: BridgeEvent) => void): () => void;
+  subscribe(
+    arg1: string | ((state: { keyboard: KeyboardState; mouse: MouseState }) => void),
+    arg2?: (event: BridgeEvent) => void,
+  ): () => void {
+    if (typeof arg1 === 'string') {
+      const event = arg1;
+      const callback = arg2;
+      if (typeof callback !== 'function') return () => {};
+
+      const list = this.eventSubscribers.get(event) ?? [];
+      list.push(callback);
+      this.eventSubscribers.set(event, list);
+      return () => this.unsubscribe(event, callback);
+    }
+
+    const listener = arg1;
     this.eventListeners.add(listener);
     return () => this.eventListeners.delete(listener);
+  }
+
+  unsubscribe(event: string, callback: (event: BridgeEvent) => void): void {
+    const list = this.eventSubscribers.get(event);
+    if (!list) return;
+    const idx = list.indexOf(callback);
+    if (idx === -1) return;
+    list.splice(idx, 1);
+    if (list.length === 0) {
+      this.eventSubscribers.delete(event);
+    } else {
+      this.eventSubscribers.set(event, list);
+    }
   }
 
   @Profile()
@@ -226,6 +297,55 @@ export class InteractionBridge {
     this.eventListeners.forEach(listener => listener({ keyboard, mouse }));
   }
 
+  registerInteractable(entity: { id: string; active?: boolean; onPointerOver?: () => void; onPointerOut?: () => void; onClick?: () => void }): void {
+    if (!entity?.id) return;
+    this.interactables.set(entity.id, entity);
+  }
+
+  unregisterInteractable(id: string): void {
+    if (!id) return;
+    this.interactables.delete(id);
+    this.hoveredInteractableIds.delete(id);
+  }
+
+  getInteractable(id: string) {
+    return this.interactables.get(id);
+  }
+
+  updateHoveredObjects(hitObjects: Array<{ object?: { userData?: { id?: string } } }>): void {
+    const nextHovered = new Set<string>();
+    for (const hit of hitObjects) {
+      const id = hit?.object?.userData?.id;
+      if (typeof id === 'string') nextHovered.add(id);
+    }
+
+    // Pointer out
+    for (const prevId of this.hoveredInteractableIds) {
+      if (nextHovered.has(prevId)) continue;
+      const entity = this.interactables.get(prevId);
+      if (!entity || entity.active === false) continue;
+      entity.onPointerOut?.();
+    }
+
+    // Pointer over
+    for (const nextId of nextHovered) {
+      if (this.hoveredInteractableIds.has(nextId)) continue;
+      const entity = this.interactables.get(nextId);
+      if (!entity || entity.active === false) continue;
+      entity.onPointerOver?.();
+    }
+
+    this.hoveredInteractableIds = nextHovered;
+  }
+
+  handleClick(event: { object?: { userData?: { id?: string } } }): void {
+    const id = event?.object?.userData?.id;
+    if (typeof id !== 'string') return;
+    const entity = this.interactables.get(id);
+    if (!entity || entity.active === false) return;
+    entity.onClick?.();
+  }
+
   @HandleError()
   private emitEvent(event: BridgeEvent): void {
     this.eventQueue.push(event);
@@ -233,21 +353,14 @@ export class InteractionBridge {
     if (this.eventQueue.length > this.MAX_EVENT_QUEUE) {
       this.eventQueue = this.eventQueue.slice(-this.MAX_EVENT_QUEUE);
     }
-    
-    const callbacks = this.eventSubscribers.get(event.event);
-    if (callbacks) {
-      callbacks.forEach(callback => {
-        try {
-          callback(event);
-        } catch (error) {
-          console.error('Event callback error:', error);
-        }
-      });
-    }
-    
-    const allCallbacks = this.eventSubscribers.get('*');
-    if (allCallbacks) {
-      allCallbacks.forEach(callback => {
+  }
+
+  private dispatchEvent(event: BridgeEvent): void {
+    const keys = [event.event, event.type, '*'];
+    for (const key of keys) {
+      const callbacks = this.eventSubscribers.get(key);
+      if (!callbacks || callbacks.length === 0) continue;
+      callbacks.forEach((callback) => {
         try {
           callback(event);
         } catch (error) {
@@ -279,12 +392,16 @@ export class InteractionBridge {
     const batchSize = 10;
     const processed = this.eventQueue.splice(0, batchSize);
     
+    for (const event of processed) {
+      this.dispatchEvent(event);
+    }
+
     if (processed.length > 0) {
-      this.emitEvent({
+      this.dispatchEvent({
         type: 'sync',
         event: 'batchProcessed',
         data: { count: processed.length },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
   }
@@ -294,7 +411,7 @@ export class InteractionBridge {
     const interactionMetrics = this.interactionSystem.getMetrics();
     const automationMetrics = this.automationSystem.getMetrics();
     
-    this.emitEvent({
+    this.dispatchEvent({
       type: 'sync',
       event: 'metricsUpdated',
       data: {
@@ -339,6 +456,12 @@ export class InteractionBridge {
     this.eventQueue = [];
     this.state.commandHistory = [];
     this.eventListeners.clear();
+    this.interactables.clear();
+    this.hoveredInteractableIds.clear();
+  }
+
+  cleanup(): void {
+    this.dispose();
   }
 
   getKeyboardState(): KeyboardState {

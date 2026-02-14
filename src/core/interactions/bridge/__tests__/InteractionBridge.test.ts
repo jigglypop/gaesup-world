@@ -95,12 +95,12 @@ describe('InteractionBridge 메모리 누수 테스트', () => {
     }, 100);
   });
 
-  it('구독 해제가 제대로 작동해야 함', () => {
+  it('구독 해제가 제대로 작동해야 함', (done) => {
     const callback1 = jest.fn();
     const callback2 = jest.fn();
 
-    bridge.subscribe('testEvent', callback1);
-    bridge.subscribe('testEvent', callback2);
+    bridge.subscribe('input', callback1);
+    bridge.subscribe('input', callback2);
 
     bridge.executeCommand({
       type: 'input',
@@ -108,7 +108,7 @@ describe('InteractionBridge 메모리 누수 테스트', () => {
       data: { key: 'a', pressed: true }
     });
 
-    bridge.unsubscribe('testEvent', callback1);
+    bridge.unsubscribe('input', callback1);
 
     bridge.executeCommand({
       type: 'input',
@@ -116,8 +116,11 @@ describe('InteractionBridge 메모리 누수 테스트', () => {
       data: { key: 'b', pressed: true }
     });
 
-    expect(callback1).toHaveBeenCalledTimes(0);
-    expect(callback2).toHaveBeenCalled();
+    setTimeout(() => {
+      expect(callback1).toHaveBeenCalledTimes(0);
+      expect(callback2).toHaveBeenCalled();
+      done();
+    }, 25);
   });
 
   it('reset 호출 시 모든 상태가 초기화되어야 함', () => {

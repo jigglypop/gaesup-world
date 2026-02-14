@@ -1,5 +1,7 @@
 // Jest setup file for polyfills and global mocks
-import "@testing-library/jest-dom";
+// Jest loads setupFilesAfterEnv via CommonJS; keep this file CJS-compatible.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+require("@testing-library/jest-dom");
 
 // ResizeObserver polyfill for jsdom environment
 global.ResizeObserver = class ResizeObserver {

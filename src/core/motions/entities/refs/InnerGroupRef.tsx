@@ -50,3 +50,5 @@ export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THRE
     </group>
   );
 });
+
+InnerGroupRef.displayName = 'InnerGroupRef';

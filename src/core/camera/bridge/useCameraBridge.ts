@@ -3,7 +3,7 @@ import { useRef, useEffect, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 
 import { BaseCameraSystem } from './BaseCameraSystem';
-import { CameraSystemConfig, CameraSystemEvents } from './types';
+import type { CameraSystemConfig, CameraSystemEvents, CameraSystemState, ICameraSystemMonitor } from './types';
 
 export function useCameraBridge<T extends BaseCameraSystem>(
   SystemClass: new (config: CameraSystemConfig) => T,
@@ -14,8 +14,8 @@ export function useCameraBridge<T extends BaseCameraSystem>(
 ): {
   system: T;
   updateConfig: (config: Partial<CameraSystemConfig>) => void;
-  getState: () => any;
-  getMetrics: () => any;
+  getState: () => CameraSystemState;
+  getMetrics: () => ReturnType<ICameraSystemMonitor['getMetrics']>;
 } {
   const systemRef = useRef<T>(null);
   if (!systemRef.current) {
@@ -29,14 +29,21 @@ export function useCameraBridge<T extends BaseCameraSystem>(
   useEffect(() => {
     if (!eventHandlers || !system) return;
     const unsubscribers: Array<() => void> = [];
+
+    type AnyHandler = (data: unknown) => void;
+    type AnyEmitter = {
+      on: (type: string, handler: AnyHandler) => void;
+      off: (type: string, handler: AnyHandler) => void;
+    };
+
+    const emitter = system.emitter as unknown as AnyEmitter;
     Object.entries(eventHandlers).forEach(([eventName, handler]) => {
-      if (handler) {
-        system.emitter.on(eventName as any, handler as any);
-        unsubscribers.push(() => {
-          system.emitter.off(eventName as any, handler as any);
-        });
-      }
+      if (!handler) return;
+      const safeHandler = handler as unknown as AnyHandler;
+      emitter.on(eventName, safeHandler);
+      unsubscribers.push(() => emitter.off(eventName, safeHandler));
     });
+
     return () => {
       unsubscribers.forEach(unsub => unsub());
     };

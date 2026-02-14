@@ -12,7 +12,7 @@ interface AutomationSystemMetrics extends BaseMetrics, AutomationMetrics {}
 export class AutomationSystem extends AbstractSystem<AutomationSystemState, AutomationSystemMetrics> {
   private config: AutomationConfig;
   private executionTimer: number | null;
-  private eventCallbacks: Map<string, Function[]>;
+  private eventCallbacks: Map<string, Array<(data: unknown) => void>>;
 
   constructor() {
     super(
@@ -56,6 +56,10 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
         targetColor: '#ff0000'
       }
     };
+  }
+
+  getConfig(): AutomationConfig {
+    return { ...this.config };
   }
 
   @HandleError()
@@ -246,14 +250,14 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
     }
   }
 
-  addEventListener(event: string, callback: Function): void {
+  addEventListener(event: string, callback: (data: unknown) => void): void {
     if (!this.eventCallbacks.has(event)) {
       this.eventCallbacks.set(event, []);
     }
     this.eventCallbacks.get(event)!.push(callback);
   }
 
-  removeEventListener(event: string, callback: Function): void {
+  removeEventListener(event: string, callback: (data: unknown) => void): void {
     const callbacks = this.eventCallbacks.get(event);
     if (callbacks) {
       const index = callbacks.indexOf(callback);

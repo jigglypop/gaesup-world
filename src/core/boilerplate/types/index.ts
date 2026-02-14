@@ -21,6 +21,8 @@ export type IDisposable = {
   dispose(): void;
 };
 
+export type RefObject<T> = { current: T };
+
 export type BridgeEventType = 'register' | 'unregister' | 'execute' | 'snapshot' | 'error';
 
 export type BridgeEvent<EngineType, SnapshotType, CommandType> = {

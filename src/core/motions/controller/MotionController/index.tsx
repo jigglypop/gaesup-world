@@ -1,8 +1,8 @@
 import React, { useCallback, useState } from 'react';
 
+import type { MotionControllerProps } from './types';
 import { useGaesupStore } from '../../../stores/gaesupStore';
 import './styles.css';
-import type { MotionControllerProps } from './types';
 
 const MOTION_PRESETS = [
   { id: 'slow', name: 'Slow', maxSpeed: 5, acceleration: 8 },

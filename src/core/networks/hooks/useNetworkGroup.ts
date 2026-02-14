@@ -1,13 +1,13 @@
 import { useCallback, useRef, useEffect, useState } from 'react';
 
 import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
-import type { NetworkGroup, NetworkMessage, NetworkSystemState } from '../types';
+import type { NetworkGroup, NetworkMessage } from '../types';
 
 export interface GroupCreateOptions {
   maxSize?: number;
   isPrivate?: boolean;
   requireInvite?: boolean;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface UseNetworkGroupOptions extends UseNetworkBridgeOptions {
@@ -26,7 +26,7 @@ export interface UseNetworkGroupResult {
   leaveGroup: (groupId: string) => void;
   
   // 그룹 메시지
-  sendGroupMessage: (groupId: string, content: any, type?: string) => string;
+  sendGroupMessage: (groupId: string, content: unknown, type?: string) => string;
   
   // 그룹 멤버 관리
   inviteToGroup: (groupId: string, npcId: string) => void;
@@ -82,7 +82,7 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
     const nodeId = `node_${npcId}`;
 
     const interval = setInterval(() => {
-      const state = getSystemState() as NetworkSystemState | null;
+      const state = getSystemState();
       if (!state) return;
 
       const groups = Array.from(state.groups.values());
@@ -199,7 +199,7 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
 
   const sendGroupMessage = useCallback((
     groupId: string,
-    content: any,
+    content: unknown,
     type: string = 'chat'
   ): string => {
     if (!isReady || !joinedGroups.includes(groupId)) return '';

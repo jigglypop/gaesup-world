@@ -1,8 +1,8 @@
 import type { ActiveStateType } from '../../motions/core/types';
 import type { PhysicsEntityProps } from '../../motions/entities/types';
-import type { GameStatesType } from '../../world/components/Rideable/types';
 import type { ModeState, ControllerOptionsType } from '../../stores/slices/mode/types';
 import type { GaesupState } from '../../stores/types';
+import type { GameStatesType } from '../../world/components/Rideable/types';
 
 export type GaesupControllerProps = Omit<
   PhysicsEntityProps,

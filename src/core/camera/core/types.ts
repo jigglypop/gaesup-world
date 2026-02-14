@@ -1,4 +1,3 @@
-import { RootState } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { ActiveStateType } from '../../motions/core/types';
@@ -188,7 +187,7 @@ export interface CollisionCheckResult {
 }
 
 export interface CameraPropType {
-  state: RootState & { delta: number };
+  state: { delta: number } & Record<string, unknown>;
   worldContext: {
     activeState: ActiveStateType;
   };

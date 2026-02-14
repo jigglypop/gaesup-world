@@ -23,12 +23,14 @@ export type PhysicsSnapshot = ReturnType<PhysicsSystem['getState']> & {
 @EnableEventLog()
 export class PhysicsBridge extends CoreBridge<PhysicsBridgeEntity, PhysicsSnapshot, PhysicsCommand> {
   protected buildEngine(_: string, config: PhysicsConfigType): PhysicsBridgeEntity | null {
+    void _;
     const system = new PhysicsSystem(config);
     return { system, dispose: () => system.dispose() };
   }
 
   @ValidateCommand()
   protected executeCommand(entity: PhysicsBridgeEntity, command: PhysicsCommand, _id: string): void {
+    void _id;
     switch (command.type) {
       case 'updateConfig':
         entity.system.updateConfig(command.data);

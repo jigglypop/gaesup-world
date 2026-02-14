@@ -26,6 +26,11 @@ export type WorldData = {
 export interface WorldContainerProps {
   children?: ReactNode;
   urls?: Partial<{
+    // Preferred keys (match store UrlsState)
+    characterUrl?: string;
+    vehicleUrl?: string;
+    airplaneUrl?: string;
+    // Backward-compatible aliases
     character?: string;
     vehicle?: string;
     airplane?: string;

@@ -99,4 +99,6 @@ export const WaveEffect = memo(({
       })}
     </group>
   );
-}); 
+});
+
+WaveEffect.displayName = 'WaveEffect';

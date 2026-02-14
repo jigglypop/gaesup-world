@@ -1,8 +1,9 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 
 import { Environment, Grid } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { Physics, euler, RigidBody, type RapierRigidBody } from '@react-three/rapier';
+import * as THREE from 'three';
 
 import { RemotePlayer } from './RemotePlayer';
 import { 
@@ -12,6 +13,7 @@ import {
   Clicker, 
   GroundClicker
 } from '../../../index';
+import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
 import { PlayerState, MultiplayerConfig } from '../types';
 
 declare global {
@@ -27,6 +29,9 @@ interface MultiplayerCanvasProps {
   airplaneUrl: string;
   playerRef: React.RefObject<RapierRigidBody>;
   config: MultiplayerConfig;
+  proximityRange?: number;
+  speechByPlayerId?: Map<string, string>;
+  localSpeechText?: string | null;
 }
 
 export function MultiplayerCanvas({ 
@@ -35,7 +40,10 @@ export function MultiplayerCanvas({
   vehicleUrl, 
   airplaneUrl, 
   playerRef, 
-  config 
+  config,
+  proximityRange,
+  speechByPlayerId,
+  localSpeechText,
 }: MultiplayerCanvasProps) {
   
   // CHARACTER_URL을 window에 설정
@@ -43,17 +51,59 @@ export function MultiplayerCanvas({
     window.CHARACTER_URL = characterUrl;
   }, [characterUrl]);
 
+  const [localPosition, setLocalPosition] = useState<[number, number, number]>([0, 0, 0]);
+  const localSpeechPos = useMemo(() => new THREE.Vector3(), []);
+
+  // local player position을 너무 자주 setState 하지 않도록 간단한 메모이즈
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const body = playerRef.current;
+      if (!body) return;
+      const p = body.translation();
+      setLocalPosition((prev) => {
+        const dx = p.x - prev[0];
+        const dy = p.y - prev[1];
+        const dz = p.z - prev[2];
+        if (dx * dx + dy * dy + dz * dz < 0.0001) return prev;
+        return [p.x, p.y, p.z];
+      });
+    }, 100);
+    return () => window.clearInterval(id);
+  }, [playerRef]);
+
+  useEffect(() => {
+    localSpeechPos.set(localPosition[0], localPosition[1], localPosition[2]);
+  }, [localPosition, localSpeechPos]);
+
+  const visiblePlayers = useMemo(() => {
+    const range = proximityRange;
+    if (!range || range <= 0) return players;
+    const [lx, ly, lz] = localPosition;
+    const next = new Map<string, PlayerState>();
+    players.forEach((state, id) => {
+      const [x, y, z] = state.position;
+      const dx = x - lx;
+      const dy = y - ly;
+      const dz = z - lz;
+      if (dx * dx + dy * dy + dz * dz <= range * range) {
+        next.set(id, state);
+      }
+    });
+    return next;
+  }, [players, proximityRange, localPosition]);
+
   return (
     <GaesupWorld
       urls={{
-        character: characterUrl,
-        vehicle: vehicleUrl,
-        airplane: airplaneUrl,
+        characterUrl: characterUrl,
+        vehicleUrl: vehicleUrl,
+        airplaneUrl: airplaneUrl,
       }}
     >
       <Canvas
         shadows
-        camera={{ position: [0, 10, 20], fov: 75 }}
+        dpr={[1, 1.5]}
+        camera={{ position: [0, 10, 20], fov: 75, near: 0.1, far: 1000 }}
         style={{ width: '100vw', height: '100vh' }}
       >
         <Environment background preset="sunset" backgroundBlurriness={1} />
@@ -79,17 +129,31 @@ export function MultiplayerCanvas({
               <GaesupController
                 rigidBodyRef={playerRef}
                 rotation={euler({ x: 0, y: Math.PI, z: 0 })}
-                parts={[{ url: characterUrl }]}
+                // `urls.characterUrl` is already set via <GaesupWorld urls={...} />.
+                // Passing the same model as a "part" duplicates the render and can skew perceived scale.
+                parts={[]}
               />
+
+              {/* 로컬 말풍선 */}
+              {localSpeechText ? (
+                <SpeechBalloon
+                  text={localSpeechText}
+                  position={localSpeechPos}
+                />
+              ) : null}
               
               {/* 원격 플레이어들 */}
-              {Array.from(players.entries()).map(([playerId, state]) => (
-                <RemotePlayer 
-                  key={playerId} 
-                  playerId={playerId} 
-                  state={state} 
+              {Array.from(visiblePlayers.entries()).map(([playerId, state]) => (
+                <RemotePlayer
+                  key={playerId}
+                  playerId={playerId}
+                  state={state}
                   characterUrl={characterUrl}
                   config={config}
+                  {...(() => {
+                    const speechText = speechByPlayerId?.get(playerId);
+                    return speechText ? { speechText } : {};
+                  })()}
                 />
               ))}
               

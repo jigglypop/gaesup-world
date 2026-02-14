@@ -42,13 +42,11 @@ export class CameraSystem extends BaseCameraSystem {
       config: {
         mode: 'thirdPerson',
         distance: { x: 15, y: 8, z: 15 },
-        bounds: undefined as any,
         enableCollision: true,
         smoothing: { position: 0.1, rotation: 0.1, fov: 0.1 },
         fov: 75,
         zoom: 1,
       },
-      activeController: undefined as any,
       lastUpdate: Date.now(),
     };
   }
@@ -93,13 +91,6 @@ export class CameraSystem extends BaseCameraSystem {
     } catch (error) {
       this.emitError('Camera calculation failed', error);
     }
-  }
-  
-  override getState(): any {
-    return {
-      config: this.state.config,
-      metrics: this.getMetrics(),
-    };
   }
   
   getCameraState(name: string): CameraState | undefined {

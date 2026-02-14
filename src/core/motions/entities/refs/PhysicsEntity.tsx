@@ -18,6 +18,15 @@ import { PartsGroupRef } from './PartsGroupRef';
 import { useGltfAndSize } from '../../hooks';
 import { PhysicsEntityProps, SetGroundRayType } from '../types';
 
+const EMPTY_GLTF_DATA_URI =
+  'data:application/json,' +
+  encodeURIComponent(
+    JSON.stringify({
+      asset: { version: '2.0' },
+      scenes: [{ nodes: [] }],
+      nodes: [],
+    }),
+  );
 
 export function useSetGroundRay() {
   return ({ groundRay, length, colliderRef }: SetGroundRayType) => {
@@ -39,7 +48,8 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     useImperativeHandle(forwardedRef, () => rigidBodyRef.current);
     const { size } = useGltfAndSize({ url: props.url || '' });
     const setGroundRay = useSetGroundRay();
-    const { scene, animations } = useGLTF(props.url);
+    const modelUrl = props.url?.trim() ? props.url : EMPTY_GLTF_DATA_URI;
+    const { scene, animations } = useGLTF(modelUrl);
     const { actions, ref: animationRef } = useAnimations(animations);
     
     const {
@@ -156,3 +166,5 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     );
   },
 );
+
+PhysicsEntity.displayName = 'PhysicsEntity';

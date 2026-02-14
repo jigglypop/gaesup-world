@@ -1,8 +1,8 @@
-import { RefObject } from 'react';
 
 import { RapierRigidBody } from '@react-three/rapier';
 
 import { Profile } from '@/core/boilerplate/decorators';
+import type { RefObject } from '@core/boilerplate';
 import { PhysicsConfigType } from '@stores/slices';
 
 import type { PhysicsState } from '../../types';

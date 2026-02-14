@@ -17,7 +17,8 @@ export function NetworkMultiplayerPage() {
   
   const multiplayer = useMultiplayer({
     config: defaultMultiplayerConfig,
-    characterUrl: CHARACTER_URL
+    characterUrl: CHARACTER_URL,
+    rigidBodyRef: playerRef,
   });
 
   // 연결되지 않은 경우 연결 폼 표시
@@ -27,10 +28,6 @@ export function NetworkMultiplayerPage() {
         onConnect={(options) => {
           playerNameRef.current = options.playerName;
           multiplayer.connect(options);
-          // 연결 후 위치 추적 시작
-          setTimeout(() => {
-            multiplayer.startTracking(playerRef);
-          }, 1000);
         }}
         error={multiplayer.error}
         isConnecting={multiplayer.connectionStatus === 'connecting'}
@@ -47,11 +44,17 @@ export function NetworkMultiplayerPage() {
         airplaneUrl={AIRPLANE_URL}
         playerRef={playerRef}
         config={defaultMultiplayerConfig}
+        // Disable proximity culling for movement testing.
+        // (Otherwise the remote player disappears when distance > proximityRange.)
+        proximityRange={0}
+        speechByPlayerId={multiplayer.speechByPlayerId}
+        localSpeechText={multiplayer.localSpeechText}
       />
       
       <PlayerInfoOverlay
         state={multiplayer}
         playerName={playerNameRef.current}
+        onSendChat={(text) => multiplayer.sendChat(text)}
         onDisconnect={() => {
           multiplayer.stopTracking();
           multiplayer.disconnect();

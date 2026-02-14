@@ -7,19 +7,10 @@ import { ClickerMoveOptions, ClickerResult } from './types';
 import { InteractionBridge } from '../../interactions/bridge/InteractionBridge';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
 
-let globalBridge: InteractionBridge | null = null;
-
-function getGlobalBridge(): InteractionBridge {
-  if (!globalBridge) {
-    globalBridge = new InteractionBridge();
-  }
-  return globalBridge;
-}
-
 export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
   const { minHeight = 0.5, offsetY = 0.5 } = options;
   const { activeState } = useStateSystem();
-  const bridge = getGlobalBridge();
+  const bridge = InteractionBridge.getGlobal();
   const isReady = Boolean(activeState?.position);
   const moveClicker = (
     event: ThreeEvent<MouseEvent>,
@@ -68,8 +59,8 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
         action: 'updateMouse',
         data: { isActive: false, shouldRun: false }
       });
-    } catch (error) {
-    }
+    } catch {
+    } 
   };
 
   const onClick = (event: ThreeEvent<MouseEvent>): void => {

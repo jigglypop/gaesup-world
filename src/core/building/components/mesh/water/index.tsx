@@ -7,14 +7,6 @@ import { Water } from "three-stdlib";
 
 extend({ Water });
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      water: any;
-    }
-  }
-}
-
 export default function Ocean() {
   const waterRef = useRef<Water | null>(null);
   const waterNormals = useTexture("/resources/waternormals.jpeg");
@@ -49,7 +41,7 @@ export default function Ocean() {
   return (
     <water
       ref={waterRef}
-      args={[geom, config as any]}
+      args={[geom, config]}
       rotation-x={-Math.PI / 2}
       position={[0, 0.1, 0]}
     />

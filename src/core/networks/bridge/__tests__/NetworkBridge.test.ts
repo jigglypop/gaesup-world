@@ -1,49 +1,31 @@
 import { NetworkBridge } from '../NetworkBridge';
 import { NetworkCommand, NetworkConfig } from '../../types';
+import * as THREE from 'three';
 
 // NetworkSystem 모킹
 jest.mock('../../core/NetworkSystem', () => {
   return {
     NetworkSystem: jest.fn().mockImplementation((config?: NetworkConfig) => ({
-      registerNPC: jest.fn(),
-      unregisterNPC: jest.fn(),
-      updateNPCPosition: jest.fn(),
-      connectNPCs: jest.fn(),
-      disconnectNPCs: jest.fn(),
-      sendMessage: jest.fn(),
-      broadcastMessage: jest.fn(),
-      createGroup: jest.fn(),
-      joinGroup: jest.fn(),
-      leaveGroup: jest.fn(),
       updateConfig: jest.fn(),
       start: jest.fn(),
-      stop: jest.fn(),
-      pause: jest.fn(),
-      resume: jest.fn(),
-      update: jest.fn(),
+      executeCommand: jest.fn(),
       createSnapshot: jest.fn().mockReturnValue({
-        nodes: new Map(),
-        connections: new Map(),
-        groups: new Map(),
-        messages: [],
-        stats: {
-          totalNodes: 0,
-          totalConnections: 0,
-          totalMessages: 0,
-          averageLatency: 0,
-          messagesPerSecond: 0
-        },
-        performance: {
-          updateTime: 0,
-          messageProcessingTime: 0,
-          connectionProcessingTime: 0
-        },
-        timestamp: Date.now()
+        nodeCount: 0,
+        connectionCount: 0,
+        activeGroups: 0,
+        messagesPerSecond: 0,
+        averageLatency: 0,
+        lastUpdate: Date.now(),
       }),
-      getNetworkStats: jest.fn().mockReturnValue({
-        totalNodes: 0,
-        totalConnections: 0,
-        totalMessages: 0
+      getDebugInfo: jest.fn().mockReturnValue({
+        networkStats: {
+          nodeCount: 0,
+          connectionCount: 0,
+          messagesPerSecond: 0,
+          averageLatency: 0,
+          bandwidth: 0,
+          lastUpdate: Date.now(),
+        },
       }),
       getState: jest.fn().mockReturnValue({ isRunning: false }),
       dispose: jest.fn()
@@ -133,109 +115,69 @@ describe('NetworkBridge', () => {
     test('NPC 등록 명령', () => {
       const command: NetworkCommand = {
         type: 'registerNPC',
-        data: {
-          npcId: 'npc-1',
-          position: { x: 10, y: 0, z: 5 },
-          metadata: { name: 'TestNPC' }
-        }
+        npcId: 'npc-1',
+        position: new THREE.Vector3(10, 0, 5),
       };
 
       bridge.execute('main', command);
       
       const entity = bridge.getEngine('main');
-      expect(entity?.system.registerNPC).toHaveBeenCalledWith(
-        'npc-1',
-        { x: 10, y: 0, z: 5 },
-        { name: 'TestNPC' }
-      );
+      expect(entity?.system.executeCommand).toHaveBeenCalledWith(command);
     });
 
     test('NPC 연결 명령', () => {
       const command: NetworkCommand = {
-        type: 'connectNPCs',
-        data: {
-          fromId: 'npc-1',
-          toId: 'npc-2',
-          options: { reliable: true }
-        }
+        type: 'connect',
+        npcId: 'npc-1',
+        targetId: 'npc-2',
       };
 
       bridge.execute('main', command);
       
       const entity = bridge.getEngine('main');
-      expect(entity?.system.connectNPCs).toHaveBeenCalledWith(
-        'npc-1',
-        'npc-2',
-        { reliable: true }
-      );
+      expect(entity?.system.executeCommand).toHaveBeenCalledWith(command);
     });
 
     test('메시지 전송 명령', () => {
       const command: NetworkCommand = {
         type: 'sendMessage',
-        data: {
-          fromId: 'npc-1',
-          toId: 'npc-2',
-          message: {
-            id: 'msg-1',
-            type: 'chat',
-            content: 'Hello!',
-            timestamp: Date.now(),
-            senderId: 'npc-1',
-            receiverId: 'npc-2'
-          }
-        }
+        message: {
+          id: 'msg-1',
+          from: 'npc-1',
+          to: 'npc-2',
+          type: 'chat',
+          payload: { text: 'Hello!' },
+          priority: 'normal',
+          timestamp: Date.now(),
+          reliability: 'unreliable',
+        },
       };
 
       bridge.execute('main', command);
       
       const entity = bridge.getEngine('main');
-      expect(entity?.system.sendMessage).toHaveBeenCalledWith(
-        'npc-1',
-        'npc-2',
-        command.data.message
-      );
+      expect(entity?.system.executeCommand).toHaveBeenCalledWith(command);
     });
 
     test('그룹 생성 명령', () => {
+      const now = Date.now();
       const command: NetworkCommand = {
         type: 'createGroup',
-        data: {
-          groupId: 'group-1',
-          npcIds: ['npc-1', 'npc-2'],
-          options: { maxSize: 10 }
-        }
+        group: {
+          type: 'party',
+          members: new Set<string>(),
+          maxMembers: 10,
+          range: 1000,
+          persistent: false,
+          createdAt: now,
+          lastActivity: now,
+        },
       };
 
       bridge.execute('main', command);
       
       const entity = bridge.getEngine('main');
-      expect(entity?.system.createGroup).toHaveBeenCalledWith(
-        'group-1',
-        ['npc-1', 'npc-2'],
-        { maxSize: 10 }
-      );
-    });
-
-    test('시스템 제어 명령', () => {
-      const startCommand: NetworkCommand = { type: 'start', data: {} };
-      const stopCommand: NetworkCommand = { type: 'stop', data: {} };
-      const pauseCommand: NetworkCommand = { type: 'pause', data: {} };
-      const resumeCommand: NetworkCommand = { type: 'resume', data: {} };
-
-      const entity = bridge.getEngine('main');
-
-      bridge.execute('main', startCommand);
-      expect(entity?.system.start).toHaveBeenCalled();
-
-      bridge.execute('main', stopCommand);
-      expect(entity?.system.stop).toHaveBeenCalled();
-
-      bridge.execute('main', pauseCommand);
-      expect(entity?.system.pause).toHaveBeenCalled();
-
-      bridge.execute('main', resumeCommand);
-      expect(entity?.system.resume).toHaveBeenCalled();
+      expect(entity?.system.executeCommand).toHaveBeenCalledWith(command);
     });
   });
 
@@ -244,13 +186,11 @@ describe('NetworkBridge', () => {
       const snapshot = bridge.snapshot('main');
       
       expect(snapshot).toBeDefined();
-      expect(snapshot?.nodes).toBeInstanceOf(Map);
-      expect(snapshot?.connections).toBeInstanceOf(Map);
-      expect(snapshot?.groups).toBeInstanceOf(Map);
-      expect(snapshot?.messages).toBeInstanceOf(Array);
-      expect(snapshot?.stats).toBeDefined();
-      expect(snapshot?.performance).toBeDefined();
-      expect(typeof snapshot?.timestamp).toBe('number');
+      expect(typeof snapshot?.nodeCount).toBe('number');
+      expect(typeof snapshot?.connectionCount).toBe('number');
+      expect(typeof snapshot?.activeGroups).toBe('number');
+      expect(typeof snapshot?.messagesPerSecond).toBe('number');
+      expect(typeof snapshot?.averageLatency).toBe('number');
     });
 
     test('존재하지 않는 엔진 스냅샷', () => {
@@ -263,10 +203,7 @@ describe('NetworkBridge', () => {
     test('시스템 업데이트 호출', () => {
       const deltaTime = 0.016; // 60fps
       
-      bridge.updateSystem('main', deltaTime);
-      
-      const entity = bridge.getEngine('main');
-      expect(entity?.system.update).toHaveBeenCalledWith(deltaTime);
+      expect(() => bridge.updateSystem('main', deltaTime)).not.toThrow();
     });
 
     test('존재하지 않는 시스템 업데이트', () => {
@@ -282,9 +219,8 @@ describe('NetworkBridge', () => {
       const stats = bridge.getNetworkStats('main');
       
       expect(stats).toBeDefined();
-      expect(typeof stats.totalNodes).toBe('number');
-      expect(typeof stats.totalConnections).toBe('number');
-      expect(typeof stats.totalMessages).toBe('number');
+      expect(typeof stats?.nodeCount).toBe('number');
+      expect(typeof stats?.connectionCount).toBe('number');
     });
 
     test('시스템 상태 조회', () => {

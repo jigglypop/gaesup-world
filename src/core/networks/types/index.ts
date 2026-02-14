@@ -30,7 +30,7 @@ export interface NetworkMessage {
   from: string;
   to: string | 'broadcast' | 'group';
   type: 'chat' | 'action' | 'state' | 'system';
-  payload: any;
+  payload: unknown;
   priority: 'low' | 'normal' | 'high' | 'critical';
   timestamp: number;
   reliability: 'unreliable' | 'reliable';
@@ -103,6 +103,8 @@ export type NetworkCommand =
   | { type: 'joinGroup'; npcId: string; groupId: string }
   | { type: 'leaveGroup'; npcId: string; groupId: string }
   | { type: 'createGroup'; group: Omit<NetworkGroup, 'id'> }
+  // Backward-compatible alias (older API used updateConfig/data.config)
+  | { type: 'updateConfig'; data: { config: Partial<NetworkConfig> } }
   | { type: 'updateSettings'; settings: Partial<NetworkConfig> }
   | { type: 'startMonitoring'; npcId: string }
   | { type: 'stopMonitoring'; npcId: string };

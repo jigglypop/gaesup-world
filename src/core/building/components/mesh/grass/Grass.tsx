@@ -121,6 +121,8 @@ const Grass: FC<GrassMeshProps> = memo(
   }
 );
 
+Grass.displayName = "Grass";
+
 function getAttributeData(instances: number, width: number) {
   const offsets = new Float32Array(instances * 3);
   const orientations = new Float32Array(instances * 4);

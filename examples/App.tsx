@@ -7,6 +7,7 @@ import './style.css';
 import { Navigation } from './components/nav/Navigation';
 import { BlueprintEditorPage } from './pages/BlueprintEditorPage';
 import { BuildingEditorPage } from './pages/BuildingEditorPage';
+import { NetworkMultiplayerPage } from './pages/NetworkMultiplayerPage';
 import { WorldPage } from './pages/World';
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/" element={<WorldPage showEditor={false} />} />
         <Route path="/building" element={<BuildingEditorPage />} />
         <Route path="/blueprints" element={<BlueprintEditorPage />} />
+        <Route path="/network" element={<NetworkMultiplayerPage />} />
         <Route
           path="/admin/*"
           element={

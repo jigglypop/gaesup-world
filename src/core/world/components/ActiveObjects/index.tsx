@@ -31,7 +31,7 @@ export function ActiveObjects({
                 key={obj.id}
                 object={obj}
                 selected={isSelected}
-                onSelect={onSelect}
+                {...(onSelect ? { onSelect } : {})}
                 showDebugInfo={showDebugInfo}
               />
             );
@@ -41,7 +41,7 @@ export function ActiveObjects({
                 key={obj.id}
                 object={obj}
                 selected={isSelected}
-                onSelect={onSelect}
+                {...(onSelect ? { onSelect } : {})}
                 showDebugInfo={showDebugInfo}
               />
             );
@@ -51,7 +51,7 @@ export function ActiveObjects({
                 key={obj.id}
                 object={obj}
                 selected={isSelected}
-                onSelect={onSelect}
+                {...(onSelect ? { onSelect } : {})}
                 showDebugInfo={showDebugInfo}
               />
             );

@@ -24,4 +24,6 @@ export const TargetMarker = memo(() => (
       />
     </mesh>
   </group>
-)); 
+));
+
+TargetMarker.displayName = 'TargetMarker';

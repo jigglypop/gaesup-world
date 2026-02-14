@@ -31,11 +31,15 @@ export class SaveLoadManager {
         version: this.version,
         timestamp: Date.now(),
         world: this.filterWorldData(worldData, options),
-        metadata: metadata ? {
-          ...metadata,
-          createdAt: metadata.createdAt || Date.now(),
-          updatedAt: Date.now()
-        } : undefined
+        ...(metadata
+          ? {
+              metadata: {
+                ...metadata,
+                createdAt: metadata.createdAt || Date.now(),
+                updatedAt: Date.now(),
+              },
+            }
+          : {}),
       };
 
       if (options.compress) {
@@ -169,7 +173,7 @@ export class SaveLoadManager {
             saves.push({
               id: saveId,
               timestamp: data.timestamp,
-              metadata: data.metadata
+              ...(data.metadata ? { metadata: data.metadata } : {}),
             });
           }
         } catch (error) {

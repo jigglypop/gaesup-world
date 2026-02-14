@@ -11,18 +11,10 @@ export interface UseInteractionSystemResult {
   dispatchInput: (updates: Partial<MouseState>) => void;
 }
 
-let globalBridge: InteractionBridge | null = null;
-function getGlobalBridge(): InteractionBridge {
-  if (!globalBridge) {
-    globalBridge = new InteractionBridge();
-  }
-  return globalBridge;
-}
-
 export function useInteractionSystem(): UseInteractionSystemResult {
   const bridgeRef = useRef<InteractionBridge | null>(null);
   const [state, setState] = useState<{ keyboard: KeyboardState; mouse: MouseState }>(() => {
-    const bridge = getGlobalBridge();
+    const bridge = InteractionBridge.getGlobal();
     return {
       keyboard: bridge.getKeyboardState(),
       mouse: bridge.getMouseState()
@@ -30,7 +22,7 @@ export function useInteractionSystem(): UseInteractionSystemResult {
   });
   
   if (!bridgeRef.current) {
-    bridgeRef.current = getGlobalBridge();
+    bridgeRef.current = InteractionBridge.getGlobal();
   }
   
   useEffect(() => {

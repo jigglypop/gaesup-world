@@ -89,7 +89,7 @@ export function useNetworkStats(options: UseNetworkStatsOptions = {}): UseNetwor
 
     const snapshot = getSnapshot();
     const networkStats = getNetworkStats();
-    const systemState = getSystemState() as any;
+    const systemState = getSystemState();
     
     if (!snapshot || !networkStats) return null;
 
@@ -114,11 +114,11 @@ export function useNetworkStats(options: UseNetworkStatsOptions = {}): UseNetwor
     };
 
     // 그룹 통계
-    const groups = systemState?.groups ? Array.from(systemState.groups.values()) : [];
-    const totalGroups = systemState?.groups ? systemState.groups.size : snapshot.activeGroups;
+    const groups = systemState ? Array.from(systemState.groups.values()) : [];
+    const totalGroups = systemState ? systemState.groups.size : snapshot.activeGroups;
     const activeGroups = totalGroups;
     const averageGroupSize = totalGroups > 0
-      ? groups.reduce((sum: number, group: any) => sum + (group.members?.size ?? 0), 0) / totalGroups
+      ? groups.reduce((sum, group) => sum + group.members.size, 0) / totalGroups
       : 0;
 
     return {

@@ -2,6 +2,7 @@ import { Node, Edge, MarkerType } from 'reactflow';
 
 import { BlueprintItem, BlueprintType } from './types';
 import { AnyBlueprint, CharacterBlueprint, VehicleBlueprint, AirplaneBlueprint } from '../../../types';
+import { NodeFieldValue } from '../../editor/EditableNode/types';
 
 // Edge style constants
 const EDGE_STYLE = {
@@ -27,8 +28,6 @@ export const convertBlueprintToItem = (blueprint: AnyBlueprint): BlueprintItem =
     lastModified: new Date().toISOString().split('T')[0] ?? '',
   };
 };
-
-import { NodeFieldValue } from '../../editor/EditableNode/types';
 
 export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?: (nodeId: string, field: string, value: NodeFieldValue) => void, onNodeDelete?: (nodeId: string) => void): { nodes: Node[], edges: Edge[] } => {
   const nodes: Node[] = [];

@@ -54,7 +54,7 @@ export function AnimationDebugPanel() {
     return unsubscribe;
   }, [bridge, currentType]);
 
-  const formatValue = (value: any, format: string, precision: number = 2): string => {
+  const formatValue = (value: unknown, format: string, precision: number = 2): string => {
     if (value === null || value === undefined) return 'N/A';
     
     switch (format) {
@@ -69,8 +69,8 @@ export function AnimationDebugPanel() {
     }
   };
 
-  const getValue = (key: string): any => {
-    return (metrics as any)[key];
+  const getValue = (key: string): unknown => {
+    return (metrics as unknown as Record<string, unknown>)[key];
   };
 
   return (

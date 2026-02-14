@@ -48,6 +48,9 @@ export function useManagedEntity<
     }
 
     return () => {
+      if (onDispose) {
+        onDispose(managedEntity);
+      }
       managedEntity.dispose();
       entityRef.current = null;
       setEntity(null);

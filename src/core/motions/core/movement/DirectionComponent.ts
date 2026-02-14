@@ -1,8 +1,8 @@
-import { RefObject } from 'react';
 
 import * as THREE from 'three';
 
 import { Profile, HandleError } from '@/core/boilerplate/decorators';
+import type { RefObject } from '@core/boilerplate';
 import { PhysicsConfigType } from '@stores/slices';
 import { ModeType } from '@stores/slices/mode/types';
 import {

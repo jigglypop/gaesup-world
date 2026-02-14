@@ -1,20 +1,20 @@
 import { useRef, useEffect, useCallback } from 'react';
 
-import { InteractionSystem } from '@core/interactions/core/InteractionSystem';
 import { useFrame, RootState } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { BridgeFactory } from '@core/boilerplate';
+import { InteractionSystem } from '@core/interactions/core/InteractionSystem';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { StoreState } from '@stores/types';
 
 import { updateInputState } from '../bridge';
 import { PhysicsBridge } from '../bridge/PhysicsBridge';
-import { PhysicsCalculationProps, PhysicsInputState, PhysicsState } from '../types';
 import { createInitialPhysicsState } from './state/physicsStateFactory';
 import { useStateSystem } from './useStateSystem';
 import { getGlobalStateManager } from './useStateSystem';
 import { EntityStateManager } from '../core/system/EntityStateManager';
+import { PhysicsCalculationProps, PhysicsInputState, PhysicsState } from '../types';
 import { PhysicsCalcProps } from '../types';
 
 

@@ -3,11 +3,11 @@ import { useRef, RefObject } from 'react';
 import type { RapierCollider, RapierRigidBody } from '@react-three/rapier';
 import type { Group } from 'three';
 
+import type { GroundRay } from '@core/motions/entities/types';
 import { useAnimationSetup } from '@core/motions/hooks/setup/useAnimationSetup';
 import { useMotionSetup } from '@core/motions/hooks/setup/useMotionSetup';
 import { usePhysicsBridge } from '@core/motions/hooks/usePhysicsBridge';
 import type { PhysicsCalculationProps } from '@core/motions/types';
-import type { GroundRay } from '@core/motions/entities/types';
 import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
 import { useGaesupStore } from '@stores/gaesupStore';
 

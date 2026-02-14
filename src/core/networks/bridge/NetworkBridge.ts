@@ -1,7 +1,7 @@
 import { CoreBridge, DomainBridge, EnableMetrics, ValidateCommand, LogSnapshot, CacheSnapshot } from '@core/boilerplate';
 
 import { NetworkSystem } from '../core/NetworkSystem';
-import { NetworkSnapshot, NetworkCommand, NetworkConfig } from '../types';
+import { NetworkSnapshot, NetworkCommand, NetworkConfig, NetworkSystemState } from '../types';
 
 export interface NetworkBridgeEntity {
   system: NetworkSystem;
@@ -132,7 +132,7 @@ export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapsh
   /**
    * 네트워크 통계 조회
    */
-  getNetworkStats(id: string = 'main'): any {
+  getNetworkStats(id: string = 'main'): ReturnType<NetworkSystem['getDebugInfo']>['networkStats'] | null {
     const entity = this.getEngine(id);
     if (!entity) return null;
     
@@ -142,7 +142,7 @@ export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapsh
   /**
    * 시스템 상태 조회
    */
-  getSystemState(id: string = 'main'): any {
+  getSystemState(id: string = 'main'): NetworkSystemState | null {
     const entity = this.getEngine(id);
     if (!entity) return null;
     

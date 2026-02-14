@@ -45,8 +45,11 @@ export class GaesupErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoun
   }
 
   private reportError(error: Error, errorInfo: ErrorInfo) {
-    if (typeof window !== 'undefined' && (window as any).Sentry) {
-      (window as any).Sentry.captureException(error, {
+    const w = window as unknown as {
+      Sentry?: { captureException: (err: Error, context?: unknown) => void };
+    };
+    if (typeof window !== 'undefined' && w.Sentry) {
+      w.Sentry.captureException(error, {
         contexts: {
           react: {
             componentStack: errorInfo.componentStack,

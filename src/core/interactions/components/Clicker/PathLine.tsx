@@ -19,4 +19,6 @@ export const PathLine = memo(({ points, color }: PathLineProps) => {
       dashed={false}
     />
   );
-}); 
+});
+
+PathLine.displayName = 'PathLine';

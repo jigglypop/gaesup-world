@@ -14,7 +14,7 @@ interface InteractionSystemMetrics extends BaseMetrics, InteractionMetrics {}
 export class InteractionSystem extends AbstractSystem<InteractionSystemState, InteractionSystemMetrics> {
   private static instance: InteractionSystem | null = null;
   private config: InteractionConfig;
-  private eventCallbacks: Map<string, Function[]>;
+  private eventCallbacks: Map<string, Array<(data: unknown) => void>>;
 
   // public으로 변경
   public constructor() {
@@ -106,14 +106,14 @@ export class InteractionSystem extends AbstractSystem<InteractionSystemState, In
   
   // getState, getMetrics는 AbstractSystem에 이미 있으므로 제거
 
-  addEventListener(event: string, callback: Function): void {
+  addEventListener(event: string, callback: (data: unknown) => void): void {
     if (!this.eventCallbacks.has(event)) {
       this.eventCallbacks.set(event, []);
     }
     this.eventCallbacks.get(event)!.push(callback);
   }
 
-  removeEventListener(event: string, callback: Function): void {
+  removeEventListener(event: string, callback: (data: unknown) => void): void {
     const callbacks = this.eventCallbacks.get(event);
     if (callbacks) {
       const index = callbacks.indexOf(callback);

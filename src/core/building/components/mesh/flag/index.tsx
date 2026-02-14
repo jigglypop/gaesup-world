@@ -23,7 +23,7 @@ const FlagMaterial = shaderMaterial(
 extend({ FlagMaterial });
 
 export const FlagMesh: FC<FlagMeshProps> = ({ geometry, pamplet_url, ...meshProps }) => {
-  const materialRef = useRef<any>(null);
+  const materialRef = useRef<THREE.Material>(null!);
 
   const texture = useTexture(
     pamplet_url || `./image/main/aggjack.webp`,
@@ -33,9 +33,8 @@ export const FlagMesh: FC<FlagMeshProps> = ({ geometry, pamplet_url, ...meshProp
   );
 
   useFrame((state) => {
-    if (materialRef.current) {
-      materialRef.current.time = state.clock.elapsedTime * 5;
-    }
+    const material = materialRef.current as unknown as { time: number };
+    material.time = state.clock.elapsedTime * 5;
   });
 
   // 컴포넌트 언마운트 시 리소스 해제

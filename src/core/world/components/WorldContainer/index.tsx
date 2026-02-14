@@ -37,7 +37,22 @@ export function WorldContainer(props: WorldContainerProps) {
   const urlUpdates = useMemo(() => {
     if (!props.urls) return null;
     const entries = Object.entries(props.urls).filter(([, value]) => value !== undefined);
-    return entries.length > 0 ? Object.fromEntries(entries) : null;
+    if (entries.length === 0) return null;
+
+    const raw = Object.fromEntries(entries) as Record<string, unknown>;
+    const mapped: Record<string, unknown> = { ...raw };
+
+    // Map legacy keys -> store keys
+    if (typeof raw['character'] === 'string' && !raw['characterUrl']) mapped['characterUrl'] = raw['character'];
+    if (typeof raw['vehicle'] === 'string' && !raw['vehicleUrl']) mapped['vehicleUrl'] = raw['vehicle'];
+    if (typeof raw['airplane'] === 'string' && !raw['airplaneUrl']) mapped['airplaneUrl'] = raw['airplane'];
+
+    // Do not keep legacy keys to avoid confusing consumers of `urls` state
+    delete mapped['character'];
+    delete mapped['vehicle'];
+    delete mapped['airplane'];
+
+    return mapped;
   }, [props.urls]);
   
   useEffect(() => {
@@ -63,7 +78,7 @@ export function GaesupWorldContent({ children, showGrid, showAxes }: {
   return (
     <Suspense fallback={null}>
       <Camera/>
-      <WorldContent showGrid={showGrid} showAxes={showAxes}>
+      <WorldContent showGrid={showGrid ?? false} showAxes={showAxes ?? false}>
         {children}
       </WorldContent>
     </Suspense>

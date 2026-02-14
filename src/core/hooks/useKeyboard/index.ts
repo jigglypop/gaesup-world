@@ -18,15 +18,6 @@ const KEY_MAPPING: Record<string, string> = {
   Escape: 'escape',
 };
 
-let globalBridge: InteractionBridge | null = null;
-
-function getGlobalBridge(): InteractionBridge {
-  if (!globalBridge) {
-    globalBridge = new InteractionBridge();
-  }
-  return globalBridge;
-}
-
 export const useKeyboard = (
   enableDiagonal = true,
   enableClicker = true,
@@ -39,7 +30,7 @@ export const useKeyboard = (
   const bridgeRef = useRef<InteractionBridge | null>(null);
   
   if (!bridgeRef.current) {
-    bridgeRef.current = getGlobalBridge();
+    bridgeRef.current = InteractionBridge.getGlobal();
   }
   
   const pressedKeys = useRef<Set<string>>(new Set());

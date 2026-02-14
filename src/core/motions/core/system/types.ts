@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 
 import { BaseState, BaseMetrics, SystemOptions } from '@core/boilerplate';
+import { GameStatesType } from '@core/world/components/Rideable/types';
+
+import { ActiveStateType } from '../types';
 
 export type MotionType = 'character' | 'vehicle' | 'airplane';
 
@@ -40,14 +43,9 @@ export interface PhysicsSystemMetrics extends BaseMetrics {
   dampingChanges: number;
 }
 
-export interface PhysicsSystemOptions extends SystemOptions {
-}
+export type PhysicsSystemOptions = SystemOptions;
 
 export interface EntityStateRefs {
   activeState: ActiveStateType;
   gameStates: GameStatesType;
 }
-
-import { GameStatesType } from '@core/world/components/Rideable/types';
-
-import { ActiveStateType } from '../types';

@@ -45,6 +45,17 @@ export function Rideable(props: RideablePropType) {
     initRideable(props);
   }, [props, initRideable]);
 
+  const { controllerOptions: rawControllerOptions, ...passiveProps } = props;
+  const controllerOptions =
+    rawControllerOptions?.lerp
+      ? {
+          lerp: {
+            cameraTurn: rawControllerOptions.lerp.cameraTurn ?? 1,
+            cameraPosition: rawControllerOptions.lerp.cameraPosition ?? 1,
+          },
+        }
+      : undefined;
+
   const userData = {
     objectType: props.objectType,
     objectkey: props.objectkey,
@@ -62,7 +73,8 @@ export function Rideable(props: RideablePropType) {
     <>
       {props.objectType === 'vehicle' && (
         <PassiveVehicle
-          {...props}
+          {...passiveProps}
+          {...(controllerOptions ? { controllerOptions } : {})}
           userData={userData}
           sensor={true}
           visible={!rideable[props.objectkey]?.isOccupied}
@@ -70,7 +82,8 @@ export function Rideable(props: RideablePropType) {
       )}
       {props.objectType === 'airplane' && (
         <PassiveAirplane
-          {...props}
+          {...passiveProps}
+          {...(controllerOptions ? { controllerOptions } : {})}
           userData={userData}
           sensor={true}
           visible={!rideable[props.objectkey]?.isOccupied}

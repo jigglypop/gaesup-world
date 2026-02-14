@@ -14,6 +14,7 @@ import { MotionCommand, MotionEntity, MotionSnapshot } from './types';
 export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, MotionCommand> {
 
   protected buildEngine(_: string, type: MotionType, rigidBody: RapierRigidBody): MotionEntity | null {
+    void _;
     if (!type || !rigidBody) return null;
     const system = new MotionSystem({ type });
     DIContainer.getInstance().injectProperties(system);
@@ -27,6 +28,7 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
 
   @ValidateCommand()
   protected executeCommand(entity: MotionEntity, command: MotionCommand, _: string): void {
+    void _;
     const { system, rigidBody } = entity;
     switch (command.type) {
       case 'move':
@@ -55,6 +57,7 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
   @LogSnapshot()
   @CacheSnapshot(16) // 60fps 캐싱
   protected createSnapshot(entity: MotionEntity, _: string): MotionSnapshot {
+    void _;
     const { system, rigidBody, type } = entity;
     const translation = rigidBody.translation();
     const velocity = rigidBody.linvel();

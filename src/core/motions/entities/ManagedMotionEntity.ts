@@ -2,6 +2,7 @@ import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { BridgeFactory } from '@core/boilerplate';
+
 import { MotionBridge } from '../bridge/MotionBridge';
 import { MotionCommand, MotionSnapshot, MotionConfig } from '../bridge/types';
 import { MotionType } from '../core/system/types';

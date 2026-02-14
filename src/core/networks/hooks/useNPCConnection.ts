@@ -6,7 +6,7 @@ import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
 
 export interface NPCConnectionOptions {
   position: Vector3;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   autoConnect?: boolean;
   connectionRange?: number;
 }

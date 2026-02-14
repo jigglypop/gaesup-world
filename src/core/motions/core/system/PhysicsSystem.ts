@@ -1,9 +1,9 @@
-import { RefObject } from 'react';
 
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { PhysicsConfigType } from '@/core/stores/slices/physics/types';
+import type { RefObject } from '@core/boilerplate';
 import { AbstractSystem, SystemUpdateArgs } from '@core/boilerplate';
 import { Profile, HandleError, ManageRuntime } from '@core/boilerplate';
 import { GameStatesType } from '@core/world/components/Rideable/types';
@@ -11,9 +11,9 @@ import { GameStatesType } from '@core/world/components/Rideable/types';
 import { AnimationController } from '../../controller/AnimationController';
 import { GravityComponent } from '../forces';
 import { PhysicsSystemState, PhysicsSystemMetrics, PhysicsSystemOptions } from './types';
+import type { PhysicsCalcProps, PhysicsState } from '../../types';
 import { ForceComponent } from '../forces/ForceComponent';
 import { DirectionComponent, ImpulseComponent } from '../movement';
-import type { PhysicsCalcProps, PhysicsState } from '../../types';
 
 const defaultState: PhysicsSystemState = {
   isJumping: false,

@@ -174,7 +174,7 @@ describe('Application Constants', () => {
     });
 
     test('should have valid update intervals', () => {
-      expect(GAME_CONSTANTS.UPDATE_INTERVAL).toBe(16);
+      expect(GAME_CONSTANTS.UPDATE_INTERVAL).toBeCloseTo(1000 / 60, 2);
       expect(GAME_CONSTANTS.SAVE_INTERVAL).toBe(60000);
       
       expect(GAME_CONSTANTS.UPDATE_INTERVAL).toBeGreaterThan(0);

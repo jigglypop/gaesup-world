@@ -1,9 +1,10 @@
-import { NetworkSystemState, NetworkConfig, NetworkCommand, NetworkSnapshot } from '../types';
 import * as THREE from 'three';
+
+import { NetworkSystemState, NetworkConfig, NetworkCommand, NetworkSnapshot } from '../types';
 import { ConnectionPool } from './ConnectionPool';
 import { MessageQueue } from './MessageQueue';
 import { NPCNetworkManager } from './NPCNetworkManager';
-import { PerformanceMetrics } from './types';
+import { PerformanceMetrics, NetworkEvent } from './types';
 
 export class NetworkSystem {
   private state: NetworkSystemState;
@@ -12,6 +13,7 @@ export class NetworkSystem {
   private connectionPool: ConnectionPool;
   private config: NetworkConfig;
   private lastUpdate: number = 0;
+  private lastCleanupTime: number = 0;
   private updateTimer: NodeJS.Timeout | undefined;
 
   constructor(config: NetworkConfig) {
@@ -39,8 +41,6 @@ export class NetworkSystem {
       isRunning: false,
       lastUpdate: Date.now()
     };
-
-    this.startUpdateLoop();
   }
 
   // 시스템 시작
@@ -48,6 +48,9 @@ export class NetworkSystem {
     if (this.state.isRunning) return;
     
     this.state.isRunning = true;
+    const now = Date.now();
+    this.lastUpdate = now;
+    this.lastCleanupTime = now;
     this.startUpdateLoop();
   }
 
@@ -90,8 +93,9 @@ export class NetworkSystem {
     this.npcManager.updateProximityGroups();
 
     // 비활성 연결 정리
-    if (now % this.config.connectionTimeout === 0) {
+    if (now - this.lastCleanupTime >= this.config.connectionTimeout) {
       this.connectionPool.cleanupInactiveConnections(this.config.connectionTimeout);
+      this.lastCleanupTime = now;
     }
 
     // 통계 업데이트
@@ -217,6 +221,10 @@ export class NetworkSystem {
           this.updateConfig(command.settings);
           return true;
 
+        case 'updateConfig':
+          this.updateConfig(command.data.config);
+          return true;
+
         case 'startMonitoring':
           // 모니터링 시작 로직
           return true;
@@ -269,7 +277,10 @@ export class NetworkSystem {
     }
 
     if (partialConfig.updateFrequency) {
-      this.startUpdateLoop(); // 업데이트 주기 변경
+      // 업데이트 주기 변경: 실행 중일 때만 interval 재시작
+      if (this.state.isRunning) {
+        this.startUpdateLoop();
+      }
     }
   }
 
@@ -320,13 +331,13 @@ export class NetworkSystem {
   }
 
   // 이벤트 리스너 등록
-  addEventListener(eventType: string, callback: (event: any) => void): void {
-    this.npcManager.addEventListener(eventType as any, callback);
+  addEventListener(eventType: NetworkEvent['type'], callback: (event: NetworkEvent) => void): void {
+    this.npcManager.addEventListener(eventType, callback);
   }
 
   // 이벤트 리스너 제거
-  removeEventListener(eventType: string, callback: (event: any) => void): void {
-    this.npcManager.removeEventListener(eventType as any, callback);
+  removeEventListener(eventType: NetworkEvent['type'], callback: (event: NetworkEvent) => void): void {
+    this.npcManager.removeEventListener(eventType, callback);
   }
 
   // 디버그 정보

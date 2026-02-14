@@ -1,8 +1,9 @@
 import { useEffect, useMemo } from 'react';
 
+import type { AnimationAction } from 'three';
+
 import { useInteractionSystem } from '@/core/motions/hooks/useInteractionSystem';
 import { useGaesupStore } from '@stores/gaesupStore';
-import type { AnimationAction } from 'three';
 
 import { useAnimationBridge } from '../../animation/hooks/useAnimationBridge';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';

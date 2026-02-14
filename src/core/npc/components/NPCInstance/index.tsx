@@ -13,6 +13,12 @@ import { useNPCStore } from '../../stores/npcStore';
 import { NPCPart } from '../../types';
 import './styles.css';
 
+type PointerHandlers = {
+  pointerover?: () => void;
+  click?: () => void;
+};
+type GroupWithHandlers = THREE.Group & { __handlers?: PointerHandlers };
+
 function NPCPartMesh({ part, instanceId }: NPCPartMeshProps) {
   void instanceId;
   const hasUrl = part.url && part.url.trim() !== '';
@@ -53,7 +59,7 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
   const handlePointerEnter = useCallback((e: React.PointerEvent) => {
     e.stopPropagation();
     document.body.style.cursor = 'pointer';
-    const handlers = (groupRef.current as any)?.__handlers;
+    const handlers = (groupRef.current as unknown as GroupWithHandlers | null)?.__handlers;
     if (handlers?.pointerover) handlers.pointerover();
   }, []);
   
@@ -110,7 +116,7 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
       }
     };
     
-    const meshElement = mesh as any;
+    const meshElement = mesh as unknown as GroupWithHandlers;
     meshElement.__handlers = {
       pointerover: handlePointerOver,
       click: handleClick

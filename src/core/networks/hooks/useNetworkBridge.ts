@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 
 import { useFrame } from '@react-three/fiber';
 
@@ -17,8 +17,8 @@ export interface UseNetworkBridgeResult {
   bridge: NetworkBridge | null;
   executeCommand: (command: NetworkCommand) => void;
   getSnapshot: () => NetworkSnapshot | null;
-  getNetworkStats: () => any;
-  getSystemState: () => any;
+  getNetworkStats: () => ReturnType<NetworkBridge['getNetworkStats']>;
+  getSystemState: () => ReturnType<NetworkBridge['getSystemState']>;
   updateSystem: (deltaTime: number) => void;
   isReady: boolean;
 }
@@ -34,7 +34,8 @@ export function useNetworkBridge(options: UseNetworkBridgeOptions = {}): UseNetw
   } = options;
 
   const bridgeRef = useRef<NetworkBridge | null>(null);
-  const isReadyRef = useRef<boolean>(false);
+  const [bridge, setBridge] = useState<NetworkBridge | null>(null);
+  const [isReady, setIsReady] = useState<boolean>(false);
 
   // Bridge 인스턴스 초기화
   useEffect(() => {
@@ -49,11 +50,12 @@ export function useNetworkBridge(options: UseNetworkBridgeOptions = {}): UseNetw
         // 설정이 제공된 경우 시스템에 적용
         if (config) {
           bridgeRef.current.execute(systemId, {
-            type: 'updateSettings',
-            settings: config
+            type: 'updateConfig',
+            data: { config }
           });
         }
-        isReadyRef.current = true;
+        setBridge(bridgeRef.current);
+        setIsReady(true);
       }
     }
 
@@ -64,51 +66,51 @@ export function useNetworkBridge(options: UseNetworkBridgeOptions = {}): UseNetw
 
   // 자동 업데이트 (매 프레임)
   useFrame((_, deltaTime) => {
-    if (enableAutoUpdate && bridgeRef.current && isReadyRef.current) {
+    if (enableAutoUpdate && bridgeRef.current && isReady) {
       bridgeRef.current.updateSystem(systemId, deltaTime);
     }
   });
 
   const executeCommand = useCallback((command: NetworkCommand) => {
-    if (bridgeRef.current && isReadyRef.current) {
+    if (bridgeRef.current && isReady) {
       bridgeRef.current.execute(systemId, command);
     }
-  }, [systemId]);
+  }, [systemId, isReady]);
 
   const getSnapshot = useCallback((): NetworkSnapshot | null => {
-    if (bridgeRef.current && isReadyRef.current) {
+    if (bridgeRef.current && isReady) {
       return bridgeRef.current.snapshot(systemId);
     }
     return null;
-  }, [systemId]);
+  }, [systemId, isReady]);
 
   const getNetworkStats = useCallback(() => {
-    if (bridgeRef.current && isReadyRef.current) {
+    if (bridgeRef.current && isReady) {
       return bridgeRef.current.getNetworkStats(systemId);
     }
     return null;
-  }, [systemId]);
+  }, [systemId, isReady]);
 
   const getSystemState = useCallback(() => {
-    if (bridgeRef.current && isReadyRef.current) {
+    if (bridgeRef.current && isReady) {
       return bridgeRef.current.getSystemState(systemId);
     }
     return null;
-  }, [systemId]);
+  }, [systemId, isReady]);
 
   const updateSystem = useCallback((deltaTime: number) => {
-    if (bridgeRef.current && isReadyRef.current) {
+    if (bridgeRef.current && isReady) {
       bridgeRef.current.updateSystem(systemId, deltaTime);
     }
-  }, [systemId]);
+  }, [systemId, isReady]);
 
   return {
-    bridge: bridgeRef.current,
+    bridge,
     executeCommand,
     getSnapshot,
     getNetworkStats,
     getSystemState,
     updateSystem,
-    isReady: isReadyRef.current
+    isReady
   };
 } 

@@ -11,7 +11,7 @@ export interface SystemContext {
   frameCount: number;
 }
 
-export interface BaseSystem<TState = any, TMetrics = any> {
+export interface BaseSystem<TState = unknown, TMetrics = unknown> {
   /**
    * 시스템 고유 ID
    */

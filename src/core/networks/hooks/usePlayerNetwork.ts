@@ -38,26 +38,21 @@ export function usePlayerNetwork(defaultOptions: UsePlayerNetworkOptions): UsePl
       playerName: options.playerName,
       playerColor: options.playerColor,
       onConnect: () => {
-        console.log('[usePlayerNetwork] 연결 성공');
         setIsConnected(true);
         setError(undefined);
       },
       onDisconnect: () => {
-        console.log('[usePlayerNetwork] 연결 종료');
         setIsConnected(false);
         setPlayers(new Map());
       },
       onPlayerJoin: (playerId, state) => {
-        console.log('[usePlayerNetwork] 플레이어 추가:', playerId, state);
         setPlayers(prev => {
           const newPlayers = new Map(prev);
           newPlayers.set(playerId, state);
-          console.log('[usePlayerNetwork] 업데이트된 플레이어 맵:', newPlayers);
           return newPlayers;
         });
       },
       onPlayerUpdate: (playerId, state) => {
-        console.log('[usePlayerNetwork] 플레이어 업데이트:', playerId, state);
         setPlayers(prev => {
           const newPlayers = new Map(prev);
           newPlayers.set(playerId, state);
@@ -65,7 +60,6 @@ export function usePlayerNetwork(defaultOptions: UsePlayerNetworkOptions): UsePl
         });
       },
       onPlayerLeave: (playerId) => {
-        console.log('[usePlayerNetwork] 플레이어 떠남:', playerId);
         setPlayers(prev => {
           const newPlayers = new Map(prev);
           newPlayers.delete(playerId);
@@ -73,7 +67,6 @@ export function usePlayerNetwork(defaultOptions: UsePlayerNetworkOptions): UsePl
         });
       },
       onError: (err) => {
-        console.error('[usePlayerNetwork] 에러:', err);
         setError(err);
       }
     });
@@ -98,16 +91,13 @@ export function usePlayerNetwork(defaultOptions: UsePlayerNetworkOptions): UsePl
   useEffect(() => {
     managerRef.current?.setCallbacks({
       onPlayerJoin: (playerId, state) => {
-        console.log('[usePlayerNetwork] 플레이어 추가:', playerId, state);
         setPlayers(prev => {
           const newPlayers = new Map(prev);
           newPlayers.set(playerId, state);
-          console.log('[usePlayerNetwork] 업데이트된 플레이어 맵:', newPlayers);
           return newPlayers;
         });
       },
       onPlayerUpdate: (playerId, state) => {
-        console.log('[usePlayerNetwork] 플레이어 업데이트:', playerId, state);
         setPlayers(prev => {
           const newPlayers = new Map(prev);
           newPlayers.set(playerId, state);
@@ -115,7 +105,6 @@ export function usePlayerNetwork(defaultOptions: UsePlayerNetworkOptions): UsePl
         });
       },
       onPlayerLeave: (playerId) => {
-        console.log('[usePlayerNetwork] 플레이어 떠남:', playerId);
         setPlayers(prev => {
           const newPlayers = new Map(prev);
           newPlayers.delete(playerId);

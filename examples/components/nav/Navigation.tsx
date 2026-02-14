@@ -16,6 +16,9 @@ export const Navigation = () => {
       <a href="/" className="app-nav-button">
         Home
       </a>
+      <a href="/network" className="app-nav-button">
+        Multiplayer
+      </a>
       {isLoggedIn ? (
         <>
           <a href="/building" className="app-nav-button">

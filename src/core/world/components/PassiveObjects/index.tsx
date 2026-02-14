@@ -14,10 +14,13 @@ const PassiveObjectInstance = memo(function PassiveObjectInstance({
   isSelected,
   onSelect,
   showDebugInfo = false,
-  enableInteraction = true
+  enableInteraction = true,
 }: PassiveObjectInstanceProps) {
   const refs = useGenericRefs();
   
+  const modelUrlValue = object.metadata?.['modelUrl'];
+  const modelUrl = typeof modelUrlValue === 'string' ? modelUrlValue : undefined;
+
   const handleClick = useCallback(() => {
     if (enableInteraction && object.interactable && onSelect) {
       onSelect(object.id);
@@ -35,10 +38,10 @@ const PassiveObjectInstance = memo(function PassiveObjectInstance({
     document.body.style.cursor = 'default';
   }, []);
   
-  if (object.metadata?.modelUrl) {
+  if (modelUrl) {
     return (
       <PhysicsEntity
-        url={object.metadata.modelUrl}
+        url={modelUrl}
         isActive={false}
         componentType={object.type}
         name={`passive-${object.type}-${object.id}`}
@@ -54,9 +57,9 @@ const PassiveObjectInstance = memo(function PassiveObjectInstance({
           type: 'passive',
           subType: object.type,
           interactable: object.interactable,
-          onNear: object.metadata?.onNear,
-          onLeave: object.metadata?.onLeave,
-          onInteract: object.metadata?.onInteract
+          onNear: object.metadata?.['onNear'],
+          onLeave: object.metadata?.['onLeave'],
+          onInteract: object.metadata?.['onInteract'],
         }}
         onCollisionEnter={() => {
           if (enableInteraction && object.interactable && onSelect) {
@@ -98,7 +101,7 @@ export function PassiveObjects({
   selectedId, 
   onSelect, 
   showDebugInfo = false,
-  enableInteraction = true
+  enableInteraction = true,
 }: PassiveObjectProps) {
   const objectElements = useMemo(() => 
     objects.map((obj) => (
@@ -106,7 +109,7 @@ export function PassiveObjects({
         key={obj.id}
         object={obj}
         isSelected={obj.id === selectedId}
-        onSelect={onSelect}
+        {...(onSelect ? { onSelect } : {})}
         showDebugInfo={showDebugInfo}
         enableInteraction={enableInteraction}
       />

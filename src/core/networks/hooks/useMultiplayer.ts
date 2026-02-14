@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback, type RefObject } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import type { RapierRigidBody } from '@react-three/rapier';
+
+import { useGaesupStore } from '@stores/gaesupStore';
 
 import { PlayerNetworkManager } from '../core/PlayerNetworkManager';
 import { PlayerPositionTracker, PlayerTrackingConfig } from '../core/PlayerPositionTracker';
@@ -14,6 +15,7 @@ import {
 interface UseMultiplayerOptions {
   config: MultiplayerConfig;
   characterUrl?: string;
+  rigidBodyRef?: RefObject<RapierRigidBody>;
 }
 
 interface UseMultiplayerResult extends MultiplayerState {
@@ -22,10 +24,15 @@ interface UseMultiplayerResult extends MultiplayerState {
   startTracking: (playerRef: RefObject<RapierRigidBody>) => void;
   stopTracking: () => void;
   updateConfig: (config: Partial<MultiplayerConfig>) => void;
+  sendChat: (text: string, options?: { range?: number; ttlMs?: number }) => void;
+  speechByPlayerId: Map<string, string>;
+  localSpeechText: string | null;
 }
 
 export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerResult {
-  const { config, characterUrl } = options;
+  const { config, characterUrl, rigidBodyRef } = options;
+  const modeType = useGaesupStore((s) => s.mode?.type ?? 'character');
+  const animationState = useGaesupStore((s) => s.animationState);
   
   // 상태 관리
   const [state, setState] = useState<MultiplayerState>({
@@ -50,6 +57,37 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
   const positionTrackerRef = useRef<PlayerPositionTracker | null>(null);
   const trackingPlayerRef = useRef<RefObject<RapierRigidBody> | null>(null);
   const configRef = useRef<MultiplayerConfig>(config);
+  const stateRef = useRef<MultiplayerState>(state);
+  const modeTypeRef = useRef(modeType);
+  const animationStateRef = useRef(animationState);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  useEffect(() => {
+    modeTypeRef.current = modeType;
+  }, [modeType]);
+
+  useEffect(() => {
+    animationStateRef.current = animationState;
+  }, [animationState]);
+
+  const [speechByPlayerId, setSpeechByPlayerId] = useState<Map<string, { text: string; expiresAt: number }>>(
+    () => new Map()
+  );
+  const speechRef = useRef<Map<string, { text: string; expiresAt: number }>>(new Map());
+
+  useEffect(() => {
+    speechRef.current = speechByPlayerId;
+  }, [speechByPlayerId]);
+
+  // 외부에서 rigidBodyRef를 준 경우 자동 트래킹
+  useEffect(() => {
+    if (rigidBodyRef) {
+      trackingPlayerRef.current = rigidBodyRef;
+    }
+  }, [rigidBodyRef]);
 
   // 위치 추적 초기화
   useEffect(() => {
@@ -86,12 +124,21 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
       roomId: connectionOptions.roomId,
       playerName: connectionOptions.playerName,
       playerColor: connectionOptions.playerColor,
+      logLevel: config.logLevel,
+      logToConsole: config.logToConsole,
       onConnect: () => {
         setState(prev => ({
           ...prev,
           isConnected: true,
           connectionStatus: 'connected',
           error: null,
+          lastUpdate: Date.now()
+        }));
+      },
+      onWelcome: (localPlayerId) => {
+        setState(prev => ({
+          ...prev,
+          localPlayerId,
           lastUpdate: Date.now()
         }));
       },
@@ -138,6 +185,15 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
           };
         });
       },
+      onChat: (playerId, text, timestamp) => {
+        void timestamp;
+        const ttl = 2500;
+        setSpeechByPlayerId((prev) => {
+          const next = new Map(prev);
+          next.set(playerId, { text, expiresAt: Date.now() + ttl });
+          return next;
+        });
+      },
       onError: (error) => {
         setState(prev => ({
           ...prev,
@@ -157,6 +213,7 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
     networkManagerRef.current?.disconnect();
     positionTrackerRef.current?.reset();
     trackingPlayerRef.current = null;
+    setSpeechByPlayerId(new Map());
     
     setState(prev => ({
       ...prev,
@@ -189,31 +246,71 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
     }
   }, []);
 
-  // 위치 추적 및 네트워크 업데이트 (useFrame)
-  useFrame(() => {
-    if (!state.isConnected || 
-        !networkManagerRef.current || 
-        !positionTrackerRef.current || 
-        !trackingPlayerRef.current?.current) {
-      return;
-    }
+  const sendChat = useCallback((text: string, options?: { range?: number; ttlMs?: number }) => {
+    const manager = networkManagerRef.current;
+    if (!manager) return;
 
-    // 연결 정보가 없으면 종료
-    if (!connectionInfoRef.current) return;
+    const range = options?.range ?? configRef.current.proximityRange;
+    manager.sendChat(text, { range });
 
-    const { playerName, playerColor } = connectionInfoRef.current;
-    
-    const updateData = positionTrackerRef.current.trackPosition(
-      trackingPlayerRef.current,
-      playerName,
-      playerColor,
-      characterUrl
-    );
+    const localId = state.localPlayerId;
+    if (!localId) return;
+    const ttl = options?.ttlMs ?? 2500;
+    const safeText = String(text ?? '').trim().slice(0, 200);
+    if (!safeText) return;
 
-    if (updateData) {
-      networkManagerRef.current.updateLocalPlayer(updateData);
-    }
-  });
+    setSpeechByPlayerId((prev) => {
+      const next = new Map(prev);
+      next.set(localId, { text: safeText, expiresAt: Date.now() + ttl });
+      return next;
+    });
+  }, [state.localPlayerId]);
+
+  // 위치 추적 및 네트워크 업데이트 (Canvas 밖에서도 동작해야 하므로 useFrame 금지)
+  useEffect(() => {
+    if (!state.isConnected) return;
+
+    const tickMs = Math.max(15, Math.floor(1000 / Math.max(1, configRef.current.tracking.updateRate)));
+
+    const id = window.setInterval(() => {
+      const currentState = stateRef.current;
+      if (!currentState.isConnected) return;
+      if (!networkManagerRef.current || !positionTrackerRef.current) return;
+      if (!trackingPlayerRef.current?.current) return;
+      if (!connectionInfoRef.current) return;
+
+      const { playerName, playerColor } = connectionInfoRef.current;
+      const type = modeTypeRef.current;
+      const localAnimation = animationStateRef.current?.[type]?.current ?? 'idle';
+      const updateData = positionTrackerRef.current.trackPosition(
+        trackingPlayerRef.current,
+        playerName,
+        playerColor,
+        characterUrl,
+        localAnimation,
+      );
+
+      if (updateData) {
+        networkManagerRef.current.updateLocalPlayer(updateData);
+      }
+
+      // 말풍선 TTL 정리 (가벼운 GC)
+      if (speechRef.current.size > 0) {
+        const now = Date.now();
+        let changed = false;
+        const next = new Map(speechRef.current);
+        next.forEach((v, k) => {
+          if (v.expiresAt <= now) {
+            next.delete(k);
+            changed = true;
+          }
+        });
+        if (changed) setSpeechByPlayerId(next);
+      }
+    }, tickMs);
+
+    return () => window.clearInterval(id);
+  }, [state.isConnected, characterUrl]);
 
   // 정리
   useEffect(() => {
@@ -228,6 +325,9 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
     disconnect,
     startTracking,
     stopTracking,
-    updateConfig
+    updateConfig,
+    sendChat,
+    speechByPlayerId: new Map(Array.from(speechByPlayerId.entries()).map(([k, v]) => [k, v.text] as const)),
+    localSpeechText: state.localPlayerId ? (speechByPlayerId.get(state.localPlayerId)?.text ?? null) : null,
   };
 } 

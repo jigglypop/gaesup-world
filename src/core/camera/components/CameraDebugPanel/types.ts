@@ -23,7 +23,7 @@ export interface DebugField {
 export interface CustomField {
   key: string;
   label: string;
-  getValue: () => any;
+  getValue: () => unknown;
   format?: 'number' | 'vector3' | 'text' | 'angle';
   precision?: number;
 }
