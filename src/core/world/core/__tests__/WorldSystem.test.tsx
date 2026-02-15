@@ -1,13 +1,13 @@
 import React from 'react';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
-import { WorldEngine } from '../WorldEngine';
+import { WorldSystem } from '../WorldSystem';
 import * as THREE from 'three';
 
 describe('WorldEngine', () => {
-  let engine: WorldEngine;
+  let engine: WorldSystem;
 
   beforeEach(() => {
-    engine = new WorldEngine();
+    engine = new WorldSystem();
   });
 
   afterEach(() => {
@@ -143,10 +143,10 @@ describe('WorldEngine', () => {
 });
 
 describe('WorldEngine 성능 테스트', () => {
-  let engine: WorldEngine;
+  let engine: WorldSystem;
 
   beforeEach(() => {
-    engine = new WorldEngine();
+    engine = new WorldSystem();
   });
 
   afterEach(() => {
@@ -156,7 +156,7 @@ describe('WorldEngine 성능 테스트', () => {
   describe('메모리 누수 방지', () => {
     it('raycast 호출 시 새로운 객체를 생성하지 않아야 함', async () => {
       const TestScene = () => {
-        const engineRef = React.useRef(new WorldEngine());
+        const engineRef = React.useRef(new WorldSystem());
         
         React.useEffect(() => {
           const origin = new THREE.Vector3(0, 0, 0);
@@ -188,7 +188,7 @@ describe('WorldEngine 성능 테스트', () => {
 
     it('여러 객체에 대한 raycast가 메모리 효율적이어야 함', async () => {
       const TestScene = () => {
-        const engineRef = React.useRef(new WorldEngine());
+        const engineRef = React.useRef(new WorldSystem());
         const [hitCount, setHitCount] = React.useState(0);
         
         React.useEffect(() => {
@@ -250,7 +250,7 @@ describe('WorldEngine 성능 테스트', () => {
   describe('공간 검색 성능', () => {
     it('반경 내 객체를 효율적으로 찾아야 함', async () => {
       const TestScene = () => {
-        const engineRef = React.useRef(new WorldEngine());
+        const engineRef = React.useRef(new WorldSystem());
         const [nearbyCount, setNearbyCount] = React.useState(0);
         
         React.useEffect(() => {
@@ -312,7 +312,7 @@ describe('WorldEngine 성능 테스트', () => {
   describe('리소스 정리', () => {
     it('cleanup 호출 시 모든 리소스가 해제되어야 함', async () => {
       const TestScene = () => {
-        const engineRef = React.useRef(new WorldEngine());
+        const engineRef = React.useRef(new WorldSystem());
         const [cleaned, setCleaned] = React.useState(false);
         React.useEffect(() => {
           for (let i = 0; i < 5; i++) {

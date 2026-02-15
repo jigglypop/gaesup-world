@@ -126,7 +126,7 @@ export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
                     key={`controller-${mode.type}`}
                     controllerOptions={{ lerp: { cameraTurn: 0.1, cameraPosition: 0.08 } }}
                     rigidBodyProps={{}}
-                    parts={mode?.type === 'character' ? [{ url: 'gltf/ally_cloth_rabbit.glb', color: '#ffe0e0' }] : []}
+                    parts={[]}
                     rotation={euler({ x: 0, y: Math.PI, z: 0 })}
                   />
                 )}

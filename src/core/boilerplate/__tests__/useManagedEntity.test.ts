@@ -1,19 +1,20 @@
 import { renderHook } from '@testing-library/react-hooks';
-import * as useManagedEntityModule from '../useManagedEntity';
-import { ManagedEntity } from '../ManagedEntity';
-import { AbstractBridge, IDisposable } from '../AbstractBridge';
+import * as useManagedEntityModule from '../hooks/useManagedEntity';
+import { ManagedEntity } from '../entity/ManagedEntity';
+import { AbstractBridge } from '../bridge/AbstractBridge';
+import type { IDisposable } from '../types';
 import { createRef, RefObject } from 'react';
-import { useBaseLifecycle } from '../useBaseLifecycle';
-import { useBaseFrame } from '../useBaseFrame';
+import { useBaseLifecycle } from '../hooks/useBaseLifecycle';
+import { useBaseFrame } from '../hooks/useBaseFrame';
 // 내부 훅들을 모킹합니다.
-jest.mock('../useBaseLifecycle', () => ({
+jest.mock('../hooks/useBaseLifecycle', () => ({
   useBaseLifecycle: jest.fn(),
 }));
-jest.mock('../useBaseFrame', () => ({
+jest.mock('../hooks/useBaseFrame', () => ({
   useBaseFrame: jest.fn(),
 }));
 // ManagedEntity 클래스를 생성자 로직을 포함하여 모킹합니다.
-jest.mock('../ManagedEntity', () => ({
+jest.mock('../entity/ManagedEntity', () => ({
   ManagedEntity: jest.fn().mockImplementation((bridge, id, engine) => ({
     engine,
     bridge,

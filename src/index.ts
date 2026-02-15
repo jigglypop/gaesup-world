@@ -27,6 +27,12 @@ export {
   SpeechBalloon,
   // Networks (multiplayer)
   useMultiplayer,
+  usePlayerNetwork,
+  useNetworkBridge,
+  useNetworkMessage,
+  useNetworkGroup,
+  useNetworkStats,
+  useNPCConnection,
   defaultMultiplayerConfig,
   MultiplayerCanvas,
   RemotePlayer,

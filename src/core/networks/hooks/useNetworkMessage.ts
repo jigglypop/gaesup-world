@@ -63,15 +63,12 @@ export function useNetworkMessage(options: UseNetworkMessageOptions): UseNetwork
     messageFilter,
     ...bridgeOptions
   } = options;
-  void onMessageReceived;
-  void onMessageFailed;
-  void messageFilter;
-
   const {
     executeCommand,
     isReady
   } = useNetworkBridge(bridgeOptions);
 
+  const MAX_MESSAGE_HISTORY = 500;
   const [receivedMessages, setReceivedMessages] = useState<NetworkMessage[]>([]);
   const [sentMessages, setSentMessages] = useState<NetworkMessage[]>([]);
   const [pendingMessages, setPendingMessages] = useState<NetworkMessage[]>([]);
@@ -106,7 +103,10 @@ export function useNetworkMessage(options: UseNetworkMessageOptions): UseNetwork
       message
     });
 
-    setSentMessages(prev => [...prev, message]);
+    setSentMessages(prev => {
+      const next = [...prev, message];
+      return next.length > MAX_MESSAGE_HISTORY ? next.slice(-MAX_MESSAGE_HISTORY) : next;
+    });
     onMessageSent?.(message);
 
     return messageId;
@@ -141,7 +141,10 @@ export function useNetworkMessage(options: UseNetworkMessageOptions): UseNetwork
 
     // broadcast는 시스템에서 to를 추가하므로, UI용으로는 가상 to를 채워서 저장
     const localMessage: NetworkMessage = { ...message, to: 'broadcast' };
-    setSentMessages(prev => [...prev, localMessage]);
+    setSentMessages(prev => {
+      const next = [...prev, localMessage];
+      return next.length > MAX_MESSAGE_HISTORY ? next.slice(-MAX_MESSAGE_HISTORY) : next;
+    });
     onMessageSent?.(localMessage);
 
     return messageId;

@@ -15,7 +15,7 @@ export default function App() {
     <BrowserRouter>
       <Navigation />
       <Routes>
-        <Route path="/" element={<WorldPage showEditor={false} />} />
+        <Route path="/" element={<WorldPage showEditor={true} />} />
         <Route path="/building" element={<BuildingEditorPage />} />
         <Route path="/blueprints" element={<BlueprintEditorPage />} />
         <Route path="/network" element={<NetworkMultiplayerPage />} />

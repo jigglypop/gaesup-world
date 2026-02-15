@@ -54,6 +54,8 @@ export function EntityController({ props, children }: EntityControllerProps) {
       parts: (props.parts || [])
         .filter((part): part is { url: string; color?: string } => !!part.url)
         .map((part) => ({ ...part, url: part.url })),
+      ...(typeof props.baseColor === 'string' && props.baseColor.trim().length > 0 ? { baseColor: props.baseColor } : {}),
+      ...(Array.isArray(props.excludeBaseNodes) && props.excludeBaseNodes.length > 0 ? { excludeBaseNodes: props.excludeBaseNodes } : {}),
       ...(props.rigidBodyProps ? { rigidBodyProps: props.rigidBodyProps } : {}),
       ...(props.controllerOptions ? { controllerOptions: props.controllerOptions } : {}),
       ...(props.groundRay ? { groundRay: props.groundRay } : {}),

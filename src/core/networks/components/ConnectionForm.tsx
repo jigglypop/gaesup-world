@@ -11,7 +11,11 @@ interface ConnectionFormProps {
 export function ConnectionForm({ onConnect, error, isConnecting }: ConnectionFormProps) {
   const [playerName, setPlayerName] = useState('');
   const [roomCode, setRoomCode] = useState('room1');
-  const [playerColor] = useState(`#${Math.floor(Math.random() * 16777215).toString(16)}`);
+  const [playerColor] = useState(() => {
+    // Ensure a valid CSS hex color: always "#RRGGBB".
+    const hex = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+    return `#${hex}`;
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

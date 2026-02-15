@@ -3,6 +3,21 @@ import React, { useState, useEffect } from 'react';
 import { useNetworkBridge, useNetworkStats } from '../hooks';
 import type { NetworkSnapshot, NetworkMessage, NetworkSystemState, NetworkConnection, NPCNetworkNode } from '../types';
 
+function collectRecentMessages(
+  messageQueues: Map<string, NetworkMessage[]>,
+  limit: number,
+): NetworkMessage[] {
+  if (limit <= 0) return [];
+  const out: NetworkMessage[] = [];
+  for (const queue of messageQueues.values()) {
+    for (const msg of queue) {
+      if (out.length >= limit) out.shift();
+      out.push(msg);
+    }
+  }
+  return out;
+}
+
 interface NetworkDebugPanelProps {
   systemId?: string;
   className?: string;
@@ -44,9 +59,7 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
       const system = getSystemState() as NetworkSystemState | null;
       if (!snapshot && !system) return;
 
-      const messages = system
-        ? Array.from(system.messageQueues.values()).flat().slice(-50)
-        : [];
+      const messages = system ? collectRecentMessages(system.messageQueues, 50) : [];
 
       setDebugState(prev => ({
         ...prev,

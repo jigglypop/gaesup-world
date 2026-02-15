@@ -8,7 +8,7 @@ import { AbstractSystem, SystemUpdateArgs } from '@core/boilerplate';
 import { Profile, HandleError, ManageRuntime } from '@core/boilerplate';
 import { GameStatesType } from '@core/world/components/Rideable/types';
 
-import { AnimationController } from '../../controller/AnimationController';
+import { AnimationController } from '@core/motions/controller/AnimationController';
 import { GravityComponent } from '../forces';
 import { PhysicsSystemState, PhysicsSystemMetrics, PhysicsSystemOptions } from './types';
 import type { PhysicsCalcProps, PhysicsState } from '../../types';
@@ -41,13 +41,14 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   private animationController = new AnimationController();
   private forceComponents: ForceComponent[] = [];
 
-  private keyStateCache = new Map<string, { lastKeyE: boolean; lastKeyR: boolean }>();
+  private keyStateCache = new Map<number, { lastKeyE: boolean; lastKeyR: boolean }>();
   private isCurrentlyJumping = false;
   private lastMovingState = false;
   private lastRunningState = false;
 
   private tempQuaternion = new THREE.Quaternion();
   private tempEuler = new THREE.Euler();
+  private tempVector = new THREE.Vector3();
   private config: PhysicsConfigType;
 
   constructor(config: PhysicsConfigType, options: PhysicsSystemOptions = {}) {
@@ -109,7 +110,8 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
 
   @Profile()
   private checkAllStates(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
-    const instanceId = `physics-${calcProp.rigidBodyRef.current?.handle || 'unknown'}`;
+    // Use the numeric rigid-body handle to avoid per-frame string allocations.
+    const instanceId = calcProp.rigidBodyRef.current?.handle ?? -1;
     this.checkGround(calcProp, physicsState);
     this.checkMoving(physicsState);
     this.checkRiding(instanceId, physicsState);
@@ -169,7 +171,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     });
   }
 
-  private checkRiding(instanceId: string = 'default', physicsState: PhysicsState): void {
+  private checkRiding(instanceId: number = -1, physicsState: PhysicsState): void {
     const keyboard = physicsState.keyboard;
     if (!this.keyStateCache.has(instanceId)) {
       this.keyStateCache.set(instanceId, { lastKeyE: false, lastKeyR: false });
@@ -295,12 +297,13 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   public applyForce(force: THREE.Vector3, rigidBody: RapierRigidBody): void {
     if (!rigidBody) return;
     const currentVel = rigidBody.linvel();
-    const newVel = new THREE.Vector3(
+    // Hot path: avoid allocating a new Vector3 on every call.
+    this.tempVector.set(
       currentVel.x + force.x,
       currentVel.y + force.y,
       currentVel.z + force.z
     );
-    rigidBody.setLinvel(newVel, true);
+    rigidBody.setLinvel(this.tempVector, true);
   }
 
   @HandleError()

@@ -12,9 +12,13 @@ export class NetworkSystem {
   private messageQueue: MessageQueue;
   private connectionPool: ConnectionPool;
   private config: NetworkConfig;
-  private lastUpdate: number = 0;
   private lastCleanupTime: number = 0;
-  private updateTimer: NodeJS.Timeout | undefined;
+  private lastStatsUpdateAt: number = 0;
+  private updateTimer: ReturnType<typeof setTimeout> | undefined;
+  private scratchNodeIds: Set<string> = new Set();
+  private scratchGroupIds: Set<string> = new Set();
+  private scratchRemoveIds: string[] = [];
+  private messageQueueSig: Map<string, { len: number; tailId: string | null }> = new Map();
 
   constructor(config: NetworkConfig) {
     this.config = { ...config };
@@ -48,9 +52,7 @@ export class NetworkSystem {
     if (this.state.isRunning) return;
     
     this.state.isRunning = true;
-    const now = Date.now();
-    this.lastUpdate = now;
-    this.lastCleanupTime = now;
+    this.lastCleanupTime = Date.now();
     this.startUpdateLoop();
   }
 
@@ -60,7 +62,7 @@ export class NetworkSystem {
     
     this.state.isRunning = false;
     if (this.updateTimer) {
-      clearInterval(this.updateTimer);
+      clearTimeout(this.updateTimer);
       this.updateTimer = undefined;
     }
   }
@@ -68,13 +70,28 @@ export class NetworkSystem {
   // 업데이트 루프 시작
   private startUpdateLoop(): void {
     if (this.updateTimer) {
-      clearInterval(this.updateTimer);
+      clearTimeout(this.updateTimer);
     }
 
-    const interval = 1000 / this.config.updateFrequency; // FPS를 ms로 변환
-    this.updateTimer = setInterval(() => {
+    const frequency = Math.max(1, this.config.updateFrequency);
+    const interval = Math.max(1, Math.floor(1000 / frequency)); // FPS를 ms로 변환
+
+    // setInterval() drifts under load; use a self-correcting timeout loop.
+    let nextTickAt = Date.now() + interval;
+    const tick = () => {
+      if (!this.state.isRunning) return;
+
       this.update();
-    }, interval);
+
+      // Keep cadence while preventing spiral-of-death catchup.
+      const now = Date.now();
+      nextTickAt += interval;
+      if (nextTickAt < now) nextTickAt = now + interval;
+      const delay = Math.max(0, nextTickAt - Date.now());
+      this.updateTimer = setTimeout(tick, delay);
+    };
+
+    this.updateTimer = setTimeout(tick, interval);
   }
 
   // 시스템 업데이트
@@ -82,9 +99,6 @@ export class NetworkSystem {
     if (!this.state.isRunning) return;
 
     const now = Date.now();
-    const deltaTime = now - this.lastUpdate;
-    this.lastUpdate = now;
-    void deltaTime;
 
     // 메시지 배치 처리
     this.processMessageBatch();
@@ -99,7 +113,7 @@ export class NetworkSystem {
     }
 
     // 통계 업데이트
-    this.updateStatistics();
+    this.updateStatistics(now);
 
     // 상태 동기화
     this.syncState();
@@ -121,11 +135,15 @@ export class NetworkSystem {
   }
 
   // 통계 업데이트
-  private updateStatistics(): void {
+  private updateStatistics(now: number): void {
+    const statsInterval = Math.max(0, this.config.debugUpdateInterval ?? 250);
+    if (statsInterval > 0 && now - this.lastStatsUpdateAt < statsInterval) {
+      return;
+    }
+    this.lastStatsUpdateAt = now;
+
     const networkStats = this.npcManager.getNetworkStats();
     const performanceMetrics = this.npcManager.getPerformanceMetrics();
-    const poolStats = this.connectionPool.getPoolStats();
-    void poolStats;
 
     this.state.stats = {
       totalNodes: networkStats.nodeCount,
@@ -133,36 +151,76 @@ export class NetworkSystem {
       messagesPerSecond: this.calculateMessagesPerSecond(performanceMetrics),
       averageLatency: performanceMetrics.averageLatency,
       bandwidth: performanceMetrics.bandwidth,
-      lastUpdate: Date.now()
+      lastUpdate: now
     };
   }
 
   // 초당 메시지 수 계산
   private calculateMessagesPerSecond(metrics: PerformanceMetrics): number {
     const timeDiff = (Date.now() - metrics.lastUpdate) / 1000;
-    return timeDiff > 0 ? metrics.messagesProcessed / timeDiff : 0;
+    const safe = Math.max(0.001, timeDiff);
+    return metrics.messagesProcessed / safe;
   }
 
   // 상태 동기화
   private syncState(): void {
-    // NPC 노드 동기화
-    this.state.nodes.clear();
-    for (const node of this.npcManager.getAllNodes()) {
+    // NPC 노드 동기화 (전체 clear/rebuild 대신 증분 업데이트)
+    const nodeIds = this.scratchNodeIds;
+    nodeIds.clear();
+    this.npcManager.forEachNode((node) => {
+      nodeIds.add(node.id);
       this.state.nodes.set(node.id, node);
+    });
+    const toRemove = this.scratchRemoveIds;
+    toRemove.length = 0;
+    for (const existingId of this.state.nodes.keys()) {
+      if (!nodeIds.has(existingId)) toRemove.push(existingId);
     }
+    for (const id of toRemove) this.state.nodes.delete(id);
 
-    // 그룹 동기화
-    this.state.groups.clear();
-    for (const group of this.npcManager.getAllGroups()) {
+    // 그룹 동기화 (증분)
+    const groupIds = this.scratchGroupIds;
+    groupIds.clear();
+    this.npcManager.forEachGroup((group) => {
+      groupIds.add(group.id);
       this.state.groups.set(group.id, group);
+    });
+    toRemove.length = 0;
+    for (const existingId of this.state.groups.keys()) {
+      if (!groupIds.has(existingId)) toRemove.push(existingId);
     }
+    for (const id of toRemove) this.state.groups.delete(id);
 
-    // 메시지 큐 동기화
-    this.state.messageQueues.clear();
-    for (const [nodeId, node] of this.state.nodes.entries()) {
-      if (node.messageQueue.length > 0) {
-        this.state.messageQueues.set(nodeId, [...node.messageQueue]);
+    // 메시지 큐 동기화 (필요한 노드만 업데이트; empty는 delete)
+    for (const nodeId of nodeIds) {
+      const node = this.state.nodes.get(nodeId);
+      if (!node || node.messageQueue.length === 0) {
+        this.state.messageQueues.delete(nodeId);
+        this.messageQueueSig.delete(nodeId);
+        continue;
       }
+      const queue = node.messageQueue;
+      const tailId = queue[queue.length - 1]?.id ?? null;
+      const prev = this.messageQueueSig.get(nodeId);
+      if (prev && prev.len === queue.length && prev.tailId === tailId) {
+        continue;
+      }
+      if (prev) {
+        prev.len = queue.length;
+        prev.tailId = tailId;
+      } else {
+        this.messageQueueSig.set(nodeId, { len: queue.length, tailId });
+      }
+      this.state.messageQueues.set(nodeId, queue.slice());
+    }
+    // Remove messageQueues for nodes that no longer exist.
+    toRemove.length = 0;
+    for (const nodeId of this.state.messageQueues.keys()) {
+      if (!nodeIds.has(nodeId)) toRemove.push(nodeId);
+    }
+    for (const id of toRemove) {
+      this.state.messageQueues.delete(id);
+      this.messageQueueSig.delete(id);
     }
   }
 

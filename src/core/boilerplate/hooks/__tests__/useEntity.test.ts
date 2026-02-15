@@ -4,41 +4,49 @@ import { RapierRigidBody } from '@react-three/rapier';
 import { useEntity, UseEntityOptions } from '../useEntity';
 
 // Mock 훅들
-const mockUseCollisionHandler = jest.fn();
-const mockUseEntityLifecycle = jest.fn();
-const mockUseGaesupStore = jest.fn();
-const mockUseAnimationPlayer = jest.fn();
-const mockUseAnimationSetup = jest.fn();
-const mockUseMotionSetup = jest.fn();
-const mockUsePhysicsBridge = jest.fn();
-
 jest.mock('../useCollisionHandler', () => ({
-  useCollisionHandler: mockUseCollisionHandler
+  useCollisionHandler: jest.fn(),
 }));
 
 jest.mock('../useEntityLifecycle', () => ({
-  useEntityLifecycle: mockUseEntityLifecycle
+  useEntityLifecycle: jest.fn(),
 }));
 
 jest.mock('@stores/gaesupStore', () => ({
-  useGaesupStore: mockUseGaesupStore
+  useGaesupStore: jest.fn(),
 }));
 
 jest.mock('@hooks/useAnimationPlayer', () => ({
-  useAnimationPlayer: mockUseAnimationPlayer
+  useAnimationPlayer: jest.fn(),
 }));
 
 jest.mock('@core/motions/hooks/setup/useAnimationSetup', () => ({
-  useAnimationSetup: mockUseAnimationSetup
+  useAnimationSetup: jest.fn(),
 }));
 
 jest.mock('@core/motions/hooks/setup/useMotionSetup', () => ({
-  useMotionSetup: mockUseMotionSetup
+  useMotionSetup: jest.fn(),
 }));
 
 jest.mock('@core/motions/hooks/usePhysicsBridge', () => ({
-  usePhysicsBridge: mockUsePhysicsBridge
+  usePhysicsBridge: jest.fn(),
 }));
+
+import { useCollisionHandler } from '../useCollisionHandler';
+import { useEntityLifecycle } from '../useEntityLifecycle';
+import { useGaesupStore } from '@stores/gaesupStore';
+import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
+import { useAnimationSetup } from '@core/motions/hooks/setup/useAnimationSetup';
+import { useMotionSetup } from '@core/motions/hooks/setup/useMotionSetup';
+import { usePhysicsBridge } from '@core/motions/hooks/usePhysicsBridge';
+
+const mockUseCollisionHandler = useCollisionHandler as unknown as jest.Mock;
+const mockUseEntityLifecycle = useEntityLifecycle as unknown as jest.Mock;
+const mockUseGaesupStore = useGaesupStore as unknown as jest.Mock;
+const mockUseAnimationPlayer = useAnimationPlayer as unknown as jest.Mock;
+const mockUseAnimationSetup = useAnimationSetup as unknown as jest.Mock;
+const mockUseMotionSetup = useMotionSetup as unknown as jest.Mock;
+const mockUsePhysicsBridge = usePhysicsBridge as unknown as jest.Mock;
 
 // Mock 반환값들
 const mockCollisionHandlers = {

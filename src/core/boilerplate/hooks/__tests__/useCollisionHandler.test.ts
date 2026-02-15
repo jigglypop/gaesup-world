@@ -45,32 +45,32 @@ describe('useCollisionHandler', () => {
   });
 
   describe('IntersectionEnter 핸들러', () => {
-    test('onIntersectionEnter 콜백이 호출되어야 함', async () => {
+    test('onIntersectionEnter 콜백이 호출되어야 함', () => {
       const onIntersectionEnter = jest.fn();
       const options: CollisionHandlerOptions = { onIntersectionEnter };
       
       const { result } = renderHook(() => useCollisionHandler(options));
       
-      await result.current.handleIntersectionEnter(mockCollisionEnterPayload);
+      result.current.handleIntersectionEnter(mockCollisionEnterPayload);
       
       expect(onIntersectionEnter).toHaveBeenCalledWith(mockCollisionEnterPayload);
       expect(onIntersectionEnter).toHaveBeenCalledTimes(1);
     });
 
-    test('userData의 onNear 함수가 호출되어야 함', async () => {
+    test('userData의 onNear 함수가 호출되어야 함', () => {
       const onNear = jest.fn();
       const userData = { onNear, testData: 'test' };
       const options: CollisionHandlerOptions = { userData };
       
       const { result } = renderHook(() => useCollisionHandler(options));
       
-      await result.current.handleIntersectionEnter(mockCollisionEnterPayload);
+      result.current.handleIntersectionEnter(mockCollisionEnterPayload);
       
       expect(onNear).toHaveBeenCalledWith(mockCollisionEnterPayload, userData);
       expect(onNear).toHaveBeenCalledTimes(1);
     });
 
-    test('onIntersectionEnter와 userData.onNear가 모두 호출되어야 함', async () => {
+    test('onIntersectionEnter와 userData.onNear가 모두 호출되어야 함', () => {
       const onIntersectionEnter = jest.fn();
       const onNear = jest.fn();
       const userData = { onNear };
@@ -78,60 +78,56 @@ describe('useCollisionHandler', () => {
       
       const { result } = renderHook(() => useCollisionHandler(options));
       
-      await result.current.handleIntersectionEnter(mockCollisionEnterPayload);
+      result.current.handleIntersectionEnter(mockCollisionEnterPayload);
       
       expect(onIntersectionEnter).toHaveBeenCalledWith(mockCollisionEnterPayload);
       expect(onNear).toHaveBeenCalledWith(mockCollisionEnterPayload, userData);
     });
 
-    test('userData.onNear가 함수가 아닌 경우 에러가 발생하지 않아야 함', async () => {
+    test('userData.onNear가 함수가 아닌 경우 에러가 발생하지 않아야 함', () => {
       const userData = { onNear: 'not a function' };
       const options: CollisionHandlerOptions = { userData };
       
       const { result } = renderHook(() => useCollisionHandler(options));
       
-      await expect(
-        result.current.handleIntersectionEnter(mockCollisionEnterPayload)
-      ).resolves.not.toThrow();
+      expect(() => result.current.handleIntersectionEnter(mockCollisionEnterPayload)).not.toThrow();
     });
 
-    test('userData가 없는 경우 에러가 발생하지 않아야 함', async () => {
+    test('userData가 없는 경우 에러가 발생하지 않아야 함', () => {
       const options: CollisionHandlerOptions = {};
       
       const { result } = renderHook(() => useCollisionHandler(options));
       
-      await expect(
-        result.current.handleIntersectionEnter(mockCollisionEnterPayload)
-      ).resolves.not.toThrow();
+      expect(() => result.current.handleIntersectionEnter(mockCollisionEnterPayload)).not.toThrow();
     });
   });
 
   describe('IntersectionExit 핸들러', () => {
-    test('onIntersectionExit 콜백이 호출되어야 함', async () => {
+    test('onIntersectionExit 콜백이 호출되어야 함', () => {
       const onIntersectionExit = jest.fn();
       const options: CollisionHandlerOptions = { onIntersectionExit };
       
       const { result } = renderHook(() => useCollisionHandler(options));
       
-      await result.current.handleIntersectionExit(mockCollisionExitPayload);
+      result.current.handleIntersectionExit(mockCollisionExitPayload);
       
       expect(onIntersectionExit).toHaveBeenCalledWith(mockCollisionExitPayload);
       expect(onIntersectionExit).toHaveBeenCalledTimes(1);
     });
 
-    test('userData의 onFar 함수가 호출되어야 함', async () => {
+    test('userData의 onFar 함수가 호출되어야 함', () => {
       const onFar = jest.fn();
       const userData = { onFar };
       const options: CollisionHandlerOptions = { userData };
       
       const { result } = renderHook(() => useCollisionHandler(options));
       
-      await result.current.handleIntersectionExit(mockCollisionExitPayload);
+      result.current.handleIntersectionExit(mockCollisionExitPayload);
       
       expect(onFar).toHaveBeenCalledWith(mockCollisionExitPayload, userData);
     });
 
-    test('onIntersectionExit와 userData.onFar가 모두 호출되어야 함', async () => {
+    test('onIntersectionExit와 userData.onFar가 모두 호출되어야 함', () => {
       const onIntersectionExit = jest.fn();
       const onFar = jest.fn();
       const userData = { onFar };
@@ -139,7 +135,7 @@ describe('useCollisionHandler', () => {
       
       const { result } = renderHook(() => useCollisionHandler(options));
       
-      await result.current.handleIntersectionExit(mockCollisionExitPayload);
+      result.current.handleIntersectionExit(mockCollisionExitPayload);
       
       expect(onIntersectionExit).toHaveBeenCalledWith(mockCollisionExitPayload);
       expect(onFar).toHaveBeenCalledWith(mockCollisionExitPayload, userData);
@@ -147,26 +143,24 @@ describe('useCollisionHandler', () => {
   });
 
   describe('CollisionEnter 핸들러', () => {
-    test('onCollisionEnter 콜백이 호출되어야 함', async () => {
+    test('onCollisionEnter 콜백이 호출되어야 함', () => {
       const onCollisionEnter = jest.fn();
       const options: CollisionHandlerOptions = { onCollisionEnter };
       
       const { result } = renderHook(() => useCollisionHandler(options));
       
-      await result.current.handleCollisionEnter(mockCollisionEnterPayload);
+      result.current.handleCollisionEnter(mockCollisionEnterPayload);
       
       expect(onCollisionEnter).toHaveBeenCalledWith(mockCollisionEnterPayload);
       expect(onCollisionEnter).toHaveBeenCalledTimes(1);
     });
 
-    test('onCollisionEnter가 없어도 에러가 발생하지 않아야 함', async () => {
+    test('onCollisionEnter가 없어도 에러가 발생하지 않아야 함', () => {
       const options: CollisionHandlerOptions = {};
       
       const { result } = renderHook(() => useCollisionHandler(options));
       
-      await expect(
-        result.current.handleCollisionEnter(mockCollisionEnterPayload)
-      ).resolves.not.toThrow();
+      expect(() => result.current.handleCollisionEnter(mockCollisionEnterPayload)).not.toThrow();
     });
   });
 
@@ -213,7 +207,7 @@ describe('useCollisionHandler', () => {
   });
 
   describe('에러 처리', () => {
-    test('콜백에서 에러가 발생해도 다른 핸들러에 영향을 주지 않아야 함', async () => {
+    test('콜백에서 에러가 발생해도 다른 핸들러에 영향을 주지 않아야 함', () => {
       const onIntersectionEnter = jest.fn(() => {
         throw new Error('Test error');
       });
@@ -224,15 +218,12 @@ describe('useCollisionHandler', () => {
       const { result } = renderHook(() => useCollisionHandler(options));
       
       // onIntersectionEnter에서 에러가 발생하지만 onNear는 여전히 호출되어야 함
-      await expect(
-        result.current.handleIntersectionEnter(mockCollisionEnterPayload)
-      ).rejects.toThrow('Test error');
-      
+      expect(() => result.current.handleIntersectionEnter(mockCollisionEnterPayload)).not.toThrow();
       expect(onIntersectionEnter).toHaveBeenCalled();
-      // onNear는 Promise.all이나 순차 실행에 따라 호출될 수도 있고 안 될 수도 있음
+      expect(onNear).toHaveBeenCalledWith(mockCollisionEnterPayload, userData);
     });
 
-    test('userData.onNear에서 에러가 발생해도 처리되어야 함', async () => {
+    test('userData.onNear에서 에러가 발생해도 처리되어야 함', () => {
       const onNear = jest.fn(() => {
         throw new Error('onNear error');
       });
@@ -241,11 +232,8 @@ describe('useCollisionHandler', () => {
       
       const { result } = renderHook(() => useCollisionHandler(options));
       
-      await expect(
-        result.current.handleIntersectionEnter(mockCollisionEnterPayload)
-      ).rejects.toThrow('onNear error');
-      
-      expect(onNear).toHaveBeenCalled();
+      expect(() => result.current.handleIntersectionEnter(mockCollisionEnterPayload)).not.toThrow();
+      expect(onNear).toHaveBeenCalledWith(mockCollisionEnterPayload, userData);
     });
   });
 
@@ -276,9 +264,7 @@ describe('useCollisionHandler', () => {
       
       const { result } = renderHook(() => useCollisionHandler(options));
       
-      await expect(
-        result.current.handleIntersectionEnter(mockCollisionEnterPayload)
-      ).resolves.not.toThrow();
+      expect(() => result.current.handleIntersectionEnter(mockCollisionEnterPayload)).not.toThrow();
     });
 
     test('userData가 undefined여도 안전해야 함', async () => {
@@ -286,9 +272,7 @@ describe('useCollisionHandler', () => {
       
       const { result } = renderHook(() => useCollisionHandler(options));
       
-      await expect(
-        result.current.handleIntersectionEnter(mockCollisionEnterPayload)
-      ).resolves.not.toThrow();
+      expect(() => result.current.handleIntersectionEnter(mockCollisionEnterPayload)).not.toThrow();
     });
   });
 

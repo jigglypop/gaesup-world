@@ -64,8 +64,9 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
     const rotation = rigidBody.rotation();
     const snapshot: MotionSnapshot = {
       type,
-      position: vec3({ x: translation.x, y: translation.y, z: translation.z }),
-      velocity: vec3({ x: velocity.x, y: velocity.y, z: velocity.z }),
+      // vec3 allocates the Vector3; avoid extra object-literal allocations.
+      position: vec3(translation),
+      velocity: vec3(velocity),
       rotation: euler({ x: rotation.x, y: rotation.y, z: rotation.z }),
       isGrounded: system.getState().isGrounded,
       isMoving: system.getState().isMoving,

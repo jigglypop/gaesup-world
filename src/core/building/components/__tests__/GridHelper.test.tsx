@@ -391,8 +391,8 @@ describe('GridHelper 컴포넌트 테스트', () => {
       const { container } = render(
         <TestWrapper>
           <GridHelper 
-            size={TILE_CONSTANTS.SIZE} 
-            divisions={TILE_CONSTANTS.SIZE} 
+            size={TILE_CONSTANTS.DEFAULT_GRID_SIZE} 
+            divisions={TILE_CONSTANTS.GRID_DIVISIONS} 
           />
         </TestWrapper>
       );
@@ -400,7 +400,7 @@ describe('GridHelper 컴포넌트 테스트', () => {
       expect(container.firstChild).toBeInTheDocument();
       
       // 예상 분할 수가 25인지 확인
-      expect(TILE_CONSTANTS.SIZE).toBe(25);
+      expect(TILE_CONSTANTS.GRID_DIVISIONS).toBe(25);
     });
 
     test('서로 다른 편집 모드에서의 그리드 색상이 작동해야 함', () => {

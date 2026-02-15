@@ -8,6 +8,11 @@ import { LogSnapshot, ValidateCommand, RequireEngineById, CacheSnapshot } from '
 import { AnimationSystem } from '../core/AnimationSystem'
 import { AnimationType } from '../core/types'
 
+function sanitizeAnimationName(name: string): string {
+  // Some GLBs contain control chars in clip names (e.g. "\brun") which breaks lookups.
+  return name.replace(/[\x00-\x1F\x7F]/g, '').trim()
+}
+
 
 
 @DomainBridge('animation')
@@ -42,7 +47,9 @@ export class AnimationBridge extends CoreBridge<
   registerAnimationAction(type: AnimationType, name: string, action: THREE.AnimationAction): void {
     const engine = this.getEngine(type)
     if (engine) {
-      engine.registerAction(name, action)
+      const cleanName = sanitizeAnimationName(name)
+      const finalName = cleanName.length > 0 ? cleanName : name
+      engine.registerAction(finalName, action)
     }
   }
 
@@ -51,7 +58,9 @@ export class AnimationBridge extends CoreBridge<
     if (!engine) return
     Object.entries(actions).forEach(([name, action]) => {
       if (action) {
-        engine.registerAction(name, action)
+        const cleanName = sanitizeAnimationName(name)
+        const finalName = cleanName.length > 0 ? cleanName : name
+        engine.registerAction(finalName, action)
       }
     })
   }

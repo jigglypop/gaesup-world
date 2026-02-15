@@ -15,6 +15,7 @@ export class ManagedMotionEntity {
   private targetPosition: THREE.Vector3 | null = null;
   private isAutomated = false;
   private unsubscribe: (() => void) | null = null;
+  private tempDirection = new THREE.Vector3();
 
   constructor(id: string, motionType: MotionType, bridge?: MotionBridge | null) {
     this.id = id;
@@ -85,18 +86,21 @@ export class ManagedMotionEntity {
     if (!this.targetPosition || !this.rigidBody) return;
 
     const currentPosition = snapshot.position;
-    const direction = new THREE.Vector3()
-      .subVectors(this.targetPosition, currentPosition)
-      .normalize();
+    const dx = this.targetPosition.x - currentPosition.x;
+    const dy = this.targetPosition.y - currentPosition.y;
+    const dz = this.targetPosition.z - currentPosition.z;
+    const distanceSq = dx * dx + dy * dy + dz * dz;
 
-    const distance = currentPosition.distanceTo(this.targetPosition);
-    if (distance < 0.5) {
+    // Avoid sqrt when we're already within the stop threshold.
+    if (distanceSq < 0.5 * 0.5) {
       this.stop();
       this.disableAutomation();
     } else {
+      const distance = Math.sqrt(distanceSq);
       const speed = Math.min(distance * 2, snapshot.config.maxSpeed);
-      const movement = direction.multiplyScalar(speed);
-      this.move(movement);
+      const invLen = distance > 0 ? 1 / distance : 0;
+      this.tempDirection.set(dx * invLen * speed, dy * invLen * speed, dz * invLen * speed);
+      this.move(this.tempDirection);
     }
   }
 

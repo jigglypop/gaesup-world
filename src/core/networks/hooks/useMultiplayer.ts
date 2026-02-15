@@ -124,6 +124,13 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
       roomId: connectionOptions.roomId,
       playerName: connectionOptions.playerName,
       playerColor: connectionOptions.playerColor,
+      reconnectAttempts: config.websocket.reconnectAttempts,
+      reconnectDelay: config.websocket.reconnectDelay,
+      pingInterval: config.websocket.pingInterval,
+      sendRateLimit: config.tracking.sendRateLimit,
+      enableAck: config.enableAck,
+      reliableTimeout: config.reliableTimeout,
+      reliableRetryCount: config.reliableRetryCount,
       logLevel: config.logLevel,
       logToConsole: config.logToConsole,
       onConnect: () => {
@@ -194,6 +201,13 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
           return next;
         });
       },
+      onPing: (rttMs) => {
+        setState(prev => ({
+          ...prev,
+          ping: rttMs,
+          lastUpdate: Date.now(),
+        }));
+      },
       onError: (error) => {
         setState(prev => ({
           ...prev,
@@ -206,7 +220,15 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
 
     networkManagerRef.current = manager;
     manager.connect();
-  }, [config.websocket.url]);
+  }, [
+    config.websocket.url,
+    config.websocket.reconnectAttempts,
+    config.websocket.reconnectDelay,
+    config.websocket.pingInterval,
+    config.tracking.sendRateLimit,
+    config.logLevel,
+    config.logToConsole
+  ]);
 
   // 연결 해제
   const disconnect = useCallback(() => {

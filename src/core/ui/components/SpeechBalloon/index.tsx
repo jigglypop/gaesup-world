@@ -94,7 +94,8 @@ function createTextTexture({
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
     
-    const context = canvas.getContext('2d', { alpha: true });
+    // Some test environments don't support the optional context attributes argument.
+    const context = canvas.getContext('2d', { alpha: true }) ?? canvas.getContext('2d');
     if (!context) {
       console.error('Cannot get 2D context');
       return null;

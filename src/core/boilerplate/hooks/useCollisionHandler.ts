@@ -17,32 +17,37 @@ export function useCollisionHandler(options: CollisionHandlerOptions) {
     userData,
   } = options;
 
+  const safeCall = (fn: unknown, ...args: unknown[]) => {
+    if (typeof fn !== 'function') return;
+    try {
+      fn(...args);
+    } catch {
+      // Handlers must not break the physics/event loop.
+    }
+  };
+
   const handleIntersectionEnter = useCallback(
     (payload: CollisionPayload) => {
-      if (onIntersectionEnter) onIntersectionEnter(payload);
-      if (userData?.['onNear'] && typeof userData['onNear'] === 'function') {
-        void userData['onNear'](payload, userData);
-      }
+      safeCall(onIntersectionEnter, payload);
+      safeCall(userData?.['onNear'], payload, userData);
     },
     [onIntersectionEnter, userData],
   );
 
   const handleIntersectionExit = useCallback(
     (payload: CollisionPayload) => {
-      if (onIntersectionExit) onIntersectionExit(payload);
-      if (userData?.['onLeave'] && typeof userData['onLeave'] === 'function') {
-        void userData['onLeave'](payload);
-      }
+      safeCall(onIntersectionExit, payload);
+      // Support both names; onFar is the preferred semantic pair for onNear.
+      safeCall(userData?.['onFar'], payload, userData);
+      safeCall(userData?.['onLeave'], payload, userData);
     },
     [onIntersectionExit, userData],
   );
 
   const handleCollisionEnter = useCallback(
     (payload: CollisionEnterPayload) => {
-      if (onCollisionEnter) onCollisionEnter(payload);
-      if (userData?.['onNear'] && typeof userData['onNear'] === 'function') {
-        void userData['onNear'](payload, userData);
-      }
+      safeCall(onCollisionEnter, payload);
+      safeCall(userData?.['onNear'], payload, userData);
     },
     [onCollisionEnter, userData],
   );

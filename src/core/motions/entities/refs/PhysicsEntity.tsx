@@ -156,6 +156,8 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
             {...(props.enableRiding !== undefined ? { enableRiding: props.enableRiding } : {})}
             {...(props.ridingUrl ? { ridingUrl: props.ridingUrl } : {})}
             {...(props.offset ? { offset: props.offset } : {})}
+            {...(props.baseColor ? { baseColor: props.baseColor } : {})}
+            {...(props.excludeBaseNodes ? { excludeBaseNodes: props.excludeBaseNodes } : {})}
             {...(props.parts ? { parts: props.parts } : {})}
           >
             {props.children}

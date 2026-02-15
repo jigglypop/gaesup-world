@@ -27,7 +27,7 @@ jest.mock('../../movement', () => ({
   })),
 }));
 
-jest.mock('../../controller/AnimationController', () => ({
+jest.mock('@core/motions/controller/AnimationController', () => ({
   AnimationController: jest.fn().mockImplementation(() => ({
     update: jest.fn(),
     play: jest.fn(),
@@ -194,7 +194,7 @@ describe('PhysicsSystem', () => {
     });
 
     test('should call animation controller update', () => {
-      const { AnimationController } = require('../../controller/AnimationController');
+      const { AnimationController } = require('@core/motions/controller/AnimationController');
       const mockAnimationController = new AnimationController();
 
       physicsSystem.calculate(mockCalcProps, mockPhysicsState);
@@ -523,7 +523,7 @@ describe('PhysicsSystem', () => {
 
   describe('Integration', () => {
     test('should integrate with animation controller', () => {
-      const { AnimationController } = require('../../controller/AnimationController');
+      const { AnimationController } = require('@core/motions/controller/AnimationController');
       const mockAnimationController = new AnimationController();
       
       physicsSystem.calculate(mockCalcProps, mockPhysicsState);

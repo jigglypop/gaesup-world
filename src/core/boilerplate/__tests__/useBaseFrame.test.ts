@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react-hooks';
-import { useBaseFrame } from '../useBaseFrame';
+import { useBaseFrame } from '../hooks/useBaseFrame';
 
 // @react-three/fiber의 useFrame을 모킹합니다.
 const frameCallbacks: ((...args: any[]) => void)[] = [];

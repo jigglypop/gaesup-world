@@ -5,6 +5,18 @@ import {
 } from './types';
 import { logger } from '../../utils/logger';
 
+const HOOK_BEFORE_METADATA_KEY = 'monitoring:hook:before';
+const HOOK_AFTER_METADATA_KEY = 'monitoring:hook:after';
+
+const isPromiseLike = (value: unknown): value is Promise<unknown> => {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as any).then === 'function' &&
+    typeof (value as any).finally === 'function'
+  );
+};
+
 export function Profile(label?: string) {
   return function (
     target: DecoratorTarget,
@@ -15,13 +27,30 @@ export function Profile(label?: string) {
 
     descriptor.value = function (...args: unknown[]) {
       const start = performance.now();
-      const result = originalMethod!.apply(this, args);
+      let result: unknown;
+      try {
+        result = originalMethod!.apply(this, args);
+      } catch (e) {
+        const end = performance.now();
+        const time = end - start;
+        const methodLabel = label || `${target.constructor.name}.${propertyKey}`;
+        logger.log(`[Profile] ${methodLabel} executed in ${time.toFixed(2)}ms`);
+        throw e;
+      }
+
+      if (isPromiseLike(result)) {
+        const methodLabel = label || `${target.constructor.name}.${propertyKey}`;
+        return (result as Promise<unknown>).finally(() => {
+          const end = performance.now();
+          const time = end - start;
+          logger.log(`[Profile] ${methodLabel} executed in ${time.toFixed(2)}ms`);
+        });
+      }
+
       const end = performance.now();
       const time = end - start;
-
       const methodLabel = label || `${target.constructor.name}.${propertyKey}`;
       logger.log(`[Profile] ${methodLabel} executed in ${time.toFixed(2)}ms`);
-
       return result;
     };
 
@@ -39,7 +68,25 @@ export function Log(level: 'log' | 'info' | 'warn' | 'error' = 'log') {
 
     descriptor.value = function (...args: unknown[]) {
       logger[level](`[${target.constructor.name}] Calling ${propertyKey} with args:`, args);
-      const result = originalMethod!.apply(this, args);
+      let result: unknown;
+      try {
+        result = originalMethod!.apply(this, args);
+      } catch (e) {
+        throw e;
+      }
+
+      if (isPromiseLike(result)) {
+        return (result as Promise<unknown>).then(
+          (resolved) => {
+            logger[level](`[${target.constructor.name}] ${propertyKey} returned:`, resolved);
+            return resolved;
+          },
+          (e) => {
+            throw e;
+          }
+        );
+      }
+
       logger[level](`[${target.constructor.name}] ${propertyKey} returned:`, result);
       return result;
     };
@@ -90,6 +137,20 @@ export function RateLimit(maxCalls: number, windowMs: number) {
 
       if (callInfo.count >= maxCalls) {
         logger.warn(`[RateLimit] ${key} exceeded rate limit`);
+
+        // If Hook decorator was applied "inside" RateLimit, it won't run unless we
+        // explicitly run the hook metadata here.
+        const before = Reflect.getMetadata(HOOK_BEFORE_METADATA_KEY, target, propertyKey) as
+          | undefined
+          | (() => void);
+        const after = Reflect.getMetadata(HOOK_AFTER_METADATA_KEY, target, propertyKey) as
+          | undefined
+          | (() => void);
+        try {
+          before?.();
+        } finally {
+          after?.();
+        }
         return;
       }
 
@@ -109,14 +170,60 @@ export function Hook(before?: () => void, after?: () => void) {
     propertyKey: string,
     descriptor: PropertyDescriptorExtended
   ) {
-    void target;
-    void propertyKey;
+    // Store hooks for outer decorators (e.g. RateLimit) to use.
+    if (before) Reflect.defineMetadata(HOOK_BEFORE_METADATA_KEY, before, target, propertyKey);
+    if (after) Reflect.defineMetadata(HOOK_AFTER_METADATA_KEY, after, target, propertyKey);
     const originalMethod = descriptor.value;
 
     descriptor.value = function (...args: unknown[]) {
-      if (before) before();
-      const result = originalMethod!.apply(this, args);
-      if (after) after();
+      before?.();
+      let result: unknown;
+      try {
+        result = originalMethod!.apply(this, args);
+      } catch (e) {
+        after?.();
+        throw e;
+      }
+
+      if (isPromiseLike(result)) {
+        return (result as Promise<unknown>).finally(() => {
+          after?.();
+        });
+      }
+
+      after?.();
+      return result;
+    };
+
+    return descriptor;
+  };
+}
+
+export function MemoryProfile(label?: string) {
+  return function (
+    target: DecoratorTarget,
+    propertyKey: string,
+    descriptor: PropertyDescriptorExtended
+  ) {
+    const originalMethod = descriptor.value;
+
+    descriptor.value = function (...args: unknown[]) {
+      const before = process.memoryUsage();
+      let result: unknown;
+      try {
+        result = originalMethod!.apply(this, args);
+      } catch (e) {
+        const after = process.memoryUsage();
+        const heapDeltaKb = (after.heapUsed - before.heapUsed) / 1024;
+        const methodLabel = label || `${target.constructor.name}.${propertyKey}`;
+        logger.log(`[MemoryProfile] ${methodLabel} heap: +${heapDeltaKb.toFixed(2)}KB`);
+        throw e;
+      }
+
+      const after = process.memoryUsage();
+      const heapDeltaKb = (after.heapUsed - before.heapUsed) / 1024;
+      const methodLabel = label || `${target.constructor.name}.${propertyKey}`;
+      logger.log(`[MemoryProfile] ${methodLabel} heap: +${heapDeltaKb.toFixed(2)}KB`);
       return result;
     };
 

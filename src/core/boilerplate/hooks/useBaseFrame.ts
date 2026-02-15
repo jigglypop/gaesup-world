@@ -15,7 +15,8 @@ export function useBaseFrame<
   callback?: () => void,
   options: UseBaseFrameOptions = {}
 ) {
-  const lastUpdateTime = useRef(0);
+  // Allow the first frame to run immediately when throttle > 0.
+  const lastUpdateTime = useRef(Number.NEGATIVE_INFINITY);
   const { 
     priority = 0, 
     enabled = true, 
@@ -23,12 +24,15 @@ export function useBaseFrame<
     skipWhenHidden = true 
   } = options;
   const frameHandler = useCallback((state: RootState, delta: number) => {
-    void state;
     void delta;
     if (!enabled || !bridge) return;
     if (skipWhenHidden && document.hidden) return;
     if (throttle > 0) {
-      const now = performance.now();
+      // Prefer R3F's clock (test-friendly, deterministic); fall back to performance.now().
+      const now =
+        typeof state?.clock?.elapsedTime === 'number'
+          ? state.clock.elapsedTime * MILLISECONDS_IN_SECOND
+          : performance.now();
       if (now - lastUpdateTime.current < throttle) return;
       lastUpdateTime.current = now;
     }

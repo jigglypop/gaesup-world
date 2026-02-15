@@ -69,6 +69,16 @@ describe('useManagedEntity', () => {
     engineRef.current = mockEngine;
     
     jest.clearAllMocks();
+
+    // jest.clearAllMocks() does not restore mock implementations.
+    // Reset per-test behavior explicitly to avoid leakage between tests.
+    mockDIContainer.injectProperties.mockReset();
+    mockDIContainer.injectProperties.mockImplementation(() => undefined);
+
+    mockManagedEntity.initialize.mockReset();
+    mockManagedEntity.initialize.mockImplementation(() => undefined);
+    mockManagedEntity.dispose.mockReset();
+    mockManagedEntity.dispose.mockImplementation(() => undefined);
     
     // ManagedEntity 생성자 mock 초기화
     (ManagedEntity as jest.Mock).mockImplementation(() => mockManagedEntity);

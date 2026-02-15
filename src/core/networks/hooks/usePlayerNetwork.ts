@@ -87,37 +87,11 @@ export function usePlayerNetwork(defaultOptions: UsePlayerNetworkOptions): UsePl
     managerRef.current?.updateLocalPlayer(state);
   }, []);
 
-  // 콜백 설정
-  useEffect(() => {
-    managerRef.current?.setCallbacks({
-      onPlayerJoin: (playerId, state) => {
-        setPlayers(prev => {
-          const newPlayers = new Map(prev);
-          newPlayers.set(playerId, state);
-          return newPlayers;
-        });
-      },
-      onPlayerUpdate: (playerId, state) => {
-        setPlayers(prev => {
-          const newPlayers = new Map(prev);
-          newPlayers.set(playerId, state);
-          return newPlayers;
-        });
-      },
-      onPlayerLeave: (playerId) => {
-        setPlayers(prev => {
-          const newPlayers = new Map(prev);
-          newPlayers.delete(playerId);
-          return newPlayers;
-        });
-      }
-    });
-  }, []);
-
   // 정리
   useEffect(() => {
     return () => {
       managerRef.current?.disconnect();
+      managerRef.current = null;
     };
   }, []);
 

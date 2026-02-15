@@ -4,10 +4,12 @@ import { AbstractBridge } from '../../bridge/AbstractBridge';
 import { IDisposable, UseBaseFrameOptions } from '../../types';
 
 // useFrame mock
-const mockUseFrame = jest.fn();
 jest.mock('@react-three/fiber', () => ({
-  useFrame: mockUseFrame
+  useFrame: jest.fn()
 }));
+
+import { useFrame } from '@react-three/fiber';
+const mockUseFrame = useFrame as unknown as jest.Mock;
 
 // Mock 클래스들
 class MockEngine implements IDisposable {
@@ -163,16 +165,15 @@ describe('useBaseFrame', () => {
       const frameHandler = mockUseFrame.mock.calls[0][0];
       
       // 첫 번째 호출 (시간: 16ms)
-      frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
+      frameHandler({ clock: { elapsedTime: 0.016 } }, 0.016);
       expect(mockCallback).toHaveBeenCalledTimes(1);
       
       // 두 번째 호출 (시간: 32ms, 간격: 16ms < 100ms)
-      frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
+      frameHandler({ clock: { elapsedTime: 0.032 } }, 0.016);
       expect(mockCallback).toHaveBeenCalledTimes(1); // 호출되지 않음
       
       // 시간을 충분히 진행시킴 (시간: 116ms 이상)
-      mockPerformanceNow.mockReturnValue(116);
-      frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
+      frameHandler({ clock: { elapsedTime: 0.116 } }, 0.016);
       expect(mockCallback).toHaveBeenCalledTimes(2); // 다시 호출됨
     });
 
@@ -227,15 +228,14 @@ describe('useBaseFrame', () => {
     test('같은 참조의 옵션이면 핸들러가 재생성되지 않아야 함', () => {
       const options: UseBaseFrameOptions = { priority: 1, enabled: true };
       
-      const { rerender } = renderHook(() => 
-        useBaseFrame(mockBridge, 'test-id', mockCallback, options)
-      );
-      
-      const initialCallCount = mockUseFrame.mock.calls.length;
-      
+      const { rerender } = renderHook(() => useBaseFrame(mockBridge, 'test-id', mockCallback, options));
+
+      const initialHandler = mockUseFrame.mock.calls[0][0];
+
       rerender();
-      
-      expect(mockUseFrame.mock.calls.length).toBe(initialCallCount);
+
+      const rerenderHandler = mockUseFrame.mock.calls[1][0];
+      expect(rerenderHandler).toBe(initialHandler);
     });
   });
 
@@ -297,10 +297,12 @@ describe('useBaseFrame', () => {
       
       // 1000번 호출하지만 throttle로 인해 실제로는 훨씬 적게 실행됨
       for (let i = 0; i < 1000; i++) {
-        frameHandler({ clock: { elapsedTime: i } }, 0.016);
+        // elapsedTime is seconds in R3F's clock.
+        frameHandler({ clock: { elapsedTime: i * 0.016 } }, 0.016);
       }
       
-      expect(mockCallback.mock.calls.length).toBeLessThan(100);
+      // With a 16ms "frame" and 100ms throttle, we expect ~140-160 calls.
+      expect(mockCallback.mock.calls.length).toBeLessThan(160);
     });
   });
 });
@@ -320,7 +322,7 @@ describe('useConditionalFrame', () => {
   test('조건이 true일 때만 실행되어야 함', () => {
     mockCondition.mockReturnValue(true);
     
-    renderHook(() => useConditionalFrame(mockBridge, 'test-id', mockCallback, mockCondition));
+    renderHook(() => useConditionalFrame(mockBridge, 'test-id', mockCondition, mockCallback));
     
     const frameHandler = mockUseFrame.mock.calls[0][0];
     frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
@@ -332,7 +334,7 @@ describe('useConditionalFrame', () => {
   test('조건이 false일 때 실행되지 않아야 함', () => {
     mockCondition.mockReturnValue(false);
     
-    renderHook(() => useConditionalFrame(mockBridge, 'test-id', mockCallback, mockCondition));
+    renderHook(() => useConditionalFrame(mockBridge, 'test-id', mockCondition, mockCallback));
     
     const frameHandler = mockUseFrame.mock.calls[0][0];
     frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
@@ -346,7 +348,7 @@ describe('useConditionalFrame', () => {
       throw new Error('Condition error');
     });
     
-    renderHook(() => useConditionalFrame(mockBridge, 'test-id', mockCallback, mockCondition));
+    renderHook(() => useConditionalFrame(mockBridge, 'test-id', mockCondition, mockCallback));
     
     const frameHandler = mockUseFrame.mock.calls[0][0];
     

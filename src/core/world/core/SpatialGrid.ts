@@ -48,16 +48,38 @@ export class SpatialGrid {
 
   update(id: string, newPosition: THREE.Vector3): void {
     const oldPosition = this.objectPositions.get(id);
-    if (!oldPosition || !oldPosition.equals(newPosition)) {
+    if (!oldPosition) {
       this.add(id, newPosition);
+      return;
     }
+    if (oldPosition.equals(newPosition)) return;
+
+    const prevKey = this.getCellKey(oldPosition.x, oldPosition.z);
+    const nextKey = this.getCellKey(newPosition.x, newPosition.z);
+
+    // Only update cell membership when the object crossed a cell boundary.
+    if (prevKey !== nextKey) {
+      const prevCell = this.cells.get(prevKey);
+      if (prevCell) {
+        prevCell.delete(id);
+        if (prevCell.size === 0) this.cells.delete(prevKey);
+      }
+
+      const nextCell = this.cells.get(nextKey) ?? new Set<string>();
+      nextCell.add(id);
+      this.cells.set(nextKey, nextCell);
+    }
+
+    // Reuse the stored Vector3 to avoid per-update allocations.
+    oldPosition.copy(newPosition);
   }
 
   getNearby(position: THREE.Vector3, radius: number): string[] {
-    const result: Set<string> = new Set();
+    const result: string[] = [];
     const cellRadius = Math.ceil(radius / this.cellSize);
     const centerX = Math.floor(position.x / this.cellSize);
     const centerZ = Math.floor(position.z / this.cellSize);
+    const radiusSq = radius * radius;
 
     for (let x = centerX - cellRadius; x <= centerX + cellRadius; x++) {
       for (let z = centerZ - cellRadius; z <= centerZ + cellRadius; z++) {
@@ -66,15 +88,19 @@ export class SpatialGrid {
         if (cell) {
           cell.forEach(id => {
             const objectPos = this.objectPositions.get(id);
-            if (objectPos && position.distanceTo(objectPos) <= radius) {
-              result.add(id);
+            if (!objectPos) return;
+            const dx = position.x - objectPos.x;
+            const dy = position.y - objectPos.y;
+            const dz = position.z - objectPos.z;
+            if (dx * dx + dy * dy + dz * dz <= radiusSq) {
+              result.push(id);
             }
           });
         }
       }
     }
 
-    return Array.from(result);
+    return result;
   }
 
   clear(): void {

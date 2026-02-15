@@ -10,7 +10,6 @@ import {
   MemoizationManager,
   shouldUpdate
 } from '@utils/memoization';
-import { threeObjectPool } from '@utils/objectPool';
 import { calcAngleByVector, calcNorm } from '@utils/vector';
 
 import { InteractionSystem } from '../../../interactions/core/InteractionSystem';
@@ -35,6 +34,9 @@ export class DirectionComponent {
   private timers = new Set<NodeJS.Timeout>();
   private interactionSystem: InteractionSystem;
   private config: PhysicsConfigType;
+  private tempEuler = new THREE.Euler();
+  private tempQuaternion = new THREE.Quaternion();
+  private targetQuaternion = new THREE.Quaternion();
 
   constructor(config: PhysicsConfigType) {
     this.interactionSystem = InteractionSystem.getInstance();
@@ -175,17 +177,12 @@ export class DirectionComponent {
     activeState.euler.x = targetX;
     activeState.euler.z = targetZ;
     
-    threeObjectPool.withEuler((tempEuler) => {
-      threeObjectPool.withQuaternion((tempQuaternion) => {
-        threeObjectPool.withQuaternion((targetQuaternion) => {
-          tempEuler.set(targetX, 0, targetZ);
-          tempQuaternion.setFromEuler(innerGroup.rotation);
-          targetQuaternion.setFromEuler(tempEuler);
-          tempQuaternion.slerp(targetQuaternion, 0.2);
-          innerGroup.setRotationFromQuaternion(tempQuaternion);
-        });
-      });
-    });
+    // Hot path: avoid object-pool overhead by reusing per-instance scratch objects.
+    this.tempEuler.set(targetX, 0, targetZ);
+    this.tempQuaternion.setFromEuler(innerGroup.rotation);
+    this.targetQuaternion.setFromEuler(this.tempEuler);
+    this.tempQuaternion.slerp(this.targetQuaternion, 0.2);
+    innerGroup.setRotationFromQuaternion(this.tempQuaternion);
   }
 
   private handleMouseDirection(
@@ -200,19 +197,18 @@ export class DirectionComponent {
       if (Q && Q.target) {
         const currentPosition = calcProp?.body?.translation() || new THREE.Vector3();
         const targetPosition = Q.target;
-        threeObjectPool.withVector3((direction) => {
-          direction.subVectors(targetPosition, currentPosition).normalize();
-          if (calcProp?.memo) {
-            if (!calcProp.memo.direction) {
-              calcProp.memo.direction = new THREE.Vector3();
-            }
-            if (!calcProp.memo.directionTarget) {
-              calcProp.memo.directionTarget = new THREE.Vector3();
-            }
-            calcProp.memo.direction.copy(direction);
-            calcProp.memo.directionTarget.copy(targetPosition);
+        const direction = this.vectorCache.getTempVector(1);
+        direction.subVectors(targetPosition, currentPosition).normalize();
+        if (calcProp?.memo) {
+          if (!calcProp.memo.direction) {
+            calcProp.memo.direction = new THREE.Vector3();
           }
-        });
+          if (!calcProp.memo.directionTarget) {
+            calcProp.memo.directionTarget = new THREE.Vector3();
+          }
+          calcProp.memo.direction.copy(direction);
+          calcProp.memo.directionTarget.copy(targetPosition);
+        }
         
         if (automation.queue.loop && Q && automation.queue.actions) {
           automation.queue.actions.push(Q);

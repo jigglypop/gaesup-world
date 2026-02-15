@@ -1,4 +1,4 @@
-import { vec3, quat, RapierRigidBody } from '@react-three/rapier';
+import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { AbstractSystem, SystemUpdateArgs, Autowired } from '@core/boilerplate';
@@ -42,6 +42,15 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
   @Autowired()
   private motionService!: MotionService;
 
+  // Hot-path scratch objects to avoid per-frame allocations.
+  private temp = {
+    position: new THREE.Vector3(),
+    velocity: new THREE.Vector3(),
+    rotation: new THREE.Euler(),
+  };
+  private tempQuaternion = new THREE.Quaternion();
+  private tempForce = new THREE.Vector3();
+
   constructor(options: MotionSystemOptions) {
     super(defaultState, defaultMetrics, options);
   }
@@ -65,10 +74,17 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
   }
 
   private extractPhysicsState(rigidBody: RapierRigidBody) {
-    const position = vec3(rigidBody.translation());
-    const velocity = vec3(rigidBody.linvel());
-    const rotation = new THREE.Euler().setFromQuaternion(quat(rigidBody.rotation()));
-    return { position, velocity, rotation };
+    const translation = rigidBody.translation();
+    this.temp.position.set(translation.x, translation.y, translation.z);
+
+    const velocity = rigidBody.linvel();
+    this.temp.velocity.set(velocity.x, velocity.y, velocity.z);
+
+    const rotation = rigidBody.rotation();
+    this.tempQuaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
+    this.temp.rotation.setFromQuaternion(this.tempQuaternion);
+
+    return this.temp;
   }
 
   @HandleError()
@@ -118,7 +134,7 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
   @HandleError()
   public applyForce(movement: THREE.Vector3, rigidBody: RapierRigidBody): void {
     const config = this.motionService.getDefaultConfig();
-    const force = this.motionService.calculateMovementForce(movement, this.state.velocity, config);
+    const force = this.motionService.calculateMovementForce(movement, this.state.velocity, config, this.tempForce);
     rigidBody.applyImpulse(force, true);
   }
 

@@ -28,16 +28,38 @@ export function useBaseLifecycle<
     }
 
     return () => {
+      // Ensure unregister always runs, even if cleanup/onUnregister throws.
+      let firstError: unknown;
+
       if (cleanupRef.current) {
-        cleanupRef.current();
-        cleanupRef.current = null;
+        try {
+          cleanupRef.current();
+        } catch (e) {
+          firstError = firstError ?? e;
+        } finally {
+          cleanupRef.current = null;
+        }
       }
+
       if (onUnregister) {
-        onUnregister(engine);
+        try {
+          onUnregister(engine);
+        } catch (e) {
+          firstError = firstError ?? e;
+        }
       }
-      bridge.unregister(id);
+
+      try {
+        bridge.unregister(id);
+      } catch (e) {
+        firstError = firstError ?? e;
+      }
+
+      if (firstError) {
+        throw firstError;
+      }
     };
-  }, [bridge, id, engine, enabled, ...dependencies]);
+  }, [bridge, id, engine, enabled, onRegister, onUnregister, ...dependencies]);
 }
 
 export function useDelayedLifecycle<

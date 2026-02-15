@@ -84,10 +84,10 @@ export class ImpulseComponent {
     const { maxSpeed = 10, accelRatio = 2 } = this.config;
     const { shift } = keyboard;
     const velocity = rigidBodyRef.current.linvel();
-    const currentSpeed = Math.sqrt(
-      velocity.x * velocity.x + velocity.z * velocity.z
-    );
-    if (currentSpeed < maxSpeed) {
+    // Avoid sqrt: compare squared speed to squared maxSpeed.
+    const safeMaxSpeed = Math.max(0, maxSpeed);
+    const speedSq = velocity.x * velocity.x + velocity.z * velocity.z;
+    if (speedSq < safeMaxSpeed * safeMaxSpeed) {
       const M = rigidBodyRef.current.mass();
       const speed = shift ? accelRatio : 1;
       const impulse = {
@@ -107,12 +107,13 @@ export class ImpulseComponent {
     const { maxSpeed = 20 } = this.config;
     
     const velocity = rigidBodyRef.current.linvel();
-    const currentSpeed = Math.sqrt(
+    // Avoid sqrt: compare squared speed to squared maxSpeed.
+    const safeMaxSpeed = Math.max(0, maxSpeed);
+    const speedSq =
       velocity.x * velocity.x +
-        velocity.y * velocity.y +
-        velocity.z * velocity.z
-    );
-    if (currentSpeed < maxSpeed) {
+      velocity.y * velocity.y +
+      velocity.z * velocity.z;
+    if (speedSq < safeMaxSpeed * safeMaxSpeed) {
       const M = rigidBodyRef.current.mass();
       const impulse = {
         x: activeState.direction.x * M,

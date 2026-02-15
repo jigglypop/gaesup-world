@@ -29,6 +29,7 @@ interface MultiplayerCanvasProps {
   airplaneUrl: string;
   playerRef: React.RefObject<RapierRigidBody>;
   config: MultiplayerConfig;
+  localPlayerColor?: string;
   proximityRange?: number;
   speechByPlayerId?: Map<string, string>;
   localSpeechText?: string | null;
@@ -41,6 +42,7 @@ export function MultiplayerCanvas({
   airplaneUrl, 
   playerRef, 
   config,
+  localPlayerColor,
   proximityRange,
   speechByPlayerId,
   localSpeechText,
@@ -132,6 +134,7 @@ export function MultiplayerCanvas({
                 // `urls.characterUrl` is already set via <GaesupWorld urls={...} />.
                 // Passing the same model as a "part" duplicates the render and can skew perceived scale.
                 parts={[]}
+                {...(localPlayerColor ? { baseColor: localPlayerColor } : {})}
               />
 
               {/* 로컬 말풍선 */}

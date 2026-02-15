@@ -18,6 +18,7 @@ export type ModelRendererProps = {
     color?: string | undefined;
     skeleton?: THREE.Skeleton | null | undefined;
     url: string;
+    excludeNodeNames?: string[] | undefined;
 }
 
 export type InnerGroupRefType = {
@@ -33,6 +34,8 @@ export type InnerGroupRefType = {
     ridingUrl?: string;
     offset?: THREE.Vector3;
     parts?: Part[];
+    baseColor?: string;
+    excludeBaseNodes?: string[];
     isRiderOn?: boolean;
     enableRiding?: boolean;
 }

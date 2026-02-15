@@ -179,14 +179,12 @@ describe('NPCSystem', () => {
     beforeEach(() => {
       // Mock building store with NPC mode and hover position
       mockUseBuildingStore.mockImplementation((selector) => {
-        if (typeof selector === 'function') {
-          const mockState = {
-            editMode: 'npc',
-            hoverPosition: { x: 15, y: 0, z: 20 }
-          };
-          return selector(mockState);
-        }
-        return selector === (state: any) => state.editMode ? 'npc' : { x: 15, y: 0, z: 20 };
+        const mockState = {
+          editMode: 'npc',
+          hoverPosition: { x: 15, y: 0, z: 20 }
+        };
+        if (typeof selector === 'function') return selector(mockState);
+        return mockState as any;
       });
     });
 

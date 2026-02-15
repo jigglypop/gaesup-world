@@ -49,6 +49,18 @@ export function RemotePlayer({ state, characterUrl, config, speechText }: Remote
   // URL 가져오기 - props에서 먼저, 없으면 state에서
   const modelUrl = characterUrl || state.modelUrl || '';
   if (!modelUrl) return null;
+
+  const normalizeHexColor = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+    const v = value.trim();
+    if (!v) return null;
+    const withHash = v.startsWith('#') ? v : `#${v}`;
+    // Accept #RGB and #RRGGBB
+    if (/^#[0-9a-fA-F]{3}$/.test(withHash)) return withHash;
+    if (/^#[0-9a-fA-F]{6}$/.test(withHash)) return withHash;
+    return null;
+  };
+  const playerColor = useMemo(() => normalizeHexColor(state.color), [state.color]);
   
   // 설정값 가져오기
   const interpolationSpeed = config?.tracking?.interpolationSpeed || 0.15;
@@ -60,10 +72,63 @@ export function RemotePlayer({ state, characterUrl, config, speechText }: Remote
   const { scene, animations } = useGLTF(modelUrl);
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { actions, ref: animationRef } = useAnimations(animations, meshRef);
+  const tintedMaterialsRef = useRef<THREE.Material[]>([]);
   const currentAnimRef = useRef<string | null>(null);
   const currentActionRef = useRef<THREE.AnimationAction | null>(null);
   const lastAnimSwitchAt = useRef<number>(performance.now());
   const speechPos = useRef(new THREE.Vector3());
+
+  // Apply per-player tint (material cloning) once per model/color.
+  useEffect(() => {
+    // Dispose previously created materials (if any).
+    for (const m of tintedMaterialsRef.current) {
+      try {
+        m.dispose();
+      } catch {
+        // ignore
+      }
+    }
+    tintedMaterialsRef.current = [];
+
+    if (!playerColor) return;
+
+    const tintMaterial = (mat: THREE.Material): THREE.Material => {
+      const anyMat = mat as unknown as { color?: { set?: (c: string) => void } };
+      if (!anyMat?.color || typeof anyMat.color.set !== 'function') return mat;
+
+      const cloned = mat.clone();
+      const c = cloned as unknown as { color?: { set?: (c: string) => void } };
+      c.color?.set?.(playerColor);
+      tintedMaterialsRef.current.push(cloned);
+      return cloned;
+    };
+
+    clone.traverse((obj) => {
+      const mesh = obj as unknown as {
+        isMesh?: boolean;
+        isSkinnedMesh?: boolean;
+        material?: THREE.Material | THREE.Material[];
+      };
+      if (!mesh || (!mesh.isMesh && !mesh.isSkinnedMesh) || !mesh.material) return;
+
+      if (Array.isArray(mesh.material)) {
+        mesh.material = mesh.material.map((m) => tintMaterial(m));
+      } else {
+        mesh.material = tintMaterial(mesh.material);
+      }
+    });
+
+    return () => {
+      for (const m of tintedMaterialsRef.current) {
+        try {
+          m.dispose();
+        } catch {
+          // ignore
+        }
+      }
+      tintedMaterialsRef.current = [];
+    };
+  }, [clone, playerColor]);
 
   const pickAction = (desired: string): THREE.AnimationAction | null => {
     if (!actions) return null;

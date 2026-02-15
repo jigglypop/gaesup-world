@@ -2,6 +2,13 @@
 // Jest loads setupFilesAfterEnv via CommonJS; keep this file CJS-compatible.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 require("@testing-library/jest-dom");
+// Decorator metadata used by boilerplate/decorators tests.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+require("reflect-metadata");
+
+// React 18+ requires this flag to suppress "act environment" warnings.
+// Some @react-three/fiber effects schedule updates on mount.
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 // ResizeObserver polyfill for jsdom environment
 global.ResizeObserver = class ResizeObserver {

@@ -9,10 +9,15 @@ import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
 
 import { ModelRendererProps, PartsGroupRefProps } from './types';
 
-export function ModelRenderer({ nodes, color, skeleton, url }: ModelRendererProps) {
+export function ModelRenderer({ nodes, color, skeleton, url, excludeNodeNames }: ModelRendererProps) {
   const processedNodes = useMemo(() => {
+    const exclude =
+      excludeNodeNames && excludeNodeNames.length > 0
+        ? new Set(excludeNodeNames)
+        : null;
     return Object.keys(nodes)
       .map((name: string, key: number) => {
+        if (exclude && exclude.has(name)) return null;
         const node = nodes[name];
         if (node instanceof THREE.SkinnedMesh) {
           const material = Array.isArray(node.material)
@@ -65,7 +70,7 @@ export function ModelRenderer({ nodes, color, skeleton, url }: ModelRendererProp
         return null;
       })
       .filter(Boolean);
-  }, [nodes, color, skeleton, url]);
+  }, [nodes, color, skeleton, url, excludeNodeNames]);
 
   return (
     <>

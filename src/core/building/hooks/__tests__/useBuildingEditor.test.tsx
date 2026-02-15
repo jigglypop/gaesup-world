@@ -1,6 +1,5 @@
 import React from 'react';
 import { renderHook, act } from '@testing-library/react';
-import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useBuildingEditor } from '../useBuildingEditor';
 import { useBuildingStore } from '../../stores/buildingStore';
@@ -9,24 +8,13 @@ import { useBuildingStore } from '../../stores/buildingStore';
 jest.mock('three', () => {
   const originalThree = jest.requireActual('three');
   
-  const mockVector2 = {
-    x: 0,
-    y: 0
-  };
-
-  const mockVector3 = {
-    x: 0,
-    y: 0,
-    z: 0
-  };
-
   const mockPlane = {
     normal: new originalThree.Vector3(0, 1, 0),
     constant: 0
   };
 
   const mockRay = {
-    intersectPlane: jest.fn(() => mockVector3)
+    intersectPlane: jest.fn()
   };
 
   const mockRaycaster = {
@@ -36,8 +24,8 @@ jest.mock('three', () => {
 
   return {
     ...originalThree,
-    Vector2: jest.fn(() => mockVector2),
-    Vector3: jest.fn(() => mockVector3),
+    Vector2: jest.fn((x = 0, y = 0) => ({ x, y })),
+    Vector3: jest.fn((x = 0, y = 0, z = 0) => ({ x, y, z })),
     Plane: jest.fn(() => mockPlane),
     Raycaster: jest.fn(() => mockRaycaster)
   };
@@ -53,43 +41,29 @@ jest.mock('@react-three/fiber', () => ({
     raycaster: {
       setFromCamera: jest.fn(),
       ray: {
-        intersectPlane: jest.fn(() => ({ x: 5, y: 0, z: 5 }))
+        // Match THREE.Ray.intersectPlane(plane, target): mutate target and return it.
+        intersectPlane: jest.fn((_plane: any, target: any) => {
+          if (target) {
+            target.x = 10;
+            target.y = 0;
+            target.z = 15;
+          }
+          return target;
+        })
       }
     }
   }))
 }));
 
 // BuildingStore 모킹
-jest.mock('../../stores/buildingStore', () => ({
-  useBuildingStore: jest.fn(() => ({
-    editMode: 'none',
-    selectedWallGroupId: 'test-wall-group',
-    selectedTileGroupId: 'test-tile-group',
-    snapPosition: jest.fn((pos) => pos),
-    addWall: jest.fn(),
-    addTile: jest.fn(),
-    removeWall: jest.fn(),
-    removeTile: jest.fn(),
-    setHoverPosition: jest.fn(),
-    getState: jest.fn(() => ({
-      currentWallRotation: 0,
-      checkWallPosition: jest.fn(() => false),
-      checkTilePosition: jest.fn(() => false),
-      currentTileMultiplier: 1
-    }))
-  }))
-}));
+jest.mock('../../stores/buildingStore', () => {
+  const useBuildingStore = jest.fn();
+  (useBuildingStore as any).getState = jest.fn();
+  return { useBuildingStore };
+});
 
 // 테스트용 래퍼 컴포넌트
-const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-  <Canvas>
-    <mesh>
-      <boxGeometry />
-      <meshBasicMaterial />
-    </mesh>
-    {children}
-  </Canvas>
-);
+const TestWrapper = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 
 describe('useBuildingEditor 훅 테스트', () => {
   let mockStore: any;
@@ -111,13 +85,15 @@ describe('useBuildingEditor 훅 테스트', () => {
       removeWall: jest.fn(),
       removeTile: jest.fn(),
       setHoverPosition: jest.fn(),
-      getState: jest.fn(() => ({
-        currentWallRotation: 0,
-        checkWallPosition: jest.fn(() => false),
-        checkTilePosition: jest.fn(() => false),
-        currentTileMultiplier: 1
-      }))
     });
+
+    // Zustand-style store API: useBuildingStore.getState()
+    (mockStore as any).getState = jest.fn(() => ({
+      currentWallRotation: 0,
+      checkWallPosition: jest.fn(() => false),
+      checkTilePosition: jest.fn(() => false),
+      currentTileMultiplier: 1
+    }));
 
     mockUseThree.mockReturnValue({
       camera: {
@@ -296,7 +272,14 @@ describe('useBuildingEditor 훅 테스트', () => {
       const mockRaycaster = {
         setFromCamera: jest.fn(),
         ray: {
-          intersectPlane: jest.fn(() => ({ x: 10, y: 0, z: 15 }))
+          intersectPlane: jest.fn((_plane: any, target: any) => {
+            if (target) {
+              target.x = 10;
+              target.y = 0;
+              target.z = 15;
+            }
+            return target;
+          })
         }
       };
 
@@ -370,14 +353,21 @@ describe('useBuildingEditor 훅 테스트', () => {
         editMode: 'wall',
         selectedWallGroupId: 'test-wall-group',
         addWall: mockAddWall,
-        getState: mockGetState,
         snapPosition: jest.fn((pos) => pos)
       });
+      (mockStore as any).getState = mockGetState;
 
       const mockRaycaster = {
         setFromCamera: jest.fn(),
         ray: {
-          intersectPlane: jest.fn(() => ({ x: 5, y: 0, z: 10 }))
+          intersectPlane: jest.fn((_plane: any, target: any) => {
+            if (target) {
+              target.x = 5;
+              target.y = 0;
+              target.z = 10;
+            }
+            return target;
+          })
         }
       };
 
@@ -456,9 +446,9 @@ describe('useBuildingEditor 훅 테스트', () => {
         editMode: 'wall',
         selectedWallGroupId: 'test-wall-group',
         addWall: jest.fn(),
-        getState: mockGetState,
         snapPosition: jest.fn((pos) => pos)
       });
+      (mockStore as any).getState = mockGetState;
 
       const { result } = renderHook(() => useBuildingEditor(), {
         wrapper: TestWrapper
@@ -519,14 +509,21 @@ describe('useBuildingEditor 훅 테스트', () => {
         editMode: 'tile',
         selectedTileGroupId: 'test-tile-group',
         addTile: mockAddTile,
-        getState: mockGetState,
         snapPosition: jest.fn((pos) => pos)
       });
+      (mockStore as any).getState = mockGetState;
 
       const mockRaycaster = {
         setFromCamera: jest.fn(),
         ray: {
-          intersectPlane: jest.fn(() => ({ x: 8, y: 0, z: 12 }))
+          intersectPlane: jest.fn((_plane: any, target: any) => {
+            if (target) {
+              target.x = 8;
+              target.y = 0;
+              target.z = 12;
+            }
+            return target;
+          })
         }
       };
 
@@ -605,9 +602,9 @@ describe('useBuildingEditor 훅 테스트', () => {
         editMode: 'tile',
         selectedTileGroupId: 'test-tile-group',
         addTile: jest.fn(),
-        getState: mockGetState,
         snapPosition: jest.fn((pos) => pos)
       });
+      (mockStore as any).getState = mockGetState;
 
       const { result } = renderHook(() => useBuildingEditor(), {
         wrapper: TestWrapper

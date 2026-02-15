@@ -15,23 +15,39 @@ export class MotionService {
   public calculateMovementForce(
     movement: THREE.Vector3,
     currentVelocity: THREE.Vector3,
-    config: { maxSpeed: number; acceleration: number }
+    config: { maxSpeed: number; acceleration: number },
+    out?: THREE.Vector3
   ): THREE.Vector3 {
     const { maxSpeed, acceleration } = config;
-    const targetVelocity = movement.clone().normalize().multiplyScalar(maxSpeed);
-    const velocityDiff = targetVelocity.sub(currentVelocity);
-    return velocityDiff.multiplyScalar(acceleration);
+    const force = out ?? new THREE.Vector3();
+
+    // Keep the input immutable (do not normalize/mutate `movement`).
+    const lenSq = movement.x * movement.x + movement.y * movement.y + movement.z * movement.z;
+    if (lenSq > 0) {
+      const invLen = 1 / Math.sqrt(lenSq);
+      const s = invLen * maxSpeed;
+      force.set(movement.x * s, movement.y * s, movement.z * s);
+    } else {
+      force.set(0, 0, 0);
+    }
+
+    // velocityDiff = targetVelocity - currentVelocity
+    force.sub(currentVelocity);
+    force.multiplyScalar(acceleration);
+    return force;
   }
 
   @Profile()
   public calculateJumpForce(
     isGrounded: boolean,
     jumpSpeed: number = this.DEFAULT_JUMP_FORCE,
-    gameStates?: GameStatesType
+    gameStates?: GameStatesType,
+    out?: THREE.Vector3
   ): THREE.Vector3 {
-    if (!isGrounded) return new THREE.Vector3(0, 0, 0);
+    const jump = out ?? new THREE.Vector3(0, 0, 0);
+    if (!isGrounded) return jump.set(0, 0, 0);
     const jumpMultiplier = gameStates?.isJumping ? 1.5 : 1;
-    return new THREE.Vector3(0, jumpSpeed * jumpMultiplier, 0);
+    return jump.set(0, jumpSpeed * jumpMultiplier, 0);
   }
 
   public calculateGroundState(position: THREE.Vector3, velocity: THREE.Vector3): boolean {
@@ -39,16 +55,18 @@ export class MotionService {
   }
 
   public calculateSpeed(velocity: THREE.Vector3): number {
-    const horizontalVelocity = new THREE.Vector3(velocity.x, 0, velocity.z);
-    return horizontalVelocity.length();
+    // Hot path: avoid allocations.
+    return Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
   }
 
-  public calculateDirection(from: THREE.Vector3, to: THREE.Vector3): THREE.Vector3 {
-    return new THREE.Vector3().subVectors(to, from).normalize();
+  public calculateDirection(from: THREE.Vector3, to: THREE.Vector3, out?: THREE.Vector3): THREE.Vector3 {
+    const dir = out ?? new THREE.Vector3();
+    return dir.subVectors(to, from).normalize();
   }
 
-  public applyDamping(velocity: THREE.Vector3, damping: number = 0.95): THREE.Vector3 {
-    return velocity.clone().multiplyScalar(damping);
+  public applyDamping(velocity: THREE.Vector3, damping: number = 0.95, out?: THREE.Vector3): THREE.Vector3 {
+    const v = out ?? new THREE.Vector3();
+    return v.copy(velocity).multiplyScalar(damping);
   }
 
   @Profile()
@@ -67,8 +85,10 @@ export class MotionService {
     currentPosition: THREE.Vector3,
     targetPosition: THREE.Vector3
   ): number {
-    const direction = this.calculateDirection(currentPosition, targetPosition);
-    return Math.atan2(direction.x, direction.z);
+    // Equivalent to atan2(normalized.x, normalized.z) without allocating a direction vector.
+    const dx = targetPosition.x - currentPosition.x;
+    const dz = targetPosition.z - currentPosition.z;
+    return Math.atan2(dx, dz);
   }
 
   @Profile()

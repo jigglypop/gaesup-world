@@ -37,23 +37,59 @@ export function useManagedEntity<
     if (!bridge || !ref.current || !enabled) return;
 
     const managedEntity = new ManagedEntity<EngineType, SnapshotType, CommandType>(id, ref.current, entityOptions);
-    DIContainer.getInstance().injectProperties(managedEntity);
-    managedEntity.initialize(); 
+    let firstError: unknown;
+
+    // DI injection should not prevent initialization.
+    try {
+      DIContainer.getInstance().injectProperties(managedEntity);
+    } catch (e) {
+      firstError = firstError ?? e;
+    }
+
+    try {
+      managedEntity.initialize();
+    } catch (e) {
+      firstError = firstError ?? e;
+    }
 
     entityRef.current = managedEntity;
     setEntity(managedEntity);
     
     if (onInit) {
-      onInit(managedEntity);
+      try {
+        onInit(managedEntity);
+      } catch (e) {
+        firstError = firstError ?? e;
+      }
+    }
+
+    if (firstError) {
+      throw firstError;
     }
 
     return () => {
+      let cleanupError: unknown;
+
       if (onDispose) {
-        onDispose(managedEntity);
+        try {
+          onDispose(managedEntity);
+        } catch (e) {
+          cleanupError = cleanupError ?? e;
+        }
       }
-      managedEntity.dispose();
+
+      try {
+        managedEntity.dispose();
+      } catch (e) {
+        cleanupError = cleanupError ?? e;
+      }
+
       entityRef.current = null;
       setEntity(null);
+
+      if (cleanupError) {
+        throw cleanupError;
+      }
     };
   }, [bridge, id, ref, enabled, ...(dependencies || [])]);
 

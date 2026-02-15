@@ -37,17 +37,18 @@ export class ConnectionPool {
 
   // 연결 가져오기 또는 생성
   getConnection(nodeA: string, nodeB: string, options?: Partial<ConnectionOptions>): NetworkConnection {
+    const finalOptions = { ...this.defaultOptions, ...options };
+
     // 사용 가능한 연결이 있으면 재사용
     const available = this.availableConnections.pop();
     if (available) {
       available.nodeA = nodeA;
       available.nodeB = nodeB;
       available.status = 'establishing';
+      available.strength = 1.0;
+      available.latency = 0;
+      available.bandwidth = finalOptions.bandwidth;
       available.lastActivity = Date.now();
-      
-      if (options?.bandwidth) {
-        available.bandwidth = options.bandwidth;
-      }
       
       this.activeConnections.set(available.id, available);
       return available;
@@ -144,11 +145,16 @@ export class ConnectionPool {
     const now = Date.now();
     let cleanedCount = 0;
 
+    // Do not mutate the map while iterating it; collect ids first.
+    const toRemove: string[] = [];
     for (const [id, connection] of this.activeConnections.entries()) {
       if (now - connection.lastActivity > maxAge) {
-        this.releaseConnection(id);
-        cleanedCount++;
+        toRemove.push(id);
       }
+    }
+
+    for (const id of toRemove) {
+      if (this.releaseConnection(id)) cleanedCount++;
     }
 
     return cleanedCount;

@@ -9,10 +9,12 @@ export class AnimationController {
   @HandleError()
   @Profile()
   update(gameStates: GameStatesType) {
-    const { isMoving, isRunning, isJumping, isFalling } = gameStates;
+    const { isMoving, isRunning, isJumping, isFalling, isRiding } = gameStates;
     let newAnimation = "idle";
-    if (isJumping) {
-      newAnimation = "jump_up";
+    if (isRiding) {
+      newAnimation = "ride";
+    } else if (isJumping) {
+      newAnimation = "jump";
     } else if (isFalling) {
       newAnimation = "fall";
     } else if (isRunning) {

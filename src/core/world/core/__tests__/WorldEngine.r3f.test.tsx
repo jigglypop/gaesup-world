@@ -1,13 +1,13 @@
 import React from 'react';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
-import { WorldEngine } from '../WorldEngine';
+import { WorldSystem } from '../WorldSystem';
 import * as THREE from 'three';
 
 describe('WorldEngine R3F Tests', () => {
   it('should test raycast without creating new objects', async () => {
     // R3F 컴포넌트로 테스트
     const TestComponent = () => {
-      const engine = React.useRef(new WorldEngine());
+      const engine = React.useRef(new WorldSystem());
       
       React.useEffect(() => {
         const origin = new THREE.Vector3(0, 0, 0);
@@ -41,7 +41,7 @@ describe('WorldEngine R3F Tests', () => {
   });
   
   it('should handle objects in scene correctly', async () => {
-    const engine = new WorldEngine();
+    void new WorldSystem();
     
     const TestScene = () => {
       return (

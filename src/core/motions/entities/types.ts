@@ -64,6 +64,18 @@ export type PhysicsEntityProps = {
   groundRay ? : GroundRay;
   rigidBodyProps ? : RigidBodyProps;
   parts ? : Part[];
+  /**
+   * Optional tint color applied to the base model materials.
+   * Useful when you want per-entity coloring without adding a separate "part" GLTF.
+   */
+  baseColor?: string;
+  /**
+   * Hide specific mesh nodes from the base model renderer.
+   * Useful when a "part" GLB includes an overlapping mesh (prevents z-fighting/ghosting).
+   *
+   * The names correspond to glTF node names (e.g. "back", "tee" for the ally assets).
+   */
+  excludeBaseNodes?: string[];
   rigidBodyRef ? : RefObject < RapierRigidBody > ;
   colliderRef ? : RefObject < RapierCollider > ;
   outerGroupRef ? : RefObject < THREE.Group > ;
