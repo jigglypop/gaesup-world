@@ -3,11 +3,5 @@ import './motions/bridge/PhysicsBridge';
 import './world/bridge/WorldBridge';
 import './animation/bridge/AnimationBridge';
 
-import { BridgeFactory } from './boilerplate';
-
-const domains = BridgeFactory.listDomains();
-
-domains.forEach((domain) => {
-  if (BridgeFactory.has(domain)) return;
-  BridgeFactory.create(domain);
-});
+// Register bridge domains via decorators (no eager instantiation).
+// Bridge instances should be created lazily via BridgeFactory.getOrCreate()/create().

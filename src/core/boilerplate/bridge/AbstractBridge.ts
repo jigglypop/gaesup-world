@@ -46,15 +46,22 @@ export abstract class AbstractBridge<
   }
   register(id: string, ...args: unknown[]): void {
     const engine = this.buildEngine(id, ...args);
-    if (engine) {
-      this.engines.set(id, engine);
-      this.emit({
-        type: 'register',
-        id,
-        timestamp: Date.now(),
-        data: { engine }
-      });
+    if (!engine) return;
+
+    // Re-registering an existing id should not leak the old engine.
+    const existing = this.engines.get(id);
+    if (existing) {
+      existing.dispose();
+      this.snapshots.delete(id);
     }
+
+    this.engines.set(id, engine);
+    this.emit({
+      type: 'register',
+      id,
+      timestamp: Date.now(),
+      data: { engine }
+    });
   }
   protected abstract buildEngine(id: string, ...args: unknown[]): EngineType | null;
   unregister(id: string): void {

@@ -55,14 +55,7 @@ export interface UseNetworkMessageResult {
  * 네트워크 메시지 송수신을 위한 훅
  */
 export function useNetworkMessage(options: UseNetworkMessageOptions): UseNetworkMessageResult {
-  const {
-    senderId,
-    onMessageReceived,
-    onMessageSent,
-    onMessageFailed,
-    messageFilter,
-    ...bridgeOptions
-  } = options;
+  const { senderId, onMessageSent, ...bridgeOptions } = options;
   const {
     executeCommand,
     isReady

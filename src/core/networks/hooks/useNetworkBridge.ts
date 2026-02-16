@@ -9,7 +9,7 @@ import { NetworkCommand, NetworkSnapshot, NetworkConfig } from '../types';
 
 export interface UseNetworkBridgeOptions {
   systemId?: string;
-  config?: NetworkConfig;
+  config?: Partial<NetworkConfig>;
   enableAutoUpdate?: boolean;
 }
 
@@ -37,27 +37,34 @@ export function useNetworkBridge(options: UseNetworkBridgeOptions = {}): UseNetw
   const [bridge, setBridge] = useState<NetworkBridge | null>(null);
   const [isReady, setIsReady] = useState<boolean>(false);
 
-  // Bridge 인스턴스 초기화
   useEffect(() => {
     if (!bridgeRef.current) {
-      bridgeRef.current = BridgeFactory.get<NetworkBridge>('networks');
-      
-      if (!bridgeRef.current) {
-        bridgeRef.current = BridgeFactory.create<NetworkBridge>('networks');
-      }
-      
-      if (bridgeRef.current) {
-        // 설정이 제공된 경우 시스템에 적용
-        if (config) {
-          bridgeRef.current.execute(systemId, {
-            type: 'updateConfig',
-            data: { config }
-          });
-        }
-        setBridge(bridgeRef.current);
-        setIsReady(true);
-      }
+      bridgeRef.current = BridgeFactory.getOrCreate<NetworkBridge>('networks');
     }
+
+    const b = bridgeRef.current;
+    if (!b) {
+      setBridge(null);
+      setIsReady(false);
+      return () => {
+        // cleanup is managed by BridgeFactory
+      };
+    }
+
+    // Ensure the engine for the requested systemId exists.
+    if (systemId === 'main') {
+      b.ensureMainEngine();
+    } else if (!b.getEngine(systemId)) {
+      b.register(systemId);
+    }
+
+    // Apply runtime config updates (works for both first-time and subsequent updates).
+    if (config && Object.keys(config).length > 0) {
+      b.execute(systemId, { type: 'updateConfig', data: { config } });
+    }
+
+    setBridge(b);
+    setIsReady(true);
 
     return () => {
       // cleanup은 BridgeFactory에서 관리

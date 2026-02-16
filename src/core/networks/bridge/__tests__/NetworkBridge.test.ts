@@ -38,6 +38,7 @@ describe('NetworkBridge', () => {
 
   beforeEach(() => {
     bridge = new NetworkBridge();
+    bridge.ensureMainEngine();
   });
 
   afterEach(() => {

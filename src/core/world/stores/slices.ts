@@ -8,8 +8,7 @@ import { WorldBridge } from '../bridge/WorldBridge';
 const DEFAULT_WORLD_ID = 'default';
 
 export const createWorldSlice: StateCreator<WorldSlice> = (set) => {
-  // BridgeFactory에서 WorldBridge 인스턴스 생성
-  const worldBridge = BridgeFactory.create<WorldBridge>('world');
+  const worldBridge = BridgeFactory.getOrCreate<WorldBridge>('world');
   
   if (worldBridge) {
     // 기본 월드 엔진 등록

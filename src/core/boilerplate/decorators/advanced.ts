@@ -2,10 +2,20 @@ import 'reflect-metadata'
 
 type Constructor<T = unknown> = new (...args: unknown[]) => T
 
+const isProduction = (process.env as { NODE_ENV?: string }).NODE_ENV === 'production'
+
+const identityMethodDecorator = (target: object, propertyKey: string, descriptor: PropertyDescriptor) => {
+    void target
+    void propertyKey
+    return descriptor
+}
+
 export function Validate() {
     return function (target: object, propertyKey: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value
-        const isAsync = (originalMethod as any)?.constructor?.name === 'AsyncFunction'
+        const isAsync =
+            typeof originalMethod === 'function' &&
+            originalMethod.constructor?.name === 'AsyncFunction'
         descriptor.value = function (this: unknown, ...args: unknown[]) {
             const commandName = Reflect.getMetadata('commandName', target, propertyKey)
             if (commandName && args[1] && typeof args[1] === 'object') {
@@ -21,6 +31,9 @@ export function Validate() {
 }
 
 export function DebugLog() {
+    if (isProduction) {
+        return identityMethodDecorator
+    }
     return function (target: object, propertyKey: string, descriptor: PropertyDescriptor) {
         void target
         const originalMethod = descriptor.value
@@ -34,6 +47,9 @@ export function DebugLog() {
 }
 
 export function PerformanceLog() {
+    if (isProduction) {
+        return identityMethodDecorator
+    }
     return function (target: object, propertyKey: string, descriptor: PropertyDescriptor) {
         void target
         const originalMethod = descriptor.value

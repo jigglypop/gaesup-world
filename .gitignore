@@ -39,3 +39,6 @@ dist/*
 coverage
 coverage/*
 .cursor
+
+# Rust / WASM build artifacts
+**/target/

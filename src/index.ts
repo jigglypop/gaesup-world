@@ -39,6 +39,9 @@ export {
   ConnectionForm,
   PlayerInfoOverlay,
   // Building
+  V3,
+  V30,
+  V31,
   MiniMap,
   MinimapPlatform,
   BuildingSystem,
@@ -47,6 +50,7 @@ export {
   BuildingUI,
   GridHelper,
   useGaesupController,
+  useTeleport,
   useBuildingEditor,
   useBuildingStore,
   BuildingController,

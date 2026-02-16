@@ -1,0 +1,171 @@
+.building-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-lg);
+  padding: var(--editor-spacing-md);
+  height: 100%;
+}
+
+.building-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-sm);
+}
+
+.building-panel__section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--editor-text-muted, #aaaaaa);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.building-panel__modes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-sm);
+}
+
+.building-panel__mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--editor-spacing-md);
+  background: var(--editor-surface-1);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.building-panel__mode-btn:hover {
+  background: var(--editor-surface-hover);
+  transform: translateY(-1px);
+}
+
+.building-panel__mode-btn--active {
+  background: var(--editor-surface-active);
+  border-color: var(--editor-accent);
+}
+
+.building-panel__mode-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--editor-text-main, #ffffff);
+  margin-bottom: 2px;
+}
+
+.building-panel__mode-desc {
+  font-size: 11px;
+  color: var(--editor-text-muted, #cccccc);
+}
+
+.building-panel__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--editor-spacing-sm);
+}
+
+.building-panel__grid-btn {
+  padding: var(--editor-spacing-sm) var(--editor-spacing-md);
+  background: var(--editor-surface-1);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--editor-text-secondary, #cccccc);
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.building-panel__grid-btn:hover {
+  background: var(--editor-surface-hover);
+  color: var(--editor-text-main, #ffffff);
+}
+
+.building-panel__grid-btn--active {
+  background: var(--editor-surface-active);
+  border-color: var(--editor-accent);
+  color: var(--editor-text-main, #ffffff);
+  font-weight: 600;
+}
+
+.building-panel__info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-sm);
+  padding: var(--editor-spacing-md);
+  background: var(--editor-surface-1);
+  border-radius: var(--editor-radius-md);
+  border: 1px solid var(--editor-border-color);
+}
+
+.building-panel__info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.building-panel__info-label {
+  font-size: 12px;
+  color: var(--editor-text-muted, #aaaaaa);
+}
+
+.building-panel__info-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--editor-text-main, #ffffff);
+}
+
+.building-panel__stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--editor-spacing-sm);
+}
+
+.building-panel__stepper-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-sm);
+  cursor: pointer;
+  color: var(--editor-text-main, #ffffff);
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.15s ease;
+}
+
+.building-panel__stepper-btn:hover {
+  background: var(--editor-surface-hover);
+}
+
+.building-panel__stepper-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--editor-text-main, #ffffff);
+  min-width: 20px;
+  text-align: center;
+}
+
+.building-panel__toggle {
+  padding: 4px 10px;
+  background: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-sm);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--editor-text-muted, #aaaaaa);
+  transition: all 0.15s ease;
+}
+
+.building-panel__toggle--on {
+  background: var(--editor-accent-bg);
+  border-color: var(--editor-accent-border);
+  color: var(--editor-accent);
+}

@@ -12,8 +12,10 @@ import { usePlayerPosition } from '../../src/core/motions/hooks/usePlayerPositio
 import { useStateSystem } from '../../src/core/motions/hooks/useStateSystem';
 import { CameraOptionType } from '../../src/core/types/camera';
 import { SpeechBalloon } from '../../src/core/ui/components/SpeechBalloon';
+import Info from '../components/info';
 import { Platforms } from '../components/platforms';
 import { RideableUIRenderer, RideableVehicles } from '../components/rideable';
+import { Teleport } from '../components/teleport';
 import { AIRPLANE_URL, CHARACTER_URL, S3, VEHICLE_URL, EXAMPLE_CONFIG } from '../config/constants';
 import '../style.css';
 
@@ -69,6 +71,29 @@ function CharacterWithSpeechBalloon() {
           visible={showBalloon}
         />
       )}
+    </>
+  );
+}
+
+function MainPageTools() {
+  const [showInfo, setShowInfo] = useState(true);
+  const [showTeleport, setShowTeleport] = useState(false);
+
+  return (
+    <>
+      <div style={{
+        position: 'fixed', top: 56, left: 10, zIndex: 1100,
+        pointerEvents: 'auto', display: 'flex', gap: 6,
+      }}>
+        <button className="app-nav-button active" onClick={() => setShowInfo((v) => !v)}>
+          {showInfo ? 'Hide Info' : 'Info'}
+        </button>
+        <button className="app-nav-button" onClick={() => setShowTeleport((v) => !v)}>
+          {showTeleport ? 'Hide Teleport' : 'Teleport'}
+        </button>
+      </div>
+      {showInfo ? <Info /> : null}
+      {showTeleport ? <Teleport /> : null}
     </>
   );
 }
@@ -187,6 +212,7 @@ export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
           showCompass={false}
         />
         <RideableUIRenderer />
+        <MainPageTools />
         
 
       </GaesupWorld>

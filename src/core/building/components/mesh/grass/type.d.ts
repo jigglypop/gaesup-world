@@ -9,6 +9,20 @@ export type GrassMeshProps = ThreeElements["group"] & {
   };
   width?: number;
   instances?: number;
+  /**
+   * Optional LOD parameters. When provided, the mesh reduces drawn instances
+   * with distance using SFE-style suppression (w = exp(-sigma)).
+   */
+  lod?: {
+    near?: number;
+    far?: number;
+    strength?: number;
+  };
+  /**
+   * Optional world-space center used for LOD distance.
+   * When omitted, the component falls back to its world transform.
+   */
+  center?: [number, number, number];
 };
 
 declare global {

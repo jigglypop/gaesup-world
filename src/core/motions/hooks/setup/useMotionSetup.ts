@@ -19,7 +19,7 @@ export function useMotionSetup(
   
   // Bridge 인스턴스 한번만 가져오기
   if (!motionBridgeRef.current) {
-    motionBridgeRef.current = BridgeFactory.get('motion') as unknown as MotionBridge;
+    motionBridgeRef.current = BridgeFactory.getOrCreate('motion') as MotionBridge | null;
   }
   
   useEffect(() => {

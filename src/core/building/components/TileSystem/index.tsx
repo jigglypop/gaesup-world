@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import * as THREE from 'three';
 
@@ -16,6 +16,10 @@ export function TileSystem({
   onTileClick,
 }: TileSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
+  const instancedRef = useRef<THREE.InstancedMesh | null>(null);
+
+  const tileCount = tileGroup.tiles.length;
+  const [capacity, setCapacity] = useState(() => Math.max(1, tileCount));
 
   const material = useMemo(() => {
     const manager = materialManagerRef.current;
@@ -26,64 +30,77 @@ export function TileSystem({
     return manager.getMaterial(floorMesh);
   }, [tileGroup.floorMeshId, meshes]);
 
-  const mergedGeometry = useMemo(() => {
-    const positions: number[] = [];
-    const indices: number[] = [];
-    const uvs: number[] = [];
-    let indexOffset = 0;
+  const baseGeometry = useMemo(() => {
+    // A single unit plane; per-tile size/position is applied via instancing.
+    const geom = new THREE.PlaneGeometry(1, 1, 1, 1);
+    geom.rotateX(-Math.PI / 2);
+    return geom;
+  }, []);
 
-    tileGroup.tiles.forEach((tile) => {
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+
+  const editGeometry = useMemo(() => new THREE.BoxGeometry(0.8, 0.3, 0.8), []);
+  const editMaterial = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: '#ff0000',
+        transparent: true,
+        opacity: 0.6,
+        emissive: new THREE.Color('#ff0000'),
+        emissiveIntensity: 0.2,
+      }),
+    [],
+  );
+
+  const tilesWithObjects = useMemo(
+    () => tileGroup.tiles.filter((t) => t.objectType && t.objectType !== 'none'),
+    [tileGroup.tiles],
+  );
+
+  useEffect(() => {
+    if (tileCount <= capacity) return;
+    // Grow with headroom to avoid recreating the InstancedMesh on every add.
+    setCapacity(Math.max(tileCount, Math.ceil(capacity * 1.5)));
+  }, [tileCount, capacity]);
+
+  useLayoutEffect(() => {
+    const mesh = instancedRef.current;
+    if (!mesh) return;
+
+    const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
+    mesh.count = tileCount;
+
+    for (let i = 0; i < tileCount; i++) {
+      const tile = tileGroup.tiles[i];
+      if (!tile) continue;
+
       const tileMultiplier = tile.size || 1;
-      const tileSize = TILE_CONSTANTS.GRID_CELL_SIZE * tileMultiplier;
-      const geometry = new THREE.PlaneGeometry(tileSize, tileSize);
-      geometry.rotateX(-Math.PI / 2);
-      geometry.translate(tile.position.x, tile.position.y + 0.001, tile.position.z);
+      const tileSize = cellSize * tileMultiplier;
 
-      const vertexPositions = Array.from(
-        geometry.attributes["position"]?.array || []
-      );
-      positions.push(...vertexPositions);
+      dummy.position.set(tile.position.x, tile.position.y + 0.001, tile.position.z);
+      dummy.rotation.set(0, tile.rotation ?? 0, 0);
+      dummy.scale.set(tileSize, 1, tileSize);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
 
-      const vertexIndices = geometry.index
-        ? Array.from(geometry.index.array as Uint16Array)
-        : [];
-      indices.push(...vertexIndices.map((idx) => idx + indexOffset));
-      const tileUvs = [0, 0, 1, 0, 1, 1, 0, 1];
-      uvs.push(...tileUvs);
-      indexOffset += geometry.attributes["position"]?.count || 0;
-      geometry.dispose();
-    });
-
-    const merged = new THREE.BufferGeometry();
-    merged.setAttribute(
-      'position',
-      new THREE.Float32BufferAttribute(positions, 3)
-    );
-    merged.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-    merged.setIndex(indices);
-    merged.computeVertexNormals();
-    return merged;
-  }, [tileGroup.tiles]);
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [tileGroup.tiles, tileCount, dummy]);
 
   useEffect(() => {
     if (tileGroup.tiles.length === 0) return undefined;
     const engine = MinimapSystem.getInstance();
     const bounds = new THREE.Box3();
+    const tmp = new THREE.Vector3();
     
     tileGroup.tiles.forEach((tile) => {
       const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
       const halfSize = tileSize / 2;
       
-      bounds.expandByPoint(new THREE.Vector3(
-        tile.position.x - halfSize,
-        tile.position.y,
-        tile.position.z - halfSize
-      ));
-      bounds.expandByPoint(new THREE.Vector3(
-        tile.position.x + halfSize,
-        tile.position.y,
-        tile.position.z + halfSize
-      ));
+      tmp.set(tile.position.x - halfSize, tile.position.y, tile.position.z - halfSize);
+      bounds.expandByPoint(tmp);
+      tmp.set(tile.position.x + halfSize, tile.position.y, tile.position.z + halfSize);
+      bounds.expandByPoint(tmp);
     });
     
     const center = new THREE.Vector3();
@@ -107,12 +124,17 @@ export function TileSystem({
   useEffect(() => {
     return () => {
       materialManagerRef.current.dispose();
-      mergedGeometry.dispose();
+      baseGeometry.dispose();
+      editGeometry.dispose();
+      editMaterial.dispose();
+    };
+  }, [baseGeometry, editGeometry, editMaterial]);
+
+  useEffect(() => {
+    return () => {
       material.dispose();
     };
-  }, [mergedGeometry, material]);
-
-  if (!mergedGeometry || !material) return null;
+  }, [material]);
 
   return (
     <GaeSupProps type="ground">
@@ -124,28 +146,22 @@ export function TileSystem({
               position={[tile.position.x, tile.position.y + 0.3, tile.position.z]}
               onClick={() => onTileClick?.(tile.id)}
             >
-              <mesh>
-                <boxGeometry args={[0.8, 0.3, 0.8]} />
-                <meshStandardMaterial 
-                  color="#ff0000" 
-                  transparent 
-                  opacity={0.6}
-                  emissive="#ff0000"
-                  emissiveIntensity={0.2}
-                />
-              </mesh>
+              <mesh geometry={editGeometry} material={editMaterial} />
             </group>
           );
         })}
         
-        <mesh
+        <instancedMesh
+          ref={instancedRef}
+          args={[baseGeometry, material, capacity]}
           castShadow
           receiveShadow
-          geometry={mergedGeometry}
-          material={material}
+          // Instance transforms are not reflected in the default bounding volume.
+          // Keep it simple and correct: disable frustum culling for the floor.
+          frustumCulled={false}
         />
         
-        {tileGroup.tiles.map((tile) => (
+        {tilesWithObjects.map((tile) => (
           <TileObject key={`${tile.id}-object`} tile={tile} />
         ))}
       </>

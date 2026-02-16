@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { RegisterSystem, ManageRuntime, Profile, HandleError } from '@core/boilerplate/decorators';
+import { RegisterSystem, Profile, HandleError } from '@core/boilerplate/decorators';
 import { BaseSystem, SystemContext } from '@core/boilerplate/entity/BaseSystem';
 
 import { SpatialGrid } from './SpatialGrid';
@@ -42,13 +42,14 @@ export interface InteractionEvent {
 
 
 @RegisterSystem('world')
-@ManageRuntime({ autoStart: true })
 export class WorldSystem implements BaseSystem {
   private objects: Map<string, WorldObject> = new Map();
   private interactionEvents: InteractionEvent[] = [];
   private spatial: SpatialGrid = new SpatialGrid({ cellSize: 10 });
   private raycaster: THREE.Raycaster = new THREE.Raycaster();
   private tempVector: THREE.Vector3 = new THREE.Vector3();
+  private nearbyIds: string[] = [];
+  private nearbyIds2: string[] = [];
 
   @HandleError()
   async init(): Promise<void> {
@@ -105,23 +106,29 @@ export class WorldSystem implements BaseSystem {
   }
 
   getObjectsInRadius(center: THREE.Vector3, radius: number): WorldObject[] {
-    const nearbyIds = this.spatial.getNearby(center, radius);
-    return nearbyIds.map((id: string) => this.objects.get(id)).filter((obj): obj is WorldObject => obj !== undefined);
+    const ids = this.spatial.getNearby(center, radius, this.nearbyIds);
+    const result: WorldObject[] = [];
+    for (const id of ids) {
+      const obj = this.objects.get(id);
+      if (obj) result.push(obj);
+    }
+    return result;
   }
 
   checkCollisions(objectId: string): WorldObject[] {
     const object = this.objects.get(objectId);
     if (!object || !object.boundingBox) return [];
 
-    const nearbyIds = this.spatial.getNearby(object.position, object.boundingBox.max.distanceTo(object.boundingBox.min));
-    return nearbyIds
-      .map((id: string) => this.objects.get(id))
-      .filter((other): other is WorldObject => 
-        other !== undefined &&
-        other.id !== objectId && 
-        other.boundingBox !== undefined &&
-        object.boundingBox!.intersectsBox(other.boundingBox)
-      );
+    const radius = object.boundingBox.max.distanceTo(object.boundingBox.min);
+    const ids = this.spatial.getNearby(object.position, radius, this.nearbyIds2);
+    const result: WorldObject[] = [];
+    for (const id of ids) {
+      if (id === objectId) continue;
+      const other = this.objects.get(id);
+      if (!other || !other.boundingBox) continue;
+      if (object.boundingBox.intersectsBox(other.boundingBox)) result.push(other);
+    }
+    return result;
   }
 
   processInteraction(event: InteractionEvent): void {
@@ -148,8 +155,8 @@ export class WorldSystem implements BaseSystem {
     this.raycaster.near = 0;
     this.raycaster.far = maxDistance;
     
-    const nearbyIds = this.spatial.getNearby(origin, maxDistance);
-    for (const id of nearbyIds) {
+    const ids = this.spatial.getNearby(origin, maxDistance, this.nearbyIds);
+    for (const id of ids) {
       const object = this.objects.get(id);
       if (object && object.boundingBox) {
         const intersect = this.raycaster.ray.intersectBox(object.boundingBox, this.tempVector);

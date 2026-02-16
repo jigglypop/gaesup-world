@@ -13,13 +13,14 @@ describe('InteractionBridge 메모리 누수 테스트', () => {
     }
   });
 
-  it('dispose 호출 시 setInterval이 정리되어야 함', () => {
-    const clearIntervalSpy = jest.spyOn(window, 'clearInterval');
+  it('dispose 호출 시 scheduled sync가 정리되어야 함', () => {
+    const clearTimeoutSpy = jest.spyOn(globalThis, 'clearTimeout');
+    bridge.subscribe('*', jest.fn()); // schedule sync timer
     
     bridge.dispose();
     
-    expect(clearIntervalSpy).toHaveBeenCalled();
-    clearIntervalSpy.mockRestore();
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+    clearTimeoutSpy.mockRestore();
   });
 
   it('이벤트 구독자가 제대로 정리되어야 함', () => {

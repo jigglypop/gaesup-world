@@ -7,17 +7,31 @@ export type SpatialGridOptions = {
 
 export class SpatialGrid {
   private cellSize: number;
-  private cells: Map<string, Set<string>> = new Map();
+  private cells: Map<number, Set<string>> = new Map();
   private objectPositions: Map<string, THREE.Vector3> = new Map();
 
   constructor(options: SpatialGridOptions = {}) {
     this.cellSize = options.cellSize ?? 10;
   }
 
-  private getCellKey(x: number, z: number): string {
+  private static zigZag(n: number): number {
+    // Map signed integer -> non-negative integer (0, 1, 2, ...).
+    return n >= 0 ? n * 2 : (-n * 2) - 1;
+  }
+
+  private static pair(a: number, b: number): number {
+    // Cantor pairing on non-negative ints, after zig-zagging signed coords.
+    // Keeps cell keys numeric to avoid per-query string allocations.
+    const A = SpatialGrid.zigZag(a);
+    const B = SpatialGrid.zigZag(b);
+    const sum = A + B;
+    return (sum * (sum + 1)) / 2 + B;
+  }
+
+  private getCellKey(x: number, z: number): number {
     const cellX = Math.floor(x / this.cellSize);
     const cellZ = Math.floor(z / this.cellSize);
-    return `${cellX},${cellZ}`;
+    return SpatialGrid.pair(cellX, cellZ);
   }
 
   add(id: string, position: THREE.Vector3): void {
@@ -74,8 +88,9 @@ export class SpatialGrid {
     oldPosition.copy(newPosition);
   }
 
-  getNearby(position: THREE.Vector3, radius: number): string[] {
-    const result: string[] = [];
+  getNearby(position: THREE.Vector3, radius: number, out?: string[]): string[] {
+    const result = out ?? [];
+    if (out) out.length = 0;
     const cellRadius = Math.ceil(radius / this.cellSize);
     const centerX = Math.floor(position.x / this.cellSize);
     const centerZ = Math.floor(position.z / this.cellSize);
@@ -83,19 +98,19 @@ export class SpatialGrid {
 
     for (let x = centerX - cellRadius; x <= centerX + cellRadius; x++) {
       for (let z = centerZ - cellRadius; z <= centerZ + cellRadius; z++) {
-        const key = `${x},${z}`;
+        const key = SpatialGrid.pair(x, z);
         const cell = this.cells.get(key);
         if (cell) {
-          cell.forEach(id => {
+          for (const id of cell) {
             const objectPos = this.objectPositions.get(id);
-            if (!objectPos) return;
+            if (!objectPos) continue;
             const dx = position.x - objectPos.x;
             const dy = position.y - objectPos.y;
             const dz = position.z - objectPos.z;
             if (dx * dx + dy * dy + dz * dz <= radiusSq) {
               result.push(id);
             }
-          });
+          }
         }
       }
     }

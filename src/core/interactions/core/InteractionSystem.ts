@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { RegisterSystem, ManageRuntime } from '@/core/boilerplate/decorators';
+import { RegisterSystem } from '@/core/boilerplate/decorators';
 import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
 import type { BaseState, BaseMetrics, SystemUpdateArgs } from '@/core/boilerplate/types';
 
@@ -10,7 +10,6 @@ interface InteractionSystemState extends BaseState, InteractionState {}
 interface InteractionSystemMetrics extends BaseMetrics, InteractionMetrics {}
 
 @RegisterSystem('interaction')
-@ManageRuntime({ autoStart: true })
 export class InteractionSystem extends AbstractSystem<InteractionSystemState, InteractionSystemMetrics> {
   private static instance: InteractionSystem | null = null;
   private config: InteractionConfig;

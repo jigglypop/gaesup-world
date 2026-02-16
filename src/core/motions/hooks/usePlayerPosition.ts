@@ -23,7 +23,7 @@ export interface UsePlayerPositionResult {
   height: number; // Character height from bounding box
 }
 
-const defaultResult: UsePlayerPositionResult = {
+const createDefaultResult = (): UsePlayerPositionResult => ({
   position: new THREE.Vector3(0, 0, 0),
   velocity: new THREE.Vector3(0, 0, 0),
   rotation: new THREE.Euler(0, 0, 0),
@@ -31,83 +31,125 @@ const defaultResult: UsePlayerPositionResult = {
   isGrounded: false,
   speed: 0,
   height: 2.0, // Default character height
-};
+});
 
-export function usePlayerPosition(options: UsePlayerPositionOptions = {}): UsePlayerPositionResult {
+export function usePlayerPosition(
+  options: UsePlayerPositionOptions = {},
+): UsePlayerPositionResult {
   const { updateInterval = 0, entityId } = options;
-  const [state, setState] = useState<UsePlayerPositionResult>(defaultResult);
+
+  // Keep stable references for consumers; update vectors in-place.
+  const resultRef = useRef<UsePlayerPositionResult | null>(null);
+  if (!resultRef.current) {
+    resultRef.current = createDefaultResult();
+  }
+
+  const [, forceUpdate] = useState(0);
   const lastUpdateRef = useRef<number>(0);
+  const lastBridgeEventRef = useRef<number>(0);
+  const inferredEntityIdRef = useRef<string | undefined>(undefined);
   const bridgeRef = useRef<MotionBridge | null>(null);
   const { activeState, gameStates } = useStateSystem();
 
-  // Initialize Motion Bridge
+  const getTargetEntityId = (bridge: MotionBridge): string | undefined => {
+    if (entityId) return entityId;
+    if (inferredEntityIdRef.current) return inferredEntityIdRef.current;
+    const activeEntities = bridge.getActiveEntities();
+    inferredEntityIdRef.current = activeEntities[0];
+    return inferredEntityIdRef.current;
+  };
+
   useEffect(() => {
-    bridgeRef.current = BridgeFactory.get('motion') as MotionBridge;
-  }, []);
+    inferredEntityIdRef.current = undefined;
+    bridgeRef.current = BridgeFactory.getOrCreate('motion') as MotionBridge | null;
+    const bridge = bridgeRef.current;
+    if (!bridge) return undefined;
 
-  // Update state from multiple sources
-  useFrame(() => {
-    // Check update interval
-    if (updateInterval > 0) {
+    const unsubscribe = bridge.subscribe((snapshot, snapshotEntityId) => {
+      const targetEntityId = getTargetEntityId(bridge);
+      if (!targetEntityId || snapshotEntityId !== targetEntityId) return;
+
       const now = performance.now();
-      if (now - lastUpdateRef.current < updateInterval) return;
+      lastBridgeEventRef.current = now;
+
+      if (updateInterval > 0 && now - lastUpdateRef.current < updateInterval) return;
       lastUpdateRef.current = now;
-    }
 
-    let position: THREE.Vector3 | null = null;
-    let velocity: THREE.Vector3 | null = null;
-    let rotation: THREE.Euler | null = null;
+      const result = resultRef.current!;
+      result.position.copy(snapshot.position);
+      result.velocity.copy(snapshot.velocity);
+      result.rotation.copy(snapshot.rotation);
+      result.isMoving = snapshot.isMoving;
+      result.isGrounded = snapshot.isGrounded;
+      result.speed = snapshot.speed;
+      result.height = 2.0;
 
-    // Try Motion Bridge first (most reliable)
-    if (bridgeRef.current) {
-      let targetEntityId = entityId;
-      
-      // If no specific entityId, use the first active entity (likely the player)
-      if (!targetEntityId) {
-        const activeEntities = bridgeRef.current.getActiveEntities();
-        targetEntityId = activeEntities[0]; // First entity is usually the player
-      }
-      
-      if (targetEntityId) {
-        const snapshot = bridgeRef.current.snapshot(targetEntityId);
-        if (snapshot && snapshot.position) {
-          position = snapshot.position.clone();
-          velocity = snapshot.velocity.clone();
-          rotation = snapshot.rotation.clone();
-          
-          setState({
-            position,
-            velocity,
-            rotation,
-            isMoving: snapshot.isMoving,
-            isGrounded: snapshot.isGrounded,
-            speed: snapshot.speed,
-            height: 2.0, // Default height, could be enhanced with actual model data
-          });
+      forceUpdate((v) => v + 1);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [entityId, updateInterval]);
+
+  // Fallback polling path (keeps position updating even when no bridge events are emitted).
+  useFrame(() => {
+    const now = performance.now();
+    if (updateInterval > 0 && now - lastUpdateRef.current < updateInterval) return;
+
+    const result = resultRef.current!;
+    const bridge = bridgeRef.current;
+
+    if (bridge) {
+      const targetEntityId = getTargetEntityId(bridge);
+
+      // If we just received a bridge event, avoid immediately re-polling snapshot().
+      const recentBridgeEvent = now - lastBridgeEventRef.current < 16;
+      if (!recentBridgeEvent && targetEntityId) {
+        const snapshot = bridge.snapshot(targetEntityId);
+        if (snapshot) {
+          result.position.copy(snapshot.position);
+          result.velocity.copy(snapshot.velocity);
+          result.rotation.copy(snapshot.rotation);
+          result.isMoving = snapshot.isMoving;
+          result.isGrounded = snapshot.isGrounded;
+          result.speed = snapshot.speed;
+          result.height = 2.0;
+
+          lastUpdateRef.current = now;
+          forceUpdate((v) => v + 1);
           return;
         }
       }
     }
 
-    // Final fallback to activeState
     if (activeState?.position) {
-      setState({
-        position: activeState.position.clone(),
-        velocity: activeState.velocity?.clone() || new THREE.Vector3(),
-        rotation: activeState.euler?.clone() || new THREE.Euler(),
-        isMoving: gameStates?.isMoving || false,
-        isGrounded: gameStates?.isOnTheGround || false,
-        speed: activeState.velocity?.length() || 0,
-        height: 2.0, // Default height for fallback case
-      });
+      result.position.copy(activeState.position);
+      if (activeState.velocity) {
+        result.velocity.copy(activeState.velocity);
+      } else {
+        result.velocity.set(0, 0, 0);
+      }
+      if (activeState.euler) {
+        result.rotation.copy(activeState.euler);
+      } else {
+        result.rotation.set(0, 0, 0);
+      }
+      result.isMoving = gameStates?.isMoving || false;
+      result.isGrounded = gameStates?.isOnTheGround || false;
+      result.speed = activeState.velocity ? activeState.velocity.length() : 0;
+      result.height = 2.0;
+
+      lastUpdateRef.current = now;
+      forceUpdate((v) => v + 1);
     }
   });
 
-  return state;
+  return resultRef.current;
 }
 
 // Hook for components that need player position in world space
 export function usePlayerWorldPosition(options: UsePlayerPositionOptions = {}): THREE.Vector3 {
   const { position } = usePlayerPosition(options);
   return position;
-} 
+}

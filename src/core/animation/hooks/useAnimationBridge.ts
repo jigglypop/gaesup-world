@@ -10,11 +10,7 @@ import { AnimationType } from '../core/types';
 import type { EntityAnimationStates } from '../core/types';
 
 export function getGlobalAnimationBridge(): AnimationBridge {
-  let bridge = BridgeFactory.get<AnimationBridge>('animation');
-  if (!bridge) {
-    bridge = BridgeFactory.create<AnimationBridge>('animation');
-  }
-  return bridge!;
+  return BridgeFactory.getOrCreate<AnimationBridge>('animation')!;
 }
 
 export function useAnimationBridge() {

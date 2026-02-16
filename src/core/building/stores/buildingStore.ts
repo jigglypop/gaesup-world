@@ -18,9 +18,71 @@ import { TILE_CONSTANTS } from '../types/constants';
 // Enable Map and Set support in Immer
 enableMapSet();
 
+type TileMeta = { x: number; z: number; halfSize: number };
+type WallMeta = { x: number; z: number; rotY: number };
+
+const zigZag = (n: number): number => (n >= 0 ? n * 2 : (-n * 2) - 1);
+const pair = (a: number, b: number): number => {
+  const A = zigZag(a);
+  const B = zigZag(b);
+  const sum = A + B;
+  return (sum * (sum + 1)) / 2 + B;
+};
+
+const unindexId = (cells: Map<number, Set<string>>, cellsById: Map<string, number[]>, id: string): void => {
+  const keys = cellsById.get(id);
+  if (!keys) return;
+  for (const key of keys) {
+    const set = cells.get(key);
+    if (!set) continue;
+    set.delete(id);
+    if (set.size === 0) cells.delete(key);
+  }
+  cellsById.delete(id);
+};
+
+const indexAabb = (
+  cells: Map<number, Set<string>>,
+  cellsById: Map<string, number[]>,
+  id: string,
+  minX: number,
+  maxX: number,
+  minZ: number,
+  maxZ: number,
+  cellSize: number,
+): void => {
+  const minCellX = Math.floor(minX / cellSize);
+  const maxCellX = Math.floor(maxX / cellSize);
+  const minCellZ = Math.floor(minZ / cellSize);
+  const maxCellZ = Math.floor(maxZ / cellSize);
+
+  const keys: number[] = [];
+  for (let cx = minCellX; cx <= maxCellX; cx++) {
+    for (let cz = minCellZ; cz <= maxCellZ; cz++) {
+      const key = pair(cx, cz);
+      let set = cells.get(key);
+      if (!set) {
+        set = new Set<string>();
+        cells.set(key, set);
+      }
+      set.add(id);
+      keys.push(key);
+    }
+  }
+  cellsById.set(id, keys);
+};
+
 interface BuildingStore extends BuildingSystemState {
   initialized: boolean;
   initializeDefaults: () => void;
+
+  // Internal spatial indexes for fast placement checks.
+  tileIndex: Map<number, Set<string>>;
+  tileCells: Map<string, number[]>;
+  tileMeta: Map<string, TileMeta>;
+  wallIndex: Map<number, Set<string>>;
+  wallCells: Map<string, number[]>;
+  wallMeta: Map<string, WallMeta>;
   
   hoverPosition: Position3D | null;
   setHoverPosition: (position: Position3D | null) => void;
@@ -79,6 +141,12 @@ interface BuildingStore extends BuildingSystemState {
 export const useBuildingStore = create<BuildingStore>()(
   immer((set, get) => ({
     initialized: false,
+    tileIndex: new Map(),
+    tileCells: new Map(),
+    tileMeta: new Map(),
+    wallIndex: new Map(),
+    wallCells: new Map(),
+    wallMeta: new Map(),
     meshes: new Map(),
     wallGroups: new Map(),
     tileGroups: new Map(),
@@ -259,7 +327,7 @@ export const useBuildingStore = create<BuildingStore>()(
         
         for (let x = 0; x < 10; x++) {
           for (let z = 0; z < 10; z++) {
-            oakFloorGroup.tiles.push({
+            const tile: TileConfig = {
               id: `default-tile-${x}-${z}`,
               position: {
                 x: startX + x * cellSize,
@@ -268,7 +336,21 @@ export const useBuildingStore = create<BuildingStore>()(
               },
               tileGroupId: oakFloorGroup.id,
               size: 1
-            });
+            };
+            oakFloorGroup.tiles.push(tile);
+
+            const halfSize = ((tile.size || 1) * cellSize) / 2;
+            state.tileMeta.set(tile.id, { x: tile.position.x, z: tile.position.z, halfSize });
+            indexAabb(
+              state.tileIndex,
+              state.tileCells,
+              tile.id,
+              tile.position.x - halfSize,
+              tile.position.x + halfSize,
+              tile.position.z - halfSize,
+              tile.position.z + halfSize,
+              cellSize,
+            );
           }
         }
       }
@@ -303,6 +385,13 @@ export const useBuildingStore = create<BuildingStore>()(
     }),
 
     removeWallGroup: (id) => set((state) => {
+      const group = state.wallGroups.get(id);
+      if (group) {
+        for (const wall of group.walls) {
+          unindexId(state.wallIndex, state.wallCells, wall.id);
+          state.wallMeta.delete(wall.id);
+        }
+      }
       state.wallGroups.delete(id);
     }),
 
@@ -310,6 +399,19 @@ export const useBuildingStore = create<BuildingStore>()(
       const group = state.wallGroups.get(groupId);
       if (group) {
         group.walls.push(wall);
+
+        const tol = 0.5;
+        state.wallMeta.set(wall.id, { x: wall.position.x, z: wall.position.z, rotY: wall.rotation.y });
+        indexAabb(
+          state.wallIndex,
+          state.wallCells,
+          wall.id,
+          wall.position.x - tol,
+          wall.position.x + tol,
+          wall.position.z - tol,
+          wall.position.z + tol,
+          1,
+        );
       }
     }),
 
@@ -320,7 +422,27 @@ export const useBuildingStore = create<BuildingStore>()(
         if (wallIndex !== -1) {
           const wall = group.walls[wallIndex];
           if (wall) {
+            const shouldReindex = updates.position !== undefined || updates.rotation !== undefined;
+            if (shouldReindex) {
+              unindexId(state.wallIndex, state.wallCells, wallId);
+              state.wallMeta.delete(wallId);
+            }
             Object.assign(wall, updates);
+
+            if (shouldReindex) {
+              const tol = 0.5;
+              state.wallMeta.set(wall.id, { x: wall.position.x, z: wall.position.z, rotY: wall.rotation.y });
+              indexAabb(
+                state.wallIndex,
+                state.wallCells,
+                wall.id,
+                wall.position.x - tol,
+                wall.position.x + tol,
+                wall.position.z - tol,
+                wall.position.z + tol,
+                1,
+              );
+            }
           }
         }
       }
@@ -329,6 +451,8 @@ export const useBuildingStore = create<BuildingStore>()(
     removeWall: (groupId, wallId) => set((state) => {
       const group = state.wallGroups.get(groupId);
       if (group) {
+        unindexId(state.wallIndex, state.wallCells, wallId);
+        state.wallMeta.delete(wallId);
         group.walls = group.walls.filter(w => w.id !== wallId);
       }
     }),
@@ -345,6 +469,13 @@ export const useBuildingStore = create<BuildingStore>()(
     }),
 
     removeTileGroup: (id) => set((state) => {
+      const group = state.tileGroups.get(id);
+      if (group) {
+        for (const tile of group.tiles) {
+          unindexId(state.tileIndex, state.tileCells, tile.id);
+          state.tileMeta.delete(tile.id);
+        }
+      }
       state.tileGroups.delete(id);
     }),
 
@@ -359,6 +490,20 @@ export const useBuildingStore = create<BuildingStore>()(
             : {}),
         };
         group.tiles.push(tileWithObject);
+
+        const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
+        const halfSize = ((tileWithObject.size || 1) * cellSize) / 2;
+        state.tileMeta.set(tileWithObject.id, { x: tileWithObject.position.x, z: tileWithObject.position.z, halfSize });
+        indexAabb(
+          state.tileIndex,
+          state.tileCells,
+          tileWithObject.id,
+          tileWithObject.position.x - halfSize,
+          tileWithObject.position.x + halfSize,
+          tileWithObject.position.z - halfSize,
+          tileWithObject.position.z + halfSize,
+          cellSize,
+        );
       }
     }),
 
@@ -369,7 +514,28 @@ export const useBuildingStore = create<BuildingStore>()(
         if (tileIndex !== -1) {
           const tile = group.tiles[tileIndex];
           if (tile) {
+            const shouldReindex = updates.position !== undefined || updates.size !== undefined;
+            if (shouldReindex) {
+              unindexId(state.tileIndex, state.tileCells, tileId);
+              state.tileMeta.delete(tileId);
+            }
             Object.assign(tile, updates);
+
+            if (shouldReindex) {
+              const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
+              const halfSize = ((tile.size || 1) * cellSize) / 2;
+              state.tileMeta.set(tile.id, { x: tile.position.x, z: tile.position.z, halfSize });
+              indexAabb(
+                state.tileIndex,
+                state.tileCells,
+                tile.id,
+                tile.position.x - halfSize,
+                tile.position.x + halfSize,
+                tile.position.z - halfSize,
+                tile.position.z + halfSize,
+                cellSize,
+              );
+            }
           }
         }
       }
@@ -378,6 +544,8 @@ export const useBuildingStore = create<BuildingStore>()(
     removeTile: (groupId, tileId) => set((state) => {
       const group = state.tileGroups.get(groupId);
       if (group) {
+        unindexId(state.tileIndex, state.tileCells, tileId);
+        state.tileMeta.delete(tileId);
         group.tiles = group.tiles.filter(t => t.id !== tileId);
       }
     }),
@@ -426,22 +594,34 @@ export const useBuildingStore = create<BuildingStore>()(
     },
     
     checkTilePosition: (position) => {
-      const { tileGroups, currentTileMultiplier } = get();
+      const { tileIndex, tileMeta, currentTileMultiplier } = get();
       const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-      const tileSize = cellSize * currentTileMultiplier;
-      const halfSize = tileSize / 2;
-      
-      for (const group of tileGroups.values()) {
-        for (const tile of group.tiles) {
-          const existingTileSize = (tile.size || 1) * cellSize;
-          const existingHalfSize = existingTileSize / 2;
-          
-          // 두 타일의 경계가 겹치는지 확인
-          if (
-            Math.abs(tile.position.x - position.x) < (halfSize + existingHalfSize - 0.1) &&
-            Math.abs(tile.position.z - position.z) < (halfSize + existingHalfSize - 0.1)
-          ) {
-            return true;
+      const halfSize = (cellSize * currentTileMultiplier) / 2;
+
+      const minX = position.x - halfSize;
+      const maxX = position.x + halfSize;
+      const minZ = position.z - halfSize;
+      const maxZ = position.z + halfSize;
+
+      const minCellX = Math.floor(minX / cellSize);
+      const maxCellX = Math.floor(maxX / cellSize);
+      const minCellZ = Math.floor(minZ / cellSize);
+      const maxCellZ = Math.floor(maxZ / cellSize);
+
+      for (let cx = minCellX; cx <= maxCellX; cx++) {
+        for (let cz = minCellZ; cz <= maxCellZ; cz++) {
+          const key = pair(cx, cz);
+          const set = tileIndex.get(key);
+          if (!set) continue;
+          for (const id of set) {
+            const meta = tileMeta.get(id);
+            if (!meta) continue;
+            if (
+              Math.abs(meta.x - position.x) < (halfSize + meta.halfSize - 0.1) &&
+              Math.abs(meta.z - position.z) < (halfSize + meta.halfSize - 0.1)
+            ) {
+              return true;
+            }
           }
         }
       }
@@ -449,18 +629,34 @@ export const useBuildingStore = create<BuildingStore>()(
     },
     
     checkWallPosition: (position, rotation) => {
-      const { wallGroups } = get();
+      const { wallIndex, wallMeta } = get();
       const tolerance = 0.5;
-      
-      for (const group of wallGroups.values()) {
-        for (const wall of group.walls) {
-          // 간단한 근접 체크 (더 정교한 충돌 검사가 필요할 수 있음)
-          if (
-            Math.abs(wall.position.x - position.x) < tolerance &&
-            Math.abs(wall.position.z - position.z) < tolerance &&
-            Math.abs(wall.rotation.y - rotation) < 0.1
-          ) {
-            return true;
+
+      const minX = position.x - tolerance;
+      const maxX = position.x + tolerance;
+      const minZ = position.z - tolerance;
+      const maxZ = position.z + tolerance;
+
+      const minCellX = Math.floor(minX / 1);
+      const maxCellX = Math.floor(maxX / 1);
+      const minCellZ = Math.floor(minZ / 1);
+      const maxCellZ = Math.floor(maxZ / 1);
+
+      for (let cx = minCellX; cx <= maxCellX; cx++) {
+        for (let cz = minCellZ; cz <= maxCellZ; cz++) {
+          const key = pair(cx, cz);
+          const set = wallIndex.get(key);
+          if (!set) continue;
+          for (const id of set) {
+            const meta = wallMeta.get(id);
+            if (!meta) continue;
+            if (
+              Math.abs(meta.x - position.x) < tolerance &&
+              Math.abs(meta.z - position.z) < tolerance &&
+              Math.abs(meta.rotY - rotation) < 0.1
+            ) {
+              return true;
+            }
           }
         }
       }

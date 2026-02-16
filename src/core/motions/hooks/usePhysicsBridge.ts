@@ -35,7 +35,7 @@ export function usePhysicsBridge(props: PhysicsCalculationProps) {
 
   // 브릿지 초기화
   useEffect(() => {
-    const bridge = BridgeFactory.get('physics') as PhysicsBridge | null;
+    const bridge = BridgeFactory.getOrCreate('physics') as PhysicsBridge | null;
     if (bridge) {
       physicsBridgeRef.current = bridge;
       physicsBridgeRef.current.register('global-physics', store.physics);

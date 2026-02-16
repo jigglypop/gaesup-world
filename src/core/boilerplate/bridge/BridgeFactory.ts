@@ -29,6 +29,10 @@ export class BridgeFactory {
         const instance = BridgeFactory.instances.get(domain)
         return instance ? (instance as T) : null
     }
+
+    static getOrCreate<T extends BridgeInstance>(domain: string): T | null {
+        return BridgeFactory.get<T>(domain) ?? BridgeFactory.create<T>(domain)
+    }
     
     static has(domain: string): boolean {
         return BridgeFactory.instances.has(domain)

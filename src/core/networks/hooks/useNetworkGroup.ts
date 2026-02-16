@@ -190,6 +190,7 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
         const touchedGroups = new Set<string>();
         for (let i = startIdx; i < queue.length; i++) {
           const msg = queue[i];
+          if (!msg) continue;
           if (msg.to !== 'group' || !msg.groupId) continue;
           if (!joinedGroupIdsRef.current.has(msg.groupId)) continue;
           if (seenMessageIdsRef.current.has(msg.id)) continue;

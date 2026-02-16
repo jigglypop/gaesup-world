@@ -4,6 +4,8 @@ import { shaderMaterial, useTexture } from "@react-three/drei";
 import { extend, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
+import { weightFromDistance } from "@core/utils/sfe";
+
 import fragmentShader from "./frag.glsl";
 import { FlagMeshProps } from "./type";
 import vertexShader from "./vert.glsl";
@@ -22,8 +24,12 @@ const FlagMaterial = shaderMaterial(
 
 extend({ FlagMaterial });
 
-export const FlagMesh: FC<FlagMeshProps> = ({ geometry, pamplet_url, ...meshProps }) => {
+export const FlagMesh: FC<FlagMeshProps> = ({ geometry, pamplet_url, lod, center, ...meshProps }) => {
   const materialRef = useRef<THREE.Material>(null!);
+  const meshRef = useRef<THREE.Mesh | null>(null);
+  const centerRef = useRef(new THREE.Vector3());
+  const lastVisibleRef = useRef<boolean>(true);
+  const lodCheckAccumRef = useRef<number>(0);
 
   const texture = useTexture(
     pamplet_url || `./image/main/aggjack.webp`,
@@ -32,7 +38,39 @@ export const FlagMesh: FC<FlagMeshProps> = ({ geometry, pamplet_url, ...meshProp
     }
   );
 
-  useFrame((state) => {
+  useEffect(() => {
+    if (center) {
+      centerRef.current.set(center[0], center[1], center[2]);
+    }
+  }, [center]);
+
+  useFrame((state, delta) => {
+    if (lod) {
+      const near = lod.near ?? 30;
+      const far = lod.far ?? 180;
+      const strength = lod.strength ?? 4;
+
+      lodCheckAccumRef.current += Math.max(0, delta);
+      const checkInterval = lastVisibleRef.current ? 0.2 : 0.5;
+      if (lodCheckAccumRef.current >= checkInterval) {
+        lodCheckAccumRef.current = 0;
+
+        if (!center && meshRef.current) {
+          meshRef.current.getWorldPosition(centerRef.current);
+        }
+
+        const dist = state.camera.position.distanceTo(centerRef.current);
+        const w = weightFromDistance(dist, near, far, strength);
+        const visible = w > 0;
+        if (visible !== lastVisibleRef.current) {
+          lastVisibleRef.current = visible;
+          if (meshRef.current) meshRef.current.visible = visible;
+        }
+      }
+
+      if (!lastVisibleRef.current) return;
+    }
+
     const material = materialRef.current as unknown as { time: number };
     material.time = state.clock.elapsedTime * 5;
   });
@@ -46,7 +84,7 @@ export const FlagMesh: FC<FlagMeshProps> = ({ geometry, pamplet_url, ...meshProp
   }, [texture]);
 
   return (
-    <mesh geometry={geometry} {...meshProps}>
+    <mesh ref={meshRef} geometry={geometry} {...meshProps}>
       <flagMaterial
         ref={materialRef}
         map={texture}

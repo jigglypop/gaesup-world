@@ -37,9 +37,11 @@ export class InteractionBridge {
   private state: BridgeState;
   private eventSubscribers: Map<string, Array<(event: BridgeEvent) => void>>;
   private eventQueue: BridgeEvent[];
-  private syncInterval: number | null;
+  private syncTimer: number | null;
+  private visibilityCleanup: (() => void) | null;
   private readonly MAX_COMMAND_HISTORY = 1000;
   private readonly MAX_EVENT_QUEUE = 500;
+  private readonly SYNC_DELAY_MS = 16;
   private engineListenerCleanups: Array<() => void> = [];
   private eventListeners: Set<(state: { keyboard: KeyboardState; mouse: MouseState }) => void>;
   private interactables: Map<string, { id: string; active?: boolean; onPointerOver?: () => void; onPointerOut?: () => void; onClick?: () => void }>;
@@ -56,13 +58,14 @@ export class InteractionBridge {
     };
     this.eventSubscribers = new Map();
     this.eventQueue = [];
-    this.syncInterval = null;
+    this.syncTimer = null;
+    this.visibilityCleanup = null;
     this.eventListeners = new Set();
     this.interactables = new Map();
     this.hoveredInteractableIds = new Set();
     
     this.setupEngineListeners();
-    this.startSync();
+    this.setupVisibilityListener();
   }
 
   private setupEngineListeners(): void {
@@ -269,6 +272,7 @@ export class InteractionBridge {
       const list = this.eventSubscribers.get(event) ?? [];
       list.push(callback);
       this.eventSubscribers.set(event, list);
+      this.scheduleSync();
       return () => this.unsubscribe(event, callback);
     }
 
@@ -287,6 +291,10 @@ export class InteractionBridge {
       this.eventSubscribers.delete(event);
     } else {
       this.eventSubscribers.set(event, list);
+    }
+
+    if (this.eventSubscribers.size === 0) {
+      this.cancelSync();
     }
   }
 
@@ -348,11 +356,14 @@ export class InteractionBridge {
 
   @HandleError()
   private emitEvent(event: BridgeEvent): void {
+    // If no one is subscribed to bridge events, avoid queueing/scheduling work.
+    if (this.eventSubscribers.size === 0) return;
     this.eventQueue.push(event);
     
     if (this.eventQueue.length > this.MAX_EVENT_QUEUE) {
       this.eventQueue = this.eventQueue.slice(-this.MAX_EVENT_QUEUE);
     }
+    this.scheduleSync();
   }
 
   private dispatchEvent(event: BridgeEvent): void {
@@ -371,10 +382,36 @@ export class InteractionBridge {
   }
 
   @HandleError()
-  private startSync(): void {
-    this.syncInterval = window.setInterval(() => {
+  private setupVisibilityListener(): void {
+    if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') return;
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        this.cancelSync();
+        return;
+      }
+      if (this.eventQueue.length > 0) {
+        this.scheduleSync();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    this.visibilityCleanup = () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }
+
+  private cancelSync(): void {
+    if (this.syncTimer === null) return;
+    clearTimeout(this.syncTimer);
+    this.syncTimer = null;
+  }
+
+  private scheduleSync(): void {
+    if (this.syncTimer !== null) return;
+    if (typeof document !== 'undefined' && document.hidden) return;
+    if (this.eventSubscribers.size === 0) return;
+
+    this.syncTimer = window.setTimeout(() => {
+      this.syncTimer = null;
       this.state.syncStatus = 'syncing';
-      
+
       try {
         this.processEventQueue();
         this.updateMetrics();
@@ -382,9 +419,14 @@ export class InteractionBridge {
         this.state.syncStatus = 'error';
         console.error('Sync error:', error);
       }
-      
+
       this.state.syncStatus = 'idle';
-    }, 16);
+
+      // If more work is queued, continue on the next tick.
+      if (this.eventQueue.length > 0 && this.eventSubscribers.size > 0) {
+        this.scheduleSync();
+      }
+    }, this.SYNC_DELAY_MS);
   }
 
   @Profile()
@@ -442,10 +484,9 @@ export class InteractionBridge {
 
   @HandleError()
   dispose(): void {
-    if (this.syncInterval !== null) {
-      clearInterval(this.syncInterval);
-      this.syncInterval = null;
-    }
+    this.cancelSync();
+    this.visibilityCleanup?.();
+    this.visibilityCleanup = null;
     
     this.engineListenerCleanups.forEach(cleanup => cleanup());
     this.engineListenerCleanups = [];

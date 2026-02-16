@@ -3,6 +3,7 @@ import React, { FC, useState } from 'react';
 import '../../styles/theme.css';
 import { 
   AnimationPanel,
+  BuildingPanel,
   CameraPanel,
   MotionPanel,
   PerformancePanel,
@@ -12,11 +13,12 @@ import { ResizablePanel } from '../ResizablePanel';
 import { EditorLayoutProps, FloatingPanel, PanelConfig } from './types';
 
 export const EditorLayout: FC<EditorLayoutProps> = ({ children }) => {
-  const [activePanels, setActivePanels] = useState<string[]>(['vehicle', 'performance']);
+  const [activePanels, setActivePanels] = useState<string[]>(['building', 'vehicle', 'performance']);
   const [floatingPanels, setFloatingPanels] = useState<FloatingPanel[]>([]);
   const [minimizedPanels, setMinimizedPanels] = useState<string[]>([]);
 
   const panelConfigs: PanelConfig[] = [
+    { id: 'building', title: 'Building', component: <BuildingPanel />, defaultSide: 'left' },
     { id: 'animation', title: 'Animation', component: <AnimationPanel />, defaultSide: 'left' },
     { id: 'camera', title: 'Camera', component: <CameraPanel />, defaultSide: 'left' },
     { id: 'motion', title: 'Motion', component: <MotionPanel />, defaultSide: 'right' },

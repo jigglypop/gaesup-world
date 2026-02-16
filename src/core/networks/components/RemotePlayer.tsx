@@ -6,6 +6,8 @@ import { CapsuleCollider, RigidBody, type RapierRigidBody } from '@react-three/r
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
+import { weightFromDistance } from '@core/utils/sfe';
+
 import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
 import { PlayerState, MultiplayerConfig } from '../types';
 
@@ -45,6 +47,14 @@ export function RemotePlayer({ state, characterUrl, config, speechText }: Remote
   const sdAdjustedTarget = useRef(new THREE.Vector3());
   const sdV1 = useRef(new THREE.Vector3());
   const sdV2 = useRef(new THREE.Vector3());
+
+  // Reused objects to avoid per-frame allocations.
+  const nextTranslation = useRef({ x: 0, y: 0, z: 0 });
+  const nextRotation = useRef({ x: 0, y: 0, z: 0, w: 1 });
+
+  // LOD/throttle state (SFE-style suppression w = exp(-sigma(distance))).
+  const lodAccum = useRef<number>(0);
+  const lodInterval = useRef<number>(0);
   
   // URL 가져오기 - props에서 먼저, 없으면 state에서
   const modelUrl = characterUrl || state.modelUrl || '';
@@ -273,13 +283,18 @@ export function RemotePlayer({ state, characterUrl, config, speechText }: Remote
         setTranslation?: (t: { x: number; y: number; z: number }, wakeUp: boolean) => void;
         setRotation?: (r: THREE.Quaternion, wakeUp: boolean) => void;
       };
-      body.setNextKinematicTranslation?.({ x: p.x, y: p.y, z: p.z });
-      body.setNextKinematicRotation?.({
-        x: targetRotation.current.x,
-        y: targetRotation.current.y,
-        z: targetRotation.current.z,
-        w: targetRotation.current.w,
-      });
+      const t = nextTranslation.current;
+      t.x = p.x;
+      t.y = p.y;
+      t.z = p.z;
+      body.setNextKinematicTranslation?.(t);
+
+      const q = nextRotation.current;
+      q.x = targetRotation.current.x;
+      q.y = targetRotation.current.y;
+      q.z = targetRotation.current.z;
+      q.w = targetRotation.current.w;
+      body.setNextKinematicRotation?.(q);
     }
     
     // Prefer (w, x, y, z). Some older senders may send identity as (x, y, z, w) = (0,0,0,1).
@@ -305,8 +320,32 @@ export function RemotePlayer({ state, characterUrl, config, speechText }: Remote
   }, [state.position, state.rotation, state.velocity]);
 
   // 부드러운 보간
-  useFrame((_, delta) => {
+  useFrame((frame, delta) => {
     if (!bodyRef.current || !meshRef.current) return;
+
+    // Distance-based throttling: far objects update less frequently.
+    // Use the last chosen interval for early returns to avoid doing distance math every frame.
+    const currentInterval = lodInterval.current;
+    if (currentInterval > 0) {
+      lodAccum.current += Math.max(0, delta);
+      if (lodAccum.current < currentInterval) return;
+      lodAccum.current = 0;
+    } else {
+      lodAccum.current = 0;
+    }
+
+    // Update the interval at the same cadence as the simulation update.
+    const approx = smoothInit.current ? smoothPos.current : targetPosition.current;
+    const cameraDist = frame.camera.position.distanceTo(approx);
+    const w = smoothInit.current ? weightFromDistance(cameraDist, 25, 140, 4) : 1;
+    lodInterval.current =
+      w >= 0.7
+        ? 0
+        : w >= 0.4
+        ? 1 / 30
+        : w >= 0.2
+        ? 1 / 15
+        : 1 / 8;
 
     // RigidBody의 현재 위치와 회전
     const pos = bodyRef.current.translation();
@@ -367,14 +406,21 @@ export function RemotePlayer({ state, characterUrl, config, speechText }: Remote
       setRotation?: (r: THREE.Quaternion, wakeUp: boolean) => void;
     };
 
-    const t = { x: smoothPos.current.x, y: smoothPos.current.y, z: smoothPos.current.z };
+    const t = nextTranslation.current;
+    t.x = smoothPos.current.x;
+    t.y = smoothPos.current.y;
+    t.z = smoothPos.current.z;
     if (typeof body.setNextKinematicTranslation === 'function') {
       body.setNextKinematicTranslation(t);
     } else {
       body.setTranslation?.(t, true);
     }
 
-    const q = { x: smoothRot.current.x, y: smoothRot.current.y, z: smoothRot.current.z, w: smoothRot.current.w };
+    const q = nextRotation.current;
+    q.x = smoothRot.current.x;
+    q.y = smoothRot.current.y;
+    q.z = smoothRot.current.z;
+    q.w = smoothRot.current.w;
     if (typeof body.setNextKinematicRotation === 'function') {
       body.setNextKinematicRotation(q);
     } else {

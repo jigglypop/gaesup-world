@@ -4,6 +4,12 @@ import * as THREE from "three";
 export type FlagMeshProps = ThreeElements["mesh"] & {
   geometry: THREE.BufferGeometry;
   pamplet_url?: string | null;
+  lod?: {
+    near?: number;
+    far?: number;
+    strength?: number;
+  };
+  center?: [number, number, number];
 };
 
 declare global {

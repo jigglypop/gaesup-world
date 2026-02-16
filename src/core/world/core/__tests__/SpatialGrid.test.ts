@@ -123,6 +123,19 @@ describe('SpatialGrid', () => {
       expect(nearby).not.toContain('far2');
     });
 
+    test('should write results into provided output array', () => {
+      const center = new THREE.Vector3(0, 0, 0);
+      const out: string[] = ['sentinel'];
+      const nearby = spatialGrid.getNearby(center, 5, out);
+
+      // Uses the provided array instance and clears it.
+      expect(nearby).toBe(out);
+      expect(out).not.toContain('sentinel');
+      expect(out).toContain('center');
+      expect(out).toContain('near1');
+      expect(out).toContain('near2');
+    });
+
     test('should find objects in larger radius', () => {
       const center = new THREE.Vector3(0, 0, 0);
       const nearby = spatialGrid.getNearby(center, 100);
@@ -192,7 +205,15 @@ describe('SpatialGrid', () => {
       
       // Cell should be cleaned up (internal implementation detail)
       const cellsMap = (spatialGrid as any).cells;
-      const key = '10,10'; // 100/10 = 10 for both x and z
+      const zigZag = (n: number) => (n >= 0 ? n * 2 : (-n * 2) - 1);
+      const pair = (a: number, b: number) => {
+        const A = zigZag(a);
+        const B = zigZag(b);
+        const sum = A + B;
+        return (sum * (sum + 1)) / 2 + B;
+      };
+      const key = pair(10, 10); // floor(100/10)=10 for both x and z
+      expect(typeof key).toBe('number');
       expect(cellsMap.has(key)).toBe(false);
     });
   });

@@ -5,19 +5,33 @@ import {
 } from './types';
 import { logger } from '../../utils/logger';
 
+const isProduction =
+  (process.env as { NODE_ENV?: string }).NODE_ENV === 'production';
+
+const identityMethodDecorator = (
+  target: DecoratorTarget,
+  propertyKey: string,
+  descriptor: PropertyDescriptorExtended
+) => {
+  void target;
+  void propertyKey;
+  return descriptor;
+};
+
 const HOOK_BEFORE_METADATA_KEY = 'monitoring:hook:before';
 const HOOK_AFTER_METADATA_KEY = 'monitoring:hook:after';
 
 const isPromiseLike = (value: unknown): value is Promise<unknown> => {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as any).then === 'function' &&
-    typeof (value as any).finally === 'function'
-  );
+  if (typeof value !== 'object' || value === null) return false;
+  const maybePromise = value as { then?: unknown; finally?: unknown };
+  return typeof maybePromise.then === 'function' && typeof maybePromise.finally === 'function';
 };
 
 export function Profile(label?: string) {
+  if (isProduction) {
+    void label;
+    return identityMethodDecorator;
+  }
   return function (
     target: DecoratorTarget,
     propertyKey: string,
@@ -59,6 +73,10 @@ export function Profile(label?: string) {
 }
 
 export function Log(level: 'log' | 'info' | 'warn' | 'error' = 'log') {
+  if (isProduction) {
+    void level;
+    return identityMethodDecorator;
+  }
   return function (
     target: DecoratorTarget,
     propertyKey: string,
@@ -200,6 +218,10 @@ export function Hook(before?: () => void, after?: () => void) {
 }
 
 export function MemoryProfile(label?: string) {
+  if (isProduction) {
+    void label;
+    return identityMethodDecorator;
+  }
   return function (
     target: DecoratorTarget,
     propertyKey: string,
@@ -208,19 +230,28 @@ export function MemoryProfile(label?: string) {
     const originalMethod = descriptor.value;
 
     descriptor.value = function (...args: unknown[]) {
-      const before = process.memoryUsage();
+      // Node-only API. In browsers, fall back to a no-op wrapper.
+      const memoryUsage =
+        typeof process !== 'undefined' && typeof process.memoryUsage === 'function'
+          ? (process.memoryUsage as () => { heapUsed: number })
+          : null;
+      if (!memoryUsage) {
+        return originalMethod!.apply(this, args);
+      }
+
+      const before = memoryUsage();
       let result: unknown;
       try {
         result = originalMethod!.apply(this, args);
       } catch (e) {
-        const after = process.memoryUsage();
+        const after = memoryUsage();
         const heapDeltaKb = (after.heapUsed - before.heapUsed) / 1024;
         const methodLabel = label || `${target.constructor.name}.${propertyKey}`;
         logger.log(`[MemoryProfile] ${methodLabel} heap: +${heapDeltaKb.toFixed(2)}KB`);
         throw e;
       }
 
-      const after = process.memoryUsage();
+      const after = memoryUsage();
       const heapDeltaKb = (after.heapUsed - before.heapUsed) / 1024;
       const methodLabel = label || `${target.constructor.name}.${propertyKey}`;
       logger.log(`[MemoryProfile] ${methodLabel} heap: +${heapDeltaKb.toFixed(2)}KB`);
@@ -232,6 +263,10 @@ export function MemoryProfile(label?: string) {
 }
 
 export function MonitorMemory(threshold: number = 100) { // MB 단위
+  if (isProduction) {
+    void threshold;
+    return identityMethodDecorator;
+  }
   return function (
     target: DecoratorTarget,
     propertyKey: string,
@@ -264,6 +299,9 @@ export function MonitorMemory(threshold: number = 100) { // MB 단위
 }
 
 export function TrackCalls() {
+  if (isProduction) {
+    return identityMethodDecorator;
+  }
   const callCounts = new Map<string, number>();
   
   return function (

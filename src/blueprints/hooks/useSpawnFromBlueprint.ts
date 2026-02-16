@@ -55,7 +55,7 @@ export function useSpawnFromBlueprint() {
       const worldObject = createWorldObject(entityId, blueprint, position, rotation, scale, options.metadata);
       
       // BridgeFactory를 통해 WorldBridge 인스턴스 가져오기
-      const worldBridge = BridgeFactory.get('world') as unknown as WorldBridge | null;
+      const worldBridge = BridgeFactory.getOrCreate('world') as unknown as WorldBridge | null;
       if (!worldBridge) {
         console.error('WorldBridge not found. Make sure it is properly initialized.');
         return null;

@@ -10,12 +10,16 @@ jest.mock('@react-three/fiber', () => ({
 jest.mock('@core/boilerplate', () => ({
   BridgeFactory: {
     get: jest.fn(),
-    create: jest.fn()
+    create: jest.fn(),
+    getOrCreate: jest.fn()
   }
 }));
 
 // NetworkBridge 모킹
 const mockBridge = {
+  ensureMainEngine: jest.fn(),
+  getEngine: jest.fn(),
+  register: jest.fn(),
   execute: jest.fn(),
   snapshot: jest.fn(),
   getNetworkStats: jest.fn(),
@@ -37,6 +41,9 @@ describe('useNetworkBridge', () => {
     mockUseFrame = fiber.useFrame as jest.Mock;
     mockBridgeFactory = boilerplate.BridgeFactory;
     
+    mockBridgeFactory.getOrCreate.mockImplementation((domain: string) => {
+      return mockBridgeFactory.get(domain) ?? mockBridgeFactory.create(domain);
+    });
     mockBridgeFactory.get.mockReturnValue(mockBridge);
     mockBridgeFactory.create.mockReturnValue(mockBridge);
     mockUseFrame.mockImplementation(() => {
@@ -105,7 +112,7 @@ describe('useNetworkBridge', () => {
   });
 
   describe('설정 적용', () => {
-    test('초기 설정 적용', () => {
+    test('초기 설정 적용', async () => {
       const config = {
         updateFrequency: 60,
         maxConnections: 200,
@@ -116,10 +123,12 @@ describe('useNetworkBridge', () => {
         systemId: 'test',
         config 
       }));
-      
-      expect(mockBridge.execute).toHaveBeenCalledWith('test', {
-        type: 'updateConfig',
-        data: { config }
+
+      await waitFor(() => {
+        expect(mockBridge.execute).toHaveBeenCalledWith('test', {
+          type: 'updateConfig',
+          data: { config }
+        });
       });
     });
   });

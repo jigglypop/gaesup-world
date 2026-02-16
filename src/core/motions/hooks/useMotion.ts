@@ -40,9 +40,7 @@ export function useMotion(
 ): UseMotionReturn {
   const { motionType, rigidBodyRef, position, autoStart = true } = options;
   const bridge = useMemo(
-    () =>
-      (BridgeFactory.get('motion') as MotionBridge | null) ??
-      (BridgeFactory.create('motion') as MotionBridge | null),
+    () => (BridgeFactory.getOrCreate('motion') as MotionBridge | null),
     [],
   );
   const entity = useMemo(

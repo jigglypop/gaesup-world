@@ -13,8 +13,15 @@ export interface NetworkBridgeEntity {
 export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapshot, NetworkCommand> {
   constructor() {
     super();
-    this.register('main', this.createDefaultConfig());
     this.setupEngineSubscriptions();
+  }
+
+  /**
+   * Register the 'main' engine with default config (call from consumer, not constructor).
+   */
+  ensureMainEngine(config?: NetworkConfig): void {
+    if (this.getEngine('main')) return;
+    this.register('main', config ?? this.createDefaultConfig());
   }
 
   protected buildEngine(_: string, config?: NetworkConfig): NetworkBridgeEntity | null {

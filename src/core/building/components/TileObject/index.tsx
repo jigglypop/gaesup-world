@@ -1,13 +1,35 @@
-import { lazy, Suspense } from 'react';
+import { Suspense, useEffect, useMemo } from 'react';
 
 import * as THREE from 'three';
 
 import { TileObjectProps } from './types';
+import Water from '../mesh/water';
+import Grass from '../mesh/grass/Grass';
+import { FlagMesh } from '../mesh/flag';
 import { TILE_CONSTANTS } from '../../types/constants';
 
-const Water = lazy(() => import('../mesh/water'));
-const Grass = lazy(() => import('../mesh/grass/Grass'));
-const Flag = lazy(() => import('../mesh/flag').then(module => ({ default: module.FlagMesh })));
+function FlagObject({ textureUrl }: { textureUrl: string | null }) {
+  const geometry = useMemo(() => new THREE.PlaneGeometry(1.5, 1), []);
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
+
+  return (
+    <group position={[0, 0, 0]}>
+      <mesh position={[0, 2, 0]}>
+        <boxGeometry args={[0.05, 4, 0.05]} />
+        <meshStandardMaterial color="#8B4513" />
+      </mesh>
+      <FlagMesh
+        geometry={geometry}
+        pamplet_url={textureUrl}
+        position={[0.75, 3, 0]}
+      />
+    </group>
+  );
+}
 
 export function TileObject({ tile }: TileObjectProps) {
   if (!tile.objectType || tile.objectType === 'none') return null;
@@ -23,27 +45,19 @@ export function TileObject({ tile }: TileObjectProps) {
             <Water />
           </group>
         )}
-        
+
         {tile.objectType === 'grass' && (
-          <Grass 
+          <Grass
             width={tileSize}
             instances={tile.objectConfig?.grassDensity || 1000}
             position={[0, 0.05, 0]}
           />
         )}
-        
+
         {tile.objectType === 'flag' && (
-          <group position={[0, 0, 0]}>
-            <mesh position={[0, 2, 0]}>
-              <boxGeometry args={[0.05, 4, 0.05]} />
-              <meshStandardMaterial color="#8B4513" />
-            </mesh>
-            <Flag 
-              geometry={new THREE.PlaneGeometry(1.5, 1)}
-              pamplet_url={tile.objectConfig?.flagTexture ?? null}
-              position={[0.75, 3, 0]}
-            />
-          </group>
+          <FlagObject
+            textureUrl={tile.objectConfig?.flagTexture ?? null}
+          />
         )}
       </Suspense>
     </group>

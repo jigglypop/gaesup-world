@@ -15,14 +15,14 @@ export class ManagedMotionEntity {
   private targetPosition: THREE.Vector3 | null = null;
   private isAutomated = false;
   private unsubscribe: (() => void) | null = null;
+  private latestSnapshot: MotionSnapshot | null = null;
   private tempDirection = new THREE.Vector3();
 
   constructor(id: string, motionType: MotionType, bridge?: MotionBridge | null) {
     this.id = id;
     this.bridge =
       bridge ??
-      (BridgeFactory.get('motion') as MotionBridge | null) ??
-      (BridgeFactory.create('motion') as MotionBridge | null) ??
+      (BridgeFactory.getOrCreate('motion') as MotionBridge | null) ??
       (() => {
         throw new Error(`[ManagedMotionEntity] MotionBridge not available for id: ${id}`);
       })();
@@ -33,6 +33,9 @@ export class ManagedMotionEntity {
     if (this.unsubscribe) return;
     this.unsubscribe = this.bridge.subscribe((snapshot, entityId) => {
       if (entityId !== this.id) return;
+      if (snapshot) {
+        this.latestSnapshot = snapshot;
+      }
       if (this.isAutomated && this.targetPosition) {
         this.handleAutomatedMovement(snapshot);
       }
@@ -109,7 +112,17 @@ export class ManagedMotionEntity {
   }
 
   public getSnapshot(): MotionSnapshot | null {
-    return this.bridge.snapshot(this.id);
+    if (this.latestSnapshot) return this.latestSnapshot;
+
+    const cached = this.bridge.getCachedSnapshot(this.id) as MotionSnapshot | undefined;
+    if (cached) {
+      this.latestSnapshot = cached;
+      return cached;
+    }
+
+    const snapshot = this.bridge.snapshot(this.id);
+    if (snapshot) this.latestSnapshot = snapshot;
+    return snapshot;
   }
 
   public isGrounded(): boolean {
@@ -129,6 +142,7 @@ export class ManagedMotionEntity {
     this.disableAutomation();
     this.unsubscribe?.();
     this.unsubscribe = null;
+    this.latestSnapshot = null;
     this.bridge.unregister(this.id);
   }
 } 
