@@ -8,6 +8,7 @@ export type RenderState = {
 export type EngineState = {
   geometries: number;
   textures: number;
+  programs: number;
 };
 
 export interface PerformanceState {

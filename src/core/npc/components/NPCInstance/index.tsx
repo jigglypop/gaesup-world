@@ -2,7 +2,8 @@ import React, { useRef, useEffect, useMemo, useCallback } from 'react';
 
 import { useGLTF } from '@react-three/drei';
 import type { ThreeEvent } from '@react-three/fiber';
-import { RigidBody } from '@react-three/rapier';
+import { useFrame } from '@react-three/fiber';
+import { RigidBody, RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
@@ -51,10 +52,63 @@ function NPCPartMesh({ part, instanceId }: NPCPartMeshProps) {
   );
 }
 
+const ARRIVAL_THRESHOLD = 0.3;
+
 export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps) {
   const groupRef = useRef<THREE.Group>(null);
+  const rigidBodyRef = useRef<RapierRigidBody>(null);
+  const waypointIndexRef = useRef(0);
   const { templates, clothingSets } = useNPCStore();
   const template = templates.get(instance.templateId);
+
+  const isNavigating = instance.navigation?.state === 'moving';
+
+  // Reset waypoint index when navigation changes.
+  useEffect(() => {
+    waypointIndexRef.current = instance.navigation?.currentIndex ?? 0;
+  }, [instance.navigation?.waypoints]);
+
+  // Navigation movement loop.
+  useFrame((_, delta) => {
+    if (!isNavigating || !instance.navigation) return;
+    const body = rigidBodyRef.current;
+    if (!body) return;
+
+    const { waypoints, speed } = instance.navigation;
+    const idx = waypointIndexRef.current;
+    if (idx >= waypoints.length) return;
+
+    const target = waypoints[idx];
+    const pos = body.translation();
+
+    const dx = target[0] - pos.x;
+    const dz = target[2] - pos.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+
+    if (dist < ARRIVAL_THRESHOLD) {
+      waypointIndexRef.current = idx + 1;
+      const store = useNPCStore.getState();
+      if (idx + 1 >= waypoints.length) {
+        store.updateNavigationPosition(instance.id, [target[0], target[1], target[2]]);
+        store.advanceNavigation(instance.id);
+      } else {
+        store.advanceNavigation(instance.id);
+      }
+      return;
+    }
+
+    const step = Math.min(speed * delta, dist);
+    const nx = pos.x + (dx / dist) * step;
+    const nz = pos.z + (dz / dist) * step;
+
+    body.setNextKinematicTranslation({ x: nx, y: pos.y, z: nz });
+
+    // Face movement direction.
+    if (groupRef.current && dist > 0.01) {
+      const angle = Math.atan2(dx, dz);
+      groupRef.current.rotation.y = angle;
+    }
+  });
   
   const handlePointerEnter = useCallback((e: React.PointerEvent) => {
     e.stopPropagation();
@@ -160,10 +214,13 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   const mainPartUrl = allParts.find(part => part.url && part.type === 'body')?.url || 
                       allParts.find(part => part.url)?.url;
   
+  const bodyType = isNavigating ? 'kinematicPosition' : 'fixed';
+
   if (mainPartUrl) {
     return (
       <RigidBody
-        type="fixed"
+        ref={rigidBodyRef}
+        type={bodyType}
         position={instance.position}
         rotation={instance.rotation}
         colliders="cuboid"
@@ -199,7 +256,8 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   
   return (
     <RigidBody
-      type="fixed"
+      ref={rigidBodyRef}
+      type={bodyType}
       position={instance.position}
       rotation={instance.rotation}
       colliders="cuboid"

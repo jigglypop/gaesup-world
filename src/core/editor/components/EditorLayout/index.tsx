@@ -19,11 +19,11 @@ export const EditorLayout: FC<EditorLayoutProps> = ({ children }) => {
 
   const panelConfigs: PanelConfig[] = [
     { id: 'building', title: 'Building', component: <BuildingPanel />, defaultSide: 'left' },
+    { id: 'vehicle', title: 'Vehicle', component: <VehiclePanel />, defaultSide: 'left' },
     { id: 'animation', title: 'Animation', component: <AnimationPanel />, defaultSide: 'left' },
-    { id: 'camera', title: 'Camera', component: <CameraPanel />, defaultSide: 'left' },
+    { id: 'camera', title: 'Camera', component: <CameraPanel />, defaultSide: 'right' },
     { id: 'motion', title: 'Motion', component: <MotionPanel />, defaultSide: 'right' },
     { id: 'performance', title: 'Performance', component: <PerformancePanel />, defaultSide: 'right' },
-    { id: 'vehicle', title: 'Vehicle', component: <VehiclePanel />, defaultSide: 'left' },
   ];
 
   const togglePanel = (panelId: string) => {

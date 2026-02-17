@@ -12,6 +12,7 @@ export const initialPerformanceState = {
   engine: {
     geometries: 0,
     textures: 0,
+    programs: 0,
   },
 };
 

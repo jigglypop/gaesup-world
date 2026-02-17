@@ -31,6 +31,8 @@ export interface MotionDebugPanelProps {
   compact?: boolean;
   zIndex?: number;
   theme?: 'dark' | 'light' | 'glass';
+  /** When true, disables fixed positioning (for embedding inside editor panels). */
+  embedded?: boolean;
 }
 
 export const DEFAULT_DEBUG_FIELDS: DebugField[] = [

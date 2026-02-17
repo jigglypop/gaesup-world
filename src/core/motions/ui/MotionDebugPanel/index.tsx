@@ -23,7 +23,7 @@ function getPanelStyle(
 }
 
 export function MotionDebugPanel(props: MotionDebugPanelProps) {
-  const panelStyle = getPanelStyle(props.position, props.zIndex);
+  const panelStyle = props.embedded ? {} : getPanelStyle(props.position, props.zIndex);
   const mode = useGaesupStore((state) => state.mode);
   const physics = useGaesupStore((state) => state.physics);
   const { activeState, gameStates } = useStateSystem();

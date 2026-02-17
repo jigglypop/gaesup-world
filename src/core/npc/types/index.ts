@@ -34,6 +34,13 @@ export interface ClothingSet {
   thumbnail?: string;
 }
 
+export interface NPCNavigationState {
+  waypoints: [number, number, number][];
+  currentIndex: number;
+  speed: number;
+  state: 'idle' | 'moving' | 'arrived';
+}
+
 export interface NPCInstance {
   id: string;
   templateId: string;
@@ -44,8 +51,9 @@ export interface NPCInstance {
   currentAnimation?: string;
   currentClothingSetId?: string;
   customParts?: NPCPart[];
+  navigation?: NPCNavigationState;
   metadata?: {
-    modelUrl?: string; // 인스턴스별 전체 모델 URL
+    modelUrl?: string;
     nameTag?: string;
     health?: number;
     level?: number;

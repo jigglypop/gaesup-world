@@ -131,28 +131,32 @@
 /* Panel Bar */
 .editor-panel-bar {
   position: absolute;
-  top: 60px;
-  right: 10px;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
   background: var(--editor-surface-secondary);
-  backdrop-filter: none;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: var(--editor-border-radius);
   padding: 4px;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  gap: 2px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   border: 1px solid var(--editor-border-color);
+  z-index: 100;
 }
 
 .editor-panel-toggle {
   background: transparent;
   border: none;
   color: var(--editor-text-secondary);
-  padding: 6px 12px;
-  font-size: 13px;
+  padding: 4px 10px;
+  font-size: 11px;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .editor-panel-toggle:hover {
@@ -552,12 +556,13 @@ textarea:focus-visible {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  color: var(--editor-text-primary);
+  color: #ffffff;
 }
 
 .perf-current {
   font-weight: 600;
   font-size: 1.3em;
+  color: #ffffff;
 }
 
 .perf-unit {
@@ -577,7 +582,7 @@ textarea:focus-visible {
   grid-template-columns: repeat(2, 1fr);
   gap: 2px 12px;
   font-size: 11px;
-  color: var(--editor-text-muted);
+  color: #ffffff;
   margin-bottom: 8px;
 }
 
@@ -587,11 +592,11 @@ textarea:focus-visible {
   border-radius: 4px;
   display: flex;
   justify-content: space-between;
-  color: var(--editor-text-primary);
+  color: #ffffff;
 }
 
 .perf-label {
-  color: var(--editor-text-faint);
+  color: rgba(255, 255, 255, 0.7);
   margin-right: 6px;
   user-select: none;
 }

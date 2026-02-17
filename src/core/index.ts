@@ -22,3 +22,6 @@ export { ControllerWrapper as GaesupController } from './interactions/components
 export { createRenderer, isWebGPUAvailable } from './rendering/webgpu';
 export { loadCoreWasm } from './wasm/loader';
 export type { GaesupCoreWasmExports } from './wasm/loader';
+
+export { NavigationSystem } from './navigation';
+export type { NavigationConfig, Waypoint } from './navigation';

@@ -9,6 +9,7 @@ import {
   NPCCategory,
   NPCAnimation,
   NPCPart,
+  NPCNavigationState,
   ClothingSet,
   ClothingCategory,
   NPCEvent
@@ -70,6 +71,12 @@ interface NPCStore extends NPCSystemState {
   changeInstanceClothing: (instanceId: string, clothingSetId: string) => void;
   addInstanceEvent: (instanceId: string, event: NPCEvent) => void;
   removeInstanceEvent: (instanceId: string, eventId: string) => void;
+
+  // Navigation
+  setNavigation: (instanceId: string, waypoints: [number, number, number][], speed?: number) => void;
+  advanceNavigation: (instanceId: string) => void;
+  clearNavigation: (instanceId: string) => void;
+  updateNavigationPosition: (instanceId: string, position: [number, number, number]) => void;
 }
 
 export const useNPCStore = create<NPCStore>()(
@@ -542,6 +549,57 @@ export const useNPCStore = create<NPCStore>()(
       } else {
         delete state.previewAccessories[type];
       }
+    }),
+
+    setNavigation: (instanceId, waypoints, speed = 3) => set((state) => {
+      const instance = state.instances.get(instanceId);
+      if (!instance || waypoints.length === 0) return;
+      const nav: NPCNavigationState = {
+        waypoints,
+        currentIndex: 0,
+        speed,
+        state: 'moving',
+      };
+      state.instances.set(instanceId, {
+        ...instance,
+        navigation: nav,
+        currentAnimation: 'walk',
+      });
+    }),
+
+    advanceNavigation: (instanceId) => set((state) => {
+      const instance = state.instances.get(instanceId);
+      if (!instance?.navigation || instance.navigation.state !== 'moving') return;
+      const nav = instance.navigation;
+      const nextIndex = nav.currentIndex + 1;
+      if (nextIndex >= nav.waypoints.length) {
+        state.instances.set(instanceId, {
+          ...instance,
+          navigation: { ...nav, state: 'arrived', currentIndex: nextIndex },
+          currentAnimation: 'idle',
+        });
+      } else {
+        state.instances.set(instanceId, {
+          ...instance,
+          navigation: { ...nav, currentIndex: nextIndex },
+        });
+      }
+    }),
+
+    clearNavigation: (instanceId) => set((state) => {
+      const instance = state.instances.get(instanceId);
+      if (!instance) return;
+      state.instances.set(instanceId, {
+        ...instance,
+        navigation: undefined,
+        currentAnimation: 'idle',
+      });
+    }),
+
+    updateNavigationPosition: (instanceId, position) => set((state) => {
+      const instance = state.instances.get(instanceId);
+      if (!instance) return;
+      state.instances.set(instanceId, { ...instance, position });
     }),
   }))
 ); 

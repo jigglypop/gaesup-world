@@ -45,6 +45,9 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   private lastMovingState = false;
   private lastRunningState = false;
 
+  private lastPositionY = 0;
+  private groundStableCount = 0;
+
   private tempQuaternion = new THREE.Quaternion();
   private tempEuler = new THREE.Euler();
   private tempVector = new THREE.Vector3();
@@ -86,6 +89,15 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   @Profile()
   calculate(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
     if (!physicsState || !calcProp.rigidBodyRef.current) return;
+
+    const isFocused = calcProp.worldContext?.cameraOption?.focus === true;
+    if (isFocused) {
+      this.freezeInput(physicsState);
+      this.checkGround(calcProp, physicsState);
+      this.animationController.update(physicsState.gameStates);
+      return;
+    }
+
     const currentVelocity = calcProp.rigidBodyRef.current.linvel();
     const activeStateRef = physicsState.activeState;
     activeStateRef.velocity.set(
@@ -130,11 +142,20 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     }
     const velocity = rigidBodyRef.current.linvel();
     const position = rigidBodyRef.current.translation();
-    const groundCheckDistance = 1.0;
-    const isNearGround = position.y <= groundCheckDistance;
-    const isNotFalling = Math.abs(velocity.y) < 0.5;
-    const isOnTheGround = isNearGround && isNotFalling;
+
+    const verticalSpeed = Math.abs(velocity.y);
+    const positionDeltaY = Math.abs(position.y - this.lastPositionY);
+
+    if (verticalSpeed < 0.5 && positionDeltaY < 0.05) {
+      this.groundStableCount = Math.min(this.groundStableCount + 1, 5);
+    } else {
+      this.groundStableCount = 0;
+    }
+    this.lastPositionY = position.y;
+
+    const isOnTheGround = this.groundStableCount >= 2;
     const isFalling = !isOnTheGround && velocity.y < -0.1;
+
     if (isOnTheGround) {
       this.resetJumpState(physicsState);
     }
@@ -187,6 +208,18 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     }
     keyState.lastKeyE = keyE;
     keyState.lastKeyR = false;
+  }
+
+  private freezeInput(physicsState: PhysicsState): void {
+    const gs = physicsState.gameStates;
+    gs.isMoving = false;
+    gs.isNotMoving = true;
+    gs.isRunning = false;
+    gs.isNotRunning = true;
+    gs.isJumping = false;
+    this.isCurrentlyJumping = false;
+    this.lastMovingState = false;
+    this.lastRunningState = false;
   }
 
   private resetJumpState(physicsState: PhysicsState): void {
@@ -339,9 +372,10 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
 
   @Profile()
   private updateForces(rigidBodyRef: RefObject<RapierRigidBody>, delta: number): void {
-    if (!rigidBodyRef.current) return;
-    for (const component of this.forceComponents) {
-      component.update(rigidBodyRef.current, delta);
+    if (!rigidBodyRef.current || this.forceComponents.length === 0) return;
+    const body = rigidBodyRef.current;
+    for (let i = 0, len = this.forceComponents.length; i < len; i++) {
+      this.forceComponents[i].update(body, delta);
     }
   }
 

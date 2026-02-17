@@ -30,6 +30,11 @@ export class PlayerPositionTracker {
   private tempSendRot = new THREE.Quaternion();
   private tempEuler = new THREE.Euler();
   private baseYaw: number | null = null;
+  private scratchUpdate: PlayerUpdateData = {
+    name: '', color: '',
+    position: [0, 0, 0], rotation: [1, 0, 0, 0],
+    animation: 'idle', velocity: [0, 0, 0],
+  };
 
   constructor(config: PlayerTrackingConfig) {
     this.config = config;
@@ -109,16 +114,21 @@ export class PlayerPositionTracker {
       return null;
     }
 
-    const updateData: PlayerUpdateData = {
-      name: playerName,
-      color: playerColor,
-      position: [currentPos.x, currentPos.y, currentPos.z],
-      // Quaternion (w, x, y, z)
-      rotation: [this.tempSendRot.w, this.tempSendRot.x, this.tempSendRot.y, this.tempSendRot.z],
-      animation: currentAnimation,
-      velocity: [this.velocity.x, this.velocity.y, this.velocity.z],
-      ...(modelUrl !== undefined ? { modelUrl } : {})
-    };
+    const updateData = this.scratchUpdate;
+    updateData.name = playerName;
+    updateData.color = playerColor;
+    updateData.position[0] = currentPos.x;
+    updateData.position[1] = currentPos.y;
+    updateData.position[2] = currentPos.z;
+    updateData.rotation[0] = this.tempSendRot.w;
+    updateData.rotation[1] = this.tempSendRot.x;
+    updateData.rotation[2] = this.tempSendRot.y;
+    updateData.rotation[3] = this.tempSendRot.z;
+    updateData.animation = currentAnimation;
+    updateData.velocity[0] = this.velocity.x;
+    updateData.velocity[1] = this.velocity.y;
+    updateData.velocity[2] = this.velocity.z;
+    updateData.modelUrl = modelUrl;
 
     // 상태 업데이트
     this.lastPosition.copy(this.tempPos);

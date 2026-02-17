@@ -1,5 +1,5 @@
 export type AnimationPanelTab = 'Player' | 'Controller' | 'Debug';
-export type CameraPanelTab = 'Controller' | 'Presets' | 'Debug';
+export type CameraPanelTab = 'Controller' | 'Presets' | 'Debug' | 'Settings';
 export type MotionPanelTab = 'Controller' | 'Debug';
 
 export type BlueprintType = 'character' | 'vehicle' | 'airplane' | 'animation' | 'behavior' | 'item';

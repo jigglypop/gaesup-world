@@ -132,6 +132,12 @@ export function useCamera() {
       ...(cameraOption?.target
         ? { lookAt: { x: cameraOption.target.x, y: cameraOption.target.y, z: cameraOption.target.z } }
         : {}),
+      ...(cameraOption?.focus !== undefined ? { focus: cameraOption.focus } : {}),
+      ...(cameraOption?.focusTarget
+        ? { focusTarget: { x: cameraOption.focusTarget.x, y: cameraOption.focusTarget.y, z: cameraOption.focusTarget.z } }
+        : { focusTarget: undefined }),
+      ...(cameraOption?.focusDistance !== undefined ? { focusDistance: cameraOption.focusDistance } : {}),
+      ...(cameraOption?.focusLerpSpeed !== undefined ? { focusLerpSpeed: cameraOption.focusLerpSpeed } : {}),
     });
   }, [cameraOption, mode, updateConfig]);
   

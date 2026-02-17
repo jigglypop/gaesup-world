@@ -4,12 +4,15 @@ import { CameraPanelTab } from './types';
 import { CameraController } from '../../../camera/components/CameraController';
 import { CameraDebugPanel } from '../../../camera/components/CameraDebugPanel';
 import { CameraPresets } from '../../../camera/components/CameraPresets';
+import { CameraSettingsTab } from './CameraSettingsTab';
 
 export function CameraPanel() {
-  const [activeTab, setActiveTab] = useState<CameraPanelTab>('Controller');
+  const [activeTab, setActiveTab] = useState<CameraPanelTab>('Settings');
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'Settings':
+        return <CameraSettingsTab />;
       case 'Controller':
         return <CameraController />;
       case 'Presets':
@@ -24,6 +27,7 @@ export function CameraPanel() {
   return (
     <div className="tabbed-panel">
       <div className="panel-tabs">
+        <button className={`panel-tab ${activeTab === 'Settings' ? 'active' : ''}`} onClick={() => setActiveTab('Settings')}>Settings</button>
         <button className={`panel-tab ${activeTab === 'Controller' ? 'active' : ''}`} onClick={() => setActiveTab('Controller')}>Controller</button>
         <button className={`panel-tab ${activeTab === 'Presets' ? 'active' : ''}`} onClick={() => setActiveTab('Presets')}>Presets</button>
         <button className={`panel-tab ${activeTab === 'Debug' ? 'active' : ''}`} onClick={() => setActiveTab('Debug')}>Debug</button>

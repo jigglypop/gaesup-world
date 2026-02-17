@@ -1,15 +1,23 @@
 import { ThreeEvent } from '@react-three/fiber';
 
 import { useClicker } from '../../../hooks/useClicker';
+import { useGaesupStore } from '../../../stores/gaesupStore';
 
 export function GroundClicker() {
   const { onClick } = useClicker();
   
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
-    // Stop propagation to prevent clicking through objects
     event.stopPropagation();
+
+    const { cameraOption, setCameraOption } = useGaesupStore.getState();
+    if (cameraOption?.focus) {
+      setCameraOption({ focus: false, focusTarget: undefined });
+      return;
+    }
+
     onClick(event);
   };
+
   
   return (
     <mesh

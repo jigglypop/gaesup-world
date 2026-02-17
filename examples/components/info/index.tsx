@@ -1,8 +1,4 @@
-import { useState } from 'react';
-
 import { useGaesupStore } from '../../../src/core';
-import { Icon } from '../icon';
-import { CameraSettings } from './CameraSettings';
 import { CAMERA_PRESETS } from './constants';
 import { SelectionTooltip } from './SelectionTooltip';
 import './styles.css';
@@ -11,7 +7,6 @@ export default function Info() {
   const mode = useGaesupStore((state) => state.mode);
   const setMode = useGaesupStore((state) => state.setMode);
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
-  const [showCameraSettings, setShowCameraSettings] = useState(false);
   const setType = (type: 'character' | 'vehicle' | 'airplane') => {
     setMode({
       type: type,
@@ -51,39 +46,17 @@ export default function Info() {
     return mode.control || 'thirdPerson';
   };
   return (
-    <>
-      <div className="info-style">
-        <SelectionTooltip
-          options={typeOptions}
-          onSelect={setType}
-          currentLabel={getCurrentTypeLabel()}
-        />
-        <SelectionTooltip
-          options={controlOptions}
-          onSelect={setControl}
-          currentLabel={getCurrentControlLabel()}
-        />
-        <Icon
-          ToolTip={<>카메라 설정</>}
-          toolTipStyles={{
-            background: 'rgba(0,0,0,0.8)',
-          }}
-        >
-          <button
-            className="glass-button"
-            onClick={() => setShowCameraSettings(!showCameraSettings)}
-          >
-            설정
-          </button>
-        </Icon>
-      </div>
-      {showCameraSettings && (
-        <CameraSettings
-          mode={mode}
-          onControlChange={setControl}
-          onClose={() => setShowCameraSettings(false)}
-        />
-      )}
-    </>
+    <div className="info-style">
+      <SelectionTooltip
+        options={typeOptions}
+        onSelect={setType}
+        currentLabel={getCurrentTypeLabel()}
+      />
+      <SelectionTooltip
+        options={controlOptions}
+        onSelect={setControl}
+        currentLabel={getCurrentControlLabel()}
+      />
+    </div>
   );
 }

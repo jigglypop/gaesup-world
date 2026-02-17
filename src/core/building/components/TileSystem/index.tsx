@@ -93,6 +93,12 @@ export function TileSystem({
     }
 
     mesh.instanceMatrix.needsUpdate = true;
+
+    // Compute a tight bounding box/sphere so frustum culling works correctly.
+    if (tileCount > 0) {
+      mesh.computeBoundingBox();
+      mesh.computeBoundingSphere();
+    }
   }, [tileGroup.tiles, tileCount, dummy]);
 
   useEffect(() => {
@@ -160,9 +166,7 @@ export function TileSystem({
           args={[baseGeometry, material, capacity]}
           castShadow
           receiveShadow
-          // Instance transforms are not reflected in the default bounding volume.
-          // Keep it simple and correct: disable frustum culling for the floor.
-          frustumCulled={false}
+          frustumCulled
         />
         
         {tilesWithObjects.map((tile) => (

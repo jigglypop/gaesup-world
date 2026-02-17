@@ -18,6 +18,7 @@ export function PerformanceCollector() {
     frameCounter.current = 0;
 
     const info = gl.info;
+    const programs = (info as unknown as { programs?: unknown[] }).programs;
     setPerformance({
       render: {
         calls: info.render.calls,
@@ -28,6 +29,7 @@ export function PerformanceCollector() {
       engine: {
         geometries: info.memory.geometries,
         textures: info.memory.textures,
+        programs: Array.isArray(programs) ? programs.length : 0,
       },
     });
   });

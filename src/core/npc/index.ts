@@ -1,4 +1,5 @@
 export type * from './types';
+export type { NPCNavigationState } from './types';
 export * from './stores/npcStore';
 export * from './components/NPCSystem';
 export { NPCInstance } from './components/NPCInstance';

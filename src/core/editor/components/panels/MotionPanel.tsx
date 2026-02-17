@@ -11,7 +11,7 @@ export function MotionPanel() {
       case 'Controller':
         return <div className="panel-content-wrapper"><MotionController /></div>;
       case 'Debug':
-        return <div className="panel-content-wrapper"><MotionDebugPanel /></div>;
+        return <div className="panel-content-wrapper"><MotionDebugPanel embedded /></div>;
       default:
         return null;
     }

@@ -2,6 +2,10 @@ export type GaesupCoreWasmExports = {
   readonly memory: WebAssembly.Memory;
   readonly alloc_f32: (len: number) => number;
   readonly dealloc_f32: (ptr: number, len: number) => void;
+  readonly alloc_u8: (len: number) => number;
+  readonly dealloc_u8: (ptr: number, len: number) => void;
+  readonly alloc_u32: (len: number) => number;
+  readonly dealloc_u32: (ptr: number, len: number) => void;
 
   // noise.rs
   readonly fill_grass_data: (
@@ -87,6 +91,30 @@ export type GaesupCoreWasmExports = {
     out_indices_ptr: number,
     out_capacity: number,
   ) => number;
+
+  // pathfinding.rs
+  readonly astar_find_path: (
+    grid_ptr: number,
+    grid_width: number,
+    grid_height: number,
+    start_x: number,
+    start_z: number,
+    goal_x: number,
+    goal_z: number,
+    out_path_ptr: number,
+    out_capacity: number,
+  ) => number;
+  readonly astar_find_path_weighted: (
+    cost_ptr: number,
+    grid_width: number,
+    grid_height: number,
+    start_x: number,
+    start_z: number,
+    goal_x: number,
+    goal_z: number,
+    out_path_ptr: number,
+    out_capacity: number,
+  ) => number;
 };
 
 let wasmPromise: Promise<GaesupCoreWasmExports | null> | null = null;
@@ -145,4 +173,16 @@ export function writeF32(wasm: GaesupCoreWasmExports, data: Float32Array): numbe
 // Helper: read Float32Array from WASM memory (copies out).
 export function readF32(wasm: GaesupCoreWasmExports, ptr: number, len: number): Float32Array {
   return new Float32Array(new Float32Array(wasm.memory.buffer, ptr, len));
+}
+
+// Helper: allocate, write Uint8Array, return pointer.
+export function writeU8(wasm: GaesupCoreWasmExports, data: Uint8Array): number {
+  const ptr = wasm.alloc_u8(data.length);
+  new Uint8Array(wasm.memory.buffer, ptr, data.length).set(data);
+  return ptr;
+}
+
+// Helper: read Uint32Array from WASM memory (copies out).
+export function readU32(wasm: GaesupCoreWasmExports, ptr: number, len: number): Uint32Array {
+  return new Uint32Array(new Uint32Array(wasm.memory.buffer, ptr, len));
 }

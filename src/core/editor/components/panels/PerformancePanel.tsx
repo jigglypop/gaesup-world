@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
+import { useShallow } from 'zustand/react/shallow';
+
 import { useGaesupStore } from '../../../stores/gaesupStore';
 
 const HISTORY_LEN = 60;
@@ -50,7 +52,7 @@ const BarMeter: React.FC<{ value: number; max: number; color: string; label: str
 };
 
 export function PerformancePanel() {
-  const performanceData = useGaesupStore((state) => state.performance);
+  const performanceData = useGaesupStore(useShallow((state) => state.performance));
   const [fps, setFps] = useState({ current: 0, min: Infinity, max: 0, avg: 0, p1Low: 0, history: Array(HISTORY_LEN).fill(0) });
   const [mem, setMem] = useState({ used: 0, limit: 0, history: Array(HISTORY_LEN).fill(0) });
   const [frameTime, setFrameTime] = useState(0);
@@ -61,6 +63,7 @@ export function PerformancePanel() {
   const lastFrameTime = useRef(0);
   const frameCount = useRef(0);
   const rawFrameTimes = useRef<number[]>([]);
+  const startTime = useRef(0);
   const animationFrameRef = useRef<number>(null);
   const frameTimeAccumulator = useRef(0);
   const frameTimeUpdateCounter = useRef(0);
@@ -79,6 +82,7 @@ export function PerformancePanel() {
     const now = window.performance.now();
     lastUpdateTime.current = now;
     lastFrameTime.current = now;
+    startTime.current = now;
 
     const updatePerformance = (now: number) => {
       const delta = now - lastFrameTime.current;
@@ -105,12 +109,20 @@ export function PerformancePanel() {
         const currentFps = (frameCount.current * 1000) / (now - lastUpdateTime.current);
         const fpsFromFrameTimes = rawFrameTimes.current.map(t => t > 0 ? 1000 / t : 0);
 
+        // Skip Min/Avg tracking during warmup (first 3s) to avoid init spike.
+        const warmedUp = now - startTime.current > 3000;
+
         setFps((prev) => {
           const newHistory = [...prev.history.slice(1), currentFps];
-          const newMin = Math.min(prev.min === Infinity ? currentFps : prev.min, currentFps);
-          const newMax = Math.max(prev.max, currentFps);
-          const newAvg = newHistory.reduce((a, b) => a + b, 0) / newHistory.length;
-          const p1Low = computeP1Low(fpsFromFrameTimes);
+          const newMin = warmedUp
+            ? Math.min(prev.min === Infinity ? currentFps : prev.min, currentFps)
+            : Infinity;
+          const newMax = warmedUp ? Math.max(prev.max, currentFps) : 0;
+          const validHistory = warmedUp ? newHistory.filter(n => n > 0) : [];
+          const newAvg = validHistory.length > 0
+            ? validHistory.reduce((a, b) => a + b, 0) / validHistory.length
+            : currentFps;
+          const p1Low = warmedUp ? computeP1Low(fpsFromFrameTimes) : currentFps;
           return { current: currentFps, min: newMin, max: newMax, avg: newAvg, p1Low, history: newHistory };
         });
 
@@ -214,7 +226,8 @@ export function PerformancePanel() {
         <div className="perf-details-grid">
           <div><span className="perf-label">Geometries</span>{geoCount}</div>
           <div><span className="perf-label">Textures</span>{texCount}</div>
-          <div><span className="perf-label">Programs</span>{performanceData.render.lines}</div>
+          <div><span className="perf-label">Programs</span>{performanceData.engine.programs}</div>
+          <div><span className="perf-label">Lines</span>{performanceData.render.lines}</div>
         </div>
         <BarMeter value={geoCount} max={200} color={geoCount > 150 ? '#f87171' : '#4ade80'} label="Geometry Budget" />
         <BarMeter value={texCount} max={100} color={texCount > 80 ? '#f87171' : '#4ade80'} label="Texture Budget" />

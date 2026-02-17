@@ -82,8 +82,8 @@ function MainPageTools() {
   return (
     <>
       <div style={{
-        position: 'fixed', top: 56, left: 10, zIndex: 1100,
-        pointerEvents: 'auto', display: 'flex', gap: 6,
+        position: 'fixed', top: 10, right: 10,
+        zIndex: 90, pointerEvents: 'auto', display: 'flex', gap: 6,
       }}>
         <button className="app-nav-button active" onClick={() => setShowInfo((v) => !v)}>
           {showInfo ? 'Hide Info' : 'Info'}
