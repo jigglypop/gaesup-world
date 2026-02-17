@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { CuboidCollider } from '@react-three/rapier';
+import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { WallSystemProps } from './types';
@@ -15,9 +15,20 @@ export function WallSystem({
   onWallClick,
 }: WallSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
+  const instancedRef = useRef<THREE.InstancedMesh | null>(null);
   const width = TILE_CONSTANTS.WALL_SIZES.WIDTH;
   const height = TILE_CONSTANTS.WALL_SIZES.HEIGHT;
   const depth = TILE_CONSTANTS.WALL_SIZES.THICKNESS;
+
+  const wallCount = wallGroup.walls.length;
+  const [capacity, setCapacity] = useState(() => Math.max(1, wallCount));
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+
+  useEffect(() => {
+    if (wallCount <= capacity) return;
+    // Grow with headroom to avoid recreating the InstancedMesh on every add.
+    setCapacity(Math.max(wallCount, Math.ceil(capacity * 1.5)));
+  }, [wallCount, capacity]);
 
   const geometry = useMemo(() => {
     const geom = new THREE.BoxGeometry(width, height, depth);
@@ -42,27 +53,22 @@ export function WallSystem({
       manager.getMaterial(backMesh || defaultMesh),
     ];
   }, [wallGroup, meshes]);
+  
+  useLayoutEffect(() => {
+    const mesh = instancedRef.current;
+    if (!mesh) return;
 
-  const instancedMesh = useMemo(() => {
-    const count = wallGroup.walls.length;
-    const mesh = new THREE.InstancedMesh(geometry, materials, count);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    
-    const dummy = new THREE.Object3D();
-    wallGroup.walls.forEach((wall, i) => {
-      dummy.position.set(
-        wall.position.x,
-        wall.position.y + height / 2,
-        wall.position.z
-      );
+    mesh.count = wallCount;
+    for (let i = 0; i < wallCount; i++) {
+      const wall = wallGroup.walls[i];
+      if (!wall) continue;
+      dummy.position.set(wall.position.x, wall.position.y + height / 2, wall.position.z);
       dummy.rotation.set(0, wall.rotation.y, 0);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
-    });
+    }
     mesh.instanceMatrix.needsUpdate = true;
-    return mesh;
-  }, [wallGroup.walls, geometry, materials, height]);
+  }, [wallGroup.walls, wallCount, dummy, height]);
 
   useEffect(() => {
     return () => {
@@ -71,26 +77,38 @@ export function WallSystem({
     };
   }, [geometry]);
 
+  const colliderData = useMemo(() => {
+    if (isEditMode) return [];
+    const halfW = width / 2;
+    return wallGroup.walls.map((wall) => {
+      const sinY = Math.sin(wall.rotation.y);
+      const cosY = Math.cos(wall.rotation.y);
+      return {
+        id: wall.id,
+        position: [
+          wall.position.x + sinY * halfW,
+          wall.position.y + height / 2,
+          wall.position.z + cosY * halfW,
+        ] as [number, number, number],
+        rotation: [0, wall.rotation.y, 0] as [number, number, number],
+      };
+    });
+  }, [wallGroup.walls, width, height, isEditMode]);
+
   return (
     <>
-      {!isEditMode && wallGroup.walls.map((wall) => {
-        const rotationMatrix = new THREE.Matrix4().makeRotationY(wall.rotation.y);
-        const centerPoint = new THREE.Vector3(0, 0, width / 2);
-        centerPoint.applyMatrix4(rotationMatrix);
-        
-        return (
-          <CuboidCollider
-            key={wall.id}
-            position={[
-              wall.position.x + centerPoint.x,
-              wall.position.y + height / 2,
-              wall.position.z + centerPoint.z,
-            ]}
-            rotation={[0, wall.rotation.y, 0]}
-            args={[width / 2, height / 2, depth / 2]}
-          />
-        );
-      })}
+      {!isEditMode && colliderData.length > 0 && (
+        <RigidBody type="fixed" colliders={false}>
+          {colliderData.map((c) => (
+            <CuboidCollider
+              key={c.id}
+              position={c.position}
+              rotation={c.rotation}
+              args={[width / 2, height / 2, depth / 2]}
+            />
+          ))}
+        </RigidBody>
+      )}
       
       {isEditMode && wallGroup.walls.map((wall) => (
         <group
@@ -105,7 +123,12 @@ export function WallSystem({
         </group>
       ))}
       
-      <primitive object={instancedMesh} />
+      <instancedMesh
+        ref={instancedRef}
+        args={[geometry, materials, capacity]}
+        castShadow
+        receiveShadow
+      />
     </>
   );
 } 

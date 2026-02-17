@@ -25,7 +25,7 @@ export const useKeyboard = (
 ) => {
   void enableDiagonal;
   void cameraOption;
-  const automation = useGaesupStore((state) => state.automation);
+  const isAutomationRunning = useGaesupStore((state) => state.automation?.queue.isRunning);
   const stopAutomation = useGaesupStore((state) => state.stopAutomation);
   const bridgeRef = useRef<InteractionBridge | null>(null);
   
@@ -91,7 +91,7 @@ export const useKeyboard = (
         pressedKeys.current.add(event.code);
         if (event.code === 'Space') event.preventDefault();
 
-        if (enableClicker && event.code === 'KeyS' && automation?.queue.isRunning) {
+        if (enableClicker && event.code === 'KeyS' && isAutomationRunning) {
           stopAutomation();
           bridgeRef.current?.executeCommand({
             type: 'input',
@@ -131,7 +131,7 @@ export const useKeyboard = (
     keyMapping,
     enableClicker,
     stopAutomation,
-    automation,
+    isAutomationRunning,
     clearAllKeys,
   ]);
 

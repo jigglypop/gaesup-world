@@ -10,7 +10,7 @@ import { TileSystem } from '../TileSystem';
 import { WallSystem } from '../WallSystem';
 import { BuildingSystemProps } from './types';
 
-export function BuildingSystem({
+export const BuildingSystem = React.memo(function BuildingSystem({
   onWallClick,
   onTileClick,
   onWallDelete,
@@ -61,4 +61,4 @@ export function BuildingSystem({
       </group>
     </Suspense>
   );
-} 
+}); 

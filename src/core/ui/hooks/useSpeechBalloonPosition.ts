@@ -16,13 +16,15 @@ export function useSpeechBalloonPosition({
   const spriteRef = useRef<Sprite>(null);
   const currentPositionRef = useRef(new THREE.Vector3());
   const targetPositionRef = useRef(new THREE.Vector3());
+  const nextTargetRef = useRef(new THREE.Vector3());
   const isInitializedRef = useRef(false);
 
   // Delta 기반 부드러운 움직임 - 미세진동 완전 제거
   useFrame((_, delta) => {
     if (!spriteRef.current) return;
     
-    const targetPosition = new THREE.Vector3(
+    const targetPosition = nextTargetRef.current;
+    targetPosition.set(
       playerPosition.x + offset.x,
       playerPosition.y + offset.y,
       playerPosition.z + offset.z
@@ -37,22 +39,21 @@ export function useSpeechBalloonPosition({
       return;
     }
     
-    // 목표 위치 변화 감지 (임계값 기반)
-    const positionDelta = targetPosition.distanceTo(targetPositionRef.current);
-    if (positionDelta > 0.05) {
+    // 목표 위치 변화 감지 (임계값 기반, sqrt 회피)
+    const positionDeltaSq = targetPosition.distanceToSquared(targetPositionRef.current);
+    if (positionDeltaSq > 0.0025) { // 0.05^2
       targetPositionRef.current.copy(targetPosition);
     }
     
     // 부드러운 이동 (lerp + damping)
-    const dampingFactor = 1.0 - Math.exp(-8.0 * delta); // 부드러운 감쇠
+    const dampingFactor = 1.0 - Math.exp(-8.0 * delta);
     const currentPos = currentPositionRef.current;
     const targetPos = targetPositionRef.current;
     
-    // 벡터 lerp를 사용한 부드러운 이동
     currentPos.lerp(targetPos, dampingFactor);
     
-    // 매우 가까우면 목표 위치로 스냅
-    if (currentPos.distanceTo(targetPos) < 0.001) {
+    // 매우 가까우면 목표 위치로 스냅 (sqrt 회피)
+    if (currentPos.distanceToSquared(targetPos) < 0.000001) { // 0.001^2
       currentPos.copy(targetPos);
     }
     

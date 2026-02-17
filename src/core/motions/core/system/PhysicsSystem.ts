@@ -48,6 +48,8 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   private tempQuaternion = new THREE.Quaternion();
   private tempEuler = new THREE.Euler();
   private tempVector = new THREE.Vector3();
+  private movementScratch = new THREE.Vector3();
+  private jumpScratch = new THREE.Vector3();
   private config: PhysicsConfigType;
 
   constructor(config: PhysicsConfigType, options: PhysicsSystemOptions = {}) {
@@ -313,7 +315,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     gameStates: GameStatesType,
     deltaTime: number
   ): THREE.Vector3 {
-    const movement = new THREE.Vector3();
+    const movement = this.movementScratch.set(0, 0, 0);
     const speedMultiplier = input.shift ? 2 : 1;
     const targetSpeed = (config.maxSpeed ?? 10) * speedMultiplier;
     if (input.forward) movement.z += 1;
@@ -330,9 +332,9 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
 
   @HandleError()
   public calculateJump(config: PhysicsConfigType, gameStates: GameStatesType, isGrounded: boolean): THREE.Vector3 {
-    if (!isGrounded) return new THREE.Vector3();
+    if (!isGrounded) return this.jumpScratch.set(0, 0, 0);
     gameStates.isJumping = true;
-    return new THREE.Vector3(0, config.jumpSpeed, 0);
+    return this.jumpScratch.set(0, config.jumpSpeed, 0);
   }
 
   @Profile()

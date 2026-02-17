@@ -15,7 +15,12 @@ export const createWorldSlice: StateCreator<WorldSlice> = (set) => {
     worldBridge.register(DEFAULT_WORLD_ID);
     
     // 브릿지 상태 변경 구독
-    worldBridge.subscribe((snapshot) => {
+    // Prevent subscription leaks when the slice is recreated (e.g. HMR / multiple stores).
+    const bridgeWithInternal = worldBridge as WorldBridge & {
+      __gaesupWorldSliceUnsubscribe?: (() => void) | undefined;
+    };
+    bridgeWithInternal.__gaesupWorldSliceUnsubscribe?.();
+    bridgeWithInternal.__gaesupWorldSliceUnsubscribe = worldBridge.subscribe((snapshot) => {
       set({
         objects: snapshot.objects,
         selectedObjectId: snapshot.selectedObjectId,
@@ -42,9 +47,9 @@ export const createWorldSlice: StateCreator<WorldSlice> = (set) => {
       
       set({ loading: true, error: undefined });
       try {
-        worldBridge.addObject(DEFAULT_WORLD_ID, object);
+        const objectId = worldBridge.addObject(DEFAULT_WORLD_ID, object);
         set({ loading: false });
-        return `world_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        return objectId;
       } catch (error) {
         set({ 
           loading: false, 

@@ -6,20 +6,6 @@ import { ModelRenderer } from './PartsGroupRef';
 import { InnerGroupRefType } from './types';
 
 export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THREE.Group>) => {
-  if (props.objectNode) {
-    props.objectNode.traverse((child: THREE.Object3D) => {
-      if (child instanceof THREE.Mesh) {
-        child.geometry?.dispose();
-        if (child.material) {
-          if (Array.isArray(child.material)) {
-            child.material.forEach((m: THREE.Material) => m.dispose());
-          } else {
-            child.material.dispose();
-          }
-        }
-      }
-    });
-  }
   const modelYawOffset =
     typeof props.modelYawOffset === 'number'
       ? props.modelYawOffset

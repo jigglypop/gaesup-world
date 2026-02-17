@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
@@ -10,31 +10,50 @@ import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
 import { ModelRendererProps, PartsGroupRefProps } from './types';
 
 export function ModelRenderer({ nodes, color, skeleton, url, excludeNodeNames }: ModelRendererProps) {
-  const processedNodes = useMemo(() => {
+  type NodeData =
+    | {
+        type: 'skinnedMesh';
+        material: THREE.Material | THREE.Material[];
+        geometry: THREE.BufferGeometry;
+        skeleton: THREE.Skeleton;
+        key: string;
+      }
+    | {
+        type: 'mesh';
+        material: THREE.Material | THREE.Material[];
+        geometry: THREE.BufferGeometry;
+        key: string;
+      };
+
+  const { processedNodes, ownedMaterials } = useMemo(() => {
+    const owned: THREE.Material[] = [];
     const exclude =
       excludeNodeNames && excludeNodeNames.length > 0
         ? new Set(excludeNodeNames)
         : null;
-    return Object.keys(nodes)
+
+    const tint = (mat: THREE.Material): THREE.Material => {
+      const cloned = mat.clone();
+      owned.push(cloned);
+      if (color && 'color' in cloned && cloned.color instanceof THREE.Color) {
+        cloned.color.set(color);
+      }
+      return cloned;
+    };
+
+    const resolveMaterial = (mat: THREE.Material | THREE.Material[]) => {
+      // If no per-instance color is requested, do not clone. This keeps memory usage down.
+      // We also set `dispose={null}` on rendered meshes to avoid R3F disposing shared GLTF assets.
+      if (!color) return mat;
+      return Array.isArray(mat) ? mat.map((m) => tint(m)) : tint(mat);
+    };
+
+    const processed = Object.keys(nodes)
       .map((name: string, key: number) => {
         if (exclude && exclude.has(name)) return null;
         const node = nodes[name];
         if (node instanceof THREE.SkinnedMesh) {
-          const material = Array.isArray(node.material)
-            ? node.material.map((m) => {
-                const cloned = m.clone();
-                if (color && 'color' in cloned && cloned.color instanceof THREE.Color) {
-                  cloned.color.set(color);
-                }
-                return cloned;
-              })
-            : (() => {
-                const cloned = node.material.clone();
-                if (color && 'color' in cloned && cloned.color instanceof THREE.Color) {
-                  cloned.color.set(color);
-                }
-                return cloned;
-              })();
+          const material = resolveMaterial(node.material);
 
           return {
             type: 'skinnedMesh' as const,
@@ -44,21 +63,7 @@ export function ModelRenderer({ nodes, color, skeleton, url, excludeNodeNames }:
             key: `${url}-${name}-${key}`,
           };
         } else if (node instanceof THREE.Mesh) {
-          const material = Array.isArray(node.material)
-            ? node.material.map((m) => {
-                const cloned = m.clone();
-                if (color && 'color' in cloned && cloned.color instanceof THREE.Color) {
-                  cloned.color.set(color);
-                }
-                return cloned;
-              })
-            : (() => {
-                const cloned = node.material.clone();
-                if (color && 'color' in cloned && cloned.color instanceof THREE.Color) {
-                  cloned.color.set(color);
-                }
-                return cloned;
-              })();
+          const material = resolveMaterial(node.material);
 
           return {
             type: 'mesh' as const,
@@ -70,7 +75,20 @@ export function ModelRenderer({ nodes, color, skeleton, url, excludeNodeNames }:
         return null;
       })
       .filter(Boolean);
+
+    return {
+      processedNodes: processed as unknown as NodeData[],
+      ownedMaterials: owned,
+    };
   }, [nodes, color, skeleton, url, excludeNodeNames]);
+
+  useEffect(() => {
+    return () => {
+      for (const m of ownedMaterials) {
+        m.dispose();
+      }
+    };
+  }, [ownedMaterials]);
 
   return (
     <>
@@ -86,6 +104,7 @@ export function ModelRenderer({ nodes, color, skeleton, url, excludeNodeNames }:
               skeleton={nodeData.skeleton}
               key={nodeData.key}
               frustumCulled={false}
+              dispose={null}
             />
           );
         } else {
@@ -96,6 +115,7 @@ export function ModelRenderer({ nodes, color, skeleton, url, excludeNodeNames }:
               material={nodeData.material}
               geometry={nodeData.geometry}
               key={nodeData.key}
+              dispose={null}
             />
           );
         }

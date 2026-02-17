@@ -191,7 +191,7 @@ export function SpeechBalloon({
 }: SpeechBalloonProps) {
   const { camera } = useThree();
   const prevDistanceRef = useRef<number>(0);
-  const frameCountRef = useRef(0);
+  const lodAccumRef = useRef(0);
   const config = useUIConfigStore((state) => state.config.speechBalloon);
   
   // Use config values with prop overrides
@@ -297,8 +297,9 @@ export function SpeechBalloon({
   useFrame(() => {
     if (!spriteRef.current || !textureData || !visible) return;
     
-    frameCountRef.current++;
-    if (frameCountRef.current % 30 !== 0) return; // 30프레임마다 체크 (약 0.5초)
+    lodAccumRef.current++;
+    if (lodAccumRef.current < 30) return;
+    lodAccumRef.current = 0;
     
     try {
       const currentPosition = spriteRef.current.position;

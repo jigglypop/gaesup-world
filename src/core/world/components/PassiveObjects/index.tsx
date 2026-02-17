@@ -96,7 +96,7 @@ const PassiveObjectInstance = memo(function PassiveObjectInstance({
   );
 });
 
-export function PassiveObjects({ 
+export const PassiveObjects = memo(function PassiveObjects({ 
   objects, 
   selectedId, 
   onSelect, 
@@ -122,7 +122,7 @@ export function PassiveObjects({
       {objectElements}
     </group>
   );
-}
+});
 
 export * from './types';
 export * from './Vehicle';

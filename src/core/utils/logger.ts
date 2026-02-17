@@ -1,4 +1,6 @@
-const isProduction = process.env['NODE_ENV'] === 'production';
+// Vite dev/build replaces `process.env.NODE_ENV` via `define` in `vite.config.ts`.
+// In Jest/Node, `process.env.NODE_ENV` exists normally.
+const isProduction = process.env.NODE_ENV === 'production';
 
 type LogLevel = 'log' | 'warn' | 'error' | 'info';
 

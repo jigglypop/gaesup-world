@@ -19,7 +19,7 @@ interface RemotePlayerProps {
   speechText?: string;
 }
 
-export function RemotePlayer({ state, characterUrl, config, speechText }: RemotePlayerProps) {
+export const RemotePlayer = React.memo(function RemotePlayer({ state, characterUrl, config, speechText }: RemotePlayerProps) {
   const bodyRef = useRef<RapierRigidBody | null>(null);
   const meshRef = useRef<THREE.Group | null>(null);
   const initialPosition = useRef<[number, number, number] | null>(null);
@@ -347,10 +347,6 @@ export function RemotePlayer({ state, characterUrl, config, speechText }: Remote
         ? 1 / 15
         : 1 / 8;
 
-    // RigidBody의 현재 위치와 회전
-    const pos = bodyRef.current.translation();
-    const rot = bodyRef.current.rotation();
-
     // Short prediction to hide network jitter (up to 120ms).
     const sinceNet = (performance.now() - lastNetUpdateAt.current) / 1000;
     const predictT = Math.max(0, Math.min(0.12, sinceNet));
@@ -358,6 +354,10 @@ export function RemotePlayer({ state, characterUrl, config, speechText }: Remote
 
     // Initialize smoothing state from current body transform.
     if (!smoothInit.current) {
+      // Only query Rapier transforms when we actually need them; translation()/rotation()
+      // allocate in the JS/WASM boundary on some builds.
+      const pos = bodyRef.current.translation();
+      const rot = bodyRef.current.rotation();
       smoothInit.current = true;
       smoothPos.current.set(pos.x, pos.y, pos.z);
       smoothVel.current.set(0, 0, 0);
@@ -470,4 +470,4 @@ export function RemotePlayer({ state, characterUrl, config, speechText }: Remote
       ) : null}
     </group>
   );
-} 
+}); 

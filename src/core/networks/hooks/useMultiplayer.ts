@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, type RefObject } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo, type RefObject } from 'react';
 
 import type { RapierRigidBody } from '@react-three/rapier';
 
@@ -316,18 +316,18 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
         networkManagerRef.current.updateLocalPlayer(updateData);
       }
 
-      // 말풍선 TTL 정리 (가벼운 GC)
+      // 말풍선 TTL 정리 (가벼운 GC) -- Map 재사용으로 불필요한 할당 방지
       if (speechRef.current.size > 0) {
         const now = Date.now();
-        let changed = false;
-        const next = new Map(speechRef.current);
-        next.forEach((v, k) => {
-          if (v.expiresAt <= now) {
-            next.delete(k);
-            changed = true;
-          }
+        const keysToDelete: string[] = [];
+        speechRef.current.forEach((v, k) => {
+          if (v.expiresAt <= now) keysToDelete.push(k);
         });
-        if (changed) setSpeechByPlayerId(next);
+        if (keysToDelete.length > 0) {
+          const next = new Map(speechRef.current);
+          for (const k of keysToDelete) next.delete(k);
+          setSpeechByPlayerId(next);
+        }
       }
     }, tickMs);
 
@@ -341,6 +341,14 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
     };
   }, []);
 
+  const speechTextMap = useMemo(() => {
+    const m = new Map<string, string>();
+    speechByPlayerId.forEach((v, k) => { m.set(k, v.text); });
+    return m;
+  }, [speechByPlayerId]);
+
+  const localSpeechText = state.localPlayerId ? (speechByPlayerId.get(state.localPlayerId)?.text ?? null) : null;
+
   return {
     ...state,
     connect,
@@ -349,7 +357,7 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
     stopTracking,
     updateConfig,
     sendChat,
-    speechByPlayerId: new Map(Array.from(speechByPlayerId.entries()).map(([k, v]) => [k, v.text] as const)),
-    localSpeechText: state.localPlayerId ? (speechByPlayerId.get(state.localPlayerId)?.text ?? null) : null,
+    speechByPlayerId: speechTextMap,
+    localSpeechText,
   };
 } 

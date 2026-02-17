@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useRef, useEffect, useMemo, useCallback } from 'react';
 
 import { useGLTF } from '@react-three/drei';
 import type { ThreeEvent } from '@react-three/fiber';
@@ -51,7 +51,7 @@ function NPCPartMesh({ part, instanceId }: NPCPartMeshProps) {
   );
 }
 
-export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps) {
+export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps) {
   const groupRef = useRef<THREE.Group>(null);
   const { templates, clothingSets } = useNPCStore();
   const template = templates.get(instance.templateId);
@@ -231,4 +231,4 @@ export function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps)
       </group>
     </RigidBody>
   );
-} 
+}); 

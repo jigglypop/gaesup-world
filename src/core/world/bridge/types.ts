@@ -14,7 +14,8 @@ export type WorldCommand =
 
 export interface AddObjectCommand {
   type: 'addObject';
-  data: Omit<WorldObject, 'id'>;
+  // Allow callers to supply an id so state-layer APIs can return the real id.
+  data: Omit<WorldObject, 'id'> & { id?: string };
 }
 
 export interface RemoveObjectCommand {

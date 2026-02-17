@@ -195,7 +195,14 @@ export class DirectionComponent {
     if (automation?.settings.trackProgress && automation.queue.actions && automation.queue.actions.length > 0) {
       const Q = automation.queue.actions.shift();
       if (Q && Q.target) {
-        const currentPosition = calcProp?.body?.translation() || new THREE.Vector3();
+        const currentPosition = this.vectorCache.getTempVector(2);
+        const rb = calcProp?.rigidBodyRef?.current;
+        if (rb) {
+          const t = rb.translation();
+          currentPosition.set(t.x, t.y, t.z);
+        } else {
+          currentPosition.set(0, 0, 0);
+        }
         const targetPosition = Q.target;
         const direction = this.vectorCache.getTempVector(1);
         direction.subVectors(targetPosition, currentPosition).normalize();

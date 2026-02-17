@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, useRef } from 'react';
 
 import { useFrame, useThree } from '@react-three/fiber';
+import * as THREE from 'three';
 
 import { useBuildingStore } from '../../building/stores/buildingStore';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
@@ -17,6 +18,19 @@ export function useCamera() {
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
   const mode = useGaesupStore((state) => state.mode);
   const isInEditMode = useBuildingStore((state) => state.isInEditMode());
+
+  // Keep refs for event handlers to avoid re-registering listeners on every option change.
+  const cameraOptionRef = useRef(cameraOption);
+  useEffect(() => {
+    cameraOptionRef.current = cameraOption;
+  }, [cameraOption]);
+  const isInEditModeRef = useRef(isInEditMode);
+  useEffect(() => {
+    isInEditModeRef.current = isInEditMode;
+  }, [isInEditMode]);
+
+  const excludeObjectsRef = useRef<THREE.Object3D[]>([]);
+  const calcPropsRef = useRef<CameraCalcProps | null>(null);
   
   const initialConfig: CameraSystemConfig = useMemo(() => ({
     mode: mode?.control || 'thirdPerson',
@@ -48,23 +62,22 @@ export function useCamera() {
   );
   
   const handleWheel = useCallback((event: WheelEvent) => {
-    if (!cameraOption?.enableZoom || isInEditMode) {
-      return;
-    }
-    
+    const opt = cameraOptionRef.current;
+    if (!opt?.enableZoom || isInEditModeRef.current) return;
+
     event.preventDefault();
-    
-    const zoomSpeed = cameraOption.zoomSpeed || 0.001;
-    const minZoom = cameraOption.minZoom || 0.1;
-    const maxZoom = cameraOption.maxZoom || 2.0;
-    const currentZoom = cameraOption.zoom || 1;
-    
+
+    const zoomSpeed = opt.zoomSpeed || 0.001;
+    const minZoom = opt.minZoom || 0.1;
+    const maxZoom = opt.maxZoom || 2.0;
+    const currentZoom = opt.zoom || 1;
+
     // 스크롤 방향 반대로 수정 (양수로 변경)
     const delta = event.deltaY * zoomSpeed;
     const newZoom = Math.min(Math.max(currentZoom + delta, minZoom), maxZoom);
-    
+
     setCameraOption({ zoom: newZoom });
-  }, [cameraOption, setCameraOption, isInEditMode]);
+  }, [setCameraOption]);
   
   useEffect(() => {
     const canvas = gl.domElement;
@@ -81,7 +94,8 @@ export function useCamera() {
   // ESC 키로 포커스 해제
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && cameraOption?.focus) {
+      const opt = cameraOptionRef.current;
+      if (event.key === 'Escape' && opt?.focus) {
         setCameraOption({ focus: false });
       }
     };
@@ -93,7 +107,7 @@ export function useCamera() {
       };
     }
     return undefined;
-  }, [cameraOption, setCameraOption, isInEditMode]);
+  }, [cameraOption?.enableFocus, isInEditMode, setCameraOption]);
   
   useEffect(() => {
     updateConfig({
@@ -124,15 +138,25 @@ export function useCamera() {
   useFrame((state, delta) => {
     if (!system || isInEditMode) return;
     
-    const calcProps: CameraCalcProps = {
-      camera: state.camera,
-      scene: state.scene,
-      deltaTime: delta,
-      activeState,
-      clock: state.clock,
-      excludeObjects: [],
-    };
-    system.calculate(calcProps);
+    // Reuse the calc props object to avoid per-frame allocations.
+    if (!calcPropsRef.current) {
+      calcPropsRef.current = {
+        camera: state.camera,
+        scene: state.scene,
+        deltaTime: delta,
+        activeState,
+        clock: state.clock,
+        excludeObjects: excludeObjectsRef.current,
+      };
+    } else {
+      const calcProps = calcPropsRef.current;
+      calcProps.camera = state.camera;
+      calcProps.scene = state.scene;
+      calcProps.deltaTime = delta;
+      calcProps.activeState = activeState;
+      calcProps.clock = state.clock;
+    }
+    system.calculate(calcPropsRef.current);
   });
   
   return {

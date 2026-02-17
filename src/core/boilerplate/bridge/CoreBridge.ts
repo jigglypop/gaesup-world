@@ -4,8 +4,8 @@ import { logger } from '../../utils/logger'
 import { IDisposable } from '../types'
 import { AbstractBridge } from './AbstractBridge'
 
-const isProduction = process.env['NODE_ENV'] === 'production'
-const enableLogs = !isProduction && process.env['VITE_ENABLE_BRIDGE_LOGS'] !== 'false'
+const isProduction = process.env.NODE_ENV === 'production'
+const enableLogs = !isProduction && process.env.VITE_ENABLE_BRIDGE_LOGS !== 'false'
 
 export abstract class CoreBridge<
   EngineType extends IDisposable,

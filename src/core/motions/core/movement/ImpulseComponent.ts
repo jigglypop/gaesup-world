@@ -14,6 +14,8 @@ export class ImpulseComponent {
   private stateManager: EntityStateManager;
   private interactionSystem: InteractionSystem;
   private config: PhysicsConfigType;
+  private scratchImpulse = { x: 0, y: 0, z: 0 };
+  private scratchLinvel = { x: 0, y: 0, z: 0 };
 
   constructor(config: PhysicsConfigType) {
     this.stateManager = new EntityStateManager();
@@ -55,7 +57,10 @@ export class ImpulseComponent {
     const { walkSpeed = 10, runSpeed = 20, jumpSpeed = 15 } = this.config;
     if (isJumping && isOnTheGround) {
       const currentVel = rigidBodyRef.current.linvel();
-      rigidBodyRef.current.setLinvel({ x: currentVel.x, y: jumpSpeed, z: currentVel.z }, true);
+      this.scratchLinvel.x = currentVel.x;
+      this.scratchLinvel.y = jumpSpeed;
+      this.scratchLinvel.z = currentVel.z;
+      rigidBodyRef.current.setLinvel(this.scratchLinvel, true);
       this.stateManager.updateGameStates({
         isOnTheGround: false,
       });
@@ -69,9 +74,10 @@ export class ImpulseComponent {
       const targetVelZ = -dir.z * speed;
       const accelX = targetVelX - vel.x;
       const accelZ = targetVelZ - vel.z;
-      const forceX = accelX * M;
-      const forceZ = accelZ * M;
-      rigidBodyRef.current.applyImpulse({ x: forceX, y: 0, z: forceZ }, true);
+      this.scratchImpulse.x = accelX * M;
+      this.scratchImpulse.y = 0;
+      this.scratchImpulse.z = accelZ * M;
+      rigidBodyRef.current.applyImpulse(this.scratchImpulse, true);
     }
   }
 
@@ -90,12 +96,10 @@ export class ImpulseComponent {
     if (speedSq < safeMaxSpeed * safeMaxSpeed) {
       const M = rigidBodyRef.current.mass();
       const speed = shift ? accelRatio : 1;
-      const impulse = {
-        x: activeState.dir.x * M * speed,
-        y: 0,
-        z: activeState.dir.z * M * speed
-      };
-      rigidBodyRef.current.applyImpulse(impulse, true);
+      this.scratchImpulse.x = activeState.dir.x * M * speed;
+      this.scratchImpulse.y = 0;
+      this.scratchImpulse.z = activeState.dir.z * M * speed;
+      rigidBodyRef.current.applyImpulse(this.scratchImpulse, true);
     }
   }
 
@@ -115,12 +119,10 @@ export class ImpulseComponent {
       velocity.z * velocity.z;
     if (speedSq < safeMaxSpeed * safeMaxSpeed) {
       const M = rigidBodyRef.current.mass();
-      const impulse = {
-        x: activeState.direction.x * M,
-        y: activeState.direction.y * M,
-        z: activeState.direction.z * M
-      };
-      rigidBodyRef.current.applyImpulse(impulse, true);
+      this.scratchImpulse.x = activeState.direction.x * M;
+      this.scratchImpulse.y = activeState.direction.y * M;
+      this.scratchImpulse.z = activeState.direction.z * M;
+      rigidBodyRef.current.applyImpulse(this.scratchImpulse, true);
     }
   }
 }

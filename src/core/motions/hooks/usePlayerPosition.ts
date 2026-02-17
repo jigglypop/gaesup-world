@@ -47,6 +47,7 @@ export function usePlayerPosition(
   const [, forceUpdate] = useState(0);
   const lastUpdateRef = useRef<number>(0);
   const lastBridgeEventRef = useRef<number>(0);
+  const lastPositionSnapshot = useRef({ x: 0, y: 0, z: 0 });
   const inferredEntityIdRef = useRef<string | undefined>(undefined);
   const bridgeRef = useRef<MotionBridge | null>(null);
   const { activeState, gameStates } = useStateSystem();
@@ -100,10 +101,20 @@ export function usePlayerPosition(
     const result = resultRef.current!;
     const bridge = bridgeRef.current;
 
+    // Only trigger React re-render when position actually changed (threshold: 0.001).
+    const posChanged = (p: THREE.Vector3) => {
+      const s = lastPositionSnapshot.current;
+      const dx = p.x - s.x, dy = p.y - s.y, dz = p.z - s.z;
+      if (dx * dx + dy * dy + dz * dz > 0.000001) {
+        s.x = p.x; s.y = p.y; s.z = p.z;
+        return true;
+      }
+      return false;
+    };
+
     if (bridge) {
       const targetEntityId = getTargetEntityId(bridge);
 
-      // If we just received a bridge event, avoid immediately re-polling snapshot().
       const recentBridgeEvent = now - lastBridgeEventRef.current < 16;
       if (!recentBridgeEvent && targetEntityId) {
         const snapshot = bridge.snapshot(targetEntityId);
@@ -117,7 +128,7 @@ export function usePlayerPosition(
           result.height = 2.0;
 
           lastUpdateRef.current = now;
-          forceUpdate((v) => v + 1);
+          if (posChanged(result.position)) forceUpdate((v) => v + 1);
           return;
         }
       }
@@ -141,7 +152,7 @@ export function usePlayerPosition(
       result.height = 2.0;
 
       lastUpdateRef.current = now;
-      forceUpdate((v) => v + 1);
+      if (posChanged(result.position)) forceUpdate((v) => v + 1);
     }
   });
 

@@ -2,7 +2,7 @@ import 'reflect-metadata'
 
 type Constructor<T = unknown> = new (...args: unknown[]) => T
 
-const isProduction = (process.env as { NODE_ENV?: string }).NODE_ENV === 'production'
+const isProduction = process.env.NODE_ENV === 'production'
 
 const identityMethodDecorator = (target: object, propertyKey: string, descriptor: PropertyDescriptor) => {
     void target

@@ -6,6 +6,7 @@ import { MeshConfig } from '../types';
 
 export class MaterialManager {
   private materials: Map<string, THREE.Material> = new Map();
+  private textures: Map<string, THREE.Texture> = new Map();
   private textureLoader: THREE.TextureLoader;
 
   constructor() {
@@ -57,10 +58,14 @@ export class MaterialManager {
   @HandleError()
   @MonitorMemory(20) // 텍스처는 메모리를 많이 사용할 수 있음
   private loadTexture(url: string): THREE.Texture {
+    const cached = this.textures.get(url);
+    if (cached) return cached;
+
     const texture = this.textureLoader.load(url);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.needsUpdate = true;
+    this.textures.set(url, texture);
     return texture;
   }
 
@@ -89,5 +94,7 @@ export class MaterialManager {
   dispose(): void {
     this.materials.forEach(material => material.dispose());
     this.materials.clear();
+    this.textures.forEach(texture => texture.dispose());
+    this.textures.clear();
   }
 } 

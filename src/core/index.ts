@@ -18,3 +18,7 @@ export { WorldProps as GaeSupProps } from './world/components/WorldProps';
 export { WorldContainer as GaesupWorld } from './world/components/WorldContainer';
 export { GaesupWorldContent } from './world/components/WorldContainer';
 export { ControllerWrapper as GaesupController } from './interactions/components/ControllerWrapper';
+
+export { createRenderer, isWebGPUAvailable } from './rendering/webgpu';
+export { loadCoreWasm } from './wasm/loader';
+export type { GaesupCoreWasmExports } from './wasm/loader';

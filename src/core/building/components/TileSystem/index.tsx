@@ -17,6 +17,7 @@ export function TileSystem({
 }: TileSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
   const instancedRef = useRef<THREE.InstancedMesh | null>(null);
+  const localMaterialRef = useRef<THREE.Material | null>(null);
 
   const tileCount = tileGroup.tiles.length;
   const [capacity, setCapacity] = useState(() => Math.max(1, tileCount));
@@ -25,8 +26,15 @@ export function TileSystem({
     const manager = materialManagerRef.current;
     const floorMesh = meshes.get(tileGroup.floorMeshId);
     if (!floorMesh) {
-      return new THREE.MeshStandardMaterial({ color: '#888888' });
+      // Dispose the previous local material (if any) before creating a new one.
+      localMaterialRef.current?.dispose();
+      const m = new THREE.MeshStandardMaterial({ color: '#888888' });
+      localMaterialRef.current = m;
+      return m;
     }
+    // If we switch from local -> managed material, ensure we don't leak the local one.
+    localMaterialRef.current?.dispose();
+    localMaterialRef.current = null;
     return manager.getMaterial(floorMesh);
   }, [tileGroup.floorMeshId, meshes]);
 
@@ -124,17 +132,13 @@ export function TileSystem({
   useEffect(() => {
     return () => {
       materialManagerRef.current.dispose();
+      localMaterialRef.current?.dispose();
+      localMaterialRef.current = null;
       baseGeometry.dispose();
       editGeometry.dispose();
       editMaterial.dispose();
     };
   }, [baseGeometry, editGeometry, editMaterial]);
-
-  useEffect(() => {
-    return () => {
-      material.dispose();
-    };
-  }, [material]);
 
   return (
     <GaeSupProps type="ground">

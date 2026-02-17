@@ -78,7 +78,6 @@ export const FlagMesh: FC<FlagMeshProps> = ({ geometry, pamplet_url, lod, center
   // 컴포넌트 언마운트 시 리소스 해제
   useEffect(() => {
     return () => {
-      if (texture) texture.dispose();
       if (materialRef.current) materialRef.current.dispose();
     };
   }, [texture]);

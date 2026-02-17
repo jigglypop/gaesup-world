@@ -1,6 +1,7 @@
 import { Suspense, useEffect, ReactNode, useMemo } from 'react';
 
 import { Camera } from '@/core/camera';
+import { PerformanceCollector } from '@/core/editor/components/panels/PerformanceCollector';
 import { useGaesupStore } from '@stores/gaesupStore';
 
 import { WorldContainerProps } from './types';
@@ -78,6 +79,7 @@ export function GaesupWorldContent({ children, showGrid, showAxes }: {
   return (
     <Suspense fallback={null}>
       <Camera/>
+      <PerformanceCollector />
       <WorldContent showGrid={showGrid ?? false} showAxes={showAxes ?? false}>
         {children}
       </WorldContent>

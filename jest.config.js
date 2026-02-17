@@ -22,7 +22,7 @@ export default {
     }],
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(three|@react-three|three-stdlib|@react-spring|@use-gesture|react-use-refs|zustand|jotai|leva|@react-icons|react-device-detect|mitt)/)',
+    'node_modules/(?!(three|@react-three|three-stdlib|@react-spring|@use-gesture|react-use-refs|zustand|leva|@react-icons|react-device-detect|mitt)/)',
   ],
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   collectCoverageFrom: [

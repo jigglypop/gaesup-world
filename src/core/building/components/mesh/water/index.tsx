@@ -55,6 +55,15 @@ export default function Ocean({ lod, center }: WaterProps) {
   useEffect(() => {
     return () => {
       geom.dispose();
+      const water = waterRef.current as unknown as {
+        material?: THREE.Material;
+        dispose?: () => void;
+      } | null;
+      // Water (three-stdlib) may own internal GPU resources; clean up defensively.
+      water?.material?.dispose?.();
+      if (typeof water?.dispose === 'function') {
+        water.dispose();
+      }
     };
   }, [geom]);
   

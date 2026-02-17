@@ -19,7 +19,13 @@ const cache = {
   },
 };
 
-const SERVER_URL = process.env["REACT_APP_SERVER_URL"] || "http://localhost:3001";
+// Allow runtime override without rebuilding the library/app.
+// Example: `window.__GAESUP_SERVER_URL__ = 'https://api.example.com'`
+const SERVER_URL =
+  (typeof (globalThis as unknown as { __GAESUP_SERVER_URL__?: unknown }).__GAESUP_SERVER_URL__ === 'string' &&
+  (globalThis as unknown as { __GAESUP_SERVER_URL__?: string }).__GAESUP_SERVER_URL__?.trim()
+    ? (globalThis as unknown as { __GAESUP_SERVER_URL__?: string }).__GAESUP_SERVER_URL__!.trim()
+    : (import.meta.env.VITE_SERVER_URL?.trim() || "http://localhost:3001"));
 
 export const tokenAsync = async () => {
   const token = cache.get("token");

@@ -84,6 +84,8 @@ export default defineConfig(({ mode }) => {
       },
       define: {
         'process.env.NODE_ENV': JSON.stringify('production'),
+        // Avoid `process is not defined` in browsers for any dev-only diagnostics.
+        'process.env.VITE_ENABLE_BRIDGE_LOGS': JSON.stringify(process.env.VITE_ENABLE_BRIDGE_LOGS ?? ''),
       },
     };
   }
@@ -120,6 +122,8 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       'process.env.NODE_ENV': JSON.stringify(mode === 'production' ? 'production' : 'development'),
+      // Avoid `process is not defined` in browsers for any dev-only diagnostics.
+      'process.env.VITE_ENABLE_BRIDGE_LOGS': JSON.stringify(process.env.VITE_ENABLE_BRIDGE_LOGS ?? ''),
     },
   };
 });

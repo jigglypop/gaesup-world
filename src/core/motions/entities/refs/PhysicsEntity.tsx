@@ -16,7 +16,7 @@ import { useEntity } from '@core/boilerplate/hooks/useEntity';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
 import { useGltfAndSize } from '../../hooks';
-import { PhysicsEntityProps, SetGroundRayType } from '../types';
+import { PhysicsEntityProps } from '../types';
 
 const EMPTY_GLTF_DATA_URI =
   'data:application/json,' +
@@ -28,26 +28,11 @@ const EMPTY_GLTF_DATA_URI =
     }),
   );
 
-export function useSetGroundRay() {
-  return ({ groundRay, length, colliderRef }: SetGroundRayType) => {
-    if (!colliderRef.current || !groundRay) return;
-    if (!groundRay.origin || !groundRay.dir) return;
-    const raycaster = new THREE.Raycaster();
-    raycaster.set(groundRay.origin, groundRay.dir);
-    raycaster.far = length;
-    const intersections = raycaster.intersectObjects([], true);
-    if (intersections.length > 0) {
-      colliderRef.current.setActiveEvents(1);
-    }
-  };
-}
-
 export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
   (props, forwardedRef) => {
     const rigidBodyRef = useRef<RapierRigidBody>(null!);
     useImperativeHandle(forwardedRef, () => rigidBodyRef.current);
     const { size } = useGltfAndSize({ url: props.url || '' });
-    const setGroundRay = useSetGroundRay();
     const modelUrl = props.url?.trim() ? props.url : EMPTY_GLTF_DATA_URI;
     const { scene, animations } = useGLTF(modelUrl);
     const { actions, ref: animationRef } = useAnimations(animations);
@@ -104,14 +89,6 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
         })
         .filter(Boolean);
     }, [props.parts, props.componentType, props.currentAnimation, skeleton]);
-
-    if (props.groundRay && props.colliderRef) {
-      setGroundRay({
-        groundRay: props.groundRay,
-        length: 2.0,
-        colliderRef: props.colliderRef
-      });
-    }
 
     const { nodes } = useGraph(clone);
     const objectNode = Object.values(nodes).find((node) => node.type === 'Object3D');

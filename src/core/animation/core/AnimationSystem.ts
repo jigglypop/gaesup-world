@@ -154,17 +154,20 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
   }
 
   override getMetrics(): AnimationSystemMetrics {
-    return { ...this.metrics };
+    return this.metrics;
   }
 
   override getState(): Readonly<AnimationSystemStateExt> {
-    return { ...this.state };
+    return this.state;
   }
 
   protected override updateMetrics(deltaTime: number): void {
     this.metrics.frameTime = deltaTime;
-    this.metrics.activeAnimations = Array.from(this.state.actions.values())
-      .filter(action => action.isRunning()).length;
+    let active = 0;
+    for (const action of this.state.actions.values()) {
+      if (action.isRunning()) active++;
+    }
+    this.metrics.activeAnimations = active;
     this.metrics.totalActions = this.state.actions.size;
     this.metrics.currentWeight = this.state.currentWeight;
     this.metrics.lastUpdate = Date.now();

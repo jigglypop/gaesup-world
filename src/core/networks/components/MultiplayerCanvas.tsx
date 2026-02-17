@@ -35,7 +35,7 @@ interface MultiplayerCanvasProps {
   localSpeechText?: string | null;
 }
 
-export function MultiplayerCanvas({ 
+export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({ 
   players, 
   characterUrl, 
   vehicleUrl, 
@@ -189,4 +189,4 @@ export function MultiplayerCanvas({
       </Canvas>
     </GaesupWorld>
   );
-} 
+}); 

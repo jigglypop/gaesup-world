@@ -8,6 +8,46 @@ import { CameraOptionType, CameraBounds, CollisionCheckResult, Obstacle } from '
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
 const tempQuaternion = new THREE.Quaternion();
+const tempMatrix4 = new THREE.Matrix4();
+const tempQuaternion2 = new THREE.Quaternion();
+const collisionDirection = new THREE.Vector3();
+const collisionRaycaster = new THREE.Raycaster();
+const collisionIntersections: THREE.Intersection[] = [];
+const collisionSafePosition = new THREE.Vector3();
+const collisionResultPosition = new THREE.Vector3();
+
+// Scratch objects for activeStateUtils fallbacks (avoid per-frame allocations).
+const fallbackPosition = new THREE.Vector3();
+const fallbackEuler = new THREE.Euler();
+const fallbackVelocity = new THREE.Vector3();
+const fallbackOffset = new THREE.Vector3();
+const fallbackToVec3 = new THREE.Vector3();
+
+// Cached collidable mesh list to avoid scene.traverse every frame.
+let cachedCollisionMeshes: THREE.Mesh[] = [];
+let cachedCollisionScene: THREE.Scene | null = null;
+let cachedCollisionVersion = -1;
+
+function getCollisionMeshes(scene: THREE.Scene): THREE.Mesh[] {
+  // Rebuild every 60 frames (~1s at 60fps) or when scene reference changes.
+  const version = (scene as unknown as { _frameId?: number })._frameId ?? 0;
+  if (scene === cachedCollisionScene && version - cachedCollisionVersion < 60) {
+    return cachedCollisionMeshes;
+  }
+  cachedCollisionScene = scene;
+  cachedCollisionVersion = version;
+  cachedCollisionMeshes = [];
+  scene.traverse((object) => {
+    if (object instanceof THREE.Mesh && !object.userData['intangible'] && object.geometry?.boundingSphere) {
+      cachedCollisionMeshes.push(object);
+    }
+  });
+  return cachedCollisionMeshes;
+}
+
+export function invalidateCollisionCache(): void {
+  cachedCollisionVersion = -1;
+}
 
 export { CAMERA_CONSTANTS };
 
@@ -39,14 +79,14 @@ export const cameraUtils = {
     speed: number,
     deltaTime: number,
   ): void => {
-    tempVector3.subVectors(target, camera.position).normalize();
     const targetQuaternion = tempQuaternion
-      .setFromRotationMatrix(new THREE.Matrix4().lookAt(camera.position, target, camera.up))
+      .setFromRotationMatrix(tempMatrix4.lookAt(camera.position, target, camera.up))
       .normalize();
 
-    const currentQuaternion = camera.quaternion.clone().normalize();
+    // Avoid per-frame allocations: reuse scratch quaternion instead of clone().
+    tempQuaternion2.copy(camera.quaternion).normalize();
 
-    if (currentQuaternion.dot(targetQuaternion) < 0) {
+    if (tempQuaternion2.dot(targetQuaternion) < 0) {
       targetQuaternion.x *= -1;
       targetQuaternion.y *= -1;
       targetQuaternion.z *= -1;
@@ -74,27 +114,32 @@ export const cameraUtils = {
     scene: THREE.Scene,
     radius: number = 0.5,
   ): CollisionCheckResult => {
-    const direction = new THREE.Vector3().subVectors(to, from).normalize();
-    const distance = from.distanceTo(to);
-    const raycaster = new THREE.Raycaster(from, direction, 0, distance);
+    collisionDirection.subVectors(to, from);
+    const distance = collisionDirection.length();
+    if (distance <= 0) {
+      return { safe: true, position: to, obstacles: [] };
+    }
+    collisionDirection.multiplyScalar(1 / distance);
+    collisionRaycaster.set(from, collisionDirection);
+    collisionRaycaster.near = 0;
+    collisionRaycaster.far = distance;
 
     const obstacles: Obstacle[] = [];
+    const meshes = getCollisionMeshes(scene);
 
-    scene.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) return;
-      if (object.userData['intangible']) return;
-      if (!object.geometry?.boundingSphere) return;
-
-      const intersects = raycaster.intersectObject(object, false);
-      const hit = intersects[0];
+    for (let i = 0, len = meshes.length; i < len; i++) {
+      const mesh = meshes[i];
+      collisionIntersections.length = 0;
+      collisionRaycaster.intersectObject(mesh, false, collisionIntersections);
+      const hit = collisionIntersections[0];
       if (hit) {
         obstacles.push({
-          object,
+          object: mesh,
           distance: hit.distance,
           point: hit.point,
         });
       }
-    });
+    }
 
     if (obstacles.length === 0) {
       return { safe: true, position: to, obstacles: [] };
@@ -104,11 +149,13 @@ export const cameraUtils = {
       current.distance < nearest.distance ? current : nearest,
     );
 
-    const safePosition = from
-      .clone()
-      .add(direction.multiplyScalar(Math.max(0, nearestObstacle.distance - radius)));
+    collisionSafePosition
+      .copy(from)
+      .addScaledVector(collisionDirection, Math.max(0, nearestObstacle.distance - radius));
 
-    return { safe: false, position: safePosition, obstacles };
+    // Copy into a dedicated result scratch to avoid returning a shared vector.
+    collisionResultPosition.copy(collisionSafePosition);
+    return { safe: false, position: collisionResultPosition, obstacles };
   },
 
   distanceSquared: (a: THREE.Vector3, b: THREE.Vector3): number => {
@@ -162,11 +209,14 @@ export const cameraUtils = {
   },
 
   updateFOV: (camera: THREE.PerspectiveCamera, targetFOV: number, speed?: number): void => {
-    if (speed && speed > 0) {
-      camera.fov = THREE.MathUtils.lerp(camera.fov, targetFOV, speed);
-    } else {
-      camera.fov = targetFOV;
-    }
+    const nextFov =
+      speed && speed > 0
+        ? THREE.MathUtils.lerp(camera.fov, targetFOV, speed)
+        : targetFOV;
+
+    // Updating the projection matrix is relatively expensive; skip when unchanged.
+    if (Math.abs(nextFov - camera.fov) < 1e-4) return;
+    camera.fov = nextFov;
     camera.updateProjectionMatrix();
   },
 
@@ -225,8 +275,9 @@ export const vectorUtils = {
     return target;
   },
 
-  toThreeVector3: (source: { x: number; y: number; z: number }) => {
-    return new THREE.Vector3(source.x, source.y, source.z);
+  toThreeVector3: (source: { x: number; y: number; z: number }, out?: THREE.Vector3) => {
+    const v = out ?? fallbackToVec3;
+    return v.set(source.x, source.y, source.z);
   },
 
   updatePosition: (target: THREE.Vector3, rigidBody: RapierRigidBody) => {
@@ -238,15 +289,15 @@ export const vectorUtils = {
 
 export const activeStateUtils = {
   getPosition: (activeState: ActiveStateType): THREE.Vector3 => {
-    return activeState?.position ? activeState.position : new THREE.Vector3(0, 0, 0);
+    return activeState?.position ? activeState.position : fallbackPosition.set(0, 0, 0);
   },
 
   getEuler: (activeState: ActiveStateType): THREE.Euler => {
-    return activeState?.euler ? activeState.euler : new THREE.Euler(0, 0, 0);
+    return activeState?.euler ? activeState.euler : fallbackEuler.set(0, 0, 0);
   },
 
   getVelocity: (activeState: ActiveStateType): THREE.Vector3 => {
-    return activeState?.velocity ? activeState.velocity : new THREE.Vector3(0, 0, 0);
+    return activeState?.velocity ? activeState.velocity : fallbackVelocity.set(0, 0, 0);
   },
 
   calculateCameraOffset: (
@@ -258,25 +309,28 @@ export const activeStateUtils = {
       euler?: THREE.Euler;
       mode?: 'thirdPerson' | 'chase' | 'fixed';
     },
+    out?: THREE.Vector3,
   ): THREE.Vector3 => {
     void position;
     const { xDistance = 15, yDistance = 8, zDistance = 15, euler, mode = 'thirdPerson' } = options;
+    const v = out ?? fallbackOffset;
     
     switch (mode) {
       case 'chase':
         if (euler) {
-          const offsetDirection = new THREE.Vector3(
-            Math.sin(euler.y),
-            1,
-            Math.cos(euler.y)
-          ).normalize();
-          return offsetDirection.multiply(new THREE.Vector3(-xDistance, yDistance, -zDistance));
+          // Normalize (sin(y), 1, cos(y)) => divide by sqrt(2).
+          const invLen = 1 / Math.SQRT2;
+          return v.set(
+            -xDistance * Math.sin(euler.y) * invLen,
+            yDistance * invLen,
+            -zDistance * Math.cos(euler.y) * invLen,
+          );
         }
-        return new THREE.Vector3(-xDistance, yDistance, -zDistance);
+        return v.set(-xDistance, yDistance, -zDistance);
         
       case 'thirdPerson':
       default:
-        return new THREE.Vector3(-xDistance, yDistance, -zDistance);
+        return v.set(-xDistance, yDistance, -zDistance);
     }
   },
 
