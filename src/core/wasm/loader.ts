@@ -92,6 +92,34 @@ export type GaesupCoreWasmExports = {
     out_capacity: number,
   ) => number;
 
+  // particle.rs
+  readonly update_snow_particles: (
+    count: number,
+    positions_ptr: number,
+    velocities_ptr: number,
+    bounds_ptr: number,
+    wind_x: number,
+    wind_y: number,
+    wind_z: number,
+    gravity: number,
+    damping: number,
+    dt: number,
+  ) => void;
+  readonly update_fire_particles: (
+    count: number,
+    positions_ptr: number,
+    lifetimes_ptr: number,
+    out_alphas_ptr: number,
+    origin_x: number,
+    origin_y: number,
+    origin_z: number,
+    spread: number,
+    rise_speed: number,
+    turbulence: number,
+    dt: number,
+    seed: number,
+  ) => void;
+
   // pathfinding.rs
   readonly astar_find_path: (
     grid_ptr: number,

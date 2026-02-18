@@ -3,6 +3,8 @@ import { Suspense } from 'react';
 import { TileObjectProps } from './types';
 import Water from '../mesh/water';
 import Grass from '../mesh/grass/Grass';
+import Fire from '../mesh/fire';
+import Billboard from '../mesh/billboard';
 import { TILE_CONSTANTS } from '../../types/constants';
 
 export function TileObject({ tile }: TileObjectProps) {
@@ -25,6 +27,18 @@ export function TileObject({ tile }: TileObjectProps) {
             width={tileSize}
             instances={tile.objectConfig?.grassDensity || 1000}
             position={[0, 0.05, 0]}
+          />
+        )}
+
+        {tile.objectType === 'fire' && (
+          <Fire intensity={tile.objectConfig?.fireIntensity ?? 1.5} />
+        )}
+
+        {tile.objectType === 'billboard' && (
+          <Billboard
+            text={tile.objectConfig?.billboardText}
+            imageUrl={tile.objectConfig?.billboardImageUrl}
+            color={tile.objectConfig?.billboardColor}
           />
         )}
       </Suspense>

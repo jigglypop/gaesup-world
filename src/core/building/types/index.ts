@@ -41,13 +41,15 @@ export interface WallGroupConfig {
   walls: WallConfig[];
 }
 
+export type TileObjectType = 'water' | 'grass' | 'flag' | 'fire' | 'billboard' | 'none';
+
 export interface TileConfig {
   id: string;
   position: Position3D;
   tileGroupId: string;
   size?: number;
   rotation?: number;
-  objectType?: 'water' | 'grass' | 'flag' | 'none';
+  objectType?: TileObjectType;
   objectConfig?: {
     flagTexture?: string;
     flagWidth?: number;
@@ -55,6 +57,10 @@ export interface TileConfig {
     flagStyle?: FlagStyle;
     grassDensity?: number;
     waterScale?: number;
+    fireIntensity?: number;
+    billboardText?: string;
+    billboardImageUrl?: string;
+    billboardColor?: string;
   };
 }
 

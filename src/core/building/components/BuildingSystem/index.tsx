@@ -6,6 +6,7 @@ import { useBuildingStore } from '../../stores/buildingStore';
 import { GridHelper } from '../GridHelper';
 import { PreviewTile } from '../PreviewTile';
 import { PreviewWall } from '../PreviewWall';
+import { Snow } from '../mesh/snow';
 import { TileSystem } from '../TileSystem';
 import { WallSystem } from '../WallSystem';
 import { BuildingSystemProps } from './types';
@@ -23,6 +24,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
     editMode,
     showGrid,
     gridSize,
+    showSnow,
   } = useBuildingStore();
   
   const wallGroupsArray = useMemo(() => Array.from(wallGroups.values()), [wallGroups]);
@@ -58,6 +60,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
             {...(onTileDelete ? { onTileDelete } : {})}
           />
         ))}
+        {showSnow && <Snow />}
       </group>
     </Suspense>
   );

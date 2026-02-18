@@ -67,7 +67,13 @@ export function TileSystem({
   );
 
   const nonFlagObjects = useMemo(
-    () => tileGroup.tiles.filter((t) => t.objectType && t.objectType !== 'none' && t.objectType !== 'flag'),
+    () =>
+      tileGroup.tiles.filter(
+        (t) =>
+          t.objectType &&
+          t.objectType !== 'none' &&
+          t.objectType !== 'flag',
+      ),
     [tileGroup.tiles],
   );
 
@@ -100,12 +106,11 @@ export function TileSystem({
 
     mesh.instanceMatrix.needsUpdate = true;
 
-    // Compute a tight bounding box/sphere so frustum culling works correctly.
     if (tileCount > 0) {
       mesh.computeBoundingBox();
       mesh.computeBoundingSphere();
     }
-  }, [tileGroup.tiles, tileCount, dummy]);
+  }, [tileGroup.tiles, tileCount, dummy, capacity]);
 
   useEffect(() => {
     if (tileGroup.tiles.length === 0) return undefined;

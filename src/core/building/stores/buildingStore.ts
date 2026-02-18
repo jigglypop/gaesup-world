@@ -9,6 +9,7 @@ import {
   TileGroupConfig,
   WallConfig,
   TileConfig,
+  TileObjectType,
   Position3D,
   WallCategory,
   TileCategory,
@@ -95,8 +96,8 @@ interface BuildingStore extends BuildingSystemState {
   currentWallRotation: number;
   setWallRotation: (rotation: number) => void;
   
-  selectedTileObjectType: 'water' | 'grass' | 'flag' | 'none';
-  setSelectedTileObjectType: (type: 'water' | 'grass' | 'flag' | 'none') => void;
+  selectedTileObjectType: TileObjectType;
+  setSelectedTileObjectType: (type: TileObjectType) => void;
 
   currentFlagWidth: number;
   currentFlagHeight: number;
@@ -106,6 +107,19 @@ interface BuildingStore extends BuildingSystemState {
   setFlagHeight: (height: number) => void;
   setFlagImageUrl: (url: string) => void;
   setFlagStyle: (style: FlagStyle) => void;
+
+  currentFireIntensity: number;
+  setFireIntensity: (intensity: number) => void;
+
+  currentBillboardText: string;
+  currentBillboardImageUrl: string;
+  currentBillboardColor: string;
+  setBillboardText: (text: string) => void;
+  setBillboardImageUrl: (url: string) => void;
+  setBillboardColor: (color: string) => void;
+
+  showSnow: boolean;
+  setShowSnow: (show: boolean) => void;
   
   checkTilePosition: (position: Position3D) => boolean;
   checkWallPosition: (position: Position3D, rotation: number) => boolean;
@@ -175,6 +189,11 @@ export const useBuildingStore = create<BuildingStore>()(
     currentFlagHeight: 1.0,
     currentFlagImageUrl: '',
     currentFlagStyle: 'flag' as FlagStyle,
+    currentFireIntensity: 1.5,
+    currentBillboardText: 'HELLO',
+    currentBillboardImageUrl: '',
+    currentBillboardColor: '#00ff88',
+    showSnow: false,
 
     initializeDefaults: () => set((state) => {
       if (state.initialized) return;
@@ -332,40 +351,81 @@ export const useBuildingStore = create<BuildingStore>()(
       state.selectedWallGroupId = 'brick-walls';
       state.selectedTileCategoryId = 'wood-floors';
       state.selectedTileGroupId = 'oak-floor';
-      
-      // 기본 바닥 타일 추가 (10x10 그리드)
-      const oakFloorGroup = state.tileGroups.get('oak-floor');
-      if (oakFloorGroup) {
-        const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-        const startX = -5 * cellSize;
-        const startZ = -5 * cellSize;
-        
-        for (let x = 0; x < 10; x++) {
-          for (let z = 0; z < 10; z++) {
-            const tile: TileConfig = {
-              id: `default-tile-${x}-${z}`,
-              position: {
-                x: startX + x * cellSize,
-                y: 0,
-                z: startZ + z * cellSize
-              },
-              tileGroupId: oakFloorGroup.id,
-              size: 1
-            };
-            oakFloorGroup.tiles.push(tile);
 
-            const halfSize = ((tile.size || 1) * cellSize) / 2;
-            state.tileMeta.set(tile.id, { x: tile.position.x, z: tile.position.z, halfSize });
-            indexAabb(
-              state.tileIndex,
-              state.tileCells,
-              tile.id,
-              tile.position.x - halfSize,
-              tile.position.x + halfSize,
-              tile.position.z - halfSize,
-              tile.position.z + halfSize,
-              cellSize,
-            );
+      // 데모 레이아웃: 7x7 센터 플라자 + 오브젝트 쇼케이스
+      //
+      //  gx: -3  -2  -1   0   1   2   3
+      //  -----------------------------------
+      // -3  oak  oak  oak FLAG oak GRSS GRSS
+      // -2  oak  oak  oak  oak oak GRSS GRSS
+      // -1  WTR  oak  MRB  MRB MRB oak  oak
+      //  0  WTR  oak  MRB  MRB MRB oak  oak
+      //  1  oak  oak  MRB  MRB MRB oak  oak
+      //  2  oak SIGN  oak  oak oak  oak FIRE
+      //  3  oak  oak  oak  oak oak  oak  oak
+
+      const oakFloorGroup = state.tileGroups.get('oak-floor');
+      const marbleFloorGroup = state.tileGroups.get('marble-floor');
+      const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
+
+      const addTileToState = (
+        group: TileGroupConfig,
+        tile: TileConfig,
+      ): void => {
+        group.tiles.push(tile);
+        const hs = ((tile.size || 1) * cellSize) / 2;
+        state.tileMeta.set(tile.id, { x: tile.position.x, z: tile.position.z, halfSize: hs });
+        indexAabb(
+          state.tileIndex, state.tileCells, tile.id,
+          tile.position.x - hs, tile.position.x + hs,
+          tile.position.z - hs, tile.position.z + hs,
+          cellSize,
+        );
+      };
+
+      if (oakFloorGroup && marbleFloorGroup) {
+        for (let gx = -3; gx <= 3; gx++) {
+          for (let gz = -3; gz <= 3; gz++) {
+            const px = gx * cellSize;
+            const pz = gz * cellSize;
+
+            const isMarble = Math.abs(gx) <= 1 && Math.abs(gz) <= 1;
+            const isGrass = gx >= 2 && gz <= -2;
+            const isWater = gx === -3 && (gz === -1 || gz === 0);
+            const isFlag = gx === 0 && gz === -3;
+            const isFire = gx === 3 && gz === 2;
+            const isBillboard = gx === -2 && gz === 2;
+
+            const group = isMarble ? marbleFloorGroup : oakFloorGroup;
+
+            const base: TileConfig = {
+              id: `demo-${gx + 3}-${gz + 3}`,
+              position: { x: px, y: 0, z: pz },
+              tileGroupId: group.id,
+              size: 1,
+            };
+
+            if (isGrass) {
+              addTileToState(group, { ...base, objectType: 'grass', objectConfig: { grassDensity: 800 } });
+            } else if (isWater) {
+              addTileToState(group, { ...base, objectType: 'water' });
+            } else if (isFlag) {
+              addTileToState(group, {
+                ...base,
+                objectType: 'flag',
+                objectConfig: { flagWidth: 1.5, flagHeight: 1.0, flagStyle: 'flag' as FlagStyle },
+              });
+            } else if (isFire) {
+              addTileToState(group, { ...base, objectType: 'fire', objectConfig: { fireIntensity: 1.5 } });
+            } else if (isBillboard) {
+              addTileToState(group, {
+                ...base,
+                objectType: 'billboard',
+                objectConfig: { billboardText: 'GAESUP\nWORLD', billboardColor: '#00ff88' },
+              });
+            } else {
+              addTileToState(group, base);
+            }
           }
         }
       }
@@ -507,7 +567,15 @@ export const useBuildingStore = create<BuildingStore>()(
                   flagStyle: state.currentFlagStyle,
                   ...(state.currentFlagImageUrl ? { flagTexture: state.currentFlagImageUrl } : {}),
                 }
-              : undefined;
+              : state.selectedTileObjectType === 'fire'
+                ? { fireIntensity: state.currentFireIntensity }
+                : state.selectedTileObjectType === 'billboard'
+                  ? {
+                      billboardText: state.currentBillboardText,
+                      billboardColor: state.currentBillboardColor,
+                      ...(state.currentBillboardImageUrl ? { billboardImageUrl: state.currentBillboardImageUrl } : {}),
+                    }
+                  : undefined;
         const tileWithObject: TileConfig = {
           ...tile,
           objectType: state.selectedTileObjectType,
@@ -757,5 +825,13 @@ export const useBuildingStore = create<BuildingStore>()(
       state.currentFlagWidth = meta.defaultWidth;
       state.currentFlagHeight = meta.defaultHeight;
     }),
+
+    setFireIntensity: (intensity) => set((state) => { state.currentFireIntensity = intensity; }),
+
+    setBillboardText: (text) => set((state) => { state.currentBillboardText = text; }),
+    setBillboardImageUrl: (url) => set((state) => { state.currentBillboardImageUrl = url; }),
+    setBillboardColor: (color) => set((state) => { state.currentBillboardColor = color; }),
+
+    setShowSnow: (show) => set((state) => { state.showSnow = show; }),
   }))
 ); 

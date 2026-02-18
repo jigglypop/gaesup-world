@@ -68,7 +68,11 @@ export function WallSystem({
       mesh.setMatrixAt(i, dummy.matrix);
     }
     mesh.instanceMatrix.needsUpdate = true;
-  }, [wallGroup.walls, wallCount, dummy, height]);
+    if (wallCount > 0) {
+      mesh.computeBoundingBox();
+      mesh.computeBoundingSphere();
+    }
+  }, [wallGroup.walls, wallCount, dummy, height, capacity]);
 
   useEffect(() => {
     return () => {

@@ -3,6 +3,7 @@ mod matrix;
 mod vector;
 mod spatial;
 mod pathfinding;
+mod particle;
 
 // Shared allocators for JS<->WASM memory transfer.
 #[no_mangle]
@@ -65,3 +66,4 @@ pub use matrix::*;
 pub use vector::*;
 pub use spatial::*;
 pub use pathfinding::*;
+pub use particle::*;

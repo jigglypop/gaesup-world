@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { OrbitControls } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
@@ -9,6 +9,7 @@ import { useBuildingStore } from '../../stores/buildingStore';
 import { BuildingSystem } from '../BuildingSystem';
 
 const DRAG_THRESHOLD_SQ = 9;
+const PLACE_COOLDOWN_MS = 150;
 
 export function BuildingController() {
   const { gl } = useThree();
@@ -28,6 +29,13 @@ export function BuildingController() {
   const initializeDefaults = useBuildingStore((s) => s.initializeDefaults);
 
   const downPosRef = useRef({ x: 0, y: 0 });
+  const lastPlaceRef = useRef(0);
+
+  // OrbitControls: 좌클릭 비활성, 우클릭으로 회전
+  const configureOrbit = useCallback((controls: any) => {
+    if (!controls) return;
+    controls.mouseButtons = { LEFT: -1, MIDDLE: 1, RIGHT: 0 };
+  }, []);
   
   useEffect(() => {
     if (!initialized) {
@@ -53,6 +61,7 @@ export function BuildingController() {
     const canvas = gl.domElement;
 
     const handleMouseDown = (e: MouseEvent) => {
+      if (e.button !== 0) return;
       downPosRef.current.x = e.clientX;
       downPosRef.current.y = e.clientY;
     };
@@ -60,9 +69,15 @@ export function BuildingController() {
     const handleMouseMove = (e: MouseEvent) => updateMousePosition(e);
 
     const handleMouseUp = (e: MouseEvent) => {
+      if (e.button !== 0) return;
+
       const dx = e.clientX - downPosRef.current.x;
       const dy = e.clientY - downPosRef.current.y;
       if (dx * dx + dy * dy > DRAG_THRESHOLD_SQ) return;
+
+      const now = performance.now();
+      if (now - lastPlaceRef.current < PLACE_COOLDOWN_MS) return;
+      lastPlaceRef.current = now;
 
       const mode = useBuildingStore.getState().editMode;
       if (mode === 'npc') return;
@@ -84,7 +99,8 @@ export function BuildingController() {
   return (
     <>
       {isEditing && (
-        <OrbitControls 
+        <OrbitControls
+          ref={configureOrbit}
           enablePan
           enableZoom
           enableRotate
@@ -102,4 +118,4 @@ export function BuildingController() {
       <NPCSystem />
     </>
   );
-} 
+}
