@@ -1,7 +1,10 @@
 import React, { FC } from 'react';
 
+import { FLAG_STYLE_META, FlagStyle } from '../../../../building/types';
 import { useBuildingStore } from '../../../../building/stores/buildingStore';
 import './styles.css';
+
+const FLAG_STYLES = Object.entries(FLAG_STYLE_META) as [FlagStyle, typeof FLAG_STYLE_META[FlagStyle]][];
 
 export const BuildingPanel: FC = () => {
   const editMode = useBuildingStore((state) => state.editMode);
@@ -12,6 +15,14 @@ export const BuildingPanel: FC = () => {
   const setSelectedTileObjectType = useBuildingStore((state) => state.setSelectedTileObjectType);
   const snapToGrid = useBuildingStore((state) => state.snapToGrid);
   const setSnapToGrid = useBuildingStore((state) => state.setSnapToGrid);
+  const currentFlagWidth = useBuildingStore((state) => state.currentFlagWidth);
+  const currentFlagHeight = useBuildingStore((state) => state.currentFlagHeight);
+  const currentFlagImageUrl = useBuildingStore((state) => state.currentFlagImageUrl);
+  const setFlagWidth = useBuildingStore((state) => state.setFlagWidth);
+  const setFlagHeight = useBuildingStore((state) => state.setFlagHeight);
+  const setFlagImageUrl = useBuildingStore((state) => state.setFlagImageUrl);
+  const currentFlagStyle = useBuildingStore((state) => state.currentFlagStyle);
+  const setFlagStyle = useBuildingStore((state) => state.setFlagStyle);
 
   const editModes: { type: typeof editMode; label: string; description: string }[] = [
     { type: 'none', label: 'None', description: 'No building mode' },
@@ -92,6 +103,83 @@ export const BuildingPanel: FC = () => {
           </div>
         </div>
       </div>
+
+      {selectedTileObjectType === 'flag' && (
+        <div className="building-panel__section">
+          <div className="building-panel__section-title">Flag Settings</div>
+          <div className="building-panel__info">
+            <div className="building-panel__info-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '4px' }}>
+              <span className="building-panel__info-label">Style</span>
+              <div className="building-panel__grid">
+                {FLAG_STYLES.map(([key, meta]) => (
+                  <button
+                    key={key}
+                    className={`building-panel__grid-btn ${currentFlagStyle === key ? 'building-panel__grid-btn--active' : ''}`}
+                    onClick={() => setFlagStyle(key)}
+                  >
+                    {meta.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="building-panel__info-item">
+              <span className="building-panel__info-label">Width</span>
+              <div className="building-panel__stepper">
+                <button
+                  className="building-panel__stepper-btn"
+                  onClick={() => setFlagWidth(Math.max(0.5, currentFlagWidth - 0.5))}
+                >
+                  -
+                </button>
+                <span className="building-panel__stepper-value">{currentFlagWidth}m</span>
+                <button
+                  className="building-panel__stepper-btn"
+                  onClick={() => setFlagWidth(Math.min(8, currentFlagWidth + 0.5))}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div className="building-panel__info-item">
+              <span className="building-panel__info-label">Height</span>
+              <div className="building-panel__stepper">
+                <button
+                  className="building-panel__stepper-btn"
+                  onClick={() => setFlagHeight(Math.max(0.5, currentFlagHeight - 0.5))}
+                >
+                  -
+                </button>
+                <span className="building-panel__stepper-value">{currentFlagHeight}m</span>
+                <button
+                  className="building-panel__stepper-btn"
+                  onClick={() => setFlagHeight(Math.min(6, currentFlagHeight + 0.5))}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div className="building-panel__info-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '4px' }}>
+              <span className="building-panel__info-label">Image URL</span>
+              <input
+                type="text"
+                value={currentFlagImageUrl}
+                onChange={(e) => setFlagImageUrl(e.target.value)}
+                placeholder="https://..."
+                style={{
+                  width: '100%',
+                  padding: '4px 6px',
+                  fontSize: '11px',
+                  background: 'var(--panel-bg, #1a1a2e)',
+                  border: '1px solid var(--border-color, #333)',
+                  borderRadius: '3px',
+                  color: 'inherit',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="building-panel__info" style={{ marginTop: 'auto' }}>
         <div className="building-panel__info-item">

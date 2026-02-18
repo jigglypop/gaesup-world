@@ -6,118 +6,89 @@ import * as THREE from 'three';
 import { useBuildingStore } from '../stores/buildingStore';
 import { Position3D, Rotation3D } from '../types';
 
+const _vec2 = new THREE.Vector2();
+const _groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const _intersection = new THREE.Vector3();
+
 export function useBuildingEditor() {
   const { camera, raycaster } = useThree();
   const mouseRef = useRef({ x: 0, y: 0 });
-  
-  const {
-    editMode,
-    selectedWallGroupId,
-    selectedTileGroupId,
-    snapPosition,
-    addWall,
-    addTile,
-    removeWall,
-    removeTile,
-    setHoverPosition,
-  } = useBuildingStore();
+
+  const editMode = useBuildingStore((s) => s.editMode);
+  const selectedWallGroupId = useBuildingStore((s) => s.selectedWallGroupId);
+  const selectedTileGroupId = useBuildingStore((s) => s.selectedTileGroupId);
+  const snapPosition = useBuildingStore((s) => s.snapPosition);
+  const addWall = useBuildingStore((s) => s.addWall);
+  const addTile = useBuildingStore((s) => s.addTile);
+  const removeWall = useBuildingStore((s) => s.removeWall);
+  const removeTile = useBuildingStore((s) => s.removeTile);
+  const setHoverPosition = useBuildingStore((s) => s.setHoverPosition);
+
+  const raycastGround = useCallback((): Position3D | null => {
+    _vec2.set(mouseRef.current.x, mouseRef.current.y);
+    raycaster.setFromCamera(_vec2, camera);
+    if (raycaster.ray.intersectPlane(_groundPlane, _intersection)) {
+      return snapPosition({ x: _intersection.x, y: 0, z: _intersection.z });
+    }
+    return null;
+  }, [camera, raycaster, snapPosition]);
 
   const updateMousePosition = useCallback((event: MouseEvent) => {
     const canvas = event.target as HTMLCanvasElement;
     mouseRef.current.x = (event.clientX / canvas.clientWidth) * 2 - 1;
     mouseRef.current.y = -(event.clientY / canvas.clientHeight) * 2 + 1;
-    
-    if (editMode === 'tile' || editMode === 'wall' || editMode === 'npc') {
-      raycaster.setFromCamera(
-        new THREE.Vector2(mouseRef.current.x, mouseRef.current.y),
-        camera
-      );
-      const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-      const intersection = new THREE.Vector3();
-      if (raycaster.ray.intersectPlane(groundPlane, intersection)) {
-        const snappedPosition = snapPosition({
-          x: intersection.x,
-          y: 0,
-          z: intersection.z,
-        });
-        setHoverPosition(snappedPosition);
-      } else {
-        setHoverPosition(null);
-      }
+
+    const mode = useBuildingStore.getState().editMode;
+    if (mode === 'tile' || mode === 'wall' || mode === 'npc') {
+      const pos = raycastGround();
+      setHoverPosition(pos);
     } else {
       setHoverPosition(null);
     }
-  }, [camera, raycaster, snapPosition, editMode, setHoverPosition]);
-
-  const getGroundPosition = useCallback((): Position3D | null => {
-    raycaster.setFromCamera(
-      new THREE.Vector2(mouseRef.current.x, mouseRef.current.y),
-      camera
-    );
-
-    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    const intersection = new THREE.Vector3();
-    
-    if (raycaster.ray.intersectPlane(groundPlane, intersection)) {
-      return snapPosition({
-        x: intersection.x,
-        y: 0,
-        z: intersection.z,
-      });
-    }
-    
-    return null;
-  }, [camera, raycaster, snapPosition]);
+  }, [raycastGround, setHoverPosition]);
 
   const placeWall = useCallback(() => {
-    if (editMode !== 'wall' || !selectedWallGroupId) return;
-    const position = getGroundPosition();
+    const { editMode: mode, selectedWallGroupId: groupId, currentWallRotation, checkWallPosition } = useBuildingStore.getState();
+    if (mode !== 'wall' || !groupId) return;
+    const position = raycastGround();
     if (!position) return;
-    const { currentWallRotation, checkWallPosition } = useBuildingStore.getState();
-    if (checkWallPosition(position, currentWallRotation)) {
-      console.warn('Wall already exists at this position');
-      return;
-    }
+    if (checkWallPosition(position, currentWallRotation)) return;
     const rotation: Rotation3D = { x: 0, y: currentWallRotation, z: 0 };
-    addWall(selectedWallGroupId, {
+    addWall(groupId, {
       id: `wall-${Date.now()}`,
       position,
       rotation,
-      wallGroupId: selectedWallGroupId,
+      wallGroupId: groupId,
     });
-  }, [editMode, selectedWallGroupId, getGroundPosition, addWall]);
+  }, [raycastGround, addWall]);
 
   const placeTile = useCallback(() => {
-    if (editMode !== 'tile' || !selectedTileGroupId) return;
-    
-    const position = getGroundPosition();
+    const { editMode: mode, selectedTileGroupId: groupId, checkTilePosition, currentTileMultiplier } = useBuildingStore.getState();
+    if (mode !== 'tile' || !groupId) return;
+    const position = raycastGround();
     if (!position) return;
-    
-    const { checkTilePosition, currentTileMultiplier } = useBuildingStore.getState();
-    if (checkTilePosition(position)) {
-      console.warn('Tile already exists at this position');
-      return;
-    }
-    
-    addTile(selectedTileGroupId, {
+    if (checkTilePosition(position)) return;
+    addTile(groupId, {
       id: `tile-${Date.now()}`,
       position,
-      tileGroupId: selectedTileGroupId,
+      tileGroupId: groupId,
       size: currentTileMultiplier,
     });
-  }, [editMode, selectedTileGroupId, getGroundPosition, addTile]);
+  }, [raycastGround, addTile]);
 
   const handleWallClick = useCallback((wallId: string) => {
-    if (editMode === 'wall' && selectedWallGroupId) {
-      removeWall(selectedWallGroupId, wallId);
+    const { editMode: mode, selectedWallGroupId: groupId } = useBuildingStore.getState();
+    if (mode === 'wall' && groupId) {
+      removeWall(groupId, wallId);
     }
-  }, [editMode, selectedWallGroupId, removeWall]);
+  }, [removeWall]);
 
   const handleTileClick = useCallback((tileId: string) => {
-    if (editMode === 'tile' && selectedTileGroupId) {
-      removeTile(selectedTileGroupId, tileId);
+    const { editMode: mode, selectedTileGroupId: groupId } = useBuildingStore.getState();
+    if (mode === 'tile' && groupId) {
+      removeTile(groupId, tileId);
     }
-  }, [editMode, selectedTileGroupId, removeTile]);
+  }, [removeTile]);
 
   return {
     updateMousePosition,
@@ -125,6 +96,6 @@ export function useBuildingEditor() {
     placeTile,
     handleWallClick,
     handleTileClick,
-    getGroundPosition,
+    getGroundPosition: raycastGround,
   };
 } 

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { OrbitControls } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
@@ -7,6 +7,8 @@ import { NPCSystem } from '../../../npc/components/NPCSystem';
 import { useBuildingEditor } from '../../hooks/useBuildingEditor';
 import { useBuildingStore } from '../../stores/buildingStore';
 import { BuildingSystem } from '../BuildingSystem';
+
+const DRAG_THRESHOLD_SQ = 9;
 
 export function BuildingController() {
   const { gl } = useThree();
@@ -18,12 +20,14 @@ export function BuildingController() {
     handleTileClick,
   } = useBuildingEditor();
   
-  const editMode = useBuildingStore((state) => state.editMode);
+  const editMode = useBuildingStore((s) => s.editMode);
   const isEditing = editMode !== 'none';
-  const setHoverPosition = useBuildingStore((state) => state.setHoverPosition);
-  const setWallRotation = useBuildingStore((state) => state.setWallRotation);
-  const initialized = useBuildingStore((state) => state.initialized);
-  const initializeDefaults = useBuildingStore((state) => state.initializeDefaults);
+  const setHoverPosition = useBuildingStore((s) => s.setHoverPosition);
+  const setWallRotation = useBuildingStore((s) => s.setWallRotation);
+  const initialized = useBuildingStore((s) => s.initialized);
+  const initializeDefaults = useBuildingStore((s) => s.initializeDefaults);
+
+  const downPosRef = useRef({ x: 0, y: 0 });
   
   useEffect(() => {
     if (!initialized) {
@@ -35,18 +39,10 @@ export function BuildingController() {
     if (editMode !== 'wall') return;
     const handleKeyDown = (e: KeyboardEvent) => {
       switch (e.key) {
-        case 'ArrowUp':
-          setWallRotation(0);
-          break;
-        case 'ArrowRight':
-          setWallRotation(Math.PI / 2);
-          break;
-        case 'ArrowDown':
-          setWallRotation(Math.PI);
-          break;
-        case 'ArrowLeft':
-          setWallRotation(Math.PI * 1.5);
-          break;
+        case 'ArrowUp':    setWallRotation(0); break;
+        case 'ArrowRight': setWallRotation(Math.PI / 2); break;
+        case 'ArrowDown':  setWallRotation(Math.PI); break;
+        case 'ArrowLeft':  setWallRotation(Math.PI * 1.5); break;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -55,29 +51,43 @@ export function BuildingController() {
 
   useEffect(() => {
     const canvas = gl.domElement;
-    const handleMouseMove = (e: MouseEvent) => updateMousePosition(e);
-    const handleClick = (e: MouseEvent) => {
-      if (editMode === 'npc') return; 
-      e.preventDefault();
-      if (editMode === 'wall') placeWall();
-      else if (editMode === 'tile') placeTile();
+
+    const handleMouseDown = (e: MouseEvent) => {
+      downPosRef.current.x = e.clientX;
+      downPosRef.current.y = e.clientY;
     };
+
+    const handleMouseMove = (e: MouseEvent) => updateMousePosition(e);
+
+    const handleMouseUp = (e: MouseEvent) => {
+      const dx = e.clientX - downPosRef.current.x;
+      const dy = e.clientY - downPosRef.current.y;
+      if (dx * dx + dy * dy > DRAG_THRESHOLD_SQ) return;
+
+      const mode = useBuildingStore.getState().editMode;
+      if (mode === 'npc') return;
+      if (mode === 'wall') placeWall();
+      else if (mode === 'tile') placeTile();
+    };
+
+    canvas.addEventListener('mousedown', handleMouseDown);
     canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('click', handleClick);
+    canvas.addEventListener('mouseup', handleMouseUp);
     return () => {
+      canvas.removeEventListener('mousedown', handleMouseDown);
       canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('click', handleClick);
+      canvas.removeEventListener('mouseup', handleMouseUp);
       setHoverPosition(null);
     };
-  }, [gl, updateMousePosition, placeWall, placeTile, editMode, setHoverPosition]);
+  }, [gl, updateMousePosition, placeWall, placeTile, setHoverPosition]);
 
   return (
     <>
       {isEditing && (
         <OrbitControls 
-          enablePan={true} 
-          enableZoom={true} 
-          enableRotate={true}
+          enablePan
+          enableZoom
+          enableRotate
           maxPolarAngle={Math.PI / 2.5}
           minDistance={5}
           maxDistance={100}

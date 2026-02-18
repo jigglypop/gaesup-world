@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import * as THREE from 'three';
 
@@ -7,6 +7,7 @@ import { GaeSupProps } from '../../../index';
 import { MinimapSystem } from '../../../ui/core';
 import { MaterialManager } from '../../core/MaterialManager';
 import { TILE_CONSTANTS } from '../../types/constants';
+import { FlagBatch } from '../mesh/flag';
 import { TileObject } from '../TileObject';
 
 export function TileSystem({ 
@@ -60,8 +61,13 @@ export function TileSystem({
     [],
   );
 
-  const tilesWithObjects = useMemo(
-    () => tileGroup.tiles.filter((t) => t.objectType && t.objectType !== 'none'),
+  const flagTiles = useMemo(
+    () => tileGroup.tiles.filter((t) => t.objectType === 'flag'),
+    [tileGroup.tiles],
+  );
+
+  const nonFlagObjects = useMemo(
+    () => tileGroup.tiles.filter((t) => t.objectType && t.objectType !== 'none' && t.objectType !== 'flag'),
     [tileGroup.tiles],
   );
 
@@ -169,9 +175,15 @@ export function TileSystem({
           frustumCulled
         />
         
-        {tilesWithObjects.map((tile) => (
+        {nonFlagObjects.map((tile) => (
           <TileObject key={`${tile.id}-object`} tile={tile} />
         ))}
+
+        {flagTiles.length > 0 && (
+          <Suspense fallback={null}>
+            <FlagBatch flags={flagTiles} />
+          </Suspense>
+        )}
       </>
     </GaeSupProps>
   );

@@ -11,7 +11,9 @@ import {
   TileConfig,
   Position3D,
   WallCategory,
-  TileCategory
+  TileCategory,
+  FlagStyle,
+  FLAG_STYLE_META,
 } from '../types';
 import { TILE_CONSTANTS } from '../types/constants';
 
@@ -95,6 +97,15 @@ interface BuildingStore extends BuildingSystemState {
   
   selectedTileObjectType: 'water' | 'grass' | 'flag' | 'none';
   setSelectedTileObjectType: (type: 'water' | 'grass' | 'flag' | 'none') => void;
+
+  currentFlagWidth: number;
+  currentFlagHeight: number;
+  currentFlagImageUrl: string;
+  currentFlagStyle: FlagStyle;
+  setFlagWidth: (width: number) => void;
+  setFlagHeight: (height: number) => void;
+  setFlagImageUrl: (url: string) => void;
+  setFlagStyle: (style: FlagStyle) => void;
   
   checkTilePosition: (position: Position3D) => boolean;
   checkWallPosition: (position: Position3D, rotation: number) => boolean;
@@ -160,6 +171,10 @@ export const useBuildingStore = create<BuildingStore>()(
     currentTileMultiplier: 1,
     currentWallRotation: 0,
     selectedTileObjectType: 'none',
+    currentFlagWidth: 1.5,
+    currentFlagHeight: 1.0,
+    currentFlagImageUrl: '',
+    currentFlagStyle: 'flag' as FlagStyle,
 
     initializeDefaults: () => set((state) => {
       if (state.initialized) return;
@@ -482,12 +497,21 @@ export const useBuildingStore = create<BuildingStore>()(
     addTile: (groupId, tile) => set((state) => {
       const group = state.tileGroups.get(groupId);
       if (group) {
+        const objectConfig: TileConfig['objectConfig'] =
+          state.selectedTileObjectType === 'grass'
+            ? { grassDensity: 1000 }
+            : state.selectedTileObjectType === 'flag'
+              ? {
+                  flagWidth: state.currentFlagWidth,
+                  flagHeight: state.currentFlagHeight,
+                  flagStyle: state.currentFlagStyle,
+                  ...(state.currentFlagImageUrl ? { flagTexture: state.currentFlagImageUrl } : {}),
+                }
+              : undefined;
         const tileWithObject: TileConfig = {
           ...tile,
           objectType: state.selectedTileObjectType,
-          ...(state.selectedTileObjectType === 'grass'
-            ? { objectConfig: { grassDensity: 1000 } }
-            : {}),
+          ...(objectConfig ? { objectConfig } : {}),
         };
         group.tiles.push(tileWithObject);
 
@@ -722,6 +746,16 @@ export const useBuildingStore = create<BuildingStore>()(
     
     setSelectedTileObjectType: (type) => set((state) => {
       state.selectedTileObjectType = type;
+    }),
+
+    setFlagWidth: (width) => set((state) => { state.currentFlagWidth = width; }),
+    setFlagHeight: (height) => set((state) => { state.currentFlagHeight = height; }),
+    setFlagImageUrl: (url) => set((state) => { state.currentFlagImageUrl = url; }),
+    setFlagStyle: (style) => set((state) => {
+      state.currentFlagStyle = style;
+      const meta = FLAG_STYLE_META[style];
+      state.currentFlagWidth = meta.defaultWidth;
+      state.currentFlagHeight = meta.defaultHeight;
     }),
   }))
 ); 
