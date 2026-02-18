@@ -304,6 +304,10 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     this.updateForces(rigidBodyRef, physicsState.delta ?? 0);
     if (rigidBodyRef?.current) {
       rigidBodyRef.current.setEnabledRotations(false, false, false, false);
+      const activeStateRef = physicsState.activeState;
+      this.tempEuler.set(0, activeStateRef.euler.y, 0);
+      this.tempQuaternion.setFromEuler(this.tempEuler);
+      rigidBodyRef.current.setRotation(this.tempQuaternion, true);
     }
   }
 

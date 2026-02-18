@@ -111,7 +111,7 @@ export class DirectionComponent {
     const xAxis = Number(rightward) - Number(leftward);
     const zAxis = Number(backward) - Number(forward);
 
-    activeState.euler.y += xAxis * (Math.PI / 64);
+    activeState.euler.y -= xAxis * (Math.PI / 64);
 
     const { sin: sinY, cos: cosY } = getCachedTrig(activeState.euler.y);
     activeState.direction.set(sinY * zAxis, 0, cosY * zAxis);
@@ -163,7 +163,7 @@ export class DirectionComponent {
     activeState: ActiveStateType,
   ): void {
     const X = maxAngle.x * upDown;
-    const Z = maxAngle.z * leftRight;
+    const Z = -maxAngle.z * leftRight;
     const _x = innerGroup.rotation.x;
     const _z = innerGroup.rotation.z;
     const maxX = maxAngle.x;
