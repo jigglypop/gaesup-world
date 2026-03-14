@@ -47,13 +47,13 @@ export function EntityController({ props, children }: EntityControllerProps) {
       outerGroupRef,
       innerGroupRef,
       colliderRef,
-      onAnimate: props.onAnimate || (() => {}),
-      onFrame: props.onFrame || (() => {}),
-      onReady: props.onReady || (() => {}),
-      onDestory: props.onDestory || (() => {}),
       parts: (props.parts || [])
         .filter((part): part is { url: string; color?: string } => !!part.url)
         .map((part) => ({ ...part, url: part.url })),
+      ...(props.onAnimate ? { onAnimate: props.onAnimate } : {}),
+      ...(props.onFrame ? { onFrame: props.onFrame } : {}),
+      ...(props.onReady ? { onReady: props.onReady } : {}),
+      ...(props.onDestory ? { onDestory: props.onDestory } : {}),
       ...(typeof props.baseColor === 'string' && props.baseColor.trim().length > 0 ? { baseColor: props.baseColor } : {}),
       ...(Array.isArray(props.excludeBaseNodes) && props.excludeBaseNodes.length > 0 ? { excludeBaseNodes: props.excludeBaseNodes } : {}),
       ...(props.rigidBodyProps ? { rigidBodyProps: props.rigidBodyProps } : {}),

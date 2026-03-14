@@ -9,9 +9,7 @@ import './styles/BlueprintEditorPage.css';
 export function BlueprintEditorPage() {
   const navigate = useNavigate();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-
   if (!isLoggedIn) {
-    // Implement proper redirect or message
     return <div>Please log in to access the Blueprint Editor.</div>;
   }
 

@@ -38,9 +38,9 @@ describe('useKeyboard', () => {
   });
 
   describe('key mapping', () => {
-    it('KeyS를 누르면 forward가 true로 설정되어야 합니다', () => {
+    it('KeyW를 누르면 forward가 true로 설정되어야 합니다', () => {
       renderHook(() => useKeyboard());
-      act(() => fireKeyEvent('KeyS', 'keydown'));
+      act(() => fireKeyEvent('KeyW', 'keydown'));
       expect(mockExecuteCommand).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'input',
@@ -50,9 +50,9 @@ describe('useKeyboard', () => {
       );
     });
 
-    it('KeyW를 누르면 backward가 true로 설정되어야 합니다', () => {
+    it('KeyS를 누르면 backward가 true로 설정되어야 합니다', () => {
       renderHook(() => useKeyboard());
-      act(() => fireKeyEvent('KeyW', 'keydown'));
+      act(() => fireKeyEvent('KeyS', 'keydown'));
       expect(mockExecuteCommand).toHaveBeenCalledWith(
         expect.objectContaining({ data: { backward: true } }),
       );
@@ -108,9 +108,9 @@ describe('useKeyboard', () => {
   describe('key up', () => {
     it('키를 떼면 false로 설정되어야 합니다', () => {
       renderHook(() => useKeyboard());
-      act(() => fireKeyEvent('KeyS', 'keydown'));
+      act(() => fireKeyEvent('KeyW', 'keydown'));
       mockExecuteCommand.mockClear();
-      act(() => fireKeyEvent('KeyS', 'keyup'));
+      act(() => fireKeyEvent('KeyW', 'keyup'));
       expect(mockExecuteCommand).toHaveBeenCalledWith(
         expect.objectContaining({ data: { forward: false } }),
       );
@@ -118,7 +118,7 @@ describe('useKeyboard', () => {
 
     it('눌리지 않은 키를 떼면 무시되어야 합니다', () => {
       renderHook(() => useKeyboard());
-      act(() => fireKeyEvent('KeyS', 'keyup'));
+      act(() => fireKeyEvent('KeyW', 'keyup'));
       expect(mockExecuteCommand).not.toHaveBeenCalled();
     });
   });
@@ -126,9 +126,9 @@ describe('useKeyboard', () => {
   describe('duplicate key prevention', () => {
     it('이미 눌린 키를 다시 눌러도 중복 전송하지 않아야 합니다', () => {
       renderHook(() => useKeyboard());
-      act(() => fireKeyEvent('KeyS', 'keydown'));
+      act(() => fireKeyEvent('KeyW', 'keydown'));
       mockExecuteCommand.mockClear();
-      act(() => fireKeyEvent('KeyS', 'keydown'));
+      act(() => fireKeyEvent('KeyW', 'keydown'));
       expect(mockExecuteCommand).not.toHaveBeenCalled();
     });
   });
@@ -157,7 +157,7 @@ describe('useKeyboard', () => {
   describe('clearAllKeys', () => {
     it('모든 키를 false로 리셋해야 합니다', () => {
       const { result } = renderHook(() => useKeyboard());
-      act(() => fireKeyEvent('KeyS', 'keydown'));
+      act(() => fireKeyEvent('KeyW', 'keydown'));
       act(() => fireKeyEvent('KeyD', 'keydown'));
       mockExecuteCommand.mockClear();
       act(() => {
@@ -181,7 +181,7 @@ describe('useKeyboard', () => {
   describe('visibility change', () => {
     it('페이지가 숨겨지면 모든 키가 해제되어야 합니다', () => {
       renderHook(() => useKeyboard());
-      act(() => fireKeyEvent('KeyS', 'keydown'));
+      act(() => fireKeyEvent('KeyW', 'keydown'));
       mockExecuteCommand.mockClear();
 
       Object.defineProperty(document, 'hidden', { value: true, writable: true });
@@ -204,7 +204,7 @@ describe('useKeyboard', () => {
       const { unmount } = renderHook(() => useKeyboard());
       unmount();
       mockExecuteCommand.mockClear();
-      act(() => fireKeyEvent('KeyS', 'keydown'));
+      act(() => fireKeyEvent('KeyW', 'keydown'));
       expect(mockExecuteCommand).not.toHaveBeenCalled();
     });
   });

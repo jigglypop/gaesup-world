@@ -1,7 +1,7 @@
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
-import { AbstractSystem, SystemUpdateArgs, Autowired } from '@core/boilerplate';
+import { AbstractSystem, SystemUpdateArgs, Inject } from '@core/boilerplate';
 import { Profile, HandleError, ManageRuntime } from '@core/boilerplate';
 import type { GameStatesType } from '@core/world/components/Rideable/types';
 
@@ -39,7 +39,7 @@ export interface MotionUpdateArgs extends SystemUpdateArgs {
 
 @ManageRuntime({ autoStart: false })
 export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, MotionSystemOptions, MotionUpdateArgs> {
-  @Autowired()
+  @Inject(MotionService)
   private motionService!: MotionService;
 
   // Hot-path scratch objects to avoid per-frame allocations.

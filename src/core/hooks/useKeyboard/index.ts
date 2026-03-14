@@ -5,9 +5,9 @@ import { useGaesupStore } from '@stores/gaesupStore';
 import { InteractionBridge } from '../../interactions/bridge/InteractionBridge';
 
 const KEY_MAPPING: Record<string, string> = {
-  KeyW: 'backward',
+  KeyW: 'forward',
   KeyA: 'leftward',
-  KeyS: 'forward',
+  KeyS: 'backward',
   KeyD: 'rightward',
   ShiftLeft: 'shift',
   Space: 'space',
@@ -91,7 +91,16 @@ export const useKeyboard = (
         pressedKeys.current.add(event.code);
         if (event.code === 'Space') event.preventDefault();
 
-        if (enableClicker && event.code === 'KeyS' && isAutomationRunning) {
+        if (
+          enableClicker &&
+          isAutomationRunning &&
+          (
+            mappedKey === 'forward' ||
+            mappedKey === 'backward' ||
+            mappedKey === 'leftward' ||
+            mappedKey === 'rightward'
+          )
+        ) {
           stopAutomation();
           bridgeRef.current?.executeCommand({
             type: 'input',

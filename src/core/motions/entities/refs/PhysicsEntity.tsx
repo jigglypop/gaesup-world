@@ -95,12 +95,14 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const safeRotationY = props.rotation instanceof THREE.Euler ? props.rotation.y : 0;
     const outerGroupProps = props.outerGroupRef ? { ref: props.outerGroupRef } : {};
     const innerGroupProps = props.innerGroupRef ? { ref: props.innerGroupRef } : {};
+    const rigidBodyBehavior = props.isActive
+      ? { canSleep: false, ccd: true }
+      : { canSleep: true, ccd: false };
 
     return (
       <group {...outerGroupProps} userData={{ intangible: true }}>
         <RigidBody
-          canSleep={false}
-          ccd={true}
+          {...rigidBodyBehavior}
           colliders={false}
           ref={rigidBodyRef}
           {...(props.name ? { name: props.name } : {})}

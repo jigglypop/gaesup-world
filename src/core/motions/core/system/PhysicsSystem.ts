@@ -51,7 +51,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   private tempQuaternion = new THREE.Quaternion();
   private tempEuler = new THREE.Euler();
   private tempVector = new THREE.Vector3();
-  private movementScratch = new THREE.Vector3();
   private jumpScratch = new THREE.Vector3();
   private config: PhysicsConfigType;
 
@@ -153,7 +152,8 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     }
     this.lastPositionY = position.y;
 
-    const isOnTheGround = this.groundStableCount >= 2;
+    const isNearGround = position.y <= 0.5 && verticalSpeed < 0.5;
+    const isOnTheGround = isNearGround || this.groundStableCount >= 2;
     const isFalling = !isOnTheGround && velocity.y < -0.1;
 
     if (isOnTheGround) {
@@ -350,9 +350,10 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     input: { forward: boolean; backward: boolean; leftward: boolean; rightward: boolean; shift: boolean; space: boolean },
     config: PhysicsConfigType,
     gameStates: GameStatesType,
-    deltaTime: number
+    deltaTime: number,
+    out?: THREE.Vector3
   ): THREE.Vector3 {
-    const movement = this.movementScratch.set(0, 0, 0);
+    const movement = (out ?? new THREE.Vector3()).set(0, 0, 0);
     const speedMultiplier = input.shift ? 2 : 1;
     const targetSpeed = (config.maxSpeed ?? 10) * speedMultiplier;
     if (input.forward) movement.z += 1;
@@ -391,6 +392,13 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     source: { x: number; y: number; z: number }
   ): void {
     target.set(source.x, source.y, source.z);
+  }
+
+  protected override onDispose(): void {
+    this.directionComponent.dispose();
+    this.forceComponents = [];
+    this.keyStateCache.clear();
+    this.groundStableCount = 0;
   }
 
   /**

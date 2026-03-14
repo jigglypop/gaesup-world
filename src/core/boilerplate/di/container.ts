@@ -121,10 +121,15 @@ export class DIContainer {
 
   private autowireProperties(instance: object): void {
     const constructor = instance.constructor as Constructor
-    const autowiredProps = Reflect.getMetadata('autowired', constructor.prototype) || []
+    const autowiredProps =
+      Reflect.getMetadata('autowired', constructor) ||
+      Reflect.getMetadata('autowired', constructor.prototype) ||
+      []
 
     for (const prop of autowiredProps) {
-        const propertyType = Reflect.getMetadata('design:type', instance, prop)
+        const propertyType =
+          Reflect.getMetadata('design:type', constructor.prototype, prop) ||
+          Reflect.getMetadata('design:type', instance, prop)
         if (propertyType) {
             try {
                 (instance as Record<string, unknown>)[prop] = this.resolve(propertyType)

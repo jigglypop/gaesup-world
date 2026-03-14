@@ -24,7 +24,13 @@ function NPCPartPreview({ part }: NPCPartPreviewProps) {
 export function NPCPreview() {
   const editMode = useBuildingStore((state) => state.editMode);
   const hoverPosition = useBuildingStore((state) => state.hoverPosition);
-  const { templates, clothingSets, selectedTemplateId, selectedClothingSetId, previewAccessories } = useNPCStore();
+  const templates = useNPCStore((state) => state.templates);
+  const clothingSets = useNPCStore((state) => state.clothingSets);
+  const selectedTemplateId = useNPCStore((state) => state.selectedTemplateId);
+  const selectedClothingSetId = useNPCStore(
+    (state) => state.selectedClothingSetId
+  );
+  const previewAccessories = useNPCStore((state) => state.previewAccessories);
   
   if (editMode !== 'npc' || !hoverPosition || !selectedTemplateId) {
     return null;

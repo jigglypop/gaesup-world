@@ -1,4 +1,4 @@
-import React, { Suspense, useState } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 
 import { Environment, Grid } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
@@ -6,7 +6,7 @@ import { euler, Physics, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { WorldPageProps } from './types';
-import { Clicker, GroundClicker, GaesupController, GaeSupProps, GaesupWorld, GaesupWorldContent, Editor, useGaesupStore, FocusableObject, MiniMap } from '../../src';
+import { Clicker, GroundClicker, GaesupController, GaesupWorld, GaesupWorldContent, Editor, useGaesupStore, FocusableObject, MiniMap } from '../../src';
 import { BuildingController, useBuildingStore } from '../../src';
 import { usePlayerPosition } from '../../src/core/motions/hooks/usePlayerPosition';
 import { useStateSystem } from '../../src/core/motions/hooks/useStateSystem';
@@ -23,7 +23,7 @@ export { S3 };
 
 const cameraOption: CameraOptionType = {
   xDistance: 15,
-  yDistance: 8,
+  yDistance: 20,
   zDistance: 15,
   offset: new THREE.Vector3(0, 0, 0),
   enableCollision: true,
@@ -45,12 +45,8 @@ const cameraOption: CameraOptionType = {
 
 function CharacterWithSpeechBalloon() {
   const [showBalloon, setShowBalloon] = useState(true);
-  
-  // Use motion bridge for real-time position updates
   const { position: playerPosition } = usePlayerPosition({ updateInterval: 16 }); // ~60fps
-  
-  // Toggle speech balloon with 'T' key
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === 't' || e.key === 'T') {
         setShowBalloon(!showBalloon);
@@ -67,7 +63,7 @@ function CharacterWithSpeechBalloon() {
         <SpeechBalloon
           text="안녕"
           position={playerPosition}
-          offset={new THREE.Vector3(0, 5, 0)} // 고정 높이로 캐릭터 훨씬 위에
+          offset={new THREE.Vector3(0, 5, 0)} 
           visible={showBalloon}
         />
       )}
@@ -78,7 +74,6 @@ function CharacterWithSpeechBalloon() {
 function MainPageTools() {
   const [showInfo, setShowInfo] = useState(true);
   const [showTeleport, setShowTeleport] = useState(false);
-
   return (
     <>
       <div style={{
@@ -113,19 +108,11 @@ export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
         }}
         debug={EXAMPLE_CONFIG.debug}
         cameraOption={cameraOption}
-        airplane={{
-          maxSpeed: 30,
-          accelRatio: 2,
-          linearDamping: 0.8,
-          gravityScale: 0.3,
-          angleDelta: { x: 0.02, y: 0.02, z: 0.02 },
-          maxAngle: { x: Math.PI / 6, y: Math.PI, z: Math.PI / 6 }
-        }}
+
       >
         <Canvas
           shadows
           dpr={[1, 2]}
-          camera={{ position: [0, 10, 20], fov: 75, near: 0.1, far: 1000 }}
           style={{ width: '100vw', height: '100vh', position: 'fixed', top: 0, left: 0, zIndex: 0 }}
           frameloop="always"
         >
@@ -180,27 +167,7 @@ export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
                 <GroundClicker />
                 <RideableVehicles />
                 <BuildingController />
-                
-                {/* Character Speech Balloon */}
                 <CharacterWithSpeechBalloon />
-                
-                <GaeSupProps type="normal" text="Orange Box" position={[10, 1, 0]} showMinimap={true}>
-                  <FocusableObject position={[0, 0, 0]} focusDistance={10}>
-                    <mesh castShadow>
-                      <boxGeometry args={[2, 2, 2]} />
-                      <meshStandardMaterial color="orange" />
-                    </mesh>
-                  </FocusableObject>
-                </GaeSupProps>
-                
-                <GaeSupProps type="normal" text="Purple Sphere" position={[-10, 2, -10]} showMinimap={true}>
-                  <FocusableObject position={[0, 0, 0]} focusDistance={15}>
-                    <mesh castShadow>
-                      <sphereGeometry args={[1.5, 32, 32]} />
-                      <meshStandardMaterial color="purple" />
-                    </mesh>
-                  </FocusableObject>
-                </GaeSupProps>
               </Physics>
             </GaesupWorldContent>
           </Suspense>
@@ -213,8 +180,6 @@ export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
         />
         <RideableUIRenderer />
         <MainPageTools />
-        
-
       </GaesupWorld>
       {showEditor && <Editor />}
       {children}

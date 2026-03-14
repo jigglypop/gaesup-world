@@ -58,8 +58,25 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   const groupRef = useRef<THREE.Group>(null);
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const waypointIndexRef = useRef(0);
-  const { templates, clothingSets } = useNPCStore();
-  const template = templates.get(instance.templateId);
+  const template = useNPCStore(
+    useCallback(
+      (state) => state.templates.get(instance.templateId),
+      [instance.templateId]
+    )
+  );
+  const clothingSet = useNPCStore(
+    useCallback(
+      (state) =>
+        instance.currentClothingSetId
+          ? state.clothingSets.get(instance.currentClothingSetId)
+          : undefined,
+      [instance.currentClothingSetId]
+    )
+  );
+  const advanceNavigation = useNPCStore((state) => state.advanceNavigation);
+  const updateNavigationPosition = useNPCStore(
+    (state) => state.updateNavigationPosition
+  );
 
   const isNavigating = instance.navigation?.state === 'moving';
 
@@ -87,12 +104,11 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
 
     if (dist < ARRIVAL_THRESHOLD) {
       waypointIndexRef.current = idx + 1;
-      const store = useNPCStore.getState();
       if (idx + 1 >= waypoints.length) {
-        store.updateNavigationPosition(instance.id, [target[0], target[1], target[2]]);
-        store.advanceNavigation(instance.id);
+        updateNavigationPosition(instance.id, [target[0], target[1], target[2]]);
+        advanceNavigation(instance.id);
       } else {
-        store.advanceNavigation(instance.id);
+        advanceNavigation(instance.id);
       }
       return;
     }
@@ -126,11 +142,8 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   }
   const allParts: NPCPart[] = [];
   allParts.push(...template.baseParts);
-  if (instance.currentClothingSetId) {
-    const clothingSet = clothingSets.get(instance.currentClothingSetId);
-    if (clothingSet) {
-      allParts.push(...clothingSet.parts);
-    }
+  if (clothingSet) {
+    allParts.push(...clothingSet.parts);
   }
   if (template.accessoryParts) {
     allParts.push(...template.accessoryParts);
@@ -184,6 +197,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   if (fullModelUrl) {
     return (
       <PhysicsEntity
+        ref={rigidBodyRef}
         url={fullModelUrl}
         isActive={false}
         componentType="character"

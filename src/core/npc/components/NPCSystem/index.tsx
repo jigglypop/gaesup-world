@@ -15,12 +15,12 @@ const NPC_LOD_STRENGTH = 4;
 
 export function NPCSystem() {
   const { gl } = useThree();
-  const {
-    instances,
-    selectedTemplateId,
-    createInstanceFromTemplate,
-    setSelectedInstance
-  } = useNPCStore();
+  const instances = useNPCStore((state) => state.instances);
+  const selectedTemplateId = useNPCStore((state) => state.selectedTemplateId);
+  const createInstanceFromTemplate = useNPCStore(
+    (state) => state.createInstanceFromTemplate
+  );
+  const setSelectedInstance = useNPCStore((state) => state.setSelectedInstance);
   const editMode = useBuildingStore(state => state.editMode);
   const hoverPosition = useBuildingStore(state => state.hoverPosition);
   const isNPCMode = editMode === 'npc';

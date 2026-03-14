@@ -10,7 +10,7 @@ import {
   MemoizationManager,
   shouldUpdate
 } from '@utils/memoization';
-import { calcAngleByVector, calcNorm } from '@utils/vector';
+import { calcNorm } from '@utils/vector';
 
 import { InteractionSystem } from '../../../interactions/core/InteractionSystem';
 import { ActiveStateType } from '../../core/types';
@@ -37,6 +37,10 @@ export class DirectionComponent {
   private tempEuler = new THREE.Euler();
   private tempQuaternion = new THREE.Quaternion();
   private targetQuaternion = new THREE.Quaternion();
+  private cameraForward = new THREE.Vector3();
+  private cameraRight = new THREE.Vector3();
+  private desiredMovement = new THREE.Vector3();
+  private readonly upAxis = new THREE.Vector3(0, 1, 0);
 
   constructor(config: PhysicsConfigType) {
     this.interactionSystem = InteractionSystem.getInstance();
@@ -80,14 +84,14 @@ export class DirectionComponent {
       this.lastKeyboardState.backward !== keyboard.backward ||
       this.lastKeyboardState.leftward !== keyboard.leftward ||
       this.lastKeyboardState.rightward !== keyboard.rightward;
+    const hasKeyboardInput =
+      keyboard.forward || keyboard.backward || keyboard.leftward || keyboard.rightward;
     if (mouse.isActive) {
       this.handleMouseDirection(activeState, mouse, this.config, calcProp);
-    } else if (keyboardChanged) {
-      const hasKeyboardInput =
-        keyboard.forward || keyboard.backward || keyboard.leftward || keyboard.rightward;
-      if (hasKeyboardInput) {
-        this.handleKeyboardDirection(activeState, keyboard, this.config, controlMode);
-      }
+    } else if (hasKeyboardInput) {
+      this.handleKeyboardDirection(activeState, keyboard, this.config, controlMode, calcProp);
+    }
+    if (keyboardChanged || hasKeyboardInput) {
       this.lastKeyboardState = {
         forward: keyboard.forward,
         backward: keyboard.backward,
@@ -109,7 +113,7 @@ export class DirectionComponent {
     const keyboard = this.interactionSystem.getKeyboardRef();
     const { forward, backward, leftward, rightward } = keyboard;
     const xAxis = Number(rightward) - Number(leftward);
-    const zAxis = Number(backward) - Number(forward);
+    const zAxis = Number(forward) - Number(backward);
 
     activeState.euler.y -= xAxis * (Math.PI / 64);
 
@@ -138,7 +142,7 @@ export class DirectionComponent {
     let boost = 1;
     if (shift) boost *= accelRatio;
     if (space) boost *= 1.5;
-    const upDown = Number(forward) - Number(backward);
+    const upDown = Number(backward) - Number(forward);
     const leftRight = Number(leftward) - Number(rightward);
     if (controlMode === 'chase') {
       activeState.euler.y += leftRight * angleDelta.y * 0.5;
@@ -283,20 +287,48 @@ export class DirectionComponent {
     keyboard: PhysicsState['keyboard'],
     characterConfig: PhysicsConfigType,
     controlMode?: string,
+    calcProp?: PhysicsCalcProps,
   ): void {
     void characterConfig;
     void controlMode;
-    const { forward, backward, leftward, rightward } = keyboard;
-    const dirX = Number(rightward) - Number(leftward);
-    const dirZ = Number(backward) - Number(forward);
-    if (dirX === 0 && dirZ === 0) return;
-    // 원래의 간단한 로직으로 복원
-    const tempVector3 = this.vectorCache.getTempVector(5);
-    tempVector3.set(dirX, 0, dirZ);
-    const angle = calcAngleByVector(tempVector3);
-    activeState.euler.y = angle;
-    activeState.dir.set(dirX, 0, dirZ);
+    const desiredMovement = this.resolveKeyboardMovementDirection(keyboard, calcProp);
+    if (!desiredMovement) return;
+
+    // Character visuals are model-offset by PI and impulse applies `-dir`,
+    // so store the inverse of the desired world-space movement.
+    activeState.dir.copy(desiredMovement).multiplyScalar(-1);
+    activeState.euler.y = Math.atan2(desiredMovement.x, desiredMovement.z);
     activeState.direction.copy(activeState.dir);
+  }
+
+  private resolveKeyboardMovementDirection(
+    keyboard: PhysicsState['keyboard'],
+    calcProp?: PhysicsCalcProps,
+  ): THREE.Vector3 | null {
+    const forwardAxis = Number(keyboard.forward) - Number(keyboard.backward);
+    const rightAxis = Number(keyboard.rightward) - Number(keyboard.leftward);
+    if (forwardAxis === 0 && rightAxis === 0) {
+      return null;
+    }
+
+    const desiredMovement = this.desiredMovement.set(0, 0, 0);
+    const camera = calcProp?.state?.camera;
+    if (camera) {
+      camera.getWorldDirection(this.cameraForward);
+      this.cameraForward.y = 0;
+      if (this.cameraForward.lengthSq() > 0.000001) {
+        this.cameraForward.normalize();
+        this.cameraRight.crossVectors(this.cameraForward, this.upAxis).normalize();
+        desiredMovement.addScaledVector(this.cameraForward, forwardAxis);
+        desiredMovement.addScaledVector(this.cameraRight, rightAxis);
+      }
+    }
+
+    if (desiredMovement.lengthSq() <= 0.000001) {
+      desiredMovement.set(rightAxis, 0, -forwardAxis);
+    }
+
+    return desiredMovement.normalize();
   }
 
   private emitRotationUpdate(

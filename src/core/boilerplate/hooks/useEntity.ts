@@ -65,16 +65,15 @@ export function useEntity(options: UseEntityOptions) {
   );
 
   // 3. Physics Logic
-  if (active) {
-    const physicsProps: PhysicsCalculationProps = {
-      rigidBodyRef,
-      ...(outerGroupRef ? { outerGroupRef } : {}),
-      ...(innerGroupRef ? { innerGroupRef } : {}),
-      ...(colliderRef ? { colliderRef } : {}),
-      ...(groundRay ? { groundRay } : {}),
-    };
-    usePhysicsBridge(physicsProps);
-  }
+  const physicsProps: PhysicsCalculationProps & { enabled: boolean } = {
+    rigidBodyRef,
+    enabled: active,
+    ...(outerGroupRef ? { outerGroupRef } : {}),
+    ...(innerGroupRef ? { innerGroupRef } : {}),
+    ...(colliderRef ? { colliderRef } : {}),
+    ...(groundRay ? { groundRay } : {}),
+  };
+  usePhysicsBridge(physicsProps);
 
   // 4. Collision Logic
   const collisionHandlers = useCollisionHandler(options);

@@ -28,7 +28,7 @@ export function useMotionSetup(
     motionBridgeRef.current.register(
       entityId,
       modeType === 'vehicle' || modeType === 'airplane'
-        ? 'vehicle'
+        ? modeType
         : 'character',
       rigidBodyRef.current
     );

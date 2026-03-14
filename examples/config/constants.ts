@@ -1,9 +1,7 @@
 import { ExampleConfig, DevMode, EditorConfig } from './types';
 
 export const S3 = 'https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf';
-// Note: local `public/gltf/*` assets are not bundled in this repo.
-// Use a publicly accessible model URL for examples.
-export const CHARACTER_URL = S3 + '/gorani.glb';
+export const CHARACTER_URL = '/gltf/bbueng.glb';
 export const AIRPLANE_URL = S3 + '/gaebird.glb';
 export const VEHICLE_URL = S3 + '/gorani.glb';
 
@@ -14,15 +12,14 @@ export const EXAMPLE_CONFIG: ExampleConfig = {
     panels: {
       hierarchy: true,
       inspector: true,
-      assetBrowser: true,
-      nodeEditor: true,
+      assetBrowser: true
     }
   },
   debug: false,
   showPerformance: true,
   showGrid: false,
   showAxes: false,
-};
+}; 
 
 export const DEFAULT_DEV_MODE: DevMode = {
   enable: true,
