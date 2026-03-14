@@ -61,6 +61,7 @@ export interface MouseState {
   angle: number;
   isActive: boolean;
   shouldRun: boolean;
+  isLookAround?: boolean;
   buttons: {
     left: boolean;
     right: boolean;

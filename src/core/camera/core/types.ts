@@ -92,6 +92,8 @@ export interface CameraConfig {
   distance?: { x: number; y: number; z: number; };
   smoothing?: { position: number; rotation: number; fov: number; };
   enableCollision?: boolean;
+  orbitYaw?: number;
+  orbitPitch?: number;
   height?: number;
   lockTarget?: boolean;
   followSpeed?: number;
@@ -145,6 +147,8 @@ export interface CameraSystemConfig {
   };
   bounds?: CameraBounds; // optional로 변경
   enableCollision: boolean;
+  orbitYaw?: number;
+  orbitPitch?: number;
   smoothing?: {
     position: number;
     rotation: number;

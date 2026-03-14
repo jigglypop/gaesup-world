@@ -15,6 +15,8 @@ export interface CameraSystemConfig {
   fov: number;
   zoom: number;
   enableCollision: boolean;
+  orbitYaw?: number;
+  orbitPitch?: number;
   minDistance?: number;
   maxDistance?: number;
   offset?: { x: number; y: number; z: number };

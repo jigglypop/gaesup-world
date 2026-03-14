@@ -23,6 +23,7 @@ export class ThirdPersonController extends BaseController {
       zDistance: state.config.distance.z * zoom,
       mode: 'thirdPerson',
     }, this.offset);
+    this.applyOrbitOffset(this.offset, state);
     return this.target.copy(position).add(this.offset);
   }
 } 

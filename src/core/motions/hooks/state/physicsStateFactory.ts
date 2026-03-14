@@ -27,6 +27,7 @@ function createInitialPhysicsState(
       angle: input.mouse.angle,
       isActive: input.mouse.isActive,
       shouldRun: input.mouse.shouldRun,
+      isLookAround: input.mouse.isLookAround,
     },
     automationOption,
     modeType: modeType as 'character' | 'vehicle' | 'airplane',

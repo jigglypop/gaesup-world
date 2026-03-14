@@ -42,6 +42,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
 
   private keyStateCache = new Map<number, { lastKeyE: boolean; lastKeyR: boolean }>();
   private isCurrentlyJumping = false;
+  private lastJumpPressed = false;
   private lastMovingState = false;
   private lastRunningState = false;
 
@@ -173,12 +174,22 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     const { shift, space, forward, backward, leftward, rightward } = keyboard;
     const isKeyboardMoving = forward || backward || leftward || rightward;
     const isMoving = isKeyboardMoving || mouse.isActive;
-    const isRunning = (isKeyboardMoving && shift) || (mouse.isActive && mouse.shouldRun);
-    
-    if (space && !this.isCurrentlyJumping) {
+    const isRunning =
+      (isKeyboardMoving && shift && !mouse.isLookAround) ||
+      (mouse.isActive && mouse.shouldRun);
+
+    const shouldStartJump =
+      physicsState.modeType === 'character' &&
+      space &&
+      !this.lastJumpPressed &&
+      gameStatesRef.isOnTheGround &&
+      !this.isCurrentlyJumping;
+
+    if (shouldStartJump) {
       this.isCurrentlyJumping = true;
       gameStatesRef.isJumping = true;
     }
+    this.lastJumpPressed = space;
     
     this.updateStateIfChanged('isMoving', isMoving, () => {
       this.lastMovingState = isMoving;
@@ -218,6 +229,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     gs.isNotRunning = true;
     gs.isJumping = false;
     this.isCurrentlyJumping = false;
+    this.lastJumpPressed = physicsState.keyboard.space;
     this.lastMovingState = false;
     this.lastRunningState = false;
   }
@@ -347,14 +359,23 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   @HandleError()
   @Profile()
   public calculateMovement(
-    input: { forward: boolean; backward: boolean; leftward: boolean; rightward: boolean; shift: boolean; space: boolean },
+    input: {
+      forward: boolean;
+      backward: boolean;
+      leftward: boolean;
+      rightward: boolean;
+      shift: boolean;
+      space: boolean;
+      isLookAround?: boolean;
+    },
     config: PhysicsConfigType,
     gameStates: GameStatesType,
     deltaTime: number,
     out?: THREE.Vector3
   ): THREE.Vector3 {
     const movement = (out ?? new THREE.Vector3()).set(0, 0, 0);
-    const speedMultiplier = input.shift ? 2 : 1;
+    const isRunning = input.shift && !input.isLookAround;
+    const speedMultiplier = isRunning ? 2 : 1;
     const targetSpeed = (config.maxSpeed ?? 10) * speedMultiplier;
     if (input.forward) movement.z += 1;
     if (input.backward) movement.z -= 1;
@@ -362,8 +383,8 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     if (input.rightward) movement.x -= 1;
     if (movement.length() > 0) {
       movement.normalize().multiplyScalar(targetSpeed * deltaTime);
-      gameStates.isRunning = input.shift;
-      gameStates.isNotRunning = !input.shift;
+      gameStates.isRunning = isRunning;
+      gameStates.isNotRunning = !isRunning;
     }
     return movement;
   }
@@ -399,6 +420,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     this.forceComponents = [];
     this.keyStateCache.clear();
     this.groundStableCount = 0;
+    this.lastJumpPressed = false;
   }
 
   /**

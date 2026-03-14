@@ -14,6 +14,11 @@ export abstract class BaseController implements ICameraController {
   private focusTarget = new THREE.Vector3();
   private focusDirection = new THREE.Vector3();
   private focusTargetPosition = new THREE.Vector3();
+  private orbitRight = new THREE.Vector3();
+  private orbitYawQuaternion = new THREE.Quaternion();
+  private orbitPitchQuaternion = new THREE.Quaternion();
+  private readonly xAxis = new THREE.Vector3(1, 0, 0);
+  private readonly yAxis = new THREE.Vector3(0, 1, 0);
 
   private applyDefaults(state: CameraSystemState): void {
     const defaults = this.defaultConfig;
@@ -51,6 +56,32 @@ export abstract class BaseController implements ICameraController {
   calculateLookAt(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
     void state;
     return activeStateUtils.getPosition(props.activeState);
+  }
+
+  protected applyOrbitOffset(offset: THREE.Vector3, state: CameraSystemState): THREE.Vector3 {
+    const orbitYaw = state.config.orbitYaw ?? 0;
+    const orbitPitch = state.config.orbitPitch ?? 0;
+    if (orbitYaw === 0 && orbitPitch === 0) {
+      return offset;
+    }
+
+    if (orbitYaw !== 0) {
+      this.orbitYawQuaternion.setFromAxisAngle(this.yAxis, orbitYaw);
+      offset.applyQuaternion(this.orbitYawQuaternion);
+    }
+
+    if (orbitPitch !== 0) {
+      this.orbitRight.crossVectors(offset, this.yAxis);
+      if (this.orbitRight.lengthSq() <= 1e-6) {
+        this.orbitRight.copy(this.xAxis);
+      } else {
+        this.orbitRight.normalize();
+      }
+      this.orbitPitchQuaternion.setFromAxisAngle(this.orbitRight, orbitPitch);
+      offset.applyQuaternion(this.orbitPitchQuaternion);
+    }
+
+    return offset;
   }
   
   @HandleError()

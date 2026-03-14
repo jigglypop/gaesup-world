@@ -273,6 +273,50 @@ describe('PhysicsSystem', () => {
       system.calculate(calcProp, physicsState);
       expect(physicsState.gameStates.isJumping).toBe(true);
     });
+
+    it('space를 누르고 유지해도 점프가 연속 재트리거되면 안 됩니다', () => {
+      const mockRigidBody = createMockRigidBody();
+      const calcProp = {
+        rigidBodyRef: { current: mockRigidBody },
+        innerGroupRef: { current: new THREE.Group() },
+      } as unknown as PhysicsCalcProps;
+      const physicsState = createPhysicsState({
+        keyboard: {
+          forward: false, backward: false, leftward: false, rightward: false,
+          shift: false, space: true, keyZ: false, keyR: false, keyF: false,
+          keyE: false, escape: false,
+        },
+      });
+
+      system.calculate(calcProp, physicsState);
+      expect(physicsState.gameStates.isJumping).toBe(true);
+
+      physicsState.gameStates.isJumping = false;
+      system.calculate(calcProp, physicsState);
+      expect(physicsState.gameStates.isJumping).toBe(false);
+    });
+
+    it('공중에서는 space를 눌러도 점프가 시작되면 안 됩니다', () => {
+      const mockRigidBody = createMockRigidBody({
+        translation: jest.fn().mockReturnValue({ x: 0, y: 10, z: 0 }),
+        linvel: jest.fn().mockReturnValue({ x: 0, y: 0, z: 0 }),
+      });
+      const calcProp = {
+        rigidBodyRef: { current: mockRigidBody },
+        innerGroupRef: { current: new THREE.Group() },
+      } as unknown as PhysicsCalcProps;
+      const physicsState = createPhysicsState({
+        keyboard: {
+          forward: false, backward: false, leftward: false, rightward: false,
+          shift: false, space: true, keyZ: false, keyR: false, keyF: false,
+          keyE: false, escape: false,
+        },
+      });
+
+      system.calculate(calcProp, physicsState);
+      expect(physicsState.gameStates.isOnTheGround).toBe(false);
+      expect(physicsState.gameStates.isJumping).toBe(false);
+    });
   });
 
   describe('calculateMovement', () => {

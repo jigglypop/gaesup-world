@@ -24,6 +24,7 @@ const createDefaultInteractionState = (): InteractionState => ({
     angle: 0,
     isActive: false,
     shouldRun: false,
+    isLookAround: false,
     buttons: { left: false, right: false, middle: false },
     wheel: 0,
     position: new THREE.Vector2()

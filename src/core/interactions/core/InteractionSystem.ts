@@ -21,7 +21,7 @@ export class InteractionSystem extends AbstractSystem<InteractionSystemState, In
     super(
       {
         keyboard: { forward: false, backward: false, leftward: false, rightward: false, shift: false, space: false, keyZ: false, keyR: false, keyF: false, keyE: false, escape: false },
-        mouse: { target: new THREE.Vector3(), angle: 0, isActive: false, shouldRun: false, buttons: { left: false, right: false, middle: false }, wheel: 0, position: new THREE.Vector2() },
+        mouse: { target: new THREE.Vector3(), angle: 0, isActive: false, shouldRun: false, isLookAround: false, buttons: { left: false, right: false, middle: false }, wheel: 0, position: new THREE.Vector2() },
         gamepad: { connected: false, leftStick: new THREE.Vector2(), rightStick: new THREE.Vector2(), triggers: { left: 0, right: 0 }, buttons: {}, vibration: { weak: 0, strong: 0 } },
         touch: { touches: [], gestures: { pinch: 1, rotation: 0, pan: new THREE.Vector2() } },
         lastUpdate: 0,

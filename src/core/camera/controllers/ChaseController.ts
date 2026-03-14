@@ -25,6 +25,7 @@ export class ChaseController extends BaseController {
       euler,
       mode: 'chase',
     }, this.offset);
+    this.applyOrbitOffset(this.offset, state);
     return this.target.copy(position).add(this.offset);
   }
 } 

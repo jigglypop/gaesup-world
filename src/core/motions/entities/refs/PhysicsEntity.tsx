@@ -98,6 +98,20 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const rigidBodyBehavior = props.isActive
       ? { canSleep: false, ccd: true }
       : { canSleep: true, ccd: false };
+    const collider = useMemo(() => {
+      const width = Math.max(size.x, 0.1);
+      const depth = Math.max(size.z, 0.1);
+      const bodyRadius =
+        props.componentType === 'character'
+          ? Math.max(0.18, Math.min(width, depth) * 0.35)
+          : Math.max(0.2, width * 1.2);
+      const bodyHalfHeight = Math.max(0.05, size.y * 0.5 - bodyRadius);
+      return {
+        halfHeight: bodyHalfHeight,
+        radius: bodyRadius,
+        y: bodyHalfHeight + bodyRadius,
+      };
+    }, [props.componentType, size.x, size.y, size.z]);
 
     return (
       <group {...outerGroupProps} userData={{ intangible: true }}>
@@ -119,8 +133,8 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
           {!props.isNotColliding && (
             <CapsuleCollider
               ref={props.colliderRef}
-              args={[(size.y / 2 - size.x) * 1.2, size.x * 1.2]}
-              position={[0, size.x * 1.2, 0]}
+              args={[collider.halfHeight, collider.radius]}
+              position={[0, collider.y, 0]}
             />
           )}
           <InnerGroupRef

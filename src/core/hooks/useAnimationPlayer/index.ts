@@ -26,10 +26,10 @@ export function useAnimationPlayer(active: boolean) {
     return {
       isMoving: isKeyboardMoving || isPointerMoving,
       isRunning:
-        (keyboard?.shift && isKeyboardMoving) ||
+        (!!keyboard?.shift && !mouse?.isLookAround && isKeyboardMoving) ||
         (mouse?.shouldRun && isPointerMoving && automation?.queue.isRunning),
     };
-  }, [keyboard.forward, keyboard.backward, keyboard.leftward, keyboard.rightward, keyboard.shift, mouse.isActive, mouse.shouldRun, automation]);
+  }, [keyboard.forward, keyboard.backward, keyboard.leftward, keyboard.rightward, keyboard.shift, mouse.isActive, mouse.shouldRun, mouse.isLookAround, automation]);
 
   const autoActiveTag = useMemo(() => {
     if (gameStates?.isJumping) return 'jump';

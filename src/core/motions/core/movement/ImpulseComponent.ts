@@ -88,14 +88,14 @@ export class ImpulseComponent {
     const { activeState } = physicsState;
     const keyboard = this.interactionSystem.getKeyboardRef();
     const { maxSpeed = 10, accelRatio = 2 } = this.config;
-    const { shift } = keyboard;
+    const isBoosting = keyboard.shift && !physicsState.mouse.isLookAround;
     const velocity = rigidBodyRef.current.linvel();
     // Avoid sqrt: compare squared speed to squared maxSpeed.
     const safeMaxSpeed = Math.max(0, maxSpeed);
     const speedSq = velocity.x * velocity.x + velocity.z * velocity.z;
     if (speedSq < safeMaxSpeed * safeMaxSpeed) {
       const M = rigidBodyRef.current.mass();
-      const speed = shift ? accelRatio : 1;
+      const speed = isBoosting ? accelRatio : 1;
       this.scratchImpulse.x = activeState.dir.x * M * speed;
       this.scratchImpulse.y = 0;
       this.scratchImpulse.z = activeState.dir.z * M * speed;

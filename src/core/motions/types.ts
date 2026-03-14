@@ -59,6 +59,7 @@ export interface PhysicsState {
     angle: number;
     isActive: boolean;
     shouldRun: boolean;
+    isLookAround?: boolean;
   };
   automationOption: AutomationState;
   modeType: ModeType;
