@@ -144,6 +144,23 @@ function pushQuad(
   pushVertex(d, bottomColor);
 }
 
+function pushGeometryQuad(
+  positions: number[],
+  a: [number, number, number],
+  b: [number, number, number],
+  c: [number, number, number],
+  d: [number, number, number],
+) {
+  positions.push(
+    a[0], a[1], a[2],
+    b[0], b[1], b[2],
+    c[0], c[1], c[2],
+    a[0], a[1], a[2],
+    c[0], c[1], c[2],
+    d[0], d[1], d[2],
+  );
+}
+
 function buildTerrainGeometry(subjectTiles: TileLike[], supportTiles: TileLike[], baseColor: THREE.Color): TerrainBuild {
   const positions: number[] = [];
   const colors: number[] = [];
@@ -290,6 +307,107 @@ function buildTerrainGeometry(subjectTiles: TileLike[], supportTiles: TileLike[]
   }
 
   return { sideGeometry, rocks };
+}
+
+function shouldCloseStairBack(tile: TileLike, supportTiles: TileLike[]): boolean {
+  const boundsList = supportTiles.map(buildTileBounds);
+  const { tileSize, totalHeight, rotation } = getStairLayout(tile);
+  const [offsetX, offsetZ] = rotateXZ(0, tileSize / 2 + 0.04, rotation);
+  const supportY = sampleSupportHeight(boundsList, tile.id, tile.position.x + offsetX, tile.position.z + offsetZ);
+  return supportY + 0.02 < totalHeight;
+}
+
+function buildStairGeometry(tile: TileLike, closeBack: boolean): THREE.BufferGeometry {
+  const geometry = new THREE.BufferGeometry();
+  const positions: number[] = [];
+  const { tileSize, stepCount, stepHeight, stepDepth, totalHeight } = getStairLayout(tile);
+  const half = tileSize / 2;
+
+  for (let i = 0; i < stepCount; i++) {
+    const z0 = -half + i * stepDepth;
+    const z1 = z0 + stepDepth;
+    const topY = stepHeight * (i + 1);
+    const prevY = stepHeight * i;
+
+    pushGeometryQuad(
+      positions,
+      [-half, topY, z0],
+      [-half, topY, z1],
+      [half, topY, z1],
+      [half, topY, z0],
+    );
+
+    pushGeometryQuad(
+      positions,
+      [-half, prevY, z0],
+      [-half, topY, z0],
+      [half, topY, z0],
+      [half, prevY, z0],
+    );
+
+    pushGeometryQuad(
+      positions,
+      [-half, 0, z0],
+      [-half, 0, z1],
+      [-half, topY, z1],
+      [-half, topY, z0],
+    );
+
+    pushGeometryQuad(
+      positions,
+      [half, 0, z1],
+      [half, 0, z0],
+      [half, topY, z0],
+      [half, topY, z1],
+    );
+  }
+
+  if (closeBack) {
+    pushGeometryQuad(
+      positions,
+      [-half, 0, half],
+      [half, 0, half],
+      [half, totalHeight, half],
+      [-half, totalHeight, half],
+    );
+  }
+
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function StairTileMesh({
+  tile,
+  material,
+  supportTiles,
+}: {
+  tile: TileLike;
+  material: THREE.Material;
+  supportTiles: TileLike[];
+}) {
+  const rotation = tile.rotation ?? 0;
+  const closeBack = useMemo(() => shouldCloseStairBack(tile, supportTiles), [supportTiles, tile]);
+  const geometry = useMemo(() => buildStairGeometry(tile, closeBack), [tile, closeBack]);
+
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
+
+  return (
+    <mesh
+      position={[tile.position.x, 0, tile.position.z]}
+      rotation={[0, rotation, 0]}
+      geometry={geometry}
+      material={material}
+      castShadow
+      receiveShadow
+    />
+  );
 }
 
 export function TileSystem({ 
@@ -683,35 +801,14 @@ export function TileSystem({
           );
         })}
 
-        {stairTiles.map((tile) => {
-          const { tileSize, stepCount, stepHeight, stepDepth, rotation } = getStairLayout(tile);
-
-          return (
-            <group
-              key={`${tile.id}-stairs`}
-              position={[tile.position.x, 0, tile.position.z]}
-              rotation={[0, rotation, 0]}
-            >
-              {Array.from({ length: stepCount }, (_, index) => {
-                const stepBoxHeight = stepHeight * (index + 1);
-                const centerY = stepBoxHeight / 2;
-                const localZ = -tileSize / 2 + stepDepth * index + stepDepth / 2;
-
-                return (
-                  <mesh
-                    key={`${tile.id}-stairs-step-${index}`}
-                    position={[0, centerY, localZ]}
-                    material={material}
-                    castShadow
-                    receiveShadow
-                  >
-                    <boxGeometry args={[tileSize, stepBoxHeight, stepDepth]} />
-                  </mesh>
-                );
-              })}
-            </group>
-          );
-        })}
+        {stairTiles.map((tile) => (
+          <StairTileMesh
+            key={`${tile.id}-stairs`}
+            tile={tile}
+            material={material}
+            supportTiles={tileGroup.tiles}
+          />
+        ))}
 
         {rampTiles.map((tile) => {
           const { tileSize, totalHeight, rotation } = getRampLayout(tile);
@@ -754,7 +851,7 @@ export function TileSystem({
         ))}
         
         {nonFlagObjects.map((tile) => (
-          <TileObject key={`${tile.id}-object`} tile={tile} />
+          <TileObject key={`${tile.id}-object`} tile={tile} tiles={tileGroup.tiles} />
         ))}
 
         {flagTiles.length > 0 && (
