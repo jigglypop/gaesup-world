@@ -2,12 +2,31 @@ import React, { useMemo, useCallback } from 'react';
 
 import { useAuthStore } from '../../../../admin/store/authStore';
 import { useNPCStore } from '../../../npc/stores/npcStore';
+import type { TileObjectType, TileShapeType } from '../../types';
 import { useBuildingStore } from '../../stores/buildingStore';
 import './styles.css';
 
 export type BuildingUIProps = {
   onClose?: () => void;
 };
+
+const TILE_OBJECT_OPTIONS: { type: TileObjectType; label: string }[] = [
+  { type: 'none', label: 'None' },
+  { type: 'water', label: 'Water' },
+  { type: 'grass', label: 'Grass' },
+  { type: 'fire', label: 'Fire' },
+  { type: 'sand', label: 'Sand' },
+  { type: 'snowfield', label: 'Snowfield' },
+  { type: 'flag', label: 'Flag' },
+  { type: 'billboard', label: 'Billboard' },
+];
+
+const TILE_SHAPE_OPTIONS: { type: TileShapeType; label: string }[] = [
+  { type: 'box', label: 'Box' },
+  { type: 'stairs', label: 'Stairs' },
+  { type: 'round', label: 'Round' },
+  { type: 'ramp', label: 'Ramp' },
+];
 
 export function BuildingUI({ onClose }: BuildingUIProps) {
   const { 
@@ -16,6 +35,12 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     isInEditMode, 
     currentTileMultiplier, 
     setTileMultiplier,
+    currentTileHeight,
+    setTileHeight,
+    currentTileShape,
+    setTileShape,
+    currentTileRotation,
+    setTileRotation,
     currentWallRotation,
     setWallRotation,
     wallCategories,
@@ -55,6 +80,14 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
   const tileCategoriesArray = useMemo(() => Array.from(tileCategories.values()), [tileCategories]);
   const wallCategoriesArray = useMemo(() => Array.from(wallCategories.values()), [wallCategories]);
   const npcTemplatesArray = useMemo(() => Array.from(npcTemplates.values()), [npcTemplates]);
+  const selectedTileObjectLabel = useMemo(
+    () => TILE_OBJECT_OPTIONS.find((option) => option.type === selectedTileObjectType)?.label ?? selectedTileObjectType,
+    [selectedTileObjectType],
+  );
+  const selectedTileShapeLabel = useMemo(
+    () => TILE_SHAPE_OPTIONS.find((option) => option.type === currentTileShape)?.label ?? currentTileShape,
+    [currentTileShape],
+  );
   
   // Callbacks
   const handleEditModeClose = useCallback(() => {
@@ -308,34 +341,64 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                     </button>
                   </div>
                 </div>
+
+                <div className="building-ui-size-group">
+                  <span className="building-ui-label">Tile Height:</span>
+                  <div className="building-ui-size-buttons">
+                    {[0, 1, 2, 3, 4].map((height) => (
+                      <button
+                        key={height}
+                        onClick={() => setTileHeight(height)}
+                        className={`building-ui-size-button ${currentTileHeight === height ? 'active' : ''}`}
+                      >
+                        {height}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="building-ui-size-group">
+                  <span className="building-ui-label">Tile Shape:</span>
+                  <div className="building-ui-size-buttons">
+                    {TILE_SHAPE_OPTIONS.map((shape) => (
+                      <button
+                        key={shape.type}
+                        onClick={() => setTileShape(shape.type)}
+                        className={`building-ui-size-button ${currentTileShape === shape.type ? 'active' : ''}`}
+                      >
+                        {shape.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="building-ui-size-group">
+                  <span className="building-ui-label">Tile Rotation:</span>
+                  <div className="building-ui-size-buttons">
+                    {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((rotation, index) => (
+                      <button
+                        key={rotation}
+                        onClick={() => setTileRotation(rotation)}
+                        className={`building-ui-size-button ${Math.abs(currentTileRotation - rotation) < 0.0001 ? 'active' : ''}`}
+                      >
+                        {index * 90}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 
                 <div className="building-ui-object-group">
                   <span className="building-ui-label">Tile Object:</span>
                   <div className="building-ui-object-buttons">
-                    <button
-                      onClick={() => setSelectedTileObjectType('none')}
-                      className={`building-ui-object-button ${selectedTileObjectType === 'none' ? 'active' : ''}`}
-                    >
-                      None
-                    </button>
-                    <button
-                      onClick={() => setSelectedTileObjectType('water')}
-                      className={`building-ui-object-button ${selectedTileObjectType === 'water' ? 'active' : ''}`}
-                    >
-                      Water
-                    </button>
-                    <button
-                      onClick={() => setSelectedTileObjectType('grass')}
-                      className={`building-ui-object-button ${selectedTileObjectType === 'grass' ? 'active' : ''}`}
-                    >
-                      Grass
-                    </button>
-                    <button
-                      onClick={() => setSelectedTileObjectType('flag')}
-                      className={`building-ui-object-button ${selectedTileObjectType === 'flag' ? 'active' : ''}`}
-                    >
-                      Flag
-                    </button>
+                    {TILE_OBJECT_OPTIONS.map((option) => (
+                      <button
+                        key={option.type}
+                        onClick={() => setSelectedTileObjectType(option.type)}
+                        className={`building-ui-object-button ${selectedTileObjectType === option.type ? 'active' : ''}`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
                 
@@ -343,7 +406,9 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                   <p>Category: {tileCategories.get(selectedTileCategoryId || '')?.name}</p>
                   <p>Type: {tileGroups.get(selectedTileGroupId || '')?.name}</p>
                   <p>Size: {currentTileMultiplier}x{currentTileMultiplier} ({currentTileMultiplier * 4}m)</p>
-                  <p>Object: {selectedTileObjectType === 'none' ? 'None' : selectedTileObjectType}</p>
+                  <p>Height: {currentTileHeight}</p>
+                  <p>Shape: {selectedTileShapeLabel}</p>
+                  <p>Object: {selectedTileObjectLabel}</p>
                   <p>Click to place tiles</p>
                   <p>Red = Occupied, Green = Available</p>
                 </div>

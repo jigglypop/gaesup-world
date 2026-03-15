@@ -41,7 +41,8 @@ export interface WallGroupConfig {
   walls: WallConfig[];
 }
 
-export type TileObjectType = 'water' | 'grass' | 'flag' | 'fire' | 'billboard' | 'none';
+export type TileObjectType = 'water' | 'grass' | 'sand' | 'snowfield' | 'flag' | 'fire' | 'billboard' | 'none';
+export type TileShapeType = 'box' | 'stairs' | 'round' | 'ramp';
 
 export interface TileConfig {
   id: string;
@@ -49,6 +50,7 @@ export interface TileConfig {
   tileGroupId: string;
   size?: number;
   rotation?: number;
+  shape?: TileShapeType;
   objectType?: TileObjectType;
   objectConfig?: {
     flagTexture?: string;

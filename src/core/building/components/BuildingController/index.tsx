@@ -25,6 +25,7 @@ export function BuildingController() {
   const isEditing = editMode !== 'none';
   const setHoverPosition = useBuildingStore((s) => s.setHoverPosition);
   const setWallRotation = useBuildingStore((s) => s.setWallRotation);
+  const setTileRotation = useBuildingStore((s) => s.setTileRotation);
   const initialized = useBuildingStore((s) => s.initialized);
   const initializeDefaults = useBuildingStore((s) => s.initializeDefaults);
 
@@ -44,18 +45,23 @@ export function BuildingController() {
   }, [initialized, initializeDefaults]);
 
   useEffect(() => {
-    if (editMode !== 'wall') return;
+    if (editMode !== 'wall' && editMode !== 'tile') return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      const applyRotation = (rotation: number) => {
+        if (editMode === 'wall') setWallRotation(rotation);
+        if (editMode === 'tile') setTileRotation(rotation);
+      };
+
       switch (e.key) {
-        case 'ArrowUp':    setWallRotation(0); break;
-        case 'ArrowRight': setWallRotation(Math.PI / 2); break;
-        case 'ArrowDown':  setWallRotation(Math.PI); break;
-        case 'ArrowLeft':  setWallRotation(Math.PI * 1.5); break;
+        case 'ArrowUp':    applyRotation(0); break;
+        case 'ArrowRight': applyRotation(Math.PI / 2); break;
+        case 'ArrowDown':  applyRotation(Math.PI); break;
+        case 'ArrowLeft':  applyRotation(Math.PI * 1.5); break;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [editMode, setWallRotation]);
+  }, [editMode, setTileRotation, setWallRotation]);
 
   useEffect(() => {
     const canvas = gl.domElement;

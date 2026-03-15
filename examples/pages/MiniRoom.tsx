@@ -637,7 +637,7 @@ export function MiniRoomPage({ children }: WorldPageProps) {
             castShadow position={[25, 45, 30]} intensity={1.0} color="#fff0d8"
             shadow-mapSize={2048} shadow-bias={-0.0003}
           >
-            <orthographicCamera attach="shadow-camera" args={[-65, 65, 65, -65, 1, 120]} />
+            <orthographicCamera attach="shadow-camera" args={[-90, 90, 90, -90, 1, 180]} />
           </directionalLight>
 
           <Suspense>

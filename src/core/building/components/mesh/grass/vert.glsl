@@ -8,6 +8,9 @@ uniform float time;
 uniform float bladeHeight;
 varying vec2 vUv;
 varying float frc;
+varying float vCluster;
+varying float vDryness;
+varying float vShade;
 
 vec3 mod289(vec3 x) {
   return x - floor(x * (1.0 / 289.0)) * 289.0;
@@ -48,6 +51,8 @@ vec3 rotateVectorByQuaternion(vec3 v, vec4 q) {
 
 void main() {
   frc = position.y / float(bladeHeight);
+  float clusterNoise = snoise(offset.xz * 0.11 + vec2(3.7, -8.2));
+  float dryNoise = snoise(offset.xz * 0.18 + vec2(-5.4, 12.6));
   float noise = 1.0 - snoise(vec2((time - offset.x / 50.0), (time - offset.z / 50.0)));
   vec4 direction = vec4(0.0, halfRootAngleSin, 0.0, halfRootAngleCos);
   vec4 tiltAxis = vec4(-orientation.z, 0.0, orientation.x, orientation.w);
@@ -59,6 +64,9 @@ void main() {
   vec4 windQuat = vec4(sin(windAngle), 0.0, -sin(windAngle), cos(windAngle));
   vPosition = rotateVectorByQuaternion(vPosition, windQuat);
 
+  vCluster = clusterNoise * 0.5 + 0.5;
+  vDryness = clamp((dryNoise * 0.5 + 0.5) * 0.7 + (1.0 - stretch) * 0.45, 0.0, 1.0);
+  vShade = clamp(0.82 + noise * 0.08 + orientation.w * 0.06, 0.72, 1.1);
   vUv = uv;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(offset + vPosition, 1.0);
 }

@@ -1,14 +1,296 @@
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { TileSystemProps } from './types';
 import { GaeSupProps } from '../../../index';
 import { MinimapSystem } from '../../../ui/core';
 import { MaterialManager } from '../../core/MaterialManager';
+import type { TileShapeType } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { FlagBatch } from '../mesh/flag';
 import { TileObject } from '../TileObject';
+
+type TileLike = TileSystemProps['tileGroup']['tiles'][number];
+
+type TerrainRock = {
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: [number, number, number];
+};
+
+type TerrainBuild = {
+  sideGeometry: THREE.BufferGeometry;
+  rocks: TerrainRock[];
+};
+
+type TileColliderData = {
+  key: string;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  args: [number, number, number];
+};
+
+type TileBounds = {
+  id: string;
+  topY: number;
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+  centerX: number;
+  centerZ: number;
+  segments: number;
+};
+
+function fract(value: number): number {
+  return value - Math.floor(value);
+}
+
+function hashNoise(...values: number[]): number {
+  const seed = values.reduce((acc, value, index) => acc + value * (index * 19.19 + 7.13), 0);
+  return fract(Math.sin(seed) * 43758.5453123);
+}
+
+function getTileShape(tile: TileLike): TileShapeType {
+  return tile.shape ?? 'box';
+}
+
+function rotateXZ(x: number, z: number, rotation: number): [number, number] {
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  return [x * cos + z * sin, z * cos - x * sin];
+}
+
+function getStairLayout(tile: TileLike) {
+  const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+  const stepCount = Math.max(4, Math.min(8, (tile.size || 1) * 4));
+  const totalHeight = Math.max(tile.position.y, TILE_CONSTANTS.HEIGHT_STEP);
+  const stepHeight = totalHeight / stepCount;
+  const stepDepth = tileSize / stepCount;
+  const colliderSlices = Math.max(stepCount * 4, Math.ceil(totalHeight / 0.08));
+  const rotation = tile.rotation ?? 0;
+
+  return { tileSize, stepCount, totalHeight, stepHeight, stepDepth, colliderSlices, rotation };
+}
+
+function getRampLayout(tile: TileLike) {
+  const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+  const rampSlices = Math.max(12, Math.min(24, Math.ceil(tileSize / 0.25)));
+  const totalHeight = Math.max(tile.position.y, TILE_CONSTANTS.HEIGHT_STEP);
+  const sliceHeight = totalHeight / rampSlices;
+  const sliceDepth = tileSize / rampSlices;
+  const rotation = tile.rotation ?? 0;
+
+  return { tileSize, rampSlices, totalHeight, sliceHeight, sliceDepth, rotation };
+}
+
+function buildTileBounds(tile: TileLike): TileBounds {
+  const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+  const half = tileSize / 2;
+
+  return {
+    id: tile.id,
+    topY: tile.position.y,
+    minX: tile.position.x - half,
+    maxX: tile.position.x + half,
+    minZ: tile.position.z - half,
+    maxZ: tile.position.z + half,
+    centerX: tile.position.x,
+    centerZ: tile.position.z,
+    segments: tile.size || 1,
+  };
+}
+
+function sampleSupportHeight(boundsList: TileBounds[], currentId: string, x: number, z: number): number {
+  let support = 0;
+
+  for (const bounds of boundsList) {
+    if (bounds.id === currentId) continue;
+    if (
+      x > bounds.minX + 0.001 &&
+      x < bounds.maxX - 0.001 &&
+      z > bounds.minZ + 0.001 &&
+      z < bounds.maxZ - 0.001
+    ) {
+      support = Math.max(support, bounds.topY);
+    }
+  }
+
+  return support;
+}
+
+function pushQuad(
+  positions: number[],
+  colors: number[],
+  a: [number, number, number],
+  b: [number, number, number],
+  c: [number, number, number],
+  d: [number, number, number],
+  topColor: THREE.Color,
+  bottomColor: THREE.Color,
+) {
+  const pushVertex = (vertex: [number, number, number], color: THREE.Color) => {
+    positions.push(vertex[0], vertex[1], vertex[2]);
+    colors.push(color.r, color.g, color.b);
+  };
+
+  pushVertex(a, topColor);
+  pushVertex(b, topColor);
+  pushVertex(c, bottomColor);
+  pushVertex(a, topColor);
+  pushVertex(c, bottomColor);
+  pushVertex(d, bottomColor);
+}
+
+function buildTerrainGeometry(subjectTiles: TileLike[], supportTiles: TileLike[], baseColor: THREE.Color): TerrainBuild {
+  const positions: number[] = [];
+  const colors: number[] = [];
+  const rocks: TerrainRock[] = [];
+  const boundsList = supportTiles.map(buildTileBounds);
+  const subjectBounds = subjectTiles.map(buildTileBounds);
+  const rockWarm = new THREE.Color('#7b6a58');
+  const rockDark = new THREE.Color('#433930');
+  const segmentSize = TILE_CONSTANTS.GRID_CELL_SIZE;
+
+  const addSide = (
+    bounds: TileBounds,
+    x0: number,
+    z0: number,
+    x1: number,
+    z1: number,
+    sampleX: number,
+    sampleZ: number,
+    outwardX: number,
+    outwardZ: number,
+    seed: number,
+  ) => {
+    const supportY = sampleSupportHeight(boundsList, bounds.id, sampleX, sampleZ);
+    if (bounds.topY <= supportY + 0.02) return;
+
+    const drop = bounds.topY - supportY;
+    const topTint = 0.72 + hashNoise(seed, bounds.centerX, bounds.centerZ) * 0.16;
+    const bottomTint = 0.42 + hashNoise(seed, bounds.topY) * 0.08;
+    const topColor = baseColor.clone().lerp(rockWarm, 0.28 + Math.min(drop, 2) * 0.08).multiplyScalar(topTint);
+    const bottomColor = baseColor.clone().lerp(rockDark, 0.7).multiplyScalar(bottomTint);
+
+    pushQuad(
+      positions,
+      colors,
+      [x0, bounds.topY, z0],
+      [x1, bounds.topY, z1],
+      [x1, supportY, z1],
+      [x0, supportY, z0],
+      topColor,
+      bottomColor,
+    );
+
+    if (drop < TILE_CONSTANTS.HEIGHT_STEP * 0.95) return;
+
+    const rockChance = hashNoise(seed, supportY, drop);
+    if (rockChance < 0.58) return;
+
+    const midX = (x0 + x1) * 0.5;
+    const midZ = (z0 + z1) * 0.5;
+    const scaleBase = 0.12 + Math.min(drop, 2.5) * 0.06;
+    const scaleJitter = 0.08 + rockChance * 0.08;
+
+    rocks.push({
+      position: [
+        midX + outwardX * (0.18 + rockChance * 0.24),
+        supportY + scaleBase * 0.65,
+        midZ + outwardZ * (0.18 + rockChance * 0.24),
+      ],
+      rotation: [
+        rockChance * Math.PI * 1.7,
+        rockChance * Math.PI * 2.9,
+        rockChance * Math.PI * 0.9,
+      ],
+      scale: [
+        scaleBase + scaleJitter * 0.6,
+        scaleBase * 0.9 + scaleJitter * 0.45,
+        scaleBase + scaleJitter,
+      ],
+    });
+  };
+
+  for (const bounds of subjectBounds) {
+    if (bounds.topY <= 0.02) continue;
+
+    const tileSize = bounds.segments * segmentSize;
+    const minOffset = -tileSize / 2;
+
+    for (let i = 0; i < bounds.segments; i++) {
+      const start = minOffset + i * segmentSize;
+      const end = start + segmentSize;
+      const segmentMid = start + segmentSize * 0.5;
+
+      addSide(
+        bounds,
+        bounds.maxX,
+        bounds.centerZ + start,
+        bounds.maxX,
+        bounds.centerZ + end,
+        bounds.maxX + 0.02,
+        bounds.centerZ + segmentMid,
+        1,
+        0,
+        hashNoise(bounds.centerX, bounds.centerZ, i, 1),
+      );
+
+      addSide(
+        bounds,
+        bounds.minX,
+        bounds.centerZ + end,
+        bounds.minX,
+        bounds.centerZ + start,
+        bounds.minX - 0.02,
+        bounds.centerZ + segmentMid,
+        -1,
+        0,
+        hashNoise(bounds.centerX, bounds.centerZ, i, 2),
+      );
+
+      addSide(
+        bounds,
+        bounds.centerX + end,
+        bounds.minZ,
+        bounds.centerX + start,
+        bounds.minZ,
+        bounds.centerX + segmentMid,
+        bounds.minZ - 0.02,
+        0,
+        -1,
+        hashNoise(bounds.centerX, bounds.centerZ, i, 3),
+      );
+
+      addSide(
+        bounds,
+        bounds.centerX + start,
+        bounds.maxZ,
+        bounds.centerX + end,
+        bounds.maxZ,
+        bounds.centerX + segmentMid,
+        bounds.maxZ + 0.02,
+        0,
+        1,
+        hashNoise(bounds.centerX, bounds.centerZ, i, 4),
+      );
+    }
+  }
+
+  const sideGeometry = new THREE.BufferGeometry();
+  if (positions.length > 0) {
+    sideGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    sideGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    sideGeometry.computeVertexNormals();
+    sideGeometry.computeBoundingBox();
+    sideGeometry.computeBoundingSphere();
+  }
+
+  return { sideGeometry, rocks };
+}
 
 export function TileSystem({ 
   tileGroup, 
@@ -22,6 +304,22 @@ export function TileSystem({
 
   const tileCount = tileGroup.tiles.length;
   const [capacity, setCapacity] = useState(() => Math.max(1, tileCount));
+  const boxTiles = useMemo(
+    () => tileGroup.tiles.filter((tile) => getTileShape(tile) === 'box'),
+    [tileGroup.tiles],
+  );
+  const stairTiles = useMemo(
+    () => tileGroup.tiles.filter((tile) => getTileShape(tile) === 'stairs'),
+    [tileGroup.tiles],
+  );
+  const rampTiles = useMemo(
+    () => tileGroup.tiles.filter((tile) => getTileShape(tile) === 'ramp'),
+    [tileGroup.tiles],
+  );
+  const roundTiles = useMemo(
+    () => tileGroup.tiles.filter((tile) => getTileShape(tile) === 'round'),
+    [tileGroup.tiles],
+  );
 
   const material = useMemo(() => {
     const manager = materialManagerRef.current;
@@ -39,6 +337,60 @@ export function TileSystem({
     return manager.getMaterial(floorMesh);
   }, [tileGroup.floorMeshId, meshes]);
 
+  const terrainColor = useMemo(() => {
+    const floorMesh = meshes.get(tileGroup.floorMeshId);
+    return new THREE.Color(floorMesh?.color || '#8a806f');
+  }, [tileGroup.floorMeshId, meshes]);
+
+  const terrain = useMemo(
+    () => buildTerrainGeometry(boxTiles, tileGroup.tiles, terrainColor),
+    [boxTiles, tileGroup.tiles, terrainColor],
+  );
+
+  const sideMaterial = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.98,
+        metalness: 0.02,
+        side: THREE.DoubleSide,
+      }),
+    [],
+  );
+
+  const rockGeometry = useMemo(() => new THREE.DodecahedronGeometry(1, 0), []);
+  const rampGeometry = useMemo(() => {
+    const geometry = new THREE.BufferGeometry();
+    const vertices = new Float32Array([
+      -0.5, 0.0, -0.5,
+      0.5, 0.0, -0.5,
+      -0.5, 0.0, 0.5,
+      0.5, 0.0, 0.5,
+      -0.5, 1.0, 0.5,
+      0.5, 1.0, 0.5,
+    ]);
+    const indices = [
+      0, 1, 3, 0, 3, 2,
+      0, 1, 5, 0, 5, 4,
+      0, 2, 4,
+      1, 5, 3,
+      2, 3, 5, 2, 5, 4,
+    ];
+    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
+  }, []);
+  const rockMaterial = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: '#71695f',
+        roughness: 1,
+        metalness: 0.02,
+      }),
+    [],
+  );
+
   const baseGeometry = useMemo(() => {
     // A single unit plane; per-tile size/position is applied via instancing.
     const geom = new THREE.PlaneGeometry(1, 1, 1, 1);
@@ -48,7 +400,7 @@ export function TileSystem({
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
-  const editGeometry = useMemo(() => new THREE.BoxGeometry(0.8, 0.3, 0.8), []);
+  const editGeometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
   const editMaterial = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
@@ -77,6 +429,106 @@ export function TileSystem({
     [tileGroup.tiles],
   );
 
+  const colliderData = useMemo(
+    () => {
+      const colliders: TileColliderData[] = [];
+
+      for (const tile of tileGroup.tiles) {
+        const shape = getTileShape(tile);
+        const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+        const rotation = tile.rotation ?? 0;
+
+        if (shape === 'stairs') {
+          const { tileSize, totalHeight, colliderSlices, rotation } = getStairLayout(tile);
+          const sliceHeight = totalHeight / colliderSlices;
+          const sliceDepth = tileSize / colliderSlices;
+
+          for (let i = 0; i < colliderSlices; i++) {
+            const stepColliderHeight = sliceHeight * (i + 1);
+            const localZ = -tileSize / 2 + sliceDepth * i + sliceDepth / 2;
+            const [offsetX, offsetZ] = rotateXZ(0, localZ, rotation);
+
+            colliders.push({
+              key: `${tile.id}-stair-collider-${i}`,
+              position: [
+                tile.position.x + offsetX,
+                stepColliderHeight / 2,
+                tile.position.z + offsetZ,
+              ],
+              rotation: [0, rotation, 0],
+              args: [tileSize / 2, stepColliderHeight / 2, sliceDepth / 2],
+            });
+          }
+
+          continue;
+        }
+
+        if (shape === 'ramp') {
+          const { tileSize, rampSlices, sliceHeight, sliceDepth, rotation } = getRampLayout(tile);
+
+          for (let i = 0; i < rampSlices; i++) {
+            const sliceColliderHeight = sliceHeight * (i + 1);
+            const localZ = -tileSize / 2 + sliceDepth * i + sliceDepth / 2;
+            const [offsetX, offsetZ] = rotateXZ(0, localZ, rotation);
+
+            colliders.push({
+              key: `${tile.id}-ramp-${i}`,
+              position: [
+                tile.position.x + offsetX,
+                sliceColliderHeight / 2,
+                tile.position.z + offsetZ,
+              ],
+              rotation: [0, rotation, 0],
+              args: [tileSize / 2, sliceColliderHeight / 2, sliceDepth / 2],
+            });
+          }
+
+          continue;
+        }
+
+        if (shape === 'round') {
+          const elevated = tile.position.y > 0.02;
+          const colliderHeight = elevated ? tile.position.y : 0.04;
+          const centerY = elevated ? colliderHeight / 2 : -0.02;
+          const radius = tileSize / 2;
+          const ringDepth = radius * 0.34;
+
+          colliders.push({
+            key: `${tile.id}-core`,
+            position: [tile.position.x, centerY, tile.position.z],
+            rotation: [0, 0, 0],
+            args: [radius * 0.46, colliderHeight / 2, radius * 0.46],
+          });
+
+          for (let i = 0; i < 4; i++) {
+            colliders.push({
+              key: `${tile.id}-ring-${i}`,
+              position: [tile.position.x, centerY, tile.position.z],
+              rotation: [0, (Math.PI / 4) * i, 0],
+              args: [radius * 0.82, colliderHeight / 2, ringDepth],
+            });
+          }
+
+          continue;
+        }
+
+        const elevated = tile.position.y > 0.02;
+        const halfHeight = elevated ? tile.position.y * 0.5 : 0.02;
+        const centerY = elevated ? tile.position.y * 0.5 : -0.02;
+
+        colliders.push({
+          key: tile.id,
+          position: [tile.position.x, centerY, tile.position.z],
+          rotation: [0, rotation, 0],
+          args: [tileSize / 2, halfHeight, tileSize / 2],
+        });
+      }
+
+      return colliders;
+    },
+    [tileGroup.tiles],
+  );
+
   useEffect(() => {
     if (tileCount <= capacity) return;
     // Grow with headroom to avoid recreating the InstancedMesh on every add.
@@ -88,10 +540,10 @@ export function TileSystem({
     if (!mesh) return;
 
     const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-    mesh.count = tileCount;
+    mesh.count = boxTiles.length;
 
-    for (let i = 0; i < tileCount; i++) {
-      const tile = tileGroup.tiles[i];
+    for (let i = 0; i < boxTiles.length; i++) {
+      const tile = boxTiles[i];
       if (!tile) continue;
 
       const tileMultiplier = tile.size || 1;
@@ -106,11 +558,11 @@ export function TileSystem({
 
     mesh.instanceMatrix.needsUpdate = true;
 
-    if (tileCount > 0) {
+    if (boxTiles.length > 0) {
       mesh.computeBoundingBox();
       mesh.computeBoundingSphere();
     }
-  }, [tileGroup.tiles, tileCount, dummy, capacity]);
+  }, [boxTiles, tileCount, dummy, capacity]);
 
   useEffect(() => {
     if (tileGroup.tiles.length === 0) return undefined;
@@ -157,14 +609,46 @@ export function TileSystem({
     };
   }, [baseGeometry, editGeometry, editMaterial]);
 
+  useEffect(() => {
+    return () => {
+      terrain.sideGeometry.dispose();
+    };
+  }, [terrain.sideGeometry]);
+
+  useEffect(() => {
+    return () => {
+      sideMaterial.dispose();
+      rockGeometry.dispose();
+      rampGeometry.dispose();
+      rockMaterial.dispose();
+    };
+  }, [rampGeometry, rockGeometry, rockMaterial, sideMaterial]);
+
   return (
     <GaeSupProps type="ground">
       <>
+        {colliderData.length > 0 && (
+          <RigidBody type="fixed" colliders={false}>
+            {colliderData.map((collider) => (
+              <CuboidCollider
+                key={`${tileGroup.id}-collider-${collider.key}`}
+                position={collider.position}
+                rotation={collider.rotation}
+                args={collider.args}
+              />
+            ))}
+          </RigidBody>
+        )}
+
         {isEditMode && tileGroup.tiles.map((tile) => {
+          const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+          const previewHeight = Math.max(0.22, tile.position.y + 0.22);
+
           return (
             <group
               key={tile.id}
-              position={[tile.position.x, tile.position.y + 0.3, tile.position.z]}
+              position={[tile.position.x, previewHeight / 2, tile.position.z]}
+              scale={[tileSize * 0.82, previewHeight, tileSize * 0.82]}
               onClick={() => onTileClick?.(tile.id)}
             >
               <mesh geometry={editGeometry} material={editMaterial} />
@@ -179,6 +663,95 @@ export function TileSystem({
           receiveShadow
           frustumCulled
         />
+
+        {roundTiles.map((tile) => {
+          const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+          const elevated = tile.position.y > 0.02;
+          const height = elevated ? tile.position.y : 0.04;
+          const centerY = elevated ? height / 2 : -0.02;
+
+          return (
+            <mesh
+              key={`${tile.id}-round`}
+              position={[tile.position.x, centerY, tile.position.z]}
+              material={material}
+              castShadow
+              receiveShadow
+            >
+              <cylinderGeometry args={[tileSize / 2, tileSize / 2, height, 28, 1, false]} />
+            </mesh>
+          );
+        })}
+
+        {stairTiles.map((tile) => {
+          const { tileSize, stepCount, stepHeight, stepDepth, rotation } = getStairLayout(tile);
+
+          return (
+            <group
+              key={`${tile.id}-stairs`}
+              position={[tile.position.x, 0, tile.position.z]}
+              rotation={[0, rotation, 0]}
+            >
+              {Array.from({ length: stepCount }, (_, index) => {
+                const stepBoxHeight = stepHeight * (index + 1);
+                const centerY = stepBoxHeight / 2;
+                const localZ = -tileSize / 2 + stepDepth * index + stepDepth / 2;
+
+                return (
+                  <mesh
+                    key={`${tile.id}-stairs-step-${index}`}
+                    position={[0, centerY, localZ]}
+                    material={material}
+                    castShadow
+                    receiveShadow
+                  >
+                    <boxGeometry args={[tileSize, stepBoxHeight, stepDepth]} />
+                  </mesh>
+                );
+              })}
+            </group>
+          );
+        })}
+
+        {rampTiles.map((tile) => {
+          const { tileSize, totalHeight, rotation } = getRampLayout(tile);
+
+          return (
+            <mesh
+              key={`${tile.id}-ramp`}
+              position={[tile.position.x, 0, tile.position.z]}
+              rotation={[0, rotation, 0]}
+              scale={[tileSize, totalHeight, tileSize]}
+              geometry={rampGeometry}
+              material={material}
+              castShadow
+              receiveShadow
+            />
+          );
+        })}
+
+        {terrain.sideGeometry.getAttribute('position') && (
+          <mesh
+            geometry={terrain.sideGeometry}
+            material={sideMaterial}
+            castShadow
+            receiveShadow
+            frustumCulled={false}
+          />
+        )}
+
+        {terrain.rocks.map((rock, index) => (
+          <mesh
+            key={`${tileGroup.id}-rock-${index}`}
+            geometry={rockGeometry}
+            material={rockMaterial}
+            position={rock.position}
+            rotation={rock.rotation}
+            scale={rock.scale}
+            castShadow
+            receiveShadow
+          />
+        ))}
         
         {nonFlagObjects.map((tile) => (
           <TileObject key={`${tile.id}-object`} tile={tile} />

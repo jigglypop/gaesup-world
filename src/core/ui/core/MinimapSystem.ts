@@ -280,6 +280,10 @@ export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSys
             ctx.fillStyle = 'rgba(0, 150, 255, 0.6)';
           } else if (tile.objectType === 'grass') {
             ctx.fillStyle = 'rgba(50, 200, 50, 0.4)';
+          } else if (tile.objectType === 'sand') {
+            ctx.fillStyle = 'rgba(210, 180, 120, 0.45)';
+          } else if (tile.objectType === 'snowfield') {
+            ctx.fillStyle = 'rgba(225, 240, 255, 0.5)';
           } else {
             ctx.fillStyle = 'rgba(150, 150, 150, 0.3)';
           }

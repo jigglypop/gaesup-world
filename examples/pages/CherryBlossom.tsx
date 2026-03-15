@@ -293,9 +293,9 @@ export function CherryBlossomPage({ showEditor = true, children }: WorldPageProp
           <hemisphereLight intensity={0.06} color="#99aad0" groundColor="#060810" />
           <directionalLight
             castShadow position={[20, 30, 10]} intensity={0.15} color="#b8c9ff"
-            shadow-mapSize={[1024, 1024]} shadow-camera-near={1} shadow-camera-far={200}
-            shadow-camera-top={100} shadow-camera-right={25}
-            shadow-camera-bottom={-100} shadow-camera-left={-25} shadow-bias={-0.0002}
+            shadow-mapSize={[1024, 1024]} shadow-camera-near={1} shadow-camera-far={260}
+            shadow-camera-top={120} shadow-camera-right={60}
+            shadow-camera-bottom={-120} shadow-camera-left={-60} shadow-bias={-0.0002}
           />
 
           <Suspense>
@@ -362,8 +362,8 @@ export function CherryBlossomPage({ showEditor = true, children }: WorldPageProp
             </GaesupWorldContent>
           </Suspense>
 
-          <EffectComposer>
-            <Bloom luminanceThreshold={0.3} luminanceSmoothing={0.9} intensity={1.0} />
+          <EffectComposer multisampling={0}>
+            <Bloom luminanceThreshold={0.5} luminanceSmoothing={0.4} intensity={0.75} />
           </EffectComposer>
         </Canvas>
 

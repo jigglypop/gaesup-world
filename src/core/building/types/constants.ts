@@ -1,6 +1,7 @@
 export const TILE_CONSTANTS = Object.freeze({
   GRID_CELL_SIZE: 4,     // 그리드 한 칸 크기
   SNAP_GRID_SIZE: 4,     // 스냅도 그리드에 맞춤
+  HEIGHT_STEP: 1,        // 타일 높이 한 단계(m)
   
   TILE_MULTIPLIERS: Object.freeze({
     SMALL: 1,    // 1x1 (4x4m)

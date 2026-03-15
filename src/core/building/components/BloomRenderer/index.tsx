@@ -1,9 +1,6 @@
-import React, { useMemo, useRef } from 'react';
-
-import { useFrame } from '@react-three/fiber';
+import React, { useMemo } from 'react';
 import * as THREE from 'three';
 
-import { weightFromDistance } from '@core/utils/sfe';
 import { BloomConfig } from '../../types';
 
 let _bloomTex: THREE.Texture | null = null;
@@ -23,10 +20,6 @@ function getBloomTexture(): THREE.Texture {
   return _bloomTex;
 }
 
-const SFE_NEAR = 20;
-const SFE_FAR = 140;
-const SFE_STRENGTH = 3;
-
 function BloomOrb({
   intensity = 2.5,
   color = '#00aaff',
@@ -34,44 +27,30 @@ function BloomOrb({
   intensity?: number;
   color?: string;
 }) {
-  const orbRef = useRef<THREE.Mesh>(null!);
-  const orbMatRef = useRef<THREE.MeshStandardMaterial>(null!);
-  const glowMatRef = useRef<THREE.SpriteMaterial>(null!);
-  const worldPos = useMemo(() => new THREE.Vector3(), []);
   const emissiveColor = useMemo(() => new THREE.Color(color), [color]);
-
-  useFrame((state) => {
-    orbRef.current.getWorldPosition(worldPos);
-    const dist = state.camera.position.distanceTo(worldPos);
-    const sfe = weightFromDistance(dist, SFE_NEAR, SFE_FAR, SFE_STRENGTH);
-    const pulse = 0.85 + 0.15 * Math.sin(state.clock.elapsedTime * 3.0);
-    orbMatRef.current.emissiveIntensity = intensity * sfe;
-    glowMatRef.current.opacity = Math.min(0.8, (0.28 * pulse) * sfe);
-  });
+  const glowOpacity = Math.min(0.55, 0.18 + intensity * 0.08);
+  const glowScale = 1.1 + intensity * 0.18;
+  const coreScale = 0.14 + intensity * 0.025;
 
   return (
     <group position={[0, 0.6, 0]}>
-      <sprite scale={[1.6, 1.6, 1]}>
+      <sprite scale={[glowScale, glowScale, 1]}>
         <spriteMaterial
-          ref={glowMatRef}
           map={getBloomTexture()}
           color={emissiveColor}
           transparent
-          opacity={0.25}
+          opacity={glowOpacity}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
       </sprite>
 
-      <mesh ref={orbRef}>
-        <sphereGeometry args={[0.2, 16, 16]} />
-        <meshStandardMaterial
-          ref={orbMatRef}
-          color="#111111"
-          emissive={emissiveColor}
-          emissiveIntensity={intensity}
-          roughness={0.2}
-          metalness={0.0}
+      <mesh scale={coreScale}>
+        <icosahedronGeometry args={[1, 0]} />
+        <meshBasicMaterial
+          color={emissiveColor}
+          transparent
+          opacity={0.92}
         />
       </mesh>
     </group>

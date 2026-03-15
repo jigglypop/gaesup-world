@@ -4,6 +4,7 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { useBuildingStore } from '../stores/buildingStore';
+import { TILE_CONSTANTS } from '../types/constants';
 import { Rotation3D } from '../types';
 
 const _vec2 = new THREE.Vector2();
@@ -70,15 +71,26 @@ export function useBuildingEditor() {
       selectedTileGroupId: groupId,
       checkTilePosition,
       currentTileMultiplier,
+      currentTileHeight,
+      currentTileShape,
+      currentTileRotation,
       hoverPosition,
     } = useBuildingStore.getState();
     if (mode !== 'tile' || !groupId || !hoverPosition) return;
     if (checkTilePosition(hoverPosition)) return;
+    const effectiveHeight = currentTileShape === 'stairs' || currentTileShape === 'ramp'
+      ? Math.max(1, currentTileHeight)
+      : currentTileHeight;
     addTile(groupId, {
       id: `tile-${++_idSeq}-${Date.now()}`,
-      position: hoverPosition,
+      position: {
+        ...hoverPosition,
+        y: effectiveHeight * TILE_CONSTANTS.HEIGHT_STEP,
+      },
       tileGroupId: groupId,
       size: currentTileMultiplier,
+      rotation: currentTileRotation,
+      shape: currentTileShape,
     });
   }, [addTile]);
 

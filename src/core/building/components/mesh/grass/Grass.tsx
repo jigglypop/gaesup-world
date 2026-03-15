@@ -20,8 +20,8 @@ const GrassMaterial = shaderMaterial(
     map: null as THREE.Texture | null,
     alphaMap: null as THREE.Texture | null,
     time: 0,
-    tipColor: new THREE.Color(0.0, 0.6, 0.0).convertSRGBToLinear(),
-    bottomColor: new THREE.Color(0.0, 0.1, 0.0).convertSRGBToLinear(),
+    tipColor: new THREE.Color("#8fbc5a").convertSRGBToLinear(),
+    bottomColor: new THREE.Color("#355b2d").convertSRGBToLinear(),
   },
   vertexShader,
   fragmentShader
@@ -211,7 +211,7 @@ const Grass: FC<GrassMeshProps> = memo(
         </mesh>
         <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <bufferGeometry {...groundGeo} />
-          <meshStandardMaterial color="#001f00" />
+          <meshStandardMaterial color="#314a28" />
         </mesh>
       </group>
     );

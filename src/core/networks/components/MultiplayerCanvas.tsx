@@ -117,11 +117,11 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
           intensity={0.5}
           shadow-mapSize={[1024, 1024]}
           shadow-camera-near={1}
-          shadow-camera-far={50}
-          shadow-camera-top={50}
-          shadow-camera-right={50}
-          shadow-camera-bottom={-50}
-          shadow-camera-left={-50}
+          shadow-camera-far={120}
+          shadow-camera-top={90}
+          shadow-camera-right={90}
+          shadow-camera-bottom={-90}
+          shadow-camera-left={-90}
         />
         
         <Suspense fallback={null}>

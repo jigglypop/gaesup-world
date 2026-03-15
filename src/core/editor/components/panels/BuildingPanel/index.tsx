@@ -1,6 +1,6 @@
 import React, { FC } from 'react';
 
-import { FLAG_STYLE_META, FlagStyle, TileObjectType } from '../../../../building/types';
+import { FLAG_STYLE_META, FlagStyle, TileObjectType, TileShapeType } from '../../../../building/types';
 import { useBuildingStore } from '../../../../building/stores/buildingStore';
 import './styles.css';
 
@@ -19,6 +19,12 @@ export const BuildingPanel: FC = () => {
   const setEditMode = useBuildingStore((state) => state.setEditMode);
   const currentTileMultiplier = useBuildingStore((state) => state.currentTileMultiplier);
   const setTileMultiplier = useBuildingStore((state) => state.setTileMultiplier);
+  const currentTileHeight = useBuildingStore((state) => state.currentTileHeight);
+  const setTileHeight = useBuildingStore((state) => state.setTileHeight);
+  const currentTileShape = useBuildingStore((state) => state.currentTileShape);
+  const setTileShape = useBuildingStore((state) => state.setTileShape);
+  const currentTileRotation = useBuildingStore((state) => state.currentTileRotation);
+  const setTileRotation = useBuildingStore((state) => state.setTileRotation);
   const selectedTileObjectType = useBuildingStore((state) => state.selectedTileObjectType);
   const setSelectedTileObjectType = useBuildingStore((state) => state.setSelectedTileObjectType);
   const snapToGrid = useBuildingStore((state) => state.snapToGrid);
@@ -53,9 +59,18 @@ export const BuildingPanel: FC = () => {
     { type: 'none', label: 'None' },
     { type: 'grass', label: 'Grass' },
     { type: 'water', label: 'Water' },
+    { type: 'sand', label: 'Sand' },
+    { type: 'snowfield', label: 'Snowfield' },
     { type: 'flag', label: 'Flag' },
     { type: 'fire', label: 'Fire' },
     { type: 'billboard', label: 'Billboard' },
+  ];
+
+  const tileShapes: { type: TileShapeType; label: string }[] = [
+    { type: 'box', label: 'Box' },
+    { type: 'stairs', label: 'Stairs' },
+    { type: 'round', label: 'Round' },
+    { type: 'ramp', label: 'Ramp' },
   ];
 
   return (
@@ -121,6 +136,46 @@ export const BuildingPanel: FC = () => {
               {snapToGrid ? 'ON' : 'OFF'}
             </button>
           </div>
+          <div className="building-panel__info-item">
+            <span className="building-panel__info-label">Height</span>
+            <div className="building-panel__stepper">
+              <button
+                className="building-panel__stepper-btn"
+                onClick={() => setTileHeight(Math.max(0, currentTileHeight - 1))}
+              >
+                -
+              </button>
+              <span className="building-panel__stepper-value">{currentTileHeight}</span>
+              <button
+                className="building-panel__stepper-btn"
+                onClick={() => setTileHeight(Math.min(6, currentTileHeight + 1))}
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="building-panel__grid" style={{ marginTop: '8px' }}>
+          {tileShapes.map((shape) => (
+            <button
+              key={shape.type}
+              className={`building-panel__grid-btn ${currentTileShape === shape.type ? 'building-panel__grid-btn--active' : ''}`}
+              onClick={() => setTileShape(shape.type)}
+            >
+              {shape.label}
+            </button>
+          ))}
+        </div>
+        <div className="building-panel__grid" style={{ marginTop: '8px' }}>
+          {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((rotation, index) => (
+            <button
+              key={rotation}
+              className={`building-panel__grid-btn ${Math.abs(currentTileRotation - rotation) < 0.0001 ? 'building-panel__grid-btn--active' : ''}`}
+              onClick={() => setTileRotation(rotation)}
+            >
+              {index * 90}°
+            </button>
+          ))}
         </div>
       </div>
 
@@ -311,6 +366,14 @@ export const BuildingPanel: FC = () => {
         <div className="building-panel__info-item">
           <span className="building-panel__info-label">Object Type</span>
           <span className="building-panel__info-value">{selectedTileObjectType}</span>
+        </div>
+        <div className="building-panel__info-item">
+          <span className="building-panel__info-label">Tile Height</span>
+          <span className="building-panel__info-value">{currentTileHeight}</span>
+        </div>
+        <div className="building-panel__info-item">
+          <span className="building-panel__info-label">Tile Shape</span>
+          <span className="building-panel__info-value">{currentTileShape}</span>
         </div>
       </div>
     </div>

@@ -10,6 +10,7 @@ import {
   WallConfig,
   TileConfig,
   TileObjectType,
+  TileShapeType,
   Position3D,
   WallCategory,
   TileCategory,
@@ -92,6 +93,12 @@ interface BuildingStore extends BuildingSystemState {
   
   currentTileMultiplier: number;
   setTileMultiplier: (multiplier: number) => void;
+  currentTileHeight: number;
+  setTileHeight: (height: number) => void;
+  currentTileShape: TileShapeType;
+  setTileShape: (shape: TileShapeType) => void;
+  currentTileRotation: number;
+  setTileRotation: (rotation: number) => void;
   
   currentWallRotation: number;
   setWallRotation: (rotation: number) => void;
@@ -183,6 +190,9 @@ export const useBuildingStore = create<BuildingStore>()(
     snapToGrid: true,
     hoverPosition: null,
     currentTileMultiplier: 1,
+    currentTileHeight: 0,
+    currentTileShape: 'box',
+    currentTileRotation: 0,
     currentWallRotation: 0,
     selectedTileObjectType: 'none',
     currentFlagWidth: 1.5,
@@ -235,6 +245,22 @@ export const useBuildingStore = create<BuildingStore>()(
         metalness: 0.1,
       });
 
+      state.meshes.set('sand-floor', {
+        id: 'sand-floor',
+        color: '#c9ab75',
+        material: 'STANDARD',
+        roughness: 0.96,
+        metalness: 0.02,
+      });
+
+      state.meshes.set('snow-floor', {
+        id: 'snow-floor',
+        color: '#eef5ff',
+        material: 'STANDARD',
+        roughness: 0.9,
+        metalness: 0.0,
+      });
+
       // 기본 벽 카테고리 생성
       state.wallCategories.set('interior-walls', {
         id: 'interior-walls',
@@ -270,6 +296,13 @@ export const useBuildingStore = create<BuildingStore>()(
         name: 'Stone Floors',
         description: 'Marble and stone flooring',
         tileGroupIds: ['marble-floor', 'granite-floor']
+      });
+
+      state.tileCategories.set('natural-floors', {
+        id: 'natural-floors',
+        name: 'Natural Floors',
+        description: 'Sand and snow terrain flooring',
+        tileGroupIds: ['sand-floor', 'snow-floor']
       });
 
       // 기본 그룹 생성
@@ -345,6 +378,20 @@ export const useBuildingStore = create<BuildingStore>()(
         floorMeshId: 'marble-floor', // 임시로 marble 재질 사용
         tiles: [],
       });
+
+      state.tileGroups.set('sand-floor', {
+        id: 'sand-floor',
+        name: 'Sand Floor',
+        floorMeshId: 'sand-floor',
+        tiles: [],
+      });
+
+      state.tileGroups.set('snow-floor', {
+        id: 'snow-floor',
+        name: 'Snow Floor',
+        floorMeshId: 'snow-floor',
+        tiles: [],
+      });
       
       // 기본 선택 설정
       state.selectedWallCategoryId = 'exterior-walls';
@@ -356,16 +403,18 @@ export const useBuildingStore = create<BuildingStore>()(
       //
       //  gx: -3  -2  -1   0   1   2   3
       //  -----------------------------------
-      // -3  oak  oak  oak FLAG oak GRSS GRSS
+      // -3  oak  oak  oak FLAG oak SNOW SNOW
       // -2  oak  oak  oak  oak oak GRSS GRSS
       // -1  WTR  oak  MRB  MRB MRB oak  oak
       //  0  WTR  oak  MRB  MRB MRB oak  oak
       //  1  oak  oak  MRB  MRB MRB oak  oak
-      //  2  oak SIGN  oak  oak oak  oak FIRE
-      //  3  oak  oak  oak  oak oak  oak  oak
+      //  2  sand sand oak  oak oak  oak FIRE
+      //  3  sand sand oak  oak oak  oak  oak
 
       const oakFloorGroup = state.tileGroups.get('oak-floor');
       const marbleFloorGroup = state.tileGroups.get('marble-floor');
+      const sandFloorGroup = state.tileGroups.get('sand-floor');
+      const snowFloorGroup = state.tileGroups.get('snow-floor');
       const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
 
       const addTileToState = (
@@ -390,23 +439,44 @@ export const useBuildingStore = create<BuildingStore>()(
             const pz = gz * cellSize;
 
             const isMarble = Math.abs(gx) <= 1 && Math.abs(gz) <= 1;
-            const isGrass = gx >= 2 && gz <= -2;
+            const isGrass = gx >= 2 && gz === -2;
+            const isSnowfield = gx >= 2 && gz === -3;
+            const isSand = gx <= -2 && gz >= 2;
             const isWater = gx === -3 && (gz === -1 || gz === 0);
             const isFlag = gx === 0 && gz === -3;
             const isFire = gx === 3 && gz === 2;
-            const isBillboard = gx === -2 && gz === 2;
+            const isRoundSample = gx === -3 && gz === 2;
+            const isRampSample = gx === -2 && gz === 2;
+            const isStairSample = gx === 2 && gz === -3;
 
-            const group = isMarble ? marbleFloorGroup : oakFloorGroup;
+            const group =
+              (isSand ? sandFloorGroup : undefined)
+              ?? (isSnowfield ? snowFloorGroup : undefined)
+              ?? (isMarble ? marbleFloorGroup : undefined)
+              ?? oakFloorGroup;
+
+            const tileHeight =
+              isSnowfield ? 2
+                : isGrass ? 1
+                  : isSand ? 1
+                    : isFire ? 1
+                      : isMarble ? (gx === 0 && gz === 0 ? 2 : 1)
+                        : 0;
 
             const base: TileConfig = {
               id: `demo-${gx + 3}-${gz + 3}`,
-              position: { x: px, y: 0, z: pz },
+              position: { x: px, y: tileHeight * TILE_CONSTANTS.HEIGHT_STEP, z: pz },
               tileGroupId: group.id,
               size: 1,
+              shape: isRoundSample ? 'round' : isRampSample ? 'ramp' : isStairSample ? 'stairs' : 'box',
             };
 
             if (isGrass) {
               addTileToState(group, { ...base, objectType: 'grass', objectConfig: { grassDensity: 800 } });
+            } else if (isSnowfield) {
+              addTileToState(group, { ...base, objectType: 'snowfield' });
+            } else if (isSand) {
+              addTileToState(group, { ...base, objectType: 'sand' });
             } else if (isWater) {
               addTileToState(group, { ...base, objectType: 'water' });
             } else if (isFlag) {
@@ -417,12 +487,6 @@ export const useBuildingStore = create<BuildingStore>()(
               });
             } else if (isFire) {
               addTileToState(group, { ...base, objectType: 'fire', objectConfig: { fireIntensity: 1.5 } });
-            } else if (isBillboard) {
-              addTileToState(group, {
-                ...base,
-                objectType: 'billboard',
-                objectConfig: { billboardText: 'GAESUP\nWORLD', billboardColor: '#00ff88' },
-              });
             } else {
               addTileToState(group, base);
             }
@@ -667,6 +731,24 @@ export const useBuildingStore = create<BuildingStore>()(
 
     setTileMultiplier: (multiplier) => set((state) => {
       state.currentTileMultiplier = multiplier;
+    }),
+
+    setTileHeight: (height) => set((state) => {
+      const nextHeight = Math.max(0, Math.min(6, Math.round(height)));
+      state.currentTileHeight = state.currentTileShape === 'stairs' || state.currentTileShape === 'ramp'
+        ? Math.max(1, nextHeight)
+        : nextHeight;
+    }),
+
+    setTileShape: (shape) => set((state) => {
+      state.currentTileShape = shape;
+      if ((shape === 'stairs' || shape === 'ramp') && state.currentTileHeight === 0) {
+        state.currentTileHeight = 1;
+      }
+    }),
+
+    setTileRotation: (rotation) => set((state) => {
+      state.currentTileRotation = rotation;
     }),
 
     setWallRotation: (rotation) => set((state) => {
