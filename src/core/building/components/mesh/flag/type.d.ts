@@ -1,6 +1,6 @@
 import type { ThreeElements } from "@react-three/fiber";
 import * as THREE from "three";
-import type { TileConfig } from "../../types";
+import type { PlacedObject } from "../../types";
 
 export type FlagMeshProps = ThreeElements["mesh"] & {
   geometry: THREE.BufferGeometry;
@@ -15,7 +15,7 @@ export type FlagMeshProps = ThreeElements["mesh"] & {
 };
 
 export type FlagBatchProps = {
-  flags: TileConfig[];
+  flags: PlacedObject[];
 };
 
 type FlagMaterialJSX = {

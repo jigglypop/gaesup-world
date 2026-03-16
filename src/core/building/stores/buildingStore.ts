@@ -11,6 +11,8 @@ import {
   TileConfig,
   TileObjectType,
   TileShapeType,
+  PlacedObjectType,
+  PlacedObject,
   Position3D,
   WallCategory,
   TileCategory,
@@ -106,6 +108,9 @@ interface BuildingStore extends BuildingSystemState {
   selectedTileObjectType: TileObjectType;
   setSelectedTileObjectType: (type: TileObjectType) => void;
 
+  selectedPlacedObjectType: PlacedObjectType | 'none';
+  setSelectedPlacedObjectType: (type: PlacedObjectType | 'none') => void;
+
   currentFlagWidth: number;
   currentFlagHeight: number;
   currentFlagImageUrl: string;
@@ -116,7 +121,16 @@ interface BuildingStore extends BuildingSystemState {
   setFlagStyle: (style: FlagStyle) => void;
 
   currentFireIntensity: number;
+  currentFireWidth: number;
+  currentFireHeight: number;
+  currentFireColor: string;
   setFireIntensity: (intensity: number) => void;
+  setFireWidth: (width: number) => void;
+  setFireHeight: (height: number) => void;
+  setFireColor: (color: string) => void;
+
+  currentObjectRotation: number;
+  setObjectRotation: (rotation: number) => void;
 
   currentBillboardText: string;
   currentBillboardImageUrl: string;
@@ -124,6 +138,10 @@ interface BuildingStore extends BuildingSystemState {
   setBillboardText: (text: string) => void;
   setBillboardImageUrl: (url: string) => void;
   setBillboardColor: (color: string) => void;
+
+  addObject: (obj: PlacedObject) => void;
+  removeObject: (id: string) => void;
+  updateObject: (id: string, updates: Partial<PlacedObject>) => void;
 
   showSnow: boolean;
   setShowSnow: (show: boolean) => void;
@@ -161,7 +179,7 @@ interface BuildingStore extends BuildingSystemState {
   updateTile: (groupId: string, tileId: string, updates: Partial<TileConfig>) => void;
   removeTile: (groupId: string, tileId: string) => void;
   
-  setEditMode: (mode: 'none' | 'wall' | 'tile' | 'npc') => void;
+  setEditMode: (mode: 'none' | 'wall' | 'tile' | 'npc' | 'object') => void;
   setShowGrid: (show: boolean) => void;
   setGridSize: (size: number) => void;
   setSnapToGrid: (snap: boolean) => void;
@@ -194,12 +212,18 @@ export const useBuildingStore = create<BuildingStore>()(
     currentTileShape: 'box',
     currentTileRotation: 0,
     currentWallRotation: 0,
+    objects: [],
     selectedTileObjectType: 'none',
+    selectedPlacedObjectType: 'none',
     currentFlagWidth: 1.5,
     currentFlagHeight: 1.0,
     currentFlagImageUrl: '',
     currentFlagStyle: 'flag' as FlagStyle,
     currentFireIntensity: 1.5,
+    currentFireWidth: 1.0,
+    currentFireHeight: 1.5,
+    currentFireColor: '#ff6622',
+    currentObjectRotation: 0,
     currentBillboardText: 'HELLO',
     currentBillboardImageUrl: '',
     currentBillboardColor: '#00ff88',
@@ -406,7 +430,7 @@ export const useBuildingStore = create<BuildingStore>()(
       // -3  oak  oak  oak FLAG oak SNOW SNOW
       // -2  oak  oak  oak  oak oak GRSS GRSS
       // -1  WTR  oak  MRB  MRB MRB oak  oak
-      //  0  WTR  oak  MRB  MRB MRB oak  oak
+      //  0  WTR  oak  MRB  MRB MRB oak  SKRA
       //  1  oak  oak  MRB  MRB MRB oak  oak
       //  2  sand sand oak  oak oak  oak FIRE
       //  3  sand sand oak  oak oak  oak  oak
@@ -479,19 +503,33 @@ export const useBuildingStore = create<BuildingStore>()(
               addTileToState(group, { ...base, objectType: 'sand' });
             } else if (isWater) {
               addTileToState(group, { ...base, objectType: 'water' });
-            } else if (isFlag) {
-              addTileToState(group, {
-                ...base,
-                objectType: 'flag',
-                objectConfig: { flagWidth: 1.5, flagHeight: 1.0, flagStyle: 'flag' as FlagStyle },
-              });
-            } else if (isFire) {
-              addTileToState(group, { ...base, objectType: 'fire', objectConfig: { fireIntensity: 1.5 } });
             } else {
               addTileToState(group, base);
             }
           }
         }
+
+        // Placed objects (independent from tiles, stackable)
+        state.objects.push(
+          {
+            id: 'demo-sakura-1',
+            type: 'sakura',
+            position: { x: 3 * cellSize, y: 0, z: 0 },
+            config: { size: cellSize },
+          },
+          {
+            id: 'demo-flag-1',
+            type: 'flag',
+            position: { x: 0, y: 0, z: -3 * cellSize },
+            config: { flagWidth: 1.5, flagHeight: 1.0, flagStyle: 'flag' as FlagStyle },
+          },
+          {
+            id: 'demo-fire-1',
+            type: 'fire',
+            position: { x: 3 * cellSize, y: TILE_CONSTANTS.HEIGHT_STEP, z: 2 * cellSize },
+            config: { fireIntensity: 1.5 },
+          },
+        );
       }
       
       state.initialized = true;
@@ -624,22 +662,7 @@ export const useBuildingStore = create<BuildingStore>()(
         const objectConfig: TileConfig['objectConfig'] =
           state.selectedTileObjectType === 'grass'
             ? { grassDensity: 1000 }
-            : state.selectedTileObjectType === 'flag'
-              ? {
-                  flagWidth: state.currentFlagWidth,
-                  flagHeight: state.currentFlagHeight,
-                  flagStyle: state.currentFlagStyle,
-                  ...(state.currentFlagImageUrl ? { flagTexture: state.currentFlagImageUrl } : {}),
-                }
-              : state.selectedTileObjectType === 'fire'
-                ? { fireIntensity: state.currentFireIntensity }
-                : state.selectedTileObjectType === 'billboard'
-                  ? {
-                      billboardText: state.currentBillboardText,
-                      billboardColor: state.currentBillboardColor,
-                      ...(state.currentBillboardImageUrl ? { billboardImageUrl: state.currentBillboardImageUrl } : {}),
-                    }
-                  : undefined;
+            : undefined;
         const tileWithObject: TileConfig = {
           ...tile,
           objectType: state.selectedTileObjectType,
@@ -898,6 +921,25 @@ export const useBuildingStore = create<BuildingStore>()(
       state.selectedTileObjectType = type;
     }),
 
+    setSelectedPlacedObjectType: (type) => set((state) => {
+      state.selectedPlacedObjectType = type;
+    }),
+
+    addObject: (obj) => set((state) => {
+      state.objects.push(obj);
+    }),
+
+    removeObject: (id) => set((state) => {
+      state.objects = state.objects.filter(o => o.id !== id);
+    }),
+
+    updateObject: (id, updates) => set((state) => {
+      const idx = state.objects.findIndex(o => o.id === id);
+      if (idx !== -1) {
+        Object.assign(state.objects[idx], updates);
+      }
+    }),
+
     setFlagWidth: (width) => set((state) => { state.currentFlagWidth = width; }),
     setFlagHeight: (height) => set((state) => { state.currentFlagHeight = height; }),
     setFlagImageUrl: (url) => set((state) => { state.currentFlagImageUrl = url; }),
@@ -909,6 +951,10 @@ export const useBuildingStore = create<BuildingStore>()(
     }),
 
     setFireIntensity: (intensity) => set((state) => { state.currentFireIntensity = intensity; }),
+    setFireWidth: (width) => set((state) => { state.currentFireWidth = width; }),
+    setFireHeight: (height) => set((state) => { state.currentFireHeight = height; }),
+    setFireColor: (color) => set((state) => { state.currentFireColor = color; }),
+    setObjectRotation: (rotation) => set((state) => { state.currentObjectRotation = rotation; }),
 
     setBillboardText: (text) => set((state) => { state.currentBillboardText = text; }),
     setBillboardImageUrl: (url) => set((state) => { state.currentBillboardImageUrl = url; }),

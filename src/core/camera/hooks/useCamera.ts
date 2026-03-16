@@ -19,7 +19,6 @@ export function useCamera() {
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
   const mode = useGaesupStore((state) => state.mode);
   const isInEditMode = useBuildingStore((state) => state.isInEditMode());
-  const interactionSystemRef = useRef(InteractionSystem.getInstance());
 
   // Keep refs for event handlers to avoid re-registering listeners on every option change.
   const cameraOptionRef = useRef(cameraOption);
@@ -37,10 +36,6 @@ export function useCamera() {
 
   const excludeObjectsRef = useRef<THREE.Object3D[]>([]);
   const calcPropsRef = useRef<CameraCalcProps | null>(null);
-  const orbitYawRef = useRef(0);
-  const orbitPitchRef = useRef(0);
-  const lookAroundActiveRef = useRef(false);
-  const lastPointerPositionRef = useRef<{ x: number; y: number } | null>(null);
   
   const initialConfig: CameraSystemConfig = useMemo(() => ({
     mode: mode?.control || 'thirdPerson',
@@ -92,8 +87,8 @@ export function useCamera() {
       fov: opt?.fov ?? 75,
       zoom: opt?.zoom ?? 1,
       enableCollision: opt?.enableCollision ?? true,
-      orbitYaw: orbitYawRef.current,
-      orbitPitch: orbitPitchRef.current,
+      orbitYaw: 0,
+      orbitPitch: 0,
       ...(opt?.maxDistance !== undefined ? { maxDistance: opt.maxDistance } : {}),
       ...(opt?.offset
         ? { offset: { x: opt.offset.x, y: opt.offset.y, z: opt.offset.z } }
@@ -109,13 +104,6 @@ export function useCamera() {
       ...(opt?.focusLerpSpeed !== undefined ? { focusLerpSpeed: opt.focusLerpSpeed } : {}),
     });
   }, [updateConfig]);
-
-  const setLookAroundActive = useCallback((active: boolean) => {
-    if (lookAroundActiveRef.current === active) return;
-    lookAroundActiveRef.current = active;
-    lastPointerPositionRef.current = null;
-    interactionSystemRef.current.updateMouse({ isLookAround: active });
-  }, []);
   
   const handleWheel = useCallback((event: WheelEvent) => {
     const opt = cameraOptionRef.current;
@@ -166,65 +154,9 @@ export function useCamera() {
   }, [cameraOption?.enableFocus, isInEditMode, setCameraOption]);
 
   useEffect(() => {
-    const currentMode = mode?.control;
-    const supportsLookAround = currentMode === 'thirdPerson' || currentMode === 'chase';
-    if (!supportsLookAround || isInEditMode) {
-      setLookAroundActive(false);
-    }
-  }, [isInEditMode, mode?.control, setLookAroundActive]);
-
-  useEffect(() => {
-    const canvas = gl.domElement;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code !== 'ShiftLeft' && event.code !== 'ShiftRight') return;
-      if (isInEditModeRef.current || cameraOptionRef.current?.focus) return;
-      const currentMode = modeRef.current?.control;
-      if (currentMode !== 'thirdPerson' && currentMode !== 'chase') return;
-      setLookAroundActive(true);
-    };
-
-    const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
-        setLookAroundActive(false);
-      }
-    };
-
-    const handleMouseMove = (event: MouseEvent) => {
-      if (!lookAroundActiveRef.current || isInEditModeRef.current) return;
-
-      const lastPointer = lastPointerPositionRef.current;
-      const deltaX = event.movementX || (lastPointer ? event.clientX - lastPointer.x : 0);
-      const deltaY = event.movementY || (lastPointer ? event.clientY - lastPointer.y : 0);
-      lastPointerPositionRef.current = { x: event.clientX, y: event.clientY };
-
-      if (deltaX === 0 && deltaY === 0) return;
-
-      orbitYawRef.current -= deltaX * 0.008;
-      orbitPitchRef.current = THREE.MathUtils.clamp(
-        orbitPitchRef.current - deltaY * 0.006,
-        -Math.PI * 0.2,
-        Math.PI * 0.35,
-      );
-      syncCameraConfig();
-    };
-
-    const handleWindowBlur = () => {
-      setLookAroundActive(false);
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('blur', handleWindowBlur);
-    canvas.addEventListener('mousemove', handleMouseMove);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-      window.removeEventListener('blur', handleWindowBlur);
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      setLookAroundActive(false);
-    };
-  }, [gl, setLookAroundActive, syncCameraConfig]);
+    InteractionSystem.getInstance().updateMouse({ isLookAround: false });
+    syncCameraConfig();
+  }, [syncCameraConfig]);
   
   useEffect(() => {
     syncCameraConfig();

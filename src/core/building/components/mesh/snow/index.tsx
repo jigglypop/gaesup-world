@@ -6,8 +6,10 @@ import * as THREE from 'three';
 import { loadCoreWasm, type GaesupCoreWasmExports } from '@core/wasm/loader';
 
 const COUNT = 2000;
+const NEAR_COUNT = 800;
 const HALF_RANGE = 20;
 const HEIGHT = 20;
+const LOD_INTERVAL = 3;
 
 let _snowTex: THREE.Texture | null = null;
 function getSnowTexture(): THREE.Texture {
@@ -33,6 +35,7 @@ export function Snow() {
   const wasmRef = useRef<GaesupCoreWasmExports | null>(null);
   const ptrsRef = useRef<{ p: number; v: number; b: number } | null>(null);
   const bounds = useMemo(() => new Float32Array(6), []);
+  const frameRef = useRef(0);
 
   useEffect(() => {
     const pos = posRef.current;
@@ -69,6 +72,9 @@ export function Snow() {
   }, []);
 
   useFrame((state, delta) => {
+    const parent = pointsRef.current?.parent;
+    if (parent && !parent.visible) return;
+
     const cam = state.camera.position;
     bounds[0] = cam.x - HALF_RANGE;
     bounds[1] = cam.x + HALF_RANGE;
@@ -82,6 +88,8 @@ export function Snow() {
     const ptrs = ptrsRef.current;
     const pos = posRef.current;
     const vel = velRef.current;
+    const frame = frameRef.current++;
+    const isFullUpdate = frame % LOD_INTERVAL === 0;
 
     if (wasm && ptrs) {
       new Float32Array(wasm.memory.buffer, ptrs.b, 6).set(bounds);
@@ -90,9 +98,14 @@ export function Snow() {
         0.3, 0.0, 0.0,
         2.0, 0.01, dt,
       );
-      pos.set(new Float32Array(wasm.memory.buffer, ptrs.p, COUNT * 3));
+      // WASM 메모리를 직접 참조하여 geometry attribute 갱신 (전체 복사 제거)
+      const wasmPos = new Float32Array(wasm.memory.buffer, ptrs.p, COUNT * 3);
+      const attr = pointsRef.current.geometry.attributes.position as THREE.BufferAttribute;
+      (attr as unknown as { array: Float32Array }).array = wasmPos;
+      attr.needsUpdate = true;
     } else {
-      for (let i = 0; i < COUNT; i++) {
+      const updateEnd = isFullUpdate ? COUNT : NEAR_COUNT;
+      for (let i = 0; i < updateEnd; i++) {
         const idx = i * 3;
         vel[idx] = vel[idx] * 0.99 + 0.3 * dt;
         vel[idx + 1] -= 2.0 * dt;
@@ -113,15 +126,17 @@ export function Snow() {
         if (pos[idx + 2] < bounds[4]) pos[idx + 2] += HALF_RANGE * 2;
         else if (pos[idx + 2] > bounds[5]) pos[idx + 2] -= HALF_RANGE * 2;
       }
-    }
 
-    const attr = pointsRef.current.geometry.attributes.position as THREE.BufferAttribute;
-    attr.needsUpdate = true;
+      const attr = pointsRef.current.geometry.attributes.position as THREE.BufferAttribute;
+      attr.needsUpdate = true;
+    }
   });
 
   const geometry = useMemo(() => {
     const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(posRef.current, 3));
+    const attr = new THREE.Float32BufferAttribute(posRef.current, 3);
+    attr.setUsage(THREE.DynamicDrawUsage);
+    g.setAttribute('position', attr);
     return g;
   }, []);
 

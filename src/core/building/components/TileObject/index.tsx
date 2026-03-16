@@ -1,20 +1,32 @@
-import { Suspense, useMemo } from 'react';
+import { Suspense, useMemo, useRef } from 'react';
+
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
+
+import { weightFromDistance } from '@core/utils/sfe';
 
 import { TileObjectProps } from './types';
 import Water from '../mesh/water';
 import Grass from '../mesh/grass/Grass';
-import Fire from '../mesh/fire';
-import Billboard from '../mesh/billboard';
-import Sand from '../mesh/sand';
-import Snowfield from '../mesh/snowfield';
 import type { TileConfig } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
+
+const SFE_NEAR = 25;
+const SFE_FAR = 90;
+const SFE_STRENGTH = 4;
 
 type WaterShoreMask = {
   north: boolean;
   south: boolean;
   east: boolean;
   west: boolean;
+};
+
+const DEFAULT_WATER_SHORE_MASK: WaterShoreMask = {
+  north: true,
+  south: true,
+  east: true,
+  west: true,
 };
 
 function tileCoversPoint(tile: TileConfig, x: number, z: number): boolean {
@@ -52,19 +64,43 @@ function getWaterShoreMask(tile: TileConfig, tiles?: TileConfig[]): WaterShoreMa
   };
 }
 
-export function TileObject({ tile, tiles }: TileObjectProps) {
-  if (!tile.objectType || tile.objectType === 'none' || tile.objectType === 'flag') return null;
+const BATCHED_COVERS = new Set(['sand', 'snowfield']);
 
-  const tileShape = tile.shape ?? 'box';
-  const isTerrainCover = tile.objectType === 'sand' || tile.objectType === 'snowfield';
-  if (isTerrainCover && tileShape !== 'box') return null;
+export function TileObject({ tile, tiles }: TileObjectProps) {
+  if (!tile.objectType || tile.objectType === 'none') return null;
+  if (BATCHED_COVERS.has(tile.objectType)) return null;
+
+  const groupRef = useRef<THREE.Group>(null!);
+  const visibleRef = useRef(true);
+  const lodAccumRef = useRef(0);
 
   const tileSize = TILE_CONSTANTS.GRID_CELL_SIZE * (tile.size || 1);
   const position = [tile.position.x, tile.position.y, tile.position.z] as [number, number, number];
-  const waterShoreMask = useMemo(() => getWaterShoreMask(tile, tiles), [tile, tiles]);
+  const waterShoreMask = useMemo(
+    () => (tile.objectType === 'water' ? getWaterShoreMask(tile, tiles) : DEFAULT_WATER_SHORE_MASK),
+    [tile, tiles],
+  );
+
+  useFrame((state, delta) => {
+    lodAccumRef.current += delta;
+    const interval = visibleRef.current ? 0.3 : 0.8;
+    if (lodAccumRef.current < interval) return;
+    lodAccumRef.current = 0;
+
+    const cam = state.camera.position;
+    const p = tile.position;
+    const dx = cam.x - p.x, dy = cam.y - p.y, dz = cam.z - p.z;
+    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    const w = weightFromDistance(dist, SFE_NEAR, SFE_FAR, SFE_STRENGTH);
+    const vis = w > 0;
+    if (vis !== visibleRef.current) {
+      visibleRef.current = vis;
+      if (groupRef.current) groupRef.current.visible = vis;
+    }
+  });
 
   return (
-    <group position={position}>
+    <group ref={groupRef} position={position}>
       <Suspense fallback={null}>
         {tile.objectType === 'water' && (
           <Water size={tileSize} shore={waterShoreMask} center={position} />
@@ -77,27 +113,7 @@ export function TileObject({ tile, tiles }: TileObjectProps) {
             position={[0, 0.05, 0]}
           />
         )}
-
-        {tile.objectType === 'fire' && (
-          <Fire intensity={tile.objectConfig?.fireIntensity ?? 1.5} />
-        )}
-
-        {tile.objectType === 'sand' && (
-          <Sand size={tileSize} />
-        )}
-
-        {tile.objectType === 'snowfield' && (
-          <Snowfield size={tileSize} />
-        )}
-
-        {tile.objectType === 'billboard' && (
-          <Billboard
-            {...(tile.objectConfig?.billboardText ? { text: tile.objectConfig.billboardText } : {})}
-            {...(tile.objectConfig?.billboardImageUrl ? { imageUrl: tile.objectConfig.billboardImageUrl } : {})}
-            {...(tile.objectConfig?.billboardColor ? { color: tile.objectConfig.billboardColor } : {})}
-          />
-        )}
       </Suspense>
     </group>
   );
-} 
+}

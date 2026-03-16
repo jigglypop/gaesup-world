@@ -17,6 +17,7 @@ export function BuildingController() {
     updateMousePosition,
     placeWall,
     placeTile,
+    placeObject,
     handleWallClick,
     handleTileClick,
   } = useBuildingEditor();
@@ -26,6 +27,7 @@ export function BuildingController() {
   const setHoverPosition = useBuildingStore((s) => s.setHoverPosition);
   const setWallRotation = useBuildingStore((s) => s.setWallRotation);
   const setTileRotation = useBuildingStore((s) => s.setTileRotation);
+  const setObjectRotation = useBuildingStore((s) => s.setObjectRotation);
   const initialized = useBuildingStore((s) => s.initialized);
   const initializeDefaults = useBuildingStore((s) => s.initializeDefaults);
 
@@ -45,11 +47,12 @@ export function BuildingController() {
   }, [initialized, initializeDefaults]);
 
   useEffect(() => {
-    if (editMode !== 'wall' && editMode !== 'tile') return;
+    if (editMode !== 'wall' && editMode !== 'tile' && editMode !== 'object') return;
     const handleKeyDown = (e: KeyboardEvent) => {
       const applyRotation = (rotation: number) => {
         if (editMode === 'wall') setWallRotation(rotation);
-        if (editMode === 'tile') setTileRotation(rotation);
+        else if (editMode === 'tile') setTileRotation(rotation);
+        else if (editMode === 'object') setObjectRotation(rotation);
       };
 
       switch (e.key) {
@@ -61,7 +64,7 @@ export function BuildingController() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [editMode, setTileRotation, setWallRotation]);
+  }, [editMode, setTileRotation, setWallRotation, setObjectRotation]);
 
   useEffect(() => {
     const canvas = gl.domElement;
@@ -89,6 +92,7 @@ export function BuildingController() {
       if (mode === 'npc') return;
       if (mode === 'wall') placeWall();
       else if (mode === 'tile') placeTile();
+      else if (mode === 'object') placeObject();
     };
 
     canvas.addEventListener('mousedown', handleMouseDown);
@@ -100,7 +104,7 @@ export function BuildingController() {
       canvas.removeEventListener('mouseup', handleMouseUp);
       setHoverPosition(null);
     };
-  }, [gl, updateMousePosition, placeWall, placeTile, setHoverPosition]);
+  }, [gl, updateMousePosition, placeWall, placeTile, placeObject, setHoverPosition]);
 
   return (
     <>

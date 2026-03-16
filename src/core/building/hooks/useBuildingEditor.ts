@@ -19,6 +19,7 @@ export function useBuildingEditor() {
   const snapPosition = useBuildingStore((s) => s.snapPosition);
   const addWall = useBuildingStore((s) => s.addWall);
   const addTile = useBuildingStore((s) => s.addTile);
+  const addObject = useBuildingStore((s) => s.addObject);
   const removeWall = useBuildingStore((s) => s.removeWall);
   const removeTile = useBuildingStore((s) => s.removeTile);
   const setHoverPosition = useBuildingStore((s) => s.setHoverPosition);
@@ -38,7 +39,7 @@ export function useBuildingEditor() {
     mouseRef.current.y = -(event.clientY / canvas.clientHeight) * 2 + 1;
 
     const mode = useBuildingStore.getState().editMode;
-    if (mode === 'tile' || mode === 'wall' || mode === 'npc') {
+    if (mode === 'tile' || mode === 'wall' || mode === 'npc' || mode === 'object') {
       const pos = raycastGround();
       setHoverPosition(pos);
     } else {
@@ -94,6 +95,70 @@ export function useBuildingEditor() {
     });
   }, [addTile]);
 
+  const placeObject = useCallback(() => {
+    const {
+      editMode: mode,
+      selectedPlacedObjectType,
+      hoverPosition,
+      tileGroups,
+      currentObjectRotation,
+      currentFlagWidth,
+      currentFlagHeight,
+      currentFlagStyle,
+      currentFlagImageUrl,
+      currentFireIntensity,
+      currentFireWidth,
+      currentFireHeight,
+      currentFireColor,
+      currentBillboardText,
+      currentBillboardColor,
+      currentBillboardImageUrl,
+    } = useBuildingStore.getState();
+    if (mode !== 'object' || selectedPlacedObjectType === 'none' || !hoverPosition) return;
+
+    let tileY = 0;
+    const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
+    for (const group of tileGroups.values()) {
+      for (const tile of group.tiles) {
+        const half = ((tile.size || 1) * cellSize) / 2;
+        if (
+          Math.abs(tile.position.x - hoverPosition.x) < half &&
+          Math.abs(tile.position.z - hoverPosition.z) < half
+        ) {
+          tileY = Math.max(tileY, tile.position.y);
+        }
+      }
+    }
+
+    const config =
+      selectedPlacedObjectType === 'sakura'
+        ? { size: useBuildingStore.getState().currentTileMultiplier * cellSize }
+        : selectedPlacedObjectType === 'flag'
+          ? {
+              flagWidth: currentFlagWidth,
+              flagHeight: currentFlagHeight,
+              flagStyle: currentFlagStyle,
+              ...(currentFlagImageUrl ? { flagTexture: currentFlagImageUrl } : {}),
+            }
+          : selectedPlacedObjectType === 'fire'
+            ? { fireIntensity: currentFireIntensity, fireWidth: currentFireWidth, fireHeight: currentFireHeight, fireColor: currentFireColor }
+            : selectedPlacedObjectType === 'billboard'
+              ? {
+                  billboardText: currentBillboardText,
+                  billboardColor: currentBillboardColor,
+                  ...(currentBillboardImageUrl ? { billboardImageUrl: currentBillboardImageUrl } : {}),
+                }
+              : undefined;
+
+    addObject({
+      id: `obj-${++_idSeq}-${Date.now()}`,
+      type: selectedPlacedObjectType,
+      position: { ...hoverPosition, y: tileY },
+      ...(currentObjectRotation !== 0 ? { rotation: currentObjectRotation } : {}),
+      ...(config ? { config } : {}),
+    });
+  }, [addObject]);
+
   const handleWallClick = useCallback((wallId: string) => {
     const { editMode: mode, selectedWallGroupId: groupId } = useBuildingStore.getState();
     if (mode === 'wall' && groupId) {
@@ -112,6 +177,7 @@ export function useBuildingEditor() {
     updateMousePosition,
     placeWall,
     placeTile,
+    placeObject,
     handleWallClick,
     handleTileClick,
     getGroundPosition: raycastGround,

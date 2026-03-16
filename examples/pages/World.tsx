@@ -22,9 +22,9 @@ import '../style.css';
 export { S3 };
 
 const cameraOption: CameraOptionType = {
-  xDistance: 15,
-  yDistance: 20,
-  zDistance: 15,
+  xDistance: -7,
+  yDistance: 10,
+  zDistance: -13,
   offset: new THREE.Vector3(0, 0, 0),
   enableCollision: true,
   smoothing: { position: 0.25, rotation: 0.3, fov: 0.2 },

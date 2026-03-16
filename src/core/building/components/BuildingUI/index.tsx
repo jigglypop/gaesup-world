@@ -14,11 +14,8 @@ const TILE_OBJECT_OPTIONS: { type: TileObjectType; label: string }[] = [
   { type: 'none', label: 'None' },
   { type: 'water', label: 'Water' },
   { type: 'grass', label: 'Grass' },
-  { type: 'fire', label: 'Fire' },
   { type: 'sand', label: 'Sand' },
   { type: 'snowfield', label: 'Snowfield' },
-  { type: 'flag', label: 'Flag' },
-  { type: 'billboard', label: 'Billboard' },
 ];
 
 const TILE_SHAPE_OPTIONS: { type: TileShapeType; label: string }[] = [

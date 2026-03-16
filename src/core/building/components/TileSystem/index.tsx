@@ -9,7 +9,8 @@ import { MinimapSystem } from '../../../ui/core';
 import { MaterialManager } from '../../core/MaterialManager';
 import type { TileShapeType } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
-import { FlagBatch } from '../mesh/flag';
+import { SandBatch, type SandEntry } from '../mesh/sand';
+import { SnowfieldBatch, type SnowfieldEntry } from '../mesh/snowfield';
 import { TileObject } from '../TileObject';
 
 type TileLike = TileSystemProps['tileGroup']['tiles'][number];
@@ -531,18 +532,40 @@ export function TileSystem({
     [],
   );
 
-  const flagTiles = useMemo(
-    () => tileGroup.tiles.filter((t) => t.objectType === 'flag'),
+  const sandTiles = useMemo(
+    () => tileGroup.tiles.filter((t) => t.objectType === 'sand'),
     [tileGroup.tiles],
   );
 
-  const nonFlagObjects = useMemo(
+  const sandEntries: SandEntry[] = useMemo(
+    () => sandTiles.map((t) => ({
+      position: [t.position.x, t.position.y, t.position.z] as [number, number, number],
+      size: TILE_CONSTANTS.GRID_CELL_SIZE * (t.size || 1),
+    })),
+    [sandTiles],
+  );
+
+  const snowfieldTiles = useMemo(
+    () => tileGroup.tiles.filter((t) => t.objectType === 'snowfield'),
+    [tileGroup.tiles],
+  );
+
+  const snowfieldEntries: SnowfieldEntry[] = useMemo(
+    () => snowfieldTiles.map((t) => ({
+      position: [t.position.x, t.position.y, t.position.z] as [number, number, number],
+      size: TILE_CONSTANTS.GRID_CELL_SIZE * (t.size || 1),
+    })),
+    [snowfieldTiles],
+  );
+
+  const tileObjects = useMemo(
     () =>
       tileGroup.tiles.filter(
         (t) =>
           t.objectType &&
           t.objectType !== 'none' &&
-          t.objectType !== 'flag',
+          t.objectType !== 'sand' &&
+          t.objectType !== 'snowfield',
       ),
     [tileGroup.tiles],
   );
@@ -850,15 +873,13 @@ export function TileSystem({
           />
         ))}
         
-        {nonFlagObjects.map((tile) => (
+        {tileObjects.map((tile) => (
           <TileObject key={`${tile.id}-object`} tile={tile} tiles={tileGroup.tiles} />
         ))}
 
-        {flagTiles.length > 0 && (
-          <Suspense fallback={null}>
-            <FlagBatch flags={flagTiles} />
-          </Suspense>
-        )}
+        {sandEntries.length > 0 && <SandBatch entries={sandEntries} />}
+
+        {snowfieldEntries.length > 0 && <SnowfieldBatch entries={snowfieldEntries} />}
       </>
     </GaeSupProps>
   );

@@ -41,8 +41,32 @@ export interface WallGroupConfig {
   walls: WallConfig[];
 }
 
-export type TileObjectType = 'water' | 'grass' | 'sand' | 'snowfield' | 'flag' | 'fire' | 'billboard' | 'none';
+export type TileObjectType = 'water' | 'grass' | 'sand' | 'snowfield' | 'none';
+export type PlacedObjectType = 'sakura' | 'flag' | 'fire' | 'billboard';
 export type TileShapeType = 'box' | 'stairs' | 'round' | 'ramp';
+
+export interface ObjectConfig {
+  size?: number;
+  flagTexture?: string;
+  flagWidth?: number;
+  flagHeight?: number;
+  flagStyle?: FlagStyle;
+  fireIntensity?: number;
+  fireWidth?: number;
+  fireHeight?: number;
+  fireColor?: string;
+  billboardText?: string;
+  billboardImageUrl?: string;
+  billboardColor?: string;
+}
+
+export interface PlacedObject {
+  id: string;
+  type: PlacedObjectType;
+  position: Position3D;
+  rotation?: number;
+  config?: ObjectConfig;
+}
 
 export interface TileConfig {
   id: string;
@@ -53,16 +77,8 @@ export interface TileConfig {
   shape?: TileShapeType;
   objectType?: TileObjectType;
   objectConfig?: {
-    flagTexture?: string;
-    flagWidth?: number;
-    flagHeight?: number;
-    flagStyle?: FlagStyle;
     grassDensity?: number;
     waterScale?: number;
-    fireIntensity?: number;
-    billboardText?: string;
-    billboardImageUrl?: string;
-    billboardColor?: string;
   };
 }
 
@@ -108,11 +124,12 @@ export interface BuildingSystemState {
   tileGroups: Map<string, TileGroupConfig>;
   wallCategories: Map<string, WallCategory>;
   tileCategories: Map<string, TileCategory>;
+  objects: PlacedObject[];
   selectedWallGroupId?: string;
   selectedTileGroupId?: string;
   selectedWallCategoryId?: string;
   selectedTileCategoryId?: string;
-  editMode: 'none' | 'wall' | 'tile' | 'npc';
+  editMode: 'none' | 'wall' | 'tile' | 'npc' | 'object';
   showGrid: boolean;
   gridSize: number;
   snapToGrid: boolean;
