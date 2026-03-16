@@ -7,7 +7,7 @@ import { PreviewTile } from '../PreviewTile';
 import { PreviewWall } from '../PreviewWall';
 import { SakuraBatch, type SakuraTreeEntry } from '../mesh/sakura';
 import { FlagBatch } from '../mesh/flag';
-import Fire from '../mesh/fire';
+import { FireBatch, type FireBatchEntry } from '../mesh/fire';
 import Billboard from '../mesh/billboard';
 import { Snow } from '../mesh/snow';
 import { TILE_CONSTANTS } from '../../types/constants';
@@ -44,7 +44,17 @@ export const BuildingSystem = React.memo(function BuildingSystem({
     [sakuraObjects],
   );
   const flagObjects = useMemo(() => objects.filter(o => o.type === 'flag'), [objects]);
-  const fireObjects = useMemo(() => objects.filter(o => o.type === 'fire'), [objects]);
+  const fireEntries: FireBatchEntry[] = useMemo(
+    () => objects.filter(o => o.type === 'fire').map(o => ({
+      position: [o.position.x, o.position.y, o.position.z] as [number, number, number],
+      rotation: o.rotation ?? 0,
+      intensity: o.config?.fireIntensity ?? 1.5,
+      width: o.config?.fireWidth ?? 1.0,
+      height: o.config?.fireHeight ?? 1.5,
+      color: o.config?.fireColor ?? '#ffffff',
+    })),
+    [objects],
+  );
   const billboardObjects = useMemo(() => objects.filter(o => o.type === 'billboard'), [objects]);
 
   return (
@@ -90,22 +100,11 @@ export const BuildingSystem = React.memo(function BuildingSystem({
           </Suspense>
         )}
 
-        {fireObjects.map((obj) => (
-          <group
-            key={obj.id}
-            position={[obj.position.x, obj.position.y, obj.position.z]}
-            rotation={[0, obj.rotation ?? 0, 0]}
-          >
-            <Suspense fallback={null}>
-              <Fire
-                intensity={obj.config?.fireIntensity ?? 1.5}
-                width={obj.config?.fireWidth ?? 1.0}
-                height={obj.config?.fireHeight ?? 1.5}
-                color={obj.config?.fireColor}
-              />
-            </Suspense>
-          </group>
-        ))}
+        {fireEntries.length > 0 && (
+          <Suspense fallback={null}>
+            <FireBatch fires={fireEntries} />
+          </Suspense>
+        )}
 
         {billboardObjects.map((obj) => (
           <group

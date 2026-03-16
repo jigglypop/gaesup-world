@@ -519,6 +519,8 @@ export function TileSystem({
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
+  const rockRef = useRef<THREE.InstancedMesh>(null!);
+
   const editGeometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
   const editMaterial = useMemo(
     () =>
@@ -675,6 +677,22 @@ export function TileSystem({
     // Grow with headroom to avoid recreating the InstancedMesh on every add.
     setCapacity(Math.max(tileCount, Math.ceil(capacity * 1.5)));
   }, [tileCount, capacity]);
+
+  useLayoutEffect(() => {
+    const mesh = rockRef.current;
+    if (mesh && terrain.rocks.length > 0) {
+      mesh.count = terrain.rocks.length;
+      for (let i = 0; i < terrain.rocks.length; i++) {
+        const rock = terrain.rocks[i]!;
+        dummy.position.set(rock.position[0], rock.position[1], rock.position[2]);
+        dummy.rotation.set(rock.rotation[0], rock.rotation[1], rock.rotation[2]);
+        dummy.scale.set(rock.scale[0], rock.scale[1], rock.scale[2]);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i, dummy.matrix);
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+    }
+  }, [terrain.rocks, dummy]);
 
   useLayoutEffect(() => {
     const mesh = instancedRef.current;
@@ -860,18 +878,14 @@ export function TileSystem({
           />
         )}
 
-        {terrain.rocks.map((rock, index) => (
-          <mesh
-            key={`${tileGroup.id}-rock-${index}`}
-            geometry={rockGeometry}
-            material={rockMaterial}
-            position={rock.position}
-            rotation={rock.rotation}
-            scale={rock.scale}
+        {terrain.rocks.length > 0 && (
+          <instancedMesh
+            ref={rockRef}
+            args={[rockGeometry, rockMaterial, Math.max(1, terrain.rocks.length)]}
             castShadow
             receiveShadow
           />
-        ))}
+        )}
         
         {tileObjects.map((tile) => (
           <TileObject key={`${tile.id}-object`} tile={tile} tiles={tileGroup.tiles} />
