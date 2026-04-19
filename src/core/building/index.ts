@@ -19,3 +19,4 @@ export { Snow } from './components/mesh/snow';
 export { default as Grass } from './components/mesh/grass/Grass';
 export { default as Water } from './components/mesh/water';
 export { default as Billboard } from './components/mesh/billboard';
+export { default as Fire } from './components/mesh/fire';

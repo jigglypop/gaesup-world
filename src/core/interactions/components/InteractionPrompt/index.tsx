@@ -1,0 +1,59 @@
+import React from 'react';
+
+import { useCurrentInteraction, useInteractionKey } from '../../hooks/useInteractionTarget';
+
+export type InteractionPromptProps = {
+  enabled?: boolean;
+};
+
+export function InteractionPrompt({ enabled = true }: InteractionPromptProps) {
+  const target = useCurrentInteraction();
+  useInteractionKey(enabled);
+
+  if (!enabled || !target) return null;
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        bottom: 96,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 96,
+        padding: '8px 14px',
+        background: 'rgba(0,0,0,0.65)',
+        color: '#fff',
+        fontFamily: 'monospace',
+        fontSize: 13,
+        borderRadius: 999,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        boxShadow: '0 6px 16px rgba(0,0,0,0.4)',
+        backdropFilter: 'blur(4px)',
+        pointerEvents: 'none',
+        userSelect: 'none',
+      }}
+    >
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minWidth: 22,
+          height: 22,
+          padding: '0 6px',
+          borderRadius: 6,
+          background: '#ffd84a',
+          color: '#222',
+          fontWeight: 700,
+        }}
+      >
+        {target.key.toUpperCase()}
+      </span>
+      <span>{target.label}</span>
+      <span style={{ opacity: 0.5, fontSize: 11 }}>{target.distance.toFixed(1)}m</span>
+    </div>
+  );
+}
+
+export default InteractionPrompt;
