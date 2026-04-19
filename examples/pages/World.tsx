@@ -8,19 +8,22 @@ import * as THREE from 'three';
 import { WorldPageProps } from './types';
 import {
   Billboard, BugSpot,
-  BuildingController, CatalogUI, Clicker, CraftingUI, DialogBox, Editor, FishSpot,
+  BuildingController, CatalogUI, Clicker, CraftingUI, CropPlot, DialogBox, Editor, FishSpot,
   Fire, GaesupController, GaesupWorld,
   GaesupWorldContent, Grass, GroundClicker, HotbarUI, InteractionPrompt, InteractionTracker, InventoryUI,
   MailboxUI, MiniMap, QuestLogUI, SakuraBatch, SandBatch, ShopUI, Snow, SnowfieldBatch,
   TimeHUD, ToastHost, ToolUseController, TreeObject, WalletHUD, Water,
-  getSaveSystem, registerSeedItems, setDefaultToonMode,
+  WeatherEffect, WeatherHUD,
+  getNPCScheduler, getSaveSystem, registerSeedCrops, registerSeedItems, setDefaultToonMode,
   useAutoSave, useCatalogStore, useCatalogTracker, useCraftingStore, useDayChange,
   useFriendshipStore, useGameClock, useHotbarKeyboard, useInventoryStore, useMailStore,
-  useQuestObjectiveTracker, useQuestStore, useShopStore, useTimeStore, useWalletStore,
+  usePlotStore, useQuestObjectiveTracker, useQuestStore, useShopStore, useTimeStore,
+  useWalletStore, useWeatherStore, useWeatherTicker,
   type SakuraTreeEntry, type SandEntry, type SnowfieldEntry,
   useBuildingStore, useGaesupStore,
 } from '../../src';
 import { registerSeedDialogs } from '../components/dialog/seedDialogs';
+import { ActionBar } from '../components/hud/ActionBar';
 import { NPCBeacon } from '../components/npc/NPCBeacon';
 import { registerSeedContent } from '../components/seedContent';
 import { usePlayerPosition } from '../../src/core/motions/hooks/usePlayerPosition';
@@ -36,6 +39,38 @@ import '../style.css';
 registerSeedItems();
 registerSeedDialogs();
 registerSeedContent();
+registerSeedCrops();
+
+// NPC daily schedules — Tommy hangs at shop / sleeps at home; Mei wanders meadow; Ryu near workbench
+getNPCScheduler().register({
+  npcId: 'tommy',
+  defaultEntry: { position: [0, 0, -8], activity: 'idle' },
+  entries: [
+    { startHour: 6,  endHour: 9,  position: [-2, 0, -8],  activity: 'idle'  },
+    { startHour: 9,  endHour: 18, position: [0, 0, -8],   activity: 'shop'  },
+    { startHour: 18, endHour: 22, position: [4, 0, -6],   activity: 'idle'  },
+    { startHour: 22, endHour: 6,  position: [-1, 0, -10], activity: 'sleep' },
+  ],
+});
+getNPCScheduler().register({
+  npcId: 'mei',
+  defaultEntry: { position: [6, 0, 0], activity: 'idle' },
+  entries: [
+    { startHour: 7,  endHour: 11, position: [6, 0, 0],   activity: 'idle'  },
+    { startHour: 11, endHour: 16, position: [10, 0, 14], activity: 'work'  },
+    { startHour: 16, endHour: 21, position: [6, 0, 0],   activity: 'idle'  },
+    { startHour: 21, endHour: 7,  position: [4, 0, -2],  activity: 'sleep' },
+  ],
+});
+getNPCScheduler().register({
+  npcId: 'ryu',
+  defaultEntry: { position: [-6, 0, 0], activity: 'idle' },
+  entries: [
+    { startHour: 8,  endHour: 19, position: [-6, 0, 0],  activity: 'work'  },
+    { startHour: 19, endHour: 23, position: [-4, 0, 4],  activity: 'idle'  },
+    { startHour: 23, endHour: 8,  position: [-7, 0, -2], activity: 'sleep' },
+  ],
+});
 
 export { S3 };
 
@@ -136,6 +171,15 @@ const BUG_SPOTS: Array<[number, number, number]> = [
   [0, 0, 50],
 ];
 
+const CROP_PLOTS: Array<{ id: string; pos: [number, number, number] }> = [
+  { id: 'plot-a', pos: [12, 0, 12] },
+  { id: 'plot-b', pos: [13.6, 0, 12] },
+  { id: 'plot-c', pos: [12, 0, 13.6] },
+  { id: 'plot-d', pos: [13.6, 0, 13.6] },
+  { id: 'plot-e', pos: [10.4, 0, 12] },
+  { id: 'plot-f', pos: [10.4, 0, 13.6] },
+];
+
 const PICKUPS: Array<{ id: string; itemId: string; count: number; pos: [number, number, number] }> = [
   { id: 'apple-1', itemId: 'apple', count: 1, pos: [3, 0, 3] },
   { id: 'apple-2', itemId: 'apple', count: 1, pos: [-3, 0, 3] },
@@ -231,6 +275,16 @@ function Scenery({ onOpenShop, onOpenCrafting }: { onOpenShop: () => void; onOpe
         <BugSpot key={`bug-${i}`} position={p} />
       ))}
 
+      {CROP_PLOTS.map((p) => (
+        <CropPlot key={p.id} id={p.id} position={p.pos} />
+      ))}
+
+      <group position={[12, 0.06, 13]}>
+        <Billboard text="Farm" width={2.4} height={0.9} color="#fff7e0" toon />
+      </group>
+
+      <WeatherEffect area={120} height={22} count={1500} />
+
       <group position={[0, 0, 40]}>
         <Grass width={60} instances={6000} lod={{ near: 20, far: 80, strength: 0.6 }} />
       </group>
@@ -277,11 +331,13 @@ function GameSystems() {
   useAutoSave({ intervalMs: 60_000 });
   useQuestObjectiveTracker(true);
   useCatalogTracker(true);
+  useWeatherTicker(true);
 
   useDayChange((time) => {
     const day = Math.floor(time.totalMinutes / (60 * 24));
     useShopStore.getState().rollDailyStock(day);
     useFriendshipStore.getState().resetDaily();
+    useWeatherStore.getState().rollForDay(day, time.season);
     if (day > 0 && useMailStore.getState().messages.length < 3) {
       useMailStore.getState().send({
         from: '메이',
@@ -340,16 +396,30 @@ function GameSystems() {
       serialize: () => useCraftingStore.getState().serialize(),
       hydrate: (data: unknown) => useCraftingStore.getState().hydrate(data as never),
     });
+    const offFarm = sys.register({
+      key: 'farming',
+      serialize: () => usePlotStore.getState().serialize(),
+      hydrate: (data: unknown) => usePlotStore.getState().hydrate(data as never),
+    });
+    const offWeather = sys.register({
+      key: 'weather',
+      serialize: () => useWeatherStore.getState().serialize(),
+      hydrate: (data: unknown) => useWeatherStore.getState().hydrate(data as never),
+    });
     void sys.load().then(() => {
       const inv = useInventoryStore.getState();
-      if (!inv.has('axe')) inv.add('axe', 1);
+      if (!inv.has('axe'))         inv.add('axe', 1);
+      if (!inv.has('shovel'))      inv.add('shovel', 1);
+      if (!inv.has('water-can'))   inv.add('water-can', 1);
+      if (!inv.has('seed-turnip')) inv.add('seed-turnip', 5);
       const today = Math.floor(useTimeStore.getState().totalMinutes / (60 * 24));
       useShopStore.getState().rollDailyStock(today);
+      useWeatherStore.getState().rollForDay(today, useTimeStore.getState().time.season);
       if (useMailStore.getState().messages.length === 0) {
         useMailStore.getState().send({
           from: '운영팀',
           subject: '환영합니다, 가에섭월드에 오신 것을!',
-          body: '도끼 [F], 인벤토리 [I], 퀘스트 [J], 우편 [M], 도감 [K], 제작 [C].\n\n첫 시작용 자금을 보내드려요.',
+          body: '도끼 [F], 인벤토리 [I], 퀘스트 [J], 우편 [M], 도감 [K], 제작 [C].\n\n농장에서 [삽]으로 땅을 갈고 [씨앗]을 핫바에 장착해 [삽]을 사용해 심으세요. [물뿌리개]로 매일 물을 주세요.\n\n첫 시작용 자금을 보내드려요.',
           sentDay: today,
           attachments: [{ bells: 500 }],
         });
@@ -365,6 +435,8 @@ function GameSystems() {
       offMail();
       offCatalog();
       offCraft();
+      offFarm();
+      offWeather();
     };
   }, []);
 
@@ -490,6 +562,7 @@ export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
 
         <GameSystems />
         <TimeHUD />
+        <WeatherHUD position="top-left" />
         <WalletHUD position="top-center" />
         <InteractionPrompt />
         <DialogBox />
@@ -501,6 +574,7 @@ export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
             <CatalogUI toggleKey="k" />
         <HotbarUI />
         <InventoryUI toggleKey="i" />
+        <ActionBar />
         <MiniMap position="bottom-left" scale={5} showZoom={false} showCompass={false} />
         <HUD />
       </GaesupWorld>

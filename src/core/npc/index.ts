@@ -15,3 +15,4 @@ export type {
   NPCActivity,
   ActiveSlot,
 } from './core/NPCScheduler';
+export { useNpcSchedule } from './hooks/useNpcSchedule';

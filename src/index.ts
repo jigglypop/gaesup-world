@@ -143,6 +143,17 @@ export {
   // NPC scheduler
   getNPCScheduler,
   resolveSchedule,
+  useNpcSchedule,
+  // Farming
+  getCropRegistry,
+  usePlotStore,
+  CropPlot,
+  registerSeedCrops,
+  // Weather
+  useWeatherStore,
+  useWeatherTicker,
+  WeatherHUD,
+  WeatherEffect,
   // Relations
   useFriendshipStore,
   FRIENDSHIP_LEVELS,
@@ -243,5 +254,17 @@ export type {
   RecipeDef,
   CraftingSerialized,
   CraftingUIProps,
+  CropId,
+  CropStage,
+  CropDef,
+  PlotState,
+  Plot,
+  FarmingSerialized,
+  CropPlotProps,
+  WeatherKind,
+  WeatherEntry,
+  WeatherSerialized,
+  WeatherHUDProps,
+  WeatherEffectProps,
 } from './core';
 export { GaesupAdmin } from './admin';

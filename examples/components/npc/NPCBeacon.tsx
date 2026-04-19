@@ -1,6 +1,6 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 
-import { Interactable, useDialogStore } from '../../../src';
+import { Interactable, useDialogStore, useNpcSchedule } from '../../../src';
 
 export type NPCBeaconProps = {
   id: string;
@@ -24,14 +24,19 @@ export function NPCBeacon({
   onCustomEffect,
 }: NPCBeaconProps) {
   const start = useDialogStore((s) => s.start);
+  const slot = useNpcSchedule(id);
+
+  const liveDialogTreeId = slot?.dialogTreeId ?? dialogTreeId;
 
   const onActivate = useCallback(() => {
-    start(dialogTreeId, {
+    start(liveDialogTreeId, {
       context: { npcId: id },
       onOpenShop: () => onOpenShop?.(),
       onCustomEffect: (eff) => onCustomEffect?.(eff.key, eff.payload),
     });
-  }, [start, dialogTreeId, id, onOpenShop, onCustomEffect]);
+  }, [start, liveDialogTreeId, id, onOpenShop, onCustomEffect]);
+
+  const livePos: [number, number, number] = useMemo(() => slot?.position ?? position, [slot?.position, position]);
 
   return (
     <Interactable
@@ -40,7 +45,7 @@ export function NPCBeacon({
       label={`${name}와 대화`}
       range={2.6}
       activationKey="e"
-      position={position}
+      position={livePos}
       onActivate={onActivate}
     >
       <group position={[0, 0.55, 0]}>

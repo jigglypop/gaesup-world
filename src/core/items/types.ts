@@ -9,7 +9,7 @@ export type ItemCategory =
   | 'furniture'
   | 'misc';
 
-export type ToolKind = 'axe' | 'shovel' | 'net' | 'rod' | 'water';
+export type ToolKind = 'axe' | 'shovel' | 'net' | 'rod' | 'water' | 'seed';
 
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 
