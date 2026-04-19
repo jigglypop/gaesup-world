@@ -232,13 +232,13 @@ function PoleBatch({ entries }: { entries: FlagEntry[] }) {
 
 // --- Cloth instancing per texture group ---
 
-function ClothBatchGroup({
-  entries, textureUrl, windStrength,
-}: {
+type ClothBatchInnerProps = {
   entries: FlagEntry[];
-  textureUrl: string;
   windStrength: number;
-}) {
+  texture: THREE.Texture;
+};
+
+function ClothBatchInner({ entries, windStrength, texture }: ClothBatchInnerProps) {
   const ref = useRef<THREE.InstancedMesh>(null!);
   const materialRef = useRef<THREE.Material>(null!);
   const count = entries.length;
@@ -252,10 +252,6 @@ function ClothBatchGroup({
     () => new THREE.PlaneGeometry(wGeo, hGeo, segsX, segsY),
     [wGeo, hGeo, segsX, segsY],
   );
-
-  const texture = textureUrl
-    ? useTexture(textureUrl)
-    : useMemo(() => getFallbackTexture(), []);
 
   useLayoutEffect(() => {
     const mesh = ref.current;
@@ -304,6 +300,40 @@ function ClothBatchGroup({
         windStrength={windStrength} envMapIntensity={1} side={THREE.DoubleSide} transparent />
     </instancedMesh>
   );
+}
+
+function ClothBatchTextured({
+  entries, textureUrl, windStrength,
+}: {
+  entries: FlagEntry[];
+  textureUrl: string;
+  windStrength: number;
+}) {
+  const texture = useTexture(textureUrl);
+  return <ClothBatchInner entries={entries} windStrength={windStrength} texture={texture} />;
+}
+
+function ClothBatchFallback({
+  entries, windStrength,
+}: {
+  entries: FlagEntry[];
+  windStrength: number;
+}) {
+  const texture = useMemo(() => getFallbackTexture(), []);
+  return <ClothBatchInner entries={entries} windStrength={windStrength} texture={texture} />;
+}
+
+function ClothBatchGroup({
+  entries, textureUrl, windStrength,
+}: {
+  entries: FlagEntry[];
+  textureUrl: string;
+  windStrength: number;
+}) {
+  if (textureUrl) {
+    return <ClothBatchTextured entries={entries} textureUrl={textureUrl} windStrength={windStrength} />;
+  }
+  return <ClothBatchFallback entries={entries} windStrength={windStrength} />;
 }
 
 // --- Main batch component ---

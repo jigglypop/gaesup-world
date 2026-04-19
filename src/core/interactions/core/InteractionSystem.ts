@@ -74,21 +74,37 @@ export class InteractionSystem extends AbstractSystem<InteractionSystemState, In
   updateKeyboard(updates: Partial<KeyboardState>): void {
     Object.assign(this.state.keyboard, updates);
     this.updateMetrics(0);
+    this.emitChange('keyboard', updates);
   }
 
   updateMouse(updates: Partial<MouseState>): void {
     Object.assign(this.state.mouse, updates);
     this.updateMetrics(0);
+    this.emitChange('mouse', updates);
   }
 
   updateGamepad(updates: Partial<GamepadState>): void {
     Object.assign(this.state.gamepad, updates);
     this.updateMetrics(0);
+    this.emitChange('gamepad', updates);
   }
 
   updateTouch(updates: Partial<TouchState>): void {
     Object.assign(this.state.touch, updates);
     this.updateMetrics(0);
+    this.emitChange('touch', updates);
+  }
+
+  private emitChange(field: 'keyboard' | 'mouse' | 'gamepad' | 'touch', updates: unknown): void {
+    const callbacks = this.eventCallbacks.get(field);
+    if (!callbacks || callbacks.length === 0) return;
+    for (const cb of callbacks) {
+      try {
+        cb(updates);
+      } catch (error) {
+        console.error('InteractionSystem change callback error:', error);
+      }
+    }
   }
 
   dispatchInput(updates: Partial<MouseState>): void {
@@ -125,38 +141,37 @@ export class InteractionSystem extends AbstractSystem<InteractionSystemState, In
   protected override updateMetrics(deltaTime: number): void {
     super.updateMetrics(deltaTime);
     this.metrics.eventCount++;
-    this.metrics.activeInputs = this.getActiveInputs();
+    this.collectActiveInputs(this.metrics.activeInputs);
   }
 
-  private getActiveInputs(): string[] {
-    const active: string[] = [];
-    
-    Object.entries(this.state.keyboard).forEach(([key, value]) => {
-      if (value) active.push(`keyboard:${key}`);
-    });
-    
-    Object.entries(this.state.mouse.buttons).forEach(([key, value]) => {
-      if (value) active.push(`mouse:${key}`);
-    });
-    
-    if (this.state.gamepad.connected) {
-      active.push('gamepad:connected');
+  // Object.entries 는 매 호출마다 새 [k,v][] 와 string concat 을 만들어 GC pressure 가 크다.
+  // 대신 호출자 소유의 배열을 in-place 로 갱신한다 (활성 입력은 거의 항상 0~수개).
+  private collectActiveInputs(out: string[]): void {
+    out.length = 0;
+
+    const kb = this.state.keyboard as unknown as Record<string, boolean>;
+    for (const key in kb) {
+      if (kb[key]) out.push(`keyboard:${key}`);
     }
-    
-    if (this.state.touch.touches.length > 0) {
-      active.push(`touch:${this.state.touch.touches.length}`);
+
+    const mb = this.state.mouse.buttons as unknown as Record<string, boolean>;
+    for (const key in mb) {
+      if (mb[key]) out.push(`mouse:${key}`);
     }
-    
-    return active;
+
+    if (this.state.gamepad.connected) out.push('gamepad:connected');
+
+    const touches = this.state.touch.touches.length;
+    if (touches > 0) out.push(`touch:${touches}`);
   }
 
   protected override onReset(): void {
     super.onReset();
-    this.eventCallbacks.clear();
   }
-  
+
   protected override onDispose(): void {
     super.onDispose();
+    this.eventCallbacks.clear();
     InteractionSystem.instance = null;
   }
 }

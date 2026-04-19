@@ -12,6 +12,7 @@ import type { PhysicsCalcProps, PhysicsState } from '../../types';
 import { GravityComponent } from '../forces';
 import { ForceComponent } from '../forces/ForceComponent';
 import { DirectionComponent, ImpulseComponent } from '../movement';
+import { EntityStateManager } from './EntityStateManager';
 import { PhysicsSystemState, PhysicsSystemMetrics, PhysicsSystemOptions } from './types';
 
 const defaultState: PhysicsSystemState = {
@@ -55,11 +56,15 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   private jumpScratch = new THREE.Vector3();
   private config: PhysicsConfigType;
 
-  constructor(config: PhysicsConfigType, options: PhysicsSystemOptions = {}) {
+  constructor(
+    config: PhysicsConfigType,
+    options: PhysicsSystemOptions = {},
+    stateManager?: EntityStateManager,
+  ) {
     super(defaultState, defaultMetrics, options);
     this.config = config;
     this.directionComponent = new DirectionComponent(this.config);
-    this.impulseComponent = new ImpulseComponent(this.config);
+    this.impulseComponent = new ImpulseComponent(this.config, stateManager);
     this.gravityComponent = new GravityComponent(this.config);
   }
 

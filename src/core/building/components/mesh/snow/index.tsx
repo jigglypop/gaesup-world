@@ -152,6 +152,11 @@ export function Snow() {
     [],
   );
 
+  useEffect(() => () => {
+    geometry.dispose();
+    material.dispose();
+  }, [geometry, material]);
+
   return (
     <points
       ref={pointsRef}

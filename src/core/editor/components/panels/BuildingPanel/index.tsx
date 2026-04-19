@@ -59,6 +59,10 @@ export const BuildingPanel: FC = () => {
   const setBillboardText = useBuildingStore((state) => state.setBillboardText);
   const setBillboardImageUrl = useBuildingStore((state) => state.setBillboardImageUrl);
   const setBillboardColor = useBuildingStore((state) => state.setBillboardColor);
+  const currentObjectPrimaryColor = useBuildingStore((state) => state.currentObjectPrimaryColor);
+  const currentObjectSecondaryColor = useBuildingStore((state) => state.currentObjectSecondaryColor);
+  const setObjectPrimaryColor = useBuildingStore((state) => state.setObjectPrimaryColor);
+  const setObjectSecondaryColor = useBuildingStore((state) => state.setObjectSecondaryColor);
   const showSnow = useBuildingStore((state) => state.showSnow);
   const setShowSnow = useBuildingStore((state) => state.setShowSnow);
 
@@ -268,6 +272,34 @@ export const BuildingPanel: FC = () => {
                 {i * 45}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {editMode === 'object' && selectedPlacedObjectType === 'sakura' && (
+        <div className="building-panel__section">
+          <div className="building-panel__section-title">Sakura Color</div>
+          <div className="building-panel__info">
+            <div className="building-panel__info-item">
+              <span className="building-panel__info-label">Blossom</span>
+              <input
+                type="color"
+                value={currentObjectPrimaryColor}
+                onChange={(e) => setObjectPrimaryColor(e.target.value)}
+                style={{ width: '36px', height: '24px', border: 'none', cursor: 'pointer', background: 'none' }}
+              />
+              <span className="building-panel__info-value" style={{ fontSize: '10px' }}>{currentObjectPrimaryColor}</span>
+            </div>
+            <div className="building-panel__info-item">
+              <span className="building-panel__info-label">Bark</span>
+              <input
+                type="color"
+                value={currentObjectSecondaryColor}
+                onChange={(e) => setObjectSecondaryColor(e.target.value)}
+                style={{ width: '36px', height: '24px', border: 'none', cursor: 'pointer', background: 'none' }}
+              />
+              <span className="building-panel__info-value" style={{ fontSize: '10px' }}>{currentObjectSecondaryColor}</span>
+            </div>
           </div>
         </div>
       )}

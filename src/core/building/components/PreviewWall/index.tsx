@@ -3,7 +3,12 @@ import { TILE_CONSTANTS } from '../../types/constants';
 import './styles.css';
 
 export function PreviewWall() {
-  const { editMode, hoverPosition, currentWallRotation, checkWallPosition } = useBuildingStore();
+  // 무관한 store 변경(타일/벽 그룹 추가 등)으로 인한 리렌더를 막기 위해
+  // 실제 사용 필드만 selector 로 구독한다.
+  const editMode = useBuildingStore((s) => s.editMode);
+  const hoverPosition = useBuildingStore((s) => s.hoverPosition);
+  const currentWallRotation = useBuildingStore((s) => s.currentWallRotation);
+  const checkWallPosition = useBuildingStore((s) => s.checkWallPosition);
   const width = TILE_CONSTANTS.WALL_SIZES.WIDTH;
   const height = TILE_CONSTANTS.WALL_SIZES.HEIGHT;
   const depth = TILE_CONSTANTS.WALL_SIZES.THICKNESS;

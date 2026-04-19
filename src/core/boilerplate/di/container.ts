@@ -16,6 +16,7 @@ export class DIContainer {
   private static instance: DIContainer
   private factories = new Map<Token<unknown>, Factory<unknown>>()
   private singletons = new Map<Token<unknown>, unknown>()
+  private singletonTokens = new Set<Token<unknown>>()
   private resolving = new Set<Token<unknown>>()
 
   private constructor() {}
@@ -29,7 +30,10 @@ export class DIContainer {
 
   register<T>(token: Token<T>, factory: Factory<T>, singleton = true): void {
     this.factories.set(token, factory as Factory<unknown>)
-    if (!singleton) {
+    if (singleton) {
+      this.singletonTokens.add(token)
+    } else {
+      this.singletonTokens.delete(token)
       this.singletons.delete(token)
     }
   }
@@ -56,21 +60,6 @@ export class DIContainer {
       throw new Error(errorMessage);
     }
 
-    const isSingleton = !this.singletons.has(token)
-    if (isSingleton) {
-        const factory = this.factories.get(token)
-        if (factory) {
-            this.resolving.add(token)
-            try {
-                const instance = factory() as T
-                this.singletons.set(token, instance)
-                return instance
-            } finally {
-                this.resolving.delete(token)
-            }
-        }
-    }
-    
     if (this.singletons.has(token)) {
       return this.singletons.get(token) as T
     }
@@ -86,7 +75,11 @@ export class DIContainer {
 
     this.resolving.add(token)
     try {
-      return factory() as T
+      const instance = factory() as T
+      if (this.singletonTokens.has(token)) {
+        this.singletons.set(token, instance)
+      }
+      return instance
     } finally {
       this.resolving.delete(token)
     }
@@ -155,6 +148,7 @@ export class DIContainer {
   clear(): void {
     this.factories.clear()
     this.singletons.clear()
+    this.singletonTokens.clear()
     this.resolving.clear()
   }
 } 

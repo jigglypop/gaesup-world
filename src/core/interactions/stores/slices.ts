@@ -122,7 +122,53 @@ const createDefaultAutomationMetrics = (): AutomationMetrics => ({
 
 type Slice = InteractionSliceState & InteractionActions;
 
-export const createInteractionSlice: StateCreator<Slice, [], [], Slice> = (set) => ({
+let systemListenersBound = false;
+
+const ensureSystemListeners = (set: (fn: (state: Slice) => Partial<Slice>) => void): void => {
+  if (systemListenersBound) return;
+  systemListenersBound = true;
+  const system = InteractionSystem.getInstance();
+  system.addEventListener('keyboard', (data) => {
+    const updates = data as Partial<InteractionState['keyboard']>;
+    set((state) => ({
+      interaction: {
+        ...state.interaction,
+        keyboard: { ...state.interaction.keyboard, ...updates },
+      },
+    }));
+  });
+  system.addEventListener('mouse', (data) => {
+    const updates = data as Partial<InteractionState['mouse']>;
+    set((state) => ({
+      interaction: {
+        ...state.interaction,
+        mouse: { ...state.interaction.mouse, ...updates },
+      },
+    }));
+  });
+  system.addEventListener('gamepad', (data) => {
+    const updates = data as Partial<InteractionState['gamepad']>;
+    set((state) => ({
+      interaction: {
+        ...state.interaction,
+        gamepad: { ...state.interaction.gamepad, ...updates },
+      },
+    }));
+  });
+  system.addEventListener('touch', (data) => {
+    const updates = data as Partial<InteractionState['touch']>;
+    set((state) => ({
+      interaction: {
+        ...state.interaction,
+        touch: { ...state.interaction.touch, ...updates },
+      },
+    }));
+  });
+};
+
+export const createInteractionSlice: StateCreator<Slice, [], [], Slice> = (set) => {
+  ensureSystemListeners(set as (fn: (state: Slice) => Partial<Slice>) => void);
+  return ({
   interaction: createDefaultInteractionState(),
   automation: createDefaultAutomationState(),
   bridge: createDefaultBridgeState(),
@@ -301,37 +347,21 @@ export const createInteractionSlice: StateCreator<Slice, [], [], Slice> = (set) 
       }
     })),
 
-  updateMouse: (updates) =>
-    set((state) => ({
-      interaction: {
-        ...state.interaction,
-        mouse: { ...state.interaction.mouse, ...updates }
-      }
-    })),
+  updateMouse: (updates) => {
+    InteractionSystem.getInstance().updateMouse(updates);
+  },
 
-  updateKeyboard: (updates) =>
-    set((state) => ({
-      interaction: {
-        ...state.interaction,
-        keyboard: { ...state.interaction.keyboard, ...updates }
-      }
-    })),
+  updateKeyboard: (updates) => {
+    InteractionSystem.getInstance().updateKeyboard(updates);
+  },
 
-  updateGamepad: (updates) =>
-    set((state) => ({
-      interaction: {
-        ...state.interaction,
-        gamepad: { ...state.interaction.gamepad, ...updates }
-      }
-    })),
+  updateGamepad: (updates) => {
+    InteractionSystem.getInstance().updateGamepad(updates);
+  },
 
-  updateTouch: (updates) =>
-    set((state) => ({
-      interaction: {
-        ...state.interaction,
-        touch: { ...state.interaction.touch, ...updates }
-      }
-    })),
+  updateTouch: (updates) => {
+    InteractionSystem.getInstance().updateTouch(updates);
+  },
 
   setInteractionActive: (active) =>
     set((state) => ({
@@ -341,3 +371,4 @@ export const createInteractionSlice: StateCreator<Slice, [], [], Slice> = (set) 
       }
     }))
 });
+};

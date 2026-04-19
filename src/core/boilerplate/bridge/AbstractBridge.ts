@@ -48,8 +48,8 @@ export abstract class AbstractBridge<
     const engine = this.buildEngine(id, ...args);
     if (!engine) return;
 
-    // Re-registering an existing id should not leak the old engine.
     const existing = this.engines.get(id);
+    if (existing === engine) return;
     if (existing) {
       existing.dispose();
       this.snapshots.delete(id);

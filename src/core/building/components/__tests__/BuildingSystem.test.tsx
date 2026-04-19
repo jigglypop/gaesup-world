@@ -51,6 +51,28 @@ jest.mock('../../../npc/components/NPCPreview', () => ({
   NPCPreview: () => <group name="npc-preview" />
 }));
 
+// mesh 하위 컴포넌트들은 GLSL 셰이더를 import하므로 jsdom 환경에서는 모킹.
+jest.mock('../mesh/sakura', () => ({
+  SakuraBatch: () => <group name="sakura-batch" />,
+}));
+
+jest.mock('../mesh/flag', () => ({
+  FlagBatch: () => <group name="flag-batch" />,
+}));
+
+jest.mock('../mesh/fire', () => ({
+  FireBatch: () => <group name="fire-batch" />,
+}));
+
+jest.mock('../mesh/billboard', () => ({
+  __esModule: true,
+  default: () => <group name="billboard" />,
+}));
+
+jest.mock('../mesh/snow', () => ({
+  Snow: () => <group name="snow" />,
+}));
+
 const expectSceneHasName = (renderer: any, name: string) => {
   expect(renderer.scene.findByProps({ name })).toBeDefined();
 };
@@ -95,18 +117,28 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
     }]
   ]);
 
-  beforeEach(() => {
-    mockUseBuildingStore = useBuildingStore as jest.MockedFunction<typeof useBuildingStore>;
-    
-    // 기본 모킹 설정
-    mockUseBuildingStore.mockReturnValue({
+  // BuildingSystem이 useBuildingStore(s => s.field) 패턴을 사용하므로
+  // mock도 selector를 받아 적용해야 한다.
+  const mockStore = (overrides: Record<string, unknown> = {}) => {
+    const state = {
       meshes: mockMeshes,
       wallGroups: mockWallGroups,
       tileGroups: mockTileGroups,
       editMode: 'none',
       showGrid: true,
-      gridSize: 100
-    } as any);
+      gridSize: 100,
+      showSnow: false,
+      objects: [],
+      ...overrides,
+    };
+    mockUseBuildingStore.mockImplementation(((selector?: (s: unknown) => unknown) =>
+      typeof selector === 'function' ? selector(state) : state
+    ) as unknown as typeof useBuildingStore);
+  };
+
+  beforeEach(() => {
+    mockUseBuildingStore = useBuildingStore as jest.MockedFunction<typeof useBuildingStore>;
+    mockStore();
   });
 
   afterEach(() => {
@@ -132,14 +164,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
     });
 
     test('그리드가 표시되어야 함', async () => {
-      mockUseBuildingStore.mockReturnValue({
-        meshes: mockMeshes,
-        wallGroups: mockWallGroups,
-        tileGroups: mockTileGroups,
-        editMode: 'none',
-        showGrid: true,
-        gridSize: 50
-      } as any);
+      mockStore({ gridSize: 50 });
 
       const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
 
@@ -149,14 +174,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
     });
 
     test('그리드가 숨겨져야 함', async () => {
-      mockUseBuildingStore.mockReturnValue({
-        meshes: mockMeshes,
-        wallGroups: mockWallGroups,
-        tileGroups: mockTileGroups,
-        editMode: 'none',
-        showGrid: false,
-        gridSize: 100
-      } as any);
+      mockStore({ showGrid: false });
 
       const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
 
@@ -187,14 +205,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
     });
 
     test('벽 편집 모드에서 isEditMode가 true여야 함', async () => {
-      mockUseBuildingStore.mockReturnValue({
-        meshes: mockMeshes,
-        wallGroups: mockWallGroups,
-        tileGroups: mockTileGroups,
-        editMode: 'wall',
-        showGrid: true,
-        gridSize: 100
-      } as any);
+      mockStore({ editMode: 'wall' });
 
       const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
 
@@ -220,14 +231,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
     });
 
     test('빈 벽 그룹 맵에서도 오류 없이 렌더링되어야 함', async () => {
-      mockUseBuildingStore.mockReturnValue({
-        meshes: mockMeshes,
-        wallGroups: new Map(),
-        tileGroups: mockTileGroups,
-        editMode: 'none',
-        showGrid: true,
-        gridSize: 100
-      } as any);
+      mockStore({ wallGroups: new Map() });
 
       const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
 
@@ -249,14 +253,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
     });
 
     test('타일 편집 모드에서 isEditMode가 true여야 함', async () => {
-      mockUseBuildingStore.mockReturnValue({
-        meshes: mockMeshes,
-        wallGroups: mockWallGroups,
-        tileGroups: mockTileGroups,
-        editMode: 'tile',
-        showGrid: true,
-        gridSize: 100
-      } as any);
+      mockStore({ editMode: 'tile' });
 
       const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
 
@@ -281,14 +278,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
     });
 
     test('빈 타일 그룹 맵에서도 오류 없이 렌더링되어야 함', async () => {
-      mockUseBuildingStore.mockReturnValue({
-        meshes: mockMeshes,
-        wallGroups: mockWallGroups,
-        tileGroups: new Map(),
-        editMode: 'none',
-        showGrid: true,
-        gridSize: 100
-      } as any);
+      mockStore({ tileGroups: new Map() });
 
       const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
 
@@ -330,14 +320,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
 
     editModes.forEach(mode => {
       test(`${mode} 편집 모드에서 올바르게 렌더링되어야 함`, async () => {
-        mockUseBuildingStore.mockReturnValue({
-          meshes: mockMeshes,
-          wallGroups: mockWallGroups,
-          tileGroups: mockTileGroups,
-          editMode: mode,
-          showGrid: true,
-          gridSize: 100
-        } as any);
+        mockStore({ editMode: mode });
 
         const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
 
@@ -390,10 +373,14 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
   });
 
   describe('데이터 변경 반응성', () => {
+    // BuildingSystem은 React.memo로 감싸져 있고 본 테스트는 zustand 구독을 mock으로 대체하므로,
+    // 실제 zustand 환경처럼 store 변경만으로 자동 리렌더되지 않는다.
+    // 따라서 props 변경(콜백 ref 교체)으로 memo 게이트를 통과시켜 새 store 값을 반영시킨다.
     test('wallGroups 변경 시 리렌더링되어야 함', async () => {
-      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+      const renderer = await ReactThreeTestRenderer.create(
+        <BuildingSystem onWallClick={jest.fn()} />
+      );
 
-      // 새로운 벽 그룹 추가
       const newWallGroups = new Map(mockWallGroups);
       newWallGroups.set('wall-group-3', {
         id: 'wall-group-3',
@@ -401,25 +388,19 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
         walls: []
       });
 
-      mockUseBuildingStore.mockReturnValue({
-        meshes: mockMeshes,
-        wallGroups: newWallGroups,
-        tileGroups: mockTileGroups,
-        editMode: 'none',
-        showGrid: true,
-        gridSize: 100
-      } as any);
+      mockStore({ wallGroups: newWallGroups });
 
-      await renderer.update(<BuildingSystem />);
+      await renderer.update(<BuildingSystem onWallClick={jest.fn()} />);
       expectSceneHasName(renderer, 'wall-system-wall-group-3');
 
       renderer.unmount();
     });
 
     test('tileGroups 변경 시 리렌더링되어야 함', async () => {
-      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+      const renderer = await ReactThreeTestRenderer.create(
+        <BuildingSystem onTileClick={jest.fn()} />
+      );
 
-      // 새로운 타일 그룹 추가
       const newTileGroups = new Map(mockTileGroups);
       newTileGroups.set('tile-group-3', {
         id: 'tile-group-3',
@@ -428,16 +409,9 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
         tiles: []
       });
 
-      mockUseBuildingStore.mockReturnValue({
-        meshes: mockMeshes,
-        wallGroups: mockWallGroups,
-        tileGroups: newTileGroups,
-        editMode: 'none',
-        showGrid: true,
-        gridSize: 100
-      } as any);
+      mockStore({ tileGroups: newTileGroups });
 
-      await renderer.update(<BuildingSystem />);
+      await renderer.update(<BuildingSystem onTileClick={jest.fn()} />);
       expectSceneHasName(renderer, 'tile-system-tile-group-3');
 
       renderer.unmount();

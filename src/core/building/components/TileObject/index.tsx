@@ -41,20 +41,24 @@ function tileCoversPoint(tile: TileConfig, x: number, z: number): boolean {
   );
 }
 
-function getWaterShoreMask(tile: TileConfig, tiles?: TileConfig[]): WaterShoreMask {
+// tiles 는 이미 water 타입만 필터된 인접 후보 배열이다 (TileSystem 에서 전달).
+// 따라서 후보 배열 길이가 W (water 타일 수) 이고 비용은 O(W) per side.
+function getWaterShoreMask(tile: TileConfig, waterCandidates?: TileConfig[]): WaterShoreMask {
   const tileSize = TILE_CONSTANTS.GRID_CELL_SIZE * (tile.size || 1);
   const half = tileSize / 2;
   const sampleOffset = Math.max(0.08, tileSize * 0.06);
   const levelThreshold = Math.max(0.12, TILE_CONSTANTS.HEIGHT_STEP * 0.25);
+  const candidates = waterCandidates ?? [];
+  if (candidates.length === 0) return DEFAULT_WATER_SHORE_MASK;
 
-  const hasConnectedWater = (x: number, z: number) =>
-    (tiles ?? []).some(
-      (candidate) =>
-        candidate.id !== tile.id &&
-        candidate.objectType === 'water' &&
-        Math.abs(candidate.position.y - tile.position.y) <= levelThreshold &&
-        tileCoversPoint(candidate, x, z),
-    );
+  const hasConnectedWater = (x: number, z: number) => {
+    for (const candidate of candidates) {
+      if (candidate.id === tile.id) continue;
+      if (Math.abs(candidate.position.y - tile.position.y) > levelThreshold) continue;
+      if (tileCoversPoint(candidate, x, z)) return true;
+    }
+    return false;
+  };
 
   return {
     north: !hasConnectedWater(tile.position.x, tile.position.z - half - sampleOffset),

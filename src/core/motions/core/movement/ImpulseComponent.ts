@@ -17,8 +17,8 @@ export class ImpulseComponent {
   private scratchImpulse = { x: 0, y: 0, z: 0 };
   private scratchLinvel = { x: 0, y: 0, z: 0 };
 
-  constructor(config: PhysicsConfigType) {
-    this.stateManager = new EntityStateManager();
+  constructor(config: PhysicsConfigType, stateManager?: EntityStateManager) {
+    this.stateManager = stateManager ?? new EntityStateManager();
     this.interactionSystem = InteractionSystem.getInstance();
     this.config = config;
   }

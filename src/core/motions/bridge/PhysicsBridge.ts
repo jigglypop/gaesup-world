@@ -2,6 +2,7 @@ import { PhysicsConfigType } from '@/core/stores/slices/physics/types';
 import { CoreBridge, DomainBridge, EnableEventLog } from '@core/boilerplate';
 import { LogSnapshot, ValidateCommand, CacheSnapshot } from '@core/boilerplate';
 
+import { EntityStateManager } from '../core/system/EntityStateManager';
 import { PhysicsSystem } from '../core/system/PhysicsSystem';
 import { PhysicsUpdateArgs } from '../core/system/PhysicsSystem';
 
@@ -22,9 +23,13 @@ export type PhysicsSnapshot = ReturnType<PhysicsSystem['getState']> & {
 @DomainBridge('physics')
 @EnableEventLog()
 export class PhysicsBridge extends CoreBridge<PhysicsBridgeEntity, PhysicsSnapshot, PhysicsCommand> {
-  protected buildEngine(_: string, config: PhysicsConfigType): PhysicsBridgeEntity | null {
+  protected buildEngine(
+    _: string,
+    config: PhysicsConfigType,
+    stateManager?: EntityStateManager,
+  ): PhysicsBridgeEntity | null {
     void _;
-    const system = new PhysicsSystem(config);
+    const system = new PhysicsSystem(config, {}, stateManager);
     return { system, dispose: () => system.dispose() };
   }
 

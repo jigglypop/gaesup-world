@@ -572,6 +572,14 @@ export function TileSystem({
     [tileGroup.tiles],
   );
 
+  // water shore mask 계산은 인접한 water 타일만 알면 충분하므로
+  // 전체 tileGroup.tiles 대신 미리 필터링한 배열을 TileObject 에 전달한다.
+  // 이로써 (water 타일 수) × (전체 타일 수) 였던 비용이 (water 타일 수)^2 로 줄어든다.
+  const waterTiles = useMemo(
+    () => tileGroup.tiles.filter((t) => t.objectType === 'water'),
+    [tileGroup.tiles],
+  );
+
   const colliderData = useMemo(
     () => {
       const colliders: TileColliderData[] = [];
@@ -888,7 +896,7 @@ export function TileSystem({
         )}
         
         {tileObjects.map((tile) => (
-          <TileObject key={`${tile.id}-object`} tile={tile} tiles={tileGroup.tiles} />
+          <TileObject key={`${tile.id}-object`} tile={tile} tiles={waterTiles} />
         ))}
 
         {sandEntries.length > 0 && <SandBatch entries={sandEntries} />}

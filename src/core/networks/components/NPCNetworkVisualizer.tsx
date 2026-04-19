@@ -25,6 +25,24 @@ interface VisualizationState {
   groups: Map<string, string[]>;
 }
 
+const COLOR_PALETTE = [
+  '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57',
+  '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3', '#ff9f43',
+] as const;
+
+const FALLBACK_GROUP_COLOR = '#cccccc';
+const DEFAULT_NODE_COLOR = '#4a90e2';
+
+const CONNECTION_COLORS: Record<NetworkConnection['status'], string> = {
+  active: '#00ff00',
+  establishing: '#ffff00',
+  unstable: '#ff9f43',
+  disconnected: '#cccccc',
+};
+
+const getConnectionColor = (status: NetworkConnection['status']): string =>
+  CONNECTION_COLORS[status] ?? '#666666';
+
 export const NPCNetworkVisualizer: React.FC<NPCNetworkVisualizerProps> = ({
   systemId = 'main',
   showLabels = true,
@@ -33,292 +51,217 @@ export const NPCNetworkVisualizer: React.FC<NPCNetworkVisualizerProps> = ({
   nodeSize = 0.5,
   connectionWidth = 0.05,
   updateInterval = 100,
-  maxRenderDistance = 100
+  maxRenderDistance = 100,
 }) => {
+  void maxRenderDistance;
   const { getSystemState, isReady } = useNetworkBridge({ systemId });
   const groupRef = useRef<THREE.Group>(null);
   const lastUpdateRef = useRef<number>(0);
-  
+
   const [visualState, setVisualState] = React.useState<VisualizationState>({
     nodes: [],
     connections: [],
-    groups: new Map()
+    groups: new Map(),
   });
 
-  // 데이터 업데이트
   useFrame(() => {
     const now = Date.now();
     if (!isReady || now - lastUpdateRef.current < updateInterval) return;
-    
+
     const system = getSystemState() as NetworkSystemState | null;
     if (!system) return;
 
-    const nodes = Array.from(system.nodes.values());
-    const connections = Array.from(system.connections.values());
     const groups = new Map<string, string[]>();
     system.groups.forEach((group, groupId) => {
       groups.set(groupId, Array.from(group.members));
     });
 
     setVisualState({
-      nodes,
-      connections,
-      groups
+      nodes: Array.from(system.nodes.values()),
+      connections: Array.from(system.connections.values()),
+      groups,
     });
-    
+
     lastUpdateRef.current = now;
   });
 
-  // 그룹별 색상 생성
+  // groupId -> color (안정적 매핑)
   const groupColors = useMemo(() => {
     const colors = new Map<string, string>();
-    const colorPalette = [
-      '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57',
-      '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3', '#ff9f43'
-    ];
-    
-    let colorIndex = 0;
+    let idx = 0;
     visualState.groups.forEach((_, groupId) => {
-      const color = colorPalette[colorIndex % colorPalette.length] ?? '#cccccc';
-      colors.set(groupId, color);
-      colorIndex++;
+      colors.set(groupId, COLOR_PALETTE[idx % COLOR_PALETTE.length] ?? FALLBACK_GROUP_COLOR);
+      idx++;
     });
-    
     return colors;
   }, [visualState.groups]);
 
-  // 노드 색상 결정
-  const getNodeGroups = (nodeId: string): string[] => {
-    const result: string[] = [];
-    for (const [groupId, members] of visualState.groups.entries()) {
-      if (members.includes(nodeId)) result.push(groupId);
-    }
+  // nodeId -> [groupId...] 인덱스 (매 노드 렌더에서 전 그룹을 순회하지 않도록)
+  const nodeGroupIndex = useMemo(() => {
+    const index = new Map<string, string[]>();
+    visualState.groups.forEach((memberIds, groupId) => {
+      for (const id of memberIds) {
+        const arr = index.get(id);
+        if (arr) arr.push(groupId);
+        else index.set(id, [groupId]);
+      }
+    });
+    return index;
+  }, [visualState.groups]);
+
+  // nodeId -> node 룩업 (연결선 렌더에서 array.find O(N) 회피)
+  const nodeIndex = useMemo(() => {
+    const index = new Map<string, NPCNetworkNode>();
+    for (const node of visualState.nodes) index.set(node.id, node);
+    return index;
+  }, [visualState.nodes]);
+
+  // 그룹 경계선 사전 계산 (매 렌더 reduce/max 회피)
+  const groupBounds = useMemo(() => {
+    const result: Array<{ groupId: string; center: [number, number, number]; radius: number }> = [];
+    visualState.groups.forEach((memberIds, groupId) => {
+      const members: NPCNetworkNode[] = [];
+      for (const id of memberIds) {
+        const n = nodeIndex.get(id);
+        if (n) members.push(n);
+      }
+      if (members.length < 2) return;
+
+      let cx = 0, cy = 0, cz = 0;
+      for (const m of members) {
+        cx += m.position.x; cy += m.position.y; cz += m.position.z;
+      }
+      cx /= members.length; cy /= members.length; cz /= members.length;
+
+      let r2max = 0;
+      for (const m of members) {
+        const dx = m.position.x - cx;
+        const dy = m.position.y - cy;
+        const dz = m.position.z - cz;
+        const r2 = dx * dx + dy * dy + dz * dz;
+        if (r2 > r2max) r2max = r2;
+      }
+
+      result.push({ groupId, center: [cx, cy, cz], radius: Math.sqrt(r2max) + 1 });
+    });
     return result;
-  };
-
-  const getNodeColor = (node: NPCNetworkNode): string => {
-    const groups = getNodeGroups(node.id);
-    if (showGroups && groups.length > 0) {
-      const firstGroup = groups[0];
-      return firstGroup ? groupColors.get(firstGroup) || '#cccccc' : '#cccccc';
-    }
-    return '#4a90e2';
-  };
-
-  // 연결선 색상 결정
-  const getConnectionColor = (connection: NetworkConnection): string => {
-    switch (connection.status) {
-      case 'active': return '#00ff00';
-      case 'establishing': return '#ffff00';
-      case 'unstable': return '#ff9f43';
-      case 'disconnected': return '#cccccc';
-      default: return '#666666';
-    }
-  };
-
-  // 노드 렌더링
-  const renderNodes = () => {
-    return visualState.nodes.map(node => {
-      const position = new THREE.Vector3(node.position.x, node.position.y, node.position.z);
-      void maxRenderDistance;
-      const color = getNodeColor(node);
-      const groups = getNodeGroups(node.id);
-      
-      return (
-        <group key={node.id} position={position}>
-          {/* 노드 구체 */}
-          <Sphere args={[nodeSize]} position={[0, 0, 0]}>
-            <meshBasicMaterial color={color} />
-          </Sphere>
-          
-          {/* 연결 개수 표시 */}
-          {node.connections.size > 0 && (
-            <Sphere args={[nodeSize * 0.3]} position={[0, nodeSize + 0.2, 0]}>
-              <meshBasicMaterial color="#ffffff" />
-            </Sphere>
-          )}
-          
-          {/* 노드 라벨 */}
-          {showLabels && (
-            <Text
-              position={[0, nodeSize + 0.5, 0]}
-              fontSize={0.3}
-              color="#ffffff"
-              anchorX="center"
-              anchorY="middle"
-            >
-              {node.id}
-            </Text>
-          )}
-          
-          {/* 그룹 표시 */}
-          {showGroups && groups.length > 0 && (
-            <Text
-              position={[0, nodeSize + 0.8, 0]}
-              fontSize={0.2}
-              color={getNodeColor(node)}
-              anchorX="center"
-              anchorY="middle"
-            >
-              {groups.join(', ')}
-            </Text>
-          )}
-        </group>
-      );
-    });
-  };
-
-  // 연결선 렌더링
-  const renderConnections = () => {
-    if (!showConnectionLines) return null;
-
-    return visualState.connections.map(connection => {
-      const fromNode = visualState.nodes.find(n => n.id === connection.nodeA);
-      const toNode = visualState.nodes.find(n => n.id === connection.nodeB);
-      
-      if (!fromNode || !toNode) return null;
-      
-      const fromPos = new THREE.Vector3(fromNode.position.x, fromNode.position.y, fromNode.position.z);
-      const toPos = new THREE.Vector3(toNode.position.x, toNode.position.y, toNode.position.z);
-      const points = [fromPos, toPos];
-      const color = getConnectionColor(connection);
-      
-      return (
-        <Line
-          key={connection.id}
-          points={points}
-          color={color}
-          lineWidth={connectionWidth}
-          transparent={true}
-          opacity={connection.status === 'active' ? 0.8 : 0.4}
-        />
-      );
-    });
-  };
-
-  // 그룹 경계선 렌더링
-  const renderGroupBoundaries = () => {
-    if (!showGroups) return null;
-
-    return Array.from(visualState.groups.entries()).map(([groupId, memberIds]) => {
-      const groupNodes = visualState.nodes.filter(node => memberIds.includes(node.id));
-      if (groupNodes.length < 2) return null;
-
-      // 그룹의 중심점 계산
-      const center = groupNodes.reduce(
-        (acc, node) => ({
-          x: acc.x + node.position.x,
-          y: acc.y + node.position.y,
-          z: acc.z + node.position.z
-        }),
-        { x: 0, y: 0, z: 0 }
-      );
-      center.x /= groupNodes.length;
-      center.y /= groupNodes.length;
-      center.z /= groupNodes.length;
-
-      // 그룹의 반지름 계산
-      const radius = Math.max(
-        ...groupNodes.map(node =>
-          Math.sqrt(
-            Math.pow(node.position.x - center.x, 2) +
-            Math.pow(node.position.y - center.y, 2) +
-            Math.pow(node.position.z - center.z, 2)
-          )
-        )
-      ) + 1;
-
-      return (
-        <group key={`group-${groupId}`}>
-          {/* 그룹 경계 원 */}
-          <mesh position={[center.x, center.y, center.z]}>
-            <ringGeometry args={[radius - 0.1, radius + 0.1, 32]} />
-            <meshBasicMaterial 
-              color={groupColors.get(groupId) || '#cccccc'} 
-              transparent={true} 
-              opacity={0.3} 
-            />
-          </mesh>
-          
-          {/* 그룹 라벨 */}
-          <Text
-            position={[center.x, center.y + radius + 0.5, center.z]}
-            fontSize={0.4}
-            color={groupColors.get(groupId) || '#cccccc'}
-            anchorX="center"
-            anchorY="middle"
-          >
-            Group: {groupId}
-          </Text>
-        </group>
-      );
-    });
-  };
+  }, [visualState.groups, nodeIndex]);
 
   if (!isReady) {
     return (
-      <Text
-        position={[0, 0, 0]}
-        fontSize={1}
-        color="#ff0000"
-        anchorX="center"
-        anchorY="middle"
-      >
+      <Text position={[0, 0, 0]} fontSize={1} color="#ff0000" anchorX="center" anchorY="middle">
         Network not ready
       </Text>
     );
   }
 
+  const resolveNodeColor = (nodeId: string): string => {
+    if (!showGroups) return DEFAULT_NODE_COLOR;
+    const groups = nodeGroupIndex.get(nodeId);
+    const firstGroup = groups?.[0];
+    if (!firstGroup) return DEFAULT_NODE_COLOR;
+    return groupColors.get(firstGroup) ?? FALLBACK_GROUP_COLOR;
+  };
+
   return (
     <group ref={groupRef}>
-      {/* 노드들 */}
-      {renderNodes()}
-      
-      {/* 연결선들 */}
-      {renderConnections()}
-      
-      {/* 그룹 경계선들 */}
-      {renderGroupBoundaries()}
-      
-      {/* 범례 */}
+      {visualState.nodes.map((node) => {
+        const color = resolveNodeColor(node.id);
+        const groups = nodeGroupIndex.get(node.id);
+        return (
+          <group key={node.id} position={[node.position.x, node.position.y, node.position.z]}>
+            <Sphere args={[nodeSize]} position={[0, 0, 0]}>
+              <meshBasicMaterial color={color} />
+            </Sphere>
+
+            {node.connections.size > 0 && (
+              <Sphere args={[nodeSize * 0.3]} position={[0, nodeSize + 0.2, 0]}>
+                <meshBasicMaterial color="#ffffff" />
+              </Sphere>
+            )}
+
+            {showLabels && (
+              <Text
+                position={[0, nodeSize + 0.5, 0]}
+                fontSize={0.3}
+                color="#ffffff"
+                anchorX="center"
+                anchorY="middle"
+              >
+                {node.id}
+              </Text>
+            )}
+
+            {showGroups && groups && groups.length > 0 && (
+              <Text
+                position={[0, nodeSize + 0.8, 0]}
+                fontSize={0.2}
+                color={color}
+                anchorX="center"
+                anchorY="middle"
+              >
+                {groups.join(', ')}
+              </Text>
+            )}
+          </group>
+        );
+      })}
+
+      {showConnectionLines && visualState.connections.map((connection) => {
+        const fromNode = nodeIndex.get(connection.nodeA);
+        const toNode = nodeIndex.get(connection.nodeB);
+        if (!fromNode || !toNode) return null;
+
+        return (
+          <Line
+            key={connection.id}
+            points={[
+              [fromNode.position.x, fromNode.position.y, fromNode.position.z],
+              [toNode.position.x, toNode.position.y, toNode.position.z],
+            ]}
+            color={getConnectionColor(connection.status)}
+            lineWidth={connectionWidth}
+            transparent
+            opacity={connection.status === 'active' ? 0.8 : 0.4}
+          />
+        );
+      })}
+
+      {showGroups && groupBounds.map(({ groupId, center, radius }) => {
+        const color = groupColors.get(groupId) ?? FALLBACK_GROUP_COLOR;
+        return (
+          <group key={`group-${groupId}`}>
+            <mesh position={center}>
+              <ringGeometry args={[radius - 0.1, radius + 0.1, 32]} />
+              <meshBasicMaterial color={color} transparent opacity={0.3} />
+            </mesh>
+            <Text
+              position={[center[0], center[1] + radius + 0.5, center[2]]}
+              fontSize={0.4}
+              color={color}
+              anchorX="center"
+              anchorY="middle"
+            >
+              Group: {groupId}
+            </Text>
+          </group>
+        );
+      })}
+
       <group position={[-10, 10, 0]}>
-        <Text
-          position={[0, 2, 0]}
-          fontSize={0.5}
-          color="#ffffff"
-          anchorX="left"
-          anchorY="middle"
-        >
+        <Text position={[0, 2, 0]} fontSize={0.5} color="#ffffff" anchorX="left" anchorY="middle">
           Network Visualization
         </Text>
-        <Text
-          position={[0, 1, 0]}
-          fontSize={0.3}
-          color="#ffffff"
-          anchorX="left"
-          anchorY="middle"
-        >
+        <Text position={[0, 1, 0]} fontSize={0.3} color="#ffffff" anchorX="left" anchorY="middle">
           Nodes: {visualState.nodes.length}
         </Text>
-        <Text
-          position={[0, 0.5, 0]}
-          fontSize={0.3}
-          color="#ffffff"
-          anchorX="left"
-          anchorY="middle"
-        >
+        <Text position={[0, 0.5, 0]} fontSize={0.3} color="#ffffff" anchorX="left" anchorY="middle">
           Connections: {visualState.connections.length}
         </Text>
-        <Text
-          position={[0, 0, 0]}
-          fontSize={0.3}
-          color="#ffffff"
-          anchorX="left"
-          anchorY="middle"
-        >
+        <Text position={[0, 0, 0]} fontSize={0.3} color="#ffffff" anchorX="left" anchorY="middle">
           Groups: {visualState.groups.size}
         </Text>
       </group>
     </group>
   );
-}; 
+};

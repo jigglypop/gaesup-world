@@ -119,6 +119,7 @@ const _grp = new THREE.Object3D();
 const _obj = new THREE.Object3D();
 const _composed = new THREE.Matrix4();
 const _treeXlat = new THREE.Matrix4();
+const _tmpCol = new THREE.Color();
 
 function composeInstance(
   mesh: THREE.InstancedMesh, idx: number,
@@ -165,8 +166,11 @@ function composeSimple(
 function fillCanopy(
   pos: Float32Array, col: Float32Array, start: number, count: number,
   th: number, cr: number, ch: number, ox: number, oy: number, oz: number,
+  tint?: THREE.Color,
 ) {
-  const a = new THREE.Color('#f3a1bf'), b = new THREE.Color('#fff1f6'), t = new THREE.Color();
+  const a = tint ? tint.clone().multiplyScalar(0.85) : new THREE.Color('#f3a1bf');
+  const b = tint ? tint.clone().lerp(new THREE.Color('#ffffff'), 0.6) : new THREE.Color('#fff1f6');
+  const t = new THREE.Color();
   for (let i = 0; i < count; i++) {
     const s = 330.7 + i * 17.13;
     const ang = hash01(s) * Math.PI * 2;
@@ -183,8 +187,11 @@ function fillCanopy(
 function fillGround(
   pos: Float32Array, col: Float32Array, start: number, count: number,
   cr: number, ox: number, oy: number, oz: number,
+  tint?: THREE.Color,
 ) {
-  const a = new THREE.Color('#f7cadb'), b = new THREE.Color('#fff3f8'), t = new THREE.Color();
+  const a = tint ? tint.clone().multiplyScalar(0.9) : new THREE.Color('#f7cadb');
+  const b = tint ? tint.clone().lerp(new THREE.Color('#ffffff'), 0.7) : new THREE.Color('#fff3f8');
+  const t = new THREE.Color();
   for (let i = 0; i < count; i++) {
     const s = 510.9 + i * 9.41;
     const ang = hash01(s) * Math.PI * 2;
@@ -204,8 +211,11 @@ function fillFalling(
   start: number, count: number,
   th: number, cr: number, ch: number, scale: number,
   ox: number, oy: number, oz: number,
+  tint?: THREE.Color,
 ) {
-  const a = new THREE.Color('#f8b3ca'), b = new THREE.Color('#fff5fa'), t = new THREE.Color();
+  const a = tint ? tint.clone().multiplyScalar(0.88) : new THREE.Color('#f8b3ca');
+  const b = tint ? tint.clone().lerp(new THREE.Color('#ffffff'), 0.65) : new THREE.Color('#fff5fa');
+  const t = new THREE.Color();
   for (let i = 0; i < count; i++) {
     const s = 740.6 + i * 6.83;
     const ang = hash01(s) * Math.PI * 2;
@@ -247,6 +257,8 @@ function makePointsGeo(pos: Float32Array, col: Float32Array, computeBBox = false
 export type SakuraTreeEntry = {
   position: [number, number, number];
   size: number;
+  blossomColor?: string;
+  barkColor?: string;
 };
 
 type TreeSpec = {
@@ -254,7 +266,13 @@ type TreeSpec = {
   scale: number; trunkHeight: number; crownRadius: number; crownHeight: number;
   branches: BranchSpec[]; roots: RootSpec[]; clusters: ClusterSpec[];
   canopyN: number; groundN: number; fallingN: number;
+  blossom: THREE.Color;
+  bark: THREE.Color;
 };
+
+const _defaultBlossom = new THREE.Color('#f7bfd2');
+const _defaultBark = new THREE.Color('#5e3d30');
+const _white = new THREE.Color('#ffffff');
 
 function computeSpecs(trees: SakuraTreeEntry[]): TreeSpec[] {
   return trees.map(t => {
@@ -269,6 +287,8 @@ function computeSpecs(trees: SakuraTreeEntry[]): TreeSpec[] {
       canopyN: Math.max(180, Math.min(420, Math.round(210 + s * 95))),
       groundN: Math.max(44, Math.min(120, Math.round(54 + s * 26))),
       fallingN: Math.max(52, Math.min(132, Math.round(62 + s * 30))),
+      blossom: t.blossomColor ? new THREE.Color(t.blossomColor) : _defaultBlossom,
+      bark: t.barkColor ? new THREE.Color(t.barkColor) : _defaultBark,
     };
   });
 }
@@ -344,11 +364,17 @@ export function SakuraBatch({ trees }: { trees: SakuraTreeEntry[] }) {
     return specs.reduce((sum, s) => sum + s.scale, 0) / specs.length;
   }, [specs]);
 
+  const hasCustomColor = useMemo(
+    () => specs.some(s => s.blossom !== _defaultBlossom || s.bark !== _defaultBark),
+    [specs],
+  );
+
   const canopyGeo = useMemo(() => {
     const p = new Float32Array(counts.canopy * 3), c = new Float32Array(counts.canopy * 3);
     let off = 0;
     for (const s of specs) {
-      fillCanopy(p, c, off, s.canopyN, s.trunkHeight, s.crownRadius, s.crownHeight, s.pos[0], s.pos[1] + 0.02, s.pos[2]);
+      const tint = s.blossom !== _defaultBlossom ? s.blossom : undefined;
+      fillCanopy(p, c, off, s.canopyN, s.trunkHeight, s.crownRadius, s.crownHeight, s.pos[0], s.pos[1] + 0.02, s.pos[2], tint);
       off += s.canopyN;
     }
     return makePointsGeo(p, c);
@@ -358,7 +384,8 @@ export function SakuraBatch({ trees }: { trees: SakuraTreeEntry[] }) {
     const p = new Float32Array(counts.ground * 3), c = new Float32Array(counts.ground * 3);
     let off = 0;
     for (const s of specs) {
-      fillGround(p, c, off, s.groundN, s.crownRadius, s.pos[0], s.pos[1] + 0.02, s.pos[2]);
+      const tint = s.blossom !== _defaultBlossom ? s.blossom : undefined;
+      fillGround(p, c, off, s.groundN, s.crownRadius, s.pos[0], s.pos[1] + 0.02, s.pos[2], tint);
       off += s.groundN;
     }
     return makePointsGeo(p, c);
@@ -371,9 +398,10 @@ export function SakuraBatch({ trees }: { trees: SakuraTreeEntry[] }) {
     const tp = new Float32Array(n * 3), ps = new Float32Array(n);
     let off = 0;
     for (const s of specs) {
+      const tint = s.blossom !== _defaultBlossom ? s.blossom : undefined;
       fillFalling(pos, col, p1, p2, tp, ps, off, s.fallingN,
         s.trunkHeight, s.crownRadius, s.crownHeight, s.scale,
-        s.pos[0], s.pos[1] + 0.02, s.pos[2]);
+        s.pos[0], s.pos[1] + 0.02, s.pos[2], tint);
       off += s.fallingN;
     }
     const g = new THREE.BufferGeometry();
@@ -397,46 +425,88 @@ export function SakuraBatch({ trees }: { trees: SakuraTreeEntry[] }) {
   useLayoutEffect(() => {
     let bi = 0, di = 0, ti = 0, si = 0, ci = 0;
 
+    // setColorAt 은 instanceColor 가 없으면 자동 생성하고, 있으면 in-place 로 갱신한다.
+    // 매 spec 변경마다 새 InstancedBufferAttribute 를 만들어 GPU 버퍼를 dispose 없이 교체하던
+    // 이전 구현은 WebGL 리소스 누수를 일으켰다.
     for (const s of specs) {
       const tp = s.pos;
+      const barkTint = s.bark !== _defaultBark;
+      const blossomTint = s.blossom !== _defaultBlossom;
 
-      composeInstance(barkRef.current, bi++, tp,
+      composeInstance(barkRef.current, bi, tp,
         [0, s.trunkHeight * 0.5, 0], [0.02, 0, -0.04],
         [0, 0, 0], null, [0.3 * s.scale, s.trunkHeight, 0.3 * s.scale]);
+      if (hasCustomColor) {
+        barkRef.current.setColorAt(bi, barkTint ? s.bark : _defaultBark);
+      }
+      bi++;
 
-      composeInstance(topRef.current, ti++, tp,
+      composeInstance(topRef.current, ti, tp,
         [0, s.trunkHeight * 0.5, 0], [0.02, 0, -0.04],
         [0, s.trunkHeight * 0.48, 0], null, [0.24 * s.scale, 0.32 * s.scale, 0.24 * s.scale]);
+      if (hasCustomColor) {
+        const tc = barkTint ? _tmpCol.copy(s.bark).multiplyScalar(0.65) : _tmpCol.set('#3f271e');
+        topRef.current.setColorAt(ti, tc);
+      }
+      ti++;
 
       for (const b of s.branches) {
-        composeInstance(barkRef.current, bi++, tp,
+        composeInstance(barkRef.current, bi, tp,
           [0, b.pivotY, 0], [b.lean, b.yaw, b.bend],
           [0, b.length * 0.5, 0], null, [b.radius, b.length, b.radius]);
+        if (hasCustomColor) {
+          barkRef.current.setColorAt(bi, barkTint ? s.bark : _defaultBark);
+        }
+        bi++;
       }
 
       for (const r of s.roots) {
-        composeInstance(darkRef.current, di++, tp,
+        composeInstance(darkRef.current, di, tp,
           [0, 0.14 * s.scale, 0], [0, r.angle, r.spread],
           [0, r.length * 0.22, 0], null, [r.radius, r.length, r.radius]);
+        if (hasCustomColor) {
+          const dc = barkTint ? _tmpCol.copy(s.bark).multiplyScalar(0.65) : _tmpCol.set('#3f271e');
+          darkRef.current.setColorAt(di, dc);
+        }
+        di++;
       }
       for (const b of s.branches) {
-        composeInstance(darkRef.current, di++, tp,
+        composeInstance(darkRef.current, di, tp,
           [0, b.pivotY, 0], [b.lean, b.yaw, b.bend],
           [0, b.length * 0.76, 0], [b.twigLean, b.twigYaw, b.bend * -0.42],
           [b.radius * 0.52, b.twigLength, b.radius * 0.52]);
+        if (hasCustomColor) {
+          const dc = barkTint ? _tmpCol.copy(s.bark).multiplyScalar(0.65) : _tmpCol.set('#3f271e');
+          darkRef.current.setColorAt(di, dc);
+        }
+        di++;
       }
 
       for (const c of s.clusters) {
-        composeSimple(shellRef.current, si++, tp, c.position, c.rotation, c.outerScale);
-        composeSimple(coreRef.current, ci++, tp, c.position, c.rotation, c.innerScale);
+        composeSimple(shellRef.current, si, tp, c.position, c.rotation, c.outerScale);
+        if (hasCustomColor) {
+          shellRef.current.setColorAt(si, blossomTint ? s.blossom : _defaultBlossom);
+        }
+        si++;
+        composeSimple(coreRef.current, ci, tp, c.position, c.rotation, c.innerScale);
+        if (hasCustomColor) {
+          const cc = blossomTint
+            ? _tmpCol.copy(s.blossom).lerp(_white, 0.4)
+            : _tmpCol.set('#ffe6f0');
+          coreRef.current.setColorAt(ci, cc);
+        }
+        ci++;
       }
     }
 
     for (const [ref, count] of [[barkRef, bi], [darkRef, di], [topRef, ti], [shellRef, si], [coreRef, ci]] as const) {
       ref.current.count = count as number;
       ref.current.instanceMatrix.needsUpdate = true;
+      if (hasCustomColor && ref.current.instanceColor) {
+        ref.current.instanceColor.needsUpdate = true;
+      }
     }
-  }, [specs]);
+  }, [specs, hasCustomColor, counts]);
 
   useEffect(() => () => {
     canopyGeo.dispose(); groundGeo.dispose();

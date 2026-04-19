@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import * as THREE from 'three';
 
@@ -7,17 +7,16 @@ import { TILE_CONSTANTS } from '../../types/constants';
 import './styles.css';
 
 export function PreviewTile() {
-  const {
-    editMode,
-    hoverPosition,
-    checkTilePosition,
-    currentTileMultiplier,
-    currentTileHeight,
-    currentTileShape,
-    currentTileRotation,
-    currentObjectRotation,
-    selectedPlacedObjectType,
-  } = useBuildingStore();
+  // 무관한 store 변경으로 인한 리렌더를 막기 위해 실제 사용 필드만 selector 로 구독한다.
+  const editMode = useBuildingStore((s) => s.editMode);
+  const hoverPosition = useBuildingStore((s) => s.hoverPosition);
+  const checkTilePosition = useBuildingStore((s) => s.checkTilePosition);
+  const currentTileMultiplier = useBuildingStore((s) => s.currentTileMultiplier);
+  const currentTileHeight = useBuildingStore((s) => s.currentTileHeight);
+  const currentTileShape = useBuildingStore((s) => s.currentTileShape);
+  const currentTileRotation = useBuildingStore((s) => s.currentTileRotation);
+  const currentObjectRotation = useBuildingStore((s) => s.currentObjectRotation);
+  const selectedPlacedObjectType = useBuildingStore((s) => s.selectedPlacedObjectType);
   const tileSize = TILE_CONSTANTS.GRID_CELL_SIZE * currentTileMultiplier;
   const effectiveHeight = currentTileShape === 'stairs' || currentTileShape === 'ramp'
     ? Math.max(1, currentTileHeight)
@@ -47,7 +46,9 @@ export function PreviewTile() {
     geometry.computeVertexNormals();
     return geometry;
   }, []);
-  
+
+  useEffect(() => () => { rampGeometry.dispose(); }, [rampGeometry]);
+
   if ((editMode !== 'tile' && editMode !== 'object') || !hoverPosition) {
     return null;
   }

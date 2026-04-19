@@ -20,36 +20,42 @@ type PointerHandlers = {
 };
 type GroupWithHandlers = THREE.Group & { __handlers?: PointerHandlers };
 
-function NPCPartMesh({ part, instanceId }: NPCPartMeshProps) {
-  void instanceId;
-  const hasUrl = part.url && part.url.trim() !== '';
-  const gltf = hasUrl ? useGLTF(part.url) : null;
-  const clone = useMemo(() => gltf ? SkeletonUtils.clone(gltf.scene) : null, [gltf]);
-  if (!hasUrl) {
-    return (
-      <mesh 
-        position={part.position || [0, 0, 0]}
-        rotation={part.rotation || [0, 0, 0]}
-        scale={part.scale || [1, 1, 1]}
-      >
-        <boxGeometry args={[0.5, 0.5, 0.5]} />
-        <meshStandardMaterial 
-          color={part.color || '#cccccc'} 
-          transparent 
-          opacity={0.6}
-        />
-      </mesh>
-    );
-  }
+function NPCPartFallbackMesh({ part }: NPCPartMeshProps) {
+  return (
+    <mesh
+      position={part.position || [0, 0, 0]}
+      rotation={part.rotation || [0, 0, 0]}
+      scale={part.scale || [1, 1, 1]}
+    >
+      <boxGeometry args={[0.5, 0.5, 0.5]} />
+      <meshStandardMaterial
+        color={part.color || '#cccccc'}
+        transparent
+        opacity={0.6}
+      />
+    </mesh>
+  );
+}
+
+function NPCPartGltfMesh({ part }: NPCPartMeshProps) {
+  const gltf = useGLTF(part.url);
+  const clone = useMemo(() => SkeletonUtils.clone(gltf.scene), [gltf]);
   if (!clone) return null;
   return (
-    <primitive 
+    <primitive
       object={clone}
       position={part.position || [0, 0, 0]}
       rotation={part.rotation || [0, 0, 0]}
       scale={part.scale || [1, 1, 1]}
     />
   );
+}
+
+function NPCPartMesh({ part, instanceId }: NPCPartMeshProps) {
+  void instanceId;
+  const hasUrl = !!part.url && part.url.trim() !== '';
+  if (!hasUrl) return <NPCPartFallbackMesh part={part} instanceId={instanceId} />;
+  return <NPCPartGltfMesh part={part} instanceId={instanceId} />;
 }
 
 const ARRIVAL_THRESHOLD = 0.3;
@@ -136,53 +142,30 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   const handlePointerLeave = useCallback(() => {
     document.body.style.cursor = 'default';
   }, []);
-  
-  if (!template) {
-    return null;
-  }
-  const allParts: NPCPart[] = [];
-  allParts.push(...template.baseParts);
-  if (clothingSet) {
-    allParts.push(...clothingSet.parts);
-  }
-  if (template.accessoryParts) {
-    allParts.push(...template.accessoryParts);
-  }
-  if (instance.customParts) {
-    instance.customParts.forEach(customPart => {
-      const index = allParts.findIndex(p => p.type === customPart.type);
-      if (index >= 0) {
-        allParts[index] = { ...allParts[index], ...customPart };
-      } else {
-        allParts.push(customPart);
-      }
-    });
-  }
+
+  // 이벤트 핸들러 바인딩은 hook 이므로 early return 보다 위에서 호출되어야 React 의 hook 순서가 일관된다.
   useEffect(() => {
     if (!instance.events || instance.events.length === 0) return;
     const mesh = groupRef.current;
     if (!mesh) return;
-    
+
     const handlePointerOver = () => {
       void instance.events?.find(e => e.type === 'onHover');
     };
-    
+
     const handleClick = () => {
       const clickEvent = instance.events?.find(e => e.type === 'onClick');
       if (clickEvent) {
         switch (clickEvent.action) {
           case 'dialogue':
-            break;
           case 'animation':
-            break;
           case 'sound':
-            break;
           case 'custom':
             break;
         }
       }
     };
-    
+
     const meshElement = mesh as unknown as GroupWithHandlers;
     meshElement.__handlers = {
       pointerover: handlePointerOver,
@@ -192,8 +175,28 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
       delete meshElement.__handlers;
     };
   }, [instance.events]);
+
+  // template / clothingSet / customParts 가 변하지 않는 한 같은 배열 reference 를 유지.
+  const allParts = useMemo<NPCPart[]>(() => {
+    if (!template) return [];
+    const parts: NPCPart[] = [...template.baseParts];
+    if (clothingSet) parts.push(...clothingSet.parts);
+    if (template.accessoryParts) parts.push(...template.accessoryParts);
+    if (instance.customParts) {
+      for (const customPart of instance.customParts) {
+        const idx = parts.findIndex(p => p.type === customPart.type);
+        if (idx >= 0) parts[idx] = { ...parts[idx], ...customPart };
+        else parts.push(customPart);
+      }
+    }
+    return parts;
+  }, [template, clothingSet, instance.customParts]);
+
+  if (!template) {
+    return null;
+  }
   const fullModelUrl = template.fullModelUrl || instance.metadata?.modelUrl;
-  
+
   if (fullModelUrl) {
     return (
       <PhysicsEntity
@@ -224,50 +227,9 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
     );
   }
   
-  // 개별 파트들로 구성된 NPC (애니메이션 미지원)
-  const mainPartUrl = allParts.find(part => part.url && part.type === 'body')?.url || 
-                      allParts.find(part => part.url)?.url;
-  
+  // mainPartUrl 분기 / fallback 분기는 본문이 동일하여 단일 경로로 합친다.
   const bodyType = isNavigating ? 'kinematicPosition' : 'fixed';
 
-  if (mainPartUrl) {
-    return (
-      <RigidBody
-        ref={rigidBodyRef}
-        type={bodyType}
-        position={instance.position}
-        rotation={instance.rotation}
-        colliders="cuboid"
-      >
-        <group
-          ref={groupRef}
-          scale={instance.scale}
-          {...(onClick
-            ? {
-                onClick: (e: ThreeEvent<MouseEvent>) => {
-                  e.stopPropagation();
-                  onClick();
-                },
-              }
-            : {})}
-          onPointerEnter={handlePointerEnter}
-          onPointerLeave={handlePointerLeave}
-        >
-          {allParts.map((part) => (
-            <NPCPartMesh key={part.id} part={part} instanceId={instance.id} />
-          ))}
-          
-          {isEditMode && (
-            <mesh position={[0, 2.5, 0]}>
-              <boxGeometry args={[0.5, 0.5, 0.5]} />
-              <meshStandardMaterial color="#00ff00" transparent opacity={0.6} />
-            </mesh>
-          )}
-        </group>
-      </RigidBody>
-    );
-  }
-  
   return (
     <RigidBody
       ref={rigidBodyRef}
@@ -293,7 +255,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
         {allParts.map((part) => (
           <NPCPartMesh key={part.id} part={part} instanceId={instance.id} />
         ))}
-        
+
         {isEditMode && (
           <mesh position={[0, 2.5, 0]}>
             <boxGeometry args={[0.5, 0.5, 0.5]} />

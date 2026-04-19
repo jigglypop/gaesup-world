@@ -35,14 +35,17 @@ uniform float uTime;
 void main() {
   float t = fract(uTime * aSpeed + aLife);
   vec3 pos = position;
-  pos.y += t * 2.8;
-  pos.x += sin(t * 6.28318 + aDrift) * 0.14;
-  pos.z += cos(t * 5.0 + aDrift * 1.7) * 0.1;
-  vAlpha = (1.0 - t) * (1.0 - t) * 0.85;
-  vHeat = 1.0 - t;
+  float angle = t * 8.0 + aDrift;
+  float radius = 0.08 + t * 0.2;
+  pos.y += t * t * 3.2;
+  pos.x += sin(angle) * radius;
+  pos.z += cos(angle) * radius;
+  float flicker = 0.75 + 0.25 * sin(uTime * 14.0 + aDrift * 4.0);
+  vAlpha = (1.0 - t) * (1.0 - t) * 0.9 * flicker;
+  vHeat = 1.0 - t * 0.85;
   vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
   gl_Position = projectionMatrix * mvPosition;
-  gl_PointSize = mix(3.5, 0.5, t) * (200.0 / -mvPosition.z);
+  gl_PointSize = mix(4.5, 0.6, t) * (220.0 / -mvPosition.z);
 }
 `;
 
@@ -53,9 +56,13 @@ varying float vHeat;
 void main() {
   float d = length(gl_PointCoord - 0.5);
   if (d > 0.5) discard;
-  float glow = 1.0 - d * 2.0;
-  vec3 color = mix(vec3(1.0, 0.3, 0.05), vec3(1.0, 0.85, 0.35), vHeat * vHeat);
-  gl_FragColor = vec4(color * glow, vAlpha * glow);
+  float glow = smoothstep(0.5, 0.05, d);
+  vec3 red = vec3(0.75, 0.12, 0.02);
+  vec3 orange = vec3(1.0, 0.5, 0.08);
+  vec3 hot = vec3(1.0, 0.92, 0.65);
+  vec3 color = mix(red, orange, vHeat);
+  color = mix(color, hot, vHeat * vHeat);
+  gl_FragColor = vec4(color * glow * 1.4, vAlpha * glow);
 }
 `;
 
@@ -92,7 +99,7 @@ function getSharedMat() {
       log: new THREE.MeshStandardMaterial({ color: 0x2a1a0a, roughness: 1 }),
       charcoal: new THREE.MeshStandardMaterial({
         color: 0x111111, roughness: 1,
-        emissive: new THREE.Color('#220800'), emissiveIntensity: 0.5,
+        emissive: new THREE.Color('#3a0c00'), emissiveIntensity: 0.8,
       }),
       ember: new THREE.ShaderMaterial({
         vertexShader: EMBER_VERT,
@@ -265,12 +272,14 @@ void main() {
 
   float px = position.x * aWidth;
   float py = position.y * aHeight;
+  float uy = clamp(uv.y, 0.0, 1.0);
 
-  float bend = aLean * pow(clamp(uv.y, 0.0, 1.0), 1.35) * (0.35 + uv.y * 0.65);
-  float wobble = sin((uv.y * 6.0 + aSeed * 5.73) + py * 1.15) * 0.035 * uv.y;
-  float lift = sin(uv.x * 3.14159 + aSeed * 3.7) * 0.018 * uv.y;
+  float sway = sin(vTime * 0.7 + aSeed * 3.14) * 0.04 * uy;
+  float bend = aLean * pow(uy, 1.35) * (0.35 + uy * 0.65);
+  float wobble = sin((uy * 6.0 + aSeed * 5.73) + py * 1.15) * 0.03 * uy;
+  float lift = sin(uv.x * 3.14159 + aSeed * 3.7) * 0.015 * uy;
 
-  vec3 billboarded = right * (px + bend + wobble) + up * (py + lift);
+  vec3 billboarded = right * (px + bend + wobble + sway) + up * (py + lift);
 
   vec4 center = modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
   center.xyz += billboarded;
@@ -304,11 +313,10 @@ float noise(vec2 p) {
 }
 
 float fbm(vec2 p) {
-  float v = 0.0;
-  float a = 0.5;
-  for (int i = 0; i < 5; i++) {
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 3; i++) {
     v += a * noise(p);
-    p = p * 2.0 + vec2(100.0);
+    p = p * 2.1 + vec2(100.0);
     a *= 0.5;
   }
   return v;
@@ -317,64 +325,64 @@ float fbm(vec2 p) {
 void main() {
   vec2 uv = vUv;
   float time = vTime;
-  float intensity = vIntensity;
   float seed = vSeed;
-  float lean = vLean;
-  float flare = vFlare;
 
-  float n1 = fbm(vec2(uv.x * 3.8 + seed * 7.3, uv.y * 5.6 - time * (1.6 + flare * 0.18)));
-  float n2 = fbm(vec2(uv.x * 7.9 - seed * 4.1, uv.y * 10.8 - time * 2.8));
-  float n3 = noise(vec2(uv.y * 9.0 + seed * 11.0, time * 4.7 + seed * 17.0));
-  float n4 = fbm(vec2(uv.x * 12.5 + seed * 2.7, uv.y * 8.0 - time * 2.2));
-  float n5 = fbm(vec2(uv.x * 5.2 + seed * 3.9 + time * 0.4, uv.y * 14.0 - time * 3.5));
+  vec2 q = vec2(
+    fbm(vec2(uv.x * 4.2 + seed * 5.1, uv.y * 5.8 - time * 1.5)),
+    fbm(vec2(uv.x * 3.6 - seed * 3.3, uv.y * 4.6 + time * 0.6))
+  );
+  float n1 = fbm(uv * vec2(3.8, 5.6) + q * 1.5 + vec2(seed * 2.0, -time * 1.1));
+  float n2 = noise(vec2(uv.y * 9.0 + seed * 11.0, time * 4.7 + seed * 17.0));
 
-  float skew = lean * pow(uv.y, 1.2);
-  float sway = (n1 - 0.5) * 0.25 * (1.0 - uv.y * 0.35);
+  float skew = vLean * pow(uv.y, 1.2);
+  float sway = (n1 - 0.5) * 0.28 * (1.0 - uv.y * 0.35);
   float x = (uv.x - 0.5) - skew + sway;
-  float width = mix(0.46 * flare, 0.04, pow(uv.y, 0.78));
+  float w = mix(0.46 * vFlare, 0.02, pow(uv.y, 0.72));
 
-  float centerBody = 1.0 - smoothstep(width, width + 0.08 + n2 * 0.05, abs(x));
-  float leftTongue = 1.0 - smoothstep(width * 0.86, width * 0.86 + 0.07, abs(x + 0.13 + (n2 - 0.5) * 0.09));
-  float rightTongue = 1.0 - smoothstep(width * 0.74, width * 0.74 + 0.07, abs(x - 0.11 + (n4 - 0.5) * 0.09));
-  float backFlame = 1.0 - smoothstep(width * 0.68, width * 0.68 + 0.1, abs(x + (n5 - 0.5) * 0.06));
+  float edgeTurb = q.x * 0.07 * uv.y;
+  float body = 1.0 - smoothstep(w - edgeTurb, w + 0.06, abs(x));
+  float tongue1 = 1.0 - smoothstep(w * 0.82, w * 0.82 + 0.06, abs(x + 0.12 + q.y * 0.08));
+  float tongue2 = 1.0 - smoothstep(w * 0.68, w * 0.68 + 0.07, abs(x - 0.1 + q.x * 0.06));
 
-  float bite = smoothstep(0.60, 1.0, n4 + uv.y * 0.38);
-  float baseGlow = 1.0 - smoothstep(0.12, 0.48, distance(uv, vec2(0.5 + skew * 0.12, 0.12)));
-  float plume = max(centerBody, max(leftTongue * 0.84, max(rightTongue * 0.78, backFlame * 0.6)));
-  plume *= mix(1.0, 0.78, bite * smoothstep(0.22, 0.9, uv.y));
-  plume *= 1.0 - smoothstep(0.82, 1.0, uv.y);
-  plume = smoothstep(0.16, 0.92, plume + baseGlow * 0.35 + n1 * 0.2 + n2 * 0.12 * (1.0 - uv.y));
+  float baseGlow = 1.0 - smoothstep(0.1, 0.42, distance(uv, vec2(0.5 + skew * 0.1, 0.1)));
+  float plume = max(body, max(tongue1 * 0.82, tongue2 * 0.68));
 
-  float emberTrail = smoothstep(0.82, 1.0, n3 + n2 * 0.35)
-    * smoothstep(0.14, 0.78, uv.y)
-    * smoothstep(0.42, 0.0, abs(x));
-  float core = 1.0 - smoothstep(0.02, 0.16 + n1 * 0.04, abs(x));
-  float fire = clamp(plume * (0.88 + 0.12 * n3), 0.0, 1.0);
+  float bite = smoothstep(0.55, 1.0, n1 + uv.y * 0.4);
+  plume *= mix(1.0, 0.72, bite * smoothstep(0.2, 0.85, uv.y));
+  plume *= 1.0 - smoothstep(0.8, 1.0, uv.y);
+  plume = smoothstep(0.14, 0.9, plume + baseGlow * 0.38 + n1 * 0.2);
 
-  vec3 deepEmber = vec3(0.45, 0.04, 0.0);
-  vec3 ember = vec3(0.72, 0.12, 0.01);
-  vec3 flame = vec3(1.0, 0.42, 0.04);
-  vec3 hot = vec3(1.0, 0.78, 0.38);
-  vec3 whiteHot = vec3(1.0, 0.96, 0.88);
+  float core = 1.0 - smoothstep(0.01, 0.14, abs(x));
+  float fire = clamp(plume * (0.85 + 0.15 * n2), 0.0, 1.0);
 
-  vec3 color = mix(deepEmber, ember, smoothstep(0.04, 0.2, fire));
-  color = mix(color, flame, smoothstep(0.15, 0.42, fire));
-  color = mix(color, hot, smoothstep(0.36, 0.72, fire));
-  color = mix(color, whiteHot, smoothstep(0.60, 1.0, fire * core));
-  color += emberTrail * vec3(1.0, 0.45, 0.08) * 0.5;
+  vec3 deepRed = vec3(0.35, 0.02, 0.0);
+  vec3 ember   = vec3(0.65, 0.08, 0.01);
+  vec3 orange  = vec3(1.0, 0.38, 0.04);
+  vec3 golden  = vec3(1.0, 0.65, 0.18);
+  vec3 hot     = vec3(1.0, 0.88, 0.55);
+  vec3 white   = vec3(1.0, 0.97, 0.92);
 
-  float smokeY = smoothstep(0.72, 0.98, uv.y);
-  float smokeNoise = fbm(vec2(uv.x * 6.0 + time * 0.3, uv.y * 4.0 - time * 0.8));
-  float smoke = smokeY * smokeNoise * 0.25 * smoothstep(0.3, 0.0, abs(x));
-  color = mix(color, vec3(0.15, 0.12, 0.1), smoke);
+  vec3 color = mix(deepRed, ember, smoothstep(0.02, 0.15, fire));
+  color = mix(color, orange, smoothstep(0.12, 0.35, fire));
+  color = mix(color, golden, smoothstep(0.28, 0.52, fire));
+  color = mix(color, hot, smoothstep(0.45, 0.72, fire));
+  color = mix(color, white, smoothstep(0.62, 1.0, fire * core));
 
-  float alpha = smoothstep(0.08, 0.38, fire) * min(1.0, 0.48 + intensity * 0.24);
-  alpha += emberTrail * 0.18;
-  alpha += smoke * 0.35;
+  float trail = smoothstep(0.8, 1.0, n2 + n1 * 0.3)
+    * smoothstep(0.18, 0.7, uv.y)
+    * smoothstep(0.35, 0.0, abs(x));
+  color += trail * vec3(1.0, 0.4, 0.06) * 0.4;
+
+  float smokeY = smoothstep(0.75, 0.98, uv.y);
+  float smoke = smokeY * q.x * 0.22 * smoothstep(0.28, 0.0, abs(x));
+  color = mix(color, vec3(0.18, 0.14, 0.12), smoke);
+
+  float alpha = smoothstep(0.06, 0.35, fire) * min(1.0, 0.5 + vIntensity * 0.26);
+  alpha += trail * 0.15 + smoke * 0.3;
 
   if (alpha < 0.01) discard;
 
-  gl_FragColor = vec4(color * vTint * (0.65 + intensity * 0.45), alpha);
+  gl_FragColor = vec4(color * vTint * (0.62 + vIntensity * 0.48), alpha);
 }
 `;
 
@@ -390,14 +398,17 @@ varying float vHeat;
 void main() {
   float t = fract(uTime * aSpeed + aLife);
   vec3 pos = position;
-  pos.y += t * 2.8;
-  pos.x += sin(t * 6.28318 + aDrift) * 0.14;
-  pos.z += cos(t * 5.0 + aDrift * 1.7) * 0.1;
-  vAlpha = (1.0 - t) * (1.0 - t) * 0.85;
-  vHeat = 1.0 - t;
+  float angle = t * 8.0 + aDrift;
+  float radius = 0.08 + t * 0.2;
+  pos.y += t * t * 3.2;
+  pos.x += sin(angle) * radius;
+  pos.z += cos(angle) * radius;
+  float flicker = 0.75 + 0.25 * sin(uTime * 14.0 + aDrift * 4.0);
+  vAlpha = (1.0 - t) * (1.0 - t) * 0.9 * flicker;
+  vHeat = 1.0 - t * 0.85;
   vec4 mvPosition = modelViewMatrix * vec4(pos + aFirePos, 1.0);
   gl_Position = projectionMatrix * mvPosition;
-  gl_PointSize = mix(3.5, 0.5, t) * (200.0 / -mvPosition.z);
+  gl_PointSize = mix(4.5, 0.6, t) * (220.0 / -mvPosition.z);
 }
 `;
 
@@ -465,6 +476,7 @@ export type FireBatchEntry = {
 const _fbGrp = new THREE.Object3D();
 const _fbObj = new THREE.Object3D();
 const _fbMat = new THREE.Matrix4();
+const _fbCol = new THREE.Color();
 
 export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireBatchEntry[] }) {
   const billboardRef = useRef<THREE.InstancedMesh>(null!);
@@ -640,28 +652,29 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
     const mesh = glowRef.current;
     if (!mesh) return;
 
-    const colors = new Float32Array(N * 3);
+    // setColorAt 은 instanceColor 가 없으면 자동 생성하고, 있으면 in-place 로 갱신한다.
+    // 매 갱신마다 InstancedBufferAttribute 를 새로 만들어 GPU 버퍼를 dispose 없이 교체하던
+    // 기존 구현은 WebGL 리소스 누수를 일으켰다.
     for (let i = 0; i < N; i++) {
       const f = fires[i]!;
-      const tint = new THREE.Color(f.color);
       _fbObj.position.set(f.position[0], f.position[1] + 0.02, f.position[2]);
       _fbObj.rotation.set(-Math.PI / 2, 0, f.rotation);
       _fbObj.scale.set(f.width, f.width, 1);
       _fbObj.updateMatrix();
       mesh.setMatrixAt(i, _fbObj.matrix);
-      colors[i * 3] = tint.r;
-      colors[i * 3 + 1] = tint.g;
-      colors[i * 3 + 2] = tint.b;
+      _fbCol.set(f.color);
+      mesh.setColorAt(i, _fbCol);
     }
     mesh.count = N;
     mesh.instanceMatrix.needsUpdate = true;
-    mesh.instanceColor = new THREE.InstancedBufferAttribute(colors, 3);
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   }, [fires, N]);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     bbMat.uniforms['uTime']!.value = t;
     bEmberMat.uniforms['uTime']!.value = t;
+    glowMat.opacity = 0.16 + Math.sin(t * 2.5) * 0.06;
   });
 
   useEffect(() => () => {

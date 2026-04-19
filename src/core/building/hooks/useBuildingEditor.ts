@@ -102,6 +102,8 @@ export function useBuildingEditor() {
       hoverPosition,
       tileGroups,
       currentObjectRotation,
+      currentObjectPrimaryColor,
+      currentObjectSecondaryColor,
       currentFlagWidth,
       currentFlagHeight,
       currentFlagStyle,
@@ -132,7 +134,11 @@ export function useBuildingEditor() {
 
     const config =
       selectedPlacedObjectType === 'sakura'
-        ? { size: useBuildingStore.getState().currentTileMultiplier * cellSize }
+        ? {
+            size: useBuildingStore.getState().currentTileMultiplier * cellSize,
+            primaryColor: currentObjectPrimaryColor,
+            secondaryColor: currentObjectSecondaryColor,
+          }
         : selectedPlacedObjectType === 'flag'
           ? {
               flagWidth: currentFlagWidth,

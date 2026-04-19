@@ -132,6 +132,11 @@ interface BuildingStore extends BuildingSystemState {
   currentObjectRotation: number;
   setObjectRotation: (rotation: number) => void;
 
+  currentObjectPrimaryColor: string;
+  currentObjectSecondaryColor: string;
+  setObjectPrimaryColor: (color: string) => void;
+  setObjectSecondaryColor: (color: string) => void;
+
   currentBillboardText: string;
   currentBillboardImageUrl: string;
   currentBillboardColor: string;
@@ -224,6 +229,8 @@ export const useBuildingStore = create<BuildingStore>()(
     currentFireHeight: 1.5,
     currentFireColor: '#ff6622',
     currentObjectRotation: 0,
+    currentObjectPrimaryColor: '#f7bfd2',
+    currentObjectSecondaryColor: '#5e3d30',
     currentBillboardText: 'HELLO',
     currentBillboardImageUrl: '',
     currentBillboardColor: '#00ff88',
@@ -955,6 +962,8 @@ export const useBuildingStore = create<BuildingStore>()(
     setFireHeight: (height) => set((state) => { state.currentFireHeight = height; }),
     setFireColor: (color) => set((state) => { state.currentFireColor = color; }),
     setObjectRotation: (rotation) => set((state) => { state.currentObjectRotation = rotation; }),
+    setObjectPrimaryColor: (color) => set((state) => { state.currentObjectPrimaryColor = color; }),
+    setObjectSecondaryColor: (color) => set((state) => { state.currentObjectSecondaryColor = color; }),
 
     setBillboardText: (text) => set((state) => { state.currentBillboardText = text; }),
     setBillboardImageUrl: (url) => set((state) => { state.currentBillboardImageUrl = url; }),

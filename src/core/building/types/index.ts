@@ -47,6 +47,8 @@ export type TileShapeType = 'box' | 'stairs' | 'round' | 'ramp';
 
 export interface ObjectConfig {
   size?: number;
+  primaryColor?: string;
+  secondaryColor?: string;
   flagTexture?: string;
   flagWidth?: number;
   flagHeight?: number;

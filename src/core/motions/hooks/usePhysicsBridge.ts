@@ -30,9 +30,22 @@ export function usePhysicsBridge(
   const physicsConfig = useGaesupStore((state) => state.physics);
   const initialPhysicsConfigRef = useRef(physicsConfig);
   const interactionSystem = InteractionSystem.getInstance();
-  
+
   const interaction = interactionSystem.getState();
   const isReady = enabled;
+
+  const inputRef = useRef<PhysicsInputState>({
+    keyboard: interaction.keyboard,
+    mouse: interaction.mouse,
+  });
+  const calcPropRef = useRef<PhysicsCalcProps | null>(null);
+
+  const setKeyboardInputRef = useRef((input: Partial<PhysicsInputState['keyboard']>) =>
+    interactionSystem.updateKeyboard(input),
+  );
+  const setMouseInputRef = useRef((input: Partial<PhysicsInputState['mouse']>) =>
+    interactionSystem.updateMouse(input),
+  );
 
   useEffect(() => {
     if (!registeredRef.current) {
@@ -58,7 +71,8 @@ export function usePhysicsBridge(
       if (!registeredRef.current) {
         physicsBridgeRef.current.register(
           'global-physics',
-          initialPhysicsConfigRef.current
+          initialPhysicsConfigRef.current,
+          stateManagerRef.current,
         );
         registeredRef.current = true;
       }
@@ -110,10 +124,9 @@ export function usePhysicsBridge(
   const executePhysics = useCallback((state: RootState, delta: number) => {
     if (!enabled || !physicsBridgeRef.current || !stateManagerRef.current) return;
 
-    const input: PhysicsInputState = {
-      keyboard: interaction.keyboard,
-      mouse: interaction.mouse,
-    };
+    const input = inputRef.current;
+    input.keyboard = interaction.keyboard;
+    input.mouse = interaction.mouse;
 
     let physicsState = physicsStateRef.current;
     // 물리 상태 초기화
@@ -149,18 +162,30 @@ export function usePhysicsBridge(
       physicsState.delta = delta;
     }
 
-    // 물리 계산 속성
-    const calcProp: PhysicsCalcProps = {
-      rigidBodyRef: props.rigidBodyRef,
-      state,
-      delta,
-      worldContext: useGaesupStore.getState(),
-      dispatch: () => {},
-      inputRef: { current: input },
-      setKeyboardInput: (input) => interactionSystem.updateKeyboard(input),
-      setMouseInput: (input) => interactionSystem.updateMouse(input),
-      ...(props.innerGroupRef ? { innerGroupRef: props.innerGroupRef } : {}),
-    };
+    // 매 프레임 객체 할당을 피하기 위해 calcProp 을 ref 로 재사용한다.
+    let calcProp = calcPropRef.current;
+    if (!calcProp) {
+      calcProp = {
+        rigidBodyRef: props.rigidBodyRef,
+        state,
+        delta,
+        worldContext: useGaesupStore.getState(),
+        dispatch: () => {},
+        inputRef,
+        setKeyboardInput: setKeyboardInputRef.current,
+        setMouseInput: setMouseInputRef.current,
+        ...(props.innerGroupRef ? { innerGroupRef: props.innerGroupRef } : {}),
+      };
+      calcPropRef.current = calcProp;
+    } else {
+      calcProp.rigidBodyRef = props.rigidBodyRef;
+      calcProp.state = state;
+      calcProp.delta = delta;
+      calcProp.worldContext = useGaesupStore.getState();
+      if (props.innerGroupRef) {
+        calcProp.innerGroupRef = props.innerGroupRef;
+      }
+    }
 
     // 브릿지를 통해 물리 업데이트
     physicsBridgeRef.current.updateEntity('global-physics', {
@@ -168,7 +193,7 @@ export function usePhysicsBridge(
       calcProp,
       physicsState
     });
-  }, [enabled, interaction, interactionSystem, props]);
+  }, [enabled, interaction, props]);
 
   // 프레임 루프
   useFrame((state, delta) => {
