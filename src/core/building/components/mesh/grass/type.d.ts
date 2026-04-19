@@ -23,6 +23,11 @@ export type GrassMeshProps = ThreeElements["group"] & {
    * When omitted, the component falls back to its world transform.
    */
   center?: [number, number, number];
+  /**
+   * When true, the ground plane uses a stepped toon material instead of PBR.
+   * Defaults to the global toon mode (rendering/toon).
+   */
+  toon?: boolean;
 };
 
 declare global {

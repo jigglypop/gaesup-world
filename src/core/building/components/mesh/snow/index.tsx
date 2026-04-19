@@ -11,6 +11,53 @@ const HALF_RANGE = 20;
 const HEIGHT = 20;
 const LOD_INTERVAL = 3;
 
+type SnowProps = {
+  /**
+   * When true, simulation runs entirely in the vertex shader (zero CPU cost).
+   * Disables WASM/JS update path. Recommended for static, area-bound snowfall.
+   */
+  gpu?: boolean;
+};
+
+const GPU_VERT = /* glsl */ `
+attribute float aSeed;
+attribute float aBaseX;
+attribute float aBaseZ;
+attribute float aFallSpeed;
+attribute float aDriftAmp;
+
+uniform float uTime;
+uniform vec3 uOrigin;
+uniform float uHalfRange;
+uniform float uHeight;
+uniform float uPointSize;
+uniform float uScale;
+
+void main() {
+  float fall = uHeight - mod(uTime * aFallSpeed + aSeed * uHeight * 2.0, uHeight * 1.4);
+  float dx = sin(uTime * 0.7 + aSeed * 6.2831) * aDriftAmp;
+  float dz = cos(uTime * 0.5 + aSeed * 3.1415) * aDriftAmp;
+
+  float wx = uOrigin.x + mod(aBaseX + dx - uOrigin.x + uHalfRange, uHalfRange * 2.0) - uHalfRange;
+  float wz = uOrigin.z + mod(aBaseZ + dz - uOrigin.z + uHalfRange, uHalfRange * 2.0) - uHalfRange;
+  float wy = uOrigin.y + fall - uHeight * 0.5;
+
+  vec4 mv = modelViewMatrix * vec4(wx, wy, wz, 1.0);
+  gl_Position = projectionMatrix * mv;
+  gl_PointSize = uPointSize * (uScale / -mv.z);
+}
+`;
+
+const GPU_FRAG = /* glsl */ `
+uniform float uOpacity;
+void main() {
+  vec2 d = gl_PointCoord - vec2(0.5);
+  float r2 = dot(d, d);
+  if (r2 > 0.25) discard;
+  gl_FragColor = vec4(1.0, 1.0, 1.0, uOpacity * exp(-r2 * 6.0));
+}
+`;
+
 let _snowTex: THREE.Texture | null = null;
 function getSnowTexture(): THREE.Texture {
   if (_snowTex) return _snowTex;
@@ -28,7 +75,90 @@ function getSnowTexture(): THREE.Texture {
   return _snowTex;
 }
 
-export function Snow() {
+function GpuSnow() {
+  const pointsRef = useRef<THREE.Points>(null!);
+  const matRef = useRef<THREE.ShaderMaterial>(null!);
+
+  const geometry = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    const pos = new Float32Array(COUNT * 3);
+    const seed = new Float32Array(COUNT);
+    const baseX = new Float32Array(COUNT);
+    const baseZ = new Float32Array(COUNT);
+    const fallSpeed = new Float32Array(COUNT);
+    const driftAmp = new Float32Array(COUNT);
+    for (let i = 0; i < COUNT; i++) {
+      pos[i * 3] = 0;
+      pos[i * 3 + 1] = 0;
+      pos[i * 3 + 2] = 0;
+      seed[i] = Math.random();
+      baseX[i] = (Math.random() - 0.5) * HALF_RANGE * 2;
+      baseZ[i] = (Math.random() - 0.5) * HALF_RANGE * 2;
+      fallSpeed[i] = 0.5 + Math.random() * 1.5;
+      driftAmp[i] = 0.05 + Math.random() * 0.25;
+    }
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('aSeed', new THREE.Float32BufferAttribute(seed, 1));
+    g.setAttribute('aBaseX', new THREE.Float32BufferAttribute(baseX, 1));
+    g.setAttribute('aBaseZ', new THREE.Float32BufferAttribute(baseZ, 1));
+    g.setAttribute('aFallSpeed', new THREE.Float32BufferAttribute(fallSpeed, 1));
+    g.setAttribute('aDriftAmp', new THREE.Float32BufferAttribute(driftAmp, 1));
+    g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), HALF_RANGE * 4);
+    return g;
+  }, []);
+
+  const material = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0 },
+          uOrigin: { value: new THREE.Vector3() },
+          uHalfRange: { value: HALF_RANGE },
+          uHeight: { value: HEIGHT },
+          uPointSize: { value: 0.08 },
+          uScale: { value: 1 },
+          uOpacity: { value: 0.85 },
+        },
+        vertexShader: GPU_VERT,
+        fragmentShader: GPU_FRAG,
+        transparent: true,
+        depthWrite: false,
+      }),
+    [],
+  );
+
+  useEffect(() => () => { geometry.dispose(); material.dispose(); }, [geometry, material]);
+
+  useFrame((state) => {
+    const points = pointsRef.current;
+    if (!points) return;
+    const parent = points.parent;
+    if (parent && !parent.visible) return;
+    const u = matRef.current.uniforms;
+    u['uTime'].value = state.clock.elapsedTime;
+    (u['uOrigin'].value as THREE.Vector3).copy(state.camera.position);
+    u['uScale'].value = state.gl.domElement.height * 0.5;
+  });
+
+  return (
+    <points
+      ref={pointsRef}
+      geometry={geometry}
+      frustumCulled={false}
+    >
+      <primitive ref={matRef} object={material} attach="material" />
+    </points>
+  );
+}
+
+export function Snow({ gpu }: SnowProps = {}) {
+  if (gpu) {
+    return <GpuSnow />;
+  }
+  return <CpuSnow />;
+}
+
+function CpuSnow() {
   const pointsRef = useRef<THREE.Points>(null!);
   const posRef = useRef(new Float32Array(COUNT * 3));
   const velRef = useRef(new Float32Array(COUNT * 3));

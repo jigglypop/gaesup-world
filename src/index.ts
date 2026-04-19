@@ -59,5 +59,34 @@ export {
   GaeSupProps,
   GaesupWorldContent,
   useGaesupStore,
+  // NPC
+  useNPCStore,
+  // Environment meshes
+  Sakura,
+  SakuraBatch,
+  Sand,
+  SandBatch,
+  Snowfield,
+  SnowfieldBatch,
+  Snow,
+  Grass,
+  Water,
+  Billboard,
+  // Toon / Outline
+  createToonMaterial,
+  getToonGradient,
+  setDefaultToonMode,
+  getDefaultToonMode,
+  disposeToonGradients,
+  applyToonToScene,
+  ToonOutlines,
+  Outlined,
+} from './core';
+export type {
+  SakuraTreeEntry,
+  SandEntry,
+  SnowfieldEntry,
+  ToonOutlinesProps,
+  OutlinedProps,
 } from './core';
 export { GaesupAdmin } from './admin';

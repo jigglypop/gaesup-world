@@ -3,11 +3,41 @@ import { useEffect, useMemo } from 'react';
 import { createNoise2D } from 'simplex-noise';
 import * as THREE from 'three';
 
+import { createToonMaterial, getDefaultToonMode } from '@core/rendering/toon';
+
 const noise2D = createNoise2D();
 
 type SnowfieldProps = {
   size?: number;
+  toon?: boolean;
 };
+
+let _snowSurfaceToon: THREE.MeshToonMaterial | null = null;
+let _snowSurfacePbr: THREE.MeshPhysicalMaterial | null = null;
+
+function getSnowSurfaceMaterial(toon: boolean): THREE.Material {
+  if (toon) {
+    if (!_snowSurfaceToon) {
+      _snowSurfaceToon = createToonMaterial({
+        vertexColors: true,
+        steps: 4,
+        emissive: '#9ec1e8',
+        emissiveIntensity: 0.06,
+      });
+    }
+    return _snowSurfaceToon;
+  }
+  if (!_snowSurfacePbr) {
+    _snowSurfacePbr = new THREE.MeshPhysicalMaterial({
+      vertexColors: true,
+      roughness: 0.88,
+      metalness: 0.0,
+      clearcoat: 0.12,
+      clearcoatRoughness: 0.75,
+    });
+  }
+  return _snowSurfacePbr;
+}
 
 function hash01(value: number): number {
   const x = Math.sin(value * 91.7 + 173.3) * 43758.5453123;
@@ -136,11 +166,14 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
   return [surface, sparkles, avgSize];
 }
 
-export function SnowfieldBatch({ entries }: { entries: SnowfieldEntry[] }) {
+export function SnowfieldBatch({ entries, toon }: { entries: SnowfieldEntry[]; toon?: boolean }) {
   const [surfaceGeo, sparkleGeo, avgSize] = useMemo(
     () => buildMergedSnowfield(entries),
     [entries],
   );
+
+  const useToon = toon ?? getDefaultToonMode();
+  const surfaceMat = getSnowSurfaceMaterial(useToon);
 
   useEffect(() => () => { surfaceGeo.dispose(); sparkleGeo.dispose(); }, [surfaceGeo, sparkleGeo]);
 
@@ -148,15 +181,7 @@ export function SnowfieldBatch({ entries }: { entries: SnowfieldEntry[] }) {
 
   return (
     <>
-      <mesh geometry={surfaceGeo} castShadow receiveShadow>
-        <meshPhysicalMaterial
-          vertexColors
-          roughness={0.88}
-          metalness={0.0}
-          clearcoat={0.12}
-          clearcoatRoughness={0.75}
-        />
-      </mesh>
+      <mesh geometry={surfaceGeo} material={surfaceMat} castShadow receiveShadow />
       <points geometry={sparkleGeo}>
         <pointsMaterial
           size={Math.max(0.03, avgSize * 0.01)}
@@ -174,7 +199,9 @@ export function SnowfieldBatch({ entries }: { entries: SnowfieldEntry[] }) {
 // Individual Snowfield (standalone use)
 // ============================================================
 
-export default function Snowfield({ size = 4 }: SnowfieldProps) {
+export default function Snowfield({ size = 4, toon }: SnowfieldProps) {
+  const useToon = toon ?? getDefaultToonMode();
+  const surfaceMat = getSnowSurfaceMaterial(useToon);
   const [surfaceGeometry, sparkleGeometry] = useMemo(() => {
     const segments = Math.max(22, Math.round(size * 7));
     const surface = new THREE.PlaneGeometry(size, size, segments, segments);
@@ -237,15 +264,7 @@ export default function Snowfield({ size = 4 }: SnowfieldProps) {
 
   return (
     <group position={[0, 0.045, 0]}>
-      <mesh geometry={surfaceGeometry} castShadow receiveShadow>
-        <meshPhysicalMaterial
-          vertexColors
-          roughness={0.88}
-          metalness={0.0}
-          clearcoat={0.12}
-          clearcoatRoughness={0.75}
-        />
-      </mesh>
+      <mesh geometry={surfaceGeometry} material={surfaceMat} castShadow receiveShadow />
       <points geometry={sparkleGeometry} frustumCulled={false}>
         <pointsMaterial
           size={Math.max(0.03, size * 0.01)}

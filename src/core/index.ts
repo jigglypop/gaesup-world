@@ -20,6 +20,16 @@ export { GaesupWorldContent } from './world/components/WorldContainer';
 export { ControllerWrapper as GaesupController } from './interactions/components/ControllerWrapper';
 
 export { createRenderer, isWebGPUAvailable } from './rendering/webgpu';
+export {
+  createToonMaterial,
+  getToonGradient,
+  setDefaultToonMode,
+  getDefaultToonMode,
+  disposeToonGradients,
+  applyToonToScene,
+} from './rendering/toon';
+export { ToonOutlines, Outlined } from './rendering/outline';
+export type { ToonOutlinesProps, OutlinedProps } from './rendering/outline';
 export { loadCoreWasm } from './wasm/loader';
 export type { GaesupCoreWasmExports } from './wasm/loader';
 

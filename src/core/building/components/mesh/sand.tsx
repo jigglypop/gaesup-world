@@ -3,11 +3,30 @@ import { useEffect, useMemo } from 'react';
 import { createNoise2D } from 'simplex-noise';
 import * as THREE from 'three';
 
+import { createToonMaterial, getDefaultToonMode } from '@core/rendering/toon';
+
 const noise2D = createNoise2D();
 
 type SandProps = {
   size?: number;
+  toon?: boolean;
 };
+
+let _sandSurfaceToon: THREE.MeshToonMaterial | null = null;
+let _sandSurfacePbr: THREE.MeshStandardMaterial | null = null;
+
+function getSandSurfaceMaterial(toon: boolean): THREE.Material {
+  if (toon) {
+    if (!_sandSurfaceToon) {
+      _sandSurfaceToon = createToonMaterial({ vertexColors: true, steps: 4 });
+    }
+    return _sandSurfaceToon;
+  }
+  if (!_sandSurfacePbr) {
+    _sandSurfacePbr = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0.02 });
+  }
+  return _sandSurfacePbr;
+}
 
 function hash01(value: number): number {
   const x = Math.sin(value * 127.1 + 311.7) * 43758.5453123;
@@ -137,11 +156,14 @@ function buildMergedSand(entries: SandEntry[]): [THREE.BufferGeometry, THREE.Buf
   return [surface, grains, avgSize];
 }
 
-export function SandBatch({ entries }: { entries: SandEntry[] }) {
+export function SandBatch({ entries, toon }: { entries: SandEntry[]; toon?: boolean }) {
   const [surfaceGeo, grainGeo, avgSize] = useMemo(
     () => buildMergedSand(entries),
     [entries],
   );
+
+  const useToon = toon ?? getDefaultToonMode();
+  const surfaceMat = getSandSurfaceMaterial(useToon);
 
   useEffect(() => () => { surfaceGeo.dispose(); grainGeo.dispose(); }, [surfaceGeo, grainGeo]);
 
@@ -149,9 +171,7 @@ export function SandBatch({ entries }: { entries: SandEntry[] }) {
 
   return (
     <>
-      <mesh geometry={surfaceGeo} castShadow receiveShadow>
-        <meshStandardMaterial vertexColors roughness={1} metalness={0.02} />
-      </mesh>
+      <mesh geometry={surfaceGeo} material={surfaceMat} castShadow receiveShadow />
       <points geometry={grainGeo}>
         <pointsMaterial
           size={Math.max(0.02, avgSize * 0.008)}
@@ -169,7 +189,9 @@ export function SandBatch({ entries }: { entries: SandEntry[] }) {
 // Individual Sand (standalone use)
 // ============================================================
 
-export default function Sand({ size = 4 }: SandProps) {
+export default function Sand({ size = 4, toon }: SandProps) {
+  const useToon = toon ?? getDefaultToonMode();
+  const surfaceMat = getSandSurfaceMaterial(useToon);
   const [surfaceGeometry, grainGeometry] = useMemo(() => {
     const segments = Math.max(20, Math.round(size * 6));
     const surface = new THREE.PlaneGeometry(size, size, segments, segments);
@@ -232,9 +254,7 @@ export default function Sand({ size = 4 }: SandProps) {
 
   return (
     <group position={[0, 0.04, 0]}>
-      <mesh geometry={surfaceGeometry} castShadow receiveShadow>
-        <meshStandardMaterial vertexColors roughness={1} metalness={0.02} />
-      </mesh>
+      <mesh geometry={surfaceGeometry} material={surfaceMat} castShadow receiveShadow />
       <points geometry={grainGeometry} frustumCulled={false}>
         <pointsMaterial
           size={Math.max(0.02, size * 0.008)}

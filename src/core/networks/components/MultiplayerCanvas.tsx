@@ -1,7 +1,7 @@
-import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Environment, Grid } from '@react-three/drei';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { Physics, euler, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
@@ -35,6 +35,39 @@ interface MultiplayerCanvasProps {
   localSpeechText?: string | null;
 }
 
+const POSITION_SAMPLE_INTERVAL_FRAMES = 6;
+const POSITION_EPSILON_SQ = 0.0001;
+
+function LocalPositionTracker({
+  playerRef,
+  onChange,
+}: {
+  playerRef: React.RefObject<RapierRigidBody>;
+  onChange: (x: number, y: number, z: number) => void;
+}) {
+  const lastRef = useRef({ x: 0, y: 0, z: 0 });
+  const frameRef = useRef(0);
+
+  useFrame(() => {
+    frameRef.current++;
+    if (frameRef.current % POSITION_SAMPLE_INTERVAL_FRAMES !== 0) return;
+    const body = playerRef.current;
+    if (!body) return;
+    const p = body.translation();
+    const last = lastRef.current;
+    const dx = p.x - last.x;
+    const dy = p.y - last.y;
+    const dz = p.z - last.z;
+    if (dx * dx + dy * dy + dz * dz < POSITION_EPSILON_SQ) return;
+    last.x = p.x;
+    last.y = p.y;
+    last.z = p.z;
+    onChange(p.x, p.y, p.z);
+  });
+
+  return null;
+}
+
 export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({ 
   players, 
   characterUrl, 
@@ -56,26 +89,13 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
   const [localPosition, setLocalPosition] = useState<[number, number, number]>([0, 0, 0]);
   const localSpeechPos = useMemo(() => new THREE.Vector3(), []);
 
-  // local player position을 너무 자주 setState 하지 않도록 간단한 메모이즈
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      const body = playerRef.current;
-      if (!body) return;
-      const p = body.translation();
-      setLocalPosition((prev) => {
-        const dx = p.x - prev[0];
-        const dy = p.y - prev[1];
-        const dz = p.z - prev[2];
-        if (dx * dx + dy * dy + dz * dz < 0.0001) return prev;
-        return [p.x, p.y, p.z];
-      });
-    }, 100);
-    return () => window.clearInterval(id);
-  }, [playerRef]);
-
-  useEffect(() => {
-    localSpeechPos.set(localPosition[0], localPosition[1], localPosition[2]);
-  }, [localPosition, localSpeechPos]);
+  const handleLocalPositionChange = useMemo(
+    () => (x: number, y: number, z: number) => {
+      localSpeechPos.set(x, y, z);
+      setLocalPosition([x, y, z]);
+    },
+    [localSpeechPos],
+  );
 
   const visiblePlayers = useMemo(() => {
     const range = proximityRange;
@@ -127,6 +147,11 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
         <Suspense fallback={null}>
           <GaesupWorldContent>
             <Physics>
+              <LocalPositionTracker
+                playerRef={playerRef}
+                onChange={handleLocalPositionChange}
+              />
+
               {/* 로컬 플레이어 */}
               <GaesupController
                 rigidBodyRef={playerRef}

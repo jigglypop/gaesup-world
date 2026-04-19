@@ -3,7 +3,9 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-type SakuraProps = { size?: number };
+import { createToonMaterial, getDefaultToonMode } from '@core/rendering/toon';
+
+type SakuraProps = { size?: number; toon?: boolean };
 
 type BranchSpec = {
   pivotY: number; length: number; radius: number;
@@ -36,10 +38,13 @@ let _sharedGeo: {
   canopyCore: THREE.SphereGeometry; trunkTop: THREE.SphereGeometry;
 } | null = null;
 
-let _sharedMat: {
-  bark: THREE.MeshStandardMaterial; barkDark: THREE.MeshStandardMaterial;
-  blossomShell: THREE.MeshStandardMaterial; blossomCore: THREE.MeshStandardMaterial;
-} | null = null;
+type SakuraMatSet = {
+  bark: THREE.Material; barkDark: THREE.Material;
+  blossomShell: THREE.Material; blossomCore: THREE.Material;
+};
+
+let _sharedMatPbr: SakuraMatSet | null = null;
+let _sharedMatToon: SakuraMatSet | null = null;
 
 function getSharedGeometry() {
   if (!_sharedGeo) {
@@ -53,16 +58,27 @@ function getSharedGeometry() {
   return _sharedGeo;
 }
 
-function getSharedMaterials() {
-  if (!_sharedMat) {
-    _sharedMat = {
+function getSharedMaterials(toon: boolean): SakuraMatSet {
+  if (toon) {
+    if (!_sharedMatToon) {
+      _sharedMatToon = {
+        bark: createToonMaterial({ color: '#5e3d30', steps: 3 }),
+        barkDark: createToonMaterial({ color: '#3f271e', steps: 3 }),
+        blossomShell: createToonMaterial({ color: '#f7bfd2', transparent: true, opacity: 0.78, steps: 4, depthWrite: false }),
+        blossomCore: createToonMaterial({ color: '#ffe6f0', transparent: true, opacity: 0.6, steps: 4, depthWrite: false }),
+      };
+    }
+    return _sharedMatToon;
+  }
+  if (!_sharedMatPbr) {
+    _sharedMatPbr = {
       bark: new THREE.MeshStandardMaterial({ color: '#5e3d30', roughness: 0.95, metalness: 0.02 }),
       barkDark: new THREE.MeshStandardMaterial({ color: '#3f271e', roughness: 1, metalness: 0.01 }),
       blossomShell: new THREE.MeshStandardMaterial({ color: '#f7bfd2', roughness: 0.92, metalness: 0.0, transparent: true, opacity: 0.68 }),
       blossomCore: new THREE.MeshStandardMaterial({ color: '#ffe6f0', roughness: 0.84, metalness: 0.0, transparent: true, opacity: 0.5 }),
     };
   }
-  return _sharedMat;
+  return _sharedMatPbr;
 }
 
 // --- Tree structure generators ---
@@ -334,7 +350,7 @@ void main() {
 }
 `;
 
-export function SakuraBatch({ trees }: { trees: SakuraTreeEntry[] }) {
+export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: boolean }) {
   const barkRef = useRef<THREE.InstancedMesh>(null!);
   const darkRef = useRef<THREE.InstancedMesh>(null!);
   const topRef = useRef<THREE.InstancedMesh>(null!);
@@ -342,8 +358,9 @@ export function SakuraBatch({ trees }: { trees: SakuraTreeEntry[] }) {
   const coreRef = useRef<THREE.InstancedMesh>(null!);
   const fallingRef = useRef<THREE.Points>(null!);
 
+  const useToon = toon ?? getDefaultToonMode();
   const geo = getSharedGeometry();
-  const mat = getSharedMaterials();
+  const mat = getSharedMaterials(useToon);
   const specs = useMemo(() => computeSpecs(trees), [trees]);
 
   const counts = useMemo(() => {
@@ -514,7 +531,11 @@ export function SakuraBatch({ trees }: { trees: SakuraTreeEntry[] }) {
   }, [canopyGeo, groundGeo, fallingGeo, fallingMat]);
 
   useFrame((state) => {
-    const m = fallingRef.current?.material as THREE.ShaderMaterial | undefined;
+    const points = fallingRef.current;
+    if (!points) return;
+    const parent = points.parent;
+    if (parent && !parent.visible) return;
+    const m = points.material as THREE.ShaderMaterial | undefined;
     if (m?.uniforms) {
       m.uniforms.uTime.value = state.clock.getElapsedTime();
       m.uniforms.uScale.value = state.gl.domElement.height * 0.5;
@@ -545,7 +566,7 @@ export function SakuraBatch({ trees }: { trees: SakuraTreeEntry[] }) {
 // Individual Sakura (standalone use outside TileSystem)
 // ============================================================
 
-export default function Sakura({ size = 4 }: SakuraProps) {
+export default function Sakura({ size = 4, toon }: SakuraProps) {
   const crownRef = useRef<THREE.Group | null>(null);
   const fallingRef = useRef<THREE.Points>(null!);
   const barkLimbRef = useRef<THREE.InstancedMesh>(null!);
@@ -558,8 +579,9 @@ export default function Sakura({ size = 4 }: SakuraProps) {
   const cr = 1.65 * scale + Math.min(size * 0.08, 0.55);
   const ch = 2.15 * scale + Math.min(size * 0.04, 0.35);
 
+  const useToon = toon ?? getDefaultToonMode();
   const geo = getSharedGeometry();
-  const mat = getSharedMaterials();
+  const mat = getSharedMaterials(useToon);
 
   const branches = useMemo(() => createBranches(scale, th), [scale, th]);
   const roots = useMemo(() => createRoots(scale), [scale]);

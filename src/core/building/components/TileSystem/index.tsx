@@ -5,6 +5,7 @@ import * as THREE from 'three';
 
 import { TileSystemProps } from './types';
 import { GaeSupProps } from '../../../index';
+import { getDefaultToonMode, getToonGradient } from '../../../rendering/toon';
 import { MinimapSystem } from '../../../ui/core';
 import { MaterialManager } from '../../core/MaterialManager';
 import type { TileShapeType } from '../../types';
@@ -446,7 +447,9 @@ export function TileSystem({
     if (!floorMesh) {
       // Dispose the previous local material (if any) before creating a new one.
       localMaterialRef.current?.dispose();
-      const m = new THREE.MeshStandardMaterial({ color: '#888888' });
+      const m = getDefaultToonMode()
+        ? new THREE.MeshToonMaterial({ color: '#888888', gradientMap: getToonGradient(4) })
+        : new THREE.MeshStandardMaterial({ color: '#888888' });
       localMaterialRef.current = m;
       return m;
     }
@@ -468,12 +471,18 @@ export function TileSystem({
 
   const sideMaterial = useMemo(
     () =>
-      new THREE.MeshStandardMaterial({
-        vertexColors: true,
-        roughness: 0.98,
-        metalness: 0.02,
-        side: THREE.DoubleSide,
-      }),
+      getDefaultToonMode()
+        ? new THREE.MeshToonMaterial({
+            vertexColors: true,
+            side: THREE.DoubleSide,
+            gradientMap: getToonGradient(4),
+          })
+        : new THREE.MeshStandardMaterial({
+            vertexColors: true,
+            roughness: 0.98,
+            metalness: 0.02,
+            side: THREE.DoubleSide,
+          }),
     [],
   );
 
@@ -502,11 +511,16 @@ export function TileSystem({
   }, []);
   const rockMaterial = useMemo(
     () =>
-      new THREE.MeshStandardMaterial({
-        color: '#71695f',
-        roughness: 1,
-        metalness: 0.02,
-      }),
+      getDefaultToonMode()
+        ? new THREE.MeshToonMaterial({
+            color: '#71695f',
+            gradientMap: getToonGradient(3),
+          })
+        : new THREE.MeshStandardMaterial({
+            color: '#71695f',
+            roughness: 1,
+            metalness: 0.02,
+          }),
     [],
   );
 
@@ -524,13 +538,22 @@ export function TileSystem({
   const editGeometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
   const editMaterial = useMemo(
     () =>
-      new THREE.MeshStandardMaterial({
-        color: '#ff0000',
-        transparent: true,
-        opacity: 0.6,
-        emissive: new THREE.Color('#ff0000'),
-        emissiveIntensity: 0.2,
-      }),
+      getDefaultToonMode()
+        ? new THREE.MeshToonMaterial({
+            color: '#ff0000',
+            transparent: true,
+            opacity: 0.6,
+            emissive: new THREE.Color('#ff0000'),
+            emissiveIntensity: 0.2,
+            gradientMap: getToonGradient(3),
+          })
+        : new THREE.MeshStandardMaterial({
+            color: '#ff0000',
+            transparent: true,
+            opacity: 0.6,
+            emissive: new THREE.Color('#ff0000'),
+            emissiveIntensity: 0.2,
+          }),
     [],
   );
 

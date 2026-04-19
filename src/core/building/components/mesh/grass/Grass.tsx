@@ -11,6 +11,24 @@ import fragmentShader from "./frag.glsl";
 import { GrassMeshProps } from "./type";
 import vertexShader from "./vert.glsl";
 import { loadCoreWasm, type GaesupCoreWasmExports } from "@core/wasm/loader";
+import { createToonMaterial, getDefaultToonMode } from "@core/rendering/toon";
+import { weightFromDistance } from "@core/utils/sfe";
+
+let _grassGroundToon: THREE.MeshToonMaterial | null = null;
+let _grassGroundPbr: THREE.MeshStandardMaterial | null = null;
+
+function getGroundMaterial(toon: boolean): THREE.Material {
+  if (toon) {
+    if (!_grassGroundToon) {
+      _grassGroundToon = createToonMaterial({ color: '#314a28', steps: 3 });
+    }
+    return _grassGroundToon;
+  }
+  if (!_grassGroundPbr) {
+    _grassGroundPbr = new THREE.MeshStandardMaterial({ color: '#314a28' });
+  }
+  return _grassGroundPbr;
+}
 
 const noise2D = createNoise2D();
 
@@ -22,6 +40,8 @@ const GrassMaterial = shaderMaterial(
     time: 0,
     tipColor: new THREE.Color("#8fbc5a").convertSRGBToLinear(),
     bottomColor: new THREE.Color("#355b2d").convertSRGBToLinear(),
+    uToon: 0,
+    uToonSteps: 4,
   },
   vertexShader,
   fragmentShader
@@ -61,11 +81,11 @@ function buildAttributeDataWasm(
 
     const buf = wasm.memory.buffer;
     return {
-      offsets: new Float32Array(new Float32Array(buf, offsetsPtr, offsetsLen)),
-      orientations: new Float32Array(new Float32Array(buf, orientationsPtr, orientationsLen)),
-      stretches: new Float32Array(new Float32Array(buf, stretchesPtr, instances)),
-      halfRootAngleSin: new Float32Array(new Float32Array(buf, halfSinPtr, instances)),
-      halfRootAngleCos: new Float32Array(new Float32Array(buf, halfCosPtr, instances)),
+      offsets: new Float32Array(buf, offsetsPtr, offsetsLen).slice(),
+      orientations: new Float32Array(buf, orientationsPtr, orientationsLen).slice(),
+      stretches: new Float32Array(buf, stretchesPtr, instances).slice(),
+      halfRootAngleSin: new Float32Array(buf, halfSinPtr, instances).slice(),
+      halfRootAngleCos: new Float32Array(buf, halfCosPtr, instances).slice(),
     };
   } finally {
     wasm.dealloc_f32(offsetsPtr, offsetsLen);
@@ -130,9 +150,18 @@ const Grass: FC<GrassMeshProps> = memo(
     options = { bW: 0.12, bH: 0.5, joints: 5 },
     width = 4,
     instances = 1000,
+    toon,
+    lod,
+    center,
     ...props
   }) => {
     const { bW, bH, joints } = options;
+    const useToon = toon ?? getDefaultToonMode();
+    const groundMat = getGroundMaterial(useToon);
+    const groupRef = useRef<THREE.Group>(null);
+    const lodCenterRef = useRef(new THREE.Vector3());
+    const lodCheckAccum = useRef(0);
+    const lastInstanceCount = useRef(instances);
     const materialRef = useRef<THREE.ShaderMaterial | null>(null);
     const geometryRef = useRef<THREE.InstancedBufferGeometry | null>(null);
 
@@ -177,16 +206,56 @@ const Grass: FC<GrassMeshProps> = memo(
       const geo = geometryRef.current;
       if (geo) {
         geo.instanceCount = instances;
+        lastInstanceCount.current = instances;
       }
     }, [instances, attributeData]);
 
-    useFrame((state) => {
+    useEffect(() => {
+      const m = materialRef.current;
+      if (!m?.uniforms) return;
+      if (m.uniforms['uToon']) m.uniforms['uToon'].value = useToon ? 1 : 0;
+      if (m.uniforms['uToonSteps']) m.uniforms['uToonSteps'].value = 4;
+    }, [useToon]);
+
+    useEffect(() => {
+      if (center) {
+        lodCenterRef.current.set(center[0], center[1], center[2]);
+      }
+    }, [center]);
+
+    useFrame((state, delta) => {
       const time = materialRef.current?.uniforms?.["time"];
       if (time) time.value = state.clock.elapsedTime / 4;
+
+      if (!lod) return;
+      lodCheckAccum.current += Math.max(0, delta);
+      if (lodCheckAccum.current < 0.2) return;
+      lodCheckAccum.current = 0;
+
+      const geo = geometryRef.current;
+      const grp = groupRef.current;
+      if (!geo || !grp) return;
+
+      if (!center) {
+        grp.getWorldPosition(lodCenterRef.current);
+      }
+
+      const dist = state.camera.position.distanceTo(lodCenterRef.current);
+      const w = weightFromDistance(
+        dist,
+        lod.near ?? 20,
+        lod.far ?? 120,
+        lod.strength ?? 4,
+      );
+      const target = Math.max(0, Math.floor(instances * w));
+      if (target !== lastInstanceCount.current) {
+        geo.instanceCount = target;
+        lastInstanceCount.current = target;
+      }
     });
 
     return (
-      <group {...props}>
+      <group ref={groupRef} {...props}>
         <mesh>
           <instancedBufferGeometry
             ref={geometryRef}
@@ -209,9 +278,12 @@ const Grass: FC<GrassMeshProps> = memo(
             transparent
           />
         </mesh>
-        <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh
+          position={[0, 0, 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          material={groundMat}
+        >
           <bufferGeometry {...groundGeo} />
-          <meshStandardMaterial color="#314a28" />
         </mesh>
       </group>
     );

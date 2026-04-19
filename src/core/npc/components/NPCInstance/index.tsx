@@ -10,6 +10,7 @@ import { SkeletonUtils } from 'three-stdlib';
 import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
 
 import { NPCPartMeshProps, NPCInstanceProps } from './types';
+import { applyToonToScene, getDefaultToonMode } from '../../../rendering/toon';
 import { useNPCStore } from '../../stores/npcStore';
 import { NPCPart } from '../../types';
 import './styles.css';
@@ -39,7 +40,11 @@ function NPCPartFallbackMesh({ part }: NPCPartMeshProps) {
 
 function NPCPartGltfMesh({ part }: NPCPartMeshProps) {
   const gltf = useGLTF(part.url);
-  const clone = useMemo(() => SkeletonUtils.clone(gltf.scene), [gltf]);
+  const clone = useMemo(() => {
+    const c = SkeletonUtils.clone(gltf.scene);
+    if (c && getDefaultToonMode()) applyToonToScene(c);
+    return c;
+  }, [gltf]);
   if (!clone) return null;
   return (
     <primitive

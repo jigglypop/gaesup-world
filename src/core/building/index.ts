@@ -7,4 +7,15 @@ export * from './components/BuildingUI';
 export * from './stores/buildingStore';
 export * from './types';
 export * from './hooks/useBuildingEditor';
-export * from './bridge/BuildingBridge'; 
+export * from './bridge/BuildingBridge';
+
+export { default as Sakura, SakuraBatch } from './components/mesh/sakura';
+export type { SakuraTreeEntry } from './components/mesh/sakura';
+export { default as Sand, SandBatch } from './components/mesh/sand';
+export type { SandEntry } from './components/mesh/sand';
+export { default as Snowfield, SnowfieldBatch } from './components/mesh/snowfield';
+export type { SnowfieldEntry } from './components/mesh/snowfield';
+export { Snow } from './components/mesh/snow';
+export { default as Grass } from './components/mesh/grass/Grass';
+export { default as Water } from './components/mesh/water';
+export { default as Billboard } from './components/mesh/billboard';

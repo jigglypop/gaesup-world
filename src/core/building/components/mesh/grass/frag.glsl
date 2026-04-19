@@ -3,6 +3,8 @@ uniform sampler2D map;
 uniform sampler2D alphaMap;
 uniform vec3 tipColor;
 uniform vec3 bottomColor;
+uniform float uToon;
+uniform float uToonSteps;
 varying vec2 vUv;
 varying float frc;
 varying float vCluster;
@@ -22,17 +24,22 @@ void main() {
   vec3 dryBottom = mix(lushBottom, warmBottom, vDryness * 0.85);
   vec3 dryTip = mix(lushTip, warmTip, vDryness);
 
-  vec3 bladeGradient = mix(dryBottom, dryTip, smoothstep(0.0, 1.0, frc));
+  float frcStepped = mix(smoothstep(0.0, 1.0, frc), floor(frc * uToonSteps) / max(uToonSteps - 1.0, 1.0), uToon);
+  vec3 bladeGradient = mix(dryBottom, dryTip, frcStepped);
   vec3 tex = texture2D(map, vUv).rgb;
   float rib = 1.0 - smoothstep(0.0, 0.52, abs(vUv.x - 0.5));
-  vec3 color = mix(bladeGradient * 0.72, tex * bladeGradient, 0.62);
+  vec3 color = mix(bladeGradient * 0.72, tex * bladeGradient, mix(0.62, 0.35, uToon));
   color *= mix(0.9, 1.1, vCluster);
   color *= mix(1.0, 0.82, vDryness * 0.35);
   color *= mix(0.94, 1.05, rib);
-  color *= vShade;
+
+  float shadeStepped = mix(vShade, floor(vShade * uToonSteps) / max(uToonSteps - 1.0, 1.0), uToon);
+  color *= shadeStepped;
 
   vec4 col = vec4(color, 1.0);
-  col.rgb = col.rgb / (col.rgb + vec3(1.0));
+  vec3 reinhard = col.rgb / (col.rgb + vec3(1.0));
+  vec3 simple = clamp(col.rgb, 0.0, 1.0);
+  col.rgb = mix(reinhard, simple, uToon);
   col.rgb = pow(col.rgb, vec3(1.0 / 2.2));
 
   gl_FragColor = col;

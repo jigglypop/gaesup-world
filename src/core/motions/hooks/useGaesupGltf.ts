@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { GLTF } from 'three-stdlib';
 
 import { GltfAndSizeOptions, GltfAndSizeResult, GaesupGltfUtils, ResourceUrlsType } from './types';
+import { applyToonToScene, getDefaultToonMode } from '../../rendering/toon';
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { getPooledVector } from '../../utils/vector';
 
@@ -46,6 +47,9 @@ export const useGltfAndSize = ({ url }: GltfAndSizeOptions): GltfAndSizeResult =
       cached.refCount++;
     } else {
       gltfCache.set(url, { gltf, refCount: 1, size: calculateSize() });
+    }
+    if (gltf.scene && getDefaultToonMode()) {
+      applyToonToScene(gltf.scene);
     }
     return () => cleanupGltf(url);
   }, [url, isValidUrl, gltf, calculateSize]);

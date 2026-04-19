@@ -39,7 +39,7 @@ export function BuildingController() {
     if (!controls) return;
     controls.mouseButtons = { LEFT: -1, MIDDLE: 1, RIGHT: 0 };
   }, []);
-  
+
   useEffect(() => {
     if (!initialized) {
       initializeDefaults();

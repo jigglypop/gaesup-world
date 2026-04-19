@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import { Profile, HandleError, MonitorMemory } from '@/core/boilerplate/decorators';
+import { getDefaultToonMode, getToonGradient } from '@/core/rendering/toon';
 
 import { MeshConfig } from '../types';
 
@@ -34,6 +35,23 @@ export class MaterialManager {
       opacity: meshConfig.opacity || 1,
       transparent: meshConfig.transparent || false,
     };
+
+    if (getDefaultToonMode()) {
+      const isGlass = meshConfig.material === 'GLASS';
+      const toon = new THREE.MeshToonMaterial({
+        color: meshConfig.color || '#ffffff',
+        opacity: isGlass ? 0.45 : (meshConfig.opacity || 1),
+        transparent: isGlass ? true : (meshConfig.transparent || false),
+        gradientMap: getToonGradient(isGlass ? 2 : 4),
+      });
+      if (meshConfig.mapTextureUrl) {
+        toon.map = this.loadTexture(meshConfig.mapTextureUrl);
+      }
+      if (meshConfig.normalTextureUrl) {
+        toon.normalMap = this.loadTexture(meshConfig.normalTextureUrl);
+      }
+      return toon;
+    }
 
     if (meshConfig.material === 'GLASS') {
       return new THREE.MeshPhysicalMaterial({
@@ -73,19 +91,16 @@ export class MaterialManager {
   @Profile()
   updateMaterial(meshId: string, updates: Partial<MeshConfig>): void {
     const material = this.materials.get(meshId);
-    if (material && material instanceof THREE.MeshStandardMaterial) {
-      if (updates.color) {
-        material.color.set(updates.color);
-      }
-      if (updates.roughness !== undefined) {
-        material.roughness = updates.roughness;
-      }
-      if (updates.metalness !== undefined) {
-        material.metalness = updates.metalness;
-      }
-      if (updates.opacity !== undefined) {
-        material.opacity = updates.opacity;
-      }
+    if (!material) return;
+    if (material instanceof THREE.MeshStandardMaterial) {
+      if (updates.color) material.color.set(updates.color);
+      if (updates.roughness !== undefined) material.roughness = updates.roughness;
+      if (updates.metalness !== undefined) material.metalness = updates.metalness;
+      if (updates.opacity !== undefined) material.opacity = updates.opacity;
+      material.needsUpdate = true;
+    } else if (material instanceof THREE.MeshToonMaterial) {
+      if (updates.color) material.color.set(updates.color);
+      if (updates.opacity !== undefined) material.opacity = updates.opacity;
       material.needsUpdate = true;
     }
   }

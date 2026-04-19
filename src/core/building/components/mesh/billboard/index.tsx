@@ -4,6 +4,7 @@ import { useTexture } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { getToonGradient, getDefaultToonMode } from '@core/rendering/toon';
 import { weightFromDistance } from '@core/utils/sfe';
 
 export interface BillboardProps {
@@ -12,6 +13,7 @@ export interface BillboardProps {
   width?: number;
   height?: number;
   color?: string;
+  toon?: boolean;
 }
 
 function createTextTexture(
@@ -62,11 +64,15 @@ function BillboardWithImage({
   width,
   height,
   color,
+  toon,
 }: BillboardProps & { imageUrl: string }) {
   const mainRef = useRef<THREE.Mesh>(null!);
-  const mainMatRef = useRef<THREE.MeshStandardMaterial>(null!);
+  const mainMatRef = useRef<THREE.MeshStandardMaterial | THREE.MeshToonMaterial>(null!);
   const glowMatRef = useRef<THREE.MeshBasicMaterial>(null!);
   const worldPos = useMemo(() => new THREE.Vector3(), []);
+
+  const useToon = toon ?? getDefaultToonMode();
+  const gradient = useToon ? getToonGradient(3) : null;
 
   const texture = useTexture(imageUrl);
   const w = width ?? 2.0;
@@ -113,23 +119,37 @@ function BillboardWithImage({
         />
       </mesh>
       <mesh ref={mainRef} geometry={mainGeo}>
-        <meshStandardMaterial
-          ref={mainMatRef}
-          map={texture}
-          emissive={emissiveColor}
-          emissiveIntensity={2.0}
-          side={THREE.DoubleSide}
-        />
+        {gradient ? (
+          <meshToonMaterial
+            ref={mainMatRef as React.RefObject<THREE.MeshToonMaterial>}
+            map={texture}
+            emissive={emissiveColor}
+            emissiveIntensity={2.0}
+            gradientMap={gradient}
+            side={THREE.DoubleSide}
+          />
+        ) : (
+          <meshStandardMaterial
+            ref={mainMatRef as React.RefObject<THREE.MeshStandardMaterial>}
+            map={texture}
+            emissive={emissiveColor}
+            emissiveIntensity={2.0}
+            side={THREE.DoubleSide}
+          />
+        )}
       </mesh>
     </group>
   );
 }
 
-function BillboardWithText({ text, width, height, color }: BillboardProps) {
+function BillboardWithText({ text, width, height, color, toon }: BillboardProps) {
   const mainRef = useRef<THREE.Mesh>(null!);
-  const mainMatRef = useRef<THREE.MeshStandardMaterial>(null!);
+  const mainMatRef = useRef<THREE.MeshStandardMaterial | THREE.MeshToonMaterial>(null!);
   const glowMatRef = useRef<THREE.MeshBasicMaterial>(null!);
   const worldPos = useMemo(() => new THREE.Vector3(), []);
+
+  const useToon = toon ?? getDefaultToonMode();
+  const gradient = useToon ? getToonGradient(3) : null;
 
   const w = width ?? 2.0;
   const h = height ?? 1.5;
@@ -179,13 +199,24 @@ function BillboardWithText({ text, width, height, color }: BillboardProps) {
         />
       </mesh>
       <mesh ref={mainRef} geometry={mainGeo}>
-        <meshStandardMaterial
-          ref={mainMatRef}
-          map={texture}
-          emissive={emissiveColor}
-          emissiveIntensity={2.0}
-          side={THREE.DoubleSide}
-        />
+        {gradient ? (
+          <meshToonMaterial
+            ref={mainMatRef as React.RefObject<THREE.MeshToonMaterial>}
+            map={texture}
+            emissive={emissiveColor}
+            emissiveIntensity={2.0}
+            gradientMap={gradient}
+            side={THREE.DoubleSide}
+          />
+        ) : (
+          <meshStandardMaterial
+            ref={mainMatRef as React.RefObject<THREE.MeshStandardMaterial>}
+            map={texture}
+            emissive={emissiveColor}
+            emissiveIntensity={2.0}
+            side={THREE.DoubleSide}
+          />
+        )}
       </mesh>
     </group>
   );
