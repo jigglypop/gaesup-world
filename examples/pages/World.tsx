@@ -7,18 +7,22 @@ import * as THREE from 'three';
 
 import { WorldPageProps } from './types';
 import {
+  AudioControls,
   Billboard, BugSpot,
-  BuildingController, CatalogUI, Clicker, CraftingUI, CropPlot, DialogBox, Editor, FishSpot,
-  Fire, GaesupController, GaesupWorld,
-  GaesupWorldContent, Grass, GroundClicker, HotbarUI, InteractionPrompt, InteractionTracker, InventoryUI,
+  BuildingController, CatalogUI, Clicker, CraftingUI, CropPlot, DialogBox, Editor, EventsHUD,
+  FishSpot, Fire, GaesupController, GaesupWorld,
+  GaesupWorldContent, Grass, GroundClicker, HotbarUI, HousePlot, InteractionPrompt,
+  InteractionTracker, InventoryUI,
   MailboxUI, MiniMap, QuestLogUI, SakuraBatch, SandBatch, ShopUI, Snow, SnowfieldBatch,
-  TimeHUD, ToastHost, ToolUseController, TreeObject, WalletHUD, Water,
+  TimeHUD, ToastHost, ToolUseController, TownHUD, TreeObject, WalletHUD, Water,
   WeatherEffect, WeatherHUD,
-  getNPCScheduler, getSaveSystem, registerSeedCrops, registerSeedItems, setDefaultToonMode,
-  useAutoSave, useCatalogStore, useCatalogTracker, useCraftingStore, useDayChange,
-  useFriendshipStore, useGameClock, useHotbarKeyboard, useInventoryStore, useMailStore,
-  usePlotStore, useQuestObjectiveTracker, useQuestStore, useShopStore, useTimeStore,
-  useWalletStore, useWeatherStore, useWeatherTicker,
+  getNPCScheduler, getSaveSystem, registerSeedCrops, registerSeedEvents, registerSeedItems,
+  setDefaultToonMode,
+  useAmbientBgm, useAutoSave, useCatalogStore, useCatalogTracker, useCraftingStore, useDayChange,
+  useDecorationScore, useEventsStore, useEventsTicker, useFriendshipStore, useGameClock,
+  useHotbarKeyboard, useInventoryStore, useMailStore,
+  usePlotStore, useQuestObjectiveTracker, useQuestStore, useShopStore, useTimeStore, useTownStore,
+  useWalletStore, useWeatherStore, useWeatherTicker, useAudioStore,
   type SakuraTreeEntry, type SandEntry, type SnowfieldEntry,
   useBuildingStore, useGaesupStore,
 } from '../../src';
@@ -40,6 +44,7 @@ registerSeedItems();
 registerSeedDialogs();
 registerSeedContent();
 registerSeedCrops();
+registerSeedEvents();
 
 // NPC daily schedules — Tommy hangs at shop / sleeps at home; Mei wanders meadow; Ryu near workbench
 getNPCScheduler().register({
@@ -180,6 +185,12 @@ const CROP_PLOTS: Array<{ id: string; pos: [number, number, number] }> = [
   { id: 'plot-f', pos: [10.4, 0, 13.6] },
 ];
 
+const HOUSE_PLOTS: Array<{ id: string; pos: [number, number, number] }> = [
+  { id: 'house-1', pos: [-18, 0, 18] },
+  { id: 'house-2', pos: [-12, 0, 18] },
+  { id: 'house-3', pos: [-6,  0, 18] },
+];
+
 const PICKUPS: Array<{ id: string; itemId: string; count: number; pos: [number, number, number] }> = [
   { id: 'apple-1', itemId: 'apple', count: 1, pos: [3, 0, 3] },
   { id: 'apple-2', itemId: 'apple', count: 1, pos: [-3, 0, 3] },
@@ -283,6 +294,13 @@ function Scenery({ onOpenShop, onOpenCrafting }: { onOpenShop: () => void; onOpe
         <Billboard text="Farm" width={2.4} height={0.9} color="#fff7e0" toon />
       </group>
 
+      {HOUSE_PLOTS.map((h) => (
+        <HousePlot key={h.id} id={h.id} position={h.pos} size={[3.2, 3.2]} />
+      ))}
+      <group position={[-12, 0.06, 22]}>
+        <Billboard text="Town" width={3} height={1} color="#fff7e0" toon />
+      </group>
+
       <WeatherEffect area={120} height={22} count={1500} />
 
       <group position={[0, 0, 40]}>
@@ -332,6 +350,9 @@ function GameSystems() {
   useQuestObjectiveTracker(true);
   useCatalogTracker(true);
   useWeatherTicker(true);
+  useEventsTicker(true);
+  useDecorationScore(true);
+  useAmbientBgm(true);
 
   useDayChange((time) => {
     const day = Math.floor(time.totalMinutes / (60 * 24));
@@ -406,6 +427,21 @@ function GameSystems() {
       serialize: () => useWeatherStore.getState().serialize(),
       hydrate: (data: unknown) => useWeatherStore.getState().hydrate(data as never),
     });
+    const offEvents = sys.register({
+      key: 'events',
+      serialize: () => useEventsStore.getState().serialize(),
+      hydrate: (data: unknown) => useEventsStore.getState().hydrate(data as never),
+    });
+    const offTown = sys.register({
+      key: 'town',
+      serialize: () => useTownStore.getState().serialize(),
+      hydrate: (data: unknown) => useTownStore.getState().hydrate(data as never),
+    });
+    const offAudio = sys.register({
+      key: 'audio',
+      serialize: () => useAudioStore.getState().serialize(),
+      hydrate: (data: unknown) => useAudioStore.getState().hydrate(data as never),
+    });
     void sys.load().then(() => {
       const inv = useInventoryStore.getState();
       if (!inv.has('axe'))         inv.add('axe', 1);
@@ -415,6 +451,19 @@ function GameSystems() {
       const today = Math.floor(useTimeStore.getState().totalMinutes / (60 * 24));
       useShopStore.getState().rollDailyStock(today);
       useWeatherStore.getState().rollForDay(today, useTimeStore.getState().time.season);
+      useEventsStore.getState().refresh(useTimeStore.getState().time);
+
+      const town = useTownStore.getState();
+      if (Object.keys(town.residents).length === 0) {
+        town.registerResident({ id: 'r-mei',   name: '메이',   bodyColor: '#ffe4c8', hatColor: '#5a8acf' });
+        town.registerResident({ id: 'r-tommy', name: '토미',   bodyColor: '#f5d199', hatColor: '#a85a5a' });
+        town.registerResident({ id: 'r-ryu',   name: '류',     bodyColor: '#ffd0b8', hatColor: '#3a8a3a' });
+      }
+      const futureDay = today + 3;
+      const houseList = Object.values(town.houses);
+      if (houseList[0] && houseList[0].state === 'empty') town.moveIn(houseList[0].id, 'r-mei', today);
+      if (houseList[1] && houseList[1].state === 'empty') town.reserveHouse(houseList[1].id, 'r-tommy', futureDay);
+      if (houseList[2] && houseList[2].state === 'empty') town.reserveHouse(houseList[2].id, 'r-ryu',   futureDay + 2);
       if (useMailStore.getState().messages.length === 0) {
         useMailStore.getState().send({
           from: '운영팀',
@@ -437,6 +486,9 @@ function GameSystems() {
       offCraft();
       offFarm();
       offWeather();
+      offEvents();
+      offTown();
+      offAudio();
     };
   }, []);
 
@@ -563,6 +615,8 @@ export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
         <GameSystems />
         <TimeHUD />
         <WeatherHUD position="top-left" />
+        <EventsHUD position="top-left" excludeIds={['season.spring','season.summer','season.autumn','season.winter']} />
+        <TownHUD position="top-right" />
         <WalletHUD position="top-center" />
         <InteractionPrompt />
         <DialogBox />
@@ -575,6 +629,7 @@ export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
         <HotbarUI />
         <InventoryUI toggleKey="i" />
         <ActionBar />
+        <AudioControls position="bottom-right" />
         <MiniMap position="bottom-left" scale={5} showZoom={false} showCompass={false} />
         <HUD />
       </GaesupWorld>

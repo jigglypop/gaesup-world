@@ -3,11 +3,13 @@ import React, { useCallback, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { useEventsStore } from '../../../events/stores/eventsStore';
 import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
 import { notify } from '../../../ui/components/Toast/toastStore';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
+import { useWeatherStore } from '../../../weather/stores/weatherStore';
 
 export type CatchEntry = { itemId: string; weight: number };
 
@@ -26,6 +28,15 @@ const DEFAULT_FISH_POOL: CatchEntry[] = [
   { itemId: 'fish-tuna', weight: 25 },
   { itemId: 'fish-koi',  weight: 10 },
 ];
+
+function filterByTags(pool: CatchEntry[], tagPrefix: string, tags: Set<string>): CatchEntry[] {
+  const allowed: string[] = [];
+  for (const t of tags) if (t.startsWith(tagPrefix)) allowed.push(t.slice(tagPrefix.length));
+  if (allowed.length === 0) return pool;
+  const set = new Set(allowed);
+  const filtered = pool.filter((p) => set.has(p.itemId));
+  return filtered.length > 0 ? filtered : pool;
+}
 
 function pickWeighted(pool: CatchEntry[]): string | null {
   if (pool.length === 0) return null;
@@ -61,11 +72,13 @@ export function FishSpot({
     lastUseRef.current = now;
     flashRef.current = now;
 
-    if (Math.random() > successChance) {
+    const bonus = useWeatherStore.getState().fishingBonus();
+    if (Math.random() > Math.min(0.95, successChance + bonus)) {
       notify('warn', '놓쳤다…');
       return true;
     }
-    const itemId = pickWeighted(pool);
+    const seasonalPool = filterByTags(pool, 'fish:', useEventsStore.getState().tags);
+    const itemId = pickWeighted(seasonalPool);
     if (!itemId) return true;
     const def = getItemRegistry().get(itemId);
     const left = useInventoryStore.getState().add(itemId, 1);

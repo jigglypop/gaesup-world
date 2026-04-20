@@ -3,11 +3,13 @@ import React, { useCallback, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { useEventsStore } from '../../../events/stores/eventsStore';
 import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
 import { notify } from '../../../ui/components/Toast/toastStore';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
+import { useWeatherStore } from '../../../weather/stores/weatherStore';
 
 export type CatchEntry = { itemId: string; weight: number };
 
@@ -26,6 +28,15 @@ const DEFAULT_BUG_POOL: CatchEntry[] = [
   { itemId: 'bug-beetle',    weight: 22 },
   { itemId: 'bug-stag',      weight: 8 },
 ];
+
+function filterByTags(pool: CatchEntry[], tagPrefix: string, tags: Set<string>): CatchEntry[] {
+  const allowed: string[] = [];
+  for (const t of tags) if (t.startsWith(tagPrefix)) allowed.push(t.slice(tagPrefix.length));
+  if (allowed.length === 0) return pool;
+  const set = new Set(allowed);
+  const filtered = pool.filter((p) => set.has(p.itemId));
+  return filtered.length > 0 ? filtered : pool;
+}
 
 function pickWeighted(pool: CatchEntry[]): string | null {
   if (pool.length === 0) return null;
@@ -62,13 +73,15 @@ export function BugSpot({
     if (now - lastUseRef.current < cooldownMs) return true;
     lastUseRef.current = now;
 
-    if (Math.random() > successChance) {
+    const bonus = useWeatherStore.getState().bugBonus();
+    if (Math.random() > Math.min(0.95, Math.max(0.05, successChance + bonus))) {
       notify('warn', '날아갔다…');
       setPresent(false);
       respawnAtRef.current = now + 8000;
       return true;
     }
-    const itemId = pickWeighted(pool);
+    const seasonalPool = filterByTags(pool, 'bug:', useEventsStore.getState().tags);
+    const itemId = pickWeighted(seasonalPool);
     if (!itemId) return true;
     const def = getItemRegistry().get(itemId);
     const left = useInventoryStore.getState().add(itemId, 1);
