@@ -14,23 +14,26 @@ export const Navigation = () => {
   return (
     <nav className="app-navigation">
       <a href="/" className="app-nav-button">
-        Home
+        메인
+      </a>
+      <a href="/edit" className="app-nav-button">
+        편집
       </a>
       <a href="/network" className="app-nav-button">
-        Multiplayer
+        멀티플레이
       </a>
       {isLoggedIn ? (
         <>
           <a href="/building" className="app-nav-button">
-            Building Editor
+            Building
           </a>
           <a href="/blueprints" className="app-nav-button">
-            Blueprint Editor
+            Blueprint
           </a>
           <a href="/admin" className="app-nav-button">
-            Admin Panel
+            Admin
           </a>
-          <span className="app-nav-user">Welcome, {user?.username}</span>
+          <span className="app-nav-user">{user?.username}</span>
           <button className="app-nav-button" onClick={handleLogout}>
             Logout
           </button>
