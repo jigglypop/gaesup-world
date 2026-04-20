@@ -79,6 +79,7 @@ export interface TileConfig {
   shape?: TileShapeType;
   objectType?: TileObjectType;
   objectConfig?: {
+    /** Blades per square meter. The mesh layer multiplies this by tile area. */
     grassDensity?: number;
     waterScale?: number;
   };

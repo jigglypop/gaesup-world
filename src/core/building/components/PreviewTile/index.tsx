@@ -52,12 +52,22 @@ export function PreviewTile() {
   if ((editMode !== 'tile' && editMode !== 'object') || !hoverPosition) {
     return null;
   }
-  
-  const isOccupied = editMode === 'tile' ? checkTilePosition(hoverPosition) : false;
+
+  // hoverPosition.y already carries the support height for tile mode; add the
+  // user-driven manual lift so the preview, the occupancy check, and the final
+  // placement all line up.
+  const placementY =
+    editMode === 'tile' && (currentTileShape === 'box' || currentTileShape === 'round')
+      ? hoverPosition.y + currentTileHeight * TILE_CONSTANTS.HEIGHT_STEP
+      : hoverPosition.y;
+  const isOccupied =
+    editMode === 'tile'
+      ? checkTilePosition({ x: hoverPosition.x, y: placementY, z: hoverPosition.z })
+      : false;
   const color = isOccupied ? '#ff0000' : '#00ff00';
-  
+
   return (
-    <group position={[hoverPosition.x, hoverPosition.y, hoverPosition.z]} rotation={[0, editMode === 'object' ? currentObjectRotation : currentTileRotation, 0]}>
+    <group position={[hoverPosition.x, placementY, hoverPosition.z]} rotation={[0, editMode === 'object' ? currentObjectRotation : currentTileRotation, 0]}>
       {editMode === 'tile' && (
         currentTileShape === 'round' ? (
           <mesh position={[0, topHeight > 0.02 ? topHeight / 2 : -0.02, 0]}>

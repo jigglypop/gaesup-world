@@ -92,6 +92,7 @@ const buildDefaultState = (): EditorMockState => ({
   hoverPosition: { x: 0, y: 0, z: 0 },
   checkWallPosition: jest.fn(() => false),
   checkTilePosition: jest.fn(() => false),
+  getSupportHeightAt: jest.fn(() => 0),
   selectedPlacedObjectType: 'none',
   tileGroups: new Map(),
   currentObjectRotation: 0,

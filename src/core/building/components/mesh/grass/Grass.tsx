@@ -13,24 +13,42 @@ import vertexShader from "./vert.glsl";
 import { loadCoreWasm, type GaesupCoreWasmExports } from "@core/wasm/loader";
 import { createToonMaterial, getDefaultToonMode } from "@core/rendering/toon";
 import { weightFromDistance } from "@core/utils/sfe";
+import { useWeatherStore } from "@core/weather/stores/weatherStore";
+import { BridgeFactory } from "@core/boilerplate";
+import type { MotionBridge } from "@core/motions/bridge/MotionBridge";
 
+// Single shared material per shading mode. Vertex colors carry the per-tile
+// variation so big tiles never look like a flat plastic green sheet.
 let _grassGroundToon: THREE.MeshToonMaterial | null = null;
 let _grassGroundPbr: THREE.MeshStandardMaterial | null = null;
 
 function getGroundMaterial(toon: boolean): THREE.Material {
   if (toon) {
     if (!_grassGroundToon) {
-      _grassGroundToon = createToonMaterial({ color: '#314a28', steps: 3 });
+      _grassGroundToon = createToonMaterial({
+        color: '#ffffff',
+        vertexColors: true,
+        steps: 3,
+      });
     }
     return _grassGroundToon;
   }
   if (!_grassGroundPbr) {
-    _grassGroundPbr = new THREE.MeshStandardMaterial({ color: '#314a28' });
+    _grassGroundPbr = new THREE.MeshStandardMaterial({
+      color: '#ffffff',
+      vertexColors: true,
+      roughness: 0.95,
+      metalness: 0.0,
+    });
   }
   return _grassGroundPbr;
 }
 
 const noise2D = createNoise2D();
+const GROUND_DARK = new THREE.Color('#2a4220');
+const GROUND_LIGHT = new THREE.Color('#5a7a35');
+const GROUND_ACCENT = new THREE.Color('#7a8e3a');
+const GROUND_DIRT = new THREE.Color('#5b4628');
 
 const GrassMaterial = shaderMaterial(
   {
@@ -38,6 +56,10 @@ const GrassMaterial = shaderMaterial(
     map: null as THREE.Texture | null,
     alphaMap: null as THREE.Texture | null,
     time: 0,
+    windScale: 1.0,
+    trampleCenter: new THREE.Vector3(0, -9999, 0),
+    trampleRadius: 1.4,
+    trampleStrength: 0.85,
     tipColor: new THREE.Color("#8fbc5a").convertSRGBToLinear(),
     bottomColor: new THREE.Color("#355b2d").convertSRGBToLinear(),
     uToon: 0,
@@ -110,6 +132,8 @@ function buildAttributeDataJS(instances: number, width: number): GrassAttributeD
 
   const gridSize = Math.ceil(Math.sqrt(instances));
   const cellSize = width / gridSize;
+  // Jitter inside each cell so the field never reads as a regular grid.
+  const jitter = cellSize * 0.9;
 
   let i = 0;
   let j = 0;
@@ -118,8 +142,10 @@ function buildAttributeDataJS(instances: number, width: number): GrassAttributeD
     const ix = idx % gridSize;
     const iz = (idx / gridSize) | 0;
 
-    const x = (ix + 0.5) * cellSize - width / 2;
-    const z = (iz + 0.5) * cellSize - width / 2;
+    const jx = (Math.random() - 0.5) * jitter;
+    const jz = (Math.random() - 0.5) * jitter;
+    const x = (ix + 0.5) * cellSize - width / 2 + jx;
+    const z = (iz + 0.5) * cellSize - width / 2 + jz;
     offsets[i] = x;
     offsets[i + 1] = getYPosition(x, z);
     offsets[i + 2] = z;
@@ -139,29 +165,65 @@ function buildAttributeDataJS(instances: number, width: number): GrassAttributeD
     orientations[j + 3] = quaternion.w;
     j += 4;
 
-    stretches[idx] = 0.8 + Math.random() * 0.2;
+    stretches[idx] = 0.7 + Math.random() * 0.45;
   }
 
   return { offsets, orientations, stretches, halfRootAngleCos, halfRootAngleSin };
 }
 
+// Both the WASM and JS path lay blades on a regular grid. That is visually a
+// dead giveaway on big tiles (you can read the rows). Apply per-cell jitter on
+// top of any source so the lawn looks natural at any tile size, and add gentle
+// length variance so rows of identical clones don't pop out.
+function jitterAndVary(data: GrassAttributeData, instances: number, width: number): void {
+  const gridSize = Math.ceil(Math.sqrt(instances));
+  const cellSize = width / gridSize;
+  const jitter = cellSize * 0.9;
+  const offsets = data.offsets;
+  const stretches = data.stretches;
+  for (let idx = 0; idx < instances; idx++) {
+    const oi = idx * 3;
+    const x = (offsets[oi] ?? 0) + (Math.random() - 0.5) * jitter;
+    const z = (offsets[oi + 2] ?? 0) + (Math.random() - 0.5) * jitter;
+    offsets[oi] = x;
+    offsets[oi + 2] = z;
+    // Re-sample noise-driven Y so jittered position still rests on terrain.
+    offsets[oi + 1] = getYPosition(x, z);
+    // Wider stretch range gives a bit of natural height variation.
+    stretches[idx] = 0.7 + Math.random() * 0.55;
+  }
+}
+
 const Grass: FC<GrassMeshProps> = memo(
   ({
-    options = { bW: 0.12, bH: 0.5, joints: 5 },
+    options = { bW: 0.14, bH: 0.65, joints: 5 },
     width = 4,
-    instances = 1000,
+    instances,
+    density,
+    maxInstances = 18000,
     toon,
     lod,
     center,
     ...props
   }) => {
     const { bW, bH, joints } = options;
+    // Resolve final instance count: prefer explicit `instances`, otherwise compute from
+    // density × area so blade density stays constant when the tile is scaled up.
+    // Falls back to a sensible default density (~ 60 blades/m²) when neither is given.
+    const resolvedInstances = useMemo(() => {
+      if (typeof instances === 'number' && instances > 0) {
+        return Math.max(1, Math.min(maxInstances, Math.floor(instances)));
+      }
+      const d = typeof density === 'number' && density > 0 ? density : 90;
+      const area = Math.max(1, width * width);
+      return Math.max(64, Math.min(maxInstances, Math.round(d * area)));
+    }, [instances, density, width, maxInstances]);
     const useToon = toon ?? getDefaultToonMode();
     const groundMat = getGroundMaterial(useToon);
     const groupRef = useRef<THREE.Group>(null);
     const lodCenterRef = useRef(new THREE.Vector3());
     const lodCheckAccum = useRef(0);
-    const lastInstanceCount = useRef(instances);
+    const lastInstanceCount = useRef(resolvedInstances);
     const materialRef = useRef<THREE.ShaderMaterial | null>(null);
     const geometryRef = useRef<THREE.InstancedBufferGeometry | null>(null);
 
@@ -177,21 +239,51 @@ const Grass: FC<GrassMeshProps> = memo(
     }, []);
 
     const attributeData = useMemo(
-      () => wasmModule
-        ? buildAttributeDataWasm(wasmModule, instances, width)
-        : buildAttributeDataJS(instances, width),
-      [instances, width, wasmModule],
+      () => {
+        const data = wasmModule
+          ? buildAttributeDataWasm(wasmModule, resolvedInstances, width)
+          : buildAttributeDataJS(resolvedInstances, width);
+        // WASM lays blades on a perfect grid (no jitter) and the JS path uses a
+        // narrower jitter; normalise both with a strong jitter pass so big tiles
+        // never show the underlying lattice pattern.
+        jitterAndVary(data, resolvedInstances, width);
+        return data;
+      },
+      [resolvedInstances, width, wasmModule],
     );
 
     const [baseGeom, groundGeo] = useMemo(() => {
       const bg = new THREE.PlaneGeometry(bW, bH, 1, joints).translate(0, bH / 2, 0);
-      const gg = new THREE.PlaneGeometry(width, width, 32, 32);
+      // Ground tessellation must scale with width so the noise-driven elevation
+      // stays smooth on big tiles instead of degenerating into flat quads.
+      const groundSegs = Math.max(8, Math.min(128, Math.round(width * 1.5)));
+      const gg = new THREE.PlaneGeometry(width, width, groundSegs, groundSegs);
       const positions = gg.getAttribute("position") as THREE.BufferAttribute;
+      const colors = new Float32Array(positions.count * 3);
+      const tmp = new THREE.Color();
       for (let k = 0; k < positions.count; k++) {
         const x = positions.getX(k);
         const z = positions.getZ(k);
         positions.setY(k, getYPosition(x, z));
+
+        // Two-octave noise gives natural patchiness; an extra tight noise
+        // sprinkles dirt scuffs so the ground reads as a real meadow.
+        const n0 = 0.5 + 0.5 * noise2D(x * 0.18, z * 0.18);
+        const n1 = 0.5 + 0.5 * noise2D(x * 0.04 + 11.3, z * 0.04 - 7.7);
+        const n2 = 0.5 + 0.5 * noise2D(x * 0.55 - 3.1, z * 0.55 + 9.4);
+
+        const tint = THREE.MathUtils.clamp(n0 * 0.65 + n1 * 0.45, 0, 1);
+        tmp.copy(GROUND_DARK).lerp(GROUND_LIGHT, tint).lerp(GROUND_ACCENT, n1 * 0.22);
+        if (n2 > 0.86) {
+          tmp.lerp(GROUND_DIRT, (n2 - 0.86) * 4.0);
+        }
+
+        const ci = k * 3;
+        colors[ci]     = tmp.r;
+        colors[ci + 1] = tmp.g;
+        colors[ci + 2] = tmp.b;
       }
+      gg.setAttribute('color', new THREE.BufferAttribute(colors, 3));
       gg.computeVertexNormals();
       return [bg, gg];
     }, [bW, bH, joints, width]);
@@ -205,10 +297,10 @@ const Grass: FC<GrassMeshProps> = memo(
     useEffect(() => {
       const geo = geometryRef.current;
       if (geo) {
-        geo.instanceCount = instances;
-        lastInstanceCount.current = instances;
+        geo.instanceCount = resolvedInstances;
+        lastInstanceCount.current = resolvedInstances;
       }
-    }, [instances, attributeData]);
+    }, [resolvedInstances, attributeData]);
 
     useEffect(() => {
       const m = materialRef.current;
@@ -224,8 +316,41 @@ const Grass: FC<GrassMeshProps> = memo(
     }, [center]);
 
     useFrame((state, delta) => {
-      const time = materialRef.current?.uniforms?.["time"];
-      if (time) time.value = state.clock.elapsedTime / 4;
+      const u = materialRef.current?.uniforms;
+      if (u?.["time"]) u["time"].value = state.clock.elapsedTime / 4;
+      // Weather drives the wind multiplier so grass sways harder during storms
+      // and stands almost still during calm sunny weather.
+      if (u?.["windScale"]) {
+        const w = useWeatherStore.getState().current;
+        const intensity = w?.intensity ?? 0;
+        const base =
+          w?.kind === 'storm' ? 2.6 :
+          w?.kind === 'rain'  ? 1.7 :
+          w?.kind === 'snow'  ? 1.3 :
+          w?.kind === 'cloudy'? 1.15 :
+                                0.85;
+        u["windScale"].value = base + intensity * 0.9;
+      }
+
+      // Player trampling: read the player's current world position from the
+      // motion bridge and push it into the shader. When the player is moving
+      // we hold the strength high; when they stop or run away the strength
+      // decays back to zero so blades stand back up smoothly.
+      if (u?.["trampleCenter"] && u?.["trampleStrength"]) {
+        const bridge = BridgeFactory.getOrCreate('motion') as MotionBridge | null;
+        const ids = bridge?.getActiveEntities() ?? [];
+        const snap = ids[0] ? bridge?.snapshot(ids[0]) : null;
+        const target = u["trampleCenter"].value as THREE.Vector3;
+        const desiredStrength = snap?.isMoving && snap?.isGrounded ? 0.85 : 0.35;
+        const lerp = Math.min(1, Math.max(0, delta * 6));
+        if (snap) {
+          target.x += (snap.position.x - target.x) * lerp;
+          target.y = snap.position.y;
+          target.z += (snap.position.z - target.z) * lerp;
+        }
+        const cur = u["trampleStrength"].value as number;
+        u["trampleStrength"].value = cur + (desiredStrength - cur) * lerp;
+      }
 
       if (!lod) return;
       lodCheckAccum.current += Math.max(0, delta);
@@ -247,7 +372,7 @@ const Grass: FC<GrassMeshProps> = memo(
         lod.far ?? 120,
         lod.strength ?? 4,
       );
-      const target = Math.max(0, Math.floor(instances * w));
+      const target = Math.max(0, Math.floor(resolvedInstances * w));
       if (target !== lastInstanceCount.current) {
         geo.instanceCount = target;
         lastInstanceCount.current = target;
@@ -282,8 +407,9 @@ const Grass: FC<GrassMeshProps> = memo(
           position={[0, 0, 0]}
           rotation={[-Math.PI / 2, 0, 0]}
           material={groundMat}
+          receiveShadow
         >
-          <bufferGeometry {...groundGeo} />
+          <primitive object={groundGeo} attach="geometry" />
         </mesh>
       </group>
     );

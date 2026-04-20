@@ -171,6 +171,40 @@ export {
   useAudioStore,
   useAmbientBgm,
   AudioControls,
+  Footsteps,
+  // Character
+  useCharacterStore,
+  CharacterCreator,
+  OutfitAvatar,
+  // Effects
+  Footprints,
+  // i18n
+  useI18nStore,
+  useTranslate,
+  useLocale,
+  t,
+  // Input
+  TouchControls,
+  // Perf
+  usePerfStore,
+  detectCapabilities,
+  autoDetectProfile,
+  profileForTier,
+  classifyTier,
+  // Rendering polish
+  DynamicFog,
+  DynamicSky,
+  ColorGrade,
+  LutOverlay,
+  parseCubeLut,
+  createLutTexture,
+  loadCubeLut,
+  loadCubeLutTexture,
+  // Scene / dimensions
+  useSceneStore,
+  SceneFader,
+  SceneRoot,
+  HouseDoor,
   // Relations
   useFriendshipStore,
   FRIENDSHIP_LEVELS,

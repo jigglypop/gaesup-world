@@ -30,7 +30,7 @@ export function WeatherHUD({ position = 'top-left' }: WeatherHUDProps) {
         padding: '4px 10px',
         background: 'rgba(20,20,28,0.85)',
         color: '#fff',
-        fontFamily: 'monospace',
+        fontFamily: "'Pretendard', system-ui, sans-serif",
         fontSize: 12,
         borderRadius: 999,
         display: 'flex',

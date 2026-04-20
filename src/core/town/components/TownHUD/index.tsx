@@ -3,10 +3,11 @@ import React from 'react';
 import { useTownStore } from '../../stores/townStore';
 
 export type TownHUDProps = {
-  position?: 'top-right' | 'bottom-right';
+  position?: 'top-right' | 'bottom-right' | 'top-left' | 'bottom-left';
+  offset?: { top?: number; left?: number; right?: number; bottom?: number };
 };
 
-export function TownHUD({ position = 'top-right' }: TownHUDProps) {
+export function TownHUD({ position = 'top-right', offset }: TownHUDProps) {
   const decorationScore = useTownStore((s) => s.decorationScore);
   const houses = useTownStore((s) => s.houses);
   const residents = useTownStore((s) => s.residents);
@@ -15,9 +16,11 @@ export function TownHUD({ position = 'top-right' }: TownHUDProps) {
   const occupied = Object.values(houses).filter((h) => h.state === 'occupied').length;
   const residentCount = Object.keys(residents).length;
 
-  const layout = position === 'bottom-right'
-    ? { bottom: 12, right: 100 }
+  const base = position === 'bottom-right' ? { bottom: 12, right: 100 }
+    : position === 'top-left'      ? { top: 160, left: 12 }
+    : position === 'bottom-left'   ? { bottom: 12, left: 240 }
     : { top: 50, right: 12 };
+  const layout = { ...base, ...(offset ?? {}) };
 
   return (
     <div
@@ -27,7 +30,7 @@ export function TownHUD({ position = 'top-right' }: TownHUDProps) {
         padding: '6px 10px',
         background: 'rgba(20,20,28,0.85)',
         color: '#fff',
-        fontFamily: 'monospace',
+        fontFamily: "'Pretendard', system-ui, sans-serif",
         fontSize: 11,
         borderRadius: 8,
         display: 'flex',

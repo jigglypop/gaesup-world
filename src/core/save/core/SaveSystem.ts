@@ -23,6 +23,13 @@ export class SaveSystem {
 
   has(key: string): boolean { return this.bindings.has(key); }
 
+  /**
+   * Returns an iterator over registered domain bindings. Used by helpers
+   * such as the visit-room snapshot serializer that need to read the
+   * same set of (de)serializers as the autosave layer.
+   */
+  getBindings(): IterableIterator<DomainBinding> { return this.bindings.values(); }
+
   async save(slot: string = this.defaultSlot): Promise<void> {
     const domains: Record<string, unknown> = {};
     for (const [key, b] of this.bindings) {

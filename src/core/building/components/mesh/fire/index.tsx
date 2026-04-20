@@ -128,6 +128,11 @@ const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color
   const geo = getSharedGeo();
   const mat = getSharedMat();
 
+  // Logs and charcoal must scale with the fire's footprint, otherwise large
+  // bonfires end up with tiny matchstick logs floating in the middle. Use the
+  // mean of width/height as a uniform reference scale.
+  const baseScale = useMemo(() => Math.max(0.4, (width + height * 0.5) / 1.5), [width, height]);
+
   const billboardLayers = useMemo(() => [
     { w: width * 0.78, h: height, x: 0, y: height * 0.5, z: 0, seed: 0.17, lean: 0.06, flare: 1.0, speed: 1.45, tOff: 0, iMul: 1.0 },
     { w: width * 0.52, h: height * 0.85, x: -width * 0.12, y: height * 0.43, z: 0.02, seed: 1.31, lean: -0.2, flare: 0.85, speed: 1.9, tOff: 1.7, iMul: 0.82 },
@@ -211,8 +216,27 @@ const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color
         scale={[width, width, 1]}
       />
 
-      <mesh geometry={geo.log} material={mat.log} position={[0.12, 0.06, 0.05]} rotation={[0.3, 0, 0.65]} />
-      <mesh geometry={geo.log} material={mat.log} position={[-0.1, 0.06, 0.08]} rotation={[0.25, 1.2, -0.6]} />
+      <mesh
+        geometry={geo.log}
+        material={mat.log}
+        position={[0.12 * baseScale, 0.06 * baseScale, 0.05 * baseScale]}
+        rotation={[0.3, 0, 0.65]}
+        scale={baseScale}
+      />
+      <mesh
+        geometry={geo.log}
+        material={mat.log}
+        position={[-0.1 * baseScale, 0.06 * baseScale, 0.08 * baseScale]}
+        rotation={[0.25, 1.2, -0.6]}
+        scale={baseScale}
+      />
+      <mesh
+        geometry={geo.log}
+        material={mat.log}
+        position={[0.02 * baseScale, 0.06 * baseScale, -0.13 * baseScale]}
+        rotation={[-0.2, 0.6, 1.0]}
+        scale={baseScale}
+      />
 
       {billboardLayers.map((l, i) => (
         <mesh key={i} geometry={billboardGeos[i]} position={[l.x, l.y, l.z]}>
@@ -612,16 +636,18 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
       _fbGrp.position.set(fire.position[0], fire.position[1], fire.position[2]);
       _fbGrp.rotation.set(0, fire.rotation, 0);
       _fbGrp.updateMatrix();
+      const s = Math.max(0.4, (fire.width + fire.height * 0.5) / 1.5);
 
-      _fbObj.position.set(0.12, 0.06, 0.05);
+      _fbObj.position.set(0.12 * s, 0.06 * s, 0.05 * s);
       _fbObj.rotation.set(0.3, 0, 0.65);
-      _fbObj.scale.set(1, 1, 1);
+      _fbObj.scale.set(s, s, s);
       _fbObj.updateMatrix();
       _fbMat.multiplyMatrices(_fbGrp.matrix, _fbObj.matrix);
       mesh.setMatrixAt(idx++, _fbMat);
 
-      _fbObj.position.set(-0.1, 0.06, 0.08);
+      _fbObj.position.set(-0.1 * s, 0.06 * s, 0.08 * s);
       _fbObj.rotation.set(0.25, 1.2, -0.6);
+      _fbObj.scale.set(s, s, s);
       _fbObj.updateMatrix();
       _fbMat.multiplyMatrices(_fbGrp.matrix, _fbObj.matrix);
       mesh.setMatrixAt(idx++, _fbMat);

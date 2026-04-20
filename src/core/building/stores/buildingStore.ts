@@ -24,7 +24,7 @@ import { TILE_CONSTANTS } from '../types/constants';
 // Enable Map and Set support in Immer
 enableMapSet();
 
-type TileMeta = { x: number; z: number; halfSize: number };
+type TileMeta = { x: number; z: number; y: number; halfSize: number };
 type WallMeta = { x: number; z: number; rotY: number };
 
 const zigZag = (n: number): number => (n >= 0 ? n * 2 : (-n * 2) - 1);
@@ -153,6 +153,12 @@ interface BuildingStore extends BuildingSystemState {
   
   checkTilePosition: (position: Position3D) => boolean;
   checkWallPosition: (position: Position3D, rotation: number) => boolean;
+  /**
+   * Returns the Y position (m) at which a new tile placed at `position` would
+   * rest on top of any existing tile that overlaps the XZ footprint. Returns
+   * 0 when nothing is below.
+   */
+  getSupportHeightAt: (position: Position3D) => number;
   
   addMesh: (mesh: MeshConfig) => void;
   updateMesh: (id: string, updates: Partial<MeshConfig>) => void;
@@ -454,7 +460,7 @@ export const useBuildingStore = create<BuildingStore>()(
       ): void => {
         group.tiles.push(tile);
         const hs = ((tile.size || 1) * cellSize) / 2;
-        state.tileMeta.set(tile.id, { x: tile.position.x, z: tile.position.z, halfSize: hs });
+        state.tileMeta.set(tile.id, { x: tile.position.x, z: tile.position.z, y: tile.position.y, halfSize: hs });
         indexAabb(
           state.tileIndex, state.tileCells, tile.id,
           tile.position.x - hs, tile.position.x + hs,
@@ -474,7 +480,6 @@ export const useBuildingStore = create<BuildingStore>()(
             const isSnowfield = gx >= 2 && gz === -3;
             const isSand = gx <= -2 && gz >= 2;
             const isWater = gx === -3 && (gz === -1 || gz === 0);
-            const isFlag = gx === 0 && gz === -3;
             const isFire = gx === 3 && gz === 2;
             const isRoundSample = gx === -3 && gz === 2;
             const isRampSample = gx === -2 && gz === 2;
@@ -503,7 +508,7 @@ export const useBuildingStore = create<BuildingStore>()(
             };
 
             if (isGrass) {
-              addTileToState(group, { ...base, objectType: 'grass', objectConfig: { grassDensity: 800 } });
+              addTileToState(group, { ...base, objectType: 'grass', objectConfig: { grassDensity: 90 } });
             } else if (isSnowfield) {
               addTileToState(group, { ...base, objectType: 'snowfield' });
             } else if (isSand) {
@@ -668,7 +673,7 @@ export const useBuildingStore = create<BuildingStore>()(
       if (group) {
         const objectConfig: TileConfig['objectConfig'] =
           state.selectedTileObjectType === 'grass'
-            ? { grassDensity: 1000 }
+            ? { grassDensity: 90 }
             : undefined;
         const tileWithObject: TileConfig = {
           ...tile,
@@ -679,7 +684,7 @@ export const useBuildingStore = create<BuildingStore>()(
 
         const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
         const halfSize = ((tileWithObject.size || 1) * cellSize) / 2;
-        state.tileMeta.set(tileWithObject.id, { x: tileWithObject.position.x, z: tileWithObject.position.z, halfSize });
+        state.tileMeta.set(tileWithObject.id, { x: tileWithObject.position.x, z: tileWithObject.position.z, y: tileWithObject.position.y, halfSize });
         indexAabb(
           state.tileIndex,
           state.tileCells,
@@ -710,7 +715,7 @@ export const useBuildingStore = create<BuildingStore>()(
             if (shouldReindex) {
               const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
               const halfSize = ((tile.size || 1) * cellSize) / 2;
-              state.tileMeta.set(tile.id, { x: tile.position.x, z: tile.position.z, halfSize });
+              state.tileMeta.set(tile.id, { x: tile.position.x, z: tile.position.z, y: tile.position.y, halfSize });
               indexAabb(
                 state.tileIndex,
                 state.tileCells,
@@ -801,6 +806,8 @@ export const useBuildingStore = create<BuildingStore>()(
       const { tileIndex, tileMeta, currentTileMultiplier } = get();
       const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
       const halfSize = (cellSize * currentTileMultiplier) / 2;
+      const heightStep = TILE_CONSTANTS.HEIGHT_STEP;
+      const yTolerance = heightStep * 0.5;
 
       const minX = position.x - halfSize;
       const maxX = position.x + halfSize;
@@ -820,16 +827,53 @@ export const useBuildingStore = create<BuildingStore>()(
           for (const id of set) {
             const meta = tileMeta.get(id);
             if (!meta) continue;
-            if (
+            const overlapsXZ =
               Math.abs(meta.x - position.x) < (halfSize + meta.halfSize - 0.1) &&
-              Math.abs(meta.z - position.z) < (halfSize + meta.halfSize - 0.1)
-            ) {
-              return true;
-            }
+              Math.abs(meta.z - position.z) < (halfSize + meta.halfSize - 0.1);
+            if (!overlapsXZ) continue;
+            // Same (or near-same) Y => collision; different Y => allow stacking.
+            if (Math.abs((meta.y ?? 0) - position.y) < yTolerance) return true;
           }
         }
       }
       return false;
+    },
+
+    getSupportHeightAt: (position) => {
+      const { tileIndex, tileMeta, currentTileMultiplier } = get();
+      const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
+      const halfSize = (cellSize * currentTileMultiplier) / 2;
+      const heightStep = TILE_CONSTANTS.HEIGHT_STEP;
+
+      const minX = position.x - halfSize;
+      const maxX = position.x + halfSize;
+      const minZ = position.z - halfSize;
+      const maxZ = position.z + halfSize;
+
+      const minCellX = Math.floor(minX / cellSize);
+      const maxCellX = Math.floor(maxX / cellSize);
+      const minCellZ = Math.floor(minZ / cellSize);
+      const maxCellZ = Math.floor(maxZ / cellSize);
+
+      let support = 0;
+      for (let cx = minCellX; cx <= maxCellX; cx++) {
+        for (let cz = minCellZ; cz <= maxCellZ; cz++) {
+          const key = pair(cx, cz);
+          const set = tileIndex.get(key);
+          if (!set) continue;
+          for (const id of set) {
+            const meta = tileMeta.get(id);
+            if (!meta) continue;
+            const overlapsXZ =
+              Math.abs(meta.x - position.x) < (halfSize + meta.halfSize - 0.1) &&
+              Math.abs(meta.z - position.z) < (halfSize + meta.halfSize - 0.1);
+            if (!overlapsXZ) continue;
+            const top = (meta.y ?? 0) + heightStep;
+            if (top > support) support = top;
+          }
+        }
+      }
+      return support;
     },
     
     checkWallPosition: (position, rotation) => {

@@ -23,10 +23,15 @@ export function ToolUseController({
   const lastUseRef = useRef(0);
 
   useEffect(() => {
+    // `e.code` is layout/IME-independent ("KeyF" stays "KeyF" even in Korean IME),
+    // while `e.key` returns the resolved character ("ㄹ" with the Korean IME on),
+    // which made the tool key silently fail when the user was typing Korean.
+    const wantedCode = `Key${useKey.toUpperCase()}`;
+    const wantedKey = useKey.toLowerCase();
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
       if (tag === 'input' || tag === 'textarea') return;
-      if (e.key.toLowerCase() !== useKey.toLowerCase()) return;
+      if (e.code !== wantedCode && e.key.toLowerCase() !== wantedKey) return;
 
       const now = performance.now();
       if (now - lastUseRef.current < cooldownMs) return;

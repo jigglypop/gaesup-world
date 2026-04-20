@@ -27,7 +27,7 @@ export function TimeHUD() {
         padding: '6px 10px',
         background: 'rgba(0,0,0,0.55)',
         color: '#fff',
-        fontFamily: 'monospace',
+        fontFamily: "'Pretendard', system-ui, sans-serif",
         fontSize: 13,
         borderRadius: 6,
         userSelect: 'none',

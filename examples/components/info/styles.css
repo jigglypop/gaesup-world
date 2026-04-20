@@ -1,13 +1,14 @@
 
 .info-style {
   position: fixed;
-  top: 48px;
-  right: 10px;
+  top: 80px;
+  right: 260px;
   display: flex;
   gap: 10px;
   padding: 8px;
   z-index: 90;
   pointer-events: auto;
+  font-family: 'Pretendard', system-ui, sans-serif;
 }
 .p-recipe {
   padding: 8px;

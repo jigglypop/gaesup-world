@@ -28,6 +28,7 @@ export function BuildingController() {
   const setWallRotation = useBuildingStore((s) => s.setWallRotation);
   const setTileRotation = useBuildingStore((s) => s.setTileRotation);
   const setObjectRotation = useBuildingStore((s) => s.setObjectRotation);
+  const setTileHeight = useBuildingStore((s) => s.setTileHeight);
   const initialized = useBuildingStore((s) => s.initialized);
   const initializeDefaults = useBuildingStore((s) => s.initializeDefaults);
 
@@ -61,10 +62,22 @@ export function BuildingController() {
         case 'ArrowDown':  applyRotation(Math.PI); break;
         case 'ArrowLeft':  applyRotation(Math.PI * 1.5); break;
       }
+
+      // Q/E: manual tile-layer offset for stacking on top of (or above)
+      // the auto-detected support height. Only meaningful in tile mode.
+      if (editMode === 'tile') {
+        if (e.code === 'KeyQ' || e.key === 'q' || e.key === 'Q') {
+          const cur = useBuildingStore.getState().currentTileHeight;
+          setTileHeight(cur - 1);
+        } else if (e.code === 'KeyE' || e.key === 'e' || e.key === 'E') {
+          const cur = useBuildingStore.getState().currentTileHeight;
+          setTileHeight(cur + 1);
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [editMode, setTileRotation, setWallRotation, setObjectRotation]);
+  }, [editMode, setTileRotation, setWallRotation, setObjectRotation, setTileHeight]);
 
   useEffect(() => {
     const canvas = gl.domElement;

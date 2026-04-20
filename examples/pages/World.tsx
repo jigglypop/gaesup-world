@@ -2,41 +2,44 @@ import React, { Suspense, useEffect, useState } from 'react';
 
 import { Environment, Grid } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
+import { EffectComposer } from '@react-three/postprocessing';
 import { euler, Physics, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { WorldPageProps } from './types';
 import {
-  AudioControls,
   Billboard, BugSpot,
-  BuildingController, CatalogUI, Clicker, CraftingUI, CropPlot, DialogBox, Editor, EventsHUD,
+  BuildingController, CatalogUI, Clicker, CraftingUI, CropPlot, DialogBox, Editor,
   FishSpot, Fire, GaesupController, GaesupWorld,
-  GaesupWorldContent, Grass, GroundClicker, HotbarUI, HousePlot, InteractionPrompt,
+  GaesupWorldContent, GroundClicker, HotbarUI, HousePlot, InteractionPrompt,
   InteractionTracker, InventoryUI,
   MailboxUI, MiniMap, QuestLogUI, SakuraBatch, SandBatch, ShopUI, Snow, SnowfieldBatch,
-  TimeHUD, ToastHost, ToolUseController, TownHUD, TreeObject, WalletHUD, Water,
-  WeatherEffect, WeatherHUD,
+  ToastHost, ToolUseController, TreeObject, Water,
+  WeatherEffect,
+  CharacterCreator, ColorGrade, DynamicFog, DynamicSky, Footprints, Footsteps, HouseDoor, OutfitAvatar, SceneRoot,
+  TouchControls, useSceneStore,
   getNPCScheduler, getSaveSystem, registerSeedCrops, registerSeedEvents, registerSeedItems,
   setDefaultToonMode,
-  useAmbientBgm, useAutoSave, useCatalogStore, useCatalogTracker, useCraftingStore, useDayChange,
+  useAmbientBgm, useAutoSave, useCatalogStore, useCatalogTracker, useCharacterStore,
+  useCraftingStore, useDayChange,
   useDecorationScore, useEventsStore, useEventsTicker, useFriendshipStore, useGameClock,
-  useHotbarKeyboard, useInventoryStore, useMailStore,
-  usePlotStore, useQuestObjectiveTracker, useQuestStore, useShopStore, useTimeStore, useTownStore,
+  useHotbarKeyboard, useI18nStore, useInventoryStore, useMailStore,
+  usePerfStore, usePlotStore, useQuestObjectiveTracker, useQuestStore, useShopStore,
+  useTimeStore, useTownStore,
   useWalletStore, useWeatherStore, useWeatherTicker, useAudioStore,
   type SakuraTreeEntry, type SandEntry, type SnowfieldEntry,
   useBuildingStore, useGaesupStore,
 } from '../../src';
 import { registerSeedDialogs } from '../components/dialog/seedDialogs';
-import { ActionBar } from '../components/hud/ActionBar';
+import { registerSeedI18n } from '../components/i18n/seedI18n';
+import { HudShell } from '../components/hud/HudShell';
 import { NPCBeacon } from '../components/npc/NPCBeacon';
 import { registerSeedContent } from '../components/seedContent';
 import { usePlayerPosition } from '../../src/core/motions/hooks/usePlayerPosition';
 import { useStateSystem } from '../../src/core/motions/hooks/useStateSystem';
 import { CameraOptionType } from '../../src/core/camera/core/types';
 import { SpeechBalloon } from '../../src/core/ui/components/SpeechBalloon';
-import Info from '../components/info';
 import { Pickup } from '../components/pickup';
-import { Teleport } from '../components/teleport';
 import { AIRPLANE_URL, CHARACTER_URL, EXAMPLE_CONFIG, S3, VEHICLE_URL } from '../config/constants';
 import '../style.css';
 
@@ -45,6 +48,11 @@ registerSeedDialogs();
 registerSeedContent();
 registerSeedCrops();
 registerSeedEvents();
+registerSeedI18n();
+
+if (typeof window !== 'undefined') {
+  usePerfStore.getState().detect();
+}
 
 // NPC daily schedules — Tommy hangs at shop / sleeps at home; Mei wanders meadow; Ryu near workbench
 getNPCScheduler().register({
@@ -79,7 +87,10 @@ getNPCScheduler().register({
 
 export { S3 };
 
-const CAMERA_OPTION: CameraOptionType = {
+// Kept for documentation: this is the "rich" camera option shape used
+// elsewhere in the codebase. The simpler shape consumed by `<GaesupWorld>`
+// is provided inline at the call site.
+export const RICH_CAMERA_OPTION: CameraOptionType = {
   xDistance: -7, yDistance: 10, zDistance: -13,
   offset: new THREE.Vector3(0, 0, 0),
   enableCollision: true,
@@ -206,19 +217,7 @@ function Lighting() {
   return (
     <>
       <Environment background preset="sunset" backgroundBlurriness={1} />
-      <directionalLight
-        castShadow
-        shadow-normalBias={0.06}
-        position={[20, 30, 10]}
-        intensity={0.5}
-        shadow-mapSize={[1024, 1024]}
-        shadow-camera-near={1}
-        shadow-camera-far={120}
-        shadow-camera-top={90}
-        shadow-camera-right={90}
-        shadow-camera-bottom={-90}
-        shadow-camera-left={-90}
-      />
+      <DynamicSky rigDistance={60} shadowMapSize={1024} />
     </>
   );
 }
@@ -245,6 +244,61 @@ function Ground() {
           <meshStandardMaterial color="#3d3d3d" polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
         </mesh>
       </RigidBody>
+    </>
+  );
+}
+
+function HomeInterior({ returnPosition }: { returnPosition: [number, number, number] }) {
+  // The interior is a tiny 8x8 room. The exit pad lives in the middle-south
+  // wall; stepping onto it returns the player to the registered outdoor spot.
+  return (
+    <>
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[0, 0, 0]} receiveShadow>
+          <boxGeometry args={[8, 0.2, 8]} />
+          <meshStandardMaterial color="#caa57a" roughness={0.85} />
+        </mesh>
+      </RigidBody>
+
+      {/* Walls */}
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[0, 1.4, -4]} castShadow receiveShadow>
+          <boxGeometry args={[8, 2.8, 0.2]} />
+          <meshStandardMaterial color="#f0e0c8" />
+        </mesh>
+      </RigidBody>
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[-4, 1.4, 0]} castShadow receiveShadow>
+          <boxGeometry args={[0.2, 2.8, 8]} />
+          <meshStandardMaterial color="#f0e0c8" />
+        </mesh>
+      </RigidBody>
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[4, 1.4, 0]} castShadow receiveShadow>
+          <boxGeometry args={[0.2, 2.8, 8]} />
+          <meshStandardMaterial color="#f0e0c8" />
+        </mesh>
+      </RigidBody>
+
+      {/* Furniture cubes for visual reference */}
+      <mesh position={[2.4, 0.4, -2.4]} castShadow>
+        <boxGeometry args={[1.6, 0.7, 1.2]} />
+        <meshStandardMaterial color="#7a4a2a" />
+      </mesh>
+      <mesh position={[-2.6, 0.25, -2.6]} castShadow>
+        <boxGeometry args={[1.0, 0.45, 1.0]} />
+        <meshStandardMaterial color="#a05030" />
+      </mesh>
+
+      {/* Exit door — leads back to the outdoor scene at the registered spot. */}
+      <HouseDoor
+        position={[0, 0.05, 3.6]}
+        sceneId="outdoor"
+        entry={{ position: returnPosition, rotationY: 0 }}
+        color="#ffd24a"
+        radius={1}
+        label="EXIT"
+      />
     </>
   );
 }
@@ -297,15 +351,41 @@ function Scenery({ onOpenShop, onOpenCrafting }: { onOpenShop: () => void; onOpe
       {HOUSE_PLOTS.map((h) => (
         <HousePlot key={h.id} id={h.id} position={h.pos} size={[3.2, 3.2]} />
       ))}
+
+      <SceneRoot scene={{ id: 'outdoor', name: 'Town', interior: false }}>
+        {/* Door pad next to the first plot opens the player's home interior. */}
+        <HouseDoor
+          position={[HOUSE_PLOTS[0]?.pos[0] ?? -8, 0.05, (HOUSE_PLOTS[0]?.pos[2] ?? -4) + 2.4]}
+          sceneId="home-interior"
+          entry={{ position: [0, 0, 0], rotationY: 0 }}
+          color="#7fc6ff"
+          radius={1.2}
+          label="HOME"
+        />
+      </SceneRoot>
+
+      <SceneRoot
+        scene={{
+          id: 'home-interior',
+          name: 'Home',
+          interior: true,
+          entry: { position: [0, 0, 0] },
+        }}
+      >
+        <HomeInterior
+          returnPosition={[
+            HOUSE_PLOTS[0]?.pos[0] ?? -8,
+            0.05,
+            (HOUSE_PLOTS[0]?.pos[2] ?? -4) + 3.4,
+          ]}
+        />
+      </SceneRoot>
+
       <group position={[-12, 0.06, 22]}>
         <Billboard text="Town" width={3} height={1} color="#fff7e0" toon />
       </group>
 
       <WeatherEffect area={120} height={22} count={1500} />
-
-      <group position={[0, 0, 40]}>
-        <Grass width={60} instances={6000} lod={{ near: 20, far: 80, strength: 0.6 }} />
-      </group>
 
       <group position={[55, 0.02, 0]}>
         <Water size={40} toon />
@@ -442,6 +522,21 @@ function GameSystems() {
       serialize: () => useAudioStore.getState().serialize(),
       hydrate: (data: unknown) => useAudioStore.getState().hydrate(data as never),
     });
+    const offChar = sys.register({
+      key: 'character',
+      serialize: () => useCharacterStore.getState().serialize(),
+      hydrate: (data: unknown) => useCharacterStore.getState().hydrate(data as never),
+    });
+    const offI18n = sys.register({
+      key: 'i18n',
+      serialize: () => useI18nStore.getState().serialize(),
+      hydrate: (data: unknown) => useI18nStore.getState().hydrate(data as never),
+    });
+    const offScene = sys.register({
+      key: 'scene',
+      serialize: () => useSceneStore.getState().serialize(),
+      hydrate: (data: unknown) => useSceneStore.getState().hydrate(data as never),
+    });
     void sys.load().then(() => {
       const inv = useInventoryStore.getState();
       if (!inv.has('axe'))         inv.add('axe', 1);
@@ -489,6 +584,9 @@ function GameSystems() {
       offEvents();
       offTown();
       offAudio();
+      offChar();
+      offI18n();
+      offScene();
     };
   }, []);
 
@@ -499,15 +597,30 @@ function Player() {
   const isInBuildingMode = useBuildingStore((s) => s.isInEditMode());
   const mode = useGaesupStore((s) => s.mode);
   const { gameStates } = useStateSystem();
+  const bodyColor = useCharacterStore((s) => s.appearance.colors.body);
   if (isInBuildingMode || gameStates?.isRiding) return null;
   return (
-    <GaesupController
-      key={`controller-${mode.type}`}
-      controllerOptions={{ lerp: { cameraTurn: 0.1, cameraPosition: 0.08 } }}
-      rigidBodyProps={{}}
-      parts={[]}
-      rotation={euler({ x: 0, y: Math.PI, z: 0 })}
-    />
+    <>
+      <GaesupController
+        key={`controller-${mode.type}`}
+        controllerOptions={{ lerp: { cameraTurn: 0.1, cameraPosition: 0.08 } }}
+        rigidBodyProps={{}}
+        parts={[]}
+        rotation={euler({ x: 0, y: Math.PI, z: 0 })}
+        baseColor={bodyColor}
+      />
+      <OutfitAvatar />
+    </>
+  );
+}
+
+function PostFX() {
+  const enabled = usePerfStore((s) => s.profile.postprocess);
+  if (!enabled) return null;
+  return (
+    <EffectComposer multisampling={0}>
+      <ColorGrade />
+    </EffectComposer>
   );
 }
 
@@ -534,47 +647,6 @@ function CharacterSpeechBalloon() {
   );
 }
 
-function HUD() {
-  const [showInfo, setShowInfo] = useState(true);
-  const [showTeleport, setShowTeleport] = useState(false);
-  const [toon, setToon] = useState(_initialToon);
-
-  const onToggleToon = () => {
-    const next = !toon;
-    setToon(next);
-    setDefaultToonMode(next);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(TOON_STORAGE_KEY, next ? '1' : '0');
-      window.location.reload();
-    }
-  };
-
-  return (
-    <>
-      <div style={{
-        position: 'fixed', top: 10, right: 10,
-        zIndex: 90, pointerEvents: 'auto', display: 'flex', gap: 6,
-      }}>
-        <button
-          className={`app-nav-button${toon ? ' active' : ''}`}
-          onClick={onToggleToon}
-          title="Toggle toon shading (reloads scene)"
-        >
-          {toon ? 'Toon: ON' : 'Toon: OFF'}
-        </button>
-        <button className={`app-nav-button${showInfo ? ' active' : ''}`} onClick={() => setShowInfo((v) => !v)}>
-          {showInfo ? 'Hide Info' : 'Info'}
-        </button>
-        <button className={`app-nav-button${showTeleport ? ' active' : ''}`} onClick={() => setShowTeleport((v) => !v)}>
-          {showTeleport ? 'Hide Teleport' : 'Teleport'}
-        </button>
-      </div>
-      {showInfo && <Info />}
-      {showTeleport && <Teleport />}
-    </>
-  );
-}
-
 export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
   const [shopOpen, setShopOpen] = useState(false);
   const [craftOpen, setCraftOpen] = useState(false);
@@ -583,7 +655,7 @@ export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
       <GaesupWorld
         urls={{ characterUrl: CHARACTER_URL, vehicleUrl: VEHICLE_URL, airplaneUrl: AIRPLANE_URL }}
         debug={EXAMPLE_CONFIG.debug}
-        cameraOption={CAMERA_OPTION}
+        cameraOption={{ type: 'thirdPerson', distance: 13, height: 10, fov: 75, smoothness: 0.25 }}
       >
         <Canvas
           shadows
@@ -607,31 +679,35 @@ export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
                 <CharacterSpeechBalloon />
                 <InteractionTracker />
                 <ToolUseController useKey="f" />
+                <Footprints />
+                <Footsteps />
               </Physics>
+              <DynamicFog color="#cfd8e3" near={45} far={260} />
+              <PostFX />
             </GaesupWorldContent>
           </Suspense>
         </Canvas>
 
         <GameSystems />
-        <TimeHUD />
-        <WeatherHUD position="top-left" />
-        <EventsHUD position="top-left" excludeIds={['season.spring','season.summer','season.autumn','season.winter']} />
-        <TownHUD position="top-right" />
-        <WalletHUD position="top-center" />
+
+        <HudShell toonInitial={_initialToon} toonStorageKey={TOON_STORAGE_KEY} />
+
         <InteractionPrompt />
         <DialogBox />
         <ToastHost />
-            <ShopUI open={shopOpen} onClose={() => setShopOpen(false)} title="토미네 상점" />
-            <CraftingUI open={craftOpen} onClose={() => setCraftOpen(false)} title="류의 작업대" />
-            <QuestLogUI toggleKey="j" />
-            <MailboxUI toggleKey="m" />
-            <CatalogUI toggleKey="k" />
-        <HotbarUI />
+
+        <ShopUI open={shopOpen} onClose={() => setShopOpen(false)} title="토미네 상점" />
+        <CraftingUI open={craftOpen} onClose={() => setCraftOpen(false)} title="류의 작업대" />
+        <QuestLogUI toggleKey="j" />
+        <MailboxUI toggleKey="m" />
+        <CatalogUI toggleKey="k" />
         <InventoryUI toggleKey="i" />
-        <ActionBar />
-        <AudioControls position="bottom-right" />
+
+        <HotbarUI />
         <MiniMap position="bottom-left" scale={5} showZoom={false} showCompass={false} />
-        <HUD />
+
+        <CharacterCreator toggleKey="o" />
+        <TouchControls />
       </GaesupWorld>
       {showEditor && <Editor />}
       {children}

@@ -47,13 +47,16 @@ export function DialogBox({ advanceKey = 'e', closeKey = 'Escape' }: DialogBoxPr
         transform: 'translateX(-50%)',
         width: 'min(720px, 92vw)',
         zIndex: 120,
-        background: 'rgba(20,20,28,0.95)',
-        color: '#fff',
-        borderRadius: 12,
-        boxShadow: '0 12px 28px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.08)',
-        fontFamily: 'monospace',
+        background: 'rgba(18,20,28,0.62)',
+        color: '#f3f4f8',
+        borderRadius: 14,
+        border: '1px solid rgba(255,255,255,0.12)',
+        boxShadow: '0 12px 28px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
+        backdropFilter: 'blur(20px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(140%)',
+        fontFamily: "'Pretendard', system-ui, sans-serif",
         fontSize: 14,
-        padding: 12,
+        padding: 14,
       }}
     >
       {node.speaker && (
@@ -81,14 +84,15 @@ export function DialogBox({ advanceKey = 'e', closeKey = 'Escape' }: DialogBoxPr
               onClick={() => choose(i)}
               style={{
                 textAlign: 'left',
-                padding: '8px 10px',
-                background: '#262626',
-                color: '#fff',
-                border: '1px solid #3a3a3a',
-                borderRadius: 6,
+                padding: '9px 12px',
+                background: 'rgba(255,255,255,0.06)',
+                color: '#f3f4f8',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 8,
                 cursor: 'pointer',
-                fontFamily: 'monospace',
+                fontFamily: "'Pretendard', system-ui, sans-serif",
                 fontSize: 13,
+                fontWeight: 500,
               }}
             >
               <span style={{

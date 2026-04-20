@@ -113,7 +113,7 @@ export function TileObject({ tile, tiles }: TileObjectProps) {
         {tile.objectType === 'grass' && (
           <Grass
             width={tileSize}
-            instances={tile.objectConfig?.grassDensity || 1000}
+            density={tile.objectConfig?.grassDensity ?? 90}
             position={[0, 0.05, 0]}
           />
         )}

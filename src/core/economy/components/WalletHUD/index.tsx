@@ -19,7 +19,7 @@ export function WalletHUD({ position = 'top-center' }: WalletHUDProps) {
         padding: '6px 12px',
         background: 'rgba(40,30,10,0.85)',
         color: '#ffd84a',
-        fontFamily: 'monospace',
+        fontFamily: "'Pretendard', system-ui, sans-serif",
         fontSize: 13,
         borderRadius: 999,
         display: 'flex',

@@ -48,7 +48,7 @@ export function ShopUI({ open, onClose, title = 'Shop' }: ShopUIProps) {
           background: '#1a1a1a', color: '#fff',
           borderRadius: 12,
           boxShadow: '0 16px 36px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,216,74,0.35)',
-          fontFamily: 'monospace', fontSize: 13,
+          fontFamily: "'Pretendard', system-ui, sans-serif", fontSize: 13,
           display: 'flex', flexDirection: 'column',
         }}
       >
@@ -127,7 +127,7 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
         color: active ? '#ffd84a' : '#ddd',
         border: 'none',
         cursor: 'pointer',
-        fontFamily: 'monospace',
+        fontFamily: "'Pretendard', system-ui, sans-serif",
         fontSize: 13,
       }}
     >{children}</button>
@@ -166,7 +166,7 @@ function btnStyle(disabled?: boolean): React.CSSProperties {
     border: 'none',
     borderRadius: 6,
     cursor: disabled ? 'not-allowed' : 'pointer',
-    fontFamily: 'monospace',
+    fontFamily: "'Pretendard', system-ui, sans-serif",
     fontSize: 12,
   };
 }

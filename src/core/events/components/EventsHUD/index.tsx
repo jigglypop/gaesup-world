@@ -43,7 +43,7 @@ export function EventsHUD({ position = 'top-left', excludeIds = [] }: EventsHUDP
               padding: '4px 10px',
               background: 'rgba(20,20,28,0.85)',
               color: '#fff',
-              fontFamily: 'monospace',
+              fontFamily: "'Pretendard', system-ui, sans-serif",
               fontSize: 11,
               borderRadius: 999,
               boxShadow: `inset 0 0 0 1px ${isFestival ? '#ffd84a55' : '#7adf9055'}`,

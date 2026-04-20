@@ -5,7 +5,11 @@ attribute float halfRootAngleSin;
 attribute float halfRootAngleCos;
 attribute float stretch;
 uniform float time;
+uniform float windScale;
 uniform float bladeHeight;
+uniform vec3 trampleCenter;
+uniform float trampleRadius;
+uniform float trampleStrength;
 varying vec2 vUv;
 varying float frc;
 varying float vCluster;
@@ -60,9 +64,25 @@ void main() {
   vec3 vPosition = vec3(position.x, position.y + position.y * stretch, position.z);
   vPosition = rotateVectorByQuaternion(vPosition, bent);
 
-  float windAngle = noise * 0.3;
+  float windAngle = noise * 0.3 * windScale;
   vec4 windQuat = vec4(sin(windAngle), 0.0, -sin(windAngle), cos(windAngle));
   vPosition = rotateVectorByQuaternion(vPosition, windQuat);
+
+  // Player trampling: blades within `trampleRadius` of `trampleCenter` get
+  // pushed down (negative Y) and tilted away from the centre. The push falls
+  // off smoothly so we don't get a hard ring of flattened grass.
+  if (trampleRadius > 0.0001) {
+    vec2 toCenter = offset.xz - trampleCenter.xz;
+    float distXZ = length(toCenter);
+    float falloff = clamp(1.0 - distXZ / trampleRadius, 0.0, 1.0);
+    if (falloff > 0.0) {
+      float push = falloff * falloff * trampleStrength;
+      vPosition.y *= mix(1.0, 0.18, push);
+      vec2 dir = distXZ > 0.0001 ? toCenter / distXZ : vec2(0.0);
+      vPosition.x += dir.x * push * 0.45 * frc;
+      vPosition.z += dir.y * push * 0.45 * frc;
+    }
+  }
 
   vCluster = clusterNoise * 0.5 + 0.5;
   vDryness = clamp((dryNoise * 0.5 + 0.5) * 0.7 + (1.0 - stretch) * 0.45, 0.0, 1.0);

@@ -62,7 +62,7 @@ export function CraftingUI({ toggleKey = 'c', title = '제작대', open: openPro
           width: 600, maxHeight: '76vh', overflow: 'hidden', display: 'flex', flexDirection: 'column',
           background: '#1a1a1a', color: '#fff', borderRadius: 12,
           boxShadow: '0 16px 36px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,200,120,0.35)',
-          fontFamily: 'monospace', fontSize: 13,
+          fontFamily: "'Pretendard', system-ui, sans-serif", fontSize: 13,
         }}
       >
         <div style={{ padding: '10px 14px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between' }}>
@@ -128,7 +128,7 @@ function btn(enabled?: boolean): React.CSSProperties {
     background: enabled ? '#ffc878' : '#333',
     color: enabled ? '#1a1a1a' : '#777',
     border: 'none', borderRadius: 6, cursor: enabled ? 'pointer' : 'not-allowed',
-    fontFamily: 'monospace', fontSize: 12, fontWeight: enabled ? 700 : 400,
+    fontFamily: "'Pretendard', system-ui, sans-serif", fontSize: 12, fontWeight: enabled ? 700 : 400,
   };
 }
 

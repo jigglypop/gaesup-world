@@ -42,7 +42,7 @@ export function MailboxUI({ toggleKey = 'm' }: MailboxUIProps) {
           width: 720, height: 460, display: 'flex',
           background: '#1a1a1a', color: '#fff', borderRadius: 12,
           boxShadow: '0 16px 36px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(207,154,255,0.35)',
-          fontFamily: 'monospace', fontSize: 13, overflow: 'hidden',
+          fontFamily: "'Pretendard', system-ui, sans-serif", fontSize: 13, overflow: 'hidden',
         }}
       >
         <div style={{ width: 260, borderRight: '1px solid #333', display: 'flex', flexDirection: 'column' }}>
@@ -135,7 +135,7 @@ function btn(primary?: boolean): React.CSSProperties {
     background: primary ? '#cf9aff' : '#444',
     color: primary ? '#1a0d24' : '#fff',
     border: 'none', borderRadius: 6, cursor: 'pointer',
-    fontFamily: 'monospace', fontSize: 12, fontWeight: primary ? 700 : 400,
+    fontFamily: "'Pretendard', system-ui, sans-serif", fontSize: 12, fontWeight: primary ? 700 : 400,
   };
 }
 

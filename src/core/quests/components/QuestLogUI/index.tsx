@@ -44,7 +44,7 @@ export function QuestLogUI({ toggleKey = 'j' }: QuestLogUIProps) {
           width: 560, maxHeight: '76vh', overflow: 'hidden', display: 'flex', flexDirection: 'column',
           background: '#1a1a1a', color: '#fff', borderRadius: 12,
           boxShadow: '0 16px 36px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(122,166,255,0.35)',
-          fontFamily: 'monospace', fontSize: 13,
+          fontFamily: "'Pretendard', system-ui, sans-serif", fontSize: 13,
         }}
       >
         <div style={{ padding: '10px 14px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between' }}>
@@ -158,7 +158,7 @@ function btn(primary?: boolean): React.CSSProperties {
     background: primary ? '#7aa6ff' : '#444',
     color: primary ? '#0d1424' : '#fff',
     border: 'none', borderRadius: 6, cursor: 'pointer',
-    fontFamily: 'monospace', fontSize: 12, fontWeight: primary ? 700 : 400,
+    fontFamily: "'Pretendard', system-ui, sans-serif", fontSize: 12, fontWeight: primary ? 700 : 400,
   };
 }
 

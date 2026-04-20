@@ -16,10 +16,13 @@ export function HotbarUI() {
         zIndex: 95,
         display: 'flex',
         gap: 6,
-        padding: 6,
-        background: 'rgba(0,0,0,0.5)',
-        borderRadius: 8,
-        backdropFilter: 'blur(6px)',
+        padding: 8,
+        background: 'rgba(18,20,28,0.55)',
+        border: '1px solid rgba(255,255,255,0.12)',
+        borderRadius: 14,
+        boxShadow: '0 8px 28px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.05)',
+        backdropFilter: 'blur(20px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(140%)',
       }}
     >
       {slots.map((slot, i) => {
@@ -31,18 +34,19 @@ export function HotbarUI() {
             onClick={() => setEquipped(i)}
             title={def?.name ?? ''}
             style={{
-              width: 56,
-              height: 56,
-              borderRadius: 6,
-              border: active ? '2px solid #ffd84a' : '2px solid rgba(255,255,255,0.18)',
-              background: 'rgba(20,20,20,0.85)',
-              color: '#fff',
+              width: 54,
+              height: 54,
+              borderRadius: 10,
+              border: active ? '1.5px solid #ffd84a' : '1px solid rgba(255,255,255,0.14)',
+              background: active ? 'rgba(255,216,74,0.10)' : 'rgba(255,255,255,0.04)',
+              color: '#f3f4f8',
               position: 'relative',
               cursor: 'pointer',
               padding: 0,
-              fontFamily: 'monospace',
+              fontFamily: "'Pretendard', system-ui, sans-serif",
               fontSize: 11,
-              boxShadow: active ? '0 0 12px rgba(255,216,74,0.6)' : 'none',
+              boxShadow: active ? '0 0 16px rgba(255,216,74,0.45)' : 'none',
+              transition: 'background 0.18s ease, border-color 0.18s ease',
             }}
           >
             <div

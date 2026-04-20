@@ -60,6 +60,57 @@ describe('buildingStore placement checks', () => {
     s.removeTile(groupId, tileId);
   });
 
+  test('checkTilePosition allows stacking on top (different Y) but blocks same Y', () => {
+    const s = useBuildingStore.getState();
+    const groupId = s.selectedTileGroupId;
+    if (!groupId) return;
+
+    const tileId = `stack-tile-${Date.now()}`;
+    const groundPos = { x: FAR + 100, y: 0, z: FAR + 100 };
+    s.addTile(groupId, {
+      id: tileId,
+      position: groundPos,
+      tileGroupId: groupId,
+      size: 1,
+    });
+
+    expect(s.checkTilePosition(groundPos)).toBe(true);
+    expect(s.checkTilePosition({ x: groundPos.x, y: 1, z: groundPos.z })).toBe(false);
+    expect(s.checkTilePosition({ x: groundPos.x, y: 2, z: groundPos.z })).toBe(false);
+
+    s.removeTile(groupId, tileId);
+  });
+
+  test('getSupportHeightAt returns top of underlying tile', () => {
+    const s = useBuildingStore.getState();
+    const groupId = s.selectedTileGroupId;
+    if (!groupId) return;
+
+    const tileId = `support-tile-${Date.now()}`;
+    const pos = { x: FAR + 200, y: 0, z: FAR + 200 };
+    expect(s.getSupportHeightAt(pos)).toBe(0);
+
+    s.addTile(groupId, {
+      id: tileId,
+      position: pos,
+      tileGroupId: groupId,
+      size: 1,
+    });
+    expect(s.getSupportHeightAt(pos)).toBe(1);
+
+    const pos2 = { x: pos.x, y: 1, z: pos.z };
+    s.addTile(groupId, {
+      id: `${tileId}-up`,
+      position: pos2,
+      tileGroupId: groupId,
+      size: 1,
+    });
+    expect(s.getSupportHeightAt(pos)).toBe(2);
+
+    s.removeTile(groupId, tileId);
+    s.removeTile(groupId, `${tileId}-up`);
+  });
+
   test('checkWallPosition detects overlap and respects removal', () => {
     const s = useBuildingStore.getState();
     const groupId = s.selectedWallGroupId;

@@ -48,7 +48,7 @@ export function InventoryUI({ toggleKey = 'i', initiallyOpen = false }: Inventor
           padding: 16,
           minWidth: 460,
           color: '#fff',
-          fontFamily: 'monospace',
+          fontFamily: "'Pretendard', system-ui, sans-serif",
           boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
         }}
       >

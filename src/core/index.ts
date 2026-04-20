@@ -26,6 +26,27 @@ export * from './weather';
 export * from './events';
 export * from './town';
 export * from './audio';
+export * from './character';
+export * from './effects';
+export * from './i18n';
+export * from './input';
+export * from './perf';
+export * from './scene';
+export { DynamicFog } from './rendering/fog/DynamicFog';
+export type { DynamicFogProps } from './rendering/fog/DynamicFog';
+export { DynamicSky } from './rendering/sky';
+export type { DynamicSkyProps, SkyKeyframe } from './rendering/sky';
+export { ColorGrade } from './rendering/postprocess/ColorGrade';
+export type { ColorGradeProps, GradePreset } from './rendering/postprocess/ColorGrade';
+export { LutOverlay } from './rendering/postprocess/LutOverlay';
+export type { LutOverlayProps } from './rendering/postprocess/LutOverlay';
+export {
+  parseCubeLut,
+  createLutTexture,
+  loadCubeLut,
+  loadCubeLutTexture,
+} from './rendering/postprocess/cubeLut';
+export type { CubeLutData } from './rendering/postprocess/cubeLut';
 
 export { Editor, EditorLayout, ResizablePanel } from './editor';
 export * from './building';

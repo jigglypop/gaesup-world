@@ -24,3 +24,6 @@ export * from './stores';
 
 // Bridge
 export * from './bridge';
+
+// Visit-room snapshot sync
+export * from './visit';

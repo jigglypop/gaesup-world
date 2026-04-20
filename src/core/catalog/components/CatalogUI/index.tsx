@@ -51,7 +51,7 @@ export function CatalogUI({ toggleKey = 'k' }: CatalogUIProps) {
           width: 760, height: 520, display: 'flex', flexDirection: 'column',
           background: '#1a1a1a', color: '#fff', borderRadius: 12,
           boxShadow: '0 16px 36px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(122,223,144,0.35)',
-          fontFamily: 'monospace', fontSize: 13, overflow: 'hidden',
+          fontFamily: "'Pretendard', system-ui, sans-serif", fontSize: 13, overflow: 'hidden',
         }}
       >
         <div style={{ padding: '10px 14px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between' }}>
@@ -71,7 +71,7 @@ export function CatalogUI({ toggleKey = 'k' }: CatalogUIProps) {
                   flex: 1, padding: '8px 4px',
                   background: tab === c ? '#262626' : 'transparent',
                   color: tab === c ? '#7adf90' : '#ddd',
-                  border: 'none', cursor: 'pointer', fontFamily: 'monospace', fontSize: 12,
+                  border: 'none', cursor: 'pointer', fontFamily: "'Pretendard', system-ui, sans-serif", fontSize: 12,
                 }}
               >
                 {labelOf(c)} ({collected}/{items.length})
@@ -128,7 +128,7 @@ function btn(): React.CSSProperties {
   return {
     padding: '4px 10px', background: '#444', color: '#fff',
     border: 'none', borderRadius: 6, cursor: 'pointer',
-    fontFamily: 'monospace', fontSize: 12,
+    fontFamily: "'Pretendard', system-ui, sans-serif", fontSize: 12,
   };
 }
 

@@ -2,14 +2,16 @@
   position: fixed;
   width: 200px;
   height: 200px;
-  background: rgba(0, 0, 0, 0.8);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(18, 20, 28, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 50%;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
   z-index: 9999;
   user-select: none;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.32);
+  font-family: 'Pretendard', system-ui, sans-serif;
 }
 
 .minimap--top-left {
@@ -110,7 +112,8 @@
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 10px;
-  font-family: monospace;
+  font-family: 'Pretendard', system-ui, sans-serif;
+  font-feature-settings: 'tnum' 1;
 }
 
 .minimap__marker {

@@ -33,19 +33,32 @@ export function useBuildingEditor() {
     return null;
   }, [camera, raycaster, snapPosition]);
 
+  /**
+   * Box-style stacking hover: snaps to the XZ grid first, then asks the store
+   * what the highest existing tile under that footprint is, and returns that
+   * height as the suggested Y. Walls/objects keep ground semantics.
+   */
+  const raycastStackable = useCallback(() => {
+    const grounded = raycastGround();
+    if (!grounded) return null;
+    const support = useBuildingStore.getState().getSupportHeightAt(grounded);
+    return { ...grounded, y: support };
+  }, [raycastGround]);
+
   const updateMousePosition = useCallback((event: MouseEvent) => {
     const canvas = event.target as HTMLCanvasElement;
     mouseRef.current.x = (event.clientX / canvas.clientWidth) * 2 - 1;
     mouseRef.current.y = -(event.clientY / canvas.clientHeight) * 2 + 1;
 
     const mode = useBuildingStore.getState().editMode;
-    if (mode === 'tile' || mode === 'wall' || mode === 'npc' || mode === 'object') {
-      const pos = raycastGround();
-      setHoverPosition(pos);
+    if (mode === 'tile') {
+      setHoverPosition(raycastStackable());
+    } else if (mode === 'wall' || mode === 'npc' || mode === 'object') {
+      setHoverPosition(raycastGround());
     } else {
       setHoverPosition(null);
     }
-  }, [raycastGround, setHoverPosition]);
+  }, [raycastGround, raycastStackable, setHoverPosition]);
 
   const placeWall = useCallback(() => {
     const {
@@ -71,6 +84,7 @@ export function useBuildingEditor() {
       editMode: mode,
       selectedTileGroupId: groupId,
       checkTilePosition,
+      getSupportHeightAt,
       currentTileMultiplier,
       currentTileHeight,
       currentTileShape,
@@ -78,16 +92,24 @@ export function useBuildingEditor() {
       hoverPosition,
     } = useBuildingStore.getState();
     if (mode !== 'tile' || !groupId || !hoverPosition) return;
-    if (checkTilePosition(hoverPosition)) return;
-    const effectiveHeight = currentTileShape === 'stairs' || currentTileShape === 'ramp'
-      ? Math.max(1, currentTileHeight)
-      : currentTileHeight;
+
+    // Stacking semantics:
+    //  - For ordinary box tiles, the cursor's Y already includes the stacked
+    //    support height (computed in updateMousePosition). The user-controlled
+    //    `currentTileHeight` is added as an explicit raise on top of that.
+    //  - Stairs/ramps still require height >= 1 step to make a usable slope.
+    const heightStep = TILE_CONSTANTS.HEIGHT_STEP;
+    const supportY = getSupportHeightAt(hoverPosition);
+    const baseY =
+      currentTileShape === 'box' || currentTileShape === 'round'
+        ? supportY + currentTileHeight * heightStep
+        : Math.max(1, currentTileHeight) * heightStep;
+
+    const placement = { ...hoverPosition, y: baseY };
+    if (checkTilePosition(placement)) return;
     addTile(groupId, {
       id: `tile-${++_idSeq}-${Date.now()}`,
-      position: {
-        ...hoverPosition,
-        y: effectiveHeight * TILE_CONSTANTS.HEIGHT_STEP,
-      },
+      position: placement,
       tileGroupId: groupId,
       size: currentTileMultiplier,
       rotation: currentTileRotation,

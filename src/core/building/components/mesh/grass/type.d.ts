@@ -10,6 +10,16 @@ export type GrassMeshProps = ThreeElements["group"] & {
   width?: number;
   instances?: number;
   /**
+   * Blades per square meter. When set, overrides `instances` so density stays
+   * constant regardless of `width`. Capped at `maxInstances` for safety.
+   */
+  density?: number;
+  /**
+   * Hard cap on instance count when computing from `density`.
+   * Prevents runaway vertex counts on very large tiles.
+   */
+  maxInstances?: number;
+  /**
    * Optional LOD parameters. When provided, the mesh reduces drawn instances
    * with distance using SFE-style suppression (w = exp(-sigma)).
    */

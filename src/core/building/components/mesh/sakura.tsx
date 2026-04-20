@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { createToonMaterial, getDefaultToonMode } from '@core/rendering/toon';
+import { useWeatherStore } from '@core/weather/stores/weatherStore';
 
 type SakuraProps = { size?: number; toon?: boolean };
 
@@ -318,6 +319,7 @@ attribute float aPointScale;
 
 uniform float uTime;
 uniform float uScale;
+uniform float uWind;
 
 varying vec3 vColor;
 
@@ -327,9 +329,9 @@ void main() {
   float w = uTime * aParams1.w + aParams1.y * 6.28318;
 
   vec3 localPos = vec3(
-    position.x + sin(w) * aParams1.z + aParams2.x * cycle,
+    position.x + sin(w) * aParams1.z * uWind + aParams2.x * cycle * uWind,
     0.18 + position.y * drift + sin(w * 0.6) * 0.06,
-    position.z + cos(w * 0.82) * aParams1.z * 0.72 + aParams2.y * cycle
+    position.z + cos(w * 0.82) * aParams1.z * 0.72 * uWind + aParams2.y * cycle * uWind
   );
 
   vColor = color;
@@ -433,7 +435,12 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
   }, [specs, counts.falling]);
 
   const fallingMat = useMemo(() => new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uScale: { value: 1 }, uOpacity: { value: 0.88 } },
+    uniforms: {
+      uTime: { value: 0 },
+      uScale: { value: 1 },
+      uOpacity: { value: 0.88 },
+      uWind: { value: 1 },
+    },
     vertexShader: BATCH_FALLING_VERT,
     fragmentShader: BATCH_FALLING_FRAG,
     transparent: true, depthWrite: false,
@@ -539,6 +546,15 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
     if (m?.uniforms) {
       m.uniforms.uTime.value = state.clock.getElapsedTime();
       m.uniforms.uScale.value = state.gl.domElement.height * 0.5;
+      const w = useWeatherStore.getState().current;
+      const intensity = w?.intensity ?? 0;
+      const base =
+        w?.kind === 'storm' ? 2.4 :
+        w?.kind === 'rain'  ? 1.6 :
+        w?.kind === 'snow'  ? 1.2 :
+        w?.kind === 'cloudy'? 1.1 :
+                              0.9;
+      m.uniforms.uWind.value = base + intensity * 0.7;
     }
   });
 

@@ -6,12 +6,12 @@ export { notify, useToastStore } from './toastStore';
 export type { Toast, ToastKind } from './toastStore';
 
 const KIND_STYLE: Record<ToastKind, { bg: string; ring: string; icon: string }> = {
-  info:    { bg: 'rgba(20,30,50,0.92)',  ring: '#7aa6ff', icon: 'i' },
-  success: { bg: 'rgba(20,40,30,0.92)',  ring: '#7adf90', icon: '+' },
-  warn:    { bg: 'rgba(50,40,20,0.92)',  ring: '#ffd84a', icon: '!' },
-  error:   { bg: 'rgba(50,20,20,0.92)',  ring: '#ff7a7a', icon: 'x' },
-  reward:  { bg: 'rgba(40,30,10,0.92)',  ring: '#ffc24a', icon: '*' },
-  mail:    { bg: 'rgba(30,20,40,0.92)',  ring: '#cf9aff', icon: 'M' },
+  info:    { bg: 'rgba(20,30,50,0.55)',  ring: '#7aa6ff', icon: 'i' },
+  success: { bg: 'rgba(20,40,30,0.55)',  ring: '#7adf90', icon: '+' },
+  warn:    { bg: 'rgba(50,40,20,0.55)',  ring: '#ffd84a', icon: '!' },
+  error:   { bg: 'rgba(50,20,20,0.55)',  ring: '#ff7a7a', icon: 'x' },
+  reward:  { bg: 'rgba(40,30,10,0.55)',  ring: '#ffc24a', icon: '*' },
+  mail:    { bg: 'rgba(30,20,40,0.55)',  ring: '#cf9aff', icon: 'M' },
 };
 
 export type ToastHostProps = {
@@ -32,8 +32,8 @@ export function ToastHost({ position = 'top-right', max = 5 }: ToastHostProps) {
   }, [toasts, dismiss]);
 
   const layout = position === 'top-center'
-    ? { top: 12, left: '50%', transform: 'translateX(-50%)' as const }
-    : { top: 12, right: 12 };
+    ? { top: 64, left: '50%', transform: 'translateX(-50%)' as const }
+    : { top: 64, right: 12 };
 
   const visible = toasts.slice(-max);
 
@@ -57,16 +57,20 @@ export function ToastHost({ position = 'top-right', max = 5 }: ToastHostProps) {
             style={{
               minWidth: 220,
               maxWidth: 360,
-              padding: '8px 12px',
-              borderRadius: 8,
+              padding: '9px 14px',
+              borderRadius: 12,
               background: s.bg,
-              color: '#fff',
-              fontFamily: 'monospace',
+              color: '#f3f4f8',
+              fontFamily: "'Pretendard', system-ui, sans-serif",
               fontSize: 13,
+              fontWeight: 500,
               display: 'flex',
               alignItems: 'center',
               gap: 10,
-              boxShadow: `0 6px 18px rgba(0,0,0,0.4), inset 0 0 0 1px ${s.ring}55`,
+              border: `1px solid ${s.ring}55`,
+              boxShadow: `0 8px 22px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.05)`,
+              backdropFilter: 'blur(18px) saturate(140%)',
+              WebkitBackdropFilter: 'blur(18px) saturate(140%)',
               animation: 'gaesup-toast-in 220ms ease-out both',
             }}
           >

@@ -5,3 +5,5 @@ export { useAudioStore } from './stores/audioStore';
 export { useAmbientBgm } from './hooks/useAmbientBgm';
 export { AudioControls } from './components/AudioControls';
 export type { AudioControlsProps } from './components/AudioControls';
+export { Footsteps } from './components/Footsteps';
+export type { FootstepsProps, SurfaceTag } from './components/Footsteps';
