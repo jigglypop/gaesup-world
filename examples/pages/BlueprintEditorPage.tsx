@@ -2,8 +2,7 @@ import React from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
-import { useAuthStore } from '../../src/admin';
-import { BlueprintEditor } from '../../src/blueprints';
+import { BlueprintEditor, useAuthStore } from '../../src';
 import './styles/BlueprintEditorPage.css';
 
 export function BlueprintEditorPage() {

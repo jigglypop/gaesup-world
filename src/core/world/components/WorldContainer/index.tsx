@@ -24,7 +24,11 @@ function WorldContent({ children, showGrid, showAxes }: {
   );
 }
 
-export function WorldContainer(props: WorldContainerProps) {
+/**
+ * Applies world-related configuration into the shared stores and renders children unchanged.
+ * Prefer this name for new code; `WorldContainer` remains as a backward-compatible alias.
+ */
+export function WorldConfigProvider(props: WorldContainerProps) {
   const setMode = useGaesupStore((state) => state.setMode);
   const setUrls = useGaesupStore((state) => state.setUrls);
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
@@ -70,6 +74,11 @@ export function WorldContainer(props: WorldContainerProps) {
 
   return props.children;
 }
+
+/**
+ * @deprecated Use `WorldConfigProvider` for clearer semantics.
+ */
+export const WorldContainer = WorldConfigProvider;
 
 export function GaesupWorldContent({ children, showGrid, showAxes }: { 
   children?: ReactNode; 

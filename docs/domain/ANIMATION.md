@@ -1,96 +1,148 @@
-# Gaesup 애니메이션 시스템
+# 애니메이션 도메인
 
-이 문서는 Gaesup 프로젝트의 3레이어 아키텍처 기반 애니메이션 시스템을 설명합니다.
+## 개요
 
-## 1. 아키텍처 개요
+Gaesup World의 애니메이션 도메인은 엔티티 타입별 애니메이션 재생을 공통 방식으로 다루기 위한 계층입니다. 현재 구조는 대체로 아래 흐름을 따릅니다.
 
-애니메이션 시스템은 `레이어 가이드`를 철저히 준수하여 **성능**과 **유지보수성**을 확보합니다.
+- 코어 시스템: `AnimationSystem`
+- 브리지: `AnimationBridge`
+- 훅: `useAnimationBridge`
+- UI 컴포넌트: `AnimationController`, `AnimationPlayer`, `AnimationDebugPanel`
 
-```
-┌─────────────────────────────────────────┐
-│  3레이어: Animation Components        │ ← UI, 사용자 입력
-│  - AnimationController, AnimationPlayer │
-│  - AnimationDebugPanel                  │
-├─────────────────────────────────────────┤
-│  2레이어: Animation Hooks               │ ← 상태 동기화, 제어 로직
-│  - useAnimationBridge                   │
-│  - useAnimationPlayer                   │
-├─────────────────────────────────────────┤
-│  1레이어: Animation Core                │ ← 순수 계산, THREE.js
-│  - AnimationEngine                      │
-│  - AnimationBridge                      │
-└─────────────────────────────────────────┘
-```
+즉, 실제 애니메이션 액션 관리는 시스템에서 하고, 외부에서는 브리지와 훅을 통해 제어합니다.
 
-## 2. 레이어별 상세 설명
+## 관련 경로
 
-### **1레이어 (Core)**: 순수 로직
+- `src/core/animation/core/`
+- `src/core/animation/bridge/`
+- `src/core/animation/hooks/`
+- `src/core/animation/components/`
+- `src/core/animation/stores/`
 
--   **`AnimationEngine.ts`**:
-    -   하나의 `AnimationMixer`를 관리하는 순수 클래스입니다.
-    -   애니메이션 재생, 정지, 페이드 인/아웃 등 실제 THREE.js 액션을 직접 제어합니다.
-    -   React에 대한 의존성이 전혀 없습니다.
+## 주요 구성 요소
 
--   **`AnimationBridge.ts`**:
-    -   `character`, `vehicle` 등 각 `AnimationType`에 대한 `AnimationEngine` 인스턴스들을 관리하는 중앙 통제실입니다.
-    -   2레이어의 `useAnimationBridge` 훅에 의해 생성되며, 모든 애니메이션 제어 명령(`AnimationCommand`)을 받아 적절한 엔진에 전달합니다.
-    -   `subscribe` 메서드를 통해 엔진의 상태 변화를 외부(UI 컴포넌트)에 알립니다.
+### `AnimationSystem`
 
-### **2레이어 (Hooks)**: 상태 관리 및 제어
+애니메이션 도메인의 실제 실행 엔진 역할입니다.
 
--   **`useAnimationBridge.ts`**:
-    -   UI 컴포넌트(3레이어)와 애니메이션 코어(1레이어)를 연결하는 핵심 훅입니다.
-    -   **글로벌 `AnimationBridge` 인스턴스**를 참조하여, 애플리케이션 전체에서 동일한 애니메이션 상태를 공유하도록 보장합니다.
-    -   `playAnimation`, `stopAnimation` 등의 제어 함수를 UI 컴포넌트에 제공합니다.
-    -   `useEffect` 내부에서 브리지를 **구독**하여, 엔진의 상태(`currentAnimation`, `isPlaying` 등)가 변경되면 Zustand 스토어의 상태를 업데이트하여 동기화합니다.
+- 엔티티 타입별 애니메이션 상태 관리
+- `THREE.AnimationAction` 등록
+- 현재 애니메이션 재생/정지
+- 가중치, 시간 배율, 믹서 시간 추적
+- 메트릭 생성
 
--   **`useAnimationPlayer.ts`**:
-    -   키보드, 마우스 입력에 따라 캐릭터의 상태(`walk`, `run`, `jump` 등)를 판단하고, `useAnimationBridge`를 통해 적절한 애니메이션을 **자동으로 재생**하는 역할을 합니다.
-    -   패널에서 수동으로 애니메이션을 지정하면, 캐릭터가 움직이지 않는 한 해당 애니메이션을 유지합니다.
+브리지에서 명령을 받으면 실제 처리는 `AnimationSystem`에서 수행합니다.
 
-### **3. 레이어 (Components)**: UI
+### `AnimationBridge`
 
--   **`AnimationController.tsx`**:
-    -   'walk', 'run', 'dance' 등 특정 애니메이션을 즉시 실행하는 버튼들을 제공하는 UI 컴포넌트입니다.
-    -   `useAnimationBridge` 훅의 `playAnimation` 함수를 호출하여 애니메이션을 재생합니다.
+애니메이션 시스템을 외부와 연결하는 진입점입니다.
 
--   **`AnimationPlayer.tsx`**:
-    -   애니메이션 목록을 보여주는 드롭다운과 재생/정지 버튼을 제공합니다.
-    -   `useEffect` 내부에서 브리지를 구독하여, `isPlaying`, `availableAnimations` 등 실제 엔진의 상태가 변경될 때마다 UI를 실시간으로 갱신합니다.
+특징:
 
--   **`AnimationDebugPanel.tsx`**:
-    -   현재 재생 중인 애니메이션, 활성 액션 수 등 상세한 디버깅 정보를 실시간으로 보여줍니다.
-    -   `AnimationPlayer`와 마찬가지로 브리지를 구독하여 데이터를 동기화합니다.
+- 도메인 이름은 `animation`
+- 기본 엔진 타입으로 `character`, `vehicle`, `airplane`를 등록
+- `play`, `stop`, `setWeight`, `setSpeed` 명령 지원
+- snapshot 기반 상태 제공
+- 리스너 구독 지원
 
-## 3. 사용 예시
+핵심 역할:
 
-### 컴포넌트에서 애니메이션 재생하기
+- 외부에서 들어온 애니메이션 명령을 `AnimationSystem`으로 전달
+- 시스템 상태를 snapshot으로 변환
+- store/UI가 읽기 쉬운 형태로 동기화
 
-`useAnimationBridge` 훅을 사용하면 어떤 컴포넌트에서든 쉽게 애니메이션을 제어할 수 있습니다.
+### `useAnimationBridge`
 
-```typescript
-import { useAnimationBridge } from '@hooks/animation';
+React 쪽에서 가장 직접적으로 쓰는 진입점입니다.
 
-function MyComponent() {
-  // 2레이어 훅 호출
+제공 기능:
+
+- `playAnimation(type, animation)`
+- `stopAnimation(type)`
+- `executeCommand(type, command)`
+- `registerAnimations(type, actions)`
+- `currentType`
+- `currentAnimation`
+
+이 훅은 브리지 구독을 통해 현재 애니메이션 상태를 `gaesupStore`의 animation 상태와 동기화합니다.
+
+### `AnimationController`
+
+간단한 프리셋 버튼 UI입니다.
+
+- `idle`
+- `walk`
+- `run`
+- `jump`
+- `fall`
+- `dance`
+- `wave`
+
+선택한 애니메이션을 현재 타입에 바로 재생합니다.
+
+### `AnimationPlayer`
+
+재생 가능한 애니메이션 목록을 보여주고, 선택/재생/정지 흐름을 제공하는 UI 컴포넌트입니다.
+
+### `AnimationDebugPanel`
+
+현재 재생 상태와 디버그 정보를 확인하는 패널입니다.
+
+## 동작 흐름
+
+애니메이션 도메인의 기본 흐름은 아래와 같습니다.
+
+1. 모델 로더 또는 엔티티 쪽에서 `THREE.AnimationAction` 목록을 확보합니다.
+2. `useAnimationBridge().registerAnimations()`로 브리지에 액션을 등록합니다.
+3. UI나 게임 로직에서 `playAnimation()` 또는 `executeCommand()`를 호출합니다.
+4. `AnimationBridge`가 해당 타입의 `AnimationSystem`에 명령을 전달합니다.
+5. 시스템 상태가 바뀌면 snapshot이 갱신됩니다.
+6. 훅과 UI가 snapshot을 기준으로 현재 상태를 반영합니다.
+
+## 타입 단위 관점
+
+현재 구조상 애니메이션은 엔티티 ID 단위라기보다 엔티티 타입 단위로 먼저 관리됩니다.
+
+- `character`
+- `vehicle`
+- `airplane`
+
+이 때문에 공통 캐릭터 계열 제어에는 편하지만, 개별 인스턴스별로 독립적인 애니메이션 풀을 세밀하게 나누는 방향으로 확장하려면 추가 설계가 필요할 수 있습니다.
+
+## 사용 예시
+
+```tsx
+import { useAnimationBridge } from 'gaesup-world';
+
+export function DanceButton() {
   const { playAnimation, currentType } = useAnimationBridge();
 
-  const handleDanceClick = () => {
-    // 1레이어 엔진에 'dance' 애니메이션 재생 명령 전달
-    playAnimation(currentType, 'dance');
-  };
-
   return (
-    <button onClick={handleDanceClick}>춤추기</button>
+    <button onClick={() => playAnimation(currentType, 'dance')}>
+      춤추기
+    </button>
   );
 }
 ```
 
-## 4. 애니메이션 등록 과정
+## 현재 강점
 
-애니메이션은 별도로 등록할 필요 없이 `PhysicsEntity`가 로드될 때 자동으로 브리지에 등록됩니다.
+- 애니메이션 제어 진입점이 비교적 단순합니다.
+- 시스템, 브리지, 훅, UI가 분리되어 있어 재사용이 쉽습니다.
+- 타입별 애니메이션 상태를 공통 흐름으로 관리할 수 있습니다.
+- snapshot 기반이라 디버그 패널/플레이어 UI 연결이 쉽습니다.
 
-1.  **`PhysicsEntity.tsx`**: `useAnimations` 훅을 통해 GLTF 파일에 포함된 모든 애니메이션 액션을 가져옵니다.
-2.  `useEffect` 내부에서 `getGlobalAnimationBridge()`를 호출하여 글로벌 브리지 인스턴스를 가져옵니다.
-3.  브리지의 `registerAnimations(type, actions)` 메서드를 호출하여 로드된 액션들을 해당 타입의 엔진에 등록합니다.
-4.  등록이 완료되면, `AnimationPlayer`나 `AnimationDebugPanel`에서 사용 가능한 애니메이션 목록이 자동으로 업데이트됩니다. 
+## 현재 한계
+
+- 개별 개체 단위보다 타입 단위 관리 성격이 강합니다.
+- 애니메이션 프리셋 이름이 UI에 일부 하드코딩되어 있습니다.
+- 실제 GLTF 클립 이름과 도메인 명령 이름 사이의 매핑 전략은 더 정교해질 수 있습니다.
+
+## 함께 보면 좋은 파일
+
+- `src/core/animation/bridge/AnimationBridge.ts`
+- `src/core/animation/hooks/useAnimationBridge.ts`
+- `src/core/animation/core/AnimationSystem.ts`
+- `src/core/animation/components/AnimationController/index.tsx`
+- `src/core/animation/components/AnimationPlayer/index.tsx`
+- `src/core/animation/components/AnimationDebugPanel/index.tsx`

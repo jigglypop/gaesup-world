@@ -1,6 +1,7 @@
 import 'reflect-metadata'
 import './core/initializeBridges';
 
+export * from './blueprints';
 export {
   GaesupWorld,
   GaesupController,
@@ -16,6 +17,8 @@ export {
   MotionDebugPanel,
   MotionUI,
   Teleport,
+  usePlayerPosition,
+  useStateSystem,
   // Interaction
   Clicker,
   Gamepad,
@@ -60,6 +63,7 @@ export {
   GaesupWorldContent,
   useGaesupStore,
   // NPC
+  NPCSystem,
   useNPCStore,
   // Environment meshes
   Sakura,
@@ -179,6 +183,7 @@ export {
   // Effects
   Footprints,
   // i18n
+  LOCALE_LABEL,
   useI18nStore,
   useTranslate,
   useLocale,
@@ -226,6 +231,7 @@ export {
   getRecipeRegistry,
   useCraftingStore,
   CraftingUI,
+  useUIConfigStore,
 } from './core';
 export type {
   SakuraTreeEntry,
@@ -236,6 +242,7 @@ export type {
   GameTime,
   Season,
   Weekday,
+  CameraOptionType,
   TimeMode,
   TimeSerialized,
   SaveBlob,
@@ -339,5 +346,7 @@ export type {
   BgmTrack,
   AudioSerialized,
   AudioControlsProps,
+  LocaleId,
+  PerfTier,
 } from './core';
-export { GaesupAdmin } from './admin';
+export { GaesupAdmin, useAuthStore, useToast } from './admin';

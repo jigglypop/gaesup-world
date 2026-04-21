@@ -1,7 +1,7 @@
 import { CheckboxInput } from './CheckboxInput';
 import { CAMERA_PRESETS } from './constants';
 import { RangeInput } from './RangeInput';
-import { useGaesupStore } from '../../../src/core';
+import { useGaesupStore } from '../../../src';
 
 interface CameraSettingsProps {
   mode: { control: string };

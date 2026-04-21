@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
 import {
+  getEventRegistry,
+  LOCALE_LABEL,
   SceneFader,
   setDefaultToonMode,
   useAudioStore,
@@ -15,10 +17,9 @@ import {
   useTownStore,
   useWalletStore,
   useWeatherStore,
+  type LocaleId,
+  type PerfTier,
 } from '../../../src';
-import { LOCALE_LABEL, type LocaleId } from '../../../src/core/i18n/types';
-import type { PerfTier } from '../../../src/core/perf/types';
-import { getEventRegistry } from '../../../src/core/events/registry/EventRegistry';
 import Info from '../info';
 import { Teleport } from '../teleport';
 

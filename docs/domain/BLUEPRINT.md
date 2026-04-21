@@ -1,78 +1,237 @@
-# Blueprint 아키텍처 가이드
+# 블루프린트 도메인
 
-이 문서는 `src/blueprints`에 위치한 데이터 중심 설계와 `src/core`의 각 도메인이 이 데이터를 어떻게 활용하여 상호작용하는지에 대한 가이드입니다.
+## 개요
 
-## 1. 핵심 철학: 데이터 중심 설계 (Data-Driven Design)
+블루프린트 도메인은 엔티티를 데이터 중심으로 정의하고, 이를 런타임 객체로 연결하기 위한 계층입니다. 캐릭터, 차량 같은 대상을 코드 안에서 직접 하드코딩하기보다, 블루프린트 정의와 팩토리 흐름을 통해 생성하는 방향을 담당합니다.
 
--   **"코드가 아닌 데이터를 수정하라"**: 게임의 동작(캐릭터 스탯, 애니메이션, 물리 속성 등)을 변경할 때 코드를 수정하는 대신, **순수 데이터 파일(`Blueprint`)**을 수정하는 것을 원칙으로 합니다.
--   **명확한 역할 분리**:
-    -   `src/blueprints`: 게임의 모든 것을 정의하는 **"설계도"**. 순수 TypeScript 객체로만 구성됩니다.
-    -   `src/core`: 설계도를 읽어 실제 로직을 실행하는 **"엔진"**.
+현재 블루프린트 관련 기능은 `src/blueprints` 아래에 모여 있습니다.
 
-## 2. Blueprint 시스템의 구성 요소
+## 관련 경로
 
-### 가. `blueprints/types.ts`
--   모든 Blueprint 타입(e.g., `CharacterBlueprint`, `VehicleBlueprint`)을 정의하는 중앙 허브입니다.
--   새로운 종류의 엔티티를 추가하고 싶다면, 먼저 이곳에 타입을 정의해야 합니다.
+- `src/blueprints/types.ts`
+- `src/blueprints/registry.ts`
+- `src/blueprints/characters/`
+- `src/blueprints/vehicles/`
+- `src/blueprints/factory/`
+- `src/blueprints/core/`
+- `src/blueprints/hooks/`
+- `src/blueprints/components/`
 
-### 나. `blueprints/characters`, `blueprints/vehicles` 등
--   실제 데이터 파일이 위치하는 곳입니다.
--   예: `warrior.ts`는 `CharacterBlueprint` 타입에 맞는 전사 캐릭터의 모든 데이터를 정의합니다.
+## 주요 구성 요소
 
-    ```typescript
-    // src/blueprints/characters/warrior.ts
-    export const WARRIOR_BLUEPRINT: CharacterBlueprint = {
-      id: 'warrior',
-      type: 'character',
-      physics: { mass: 80, moveSpeed: 5 },
-      animations: { idle: 'warrior_idle.glb' },
-      // ...
-    };
-    ```
+### `types.ts`
 
-### 다. `blueprints/registry.ts`
--   프로젝트 내의 모든 Blueprint를 한곳에 모아 등록하는 **중앙 등록소**입니다.
--   엔진이 특정 Blueprint를 찾을 때 이 등록소를 사용합니다. `BlueprintRegistry.get('warrior')`와 같이 ID로 쉽게 조회할 수 있습니다.
+블루프린트 도메인의 기본 타입 정의가 들어 있습니다.
 
-### 라. `blueprints/factory/BlueprintFactory.ts`
--   Blueprint 데이터를 기반으로 실제 게임 엔티티(Three.js 객체, Rapier Body 등)를 생성하는 **팩토리 클래스**입니다.
--   `createCharacter(blueprint)`와 같은 메서드를 통해 데이터와 실제 월드 객체를 연결합니다.
+- 캐릭터 블루프린트
+- 차량 블루프린트
+- 공통 블루프린트 타입
+- 기타 블루프린트 관련 타입
 
-## 3. 작동 흐름
+새 블루프린트 계열을 추가할 때는 보통 여기서 타입 체계를 먼저 확장하게 됩니다.
 
-```mermaid
-graph TD
-    subgraph "1. Data Definition (blueprints)"
-        A[Blueprint Types<br/>(types.ts)] --> B{Character & Vehicle<br/>Blueprints};
-        B --> C[Blueprint Registry<br/>(registry.ts)];
-    end
+### `registry.ts`
 
-    subgraph "2. Entity Creation (core)"
-        D[useSpawnFromBlueprint<br/>(hook)] -- requests --> E[BlueprintFactory];
-        C -- provides data --> E;
-        E -- creates --> F[Character/Vehicle<br/>Entity];
-    end
+중앙 블루프린트 저장소입니다.
 
-    subgraph "3. World"
-        F -- is added to --> G[3D World];
-    end
+현재 특징:
 
-    style B fill:#cde4ff
-    style C fill:#cde4ff
-    style E fill:#d5e8d4
-    style F fill:#d5e8d4
+- 싱글턴 형태
+- 기본 블루프린트 자동 등록
+- `register`, `get`, `getByType`, `getAll`, `has`, `remove`, `clear` 제공
+
+기본 등록 대상:
+
+- `WARRIOR_BLUEPRINT`
+- `FIRE_MAGE_BLUEPRINT`
+- `BASIC_KART_BLUEPRINT`
+
+즉, 코드 시작 시점에 일부 대표 블루프린트는 바로 사용할 수 있습니다.
+
+### `characters/`, `vehicles/`
+
+실제 블루프린트 데이터가 놓이는 위치입니다.
+
+예:
+
+- `characters/warrior.ts`
+- `characters/mage.ts`
+- `vehicles/kart.ts`
+
+이 파일들은 실제 게임 로직이 아니라 “엔티티를 어떻게 정의할지”에 가까운 정적 데이터 역할을 합니다.
+
+### `BlueprintFactory`
+
+블루프린트 정의를 실제 엔티티 객체로 연결하는 팩토리입니다.
+
+주요 기능:
+
+- `createEntity(blueprint, config)`
+- `createFromId(blueprintId, config)`
+- `createFromDefinition(definition, config)`
+- `registerComponentFactory(type, factory)`
+- `getAvailableComponentTypes()`
+
+내부적으로는:
+
+- `BlueprintConverter`
+- `ComponentRegistry`
+- `BlueprintEntity`
+
+와 연결됩니다.
+
+즉, 블루프린트 정의를 받아서 실제 런타임 엔티티 껍데기로 바꾸는 흐름의 중심입니다.
+
+### `BlueprintConverter`
+
+도메인별 블루프린트 타입을 런타임에서 쓰는 공통 정의 형식으로 변환하는 역할을 맡습니다.
+
+### `BlueprintEntity`
+
+팩토리에서 만들어지는 런타임 엔티티 래퍼입니다. 블루프린트 정의, 그룹 ref, rigid body ref 등을 묶어서 관리합니다.
+
+### `BlueprintLoader`
+
+외부 JSON 또는 경로 기반으로 블루프린트를 읽어오는 도구입니다.
+
+- `load(path)`
+- `loadFromJSON(json)`
+- `get(id)`
+- `getAll()`
+- `clear()`
+
+즉, 정적 TS 파일 외에도 JSON 기반 블루프린트 흐름을 열어두고 있습니다.
+
+### `ComponentRegistry`
+
+블루프린트 엔티티를 구성하는 컴포넌트 팩토리를 등록하는 저장소입니다. `BlueprintFactory`는 초기화 시점에 캐릭터, 차량, 비행기 계열 기본 컴포넌트 팩토리를 등록합니다.
+
+## 주요 훅과 컴포넌트
+
+### `useBlueprint`
+
+레지스트리에서 블루프린트를 조회하기 위한 훅입니다.
+
+대표 제공:
+
+- `useBlueprint`
+- `useCharacterBlueprint`
+- `useVehicleBlueprint`
+- `useAirplaneBlueprint`
+- `useBlueprintsByType`
+
+### `useSpawnFromBlueprint`
+
+블루프린트를 기준으로 월드에 엔티티를 배치하는 훅입니다.
+
+주요 기능:
+
+- `spawnEntity(blueprintId, options)`
+- `spawnAtCursor(blueprintId)`
+- `spawnMultiple(blueprintId, count, options)`
+- `isSpawning`
+- `lastSpawnedEntity`
+
+이 훅은 내부적으로:
+
+- `blueprintRegistry`
+- `WorldBridge`
+- `gaesupStore`
+
+를 함께 사용합니다.
+
+즉, 단순 조회 훅이 아니라 실제 월드 배치 흐름과 연결된 훅입니다.
+
+### `BlueprintSpawner`
+
+지정한 블루프린트 또는 블루프린트 ID를 기준으로 RigidBody와 Group 안에 런타임 엔티티를 생성하는 React 컴포넌트입니다.
+
+역할:
+
+- `BlueprintFactory` 호출
+- `RigidBody` 생성
+- `innerGroupRef`, `outerGroupRef`, `rigidBodyRef` 연결
+- 언마운트 시 엔티티 dispose
+
+### 기타 UI
+
+현재 블루프린트 도메인에는 아래 UI도 포함됩니다.
+
+- `BlueprintEditor`
+- `BlueprintPreview`
+- `BlueprintPanel`
+- 에디터용 노드 컴포넌트들
+
+즉, 블루프린트는 단순 데이터 저장소가 아니라 편집 UI까지 같이 포함한 비교적 큰 도메인입니다.
+
+## 동작 흐름
+
+기본 흐름은 아래처럼 볼 수 있습니다.
+
+1. 블루프린트 데이터를 `characters/`, `vehicles/` 등에서 정의합니다.
+2. `blueprintRegistry`에 등록합니다.
+3. 필요할 때 `useBlueprint()` 또는 `useBlueprintsByType()`로 조회합니다.
+4. `BlueprintFactory` 또는 `BlueprintSpawner`를 통해 런타임 엔티티를 만듭니다.
+5. `useSpawnFromBlueprint()`를 쓰는 경우 `WorldBridge`를 통해 월드 오브젝트로 추가합니다.
+
+## 현재 강점
+
+- 데이터 정의와 런타임 생성 흐름이 분리되어 있습니다.
+- 중앙 레지스트리 구조라 조회와 확장이 쉽습니다.
+- 팩토리와 컴포넌트 레지스트리 구조 덕분에 확장 가능성이 높습니다.
+- 훅, 스포너, 에디터 UI까지 이미 연결되어 있습니다.
+
+## 현재 한계
+
+- 일부 구현은 아직 얇은 래퍼 수준이라 실제 게임 로직과 더 강하게 결합될 여지가 있습니다.
+- 블루프린트 정의, 월드 오브젝트 메타데이터, 런타임 컴포넌트 사이의 경계가 더 명확해질 필요가 있습니다.
+- 타입과 런타임 필드 이름이 장기적으로 더 정리되어야 합니다.
+
+## 사용 예시
+
+### 레지스트리 조회
+
+```ts
+import { blueprintRegistry } from 'gaesup-world';
+
+const warrior = blueprintRegistry.get('warrior');
 ```
 
-1.  **정의 (Definition)**: `blueprints` 폴더에서 캐릭터, 차량 등의 속성을 데이터로 정의하고 `BlueprintRegistry`에 등록합니다.
-2.  **생성 요청 (Request)**: React 컴포넌트에서 `useSpawnFromBlueprint` 같은 훅을 사용하여 'warrior' ID를 가진 엔티티 생성을 요청합니다.
-3.  **팩토리 작동 (Factory)**: `BlueprintFactory`는 `BlueprintRegistry`에서 'warrior' 데이터를 조회합니다.
-4.  **인스턴스화 (Instantiation)**: 조회된 데이터를 바탕으로 `MotionSystem`, `AnimationSystem` 등에 필요한 컴포넌트와 설정을 포함한 실제 게임 엔티티를 생성하여 월드에 추가합니다.
+### 훅으로 스폰
 
-## 4. 왜 이 구조를 사용하는가?
+```tsx
+import { useSpawnFromBlueprint } from 'gaesup-world';
 
--   **생산성**: 기획자나 디자이너가 코드 베이스를 깊이 이해하지 않고도 `blueprints` 폴더의 데이터만 수정하여 게임 밸런스를 맞추거나 콘텐츠를 추가할 수 있습니다.
--   **유지보수**: 로직과 데이터가 분리되어 있어, 특정 캐릭터의 움직임을 수정하고 싶을 때 `motions` 코드를 건드리는 대신 해당 캐릭터의 `Blueprint` 파일만 변경하면 됩니다.
--   **확장성**: 새로운 종류의 자동차를 추가하고 싶다면, `VehicleBlueprint` 형식에 맞는 데이터 파일을 추가하고 `registry`에 등록하기만 하면 됩니다. 코어 로직 변경이 필요 없습니다.
--   **협업**: 프론트엔드 개발자는 코어 로직에, 게임 디자이너는 데이터에 집중하여 효율적인 협업이 가능합니다.
+export function SpawnButton() {
+  const { spawnEntity, isSpawning } = useSpawnFromBlueprint();
 
-이 아키텍처는 프로젝트가 커지고 복잡해지더라도 일관성과 유지보수 용이성을 유지하는 핵심적인 역할을 합니다. 
+  return (
+    <button
+      disabled={isSpawning}
+      onClick={() => spawnEntity('warrior', { position: [0, 0, 0] })}
+    >
+      전사 스폰
+    </button>
+  );
+}
+```
+
+### 컴포넌트로 스폰
+
+```tsx
+import { BlueprintSpawner } from 'gaesup-world';
+
+<BlueprintSpawner blueprintId="warrior" position={[0, 0, 0]}>
+  {/* 실제 렌더링 children */}
+</BlueprintSpawner>
+```
+
+## 함께 보면 좋은 파일
+
+- `src/blueprints/registry.ts`
+- `src/blueprints/factory/BlueprintFactory.ts`
+- `src/blueprints/factory/BlueprintConverter.ts`
+- `src/blueprints/hooks/useBlueprint.ts`
+- `src/blueprints/hooks/useSpawnFromBlueprint.ts`
+- `src/blueprints/components/BlueprintSpawner/index.tsx`
+- `src/blueprints/components/BlueprintEditor/index.tsx`

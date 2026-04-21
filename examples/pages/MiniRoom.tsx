@@ -9,11 +9,9 @@ import { WorldPageProps } from './types';
 import {
   Clicker, GroundClicker, GaesupController, GaesupWorld,
   GaesupWorldContent, useNPCStore, useGaesupStore,
+  Fire, NPCSystem, useStateSystem,
+  type CameraOptionType,
 } from '../../src';
-import Fire from '../../src/core/building/components/mesh/fire/index';
-import { NPCSystem } from '../../src/core/npc/components/NPCSystem';
-import { useStateSystem } from '../../src/core/motions/hooks/useStateSystem';
-import { CameraOptionType } from '../../src/core/types/camera';
 import { CHARACTER_URL, VEHICLE_URL, AIRPLANE_URL } from '../config/constants';
 import '../style.css';
 

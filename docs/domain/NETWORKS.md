@@ -1,136 +1,202 @@
-# Networks Domain Design
+# 네트워크 도메인
 
-## �� 개요
+## 개요
 
-Networks 도메인은 실시간 멀티플레이어 환경을 구축하기 위한 포괄적인 시스템을 제공합니다. WebSocket을 기반으로 플레이어 간의 상태를 동기화하고, 연결 관리, 데이터 전송 등 멀티플레이어 게임에 필요한 핵심 기능을 담당합니다.
+네트워크 도메인은 멀티플레이어 연결, 원격 플레이어 상태 동기화, 메시지 전송, 방문 스냅샷 기능을 담당합니다. 현재 구조는 코어 네트워크 매니저, React 훅, UI 컴포넌트, 방문 동기화 서브도메인으로 나뉘어 있습니다.
 
-## 🏗️ 아키텍처
+핵심 구성:
 
-### Layer 1: Core Engine
-- **PlayerNetworkManager**: WebSocket 연결, 메시지 핸들링 등 서버와의 통신을 담당하는 핵심 클래스입니다.
-- **PlayerPositionTracker**: 로컬 플레이어의 위치와 상태를 주기적으로 추적하여 서버로 전송합니다.
+- 코어: `PlayerNetworkManager`, `PlayerPositionTracker`, `NetworkSystem`, `NPCNetworkManager`, `MessageQueue`, `ConnectionPool`
+- 훅: `useMultiplayer`, `usePlayerNetwork`, `useNetworkBridge`, `useNetworkMessage`, `useNetworkGroup`, `useNetworkStats`, `useNPCConnection`
+- 컴포넌트: `ConnectionForm`, `MultiplayerCanvas`, `PlayerInfoOverlay`, `RemotePlayer`, `NetworkDebugPanel`
+- 방문 기능: `useVisitRoom`, `serializer`, `channel`
 
-### Layer 2: Bridge & State
-- **useMultiplayer 훅**: `PlayerNetworkManager`와 `PlayerPositionTracker`를 사용하여 멀티플레이어 로직을 관리하고, 컴포넌트에서 사용할 상태와 함수를 제공하는 중앙 컨트롤러 역할을 합니다.
-- **Zustand Stores**: 연결 상태, 플레이어 목록, 오류 메시지 등 UI와 관련된 상태를 관리합니다.
+## 관련 경로
 
-### Layer 3: UI & Hooks
-- **ConnectionForm**: 사용자가 서버에 접속하기 위한 정보를 입력하는 UI 컴포넌트입니다.
-- **MultiplayerCanvas**: 로컬 및 원격 플레이어들을 3D 월드에 렌더링합니다.
-- **PlayerInfoOverlay**: 현재 연결 상태, 플레이어 목록, 접속 해제 버튼 등을 제공하는 UI 오버레이입니다.
+- `src/core/networks/core/`
+- `src/core/networks/hooks/`
+- `src/core/networks/components/`
+- `src/core/networks/stores/`
+- `src/core/networks/visit/`
+- `src/core/networks/bridge/`
 
-## 📁 디렉토리 구조
+## 주요 구성 요소
 
-```
-src/core/networks/
-├── bridge/                 # 도메인 간 통신 (필요 시 확장)
-├── components/
-│   ├── ConnectionForm.tsx      # 연결 UI
-│   ├── MultiplayerCanvas.tsx   # 3D 렌더링 영역
-│   ├── PlayerInfoOverlay.tsx   # 정보 오버레이
-│   └── RemotePlayer.tsx        # 원격 플레이어 컴포넌트
-├── config/
-│   └── default.ts            # 기본 네트워크 설정
-├── core/
-│   ├── PlayerNetworkManager.ts # WebSocket 통신 관리
-│   └── PlayerPositionTracker.ts# 플레이어 상태 추적
-├── hooks/
-│   ├── useMultiplayer.ts       # 핵심 멀티플레이어 훅
-│   └── usePlayerNetwork.ts     # PlayerNetworkManager 래퍼 훅
-├── stores/                   # Zustand 상태 관리
-├── types/                    # 공통 타입 정의
-└── index.ts                  # 도메인 진입점
-```
+### `PlayerNetworkManager`
 
-## 🔧 핵심 기능
+플레이어 단위 WebSocket 연결과 메시지 송수신을 담당하는 핵심 매니저입니다.
 
-### 1. 실시간 플레이어 동기화
-- **상태 전송**: 로컬 플레이어의 위치, 회전, 애니메이션 상태 등을 실시간으로 서버에 전송합니다.
-- **상태 수신**: 서버로부터 다른 플레이어들의 상태를 수신하여 `RemotePlayer` 컴포넌트에 반영합니다.
+주요 역할:
 
-### 2. 연결 관리
-- **연결 UI**: `ConnectionForm` 컴포넌트를 통해 서버 URL, 방 ID, 플레이어 이름을 입력받아 연결을 시작합니다.
-- **자동 재연결**: 연결이 끊어졌을 경우를 대비한 로직 (구현 예정).
-- **상태 관리**: 연결 중, 연결됨, 연결 끊김, 오류 등 다양한 연결 상태를 관리하고 UI에 피드백을 제공합니다.
+- 서버 연결/해제
+- 플레이어 입장/퇴장 이벤트 처리
+- 플레이어 상태 수신
+- 채팅 메시지 수신
+- 핑/오류 처리
 
-### 3. 간편한 사용성
-- **`useMultiplayer` 훅**: 단일 훅을 통해 멀티플레이어의 모든 기능을 제어할 수 있습니다.
-- **선언적 컴포넌트**: `MultiplayerCanvas`, `PlayerInfoOverlay` 등 직관적인 컴포넌트를 조합하여 멀티플레이어 씬을 구성합니다.
+`useMultiplayer`는 이 매니저를 직접 감싸는 상위 진입점에 가깝습니다.
 
-## 📊 타입 정의
+### `PlayerPositionTracker`
 
-### 주요 타입
-```typescript
-// 플레이어 상태
-export interface PlayerState {
-  position: [number, number, number];
-  rotation: [number, number, number];
-  animation: string;
-  name: string;
-  color: string;
-}
+로컬 플레이어 위치를 일정 주기로 읽어 네트워크로 보내는 추적기입니다.
 
-// useMultiplayer 훅 반환 타입
-export interface UseMultiplayerResult {
-  connect: (options: ConnectOptions) => void;
-  disconnect: () => void;
-  startTracking: (playerRef: React.RefObject<any>) => void;
-  stopTracking: () => void;
-  players: Map<string, PlayerState>;
-  connectionStatus: 'disconnected' | 'connecting' | 'connected';
-  error: string | null;
-  isConnected: boolean;
-}
+관련 설정:
 
-// 연결 옵션
-export interface ConnectOptions {
-  url: string;
-  roomId: string;
-  playerName: string;
-  playerColor: string;
-}
-```
+- `updateRate`
+- `velocityThreshold`
+- `sendRateLimit`
 
-## 🚀 사용 예제 (`examples/pages/NetworkMultiplayerPage.tsx`)
+즉, 무조건 매 프레임 보내는 대신 제한된 빈도로 플레이어 상태를 전송합니다.
+
+### `NetworkSystem`
+
+네트워크 관련 내부 시스템 계층입니다. 플레이어 멀티플레이어뿐 아니라 NPC 네트워크와 메시지 큐, 그룹 관리까지 더 넓은 범위를 다룹니다.
+
+포함되는 기능:
+
+- 메시지 배치 처리
+- 근접 기반 그룹 업데이트
+- 연결 정리
+- 통계 업데이트
+- snapshot 생성
+
+### `NPCNetworkManager`
+
+NPC 간 연결, 그룹, 메시지 전송을 관리하는 매니저입니다. 플레이어 멀티플레이어와는 조금 다른 레벨의 네트워크 추상화를 담당합니다.
+
+### `MessageQueue`, `ConnectionPool`
+
+네트워크 부하와 연결 수를 관리하는 유틸리티성 코어 구성 요소입니다.
+
+## 주요 훅
+
+### `useMultiplayer`
+
+멀티플레이어 사용 시 가장 직접적으로 쓰는 훅입니다.
+
+주요 제공:
+
+- `connect(options)`
+- `disconnect()`
+- `startTracking(playerRef)`
+- `stopTracking()`
+- `updateConfig(config)`
+- `sendChat(text, options?)`
+- `players`
+- `isConnected`
+- `connectionStatus`
+- `error`
+- `ping`
+- `speechByPlayerId`
+- `localSpeechText`
+
+즉, UI 입장에서는 이 훅 하나로 대부분의 멀티플레이어 흐름을 다룰 수 있습니다.
+
+### 그 외 훅
+
+- `usePlayerNetwork`
+- `useNetworkBridge`
+- `useNetworkMessage`
+- `useNetworkGroup`
+- `useNetworkStats`
+- `useNPCConnection`
+
+이 훅들은 좀 더 세분화된 기능이나 디버그/도메인 통합 상황에서 사용됩니다.
+
+## UI 컴포넌트
+
+### `ConnectionForm`
+
+방 ID, 이름, 색상 등 접속 정보를 받아 연결을 시작하는 UI입니다.
+
+### `MultiplayerCanvas`
+
+로컬 플레이어와 원격 플레이어를 월드에 그리는 3D 캔버스 계층입니다.
+
+### `PlayerInfoOverlay`
+
+연결 상태, 채팅, 접속 해제 등 멀티플레이어 HUD 역할을 하는 오버레이입니다.
+
+### `RemotePlayer`
+
+다른 사용자 플레이어를 렌더링하는 컴포넌트입니다.
+
+### `NetworkDebugPanel`
+
+네트워크 상태를 확인하기 위한 디버그 패널입니다.
+
+## 방문 기능
+
+`visit/` 하위 도메인은 월드 상태를 스냅샷 형태로 직렬화/적용하는 기능을 담당합니다.
+
+대표 항목:
+
+- `useVisitRoom`
+- `serializer.ts`
+- `channel.ts`
+
+즉, 단순 실시간 멀티플레이어 외에 “방문/복제/상태 반영” 같은 별도 흐름도 고려된 구조입니다.
+
+## 동작 흐름
+
+멀티플레이어 기본 흐름은 아래와 같습니다.
+
+1. `useMultiplayer()`를 초기화합니다.
+2. `ConnectionForm` 등에서 접속 정보를 받아 `connect()`를 호출합니다.
+3. `PlayerNetworkManager`가 서버에 연결합니다.
+4. `startTracking()`으로 로컬 플레이어 바디를 연결합니다.
+5. `PlayerPositionTracker`가 위치와 상태를 전송합니다.
+6. 원격 플레이어 상태가 들어오면 `players` 맵이 갱신됩니다.
+7. `MultiplayerCanvas`와 `RemotePlayer`가 이를 렌더링합니다.
+8. 필요하면 `sendChat()`으로 근접 채팅도 전송합니다.
+
+## 현재 강점
+
+- 플레이어 멀티플레이어 흐름과 내부 네트워크 시스템이 모두 존재합니다.
+- `useMultiplayer` 진입점이 비교적 단순합니다.
+- UI 컴포넌트 구성이 이미 준비되어 있어 데모 연결이 쉽습니다.
+- 채팅, 핑, 상태 추적까지 포함돼 있어 실제 플레이 흐름을 시험하기 좋습니다.
+
+## 현재 한계
+
+- 플레이어 멀티플레이어와 NPC 네트워크 계층이 함께 있어 구조 파악 난도가 높습니다.
+- 일부 내부 시스템은 설계 폭이 넓은 반면, 외부 사용 가이드는 아직 얇은 편입니다.
+- strict 타입 기준으로는 일부 방문/네트워크 타입 정리가 남아 있습니다.
+
+## 사용 예시
 
 ```tsx
-import { useMultiplayer, ConnectionForm, PlayerInfoOverlay, MultiplayerCanvas } from '../../src/core/networks';
+import { ConnectionForm, MultiplayerCanvas, PlayerInfoOverlay, useMultiplayer } from 'gaesup-world';
 
-export function NetworkMultiplayerPage() {
-  const playerRef = useRef<any>(null);
-  
+export function NetworkPage() {
   const multiplayer = useMultiplayer({
     config: defaultMultiplayerConfig,
-    characterUrl: CHARACTER_URL
   });
 
   if (!multiplayer.isConnected) {
-    return (
-      <ConnectionForm
-        onConnect={(options) => multiplayer.connect(options)}
-        // ...
-      />
-    );
+    return <ConnectionForm onConnect={multiplayer.connect} />;
   }
 
   return (
     <>
-      <MultiplayerCanvas
-        players={multiplayer.players}
-        playerRef={playerRef}
-        // ...
-      />
-      
+      <MultiplayerCanvas players={multiplayer.players} />
       <PlayerInfoOverlay
         state={multiplayer}
-        onDisconnect={() => multiplayer.disconnect()}
-        // ...
+        onDisconnect={multiplayer.disconnect}
+        onSendChat={(text) => multiplayer.sendChat(text)}
       />
     </>
   );
 }
 ```
-1.  **`useMultiplayer`** 훅을 호출하여 멀티플레이어 인스턴스를 가져옵니다.
-2.  연결되어 있지 않다면 **`ConnectionForm`** 을 렌더링합니다.
-3.  연결되면 **`MultiplayerCanvas`** 와 **`PlayerInfoOverlay`** 를 렌더링합니다.
-4.  `connect`, `disconnect` 등의 함수를 호출하여 네트워크 상태를 제어합니다. 
+
+## 함께 보면 좋은 파일
+
+- `src/core/networks/hooks/useMultiplayer.ts`
+- `src/core/networks/core/PlayerNetworkManager.ts`
+- `src/core/networks/core/PlayerPositionTracker.ts`
+- `src/core/networks/core/NetworkSystem.ts`
+- `src/core/networks/components/ConnectionForm.tsx`
+- `src/core/networks/components/MultiplayerCanvas.tsx`
+- `src/core/networks/components/PlayerInfoOverlay.tsx`
+- `src/core/networks/visit/useVisitRoom.ts`

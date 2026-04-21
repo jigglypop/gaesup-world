@@ -1,112 +1,250 @@
-# Networks API
+# 네트워크 API
 
-이 문서는 `networks` 도메인에서 제공하는 API, 컴포넌트 및 훅에 대한 기술 참조입니다.
+## 개요
 
-## 1. Hooks
+이 문서는 현재 코드 기준으로 네트워크 도메인의 외부 사용 API를 정리합니다.
 
-### `useMultiplayer`
+관련 경로:
 
-멀티플레이어 기능의 핵심 진입점입니다. `PlayerNetworkManager`와 `PlayerPositionTracker`를 내부적으로 관리하며, 멀티플레이어 세션을 제어하는 데 필요한 모든 상태와 함수를 제공합니다.
+- `src/core/networks/index.ts`
+- `src/core/networks/hooks/*`
+- `src/core/networks/components/*`
+- `src/core/networks/types/index.ts`
+- `src/core/networks/config/defaultConfig.ts`
 
--   **위치**: `src/core/networks/hooks/useMultiplayer.ts`
+## 주요 export
 
-**Props**
+대표적으로 아래 API를 외부에서 자주 사용합니다.
 
-| 이름 | 타입 | 필수 | 설명 |
-| :--- | :--- | :--- | :--- |
-| `config` | `MultiplayerConfig` | 예 | 서버 URL, 틱레이트 등 네트워크 설정을 담은 객체입니다. |
-| `characterUrl` | `string` | 예 | 원격 플레이어를 렌더링할 때 사용할 기본 캐릭터 모델의 URL입니다. |
+- 훅: `useMultiplayer`, `usePlayerNetwork`, `useNetworkBridge`, `useNetworkMessage`, `useNetworkGroup`, `useNetworkStats`, `useNPCConnection`
+- 컴포넌트: `ConnectionForm`, `MultiplayerCanvas`, `PlayerInfoOverlay`, `RemotePlayer`, `NetworkDebugPanel`, `NPCNetworkVisualizer`
+- 설정: `defaultMultiplayerConfig`
+- 타입: `MultiplayerConfig`, `MultiplayerState`, `PlayerState`, `NetworkConfig`
+- 방문 기능: `useVisitRoom`
 
-**반환값 (`UseMultiplayerResult`)**
+## 훅 API
 
-| 이름 | 타입 | 설명 |
-| :--- | :--- | :--- |
-| `connect` | `(options: ConnectOptions) => void` | 지정된 옵션으로 WebSocket 서버에 연결을 시작합니다. |
-| `disconnect` | `() => void` | 현재 연결을 종료합니다. |
-| `startTracking` | `(playerRef: RefObject<any>) => void` | 로컬 플레이어(`playerRef`)의 상태 추적을 시작하여 서버로 전송합니다. |
-| `stopTracking` | `() => void` | 로컬 플레이어의 상태 추적을 중지합니다. |
-| `players` | `Map<string, PlayerState>` | 현재 방에 있는 모든 원격 플레이어의 ID와 상태를 담은 맵입니다. |
-| `connectionStatus` | `'disconnected' \| 'connecting' \| 'connected'` | 현재 WebSocket 연결 상태입니다. |
-| `error` | `string \| null` | 연결 또는 통신 중 발생한 오류 메시지입니다. |
-| `isConnected` | `boolean` | `connectionStatus`가 `'connected'`인지 여부를 나타내는 편의 상태입니다. |
+### `useMultiplayer(options)`
 
----
+가장 대표적인 멀티플레이어 훅입니다.
 
-## 2. Components
+입력:
 
-### `<ConnectionForm />`
+```ts
+type UseMultiplayerOptions = {
+  config: MultiplayerConfig;
+  characterUrl?: string;
+  rigidBodyRef?: RefObject<RapierRigidBody>;
+};
+```
 
-사용자가 멀티플레이어 세션에 참여하는 데 필요한 정보를 입력하는 UI 컴포넌트입니다.
+반환값 성격:
 
--   **위치**: `src/core/networks/components/ConnectionForm.tsx`
+- 연결 제어
+- 추적 제어
+- 채팅 전송
+- 플레이어 목록
+- 상태/오류/핑
 
-**Props**
+대표 반환 필드:
 
-| 이름 | 타입 | 필수 | 설명 |
-| :--- | :--- | :--- | :--- |
-| `onConnect` | `(options: ConnectOptions) => void` | "연결" 버튼 클릭 시 호출되며, 사용자가 입력한 연결 옵션을 인자로 전달합니다. |
-| `isConnecting` | `boolean` | 아니요 | 현재 연결 시도 중인지 여부를 나타냅니다. `true`이면 UI가 비활성화됩니다. |
-| `error` | `string \| null` | 아니요 | 연결 실패 시 표시할 오류 메시지입니다. |
+- `connect(options)`
+- `disconnect()`
+- `startTracking(playerRef)`
+- `stopTracking()`
+- `updateConfig(config)`
+- `sendChat(text, options?)`
+- `isConnected`
+- `connectionStatus`
+- `players`
+- `localPlayerId`
+- `roomId`
+- `error`
+- `ping`
+- `speechByPlayerId`
+- `localSpeechText`
 
-### `<MultiplayerCanvas />`
+### `usePlayerNetwork`
 
-로컬 플레이어와 서버로부터 받은 원격 플레이어들을 3D 공간에 렌더링하는 컨테이너 컴포넌트입니다.
+플레이어 네트워크 쪽에 더 직접 가까운 훅입니다.
 
--   **위치**: `src/core/networks/components/MultiplayerCanvas.tsx`
+### `useNetworkBridge`
 
-**Props**
+브리지 기반 네트워크 접근이 필요한 경우 사용하는 훅입니다.
 
-| 이름 | 타입 | 필수 | 설명 |
-| :--- | :--- | :--- | :--- |
-| `players` | `Map<string, PlayerState>` | `useMultiplayer` 훅에서 받은 원격 플레이어 맵입니다. |
-| `playerRef` | `RefObject<any>` | 로컬 플레이어의 `ref` 객체입니다. `GaesupController`에 연결된 `ref`를 전달해야 합니다. |
-| `config` | `MultiplayerConfig` | 틱레이트 등 렌더링 관련 설정입니다. |
-| `characterUrl` | `string` | 플레이어의 기본 캐릭터 모델 URL입니다. |
-| `vehicleUrl` | `string` | 아니요 | 플레이어가 탑승할 수 있는 차량 모델 URL입니다. |
-| `airplaneUrl` | `string` | 아니요 | 플레이어가 탑승할 수 있는 비행기 모델 URL입니다. |
+### `useNetworkMessage`
 
-### `<PlayerInfoOverlay />`
+메시지 처리 중심 훅입니다.
 
-현재 멀티플레이어 상태(연결 상태, 플레이어 목록 등)를 화면에 표시하고, 연결 해제 기능을 제공하는 UI 오버레이입니다.
+### `useNetworkGroup`
 
--   **위치**: `src/core/networks/components/PlayerInfoOverlay.tsx`
+그룹 관련 훅입니다.
 
-**Props**
+### `useNetworkStats`
 
-| 이름 | 타입 | 필수 | 설명 |
-| :--- | :--- | :--- | :--- |
-| `state` | `UseMultiplayerResult` | `useMultiplayer` 훅이 반환하는 전체 상태 객체입니다. |
-| `playerName` | `string` | 현재 로컬 플레이어의 이름입니다. |
-| `onDisconnect` | `() => void` | "연결 해제" 버튼 클릭 시 호출될 콜백 함수입니다. |
+통계 관련 훅입니다.
 
-### `<RemotePlayer />`
+### `useNPCConnection`
 
-서버로부터 받은 플레이어 데이터를 기반으로 3D 월드에 렌더링되는 원격 플레이어 컴포넌트입니다. 일반적으로 `MultiplayerCanvas` 내부에서 사용됩니다.
+NPC 네트워크 연결 쪽 훅입니다.
 
--   **위치**: `src/core/networks/components/RemotePlayer.tsx`
+### `useVisitRoom`
 
-**Props**
+방문 스냅샷 적용/복원 흐름에 사용하는 훅입니다.
 
-| 이름 | 타입 | 필수 | 설명 |
-| :--- | :--- | :--- | :--- |
-| `playerId` | `string` | 원격 플레이어의 고유 ID입니다. |
-| `initialState` | `PlayerState` | 플레이어의 초기 상태(위치, 이름, 색상 등)입니다. |
-| `characterUrl` | `string` | 해당 플레이어의 캐릭터 모델 URL입니다. |
-| `tickRate` | `number` | 서버로부터의 업데이트 주기에 맞춰 보간을 수행하기 위한 틱레이트입니다. |
+## 컴포넌트 API
 
-## 3. Configuration
+### `ConnectionForm`
+
+연결 정보 입력 UI입니다.
+
+props:
+
+- `onConnect(options)`
+- `error?: string | null`
+- `isConnecting?: boolean`
+
+입력값으로 실제로 받는 정보:
+
+- `roomId`
+- `playerName`
+- `playerColor`
+
+### `MultiplayerCanvas`
+
+원격 플레이어와 로컬 플레이어를 함께 렌더링하는 3D 캔버스 계층입니다.
+
+주로 아래 정보를 받습니다.
+
+- `players`
+- `characterUrl`
+- `vehicleUrl`
+- `airplaneUrl`
+- `playerRef`
+- `config`
+
+### `PlayerInfoOverlay`
+
+연결 상태, 플레이어 목록, 채팅, 접속 해제를 제공하는 오버레이입니다.
+
+props:
+
+- `state: MultiplayerState`
+- `playerName?: string`
+- `onDisconnect: () => void`
+- `onSendChat?: (text: string) => void`
+
+### `RemotePlayer`
+
+원격 플레이어 렌더링 컴포넌트입니다.
+
+### `NetworkDebugPanel`
+
+네트워크 디버그 정보 패널입니다.
+
+## 타입 API
+
+### `PlayerState`
+
+원격 또는 로컬 플레이어의 네트워크 상태입니다.
+
+주요 필드:
+
+- `name`
+- `color`
+- `position`
+- `rotation`
+- `animation?`
+- `velocity?`
+- `modelUrl?`
+
+### `MultiplayerConnectionOptions`
+
+연결 시 넘기는 정보입니다.
+
+- `roomId`
+- `playerName`
+- `playerColor`
+- `characterUrl?`
+
+### `MultiplayerState`
+
+훅이 들고 있는 멀티플레이어 상태입니다.
+
+- `isConnected`
+- `connectionStatus`
+- `players`
+- `localPlayerId`
+- `roomId`
+- `error`
+- `ping`
+- `lastUpdate`
 
 ### `MultiplayerConfig`
 
-네트워크 도메인의 동작을 설정하는 객체입니다.
+멀티플레이어 전체 설정입니다.
 
--   **위치**: `src/core/networks/config/default.ts`
+- `NetworkConfig` 전체
+- `websocket`
+- `tracking`
+- `rendering`
 
-**Properties**
+## 설정 API
 
-| 이름 | 타입 | 기본값 | 설명 |
-| :--- | :--- | :--- | :--- |
-| `url` | `string` | `"ws://localhost:8787"` | 연결할 WebSocket 서버의 주소입니다. |
-| `roomId` | `string` | `"gaesup-room"` | 입장할 방의 ID입니다. |
-| `tickRate` | `number` | `20` | 초당 서버로 상태를 전송하는 횟수 (Hz)입니다. |
-| `maxPlayers` | `number` | `16` | 방에 들어갈 수 있는 최대 플레이어 수입니다. | 
+### `defaultMultiplayerConfig`
+
+바로 쓸 수 있는 기본 설정 객체입니다.
+
+예:
+
+```tsx
+import { defaultMultiplayerConfig, useMultiplayer } from 'gaesup-world';
+
+const multiplayer = useMultiplayer({
+  config: defaultMultiplayerConfig,
+});
+```
+
+## 사용 예시
+
+```tsx
+import {
+  ConnectionForm,
+  MultiplayerCanvas,
+  PlayerInfoOverlay,
+  defaultMultiplayerConfig,
+  useMultiplayer,
+} from 'gaesup-world';
+
+export function NetworkPage() {
+  const multiplayer = useMultiplayer({
+    config: defaultMultiplayerConfig,
+  });
+
+  if (!multiplayer.isConnected) {
+    return (
+      <ConnectionForm
+        onConnect={multiplayer.connect}
+        error={multiplayer.error}
+        isConnecting={multiplayer.connectionStatus === 'connecting'}
+      />
+    );
+  }
+
+  return (
+    <>
+      <MultiplayerCanvas players={multiplayer.players} config={defaultMultiplayerConfig} />
+      <PlayerInfoOverlay
+        state={multiplayer}
+        onDisconnect={multiplayer.disconnect}
+        onSendChat={(text) => multiplayer.sendChat(text)}
+      />
+    </>
+  );
+}
+```
+
+## 함께 보면 좋은 문서
+
+- [네트워크 도메인 문서](../domain/NETWORKS.md)
+- [네트워크 설정 문서](../config/NETWORKS_CONFIG.md)

@@ -1,4 +1,4 @@
-import { GaesupAdmin } from '../src/admin';
+import { GaesupAdmin } from '../src';
 
 export default function AdminTest() {
   return (

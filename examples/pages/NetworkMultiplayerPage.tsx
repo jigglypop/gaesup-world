@@ -8,7 +8,7 @@ import {
   PlayerInfoOverlay,
   MultiplayerCanvas,
   defaultMultiplayerConfig
-} from '../../src/core/networks';
+} from '../../src';
 import { CHARACTER_URL, VEHICLE_URL, AIRPLANE_URL } from '../config/constants';
 
 export function NetworkMultiplayerPage() {

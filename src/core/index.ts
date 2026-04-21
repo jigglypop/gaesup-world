@@ -55,6 +55,7 @@ export * from './npc';
 export { WorldProps as GaeSupProps } from './world/components/WorldProps';
 export { WorldContainer as GaesupWorld } from './world/components/WorldContainer';
 export { GaesupWorldContent } from './world/components/WorldContainer';
+export { WorldConfigProvider, WorldContainer } from './world/components/WorldContainer';
 export { ControllerWrapper as GaesupController } from './interactions/components/ControllerWrapper';
 
 export { createRenderer, isWebGPUAvailable } from './rendering/webgpu';

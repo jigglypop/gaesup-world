@@ -1,469 +1,173 @@
-# Camera System Architecture
+# 카메라 도메인
 
 ## 개요
 
-Gaesup Camera 시스템은 **레이어 기반 아키텍처**를 구현하여 성능 최적화와 코드 분리를 달성했습니다. 이는 다른 도메인들이 따라갈 **선구적 구조**입니다.
+Gaesup World의 카메라 도메인은 플레이어 상태와 월드 상태를 기준으로 카메라 위치와 시선을 계산하는 시스템입니다. 현재 구조는 코어 계산, 브리지, 훅, React 컴포넌트가 나뉘어 있습니다.
 
-## 레이어 아키텍처 원칙
+핵심 구성:
 
-### **1레이어 (Core Layer)** 
-```
-core/ behavior/ (선택적)
-```
-- **책임**: ref, useFrame 로직
-- **특징**: 순수한 THREE.js 및 성능 집약적 연산
-- **금지사항**: ⚠️ **상위 레이어 의존성 절대 금지**
-  - React hooks (useState, useEffect, useMemo 등) 사용 금지
-  - Zustand store 접근 금지
-  - React 컴포넌트 의존성 금지
+- 시스템: `CameraSystem`
+- 브리지 계층: `BaseCameraSystem`, `useCameraBridge`
+- 훅: `useCamera`
+- 컨트롤러: `ThirdPersonController`, `FirstPersonController`, `ChaseController` 등
+- 컴포넌트: `Camera`, `CameraController`, `CameraPresets`, `CameraDebugPanel`
 
-### **2레이어 (State Management Layer)**
-```
-controllers/ store/ hooks/
-```
-- **책임**: React 상태관리, zustand, useEffect 처리
-- **특징**: 리렌더링 최적화 및 상태 분리
-- **금지사항**: ⚠️ **하위 레이어에서 리렌더링 유발 금지**
-  - 1레이어에서 React state 변경 금지
-  - useFrame 내부에서 setState 호출 금지
+## 관련 경로
 
-### **3레이어 (Integration Layer)**
-```
-기타 로직들, React 컴포넌트
-```
-- **책임**: 사용자 인터페이스 및 통합 로직
-- **특징**: 자유로운 React 패턴 사용 가능
+- `src/core/camera/core/`
+- `src/core/camera/bridge/`
+- `src/core/camera/controllers/`
+- `src/core/camera/hooks/`
+- `src/core/camera/components/`
+- `src/core/camera/stores/`
+- `src/core/camera/utils/`
 
-## 📁 Camera System 구조
+## 현재 지원 카메라 모드
 
-```
-camera/
-├── core/                    # 1레이어 - 순수 로직
-│   ├── CameraEngine.ts      # 메인 엔진 (THREE.js 전용)
-│   └── types.ts             # 타입 정의
-├── controllers/             # 2레이어 - 상태관리
-│   ├── BaseController.ts    # 공통 컨트롤러 로직
-│   ├── ThirdPersonController.ts
-│   ├── ChaseController.ts
-│   ├── FirstPersonController.ts
-│   ├── TopDownController.ts
-│   ├── IsometricController.ts
-│   ├── SideScrollController.ts
-│   ├── FixedController.ts
-│   └── index.ts
-├── hooks/                   # 2레이어 - React 훅
-│   └── useCamera.ts         # 카메라 React 통합
-├── Camera.tsx               # 3레이어 - React 컴포넌트
-└── index.ts                 # 공개 API
+코드 기준으로 아래 컨트롤러들이 등록되어 있습니다.
 
-external dependencies:
-├── stores/                  # 2레이어 - Zustand 스토어
-│   └── gaesupStore.ts      # 카메라 상태 (cameraOption, mode 등)
-└── utils/                   # 유틸리티
-    └── camera.ts           # activeStateUtils, cameraUtils
-```
+- `thirdPerson`
+- `firstPerson`
+- `chase`
+- `topDown`
+- `isometric`
+- `sideScroll`
+- `fixed`
 
-## 🔧 Core Layer (1레이어) 상세
+`CameraSystem`은 내부 `controllers` 맵에 이 컨트롤러들을 등록해두고, 현재 모드에 맞는 컨트롤러를 실행합니다.
 
-### **CameraEngine.ts**
-```typescript
-export class CameraEngine {
-  private controllers: Map<string, ICameraController> = new Map();
-  private state: CameraSystemState;
-  
-  // 메인 계산 로직 - useFrame에서 호출
-  calculate(props: CameraCalcProps): void {
-    const controller = this.controllers.get(this.state.config.mode);
-    if (!controller) return;
-    
-    this.state.activeController = controller;
-    controller.update(props, this.state);  // Controller에게 위임
-  }
-  
-  // 설정 업데이트 (2레이어에서 호출)
-  updateConfig(config: Partial<CameraConfig>): void {
-    Object.assign(this.state.config, config);
-    
-    // cameraOption의 거리 값을 distance로 매핑
-    if (config.xDistance !== undefined || config.yDistance !== undefined || config.zDistance !== undefined) {
-      this.state.config.distance = {
-        x: config.xDistance || this.state.config.distance.x,
-        y: config.yDistance || this.state.config.distance.y,
-        z: config.zDistance || this.state.config.distance.z,
-      };
-    }
-  }
-}
-```
+## 주요 구성 요소
 
-**핵심 특징:**
-- ✅ 순수한 THREE.js 로직만 포함
-- ✅ React 의존성 없음
-- ✅ 60fps useFrame에서 안전하게 실행
+### `CameraSystem`
 
-### **types.ts**
-```typescript
-// 1레이어 전용 타입들 - React 의존성 없음
-export interface CameraSystemState {
-  config: CameraConfig;
-  activeController?: ICameraController;
-}
+카메라 계산의 중심 시스템입니다.
 
-export interface CameraCalcProps {
-  camera: THREE.Camera;
-  scene: THREE.Scene;
-  deltaTime: number;
-  activeState: ActiveStateType;  // 캐릭터 상태
-  clock: THREE.Clock;
-  excludeObjects?: THREE.Object3D[];
-}
+역할:
 
-export interface ICameraController {
-  name: string;
-  defaultConfig: Partial<CameraConfig>;
-  update(props: CameraCalcProps, state: CameraSystemState): void;
-}
-```
+- 컨트롤러 등록 및 선택
+- 카메라 상태 초기화
+- 설정 반영
+- 프레임별 카메라 계산 호출
+- 카메라 상태 전환 정보 관리
 
-## ⚙️ Controllers Layer (2레이어) 상세
+초기 기본 설정에는 아래 항목들이 포함됩니다.
 
-### **BaseController.ts** - 공통 로직
-```typescript
-export abstract class BaseController implements ICameraController {
-  abstract name: string;
-  abstract defaultConfig: Partial<CameraConfig>;
-  
-  abstract calculateTargetPosition(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3;
-  
-  calculateLookAt(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
-    return activeStateUtils.getPosition(props.activeState);
-  }
-  
-  update(props: CameraCalcProps, state: CameraSystemState): void {
-    const { camera, deltaTime, activeState } = props;
-    if (!activeState) return;
-    
-    // 1. 설정 적용
-    Object.assign(state.config, this.defaultConfig);
-    
-    // 2. 타겟 위치 계산
-    const targetPosition = this.calculateTargetPosition(props, state);
-    const lookAtTarget = this.calculateLookAt(props, state);
-    
-    // 3. 기존 검증된 로직 사용
-    cameraUtils.preventCameraJitter(camera, targetPosition, lookAtTarget, 8.0, deltaTime);
-    
-    // 4. FOV 업데이트
-    if (state.config.fov && camera instanceof THREE.PerspectiveCamera) {
-      cameraUtils.updateFOV(camera, state.config.fov, state.config.smoothing?.fov);
-    }
-  }
-}
-```
+- 모드
+- 거리(`x`, `y`, `z`)
+- 충돌 사용 여부
+- 보간값(`smoothing`)
+- FOV
+- 줌
 
-### **개별 컨트롤러들**
+### 컨트롤러 계층
 
-#### **ThirdPersonController** - 3인칭 시점
-```typescript
-calculateTargetPosition(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
-  const position = activeStateUtils.getPosition(props.activeState);
-  const offset = activeStateUtils.calculateCameraOffset(position, {
-    xDistance: state.config.distance.x,     // 기본: 15
-    yDistance: state.config.distance.y,     // 기본: 8
-    zDistance: state.config.distance.z,     // 기본: 15
-    mode: 'thirdPerson',
-  });
-  return position.clone().add(offset);
-}
+각 컨트롤러는 특정 시점 규칙을 담당합니다.
+
+- `ThirdPersonController`: 일반적인 3인칭 시점
+- `FirstPersonController`: 1인칭 시점
+- `ChaseController`: 캐릭터 방향을 따라가는 추적 시점
+- `TopDownController`: 위에서 내려다보는 시점
+- `IsometricController`: 등각 시점
+- `SideScrollController`: 횡스크롤 스타일 시점
+- `FixedController`: 고정 카메라
+
+즉, 카메라 동작의 차이는 대부분 컨트롤러 단위로 분리됩니다.
+
+### `useCamera`
+
+React 쪽에서 실제 카메라 시스템을 연결하는 핵심 훅입니다.
+
+주요 동작:
+
+- `useThree()`로 현재 카메라와 렌더러 접근
+- `useStateSystem()`에서 플레이어 active state 수신
+- `gaesupStore`의 `cameraOption`, `mode` 구독
+- `useCameraBridge()`로 `CameraSystem` 생성/연결
+- `useFrame()`에서 매 프레임 `system.calculate()` 호출
+- 휠 줌 처리
+- 포커스 해제(`Escape`) 처리
+
+즉, 카메라 도메인의 실제 실행 루프는 `useCamera()` 안에 모여 있습니다.
+
+### `Camera`
+
+보통 외부에서는 `Camera` 컴포넌트를 통해 카메라 훅이 적용됩니다. `GaesupWorldContent` 내부에서도 이 컴포넌트를 사용합니다.
+
+### UI 컴포넌트
+
+- `CameraController`: 카메라 조작용 UI
+- `CameraPresets`: 프리셋 선택 UI
+- `CameraDebugPanel`: 현재 카메라 상태를 확인하는 디버그 UI
+
+## 설정 흐름
+
+카메라 설정은 주로 `useGaesupStore().cameraOption`과 `mode.control`에서 들어옵니다.
+
+대표 항목:
+
+- `xDistance`
+- `yDistance`
+- `zDistance`
+- `fov`
+- `zoom`
+- `enableCollision`
+- `enableZoom`
+- `enableFocus`
+- `focus`
+- `focusTarget`
+- `focusDistance`
+- `focusLerpSpeed`
+- `smoothing`
+
+`useCamera()`는 이 값을 브리지 설정 형식으로 변환해서 `CameraSystem`에 반영합니다.
+
+## 동작 흐름
+
+1. 외부에서 `GaesupWorld` 또는 store를 통해 카메라 옵션을 설정합니다.
+2. `Camera` 컴포넌트가 `useCamera()`를 실행합니다.
+3. `useCamera()`가 `CameraSystem`과 브리지를 연결합니다.
+4. `useFrame()`마다 현재 플레이어 상태와 카메라 옵션을 시스템에 전달합니다.
+5. 현재 모드에 맞는 컨트롤러가 카메라 위치와 시선을 계산합니다.
+6. 결과가 실제 `three.js` 카메라에 반영됩니다.
+
+## 현재 강점
+
+- 모드별 책임이 컨트롤러 단위로 잘 분리되어 있습니다.
+- store 기반 옵션과 프레임 계산이 연결되어 있어 확장성이 좋습니다.
+- 줌, 포커스, 충돌, 시점 전환 같은 옵션을 한 도메인에서 관리할 수 있습니다.
+- React 쪽 사용법은 `Camera` 또는 `useCamera()`로 비교적 단순합니다.
+
+## 현재 한계
+
+- 옵션 타입이 풍부한 대신 흐름이 복잡해서 문서 없이 파악하기 어렵습니다.
+- 일부 포커스/옵션 관련 타입은 strict 타입 설정에서 정리가 더 필요합니다.
+- 컨트롤러별 실제 차이점과 추천 사용처를 UI 수준에서 더 명확히 안내할 필요가 있습니다.
+
+## 사용 예시
+
+```tsx
+import { GaesupWorld } from 'gaesup-world';
+
+<GaesupWorld
+  mode={{ type: 'character', controller: 'keyboard', control: 'chase' }}
+  cameraOption={{
+    xDistance: -7,
+    yDistance: 10,
+    zDistance: -13,
+    fov: 75,
+    enableCollision: true,
+    zoom: 1,
+  }}
+>
+  {/* world contents */}
+</GaesupWorld>
 ```
 
-#### **ChaseController** - 추적 카메라
-```typescript
-calculateTargetPosition(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
-  const position = activeStateUtils.getPosition(props.activeState);
-  const euler = activeStateUtils.getEuler(props.activeState);  // 캐릭터 회전 반영
-  const offset = activeStateUtils.calculateCameraOffset(position, {
-    xDistance: state.config.distance.x,     // 기본: 10
-    yDistance: state.config.distance.y,     // 기본: 5
-    zDistance: state.config.distance.z,     // 기본: 10
-    euler,                                   // 캐릭터 방향에 따라 오프셋 회전
-    mode: 'chase',
-  });
-  return position.clone().add(offset);
-}
-```
+## 함께 보면 좋은 파일
 
-#### **FirstPersonController** - 1인칭 시점
-```typescript
-calculateTargetPosition(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
-  const position = activeStateUtils.getPosition(props.activeState);
-  const headOffset = new THREE.Vector3(0, 1.7, 0);  // 머리 높이
-  return position.clone().add(headOffset);
-}
-
-calculateLookAt(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
-  const position = activeStateUtils.getPosition(props.activeState);
-  const euler = activeStateUtils.getEuler(props.activeState);
-  const lookDirection = new THREE.Vector3(0, 0, -1);
-  if (euler) {
-    lookDirection.applyEuler(euler);  // 캐릭터가 보는 방향
-  }
-  return position.clone().add(lookDirection);
-}
-```
-
-#### **TopDownController** - 탑다운 시점
-```typescript
-calculateTargetPosition(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
-  const position = activeStateUtils.getPosition(props.activeState);
-  return new THREE.Vector3(
-    position.x,
-    position.y + state.config.distance.y,   // 기본: 20m 위
-    position.z
-  );
-}
-```
-
-#### **IsometricController** - 등각 투영
-```typescript
-calculateTargetPosition(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
-  const position = activeStateUtils.getPosition(props.activeState);
-  const angle = Math.PI / 4;  // 45도
-  const distance = Math.sqrt(state.config.distance.x ** 2 + state.config.distance.z ** 2);
-  return new THREE.Vector3(
-    position.x + Math.cos(angle) * distance,
-    position.y + state.config.distance.y,
-    position.z + Math.sin(angle) * distance
-  );
-}
-```
-
-#### **SideScrollController** - 횡스크롤
-```typescript
-calculateTargetPosition(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
-  const position = activeStateUtils.getPosition(props.activeState);
-  return new THREE.Vector3(
-    position.x + state.config.distance.x,   // X 오프셋
-    position.y + state.config.distance.y,   // Y 오프셋  
-    state.config.distance.z                 // Z 고정값
-  );
-}
-```
-
-#### **FixedController** - 고정 카메라
-```typescript
-calculateTargetPosition(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
-  return state.config.fixedPosition || new THREE.Vector3(0, 10, 10);
-}
-
-calculateLookAt(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
-  return state.config.fixedLookAt || new THREE.Vector3(0, 0, 0);
-}
-```
-
-## 🎣 Hooks Layer (2레이어) 상세
-
-### **useCamera.ts** - React 통합
-```typescript
-export function useCamera() {
-  const engineRef = useRef<CameraEngine>();
-  
-  // Zustand 스토어에서 상태 구독
-  const block = useGaesupStore((state) => state.block);
-  const activeState = useGaesupStore((state) => state.activeState);
-  const cameraOption = useGaesupStore((state) => state.cameraOption);
-  const mode = useGaesupStore((state) => state.mode);
-  
-  // 엔진 초기화 (한 번만)
-  useEffect(() => {
-    engineRef.current = new CameraEngine();
-    
-    setTimeout(() => {
-      if (engineRef.current) {
-        engineRef.current.updateConfig({
-          mode: mode?.control || 'thirdPerson',
-          ...cameraOption,
-        });
-      }
-    }, 100);
-  }, []);
-  
-  // 설정 변경 시 엔진 업데이트
-  useEffect(() => {
-    if (engineRef.current) {
-      engineRef.current.updateConfig({
-        mode: mode?.control || 'thirdPerson',
-        ...cameraOption,
-      });
-    }
-  }, [cameraOption, mode]);
-  
-  // 메인 프레임 루프 - 1레이어 호출
-  useFrame((state, delta) => {
-    if (!engineRef.current || block.camera) return;
-    
-    const calcProps: CameraCalcProps = {
-      camera: state.camera,
-      scene: state.scene,
-      deltaTime: delta,
-      activeState,
-      clock: state.clock,
-      excludeObjects: [],
-    };
-    
-    engineRef.current.calculate(calcProps);  // 1레이어로 전달
-  });
-  
-  return {
-    engine: engineRef.current,
-  };
-}
-```
-
-**핵심 특징:**
-- ✅ React 상태와 1레이어 분리
-- ✅ useFrame에서 순수 계산 로직만 호출
-- ✅ 리렌더링 최적화
-
-## 데이터 흐름
-
-```
-[Zustand Store] 
-    ↓ (상태 변경)
-[useCamera Hook] 
-    ↓ (useEffect로 설정 업데이트)
-[CameraEngine.updateConfig()]
-    ↓ (useFrame에서 매 프레임)
-[CameraEngine.calculate()]
-    ↓ (Controller 선택)
-[Controller.update()]
-    ↓ (위치 계산)
-[preventCameraJitter()]
-    ↓ (THREE.js 적용)
-[Camera Position & Rotation]
-```
-
-## 사용 방법
-
-### **기본 사용**
-```typescript
-// React 컴포넌트에서
-function Scene() {
-  return (
-    <Canvas>
-      <Camera />  {/* 자동으로 카메라 제어 */}
-      {/* 다른 3D 요소들 */}
-    </Canvas>
-  );
-}
-```
-
-### **모드 변경**
-```typescript
-// Zustand 스토어를 통해
-const setMode = useGaesupStore((state) => state.setMode);
-setMode({ control: 'chase' });  // 추적 카메라로 변경
-```
-
-### **설정 변경**
-```typescript
-// 카메라 옵션 조정
-const setCameraOption = useGaesupStore((state) => state.setCameraOption);
-setCameraOption({
-  xDistance: 20,  // 거리 조정
-  yDistance: 12,
-  zDistance: 20,
-  fov: 60,        // 시야각 조정
-});
-```
-
-## 성능 최적화
-
-### **1. 레이어 분리 효과**
-- **1레이어**: useFrame에서 60fps 실행 - React 리렌더링 영향 없음
-- **2레이어**: 상태 변경 시만 실행 - 필요할 때만 업데이트
-- **3레이어**: UI 변경 시만 실행 - 사용자 인터랙션에만 반응
-
-### **2. 메모리 최적화**
-- `useRef`로 엔진 인스턴스 유지
-- Controller 인스턴스 재사용
-- THREE.js 객체 풀링 (activeStateUtils 내부)
-
-### **3. 연산 최적화**
-- `preventCameraJitter`: 검증된 프레임 독립적 보간
-- Vector3 클론 최소화
-- 불필요한 계산 스킵
-
-## 주의사항 및 금지사항
-
-### **1레이어에서 절대 금지:**
-```typescript
-// ❌ 금지 - React hooks 사용
-const [state, setState] = useState();
-useEffect(() => {}, []);
-
-// ❌ 금지 - Zustand 스토어 직접 접근
-const store = useGaesupStore();
-
-// ❌ 금지 - React 컴포넌트 의존성
-import SomeComponent from './SomeComponent';
-```
-
-### **2레이어에서 주의사항:**
-```typescript
-// ❌ 금지 - useFrame 내부에서 상태 변경
-useFrame(() => {
-  setState(newValue);  // 리렌더링 폭탄!
-});
-
-// ✅ 권장 - 상태는 이벤트에서만 변경
-useEffect(() => {
-  // 상태 변경 로직
-}, [dependency]);
-```
-
-## 확장 계획
-
-이 레이어 구조는 다른 도메인으로 확장될 예정:
-
-### **Physics System**
-```
-physics/
-├── core/           # 1레이어 - Rapier 엔진 로직
-├── controllers/    # 2레이어 - 물리 상태 관리
-├── hooks/          # 2레이어 - usePhysics
-└── store/          # 2레이어 - 물리 설정 스토어
-```
-
-### **Animation System**
-```
-animation/
-├── core/           # 1레이어 - THREE.js AnimationMixer
-├── controllers/    # 2레이어 - 애니메이션 제어
-├── hooks/          # 2레이어 - useAnimation
-└── store/          # 2레이어 - 애니메이션 상태
-```
-
-## 레이어 준수 체크리스트
-
-각 도메인 구현 시 다음을 확인:
-
-### **1레이어 체크리스트**
-- [ ] React hooks 사용 없음
-- [ ] Zustand store 직접 접근 없음
-- [ ] 순수 함수/클래스만 포함
-- [ ] useFrame에서 안전하게 실행 가능
-- [ ] THREE.js/Rapier 등 성능 중심 라이브러리만 사용
-
-### **2레이어 체크리스트**
-- [ ] 1레이어에서 상태 변경 유발 없음
-- [ ] useFrame 내부에서 setState 없음
-- [ ] React 최적화 패턴 적용
-- [ ] 적절한 의존성 배열 설정
-
-### **3레이어 체크리스트**
-- [ ] 자유로운 React 패턴 사용
-- [ ] 사용자 인터페이스 담당
-- [ ] 하위 레이어 올바른 호출
-
- 
+- `src/core/camera/core/CameraSystem.ts`
+- `src/core/camera/hooks/useCamera.ts`
+- `src/core/camera/controllers/ThirdPersonController.ts`
+- `src/core/camera/controllers/ChaseController.ts`
+- `src/core/camera/components/CameraPresets/index.tsx`
+- `src/core/camera/components/CameraDebugPanel/index.tsx`

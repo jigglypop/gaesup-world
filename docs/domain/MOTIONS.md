@@ -1,165 +1,166 @@
-# Motions Domain Architecture
+# 모션 도메인
 
 ## 개요
 
-Motions 도메인은 캐릭터, 차량, 비행기 등의 물리적 움직임과 상호작용을 담당합니다. Blueprint 데이터를 소비하여 실제 물리 엔진과 연동합니다.
+모션 도메인은 엔티티의 이동, 물리 상태, 이동 관련 브리지, 엔티티 래퍼를 담당합니다. 캐릭터, 차량, 비행기처럼 “움직이는 대상”의 상태를 공통 흐름으로 묶는 역할을 합니다.
 
-## 폴더 구조
+현재 기준 핵심 축은 아래와 같습니다.
 
-```
-src/core/motions/
-├── components/              # Layer 3: React 컴포넌트
-│   ├── entities/           # 엔티티 렌더링
-│   │   ├── PhysicsEntity/
-│   │   │   ├── index.tsx
-│   │   │   ├── styles.css
-│   │   │   └── types.ts
-│   │   ├── InnerGroup/
-│   │   └── PartsGroup/
-│   ├── controllers/        # UI 컨트롤러
-│   │   ├── EntityController/
-│   │   └── MotionController/
-│   ├── ui/                 # 일반 UI
-│   │   ├── MotionUI/
-│   │   └── Teleport/
-│   └── debug/              # 디버그 도구
-│       └── MotionDebugPanel/
-│
-├── controllers/             # Layer 2: 비즈니스 로직 (Non-React)
-│   ├── AnimationController.ts
-│   ├── MotionController.ts
-│   └── PhysicsController.ts
-│
-├── hooks/                   # Layer 2: React Hooks
-│   ├── core/               # 단일 책임 훅
-│   │   ├── usePhysicsLoop.ts      # ~50줄, useFrame 기반 물리 루프
-│   │   ├── useMotionBridge.ts     # ~60줄, 브릿지 등록/해제
-│   │   ├── useCollisionHandlers.ts # ~40줄, 충돌 핸들링
-│   │   └── useTeleportListener.ts # ~30줄, 텔레포트 이벤트
-│   ├── composed/           # 조합된 훅
-│   │   └── usePhysicsEntity.ts    # ~80줄, 위 훅들을 조합
-│   └── index.ts
-│
-├── stores/                  # Layer 2: Zustand 상태 관리
-│   ├── motionSlice.ts      # 모션 상태 슬라이스
-│   │   ├── position, velocity, rotation 스냅샷
-│   │   ├── physics 상태
-│   │   └── animation 상태
-│   └── types.ts
-│
-├── core/                    # Layer 1: 순수 로직, ref 기반
-│   ├── engine/             # 물리/모션 엔진
-│   │   ├── MotionEngine.ts
-│   │   ├── PhysicsEngine.ts
-│   │   └── StateEngine.ts
-│   ├── forces/             # 물리력 계산
-│   │   ├── ForceComponent.ts
-│   │   ├── JumpForce.ts
-│   │   └── GravityForce.ts
-│   ├── movement/           # 이동 로직
-│   │   ├── CharacterMovement.ts
-│   │   └── VehicleMovement.ts
-│   ├── refs/               # ref 기반 유틸리티
-│   │   ├── PhysicsRef.ts
-│   │   └── AnimationRef.ts
-│   └── types.ts
-│
-├── bridge/                  # 레이어 간 통신
-│   ├── MotionBridge.ts
-│   └── types.ts
-│
-├── types/                   # 도메인 공통 타입
-│   ├── physics.ts
-│   ├── animation.ts
-│   └── index.ts
-└── index.ts                # 공개 API
-```
+- 시스템: `MotionSystem`, `PhysicsSystem`
+- 브리지: `MotionBridge`, `PhysicsBridge`
+- 훅: `useMotion`, `usePhysics`, `usePhysicsBridge`, `usePlayerPosition`, `useStateSystem`
+- 엔티티 계층: `ManagedMotionEntity`, `PhysicsEntity`, `RiderRef` 등
+- 컨트롤러/UI: `EntityController`, `MotionController`, `MotionUI`, `MotionDebugPanel`, `Teleport`
 
-## 핵심 개념
+## 관련 경로
 
-### 1. PhysicsEntity
-- Layer 3 컴포넌트로, 물리 엔티티를 렌더링
-- RigidBody와 Collider를 포함
-- Blueprint 데이터를 기반으로 초기화
+- `src/core/motions/core/`
+- `src/core/motions/bridge/`
+- `src/core/motions/hooks/`
+- `src/core/motions/entities/`
+- `src/core/motions/controller/`
+- `src/core/motions/ui/`
 
-### 2. MotionBridge
-- Layer 1(ref)과 Layer 2(state) 사이의 유일한 통신 채널
-- ref 등록/해제, 명령 실행, 스냅샷 제공
-- React/Zustand 의존성 없음
+## 주요 구성 요소
 
-### 3. usePhysicsEntity (조합 훅)
-- 여러 core 훅들을 조합한 메인 훅
-- Blueprint를 받아 물리 엔티티 생성
-- Bridge를 통해 상태 동기화
+### `MotionSystem`
 
-## Blueprint 소비 패턴
+이동 상태를 계산하는 핵심 시스템입니다.
 
-```typescript
-// hooks/composed/usePhysicsEntity.ts
-import { WARRIOR_BLUEPRINT } from '@blueprints/characters/warrior';
+주요 역할:
 
-export function usePhysicsEntity(blueprintId: string) {
-  const blueprint = getBlueprint(blueprintId);
-  const engineRef = useRef<PhysicsEngine>();
-  
-  // Blueprint의 physics 데이터 사용
-  const physics = {
-    mass: blueprint.physics.mass,
-    jumpForce: blueprint.physics.jumpForce,
-    moveSpeed: blueprint.physics.moveSpeed
-  };
-  
-  // 각 core 훅 사용
-  const bridge = useMotionBridge(id, rigidBodyRef);
-  const { handleCollision } = useCollisionHandlers(callbacks);
-  
-  usePhysicsLoop(engineRef, physics);
-  useTeleportListener(rigidBodyRef);
-  
-  return { bridge, handleCollision };
+- 현재 위치, 속도, 회전 추적
+- 지면 접촉 여부 관리
+- 이동 중 여부 판단
+- 속도/거리 메트릭 계산
+- 점프 힘 계산
+- 이동 힘 적용
+
+즉, 엔티티가 어떻게 움직이고 있는지에 대한 상태와 계산은 이 시스템이 담당합니다.
+
+### `PhysicsSystem`
+
+물리 쪽 세부 상태와 상호작용을 담당하는 시스템입니다. `motions` 도메인 안에서 실제 Rapier 연동과 더 가까운 축에 있습니다.
+
+### `MotionBridge`
+
+모션 도메인의 명령/스냅샷 브리지입니다.
+
+도메인 이름:
+
+- `motion`
+
+주요 기능:
+
+- 엔티티 등록
+- `move`, `jump`, `stop`, `reset`, `setConfig` 명령 실행
+- `RapierRigidBody` 상태를 읽어서 snapshot 생성
+- 엔티티별 캐시 snapshot 유지
+
+현재 snapshot에는 아래 정보가 포함됩니다.
+
+- 타입
+- 위치
+- 속도
+- 회전
+- 지면 접촉 여부
+- 이동 여부
+- 속도
+- 메트릭
+- 설정값
+
+### `PhysicsBridge`
+
+물리 관련 상태와 명령을 연결하는 별도 브리지입니다. `MotionBridge`와 함께 사용되며, 모션/물리의 관심사를 나누는 역할을 합니다.
+
+### 엔티티 계층
+
+`src/core/motions/entities/` 아래에는 실제 움직이는 엔티티를 구성하는 래퍼와 ref 계층이 들어 있습니다.
+
+대표 항목:
+
+- `ManagedMotionEntity`
+- `PhysicsEntity`
+- `InnerGroupRef`
+- `PartsGroupRef`
+- `RiderRef`
+
+이 계층은 Three.js 그룹, Rapier 바디, 애니메이션 상태를 연결하는 실전용 구조에 가깝습니다.
+
+### 훅 계층
+
+대표 훅:
+
+- `useMotion`
+- `usePhysics`
+- `usePhysicsBridge`
+- `usePlayerPosition`
+- `useStateSystem`
+- `useBlueprintEntity`
+- `useInteractionSystem`
+- `useGaesupGltf`
+
+이 중 자주 보는 훅은:
+
+- `usePlayerPosition`: 현재 플레이어 위치를 읽는 용도
+- `useStateSystem`: 현재 active state를 참조하는 용도
+- `usePhysicsBridge`: 브리지 연결
+
+### 컨트롤러/UI
+
+대표 구성:
+
+- `EntityController.tsx`
+- `MotionController`
+- `MotionUI`
+- `MotionDebugPanel`
+- `Teleport`
+
+즉, 이동 도메인은 시스템만 있는 게 아니라 실제 조작 UI와 디버그 UI까지 포함합니다.
+
+## 동작 흐름
+
+모션 도메인의 일반적인 흐름은 아래와 같습니다.
+
+1. 움직이는 엔티티가 `RapierRigidBody`와 함께 생성됩니다.
+2. 모션/물리 브리지에 엔티티가 등록됩니다.
+3. 이동 입력이나 게임 로직이 `move`, `jump`, `stop` 명령을 보냅니다.
+4. `MotionSystem`이 힘 적용, 속도 계산, 상태 업데이트를 수행합니다.
+5. 브리지가 현재 rigid body 상태를 snapshot으로 만듭니다.
+6. 훅과 UI가 이 snapshot 또는 store 상태를 사용합니다.
+
+## 현재 강점
+
+- 모션과 물리 흐름이 브리지 기반으로 분리되어 있습니다.
+- snapshot 구조가 있어 UI와 디버그 연결이 쉽습니다.
+- 엔티티 ref 계층이 분리되어 있어 실제 월드 오브젝트와 잘 결합됩니다.
+- 캐릭터/차량/비행기 흐름을 공통 계층으로 다룰 수 있습니다.
+
+## 현재 한계
+
+- 도메인 규모가 커서 처음 진입 시 파악 비용이 높습니다.
+- 모션, 물리, 상호작용, 애니메이션 경계가 일부 파일에서는 촘촘히 얽혀 있습니다.
+- strict 타입 기준으로는 일부 시스템에 추가 정리가 필요합니다.
+
+## 사용 예시
+
+```tsx
+import { usePlayerPosition } from 'gaesup-world';
+
+export function PlayerPositionText() {
+  const position = usePlayerPosition();
+
+  return <div>{position.join(', ')}</div>;
 }
 ```
 
-## 마이그레이션 계획
+## 함께 보면 좋은 파일
 
-### Phase 1: 구조 생성
-1. 새 폴더 구조 생성 (components/, stores/, hooks/core/ 등)
-2. tsconfig paths 설정
-3. ESLint 규칙 추가
-
-### Phase 2: 코드 이동
-1. **usePhysics.ts 분해** (최우선)
-   - usePhysicsLoop.ts
-   - useMotionBridge.ts
-   - useCollisionHandlers.ts
-   - useTeleportListener.ts
-   
-2. **컴포넌트 이동**
-   - entities/refs/* → components/entities/*
-   - ui/* → components/ui/*
-   
-3. **순수 로직 분리**
-   - ref 유틸리티 → core/refs/
-   - 엔진 로직 → core/engine/
-
-### Phase 3: 상태 관리
-1. motionSlice 구현
-2. Bridge를 통한 스냅샷 동기화
-3. 기존 gaesupStore 의존성 제거
-
-## 주의사항
-
-1. **레이어 규칙 준수**
-   - Layer 1에서 React/Zustand 사용 금지
-   - useFrame 내에서 setState 금지
-   - Bridge를 통해서만 레이어 간 통신
-
-2. **파일 크기 제한**
-   - Core hooks: 최대 80줄
-   - Components: 최대 200줄
-   - Engine: 최대 500줄
-
-3. **성능 최적화**
-   - 스냅샷은 읽기 전용 (Object.freeze)
-   - 선택적 구독으로 리렌더링 최소화
-   - ref 기반 로직으로 60fps 유지 
+- `src/core/motions/bridge/MotionBridge.ts`
+- `src/core/motions/bridge/PhysicsBridge.ts`
+- `src/core/motions/core/system/MotionSystem.ts`
+- `src/core/motions/core/system/PhysicsSystem.ts`
+- `src/core/motions/hooks/useStateSystem.ts`
+- `src/core/motions/hooks/usePlayerPosition.ts`
+- `src/core/motions/entities/ManagedMotionEntity.ts`
+- `src/core/motions/controller/EntityController.tsx`

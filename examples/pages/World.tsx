@@ -27,7 +27,8 @@ import {
   usePerfStore, usePlotStore, useQuestObjectiveTracker, useQuestStore, useShopStore,
   useTimeStore, useTownStore,
   useWalletStore, useWeatherStore, useWeatherTicker, useAudioStore,
-  type SakuraTreeEntry, type SandEntry, type SnowfieldEntry,
+  usePlayerPosition, useStateSystem, SpeechBalloon,
+  type CameraOptionType, type SakuraTreeEntry, type SandEntry, type SnowfieldEntry,
   useBuildingStore, useGaesupStore,
 } from '../../src';
 import { registerSeedDialogs } from '../components/dialog/seedDialogs';
@@ -35,10 +36,6 @@ import { registerSeedI18n } from '../components/i18n/seedI18n';
 import { HudShell } from '../components/hud/HudShell';
 import { NPCBeacon } from '../components/npc/NPCBeacon';
 import { registerSeedContent } from '../components/seedContent';
-import { usePlayerPosition } from '../../src/core/motions/hooks/usePlayerPosition';
-import { useStateSystem } from '../../src/core/motions/hooks/useStateSystem';
-import { CameraOptionType } from '../../src/core/camera/core/types';
-import { SpeechBalloon } from '../../src/core/ui/components/SpeechBalloon';
 import { Pickup } from '../components/pickup';
 import { AIRPLANE_URL, CHARACTER_URL, EXAMPLE_CONFIG, S3, VEHICLE_URL } from '../config/constants';
 import '../style.css';

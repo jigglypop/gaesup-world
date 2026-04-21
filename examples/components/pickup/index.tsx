@@ -1,7 +1,6 @@
 import React, { useCallback, useState } from 'react';
 
-import { Interactable, useInventoryStore } from '../../../src';
-import { getItemRegistry } from '../../../src/core/items';
+import { Interactable, useInventoryStore, getItemRegistry } from '../../../src';
 
 export type PickupProps = {
   id?: string;

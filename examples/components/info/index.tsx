@@ -1,4 +1,4 @@
-import { useGaesupStore } from '../../../src/core';
+import { useGaesupStore } from '../../../src';
 import { CAMERA_PRESETS } from './constants';
 import { SelectionTooltip } from './SelectionTooltip';
 import './styles.css';

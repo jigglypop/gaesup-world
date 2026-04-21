@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { useUIConfigStore } from '../../../src/core/ui/stores/UIConfigStore';
+import { useUIConfigStore } from '../../../src';
 
 export const SpeechBalloonSettings = () => {
   const { config, updateSpeechBalloonConfig } = useUIConfigStore();
