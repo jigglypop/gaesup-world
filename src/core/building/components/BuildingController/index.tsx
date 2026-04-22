@@ -6,7 +6,12 @@ import { useThree } from '@react-three/fiber';
 import { NPCSystem } from '../../../npc/components/NPCSystem';
 import { useBuildingEditor } from '../../hooks/useBuildingEditor';
 import { useBuildingStore } from '../../stores/buildingStore';
+import { BuildingGpuCullingDriver } from '../BuildingGpuCullingDriver';
+import { BuildingGpuMirrorDriver } from '../BuildingGpuMirrorDriver';
+import { BuildingGpuUploadDriver } from '../BuildingGpuUploadDriver';
+import { BuildingRenderStateDriver } from '../BuildingRenderStateDriver';
 import { BuildingSystem } from '../BuildingSystem';
+import { BuildingVisibilityDriver } from '../BuildingVisibilityDriver';
 
 const DRAG_THRESHOLD_SQ = 9;
 const PLACE_COOLDOWN_MS = 150;
@@ -121,6 +126,11 @@ export function BuildingController() {
 
   return (
     <>
+      <BuildingRenderStateDriver />
+      <BuildingGpuMirrorDriver />
+      <BuildingGpuUploadDriver />
+      <BuildingGpuCullingDriver />
+      <BuildingVisibilityDriver />
       {isEditing && (
         <OrbitControls
           ref={configureOrbit}

@@ -12,6 +12,7 @@ import Billboard from '../mesh/billboard';
 import { Snow } from '../mesh/snow';
 import type { PlacedObject } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
+import { useBuildingVisibilityStore } from '../../visibility/store';
 import { TileSystem } from '../TileSystem';
 import { WallSystem } from '../WallSystem';
 import { BuildingSystemProps } from './types';
@@ -76,11 +77,27 @@ export const BuildingSystem = React.memo(function BuildingSystem({
   const gridSize = useBuildingStore((s) => s.gridSize);
   const showSnow = useBuildingStore((s) => s.showSnow);
   const objects = useBuildingStore((s) => s.objects);
+  const visibilityReady = useBuildingVisibilityStore((s) => s.initialized);
+  const visibleWallGroupIds = useBuildingVisibilityStore((s) => s.visibleWallGroupIds);
+  const visibleTileGroupIds = useBuildingVisibilityStore((s) => s.visibleTileGroupIds);
+  const visibleObjectIds = useBuildingVisibilityStore((s) => s.visibleObjectIds);
 
-  const wallGroupsArray = useMemo(() => Array.from(wallGroups.values()), [wallGroups]);
-  const tileGroupsArray = useMemo(() => Array.from(tileGroups.values()), [tileGroups]);
+  const wallGroupsArray = useMemo(() => {
+    const groups = Array.from(wallGroups.values());
+    if (!visibilityReady) return groups;
+    return groups.filter((group) => visibleWallGroupIds.has(group.id));
+  }, [wallGroups, visibilityReady, visibleWallGroupIds]);
+  const tileGroupsArray = useMemo(() => {
+    const groups = Array.from(tileGroups.values());
+    if (!visibilityReady) return groups;
+    return groups.filter((group) => visibleTileGroupIds.has(group.id));
+  }, [tileGroups, visibilityReady, visibleTileGroupIds]);
+  const visibleObjects = useMemo(() => {
+    if (!visibilityReady) return objects;
+    return objects.filter((object) => visibleObjectIds.has(object.id));
+  }, [objects, visibilityReady, visibleObjectIds]);
 
-  const buckets = useMemo(() => bucketObjects(objects), [objects]);
+  const buckets = useMemo(() => bucketObjects(visibleObjects), [visibleObjects]);
   const sakuraEntries = buckets.sakura;
   const flagObjects = buckets.flag;
   const fireEntries = buckets.fire;

@@ -10,13 +10,14 @@ import { WorldPageProps } from './types';
 import {
   Billboard, BugSpot,
   BuildingController, CatalogUI, Clicker, CraftingUI, CropPlot, DialogBox, Editor,
-  FishSpot, Fire, GaesupController, GaesupWorld,
+  FishSpot, Fire, GaesupController, GaesupWorld, GrassDriver,
   GaesupWorldContent, GroundClicker, HotbarUI, HousePlot, InteractionPrompt,
   InteractionTracker, InventoryUI,
   MailboxUI, MiniMap, QuestLogUI, SakuraBatch, SandBatch, ShopUI, Snow, SnowfieldBatch,
   ToastHost, ToolUseController, TreeObject, Water,
   WeatherEffect,
   CharacterCreator, ColorGrade, DynamicFog, DynamicSky, Footprints, Footsteps, HouseDoor, OutfitAvatar, SceneRoot,
+  RoomPortal, RoomRoot, RoomVisibilityDriver,
   TouchControls, useSceneStore,
   getNPCScheduler, getSaveSystem, registerSeedCrops, registerSeedEvents, registerSeedItems,
   setDefaultToonMode,
@@ -246,18 +247,11 @@ function Ground() {
 }
 
 function HomeInterior({ returnPosition }: { returnPosition: [number, number, number] }) {
-  // The interior is a tiny 8x8 room. The exit pad lives in the middle-south
-  // wall; stepping onto it returns the player to the registered outdoor spot.
+  // Split the home into three compact rooms so indoor portal visibility can
+  // cull furniture/floors that are not near the player or a visible doorway.
   return (
     <>
-      <RigidBody type="fixed" colliders="cuboid">
-        <mesh position={[0, 0, 0]} receiveShadow>
-          <boxGeometry args={[8, 0.2, 8]} />
-          <meshStandardMaterial color="#caa57a" roughness={0.85} />
-        </mesh>
-      </RigidBody>
-
-      {/* Walls */}
+      {/* Outer shell */}
       <RigidBody type="fixed" colliders="cuboid">
         <mesh position={[0, 1.4, -4]} castShadow receiveShadow>
           <boxGeometry args={[8, 2.8, 0.2]} />
@@ -277,25 +271,117 @@ function HomeInterior({ returnPosition }: { returnPosition: [number, number, num
         </mesh>
       </RigidBody>
 
-      {/* Furniture cubes for visual reference */}
-      <mesh position={[2.4, 0.4, -2.4]} castShadow>
-        <boxGeometry args={[1.6, 0.7, 1.2]} />
-        <meshStandardMaterial color="#7a4a2a" />
-      </mesh>
-      <mesh position={[-2.6, 0.25, -2.6]} castShadow>
-        <boxGeometry args={[1.0, 0.45, 1.0]} />
-        <meshStandardMaterial color="#a05030" />
-      </mesh>
+      {/* Divider walls with centered portal openings */}
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh position={[-2.55, 1.4, 1.2]} castShadow receiveShadow>
+          <boxGeometry args={[2.9, 2.8, 0.2]} />
+          <meshStandardMaterial color="#ead8bf" />
+        </mesh>
+        <mesh position={[2.55, 1.4, 1.2]} castShadow receiveShadow>
+          <boxGeometry args={[2.9, 2.8, 0.2]} />
+          <meshStandardMaterial color="#ead8bf" />
+        </mesh>
+        <mesh position={[-2.55, 1.4, -1.4]} castShadow receiveShadow>
+          <boxGeometry args={[2.9, 2.8, 0.2]} />
+          <meshStandardMaterial color="#ead8bf" />
+        </mesh>
+        <mesh position={[2.55, 1.4, -1.4]} castShadow receiveShadow>
+          <boxGeometry args={[2.9, 2.8, 0.2]} />
+          <meshStandardMaterial color="#ead8bf" />
+        </mesh>
+      </RigidBody>
 
-      {/* Exit door — leads back to the outdoor scene at the registered spot. */}
-      <HouseDoor
-        position={[0, 0.05, 3.6]}
-        sceneId="outdoor"
-        entry={{ position: returnPosition, rotationY: 0 }}
-        color="#ffd24a"
-        radius={1}
-        label="EXIT"
+      <RoomPortal
+        id="home-foyer-living"
+        sceneId="home-interior"
+        fromRoomId="home-foyer"
+        toRoomId="home-living"
+        position={[0, 1.1, 1.2]}
+        revealDistance={3.1}
       />
+      <RoomPortal
+        id="home-living-studio"
+        sceneId="home-interior"
+        fromRoomId="home-living"
+        toRoomId="home-studio"
+        position={[0, 1.1, -1.4]}
+        revealDistance={3.1}
+      />
+
+      <RoomRoot
+        sceneId="home-interior"
+        roomId="home-foyer"
+        bounds={{ min: [-3.9, -0.2, 1.2], max: [3.9, 3.2, 4.0] }}
+      >
+        <RigidBody type="fixed" colliders="cuboid">
+          <mesh position={[0, 0, 2.6]} receiveShadow>
+            <boxGeometry args={[8, 0.2, 2.8]} />
+            <meshStandardMaterial color="#caa57a" roughness={0.85} />
+          </mesh>
+        </RigidBody>
+        <mesh position={[-2.4, 0.35, 3.0]} castShadow>
+          <boxGeometry args={[1.1, 0.6, 0.8]} />
+          <meshStandardMaterial color="#8f5b39" />
+        </mesh>
+        <mesh position={[2.3, 0.5, 2.7]} castShadow>
+          <cylinderGeometry args={[0.45, 0.55, 0.9, 18]} />
+          <meshStandardMaterial color="#d7c7a2" />
+        </mesh>
+        <HouseDoor
+          position={[0, 0.05, 3.6]}
+          sceneId="outdoor"
+          entry={{ position: returnPosition, rotationY: 0 }}
+          color="#ffd24a"
+          radius={1}
+          label="EXIT"
+        />
+      </RoomRoot>
+
+      <RoomRoot
+        sceneId="home-interior"
+        roomId="home-living"
+        bounds={{ min: [-3.9, -0.2, -1.4], max: [3.9, 3.2, 1.2] }}
+      >
+        <RigidBody type="fixed" colliders="cuboid">
+          <mesh position={[0, 0, -0.1]} receiveShadow>
+            <boxGeometry args={[8, 0.2, 2.6]} />
+            <meshStandardMaterial color="#caa57a" roughness={0.85} />
+          </mesh>
+        </RigidBody>
+        <mesh position={[1.9, 0.45, -0.2]} castShadow>
+          <boxGeometry args={[2.1, 0.8, 1.1]} />
+          <meshStandardMaterial color="#7a4a2a" />
+        </mesh>
+        <mesh position={[-2.1, 0.3, 0.2]} castShadow>
+          <boxGeometry args={[1.3, 0.5, 1.0]} />
+          <meshStandardMaterial color="#9a6a43" />
+        </mesh>
+      </RoomRoot>
+
+      <RoomRoot
+        sceneId="home-interior"
+        roomId="home-studio"
+        bounds={{ min: [-3.9, -0.2, -4.0], max: [3.9, 3.2, -1.4] }}
+      >
+        <RigidBody type="fixed" colliders="cuboid">
+          <mesh position={[0, 0, -2.7]} receiveShadow>
+            <boxGeometry args={[8, 0.2, 2.6]} />
+            <meshStandardMaterial color="#caa57a" roughness={0.85} />
+          </mesh>
+        </RigidBody>
+        <mesh position={[2.4, 0.4, -2.8]} castShadow>
+          <boxGeometry args={[1.6, 0.7, 1.2]} />
+          <meshStandardMaterial color="#7a4a2a" />
+        </mesh>
+        <mesh position={[-2.6, 0.25, -2.6]} castShadow>
+          <boxGeometry args={[1.0, 0.45, 1.0]} />
+          <meshStandardMaterial color="#a05030" />
+        </mesh>
+        <mesh position={[0, 0.85, -3.2]} castShadow>
+          <boxGeometry args={[2.1, 1.5, 0.45]} />
+          <meshStandardMaterial color="#c8d4e5" />
+        </mesh>
+      </RoomRoot>
     </>
   );
 }
@@ -354,7 +440,7 @@ function Scenery({ onOpenShop, onOpenCrafting }: { onOpenShop: () => void; onOpe
         <HouseDoor
           position={[HOUSE_PLOTS[0]?.pos[0] ?? -8, 0.05, (HOUSE_PLOTS[0]?.pos[2] ?? -4) + 2.4]}
           sceneId="home-interior"
-          entry={{ position: [0, 0, 0], rotationY: 0 }}
+          entry={{ position: [0, 0, 2.6], rotationY: 0 }}
           color="#7fc6ff"
           radius={1.2}
           label="HOME"
@@ -678,6 +764,8 @@ export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
                 <ToolUseController useKey="f" />
                 <Footprints />
                 <Footsteps />
+                <GrassDriver />
+                <RoomVisibilityDriver />
               </Physics>
               <DynamicFog color="#cfd8e3" near={45} far={260} />
               <PostFX />

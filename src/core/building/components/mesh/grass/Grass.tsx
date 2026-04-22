@@ -1,7 +1,7 @@
 import { FC, memo, useEffect, useMemo, useRef, useState } from "react";
 
 import { shaderMaterial } from "@react-three/drei";
-import { extend, useFrame, useLoader } from "@react-three/fiber";
+import { extend, useLoader } from "@react-three/fiber";
 import { createNoise2D } from "simplex-noise";
 import * as THREE from "three";
 
@@ -12,10 +12,9 @@ import { GrassMeshProps } from "./type";
 import vertexShader from "./vert.glsl";
 import { loadCoreWasm, type GaesupCoreWasmExports } from "@core/wasm/loader";
 import { createToonMaterial, getDefaultToonMode } from "@core/rendering/toon";
-import { weightFromDistance } from "@core/utils/sfe";
-import { useWeatherStore } from "@core/weather/stores/weatherStore";
-import { BridgeFactory } from "@core/boilerplate";
-import type { MotionBridge } from "@core/motions/bridge/MotionBridge";
+import { usePerfStore } from "@core/perf/stores/perfStore";
+
+import { getGrassManager, setGrassManagerWasm, type GrassTileRenderState } from "./manager";
 
 // Single shared material per shading mode. Vertex colors carry the per-tile
 // variation so big tiles never look like a flat plastic green sheet.
@@ -207,22 +206,23 @@ const Grass: FC<GrassMeshProps> = memo(
     ...props
   }) => {
     const { bW, bH, joints } = options;
-    // Resolve final instance count: prefer explicit `instances`, otherwise compute from
-    // density × area so blade density stays constant when the tile is scaled up.
-    // Falls back to a sensible default density (~ 60 blades/m²) when neither is given.
+    // Auto-clamp instance budget to the active perf tier. Low-end devices get
+    // a quarter of the blades; high-end keep the user-supplied cap. This is
+    // why "many tiles" no longer melts down on integrated GPUs.
+    const instanceScale = usePerfStore((s) => s.profile.instanceScale);
     const resolvedInstances = useMemo(() => {
+      const cap = Math.max(64, Math.min(maxInstances, Math.round(maxInstances * instanceScale)));
       if (typeof instances === 'number' && instances > 0) {
-        return Math.max(1, Math.min(maxInstances, Math.floor(instances)));
+        return Math.max(1, Math.min(cap, Math.floor(instances * instanceScale)));
       }
       const d = typeof density === 'number' && density > 0 ? density : 90;
       const area = Math.max(1, width * width);
-      return Math.max(64, Math.min(maxInstances, Math.round(d * area)));
-    }, [instances, density, width, maxInstances]);
+      return Math.max(64, Math.min(cap, Math.round(d * area * instanceScale)));
+    }, [instances, density, width, maxInstances, instanceScale]);
     const useToon = toon ?? getDefaultToonMode();
     const groundMat = getGroundMaterial(useToon);
     const groupRef = useRef<THREE.Group>(null);
-    const lodCenterRef = useRef(new THREE.Vector3());
-    const lodCheckAccum = useRef(0);
+    const meshRef = useRef<THREE.Mesh>(null);
     const lastInstanceCount = useRef(resolvedInstances);
     const materialRef = useRef<THREE.ShaderMaterial | null>(null);
     const geometryRef = useRef<THREE.InstancedBufferGeometry | null>(null);
@@ -232,10 +232,16 @@ const Grass: FC<GrassMeshProps> = memo(
       bladeAlpha,
     ]);
 
-    // WASM-accelerated attribute generation with JS fallback.
+    // WASM-accelerated attribute generation with JS fallback. Loaded once
+    // and shared with the central GrassManager so manager-side passes
+    // (LOD weight batching) can also benefit.
     const [wasmModule, setWasmModule] = useState<GaesupCoreWasmExports | null>(null);
     useEffect(() => {
-      loadCoreWasm().then((w) => { if (w) setWasmModule(w); });
+      loadCoreWasm().then((w) => {
+        if (!w) return;
+        setWasmModule(w);
+        setGrassManagerWasm(w);
+      });
     }, []);
 
     const attributeData = useMemo(
@@ -309,79 +315,72 @@ const Grass: FC<GrassMeshProps> = memo(
       if (m.uniforms['uToonSteps']) m.uniforms['uToonSteps'].value = 4;
     }, [useToon]);
 
+    // Register with the central GrassManager. The manager runs one
+    // shared `useFrame` (via <GrassDriver />) and updates per-tile
+    // uniforms + instanceCount in batch. When the driver is not mounted
+    // the local frame loop below covers a single tile so legacy uses
+    // keep working.
     useEffect(() => {
-      if (center) {
-        lodCenterRef.current.set(center[0], center[1], center[2]);
-      }
-    }, [center]);
-
-    useFrame((state, delta) => {
-      const u = materialRef.current?.uniforms;
-      if (u?.["time"]) u["time"].value = state.clock.elapsedTime / 4;
-      // Weather drives the wind multiplier so grass sways harder during storms
-      // and stands almost still during calm sunny weather.
-      if (u?.["windScale"]) {
-        const w = useWeatherStore.getState().current;
-        const intensity = w?.intensity ?? 0;
-        const base =
-          w?.kind === 'storm' ? 2.6 :
-          w?.kind === 'rain'  ? 1.7 :
-          w?.kind === 'snow'  ? 1.3 :
-          w?.kind === 'cloudy'? 1.15 :
-                                0.85;
-        u["windScale"].value = base + intensity * 0.9;
-      }
-
-      // Player trampling: read the player's current world position from the
-      // motion bridge and push it into the shader. When the player is moving
-      // we hold the strength high; when they stop or run away the strength
-      // decays back to zero so blades stand back up smoothly.
-      if (u?.["trampleCenter"] && u?.["trampleStrength"]) {
-        const bridge = BridgeFactory.getOrCreate('motion') as MotionBridge | null;
-        const ids = bridge?.getActiveEntities() ?? [];
-        const snap = ids[0] ? bridge?.snapshot(ids[0]) : null;
-        const target = u["trampleCenter"].value as THREE.Vector3;
-        const desiredStrength = snap?.isMoving && snap?.isGrounded ? 0.85 : 0.35;
-        const lerp = Math.min(1, Math.max(0, delta * 6));
-        if (snap) {
-          target.x += (snap.position.x - target.x) * lerp;
-          target.y = snap.position.y;
-          target.z += (snap.position.z - target.z) * lerp;
-        }
-        const cur = u["trampleStrength"].value as number;
-        u["trampleStrength"].value = cur + (desiredStrength - cur) * lerp;
-      }
-
-      if (!lod) return;
-      lodCheckAccum.current += Math.max(0, delta);
-      if (lodCheckAccum.current < 0.2) return;
-      lodCheckAccum.current = 0;
-
-      const geo = geometryRef.current;
       const grp = groupRef.current;
-      if (!geo || !grp) return;
-
-      if (!center) {
-        grp.getWorldPosition(lodCenterRef.current);
+      const initialCenter = new THREE.Vector3();
+      if (center) {
+        initialCenter.set(center[0], center[1], center[2]);
+      } else if (grp) {
+        grp.updateWorldMatrix(true, false);
+        grp.getWorldPosition(initialCenter);
       }
 
-      const dist = state.camera.position.distanceTo(lodCenterRef.current);
-      const w = weightFromDistance(
-        dist,
-        lod.near ?? 20,
-        lod.far ?? 120,
-        lod.strength ?? 4,
+      const apply = (s: GrassTileRenderState) => {
+        const mesh = meshRef.current;
+        const geo = geometryRef.current;
+        const u = materialRef.current?.uniforms;
+        if (!mesh || !geo || !u) return;
+
+        if (mesh.visible !== s.visible) mesh.visible = s.visible;
+        if (geo.instanceCount !== s.instanceCount) {
+          geo.instanceCount = s.instanceCount;
+          lastInstanceCount.current = s.instanceCount;
+        }
+        if (u['time']) u['time'].value = s.time;
+        if (u['windScale']) u['windScale'].value = s.windScale;
+        if (u['trampleCenter']) {
+          const v = u['trampleCenter'].value as THREE.Vector3;
+          v.copy(s.trampleCenter);
+        }
+        if (u['trampleStrength']) u['trampleStrength'].value = s.trampleStrength;
+      };
+
+      const handle = getGrassManager().register({
+        width,
+        height: bH * 1.4,
+        center: initialCenter,
+        maxInstances: resolvedInstances,
+        ...(lod ? { lod } : {}),
+        apply,
+      });
+
+      return () => { getGrassManager().unregister(handle.id); };
+    }, [width, bH, resolvedInstances, center?.[0], center?.[1], center?.[2], lod?.near, lod?.far, lod?.strength]);
+
+    // Pre-compute a bounding sphere that contains every blade in the tile.
+    // InstancedBufferGeometry can't compute one automatically because the
+    // per-instance offset attribute isn't part of `position`. Without this
+    // the renderer falls back to skipping frustum culling and draws every
+    // tile every frame.
+    useEffect(() => {
+      const geo = geometryRef.current;
+      if (!geo) return;
+      const radius = Math.hypot(width, bH * 1.4) * 0.6;
+      geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, bH * 0.5, 0), radius);
+      geo.boundingBox = new THREE.Box3(
+        new THREE.Vector3(-width * 0.5, 0, -width * 0.5),
+        new THREE.Vector3(width * 0.5, bH * 1.6, width * 0.5),
       );
-      const target = Math.max(0, Math.floor(resolvedInstances * w));
-      if (target !== lastInstanceCount.current) {
-        geo.instanceCount = target;
-        lastInstanceCount.current = target;
-      }
-    });
+    }, [width, bH]);
 
     return (
       <group ref={groupRef} {...props}>
-        <mesh>
+        <mesh ref={meshRef} frustumCulled>
           <instancedBufferGeometry
             ref={geometryRef}
             index={baseGeom.index}

@@ -26,6 +26,28 @@ export type SceneDescriptor = {
   exit?: SceneEntry;
 };
 
+export type RoomBounds = {
+  min: [number, number, number];
+  max: [number, number, number];
+};
+
+export type RoomDescriptor = {
+  id: string;
+  sceneId: SceneId;
+  name?: string;
+  bounds: RoomBounds;
+};
+
+export type RoomPortalDescriptor = {
+  id: string;
+  sceneId: SceneId;
+  fromRoomId: string;
+  toRoomId: string;
+  position: [number, number, number];
+  radius?: number;
+  revealDistance?: number;
+};
+
 export type SceneSerialized = {
   version: 1;
   current: SceneId;
