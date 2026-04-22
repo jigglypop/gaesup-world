@@ -1,38 +1,45 @@
 .app-navigation {
   position: fixed;
-  top: 10px;
-  left: 10px;
-  z-index: 1000;
+  top: 18px;
+  left: 18px;
+  z-index: 95;
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
+  max-width: calc(100vw - 36px);
 }
 
 .app-nav-button {
-  background-color: var(--editor-surface-secondary);
-  border: 1px solid var(--editor-border-color);
-  color: var(--editor-text-secondary);
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 500;
+  background: rgba(18, 20, 28, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f3f4f8;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
   text-decoration: none;
-  border-radius: var(--editor-border-radius);
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: var(--editor-shadow);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
 }
 
 .app-nav-button:hover {
-  background-color: var(--editor-surface-hover);
-  color: var(--editor-text-primary);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
 }
 
 .app-nav-user {
-  background-color: var(--editor-surface-secondary);
-  border: 1px solid var(--editor-border-color);
-  color: var(--editor-text-main);
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 500;
-  border-radius: var(--editor-border-radius);
-  box-shadow: var(--editor-shadow);
-} 
+  background: rgba(18, 20, 28, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f3f4f8;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}

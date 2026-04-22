@@ -1,12 +1,12 @@
 .teleport-container {
   position: fixed;
-  top: 80px;
-  right: 260px;
+  top: calc(var(--gp-shell-pad, 16px) + var(--gp-header-height, 62px) + 10px);
+  right: calc(var(--gp-right-rail, 304px) + var(--gp-shell-pad, 16px) + var(--gp-content-gap, 16px));
   z-index: 1000;
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
-  padding: 8px;
+  grid-template-columns: repeat(4, minmax(92px, 1fr));
+  gap: 8px;
+  padding: 10px;
   background: rgba(18, 20, 28, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
@@ -14,25 +14,27 @@
   -webkit-backdrop-filter: blur(20px) saturate(140%);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.32);
   font-family: 'Pretendard', system-ui, sans-serif;
+  max-width: min(540px, calc(100vw - var(--gp-right-rail, 304px) - 64px));
 }
 
 .teleport-button {
   background: rgba(255, 255, 255, 0.06);
   color: #f3f4f8;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 8px 12px;
+  padding: 10px 12px;
   cursor: pointer;
   border-radius: 8px;
-  font-size: 11.5px;
+  font-size: 13.5px;
   font-weight: 500;
-  letter-spacing: 0.2px;
+  letter-spacing: 0;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
+  min-height: 42px;
   transition: background 0.18s ease, border-color 0.18s ease, transform 0.06s ease;
   font-family: 'Pretendard', system-ui, sans-serif;
+  line-height: 1.35;
 }
 
 .teleport-button:hover {
@@ -42,4 +44,14 @@
 
 .teleport-button:active {
   transform: translateY(1px);
+}
+
+@media (max-width: 860px) {
+  .teleport-container {
+    top: 74px;
+    left: 10px;
+    right: 10px;
+    max-width: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

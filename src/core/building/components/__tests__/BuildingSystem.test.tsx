@@ -2,8 +2,21 @@ import React from 'react';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 
 import { BuildingSystem } from '../BuildingSystem';
+import {
+  createEmptyBuildingIndirectDrawMirror,
+  DRAW_CLUSTER_BILLBOARD,
+  DRAW_CLUSTER_FIRE,
+  DRAW_CLUSTER_FLAG,
+  DRAW_CLUSTER_SAKURA,
+  DRAW_CLUSTER_TILE,
+  DRAW_CLUSTER_WALL,
+  INDIRECT_DRAW_STRIDE,
+} from '../../render/draw';
+import { useBuildingGpuCullingStore } from '../../render/cullingStore';
+import { useBuildingRenderStateStore } from '../../render/store';
 import { useBuildingStore } from '../../stores/buildingStore';
 import { WallGroupConfig, TileGroupConfig, MeshConfig } from '../../types';
+import { useBuildingVisibilityStore } from '../../visibility/store';
 
 // BuildingStore 모킹
 jest.mock('../../stores/buildingStore', () => ({
@@ -138,11 +151,17 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
 
   beforeEach(() => {
     mockUseBuildingStore = useBuildingStore as jest.MockedFunction<typeof useBuildingStore>;
+    useBuildingRenderStateStore.getState().reset();
+    useBuildingGpuCullingStore.getState().reset();
+    useBuildingVisibilityStore.getState().reset();
     mockStore();
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    useBuildingRenderStateStore.getState().reset();
+    useBuildingGpuCullingStore.getState().reset();
+    useBuildingVisibilityStore.getState().reset();
   });
 
   describe('렌더링', () => {
@@ -413,6 +432,76 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
 
       await renderer.update(<BuildingSystem onTileClick={jest.fn()} />);
       expectSceneHasName(renderer, 'tile-system-tile-group-3');
+
+      renderer.unmount();
+    });
+  });
+
+  describe('indirect draw execution MVP', () => {
+    test('draw args budget only renders the allowed number of wall and tile groups', async () => {
+      const drawMirror = createEmptyBuildingIndirectDrawMirror();
+      drawMirror.version = 11;
+      drawMirror.args[DRAW_CLUSTER_WALL * INDIRECT_DRAW_STRIDE + 1] = 1;
+      drawMirror.args[DRAW_CLUSTER_TILE * INDIRECT_DRAW_STRIDE + 1] = 1;
+      useBuildingRenderStateStore.getState().setDrawMirror(drawMirror);
+      useBuildingGpuCullingStore.getState().setResult({
+        version: 11,
+        tileIds: new Set(['tile-group-1', 'tile-group-2']),
+        wallIds: new Set(['wall-group-1', 'wall-group-2']),
+        objectIds: new Set(),
+        clusterCounts: new Uint32Array(10),
+      });
+      useBuildingVisibilityStore.getState().setVisible({
+        tileIds: new Set(['tile-group-1', 'tile-group-2']),
+        wallIds: new Set(['wall-group-1', 'wall-group-2']),
+        objectIds: new Set(),
+      });
+
+      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+
+      expectSceneHasName(renderer, 'wall-system-wall-group-1');
+      expectSceneMissingName(renderer, 'wall-system-wall-group-2');
+      expectSceneHasName(renderer, 'tile-system-tile-group-1');
+      expectSceneMissingName(renderer, 'tile-system-tile-group-2');
+
+      renderer.unmount();
+    });
+
+    test('draw args budget clamps object batches by cluster', async () => {
+      const drawMirror = createEmptyBuildingIndirectDrawMirror();
+      drawMirror.version = 12;
+      drawMirror.args[DRAW_CLUSTER_SAKURA * INDIRECT_DRAW_STRIDE + 1] = 1;
+      drawMirror.args[DRAW_CLUSTER_FLAG * INDIRECT_DRAW_STRIDE + 1] = 0;
+      drawMirror.args[DRAW_CLUSTER_FIRE * INDIRECT_DRAW_STRIDE + 1] = 1;
+      drawMirror.args[DRAW_CLUSTER_BILLBOARD * INDIRECT_DRAW_STRIDE + 1] = 0;
+      useBuildingRenderStateStore.getState().setDrawMirror(drawMirror);
+      useBuildingGpuCullingStore.getState().setResult({
+        version: 12,
+        tileIds: new Set(),
+        wallIds: new Set(),
+        objectIds: new Set(['s1', 's2', 'f1', 'b1']),
+        clusterCounts: new Uint32Array(10),
+      });
+      useBuildingVisibilityStore.getState().setVisible({
+        tileIds: new Set(),
+        wallIds: new Set(),
+        objectIds: new Set(['s1', 's2', 'f1', 'b1']),
+      });
+      mockStore({
+        objects: [
+          { id: 's1', type: 'sakura', position: { x: 0, y: 0, z: 0 }, config: {} },
+          { id: 's2', type: 'sakura', position: { x: 1, y: 0, z: 0 }, config: {} },
+          { id: 'f1', type: 'fire', position: { x: 2, y: 0, z: 0 }, config: {} },
+          { id: 'b1', type: 'billboard', position: { x: 3, y: 0, z: 0 }, config: {} },
+        ],
+      });
+
+      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+
+      expectSceneHasName(renderer, 'sakura-batch');
+      expectSceneHasName(renderer, 'fire-batch');
+      expectSceneMissingName(renderer, 'flag-batch');
+      expect(() => renderer.scene.findAllByProps({ name: 'billboard' })).not.toThrow();
 
       renderer.unmount();
     });

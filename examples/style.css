@@ -173,7 +173,7 @@ html, body, #root {
   --gp-glass-shadow:    0 8px 28px rgba(0, 0, 0, 0.32);
   --gp-glass-blur:      18px;
   --gp-text:            #f3f4f8;
-  --gp-text-dim:        rgba(243, 244, 248, 0.62);
+  --gp-text-dim:        rgba(243, 244, 248, 0.76);
   --gp-accent:          #ffd84a;
   --gp-good:            #7adf90;
   --gp-cool:            #9ad9ff;
@@ -183,6 +183,11 @@ html, body, #root {
   --gp-radius-sm:       8px;
   --gp-radius-pill:     999px;
   --gp-pad:             10px;
+  --gp-shell-pad:       16px;
+  --gp-header-height:   62px;
+  --gp-left-rail:       248px;
+  --gp-right-rail:      304px;
+  --gp-content-gap:     16px;
   --gp-z-canvas:        0;
   --gp-z-shell:         80;
   --gp-z-overlay:       100;
@@ -192,6 +197,7 @@ html, body, #root {
 .gp-font {
   font-family: 'Pretendard', system-ui, -apple-system, sans-serif;
   font-feature-settings: 'tnum' 1;
+  line-height: 1.45;
 }
 
 .gp-glass {
@@ -212,11 +218,12 @@ html, body, #root {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 7px 12px;
   border-radius: var(--gp-radius-pill);
-  font-size: 11.5px;
+  font-size: 13.5px;
   font-weight: 500;
-  letter-spacing: 0.1px;
+  letter-spacing: 0;
+  line-height: 1.35;
 }
 
 .gp-chip-dot {
@@ -231,11 +238,11 @@ html, body, #root {
   background: rgba(255,255,255,0.05);
   border: 1px solid var(--gp-glass-border);
   color: var(--gp-text);
-  padding: 7px 12px;
+  padding: 10px 14px;
   border-radius: var(--gp-radius-sm);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
-  letter-spacing: 0.2px;
+  letter-spacing: 0;
   cursor: pointer;
   transition: background 0.18s ease, border-color 0.18s ease, transform 0.06s ease;
   display: inline-flex;
@@ -251,8 +258,8 @@ html, body, #root {
 .gp-icon-btn {
   width: 40px; height: 40px;
   border-radius: 50%;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   position: relative;
   padding: 0;
 }
@@ -263,21 +270,29 @@ html, body, #root {
   z-index: var(--gp-z-shell);
   pointer-events: none;
   display: grid;
-  grid-template-columns: 220px 1fr 240px;
+  grid-template-columns: var(--gp-left-rail) minmax(0, 1fr) var(--gp-right-rail);
   grid-template-rows:    auto 1fr auto;
   grid-template-areas:
     "header header header"
     "left   .      right"
     "footer footer footer";
-  gap: 12px;
-  padding: 12px;
+  gap: var(--gp-content-gap);
+  padding: var(--gp-shell-pad);
   color: var(--gp-text);
   font-family: 'Pretendard', system-ui, sans-serif;
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 1.45;
 }
 .gp-shell > * { pointer-events: auto; }
 
-.gp-header { grid-area: header; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.gp-header {
+  grid-area: header;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-height: var(--gp-header-height);
+}
 .gp-left   { grid-area: left;   display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 .gp-right  { grid-area: right;  display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
 .gp-footer {
@@ -289,30 +304,30 @@ html, body, #root {
 }
 
 .gp-panel {
-  padding: 10px 12px;
+  padding: 14px 15px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 .gp-panel-title {
-  font-size: 10px;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
+  font-size: 11.5px;
+  letter-spacing: 0.4px;
   color: var(--gp-text-dim);
-  font-weight: 600;
+  font-weight: 500;
 }
 .gp-panel-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 1.45;
 }
 .gp-stat {
   display: flex; flex-direction: column; gap: 2px;
 }
-.gp-stat-label { font-size: 10px; color: var(--gp-text-dim); letter-spacing: 0.4px; }
-.gp-stat-value { font-size: 16px; font-weight: 700; letter-spacing: 0.2px; }
+.gp-stat-label { font-size: 12px; color: var(--gp-text-dim); letter-spacing: 0; line-height: 1.4; }
+.gp-stat-value { font-size: 18px; font-weight: 600; letter-spacing: 0; line-height: 1.2; }
 
 .gp-actionrow {
   display: flex; flex-direction: column; gap: 8px;
@@ -322,7 +337,7 @@ html, body, #root {
   min-width: 18px; height: 18px; padding: 0 5px;
   border-radius: var(--gp-radius-pill);
   background: var(--gp-cool); color: #1a1d24;
-  font-size: 10px; font-weight: 700;
+  font-size: 11.5px; font-weight: 600;
   display: inline-flex; align-items: center; justify-content: center;
 }
 .gp-badge--warn { background: var(--gp-accent); }
@@ -336,19 +351,26 @@ html, body, #root {
 
 .gp-key {
   display: inline-block;
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: 4px;
   background: rgba(255,255,255,0.10);
   border: 1px solid var(--gp-glass-border);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
   color: var(--gp-text-dim);
+}
+
+.gp-footer-help {
+  padding: 8px 14px;
+  align-self: end;
+  gap: 8px;
 }
 
 @media (max-width: 1100px) {
   .gp-shell {
-    grid-template-columns: 200px 1fr 220px;
+    --gp-left-rail: 224px;
+    --gp-right-rail: 272px;
   }
 }
 @media (max-width: 860px) {
@@ -358,7 +380,8 @@ html, body, #root {
       "header"
       "right"
       "footer";
-    padding: 8px;
+    padding: 10px;
   }
   .gp-left { display: none; }
+  .gp-right { gap: 8px; }
 }

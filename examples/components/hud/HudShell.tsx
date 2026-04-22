@@ -60,10 +60,10 @@ function HeaderBar() {
     <div className="gp-header">
       <div className="gp-glass gp-pill" style={{ paddingRight: 12 }}>
         <span className="gp-chip-dot" style={{ background: SEASON_COLOR[t.season] ?? '#fff' }} />
-        <span style={{ fontWeight: 600 }}>
+        <span style={{ fontWeight: 500 }}>
           Y{t.year}·M{String(t.month).padStart(2, '0')}·D{String(t.day).padStart(2, '0')} ({WEEKDAY_LABEL[t.weekday]})
         </span>
-        <span style={{ opacity: 0.85, marginLeft: 6 }}>{hh}:{mm}</span>
+        <span style={{ opacity: 0.9, marginLeft: 6, fontWeight: 500 }}>{hh}:{mm}</span>
       </div>
 
       {wmeta && (
@@ -88,7 +88,7 @@ function HeaderBar() {
       <div style={{ flex: 1 }} />
 
       <div className="gp-glass gp-pill" style={{ paddingRight: 12, gap: 8 }}>
-        <span style={{ color: 'var(--gp-accent)', fontWeight: 700 }}>{wallet.toLocaleString()}</span>
+        <span style={{ color: 'var(--gp-accent)', fontWeight: 600 }}>{wallet.toLocaleString()}</span>
         <span style={{ color: 'var(--gp-text-dim)' }}>B</span>
       </div>
     </div>
@@ -235,8 +235,8 @@ function RightSidebar() {
       <div className="gp-glass gp-panel">
         <div className="gp-panel-title">캐릭터</div>
         <div className="gp-panel-row">
-          <span style={{ fontWeight: 600 }}>{charName}</span>
-          <span style={{ color: 'var(--gp-text-dim)', fontSize: 11 }}>장착 {equippedCount}/5</span>
+          <span style={{ fontWeight: 500 }}>{charName}</span>
+          <span style={{ color: 'var(--gp-text-dim)', fontSize: 12.5 }}>장착 {equippedCount}/5</span>
         </div>
       </div>
 
@@ -253,8 +253,8 @@ function RightSidebar() {
           </div>
         </div>
         <div className="gp-panel-row">
-          <span style={{ color: 'var(--gp-text-dim)', fontSize: 11 }}>등록 인원</span>
-          <span style={{ fontWeight: 600 }}>{residentCount}</span>
+          <span style={{ color: 'var(--gp-text-dim)', fontSize: 12.5 }}>등록 인원</span>
+          <span style={{ fontWeight: 500 }}>{residentCount}</span>
         </div>
       </div>
 
@@ -285,7 +285,7 @@ function FooterBar() {
     <div className="gp-footer">
       <div />
       <div />
-      <div className="gp-glass gp-pill" style={{ padding: '6px 12px', alignSelf: 'end' }}>
+      <div className="gp-glass gp-pill gp-footer-help">
         <span className="gp-key">F</span><span>도구</span>
         <span style={{ opacity: 0.4 }}>·</span>
         <span className="gp-key">E</span><span>대화</span>

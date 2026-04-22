@@ -1,7 +1,7 @@
 import type { BuildingRenderSnapshot } from './core';
 
 export const GPU_SPATIAL_STRIDE = 4; // xyz + radius
-export const GPU_META_STRIDE = 4; // cellX, cellZ, kind, memberCount
+export const GPU_META_STRIDE = 5; // cellX, cellZ, kind, subKind, memberCount
 
 export type DirtyRange = {
   start: number;
@@ -61,7 +61,8 @@ function packMeta(snapshot: BuildingRenderSnapshot): Int32Array {
     packed[base] = snapshot.cellX[i] ?? 0;
     packed[base + 1] = snapshot.cellZ[i] ?? 0;
     packed[base + 2] = snapshot.kinds[i] ?? 0;
-    packed[base + 3] = snapshot.memberCount[i] ?? 0;
+    packed[base + 3] = snapshot.subKinds[i] ?? 0;
+    packed[base + 4] = snapshot.memberCount[i] ?? 0;
   }
   return packed;
 }

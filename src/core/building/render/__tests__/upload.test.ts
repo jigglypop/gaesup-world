@@ -1,7 +1,9 @@
 import { buildBuildingRenderSnapshot } from '../core';
+import { buildBuildingIndirectDrawMirror } from '../draw';
 import { buildBuildingGpuMirror } from '../gpu';
 import {
   createEmptyBuildingGpuUploadResources,
+  syncBuildingIndirectArgsBuffer,
   syncBuildingGpuBuffers,
   type GpuBufferLike,
   type GpuDeviceLike,
@@ -135,5 +137,24 @@ describe('building gpu upload bridge', () => {
     expect((firstResources.spatialBuffer as MockBuffer).destroyed).toBe(true);
     expect((firstResources.metaBuffer as MockBuffer).destroyed).toBe(true);
     expect(secondResources.spatialBytes).toBeGreaterThan(firstResources.spatialBytes);
+  });
+
+  it('uploads indirect draw args into a dedicated GPU buffer', () => {
+    const { device, created, writes } = createMockDevice();
+    const counts = new Uint32Array(10);
+    counts[1] = 12;
+    counts[8] = 2;
+    const drawMirror = buildBuildingIndirectDrawMirror(3, counts, null);
+
+    const resources = syncBuildingIndirectArgsBuffer(
+      device,
+      createEmptyBuildingGpuUploadResources(),
+      drawMirror,
+    );
+
+    expect(resources.indirectArgsBuffer).toBeTruthy();
+    expect(resources.indirectArgsBytes).toBeGreaterThan(0);
+    expect(created.some((buffer) => buffer.label === 'building-indirect-args')).toBe(true);
+    expect(writes.length).toBeGreaterThan(0);
   });
 });

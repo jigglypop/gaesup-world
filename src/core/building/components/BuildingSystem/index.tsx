@@ -12,6 +12,20 @@ import Billboard from '../mesh/billboard';
 import { Snow } from '../mesh/snow';
 import type { PlacedObject } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
+import {
+  DRAW_CLUSTER_BILLBOARD,
+  DRAW_CLUSTER_FIRE,
+  DRAW_CLUSTER_FLAG,
+  DRAW_CLUSTER_SAKURA,
+  DRAW_CLUSTER_SAND,
+  DRAW_CLUSTER_SNOWFIELD,
+  DRAW_CLUSTER_TILE,
+  DRAW_CLUSTER_WALL,
+  DRAW_CLUSTER_WATER,
+  getIndirectInstanceCount,
+} from '../../render/draw';
+import { useBuildingGpuCullingStore } from '../../render/cullingStore';
+import { useBuildingRenderStateStore } from '../../render/store';
 import { useBuildingVisibilityStore } from '../../visibility/store';
 import { TileSystem } from '../TileSystem';
 import { WallSystem } from '../WallSystem';
@@ -30,6 +44,22 @@ const EMPTY_BUCKETS: ObjectBuckets = {
   fire: [],
   billboard: [],
 };
+
+function clampList<T>(items: T[], limit: number): T[] {
+  if (limit <= 0) return [];
+  if (items.length <= limit) return items;
+  return items.slice(0, limit);
+}
+
+function getTileClusterId(group: { tiles: Array<{ objectType?: string }> }): number {
+  const objectType = group.tiles.find((tile) => tile.objectType && tile.objectType !== 'none')?.objectType ?? 'none';
+  if (objectType === 'water') return DRAW_CLUSTER_WATER;
+  if (objectType === 'sand') return DRAW_CLUSTER_SAND;
+  if (objectType === 'snowfield') return DRAW_CLUSTER_SNOWFIELD;
+  // Grass tiles still render through TileSystem today, so until the grass batch
+  // renderer consumes its own indirect path we budget them through tile cluster.
+  return DRAW_CLUSTER_TILE;
+}
 
 function bucketObjects(objects: PlacedObject[] | undefined): ObjectBuckets {
   if (!objects || objects.length === 0) return EMPTY_BUCKETS;
@@ -77,31 +107,84 @@ export const BuildingSystem = React.memo(function BuildingSystem({
   const gridSize = useBuildingStore((s) => s.gridSize);
   const showSnow = useBuildingStore((s) => s.showSnow);
   const objects = useBuildingStore((s) => s.objects);
+  const drawMirror = useBuildingRenderStateStore((s) => s.drawMirror);
+  const gpuCullingActive = useBuildingGpuCullingStore((s) => s.active);
+  const gpuCullingVersion = useBuildingGpuCullingStore((s) => s.version);
   const visibilityReady = useBuildingVisibilityStore((s) => s.initialized);
   const visibleWallGroupIds = useBuildingVisibilityStore((s) => s.visibleWallGroupIds);
   const visibleTileGroupIds = useBuildingVisibilityStore((s) => s.visibleTileGroupIds);
   const visibleObjectIds = useBuildingVisibilityStore((s) => s.visibleObjectIds);
 
+  const drawReady = gpuCullingActive && drawMirror.version > 0 && drawMirror.version === gpuCullingVersion;
+  const wallBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_WALL) : Number.MAX_SAFE_INTEGER;
+  const tileBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_TILE) : Number.MAX_SAFE_INTEGER;
+  const waterBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_WATER) : Number.MAX_SAFE_INTEGER;
+  const sandBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_SAND) : Number.MAX_SAFE_INTEGER;
+  const snowfieldBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_SNOWFIELD) : Number.MAX_SAFE_INTEGER;
+  const sakuraBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_SAKURA) : Number.MAX_SAFE_INTEGER;
+  const flagBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_FLAG) : Number.MAX_SAFE_INTEGER;
+  const fireBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_FIRE) : Number.MAX_SAFE_INTEGER;
+  const billboardBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_BILLBOARD) : Number.MAX_SAFE_INTEGER;
+
   const wallGroupsArray = useMemo(() => {
     const groups = Array.from(wallGroups.values());
-    if (!visibilityReady) return groups;
-    return groups.filter((group) => visibleWallGroupIds.has(group.id));
-  }, [wallGroups, visibilityReady, visibleWallGroupIds]);
+    const filtered = !visibilityReady ? groups : groups.filter((group) => visibleWallGroupIds.has(group.id));
+    return clampList(filtered, wallBudget);
+  }, [wallGroups, visibilityReady, visibleWallGroupIds, wallBudget]);
   const tileGroupsArray = useMemo(() => {
     const groups = Array.from(tileGroups.values());
-    if (!visibilityReady) return groups;
-    return groups.filter((group) => visibleTileGroupIds.has(group.id));
-  }, [tileGroups, visibilityReady, visibleTileGroupIds]);
+    const filtered = !visibilityReady ? groups : groups.filter((group) => visibleTileGroupIds.has(group.id));
+    const generic: typeof filtered = [];
+    const water: typeof filtered = [];
+    const sand: typeof filtered = [];
+    const snowfield: typeof filtered = [];
+    for (const group of filtered) {
+      const cluster = getTileClusterId(group);
+      if (cluster === DRAW_CLUSTER_WATER) water.push(group);
+      else if (cluster === DRAW_CLUSTER_SAND) sand.push(group);
+      else if (cluster === DRAW_CLUSTER_SNOWFIELD) snowfield.push(group);
+      else generic.push(group);
+    }
+    return [
+      ...clampList(generic, tileBudget),
+      ...clampList(water, waterBudget),
+      ...clampList(sand, sandBudget),
+      ...clampList(snowfield, snowfieldBudget),
+    ];
+  }, [tileGroups, visibilityReady, visibleTileGroupIds, tileBudget, waterBudget, sandBudget, snowfieldBudget]);
   const visibleObjects = useMemo(() => {
-    if (!visibilityReady) return objects;
-    return objects.filter((object) => visibleObjectIds.has(object.id));
-  }, [objects, visibilityReady, visibleObjectIds]);
+    const filtered = !visibilityReady ? objects : objects.filter((object) => visibleObjectIds.has(object.id));
+    const sakura: typeof filtered = [];
+    const flag: typeof filtered = [];
+    const fire: typeof filtered = [];
+    const billboard: typeof filtered = [];
+    for (const object of filtered) {
+      if (object.type === 'sakura') sakura.push(object);
+      else if (object.type === 'flag') flag.push(object);
+      else if (object.type === 'fire') fire.push(object);
+      else if (object.type === 'billboard') billboard.push(object);
+    }
+    return [
+      ...clampList(sakura, sakuraBudget),
+      ...clampList(flag, flagBudget),
+      ...clampList(fire, fireBudget),
+      ...clampList(billboard, billboardBudget),
+    ];
+  }, [
+    objects,
+    visibilityReady,
+    visibleObjectIds,
+    sakuraBudget,
+    flagBudget,
+    fireBudget,
+    billboardBudget,
+  ]);
 
   const buckets = useMemo(() => bucketObjects(visibleObjects), [visibleObjects]);
-  const sakuraEntries = buckets.sakura;
-  const flagObjects = buckets.flag;
-  const fireEntries = buckets.fire;
-  const billboardObjects = buckets.billboard;
+  const sakuraEntries = clampList(buckets.sakura, sakuraBudget);
+  const flagObjects = clampList(buckets.flag, flagBudget);
+  const fireEntries = clampList(buckets.fire, fireBudget);
+  const billboardObjects = clampList(buckets.billboard, billboardBudget);
 
   return (
     <Suspense fallback={null}>

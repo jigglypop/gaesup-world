@@ -1,4 +1,5 @@
 import { createBuildingGpuUploadPlan, type BuildingGpuBufferMirror } from './gpu';
+import { createBuildingIndirectDrawUploadPlan, type BuildingIndirectDrawMirror } from './draw';
 
 const GPU_BUFFER_USAGE_COPY_DST = 0x0008;
 const GPU_BUFFER_USAGE_STORAGE = 0x0080;
@@ -21,8 +22,10 @@ export type BuildingGpuUploadResources = {
   uploadedVersion: number;
   spatialBuffer: GpuBufferLike | null;
   metaBuffer: GpuBufferLike | null;
+  indirectArgsBuffer: GpuBufferLike | null;
   spatialBytes: number;
   metaBytes: number;
+  indirectArgsBytes: number;
 };
 
 export function createEmptyBuildingGpuUploadResources(): BuildingGpuUploadResources {
@@ -31,8 +34,10 @@ export function createEmptyBuildingGpuUploadResources(): BuildingGpuUploadResour
     uploadedVersion: 0,
     spatialBuffer: null,
     metaBuffer: null,
+    indirectArgsBuffer: null,
     spatialBytes: 0,
     metaBytes: 0,
+    indirectArgsBytes: 0,
   };
 }
 
@@ -56,6 +61,7 @@ function destroyBuffer(buffer: GpuBufferLike | null): void {
 export function destroyBuildingGpuUploadResources(resources: BuildingGpuUploadResources): void {
   destroyBuffer(resources.spatialBuffer);
   destroyBuffer(resources.metaBuffer);
+  destroyBuffer(resources.indirectArgsBuffer);
 }
 
 function ensureBuffer(
@@ -120,7 +126,39 @@ export function syncBuildingGpuBuffers(
     uploadedVersion: mirror.version,
     spatialBuffer,
     metaBuffer,
+    indirectArgsBuffer: previous.indirectArgsBuffer,
     spatialBytes,
     metaBytes,
+    indirectArgsBytes: previous.indirectArgsBytes,
+  };
+}
+
+export function syncBuildingIndirectArgsBuffer(
+  device: GpuDeviceLike,
+  previous: BuildingGpuUploadResources,
+  mirror: BuildingIndirectDrawMirror,
+): BuildingGpuUploadResources {
+  const plan = createBuildingIndirectDrawUploadPlan(mirror);
+  const indirectArgsBytes = mirror.args.byteLength;
+  const indirectArgsBuffer = ensureBuffer(
+    device,
+    previous.indirectArgsBuffer,
+    previous.indirectArgsBytes,
+    indirectArgsBytes,
+    'building-indirect-args',
+  );
+
+  if (indirectArgsBuffer) {
+    for (const slice of plan.slices) {
+      device.queue.writeBuffer(indirectArgsBuffer, slice.byteOffset, slice.data);
+    }
+  }
+
+  return {
+    ...previous,
+    backend: 'webgpu',
+    uploadedVersion: Math.max(previous.uploadedVersion, mirror.version),
+    indirectArgsBuffer,
+    indirectArgsBytes,
   };
 }

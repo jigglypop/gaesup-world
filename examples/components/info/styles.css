@@ -1,14 +1,16 @@
 
 .info-style {
   position: fixed;
-  top: 80px;
-  right: 260px;
+  top: calc(var(--gp-shell-pad, 16px) + var(--gp-header-height, 62px) + 10px);
+  right: calc(var(--gp-right-rail, 304px) + var(--gp-shell-pad, 16px) + var(--gp-content-gap, 16px));
   display: flex;
   gap: 10px;
-  padding: 8px;
+  padding: 10px;
   z-index: 90;
   pointer-events: auto;
   font-family: 'Pretendard', system-ui, sans-serif;
+  max-width: min(860px, calc(100vw - var(--gp-right-rail, 304px) - 56px));
+  flex-wrap: wrap;
 }
 .p-recipe {
   padding: 8px;
@@ -27,17 +29,18 @@
   color: #ffffff;
 }
 .glass-button {
-  padding: 8px;
+  padding: 10px 12px;
   background-color: rgba(0, 0, 0, 0.7);
   border: none;
   border-radius: 8px;
   color: white;
   cursor: pointer;
   backdrop-filter: blur(10px);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   transition: all 0.3s ease;
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+  line-height: 1.4;
 }
 .glass-button:hover {
   background-color: rgba(255, 255, 255, 0.2);
@@ -46,28 +49,28 @@
 }
 .camera-description {
   position: fixed;
-  top: 80px;
+  top: calc(var(--gp-shell-pad, 16px) + var(--gp-header-height, 62px) + 12px);
   left: 50%;
   transform: translateX(-50%);
   background-color: rgba(0, 0, 0, 0.8);
   color: white;
   padding: 12px 24px;
   border-radius: 20px;
-  font-size: 14px;
-  font-weight: 300;
-  letter-spacing: 0.5px;
-  line-height: 1.5;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.1px;
+  line-height: 1.6;
   z-index: 999;
   text-align: center;
-  max-width: 450px;
+  max-width: min(560px, calc(100vw - 40px));
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 .camera-settings {
   position: fixed;
-  top: 60px;
-  left: 20px;
-  width: 600px;
+  top: calc(var(--gp-shell-pad, 16px) + var(--gp-header-height, 62px) + 10px);
+  left: calc(var(--gp-shell-pad, 16px) + 4px);
+  width: min(680px, calc(100vw - var(--gp-right-rail, 304px) - 48px));
   max-height: 80vh;
   background-color: rgba(0, 0, 0, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -75,9 +78,9 @@
   padding: 20px;
   backdrop-filter: blur(15px);
   color: white;
-  font-size: 14px;
-  letter-spacing: 0.3px;
-  line-height: 1.4;
+  font-size: 15px;
+  letter-spacing: 0.05px;
+  line-height: 1.55;
   z-index: 999;
   overflow: auto;
 }
@@ -88,16 +91,16 @@
   margin-bottom: 20px;
   padding-bottom: 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  letter-spacing: 0.3px;
+  letter-spacing: 0.05px;
 }
 .reset-button {
-  padding: 6px 12px;
+  padding: 8px 14px;
   background-color: rgba(255, 100, 100, 0.2);
   border: 1px solid rgba(255, 100, 100, 0.4);
   border-radius: 6px;
   color: white;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13.5px;
   letter-spacing: 0.1px;
   transition: all 0.2s ease;
 }
@@ -127,15 +130,15 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
-  letter-spacing: 0.2px;
+  font-size: 15px;
+  letter-spacing: 0.05px;
 }
 .checkbox-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
-  letter-spacing: 0.2px;
+  font-size: 15px;
+  letter-spacing: 0.05px;
 }
 .quick-presets {
   margin-top: 20px;
@@ -151,17 +154,35 @@
   margin-top: 10px;
 }
 .preset-button {
-  padding: 6px 12px;
+  padding: 8px 14px;
   background-color: rgba(100, 200, 255, 0.2);
   border: 1px solid rgba(100, 200, 255, 0.4);
   border-radius: 6px;
   color: white;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13.5px;
   letter-spacing: 0.1px;
   transition: all 0.2s ease;
 }
 .preset-button:hover {
   background-color: rgba(100, 200, 255, 0.4);
   transform: translateY(-1px);
-} 
+}
+
+@media (max-width: 860px) {
+  .info-style,
+  .camera-settings {
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-width: none;
+  }
+
+  .info-style {
+    top: 74px;
+  }
+
+  .camera-settings {
+    top: 126px;
+  }
+}

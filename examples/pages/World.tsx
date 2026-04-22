@@ -100,6 +100,8 @@ export const RICH_CAMERA_OPTION: CameraOptionType = {
 };
 
 const TOON_STORAGE_KEY = 'gaesup:toonMode';
+const DEFAULT_WORLD_TIME_MINUTES = 18 * 60;
+const WORLD_WEATHER_ENABLED = false;
 const _initialToon = (() => {
   if (typeof window === 'undefined') return true;
   const v = window.localStorage.getItem(TOON_STORAGE_KEY);
@@ -468,7 +470,7 @@ function Scenery({ onOpenShop, onOpenCrafting }: { onOpenShop: () => void; onOpe
         <Billboard text="Town" width={3} height={1} color="#fff7e0" toon />
       </group>
 
-      <WeatherEffect area={120} height={22} count={1500} />
+      {WORLD_WEATHER_ENABLED && <WeatherEffect area={120} height={22} count={1500} />}
 
       <group position={[55, 0.02, 0]}>
         <Water size={40} toon />
@@ -507,12 +509,12 @@ function Scenery({ onOpenShop, onOpenCrafting }: { onOpenShop: () => void; onOpe
 }
 
 function GameSystems() {
-  useGameClock(true);
+  useGameClock(false);
   useHotbarKeyboard(true);
   useAutoSave({ intervalMs: 60_000 });
   useQuestObjectiveTracker(true);
   useCatalogTracker(true);
-  useWeatherTicker(true);
+  useWeatherTicker(WORLD_WEATHER_ENABLED);
   useEventsTicker(true);
   useDecorationScore(true);
   useAmbientBgm(true);
@@ -621,15 +623,21 @@ function GameSystems() {
       hydrate: (data: unknown) => useSceneStore.getState().hydrate(data as never),
     });
     void sys.load().then(() => {
+      useTimeStore.getState().setTotalMinutes(DEFAULT_WORLD_TIME_MINUTES);
+      useWeatherStore.setState((state) => ({
+        ...state,
+        current: null,
+      }));
+
       const inv = useInventoryStore.getState();
       if (!inv.has('axe'))         inv.add('axe', 1);
       if (!inv.has('shovel'))      inv.add('shovel', 1);
       if (!inv.has('water-can'))   inv.add('water-can', 1);
       if (!inv.has('seed-turnip')) inv.add('seed-turnip', 5);
-      const today = Math.floor(useTimeStore.getState().totalMinutes / (60 * 24));
+      const timeState = useTimeStore.getState();
+      const today = Math.floor(timeState.totalMinutes / (60 * 24));
       useShopStore.getState().rollDailyStock(today);
-      useWeatherStore.getState().rollForDay(today, useTimeStore.getState().time.season);
-      useEventsStore.getState().refresh(useTimeStore.getState().time);
+      useEventsStore.getState().refresh(timeState.time);
 
       const town = useTownStore.getState();
       if (Object.keys(town.residents).length === 0) {

@@ -15,10 +15,22 @@ export const RENDER_KIND_TILE = 0;
 export const RENDER_KIND_WALL = 1;
 export const RENDER_KIND_OBJECT = 2;
 
+export const RENDER_SUBKIND_TILE_GENERIC = 0;
+export const RENDER_SUBKIND_TILE_GRASS = 1;
+export const RENDER_SUBKIND_TILE_WATER = 2;
+export const RENDER_SUBKIND_TILE_SAND = 3;
+export const RENDER_SUBKIND_TILE_SNOWFIELD = 4;
+export const RENDER_SUBKIND_WALL_GENERIC = 10;
+export const RENDER_SUBKIND_OBJECT_SAKURA = 20;
+export const RENDER_SUBKIND_OBJECT_FLAG = 21;
+export const RENDER_SUBKIND_OBJECT_FIRE = 22;
+export const RENDER_SUBKIND_OBJECT_BILLBOARD = 23;
+
 export type BuildingRenderSnapshot = {
   version: number;
   ids: string[];
   kinds: Uint8Array;
+  subKinds: Uint8Array;
   centerX: Float32Array;
   centerY: Float32Array;
   centerZ: Float32Array;
@@ -33,6 +45,7 @@ export function createEmptyRenderSnapshot(): BuildingRenderSnapshot {
     version: 0,
     ids: [],
     kinds: new Uint8Array(0),
+    subKinds: new Uint8Array(0),
     centerX: new Float32Array(0),
     centerY: new Float32Array(0),
     centerZ: new Float32Array(0),
@@ -67,6 +80,7 @@ export function buildBuildingRenderSnapshot(args: {
 
   const ids = new Array<string>(count);
   const kinds = new Uint8Array(count);
+  const subKinds = new Uint8Array(count);
   const centerX = new Float32Array(count);
   const centerY = new Float32Array(count);
   const centerZ = new Float32Array(count);
@@ -76,9 +90,10 @@ export function buildBuildingRenderSnapshot(args: {
   const memberCount = new Uint16Array(count);
 
   let offset = 0;
-  const write = (id: string, kind: number, record: VisibilityRecord, members: number) => {
+  const write = (id: string, kind: number, subKind: number, record: VisibilityRecord, members: number) => {
     ids[offset] = id;
     kinds[offset] = kind;
+    subKinds[offset] = subKind;
     centerX[offset] = record.centerX;
     centerY[offset] = record.centerY;
     centerZ[offset] = record.centerZ;
@@ -92,23 +107,37 @@ export function buildBuildingRenderSnapshot(args: {
   for (const group of args.tileGroups) {
     const record = buildTileGroupRecord(group);
     if (!record) continue;
-    write(group.id, RENDER_KIND_TILE, record, group.tiles.length);
+    const objectType = group.tiles.find((tile) => tile.objectType && tile.objectType !== 'none')?.objectType ?? 'none';
+    const subKind =
+      objectType === 'grass' ? RENDER_SUBKIND_TILE_GRASS :
+      objectType === 'water' ? RENDER_SUBKIND_TILE_WATER :
+      objectType === 'sand' ? RENDER_SUBKIND_TILE_SAND :
+      objectType === 'snowfield' ? RENDER_SUBKIND_TILE_SNOWFIELD :
+                                RENDER_SUBKIND_TILE_GENERIC;
+    write(group.id, RENDER_KIND_TILE, subKind, record, group.tiles.length);
   }
 
   for (const group of args.wallGroups) {
     const record = buildWallGroupRecord(group);
     if (!record) continue;
-    write(group.id, RENDER_KIND_WALL, record, group.walls.length);
+    write(group.id, RENDER_KIND_WALL, RENDER_SUBKIND_WALL_GENERIC, record, group.walls.length);
   }
 
   for (const object of args.objects) {
-    write(object.id, RENDER_KIND_OBJECT, buildObjectRecord(object), 1);
+    const subKind =
+      object.type === 'sakura' ? RENDER_SUBKIND_OBJECT_SAKURA :
+      object.type === 'flag' ? RENDER_SUBKIND_OBJECT_FLAG :
+      object.type === 'fire' ? RENDER_SUBKIND_OBJECT_FIRE :
+      object.type === 'billboard' ? RENDER_SUBKIND_OBJECT_BILLBOARD :
+                                   RENDER_SUBKIND_OBJECT_FIRE;
+    write(object.id, RENDER_KIND_OBJECT, subKind, buildObjectRecord(object), 1);
   }
 
   return {
     version: args.version,
     ids,
     kinds,
+    subKinds,
     centerX,
     centerY,
     centerZ,
@@ -143,7 +172,7 @@ function toRecord(snapshot: BuildingRenderSnapshot, index: number): VisibilityRe
 
 export function buildVisibilityIndexFromRenderSnapshot(
   snapshot: BuildingRenderSnapshot,
-  cellSize = VISIBILITY_CELL_SIZE,
+  _cellSize = VISIBILITY_CELL_SIZE,
 ): VisibilityIndex {
   const index: VisibilityIndex = {
     tileById: new Map(),

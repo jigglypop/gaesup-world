@@ -9,6 +9,8 @@ import { useBuildingStore } from '../../stores/buildingStore';
 import { BuildingGpuCullingDriver } from '../BuildingGpuCullingDriver';
 import { BuildingGpuMirrorDriver } from '../BuildingGpuMirrorDriver';
 import { BuildingGpuUploadDriver } from '../BuildingGpuUploadDriver';
+import { BuildingIndirectArgsUploadDriver } from '../BuildingIndirectArgsUploadDriver';
+import { BuildingIndirectDrawDriver } from '../BuildingIndirectDrawDriver';
 import { BuildingRenderStateDriver } from '../BuildingRenderStateDriver';
 import { BuildingSystem } from '../BuildingSystem';
 import { BuildingVisibilityDriver } from '../BuildingVisibilityDriver';
@@ -130,6 +132,8 @@ export function BuildingController() {
       <BuildingGpuMirrorDriver />
       <BuildingGpuUploadDriver />
       <BuildingGpuCullingDriver />
+      <BuildingIndirectDrawDriver />
+      <BuildingIndirectArgsUploadDriver />
       <BuildingVisibilityDriver />
       {isEditing && (
         <OrbitControls

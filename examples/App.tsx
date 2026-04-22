@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 
 import { GaesupAdmin } from '../src';
 import './style.css';
@@ -11,10 +11,13 @@ import { EditPage } from './pages/EditPage';
 import { NetworkMultiplayerPage } from './pages/NetworkMultiplayerPage';
 import { WorldPage } from './pages/World';
 
-export default function App() {
+function AppLayout() {
+  const location = useLocation();
+  const hideNavigation = location.pathname === '/' || location.pathname.startsWith('/admin');
+
   return (
-    <BrowserRouter>
-      <Navigation />
+    <>
+      {!hideNavigation && <Navigation />}
       <Routes>
         <Route path="/" element={<WorldPage />} />
         <Route path="/edit" element={<EditPage />} />
@@ -30,6 +33,14 @@ export default function App() {
           }
         />
       </Routes>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppLayout />
     </BrowserRouter>
   );
 }

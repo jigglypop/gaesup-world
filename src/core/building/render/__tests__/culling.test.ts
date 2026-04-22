@@ -1,5 +1,13 @@
-import { buildBuildingRenderSnapshot } from '../core';
-import { parseBuildingGpuVisibilityFlags } from '../culling';
+import {
+  buildBuildingRenderSnapshot,
+  RENDER_SUBKIND_OBJECT_FIRE,
+  RENDER_SUBKIND_TILE_GRASS,
+} from '../core';
+import {
+  DRAW_CLUSTER_FIRE,
+  DRAW_CLUSTER_GRASS,
+  parseBuildingGpuVisibilityFlags,
+} from '../culling';
 
 describe('building gpu culling parse', () => {
   it('maps visible flags back to tile, wall and object id sets', () => {
@@ -23,7 +31,7 @@ describe('building gpu culling parse', () => {
           id: 'tiles',
           name: 'Tiles',
           floorMeshId: 'wood-floor',
-          tiles: [{ id: 't1', tileGroupId: 'tiles', position: { x: 2, y: 0, z: 2 }, size: 1 }],
+          tiles: [{ id: 't1', tileGroupId: 'tiles', position: { x: 2, y: 0, z: 2 }, size: 1, objectType: 'grass' }],
         },
       ],
       objects: [{ id: 'o1', type: 'fire', position: { x: 4, y: 0, z: 4 } }],
@@ -36,5 +44,9 @@ describe('building gpu culling parse', () => {
     expect(parsed.tileIds.has('tiles')).toBe(true);
     expect(parsed.wallIds.size).toBe(0);
     expect(parsed.objectIds.has('o1')).toBe(true);
+    expect(parsed.clusterCounts[DRAW_CLUSTER_GRASS]).toBe(1);
+    expect(parsed.clusterCounts[DRAW_CLUSTER_FIRE]).toBe(1);
+    expect(snapshot.subKinds[0]).toBe(RENDER_SUBKIND_TILE_GRASS);
+    expect(snapshot.subKinds[2]).toBe(RENDER_SUBKIND_OBJECT_FIRE);
   });
 });
