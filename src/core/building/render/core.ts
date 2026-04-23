@@ -8,7 +8,6 @@ import {
   type VisibilityRecord,
   OCCLUDER_MIN_RADIUS,
   OCCLUDER_MIN_WALL_RADIUS,
-  VISIBILITY_CELL_SIZE,
 } from '../visibility/core';
 
 export const RENDER_KIND_TILE = 0;
@@ -172,7 +171,6 @@ function toRecord(snapshot: BuildingRenderSnapshot, index: number): VisibilityRe
 
 export function buildVisibilityIndexFromRenderSnapshot(
   snapshot: BuildingRenderSnapshot,
-  _cellSize = VISIBILITY_CELL_SIZE,
 ): VisibilityIndex {
   const index: VisibilityIndex = {
     tileById: new Map(),

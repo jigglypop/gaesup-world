@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 
-import { useBuildingStore } from '../../stores/buildingStore';
 import { buildBuildingRenderSnapshot } from '../../render/core';
 import { useBuildingRenderStateStore } from '../../render/store';
+import { useBuildingStore } from '../../stores/buildingStore';
 
 export function BuildingRenderStateDriver() {
   const wallGroups = useBuildingStore((s) => s.wallGroups);

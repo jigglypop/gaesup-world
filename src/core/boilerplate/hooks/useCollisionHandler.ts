@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 
 import type { CollisionEnterPayload, CollisionPayload } from '@react-three/rapier';
+
 import type { RuntimeValue } from '../types';
 
 export type CollisionHandlerArg = CollisionPayload | CollisionEnterPayload | CollisionUserData | undefined;

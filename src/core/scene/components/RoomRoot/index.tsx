@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 
-import { useSceneStore } from '../../stores/sceneStore';
 import { useRoomVisibilityStore } from '../../stores/roomVisibilityStore';
+import { useSceneStore } from '../../stores/sceneStore';
 import type { RoomBounds, SceneId } from '../../types';
 
 export type RoomRootProps = {

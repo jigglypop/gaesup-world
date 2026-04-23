@@ -1,17 +1,8 @@
 import React, { Suspense, useMemo } from 'react';
 
+import { BuildingSystemProps } from './types';
 import { NPCPreview } from '../../../npc/components/NPCPreview';
-import { useBuildingStore } from '../../stores/buildingStore';
-import { GridHelper } from '../GridHelper';
-import { PreviewTile } from '../PreviewTile';
-import { PreviewWall } from '../PreviewWall';
-import { SakuraBatch, type SakuraTreeEntry } from '../mesh/sakura';
-import { FlagBatch } from '../mesh/flag';
-import { FireBatch, type FireBatchEntry } from '../mesh/fire';
-import Billboard from '../mesh/billboard';
-import { Snow } from '../mesh/snow';
-import type { PlacedObject } from '../../types';
-import { TILE_CONSTANTS } from '../../types/constants';
+import { useBuildingGpuCullingStore } from '../../render/cullingStore';
 import {
   DRAW_CLUSTER_BILLBOARD,
   DRAW_CLUSTER_FIRE,
@@ -24,12 +15,21 @@ import {
   DRAW_CLUSTER_WATER,
   getIndirectInstanceCount,
 } from '../../render/draw';
-import { useBuildingGpuCullingStore } from '../../render/cullingStore';
 import { useBuildingRenderStateStore } from '../../render/store';
+import { useBuildingStore } from '../../stores/buildingStore';
+import type { PlacedObject } from '../../types';
+import { TILE_CONSTANTS } from '../../types/constants';
 import { useBuildingVisibilityStore } from '../../visibility/store';
+import { GridHelper } from '../GridHelper';
+import Billboard from '../mesh/billboard';
+import { FireBatch, type FireBatchEntry } from '../mesh/fire';
+import { FlagBatch } from '../mesh/flag';
+import { SakuraBatch, type SakuraTreeEntry } from '../mesh/sakura';
+import { Snow } from '../mesh/snow';
+import { PreviewTile } from '../PreviewTile';
+import { PreviewWall } from '../PreviewWall';
 import { TileSystem } from '../TileSystem';
 import { WallSystem } from '../WallSystem';
-import { BuildingSystemProps } from './types';
 
 type ObjectBuckets = {
   sakura: SakuraTreeEntry[];

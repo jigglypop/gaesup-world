@@ -64,8 +64,9 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     set((state) => {
       if (id === DEFAULT_SCENE_ID) return state;
       if (!state.scenes[id]) return state;
-      const { [id]: _removed, ...rest } = state.scenes;
-      return { scenes: rest };
+      const scenes = { ...state.scenes };
+      delete scenes[id];
+      return { scenes };
     }),
 
   setTransition: (next) =>

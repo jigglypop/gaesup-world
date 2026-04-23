@@ -6,10 +6,10 @@ import * as THREE from 'three';
 import { weightFromDistance } from '@core/utils/sfe';
 
 import { TileObjectProps } from './types';
-import Water from '../mesh/water';
-import Grass from '../mesh/grass/Grass';
 import type { TileConfig } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
+import Grass from '../mesh/grass/Grass';
+import Water from '../mesh/water';
 
 const SFE_NEAR = 25;
 const SFE_FAR = 90;

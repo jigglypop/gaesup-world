@@ -1,7 +1,7 @@
 import React, { FC } from 'react';
 
-import { FLAG_STYLE_META, FlagStyle, TileObjectType, PlacedObjectType, TileShapeType } from '../../../../building/types';
 import { useBuildingStore } from '../../../../building/stores/buildingStore';
+import { FLAG_STYLE_META, FlagStyle, TileObjectType, PlacedObjectType, TileShapeType } from '../../../../building/types';
 import './styles.css';
 
 const FLAG_STYLES = Object.entries(FLAG_STYLE_META) as [FlagStyle, typeof FLAG_STYLE_META[FlagStyle]][];

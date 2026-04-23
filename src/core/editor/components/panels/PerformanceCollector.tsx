@@ -1,5 +1,6 @@
-import { useFrame, useThree } from '@react-three/fiber';
 import { useRef } from 'react';
+
+import { useFrame, useThree } from '@react-three/fiber';
 
 import { useGaesupStore } from '../../../stores/gaesupStore';
 

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 
-import { useBuildingStore } from '../../src';
 import { WorldPage } from './World';
+import { useBuildingStore } from '../../src';
 
 /**
  * Edit-mode entry. Reuses the world canvas but mounts the in-game

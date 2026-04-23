@@ -1,6 +1,6 @@
-import { useGaesupStore } from '../../../src';
 import { CAMERA_PRESETS } from './constants';
 import { SelectionTooltip } from './SelectionTooltip';
+import { useGaesupStore } from '../../../src';
 import './styles.css';
 
 export default function Info() {

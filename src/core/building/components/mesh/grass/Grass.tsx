@@ -7,14 +7,15 @@ import * as THREE from "three";
 
 import bladeAlpha from "/resources/blade_alpha.jpg";
 import bladeDiffuse from "/resources/blade_diffuse.jpg";
+import { usePerfStore } from "@core/perf/stores/perfStore";
+import { createToonMaterial, getDefaultToonMode } from "@core/rendering/toon";
+import { loadCoreWasm, type GaesupCoreWasmExports } from "@core/wasm/loader";
+
 import fragmentShader from "./frag.glsl";
+import { getGrassManager, setGrassManagerWasm, type GrassTileRenderState } from "./manager";
 import { GrassMeshProps } from "./type";
 import vertexShader from "./vert.glsl";
-import { loadCoreWasm, type GaesupCoreWasmExports } from "@core/wasm/loader";
-import { createToonMaterial, getDefaultToonMode } from "@core/rendering/toon";
-import { usePerfStore } from "@core/perf/stores/perfStore";
 
-import { getGrassManager, setGrassManagerWasm, type GrassTileRenderState } from "./manager";
 
 // Single shared material per shading mode. Vertex colors carry the per-tile
 // variation so big tiles never look like a flat plastic green sheet.

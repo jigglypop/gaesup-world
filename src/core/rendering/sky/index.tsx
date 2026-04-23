@@ -1,10 +1,11 @@
 import { useMemo, useRef } from 'react';
+
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { useTimeStore } from '../../time/stores/timeStore';
-import { useWeatherStore } from '../../weather/stores/weatherStore';
 import type { Season } from '../../time/types';
+import { useWeatherStore } from '../../weather/stores/weatherStore';
 import type { WeatherKind } from '../../weather/types';
 
 export type SkyKeyframe = {

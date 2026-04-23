@@ -5,11 +5,12 @@ import { extend, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 import { weightFromDistance } from "@core/utils/sfe";
-import { FLAG_STYLE_META, FlagStyle } from "../../../types";
+
 
 import fragmentShader from "./frag.glsl";
 import { FlagBatchProps, FlagMeshProps } from "./type";
 import vertexShader from "./vert.glsl";
+import { FLAG_STYLE_META, FlagStyle } from "../../../types";
 
 const FlagMaterial = shaderMaterial(
   {

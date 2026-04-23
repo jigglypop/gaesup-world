@@ -6,9 +6,9 @@ import * as THREE from 'three';
 import { useEventsStore } from '../../../events/stores/eventsStore';
 import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
-import { notify } from '../../../ui/components/Toast/toastStore';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
+import { notify } from '../../../ui/components/Toast/toastStore';
 import { useWeatherStore } from '../../../weather/stores/weatherStore';
 
 export type CatchEntry = { itemId: string; weight: number };

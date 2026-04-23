@@ -11,8 +11,7 @@ type DecoratorValue =
   | bigint
   | symbol
   | null
-  | undefined
-  | Function;
+  | undefined;
 type DecoratedMethod = (...args: DecoratorValue[]) => DecoratorValue;
 type BridgeIdentifier = string | number | symbol;
 type IdentifiedValue = { id: BridgeIdentifier };

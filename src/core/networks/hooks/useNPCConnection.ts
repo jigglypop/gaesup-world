@@ -3,6 +3,7 @@ import { useCallback, useRef, useEffect } from 'react';
 import { Vector3 } from 'three';
 
 import type { RuntimeRecord } from '@core/boilerplate/types';
+
 import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
 
 export interface NPCConnectionOptions {

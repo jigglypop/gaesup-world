@@ -1,7 +1,7 @@
+import type { BlueprintRecord, BlueprintValue } from '../types';
 import type { CharacterAnimationProps } from './components/CharacterAnimationComponent';
 import type { CharacterMovementProps } from './components/CharacterMovementComponent';
 import type { GravityForceProperties } from './components/GravityForceComponent';
-import type { BlueprintRecord, BlueprintValue } from '../types';
 
 const asNumber = (value: BlueprintValue | undefined, fallback: number): number =>
   typeof value === 'number' ? value : fallback;

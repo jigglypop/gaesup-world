@@ -14,8 +14,7 @@ export type DecoratedValue =
   | bigint
   | symbol
   | null
-  | undefined
-  | Function;
+  | undefined;
 
 export type AnyConstructor<T = object> = new (...args: never[]) => T;
 

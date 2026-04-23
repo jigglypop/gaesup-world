@@ -23,8 +23,8 @@ import type { BlueprintRecord, BlueprintValue } from '../../types';
 import { BlueprintPreview } from '../BlueprintPreview';
 import { CameraNode } from '../editor/CameraNode';
 import { EditableNode } from '../editor/EditableNode';
-import { InputNode } from '../editor/InputNode';
 import { NodeFieldValue } from '../editor/EditableNode/types';
+import { InputNode } from '../editor/InputNode';
 import {
   convertBlueprintToItem,
   generateNodesFromBlueprint,

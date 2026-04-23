@@ -2,8 +2,8 @@ import * as THREE from 'three';
 
 import { BridgeFactory } from '@core/boilerplate';
 import type { MotionBridge } from '@core/motions/bridge/MotionBridge';
-import { useWeatherStore } from '@core/weather/stores/weatherStore';
 import type { GaesupCoreWasmExports } from '@core/wasm/loader';
+import { useWeatherStore } from '@core/weather/stores/weatherStore';
 
 /**
  * Per-tile grass record consumed by the manager. Tiles register on

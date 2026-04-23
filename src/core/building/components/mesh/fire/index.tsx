@@ -1,7 +1,7 @@
 import React, { FC, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
-import { extend, useFrame } from '@react-three/fiber';
 import { shaderMaterial } from '@react-three/drei';
+import { extend, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import fragmentShader from './frag.glsl';

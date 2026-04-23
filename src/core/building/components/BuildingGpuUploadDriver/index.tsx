@@ -2,13 +2,13 @@ import { useEffect, useRef } from 'react';
 
 import { useThree } from '@react-three/fiber';
 
+import { useBuildingRenderStateStore } from '../../render/store';
 import {
   createEmptyBuildingGpuUploadResources,
   destroyBuildingGpuUploadResources,
   getWebGPUDeviceFromRenderer,
   syncBuildingGpuBuffers,
 } from '../../render/upload';
-import { useBuildingRenderStateStore } from '../../render/store';
 
 export function BuildingGpuUploadDriver() {
   const gl = useThree((s) => s.gl);

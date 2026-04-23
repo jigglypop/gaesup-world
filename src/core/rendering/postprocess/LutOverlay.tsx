@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
+
 import { LUT } from '@react-three/postprocessing';
+import * as THREE from 'three';
 
 import { loadCubeLutTexture } from './cubeLut';
 

@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 
+import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import type { ItemId } from '../../items/types';
-import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 import type { ShopOffer, ShopSerialized } from '../types';
 import { useWalletStore } from './walletStore';
 

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
-import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 import { useWalletStore } from '../../economy/stores/walletStore';
+import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 import { notify } from '../../ui/components/Toast/toastStore';
 import { getRecipeRegistry } from '../registry/RecipeRegistry';
 import type { CraftingSerialized, RecipeId } from '../types';

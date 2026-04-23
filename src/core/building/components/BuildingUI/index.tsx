@@ -2,8 +2,8 @@ import React, { useMemo, useCallback } from 'react';
 
 import { useAuthStore } from '../../../../admin/store/authStore';
 import { useNPCStore } from '../../../npc/stores/npcStore';
-import type { TileObjectType, TileShapeType } from '../../types';
 import { useBuildingStore } from '../../stores/buildingStore';
+import type { TileObjectType, TileShapeType } from '../../types';
 import './styles.css';
 
 export type BuildingUIProps = {

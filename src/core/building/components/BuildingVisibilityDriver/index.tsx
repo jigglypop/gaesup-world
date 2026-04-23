@@ -3,6 +3,9 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { buildVisibilityIndexFromRenderSnapshot } from '../../render/core';
+import { useBuildingGpuCullingStore } from '../../render/cullingStore';
+import { useBuildingRenderStateStore } from '../../render/store';
 import {
   collectCandidateIds,
   collectOccluderCandidates,
@@ -12,9 +15,6 @@ import {
   VISIBILITY_MAX_DISTANCE,
   VISIBILITY_UPDATE_INTERVAL,
 } from '../../visibility/core';
-import { buildVisibilityIndexFromRenderSnapshot } from '../../render/core';
-import { useBuildingGpuCullingStore } from '../../render/cullingStore';
-import { useBuildingRenderStateStore } from '../../render/store';
 import { useBuildingVisibilityStore } from '../../visibility/store';
 
 function appendVisibleIds(

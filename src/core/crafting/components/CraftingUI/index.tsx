@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
+import { useWalletStore } from '../../../economy/stores/walletStore';
 import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
-import { useWalletStore } from '../../../economy/stores/walletStore';
 import { getRecipeRegistry } from '../../registry/RecipeRegistry';
 import { useCraftingStore } from '../../stores/craftingStore';
 

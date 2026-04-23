@@ -18,8 +18,8 @@ import './styles.css';
 import { BlueprintType, BlueprintCategory } from './types';
 import { convertBlueprintToItem, generateNodesFromBlueprint } from './utils';
 import { blueprintRegistry, AnyBlueprint, CharacterBlueprint, VehicleBlueprint, AirplaneBlueprint, BlueprintWithComponents, BlueprintComponent } from '../../../';
-import type { BlueprintRecord, BlueprintValue } from '../../../types';
 import { useSpawnFromBlueprint } from '../../../hooks/useSpawnFromBlueprint';
+import type { BlueprintRecord, BlueprintValue } from '../../../types';
 import { EditableNode } from '../../editor/EditableNode';
 import { NodeFieldValue, EditableNodeData } from '../../editor/EditableNode/types';
 

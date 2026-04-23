@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
@@ -56,7 +55,7 @@ export interface PhysicsBridgeData {
 }
 
 export interface PhysicsLayerProps {
-  children: ReactNode;
+  children: RuntimeValue | RuntimeValue[];
   bridgeRef: RefObject<PhysicsBridgeData>;
 }
 

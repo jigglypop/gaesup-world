@@ -33,11 +33,11 @@ import {
   useBuildingStore, useGaesupStore,
 } from '../../src';
 import { registerSeedDialogs } from '../components/dialog/seedDialogs';
-import { registerSeedI18n } from '../components/i18n/seedI18n';
 import { HudShell } from '../components/hud/HudShell';
+import { registerSeedI18n } from '../components/i18n/seedI18n';
 import { NPCBeacon } from '../components/npc/NPCBeacon';
-import { registerSeedContent } from '../components/seedContent';
 import { Pickup } from '../components/pickup';
+import { registerSeedContent } from '../components/seedContent';
 import { AIRPLANE_URL, CHARACTER_URL, EXAMPLE_CONFIG, S3, VEHICLE_URL } from '../config/constants';
 import '../style.css';
 

@@ -23,7 +23,10 @@ const HOOK_AFTER_METADATA_KEY = 'monitoring:hook:after';
 
 const isPromiseLike = (value: DecoratedValue): value is Promise<DecoratedValue> => {
   if (typeof value !== 'object' || value === null) return false;
-  const maybePromise = value as { then?: Function; finally?: Function };
+  const maybePromise = value as {
+    then?: (...args: unknown[]) => unknown;
+    finally?: (...args: unknown[]) => unknown;
+  };
   return typeof maybePromise.then === 'function' && typeof maybePromise.finally === 'function';
 };
 

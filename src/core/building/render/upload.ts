@@ -1,5 +1,5 @@
-import { createBuildingGpuUploadPlan, type BuildingGpuBufferMirror } from './gpu';
 import { createBuildingIndirectDrawUploadPlan, type BuildingIndirectDrawMirror } from './draw';
+import { createBuildingGpuUploadPlan, type BuildingGpuBufferMirror } from './gpu';
 
 const GPU_BUFFER_USAGE_COPY_DST = 0x0008;
 const GPU_BUFFER_USAGE_STORAGE = 0x0080;

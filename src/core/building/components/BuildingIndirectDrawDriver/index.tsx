@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
-import { buildBuildingIndirectDrawMirror } from '../../render/draw';
 import { useBuildingGpuCullingStore } from '../../render/cullingStore';
+import { buildBuildingIndirectDrawMirror } from '../../render/draw';
 import { useBuildingRenderStateStore } from '../../render/store';
 
 export function BuildingIndirectDrawDriver() {

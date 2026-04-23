@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 
-import { getItemRegistry } from '../../../items/registry/ItemRegistry';
 import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
+import { getItemRegistry } from '../../../items/registry/ItemRegistry';
+import { notify } from '../../../ui/components/Toast/toastStore';
 import { useShopStore } from '../../stores/shopStore';
 import { useWalletStore } from '../../stores/walletStore';
-import { notify } from '../../../ui/components/Toast/toastStore';
 
 export type ShopUIProps = {
   open: boolean;

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import type { RuntimeRecord } from '@core/boilerplate/types';
+
 import { ActiveStateType } from '../../motions/core/types';
 
 export interface CameraConstants {

@@ -3,6 +3,7 @@ import React, { useEffect, useId, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
 import type { RuntimeRecord } from '@core/boilerplate/types';
+
 import { useInteractablesStore, type InteractableKind } from '../../stores/interactablesStore';
 
 export type InteractableProps = {

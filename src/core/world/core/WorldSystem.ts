@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
 import { RegisterSystem, Profile, HandleError } from '@core/boilerplate/decorators';
-import type { RuntimeRecord } from '@core/boilerplate/types';
 import { BaseSystem, SystemContext } from '@core/boilerplate/entity/BaseSystem';
+import type { RuntimeRecord } from '@core/boilerplate/types';
 
 import { SpatialGrid } from './SpatialGrid';
 

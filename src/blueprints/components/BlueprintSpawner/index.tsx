@@ -4,8 +4,8 @@ import { RigidBody, RapierRigidBody } from '@react-three/rapier';
 import { Group } from 'three';
 
 import { BlueprintSpawnerProps } from './types';
-import { BlueprintFactory } from '../../factory/BlueprintFactory';
 import { BlueprintEntity } from '../../core/BlueprintEntity';
+import { BlueprintFactory } from '../../factory/BlueprintFactory';
 import { AnyBlueprint } from '../../types';
 
 export function BlueprintSpawner({

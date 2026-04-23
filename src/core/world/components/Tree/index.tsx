@@ -4,10 +4,10 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
-import { notify } from '../../../ui/components/Toast/toastStore';
 import { useTimeStore } from '../../../time/stores/timeStore';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
+import { notify } from '../../../ui/components/Toast/toastStore';
 
 export type TreeObjectProps = {
   id?: string;

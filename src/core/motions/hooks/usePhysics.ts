@@ -5,8 +5,8 @@ import { RapierRigidBody } from '@react-three/rapier';
 import { useGaesupStore } from '@stores/gaesupStore';
 
 import { useStateSystem } from './useStateSystem';
-import { InteractionSystem } from '../../interactions/core/InteractionSystem';
 import type { InteractionCommand, InteractionState } from '../../interactions/bridge';
+import { InteractionSystem } from '../../interactions/core/InteractionSystem';
 
 type UsePhysicsResult = {
     worldContext: ReturnType<typeof useGaesupStore.getState>;

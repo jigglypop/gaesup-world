@@ -1,9 +1,9 @@
-import type { DomainBinding, SerializedDomainValue } from '../../save/types';
 import {
   DEFAULT_VISIT_DOMAINS,
   type VisitBindingProvider,
   type VisitSnapshot,
 } from './types';
+import type { DomainBinding, SerializedDomainValue } from '../../save/types';
 
 export type SerializeVisitOptions = {
   hostId: string;

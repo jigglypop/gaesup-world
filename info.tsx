@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // ══════════════════════════════════════════════════════════
 // 양재천 앵화야행 — 상세 동선 타임라인 v4
@@ -14,8 +14,6 @@ const riverCenter = [
   {x:162,y:57.5},{x:170,y:57},{x:178,y:56},{x:186,y:55},{x:194,y:54},
   {x:200,y:53.5},
 ];
-const riverTop = riverCenter.map(p => ({x:p.x, y:p.y - 3.5}));
-const riverBot = riverCenter.map(p => ({x:p.x, y:p.y + 3.5}));
 
 // ── 산책로 (하천 양쪽) ──
 const pathNorth = riverCenter.map(p => ({x:p.x, y:p.y - 6}));

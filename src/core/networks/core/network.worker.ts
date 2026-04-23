@@ -88,7 +88,7 @@ self.onmessage = (e: MessageEvent) => {
         try {
           const msg = JSON.parse(text);
           handleServerMessage(msg);
-        } catch (err) {
+        } catch {
           self.postMessage({ type: 'WS_ERROR', error: 'Parse failed' });
         }
       };

@@ -1,9 +1,9 @@
-import { ComponentRegistry } from './ComponentRegistry';
 import {
   toCharacterAnimationProps,
   toCharacterMovementProps,
   toGravityForceProperties,
 } from './componentProps';
+import { ComponentRegistry } from './ComponentRegistry';
 import { CharacterAnimationComponent } from './components/CharacterAnimationComponent';
 import { CharacterMovementComponent } from './components/CharacterMovementComponent';
 import { GravityForceComponent } from './components/GravityForceComponent';

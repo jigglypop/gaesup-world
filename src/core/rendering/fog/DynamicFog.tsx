@@ -58,7 +58,7 @@ export function DynamicFog({
     const base = new THREE.Color(color);
     const blend = dayBlend(hour, minute);
 
-    let target = base.clone();
+    const target = base.clone();
     if (blend.phase === 'night') target.copy(NIGHT_COLOR);
     else if (blend.phase === 'dawn') target.lerpColors(NIGHT_COLOR, DAWN_COLOR, blend.t);
     else if (blend.phase === 'dusk') target.lerpColors(NIGHT_COLOR, DUSK_COLOR, blend.t);

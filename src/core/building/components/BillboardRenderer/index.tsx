@@ -2,8 +2,8 @@ import React, { Suspense } from 'react';
 
 import type { ThreeEvent } from '@react-three/fiber';
 
-import Billboard from '../mesh/billboard';
 import { BillboardConfig } from '../../types';
+import Billboard from '../mesh/billboard';
 
 interface Props {
   billboards: BillboardConfig[];

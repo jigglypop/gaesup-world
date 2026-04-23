@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { InteractionSystem } from '../../../../interactions/core/InteractionSystem';
 import type { KeyboardState } from '../../../../interactions/bridge';
+import { InteractionSystem } from '../../../../interactions/core/InteractionSystem';
 
 export type TouchControlsProps = {
   /** Force visibility regardless of pointer detection. */
