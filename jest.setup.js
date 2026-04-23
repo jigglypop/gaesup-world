@@ -10,6 +10,15 @@ require("reflect-metadata");
 // Some @react-three/fiber effects schedule updates on mount.
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
+try {
+  // Keep Jest output focused on failures instead of decorator/bootstrap logs.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { logger } = require("./src/core/utils/logger");
+  logger.disable();
+} catch {
+  // Logger is optional for tests that don't load app modules.
+}
+
 // ResizeObserver polyfill for jsdom environment
 global.ResizeObserver = class ResizeObserver {
   constructor(cb) {
@@ -50,4 +59,8 @@ if (!global.HTMLCanvasElement.prototype.getContext) {
     rect: () => {},
     clip: () => {},
   });
-} 
+}
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});

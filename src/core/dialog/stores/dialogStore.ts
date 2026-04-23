@@ -3,19 +3,21 @@ import { create } from 'zustand';
 import { useQuestStore } from '../../quests/stores/questStore';
 import { DialogRunner } from '../core/DialogRunner';
 import { getDialogRegistry } from '../registry/DialogRegistry';
-import type { DialogContext, DialogNode, DialogTreeId } from '../types';
+import type { DialogContext, DialogEffect, DialogNode, DialogTreeId } from '../types';
+
+type CustomDialogEffect = Extract<DialogEffect, { type: 'custom' }>;
 
 type DialogState = {
   runner: DialogRunner | null;
   node: DialogNode | null;
-  npcId?: string;
+  npcId: string | undefined;
 
   start: (
     treeId: DialogTreeId,
     options?: {
       context?: DialogContext;
       onOpenShop?: (shopId?: string) => void;
-      onCustomEffect?: (effect: { type: 'custom'; key: string; payload?: unknown }) => void;
+      onCustomEffect?: (effect: CustomDialogEffect) => void;
     },
   ) => boolean;
   advance: () => void;
@@ -33,9 +35,9 @@ export const useDialogStore = create<DialogState>((set, get) => ({
     if (!tree) return false;
     const runner = new DialogRunner({
       tree,
-      context: options?.context,
-      onCustomEffect: options?.onCustomEffect,
-      onOpenShop: options?.onOpenShop,
+      ...(options?.context ? { context: options.context } : {}),
+      ...(options?.onCustomEffect ? { onCustomEffect: options.onCustomEffect } : {}),
+      ...(options?.onOpenShop ? { onOpenShop: options.onOpenShop } : {}),
     });
     set({ runner, node: runner.current, npcId: options?.context?.npcId });
     if (options?.context?.npcId) useQuestStore.getState().notifyTalk(options.context.npcId);

@@ -1,9 +1,11 @@
+type ValidationValue = object | string | number | boolean | bigint | symbol | null | undefined;
+
 export const ValidationUtils = {
-  isNonEmptyString(value: unknown): value is string {
+  isNonEmptyString(value: ValidationValue): value is string {
     return typeof value === 'string' && value.trim().length > 0;
   },
 
-  isPositiveNumber(value: unknown): value is number {
+  isPositiveNumber(value: ValidationValue): value is number {
     return typeof value === 'number' && value > 0;
   },
 
@@ -11,7 +13,7 @@ export const ValidationUtils = {
     return value >= min && value <= max;
   },
 
-  isValidId(id: unknown): id is string {
+  isValidId(id: ValidationValue): id is string {
     return this.isNonEmptyString(id) && /^[a-zA-Z0-9_-]+$/.test(id);
   },
 
@@ -28,8 +30,8 @@ export const ValidationUtils = {
     }
   },
 
-  hasRequiredProperties<T extends Record<string, unknown>>(
-    obj: unknown,
+  hasRequiredProperties<T extends Record<string, ValidationValue>>(
+    obj: object | null | undefined,
     requiredProps: (keyof T)[]
   ): obj is T {
     if (typeof obj !== 'object' || obj === null) return false;

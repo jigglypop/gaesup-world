@@ -131,6 +131,10 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
     }
   }
 
+  protected createUpdateArgs(context: SystemContext): SystemContext {
+    return context;
+  }
+
   // AnimationBridge에서 호출하는 update 메서드 (deltaTime 파라미터 유지)
   updateAnimation(deltaTime: number): void {
     const context: SystemContext = {

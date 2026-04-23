@@ -2,6 +2,7 @@ import React, { useEffect, useId, useMemo, useRef } from 'react';
 
 import * as THREE from 'three';
 
+import type { RuntimeRecord } from '@core/boilerplate/types';
 import { useInteractablesStore, type InteractableKind } from '../../stores/interactablesStore';
 
 export type InteractableProps = {
@@ -10,7 +11,7 @@ export type InteractableProps = {
   label: string;
   range?: number;
   activationKey?: string;
-  data?: Record<string, unknown>;
+  data?: RuntimeRecord;
   onActivate: () => void;
   position: [number, number, number];
   children?: React.ReactNode;
@@ -44,7 +45,7 @@ export function Interactable({
       position: posVec.clone(),
       range,
       key: activationKey,
-      data,
+      ...(data ? { data } : {}),
       onActivate,
     });
     return () => unregister(realId);

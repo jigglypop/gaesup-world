@@ -89,7 +89,10 @@ export class CameraSystem extends BaseCameraSystem {
       this.state.activeController = controller;
       controller.update(props, this.state);
     } catch (error) {
-      this.emitError('Camera calculation failed', error);
+      this.emitError(
+        'Camera calculation failed',
+        error instanceof Error ? error.message : undefined,
+      );
     }
   }
   

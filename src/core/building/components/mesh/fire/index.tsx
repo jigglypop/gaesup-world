@@ -23,6 +23,7 @@ type FireUniforms = {
   flare: number;
   tint: THREE.Color;
 };
+type FireMaterialInstance = THREE.ShaderMaterial & FireUniforms;
 
 const EMBER_VERT = `
 attribute float aLife;
@@ -123,7 +124,6 @@ interface FireProps {
 
 const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color = '#ffffff' }) => {
   const tintColor = useMemo(() => new THREE.Color(color), [color]);
-  const matRefs = useRef<(THREE.Material | null)[]>([]);
 
   const geo = getSharedGeo();
   const mat = getSharedMat();
@@ -138,6 +138,10 @@ const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color
     { w: width * 0.52, h: height * 0.85, x: -width * 0.12, y: height * 0.43, z: 0.02, seed: 1.31, lean: -0.2, flare: 0.85, speed: 1.9, tOff: 1.7, iMul: 0.82 },
     { w: width * 0.42, h: height * 0.7, x: width * 0.14, y: height * 0.36, z: -0.02, seed: 2.63, lean: 0.16, flare: 0.74, speed: 2.2, tOff: 3.4, iMul: 0.72 },
   ], [width, height]);
+  const materialRefs = useMemo(
+    () => billboardLayers.map(() => React.createRef<FireMaterialInstance>()),
+    [billboardLayers],
+  );
 
   const billboardGeos = useMemo(
     () => billboardLayers.map(l => new THREE.PlaneGeometry(l.w, l.h)),
@@ -169,19 +173,20 @@ const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color
     const t = state.clock.elapsedTime;
 
     for (let i = 0; i < billboardLayers.length; i++) {
-      const m = matRefs.current[i];
+      const m = materialRefs[i]?.current;
       if (!m) continue;
       const l = billboardLayers[i];
-      const u = m as unknown as FireUniforms;
-      u.time = t * l.speed + l.tOff;
-      u.intensity = intensity * l.iMul;
-      u.seed = l.seed;
-      u.lean = l.lean;
-      u.flare = l.flare;
-      u.tint = tintColor;
+      if (!l) continue;
+      m.time = t * l.speed + l.tOff;
+      m.intensity = intensity * l.iMul;
+      m.seed = l.seed;
+      m.lean = l.lean;
+      m.flare = l.flare;
+      m.tint = tintColor;
     }
 
-    mat.ember.uniforms.uTime.value = t;
+    const emberTime = mat.ember.uniforms['uTime'];
+    if (emberTime) emberTime.value = t;
   });
 
   useEffect(() => {
@@ -239,15 +244,22 @@ const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color
       />
 
       {billboardLayers.map((l, i) => (
-        <mesh key={i} geometry={billboardGeos[i]} position={[l.x, l.y, l.z]}>
-          <fireMaterial
-            ref={(el: THREE.Material | null) => { matRefs.current[i] = el; }}
-            transparent
-            depthWrite={false}
-            side={THREE.DoubleSide}
-            blending={THREE.AdditiveBlending}
-          />
-        </mesh>
+        (() => {
+          const geometry = billboardGeos[i];
+          const materialRef = materialRefs[i];
+          if (!geometry || !materialRef) return null;
+          return (
+            <mesh key={i} geometry={geometry} position={[l.x, l.y, l.z]}>
+              <fireMaterial
+                ref={materialRef}
+                transparent
+                depthWrite={false}
+                side={THREE.DoubleSide}
+                blending={THREE.AdditiveBlending}
+              />
+            </mesh>
+          );
+        })()
       ))}
 
       <points geometry={emberGeo} material={mat.ember} />

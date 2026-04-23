@@ -11,7 +11,7 @@ export function GroundClicker() {
 
     const { cameraOption, setCameraOption } = useGaesupStore.getState();
     if (cameraOption?.focus) {
-      setCameraOption({ focus: false, focusTarget: undefined });
+      setCameraOption({ focus: false });
       return;
     }
 

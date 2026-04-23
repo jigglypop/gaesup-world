@@ -1,4 +1,4 @@
-import type { DomainBinding } from '../../save/types';
+import type { DomainBinding, SerializedDomainValue } from '../../save/types';
 import {
   DEFAULT_VISIT_DOMAINS,
   type VisitBindingProvider,
@@ -21,11 +21,11 @@ export type ApplyVisitOptions = {
    * Called for each domain right before its hydrate is invoked. Return
    * `false` to skip applying that domain.
    */
-  filter?: (key: string, value: unknown) => boolean;
+  filter?: (key: string, value: SerializedDomainValue) => boolean;
 };
 
-function collectBindings(provider: VisitBindingProvider): Map<string, DomainBinding<unknown>> {
-  const map = new Map<string, DomainBinding<unknown>>();
+function collectBindings(provider: VisitBindingProvider): Map<string, DomainBinding> {
+  const map = new Map<string, DomainBinding>();
   for (const binding of provider()) {
     if (!binding || typeof binding.key !== 'string') continue;
     map.set(binding.key, binding);
@@ -39,7 +39,7 @@ export function serializeVisit(
 ): VisitSnapshot {
   const bindings = collectBindings(provider);
   const targets = options.domains ?? DEFAULT_VISIT_DOMAINS;
-  const domains: Record<string, unknown> = {};
+  const domains: Record<string, SerializedDomainValue> = {};
 
   for (const key of targets) {
     const binding = bindings.get(key);
@@ -54,7 +54,7 @@ export function serializeVisit(
   return {
     version: options.version ?? 1,
     hostId: options.hostId,
-    hostName: options.hostName,
+    ...(options.hostName ? { hostName: options.hostName } : {}),
     capturedAt: Date.now(),
     domains,
   };
@@ -104,7 +104,7 @@ export function applyVisitSnapshot(
  * duplicating wiring.
  */
 export function visitProviderFromSaveSystem(
-  saveSystem: { getBindings: () => Iterable<DomainBinding<unknown>> },
+  saveSystem: { getBindings: () => Iterable<DomainBinding> },
 ): VisitBindingProvider {
   return () => saveSystem.getBindings();
 }

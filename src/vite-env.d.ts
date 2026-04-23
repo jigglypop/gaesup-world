@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 type ThreeElements = import("@react-three/fiber").ThreeElements;
+type WaterElementProps = Record<string, object | string | number | boolean | bigint | symbol | null | undefined>;
 
 // Custom env vars used by this repo (keeps `noPropertyAccessFromIndexSignature` happy).
 interface ImportMetaEnv {
@@ -16,14 +17,14 @@ declare namespace NodeJS {
 
 declare namespace JSX {
   interface IntrinsicElements extends ThreeElements {
-    water: Record<string, unknown>;
+    water: WaterElementProps;
   }
 }
 
 declare namespace React {
   namespace JSX {
     interface IntrinsicElements extends ThreeElements {
-      water: Record<string, unknown>;
+      water: WaterElementProps;
     }
   }
 }

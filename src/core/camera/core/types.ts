@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 
+import type { RuntimeRecord } from '@core/boilerplate/types';
 import { ActiveStateType } from '../../motions/core/types';
 
 export interface CameraConstants {
@@ -191,12 +192,12 @@ export interface CollisionCheckResult {
 }
 
 export interface CameraPropType {
-  state: { delta: number } & Record<string, unknown>;
+  state: { delta: number } & RuntimeRecord;
   worldContext: {
     activeState: ActiveStateType;
   };
   cameraOption: CameraOptionType;
-  controllerOptions?: Record<string, unknown>;
+  controllerOptions?: RuntimeRecord;
 }
 
 export interface CameraShakeConfig {

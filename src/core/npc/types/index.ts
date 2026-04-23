@@ -1,3 +1,5 @@
+import type { RuntimeValue } from '@core/boilerplate/types';
+
 export interface NPCPart {
   id: string;
   type: 'body' | 'hair' | 'top' | 'bottom' | 'shoes' | 'glasses' | 'hat' | 'accessory' | 'weapon';
@@ -67,7 +69,7 @@ export type NPCEventPayload =
   | { type: 'dialogue'; text: string; duration?: number }
   | { type: 'animation'; animationId: string; loop?: boolean }
   | { type: 'sound'; soundUrl: string; volume?: number }
-  | { type: 'custom'; data: unknown };
+  | { type: 'custom'; data: RuntimeValue };
 
 export interface NPCEvent {
   id: string;

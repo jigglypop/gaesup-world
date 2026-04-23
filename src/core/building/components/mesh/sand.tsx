@@ -76,6 +76,7 @@ function buildMergedSand(entries: SandEntry[]): [THREE.BufferGeometry, THREE.Buf
   for (let ei = 0; ei < entries.length; ei++) {
     const e = entries[ei];
     const segs = segList[ei];
+    if (!e || segs === undefined) continue;
     const s = e.size;
     const ox = e.position[0], oy = e.position[1] + 0.04, oz = e.position[2];
 
@@ -124,6 +125,7 @@ function buildMergedSand(entries: SandEntry[]): [THREE.BufferGeometry, THREE.Buf
   for (let ei = 0; ei < entries.length; ei++) {
     const e = entries[ei];
     const gc = grainList[ei];
+    if (!e || gc === undefined) continue;
     const s = e.size;
     const ox = e.position[0], oy = e.position[1] + 0.04, oz = e.position[2];
 

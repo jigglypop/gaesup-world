@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import { OrbitControls } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
+import * as THREE from 'three';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 import { NPCSystem } from '../../../npc/components/NPCSystem';
 import { useBuildingEditor } from '../../hooks/useBuildingEditor';
@@ -43,9 +45,13 @@ export function BuildingController() {
   const lastPlaceRef = useRef(0);
 
   // OrbitControls: 좌클릭 비활성, 우클릭으로 회전
-  const configureOrbit = useCallback((controls: any) => {
+  const configureOrbit = useCallback((controls: OrbitControlsImpl | null) => {
     if (!controls) return;
-    controls.mouseButtons = { LEFT: -1, MIDDLE: 1, RIGHT: 0 };
+    controls.mouseButtons = {
+      LEFT: -1 as THREE.MOUSE,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: THREE.MOUSE.ROTATE,
+    };
   }, []);
 
   useEffect(() => {

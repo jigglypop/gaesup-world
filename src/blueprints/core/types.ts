@@ -3,10 +3,12 @@ import { RefObject } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 import type { Group, Vector3 } from 'three';
 
+import type { BlueprintRecord, BlueprintValue } from '../types';
+
 export interface ComponentDefinition {
   type: string;
   enabled: boolean;
-  properties: Record<string, unknown>;
+  properties: BlueprintRecord;
 }
 
 export interface BlueprintDefinition {
@@ -21,7 +23,7 @@ export interface BlueprintDefinition {
     linearDamping?: number;
     angularDamping?: number;
   };
-  metadata?: Record<string, unknown>;
+  metadata?: BlueprintRecord;
 }
 
 export interface ComponentContext {
@@ -46,7 +48,7 @@ export interface IForceComponent extends IComponent {
 }
 
 export interface IMovementComponent extends IComponent {
-  calculateMovement(input: unknown, context: ComponentContext): Vector3;
+  calculateMovement(input: BlueprintValue, context: ComponentContext): Vector3;
 }
 
 export interface ComponentRegistry {
@@ -55,4 +57,4 @@ export interface ComponentRegistry {
   getFactory(type: string): ComponentFactory | undefined;
 }
 
-export type ComponentFactory = (properties: Record<string, unknown>) => IComponent; 
+export type ComponentFactory = (properties: BlueprintRecord) => IComponent; 

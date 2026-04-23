@@ -22,8 +22,6 @@ export type TreeObjectProps = {
   scale?: number;
 };
 
-const _tmp = new THREE.Vector3();
-
 export function TreeObject({
   position,
   rotationY = 0,

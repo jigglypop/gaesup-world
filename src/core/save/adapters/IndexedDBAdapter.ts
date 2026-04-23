@@ -44,8 +44,8 @@ function withStore<T>(
 export class IndexedDBAdapter implements SaveAdapter {
   async read(slot: string): Promise<SaveBlob | null> {
     try {
-      const v = await withStore<unknown>('readonly', (s) => s.get(slot));
-      return (v as SaveBlob) ?? null;
+      const v = await withStore<SaveBlob | undefined>('readonly', (s) => s.get(slot));
+      return v ?? null;
     } catch {
       return null;
     }

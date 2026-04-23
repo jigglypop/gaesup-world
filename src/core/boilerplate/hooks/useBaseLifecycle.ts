@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import { AbstractBridge } from '../bridge/AbstractBridge';
-import { IDisposable, UseBaseLifecycleOptions } from '../types';
+import { IDisposable, RuntimeValue, UseBaseLifecycleOptions } from '../types';
 
 export function useBaseLifecycle<
   EngineType extends IDisposable,
@@ -29,13 +29,13 @@ export function useBaseLifecycle<
 
     return () => {
       // Ensure unregister always runs, even if cleanup/onUnregister throws.
-      let firstError: unknown;
+      let firstError: Error | RuntimeValue;
 
       if (cleanupRef.current) {
         try {
           cleanupRef.current();
         } catch (e) {
-          firstError = firstError ?? e;
+          firstError = firstError ?? (e instanceof Error ? e : String(e));
         } finally {
           cleanupRef.current = null;
         }
@@ -45,14 +45,14 @@ export function useBaseLifecycle<
         try {
           onUnregister(engine);
         } catch (e) {
-          firstError = firstError ?? e;
+          firstError = firstError ?? (e instanceof Error ? e : String(e));
         }
       }
 
       try {
         bridge.unregister(id);
       } catch (e) {
-        firstError = firstError ?? e;
+        firstError = firstError ?? (e instanceof Error ? e : String(e));
       }
 
       if (firstError) {

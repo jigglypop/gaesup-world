@@ -189,7 +189,7 @@ export class RenderBudget {
     if (len < 3) return this.currentStrength;
 
     let sum = 0;
-    for (let i = 0; i < len; i++) sum += this.frameTimeHistory[i];
+    for (let i = 0; i < len; i++) sum += this.frameTimeHistory[i] ?? 0;
     const avgFps = sum / len;
 
     // SFE time evolution: d(sigma)/dt = -eta * (target - actual)
@@ -208,7 +208,7 @@ export class RenderBudget {
     const len = this.frameTimeHistory.length;
     if (len === 0) return 0;
     let sum = 0;
-    for (let i = 0; i < len; i++) sum += this.frameTimeHistory[i];
+    for (let i = 0; i < len; i++) sum += this.frameTimeHistory[i] ?? 0;
     return sum / len;
   }
 

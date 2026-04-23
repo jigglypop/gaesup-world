@@ -2,6 +2,7 @@ import { Suspense, useEffect, ReactNode, useMemo } from 'react';
 
 import { Camera } from '@/core/camera';
 import { PerformanceCollector } from '@/core/editor/components/panels/PerformanceCollector';
+import type { UrlsState } from '@/core/stores/slices/urls/types';
 import { useGaesupStore } from '@stores/gaesupStore';
 
 import { WorldContainerProps } from './types';
@@ -41,23 +42,23 @@ export function WorldConfigProvider(props: WorldContainerProps) {
 
   const urlUpdates = useMemo(() => {
     if (!props.urls) return null;
-    const entries = Object.entries(props.urls).filter(([, value]) => value !== undefined);
-    if (entries.length === 0) return null;
+    const mapped: Partial<UrlsState> = {};
 
-    const raw = Object.fromEntries(entries) as Record<string, unknown>;
-    const mapped: Record<string, unknown> = { ...raw };
+    if (props.urls.characterUrl !== undefined) mapped.characterUrl = props.urls.characterUrl;
+    if (props.urls.vehicleUrl !== undefined) mapped.vehicleUrl = props.urls.vehicleUrl;
+    if (props.urls.airplaneUrl !== undefined) mapped.airplaneUrl = props.urls.airplaneUrl;
 
-    // Map legacy keys -> store keys
-    if (typeof raw['character'] === 'string' && !raw['characterUrl']) mapped['characterUrl'] = raw['character'];
-    if (typeof raw['vehicle'] === 'string' && !raw['vehicleUrl']) mapped['vehicleUrl'] = raw['vehicle'];
-    if (typeof raw['airplane'] === 'string' && !raw['airplaneUrl']) mapped['airplaneUrl'] = raw['airplane'];
+    if (mapped.characterUrl === undefined && props.urls.character !== undefined) {
+      mapped.characterUrl = props.urls.character;
+    }
+    if (mapped.vehicleUrl === undefined && props.urls.vehicle !== undefined) {
+      mapped.vehicleUrl = props.urls.vehicle;
+    }
+    if (mapped.airplaneUrl === undefined && props.urls.airplane !== undefined) {
+      mapped.airplaneUrl = props.urls.airplane;
+    }
 
-    // Do not keep legacy keys to avoid confusing consumers of `urls` state
-    delete mapped['character'];
-    delete mapped['vehicle'];
-    delete mapped['airplane'];
-
-    return mapped;
+    return Object.keys(mapped).length > 0 ? mapped : null;
   }, [props.urls]);
   
   useEffect(() => {

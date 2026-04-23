@@ -1,3 +1,5 @@
+import type { NetworkPayload } from '../types';
+
 // Web Worker for handling WebSocket communication and JSON parsing
 // Offloads network processing from the main thread.
 
@@ -9,7 +11,6 @@ export type WorkerMessage =
 
 let ws: WebSocket | null = null;
 let floatView: Float32Array | null = null;
-let int32View: Int32Array | null = null;
 
 // Map clientId to an index in the SharedArrayBuffer (0 to 1023)
 const clientIndexMap = new Map<string, number>();
@@ -33,6 +34,24 @@ const getClientIndex = (id: string) => {
 // 11: updated timestamp
 const STRIDE = 16;
 
+type TransformState = {
+  position?: [number, number, number];
+  rotation?: [number, number, number, number];
+  velocity?: [number, number, number];
+  [key: string]: NetworkPayload;
+};
+
+type ServerMessage = {
+  type: string;
+  client_id?: string;
+  state?: TransformState;
+  [key: string]: NetworkPayload;
+};
+
+function isTransformState(value: NetworkPayload): value is TransformState {
+  return value !== null && typeof value === 'object';
+}
+
 self.onmessage = (e: MessageEvent) => {
   const data = e.data;
 
@@ -40,7 +59,6 @@ self.onmessage = (e: MessageEvent) => {
     case 'INIT':
       const buffer = data.sharedBuffer;
       floatView = new Float32Array(buffer);
-      int32View = new Int32Array(buffer);
       break;
 
     case 'CONNECT':
@@ -97,11 +115,12 @@ self.onmessage = (e: MessageEvent) => {
   }
 };
 
-function handleServerMessage(msg: any) {
+function handleServerMessage(msg: ServerMessage) {
   // If it's a transform update and we have SAB, write it directly and skip postMessage if metadata didn't change
   if (msg.type === 'PlayerUpdate' && floatView) {
-    const clientId = msg.client_id;
-    const state = msg.state;
+    const clientId = typeof msg.client_id === 'string' ? msg.client_id : null;
+    const state = isTransformState(msg.state) ? msg.state : null;
+    if (!clientId) return;
     const idx = getClientIndex(clientId);
 
     if (idx !== -1 && state) {
@@ -146,7 +165,9 @@ function handleServerMessage(msg: any) {
       }
     }
   } else if (msg.type === 'PlayerJoined' && floatView) {
-    const idx = getClientIndex(msg.client_id);
+    const clientId = typeof msg.client_id === 'string' ? msg.client_id : null;
+    if (!clientId) return;
+    const idx = getClientIndex(clientId);
     if (idx !== -1) {
       self.postMessage({
         type: 'WS_MESSAGE',

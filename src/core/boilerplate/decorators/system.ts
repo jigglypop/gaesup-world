@@ -1,16 +1,33 @@
 import {
   DecoratorTarget,
+  DecoratedValue,
   PropertyDescriptorExtended,
   AnyConstructor
 } from './types';
 import { logger } from '../../utils/logger';
 import type { BaseSystem } from '../entity/BaseSystem';
+import type { SystemContext } from '../entity/BaseSystem';
 import { SystemRegistry } from '../entity/SystemRegistry';
+import type { RuntimeValue } from '../types';
+
+type RuntimeState = {
+  animationFrameId: number | null;
+  lastTime: number;
+  totalTime: number;
+  frameCount: number;
+};
+
+type DisposableInstance = {
+  dispose?: () => void;
+  update?: (context: SystemContext) => void;
+};
+
+type HandledErrorValue = Error | RuntimeValue;
 
 /**
- * 시스템 메서드의 에러를 자동으로 처리하는 데코레이터
+ * ?쒖뒪??硫붿꽌?쒖쓽 ?먮윭瑜??먮룞?쇰줈 泥섎━?섎뒗 ?곗퐫?덉씠??
  */
-export function HandleError(defaultReturn?: unknown) {
+export function HandleError(defaultReturn?: DecoratedValue) {
   return function (
     target: DecoratorTarget,
     propertyKey: string,
@@ -18,11 +35,15 @@ export function HandleError(defaultReturn?: unknown) {
   ) {
     void target;
     const originalMethod = descriptor.value;
-    descriptor.value = function (...args: unknown[]) {
+    descriptor.value = function (...args: never[]) {
       try {
         return originalMethod!.apply(this, args);
       } catch (error) {
-        logger.error(`[${this.constructor.name}] Error in ${propertyKey}:`, error);
+        const loggedError: HandledErrorValue = error instanceof Error ? error : String(error);
+        logger.error(
+          `[${this.constructor.name}] Error in ${propertyKey}:`,
+          loggedError,
+        );
         return defaultReturn;
       }
     };
@@ -32,7 +53,7 @@ export function HandleError(defaultReturn?: unknown) {
 }
 
 /**
- * 시스템 초기화를 로깅하는 데코레이터
+ * ?쒖뒪??珥덇린?붾? 濡쒓퉭?섎뒗 ?곗퐫?덉씠??
  */
 export function LogInitialization() {
   return function (
@@ -43,7 +64,7 @@ export function LogInitialization() {
     void target;
     void propertyKey;
     const originalMethod = descriptor.value;
-    descriptor.value = function (...args: unknown[]) {
+    descriptor.value = function (...args: never[]) {
       logger.info(`[${this.constructor.name}] Initializing`);
       const startTime = performance.now();
       const result = originalMethod!.apply(this, args);
@@ -56,92 +77,97 @@ export function LogInitialization() {
 }
 
 /**
- * 시스템을 자동으로 등록하는 클래스 데코레이터
+ * ?쒖뒪?쒖쓣 ?먮룞?쇰줈 ?깅줉?섎뒗 ?대옒???곗퐫?덉씠??
  */
 export function RegisterSystem(systemType: string) {
-  return function <T extends AnyConstructor>(constructor: T) {
-    const decoratedClass = class extends constructor {
-      // TS mixin requirement: rest args must be `any[]`.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      constructor(...args: any[]) {
-        super(...(args as unknown as ConstructorParameters<T>));
-        SystemRegistry.register(systemType, this as unknown as BaseSystem);
+  return function <T extends AnyConstructor>(constructor: T): T {
+    const decoratedConstructor = new Proxy(constructor, {
+      construct(target, args, newTarget) {
+        const instance = Reflect.construct(target, args, newTarget) as BaseSystem;
+        SystemRegistry.register(systemType, instance);
         logger.info(`[${constructor.name}] Registered as ${systemType} system`);
+        return instance;
       }
-    };
-    // 원래 클래스의 이름을 유지
-    Object.defineProperty(decoratedClass, 'name', { value: constructor.name });
-    return decoratedClass as T;
+    });
+
+    Object.defineProperty(decoratedConstructor, 'name', { value: constructor.name });
+    return decoratedConstructor as T;
   };
 }
 
 /**
- * 시스템의 런타임을 자동으로 관리하는 클래스 데코레이터
+ * ?쒖뒪?쒖쓽 ?고??꾩쓣 ?먮룞?쇰줈 愿由ы븯???대옒???곗퐫?덉씠??
  */
 export function ManageRuntime(options: { autoStart?: boolean } = {}) {
-  return function <T extends AnyConstructor>(constructor: T) {
-    const decoratedClass = class extends constructor {
-      private animationFrameId: number | null = null;
-      private lastTime: number = 0;
-      private totalTime: number = 0;
-      private frameCount: number = 0;
+  return function <T extends AnyConstructor>(constructor: T): T {
+    const runtimeState = new WeakMap<object, RuntimeState>();
 
-      // TS mixin requirement: rest args must be `any[]`.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      constructor(...args: any[]) {
-        super(...(args as unknown as ConstructorParameters<T>));
-        
-        if (options.autoStart) {
-          this.startRuntime();
-        }
-      }
-
-      private startRuntime() {
-        const loop = (currentTime: number) => {
-          if (this.lastTime === 0) {
-            this.lastTime = currentTime;
-          }
-          
-          const deltaTime = currentTime - this.lastTime;
-          this.lastTime = currentTime;
-          this.totalTime += deltaTime;
-          this.frameCount++;
-          
-          const context = {
-            deltaTime,
-            totalTime: this.totalTime,
-            frameCount: this.frameCount
-          };
-          
-          // Type-safe update method call
-          const instance = this as unknown as { update?: (context: unknown) => void };
-          if (instance.update && typeof instance.update === 'function') {
-            instance.update(context);
-          }
-          
-          this.animationFrameId = requestAnimationFrame(loop);
+    const decoratedConstructor = new Proxy(constructor, {
+      construct(target, args, newTarget) {
+        const instance = Reflect.construct(target, args, newTarget) as object & DisposableInstance;
+        const state: RuntimeState = {
+          animationFrameId: null,
+          lastTime: 0,
+          totalTime: 0,
+          frameCount: 0,
         };
-        
-        this.animationFrameId = requestAnimationFrame(loop);
-        logger.info(`[${constructor.name}] Runtime started`);
-      }
+        runtimeState.set(instance, state);
 
-      dispose() {
-        if (this.animationFrameId !== null) {
-          cancelAnimationFrame(this.animationFrameId);
-          this.animationFrameId = null;
-          logger.info(`[${constructor.name}] Runtime stopped`);
+        const stopRuntime = () => {
+          if (state.animationFrameId !== null) {
+            cancelAnimationFrame(state.animationFrameId);
+            state.animationFrameId = null;
+            logger.info(`[${constructor.name}] Runtime stopped`);
+          }
+        };
+
+        const startRuntime = () => {
+          const loop = (currentTime: number) => {
+            if (state.lastTime === 0) {
+              state.lastTime = currentTime;
+            }
+
+            const deltaTime = currentTime - state.lastTime;
+            state.lastTime = currentTime;
+            state.totalTime += deltaTime;
+            state.frameCount++;
+
+            const context = {
+              deltaTime,
+              totalTime: state.totalTime,
+              frameCount: state.frameCount
+            };
+
+            if (instance.update && typeof instance.update === 'function') {
+              instance.update(context);
+            }
+
+            state.animationFrameId = requestAnimationFrame(loop);
+          };
+
+          state.animationFrameId = requestAnimationFrame(loop);
+          logger.info(`[${constructor.name}] Runtime started`);
+        };
+
+        const originalDispose = instance.dispose?.bind(instance);
+        Object.defineProperty(instance, 'dispose', {
+          configurable: true,
+          writable: true,
+          value: () => {
+            stopRuntime();
+            originalDispose?.();
+          }
+        });
+
+        if (options.autoStart) {
+          startRuntime();
         }
-        
-        // 원래 클래스의 dispose 메서드 호출
-        const originalDispose = constructor.prototype.dispose;
-        if (originalDispose && typeof originalDispose === 'function') {
-          originalDispose.call(this);
-        }
+
+        return instance;
       }
-    };
-    // 원래 클래스의 이름을 유지
-    Object.defineProperty(decoratedClass, 'name', { value: constructor.name });
-    return decoratedClass as T;
+    });
+
+    Object.defineProperty(decoratedConstructor, 'name', { value: constructor.name });
+    return decoratedConstructor as T;
   };
-} 
+}

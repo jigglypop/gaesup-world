@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 
 import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
-import { NetworkMessage } from '../types';
+import { NetworkMessage, NetworkPayload } from '../types';
 
 export interface MessageSendOptions {
   reliable?: boolean;
@@ -26,8 +26,8 @@ export interface UseNetworkMessageOptions extends UseNetworkBridgeOptions {
 
 export interface UseNetworkMessageResult {
   // 메시지 전송
-  sendMessage: (receiverId: string, content: unknown, type?: string, options?: MessageSendOptions) => string;
-  broadcastMessage: (content: unknown, type?: string, options?: BroadcastOptions) => string;
+  sendMessage: (receiverId: string, content: NetworkPayload, type?: string, options?: MessageSendOptions) => string;
+  broadcastMessage: (content: NetworkPayload, type?: string, options?: BroadcastOptions) => string;
   
   // 메시지 상태
   receivedMessages: NetworkMessage[];
@@ -70,7 +70,7 @@ export function useNetworkMessage(options: UseNetworkMessageOptions): UseNetwork
 
   const sendMessage = useCallback((
     receiverId: string,
-    content: unknown,
+    content: NetworkPayload,
     type: string = 'chat',
     messageOptions?: MessageSendOptions
   ): string => {
@@ -106,7 +106,7 @@ export function useNetworkMessage(options: UseNetworkMessageOptions): UseNetwork
   }, [isReady, executeCommand, senderId, onMessageSent]);
 
   const broadcastMessage = useCallback((
-    content: unknown,
+    content: NetworkPayload,
     type: string = 'chat',
     broadcastOptions?: BroadcastOptions
   ): string => {

@@ -26,7 +26,15 @@ export function RoomPortal({
   const unregisterPortal = useRoomVisibilityStore((s) => s.unregisterPortal);
 
   useEffect(() => {
-    registerPortal({ id, sceneId, fromRoomId, toRoomId, position, radius, revealDistance });
+    registerPortal({
+      id,
+      sceneId,
+      fromRoomId,
+      toRoomId,
+      position,
+      ...(radius !== undefined ? { radius } : {}),
+      ...(revealDistance !== undefined ? { revealDistance } : {}),
+    });
     return () => unregisterPortal(id);
   }, [id, sceneId, fromRoomId, toRoomId, position, radius, revealDistance, registerPortal, unregisterPortal]);
 

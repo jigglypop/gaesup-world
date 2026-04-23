@@ -5,6 +5,8 @@ import { ActiveStateType } from '../../motions/core/types';
 import { CAMERA_CONSTANTS } from '../core/constants';
 import { CameraOptionType, CameraBounds, CollisionCheckResult, Obstacle } from '../core/types';
 
+type SceneWithFrameId = THREE.Scene & { _frameId?: number };
+
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
 const tempQuaternion = new THREE.Quaternion();
@@ -30,7 +32,7 @@ let cachedCollisionVersion = -1;
 
 function getCollisionMeshes(scene: THREE.Scene): THREE.Mesh[] {
   // Rebuild every 60 frames (~1s at 60fps) or when scene reference changes.
-  const version = (scene as unknown as { _frameId?: number })._frameId ?? 0;
+  const version = (scene as SceneWithFrameId)._frameId ?? 0;
   if (scene === cachedCollisionScene && version - cachedCollisionVersion < 60) {
     return cachedCollisionMeshes;
   }
@@ -129,6 +131,7 @@ export const cameraUtils = {
 
     for (let i = 0, len = meshes.length; i < len; i++) {
       const mesh = meshes[i];
+      if (!mesh) continue;
       collisionIntersections.length = 0;
       collisionRaycaster.intersectObject(mesh, false, collisionIntersections);
       const hit = collisionIntersections[0];

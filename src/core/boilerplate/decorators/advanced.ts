@@ -1,6 +1,8 @@
 import 'reflect-metadata'
 
-type Constructor<T = unknown> = new (...args: unknown[]) => T
+import type { DecoratedValue } from './types'
+
+type Constructor<T = object> = new (...args: DecoratedValue[]) => T
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -16,10 +18,10 @@ export function Validate() {
         const isAsync =
             typeof originalMethod === 'function' &&
             originalMethod.constructor?.name === 'AsyncFunction'
-        descriptor.value = function (this: unknown, ...args: unknown[]) {
+        descriptor.value = function (this: object, ...args: DecoratedValue[]) {
             const commandName = Reflect.getMetadata('commandName', target, propertyKey)
             if (commandName && args[1] && typeof args[1] === 'object') {
-                const command = args[1] as Record<string, unknown>
+                const command = args[1] as Record<string, DecoratedValue>
                 if (!command["type"]) {
                     const err = new Error(`Command validation failed: missing 'type' field`)
                     return isAsync ? Promise.reject(err) : (() => { throw err })()
@@ -37,7 +39,7 @@ export function DebugLog() {
     return function (target: object, propertyKey: string, descriptor: PropertyDescriptor) {
         void target
         const originalMethod = descriptor.value
-        descriptor.value = function (this: unknown, ...args: unknown[]) {
+        descriptor.value = function (this: object, ...args: DecoratedValue[]) {
             console.log(`[${propertyKey}] called with:`, args)
             const result = originalMethod.apply(this, args)
             console.log(`[${propertyKey}] returned:`, result)
@@ -53,7 +55,7 @@ export function PerformanceLog() {
     return function (target: object, propertyKey: string, descriptor: PropertyDescriptor) {
         void target
         const originalMethod = descriptor.value
-        descriptor.value = function (this: unknown, ...args: unknown[]) {
+        descriptor.value = function (this: object, ...args: DecoratedValue[]) {
             const start = performance.now()
             const result = originalMethod.apply(this, args)
             const duration = performance.now() - start
@@ -64,7 +66,7 @@ export function PerformanceLog() {
 }
 
 export function EnableEventLog() {
-    return function (...args: unknown[]) {
+    return function (...args: Array<object | string>) {
         // Class decorator: @EnableEventLog() class X {}
         if (args.length === 1) {
             const target = args[0] as Constructor

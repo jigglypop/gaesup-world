@@ -1,27 +1,27 @@
 import { StateCreator } from 'zustand';
 
 import { SaveLoadManager } from '../persistence/SaveLoadManager';
-import { SaveData, SaveLoadOptions, SaveMetadata, WorldSaveData } from '../persistence/types';
+import { CameraSaveData, NPCSaveData, SaveData, SaveLoadOptions, SaveMetadata, WorldSaveData } from '../persistence/types';
 
 type StoreApi<TState> = {
   getState: () => TState;
 };
 
 type BuildingStoreState = {
-  wallGroups: Map<string, unknown>;
-  tileGroups: Map<string, unknown>;
-  meshes: Map<string, unknown>;
+  wallGroups: Map<string, WorldSaveData['buildings']['wallGroups'][number]>;
+  tileGroups: Map<string, WorldSaveData['buildings']['tileGroups'][number]>;
+  meshes: Map<string, WorldSaveData['buildings']['meshes'][number]>;
 };
 
 type NPCStoreState = {
-  instances: Map<string, unknown>;
+  instances: Map<string, NPCSaveData>;
 };
 
 type CameraStoreState = {
-  position: unknown;
-  rotation: unknown;
-  mode: unknown;
-  settings: unknown;
+  position: CameraSaveData['position'];
+  rotation: CameraSaveData['rotation'];
+  mode: CameraSaveData['mode'];
+  settings: CameraSaveData['settings'];
 };
 
 type GaesupStores = {

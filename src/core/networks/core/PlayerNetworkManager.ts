@@ -1,4 +1,4 @@
-import { PlayerState } from '../types';
+import { NetworkPayload, PlayerState } from '../types';
 
 type PlayerNetworkLogLevel = 'none' | 'error' | 'warn' | 'info' | 'debug';
 
@@ -28,6 +28,17 @@ export interface PlayerNetworkManagerOptions {
   onReliableFailed?: (info: { ackId: string; messageType: string }) => void;
   onError?: (error: string) => void;
 }
+
+type TextReadablePayload = {
+  text: () => Promise<string>;
+};
+type WebSocketMessageData = string | ArrayBuffer | Blob | TextReadablePayload | null | undefined;
+type PlayerNetworkLogArg = object | string | number | boolean | bigint | symbol | null | undefined;
+
+const isTextReadablePayload = (value: WebSocketMessageData): value is TextReadablePayload => {
+  if (typeof value !== 'object' || value === null) return false;
+  return 'text' in value && typeof value.text === 'function';
+};
 
 export class PlayerNetworkManager {
   private ws: WebSocket | null = null;
@@ -119,22 +130,22 @@ export class PlayerNetworkManager {
     return levels[level] <= levels[this.logLevel];
   }
 
-  private debug(message: string, ...args: unknown[]): void {
+  private debug(message: string, ...args: PlayerNetworkLogArg[]): void {
     if (!this.shouldLog('debug')) return;
     console.log(message, ...args);
   }
 
-  private info(message: string, ...args: unknown[]): void {
+  private info(message: string, ...args: PlayerNetworkLogArg[]): void {
     if (!this.shouldLog('info')) return;
     console.info(message, ...args);
   }
 
-  private warn(message: string, ...args: unknown[]): void {
+  private warn(message: string, ...args: PlayerNetworkLogArg[]): void {
     if (!this.shouldLog('warn')) return;
     console.warn(message, ...args);
   }
 
-  private error(message: string, ...args: unknown[]): void {
+  private error(message: string, ...args: PlayerNetworkLogArg[]): void {
     if (!this.shouldLog('error')) return;
     console.error(message, ...args);
   }
@@ -190,7 +201,7 @@ export class PlayerNetworkManager {
 
       // Flush buffered messages after Join to keep ordering sane.
       this.flushOfflineQueue();
-      // Resend in-flight reliable messages (if any) after reconnect.
+      // Resend in-flight reliable messages, when present, after reconnect.
       this.resumePendingAcks();
       
       if (this.onConnect) {
@@ -210,16 +221,14 @@ export class PlayerNetworkManager {
         }
       };
 
-      const data = event.data as unknown;
+      const data = event.data as WebSocketMessageData;
       if (typeof data === 'string') {
         handleText(data);
         return;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const maybeBlob = data as any;
-      if (maybeBlob && typeof maybeBlob.text === 'function') {
-        maybeBlob
+      if (isTextReadablePayload(data)) {
+        data
           .text()
           .then((t: string) => handleText(t))
           .catch(() => this.onError?.('서버 메시지 수신 실패'));
@@ -591,7 +600,7 @@ export class PlayerNetworkManager {
     return `ack_${Date.now()}_${n}`;
   }
 
-  private sendReliable(payload: { type: string; [k: string]: unknown }): void {
+  private sendReliable(payload: { type: string; [k: string]: NetworkPayload }): void {
     const ws = this.ws;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
@@ -610,7 +619,7 @@ export class PlayerNetworkManager {
 
   private trackPendingAck(args: { ackId: string; raw: string; messageType: string }): void {
     if (!this.enableAck) return;
-    // Replace any previous entry with the same ackId (shouldn't happen, but keep it safe).
+    // Replace the previous entry with the same ackId (shouldn't happen, but keep it safe).
     this.stopAckTimer(args.ackId);
 
     this.pendingAcks.set(args.ackId, {

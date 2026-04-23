@@ -2,7 +2,7 @@ import 'reflect-metadata'
 import { ServiceTarget, Token } from '../types'
 
 export type ServiceOptions = {
-  token?: Token<unknown>
+  token?: Token<object>
   singleton?: boolean
 }
 

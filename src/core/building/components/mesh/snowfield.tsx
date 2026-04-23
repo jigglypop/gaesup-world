@@ -86,6 +86,7 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
   for (let ei = 0; ei < entries.length; ei++) {
     const e = entries[ei];
     const segs = segList[ei];
+    if (!e || segs === undefined) continue;
     const s = e.size;
     const ox = e.position[0], oy = e.position[1] + 0.045, oz = e.position[2];
 
@@ -134,6 +135,7 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
   for (let ei = 0; ei < entries.length; ei++) {
     const e = entries[ei];
     const sc = sparkleList[ei];
+    if (!e || sc === undefined) continue;
     const s = e.size;
     const ox = e.position[0], oy = e.position[1] + 0.045, oz = e.position[2];
 

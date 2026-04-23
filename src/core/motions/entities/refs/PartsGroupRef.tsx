@@ -74,10 +74,10 @@ export function ModelRenderer({ nodes, color, skeleton, url, excludeNodeNames }:
         }
         return null;
       })
-      .filter(Boolean);
+      .filter((node): node is NodeData => node !== null);
 
     return {
-      processedNodes: processed as unknown as NodeData[],
+      processedNodes: processed,
       ownedMaterials: owned,
     };
   }, [nodes, color, skeleton, url, excludeNodeNames]);

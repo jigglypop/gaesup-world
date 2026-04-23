@@ -33,7 +33,7 @@ type WaterProps = {
 
 // Vertex displacement uses world-space frequencies (cycles per meter) so wave
 // length stays constant regardless of tile scale. Three octaves give the surface
-// enough motion to read on tiles of any size.
+// enough motion to read on tiles of every size.
 const TOON_WATER_VERT = /* glsl */ `
 uniform float uTime;
 varying vec2 vUv;
@@ -56,7 +56,7 @@ void main() {
 
 // Fragment uses world-XZ for every detail layer (foam stripes, sparse specks,
 // rippling highlights, depth tint) so density and pattern stay visually
-// consistent at any tile size. Edge vignette softens the rectangular border.
+// consistent at every tile size. Edge vignette softens the rectangular border.
 const TOON_WATER_FRAG = /* glsl */ `
 uniform vec3 uShallow;
 uniform vec3 uDeep;
@@ -121,7 +121,7 @@ void main() {
 
 export default function Ocean({ lod, center, size = 16, shore, toon }: WaterProps) {
   const useToon = toon ?? getDefaultToonMode();
-  const waterRef = useRef<Water | null>(null);
+  const waterRef = useRef<(Water & { dispose?: () => void }) | null>(null);
   const toonMatRef = useRef<THREE.ShaderMaterial | null>(null);
   const toonMeshRef = useRef<THREE.Mesh | null>(null);
   const waterNormals = useTexture("/resources/waternormals.jpeg");
@@ -230,10 +230,7 @@ export default function Ocean({ lod, center, size = 16, shore, toon }: WaterProp
   useEffect(() => {
     return () => {
       geom.dispose();
-      const water = waterRef.current as unknown as {
-        material?: THREE.Material;
-        dispose?: () => void;
-      } | null;
+      const water = waterRef.current;
       // Water (three-stdlib) may own internal GPU resources; clean up defensively.
       water?.material?.dispose?.();
       if (typeof water?.dispose === 'function') {
@@ -275,7 +272,7 @@ export default function Ocean({ lod, center, size = 16, shore, toon }: WaterProp
     }
 
     if (useToon) {
-      const u = toonMatRef.current?.uniforms?.uTime;
+      const u = toonMatRef.current?.uniforms?.['uTime'];
       if (u) u.value = state.clock.elapsedTime;
     } else {
       const time = waterRef.current?.material.uniforms?.["time"];

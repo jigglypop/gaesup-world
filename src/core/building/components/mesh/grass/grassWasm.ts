@@ -25,8 +25,7 @@ const getDefaultWasmUrl = (): string => {
   // Works with <base href="..."> and subpath deployments.
   try {
     // Prefer Vite's configured base URL when available.
-    const maybeEnv = (import.meta as unknown as { env?: { BASE_URL?: unknown } }).env;
-    const baseUrl = typeof maybeEnv?.BASE_URL === 'string' ? maybeEnv.BASE_URL : null;
+    const baseUrl = typeof import.meta.env.BASE_URL === 'string' ? import.meta.env.BASE_URL : null;
     if (baseUrl) {
       const normalized = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
       return new URL(`${normalized}wasm/gaesup_grass_attr.wasm`, document.baseURI).toString();
@@ -55,7 +54,7 @@ export async function loadGrassWasm(): Promise<GrassWasmExports | null> {
 
       const bytes = await res.arrayBuffer();
       const { instance } = await WebAssembly.instantiate(bytes, {});
-      const exports = instance.exports as unknown as Partial<GrassWasmExports>;
+      const exports = instance.exports as Partial<GrassWasmExports>;
 
       if (!exports || !(exports.memory instanceof WebAssembly.Memory)) return null;
       if (typeof exports.alloc_f32 !== 'function') return null;

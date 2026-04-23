@@ -135,9 +135,12 @@ function GpuSnow() {
     const parent = points.parent;
     if (parent && !parent.visible) return;
     const u = matRef.current.uniforms;
-    u['uTime'].value = state.clock.elapsedTime;
-    (u['uOrigin'].value as THREE.Vector3).copy(state.camera.position);
-    u['uScale'].value = state.gl.domElement.height * 0.5;
+    const uTime = u['uTime'];
+    const uOrigin = u['uOrigin'];
+    const uScale = u['uScale'];
+    if (uTime) uTime.value = state.clock.elapsedTime;
+    if (uOrigin) (uOrigin.value as THREE.Vector3).copy(state.camera.position);
+    if (uScale) uScale.value = state.gl.domElement.height * 0.5;
   });
 
   return (
@@ -220,6 +223,8 @@ function CpuSnow() {
     const vel = velRef.current;
     const frame = frameRef.current++;
     const isFullUpdate = frame % LOD_INTERVAL === 0;
+    const points = pointsRef.current;
+    if (!points) return;
 
     if (wasm && ptrs) {
       new Float32Array(wasm.memory.buffer, ptrs.b, 6).set(bounds);
@@ -230,34 +235,64 @@ function CpuSnow() {
       );
       // WASM 메모리를 직접 참조하여 geometry attribute 갱신 (전체 복사 제거)
       const wasmPos = new Float32Array(wasm.memory.buffer, ptrs.p, COUNT * 3);
-      const attr = pointsRef.current.geometry.attributes.position as THREE.BufferAttribute;
-      (attr as unknown as { array: Float32Array }).array = wasmPos;
+      const attr = points.geometry.attributes['position'];
+      if (!(attr instanceof THREE.BufferAttribute)) return;
+      attr.array = wasmPos;
       attr.needsUpdate = true;
     } else {
       const updateEnd = isFullUpdate ? COUNT : NEAR_COUNT;
       for (let i = 0; i < updateEnd; i++) {
         const idx = i * 3;
-        vel[idx] = vel[idx] * 0.99 + 0.3 * dt;
-        vel[idx + 1] -= 2.0 * dt;
-        vel[idx + 2] *= 0.99;
-
-        pos[idx] += vel[idx] * dt;
-        pos[idx + 1] += vel[idx + 1] * dt;
-        pos[idx + 2] += vel[idx + 2] * dt;
-
-        if (pos[idx] < bounds[0]) pos[idx] += HALF_RANGE * 2;
-        else if (pos[idx] > bounds[1]) pos[idx] -= HALF_RANGE * 2;
-
-        if (pos[idx + 1] < bounds[2]) {
-          pos[idx + 1] = bounds[3];
-          vel[idx + 1] = -(0.5 + Math.random() * 1.5);
+        const vx = vel[idx];
+        const vy = vel[idx + 1];
+        const vz = vel[idx + 2];
+        const px = pos[idx];
+        const py = pos[idx + 1];
+        const pz = pos[idx + 2];
+        const minX = bounds[0];
+        const maxX = bounds[1];
+        const minY = bounds[2];
+        const maxY = bounds[3];
+        const minZ = bounds[4];
+        const maxZ = bounds[5];
+        if (
+          vx === undefined || vy === undefined || vz === undefined ||
+          px === undefined || py === undefined || pz === undefined ||
+          minX === undefined || maxX === undefined || minY === undefined ||
+          maxY === undefined || minZ === undefined || maxZ === undefined
+        ) {
+          continue;
         }
 
-        if (pos[idx + 2] < bounds[4]) pos[idx + 2] += HALF_RANGE * 2;
-        else if (pos[idx + 2] > bounds[5]) pos[idx + 2] -= HALF_RANGE * 2;
+        const nextVx = vx * 0.99 + 0.3 * dt;
+        let nextVy = vy - 2.0 * dt;
+        const nextVz = vz * 0.99;
+
+        let nextPx = px + nextVx * dt;
+        let nextPy = py + nextVy * dt;
+        let nextPz = pz + nextVz * dt;
+
+        if (nextPx < minX) nextPx += HALF_RANGE * 2;
+        else if (nextPx > maxX) nextPx -= HALF_RANGE * 2;
+
+        if (nextPy < minY) {
+          nextPy = maxY;
+          nextVy = -(0.5 + Math.random() * 1.5);
+        }
+
+        if (nextPz < minZ) nextPz += HALF_RANGE * 2;
+        else if (nextPz > maxZ) nextPz -= HALF_RANGE * 2;
+
+        vel[idx] = nextVx;
+        vel[idx + 1] = nextVy;
+        vel[idx + 2] = nextVz;
+        pos[idx] = nextPx;
+        pos[idx + 1] = nextPy;
+        pos[idx + 2] = nextPz;
       }
 
-      const attr = pointsRef.current.geometry.attributes.position as THREE.BufferAttribute;
+      const attr = points.geometry.attributes['position'];
+      if (!(attr instanceof THREE.BufferAttribute)) return;
       attr.needsUpdate = true;
     }
   });

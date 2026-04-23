@@ -589,11 +589,12 @@ export const useNPCStore = create<NPCStore>()(
     clearNavigation: (instanceId) => set((state) => {
       const instance = state.instances.get(instanceId);
       if (!instance) return;
-      state.instances.set(instanceId, {
+      const nextInstance: NPCInstance = {
         ...instance,
-        navigation: undefined,
         currentAnimation: 'idle',
-      });
+      };
+      delete nextInstance.navigation;
+      state.instances.set(instanceId, nextInstance);
     }),
 
     updateNavigationPosition: (instanceId, position) => set((state) => {

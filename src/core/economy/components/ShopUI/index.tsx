@@ -72,7 +72,7 @@ export function ShopUI({ open, onClose, title = 'Shop' }: ShopUIProps) {
               return (
                 <Row
                   key={offer.itemId}
-                  color={def?.color}
+                  {...(def?.color ? { color: def.color } : {})}
                   name={def?.name ?? offer.itemId}
                   sub={`재고 ${stockLeft}`}
                   price={price}
@@ -96,7 +96,7 @@ export function ShopUI({ open, onClose, title = 'Shop' }: ShopUIProps) {
               return (
                 <Row
                   key={id}
-                  color={def?.color}
+                  {...(def?.color ? { color: def.color } : {})}
                   name={def?.name ?? id}
                   sub={`보유 ${count}`}
                   price={price}

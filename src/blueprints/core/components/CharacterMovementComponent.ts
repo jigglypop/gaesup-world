@@ -32,8 +32,8 @@ export class CharacterMovementComponent implements IComponent {
     const rigidBody = context.rigidBodyRef.current;
     const currentVelocity = rigidBody.linvel();
     
-    const keyboard = (window as any).__keyboardState || {};
-    const mouse = (window as any).__mouseState || {};
+    const keyboard = window.__keyboardState ?? {};
+    const mouse = window.__mouseState;
     
     const moveX = (keyboard.rightward ? 1 : 0) - (keyboard.leftward ? 1 : 0);
     const moveZ = (keyboard.backward ? 1 : 0) - (keyboard.forward ? 1 : 0);

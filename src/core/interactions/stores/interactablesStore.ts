@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { create } from 'zustand';
 
+import type { RuntimeRecord } from '../../boilerplate/types';
+
 export type InteractableKind = 'pickup' | 'npc' | 'door' | 'shop' | 'storage' | 'tool-target' | 'misc';
 
 export type InteractableEntry = {
@@ -10,7 +12,7 @@ export type InteractableEntry = {
   position: THREE.Vector3;
   range: number;
   key: string;
-  data?: Record<string, unknown>;
+  data?: RuntimeRecord;
   onActivate: () => void;
 };
 

@@ -1,7 +1,7 @@
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
-import { AbstractSystem, SystemUpdateArgs, Inject } from '@core/boilerplate';
+import { AbstractSystem, SystemContext, SystemUpdateArgs, Inject } from '@core/boilerplate';
 import { Profile, HandleError, ManageRuntime } from '@core/boilerplate';
 import type { GameStatesType } from '@core/world/components/Rideable/types';
 
@@ -37,6 +37,15 @@ export interface MotionUpdateArgs extends SystemUpdateArgs {
   gameStates: GameStatesType;
 }
 
+function isMotionUpdateArgs(context: SystemContext | MotionUpdateArgs): context is MotionUpdateArgs {
+  const candidate = context as Partial<MotionUpdateArgs>;
+  return (
+    candidate.rigidBody !== undefined &&
+    candidate.activeState !== undefined &&
+    candidate.gameStates !== undefined
+  );
+}
+
 @ManageRuntime({ autoStart: false })
 export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, MotionSystemOptions, MotionUpdateArgs> {
   @Inject(MotionService)
@@ -62,6 +71,13 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     this.updatePosition(position, args.activeState);
     this.updateVelocity(velocity, args.activeState, args.gameStates);
     this.updateRotation(rotation, args.activeState);
+  }
+
+  protected createUpdateArgs(context: SystemContext): MotionUpdateArgs {
+    if (isMotionUpdateArgs(context)) {
+      return context;
+    }
+    throw new Error('MotionSystem requires explicit motion update args.');
   }
 
   @Profile()

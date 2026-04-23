@@ -1,9 +1,24 @@
 import { VscSymbolStructure } from 'react-icons/vsc';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, type NodeProps } from 'reactflow';
+
+import type { CameraConfig } from '../../../types';
+import type { NodeFieldValue } from '../EditableNode/types';
 import './styles.css';
 
-export function CameraNode({ data, id }: { data: any; id: string }) {
-  const handleChange = (field: string, value: any) => {
+type CameraNodeData = Partial<CameraConfig> & {
+  onChange?: (nodeId: string, field: string, value: NodeFieldValue) => void;
+};
+
+type CameraField =
+  | 'mode'
+  | 'enableZoom'
+  | 'zoomSpeed'
+  | 'minZoom'
+  | 'maxZoom'
+  | 'fov';
+
+export function CameraNode({ data, id }: NodeProps<CameraNodeData>) {
+  const handleChange = (field: CameraField, value: NodeFieldValue) => {
     if (data.onChange) {
       data.onChange(id, field, value);
     }

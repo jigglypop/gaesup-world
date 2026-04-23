@@ -70,6 +70,24 @@ export interface PlacedObject {
   config?: ObjectConfig;
 }
 
+export interface BillboardConfig {
+  id: string;
+  position: Position3D;
+  width: number;
+  height: number;
+  rotation?: Partial<Rotation3D>;
+  text?: string;
+  imageUrl?: string;
+  color?: string;
+}
+
+export interface BloomConfig {
+  id: string;
+  position: Position3D;
+  intensity?: number;
+  color?: string;
+}
+
 export interface TileConfig {
   id: string;
   position: Position3D;

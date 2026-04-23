@@ -15,7 +15,11 @@ import {
   Clicker,
   GroundClicker 
 } from '../../../core';
-import { CharacterBlueprint } from '../../types';
+import { AnyBlueprint, CharacterBlueprint } from '../../types';
+
+const isCharacterBlueprint = (
+  blueprint: AnyBlueprint | null | undefined,
+): blueprint is CharacterBlueprint => blueprint?.type === 'character';
 
 export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {
   const setUrls = useGaesupStore((state) => state.setUrls);
@@ -24,11 +28,6 @@ export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {
   const mode = useGaesupStore((state) => state.mode);
   
   const [cameraDistance, setCameraDistance] = useState(20);
-  
-  // Type guard for CharacterBlueprint
-  const isCharacterBlueprint = (bp: any): bp is CharacterBlueprint => {
-    return bp?.type === 'character';
-  };
   
   // Get control settings from blueprint
   const enableClickToMove = isCharacterBlueprint(blueprint) ? (blueprint.controls?.clickToMove ?? true) : false;
@@ -75,7 +74,7 @@ export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {
       }
       // Handle parts - use the first part as character URL
       else if (blueprint.visuals?.parts && blueprint.visuals.parts.length > 0) {
-        const bodyPart = blueprint.visuals.parts.find((p: any) => p.type === 'body');
+        const bodyPart = blueprint.visuals.parts.find((part) => part.type === 'body');
         if (bodyPart) {
           setUrls({ characterUrl: bodyPart.url });
         }
@@ -100,8 +99,8 @@ export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {
     if (!isCharacterBlueprint(blueprint) || !blueprint.visuals?.parts) return [];
     
     return blueprint.visuals.parts
-      .filter((p: any) => p.type !== 'body')
-      .map((p: any) => ({ url: p.url, color: p.color }));
+      .filter((part) => part.type !== 'body')
+      .map((part) => (part.color ? { url: part.url, color: part.color } : { url: part.url }));
   };
 
   return (

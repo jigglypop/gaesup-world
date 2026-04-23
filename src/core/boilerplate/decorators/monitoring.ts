@@ -1,4 +1,5 @@
 import {
+  DecoratedValue,
   DecoratorTarget,
   PerformanceWithMemory,
   PropertyDescriptorExtended
@@ -20,9 +21,9 @@ const identityMethodDecorator = (
 const HOOK_BEFORE_METADATA_KEY = 'monitoring:hook:before';
 const HOOK_AFTER_METADATA_KEY = 'monitoring:hook:after';
 
-const isPromiseLike = (value: unknown): value is Promise<unknown> => {
+const isPromiseLike = (value: DecoratedValue): value is Promise<DecoratedValue> => {
   if (typeof value !== 'object' || value === null) return false;
-  const maybePromise = value as { then?: unknown; finally?: unknown };
+  const maybePromise = value as { then?: Function; finally?: Function };
   return typeof maybePromise.then === 'function' && typeof maybePromise.finally === 'function';
 };
 
@@ -38,9 +39,9 @@ export function Profile(label?: string) {
   ) {
     const originalMethod = descriptor.value;
 
-    descriptor.value = function (...args: unknown[]) {
+    descriptor.value = function (...args: DecoratedValue[]) {
       const start = performance.now();
-      let result: unknown;
+      let result: DecoratedValue;
       try {
         result = originalMethod!.apply(this, args);
       } catch (e) {
@@ -53,7 +54,7 @@ export function Profile(label?: string) {
 
       if (isPromiseLike(result)) {
         const methodLabel = label || `${target.constructor.name}.${propertyKey}`;
-        return (result as Promise<unknown>).finally(() => {
+        return result.finally(() => {
           const end = performance.now();
           const time = end - start;
           logger.log(`[Profile] ${methodLabel} executed in ${time.toFixed(2)}ms`);
@@ -83,9 +84,9 @@ export function Log(level: 'log' | 'info' | 'warn' | 'error' = 'log') {
   ) {
     const originalMethod = descriptor.value;
 
-    descriptor.value = function (...args: unknown[]) {
+    descriptor.value = function (...args: DecoratedValue[]) {
       logger[level](`[${target.constructor.name}] Calling ${propertyKey} with args:`, args);
-      let result: unknown;
+      let result: DecoratedValue;
       try {
         result = originalMethod!.apply(this, args);
       } catch (e) {
@@ -93,7 +94,7 @@ export function Log(level: 'log' | 'info' | 'warn' | 'error' = 'log') {
       }
 
       if (isPromiseLike(result)) {
-        return (result as Promise<unknown>).then(
+        return result.then(
           (resolved) => {
             logger[level](`[${target.constructor.name}] ${propertyKey} returned:`, resolved);
             return resolved;
@@ -122,7 +123,7 @@ export function Delay(milliseconds: number) {
     void propertyKey;
     const originalMethod = descriptor.value;
 
-    descriptor.value = async function (...args: unknown[]) {
+    descriptor.value = async function (...args: DecoratedValue[]) {
       await new Promise(resolve => setTimeout(resolve, milliseconds));
       const result = await originalMethod!.apply(this, args);
       return result;
@@ -142,7 +143,7 @@ export function RateLimit(maxCalls: number, windowMs: number) {
   ) {
     const originalMethod = descriptor.value;
 
-    descriptor.value = function (...args: unknown[]) {
+    descriptor.value = function (...args: DecoratedValue[]) {
       const key = `${target.constructor.name}.${propertyKey}`;
       const now = Date.now();
       const callInfo = callCounts.get(key) || { count: 0, resetTime: now + windowMs };
@@ -192,9 +193,9 @@ export function Hook(before?: () => void, after?: () => void) {
     if (after) Reflect.defineMetadata(HOOK_AFTER_METADATA_KEY, after, target, propertyKey);
     const originalMethod = descriptor.value;
 
-    descriptor.value = function (...args: unknown[]) {
+    descriptor.value = function (...args: DecoratedValue[]) {
       before?.();
-      let result: unknown;
+      let result: DecoratedValue;
       try {
         result = originalMethod!.apply(this, args);
       } catch (e) {
@@ -203,7 +204,7 @@ export function Hook(before?: () => void, after?: () => void) {
       }
 
       if (isPromiseLike(result)) {
-        return (result as Promise<unknown>).finally(() => {
+        return result.finally(() => {
           after?.();
         });
       }
@@ -228,7 +229,7 @@ export function MemoryProfile(label?: string) {
   ) {
     const originalMethod = descriptor.value;
 
-    descriptor.value = function (...args: unknown[]) {
+    descriptor.value = function (...args: DecoratedValue[]) {
       // Node-only API. In browsers, fall back to a no-op wrapper.
       const memoryUsage =
         typeof process !== 'undefined' && typeof process.memoryUsage === 'function'
@@ -239,7 +240,7 @@ export function MemoryProfile(label?: string) {
       }
 
       const before = memoryUsage();
-      let result: unknown;
+      let result: DecoratedValue;
       try {
         result = originalMethod!.apply(this, args);
       } catch (e) {
@@ -274,7 +275,7 @@ export function MonitorMemory(threshold: number = 100) { // MB 단위
     void target;
     const originalMethod = descriptor.value;
 
-    descriptor.value = function (...args: unknown[]) {
+    descriptor.value = function (...args: DecoratedValue[]) {
       const perf = performance as PerformanceWithMemory;
       const beforeMemory = perf.memory?.usedJSHeapSize || 0;
       const result = originalMethod!.apply(this, args);
@@ -311,7 +312,7 @@ export function TrackCalls() {
     void target;
     const originalMethod = descriptor.value;
 
-    descriptor.value = function (...args: unknown[]) {
+    descriptor.value = function (...args: DecoratedValue[]) {
       const key = `${this.constructor.name}.${propertyKey}`;
       const count = (callCounts.get(key) || 0) + 1;
       callCounts.set(key, count);
@@ -336,7 +337,7 @@ export function Timeout(ms: number) {
     void target;
     const originalMethod = descriptor.value;
 
-    descriptor.value = async function (...args: unknown[]) {
+    descriptor.value = async function (...args: DecoratedValue[]) {
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error(`${propertyKey} timed out after ${ms}ms`)), ms);
       });
@@ -347,7 +348,10 @@ export function Timeout(ms: number) {
           timeoutPromise
         ]);
       } catch (error) {
-        logger.error(`[${this.constructor.name}] ${propertyKey} timeout:`, error);
+        logger.error(
+          `[${this.constructor.name}] ${propertyKey} timeout:`,
+          error instanceof Error ? error : String(error),
+        );
         throw error;
       }
     };

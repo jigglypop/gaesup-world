@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { useGaesupStore } from '@stores/gaesupStore';
 
+import type { CameraOptionType } from '../../camera/core/types';
 import { InteractionBridge } from '../../interactions/bridge/InteractionBridge';
 
 const KEY_MAPPING: Record<string, string> = {
@@ -21,7 +22,7 @@ const KEY_MAPPING: Record<string, string> = {
 export const useKeyboard = (
   enableDiagonal = true,
   enableClicker = true,
-  cameraOption?: unknown,
+  cameraOption?: CameraOptionType,
 ) => {
   void enableDiagonal;
   void cameraOption;

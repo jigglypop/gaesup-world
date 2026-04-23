@@ -1,6 +1,4 @@
 
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-function-type */
-
 export type LoggingOptions = {
   enablePerformanceLog?: boolean;
   enableMemoryLog?: boolean;
@@ -8,11 +6,21 @@ export type LoggingOptions = {
 };
 
 export type DecoratorTarget = object;
+export type DecoratedValue =
+  | object
+  | string
+  | number
+  | boolean
+  | bigint
+  | symbol
+  | null
+  | undefined
+  | Function;
 
-export type AnyConstructor<T = object> = new (...args: any[]) => T;
+export type AnyConstructor<T = object> = new (...args: never[]) => T;
 
 export type PropertyDescriptorExtended = PropertyDescriptor & {
-  value?: Function;
+  value?: ((...args: never[]) => void | DecoratedValue) | undefined;
 };
 
 export type PerformanceMemory = {

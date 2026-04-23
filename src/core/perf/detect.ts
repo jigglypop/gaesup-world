@@ -1,5 +1,11 @@
 import type { DeviceCapabilities, PerfProfile, PerfTier } from './types';
 
+declare global {
+  interface Navigator {
+    deviceMemory?: number;
+  }
+}
+
 const LOW_GPU_HINTS = ['intel', 'mali', 'adreno 3', 'adreno 4', 'powervr'];
 const SOFTWARE_GPU_HINTS = ['swiftshader', 'llvmpipe', 'software'];
 const HIGH_GPU_HINTS = ['rtx', 'radeon rx', 'apple m', 'apple a1', 'apple a2'];
@@ -39,7 +45,7 @@ export function detectCapabilities(): DeviceCapabilities {
   }
 
   const cores = (navigator.hardwareConcurrency as number | undefined) ?? 4;
-  const memory = ((navigator as unknown as { deviceMemory?: number }).deviceMemory) ?? 4;
+  const memory = navigator.deviceMemory ?? 4;
   const isMobile = /android|iphone|ipad|ipod|mobile|opera mini/i.test(navigator.userAgent);
   const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
 

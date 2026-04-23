@@ -1,7 +1,7 @@
 import { Node, Edge, MarkerType } from 'reactflow';
 
 import { BlueprintItem, BlueprintType } from './types';
-import { AnyBlueprint, CharacterBlueprint, VehicleBlueprint, AirplaneBlueprint } from '../../../types';
+import type { AnyBlueprint, BlueprintRecord, BlueprintValue } from '../../../types';
 import { NodeFieldValue } from '../../editor/EditableNode/types';
 
 // Edge style constants
@@ -17,11 +17,30 @@ const MARKER_STYLE = {
   height: 20
 };
 
+const isRecord = (value: BlueprintValue | undefined): value is BlueprintRecord =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const getBlueprintItemType = (blueprint: AnyBlueprint): BlueprintType => {
+  switch (blueprint.type) {
+    case 'animation-sequence':
+      return 'animation';
+    case 'behavior-tree':
+      return 'behavior';
+    default:
+      return blueprint.type;
+  }
+};
+
+const getBehaviorInitial = (value: BlueprintValue | undefined): string => {
+  if (!isRecord(value)) return 'idle';
+  return typeof value['initial'] === 'string' ? value['initial'] : 'idle';
+};
+
 export const convertBlueprintToItem = (blueprint: AnyBlueprint): BlueprintItem => {
   return {
     id: blueprint.id,
     name: blueprint.name,
-    type: blueprint.type as BlueprintType,
+    type: getBlueprintItemType(blueprint),
     version: blueprint.version,
     tags: blueprint.tags || [],
     description: blueprint.description ?? '',
@@ -50,8 +69,6 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
   });
 
   if (blueprint.type === 'character') {
-    const charBlueprint = blueprint as CharacterBlueprint;
-    
     // System core node
     nodes.push({
       id: 'system',
@@ -75,13 +92,13 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
       data: { 
         title: 'Physics',
         fields: {
-          mass: charBlueprint.physics.mass,
-          moveSpeed: charBlueprint.physics.moveSpeed,
-          runSpeed: charBlueprint.physics.runSpeed,
-          jumpForce: charBlueprint.physics.jumpForce,
-          height: charBlueprint.physics.height,
-          radius: charBlueprint.physics.radius,
-          airControl: charBlueprint.physics.airControl
+          mass: blueprint.physics.mass,
+          moveSpeed: blueprint.physics.moveSpeed,
+          runSpeed: blueprint.physics.runSpeed,
+          jumpForce: blueprint.physics.jumpForce,
+          height: blueprint.physics.height,
+          radius: blueprint.physics.radius,
+          airControl: blueprint.physics.airControl
         },
         onEdit: onNodeEdit,
         onDelete: onNodeDelete
@@ -96,12 +113,12 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
       data: { 
         title: 'Stats',
         fields: {
-          health: charBlueprint.stats.health,
-          stamina: charBlueprint.stats.stamina,
-          mana: charBlueprint.stats.mana || 0,
-          strength: charBlueprint.stats.strength,
-          defense: charBlueprint.stats.defense,
-          speed: charBlueprint.stats.speed
+          health: blueprint.stats.health,
+          stamina: blueprint.stats.stamina,
+          mana: blueprint.stats.mana || 0,
+          strength: blueprint.stats.strength,
+          defense: blueprint.stats.defense,
+          speed: blueprint.stats.speed
         },
         onEdit: onNodeEdit,
         onDelete: onNodeDelete
@@ -116,12 +133,12 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
       data: { 
         title: 'Animations',
         fields: {
-          idle: charBlueprint.animations.idle || 'none',
-          walk: charBlueprint.animations.walk || 'none',
-          run: charBlueprint.animations.run || 'none',
-          jump_start: charBlueprint.animations.jump?.start || 'none',
-          jump_loop: charBlueprint.animations.jump?.loop || 'none',
-          jump_land: charBlueprint.animations.jump?.land || 'none'
+          idle: blueprint.animations.idle || 'none',
+          walk: blueprint.animations.walk || 'none',
+          run: blueprint.animations.run || 'none',
+          jump_start: blueprint.animations.jump?.start || 'none',
+          jump_loop: blueprint.animations.jump?.loop || 'none',
+          jump_land: blueprint.animations.jump?.land || 'none'
         },
         onEdit: onNodeEdit,
         onDelete: onNodeDelete
@@ -129,7 +146,7 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
     });
     
     // Behaviors node (if exists)
-    if (charBlueprint.behaviors) {
+    if (blueprint.behaviors) {
       nodes.push({
         id: 'behaviors',
         type: 'editable',
@@ -137,8 +154,8 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
         data: { 
           title: 'Behaviors',
           fields: {
-            type: charBlueprint.behaviors.type,
-            initial: (charBlueprint.behaviors.data as any)?.initial || 'idle'
+            type: blueprint.behaviors.type,
+            initial: getBehaviorInitial(blueprint.behaviors.data)
           },
           onEdit: onNodeEdit,
           onDelete: onNodeDelete
@@ -152,7 +169,7 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
       type: 'camera',
       position: { x: 50, y: 150 },
       data: {
-        ...(charBlueprint.camera || {}),
+        ...(blueprint.camera || {}),
         onChange: onNodeEdit
       }
     });
@@ -165,8 +182,8 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
       data: { 
         title: 'Camera Controller',
         fields: {
-          smoothing: charBlueprint.camera?.smoothing?.position || 0.25,
-          collision: charBlueprint.camera?.enableCollision || false
+          smoothing: blueprint.camera?.smoothing?.position || 0.25,
+          collision: blueprint.camera?.enableCollision || false
         },
         onEdit: onNodeEdit,
         onDelete: onNodeDelete
@@ -180,10 +197,10 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
       data: { 
         title: 'Zoom Component',
         fields: {
-          enabled: charBlueprint.camera?.enableZoom || true,
-          speed: charBlueprint.camera?.zoomSpeed || 1,
-          min: charBlueprint.camera?.minZoom || 5,
-          max: charBlueprint.camera?.maxZoom || 50
+          enabled: blueprint.camera?.enableZoom || true,
+          speed: blueprint.camera?.zoomSpeed || 1,
+          min: blueprint.camera?.minZoom || 5,
+          max: blueprint.camera?.maxZoom || 50
         },
         onEdit: onNodeEdit,
         onDelete: onNodeDelete
@@ -196,13 +213,11 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
       type: 'input',
       position: { x: 450, y: 150 },
       data: {
-        ...(charBlueprint.controls || {}),
+        ...(blueprint.controls || {}),
         onChange: onNodeEdit
       }
     });
   } else if (blueprint.type === 'vehicle') {
-    const vehicleBlueprint = blueprint as VehicleBlueprint;
-    
     nodes.push({
       id: 'vehicle-physics',
       type: 'editable',
@@ -210,11 +225,11 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
       data: { 
         title: 'Physics',
         fields: {
-          mass: vehicleBlueprint.physics.mass,
-          maxSpeed: vehicleBlueprint.physics.maxSpeed,
-          acceleration: vehicleBlueprint.physics.acceleration,
-          braking: vehicleBlueprint.physics.braking,
-          turning: vehicleBlueprint.physics.turning
+          mass: blueprint.physics.mass,
+          maxSpeed: blueprint.physics.maxSpeed,
+          acceleration: blueprint.physics.acceleration,
+          braking: blueprint.physics.braking,
+          turning: blueprint.physics.turning
         },
         onEdit: onNodeEdit,
         onDelete: onNodeDelete
@@ -228,16 +243,14 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
       data: { 
         title: 'Seats',
         fields: {
-          count: vehicleBlueprint.seats.length,
-          driverSeat: vehicleBlueprint.seats.findIndex(s => s.isDriver) + 1
+          count: blueprint.seats.length,
+          driverSeat: blueprint.seats.findIndex(s => s.isDriver) + 1
         },
         onEdit: onNodeEdit,
         onDelete: onNodeDelete
       }
     });
   } else if (blueprint.type === 'airplane') {
-    const airplaneBlueprint = blueprint as AirplaneBlueprint;
-    
     nodes.push({
       id: 'airplane-physics',
       type: 'editable',
@@ -245,12 +258,12 @@ export const generateNodesFromBlueprint = (blueprint: AnyBlueprint, onNodeEdit?:
       data: { 
         title: 'Physics',
         fields: {
-          mass: airplaneBlueprint.physics.mass,
-          maxSpeed: airplaneBlueprint.physics.maxSpeed,
-          acceleration: airplaneBlueprint.physics.acceleration,
-          turning: airplaneBlueprint.physics.turning,
-          lift: airplaneBlueprint.physics.lift,
-          drag: airplaneBlueprint.physics.drag
+          mass: blueprint.physics.mass,
+          maxSpeed: blueprint.physics.maxSpeed,
+          acceleration: blueprint.physics.acceleration,
+          turning: blueprint.physics.turning,
+          lift: blueprint.physics.lift,
+          drag: blueprint.physics.drag
         },
         onEdit: onNodeEdit,
         onDelete: onNodeDelete

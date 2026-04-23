@@ -280,9 +280,9 @@ export function collectOccluderCandidates(
 
 type VectorLike = { x: number; y: number; z: number };
 type OcclusionScratch = {
-  targetDir: VectorLike & { set: (x: number, y: number, z: number) => VectorLike; normalize: () => VectorLike; dot: (v: VectorLike) => number; crossVectors: (a: VectorLike, b: VectorLike) => VectorLike; length: () => number; };
-  occDir: VectorLike & { set: (x: number, y: number, z: number) => VectorLike; normalize: () => VectorLike; dot: (v: VectorLike) => number; };
-  cross: VectorLike & { crossVectors: (a: VectorLike, b: VectorLike) => VectorLike; length: () => number; };
+  targetDir: import('three').Vector3;
+  occDir: import('three').Vector3;
+  cross: import('three').Vector3;
 };
 
 export function isOccludedByAny(

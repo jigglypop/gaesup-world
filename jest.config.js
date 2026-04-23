@@ -33,9 +33,4 @@ export default {
   ],
   setupFiles: ['jest-canvas-mock'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  globals: {
-    'ts-jest': {
-      isolatedModules: true,
-    },
-  },
 }; 

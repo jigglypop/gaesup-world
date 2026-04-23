@@ -17,6 +17,13 @@ export type GpuDeviceLike = {
   queue: GpuQueueLike;
 };
 
+type RendererLike = {
+  backend?: {
+    device?: GpuDeviceLike | null;
+  };
+  device?: GpuDeviceLike | null;
+};
+
 export type BuildingGpuUploadResources = {
   backend: 'none' | 'webgpu';
   uploadedVersion: number;
@@ -41,16 +48,16 @@ export function createEmptyBuildingGpuUploadResources(): BuildingGpuUploadResour
   };
 }
 
-export function getWebGPUDeviceFromRenderer(renderer: unknown): GpuDeviceLike | null {
-  const candidate =
-    (renderer as { backend?: { device?: unknown } } | null)?.backend?.device ??
-    (renderer as { device?: unknown } | null)?.device ??
-    null;
+export function getWebGPUDeviceFromRenderer(renderer: object | null | undefined): GpuDeviceLike | null {
+  if (typeof renderer !== 'object' || renderer === null) return null;
+
+  const rendererLike = renderer as RendererLike;
+  const candidate = rendererLike.backend?.device ?? rendererLike.device ?? null;
 
   if (!candidate) return null;
-  if (typeof (candidate as GpuDeviceLike).createBuffer !== 'function') return null;
-  if (typeof (candidate as GpuDeviceLike).queue?.writeBuffer !== 'function') return null;
-  return candidate as GpuDeviceLike;
+  if (typeof candidate.createBuffer !== 'function') return null;
+  if (typeof candidate.queue?.writeBuffer !== 'function') return null;
+  return candidate;
 }
 
 function destroyBuffer(buffer: GpuBufferLike | null): void {

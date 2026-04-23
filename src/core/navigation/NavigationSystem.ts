@@ -91,6 +91,13 @@ export class NavigationSystem {
     view.set(this.costGrid);
   }
 
+  private openNodeAt(
+    open: Array<{ f: number; idx: number }>,
+    index: number,
+  ): { f: number; idx: number } | null {
+    return open[index] ?? null;
+  }
+
   worldToGrid(worldX: number, worldZ: number): [number, number] {
     const { cellSize, worldMinX, worldMinZ } = this.config;
     const gx = Math.floor((worldX - worldMinX) / cellSize);
@@ -201,7 +208,10 @@ export class NavigationSystem {
     const raw = new Uint32Array(wasm.memory.buffer, this.outPathPtr, pathLen * 2);
     const waypoints: Waypoint[] = [];
     for (let i = 0; i < pathLen; i++) {
-      waypoints.push(this.gridToWorld(raw[i * 2], raw[i * 2 + 1], y));
+      const rawX = raw[i * 2];
+      const rawZ = raw[i * 2 + 1];
+      if (rawX === undefined || rawZ === undefined) continue;
+      waypoints.push(this.gridToWorld(rawX, rawZ, y));
     }
     return waypoints;
   }
@@ -231,7 +241,7 @@ export class NavigationSystem {
       { f: this.octileH(sx, sz, gx, gz), idx: startIdx },
     ];
 
-    const dirs = [
+    const dirs: ReadonlyArray<readonly [number, number, number]> = [
       [1, 0, 10], [-1, 0, 10], [0, 1, 10], [0, -1, 10],
       [1, 1, 14], [1, -1, 14], [-1, 1, 14], [-1, -1, 14],
     ];
@@ -239,10 +249,14 @@ export class NavigationSystem {
     while (open.length > 0) {
       let minPos = 0;
       for (let i = 1; i < open.length; i++) {
-        if (open[i].f < open[minPos].f) minPos = i;
+        const candidate = this.openNodeAt(open, i);
+        const currentMin = this.openNodeAt(open, minPos);
+        if (candidate && currentMin && candidate.f < currentMin.f) minPos = i;
       }
-      const current = open[minPos];
-      open[minPos] = open[open.length - 1];
+      const current = this.openNodeAt(open, minPos);
+      const last = this.openNodeAt(open, open.length - 1);
+      if (!current || !last) break;
+      open[minPos] = last;
       open.pop();
 
       const ci = current.idx;
@@ -253,6 +267,7 @@ export class NavigationSystem {
       const cx = ci % w;
       const cz = (ci / w) | 0;
       const cg = gScore[ci];
+      if (cg === undefined) continue;
 
       for (const [dx, dz, cost] of dirs) {
         const nx = cx + dx;
@@ -267,7 +282,8 @@ export class NavigationSystem {
         }
 
         const tentG = cg + cost;
-        if (tentG < gScore[ni]) {
+        const nextScore = gScore[ni];
+        if (nextScore !== undefined && tentG < nextScore) {
           gScore[ni] = tentG;
           cameFrom[ni] = ci;
           open.push({ f: tentG + this.octileH(nx, nz, gx, gz), idx: ni });
@@ -281,7 +297,9 @@ export class NavigationSystem {
     let trace = goalIdx;
     while (trace !== startIdx) {
       path.push(this.gridToWorld(trace % w, (trace / w) | 0, y));
-      trace = cameFrom[trace];
+      const previous = cameFrom[trace];
+      if (previous === undefined) return [];
+      trace = previous;
       if (trace === 0xFFFFFFFF) return [];
     }
     path.push(this.gridToWorld(sx, sz, y));
@@ -298,11 +316,14 @@ export class NavigationSystem {
   simplifyPath(waypoints: Waypoint[]): Waypoint[] {
     if (waypoints.length <= 2) return waypoints;
 
-    const result: Waypoint[] = [waypoints[0]];
+    const first = waypoints[0];
+    if (!first) return [];
+    const result: Waypoint[] = [first];
     for (let i = 1; i < waypoints.length - 1; i++) {
       const prev = result[result.length - 1];
       const curr = waypoints[i];
       const next = waypoints[i + 1];
+      if (!prev || !curr || !next) continue;
 
       const dx1 = curr[0] - prev[0];
       const dz1 = curr[2] - prev[2];
@@ -313,7 +334,8 @@ export class NavigationSystem {
         result.push(curr);
       }
     }
-    result.push(waypoints[waypoints.length - 1]);
+    const last = waypoints[waypoints.length - 1];
+    if (last) result.push(last);
     return result;
   }
 

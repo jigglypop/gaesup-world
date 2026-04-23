@@ -18,9 +18,56 @@ import './styles.css';
 import { BlueprintType, BlueprintCategory } from './types';
 import { convertBlueprintToItem, generateNodesFromBlueprint } from './utils';
 import { blueprintRegistry, AnyBlueprint, CharacterBlueprint, VehicleBlueprint, AirplaneBlueprint, BlueprintWithComponents, BlueprintComponent } from '../../../';
+import type { BlueprintRecord, BlueprintValue } from '../../../types';
 import { useSpawnFromBlueprint } from '../../../hooks/useSpawnFromBlueprint';
 import { EditableNode } from '../../editor/EditableNode';
 import { NodeFieldValue, EditableNodeData } from '../../editor/EditableNode/types';
+
+const isRecord = (value: BlueprintValue | AnyBlueprint | undefined): value is BlueprintRecord =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const setNestedProperty = (
+  target: BlueprintRecord,
+  path: string[],
+  value: NodeFieldValue,
+): boolean => {
+  if (path.length === 0) return false;
+
+  let current: BlueprintRecord | BlueprintValue[] | BlueprintValue | undefined = target;
+
+  for (let i = 0; i < path.length - 1; i++) {
+    const key = path[i];
+    if (!key) return false;
+
+    if (Array.isArray(current)) {
+      const index = Number(key);
+      if (!Number.isInteger(index) || index < 0 || index >= current.length) {
+        return false;
+      }
+      current = current[index];
+      continue;
+    }
+
+    if (!isRecord(current)) return false;
+    current = current[key];
+  }
+
+  const lastKey = path[path.length - 1];
+  if (!lastKey) return false;
+
+  if (Array.isArray(current)) {
+    const index = Number(lastKey);
+    if (!Number.isInteger(index) || index < 0 || index >= current.length) {
+      return false;
+    }
+    current[index] = value;
+    return true;
+  }
+
+  if (!isRecord(current)) return false;
+  current[lastKey] = value;
+  return true;
+};
 
 
 const blueprintCategories: BlueprintCategory[] = [
@@ -301,22 +348,12 @@ export const BlueprintPanel: React.FC = () => {
   const handlePropertyChange = (path: string[], value: NodeFieldValue) => {
     if (!editingBlueprint) return;
     
-    const newBlueprint = JSON.parse(JSON.stringify(editingBlueprint));
-    let current: any = newBlueprint;
-    
-    for (let i = 0; i < path.length - 1; i++) {
-      const key = path[i];
-      if (!key) return;
-      current = current[key];
-    }
-    
-    const lastKey = path[path.length - 1];
-    if (!lastKey) return;
-    current[lastKey] = value;
-    setEditingBlueprint(newBlueprint);
+    const newBlueprint = JSON.parse(JSON.stringify(editingBlueprint)) as BlueprintRecord;
+    if (!setNestedProperty(newBlueprint, path, value)) return;
+    setEditingBlueprint(newBlueprint as AnyBlueprint);
   };
 
-  const renderPropertyEditor = (obj: Record<string, unknown>, path: string[] = []): React.ReactElement[] => {
+  const renderPropertyEditor = (obj: BlueprintRecord, path: string[] = []): React.ReactElement[] => {
     const elements: React.ReactElement[] = [];
     
     Object.entries(obj).forEach(([key, value]) => {
@@ -337,19 +374,19 @@ export const BlueprintPanel: React.FC = () => {
             />
           </div>
         );
-      } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      } else if (isRecord(value)) {
         elements.push(
           <div key={pathKey} className="property-editor__group">
             <div className="property-editor__group-title editor-text">
               {key.charAt(0).toUpperCase() + key.slice(1)}:
             </div>
             <div className="property-editor__group-content">
-              {renderPropertyEditor(value as Record<string, unknown>, currentPath)}
+              {renderPropertyEditor(value, currentPath)}
             </div>
           </div>
         );
       } else if (Array.isArray(value)) {
-        if (value.length > 0 && typeof value[0] === 'object') {
+        if (value.length > 0 && value.every(isRecord)) {
           elements.push(
             <div key={pathKey} className="property-editor__group">
               <div className="property-editor__group-title editor-text">
@@ -359,7 +396,7 @@ export const BlueprintPanel: React.FC = () => {
                 {value.map((item, index) => (
                   <div key={`${pathKey}.${index}`} className="property-editor__array-item">
                     <div className="property-editor__array-item-title editor-text-small">Item {index + 1}</div>
-                    {renderPropertyEditor(item as Record<string, unknown>, [...currentPath, index.toString()])}
+                    {renderPropertyEditor(item, [...currentPath, index.toString()])}
                   </div>
                 ))}
               </div>
@@ -753,7 +790,7 @@ export const BlueprintPanel: React.FC = () => {
                   <h4 className="blueprint-panel__property-editor-title editor-text">
                     {isCreatingNew ? 'Create New Blueprint' : `Edit: ${editingBlueprint.name}`}
                   </h4>
-                  {renderPropertyEditor(editingBlueprint)}
+                  {renderPropertyEditor(editingBlueprint as BlueprintRecord)}
                 </div>
               )}
             </div>

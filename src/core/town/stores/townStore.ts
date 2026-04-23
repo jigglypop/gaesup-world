@@ -78,7 +78,12 @@ export const useTownStore = create<State>((set, get) => ({
     set({
       houses: {
         ...get().houses,
-        [houseId]: { ...h, state: 'reserved', reservedFor: residentId, reservedUntilDay: untilDay },
+        [houseId]: {
+          ...h,
+          state: 'reserved',
+          reservedFor: residentId,
+          ...(untilDay !== undefined ? { reservedUntilDay: untilDay } : {}),
+        },
       },
     });
     return true;
@@ -101,7 +106,11 @@ export const useTownStore = create<State>((set, get) => ({
     set({
       houses: {
         ...get().houses,
-        [houseId]: { ...h, state: 'occupied', residentId, reservedFor: undefined, reservedUntilDay: undefined },
+        [houseId]: {
+          ...h,
+          state: 'occupied',
+          residentId,
+        },
       },
       residents: {
         ...get().residents,

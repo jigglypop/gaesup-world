@@ -22,6 +22,14 @@ export type GrassWindCompute = {
   windBuffer: Float32Array;
 };
 
+type TslModule = {
+  storage?: (...args: never[]) => object;
+  float?: (value: number) => object;
+  instanceIndex?: object;
+  sin?: (value: object) => object;
+  compute?: (...args: never[]) => object;
+};
+
 /**
  * Try to create a GPU compute node for grass wind simulation.
  * Returns null if WebGPU/TSL is not available.
@@ -35,13 +43,7 @@ export async function createGrassWindCompute(
 ): Promise<GrassWindCompute | null> {
   try {
     // Attempt dynamic TSL import. This will fail cleanly on WebGL-only builds.
-    const tsl = await import('three/tsl') as unknown as {
-      storage?: unknown;
-      float?: unknown;
-      instanceIndex?: unknown;
-      sin?: unknown;
-      compute?: unknown;
-    };
+    const tsl = await import('three/tsl') as TslModule;
 
     if (!tsl.storage || !tsl.compute) {
       return null;
@@ -85,7 +87,7 @@ export async function createGrassWindCompute(
  * the vertex displacement, wind, and color mixing can be expressed
  * as TSL nodes for optimal cross-renderer compilation.
  */
-export function isWebGPURenderer(renderer: unknown): boolean {
+export function isWebGPURenderer(renderer: object | null | undefined): boolean {
   if (!renderer) return false;
   const name = (renderer as { constructor?: { name?: string } })?.constructor?.name ?? '';
   return name === 'WebGPURenderer';

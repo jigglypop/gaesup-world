@@ -13,6 +13,8 @@ import {
 } from '@react-three/rapier';
 import * as THREE from 'three';
 
+import type { CollisionUserData } from '@core/boilerplate/hooks/useCollisionHandler';
+
 export type Part = {
   url: string;
   color?: string;
@@ -81,7 +83,7 @@ export type PhysicsEntityProps = {
   outerGroupRef ? : RefObject < THREE.Group > ;
   innerGroupRef ? : RefObject < THREE.Group > ;
   children ? : ReactNode;
-  userData ? : Record < string, unknown > ;
+  userData ? : CollisionUserData;
   sensor ? : boolean;
   onIntersectionEnter ? : (payload: CollisionPayload) => void;
   onIntersectionExit ? : (payload: CollisionPayload) => void;

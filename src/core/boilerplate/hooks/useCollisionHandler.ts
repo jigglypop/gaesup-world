@@ -1,12 +1,18 @@
 import { useCallback } from 'react';
 
 import type { CollisionEnterPayload, CollisionPayload } from '@react-three/rapier';
+import type { RuntimeValue } from '../types';
+
+export type CollisionHandlerArg = CollisionPayload | CollisionEnterPayload | CollisionUserData | undefined;
+export type CollisionHandlerFn = (...args: CollisionHandlerArg[]) => void;
+export type CollisionHandlerValue = CollisionHandlerFn | RuntimeValue;
+export type CollisionUserData = Record<string, CollisionHandlerValue>;
 
 export interface CollisionHandlerOptions {
   onIntersectionEnter?: (payload: CollisionPayload) => void;
   onIntersectionExit?: (payload: CollisionPayload) => void;
   onCollisionEnter?: (payload: CollisionEnterPayload) => void;
-  userData?: Record<string, unknown>;
+  userData?: CollisionUserData;
 }
 
 export function useCollisionHandler(options: CollisionHandlerOptions) {
@@ -17,7 +23,7 @@ export function useCollisionHandler(options: CollisionHandlerOptions) {
     userData,
   } = options;
 
-  const safeCall = (fn: unknown, ...args: unknown[]) => {
+  const safeCall = (fn: CollisionHandlerValue, ...args: CollisionHandlerArg[]) => {
     if (typeof fn !== 'function') return;
     try {
       fn(...args);

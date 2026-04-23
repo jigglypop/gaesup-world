@@ -172,7 +172,7 @@ function buildAttributeDataJS(instances: number, width: number): GrassAttributeD
 
 // Both the WASM and JS path lay blades on a regular grid. That is visually a
 // dead giveaway on big tiles (you can read the rows). Apply per-cell jitter on
-// top of any source so the lawn looks natural at any tile size, and add gentle
+// top of each source so the lawn looks natural at every tile size, and add gentle
 // length variance so rows of identical clones don't pop out.
 function jitterAndVary(data: GrassAttributeData, instances: number, width: number): void {
   const gridSize = Math.ceil(Math.sqrt(instances));

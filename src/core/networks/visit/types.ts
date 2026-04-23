@@ -1,4 +1,4 @@
-import type { DomainBinding } from '../../save/types';
+import type { DomainBinding, SerializedDomainValue } from '../../save/types';
 
 /**
  * Set of save-domain keys that are considered "shareable" when another
@@ -24,7 +24,7 @@ export type VisitSnapshot = {
   hostId: string;
   hostName?: string;
   capturedAt: number;
-  domains: Record<string, unknown>;
+  domains: Record<string, SerializedDomainValue>;
 };
 
 export type VisitChannelEvent =
@@ -42,4 +42,4 @@ export type VisitChannel = {
   close(): void;
 };
 
-export type VisitBindingProvider = () => Iterable<DomainBinding<unknown>>;
+export type VisitBindingProvider = () => Iterable<DomainBinding>;

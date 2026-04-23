@@ -21,7 +21,10 @@ export class BridgeFactory {
             logger.info(`[BridgeFactory] Created bridge instance for domain: ${domain}`)
             return instance
         } catch (error) {
-            logger.error(`[BridgeFactory] Failed to create bridge for domain: ${domain}`, error)
+            logger.error(
+              `[BridgeFactory] Failed to create bridge for domain: ${domain}`,
+              error instanceof Error ? error : String(error),
+            )
             return null
         }
     }

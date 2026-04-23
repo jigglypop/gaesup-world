@@ -1,4 +1,5 @@
 import type { ItemId } from '../items/types';
+import type { PlainDataValue } from '../types/common';
 
 export type DialogNodeId = string;
 export type DialogTreeId = string;
@@ -13,7 +14,7 @@ export type DialogEffect =
   | { type: 'startQuest'; questId: string }
   | { type: 'completeQuest'; questId: string }
   | { type: 'openShop'; shopId?: string }
-  | { type: 'custom'; key: string; payload?: unknown };
+  | { type: 'custom'; key: string; payload?: PlainDataValue };
 
 export type DialogChoice = {
   text: string;

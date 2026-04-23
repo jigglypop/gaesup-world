@@ -18,7 +18,7 @@ export function PerformanceCollector() {
     frameCounter.current = 0;
 
     const info = gl.info;
-    const programs = (info as unknown as { programs?: unknown[] }).programs;
+    const programs = 'programs' in info ? info.programs : undefined;
     setPerformance({
       render: {
         calls: info.render.calls,

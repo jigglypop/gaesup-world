@@ -56,9 +56,9 @@ export function resolveSchedule(schedule: NPCSchedule, time: GameTime): ActiveSl
     if (entryMatches(entry, time)) {
       return {
         position: entry.position,
-        rotationY: entry.rotationY,
         activity: entry.activity ?? 'idle',
-        dialogTreeId: entry.dialogTreeId,
+        ...(entry.rotationY !== undefined ? { rotationY: entry.rotationY } : {}),
+        ...(entry.dialogTreeId ? { dialogTreeId: entry.dialogTreeId } : {}),
         source: entry,
       };
     }
@@ -66,9 +66,9 @@ export function resolveSchedule(schedule: NPCSchedule, time: GameTime): ActiveSl
   const fallback = schedule.defaultEntry;
   return {
     position: fallback?.position ?? [0, 0, 0],
-    rotationY: fallback?.rotationY,
     activity: fallback?.activity ?? 'idle',
-    dialogTreeId: fallback?.dialogTreeId,
+    ...(fallback?.rotationY !== undefined ? { rotationY: fallback.rotationY } : {}),
+    ...(fallback?.dialogTreeId ? { dialogTreeId: fallback.dialogTreeId } : {}),
     source: null,
   };
 }

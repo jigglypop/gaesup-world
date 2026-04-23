@@ -67,8 +67,6 @@ describe('GrassManager', () => {
       apply: (s) => samples.push({ ...s, trampleCenter: s.trampleCenter.clone() }),
     });
 
-    // Force the cooldown to elapse so the manager actually ticks.
-    jest.advanceTimersByTime?.(20);
     mgr.tick({ elapsedTime: 0, delta: 1 / 60, cameraPosition: camera.position, frustum });
 
     expect(samples[0].visible).toBe(false);

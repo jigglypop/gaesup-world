@@ -6,14 +6,14 @@ import { BridgeFactory } from '../../core/boilerplate';
 import { useGaesupStore } from '../../core/stores/gaesupStore';
 import { WorldBridge } from '../../core/world/bridge/WorldBridge';
 import { blueprintRegistry } from '../registry';
-import { AnyBlueprint } from '../types';
+import { AnyBlueprint, BlueprintRecord } from '../types';
 
 
 export type SpawnOptions = {
   position?: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  metadata?: Record<string, unknown>;
+  metadata?: BlueprintRecord;
 };
 
 export type SpawnedEntity = {
@@ -23,10 +23,26 @@ export type SpawnedEntity = {
   position: [number, number, number];
   rotation: [number, number, number];
   scale: [number, number, number];
-  metadata?: Record<string, unknown>;
+  metadata?: BlueprintRecord;
 };
 
 const DEFAULT_WORLD_ID = 'default';
+
+const getMetadataString = (
+  metadata: BlueprintRecord | undefined,
+  key: string,
+): string => {
+  const value = metadata?.[key];
+  return typeof value === 'string' ? value : '';
+};
+
+const getBlueprintModelUrl = (blueprint: AnyBlueprint): string => {
+  if (blueprint.type === 'character') {
+    return blueprint.visuals?.model ?? getMetadataString(blueprint.metadata, 'modelUrl');
+  }
+
+  return getMetadataString(blueprint.metadata, 'modelUrl');
+};
 
 export function useSpawnFromBlueprint() {
   const [isSpawning, setIsSpawning] = useState(false);
@@ -55,23 +71,24 @@ export function useSpawnFromBlueprint() {
       const worldObject = createWorldObject(entityId, blueprint, position, rotation, scale, options.metadata);
       
       // BridgeFactory를 통해 WorldBridge 인스턴스 가져오기
-      const worldBridge = BridgeFactory.getOrCreate('world') as unknown as WorldBridge | null;
+      const worldBridge = BridgeFactory.getOrCreate<WorldBridge>('world');
       if (!worldBridge) {
         console.error('WorldBridge not found. Make sure it is properly initialized.');
         return null;
       }
 
       worldBridge.addObject(DEFAULT_WORLD_ID, worldObject);
+      const modelUrl = getBlueprintModelUrl(blueprint);
       
       if (blueprint.type === 'character') {
         setMode({ type: 'character' });
-        setUrls({ characterUrl: (blueprint.metadata?.['modelUrl'] as string) || '' });
+        setUrls({ characterUrl: modelUrl });
       } else if (blueprint.type === 'vehicle') {
         setMode({ type: 'vehicle' });
-        setUrls({ vehicleUrl: (blueprint.metadata?.['modelUrl'] as string) || '' });
+        setUrls({ vehicleUrl: modelUrl });
       } else if (blueprint.type === 'airplane') {
         setMode({ type: 'airplane' });
-        setUrls({ airplaneUrl: (blueprint.metadata?.['modelUrl'] as string) || '' });
+        setUrls({ airplaneUrl: modelUrl });
       }
 
       const spawnedEntity: SpawnedEntity = {
@@ -95,12 +112,16 @@ export function useSpawnFromBlueprint() {
   }, [setMode, setUrls]);
 
   const spawnAtCursor = useCallback(async (blueprintId: string): Promise<SpawnedEntity | null> => {
-    const camera = (window as any).__camera;
+    const camera = window.__camera;
+    if (!camera) {
+      return spawnEntity(blueprintId);
+    }
+
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2(0, 0);
     
     raycaster.setFromCamera(mouse, camera);
-    const scene = (window as any).__scene;
+    const scene = window.__scene;
     const intersects = scene ? raycaster.intersectObjects(scene.children, true) : [];
     
     let position: [number, number, number] = [0, 0, 0];
@@ -153,7 +174,7 @@ function createWorldObject(
   position: [number, number, number],
   rotation: [number, number, number],
   scale: [number, number, number],
-  metadata?: Record<string, unknown>
+  metadata?: BlueprintRecord
 ) {
   const baseObject = {
     id,
@@ -170,9 +191,12 @@ function createWorldObject(
     }
   };
 
-  const charBlueprint = blueprint as any;
-  const vehicleBlueprint = blueprint as any;
-  const airplaneBlueprint = blueprint as any;
+  const modelUrl = getBlueprintModelUrl(blueprint);
+  const seats =
+    blueprint.type === 'vehicle' || blueprint.type === 'airplane'
+      ? blueprint.seats
+      : undefined;
+  const stats = blueprint.type === 'character' ? blueprint.stats : undefined;
   
   return {
     ...baseObject,
@@ -182,16 +206,16 @@ function createWorldObject(
     metadata: {
       ...baseObject.metadata,
       blueprintType: blueprint.type,
-      characterUrl: charBlueprint.visuals?.model || '',
-      vehicleUrl: vehicleBlueprint.visuals?.model || '',
-      airplaneUrl: airplaneBlueprint.visuals?.model || '',
+      characterUrl: blueprint.type === 'character' ? modelUrl : '',
+      vehicleUrl: blueprint.type === 'vehicle' ? modelUrl : '',
+      airplaneUrl: blueprint.type === 'airplane' ? modelUrl : '',
       currentAnimation: 'idle',
-      stats: charBlueprint.stats,
-      seats: vehicleBlueprint.seats || airplaneBlueprint.seats,
-      health: charBlueprint.stats?.health || 100,
-      maxHealth: charBlueprint.stats?.health || 100,
-      energy: charBlueprint.stats?.stamina || 100,
-      maxEnergy: charBlueprint.stats?.stamina || 100,
+      ...(stats ? { stats } : {}),
+      ...(seats ? { seats } : {}),
+      health: stats?.health || 100,
+      maxHealth: stats?.health || 100,
+      energy: stats?.stamina || 100,
+      maxEnergy: stats?.stamina || 100,
       fuel: 100,
       maxFuel: 100,
       altitude: 0

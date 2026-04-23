@@ -2,6 +2,8 @@ import React, { useCallback } from 'react';
 
 import { useGaesupStore } from '../../../stores/gaesupStore';
 
+type DistanceKey = 'xDistance' | 'yDistance' | 'zDistance';
+
 function RangeRow({ label, min, max, step, value, suffix, onChange }: {
   label: string; min: number; max: number; step: number; value: number;
   suffix?: string; onChange: (v: number) => void;
@@ -59,7 +61,7 @@ export function CameraSettingsTab() {
     setCameraOption({ smoothing: { ...cameraOption.smoothing, [key]: value } });
   }, [setCameraOption, cameraOption.smoothing]);
 
-  const dist = (key: string) => (cameraOption as Record<string, unknown>)[key] as number ?? 0;
+  const dist = (key: DistanceKey) => cameraOption[key] ?? 0;
 
   return (
     <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>

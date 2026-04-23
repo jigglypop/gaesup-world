@@ -27,7 +27,7 @@ export interface GroupCreateOptions {
 export interface NetworkEvent {
   type: 'nodeConnected' | 'nodeDisconnected' | 'messageReceived' | 'groupJoined' | 'groupLeft';
   nodeId: string;
-  data?: unknown;
+  data?: NetworkPayload;
   timestamp: number;
 }
 
@@ -40,3 +40,4 @@ export interface PerformanceMetrics {
   errorRate: number;
   lastUpdate: number;
 } 
+import type { NetworkPayload } from '../types';

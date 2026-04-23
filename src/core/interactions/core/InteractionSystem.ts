@@ -2,9 +2,31 @@ import * as THREE from 'three';
 
 import { RegisterSystem } from '@/core/boilerplate/decorators';
 import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
+import type { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
 import type { BaseState, BaseMetrics, SystemUpdateArgs } from '@/core/boilerplate/types';
 
 import { InteractionState, InteractionConfig, InteractionMetrics, KeyboardState, MouseState, GamepadState, TouchState } from '../bridge';
+
+const KEYBOARD_KEYS: Array<keyof KeyboardState> = [
+  'forward',
+  'backward',
+  'leftward',
+  'rightward',
+  'shift',
+  'space',
+  'keyZ',
+  'keyR',
+  'keyF',
+  'keyE',
+  'escape',
+];
+
+const MOUSE_BUTTON_KEYS: Array<keyof MouseState['buttons']> = ['left', 'right', 'middle'];
+type InteractionEventPayload =
+  | Partial<KeyboardState>
+  | Partial<MouseState>
+  | Partial<GamepadState>
+  | Partial<TouchState>;
 
 interface InteractionSystemState extends BaseState, InteractionState {}
 interface InteractionSystemMetrics extends BaseMetrics, InteractionMetrics {}
@@ -13,7 +35,7 @@ interface InteractionSystemMetrics extends BaseMetrics, InteractionMetrics {}
 export class InteractionSystem extends AbstractSystem<InteractionSystemState, InteractionSystemMetrics> {
   private static instance: InteractionSystem | null = null;
   private config: InteractionConfig;
-  private eventCallbacks: Map<string, Array<(data: unknown) => void>>;
+  private eventCallbacks: Map<string, Array<(data: InteractionEventPayload) => void>>;
 
   // public으로 변경
   public constructor() {
@@ -51,6 +73,10 @@ export class InteractionSystem extends AbstractSystem<InteractionSystemState, In
 
   protected performUpdate(args: SystemUpdateArgs): void {
     void args;
+  }
+
+  protected createUpdateArgs(context: SystemContext): SystemUpdateArgs {
+    return this.createDefaultUpdateArgs(context);
   }
 
   private createDefaultConfig(): InteractionConfig {
@@ -95,7 +121,7 @@ export class InteractionSystem extends AbstractSystem<InteractionSystemState, In
     this.emitChange('touch', updates);
   }
 
-  private emitChange(field: 'keyboard' | 'mouse' | 'gamepad' | 'touch', updates: unknown): void {
+  private emitChange(field: 'keyboard' | 'mouse' | 'gamepad' | 'touch', updates: InteractionEventPayload): void {
     const callbacks = this.eventCallbacks.get(field);
     if (!callbacks || callbacks.length === 0) return;
     for (const cb of callbacks) {
@@ -121,14 +147,14 @@ export class InteractionSystem extends AbstractSystem<InteractionSystemState, In
   
   // getState, getMetrics는 AbstractSystem에 이미 있으므로 제거
 
-  addEventListener(event: string, callback: (data: unknown) => void): void {
+  addEventListener(event: string, callback: (data: InteractionEventPayload) => void): void {
     if (!this.eventCallbacks.has(event)) {
       this.eventCallbacks.set(event, []);
     }
     this.eventCallbacks.get(event)!.push(callback);
   }
 
-  removeEventListener(event: string, callback: (data: unknown) => void): void {
+  removeEventListener(event: string, callback: (data: InteractionEventPayload) => void): void {
     const callbacks = this.eventCallbacks.get(event);
     if (callbacks) {
       const index = callbacks.indexOf(callback);
@@ -149,14 +175,12 @@ export class InteractionSystem extends AbstractSystem<InteractionSystemState, In
   private collectActiveInputs(out: string[]): void {
     out.length = 0;
 
-    const kb = this.state.keyboard as unknown as Record<string, boolean>;
-    for (const key in kb) {
-      if (kb[key]) out.push(`keyboard:${key}`);
+    for (const key of KEYBOARD_KEYS) {
+      if (this.state.keyboard[key]) out.push(`keyboard:${key}`);
     }
 
-    const mb = this.state.mouse.buttons as unknown as Record<string, boolean>;
-    for (const key in mb) {
-      if (mb[key]) out.push(`mouse:${key}`);
+    for (const key of MOUSE_BUTTON_KEYS) {
+      if (this.state.mouse.buttons[key]) out.push(`mouse:${key}`);
     }
 
     if (this.state.gamepad.connected) out.push('gamepad:connected');

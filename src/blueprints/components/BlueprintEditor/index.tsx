@@ -19,15 +19,37 @@ import {
 } from './types';
 import { blueprintRegistry, AnyBlueprint } from '../../';
 import { useSpawnFromBlueprint } from '../../hooks/useSpawnFromBlueprint';
+import type { BlueprintRecord, BlueprintValue } from '../../types';
 import { BlueprintPreview } from '../BlueprintPreview';
 import { CameraNode } from '../editor/CameraNode';
 import { EditableNode } from '../editor/EditableNode';
 import { InputNode } from '../editor/InputNode';
+import { NodeFieldValue } from '../editor/EditableNode/types';
 import {
   convertBlueprintToItem,
   generateNodesFromBlueprint,
 } from '../panels/BlueprintPanel/utils';
 import './styles.css';
+
+type EditableBlueprintDraft = AnyBlueprint & {
+  physics?: Record<string, NodeFieldValue>;
+  camera?: BlueprintRecord;
+  controls?: Record<string, NodeFieldValue>;
+};
+
+const isRecord = (value: BlueprintValue | undefined): value is BlueprintRecord =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const getOrCreateRecord = (
+  parent: BlueprintRecord,
+  key: string,
+): BlueprintRecord => {
+  const current = parent[key];
+  if (isRecord(current)) return current;
+  const next: BlueprintRecord = {};
+  parent[key] = next;
+  return next;
+};
 
 const blueprintCategories: BlueprintCategory[] = [
   { id: 'characters', name: 'Characters', type: 'character', count: 0 },
@@ -103,64 +125,69 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
   }, [setNodes, setEdges]);
 
   const handleNodeEditCallback = useCallback(
-    (nodeId: string, field: string, value: any) => {
+    (nodeId: string, field: string, value: NodeFieldValue) => {
       setEditingBlueprint(currentBlueprint => {
         if (!currentBlueprint) return null;
 
-        const newBlueprint = JSON.parse(JSON.stringify(currentBlueprint));
+        const newBlueprint = JSON.parse(
+          JSON.stringify(currentBlueprint),
+        ) as EditableBlueprintDraft;
 
         if (nodeId === 'root') {
-          if (field === 'version') newBlueprint.version = value;
-          else if (field === 'name') newBlueprint.name = value;
+          if (field === 'version' && typeof value === 'string') {
+            newBlueprint.version = value;
+          } else if (field === 'name' && typeof value === 'string') {
+            newBlueprint.name = value;
+          }
         } else if (
           nodeId === 'physics' ||
           nodeId === 'vehicle-physics' ||
           nodeId === 'airplane-physics'
         ) {
           if ('physics' in newBlueprint && newBlueprint.physics) {
-            (newBlueprint.physics as any)[field] = value;
+            newBlueprint.physics[field] = value;
           }
         } else if (nodeId === 'camera') {
           if ('camera' in newBlueprint) {
-            if (!newBlueprint.camera) {
-              (newBlueprint as any).camera = {};
-            }
-            (newBlueprint as any).camera[field] = value;
+            newBlueprint.camera ??= {};
+            newBlueprint.camera[field] = value;
           }
         } else if (nodeId === 'controls') {
           if ('controls' in newBlueprint) {
-            if (!newBlueprint.controls) {
-              (newBlueprint as any).controls = {};
-            }
-            (newBlueprint as any).controls[field] = value;
+            newBlueprint.controls ??= {};
+            newBlueprint.controls[field] = value;
           }
         } else if (nodeId === 'camera-controller') {
           if ('camera' in newBlueprint) {
-            if (!newBlueprint.camera) {
-              (newBlueprint as any).camera = {};
-            }
+            newBlueprint.camera ??= {};
+            const camera = newBlueprint.camera;
             if (field === 'smoothing') {
-              if (!(newBlueprint as any).camera.smoothing) {
-                (newBlueprint as any).camera.smoothing = { position: 0.25, rotation: 0.3, fov: 0.2 };
+              const smoothing = getOrCreateRecord(camera, 'smoothing');
+              if (typeof value === 'number') {
+                smoothing['position'] = value;
               }
-              (newBlueprint as any).camera.smoothing.position = value;
-            } else if (field === 'collision') {
-              (newBlueprint as any).camera.enableCollision = value;
+              if (!('rotation' in smoothing)) {
+                smoothing['rotation'] = 0.3;
+              }
+              if (!('fov' in smoothing)) {
+                smoothing['fov'] = 0.2;
+              }
+            } else if (field === 'collision' && typeof value === 'boolean') {
+              camera['enableCollision'] = value;
             }
           }
         } else if (nodeId === 'camera-zoom') {
           if ('camera' in newBlueprint) {
-            if (!newBlueprint.camera) {
-              (newBlueprint as any).camera = {};
-            }
-            if (field === 'enabled') {
-              (newBlueprint as any).camera.enableZoom = value;
-            } else if (field === 'speed') {
-              (newBlueprint as any).camera.zoomSpeed = value;
-            } else if (field === 'min') {
-              (newBlueprint as any).camera.minZoom = value;
-            } else if (field === 'max') {
-              (newBlueprint as any).camera.maxZoom = value;
+            newBlueprint.camera ??= {};
+            const camera = newBlueprint.camera;
+            if (field === 'enabled' && typeof value === 'boolean') {
+              camera['enableZoom'] = value;
+            } else if (field === 'speed' && typeof value === 'number') {
+              camera['zoomSpeed'] = value;
+            } else if (field === 'min' && typeof value === 'number') {
+              camera['minZoom'] = value;
+            } else if (field === 'max' && typeof value === 'number') {
+              camera['maxZoom'] = value;
             }
           }
         }

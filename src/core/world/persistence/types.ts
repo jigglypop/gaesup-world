@@ -1,3 +1,5 @@
+import type { RuntimeRecord } from '../../boilerplate/types';
+
 export interface SaveData {
   version: string;
   timestamp: number;
@@ -56,7 +58,7 @@ export interface NPCSaveData {
   rotation: { x: number; y: number; z: number };
   modelUrl?: string;
   behavior?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: RuntimeRecord;
 }
 
 export interface EnvironmentSaveData {
@@ -82,7 +84,7 @@ export interface CameraSaveData {
   position: { x: number; y: number; z: number };
   rotation: { x: number; y: number; z: number };
   mode: string;
-  settings?: Record<string, unknown>;
+  settings?: RuntimeRecord;
 }
 
 export interface SaveMetadata {

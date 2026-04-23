@@ -1,14 +1,21 @@
 import * as THREE from 'three';
+import type { WebGPURenderer } from 'three/webgpu';
 
-type RendererProps = {
+declare global {
+  interface Navigator {
+    gpu?: {
+      requestAdapter: () => Promise<object | null>;
+    };
+  }
+}
+
+type RendererProps = Omit<THREE.WebGLRendererParameters, 'context'> & {
   canvas: HTMLCanvasElement;
-  antialias?: boolean;
-  alpha?: boolean;
   powerPreference?: 'default' | 'high-performance' | 'low-power';
-  [key: string]: unknown;
 };
 
 let webgpuAvailable: boolean | null = null;
+type AnyRenderer = THREE.WebGLRenderer | WebGPURenderer;
 
 /**
  * Check WebGPU availability (cached after first call).
@@ -20,7 +27,7 @@ export async function isWebGPUAvailable(): Promise<boolean> {
       webgpuAvailable = false;
       return false;
     }
-    const adapter = await (navigator as unknown as { gpu: { requestAdapter: () => Promise<unknown | null> } }).gpu.requestAdapter();
+    const adapter = await navigator.gpu?.requestAdapter();
     webgpuAvailable = adapter !== null;
     return webgpuAvailable;
   } catch {
@@ -37,20 +44,22 @@ export async function isWebGPUAvailable(): Promise<boolean> {
  *
  * R3F v9 supports async gl functions natively.
  */
-export async function createRenderer(props: RendererProps): Promise<THREE.WebGLRenderer> {
+export async function createRenderer(props: RendererProps): Promise<AnyRenderer> {
   const available = await isWebGPUAvailable();
 
   if (available) {
     try {
       // Dynamic import to avoid bundling WebGPU code when not available.
-      const webgpuModule = await import('three/webgpu') as unknown as {
-        default?: { new(props: RendererProps): THREE.WebGLRenderer & { init(): Promise<void> } };
-        WebGPURenderer?: { new(props: RendererProps): THREE.WebGLRenderer & { init(): Promise<void> } };
-      };
+      const webgpuModule = await import('three/webgpu');
 
-      const WebGPURenderer = webgpuModule.WebGPURenderer ?? webgpuModule.default;
+      const WebGPURenderer = webgpuModule.WebGPURenderer;
       if (WebGPURenderer) {
-        const renderer = new WebGPURenderer(props);
+        const { powerPreference, ...restProps } = props;
+        const renderer = new WebGPURenderer(
+          powerPreference === 'default'
+            ? restProps
+            : { ...restProps, powerPreference },
+        );
         await renderer.init();
         return renderer;
       }

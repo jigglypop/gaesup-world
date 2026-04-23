@@ -1,4 +1,4 @@
-import { BaseState, BaseMetrics, SystemOptions, SystemUpdateArgs } from '../types';
+import { BaseState, BaseMetrics, SystemOptions, SystemUpdateArgs, RuntimeRecord } from '../types';
 import { BaseSystem, SystemContext } from './BaseSystem';
 import { Profile, HandleError } from '../decorators';
 
@@ -32,7 +32,7 @@ export abstract class AbstractSystem<
     }
     private createInitialState(
         defaultState: StateType,
-        initialState?: Record<string, unknown>
+        initialState?: RuntimeRecord
     ): StateType {
         return {
             ...defaultState,
@@ -42,7 +42,7 @@ export abstract class AbstractSystem<
     }
     private createInitialMetrics(
         defaultMetrics: MetricsType,
-        initialMetrics?: Record<string, unknown>
+        initialMetrics?: RuntimeRecord
     ): MetricsType {
         return {
             ...defaultMetrics,
@@ -75,12 +75,10 @@ export abstract class AbstractSystem<
         this.performUpdateWithArgs(args);
     }
     
-    protected createUpdateArgs(context: SystemContext): UpdateArgsType {
-        return {
-            ...context,
-            deltaTime: context.deltaTime
-        } as unknown as UpdateArgsType;
+    protected createDefaultUpdateArgs(context: SystemContext): SystemUpdateArgs {
+        return context;
     }
+    protected abstract createUpdateArgs(context: SystemContext): UpdateArgsType;
     
     @Profile()
     protected performUpdateWithArgs(args: UpdateArgsType): void {

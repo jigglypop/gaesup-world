@@ -13,7 +13,7 @@ export type Toast = {
 
 type State = {
   toasts: Toast[];
-  push: (t: Omit<Toast, 'id' | 'createdAt'> & { durationMs?: number }) => number;
+  push: (t: Omit<Toast, 'id' | 'createdAt' | 'durationMs'> & { durationMs?: number }) => number;
   dismiss: (id: number) => void;
   clear: () => void;
 };
@@ -30,7 +30,7 @@ export const useToastStore = create<State>((set, get) => ({
       durationMs: t.durationMs ?? 3500,
       kind: t.kind,
       text: t.text,
-      icon: t.icon,
+      ...(t.icon ? { icon: t.icon } : {}),
     };
     set({ toasts: [...get().toasts, toast] });
     return id;
@@ -40,5 +40,10 @@ export const useToastStore = create<State>((set, get) => ({
 }));
 
 export function notify(kind: ToastKind, text: string, opts?: { icon?: string; durationMs?: number }): number {
-  return useToastStore.getState().push({ kind, text, icon: opts?.icon, durationMs: opts?.durationMs });
+  return useToastStore.getState().push({
+    kind,
+    text,
+    ...(opts?.icon ? { icon: opts.icon } : {}),
+    ...(opts?.durationMs !== undefined ? { durationMs: opts.durationMs } : {}),
+  });
 }

@@ -118,7 +118,9 @@ export const PassiveObjects = memo(function PassiveObjects({
     const cam = state.camera.position;
     const next = new Set<string>();
     for (const obj of objects) {
-      const [x, y, z] = obj.position;
+      const x = obj.position.x;
+      const y = obj.position.y;
+      const z = obj.position.z;
       const dx = x - cam.x, dy = y - cam.y, dz = z - cam.z;
       if (dx * dx + dy * dy + dz * dz <= PASSIVE_LOD_FAR_SQ) {
         next.add(obj.id);

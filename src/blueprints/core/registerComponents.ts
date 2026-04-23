@@ -1,4 +1,9 @@
 import { ComponentRegistry } from './ComponentRegistry';
+import {
+  toCharacterAnimationProps,
+  toCharacterMovementProps,
+  toGravityForceProperties,
+} from './componentProps';
 import { CharacterAnimationComponent } from './components/CharacterAnimationComponent';
 import { CharacterMovementComponent } from './components/CharacterMovementComponent';
 import { GravityForceComponent } from './components/GravityForceComponent';
@@ -7,11 +12,11 @@ export function registerDefaultComponents(): void {
   const registry = ComponentRegistry.getInstance();
   
   // Force Components
-  registry.register('GravityForce', (props) => new GravityForceComponent(props as any));
+  registry.register('GravityForce', (props) => new GravityForceComponent(toGravityForceProperties(props)));
   
   // Character Components
-  registry.register('CharacterMovement', (props) => new CharacterMovementComponent(props as any));
-  registry.register('CharacterAnimation', (props) => new CharacterAnimationComponent(props as any));
+  registry.register('CharacterMovement', (props) => new CharacterMovementComponent(toCharacterMovementProps(props)));
+  registry.register('CharacterAnimation', (props) => new CharacterAnimationComponent(toCharacterAnimationProps(props)));
   registry.register('CharacterPhysics', (props) => ({
     type: 'CharacterPhysics',
     enabled: true,

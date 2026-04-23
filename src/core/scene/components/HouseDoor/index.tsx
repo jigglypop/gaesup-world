@@ -35,7 +35,7 @@ export type HouseDoorProps = {
  *
  * Implementation note: we do not rely on Rapier sensors here because the
  * outdoor scene is unmounted when entering an interior, which would tear down
- * any sensor mid-event. Polling the player's position with a small radius is
+ * a sensor mid-event. Polling the player's position with a small radius is
  * cheap and survives scene swaps.
  */
 export function HouseDoor({

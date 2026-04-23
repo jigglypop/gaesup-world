@@ -9,7 +9,7 @@ export interface PlayerUpdateData {
   rotation: [number, number, number, number];
   animation: string;
   velocity: [number, number, number];
-  modelUrl?: string;
+  modelUrl?: string | undefined;
 }
 
 export interface PlayerTrackingConfig {
@@ -60,8 +60,7 @@ export class PlayerPositionTracker {
     this.tempRot.set(currentRot.x, currentRot.y, currentRot.z, currentRot.w);
 
     // 속도 계산: Rapier의 linvel을 우선 사용 (더 안정적/저렴)
-    const body = playerRef.current as unknown as { linvel?: () => { x: number; y: number; z: number } };
-    const lv = typeof body.linvel === 'function' ? body.linvel() : null;
+    const lv = playerRef.current.linvel();
     if (lv) {
       this.velocity.set(lv.x, lv.y, lv.z);
     } else {

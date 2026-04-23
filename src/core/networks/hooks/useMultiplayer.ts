@@ -313,7 +313,10 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
       );
 
       if (updateData) {
-        networkManagerRef.current.updateLocalPlayer(updateData);
+        const { modelUrl, ...baseUpdate } = updateData;
+        networkManagerRef.current.updateLocalPlayer(
+          modelUrl ? { ...baseUpdate, modelUrl } : baseUpdate,
+        );
       }
 
       // 말풍선 TTL 정리 (가벼운 GC) -- Map 재사용으로 불필요한 할당 방지

@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 
+export type NetworkPayload = object | string | number | boolean | null | undefined;
+
 // 플레이어 상태 정보
 export interface PlayerState {
   name: string;
@@ -30,7 +32,7 @@ export interface NetworkMessage {
   from: string;
   to: string | 'broadcast' | 'group';
   type: 'chat' | 'action' | 'state' | 'system';
-  payload: unknown;
+  payload: NetworkPayload;
   priority: 'low' | 'normal' | 'high' | 'critical';
   timestamp: number;
   reliability: 'unreliable' | 'reliable';

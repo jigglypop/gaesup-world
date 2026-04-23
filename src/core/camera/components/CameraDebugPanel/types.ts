@@ -1,3 +1,5 @@
+import type { DebugValue } from '@core/types/common';
+
 export interface CameraDebugPanelProps {
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   visible?: boolean;
@@ -23,7 +25,7 @@ export interface DebugField {
 export interface CustomField {
   key: string;
   label: string;
-  getValue: () => unknown;
+  getValue: () => DebugValue;
   format?: 'number' | 'vector3' | 'text' | 'angle';
   precision?: number;
 }

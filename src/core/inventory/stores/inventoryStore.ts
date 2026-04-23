@@ -130,8 +130,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
         }
       }
     }
-    slots[from] = b;
-    slots[to] = a;
+    slots[from] = b ?? null;
+    slots[to] = a ?? null;
     set({ slots });
   },
 

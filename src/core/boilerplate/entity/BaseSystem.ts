@@ -1,3 +1,5 @@
+import type { RuntimeRecord } from '../types';
+
 export interface SystemCapabilities {
   hasAsync?: boolean;
   hasMetrics?: boolean;
@@ -11,7 +13,7 @@ export interface SystemContext {
   frameCount: number;
 }
 
-export interface BaseSystem<TState = unknown, TMetrics = unknown> {
+export interface BaseSystem<TState = RuntimeRecord, TMetrics = RuntimeRecord> {
   /**
    * 시스템 고유 ID
    */

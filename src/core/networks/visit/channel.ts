@@ -74,7 +74,7 @@ function tryParseWire(raw: string): WireMessage | null {
 }
 
 /**
- * Wraps any text-based transport (typically a WebSocket) so visit-room
+ * Wraps text-based transports (typically a WebSocket) so visit-room
  * snapshots can be exchanged across the network using a stable wire
  * format. Listeners receive parsed events identical to the local
  * channel implementation.

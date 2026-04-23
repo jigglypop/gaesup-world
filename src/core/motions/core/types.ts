@@ -1,12 +1,12 @@
-
+import type { ReactNode } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
-import type { RefObject } from '@core/boilerplate';
+import type { RefObject, RuntimeValue } from '@core/boilerplate';
 import { PhysicsConfigType } from '@stores/slices';
 import type { StoreState } from '@stores/types';
 
-import type { PhysicsInputState } from '../types';
+import type { PhysicsDispatchAction, PhysicsInputState } from '../types';
 
 export type characterConfigType = Pick<PhysicsConfigType, 
   'walkSpeed' | 'runSpeed' | 'jumpSpeed' | 'jumpGravityScale' | 'normalGravityScale' | 'airDamping' | 'stopDamping'
@@ -43,7 +43,7 @@ export interface PhysicsCalcPropsLegacy {
   onStateUpdate?: (updates: Partial<ActiveStateType>) => void;
 }
 
-export interface BaseState<T = unknown> {
+export interface BaseState<T = RuntimeValue> {
   isLoading: boolean;
   isReady: boolean;
   error: string | null;
@@ -56,7 +56,7 @@ export interface PhysicsBridgeData {
 }
 
 export interface PhysicsLayerProps {
-  children: unknown;
+  children: ReactNode;
   bridgeRef: RefObject<PhysicsBridgeData>;
 }
 
@@ -84,12 +84,12 @@ export type PhysicsConnectors = Record<string, PhysicsConnector>;
 
 export interface PhysicsStatus extends BaseState<PhysicsLayerStatus> {
   rawData: {
-    inputSystem: unknown;
-    urls: unknown;
-    block: unknown;
+    inputSystem: PhysicsInputState;
+    urls: StoreState['urls'];
+    block: StoreState['rideable'];
     worldContext: Partial<StoreState>;
-    controllerContext: unknown;
-    worldDispatch: (action: { type: string; payload?: unknown }) => void;
+    controllerContext: Partial<ActiveStateType> | null;
+    worldDispatch: (action: PhysicsDispatchAction) => void;
   };
 }
 

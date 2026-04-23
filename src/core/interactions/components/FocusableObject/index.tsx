@@ -11,7 +11,6 @@ export function unfocusCamera() {
   if (!cameraOption?.focus) return;
   setCameraOption({
     focus: false,
-    focusTarget: undefined,
   });
 }
 
@@ -26,7 +25,7 @@ export const FocusableObject = forwardRef<THREE.Group, FocusableObjectProps>(
 
       if (cameraOption.focus) {
         unfocusCamera();
-        if (onBlur) onBlur(event as unknown as ThreeEvent<PointerEvent>);
+        if (onBlur) onBlur(event);
         return;
       }
 

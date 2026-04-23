@@ -1,22 +1,24 @@
 import { BaseSystem } from './BaseSystem';
 
+const shouldWarnOnOverwrite = process.env.NODE_ENV !== 'test';
+
 class Registry {
   private systems: Map<string, BaseSystem> = new Map();
 
-  private safeDispose(system: unknown): void {
-    if (typeof system !== 'object' || system === null) return;
-    const dispose = (system as { dispose?: unknown }).dispose;
-    if (typeof dispose !== 'function') return;
+  private safeDispose(system: BaseSystem | undefined): void {
+    if (!system) return;
 
     try {
-      dispose.call(system);
+      system.dispose();
     } catch {
       // registry cleanups must be best-effort
     }
   }
 
   register(type: string, system: BaseSystem): void {
-    if (this.systems.has(type)) {
+    const existing = this.systems.get(type);
+    if (existing === system) return;
+    if (existing && shouldWarnOnOverwrite) {
       console.warn(`System with type "${type}" is already registered. Overwriting.`);
     }
     this.systems.set(type, system);

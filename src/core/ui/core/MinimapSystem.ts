@@ -400,6 +400,10 @@ export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSys
     void context;
   }
 
+  protected createUpdateArgs(context: SystemContext): SystemContext {
+    return context;
+  }
+
   protected override updateMetrics(deltaTime: number): void {
     this.metrics.markerCount = this.state.markers.size;
     this.metrics.frameTime = deltaTime;

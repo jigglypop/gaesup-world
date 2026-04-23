@@ -26,17 +26,54 @@ type GpuBufferLike = {
 };
 
 type GpuDeviceLike = ReturnType<typeof getWebGPUDeviceFromRenderer> extends infer T ? Exclude<T, null> : never;
+type GpuShaderModuleLike = object;
+type GpuBindGroupLayoutLike = object;
+type GpuBindGroupLike = object;
+type GpuCommandBufferLike = object;
+type GpuComputePassLike = {
+  setPipeline: (pipeline: GpuComputePipelineLike) => void;
+  setBindGroup: (index: number, bindGroup: GpuBindGroupLike) => void;
+  dispatchWorkgroups: (count: number) => void;
+  end: () => void;
+};
+type GpuCommandEncoderLike = {
+  beginComputePass: () => GpuComputePassLike;
+  copyBufferToBuffer: (
+    src: GpuBufferLike,
+    srcOffset: number,
+    dst: GpuBufferLike,
+    dstOffset: number,
+    size: number,
+  ) => void;
+  finish: () => GpuCommandBufferLike;
+};
+type GpuComputePipelineLike = {
+  getBindGroupLayout: (index: number) => GpuBindGroupLayoutLike;
+};
+type GpuComputeDevice = GpuDeviceLike & {
+  createShaderModule: (args: { code: string }) => GpuShaderModuleLike;
+  createComputePipeline: (args: {
+    layout: 'auto';
+    compute: { module: GpuShaderModuleLike; entryPoint: string };
+  }) => GpuComputePipelineLike;
+  createBindGroup: (args: {
+    layout: GpuBindGroupLayoutLike;
+    entries: Array<{ binding: number; resource: { buffer: GpuBufferLike } }>;
+  }) => GpuBindGroupLike;
+  createCommandEncoder: () => GpuCommandEncoderLike;
+  queue: GpuDeviceLike['queue'] & { submit: (commands: GpuCommandBufferLike[]) => void };
+};
 
 type ComputeResources = {
-  pipeline: unknown | null;
-  bindGroupLayout: unknown | null;
+  pipeline: GpuComputePipelineLike | null;
+  bindGroupLayout: GpuBindGroupLayoutLike | null;
   uniformBuffer: GpuBufferLike | null;
   visibleBuffer: GpuBufferLike | null;
   readBuffer: GpuBufferLike | null;
-  bindGroup: unknown | null;
+  bindGroup: GpuBindGroupLike | null;
   count: number;
-  spatialBuffer: unknown | null;
-  metaBuffer: unknown | null;
+  spatialBuffer: GpuBufferLike | null;
+  metaBuffer: GpuBufferLike | null;
 };
 
 function createEmptyResources(): ComputeResources {
@@ -66,13 +103,12 @@ function destroyResources(resources: ComputeResources): void {
 
 function createComputeResources(
   device: GpuDeviceLike,
-  spatialBuffer: unknown,
-  metaBuffer: unknown,
+  spatialBuffer: GpuBufferLike,
+  metaBuffer: GpuBufferLike,
   count: number,
 ): ComputeResources {
-  const shaderModule = (device as unknown as {
-    createShaderModule: (args: { code: string }) => unknown;
-  }).createShaderModule({
+  const gpuDevice = device as GpuComputeDevice;
+  const shaderModule = gpuDevice.createShaderModule({
     code: `
 struct Params {
   viewProj : mat4x4<f32>,
@@ -122,14 +158,12 @@ fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
 `,
   });
 
-  const pipeline = (device as unknown as {
-    createComputePipeline: (args: { layout: 'auto'; compute: { module: unknown; entryPoint: string } }) => unknown;
-  }).createComputePipeline({
+  const pipeline = gpuDevice.createComputePipeline({
     layout: 'auto',
     compute: { module: shaderModule, entryPoint: 'main' },
   });
 
-  const bindGroupLayout = (pipeline as { getBindGroupLayout: (index: number) => unknown }).getBindGroupLayout(0);
+  const bindGroupLayout = pipeline.getBindGroupLayout(0);
   const uniformBuffer = device.createBuffer({
     label: 'building-cull-uniforms',
     size: 96,
@@ -146,9 +180,7 @@ fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
     usage: GPU_BUFFER_USAGE_COPY_DST | GPU_BUFFER_USAGE_MAP_READ,
   }) as GpuBufferLike;
 
-  const bindGroup = (device as unknown as {
-    createBindGroup: (args: { layout: unknown; entries: Array<{ binding: number; resource: { buffer: unknown } }> }) => unknown;
-  }).createBindGroup({
+  const bindGroup = gpuDevice.createBindGroup({
     layout: bindGroupLayout,
     entries: [
       { binding: 0, resource: { buffer: spatialBuffer } },
@@ -239,26 +271,14 @@ export function BuildingGpuCullingDriver() {
     uniform[22] = 0;
     uniform[23] = 0;
 
-    device.queue.writeBuffer(resources.uniformBuffer as GpuBufferLike, 0, uniform);
+    if (!resources.uniformBuffer || !resources.visibleBuffer || !resources.readBuffer || !resources.bindGroup || !resources.pipeline) {
+      return;
+    }
 
-    const encoder = (device as unknown as {
-      createCommandEncoder: () => {
-        beginComputePass: () => {
-          setPipeline: (pipeline: unknown) => void;
-          setBindGroup: (index: number, bindGroup: unknown) => void;
-          dispatchWorkgroups: (count: number) => void;
-          end: () => void;
-        };
-        copyBufferToBuffer: (
-          src: unknown,
-          srcOffset: number,
-          dst: unknown,
-          dstOffset: number,
-          size: number,
-        ) => void;
-        finish: () => unknown;
-      };
-    }).createCommandEncoder();
+    device.queue.writeBuffer(resources.uniformBuffer, 0, uniform);
+
+    const gpuDevice = device as GpuComputeDevice;
+    const encoder = gpuDevice.createCommandEncoder();
 
     const pass = encoder.beginComputePass();
     pass.setPipeline(resources.pipeline);
@@ -266,7 +286,7 @@ export function BuildingGpuCullingDriver() {
     pass.dispatchWorkgroups(Math.max(1, Math.ceil(snapshot.ids.length / WORKGROUP_SIZE)));
     pass.end();
     encoder.copyBufferToBuffer(resources.visibleBuffer, 0, resources.readBuffer, 0, Math.max(4, snapshot.ids.length * 4));
-    (device as unknown as { queue: { submit: (commands: unknown[]) => void } }).queue.submit([encoder.finish()]);
+    gpuDevice.queue.submit([encoder.finish()]);
 
     refs.current.busy = true;
     void Promise.resolve(resources.readBuffer?.mapAsync?.(GPU_MAP_MODE_READ))

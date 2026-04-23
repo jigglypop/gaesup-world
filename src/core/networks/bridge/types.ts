@@ -1,4 +1,5 @@
 import { NetworkConfig } from '../types';
+import type { NetworkPayload } from '../types';
 
 /**
  * 네트워크 브릿지 설정 스토어 인터페이스
@@ -15,7 +16,7 @@ export interface NetworkConfigStore {
 export interface NetworkBridgeEvent {
   type: 'connection' | 'message' | 'error' | 'performance';
   timestamp: number;
-  data: unknown;
+  data: NetworkPayload;
 }
 
 /**

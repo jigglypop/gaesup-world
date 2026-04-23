@@ -39,7 +39,7 @@ export const useMailStore = create<State>((set, get) => ({
       subject: msg.subject,
       body: msg.body,
       sentDay: msg.sentDay,
-      attachments: msg.attachments,
+      ...(msg.attachments ? { attachments: msg.attachments } : {}),
       read: false,
       claimed: !msg.attachments || msg.attachments.length === 0,
     };
@@ -82,7 +82,13 @@ export const useMailStore = create<State>((set, get) => ({
   unreadCount: () => get().messages.reduce((n, m) => n + (m.read ? 0 : 1), 0),
   hasUnclaimedAttachments: () => get().messages.some((m) => !m.claimed && (m.attachments?.length ?? 0) > 0),
 
-  serialize: () => ({ version: 1, messages: get().messages.map((m) => ({ ...m, attachments: m.attachments?.map((a) => ({ ...a })) })) }),
+  serialize: () => ({
+    version: 1,
+    messages: get().messages.map((m) => ({
+      ...m,
+      ...(m.attachments ? { attachments: m.attachments.map((a) => ({ ...a })) } : {}),
+    })),
+  }),
 
   hydrate: (data) => {
     if (!data || !Array.isArray(data.messages)) return;

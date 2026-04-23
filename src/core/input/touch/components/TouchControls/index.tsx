@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { InteractionSystem } from '../../../../interactions/core/InteractionSystem';
+import type { KeyboardState } from '../../../../interactions/bridge';
 
 export type TouchControlsProps = {
   /** Force visibility regardless of pointer detection. */
@@ -29,6 +30,10 @@ const DEFAULT_ACTIONS: TouchActionButton[] = [
   { id: 'use',  label: '사용', key: 'F' },
 ];
 
+type TouchKeyboardUpdate = Partial<
+  Pick<KeyboardState, 'forward' | 'backward' | 'leftward' | 'rightward' | 'shift'>
+>;
+
 function isCoarsePointer(): boolean {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
   return window.matchMedia('(pointer: coarse)').matches;
@@ -48,7 +53,7 @@ function dispatchKey(type: 'keydown' | 'keyup', key: string): void {
 /**
  * Mobile / coarse-pointer overlay: virtual joystick on the left, action
  * buttons on the right. The joystick drives `InteractionSystem.updateKeyboard`
- * directly with `forward/backward/leftward/rightward/run`, action buttons
+ * directly with `forward/backward/leftward/rightward/shift`, action buttons
  * dispatch synthetic keyboard events so existing key-bound systems pick them up.
  */
 export function TouchControls({
@@ -86,12 +91,12 @@ export function TouchControls({
 
     const reset = () => {
       const s = stateRef.current;
-      const upd: Record<string, boolean> = {};
+      const upd: TouchKeyboardUpdate = {};
       if (s.forward) upd.forward = false;
       if (s.backward) upd.backward = false;
       if (s.leftward) upd.leftward = false;
       if (s.rightward) upd.rightward = false;
-      if (s.run) upd.run = false;
+      if (s.run) upd.shift = false;
       s.forward = s.backward = s.leftward = s.rightward = s.run = false;
       if (Object.keys(upd).length > 0) sys.updateKeyboard(upd);
       knob.style.transform = 'translate(-50%, -50%)';
@@ -121,13 +126,13 @@ export function TouchControls({
 
       const norm = clamped / radius;
       const s = stateRef.current;
-      const upd: Record<string, boolean> = {};
+      const upd: TouchKeyboardUpdate = {};
       if (norm < deadzone) {
         if (s.forward)   { upd.forward   = false; s.forward   = false; }
         if (s.backward)  { upd.backward  = false; s.backward  = false; }
         if (s.leftward)  { upd.leftward  = false; s.leftward  = false; }
         if (s.rightward) { upd.rightward = false; s.rightward = false; }
-        if (s.run)       { upd.run       = false; s.run       = false; }
+        if (s.run)       { upd.shift     = false; s.run       = false; }
       } else {
         const ax = Math.cos(angle);
         const ay = Math.sin(angle);
@@ -140,7 +145,7 @@ export function TouchControls({
         if (s.backward !== b)  { upd.backward  = b;   s.backward  = b; }
         if (s.leftward !== l)  { upd.leftward  = l;   s.leftward  = l; }
         if (s.rightward !== r) { upd.rightward = r;   s.rightward = r; }
-        if (s.run !== run)     { upd.run       = run; s.run       = run; }
+        if (s.run !== run)     { upd.shift     = run; s.run       = run; }
       }
       if (Object.keys(upd).length > 0) sys.updateKeyboard(upd);
     };

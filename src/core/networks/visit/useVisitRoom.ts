@@ -28,7 +28,7 @@ export type UseVisitRoomOptions = {
 };
 
 export type VisitRoomController = {
-  /** Most recent snapshot received from another host, if any. */
+  /** Most recent snapshot received from another host, when present. */
   remoteSnapshot: VisitSnapshot | null;
   /** Last snapshot we published locally, useful for diagnostics. */
   lastPublished: VisitSnapshot | null;
@@ -76,7 +76,7 @@ export function useVisitRoom(options: UseVisitRoomOptions): VisitRoomController 
         setRemoteSnapshot(event.snapshot);
         if (autoApplyRef.current) {
           applyVisitSnapshot(bindingsRef.current, event.snapshot, {
-            allowedDomains: allowedRef.current,
+            ...(allowedRef.current ? { allowedDomains: allowedRef.current } : {}),
           });
         }
       } else if (event.type === 'leave') {
@@ -87,7 +87,10 @@ export function useVisitRoom(options: UseVisitRoomOptions): VisitRoomController 
   }, [channel, hostId]);
 
   const publishNow = useCallback((): VisitSnapshot => {
-    const snapshot = serializeVisit(bindingsRef.current, { hostId, hostName });
+    const snapshot = serializeVisit(bindingsRef.current, {
+      hostId,
+      ...(hostName ? { hostName } : {}),
+    });
     if (hostMode) channel.publish(snapshot);
     setLastPublished(snapshot);
     return snapshot;
@@ -97,7 +100,7 @@ export function useVisitRoom(options: UseVisitRoomOptions): VisitRoomController 
     const snapshot = remoteSnapshot;
     if (!snapshot) return false;
     const result = applyVisitSnapshot(bindingsRef.current, snapshot, {
-      allowedDomains: allowedRef.current,
+      ...(allowedRef.current ? { allowedDomains: allowedRef.current } : {}),
     });
     return result.applied.length > 0;
   }, [remoteSnapshot]);

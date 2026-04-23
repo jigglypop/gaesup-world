@@ -57,7 +57,7 @@ export function LutOverlay({
         setTexture(tex);
         onLoadRef.current?.(tex);
       })
-      .catch((err: unknown) => {
+      .catch((err) => {
         if (cancelled) return;
         const error = err instanceof Error ? err : new Error(String(err));
         if (onErrorRef.current) onErrorRef.current(error);

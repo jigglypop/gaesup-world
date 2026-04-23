@@ -6,11 +6,14 @@ interface APIResponse<T> {
   status: number;
 }
 
+type JsonPrimitive = string | number | boolean | null;
+type RequestBody = JsonPrimitive | object;
+
 class APIBuilder {
   private method: string = 'GET';
   private url: string = '';
   private baseUrl: string = '';
-  private body: unknown = null;
+  private body: RequestBody | null = null;
   private headers: { [key: string]: string } = {};
   private withAuth: boolean = false;
 
@@ -21,27 +24,27 @@ class APIBuilder {
     return builder;
   }
 
-  static post(url: string, body?: unknown) {
+  static post(url: string, body?: RequestBody) {
     const builder = new APIBuilder();
     builder.method = 'POST';
     builder.url = url;
-    builder.body = body;
+    builder.body = body ?? null;
     return builder;
   }
 
-  static patch(url: string, body?: unknown) {
+  static patch(url: string, body?: RequestBody) {
     const builder = new APIBuilder();
     builder.method = 'PATCH';
     builder.url = url;
-    builder.body = body;
+    builder.body = body ?? null;
     return builder;
   }
 
-  static delete(url: string, body?: unknown) {
+  static delete(url: string, body?: RequestBody) {
     const builder = new APIBuilder();
     builder.method = 'DELETE';
     builder.url = url;
-    builder.body = body;
+    builder.body = body ?? null;
     return builder;
   }
 

@@ -1,4 +1,4 @@
-import { IDisposable, BridgeEventType, BridgeEvent, BridgeMiddleware } from '../types';
+import { IDisposable, BridgeEventType, BridgeEvent, BridgeMiddleware, RuntimeValue } from '../types';
 
 export abstract class AbstractBridge<
   EngineType extends IDisposable,
@@ -44,7 +44,7 @@ export abstract class AbstractBridge<
       this.eventHandlers.get(type)?.delete(handler);
     };
   }
-  register(id: string, ...args: unknown[]): void {
+  register(id: string, ...args: RuntimeValue[]): void {
     const engine = this.buildEngine(id, ...args);
     if (!engine) return;
 
@@ -63,7 +63,7 @@ export abstract class AbstractBridge<
       data: { engine }
     });
   }
-  protected abstract buildEngine(id: string, ...args: unknown[]): EngineType | null;
+  protected abstract buildEngine(id: string, ...args: RuntimeValue[]): EngineType | null;
   unregister(id: string): void {
     const engine = this.engines.get(id);
     if (engine) {

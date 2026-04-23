@@ -1,5 +1,7 @@
 import * as THREE from 'three' 
 
+import type { RuntimeRecord } from '@core/boilerplate/types';
+
 export type KeyboardState = {
   forward: boolean;
   backward: boolean;
@@ -95,7 +97,7 @@ export type AutomationAction = {
   delay?: number;
   beforeCallback?: () => void;
   afterCallback?: () => void;
-  data?: Record<string, unknown>;
+  data?: RuntimeRecord;
   timestamp?: number;
 }
 

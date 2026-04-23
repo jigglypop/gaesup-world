@@ -45,7 +45,7 @@ export class WorldBridge extends CoreBridge<WorldSystemEntity, WorldSnapshot, Wo
         // Allow callers to supply an id (so state-layer APIs can return the real id).
         const { id: providedId, ...rest } = command.data;
         const objectId = typeof providedId === 'string' && providedId.length > 0 ? providedId : this.generateId();
-        const worldObject: WorldObject = { ...(rest as Omit<WorldObject, 'id'>), id: objectId };
+        const worldObject: WorldObject = { ...rest, id: objectId };
         system.addObject(worldObject);
         break;
         
@@ -123,10 +123,10 @@ export class WorldBridge extends CoreBridge<WorldSystemEntity, WorldSnapshot, Wo
   }
 
   // 편의 메서드들 (기존 API 호환성 유지)
-  addObject(id: string, object: Omit<WorldObject, 'id'>): string {
-    const providedId = (object as unknown as { id?: unknown }).id;
+  addObject(id: string, object: Omit<WorldObject, 'id'> & { id?: string }): string {
+    const providedId = object.id;
     const objectId = typeof providedId === 'string' && providedId.length > 0 ? providedId : this.generateId();
-    this.execute(id, { type: 'addObject', data: { ...(object as unknown as Omit<WorldObject, 'id'>), id: objectId } });
+    this.execute(id, { type: 'addObject', data: { ...object, id: objectId } });
     return objectId;
   }
 

@@ -1,10 +1,14 @@
+export type BlueprintPrimitive = string | number | boolean | null;
+export type BlueprintValue = BlueprintPrimitive | BlueprintRecord | BlueprintValue[];
+export type BlueprintRecord = { [key: string]: BlueprintValue };
+
 export type Blueprint = {
   id: string;
   name: string;
   description?: string;
   version: string;
   tags?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: BlueprintRecord;
 };
 
 export type CameraConfig = {
@@ -55,7 +59,7 @@ export type CharacterBlueprint = Blueprint & {
   
   behaviors?: {
     type: 'state-machine' | 'behavior-tree';
-    data: unknown;
+    data: BlueprintRecord;
   };
   
   stats: {
@@ -71,7 +75,7 @@ export type CharacterBlueprint = Blueprint & {
     parts?: BlueprintPart[];
     model?: string;
     textures?: string[];
-    materials?: Record<string, unknown>;
+    materials?: BlueprintRecord;
     scale?: number;
   };
   
@@ -83,6 +87,7 @@ export type BlueprintPart = {
   id: string;
   type: 'body' | 'hair' | 'top' | 'bottom' | 'shoes' | 'glasses' | 'hat' | 'accessory' | 'weapon';
   url: string;
+  color?: string;
   position?: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
@@ -97,7 +102,7 @@ export type VehicleBlueprint = Blueprint & {
     acceleration: number;
     braking: number;
     turning: number;
-    suspension?: unknown;
+    suspension?: BlueprintRecord;
   };
   
   seats: Array<{
@@ -149,7 +154,7 @@ export type AnimationSequence = Blueprint & {
     events?: Array<{
       time: number;
       type: string;
-      data?: unknown;
+      data?: BlueprintRecord;
     }>;
   }>;
   
@@ -165,7 +170,7 @@ export type BehaviorTree = Blueprint & {
   type: 'behavior-tree';
   
   root: BehaviorNode;
-  blackboard?: Record<string, unknown>;
+  blackboard?: BlueprintRecord;
 };
 
 export type BehaviorNode = {
@@ -173,7 +178,7 @@ export type BehaviorNode = {
   children?: BehaviorNode[];
   action?: string;
   condition?: string;
-  parameters?: Record<string, unknown>;
+  parameters?: BlueprintRecord;
 };
 
 export type ItemBlueprint = Blueprint & {
@@ -204,7 +209,7 @@ export type ItemBlueprint = Blueprint & {
 export type BlueprintComponent = {
   id: string;
   type: string;
-  [key: string]: unknown;
+  [key: string]: BlueprintValue;
 };
 
 export type EditableNode = BlueprintComponent & {

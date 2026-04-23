@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 export type Vector3Tuple = [number, number, number];
 export type QuaternionTuple = [number, number, number, number];
+export type PlainDataValue = object | string | number | boolean | null | undefined;
 
 export type ThreeEvent = THREE.Event & {
   object?: THREE.Object3D;
@@ -29,7 +30,7 @@ export type CollisionEvent = {
   };
 };
 
-export type ConfigValue = string | number | boolean | Vector3Tuple | QuaternionTuple | Record<string, unknown>;
+export type ConfigValue = string | number | boolean | Vector3Tuple | QuaternionTuple | Record<string, PlainDataValue>;
 
 export type GenericConfig = Record<string, ConfigValue>;
 
@@ -37,10 +38,10 @@ export type DebugValue = string | number | boolean | THREE.Vector3 | THREE.Quate
 
 export type PayloadData = {
   type: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, PlainDataValue>;
   timestamp?: number;
 };
 
-export type CallbackFunction<T = void> = (...args: unknown[]) => T;
+export type CallbackFunction<T = void> = (...args: Array<PlainDataValue | bigint | symbol>) => T;
 
 export type CleanupFunction = () => void; 

@@ -19,6 +19,12 @@ interface RemotePlayerProps {
   speechText?: string;
 }
 
+type ColorableMaterial = THREE.Material & { color: THREE.Color };
+
+function isColorableMaterial(material: THREE.Material): material is ColorableMaterial {
+  return 'color' in material && material.color instanceof THREE.Color;
+}
+
 export const RemotePlayer = React.memo(function RemotePlayer({ state, characterUrl, config, speechText }: RemotePlayerProps) {
   const bodyRef = useRef<RapierRigidBody | null>(null);
   const meshRef = useRef<THREE.Group | null>(null);
@@ -60,7 +66,7 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
   const modelUrl = characterUrl || state.modelUrl || '';
   if (!modelUrl) return null;
 
-  const normalizeHexColor = (value: unknown): string | null => {
+  const normalizeHexColor = (value: string | null | undefined): string | null => {
     if (typeof value !== 'string') return null;
     const v = value.trim();
     if (!v) return null;
@@ -90,7 +96,7 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
 
   // Apply per-player tint (material cloning) once per model/color.
   useEffect(() => {
-    // Dispose previously created materials (if any).
+    // Dispose previously created materials, when present.
     for (const m of tintedMaterialsRef.current) {
       try {
         m.dispose();
@@ -103,28 +109,23 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
     if (!playerColor) return;
 
     const tintMaterial = (mat: THREE.Material): THREE.Material => {
-      const anyMat = mat as unknown as { color?: { set?: (c: string) => void } };
-      if (!anyMat?.color || typeof anyMat.color.set !== 'function') return mat;
+      if (!isColorableMaterial(mat)) return mat;
 
       const cloned = mat.clone();
-      const c = cloned as unknown as { color?: { set?: (c: string) => void } };
-      c.color?.set?.(playerColor);
+      if (!isColorableMaterial(cloned)) return mat;
+      cloned.color.set(playerColor);
       tintedMaterialsRef.current.push(cloned);
       return cloned;
     };
 
     clone.traverse((obj) => {
-      const mesh = obj as unknown as {
-        isMesh?: boolean;
-        isSkinnedMesh?: boolean;
-        material?: THREE.Material | THREE.Material[];
-      };
-      if (!mesh || (!mesh.isMesh && !mesh.isSkinnedMesh) || !mesh.material) return;
+      if (!(obj instanceof THREE.Mesh || obj instanceof THREE.SkinnedMesh)) return;
+      if (!obj.material) return;
 
-      if (Array.isArray(mesh.material)) {
-        mesh.material = mesh.material.map((m) => tintMaterial(m));
+      if (Array.isArray(obj.material)) {
+        obj.material = obj.material.map((m) => tintMaterial(m));
       } else {
-        mesh.material = tintMaterial(mesh.material);
+        obj.material = tintMaterial(obj.material);
       }
     });
 
@@ -277,24 +278,19 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
       smoothVel.current.set(0, 0, 0);
       smoothRot.current.copy(targetRotation.current);
 
-      const body = bodyRef.current as unknown as {
-        setNextKinematicTranslation?: (t: { x: number; y: number; z: number }) => void;
-        setNextKinematicRotation?: (r: { x: number; y: number; z: number; w: number }) => void;
-        setTranslation?: (t: { x: number; y: number; z: number }, wakeUp: boolean) => void;
-        setRotation?: (r: THREE.Quaternion, wakeUp: boolean) => void;
-      };
+      const body = bodyRef.current;
       const t = nextTranslation.current;
       t.x = p.x;
       t.y = p.y;
       t.z = p.z;
-      body.setNextKinematicTranslation?.(t);
+      body.setNextKinematicTranslation(t);
 
       const q = nextRotation.current;
       q.x = targetRotation.current.x;
       q.y = targetRotation.current.y;
       q.z = targetRotation.current.z;
       q.w = targetRotation.current.w;
-      body.setNextKinematicRotation?.(q);
+      body.setNextKinematicRotation(q);
     }
     
     // Prefer (w, x, y, z). Some older senders may send identity as (x, y, z, w) = (0,0,0,1).
@@ -399,33 +395,20 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
 
     // RigidBody 업데이트
     // Rapier kinematic bodies should be driven via "next kinematic" setters.
-    const body = bodyRef.current as unknown as {
-      setNextKinematicTranslation?: (t: { x: number; y: number; z: number }) => void;
-      setNextKinematicRotation?: (r: { x: number; y: number; z: number; w: number }) => void;
-      setTranslation?: (t: { x: number; y: number; z: number }, wakeUp: boolean) => void;
-      setRotation?: (r: THREE.Quaternion, wakeUp: boolean) => void;
-    };
+    const body = bodyRef.current;
 
     const t = nextTranslation.current;
     t.x = smoothPos.current.x;
     t.y = smoothPos.current.y;
     t.z = smoothPos.current.z;
-    if (typeof body.setNextKinematicTranslation === 'function') {
-      body.setNextKinematicTranslation(t);
-    } else {
-      body.setTranslation?.(t, true);
-    }
+    body.setNextKinematicTranslation(t);
 
     const q = nextRotation.current;
     q.x = smoothRot.current.x;
     q.y = smoothRot.current.y;
     q.z = smoothRot.current.z;
     q.w = smoothRot.current.w;
-    if (typeof body.setNextKinematicRotation === 'function') {
-      body.setNextKinematicRotation(q);
-    } else {
-      body.setRotation?.(smoothRot.current, true);
-    }
+    body.setNextKinematicRotation(q);
     
     // Animation switching is handled in the effect above (with hysteresis).
   });

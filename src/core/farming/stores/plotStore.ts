@@ -138,7 +138,7 @@ export const usePlotStore = create<State>((set, get) => ({
         const def = p.cropId ? getCropRegistry().get(p.cropId) : undefined;
         if (def && p.plantedAt !== undefined) {
           const last = p.lastWateredAt ?? p.plantedAt;
-          if (currentMinutes - last >= def.driedOutMinutes && p.state !== 'dried') {
+          if (currentMinutes - last >= def.driedOutMinutes) {
             p = { ...p, state: 'dried' };
             changed = true;
           } else {

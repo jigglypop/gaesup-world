@@ -155,7 +155,7 @@ interface BuildingStore extends BuildingSystemState {
   checkWallPosition: (position: Position3D, rotation: number) => boolean;
   /**
    * Returns the Y position (m) at which a new tile placed at `position` would
-   * rest on top of any existing tile that overlaps the XZ footprint. Returns
+   * rest on top of each existing tile that overlaps the XZ footprint. Returns
    * 0 when nothing is below.
    */
   getSupportHeightAt: (position: Position3D) => number;
@@ -987,7 +987,10 @@ export const useBuildingStore = create<BuildingStore>()(
     updateObject: (id, updates) => set((state) => {
       const idx = state.objects.findIndex(o => o.id === id);
       if (idx !== -1) {
-        Object.assign(state.objects[idx], updates);
+        const object = state.objects[idx];
+        if (object) {
+          Object.assign(object, updates);
+        }
       }
     }),
 

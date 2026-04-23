@@ -1,7 +1,7 @@
 import { RefObject, useRef, useState, useEffect } from 'react';
 
 import { ManagedEntity } from '../entity/ManagedEntity';
-import { IDisposable, UseManagedEntityOptions } from '../types';
+import { IDisposable, RuntimeValue, UseManagedEntityOptions } from '../types';
 import { useBaseFrame } from './useBaseFrame';
 import { useBaseLifecycle } from './useBaseLifecycle';
 import { AbstractBridge } from '../bridge/AbstractBridge';
@@ -37,19 +37,19 @@ export function useManagedEntity<
     if (!bridge || !ref.current || !enabled) return;
 
     const managedEntity = new ManagedEntity<EngineType, SnapshotType, CommandType>(id, ref.current, entityOptions);
-    let firstError: unknown;
+    let firstError: Error | RuntimeValue;
 
     // DI injection should not prevent initialization.
     try {
       DIContainer.getInstance().injectProperties(managedEntity);
     } catch (e) {
-      firstError = firstError ?? e;
+      firstError = firstError ?? (e instanceof Error ? e : String(e));
     }
 
     try {
       managedEntity.initialize();
     } catch (e) {
-      firstError = firstError ?? e;
+      firstError = firstError ?? (e instanceof Error ? e : String(e));
     }
 
     entityRef.current = managedEntity;
@@ -59,7 +59,7 @@ export function useManagedEntity<
       try {
         onInit(managedEntity);
       } catch (e) {
-        firstError = firstError ?? e;
+        firstError = firstError ?? (e instanceof Error ? e : String(e));
       }
     }
 
@@ -68,20 +68,20 @@ export function useManagedEntity<
     }
 
     return () => {
-      let cleanupError: unknown;
+      let cleanupError: Error | RuntimeValue;
 
       if (onDispose) {
         try {
           onDispose(managedEntity);
         } catch (e) {
-          cleanupError = cleanupError ?? e;
+          cleanupError = cleanupError ?? (e instanceof Error ? e : String(e));
         }
       }
 
       try {
         managedEntity.dispose();
       } catch (e) {
-        cleanupError = cleanupError ?? e;
+        cleanupError = cleanupError ?? (e instanceof Error ? e : String(e));
       }
 
       entityRef.current = null;

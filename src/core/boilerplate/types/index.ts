@@ -1,5 +1,16 @@
 import { ManagedEntity } from "../entity/ManagedEntity";
 
+export type RuntimeValue =
+  | object
+  | string
+  | number
+  | boolean
+  | bigint
+  | symbol
+  | null
+  | undefined;
+export type RuntimeRecord = Record<string, RuntimeValue>;
+
 export type BaseState = {
     lastUpdate: number;
 };
@@ -9,8 +20,8 @@ export type BaseMetrics = {
 };
 
 export type SystemOptions = {
-    initialState?: Record<string, unknown>;
-    initialMetrics?: Record<string, unknown>;
+    initialState?: RuntimeRecord;
+    initialMetrics?: RuntimeRecord;
 };
 
 export type SystemUpdateArgs = {
@@ -65,7 +76,7 @@ export type UseBaseFrameOptions = {
 export type UseBaseLifecycleOptions<EngineType> = {
     onRegister?: (engine: EngineType) => void | (() => void);
     onUnregister?: (engine: EngineType) => void;
-    dependencies?: unknown[];
+    dependencies?: RuntimeValue[];
     enabled?: boolean;
 }
 
@@ -83,11 +94,11 @@ export const DEFAULT_CACHE_TIMEOUT_MS = 16;
 export const DEFAULT_COMMAND_QUEUE_SIZE = 100;
 export const MILLISECONDS_IN_SECOND = 1000;
 
-export type Constructor<T = unknown> = new (...args: unknown[]) => T;
-export type AbstractConstructor<T = unknown> = abstract new (...args: unknown[]) => T;
-export type ServiceTarget<T = unknown> = Constructor<T> | AbstractConstructor<T>;
+export type Constructor<T = object> = new (...args: RuntimeValue[]) => T;
+export type AbstractConstructor<T = object> = abstract new (...args: RuntimeValue[]) => T;
+export type ServiceTarget<T = object> = Constructor<T> | AbstractConstructor<T>;
 export type Factory<T> = () => T;
 export type Token<T> = ServiceTarget<T> | string | symbol;
-export type BridgeClass = new (...args: unknown[]) => unknown
+export type BridgeClass = new (...args: RuntimeValue[]) => object
 export type BridgeInstance = IDisposable;
-export type BridgeConstructor = new (...args: unknown[]) => BridgeInstance; 
+export type BridgeConstructor = new (...args: RuntimeValue[]) => BridgeInstance; 

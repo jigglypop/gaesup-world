@@ -1,4 +1,6 @@
 import React, { useMemo } from 'react';
+
+import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { BloomConfig } from '../../types';
@@ -76,7 +78,14 @@ export const BloomRenderer = React.memo(function BloomRenderer({
         <group
           key={b.id}
           position={[b.position.x, b.position.y, b.position.z]}
-          {...(isEditMode && onClick ? { onClick: (e: any) => { e.stopPropagation(); onClick(b.id); } } : {})}
+          {...(isEditMode && onClick
+            ? {
+                onClick: (event: ThreeEvent<MouseEvent>) => {
+                  event.stopPropagation();
+                  onClick(b.id);
+                },
+              }
+            : {})}
         >
           <BloomOrb intensity={b.intensity ?? 2.5} color={b.color ?? '#00aaff'} />
         </group>

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 
 import { PhysicsConfigType } from '@/core/stores/slices/physics/types';
 import type { RefObject } from '@core/boilerplate';
-import { AbstractSystem, SystemUpdateArgs } from '@core/boilerplate';
+import { AbstractSystem, SystemContext, SystemUpdateArgs } from '@core/boilerplate';
 import { HandleError, ManageRuntime, Profile } from '@core/boilerplate';
 import { AnimationController } from '@core/motions/controller/AnimationController';
 import { GameStatesType } from '@core/world/components/Rideable/types';
@@ -31,6 +31,11 @@ const defaultMetrics: PhysicsSystemMetrics = {
 export interface PhysicsUpdateArgs extends SystemUpdateArgs {
   calcProp: PhysicsCalcProps;
   physicsState: PhysicsState;
+}
+
+function isPhysicsUpdateArgs(context: SystemContext | PhysicsUpdateArgs): context is PhysicsUpdateArgs {
+  const candidate = context as Partial<PhysicsUpdateArgs>;
+  return candidate.calcProp !== undefined && candidate.physicsState !== undefined;
 }
 
 @ManageRuntime({ autoStart: false })
@@ -76,6 +81,13 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   @Profile()
   protected performUpdate(args: PhysicsUpdateArgs): void {
     this.calculate(args.calcProp, args.physicsState);
+  }
+
+  protected createUpdateArgs(context: SystemContext): PhysicsUpdateArgs {
+    if (isPhysicsUpdateArgs(context)) {
+      return context;
+    }
+    throw new Error('PhysicsSystem requires updateWithArgs().');
   }
 
   @Profile()
@@ -398,7 +410,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   public calculateJump(config: PhysicsConfigType, gameStates: GameStatesType, isGrounded: boolean): THREE.Vector3 {
     if (!isGrounded) return this.jumpScratch.set(0, 0, 0);
     gameStates.isJumping = true;
-    return this.jumpScratch.set(0, config.jumpSpeed, 0);
+    return this.jumpScratch.set(0, config.jumpSpeed ?? 0, 0);
   }
 
   @Profile()
@@ -406,7 +418,9 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     if (!rigidBodyRef.current || this.forceComponents.length === 0) return;
     const body = rigidBodyRef.current;
     for (let i = 0, len = this.forceComponents.length; i < len; i++) {
-      this.forceComponents[i].update(body, delta);
+      const component = this.forceComponents[i];
+      if (!component) continue;
+      component.update(body, delta);
     }
   }
 

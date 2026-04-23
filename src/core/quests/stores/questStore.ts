@@ -204,7 +204,7 @@ export const useQuestStore = create<State>((set, get) => ({
   active: () => Object.values(get().state).filter((p) => p.status === 'active'),
   completed: () => Object.values(get().state).filter((p) => p.status === 'completed'),
 
-  isObjectiveComplete: (def, p, obj) => {
+  isObjectiveComplete: (_def, p, obj) => {
     const cur = p.progress[obj.id] ?? 0;
     if (obj.type === 'collect') {
       const have = useInventoryStore.getState().countOf(obj.itemId);
@@ -235,8 +235,8 @@ export const useQuestStore = create<State>((set, get) => ({
           questId: k,
           status: (v.status as QuestStatus) ?? 'available',
           progress: v.progress && typeof v.progress === 'object' ? { ...v.progress } : {},
-          startedAt: v.startedAt,
-          completedAt: v.completedAt,
+          ...(typeof v.startedAt === 'number' ? { startedAt: v.startedAt } : {}),
+          ...(typeof v.completedAt === 'number' ? { completedAt: v.completedAt } : {}),
         };
       }
     }

@@ -66,7 +66,7 @@ function NPCPartMesh({ part, instanceId }: NPCPartMeshProps) {
 const ARRIVAL_THRESHOLD = 0.3;
 
 export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps) {
-  const groupRef = useRef<THREE.Group>(null);
+  const groupRef = useRef<GroupWithHandlers>(null);
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const waypointIndexRef = useRef(0);
   const template = useNPCStore(
@@ -107,6 +107,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
     if (idx >= waypoints.length) return;
 
     const target = waypoints[idx];
+    if (!target) return;
     const pos = body.translation();
 
     const dx = target[0] - pos.x;
@@ -137,10 +138,10 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
     }
   });
   
-  const handlePointerEnter = useCallback((e: React.PointerEvent) => {
+  const handlePointerEnter = useCallback((e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
     document.body.style.cursor = 'pointer';
-    const handlers = (groupRef.current as unknown as GroupWithHandlers | null)?.__handlers;
+    const handlers = groupRef.current?.__handlers;
     if (handlers?.pointerover) handlers.pointerover();
   }, []);
   
@@ -171,13 +172,12 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
       }
     };
 
-    const meshElement = mesh as unknown as GroupWithHandlers;
-    meshElement.__handlers = {
+    mesh.__handlers = {
       pointerover: handlePointerOver,
       click: handleClick
     };
     return () => {
-      delete meshElement.__handlers;
+      delete mesh.__handlers;
     };
   }, [instance.events]);
 

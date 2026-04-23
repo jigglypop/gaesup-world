@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 
+export type InteractionPayload = object | string | number | boolean | null | undefined;
+
 export interface BridgeCommand {
   type: 'input' | 'automation';
   action: string;
-  data?: unknown;
+  data?: InteractionPayload;
   timestamp?: number;
 }
 
@@ -17,7 +19,7 @@ export interface BridgeState {
 export interface BridgeEvent {
   type: 'input' | 'automation' | 'sync';
   event: string;
-  data?: unknown;
+  data?: InteractionPayload;
   timestamp: number;
 }
 
@@ -102,7 +104,7 @@ export interface AutomationAction {
   delay?: number;
   beforeCallback?: () => void;
   afterCallback?: () => void;
-  data?: Record<string, unknown>;
+  data?: Record<string, InteractionPayload>;
   timestamp?: number;
 }
 
@@ -207,7 +209,7 @@ export interface AutomationMetrics {
 
 export interface InteractionCommand {
   type: 'updateKeyboard' | 'updateMouse' | 'updateGamepad' | 'updateTouch' | 'reset' | 'setConfig';
-  payload?: unknown;
+  payload?: InteractionPayload;
 }
 
 export interface InteractionSnapshot {

@@ -40,7 +40,7 @@ export class CharacterAnimationComponent implements IComponent {
 
   private setupAnimations(context: ComponentContext): void {
     void context;
-    const animations = (window as any).__loadedAnimations || {};
+    const animations = window.__loadedAnimations ?? {};
     
     Object.entries(this.props.animations).forEach(([key, value]) => {
       if (typeof value === 'string' && animations[value]) {

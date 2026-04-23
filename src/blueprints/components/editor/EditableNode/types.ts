@@ -1,4 +1,6 @@
-export type NodeFieldValue = string | number | boolean | string[] | Record<string, unknown>;
+import type { BlueprintRecord } from '../../../types';
+
+export type NodeFieldValue = string | number | boolean | string[] | BlueprintRecord;
 
 export type EditableNodeData = {
   title: string;

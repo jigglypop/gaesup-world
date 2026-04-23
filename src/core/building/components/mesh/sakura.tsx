@@ -544,8 +544,8 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
     if (parent && !parent.visible) return;
     const m = points.material as THREE.ShaderMaterial | undefined;
     if (m?.uniforms) {
-      m.uniforms.uTime.value = state.clock.getElapsedTime();
-      m.uniforms.uScale.value = state.gl.domElement.height * 0.5;
+      const uTime = m.uniforms['uTime'];
+      const uScale = m.uniforms['uScale'];
       const w = useWeatherStore.getState().current;
       const intensity = w?.intensity ?? 0;
       const base =
@@ -554,7 +554,10 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
         w?.kind === 'snow'  ? 1.2 :
         w?.kind === 'cloudy'? 1.1 :
                               0.9;
-      m.uniforms.uWind.value = base + intensity * 0.7;
+      const uWind = m.uniforms['uWind'];
+      if (uTime) uTime.value = state.clock.getElapsedTime();
+      if (uScale) uScale.value = state.gl.domElement.height * 0.5;
+      if (uWind) uWind.value = base + intensity * 0.7;
     }
   });
 
@@ -647,6 +650,7 @@ export default function Sakura({ size = 4, toon }: SakuraProps) {
       bm.count = barkN;
       for (let i = 0; i < branches.length; i++) {
         const b = branches[i];
+        if (!b) continue;
         composeInstance(bm, i, null, [0, b.pivotY, 0], [b.lean, b.yaw, b.bend], [0, b.length * 0.5, 0], null, [b.radius, b.length, b.radius]);
       }
       bm.instanceMatrix.needsUpdate = true;
@@ -660,9 +664,25 @@ export default function Sakura({ size = 4, toon }: SakuraProps) {
       dm.instanceMatrix.needsUpdate = true;
     }
     const sm = shellRef.current;
-    if (sm) { sm.count = clusterN; for (let i = 0; i < clusters.length; i++) composeSimple(sm, i, null, clusters[i].position, clusters[i].rotation, clusters[i].outerScale); sm.instanceMatrix.needsUpdate = true; }
+    if (sm) {
+      sm.count = clusterN;
+      for (let i = 0; i < clusters.length; i++) {
+        const cluster = clusters[i];
+        if (!cluster) continue;
+        composeSimple(sm, i, null, cluster.position, cluster.rotation, cluster.outerScale);
+      }
+      sm.instanceMatrix.needsUpdate = true;
+    }
     const cm = coreRef.current;
-    if (cm) { cm.count = clusterN; for (let i = 0; i < clusters.length; i++) composeSimple(cm, i, null, clusters[i].position, clusters[i].rotation, clusters[i].innerScale); cm.instanceMatrix.needsUpdate = true; }
+    if (cm) {
+      cm.count = clusterN;
+      for (let i = 0; i < clusters.length; i++) {
+        const cluster = clusters[i];
+        if (!cluster) continue;
+        composeSimple(cm, i, null, cluster.position, cluster.rotation, cluster.innerScale);
+      }
+      cm.instanceMatrix.needsUpdate = true;
+    }
   }, [branches, roots, clusters, scale, barkN, darkN, clusterN]);
 
   useEffect(() => () => { canopyGeo.dispose(); groundGeo.dispose(); fallingGeo.dispose(); fallingMat.dispose(); }, [canopyGeo, groundGeo, fallingGeo, fallingMat]);
@@ -672,7 +692,12 @@ export default function Sakura({ size = 4, toon }: SakuraProps) {
     if (parent && !parent.visible) return;
     const elapsed = state.clock.getElapsedTime();
     const m = fallingRef.current?.material as THREE.ShaderMaterial | undefined;
-    if (m?.uniforms) { m.uniforms.uTime.value = elapsed; m.uniforms.uScale.value = state.gl.domElement.height * 0.5; }
+    if (m?.uniforms) {
+      const uTime = m.uniforms['uTime'];
+      const uScale = m.uniforms['uScale'];
+      if (uTime) uTime.value = elapsed;
+      if (uScale) uScale.value = state.gl.domElement.height * 0.5;
+    }
     if (crownRef.current) {
       crownRef.current.rotation.z = Math.sin(elapsed * 0.42 + scale) * 0.028;
       crownRef.current.rotation.x = Math.cos(elapsed * 0.35 + scale * 0.6) * 0.012;

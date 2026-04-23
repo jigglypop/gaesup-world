@@ -12,6 +12,7 @@ import type {
   BridgeSnapshot,
   GamepadState,
   InteractionConfig,
+  InteractionPayload,
   TouchState,
 } from './types';
 import { AutomationSystem } from '../core/AutomationSystem';
@@ -69,7 +70,7 @@ export class InteractionBridge {
   }
 
   private setupEngineListeners(): void {
-    const moveListener = (data: unknown) => {
+    const moveListener = (data: InteractionPayload) => {
       if (!(data instanceof THREE.Vector3)) return;
       const target = data;
       this.executeCommand({
@@ -79,7 +80,7 @@ export class InteractionBridge {
       });
     };
     
-    const clickListener = (data: unknown) => {
+    const clickListener = (data: InteractionPayload) => {
       if (!(data instanceof THREE.Vector3)) return;
       const target = data;
       this.executeCommand({
@@ -89,7 +90,7 @@ export class InteractionBridge {
       });
     };
     
-    const keyListener = (data: unknown) => {
+    const keyListener = (data: InteractionPayload) => {
       if (typeof data !== 'string') return;
       const key = data;
       this.executeCommand({
@@ -133,7 +134,10 @@ export class InteractionBridge {
     this.state.commandHistory.push(fullCommand);
     
     if (this.state.commandHistory.length > this.MAX_COMMAND_HISTORY) {
-      this.state.commandHistory = this.state.commandHistory.slice(-this.MAX_COMMAND_HISTORY);
+      this.state.commandHistory.splice(
+        0,
+        this.state.commandHistory.length - this.MAX_COMMAND_HISTORY,
+      );
     }
     
     this.emitEvent({
@@ -361,7 +365,7 @@ export class InteractionBridge {
     this.eventQueue.push(event);
     
     if (this.eventQueue.length > this.MAX_EVENT_QUEUE) {
-      this.eventQueue = this.eventQueue.slice(-this.MAX_EVENT_QUEUE);
+      this.eventQueue.splice(0, this.eventQueue.length - this.MAX_EVENT_QUEUE);
     }
     this.scheduleSync();
   }

@@ -1,11 +1,30 @@
 import 'reflect-metadata'
 
-import { logger } from '../../utils/logger'
+import { logger, type LogValue } from '../../utils/logger'
 import { IDisposable } from '../types'
 import { AbstractBridge } from './AbstractBridge'
 
 const isProduction = process.env.NODE_ENV === 'production'
 const enableLogs = !isProduction && process.env.VITE_ENABLE_BRIDGE_LOGS !== 'false'
+
+function toBridgeLogValue<ValueType>(value: ValueType | undefined): LogValue {
+  if (value === undefined) return undefined
+  if (value === null) return null
+
+  const valueType = typeof value
+  if (
+    valueType === 'object' ||
+    valueType === 'string' ||
+    valueType === 'number' ||
+    valueType === 'boolean' ||
+    valueType === 'bigint' ||
+    valueType === 'symbol'
+  ) {
+    return value as LogValue
+  }
+
+  return String(value)
+}
 
 export abstract class CoreBridge<
   EngineType extends IDisposable,
@@ -35,7 +54,11 @@ export abstract class CoreBridge<
         logger.log(`[Event] Registered entity: ${event.id}`)
       })
       this.on('execute', (event) => {
-        logger.log(`[Event] Executed command on ${event.id}:`, event.data?.command)
+        const command = event.data?.command
+        logger.log(
+          `[Event] Executed command on ${event.id}:`,
+          toBridgeLogValue(command),
+        )
       })
       this.on('unregister', (event) => {
         logger.log(`[Event] Unregistered entity: ${event.id}`)

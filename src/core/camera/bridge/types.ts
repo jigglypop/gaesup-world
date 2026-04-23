@@ -1,11 +1,13 @@
 import { Emitter } from 'mitt';
 
+export type CameraEventValue = object | string | number | boolean | null | undefined;
+
 export type CameraSystemEvents = {
   modeChange: { from: string; to: string };
   positionUpdate: { position: [number, number, number]; target: [number, number, number] };
-  configChange: { key: string; value: unknown };
+  configChange: { key: string; value: CameraEventValue };
   controllerSwitch: { from: string; to: string };
-  error: { message: string; details?: unknown };
+  error: { message: string; details?: CameraEventValue };
 };
 
 export interface CameraSystemConfig {

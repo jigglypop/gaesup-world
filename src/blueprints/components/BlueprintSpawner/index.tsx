@@ -5,6 +5,8 @@ import { Group } from 'three';
 
 import { BlueprintSpawnerProps } from './types';
 import { BlueprintFactory } from '../../factory/BlueprintFactory';
+import { BlueprintEntity } from '../../core/BlueprintEntity';
+import { AnyBlueprint } from '../../types';
 
 export function BlueprintSpawner({
   blueprint,
@@ -19,7 +21,7 @@ export function BlueprintSpawner({
   const rigidBodyRef = useRef<RapierRigidBody>(null!);
   const innerGroupRef = useRef<Group>(null!);
   const outerGroupRef = useRef<Group>(null!);
-  const entityRef = useRef<any>(null);
+  const entityRef = useRef<BlueprintEntity | null>(null);
 
   useEffect(() => {
     const factory = BlueprintFactory.getInstance();
@@ -84,7 +86,7 @@ export function BlueprintSpawner({
   );
 }
 
-function getPhysicsConfig(type: string) {
+function getPhysicsConfig(type: AnyBlueprint['type']) {
   switch (type) {
     case 'character':
       return {

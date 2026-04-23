@@ -104,7 +104,9 @@ export class BlueprintConverter {
         acceleration: blueprint.physics.acceleration,
         braking: blueprint.physics.braking,
         turning: blueprint.physics.turning,
-        suspension: blueprint.physics.suspension
+        ...(blueprint.physics.suspension
+          ? { suspension: blueprint.physics.suspension }
+          : {})
       }
     });
 

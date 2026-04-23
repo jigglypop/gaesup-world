@@ -121,7 +121,13 @@ export function parseCubeLut(text: string): CubeLutData {
     }
   }
 
-  return { size: cubeSize, data, domainMin, domainMax, title };
+  return {
+    size: cubeSize,
+    data,
+    domainMin,
+    domainMax,
+    ...(title ? { title } : {}),
+  };
 }
 
 export function createLutTexture(lut: CubeLutData): THREE.Data3DTexture {

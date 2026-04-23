@@ -65,6 +65,9 @@ class GrassManager {
   private lastSampleAt = 0;
 
   register(handle: Omit<GrassTileHandle, 'id'>): GrassTileHandle {
+    if (this.tiles.size === 0) {
+      this.lastSampleAt = 0;
+    }
     const id = this.nextId++;
     const tile: GrassTileHandle = { ...handle, id };
     this.tiles.set(id, tile);
@@ -80,6 +83,9 @@ class GrassManager {
 
   unregister(id: number): void {
     this.tiles.delete(id);
+    if (this.tiles.size === 0) {
+      this.lastSampleAt = 0;
+    }
   }
 
   size(): number {
@@ -183,7 +189,7 @@ class GrassManager {
         }
         return;
       } catch {
-        // fall through to JS path on any wasm hiccup
+        // fall through to the JS path on wasm hiccups
       }
     }
 

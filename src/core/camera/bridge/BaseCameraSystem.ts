@@ -1,6 +1,6 @@
 import mitt from 'mitt';
 
-import { CameraSystemEvents, CameraSystemConfig, ICameraSystemMonitor, CameraSystemEmitter, CameraSystemState } from './types';
+import { CameraEventValue, CameraSystemEvents, CameraSystemConfig, ICameraSystemMonitor, CameraSystemEmitter, CameraSystemState } from './types';
 import { Profile, HandleError } from '../../boilerplate/decorators';
 
 export abstract class BaseCameraSystem implements ICameraSystemMonitor {
@@ -62,7 +62,7 @@ export abstract class BaseCameraSystem implements ICameraSystemMonitor {
     this.metrics.lastUpdateTime = Date.now();
   }
 
-  protected emitError(message: string, details?: unknown): void {
+  protected emitError(message: string, details?: CameraEventValue): void {
     this.emitter.emit('error', { message, details });
   }
 

@@ -1,7 +1,9 @@
+export type SerializedDomainValue = object | string | number | boolean | null | undefined;
+
 export type SaveBlob = {
   version: number;
   savedAt: number;
-  domains: Record<string, unknown>;
+  domains: Record<string, SerializedDomainValue>;
 };
 
 export type SaveAdapter = {
@@ -11,7 +13,7 @@ export type SaveAdapter = {
   remove(slot: string): Promise<void>;
 };
 
-export type DomainBinding<T = unknown> = {
+export type DomainBinding<T = SerializedDomainValue> = {
   key: string;
   serialize: () => T;
   hydrate: (data: T | null | undefined) => void;

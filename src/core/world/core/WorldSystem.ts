@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import { RegisterSystem, Profile, HandleError } from '@core/boilerplate/decorators';
+import type { RuntimeRecord } from '@core/boilerplate/types';
 import { BaseSystem, SystemContext } from '@core/boilerplate/entity/BaseSystem';
 
 import { SpatialGrid } from './SpatialGrid';
@@ -11,7 +12,7 @@ export interface WorldObject {
   rotation: THREE.Euler;
   scale: THREE.Vector3;
   type: string;
-  metadata?: Record<string, unknown>;
+  metadata?: RuntimeRecord;
   boundingBox?: THREE.Box3;
   isActive?: boolean;
   canInteract?: boolean;
@@ -36,7 +37,7 @@ export interface InteractionEvent {
   object1Id: string;
   object2Id?: string;
   timestamp: number;
-  data?: Record<string, unknown>;
+  data?: RuntimeRecord;
 }
 
 

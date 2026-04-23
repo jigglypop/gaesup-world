@@ -1,4 +1,5 @@
 import { Profile, HandleError, MonitorMemory, Timeout } from '@/core/boilerplate/decorators';
+import type { RuntimeValue } from '@/core/boilerplate/types';
 
 import { 
   SaveData, 
@@ -280,7 +281,7 @@ export class SaveLoadManager {
     return JSON.parse(jsonStr);
   }
 
-  private validateSaveData(data: unknown): data is SaveData {
+  private validateSaveData(data: RuntimeValue): data is SaveData {
     return (
       data !== null &&
       typeof data === 'object' &&

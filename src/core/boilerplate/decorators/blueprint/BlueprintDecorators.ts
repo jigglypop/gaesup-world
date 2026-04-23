@@ -1,8 +1,9 @@
 import 'reflect-metadata'
 import { blueprintRegistry } from '../../../../blueprints/registry'
 import { AnyBlueprint } from '../../../../blueprints/types'
+import type { RuntimeValue } from '../../types'
 
-type Constructor<T = unknown> = new (...args: unknown[]) => T
+type Constructor<T = object> = new (...args: RuntimeValue[]) => T
 
 export function Blueprint(blueprintData: Partial<AnyBlueprint>) {
   return function <T extends Constructor>(target: T) {

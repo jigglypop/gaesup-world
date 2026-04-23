@@ -6,7 +6,7 @@ import { Group } from 'three';
 import { BlueprintConverter } from './BlueprintConverter';
 import { BlueprintEntity } from '../core/BlueprintEntity';
 import { ComponentRegistry } from '../core/ComponentRegistry';
-import { BlueprintDefinition } from '../core/types';
+import { BlueprintDefinition, ComponentFactory } from '../core/types';
 import { AnyBlueprint } from '../types';
 
 export type BlueprintEntityConfig = {
@@ -145,7 +145,7 @@ export class BlueprintFactory {
     );
   }
 
-  registerComponentFactory(type: string, factory: (props: any) => any): void {
+  registerComponentFactory(type: string, factory: ComponentFactory): void {
     this.componentRegistry.register(type, factory);
   }
 

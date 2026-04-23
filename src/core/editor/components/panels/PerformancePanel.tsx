@@ -74,7 +74,7 @@ export function PerformancePanel() {
     const sorted = [...history].filter(n => n > 0).sort((a, b) => a - b);
     const onePercent = Math.max(1, Math.floor(sorted.length * 0.01));
     let sum = 0;
-    for (let i = 0; i < onePercent; i++) sum += sorted[i];
+    for (let i = 0; i < onePercent; i++) sum += sorted[i] ?? 0;
     return sum / onePercent;
   }, []);
 

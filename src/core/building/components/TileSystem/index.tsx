@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
@@ -445,7 +445,7 @@ export function TileSystem({
     const manager = materialManagerRef.current;
     const floorMesh = meshes.get(tileGroup.floorMeshId);
     if (!floorMesh) {
-      // Dispose the previous local material (if any) before creating a new one.
+      // Dispose the previous local material, when present, before creating a new one.
       localMaterialRef.current?.dispose();
       const m = getDefaultToonMode()
         ? new THREE.MeshToonMaterial({ color: '#888888', gradientMap: getToonGradient(4) })

@@ -15,6 +15,11 @@ import { GameStatesType } from '../world/components/Rideable/types';
 
 
 export type PhysicsInputState = Pick<InteractionState, 'keyboard' | 'mouse'>;
+export type PhysicsDispatchPayload = object | string | number | boolean | null | undefined;
+export type PhysicsDispatchAction = {
+  type: string;
+  payload?: PhysicsDispatchPayload;
+};
 
 
 export interface PhysicsCalcProps {
@@ -23,7 +28,7 @@ export interface PhysicsCalcProps {
   state: RootState;
   delta: number;
   worldContext: StoreState;
-  dispatch: (action: { type: string; payload?: unknown }) => void;
+  dispatch: (action: PhysicsDispatchAction) => void;
   inputRef: { current: PhysicsInputState };
   setKeyboardInput: (input: Partial<PhysicsInputState['keyboard']>) => void;
   setMouseInput: (input: Partial<PhysicsInputState['mouse']>) => void;

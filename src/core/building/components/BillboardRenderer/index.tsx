@@ -1,5 +1,7 @@
 import React, { Suspense } from 'react';
 
+import type { ThreeEvent } from '@react-three/fiber';
+
 import Billboard from '../mesh/billboard';
 import { BillboardConfig } from '../../types';
 
@@ -23,12 +25,19 @@ export const BillboardRenderer = React.memo(function BillboardRenderer({
           key={bb.id}
           position={[bb.position.x, bb.position.y, bb.position.z]}
           rotation={[0, (bb.rotation?.y ?? 0) + Math.PI, 0]}
-          {...(isEditMode && onClick ? { onClick: (e: any) => { e.stopPropagation(); onClick(bb.id); } } : {})}
+          {...(isEditMode && onClick
+            ? {
+                onClick: (event: ThreeEvent<MouseEvent>) => {
+                  event.stopPropagation();
+                  onClick(bb.id);
+                },
+              }
+            : {})}
         >
           <Suspense fallback={null}>
             <Billboard
               text={bb.text ?? 'HELLO'}
-              imageUrl={bb.imageUrl}
+              {...(bb.imageUrl ? { imageUrl: bb.imageUrl } : {})}
               width={bb.width}
               height={bb.height}
               color={bb.color ?? '#00ff88'}

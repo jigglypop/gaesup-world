@@ -1,5 +1,15 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
 
+type ErrorContext = object | string | number | boolean | null | undefined;
+
+declare global {
+  interface Window {
+    Sentry?: {
+      captureException: (err: Error, context?: ErrorContext) => void;
+    };
+  }
+}
+
 export enum ErrorType {
   PHYSICS = 'PHYSICS',
   RENDER = 'RENDER',
@@ -12,7 +22,7 @@ export enum ErrorType {
 export interface GaesupError extends Error {
   type: ErrorType;
   code: string;
-  context?: unknown;
+  context?: ErrorContext;
   recoverable: boolean;
 }
 
@@ -45,11 +55,8 @@ export class GaesupErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoun
   }
 
   private reportError(error: Error, errorInfo: ErrorInfo) {
-    const w = window as unknown as {
-      Sentry?: { captureException: (err: Error, context?: unknown) => void };
-    };
-    if (typeof window !== 'undefined' && w.Sentry) {
-      w.Sentry.captureException(error, {
+    if (typeof window !== 'undefined' && window.Sentry) {
+      window.Sentry.captureException(error, {
         contexts: {
           react: {
             componentStack: errorInfo.componentStack,
@@ -82,7 +89,7 @@ export function createGaesupError(
   type: ErrorType,
   code: string,
   message: string,
-  context?: unknown,
+  context?: ErrorContext,
   recoverable = false,
 ): GaesupError {
   const error = new Error(message) as GaesupError;

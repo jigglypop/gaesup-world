@@ -1,13 +1,13 @@
 import { useCallback, useRef, useEffect, useState } from 'react';
 
 import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
-import type { NetworkGroup, NetworkMessage } from '../types';
+import type { NetworkGroup, NetworkMessage, NetworkPayload } from '../types';
 
 export interface GroupCreateOptions {
   maxSize?: number;
   isPrivate?: boolean;
   requireInvite?: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, NetworkPayload>;
 }
 
 export interface UseNetworkGroupOptions extends UseNetworkBridgeOptions {
@@ -26,7 +26,7 @@ export interface UseNetworkGroupResult {
   leaveGroup: (groupId: string) => void;
   
   // 그룹 메시지
-  sendGroupMessage: (groupId: string, content: unknown, type?: string) => string;
+  sendGroupMessage: (groupId: string, content: NetworkPayload, type?: string) => string;
   
   // 그룹 멤버 관리
   inviteToGroup: (groupId: string, npcId: string) => void;
@@ -274,7 +274,7 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
 
   const sendGroupMessage = useCallback((
     groupId: string,
-    content: unknown,
+    content: NetworkPayload,
     type: string = 'chat'
   ): string => {
     if (!isReady || !joinedGroups.includes(groupId)) return '';

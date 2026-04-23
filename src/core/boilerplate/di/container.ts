@@ -1,8 +1,8 @@
 import 'reflect-metadata'
 import { logger } from '../../utils/logger'
-import { Constructor, Factory, ServiceTarget, Token } from '../types'
+import { Constructor, Factory, RuntimeValue, ServiceTarget, Token } from '../types'
 
-function getTokenName(token: Token<unknown>): string {
+function getTokenName(token: Token<object>): string {
   if (typeof token === 'function') {
     return token.name
   }
@@ -14,10 +14,10 @@ function getTokenName(token: Token<unknown>): string {
 
 export class DIContainer {
   private static instance: DIContainer
-  private factories = new Map<Token<unknown>, Factory<unknown>>()
-  private singletons = new Map<Token<unknown>, unknown>()
-  private singletonTokens = new Set<Token<unknown>>()
-  private resolving = new Set<Token<unknown>>()
+  private factories = new Map<Token<object>, Factory<RuntimeValue>>()
+  private singletons = new Map<Token<object>, RuntimeValue>()
+  private singletonTokens = new Set<Token<object>>()
+  private resolving = new Set<Token<object>>()
 
   private constructor() {}
 
@@ -29,17 +29,17 @@ export class DIContainer {
   }
 
   register<T>(token: Token<T>, factory: Factory<T>, singleton = true): void {
-    this.factories.set(token, factory as Factory<unknown>)
+    this.factories.set(token as Token<object>, () => factory() as RuntimeValue)
     if (singleton) {
-      this.singletonTokens.add(token)
+      this.singletonTokens.add(token as Token<object>)
     } else {
-      this.singletonTokens.delete(token)
-      this.singletons.delete(token)
+      this.singletonTokens.delete(token as Token<object>)
+      this.singletons.delete(token as Token<object>)
     }
   }
 
-  registerService<T>(ServiceConstructor: ServiceTarget<T>): void {
-    const token = Reflect.getMetadata('di:token', ServiceConstructor) || ServiceConstructor
+  registerService<T extends object>(ServiceConstructor: ServiceTarget<T>): void {
+    const token = (Reflect.getMetadata('di:token', ServiceConstructor) as Token<object> | undefined) || ServiceConstructor
     
     if (this.factories.has(token)) {
       return
@@ -51,42 +51,42 @@ export class DIContainer {
   }
 
   resolve<T>(token: Token<T>): T {
-    if (this.resolving.has(token)) {
+    if (this.resolving.has(token as Token<object>)) {
       const path = Array.from(this.resolving).map(getTokenName).join(' -> ');
       const errorMessage = `DIContainer: Circular dependency detected: ${path} -> ${getTokenName(
-        token
+        token as Token<object>
       )}`;
       logger.error(errorMessage);
       throw new Error(errorMessage);
     }
 
-    if (this.singletons.has(token)) {
-      return this.singletons.get(token) as T
+    if (this.singletons.has(token as Token<object>)) {
+      return this.singletons.get(token as Token<object>) as T
     }
 
-    const factory = this.factories.get(token)
+    const factory = this.factories.get(token as Token<object>)
     if (!factory) {
       if (typeof token === 'function' && 'prototype' in token) {
-        this.registerService(token as ServiceTarget<T>)
+        this.registerService(token as ServiceTarget<object>)
         return this.resolve(token)
       }
       throw new Error(`DIContainer: No factory registered for token: ${getTokenName(token)}`)
     }
 
-    this.resolving.add(token)
+    this.resolving.add(token as Token<object>)
     try {
       const instance = factory() as T
-      if (this.singletonTokens.has(token)) {
-        this.singletons.set(token, instance)
+      if (this.singletonTokens.has(token as Token<object>)) {
+        this.singletons.set(token as Token<object>, instance as RuntimeValue)
       }
       return instance
     } finally {
-      this.resolving.delete(token)
+      this.resolving.delete(token as Token<object>)
     }
   }
 
   private createInstance<T>(ClassConstructor: Constructor<T>): T {
-    const paramTokens: Token<unknown>[] = Reflect.getMetadata('di:paramtypes', ClassConstructor) || []
+    const paramTokens: Token<object>[] = Reflect.getMetadata('di:paramtypes', ClassConstructor) || []
     const paramTypes: Constructor[] = Reflect.getMetadata('design:paramtypes', ClassConstructor) || []
 
     const params = paramTypes.map((paramType, index) => {
@@ -96,7 +96,7 @@ export class DIContainer {
       }
       try {
         return this.resolve(token)
-      } catch (error: unknown) {
+      } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error)
         logger.error(`DIContainer: Failed to resolve parameter ${index} (${getTokenName(token)}) for ${ClassConstructor.name}.`, errorMessage)
         throw new Error(`Could not construct ${ClassConstructor.name}.`)
@@ -125,8 +125,8 @@ export class DIContainer {
           Reflect.getMetadata('design:type', instance, prop)
         if (propertyType) {
             try {
-                (instance as Record<string, unknown>)[prop] = this.resolve(propertyType)
-            } catch (error: unknown) {
+                (instance as Record<string, RuntimeValue>)[prop] = this.resolve(propertyType)
+            } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error)
                 logger.warn(`DIContainer: Failed to autowire property '${prop}' on '${constructor.name}'.`, errorMessage)
             }
@@ -135,10 +135,10 @@ export class DIContainer {
 
     const injectedProps = Reflect.getMetadata('di:properties', constructor) || {}
     for (const prop in injectedProps) {
-        const token = injectedProps[prop]
+        const token = injectedProps[prop] as Token<object>
         try {
-            (instance as Record<string, unknown>)[prop] = this.resolve(token)
-        } catch (error: unknown) {
+            (instance as Record<string, RuntimeValue>)[prop] = this.resolve(token)
+        } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error)
             logger.warn(`DIContainer: Failed to inject property '${prop}' with token '${String(token)}' on '${constructor.name}'.`, errorMessage)
         }

@@ -26,6 +26,7 @@ const FlagMaterial = shaderMaterial(
 extend({ FlagMaterial });
 
 type FlagUniforms = { time: number; windStrength: number };
+type FlagMaterialInstance = THREE.ShaderMaterial & FlagUniforms;
 
 let _fallbackTex: THREE.Texture | null = null;
 function getFallbackTexture(): THREE.Texture {
@@ -48,7 +49,7 @@ function getFallbackTexture(): THREE.Texture {
 function FlagWithTexture({
   geometry, textureUrl, lod, center, windStrength = 1.0, ...meshProps
 }: Omit<FlagMeshProps, "pamplet_url"> & { textureUrl: string }) {
-  const materialRef = useRef<THREE.Material>(null!);
+  const materialRef = useRef<FlagMaterialInstance>(null!);
   const meshRef = useRef<THREE.Mesh | null>(null);
   const centerRef = useRef(new THREE.Vector3());
   const lastVisibleRef = useRef(true);
@@ -77,7 +78,7 @@ function FlagWithTexture({
       }
       if (!lastVisibleRef.current) return;
     }
-    const u = materialRef.current as unknown as FlagUniforms;
+    const u = materialRef.current;
     u.time = state.clock.elapsedTime * 5;
     u.windStrength = windStrength;
   });
@@ -95,11 +96,11 @@ function FlagWithTexture({
 function FlagWithFallback({
   geometry, windStrength = 1.0, ...meshProps
 }: Omit<FlagMeshProps, "pamplet_url">) {
-  const materialRef = useRef<THREE.Material>(null!);
+  const materialRef = useRef<FlagMaterialInstance>(null!);
   const fallbackTex = useMemo(() => getFallbackTexture(), []);
 
   useFrame((state) => {
-    const u = materialRef.current as unknown as FlagUniforms;
+    const u = materialRef.current;
     u.time = state.clock.elapsedTime * 5;
     u.windStrength = windStrength;
   });
@@ -219,7 +220,9 @@ function PoleBatch({ entries }: { entries: FlagEntry[] }) {
     if (!mesh) return;
     mesh.count = count;
     for (let i = 0; i < count; i++) {
-      mesh.setMatrixAt(i, matrices[i]);
+      const matrix = matrices[i];
+      if (!matrix) continue;
+      mesh.setMatrixAt(i, matrix);
     }
     mesh.instanceMatrix.needsUpdate = true;
   }, [matrices, count]);
@@ -240,7 +243,7 @@ type ClothBatchInnerProps = {
 
 function ClothBatchInner({ entries, windStrength, texture }: ClothBatchInnerProps) {
   const ref = useRef<THREE.InstancedMesh>(null!);
-  const materialRef = useRef<THREE.Material>(null!);
+  const materialRef = useRef<FlagMaterialInstance>(null!);
   const count = entries.length;
   const capacity = useMemo(() => Math.max(1, count), [count]);
 
@@ -259,6 +262,7 @@ function ClothBatchInner({ entries, windStrength, texture }: ClothBatchInnerProp
     mesh.count = count;
     for (let i = 0; i < count; i++) {
       const e = entries[i];
+      if (!e) continue;
       const meta = FLAG_STYLE_META[e.style];
       let cx = e.x;
       let cy = e.y;
@@ -286,7 +290,7 @@ function ClothBatchInner({ entries, windStrength, texture }: ClothBatchInnerProp
   }, [entries, count, wGeo, hGeo]);
 
   useFrame((state) => {
-    const u = materialRef.current as unknown as FlagUniforms;
+    const u = materialRef.current;
     u.time = state.clock.elapsedTime * 5;
     u.windStrength = windStrength;
   });
@@ -367,9 +371,11 @@ export const FlagBatch = React.memo(function FlagBatch({ flags }: FlagBatchProps
     <>
       <PoleBatch entries={entries} />
       {groups.map(([key, grp]) => {
-        const style = grp[0].style;
+        const first = grp[0];
+        if (!first) return null;
+        const style = first.style;
         const ws = FLAG_STYLE_META[style].windStrength;
-        const tex = grp[0].textureUrl;
+        const tex = first.textureUrl;
         return (
           <ClothBatchGroup
             key={key}

@@ -1,10 +1,9 @@
 import 'reflect-metadata'
 import { BridgeRegistry } from '../../bridge/BridgeRegistry'
-
-type Constructor<T = unknown> = new (...args: unknown[]) => T
+import type { ServiceTarget } from '../../types'
 
 export function DomainBridge(domain: string) {
-  return function <T extends Constructor>(target: T) {
+  return function <T extends ServiceTarget<object>>(target: T) {
     Reflect.defineMetadata('domain', domain, target)
     BridgeRegistry.register(domain, target)
   }
@@ -19,7 +18,7 @@ export function Command(name: string) {
 }
 
 export function EnableMetrics() {
-  return function <T extends Constructor>(target: T) {
+  return function <T extends ServiceTarget<object>>(target: T) {
     Reflect.defineMetadata('enableMetrics', true, target.prototype)
   }
 } 

@@ -9,13 +9,16 @@ import { useGaesupStore } from '../../../stores/gaesupStore';
 import './styles.css';
 
 type Vec3Like = { x: number; y: number; z: number };
-function isVec3Like(value: unknown): value is Vec3Like {
+type PartialVec3Like = { x?: number; y?: number; z?: number };
+type MetricValue = CameraMetrics[keyof CameraMetrics] | undefined;
+
+function isVec3Like(value: PartialVec3Like | MetricValue): value is Vec3Like {
   if (typeof value !== 'object' || value === null) return false;
-  const v = value as Record<string, unknown>;
+  const v = value as PartialVec3Like;
   return (
-    typeof v['x'] === 'number' &&
-    typeof v['y'] === 'number' &&
-    typeof v['z'] === 'number'
+    typeof v.x === 'number' &&
+    typeof v.y === 'number' &&
+    typeof v.z === 'number'
   );
 }
 
@@ -39,8 +42,8 @@ export function CameraDebugPanel() {
   const { activeState } = useStateSystem();
   const metricsRef = useRef<CameraMetrics>(initialMetrics);
   const checkMetricChange = useCallback((
-    newValue: unknown, 
-    oldValue: unknown
+    newValue: MetricValue, 
+    oldValue: MetricValue
   ): boolean => {
     if (newValue === oldValue) return false;
     
@@ -57,7 +60,7 @@ export function CameraDebugPanel() {
     return JSON.stringify(newValue) !== JSON.stringify(oldValue);
   }, []);
 
-  const toVec3 = useCallback((value: unknown): Vec3Like | null => {
+  const toVec3 = useCallback((value: PartialVec3Like | null | undefined): Vec3Like | null => {
     if (!isVec3Like(value)) return null;
     return { x: value.x, y: value.y, z: value.z };
   }, []);

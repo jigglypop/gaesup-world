@@ -1,18 +1,28 @@
+import type { Vector3 } from 'three';
+
 import { RegisterSystem, ManageRuntime, Profile, HandleError } from '@/core/boilerplate/decorators';
 import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
+import type { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
 import type { BaseState, BaseMetrics, SystemUpdateArgs } from '@/core/boilerplate/types';
 
 import { AutomationState, AutomationConfig, AutomationMetrics, AutomationAction } from '../bridge/types';
 
 interface AutomationSystemState extends BaseState, AutomationState {}
 interface AutomationSystemMetrics extends BaseMetrics, AutomationMetrics {}
+type AutomationEventPayload =
+  | AutomationAction
+  | AutomationAction['data']
+  | Vector3
+  | string
+  | { action: AutomationAction; error: Error }
+  | undefined;
 
 @RegisterSystem('automation')
 @ManageRuntime({ autoStart: false })
 export class AutomationSystem extends AbstractSystem<AutomationSystemState, AutomationSystemMetrics> {
   private config: AutomationConfig;
   private executionTimer: number | null;
-  private eventCallbacks: Map<string, Array<(data: unknown) => void>>;
+  private eventCallbacks: Map<string, Array<(data: AutomationEventPayload) => void>>;
 
   constructor() {
     super(
@@ -40,6 +50,10 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
 
   protected performUpdate(args: SystemUpdateArgs): void {
     void args;
+  }
+
+  protected createUpdateArgs(context: SystemContext): SystemUpdateArgs {
+    return this.createDefaultUpdateArgs(context);
   }
 
   private createDefaultConfig(): AutomationConfig {
@@ -243,21 +257,21 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
     this.metrics.errorRate = this.state.executionStats.errors.length / Math.max(this.state.executionStats.totalExecuted, 1) * 100;
   }
 
-  private emit(event: string, data?: unknown): void {
+  private emit(event: string, data?: AutomationEventPayload): void {
     const callbacks = this.eventCallbacks.get(event);
     if (callbacks) {
       callbacks.forEach(callback => callback(data));
     }
   }
 
-  addEventListener(event: string, callback: (data: unknown) => void): void {
+  addEventListener(event: string, callback: (data: AutomationEventPayload) => void): void {
     if (!this.eventCallbacks.has(event)) {
       this.eventCallbacks.set(event, []);
     }
     this.eventCallbacks.get(event)!.push(callback);
   }
 
-  removeEventListener(event: string, callback: (data: unknown) => void): void {
+  removeEventListener(event: string, callback: (data: AutomationEventPayload) => void): void {
     const callbacks = this.eventCallbacks.get(event);
     if (callbacks) {
       const index = callbacks.indexOf(callback);

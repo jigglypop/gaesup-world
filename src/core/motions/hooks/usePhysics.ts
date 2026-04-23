@@ -6,6 +6,23 @@ import { useGaesupStore } from '@stores/gaesupStore';
 
 import { useStateSystem } from './useStateSystem';
 import { InteractionSystem } from '../../interactions/core/InteractionSystem';
+import type { InteractionCommand, InteractionState } from '../../interactions/bridge';
+
+type UsePhysicsResult = {
+    worldContext: ReturnType<typeof useGaesupStore.getState>;
+    activeState: ReturnType<typeof useStateSystem>['activeState'];
+    input: {
+        keyboard: InteractionState['keyboard'];
+        mouse: InteractionState['mouse'];
+        rigidBodyRef: RefObject<RapierRigidBody | null>;
+    };
+    interaction: InteractionState;
+    urls: ReturnType<typeof useGaesupStore.getState>['urls'];
+    setKeyboardInput: (input: Partial<InteractionState['keyboard']>) => void;
+    setMouseInput: (input: Partial<InteractionState['mouse']>) => void;
+    dispatch: (action: InteractionCommand) => void;
+    isReady: boolean;
+};
 
 /**
  * @deprecated usePhysicsBridge와 useMotion을 대신 사용하세요
@@ -15,11 +32,12 @@ import { InteractionSystem } from '../../interactions/core/InteractionSystem';
  * - 물리 시뮬레이션: usePhysicsBridge
  * - 엔티티 모션: useMotion
  */
-export function usePhysics() {
+export function usePhysics(): UsePhysicsResult {
     const { activeState } = useStateSystem();
     const interactionSystem = InteractionSystem.getInstance();
     const interaction = interactionSystem.getState();
     const urls = useGaesupStore((state) => state.urls);
+    const rigidBodyRef: RefObject<RapierRigidBody | null> = { current: null };
     const isReady = !!(interaction && urls && activeState);
 
     return {
@@ -28,9 +46,9 @@ export function usePhysics() {
         input: {
             keyboard: interaction.keyboard,
             mouse: interaction.mouse,
-            rigidBodyRef: { current: null } as unknown as RefObject<RapierRigidBody>,
+            rigidBodyRef,
         },
-        interaction: interaction as unknown,
+        interaction,
         urls,
         setKeyboardInput: (input: Partial<typeof interaction.keyboard>) => {
             interactionSystem.updateKeyboard(input);
@@ -38,7 +56,7 @@ export function usePhysics() {
         setMouseInput: (input: Partial<typeof interaction.mouse>) => {
             interactionSystem.updateMouse(input);
         },
-        dispatch: (action: { type: string; payload?: unknown }) => {
+        dispatch: (action: InteractionCommand) => {
             void action;
         },
         isReady,

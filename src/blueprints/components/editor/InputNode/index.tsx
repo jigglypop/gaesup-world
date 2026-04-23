@@ -1,9 +1,22 @@
 import { VscVm } from 'react-icons/vsc';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, type NodeProps } from 'reactflow';
+
+import type { ControlConfig } from '../../../types';
+import type { NodeFieldValue } from '../EditableNode/types';
 import './styles.css';
 
-export function InputNode({ data, id }: { data: any; id: string }) {
-  const handleChange = (field: string, value: any) => {
+type InputNodeData = Partial<ControlConfig> & {
+  onChange?: (nodeId: string, field: string, value: NodeFieldValue) => void;
+};
+
+export function InputNode({ data, id }: NodeProps<InputNodeData>) {
+  const handleChange = (
+    field: keyof Pick<
+      ControlConfig,
+      'enableKeyboard' | 'enableMouse' | 'clickToMove' | 'enableGamepad'
+    >,
+    value: boolean,
+  ) => {
     if (data.onChange) {
       data.onChange(id, field, value);
     }

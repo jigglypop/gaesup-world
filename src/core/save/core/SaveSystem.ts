@@ -1,6 +1,6 @@
 import { IndexedDBAdapter } from '../adapters/IndexedDBAdapter';
 import { LocalStorageAdapter } from '../adapters/LocalStorageAdapter';
-import type { DomainBinding, Migration, SaveAdapter, SaveBlob, SaveSystemOptions } from '../types';
+import type { DomainBinding, Migration, SaveAdapter, SaveBlob, SaveSystemOptions, SerializedDomainValue } from '../types';
 
 export class SaveSystem {
   private adapter: SaveAdapter;
@@ -16,8 +16,13 @@ export class SaveSystem {
     this.defaultSlot = opts.defaultSlot ?? 'main';
   }
 
-  register<T>(binding: DomainBinding<T>): () => void {
-    this.bindings.set(binding.key, binding as DomainBinding);
+  register<T extends SerializedDomainValue>(binding: DomainBinding<T>): () => void {
+    const normalizedBinding: DomainBinding = {
+      key: binding.key,
+      serialize: () => binding.serialize(),
+      hydrate: (data) => binding.hydrate(data as T | null | undefined),
+    };
+    this.bindings.set(binding.key, normalizedBinding);
     return () => { this.bindings.delete(binding.key); };
   }
 
@@ -31,7 +36,7 @@ export class SaveSystem {
   getBindings(): IterableIterator<DomainBinding> { return this.bindings.values(); }
 
   async save(slot: string = this.defaultSlot): Promise<void> {
-    const domains: Record<string, unknown> = {};
+    const domains: SaveBlob['domains'] = {};
     for (const [key, b] of this.bindings) {
       try { domains[key] = b.serialize(); } catch { domains[key] = null; }
     }

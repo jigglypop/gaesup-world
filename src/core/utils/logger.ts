@@ -2,11 +2,12 @@
 // In Jest/Node, `process.env.NODE_ENV` exists normally.
 const isProduction = process.env.NODE_ENV === 'production';
 
-type LogLevel = 'log' | 'warn' | 'error' | 'info';
+export type LogLevel = 'log' | 'warn' | 'error' | 'info';
+export type LogValue = object | string | number | boolean | bigint | symbol | null | undefined;
 
 class Logger {
   private static instance: Logger;
-  private enabled: boolean = !isProduction;
+  private enabled: boolean = !isProduction && process.env.NODE_ENV !== 'test';
   private level: LogLevel = 'info';
 
   private constructor() {}
@@ -41,25 +42,25 @@ class Logger {
     return levels[level] <= levels[this.level];
   }
 
-  public log(message: string, ...args: unknown[]): void {
+  public log(message: string, ...args: LogValue[]): void {
     if (this.shouldLog('log')) {
       console.log(`[LOG] ${message}`, ...args);
     }
   }
 
-  public info(message: string, ...args: unknown[]): void {
+  public info(message: string, ...args: LogValue[]): void {
     if (this.shouldLog('info')) {
       console.info(`[INFO] ${message}`, ...args);
     }
   }
 
-  public warn(message: string, ...args: unknown[]): void {
+  public warn(message: string, ...args: LogValue[]): void {
     if (this.shouldLog('warn')) {
       console.warn(`[WARN] ${message}`, ...args);
     }
   }
 
-  public error(message: string, ...args: unknown[]): void {
+  public error(message: string, ...args: LogValue[]): void {
     if (this.shouldLog('error')) {
       console.error(`[ERROR] ${message}`, ...args);
     }
