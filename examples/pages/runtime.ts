@@ -139,6 +139,13 @@ export function registerWorldGameplayEventBlueprint(blueprint: GameplayEventBlue
   getWorldGameplayEngine().setBlueprints(gameplayBlueprints);
 }
 
+export function deleteWorldGameplayEventBlueprint(id: string): void {
+  const index = gameplayBlueprints.findIndex((item) => item.id === id);
+  if (index === -1) return;
+  gameplayBlueprints.splice(index, 1);
+  getWorldGameplayEngine().setBlueprints(gameplayBlueprints);
+}
+
 export async function dispatchWorldGameplayEvent(trigger: GameplayTriggerEvent): Promise<void> {
   await getWorldGameplayEngine().dispatch(trigger);
 }

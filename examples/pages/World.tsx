@@ -7,6 +7,7 @@ import * as THREE from 'three';
 
 import {
   createWorldRuntime,
+  deleteWorldGameplayEventBlueprint,
   dispatchWorldGameplayEvent,
   getWorldGameplayBlueprints,
   loadWorldRuntime,
@@ -542,6 +543,14 @@ export const WorldPage = ({ showEditor = false, showHud = true, children }: Worl
               registerWorldGameplayEventBlueprint(blueprint);
               setGameplayBlueprints(getWorldGameplayBlueprints());
             }}
+            onUpdate={(blueprint) => {
+              registerWorldGameplayEventBlueprint(blueprint);
+              setGameplayBlueprints(getWorldGameplayBlueprints());
+            }}
+            onDelete={(id) => {
+              deleteWorldGameplayEventBlueprint(id);
+              setGameplayBlueprints(getWorldGameplayBlueprints());
+            }}
             onRun={(trigger) => dispatchWorldGameplayEvent(trigger)}
           />
         ),
@@ -551,7 +560,7 @@ export const WorldPage = ({ showEditor = false, showHud = true, children }: Worl
       {
         id: 'studio',
         title: '스튜디오',
-        component: <StudioPanel />,
+        component: <StudioPanel gameplayEvents={gameplayBlueprints} />,
         defaultSide: 'right',
         pluginId: 'gaesup.studio',
       },

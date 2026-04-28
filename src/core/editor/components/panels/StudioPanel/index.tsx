@@ -7,7 +7,7 @@ import {
   type ContentBundle,
   type ContentBundleValidation,
 } from '../../../../content';
-import { SEED_GAMEPLAY_EVENTS } from '../../../../gameplay';
+import { SEED_GAMEPLAY_EVENTS, type GameplayEventBlueprint } from '../../../../gameplay';
 import { getSaveSystem } from '../../../../save';
 import './styles.css';
 
@@ -22,6 +22,10 @@ const DEFAULT_BUNDLE_ID = 'studio-social-world';
 const DEFAULT_BUNDLE_NAME = 'Studio Social World';
 const DEFAULT_VERSION = '1.0.0';
 
+export type StudioPanelProps = {
+  gameplayEvents?: GameplayEventBlueprint[];
+};
+
 const downloadJson = (filename: string, data: unknown): void => {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -33,7 +37,7 @@ const downloadJson = (filename: string, data: unknown): void => {
   window.URL.revokeObjectURL(url);
 };
 
-export function StudioPanel() {
+export function StudioPanel({ gameplayEvents = SEED_GAMEPLAY_EVENTS }: StudioPanelProps) {
   const assetIds = useAssetStore((state) => state.ids);
   const assetRecords = useAssetStore((state) => state.records);
   const assets = useMemo(
@@ -54,9 +58,9 @@ export function StudioPanel() {
       id: bundleId,
       name: bundleName,
       version,
-      gameplayEvents: SEED_GAMEPLAY_EVENTS,
+      gameplayEvents,
     });
-  }, [assets, bundleId, bundleName, version]);
+  }, [assets, bundleId, bundleName, gameplayEvents, version]);
 
   const refreshSlots = useCallback(async () => {
     const nextSlots = await getSaveSystem().list();
@@ -138,7 +142,7 @@ export function StudioPanel() {
           <input value={version} onChange={(event) => setVersion(event.target.value)} />
         </label>
         <div className="studio-panel__meta">
-          {assets.length} asset(s), {SEED_GAMEPLAY_EVENTS.length} gameplay event(s),{' '}
+          {assets.length} asset(s), {gameplayEvents.length} gameplay event(s),{' '}
           {Array.from(getSaveSystem().getBindings()).length} save domain(s)
         </div>
         <div className="studio-panel__actions">

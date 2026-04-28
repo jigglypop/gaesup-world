@@ -28,7 +28,10 @@
   color: var(--editor-text-muted, #cccccc);
 }
 
-.gameplay-event-panel__field input {
+.gameplay-event-panel__field input,
+.gameplay-event-panel__field select,
+.gameplay-event-panel__row input,
+.gameplay-event-panel__row select {
   padding: 8px 10px;
   color: var(--editor-text-main, #ffffff);
   background: var(--editor-surface-1);
@@ -37,6 +40,7 @@
 }
 
 .gameplay-event-panel__primary,
+.gameplay-event-panel__actions button,
 .gameplay-event-panel__card button {
   padding: 7px 10px;
   color: var(--editor-text-main, #ffffff);
@@ -47,8 +51,30 @@
 }
 
 .gameplay-event-panel__primary:hover,
+.gameplay-event-panel__actions button:hover,
 .gameplay-event-panel__card button:hover {
   background: var(--editor-surface-hover);
+}
+
+.gameplay-event-panel__actions,
+.gameplay-event-panel__card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--editor-spacing-sm);
+}
+
+.gameplay-event-panel__subhead {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--editor-text-muted, #cccccc);
+}
+
+.gameplay-event-panel__row {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.9fr) minmax(0, 1fr) auto;
+  gap: var(--editor-spacing-sm);
+  align-items: center;
 }
 
 .gameplay-event-panel__list {
@@ -64,6 +90,20 @@
   gap: var(--editor-spacing-sm);
   padding: 8px;
   background: var(--editor-surface-1);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+}
+
+.gameplay-event-panel__editor {
+  width: 100%;
+  min-height: 220px;
+  padding: 10px;
+  color: var(--editor-text-main, #ffffff);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  resize: vertical;
+  background: rgba(10, 12, 16, 0.72);
   border: 1px solid var(--editor-border-color);
   border-radius: var(--editor-radius-md);
 }
