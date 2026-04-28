@@ -12,6 +12,18 @@ import { useCameraBridge } from '../bridge/useCameraBridge';
 import { CameraSystem } from '../core/CameraSystem';
 import { CameraCalcProps } from '../core/types';
 
+const ORBIT_SPEED = 0.0015;
+const ORBIT_SMOOTHING = 10;
+const ORBIT_EPSILON = 0.0001;
+const MIN_ORBIT_PITCH = -0.65;
+const MAX_ORBIT_PITCH = 0.85;
+
+const isEditableTarget = (target: EventTarget | null): boolean => {
+  if (!(target instanceof HTMLElement)) return false;
+  const tagName = target.tagName.toLowerCase();
+  return tagName === 'input' || tagName === 'textarea' || tagName === 'select' || target.isContentEditable;
+};
+
 export function useCamera() {
   const { gl } = useThree();
   const { activeState } = useStateSystem();
@@ -36,6 +48,11 @@ export function useCamera() {
 
   const excludeObjectsRef = useRef<THREE.Object3D[]>([]);
   const calcPropsRef = useRef<CameraCalcProps | null>(null);
+  const orbitShiftKeysRef = useRef<Set<string>>(new Set());
+  const orbitYawRef = useRef(0);
+  const orbitPitchRef = useRef(0);
+  const targetOrbitYawRef = useRef(0);
+  const targetOrbitPitchRef = useRef(0);
   
   const initialConfig: CameraSystemConfig = useMemo(() => ({
     mode: mode?.control || 'thirdPerson',
@@ -52,8 +69,8 @@ export function useCamera() {
     fov: cameraOption?.fov ?? 75,
     zoom: cameraOption?.zoom ?? 1,
     enableCollision: cameraOption?.enableCollision ?? true,
-    orbitYaw: 0,
-    orbitPitch: 0,
+    orbitYaw: orbitYawRef.current,
+    orbitPitch: orbitPitchRef.current,
     ...(cameraOption?.maxDistance !== undefined ? { maxDistance: cameraOption.maxDistance } : {}),
     ...(cameraOption?.offset
       ? { offset: { x: cameraOption.offset.x, y: cameraOption.offset.y, z: cameraOption.offset.z } }
@@ -87,8 +104,8 @@ export function useCamera() {
       fov: opt?.fov ?? 75,
       zoom: opt?.zoom ?? 1,
       enableCollision: opt?.enableCollision ?? true,
-      orbitYaw: 0,
-      orbitPitch: 0,
+      orbitYaw: orbitYawRef.current,
+      orbitPitch: orbitPitchRef.current,
       ...(opt?.maxDistance !== undefined ? { maxDistance: opt.maxDistance } : {}),
       ...(opt?.offset
         ? { offset: { x: opt.offset.x, y: opt.offset.y, z: opt.offset.z } }
@@ -112,8 +129,8 @@ export function useCamera() {
     event.preventDefault();
 
     const zoomSpeed = opt.zoomSpeed || 0.001;
-    const minZoom = opt.minZoom || 0.1;
-    const maxZoom = opt.maxZoom || 2.0;
+    const minZoom = opt.minZoom || 0.45;
+    const maxZoom = opt.maxZoom || 2.4;
     const currentZoom = opt.zoom || 1;
 
     // 스크롤 방향 반대로 수정 (양수로 변경)
@@ -133,6 +150,52 @@ export function useCamera() {
     }
     return undefined;
   }, [gl, handleWheel, cameraOption?.enableZoom, isInEditMode]);
+
+  useEffect(() => {
+    if (isInEditMode) return undefined;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target)) return;
+
+      if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
+        orbitShiftKeysRef.current.add(event.code);
+      }
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.code !== 'ShiftLeft' && event.code !== 'ShiftRight') return;
+      orbitShiftKeysRef.current.delete(event.code);
+    };
+
+    const handleMouseMove = (event: MouseEvent) => {
+      if (orbitShiftKeysRef.current.size === 0 || isEditableTarget(event.target)) return;
+      if (event.movementX === 0 && event.movementY === 0) return;
+
+      targetOrbitYawRef.current -= event.movementX * ORBIT_SPEED;
+      targetOrbitPitchRef.current = THREE.MathUtils.clamp(
+        targetOrbitPitchRef.current + event.movementY * ORBIT_SPEED,
+        MIN_ORBIT_PITCH,
+        MAX_ORBIT_PITCH,
+      );
+    };
+
+    const clearOrbitKeyState = () => {
+      orbitShiftKeysRef.current.clear();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('blur', clearOrbitKeyState);
+    document.addEventListener('visibilitychange', clearOrbitKeyState);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('blur', clearOrbitKeyState);
+      document.removeEventListener('visibilitychange', clearOrbitKeyState);
+    };
+  }, [isInEditMode, updateConfig]);
   
   
   // ESC 키로 포커스 해제
@@ -164,6 +227,30 @@ export function useCamera() {
   
   useFrame((state, delta) => {
     if (!system || isInEditMode) return;
+
+    const nextOrbitYaw = THREE.MathUtils.damp(
+      orbitYawRef.current,
+      targetOrbitYawRef.current,
+      ORBIT_SMOOTHING,
+      delta,
+    );
+    const nextOrbitPitch = THREE.MathUtils.damp(
+      orbitPitchRef.current,
+      targetOrbitPitchRef.current,
+      ORBIT_SMOOTHING,
+      delta,
+    );
+    if (
+      Math.abs(nextOrbitYaw - orbitYawRef.current) > ORBIT_EPSILON ||
+      Math.abs(nextOrbitPitch - orbitPitchRef.current) > ORBIT_EPSILON
+    ) {
+      orbitYawRef.current = nextOrbitYaw;
+      orbitPitchRef.current = nextOrbitPitch;
+      updateConfig({
+        orbitYaw: nextOrbitYaw,
+        orbitPitch: nextOrbitPitch,
+      });
+    }
     
     // Reuse the calc props object to avoid per-frame allocations.
     if (!calcPropsRef.current) {

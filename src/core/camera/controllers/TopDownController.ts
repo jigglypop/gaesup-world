@@ -15,6 +15,7 @@ export class TopDownController extends BaseController {
 
   calculateTargetPosition(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
     const position = activeStateUtils.getPosition(props.activeState);
-    return this.target.set(position.x, position.y + state.config.distance.y, position.z);
+    const zoom = state.config.zoom || 1;
+    return this.target.set(position.x, position.y + state.config.distance.y * zoom, position.z);
   }
 } 
