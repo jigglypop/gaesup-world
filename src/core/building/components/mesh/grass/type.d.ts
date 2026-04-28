@@ -33,6 +33,10 @@ export type GrassMeshProps = ThreeElements["group"] & {
    * When omitted, the component falls back to its world transform.
    */
   center?: [number, number, number];
+  groundColor?: string;
+  groundAccentColor?: string;
+  bladeTipColor?: string;
+  bladeBottomColor?: string;
   /**
    * When true, the ground plane uses a stepped toon material instead of PBR.
    * Defaults to the global toon mode (rendering/toon).
@@ -50,6 +54,8 @@ declare global {
         toneMapped?: boolean;
         side?: THREE.Side;
         transparent?: boolean;
+        tipColor?: THREE.Color;
+        bottomColor?: THREE.Color;
       };
     }
   }
@@ -64,6 +70,8 @@ declare global {
           toneMapped?: boolean;
           side?: THREE.Side;
           transparent?: boolean;
+          tipColor?: THREE.Color;
+          bottomColor?: THREE.Color;
         };
       }
     }

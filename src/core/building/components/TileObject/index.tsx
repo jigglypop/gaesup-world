@@ -114,6 +114,10 @@ export function TileObject({ tile, tiles }: TileObjectProps) {
           <Grass
             width={tileSize}
             density={tile.objectConfig?.grassDensity ?? 90}
+            {...(tile.objectConfig?.terrainColor ? { groundColor: tile.objectConfig.terrainColor } : {})}
+            {...(tile.objectConfig?.terrainAccentColor ? { groundAccentColor: tile.objectConfig.terrainAccentColor } : {})}
+            {...(tile.objectConfig?.terrainColor ? { bladeBottomColor: tile.objectConfig.terrainColor } : {})}
+            {...(tile.objectConfig?.terrainAccentColor ? { bladeTipColor: tile.objectConfig.terrainAccentColor } : {})}
             position={[0, 0.05, 0]}
           />
         )}

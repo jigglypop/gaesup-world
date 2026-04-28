@@ -124,6 +124,32 @@ describe('buildingStore placement checks', () => {
     s.removeTile(groupId, tileId);
   });
 
+  test('addTile stores terrain colors for grass sand and snow covers', () => {
+    const s = useBuildingStore.getState();
+    const groupId = s.selectedTileGroupId;
+    expect(groupId).toBeDefined();
+    if (!groupId) return;
+
+    s.setSelectedTileObjectType('sand');
+    s.setTerrainColors('#aa8844', '#ffdd88');
+
+    const tileId = `terrain-color-tile-${Date.now()}`;
+    s.addTile(groupId, {
+      id: tileId,
+      position: { x: FAR + 24, y: 0, z: FAR },
+      tileGroupId: groupId,
+      size: 1,
+    });
+
+    const tile = useBuildingStore.getState().tileGroups.get(groupId)?.tiles.find((entry) => entry.id === tileId);
+    expect(tile?.objectType).toBe('sand');
+    expect(tile?.objectConfig?.terrainColor).toBe('#aa8844');
+    expect(tile?.objectConfig?.terrainAccentColor).toBe('#ffdd88');
+
+    s.setSelectedTileObjectType('none');
+    s.removeTile(groupId, tileId);
+  });
+
   test('checkTilePosition accounts for currentTileMultiplier', () => {
     const s = useBuildingStore.getState();
     const groupId = s.selectedTileGroupId;

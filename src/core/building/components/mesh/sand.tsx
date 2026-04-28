@@ -10,6 +10,8 @@ const noise2D = createNoise2D();
 type SandProps = {
   size?: number;
   toon?: boolean;
+  color?: string;
+  accentColor?: string;
 };
 
 let _sandSurfaceToon: THREE.MeshToonMaterial | null = null;
@@ -50,6 +52,8 @@ function getSandHeight(x: number, z: number, size: number): number {
 export type SandEntry = {
   position: [number, number, number];
   size: number;
+  color?: string;
+  accentColor?: string;
 };
 
 function buildMergedSand(entries: SandEntry[]): [THREE.BufferGeometry, THREE.BufferGeometry, number] {
@@ -79,6 +83,9 @@ function buildMergedSand(entries: SandEntry[]): [THREE.BufferGeometry, THREE.Buf
     if (!e || segs === undefined) continue;
     const s = e.size;
     const ox = e.position[0], oy = e.position[1] + 0.04, oz = e.position[2];
+    const baseColor = new THREE.Color(e.color ?? '#b89b66');
+    const accentColor = new THREE.Color(e.accentColor ?? '#e0c27a');
+    const tmpColor = new THREE.Color();
 
     for (let iz = 0; iz <= segs; iz++) {
       for (let ix = 0; ix <= segs; ix++) {
@@ -91,9 +98,10 @@ function buildMergedSand(entries: SandEntry[]): [THREE.BufferGeometry, THREE.Buf
         pos[vi3] = lx + ox;
         pos[vi3 + 1] = y + oy;
         pos[vi3 + 2] = lz + oz;
-        col[vi3] = 0.72 + tint * 0.09;
-        col[vi3 + 1] = 0.61 + tint * 0.07;
-        col[vi3 + 2] = 0.40 + tint * 0.05;
+        tmpColor.copy(baseColor).lerp(accentColor, tint * 0.45).multiplyScalar(0.86 + tint * 0.18);
+        col[vi3] = tmpColor.r;
+        col[vi3 + 1] = tmpColor.g;
+        col[vi3 + 2] = tmpColor.b;
       }
     }
 
@@ -128,6 +136,9 @@ function buildMergedSand(entries: SandEntry[]): [THREE.BufferGeometry, THREE.Buf
     if (!e || gc === undefined) continue;
     const s = e.size;
     const ox = e.position[0], oy = e.position[1] + 0.04, oz = e.position[2];
+    const baseColor = new THREE.Color(e.color ?? '#b89b66');
+    const accentColor = new THREE.Color(e.accentColor ?? '#e0c27a');
+    const tmpColor = new THREE.Color();
 
     for (let i = 0; i < gc; i++) {
       const gi = (gOff + i) * 3;
@@ -139,9 +150,10 @@ function buildMergedSand(entries: SandEntry[]): [THREE.BufferGeometry, THREE.Buf
       gPos[gi] = lx + ox;
       gPos[gi + 1] = y + oy;
       gPos[gi + 2] = lz + oz;
-      gCol[gi] = 0.76 + tint * 0.08;
-      gCol[gi + 1] = 0.68 + tint * 0.05;
-      gCol[gi + 2] = 0.48 + tint * 0.04;
+      tmpColor.copy(baseColor).lerp(accentColor, tint * 0.55).multiplyScalar(0.92 + tint * 0.12);
+      gCol[gi] = tmpColor.r;
+      gCol[gi + 1] = tmpColor.g;
+      gCol[gi + 2] = tmpColor.b;
     }
     gOff += gc;
   }
@@ -191,7 +203,7 @@ export function SandBatch({ entries, toon }: { entries: SandEntry[]; toon?: bool
 // Individual Sand (standalone use)
 // ============================================================
 
-export default function Sand({ size = 4, toon }: SandProps) {
+export default function Sand({ size = 4, toon, color: sandColor, accentColor: sandAccentColor }: SandProps) {
   const useToon = toon ?? getDefaultToonMode();
   const surfaceMat = getSandSurfaceMaterial(useToon);
   const [surfaceGeometry, grainGeometry] = useMemo(() => {
@@ -202,6 +214,8 @@ export default function Sand({ size = 4, toon }: SandProps) {
     const positions = surface.getAttribute('position') as THREE.BufferAttribute;
     const colors = new Float32Array(positions.count * 3);
     const color = new THREE.Color();
+    const baseColor = new THREE.Color(sandColor ?? '#b89b66');
+    const accentColor = new THREE.Color(sandAccentColor ?? '#e0c27a');
 
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i);
@@ -210,7 +224,7 @@ export default function Sand({ size = 4, toon }: SandProps) {
       const tint = 0.5 + 0.5 * noise2D(x * 0.22 + 5.1, z * 0.22 - 3.6);
 
       positions.setY(i, y);
-      color.setRGB(0.72 + tint * 0.09, 0.61 + tint * 0.07, 0.40 + tint * 0.05);
+      color.copy(baseColor).lerp(accentColor, tint * 0.45).multiplyScalar(0.86 + tint * 0.18);
       colors[i * 3] = color.r;
       colors[i * 3 + 1] = color.g;
       colors[i * 3 + 2] = color.b;
@@ -234,7 +248,7 @@ export default function Sand({ size = 4, toon }: SandProps) {
       grainPositions[i * 3 + 1] = y;
       grainPositions[i * 3 + 2] = z;
 
-      color.setRGB(0.76 + tint * 0.08, 0.68 + tint * 0.05, 0.48 + tint * 0.04);
+      color.copy(baseColor).lerp(accentColor, tint * 0.55).multiplyScalar(0.92 + tint * 0.12);
       grainColors[i * 3] = color.r;
       grainColors[i * 3 + 1] = color.g;
       grainColors[i * 3 + 2] = color.b;
@@ -245,7 +259,7 @@ export default function Sand({ size = 4, toon }: SandProps) {
     grains.setAttribute('color', new THREE.Float32BufferAttribute(grainColors, 3));
 
     return [surface, grains];
-  }, [size]);
+  }, [sandAccentColor, sandColor, size]);
 
   useEffect(() => {
     return () => {

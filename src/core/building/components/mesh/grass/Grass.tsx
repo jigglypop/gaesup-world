@@ -45,7 +45,6 @@ function getGroundMaterial(toon: boolean): THREE.Material {
 }
 
 const noise2D = createNoise2D();
-const GROUND_DARK = new THREE.Color('#2a4220');
 const GROUND_LIGHT = new THREE.Color('#5a7a35');
 const GROUND_ACCENT = new THREE.Color('#7a8e3a');
 const GROUND_DIRT = new THREE.Color('#5b4628');
@@ -204,6 +203,10 @@ const Grass: FC<GrassMeshProps> = memo(
     toon,
     lod,
     center,
+    groundColor,
+    groundAccentColor,
+    bladeTipColor,
+    bladeBottomColor,
     ...props
   }) => {
     const { bW, bH, joints } = options;
@@ -222,6 +225,16 @@ const Grass: FC<GrassMeshProps> = memo(
     }, [instances, density, width, maxInstances, instanceScale]);
     const useToon = toon ?? getDefaultToonMode();
     const groundMat = getGroundMaterial(useToon);
+    const baseGroundColor = useMemo(() => new THREE.Color(groundColor ?? GROUND_LIGHT), [groundColor]);
+    const accentGroundColor = useMemo(() => new THREE.Color(groundAccentColor ?? GROUND_ACCENT), [groundAccentColor]);
+    const tipBladeColor = useMemo(
+      () => new THREE.Color(bladeTipColor ?? '#8fbc5a').convertSRGBToLinear(),
+      [bladeTipColor],
+    );
+    const bottomBladeColor = useMemo(
+      () => new THREE.Color(bladeBottomColor ?? '#355b2d').convertSRGBToLinear(),
+      [bladeBottomColor],
+    );
     const groupRef = useRef<THREE.Group>(null);
     const meshRef = useRef<THREE.Mesh>(null);
     const lastInstanceCount = useRef(resolvedInstances);
@@ -280,7 +293,7 @@ const Grass: FC<GrassMeshProps> = memo(
         const n2 = 0.5 + 0.5 * noise2D(x * 0.55 - 3.1, z * 0.55 + 9.4);
 
         const tint = THREE.MathUtils.clamp(n0 * 0.65 + n1 * 0.45, 0, 1);
-        tmp.copy(GROUND_DARK).lerp(GROUND_LIGHT, tint).lerp(GROUND_ACCENT, n1 * 0.22);
+        tmp.copy(baseGroundColor).multiplyScalar(0.58 + tint * 0.42).lerp(accentGroundColor, n1 * 0.28);
         if (n2 > 0.86) {
           tmp.lerp(GROUND_DIRT, (n2 - 0.86) * 4.0);
         }
@@ -293,7 +306,7 @@ const Grass: FC<GrassMeshProps> = memo(
       gg.setAttribute('color', new THREE.BufferAttribute(colors, 3));
       gg.computeVertexNormals();
       return [bg, gg];
-    }, [bW, bH, joints, width]);
+    }, [accentGroundColor, bW, bH, baseGroundColor, joints, width]);
     useEffect(() => {
       return () => {
         baseGeom.dispose();
@@ -314,7 +327,9 @@ const Grass: FC<GrassMeshProps> = memo(
       if (!m?.uniforms) return;
       if (m.uniforms['uToon']) m.uniforms['uToon'].value = useToon ? 1 : 0;
       if (m.uniforms['uToonSteps']) m.uniforms['uToonSteps'].value = 4;
-    }, [useToon]);
+      if (m.uniforms['tipColor']) m.uniforms['tipColor'].value.copy(tipBladeColor);
+      if (m.uniforms['bottomColor']) m.uniforms['bottomColor'].value.copy(bottomBladeColor);
+    }, [bottomBladeColor, tipBladeColor, useToon]);
 
     // Register with the central GrassManager. The manager runs one
     // shared `useFrame` (via <GrassDriver />) and updates per-tile

@@ -678,6 +678,8 @@ export function TileSystem({
     () => sandTiles.map((t) => ({
       position: [t.position.x, t.position.y, t.position.z] as [number, number, number],
       size: TILE_CONSTANTS.GRID_CELL_SIZE * (t.size || 1),
+      ...(t.objectConfig?.terrainColor ? { color: t.objectConfig.terrainColor } : {}),
+      ...(t.objectConfig?.terrainAccentColor ? { accentColor: t.objectConfig.terrainAccentColor } : {}),
     })),
     [sandTiles],
   );
@@ -691,6 +693,8 @@ export function TileSystem({
     () => snowfieldTiles.map((t) => ({
       position: [t.position.x, t.position.y, t.position.z] as [number, number, number],
       size: TILE_CONSTANTS.GRID_CELL_SIZE * (t.size || 1),
+      ...(t.objectConfig?.terrainColor ? { color: t.objectConfig.terrainColor } : {}),
+      ...(t.objectConfig?.terrainAccentColor ? { accentColor: t.objectConfig.terrainAccentColor } : {}),
     })),
     [snowfieldTiles],
   );

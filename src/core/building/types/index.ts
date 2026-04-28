@@ -117,6 +117,8 @@ export interface TileConfig {
     /** Blades per square meter. The mesh layer multiplies this by tile area. */
     grassDensity?: number;
     waterScale?: number;
+    terrainColor?: string;
+    terrainAccentColor?: string;
   };
 }
 

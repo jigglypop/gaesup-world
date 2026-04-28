@@ -45,6 +45,9 @@ export const BuildingPanel: FC = () => {
   const setWallRotation = useBuildingStore((state) => state.setWallRotation);
   const selectedTileObjectType = useBuildingStore((state) => state.selectedTileObjectType);
   const setSelectedTileObjectType = useBuildingStore((state) => state.setSelectedTileObjectType);
+  const currentTerrainColor = useBuildingStore((state) => state.currentTerrainColor);
+  const currentTerrainAccentColor = useBuildingStore((state) => state.currentTerrainAccentColor);
+  const setTerrainColors = useBuildingStore((state) => state.setTerrainColors);
   const selectedPlacedObjectType = useBuildingStore((state) => state.selectedPlacedObjectType);
   const setSelectedPlacedObjectType = useBuildingStore((state) => state.setSelectedPlacedObjectType);
   const snapToGrid = useBuildingStore((state) => state.snapToGrid);
@@ -204,6 +207,20 @@ export const BuildingPanel: FC = () => {
     setCurrentTileMaterialId(placementMeshId);
   };
 
+  const applyTerrainColors = (color: string, accentColor: string = currentTerrainAccentColor) => {
+    setTerrainColors(color, accentColor);
+    if (!selectedTileId || !selectedTileGroup) return;
+    const tile = selectedTileGroup.tiles.find((entry) => entry.id === selectedTileId);
+    if (!tile || !tile.objectType || tile.objectType === 'none' || tile.objectType === 'water') return;
+    updateTile(selectedTileGroup.id, selectedTileId, {
+      objectConfig: {
+        ...(tile.objectConfig ?? {}),
+        terrainColor: color,
+        terrainAccentColor: accentColor,
+      },
+    });
+  };
+
   return (
     <div className="building-panel">
       <div className="building-panel__section">
@@ -306,6 +323,24 @@ export const BuildingPanel: FC = () => {
                 {t.label}
               </button>
             ))}
+          </div>
+          <div className="building-panel__terrain-colors">
+            <label>
+              <span>기본색</span>
+              <input
+                type="color"
+                value={currentTerrainColor}
+                onChange={(event) => applyTerrainColors(event.target.value)}
+              />
+            </label>
+            <label>
+              <span>강조색</span>
+              <input
+                type="color"
+                value={currentTerrainAccentColor}
+                onChange={(event) => applyTerrainColors(currentTerrainColor, event.target.value)}
+              />
+            </label>
           </div>
         </div>
       )}

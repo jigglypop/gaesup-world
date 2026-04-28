@@ -98,6 +98,36 @@
   font-weight: 600;
 }
 
+.building-panel__terrain-colors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--editor-spacing-sm);
+}
+
+.building-panel__terrain-colors label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--editor-spacing-sm);
+  padding: 7px 8px;
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  background: var(--editor-surface-1);
+  color: var(--editor-text-muted, #aaaaaa);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.building-panel__terrain-colors input {
+  width: 34px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
 .building-panel__info {
   display: flex;
   flex-direction: column;

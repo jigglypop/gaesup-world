@@ -10,6 +10,8 @@ const noise2D = createNoise2D();
 type SnowfieldProps = {
   size?: number;
   toon?: boolean;
+  color?: string;
+  accentColor?: string;
 };
 
 let _snowSurfaceToon: THREE.MeshToonMaterial | null = null;
@@ -60,6 +62,8 @@ function getSnowHeight(x: number, z: number, size: number): number {
 export type SnowfieldEntry = {
   position: [number, number, number];
   size: number;
+  color?: string;
+  accentColor?: string;
 };
 
 function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry, THREE.BufferGeometry, number] {
@@ -89,6 +93,9 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
     if (!e || segs === undefined) continue;
     const s = e.size;
     const ox = e.position[0], oy = e.position[1] + 0.045, oz = e.position[2];
+    const baseColor = new THREE.Color(e.color ?? '#dcecff');
+    const accentColor = new THREE.Color(e.accentColor ?? '#ffffff');
+    const tmpColor = new THREE.Color();
 
     for (let iz = 0; iz <= segs; iz++) {
       for (let ix = 0; ix <= segs; ix++) {
@@ -101,9 +108,10 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
         pos[vi3] = lx + ox;
         pos[vi3 + 1] = y + oy;
         pos[vi3 + 2] = lz + oz;
-        col[vi3] = 0.87 + tint * 0.06;
-        col[vi3 + 1] = 0.90 + tint * 0.05;
-        col[vi3 + 2] = 0.94 + tint * 0.04;
+        tmpColor.copy(baseColor).lerp(accentColor, tint * 0.55).multiplyScalar(0.9 + tint * 0.1);
+        col[vi3] = tmpColor.r;
+        col[vi3 + 1] = tmpColor.g;
+        col[vi3 + 2] = tmpColor.b;
       }
     }
 
@@ -138,6 +146,9 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
     if (!e || sc === undefined) continue;
     const s = e.size;
     const ox = e.position[0], oy = e.position[1] + 0.045, oz = e.position[2];
+    const baseColor = new THREE.Color(e.color ?? '#dcecff');
+    const accentColor = new THREE.Color(e.accentColor ?? '#ffffff');
+    const tmpColor = new THREE.Color();
 
     for (let i = 0; i < sc; i++) {
       const gi = (sOff + i) * 3;
@@ -149,9 +160,10 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
       sPos[gi] = lx + ox;
       sPos[gi + 1] = y + oy;
       sPos[gi + 2] = lz + oz;
-      sCol[gi] = 0.9 + tint * 0.08;
-      sCol[gi + 1] = 0.94 + tint * 0.05;
-      sCol[gi + 2] = 1.0;
+      tmpColor.copy(baseColor).lerp(accentColor, 0.6 + tint * 0.4);
+      sCol[gi] = tmpColor.r;
+      sCol[gi + 1] = tmpColor.g;
+      sCol[gi + 2] = tmpColor.b;
     }
     sOff += sc;
   }
@@ -201,7 +213,7 @@ export function SnowfieldBatch({ entries, toon }: { entries: SnowfieldEntry[]; t
 // Individual Snowfield (standalone use)
 // ============================================================
 
-export default function Snowfield({ size = 4, toon }: SnowfieldProps) {
+export default function Snowfield({ size = 4, toon, color: snowColor, accentColor: snowAccentColor }: SnowfieldProps) {
   const useToon = toon ?? getDefaultToonMode();
   const surfaceMat = getSnowSurfaceMaterial(useToon);
   const [surfaceGeometry, sparkleGeometry] = useMemo(() => {
@@ -212,6 +224,8 @@ export default function Snowfield({ size = 4, toon }: SnowfieldProps) {
     const positions = surface.getAttribute('position') as THREE.BufferAttribute;
     const colors = new Float32Array(positions.count * 3);
     const color = new THREE.Color();
+    const baseColor = new THREE.Color(snowColor ?? '#dcecff');
+    const accentColor = new THREE.Color(snowAccentColor ?? '#ffffff');
 
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i);
@@ -220,7 +234,7 @@ export default function Snowfield({ size = 4, toon }: SnowfieldProps) {
       const tint = 0.5 + 0.5 * noise2D(x * 0.16 - 2.4, z * 0.16 + 7.2);
 
       positions.setY(i, y);
-      color.setRGB(0.87 + tint * 0.06, 0.90 + tint * 0.05, 0.94 + tint * 0.04);
+      color.copy(baseColor).lerp(accentColor, tint * 0.55).multiplyScalar(0.9 + tint * 0.1);
       colors[i * 3] = color.r;
       colors[i * 3 + 1] = color.g;
       colors[i * 3 + 2] = color.b;
@@ -244,7 +258,7 @@ export default function Snowfield({ size = 4, toon }: SnowfieldProps) {
       sparklePositions[i * 3 + 1] = y;
       sparklePositions[i * 3 + 2] = z;
 
-      color.setRGB(0.9 + tint * 0.08, 0.94 + tint * 0.05, 1.0);
+      color.copy(baseColor).lerp(accentColor, 0.6 + tint * 0.4);
       sparkleColors[i * 3] = color.r;
       sparkleColors[i * 3 + 1] = color.g;
       sparkleColors[i * 3 + 2] = color.b;
@@ -255,7 +269,7 @@ export default function Snowfield({ size = 4, toon }: SnowfieldProps) {
     sparkles.setAttribute('color', new THREE.Float32BufferAttribute(sparkleColors, 3));
 
     return [surface, sparkles];
-  }, [size]);
+  }, [size, snowAccentColor, snowColor]);
 
   useEffect(() => {
     return () => {

@@ -71,6 +71,9 @@ interface BuildingStore extends BuildingSystemState {
   
   selectedTileObjectType: TileObjectType;
   setSelectedTileObjectType: (type: TileObjectType) => void;
+  currentTerrainColor: string;
+  currentTerrainAccentColor: string;
+  setTerrainColors: (color: string, accentColor?: string) => void;
 
   selectedPlacedObjectType: PlacedObjectType | 'none';
   setSelectedPlacedObjectType: (type: PlacedObjectType | 'none') => void;
@@ -204,6 +207,8 @@ export const useBuildingStore = create<BuildingStore>()(
     currentWallRotation: 0,
     objects: [],
     selectedTileObjectType: 'none',
+    currentTerrainColor: '#5a7a35',
+    currentTerrainAccentColor: '#8fbc5a',
     selectedPlacedObjectType: 'none',
     selectedWallId: null,
     selectedTileId: null,
@@ -666,8 +671,17 @@ export const useBuildingStore = create<BuildingStore>()(
       if (group) {
         const objectConfig: TileConfig['objectConfig'] =
           state.selectedTileObjectType === 'grass'
-            ? { grassDensity: 90 }
-            : undefined;
+            ? {
+                grassDensity: 90,
+                terrainColor: state.currentTerrainColor,
+                terrainAccentColor: state.currentTerrainAccentColor,
+              }
+            : state.selectedTileObjectType === 'sand' || state.selectedTileObjectType === 'snowfield'
+              ? {
+                  terrainColor: state.currentTerrainColor,
+                  terrainAccentColor: state.currentTerrainAccentColor,
+                }
+              : undefined;
         const cell = tile.cell ?? tilePositionToCell(tile.position);
         const materialId = tile.materialId ?? state.currentTileMaterialId;
         const tileWithObject: TileConfig = {
@@ -1043,6 +1057,23 @@ export const useBuildingStore = create<BuildingStore>()(
     
     setSelectedTileObjectType: (type) => set((state) => {
       state.selectedTileObjectType = type;
+      if (type === 'grass') {
+        state.currentTerrainColor = '#5a7a35';
+        state.currentTerrainAccentColor = '#8fbc5a';
+      } else if (type === 'sand') {
+        state.currentTerrainColor = '#b89b66';
+        state.currentTerrainAccentColor = '#e0c27a';
+      } else if (type === 'snowfield') {
+        state.currentTerrainColor = '#dcecff';
+        state.currentTerrainAccentColor = '#ffffff';
+      }
+    }),
+
+    setTerrainColors: (color, accentColor) => set((state) => {
+      state.currentTerrainColor = color;
+      if (accentColor !== undefined) {
+        state.currentTerrainAccentColor = accentColor;
+      }
     }),
 
     setSelectedPlacedObjectType: (type) => set((state) => {
