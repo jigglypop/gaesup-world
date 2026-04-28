@@ -31,7 +31,9 @@
 .gameplay-event-panel__field input,
 .gameplay-event-panel__field select,
 .gameplay-event-panel__row input,
-.gameplay-event-panel__row select {
+.gameplay-event-panel__row select,
+.gameplay-event-panel__type-select select,
+.gameplay-event-panel__node-toolbar select {
   padding: 8px 10px;
   color: var(--editor-text-main, #ffffff);
   background: var(--editor-surface-1);
@@ -61,6 +63,132 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--editor-spacing-sm);
+}
+
+.gameplay-event-panel__editor-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--editor-spacing-md);
+}
+
+.gameplay-event-panel__hint {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--editor-text-muted, #cccccc);
+}
+
+.gameplay-event-panel__type-select {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+  font-size: 11px;
+  color: var(--editor-text-muted, #cccccc);
+}
+
+.gameplay-event-panel__flow {
+  height: 520px;
+  overflow: hidden;
+  background: rgba(8, 10, 14, 0.72);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+}
+
+.gameplay-event-panel__flow .react-flow__pane {
+  cursor: grab;
+}
+
+.gameplay-event-panel__node-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--editor-spacing-sm);
+}
+
+.gameplay-event-node {
+  min-width: 220px;
+  overflow: hidden;
+  color: var(--editor-text-main, #ffffff);
+  background: rgba(20, 24, 34, 0.96);
+  border: 1px solid rgba(122, 134, 168, 0.65);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+}
+
+.gameplay-event-node__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  background: rgba(70, 88, 132, 0.45);
+  border-bottom: 1px solid rgba(122, 134, 168, 0.45);
+}
+
+.gameplay-event-node__delete,
+.gameplay-event-node__edit button {
+  padding: 4px 6px;
+  color: var(--editor-text-main, #ffffff);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.gameplay-event-node__field {
+  padding: 8px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.gameplay-event-node__value {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.gameplay-event-node__value span {
+  overflow: hidden;
+  color: var(--editor-text-muted, #cccccc);
+  text-overflow: ellipsis;
+}
+
+.gameplay-event-node__value strong {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+}
+
+.gameplay-event-node__edit {
+  display: flex;
+  gap: 4px;
+}
+
+.gameplay-event-node__edit input {
+  min-width: 0;
+  flex: 1;
+  padding: 5px 6px;
+  color: var(--editor-text-main, #ffffff);
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+}
+
+.gameplay-event-node__handle {
+  width: 9px;
+  height: 9px;
+  background: #9cadff;
+  border-color: #d5ddff;
 }
 
 .gameplay-event-panel__subhead {
