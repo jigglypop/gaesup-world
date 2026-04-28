@@ -2,11 +2,11 @@ import { useMemo } from 'react';
 
 import { vec3 } from '@react-three/rapier';
 
-import { useBuildingStore } from '../../building/stores/buildingStore';
 import { useGenericRefs } from '@hooks/useGenericRefs';
 import { useKeyboard } from '@hooks/useKeyboard';
 
 import { EntityControllerProps } from './types';
+import { useBuildingStore } from '../../building/stores/buildingStore';
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { PhysicsEntity } from '../entities/refs/PhysicsEntity';
 import { useStateSystem } from '../hooks/useStateSystem';

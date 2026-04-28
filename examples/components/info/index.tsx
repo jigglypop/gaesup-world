@@ -10,7 +10,7 @@ export default function Info() {
   const setType = (type: 'character' | 'vehicle' | 'airplane') => {
     setMode({
       type: type,
-      control: 'chase',
+      control: type === 'character' ? 'thirdPerson' : 'chase',
     });
   };
   const setControl = (

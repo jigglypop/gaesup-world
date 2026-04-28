@@ -3,6 +3,17 @@ import mitt from 'mitt';
 import { CameraEventValue, CameraSystemEvents, CameraSystemConfig, ICameraSystemMonitor, CameraSystemEmitter, CameraSystemState } from './types';
 import { Profile, HandleError } from '../../boilerplate/decorators';
 
+export function cloneCameraSystemConfig(config: CameraSystemConfig): CameraSystemConfig {
+  return {
+    ...config,
+    distance: { ...config.distance },
+    smoothing: { ...config.smoothing },
+    ...(config.focusTarget ? { focusTarget: { ...config.focusTarget } } : {}),
+    ...(config.offset ? { offset: { ...config.offset } } : {}),
+    ...(config.lookAt ? { lookAt: { ...config.lookAt } } : {}),
+  };
+}
+
 export abstract class BaseCameraSystem implements ICameraSystemMonitor {
   public emitter: CameraSystemEmitter;
   protected config: CameraSystemConfig;
@@ -13,13 +24,13 @@ export abstract class BaseCameraSystem implements ICameraSystemMonitor {
   };
   protected constructor(initialConfig: CameraSystemConfig) {
     this.emitter = mitt<CameraSystemEvents>();
-    this.config = initialConfig;
+    this.config = cloneCameraSystemConfig(initialConfig);
   }
 
   @HandleError()
   public updateConfig(newConfig: Partial<CameraSystemConfig>): void {
     const oldConfig = { ...this.config };
-    this.config = { ...this.config, ...newConfig };
+    this.config = cloneCameraSystemConfig({ ...this.config, ...newConfig });
     
     Object.keys(newConfig).forEach(key => {
       this.emitter.emit('configChange', { 
@@ -36,7 +47,7 @@ export abstract class BaseCameraSystem implements ICameraSystemMonitor {
     }
   }
   public getConfig(): CameraSystemConfig {
-    return { ...this.config };
+    return cloneCameraSystemConfig(this.config);
   }
   public getState(): CameraSystemState {
     return {

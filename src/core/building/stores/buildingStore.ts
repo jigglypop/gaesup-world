@@ -2,6 +2,21 @@ import { enableMapSet } from 'immer';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
+import {
+  blockToPlacementEntry,
+  createBuildingPlacementEngine,
+  getTileSupportHeight,
+  hasWallCollision,
+  indexAabb,
+  snapBuildingPosition,
+  createTileFootprint,
+  tileHalfSize,
+  tilePositionToCell,
+  tileToPlacementEntry,
+  unindexId,
+  wallTransformToEdge,
+} from '../model';
+import type { TileMeta, WallMeta } from '../model';
 import { 
   BuildingSystemState, 
   MeshConfig, 
@@ -22,21 +37,6 @@ import {
   FLAG_STYLE_META,
 } from '../types';
 import { TILE_CONSTANTS } from '../types/constants';
-import {
-  blockToPlacementEntry,
-  createBuildingPlacementEngine,
-  getTileSupportHeight,
-  hasWallCollision,
-  indexAabb,
-  snapBuildingPosition,
-  createTileFootprint,
-  tileHalfSize,
-  tilePositionToCell,
-  tileToPlacementEntry,
-  unindexId,
-  wallTransformToEdge,
-} from '../model';
-import type { TileMeta, WallMeta } from '../model';
 
 enableMapSet();
 

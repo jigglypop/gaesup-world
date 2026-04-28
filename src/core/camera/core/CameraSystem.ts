@@ -6,11 +6,10 @@ import {
   ICameraController,
   CameraSystemState,
   CameraCalcProps,
-  CameraConfig,
   CameraState,
   CameraTransition,
 } from './types';
-import { BaseCameraSystem } from '../bridge/BaseCameraSystem';
+import { BaseCameraSystem, cloneCameraSystemConfig } from '../bridge/BaseCameraSystem';
 import { CameraSystemConfig } from '../bridge/types';
 import {
   ThirdPersonController,
@@ -32,21 +31,14 @@ export class CameraSystem extends BaseCameraSystem {
   
   constructor(config: CameraSystemConfig) {
     super(config);
-    this.state = this.createInitialState();
+    this.state = this.createInitialState(config);
     this.registerControllers();
     this.initializeCameraStates();
   }
   
-  private createInitialState(): CameraSystemState {
+  private createInitialState(config: CameraSystemConfig): CameraSystemState {
     return {
-      config: {
-        mode: 'thirdPerson',
-        distance: { x: 15, y: 8, z: 15 },
-        enableCollision: true,
-        smoothing: { position: 0.1, rotation: 0.1, fov: 0.1 },
-        fov: 75,
-        zoom: 1,
-      },
+      config: cloneCameraSystemConfig(config),
       lastUpdate: Date.now(),
     };
   }
@@ -74,8 +66,9 @@ export class CameraSystem extends BaseCameraSystem {
     this.controllers.set(controller.name, controller);
   }
   
-  override updateConfig(config: Partial<CameraConfig>): void {
-    Object.assign(this.state.config, config);
+  override updateConfig(config: Partial<CameraSystemConfig>): void {
+    super.updateConfig(config);
+    this.state.config = this.getConfig();
   }
   
   update(deltaTime: number): void {
@@ -117,11 +110,14 @@ export class CameraSystem extends BaseCameraSystem {
     if (this.cameraStates.has(name)) {
       this.currentCameraStateName = name;
       const newState = this.cameraStates.get(name)!;
-      this.state.config.mode = newState.type;
+      const nextConfig: Partial<CameraSystemConfig> = {
+        mode: newState.type,
+        fov: newState.fov,
+      };
       if (newState.config.distance) {
-        this.state.config.distance = newState.config.distance;
+        nextConfig.distance = newState.config.distance;
       }
-      this.state.config.fov = newState.fov;
+      this.updateConfig(nextConfig);
     }
   }
   

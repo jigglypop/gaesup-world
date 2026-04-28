@@ -21,8 +21,6 @@ export function NetworkMultiplayerPage() {
     characterUrl: CHARACTER_URL,
     rigidBodyRef: playerRef,
   });
-
-  // 연결되지 않은 경우 연결 폼 표시
   if (!multiplayer.isConnected) {
     return (
       <ConnectionForm

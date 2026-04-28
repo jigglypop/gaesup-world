@@ -35,6 +35,18 @@ const createCalcProps = (): CameraCalcProps => ({
   clock: new THREE.Clock(),
 });
 
+const addBlockingMesh = (scene: THREE.Scene) => {
+  const blocker = new THREE.Mesh(
+    new THREE.BoxGeometry(6, 6, 6),
+    new THREE.MeshBasicMaterial(),
+  );
+  blocker.position.set(-5, 4, -5);
+  blocker.geometry.computeBoundingSphere();
+  scene.add(blocker);
+  scene.updateMatrixWorld(true);
+  return blocker;
+};
+
 describe('CameraSystem', () => {
   let system: CameraSystem;
 
@@ -50,6 +62,23 @@ describe('CameraSystem', () => {
     it('기본 컨트롤러가 등록되어야 합니다', () => {
       const props = createCalcProps();
       expect(() => system.calculate(props)).not.toThrow();
+    });
+
+    it('생성자 설정을 첫 계산 프레임부터 사용해야 합니다', () => {
+      const topDownSystem = new CameraSystem({
+        ...createDefaultSystemConfig(),
+        mode: 'topDown',
+        distance: { x: 0, y: 30, z: 0 },
+      });
+      const props = createCalcProps();
+
+      topDownSystem.calculate(props);
+
+      expect(props.camera.position.x).toBeCloseTo(0);
+      expect(props.camera.position.z).toBeCloseTo(0);
+      expect(props.camera.position.y).toBeGreaterThan(0);
+
+      topDownSystem.destroy();
     });
 
     it('기본 카메라 상태 "default"가 존재해야 합니다', () => {
@@ -69,16 +98,21 @@ describe('CameraSystem', () => {
   describe('updateConfig', () => {
     it('내부 state.config을 업데이트해야 합니다', () => {
       system.updateConfig({ mode: 'firstPerson' });
-      // CameraSystem.updateConfig은 this.state.config에 반영
-      // calculate에서 mode 기반 컨트롤러 선택에 영향
       const props = createCalcProps();
       expect(() => system.calculate(props)).not.toThrow();
     });
 
-    it('BaseCameraSystem.getConfig은 base config를 반환합니다', () => {
+    it('getConfig가 updateConfig 이후 실제 계산 설정과 일치해야 합니다', () => {
+      system.updateConfig({
+        mode: 'topDown',
+        distance: { x: 0, y: 42, z: 0 },
+        fov: 55,
+      });
+
       const config = system.getConfig();
-      expect(config.enableCollision).toBe(true);
-      expect(config.distance).toEqual({ x: 15, y: 8, z: 15 });
+      expect(config.mode).toBe('topDown');
+      expect(config.distance).toEqual({ x: 0, y: 42, z: 0 });
+      expect(config.fov).toBe(55);
     });
   });
 
@@ -103,6 +137,73 @@ describe('CameraSystem', () => {
     it('유효한 모드로 계산 시 에러가 없어야 합니다', () => {
       const props = createCalcProps();
       expect(() => system.calculate(props)).not.toThrow();
+    });
+
+    it('smoothing.position 값에 따라 추종 속도가 달라져야 합니다', () => {
+      const slowSystem = new CameraSystem(createDefaultSystemConfig());
+      const fastSystem = new CameraSystem(createDefaultSystemConfig());
+      const slowProps = createCalcProps();
+      const fastProps = createCalcProps();
+
+      slowSystem.updateConfig({ smoothing: { position: 0.02, rotation: 0.1, fov: 0.1 } });
+      fastSystem.updateConfig({ smoothing: { position: 0.2, rotation: 0.1, fov: 0.1 } });
+
+      slowSystem.calculate(slowProps);
+      fastSystem.calculate(fastProps);
+
+      expect(fastProps.camera.position.length()).toBeGreaterThan(slowProps.camera.position.length());
+
+      slowSystem.destroy();
+      fastSystem.destroy();
+    });
+
+    it('enableCollision이 켜져 있으면 장애물 앞에서 카메라 목표 거리를 줄여야 합니다', () => {
+      const blockedProps = createCalcProps();
+      const clearProps = createCalcProps();
+      addBlockingMesh(blockedProps.scene);
+      addBlockingMesh(clearProps.scene);
+
+      system.updateConfig({ enableCollision: true, collisionMargin: 0.5 });
+      system.calculate(blockedProps);
+
+      system.updateConfig({ enableCollision: false });
+      system.calculate(clearProps);
+
+      expect(blockedProps.camera.position.length()).toBeLessThan(clearProps.camera.position.length());
+    });
+
+    it('topDown 모드에서도 오비트 pitch/yaw가 카메라 위치에 반영되어야 합니다', () => {
+      const props = createCalcProps();
+
+      system.updateConfig({
+        mode: 'topDown',
+        distance: { x: 0, y: 30, z: 0 },
+        enableCollision: false,
+        orbitPitch: 0.45,
+        orbitYaw: 0.7,
+      });
+      system.calculate(props);
+
+      expect(Math.abs(props.camera.position.x)).toBeGreaterThan(0);
+      expect(Math.abs(props.camera.position.z)).toBeGreaterThan(0);
+      expect(props.camera.position.y).toBeGreaterThan(0);
+    });
+
+    it('focus 진입 시 현재 카메라 위치보다 기본 컨트롤러 방향을 우선해야 합니다', () => {
+      const props = createCalcProps();
+      props.camera.position.copy(createMockActiveState().position);
+
+      system.updateConfig({
+        focus: true,
+        focusTarget: { x: 0, y: 1, z: 0 },
+        focusDistance: 10,
+        focusLerpSpeed: 10,
+        enableCollision: false,
+      });
+      system.calculate(props);
+
+      expect(props.camera.position.x).toBeLessThan(0);
+      expect(props.camera.position.z).toBeLessThan(0);
     });
 
     it('존재하지 않는 모드로 설정하면 계산이 스킵되어야 합니다', () => {
@@ -196,6 +297,30 @@ describe('CameraSystem', () => {
       system.calculate(createCalcProps());
       expect(mockUpdate).toHaveBeenCalled();
     });
+
+    it('상태 전환 시 getConfig도 함께 업데이트되어야 합니다', () => {
+      const state: CameraState = {
+        name: 'topdown-wide',
+        type: 'topDown',
+        position: new THREE.Vector3(),
+        rotation: new THREE.Euler(),
+        fov: 50,
+        config: { distance: { x: 0, y: 32, z: 0 } },
+        priority: 0,
+        tags: [],
+      };
+
+      system.addCameraState('topdown-wide', state);
+      system.switchCameraState('topdown-wide');
+
+      expect(system.getConfig()).toEqual(
+        expect.objectContaining({
+          mode: 'topDown',
+          distance: { x: 0, y: 32, z: 0 },
+          fov: 50,
+        }),
+      );
+    });
   });
 
   describe('setCameraTransitions', () => {
@@ -248,6 +373,17 @@ describe('CameraSystem', () => {
         expect.objectContaining({ from: 'thirdPerson', to: 'firstPerson' }),
       );
     });
+
+    it('CameraSystem.updateConfig으로 modeChange 이벤트를 발생시켜야 합니다', () => {
+      const callback = jest.fn();
+      system.emitter.on('modeChange', callback);
+
+      system.updateConfig({ mode: 'chase' });
+
+      expect(callback).toHaveBeenCalledWith(
+        expect.objectContaining({ from: 'thirdPerson', to: 'chase' }),
+      );
+    });
   });
 
   describe('lifecycle', () => {
@@ -278,6 +414,16 @@ describe('CameraSystem', () => {
       const b = system.getConfig();
       expect(a).not.toBe(b);
       expect(a).toEqual(b);
+    });
+
+    it('getConfig의 중첩 객체를 수정해도 내부 설정이 바뀌면 안 됩니다', () => {
+      const config = system.getConfig();
+      config.distance.x = 999;
+      config.smoothing.position = 999;
+
+      const nextConfig = system.getConfig();
+      expect(nextConfig.distance.x).toBe(15);
+      expect(nextConfig.smoothing.position).toBe(0.1);
     });
   });
 });

@@ -7,6 +7,11 @@ import { activeStateUtils } from '../utils/camera';
 export class TopDownController extends BaseController {
   name = 'topDown';
   private target = new THREE.Vector3();
+  private offset = new THREE.Vector3();
+  private yawQuaternion = new THREE.Quaternion();
+  private pitchQuaternion = new THREE.Quaternion();
+  private readonly xAxis = new THREE.Vector3(1, 0, 0);
+  private readonly yAxis = new THREE.Vector3(0, 1, 0);
   defaultConfig: Partial<CameraConfig> = {
     distance: { x: 0, y: 20, z: 0 },
     smoothing: { position: 0.1, rotation: 0.1, fov: 0.1 },
@@ -16,6 +21,19 @@ export class TopDownController extends BaseController {
   calculateTargetPosition(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
     const position = activeStateUtils.getPosition(props.activeState);
     const zoom = state.config.zoom || 1;
-    return this.target.set(position.x, position.y + state.config.distance.y * zoom, position.z);
+    const offset = this.offset.set(0, state.config.distance.y * zoom, 0);
+    const orbitPitch = state.config.orbitPitch ?? 0;
+    const orbitYaw = state.config.orbitYaw ?? 0;
+
+    if (orbitPitch !== 0) {
+      this.pitchQuaternion.setFromAxisAngle(this.xAxis, orbitPitch);
+      offset.applyQuaternion(this.pitchQuaternion);
+    }
+    if (orbitYaw !== 0) {
+      this.yawQuaternion.setFromAxisAngle(this.yAxis, orbitYaw);
+      offset.applyQuaternion(this.yawQuaternion);
+    }
+
+    return this.target.copy(position).add(offset);
   }
 } 

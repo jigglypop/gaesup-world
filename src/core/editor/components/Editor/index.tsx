@@ -1,9 +1,9 @@
 import React, { FC, useEffect, useRef } from 'react';
 
-import { EditorLayout } from '../EditorLayout';
-import { useGaesupStore } from '../../../stores/gaesupStore';
 import type { CameraOptionType } from '../../../camera/core/types';
+import { useGaesupStore } from '../../../stores/gaesupStore';
 import type { ModeState } from '../../../stores/slices/mode/types';
+import { EditorLayout } from '../EditorLayout';
 import '../../styles/theme.css';
 import { EditorProps } from './types';
 import './styles.css'

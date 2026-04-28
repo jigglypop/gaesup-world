@@ -38,7 +38,7 @@ export interface WorldContainerProps {
     skybox?: string;
   }>;
   cameraOption?: {
-    type: 'fixed' | 'chase' | 'firstPerson' | 'thirdPerson' | 'topDown' | 'isometric';
+    type: 'fixed' | 'chase' | 'firstPerson' | 'thirdPerson' | 'topDown' | 'isometric' | 'sideScroll';
     distance?: number;
     height?: number;
     xDistance?: number;
@@ -56,7 +56,7 @@ export interface WorldContainerProps {
   mode?: {
     type: 'character' | 'vehicle' | 'airplane';
     controller?: 'clicker' | 'keyboard' | 'gamepad';
-    control?: 'fixed' | 'chase' | 'firstPerson' | 'thirdPerson' | 'topDown' | 'isometric';
+    control?: 'fixed' | 'chase' | 'firstPerson' | 'thirdPerson' | 'topDown' | 'isometric' | 'sideScroll';
   };
   debug?: boolean;
   showGrid?: boolean;

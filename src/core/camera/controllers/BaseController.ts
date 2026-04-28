@@ -13,6 +13,7 @@ export abstract class BaseController implements ICameraController {
   // Scratch objects reused per controller instance (one instance per CameraSystem).
   private focusTarget = new THREE.Vector3();
   private focusDirection = new THREE.Vector3();
+  private focusBasePosition = new THREE.Vector3();
   private focusTargetPosition = new THREE.Vector3();
   private orbitRight = new THREE.Vector3();
   private orbitYawQuaternion = new THREE.Quaternion();
@@ -90,14 +91,7 @@ export abstract class BaseController implements ICameraController {
     const { camera, deltaTime, activeState } = props;
     if (!activeState) return;
     this.applyDefaults(state);
-    type FocusTarget = { x: number; y: number; z: number };
-    type CameraConfigWithFocus = CameraSystemConfig & {
-      focus?: boolean;
-      focusTarget?: FocusTarget;
-      focusDistance?: number;
-      focusLerpSpeed?: number;
-    };
-    const cameraOption = state.config as CameraConfigWithFocus;
+    const cameraOption = state.config;
     let targetPosition: THREE.Vector3;
     let lookAtTarget: THREE.Vector3;
     if (cameraOption.focus && cameraOption.focusTarget) {
@@ -109,8 +103,12 @@ export abstract class BaseController implements ICameraController {
       );
       lookAtTarget = focusTarget;
       const distance = cameraOption.focusDistance || 10;
+      const basePosition = this.focusBasePosition.copy(this.calculateTargetPosition(props, state));
       const direction = this.focusDirection;
-      direction.copy(camera.position).sub(focusTarget);
+      direction.copy(basePosition).sub(focusTarget);
+      if (direction.lengthSq() === 0) {
+        direction.copy(camera.position).sub(focusTarget);
+      }
       if (direction.lengthSq() === 0) {
         direction.set(1, 1, 1);
       }
@@ -121,19 +119,35 @@ export abstract class BaseController implements ICameraController {
       targetPosition = this.calculateTargetPosition(props, state);
       lookAtTarget = this.calculateLookAt(props, state);
     }
+    if (cameraOption.enableCollision) {
+      const collision = cameraUtils.improvedCollisionCheck(
+        lookAtTarget,
+        targetPosition,
+        props.scene,
+        cameraOption.collisionMargin ?? 0.5,
+        props.excludeObjects,
+      );
+      targetPosition = collision.position;
+    }
     const focusLerpSpeed = cameraOption.focusLerpSpeed || 10.0;
-    const smoothing = cameraOption.focus ? focusLerpSpeed : 10.0;
+    const positionSmoothing = cameraOption.focus
+      ? focusLerpSpeed
+      : cameraUtils.smoothingToSpeed(cameraOption.smoothing?.position);
+    const rotationSmoothing = cameraOption.focus
+      ? focusLerpSpeed * 0.8
+      : cameraUtils.smoothingToSpeed(cameraOption.smoothing?.rotation, positionSmoothing * 0.8);
     cameraUtils.preventCameraJitter(
       camera, 
       targetPosition, 
       lookAtTarget, 
-      smoothing, 
-      deltaTime
+      positionSmoothing, 
+      deltaTime,
+      rotationSmoothing
     );
     
     // FOV 업데이트
     if (state.config.fov && camera instanceof THREE.PerspectiveCamera) {
-      cameraUtils.updateFOV(camera, state.config.fov, state.config.smoothing?.fov);
+      cameraUtils.updateFOV(camera, state.config.fov, state.config.smoothing?.fov, deltaTime);
     }
   }
 } 

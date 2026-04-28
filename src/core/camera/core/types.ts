@@ -149,6 +149,7 @@ export interface CameraSystemConfig {
   };
   bounds?: CameraBounds; // optional로 변경
   enableCollision: boolean;
+  collisionMargin?: number;
   orbitYaw?: number;
   orbitPitch?: number;
   smoothing?: {
@@ -157,6 +158,10 @@ export interface CameraSystemConfig {
     fov: number;
   };
   fov?: number;
+  focus?: boolean;
+  focusTarget?: { x: number; y: number; z: number };
+  focusDistance?: number;
+  focusLerpSpeed?: number;
   zoom?: number;
   xDistance?: number;
   yDistance?: number;

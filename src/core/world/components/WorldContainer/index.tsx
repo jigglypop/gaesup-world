@@ -1,4 +1,4 @@
-import { Suspense, useEffect, ReactNode, useMemo } from 'react';
+import { Suspense, useEffect, useLayoutEffect, ReactNode, useMemo } from 'react';
 
 import { Camera } from '@/core/camera';
 import type { CameraOptionType } from '@/core/camera';
@@ -35,12 +35,6 @@ export function WorldConfigProvider(props: WorldContainerProps) {
   const setUrls = useGaesupStore((state) => state.setUrls);
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
 
-  useEffect(() => {
-    if (props.mode) {
-      setMode(props.mode);
-    }
-  }, [props.mode, setMode]);
-
   const urlUpdates = useMemo(() => {
     if (!props.urls) return null;
     const mapped: Partial<UrlsState> = {};
@@ -68,11 +62,9 @@ export function WorldConfigProvider(props: WorldContainerProps) {
     }
   }, [urlUpdates, setUrls]);
 
-  useEffect(() => {
+  const cameraOptionUpdates = useMemo(() => {
     const option = props.cameraOption;
-    if (!option) return;
-
-    setMode({ control: option.type });
+    if (!option) return null;
 
     const distance = option.distance ?? 15;
     const nextOption: Partial<CameraOptionType> = {};
@@ -113,8 +105,20 @@ export function WorldConfigProvider(props: WorldContainerProps) {
       };
     }
 
-    setCameraOption(nextOption);
-  }, [props.cameraOption, setCameraOption, setMode]);
+    return nextOption;
+  }, [props.cameraOption]);
+
+  useLayoutEffect(() => {
+    if (props.mode) {
+      setMode(props.mode);
+    }
+    if (props.cameraOption) {
+      setMode({ control: props.cameraOption.type });
+    }
+    if (cameraOptionUpdates) {
+      setCameraOption(cameraOptionUpdates);
+    }
+  }, [cameraOptionUpdates, props.cameraOption, props.mode, setCameraOption, setMode]);
 
   return props.children;
 }

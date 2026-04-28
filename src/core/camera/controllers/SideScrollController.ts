@@ -8,7 +8,7 @@ export class SideScrollController extends BaseController {
   name = 'sideScroll';
   private target = new THREE.Vector3();
   defaultConfig: Partial<CameraConfig> = {
-    distance: { x: 0, y: 5, z: 10 },
+    distance: { x: 0, y: 5, z: 18 },
     smoothing: { position: 0.08, rotation: 0.1, fov: 0.1 },
     enableCollision: false,
   };
@@ -18,7 +18,7 @@ export class SideScrollController extends BaseController {
     return this.target.set(
       position.x + state.config.distance.x,
       position.y + state.config.distance.y,
-      state.config.distance.z
+      position.z + state.config.distance.z
     );
   }
 } 

@@ -1,14 +1,15 @@
 export const CAMERA_PRESETS = {
   firstPerson: {
-    yDistance: 1.6,
+    yDistance: 2.0,
+    zDistance: 0.45,
     fov: 75,
-    smoothing: { position: 0.1, rotation: 0.1, fov: 0.05 },
+    smoothing: { position: 0.2, rotation: 0.15, fov: 0.05 },
   },
   thirdPerson: {
     xDistance: 15,
     yDistance: 8,
     zDistance: 15,
-    enableCollision: true,
+    enableCollision: false,
     smoothing: { position: 1, rotation: 0.1, fov: 0.1 },
     bounds: { minY: 2, maxY: 50 },
   },
@@ -26,9 +27,11 @@ export const CAMERA_PRESETS = {
     bounds: { minX: -100, maxX: 100, minZ: -100, maxZ: 100 },
   },
   sideScroll: {
-    xDistance: -20,
+    xDistance: 0,
     yDistance: 5,
-    zDistance: 0,
+    zDistance: 18,
+    fov: 65,
+    smoothing: { position: 0.12, rotation: 0.12, fov: 0.1 },
     bounds: { minX: -50, maxX: 50, minY: 2, maxY: 30 },
   },
 };

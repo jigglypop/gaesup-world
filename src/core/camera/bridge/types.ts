@@ -15,8 +15,13 @@ export interface CameraSystemConfig {
   distance: { x: number; y: number; z: number };
   smoothing: { position: number; rotation: number; fov: number };
   fov: number;
+  focus?: boolean;
+  focusTarget?: { x: number; y: number; z: number };
+  focusDistance?: number;
+  focusLerpSpeed?: number;
   zoom: number;
   enableCollision: boolean;
+  collisionMargin?: number;
   orbitYaw?: number;
   orbitPitch?: number;
   minDistance?: number;

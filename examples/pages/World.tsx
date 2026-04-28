@@ -84,9 +84,6 @@ getNPCScheduler().register({
 
 export { S3 };
 
-// Kept for documentation: this is the "rich" camera option shape used
-// elsewhere in the codebase. The simpler shape consumed by `<GaesupWorld>`
-// is provided inline at the call site.
 export const RICH_CAMERA_OPTION: CameraOptionType = {
   xDistance: -7, yDistance: 10, zDistance: -13,
   offset: new THREE.Vector3(0, 0, 0),
@@ -691,8 +688,9 @@ export const WorldPage = ({ showEditor = false, showHud = true, children }: Worl
     <>
       <GaesupWorld
         urls={{ characterUrl: DEFAULT_CHARACTER_URL, vehicleUrl: VEHICLE_URL, airplaneUrl: AIRPLANE_URL }}
+        mode={{ type: 'character', controller: 'keyboard', control: 'thirdPerson' }}
         debug={EXAMPLE_CONFIG.debug}
-        cameraOption={{ type: 'thirdPerson', distance: 13, height: 10, fov: 75, smoothness: 0.25 }}
+        cameraOption={{ type: 'thirdPerson', distance: 13, height: 10, fov: 75, smoothness: 0.25, enableCollision: false }}
       >
         <Canvas
           shadows

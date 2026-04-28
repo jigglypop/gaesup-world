@@ -30,21 +30,44 @@ let cachedCollisionMeshes: THREE.Mesh[] = [];
 let cachedCollisionScene: THREE.Scene | null = null;
 let cachedCollisionVersion = -1;
 
+function collectCollisionMeshes(scene: THREE.Scene): THREE.Mesh[] {
+  const meshes: THREE.Mesh[] = [];
+  scene.traverse((object) => {
+    if (object instanceof THREE.Mesh && !object.userData['intangible'] && object.geometry?.boundingSphere) {
+      meshes.push(object);
+    }
+  });
+  return meshes;
+}
+
 function getCollisionMeshes(scene: THREE.Scene): THREE.Mesh[] {
+  const version = (scene as SceneWithFrameId)._frameId;
+  if (version === undefined) {
+    return collectCollisionMeshes(scene);
+  }
+
   // Rebuild every 60 frames (~1s at 60fps) or when scene reference changes.
-  const version = (scene as SceneWithFrameId)._frameId ?? 0;
   if (scene === cachedCollisionScene && version - cachedCollisionVersion < 60) {
     return cachedCollisionMeshes;
   }
   cachedCollisionScene = scene;
   cachedCollisionVersion = version;
-  cachedCollisionMeshes = [];
-  scene.traverse((object) => {
-    if (object instanceof THREE.Mesh && !object.userData['intangible'] && object.geometry?.boundingSphere) {
-      cachedCollisionMeshes.push(object);
-    }
-  });
+  cachedCollisionMeshes = collectCollisionMeshes(scene);
   return cachedCollisionMeshes;
+}
+
+function isObjectExcluded(object: THREE.Object3D, excludedObjects?: THREE.Object3D[]): boolean {
+  if (!excludedObjects || excludedObjects.length === 0) return false;
+
+  let current: THREE.Object3D | null = object;
+  while (current) {
+    for (let i = 0, len = excludedObjects.length; i < len; i++) {
+      if (current === excludedObjects[i]) return true;
+    }
+    current = current.parent;
+  }
+
+  return false;
 }
 
 export function invalidateCollisionCache(): void {
@@ -62,6 +85,16 @@ export const cameraUtils = {
 
   clampValue: (value: number, min: number, max: number): number => {
     return Math.max(min, Math.min(max, value));
+  },
+
+  smoothingToSpeed: (value: number | undefined, fallback: number = CAMERA_CONSTANTS.FRAME_RATE_LERP_SPEED): number => {
+    if (value === undefined) return fallback;
+    if (!Number.isFinite(value)) return fallback;
+    if (value <= 0) return 0;
+    if (value >= 1) return value;
+
+    const clamped = cameraUtils.clampValue(value, 0.001, 0.999);
+    return -Math.log(1 - clamped) * 60;
   },
 
 
@@ -103,11 +136,12 @@ export const cameraUtils = {
     camera: THREE.Camera,
     targetPosition: THREE.Vector3,
     targetLookAt: THREE.Vector3,
-    speed: number,
+    positionSpeed: number,
     deltaTime: number,
+    rotationSpeed: number = positionSpeed * 0.8,
   ): void => {
-    cameraUtils.frameRateIndependentLerpVector3(camera.position, targetPosition, speed, deltaTime);
-    cameraUtils.smoothLookAt(camera, targetLookAt, speed * 0.8, deltaTime);
+    cameraUtils.frameRateIndependentLerpVector3(camera.position, targetPosition, positionSpeed, deltaTime);
+    cameraUtils.smoothLookAt(camera, targetLookAt, rotationSpeed, deltaTime);
   },
 
   improvedCollisionCheck: (
@@ -115,6 +149,7 @@ export const cameraUtils = {
     to: THREE.Vector3,
     scene: THREE.Scene,
     radius: number = 0.5,
+    excludedObjects?: THREE.Object3D[],
   ): CollisionCheckResult => {
     collisionDirection.subVectors(to, from);
     const distance = collisionDirection.length();
@@ -132,6 +167,7 @@ export const cameraUtils = {
     for (let i = 0, len = meshes.length; i < len; i++) {
       const mesh = meshes[i];
       if (!mesh) continue;
+      if (isObjectExcluded(mesh, excludedObjects)) continue;
       collisionIntersections.length = 0;
       collisionRaycaster.intersectObject(mesh, false, collisionIntersections);
       const hit = collisionIntersections[0];
@@ -211,11 +247,26 @@ export const cameraUtils = {
     return Math.atan(y / x) + (y >= 0 ? Math.PI : -Math.PI);
   },
 
-  updateFOV: (camera: THREE.PerspectiveCamera, targetFOV: number, speed?: number): void => {
+  updateFOV: (
+    camera: THREE.PerspectiveCamera,
+    targetFOV: number,
+    speed?: number,
+    deltaTime?: number,
+  ): void => {
+    if (!speed || speed <= 0) {
+      if (Math.abs(targetFOV - camera.fov) < 1e-4) return;
+      camera.fov = targetFOV;
+      camera.updateProjectionMatrix();
+      return;
+    }
+
+    const factor = deltaTime === undefined
+      ? speed
+      : 1 - Math.exp(-cameraUtils.smoothingToSpeed(speed) * deltaTime);
     const nextFov =
-      speed && speed > 0
-        ? THREE.MathUtils.lerp(camera.fov, targetFOV, speed)
-        : targetFOV;
+      factor >= 1
+        ? targetFOV
+        : THREE.MathUtils.lerp(camera.fov, targetFOV, factor);
 
     // Updating the projection matrix is relatively expensive; skip when unchanged.
     if (Math.abs(nextFov - camera.fov) < 1e-4) return;

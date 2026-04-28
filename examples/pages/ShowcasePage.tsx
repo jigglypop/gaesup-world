@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useLayoutEffect } from 'react';
 
 import { WorldPage } from './World';
-import { useBuildingStore } from '../../src';
+import { useBuildingStore, useGaesupStore } from '../../src';
+import { CAMERA_PRESETS } from '../components/info/constants';
 
 const SAMPLE_BLOCK_SIZE = 4;
 const SAMPLE_BLOCKS = [
@@ -46,7 +47,10 @@ function seedSampleBlocks() {
 }
 
 export function ShowcasePage() {
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const store = useGaesupStore.getState();
+    store.setMode({ type: 'character', controller: 'keyboard', control: 'thirdPerson' });
+    store.setCameraOption(CAMERA_PRESETS.thirdPerson);
     seedSampleBlocks();
   }, []);
 

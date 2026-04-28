@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useCallback, useRef, useLayoutEffect } from 'react';
 
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -69,6 +69,7 @@ export function useCamera() {
     fov: cameraOption?.fov ?? 75,
     zoom: cameraOption?.zoom ?? 1,
     enableCollision: cameraOption?.enableCollision ?? true,
+    ...(cameraOption?.collisionMargin !== undefined ? { collisionMargin: cameraOption.collisionMargin } : {}),
     orbitYaw: orbitYawRef.current,
     orbitPitch: orbitPitchRef.current,
     ...(cameraOption?.maxDistance !== undefined ? { maxDistance: cameraOption.maxDistance } : {}),
@@ -104,6 +105,7 @@ export function useCamera() {
       fov: opt?.fov ?? 75,
       zoom: opt?.zoom ?? 1,
       enableCollision: opt?.enableCollision ?? true,
+      ...(opt?.collisionMargin !== undefined ? { collisionMargin: opt.collisionMargin } : {}),
       orbitYaw: orbitYawRef.current,
       orbitPitch: orbitPitchRef.current,
       ...(opt?.maxDistance !== undefined ? { maxDistance: opt.maxDistance } : {}),
@@ -242,12 +244,12 @@ export function useCamera() {
     return undefined;
   }, [cameraOption?.enableFocus, isInEditMode, setCameraOption]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     InteractionSystem.getInstance().updateMouse({ isLookAround: false });
     syncCameraConfig();
   }, [syncCameraConfig]);
   
-  useEffect(() => {
+  useLayoutEffect(() => {
     syncCameraConfig();
   }, [cameraOption, mode, syncCameraConfig]);
   

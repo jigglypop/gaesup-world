@@ -1,76 +1,209 @@
 .app-navigation {
   position: fixed;
   top: 12px;
-  left: 12px;
+  left: 0;
   bottom: 12px;
   z-index: 130;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  width: 104px;
-  padding: 10px;
-  background: rgba(18, 20, 28, 0.58);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 18px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  gap: 6px;
+  width: 132px;
+  padding: 8px;
+  background: rgba(13, 16, 24, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 0;
+  border-radius: 0 16px 16px 0;
+  box-shadow: 10px 12px 30px rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  transform: translateX(calc(-100% + 38px));
+  transition:
+    transform 0.24s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.app-navigation::before {
+  content: "MENU";
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  color: rgba(243, 244, 248, 0.72);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  writing-mode: vertical-rl;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.app-navigation:hover,
+.app-navigation:focus-within {
+  background: rgba(13, 16, 24, 0.78);
+  box-shadow: 12px 16px 40px rgba(0, 0, 0, 0.32);
+  transform: translateX(0);
+}
+
+.app-navigation:hover::before,
+.app-navigation:focus-within::before {
+  opacity: 0;
 }
 
 .app-nav-brand {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   color: #f3f4f8;
-  padding: 8px 6px 12px;
-  font-size: 12px;
+  padding: 7px 5px 10px;
+  font-size: 11px;
   font-weight: 800;
   text-decoration: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-right: 30px;
+  margin-bottom: 2px;
+  transition: margin-right 0.24s ease;
+}
+
+.app-navigation:hover .app-nav-brand,
+.app-navigation:focus-within .app-nav-brand {
+  margin-right: 0;
 }
 
 .app-nav-mark {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
   display: grid;
   place-items: center;
   background: #7bd3a7;
   color: #122018;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .app-nav-button {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  appearance: none;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #f3f4f8;
-  padding: 9px 8px;
-  font-size: 12px;
+  padding: 7px 8px;
+  font: inherit;
+  font-size: 11px;
   font-weight: 600;
+  line-height: 1.2;
   text-decoration: none;
-  border-radius: 10px;
+  border-radius: 9px;
   cursor: pointer;
-  transition: all 0.2s ease;
   text-align: center;
+  margin-right: 30px;
+  transition:
+    margin-right 0.24s ease,
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.app-navigation:hover .app-nav-button,
+.app-navigation:focus-within .app-nav-button {
+  margin-right: 0;
 }
 
 .app-nav-button:hover,
 .app-nav-button.active {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(123, 211, 167, 0.16);
+  border-color: rgba(123, 211, 167, 0.34);
   color: #ffffff;
+  transform: translateX(1px);
 }
 
 .app-nav-user {
   margin-top: auto;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #f3f4f8;
-  padding: 8px;
-  font-size: 11px;
+  padding: 7px 8px;
+  font-size: 10px;
   font-weight: 600;
-  border-radius: 10px;
+  border-radius: 9px;
   text-align: center;
+  margin-right: 30px;
+  transition: margin-right 0.24s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-navigation:hover .app-nav-user,
+.app-navigation:focus-within .app-nav-user {
+  margin-right: 0;
+}
+
+@media (max-width: 768px) {
+  .app-navigation {
+    top: auto;
+    right: 8px;
+    bottom: 10px;
+    left: 8px;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    width: auto;
+    max-width: calc(100vw - 16px);
+    min-height: 50px;
+    padding: 7px;
+    background: rgba(13, 16, 24, 0.82);
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.3);
+    transform: none;
+    scrollbar-width: none;
+  }
+
+  .app-navigation::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-navigation::before {
+    content: none;
+  }
+
+  .app-nav-brand,
+  .app-nav-button,
+  .app-nav-user {
+    flex: 0 0 auto;
+    margin-right: 0;
+  }
+
+  .app-nav-brand {
+    flex-direction: row;
+    min-width: 42px;
+    padding: 5px 7px;
+    border-bottom: 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 0;
+  }
+
+  .app-nav-brand span:last-child {
+    display: none;
+  }
+
+  .app-nav-mark {
+    width: 28px;
+    height: 28px;
+  }
+
+  .app-nav-button {
+    min-height: 34px;
+    padding: 8px 10px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .app-nav-user {
+    margin-top: 0;
+    max-width: 96px;
+  }
 }

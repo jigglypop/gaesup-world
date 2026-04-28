@@ -20,17 +20,11 @@ export const Navigation = () => {
         <span className="app-nav-mark">G</span>
         <span>Gaesup</span>
       </NavLink>
-      <NavLink to="/world" className="app-nav-button">
-        World
-      </NavLink>
       <NavLink to="/edit" className="app-nav-button">
-        Editor
-      </NavLink>
-      <NavLink to="/building" className="app-nav-button">
-        Building
+        에디터
       </NavLink>
       <NavLink to="/blueprints" className="app-nav-button">
-        Blueprint
+        블루프린트
       </NavLink>
       <NavLink to="/network" className="app-nav-button">
         Network

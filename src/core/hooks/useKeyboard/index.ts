@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { useGaesupStore } from '@stores/gaesupStore';
 
-import type { CameraOptionType } from '../../camera/core/types';
 import { useBuildingStore } from '../../building/stores/buildingStore';
+import type { CameraOptionType } from '../../camera/core/types';
 import { InteractionBridge } from '../../interactions/bridge/InteractionBridge';
 
 const KEY_MAPPING: Record<string, string> = {
