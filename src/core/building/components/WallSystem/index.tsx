@@ -12,6 +12,7 @@ export function WallSystem({
   wallGroup, 
   meshes, 
   isEditMode = false,
+  selectedWallId = null,
   onWallClick,
 }: WallSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
@@ -114,18 +115,27 @@ export function WallSystem({
         </RigidBody>
       )}
       
-      {isEditMode && wallGroup.walls.map((wall) => (
-        <group
-          key={wall.id}
-          position={[wall.position.x, wall.position.y + height + 0.5, wall.position.z]}
-          onClick={() => onWallClick?.(wall.id)}
-        >
-          <mesh>
-            <boxGeometry args={[0.5, 0.5, 0.5]} />
-            <meshStandardMaterial color="#ff0000" />
-          </mesh>
-        </group>
-      ))}
+      {isEditMode && wallGroup.walls.map((wall) => {
+        const selected = wall.id === selectedWallId;
+        return (
+          <group
+            key={wall.id}
+            position={[wall.position.x, wall.position.y + height + 0.5, wall.position.z]}
+            onClick={() => onWallClick?.(wall.id)}
+          >
+            <mesh scale={selected ? 1.28 : 1}>
+              <sphereGeometry args={[0.22, 16, 16]} />
+              <meshStandardMaterial
+                color={selected ? '#bae6fd' : '#7dd3fc'}
+                emissive={selected ? '#60a5fa' : '#2f8dbd'}
+                emissiveIntensity={selected ? 0.5 : 0.22}
+                transparent
+                opacity={selected ? 0.94 : 0.78}
+              />
+            </mesh>
+          </group>
+        );
+      })}
       
       <instancedMesh
         ref={instancedRef}

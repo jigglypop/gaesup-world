@@ -108,6 +108,9 @@ export const BuildingSystem = React.memo(function BuildingSystem({
   const tileGroups = useBuildingStore((s) => s.tileGroups);
   const blocks = useBuildingStore((s) => s.blocks);
   const editMode = useBuildingStore((s) => s.editMode);
+  const selectedWallId = useBuildingStore((s) => s.selectedWallId);
+  const selectedTileId = useBuildingStore((s) => s.selectedTileId);
+  const selectedBlockId = useBuildingStore((s) => s.selectedBlockId);
   const showGrid = useBuildingStore((s) => s.showGrid);
   const gridSize = useBuildingStore((s) => s.gridSize);
   const showSnow = useBuildingStore((s) => s.showSnow);
@@ -213,6 +216,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
             wallGroup={wallGroup}
             meshes={meshes}
             isEditMode={editMode === 'wall'}
+            selectedWallId={selectedWallId}
             {...(onWallClick ? { onWallClick } : {})}
             {...(onWallDelete ? { onWallDelete } : {})}
           />
@@ -224,6 +228,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
             tileGroup={tileGroup}
             meshes={meshes}
             isEditMode={editMode === 'tile'}
+            selectedTileId={selectedTileId}
             {...(onTileClick ? { onTileClick } : {})}
             {...(onTileDelete ? { onTileDelete } : {})}
           />
@@ -234,6 +239,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
             blocks={visibleBlocks}
             meshes={meshes}
             isEditMode={editMode === 'block'}
+            selectedBlockId={selectedBlockId}
             {...(onBlockClick || onBlockDelete ? { onBlockClick: onBlockClick ?? onBlockDelete } : {})}
           />
         )}

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 import { vec3 } from '@react-three/rapier';
 
+import { useBuildingStore } from '../../building/stores/buildingStore';
 import { useGenericRefs } from '@hooks/useGenericRefs';
 import { useKeyboard } from '@hooks/useKeyboard';
 
@@ -16,10 +17,12 @@ export function EntityController({ props, children }: EntityControllerProps) {
   const { gameStates } = useStateSystem();
   const rideable = useGaesupStore((state) => state.rideable);
   const urls = useGaesupStore((state) => state.urls);
+  const isInBuildingEditMode = useBuildingStore((state) => state.isInEditMode());
   const refs = useGenericRefs();
   
   // Initialize keyboard event listeners
   useKeyboard();
+  if (isInBuildingEditMode) return null;
   if (!mode || !gameStates || !rideable || !urls) return null;
   // Avoid rendering PhysicsEntity until the required model URL exists.
   if (mode.type === 'character' && !urls.characterUrl) return null;

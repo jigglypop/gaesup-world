@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useGaesupStore } from '@stores/gaesupStore';
 
 import type { CameraOptionType } from '../../camera/core/types';
+import { useBuildingStore } from '../../building/stores/buildingStore';
 import { InteractionBridge } from '../../interactions/bridge/InteractionBridge';
 
 const KEY_MAPPING: Record<string, string> = {
@@ -28,6 +29,7 @@ export const useKeyboard = (
   void cameraOption;
   const isAutomationRunning = useGaesupStore((state) => state.automation?.queue.isRunning);
   const stopAutomation = useGaesupStore((state) => state.stopAutomation);
+  const isInBuildingEditMode = useBuildingStore((state) => state.isInEditMode());
   const bridgeRef = useRef<InteractionBridge | null>(null);
   
   if (!bridgeRef.current) {
@@ -82,9 +84,21 @@ export const useKeyboard = (
   }, []);
 
   useEffect(() => {
+    if (isInBuildingEditMode) {
+      clearAllKeys();
+    }
+  }, [clearAllKeys, isInBuildingEditMode]);
+
+  useEffect(() => {
     const handleKey = (event: KeyboardEvent, isDown: boolean) => {
       const mappedKey = keyMapping[event.code];
       if (!mappedKey) return;
+
+      if (isInBuildingEditMode) {
+        if (isDown) event.preventDefault();
+        clearAllKeys();
+        return;
+      }
 
       const wasPressed = pressedKeys.current.has(event.code);
 
@@ -143,6 +157,7 @@ export const useKeyboard = (
     stopAutomation,
     isAutomationRunning,
     clearAllKeys,
+    isInBuildingEditMode,
   ]);
 
   return {

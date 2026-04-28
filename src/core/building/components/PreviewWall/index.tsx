@@ -18,7 +18,7 @@ export function PreviewWall() {
   }
   
   const isOccupied = checkWallPosition(hoverPosition, currentWallRotation);
-  const color = isOccupied ? '#ff0000' : '#00ff00';
+  const color = isOccupied ? '#f3b95f' : '#7dd3fc';
   
   return (
     <group position={[hoverPosition.x, hoverPosition.y + height / 2, hoverPosition.z]} rotation={[0, currentWallRotation, 0]}>
@@ -27,9 +27,9 @@ export function PreviewWall() {
         <meshStandardMaterial
           color={color}
           transparent
-          opacity={0.5}
+          opacity={isOccupied ? 0.34 : 0.42}
           emissive={color}
-          emissiveIntensity={0.3}
+          emissiveIntensity={isOccupied ? 0.08 : 0.14}
         />
       </mesh>
     </group>

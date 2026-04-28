@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { GaesupAdmin } from '../src/admin-entry';
 import { Navigation } from './components/nav/Navigation';
@@ -16,6 +16,7 @@ function AppLayout() {
     <>
       <Navigation />
       <Routes>
+        <Route path="/index.html" element={<Navigate to="/" replace />} />
         <Route path="/" element={<ShowcasePage />} />
         <Route path="/world" element={<WorldPage />} />
         <Route path="/edit" element={<EditPage />} />

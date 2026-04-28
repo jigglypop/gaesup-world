@@ -38,16 +38,25 @@ export interface WorldContainerProps {
     skybox?: string;
   }>;
   cameraOption?: {
-    type: 'fixed' | 'chase' | 'firstPerson' | 'thirdPerson' | 'topDown';
+    type: 'fixed' | 'chase' | 'firstPerson' | 'thirdPerson' | 'topDown' | 'isometric';
     distance?: number;
     height?: number;
+    xDistance?: number;
+    yDistance?: number;
+    zDistance?: number;
     fov?: number;
     smoothness?: number;
+    zoom?: number;
+    enableZoom?: boolean;
+    minZoom?: number;
+    maxZoom?: number;
+    zoomSpeed?: number;
+    enableCollision?: boolean;
   };
   mode?: {
     type: 'character' | 'vehicle' | 'airplane';
     controller?: 'clicker' | 'keyboard' | 'gamepad';
-    control?: 'fixed' | 'chase' | 'firstPerson' | 'thirdPerson' | 'topDown';
+    control?: 'fixed' | 'chase' | 'firstPerson' | 'thirdPerson' | 'topDown' | 'isometric';
   };
   debug?: boolean;
   showGrid?: boolean;

@@ -72,6 +72,12 @@ interface BuildingStore extends BuildingSystemState {
 
   selectedPlacedObjectType: PlacedObjectType | 'none';
   setSelectedPlacedObjectType: (type: PlacedObjectType | 'none') => void;
+  selectedWallId: string | null;
+  selectedTileId: string | null;
+  selectedBlockId: string | null;
+  setSelectedWallId: (id: string | null) => void;
+  setSelectedTileId: (id: string | null) => void;
+  setSelectedBlockId: (id: string | null) => void;
 
   currentFlagWidth: number;
   currentFlagHeight: number;
@@ -196,6 +202,9 @@ export const useBuildingStore = create<BuildingStore>()(
     objects: [],
     selectedTileObjectType: 'none',
     selectedPlacedObjectType: 'none',
+    selectedWallId: null,
+    selectedTileId: null,
+    selectedBlockId: null,
     currentFlagWidth: 1.5,
     currentFlagHeight: 1.0,
     currentFlagImageUrl: '',
@@ -455,7 +464,6 @@ export const useBuildingStore = create<BuildingStore>()(
             const isGrass = gx >= 2 && gz === -2;
             const isSnowfield = gx >= 2 && gz === -3;
             const isSand = gx <= -2 && gz >= 2;
-            const isWater = gx === -3 && (gz === -1 || gz === 0);
             const isFire = gx === 3 && gz === 2;
             const isRoundSample = gx === -3 && gz === 2;
             const isRampSample = gx === -2 && gz === 2;
@@ -489,8 +497,6 @@ export const useBuildingStore = create<BuildingStore>()(
               addTileToState(group, { ...base, objectType: 'snowfield' });
             } else if (isSand) {
               addTileToState(group, { ...base, objectType: 'sand' });
-            } else if (isWater) {
-              addTileToState(group, { ...base, objectType: 'water' });
             } else {
               addTileToState(group, base);
             }
@@ -626,6 +632,7 @@ export const useBuildingStore = create<BuildingStore>()(
         unindexId(state.wallIndex, state.wallCells, wallId);
         state.wallMeta.delete(wallId);
         group.walls = group.walls.filter(w => w.id !== wallId);
+        if (state.selectedWallId === wallId) state.selectedWallId = null;
       }
     }),
 
@@ -729,6 +736,7 @@ export const useBuildingStore = create<BuildingStore>()(
         unindexId(state.tileIndex, state.tileCells, tileId);
         state.tileMeta.delete(tileId);
         group.tiles = group.tiles.filter(t => t.id !== tileId);
+        if (state.selectedTileId === tileId) state.selectedTileId = null;
       }
     }),
 
@@ -753,6 +761,7 @@ export const useBuildingStore = create<BuildingStore>()(
 
     removeBlock: (blockId) => set((state) => {
       state.blocks = state.blocks.filter((block) => block.id !== blockId);
+      if (state.selectedBlockId === blockId) state.selectedBlockId = null;
     }),
 
     setEditMode: (mode) => set((state) => {
@@ -1029,6 +1038,27 @@ export const useBuildingStore = create<BuildingStore>()(
 
     setSelectedPlacedObjectType: (type) => set((state) => {
       state.selectedPlacedObjectType = type;
+    }),
+    setSelectedWallId: (id) => set((state) => {
+      state.selectedWallId = id;
+      if (id) {
+        state.selectedTileId = null;
+        state.selectedBlockId = null;
+      }
+    }),
+    setSelectedTileId: (id) => set((state) => {
+      state.selectedTileId = id;
+      if (id) {
+        state.selectedWallId = null;
+        state.selectedBlockId = null;
+      }
+    }),
+    setSelectedBlockId: (id) => set((state) => {
+      state.selectedBlockId = id;
+      if (id) {
+        state.selectedWallId = null;
+        state.selectedTileId = null;
+      }
     }),
 
     addObject: (obj) => set((state) => {

@@ -64,7 +64,9 @@ export function PreviewTile() {
     editMode === 'tile'
       ? checkTilePosition({ x: hoverPosition.x, y: placementY, z: hoverPosition.z })
       : false;
-  const color = isOccupied ? '#ff0000' : '#00ff00';
+  const color = isOccupied ? '#f3b95f' : '#7dd3fc';
+  const previewOpacity = isOccupied ? 0.3 : 0.38;
+  const previewEmissive = isOccupied ? 0.08 : 0.12;
 
   return (
     <group position={[hoverPosition.x, placementY, hoverPosition.z]} rotation={[0, editMode === 'object' ? currentObjectRotation : currentTileRotation, 0]}>
@@ -72,7 +74,7 @@ export function PreviewTile() {
         currentTileShape === 'round' ? (
           <mesh position={[0, topHeight > 0.02 ? topHeight / 2 : -0.02, 0]}>
             <cylinderGeometry args={[tileSize / 2, tileSize / 2, topHeight > 0.02 ? topHeight : 0.04, 24]} />
-            <meshStandardMaterial color={color} transparent opacity={0.45} emissive={color} emissiveIntensity={0.25} />
+            <meshStandardMaterial color={color} transparent opacity={previewOpacity} emissive={color} emissiveIntensity={previewEmissive} />
           </mesh>
         ) : currentTileShape === 'stairs' ? (
           <>{Array.from({ length: 4 }, (_, index) => {
@@ -84,18 +86,18 @@ export function PreviewTile() {
             return (
               <mesh key={index} position={[0, centerY, localZ]}>
                 <boxGeometry args={[tileSize, stepHeight * (index + 1), stepDepth]} />
-                <meshStandardMaterial color={color} transparent opacity={0.45} emissive={color} emissiveIntensity={0.25} />
+                <meshStandardMaterial color={color} transparent opacity={previewOpacity} emissive={color} emissiveIntensity={previewEmissive} />
               </mesh>
             );
           })}</>
         ) : currentTileShape === 'ramp' ? (
           <mesh position={[0, 0, 0]} scale={[tileSize, Math.max(TILE_CONSTANTS.HEIGHT_STEP, topHeight), tileSize]} geometry={rampGeometry}>
-            <meshStandardMaterial color={color} transparent opacity={0.45} emissive={color} emissiveIntensity={0.25} />
+            <meshStandardMaterial color={color} transparent opacity={previewOpacity} emissive={color} emissiveIntensity={previewEmissive} />
           </mesh>
         ) : (
           <mesh position={[0, previewHeight / 2, 0]}>
             <boxGeometry args={[tileSize, previewHeight, tileSize]} />
-            <meshStandardMaterial color={color} transparent opacity={0.45} emissive={color} emissiveIntensity={0.3} />
+            <meshStandardMaterial color={color} transparent opacity={previewOpacity} emissive={color} emissiveIntensity={previewEmissive} />
           </mesh>
         )
       )}
@@ -103,7 +105,7 @@ export function PreviewTile() {
       {editMode === 'object' && (
         <mesh position={[0, 0.06, 0]}>
           <cylinderGeometry args={[0.35, 0.35, 0.12, 16]} />
-          <meshStandardMaterial color="#00ff88" transparent opacity={0.5} emissive="#00ff88" emissiveIntensity={0.3} />
+          <meshStandardMaterial color="#7dd3fc" transparent opacity={0.38} emissive="#2f8dbd" emissiveIntensity={0.12} />
         </mesh>
       )}
 

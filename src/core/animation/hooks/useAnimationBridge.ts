@@ -9,8 +9,14 @@ import { AnimationCommand } from '../bridge/types';
 import { AnimationType } from '../core/types';
 import type { EntityAnimationStates } from '../core/types';
 
+let fallbackAnimationBridge: AnimationBridge | null = null;
+
 export function getGlobalAnimationBridge(): AnimationBridge {
-  return BridgeFactory.getOrCreate<AnimationBridge>('animation')!;
+  const bridge = BridgeFactory.getOrCreate<AnimationBridge>('animation');
+  if (bridge) return bridge;
+
+  fallbackAnimationBridge ??= new AnimationBridge();
+  return fallbackAnimationBridge;
 }
 
 export function useAnimationBridge() {
@@ -19,6 +25,7 @@ export function useAnimationBridge() {
   const animationState = useGaesupStore((state) => state.animationState);
   const setAnimation = useGaesupStore((state) => state.setAnimation);
   const bridge = getGlobalAnimationBridge();
+  bridgeRef.current = bridge;
 
   useEffect(() => {
     bridgeRef.current = bridge;
@@ -75,7 +82,7 @@ export function useAnimationBridge() {
   const currentType = (mode?.type as AnimationType) || 'character';
   
   return {
-    bridge: bridgeRef.current,
+    bridge,
     playAnimation,
     stopAnimation,
     executeCommand,

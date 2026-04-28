@@ -50,6 +50,7 @@ export function BlockSystem({
   blocks,
   meshes,
   isEditMode = false,
+  selectedBlockId = null,
   onBlockClick,
 }: BlockSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
@@ -58,11 +59,22 @@ export function BlockSystem({
   const editMaterial = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: '#ff3344',
+        color: '#60a5fa',
         transparent: true,
-        opacity: 0.58,
-        emissive: new THREE.Color('#ff3344'),
-        emissiveIntensity: 0.18,
+        opacity: 0.34,
+        emissive: new THREE.Color('#2563eb'),
+        emissiveIntensity: 0.08,
+      }),
+    [],
+  );
+  const selectedEditMaterial = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: '#bae6fd',
+        transparent: true,
+        opacity: 0.48,
+        emissive: new THREE.Color('#60a5fa'),
+        emissiveIntensity: 0.2,
       }),
     [],
   );
@@ -89,8 +101,9 @@ export function BlockSystem({
       materialManagerRef.current.dispose();
       geometry.dispose();
       editMaterial.dispose();
+      selectedEditMaterial.dispose();
     };
-  }, [editMaterial, geometry]);
+  }, [editMaterial, geometry, selectedEditMaterial]);
 
   return (
     <>
@@ -124,6 +137,7 @@ export function BlockSystem({
 
       {isEditMode && blocks.map((block) => {
         const transform = getBlockTransform(block);
+        const selected = block.id === selectedBlockId;
         return (
           <mesh
             key={`${block.id}-edit`}
@@ -135,7 +149,7 @@ export function BlockSystem({
               transform.scale[2] * 0.82,
             ]}
             geometry={geometry}
-            material={editMaterial}
+            material={selected ? selectedEditMaterial : editMaterial}
             onClick={() => onBlockClick?.(block.id)}
           />
         );

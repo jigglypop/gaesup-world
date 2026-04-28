@@ -9,11 +9,11 @@ import { WorldPageProps } from './types';
 import {
   BugSpot,
   BuildingController, CatalogUI, Clicker, CraftingUI, CropPlot, DialogBox, Editor,
-  FishSpot, GaesupController, GaesupWorld, GrassDriver,
+  GaesupController, GaesupWorld, GrassDriver,
   GaesupWorldContent, GroundClicker, HotbarUI, HousePlot, InteractionPrompt,
   InteractionTracker, InventoryUI,
   MailboxUI, MiniMap, QuestLogUI, SandBatch, ShopUI, Snow, SnowfieldBatch,
-  ToastHost, ToolUseController, Water,
+  ToastHost, ToolUseController,
   WeatherEffect,
   CharacterCreator, Footprints, HouseDoor, SakuraBatch, SceneRoot,
   RoomPortal, RoomRoot, RoomVisibilityDriver,
@@ -152,12 +152,6 @@ const NPCS: Array<{
   { id: 'tommy', name: '토미', pos: [0, 0, -8], color: '#f5d199', hatColor: '#a85a5a', dialogTreeId: 'npc.shopkeeper', isShopkeeper: true },
   { id: 'mei',   name: '메이', pos: [6, 0, 0],  color: '#ffe4c8', hatColor: '#5a8acf', dialogTreeId: 'npc.villager' },
   { id: 'ryu',   name: '류',   pos: [-6, 0, 0], color: '#ffd0b8', hatColor: '#3a8a3a', dialogTreeId: 'npc.craftsman', isCraftsman: true },
-];
-
-const FISH_SPOTS: Array<[number, number, number]> = [
-  [55, 0.06, 4],
-  [55, 0.06, -4],
-  [50, 0.06, 0],
 ];
 
 const BUG_SPOTS: Array<[number, number, number]> = [
@@ -407,9 +401,6 @@ function Scenery({ onOpenShop, onOpenCrafting }: { onOpenShop: () => void; onOpe
         />
       ))}
 
-      {FISH_SPOTS.map((p, i) => (
-        <FishSpot key={`fish-${i}`} position={p} />
-      ))}
       {BUG_SPOTS.map((p, i) => (
         <BugSpot key={`bug-${i}`} position={p} />
       ))}
@@ -453,9 +444,6 @@ function Scenery({ onOpenShop, onOpenCrafting }: { onOpenShop: () => void; onOpe
 
       {WORLD_WEATHER_ENABLED && <WeatherEffect area={120} height={22} count={1500} />}
 
-      <group position={[55, 0.02, 0]}>
-        <Water size={40} toon />
-      </group>
       <SandBatch entries={SAND_TILES} />
 
       <SnowfieldBatch entries={SNOWFIELD_TILES} />

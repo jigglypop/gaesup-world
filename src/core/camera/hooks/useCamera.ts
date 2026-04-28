@@ -45,10 +45,10 @@ export function useCamera() {
   useEffect(() => {
     isInEditModeRef.current = isInEditMode;
   }, [isInEditMode]);
-
   const excludeObjectsRef = useRef<THREE.Object3D[]>([]);
   const calcPropsRef = useRef<CameraCalcProps | null>(null);
   const orbitShiftKeysRef = useRef<Set<string>>(new Set());
+  const orbitPointerActiveRef = useRef(false);
   const orbitYawRef = useRef(0);
   const orbitPitchRef = useRef(0);
   const targetOrbitYawRef = useRef(0);
@@ -124,7 +124,7 @@ export function useCamera() {
   
   const handleWheel = useCallback((event: WheelEvent) => {
     const opt = cameraOptionRef.current;
-    if (!opt?.enableZoom || isInEditModeRef.current) return;
+    if (!opt?.enableZoom) return;
 
     event.preventDefault();
 
@@ -142,17 +142,17 @@ export function useCamera() {
   
   useEffect(() => {
     const canvas = gl.domElement;
-    if (cameraOption?.enableZoom && !isInEditMode) {
+    if (cameraOption?.enableZoom) {
       canvas.addEventListener('wheel', handleWheel, { passive: false });
       return () => {
         canvas.removeEventListener('wheel', handleWheel);
       };
     }
     return undefined;
-  }, [gl, handleWheel, cameraOption?.enableZoom, isInEditMode]);
+  }, [gl, handleWheel, cameraOption?.enableZoom]);
 
   useEffect(() => {
-    if (isInEditMode) return undefined;
+    const canvas = gl.domElement;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isEditableTarget(event.target)) return;
@@ -167,8 +167,22 @@ export function useCamera() {
       orbitShiftKeysRef.current.delete(event.code);
     };
 
+    const handleMouseDown = (event: MouseEvent) => {
+      if (!isInEditModeRef.current || isEditableTarget(event.target)) return;
+      if (event.button !== 1 && event.button !== 2) return;
+
+      event.preventDefault();
+      orbitPointerActiveRef.current = true;
+    };
+
+    const handleMouseUp = (event: MouseEvent) => {
+      if (event.button !== 1 && event.button !== 2) return;
+      orbitPointerActiveRef.current = false;
+    };
+
     const handleMouseMove = (event: MouseEvent) => {
-      if (orbitShiftKeysRef.current.size === 0 || isEditableTarget(event.target)) return;
+      const isOrbitActive = orbitShiftKeysRef.current.size > 0 || orbitPointerActiveRef.current;
+      if (!isOrbitActive || isEditableTarget(event.target)) return;
       if (event.movementX === 0 && event.movementY === 0) return;
 
       targetOrbitYawRef.current -= event.movementX * ORBIT_SPEED;
@@ -181,21 +195,33 @@ export function useCamera() {
 
     const clearOrbitKeyState = () => {
       orbitShiftKeysRef.current.clear();
+      orbitPointerActiveRef.current = false;
+    };
+
+    const preventContextMenu = (event: MouseEvent) => {
+      if (!isInEditModeRef.current) return;
+      event.preventDefault();
     };
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('blur', clearOrbitKeyState);
     document.addEventListener('visibilitychange', clearOrbitKeyState);
+    canvas.addEventListener('mousedown', handleMouseDown);
+    canvas.addEventListener('contextmenu', preventContextMenu);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('blur', clearOrbitKeyState);
       document.removeEventListener('visibilitychange', clearOrbitKeyState);
+      canvas.removeEventListener('mousedown', handleMouseDown);
+      canvas.removeEventListener('contextmenu', preventContextMenu);
     };
-  }, [isInEditMode, updateConfig]);
+  }, [gl, updateConfig]);
   
   
   // ESC 키로 포커스 해제
@@ -226,7 +252,7 @@ export function useCamera() {
   }, [cameraOption, mode, syncCameraConfig]);
   
   useFrame((state, delta) => {
-    if (!system || isInEditMode) return;
+    if (!system) return;
 
     const nextOrbitYaw = THREE.MathUtils.damp(
       orbitYawRef.current,

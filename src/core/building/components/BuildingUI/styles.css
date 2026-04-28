@@ -427,8 +427,8 @@
 }
 
 .building-ui-remove-part:hover {
-  background-color: #ff4444;
-  color: white;
+  background-color: rgba(96, 165, 250, 0.18);
+  color: var(--editor-text-primary);
 }
 
 .building-ui-clothing-buttons {

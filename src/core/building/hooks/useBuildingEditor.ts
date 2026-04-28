@@ -21,9 +21,9 @@ export function useBuildingEditor() {
   const addTile = useBuildingStore((s) => s.addTile);
   const addBlock = useBuildingStore((s) => s.addBlock);
   const addObject = useBuildingStore((s) => s.addObject);
-  const removeWall = useBuildingStore((s) => s.removeWall);
-  const removeTile = useBuildingStore((s) => s.removeTile);
-  const removeBlock = useBuildingStore((s) => s.removeBlock);
+  const setSelectedWallId = useBuildingStore((s) => s.setSelectedWallId);
+  const setSelectedTileId = useBuildingStore((s) => s.setSelectedTileId);
+  const setSelectedBlockId = useBuildingStore((s) => s.setSelectedBlockId);
   const setHoverPosition = useBuildingStore((s) => s.setHoverPosition);
 
   const raycastGround = useCallback(() => {
@@ -219,25 +219,25 @@ export function useBuildingEditor() {
   }, [addObject]);
 
   const handleWallClick = useCallback((wallId: string) => {
-    const { editMode: mode, selectedWallGroupId: groupId } = useBuildingStore.getState();
-    if (mode === 'wall' && groupId) {
-      removeWall(groupId, wallId);
+    const { editMode: mode } = useBuildingStore.getState();
+    if (mode === 'wall') {
+      setSelectedWallId(wallId);
     }
-  }, [removeWall]);
+  }, [setSelectedWallId]);
 
   const handleTileClick = useCallback((tileId: string) => {
-    const { editMode: mode, selectedTileGroupId: groupId } = useBuildingStore.getState();
-    if (mode === 'tile' && groupId) {
-      removeTile(groupId, tileId);
+    const { editMode: mode } = useBuildingStore.getState();
+    if (mode === 'tile') {
+      setSelectedTileId(tileId);
     }
-  }, [removeTile]);
+  }, [setSelectedTileId]);
 
   const handleBlockClick = useCallback((blockId: string) => {
     const { editMode: mode } = useBuildingStore.getState();
     if (mode === 'block') {
-      removeBlock(blockId);
+      setSelectedBlockId(blockId);
     }
-  }, [removeBlock]);
+  }, [setSelectedBlockId]);
 
   return {
     updateMousePosition,

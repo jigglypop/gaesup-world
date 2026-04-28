@@ -13,17 +13,17 @@ import { ResizablePanel } from '../ResizablePanel';
 import { EditorLayoutProps, FloatingPanel, PanelConfig } from './types';
 
 export const EditorLayout: FC<EditorLayoutProps> = ({ children }) => {
-  const [activePanels, setActivePanels] = useState<string[]>(['building', 'vehicle', 'performance']);
+  const [activePanels, setActivePanels] = useState<string[]>(['building', 'camera']);
   const [floatingPanels, setFloatingPanels] = useState<FloatingPanel[]>([]);
   const [minimizedPanels, setMinimizedPanels] = useState<string[]>([]);
 
   const panelConfigs: PanelConfig[] = [
-    { id: 'building', title: 'Building', component: <BuildingPanel />, defaultSide: 'left' },
-    { id: 'vehicle', title: 'Vehicle', component: <VehiclePanel />, defaultSide: 'left' },
-    { id: 'animation', title: 'Animation', component: <AnimationPanel />, defaultSide: 'left' },
-    { id: 'camera', title: 'Camera', component: <CameraPanel />, defaultSide: 'right' },
-    { id: 'motion', title: 'Motion', component: <MotionPanel />, defaultSide: 'right' },
-    { id: 'performance', title: 'Performance', component: <PerformancePanel />, defaultSide: 'right' },
+    { id: 'building', title: '건축', component: <BuildingPanel />, defaultSide: 'left' },
+    { id: 'vehicle', title: '탑승체', component: <VehiclePanel />, defaultSide: 'left' },
+    { id: 'animation', title: '애니메이션', component: <AnimationPanel />, defaultSide: 'left' },
+    { id: 'camera', title: '카메라', component: <CameraPanel />, defaultSide: 'right' },
+    { id: 'motion', title: '모션', component: <MotionPanel />, defaultSide: 'right' },
+    { id: 'performance', title: '성능', component: <PerformancePanel />, defaultSide: 'right' },
   ];
 
   const togglePanel = (panelId: string) => {
@@ -108,9 +108,9 @@ export const EditorLayout: FC<EditorLayoutProps> = ({ children }) => {
             <ResizablePanel
               key={config.id}
               title={config.title}
-              initialWidth={280}
-              initialHeight={Math.max(300, (window.innerHeight - 120) / getLeftPanels().length)}
-              minWidth={200}
+              initialWidth={320}
+              initialHeight={Math.min(640, Math.max(420, window.innerHeight - 120))}
+              minWidth={260}
               maxWidth={500}
               resizeHandles={['right']}
               className="editor-glass-panel"
@@ -134,9 +134,9 @@ export const EditorLayout: FC<EditorLayoutProps> = ({ children }) => {
             <ResizablePanel
               key={config.id}
               title={config.title}
-              initialWidth={320}
-              initialHeight={Math.max(300, (window.innerHeight - 120) / getRightPanels().length)}
-              minWidth={200}
+              initialWidth={300}
+              initialHeight={Math.min(520, Math.max(360, window.innerHeight - 120))}
+              minWidth={260}
               maxWidth={500}
               resizeHandles={['corner']}
               className="editor-glass-panel"
@@ -195,7 +195,7 @@ export const EditorLayout: FC<EditorLayoutProps> = ({ children }) => {
                 key={panelId}
                 onClick={() => restorePanel(panelId)}
                 className="editor-minimized-item"
-                title={`Restore ${config.title}`}
+                title={`${config.title} 복원`}
               >
                 {config.title}
               </button>

@@ -131,14 +131,14 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
         onMouseDown={handleDragStart}
       >
         <h3 className="rp-title">{title}</h3>
-        <div className="rp-controls">
+        <div className="rp-controls" onMouseDown={(event) => event.stopPropagation()}>
           {onMinimize && (
-            <button className="rp-btn" onClick={onMinimize} title="Minimize">
+            <button className="rp-btn rp-btn--minimize" onClick={onMinimize} title="최소화">
               <MinimizeIcon />
             </button>
           )}
           {onClose && (
-            <button className="rp-btn" onClick={onClose} title="Close">
+            <button className="rp-btn rp-btn--close" onClick={onClose} title="닫기">
               <CloseIcon />
             </button>
           )}

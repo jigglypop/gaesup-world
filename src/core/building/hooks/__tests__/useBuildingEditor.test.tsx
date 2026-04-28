@@ -84,6 +84,9 @@ const buildDefaultState = (): EditorMockState => ({
   removeWall: jest.fn(),
   removeTile: jest.fn(),
   removeBlock: jest.fn(),
+  setSelectedWallId: jest.fn(),
+  setSelectedTileId: jest.fn(),
+  setSelectedBlockId: jest.fn(),
   setHoverPosition: jest.fn(),
   // getState로 읽히는 항목
   currentWallRotation: 0,
@@ -531,118 +534,86 @@ describe('useBuildingEditor 훅 테스트', () => {
   });
 
   describe('벽 클릭 처리', () => {
-    test('벽 편집 모드에서 벽 클릭 시 벽이 제거되어야 함', () => {
-      const mockRemoveWall = jest.fn();
+    test('벽 편집 모드에서 벽 클릭 시 벽이 선택되어야 함', () => {
+      const mockSetSelectedWallId = jest.fn();
       setStoreState({
         editMode: 'wall',
-        selectedWallGroupId: 'test-wall-group',
-        removeWall: mockRemoveWall,
+        setSelectedWallId: mockSetSelectedWallId,
       });
 
       const { result } = renderHook(() => useBuildingEditor(), { wrapper: TestWrapper });
       act(() => { result.current.handleWallClick('wall-123'); });
 
-      expect(mockRemoveWall).toHaveBeenCalledWith('test-wall-group', 'wall-123');
+      expect(mockSetSelectedWallId).toHaveBeenCalledWith('wall-123');
     });
 
-    test('벽 편집 모드가 아닐 때 벽 클릭 시 제거되지 않아야 함', () => {
-      const mockRemoveWall = jest.fn();
+    test('벽 편집 모드가 아닐 때 벽 클릭 시 선택되지 않아야 함', () => {
+      const mockSetSelectedWallId = jest.fn();
       setStoreState({
         editMode: 'tile',
-        selectedWallGroupId: 'test-wall-group',
-        removeWall: mockRemoveWall,
+        setSelectedWallId: mockSetSelectedWallId,
       });
 
       const { result } = renderHook(() => useBuildingEditor(), { wrapper: TestWrapper });
       act(() => { result.current.handleWallClick('wall-123'); });
 
-      expect(mockRemoveWall).not.toHaveBeenCalled();
-    });
-
-    test('선택된 벽 그룹이 없을 때 벽이 제거되지 않아야 함', () => {
-      const mockRemoveWall = jest.fn();
-      setStoreState({
-        editMode: 'wall',
-        selectedWallGroupId: null,
-        removeWall: mockRemoveWall,
-      });
-
-      const { result } = renderHook(() => useBuildingEditor(), { wrapper: TestWrapper });
-      act(() => { result.current.handleWallClick('wall-123'); });
-
-      expect(mockRemoveWall).not.toHaveBeenCalled();
+      expect(mockSetSelectedWallId).not.toHaveBeenCalled();
     });
   });
 
   describe('타일 클릭 처리', () => {
-    test('타일 편집 모드에서 타일 클릭 시 타일이 제거되어야 함', () => {
-      const mockRemoveTile = jest.fn();
+    test('타일 편집 모드에서 타일 클릭 시 타일이 선택되어야 함', () => {
+      const mockSetSelectedTileId = jest.fn();
       setStoreState({
         editMode: 'tile',
-        selectedTileGroupId: 'test-tile-group',
-        removeTile: mockRemoveTile,
+        setSelectedTileId: mockSetSelectedTileId,
       });
 
       const { result } = renderHook(() => useBuildingEditor(), { wrapper: TestWrapper });
       act(() => { result.current.handleTileClick('tile-456'); });
 
-      expect(mockRemoveTile).toHaveBeenCalledWith('test-tile-group', 'tile-456');
+      expect(mockSetSelectedTileId).toHaveBeenCalledWith('tile-456');
     });
 
-    test('타일 편집 모드가 아닐 때 타일 클릭 시 제거되지 않아야 함', () => {
-      const mockRemoveTile = jest.fn();
+    test('타일 편집 모드가 아닐 때 타일 클릭 시 선택되지 않아야 함', () => {
+      const mockSetSelectedTileId = jest.fn();
       setStoreState({
         editMode: 'wall',
-        selectedTileGroupId: 'test-tile-group',
-        removeTile: mockRemoveTile,
+        setSelectedTileId: mockSetSelectedTileId,
       });
 
       const { result } = renderHook(() => useBuildingEditor(), { wrapper: TestWrapper });
       act(() => { result.current.handleTileClick('tile-456'); });
 
-      expect(mockRemoveTile).not.toHaveBeenCalled();
-    });
-
-    test('선택된 타일 그룹이 없을 때 타일이 제거되지 않아야 함', () => {
-      const mockRemoveTile = jest.fn();
-      setStoreState({
-        editMode: 'tile',
-        selectedTileGroupId: null,
-        removeTile: mockRemoveTile,
-      });
-
-      const { result } = renderHook(() => useBuildingEditor(), { wrapper: TestWrapper });
-      act(() => { result.current.handleTileClick('tile-456'); });
-
-      expect(mockRemoveTile).not.toHaveBeenCalled();
+      expect(mockSetSelectedTileId).not.toHaveBeenCalled();
     });
   });
 
   describe('블록 클릭 처리', () => {
-    test('블록 편집 모드에서 블록 클릭 시 블록이 제거되어야 함', () => {
-      const mockRemoveBlock = jest.fn();
+    test('블록 편집 모드에서 블록 클릭 시 블록이 선택되어야 함', () => {
+      const mockSetSelectedBlockId = jest.fn();
       setStoreState({
         editMode: 'block',
-        removeBlock: mockRemoveBlock,
+        setSelectedBlockId: mockSetSelectedBlockId,
       });
 
       const { result } = renderHook(() => useBuildingEditor(), { wrapper: TestWrapper });
       act(() => { result.current.handleBlockClick('block-789'); });
 
-      expect(mockRemoveBlock).toHaveBeenCalledWith('block-789');
+      expect(mockSetSelectedBlockId).toHaveBeenCalledWith('block-789');
     });
 
-    test('블록 편집 모드가 아닐 때 블록 클릭 시 제거되지 않아야 함', () => {
-      const mockRemoveBlock = jest.fn();
+    test('블록 편집 모드가 아닐 때 블록 클릭 시 선택되지 않아야 함', () => {
+      const mockSetSelectedBlockId = jest.fn();
       setStoreState({
         editMode: 'tile',
-        removeBlock: mockRemoveBlock,
+        setSelectedBlockId: mockSetSelectedBlockId,
       });
 
       const { result } = renderHook(() => useBuildingEditor(), { wrapper: TestWrapper });
       act(() => { result.current.handleBlockClick('block-789'); });
 
-      expect(mockRemoveBlock).not.toHaveBeenCalled();
+      expect(mockSetSelectedBlockId).not.toHaveBeenCalled();
     });
   });
 

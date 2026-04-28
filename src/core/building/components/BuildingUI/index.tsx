@@ -413,7 +413,7 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                   <p>Shape: {selectedTileShapeLabel}</p>
                   <p>Object: {selectedTileObjectLabel}</p>
                   <p>Click to place tiles</p>
-                  <p>Red = Occupied, Green = Available</p>
+                  <p>Amber = Occupied, Blue = Available</p>
                 </div>
               </>
             )}
@@ -454,7 +454,7 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                   <p>Size: {currentTileMultiplier}x{currentTileMultiplier}</p>
                   <p>Layer offset: {currentTileHeight}</p>
                   <p>Click to place voxel blocks</p>
-                  <p>Click red blocks to delete</p>
+                  <p>Click highlighted blocks to delete</p>
                 </div>
               </>
             )}
@@ -659,8 +659,8 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                   <p>Type: {wallGroups.get(selectedWallGroupId || '')?.name}</p>
                   <p>Use arrow keys to rotate</p>
                   <p>Click to place walls</p>
-                  <p>Red = Occupied, Green = Available</p>
-                  <p>Click red boxes to delete</p>
+                  <p>Amber = Occupied, Blue = Available</p>
+                  <p>Click highlighted markers to delete</p>
                 </div>
               </>
             )}

@@ -1,6 +1,7 @@
 import { Suspense, useEffect, ReactNode, useMemo } from 'react';
 
 import { Camera } from '@/core/camera';
+import type { CameraOptionType } from '@/core/camera';
 import { PerformanceCollector } from '@/core/editor/components/panels/PerformanceCollector';
 import type { UrlsState } from '@/core/stores/slices/urls/types';
 import { useGaesupStore } from '@stores/gaesupStore';
@@ -68,10 +69,52 @@ export function WorldConfigProvider(props: WorldContainerProps) {
   }, [urlUpdates, setUrls]);
 
   useEffect(() => {
-    if (props.cameraOption) {
-      setCameraOption(props.cameraOption);
+    const option = props.cameraOption;
+    if (!option) return;
+
+    setMode({ control: option.type });
+
+    const distance = option.distance ?? 15;
+    const nextOption: Partial<CameraOptionType> = {};
+    if (option.xDistance !== undefined) {
+      nextOption.xDistance = option.xDistance;
+    } else if (option.type === 'topDown') {
+      nextOption.xDistance = 0;
+    } else if (option.type !== 'firstPerson') {
+      nextOption.xDistance = distance;
     }
-  }, [props.cameraOption, setCameraOption]);
+
+    if (option.yDistance !== undefined) {
+      nextOption.yDistance = option.yDistance;
+    } else {
+      nextOption.yDistance = option.height ?? (option.type === 'topDown' ? distance : 8);
+    }
+
+    if (option.zDistance !== undefined) {
+      nextOption.zDistance = option.zDistance;
+    } else if (option.type === 'topDown') {
+      nextOption.zDistance = 0;
+    } else if (option.type !== 'firstPerson') {
+      nextOption.zDistance = distance;
+    }
+
+    if (option.fov !== undefined) nextOption.fov = option.fov;
+    if (option.zoom !== undefined) nextOption.zoom = option.zoom;
+    if (option.enableZoom !== undefined) nextOption.enableZoom = option.enableZoom;
+    if (option.minZoom !== undefined) nextOption.minZoom = option.minZoom;
+    if (option.maxZoom !== undefined) nextOption.maxZoom = option.maxZoom;
+    if (option.zoomSpeed !== undefined) nextOption.zoomSpeed = option.zoomSpeed;
+    if (option.enableCollision !== undefined) nextOption.enableCollision = option.enableCollision;
+    if (option.smoothness !== undefined) {
+      nextOption.smoothing = {
+        position: option.smoothness,
+        rotation: option.smoothness,
+        fov: option.smoothness,
+      };
+    }
+
+    setCameraOption(nextOption);
+  }, [props.cameraOption, setCameraOption, setMode]);
 
   return props.children;
 }

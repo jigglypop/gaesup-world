@@ -38,9 +38,9 @@
   --editor-warning-bg: rgba(255, 152, 0, 0.2);
   --editor-warning-bg-hover: rgba(255, 152, 0, 0.3);
   --editor-warning-border: rgba(255, 152, 0, 0.5);
-  --editor-danger-bg: rgba(244, 67, 54, 0.2);
-  --editor-danger-bg-hover: rgba(244, 67, 54, 0.3);
-  --editor-danger-border: rgba(244, 67, 54, 0.5);
+  --editor-danger-bg: rgba(148, 163, 184, 0.16);
+  --editor-danger-bg-hover: rgba(148, 163, 184, 0.24);
+  --editor-danger-border: rgba(148, 163, 184, 0.36);
   --editor-info-bg: rgba(156, 39, 176, 0.2);
   --editor-info-bg-hover: rgba(156, 39, 176, 0.3);
   --editor-info-border: rgba(156, 39, 176, 0.5);
@@ -112,8 +112,8 @@
 
 .editor-left-stack {
   position: absolute;
-  top: 50px;
-  left: 10px;
+  top: 64px;
+  left: 18px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -121,8 +121,8 @@
 
 .editor-right-stack {
   position: absolute;
-  top: 50px;
-  right: 10px;
+  top: 64px;
+  right: 18px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -131,18 +131,18 @@
 /* Panel Bar */
 .editor-panel-bar {
   position: absolute;
-  top: 8px;
+  top: 14px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--editor-surface-secondary);
+  background: rgba(24, 27, 32, 0.82);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: var(--editor-border-radius);
-  padding: 4px;
+  padding: 5px;
   display: flex;
   flex-direction: row;
-  gap: 2px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  gap: 4px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
   border: 1px solid var(--editor-border-color);
   z-index: 100;
 }
@@ -151,9 +151,9 @@
   background: transparent;
   border: none;
   color: var(--editor-text-secondary);
-  padding: 4px 10px;
-  font-size: 11px;
-  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
@@ -165,7 +165,7 @@
 }
 
 .editor-panel-toggle.active {
-  background-color: var(--editor-surface-active);
+  background-color: rgba(74, 144, 226, 0.32);
   color: var(--editor-text-primary);
   font-weight: 600;
 }
@@ -375,8 +375,8 @@
 }
 
 .editor-panel-button.close:hover {
-  background: rgba(255, 69, 58, 0.2);
-  color: #ff453a;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--editor-text);
 }
 
 .editor-panel-button.minimize:hover {
@@ -826,12 +826,12 @@ textarea:focus-visible {
 .rp-panel {
   display: flex;
   flex-direction: column;
-  background: var(--editor-glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--editor-border-color);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-  border-radius: var(--editor-border-radius);
+  background: rgba(24, 27, 32, 0.86);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
+  border-radius: 12px;
   overflow: hidden;
   position: relative;
 }
@@ -841,10 +841,10 @@ textarea:focus-visible {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 8px 0 12px;
-  height: 32px;
+  padding: 0 10px 0 14px;
+  height: 38px;
   flex-shrink: 0;
-  background: var(--editor-surface-primary);
+  background: rgba(12, 14, 18, 0.34);
   border-bottom: 1px solid var(--editor-border-color);
   cursor: move;
 }
@@ -862,26 +862,39 @@ textarea:focus-visible {
 .rp-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .rp-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: transparent;
-  border: none;
-  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
   color: var(--editor-text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .rp-btn:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.12);
   color: var(--editor-text-primary);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.rp-btn--close:hover {
+  background: rgba(96, 165, 250, 0.18);
+  color: #dbeafe;
+  border-color: rgba(147, 197, 253, 0.34);
+}
+
+.rp-btn--minimize:hover {
+  background: rgba(148, 163, 184, 0.18);
+  color: #e2e8f0;
+  border-color: rgba(203, 213, 225, 0.24);
 }
 
 /* Content */

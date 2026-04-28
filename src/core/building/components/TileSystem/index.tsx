@@ -416,6 +416,7 @@ export function TileSystem({
   tileGroup, 
   meshes, 
   isEditMode = false,
+  selectedTileId = null,
   onTileClick,
 }: TileSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
@@ -540,19 +541,39 @@ export function TileSystem({
     () =>
       getDefaultToonMode()
         ? new THREE.MeshToonMaterial({
-            color: '#ff0000',
+            color: '#60a5fa',
             transparent: true,
-            opacity: 0.6,
-            emissive: new THREE.Color('#ff0000'),
-            emissiveIntensity: 0.2,
+            opacity: 0.32,
+            emissive: new THREE.Color('#2563eb'),
+            emissiveIntensity: 0.08,
             gradientMap: getToonGradient(3),
           })
         : new THREE.MeshStandardMaterial({
-            color: '#ff0000',
+            color: '#60a5fa',
             transparent: true,
-            opacity: 0.6,
-            emissive: new THREE.Color('#ff0000'),
-            emissiveIntensity: 0.2,
+            opacity: 0.32,
+            emissive: new THREE.Color('#2563eb'),
+            emissiveIntensity: 0.08,
+          }),
+    [],
+  );
+  const selectedEditMaterial = useMemo(
+    () =>
+      getDefaultToonMode()
+        ? new THREE.MeshToonMaterial({
+            color: '#bae6fd',
+            transparent: true,
+            opacity: 0.5,
+            emissive: new THREE.Color('#60a5fa'),
+            emissiveIntensity: 0.18,
+            gradientMap: getToonGradient(3),
+          })
+        : new THREE.MeshStandardMaterial({
+            color: '#bae6fd',
+            transparent: true,
+            opacity: 0.5,
+            emissive: new THREE.Color('#60a5fa'),
+            emissiveIntensity: 0.18,
           }),
     [],
   );
@@ -796,8 +817,9 @@ export function TileSystem({
       baseGeometry.dispose();
       editGeometry.dispose();
       editMaterial.dispose();
+      selectedEditMaterial.dispose();
     };
-  }, [baseGeometry, editGeometry, editMaterial]);
+  }, [baseGeometry, editGeometry, editMaterial, selectedEditMaterial]);
 
   useEffect(() => {
     return () => {
@@ -831,6 +853,7 @@ export function TileSystem({
         )}
 
         {isEditMode && tileGroup.tiles.map((tile) => {
+          const selected = tile.id === selectedTileId;
           const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
           const previewHeight = Math.max(0.22, tile.position.y + 0.22);
 
@@ -841,7 +864,7 @@ export function TileSystem({
               scale={[tileSize * 0.82, previewHeight, tileSize * 0.82]}
               onClick={() => onTileClick?.(tile.id)}
             >
-              <mesh geometry={editGeometry} material={editMaterial} />
+              <mesh geometry={editGeometry} material={selected ? selectedEditMaterial : editMaterial} />
             </group>
           );
         })}
