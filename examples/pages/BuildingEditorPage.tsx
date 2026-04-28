@@ -18,7 +18,7 @@ export function BuildingEditorPage() {
   }, [setEditMode]);
 
   return (
-    <WorldPage showEditor>
+    <WorldPage showHud={false}>
       <BuildingExample onClose={() => navigate('/')} />
     </WorldPage>
   );

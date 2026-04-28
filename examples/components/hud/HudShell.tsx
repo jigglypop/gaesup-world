@@ -1,90 +1,33 @@
 import React, { useEffect, useState } from 'react';
 
 import {
-  getEventRegistry,
   LOCALE_LABEL,
   SceneFader,
   setDefaultToonMode,
   useAudioStore,
   useCatalogStore,
   useCharacterStore,
-  useEventsStore,
-  useGameTime,
   useI18nStore,
   useMailStore,
   usePerfStore,
   useQuestStore,
   useTownStore,
   useWalletStore,
-  useWeatherStore,
   type LocaleId,
   type PerfTier,
 } from '../../../src';
 import Info from '../info';
 import { Teleport } from '../teleport';
 
-const SEASON_COLOR: Record<string, string> = {
-  spring: '#ffb6c1',
-  summer: '#9bd97a',
-  autumn: '#e0a060',
-  winter: '#cfe2ff',
-};
-const WEEKDAY_LABEL: Record<string, string> = {
-  sun: '일', mon: '월', tue: '화', wed: '수', thu: '목', fri: '금', sat: '토',
-};
-const WEATHER_META: Record<string, { sym: string; label: string; color: string }> = {
-  sunny:  { sym: 'O', label: '맑음', color: '#ffd84a' },
-  cloudy: { sym: 'c', label: '흐림', color: '#aab2bc' },
-  rain:   { sym: 'r', label: '비',   color: '#9ad9ff' },
-  snow:   { sym: '*', label: '눈',   color: '#dff0ff' },
-  storm:  { sym: '!', label: '폭풍', color: '#7f7fff' },
-};
-
 function dispatchKey(k: string) {
   window.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
 }
 
 function HeaderBar() {
-  const t = useGameTime();
   const wallet = useWalletStore((s) => s.bells);
-  const weather = useWeatherStore((s) => s.current);
-  const events = useEventsStore((s) => s.active);
-  const reg = getEventRegistry();
-
-  const wmeta = weather ? WEATHER_META[weather.kind] : null;
-  const visibleEvents = events.filter((id) => !id.startsWith('season.'));
-  const hh = String(t.hour).padStart(2, '0');
-  const mm = String(t.minute).padStart(2, '0');
 
   return (
     <div className="gp-header">
-      <div className="gp-glass gp-pill" style={{ paddingRight: 12 }}>
-        <span className="gp-chip-dot" style={{ background: SEASON_COLOR[t.season] ?? '#fff' }} />
-        <span style={{ fontWeight: 500 }}>
-          Y{t.year}·M{String(t.month).padStart(2, '0')}·D{String(t.day).padStart(2, '0')} ({WEEKDAY_LABEL[t.weekday]})
-        </span>
-        <span style={{ opacity: 0.9, marginLeft: 6, fontWeight: 500 }}>{hh}:{mm}</span>
-      </div>
-
-      {wmeta && (
-        <div className="gp-glass gp-pill" title={`${wmeta.label} (intensity ${weather!.intensity.toFixed(1)})`}>
-          <span className="gp-chip-dot" style={{ background: wmeta.color }} />
-          <span>{wmeta.label}</span>
-        </div>
-      )}
-
-      {visibleEvents.map((id) => {
-        const def = reg.get(id);
-        if (!def) return null;
-        const fest = def.tags?.some((tag) => tag === 'festival' || tag === 'tourney');
-        return (
-          <div key={id} className="gp-glass gp-pill">
-            <span className="gp-chip-dot" style={{ background: fest ? 'var(--gp-accent)' : 'var(--gp-good)' }} />
-            <span>{def.name}</span>
-          </div>
-        );
-      })}
-
       <div style={{ flex: 1 }} />
 
       <div className="gp-glass gp-pill" style={{ paddingRight: 12, gap: 8 }}>

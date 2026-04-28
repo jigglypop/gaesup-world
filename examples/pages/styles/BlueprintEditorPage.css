@@ -3,7 +3,13 @@ body {
 }
 
 .blueprint-editor-page {
-  width: 100vw;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: var(--app-sidebar-width, 128px);
+  z-index: 100;
+  width: calc(100vw - var(--app-sidebar-width, 128px));
   height: 100vh;
   background-color: var(--editor-bg-1);
   display: flex;
@@ -42,13 +48,14 @@ body {
 }
 
 .blueprint-editor-page__close {
-  background: transparent;
-  border: none;
+  background: var(--editor-surface-1);
+  border: 1px solid var(--editor-border-color);
   color: var(--editor-text-secondary);
-  font-size: 28px;
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
-  padding: 0 8px;
+  padding: 8px 12px;
   border-radius: var(--editor-radius-sm);
   transition: all 0.2s ease;
 }

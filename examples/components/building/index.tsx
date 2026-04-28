@@ -13,5 +13,5 @@ export function BuildingExample({ onClose }: BuildingExampleProps) {
     initializeDefaults();
   }, [initializeDefaults]);
 
-  return <BuildingUI onClose={onClose} />;
+  return <BuildingUI {...(onClose ? { onClose } : {})} />;
 } 

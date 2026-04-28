@@ -1,7 +1,7 @@
 .building-edit-mode-overlay {
   position: fixed;
   top: 0;
-  left: 0;
+  left: var(--app-sidebar-width, 128px);
   right: 0;
   bottom: 0;
   pointer-events: none;

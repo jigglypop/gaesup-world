@@ -2,16 +2,11 @@ import React from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
-import { useAuthStore } from '../../src/admin-entry';
 import { BlueprintEditor } from '../../src/blueprints/editor';
 import './styles/BlueprintEditorPage.css';
 
 export function BlueprintEditorPage() {
   const navigate = useNavigate();
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  if (!isLoggedIn) {
-    return <div>Please log in to access the Blueprint Editor.</div>;
-  }
 
   const handleClose = () => {
     navigate('/');
@@ -20,7 +15,8 @@ export function BlueprintEditorPage() {
   return (
     <div className="blueprint-editor-page">
       <div className="blueprint-editor-page__header">
-        <button onClick={handleClose} className="blueprint-editor-page__close">×</button>
+        <h1 className="blueprint-editor-page__title">Blueprint Editor</h1>
+        <button onClick={handleClose} className="blueprint-editor-page__close">Close</button>
       </div>
       <BlueprintEditor onClose={handleClose} />
     </div>

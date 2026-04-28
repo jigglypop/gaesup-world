@@ -1,45 +1,76 @@
 .app-navigation {
   position: fixed;
-  top: 18px;
-  left: 18px;
-  z-index: 95;
+  top: 12px;
+  left: 12px;
+  bottom: 12px;
+  z-index: 130;
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  max-width: calc(100vw - 36px);
-}
-
-.app-nav-button {
-  background: rgba(18, 20, 28, 0.52);
+  flex-direction: column;
+  gap: 8px;
+  width: 104px;
+  padding: 10px;
+  background: rgba(18, 20, 28, 0.58);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #f3f4f8;
-  padding: 8px 14px;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.26);
+  border-radius: 18px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
 }
 
-.app-nav-button:hover {
+.app-nav-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #f3f4f8;
+  padding: 8px 6px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  margin-bottom: 4px;
+}
+
+.app-nav-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #7bd3a7;
+  color: #122018;
+  font-size: 18px;
+}
+
+.app-nav-button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f3f4f8;
+  padding: 9px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.app-nav-button:hover,
+.app-nav-button.active {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.18);
   color: #ffffff;
 }
 
 .app-nav-user {
-  background: rgba(18, 20, 28, 0.52);
+  margin-top: auto;
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #f3f4f8;
-  padding: 8px 14px;
-  font-size: 14px;
+  padding: 8px;
+  font-size: 11px;
   font-weight: 600;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.26);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-radius: 10px;
+  text-align: center;
 }

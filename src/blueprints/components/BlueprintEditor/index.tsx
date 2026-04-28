@@ -244,7 +244,6 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
     const spawnedEntity = await spawnAtCursor(selectedBlueprint);
 
     if (spawnedEntity) {
-      console.log('Successfully spawned entity:', spawnedEntity);
       onClose();
     }
   };

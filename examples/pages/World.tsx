@@ -2,27 +2,25 @@ import React, { Suspense, useEffect, useState } from 'react';
 
 import { Environment, Grid } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { EffectComposer } from '@react-three/postprocessing';
 import { euler, Physics, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { WorldPageProps } from './types';
-import { ColorGrade } from '../../src/postprocessing';
 import {
-  Billboard, BugSpot,
+  BugSpot,
   BuildingController, CatalogUI, Clicker, CraftingUI, CropPlot, DialogBox, Editor,
-  FishSpot, Fire, GaesupController, GaesupWorld, GrassDriver,
+  FishSpot, GaesupController, GaesupWorld, GrassDriver,
   GaesupWorldContent, GroundClicker, HotbarUI, HousePlot, InteractionPrompt,
   InteractionTracker, InventoryUI,
-  MailboxUI, MiniMap, QuestLogUI, SakuraBatch, SandBatch, ShopUI, Snow, SnowfieldBatch,
-  ToastHost, ToolUseController, TreeObject, Water,
+  MailboxUI, MiniMap, QuestLogUI, SandBatch, ShopUI, Snow, SnowfieldBatch,
+  ToastHost, ToolUseController, Water,
   WeatherEffect,
-  CharacterCreator, DynamicFog, DynamicSky, Footprints, Footsteps, HouseDoor, OutfitAvatar, SceneRoot,
+  CharacterCreator, Footprints, HouseDoor, SakuraBatch, SceneRoot,
   RoomPortal, RoomRoot, RoomVisibilityDriver,
   TouchControls, useSceneStore,
   getNPCScheduler, getSaveSystem, registerSeedCrops, registerSeedEvents, registerSeedItems,
   setDefaultToonMode,
-  useAmbientBgm, useAutoSave, useCatalogStore, useCatalogTracker, useCharacterStore,
+  useAutoSave, useCatalogStore, useCatalogTracker, useCharacterStore,
   useCraftingStore, useDayChange,
   useDecorationScore, useEventsStore, useEventsTicker, useFriendshipStore, useGameClock,
   useHotbarKeyboard, useI18nStore, useInventoryStore, useMailStore,
@@ -31,7 +29,7 @@ import {
   useWalletStore, useWeatherStore, useWeatherTicker, useAudioStore,
   usePlayerPosition, useStateSystem, SpeechBalloon,
   type CameraOptionType, type SakuraTreeEntry, type SandEntry, type SnowfieldEntry,
-  useBuildingStore, useGaesupStore,
+  useBuildingStore, useGaesupStore, WARRIOR_BLUEPRINT,
 } from '../../src';
 import { registerSeedDialogs } from '../components/dialog/seedDialogs';
 import { HudShell } from '../components/hud/HudShell';
@@ -141,26 +139,6 @@ const SNOWFIELD_TILES: SnowfieldEntry[] = [
   { position: [-46, 0, -6], size: 6 },
 ];
 
-const CAMP_FIRES: Array<[number, number, number]> = [
-  [8, 0.2, 8],
-  [-8, 0.2, -8],
-];
-
-const CHOPPABLE_TREES: Array<{
-  id: string;
-  pos: [number, number, number];
-  trunk?: string;
-  foliage?: string;
-  scale?: number;
-}> = [
-  { id: 'oak-1', pos: [10, 0, -14], trunk: '#6b4a2a', foliage: '#3f8a3a', scale: 1.0 },
-  { id: 'oak-2', pos: [-10, 0, -16], trunk: '#6b4a2a', foliage: '#4ea052', scale: 1.1 },
-  { id: 'oak-3', pos: [16, 0, 4], trunk: '#5d3f24', foliage: '#3a8a3a', scale: 1.2 },
-  { id: 'oak-4', pos: [-16, 0, 4], trunk: '#5d3f24', foliage: '#65a558', scale: 0.9 },
-  { id: 'pine-1', pos: [-32, 0, 18], trunk: '#4a3220', foliage: '#2e6e3a', scale: 1.3 },
-  { id: 'pine-2', pos: [32, 0, 16], trunk: '#4a3220', foliage: '#2e6e3a', scale: 1.4 },
-];
-
 const NPCS: Array<{
   id: string;
   name: string;
@@ -214,11 +192,32 @@ const PICKUPS: Array<{ id: string; itemId: string; count: number; pos: [number, 
   { id: 'stone-1', itemId: 'stone', count: 1, pos: [-44, 0, -2] },
 ];
 
+const DEFAULT_CHARACTER_BLUEPRINT_PARTS = WARRIOR_BLUEPRINT.visuals?.parts ?? [];
+const DEFAULT_CHARACTER_BODY = DEFAULT_CHARACTER_BLUEPRINT_PARTS.find((part) => part.type === 'body');
+const DEFAULT_CHARACTER_URL = DEFAULT_CHARACTER_BODY?.url ?? CHARACTER_URL;
+const DEFAULT_CHARACTER_PARTS = DEFAULT_CHARACTER_BLUEPRINT_PARTS
+  .filter((part) => part.id !== DEFAULT_CHARACTER_BODY?.id)
+  .map((part) => ({ url: part.url }));
+
 function Lighting() {
   return (
     <>
       <Environment background preset="sunset" backgroundBlurriness={1} />
-      <DynamicSky rigDistance={60} shadowMapSize={1024} />
+      <ambientLight intensity={0.45} color="#ffffff" />
+      <directionalLight
+        castShadow
+        position={[28, 36, 18]}
+        intensity={1.8}
+        color="#ffffff"
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-near={1}
+        shadow-camera-far={120}
+        shadow-camera-top={70}
+        shadow-camera-right={70}
+        shadow-camera-bottom={-70}
+        shadow-camera-left={-70}
+        shadow-bias={-0.00015}
+      />
     </>
   );
 }
@@ -394,17 +393,6 @@ function Scenery({ onOpenShop, onOpenCrafting }: { onOpenShop: () => void; onOpe
     <>
       <SakuraBatch trees={SAKURA_TREES} />
 
-      {CHOPPABLE_TREES.map((t) => (
-        <TreeObject
-          key={t.id}
-          id={t.id}
-          position={t.pos}
-          {...(t.trunk !== undefined ? { trunkColor: t.trunk } : {})}
-          {...(t.foliage !== undefined ? { foliageColor: t.foliage } : {})}
-          {...(t.scale !== undefined ? { scale: t.scale } : {})}
-        />
-      ))}
-
       {NPCS.map((n) => (
         <NPCBeacon
           key={n.id}
@@ -429,10 +417,6 @@ function Scenery({ onOpenShop, onOpenCrafting }: { onOpenShop: () => void; onOpe
       {CROP_PLOTS.map((p) => (
         <CropPlot key={p.id} id={p.id} position={p.pos} />
       ))}
-
-      <group position={[12, 0.06, 13]}>
-        <Billboard text="Farm" width={2.4} height={0.9} color="#fff7e0" toon />
-      </group>
 
       {HOUSE_PLOTS.map((h) => (
         <HousePlot key={h.id} id={h.id} position={h.pos} size={[3.2, 3.2]} />
@@ -467,10 +451,6 @@ function Scenery({ onOpenShop, onOpenCrafting }: { onOpenShop: () => void; onOpe
         />
       </SceneRoot>
 
-      <group position={[-12, 0.06, 22]}>
-        <Billboard text="Town" width={3} height={1} color="#fff7e0" toon />
-      </group>
-
       {WORLD_WEATHER_ENABLED && <WeatherEffect area={120} height={22} count={1500} />}
 
       <group position={[55, 0.02, 0]}>
@@ -481,25 +461,6 @@ function Scenery({ onOpenShop, onOpenCrafting }: { onOpenShop: () => void; onOpe
       <SnowfieldBatch entries={SNOWFIELD_TILES} />
       <group position={[-43, 0, 0]}>
         <Snow gpu />
-      </group>
-
-      {CAMP_FIRES.map((p, i) => (
-        <group key={`fire-${i}`} position={p}>
-          <Fire intensity={2.0} width={1.4} height={2.0} color="#ffd49a" />
-        </group>
-      ))}
-
-      <group position={[0, 0, -45]} rotation={[0, Math.PI, 0]}>
-        <Billboard text="Welcome to Gaesup World" width={6} height={2} color="#fff7e0" toon />
-      </group>
-      <group position={[42, 0, -42]} rotation={[0, Math.PI * 0.75, 0]}>
-        <Billboard text="Beach" width={4} height={1.6} color="#fff2c8" toon />
-      </group>
-      <group position={[-42, 0, -42]} rotation={[0, -Math.PI * 0.75, 0]}>
-        <Billboard text="Snowland" width={4} height={1.6} color="#e6f3ff" toon />
-      </group>
-      <group position={[0, 0, 50]} rotation={[0, 0, 0]}>
-        <Billboard text="Meadow" width={4} height={1.6} color="#e6ffd6" toon />
       </group>
 
       {PICKUPS.map((p) => (
@@ -518,7 +479,16 @@ function GameSystems() {
   useWeatherTicker(WORLD_WEATHER_ENABLED);
   useEventsTicker(true);
   useDecorationScore(true);
-  useAmbientBgm(true);
+  useEffect(() => {
+    useAudioStore.setState({
+      masterMuted: true,
+      bgmMuted: true,
+      sfxMuted: true,
+      currentBgmId: null,
+    });
+    useAudioStore.getState().stopBgm();
+    useAudioStore.getState().apply();
+  }, []);
 
   useDayChange((time) => {
     const day = Math.floor(time.totalMinutes / (60 * 24));
@@ -689,7 +659,6 @@ function Player() {
   const isInBuildingMode = useBuildingStore((s) => s.isInEditMode());
   const mode = useGaesupStore((s) => s.mode);
   const { gameStates } = useStateSystem();
-  const bodyColor = useCharacterStore((s) => s.appearance.colors.body);
   if (isInBuildingMode || gameStates?.isRiding) return null;
   return (
     <>
@@ -697,22 +666,10 @@ function Player() {
         key={`controller-${mode.type}`}
         controllerOptions={{ lerp: { cameraTurn: 0.1, cameraPosition: 0.08 } }}
         rigidBodyProps={{}}
-        parts={[]}
+        parts={DEFAULT_CHARACTER_PARTS}
         rotation={euler({ x: 0, y: Math.PI, z: 0 })}
-        baseColor={bodyColor}
       />
-      <OutfitAvatar />
     </>
-  );
-}
-
-function PostFX() {
-  const enabled = usePerfStore((s) => s.profile.postprocess);
-  if (!enabled) return null;
-  return (
-    <EffectComposer multisampling={0}>
-      <ColorGrade />
-    </EffectComposer>
   );
 }
 
@@ -739,13 +696,13 @@ function CharacterSpeechBalloon() {
   );
 }
 
-export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
+export const WorldPage = ({ showEditor = false, showHud = true, children }: WorldPageProps) => {
   const [shopOpen, setShopOpen] = useState(false);
   const [craftOpen, setCraftOpen] = useState(false);
   return (
     <>
       <GaesupWorld
-        urls={{ characterUrl: CHARACTER_URL, vehicleUrl: VEHICLE_URL, airplaneUrl: AIRPLANE_URL }}
+        urls={{ characterUrl: DEFAULT_CHARACTER_URL, vehicleUrl: VEHICLE_URL, airplaneUrl: AIRPLANE_URL }}
         debug={EXAMPLE_CONFIG.debug}
         cameraOption={{ type: 'thirdPerson', distance: 13, height: 10, fov: 75, smoothness: 0.25 }}
       >
@@ -772,36 +729,37 @@ export const WorldPage = ({ showEditor = false, children }: WorldPageProps) => {
                 <InteractionTracker />
                 <ToolUseController useKey="f" />
                 <Footprints />
-                <Footsteps />
                 <GrassDriver />
                 <RoomVisibilityDriver />
               </Physics>
-              <DynamicFog color="#cfd8e3" near={45} far={260} />
-              <PostFX />
             </GaesupWorldContent>
           </Suspense>
         </Canvas>
 
         <GameSystems />
 
-        <HudShell toonInitial={_initialToon} toonStorageKey={TOON_STORAGE_KEY} />
+        {showHud && (
+          <>
+            <HudShell toonInitial={_initialToon} toonStorageKey={TOON_STORAGE_KEY} />
 
-        <InteractionPrompt />
-        <DialogBox />
-        <ToastHost />
+            <InteractionPrompt />
+            <DialogBox />
+            <ToastHost />
 
-        <ShopUI open={shopOpen} onClose={() => setShopOpen(false)} title="토미네 상점" />
-        <CraftingUI open={craftOpen} onClose={() => setCraftOpen(false)} title="류의 작업대" />
-        <QuestLogUI toggleKey="j" />
-        <MailboxUI toggleKey="m" />
-        <CatalogUI toggleKey="k" />
-        <InventoryUI toggleKey="i" />
+            <ShopUI open={shopOpen} onClose={() => setShopOpen(false)} title="토미네 상점" />
+            <CraftingUI open={craftOpen} onClose={() => setCraftOpen(false)} title="류의 작업대" />
+            <QuestLogUI toggleKey="j" />
+            <MailboxUI toggleKey="m" />
+            <CatalogUI toggleKey="k" />
+            <InventoryUI toggleKey="i" />
 
-        <HotbarUI />
-        <MiniMap position="bottom-left" scale={5} showZoom={false} showCompass={false} />
+            <HotbarUI />
+            <MiniMap position="bottom-left" scale={5} showZoom={false} showCompass={false} />
 
-        <CharacterCreator toggleKey="o" />
-        <TouchControls />
+            <CharacterCreator toggleKey="o" />
+            <TouchControls />
+          </>
+        )}
       </GaesupWorld>
       {showEditor && <Editor />}
       {children}

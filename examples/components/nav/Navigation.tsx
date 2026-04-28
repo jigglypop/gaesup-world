@@ -1,50 +1,54 @@
 import React from 'react';
 
+import { NavLink, useNavigate } from 'react-router-dom';
+
 import { useAuthStore } from '../../../src/admin-entry';
 import './styles.css';
 
 export const Navigation = () => {
   const { isLoggedIn, user, logout } = useAuthStore();
+  const navigate = useNavigate();
   
   const handleLogout = () => {
     logout();
-    window.location.href = '/';
+    navigate('/');
   };
   
   return (
     <nav className="app-navigation">
-      <a href="/" className="app-nav-button">
-        메인
-      </a>
-      <a href="/world" className="app-nav-button">
-        월드
-      </a>
-      <a href="/edit" className="app-nav-button">
-        편집
-      </a>
-      <a href="/network" className="app-nav-button">
-        멀티플레이
-      </a>
+      <NavLink to="/" className="app-nav-brand">
+        <span className="app-nav-mark">G</span>
+        <span>Gaesup</span>
+      </NavLink>
+      <NavLink to="/world" className="app-nav-button">
+        World
+      </NavLink>
+      <NavLink to="/edit" className="app-nav-button">
+        Editor
+      </NavLink>
+      <NavLink to="/building" className="app-nav-button">
+        Building
+      </NavLink>
+      <NavLink to="/blueprints" className="app-nav-button">
+        Blueprint
+      </NavLink>
+      <NavLink to="/network" className="app-nav-button">
+        Network
+      </NavLink>
       {isLoggedIn ? (
         <>
-          <a href="/building" className="app-nav-button">
-            Building
-          </a>
-          <a href="/blueprints" className="app-nav-button">
-            Blueprint
-          </a>
-          <a href="/admin" className="app-nav-button">
+          <NavLink to="/admin" className="app-nav-button">
             Admin
-          </a>
+          </NavLink>
           <span className="app-nav-user">{user?.username}</span>
           <button className="app-nav-button" onClick={handleLogout}>
             Logout
           </button>
         </>
       ) : (
-        <a href="/admin" className="app-nav-button">
+        <NavLink to="/admin" className="app-nav-button">
           Login
-        </a>
+        </NavLink>
       )}
     </nav>
   );

@@ -16,7 +16,7 @@ export function EditPage() {
     return () => { setEditMode('none'); };
   }, [setEditMode]);
 
-  return <WorldPage showEditor />;
+  return <WorldPage showEditor showHud={false} />;
 }
 
 export default EditPage;

@@ -12,7 +12,7 @@ import {
 import { CHARACTER_URL, VEHICLE_URL, AIRPLANE_URL } from '../config/constants';
 
 export function NetworkMultiplayerPage() {
-  const playerRef = useRef<RapierRigidBody | null>(null);
+  const playerRef = useRef<RapierRigidBody>(null!);
   const playerNameRef = useRef<string>('');
   const playerColorRef = useRef<string>('');
   

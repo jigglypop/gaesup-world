@@ -1,9 +1,8 @@
 import React from 'react';
 
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import { GaesupAdmin } from '../src/admin-entry';
-import './style.css';
 import { Navigation } from './components/nav/Navigation';
 import { BlueprintEditorPage } from './pages/BlueprintEditorPage';
 import { BuildingEditorPage } from './pages/BuildingEditorPage';
@@ -13,12 +12,9 @@ import { ShowcasePage } from './pages/ShowcasePage';
 import { WorldPage } from './pages/World';
 
 function AppLayout() {
-  const location = useLocation();
-  const hideNavigation = location.pathname === '/' || location.pathname.startsWith('/admin');
-
   return (
     <>
-      {!hideNavigation && <Navigation />}
+      <Navigation />
       <Routes>
         <Route path="/" element={<ShowcasePage />} />
         <Route path="/world" element={<WorldPage />} />
@@ -30,7 +26,7 @@ function AppLayout() {
           path="/admin/*"
           element={
             <GaesupAdmin>
-              <WorldPage showEditor={true} />
+              <WorldPage showEditor showHud={false} />
             </GaesupAdmin>
           }
         />
