@@ -71,6 +71,59 @@ describe('buildingStore placement checks', () => {
     s.removeTile(groupId, tileId);
   });
 
+  test('updateTile can assign a per-tile material without changing its group mesh', () => {
+    const s = useBuildingStore.getState();
+    const groupId = s.selectedTileGroupId;
+    expect(groupId).toBeDefined();
+    if (!groupId) return;
+
+    const beforeGroupMesh = s.tileGroups.get(groupId)?.floorMeshId;
+    const tileId = `material-tile-${Date.now()}`;
+    s.addTile(groupId, {
+      id: tileId,
+      position: { x: FAR + 16, y: 0, z: FAR },
+      tileGroupId: groupId,
+      size: 1,
+    });
+
+    s.updateTile(groupId, tileId, { materialId: 'tile-only-material' });
+
+    const state = useBuildingStore.getState();
+    const group = state.tileGroups.get(groupId);
+    const tile = group?.tiles.find((entry) => entry.id === tileId);
+    expect(group?.floorMeshId).toBe(beforeGroupMesh);
+    expect(tile?.materialId).toBe('tile-only-material');
+
+    s.removeTile(groupId, tileId);
+  });
+
+  test('addTile applies currentTileMaterialId only to the new tile', () => {
+    const s = useBuildingStore.getState();
+    const groupId = s.selectedTileGroupId;
+    expect(groupId).toBeDefined();
+    if (!groupId) return;
+
+    const beforeGroupMesh = s.tileGroups.get(groupId)?.floorMeshId;
+    s.setCurrentTileMaterialId('next-tile-material');
+
+    const tileId = `current-material-tile-${Date.now()}`;
+    s.addTile(groupId, {
+      id: tileId,
+      position: { x: FAR + 20, y: 0, z: FAR },
+      tileGroupId: groupId,
+      size: 1,
+    });
+
+    const state = useBuildingStore.getState();
+    const group = state.tileGroups.get(groupId);
+    const tile = group?.tiles.find((entry) => entry.id === tileId);
+    expect(group?.floorMeshId).toBe(beforeGroupMesh);
+    expect(tile?.materialId).toBe('next-tile-material');
+
+    s.setCurrentTileMaterialId(null);
+    s.removeTile(groupId, tileId);
+  });
+
   test('checkTilePosition accounts for currentTileMultiplier', () => {
     const s = useBuildingStore.getState();
     const groupId = s.selectedTileGroupId;

@@ -185,6 +185,11 @@ export {
   useCharacterStore,
   CharacterCreator,
   OutfitAvatar,
+  useAssetStore,
+  AssetPreviewCanvas,
+  SEED_ASSETS,
+  HttpAssetSource,
+  resolveCharacterParts,
   // Effects
   Footprints,
   // i18n
@@ -349,4 +354,11 @@ export type {
   AudioControlsProps,
   LocaleId,
   PerfTier,
+  AssetKind,
+  AssetSlot,
+  AssetRecord,
+  AssetSource,
+  AssetQuery,
+  AssetPreviewCanvasProps,
+  ResolveCharacterPartsInput,
 } from './core';

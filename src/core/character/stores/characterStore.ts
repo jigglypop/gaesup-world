@@ -5,6 +5,7 @@ import {
   type Appearance,
   type AppearanceColors,
   type CharacterSerialized,
+  type CharacterSerializedV1,
   type FaceStyle,
   type HairStyle,
   type OutfitSlot,
@@ -20,9 +21,10 @@ type CharacterState = {
   setHair: (hair: HairStyle) => void;
   equipOutfit: (slot: OutfitSlot, itemId: string | null) => void;
   resetAppearance: () => void;
+  getEquippedAssetIds: () => string[];
 
   serialize: () => CharacterSerialized;
-  hydrate: (data: CharacterSerialized | null | undefined) => void;
+  hydrate: (data: CharacterSerialized | CharacterSerializedV1 | null | undefined) => void;
 };
 
 const EMPTY_OUTFITS: Record<OutfitSlot, string | null> = {
@@ -31,6 +33,8 @@ const EMPTY_OUTFITS: Record<OutfitSlot, string | null> = {
   bottom: null,
   shoes: null,
   face: null,
+  weapon: null,
+  accessory: null,
 };
 
 export const useCharacterStore = create<CharacterState>((set, get) => ({
@@ -60,10 +64,13 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
       outfits: { ...EMPTY_OUTFITS },
     }),
 
+  getEquippedAssetIds: () =>
+    Object.values(get().outfits).filter((id): id is string => typeof id === 'string' && id.length > 0),
+
   serialize: () => {
     const s = get();
     return {
-      version: 1,
+      version: 2,
       appearance: {
         ...s.appearance,
         colors: { ...s.appearance.colors },
@@ -73,7 +80,7 @@ export const useCharacterStore = create<CharacterState>((set, get) => ({
   },
 
   hydrate: (data) => {
-    if (!data || data.version !== 1) return;
+    if (!data || (data.version !== 1 && data.version !== 2)) return;
     set({
       appearance: {
         ...DEFAULT_APPEARANCE,

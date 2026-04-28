@@ -1,4 +1,5 @@
-export type OutfitSlot = 'hat' | 'top' | 'bottom' | 'shoes' | 'face';
+export type OutfitSlot = 'hat' | 'top' | 'bottom' | 'shoes' | 'face' | 'weapon' | 'accessory';
+export type LegacyOutfitSlot = Exclude<OutfitSlot, 'weapon' | 'accessory'>;
 
 export type AppearanceColors = {
   body: string;
@@ -19,8 +20,14 @@ export type Appearance = {
   hair: HairStyle;
 };
 
-export type CharacterSerialized = {
+export type CharacterSerializedV1 = {
   version: 1;
+  appearance: Appearance;
+  outfits: Record<LegacyOutfitSlot, string | null>;
+};
+
+export type CharacterSerialized = {
+  version: 2;
   appearance: Appearance;
   outfits: Record<OutfitSlot, string | null>;
 };
@@ -45,6 +52,8 @@ export const OUTFIT_SLOT_LABEL: Record<OutfitSlot, string> = {
   bottom: '하의',
   shoes: '신발',
   face: '표정',
+  weapon: '무기',
+  accessory: '액세서리',
 };
 
 export const HAIR_STYLE_LABEL: Record<HairStyle, string> = {

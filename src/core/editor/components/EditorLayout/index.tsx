@@ -5,6 +5,7 @@ import {
   AnimationPanel,
   BuildingPanel,
   CameraPanel,
+  CharacterAssetPanel,
   MotionPanel,
   PerformancePanel,
   VehiclePanel
@@ -13,12 +14,13 @@ import { ResizablePanel } from '../ResizablePanel';
 import { EditorLayoutProps, FloatingPanel, PanelConfig } from './types';
 
 export const EditorLayout: FC<EditorLayoutProps> = ({ children }) => {
-  const [activePanels, setActivePanels] = useState<string[]>(['building', 'camera']);
+  const [activePanels, setActivePanels] = useState<string[]>(['building', 'character', 'camera']);
   const [floatingPanels, setFloatingPanels] = useState<FloatingPanel[]>([]);
   const [minimizedPanels, setMinimizedPanels] = useState<string[]>([]);
 
   const panelConfigs: PanelConfig[] = [
     { id: 'building', title: '건축', component: <BuildingPanel />, defaultSide: 'left' },
+    { id: 'character', title: '캐릭터', component: <CharacterAssetPanel />, defaultSide: 'left' },
     { id: 'vehicle', title: '탑승체', component: <VehiclePanel />, defaultSide: 'left' },
     { id: 'animation', title: '애니메이션', component: <AnimationPanel />, defaultSide: 'left' },
     { id: 'camera', title: '카메라', component: <CameraPanel />, defaultSide: 'right' },

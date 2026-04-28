@@ -27,6 +27,7 @@ export * from './weather';
 export * from './events';
 export * from './town';
 export * from './audio';
+export * from './assets';
 export * from './character';
 export * from './effects';
 export * from './i18n';

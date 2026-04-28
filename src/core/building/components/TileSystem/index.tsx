@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
 import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
@@ -34,6 +34,12 @@ type TileColliderData = {
   args: [number, number, number];
 };
 
+type BoxTileBatch = {
+  materialId: string;
+  tiles: TileLike[];
+  material: THREE.Material;
+};
+
 type TileBounds = {
   id: string;
   topY: number;
@@ -57,6 +63,10 @@ function hashNoise(...values: number[]): number {
 
 function getTileShape(tile: TileLike): TileShapeType {
   return tile.shape ?? 'box';
+}
+
+function getTileMaterialId(tile: TileLike, fallbackId: string): string {
+  return tile.materialId ?? fallbackId;
 }
 
 function rotateXZ(x: number, z: number, rotation: number): [number, number] {
@@ -412,6 +422,55 @@ function StairTileMesh({
   );
 }
 
+function BoxTileBatchMesh({
+  batch,
+  geometry,
+  dummy,
+}: {
+  batch: BoxTileBatch;
+  geometry: THREE.BufferGeometry;
+  dummy: THREE.Object3D;
+}) {
+  const ref = useRef<THREE.InstancedMesh | null>(null);
+
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+
+    const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
+    mesh.count = batch.tiles.length;
+
+    for (let i = 0; i < batch.tiles.length; i++) {
+      const tile = batch.tiles[i];
+      if (!tile) continue;
+      const tileMultiplier = tile.size || 1;
+      const tileSize = cellSize * tileMultiplier;
+
+      dummy.position.set(tile.position.x, tile.position.y + 0.001, tile.position.z);
+      dummy.rotation.set(0, tile.rotation ?? 0, 0);
+      dummy.scale.set(tileSize, 1, tileSize);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
+
+    mesh.instanceMatrix.needsUpdate = true;
+    if (batch.tiles.length > 0) {
+      mesh.computeBoundingBox();
+      mesh.computeBoundingSphere();
+    }
+  }, [batch.tiles, dummy]);
+
+  return (
+    <instancedMesh
+      ref={ref}
+      args={[geometry, batch.material, Math.max(1, batch.tiles.length)]}
+      castShadow
+      receiveShadow
+      frustumCulled
+    />
+  );
+}
+
 export function TileSystem({ 
   tileGroup, 
   meshes, 
@@ -420,11 +479,8 @@ export function TileSystem({
   onTileClick,
 }: TileSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
-  const instancedRef = useRef<THREE.InstancedMesh | null>(null);
   const localMaterialRef = useRef<THREE.Material | null>(null);
 
-  const tileCount = tileGroup.tiles.length;
-  const [capacity, setCapacity] = useState(() => Math.max(1, tileCount));
   const boxTiles = useMemo(
     () => tileGroup.tiles.filter((tile) => getTileShape(tile) === 'box'),
     [tileGroup.tiles],
@@ -442,7 +498,7 @@ export function TileSystem({
     [tileGroup.tiles],
   );
 
-  const material = useMemo(() => {
+  const defaultMaterial = useMemo(() => {
     const manager = materialManagerRef.current;
     const floorMesh = meshes.get(tileGroup.floorMeshId);
     if (!floorMesh) {
@@ -459,6 +515,33 @@ export function TileSystem({
     localMaterialRef.current = null;
     return manager.getMaterial(floorMesh);
   }, [tileGroup.floorMeshId, meshes]);
+
+  const materialById = useMemo(() => {
+    const manager = materialManagerRef.current;
+    const materials = new Map<string, THREE.Material>();
+    materials.set(tileGroup.floorMeshId, defaultMaterial);
+    for (const tile of tileGroup.tiles) {
+      if (!tile.materialId || materials.has(tile.materialId)) continue;
+      const mesh = meshes.get(tile.materialId);
+      materials.set(tile.materialId, mesh ? manager.getMaterial(mesh) : defaultMaterial);
+    }
+    return materials;
+  }, [defaultMaterial, meshes, tileGroup.floorMeshId, tileGroup.tiles]);
+
+  const boxTileBatches = useMemo<BoxTileBatch[]>(() => {
+    const byMaterial = new Map<string, TileLike[]>();
+    for (const tile of boxTiles) {
+      const materialId = getTileMaterialId(tile, tileGroup.floorMeshId);
+      const list = byMaterial.get(materialId) ?? [];
+      list.push(tile);
+      byMaterial.set(materialId, list);
+    }
+    return Array.from(byMaterial.entries()).map(([materialId, tiles]) => ({
+      materialId,
+      tiles,
+      material: materialById.get(materialId) ?? defaultMaterial,
+    }));
+  }, [boxTiles, defaultMaterial, materialById, tileGroup.floorMeshId]);
 
   const terrainColor = useMemo(() => {
     const floorMesh = meshes.get(tileGroup.floorMeshId);
@@ -543,17 +626,21 @@ export function TileSystem({
         ? new THREE.MeshToonMaterial({
             color: '#60a5fa',
             transparent: true,
-            opacity: 0.32,
+              opacity: 0.14,
             emissive: new THREE.Color('#2563eb'),
             emissiveIntensity: 0.08,
             gradientMap: getToonGradient(3),
+              wireframe: true,
+              depthWrite: false,
           })
         : new THREE.MeshStandardMaterial({
             color: '#60a5fa',
             transparent: true,
-            opacity: 0.32,
+              opacity: 0.14,
             emissive: new THREE.Color('#2563eb'),
             emissiveIntensity: 0.08,
+              wireframe: true,
+              depthWrite: false,
           }),
     [],
   );
@@ -563,17 +650,21 @@ export function TileSystem({
         ? new THREE.MeshToonMaterial({
             color: '#bae6fd',
             transparent: true,
-            opacity: 0.5,
+              opacity: 0.28,
             emissive: new THREE.Color('#60a5fa'),
             emissiveIntensity: 0.18,
             gradientMap: getToonGradient(3),
+              wireframe: true,
+              depthWrite: false,
           })
         : new THREE.MeshStandardMaterial({
             color: '#bae6fd',
             transparent: true,
-            opacity: 0.5,
+              opacity: 0.28,
             emissive: new THREE.Color('#60a5fa'),
             emissiveIntensity: 0.18,
+              wireframe: true,
+              depthWrite: false,
           }),
     [],
   );
@@ -724,12 +815,6 @@ export function TileSystem({
     [tileGroup.tiles],
   );
 
-  useEffect(() => {
-    if (tileCount <= capacity) return;
-    // Grow with headroom to avoid recreating the InstancedMesh on every add.
-    setCapacity(Math.max(tileCount, Math.ceil(capacity * 1.5)));
-  }, [tileCount, capacity]);
-
   useLayoutEffect(() => {
     const mesh = rockRef.current;
     if (mesh && terrain.rocks.length > 0) {
@@ -745,35 +830,6 @@ export function TileSystem({
       mesh.instanceMatrix.needsUpdate = true;
     }
   }, [terrain.rocks, dummy]);
-
-  useLayoutEffect(() => {
-    const mesh = instancedRef.current;
-    if (!mesh) return;
-
-    const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-    mesh.count = boxTiles.length;
-
-    for (let i = 0; i < boxTiles.length; i++) {
-      const tile = boxTiles[i];
-      if (!tile) continue;
-
-      const tileMultiplier = tile.size || 1;
-      const tileSize = cellSize * tileMultiplier;
-
-      dummy.position.set(tile.position.x, tile.position.y + 0.001, tile.position.z);
-      dummy.rotation.set(0, tile.rotation ?? 0, 0);
-      dummy.scale.set(tileSize, 1, tileSize);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-    }
-
-    mesh.instanceMatrix.needsUpdate = true;
-
-    if (boxTiles.length > 0) {
-      mesh.computeBoundingBox();
-      mesh.computeBoundingSphere();
-    }
-  }, [boxTiles, tileCount, dummy, capacity]);
 
   useEffect(() => {
     if (tileGroup.tiles.length === 0) return undefined;
@@ -869,25 +925,27 @@ export function TileSystem({
           );
         })}
         
-        <instancedMesh
-          ref={instancedRef}
-          args={[baseGeometry, material, capacity]}
-          castShadow
-          receiveShadow
-          frustumCulled
-        />
+        {boxTileBatches.map((batch) => (
+          <BoxTileBatchMesh
+            key={`${tileGroup.id}-box-${batch.materialId}`}
+            batch={batch}
+            geometry={baseGeometry}
+            dummy={dummy}
+          />
+        ))}
 
         {roundTiles.map((tile) => {
           const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
           const elevated = tile.position.y > 0.02;
           const height = elevated ? tile.position.y : 0.04;
           const centerY = elevated ? height / 2 : -0.02;
+          const tileMaterialId = getTileMaterialId(tile, tileGroup.floorMeshId);
 
           return (
             <mesh
               key={`${tile.id}-round`}
               position={[tile.position.x, centerY, tile.position.z]}
-              material={material}
+              material={materialById.get(tileMaterialId) ?? defaultMaterial}
               castShadow
               receiveShadow
             >
@@ -900,13 +958,14 @@ export function TileSystem({
           <StairTileMesh
             key={`${tile.id}-stairs`}
             tile={tile}
-            material={material}
+            material={materialById.get(getTileMaterialId(tile, tileGroup.floorMeshId)) ?? defaultMaterial}
             supportTiles={tileGroup.tiles}
           />
         ))}
 
         {rampTiles.map((tile) => {
           const { tileSize, totalHeight, rotation } = getRampLayout(tile);
+          const tileMaterialId = getTileMaterialId(tile, tileGroup.floorMeshId);
 
           return (
             <mesh
@@ -915,7 +974,7 @@ export function TileSystem({
               rotation={[0, rotation, 0]}
               scale={[tileSize, totalHeight, tileSize]}
               geometry={rampGeometry}
-              material={material}
+              material={materialById.get(tileMaterialId) ?? defaultMaterial}
               castShadow
               receiveShadow
             />

@@ -63,6 +63,8 @@ interface BuildingStore extends BuildingSystemState {
   setTileShape: (shape: TileShapeType) => void;
   currentTileRotation: number;
   setTileRotation: (rotation: number) => void;
+  currentTileMaterialId: string | null;
+  setCurrentTileMaterialId: (materialId: string | null) => void;
   
   currentWallRotation: number;
   setWallRotation: (rotation: number) => void;
@@ -198,6 +200,7 @@ export const useBuildingStore = create<BuildingStore>()(
     currentTileHeight: 0,
     currentTileShape: 'box',
     currentTileRotation: 0,
+    currentTileMaterialId: null,
     currentWallRotation: 0,
     objects: [],
     selectedTileObjectType: 'none',
@@ -666,10 +669,12 @@ export const useBuildingStore = create<BuildingStore>()(
             ? { grassDensity: 90 }
             : undefined;
         const cell = tile.cell ?? tilePositionToCell(tile.position);
+        const materialId = tile.materialId ?? state.currentTileMaterialId;
         const tileWithObject: TileConfig = {
           ...tile,
           cell,
           footprint: tile.footprint ?? createTileFootprint(cell, tile.size || 1),
+          ...(materialId ? { materialId } : {}),
           objectType: state.selectedTileObjectType,
           ...(objectConfig ? { objectConfig } : {}),
         };
@@ -807,6 +812,10 @@ export const useBuildingStore = create<BuildingStore>()(
 
     setTileRotation: (rotation) => set((state) => {
       state.currentTileRotation = rotation;
+    }),
+
+    setCurrentTileMaterialId: (materialId) => set((state) => {
+      state.currentTileMaterialId = materialId;
     }),
 
     setWallRotation: (rotation) => set((state) => {

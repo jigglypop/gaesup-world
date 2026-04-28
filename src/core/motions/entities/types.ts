@@ -16,6 +16,8 @@ import * as THREE from 'three';
 import type { CollisionUserData } from '@core/boilerplate/hooks/useCollisionHandler';
 
 export type Part = {
+  id?: string;
+  slot?: string;
   url: string;
   color?: string;
 };

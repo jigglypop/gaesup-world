@@ -1,5 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import {
+  AssetPreviewCanvas,
+  useAssetStore,
+  type AssetRecord,
+} from '../../../assets';
 import { useCharacterStore } from '../../stores/characterStore';
 import {
   FACE_STYLE_LABEL,
@@ -28,7 +33,12 @@ const COLOR_KEYS: { key: keyof AppearanceColors; label: string }[] = [
 
 const HAIR_OPTIONS: HairStyle[] = ['short', 'long', 'cap', 'bun', 'spiky'];
 const FACE_OPTIONS: FaceStyle[] = ['default', 'smile', 'wink', 'sleepy', 'surprised'];
-const SLOTS: OutfitSlot[] = ['hat', 'top', 'bottom', 'shoes', 'face'];
+const SLOTS: OutfitSlot[] = ['hat', 'top', 'bottom', 'shoes', 'face', 'weapon', 'accessory'];
+
+const matchesSlot = (asset: AssetRecord, slot: OutfitSlot) => {
+  if (slot === 'weapon') return asset.kind === 'weapon' || asset.slot === 'weapon';
+  return asset.slot === slot && (asset.kind === 'characterPart' || asset.kind === 'weapon');
+};
 
 export function CharacterCreator({ toggleKey, open, onClose }: CharacterCreatorProps = {}) {
   const controlled = typeof open === 'boolean';
@@ -43,6 +53,26 @@ export function CharacterCreator({ toggleKey, open, onClose }: CharacterCreatorP
   const setFace = useCharacterStore((s) => s.setFace);
   const equipOutfit = useCharacterStore((s) => s.equipOutfit);
   const resetAppearance = useCharacterStore((s) => s.resetAppearance);
+  const assetIds = useAssetStore((s) => s.ids);
+  const assetRecords = useAssetStore((s) => s.records);
+  const [tagFilter, setTagFilter] = useState('');
+  const [ownedOnly, setOwnedOnly] = useState(false);
+
+  const assetsBySlot = useMemo(() => {
+    const normalizedTag = tagFilter.trim().toLowerCase();
+    return SLOTS.reduce((acc, slot) => {
+      acc[slot] = assetIds
+        .map((id) => assetRecords[id])
+        .filter((asset): asset is AssetRecord => Boolean(asset))
+        .filter((asset) => matchesSlot(asset, slot))
+        .filter((asset) => {
+          if (!normalizedTag) return true;
+          return asset.tags?.some((tag) => tag.toLowerCase().includes(normalizedTag)) ?? false;
+        })
+        .filter((asset) => !ownedOnly || asset.metadata?.['owned'] !== false);
+      return acc;
+    }, {} as Record<OutfitSlot, AssetRecord[]>);
+  }, [assetIds, assetRecords, ownedOnly, tagFilter]);
 
   useEffect(() => {
     if (!toggleKey || controlled) return;
@@ -83,7 +113,7 @@ export function CharacterCreator({ toggleKey, open, onClose }: CharacterCreatorP
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: 'min(640px, 92vw)',
+          width: 'min(760px, 92vw)',
           maxHeight: '88vh',
           overflowY: 'auto',
           background: 'rgba(18,20,28,0.62)',
@@ -183,19 +213,50 @@ export function CharacterCreator({ toggleKey, open, onClose }: CharacterCreatorP
         </section>
 
         <section>
-          <label style={labelStyle}>장착 슬롯</label>
+          <div style={filterHeader}>
+            <label style={{ ...labelStyle, marginBottom: 0 }}>장착 슬롯</label>
+            <input
+              value={tagFilter}
+              onChange={(e) => setTagFilter(e.target.value)}
+              placeholder="태그 검색"
+              style={smallInput}
+            />
+            <label style={checkLabel}>
+              <input
+                type="checkbox"
+                checked={ownedOnly}
+                onChange={(e) => setOwnedOnly(e.target.checked)}
+              />
+              보유만
+            </label>
+          </div>
           <div style={gridCols}>
             {SLOTS.map((slot) => (
-              <div key={slot} style={colorRow}>
-                <span style={{ flex: 1 }}>{OUTFIT_SLOT_LABEL[slot]}</span>
-                <span style={{ color: outfits[slot] ? '#7adf90' : 'rgba(243,244,248,0.45)' }}>
-                  {outfits[slot] ?? '비어있음'}
-                </span>
-                {outfits[slot] && (
+              <div key={slot} style={slotPanel}>
+                <div style={slotHeader}>
+                  <span>{OUTFIT_SLOT_LABEL[slot]}</span>
+                  <span style={{ color: outfits[slot] ? '#7adf90' : 'rgba(243,244,248,0.45)' }}>
+                    {outfits[slot] ?? '비어있음'}
+                  </span>
                   <button onClick={() => equipOutfit(slot, null)} style={glassBtn}>
-                    벗기
+                    비우기
                   </button>
-                )}
+                </div>
+                <div style={assetGrid}>
+                  {assetsBySlot[slot].map((asset) => (
+                    <button
+                      key={asset.id}
+                      onClick={() => equipOutfit(slot, asset.id)}
+                      style={assetCard(outfits[slot] === asset.id)}
+                    >
+                      <AssetPreviewCanvas asset={asset} size={58} />
+                      <span style={assetName}>{asset.name}</span>
+                    </button>
+                  ))}
+                  {assetsBySlot[slot].length === 0 && (
+                    <span style={emptyText}>사용 가능한 에셋 없음</span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -259,4 +320,82 @@ const glassBtn = {
   fontFamily: 'inherit',
   fontSize: 12,
   fontWeight: 500,
+};
+
+const filterHeader = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  marginBottom: 8,
+};
+
+const smallInput = {
+  flex: 1,
+  minWidth: 120,
+  padding: '6px 9px',
+  borderRadius: 8,
+  border: '1px solid rgba(255,255,255,0.14)',
+  background: 'rgba(255,255,255,0.06)',
+  color: '#f3f4f8',
+  fontFamily: 'inherit',
+  fontSize: 12,
+};
+
+const checkLabel = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 5,
+  color: 'rgba(243,244,248,0.72)',
+  fontSize: 12,
+};
+
+const slotPanel = {
+  padding: 8,
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(255,255,255,0.10)',
+  borderRadius: 10,
+};
+
+const slotHeader = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  marginBottom: 8,
+};
+
+const assetGrid = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+  gap: 6,
+};
+
+const assetCard = (active: boolean) => ({
+  display: 'grid',
+  gridTemplateColumns: '58px minmax(0, 1fr)',
+  alignItems: 'center',
+  gap: 8,
+  minHeight: 70,
+  padding: 6,
+  borderRadius: 10,
+  border: active ? '1px solid #7bd3a7' : '1px solid rgba(255,255,255,0.10)',
+  background: active ? 'rgba(123,211,167,0.14)' : 'rgba(255,255,255,0.035)',
+  color: '#f3f4f8',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  textAlign: 'left' as const,
+});
+
+const assetName = {
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap' as const,
+  fontSize: 12,
+  fontWeight: 600,
+};
+
+const emptyText = {
+  gridColumn: '1 / -1',
+  padding: '10px 8px',
+  color: 'rgba(243,244,248,0.45)',
+  fontSize: 12,
 };

@@ -125,6 +125,91 @@
   color: var(--editor-text-main, #ffffff);
 }
 
+.building-panel__asset-targets {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px;
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  background: var(--editor-surface-1);
+  color: var(--editor-text-muted, #aaaaaa);
+  font-size: 11px;
+}
+
+.building-panel__asset-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-sm);
+}
+
+.building-panel__asset-card {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--editor-spacing-sm);
+  padding: 6px;
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  background: var(--editor-surface-1);
+}
+
+.building-panel__asset-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.building-panel__asset-info strong,
+.building-panel__asset-info span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.building-panel__asset-info strong {
+  color: var(--editor-text-main, #ffffff);
+  font-size: 12px;
+}
+
+.building-panel__asset-info span {
+  color: var(--editor-text-muted, #aaaaaa);
+  font-size: 10px;
+}
+
+.building-panel__asset-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.building-panel__asset-action {
+  min-width: 42px;
+  padding: 4px 8px;
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-sm);
+  background: var(--editor-surface-secondary);
+  color: var(--editor-text-secondary, #cccccc);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.building-panel__asset-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.building-panel__empty {
+  padding: 9px;
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  background: var(--editor-surface-1);
+  color: var(--editor-text-muted, #aaaaaa);
+  font-size: 12px;
+}
+
 .building-panel__stepper {
   display: flex;
   align-items: center;

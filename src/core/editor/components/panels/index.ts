@@ -5,4 +5,5 @@ export { PerformancePanel } from './PerformancePanel';
 export { PerformanceCollector } from './PerformanceCollector';
 export { VehiclePanel } from './VehiclePanel';
 export { BuildingPanel } from './BuildingPanel';
+export { CharacterAssetPanel } from './CharacterAssetPanel';
 export * from './types'; 

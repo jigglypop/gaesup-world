@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 
 import { Environment, Grid } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
@@ -29,7 +29,7 @@ import {
   useWalletStore, useWeatherStore, useWeatherTicker, useAudioStore,
   usePlayerPosition, useStateSystem, SpeechBalloon,
   type CameraOptionType, type SakuraTreeEntry, type SandEntry, type SnowfieldEntry,
-  useBuildingStore, useGaesupStore, WARRIOR_BLUEPRINT,
+  resolveCharacterParts, useAssetStore, useBuildingStore, useGaesupStore, WARRIOR_BLUEPRINT,
 } from '../../src';
 import { registerSeedDialogs } from '../components/dialog/seedDialogs';
 import { HudShell } from '../components/hud/HudShell';
@@ -188,7 +188,7 @@ const DEFAULT_CHARACTER_BODY = DEFAULT_CHARACTER_BLUEPRINT_PARTS.find((part) => 
 const DEFAULT_CHARACTER_URL = DEFAULT_CHARACTER_BODY?.url ?? CHARACTER_URL;
 const DEFAULT_CHARACTER_PARTS = DEFAULT_CHARACTER_BLUEPRINT_PARTS
   .filter((part) => part.id !== DEFAULT_CHARACTER_BODY?.id)
-  .map((part) => ({ url: part.url }));
+  .map((part) => ({ id: part.id, slot: part.type, url: part.url, ...(part.color ? { color: part.color } : {}) }));
 
 function Lighting() {
   return (
@@ -643,7 +643,17 @@ function GameSystems() {
 function Player() {
   const isInBuildingMode = useBuildingStore((s) => s.isInEditMode());
   const mode = useGaesupStore((s) => s.mode);
+  const outfits = useCharacterStore((s) => s.outfits);
+  const assetRecords = useAssetStore((s) => s.records);
   const { gameStates } = useStateSystem();
+  const parts = useMemo(
+    () => resolveCharacterParts({
+      baseParts: DEFAULT_CHARACTER_PARTS,
+      outfits,
+      assets: assetRecords,
+    }),
+    [assetRecords, outfits],
+  );
   if (isInBuildingMode || gameStates?.isRiding) return null;
   return (
     <>
@@ -651,7 +661,7 @@ function Player() {
         key={`controller-${mode.type}`}
         controllerOptions={{ lerp: { cameraTurn: 0.1, cameraPosition: 0.08 } }}
         rigidBodyProps={{}}
-        parts={DEFAULT_CHARACTER_PARTS}
+        parts={parts}
         rotation={euler({ x: 0, y: Math.PI, z: 0 })}
       />
     </>

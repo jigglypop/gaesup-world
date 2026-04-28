@@ -61,9 +61,11 @@ export function BlockSystem({
       new THREE.MeshStandardMaterial({
         color: '#60a5fa',
         transparent: true,
-        opacity: 0.34,
+        opacity: 0.16,
         emissive: new THREE.Color('#2563eb'),
         emissiveIntensity: 0.08,
+        wireframe: true,
+        depthWrite: false,
       }),
     [],
   );
@@ -72,9 +74,11 @@ export function BlockSystem({
       new THREE.MeshStandardMaterial({
         color: '#bae6fd',
         transparent: true,
-        opacity: 0.48,
+        opacity: 0.28,
         emissive: new THREE.Color('#60a5fa'),
         emissiveIntensity: 0.2,
+        wireframe: true,
+        depthWrite: false,
       }),
     [],
   );

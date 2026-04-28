@@ -1,7 +1,14 @@
-import React, { FC } from 'react';
+import React, { FC, useMemo } from 'react';
 
+import {
+  AssetPreviewCanvas,
+  createScopedAssetMeshConfig,
+  createScopedBuildingMeshId,
+  type AssetRecord,
+  useAssetStore,
+} from '../../../../assets';
 import { useBuildingStore } from '../../../../building/stores/buildingStore';
-import { FLAG_STYLE_META, FlagStyle, TileObjectType, PlacedObjectType, TileShapeType } from '../../../../building/types';
+import { FLAG_STYLE_META, FlagStyle, TileObjectType, PlacedObjectType, TileShapeType, type MeshConfig } from '../../../../building/types';
 import './styles.css';
 
 const FLAG_STYLES = Object.entries(FLAG_STYLE_META) as [FlagStyle, typeof FLAG_STYLE_META[FlagStyle]][];
@@ -14,12 +21,16 @@ const BILLBOARD_COLORS = [
   { value: '#ffdd00', label: '노랑' },
 ];
 
+const isBuildingMaterialAsset = (asset: AssetRecord) =>
+  asset.kind === 'material' || asset.kind === 'wall' || asset.kind === 'tile';
+
 export const BuildingPanel: FC = () => {
   const editMode = useBuildingStore((state) => state.editMode);
   const setEditMode = useBuildingStore((state) => state.setEditMode);
   const selectedWallId = useBuildingStore((state) => state.selectedWallId);
   const selectedTileId = useBuildingStore((state) => state.selectedTileId);
   const selectedBlockId = useBuildingStore((state) => state.selectedBlockId);
+  const selectedWallGroupId = useBuildingStore((state) => state.selectedWallGroupId);
   const currentTileMultiplier = useBuildingStore((state) => state.currentTileMultiplier);
   const setTileMultiplier = useBuildingStore((state) => state.setTileMultiplier);
   const currentTileHeight = useBuildingStore((state) => state.currentTileHeight);
@@ -28,6 +39,8 @@ export const BuildingPanel: FC = () => {
   const setTileShape = useBuildingStore((state) => state.setTileShape);
   const currentTileRotation = useBuildingStore((state) => state.currentTileRotation);
   const setTileRotation = useBuildingStore((state) => state.setTileRotation);
+  const currentTileMaterialId = useBuildingStore((state) => state.currentTileMaterialId);
+  const setCurrentTileMaterialId = useBuildingStore((state) => state.setCurrentTileMaterialId);
   const currentWallRotation = useBuildingStore((state) => state.currentWallRotation);
   const setWallRotation = useBuildingStore((state) => state.setWallRotation);
   const selectedTileObjectType = useBuildingStore((state) => state.selectedTileObjectType);
@@ -59,7 +72,10 @@ export const BuildingPanel: FC = () => {
   const wallGroups = useBuildingStore((state) => state.wallGroups);
   const blocks = useBuildingStore((state) => state.blocks);
   const meshes = useBuildingStore((state) => state.meshes);
+  const addMesh = useBuildingStore((state) => state.addMesh);
   const updateMesh = useBuildingStore((state) => state.updateMesh);
+  const updateWallGroup = useBuildingStore((state) => state.updateWallGroup);
+  const updateTile = useBuildingStore((state) => state.updateTile);
   const removeWall = useBuildingStore((state) => state.removeWall);
   const removeTile = useBuildingStore((state) => state.removeTile);
   const removeBlock = useBuildingStore((state) => state.removeBlock);
@@ -75,6 +91,15 @@ export const BuildingPanel: FC = () => {
   const setObjectSecondaryColor = useBuildingStore((state) => state.setObjectSecondaryColor);
   const showSnow = useBuildingStore((state) => state.showSnow);
   const setShowSnow = useBuildingStore((state) => state.setShowSnow);
+  const assetIds = useAssetStore((state) => state.ids);
+  const assetRecords = useAssetStore((state) => state.records);
+  const buildingAssets = useMemo(
+    () => assetIds
+      .map((id) => assetRecords[id])
+      .filter((asset): asset is AssetRecord => Boolean(asset))
+      .filter(isBuildingMaterialAsset),
+    [assetIds, assetRecords],
+  );
 
   const editModes: { type: typeof editMode; label: string; description: string }[] = [
     { type: 'none', label: '없음', description: '건축 편집을 끕니다' },
@@ -115,10 +140,10 @@ export const BuildingPanel: FC = () => {
   ];
   const selectedWallGroup = selectedWallId
     ? Array.from(wallGroups.values()).find((group) => group.walls.some((wall) => wall.id === selectedWallId))
-    : undefined;
+    : wallGroups.get(selectedWallGroupId ?? '');
   const selectedTileGroup = selectedTileId
     ? Array.from(tileGroups.values()).find((group) => group.tiles.some((tile) => tile.id === selectedTileId))
-    : undefined;
+    : tileGroups.get(selectedTileGroupId ?? '');
   const selectedBlock = selectedBlockId
     ? blocks.find((block) => block.id === selectedBlockId)
     : undefined;
@@ -140,6 +165,43 @@ export const BuildingPanel: FC = () => {
   const handleDeleteSelectedBlock = () => {
     if (!selectedBlockId) return;
     removeBlock(selectedBlockId);
+  };
+
+  const upsertScopedMesh = (
+    sourceMeshId: string | undefined,
+    scopeId: string,
+    surface: string,
+    asset: AssetRecord,
+  ): string => {
+    const nextMeshId = createScopedBuildingMeshId(scopeId, surface, asset.id);
+    const base = sourceMeshId ? meshes.get(sourceMeshId) : undefined;
+    const nextMesh: MeshConfig = createScopedAssetMeshConfig(nextMeshId, asset, base);
+    if (meshes.has(nextMeshId)) {
+      updateMesh(nextMeshId, nextMesh);
+    } else {
+      addMesh(nextMesh);
+    }
+    return nextMeshId;
+  };
+
+  const applyAssetToWall = (asset: AssetRecord) => {
+    if (!selectedWallGroup) return;
+    updateWallGroup(selectedWallGroup.id, {
+      frontMeshId: upsertScopedMesh(selectedWallGroup.frontMeshId, selectedWallGroup.id, 'front', asset),
+      backMeshId: upsertScopedMesh(selectedWallGroup.backMeshId, selectedWallGroup.id, 'back', asset),
+      sideMeshId: upsertScopedMesh(selectedWallGroup.sideMeshId, selectedWallGroup.id, 'side', asset),
+    });
+  };
+
+  const applyAssetToTile = (asset: AssetRecord) => {
+    if (!selectedTileGroup) return;
+    if (selectedTileId) {
+      const tileScopedMeshId = upsertScopedMesh(selectedTileGroup.floorMeshId, selectedTileId, 'tile', asset);
+      updateTile(selectedTileGroup.id, selectedTileId, { materialId: tileScopedMeshId });
+      return;
+    }
+    const placementMeshId = upsertScopedMesh(selectedTileGroup.floorMeshId, 'placement', 'tile', asset);
+    setCurrentTileMaterialId(placementMeshId);
   };
 
   return (
@@ -186,6 +248,47 @@ export const BuildingPanel: FC = () => {
             >
               선택 벽 삭제
             </button>
+          </div>
+        </div>
+      )}
+
+      {(editMode === 'wall' || editMode === 'tile' || editMode === 'none') && (
+        <div className="building-panel__section">
+          <div className="building-panel__section-title">에셋 재질</div>
+          <div className="building-panel__asset-targets">
+            <span>벽: {selectedWallGroup?.name ?? '선택 없음'}</span>
+            <span>타일: {selectedTileId ? `선택 타일 ${selectedTileId}` : '다음 생성 타일'}</span>
+            <span>현재 생성 재질: {currentTileMaterialId ?? selectedTileGroup?.floorMeshId ?? '기본값'}</span>
+          </div>
+          <div className="building-panel__asset-list">
+            {buildingAssets.map((asset) => (
+              <div key={asset.id} className="building-panel__asset-card">
+                <AssetPreviewCanvas asset={asset} size={54} />
+                <div className="building-panel__asset-info">
+                  <strong>{asset.name}</strong>
+                  <span>{asset.kind}</span>
+                </div>
+                <div className="building-panel__asset-actions">
+                  <button
+                    className="building-panel__asset-action"
+                    disabled={!selectedWallGroup}
+                    onClick={() => applyAssetToWall(asset)}
+                  >
+                    벽
+                  </button>
+                  <button
+                    className="building-panel__asset-action"
+                    disabled={!selectedTileGroup}
+                    onClick={() => applyAssetToTile(asset)}
+                  >
+                    타일
+                  </button>
+                </div>
+              </div>
+            ))}
+            {buildingAssets.length === 0 && (
+              <div className="building-panel__empty">사용 가능한 빌딩 에셋이 없습니다.</div>
+            )}
           </div>
         </div>
       )}

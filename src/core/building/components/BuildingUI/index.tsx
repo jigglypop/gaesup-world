@@ -3,7 +3,7 @@ import React, { useMemo, useCallback } from 'react';
 import { useAuthStore } from '../../../../admin/store/authStore';
 import { useNPCStore } from '../../../npc/stores/npcStore';
 import { useBuildingStore } from '../../stores/buildingStore';
-import type { TileObjectType, TileShapeType } from '../../types';
+import type { MeshConfig, TileObjectType, TileShapeType } from '../../types';
 import './styles.css';
 
 export type BuildingUIProps = {
@@ -46,6 +46,8 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     selectedTileCategoryId,
     selectedWallGroupId,
     selectedTileGroupId,
+    selectedTileId,
+    setCurrentTileMaterialId,
     setSelectedWallCategory,
     setSelectedTileCategory,
     wallGroups,
@@ -53,6 +55,8 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     meshes,
     updateMesh,
     addMesh,
+    updateWallGroup,
+    updateTile,
     addWallGroup,
     addTileGroup,
     selectedTileObjectType,
@@ -85,6 +89,27 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     () => TILE_SHAPE_OPTIONS.find((option) => option.type === currentTileShape)?.label ?? currentTileShape,
     [currentTileShape],
   );
+
+  const upsertCustomMesh = useCallback((sourceMeshId: string | undefined, nextMeshId: string): string => {
+    const base = sourceMeshId ? meshes.get(sourceMeshId) : undefined;
+    const { mapTextureUrl, textureUrl, ...baseWithoutTexture } = base ?? {};
+    void mapTextureUrl;
+    void textureUrl;
+    const nextMesh: MeshConfig = {
+      ...baseWithoutTexture,
+      id: nextMeshId,
+      color: customColor,
+      material: 'STANDARD',
+      ...(customTexture ? { mapTextureUrl: customTexture, textureUrl: customTexture } : {}),
+    };
+
+    if (meshes.has(nextMeshId)) {
+      updateMesh(nextMeshId, nextMesh);
+    } else {
+      addMesh(nextMesh);
+    }
+    return nextMeshId;
+  }, [addMesh, customColor, customTexture, meshes, updateMesh]);
   
   // Callbacks
   const handleEditModeClose = useCallback(() => {
@@ -259,10 +284,14 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                         if (selectedTileGroupId) {
                           const tileGroup = tileGroups.get(selectedTileGroupId);
                           if (tileGroup && tileGroup.floorMeshId) {
-                            updateMesh(tileGroup.floorMeshId, {
-                              color: customColor,
-                              ...(customTexture ? { mapTextureUrl: customTexture } : {}),
-                            });
+                            const meshId = selectedTileId
+                              ? upsertCustomMesh(tileGroup.floorMeshId, `custom-tile-mesh-${selectedTileId}`)
+                              : upsertCustomMesh(tileGroup.floorMeshId, 'custom-placement-tile-mesh');
+                            if (selectedTileId) {
+                              updateTile(tileGroup.id, selectedTileId, { materialId: meshId });
+                              return;
+                            }
+                            setCurrentTileMaterialId(meshId);
                           }
                         }
                       }}
@@ -549,24 +578,11 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                         if (selectedWallGroupId) {
                           const wallGroup = wallGroups.get(selectedWallGroupId);
                           if (wallGroup && wallGroup.frontMeshId) {
-                            const meshUpdate = {
-                              color: customColor,
-                              ...(customTexture ? { mapTextureUrl: customTexture } : {}),
-                            };
-                            updateMesh(wallGroup.frontMeshId, {
-                              ...meshUpdate,
+                            updateWallGroup(wallGroup.id, {
+                              frontMeshId: upsertCustomMesh(wallGroup.frontMeshId, `custom-wall-mesh-${wallGroup.id}-front`),
+                              backMeshId: upsertCustomMesh(wallGroup.backMeshId, `custom-wall-mesh-${wallGroup.id}-back`),
+                              sideMeshId: upsertCustomMesh(wallGroup.sideMeshId, `custom-wall-mesh-${wallGroup.id}-side`),
                             });
-                            // Update back and side meshes too
-                            if (wallGroup.backMeshId) {
-                              updateMesh(wallGroup.backMeshId, {
-                                ...meshUpdate,
-                              });
-                            }
-                            if (wallGroup.sideMeshId) {
-                              updateMesh(wallGroup.sideMeshId, {
-                                ...meshUpdate,
-                              });
-                            }
                           }
                         }
                       }}

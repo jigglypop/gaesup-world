@@ -14,10 +14,21 @@ export interface Rotation3D {
 
 export interface MeshConfig {
   id: string;
+  assetId?: string;
   color?: string;
   material?: 'STANDARD' | 'GLASS' | 'METAL';
+  textureUrl?: string;
   mapTextureUrl?: string;
   normalTextureUrl?: string;
+  materialParams?: {
+    color?: string;
+    mapTextureUrl?: string;
+    normalTextureUrl?: string;
+    roughness?: number;
+    metalness?: number;
+    opacity?: number;
+    transparent?: boolean;
+  };
   roughness?: number;
   metalness?: number;
   opacity?: number;
@@ -95,6 +106,7 @@ export interface TileConfig {
   id: string;
   position: Position3D;
   tileGroupId: string;
+  materialId?: string;
   cell?: CellCoord;
   footprint?: CellCoord[];
   size?: number;

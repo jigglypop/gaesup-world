@@ -17,38 +17,62 @@ export class MaterialManager {
   @HandleError()
   @Profile()
   getMaterial(meshConfig: MeshConfig): THREE.Material {
-    const cached = this.materials.get(meshConfig.id);
+    const key = this.createMaterialKey(meshConfig);
+    const cached = this.materials.get(key);
     if (cached) return cached;
 
     const material = this.createMaterial(meshConfig);
-    this.materials.set(meshConfig.id, material);
+    this.materials.set(key, material);
     return material;
+  }
+
+  private createMaterialKey(meshConfig: MeshConfig): string {
+    return [
+      meshConfig.id,
+      meshConfig.assetId ?? '',
+      meshConfig.color ?? meshConfig.materialParams?.color ?? '',
+      meshConfig.material ?? '',
+      meshConfig.textureUrl ?? '',
+      meshConfig.mapTextureUrl ?? meshConfig.materialParams?.mapTextureUrl ?? '',
+      meshConfig.normalTextureUrl ?? meshConfig.materialParams?.normalTextureUrl ?? '',
+      meshConfig.roughness ?? meshConfig.materialParams?.roughness ?? '',
+      meshConfig.metalness ?? meshConfig.materialParams?.metalness ?? '',
+      meshConfig.opacity ?? meshConfig.materialParams?.opacity ?? '',
+      meshConfig.transparent ?? meshConfig.materialParams?.transparent ?? '',
+    ].join('|');
   }
 
   @HandleError()
   @Profile()
   private createMaterial(meshConfig: MeshConfig): THREE.Material {
+    const color = meshConfig.color ?? meshConfig.materialParams?.color ?? '#ffffff';
+    const roughness = meshConfig.roughness ?? meshConfig.materialParams?.roughness ?? 0.5;
+    const metalness = meshConfig.metalness ?? meshConfig.materialParams?.metalness ?? 0;
+    const opacity = meshConfig.opacity ?? meshConfig.materialParams?.opacity ?? 1;
+    const transparent = meshConfig.transparent ?? meshConfig.materialParams?.transparent ?? false;
+    const mapTextureUrl = meshConfig.mapTextureUrl ?? meshConfig.textureUrl ?? meshConfig.materialParams?.mapTextureUrl;
+    const normalTextureUrl = meshConfig.normalTextureUrl ?? meshConfig.materialParams?.normalTextureUrl;
     const baseOptions: THREE.MeshStandardMaterialParameters = {
-      color: meshConfig.color || '#ffffff',
-      roughness: meshConfig.roughness || 0.5,
-      metalness: meshConfig.metalness || 0,
-      opacity: meshConfig.opacity || 1,
-      transparent: meshConfig.transparent || false,
+      color,
+      roughness,
+      metalness,
+      opacity,
+      transparent,
     };
 
     if (getDefaultToonMode()) {
       const isGlass = meshConfig.material === 'GLASS';
       const toon = new THREE.MeshToonMaterial({
-        color: meshConfig.color || '#ffffff',
-        opacity: isGlass ? 0.45 : (meshConfig.opacity || 1),
-        transparent: isGlass ? true : (meshConfig.transparent || false),
+        color,
+        opacity: isGlass ? 0.45 : opacity,
+        transparent: isGlass ? true : transparent,
         gradientMap: getToonGradient(isGlass ? 2 : 4),
       });
-      if (meshConfig.mapTextureUrl) {
-        toon.map = this.loadTexture(meshConfig.mapTextureUrl);
+      if (mapTextureUrl) {
+        toon.map = this.loadTexture(mapTextureUrl);
       }
-      if (meshConfig.normalTextureUrl) {
-        toon.normalMap = this.loadTexture(meshConfig.normalTextureUrl);
+      if (normalTextureUrl) {
+        toon.normalMap = this.loadTexture(normalTextureUrl);
       }
       return toon;
     }
@@ -62,12 +86,12 @@ export class MaterialManager {
       });
     }
 
-    if (meshConfig.mapTextureUrl) {
-      baseOptions.map = this.loadTexture(meshConfig.mapTextureUrl);
+    if (mapTextureUrl) {
+      baseOptions.map = this.loadTexture(mapTextureUrl);
     }
 
-    if (meshConfig.normalTextureUrl) {
-      baseOptions.normalMap = this.loadTexture(meshConfig.normalTextureUrl);
+    if (normalTextureUrl) {
+      baseOptions.normalMap = this.loadTexture(normalTextureUrl);
     }
 
     return new THREE.MeshStandardMaterial(baseOptions);
