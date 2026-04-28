@@ -5,31 +5,92 @@
   "description": "Web 3D Character Controller and World Platform Library",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./admin": {
+      "import": {
+        "types": "./dist/admin-entry.d.ts",
+        "default": "./dist/admin.js"
+      },
+      "require": {
+        "types": "./dist/admin-entry.d.cts",
+        "default": "./dist/admin.cjs"
+      }
+    },
+    "./blueprints": {
+      "import": {
+        "types": "./dist/blueprints/index.d.ts",
+        "default": "./dist/blueprints.js"
+      },
+      "require": {
+        "types": "./dist/blueprints/index.d.cts",
+        "default": "./dist/blueprints.cjs"
+      }
+    },
+    "./blueprints/editor": {
+      "import": {
+        "types": "./dist/blueprints/editor.d.ts",
+        "default": "./dist/blueprints-editor.js"
+      },
+      "require": {
+        "types": "./dist/blueprints/editor.d.cts",
+        "default": "./dist/blueprints-editor.cjs"
+      }
+    },
+    "./postprocessing": {
+      "import": {
+        "types": "./dist/postprocessing.d.ts",
+        "default": "./dist/postprocessing.js"
+      },
+      "require": {
+        "types": "./dist/postprocessing.d.cts",
+        "default": "./dist/postprocessing.cjs"
+      }
+    },
+    "./style.css": "./dist/index.css"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "sideEffects": [
+    "**/*.css",
+    "**/*.glsl",
+    "reflect-metadata"
+  ],
   "files": [
-    "dist",
+    "dist/index.js",
+    "dist/index.cjs",
+    "dist/index.d.ts",
+    "dist/*.js",
+    "dist/*.cjs",
+    "dist/*.d.ts",
+    "dist/*.d.cts",
+    "dist/*.css",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.cts",
+    "dist/wasm/*.wasm",
     "README.md",
     "LICENSE.txt"
   ],
   "scripts": {
     "dev": "vite --force",
     "clean": "rimraf dist/",
-    "build": "pnpm clean && pnpm build:esm && pnpm build:cjs && pnpm build:types",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:types",
     "build:esm": "vite build --mode esm",
     "build:cjs": "vite build --mode cjs",
-    "build:types": "tsc -p tsconfig.build.json",
+    "build:types": "tsc -p tsconfig.build.json && node scripts/copy-cjs-types.cjs",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "preview": "vite preview",
-    "prepare": "pnpm build",
-    "predeploy": "pnpm build",
+    "prepare": "npm run build",
+    "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -38,30 +99,13 @@
     "test:memory:verbose": "jest --testPathPattern=memory --verbose --runInBand --logHeapUsage",
     "test:memory:ci": "jest --testPathPattern=memory --runInBand --logHeapUsage",
     "release": "semantic-release",
-    "publish:full": "pnpm prepare && npm publish"
+    "publish:full": "npm run prepare && npm publish"
   },
   "dependencies": {
-    "@react-icons/all-files": "^4.1.0",
-    "@react-three/postprocessing": "^3.0.4",
-    "@types/stats.js": "^0.17.4",
-    "@types/three": "^0.178.0",
-    "@xyflow/react": "^12.8.1",
     "immer": "^10.1.1",
-    "leva": "0.10.0",
-    "lru-cache": "^11.1.0",
     "mitt": "^3.0.1",
-    "r3f-perf": "^7.2.3",
-    "rc-dock": "^3.3.2",
-    "react-device-detect": "^2.2.3",
-    "react-icons": "^5.5.0",
-    "react-router-dom": "^7.6.3",
-    "react-use-refs": "^1.0.1",
-    "reactflow": "^11.11.4",
     "reflect-metadata": "^0.2.2",
     "simplex-noise": "^4.0.3",
-    "stats.js": "^0.17.0",
-    "three": "^0.178.0",
-    "three-stdlib": "^2.36.0",
     "zustand": "^5.0.6"
   },
   "devDependencies": {
@@ -87,7 +131,10 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@types/react-test-renderer": "^19.1.0",
+    "@types/stats.js": "^0.17.4",
+    "@types/three": "^0.178.0",
     "@vitejs/plugin-react-swc": "^3.10.2",
+    "@xyflow/react": "^12.8.1",
     "copyfiles": "^2.4.1",
     "css-loader": "^7.1.2",
     "eslint": "^9.30.1",
@@ -104,12 +151,21 @@
     "jest": "^30.0.4",
     "jest-canvas-mock": "^2.5.2",
     "jest-environment-jsdom": "^30.0.4",
+    "leva": "0.10.0",
+    "lru-cache": "^11.1.0",
     "path": "^0.12.7",
     "prettier": "^3.6.2",
     "publint": "^0.3.12",
+    "r3f-perf": "^7.2.3",
+    "rc-dock": "^3.3.2",
     "react": "^19.1.0",
+    "react-device-detect": "^2.2.3",
     "react-dom": "^19.1.0",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^7.6.3",
     "react-test-renderer": "^19.1.0",
+    "react-use-refs": "^1.0.1",
+    "reactflow": "^11.11.4",
     "rimraf": "^6.0.1",
     "semantic-release": "^24.2.6",
     "ts-jest": "^29.4.0",
@@ -119,21 +175,53 @@
     "vite": "^7.0.2",
     "vite-plugin-glsl": "^1.5.1",
     "vite-plugin-svgr": "^4.3.0",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite-tsconfig-paths": "^5.1.4",
+    "three-stdlib": "^2.36.0",
+    "@react-three/postprocessing": "^3.0.4"
   },
   "peerDependencies": {
     "@dimforge/rapier3d": "^0.14.0 || ^0.17.0",
     "@dimforge/rapier3d-compat": "^0.14.0 || ^0.17.0",
     "@react-three/drei": "^9.112.0 || ^10.0.0",
     "@react-three/fiber": "^8.17.7 || ^9.0.0",
+    "@react-three/postprocessing": "^2.16.0 || ^3.0.0",
     "@react-three/rapier": "^1.4.0 || ^2.0.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
+    "react-icons": "^5.0.0",
+    "react-router-dom": "^6.0.0 || ^7.0.0",
+    "reactflow": "^11.0.0",
     "three": "^0.168.0 || ^0.178.0"
+  },
+  "peerDependenciesMeta": {
+    "@dimforge/rapier3d": {
+      "optional": true
+    },
+    "@dimforge/rapier3d-compat": {
+      "optional": true
+    },
+    "@react-three/drei": {
+      "optional": true
+    },
+    "@react-three/postprocessing": {
+      "optional": true
+    },
+    "@react-three/rapier": {
+      "optional": true
+    },
+    "react-icons": {
+      "optional": true
+    },
+    "react-router-dom": {
+      "optional": true
+    },
+    "reactflow": {
+      "optional": true
+    }
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jigglypop/gaesup-world.git"
+    "url": "git+https://github.com/jigglypop/gaesup-world.git"
   },
   "keywords": [
     "three.js",

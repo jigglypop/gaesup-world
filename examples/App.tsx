@@ -2,7 +2,7 @@ import React from 'react';
 
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 
-import { GaesupAdmin } from '../src';
+import { GaesupAdmin } from '../src/admin-entry';
 import './style.css';
 import { Navigation } from './components/nav/Navigation';
 import { BlueprintEditorPage } from './pages/BlueprintEditorPage';

@@ -7,6 +7,7 @@ import { euler, Physics, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { WorldPageProps } from './types';
+import { ColorGrade } from '../../src/postprocessing';
 import {
   Billboard, BugSpot,
   BuildingController, CatalogUI, Clicker, CraftingUI, CropPlot, DialogBox, Editor,
@@ -16,7 +17,7 @@ import {
   MailboxUI, MiniMap, QuestLogUI, SakuraBatch, SandBatch, ShopUI, Snow, SnowfieldBatch,
   ToastHost, ToolUseController, TreeObject, Water,
   WeatherEffect,
-  CharacterCreator, ColorGrade, DynamicFog, DynamicSky, Footprints, Footsteps, HouseDoor, OutfitAvatar, SceneRoot,
+  CharacterCreator, DynamicFog, DynamicSky, Footprints, Footsteps, HouseDoor, OutfitAvatar, SceneRoot,
   RoomPortal, RoomRoot, RoomVisibilityDriver,
   TouchControls, useSceneStore,
   getNPCScheduler, getSaveSystem, registerSeedCrops, registerSeedEvents, registerSeedItems,

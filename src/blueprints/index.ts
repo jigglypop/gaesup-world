@@ -2,7 +2,6 @@ export * from './types';
 export * from './registry';
 export * from './factory';
 export * from './hooks';
-export * from './components/BlueprintEditor';
 export * from './characters';
 export * from './vehicles';
 export { blueprintRegistry } from './registry';

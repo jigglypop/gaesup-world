@@ -6,6 +6,31 @@ import glsl from 'vite-plugin-glsl';
 import svgr from 'vite-plugin-svgr';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
+const libraryExternals = [
+  'react',
+  'react-dom',
+  'react/jsx-runtime',
+  'three',
+  /^three\//,
+  'three-stdlib',
+  '@react-three/fiber',
+  '@react-three/drei',
+  '@react-three/rapier',
+  '@react-three/postprocessing',
+  '@dimforge/rapier3d',
+  '@dimforge/rapier3d-compat',
+  'immer',
+  /^immer\//,
+  'mitt',
+  'react-icons',
+  /^react-icons\//,
+  'react-router-dom',
+  'reactflow',
+  'reflect-metadata',
+  'simplex-noise',
+  'zustand',
+  /^zustand\//,
+];
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -49,28 +74,20 @@ export default defineConfig(({ mode }) => {
       },
       build: {
         lib: {
-          entry: path.resolve(__dirname, 'src/index.ts'),
+          entry: {
+            index: path.resolve(__dirname, 'src/index.ts'),
+            admin: path.resolve(__dirname, 'src/admin-entry.ts'),
+            blueprints: path.resolve(__dirname, 'src/blueprints/index.ts'),
+            'blueprints-editor': path.resolve(__dirname, 'src/blueprints/editor.ts'),
+            postprocessing: path.resolve(__dirname, 'src/postprocessing.ts'),
+          },
           name: 'GaesupWorld',
-          fileName: mode === 'esm' ? 'index' : 'index',
+          fileName: (format, entryName) => `${entryName}.${format === 'cjs' ? 'cjs' : 'js'}`,
+          cssFileName: 'index',
           formats: mode === 'esm' ? ['es'] : ['cjs'],
         },
         rollupOptions: {
-          external: [
-            'react',
-            'react-dom',
-            'three',
-            '@react-three/fiber',
-            '@react-three/drei',
-            '@react-three/rapier',
-            '@dimforge/rapier3d',
-            '@dimforge/rapier3d-compat',
-            'jotai',
-            'leva',
-            'react-device-detect',
-            'react-icons',
-            'react-use-refs',
-            'three-stdlib',
-          ],
+          external: libraryExternals,
           output: {
             globals: {
               react: 'React',

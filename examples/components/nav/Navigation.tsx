@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { useAuthStore } from '../../../src';
+import { useAuthStore } from '../../../src/admin-entry';
 import './styles.css';
 
 export const Navigation = () => {

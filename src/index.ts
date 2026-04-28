@@ -79,15 +79,13 @@ export {
   Water,
   Billboard,
   Fire,
-  // Toon / Outline
+  // Toon
   createToonMaterial,
   getToonGradient,
   setDefaultToonMode,
   getDefaultToonMode,
   disposeToonGradients,
   applyToonToScene,
-  ToonOutlines,
-  Outlined,
   // Time
   TimeHUD,
   useTimeStore,
@@ -201,12 +199,6 @@ export {
   // Rendering polish
   DynamicFog,
   DynamicSky,
-  ColorGrade,
-  LutOverlay,
-  parseCubeLut,
-  createLutTexture,
-  loadCubeLut,
-  loadCubeLutTexture,
   // Scene / dimensions
   useSceneStore,
   SceneFader,
@@ -243,8 +235,6 @@ export type {
   SakuraTreeEntry,
   SandEntry,
   SnowfieldEntry,
-  ToonOutlinesProps,
-  OutlinedProps,
   GameTime,
   Season,
   Weekday,
@@ -355,4 +345,3 @@ export type {
   LocaleId,
   PerfTier,
 } from './core';
-export { GaesupAdmin, useAuthStore, useToast } from './admin';
