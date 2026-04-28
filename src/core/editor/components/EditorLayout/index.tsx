@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useMemo, useState } from 'react';
 
 import '../../styles/theme.css';
 import { 
@@ -13,12 +13,17 @@ import {
 import { ResizablePanel } from '../ResizablePanel';
 import { EditorLayoutProps, FloatingPanel, PanelConfig } from './types';
 
-export const EditorLayout: FC<EditorLayoutProps> = ({ children }) => {
-  const [activePanels, setActivePanels] = useState<string[]>(['building', 'character', 'camera']);
+export const EditorLayout: FC<EditorLayoutProps> = ({
+  children,
+  panels = [],
+  defaultActivePanels = ['building', 'character', 'camera'],
+  actions = [],
+}) => {
+  const [activePanels, setActivePanels] = useState<string[]>(defaultActivePanels);
   const [floatingPanels, setFloatingPanels] = useState<FloatingPanel[]>([]);
   const [minimizedPanels, setMinimizedPanels] = useState<string[]>([]);
 
-  const panelConfigs: PanelConfig[] = [
+  const builtInPanels: PanelConfig[] = [
     { id: 'building', title: '건축', component: <BuildingPanel />, defaultSide: 'left' },
     { id: 'character', title: '캐릭터', component: <CharacterAssetPanel />, defaultSide: 'left' },
     { id: 'vehicle', title: '탑승체', component: <VehiclePanel />, defaultSide: 'left' },
@@ -27,6 +32,7 @@ export const EditorLayout: FC<EditorLayoutProps> = ({ children }) => {
     { id: 'motion', title: '모션', component: <MotionPanel />, defaultSide: 'right' },
     { id: 'performance', title: '성능', component: <PerformancePanel />, defaultSide: 'right' },
   ];
+  const panelConfigs = useMemo(() => [...builtInPanels, ...panels], [panels]);
 
   const togglePanel = (panelId: string) => {
     setActivePanels(prev => {
@@ -99,6 +105,17 @@ export const EditorLayout: FC<EditorLayoutProps> = ({ children }) => {
             title={config.title}
           >
             {config.title}
+          </button>
+        ))}
+        {actions.map(action => (
+          <button
+            key={action.id}
+            onClick={() => { void action.onClick(); }}
+            className="editor-panel-toggle"
+            disabled={action.disabled}
+            title={action.label}
+          >
+            {action.label}
           </button>
         ))}
       </div>

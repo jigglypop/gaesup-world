@@ -1,4 +1,5 @@
 // Core
+export * from './adapter';
 export * from './core';
 
 // Hooks (이름 충돌 방지를 위해 개별 export)

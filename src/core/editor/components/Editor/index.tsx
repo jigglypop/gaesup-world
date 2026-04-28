@@ -29,7 +29,8 @@ const EDITOR_CAMERA_OPTION: Partial<CameraOptionType> = {
 export const Editor: FC<EditorProps> = ({ 
   children, 
   className = '', 
-  style = {} 
+  style = {},
+  shell,
 }) => {
   const previousCameraRef = useRef<{
     mode: ModeState;
@@ -61,7 +62,11 @@ export const Editor: FC<EditorProps> = ({
         ...style
       }}
     >
-      <EditorLayout>
+      <EditorLayout
+        {...(shell?.panels ? { panels: shell.panels } : {})}
+        {...(shell?.defaultActivePanels ? { defaultActivePanels: shell.defaultActivePanels } : {})}
+        {...(shell?.actions ? { actions: shell.actions } : {})}
+      >
         {children}
       </EditorLayout>
     </div>

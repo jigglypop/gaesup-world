@@ -3,6 +3,7 @@ export * from './camera';
 export * from './error';
 export * from './hooks';
 export * from './grid';
+export * from './gameplay';
 export * from './interactions';
 export * from './motions';
 export * from './stores';
@@ -10,6 +11,7 @@ export * from './ui';
 export * from './utils';
 export * from './world';
 export * from './networks';
+export * from './ops';
 export * from './time';
 export * from './save';
 export * from './items';
@@ -29,12 +31,30 @@ export * from './town';
 export * from './audio';
 export * from './assets';
 export * from './character';
+export * from './content';
 export * from './effects';
 export * from './i18n';
 export * from './input';
+export {
+  PLAYER_PROGRESS_DOMAINS,
+  WORLD_SNAPSHOT_DOMAINS,
+  createPlayerProgress,
+  createWorldSnapshot,
+  pickDomains,
+} from './platform';
+export type {
+  CreatePlayerProgressOptions,
+  CreateWorldSnapshotOptions,
+  DomainSnapshot,
+  PlayerProgress,
+  PlayerProgressDomain,
+  WorldSnapshot as PlatformWorldSnapshot,
+  WorldSnapshotDomain,
+} from './platform';
 export * from './perf';
 export * from './placement';
 export * from './plugins';
+export * from './runtime';
 export * from './scene';
 export { DynamicFog } from './rendering/fog/DynamicFog';
 export type { DynamicFogProps } from './rendering/fog/DynamicFog';

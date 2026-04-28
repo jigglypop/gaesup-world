@@ -2,9 +2,17 @@ import 'reflect-metadata'
 import './core/initializeBridges';
 
 export * from './blueprints';
+export * from './core/assets';
+export * from './core/content';
+export * from './core/editor';
+export * from './core/gameplay';
 export * from './core/grid';
+export * from './core/networks/adapter';
+export * from './core/ops';
+export * from './core/platform';
 export * from './core/placement';
 export * from './core/plugins';
+export * from './core/runtime';
 export {
   GaesupWorld,
   GaesupController,

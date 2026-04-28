@@ -6,4 +6,6 @@ export { PerformanceCollector } from './PerformanceCollector';
 export { VehiclePanel } from './VehiclePanel';
 export { BuildingPanel } from './BuildingPanel';
 export { CharacterAssetPanel } from './CharacterAssetPanel';
+export { GameplayEventPanel } from './GameplayEventPanel';
+export { StudioPanel } from './StudioPanel';
 export * from './types'; 

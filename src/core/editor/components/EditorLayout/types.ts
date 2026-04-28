@@ -2,6 +2,9 @@ import { ReactNode } from "react";
 
 export interface EditorLayoutProps {
     children?: ReactNode;
+    panels?: EditorShellPluginPanel[];
+    defaultActivePanels?: string[];
+    actions?: EditorShellAction[];
 }
 
 export interface PanelConfig {
@@ -10,6 +13,17 @@ export interface PanelConfig {
     component: ReactNode;
     defaultSide?: 'left' | 'right' | 'floating';
     icon?: string;
+}
+
+export interface EditorShellPluginPanel extends PanelConfig {
+    pluginId?: string;
+}
+
+export interface EditorShellAction {
+    id: string;
+    label: string;
+    disabled?: boolean;
+    onClick: () => void | Promise<void>;
 }
 
 export interface FloatingPanel {

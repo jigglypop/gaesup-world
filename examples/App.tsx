@@ -17,7 +17,7 @@ function AppLayout() {
       <Routes>
         <Route path="/index.html" element={<Navigate to="/" replace />} />
         <Route path="/" element={<ShowcasePage />} />
-        <Route path="/world" element={<WorldPage />} />
+        <Route path="/world" element={<WorldPage showEditor showHud />} />
         <Route path="/edit" element={<EditPage />} />
         <Route path="/blueprints" element={<BlueprintEditorPage />} />
         <Route path="/network" element={<NetworkMultiplayerPage />} />

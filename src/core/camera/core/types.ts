@@ -159,7 +159,7 @@ export interface CameraSystemConfig {
   };
   fov?: number;
   focus?: boolean;
-  focusTarget?: { x: number; y: number; z: number };
+  focusTarget?: { x: number; y: number; z: number } | undefined;
   focusDistance?: number;
   focusLerpSpeed?: number;
   zoom?: number;

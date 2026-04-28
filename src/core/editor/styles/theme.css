@@ -113,7 +113,7 @@
 .editor-left-stack {
   position: absolute;
   top: 64px;
-  left: 18px;
+  left: 52px;
   display: flex;
   flex-direction: column;
   gap: 8px;

@@ -5,82 +5,47 @@ import { Canvas } from '@react-three/fiber';
 import { euler, Physics, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
+import {
+  createWorldRuntime,
+  dispatchWorldGameplayEvent,
+  getWorldGameplayBlueprints,
+  loadWorldRuntime,
+  registerWorldGameplayEventBlueprint,
+} from './runtime';
 import { WorldPageProps } from './types';
 import {
   BugSpot,
   BuildingController, CatalogUI, Clicker, CraftingUI, CropPlot, DialogBox, Editor,
+  createEditorShell,
   GaesupController, GaesupWorld, GrassDriver,
   GaesupWorldContent, GroundClicker, HotbarUI, HousePlot, InteractionPrompt,
-  InteractionTracker, InventoryUI,
+  GameplayEventPanel, InteractionTracker, InventoryUI,
   MailboxUI, MiniMap, QuestLogUI, SandBatch, ShopUI, Snow, SnowfieldBatch,
-  ToastHost, ToolUseController,
+  StudioPanel, ToastHost, ToolUseController,
   WeatherEffect,
   CharacterCreator, Footprints, HouseDoor, SakuraBatch, SceneRoot,
   RoomPortal, RoomRoot, RoomVisibilityDriver,
-  TouchControls, useSceneStore,
-  getNPCScheduler, getSaveSystem, registerSeedCrops, registerSeedEvents, registerSeedItems,
+  TouchControls,
   setDefaultToonMode,
-  useAutoSave, useCatalogStore, useCatalogTracker, useCharacterStore,
-  useCraftingStore, useDayChange,
-  useDecorationScore, useEventsStore, useEventsTicker, useFriendshipStore, useGameClock,
-  useHotbarKeyboard, useI18nStore, useInventoryStore, useMailStore,
-  usePerfStore, usePlotStore, useQuestObjectiveTracker, useQuestStore, useShopStore,
-  useTimeStore, useTownStore,
-  useWalletStore, useWeatherStore, useWeatherTicker, useAudioStore,
+  useAutoSave, useCatalogTracker, useCharacterStore,
+  useDayChange,
+  useDecorationScore, useEventsTicker, useFriendshipStore, useGameClock,
+  useHotbarKeyboard, useMailStore,
+  usePerfStore, useQuestObjectiveTracker, useShopStore,
+  useWeatherStore, useWeatherTicker, useAudioStore,
   usePlayerPosition, useStateSystem, SpeechBalloon,
   type CameraOptionType, type SakuraTreeEntry, type SandEntry, type SnowfieldEntry,
   resolveCharacterParts, useAssetStore, useBuildingStore, useGaesupStore, WARRIOR_BLUEPRINT,
 } from '../../src';
-import { registerSeedDialogs } from '../components/dialog/seedDialogs';
 import { HudShell } from '../components/hud/HudShell';
-import { registerSeedI18n } from '../components/i18n/seedI18n';
 import { NPCBeacon } from '../components/npc/NPCBeacon';
 import { Pickup } from '../components/pickup';
-import { registerSeedContent } from '../components/seedContent';
 import { AIRPLANE_URL, CHARACTER_URL, EXAMPLE_CONFIG, S3, VEHICLE_URL } from '../config/constants';
 import '../style.css';
-
-registerSeedItems();
-registerSeedDialogs();
-registerSeedContent();
-registerSeedCrops();
-registerSeedEvents();
-registerSeedI18n();
 
 if (typeof window !== 'undefined') {
   usePerfStore.getState().detect();
 }
-
-// NPC daily schedules — Tommy hangs at shop / sleeps at home; Mei wanders meadow; Ryu near workbench
-getNPCScheduler().register({
-  npcId: 'tommy',
-  defaultEntry: { position: [0, 0, -8], activity: 'idle' },
-  entries: [
-    { startHour: 6,  endHour: 9,  position: [-2, 0, -8],  activity: 'idle'  },
-    { startHour: 9,  endHour: 18, position: [0, 0, -8],   activity: 'shop'  },
-    { startHour: 18, endHour: 22, position: [4, 0, -6],   activity: 'idle'  },
-    { startHour: 22, endHour: 6,  position: [-1, 0, -10], activity: 'sleep' },
-  ],
-});
-getNPCScheduler().register({
-  npcId: 'mei',
-  defaultEntry: { position: [6, 0, 0], activity: 'idle' },
-  entries: [
-    { startHour: 7,  endHour: 11, position: [6, 0, 0],   activity: 'idle'  },
-    { startHour: 11, endHour: 16, position: [10, 0, 14], activity: 'work'  },
-    { startHour: 16, endHour: 21, position: [6, 0, 0],   activity: 'idle'  },
-    { startHour: 21, endHour: 7,  position: [4, 0, -2],  activity: 'sleep' },
-  ],
-});
-getNPCScheduler().register({
-  npcId: 'ryu',
-  defaultEntry: { position: [-6, 0, 0], activity: 'idle' },
-  entries: [
-    { startHour: 8,  endHour: 19, position: [-6, 0, 0],  activity: 'work'  },
-    { startHour: 19, endHour: 23, position: [-4, 0, 4],  activity: 'idle'  },
-    { startHour: 23, endHour: 8,  position: [-7, 0, -2], activity: 'sleep' },
-  ],
-});
 
 export { S3 };
 
@@ -96,7 +61,6 @@ export const RICH_CAMERA_OPTION: CameraOptionType = {
 };
 
 const TOON_STORAGE_KEY = 'gaesup:toonMode';
-const DEFAULT_WORLD_TIME_MINUTES = 18 * 60;
 const WORLD_WEATHER_ENABLED = false;
 const _initialToon = (() => {
   if (typeof window === 'undefined') return true;
@@ -395,6 +359,9 @@ function Scenery({ onOpenShop, onOpenCrafting }: { onOpenShop: () => void; onOpe
           {...(n.hatColor !== undefined ? { hatColor: n.hatColor } : {})}
           {...(n.isShopkeeper ? { onOpenShop } : {})}
           {...(n.isCraftsman ? { onCustomEffect: (key: string) => { if (key === 'openCrafting') onOpenCrafting(); } } : {})}
+          onInteract={(id) => {
+            void dispatchWorldGameplayEvent({ type: 'interaction', targetId: `npc:${id}`, action: 'talk' });
+          }}
         />
       ))}
 
@@ -456,13 +423,20 @@ function Scenery({ onOpenShop, onOpenCrafting }: { onOpenShop: () => void; onOpe
 }
 
 function GameSystems() {
+  const runtime = useMemo(() => createWorldRuntime(), []);
   useGameClock(false);
   useHotbarKeyboard(true);
   useAutoSave({ intervalMs: 60_000 });
   useQuestObjectiveTracker(true);
   useCatalogTracker(true);
   useWeatherTicker(WORLD_WEATHER_ENABLED);
-  useEventsTicker(true);
+  useEventsTicker(true, {
+    onStarted: (ids) => {
+      for (const id of ids) {
+        void dispatchWorldGameplayEvent({ type: 'calendarEventStarted', eventId: id });
+      }
+    },
+  });
   useDecorationScore(true);
   useEffect(() => {
     useAudioStore.setState({
@@ -492,150 +466,11 @@ function GameSystems() {
   });
 
   useEffect(() => {
-    const sys = getSaveSystem();
-    const offTime = sys.register({
-      key: 'time',
-      serialize: () => useTimeStore.getState().serialize(),
-      hydrate: (data: unknown) => useTimeStore.getState().hydrate(data as never),
-    });
-    const offInv = sys.register({
-      key: 'inventory',
-      serialize: () => useInventoryStore.getState().serialize(),
-      hydrate: (data: unknown) => useInventoryStore.getState().hydrate(data as never),
-    });
-    const offWallet = sys.register({
-      key: 'wallet',
-      serialize: () => useWalletStore.getState().serialize(),
-      hydrate: (data: unknown) => useWalletStore.getState().hydrate(data as never),
-    });
-    const offShop = sys.register({
-      key: 'shop',
-      serialize: () => useShopStore.getState().serialize(),
-      hydrate: (data: unknown) => useShopStore.getState().hydrate(data as never),
-    });
-    const offRel = sys.register({
-      key: 'relations',
-      serialize: () => useFriendshipStore.getState().serialize(),
-      hydrate: (data: unknown) => useFriendshipStore.getState().hydrate(data as never),
-    });
-    const offQuest = sys.register({
-      key: 'quests',
-      serialize: () => useQuestStore.getState().serialize(),
-      hydrate: (data: unknown) => useQuestStore.getState().hydrate(data as never),
-    });
-    const offMail = sys.register({
-      key: 'mail',
-      serialize: () => useMailStore.getState().serialize(),
-      hydrate: (data: unknown) => useMailStore.getState().hydrate(data as never),
-    });
-    const offCatalog = sys.register({
-      key: 'catalog',
-      serialize: () => useCatalogStore.getState().serialize(),
-      hydrate: (data: unknown) => useCatalogStore.getState().hydrate(data as never),
-    });
-    const offCraft = sys.register({
-      key: 'crafting',
-      serialize: () => useCraftingStore.getState().serialize(),
-      hydrate: (data: unknown) => useCraftingStore.getState().hydrate(data as never),
-    });
-    const offFarm = sys.register({
-      key: 'farming',
-      serialize: () => usePlotStore.getState().serialize(),
-      hydrate: (data: unknown) => usePlotStore.getState().hydrate(data as never),
-    });
-    const offWeather = sys.register({
-      key: 'weather',
-      serialize: () => useWeatherStore.getState().serialize(),
-      hydrate: (data: unknown) => useWeatherStore.getState().hydrate(data as never),
-    });
-    const offEvents = sys.register({
-      key: 'events',
-      serialize: () => useEventsStore.getState().serialize(),
-      hydrate: (data: unknown) => useEventsStore.getState().hydrate(data as never),
-    });
-    const offTown = sys.register({
-      key: 'town',
-      serialize: () => useTownStore.getState().serialize(),
-      hydrate: (data: unknown) => useTownStore.getState().hydrate(data as never),
-    });
-    const offAudio = sys.register({
-      key: 'audio',
-      serialize: () => useAudioStore.getState().serialize(),
-      hydrate: (data: unknown) => useAudioStore.getState().hydrate(data as never),
-    });
-    const offChar = sys.register({
-      key: 'character',
-      serialize: () => useCharacterStore.getState().serialize(),
-      hydrate: (data: unknown) => useCharacterStore.getState().hydrate(data as never),
-    });
-    const offI18n = sys.register({
-      key: 'i18n',
-      serialize: () => useI18nStore.getState().serialize(),
-      hydrate: (data: unknown) => useI18nStore.getState().hydrate(data as never),
-    });
-    const offScene = sys.register({
-      key: 'scene',
-      serialize: () => useSceneStore.getState().serialize(),
-      hydrate: (data: unknown) => useSceneStore.getState().hydrate(data as never),
-    });
-    void sys.load().then(() => {
-      useTimeStore.getState().setTotalMinutes(DEFAULT_WORLD_TIME_MINUTES);
-      useWeatherStore.setState((state) => ({
-        ...state,
-        current: null,
-      }));
-
-      const inv = useInventoryStore.getState();
-      if (!inv.has('axe'))         inv.add('axe', 1);
-      if (!inv.has('shovel'))      inv.add('shovel', 1);
-      if (!inv.has('water-can'))   inv.add('water-can', 1);
-      if (!inv.has('seed-turnip')) inv.add('seed-turnip', 5);
-      const timeState = useTimeStore.getState();
-      const today = Math.floor(timeState.totalMinutes / (60 * 24));
-      useShopStore.getState().rollDailyStock(today);
-      useEventsStore.getState().refresh(timeState.time);
-
-      const town = useTownStore.getState();
-      if (Object.keys(town.residents).length === 0) {
-        town.registerResident({ id: 'r-mei',   name: '메이',   bodyColor: '#ffe4c8', hatColor: '#5a8acf' });
-        town.registerResident({ id: 'r-tommy', name: '토미',   bodyColor: '#f5d199', hatColor: '#a85a5a' });
-        town.registerResident({ id: 'r-ryu',   name: '류',     bodyColor: '#ffd0b8', hatColor: '#3a8a3a' });
-      }
-      const futureDay = today + 3;
-      const houseList = Object.values(town.houses);
-      if (houseList[0] && houseList[0].state === 'empty') town.moveIn(houseList[0].id, 'r-mei', today);
-      if (houseList[1] && houseList[1].state === 'empty') town.reserveHouse(houseList[1].id, 'r-tommy', futureDay);
-      if (houseList[2] && houseList[2].state === 'empty') town.reserveHouse(houseList[2].id, 'r-ryu',   futureDay + 2);
-      if (useMailStore.getState().messages.length === 0) {
-        useMailStore.getState().send({
-          from: '운영팀',
-          subject: '환영합니다, 가에섭월드에 오신 것을!',
-          body: '도끼 [F], 인벤토리 [I], 퀘스트 [J], 우편 [M], 도감 [K], 제작 [C].\n\n농장에서 [삽]으로 땅을 갈고 [씨앗]을 핫바에 장착해 [삽]을 사용해 심으세요. [물뿌리개]로 매일 물을 주세요.\n\n첫 시작용 자금을 보내드려요.',
-          sentDay: today,
-          attachments: [{ bells: 500 }],
-        });
-      }
-    });
+    void loadWorldRuntime(runtime);
     return () => {
-      offTime();
-      offInv();
-      offWallet();
-      offShop();
-      offRel();
-      offQuest();
-      offMail();
-      offCatalog();
-      offCraft();
-      offFarm();
-      offWeather();
-      offEvents();
-      offTown();
-      offAudio();
-      offChar();
-      offI18n();
-      offScene();
+      void runtime.dispose();
     };
-  }, []);
+  }, [runtime]);
 
   return null;
 }
@@ -694,6 +529,35 @@ function CharacterSpeechBalloon() {
 export const WorldPage = ({ showEditor = false, showHud = true, children }: WorldPageProps) => {
   const [shopOpen, setShopOpen] = useState(false);
   const [craftOpen, setCraftOpen] = useState(false);
+  const [gameplayBlueprints, setGameplayBlueprints] = useState(() => getWorldGameplayBlueprints());
+  const editorShell = useMemo(() => createEditorShell({
+    panels: [
+      {
+        id: 'gameplay-events',
+        title: '이벤트',
+        component: (
+          <GameplayEventPanel
+            blueprints={gameplayBlueprints}
+            onCreate={(blueprint) => {
+              registerWorldGameplayEventBlueprint(blueprint);
+              setGameplayBlueprints(getWorldGameplayBlueprints());
+            }}
+            onRun={(trigger) => dispatchWorldGameplayEvent(trigger)}
+          />
+        ),
+        defaultSide: 'right',
+        pluginId: 'gaesup.gameplay-events',
+      },
+      {
+        id: 'studio',
+        title: '스튜디오',
+        component: <StudioPanel />,
+        defaultSide: 'right',
+        pluginId: 'gaesup.studio',
+      },
+    ],
+    defaultActivePanels: ['building', 'character', 'gameplay-events', 'studio', 'camera'],
+  }), [gameplayBlueprints]);
   return (
     <>
       <GaesupWorld
@@ -757,7 +621,7 @@ export const WorldPage = ({ showEditor = false, showHud = true, children }: Worl
           </>
         )}
       </GaesupWorld>
-      {showEditor && <Editor />}
+      {showEditor && <Editor shell={editorShell} />}
       {children}
     </>
   );

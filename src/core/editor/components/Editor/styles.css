@@ -1,9 +1,9 @@
 .gaesup-editor {
     position: fixed;
     top: 0;
-    left: var(--app-sidebar-width, 128px);
-    width: calc(100vw - var(--app-sidebar-width, 128px));
+    left: 0;
+    width: 100vw;
     height: 100vh;
     pointer-events: none;
-    z-index: 1000;
+    z-index: 5000;
 }

@@ -54,5 +54,5 @@ export function ShowcasePage() {
     seedSampleBlocks();
   }, []);
 
-  return <WorldPage showHud={false} />;
+  return <WorldPage showEditor showHud />;
 }

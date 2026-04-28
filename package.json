@@ -44,6 +44,56 @@
         "default": "./dist/blueprints-editor.cjs"
       }
     },
+    "./runtime": {
+      "import": {
+        "types": "./dist/runtime.d.ts",
+        "default": "./dist/runtime.js"
+      },
+      "require": {
+        "types": "./dist/runtime.d.cts",
+        "default": "./dist/runtime.cjs"
+      }
+    },
+    "./editor": {
+      "import": {
+        "types": "./dist/editor.d.ts",
+        "default": "./dist/editor.js"
+      },
+      "require": {
+        "types": "./dist/editor.d.cts",
+        "default": "./dist/editor.cjs"
+      }
+    },
+    "./assets": {
+      "import": {
+        "types": "./dist/assets.d.ts",
+        "default": "./dist/assets.js"
+      },
+      "require": {
+        "types": "./dist/assets.d.cts",
+        "default": "./dist/assets.cjs"
+      }
+    },
+    "./network": {
+      "import": {
+        "types": "./dist/network.d.ts",
+        "default": "./dist/network.js"
+      },
+      "require": {
+        "types": "./dist/network.d.cts",
+        "default": "./dist/network.cjs"
+      }
+    },
+    "./server-contracts": {
+      "import": {
+        "types": "./dist/server-contracts.d.ts",
+        "default": "./dist/server-contracts.js"
+      },
+      "require": {
+        "types": "./dist/server-contracts.d.cts",
+        "default": "./dist/server-contracts.cjs"
+      }
+    },
     "./postprocessing": {
       "import": {
         "types": "./dist/postprocessing.d.ts",

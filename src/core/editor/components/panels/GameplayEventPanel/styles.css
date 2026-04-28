@@ -1,0 +1,105 @@
+.gameplay-event-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-lg);
+  padding: var(--editor-spacing-md);
+  height: 100%;
+}
+
+.gameplay-event-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-sm);
+}
+
+.gameplay-event-panel__title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--editor-text-muted, #aaaaaa);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.gameplay-event-panel__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--editor-text-muted, #cccccc);
+}
+
+.gameplay-event-panel__field input {
+  padding: 8px 10px;
+  color: var(--editor-text-main, #ffffff);
+  background: var(--editor-surface-1);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+}
+
+.gameplay-event-panel__primary,
+.gameplay-event-panel__card button {
+  padding: 7px 10px;
+  color: var(--editor-text-main, #ffffff);
+  background: var(--editor-surface-1);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  cursor: pointer;
+}
+
+.gameplay-event-panel__primary:hover,
+.gameplay-event-panel__card button:hover {
+  background: var(--editor-surface-hover);
+}
+
+.gameplay-event-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-sm);
+}
+
+.gameplay-event-panel__card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--editor-spacing-sm);
+  padding: 8px;
+  background: var(--editor-surface-1);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+}
+
+.gameplay-event-panel__card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--editor-text-main, #ffffff);
+}
+
+.gameplay-event-panel__card-meta {
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--editor-text-muted, #cccccc);
+}
+
+.gameplay-event-panel__status {
+  padding: 8px 10px;
+  font-size: 12px;
+  border-radius: var(--editor-radius-md);
+  border: 1px solid var(--editor-border-color);
+}
+
+.gameplay-event-panel__status--idle {
+  color: var(--editor-text-muted, #cccccc);
+  background: var(--editor-surface-1);
+}
+
+.gameplay-event-panel__status--success {
+  color: #c7ffd4;
+  background: rgba(40, 130, 70, 0.2);
+  border-color: rgba(80, 180, 110, 0.5);
+}
+
+.gameplay-event-panel__status--error {
+  color: #ffd0d0;
+  background: rgba(140, 40, 40, 0.2);
+  border-color: rgba(190, 80, 80, 0.5);
+}

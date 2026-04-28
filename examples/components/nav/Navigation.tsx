@@ -23,6 +23,9 @@ export const Navigation = () => {
       <NavLink to="/edit" className="app-nav-button">
         에디터
       </NavLink>
+      <NavLink to="/world" className="app-nav-button">
+        월드
+      </NavLink>
       <NavLink to="/blueprints" className="app-nav-button">
         블루프린트
       </NavLink>

@@ -12,7 +12,7 @@ export function EditPage() {
     return () => { setEditMode('none'); };
   }, [setEditMode]);
 
-  return <WorldPage showEditor showHud={false} />;
+  return <WorldPage showEditor showHud />;
 }
 
 export default EditPage;

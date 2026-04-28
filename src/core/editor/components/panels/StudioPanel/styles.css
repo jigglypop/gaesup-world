@@ -1,0 +1,95 @@
+.studio-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-lg);
+  padding: var(--editor-spacing-md);
+  height: 100%;
+}
+
+.studio-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-sm);
+}
+
+.studio-panel__title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--editor-text-muted, #aaaaaa);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.studio-panel__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--editor-text-muted, #cccccc);
+}
+
+.studio-panel__field input {
+  padding: 8px 10px;
+  color: var(--editor-text-main, #ffffff);
+  background: var(--editor-surface-1);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+}
+
+.studio-panel__actions,
+.studio-panel__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--editor-spacing-sm);
+}
+
+.studio-panel__actions button,
+.studio-panel__chips button {
+  padding: 7px 10px;
+  color: var(--editor-text-main, #ffffff);
+  background: var(--editor-surface-1);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  cursor: pointer;
+}
+
+.studio-panel__actions button:hover,
+.studio-panel__chips button:hover {
+  background: var(--editor-surface-hover);
+}
+
+.studio-panel__meta {
+  font-size: 11px;
+  color: var(--editor-text-muted, #cccccc);
+}
+
+.studio-panel__status {
+  padding: 8px 10px;
+  font-size: 12px;
+  border-radius: var(--editor-radius-md);
+  border: 1px solid var(--editor-border-color);
+}
+
+.studio-panel__status--idle {
+  color: var(--editor-text-muted, #cccccc);
+  background: var(--editor-surface-1);
+}
+
+.studio-panel__status--success {
+  color: #c7ffd4;
+  background: rgba(40, 130, 70, 0.2);
+  border-color: rgba(80, 180, 110, 0.5);
+}
+
+.studio-panel__status--error {
+  color: #ffd0d0;
+  background: rgba(140, 40, 40, 0.2);
+  border-color: rgba(190, 80, 80, 0.5);
+}
+
+.studio-panel__errors {
+  margin: 0;
+  padding-left: 18px;
+  color: #ffd0d0;
+  font-size: 11px;
+}

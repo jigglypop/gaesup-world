@@ -1,3 +1,4 @@
+import { WORLD_SNAPSHOT_DOMAINS } from '../../platform';
 import type { DomainBinding, SerializedDomainValue } from '../../save/types';
 
 /**
@@ -6,16 +7,7 @@ import type { DomainBinding, SerializedDomainValue } from '../../save/types';
  * farming plots, and audio settings are intentionally included; private
  * progression (mail, friendship, quests, wallet, inventory) is not.
  */
-export const DEFAULT_VISIT_DOMAINS: readonly string[] = [
-  'building',
-  'scene',
-  'character',
-  'farming',
-  'town',
-  'time',
-  'weather',
-  'audio',
-] as const;
+export const DEFAULT_VISIT_DOMAINS: readonly string[] = WORLD_SNAPSHOT_DOMAINS;
 
 export type VisitDomainKey = (typeof DEFAULT_VISIT_DOMAINS)[number] | (string & {});
 

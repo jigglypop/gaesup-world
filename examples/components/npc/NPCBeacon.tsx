@@ -11,6 +11,7 @@ export type NPCBeaconProps = {
   dialogTreeId: string;
   onOpenShop?: () => void;
   onCustomEffect?: (key: string, payload?: unknown) => void;
+  onInteract?: (id: string) => void;
 };
 
 export function NPCBeacon({
@@ -22,6 +23,7 @@ export function NPCBeacon({
   dialogTreeId,
   onOpenShop,
   onCustomEffect,
+  onInteract,
 }: NPCBeaconProps) {
   const start = useDialogStore((s) => s.start);
   const slot = useNpcSchedule(id);
@@ -29,12 +31,13 @@ export function NPCBeacon({
   const liveDialogTreeId = slot?.dialogTreeId ?? dialogTreeId;
 
   const onActivate = useCallback(() => {
+    onInteract?.(id);
     start(liveDialogTreeId, {
       context: { npcId: id },
       onOpenShop: () => onOpenShop?.(),
       onCustomEffect: (eff) => onCustomEffect?.(eff.key, eff.payload),
     });
-  }, [start, liveDialogTreeId, id, onOpenShop, onCustomEffect]);
+  }, [start, liveDialogTreeId, id, onOpenShop, onCustomEffect, onInteract]);
 
   const livePos: [number, number, number] = useMemo(() => slot?.position ?? position, [slot?.position, position]);
 
