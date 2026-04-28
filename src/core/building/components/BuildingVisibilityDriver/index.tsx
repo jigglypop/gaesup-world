@@ -21,7 +21,7 @@ function appendVisibleIds(
   out: Set<string>,
   candidates: Set<string>,
   byId: Map<string, VisibilityRecord>,
-  selfKind: 'tile' | 'wall' | 'object',
+  selfKind: 'tile' | 'wall' | 'block' | 'object',
   occluders: ReturnType<typeof collectOccluderCandidates>,
   frustum: THREE.Frustum,
   cameraPosition: THREE.Vector3,
@@ -55,6 +55,7 @@ export function BuildingVisibilityDriver() {
   const gpuCullingVersion = useBuildingGpuCullingStore((s) => s.version);
   const gpuTileIds = useBuildingGpuCullingStore((s) => s.visibleTileGroupIds);
   const gpuWallIds = useBuildingGpuCullingStore((s) => s.visibleWallGroupIds);
+  const gpuBlockIds = useBuildingGpuCullingStore((s) => s.visibleBlockIds);
   const gpuObjectIds = useBuildingGpuCullingStore((s) => s.visibleObjectIds);
   const setVisible = useBuildingVisibilityStore((s) => s.setVisible);
   const reset = useBuildingVisibilityStore((s) => s.reset);
@@ -68,6 +69,7 @@ export function BuildingVisibilityDriver() {
   const cacheRef = useRef(new Map<string, {
     tileIds: Set<string>;
     wallIds: Set<string>;
+    blockIds: Set<string>;
     objectIds: Set<string>;
   }>());
   const scratch = useMemo(
@@ -142,6 +144,14 @@ export function BuildingVisibilityDriver() {
           scratch.camera.z,
           VISIBILITY_MAX_DISTANCE,
         );
+    const blockCandidates = useGpuCandidates
+      ? new Set(gpuBlockIds)
+      : collectCandidateIds(
+          index.blockBuckets,
+          scratch.camera.x,
+          scratch.camera.z,
+          VISIBILITY_MAX_DISTANCE,
+        );
     const occluders = collectOccluderCandidates(
       index,
       scratch.camera.x,
@@ -151,6 +161,7 @@ export function BuildingVisibilityDriver() {
 
     const tileIds = new Set<string>();
     const wallIds = new Set<string>();
+    const blockIds = new Set<string>();
     const objectIds = new Set<string>();
     const maxDistanceSq = VISIBILITY_MAX_DISTANCE * VISIBILITY_MAX_DISTANCE;
 
@@ -190,8 +201,20 @@ export function BuildingVisibilityDriver() {
       maxDistanceSq,
       scratch,
     );
+    appendVisibleIds(
+      blockIds,
+      blockCandidates,
+      index.blockById,
+      'block',
+      occluders,
+      scratch.frustum,
+      scratch.camera,
+      scratch.sphere,
+      maxDistanceSq,
+      scratch,
+    );
 
-    const payload = { tileIds, wallIds, objectIds };
+    const payload = { tileIds, wallIds, blockIds, objectIds };
     cacheRef.current.set(queryKey, payload);
     if (cacheRef.current.size > 96) {
       const oldestKey = cacheRef.current.keys().next().value;

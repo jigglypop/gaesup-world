@@ -19,9 +19,11 @@ export function useBuildingEditor() {
   const snapPosition = useBuildingStore((s) => s.snapPosition);
   const addWall = useBuildingStore((s) => s.addWall);
   const addTile = useBuildingStore((s) => s.addTile);
+  const addBlock = useBuildingStore((s) => s.addBlock);
   const addObject = useBuildingStore((s) => s.addObject);
   const removeWall = useBuildingStore((s) => s.removeWall);
   const removeTile = useBuildingStore((s) => s.removeTile);
+  const removeBlock = useBuildingStore((s) => s.removeBlock);
   const setHoverPosition = useBuildingStore((s) => s.setHoverPosition);
 
   const raycastGround = useCallback(() => {
@@ -51,7 +53,7 @@ export function useBuildingEditor() {
     mouseRef.current.y = -(event.clientY / canvas.clientHeight) * 2 + 1;
 
     const mode = useBuildingStore.getState().editMode;
-    if (mode === 'tile') {
+    if (mode === 'tile' || mode === 'block') {
       setHoverPosition(raycastStackable());
     } else if (mode === 'wall' || mode === 'npc' || mode === 'object') {
       setHoverPosition(raycastGround());
@@ -116,6 +118,35 @@ export function useBuildingEditor() {
       shape: currentTileShape,
     });
   }, [addTile]);
+
+  const placeBlock = useCallback(() => {
+    const {
+      editMode: mode,
+      checkBlockPosition,
+      getSupportHeightAt,
+      currentTileMultiplier,
+      currentTileHeight,
+      hoverPosition,
+    } = useBuildingStore.getState();
+    if (mode !== 'block' || !hoverPosition) return;
+
+    const heightStep = TILE_CONSTANTS.HEIGHT_STEP;
+    const supportY = getSupportHeightAt(hoverPosition);
+    const sizeXZ = Math.max(1, Math.round(currentTileMultiplier));
+    const placement = {
+      ...hoverPosition,
+      y: supportY + currentTileHeight * heightStep,
+    };
+    const block = {
+      id: `block-${++_idSeq}-${Date.now()}`,
+      position: placement,
+      size: { x: sizeXZ, y: 1, z: sizeXZ },
+      materialId: 'default-block',
+    };
+
+    if (checkBlockPosition(block)) return;
+    addBlock(block);
+  }, [addBlock]);
 
   const placeObject = useCallback(() => {
     const {
@@ -201,13 +232,22 @@ export function useBuildingEditor() {
     }
   }, [removeTile]);
 
+  const handleBlockClick = useCallback((blockId: string) => {
+    const { editMode: mode } = useBuildingStore.getState();
+    if (mode === 'block') {
+      removeBlock(blockId);
+    }
+  }, [removeBlock]);
+
   return {
     updateMousePosition,
     placeWall,
     placeTile,
+    placeBlock,
     placeObject,
     handleWallClick,
     handleTileClick,
+    handleBlockClick,
     getGroundPosition: raycastGround,
   };
 }

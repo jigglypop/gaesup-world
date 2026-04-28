@@ -26,9 +26,11 @@ export function BuildingController() {
     updateMousePosition,
     placeWall,
     placeTile,
+    placeBlock,
     placeObject,
     handleWallClick,
     handleTileClick,
+    handleBlockClick,
   } = useBuildingEditor();
   
   const editMode = useBuildingStore((s) => s.editMode);
@@ -61,7 +63,7 @@ export function BuildingController() {
   }, [initialized, initializeDefaults]);
 
   useEffect(() => {
-    if (editMode !== 'wall' && editMode !== 'tile' && editMode !== 'object') return;
+    if (editMode !== 'wall' && editMode !== 'tile' && editMode !== 'block' && editMode !== 'object') return;
     const handleKeyDown = (e: KeyboardEvent) => {
       const applyRotation = (rotation: number) => {
         if (editMode === 'wall') setWallRotation(rotation);
@@ -76,9 +78,9 @@ export function BuildingController() {
         case 'ArrowLeft':  applyRotation(Math.PI * 1.5); break;
       }
 
-      // Q/E: manual tile-layer offset for stacking on top of (or above)
+      // Q/E: manual layer offset for stacking on top of (or above)
       // the auto-detected support height. Only meaningful in tile mode.
-      if (editMode === 'tile') {
+      if (editMode === 'tile' || editMode === 'block') {
         if (e.code === 'KeyQ' || e.key === 'q' || e.key === 'Q') {
           const cur = useBuildingStore.getState().currentTileHeight;
           setTileHeight(cur - 1);
@@ -118,6 +120,7 @@ export function BuildingController() {
       if (mode === 'npc') return;
       if (mode === 'wall') placeWall();
       else if (mode === 'tile') placeTile();
+      else if (mode === 'block') placeBlock();
       else if (mode === 'object') placeObject();
     };
 
@@ -130,7 +133,7 @@ export function BuildingController() {
       canvas.removeEventListener('mouseup', handleMouseUp);
       setHoverPosition(null);
     };
-  }, [gl, updateMousePosition, placeWall, placeTile, placeObject, setHoverPosition]);
+  }, [gl, updateMousePosition, placeWall, placeTile, placeBlock, placeObject, setHoverPosition]);
 
   return (
     <>
@@ -155,8 +158,10 @@ export function BuildingController() {
       <BuildingSystem
         onWallClick={handleWallClick}
         onTileClick={handleTileClick}
+        onBlockClick={handleBlockClick}
         onWallDelete={handleWallClick}
         onTileDelete={handleTileClick}
+        onBlockDelete={handleBlockClick}
       />
       <NPCSystem />
     </>

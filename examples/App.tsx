@@ -9,6 +9,7 @@ import { BlueprintEditorPage } from './pages/BlueprintEditorPage';
 import { BuildingEditorPage } from './pages/BuildingEditorPage';
 import { EditPage } from './pages/EditPage';
 import { NetworkMultiplayerPage } from './pages/NetworkMultiplayerPage';
+import { ShowcasePage } from './pages/ShowcasePage';
 import { WorldPage } from './pages/World';
 
 function AppLayout() {
@@ -19,7 +20,8 @@ function AppLayout() {
     <>
       {!hideNavigation && <Navigation />}
       <Routes>
-        <Route path="/" element={<WorldPage />} />
+        <Route path="/" element={<ShowcasePage />} />
+        <Route path="/world" element={<WorldPage />} />
         <Route path="/edit" element={<EditPage />} />
         <Route path="/building" element={<BuildingEditorPage />} />
         <Route path="/blueprints" element={<BlueprintEditorPage />} />

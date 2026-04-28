@@ -1,5 +1,6 @@
 import {
   buildTileGroupRecord,
+  buildBlockRecord,
   buildWallGroupRecord,
   buildVisibilityIndex,
   collectCandidateIds,
@@ -7,7 +8,7 @@ import {
   createVisibilityQueryKey,
   isOccludedByAny,
 } from '../core';
-import type { PlacedObject, TileGroupConfig, WallGroupConfig } from '../../types';
+import type { BuildingBlockConfig, PlacedObject, TileGroupConfig, WallGroupConfig } from '../../types';
 import * as THREE from 'three';
 
 describe('building visibility core', () => {
@@ -57,6 +58,23 @@ describe('building visibility core', () => {
     expect(record?.radius).toBeGreaterThan(4);
   });
 
+  it('builds block bounds from voxel dimensions', () => {
+    const block: BuildingBlockConfig = {
+      id: 'stone',
+      position: { x: 4, y: 1, z: 8 },
+      size: { x: 2, y: 3, z: 1 },
+      materialId: 'stone',
+    };
+
+    const record = buildBlockRecord(block);
+
+    expect(record.id).toBe('stone');
+    expect(record.centerX).toBeCloseTo(6);
+    expect(record.centerY).toBeCloseTo(2.5);
+    expect(record.centerZ).toBeCloseTo(8);
+    expect(record.radius).toBeGreaterThan(4);
+  });
+
   it('collects only nearby bucket candidates', () => {
     const wallGroups: WallGroupConfig[] = [];
     const tileGroups: TileGroupConfig[] = [
@@ -80,6 +98,20 @@ describe('building visibility core', () => {
 
     expect(ids.has('near')).toBe(true);
     expect(ids.has('far')).toBe(false);
+  });
+
+  it('indexes block visibility buckets and occluders', () => {
+    const index = buildVisibilityIndex([], [], [], [
+      { id: 'block-near', position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 3, z: 1 } },
+      { id: 'block-far', position: { x: 400, y: 0, z: 400 } },
+    ], 20);
+    const ids = collectCandidateIds(index.blockBuckets, 0, 0, 80, 20);
+    const occluders = collectOccluderCandidates(index, 0, 0, 80, 20);
+
+    expect(ids.has('block-near')).toBe(true);
+    expect(ids.has('block-far')).toBe(false);
+    expect(index.blockById.has('block-near')).toBe(true);
+    expect(occluders.some((entry) => entry.key === 'block:block-near')).toBe(true);
   });
 
   it('treats large wall groups as occluders for targets behind them', () => {

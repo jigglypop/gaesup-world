@@ -1,5 +1,6 @@
-import type { PlacedObject, TileGroupConfig, WallGroupConfig } from '../types';
+import type { BuildingBlockConfig, PlacedObject, TileGroupConfig, WallGroupConfig } from '../types';
 import {
+  buildBlockRecord,
   buildObjectRecord,
   buildTileGroupRecord,
   buildWallGroupRecord,
@@ -13,6 +14,7 @@ import {
 export const RENDER_KIND_TILE = 0;
 export const RENDER_KIND_WALL = 1;
 export const RENDER_KIND_OBJECT = 2;
+export const RENDER_KIND_BLOCK = 3;
 
 export const RENDER_SUBKIND_TILE_GENERIC = 0;
 export const RENDER_SUBKIND_TILE_GRASS = 1;
@@ -24,6 +26,7 @@ export const RENDER_SUBKIND_OBJECT_SAKURA = 20;
 export const RENDER_SUBKIND_OBJECT_FLAG = 21;
 export const RENDER_SUBKIND_OBJECT_FIRE = 22;
 export const RENDER_SUBKIND_OBJECT_BILLBOARD = 23;
+export const RENDER_SUBKIND_BLOCK_GENERIC = 30;
 
 export type BuildingRenderSnapshot = {
   version: number;
@@ -55,8 +58,13 @@ export function createEmptyRenderSnapshot(): BuildingRenderSnapshot {
   };
 }
 
-function countEntities(wallGroups: WallGroupConfig[], tileGroups: TileGroupConfig[], objects: PlacedObject[]): number {
-  let count = objects.length;
+function countEntities(
+  wallGroups: WallGroupConfig[],
+  tileGroups: TileGroupConfig[],
+  objects: PlacedObject[],
+  blocks: BuildingBlockConfig[],
+): number {
+  let count = objects.length + blocks.length;
   for (const group of wallGroups) {
     if (group.walls.length > 0) count += 1;
   }
@@ -70,9 +78,11 @@ export function buildBuildingRenderSnapshot(args: {
   wallGroups: WallGroupConfig[];
   tileGroups: TileGroupConfig[];
   objects: PlacedObject[];
+  blocks?: BuildingBlockConfig[];
   version: number;
 }): BuildingRenderSnapshot {
-  const count = countEntities(args.wallGroups, args.tileGroups, args.objects);
+  const blocks = args.blocks ?? [];
+  const count = countEntities(args.wallGroups, args.tileGroups, args.objects, blocks);
   if (count === 0) {
     return { ...createEmptyRenderSnapshot(), version: args.version };
   }
@@ -120,6 +130,10 @@ export function buildBuildingRenderSnapshot(args: {
     const record = buildWallGroupRecord(group);
     if (!record) continue;
     write(group.id, RENDER_KIND_WALL, RENDER_SUBKIND_WALL_GENERIC, record, group.walls.length);
+  }
+
+  for (const block of blocks) {
+    write(block.id, RENDER_KIND_BLOCK, RENDER_SUBKIND_BLOCK_GENERIC, buildBlockRecord(block), 1);
   }
 
   for (const object of args.objects) {
@@ -175,9 +189,11 @@ export function buildVisibilityIndexFromRenderSnapshot(
   const index: VisibilityIndex = {
     tileById: new Map(),
     wallById: new Map(),
+    blockById: new Map(),
     objectById: new Map(),
     tileBuckets: new Map(),
     wallBuckets: new Map(),
+    blockBuckets: new Map(),
     objectBuckets: new Map(),
     occluderByKey: new Map(),
     occluderBuckets: new Map(),
@@ -215,6 +231,22 @@ export function buildVisibilityIndexFromRenderSnapshot(
           key: `wall:${id}`,
           kind: 'wall',
           strength: record.radius * 1.15,
+        };
+        index.occluderByKey.set(occluder.key, occluder);
+        pushBucket(index.occluderBuckets, occluder.cellX, occluder.cellZ, occluder.key);
+      }
+      continue;
+    }
+
+    if (kind === RENDER_KIND_BLOCK) {
+      index.blockById.set(id, record);
+      pushBucket(index.blockBuckets, record.cellX, record.cellZ, id);
+      if (record.radius >= OCCLUDER_MIN_WALL_RADIUS || (snapshot.memberCount[i] ?? 0) >= 1) {
+        const occluder: OccluderRecord = {
+          ...record,
+          key: `block:${id}`,
+          kind: 'block',
+          strength: record.radius * 1.1,
         };
         index.occluderByKey.set(occluder.key, occluder);
         pushBucket(index.occluderBuckets, occluder.cellX, occluder.cellZ, occluder.key);

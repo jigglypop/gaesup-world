@@ -1,4 +1,5 @@
-import type { PlacedObject, TileGroupConfig, WallGroupConfig } from '../types';
+import type { BuildingBlockConfig, PlacedObject, TileGroupConfig, WallGroupConfig } from '../types';
+import { TILE_CONSTANTS } from '../types/constants';
 
 export const VISIBILITY_CELL_SIZE = 18;
 export const VISIBILITY_MAX_DISTANCE = 140;
@@ -20,16 +21,18 @@ export type VisibilityRecord = {
 
 export type OccluderRecord = VisibilityRecord & {
   key: string;
-  kind: 'tile' | 'wall';
+  kind: 'tile' | 'wall' | 'block';
   strength: number;
 };
 
 export type VisibilityIndex = {
   tileById: Map<string, VisibilityRecord>;
   wallById: Map<string, VisibilityRecord>;
+  blockById: Map<string, VisibilityRecord>;
   objectById: Map<string, VisibilityRecord>;
   tileBuckets: Map<string, string[]>;
   wallBuckets: Map<string, string[]>;
+  blockBuckets: Map<string, string[]>;
   objectBuckets: Map<string, string[]>;
   occluderByKey: Map<string, OccluderRecord>;
   occluderBuckets: Map<string, string[]>;
@@ -150,6 +153,23 @@ export function buildWallGroupRecord(group: WallGroupConfig, cellSize = VISIBILI
   return createRecord(group.id, minX, maxX, minY, maxY, minZ, maxZ, cellSize);
 }
 
+export function buildBlockRecord(block: BuildingBlockConfig, cellSize = VISIBILITY_CELL_SIZE): VisibilityRecord {
+  const width = Math.max(1, Math.round(block.size?.x ?? 1)) * TILE_CONSTANTS.GRID_CELL_SIZE;
+  const height = Math.max(1, Math.round(block.size?.y ?? 1)) * TILE_CONSTANTS.HEIGHT_STEP;
+  const depth = Math.max(1, Math.round(block.size?.z ?? 1)) * TILE_CONSTANTS.GRID_CELL_SIZE;
+  const halfCell = TILE_CONSTANTS.GRID_CELL_SIZE * 0.5;
+  return createRecord(
+    block.id,
+    block.position.x - halfCell,
+    block.position.x - halfCell + width,
+    block.position.y,
+    block.position.y + height,
+    block.position.z - halfCell,
+    block.position.z - halfCell + depth,
+    cellSize,
+  );
+}
+
 function getObjectRadius(object: PlacedObject): number {
   const size = object.config?.size ?? 1;
   switch (object.type) {
@@ -183,14 +203,19 @@ export function buildVisibilityIndex(
   wallGroups: WallGroupConfig[],
   tileGroups: TileGroupConfig[],
   objects: PlacedObject[],
-  cellSize = VISIBILITY_CELL_SIZE,
+  blocksOrCellSize: BuildingBlockConfig[] | number = [],
+  maybeCellSize = VISIBILITY_CELL_SIZE,
 ): VisibilityIndex {
+  const blocks = Array.isArray(blocksOrCellSize) ? blocksOrCellSize : [];
+  const cellSize = typeof blocksOrCellSize === 'number' ? blocksOrCellSize : maybeCellSize;
   const index: VisibilityIndex = {
     tileById: new Map(),
     wallById: new Map(),
+    blockById: new Map(),
     objectById: new Map(),
     tileBuckets: new Map(),
     wallBuckets: new Map(),
+    blockBuckets: new Map(),
     objectBuckets: new Map(),
     occluderByKey: new Map(),
     occluderBuckets: new Map(),
@@ -224,6 +249,22 @@ export function buildVisibilityIndex(
         key: `wall:${record.id}`,
         kind: 'wall',
         strength: record.radius * 1.15,
+      };
+      index.occluderByKey.set(occluder.key, occluder);
+      pushRawBucket(index.occluderBuckets, occluder.cellX, occluder.cellZ, occluder.key);
+    }
+  }
+
+  for (const block of blocks) {
+    const record = buildBlockRecord(block, cellSize);
+    index.blockById.set(record.id, record);
+    pushBucket(index.blockBuckets, record);
+    if (record.radius >= OCCLUDER_MIN_WALL_RADIUS || (block.size?.y ?? 1) >= 2) {
+      const occluder: OccluderRecord = {
+        ...record,
+        key: `block:${record.id}`,
+        kind: 'block',
+        strength: record.radius * 1.1,
       };
       index.occluderByKey.set(occluder.key, occluder);
       pushRawBucket(index.occluderBuckets, occluder.cellX, occluder.cellZ, occluder.key);
@@ -287,7 +328,7 @@ type OcclusionScratch = {
 
 export function isOccludedByAny(
   record: VisibilityRecord,
-  selfKind: 'tile' | 'wall' | 'object',
+  selfKind: 'tile' | 'wall' | 'block' | 'object',
   camera: VectorLike,
   occluders: OccluderRecord[],
   scratch: OcclusionScratch,

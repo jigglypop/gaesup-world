@@ -5,6 +5,7 @@ import { NPCPreview } from '../../../npc/components/NPCPreview';
 import { useBuildingGpuCullingStore } from '../../render/cullingStore';
 import {
   DRAW_CLUSTER_BILLBOARD,
+  DRAW_CLUSTER_BLOCK,
   DRAW_CLUSTER_FIRE,
   DRAW_CLUSTER_FLAG,
   DRAW_CLUSTER_SAKURA,
@@ -21,6 +22,7 @@ import type { PlacedObject } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { useBuildingVisibilityStore } from '../../visibility/store';
 import { GridHelper } from '../GridHelper';
+import { BlockSystem } from '../BlockSystem';
 import Billboard from '../mesh/billboard';
 import { FireBatch, type FireBatchEntry } from '../mesh/fire';
 import { FlagBatch } from '../mesh/flag';
@@ -94,14 +96,17 @@ function bucketObjects(objects: PlacedObject[] | undefined): ObjectBuckets {
 export const BuildingSystem = React.memo(function BuildingSystem({
   onWallClick,
   onTileClick,
+  onBlockClick,
   onWallDelete,
   onTileDelete,
+  onBlockDelete,
 }: BuildingSystemProps) {
   // Field-level selectors so unrelated store updates (e.g. hoverPosition)
   // don't trigger a rerender of the entire scene tree.
   const meshes = useBuildingStore((s) => s.meshes);
   const wallGroups = useBuildingStore((s) => s.wallGroups);
   const tileGroups = useBuildingStore((s) => s.tileGroups);
+  const blocks = useBuildingStore((s) => s.blocks);
   const editMode = useBuildingStore((s) => s.editMode);
   const showGrid = useBuildingStore((s) => s.showGrid);
   const gridSize = useBuildingStore((s) => s.gridSize);
@@ -113,6 +118,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
   const visibilityReady = useBuildingVisibilityStore((s) => s.initialized);
   const visibleWallGroupIds = useBuildingVisibilityStore((s) => s.visibleWallGroupIds);
   const visibleTileGroupIds = useBuildingVisibilityStore((s) => s.visibleTileGroupIds);
+  const visibleBlockIds = useBuildingVisibilityStore((s) => s.visibleBlockIds);
   const visibleObjectIds = useBuildingVisibilityStore((s) => s.visibleObjectIds);
 
   const drawReady = gpuCullingActive && drawMirror.version > 0 && drawMirror.version === gpuCullingVersion;
@@ -125,6 +131,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
   const flagBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_FLAG) : Number.MAX_SAFE_INTEGER;
   const fireBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_FIRE) : Number.MAX_SAFE_INTEGER;
   const billboardBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_BILLBOARD) : Number.MAX_SAFE_INTEGER;
+  const blockBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_BLOCK) : Number.MAX_SAFE_INTEGER;
 
   const wallGroupsArray = useMemo(() => {
     const groups = Array.from(wallGroups.values());
@@ -179,6 +186,11 @@ export const BuildingSystem = React.memo(function BuildingSystem({
     fireBudget,
     billboardBudget,
   ]);
+  const visibleBlocks = useMemo(() => {
+    const list = blocks ?? [];
+    const filtered = !visibilityReady ? list : list.filter((block) => visibleBlockIds.has(block.id));
+    return clampList(filtered, blockBudget);
+  }, [blocks, visibilityReady, visibleBlockIds, blockBudget]);
 
   const buckets = useMemo(() => bucketObjects(visibleObjects), [visibleObjects]);
   const sakuraEntries = clampList(buckets.sakura, sakuraBudget);
@@ -216,6 +228,15 @@ export const BuildingSystem = React.memo(function BuildingSystem({
             {...(onTileDelete ? { onTileDelete } : {})}
           />
         ))}
+
+        {visibleBlocks.length > 0 && (
+          <BlockSystem
+            blocks={visibleBlocks}
+            meshes={meshes}
+            isEditMode={editMode === 'block'}
+            {...(onBlockClick || onBlockDelete ? { onBlockClick: onBlockClick ?? onBlockDelete } : {})}
+          />
+        )}
 
         {sakuraEntries.length > 0 && (
           <Suspense fallback={null}>

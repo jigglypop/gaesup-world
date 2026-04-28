@@ -79,9 +79,11 @@ const buildDefaultState = (): EditorMockState => ({
   snapPosition: jest.fn((pos: unknown) => pos),
   addWall: jest.fn(),
   addTile: jest.fn(),
+  addBlock: jest.fn(),
   addObject: jest.fn(),
   removeWall: jest.fn(),
   removeTile: jest.fn(),
+  removeBlock: jest.fn(),
   setHoverPosition: jest.fn(),
   // getState로 읽히는 항목
   currentWallRotation: 0,
@@ -92,6 +94,7 @@ const buildDefaultState = (): EditorMockState => ({
   hoverPosition: { x: 0, y: 0, z: 0 },
   checkWallPosition: jest.fn(() => false),
   checkTilePosition: jest.fn(() => false),
+  checkBlockPosition: jest.fn(() => false),
   getSupportHeightAt: jest.fn(() => 0),
   selectedPlacedObjectType: 'none',
   tileGroups: new Map(),
@@ -168,8 +171,10 @@ describe('useBuildingEditor 훅 테스트', () => {
       expect(result.current).toHaveProperty('updateMousePosition');
       expect(result.current).toHaveProperty('placeWall');
       expect(result.current).toHaveProperty('placeTile');
+      expect(result.current).toHaveProperty('placeBlock');
       expect(result.current).toHaveProperty('handleWallClick');
       expect(result.current).toHaveProperty('handleTileClick');
+      expect(result.current).toHaveProperty('handleBlockClick');
       expect(result.current).toHaveProperty('getGroundPosition');
     });
 
@@ -181,8 +186,10 @@ describe('useBuildingEditor 훅 테스트', () => {
       expect(typeof result.current.updateMousePosition).toBe('function');
       expect(typeof result.current.placeWall).toBe('function');
       expect(typeof result.current.placeTile).toBe('function');
+      expect(typeof result.current.placeBlock).toBe('function');
       expect(typeof result.current.handleWallClick).toBe('function');
       expect(typeof result.current.handleTileClick).toBe('function');
+      expect(typeof result.current.handleBlockClick).toBe('function');
       expect(typeof result.current.getGroundPosition).toBe('function');
     });
   });
@@ -248,6 +255,23 @@ describe('useBuildingEditor 훅 테스트', () => {
       act(() => { result.current.updateMousePosition(mouseEvent); });
 
       expect(mockSetHoverPosition).toHaveBeenCalled();
+    });
+
+    test('블록 편집 모드에서 스택 가능한 마우스 위치가 업데이트되어야 함', () => {
+      const mockSetHoverPosition = jest.fn();
+      const mockGetSupportHeightAt = jest.fn(() => 2);
+      setStoreState({
+        editMode: 'block',
+        setHoverPosition: mockSetHoverPosition,
+        snapPosition: jest.fn((pos: unknown) => pos),
+        getSupportHeightAt: mockGetSupportHeightAt,
+      });
+
+      const { result } = renderHook(() => useBuildingEditor(), { wrapper: TestWrapper });
+      act(() => { result.current.updateMousePosition(mouseEvent); });
+
+      expect(mockGetSupportHeightAt).toHaveBeenCalled();
+      expect(mockSetHoverPosition).toHaveBeenCalledWith({ x: 5, y: 2, z: 5 });
     });
   });
 
@@ -453,6 +477,59 @@ describe('useBuildingEditor 훅 테스트', () => {
     });
   });
 
+  describe('블록 배치', () => {
+    test('블록 편집 모드에서 블록이 올바르게 배치되어야 함', () => {
+      const mockAddBlock = jest.fn();
+      const hoverPosition = { x: 8, y: 0, z: 12 };
+      const mockGetSupportHeightAt = jest.fn(() => 1);
+      setStoreState({
+        editMode: 'block',
+        addBlock: mockAddBlock,
+        currentTileMultiplier: 2,
+        currentTileHeight: 1,
+        checkBlockPosition: jest.fn(() => false),
+        getSupportHeightAt: mockGetSupportHeightAt,
+        hoverPosition,
+      });
+
+      const { result } = renderHook(() => useBuildingEditor(), { wrapper: TestWrapper });
+      act(() => { result.current.placeBlock(); });
+
+      expect(mockGetSupportHeightAt).toHaveBeenCalledWith(hoverPosition);
+      expect(mockAddBlock).toHaveBeenCalledWith(expect.objectContaining({
+        id: expect.stringMatching(/^block-\d+-\d+$/),
+        position: expect.objectContaining({ x: 8, y: 2, z: 12 }),
+        size: { x: 2, y: 1, z: 2 },
+        materialId: 'default-block',
+      }));
+    });
+
+    test('블록 편집 모드가 아닐 때 블록이 배치되지 않아야 함', () => {
+      const mockAddBlock = jest.fn();
+      setStoreState({ editMode: 'tile', addBlock: mockAddBlock });
+
+      const { result } = renderHook(() => useBuildingEditor(), { wrapper: TestWrapper });
+      act(() => { result.current.placeBlock(); });
+
+      expect(mockAddBlock).not.toHaveBeenCalled();
+    });
+
+    test('이미 점유된 위치면 블록이 추가되지 않아야 함', () => {
+      const mockAddBlock = jest.fn();
+      setStoreState({
+        editMode: 'block',
+        addBlock: mockAddBlock,
+        checkBlockPosition: jest.fn(() => true),
+        hoverPosition: { x: 0, y: 0, z: 0 },
+      });
+
+      const { result } = renderHook(() => useBuildingEditor(), { wrapper: TestWrapper });
+      act(() => { result.current.placeBlock(); });
+
+      expect(mockAddBlock).not.toHaveBeenCalled();
+    });
+  });
+
   describe('벽 클릭 처리', () => {
     test('벽 편집 모드에서 벽 클릭 시 벽이 제거되어야 함', () => {
       const mockRemoveWall = jest.fn();
@@ -541,6 +618,34 @@ describe('useBuildingEditor 훅 테스트', () => {
     });
   });
 
+  describe('블록 클릭 처리', () => {
+    test('블록 편집 모드에서 블록 클릭 시 블록이 제거되어야 함', () => {
+      const mockRemoveBlock = jest.fn();
+      setStoreState({
+        editMode: 'block',
+        removeBlock: mockRemoveBlock,
+      });
+
+      const { result } = renderHook(() => useBuildingEditor(), { wrapper: TestWrapper });
+      act(() => { result.current.handleBlockClick('block-789'); });
+
+      expect(mockRemoveBlock).toHaveBeenCalledWith('block-789');
+    });
+
+    test('블록 편집 모드가 아닐 때 블록 클릭 시 제거되지 않아야 함', () => {
+      const mockRemoveBlock = jest.fn();
+      setStoreState({
+        editMode: 'tile',
+        removeBlock: mockRemoveBlock,
+      });
+
+      const { result } = renderHook(() => useBuildingEditor(), { wrapper: TestWrapper });
+      act(() => { result.current.handleBlockClick('block-789'); });
+
+      expect(mockRemoveBlock).not.toHaveBeenCalled();
+    });
+  });
+
   describe('의존성 배열 및 성능 최적화', () => {
     test('훅이 불필요하게 재생성되지 않아야 함', () => {
       const { result, rerender } = renderHook(() => useBuildingEditor(), {
@@ -551,8 +656,10 @@ describe('useBuildingEditor 훅 테스트', () => {
         updateMousePosition: result.current.updateMousePosition,
         placeWall: result.current.placeWall,
         placeTile: result.current.placeTile,
+        placeBlock: result.current.placeBlock,
         handleWallClick: result.current.handleWallClick,
         handleTileClick: result.current.handleTileClick,
+        handleBlockClick: result.current.handleBlockClick,
         getGroundPosition: result.current.getGroundPosition
       };
 
@@ -563,8 +670,10 @@ describe('useBuildingEditor 훅 테스트', () => {
       expect(result.current.updateMousePosition).toBe(firstRender.updateMousePosition);
       expect(result.current.placeWall).toBe(firstRender.placeWall);
       expect(result.current.placeTile).toBe(firstRender.placeTile);
+      expect(result.current.placeBlock).toBe(firstRender.placeBlock);
       expect(result.current.handleWallClick).toBe(firstRender.handleWallClick);
       expect(result.current.handleTileClick).toBe(firstRender.handleTileClick);
+      expect(result.current.handleBlockClick).toBe(firstRender.handleBlockClick);
       expect(result.current.getGroundPosition).toBe(firstRender.getGroundPosition);
     });
 

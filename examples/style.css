@@ -385,3 +385,253 @@ html, body, #root {
   .gp-left { display: none; }
   .gp-right { gap: 8px; }
 }
+
+/* ============================================================
+ * Main example showcase
+ * ============================================================ */
+
+.showcase-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  pointer-events: none;
+  color: #f6f8fb;
+  font-family: 'Pretendard', system-ui, sans-serif;
+}
+
+.showcase-shell * {
+  box-sizing: border-box;
+  letter-spacing: 0;
+}
+
+.showcase-topbar {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  pointer-events: auto;
+}
+
+.showcase-brand,
+.showcase-routebar,
+.showcase-panel {
+  background: rgba(18, 23, 31, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(16px) saturate(135%);
+  -webkit-backdrop-filter: blur(16px) saturate(135%);
+}
+
+.showcase-brand {
+  height: 52px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px 0 10px;
+}
+
+.showcase-brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: #7bd3a7;
+  color: #122018;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.showcase-brand-text {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.showcase-routebar {
+  min-height: 52px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px;
+}
+
+.showcase-route,
+.showcase-tool,
+.showcase-step,
+.showcase-wide-action {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f6f8fb;
+  border-radius: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.showcase-route:hover,
+.showcase-tool:hover,
+.showcase-step:hover,
+.showcase-wide-action:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.showcase-tool.active,
+.showcase-step.active {
+  background: rgba(123, 211, 167, 0.2);
+  border-color: rgba(123, 211, 167, 0.72);
+  color: #aef0cb;
+}
+
+.showcase-panel {
+  position: absolute;
+  width: 248px;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.showcase-panel-left {
+  left: 14px;
+  top: 86px;
+}
+
+.showcase-panel-right {
+  right: 14px;
+  top: 86px;
+}
+
+.showcase-section-title {
+  color: rgba(246, 248, 251, 0.72);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.showcase-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.showcase-tool {
+  width: 100%;
+}
+
+.showcase-control-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.showcase-step {
+  min-width: 0;
+  padding: 0;
+}
+
+.showcase-wide-action {
+  width: 100%;
+  background: rgba(255, 210, 96, 0.12);
+  border-color: rgba(255, 210, 96, 0.34);
+  color: #ffe4a6;
+}
+
+.showcase-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.showcase-stat-grid div,
+.showcase-plugin-list div {
+  min-height: 58px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 9px;
+}
+
+.showcase-stat-grid span {
+  display: block;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.showcase-stat-grid small {
+  display: block;
+  margin-top: 5px;
+  color: rgba(246, 248, 251, 0.68);
+  font-size: 12px;
+}
+
+.showcase-plugin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.showcase-plugin-list div {
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.showcase-plugin-list span {
+  color: rgba(246, 248, 251, 0.78);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.showcase-plugin-list strong {
+  color: #8fd6ff;
+  font-size: 16px;
+}
+
+@media (max-width: 900px) {
+  .showcase-topbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .showcase-routebar {
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
+  .showcase-route {
+    white-space: nowrap;
+  }
+
+  .showcase-panel {
+    width: calc(100vw - 28px);
+  }
+
+  .showcase-panel-left {
+    top: 138px;
+  }
+
+  .showcase-panel-right {
+    display: none;
+  }
+}

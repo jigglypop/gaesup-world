@@ -206,6 +206,7 @@ export class SaveLoadManager {
       filtered.buildings = {
         wallGroups: [],
         tileGroups: [],
+        blocks: [],
         meshes: []
       };
     }

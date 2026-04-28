@@ -1,3 +1,5 @@
+import type { CellCoord, EdgeCoord } from '../../grid';
+
 export interface Position3D {
   x: number;
   y: number;
@@ -27,6 +29,7 @@ export interface WallConfig {
   position: Position3D;
   rotation: Rotation3D;
   wallGroupId: string;
+  edge?: EdgeCoord;
   width?: number;
   height?: number;
   depth?: number;
@@ -92,6 +95,8 @@ export interface TileConfig {
   id: string;
   position: Position3D;
   tileGroupId: string;
+  cell?: CellCoord;
+  footprint?: CellCoord[];
   size?: number;
   rotation?: number;
   shape?: TileShapeType;
@@ -101,6 +106,28 @@ export interface TileConfig {
     grassDensity?: number;
     waterScale?: number;
   };
+}
+
+export interface BuildingBlockConfig {
+  id: string;
+  position: Position3D;
+  cell?: CellCoord;
+  size?: {
+    x?: number;
+    y?: number;
+    z?: number;
+  };
+  materialId?: string;
+  tags?: string[];
+}
+
+export interface BuildingSerializedState {
+  version: 1;
+  meshes: MeshConfig[];
+  wallGroups: WallGroupConfig[];
+  tileGroups: TileGroupConfig[];
+  blocks: BuildingBlockConfig[];
+  objects: PlacedObject[];
 }
 
 export type FlagStyle = 'flag' | 'banner' | 'panel' | 'placard';
@@ -143,6 +170,7 @@ export interface BuildingSystemState {
   meshes: Map<string, MeshConfig>;
   wallGroups: Map<string, WallGroupConfig>;
   tileGroups: Map<string, TileGroupConfig>;
+  blocks: BuildingBlockConfig[];
   wallCategories: Map<string, WallCategory>;
   tileCategories: Map<string, TileCategory>;
   objects: PlacedObject[];
@@ -150,7 +178,7 @@ export interface BuildingSystemState {
   selectedTileGroupId?: string;
   selectedWallCategoryId?: string;
   selectedTileCategoryId?: string;
-  editMode: 'none' | 'wall' | 'tile' | 'npc' | 'object';
+  editMode: 'none' | 'wall' | 'tile' | 'block' | 'npc' | 'object';
   showGrid: boolean;
   gridSize: number;
   snapToGrid: boolean;

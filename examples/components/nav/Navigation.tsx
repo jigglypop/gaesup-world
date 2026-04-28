@@ -16,6 +16,9 @@ export const Navigation = () => {
       <a href="/" className="app-nav-button">
         메인
       </a>
+      <a href="/world" className="app-nav-button">
+        월드
+      </a>
       <a href="/edit" className="app-nav-button">
         편집
       </a>

@@ -5,6 +5,7 @@ import { BuildingSystem } from '../BuildingSystem';
 import {
   createEmptyBuildingIndirectDrawMirror,
   DRAW_CLUSTER_BILLBOARD,
+  DRAW_CLUSTER_BLOCK,
   DRAW_CLUSTER_FIRE,
   DRAW_CLUSTER_FLAG,
   DRAW_CLUSTER_SAKURA,
@@ -42,6 +43,19 @@ jest.mock('../TileSystem', () => ({
         <planeGeometry />
         <meshBasicMaterial />
       </mesh>
+    </group>
+  )
+}));
+
+jest.mock('../BlockSystem', () => ({
+  BlockSystem: ({ blocks }: any) => (
+    <group name="block-system">
+      {blocks.map((block: any) => (
+        <mesh key={block.id} name={`block-${block.id}`}>
+          <boxGeometry />
+          <meshBasicMaterial />
+        </mesh>
+      ))}
     </group>
   )
 }));
@@ -137,6 +151,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
       meshes: mockMeshes,
       wallGroups: mockWallGroups,
       tileGroups: mockTileGroups,
+      blocks: [],
       editMode: 'none',
       showGrid: true,
       gridSize: 100,
@@ -335,7 +350,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
   });
 
   describe('다양한 편집 모드', () => {
-    const editModes = ['none', 'wall', 'tile', 'npc'] as const;
+    const editModes = ['none', 'wall', 'tile', 'block', 'npc'] as const;
 
     editModes.forEach(mode => {
       test(`${mode} 편집 모드에서 올바르게 렌더링되어야 함`, async () => {
@@ -448,12 +463,14 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
         version: 11,
         tileIds: new Set(['tile-group-1', 'tile-group-2']),
         wallIds: new Set(['wall-group-1', 'wall-group-2']),
+        blockIds: new Set(),
         objectIds: new Set(),
-        clusterCounts: new Uint32Array(10),
+        clusterCounts: new Uint32Array(11),
       });
       useBuildingVisibilityStore.getState().setVisible({
         tileIds: new Set(['tile-group-1', 'tile-group-2']),
         wallIds: new Set(['wall-group-1', 'wall-group-2']),
+        blockIds: new Set(),
         objectIds: new Set(),
       });
 
@@ -479,12 +496,14 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
         version: 12,
         tileIds: new Set(),
         wallIds: new Set(),
+        blockIds: new Set(),
         objectIds: new Set(['s1', 's2', 'f1', 'b1']),
-        clusterCounts: new Uint32Array(10),
+        clusterCounts: new Uint32Array(11),
       });
       useBuildingVisibilityStore.getState().setVisible({
         tileIds: new Set(),
         wallIds: new Set(),
+        blockIds: new Set(),
         objectIds: new Set(['s1', 's2', 'f1', 'b1']),
       });
       mockStore({
@@ -502,6 +521,40 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
       expectSceneHasName(renderer, 'fire-batch');
       expectSceneMissingName(renderer, 'flag-batch');
       expect(() => renderer.scene.findAllByProps({ name: 'billboard' })).not.toThrow();
+
+      renderer.unmount();
+    });
+
+    test('draw args budget clamps rendered blocks', async () => {
+      const drawMirror = createEmptyBuildingIndirectDrawMirror();
+      drawMirror.version = 13;
+      drawMirror.args[DRAW_CLUSTER_BLOCK * INDIRECT_DRAW_STRIDE + 1] = 1;
+      useBuildingRenderStateStore.getState().setDrawMirror(drawMirror);
+      useBuildingGpuCullingStore.getState().setResult({
+        version: 13,
+        tileIds: new Set(),
+        wallIds: new Set(),
+        blockIds: new Set(['b1', 'b2']),
+        objectIds: new Set(),
+        clusterCounts: new Uint32Array(11),
+      });
+      useBuildingVisibilityStore.getState().setVisible({
+        tileIds: new Set(),
+        wallIds: new Set(),
+        blockIds: new Set(['b1', 'b2']),
+        objectIds: new Set(),
+      });
+      mockStore({
+        blocks: [
+          { id: 'b1', position: { x: 0, y: 0, z: 0 }, materialId: 'stone' },
+          { id: 'b2', position: { x: 4, y: 0, z: 0 }, materialId: 'stone' },
+        ],
+      });
+
+      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+
+      expectSceneHasName(renderer, 'block-b1');
+      expectSceneMissingName(renderer, 'block-b2');
 
       renderer.unmount();
     });

@@ -4,10 +4,12 @@ type BuildingVisibilityState = {
   initialized: boolean;
   visibleTileGroupIds: Set<string>;
   visibleWallGroupIds: Set<string>;
+  visibleBlockIds: Set<string>;
   visibleObjectIds: Set<string>;
   setVisible: (payload: {
     tileIds: Set<string>;
     wallIds: Set<string>;
+    blockIds?: Set<string>;
     objectIds: Set<string>;
   }) => void;
   reset: () => void;
@@ -28,19 +30,23 @@ export const useBuildingVisibilityStore = create<BuildingVisibilityState>((set) 
   initialized: false,
   visibleTileGroupIds: EMPTY,
   visibleWallGroupIds: EMPTY,
+  visibleBlockIds: EMPTY,
   visibleObjectIds: EMPTY,
-  setVisible: ({ tileIds, wallIds, objectIds }) =>
+  setVisible: ({ tileIds, wallIds, blockIds, objectIds }) =>
     set((state) => {
       const tileChanged = !sameSet(state.visibleTileGroupIds, tileIds);
       const wallChanged = !sameSet(state.visibleWallGroupIds, wallIds);
+      const nextBlockIds = blockIds ?? EMPTY;
+      const blockChanged = !sameSet(state.visibleBlockIds, nextBlockIds);
       const objectChanged = !sameSet(state.visibleObjectIds, objectIds);
-      if (!tileChanged && !wallChanged && !objectChanged && state.initialized) {
+      if (!tileChanged && !wallChanged && !blockChanged && !objectChanged && state.initialized) {
         return state;
       }
       return {
         initialized: true,
         visibleTileGroupIds: tileChanged ? tileIds : state.visibleTileGroupIds,
         visibleWallGroupIds: wallChanged ? wallIds : state.visibleWallGroupIds,
+        visibleBlockIds: blockChanged ? nextBlockIds : state.visibleBlockIds,
         visibleObjectIds: objectChanged ? objectIds : state.visibleObjectIds,
       };
     }),
@@ -49,6 +55,7 @@ export const useBuildingVisibilityStore = create<BuildingVisibilityState>((set) 
       initialized: false,
       visibleTileGroupIds: EMPTY,
       visibleWallGroupIds: EMPTY,
+      visibleBlockIds: EMPTY,
       visibleObjectIds: EMPTY,
     }),
 }));

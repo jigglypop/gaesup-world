@@ -7,6 +7,7 @@ import { useBuildingStore } from '../../stores/buildingStore';
 export function BuildingRenderStateDriver() {
   const wallGroups = useBuildingStore((s) => s.wallGroups);
   const tileGroups = useBuildingStore((s) => s.tileGroups);
+  const blocks = useBuildingStore((s) => s.blocks);
   const objects = useBuildingStore((s) => s.objects);
   const setSnapshot = useBuildingRenderStateStore((s) => s.setSnapshot);
   const reset = useBuildingRenderStateStore((s) => s.reset);
@@ -17,10 +18,11 @@ export function BuildingRenderStateDriver() {
       buildBuildingRenderSnapshot({
         wallGroups: Array.from(wallGroups.values()),
         tileGroups: Array.from(tileGroups.values()),
+        blocks: blocks ?? [],
         objects,
         version: versionRef.current++,
       }),
-    [wallGroups, tileGroups, objects],
+    [wallGroups, tileGroups, blocks, objects],
   );
 
   useEffect(() => {

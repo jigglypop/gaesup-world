@@ -155,6 +155,12 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
               >
                 Tile Mode
               </button>
+              <button
+                onClick={() => setEditMode('block')}
+                className={`building-ui-mode-button ${editMode === 'block' ? 'active' : ''}`}
+              >
+                Block Mode
+              </button>
               <button 
                 onClick={() => setEditMode('npc')}
                 className={`building-ui-mode-button ${editMode === 'npc' ? 'active' : ''}`}
@@ -408,6 +414,47 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                   <p>Object: {selectedTileObjectLabel}</p>
                   <p>Click to place tiles</p>
                   <p>Red = Occupied, Green = Available</p>
+                </div>
+              </>
+            )}
+
+            {editMode === 'block' && (
+              <>
+                <div className="building-ui-size-group">
+                  <span className="building-ui-label">Block Size:</span>
+                  <div className="building-ui-size-buttons">
+                    {[1, 2, 3, 4].map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setTileMultiplier(size)}
+                        className={`building-ui-size-button ${currentTileMultiplier === size ? 'active' : ''}`}
+                      >
+                        {size}x{size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="building-ui-size-group">
+                  <span className="building-ui-label">Layer Offset:</span>
+                  <div className="building-ui-size-buttons">
+                    {[0, 1, 2, 3, 4].map((height) => (
+                      <button
+                        key={height}
+                        onClick={() => setTileHeight(height)}
+                        className={`building-ui-size-button ${currentTileHeight === height ? 'active' : ''}`}
+                      >
+                        {height}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="building-ui-info">
+                  <p>Size: {currentTileMultiplier}x{currentTileMultiplier}</p>
+                  <p>Layer offset: {currentTileHeight}</p>
+                  <p>Click to place voxel blocks</p>
+                  <p>Click red blocks to delete</p>
                 </div>
               </>
             )}

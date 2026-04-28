@@ -11,6 +11,8 @@ type BuildingStoreState = {
   wallGroups: Map<string, WorldSaveData['buildings']['wallGroups'][number]>;
   tileGroups: Map<string, WorldSaveData['buildings']['tileGroups'][number]>;
   meshes: Map<string, WorldSaveData['buildings']['meshes'][number]>;
+  blocks: NonNullable<WorldSaveData['buildings']['blocks']>;
+  hydrate?: (data: WorldSaveData['buildings']) => void;
 };
 
 type NPCStoreState = {
@@ -77,6 +79,7 @@ export const createPersistenceSlice: StateCreator<PersistenceState> = (set, get)
         buildings: {
           wallGroups: Array.from(buildingStore.getState().wallGroups.values()),
           tileGroups: Array.from(buildingStore.getState().tileGroups.values()),
+          blocks: Array.from(buildingStore.getState().blocks),
           meshes: Array.from(buildingStore.getState().meshes.values()),
         },
         npcs: npcStore ? Array.from(npcStore.getState().instances.values()) : [],
@@ -123,21 +126,28 @@ export const createPersistenceSlice: StateCreator<PersistenceState> = (set, get)
         
         if (buildingStore && result.data.world.buildings) {
           const state = buildingStore.getState();
-          state.wallGroups.clear();
-          state.tileGroups.clear();
-          state.meshes.clear();
-          
-          result.data.world.buildings.wallGroups.forEach(group => {
-            state.wallGroups.set(group.id, group);
-          });
-          
-          result.data.world.buildings.tileGroups.forEach(group => {
-            state.tileGroups.set(group.id, group);
-          });
-          
-          result.data.world.buildings.meshes.forEach(mesh => {
-            state.meshes.set(mesh.id, mesh);
-          });
+          if (typeof state.hydrate === 'function') {
+            state.hydrate(result.data.world.buildings);
+          } else {
+            state.wallGroups.clear();
+            state.tileGroups.clear();
+            state.meshes.clear();
+            state.blocks = [];
+
+            result.data.world.buildings.wallGroups.forEach(group => {
+              state.wallGroups.set(group.id, group);
+            });
+
+            result.data.world.buildings.tileGroups.forEach(group => {
+              state.tileGroups.set(group.id, group);
+            });
+
+            result.data.world.buildings.meshes.forEach(mesh => {
+              state.meshes.set(mesh.id, mesh);
+            });
+
+            state.blocks = [...(result.data.world.buildings.blocks ?? [])];
+          }
         }
         
         if (npcStore && result.data.world.npcs) {
@@ -187,6 +197,7 @@ export const createPersistenceSlice: StateCreator<PersistenceState> = (set, get)
         buildings: {
           wallGroups: Array.from(buildingStore.getState().wallGroups.values()),
           tileGroups: Array.from(buildingStore.getState().tileGroups.values()),
+          blocks: Array.from(buildingStore.getState().blocks),
           meshes: Array.from(buildingStore.getState().meshes.values()),
         },
         npcs: npcStore ? Array.from(npcStore.getState().instances.values()) : [],
@@ -229,21 +240,28 @@ export const createPersistenceSlice: StateCreator<PersistenceState> = (set, get)
         
         if (buildingStore && result.data.world.buildings) {
           const state = buildingStore.getState();
-          state.wallGroups.clear();
-          state.tileGroups.clear();
-          state.meshes.clear();
-          
-          result.data.world.buildings.wallGroups.forEach(group => {
-            state.wallGroups.set(group.id, group);
-          });
-          
-          result.data.world.buildings.tileGroups.forEach(group => {
-            state.tileGroups.set(group.id, group);
-          });
-          
-          result.data.world.buildings.meshes.forEach(mesh => {
-            state.meshes.set(mesh.id, mesh);
-          });
+          if (typeof state.hydrate === 'function') {
+            state.hydrate(result.data.world.buildings);
+          } else {
+            state.wallGroups.clear();
+            state.tileGroups.clear();
+            state.meshes.clear();
+            state.blocks = [];
+
+            result.data.world.buildings.wallGroups.forEach(group => {
+              state.wallGroups.set(group.id, group);
+            });
+
+            result.data.world.buildings.tileGroups.forEach(group => {
+              state.tileGroups.set(group.id, group);
+            });
+
+            result.data.world.buildings.meshes.forEach(mesh => {
+              state.meshes.set(mesh.id, mesh);
+            });
+
+            state.blocks = [...(result.data.world.buildings.blocks ?? [])];
+          }
         }
         
         if (npcStore && result.data.world.npcs) {

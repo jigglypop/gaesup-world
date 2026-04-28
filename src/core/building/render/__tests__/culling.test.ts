@@ -4,6 +4,7 @@ import {
   RENDER_SUBKIND_TILE_GRASS,
 } from '../core';
 import {
+  DRAW_CLUSTER_BLOCK,
   DRAW_CLUSTER_FIRE,
   DRAW_CLUSTER_GRASS,
   parseBuildingGpuVisibilityFlags,
@@ -34,19 +35,22 @@ describe('building gpu culling parse', () => {
           tiles: [{ id: 't1', tileGroupId: 'tiles', position: { x: 2, y: 0, z: 2 }, size: 1, objectType: 'grass' }],
         },
       ],
+      blocks: [{ id: 'b1', position: { x: 8, y: 0, z: 8 } }],
       objects: [{ id: 'o1', type: 'fire', position: { x: 4, y: 0, z: 4 } }],
       version: 5,
     });
 
-    const parsed = parseBuildingGpuVisibilityFlags(snapshot, new Uint32Array([1, 0, 1]));
+    const parsed = parseBuildingGpuVisibilityFlags(snapshot, new Uint32Array([1, 0, 1, 1]));
 
     expect(parsed.version).toBe(5);
     expect(parsed.tileIds.has('tiles')).toBe(true);
     expect(parsed.wallIds.size).toBe(0);
+    expect(parsed.blockIds.has('b1')).toBe(true);
     expect(parsed.objectIds.has('o1')).toBe(true);
     expect(parsed.clusterCounts[DRAW_CLUSTER_GRASS]).toBe(1);
+    expect(parsed.clusterCounts[DRAW_CLUSTER_BLOCK]).toBe(1);
     expect(parsed.clusterCounts[DRAW_CLUSTER_FIRE]).toBe(1);
     expect(snapshot.subKinds[0]).toBe(RENDER_SUBKIND_TILE_GRASS);
-    expect(snapshot.subKinds[2]).toBe(RENDER_SUBKIND_OBJECT_FIRE);
+    expect(snapshot.subKinds[3]).toBe(RENDER_SUBKIND_OBJECT_FIRE);
   });
 });

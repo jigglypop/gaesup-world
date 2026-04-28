@@ -38,6 +38,18 @@ export interface BuildingSaveData {
       rotation?: number;
     }>;
   }>;
+  blocks?: Array<{
+    id: string;
+    position: { x: number; y: number; z: number };
+    cell?: { x: number; z: number; level?: number };
+    size?: {
+      x?: number;
+      y?: number;
+      z?: number;
+    };
+    materialId?: string;
+    tags?: string[];
+  }>;
   meshes: Array<{
     id: string;
     color: string;

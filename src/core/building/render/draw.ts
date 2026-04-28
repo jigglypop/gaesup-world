@@ -1,5 +1,6 @@
 import {
   DRAW_CLUSTER_BILLBOARD,
+  DRAW_CLUSTER_BLOCK,
   DRAW_CLUSTER_COUNT,
   DRAW_CLUSTER_FIRE,
   DRAW_CLUSTER_FLAG,
@@ -14,6 +15,7 @@ import {
 
 export {
   DRAW_CLUSTER_BILLBOARD,
+  DRAW_CLUSTER_BLOCK,
   DRAW_CLUSTER_COUNT,
   DRAW_CLUSTER_FIRE,
   DRAW_CLUSTER_FLAG,
@@ -66,6 +68,7 @@ export const DRAW_CLUSTER_DESCRIPTORS: DrawClusterDescriptor[] = [
   { id: DRAW_CLUSTER_FLAG, label: 'flag', vertexCountHint: 12 },
   { id: DRAW_CLUSTER_FIRE, label: 'fire', vertexCountHint: 6 },
   { id: DRAW_CLUSTER_BILLBOARD, label: 'billboard', vertexCountHint: 6 },
+  { id: DRAW_CLUSTER_BLOCK, label: 'block', vertexCountHint: 36 },
 ];
 
 export function createEmptyBuildingIndirectDrawMirror(): BuildingIndirectDrawMirror {

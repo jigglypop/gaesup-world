@@ -2,6 +2,9 @@ import 'reflect-metadata'
 import './core/initializeBridges';
 
 export * from './blueprints';
+export * from './core/grid';
+export * from './core/placement';
+export * from './core/plugins';
 export {
   GaesupWorld,
   GaesupController,
@@ -57,6 +60,8 @@ export {
   useBuildingEditor,
   useBuildingStore,
   BuildingController,
+  createBuildingPlugin,
+  buildingPlugin,
   Editor,
   FocusableObject,
   GaeSupProps,

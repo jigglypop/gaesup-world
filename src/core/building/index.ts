@@ -1,6 +1,7 @@
 export * from './components/BuildingSystem';
 export * from './components/BuildingController';
 export * from './components/BuildingRenderStateDriver';
+export * from './components/BlockSystem';
 export * from './components/BuildingGpuMirrorDriver';
 export * from './components/BuildingGpuUploadDriver';
 export * from './components/BuildingGpuCullingDriver';
@@ -11,6 +12,8 @@ export * from './components/TileSystem';
 export * from './components/WallSystem';
 export * from './components/GridHelper';
 export * from './components/BuildingUI';
+export * from './model';
+export * from './plugin';
 export * from './stores/buildingStore';
 export * from './render/store';
 export * from './render/draw';

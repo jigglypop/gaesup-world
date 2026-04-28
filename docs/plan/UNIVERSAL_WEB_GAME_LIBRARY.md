@@ -436,6 +436,31 @@ interface WallDefinition {
 자유 배치 오브젝트 예:
 
 ```ts
+interface BlockDefinition {
+  id: string;
+  footprint: {
+    kind: 'volume';
+    width: number;
+    depth: number;
+    height: number;
+    anchor: 'corner';
+  };
+  materialId?: string;
+  tags?: Array<'wall' | 'floor' | 'terrain' | 'structure'>;
+}
+```
+
+중요한 결정:
+
+- 벽은 한 종류가 아니다. 얇은 벽, 문/창문이 붙는 벽은 `edge` 모델이 맞다.
+- 마인크래프트처럼 박스를 파고 올리는 건축은 `block`/`volume` 모델이 맞다.
+- 포코피아/모동숲식 바닥과 가구는 `cell` 모델이 맞다.
+- 따라서 building core는 특정 벽 방식을 강제하지 않고 `cell`, `edge`, `volume`, `free` footprint를 모두 PlacementEngine에 올린다.
+- 게임 플러그인은 자기 게임에 맞는 배치 방식만 켜면 된다. 예: cozy-builder는 `cell + edge`, voxel-builder는 `volume`, shooter-map-editor는 `free + volume`.
+
+자유 배치 오브젝트 예:
+
+```ts
 interface FreeObjectDefinition {
   id: string;
   footprint: {
@@ -789,6 +814,285 @@ Blueprint editor는 optional package로 유지해야 한다.
 import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
 ```
 
+## Plugin Architecture
+
+범용 웹게임 라이브러리가 되려면 플러그인 시스템이 필요하다. 플러그인은 코어를 수정하지 않고 장르, 렌더링, 건축 방식, 아이템, NPC, 퀘스트, 에디터 패널을 추가할 수 있게 해준다.
+
+중요한 원칙은 플러그인이 강력하되 코어를 망가뜨리지 못하게 하는 것이다.
+
+플러그인이 확장할 수 있는 영역:
+
+- grid adapter
+- placement rule
+- building tool
+- catalog item type
+- asset loader
+- renderer
+- material preset
+- camera controller
+- input binding
+- interaction type
+- NPC behavior
+- dialog condition
+- quest objective
+- crafting recipe type
+- save adapter
+- network transport
+- editor panel
+- debug overlay
+- blueprint node
+
+권장 플러그인 모델:
+
+```ts
+interface GaesupPlugin {
+  id: string;
+  name: string;
+  version: string;
+  dependencies?: string[];
+  optionalDependencies?: string[];
+  setup(ctx: PluginContext): void | Promise<void>;
+  dispose?(ctx: PluginContext): void | Promise<void>;
+}
+```
+
+플러그인 context는 명시적인 registry만 제공한다.
+
+```ts
+interface PluginContext {
+  grid: GridRegistry;
+  placement: PlacementRegistry;
+  catalog: CatalogRegistry;
+  assets: AssetRegistry;
+  rendering: RenderingRegistry;
+  input: InputRegistry;
+  interactions: InteractionRegistry;
+  npc: NpcRegistry;
+  quests: QuestRegistry;
+  blueprints: BlueprintRegistry;
+  editor?: EditorRegistry;
+  save: SaveRegistry;
+  events: EventBus;
+  logger: Logger;
+}
+```
+
+플러그인 사용 예:
+
+```ts
+import { createGame } from 'gaesup-world/core';
+import { cozyLifePlugin } from '@gaesup/plugin-cozy-life';
+import { squareGridPlugin } from '@gaesup/plugin-square-grid';
+import { buildingPlugin } from '@gaesup/plugin-building';
+
+const game = createGame({
+  plugins: [
+    squareGridPlugin(),
+    buildingPlugin(),
+    cozyLifePlugin(),
+  ],
+});
+```
+
+플러그인 등록 예:
+
+```ts
+export function hexGridPlugin(): GaesupPlugin {
+  return {
+    id: '@gaesup/plugin-hex-grid',
+    name: 'Hex Grid',
+    version: '1.0.0',
+    setup(ctx) {
+      ctx.grid.register('hex', new HexGridAdapter());
+    },
+  };
+}
+```
+
+배치 규칙 플러그인 예:
+
+```ts
+export function animalCrossingPlacementPlugin(): GaesupPlugin {
+  return {
+    id: '@gaesup/plugin-cozy-placement',
+    name: 'Cozy Placement Rules',
+    version: '1.0.0',
+    setup(ctx) {
+      ctx.placement.registerRule(noOverlapRule);
+      ctx.placement.registerRule(requiresFloorRule);
+      ctx.placement.registerRule(furnitureMustFaceWalkableCellRule);
+      ctx.placement.registerRule(wallAttachmentRule);
+    },
+  };
+}
+```
+
+슈팅 게임 플러그인 예:
+
+```ts
+export function shooterPlugin(): GaesupPlugin {
+  return {
+    id: '@gaesup/plugin-shooter',
+    name: 'Shooter Kit',
+    version: '1.0.0',
+    setup(ctx) {
+      ctx.catalog.registerType('weapon', weaponItemType);
+      ctx.interactions.register('damageable', damageableInteraction);
+      ctx.input.registerBinding('fire', defaultFireBinding);
+      ctx.blueprints.registerNode('weapon-spawner', weaponSpawnerNode);
+    },
+  };
+}
+```
+
+하이그래픽 렌더링 플러그인 예:
+
+```ts
+export function highGraphicsPlugin(): GaesupPlugin {
+  return {
+    id: '@gaesup/plugin-high-graphics',
+    name: 'High Graphics Renderer',
+    version: '1.0.0',
+    setup(ctx) {
+      ctx.rendering.registerPreset('high-pbr', highPbrPreset);
+      ctx.rendering.registerMaterialFactory('pbr', createPbrMaterial);
+      ctx.rendering.registerPostprocess('cinematic', cinematicPostprocess);
+    },
+  };
+}
+```
+
+## Plugin Package Strategy
+
+플러그인은 npm 패키지로 배포할 수 있어야 한다.
+
+권장 네이밍:
+
+```txt
+@gaesup/plugin-square-grid
+@gaesup/plugin-hex-grid
+@gaesup/plugin-free-placement
+@gaesup/plugin-building
+@gaesup/plugin-cozy-life
+@gaesup/plugin-farming
+@gaesup/plugin-shooter
+@gaesup/plugin-high-graphics
+@gaesup/plugin-blueprint-editor
+```
+
+서드파티 플러그인은 다음 네이밍을 권장한다.
+
+```txt
+gaesup-plugin-my-feature
+@my-scope/gaesup-plugin-my-feature
+```
+
+플러그인 패키지는 가능한 한 peer dependency를 사용해야 한다. 예를 들어 렌더링 플러그인이 `postprocessing`이나 특정 shader 라이브러리에 의존한다면, 그 의존성은 해당 플러그인 안에만 있어야 한다. 코어 패키지의 dependency가 늘어나면 안 된다.
+
+권장 plugin package export:
+
+```json
+{
+  "name": "@gaesup/plugin-square-grid",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "peerDependencies": {
+    "gaesup-world": "^1.0.0"
+  }
+}
+```
+
+## Plugin Safety
+
+플러그인이 코어 내부 store나 private class를 직접 만지면 장기 유지보수가 어려워진다. 따라서 플러그인은 registry와 event bus를 통해서만 기능을 추가해야 한다.
+
+금지해야 할 패턴:
+
+```ts
+// bad
+import { useBuildingStore } from 'gaesup-world/internal';
+useBuildingStore.setState(...);
+```
+
+권장 패턴:
+
+```ts
+// good
+ctx.placement.registerRule(customRule);
+ctx.catalog.registerItem(customItem);
+ctx.events.emit('catalog:itemRegistered', customItem);
+```
+
+플러그인 시스템에는 다음 안전 장치가 필요하다.
+
+- plugin id 중복 방지
+- dependency 확인
+- setup 순서 보장
+- dispose 지원
+- registry별 schema validation
+- save data namespace 분리
+- plugin version 기록
+- migration hook 지원
+- client/server 사용 가능 여부 표시
+- editor-only plugin과 runtime plugin 구분
+
+플러그인 메타데이터 예:
+
+```ts
+interface PluginManifest {
+  id: string;
+  name: string;
+  version: string;
+  runtime: 'client' | 'server' | 'both' | 'editor';
+  capabilities: string[];
+  dependencies?: Record<string, string>;
+}
+```
+
+저장 데이터에는 어떤 플러그인이 사용되었는지 기록해야 한다.
+
+```ts
+interface GameSaveData {
+  version: number;
+  plugins: Array<{
+    id: string;
+    version: string;
+  }>;
+  world: WorldSaveData;
+}
+```
+
+이 정보가 있어야 나중에 저장 데이터를 열 때 필요한 플러그인을 확인하고 migration을 실행할 수 있다.
+
+## Extension Points
+
+코어는 다음 extension point를 공식 API로 제공해야 한다.
+
+```ts
+interface ExtensionPoints {
+  registerGridAdapter(adapter: GridAdapter): void;
+  registerPlacementRule(rule: PlacementRule): void;
+  registerCatalogItem(item: CatalogItem): void;
+  registerAssetLoader(loader: AssetLoader): void;
+  registerRenderer(renderer: RendererPlugin): void;
+  registerCameraController(controller: CameraController): void;
+  registerInputBinding(binding: InputBinding): void;
+  registerInteraction(interaction: InteractionDefinition): void;
+  registerNpcBehavior(behavior: NpcBehavior): void;
+  registerQuestObjective(objective: QuestObjectiveDefinition): void;
+  registerBlueprintNode(node: BlueprintNodeDefinition): void;
+  registerEditorPanel(panel: EditorPanelDefinition): void;
+  registerSaveAdapter(adapter: SaveAdapter): void;
+}
+```
+
+이 extension point들이 안정화되면 `gaesup-world`는 단일 라이브러리가 아니라 작은 게임 엔진 생태계처럼 확장될 수 있다.
+
 ## API Design Rules
 
 공개 API는 다음 기준을 따라야 한다.
@@ -803,6 +1107,9 @@ import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
 8. 배치 규칙은 plugin처럼 추가 가능해야 한다.
 9. 기본 preset은 제공하되 강제하지 않는다.
 10. examples는 라이브러리의 철학을 보여주는 제품 수준의 샘플이어야 한다.
+11. 플러그인은 registry와 event bus를 통해서만 코어를 확장해야 한다.
+12. runtime plugin과 editor-only plugin을 분리해야 한다.
+13. 플러그인 save data는 namespace와 version을 가져야 한다.
 
 ## Roadmap
 
@@ -814,7 +1121,17 @@ import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
 - README import 문서 최신화
 - npm package size 유지
 
-### Phase 2: Grid Core
+### Phase 2: Plugin Core
+
+- `PluginContext` 추가
+- plugin registry 추가
+- setup/dispose lifecycle 추가
+- dependency resolution 추가
+- runtime/editor plugin 구분
+- plugin manifest 타입 추가
+- plugin save namespace 설계
+
+### Phase 3: Grid Core
 
 - `src/core/grid` 추가
 - `GridAdapter` 추가
@@ -823,7 +1140,7 @@ import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
 - `CellCoord`, `EdgeCoord`, `CornerCoord` 추가
 - `gridToWorld`, `worldToGrid` 테스트 추가
 
-### Phase 3: Placement Engine
+### Phase 4: Placement Engine
 
 - `PlacementEngine` 추가
 - `PlacementRule` 추가
@@ -834,14 +1151,14 @@ import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
 - placement transaction
 - undo/redo 기반 마련
 
-### Phase 4: Building Refactor
+### Phase 5: Building Refactor
 
 - 기존 `buildingStore`의 `checkTilePosition`, `checkWallPosition`, `snapPosition`을 grid/placement로 이동
 - `WallConfig.position + rotation`에서 `EdgeCoord` 기반 모델로 migration path 제공
 - `TileConfig.position`에서 `CellCoord` 기반 모델로 migration path 제공
 - renderer는 변환된 world position만 사용
 
-### Phase 5: Cozy Game Preset
+### Phase 6: Cozy Game Preset
 
 - `rendering/toon` preset 추가
 - cozy camera preset 추가
@@ -850,16 +1167,25 @@ import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
 - tile/furniture sample asset 규칙 정리
 - 생활형 example 재구성
 
-### Phase 6: Genre Expansion
+### Phase 7: Genre Expansion
 
 - `rendering/high` path 정리
 - shooter에 필요한 entity/input/camera/network extension 설계
 - building 없는 minimal game example 추가
 - high graphics example 추가
 
+### Phase 8: Plugin Ecosystem
+
+- official plugin template 추가
+- plugin authoring guide 추가
+- plugin validation test utility 추가
+- sample plugins 추가
+- third-party plugin naming/documentation 정리
+- marketplace 또는 registry metadata 설계
+
 ## Immediate Recommendation
 
-가장 먼저 할 작업은 `grid`와 `placement`를 독립 모듈로 만드는 것이다.
+가장 먼저 할 작업은 plugin core, `grid`, `placement`를 독립 모듈로 만드는 것이다.
 
 현재:
 
@@ -877,6 +1203,12 @@ buildingStore
 목표:
 
 ```txt
+plugin
+- setup
+- dispose
+- registry
+- extension point
+
 grid
 - coordinate
 - conversion
@@ -899,5 +1231,4 @@ building/r3f
 - mesh rendering
 ```
 
-이 분리를 하면 포코피아/모동숲식 건축뿐 아니라 다른 격자 방식, 자유 배치, 슈팅 게임 맵 오브젝트 배치까지 같은 코어로 확장할 수 있다.
-
+이 분리를 하면 포코피아/모동숲식 건축뿐 아니라 다른 격자 방식, 자유 배치, 슈팅 게임 맵 오브젝트 배치까지 같은 코어로 확장할 수 있다. 또한 외부 개발자가 코어를 건드리지 않고 새 장르, 새 렌더러, 새 건축 방식, 새 에디터 도구를 추가할 수 있다.

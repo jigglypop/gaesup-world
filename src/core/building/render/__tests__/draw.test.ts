@@ -1,9 +1,9 @@
 import { buildBuildingIndirectDrawMirror, createBuildingIndirectDrawUploadPlan, INDIRECT_DRAW_STRIDE } from '../draw';
-import { DRAW_CLUSTER_FIRE, DRAW_CLUSTER_GRASS } from '../culling';
+import { DRAW_CLUSTER_COUNT, DRAW_CLUSTER_FIRE, DRAW_CLUSTER_GRASS } from '../culling';
 
 describe('building indirect draw prep', () => {
   it('builds indirect args from cluster counts', () => {
-    const counts = new Uint32Array(10);
+    const counts = new Uint32Array(DRAW_CLUSTER_COUNT);
     counts[DRAW_CLUSTER_GRASS] = 12;
     counts[DRAW_CLUSTER_FIRE] = 3;
 
@@ -14,15 +14,15 @@ describe('building indirect draw prep', () => {
     expect(mirror.version).toBe(4);
     expect(mirror.args[grassBase + 1]).toBe(12);
     expect(mirror.args[fireBase + 1]).toBe(3);
-    expect(mirror.dirtyRanges).toEqual([{ start: 0, end: 10 }]);
+    expect(mirror.dirtyRanges).toEqual([{ start: 0, end: DRAW_CLUSTER_COUNT }]);
   });
 
   it('creates partial upload slices for changed draw clusters', () => {
-    const firstCounts = new Uint32Array(10);
+    const firstCounts = new Uint32Array(DRAW_CLUSTER_COUNT);
     firstCounts[DRAW_CLUSTER_GRASS] = 12;
     const first = buildBuildingIndirectDrawMirror(1, firstCounts, null);
 
-    const secondCounts = new Uint32Array(10);
+    const secondCounts = new Uint32Array(DRAW_CLUSTER_COUNT);
     secondCounts[DRAW_CLUSTER_GRASS] = 18;
     secondCounts[DRAW_CLUSTER_FIRE] = 2;
     const second = buildBuildingIndirectDrawMirror(2, secondCounts, first);

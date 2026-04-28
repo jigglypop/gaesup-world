@@ -7,6 +7,8 @@ import {
   MeshConfig, 
   WallGroupConfig, 
   TileGroupConfig,
+  BuildingBlockConfig,
+  BuildingSerializedState,
   WallConfig,
   TileConfig,
   TileObjectType,
@@ -20,63 +22,23 @@ import {
   FLAG_STYLE_META,
 } from '../types';
 import { TILE_CONSTANTS } from '../types/constants';
+import {
+  blockToPlacementEntry,
+  createBuildingPlacementEngine,
+  getTileSupportHeight,
+  hasWallCollision,
+  indexAabb,
+  snapBuildingPosition,
+  createTileFootprint,
+  tileHalfSize,
+  tilePositionToCell,
+  tileToPlacementEntry,
+  unindexId,
+  wallTransformToEdge,
+} from '../model';
+import type { TileMeta, WallMeta } from '../model';
 
-// Enable Map and Set support in Immer
 enableMapSet();
-
-type TileMeta = { x: number; z: number; y: number; halfSize: number };
-type WallMeta = { x: number; z: number; rotY: number };
-
-const zigZag = (n: number): number => (n >= 0 ? n * 2 : (-n * 2) - 1);
-const pair = (a: number, b: number): number => {
-  const A = zigZag(a);
-  const B = zigZag(b);
-  const sum = A + B;
-  return (sum * (sum + 1)) / 2 + B;
-};
-
-const unindexId = (cells: Map<number, Set<string>>, cellsById: Map<string, number[]>, id: string): void => {
-  const keys = cellsById.get(id);
-  if (!keys) return;
-  for (const key of keys) {
-    const set = cells.get(key);
-    if (!set) continue;
-    set.delete(id);
-    if (set.size === 0) cells.delete(key);
-  }
-  cellsById.delete(id);
-};
-
-const indexAabb = (
-  cells: Map<number, Set<string>>,
-  cellsById: Map<string, number[]>,
-  id: string,
-  minX: number,
-  maxX: number,
-  minZ: number,
-  maxZ: number,
-  cellSize: number,
-): void => {
-  const minCellX = Math.floor(minX / cellSize);
-  const maxCellX = Math.floor(maxX / cellSize);
-  const minCellZ = Math.floor(minZ / cellSize);
-  const maxCellZ = Math.floor(maxZ / cellSize);
-
-  const keys: number[] = [];
-  for (let cx = minCellX; cx <= maxCellX; cx++) {
-    for (let cz = minCellZ; cz <= maxCellZ; cz++) {
-      const key = pair(cx, cz);
-      let set = cells.get(key);
-      if (!set) {
-        set = new Set<string>();
-        cells.set(key, set);
-      }
-      set.add(id);
-      keys.push(key);
-    }
-  }
-  cellsById.set(id, keys);
-};
 
 interface BuildingStore extends BuildingSystemState {
   initialized: boolean;
@@ -152,6 +114,7 @@ interface BuildingStore extends BuildingSystemState {
   setShowSnow: (show: boolean) => void;
   
   checkTilePosition: (position: Position3D) => boolean;
+  checkBlockPosition: (block: Pick<BuildingBlockConfig, 'position' | 'size' | 'cell'>) => boolean;
   checkWallPosition: (position: Position3D, rotation: number) => boolean;
   /**
    * Returns the Y position (m) at which a new tile placed at `position` would
@@ -189,14 +152,20 @@ interface BuildingStore extends BuildingSystemState {
   addTile: (groupId: string, tile: TileConfig) => void;
   updateTile: (groupId: string, tileId: string, updates: Partial<TileConfig>) => void;
   removeTile: (groupId: string, tileId: string) => void;
+
+  addBlock: (block: BuildingBlockConfig) => void;
+  updateBlock: (blockId: string, updates: Partial<BuildingBlockConfig>) => void;
+  removeBlock: (blockId: string) => void;
   
-  setEditMode: (mode: 'none' | 'wall' | 'tile' | 'npc' | 'object') => void;
+  setEditMode: (mode: BuildingSystemState['editMode']) => void;
   setShowGrid: (show: boolean) => void;
   setGridSize: (size: number) => void;
   setSnapToGrid: (snap: boolean) => void;
   
   snapPosition: (position: Position3D) => Position3D;
   isInEditMode: () => boolean;
+  serialize: () => BuildingSerializedState;
+  hydrate: (data: Partial<BuildingSerializedState> | null | undefined) => void;
 }
 
 export const useBuildingStore = create<BuildingStore>()(
@@ -211,6 +180,7 @@ export const useBuildingStore = create<BuildingStore>()(
     meshes: new Map(),
     wallGroups: new Map(),
     tileGroups: new Map(),
+    blocks: [],
     wallCategories: new Map(),
     tileCategories: new Map(),
     editMode: 'none',
@@ -458,13 +428,19 @@ export const useBuildingStore = create<BuildingStore>()(
         group: TileGroupConfig,
         tile: TileConfig,
       ): void => {
-        group.tiles.push(tile);
-        const hs = ((tile.size || 1) * cellSize) / 2;
-        state.tileMeta.set(tile.id, { x: tile.position.x, z: tile.position.z, y: tile.position.y, halfSize: hs });
+        const cell = tile.cell ?? tilePositionToCell(tile.position);
+        const tileWithCell: TileConfig = {
+          ...tile,
+          cell,
+          footprint: tile.footprint ?? createTileFootprint(cell, tile.size || 1),
+        };
+        group.tiles.push(tileWithCell);
+        const hs = tileHalfSize(tile.size || 1);
+        state.tileMeta.set(tileWithCell.id, { x: tileWithCell.position.x, z: tileWithCell.position.z, y: tileWithCell.position.y, halfSize: hs });
         indexAabb(
-          state.tileIndex, state.tileCells, tile.id,
-          tile.position.x - hs, tile.position.x + hs,
-          tile.position.z - hs, tile.position.z + hs,
+          state.tileIndex, state.tileCells, tileWithCell.id,
+          tileWithCell.position.x - hs, tileWithCell.position.x + hs,
+          tileWithCell.position.z - hs, tileWithCell.position.z + hs,
           cellSize,
         );
       };
@@ -587,18 +563,22 @@ export const useBuildingStore = create<BuildingStore>()(
     addWall: (groupId, wall) => set((state) => {
       const group = state.wallGroups.get(groupId);
       if (group) {
-        group.walls.push(wall);
+        const wallWithEdge: WallConfig = {
+          ...wall,
+          edge: wall.edge ?? wallTransformToEdge(wall.position, wall.rotation.y),
+        };
+        group.walls.push(wallWithEdge);
 
         const tol = 0.5;
-        state.wallMeta.set(wall.id, { x: wall.position.x, z: wall.position.z, rotY: wall.rotation.y });
+        state.wallMeta.set(wallWithEdge.id, { x: wallWithEdge.position.x, z: wallWithEdge.position.z, rotY: wallWithEdge.rotation.y });
         indexAabb(
           state.wallIndex,
           state.wallCells,
-          wall.id,
-          wall.position.x - tol,
-          wall.position.x + tol,
-          wall.position.z - tol,
-          wall.position.z + tol,
+          wallWithEdge.id,
+          wallWithEdge.position.x - tol,
+          wallWithEdge.position.x + tol,
+          wallWithEdge.position.z - tol,
+          wallWithEdge.position.z + tol,
           1,
         );
       }
@@ -617,6 +597,9 @@ export const useBuildingStore = create<BuildingStore>()(
               state.wallMeta.delete(wallId);
             }
             Object.assign(wall, updates);
+            if (updates.position !== undefined || updates.rotation !== undefined) {
+              wall.edge = updates.edge ?? wallTransformToEdge(wall.position, wall.rotation.y);
+            }
 
             if (shouldReindex) {
               const tol = 0.5;
@@ -675,15 +658,18 @@ export const useBuildingStore = create<BuildingStore>()(
           state.selectedTileObjectType === 'grass'
             ? { grassDensity: 90 }
             : undefined;
+        const cell = tile.cell ?? tilePositionToCell(tile.position);
         const tileWithObject: TileConfig = {
           ...tile,
+          cell,
+          footprint: tile.footprint ?? createTileFootprint(cell, tile.size || 1),
           objectType: state.selectedTileObjectType,
           ...(objectConfig ? { objectConfig } : {}),
         };
         group.tiles.push(tileWithObject);
 
         const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-        const halfSize = ((tileWithObject.size || 1) * cellSize) / 2;
+        const halfSize = tileHalfSize(tileWithObject.size || 1);
         state.tileMeta.set(tileWithObject.id, { x: tileWithObject.position.x, z: tileWithObject.position.z, y: tileWithObject.position.y, halfSize });
         indexAabb(
           state.tileIndex,
@@ -711,10 +697,15 @@ export const useBuildingStore = create<BuildingStore>()(
               state.tileMeta.delete(tileId);
             }
             Object.assign(tile, updates);
+            if (updates.position !== undefined || updates.size !== undefined || updates.cell !== undefined) {
+              const cell = updates.cell ?? tilePositionToCell(tile.position);
+              tile.cell = cell;
+              tile.footprint = updates.footprint ?? createTileFootprint(cell, tile.size || 1);
+            }
 
             if (shouldReindex) {
               const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-              const halfSize = ((tile.size || 1) * cellSize) / 2;
+              const halfSize = tileHalfSize(tile.size || 1);
               state.tileMeta.set(tile.id, { x: tile.position.x, z: tile.position.z, y: tile.position.y, halfSize });
               indexAabb(
                 state.tileIndex,
@@ -739,6 +730,29 @@ export const useBuildingStore = create<BuildingStore>()(
         state.tileMeta.delete(tileId);
         group.tiles = group.tiles.filter(t => t.id !== tileId);
       }
+    }),
+
+    addBlock: (block) => set((state) => {
+      const cell = block.cell ?? tilePositionToCell(block.position);
+      state.blocks.push({
+        ...block,
+        cell,
+      });
+    }),
+
+    updateBlock: (blockId, updates) => set((state) => {
+      const index = state.blocks.findIndex((block) => block.id === blockId);
+      if (index === -1) return;
+      const block = state.blocks[index];
+      if (!block) return;
+      Object.assign(block, updates);
+      if (updates.position !== undefined || updates.cell !== undefined) {
+        block.cell = updates.cell ?? tilePositionToCell(block.position);
+      }
+    }),
+
+    removeBlock: (blockId) => set((state) => {
+      state.blocks = state.blocks.filter((block) => block.id !== blockId);
     }),
 
     setEditMode: (mode) => set((state) => {
@@ -793,128 +807,169 @@ export const useBuildingStore = create<BuildingStore>()(
     snapPosition: (position) => {
       const { snapToGrid } = get();
       if (!snapToGrid) return position;
-      
-      const snapSize = TILE_CONSTANTS.SNAP_GRID_SIZE;
-      return {
-        x: Math.round(position.x / snapSize) * snapSize,
-        y: position.y,
-        z: Math.round(position.z / snapSize) * snapSize,
-      };
+
+      return snapBuildingPosition(position);
     },
     
     checkTilePosition: (position) => {
-      const { tileIndex, tileMeta, currentTileMultiplier } = get();
-      const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-      const halfSize = (cellSize * currentTileMultiplier) / 2;
-      const heightStep = TILE_CONSTANTS.HEIGHT_STEP;
-      const yTolerance = heightStep * 0.5;
+      const {
+        currentTileMultiplier,
+        currentTileRotation,
+        currentTileShape,
+        selectedTileGroupId,
+        selectedTileObjectType,
+        blocks,
+        tileGroups,
+        wallGroups,
+      } = get();
+      const groupId = selectedTileGroupId ?? '__candidate_group__';
+      const cell = tilePositionToCell(position);
+      const entry = tileToPlacementEntry({
+        id: '__candidate_tile__',
+        position,
+        tileGroupId: groupId,
+        size: currentTileMultiplier,
+        shape: currentTileShape,
+        rotation: currentTileRotation,
+        objectType: selectedTileObjectType,
+        cell,
+        footprint: createTileFootprint(cell, currentTileMultiplier),
+      });
+      const engine = createBuildingPlacementEngine(tileGroups.values(), wallGroups.values(), { blocks });
+      const request = {
+        subject: entry.subject,
+        coord: entry.coord,
+        footprint: entry.footprint,
+      };
 
-      const minX = position.x - halfSize;
-      const maxX = position.x + halfSize;
-      const minZ = position.z - halfSize;
-      const maxZ = position.z + halfSize;
+      return !engine.canPlace(entry.rotation === undefined ? request : { ...request, rotation: entry.rotation }).ok;
+    },
 
-      const minCellX = Math.floor(minX / cellSize);
-      const maxCellX = Math.floor(maxX / cellSize);
-      const minCellZ = Math.floor(minZ / cellSize);
-      const maxCellZ = Math.floor(maxZ / cellSize);
-
-      for (let cx = minCellX; cx <= maxCellX; cx++) {
-        for (let cz = minCellZ; cz <= maxCellZ; cz++) {
-          const key = pair(cx, cz);
-          const set = tileIndex.get(key);
-          if (!set) continue;
-          for (const id of set) {
-            const meta = tileMeta.get(id);
-            if (!meta) continue;
-            const overlapsXZ =
-              Math.abs(meta.x - position.x) < (halfSize + meta.halfSize - 0.1) &&
-              Math.abs(meta.z - position.z) < (halfSize + meta.halfSize - 0.1);
-            if (!overlapsXZ) continue;
-            // Same (or near-same) Y => collision; different Y => allow stacking.
-            if (Math.abs((meta.y ?? 0) - position.y) < yTolerance) return true;
-          }
-        }
-      }
-      return false;
+    checkBlockPosition: (block) => {
+      const { blocks, tileGroups, wallGroups } = get();
+      const candidate = blockToPlacementEntry({
+        id: '__candidate_block__',
+        position: block.position,
+        ...(block.cell ? { cell: block.cell } : {}),
+        ...(block.size ? { size: block.size } : {}),
+      });
+      const engine = createBuildingPlacementEngine(tileGroups.values(), wallGroups.values(), { blocks });
+      return !engine.canPlace({
+        subject: candidate.subject,
+        coord: candidate.coord,
+        footprint: candidate.footprint,
+      }).ok;
     },
 
     getSupportHeightAt: (position) => {
       const { tileIndex, tileMeta, currentTileMultiplier } = get();
-      const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-      const halfSize = (cellSize * currentTileMultiplier) / 2;
-      const heightStep = TILE_CONSTANTS.HEIGHT_STEP;
-
-      const minX = position.x - halfSize;
-      const maxX = position.x + halfSize;
-      const minZ = position.z - halfSize;
-      const maxZ = position.z + halfSize;
-
-      const minCellX = Math.floor(minX / cellSize);
-      const maxCellX = Math.floor(maxX / cellSize);
-      const minCellZ = Math.floor(minZ / cellSize);
-      const maxCellZ = Math.floor(maxZ / cellSize);
-
-      let support = 0;
-      for (let cx = minCellX; cx <= maxCellX; cx++) {
-        for (let cz = minCellZ; cz <= maxCellZ; cz++) {
-          const key = pair(cx, cz);
-          const set = tileIndex.get(key);
-          if (!set) continue;
-          for (const id of set) {
-            const meta = tileMeta.get(id);
-            if (!meta) continue;
-            const overlapsXZ =
-              Math.abs(meta.x - position.x) < (halfSize + meta.halfSize - 0.1) &&
-              Math.abs(meta.z - position.z) < (halfSize + meta.halfSize - 0.1);
-            if (!overlapsXZ) continue;
-            const top = (meta.y ?? 0) + heightStep;
-            if (top > support) support = top;
-          }
-        }
-      }
-      return support;
+      return getTileSupportHeight(tileIndex, tileMeta, position, currentTileMultiplier);
     },
     
     checkWallPosition: (position, rotation) => {
       const { wallIndex, wallMeta } = get();
-      const tolerance = 0.5;
-
-      const minX = position.x - tolerance;
-      const maxX = position.x + tolerance;
-      const minZ = position.z - tolerance;
-      const maxZ = position.z + tolerance;
-
-      const minCellX = Math.floor(minX / 1);
-      const maxCellX = Math.floor(maxX / 1);
-      const minCellZ = Math.floor(minZ / 1);
-      const maxCellZ = Math.floor(maxZ / 1);
-
-      for (let cx = minCellX; cx <= maxCellX; cx++) {
-        for (let cz = minCellZ; cz <= maxCellZ; cz++) {
-          const key = pair(cx, cz);
-          const set = wallIndex.get(key);
-          if (!set) continue;
-          for (const id of set) {
-            const meta = wallMeta.get(id);
-            if (!meta) continue;
-            if (
-              Math.abs(meta.x - position.x) < tolerance &&
-              Math.abs(meta.z - position.z) < tolerance &&
-              Math.abs(meta.rotY - rotation) < 0.1
-            ) {
-              return true;
-            }
-          }
-        }
-      }
-      return false;
+      return hasWallCollision(wallIndex, wallMeta, position, rotation);
     },
     
     isInEditMode: () => {
       const { editMode } = get();
       return editMode !== 'none';
     },
+
+    serialize: () => {
+      const { meshes, wallGroups, tileGroups, blocks, objects } = get();
+      return {
+        version: 1,
+        meshes: Array.from(meshes.values()),
+        wallGroups: Array.from(wallGroups.values()),
+        tileGroups: Array.from(tileGroups.values()),
+        blocks: blocks.map((block) => ({ ...block })),
+        objects: objects.map((object) => ({ ...object })),
+      };
+    },
+
+    hydrate: (data) => set((state) => {
+      if (!data) return;
+
+      state.meshes.clear();
+      state.wallGroups.clear();
+      state.tileGroups.clear();
+      state.tileIndex.clear();
+      state.tileCells.clear();
+      state.tileMeta.clear();
+      state.wallIndex.clear();
+      state.wallCells.clear();
+      state.wallMeta.clear();
+
+      for (const mesh of data.meshes ?? []) {
+        state.meshes.set(mesh.id, { ...mesh });
+      }
+
+      const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
+      for (const group of data.tileGroups ?? []) {
+        const tiles = group.tiles.map((tile) => {
+          const cell = tile.cell ?? tilePositionToCell(tile.position);
+          const tileWithCell: TileConfig = {
+            ...tile,
+            cell,
+            footprint: tile.footprint ?? createTileFootprint(cell, tile.size || 1),
+          };
+          const halfSize = tileHalfSize(tileWithCell.size || 1);
+          state.tileMeta.set(tileWithCell.id, {
+            x: tileWithCell.position.x,
+            z: tileWithCell.position.z,
+            y: tileWithCell.position.y,
+            halfSize,
+          });
+          indexAabb(
+            state.tileIndex,
+            state.tileCells,
+            tileWithCell.id,
+            tileWithCell.position.x - halfSize,
+            tileWithCell.position.x + halfSize,
+            tileWithCell.position.z - halfSize,
+            tileWithCell.position.z + halfSize,
+            cellSize,
+          );
+          return tileWithCell;
+        });
+        state.tileGroups.set(group.id, { ...group, tiles });
+      }
+
+      for (const group of data.wallGroups ?? []) {
+        const walls = group.walls.map((wall) => {
+          const wallWithEdge: WallConfig = {
+            ...wall,
+            edge: wall.edge ?? wallTransformToEdge(wall.position, wall.rotation.y),
+          };
+          const tol = 0.5;
+          state.wallMeta.set(wallWithEdge.id, {
+            x: wallWithEdge.position.x,
+            z: wallWithEdge.position.z,
+            rotY: wallWithEdge.rotation.y,
+          });
+          indexAabb(
+            state.wallIndex,
+            state.wallCells,
+            wallWithEdge.id,
+            wallWithEdge.position.x - tol,
+            wallWithEdge.position.x + tol,
+            wallWithEdge.position.z - tol,
+            wallWithEdge.position.z + tol,
+            1,
+          );
+          return wallWithEdge;
+        });
+        state.wallGroups.set(group.id, { ...group, walls });
+      }
+
+      state.blocks = (data.blocks ?? []).map((block) => ({
+        ...block,
+        cell: block.cell ?? tilePositionToCell(block.position),
+      }));
+      state.objects = (data.objects ?? []).map((object) => ({ ...object }));
+      state.initialized = true;
+    }),
 
     addWallCategory: (category) => set((state) => {
       state.wallCategories.set(category.id, category);

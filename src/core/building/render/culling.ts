@@ -1,5 +1,6 @@
 import {
   RENDER_KIND_OBJECT,
+  RENDER_KIND_BLOCK,
   RENDER_KIND_TILE,
   RENDER_KIND_WALL,
   RENDER_SUBKIND_OBJECT_BILLBOARD,
@@ -23,12 +24,14 @@ export const DRAW_CLUSTER_SAKURA = 6;
 export const DRAW_CLUSTER_FLAG = 7;
 export const DRAW_CLUSTER_FIRE = 8;
 export const DRAW_CLUSTER_BILLBOARD = 9;
-export const DRAW_CLUSTER_COUNT = 10;
+export const DRAW_CLUSTER_BLOCK = 10;
+export const DRAW_CLUSTER_COUNT = 11;
 
 export type BuildingGpuCullingResult = {
   version: number;
   tileIds: Set<string>;
   wallIds: Set<string>;
+  blockIds: Set<string>;
   objectIds: Set<string>;
   clusterCounts: Uint32Array;
 };
@@ -46,6 +49,9 @@ export function getDrawClusterForSnapshotEntry(snapshot: BuildingRenderSnapshot,
   if (kind === RENDER_KIND_WALL) {
     return DRAW_CLUSTER_WALL;
   }
+  if (kind === RENDER_KIND_BLOCK) {
+    return DRAW_CLUSTER_BLOCK;
+  }
   if (kind === RENDER_KIND_OBJECT) {
     if (subKind === RENDER_SUBKIND_OBJECT_SAKURA) return DRAW_CLUSTER_SAKURA;
     if (subKind === RENDER_SUBKIND_OBJECT_FLAG) return DRAW_CLUSTER_FLAG;
@@ -61,6 +67,7 @@ export function parseBuildingGpuVisibilityFlags(
 ): BuildingGpuCullingResult {
   const tileIds = new Set<string>();
   const wallIds = new Set<string>();
+  const blockIds = new Set<string>();
   const objectIds = new Set<string>();
   const clusterCounts = new Uint32Array(DRAW_CLUSTER_COUNT);
 
@@ -74,6 +81,8 @@ export function parseBuildingGpuVisibilityFlags(
       tileIds.add(id);
     } else if (kind === RENDER_KIND_WALL) {
       wallIds.add(id);
+    } else if (kind === RENDER_KIND_BLOCK) {
+      blockIds.add(id);
     } else if (kind === RENDER_KIND_OBJECT) {
       objectIds.add(id);
     }
@@ -85,6 +94,7 @@ export function parseBuildingGpuVisibilityFlags(
     version: snapshot.version,
     tileIds,
     wallIds,
+    blockIds,
     objectIds,
     clusterCounts,
   };
