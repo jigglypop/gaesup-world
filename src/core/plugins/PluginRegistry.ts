@@ -71,9 +71,16 @@ export class PluginRegistry implements PluginRegistryApi {
     if (!record || record.status === 'disposed') return;
 
     record.status = 'disposing';
-    await record.plugin.dispose?.(this.context);
-    record.status = 'disposed';
-    this.removeFromSetupOrder(id);
+    try {
+      await record.plugin.dispose?.(this.context);
+      this.removePluginExtensions(id);
+      record.status = 'disposed';
+      this.removeFromSetupOrder(id);
+    } catch (error) {
+      record.status = 'failed';
+      record.error = error;
+      throw error;
+    }
   }
 
   async disposeAll(): Promise<void> {
@@ -166,6 +173,24 @@ export class PluginRegistry implements PluginRegistryApi {
     if (index !== -1) {
       this.setupOrder.splice(index, 1);
     }
+  }
+
+  private removePluginExtensions(pluginId: string): void {
+    this.context.grid.removeByPlugin(pluginId);
+    this.context.placement.removeByPlugin(pluginId);
+    this.context.catalog.removeByPlugin(pluginId);
+    this.context.assets.removeByPlugin(pluginId);
+    this.context.rendering.removeByPlugin(pluginId);
+    this.context.input.removeByPlugin(pluginId);
+    this.context.interactions.removeByPlugin(pluginId);
+    this.context.npc.removeByPlugin(pluginId);
+    this.context.quests.removeByPlugin(pluginId);
+    this.context.blueprints.removeByPlugin(pluginId);
+    this.context.editor.removeByPlugin(pluginId);
+    this.context.save.removeByPlugin(pluginId);
+    this.context.services.removeByPlugin(pluginId);
+    this.context.systems.removeByPlugin(pluginId);
+    this.context.components.removeByPlugin(pluginId);
   }
 }
 

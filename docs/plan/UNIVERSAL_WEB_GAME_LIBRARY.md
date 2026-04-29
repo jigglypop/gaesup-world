@@ -1111,124 +1111,282 @@ interface ExtensionPoints {
 12. runtime plugin과 editor-only plugin을 분리해야 한다.
 13. 플러그인 save data는 namespace와 version을 가져야 한다.
 
-## Roadmap
+## Current Platform Audit
 
-### Phase 1: Library Boundary
+현재 코드베이스는 초기 계획보다 이미 많이 진행되어 있다. `package.json`은 `./runtime`, `./editor`, `./assets`, `./network`, `./server-contracts`, `./blueprints` 같은 subpath export를 제공하고, `src/core/runtime/createGaesupRuntime.ts`는 plugin setup/dispose, asset loading, save binding 등록을 한 곳에서 묶는다. `src/core/plugins`에는 `PluginRegistry`, `PluginContext`, `ExtensionRegistry`, event bus, plugin manifest가 들어가 있으며, `building`, `camera`, `motions`는 플러그인 형태로 진입점을 갖고 있다.
 
-- 루트 export 최소화
-- subpath exports 확장
-- optional dependency 격리
-- README import 문서 최신화
-- npm package size 유지
+따라서 다음 단계는 플러그인 시스템을 새로 만드는 것이 아니라, 이미 있는 runtime/plugin/save 구조를 실제 도메인 코드의 단일 통합 경로로 만드는 것이다.
 
-### Phase 2: Plugin Core
+### Already Strong
 
-- `PluginContext` 추가
-- plugin registry 추가
-- setup/dispose lifecycle 추가
-- dependency resolution 추가
-- runtime/editor plugin 구분
-- plugin manifest 타입 추가
-- plugin save namespace 설계
+- `PluginRegistry`가 중복 plugin 방지, dependency setup 순서, optional dependency, dispose 역순 처리를 지원한다.
+- `PluginContext`가 `grid`, `placement`, `catalog`, `assets`, `rendering`, `input`, `interactions`, `npc`, `quests`, `blueprints`, `editor`, `save`, `services`, `systems`, `components` registry를 제공한다.
+- `createGaesupRuntime`이 plugin이 등록한 save binding을 `SaveSystem`에 연결한다.
+- `building` plugin은 `grid`, `placement`, `save`, `services`를 등록해서 현재 가장 좋은 기준 구현에 가깝다.
+- `server-contracts`와 `platform/snapshot`이 서버/스냅샷 방향의 최소 표면을 갖고 있다.
+- TypeScript strict 설정이 강하다. `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noUnusedLocals`, `noUnusedParameters`가 켜져 있다.
 
-### Phase 3: Grid Core
+### Main Gaps
 
-- `src/core/grid` 추가
-- `GridAdapter` 추가
-- `SquareGridAdapter` 추가
-- `FreePlacementAdapter` 추가
-- `CellCoord`, `EdgeCoord`, `CornerCoord` 추가
-- `gridToWorld`, `worldToGrid` 테스트 추가
+- 저장 경로가 `SaveSystem`과 `SaveLoadManager + window.__gaesupStores`로 나뉘어 있다.
+- `camera` plugin은 system factory만 등록하고 save domain을 등록하지 않는다.
+- `motions` plugin은 `physics.bridge`, `interaction.input`을 등록하지만, `usePhysicsBridge`는 여전히 `BridgeFactory.getOrCreate`, fallback singleton, DOM event를 직접 사용한다.
+- `InteractionSystem`은 singleton 중심이라 input backend, replay input, network authority input을 교체하기 어렵다.
+- `ExtensionRegistry<TValue = unknown>` 기본값이 너무 느슨해서 핵심 extension의 value contract가 약하다.
+- `BuildingUI`가 `authStore`, `npcStore`, `buildingStore`를 직접 import해서 building UI, admin policy, NPC 선택 책임이 섞여 있다.
+- `SaveSystem`은 serialize/hydrate 실패를 조용히 삼킨다. 플랫폼 품질 기준에서는 logger 또는 diagnostics가 필요하다.
+- `SaveLoadManager`는 `localStorage`, `document`, `Blob`, `URL`에 직접 의존해서 서버/테스트/비브라우저 환경에서 재사용하기 어렵다.
+- ESLint가 테스트 파일을 ignore하고 있어 테스트 코드 품질과 import boundary 문제가 숨어도 잡기 어렵다.
 
-### Phase 4: Placement Engine
+## Updated Execution Roadmap
 
-- `PlacementEngine` 추가
-- `PlacementRule` 추가
-- no-overlap rule
-- support rule
-- wall-edge rule
-- footprint rotation
-- placement transaction
-- undo/redo 기반 마련
+### Phase 0: Baseline and Repository Hygiene
 
-### Phase 5: Building Refactor
+목표는 플랫폼 작업 전에 현재 상태를 신뢰 가능한 기준선으로 고정하는 것이다.
 
-- 기존 `buildingStore`의 `checkTilePosition`, `checkWallPosition`, `snapPosition`을 grid/placement로 이동
-- `WallConfig.position + rotation`에서 `EdgeCoord` 기반 모델로 migration path 제공
-- `TileConfig.position`에서 `CellCoord` 기반 모델로 migration path 제공
-- renderer는 변환된 world position만 사용
+- `src/core/...`와 `src\core\...` 형태로 보이는 경로 중복을 확인하고 정리한다.
+- `demo-dist` 같은 빌드 산출물 변경과 실제 소스 변경을 분리한다.
+- `npm run lint`, `npm test`, `npm run build:types` 결과를 기준선으로 기록한다.
+- 테스트 파일을 ESLint에서 전부 제외하는 정책을 재검토한다.
+- 새 플랫폼 작업은 산출물 변경과 섞지 않는다.
 
-### Phase 6: Cozy Game Preset
+완료 기준:
 
-- `rendering/toon` preset 추가
-- cozy camera preset 추가
-- stylized material preset 추가
-- contact shadow/default light rig 추가
-- tile/furniture sample asset 규칙 정리
-- 생활형 example 재구성
+- 소스 변경과 빌드 산출물 변경이 분리되어 있다.
+- lint/test/type build의 현재 실패 목록이 명확하다.
+- 플랫폼 작업 PR 또는 commit이 리뷰 가능한 단위로 나뉜다.
 
-### Phase 7: Genre Expansion
+### Phase 1: Persistence Unification
 
-- `rendering/high` path 정리
-- shooter에 필요한 entity/input/camera/network extension 설계
-- building 없는 minimal game example 추가
-- high graphics example 추가
+목표는 모든 게임 상태 저장/복원을 `SaveSystem` 중심으로 통합하는 것이다. 이 단계가 가장 먼저 필요하다. 저장 포맷은 나중에 바꾸기 어렵고, 멀티플레이/서버/에디터/방문 월드가 모두 저장 모델 위에 올라가기 때문이다.
 
-### Phase 8: Plugin Ecosystem
-
-- official plugin template 추가
-- plugin authoring guide 추가
-- plugin validation test utility 추가
-- sample plugins 추가
-- third-party plugin naming/documentation 정리
-- marketplace 또는 registry metadata 설계
-
-## Immediate Recommendation
-
-가장 먼저 할 작업은 plugin core, `grid`, `placement`를 독립 모듈로 만드는 것이다.
-
-현재:
+현재 문제:
 
 ```txt
-buildingStore
-- grid constant
-- snap
-- tile collision
-- wall collision
-- edit state
-- demo data
-- object state
+runtime path
+- createGaesupRuntime
+- SaveSystem
+- ctx.save.register
+
+world path
+- persistenceSlice
+- SaveLoadManager
+- window.__gaesupStores
+- localStorage 직접 접근
 ```
 
 목표:
 
 ```txt
-plugin
-- setup
-- dispose
-- registry
-- extension point
+runtime
+- plugin setup
+- save domain registration
+- world/player snapshot creation
 
-grid
-- coordinate
-- conversion
-- neighbor query
+save
+- domain binding
+- adapter
+- migration
+- diagnostics
 
-placement
-- canPlace
-- place
-- remove
-- rotate
-- rules
-
-building/store
-- selected tool
-- current mode
-- editor state
-
-building/r3f
-- visual preview
-- mesh rendering
+world persistence
+- SaveSystem 기반 facade
+- file import/export만 별도 adapter로 분리
 ```
 
-이 분리를 하면 포코피아/모동숲식 건축뿐 아니라 다른 격자 방식, 자유 배치, 슈팅 게임 맵 오브젝트 배치까지 같은 코어로 확장할 수 있다. 또한 외부 개발자가 코어를 건드리지 않고 새 장르, 새 렌더러, 새 건축 방식, 새 에디터 도구를 추가할 수 있다.
+작업:
+
+- `persistenceSlice`에서 `window.__gaesupStores` 의존을 제거한다.
+- `building`, `camera`, `npc`, `time`, `weather`, `audio` 등을 domain binding으로 저장한다.
+- `SaveLoadManager`는 legacy 또는 file import/export helper로 축소한다.
+- `SaveSystem.save/load`가 domain별 실패를 diagnostics로 남기게 한다.
+- world snapshot과 player progress를 `src/core/platform/snapshot.ts`의 domain 목록과 맞춘다.
+
+완료 기준:
+
+- world save/load가 `window.__gaesupStores` 없이 동작한다.
+- building + camera + npc 최소 round-trip 테스트가 있다.
+- serialize/hydrate 실패가 조용히 사라지지 않고 logger 또는 result로 드러난다.
+
+### Phase 2: Camera Save Domain
+
+목표는 `camera`를 `building`과 같은 수준의 plugin citizen으로 올리는 것이다.
+
+작업:
+
+- `createCameraPlugin`에 `saveExtensionId`와 `storeServiceId` 옵션을 추가한다.
+- camera position, rotation, mode, settings를 `ctx.save.register('camera', ...)`로 등록한다.
+- camera state 접근 경로를 service로 노출한다.
+- `createGaesupRuntime` 통합 테스트에 camera save binding을 추가한다.
+
+완료 기준:
+
+- camera plugin setup 후 `runtime.save.getBindings()`에 `camera` domain이 포함된다.
+- 저장 후 camera state를 변경하고 load하면 이전 상태로 복원된다.
+- world persistence가 camera를 별도 window store에서 읽지 않는다.
+
+### Phase 3: Motions Runtime Integration
+
+목표는 motions가 plugin registry에 등록한 bridge/input을 실제 hook이 사용하게 만드는 것이다.
+
+현재 문제:
+
+```txt
+usePhysicsBridge
+- BridgeFactory.getOrCreate('physics')
+- fallback new PhysicsBridge()
+- createInteractionInputAdapter() 직접 호출
+- window/document teleport event 직접 구독
+```
+
+목표:
+
+```txt
+usePhysicsBridge
+- runtime context 또는 resolver에서 physics bridge 획득
+- ctx.input의 adapter factory 사용
+- ctx.events 기반 teleport 이벤트 사용
+- singleton은 default adapter 내부로 격리
+```
+
+작업:
+
+- `GaesupRuntime`에 plugin context 접근 또는 runtime resolver API를 추가한다.
+- `usePhysicsBridge`가 `physics.bridge`와 `interaction.input`을 주입받을 수 있게 한다.
+- DOM teleport event는 compatibility adapter로 분리하고 내부 기본 경로는 `ctx.events`로 바꾼다.
+- bridge fallback 생성은 테스트 또는 non-runtime 환경에서만 명시적으로 사용한다.
+
+완료 기준:
+
+- motions plugin을 교체하면 hook이 교체된 bridge/input을 사용한다.
+- runtime 미설정 fallback 경로가 명시적이고 테스트되어 있다.
+- DOM event 없이도 teleport 요청이 처리된다.
+
+### Phase 4: Interaction Backend Abstraction
+
+목표는 interaction/input이 singleton 하나에 고정되지 않도록 만드는 것이다.
+
+작업:
+
+- `InteractionSystem.getInstance()`를 직접 쓰는 경로를 adapter 뒤로 숨긴다.
+- keyboard/mouse/gamepad/replay/network input backend 공통 인터페이스를 정의한다.
+- `ctx.input`에 backend 또는 adapter factory를 등록한다.
+- motions, UI prompt, interaction target query가 같은 input source를 사용하게 한다.
+
+완료 기준:
+
+- default backend는 기존 동작을 유지한다.
+- 테스트에서 fake input backend를 등록해 motions 또는 interaction을 구동할 수 있다.
+- replay/network input을 추가할 수 있는 확장 지점이 생긴다.
+
+### Phase 5: Typed Extension Registry
+
+목표는 registry의 유연성은 유지하되 핵심 extension contract는 컴파일 타임에 잡는 것이다.
+
+작업:
+
+- 핵심 extension ID를 상수로 정의한다.
+- `systems`, `input`, `save`, `services`에 타입 맵을 도입한다.
+- `PluginManifest.dependencies`에 semver range를 반영한다.
+- plugin setup 전 manifest validation을 추가한다.
+- capability 충돌 또는 누락 진단을 제공한다.
+
+완료 기준:
+
+- `physics.bridge`, `interaction.input`, `building.store`, `camera.system`, `camera.store` 같은 핵심 extension은 잘못된 value를 등록하기 어렵다.
+- plugin dependency version mismatch를 setup 전에 알 수 있다.
+- registry 충돌 메시지가 plugin id와 extension id를 모두 포함한다.
+
+### Phase 6: UI Decoupling
+
+목표는 core domain UI가 앱 정책과 강하게 결합되지 않게 하는 것이다.
+
+현재 문제:
+
+```txt
+BuildingUI
+- useBuildingStore 직접 사용
+- useAuthStore 직접 사용
+- useNPCStore 직접 사용
+- editor/admin/npc 선택 책임 혼합
+```
+
+작업:
+
+- `BuildingUI`를 순수 building panel과 app/admin extension panel로 분리한다.
+- auth, NPC template 선택, admin-only control은 optional props 또는 plugin-provided component로 분리한다.
+- `ctx.components` 또는 `ctx.services`를 통해 UI capability를 주입하는 경로를 만든다.
+- core building package는 building store/service contract만 알게 한다.
+
+완료 기준:
+
+- building UI를 auth/NPC 없이 사용할 수 있다.
+- admin 기능을 꺼도 building panel이 깨지지 않는다.
+- 다른 게임이 자체 NPC/auth 시스템을 주입할 수 있다.
+
+### Phase 7: Network and Server Authority
+
+목표는 `NetworkAdapter`를 단순 transport에서 게임 플랫폼 네트워크 계약으로 확장하는 것이다.
+
+작업:
+
+- `GameCommand`, `ServerEvent`, `StateDelta`, `SnapshotAck` 타입을 추가한다.
+- `NetworkMessageType`을 domain별 command/event로 확장한다.
+- `WorldSnapshot`과 visit room snapshot 형식을 정렬한다.
+- server-side plugin host 설계를 시작한다.
+- client-only, server-only, both plugin runtime을 실제 bootstrap에서 구분한다.
+
+완료 기준:
+
+- 클라이언트가 보내는 입력/명령과 서버가 확정하는 상태 변경이 타입으로 분리된다.
+- visit world, multiplayer room, player progress가 같은 snapshot 원칙을 따른다.
+- server contract가 클라이언트 구현 세부사항에 의존하지 않는다.
+
+### Phase 8: Content and Plugin Ecosystem
+
+목표는 외부 개발자가 코어를 건드리지 않고 게임 장르, 콘텐츠, 렌더러를 추가할 수 있게 하는 것이다.
+
+작업:
+
+- official plugin template을 만든다.
+- plugin validation test utility를 제공한다.
+- content catalog manifest에 schema version을 둔다.
+- asset loading fallback과 loaded catalog 상태를 구분한다.
+- sample plugin을 최소 세 가지 제공한다: cozy-life, high-graphics, shooter-kit.
+
+완료 기준:
+
+- 새 plugin을 별도 package로 만들고 runtime에 등록하는 예제가 있다.
+- manifest validation, dependency validation, save namespace validation이 테스트된다.
+- core package dependency가 plugin-specific dependency로 오염되지 않는다.
+
+## Quality Risk Register
+
+| Risk | Impact | Fix |
+| --- | --- | --- |
+| 저장 경로 이중화 | 저장 데이터 shape 분기, 복원 실패, 서버 동기화 어려움 | `SaveSystem` 중심으로 통합 |
+| `window.__gaesupStores` | 멀티 런타임, 테스트, SSR, 서버 검증 어려움 | runtime injection 또는 save domain binding 사용 |
+| singleton/global bridge | plugin 교체 불가, 테스트 격리 어려움 | `ctx.systems`, `ctx.input`, `ctx.events` 사용 |
+| 느슨한 registry 타입 | extension value mismatch를 런타임에서야 발견 | typed registry와 extension ID 상수 도입 |
+| save error swallow | 데이터 손상 또는 실패가 사용자에게 숨음 | diagnostics/logger/result 추가 |
+| DOM API 직접 의존 | 서버/worker/non-browser 재사용 불가 | adapter로 분리 |
+| UI와 app policy 결합 | domain UI 재사용 어려움 | props/service/plugin component로 주입 |
+| 테스트 lint 제외 | 테스트 코드 품질 저하 | 테스트 파일 lint 정책 재검토 |
+| dependency version 미검증 | plugin 조합 실패를 늦게 발견 | manifest validation 추가 |
+| logger noop 기본값 | 운영 관측성 부족 | runtime logger 주입과 plugin diagnostics 제공 |
+
+## Immediate Recommendation
+
+가장 먼저 할 작업은 `SaveSystem` 중심의 저장 통합이다. 이전 계획의 plugin core, grid, placement는 이미 상당 부분 들어와 있으므로, 지금은 새 구조를 더 만들기보다 실제 코드 경로를 하나로 정렬해야 한다.
+
+권장 첫 작업 순서:
+
+1. `persistenceSlice`의 `window.__gaesupStores` 제거 계획 수립
+2. `camera` save binding 추가
+3. `building + camera` runtime save round-trip 테스트 추가
+4. `SaveSystem` diagnostics 추가
+5. `SaveLoadManager`를 legacy/file helper로 축소
+6. `usePhysicsBridge`가 plugin context의 bridge/input을 쓰도록 변경
+7. `InteractionSystem` singleton을 default backend adapter 뒤로 이동
+
+이 순서가 끝나면 `gaesup-world`는 단순 기능 묶음이 아니라, 런타임이 plugin을 조립하고, domain state를 저장하며, 입력/물리/상호작용을 교체 가능한 방식으로 연결하는 통합 게임 플랫폼에 가까워진다.

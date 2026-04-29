@@ -3,10 +3,11 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import { buildVisibilityIndexFromRenderSnapshot } from '../../render/core';
 import { useBuildingGpuCullingStore } from '../../render/cullingStore';
 import { useBuildingRenderStateStore } from '../../render/store';
+import { useBuildingStore } from '../../stores/buildingStore';
 import {
+  buildVisibilityIndex,
   collectCandidateIds,
   collectOccluderCandidates,
   createVisibilityQueryKey,
@@ -51,6 +52,10 @@ function appendVisibleIds(
 
 export function BuildingVisibilityDriver() {
   const snapshot = useBuildingRenderStateStore((s) => s.snapshot);
+  const wallGroups = useBuildingStore((s) => s.wallGroups);
+  const tileGroups = useBuildingStore((s) => s.tileGroups);
+  const blocks = useBuildingStore((s) => s.blocks);
+  const objects = useBuildingStore((s) => s.objects);
   const gpuCullingActive = useBuildingGpuCullingStore((s) => s.active);
   const gpuCullingVersion = useBuildingGpuCullingStore((s) => s.version);
   const gpuTileIds = useBuildingGpuCullingStore((s) => s.visibleTileGroupIds);
@@ -61,8 +66,13 @@ export function BuildingVisibilityDriver() {
   const reset = useBuildingVisibilityStore((s) => s.reset);
 
   const index = useMemo(
-    () => buildVisibilityIndexFromRenderSnapshot(snapshot),
-    [snapshot],
+    () => buildVisibilityIndex(
+      Array.from(wallGroups.values()),
+      Array.from(tileGroups.values()),
+      objects,
+      blocks ?? [],
+    ),
+    [wallGroups, tileGroups, objects, blocks],
   );
 
   const accumRef = useRef(0);
@@ -220,7 +230,12 @@ export function BuildingVisibilityDriver() {
       const oldestKey = cacheRef.current.keys().next().value;
       if (oldestKey) cacheRef.current.delete(oldestKey);
     }
-    setVisible(payload);
+    setVisible({
+      tileIds: payload.tileIds,
+      wallIds: payload.wallIds,
+      blockIds: payload.blockIds,
+      objectIds: payload.objectIds,
+    });
   });
 
   return null;

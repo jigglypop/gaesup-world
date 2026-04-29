@@ -48,6 +48,7 @@ export interface ExtensionRegistry<TValue = unknown> {
   require<TResolved extends TValue = TValue>(id: string): TResolved;
   has(id: string): boolean;
   remove(id: string): boolean;
+  removeByPlugin(pluginId: string): number;
   list(): Array<RegistryEntry<TValue>>;
   clear(): void;
 }
@@ -65,6 +66,9 @@ export interface PluginExtensionRegistries {
   blueprints: ExtensionRegistry;
   editor: ExtensionRegistry;
   save: ExtensionRegistry;
+  services: ExtensionRegistry;
+  systems: ExtensionRegistry;
+  components: ExtensionRegistry;
 }
 
 export interface PluginContext extends PluginExtensionRegistries {

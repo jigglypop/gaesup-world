@@ -25,6 +25,10 @@ const TILE_SHAPE_OPTIONS: { type: TileShapeType; label: string }[] = [
   { type: 'ramp', label: 'Ramp' },
 ];
 
+export function createCustomMeshId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export function BuildingUI({ onClose }: BuildingUIProps) {
   const { 
     setEditMode, 
@@ -46,7 +50,9 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     selectedTileCategoryId,
     selectedWallGroupId,
     selectedTileGroupId,
+    selectedWallId,
     selectedTileId,
+    setCurrentWallMaterialId,
     setCurrentTileMaterialId,
     setSelectedWallCategory,
     setSelectedTileCategory,
@@ -55,7 +61,8 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     meshes,
     updateMesh,
     addMesh,
-    updateWallGroup,
+    updateWall,
+    moveWallToGroup,
     updateTile,
     addWallGroup,
     addTileGroup,
@@ -110,6 +117,13 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     }
     return nextMeshId;
   }, [addMesh, customColor, customTexture, meshes, updateMesh]);
+
+  const findWallGroupByWallId = useCallback((wallId: string) => (
+    Array.from(wallGroups.values()).find((group) => group.walls.some((wall) => wall.id === wallId))
+  ), [wallGroups]);
+  const selectedWallTypeGroupId = selectedWallId
+    ? findWallGroupByWallId(selectedWallId)?.id
+    : selectedWallGroupId;
   
   // Callbacks
   const handleEditModeClose = useCallback(() => {
@@ -124,9 +138,13 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
   
   React.useEffect(() => {
     if (editMode === 'wall' && selectedWallGroupId) {
-      const wallGroup = wallGroups.get(selectedWallGroupId);
-      if (wallGroup && wallGroup.frontMeshId) {
-        const mesh = meshes.get(wallGroup.frontMeshId);
+      const wallGroup = selectedWallId ? findWallGroupByWallId(selectedWallId) : wallGroups.get(selectedWallGroupId);
+      const selectedWall = selectedWallId
+        ? wallGroup?.walls.find((wall) => wall.id === selectedWallId)
+        : undefined;
+      const meshId = selectedWall?.materialId ?? wallGroup?.frontMeshId;
+      if (meshId) {
+        const mesh = meshes.get(meshId);
         if (mesh) {
           setCustomColor(mesh.color || '#808080');
           setCustomTexture(mesh.mapTextureUrl || '');
@@ -142,7 +160,7 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
         }
       }
     }
-  }, [editMode, selectedWallGroupId, selectedTileGroupId, wallGroups, tileGroups, meshes]);
+  }, [editMode, selectedWallGroupId, selectedTileGroupId, selectedWallId, findWallGroupByWallId, wallGroups, tileGroups, meshes]);
   
   if (!isLoggedIn) {
     return null;
@@ -286,7 +304,7 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                           if (tileGroup && tileGroup.floorMeshId) {
                             const meshId = selectedTileId
                               ? upsertCustomMesh(tileGroup.floorMeshId, `custom-tile-mesh-${selectedTileId}`)
-                              : upsertCustomMesh(tileGroup.floorMeshId, 'custom-placement-tile-mesh');
+                              : upsertCustomMesh(tileGroup.floorMeshId, createCustomMeshId('custom-placement-tile-mesh'));
                             if (selectedTileId) {
                               updateTile(tileGroup.id, selectedTileId, { materialId: meshId });
                               return;
@@ -508,8 +526,15 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                 <div className="building-ui-category-group">
                   <span className="building-ui-label">Type:</span>
                   <select 
-                    value={selectedWallGroupId || ''} 
-                    onChange={(e) => useBuildingStore.setState({ selectedWallGroupId: e.target.value })}
+                    value={selectedWallTypeGroupId || ''} 
+                    onChange={(e) => {
+                      const nextGroupId = e.target.value;
+                      if (selectedWallId) {
+                        moveWallToGroup(selectedWallId, nextGroupId);
+                        return;
+                      }
+                      useBuildingStore.setState({ selectedWallGroupId: nextGroupId });
+                    }}
                     className="building-ui-select"
                   >
                     {selectedWallCategoryId && wallCategories.get(selectedWallCategoryId)?.wallGroupIds.map(groupId => {
@@ -576,14 +601,23 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                     <button
                       onClick={() => {
                         if (selectedWallGroupId) {
-                          const wallGroup = wallGroups.get(selectedWallGroupId);
-                          if (wallGroup && wallGroup.frontMeshId) {
-                            updateWallGroup(wallGroup.id, {
-                              frontMeshId: upsertCustomMesh(wallGroup.frontMeshId, `custom-wall-mesh-${wallGroup.id}-front`),
-                              backMeshId: upsertCustomMesh(wallGroup.backMeshId, `custom-wall-mesh-${wallGroup.id}-back`),
-                              sideMeshId: upsertCustomMesh(wallGroup.sideMeshId, `custom-wall-mesh-${wallGroup.id}-side`),
-                            });
+                          const wallGroup = selectedWallId ? findWallGroupByWallId(selectedWallId) : wallGroups.get(selectedWallGroupId);
+                          if (!wallGroup) return;
+                          const selectedWall = selectedWallId
+                            ? wallGroup.walls.find((wall) => wall.id === selectedWallId)
+                            : undefined;
+                          const sourceMeshId = selectedWall?.materialId ?? wallGroup.frontMeshId;
+                          const meshId = upsertCustomMesh(
+                            sourceMeshId,
+                            selectedWallId
+                              ? `custom-wall-mesh-${selectedWallId}`
+                              : createCustomMeshId('custom-placement-wall-mesh'),
+                          );
+                          if (selectedWallId) {
+                            updateWall(wallGroup.id, selectedWallId, { materialId: meshId });
+                            return;
                           }
+                          setCurrentWallMaterialId(meshId);
                         }
                       }}
                       className="building-ui-apply-button"

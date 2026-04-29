@@ -1,4 +1,4 @@
-import type { SerializedDomainValue } from '../save';
+import type { DomainBinding, SerializedDomainValue } from '../save';
 
 export const WORLD_SNAPSHOT_DOMAINS = [
   'building',
@@ -6,6 +6,7 @@ export const WORLD_SNAPSHOT_DOMAINS = [
   'character',
   'assets',
   'npc',
+  'camera',
   'time',
   'weather',
   'audio',
@@ -55,6 +56,10 @@ export type CreatePlayerProgressOptions = CreateWorldSnapshotOptions & {
   worldId?: string;
 };
 
+export type PlatformSaveBindingProvider = {
+  getBindings: () => Iterable<DomainBinding>;
+};
+
 export function pickDomains<TDomain extends string>(
   domains: Record<string, SerializedDomainValue>,
   allowed: readonly TDomain[],
@@ -95,4 +100,34 @@ export function createPlayerProgress(
     savedAt: options.savedAt ?? Date.now(),
     domains: pickDomains(domains, PLAYER_PROGRESS_DOMAINS),
   };
+}
+
+export function collectSaveDomains(
+  provider: PlatformSaveBindingProvider,
+): Record<string, SerializedDomainValue> {
+  const domains: Record<string, SerializedDomainValue> = {};
+  for (const binding of provider.getBindings()) {
+    try {
+      domains[binding.key] = binding.serialize();
+    } catch {
+      domains[binding.key] = null;
+    }
+  }
+  return domains;
+}
+
+export function createWorldSnapshotFromSaveSystem(
+  provider: PlatformSaveBindingProvider,
+  worldId: string,
+  options: CreateWorldSnapshotOptions = {},
+): WorldSnapshot {
+  return createWorldSnapshot(worldId, collectSaveDomains(provider), options);
+}
+
+export function createPlayerProgressFromSaveSystem(
+  provider: PlatformSaveBindingProvider,
+  playerId: string,
+  options: CreatePlayerProgressOptions = {},
+): PlayerProgress {
+  return createPlayerProgress(playerId, collectSaveDomains(provider), options);
 }

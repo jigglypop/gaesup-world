@@ -21,6 +21,8 @@ export type GaesupRuntime = {
   plugins: PluginRegistry;
   save: SaveSystem;
   loadAssets: () => Promise<void>;
+  getService: <TService = unknown>(id: string) => TService | undefined;
+  requireService: <TService = unknown>(id: string) => TService;
   setup: () => Promise<void>;
   dispose: () => Promise<void>;
 };

@@ -1,6 +1,6 @@
 import { IndexedDBAdapter } from '../adapters/IndexedDBAdapter';
 import { LocalStorageAdapter } from '../adapters/LocalStorageAdapter';
-import type { DomainBinding, Migration, SaveAdapter, SaveBlob, SaveSystemOptions } from '../types';
+import type { DomainBinding, Migration, SaveAdapter, SaveBlob, SaveDiagnostic, SaveSystemOptions } from '../types';
 
 export class SaveSystem {
   private adapter: SaveAdapter;
@@ -8,12 +8,14 @@ export class SaveSystem {
   private currentVersion: number;
   private migrations: Record<number, Migration>;
   private defaultSlot: string;
+  private onDiagnostic: ((diagnostic: SaveDiagnostic) => void) | undefined;
 
   constructor(opts: SaveSystemOptions) {
     this.adapter = opts.adapter;
     this.currentVersion = opts.currentVersion ?? 1;
     this.migrations = opts.migrations ?? {};
     this.defaultSlot = opts.defaultSlot ?? 'main';
+    this.onDiagnostic = opts.onDiagnostic;
   }
 
   register(binding: DomainBinding): () => void {
@@ -38,7 +40,12 @@ export class SaveSystem {
   async save(slot: string = this.defaultSlot): Promise<void> {
     const domains: SaveBlob['domains'] = {};
     for (const [key, b] of this.bindings) {
-      try { domains[key] = b.serialize(); } catch { domains[key] = null; }
+      try {
+        domains[key] = b.serialize();
+      } catch (error) {
+        domains[key] = null;
+        this.reportDiagnostic({ phase: 'serialize', key, slot, error });
+      }
     }
     const blob: SaveBlob = {
       version: this.currentVersion,
@@ -58,13 +65,21 @@ export class SaveSystem {
       blob = m(blob);
     }
     for (const [key, b] of this.bindings) {
-      try { b.hydrate(blob.domains?.[key]); } catch { void 0; }
+      try {
+        b.hydrate(blob.domains?.[key]);
+      } catch (error) {
+        this.reportDiagnostic({ phase: 'hydrate', key, slot, error });
+      }
     }
     return true;
   }
 
   async list(): Promise<string[]> { return this.adapter.list(); }
   async remove(slot: string = this.defaultSlot): Promise<void> { return this.adapter.remove(slot); }
+
+  private reportDiagnostic(diagnostic: SaveDiagnostic): void {
+    this.onDiagnostic?.(diagnostic);
+  }
 }
 
 let _instance: SaveSystem | null = null;

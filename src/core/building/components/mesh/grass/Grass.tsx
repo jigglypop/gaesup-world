@@ -5,20 +5,16 @@ import { extend, useLoader } from "@react-three/fiber";
 import { createNoise2D } from "simplex-noise";
 import * as THREE from "three";
 
-import bladeAlpha from "/resources/blade_alpha.jpg";
-import bladeDiffuse from "/resources/blade_diffuse.jpg";
 import { usePerfStore } from "@core/perf/stores/perfStore";
 import { createToonMaterial, getDefaultToonMode } from "@core/rendering/toon";
 import { loadCoreWasm, type GaesupCoreWasmExports } from "@core/wasm/loader";
 
+import { resolveGrassTextureSources } from "./assets";
 import fragmentShader from "./frag.glsl";
 import { getGrassManager, setGrassManagerWasm, type GrassTileRenderState } from "./manager";
 import { GrassMeshProps } from "./type";
 import vertexShader from "./vert.glsl";
 
-
-// Single shared material per shading mode. Vertex colors carry the per-tile
-// variation so big tiles never look like a flat plastic green sheet.
 let _grassGroundToon: THREE.MeshToonMaterial | null = null;
 let _grassGroundPbr: THREE.MeshStandardMaterial | null = null;
 
@@ -207,6 +203,8 @@ const Grass: FC<GrassMeshProps> = memo(
     groundAccentColor,
     bladeTipColor,
     bladeBottomColor,
+    bladeDiffuseUrl,
+    bladeAlphaUrl,
     ...props
   }) => {
     const { bW, bH, joints } = options;
@@ -241,9 +239,16 @@ const Grass: FC<GrassMeshProps> = memo(
     const materialRef = useRef<THREE.ShaderMaterial | null>(null);
     const geometryRef = useRef<THREE.InstancedBufferGeometry | null>(null);
 
+    const textureSources = useMemo(
+      () => resolveGrassTextureSources({
+        ...(bladeDiffuseUrl ? { bladeDiffuseUrl } : {}),
+        ...(bladeAlphaUrl ? { bladeAlphaUrl } : {}),
+      }),
+      [bladeDiffuseUrl, bladeAlphaUrl],
+    );
     const [texture, alphaMap] = useLoader(THREE.TextureLoader, [
-      bladeDiffuse,
-      bladeAlpha,
+      textureSources.bladeDiffuseUrl,
+      textureSources.bladeAlphaUrl,
     ]);
 
     // WASM-accelerated attribute generation with JS fallback. Loaded once

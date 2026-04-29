@@ -3,11 +3,11 @@ import { StateCreator } from 'zustand';
 import { SaveLoadManager } from '../persistence/SaveLoadManager';
 import { CameraSaveData, NPCSaveData, SaveData, SaveLoadOptions, SaveMetadata, WorldSaveData } from '../persistence/types';
 
-type StoreApi<TState> = {
+export type StoreApi<TState> = {
   getState: () => TState;
 };
 
-type BuildingStoreState = {
+export type BuildingStoreState = {
   wallGroups: Map<string, WorldSaveData['buildings']['wallGroups'][number]>;
   tileGroups: Map<string, WorldSaveData['buildings']['tileGroups'][number]>;
   meshes: Map<string, WorldSaveData['buildings']['meshes'][number]>;
@@ -15,18 +15,18 @@ type BuildingStoreState = {
   hydrate?: (data: WorldSaveData['buildings']) => void;
 };
 
-type NPCStoreState = {
+export type NPCStoreState = {
   instances: Map<string, NPCSaveData>;
 };
 
-type CameraStoreState = {
+export type CameraStoreState = {
   position: CameraSaveData['position'];
   rotation: CameraSaveData['rotation'];
   mode: CameraSaveData['mode'];
   settings: CameraSaveData['settings'];
 };
 
-type GaesupStores = {
+export type GaesupStores = {
   buildingStore?: StoreApi<BuildingStoreState>;
   npcStore?: StoreApi<NPCStoreState>;
   cameraStore?: StoreApi<CameraStoreState> & { setState: (state: Partial<CameraStoreState>) => void };
@@ -36,6 +36,129 @@ declare global {
   interface Window {
     __gaesupStores?: GaesupStores;
   }
+}
+
+export type PersistenceStoresResolver = () => GaesupStores;
+
+export interface PersistenceSliceOptions {
+  getStores?: PersistenceStoresResolver;
+  saveLoadManager?: SaveLoadManager;
+}
+
+const DEFAULT_ENVIRONMENT: WorldSaveData['environment'] = {
+  lighting: {
+    ambientIntensity: 1,
+    directionalIntensity: 1,
+    directionalPosition: { x: 0, y: 10, z: 0 },
+  },
+};
+
+function getWindowStores(): GaesupStores {
+  if (typeof window === 'undefined') return {};
+  return window.__gaesupStores ?? {};
+}
+
+function createWorldData(
+  stores: GaesupStores,
+  worldId: string,
+  worldName: string,
+): WorldSaveData {
+  const { buildingStore, npcStore, cameraStore } = stores;
+
+  if (!buildingStore) {
+    throw new Error('Building store not initialized');
+  }
+
+  const buildingState = buildingStore.getState();
+  const cameraState = cameraStore?.getState();
+  const camera = cameraState ? {
+    position: cameraState.position,
+    rotation: cameraState.rotation,
+    mode: cameraState.mode,
+    ...(cameraState.settings ? { settings: cameraState.settings } : {}),
+  } : undefined;
+
+  const worldData: WorldSaveData = {
+    id: worldId,
+    name: worldName,
+    buildings: {
+      wallGroups: Array.from(buildingState.wallGroups.values()),
+      tileGroups: Array.from(buildingState.tileGroups.values()),
+      blocks: Array.from(buildingState.blocks),
+      meshes: Array.from(buildingState.meshes.values()),
+    },
+    npcs: npcStore ? Array.from(npcStore.getState().instances.values()) : [],
+    environment: DEFAULT_ENVIRONMENT,
+    ...(camera ? { camera } : {}),
+  };
+
+  return worldData;
+}
+
+function hydrateBuildingStore(
+  buildingStore: StoreApi<BuildingStoreState> | undefined,
+  buildings: WorldSaveData['buildings'] | undefined,
+): void {
+  if (!buildingStore || !buildings) return;
+
+  const state = buildingStore.getState();
+  if (typeof state.hydrate === 'function') {
+    state.hydrate(buildings);
+    return;
+  }
+
+  state.wallGroups.clear();
+  state.tileGroups.clear();
+  state.meshes.clear();
+  state.blocks = [];
+
+  buildings.wallGroups.forEach((group) => {
+    state.wallGroups.set(group.id, group);
+  });
+
+  buildings.tileGroups.forEach((group) => {
+    state.tileGroups.set(group.id, group);
+  });
+
+  buildings.meshes.forEach((mesh) => {
+    state.meshes.set(mesh.id, mesh);
+  });
+
+  state.blocks = [...(buildings.blocks ?? [])];
+}
+
+function hydrateNpcStore(
+  npcStore: StoreApi<NPCStoreState> | undefined,
+  npcs: NPCSaveData[] | undefined,
+): void {
+  if (!npcStore || !npcs) return;
+
+  const state = npcStore.getState();
+  state.instances.clear();
+
+  npcs.forEach((npc) => {
+    state.instances.set(npc.id, npc);
+  });
+}
+
+function hydrateCameraStore(
+  cameraStore: GaesupStores['cameraStore'],
+  camera: WorldSaveData['camera'] | undefined,
+): void {
+  if (!cameraStore || !camera) return;
+
+  cameraStore.setState({
+    position: camera.position,
+    rotation: camera.rotation,
+    mode: camera.mode,
+    settings: camera.settings || {},
+  });
+}
+
+function hydrateStores(stores: GaesupStores, world: WorldSaveData): void {
+  hydrateBuildingStore(stores.buildingStore, world.buildings);
+  hydrateNpcStore(stores.npcStore, world.npcs);
+  hydrateCameraStore(stores.cameraStore, world.camera);
 }
 
 export interface PersistenceState {
@@ -55,8 +178,13 @@ export interface PersistenceState {
   clearError: () => void;
 }
 
-export const createPersistenceSlice: StateCreator<PersistenceState> = (set, get) => ({
-  saveLoadManager: new SaveLoadManager(),
+export function createPersistenceSliceWithOptions(
+  options: PersistenceSliceOptions = {},
+): StateCreator<PersistenceState> {
+  const resolveStores = options.getStores ?? getWindowStores;
+
+  return (set, get) => ({
+  saveLoadManager: options.saveLoadManager ?? new SaveLoadManager(),
   currentSaveId: null,
   saves: [],
   isSaving: false,
@@ -67,36 +195,7 @@ export const createPersistenceSlice: StateCreator<PersistenceState> = (set, get)
     set({ isSaving: true, lastError: null });
     
     try {
-      const { buildingStore, npcStore, cameraStore } = window.__gaesupStores || {};
-      
-      if (!buildingStore) {
-        throw new Error('Building store not initialized');
-      }
-
-      const worldData = {
-        id: worldId,
-        name: worldName,
-        buildings: {
-          wallGroups: Array.from(buildingStore.getState().wallGroups.values()),
-          tileGroups: Array.from(buildingStore.getState().tileGroups.values()),
-          blocks: Array.from(buildingStore.getState().blocks),
-          meshes: Array.from(buildingStore.getState().meshes.values()),
-        },
-        npcs: npcStore ? Array.from(npcStore.getState().instances.values()) : [],
-        environment: {
-          lighting: {
-            ambientIntensity: 1,
-            directionalIntensity: 1,
-            directionalPosition: { x: 0, y: 10, z: 0 }
-          }
-        },
-        camera: cameraStore ? {
-          position: cameraStore.getState().position,
-          rotation: cameraStore.getState().rotation,
-          mode: cameraStore.getState().mode,
-          settings: cameraStore.getState().settings
-        } : undefined
-      } as WorldSaveData;
+      const worldData = createWorldData(resolveStores(), worldId, worldName);
 
       const result = await get().saveLoadManager.save(worldData, metadata, options);
       
@@ -122,51 +221,7 @@ export const createPersistenceSlice: StateCreator<PersistenceState> = (set, get)
       const result = await get().saveLoadManager.load(saveId, options);
       
       if (result.success && result.data) {
-        const { buildingStore, npcStore, cameraStore } = window.__gaesupStores || {};
-        
-        if (buildingStore && result.data.world.buildings) {
-          const state = buildingStore.getState();
-          if (typeof state.hydrate === 'function') {
-            state.hydrate(result.data.world.buildings);
-          } else {
-            state.wallGroups.clear();
-            state.tileGroups.clear();
-            state.meshes.clear();
-            state.blocks = [];
-
-            result.data.world.buildings.wallGroups.forEach(group => {
-              state.wallGroups.set(group.id, group);
-            });
-
-            result.data.world.buildings.tileGroups.forEach(group => {
-              state.tileGroups.set(group.id, group);
-            });
-
-            result.data.world.buildings.meshes.forEach(mesh => {
-              state.meshes.set(mesh.id, mesh);
-            });
-
-            state.blocks = [...(result.data.world.buildings.blocks ?? [])];
-          }
-        }
-        
-        if (npcStore && result.data.world.npcs) {
-          const state = npcStore.getState();
-          state.instances.clear();
-          
-          result.data.world.npcs.forEach(npc => {
-            state.instances.set(npc.id, npc);
-          });
-        }
-        
-        if (cameraStore && result.data.world.camera) {
-          cameraStore.setState({
-            position: result.data.world.camera.position,
-            rotation: result.data.world.camera.rotation,
-            mode: result.data.world.camera.mode,
-            settings: result.data.world.camera.settings || {}
-          });
-        }
+        hydrateStores(resolveStores(), result.data.world);
         
         set({ currentSaveId: saveId });
         return result.data;
@@ -185,36 +240,7 @@ export const createPersistenceSlice: StateCreator<PersistenceState> = (set, get)
     set({ isSaving: true, lastError: null });
     
     try {
-      const { buildingStore, npcStore, cameraStore } = window.__gaesupStores || {};
-      
-      if (!buildingStore) {
-        throw new Error('Building store not initialized');
-      }
-
-      const worldData = {
-        id: worldId,
-        name: worldName,
-        buildings: {
-          wallGroups: Array.from(buildingStore.getState().wallGroups.values()),
-          tileGroups: Array.from(buildingStore.getState().tileGroups.values()),
-          blocks: Array.from(buildingStore.getState().blocks),
-          meshes: Array.from(buildingStore.getState().meshes.values()),
-        },
-        npcs: npcStore ? Array.from(npcStore.getState().instances.values()) : [],
-        environment: {
-          lighting: {
-            ambientIntensity: 1,
-            directionalIntensity: 1,
-            directionalPosition: { x: 0, y: 10, z: 0 }
-          }
-        },
-        camera: cameraStore ? {
-          position: cameraStore.getState().position,
-          rotation: cameraStore.getState().rotation,
-          mode: cameraStore.getState().mode,
-          settings: cameraStore.getState().settings
-        } : undefined
-      } as WorldSaveData;
+      const worldData = createWorldData(resolveStores(), worldId, worldName);
 
       const result = await get().saveLoadManager.saveToFile(worldData, filename, metadata, options);
       
@@ -236,51 +262,7 @@ export const createPersistenceSlice: StateCreator<PersistenceState> = (set, get)
       const result = await get().saveLoadManager.loadFromFile(file, options);
       
       if (result.success && result.data) {
-        const { buildingStore, npcStore, cameraStore } = window.__gaesupStores || {};
-        
-        if (buildingStore && result.data.world.buildings) {
-          const state = buildingStore.getState();
-          if (typeof state.hydrate === 'function') {
-            state.hydrate(result.data.world.buildings);
-          } else {
-            state.wallGroups.clear();
-            state.tileGroups.clear();
-            state.meshes.clear();
-            state.blocks = [];
-
-            result.data.world.buildings.wallGroups.forEach(group => {
-              state.wallGroups.set(group.id, group);
-            });
-
-            result.data.world.buildings.tileGroups.forEach(group => {
-              state.tileGroups.set(group.id, group);
-            });
-
-            result.data.world.buildings.meshes.forEach(mesh => {
-              state.meshes.set(mesh.id, mesh);
-            });
-
-            state.blocks = [...(result.data.world.buildings.blocks ?? [])];
-          }
-        }
-        
-        if (npcStore && result.data.world.npcs) {
-          const state = npcStore.getState();
-          state.instances.clear();
-          
-          result.data.world.npcs.forEach(npc => {
-            state.instances.set(npc.id, npc);
-          });
-        }
-        
-        if (cameraStore && result.data.world.camera) {
-          cameraStore.setState({
-            position: result.data.world.camera.position,
-            rotation: result.data.world.camera.rotation,
-            mode: result.data.world.camera.mode,
-            settings: result.data.world.camera.settings || {}
-          });
-        }
+        hydrateStores(resolveStores(), result.data.world);
         
         return result.data;
       } else {
@@ -312,4 +294,7 @@ export const createPersistenceSlice: StateCreator<PersistenceState> = (set, get)
   clearError: () => {
     set({ lastError: null });
   }
-}); 
+});
+}
+
+export const createPersistenceSlice: StateCreator<PersistenceState> = createPersistenceSliceWithOptions();

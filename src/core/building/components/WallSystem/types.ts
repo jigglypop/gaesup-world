@@ -2,6 +2,7 @@ import { WallGroupConfig, MeshConfig } from '../../types';
 
 export type WallSystemProps = {
   wallGroup: WallGroupConfig;
+  wallGroups?: Map<string, WallGroupConfig>;
   meshes: Map<string, MeshConfig>;
   isEditMode?: boolean;
   selectedWallId?: string | null;

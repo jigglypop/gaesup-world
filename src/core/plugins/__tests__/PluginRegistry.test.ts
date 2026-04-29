@@ -146,6 +146,43 @@ describe('PluginRegistry', () => {
     ]);
   });
 
+  it('exposes generic services systems and component registries for framework plugins', async () => {
+    const registry = createPluginRegistry();
+    const service = { get: () => 'ok' };
+    const system = { update: () => undefined };
+    const component = { renderKind: 'headless' };
+
+    registry.register(plugin('framework', (ctx) => {
+      ctx.services.register('save-service', service, 'framework');
+      ctx.systems.register('turn-system', system, 'framework');
+      ctx.components.register('inventory-panel', component, 'framework');
+    }));
+
+    await registry.setup('framework');
+
+    expect(registry.context.services.require('save-service')).toBe(service);
+    expect(registry.context.systems.require('turn-system')).toBe(system);
+    expect(registry.context.components.require('inventory-panel')).toBe(component);
+  });
+
+  it('removes extensions owned by a plugin after dispose even without manual cleanup', async () => {
+    const registry = createPluginRegistry();
+    registry.register(plugin('framework', (ctx) => {
+      ctx.grid.register('square', { cellSize: 4 }, 'framework');
+      ctx.services.register('clock', { now: () => 1 }, 'framework');
+      ctx.systems.register('weather', { update: () => undefined }, 'framework');
+      ctx.components.register('hud', { renderKind: 'react' }, 'framework');
+    }));
+
+    await registry.setup('framework');
+    await registry.dispose('framework');
+
+    expect(registry.context.grid.has('square')).toBe(false);
+    expect(registry.context.services.has('clock')).toBe(false);
+    expect(registry.context.systems.has('weather')).toBe(false);
+    expect(registry.context.components.has('hud')).toBe(false);
+  });
+
   it('shares one event bus across plugins', async () => {
     const payloads: string[] = [];
     const registry = createPluginRegistry();
@@ -167,6 +204,7 @@ describe('InMemoryExtensionRegistry', () => {
     const registry = new InMemoryExtensionRegistry<number>();
     registry.register('one', 1);
     registry.register('two', 2, 'math');
+    registry.register('three', 3, 'math');
 
     expect(registry.has('one')).toBe(true);
     expect(registry.get('two')).toBe(2);
@@ -174,10 +212,13 @@ describe('InMemoryExtensionRegistry', () => {
     expect(registry.list()).toEqual([
       { id: 'one', value: 1 },
       { id: 'two', value: 2, pluginId: 'math' },
+      { id: 'three', value: 3, pluginId: 'math' },
     ]);
 
     expect(registry.remove('one')).toBe(true);
     expect(registry.has('one')).toBe(false);
+    expect(registry.removeByPlugin('math')).toBe(2);
+    expect(registry.list()).toEqual([]);
 
     registry.clear();
     expect(registry.list()).toEqual([]);

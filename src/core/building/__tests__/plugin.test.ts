@@ -28,8 +28,16 @@ describe('building plugin', () => {
         pluginId: 'gaesup.building',
         gridExtensionId: 'building.square',
         placementExtensionId: 'building.placement',
+        saveExtensionId: 'building',
+        storeServiceId: 'building.store',
       },
     ]);
+    expect(registry.context.save.require('building')).toEqual(expect.objectContaining({ key: 'building' }));
+    expect(registry.context.services.require('building.store')).toEqual(expect.objectContaining({
+      useStore: expect.any(Function),
+      getState: expect.any(Function),
+      setState: expect.any(Function),
+    }));
   });
 
   it('supports custom extension ids and removes extensions on dispose', async () => {
@@ -38,16 +46,22 @@ describe('building plugin', () => {
       id: 'custom.building',
       gridExtensionId: 'custom.grid',
       placementExtensionId: 'custom.placement',
+      saveExtensionId: 'custom.save',
+      storeServiceId: 'custom.store',
     }));
 
     await registry.setup('custom.building');
 
     expect(registry.context.grid.has('custom.grid')).toBe(true);
     expect(registry.context.placement.has('custom.placement')).toBe(true);
+    expect(registry.context.save.has('custom.save')).toBe(true);
+    expect(registry.context.services.has('custom.store')).toBe(true);
 
     await registry.dispose('custom.building');
 
     expect(registry.context.grid.has('custom.grid')).toBe(false);
     expect(registry.context.placement.has('custom.placement')).toBe(false);
+    expect(registry.context.save.has('custom.save')).toBe(false);
+    expect(registry.context.services.has('custom.store')).toBe(false);
   });
 });

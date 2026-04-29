@@ -1,5 +1,5 @@
 import { SaveSystem } from '../core/SaveSystem';
-import type { SaveAdapter, SaveBlob } from '../types';
+import type { SaveAdapter, SaveBlob, SaveDiagnostic } from '../types';
 
 class MemoryAdapter implements SaveAdapter {
   private map = new Map<string, SaveBlob>();
@@ -59,5 +59,85 @@ describe('SaveSystem', () => {
     sys.register({ key: 'x', serialize: () => null, hydrate: (d) => { received = d; } });
     await sys.load('m');
     expect(received).toEqual({ v: 3 });
+  });
+
+  test('reports serialize failures without blocking other domains', async () => {
+    const adapter = new MemoryAdapter();
+    const diagnostics: SaveDiagnostic[] = [];
+    const sys = new SaveSystem({
+      adapter,
+      onDiagnostic: (diagnostic) => diagnostics.push(diagnostic),
+    });
+
+    sys.register({
+      key: 'broken',
+      serialize: () => { throw new Error('serialize failed'); },
+      hydrate: () => undefined,
+    });
+    sys.register({
+      key: 'healthy',
+      serialize: () => ({ ok: true }),
+      hydrate: () => undefined,
+    });
+
+    await sys.save('diagnostic-slot');
+
+    const saved = await adapter.read('diagnostic-slot');
+    expect(saved?.domains).toEqual({
+      broken: null,
+      healthy: { ok: true },
+    });
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toMatchObject({
+      phase: 'serialize',
+      key: 'broken',
+      slot: 'diagnostic-slot',
+    });
+    expect(diagnostics[0]?.error).toBeInstanceOf(Error);
+  });
+
+  test('reports hydrate failures without blocking other domains', async () => {
+    const adapter = new MemoryAdapter();
+    const diagnostics: SaveDiagnostic[] = [];
+    await adapter.write('diagnostic-slot', {
+      version: 1,
+      savedAt: 0,
+      domains: {
+        broken: { value: 1 },
+        healthy: { value: 2 },
+      },
+    });
+    const sys = new SaveSystem({
+      adapter,
+      onDiagnostic: (diagnostic) => diagnostics.push(diagnostic),
+    });
+    let healthy = 0;
+
+    sys.register({
+      key: 'broken',
+      serialize: () => null,
+      hydrate: () => { throw new Error('hydrate failed'); },
+    });
+    sys.register({
+      key: 'healthy',
+      serialize: () => null,
+      hydrate: (data) => {
+        if (data && typeof data === 'object' && 'value' in data) {
+          healthy = Number((data as { value: unknown }).value);
+        }
+      },
+    });
+
+    const ok = await sys.load('diagnostic-slot');
+
+    expect(ok).toBe(true);
+    expect(healthy).toBe(2);
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toMatchObject({
+      phase: 'hydrate',
+      key: 'broken',
+      slot: 'diagnostic-slot',
+    });
+    expect(diagnostics[0]?.error).toBeInstanceOf(Error);
   });
 });

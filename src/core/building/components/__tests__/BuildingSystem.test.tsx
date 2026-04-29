@@ -274,6 +274,24 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
 
       renderer.unmount();
     });
+
+    test('visibility 결과에 따라 벽도 타일처럼 group 단위로 필터링되어야 함', async () => {
+      useBuildingVisibilityStore.getState().setVisible({
+        tileIds: new Set(['tile-group-1']),
+        wallIds: new Set(['wall-group-1']),
+        blockIds: new Set(),
+        objectIds: new Set(),
+      });
+
+      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+
+      expectSceneHasName(renderer, 'wall-system-wall-group-1');
+      expectSceneMissingName(renderer, 'wall-system-wall-group-2');
+      expectSceneHasName(renderer, 'tile-system-tile-group-1');
+      expectSceneMissingName(renderer, 'tile-system-tile-group-2');
+
+      renderer.unmount();
+    });
   });
 
   describe('타일 시스템', () => {

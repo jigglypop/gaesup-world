@@ -133,7 +133,7 @@ class GrassManager {
       const tile = this.tiles.get(id);
       if (!tile) { idx += 1; continue; }
 
-      const weight = this.weights[idx] ?? 0;
+      let weight = this.weights[idx] ?? 0;
       idx += 1;
 
       // Frustum cull using a sphere whose radius matches the tile's
@@ -142,6 +142,15 @@ class GrassManager {
       const radius = Math.hypot(tile.width, tile.height) * 0.6;
       const sphere = SPHERE_SCRATCH.set(tile.center, radius);
       const inFrustum = args.frustum.intersectsSphere(sphere);
+      if (tile.lod) {
+        const dist = tile.center.distanceTo(args.cameraPosition);
+        weight = jsWeight(
+          dist,
+          tile.lod.near ?? 24,
+          tile.lod.far ?? 160,
+          tile.lod.strength ?? 4,
+        );
+      }
 
       const target = Math.max(0, Math.floor(tile.maxInstances * weight));
       const visible = inFrustum && target > 0;

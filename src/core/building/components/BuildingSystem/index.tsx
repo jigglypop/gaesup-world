@@ -214,6 +214,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
           <WallSystem
             key={wallGroup.id}
             wallGroup={wallGroup}
+            wallGroups={wallGroups}
             meshes={meshes}
             isEditMode={editMode === 'wall'}
             selectedWallId={selectedWallId}

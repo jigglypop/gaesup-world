@@ -100,6 +100,47 @@ describe('building visibility core', () => {
     expect(ids.has('far')).toBe(false);
   });
 
+  it('keeps large wall and tile groups in nearby buckets when the camera is near an edge', () => {
+    const wallGroups: WallGroupConfig[] = [
+      {
+        id: 'long-wall',
+        name: 'Long Wall',
+        walls: [
+          {
+            id: 'w1',
+            wallGroupId: 'long-wall',
+            position: { x: 0, y: 0, z: 0 },
+            rotation: { x: 0, y: 0, z: 0 },
+          },
+          {
+            id: 'w2',
+            wallGroupId: 'long-wall',
+            position: { x: 180, y: 0, z: 0 },
+            rotation: { x: 0, y: 0, z: 0 },
+          },
+        ],
+      },
+    ];
+    const tileGroups: TileGroupConfig[] = [
+      {
+        id: 'long-floor',
+        name: 'Long Floor',
+        floorMeshId: 'wood-floor',
+        tiles: [
+          { id: 't1', tileGroupId: 'long-floor', position: { x: 0, y: 0, z: 20 }, size: 1 },
+          { id: 't2', tileGroupId: 'long-floor', position: { x: 180, y: 0, z: 20 }, size: 1 },
+        ],
+      },
+    ];
+    const index = buildVisibilityIndex(wallGroups, tileGroups, [], 20);
+
+    const wallIds = collectCandidateIds(index.wallBuckets, 0, 0, 40, 20);
+    const tileIds = collectCandidateIds(index.tileBuckets, 0, 0, 40, 20);
+
+    expect(wallIds.has('long-wall')).toBe(true);
+    expect(tileIds.has('long-floor')).toBe(true);
+  });
+
   it('indexes block visibility buckets and occluders', () => {
     const index = buildVisibilityIndex([], [], [], [
       { id: 'block-near', position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 3, z: 1 } },

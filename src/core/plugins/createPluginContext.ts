@@ -38,6 +38,9 @@ export function createPluginContext(
     blueprints: new InMemoryExtensionRegistry(),
     editor: new InMemoryExtensionRegistry(),
     save: new InMemoryExtensionRegistry(),
+    services: new InMemoryExtensionRegistry(),
+    systems: new InMemoryExtensionRegistry(),
+    components: new InMemoryExtensionRegistry(),
   };
 }
 

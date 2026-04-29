@@ -26,4 +26,17 @@ describe('usePhysicsBridge calcProp 재사용', () => {
     const src = read();
     expect(src).toMatch(/inputRef\s*=\s*useRef/);
   });
+
+  test('plugin runtime 으로 주입된 physics bridge 와 input adapter 를 사용할 수 있다', () => {
+    const src = read();
+    expect(src).toMatch(/motionsRuntime\?:\s*MotionsRuntime/);
+    expect(src).toMatch(/motionsRuntime\?\.inputAdapter/);
+    expect(src).toMatch(/motionsRuntime\?\.physicsBridge/);
+  });
+
+  test('plugin runtime event bus 에서 teleport 요청을 구독할 수 있다', () => {
+    const src = read();
+    expect(src).toMatch(/MOTIONS_TELEPORT_EVENT/);
+    expect(src).toMatch(/motionsRuntime\?\.events\.on/);
+  });
 });

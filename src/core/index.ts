@@ -38,8 +38,11 @@ export * from './input';
 export {
   PLAYER_PROGRESS_DOMAINS,
   WORLD_SNAPSHOT_DOMAINS,
+  collectSaveDomains,
   createPlayerProgress,
+  createPlayerProgressFromSaveSystem,
   createWorldSnapshot,
+  createWorldSnapshotFromSaveSystem,
   pickDomains,
 } from './platform';
 export type {
@@ -48,6 +51,7 @@ export type {
   DomainSnapshot,
   PlayerProgress,
   PlayerProgressDomain,
+  PlatformSaveBindingProvider,
   WorldSnapshot as PlatformWorldSnapshot,
   WorldSnapshotDomain,
 } from './platform';

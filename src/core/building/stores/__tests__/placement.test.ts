@@ -124,6 +124,134 @@ describe('buildingStore placement checks', () => {
     s.removeTile(groupId, tileId);
   });
 
+  test('updateWall can assign a per-wall material without changing its group mesh', () => {
+    const s = useBuildingStore.getState();
+    const groupId = s.selectedWallGroupId;
+    expect(groupId).toBeDefined();
+    if (!groupId) return;
+
+    const beforeGroupMesh = s.wallGroups.get(groupId)?.frontMeshId;
+    const wallId = `material-wall-${Date.now()}`;
+    s.addWall(groupId, {
+      id: wallId,
+      position: { x: FAR + 28, y: 0, z: FAR },
+      rotation: { x: 0, y: 0, z: 0 },
+      wallGroupId: groupId,
+    });
+
+    s.updateWall(groupId, wallId, { materialId: 'wall-only-material' });
+
+    const state = useBuildingStore.getState();
+    const group = state.wallGroups.get(groupId);
+    const wall = group?.walls.find((entry) => entry.id === wallId);
+    expect(group?.frontMeshId).toBe(beforeGroupMesh);
+    expect(wall?.materialId).toBe('wall-only-material');
+
+    s.removeWall(groupId, wallId);
+  });
+
+  test('addWall applies currentWallMaterialId only to the new wall', () => {
+    const s = useBuildingStore.getState();
+    const groupId = s.selectedWallGroupId;
+    expect(groupId).toBeDefined();
+    if (!groupId) return;
+
+    const beforeGroupMesh = s.wallGroups.get(groupId)?.frontMeshId;
+    s.setCurrentWallMaterialId('next-wall-material');
+
+    const wallId = `current-material-wall-${Date.now()}`;
+    s.addWall(groupId, {
+      id: wallId,
+      position: { x: FAR + 32, y: 0, z: FAR },
+      rotation: { x: 0, y: 0, z: 0 },
+      wallGroupId: groupId,
+    });
+
+    const state = useBuildingStore.getState();
+    const group = state.wallGroups.get(groupId);
+    const wall = group?.walls.find((entry) => entry.id === wallId);
+    expect(group?.frontMeshId).toBe(beforeGroupMesh);
+    expect(wall?.materialId).toBe('next-wall-material');
+
+    s.setCurrentWallMaterialId(null);
+    s.removeWall(groupId, wallId);
+  });
+
+  test('new walls keep the material id they were placed with after the placement material changes', () => {
+    const s = useBuildingStore.getState();
+    const groupId = s.selectedWallGroupId;
+    expect(groupId).toBeDefined();
+    if (!groupId) return;
+
+    const firstWallId = `first-material-wall-${Date.now()}`;
+    const secondWallId = `second-material-wall-${Date.now()}`;
+
+    s.setCurrentWallMaterialId('wall-material-a');
+    s.addWall(groupId, {
+      id: firstWallId,
+      position: { x: FAR + 36, y: 0, z: FAR },
+      rotation: { x: 0, y: 0, z: 0 },
+      wallGroupId: groupId,
+    });
+
+    s.setCurrentWallMaterialId('wall-material-b');
+    s.addWall(groupId, {
+      id: secondWallId,
+      position: { x: FAR + 40, y: 0, z: FAR },
+      rotation: { x: 0, y: 0, z: 0 },
+      wallGroupId: groupId,
+    });
+
+    const group = useBuildingStore.getState().wallGroups.get(groupId);
+    expect(group?.walls.find((entry) => entry.id === firstWallId)?.materialId).toBe('wall-material-a');
+    expect(group?.walls.find((entry) => entry.id === secondWallId)?.materialId).toBe('wall-material-b');
+
+    s.setCurrentWallMaterialId(null);
+    s.removeWall(groupId, firstWallId);
+    s.removeWall(groupId, secondWallId);
+  });
+
+  test('moveWallToGroup changes only the selected wall type', () => {
+    const s = useBuildingStore.getState();
+    const sourceGroupId = s.selectedWallGroupId;
+    const targetGroupId = Array.from(s.wallGroups.keys()).find((id) => id !== sourceGroupId);
+    expect(sourceGroupId).toBeDefined();
+    expect(targetGroupId).toBeDefined();
+    if (!sourceGroupId || !targetGroupId) return;
+
+    const firstWallId = `move-wall-a-${Date.now()}`;
+    const secondWallId = `move-wall-b-${Date.now()}`;
+    s.addWall(sourceGroupId, {
+      id: firstWallId,
+      position: { x: FAR + 44, y: 0, z: FAR },
+      rotation: { x: 0, y: 0, z: 0 },
+      wallGroupId: sourceGroupId,
+      materialId: 'old-custom-material',
+    });
+    s.addWall(sourceGroupId, {
+      id: secondWallId,
+      position: { x: FAR + 48, y: 0, z: FAR },
+      rotation: { x: 0, y: 0, z: 0 },
+      wallGroupId: sourceGroupId,
+    });
+
+    s.moveWallToGroup(firstWallId, targetGroupId);
+
+    const state = useBuildingStore.getState();
+    const sourceGroup = state.wallGroups.get(sourceGroupId);
+    const targetGroup = state.wallGroups.get(targetGroupId);
+    expect(sourceGroup?.walls.some((entry) => entry.id === firstWallId)).toBe(false);
+    expect(sourceGroup?.walls.some((entry) => entry.id === secondWallId)).toBe(true);
+    expect(targetGroup?.walls.find((entry) => entry.id === firstWallId)).toEqual(expect.objectContaining({
+      id: firstWallId,
+      wallGroupId: targetGroupId,
+    }));
+    expect(targetGroup?.walls.find((entry) => entry.id === firstWallId)?.materialId).toBeUndefined();
+
+    s.removeWall(targetGroupId, firstWallId);
+    s.removeWall(sourceGroupId, secondWallId);
+  });
+
   test('addTile stores terrain colors for grass sand and snow covers', () => {
     const s = useBuildingStore.getState();
     const groupId = s.selectedTileGroupId;

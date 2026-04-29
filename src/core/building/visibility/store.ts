@@ -39,7 +39,13 @@ export const useBuildingVisibilityStore = create<BuildingVisibilityState>((set) 
       const nextBlockIds = blockIds ?? EMPTY;
       const blockChanged = !sameSet(state.visibleBlockIds, nextBlockIds);
       const objectChanged = !sameSet(state.visibleObjectIds, objectIds);
-      if (!tileChanged && !wallChanged && !blockChanged && !objectChanged && state.initialized) {
+      if (
+        !tileChanged &&
+        !wallChanged &&
+        !blockChanged &&
+        !objectChanged &&
+        state.initialized
+      ) {
         return state;
       }
       return {

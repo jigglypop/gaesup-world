@@ -37,6 +37,8 @@ export type GrassMeshProps = ThreeElements["group"] & {
   groundAccentColor?: string;
   bladeTipColor?: string;
   bladeBottomColor?: string;
+  bladeDiffuseUrl?: string;
+  bladeAlphaUrl?: string;
   /**
    * When true, the ground plane uses a stepped toon material instead of PBR.
    * Defaults to the global toon mode (rendering/toon).

@@ -5,63 +5,102 @@ import * as THREE from 'three';
 
 import { WallSystemProps } from './types';
 import { MaterialManager } from '../../core/MaterialManager';
-import { MeshConfig } from '../../types';
+import { MeshConfig, WallConfig, WallGroupConfig } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
 
-export function WallSystem({ 
-  wallGroup, 
-  meshes, 
-  isEditMode = false,
-  selectedWallId = null,
-  onWallClick,
-}: WallSystemProps) {
-  const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
-  const instancedRef = useRef<THREE.InstancedMesh | null>(null);
-  const width = TILE_CONSTANTS.WALL_SIZES.WIDTH;
-  const height = TILE_CONSTANTS.WALL_SIZES.HEIGHT;
-  const depth = TILE_CONSTANTS.WALL_SIZES.THICKNESS;
+type WallBatch = {
+  key: string;
+  walls: WallConfig[];
+  materials: THREE.Material[];
+};
 
-  const wallCount = wallGroup.walls.length;
+const DEFAULT_WALL_MESH: MeshConfig = { id: 'default', color: '#000000' };
+
+export function getWallMaterialKey(wall: WallConfig): string {
+  return wall.materialId ? `material:${wall.materialId}` : `type:${wall.wallGroupId}`;
+}
+
+function getWallMaterials(
+  manager: MaterialManager,
+  meshes: Map<string, MeshConfig>,
+  wall: WallConfig,
+  wallGroups: Map<string, WallGroupConfig>,
+  fallbackWallGroup: WallGroupConfig,
+): THREE.Material[] {
+  if (wall.materialId) {
+    const material = manager.getMaterial(meshes.get(wall.materialId) ?? DEFAULT_WALL_MESH);
+    return [material, material, material, material, material, material];
+  }
+
+  const wallType = wallGroups.get(wall.wallGroupId) ?? fallbackWallGroup;
+  const frontMesh = wallType.frontMeshId ? meshes.get(wallType.frontMeshId) : DEFAULT_WALL_MESH;
+  const backMesh = wallType.backMeshId ? meshes.get(wallType.backMeshId) : DEFAULT_WALL_MESH;
+  const sideMesh = wallType.sideMeshId ? meshes.get(wallType.sideMeshId) : DEFAULT_WALL_MESH;
+
+  return [
+    manager.getMaterial(sideMesh ?? DEFAULT_WALL_MESH),
+    manager.getMaterial(sideMesh ?? DEFAULT_WALL_MESH),
+    manager.getMaterial(sideMesh ?? DEFAULT_WALL_MESH),
+    manager.getMaterial(sideMesh ?? DEFAULT_WALL_MESH),
+    manager.getMaterial(frontMesh ?? DEFAULT_WALL_MESH),
+    manager.getMaterial(backMesh ?? DEFAULT_WALL_MESH),
+  ];
+}
+
+function buildWallBatches(
+  wallGroup: WallGroupConfig,
+  wallGroups: Map<string, WallGroupConfig>,
+  meshes: Map<string, MeshConfig>,
+  manager: MaterialManager,
+): WallBatch[] {
+  const grouped = new Map<string, WallConfig[]>();
+  for (const wall of wallGroup.walls) {
+    const key = getWallMaterialKey(wall);
+    const walls = grouped.get(key) ?? [];
+    walls.push(wall);
+    grouped.set(key, walls);
+  }
+
+  return Array.from(grouped.entries()).map(([key, walls]) => {
+    const firstWall = walls[0];
+    return {
+      key,
+      walls,
+      materials: firstWall
+        ? getWallMaterials(manager, meshes, firstWall, wallGroups, wallGroup)
+        : getWallMaterials(manager, meshes, { id: '', wallGroupId: wallGroup.id, position: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } }, wallGroups, wallGroup),
+    };
+  });
+}
+
+function WallBatchMesh({
+  batch,
+  geometry,
+  height,
+  onWallClick,
+}: {
+  batch: WallBatch;
+  geometry: THREE.BoxGeometry;
+  height: number;
+  onWallClick?: (wallId: string) => void;
+}) {
+  const instancedRef = useRef<THREE.InstancedMesh | null>(null);
+  const wallCount = batch.walls.length;
   const [capacity, setCapacity] = useState(() => Math.max(1, wallCount));
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
   useEffect(() => {
     if (wallCount <= capacity) return;
-    // Grow with headroom to avoid recreating the InstancedMesh on every add.
     setCapacity(Math.max(wallCount, Math.ceil(capacity * 1.5)));
   }, [wallCount, capacity]);
 
-  const geometry = useMemo(() => {
-    const geom = new THREE.BoxGeometry(width, height, depth);
-    geom.translate(0, 0, width / 2);
-    return geom;
-  }, [width, height, depth]);
-
-  const materials = useMemo(() => {
-    const manager = materialManagerRef.current;
-    const defaultMesh: MeshConfig = { id: 'default', color: '#000000' };
-    
-    const frontMesh = wallGroup.frontMeshId ? meshes.get(wallGroup.frontMeshId) : defaultMesh;
-    const backMesh = wallGroup.backMeshId ? meshes.get(wallGroup.backMeshId) : defaultMesh;
-    const sideMesh = wallGroup.sideMeshId ? meshes.get(wallGroup.sideMeshId) : defaultMesh;
-
-    return [
-      manager.getMaterial(sideMesh || defaultMesh),
-      manager.getMaterial(sideMesh || defaultMesh),
-      manager.getMaterial(sideMesh || defaultMesh),
-      manager.getMaterial(sideMesh || defaultMesh),
-      manager.getMaterial(frontMesh || defaultMesh),
-      manager.getMaterial(backMesh || defaultMesh),
-    ];
-  }, [wallGroup, meshes]);
-  
   useLayoutEffect(() => {
     const mesh = instancedRef.current;
     if (!mesh) return;
 
     mesh.count = wallCount;
     for (let i = 0; i < wallCount; i++) {
-      const wall = wallGroup.walls[i];
+      const wall = batch.walls[i];
       if (!wall) continue;
       dummy.position.set(wall.position.x, wall.position.y + height / 2, wall.position.z);
       dummy.rotation.set(0, wall.rotation.y, 0);
@@ -73,7 +112,48 @@ export function WallSystem({
       mesh.computeBoundingBox();
       mesh.computeBoundingSphere();
     }
-  }, [wallGroup.walls, wallCount, dummy, height, capacity]);
+  }, [batch.walls, wallCount, dummy, height, capacity]);
+
+  const handleClick = (event: { stopPropagation: () => void; instanceId?: number }) => {
+    event.stopPropagation();
+    const wall = event.instanceId !== undefined ? batch.walls[event.instanceId] : undefined;
+    if (wall) onWallClick?.(wall.id);
+  };
+
+  return (
+    <instancedMesh
+      ref={instancedRef}
+      args={[geometry, batch.materials, capacity]}
+      castShadow
+      receiveShadow
+      {...(onWallClick ? { onClick: handleClick } : {})}
+    />
+  );
+}
+
+export function WallSystem({ 
+  wallGroup, 
+  wallGroups,
+  meshes, 
+  isEditMode = false,
+  selectedWallId = null,
+  onWallClick,
+}: WallSystemProps) {
+  const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
+  const width = TILE_CONSTANTS.WALL_SIZES.WIDTH;
+  const height = TILE_CONSTANTS.WALL_SIZES.HEIGHT;
+  const depth = TILE_CONSTANTS.WALL_SIZES.THICKNESS;
+
+  const geometry = useMemo(() => {
+    const geom = new THREE.BoxGeometry(width, height, depth);
+    geom.translate(0, 0, width / 2);
+    return geom;
+  }, [width, height, depth]);
+
+  const batches = useMemo(
+    () => buildWallBatches(wallGroup, wallGroups ?? new Map([[wallGroup.id, wallGroup]]), meshes, materialManagerRef.current),
+    [wallGroup, wallGroups, meshes],
+  );
 
   useEffect(() => {
     return () => {
@@ -137,12 +217,15 @@ export function WallSystem({
         );
       })}
       
-      <instancedMesh
-        ref={instancedRef}
-        args={[geometry, materials, capacity]}
-        castShadow
-        receiveShadow
-      />
+      {batches.map((batch) => (
+        <WallBatchMesh
+          key={`${wallGroup.id}-${batch.key}`}
+          batch={batch}
+          geometry={geometry}
+          height={height}
+          {...(onWallClick ? { onWallClick } : {})}
+        />
+      ))}
     </>
   );
 } 

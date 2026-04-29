@@ -7,3 +7,4 @@ export * from './stores';
 export * from './debug';
 export * from './components';
 export * from './bridge';
+export * from './plugin';

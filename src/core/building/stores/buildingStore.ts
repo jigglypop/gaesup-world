@@ -37,6 +37,7 @@ import {
   FLAG_STYLE_META,
 } from '../types';
 import { TILE_CONSTANTS } from '../types/constants';
+import { hydrateBuildingState, serializeBuildingState } from './persistence';
 
 enableMapSet();
 
@@ -68,6 +69,8 @@ interface BuildingStore extends BuildingSystemState {
   
   currentWallRotation: number;
   setWallRotation: (rotation: number) => void;
+  currentWallMaterialId: string | null;
+  setCurrentWallMaterialId: (materialId: string | null) => void;
   
   selectedTileObjectType: TileObjectType;
   setSelectedTileObjectType: (type: TileObjectType) => void;
@@ -154,6 +157,7 @@ interface BuildingStore extends BuildingSystemState {
   
   addWall: (groupId: string, wall: WallConfig) => void;
   updateWall: (groupId: string, wallId: string, updates: Partial<WallConfig>) => void;
+  moveWallToGroup: (wallId: string, targetGroupId: string) => void;
   removeWall: (groupId: string, wallId: string) => void;
   
   addTileGroup: (group: TileGroupConfig) => void;
@@ -205,6 +209,7 @@ export const useBuildingStore = create<BuildingStore>()(
     currentTileRotation: 0,
     currentTileMaterialId: null,
     currentWallRotation: 0,
+    currentWallMaterialId: null,
     objects: [],
     selectedTileObjectType: 'none',
     currentTerrainColor: '#5a7a35',
@@ -577,8 +582,10 @@ export const useBuildingStore = create<BuildingStore>()(
     addWall: (groupId, wall) => set((state) => {
       const group = state.wallGroups.get(groupId);
       if (group) {
+        const materialId = wall.materialId ?? state.currentWallMaterialId;
         const wallWithEdge: WallConfig = {
           ...wall,
+          ...(materialId ? { materialId } : {}),
           edge: wall.edge ?? wallTransformToEdge(wall.position, wall.rotation.y),
         };
         group.walls.push(wallWithEdge);
@@ -632,6 +639,36 @@ export const useBuildingStore = create<BuildingStore>()(
           }
         }
       }
+    }),
+
+    moveWallToGroup: (wallId, targetGroupId) => set((state) => {
+      const targetGroup = state.wallGroups.get(targetGroupId);
+      if (!targetGroup) return;
+
+      let sourceGroup: WallGroupConfig | undefined;
+      let wallIndex = -1;
+      for (const group of state.wallGroups.values()) {
+        wallIndex = group.walls.findIndex((wall) => wall.id === wallId);
+        if (wallIndex !== -1) {
+          sourceGroup = group;
+          break;
+        }
+      }
+      if (!sourceGroup || wallIndex === -1 || sourceGroup.id === targetGroupId) {
+        state.selectedWallGroupId = targetGroupId;
+        return;
+      }
+
+      const wall = sourceGroup.walls[wallIndex];
+      if (!wall) return;
+      const { materialId: _materialId, ...wallWithoutMaterial } = wall;
+      void _materialId;
+      sourceGroup.walls.splice(wallIndex, 1);
+      targetGroup.walls.push({
+        ...wallWithoutMaterial,
+        wallGroupId: targetGroupId,
+      });
+      state.selectedWallGroupId = targetGroupId;
     }),
 
     removeWall: (groupId, wallId) => set((state) => {
@@ -836,6 +873,10 @@ export const useBuildingStore = create<BuildingStore>()(
       state.currentWallRotation = rotation;
     }),
 
+    setCurrentWallMaterialId: (materialId) => set((state) => {
+      state.currentWallMaterialId = materialId;
+    }),
+
     snapPosition: (position) => {
       const { snapToGrid } = get();
       if (!snapToGrid) return position;
@@ -908,99 +949,10 @@ export const useBuildingStore = create<BuildingStore>()(
       return editMode !== 'none';
     },
 
-    serialize: () => {
-      const { meshes, wallGroups, tileGroups, blocks, objects } = get();
-      return {
-        version: 1,
-        meshes: Array.from(meshes.values()),
-        wallGroups: Array.from(wallGroups.values()),
-        tileGroups: Array.from(tileGroups.values()),
-        blocks: blocks.map((block) => ({ ...block })),
-        objects: objects.map((object) => ({ ...object })),
-      };
-    },
+    serialize: () => serializeBuildingState(get()),
 
     hydrate: (data) => set((state) => {
-      if (!data) return;
-
-      state.meshes.clear();
-      state.wallGroups.clear();
-      state.tileGroups.clear();
-      state.tileIndex.clear();
-      state.tileCells.clear();
-      state.tileMeta.clear();
-      state.wallIndex.clear();
-      state.wallCells.clear();
-      state.wallMeta.clear();
-
-      for (const mesh of data.meshes ?? []) {
-        state.meshes.set(mesh.id, { ...mesh });
-      }
-
-      const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-      for (const group of data.tileGroups ?? []) {
-        const tiles = group.tiles.map((tile) => {
-          const cell = tile.cell ?? tilePositionToCell(tile.position);
-          const tileWithCell: TileConfig = {
-            ...tile,
-            cell,
-            footprint: tile.footprint ?? createTileFootprint(cell, tile.size || 1),
-          };
-          const halfSize = tileHalfSize(tileWithCell.size || 1);
-          state.tileMeta.set(tileWithCell.id, {
-            x: tileWithCell.position.x,
-            z: tileWithCell.position.z,
-            y: tileWithCell.position.y,
-            halfSize,
-          });
-          indexAabb(
-            state.tileIndex,
-            state.tileCells,
-            tileWithCell.id,
-            tileWithCell.position.x - halfSize,
-            tileWithCell.position.x + halfSize,
-            tileWithCell.position.z - halfSize,
-            tileWithCell.position.z + halfSize,
-            cellSize,
-          );
-          return tileWithCell;
-        });
-        state.tileGroups.set(group.id, { ...group, tiles });
-      }
-
-      for (const group of data.wallGroups ?? []) {
-        const walls = group.walls.map((wall) => {
-          const wallWithEdge: WallConfig = {
-            ...wall,
-            edge: wall.edge ?? wallTransformToEdge(wall.position, wall.rotation.y),
-          };
-          const tol = 0.5;
-          state.wallMeta.set(wallWithEdge.id, {
-            x: wallWithEdge.position.x,
-            z: wallWithEdge.position.z,
-            rotY: wallWithEdge.rotation.y,
-          });
-          indexAabb(
-            state.wallIndex,
-            state.wallCells,
-            wallWithEdge.id,
-            wallWithEdge.position.x - tol,
-            wallWithEdge.position.x + tol,
-            wallWithEdge.position.z - tol,
-            wallWithEdge.position.z + tol,
-            1,
-          );
-          return wallWithEdge;
-        });
-        state.wallGroups.set(group.id, { ...group, walls });
-      }
-
-      state.blocks = (data.blocks ?? []).map((block) => ({
-        ...block,
-        cell: block.cell ?? tilePositionToCell(block.position),
-      }));
-      state.objects = (data.objects ?? []).map((object) => ({ ...object }));
-      state.initialized = true;
+      hydrateBuildingState(state, data);
     }),
 
     addWallCategory: (category) => set((state) => {

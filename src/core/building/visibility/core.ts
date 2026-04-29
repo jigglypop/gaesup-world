@@ -62,14 +62,22 @@ export function createVisibilityQueryKey(
   return `${cellX}:${cellZ}:${dirBucket}`;
 }
 
-function pushBucket(map: Map<string, string[]>, record: VisibilityRecord): void {
-  const key = cellKey(record.cellX, record.cellZ);
-  const existing = map.get(key);
-  if (existing) {
-    existing.push(record.id);
-    return;
+function pushRecordBucket(
+  map: Map<string, string[]>,
+  record: VisibilityRecord,
+  value: string,
+  cellSize = VISIBILITY_CELL_SIZE,
+): void {
+  const radius = Math.max(0, Math.ceil(record.radius / cellSize));
+  for (let z = record.cellZ - radius; z <= record.cellZ + radius; z += 1) {
+    for (let x = record.cellX - radius; x <= record.cellX + radius; x += 1) {
+      pushRawBucket(map, x, z, value);
+    }
   }
-  map.set(key, [record.id]);
+}
+
+function pushBucket(map: Map<string, string[]>, record: VisibilityRecord, cellSize = VISIBILITY_CELL_SIZE): void {
+  pushRecordBucket(map, record, record.id, cellSize);
 }
 
 function pushRawBucket(map: Map<string, string[]>, cellX: number, cellZ: number, value: string): void {
@@ -225,7 +233,7 @@ export function buildVisibilityIndex(
     const record = buildTileGroupRecord(group, cellSize);
     if (!record) continue;
     index.tileById.set(record.id, record);
-    pushBucket(index.tileBuckets, record);
+    pushBucket(index.tileBuckets, record, cellSize);
     if (record.radius >= OCCLUDER_MIN_RADIUS) {
       const occluder: OccluderRecord = {
         ...record,
@@ -234,7 +242,7 @@ export function buildVisibilityIndex(
         strength: record.radius,
       };
       index.occluderByKey.set(occluder.key, occluder);
-      pushRawBucket(index.occluderBuckets, occluder.cellX, occluder.cellZ, occluder.key);
+      pushRecordBucket(index.occluderBuckets, occluder, occluder.key, cellSize);
     }
   }
 
@@ -242,7 +250,7 @@ export function buildVisibilityIndex(
     const record = buildWallGroupRecord(group, cellSize);
     if (!record) continue;
     index.wallById.set(record.id, record);
-    pushBucket(index.wallBuckets, record);
+    pushBucket(index.wallBuckets, record, cellSize);
     if (record.radius >= OCCLUDER_MIN_WALL_RADIUS || group.walls.length >= 4) {
       const occluder: OccluderRecord = {
         ...record,
@@ -251,14 +259,14 @@ export function buildVisibilityIndex(
         strength: record.radius * 1.15,
       };
       index.occluderByKey.set(occluder.key, occluder);
-      pushRawBucket(index.occluderBuckets, occluder.cellX, occluder.cellZ, occluder.key);
+      pushRecordBucket(index.occluderBuckets, occluder, occluder.key, cellSize);
     }
   }
 
   for (const block of blocks) {
     const record = buildBlockRecord(block, cellSize);
     index.blockById.set(record.id, record);
-    pushBucket(index.blockBuckets, record);
+    pushBucket(index.blockBuckets, record, cellSize);
     if (record.radius >= OCCLUDER_MIN_WALL_RADIUS || (block.size?.y ?? 1) >= 2) {
       const occluder: OccluderRecord = {
         ...record,
@@ -267,14 +275,14 @@ export function buildVisibilityIndex(
         strength: record.radius * 1.1,
       };
       index.occluderByKey.set(occluder.key, occluder);
-      pushRawBucket(index.occluderBuckets, occluder.cellX, occluder.cellZ, occluder.key);
+      pushRecordBucket(index.occluderBuckets, occluder, occluder.key, cellSize);
     }
   }
 
   for (const object of objects) {
     const record = buildObjectRecord(object, cellSize);
     index.objectById.set(record.id, record);
-    pushBucket(index.objectBuckets, record);
+    pushBucket(index.objectBuckets, record, cellSize);
   }
 
   return index;

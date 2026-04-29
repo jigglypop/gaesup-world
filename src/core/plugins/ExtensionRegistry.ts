@@ -48,6 +48,16 @@ export class InMemoryExtensionRegistry<TValue = unknown> implements ExtensionReg
     return this.entries.delete(id);
   }
 
+  removeByPlugin(pluginId: string): number {
+    let removed = 0;
+    for (const [id, entry] of this.entries) {
+      if (entry.pluginId !== pluginId) continue;
+      this.entries.delete(id);
+      removed += 1;
+    }
+    return removed;
+  }
+
   list(): Array<RegistryEntry<TValue>> {
     return Array.from(this.entries.values());
   }

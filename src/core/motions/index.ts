@@ -5,3 +5,4 @@ export * from './entities';
 export * from './hooks';
 export * from './types';
 export * from './ui';
+export * from './plugin';

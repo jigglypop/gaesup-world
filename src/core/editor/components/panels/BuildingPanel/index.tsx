@@ -24,6 +24,10 @@ const BILLBOARD_COLORS = [
 const isBuildingMaterialAsset = (asset: AssetRecord) =>
   asset.kind === 'material' || asset.kind === 'wall' || asset.kind === 'tile';
 
+export function createPlacementAssetScopeId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export const BuildingPanel: FC = () => {
   const editMode = useBuildingStore((state) => state.editMode);
   const setEditMode = useBuildingStore((state) => state.setEditMode);
@@ -77,8 +81,9 @@ export const BuildingPanel: FC = () => {
   const meshes = useBuildingStore((state) => state.meshes);
   const addMesh = useBuildingStore((state) => state.addMesh);
   const updateMesh = useBuildingStore((state) => state.updateMesh);
-  const updateWallGroup = useBuildingStore((state) => state.updateWallGroup);
+  const updateWall = useBuildingStore((state) => state.updateWall);
   const updateTile = useBuildingStore((state) => state.updateTile);
+  const setCurrentWallMaterialId = useBuildingStore((state) => state.setCurrentWallMaterialId);
   const removeWall = useBuildingStore((state) => state.removeWall);
   const removeTile = useBuildingStore((state) => state.removeTile);
   const removeBlock = useBuildingStore((state) => state.removeBlock);
@@ -189,11 +194,23 @@ export const BuildingPanel: FC = () => {
 
   const applyAssetToWall = (asset: AssetRecord) => {
     if (!selectedWallGroup) return;
-    updateWallGroup(selectedWallGroup.id, {
-      frontMeshId: upsertScopedMesh(selectedWallGroup.frontMeshId, selectedWallGroup.id, 'front', asset),
-      backMeshId: upsertScopedMesh(selectedWallGroup.backMeshId, selectedWallGroup.id, 'back', asset),
-      sideMeshId: upsertScopedMesh(selectedWallGroup.sideMeshId, selectedWallGroup.id, 'side', asset),
-    });
+    const selectedWall = selectedWallId
+      ? selectedWallGroup.walls.find((wall) => wall.id === selectedWallId)
+      : undefined;
+    const sourceMeshId = selectedWall?.materialId ?? selectedWallGroup.frontMeshId;
+    if (selectedWallId) {
+      const wallScopedMeshId = upsertScopedMesh(sourceMeshId, selectedWallId, 'wall', asset);
+      updateWall(selectedWallGroup.id, selectedWallId, { materialId: wallScopedMeshId });
+      return;
+    }
+
+    const placementMeshId = upsertScopedMesh(
+      selectedWallGroup.frontMeshId,
+      createPlacementAssetScopeId('placement-wall'),
+      'wall',
+      asset,
+    );
+    setCurrentWallMaterialId(placementMeshId);
   };
 
   const applyAssetToTile = (asset: AssetRecord) => {

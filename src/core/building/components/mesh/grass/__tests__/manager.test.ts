@@ -75,6 +75,33 @@ describe('GrassManager', () => {
     mgr.unregister(handle.id);
   });
 
+  it('honors per-tile LOD overrides', () => {
+    const mgr = getGrassManager();
+    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 500);
+    camera.position.set(0, 5, 0);
+    camera.lookAt(0, 0, 50);
+    const frustum = makeFrustum(camera);
+
+    const samples: GrassTileRenderState[] = [];
+    const handle = mgr.register({
+      width: 4,
+      height: 1,
+      center: new THREE.Vector3(0, 0, 50),
+      maxInstances: 1000,
+      lod: { near: 1, far: 10, strength: 1 },
+      apply: (s) => samples.push({ ...s, trampleCenter: s.trampleCenter.clone() }),
+    });
+
+    const start = Date.now();
+    while (Date.now() - start < 20) { /* wait past dedupe window */ }
+    mgr.tick({ elapsedTime: 0, delta: 1 / 60, cameraPosition: camera.position, frustum });
+
+    expect(samples[0].visible).toBe(false);
+    expect(samples[0].instanceCount).toBe(0);
+
+    mgr.unregister(handle.id);
+  });
+
   it('processes many tiles in a single tick', () => {
     const mgr = getGrassManager();
     const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 500);

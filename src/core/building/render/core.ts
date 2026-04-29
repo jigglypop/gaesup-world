@@ -9,6 +9,7 @@ import {
   type VisibilityRecord,
   OCCLUDER_MIN_RADIUS,
   OCCLUDER_MIN_WALL_RADIUS,
+  VISIBILITY_CELL_SIZE,
 } from '../visibility/core';
 
 export const RENDER_KIND_TILE = 0;
@@ -161,7 +162,7 @@ export function buildBuildingRenderSnapshot(args: {
   };
 }
 
-function pushBucket(map: Map<string, string[]>, cellX: number, cellZ: number, value: string): void {
+function pushBucketCell(map: Map<string, string[]>, cellX: number, cellZ: number, value: string): void {
   const key = `${cellX}:${cellZ}`;
   const existing = map.get(key);
   if (existing) {
@@ -169,6 +170,15 @@ function pushBucket(map: Map<string, string[]>, cellX: number, cellZ: number, va
     return;
   }
   map.set(key, [value]);
+}
+
+function pushBucket(map: Map<string, string[]>, record: VisibilityRecord, value: string): void {
+  const radius = Math.max(0, Math.ceil(record.radius / VISIBILITY_CELL_SIZE));
+  for (let z = record.cellZ - radius; z <= record.cellZ + radius; z += 1) {
+    for (let x = record.cellX - radius; x <= record.cellX + radius; x += 1) {
+      pushBucketCell(map, x, z, value);
+    }
+  }
 }
 
 function toRecord(snapshot: BuildingRenderSnapshot, index: number): VisibilityRecord {
@@ -207,7 +217,7 @@ export function buildVisibilityIndexFromRenderSnapshot(
 
     if (kind === RENDER_KIND_TILE) {
       index.tileById.set(id, record);
-      pushBucket(index.tileBuckets, record.cellX, record.cellZ, id);
+      pushBucket(index.tileBuckets, record, id);
       if (record.radius >= OCCLUDER_MIN_RADIUS) {
         const occluder: OccluderRecord = {
           ...record,
@@ -216,14 +226,14 @@ export function buildVisibilityIndexFromRenderSnapshot(
           strength: record.radius,
         };
         index.occluderByKey.set(occluder.key, occluder);
-        pushBucket(index.occluderBuckets, occluder.cellX, occluder.cellZ, occluder.key);
+        pushBucket(index.occluderBuckets, occluder, occluder.key);
       }
       continue;
     }
 
     if (kind === RENDER_KIND_WALL) {
       index.wallById.set(id, record);
-      pushBucket(index.wallBuckets, record.cellX, record.cellZ, id);
+      pushBucket(index.wallBuckets, record, id);
       const members = snapshot.memberCount[i] ?? 0;
       if (record.radius >= OCCLUDER_MIN_WALL_RADIUS || members >= 4) {
         const occluder: OccluderRecord = {
@@ -233,14 +243,14 @@ export function buildVisibilityIndexFromRenderSnapshot(
           strength: record.radius * 1.15,
         };
         index.occluderByKey.set(occluder.key, occluder);
-        pushBucket(index.occluderBuckets, occluder.cellX, occluder.cellZ, occluder.key);
+        pushBucket(index.occluderBuckets, occluder, occluder.key);
       }
       continue;
     }
 
     if (kind === RENDER_KIND_BLOCK) {
       index.blockById.set(id, record);
-      pushBucket(index.blockBuckets, record.cellX, record.cellZ, id);
+      pushBucket(index.blockBuckets, record, id);
       if (record.radius >= OCCLUDER_MIN_WALL_RADIUS || (snapshot.memberCount[i] ?? 0) >= 1) {
         const occluder: OccluderRecord = {
           ...record,
@@ -249,13 +259,13 @@ export function buildVisibilityIndexFromRenderSnapshot(
           strength: record.radius * 1.1,
         };
         index.occluderByKey.set(occluder.key, occluder);
-        pushBucket(index.occluderBuckets, occluder.cellX, occluder.cellZ, occluder.key);
+        pushBucket(index.occluderBuckets, occluder, occluder.key);
       }
       continue;
     }
 
     index.objectById.set(id, record);
-    pushBucket(index.objectBuckets, record.cellX, record.cellZ, id);
+    pushBucket(index.objectBuckets, record, id);
   }
 
   return index;

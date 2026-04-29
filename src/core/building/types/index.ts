@@ -40,6 +40,7 @@ export interface WallConfig {
   position: Position3D;
   rotation: Rotation3D;
   wallGroupId: string;
+  materialId?: string;
   edge?: EdgeCoord;
   width?: number;
   height?: number;
