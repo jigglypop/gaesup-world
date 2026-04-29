@@ -1,7 +1,7 @@
 import React from 'react';
 import { renderHook, act } from '@testing-library/react';
 import * as THREE from 'three';
-import { useBuildingEditor } from '../useBuildingEditor';
+import { createTerrainBlockMaterial, findTerrainBlockMaterial, useBuildingEditor } from '../useBuildingEditor';
 import { useBuildingStore } from '../../stores/buildingStore';
 
 // THREE.js 모킹: 훅이 모듈 로드 시 즉시 Vector2/Vector3/Plane 인스턴스를 만든다.
@@ -80,6 +80,7 @@ const buildDefaultState = (): EditorMockState => ({
   addWall: jest.fn(),
   addTile: jest.fn(),
   addBlock: jest.fn(),
+  addMesh: jest.fn(),
   addObject: jest.fn(),
   removeWall: jest.fn(),
   removeTile: jest.fn(),
@@ -94,6 +95,10 @@ const buildDefaultState = (): EditorMockState => ({
   currentTileHeight: 0,
   currentTileShape: 'box',
   currentTileRotation: 0,
+  selectedTileObjectType: 'none',
+  currentTerrainColor: '#5a7a35',
+  currentTerrainAccentColor: '#8fbc5a',
+  meshes: new Map(),
   hoverPosition: { x: 0, y: 0, z: 0 },
   checkWallPosition: jest.fn(() => false),
   checkTilePosition: jest.fn(() => false),
@@ -481,6 +486,41 @@ describe('useBuildingEditor 훅 테스트', () => {
   });
 
   describe('블록 배치', () => {
+    test('모래와 눈 커버 색상을 블록 재질로 변환해야 함', () => {
+      expect(createTerrainBlockMaterial('sand', '#b89b66', '#e0c27a')).toEqual(expect.objectContaining({
+        id: 'terrain-block-sand-b89b66-e0c27a',
+        color: '#b89b66',
+      }));
+      expect(createTerrainBlockMaterial('snowfield', '#dcecff', '#ffffff')).toEqual(expect.objectContaining({
+        id: 'terrain-block-snowfield-dcecff-ffffff',
+        color: '#dcecff',
+      }));
+      expect(createTerrainBlockMaterial('grass', '#5a7a35', '#8fbc5a')).toBeNull();
+    });
+
+    test('박스 위치 아래 모래나 눈 타일 색상을 블록 재질로 샘플링해야 함', () => {
+      const tileGroups = new Map([
+        ['sand-floor', {
+          id: 'sand-floor',
+          name: 'Sand',
+          floorMeshId: 'sand-floor',
+          tiles: [{
+            id: 'sand-tile',
+            tileGroupId: 'sand-floor',
+            position: { x: 8, y: 0, z: 12 },
+            size: 1,
+            objectType: 'sand',
+            objectConfig: { terrainColor: '#aa8844', terrainAccentColor: '#ffdd88' },
+          }],
+        }],
+      ]);
+
+      expect(findTerrainBlockMaterial(tileGroups.values(), { x: 8, y: 1, z: 12 })).toEqual(expect.objectContaining({
+        id: 'terrain-block-sand-aa8844-ffdd88',
+        color: '#aa8844',
+      }));
+    });
+
     test('블록 편집 모드에서 블록이 올바르게 배치되어야 함', () => {
       const mockAddBlock = jest.fn();
       const hoverPosition = { x: 8, y: 0, z: 12 };
@@ -504,6 +544,80 @@ describe('useBuildingEditor 훅 테스트', () => {
         position: expect.objectContaining({ x: 8, y: 2, z: 12 }),
         size: { x: 2, y: 1, z: 2 },
         materialId: 'default-block',
+      }));
+    });
+
+    test('모래 커버 선택 상태에서는 현재 모래 색상 블록 재질로 배치해야 함', () => {
+      const mockAddBlock = jest.fn();
+      const mockAddMesh = jest.fn();
+      const hoverPosition = { x: 8, y: 0, z: 12 };
+      setStoreState({
+        editMode: 'block',
+        addBlock: mockAddBlock,
+        addMesh: mockAddMesh,
+        meshes: new Map(),
+        currentTileMultiplier: 1,
+        currentTileHeight: 0,
+        selectedTileObjectType: 'sand',
+        currentTerrainColor: '#aa8844',
+        currentTerrainAccentColor: '#ffdd88',
+        checkBlockPosition: jest.fn(() => false),
+        getSupportHeightAt: jest.fn(() => 0),
+        hoverPosition,
+      });
+
+      const { result } = renderHook(() => useBuildingEditor(), { wrapper: TestWrapper });
+      act(() => { result.current.placeBlock(); });
+
+      expect(mockAddMesh).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'terrain-block-sand-aa8844-ffdd88',
+        color: '#aa8844',
+      }));
+      expect(mockAddBlock).toHaveBeenCalledWith(expect.objectContaining({
+        materialId: 'terrain-block-sand-aa8844-ffdd88',
+      }));
+    });
+
+    test('박스 아래 모래 타일이 있으면 선택 커버와 무관하게 모래 색상 블록으로 배치해야 함', () => {
+      const mockAddBlock = jest.fn();
+      const mockAddMesh = jest.fn();
+      const hoverPosition = { x: 8, y: 0, z: 12 };
+      const tileGroups = new Map([
+        ['sand-floor', {
+          id: 'sand-floor',
+          name: 'Sand',
+          floorMeshId: 'sand-floor',
+          tiles: [{
+            id: 'sand-tile',
+            tileGroupId: 'sand-floor',
+            position: { x: 8, y: 0, z: 12 },
+            size: 1,
+            objectType: 'sand',
+            objectConfig: { terrainColor: '#c69a55', terrainAccentColor: '#f3d589' },
+          }],
+        }],
+      ]);
+      setStoreState({
+        editMode: 'block',
+        addBlock: mockAddBlock,
+        addMesh: mockAddMesh,
+        meshes: new Map(),
+        tileGroups,
+        selectedTileObjectType: 'none',
+        checkBlockPosition: jest.fn(() => false),
+        getSupportHeightAt: jest.fn(() => 1),
+        hoverPosition,
+      });
+
+      const { result } = renderHook(() => useBuildingEditor(), { wrapper: TestWrapper });
+      act(() => { result.current.placeBlock(); });
+
+      expect(mockAddMesh).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'terrain-block-sand-c69a55-f3d589',
+        color: '#c69a55',
+      }));
+      expect(mockAddBlock).toHaveBeenCalledWith(expect.objectContaining({
+        materialId: 'terrain-block-sand-c69a55-f3d589',
       }));
     });
 

@@ -4,13 +4,73 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { useBuildingStore } from '../stores/buildingStore';
-import { Rotation3D } from '../types';
+import { MeshConfig, Position3D, Rotation3D, TileGroupConfig, TileObjectType } from '../types';
 import { TILE_CONSTANTS } from '../types/constants';
 
 const _vec2 = new THREE.Vector2();
 const _groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const _intersection = new THREE.Vector3();
 let _idSeq = 0;
+
+function sanitizeMaterialIdPart(value: string): string {
+  return value.replace(/[^a-zA-Z0-9_-]/g, '');
+}
+
+export function createTerrainBlockMaterial(
+  objectType: TileObjectType,
+  color: string,
+  accentColor: string,
+): MeshConfig | null {
+  if (objectType !== 'sand' && objectType !== 'snowfield') return null;
+  const id = [
+    'terrain-block',
+    objectType,
+    sanitizeMaterialIdPart(color),
+    sanitizeMaterialIdPart(accentColor),
+  ].join('-');
+  return {
+    id,
+    color,
+    material: 'STANDARD',
+    roughness: objectType === 'snowfield' ? 0.78 : 0.94,
+  };
+}
+
+function getDefaultTerrainColors(objectType: TileObjectType): { color: string; accentColor: string } | null {
+  if (objectType === 'sand') return { color: '#b89b66', accentColor: '#e0c27a' };
+  if (objectType === 'snowfield') return { color: '#dcecff', accentColor: '#ffffff' };
+  return null;
+}
+
+export function findTerrainBlockMaterial(
+  tileGroups: Iterable<TileGroupConfig>,
+  position: Position3D,
+): MeshConfig | null {
+  let topTile: TileGroupConfig['tiles'][number] | null = null;
+  let topY = -Infinity;
+
+  for (const group of tileGroups) {
+    for (const tile of group.tiles) {
+      if (tile.objectType !== 'sand' && tile.objectType !== 'snowfield') continue;
+      const tileSize = (tile.size ?? 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+      const half = tileSize * 0.5;
+      const inX = position.x >= tile.position.x - half && position.x <= tile.position.x + half;
+      const inZ = position.z >= tile.position.z - half && position.z <= tile.position.z + half;
+      if (!inX || !inZ || tile.position.y < topY) continue;
+      topTile = tile;
+      topY = tile.position.y;
+    }
+  }
+
+  if (!topTile) return null;
+  const defaults = getDefaultTerrainColors(topTile.objectType ?? 'none');
+  if (!defaults) return null;
+  return createTerrainBlockMaterial(
+    topTile.objectType ?? 'none',
+    topTile.objectConfig?.terrainColor ?? defaults.color,
+    topTile.objectConfig?.terrainAccentColor ?? defaults.accentColor,
+  );
+}
 
 export function useBuildingEditor() {
   const { camera, raycaster } = useThree();
@@ -126,6 +186,12 @@ export function useBuildingEditor() {
       getSupportHeightAt,
       currentTileMultiplier,
       currentTileHeight,
+      selectedTileObjectType,
+      currentTerrainColor,
+      currentTerrainAccentColor,
+      tileGroups,
+      meshes,
+      addMesh,
       hoverPosition,
     } = useBuildingStore.getState();
     if (mode !== 'block' || !hoverPosition) return;
@@ -137,11 +203,16 @@ export function useBuildingEditor() {
       ...hoverPosition,
       y: supportY + currentTileHeight * heightStep,
     };
+    const terrainBlockMaterial = findTerrainBlockMaterial(tileGroups.values(), hoverPosition)
+      ?? createTerrainBlockMaterial(selectedTileObjectType, currentTerrainColor, currentTerrainAccentColor);
+    if (terrainBlockMaterial && !meshes.has(terrainBlockMaterial.id)) {
+      addMesh(terrainBlockMaterial);
+    }
     const block = {
       id: `block-${++_idSeq}-${Date.now()}`,
       position: placement,
       size: { x: sizeXZ, y: 1, z: sizeXZ },
-      materialId: 'default-block',
+      materialId: terrainBlockMaterial?.id ?? 'default-block',
     };
 
     if (checkBlockPosition(block)) return;

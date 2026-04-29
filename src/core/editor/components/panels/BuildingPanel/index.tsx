@@ -28,6 +28,22 @@ export function createPlacementAssetScopeId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+export function createScopedColorMeshConfig(id: string, color: string, base?: MeshConfig): MeshConfig {
+  const { mapTextureUrl: _mapTextureUrl, textureUrl: _textureUrl, materialParams, ...baseWithoutTexture } = base ?? {};
+  void _mapTextureUrl;
+  void _textureUrl;
+  return {
+    ...baseWithoutTexture,
+    id,
+    color,
+    material: 'STANDARD',
+    materialParams: {
+      ...(materialParams ?? {}),
+      color,
+    },
+  };
+}
+
 export const BuildingPanel: FC = () => {
   const editMode = useBuildingStore((state) => state.editMode);
   const setEditMode = useBuildingStore((state) => state.setEditMode);
@@ -152,6 +168,9 @@ export const BuildingPanel: FC = () => {
   const selectedTileGroup = selectedTileId
     ? Array.from(tileGroups.values()).find((group) => group.tiles.some((tile) => tile.id === selectedTileId))
     : tileGroups.get(selectedTileGroupId ?? '');
+  const selectedTile = selectedTileId
+    ? selectedTileGroup?.tiles.find((tile) => tile.id === selectedTileId)
+    : undefined;
   const selectedBlock = selectedBlockId
     ? blocks.find((block) => block.id === selectedBlockId)
     : undefined;
@@ -216,12 +235,36 @@ export const BuildingPanel: FC = () => {
   const applyAssetToTile = (asset: AssetRecord) => {
     if (!selectedTileGroup) return;
     if (selectedTileId) {
-      const tileScopedMeshId = upsertScopedMesh(selectedTileGroup.floorMeshId, selectedTileId, 'tile', asset);
+      const tileScopedMeshId = upsertScopedMesh(selectedTile?.materialId ?? selectedTileGroup.floorMeshId, selectedTileId, 'tile', asset);
       updateTile(selectedTileGroup.id, selectedTileId, { materialId: tileScopedMeshId });
       return;
     }
-    const placementMeshId = upsertScopedMesh(selectedTileGroup.floorMeshId, 'placement', 'tile', asset);
+    const placementMeshId = upsertScopedMesh(
+      selectedTileGroup.floorMeshId,
+      createPlacementAssetScopeId('placement-tile'),
+      'tile',
+      asset,
+    );
     setCurrentTileMaterialId(placementMeshId);
+  };
+
+  const applyColorToTile = (color: string) => {
+    if (!selectedTileGroup) return;
+    if (selectedTileId) {
+      const sourceMeshId = selectedTile?.materialId ?? selectedTileGroup.floorMeshId;
+      const meshId = createScopedBuildingMeshId(selectedTileId, 'tile-color', color);
+      const mesh = createScopedColorMeshConfig(meshId, color, meshes.get(sourceMeshId));
+      if (meshes.has(meshId)) updateMesh(meshId, mesh);
+      else addMesh(mesh);
+      updateTile(selectedTileGroup.id, selectedTileId, { materialId: meshId });
+      return;
+    }
+
+    const sourceMeshId = currentTileMaterialId ?? selectedTileGroup.floorMeshId;
+    const meshId = createScopedBuildingMeshId(createPlacementAssetScopeId('placement-tile-color'), 'tile', color);
+    const mesh = createScopedColorMeshConfig(meshId, color, meshes.get(sourceMeshId));
+    addMesh(mesh);
+    setCurrentTileMaterialId(meshId);
   };
 
   const applyTerrainColors = (color: string, accentColor: string = currentTerrainAccentColor) => {
@@ -498,8 +541,9 @@ export const BuildingPanel: FC = () => {
 
       {editMode === 'tile' && selectedTileGroupId && (() => {
         const tileGroup = tileGroups.get(selectedTileGroupId);
-        const floorMesh = tileGroup ? meshes.get(tileGroup.floorMeshId) : undefined;
-        return floorMesh ? (
+        const tileMeshId = selectedTile?.materialId ?? currentTileMaterialId ?? tileGroup?.floorMeshId;
+        const tileMesh = tileMeshId ? meshes.get(tileMeshId) : undefined;
+        return tileMesh ? (
           <div className="building-panel__section">
             <div className="building-panel__section-title">타일 색상</div>
             <div className="building-panel__info">
@@ -507,11 +551,11 @@ export const BuildingPanel: FC = () => {
                 <span className="building-panel__info-label">색상</span>
                 <input
                   type="color"
-                  value={floorMesh.color || '#888888'}
-                  onChange={(e) => updateMesh(floorMesh.id, { color: e.target.value })}
+                  value={tileMesh.color || '#888888'}
+                  onChange={(e) => applyColorToTile(e.target.value)}
                   style={{ width: '36px', height: '24px', border: 'none', cursor: 'pointer', background: 'none' }}
                 />
-                <span className="building-panel__info-value" style={{ fontSize: '10px' }}>{floorMesh.color || '#888888'}</span>
+                <span className="building-panel__info-value" style={{ fontSize: '10px' }}>{tileMesh.color || '#888888'}</span>
               </div>
             </div>
           </div>
