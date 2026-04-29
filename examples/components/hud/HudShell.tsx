@@ -1,20 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import {
-  LOCALE_LABEL,
   SceneFader,
-  setDefaultToonMode,
-  useAudioStore,
   useCatalogStore,
   useCharacterStore,
-  useI18nStore,
   useMailStore,
-  usePerfStore,
   useQuestStore,
   useTownStore,
   useWalletStore,
-  type LocaleId,
-  type PerfTier,
 } from '../../../src';
 import Info from '../info';
 import { Teleport } from '../teleport';
@@ -38,29 +31,16 @@ function HeaderBar() {
   );
 }
 
-function LeftSidebar({ toon, onToggleToon, showInfo, setShowInfo, showTele, setShowTele }: {
-  toon: boolean;
-  onToggleToon: () => void;
+function LeftSidebar({ showInfo, setShowInfo, showTele, setShowTele }: {
   showInfo: boolean;
   setShowInfo: (v: boolean) => void;
   showTele: boolean;
   setShowTele: (v: boolean) => void;
 }) {
-  const masterMuted = useAudioStore((s) => s.masterMuted);
-  const bgmMuted = useAudioStore((s) => s.bgmMuted);
-  const sfxMuted = useAudioStore((s) => s.sfxMuted);
-  const toggleMaster = useAudioStore((s) => s.toggleMaster);
-  const toggleBgm = useAudioStore((s) => s.toggleBgm);
-  const toggleSfx = useAudioStore((s) => s.toggleSfx);
-
   return (
     <div className="gp-left">
       <div className="gp-glass gp-panel" style={{ width: '100%' }}>
-        <div className="gp-panel-title">화면</div>
-        <button className={`gp-btn${toon ? ' gp-btn--active' : ''}`} onClick={onToggleToon}>
-          <span>Toon Shading</span>
-          <span className="gp-key">{toon ? 'ON' : 'OFF'}</span>
-        </button>
+        <div className="gp-panel-title">도구</div>
         <button className={`gp-btn${showInfo ? ' gp-btn--active' : ''}`} onClick={() => setShowInfo(!showInfo)}>
           <span>카메라 / 모드</span>
           <span className="gp-key">I-Panel</span>
@@ -68,69 +48,6 @@ function LeftSidebar({ toon, onToggleToon, showInfo, setShowInfo, showTele, setS
         <button className={`gp-btn${showTele ? ' gp-btn--active' : ''}`} onClick={() => setShowTele(!showTele)}>
           <span>Teleport</span>
           <span className="gp-key">⤴</span>
-        </button>
-      </div>
-
-      <div className="gp-glass gp-panel" style={{ width: '100%' }}>
-        <div className="gp-panel-title">사운드</div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button className={`gp-btn${masterMuted ? ' gp-btn--muted' : ''}`} style={{ flex: 1 }} onClick={toggleMaster} title="Master">
-            <span>M</span>{masterMuted && <span className="gp-key">OFF</span>}
-          </button>
-          <button className={`gp-btn${bgmMuted ? ' gp-btn--muted' : ''}`} style={{ flex: 1 }} onClick={toggleBgm} title="BGM">
-            <span>BGM</span>{bgmMuted && <span className="gp-key">OFF</span>}
-          </button>
-          <button className={`gp-btn${sfxMuted ? ' gp-btn--muted' : ''}`} style={{ flex: 1 }} onClick={toggleSfx} title="SFX">
-            <span>SFX</span>{sfxMuted && <span className="gp-key">OFF</span>}
-          </button>
-        </div>
-      </div>
-
-      <LocaleAndPerfPanel />
-    </div>
-  );
-}
-
-function LocaleAndPerfPanel() {
-  const locale = useI18nStore((s) => s.locale);
-  const setLocale = useI18nStore((s) => s.setLocale);
-  const tier = usePerfStore((s) => s.profile.tier);
-  const setTier = usePerfStore((s) => s.setTier);
-  const resetAuto = usePerfStore((s) => s.resetAuto);
-
-  const locales: LocaleId[] = ['ko', 'en', 'ja'];
-  const tiers: PerfTier[] = ['low', 'medium', 'high'];
-
-  return (
-    <div className="gp-glass gp-panel" style={{ width: '100%' }}>
-      <div className="gp-panel-title">언어 / 성능</div>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-        {locales.map((l) => (
-          <button
-            key={l}
-            className={`gp-btn${locale === l ? ' gp-btn--active' : ''}`}
-            style={{ flex: 1 }}
-            onClick={() => setLocale(l)}
-            title={LOCALE_LABEL[l]}
-          >
-            <span>{l.toUpperCase()}</span>
-          </button>
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: 6 }}>
-        {tiers.map((t) => (
-          <button
-            key={t}
-            className={`gp-btn${tier === t ? ' gp-btn--active' : ''}`}
-            style={{ flex: 1 }}
-            onClick={() => setTier(t)}
-            title={`Performance: ${t}`}
-          >
-            <span>{t}</span>
-          </button>
-        ))}
-        <button className="gp-btn" onClick={resetAuto} title="Auto detect">
-          <span className="gp-key">A</span>
         </button>
       </div>
     </div>
@@ -241,49 +158,16 @@ function FooterBar() {
   );
 }
 
-export type HudShellProps = {
-  toonInitial?: boolean;
-  toonStorageKey?: string;
-};
+export type HudShellProps = Record<string, never>;
 
-export function HudShell({ toonInitial = true, toonStorageKey = 'gaesup:toonMode' }: HudShellProps) {
-  const [toon, setToon] = useState(toonInitial);
-  const [showInfo, setShowInfo] = useState(false);
-  const [showTele, setShowTele] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const v = window.localStorage.getItem(toonStorageKey);
-    if (v !== null) setToon(v === '1');
-  }, [toonStorageKey]);
-
-  const onToggleToon = () => {
-    const next = !toon;
-    setToon(next);
-    setDefaultToonMode(next);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(toonStorageKey, next ? '1' : '0');
-      window.location.reload();
-    }
-  };
-
+export function HudShell() {
   return (
     <>
       <div className="gp-shell">
         <HeaderBar />
-        <LeftSidebar
-          toon={toon}
-          onToggleToon={onToggleToon}
-          showInfo={showInfo}
-          setShowInfo={setShowInfo}
-          showTele={showTele}
-          setShowTele={setShowTele}
-        />
         <RightSidebar />
         <FooterBar />
       </div>
-      {showInfo && <Info />}
-      {showTele && <Teleport />}
       <SceneFader />
     </>
   );

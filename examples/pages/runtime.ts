@@ -192,7 +192,7 @@ function applyStarterState(): void {
   if (useMailStore.getState().messages.length === 0) {
     useMailStore.getState().send({
       from: '운영팀',
-      subject: '환영합니다, 가에섭월드에 오신 것을!',
+      subject: '환영합니다',
       body: '도끼 [F], 인벤토리 [I], 퀘스트 [J], 우편 [M], 도감 [K], 제작 [C].\n\n농장에서 [삽]으로 땅을 갈고 [씨앗]을 핫바에 장착해 [삽]을 사용해 심으세요. [물뿌리개]로 매일 물을 주세요.\n\n첫 시작용 자금을 보내드려요.',
       sentDay: today,
       attachments: [{ bells: 500 }],

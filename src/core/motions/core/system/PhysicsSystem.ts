@@ -28,6 +28,14 @@ const defaultMetrics: PhysicsSystemMetrics = {
   frameTime: 0,
 };
 
+const WORLD_GROUND_Y_THRESHOLD = 0.75;
+const GROUNDED_VERTICAL_SPEED = 0.25;
+const GROUNDED_Y_DELTA = 0.025;
+const GROUNDED_STABLE_FRAMES = 3;
+const WALK_GROUNDED_VERTICAL_SPEED = 1.2;
+const WALK_GROUNDED_Y_DELTA = 0.35;
+const FALLING_VERTICAL_SPEED = -0.25;
+
 export interface PhysicsUpdateArgs extends SystemUpdateArgs {
   calcProp: PhysicsCalcProps;
   physicsState: PhysicsState;
@@ -54,6 +62,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
 
   private lastPositionY = 0;
   private groundStableCount = 0;
+  private lastGroundedY: number | null = null;
 
   private tempQuaternion = new THREE.Quaternion();
   private tempEuler = new THREE.Euler();
@@ -162,19 +171,40 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
 
     const verticalSpeed = Math.abs(velocity.y);
     const positionDeltaY = Math.abs(position.y - this.lastPositionY);
+    const isRising = velocity.y > 0.02;
+    const isNearWorldGround = position.y <= WORLD_GROUND_Y_THRESHOLD;
+    const isNearKnownGround =
+      this.lastGroundedY !== null &&
+      Math.abs(position.y - this.lastGroundedY) <= WORLD_GROUND_Y_THRESHOLD;
+    const canReuseStableGround = isNearWorldGround || isNearKnownGround;
+    const isJumpIntent = gameStatesRef.isJumping || physicsState.keyboard.space;
+    const isWalkingGroundJitter =
+      isNearKnownGround &&
+      !isJumpIntent &&
+      verticalSpeed < WALK_GROUNDED_VERTICAL_SPEED &&
+      positionDeltaY < WALK_GROUNDED_Y_DELTA;
 
-    if (verticalSpeed < 0.5 && positionDeltaY < 0.05) {
+    if (
+      !isRising &&
+      canReuseStableGround &&
+      verticalSpeed < GROUNDED_VERTICAL_SPEED &&
+      positionDeltaY < GROUNDED_Y_DELTA
+    ) {
       this.groundStableCount = Math.min(this.groundStableCount + 1, 5);
     } else {
       this.groundStableCount = 0;
     }
     this.lastPositionY = position.y;
 
-    const isNearGround = position.y <= 0.5 && verticalSpeed < 0.5;
-    const isOnTheGround = isNearGround || this.groundStableCount >= 2;
-    const isFalling = !isOnTheGround && velocity.y < -0.1;
+    const isNearGround = canReuseStableGround && !isRising && verticalSpeed < GROUNDED_VERTICAL_SPEED;
+    const isOnTheGround =
+      isNearGround ||
+      isWalkingGroundJitter ||
+      this.groundStableCount >= GROUNDED_STABLE_FRAMES;
+    const isFalling = !isOnTheGround && velocity.y < FALLING_VERTICAL_SPEED;
 
     if (isOnTheGround) {
+      this.lastGroundedY = position.y;
       this.resetJumpState(physicsState);
     }
     gameStatesRef.isOnTheGround = isOnTheGround;
@@ -439,6 +469,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     this.forceComponents = [];
     this.keyStateCache.clear();
     this.groundStableCount = 0;
+    this.lastGroundedY = null;
     this.lastJumpPressed = false;
   }
 

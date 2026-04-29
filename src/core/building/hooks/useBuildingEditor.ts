@@ -3,6 +3,7 @@ import { useCallback, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { getDefaultBuildingObject } from '../catalog';
 import { useBuildingStore } from '../stores/buildingStore';
 import { MeshConfig, Position3D, Rotation3D, TileGroupConfig, TileObjectType } from '../types';
 import { TILE_CONSTANTS } from '../types/constants';
@@ -239,6 +240,10 @@ export function useBuildingEditor() {
       currentBillboardText,
       currentBillboardColor,
       currentBillboardImageUrl,
+      selectedModelObjectId,
+      currentModelUrl,
+      currentModelScale,
+      currentModelColor,
     } = useBuildingStore.getState();
     if (mode !== 'object' || selectedPlacedObjectType === 'none' || !hoverPosition) return;
 
@@ -278,6 +283,19 @@ export function useBuildingEditor() {
                   billboardColor: currentBillboardColor,
                   ...(currentBillboardImageUrl ? { billboardImageUrl: currentBillboardImageUrl } : {}),
                 }
+              : selectedPlacedObjectType === 'model'
+                ? (() => {
+                    const catalogItem = getDefaultBuildingObject(selectedModelObjectId);
+                    const modelUrl = currentModelUrl || catalogItem?.modelUrl;
+                    return {
+                      modelId: catalogItem?.id ?? selectedModelObjectId,
+                      modelLabel: catalogItem?.label ?? selectedModelObjectId,
+                      modelFallbackKind: catalogItem?.fallbackKind ?? 'generic',
+                      modelScale: currentModelScale || catalogItem?.defaultScale || 1,
+                      modelColor: currentModelColor || catalogItem?.defaultColor || '#9b7653',
+                      ...(modelUrl ? { modelUrl } : {}),
+                    };
+                  })()
               : undefined;
 
     addObject({

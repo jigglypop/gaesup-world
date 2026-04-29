@@ -47,7 +47,7 @@ export function useCamera() {
   }, [isInEditMode]);
   const excludeObjectsRef = useRef<THREE.Object3D[]>([]);
   const calcPropsRef = useRef<CameraCalcProps | null>(null);
-  const orbitShiftKeysRef = useRef<Set<string>>(new Set());
+  const orbitModifierKeysRef = useRef<Set<string>>(new Set());
   const orbitPointerActiveRef = useRef(false);
   const orbitYawRef = useRef(0);
   const orbitPitchRef = useRef(0);
@@ -159,14 +159,14 @@ export function useCamera() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isEditableTarget(event.target)) return;
 
-      if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
-        orbitShiftKeysRef.current.add(event.code);
+      if (event.code === 'ControlLeft' || event.code === 'ControlRight') {
+        orbitModifierKeysRef.current.add(event.code);
       }
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.code !== 'ShiftLeft' && event.code !== 'ShiftRight') return;
-      orbitShiftKeysRef.current.delete(event.code);
+      if (event.code !== 'ControlLeft' && event.code !== 'ControlRight') return;
+      orbitModifierKeysRef.current.delete(event.code);
     };
 
     const handleMouseDown = (event: MouseEvent) => {
@@ -183,7 +183,7 @@ export function useCamera() {
     };
 
     const handleMouseMove = (event: MouseEvent) => {
-      const isOrbitActive = orbitShiftKeysRef.current.size > 0 || orbitPointerActiveRef.current;
+      const isOrbitActive = orbitModifierKeysRef.current.size > 0 || orbitPointerActiveRef.current;
       if (!isOrbitActive || isEditableTarget(event.target)) return;
       if (event.movementX === 0 && event.movementY === 0) return;
 
@@ -196,7 +196,7 @@ export function useCamera() {
     };
 
     const clearOrbitKeyState = () => {
-      orbitShiftKeysRef.current.clear();
+      orbitModifierKeysRef.current.clear();
       orbitPointerActiveRef.current = false;
     };
 

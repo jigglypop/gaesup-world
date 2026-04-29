@@ -155,6 +155,26 @@
   color: var(--editor-text-main, #ffffff);
 }
 
+.building-panel__text-input,
+.building-panel__number-input {
+  min-width: 0;
+  max-width: 150px;
+  padding: 5px 7px;
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-sm);
+  background: var(--editor-surface-secondary);
+  color: var(--editor-text-main, #ffffff);
+  font-size: 11px;
+}
+
+.building-panel__text-input {
+  width: 150px;
+}
+
+.building-panel__number-input {
+  width: 72px;
+}
+
 .building-panel__asset-targets {
   display: flex;
   flex-direction: column;

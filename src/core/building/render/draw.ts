@@ -5,6 +5,7 @@ import {
   DRAW_CLUSTER_FIRE,
   DRAW_CLUSTER_FLAG,
   DRAW_CLUSTER_GRASS,
+  DRAW_CLUSTER_MODEL,
   DRAW_CLUSTER_SAKURA,
   DRAW_CLUSTER_SAND,
   DRAW_CLUSTER_SNOWFIELD,
@@ -20,6 +21,7 @@ export {
   DRAW_CLUSTER_FIRE,
   DRAW_CLUSTER_FLAG,
   DRAW_CLUSTER_GRASS,
+  DRAW_CLUSTER_MODEL,
   DRAW_CLUSTER_SAKURA,
   DRAW_CLUSTER_SAND,
   DRAW_CLUSTER_SNOWFIELD,
@@ -69,6 +71,7 @@ export const DRAW_CLUSTER_DESCRIPTORS: DrawClusterDescriptor[] = [
   { id: DRAW_CLUSTER_FIRE, label: 'fire', vertexCountHint: 6 },
   { id: DRAW_CLUSTER_BILLBOARD, label: 'billboard', vertexCountHint: 6 },
   { id: DRAW_CLUSTER_BLOCK, label: 'block', vertexCountHint: 36 },
+  { id: DRAW_CLUSTER_MODEL, label: 'model', vertexCountHint: 36 },
 ];
 
 export function createEmptyBuildingIndirectDrawMirror(): BuildingIndirectDrawMirror {

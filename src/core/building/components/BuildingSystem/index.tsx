@@ -8,6 +8,7 @@ import {
   DRAW_CLUSTER_BLOCK,
   DRAW_CLUSTER_FIRE,
   DRAW_CLUSTER_FLAG,
+  DRAW_CLUSTER_MODEL,
   DRAW_CLUSTER_SAKURA,
   DRAW_CLUSTER_SAND,
   DRAW_CLUSTER_SNOWFIELD,
@@ -26,6 +27,7 @@ import { GridHelper } from '../GridHelper';
 import Billboard from '../mesh/billboard';
 import { FireBatch, type FireBatchEntry } from '../mesh/fire';
 import { FlagBatch } from '../mesh/flag';
+import ModelObject from '../mesh/model';
 import { SakuraBatch, type SakuraTreeEntry } from '../mesh/sakura';
 import { Snow } from '../mesh/snow';
 import { PreviewTile } from '../PreviewTile';
@@ -38,6 +40,7 @@ type ObjectBuckets = {
   flag: PlacedObject[];
   fire: FireBatchEntry[];
   billboard: PlacedObject[];
+  model: PlacedObject[];
 };
 
 const EMPTY_BUCKETS: ObjectBuckets = {
@@ -45,6 +48,7 @@ const EMPTY_BUCKETS: ObjectBuckets = {
   flag: [],
   fire: [],
   billboard: [],
+  model: [],
 };
 
 function clampList<T>(items: T[], limit: number): T[] {
@@ -66,7 +70,7 @@ function getTileClusterId(group: { tiles: Array<{ objectType?: string }> }): num
 function bucketObjects(objects: PlacedObject[] | undefined): ObjectBuckets {
   if (!objects || objects.length === 0) return EMPTY_BUCKETS;
 
-  const buckets: ObjectBuckets = { sakura: [], flag: [], fire: [], billboard: [] };
+  const buckets: ObjectBuckets = { sakura: [], flag: [], fire: [], billboard: [], model: [] };
   for (const o of objects) {
     if (o.type === 'sakura') {
       buckets.sakura.push({
@@ -88,6 +92,8 @@ function bucketObjects(objects: PlacedObject[] | undefined): ObjectBuckets {
       });
     } else if (o.type === 'billboard') {
       buckets.billboard.push(o);
+    } else if (o.type === 'model') {
+      buckets.model.push(o);
     }
   }
   return buckets;
@@ -134,6 +140,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
   const flagBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_FLAG) : Number.MAX_SAFE_INTEGER;
   const fireBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_FIRE) : Number.MAX_SAFE_INTEGER;
   const billboardBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_BILLBOARD) : Number.MAX_SAFE_INTEGER;
+  const modelBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_MODEL) : Number.MAX_SAFE_INTEGER;
   const blockBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_BLOCK) : Number.MAX_SAFE_INTEGER;
 
   const wallGroupsArray = useMemo(() => {
@@ -168,17 +175,20 @@ export const BuildingSystem = React.memo(function BuildingSystem({
     const flag: typeof filtered = [];
     const fire: typeof filtered = [];
     const billboard: typeof filtered = [];
+    const model: typeof filtered = [];
     for (const object of filtered) {
       if (object.type === 'sakura') sakura.push(object);
       else if (object.type === 'flag') flag.push(object);
       else if (object.type === 'fire') fire.push(object);
       else if (object.type === 'billboard') billboard.push(object);
+      else if (object.type === 'model') model.push(object);
     }
     return [
       ...clampList(sakura, sakuraBudget),
       ...clampList(flag, flagBudget),
       ...clampList(fire, fireBudget),
       ...clampList(billboard, billboardBudget),
+      ...clampList(model, modelBudget),
     ];
   }, [
     objects,
@@ -188,6 +198,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
     flagBudget,
     fireBudget,
     billboardBudget,
+    modelBudget,
   ]);
   const visibleBlocks = useMemo(() => {
     const list = blocks ?? [];
@@ -200,6 +211,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
   const flagObjects = clampList(buckets.flag, flagBudget);
   const fireEntries = clampList(buckets.fire, fireBudget);
   const billboardObjects = clampList(buckets.billboard, billboardBudget);
+  const modelObjects = clampList(buckets.model, modelBudget);
 
   return (
     <Suspense fallback={null}>
@@ -274,6 +286,24 @@ export const BuildingSystem = React.memo(function BuildingSystem({
                 {...(obj.config?.billboardText ? { text: obj.config.billboardText } : {})}
                 {...(obj.config?.billboardImageUrl ? { imageUrl: obj.config.billboardImageUrl } : {})}
                 {...(obj.config?.billboardColor ? { color: obj.config.billboardColor } : {})}
+              />
+            </Suspense>
+          </group>
+        ))}
+
+        {modelObjects.map((obj) => (
+          <group
+            key={obj.id}
+            position={[obj.position.x, obj.position.y, obj.position.z]}
+            rotation={[0, obj.rotation ?? 0, 0]}
+          >
+            <Suspense fallback={null}>
+              <ModelObject
+                {...(obj.config?.modelUrl ? { url: obj.config.modelUrl } : {})}
+                {...(obj.config?.modelLabel ? { label: obj.config.modelLabel } : {})}
+                {...(obj.config?.modelFallbackKind ? { fallbackKind: obj.config.modelFallbackKind } : {})}
+                {...(obj.config?.modelScale ? { scale: obj.config.modelScale } : {})}
+                {...(obj.config?.modelColor ? { color: obj.config.modelColor } : {})}
               />
             </Suspense>
           </group>

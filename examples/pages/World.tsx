@@ -61,14 +61,10 @@ export const RICH_CAMERA_OPTION: CameraOptionType = {
   maxDistance: 50, distance: 10, bounds: { minY: 2, maxY: 50 },
 };
 
-const TOON_STORAGE_KEY = 'gaesup:toonMode';
 const WORLD_WEATHER_ENABLED = false;
-const _initialToon = (() => {
-  if (typeof window === 'undefined') return true;
-  const v = window.localStorage.getItem(TOON_STORAGE_KEY);
-  return v === null ? true : v === '1';
-})();
-setDefaultToonMode(_initialToon);
+const DEFAULT_TOON_MODE = false;
+
+setDefaultToonMode(DEFAULT_TOON_MODE);
 
 const SAKURA_TREES: SakuraTreeEntry[] = [
   { position: [-22, 0, -10], size: 4.4, blossomColor: '#ffb6c1' },
@@ -205,11 +201,8 @@ function Ground() {
 }
 
 function HomeInterior({ returnPosition }: { returnPosition: [number, number, number] }) {
-  // Split the home into three compact rooms so indoor portal visibility can
-  // cull furniture/floors that are not near the player or a visible doorway.
   return (
     <>
-      {/* Outer shell */}
       <RigidBody type="fixed" colliders="cuboid">
         <mesh position={[0, 1.4, -4]} castShadow receiveShadow>
           <boxGeometry args={[8, 2.8, 0.2]} />
@@ -609,7 +602,7 @@ export const WorldPage = ({ showEditor = false, showHud = true, children }: Worl
 
         {showHud && (
           <>
-            <HudShell toonInitial={_initialToon} toonStorageKey={TOON_STORAGE_KEY} />
+            <HudShell />
 
             <InteractionPrompt />
             <DialogBox />

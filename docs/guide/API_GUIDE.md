@@ -1,153 +1,108 @@
-# Gaesup API 사용 가이드: 움직이는 캐릭터 만들기
+# Gaesup API 사용 가이드
 
-이 가이드는 Gaesup 라이브러리 사용자가 가장 간단한 방법으로 물리 효과가 적용된 캐릭터를 생성하고 조작하는 방법을 안내합니다.
+이 문서는 현재 공개 패키지 기준으로 가장 기본적인 월드 실행 방법을 정리합니다.
 
-## 1. 사전 준비: Blueprint 정의
+## 패키지 엔트리
 
-먼저, 캐릭터의 모든 속성을 정의하는 `Blueprint` 파일을 만듭니다. 이 파일은 순수한 데이터 객체입니다.
-
-```typescript
-// src/gamedata/blueprints/MyCharacter.ts
-
-import { CharacterBlueprint } from '@gaesup/core'; // (가상 경로)
-
-export const MY_CHARACTER_BLUEPRINT: CharacterBlueprint = {
-  id: 'my-char-01',
-  name: '내 캐릭터',
-  type: 'character',
-  
-  // 물리 속성 (가장 중요)
-  physics: {
-    mass: 70,
-    jumpForce: 350,
-    // ...
-  },
-  
-  // 애니메이션 파일 경로
-  animations: {
-    idle: '/animations/idle.glb',
-    walk: '/animations/walk.glb',
-    // ...
-  },
-  // ... 기타 필요한 속성
-};
-```
-
-## 2. 핵심 컴포넌트: `<GaesupController>`
-
-`<GaesupController>`는 캐릭터의 물리, 애니메이션, 상태 동기화를 모두 관리하는 메인 컨트롤러 컴포넌트입니다. `blueprint`를 `prop`으로 전달하기만 하면 모든 설정이 완료됩니다.
+기본 런타임 API는 루트 엔트리에서 가져옵니다.
 
 ```tsx
-// src/components/MyScene.tsx
+import { GaesupController, GaesupWorld } from 'gaesup-world';
+```
 
+관리자와 블루프린트 에디터는 별도 subpath를 사용합니다.
+
+```tsx
+import { GaesupAdmin, useAuthStore } from 'gaesup-world/admin';
+import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
+```
+
+## 기본 월드
+
+`GaesupWorld`는 월드 설정을 store에 주입하는 루트 컴포넌트입니다. 실제 3D 렌더링은 React Three Fiber의 `Canvas` 안에서 구성합니다.
+
+```tsx
 import { Canvas } from '@react-three/fiber';
-import { GaesupController } from '@gaesup/core'; // (가상 경로)
-import { MY_CHARACTER_BLUEPRINT } from '../gamedata/blueprints/MyCharacter';
+import { Physics } from '@react-three/rapier';
+import { GaesupController, GaesupWorld } from 'gaesup-world';
 
-export function MyScene() {
+export function App() {
   return (
-    <Canvas>
-      {/* GaesupController에 blueprint만 전달하면 캐릭터가 생성됩니다. */}
-      <GaesupController blueprint={MY_CHARACTER_BLUEPRINT}>
-        {/* 여기에 캐릭터의 3D 모델(Mesh)을 자식으로 넣어주세요. */}
-        {/* 예: <MyCharacterModel /> */}
-      </GaesupController>
-    </Canvas>
+    <GaesupWorld
+      urls={{ characterUrl: '/models/character.glb' }}
+      mode={{ type: 'character', controller: 'keyboard', control: 'thirdPerson' }}
+      cameraOption={{
+        xDistance: -7,
+        yDistance: 10,
+        zDistance: -13,
+        fov: 75,
+        enableCollision: true,
+      }}
+    >
+      <Canvas shadows>
+        <Physics>
+          <GaesupController />
+        </Physics>
+      </Canvas>
+    </GaesupWorld>
   );
 }
 ```
 
-## 3. 캐릭터 조작: `useGaesupPlayer` Hook
+`GaesupController`는 현재 공개 API에서 `blueprint` prop을 받는 생성기 컴포넌트가 아닙니다. 캐릭터 URL, 입력 방식, 카메라 방식은 `GaesupWorld`의 `urls`, `mode`, `cameraOption`으로 설정합니다.
 
-생성된 캐릭터를 조작하려면 `useGaesupPlayer` 훅을 사용합니다. 이 훅은 캐릭터를 조작할 수 있는 함수들(e.g., `move`, `jump`)을 반환합니다.
+## 상태 조회
+
+플레이어 위치처럼 자주 쓰는 상태는 공개 훅을 사용합니다.
 
 ```tsx
-// src/components/PlayerControls.tsx
+import { usePlayerPosition } from 'gaesup-world';
 
-import { useGaesupPlayer } from '@gaesup/core'; // (가상 경로)
-import { useKeyboardControls } from '@react-three/drei'; // (예시)
-
-export function PlayerControls() {
-  // 1. 조작 함수들을 가져옵니다.
-  const { move, jump } = useGaesupPlayer();
-  const [sub, get] = useKeyboardControls();
-
-  // 2. 키보드 입력에 따라 조작 함수를 호출합니다.
-  useEffect(() => {
-    return sub(
-      (state) => state.forward || state.backward || state.left || state.right,
-      (pressed) => {
-        const { forward, backward, left, right } = get();
-        // 'move' 명령 전송
-        move({ x: left - right, y: 0, z: backward - forward });
-      }
-    );
-  }, [move, get, sub]);
-
-  useEffect(() => {
-    return sub(
-      (state) => state.jump,
-      (pressed) => {
-        if (pressed) {
-          // 'jump' 명령 전송
-          jump();
-        }
-      }
-    );
-  }, [jump, sub]);
-  
-  return null; // 이 컴포넌트는 UI를 렌더링하지 않습니다.
-}
-
-// MyScene에 추가
-function MyScene() {
-  return (
-    <Canvas>
-      <KeyboardControls map={[... ]}>
-        <GaesupController blueprint={...}>
-          <MyCharacterModel />
-        </GaesupController>
-        
-        {/* PlayerControls 컴포넌트를 추가하여 조작을 활성화합니다. */}
-        <PlayerControls />
-      </KeyboardControls>
-    </Canvas>
-  )
+export function PlayerPositionText() {
+  const position = usePlayerPosition();
+  return <div>{position.join(', ')}</div>;
 }
 ```
 
-## 4. 상태 구독: `useGaesupState` Hook
-
-캐릭터의 현재 상태(위치, 속도 등)를 UI에 표시하려면 `useGaesupState` 훅을 사용합니다.
+월드 설정 store가 필요하면 selector로 필요한 값만 구독합니다.
 
 ```tsx
-// src/components/CharacterUI.tsx
+import { useGaesupStore } from 'gaesup-world';
 
-import { useGaesupState } from '@gaesup/core'; // (가상 경로)
-
-export function CharacterUI({ characterId }) {
-  // 1. 캐릭터 ID로 현재 상태 스냅샷을 구독합니다.
-  const snapshot = useGaesupState(characterId);
-
-  if (!snapshot) return null;
-  
-  // 2. 스냅샷 데이터를 UI에 표시합니다.
-  return (
-    <div>
-      <p>Position: {snapshot.position.x.toFixed(2)}, {snapshot.position.z.toFixed(2)}</p>
-      <p>Velocity: {snapshot.velocity.length().toFixed(2)}</p>
-      <p>Is Moving: {snapshot.isMoving ? 'Yes' : 'No'}</p>
-    </div>
-  );
+export function CurrentModeLabel() {
+  const control = useGaesupStore((state) => state.mode.control);
+  return <span>{control}</span>;
 }
 ```
 
-## 요약
+## 블루프린트 사용
 
-| 목적 | 사용하는 API | 비고 |
-| :--- | :--- | :--- |
-| **캐릭터 생성** | `<GaesupController blueprint={...} />` | 모든 것의 시작점. `blueprint`가 필수. |
-| **캐릭터 조작** | `useGaesupPlayer()` | `move`, `jump` 등 명령 함수 반환. |
-| **상태 조회** | `useGaesupState(id)` | 실시간 `snapshot` 데이터 반환. |
+블루프린트 조회와 스폰 API는 루트 엔트리 또는 `gaesup-world/blueprints`에서 사용할 수 있습니다.
 
-이 세 가지 API를 통해 Gaesup 라이브러리의 핵심 기능을 간단하게 사용할 수 있습니다. 
+```tsx
+import { BlueprintSpawner, blueprintRegistry, useSpawnFromBlueprint } from 'gaesup-world';
+
+const warrior = blueprintRegistry.get('warrior');
+```
+
+편집 UI는 별도 엔트리입니다.
+
+```tsx
+import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
+```
+
+## 자주 쓰는 도메인 API
+
+- 월드/컨트롤러: `GaesupWorld`, `GaesupController`, `useGaesupStore`
+- 카메라: `Camera`, `CameraPresets`, `CameraDebugPanel`
+- 모션: `MotionController`, `MotionUI`, `usePlayerPosition`, `useStateSystem`
+- 건설: `BuildingUI`, `BuildingController`, `useBuildingEditor`, `useBuildingStore`
+- 저장: `SaveSystem`, `getSaveSystem`, `createDefaultSaveSystem`
+- 생활형 도메인: `useInventoryStore`, `InventoryUI`, `HotbarUI`, `useGameTime`, `WeatherEffect`, `QuestLogUI`
+
+## 함께 볼 문서
+
+- [README](../../README.md)
+- [Building API](../api/BUILDING_API.md)
+- [Camera API](../api/CAMERA_API.md)
+- [Motions API](../api/MOTIONS_API.md)

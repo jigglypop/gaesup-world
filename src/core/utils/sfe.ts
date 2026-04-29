@@ -56,7 +56,7 @@ export const weightFromDistance = (
 // w = exp(-sigma_total)
 //
 // Matches the SFE unified formula: x_new = exp(-sigma(x)) * ...
-// See: docs/sfe/Core_Theory/8.1_SFE_Reality_Stone
+// Public API status is documented in docs/api/PERFORMANCE_API.md.
 // ---------------------------------------------------------------------------
 
 export type SuppressionFactors = {

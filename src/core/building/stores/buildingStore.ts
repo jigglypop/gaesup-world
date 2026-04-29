@@ -36,8 +36,8 @@ import {
   FlagStyle,
   FLAG_STYLE_META,
 } from '../types';
-import { TILE_CONSTANTS } from '../types/constants';
 import { hydrateBuildingState, serializeBuildingState } from './persistence';
+import { TILE_CONSTANTS } from '../types/constants';
 
 enableMapSet();
 
@@ -80,6 +80,14 @@ interface BuildingStore extends BuildingSystemState {
 
   selectedPlacedObjectType: PlacedObjectType | 'none';
   setSelectedPlacedObjectType: (type: PlacedObjectType | 'none') => void;
+  selectedModelObjectId: string;
+  setSelectedModelObjectId: (id: string) => void;
+  currentModelUrl: string;
+  setModelUrl: (url: string) => void;
+  currentModelScale: number;
+  setModelScale: (scale: number) => void;
+  currentModelColor: string;
+  setModelColor: (color: string) => void;
   selectedWallId: string | null;
   selectedTileId: string | null;
   selectedBlockId: string | null;
@@ -215,6 +223,10 @@ export const useBuildingStore = create<BuildingStore>()(
     currentTerrainColor: '#5a7a35',
     currentTerrainAccentColor: '#8fbc5a',
     selectedPlacedObjectType: 'none',
+    selectedModelObjectId: 'door-basic',
+    currentModelUrl: '',
+    currentModelScale: 1,
+    currentModelColor: '#9b7653',
     selectedWallId: null,
     selectedTileId: null,
     selectedBlockId: null,
@@ -1030,6 +1042,18 @@ export const useBuildingStore = create<BuildingStore>()(
 
     setSelectedPlacedObjectType: (type) => set((state) => {
       state.selectedPlacedObjectType = type;
+    }),
+    setSelectedModelObjectId: (id) => set((state) => {
+      state.selectedModelObjectId = id;
+    }),
+    setModelUrl: (url) => set((state) => {
+      state.currentModelUrl = url;
+    }),
+    setModelScale: (scale) => set((state) => {
+      state.currentModelScale = Math.max(0.1, Math.min(10, scale));
+    }),
+    setModelColor: (color) => set((state) => {
+      state.currentModelColor = color;
     }),
     setSelectedWallId: (id) => set((state) => {
       state.selectedWallId = id;

@@ -1,5 +1,3 @@
-import { useShallow } from 'zustand/react/shallow';
-
 import { useGaesupStore } from '@stores/gaesupStore';
 
 import { UseGaesupControllerResult } from './types';
@@ -9,7 +7,7 @@ export function useGaesupController(): UseGaesupControllerResult {
   const { activeState, gameStates } = useStateSystem();
   const mode = useGaesupStore((state) => state.mode);
   const control = useGaesupStore((state) => state.controllerOptions);
-  const controller = useGaesupStore(useShallow((state) => state));
+  const controller = useGaesupStore.getState();
 
   const worldContext = { mode, states: gameStates, control };
 

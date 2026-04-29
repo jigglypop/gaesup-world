@@ -6,6 +6,7 @@ import {
   RENDER_SUBKIND_OBJECT_BILLBOARD,
   RENDER_SUBKIND_OBJECT_FIRE,
   RENDER_SUBKIND_OBJECT_FLAG,
+  RENDER_SUBKIND_OBJECT_MODEL,
   RENDER_SUBKIND_OBJECT_SAKURA,
   RENDER_SUBKIND_TILE_GRASS,
   RENDER_SUBKIND_TILE_SAND,
@@ -25,7 +26,8 @@ export const DRAW_CLUSTER_FLAG = 7;
 export const DRAW_CLUSTER_FIRE = 8;
 export const DRAW_CLUSTER_BILLBOARD = 9;
 export const DRAW_CLUSTER_BLOCK = 10;
-export const DRAW_CLUSTER_COUNT = 11;
+export const DRAW_CLUSTER_MODEL = 11;
+export const DRAW_CLUSTER_COUNT = 12;
 
 export type BuildingGpuCullingResult = {
   version: number;
@@ -57,6 +59,7 @@ export function getDrawClusterForSnapshotEntry(snapshot: BuildingRenderSnapshot,
     if (subKind === RENDER_SUBKIND_OBJECT_FLAG) return DRAW_CLUSTER_FLAG;
     if (subKind === RENDER_SUBKIND_OBJECT_FIRE) return DRAW_CLUSTER_FIRE;
     if (subKind === RENDER_SUBKIND_OBJECT_BILLBOARD) return DRAW_CLUSTER_BILLBOARD;
+    if (subKind === RENDER_SUBKIND_OBJECT_MODEL) return DRAW_CLUSTER_MODEL;
   }
   return DRAW_CLUSTER_TILE;
 }

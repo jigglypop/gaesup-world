@@ -24,7 +24,6 @@ export interface EditorMode {
 export interface ExampleConfig {
   editor: EditorMode;
   debug: boolean;
-  showPerformance: boolean;
   showGrid: boolean;
   showAxes: boolean;
 }
@@ -44,7 +43,6 @@ export type EditorConfig = {
     animation?: boolean;
     camera?: boolean;
     motion?: boolean;
-    performance?: boolean;
     vehicle?: boolean;
     blueprints?: boolean;
   };

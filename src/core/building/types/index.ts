@@ -57,8 +57,21 @@ export interface WallGroupConfig {
 }
 
 export type TileObjectType = 'water' | 'grass' | 'sand' | 'snowfield' | 'none';
-export type PlacedObjectType = 'sakura' | 'flag' | 'fire' | 'billboard';
+export type PlacedObjectType = 'sakura' | 'flag' | 'fire' | 'billboard' | 'model';
 export type TileShapeType = 'box' | 'stairs' | 'round' | 'ramp';
+export type BuildingModelFallbackKind =
+  | 'door'
+  | 'window'
+  | 'fence'
+  | 'lamp'
+  | 'chair'
+  | 'table'
+  | 'bed'
+  | 'storage'
+  | 'mailbox'
+  | 'crafting'
+  | 'shop'
+  | 'generic';
 
 export interface ObjectConfig {
   size?: number;
@@ -75,6 +88,12 @@ export interface ObjectConfig {
   billboardText?: string;
   billboardImageUrl?: string;
   billboardColor?: string;
+  modelId?: string;
+  modelLabel?: string;
+  modelUrl?: string;
+  modelScale?: number;
+  modelColor?: string;
+  modelFallbackKind?: BuildingModelFallbackKind;
 }
 
 export interface PlacedObject {

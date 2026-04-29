@@ -27,6 +27,7 @@ export const RENDER_SUBKIND_OBJECT_SAKURA = 20;
 export const RENDER_SUBKIND_OBJECT_FLAG = 21;
 export const RENDER_SUBKIND_OBJECT_FIRE = 22;
 export const RENDER_SUBKIND_OBJECT_BILLBOARD = 23;
+export const RENDER_SUBKIND_OBJECT_MODEL = 24;
 export const RENDER_SUBKIND_BLOCK_GENERIC = 30;
 
 export type BuildingRenderSnapshot = {
@@ -143,6 +144,7 @@ export function buildBuildingRenderSnapshot(args: {
       object.type === 'flag' ? RENDER_SUBKIND_OBJECT_FLAG :
       object.type === 'fire' ? RENDER_SUBKIND_OBJECT_FIRE :
       object.type === 'billboard' ? RENDER_SUBKIND_OBJECT_BILLBOARD :
+      object.type === 'model' ? RENDER_SUBKIND_OBJECT_MODEL :
                                    RENDER_SUBKIND_OBJECT_FIRE;
     write(object.id, RENDER_KIND_OBJECT, subKind, buildObjectRecord(object), 1);
   }

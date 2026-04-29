@@ -52,6 +52,13 @@ type TileBounds = {
   segments: number;
 };
 
+const TERRAIN_COVER_EDGE_LIFT: Partial<Record<NonNullable<TileLike['objectType']>, number>> = {
+  grass: 0.05,
+  sand: 0.065,
+  snowfield: 0.055,
+  water: 0.055,
+};
+
 function fract(value: number): number {
   return value - Math.floor(value);
 }
@@ -101,10 +108,11 @@ function getRampLayout(tile: TileLike) {
 function buildTileBounds(tile: TileLike): TileBounds {
   const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
   const half = tileSize / 2;
+  const terrainLift = tile.objectType ? (TERRAIN_COVER_EDGE_LIFT[tile.objectType] ?? 0) : 0;
 
   return {
     id: tile.id,
-    topY: tile.position.y,
+    topY: tile.position.y + terrainLift,
     minX: tile.position.x - half,
     maxX: tile.position.x + half,
     minZ: tile.position.z - half,

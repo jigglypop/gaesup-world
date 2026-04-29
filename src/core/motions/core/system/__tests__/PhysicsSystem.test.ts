@@ -216,6 +216,44 @@ describe('PhysicsSystem', () => {
       expect(physicsState.gameStates.isOnTheGround).toBe(false);
       expect(physicsState.gameStates.isFalling).toBe(true);
     });
+
+    it('공중에서 수직 속도가 잠깐 작아져도 지면으로 오판하지 않아야 합니다', () => {
+      const mockRigidBody = createMockRigidBody({
+        translation: jest.fn().mockReturnValue({ x: 0, y: 4, z: 0 }),
+        linvel: jest.fn().mockReturnValue({ x: 0, y: -0.05, z: 0 }),
+      });
+      const calcProp = {
+        rigidBodyRef: { current: mockRigidBody },
+        innerGroupRef: { current: new THREE.Group() },
+      } as unknown as PhysicsCalcProps;
+      const physicsState = createPhysicsState();
+
+      for (let i = 0; i < 4; i += 1) {
+        system.calculate(calcProp, physicsState);
+      }
+
+      expect(physicsState.gameStates.isOnTheGround).toBe(false);
+      expect(physicsState.gameStates.isJumping).toBe(false);
+    });
+
+    it('지면 근처 보행 흔들림은 grounded를 유지해야 합니다', () => {
+      const positions = [0.5, 0.62, 0.7, 0.58];
+      const velocities = [0, 0, 0.7, 0.7, -0.8, -0.8, 0.3, 0.3];
+      const mockRigidBody = createMockRigidBody({
+        translation: jest.fn(() => ({ x: 0, y: positions.shift() ?? 0.58, z: 0 })),
+        linvel: jest.fn(() => ({ x: 1, y: velocities.shift() ?? 0.02, z: 0 })),
+      });
+      const calcProp = {
+        rigidBodyRef: { current: mockRigidBody },
+        innerGroupRef: { current: new THREE.Group() },
+      } as unknown as PhysicsCalcProps;
+      const physicsState = createPhysicsState();
+
+      for (let i = 0; i < 4; i += 1) {
+        system.calculate(calcProp, physicsState);
+        expect(physicsState.gameStates.isOnTheGround).toBe(true);
+      }
+    });
   });
 
   describe('checkMoving (via calculate)', () => {

@@ -7,6 +7,7 @@ import {
   type AssetRecord,
   useAssetStore,
 } from '../../../../assets';
+import { DEFAULT_BUILDING_OBJECT_CATALOG, getDefaultBuildingObject } from '../../../../building/catalog';
 import { useBuildingStore } from '../../../../building/stores/buildingStore';
 import { FLAG_STYLE_META, FlagStyle, TileObjectType, PlacedObjectType, TileShapeType, type MeshConfig } from '../../../../building/types';
 import './styles.css';
@@ -70,6 +71,14 @@ export const BuildingPanel: FC = () => {
   const setTerrainColors = useBuildingStore((state) => state.setTerrainColors);
   const selectedPlacedObjectType = useBuildingStore((state) => state.selectedPlacedObjectType);
   const setSelectedPlacedObjectType = useBuildingStore((state) => state.setSelectedPlacedObjectType);
+  const selectedModelObjectId = useBuildingStore((state) => state.selectedModelObjectId);
+  const setSelectedModelObjectId = useBuildingStore((state) => state.setSelectedModelObjectId);
+  const currentModelUrl = useBuildingStore((state) => state.currentModelUrl);
+  const setModelUrl = useBuildingStore((state) => state.setModelUrl);
+  const currentModelScale = useBuildingStore((state) => state.currentModelScale);
+  const setModelScale = useBuildingStore((state) => state.setModelScale);
+  const currentModelColor = useBuildingStore((state) => state.currentModelColor);
+  const setModelColor = useBuildingStore((state) => state.setModelColor);
   const snapToGrid = useBuildingStore((state) => state.snapToGrid);
   const setSnapToGrid = useBuildingStore((state) => state.setSnapToGrid);
   const currentFlagWidth = useBuildingStore((state) => state.currentFlagWidth);
@@ -147,6 +156,7 @@ export const BuildingPanel: FC = () => {
     { type: 'flag', label: '깃발' },
     { type: 'fire', label: '불' },
     { type: 'billboard', label: '간판' },
+    { type: 'model', label: '기본 기물' },
   ];
 
   const tileShapes: { type: TileShapeType; label: string }[] = [
@@ -178,6 +188,7 @@ export const BuildingPanel: FC = () => {
   const currentCoverLabel = coverTypes.find((type) => type.type === selectedTileObjectType)?.label ?? selectedTileObjectType;
   const currentPlacedObjectLabel = placedObjectTypes.find((type) => type.type === selectedPlacedObjectType)?.label ?? selectedPlacedObjectType;
   const currentTileShapeLabel = tileShapes.find((shape) => shape.type === currentTileShape)?.label ?? currentTileShape;
+  const selectedModelObject = getDefaultBuildingObject(selectedModelObjectId) ?? DEFAULT_BUILDING_OBJECT_CATALOG[0];
 
   const handleDeleteSelectedWall = () => {
     if (!selectedWallId || !selectedWallGroup) return;
@@ -413,11 +424,78 @@ export const BuildingPanel: FC = () => {
               <button
                 key={t.type}
                 className={`building-panel__grid-btn ${selectedPlacedObjectType === t.type ? 'building-panel__grid-btn--active' : ''}`}
-                onClick={() => setSelectedPlacedObjectType(t.type)}
+                onClick={() => {
+                  setSelectedPlacedObjectType(t.type);
+                  if (t.type === 'model' && selectedModelObject) {
+                    setModelScale(selectedModelObject.defaultScale);
+                    setModelColor(selectedModelObject.defaultColor);
+                    setModelUrl(selectedModelObject.modelUrl ?? '');
+                  }
+                }}
               >
                 {t.label}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {editMode === 'object' && selectedPlacedObjectType === 'model' && (
+        <div className="building-panel__section">
+          <div className="building-panel__section-title">기본 기물 GLB</div>
+          <div className="building-panel__grid">
+            {DEFAULT_BUILDING_OBJECT_CATALOG.map((item) => (
+              <button
+                key={item.id}
+                className={`building-panel__grid-btn ${selectedModelObjectId === item.id ? 'building-panel__grid-btn--active' : ''}`}
+                onClick={() => {
+                  setSelectedModelObjectId(item.id);
+                  setModelScale(item.defaultScale);
+                  setModelColor(item.defaultColor);
+                  setModelUrl(item.modelUrl ?? '');
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <div className="building-panel__info">
+            <label className="building-panel__info-item">
+              <span className="building-panel__info-label">GLB URL</span>
+              <input
+                type="text"
+                value={currentModelUrl}
+                onChange={(event) => setModelUrl(event.target.value)}
+                placeholder="gltf/props/door.glb"
+                className="building-panel__text-input"
+              />
+            </label>
+            <label className="building-panel__info-item">
+              <span className="building-panel__info-label">스케일</span>
+              <input
+                type="number"
+                min="0.1"
+                max="10"
+                step="0.1"
+                value={currentModelScale}
+                onChange={(event) => setModelScale(Number(event.target.value) || 1)}
+                className="building-panel__number-input"
+              />
+            </label>
+            <label className="building-panel__info-item">
+              <span className="building-panel__info-label">색상</span>
+              <input
+                type="color"
+                value={currentModelColor}
+                onChange={(event) => setModelColor(event.target.value)}
+                style={{ width: '36px', height: '24px', border: 'none', cursor: 'pointer', background: 'none' }}
+              />
+              <span className="building-panel__info-value" style={{ fontSize: '10px' }}>{currentModelColor}</span>
+            </label>
+            <div className="building-panel__info-item">
+              <span className="building-panel__info-label">Fallback</span>
+              <span className="building-panel__info-value">{selectedModelObject?.fallbackKind ?? 'generic'}</span>
+            </div>
           </div>
         </div>
       )}

@@ -63,50 +63,33 @@ Editor
 
 ## Recommended Package Surface
 
-루트 export는 가볍게 유지하고, 기능별 subpath를 제공한다.
+현재 배포 패키지의 실제 subpath export는 아래와 같다.
 
 ```txt
 gaesup-world
-gaesup-world/core
-gaesup-world/world
-gaesup-world/grid
-gaesup-world/player
-gaesup-world/camera
-gaesup-world/input
-gaesup-world/interactions
-gaesup-world/inventory
-gaesup-world/catalog
-gaesup-world/building
-gaesup-world/building/r3f
-gaesup-world/building/editor
-gaesup-world/farming
-gaesup-world/crafting
-gaesup-world/npc
-gaesup-world/dialog
-gaesup-world/quests
-gaesup-world/time
-gaesup-world/weather
-gaesup-world/save
-gaesup-world/network
-gaesup-world/rendering
-gaesup-world/rendering/toon
-gaesup-world/rendering/high
+gaesup-world/admin
 gaesup-world/blueprints
 gaesup-world/blueprints/editor
-gaesup-world/admin
+gaesup-world/runtime
+gaesup-world/editor
+gaesup-world/assets
+gaesup-world/network
+gaesup-world/server-contracts
+gaesup-world/postprocessing
 gaesup-world/style.css
 ```
 
-예상 사용 방식:
+장기적으로는 루트 export를 더 가볍게 유지하고 기능별 subpath를 늘리는 것이 좋다. 다만 아래 예시는 현재 공개 API가 아니라 제안이다.
 
 ```ts
+// 제안. 현재 package.json exports에 아직 없음.
 import { createWorld } from 'gaesup-world/world';
 import { SquareGridAdapter } from 'gaesup-world/grid';
 import { createPlacementEngine } from 'gaesup-world/building';
 import { BuildingRenderer } from 'gaesup-world/building/r3f';
 ```
 
-무거운 UI, 에디터, postprocessing, admin, network는 루트 import에 섞이지 않게 한다.
+무거운 UI, 에디터, postprocessing, admin, network는 가능한 한 subpath로 분리한다. 현재 `admin`, `blueprints/editor`, `postprocessing`, `network`는 이미 subpath가 있다.
 
 ## World Model
 
@@ -1129,12 +1112,12 @@ interface ExtensionPoints {
 ### Main Gaps
 
 - 저장 경로가 `SaveSystem`과 `SaveLoadManager + window.__gaesupStores`로 나뉘어 있다.
-- `camera` plugin은 system factory만 등록하고 save domain을 등록하지 않는다.
+- `camera` plugin은 현재 system factory, save domain, store service를 등록한다. 남은 과제는 world persistence가 이 binding을 단일 경로로 사용하게 정렬하는 것이다.
 - `motions` plugin은 `physics.bridge`, `interaction.input`을 등록하지만, `usePhysicsBridge`는 여전히 `BridgeFactory.getOrCreate`, fallback singleton, DOM event를 직접 사용한다.
 - `InteractionSystem`은 singleton 중심이라 input backend, replay input, network authority input을 교체하기 어렵다.
 - `ExtensionRegistry<TValue = unknown>` 기본값이 너무 느슨해서 핵심 extension의 value contract가 약하다.
 - `BuildingUI`가 `authStore`, `npcStore`, `buildingStore`를 직접 import해서 building UI, admin policy, NPC 선택 책임이 섞여 있다.
-- `SaveSystem`은 serialize/hydrate 실패를 조용히 삼킨다. 플랫폼 품질 기준에서는 logger 또는 diagnostics가 필요하다.
+- `SaveSystem`은 serialize/hydrate 실패를 `onDiagnostic` callback으로 보고한다. 남은 과제는 runtime logger와 사용자-facing diagnostics로 연결하는 것이다.
 - `SaveLoadManager`는 `localStorage`, `document`, `Blob`, `URL`에 직접 의존해서 서버/테스트/비브라우저 환경에서 재사용하기 어렵다.
 - ESLint가 테스트 파일을 ignore하고 있어 테스트 코드 품질과 import boundary 문제가 숨어도 잡기 어렵다.
 
@@ -1210,14 +1193,15 @@ world persistence
 
 ### Phase 2: Camera Save Domain
 
-목표는 `camera`를 `building`과 같은 수준의 plugin citizen으로 올리는 것이다.
+상태: 기본 구현 완료. `createCameraPlugin`은 `camera.system`, `camera` save binding, `camera.store` service를 등록한다.
+
+남은 목표는 camera save binding을 world persistence의 단일 경로에 연결하는 것이다.
 
 작업:
 
-- `createCameraPlugin`에 `saveExtensionId`와 `storeServiceId` 옵션을 추가한다.
-- camera position, rotation, mode, settings를 `ctx.save.register('camera', ...)`로 등록한다.
-- camera state 접근 경로를 service로 노출한다.
-- `createGaesupRuntime` 통합 테스트에 camera save binding을 추가한다.
+- world persistence가 camera를 별도 window store에서 읽지 않게 한다.
+- runtime save round-trip에서 building + camera + npc 조합을 계속 검증한다.
+- camera state 직렬화 범위를 모드/옵션 외 실제 카메라 상태까지 넓힐지 결정한다.
 
 완료 기준:
 
@@ -1368,7 +1352,7 @@ BuildingUI
 | `window.__gaesupStores` | 멀티 런타임, 테스트, SSR, 서버 검증 어려움 | runtime injection 또는 save domain binding 사용 |
 | singleton/global bridge | plugin 교체 불가, 테스트 격리 어려움 | `ctx.systems`, `ctx.input`, `ctx.events` 사용 |
 | 느슨한 registry 타입 | extension value mismatch를 런타임에서야 발견 | typed registry와 extension ID 상수 도입 |
-| save error swallow | 데이터 손상 또는 실패가 사용자에게 숨음 | diagnostics/logger/result 추가 |
+| save diagnostics 미연결 | domain 실패는 `onDiagnostic`으로 잡히지만 UI/logger 연결이 약함 | runtime logger와 사용자-facing diagnostics 연결 |
 | DOM API 직접 의존 | 서버/worker/non-browser 재사용 불가 | adapter로 분리 |
 | UI와 app policy 결합 | domain UI 재사용 어려움 | props/service/plugin component로 주입 |
 | 테스트 lint 제외 | 테스트 코드 품질 저하 | 테스트 파일 lint 정책 재검토 |
@@ -1382,9 +1366,9 @@ BuildingUI
 권장 첫 작업 순서:
 
 1. `persistenceSlice`의 `window.__gaesupStores` 제거 계획 수립
-2. `camera` save binding 추가
-3. `building + camera` runtime save round-trip 테스트 추가
-4. `SaveSystem` diagnostics 추가
+2. `building + camera + npc` runtime save round-trip 테스트 유지
+3. `SaveSystem` diagnostics를 runtime logger와 UI에 연결
+4. world persistence가 camera binding을 사용하게 정렬
 5. `SaveLoadManager`를 legacy/file helper로 축소
 6. `usePhysicsBridge`가 plugin context의 bridge/input을 쓰도록 변경
 7. `InteractionSystem` singleton을 default backend adapter 뒤로 이동

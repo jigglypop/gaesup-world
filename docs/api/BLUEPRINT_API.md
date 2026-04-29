@@ -1,61 +1,114 @@
-# Blueprint Domain API Reference
+# Blueprint API
 
-## 개요
+이 문서는 현재 코드 기준의 블루프린트 도메인 API를 정리합니다.
 
-Blueprint Domain은 **데이터 중심 엔티티 시스템, 동적 엔티티 생성, 컴포넌트 기반 아키텍처**를 제공하는 도메인입니다. JSON 기반의 블루프린트로부터 3D 엔티티를 동적으로 생성하고, 다양한 컴포넌트를 조합하여 복잡한 게임 오브젝트를 구성할 수 있습니다.
+## 엔트리
 
-**경로**: `src/blueprints/`
+런타임 블루프린트 API는 루트 엔트리와 `gaesup-world/blueprints`에서 사용할 수 있습니다.
 
-## 핵심 시스템
+```ts
+import { BlueprintFactory, BlueprintSpawner, blueprintRegistry } from 'gaesup-world';
+```
 
-### BlueprintLoader
+블루프린트 편집 UI는 별도 subpath를 사용합니다.
 
-블루프린트 데이터를 로드하고 파싱하는 시스템입니다.
+```tsx
+import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
+```
 
-```typescript
-class BlueprintLoader {
-  static async loadBlueprint(path: string): Promise<BlueprintData>
-  static async loadBlueprintFromUrl(url: string): Promise<BlueprintData>
-  static validateBlueprint(data: any): BlueprintValidationResult
-  
-  // 캐싱
-  static enableCache(enabled: boolean): void
-  static clearCache(): void
-  static getCachedBlueprint(path: string): BlueprintData | null
-  
-  // 배치 로드
-  static async loadMultipleBlueprints(paths: string[]): Promise<BlueprintData[]>
-  static async preloadBlueprints(paths: string[]): Promise<void>
+## Registry
+
+`blueprintRegistry`는 등록된 블루프린트를 조회하고 추가하는 singleton registry입니다.
+
+```ts
+import { blueprintRegistry } from 'gaesup-world';
+
+const all = blueprintRegistry.getAll();
+const warrior = blueprintRegistry.get('warrior');
+```
+
+## BlueprintLoader
+
+`BlueprintLoader`는 `src/blueprints/core/BlueprintLoader.ts`에 있는 간단한 static loader입니다.
+
+현재 메서드:
+
+- `load(path)`: fetch로 JSON을 읽고 registry map에 저장
+- `loadFromJSON(json)`: JSON 문자열 또는 객체를 `BlueprintDefinition`으로 등록
+- `get(id)`: 로더 내부 map에서 조회
+- `getAll()`: 로더 내부 map 전체 조회
+- `clear()`: 로더 내부 map 초기화
+
+```ts
+import { BlueprintLoader } from 'gaesup-world';
+
+const blueprint = await BlueprintLoader.load('/blueprints/house.json');
+const inline = BlueprintLoader.loadFromJSON({ id: 'custom', components: [] });
+```
+
+`loadBlueprintFromUrl`, `enableCache`, `loadMultipleBlueprints` 같은 API는 현재 구현되어 있지 않습니다.
+
+## BlueprintFactory
+
+`BlueprintFactory`는 static factory가 아니라 singleton instance를 통해 사용합니다.
+
+```ts
+import { BlueprintFactory } from 'gaesup-world';
+
+const factory = BlueprintFactory.getInstance();
+```
+
+현재 주요 메서드:
+
+- `createEntity(blueprint, config)`
+- `createFromId(blueprintId, config)`
+- `createFromDefinition(definition, config)`
+- `registerComponentFactory(type, factory)`
+- `getAvailableComponentTypes()`
+
+`createBatch`, entity type registry, object pool API는 현재 공개 구현이 아닙니다.
+
+## BlueprintSpawner
+
+`BlueprintSpawner`는 React/R3F 환경에서 블루프린트 기반 엔티티를 생성하는 컴포넌트입니다.
+
+```tsx
+import { BlueprintSpawner } from 'gaesup-world';
+
+<BlueprintSpawner blueprintId="warrior" position={[0, 0, 0]} />
+```
+
+## Hooks
+
+대표 훅:
+
+- `useBlueprint`
+- `useCharacterBlueprint`
+- `useVehicleBlueprint`
+- `useAirplaneBlueprint`
+- `useBlueprintsByType`
+- `useSpawnFromBlueprint`
+
+```tsx
+import { useSpawnFromBlueprint } from 'gaesup-world';
+
+function SpawnButton() {
+  const { spawnAtCursor, isSpawning } = useSpawnFromBlueprint();
+
+  return (
+    <button onClick={() => spawnAtCursor('warrior')} disabled={isSpawning}>
+      Spawn
+    </button>
+  );
 }
 ```
 
-### BlueprintFactory
+## Editor API
 
-블루프린트로부터 실제 엔티티를 생성하는 팩토리입니다.
+`BlueprintEditor`, `BlueprintPreview`, `BlueprintPanel`, node editor components는 `gaesup-world/blueprints/editor`에서 가져옵니다.
 
-```typescript
-class BlueprintFactory {
-  // 엔티티 생성
-  static createEntity(blueprint: BlueprintData, options?: EntityCreationOptions): BlueprintEntity
-  static createBatch(blueprints: BlueprintData[], options?: BatchCreationOptions): BlueprintEntity[]
-  
-  // 컴포넌트 팩토리 등록
-  static registerComponentFactory<T extends BaseComponent>(
-    type: string, 
-    factory: ComponentFactory<T>
-  ): void
-  
-  // 커스텀 엔티티 타입 등록
-  static registerEntityType<T extends BlueprintEntity>(
-    type: string, 
-    constructor: EntityConstructor<T>
-  ): void
-  
-  // 팩토리 조회
-  static getComponentFactory(type: string): ComponentFactory<any> | null
-  static getEntityType(type: string): EntityConstructor<any> | null
-  static getRegisteredTypes(): string[]
-}
+```tsx
+import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
+
+<BlueprintEditor onClose={() => setOpen(false)} />
 ```
-
-이 API 가이드는 Blueprint Domain의 모든 기능을 상세히 다루며, 데이터 중심의 엔티티 시스템부터 복잡한 컴포넌트 조합까지 완전한 블루프린트 시스템을 구축할 수 있는 레퍼런스를 제공합니다.

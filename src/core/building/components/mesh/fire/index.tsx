@@ -514,6 +514,14 @@ const _fbObj = new THREE.Object3D();
 const _fbMat = new THREE.Matrix4();
 const _fbCol = new THREE.Color();
 
+export function createFireBatchSignature(fires: FireBatchEntry[]): string {
+  let signature = `${fires.length}`;
+  for (const fire of fires) {
+    signature += `|${fire.position[0]},${fire.position[1]},${fire.position[2]},${fire.rotation},${fire.intensity},${fire.width},${fire.height},${fire.color}`;
+  }
+  return signature;
+}
+
 export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireBatchEntry[] }) {
   const billboardRef = useRef<THREE.InstancedMesh>(null!);
   const logRef = useRef<THREE.InstancedMesh>(null!);
@@ -529,6 +537,12 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
   const bbMat = getBatchBillboardMat();
   const glowMat = getBatchGlowMat();
   const bEmberMat = getBatchEmberMat();
+  const fireSignature = useMemo(() => createFireBatchSignature(fires), [fires]);
+  const stableFiresRef = useRef({ signature: fireSignature, fires });
+  if (stableFiresRef.current.signature !== fireSignature) {
+    stableFiresRef.current = { signature: fireSignature, fires };
+  }
+  const stableFires = stableFiresRef.current.fires;
 
   const billboardGeo = useMemo(() => {
     if (N === 0) return null;
@@ -544,8 +558,8 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
     const tints = new Float32Array(billboardCount * 3);
 
     let idx = 0;
-    for (const fire of fires) {
-      const tint = new THREE.Color(fire.color);
+    for (const fire of stableFires) {
+      _fbCol.set(fire.color);
       for (const layer of FIRE_LAYERS) {
         seeds[idx] = layer.seed;
         leans[idx] = layer.lean;
@@ -555,9 +569,9 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
         tOffs[idx] = layer.tOff;
         widths[idx] = fire.width * layer.wMul;
         heights[idx] = fire.height * layer.hMul;
-        tints[idx * 3] = tint.r;
-        tints[idx * 3 + 1] = tint.g;
-        tints[idx * 3 + 2] = tint.b;
+        tints[idx * 3] = _fbCol.r;
+        tints[idx * 3 + 1] = _fbCol.g;
+        tints[idx * 3 + 2] = _fbCol.b;
         idx++;
       }
     }
@@ -572,7 +586,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
     g.setAttribute('aHeight', new THREE.InstancedBufferAttribute(heights, 1));
     g.setAttribute('aTint', new THREE.InstancedBufferAttribute(tints, 3));
     return g;
-  }, [fires, N, billboardCount]);
+  }, [fireSignature, stableFires, N, billboardCount]);
 
   const emberGeo = useMemo(() => {
     if (N === 0) return null;
@@ -585,7 +599,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
     const firePos = new Float32Array(total * 3);
 
     for (let fi = 0; fi < N; fi++) {
-      const f = fires[fi]!;
+      const f = stableFires[fi]!;
       const base = fi * EMBER_PER_FIRE;
       for (let i = 0; i < EMBER_PER_FIRE; i++) {
         const gi = base + i;
@@ -609,7 +623,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
     g.setAttribute('aFirePos', new THREE.BufferAttribute(firePos, 3));
     g.computeBoundingSphere();
     return g;
-  }, [fires, N]);
+  }, [fireSignature, stableFires, N]);
 
   useLayoutEffect(() => {
     if (N === 0) return;

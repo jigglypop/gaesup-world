@@ -1,7 +1,10 @@
 import React, { useMemo, useCallback } from 'react';
 
+import { useShallow } from 'zustand/react/shallow';
+
 import { useAuthStore } from '../../../../admin/store/authStore';
 import { useNPCStore } from '../../../npc/stores/npcStore';
+import { DEFAULT_BUILDING_OBJECT_CATALOG, getDefaultBuildingObject } from '../../catalog';
 import { useBuildingStore } from '../../stores/buildingStore';
 import type { MeshConfig, TileObjectType, TileShapeType } from '../../types';
 import './styles.css';
@@ -67,8 +70,70 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     addWallGroup,
     addTileGroup,
     selectedTileObjectType,
-    setSelectedTileObjectType
-  } = useBuildingStore();
+    setSelectedTileObjectType,
+    selectedPlacedObjectType,
+    setSelectedPlacedObjectType,
+    currentObjectRotation,
+    setObjectRotation,
+    selectedModelObjectId,
+    setSelectedModelObjectId,
+    currentModelUrl,
+    setModelUrl,
+    currentModelScale,
+    setModelScale,
+    currentModelColor,
+    setModelColor,
+  } = useBuildingStore(useShallow((state) => ({
+    setEditMode: state.setEditMode,
+    editMode: state.editMode,
+    isInEditMode: state.isInEditMode,
+    currentTileMultiplier: state.currentTileMultiplier,
+    setTileMultiplier: state.setTileMultiplier,
+    currentTileHeight: state.currentTileHeight,
+    setTileHeight: state.setTileHeight,
+    currentTileShape: state.currentTileShape,
+    setTileShape: state.setTileShape,
+    currentTileRotation: state.currentTileRotation,
+    setTileRotation: state.setTileRotation,
+    currentWallRotation: state.currentWallRotation,
+    setWallRotation: state.setWallRotation,
+    wallCategories: state.wallCategories,
+    tileCategories: state.tileCategories,
+    selectedWallCategoryId: state.selectedWallCategoryId,
+    selectedTileCategoryId: state.selectedTileCategoryId,
+    selectedWallGroupId: state.selectedWallGroupId,
+    selectedTileGroupId: state.selectedTileGroupId,
+    selectedWallId: state.selectedWallId,
+    selectedTileId: state.selectedTileId,
+    setCurrentWallMaterialId: state.setCurrentWallMaterialId,
+    setCurrentTileMaterialId: state.setCurrentTileMaterialId,
+    setSelectedWallCategory: state.setSelectedWallCategory,
+    setSelectedTileCategory: state.setSelectedTileCategory,
+    wallGroups: state.wallGroups,
+    tileGroups: state.tileGroups,
+    meshes: state.meshes,
+    updateMesh: state.updateMesh,
+    addMesh: state.addMesh,
+    updateWall: state.updateWall,
+    moveWallToGroup: state.moveWallToGroup,
+    updateTile: state.updateTile,
+    addWallGroup: state.addWallGroup,
+    addTileGroup: state.addTileGroup,
+    selectedTileObjectType: state.selectedTileObjectType,
+    setSelectedTileObjectType: state.setSelectedTileObjectType,
+    selectedPlacedObjectType: state.selectedPlacedObjectType,
+    setSelectedPlacedObjectType: state.setSelectedPlacedObjectType,
+    currentObjectRotation: state.currentObjectRotation,
+    setObjectRotation: state.setObjectRotation,
+    selectedModelObjectId: state.selectedModelObjectId,
+    setSelectedModelObjectId: state.setSelectedModelObjectId,
+    currentModelUrl: state.currentModelUrl,
+    setModelUrl: state.setModelUrl,
+    currentModelScale: state.currentModelScale,
+    setModelScale: state.setModelScale,
+    currentModelColor: state.currentModelColor,
+    setModelColor: state.setModelColor,
+  })));
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const isEditing = isInEditMode();
   
@@ -78,7 +143,13 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     setSelectedTemplate: setSelectedNPCTemplate,
     initializeDefaults: initializeNPCDefaults,
     selectedInstanceId: selectedNPCInstanceId,
-  } = useNPCStore();
+  } = useNPCStore(useShallow((state) => ({
+    templates: state.templates,
+    selectedTemplateId: state.selectedTemplateId,
+    setSelectedTemplate: state.setSelectedTemplate,
+    initializeDefaults: state.initializeDefaults,
+    selectedInstanceId: state.selectedInstanceId,
+  })));
   
   const [showCustomSettings, setShowCustomSettings] = React.useState(false);
   const [customName, setCustomName] = React.useState('');
@@ -95,6 +166,10 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
   const selectedTileShapeLabel = useMemo(
     () => TILE_SHAPE_OPTIONS.find((option) => option.type === currentTileShape)?.label ?? currentTileShape,
     [currentTileShape],
+  );
+  const selectedModelObject = useMemo(
+    () => getDefaultBuildingObject(selectedModelObjectId) ?? DEFAULT_BUILDING_OBJECT_CATALOG[0],
+    [selectedModelObjectId],
   );
 
   const upsertCustomMesh = useCallback((sourceMeshId: string | undefined, nextMeshId: string): string => {
@@ -209,6 +284,15 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                 className={`building-ui-mode-button ${editMode === 'npc' ? 'active' : ''}`}
               >
                 NPC Mode
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedPlacedObjectType('model');
+                  setEditMode('object');
+                }}
+                className={`building-ui-mode-button ${editMode === 'object' ? 'active' : ''}`}
+              >
+                Object Mode
               </button>
             </div>
             
@@ -428,8 +512,8 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                     {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((rotation, index) => (
                       <button
                         key={rotation}
-                        onClick={() => setTileRotation(rotation)}
-                        className={`building-ui-size-button ${Math.abs(currentTileRotation - rotation) < 0.0001 ? 'active' : ''}`}
+                        onClick={() => setObjectRotation(rotation)}
+                        className={`building-ui-size-button ${Math.abs(currentObjectRotation - rotation) < 0.0001 ? 'active' : ''}`}
                       >
                         {index * 90}
                       </button>
@@ -502,6 +586,125 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                   <p>Layer offset: {currentTileHeight}</p>
                   <p>Click to place voxel blocks</p>
                   <p>Click highlighted blocks to delete</p>
+                </div>
+              </>
+            )}
+
+            {editMode === 'object' && (
+              <>
+                <div className="building-ui-category-group">
+                  <span className="building-ui-label">Object:</span>
+                  <select
+                    value={selectedModelObjectId}
+                    onChange={(e) => {
+                      const next = getDefaultBuildingObject(e.target.value);
+                      setSelectedModelObjectId(e.target.value);
+                      if (next) {
+                        setSelectedPlacedObjectType('model');
+                        setModelScale(next.defaultScale);
+                        setModelColor(next.defaultColor);
+                        setModelUrl(next.modelUrl ?? '');
+                      }
+                    }}
+                    className="building-ui-select"
+                  >
+                    {DEFAULT_BUILDING_OBJECT_CATALOG.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="building-ui-object-group">
+                  <span className="building-ui-label">Basic Objects:</span>
+                  <div className="building-ui-object-buttons">
+                    {DEFAULT_BUILDING_OBJECT_CATALOG.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setSelectedPlacedObjectType('model');
+                          setSelectedModelObjectId(item.id);
+                          setModelScale(item.defaultScale);
+                          setModelColor(item.defaultColor);
+                          setModelUrl(item.modelUrl ?? '');
+                        }}
+                        className={`building-ui-object-button ${selectedModelObjectId === item.id ? 'active' : ''}`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="building-ui-size-group">
+                  <span className="building-ui-label">Object Rotation:</span>
+                  <div className="building-ui-size-buttons">
+                    {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((rotation, index) => (
+                      <button
+                        key={rotation}
+                        onClick={() => setTileRotation(rotation)}
+                        className={`building-ui-size-button ${Math.abs(currentTileRotation - rotation) < 0.0001 ? 'active' : ''}`}
+                      >
+                        {index * 90}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="building-ui-custom-settings">
+                  <div className="building-ui-input-group">
+                    <span className="building-ui-label">GLB URL:</span>
+                    <input
+                      type="text"
+                      value={currentModelUrl}
+                      onChange={(e) => {
+                        setSelectedPlacedObjectType('model');
+                        setModelUrl(e.target.value);
+                      }}
+                      placeholder="gltf/props/door.glb"
+                      className="building-ui-input"
+                    />
+                  </div>
+
+                  <div className="building-ui-input-group">
+                    <span className="building-ui-label">Scale:</span>
+                    <input
+                      type="number"
+                      min="0.1"
+                      max="10"
+                      step="0.1"
+                      value={currentModelScale}
+                      onChange={(e) => setModelScale(Number(e.target.value) || 1)}
+                      className="building-ui-input"
+                    />
+                  </div>
+
+                  <div className="building-ui-input-group">
+                    <span className="building-ui-label">Color:</span>
+                    <div className="building-ui-color-input">
+                      <input
+                        type="color"
+                        value={currentModelColor}
+                        onChange={(e) => setModelColor(e.target.value)}
+                        className="building-ui-color-picker"
+                      />
+                      <input
+                        type="text"
+                        value={currentModelColor}
+                        onChange={(e) => setModelColor(e.target.value)}
+                        className="building-ui-input"
+                        style={{ width: '100px' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="building-ui-info">
+                  <p>Type: {selectedPlacedObjectType === 'model' ? selectedModelObject?.label : 'None'}</p>
+                  <p>Fallback: {selectedModelObject?.fallbackKind ?? 'generic'}</p>
+                  <p>GLB URL이 비어 있으면 기본 프리미티브로 표시됩니다.</p>
+                  <p>Click to place objects</p>
                 </div>
               </>
             )}

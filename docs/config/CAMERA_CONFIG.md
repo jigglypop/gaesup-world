@@ -199,7 +199,7 @@ cameraOption={{
 
 - `cameraOption`은 고수준 입력 타입이고, 그대로 시스템 내부 타입과 일치하지는 않습니다.
 - `focusTarget`, `target`, `offset`은 `THREE.Vector3`를 쓰므로 React 직렬화 관점에서는 주의가 필요합니다.
-- strict 타입 기준으로 일부 포커스 옵션은 추가 정리가 필요한 상태입니다.
+- camera plugin은 save binding과 store service를 등록합니다. world persistence가 이 binding을 단일 저장 경로로 쓰도록 정렬하는 작업은 별도 통합 과제입니다.
 
 ## 함께 보면 좋은 파일
 

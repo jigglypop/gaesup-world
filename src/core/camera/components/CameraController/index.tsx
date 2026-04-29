@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { useShallow } from 'zustand/react/shallow';
+
 import { useGaesupStore } from '../../../stores/gaesupStore';
 import type { CameraType } from '../../core/types';
 import './styles.css';
@@ -15,7 +17,10 @@ const CAMERA_MODES: Array<{ value: CameraType; label: string }> = [
 ];
 
 export function CameraController() {
-  const { mode, setMode } = useGaesupStore();
+  const { mode, setMode } = useGaesupStore(useShallow((state) => ({
+    mode: state.mode,
+    setMode: state.setMode,
+  })));
   const activeMode = mode?.control || 'thirdPerson';
 
   return (

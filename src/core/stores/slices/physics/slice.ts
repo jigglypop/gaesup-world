@@ -8,7 +8,7 @@ const initialState: PhysicsConfigType = {
     walkSpeed: 10,
     runSpeed: 20,
     jumpSpeed: 15,
-    jumpGravityScale: 1.5,
+    jumpGravityScale: 2.4,
     normalGravityScale: 1.0,
     airDamping: 0.1,
     stopDamping: 2.0,

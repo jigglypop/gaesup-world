@@ -16,15 +16,14 @@ export const EXAMPLE_CONFIG: ExampleConfig = {
     }
   },
   debug: false,
-  showPerformance: true,
   showGrid: false,
   showAxes: false,
 }; 
 
 export const DEFAULT_DEV_MODE: DevMode = {
   enable: true,
-  showStats: true,
-  showDebugInfo: true,
+  showStats: false,
+  showDebugInfo: false,
   showGrid: true,
   showAxes: true,
   showColliders: false,
@@ -37,7 +36,6 @@ export const DEFAULT_EDITOR_CONFIG: EditorConfig = {
     animation: true,
     camera: true,
     motion: true,
-    performance: true,
     vehicle: true,
   },
 };

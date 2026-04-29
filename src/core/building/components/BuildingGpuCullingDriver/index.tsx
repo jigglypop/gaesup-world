@@ -214,6 +214,7 @@ export function BuildingGpuCullingDriver() {
     resources: createEmptyResources(),
     busy: false,
     lastRunAt: 0,
+    readbackFlags: null as Uint32Array | null,
   });
 
   const scratch = useMemo(
@@ -293,7 +294,13 @@ export function BuildingGpuCullingDriver() {
       .then(() => {
         const mapped = resources.readBuffer?.getMappedRange?.();
         if (!mapped) return;
-        const copy = new Uint32Array(mapped.slice(0));
+        const count = snapshot.ids.length;
+        const mappedFlags = new Uint32Array(mapped, 0, count);
+        if (!refs.current.readbackFlags || refs.current.readbackFlags.length < count) {
+          refs.current.readbackFlags = new Uint32Array(count);
+        }
+        const copy = refs.current.readbackFlags;
+        copy.set(mappedFlags);
         resources.readBuffer?.unmap?.();
         const parsed = parseBuildingGpuVisibilityFlags(snapshot, copy);
         setResult(parsed);

@@ -184,7 +184,7 @@ React와 엔진 사이를 연결하는 계층입니다.
 
 ## 공개 API 상태
 
-현재 기준으로 외부 사용자는 가능한 한 루트 엔트리 `gaesup-world`에서 import 하는 흐름을 권장합니다.
+현재 기준으로 외부 사용자는 런타임/도메인 API는 루트 엔트리 `gaesup-world`에서 import 하고, 관리자와 편집기처럼 무거운 UI는 subpath를 사용합니다.
 
 예:
 
@@ -192,12 +192,12 @@ React와 엔진 사이를 연결하는 계층입니다.
 import {
   GaesupWorld,
   GaesupController,
-  GaesupAdmin,
-  BlueprintEditor,
-  useAuthStore,
   useInventoryStore,
   useGameTime,
 } from 'gaesup-world';
+
+import { GaesupAdmin, useAuthStore } from 'gaesup-world/admin';
+import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
 ```
 
 최근 정리 방향도 `examples/`가 내부 파일 경로 대신 public API만 보도록 맞추는 쪽입니다.
@@ -223,8 +223,8 @@ import {
 
 `examples/`는 단순 샘플이 아니라 사실상 통합 검증 환경에 가깝습니다.
 
-- 월드 플레이 데모
-- 건설 에디터
+- 쇼케이스 데모
+- 월드/건설 에디터 데모
 - 블루프린트 에디터
 - 네트워크 멀티플레이어
 - 관리자 래핑
@@ -238,23 +238,23 @@ import {
 - 데모 Vite 빌드 성공
 - 라이브러리 ESM 빌드 성공
 - Jest 테스트 통과
-- TypeScript strict 전체 통과는 아직 미완료
+- TypeScript declaration build 통과
 
-즉, 런타임/번들 기준으로는 사용 가능한 수준이지만, 타입 시스템 기준으로는 기술 부채가 남아 있습니다.
+즉, 런타임/번들/타입 선언 빌드 기준으로는 사용 가능한 수준입니다.
 
 ## 현재 리스크
 
-### 1. 타입 정리 미완료
+### 1. 공개 API와 문서 정합성
 
-`exactOptionalPropertyTypes`와 엄격한 null 체크 때문에 여러 도메인에 타입 오류가 남아 있습니다.
+도메인이 많고 subpath export가 분리되어 있어 문서가 실제 공개 API보다 앞서거나 뒤처질 수 있습니다. 특히 루트 import와 subpath import를 구분해야 합니다.
 
 ### 2. 번들 크기
 
 데모 빌드는 성공하지만 메인 청크가 큽니다. 추후 동적 import와 청크 분할 전략이 필요합니다.
 
-### 3. 문서와 구현의 시차
+### 3. 저장/런타임 통합 경로
 
-이 문서를 포함해 문서 최신화를 진행 중이지만, 도메인이 많은 만큼 일부 하위 문서는 구현보다 앞서거나 뒤처져 있을 수 있습니다.
+`SaveSystem` 기반 runtime path와 legacy world persistence path가 함께 남아 있어 장기적으로 단일 경로 정리가 필요합니다.
 
 ## 추천 읽기 순서
 
@@ -275,4 +275,4 @@ import {
 
 ## 요약
 
-Gaesup World는 “웹 3D 캐릭터 조작 라이브러리”에서 출발했지만, 현재는 생활형 월드 게임 제작을 위한 확장형 프레임워크에 가까운 형태로 성장한 상태입니다. 구조는 크고 복잡하지만, 도메인 분리와 bridge 패턴 덕분에 확장성은 좋은 편입니다. 앞으로의 핵심 과제는 타입 정리, 문서 정합성 유지, 번들 최적화입니다.
+Gaesup World는 “웹 3D 캐릭터 조작 라이브러리”에서 출발했지만, 현재는 생활형 월드 게임 제작을 위한 확장형 프레임워크에 가까운 형태로 성장한 상태입니다. 구조는 크고 복잡하지만, 도메인 분리와 bridge/plugin 패턴 덕분에 확장성은 좋은 편입니다. 앞으로의 핵심 과제는 공개 API 문서 정합성 유지, 저장 경로 통합, 번들 최적화입니다.

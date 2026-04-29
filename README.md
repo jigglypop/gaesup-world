@@ -19,9 +19,9 @@
 - 라이브러리 ESM 빌드: 확인 완료
 - 데모 Vite 빌드: 확인 완료
 - Jest 테스트: 통과
-- TypeScript strict 전체 통과: 아직 아님
+- TypeScript declaration build: 통과
 
-즉, 런타임과 번들 기준으로는 사용 가능한 상태지만, 일부 도메인에는 추가 타입 정리가 남아 있습니다.
+즉, 런타임, 번들, 타입 선언 빌드 기준으로는 사용 가능한 상태입니다.
 
 ## 설치
 
@@ -122,7 +122,6 @@ export default function App() {
 import {
   GaesupWorld,
   GaesupController,
-  GaesupAdmin,
   WorldContainer,
   WorldConfigProvider,
   BuildingUI,
@@ -130,7 +129,6 @@ import {
   QuestLogUI,
   DialogBox,
   WeatherEffect,
-  useAuthStore,
   useInventoryStore,
   useQuestStore,
   useWeatherStore,
@@ -140,29 +138,35 @@ import {
 } from 'gaesup-world';
 ```
 
-블루프린트 관련 API도 루트 엔트리에서 바로 사용할 수 있습니다.
+블루프린트 런타임 관련 API도 루트 엔트리에서 바로 사용할 수 있습니다.
 
 ```tsx
 import {
-  BlueprintEditor,
   BlueprintSpawner,
   blueprintRegistry,
   BlueprintFactory,
 } from 'gaesup-world';
 ```
 
-## Admin 사용법
-
-관리자 UI도 루트 엔트리에서 import 합니다.
+관리자 UI와 블루프린트 편집 UI는 별도 subpath를 사용합니다.
 
 ```tsx
-import { GaesupAdmin } from 'gaesup-world';
+import { GaesupAdmin, useAuthStore } from 'gaesup-world/admin';
+import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
+```
+
+## Admin 사용법
+
+관리자 UI는 `gaesup-world/admin` 엔트리에서 import 합니다.
+
+```tsx
+import { GaesupAdmin } from 'gaesup-world/admin';
 ```
 
 기본적으로 `GaesupAdmin`은 로그인 게이트가 켜져 있습니다. 즉, `requireLogin` 기본값은 `true`입니다.
 
 ```tsx
-import { GaesupAdmin } from 'gaesup-world';
+import { GaesupAdmin } from 'gaesup-world/admin';
 
 export default function AdminPage() {
   return (
@@ -210,9 +214,9 @@ corepack pnpm lint
 
 `examples/`에는 라이브러리를 실제로 사용하는 데모 라우트가 들어 있습니다.
 
-- `/`: 기본 월드 데모
+- `/`: 쇼케이스 데모
+- `/world`: 기본 월드/건설 에디터 데모
 - `/edit`: 편집 데모
-- `/building`: 건설 에디터
 - `/blueprints`: 블루프린트 에디터
 - `/network`: 멀티플레이어 데모
 - `/admin`: 관리자 래핑 데모
@@ -226,9 +230,9 @@ corepack pnpm lint
 - `corepack pnpm exec vite build`: 성공
 - `corepack pnpm exec vite build --mode esm`: 성공
 - `corepack pnpm exec jest --runInBand --watchman=false`: 성공
-- `corepack pnpm exec tsc -p tsconfig.build.json --pretty false`: 실패
+- `npm run build:types`: 성공
 
-마지막 항목은 문서 문제가 아니라, 저장소 전반에 남아 있는 strict 타입 오류 때문입니다.
+타입 선언 빌드는 현재 통과합니다.
 
 ## 문서 안내
 

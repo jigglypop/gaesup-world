@@ -24,7 +24,7 @@
 }
 
 .app-navigation::before {
-  content: "MENU";
+  content: "▷";
   position: absolute;
   top: 50%;
   right: 10px;

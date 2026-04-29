@@ -140,7 +140,7 @@
 
 - 도메인 규모가 커서 처음 진입 시 파악 비용이 높습니다.
 - 모션, 물리, 상호작용, 애니메이션 경계가 일부 파일에서는 촘촘히 얽혀 있습니다.
-- strict 타입 기준으로는 일부 시스템에 추가 정리가 필요합니다.
+- `motionsRuntime`을 통한 bridge/input 주입 경로가 생겼지만, 일부 fallback 경로는 여전히 `BridgeFactory` singleton과 DOM teleport event를 지원합니다.
 
 ## 사용 예시
 

@@ -1,7 +1,12 @@
 import {
   buildBuildingRenderSnapshot,
+  RENDER_KIND_BLOCK,
+  RENDER_KIND_OBJECT,
+  RENDER_KIND_TILE,
+  RENDER_KIND_WALL,
   RENDER_SUBKIND_OBJECT_FIRE,
   RENDER_SUBKIND_TILE_GRASS,
+  type BuildingRenderSnapshot,
 } from '../core';
 import {
   DRAW_CLUSTER_BLOCK,
@@ -52,5 +57,49 @@ describe('building gpu culling parse', () => {
     expect(parsed.clusterCounts[DRAW_CLUSTER_FIRE]).toBe(1);
     expect(snapshot.subKinds[0]).toBe(RENDER_SUBKIND_TILE_GRASS);
     expect(snapshot.subKinds[3]).toBe(RENDER_SUBKIND_OBJECT_FIRE);
+  });
+
+  it('parses large visibility buffers within a frame-budget smoke threshold', () => {
+    const count = 20_000;
+    const ids = Array.from({ length: count }, (_, index) => `entity-${index}`);
+    const kinds = new Uint8Array(count);
+    const subKinds = new Uint8Array(count);
+    const flags = new Uint32Array(count);
+
+    for (let i = 0; i < count; i += 1) {
+      const kindIndex = i % 4;
+      kinds[i] =
+        kindIndex === 0 ? RENDER_KIND_TILE :
+        kindIndex === 1 ? RENDER_KIND_WALL :
+        kindIndex === 2 ? RENDER_KIND_OBJECT :
+                          RENDER_KIND_BLOCK;
+      subKinds[i] = kindIndex === 0 ? RENDER_SUBKIND_TILE_GRASS : RENDER_SUBKIND_OBJECT_FIRE;
+      flags[i] = i % 3 === 0 ? 1 : 0;
+    }
+
+    const snapshot: BuildingRenderSnapshot = {
+      version: 9,
+      ids,
+      kinds,
+      subKinds,
+      centerX: new Float32Array(count),
+      centerY: new Float32Array(count),
+      centerZ: new Float32Array(count),
+      radius: new Float32Array(count),
+      cellX: new Int16Array(count),
+      cellZ: new Int16Array(count),
+      memberCount: new Uint16Array(count),
+    };
+
+    const startedAt = performance.now();
+    const parsed = parseBuildingGpuVisibilityFlags(snapshot, flags);
+    const elapsedMs = performance.now() - startedAt;
+
+    expect(parsed.version).toBe(9);
+    expect(parsed.tileIds.size + parsed.wallIds.size + parsed.objectIds.size + parsed.blockIds.size)
+      .toBe(Math.ceil(count / 3));
+    expect(parsed.clusterCounts[DRAW_CLUSTER_GRASS]).toBeGreaterThan(0);
+    expect(parsed.clusterCounts[DRAW_CLUSTER_FIRE]).toBeGreaterThan(0);
+    expect(elapsedMs).toBeLessThan(500);
   });
 });
