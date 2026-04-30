@@ -88,6 +88,12 @@ export interface ObjectConfig {
   billboardText?: string;
   billboardImageUrl?: string;
   billboardColor?: string;
+  billboardWidth?: number;
+  billboardHeight?: number;
+  billboardScale?: number;
+  billboardOffsetY?: number;
+  billboardElevation?: number;
+  billboardIntensity?: number;
   modelId?: string;
   modelLabel?: string;
   modelUrl?: string;

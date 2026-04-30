@@ -276,7 +276,7 @@
   .help-panel {
     width: calc(100vw - 20px);
     max-width: 700px;
-    bottom: 10px;
+    bottom: calc(70px + env(safe-area-inset-bottom, 0px));
   }
   
   .content-blocks {
@@ -295,5 +295,18 @@
   
   .tab-content {
     padding: 12px;
+  }
+}
+
+@media (max-width: 520px) {
+  .help-panel {
+    width: calc(100vw - 16px);
+    max-height: 42vh;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    font-size: 1rem;
+  }
+
+  .tab-content {
+    max-height: calc(42vh - 38px);
   }
 }

@@ -24,7 +24,7 @@ import { TILE_CONSTANTS } from '../../types/constants';
 import { useBuildingVisibilityStore } from '../../visibility/store';
 import { BlockSystem } from '../BlockSystem';
 import { GridHelper } from '../GridHelper';
-import Billboard from '../mesh/billboard';
+import { BillboardBatch } from '../mesh/billboard';
 import { FireBatch, type FireBatchEntry } from '../mesh/fire';
 import { FlagBatch } from '../mesh/flag';
 import ModelObject from '../mesh/model';
@@ -275,21 +275,11 @@ export const BuildingSystem = React.memo(function BuildingSystem({
           </Suspense>
         )}
 
-        {billboardObjects.map((obj) => (
-          <group
-            key={obj.id}
-            position={[obj.position.x, obj.position.y, obj.position.z]}
-            rotation={[0, obj.rotation ?? 0, 0]}
-          >
-            <Suspense fallback={null}>
-              <Billboard
-                {...(obj.config?.billboardText ? { text: obj.config.billboardText } : {})}
-                {...(obj.config?.billboardImageUrl ? { imageUrl: obj.config.billboardImageUrl } : {})}
-                {...(obj.config?.billboardColor ? { color: obj.config.billboardColor } : {})}
-              />
-            </Suspense>
-          </group>
-        ))}
+        {billboardObjects.length > 0 && (
+          <Suspense fallback={null}>
+            <BillboardBatch billboards={billboardObjects} />
+          </Suspense>
+        )}
 
         {modelObjects.map((obj) => (
           <group

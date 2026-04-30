@@ -124,9 +124,21 @@ interface BuildingStore extends BuildingSystemState {
   currentBillboardText: string;
   currentBillboardImageUrl: string;
   currentBillboardColor: string;
+  currentBillboardWidth: number;
+  currentBillboardHeight: number;
+  currentBillboardScale: number;
+  currentBillboardOffsetY: number;
+  currentBillboardElevation: number;
+  currentBillboardIntensity: number;
   setBillboardText: (text: string) => void;
   setBillboardImageUrl: (url: string) => void;
   setBillboardColor: (color: string) => void;
+  setBillboardWidth: (width: number) => void;
+  setBillboardHeight: (height: number) => void;
+  setBillboardScale: (scale: number) => void;
+  setBillboardOffsetY: (offsetY: number) => void;
+  setBillboardElevation: (elevation: number) => void;
+  setBillboardIntensity: (intensity: number) => void;
 
   addObject: (obj: PlacedObject) => void;
   removeObject: (id: string) => void;
@@ -244,6 +256,12 @@ export const useBuildingStore = create<BuildingStore>()(
     currentBillboardText: 'HELLO',
     currentBillboardImageUrl: '',
     currentBillboardColor: '#00ff88',
+    currentBillboardWidth: 0,
+    currentBillboardHeight: 1.5,
+    currentBillboardScale: 1,
+    currentBillboardOffsetY: 0,
+    currentBillboardElevation: 1,
+    currentBillboardIntensity: 2,
     showSnow: false,
 
     initializeDefaults: () => set((state) => {
@@ -1024,6 +1042,9 @@ export const useBuildingStore = create<BuildingStore>()(
       if (type === 'grass') {
         state.currentTerrainColor = '#5a7a35';
         state.currentTerrainAccentColor = '#8fbc5a';
+      } else if (type === 'water') {
+        state.currentTerrainColor = '#2f8dbd';
+        state.currentTerrainAccentColor = '#9ed6c8';
       } else if (type === 'sand') {
         state.currentTerrainColor = '#b89b66';
         state.currentTerrainAccentColor = '#e0c27a';
@@ -1116,6 +1137,12 @@ export const useBuildingStore = create<BuildingStore>()(
     setBillboardText: (text) => set((state) => { state.currentBillboardText = text; }),
     setBillboardImageUrl: (url) => set((state) => { state.currentBillboardImageUrl = url; }),
     setBillboardColor: (color) => set((state) => { state.currentBillboardColor = color; }),
+    setBillboardWidth: (width) => set((state) => { state.currentBillboardWidth = width; }),
+    setBillboardHeight: (height) => set((state) => { state.currentBillboardHeight = height; }),
+    setBillboardScale: (scale) => set((state) => { state.currentBillboardScale = scale; }),
+    setBillboardOffsetY: (offsetY) => set((state) => { state.currentBillboardOffsetY = offsetY; }),
+    setBillboardElevation: (elevation) => set((state) => { state.currentBillboardElevation = elevation; }),
+    setBillboardIntensity: (intensity) => set((state) => { state.currentBillboardIntensity = intensity; }),
 
     setShowSnow: (show) => set((state) => { state.showSnow = show; }),
   }))

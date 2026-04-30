@@ -179,10 +179,38 @@
   }
 
   .info-style {
-    top: 74px;
+    top: 64px;
+    max-height: calc(100vh - 154px - env(safe-area-inset-bottom, 0px));
+    overflow: auto;
   }
 
   .camera-settings {
-    top: 126px;
+    top: 112px;
+    max-height: calc(100vh - 132px - env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (max-width: 520px) {
+  .info-style,
+  .camera-settings {
+    left: 8px;
+    right: 8px;
+  }
+
+  .camera-description {
+    top: 56px;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .camera-settings {
+    top: 104px;
+    padding: 14px;
+  }
+
+  .glass-button,
+  .preset-button,
+  .reset-button {
+    min-height: 38px;
   }
 }

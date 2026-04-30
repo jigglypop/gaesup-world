@@ -240,6 +240,12 @@ export function useBuildingEditor() {
       currentBillboardText,
       currentBillboardColor,
       currentBillboardImageUrl,
+      currentBillboardWidth,
+      currentBillboardHeight,
+      currentBillboardScale,
+      currentBillboardOffsetY,
+      currentBillboardElevation,
+      currentBillboardIntensity,
       selectedModelObjectId,
       currentModelUrl,
       currentModelScale,
@@ -281,6 +287,12 @@ export function useBuildingEditor() {
               ? {
                   billboardText: currentBillboardText,
                   billboardColor: currentBillboardColor,
+                  billboardHeight: currentBillboardHeight,
+                  billboardScale: currentBillboardScale,
+                  billboardOffsetY: currentBillboardOffsetY,
+                  billboardElevation: currentBillboardElevation,
+                  billboardIntensity: currentBillboardIntensity,
+                  ...(currentBillboardWidth > 0 ? { billboardWidth: currentBillboardWidth } : {}),
                   ...(currentBillboardImageUrl ? { billboardImageUrl: currentBillboardImageUrl } : {}),
                 }
               : selectedPlacedObjectType === 'model'
@@ -301,7 +313,12 @@ export function useBuildingEditor() {
     addObject({
       id: `obj-${++_idSeq}-${Date.now()}`,
       type: selectedPlacedObjectType,
-      position: { ...hoverPosition, y: tileY },
+      position: {
+        ...hoverPosition,
+        y: selectedPlacedObjectType === 'billboard'
+          ? tileY + currentBillboardOffsetY
+          : tileY,
+      },
       ...(currentObjectRotation !== 0 ? { rotation: currentObjectRotation } : {}),
       ...(config ? { config } : {}),
     });

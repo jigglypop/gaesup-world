@@ -143,7 +143,7 @@
   .app-navigation {
     top: auto;
     right: 8px;
-    bottom: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     left: 8px;
     flex-direction: row;
     align-items: center;
@@ -205,5 +205,34 @@
   .app-nav-user {
     margin-top: 0;
     max-width: 96px;
+  }
+}
+
+@media (max-width: 520px) {
+  .app-navigation {
+    gap: 5px;
+    min-height: 46px;
+    padding: 6px;
+  }
+
+  .app-nav-brand {
+    min-width: 38px;
+    padding: 4px 6px;
+  }
+
+  .app-nav-mark {
+    width: 26px;
+    height: 26px;
+    font-size: 14px;
+  }
+
+  .app-nav-button {
+    min-height: 32px;
+    padding: 7px 9px;
+    font-size: 10.5px;
+  }
+
+  .app-nav-user {
+    display: none;
   }
 }

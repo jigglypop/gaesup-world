@@ -1,7 +1,7 @@
 import { FC, memo, useEffect, useMemo, useRef, useState } from "react";
 
 import { shaderMaterial } from "@react-three/drei";
-import { extend, useLoader } from "@react-three/fiber";
+import { extend } from "@react-three/fiber";
 import { createNoise2D } from "simplex-noise";
 import * as THREE from "three";
 
@@ -9,7 +9,11 @@ import { usePerfStore } from "@core/perf/stores/perfStore";
 import { createToonMaterial, getDefaultToonMode } from "@core/rendering/toon";
 import { loadCoreWasm, type GaesupCoreWasmExports } from "@core/wasm/loader";
 
-import { resolveGrassTextureSources } from "./assets";
+import {
+  DEFAULT_BLADE_ALPHA_URL,
+  DEFAULT_BLADE_DIFFUSE_URL,
+  resolveGrassTextureSources,
+} from "./assets";
 import fragmentShader from "./frag.glsl";
 import { getGrassManager, setGrassManagerWasm, type GrassTileRenderState } from "./manager";
 import { GrassMeshProps } from "./type";
@@ -17,6 +21,53 @@ import vertexShader from "./vert.glsl";
 
 let _grassGroundToon: THREE.MeshToonMaterial | null = null;
 let _grassGroundPbr: THREE.MeshStandardMaterial | null = null;
+let _fallbackBladeDiffuse: THREE.DataTexture | null = null;
+let _fallbackBladeAlpha: THREE.DataTexture | null = null;
+let _grassTextureLoader: THREE.TextureLoader | null = null;
+
+function getGrassTextureLoader(): THREE.TextureLoader {
+  _grassTextureLoader ??= new THREE.TextureLoader();
+  return _grassTextureLoader;
+}
+
+function createSolidTexture(r: number, g: number, b: number, a: number): THREE.DataTexture {
+  const tex = new THREE.DataTexture(new Uint8Array([r, g, b, a]), 1, 1, THREE.RGBAFormat);
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function getFallbackBladeDiffuse(): THREE.Texture {
+  _fallbackBladeDiffuse ??= createSolidTexture(102, 168, 70, 255);
+  return _fallbackBladeDiffuse;
+}
+
+function getFallbackBladeAlpha(): THREE.Texture {
+  _fallbackBladeAlpha ??= createSolidTexture(255, 255, 255, 255);
+  return _fallbackBladeAlpha;
+}
+
+function configureBladeTexture(texture: THREE.Texture, colorSpace: THREE.ColorSpace): THREE.Texture {
+  texture.colorSpace = colorSpace;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function loadBladeTexture(url: string, fallbackUrl: string, fallbackTexture: THREE.Texture, colorSpace: THREE.ColorSpace) {
+  const loader = getGrassTextureLoader();
+  const load = (src: string) =>
+    new Promise<THREE.Texture>((resolve, reject) => {
+      loader.load(
+        src,
+        (texture) => resolve(configureBladeTexture(texture, colorSpace)),
+        undefined,
+        reject,
+      );
+    });
+
+  return load(url).catch(() => (url === fallbackUrl ? fallbackTexture : load(fallbackUrl).catch(() => fallbackTexture)));
+}
 
 function getGroundMaterial(toon: boolean): THREE.Material {
   if (toon) {
@@ -77,6 +128,41 @@ type GrassAttributeData = {
   halfRootAngleCos: Float32Array;
   halfRootAngleSin: Float32Array;
 };
+
+function useGrassBladeTextures(textureSources: ReturnType<typeof resolveGrassTextureSources>) {
+  const [textures, setTextures] = useState(() => ({
+    texture: getFallbackBladeDiffuse(),
+    alphaMap: getFallbackBladeAlpha(),
+  }));
+
+  useEffect(() => {
+    let cancelled = false;
+
+    Promise.all([
+      loadBladeTexture(
+        textureSources.bladeDiffuseUrl,
+        DEFAULT_BLADE_DIFFUSE_URL,
+        getFallbackBladeDiffuse(),
+        THREE.SRGBColorSpace,
+      ),
+      loadBladeTexture(
+        textureSources.bladeAlphaUrl,
+        DEFAULT_BLADE_ALPHA_URL,
+        getFallbackBladeAlpha(),
+        THREE.NoColorSpace,
+      ),
+    ]).then(([texture, alphaMap]) => {
+      if (cancelled) return;
+      setTextures({ texture, alphaMap });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [textureSources.bladeAlphaUrl, textureSources.bladeDiffuseUrl]);
+
+  return textures;
+}
 
 function buildAttributeDataWasm(
   wasm: GaesupCoreWasmExports,
@@ -246,10 +332,7 @@ const Grass: FC<GrassMeshProps> = memo(
       }),
       [bladeDiffuseUrl, bladeAlphaUrl],
     );
-    const [texture, alphaMap] = useLoader(THREE.TextureLoader, [
-      textureSources.bladeDiffuseUrl,
-      textureSources.bladeAlphaUrl,
-    ]);
+    const { texture, alphaMap } = useGrassBladeTextures(textureSources);
 
     // WASM-accelerated attribute generation with JS fallback. Loaded once
     // and shared with the central GrassManager so manager-side passes

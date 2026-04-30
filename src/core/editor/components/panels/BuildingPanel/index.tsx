@@ -115,9 +115,21 @@ export const BuildingPanel: FC = () => {
   const currentBillboardText = useBuildingStore((state) => state.currentBillboardText);
   const currentBillboardImageUrl = useBuildingStore((state) => state.currentBillboardImageUrl);
   const currentBillboardColor = useBuildingStore((state) => state.currentBillboardColor);
+  const currentBillboardWidth = useBuildingStore((state) => state.currentBillboardWidth);
+  const currentBillboardHeight = useBuildingStore((state) => state.currentBillboardHeight);
+  const currentBillboardScale = useBuildingStore((state) => state.currentBillboardScale);
+  const currentBillboardOffsetY = useBuildingStore((state) => state.currentBillboardOffsetY);
+  const currentBillboardElevation = useBuildingStore((state) => state.currentBillboardElevation);
+  const currentBillboardIntensity = useBuildingStore((state) => state.currentBillboardIntensity);
   const setBillboardText = useBuildingStore((state) => state.setBillboardText);
   const setBillboardImageUrl = useBuildingStore((state) => state.setBillboardImageUrl);
   const setBillboardColor = useBuildingStore((state) => state.setBillboardColor);
+  const setBillboardWidth = useBuildingStore((state) => state.setBillboardWidth);
+  const setBillboardHeight = useBuildingStore((state) => state.setBillboardHeight);
+  const setBillboardScale = useBuildingStore((state) => state.setBillboardScale);
+  const setBillboardOffsetY = useBuildingStore((state) => state.setBillboardOffsetY);
+  const setBillboardElevation = useBuildingStore((state) => state.setBillboardElevation);
+  const setBillboardIntensity = useBuildingStore((state) => state.setBillboardIntensity);
   const currentObjectPrimaryColor = useBuildingStore((state) => state.currentObjectPrimaryColor);
   const currentObjectSecondaryColor = useBuildingStore((state) => state.currentObjectSecondaryColor);
   const setObjectPrimaryColor = useBuildingStore((state) => state.setObjectPrimaryColor);
@@ -145,6 +157,7 @@ export const BuildingPanel: FC = () => {
 
   const coverTypes: { type: TileObjectType; label: string }[] = [
     { type: 'none', label: '없음' },
+    { type: 'water', label: '물' },
     { type: 'grass', label: '잔디' },
     { type: 'sand', label: '모래' },
     { type: 'snowfield', label: '눈밭' },
@@ -746,6 +759,116 @@ export const BuildingPanel: FC = () => {
         <div className="building-panel__section">
           <div className="building-panel__section-title">간판 설정</div>
           <div className="building-panel__info">
+            <div className="building-panel__info-item">
+              <span className="building-panel__info-label">크기</span>
+              <div className="building-panel__stepper">
+                <button
+                  className="building-panel__stepper-btn"
+                  onClick={() => setBillboardScale(Math.max(0.2, currentBillboardScale - 0.2))}
+                >
+                  -
+                </button>
+                <span className="building-panel__stepper-value">{currentBillboardScale.toFixed(1)}x</span>
+                <button
+                  className="building-panel__stepper-btn"
+                  onClick={() => setBillboardScale(Math.min(10, currentBillboardScale + 0.2))}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div className="building-panel__info-item">
+              <span className="building-panel__info-label">배치 높이</span>
+              <div className="building-panel__stepper">
+                <button
+                  className="building-panel__stepper-btn"
+                  onClick={() => setBillboardOffsetY(Math.max(-4, currentBillboardOffsetY - 0.25))}
+                >
+                  -
+                </button>
+                <span className="building-panel__stepper-value">{currentBillboardOffsetY.toFixed(2)}m</span>
+                <button
+                  className="building-panel__stepper-btn"
+                  onClick={() => setBillboardOffsetY(Math.min(12, currentBillboardOffsetY + 0.25))}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div className="building-panel__info-item">
+              <span className="building-panel__info-label">판넬 너비</span>
+              <div className="building-panel__stepper">
+                <button
+                  className="building-panel__stepper-btn"
+                  onClick={() => setBillboardWidth(Math.max(0, currentBillboardWidth - 0.25))}
+                >
+                  -
+                </button>
+                <span className="building-panel__stepper-value">
+                  {currentBillboardWidth > 0 ? `${currentBillboardWidth.toFixed(2)}m` : '자동'}
+                </span>
+                <button
+                  className="building-panel__stepper-btn"
+                  onClick={() => setBillboardWidth(Math.min(12, currentBillboardWidth + 0.25))}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div className="building-panel__info-item">
+              <span className="building-panel__info-label">판넬 높이</span>
+              <div className="building-panel__stepper">
+                <button
+                  className="building-panel__stepper-btn"
+                  onClick={() => setBillboardHeight(Math.max(0.3, currentBillboardHeight - 0.25))}
+                >
+                  -
+                </button>
+                <span className="building-panel__stepper-value">{currentBillboardHeight.toFixed(2)}m</span>
+                <button
+                  className="building-panel__stepper-btn"
+                  onClick={() => setBillboardHeight(Math.min(8, currentBillboardHeight + 0.25))}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div className="building-panel__info-item">
+              <span className="building-panel__info-label">기둥 높이</span>
+              <div className="building-panel__stepper">
+                <button
+                  className="building-panel__stepper-btn"
+                  onClick={() => setBillboardElevation(Math.max(0, currentBillboardElevation - 0.25))}
+                >
+                  -
+                </button>
+                <span className="building-panel__stepper-value">{currentBillboardElevation.toFixed(2)}m</span>
+                <button
+                  className="building-panel__stepper-btn"
+                  onClick={() => setBillboardElevation(Math.min(8, currentBillboardElevation + 0.25))}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div className="building-panel__info-item">
+              <span className="building-panel__info-label">밝기</span>
+              <div className="building-panel__stepper">
+                <button
+                  className="building-panel__stepper-btn"
+                  onClick={() => setBillboardIntensity(Math.max(0, currentBillboardIntensity - 0.25))}
+                >
+                  -
+                </button>
+                <span className="building-panel__stepper-value">{currentBillboardIntensity.toFixed(2)}</span>
+                <button
+                  className="building-panel__stepper-btn"
+                  onClick={() => setBillboardIntensity(Math.min(8, currentBillboardIntensity + 0.25))}
+                >
+                  +
+                </button>
+              </div>
+            </div>
             <div className="building-panel__info-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '4px' }}>
               <span className="building-panel__info-label">문구</span>
               <input

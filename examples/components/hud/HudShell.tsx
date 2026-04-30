@@ -161,13 +161,24 @@ function FooterBar() {
 export type HudShellProps = Record<string, never>;
 
 export function HudShell() {
+  const [showInfo, setShowInfo] = useState(false);
+  const [showTele, setShowTele] = useState(false);
+
   return (
     <>
       <div className="gp-shell">
         <HeaderBar />
+        <LeftSidebar
+          showInfo={showInfo}
+          setShowInfo={setShowInfo}
+          showTele={showTele}
+          setShowTele={setShowTele}
+        />
         <RightSidebar />
         <FooterBar />
       </div>
+      {showInfo && <Info />}
+      {showTele && <Teleport />}
       <SceneFader />
     </>
   );

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
 
-import { useTexture } from "@react-three/drei";
 import { extend, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { Water } from "three-stdlib";
@@ -18,6 +17,8 @@ type WaterProps = {
   };
   center?: [number, number, number];
   size?: number;
+  width?: number;
+  depth?: number;
   shore?: Partial<{
     north: boolean;
     south: boolean;
@@ -26,7 +27,7 @@ type WaterProps = {
   }>;
   /**
    * When true, uses a lightweight stylized shader without reflection RT.
-   * Defaults to the global toon mode. Removes per-frame mirror render pass.
+   * Defaults to the global toon mode. The normal path keeps the original Water quality.
    */
   toon?: boolean;
 };
@@ -119,15 +120,92 @@ void main() {
 }
 `;
 
-export default function Ocean({ lod, center, size = 16, shore, toon }: WaterProps) {
+let _sharedWaterNormals: THREE.DataTexture | null = null;
+
+function noise2(x: number, y: number): number {
+  const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453123;
+  return s - Math.floor(s);
+}
+
+function smoothNoise(x: number, y: number): number {
+  const xi = Math.floor(x);
+  const yi = Math.floor(y);
+  const xf = x - xi;
+  const yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf);
+  const v = yf * yf * (3 - 2 * yf);
+  const a = noise2(xi, yi);
+  const b = noise2(xi + 1, yi);
+  const c = noise2(xi, yi + 1);
+  const d = noise2(xi + 1, yi + 1);
+  return THREE.MathUtils.lerp(
+    THREE.MathUtils.lerp(a, b, u),
+    THREE.MathUtils.lerp(c, d, u),
+    v,
+  );
+}
+
+function waterHeight(x: number, y: number): number {
+  let value = 0;
+  let amp = 0.58;
+  let freq = 1.15;
+  for (let i = 0; i < 5; i += 1) {
+    value += smoothNoise(x * freq + 17.3 * i, y * freq - 9.1 * i) * amp;
+    freq *= 2.03;
+    amp *= 0.48;
+  }
+  value += Math.sin(x * 8.2 + y * 1.7) * 0.06;
+  value += Math.cos(y * 7.1 - x * 2.4) * 0.05;
+  return value;
+}
+
+function getSharedWaterNormals(size = 128): THREE.DataTexture {
+  if (_sharedWaterNormals) return _sharedWaterNormals;
+  const data = new Uint8Array(size * size * 4);
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const i = (y * size + x) * 4;
+      const u = x / size;
+      const v = y / size;
+      const e = 1 / size;
+      const hL = waterHeight(u - e, v);
+      const hR = waterHeight(u + e, v);
+      const hD = waterHeight(u, v - e);
+      const hU = waterHeight(u, v + e);
+      const nx = (hL - hR) * 1.15;
+      const ny = (hD - hU) * 1.15;
+      const nz = 1.0;
+      const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+      data[i] = Math.round((nx / len * 0.5 + 0.5) * 255);
+      data[i + 1] = Math.round((ny / len * 0.5 + 0.5) * 255);
+      data[i + 2] = Math.round((nz / len * 0.5 + 0.5) * 255);
+      data[i + 3] = 255;
+    }
+  }
+
+  const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = true;
+  texture.colorSpace = THREE.NoColorSpace;
+  texture.needsUpdate = true;
+  _sharedWaterNormals = texture;
+  return texture;
+}
+
+export default function Ocean({ lod, center, size = 16, width, depth, shore, toon }: WaterProps) {
   const useToon = toon ?? getDefaultToonMode();
   const waterRef = useRef<(Water & { dispose?: () => void }) | null>(null);
   const toonMatRef = useRef<THREE.ShaderMaterial | null>(null);
   const toonMeshRef = useRef<THREE.Mesh | null>(null);
-  const waterNormals = useTexture("/resources/waternormals.jpeg");
+  const fallbackMeshRef = useRef<THREE.Mesh | null>(null);
   const centerRef = useRef(new THREE.Vector3());
   const lastVisibleRef = useRef<boolean>(true);
+  const highQualityRef = useRef<boolean>(true);
   const lodCheckAccumRef = useRef<number>(0);
+  const timeAccumRef = useRef<number>(0);
   const shallowMaterial = useMemo(
     () =>
       new THREE.MeshPhysicalMaterial({
@@ -151,35 +229,35 @@ export default function Ocean({ lod, center, size = 16, shore, toon }: WaterProp
     }),
     [shore?.east, shore?.north, shore?.south, shore?.west],
   );
-  const shoreWidth = Math.min(size * 0.18, 0.72);
+  const surfaceWidth = width ?? size;
+  const surfaceDepth = depth ?? size;
+  const shoreWidth = Math.min(Math.min(surfaceWidth, surfaceDepth) * 0.18, 0.72);
   const insetNorth = shoreMask.north ? shoreWidth : 0;
   const insetSouth = shoreMask.south ? shoreWidth : 0;
   const insetEast = shoreMask.east ? shoreWidth : 0;
   const insetWest = shoreMask.west ? shoreWidth : 0;
-  const waterWidth = Math.max(size - insetWest - insetEast, size * 0.34);
-  const waterDepth = Math.max(size - insetNorth - insetSouth, size * 0.34);
+  const waterWidth = Math.max(surfaceWidth - insetWest - insetEast, surfaceWidth * 0.34);
+  const waterDepth = Math.max(surfaceDepth - insetNorth - insetSouth, surfaceDepth * 0.34);
   const waterOffsetX = (insetWest - insetEast) * 0.5;
   const waterOffsetZ = (insetNorth - insetSouth) * 0.5;
   const shoreSpanX = Math.max(
-    size - (shoreMask.west ? shoreWidth * 0.25 : 0) - (shoreMask.east ? shoreWidth * 0.25 : 0),
-    size * 0.42,
+    surfaceWidth - (shoreMask.west ? shoreWidth * 0.25 : 0) - (shoreMask.east ? shoreWidth * 0.25 : 0),
+    surfaceWidth * 0.42,
   );
   const shoreSpanZ = Math.max(
-    size - (shoreMask.north ? shoreWidth * 0.25 : 0) - (shoreMask.south ? shoreWidth * 0.25 : 0),
-    size * 0.42,
+    surfaceDepth - (shoreMask.north ? shoreWidth * 0.25 : 0) - (shoreMask.south ? shoreWidth * 0.25 : 0),
+    surfaceDepth * 0.42,
   );
   
-  // Repeat the normal-map at a fixed world-scale (~ 1 tile per 4 units) so wave detail
-  // keeps the same density when the tile is scaled up. With a fixed repeat=(4,4) the
-  // pattern visibly stretched on large tiles.
-  const normalRepeat = useMemo(() => Math.max(2, Math.round(size / 4)), [size]);
-  useEffect(() => {
-    if (waterNormals) {
-      waterNormals.wrapS = waterNormals.wrapT = THREE.RepeatWrapping;
-      waterNormals.repeat.set(normalRepeat, normalRepeat);
-      waterNormals.needsUpdate = true;
-    }
-  }, [waterNormals, normalRepeat]);
+  // Shared procedural normal texture avoids per-tile image decode and upload.
+  const waterNormals = getSharedWaterNormals();
+
+  const renderTargetSize = useMemo(() => {
+    const longest = Math.max(surfaceWidth, surfaceDepth);
+    if (longest <= 8) return 256;
+    if (longest <= 24) return 384;
+    return 512;
+  }, [surfaceDepth, surfaceWidth]);
 
   useEffect(() => {
     if (center) {
@@ -189,27 +267,43 @@ export default function Ocean({ lod, center, size = 16, shore, toon }: WaterProp
   
   const config = useMemo(
     () => ({
-      textureWidth: 512,
-      textureHeight: 512,
+      textureWidth: renderTargetSize,
+      textureHeight: renderTargetSize,
       waterNormals,
       sunDirection: new THREE.Vector3(0.1, 0.7, 0.2),
       sunColor: 0xffffff,
       waterColor: 0x001e0f,
       distortionScale: 3.7,
     }),
-    [waterNormals]
+    [renderTargetSize, waterNormals]
   );
   
   // Tessellation density also scales with tile size so wave amplitude stays smooth on
   // large tiles. Capped to keep big tiles from blowing up the vertex count.
   const segs = useMemo(() => {
     const longest = Math.max(waterWidth, waterDepth);
-    const base = useToon ? Math.round(longest * 4) : Math.round(longest * 1.2);
-    return Math.max(useToon ? 16 : 6, Math.min(useToon ? 96 : 32, base));
+    const base = useToon ? Math.round(longest * 2.5) : Math.round(longest * 1.2);
+    return Math.max(useToon ? 14 : 6, Math.min(useToon ? 56 : 32, base));
   }, [useToon, waterWidth, waterDepth]);
   const geom = useMemo(
     () => new THREE.PlaneGeometry(waterWidth, waterDepth, segs, segs),
     [waterDepth, waterWidth, segs],
+  );
+  const fallbackMaterial = useMemo(
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        color: '#2f8dbd',
+        roughness: 0.18,
+        metalness: 0,
+        transparent: true,
+        opacity: 0.72,
+        clearcoat: 0.45,
+        clearcoatRoughness: 0.24,
+        normalMap: waterNormals,
+        normalScale: new THREE.Vector2(0.22, 0.22),
+        depthWrite: false,
+      }),
+    [waterNormals],
   );
   const toonMaterial = useMemo(() => {
     if (!useToon) return null;
@@ -225,7 +319,7 @@ export default function Ocean({ lod, center, size = 16, shore, toon }: WaterProp
       transparent: true,
       depthWrite: false,
     });
-  }, [useToon]);
+  }, [useToon, waterNormals]);
 
   useEffect(() => {
     return () => {
@@ -236,9 +330,10 @@ export default function Ocean({ lod, center, size = 16, shore, toon }: WaterProp
       if (typeof water?.dispose === 'function') {
         water.dispose();
       }
+      fallbackMaterial.dispose();
       toonMaterial?.dispose();
     };
-  }, [geom, toonMaterial]);
+  }, [fallbackMaterial, geom, toonMaterial]);
 
   useEffect(() => {
     return () => {
@@ -249,6 +344,9 @@ export default function Ocean({ lod, center, size = 16, shore, toon }: WaterProp
   useFrame((state, delta) => {
     const target = useToon ? (toonMeshRef.current as THREE.Object3D | null) : (waterRef.current as THREE.Object3D | null);
     if (!target) return;
+
+    const water = waterRef.current as THREE.Object3D | null;
+    const fallback = fallbackMeshRef.current;
 
     if (lod) {
       lodCheckAccumRef.current += Math.max(0, delta);
@@ -262,21 +360,35 @@ export default function Ocean({ lod, center, size = 16, shore, toon }: WaterProp
         const dist = state.camera.position.distanceTo(centerRef.current);
         const w = weightFromDistance(dist, near, far, strength);
         const visible = w > 0;
+        highQualityRef.current = !useToon && dist <= near;
         if (visible !== lastVisibleRef.current) {
           lastVisibleRef.current = visible;
           target.visible = visible;
         }
       }
 
-      if (!lastVisibleRef.current) return;
+      if (!lastVisibleRef.current) {
+        if (water) water.visible = false;
+        if (fallback) fallback.visible = false;
+        return;
+      }
     }
 
     if (useToon) {
+      if (fallback) fallback.visible = false;
       const u = toonMatRef.current?.uniforms?.['uTime'];
       if (u) u.value = state.clock.elapsedTime;
     } else {
+      const useHighQualityWater = highQualityRef.current;
+      if (water) water.visible = useHighQualityWater;
+      if (fallback) fallback.visible = !useHighQualityWater;
+      if (!useHighQualityWater) return;
+
+      timeAccumRef.current += Math.max(0, delta);
+      if (timeAccumRef.current < 1 / 30) return;
       const time = waterRef.current?.material.uniforms?.["time"];
-      if (time) time.value += delta * 0.3;
+      if (time) time.value += timeAccumRef.current * 0.3;
+      timeAccumRef.current = 0;
     }
   });
 
@@ -285,7 +397,7 @@ export default function Ocean({ lod, center, size = 16, shore, toon }: WaterProp
       {shoreMask.north && (
         <mesh
           rotation-x={-Math.PI / 2}
-          position={[0, 0.055, -size / 2 + shoreWidth / 2]}
+          position={[0, 0.055, -surfaceDepth / 2 + shoreWidth / 2]}
           material={shallowMaterial}
           receiveShadow
         >
@@ -296,7 +408,7 @@ export default function Ocean({ lod, center, size = 16, shore, toon }: WaterProp
       {shoreMask.south && (
         <mesh
           rotation-x={-Math.PI / 2}
-          position={[0, 0.055, size / 2 - shoreWidth / 2]}
+          position={[0, 0.055, surfaceDepth / 2 - shoreWidth / 2]}
           material={shallowMaterial}
           receiveShadow
         >
@@ -307,7 +419,7 @@ export default function Ocean({ lod, center, size = 16, shore, toon }: WaterProp
       {shoreMask.west && (
         <mesh
           rotation-x={-Math.PI / 2}
-          position={[-size / 2 + shoreWidth / 2, 0.055, 0]}
+          position={[-surfaceWidth / 2 + shoreWidth / 2, 0.055, 0]}
           material={shallowMaterial}
           receiveShadow
         >
@@ -318,7 +430,7 @@ export default function Ocean({ lod, center, size = 16, shore, toon }: WaterProp
       {shoreMask.east && (
         <mesh
           rotation-x={-Math.PI / 2}
-          position={[size / 2 - shoreWidth / 2, 0.055, 0]}
+          position={[surfaceWidth / 2 - shoreWidth / 2, 0.055, 0]}
           material={shallowMaterial}
           receiveShadow
         >
@@ -340,12 +452,22 @@ export default function Ocean({ lod, center, size = 16, shore, toon }: WaterProp
           />
         </mesh>
       ) : (
-        <water
-          ref={waterRef}
-          args={[geom, config]}
-          rotation-x={-Math.PI / 2}
-          position={[waterOffsetX, 0.1, waterOffsetZ]}
-        />
+        <>
+          <water
+            ref={waterRef}
+            args={[geom, config]}
+            rotation-x={-Math.PI / 2}
+            position={[waterOffsetX, 0.1, waterOffsetZ]}
+          />
+          <mesh
+            ref={fallbackMeshRef}
+            geometry={geom}
+            material={fallbackMaterial}
+            rotation-x={-Math.PI / 2}
+            position={[waterOffsetX, 0.095, waterOffsetZ]}
+            visible={false}
+          />
+        </>
       )}
     </group>
   );

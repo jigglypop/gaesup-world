@@ -307,11 +307,77 @@ html, body, #root {
     grid-template-columns: 1fr;
     grid-template-areas:
       "header"
+      "left"
       "right"
       "footer";
+    inset: 0;
+    align-content: start;
+    padding: 10px 10px calc(82px + env(safe-area-inset-bottom, 0px));
+    gap: 8px;
+  }
+
+  .gp-header {
+    min-height: 44px;
+    justify-content: flex-end;
+  }
+
+  .gp-left {
+    align-items: stretch;
+  }
+
+  .gp-left .gp-panel {
+    width: auto !important;
     padding: 10px;
   }
-  .gp-left { display: none; }
-  .gp-right { gap: 8px; }
+
+  .gp-left .gp-panel,
+  .gp-actionrow {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gp-panel-title {
+    grid-column: 1 / -1;
+  }
+
+  .gp-right {
+    gap: 8px;
+    max-height: 38vh;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  .gp-right .gp-panel {
+    padding: 10px;
+  }
+
+  .gp-footer {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .gp-shell {
+    padding: 8px 8px calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .gp-pill {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .gp-btn {
+    min-height: 40px;
+    padding: 9px 10px;
+    font-size: 13px;
+  }
+
+  .gp-right {
+    max-height: 34vh;
+  }
+
+  .gp-panel-row {
+    font-size: 13px;
+  }
 }
 

@@ -32,6 +32,7 @@ import {
 import { registerSeedDialogs } from '../components/dialog/seedDialogs';
 import { registerSeedI18n } from '../components/i18n/seedI18n';
 import { registerSeedContent } from '../components/seedContent';
+import { NPC_SCHEDULES } from './world/data';
 
 const DEFAULT_WORLD_TIME_MINUTES = 18 * 60;
 
@@ -51,35 +52,7 @@ function registerWorldSeeds(): void {
   registerSeedI18n();
 
   const scheduler = getNPCScheduler();
-  scheduler.register({
-    npcId: 'tommy',
-    defaultEntry: { position: [0, 0, -8], activity: 'idle' },
-    entries: [
-      { startHour: 6, endHour: 9, position: [-2, 0, -8], activity: 'idle' },
-      { startHour: 9, endHour: 18, position: [0, 0, -8], activity: 'shop' },
-      { startHour: 18, endHour: 22, position: [4, 0, -6], activity: 'idle' },
-      { startHour: 22, endHour: 6, position: [-1, 0, -10], activity: 'sleep' },
-    ],
-  });
-  scheduler.register({
-    npcId: 'mei',
-    defaultEntry: { position: [6, 0, 0], activity: 'idle' },
-    entries: [
-      { startHour: 7, endHour: 11, position: [6, 0, 0], activity: 'idle' },
-      { startHour: 11, endHour: 16, position: [10, 0, 14], activity: 'work' },
-      { startHour: 16, endHour: 21, position: [6, 0, 0], activity: 'idle' },
-      { startHour: 21, endHour: 7, position: [4, 0, -2], activity: 'sleep' },
-    ],
-  });
-  scheduler.register({
-    npcId: 'ryu',
-    defaultEntry: { position: [-6, 0, 0], activity: 'idle' },
-    entries: [
-      { startHour: 8, endHour: 19, position: [-6, 0, 0], activity: 'work' },
-      { startHour: 19, endHour: 23, position: [-4, 0, 4], activity: 'idle' },
-      { startHour: 23, endHour: 8, position: [-7, 0, -2], activity: 'sleep' },
-    ],
-  });
+  NPC_SCHEDULES.forEach((schedule) => scheduler.register(schedule));
 }
 
 const createStoreBinding = (

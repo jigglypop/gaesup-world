@@ -107,7 +107,12 @@ export function TileObject({ tile, tiles }: TileObjectProps) {
     <group ref={groupRef} position={position}>
       <Suspense fallback={null}>
         {tile.objectType === 'water' && (
-          <Water size={tileSize} shore={waterShoreMask} center={position} />
+          <Water
+            size={tileSize}
+            shore={waterShoreMask}
+            center={position}
+            lod={{ near: SFE_NEAR, far: SFE_FAR, strength: SFE_STRENGTH }}
+          />
         )}
 
         {tile.objectType === 'grass' && (

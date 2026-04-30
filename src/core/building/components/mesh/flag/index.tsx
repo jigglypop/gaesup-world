@@ -226,12 +226,13 @@ function PoleBatch({ entries }: { entries: FlagEntry[] }) {
       mesh.setMatrixAt(i, matrix);
     }
     mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingSphere();
   }, [matrices, count]);
 
   useEffect(() => () => { geometry.dispose(); }, [geometry]);
 
   if (count === 0) return null;
-  return <instancedMesh ref={ref} args={[geometry, mat, capacity]} />;
+  return <instancedMesh ref={ref} args={[geometry, mat, capacity]} frustumCulled />;
 }
 
 // --- Cloth instancing per texture group ---
@@ -245,13 +246,14 @@ type ClothBatchInnerProps = {
 function ClothBatchInner({ entries, windStrength, texture }: ClothBatchInnerProps) {
   const ref = useRef<THREE.InstancedMesh>(null!);
   const materialRef = useRef<FlagMaterialInstance>(null!);
+  const frameAccumRef = useRef(0);
   const count = entries.length;
   const capacity = useMemo(() => Math.max(1, count), [count]);
 
   const wGeo = entries[0]?.flagWidth ?? 1.5;
   const hGeo = entries[0]?.flagHeight ?? 1.0;
-  const segsX = windStrength > 0 ? 16 : 1;
-  const segsY = windStrength > 0 ? 8 : 1;
+  const segsX = windStrength > 0.6 ? 12 : windStrength > 0 ? 8 : 1;
+  const segsY = windStrength > 0.6 ? 6 : windStrength > 0 ? 4 : 1;
   const geometry = useMemo(
     () => new THREE.PlaneGeometry(wGeo, hGeo, segsX, segsY),
     [wGeo, hGeo, segsX, segsY],
@@ -288,9 +290,13 @@ function ClothBatchInner({ entries, windStrength, texture }: ClothBatchInnerProp
       mesh.setMatrixAt(i, _dummy.matrix);
     }
     mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingSphere();
   }, [entries, count, wGeo, hGeo]);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
+    frameAccumRef.current += Math.max(0, delta);
+    if (frameAccumRef.current < 1 / 30) return;
+    frameAccumRef.current = 0;
     const u = materialRef.current;
     u.time = state.clock.elapsedTime * 5;
     u.windStrength = windStrength;
@@ -300,7 +306,7 @@ function ClothBatchInner({ entries, windStrength, texture }: ClothBatchInnerProp
 
   if (count === 0) return null;
   return (
-    <instancedMesh ref={ref} args={[geometry, undefined!, capacity]} frustumCulled={false}>
+    <instancedMesh ref={ref} args={[geometry, undefined!, capacity]} frustumCulled>
       <flagMaterial ref={materialRef} map={texture} transmission={0.05}
         windStrength={windStrength} envMapIntensity={1} side={THREE.DoubleSide} transparent />
     </instancedMesh>

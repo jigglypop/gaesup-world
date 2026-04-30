@@ -83,6 +83,24 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     setModelScale,
     currentModelColor,
     setModelColor,
+    currentBillboardText,
+    setBillboardText,
+    currentBillboardImageUrl,
+    setBillboardImageUrl,
+    currentBillboardColor,
+    setBillboardColor,
+    currentBillboardWidth,
+    setBillboardWidth,
+    currentBillboardHeight,
+    setBillboardHeight,
+    currentBillboardScale,
+    setBillboardScale,
+    currentBillboardOffsetY,
+    setBillboardOffsetY,
+    currentBillboardElevation,
+    setBillboardElevation,
+    currentBillboardIntensity,
+    setBillboardIntensity,
   } = useBuildingStore(useShallow((state) => ({
     setEditMode: state.setEditMode,
     editMode: state.editMode,
@@ -133,6 +151,24 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     setModelScale: state.setModelScale,
     currentModelColor: state.currentModelColor,
     setModelColor: state.setModelColor,
+    currentBillboardText: state.currentBillboardText,
+    setBillboardText: state.setBillboardText,
+    currentBillboardImageUrl: state.currentBillboardImageUrl,
+    setBillboardImageUrl: state.setBillboardImageUrl,
+    currentBillboardColor: state.currentBillboardColor,
+    setBillboardColor: state.setBillboardColor,
+    currentBillboardWidth: state.currentBillboardWidth,
+    setBillboardWidth: state.setBillboardWidth,
+    currentBillboardHeight: state.currentBillboardHeight,
+    setBillboardHeight: state.setBillboardHeight,
+    currentBillboardScale: state.currentBillboardScale,
+    setBillboardScale: state.setBillboardScale,
+    currentBillboardOffsetY: state.currentBillboardOffsetY,
+    setBillboardOffsetY: state.setBillboardOffsetY,
+    currentBillboardElevation: state.currentBillboardElevation,
+    setBillboardElevation: state.setBillboardElevation,
+    currentBillboardIntensity: state.currentBillboardIntensity,
+    setBillboardIntensity: state.setBillboardIntensity,
   })));
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const isEditing = isInEditMode();
@@ -512,8 +548,8 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                     {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((rotation, index) => (
                       <button
                         key={rotation}
-                        onClick={() => setObjectRotation(rotation)}
-                        className={`building-ui-size-button ${Math.abs(currentObjectRotation - rotation) < 0.0001 ? 'active' : ''}`}
+                        onClick={() => setTileRotation(rotation)}
+                        className={`building-ui-size-button ${Math.abs(currentTileRotation - rotation) < 0.0001 ? 'active' : ''}`}
                       >
                         {index * 90}
                       </button>
@@ -619,6 +655,15 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                 <div className="building-ui-object-group">
                   <span className="building-ui-label">Basic Objects:</span>
                   <div className="building-ui-object-buttons">
+                    {(['sakura', 'flag', 'fire', 'billboard'] as const).map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => setSelectedPlacedObjectType(type)}
+                        className={`building-ui-object-button ${selectedPlacedObjectType === type ? 'active' : ''}`}
+                      >
+                        {type}
+                      </button>
+                    ))}
                     {DEFAULT_BUILDING_OBJECT_CATALOG.map((item) => (
                       <button
                         key={item.id}
@@ -643,14 +688,167 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                     {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((rotation, index) => (
                       <button
                         key={rotation}
-                        onClick={() => setTileRotation(rotation)}
-                        className={`building-ui-size-button ${Math.abs(currentTileRotation - rotation) < 0.0001 ? 'active' : ''}`}
+                        onClick={() => setObjectRotation(rotation)}
+                        className={`building-ui-size-button ${Math.abs(currentObjectRotation - rotation) < 0.0001 ? 'active' : ''}`}
                       >
                         {index * 90}
                       </button>
                     ))}
                   </div>
                 </div>
+
+                {selectedPlacedObjectType === 'billboard' && (
+                  <div className="building-ui-custom-settings">
+                    <div className="building-ui-size-group">
+                      <span className="building-ui-label">Billboard Size:</span>
+                      <div className="building-ui-size-buttons">
+                        {[0.5, 1, 1.5, 2, 3, 4].map((size) => (
+                          <button
+                            key={size}
+                            onClick={() => setBillboardScale(size)}
+                            className={`building-ui-size-button ${Math.abs(currentBillboardScale - size) < 0.0001 ? 'active' : ''}`}
+                          >
+                            {size}x
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="building-ui-size-group">
+                      <span className="building-ui-label">Billboard Height:</span>
+                      <div className="building-ui-size-buttons">
+                        {[-1, 0, 1, 2, 3, 4, 6].map((height) => (
+                          <button
+                            key={height}
+                            onClick={() => setBillboardOffsetY(height)}
+                            className={`building-ui-size-button ${Math.abs(currentBillboardOffsetY - height) < 0.0001 ? 'active' : ''}`}
+                          >
+                            {height}m
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Text:</span>
+                      <input
+                        type="text"
+                        value={currentBillboardText}
+                        onChange={(e) => setBillboardText(e.target.value)}
+                        className="building-ui-input"
+                      />
+                    </div>
+
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Image URL:</span>
+                      <input
+                        type="text"
+                        value={currentBillboardImageUrl}
+                        onChange={(e) => setBillboardImageUrl(e.target.value)}
+                        placeholder="https://..."
+                        className="building-ui-input"
+                      />
+                    </div>
+
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Color:</span>
+                      <div className="building-ui-color-input">
+                        <input
+                          type="color"
+                          value={currentBillboardColor}
+                          onChange={(e) => setBillboardColor(e.target.value)}
+                          className="building-ui-color-picker"
+                        />
+                        <input
+                          type="text"
+                          value={currentBillboardColor}
+                          onChange={(e) => setBillboardColor(e.target.value)}
+                          className="building-ui-input"
+                          style={{ width: '100px' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Custom Size:</span>
+                      <input
+                        type="number"
+                        min="0.1"
+                        max="10"
+                        step="0.1"
+                        value={currentBillboardScale}
+                        onChange={(e) => setBillboardScale(Number(e.target.value) || 1)}
+                        className="building-ui-input"
+                      />
+                    </div>
+
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Custom Height:</span>
+                      <input
+                        type="number"
+                        min="-4"
+                        max="12"
+                        step="0.1"
+                        value={currentBillboardOffsetY}
+                        onChange={(e) => setBillboardOffsetY(Number(e.target.value) || 0)}
+                        className="building-ui-input"
+                      />
+                    </div>
+
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Panel Width:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="8"
+                        step="0.1"
+                        value={currentBillboardWidth}
+                        onChange={(e) => setBillboardWidth(Number(e.target.value) || 0)}
+                        className="building-ui-input"
+                      />
+                      <span className="building-ui-help">0 = image ratio auto</span>
+                    </div>
+
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Panel Height:</span>
+                      <input
+                        type="number"
+                        min="0.3"
+                        max="5"
+                        step="0.1"
+                        value={currentBillboardHeight}
+                        onChange={(e) => setBillboardHeight(Number(e.target.value) || 1.5)}
+                        className="building-ui-input"
+                      />
+                    </div>
+
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Post Height:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="8"
+                        step="0.1"
+                        value={currentBillboardElevation}
+                        onChange={(e) => setBillboardElevation(Number(e.target.value) || 0)}
+                        className="building-ui-input"
+                      />
+                    </div>
+
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Brightness:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="8"
+                        step="0.1"
+                        value={currentBillboardIntensity}
+                        onChange={(e) => setBillboardIntensity(Number(e.target.value) || 0)}
+                        className="building-ui-input"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div className="building-ui-custom-settings">
                   <div className="building-ui-input-group">
