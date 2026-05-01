@@ -1,73 +1,53 @@
 .app-navigation {
   position: fixed;
-  top: 12px;
-  left: 0;
-  bottom: 12px;
+  top: 8px;
+  left: 50%;
   z-index: 130;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: 6px;
-  width: 132px;
+  width: auto;
+  max-width: calc(100vw - 24px);
+  min-height: 44px;
   padding: 8px;
-  background: rgba(13, 16, 24, 0.58);
+  background: rgba(13, 16, 24, 0.82);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-left: 0;
-  border-radius: 0 16px 16px 0;
-  box-shadow: 10px 12px 30px rgba(0, 0, 0, 0.26);
+  border-radius: 16px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
-  transform: translateX(calc(-100% + 38px));
+  transform: translateX(-50%);
   transition:
-    transform 0.24s ease,
     background 0.2s ease,
     box-shadow 0.2s ease;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
 }
 
-.app-navigation::before {
-  content: "▷";
-  position: absolute;
-  top: 50%;
-  right: 10px;
-  color: rgba(243, 244, 248, 0.72);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  writing-mode: vertical-rl;
-  transform: translateY(-50%);
-  pointer-events: none;
+.app-navigation::-webkit-scrollbar {
+  display: none;
 }
 
 .app-navigation:hover,
 .app-navigation:focus-within {
   background: rgba(13, 16, 24, 0.78);
   box-shadow: 12px 16px 40px rgba(0, 0, 0, 0.32);
-  transform: translateX(0);
-}
-
-.app-navigation:hover::before,
-.app-navigation:focus-within::before {
-  opacity: 0;
 }
 
 .app-nav-brand {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: 5px;
   color: #f3f4f8;
-  padding: 7px 5px 10px;
+  padding: 15px 8px;
   font-size: 11px;
   font-weight: 800;
   text-decoration: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  margin-right: 30px;
-  margin-bottom: 2px;
-  transition: margin-right 0.24s ease;
-}
-
-.app-navigation:hover .app-nav-brand,
-.app-navigation:focus-within .app-nav-brand {
-  margin-right: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  flex: 0 0 auto;
 }
 
 .app-nav-mark {
@@ -86,7 +66,8 @@
   background: rgba(255, 255, 255, 0.055);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #f3f4f8;
-  padding: 7px 8px;
+  padding: 10px 15px;
+  margin: 5px;
   font: inherit;
   font-size: 11px;
   font-weight: 600;
@@ -95,18 +76,13 @@
   border-radius: 9px;
   cursor: pointer;
   text-align: center;
-  margin-right: 30px;
+  white-space: nowrap;
+  flex: 0 0 auto;
   transition:
-    margin-right 0.24s ease,
     transform 0.2s ease,
     background 0.2s ease,
     border-color 0.2s ease,
     color 0.2s ease;
-}
-
-.app-navigation:hover .app-nav-button,
-.app-navigation:focus-within .app-nav-button {
-  margin-right: 0;
 }
 
 .app-nav-button:hover,
@@ -114,11 +90,10 @@
   background: rgba(123, 211, 167, 0.16);
   border-color: rgba(123, 211, 167, 0.34);
   color: #ffffff;
-  transform: translateX(1px);
+  transform: translateY(-1px);
 }
 
 .app-nav-user {
-  margin-top: auto;
   background: rgba(255, 255, 255, 0.055);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #f3f4f8;
@@ -127,63 +102,42 @@
   font-weight: 600;
   border-radius: 9px;
   text-align: center;
-  margin-right: 30px;
-  transition: margin-right 0.24s ease;
+  flex: 0 0 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.app-navigation:hover .app-nav-user,
-.app-navigation:focus-within .app-nav-user {
-  margin-right: 0;
+.app-editor-navigation-slot {
+  display: contents;
+}
+
+.app-editor-navigation-slot:empty {
+  display: none;
 }
 
 @media (max-width: 768px) {
   .app-navigation {
-    top: auto;
+    top: 8px;
     right: 8px;
-    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     left: 8px;
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
+    transform: none;
     width: auto;
     max-width: calc(100vw - 16px);
-    min-height: 50px;
     padding: 7px;
-    background: rgba(13, 16, 24, 0.82);
-    overflow-x: auto;
-    overflow-y: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px;
-    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.3);
-    transform: none;
-    scrollbar-width: none;
-  }
-
-  .app-navigation::-webkit-scrollbar {
-    display: none;
-  }
-
-  .app-navigation::before {
-    content: none;
   }
 
   .app-nav-brand,
   .app-nav-button,
-  .app-nav-user {
+  .app-nav-user,
+  .app-editor-navigation-slot {
     flex: 0 0 auto;
     margin-right: 0;
   }
 
   .app-nav-brand {
-    flex-direction: row;
     min-width: 42px;
     padding: 5px 7px;
-    border-bottom: 0;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 0;
   }
 
   .app-nav-brand span:last-child {

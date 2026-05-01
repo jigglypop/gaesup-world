@@ -4,13 +4,13 @@ body {
 
 .blueprint-editor-page {
   position: fixed;
-  top: 0;
+  top: var(--app-header-height, 64px);
   right: 0;
   bottom: 0;
-  left: var(--app-sidebar-width, 128px);
+  left: 0;
   z-index: 100;
-  width: calc(100vw - var(--app-sidebar-width, 128px));
-  height: 100vh;
+  width: 100vw;
+  height: calc(100vh - var(--app-header-height, 64px));
   background-color: var(--editor-bg-1);
   display: flex;
   flex-direction: column;

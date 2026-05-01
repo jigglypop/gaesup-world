@@ -53,17 +53,6 @@ function LeftSidebar({
 
   return (
     <div className="gp-left">
-      <div className="gp-glass gp-panel" style={{ width: '100%' }}>
-        <div className="gp-panel-title">도구</div>
-        <button className={`gp-btn${showInfo ? ' gp-btn--active' : ''}`} onClick={() => setShowInfo(!showInfo)}>
-          <span>카메라 / 모드</span>
-          <span className="gp-key">패널</span>
-        </button>
-        <button className={`gp-btn${showTele ? ' gp-btn--active' : ''}`} onClick={() => setShowTele(!showTele)}>
-          <span>Teleport</span>
-          <span className="gp-key">TELE</span>
-        </button>
-      </div>
       {showEnvironmentControls && (
         <div className="gp-glass gp-panel" style={{ width: '100%' }}>
           <div className="gp-panel-title">월드 환경</div>
@@ -158,7 +147,7 @@ function RightSidebar({ onOpenCrafting }: { onOpenCrafting?: () => void }) {
       </div>
 
       <div className="gp-glass gp-panel">
-        <div className="gp-panel-title">메뉴</div>
+        <div className="gp-panel-title">게임 메뉴</div>
         <div className="gp-actionrow">
           {actions.map((a) => (
             <button key={a.id} className="gp-btn" onClick={a.onClick ?? (() => dispatchKey(a.key))}>

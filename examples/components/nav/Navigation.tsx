@@ -17,8 +17,7 @@ export const Navigation = () => {
   return (
     <nav className="app-navigation">
       <NavLink to="/" className="app-nav-brand">
-        <span className="app-nav-mark">G</span>
-        <span>Gaesup</span>
+        <span>GAESUP WORLD</span>
       </NavLink>
       <NavLink to="/edit" className="app-nav-button">
         에디터
@@ -29,12 +28,10 @@ export const Navigation = () => {
       <NavLink to="/blueprints" className="app-nav-button">
         블루프린트
       </NavLink>
-      <NavLink to="/mini-room" className="app-nav-button">
-        미니룸
-      </NavLink>
       <NavLink to="/network" className="app-nav-button">
         Network
       </NavLink>
+      <div id="app-editor-navigation-slot" className="app-editor-navigation-slot" />
       {isLoggedIn ? (
         <>
           <NavLink to="/admin" className="app-nav-button">

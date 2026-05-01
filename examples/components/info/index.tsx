@@ -2,15 +2,18 @@ import { useState } from 'react';
 
 import { CameraSettings } from './CameraSettings';
 import { CAMERA_PRESETS } from './constants';
-import { SelectionTooltip } from './SelectionTooltip';
 import { SpeechBalloonSettings } from './SpeechBalloonSettings';
 import { useGaesupStore } from '../../../src';
-import { InfoTabs } from '../infoTabs';
 import './styles.css';
 
 type CameraControl = keyof typeof CAMERA_PRESETS;
 type InfoSection = 'help' | 'camera' | 'speech';
 type WorldType = 'character' | 'vehicle' | 'airplane';
+type MenuOption = {
+  value: string;
+  label: string;
+  isSelected: boolean;
+};
 
 const cameraControlLabels: Record<CameraControl, string> = {
   firstPerson: '1인칭',
@@ -26,6 +29,34 @@ function isCameraControl(value: string): value is CameraControl {
 
 function isWorldType(value: string): value is WorldType {
   return value === 'character' || value === 'vehicle' || value === 'airplane';
+}
+
+function MenuOptionGroup({
+  title,
+  options,
+  onSelect,
+}: {
+  title: string;
+  options: MenuOption[];
+  onSelect: (value: string) => void;
+}) {
+  return (
+    <div className="info-menu-group">
+      <div className="info-menu-label">{title}</div>
+      <div className="info-menu-options">
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            className={`glass-button ${option.isSelected ? 'glass-button--active' : ''}`}
+            onClick={() => onSelect(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function Info() {
@@ -60,18 +91,6 @@ export default function Info() {
     { value: 'topDown', label: cameraControlLabels.topDown, isSelected: mode.control === 'topDown' },
     { value: 'sideScroll', label: cameraControlLabels.sideScroll, isSelected: mode.control === 'sideScroll' },
   ];
-  const getCurrentTypeLabel = () => {
-    switch (mode.type) {
-      case 'character': return '캐릭터';
-      case 'vehicle': return '차량';
-      case 'airplane': return '비행기';
-      default: return '캐릭터';
-    }
-  };
-  const getCurrentControlLabel = () => {
-    const control = isCameraControl(mode.control) ? mode.control : 'thirdPerson';
-    return cameraControlLabels[control];
-  };
 
   const sectionButtons: { id: InfoSection; label: string }[] = [
     { id: 'help', label: '도움말' },
@@ -80,29 +99,29 @@ export default function Info() {
   ];
 
   return (
-    <div className="info-style">
-      <SelectionTooltip
-        options={typeOptions}
-        onSelect={setType}
-        currentLabel={getCurrentTypeLabel()}
-      />
-      <SelectionTooltip
-        options={controlOptions}
-        onSelect={setControl}
-        currentLabel={getCurrentControlLabel()}
-      />
-      <div style={{ display: 'flex', gap: 8, marginTop: 12, marginBottom: 12 }}>
+    <div className="info-style gp-glass gp-glass-strong">
+      <div className="info-menu-header">
+        <div>
+          <div className="gp-panel-title">메뉴</div>
+          <h2>월드 설정</h2>
+        </div>
+      </div>
+
+      <MenuOptionGroup title="플레이 모드" options={typeOptions} onSelect={setType} />
+      <MenuOptionGroup title="카메라 모드" options={controlOptions} onSelect={setControl} />
+
+      <div className="info-section-menu">
         {sectionButtons.map((section) => (
           <button
             key={section.id}
-            className="glass-button"
+            type="button"
+            className={`glass-button ${activeSection === section.id ? 'glass-button--active' : ''}`}
             onClick={() => setActiveSection(section.id)}
           >
             {section.label}
           </button>
         ))}
       </div>
-      {activeSection === 'help' && <InfoTabs />}
       {activeSection === 'camera' && (
         <CameraSettings
           mode={{ control: isCameraControl(mode.control) ? mode.control : 'thirdPerson' }}

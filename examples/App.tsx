@@ -6,7 +6,6 @@ import { GaesupAdmin } from '../src/admin-entry';
 import { Navigation } from './components/nav/Navigation';
 import { BlueprintEditorPage } from './pages/BlueprintEditorPage';
 import { EditPage } from './pages/EditPage';
-import { MiniRoomPage } from './pages/MiniRoom';
 import { NetworkMultiplayerPage } from './pages/NetworkMultiplayerPage';
 import { ShowcasePage } from './pages/ShowcasePage';
 import { WorldPage } from './pages/World';
@@ -20,7 +19,6 @@ function AppLayout() {
         <Route path="/" element={<ShowcasePage />} />
         <Route path="/world" element={<WorldPage showHud />} />
         <Route path="/edit" element={<EditPage />} />
-        <Route path="/mini-room" element={<MiniRoomPage />} />
         <Route path="/blueprints" element={<BlueprintEditorPage />} />
         <Route path="/network" element={<NetworkMultiplayerPage />} />
         <Route

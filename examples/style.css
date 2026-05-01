@@ -2,7 +2,8 @@
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  --app-sidebar-width: 128px;
+  --app-sidebar-width: 0px;
+  --app-header-height: 64px;
 }
 
 @font-face {
@@ -206,7 +207,7 @@ html, body, #root {
     "left   .      right"
     "footer footer footer";
   gap: var(--gp-content-gap);
-  padding: var(--gp-shell-pad);
+  padding: calc(var(--app-header-height, 64px) + var(--gp-shell-pad)) var(--gp-shell-pad) var(--gp-shell-pad);
   color: var(--gp-text);
   font-family: 'Pretendard', system-ui, sans-serif;
   font-size: 14px;
@@ -312,7 +313,7 @@ html, body, #root {
       "footer";
     inset: 0;
     align-content: start;
-    padding: 10px 10px calc(82px + env(safe-area-inset-bottom, 0px));
+    padding: calc(var(--app-header-height, 64px) + 10px) 10px calc(82px + env(safe-area-inset-bottom, 0px));
     gap: 8px;
   }
 
@@ -358,7 +359,7 @@ html, body, #root {
 
 @media (max-width: 520px) {
   .gp-shell {
-    padding: 8px 8px calc(76px + env(safe-area-inset-bottom, 0px));
+    padding: calc(var(--app-header-height, 64px) + 8px) 8px calc(76px + env(safe-area-inset-bottom, 0px));
   }
 
   .gp-pill {

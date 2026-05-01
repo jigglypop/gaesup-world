@@ -4,13 +4,106 @@
   top: calc(var(--gp-shell-pad, 16px) + var(--gp-header-height, 62px) + 10px);
   right: calc(var(--gp-right-rail, 304px) + var(--gp-shell-pad, 16px) + var(--gp-content-gap, 16px));
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  padding: 10px;
+  width: min(520px, calc(100vw - var(--gp-right-rail, 304px) - var(--gp-left-rail, 248px) - 64px));
+  max-height: calc(100vh - var(--gp-header-height, 62px) - 48px);
+  padding: 14px;
   z-index: 90;
   pointer-events: auto;
   font-family: 'Pretendard', system-ui, sans-serif;
-  max-width: min(860px, calc(100vw - var(--gp-right-rail, 304px) - 56px));
-  flex-wrap: wrap;
+  overflow: auto;
+}
+
+.info-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.info-menu-header h2 {
+  margin: 3px 0 0;
+  color: var(--gp-text, #f3f4f8);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.info-menu-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-menu-label {
+  color: var(--gp-text-dim, rgba(243, 244, 248, 0.76));
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.info-menu-options,
+.info-section-menu {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.info-section-menu {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding-top: 4px;
+  border-top: 1px solid var(--gp-glass-border, rgba(255, 255, 255, 0.1));
+}
+
+.info-style .camera-settings {
+  position: static;
+  transform: none;
+  width: auto;
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  color: var(--gp-text, white);
+  overflow: visible;
+}
+
+.info-style .settings-header {
+  margin-bottom: 12px;
+}
+
+.info-style .settings-header h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.info-style .settings-grid {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.info-style .quick-presets {
+  margin-top: 10px;
+}
+
+.info-style .info-group {
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.info-style .info-group + .info-group {
+  margin-top: 8px;
+}
+
+.info-style .info-group h3,
+.info-style .info-group p,
+.info-style .info-group ul {
+  margin-top: 0;
 }
 .p-recipe {
   padding: 8px;
@@ -31,7 +124,7 @@
 .glass-button {
   padding: 10px 12px;
   background-color: rgba(0, 0, 0, 0.7);
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   color: white;
   cursor: pointer;
@@ -46,6 +139,11 @@
   background-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.glass-button--active {
+  background-color: rgba(255, 216, 74, 0.18);
+  border-color: rgba(255, 216, 74, 0.55);
+  color: var(--gp-accent, #ffd84a);
 }
 .camera-description {
   position: fixed;
@@ -182,6 +280,7 @@
     top: 64px;
     max-height: calc(100vh - 154px - env(safe-area-inset-bottom, 0px));
     overflow: auto;
+    width: auto;
   }
 
   .camera-settings {
@@ -212,5 +311,10 @@
   .preset-button,
   .reset-button {
     min-height: 38px;
+  }
+
+  .info-menu-options,
+  .info-section-menu {
+    grid-template-columns: 1fr;
   }
 }

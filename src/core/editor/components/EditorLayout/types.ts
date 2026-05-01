@@ -42,11 +42,3 @@ export interface EditorShellAction {
     disabled?: boolean;
     onClick: () => void | Promise<void>;
 }
-
-export interface FloatingPanel {
-    id: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}
