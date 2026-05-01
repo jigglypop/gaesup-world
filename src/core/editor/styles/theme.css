@@ -2,14 +2,14 @@
 
 :root {
   --editor-surface-primary: rgba(25, 25, 30, 0.85);
-  --editor-surface-secondary: rgba(45, 45, 55, 0.7);
-  --editor-surface-hover: rgba(65, 65, 75, 0.85); /* For hover */
-  --editor-surface-active: rgba(85, 85, 95, 0.95); /* For active states, high opacity */
+  --editor-surface-secondary: rgba(34, 36, 46, 0.52);
+  --editor-surface-hover: rgba(84, 92, 110, 0.38);
+  --editor-surface-active: rgba(98, 112, 136, 0.46);
   --editor-surface-disabled: rgba(45, 45, 55, 0.5);
-  --editor-border-color: rgba(255, 255, 255, 0.1);
+  --editor-border-color: rgba(255, 255, 255, 0.18);
   --editor-text-primary: #f1f1f1;
   --editor-text-secondary: #a1a1a1;
-  --editor-glass-bg: rgba(30, 30, 35, 0.6);
+  --editor-glass-bg: rgba(18, 22, 32, 0.36);
   --editor-shadow: 0 8px 24px rgba(0,0,0,0.4);
   --editor-border-radius: 6px;
   --editor-surface: rgba(45, 45, 45, 0.95);
@@ -17,15 +17,15 @@
   --editor-text-main: #ffffff;
   --editor-text-muted: #c0c0c0;
   --editor-text-faint: #808080;
-  --editor-glass-blur: blur(15px);
+  --editor-glass-blur: blur(20px);
   --editor-spacing-xs: 4px;
   --editor-spacing-sm: 8px;
   --editor-spacing-md: 12px;
   --editor-spacing-lg: 16px;
   --editor-border: rgba(85, 85, 85, 0.8);
-  --editor-bg-1: rgba(30, 30, 35, 0.95);
-  --editor-bg-2: rgba(40, 40, 45, 0.95);
-  --editor-surface-1: rgba(50, 50, 55, 0.9);
+  --editor-bg-1: rgba(20, 24, 33, 0.52);
+  --editor-bg-2: rgba(24, 28, 38, 0.6);
+  --editor-surface-1: rgba(40, 48, 62, 0.46);
   --editor-accent: #0078d4;
   --editor-accent-color: #0078d4;
   --editor-accent-bg: rgba(0, 120, 212, 0.2);
@@ -115,9 +115,9 @@
   width: 148px;
   display: grid;
   grid-template-columns: 148px;
-  background: rgba(24, 27, 32, 0.9);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: linear-gradient(160deg, rgba(22, 30, 44, 0.4), rgba(14, 18, 28, 0.32));
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--editor-border-color);
   border-radius: 14px;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
@@ -139,7 +139,7 @@
   gap: 12px;
   padding: 10px;
   border-right: 1px solid var(--editor-border-color);
-  background: rgba(0, 0, 0, 0.16);
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .editor-sidebar-header {
@@ -170,7 +170,7 @@
   min-width: 0;
   min-height: 0;
   flex-direction: column;
-  background: rgba(30, 30, 35, 0.58);
+  background: rgba(14, 18, 28, 0.24);
   overflow: hidden;
 }
 
@@ -178,7 +178,7 @@
   flex: 0 0 auto;
   padding: 12px 14px;
   border-bottom: 1px solid var(--editor-border-color);
-  background: rgba(0, 0, 0, 0.22);
+  background: rgba(0, 0, 0, 0.12);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -201,7 +201,7 @@
 .editor-sidebar-close {
   flex: 0 0 auto;
   padding: 5px 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--editor-border-color);
   border-radius: 6px;
   color: var(--editor-text-secondary);
@@ -218,6 +218,7 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
+  padding: 2px;
 }
 
 .editor-shell-title {
@@ -466,39 +467,30 @@
   color: var(--editor-text-muted);
 }
 
-/* Scrollbars */
-.editor-scrollbar::-webkit-scrollbar,
-.inspector-panel::-webkit-scrollbar,
-.hierarchy-panel::-webkit-scrollbar,
-.asset-grid::-webkit-scrollbar,
-.performance-panel .performance-history::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Unified Scrollbar */
+.gaesup-editor * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(181, 203, 236, 0.42) rgba(8, 12, 20, 0.14);
 }
 
-.editor-scrollbar::-webkit-scrollbar-track,
-.inspector-panel::-webkit-scrollbar-track,
-.hierarchy-panel::-webkit-scrollbar-track,
-.asset-grid::-webkit-scrollbar-track,
-.performance-panel .performance-history::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
+.gaesup-editor *::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
 }
 
-.editor-scrollbar::-webkit-scrollbar-thumb,
-.inspector-panel::-webkit-scrollbar-thumb,
-.hierarchy-panel::-webkit-scrollbar-thumb,
-.asset-grid::-webkit-scrollbar-thumb,
-.performance-panel .performance-history::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
+.gaesup-editor *::-webkit-scrollbar-track {
+  background: rgba(8, 12, 20, 0.14);
+  border-radius: 999px;
 }
 
-.editor-scrollbar::-webkit-scrollbar-thumb:hover,
-.inspector-panel::-webkit-scrollbar-thumb:hover,
-.hierarchy-panel::-webkit-scrollbar-thumb:hover,
-.asset-grid::-webkit-scrollbar-thumb:hover,
-.performance-panel .performance-history::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+.gaesup-editor *::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(186, 214, 255, 0.52), rgba(124, 162, 214, 0.48));
+  border: 2px solid rgba(8, 12, 20, 0.18);
+  border-radius: 999px;
+}
+
+.gaesup-editor *::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(208, 226, 255, 0.64), rgba(147, 189, 248, 0.58));
 }
 
 /* Panel Headers & Controls */
@@ -1057,30 +1049,4 @@ textarea:focus-visible {
 }
 .handle-corner {
   right: -3px; bottom: -3px; width: 12px; height: 12px; cursor: nwse-resize;
-}
-
-/* Global Scrollbar Styling */
-.rp-content::-webkit-scrollbar,
-.panel-tab-content::-webkit-scrollbar,
-.hierarchy-panel::-webkit-scrollbar,
-.inspector-panel::-webkit-scrollbar,
-.asset-grid::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-  background-color: rgba(0, 0, 0, 0.2);
-}
-.rp-content::-webkit-scrollbar-thumb,
-.panel-tab-content::-webkit-scrollbar-thumb,
-.hierarchy-panel::-webkit-scrollbar-thumb,
-.inspector-panel::-webkit-scrollbar-thumb,
-.asset-grid::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-}
-.rp-content::-webkit-scrollbar-thumb:hover,
-.panel-tab-content::-webkit-scrollbar-thumb:hover,
-.hierarchy-panel::-webkit-scrollbar-thumb:hover,
-.inspector-panel::-webkit-scrollbar-thumb:hover,
-.asset-grid::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
 }

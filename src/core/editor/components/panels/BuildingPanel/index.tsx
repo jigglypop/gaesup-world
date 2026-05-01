@@ -13,7 +13,6 @@ import {
   BUILDING_WALL_PRESETS,
   BUILDING_TILE_PRESETS,
   BUILDING_TILE_OBJECT_OPTIONS,
-  BUILDING_TILE_SHAPE_OPTIONS,
   type MeshConfig,
 } from '../../../../building/types';
 import { FieldColor, FieldRow } from '../../fields';
@@ -29,7 +28,6 @@ import {
   EnvironmentSection,
   FireSettingsSection,
   FlagSettingsSection,
-  FooterSummarySection,
   NPCAnimationSection,
   NPCMovementSection,
   NPCPerceptionSection,
@@ -51,9 +49,7 @@ export type BuildingPanelSlot =
   | 'beforeInspector'
   | 'afterWallSettings'
   | 'afterTileSettings'
-  | 'afterObjectSettings'
-  | 'beforeFooter'
-  | 'footer';
+  | 'afterObjectSettings';
 
 export type { BuildingPanelAction } from './sections';
 
@@ -249,9 +245,6 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
     ? selectedWallGroup?.walls.find((wall) => wall.id === selectedWallId)
     : undefined;
   const currentEditModeLabel = editModes.find((mode) => mode.type === editMode)?.label ?? editMode;
-  const currentCoverLabel = BUILDING_TILE_OBJECT_OPTIONS.find((type) => type.type === selectedTileObjectType)?.labelKo ?? selectedTileObjectType;
-  const currentPlacedObjectLabel = BUILDING_PLACED_OBJECT_OPTIONS.find((type) => type.type === selectedPlacedObjectType)?.labelKo ?? selectedPlacedObjectType;
-  const currentTileShapeLabel = BUILDING_TILE_SHAPE_OPTIONS.find((shape) => shape.type === currentTileShape)?.labelKo ?? currentTileShape;
   const currentWallKindLabel = BUILDING_WALL_KIND_OPTIONS.find((kind) => kind.type === (selectedWall?.wallKind ?? currentWallKind))?.labelKo ?? currentWallKind;
   const selectedModelObject = getDefaultBuildingObject(selectedModelObjectId) ?? DEFAULT_BUILDING_OBJECT_CATALOG[0];
   const selectedNPCInstance = selectedNPCInstanceId ? npcInstances.get(selectedNPCInstanceId) : undefined;
@@ -861,16 +854,6 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
       {isObjectMode && slots.afterObjectSettings}
       {children}
       </div>
-
-      {slots.beforeFooter}
-      <FooterSummarySection
-        currentEditModeLabel={currentEditModeLabel}
-        currentCoverLabel={currentCoverLabel}
-        currentPlacedObjectLabel={currentPlacedObjectLabel}
-        currentTileHeight={currentTileHeight}
-        currentTileShapeLabel={currentTileShapeLabel}
-        footer={slots.footer}
-      />
     </div>
   );
 };

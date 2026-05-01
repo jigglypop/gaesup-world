@@ -1,4 +1,4 @@
-import React, { type ReactNode } from 'react';
+import React from 'react';
 
 import {
   appendNPCBlueprintNode,
@@ -113,51 +113,6 @@ export function EnvironmentSection({
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-export type FooterSummarySectionProps = {
-  currentEditModeLabel: string;
-  currentCoverLabel: string;
-  currentPlacedObjectLabel: string;
-  currentTileHeight: number;
-  currentTileShapeLabel: string;
-  footer?: ReactNode;
-};
-
-export function FooterSummarySection({
-  currentEditModeLabel,
-  currentCoverLabel,
-  currentPlacedObjectLabel,
-  currentTileHeight,
-  currentTileShapeLabel,
-  footer,
-}: FooterSummarySectionProps) {
-  return (
-    <div className="building-panel__footer">
-      <div className="building-panel__info-item">
-        <span className="building-panel__info-label">현재 모드</span>
-        <span className="building-panel__info-value">{currentEditModeLabel}</span>
-      </div>
-      <div className="building-panel__info-item">
-        <span className="building-panel__info-label">지형 덮개</span>
-        <span className="building-panel__info-value">{currentCoverLabel}</span>
-      </div>
-      <div className="building-panel__info-item">
-        <span className="building-panel__info-label">오브젝트</span>
-        <span className="building-panel__info-value">{currentPlacedObjectLabel}</span>
-      </div>
-      <div className="building-panel__info-item">
-        <span className="building-panel__info-label">타일 높이</span>
-        <span className="building-panel__info-value">{currentTileHeight}</span>
-      </div>
-      <div className="building-panel__info-item">
-        <span className="building-panel__info-label">타일 형태</span>
-        <span className="building-panel__info-value">{currentTileShapeLabel}</span>
-      </div>
-      <div className="building-panel__hint">좌클릭 배치 · 우클릭 회전 · Q/E 높이</div>
-      {footer}
     </div>
   );
 }
