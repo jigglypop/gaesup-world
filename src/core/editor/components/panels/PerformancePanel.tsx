@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 
+import type { EditorPanelBaseProps } from './types';
 import { useGaesupStore } from '../../../stores/gaesupStore';
 
 const HISTORY_LEN = 60;
@@ -51,7 +52,7 @@ const BarMeter: React.FC<{ value: number; max: number; color: string; label: str
   );
 };
 
-export function PerformancePanel() {
+export function PerformancePanel({ className = '', style, children }: EditorPanelBaseProps = {}) {
   const performanceData = useGaesupStore(useShallow((state) => state.performance));
   const [fps, setFps] = useState({ current: 0, min: Infinity, max: 0, avg: 0, p1Low: 0, history: Array(HISTORY_LEN).fill(0) });
   const [mem, setMem] = useState({ used: 0, limit: 0, history: Array(HISTORY_LEN).fill(0) });
@@ -171,7 +172,7 @@ export function PerformancePanel() {
   const texCount = performanceData.engine.textures;
 
   return (
-    <div className="perf-panel">
+    <div className={`perf-panel ${className}`} style={style}>
       {/* FPS */}
       <div className="perf-stat-group">
         <div className="perf-header">
@@ -247,6 +248,7 @@ export function PerformancePanel() {
         </div>
         <Sparkline data={mem.history} color={getMemoryColor(mem.used, mem.limit)} max={mem.limit || 1} />
       </div>
+      {children}
     </div>
   );
 }

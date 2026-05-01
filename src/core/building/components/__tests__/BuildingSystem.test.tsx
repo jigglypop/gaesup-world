@@ -78,6 +78,10 @@ jest.mock('../../../npc/components/NPCPreview', () => ({
   NPCPreview: () => <group name="npc-preview" />
 }));
 
+jest.mock('../../../weather', () => ({
+  WeatherEffect: ({ kind }: { kind: string }) => <group name={`weather-effect-${kind}`} />,
+}));
+
 // mesh 하위 컴포넌트들은 GLSL 셰이더를 import하므로 jsdom 환경에서는 모킹.
 jest.mock('../mesh/sakura', () => ({
   SakuraBatch: () => <group name="sakura-batch" />,
@@ -226,6 +230,16 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
       expectSceneHasName(renderer, 'preview-tile');
       expectSceneHasName(renderer, 'preview-wall');
       expectSceneHasName(renderer, 'npc-preview');
+
+      renderer.unmount();
+    });
+
+    test('건축 날씨 효과가 선택된 weatherEffect로 렌더링되어야 함', async () => {
+      mockStore({ weatherEffect: 'storm' });
+
+      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+
+      expectSceneHasName(renderer, 'weather-effect-storm');
 
       renderer.unmount();
     });

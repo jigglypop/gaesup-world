@@ -63,7 +63,13 @@ const blueprintCategories: BlueprintCategory[] = [
   { id: 'items', name: 'Items', type: 'item', count: 0 },
 ];
 
-export const BlueprintPanel: React.FC = () => {
+export type BlueprintPanelProps = {
+  className?: string;
+  style?: React.CSSProperties;
+  children?: React.ReactNode;
+};
+
+export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', style, children }) => {
   const [selectedCategory, setSelectedCategory] = useState<BlueprintType>('character');
   const [selectedBlueprint, setSelectedBlueprint] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -348,7 +354,7 @@ export const BlueprintPanel: React.FC = () => {
   };
 
   return (
-    <div className="blueprint-panel">
+    <div className={`blueprint-panel ${className}`} style={style}>
       <h3 className="editor-title">Blueprint Library</h3>
       
       <div className="blueprint-panel__toolbar">
@@ -476,6 +482,7 @@ export const BlueprintPanel: React.FC = () => {
         </div>
           </>
       )}
+      {children}
     </div>
   );
 }; 

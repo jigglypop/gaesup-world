@@ -1,5 +1,5 @@
 import type { ContentBundle, ContentBundleValidation } from '../content';
-import type { EditorShellAction, EditorShellPluginPanel } from './components/EditorLayout/types';
+import type { EditorPanelDefaults, EditorShellAction, EditorShellPluginPanel } from './components/EditorLayout/types';
 
 export type EditorShellCommand = {
   id: string;
@@ -13,6 +13,9 @@ export type EditorShellValidation = (bundle: ContentBundle) => ContentBundleVali
 export type EditorShellOptions = {
   panels?: EditorShellPluginPanel[];
   defaultActivePanels?: string[];
+  hiddenBuiltInPanels?: string[];
+  panelOrder?: string[];
+  panelDefaults?: Record<string, EditorPanelDefaults>;
   commands?: EditorShellCommand[];
   validate?: EditorShellValidation;
 };
@@ -20,6 +23,9 @@ export type EditorShellOptions = {
 export type EditorShell = {
   panels: EditorShellPluginPanel[];
   defaultActivePanels?: string[];
+  hiddenBuiltInPanels?: string[];
+  panelOrder?: string[];
+  panelDefaults?: Record<string, EditorPanelDefaults>;
   actions: EditorShellAction[];
   validate?: EditorShellValidation;
 };
@@ -44,6 +50,15 @@ export function createEditorShell(options: EditorShellOptions = {}): EditorShell
   };
   if (options.defaultActivePanels) {
     shell.defaultActivePanels = options.defaultActivePanels;
+  }
+  if (options.hiddenBuiltInPanels) {
+    shell.hiddenBuiltInPanels = options.hiddenBuiltInPanels;
+  }
+  if (options.panelOrder) {
+    shell.panelOrder = options.panelOrder;
+  }
+  if (options.panelDefaults) {
+    shell.panelDefaults = options.panelDefaults;
   }
   if (options.validate) {
     shell.validate = options.validate;

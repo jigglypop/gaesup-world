@@ -2,16 +2,18 @@ import React, { useCallback, useMemo, useState } from 'react';
 
 import {
   GameplayEventEngine,
+  SEED_GAMEPLAY_EVENTS,
   type GameplayEventBlueprint,
   type GameplayEventAction,
   type GameplayEventCondition,
   type GameplayEventTrigger,
   type GameplayTriggerEvent,
 } from '../../../../gameplay';
+import type { EditorPanelBaseProps } from '../types';
 import './styles.css';
 
-export type GameplayEventPanelProps = {
-  blueprints: GameplayEventBlueprint[];
+export type GameplayEventPanelProps = EditorPanelBaseProps & {
+  blueprints?: GameplayEventBlueprint[];
   onCreate?: (blueprint: GameplayEventBlueprint) => void;
   onUpdate?: (blueprint: GameplayEventBlueprint) => void;
   onDelete?: (id: string) => void;
@@ -145,11 +147,14 @@ const toBooleanValue = (value: string): string | number | boolean => {
 };
 
 export function GameplayEventPanel({
-  blueprints,
+  blueprints = SEED_GAMEPLAY_EVENTS,
   onCreate,
   onUpdate,
   onDelete,
   onRun,
+  className = '',
+  style,
+  children,
 }: GameplayEventPanelProps) {
   const fallbackEngine = useMemo(() => new GameplayEventEngine({ blueprints }), [blueprints]);
   const [id, setId] = useState('custom-toast');
@@ -309,7 +314,7 @@ export function GameplayEventPanel({
   );
 
   return (
-    <div className="gameplay-event-panel">
+    <div className={`gameplay-event-panel ${className}`} style={style}>
       <section className="gameplay-event-panel__section">
         <div className="gameplay-event-panel__title">Create Manual Event</div>
         <label className="gameplay-event-panel__field">
@@ -461,6 +466,7 @@ export function GameplayEventPanel({
           {status.message}
         </div>
       </section>
+      {children}
     </div>
   );
 }

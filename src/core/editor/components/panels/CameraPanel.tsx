@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 
 import { CameraSettingsTab } from './CameraSettingsTab';
-import { CameraPanelTab } from './types';
+import { CameraPanelTab, type EditorPanelBaseProps } from './types';
 import { CameraController } from '../../../camera/components/CameraController';
 import { CameraDebugPanel } from '../../../camera/components/CameraDebugPanel';
 import { CameraPresets } from '../../../camera/components/CameraPresets';
 
-export function CameraPanel() {
+export function CameraPanel({ className = '', style, children }: EditorPanelBaseProps = {}) {
   const [activeTab, setActiveTab] = useState<CameraPanelTab>('Settings');
 
   const renderContent = () => {
@@ -25,7 +25,7 @@ export function CameraPanel() {
   };
 
   return (
-    <div className="tabbed-panel">
+    <div className={`tabbed-panel ${className}`} style={style}>
       <div className="panel-tabs">
         <button className={`panel-tab ${activeTab === 'Settings' ? 'active' : ''}`} onClick={() => setActiveTab('Settings')}>Settings</button>
         <button className={`panel-tab ${activeTab === 'Controller' ? 'active' : ''}`} onClick={() => setActiveTab('Controller')}>Controller</button>
@@ -34,6 +34,7 @@ export function CameraPanel() {
       </div>
       <div className="panel-tab-content">
         {renderContent()}
+        {children}
       </div>
     </div>
   );

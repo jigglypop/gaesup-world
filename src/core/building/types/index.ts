@@ -35,6 +35,22 @@ export interface MeshConfig {
   transparent?: boolean;
 }
 
+export type BuildingWallKind = 'solid' | 'window' | 'door' | 'arch' | 'half' | 'railing' | 'glass';
+
+export type BuildingWallPreset = {
+  id: string;
+  categoryId: string;
+  categoryName: string;
+  labelEn: string;
+  labelKo: string;
+  exteriorColor: string;
+  interiorColor: string;
+  sideColor: string;
+  defaultKind: BuildingWallKind;
+  roughness?: number;
+  metalness?: number;
+};
+
 export interface WallConfig {
   id: string;
   position: Position3D;
@@ -45,6 +61,8 @@ export interface WallConfig {
   width?: number;
   height?: number;
   depth?: number;
+  wallKind?: BuildingWallKind;
+  flipSides?: boolean;
 }
 
 export interface WallGroupConfig {
@@ -53,6 +71,7 @@ export interface WallGroupConfig {
   frontMeshId?: string;
   backMeshId?: string;
   sideMeshId?: string;
+  defaultWallKind?: BuildingWallKind;
   walls: WallConfig[];
 }
 
@@ -186,6 +205,16 @@ export const BUILDING_WEATHER_EFFECT_OPTIONS: BuildingOptionMeta<BuildingWeather
   { type: 'wind', labelEn: 'Wind', labelKo: '바람' },
 ];
 
+export const BUILDING_WALL_KIND_OPTIONS: BuildingOptionMeta<BuildingWallKind>[] = [
+  { type: 'solid', labelEn: 'Solid', labelKo: '일반벽' },
+  { type: 'window', labelEn: 'Window', labelKo: '창문벽' },
+  { type: 'door', labelEn: 'Door', labelKo: '문벽' },
+  { type: 'arch', labelEn: 'Arch', labelKo: '아치' },
+  { type: 'half', labelEn: 'Half Wall', labelKo: '반벽' },
+  { type: 'railing', labelEn: 'Railing', labelKo: '난간' },
+  { type: 'glass', labelEn: 'Glass Wall', labelKo: '유리벽' },
+];
+
 export type FlagStyle = 'flag' | 'banner' | 'panel' | 'placard';
 
 export const FLAG_STYLE_META: Record<FlagStyle, {
@@ -221,6 +250,17 @@ export type BuildingTilePreset = {
   transparent?: boolean;
   mapTextureUrl?: string;
 };
+
+export const BUILDING_WALL_PRESETS: BuildingWallPreset[] = [
+  { id: 'brick-house', categoryId: 'exterior-walls', categoryName: 'Exterior Walls', labelEn: 'Brick House', labelKo: '벽돌집', exteriorColor: '#8b4a34', interiorColor: '#eadfce', sideColor: '#6f3b2c', defaultKind: 'solid', roughness: 0.82 },
+  { id: 'plaster-house', categoryId: 'interior-walls', categoryName: 'Interior Walls', labelEn: 'Plaster Room', labelKo: '석고 내벽', exteriorColor: '#d7d0bf', interiorColor: '#f2eadc', sideColor: '#b6ac9a', defaultKind: 'solid', roughness: 0.86 },
+  { id: 'wood-cabin', categoryId: 'exterior-walls', categoryName: 'Exterior Walls', labelEn: 'Wood Cabin', labelKo: '나무집', exteriorColor: '#8a5a36', interiorColor: '#c8a174', sideColor: '#6f4529', defaultKind: 'solid', roughness: 0.74 },
+  { id: 'stone-cottage', categoryId: 'exterior-walls', categoryName: 'Exterior Walls', labelEn: 'Stone Cottage', labelKo: '돌집', exteriorColor: '#79766d', interiorColor: '#d5ceb9', sideColor: '#56544e', defaultKind: 'solid', roughness: 0.9 },
+  { id: 'modern-concrete', categoryId: 'exterior-walls', categoryName: 'Exterior Walls', labelEn: 'Modern Concrete', labelKo: '모던 콘크리트', exteriorColor: '#858a8c', interiorColor: '#e8e8e3', sideColor: '#64686a', defaultKind: 'solid', roughness: 0.8 },
+  { id: 'shopfront', categoryId: 'special-walls', categoryName: 'Special Walls', labelEn: 'Shopfront', labelKo: '상점 전면', exteriorColor: '#4b5563', interiorColor: '#e5dcc9', sideColor: '#374151', defaultKind: 'window', roughness: 0.48, metalness: 0.08 },
+  { id: 'glass-office', categoryId: 'special-walls', categoryName: 'Special Walls', labelEn: 'Glass Office', labelKo: '유리 오피스', exteriorColor: '#8ecae6', interiorColor: '#d8f2ff', sideColor: '#4b6470', defaultKind: 'glass', roughness: 0.16, metalness: 0.03 },
+  { id: 'garden-fence', categoryId: 'special-walls', categoryName: 'Special Walls', labelEn: 'Garden Fence', labelKo: '정원 울타리', exteriorColor: '#7a5a3a', interiorColor: '#9b7653', sideColor: '#5d422c', defaultKind: 'railing', roughness: 0.78 },
+];
 
 export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   { id: 'oak-planks', categoryId: 'wood-floors', categoryName: 'Wood Floors', labelEn: 'Oak Planks', labelKo: '오크 판자', color: '#8b5a2b', roughness: 0.58 },

@@ -24,6 +24,7 @@ type ClusterSpec = {
 };
 
 type RootSpec = { angle: number; length: number; radius: number; spread: number };
+type TreeCanopyShape = 'round' | 'oval' | 'conifer' | 'column' | 'weeping' | 'sparse';
 
 function hash01(v: number): number {
   const x = Math.sin(v * 127.1 + 311.7) * 43758.5453123;
@@ -86,18 +87,26 @@ function getSharedMaterials(toon: boolean): SakuraMatSet {
 
 // --- Tree structure generators ---
 
-function createBranches(scale: number, trunkHeight: number): BranchSpec[] {
-  const n = Math.max(11, Math.min(18, Math.round(10 + scale * 4)));
+function createBranches(scale: number, trunkHeight: number, shape: TreeCanopyShape): BranchSpec[] {
+  const countBias = shape === 'sparse' ? 5 : 0;
+  const n = Math.max(8, Math.min(20, Math.round(10 + scale * 4 + countBias)));
   return Array.from({ length: n }, (_, i) => {
     const s = 19.3 + i * 13.17 + scale * 5.1;
-    const len = (1.05 + hash01(s + 1) * 1.35) * scale;
+    const conifer = shape === 'conifer' || shape === 'column';
+    const sparse = shape === 'sparse';
+    const lenMul = conifer ? 0.58 : sparse ? 1.24 : shape === 'weeping' ? 0.82 : 1;
+    const len = (1.05 + hash01(s + 1) * 1.35) * scale * lenMul;
     const dir = hash01(s + 2) > 0.5 ? 1 : -1;
     return {
-      pivotY: trunkHeight * (0.38 + hash01(s + 3) * 0.42), length: len,
-      radius: (0.08 + hash01(s + 4) * 0.045) * scale,
-      yaw: hash01(s + 5) * Math.PI * 2, bend: (0.58 + hash01(s + 6) * 0.34) * dir,
-      lean: (hash01(s + 7) - 0.5) * 0.34, twigLength: len * (0.34 + hash01(s + 8) * 0.26),
-      twigYaw: (hash01(s + 9) - 0.5) * 0.95, twigLean: (0.25 + hash01(s + 10) * 0.38) * -dir,
+      pivotY: trunkHeight * (conifer ? 0.28 + hash01(s + 3) * 0.52 : 0.38 + hash01(s + 3) * 0.42),
+      length: len,
+      radius: (0.08 + hash01(s + 4) * 0.045) * scale * (sparse ? 0.82 : 1),
+      yaw: hash01(s + 5) * Math.PI * 2,
+      bend: (conifer ? 0.38 : 0.58 + hash01(s + 6) * 0.34) * dir,
+      lean: (hash01(s + 7) - 0.5) * (conifer ? 0.18 : 0.34),
+      twigLength: len * (sparse ? 0.5 : 0.34 + hash01(s + 8) * 0.26),
+      twigYaw: (hash01(s + 9) - 0.5) * (conifer ? 0.48 : 0.95),
+      twigLean: (shape === 'weeping' ? -0.55 : 0.25 + hash01(s + 10) * 0.38) * -dir,
     };
   });
 }
@@ -114,19 +123,33 @@ function createRoots(scale: number): RootSpec[] {
   });
 }
 
-function createClusters(scale: number, th: number, cr: number, ch: number): ClusterSpec[] {
-  const n = Math.max(9, Math.min(16, Math.round(9 + scale * 4)));
+function createClusters(scale: number, th: number, cr: number, ch: number, shape: TreeCanopyShape): ClusterSpec[] {
+  const n = Math.max(6, Math.min(18, Math.round((shape === 'sparse' ? 6 : 9) + scale * 4)));
   return Array.from({ length: n }, (_, i) => {
     const s = 220.4 + i * 10.73 + scale * 4.4;
     const a = hash01(s) * Math.PI * 2;
-    const rad = cr * (0.18 + hash01(s + 1) * 0.72);
-    const ox = (0.7 + hash01(s + 5) * 0.9) * scale;
-    const oy = (0.52 + hash01(s + 6) * 0.56) * scale;
-    const oz = (0.66 + hash01(s + 7) * 0.88) * scale;
+    const tier = n <= 1 ? 0 : i / (n - 1);
+    const pointTaper = Math.max(0.12, 1 - tier);
+    const conifer = shape === 'conifer' || shape === 'column';
+    const rad = conifer
+      ? cr * pointTaper * (shape === 'column' ? 0.34 : 0.58) * (0.55 + hash01(s + 1) * 0.45)
+      : cr * (0.18 + hash01(s + 1) * 0.72);
+    const ox = (0.7 + hash01(s + 5) * 0.9) * scale * (conifer ? pointTaper : 1);
+    const oy = (0.52 + hash01(s + 6) * 0.56) * scale * (shape === 'weeping' ? 1.4 : 1);
+    const oz = (0.66 + hash01(s + 7) * 0.88) * scale * (conifer ? pointTaper : 1);
+    const y = conifer
+      ? th * 0.42 + ch * (0.06 + tier * 0.9)
+      : shape === 'weeping'
+        ? th * (0.46 + hash01(s + 3) * 0.18) + hash01(s + 4) * ch * 0.32
+        : th * (0.64 + hash01(s + 3) * 0.22) + hash01(s + 4) * ch * 0.42;
     return {
-      position: [Math.cos(a) * rad, th * (0.64 + hash01(s + 3) * 0.22) + hash01(s + 4) * ch * 0.42, Math.sin(a) * rad * (0.86 + hash01(s + 2) * 0.22)],
+      position: [Math.cos(a) * rad, y, Math.sin(a) * rad * (0.86 + hash01(s + 2) * 0.22)],
       rotation: [(hash01(s + 8) - 0.5) * 0.55, hash01(s + 9) * Math.PI * 2, (hash01(s + 10) - 0.5) * 0.55],
-      outerScale: [ox, oy, oz],
+      outerScale: [
+        shape === 'column' ? ox * 0.62 : ox,
+        conifer ? oy * 0.88 : oy,
+        shape === 'column' ? oz * 0.62 : oz,
+      ],
       innerScale: [ox * 0.7, oy * 0.72, oz * 0.7],
     };
   });
@@ -185,6 +208,7 @@ function composeSimple(
 function fillCanopy(
   pos: Float32Array, col: Float32Array, start: number, count: number,
   th: number, cr: number, ch: number, ox: number, oy: number, oz: number,
+  shape: TreeCanopyShape = 'round',
   tint?: THREE.Color,
 ) {
   const a = tint ? tint.clone().multiplyScalar(0.85) : new THREE.Color('#f3a1bf');
@@ -193,10 +217,18 @@ function fillCanopy(
   for (let i = 0; i < count; i++) {
     const s = 330.7 + i * 17.13;
     const ang = hash01(s) * Math.PI * 2;
-    const ring = cr * (0.18 + Math.sqrt(hash01(s + 1)) * 0.86);
+    const heightT = Math.pow(hash01(s + 4), shape === 'conifer' || shape === 'column' ? 0.92 : 0.72);
+    const taper = shape === 'conifer'
+      ? Math.max(0.08, 1 - heightT * 0.92)
+      : shape === 'column'
+        ? 0.32 + Math.max(0.08, 1 - heightT) * 0.24
+        : shape === 'weeping'
+          ? 0.82 + heightT * 0.28
+          : 1;
+    const ring = cr * taper * (0.18 + Math.sqrt(hash01(s + 1)) * 0.86);
     const idx = (start + i) * 3;
     pos[idx] = Math.cos(ang) * ring * (0.82 + hash01(s + 2) * 0.22) + ox;
-    pos[idx + 1] = th * 0.58 + Math.pow(hash01(s + 4), 0.72) * ch + (hash01(s + 5) - 0.5) * 0.36 + oy;
+    pos[idx + 1] = th * (shape === 'weeping' ? 0.46 : 0.58) + heightT * ch + (hash01(s + 5) - 0.5) * 0.36 + oy;
     pos[idx + 2] = Math.sin(ang) * ring * (0.8 + hash01(s + 3) * 0.26) + oz;
     t.copy(a).lerp(b, 0.28 + hash01(s + 6) * 0.72).multiplyScalar(0.92 + hash01(s + 7) * 0.18);
     setColor(col, idx, t);
@@ -284,6 +316,7 @@ export type SakuraTreeEntry = {
 type TreeSpec = {
   pos: [number, number, number];
   scale: number; trunkHeight: number; crownRadius: number; crownHeight: number;
+  shape: TreeCanopyShape;
   branches: BranchSpec[]; roots: RootSpec[]; clusters: ClusterSpec[];
   canopyN: number; groundN: number; fallingN: number;
   blossom: THREE.Color;
@@ -295,22 +328,24 @@ const _defaultBark = new THREE.Color('#5e3d30');
 const _white = new THREE.Color('#ffffff');
 
 const TREE_PRESETS: Record<BuildingTreeKind, {
-  canopy: string;
+  canopyColor: string;
   bark: string;
+  shape: TreeCanopyShape;
   crownRadius: number;
   crownHeight: number;
   trunkHeight: number;
+  canopyDensity: number;
   falling: number;
   ground: number;
 }> = {
-  sakura: { canopy: '#f7bfd2', bark: '#5e3d30', crownRadius: 1.0, crownHeight: 1.0, trunkHeight: 1.0, falling: 1.0, ground: 1.0 },
-  oak: { canopy: '#4f8f3a', bark: '#6b4a2a', crownRadius: 1.08, crownHeight: 0.9, trunkHeight: 1.0, falling: 0.08, ground: 0.35 },
-  pine: { canopy: '#2f6f45', bark: '#5b3b24', crownRadius: 0.82, crownHeight: 1.26, trunkHeight: 1.12, falling: 0.02, ground: 0.12 },
-  maple: { canopy: '#d05a2d', bark: '#654126', crownRadius: 1.02, crownHeight: 0.86, trunkHeight: 0.96, falling: 0.45, ground: 0.8 },
-  birch: { canopy: '#87b95a', bark: '#e8e1cf', crownRadius: 0.92, crownHeight: 0.95, trunkHeight: 1.08, falling: 0.12, ground: 0.35 },
-  willow: { canopy: '#7fae55', bark: '#6a5635', crownRadius: 1.16, crownHeight: 1.18, trunkHeight: 0.92, falling: 0.2, ground: 0.45 },
-  cypress: { canopy: '#315f3a', bark: '#59402d', crownRadius: 0.65, crownHeight: 1.45, trunkHeight: 1.2, falling: 0.02, ground: 0.12 },
-  dead: { canopy: '#8b7a61', bark: '#4b392c', crownRadius: 0.66, crownHeight: 0.72, trunkHeight: 1.04, falling: 0.0, ground: 0.12 },
+  sakura: { canopyColor: '#f7bfd2', bark: '#5e3d30', shape: 'round', crownRadius: 1.0, crownHeight: 1.0, trunkHeight: 1.0, canopyDensity: 1.0, falling: 1.0, ground: 1.0 },
+  oak: { canopyColor: '#4f8f3a', bark: '#6b4a2a', shape: 'round', crownRadius: 1.12, crownHeight: 0.86, trunkHeight: 1.0, canopyDensity: 1.0, falling: 0.08, ground: 0.35 },
+  pine: { canopyColor: '#2f6f45', bark: '#5b3b24', shape: 'conifer', crownRadius: 0.92, crownHeight: 1.5, trunkHeight: 1.18, canopyDensity: 0.82, falling: 0.02, ground: 0.12 },
+  maple: { canopyColor: '#d05a2d', bark: '#654126', shape: 'oval', crownRadius: 1.02, crownHeight: 0.78, trunkHeight: 0.96, canopyDensity: 1.0, falling: 0.45, ground: 0.8 },
+  birch: { canopyColor: '#87b95a', bark: '#e8e1cf', shape: 'oval', crownRadius: 0.82, crownHeight: 1.08, trunkHeight: 1.14, canopyDensity: 0.86, falling: 0.12, ground: 0.35 },
+  willow: { canopyColor: '#7fae55', bark: '#6a5635', shape: 'weeping', crownRadius: 1.2, crownHeight: 1.28, trunkHeight: 0.88, canopyDensity: 1.08, falling: 0.2, ground: 0.45 },
+  cypress: { canopyColor: '#315f3a', bark: '#59402d', shape: 'column', crownRadius: 0.78, crownHeight: 1.65, trunkHeight: 1.24, canopyDensity: 0.74, falling: 0.02, ground: 0.12 },
+  dead: { canopyColor: '#8b7a61', bark: '#4b392c', shape: 'sparse', crownRadius: 0.7, crownHeight: 0.7, trunkHeight: 1.08, canopyDensity: 0.2, falling: 0.0, ground: 0.12 },
 };
 
 function computeSpecs(trees: SakuraTreeEntry[]): TreeSpec[] {
@@ -322,12 +357,13 @@ function computeSpecs(trees: SakuraTreeEntry[]): TreeSpec[] {
     const ch = (2.15 * s + Math.min(t.size * 0.04, 0.35)) * preset.crownHeight;
     return {
       pos: t.position, scale: s, trunkHeight: th, crownRadius: cr, crownHeight: ch,
-      branches: createBranches(s, th), roots: createRoots(s),
-      clusters: createClusters(s, th, cr, ch),
-      canopyN: Math.max(180, Math.min(420, Math.round(210 + s * 95))),
+      shape: preset.shape,
+      branches: createBranches(s, th, preset.shape), roots: createRoots(s),
+      clusters: createClusters(s, th, cr, ch, preset.shape),
+      canopyN: Math.round(Math.max(180, Math.min(420, Math.round(210 + s * 95))) * preset.canopyDensity),
       groundN: Math.round(Math.max(44, Math.min(120, Math.round(54 + s * 26))) * preset.ground),
       fallingN: Math.round(Math.max(52, Math.min(132, Math.round(62 + s * 30))) * preset.falling),
-      blossom: t.blossomColor ? new THREE.Color(t.blossomColor) : new THREE.Color(preset.canopy),
+      blossom: t.blossomColor ? new THREE.Color(t.blossomColor) : new THREE.Color(preset.canopyColor),
       bark: t.barkColor ? new THREE.Color(t.barkColor) : new THREE.Color(preset.bark),
     };
   });
@@ -416,7 +452,7 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
     let off = 0;
     for (const s of specs) {
       const tint = s.blossom !== _defaultBlossom ? s.blossom : undefined;
-      fillCanopy(p, c, off, s.canopyN, s.trunkHeight, s.crownRadius, s.crownHeight, s.pos[0], s.pos[1] + 0.02, s.pos[2], tint);
+      fillCanopy(p, c, off, s.canopyN, s.trunkHeight, s.crownRadius, s.crownHeight, s.pos[0], s.pos[1] + 0.02, s.pos[2], s.shape, tint);
       off += s.canopyN;
     }
     return makePointsGeo(p, c);
@@ -625,9 +661,9 @@ export default function Sakura({ size = 4, toon }: SakuraProps) {
   const geo = getSharedGeometry();
   const mat = getSharedMaterials(useToon);
 
-  const branches = useMemo(() => createBranches(scale, th), [scale, th]);
+  const branches = useMemo(() => createBranches(scale, th, 'round'), [scale, th]);
   const roots = useMemo(() => createRoots(scale), [scale]);
-  const clusters = useMemo(() => createClusters(scale, th, cr, ch), [scale, th, cr, ch]);
+  const clusters = useMemo(() => createClusters(scale, th, cr, ch, 'round'), [scale, th, cr, ch]);
 
   const barkN = branches.length;
   const darkN = roots.length + branches.length;

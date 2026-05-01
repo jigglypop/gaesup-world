@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
@@ -28,6 +28,18 @@ const EMPTY_GLTF_DATA_URI =
     }),
   );
 
+function resolveAnimationKey(
+  actions: Record<string, THREE.AnimationAction | null>,
+  requested: string,
+): string | undefined {
+  if (actions[requested]) return requested;
+  const keys = Object.keys(actions);
+  const normalized = requested.toLowerCase();
+  return keys.find((key) => key.toLowerCase() === normalized)
+    ?? keys.find((key) => key.toLowerCase().includes(normalized))
+    ?? (keys.length === 1 ? keys[0] : undefined);
+}
+
 export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
   (props, forwardedRef) => {
     const rigidBodyRef = useRef<RapierRigidBody>(null!);
@@ -36,6 +48,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const modelUrl = props.url?.trim() ? props.url : EMPTY_GLTF_DATA_URI;
     const { scene, animations } = useGLTF(modelUrl);
     const { actions, ref: animationRef } = useAnimations(animations);
+    const activeAnimationRef = useRef<string | undefined>(undefined);
     
     const {
       handleIntersectionEnter,
@@ -51,6 +64,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       ...(props.onReady ? { onReady: props.onReady } : {}),
       ...(props.onFrame ? { onFrame: props.onFrame } : {}),
       ...(props.onAnimate ? { onAnimate: props.onAnimate } : {}),
+      ...(props.onDestroy || props.onDestory ? { onDestroy: props.onDestroy ?? props.onDestory } : {}),
       actions,
       isActive: props.isActive,
       ...(props.outerGroupRef ? { outerGroupRef: props.outerGroupRef } : {}),
@@ -99,6 +113,15 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       ? { canSleep: false, ccd: true }
       : { canSleep: true, ccd: false };
     const collider = useMemo(() => {
+      if (props.colliderSize) {
+        const radius = Math.max(0.05, props.colliderSize.radius);
+        const halfHeight = Math.max(0.05, props.colliderSize.height * 0.5 - radius);
+        return {
+          halfHeight,
+          radius,
+          y: halfHeight + radius,
+        };
+      }
       const width = Math.max(size.x, 0.1);
       const depth = Math.max(size.z, 0.1);
       const bodyRadius =
@@ -111,7 +134,19 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
         radius: bodyRadius,
         y: bodyHalfHeight + bodyRadius,
       };
-    }, [props.componentType, size.x, size.y, size.z]);
+    }, [props.colliderSize, props.componentType, size.x, size.y, size.z]);
+
+    useEffect(() => {
+      if (!props.currentAnimation) return;
+      const nextKey = resolveAnimationKey(actions, props.currentAnimation);
+      if (!nextKey || activeAnimationRef.current === nextKey) return;
+
+      const previous = activeAnimationRef.current ? actions[activeAnimationRef.current] : undefined;
+      const next = actions[nextKey];
+      previous?.fadeOut(0.2);
+      next?.reset().fadeIn(0.2).play();
+      activeAnimationRef.current = nextKey;
+    }, [actions, props.currentAnimation]);
 
     return (
       <group {...outerGroupProps} userData={{ intangible: true }}>

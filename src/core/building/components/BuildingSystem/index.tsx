@@ -2,12 +2,14 @@ import React, { Suspense, useMemo } from 'react';
 
 import { BuildingSystemProps } from './types';
 import { NPCPreview } from '../../../npc/components/NPCPreview';
+import { WeatherEffect } from '../../../weather';
 import { useBuildingGpuCullingStore } from '../../render/cullingStore';
 import {
   DRAW_CLUSTER_BILLBOARD,
   DRAW_CLUSTER_BLOCK,
   DRAW_CLUSTER_FIRE,
   DRAW_CLUSTER_FLAG,
+  DRAW_CLUSTER_GRASS,
   DRAW_CLUSTER_MODEL,
   DRAW_CLUSTER_SAKURA,
   DRAW_CLUSTER_SAND,
@@ -70,8 +72,7 @@ function getTileClusterId(group: { tiles: Array<{ objectType?: string }> }): num
   if (objectType === 'water') return DRAW_CLUSTER_WATER;
   if (objectType === 'sand') return DRAW_CLUSTER_SAND;
   if (objectType === 'snowfield') return DRAW_CLUSTER_SNOWFIELD;
-  // Grass tiles still render through TileSystem today, so until the grass batch
-  // renderer consumes its own indirect path we budget them through tile cluster.
+  if (objectType === 'grass') return DRAW_CLUSTER_GRASS;
   return DRAW_CLUSTER_TILE;
 }
 
@@ -129,6 +130,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
   const showGrid = useBuildingStore((s) => s.showGrid);
   const gridSize = useBuildingStore((s) => s.gridSize);
   const showSnow = useBuildingStore((s) => s.showSnow);
+  const weatherEffect = useBuildingStore((s) => s.weatherEffect);
   const objects = useBuildingStore((s) => s.objects);
   const drawMirror = useBuildingRenderStateStore((s) => s.drawMirror);
   const gpuCullingActive = useBuildingGpuCullingStore((s) => s.active);
@@ -142,6 +144,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
   const drawReady = gpuCullingActive && drawMirror.version > 0 && drawMirror.version === gpuCullingVersion;
   const wallBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_WALL) : Number.MAX_SAFE_INTEGER;
   const tileBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_TILE) : Number.MAX_SAFE_INTEGER;
+  const grassBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_GRASS) : Number.MAX_SAFE_INTEGER;
   const waterBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_WATER) : Number.MAX_SAFE_INTEGER;
   const sandBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_SAND) : Number.MAX_SAFE_INTEGER;
   const snowfieldBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_SNOWFIELD) : Number.MAX_SAFE_INTEGER;
@@ -161,23 +164,26 @@ export const BuildingSystem = React.memo(function BuildingSystem({
     const groups = Array.from(tileGroups.values());
     const filtered = !visibilityReady ? groups : groups.filter((group) => visibleTileGroupIds.has(group.id));
     const generic: typeof filtered = [];
+    const grass: typeof filtered = [];
     const water: typeof filtered = [];
     const sand: typeof filtered = [];
     const snowfield: typeof filtered = [];
     for (const group of filtered) {
       const cluster = getTileClusterId(group);
-      if (cluster === DRAW_CLUSTER_WATER) water.push(group);
+      if (cluster === DRAW_CLUSTER_GRASS) grass.push(group);
+      else if (cluster === DRAW_CLUSTER_WATER) water.push(group);
       else if (cluster === DRAW_CLUSTER_SAND) sand.push(group);
       else if (cluster === DRAW_CLUSTER_SNOWFIELD) snowfield.push(group);
       else generic.push(group);
     }
     return [
       ...clampList(generic, tileBudget),
+      ...clampList(grass, grassBudget),
       ...clampList(water, waterBudget),
       ...clampList(sand, sandBudget),
       ...clampList(snowfield, snowfieldBudget),
     ];
-  }, [tileGroups, visibilityReady, visibleTileGroupIds, tileBudget, waterBudget, sandBudget, snowfieldBudget]);
+  }, [tileGroups, visibilityReady, visibleTileGroupIds, tileBudget, grassBudget, waterBudget, sandBudget, snowfieldBudget]);
   const visibleObjects = useMemo(() => {
     const filtered = !visibilityReady ? objects : objects.filter((object) => visibleObjectIds.has(object.id));
     const sakura: typeof filtered = [];
@@ -308,7 +314,10 @@ export const BuildingSystem = React.memo(function BuildingSystem({
           </group>
         ))}
 
-        {showSnow && <Snow gpu />}
+        {weatherEffect !== 'none' && (
+          <WeatherEffect kind={weatherEffect} count={weatherEffect === 'storm' ? 1800 : 1200} />
+        )}
+        {showSnow && weatherEffect !== 'snow' && <Snow gpu />}
       </group>
     </Suspense>
   );

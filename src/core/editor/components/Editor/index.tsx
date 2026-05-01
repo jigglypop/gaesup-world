@@ -66,6 +66,10 @@ export const Editor: FC<EditorProps> = ({
         {...(shell?.panels ? { panels: shell.panels } : {})}
         {...(shell?.defaultActivePanels ? { defaultActivePanels: shell.defaultActivePanels } : {})}
         {...(shell?.actions ? { actions: shell.actions } : {})}
+        {...(shell?.hiddenBuiltInPanels ? { hiddenBuiltInPanels: shell.hiddenBuiltInPanels } : {})}
+        {...(shell?.panelOrder ? { panelOrder: shell.panelOrder } : {})}
+        {...(shell?.panelDefaults ? { panelDefaults: shell.panelDefaults } : {})}
+        {...(shell?.validate ? { validateBundle: shell.validate } : {})}
       >
         {children}
       </EditorLayout>

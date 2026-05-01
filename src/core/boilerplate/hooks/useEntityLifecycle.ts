@@ -6,16 +6,18 @@ export interface EntityLifecycleOptions {
   onReady?: () => void;
   onFrame?: () => void;
   onAnimate?: () => void;
+  onDestroy?: () => void;
   actions?: Record<string, THREE.AnimationAction | null>;
 }
 
 export function useEntityLifecycle(options: EntityLifecycleOptions) {
-  const { onReady, onFrame, onAnimate, actions } = options;
+  const { onReady, onFrame, onAnimate, onDestroy, actions } = options;
 
   // onReady 콜백
   useEffect(() => {
     if (onReady) onReady();
-  }, [onReady]);
+    return onDestroy;
+  }, [onDestroy, onReady]);
 
   // 프레임 핸들러
   useEffect(() => {

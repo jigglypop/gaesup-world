@@ -1,3 +1,11 @@
+import type { CSSProperties, ReactNode } from 'react';
+
+export type EditorPanelBaseProps = {
+  className?: string;
+  style?: CSSProperties;
+  children?: ReactNode;
+};
+
 export type AnimationPanelTab = 'Player' | 'Controller' | 'Debug';
 export type CameraPanelTab = 'Controller' | 'Presets' | 'Debug' | 'Settings';
 export type MotionPanelTab = 'Controller' | 'Debug';

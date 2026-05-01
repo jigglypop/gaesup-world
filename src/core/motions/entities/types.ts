@@ -54,6 +54,8 @@ export type GroundRay = {
 export type PhysicsEntityProps = {
   onReady ? : () => void;
   onFrame ? : () => void;
+  onDestroy ? : () => void;
+  /** @deprecated Use onDestroy. */
   onDestory ? : () => void;
   onAnimate ? : () => void;
   url: string;
@@ -62,6 +64,7 @@ export type PhysicsEntityProps = {
   rotation ? : THREE.Euler | [number, number, number];
   scale?: THREE.Vector3 | [number, number, number] | number;
   size?: { x: number; y: number; z: number };
+  colliderSize?: { height: number; radius: number };
   isActive: boolean;
   componentType: string;
   rigidbodyType ? : RigidBodyTypeString;

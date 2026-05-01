@@ -9,6 +9,21 @@ export {
   getNPCScheduler,
   resolveSchedule,
 } from './core/NPCScheduler';
+export {
+  compileNPCBrainBlueprint,
+  getNPCBrainBlueprint,
+  registerNPCBrainBlueprint,
+  unregisterNPCBrainBlueprint,
+} from './core/blueprint';
+export {
+  createNPCObservation,
+  resolveNPCBrainDecision,
+  registerNPCBrainAdapter,
+} from './core/brain';
+export type {
+  NPCBrainAdapter,
+  NPCBrainAdapterContext,
+} from './core/brain';
 export type {
   NPCSchedule,
   NPCScheduleEntry,

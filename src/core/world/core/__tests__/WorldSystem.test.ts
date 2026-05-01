@@ -32,10 +32,10 @@ describe('WorldSystem', () => {
   });
 
   describe('Initialization', () => {
-    test('should initialize successfully', async () => {
+    test('should initialize successfully without runtime console noise', async () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       await worldSystem.init();
-      expect(consoleSpy).toHaveBeenCalledWith('[WorldSystem] Initialized');
+      expect(consoleSpy).not.toHaveBeenCalled();
       consoleSpy.mockRestore();
     });
 

@@ -43,6 +43,119 @@ export interface NPCNavigationState {
   state: 'idle' | 'moving' | 'arrived';
 }
 
+export type NPCBrainMode = 'none' | 'scripted' | 'llm' | 'reinforcement';
+
+export interface NPCVolumeConfig {
+  /** Total humanoid capsule height in meters. Defaults close to the player volume. */
+  height: number;
+  /** Capsule radius in meters. */
+  radius: number;
+  /** Extra proximity sensor radius for interaction/perception. */
+  interactionRadius: number;
+}
+
+export interface NPCBrainConfig {
+  mode: NPCBrainMode;
+  providerId?: string | undefined;
+  policyId?: string | undefined;
+  blueprintId?: string | undefined;
+  prompt?: string;
+  memory?: Record<string, RuntimeValue>;
+  autoRespond?: boolean;
+}
+
+export interface NPCPerceptionConfig {
+  enabled: boolean;
+  sightRadius: number;
+  hearingRadius: number;
+  fieldOfView?: number;
+}
+
+export type NPCBehaviorMode = 'idle' | 'patrol' | 'wander';
+
+export interface NPCBehaviorConfig {
+  mode: NPCBehaviorMode;
+  speed: number;
+  loop?: boolean;
+  waypoints?: [number, number, number][];
+  wanderRadius?: number;
+  waitSeconds?: number;
+  idleAnimation?: string;
+  moveAnimation?: string;
+  arriveAnimation?: string;
+}
+
+export type NPCAction =
+  | { type: 'idle'; animationId?: string }
+  | { type: 'moveTo'; target: [number, number, number]; speed?: number; animationId?: string }
+  | { type: 'patrol'; waypoints: [number, number, number][]; speed?: number; loop?: boolean; animationId?: string }
+  | { type: 'wander'; radius?: number; speed?: number; waitSeconds?: number }
+  | { type: 'playAnimation'; animationId: string; loop?: boolean; speed?: number }
+  | { type: 'lookAt'; target: [number, number, number] }
+  | { type: 'speak'; text: string; duration?: number }
+  | { type: 'interact'; targetId: string }
+  | { type: 'remember'; key: string; value: RuntimeValue };
+
+export type NPCBrainBlueprintCondition =
+  | { type: 'always' }
+  | { type: 'navigationIdle' }
+  | { type: 'perceivedAny' }
+  | { type: 'memoryEquals'; key: string; value: RuntimeValue };
+
+export type NPCBrainBlueprintTarget =
+  | { type: 'point'; value: [number, number, number] }
+  | { type: 'self' }
+  | { type: 'nearestPerceived' };
+
+export type NPCBrainBlueprintNode =
+  | { id: string; type: 'start'; label?: string }
+  | { id: string; type: 'condition'; label?: string; condition: NPCBrainBlueprintCondition }
+  | { id: string; type: 'action'; label?: string; action: NPCAction | { type: 'moveToTarget'; target: NPCBrainBlueprintTarget; speed?: number; animationId?: string } };
+
+export interface NPCBrainBlueprintEdge {
+  id: string;
+  source: string;
+  target: string;
+  branch?: 'true' | 'false' | 'next';
+}
+
+export interface NPCBrainBlueprint {
+  id: string;
+  name: string;
+  description?: string;
+  nodes: NPCBrainBlueprintNode[];
+  edges: NPCBrainBlueprintEdge[];
+}
+
+export interface NPCObservationTarget {
+  instanceId: string;
+  name: string;
+  position: [number, number, number];
+  distance: number;
+  brainMode: NPCBrainMode;
+}
+
+export interface NPCObservation {
+  instanceId: string;
+  templateId: string;
+  timestamp: number;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  currentAnimation: string;
+  navigationState: NPCNavigationState['state'] | 'none';
+  behaviorMode: NPCBehaviorMode;
+  brainMode: NPCBrainMode;
+  perceptionEnabled: boolean;
+  perceived: NPCObservationTarget[];
+  memory?: Record<string, RuntimeValue>;
+}
+
+export interface NPCBrainDecision {
+  source: NPCBrainMode | 'external' | 'blueprint';
+  actions: NPCAction[];
+  reason?: string;
+}
+
 export interface NPCInstance {
   id: string;
   templateId: string;
@@ -53,7 +166,13 @@ export interface NPCInstance {
   currentAnimation?: string;
   currentClothingSetId?: string;
   customParts?: NPCPart[];
+  volume?: NPCVolumeConfig;
+  brain?: NPCBrainConfig;
+  perception?: NPCPerceptionConfig;
+  behavior?: NPCBehaviorConfig;
   navigation?: NPCNavigationState;
+  lastObservation?: NPCObservation;
+  lastDecision?: NPCBrainDecision;
   metadata?: {
     modelUrl?: string;
     nameTag?: string;
@@ -61,6 +180,7 @@ export interface NPCInstance {
     level?: number;
     faction?: string;
     dialogue?: string[];
+    lastInteractionTargetId?: string;
   };
   events?: NPCEvent[];
 }
@@ -107,6 +227,7 @@ export interface NPCSystemState {
   clothingSets: Map<string, ClothingSet>;
   clothingCategories: Map<string, ClothingCategory>;
   animations: Map<string, NPCAnimation>;
+  brainBlueprints: Map<string, NPCBrainBlueprint>;
   selectedTemplateId?: string;
   selectedCategoryId?: string;
   selectedClothingSetId?: string;

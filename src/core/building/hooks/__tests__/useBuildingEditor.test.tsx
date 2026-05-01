@@ -91,6 +91,7 @@ const buildDefaultState = (): EditorMockState => ({
   setHoverPosition: jest.fn(),
   // getState로 읽히는 항목
   currentWallRotation: 0,
+  currentWallKind: 'solid',
   currentTileMultiplier: 1,
   currentTileHeight: 0,
   currentTileShape: 'box',

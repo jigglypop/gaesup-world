@@ -54,7 +54,7 @@ export class WorldSystem implements BaseSystem {
 
   @HandleError()
   async init(): Promise<void> {
-    console.log('[WorldSystem] Initialized');
+    // Reserved for future async world initialization.
   }
 
   @Profile()

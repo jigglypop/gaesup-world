@@ -29,7 +29,9 @@ import {
   TileObjectType,
   TileShapeType,
   BuildingTreeKind,
+  BuildingWallKind,
   BUILDING_TILE_PRESETS,
+  BUILDING_WALL_PRESETS,
   BUILDING_TREE_COLOR_PRESETS,
   PlacedObjectType,
   PlacedObject,
@@ -68,6 +70,26 @@ function ensureTileGroupInCategory(state: BuildingStore, categoryId: string, gro
   state.tileCategories.set(categoryId, {
     ...category,
     tileGroupIds: [...category.tileGroupIds, groupId],
+  });
+}
+
+function ensureWallCategory(
+  state: BuildingStore,
+  id: string,
+  name: string,
+  description: string,
+): void {
+  if (!state.wallCategories.has(id)) {
+    state.wallCategories.set(id, { id, name, description, wallGroupIds: [] });
+  }
+}
+
+function ensureWallGroupInCategory(state: BuildingStore, categoryId: string, groupId: string): void {
+  const category = state.wallCategories.get(categoryId);
+  if (!category || category.wallGroupIds.includes(groupId)) return;
+  state.wallCategories.set(categoryId, {
+    ...category,
+    wallGroupIds: [...category.wallGroupIds, groupId],
   });
 }
 
@@ -111,6 +133,9 @@ interface BuildingStore extends BuildingSystemState {
   setWallRotation: (rotation: number) => void;
   currentWallMaterialId: string | null;
   setCurrentWallMaterialId: (materialId: string | null) => void;
+  currentWallKind: BuildingWallKind;
+  setWallKind: (kind: BuildingWallKind) => void;
+  applyWallPreset: (presetId: string) => void;
   
   selectedTileObjectType: TileObjectType;
   setSelectedTileObjectType: (type: TileObjectType) => void;
@@ -281,6 +306,7 @@ export const useBuildingStore = create<BuildingStore>()(
     currentCustomTileTextureUrl: '',
     currentWallRotation: 0,
     currentWallMaterialId: null,
+    currentWallKind: 'solid',
     objects: [],
     selectedTileObjectType: 'none',
     currentTerrainColor: '#5a7a35',
@@ -464,6 +490,47 @@ export const useBuildingStore = create<BuildingStore>()(
         sideMeshId: 'brick-wall',
         walls: [],
       });
+
+      for (const preset of BUILDING_WALL_PRESETS) {
+        const exteriorMeshId = `wall-${preset.id}-exterior`;
+        const interiorMeshId = `wall-${preset.id}-interior`;
+        const sideMeshId = `wall-${preset.id}-side`;
+        const groupId = `${preset.id}-walls`;
+        ensureWallCategory(state, preset.categoryId, preset.categoryName, `${preset.categoryName} wall presets`);
+        ensureWallGroupInCategory(state, preset.categoryId, groupId);
+        state.meshes.set(exteriorMeshId, {
+          id: exteriorMeshId,
+          color: preset.exteriorColor,
+          material: 'STANDARD',
+          roughness: preset.roughness ?? 0.78,
+          metalness: preset.metalness ?? 0.02,
+        });
+        state.meshes.set(interiorMeshId, {
+          id: interiorMeshId,
+          color: preset.interiorColor,
+          material: 'STANDARD',
+          roughness: preset.roughness ?? 0.78,
+          metalness: preset.metalness ?? 0.02,
+        });
+        state.meshes.set(sideMeshId, {
+          id: sideMeshId,
+          color: preset.sideColor,
+          material: 'STANDARD',
+          roughness: preset.roughness ?? 0.82,
+          metalness: preset.metalness ?? 0.02,
+        });
+        if (!state.wallGroups.has(groupId)) {
+          state.wallGroups.set(groupId, {
+            id: groupId,
+            name: preset.labelEn,
+            frontMeshId: exteriorMeshId,
+            backMeshId: interiorMeshId,
+            sideMeshId,
+            defaultWallKind: preset.defaultKind,
+            walls: [],
+          });
+        }
+      }
       
       state.tileGroups.set('oak-floor', {
         id: 'oak-floor',
@@ -695,9 +762,11 @@ export const useBuildingStore = create<BuildingStore>()(
       const group = state.wallGroups.get(groupId);
       if (group) {
         const materialId = wall.materialId ?? state.currentWallMaterialId;
+        const wallKind = wall.wallKind ?? state.currentWallKind ?? group.defaultWallKind ?? 'solid';
         const wallWithEdge: WallConfig = {
           ...wall,
           ...(materialId ? { materialId } : {}),
+          wallKind,
           edge: wall.edge ?? wallTransformToEdge(wall.position, wall.rotation.y),
         };
         group.walls.push(wallWithEdge);
@@ -1053,6 +1122,65 @@ export const useBuildingStore = create<BuildingStore>()(
 
     setCurrentWallMaterialId: (materialId) => set((state) => {
       state.currentWallMaterialId = materialId;
+    }),
+
+    setWallKind: (kind) => set((state) => {
+      state.currentWallKind = kind;
+      if (!state.selectedWallId) return;
+      for (const group of state.wallGroups.values()) {
+        const wall = group.walls.find((entry) => entry.id === state.selectedWallId);
+        if (wall) {
+          wall.wallKind = kind;
+          return;
+        }
+      }
+    }),
+
+    applyWallPreset: (presetId) => set((state) => {
+      const preset = BUILDING_WALL_PRESETS.find((item) => item.id === presetId);
+      if (!preset) return;
+      const exteriorMeshId = `wall-${preset.id}-exterior`;
+      const interiorMeshId = `wall-${preset.id}-interior`;
+      const sideMeshId = `wall-${preset.id}-side`;
+      const groupId = `${preset.id}-walls`;
+      ensureWallCategory(state, preset.categoryId, preset.categoryName, `${preset.categoryName} wall presets`);
+      ensureWallGroupInCategory(state, preset.categoryId, groupId);
+      state.meshes.set(exteriorMeshId, {
+        id: exteriorMeshId,
+        color: preset.exteriorColor,
+        material: 'STANDARD',
+        roughness: preset.roughness ?? 0.78,
+        metalness: preset.metalness ?? 0.02,
+      });
+      state.meshes.set(interiorMeshId, {
+        id: interiorMeshId,
+        color: preset.interiorColor,
+        material: 'STANDARD',
+        roughness: preset.roughness ?? 0.78,
+        metalness: preset.metalness ?? 0.02,
+      });
+      state.meshes.set(sideMeshId, {
+        id: sideMeshId,
+        color: preset.sideColor,
+        material: 'STANDARD',
+        roughness: preset.roughness ?? 0.82,
+        metalness: preset.metalness ?? 0.02,
+      });
+      if (!state.wallGroups.has(groupId)) {
+        state.wallGroups.set(groupId, {
+          id: groupId,
+          name: preset.labelEn,
+          frontMeshId: exteriorMeshId,
+          backMeshId: interiorMeshId,
+          sideMeshId,
+          defaultWallKind: preset.defaultKind,
+          walls: [],
+        });
+      }
+      state.selectedWallCategoryId = preset.categoryId;
+      state.selectedWallGroupId = groupId;
+      state.currentWallKind = preset.defaultKind;
+      state.currentWallMaterialId = null;
     }),
 
     snapPosition: (position) => {

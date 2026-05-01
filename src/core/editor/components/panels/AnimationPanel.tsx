@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 
-import { AnimationPanelTab } from './types';
+import { AnimationPanelTab, type EditorPanelBaseProps } from './types';
 import { AnimationController } from '../../../animation/components/AnimationController';
 import { AnimationDebugPanel } from '../../../animation/components/AnimationDebugPanel';
 import { AnimationPlayer } from '../../../animation/components/AnimationPlayer';
 
-export function AnimationPanel() {
+export function AnimationPanel({ className = '', style, children }: EditorPanelBaseProps = {}) {
   const [activeTab, setActiveTab] = useState<AnimationPanelTab>('Player');
   const renderContent = () => {
     switch (activeTab) {
@@ -21,7 +21,7 @@ export function AnimationPanel() {
   };
 
   return (
-    <div className="tabbed-panel">
+    <div className={`tabbed-panel ${className}`} style={style}>
       <div className="panel-tabs">
         <button className={`panel-tab ${activeTab === 'Player' ? 'active' : ''}`} onClick={() => setActiveTab('Player')}>Player</button>
         <button className={`panel-tab ${activeTab === 'Controller' ? 'active' : ''}`} onClick={() => setActiveTab('Controller')}>Controller</button>
@@ -29,6 +29,7 @@ export function AnimationPanel() {
       </div>
       <div className="panel-tab-content">
         {renderContent()}
+        {children}
       </div>
     </div>
   );

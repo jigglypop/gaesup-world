@@ -6,8 +6,10 @@ import {
   BuildingPanel,
   CameraPanel,
   CharacterAssetPanel,
+  GameplayEventPanel,
   MotionPanel,
   PerformancePanel,
+  StudioPanel,
   VehiclePanel
 } from '../panels';
 import { ResizablePanel } from '../ResizablePanel';
@@ -18,21 +20,53 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
   panels = [],
   defaultActivePanels = ['building', 'character', 'camera'],
   actions = [],
+  hiddenBuiltInPanels = [],
+  panelOrder,
+  panelDefaults = {},
+  validateBundle,
 }) => {
   const [activePanels, setActivePanels] = useState<string[]>(defaultActivePanels);
   const [floatingPanels, setFloatingPanels] = useState<FloatingPanel[]>([]);
   const [minimizedPanels, setMinimizedPanels] = useState<string[]>([]);
 
-  const builtInPanels: PanelConfig[] = [
-    { id: 'building', title: '건축', component: <BuildingPanel />, defaultSide: 'left' },
-    { id: 'character', title: '캐릭터', component: <CharacterAssetPanel />, defaultSide: 'left' },
-    { id: 'vehicle', title: '탑승체', component: <VehiclePanel />, defaultSide: 'left' },
-    { id: 'animation', title: '애니메이션', component: <AnimationPanel />, defaultSide: 'left' },
-    { id: 'camera', title: '카메라', component: <CameraPanel />, defaultSide: 'right' },
-    { id: 'motion', title: '모션', component: <MotionPanel />, defaultSide: 'right' },
-    { id: 'performance', title: '성능', component: <PerformancePanel />, defaultSide: 'right' },
-  ];
-  const panelConfigs = useMemo(() => [...builtInPanels, ...panels], [panels]);
+  const panelConfigs = useMemo(() => {
+    const builtInPanels: PanelConfig[] = [
+      { id: 'building', title: '건축', component: <BuildingPanel />, defaultSide: 'left' },
+      { id: 'character', title: '캐릭터', component: <CharacterAssetPanel />, defaultSide: 'left' },
+      { id: 'vehicle', title: '탑승체', component: <VehiclePanel />, defaultSide: 'left' },
+      { id: 'animation', title: '애니메이션', component: <AnimationPanel />, defaultSide: 'left' },
+      { id: 'camera', title: '카메라', component: <CameraPanel />, defaultSide: 'right' },
+      { id: 'motion', title: '모션', component: <MotionPanel />, defaultSide: 'right' },
+      { id: 'performance', title: '성능', component: <PerformancePanel />, defaultSide: 'right' },
+      { id: 'gameplay-events', title: '게임플레이 이벤트', component: <GameplayEventPanel />, defaultSide: 'right' },
+      { id: 'studio', title: '스튜디오', component: <StudioPanel {...(validateBundle ? { validateBundle } : {})} />, defaultSide: 'right' },
+    ];
+    const hidden = new Set(hiddenBuiltInPanels);
+    const panelMap = new Map<string, PanelConfig>();
+    for (const panel of builtInPanels) {
+      if (hidden.has(panel.id)) continue;
+      const defaults = panelDefaults[panel.id] ?? {};
+      panelMap.set(panel.id, { ...panel, ...defaults });
+    }
+    for (const panel of panels) {
+      const defaults = panelDefaults[panel.id] ?? {};
+      panelMap.set(panel.id, { ...panelMap.get(panel.id), ...panel, ...defaults });
+    }
+    const orderedIds = panelOrder ?? [];
+    const orderedPanels: PanelConfig[] = [];
+    for (const id of orderedIds) {
+      const panel = panelMap.get(id);
+      if (!panel) continue;
+      orderedPanels.push(panel);
+      panelMap.delete(id);
+    }
+    return [...orderedPanels, ...panelMap.values()];
+  }, [hiddenBuiltInPanels, panelDefaults, panelOrder, panels, validateBundle]);
+
+  const activePanelIds = useMemo(
+    () => activePanels.filter((panelId) => panelConfigs.some((config) => config.id === panelId)),
+    [activePanels, panelConfigs],
+  );
 
   const togglePanel = (panelId: string) => {
     setActivePanels(prev => {
@@ -79,22 +113,23 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
     }
   };
 
-  const getLeftPanels = () => panelConfigs.filter(config => 
-    activePanels.includes(config.id) && 
-    config.defaultSide === 'left' && 
+  const getLeftPanels = () => panelConfigs.filter(config =>
+    activePanelIds.includes(config.id) &&
+    config.defaultSide === 'left' &&
     !floatingPanels.some(fp => fp.id === config.id)
   );
 
-  const getRightPanels = () => panelConfigs.filter(config => 
-    activePanels.includes(config.id) && 
-    config.defaultSide === 'right' && 
+  const getRightPanels = () => panelConfigs.filter(config =>
+    activePanelIds.includes(config.id) &&
+    config.defaultSide === 'right' &&
     !floatingPanels.some(fp => fp.id === config.id)
   );
 
-  const getFloatingPanels = () => floatingPanels.filter(fp => activePanels.includes(fp.id));
+  const getFloatingPanels = () => floatingPanels.filter(fp => activePanelIds.includes(fp.id));
   const leftPanels = getLeftPanels();
   const rightPanels = getRightPanels();
   const floatingPanelItems = getFloatingPanels();
+  const viewportHeight = typeof window === 'undefined' ? 720 : window.innerHeight;
 
   return (
     <div className="editor-root">
@@ -132,14 +167,17 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
             <ResizablePanel
               key={config.id}
               title={config.title}
-              initialWidth={320}
-              initialHeight={Math.min(640, Math.max(420, window.innerHeight - 120))}
-              minWidth={260}
-              maxWidth={500}
-              resizeHandles={['right']}
-              className="editor-glass-panel"
+              initialWidth={config.initialWidth ?? 320}
+              initialHeight={config.initialHeight ?? Math.min(640, Math.max(420, viewportHeight - 120))}
+              minWidth={config.minWidth ?? 260}
+              {...(config.minHeight !== undefined ? { minHeight: config.minHeight } : {})}
+              maxWidth={config.maxWidth ?? 500}
+              {...(config.maxHeight !== undefined ? { maxHeight: config.maxHeight } : {})}
+              resizeHandles={config.resizeHandles ?? ['right']}
+              className={`editor-glass-panel ${config.className ?? ''}`}
               style={{
-                marginBottom: index < leftPanels.length - 1 ? '8px' : '0'
+                marginBottom: index < leftPanels.length - 1 ? '8px' : '0',
+                ...(config.style ?? {}),
               }}
               onClose={() => closePanel(config.id)}
               onMinimize={() => minimizePanel(config.id)}
@@ -158,14 +196,17 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
             <ResizablePanel
               key={config.id}
               title={config.title}
-              initialWidth={300}
-              initialHeight={Math.min(520, Math.max(360, window.innerHeight - 120))}
-              minWidth={260}
-              maxWidth={500}
-              resizeHandles={['corner']}
-              className="editor-glass-panel"
+              initialWidth={config.initialWidth ?? 300}
+              initialHeight={config.initialHeight ?? Math.min(520, Math.max(360, viewportHeight - 120))}
+              minWidth={config.minWidth ?? 260}
+              {...(config.minHeight !== undefined ? { minHeight: config.minHeight } : {})}
+              maxWidth={config.maxWidth ?? 500}
+              {...(config.maxHeight !== undefined ? { maxHeight: config.maxHeight } : {})}
+              resizeHandles={config.resizeHandles ?? ['corner']}
+              className={`editor-glass-panel ${config.className ?? ''}`}
               style={{
-                marginBottom: index < rightPanels.length - 1 ? '8px' : '0'
+                marginBottom: index < rightPanels.length - 1 ? '8px' : '0',
+                ...(config.style ?? {}),
               }}
               onClose={() => closePanel(config.id)}
               onMinimize={() => minimizePanel(config.id)}
@@ -185,17 +226,20 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
           <ResizablePanel
             key={floatingPanel.id}
             title={config.title}
-            initialWidth={floatingPanel.width}
-            initialHeight={floatingPanel.height}
-            minWidth={200}
-            maxWidth={800}
-            resizeHandles={['right', 'bottom', 'corner']}
-            className="editor-glass-panel"
+            initialWidth={config.initialWidth ?? floatingPanel.width}
+            initialHeight={config.initialHeight ?? floatingPanel.height}
+            minWidth={config.minWidth ?? 200}
+            {...(config.minHeight !== undefined ? { minHeight: config.minHeight } : {})}
+            maxWidth={config.maxWidth ?? 800}
+            {...(config.maxHeight !== undefined ? { maxHeight: config.maxHeight } : {})}
+            resizeHandles={config.resizeHandles ?? ['right', 'bottom', 'corner']}
+            className={`editor-glass-panel ${config.className ?? ''}`}
             style={{
               position: 'fixed',
               left: `${floatingPanel.x}px`,
               top: `${floatingPanel.y}px`,
-              zIndex: 1001
+              zIndex: 1001,
+              ...(config.style ?? {}),
             }}
             onClose={() => closePanel(config.id)}
             onMinimize={() => minimizePanel(config.id)}
@@ -208,7 +252,7 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
 
       <div className="editor-shell-footer">
         <div className="editor-shell-status">
-          {activePanels.length > 0 ? `Active: ${activePanels.length}` : 'No active panels'}
+          {activePanelIds.length > 0 ? `Active: ${activePanelIds.length}` : 'No active panels'}
         </div>
         {minimizedPanels.length > 0 && (
           <div className="editor-minimized-dock">

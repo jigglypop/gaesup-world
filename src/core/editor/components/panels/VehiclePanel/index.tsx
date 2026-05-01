@@ -2,9 +2,10 @@ import React, { FC } from 'react';
 
 import { useGaesupStore } from '../../../../stores/gaesupStore';
 import { ModeType } from '../../../../stores/types';
+import type { EditorPanelBaseProps } from '../types';
 import './styles.css';
 
-export const VehiclePanel: FC = () => {
+export const VehiclePanel: FC<EditorPanelBaseProps> = ({ className = '', style, children }) => {
   const mode = useGaesupStore((state) => state.mode);
   const setMode = useGaesupStore((state) => state.setMode);
 
@@ -23,7 +24,7 @@ export const VehiclePanel: FC = () => {
   ];
 
   return (
-    <div className="vehicle-panel">
+    <div className={`vehicle-panel ${className}`} style={style}>
       <div className="vehicle-panel__modes">
         {modes.map((modeConfig) => (
           <button
@@ -49,6 +50,7 @@ export const VehiclePanel: FC = () => {
           </span>
         </div>
       </div>
+      {children}
     </div>
   );
 }; 

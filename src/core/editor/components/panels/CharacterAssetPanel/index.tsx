@@ -10,6 +10,7 @@ import {
   OUTFIT_SLOT_LABEL,
   type OutfitSlot,
 } from '../../../../character/types';
+import type { EditorPanelBaseProps } from '../types';
 import './styles.css';
 
 const SLOTS: OutfitSlot[] = ['hat', 'top', 'bottom', 'shoes', 'face', 'weapon', 'accessory'];
@@ -19,7 +20,7 @@ const matchesSlot = (asset: AssetRecord, slot: OutfitSlot) => {
   return asset.slot === slot && (asset.kind === 'characterPart' || asset.kind === 'weapon');
 };
 
-export const CharacterAssetPanel: FC = () => {
+export const CharacterAssetPanel: FC<EditorPanelBaseProps> = ({ className = '', style, children }) => {
   const outfits = useCharacterStore((state) => state.outfits);
   const equipOutfit = useCharacterStore((state) => state.equipOutfit);
   const resetAppearance = useCharacterStore((state) => state.resetAppearance);
@@ -45,7 +46,7 @@ export const CharacterAssetPanel: FC = () => {
   }, [assetIds, assetRecords, ownedOnly, selectedSlot, tagFilter]);
 
   return (
-    <div className="character-asset-panel">
+    <div className={`character-asset-panel ${className}`} style={style}>
       <section className="character-asset-panel__section">
         <div className="character-asset-panel__header">
           <span className="character-asset-panel__section-title">캐릭터 에셋</span>
@@ -121,6 +122,7 @@ export const CharacterAssetPanel: FC = () => {
           )}
         </div>
       </section>
+      {children}
     </div>
   );
 };

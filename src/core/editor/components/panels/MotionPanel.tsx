@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 
-import { MotionPanelTab } from './types';
+import { MotionPanelTab, type EditorPanelBaseProps } from './types';
 import { MotionController } from '../../../motions/controller/MotionController';
 import { MotionDebugPanel } from '../../../motions/ui/MotionDebugPanel';
 
-export function MotionPanel() {
+export function MotionPanel({ className = '', style, children }: EditorPanelBaseProps = {}) {
   const [activeTab, setActiveTab] = useState<MotionPanelTab>('Controller');
   const renderContent = () => {
     switch (activeTab) {
@@ -18,13 +18,14 @@ export function MotionPanel() {
   };
 
   return (
-    <div className="tabbed-panel">
+    <div className={`tabbed-panel ${className}`} style={style}>
       <div className="panel-tabs">
         <button className={`panel-tab ${activeTab === 'Controller' ? 'active' : ''}`} onClick={() => setActiveTab('Controller')}>Controller</button>
         <button className={`panel-tab ${activeTab === 'Debug' ? 'active' : ''}`} onClick={() => setActiveTab('Debug')}>Debug</button>
       </div>
       <div className="panel-tab-content">
         {renderContent()}
+        {children}
       </div>
     </div>
   );

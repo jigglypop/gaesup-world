@@ -17,6 +17,11 @@ type SnowProps = {
    * Disables WASM/JS update path. Recommended for static, area-bound snowfall.
    */
   gpu?: boolean;
+  /**
+   * Keep the particle volume centered on the active camera. Disabled by default
+   * so editor camera controls do not drag world snow around.
+   */
+  followCamera?: boolean;
 };
 
 const GPU_VERT = /* glsl */ `
@@ -75,7 +80,7 @@ function getSnowTexture(): THREE.Texture {
   return _snowTex;
 }
 
-function GpuSnow() {
+function GpuSnow({ followCamera = false }: Pick<SnowProps, 'followCamera'>) {
   const pointsRef = useRef<THREE.Points>(null!);
   const matRef = useRef<THREE.ShaderMaterial>(null!);
 
@@ -139,7 +144,7 @@ function GpuSnow() {
     const uOrigin = u['uOrigin'];
     const uScale = u['uScale'];
     if (uTime) uTime.value = state.clock.elapsedTime;
-    if (uOrigin) (uOrigin.value as THREE.Vector3).copy(state.camera.position);
+    if (followCamera && uOrigin) (uOrigin.value as THREE.Vector3).copy(state.camera.position);
     if (uScale) uScale.value = state.gl.domElement.height * 0.5;
   });
 
@@ -154,14 +159,14 @@ function GpuSnow() {
   );
 }
 
-export function Snow({ gpu }: SnowProps = {}) {
+export function Snow({ gpu, followCamera = false }: SnowProps = {}) {
   if (gpu) {
-    return <GpuSnow />;
+    return <GpuSnow followCamera={followCamera} />;
   }
-  return <CpuSnow />;
+  return <CpuSnow followCamera={followCamera} />;
 }
 
-function CpuSnow() {
+function CpuSnow({ followCamera = false }: Pick<SnowProps, 'followCamera'>) {
   const pointsRef = useRef<THREE.Points>(null!);
   const posRef = useRef(new Float32Array(COUNT * 3));
   const velRef = useRef(new Float32Array(COUNT * 3));
@@ -208,13 +213,22 @@ function CpuSnow() {
     const parent = pointsRef.current?.parent;
     if (parent && !parent.visible) return;
 
-    const cam = state.camera.position;
-    bounds[0] = cam.x - HALF_RANGE;
-    bounds[1] = cam.x + HALF_RANGE;
-    bounds[2] = cam.y - 5;
-    bounds[3] = cam.y + HEIGHT;
-    bounds[4] = cam.z - HALF_RANGE;
-    bounds[5] = cam.z + HALF_RANGE;
+    if (followCamera) {
+      const cam = state.camera.position;
+      bounds[0] = cam.x - HALF_RANGE;
+      bounds[1] = cam.x + HALF_RANGE;
+      bounds[2] = cam.y - 5;
+      bounds[3] = cam.y + HEIGHT;
+      bounds[4] = cam.z - HALF_RANGE;
+      bounds[5] = cam.z + HALF_RANGE;
+    } else {
+      bounds[0] = -HALF_RANGE;
+      bounds[1] = HALF_RANGE;
+      bounds[2] = 0;
+      bounds[3] = HEIGHT;
+      bounds[4] = -HALF_RANGE;
+      bounds[5] = HALF_RANGE;
+    }
 
     const dt = Math.min(delta, 0.05);
     const wasm = wasmRef.current;

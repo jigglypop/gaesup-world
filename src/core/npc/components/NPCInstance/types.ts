@@ -7,4 +7,5 @@ export interface NPCInstanceProps {
 export interface NPCPartMeshProps {
     part: NPCPart;
     instanceId: string;
+    currentAnimation?: string | undefined;
 }

@@ -10,6 +10,8 @@ import { useBuildingStore } from '../../stores/buildingStore';
 import {
   BUILDING_BASIC_OBJECT_OPTIONS,
   BUILDING_FLAG_STYLE_OPTIONS,
+  BUILDING_WALL_KIND_OPTIONS,
+  BUILDING_WALL_PRESETS,
   BUILDING_TILE_PRESETS,
   BUILDING_TREE_OPTIONS,
   BUILDING_TILE_OBJECT_OPTIONS,
@@ -40,6 +42,9 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     setTileRotation,
     currentWallRotation,
     setWallRotation,
+    currentWallKind,
+    setWallKind,
+    applyWallPreset,
     wallCategories,
     tileCategories,
     selectedWallCategoryId,
@@ -144,6 +149,9 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     setTileRotation: state.setTileRotation,
     currentWallRotation: state.currentWallRotation,
     setWallRotation: state.setWallRotation,
+    currentWallKind: state.currentWallKind,
+    setWallKind: state.setWallKind,
+    applyWallPreset: state.applyWallPreset,
     wallCategories: state.wallCategories,
     tileCategories: state.tileCategories,
     selectedWallCategoryId: state.selectedWallCategoryId,
@@ -272,6 +280,15 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     () => getDefaultBuildingObject(selectedModelObjectId) ?? DEFAULT_BUILDING_OBJECT_CATALOG[0],
     [selectedModelObjectId],
   );
+  const wallGroupByWallId = useMemo(() => {
+    const lookup = new Map<string, string>();
+    for (const group of wallGroups.values()) {
+      for (const wall of group.walls) {
+        lookup.set(wall.id, group.id);
+      }
+    }
+    return lookup;
+  }, [wallGroups]);
 
   const upsertCustomMesh = useCallback((sourceMeshId: string | undefined, nextMeshId: string): string => {
     const base = sourceMeshId ? meshes.get(sourceMeshId) : undefined;
@@ -294,12 +311,17 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     return nextMeshId;
   }, [addMesh, customColor, customTexture, meshes, updateMesh]);
 
-  const findWallGroupByWallId = useCallback((wallId: string) => (
-    Array.from(wallGroups.values()).find((group) => group.walls.some((wall) => wall.id === wallId))
-  ), [wallGroups]);
+  const findWallGroupByWallId = useCallback((wallId: string) => {
+    const groupId = wallGroupByWallId.get(wallId);
+    return groupId ? wallGroups.get(groupId) : undefined;
+  }, [wallGroupByWallId, wallGroups]);
   const selectedWallTypeGroupId = selectedWallId
     ? findWallGroupByWallId(selectedWallId)?.id
     : selectedWallGroupId;
+  const selectedWallGroup = selectedWallId ? findWallGroupByWallId(selectedWallId) : wallGroups.get(selectedWallGroupId ?? '');
+  const selectedWall = selectedWallId
+    ? selectedWallGroup?.walls.find((wall) => wall.id === selectedWallId)
+    : undefined;
   
   // Callbacks
   const handleEditModeClose = useCallback(() => {
@@ -464,6 +486,50 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                     })}
                   </select>
                 </div>
+
+                <div className="building-ui-object-group">
+                  <span className="building-ui-label">Wall Preset:</span>
+                  <div className="building-ui-object-buttons">
+                    {BUILDING_WALL_PRESETS.map((preset) => {
+                      const groupId = `${preset.id}-walls`;
+                      return (
+                        <button
+                          key={preset.id}
+                          onClick={() => applyWallPreset(preset.id)}
+                          className={`building-ui-object-button ${selectedWallGroupId === groupId ? 'active' : ''}`}
+                        >
+                          {preset.labelEn}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="building-ui-object-group">
+                  <span className="building-ui-label">Wall Module:</span>
+                  <div className="building-ui-object-buttons">
+                    {BUILDING_WALL_KIND_OPTIONS.map((kind) => (
+                      <button
+                        key={kind.type}
+                        onClick={() => setWallKind(kind.type)}
+                        className={`building-ui-object-button ${(selectedWall?.wallKind ?? currentWallKind) === kind.type ? 'active' : ''}`}
+                      >
+                        {kind.labelEn}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (!selectedWallId || !selectedWallGroup) return;
+                    updateWall(selectedWallGroup.id, selectedWallId, { flipSides: !selectedWall?.flipSides });
+                  }}
+                  className="building-ui-apply-button"
+                  disabled={!selectedWallId || !selectedWallGroup}
+                >
+                  Flip Interior/Exterior
+                </button>
                 
                 <button 
                   onClick={handleToggleCustomSettings}

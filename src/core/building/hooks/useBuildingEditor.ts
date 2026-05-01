@@ -128,6 +128,7 @@ export function useBuildingEditor() {
       editMode: mode,
       selectedWallGroupId: groupId,
       currentWallRotation,
+      currentWallKind,
       checkWallPosition,
       hoverPosition,
     } = useBuildingStore.getState();
@@ -139,6 +140,7 @@ export function useBuildingEditor() {
       position: hoverPosition,
       rotation,
       wallGroupId: groupId,
+      wallKind: currentWallKind,
     });
   }, [addWall]);
 
@@ -187,6 +189,9 @@ export function useBuildingEditor() {
       getSupportHeightAt,
       currentTileMultiplier,
       currentTileHeight,
+      selectedTileObjectType,
+      currentTerrainColor,
+      currentTerrainAccentColor,
       tileGroups,
       meshes,
       addMesh,
@@ -201,7 +206,9 @@ export function useBuildingEditor() {
       ...hoverPosition,
       y: supportY + currentTileHeight * heightStep,
     };
-    const terrainBlockMaterial = findTerrainBlockMaterial(tileGroups.values(), hoverPosition);
+    const terrainBlockMaterial =
+      findTerrainBlockMaterial(tileGroups.values(), hoverPosition)
+      ?? createTerrainBlockMaterial(selectedTileObjectType, currentTerrainColor, currentTerrainAccentColor);
     if (terrainBlockMaterial && !meshes.has(terrainBlockMaterial.id)) {
       addMesh(terrainBlockMaterial);
     }

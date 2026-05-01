@@ -2,6 +2,7 @@ import { enableMapSet } from 'immer';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
+import { registerNPCBrainBlueprint, unregisterNPCBrainBlueprint } from '../core/blueprint';
 import { 
   NPCSystemState, 
   NPCTemplate, 
@@ -10,12 +11,58 @@ import {
   NPCAnimation,
   NPCPart,
   NPCNavigationState,
+  NPCVolumeConfig,
+  NPCBrainConfig,
+  NPCPerceptionConfig,
+  NPCBehaviorConfig,
+  NPCAction,
+  NPCObservation,
+  NPCBrainDecision,
+  NPCBrainBlueprint,
   ClothingSet,
   ClothingCategory,
   NPCEvent
 } from '../types';
 
 enableMapSet();
+
+const DEFAULT_NPC_VOLUME: NPCVolumeConfig = {
+  height: 1.8,
+  radius: 0.32,
+  interactionRadius: 1.6,
+};
+
+const DEFAULT_NPC_BRAIN: NPCBrainConfig = {
+  mode: 'scripted',
+  autoRespond: false,
+  prompt: 'Respond as an in-world NPC when a dialogue system is connected.',
+};
+
+const DEFAULT_NPC_PERCEPTION: NPCPerceptionConfig = {
+  enabled: true,
+  sightRadius: 8,
+  hearingRadius: 4,
+  fieldOfView: 110,
+};
+
+const DEFAULT_NPC_BEHAVIOR: NPCBehaviorConfig = {
+  mode: 'idle',
+  speed: 2.2,
+  loop: true,
+  wanderRadius: 4,
+  waitSeconds: 1.5,
+  idleAnimation: 'idle',
+  moveAnimation: 'walk',
+  arriveAnimation: 'idle',
+};
+
+function getIdleAnimation(instance: NPCInstance): string {
+  return instance.behavior?.idleAnimation ?? instance.behavior?.arriveAnimation ?? 'idle';
+}
+
+function getMoveAnimation(instance: NPCInstance, speed: number): string {
+  return instance.behavior?.moveAnimation ?? (speed >= 3.8 ? 'run' : 'walk');
+}
 
 interface NPCStore extends NPCSystemState {
   initialized: boolean;
@@ -56,6 +103,9 @@ interface NPCStore extends NPCSystemState {
   addAnimation: (animation: NPCAnimation) => void;
   updateAnimation: (id: string, updates: Partial<NPCAnimation>) => void;
   removeAnimation: (id: string) => void;
+  addBrainBlueprint: (blueprint: NPCBrainBlueprint) => void;
+  updateBrainBlueprint: (id: string, updates: Partial<NPCBrainBlueprint>) => void;
+  removeBrainBlueprint: (id: string) => void;
   
   // Selection
   setSelectedTemplate: (id: string) => void;
@@ -69,6 +119,14 @@ interface NPCStore extends NPCSystemState {
   createInstanceFromTemplate: (templateId: string, position: [number, number, number]) => void;
   updateInstancePart: (instanceId: string, partId: string, updates: Partial<NPCPart>) => void;
   changeInstanceClothing: (instanceId: string, clothingSetId: string) => void;
+  updateInstanceVolume: (instanceId: string, volume: Partial<NPCVolumeConfig>) => void;
+  updateInstanceBrain: (instanceId: string, brain: Partial<NPCBrainConfig>) => void;
+  updateInstancePerception: (instanceId: string, perception: Partial<NPCPerceptionConfig>) => void;
+  updateInstanceBehavior: (instanceId: string, behavior: Partial<NPCBehaviorConfig>) => void;
+  setInstanceObservation: (instanceId: string, observation: NPCObservation) => void;
+  setInstanceDecision: (instanceId: string, decision: NPCBrainDecision) => void;
+  executeInstanceAction: (instanceId: string, action: NPCAction) => void;
+  executeInstanceActions: (instanceId: string, actions: NPCAction[]) => void;
   addInstanceEvent: (instanceId: string, event: NPCEvent) => void;
   removeInstanceEvent: (instanceId: string, eventId: string) => void;
 
@@ -88,6 +146,7 @@ export const useNPCStore = create<NPCStore>()(
     clothingSets: new Map(),
     clothingCategories: new Map(),
     animations: new Map(),
+    brainBlueprints: new Map(),
     editMode: false,
     previewAccessories: {},
 
@@ -129,6 +188,41 @@ export const useNPCStore = create<NPCStore>()(
         loop: true,
         speed: 1.5
       });
+
+      const wanderBlueprint: NPCBrainBlueprint = {
+        id: 'npc-blueprint-wander',
+        name: 'Wander Loop',
+        description: 'Move to a generated wander target when navigation is idle.',
+        nodes: [
+          { id: 'start', type: 'start', label: 'Start' },
+          { id: 'idle-check', type: 'condition', label: 'Navigation Idle', condition: { type: 'navigationIdle' } },
+          { id: 'wander', type: 'action', label: 'Wander', action: { type: 'wander', radius: 4, speed: 2.2, waitSeconds: 1.5 } },
+        ],
+        edges: [
+          { id: 'start-idle', source: 'start', target: 'idle-check', branch: 'next' },
+          { id: 'idle-wander', source: 'idle-check', target: 'wander', branch: 'true' },
+        ],
+      };
+      const greetBlueprint: NPCBrainBlueprint = {
+        id: 'npc-blueprint-greet-nearest',
+        name: 'Greet Nearest',
+        description: 'Look at and greet the nearest perceived NPC.',
+        nodes: [
+          { id: 'start', type: 'start', label: 'Start' },
+          { id: 'see-any', type: 'condition', label: 'Perceived Any', condition: { type: 'perceivedAny' } },
+          { id: 'look', type: 'action', label: 'Look At Nearest', action: { type: 'moveToTarget', target: { type: 'nearestPerceived' }, speed: 1.2, animationId: 'walk' } },
+          { id: 'speak', type: 'action', label: 'Speak', action: { type: 'speak', text: '안녕?', duration: 2 } },
+        ],
+        edges: [
+          { id: 'start-see', source: 'start', target: 'see-any', branch: 'next' },
+          { id: 'see-look', source: 'see-any', target: 'look', branch: 'true' },
+          { id: 'look-speak', source: 'look', target: 'speak', branch: 'next' },
+        ],
+      };
+      state.brainBlueprints.set(wanderBlueprint.id, wanderBlueprint);
+      state.brainBlueprints.set(greetBlueprint.id, greetBlueprint);
+      registerNPCBrainBlueprint(wanderBlueprint);
+      registerNPCBrainBlueprint(greetBlueprint);
       
       // Default clothing categories
       state.clothingCategories.set('basic', {
@@ -405,6 +499,24 @@ export const useNPCStore = create<NPCStore>()(
       state.animations.delete(id);
     }),
 
+    addBrainBlueprint: (blueprint) => set((state) => {
+      state.brainBlueprints.set(blueprint.id, blueprint);
+      registerNPCBrainBlueprint(blueprint);
+    }),
+
+    updateBrainBlueprint: (id, updates) => set((state) => {
+      const blueprint = state.brainBlueprints.get(id);
+      if (!blueprint) return;
+      const nextBlueprint = { ...blueprint, ...updates };
+      state.brainBlueprints.set(id, nextBlueprint);
+      registerNPCBrainBlueprint(nextBlueprint);
+    }),
+
+    removeBrainBlueprint: (id) => set((state) => {
+      state.brainBlueprints.delete(id);
+      unregisterNPCBrainBlueprint(id);
+    }),
+
     setSelectedTemplate: (id) => set((state) => {
       state.selectedTemplateId = id;
     }),
@@ -477,6 +589,10 @@ export const useNPCStore = create<NPCStore>()(
         ...(template.defaultAnimation ? { currentAnimation: template.defaultAnimation } : {}),
         ...(selectedClothingSetId ? { currentClothingSetId: selectedClothingSetId } : {}),
         ...(customParts.length > 0 ? { customParts } : {}),
+        volume: { ...DEFAULT_NPC_VOLUME },
+        brain: { ...DEFAULT_NPC_BRAIN },
+        perception: { ...DEFAULT_NPC_PERCEPTION },
+        behavior: { ...DEFAULT_NPC_BEHAVIOR },
         events: [],
       };
 
@@ -526,6 +642,170 @@ export const useNPCStore = create<NPCStore>()(
       }
     }),
 
+    updateInstanceVolume: (instanceId, volume) => set((state) => {
+      const instance = state.instances.get(instanceId);
+      if (!instance) return;
+      state.instances.set(instanceId, {
+        ...instance,
+        volume: { ...(instance.volume ?? DEFAULT_NPC_VOLUME), ...volume },
+      });
+    }),
+
+    updateInstanceBrain: (instanceId, brain) => set((state) => {
+      const instance = state.instances.get(instanceId);
+      if (!instance) return;
+      state.instances.set(instanceId, {
+        ...instance,
+        brain: { ...(instance.brain ?? DEFAULT_NPC_BRAIN), ...brain },
+      });
+    }),
+
+    updateInstancePerception: (instanceId, perception) => set((state) => {
+      const instance = state.instances.get(instanceId);
+      if (!instance) return;
+      state.instances.set(instanceId, {
+        ...instance,
+        perception: { ...(instance.perception ?? DEFAULT_NPC_PERCEPTION), ...perception },
+      });
+    }),
+
+    updateInstanceBehavior: (instanceId, behavior) => set((state) => {
+      const instance = state.instances.get(instanceId);
+      if (!instance) return;
+      const nextBehavior = { ...(instance.behavior ?? DEFAULT_NPC_BEHAVIOR), ...behavior };
+      const nextInstance: NPCInstance = {
+        ...instance,
+        behavior: nextBehavior,
+      };
+      if (nextBehavior.mode === 'idle') {
+        nextInstance.currentAnimation = nextBehavior.idleAnimation ?? 'idle';
+      } else if (behavior.moveAnimation !== undefined) {
+        nextInstance.currentAnimation = behavior.moveAnimation;
+      }
+      if (nextBehavior.mode === 'idle') {
+        delete nextInstance.navigation;
+      }
+      state.instances.set(instanceId, nextInstance);
+    }),
+
+    setInstanceObservation: (instanceId, observation) => set((state) => {
+      const instance = state.instances.get(instanceId);
+      if (!instance) return;
+      state.instances.set(instanceId, {
+        ...instance,
+        lastObservation: observation,
+      });
+    }),
+
+    setInstanceDecision: (instanceId, decision) => set((state) => {
+      const instance = state.instances.get(instanceId);
+      if (!instance) return;
+      state.instances.set(instanceId, {
+        ...instance,
+        lastDecision: decision,
+      });
+    }),
+
+    executeInstanceAction: (instanceId, action) => {
+      const store = get();
+      const instance = store.instances.get(instanceId);
+      if (!instance) return;
+
+      switch (action.type) {
+        case 'idle':
+          store.updateInstanceBehavior(instanceId, {
+            mode: 'idle',
+            ...(action.animationId ? { idleAnimation: action.animationId, arriveAnimation: action.animationId } : {}),
+          });
+          store.clearNavigation(instanceId);
+          if (action.animationId) store.updateInstance(instanceId, { currentAnimation: action.animationId });
+          return;
+
+        case 'moveTo':
+          if (action.animationId) {
+            store.updateInstanceBehavior(instanceId, { moveAnimation: action.animationId });
+          }
+          store.setNavigation(instanceId, [action.target], action.speed ?? instance.behavior?.speed ?? DEFAULT_NPC_BEHAVIOR.speed);
+          return;
+
+        case 'patrol':
+          if (action.waypoints.length === 0) return;
+          store.updateInstanceBehavior(instanceId, {
+            mode: 'patrol',
+            waypoints: action.waypoints,
+            speed: action.speed ?? instance.behavior?.speed ?? DEFAULT_NPC_BEHAVIOR.speed,
+            loop: action.loop ?? instance.behavior?.loop ?? true,
+            ...(action.animationId ? { moveAnimation: action.animationId } : {}),
+          });
+          store.setNavigation(instanceId, action.waypoints, action.speed ?? instance.behavior?.speed ?? DEFAULT_NPC_BEHAVIOR.speed);
+          return;
+
+        case 'wander':
+          store.updateInstanceBehavior(instanceId, {
+            mode: 'wander',
+            speed: action.speed ?? instance.behavior?.speed ?? DEFAULT_NPC_BEHAVIOR.speed,
+            wanderRadius: action.radius ?? instance.behavior?.wanderRadius ?? DEFAULT_NPC_BEHAVIOR.wanderRadius ?? 4,
+            waitSeconds: action.waitSeconds ?? instance.behavior?.waitSeconds ?? DEFAULT_NPC_BEHAVIOR.waitSeconds ?? 1.5,
+          });
+          return;
+
+        case 'playAnimation':
+          store.updateAnimation(action.animationId, {
+            ...(action.loop !== undefined ? { loop: action.loop } : {}),
+            ...(action.speed !== undefined ? { speed: action.speed } : {}),
+          });
+          store.updateInstance(instanceId, { currentAnimation: action.animationId });
+          return;
+
+        case 'lookAt':
+          store.updateInstance(instanceId, {
+            rotation: [
+              instance.rotation[0],
+              Math.atan2(action.target[0] - instance.position[0], action.target[2] - instance.position[2]),
+              instance.rotation[2],
+            ],
+          });
+          return;
+
+        case 'speak':
+          store.addInstanceEvent(instanceId, {
+            id: `npc-speak-${Date.now()}`,
+            type: 'onInteract',
+            action: 'dialogue',
+            payload: {
+              type: 'dialogue',
+              text: action.text,
+              ...(action.duration !== undefined ? { duration: action.duration } : {}),
+            },
+          });
+          return;
+
+        case 'interact':
+          store.updateInstance(instanceId, {
+            metadata: {
+              ...instance.metadata,
+              lastInteractionTargetId: action.targetId,
+            },
+          });
+          return;
+
+        case 'remember':
+          store.updateInstanceBrain(instanceId, {
+            memory: {
+              ...(instance.brain?.memory ?? {}),
+              [action.key]: action.value,
+            },
+          });
+          return;
+      }
+    },
+
+    executeInstanceActions: (instanceId, actions) => {
+      for (const action of actions) {
+        get().executeInstanceAction(instanceId, action);
+      }
+    },
+
     addInstanceEvent: (instanceId, event) => set((state) => {
       const instance = state.instances.get(instanceId);
       if (instance) {
@@ -563,7 +843,7 @@ export const useNPCStore = create<NPCStore>()(
       state.instances.set(instanceId, {
         ...instance,
         navigation: nav,
-        currentAnimation: 'walk',
+        currentAnimation: getMoveAnimation(instance, speed),
       });
     }),
 
@@ -576,7 +856,7 @@ export const useNPCStore = create<NPCStore>()(
         state.instances.set(instanceId, {
           ...instance,
           navigation: { ...nav, state: 'arrived', currentIndex: nextIndex },
-          currentAnimation: 'idle',
+          currentAnimation: getIdleAnimation(instance),
         });
       } else {
         state.instances.set(instanceId, {
@@ -591,7 +871,7 @@ export const useNPCStore = create<NPCStore>()(
       if (!instance) return;
       const nextInstance: NPCInstance = {
         ...instance,
-        currentAnimation: 'idle',
+        currentAnimation: getIdleAnimation(instance),
       };
       delete nextInstance.navigation;
       state.instances.set(instanceId, nextInstance);

@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 
-import { useAssetStore } from '../../../../assets';
+import { useAssetStore, type AssetRecord } from '../../../../assets';
 import {
   createContentBundleFromSaveSystem,
   validateContentBundle,
@@ -9,6 +9,7 @@ import {
 } from '../../../../content';
 import { SEED_GAMEPLAY_EVENTS, type GameplayEventBlueprint } from '../../../../gameplay';
 import { getSaveSystem } from '../../../../save';
+import type { EditorPanelBaseProps } from '../types';
 import './styles.css';
 
 type StudioStatusKind = 'idle' | 'success' | 'error';
@@ -22,8 +23,25 @@ const DEFAULT_BUNDLE_ID = 'studio-social-world';
 const DEFAULT_BUNDLE_NAME = 'Studio Social World';
 const DEFAULT_VERSION = '1.0.0';
 
-export type StudioPanelProps = {
+export type StudioPanelBundleContext = {
+  assets: AssetRecord[];
+  bundleId: string;
+  bundleName: string;
+  version: string;
+  gameplayEvents: GameplayEventBlueprint[];
+};
+
+export type StudioPanelProps = EditorPanelBaseProps & {
   gameplayEvents?: GameplayEventBlueprint[];
+  defaultSlot?: string;
+  defaultBundleId?: string;
+  defaultBundleName?: string;
+  defaultVersion?: string;
+  buildBundle?: (context: StudioPanelBundleContext) => ContentBundle;
+  validateBundle?: (bundle: ContentBundle) => ContentBundleValidation;
+  onSaveWorld?: (slot: string) => void | Promise<void>;
+  onLoadWorld?: (slot: string) => boolean | void | Promise<boolean | void>;
+  onExportBundle?: (bundle: ContentBundle) => void | Promise<void>;
 };
 
 const downloadJson = (filename: string, data: unknown): void => {
@@ -37,7 +55,21 @@ const downloadJson = (filename: string, data: unknown): void => {
   window.URL.revokeObjectURL(url);
 };
 
-export function StudioPanel({ gameplayEvents = SEED_GAMEPLAY_EVENTS }: StudioPanelProps) {
+export function StudioPanel({
+  gameplayEvents = SEED_GAMEPLAY_EVENTS,
+  defaultSlot = 'main',
+  defaultBundleId = DEFAULT_BUNDLE_ID,
+  defaultBundleName = DEFAULT_BUNDLE_NAME,
+  defaultVersion = DEFAULT_VERSION,
+  buildBundle: buildBundleProp,
+  validateBundle = validateContentBundle,
+  onSaveWorld,
+  onLoadWorld,
+  onExportBundle,
+  className = '',
+  style,
+  children,
+}: StudioPanelProps) {
   const assetIds = useAssetStore((state) => state.ids);
   const assetRecords = useAssetStore((state) => state.records);
   const assets = useMemo(
@@ -45,22 +77,30 @@ export function StudioPanel({ gameplayEvents = SEED_GAMEPLAY_EVENTS }: StudioPan
     [assetIds, assetRecords],
   );
 
-  const [slot, setSlot] = useState('main');
-  const [bundleId, setBundleId] = useState(DEFAULT_BUNDLE_ID);
-  const [bundleName, setBundleName] = useState(DEFAULT_BUNDLE_NAME);
-  const [version, setVersion] = useState(DEFAULT_VERSION);
+  const [slot, setSlot] = useState(defaultSlot);
+  const [bundleId, setBundleId] = useState(defaultBundleId);
+  const [bundleName, setBundleName] = useState(defaultBundleName);
+  const [version, setVersion] = useState(defaultVersion);
   const [slots, setSlots] = useState<string[]>([]);
   const [status, setStatus] = useState<StudioStatus>({ kind: 'idle', message: 'Ready' });
   const [validation, setValidation] = useState<ContentBundleValidation | null>(null);
 
   const buildBundle = useCallback((): ContentBundle => {
+    const context: StudioPanelBundleContext = {
+      assets,
+      bundleId,
+      bundleName,
+      version,
+      gameplayEvents,
+    };
+    if (buildBundleProp) return buildBundleProp(context);
     return createContentBundleFromSaveSystem(getSaveSystem(), assets, {
       id: bundleId,
       name: bundleName,
       version,
       gameplayEvents,
     });
-  }, [assets, bundleId, bundleName, gameplayEvents, version]);
+  }, [assets, buildBundleProp, bundleId, bundleName, gameplayEvents, version]);
 
   const refreshSlots = useCallback(async () => {
     const nextSlots = await getSaveSystem().list();
@@ -69,42 +109,53 @@ export function StudioPanel({ gameplayEvents = SEED_GAMEPLAY_EVENTS }: StudioPan
   }, []);
 
   const saveWorld = useCallback(async () => {
-    await getSaveSystem().save(slot);
+    if (onSaveWorld) {
+      await onSaveWorld(slot);
+    } else {
+      await getSaveSystem().save(slot);
+    }
     setStatus({ kind: 'success', message: `Saved slot "${slot}"` });
     await refreshSlots();
-  }, [refreshSlots, slot]);
+  }, [onSaveWorld, refreshSlots, slot]);
 
   const loadWorld = useCallback(async () => {
-    const loaded = await getSaveSystem().load(slot);
+    const loadResult = onLoadWorld
+      ? await onLoadWorld(slot)
+      : await getSaveSystem().load(slot);
+    const loaded = loadResult === undefined ? true : Boolean(loadResult);
     setStatus({
       kind: loaded ? 'success' : 'error',
       message: loaded ? `Loaded slot "${slot}"` : `No save data in slot "${slot}"`,
     });
-  }, [slot]);
+  }, [onLoadWorld, slot]);
 
   const validateWorld = useCallback(() => {
-    const result = validateContentBundle(buildBundle());
+    const result = validateBundle(buildBundle());
     setValidation(result);
     setStatus({
       kind: result.ok ? 'success' : 'error',
       message: result.ok ? 'Bundle is valid' : `Bundle has ${result.errors.length} error(s)`,
     });
-  }, [buildBundle]);
+  }, [buildBundle, validateBundle]);
 
   const exportBundle = useCallback(() => {
     const bundle = buildBundle();
-    const result = validateContentBundle(bundle);
+    const result = validateBundle(bundle);
     setValidation(result);
     if (!result.ok) {
       setStatus({ kind: 'error', message: 'Fix bundle validation before export' });
       return;
     }
-    downloadJson(`${bundle.id}-${bundle.version}.bundle.json`, bundle);
+    if (onExportBundle) {
+      void onExportBundle(bundle);
+    } else {
+      downloadJson(`${bundle.id}-${bundle.version}.bundle.json`, bundle);
+    }
     setStatus({ kind: 'success', message: 'Exported content bundle JSON' });
-  }, [buildBundle]);
+  }, [buildBundle, onExportBundle, validateBundle]);
 
   return (
-    <div className="studio-panel">
+    <div className={`studio-panel ${className}`} style={style}>
       <section className="studio-panel__section">
         <div className="studio-panel__title">World Save</div>
         <label className="studio-panel__field">
@@ -164,6 +215,7 @@ export function StudioPanel({ gameplayEvents = SEED_GAMEPLAY_EVENTS }: StudioPan
           </ul>
         )}
       </section>
+      {children}
     </div>
   );
 }

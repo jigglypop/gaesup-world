@@ -56,6 +56,7 @@ export function EntityController({ props, children }: EntityControllerProps) {
       ...(props.onAnimate ? { onAnimate: props.onAnimate } : {}),
       ...(props.onFrame ? { onFrame: props.onFrame } : {}),
       ...(props.onReady ? { onReady: props.onReady } : {}),
+      ...(props.onDestroy ? { onDestroy: props.onDestroy } : {}),
       ...(props.onDestory ? { onDestory: props.onDestory } : {}),
       ...(typeof props.baseColor === 'string' && props.baseColor.trim().length > 0 ? { baseColor: props.baseColor } : {}),
       ...(Array.isArray(props.excludeBaseNodes) && props.excludeBaseNodes.length > 0 ? { excludeBaseNodes: props.excludeBaseNodes } : {}),
