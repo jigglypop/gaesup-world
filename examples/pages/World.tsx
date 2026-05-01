@@ -21,6 +21,7 @@ import {
   Clicker,
   CraftingUI,
   DialogBox,
+  DynamicFog,
   Editor,
   Footprints,
   GaesupWorld,
@@ -42,7 +43,9 @@ import {
   ToastHost,
   ToolUseController,
   TouchControls,
+  WeatherEffect,
   createEditorShell,
+  useBuildingStore,
   usePerfStore,
 } from '../../src';
 import { HudShell } from '../components/hud/HudShell';
@@ -61,6 +64,9 @@ setDefaultToonMode(DEFAULT_TOON_MODE);
 export const WorldPage = ({ showEditor = false, showHud = true, children }: WorldPageProps) => {
   const [shopOpen, setShopOpen] = useState(false);
   const [craftOpen, setCraftOpen] = useState(false);
+  const fogEnabled = useBuildingStore((s) => s.showFog);
+  const fogColor = useBuildingStore((s) => s.fogColor);
+  const weatherEffect = useBuildingStore((s) => s.weatherEffect);
   const [gameplayBlueprints, setGameplayBlueprints] = useState(() => getWorldGameplayBlueprints());
   const editorShell = useMemo(() => createEditorShell({
     panels: [
@@ -96,7 +102,7 @@ export const WorldPage = ({ showEditor = false, showHud = true, children }: Worl
         pluginId: 'gaesup.studio',
       },
     ],
-    defaultActivePanels: ['building', 'character', 'gameplay-events', 'studio', 'camera'],
+    defaultActivePanels: ['building', 'camera'],
   }), [gameplayBlueprints]);
 
   return (
@@ -114,6 +120,16 @@ export const WorldPage = ({ showEditor = false, showHud = true, children }: Worl
           frameloop="always"
         >
           <Lighting />
+          <DynamicFog enabled={fogEnabled} color={fogColor} />
+          {(weatherEffect === 'rain' || weatherEffect === 'storm' || weatherEffect === 'wind') && (
+            <WeatherEffect
+              kind={weatherEffect}
+              area={110}
+              height={26}
+              count={weatherEffect === 'wind' ? 900 : 1800}
+              followCamera
+            />
+          )}
           <Suspense>
             <GaesupWorldContent showGrid={EXAMPLE_CONFIG.showGrid} showAxes={EXAMPLE_CONFIG.showAxes}>
               <Physics debug interpolate>
@@ -141,7 +157,10 @@ export const WorldPage = ({ showEditor = false, showHud = true, children }: Worl
 
         {showHud && (
           <>
-            <HudShell />
+            <HudShell
+              onOpenCrafting={() => setCraftOpen(true)}
+              showEnvironmentControls={!showEditor}
+            />
 
             <InteractionPrompt />
             <DialogBox />

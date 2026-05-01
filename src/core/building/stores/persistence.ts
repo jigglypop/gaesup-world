@@ -20,7 +20,7 @@ import { TILE_CONSTANTS } from '../types/constants';
 
 export type BuildingSerializableState = Pick<
   BuildingHydrationTarget,
-  'meshes' | 'wallGroups' | 'tileGroups' | 'blocks' | 'objects'
+  'meshes' | 'wallGroups' | 'tileGroups' | 'blocks' | 'objects' | 'showSnow' | 'showFog' | 'fogColor' | 'weatherEffect'
 >;
 
 export type BuildingHydrationTarget = {
@@ -36,6 +36,10 @@ export type BuildingHydrationTarget = {
   wallCells: Map<string, number[]>;
   wallMeta: Map<string, WallMeta>;
   initialized: boolean;
+  showSnow: boolean;
+  showFog: boolean;
+  fogColor: string;
+  weatherEffect: BuildingSerializedState['weatherEffect'];
 };
 
 export function serializeBuildingState(state: BuildingSerializableState): BuildingSerializedState {
@@ -46,6 +50,10 @@ export function serializeBuildingState(state: BuildingSerializableState): Buildi
     tileGroups: Array.from(state.tileGroups.values(), cloneBuildingValue),
     blocks: state.blocks.map(cloneBuildingValue),
     objects: state.objects.map(cloneBuildingValue),
+    showSnow: state.showSnow,
+    showFog: state.showFog,
+    fogColor: state.fogColor,
+    weatherEffect: state.weatherEffect,
   };
 }
 
@@ -84,6 +92,10 @@ export function hydrateBuildingState(
     cell: block.cell ?? tilePositionToCell(block.position),
   }));
   state.objects = (data.objects ?? []).map((object) => ({ ...object }));
+  state.showSnow = data.showSnow ?? false;
+  state.showFog = data.showFog ?? false;
+  state.fogColor = data.fogColor ?? '#cfd8e3';
+  state.weatherEffect = data.weatherEffect ?? (state.showSnow ? 'snow' : 'none');
   state.initialized = true;
 }
 

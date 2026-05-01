@@ -19,7 +19,7 @@ import {
 } from '../../render/draw';
 import { useBuildingRenderStateStore } from '../../render/store';
 import { useBuildingStore } from '../../stores/buildingStore';
-import type { PlacedObject } from '../../types';
+import type { BuildingTreeKind, PlacedObject } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { useBuildingVisibilityStore } from '../../visibility/store';
 import { BlockSystem } from '../BlockSystem';
@@ -42,6 +42,14 @@ type ObjectBuckets = {
   billboard: PlacedObject[];
   model: PlacedObject[];
 };
+
+function isTreeObject(object: PlacedObject): boolean {
+  return object.type === 'tree' || object.type === 'sakura';
+}
+
+function resolveTreeKind(object: PlacedObject): BuildingTreeKind {
+  return object.type === 'sakura' ? 'sakura' : object.config?.treeKind ?? 'oak';
+}
 
 const EMPTY_BUCKETS: ObjectBuckets = {
   sakura: [],
@@ -72,10 +80,11 @@ function bucketObjects(objects: PlacedObject[] | undefined): ObjectBuckets {
 
   const buckets: ObjectBuckets = { sakura: [], flag: [], fire: [], billboard: [], model: [] };
   for (const o of objects) {
-    if (o.type === 'sakura') {
+    if (isTreeObject(o)) {
       buckets.sakura.push({
         position: [o.position.x, o.position.y, o.position.z],
         size: o.config?.size ?? TILE_CONSTANTS.GRID_CELL_SIZE,
+        treeKind: resolveTreeKind(o),
         ...(o.config?.primaryColor ? { blossomColor: o.config.primaryColor } : {}),
         ...(o.config?.secondaryColor ? { barkColor: o.config.secondaryColor } : {}),
       });
@@ -177,7 +186,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
     const billboard: typeof filtered = [];
     const model: typeof filtered = [];
     for (const object of filtered) {
-      if (object.type === 'sakura') sakura.push(object);
+      if (isTreeObject(object)) sakura.push(object);
       else if (object.type === 'flag') flag.push(object);
       else if (object.type === 'fire') fire.push(object);
       else if (object.type === 'billboard') billboard.push(object);
@@ -299,7 +308,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
           </group>
         ))}
 
-        {showSnow && <Snow />}
+        {showSnow && <Snow gpu />}
       </group>
     </Suspense>
   );

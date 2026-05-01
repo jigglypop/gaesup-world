@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 
+import { createHudActionButtons } from './ActionBar';
 import {
   SceneFader,
+  useBuildingStore,
   useCatalogStore,
   useCharacterStore,
   useMailStore,
@@ -31,30 +33,55 @@ function HeaderBar() {
   );
 }
 
-function LeftSidebar({ showInfo, setShowInfo, showTele, setShowTele }: {
+function LeftSidebar({
+  showInfo,
+  setShowInfo,
+  showTele,
+  setShowTele,
+  showEnvironmentControls,
+}: {
   showInfo: boolean;
   setShowInfo: (v: boolean) => void;
   showTele: boolean;
   setShowTele: (v: boolean) => void;
+  showEnvironmentControls: boolean;
 }) {
+  const showSnow = useBuildingStore((s) => s.showSnow);
+  const setShowSnow = useBuildingStore((s) => s.setShowSnow);
+  const showFog = useBuildingStore((s) => s.showFog);
+  const setShowFog = useBuildingStore((s) => s.setShowFog);
+
   return (
     <div className="gp-left">
       <div className="gp-glass gp-panel" style={{ width: '100%' }}>
         <div className="gp-panel-title">도구</div>
         <button className={`gp-btn${showInfo ? ' gp-btn--active' : ''}`} onClick={() => setShowInfo(!showInfo)}>
           <span>카메라 / 모드</span>
-          <span className="gp-key">I-Panel</span>
+          <span className="gp-key">패널</span>
         </button>
         <button className={`gp-btn${showTele ? ' gp-btn--active' : ''}`} onClick={() => setShowTele(!showTele)}>
           <span>Teleport</span>
-          <span className="gp-key">⤴</span>
+          <span className="gp-key">TELE</span>
         </button>
       </div>
+      {showEnvironmentControls && (
+        <div className="gp-glass gp-panel" style={{ width: '100%' }}>
+          <div className="gp-panel-title">월드 환경</div>
+          <button className={`gp-btn${showSnow ? ' gp-btn--active' : ''}`} onClick={() => setShowSnow(!showSnow)}>
+            <span>월드 눈</span>
+            <span className="gp-key">{showSnow ? 'ON' : 'OFF'}</span>
+          </button>
+          <button className={`gp-btn${showFog ? ' gp-btn--active' : ''}`} onClick={() => setShowFog(!showFog)}>
+            <span>장면 안개</span>
+            <span className="gp-key">{showFog ? 'ON' : 'OFF'}</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-function RightSidebar() {
+function RightSidebar({ onOpenCrafting }: { onOpenCrafting?: () => void }) {
   const messages = useMailStore((s) => s.messages);
   const quests = useQuestStore((s) => s.state);
   const catalog = useCatalogStore((s) => s.entries);
@@ -70,20 +97,32 @@ function RightSidebar() {
   const totalHouses = Object.keys(houses).length;
   const residentCount = Object.keys(residents).length;
 
-  type Action = { id: string; key: string; label: string; badge?: number; badgeKind?: 'cool' | 'warn' | 'good' };
+  type Action = {
+    id: string;
+    key: string;
+    label: string;
+    badge?: number;
+    badgeKind?: 'cool' | 'warn' | 'good';
+    onClick?: () => void;
+  };
+  const coreActions = createHudActionButtons({
+    activeQuests,
+    unreadMail,
+    unclaimedMail: unclaimed,
+    collected,
+  });
   const actions: Action[] = [
-    { id: 'inv',  key: 'i', label: '인벤토리' },
-    ...(activeQuests > 0
-      ? [{ id: 'que', key: 'j', label: '퀘스트', badge: activeQuests, badgeKind: 'cool' as const }]
-      : [{ id: 'que', key: 'j', label: '퀘스트' }]),
-    ...(unreadMail > 0
-      ? [{ id: 'mail', key: 'm', label: '우편', badge: unreadMail, badgeKind: (unclaimed > 0 ? 'warn' : 'cool') as 'warn' | 'cool' }]
-      : [{ id: 'mail', key: 'm', label: '우편' }]),
-    ...(collected > 0
-      ? [{ id: 'cat', key: 'k', label: '도감', badge: collected, badgeKind: 'good' as const }]
-      : [{ id: 'cat', key: 'k', label: '도감' }]),
-    { id: 'crf',  key: 'c', label: '제작' },
-    { id: 'chr',  key: 'o', label: '캐릭터' },
+    ...coreActions.map((action): Action => ({
+      id: action.key,
+      key: action.key,
+      label: action.label,
+      ...(typeof action.badge === 'number' ? { badge: action.badge } : {}),
+      ...(action.key === 'j' ? { badgeKind: 'cool' as const } : {}),
+      ...(action.key === 'm' ? { badgeKind: (unclaimed > 0 ? 'warn' : 'cool') as 'warn' | 'cool' } : {}),
+      ...(action.key === 'k' ? { badgeKind: 'good' as const } : {}),
+      ...(action.key === 'c' && onOpenCrafting ? { onClick: onOpenCrafting } : {}),
+    })),
+    { id: 'chr', key: 'o', label: '캐릭터' },
   ];
 
   const charName = useCharacterStore((s) => s.appearance.name);
@@ -122,7 +161,7 @@ function RightSidebar() {
         <div className="gp-panel-title">메뉴</div>
         <div className="gp-actionrow">
           {actions.map((a) => (
-            <button key={a.id} className="gp-btn" onClick={() => dispatchKey(a.key)}>
+            <button key={a.id} className="gp-btn" onClick={a.onClick ?? (() => dispatchKey(a.key))}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <span className="gp-key">{a.key.toUpperCase()}</span>
                 <span>{a.label}</span>
@@ -158,9 +197,15 @@ function FooterBar() {
   );
 }
 
-export type HudShellProps = Record<string, never>;
+export type HudShellProps = {
+  onOpenCrafting?: () => void;
+  showEnvironmentControls?: boolean;
+};
 
-export function HudShell() {
+export function HudShell({
+  onOpenCrafting,
+  showEnvironmentControls = true,
+}: HudShellProps) {
   const [showInfo, setShowInfo] = useState(false);
   const [showTele, setShowTele] = useState(false);
 
@@ -173,8 +218,9 @@ export function HudShell() {
           setShowInfo={setShowInfo}
           showTele={showTele}
           setShowTele={setShowTele}
+          showEnvironmentControls={showEnvironmentControls}
         />
-        <RightSidebar />
+        <RightSidebar {...(onOpenCrafting ? { onOpenCrafting } : {})} />
         <FooterBar />
       </div>
       {showInfo && <Info />}

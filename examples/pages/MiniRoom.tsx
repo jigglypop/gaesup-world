@@ -276,7 +276,11 @@ function GrandPiano() {
         <boxGeometry args={[4, 1.2, 0.08]} />
         <meshStandardMaterial color="#0a0a0a" roughness={0.15} metalness={0.3} />
       </mesh>
-      {[[-1.5, 2], [1.5, 2], [0, -2.5]].map(([x, z], i) => (
+      {([
+        [-1.5, 2],
+        [1.5, 2],
+        [0, -2.5],
+      ] as [number, number][]).map(([x, z], i) => (
         <mesh key={i} castShadow position={[x, 0.7, z]}>
           <cylinderGeometry args={[0.12, 0.15, 1.4, 8]} />
           <meshStandardMaterial color="#0a0a0a" roughness={0.15} metalness={0.3} />
@@ -305,7 +309,12 @@ function DiningTable() {
         <boxGeometry args={[16, 0.2, 5]} />
         <meshStandardMaterial color={WOOD_MAHOGANY} roughness={0.5} />
       </mesh>
-      {[[-7, -2], [7, -2], [-7, 2], [7, 2]].map(([x, z], i) => (
+      {([
+        [-7, -2],
+        [7, -2],
+        [-7, 2],
+        [7, 2],
+      ] as [number, number][]).map(([x, z], i) => (
         <mesh key={i} castShadow position={[x, 0.7, z]}>
           <cylinderGeometry args={[0.18, 0.22, 1.4, 8]} />
           <meshStandardMaterial color={WOOD_RICH} roughness={0.5} />
@@ -359,7 +368,12 @@ function DiningChair({ position, rotation }: { position: [number, number, number
         <boxGeometry args={[0.85, 1.1, 0.04]} />
         <meshStandardMaterial color={VELVET_DARK} roughness={0.95} />
       </mesh>
-      {[[-0.4, -0.4], [0.4, -0.4], [-0.4, 0.4], [0.4, 0.4]].map(([lx, lz], i) => (
+      {([
+        [-0.4, -0.4],
+        [0.4, -0.4],
+        [-0.4, 0.4],
+        [0.4, 0.4],
+      ] as [number, number][]).map(([lx, lz], i) => (
         <mesh key={i} castShadow position={[lx, 0.4, lz]}>
           <cylinderGeometry args={[0.05, 0.06, 0.8, 6]} />
           <meshStandardMaterial color={WOOD_RICH} roughness={0.5} />
@@ -398,7 +412,12 @@ function SofaSet() {
         <boxGeometry args={[5, 0.12, 3]} />
         <meshStandardMaterial color={MARBLE} roughness={0.3} />
       </mesh>
-      {[[-2, -2.7], [2, -2.7], [-2, -0.3], [2, -0.3]].map(([x, z], i) => (
+      {([
+        [-2, -2.7],
+        [2, -2.7],
+        [-2, -0.3],
+        [2, -0.3],
+      ] as [number, number][]).map(([x, z], i) => (
         <mesh key={i} castShadow position={[x, 0.38, z]}>
           <cylinderGeometry args={[0.1, 0.12, 0.76, 8]} />
           <meshStandardMaterial color={GOLD_DARK} roughness={0.3} metalness={0.5} />
@@ -616,7 +635,7 @@ export function MiniRoomPage({ children }: WorldPageProps) {
       <GaesupWorld
         urls={{ characterUrl: CHARACTER_URL, vehicleUrl: VEHICLE_URL, airplaneUrl: AIRPLANE_URL }}
         debug={false}
-        cameraOption={CAMERA_OPT}
+        cameraOption={{ type: 'thirdPerson', ...CAMERA_OPT }}
       >
         <Canvas
           shadows

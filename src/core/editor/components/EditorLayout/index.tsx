@@ -92,38 +92,43 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
   );
 
   const getFloatingPanels = () => floatingPanels.filter(fp => activePanels.includes(fp.id));
+  const leftPanels = getLeftPanels();
+  const rightPanels = getRightPanels();
+  const floatingPanelItems = getFloatingPanels();
 
   return (
     <div className="editor-root">
-      {/* Panel Toggle Bar */}
-      <div className="editor-panel-bar">
-        {panelConfigs.map(config => (
-          <button
-            key={config.id}
-            onClick={() => togglePanel(config.id)}
-            className={`editor-panel-toggle ${activePanels.includes(config.id) ? 'active' : ''}`}
-            title={config.title}
-          >
-            {config.title}
-          </button>
-        ))}
-        {actions.map(action => (
-          <button
-            key={action.id}
-            onClick={() => { void action.onClick(); }}
-            className="editor-panel-toggle"
-            disabled={action.disabled}
-            title={action.label}
-          >
-            {action.label}
-          </button>
-        ))}
+      <div className="editor-shell-header">
+        <div className="editor-shell-title">Inspector Editor</div>
+        <div className="editor-panel-bar" aria-label="Editor panels">
+          {panelConfigs.map(config => (
+            <button
+              key={config.id}
+              onClick={() => togglePanel(config.id)}
+              className={`editor-panel-toggle ${activePanels.includes(config.id) ? 'active' : ''}`}
+              title={config.title}
+            >
+              {config.title}
+            </button>
+          ))}
+          {actions.map(action => (
+            <button
+              key={action.id}
+              onClick={() => { void action.onClick(); }}
+              className="editor-panel-toggle"
+              disabled={action.disabled}
+              title={action.label}
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Left Panel Stack */}
-      {getLeftPanels().length > 0 && (
+      {leftPanels.length > 0 && (
         <div className="editor-left-stack">
-          {getLeftPanels().map((config, index) => (
+          <div className="editor-region-label">Tools</div>
+          {leftPanels.map((config, index) => (
             <ResizablePanel
               key={config.id}
               title={config.title}
@@ -134,7 +139,7 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
               resizeHandles={['right']}
               className="editor-glass-panel"
               style={{
-                marginBottom: index < getLeftPanels().length - 1 ? '8px' : '0'
+                marginBottom: index < leftPanels.length - 1 ? '8px' : '0'
               }}
               onClose={() => closePanel(config.id)}
               onMinimize={() => minimizePanel(config.id)}
@@ -146,10 +151,10 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
         </div>
       )}
 
-      {/* Right Panel Stack */}
-      {getRightPanels().length > 0 && (
+      {rightPanels.length > 0 && (
         <div className="editor-right-stack">
-          {getRightPanels().map((config, index) => (
+          <div className="editor-region-label">Inspector</div>
+          {rightPanels.map((config, index) => (
             <ResizablePanel
               key={config.id}
               title={config.title}
@@ -160,7 +165,7 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
               resizeHandles={['corner']}
               className="editor-glass-panel"
               style={{
-                marginBottom: index < getRightPanels().length - 1 ? '8px' : '0'
+                marginBottom: index < rightPanels.length - 1 ? '8px' : '0'
               }}
               onClose={() => closePanel(config.id)}
               onMinimize={() => minimizePanel(config.id)}
@@ -172,8 +177,7 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
         </div>
       )}
 
-      {/* Floating Panels */}
-      {getFloatingPanels().map(floatingPanel => {
+      {floatingPanelItems.map(floatingPanel => {
         const config = panelConfigs.find(c => c.id === floatingPanel.id);
         if (!config) return null;
         
@@ -202,26 +206,31 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
         );
       })}
 
-      {/* Minimized Panels Dock */}
-      {minimizedPanels.length > 0 && (
-        <div className="editor-minimized-dock">
-          {minimizedPanels.map(panelId => {
-            const config = panelConfigs.find(c => c.id === panelId);
-            if (!config) return null;
-            
-            return (
-              <button
-                key={panelId}
-                onClick={() => restorePanel(panelId)}
-                className="editor-minimized-item"
-                title={`${config.title} 복원`}
-              >
-                {config.title}
-              </button>
-            );
-          })}
+      <div className="editor-shell-footer">
+        <div className="editor-shell-status">
+          {activePanels.length > 0 ? `Active: ${activePanels.length}` : 'No active panels'}
         </div>
-      )}
+        {minimizedPanels.length > 0 && (
+          <div className="editor-minimized-dock">
+            {minimizedPanels.map(panelId => {
+              const config = panelConfigs.find(c => c.id === panelId);
+              if (!config) return null;
+
+              return (
+                <button
+                  key={panelId}
+                  onClick={() => restorePanel(panelId)}
+                  className="editor-minimized-item"
+                  title={`${config.title} 복원`}
+                >
+                  {config.title}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <div className="editor-shell-hint">좌클릭 배치 · 우클릭 회전 · Q/E 높이 조절</div>
+      </div>
 
       {children}
     </div>

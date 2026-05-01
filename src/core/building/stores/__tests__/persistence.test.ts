@@ -19,6 +19,10 @@ function createTarget(): BuildingHydrationTarget {
     wallCells: new Map(),
     wallMeta: new Map(),
     initialized: false,
+    showSnow: false,
+    showFog: false,
+    fogColor: '#cfd8e3',
+    weatherEffect: 'none',
   };
 }
 
@@ -42,6 +46,10 @@ describe('building persistence helpers', () => {
       tileGroups: [{ id: 'tiles', name: 'Tiles', floorMeshId: 'mesh', tiles: [] }],
       blocks: [{ id: 'block', position: { x: 0, y: 0, z: 0 } }],
       objects: [{ id: 'object', type: 'fire', position: { x: 1, y: 0, z: 1 } }],
+      showSnow: false,
+      showFog: false,
+      fogColor: '#cfd8e3',
+      weatherEffect: 'none',
     });
   });
 
@@ -87,6 +95,10 @@ describe('building persistence helpers', () => {
         },
       ],
       objects: [],
+      showSnow: false,
+      showFog: false,
+      fogColor: '#cfd8e3',
+      weatherEffect: 'none',
     };
 
     hydrateBuildingState(target, data);

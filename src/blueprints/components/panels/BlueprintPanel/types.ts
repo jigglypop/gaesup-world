@@ -1,3 +1,5 @@
+import type { BlueprintRecord } from '../../../types';
+
 export type BlueprintType =
   | 'character'
   | 'vehicle'
@@ -21,4 +23,6 @@ export type BlueprintItem = {
   tags: string[];
   description: string;
   lastModified: string;
-}; 
+};
+
+export type BlueprintFieldValue = string | number | boolean | string[] | BlueprintRecord;

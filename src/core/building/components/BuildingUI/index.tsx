@@ -5,32 +5,25 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAuthStore } from '../../../../admin/store/authStore';
 import { useNPCStore } from '../../../npc/stores/npcStore';
 import { DEFAULT_BUILDING_OBJECT_CATALOG, getDefaultBuildingObject } from '../../catalog';
+import { createBuildingScopeId } from '../../id';
 import { useBuildingStore } from '../../stores/buildingStore';
-import type { MeshConfig, TileObjectType, TileShapeType } from '../../types';
+import {
+  BUILDING_BASIC_OBJECT_OPTIONS,
+  BUILDING_FLAG_STYLE_OPTIONS,
+  BUILDING_TILE_PRESETS,
+  BUILDING_TREE_OPTIONS,
+  BUILDING_TILE_OBJECT_OPTIONS,
+  BUILDING_TILE_SHAPE_OPTIONS,
+  BUILDING_WEATHER_EFFECT_OPTIONS,
+  type MeshConfig,
+} from '../../types';
 import './styles.css';
 
 export type BuildingUIProps = {
   onClose?: () => void;
 };
 
-const TILE_OBJECT_OPTIONS: { type: TileObjectType; label: string }[] = [
-  { type: 'none', label: 'None' },
-  { type: 'water', label: 'Water' },
-  { type: 'grass', label: 'Grass' },
-  { type: 'sand', label: 'Sand' },
-  { type: 'snowfield', label: 'Snowfield' },
-];
-
-const TILE_SHAPE_OPTIONS: { type: TileShapeType; label: string }[] = [
-  { type: 'box', label: 'Box' },
-  { type: 'stairs', label: 'Stairs' },
-  { type: 'round', label: 'Round' },
-  { type: 'ramp', label: 'Ramp' },
-];
-
-export function createCustomMeshId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
+export const createCustomMeshId = createBuildingScopeId;
 
 export function BuildingUI({ onClose }: BuildingUIProps) {
   const { 
@@ -71,6 +64,12 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     addTileGroup,
     selectedTileObjectType,
     setSelectedTileObjectType,
+    currentCustomTileName,
+    currentCustomTileColor,
+    currentCustomTileTextureUrl,
+    setCustomTileDraft,
+    applyTilePreset,
+    applyCustomTile,
     selectedPlacedObjectType,
     setSelectedPlacedObjectType,
     currentObjectRotation,
@@ -83,6 +82,28 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     setModelScale,
     currentModelColor,
     setModelColor,
+    currentObjectPrimaryColor,
+    setObjectPrimaryColor,
+    currentObjectSecondaryColor,
+    setObjectSecondaryColor,
+    currentTreeKind,
+    setTreeKind,
+    currentFlagWidth,
+    setFlagWidth,
+    currentFlagHeight,
+    setFlagHeight,
+    currentFlagImageUrl,
+    setFlagImageUrl,
+    currentFlagStyle,
+    setFlagStyle,
+    currentFireIntensity,
+    setFireIntensity,
+    currentFireWidth,
+    setFireWidth,
+    currentFireHeight,
+    setFireHeight,
+    currentFireColor,
+    setFireColor,
     currentBillboardText,
     setBillboardText,
     currentBillboardImageUrl,
@@ -101,6 +122,14 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     setBillboardElevation,
     currentBillboardIntensity,
     setBillboardIntensity,
+    showSnow,
+    setShowSnow,
+    showFog,
+    setShowFog,
+    fogColor,
+    setFogColor,
+    weatherEffect,
+    setWeatherEffect,
   } = useBuildingStore(useShallow((state) => ({
     setEditMode: state.setEditMode,
     editMode: state.editMode,
@@ -139,6 +168,12 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     addTileGroup: state.addTileGroup,
     selectedTileObjectType: state.selectedTileObjectType,
     setSelectedTileObjectType: state.setSelectedTileObjectType,
+    currentCustomTileName: state.currentCustomTileName,
+    currentCustomTileColor: state.currentCustomTileColor,
+    currentCustomTileTextureUrl: state.currentCustomTileTextureUrl,
+    setCustomTileDraft: state.setCustomTileDraft,
+    applyTilePreset: state.applyTilePreset,
+    applyCustomTile: state.applyCustomTile,
     selectedPlacedObjectType: state.selectedPlacedObjectType,
     setSelectedPlacedObjectType: state.setSelectedPlacedObjectType,
     currentObjectRotation: state.currentObjectRotation,
@@ -151,6 +186,28 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     setModelScale: state.setModelScale,
     currentModelColor: state.currentModelColor,
     setModelColor: state.setModelColor,
+    currentObjectPrimaryColor: state.currentObjectPrimaryColor,
+    setObjectPrimaryColor: state.setObjectPrimaryColor,
+    currentObjectSecondaryColor: state.currentObjectSecondaryColor,
+    setObjectSecondaryColor: state.setObjectSecondaryColor,
+    currentTreeKind: state.currentTreeKind,
+    setTreeKind: state.setTreeKind,
+    currentFlagWidth: state.currentFlagWidth,
+    setFlagWidth: state.setFlagWidth,
+    currentFlagHeight: state.currentFlagHeight,
+    setFlagHeight: state.setFlagHeight,
+    currentFlagImageUrl: state.currentFlagImageUrl,
+    setFlagImageUrl: state.setFlagImageUrl,
+    currentFlagStyle: state.currentFlagStyle,
+    setFlagStyle: state.setFlagStyle,
+    currentFireIntensity: state.currentFireIntensity,
+    setFireIntensity: state.setFireIntensity,
+    currentFireWidth: state.currentFireWidth,
+    setFireWidth: state.setFireWidth,
+    currentFireHeight: state.currentFireHeight,
+    setFireHeight: state.setFireHeight,
+    currentFireColor: state.currentFireColor,
+    setFireColor: state.setFireColor,
     currentBillboardText: state.currentBillboardText,
     setBillboardText: state.setBillboardText,
     currentBillboardImageUrl: state.currentBillboardImageUrl,
@@ -169,6 +226,14 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     setBillboardElevation: state.setBillboardElevation,
     currentBillboardIntensity: state.currentBillboardIntensity,
     setBillboardIntensity: state.setBillboardIntensity,
+    showSnow: state.showSnow,
+    setShowSnow: state.setShowSnow,
+    showFog: state.showFog,
+    setShowFog: state.setShowFog,
+    fogColor: state.fogColor,
+    setFogColor: state.setFogColor,
+    weatherEffect: state.weatherEffect,
+    setWeatherEffect: state.setWeatherEffect,
   })));
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const isEditing = isInEditMode();
@@ -196,11 +261,11 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
   const wallCategoriesArray = useMemo(() => Array.from(wallCategories.values()), [wallCategories]);
   const npcTemplatesArray = useMemo(() => Array.from(npcTemplates.values()), [npcTemplates]);
   const selectedTileObjectLabel = useMemo(
-    () => TILE_OBJECT_OPTIONS.find((option) => option.type === selectedTileObjectType)?.label ?? selectedTileObjectType,
+    () => BUILDING_TILE_OBJECT_OPTIONS.find((option) => option.type === selectedTileObjectType)?.labelEn ?? selectedTileObjectType,
     [selectedTileObjectType],
   );
   const selectedTileShapeLabel = useMemo(
-    () => TILE_SHAPE_OPTIONS.find((option) => option.type === currentTileShape)?.label ?? currentTileShape,
+    () => BUILDING_TILE_SHAPE_OPTIONS.find((option) => option.type === currentTileShape)?.labelEn ?? currentTileShape,
     [currentTileShape],
   );
   const selectedModelObject = useMemo(
@@ -322,14 +387,47 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                 NPC Mode
               </button>
               <button
-                onClick={() => {
-                  setSelectedPlacedObjectType('model');
-                  setEditMode('object');
-                }}
+                onClick={() => setEditMode('object')}
                 className={`building-ui-mode-button ${editMode === 'object' ? 'active' : ''}`}
               >
                 Object Mode
               </button>
+            </div>
+
+            <div className="building-ui-object-group">
+              <span className="building-ui-label">World Environment:</span>
+              <div className="building-ui-object-buttons">
+                <button
+                  onClick={() => setShowSnow(!showSnow)}
+                  className={`building-ui-object-button ${showSnow ? 'active' : ''}`}
+                >
+                  Snow {showSnow ? 'ON' : 'OFF'}
+                </button>
+                {BUILDING_WEATHER_EFFECT_OPTIONS.filter((option) => option.type !== 'snow').map((option) => (
+                  <button
+                    key={option.type}
+                    onClick={() => setWeatherEffect(option.type)}
+                    className={`building-ui-object-button ${weatherEffect === option.type ? 'active' : ''}`}
+                  >
+                    {option.labelEn}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setShowFog(!showFog)}
+                  className={`building-ui-object-button ${showFog ? 'active' : ''}`}
+                >
+                  Fog {showFog ? 'ON' : 'OFF'}
+                </button>
+                <label className="building-ui-object-button">
+                  Fog Color
+                  <input
+                    type="color"
+                    value={fogColor}
+                    onChange={(e) => setFogColor(e.target.value)}
+                    style={{ marginLeft: 8 }}
+                  />
+                </label>
+              </div>
             </div>
             
             {editMode === 'tile' && (
@@ -530,13 +628,13 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                 <div className="building-ui-size-group">
                   <span className="building-ui-label">Tile Shape:</span>
                   <div className="building-ui-size-buttons">
-                    {TILE_SHAPE_OPTIONS.map((shape) => (
+                    {BUILDING_TILE_SHAPE_OPTIONS.map((shape) => (
                       <button
                         key={shape.type}
                         onClick={() => setTileShape(shape.type)}
                         className={`building-ui-size-button ${currentTileShape === shape.type ? 'active' : ''}`}
                       >
-                        {shape.label}
+                        {shape.labelEn}
                       </button>
                     ))}
                   </div>
@@ -556,17 +654,78 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                     ))}
                   </div>
                 </div>
+
+                <div className="building-ui-object-group">
+                  <span className="building-ui-label">Tile Preset:</span>
+                  <div className="building-ui-object-buttons">
+                    {BUILDING_TILE_PRESETS.map((preset) => {
+                      const groupId = `${preset.id}-floor`;
+                      return (
+                        <button
+                          key={preset.id}
+                          onClick={() => applyTilePreset(preset.id)}
+                          className={`building-ui-object-button ${selectedTileGroupId === groupId ? 'active' : ''}`}
+                        >
+                          {preset.labelEn}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="building-ui-custom-settings">
+                  <div className="building-ui-input-group">
+                    <span className="building-ui-label">Custom Tile:</span>
+                    <input
+                      type="text"
+                      value={currentCustomTileName}
+                      onChange={(e) => setCustomTileDraft({ name: e.target.value })}
+                      className="building-ui-input"
+                    />
+                  </div>
+                  <div className="building-ui-input-group">
+                    <span className="building-ui-label">Color:</span>
+                    <div className="building-ui-color-input">
+                      <input
+                        type="color"
+                        value={currentCustomTileColor}
+                        onChange={(e) => setCustomTileDraft({ color: e.target.value })}
+                        className="building-ui-color-picker"
+                      />
+                      <input
+                        type="text"
+                        value={currentCustomTileColor}
+                        onChange={(e) => setCustomTileDraft({ color: e.target.value })}
+                        className="building-ui-input"
+                        style={{ width: '100px' }}
+                      />
+                    </div>
+                  </div>
+                  <div className="building-ui-input-group">
+                    <span className="building-ui-label">Texture URL:</span>
+                    <input
+                      type="text"
+                      value={currentCustomTileTextureUrl}
+                      onChange={(e) => setCustomTileDraft({ textureUrl: e.target.value })}
+                      placeholder="textures/floor.png"
+                      className="building-ui-input"
+                    />
+                  </div>
+                  <button onClick={applyCustomTile} className="building-ui-action-button">
+                    Create/Select Separate Tile Map
+                  </button>
+                </div>
                 
                 <div className="building-ui-object-group">
                   <span className="building-ui-label">Tile Object:</span>
                   <div className="building-ui-object-buttons">
-                    {TILE_OBJECT_OPTIONS.map((option) => (
+                    {BUILDING_TILE_OBJECT_OPTIONS.map((option) => (
                       <button
                         key={option.type}
                         onClick={() => setSelectedTileObjectType(option.type)}
                         className={`building-ui-object-button ${selectedTileObjectType === option.type ? 'active' : ''}`}
                       >
-                        {option.label}
+                        {option.labelEn}
                       </button>
                     ))}
                   </div>
@@ -628,40 +787,16 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
 
             {editMode === 'object' && (
               <>
-                <div className="building-ui-category-group">
-                  <span className="building-ui-label">Object:</span>
-                  <select
-                    value={selectedModelObjectId}
-                    onChange={(e) => {
-                      const next = getDefaultBuildingObject(e.target.value);
-                      setSelectedModelObjectId(e.target.value);
-                      if (next) {
-                        setSelectedPlacedObjectType('model');
-                        setModelScale(next.defaultScale);
-                        setModelColor(next.defaultColor);
-                        setModelUrl(next.modelUrl ?? '');
-                      }
-                    }}
-                    className="building-ui-select"
-                  >
-                    {DEFAULT_BUILDING_OBJECT_CATALOG.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 <div className="building-ui-object-group">
-                  <span className="building-ui-label">Basic Objects:</span>
+                  <span className="building-ui-label">Object Type:</span>
                   <div className="building-ui-object-buttons">
-                    {(['sakura', 'flag', 'fire', 'billboard'] as const).map((type) => (
+                    {BUILDING_BASIC_OBJECT_OPTIONS.map((option) => (
                       <button
-                        key={type}
-                        onClick={() => setSelectedPlacedObjectType(type)}
-                        className={`building-ui-object-button ${selectedPlacedObjectType === type ? 'active' : ''}`}
+                        key={option.type}
+                        onClick={() => setSelectedPlacedObjectType(option.type)}
+                        className={`building-ui-object-button ${selectedPlacedObjectType === option.type ? 'active' : ''}`}
                       >
-                        {type}
+                        {option.labelEn}
                       </button>
                     ))}
                     {DEFAULT_BUILDING_OBJECT_CATALOG.map((item) => (
@@ -674,7 +809,7 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                           setModelColor(item.defaultColor);
                           setModelUrl(item.modelUrl ?? '');
                         }}
-                        className={`building-ui-object-button ${selectedModelObjectId === item.id ? 'active' : ''}`}
+                        className={`building-ui-object-button ${selectedPlacedObjectType === 'model' && selectedModelObjectId === item.id ? 'active' : ''}`}
                       >
                         {item.label}
                       </button>
@@ -696,6 +831,173 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                     ))}
                   </div>
                 </div>
+
+                {(selectedPlacedObjectType === 'tree' || selectedPlacedObjectType === 'sakura') && (
+                  <div className="building-ui-custom-settings">
+                    <div className="building-ui-object-group">
+                      <span className="building-ui-label">Tree Type:</span>
+                      <div className="building-ui-object-buttons">
+                        {BUILDING_TREE_OPTIONS.map((option) => (
+                          <button
+                            key={option.type}
+                            onClick={() => setTreeKind(option.type)}
+                            className={`building-ui-object-button ${currentTreeKind === option.type ? 'active' : ''}`}
+                          >
+                            {option.labelEn}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Leaf/Flower Color:</span>
+                      <div className="building-ui-color-input">
+                        <input
+                          type="color"
+                          value={currentObjectPrimaryColor}
+                          onChange={(e) => setObjectPrimaryColor(e.target.value)}
+                          className="building-ui-color-picker"
+                        />
+                        <input
+                          type="text"
+                          value={currentObjectPrimaryColor}
+                          onChange={(e) => setObjectPrimaryColor(e.target.value)}
+                          className="building-ui-input"
+                          style={{ width: '100px' }}
+                        />
+                      </div>
+                    </div>
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Bark Color:</span>
+                      <div className="building-ui-color-input">
+                        <input
+                          type="color"
+                          value={currentObjectSecondaryColor}
+                          onChange={(e) => setObjectSecondaryColor(e.target.value)}
+                          className="building-ui-color-picker"
+                        />
+                        <input
+                          type="text"
+                          value={currentObjectSecondaryColor}
+                          onChange={(e) => setObjectSecondaryColor(e.target.value)}
+                          className="building-ui-input"
+                          style={{ width: '100px' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedPlacedObjectType === 'flag' && (
+                  <div className="building-ui-custom-settings">
+                    <div className="building-ui-object-group">
+                      <span className="building-ui-label">Flag Style:</span>
+                      <div className="building-ui-object-buttons">
+                        {BUILDING_FLAG_STYLE_OPTIONS.map(({ style, meta }) => (
+                          <button
+                            key={style}
+                            onClick={() => setFlagStyle(style)}
+                            className={`building-ui-object-button ${currentFlagStyle === style ? 'active' : ''}`}
+                          >
+                            {meta.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Width:</span>
+                      <input
+                        type="number"
+                        min="0.5"
+                        max="8"
+                        step="0.1"
+                        value={currentFlagWidth}
+                        onChange={(e) => setFlagWidth(Number(e.target.value) || 1.5)}
+                        className="building-ui-input"
+                      />
+                    </div>
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Height:</span>
+                      <input
+                        type="number"
+                        min="0.5"
+                        max="6"
+                        step="0.1"
+                        value={currentFlagHeight}
+                        onChange={(e) => setFlagHeight(Number(e.target.value) || 1)}
+                        className="building-ui-input"
+                      />
+                    </div>
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Image URL:</span>
+                      <input
+                        type="text"
+                        value={currentFlagImageUrl}
+                        onChange={(e) => setFlagImageUrl(e.target.value)}
+                        placeholder="https://..."
+                        className="building-ui-input"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {selectedPlacedObjectType === 'fire' && (
+                  <div className="building-ui-custom-settings">
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Intensity:</span>
+                      <input
+                        type="number"
+                        min="0.5"
+                        max="3"
+                        step="0.1"
+                        value={currentFireIntensity}
+                        onChange={(e) => setFireIntensity(Number(e.target.value) || 1.5)}
+                        className="building-ui-input"
+                      />
+                    </div>
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Width:</span>
+                      <input
+                        type="number"
+                        min="0.3"
+                        max="4"
+                        step="0.1"
+                        value={currentFireWidth}
+                        onChange={(e) => setFireWidth(Number(e.target.value) || 1)}
+                        className="building-ui-input"
+                      />
+                    </div>
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Height:</span>
+                      <input
+                        type="number"
+                        min="0.5"
+                        max="5"
+                        step="0.1"
+                        value={currentFireHeight}
+                        onChange={(e) => setFireHeight(Number(e.target.value) || 1.5)}
+                        className="building-ui-input"
+                      />
+                    </div>
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Color:</span>
+                      <div className="building-ui-color-input">
+                        <input
+                          type="color"
+                          value={currentFireColor}
+                          onChange={(e) => setFireColor(e.target.value)}
+                          className="building-ui-color-picker"
+                        />
+                        <input
+                          type="text"
+                          value={currentFireColor}
+                          onChange={(e) => setFireColor(e.target.value)}
+                          className="building-ui-input"
+                          style={{ width: '100px' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {selectedPlacedObjectType === 'billboard' && (
                   <div className="building-ui-custom-settings">
@@ -850,58 +1152,61 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
                   </div>
                 )}
 
-                <div className="building-ui-custom-settings">
-                  <div className="building-ui-input-group">
-                    <span className="building-ui-label">GLB URL:</span>
-                    <input
-                      type="text"
-                      value={currentModelUrl}
-                      onChange={(e) => {
-                        setSelectedPlacedObjectType('model');
-                        setModelUrl(e.target.value);
-                      }}
-                      placeholder="gltf/props/door.glb"
-                      className="building-ui-input"
-                    />
-                  </div>
-
-                  <div className="building-ui-input-group">
-                    <span className="building-ui-label">Scale:</span>
-                    <input
-                      type="number"
-                      min="0.1"
-                      max="10"
-                      step="0.1"
-                      value={currentModelScale}
-                      onChange={(e) => setModelScale(Number(e.target.value) || 1)}
-                      className="building-ui-input"
-                    />
-                  </div>
-
-                  <div className="building-ui-input-group">
-                    <span className="building-ui-label">Color:</span>
-                    <div className="building-ui-color-input">
-                      <input
-                        type="color"
-                        value={currentModelColor}
-                        onChange={(e) => setModelColor(e.target.value)}
-                        className="building-ui-color-picker"
-                      />
+                {selectedPlacedObjectType === 'model' && (
+                  <div className="building-ui-custom-settings">
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">GLB URL:</span>
                       <input
                         type="text"
-                        value={currentModelColor}
-                        onChange={(e) => setModelColor(e.target.value)}
+                        value={currentModelUrl}
+                        onChange={(e) => setModelUrl(e.target.value)}
+                        placeholder="gltf/props/door.glb"
                         className="building-ui-input"
-                        style={{ width: '100px' }}
                       />
                     </div>
+
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Scale:</span>
+                      <input
+                        type="number"
+                        min="0.1"
+                        max="10"
+                        step="0.1"
+                        value={currentModelScale}
+                        onChange={(e) => setModelScale(Number(e.target.value) || 1)}
+                        className="building-ui-input"
+                      />
+                    </div>
+
+                    <div className="building-ui-input-group">
+                      <span className="building-ui-label">Color:</span>
+                      <div className="building-ui-color-input">
+                        <input
+                          type="color"
+                          value={currentModelColor}
+                          onChange={(e) => setModelColor(e.target.value)}
+                          className="building-ui-color-picker"
+                        />
+                        <input
+                          type="text"
+                          value={currentModelColor}
+                          onChange={(e) => setModelColor(e.target.value)}
+                          className="building-ui-input"
+                          style={{ width: '100px' }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="building-ui-info">
-                  <p>Type: {selectedPlacedObjectType === 'model' ? selectedModelObject?.label : 'None'}</p>
-                  <p>Fallback: {selectedModelObject?.fallbackKind ?? 'generic'}</p>
-                  <p>GLB URL이 비어 있으면 기본 프리미티브로 표시됩니다.</p>
+                  <p>Type: {selectedPlacedObjectType === 'model' ? selectedModelObject?.label : selectedPlacedObjectType}</p>
+                  {selectedPlacedObjectType === 'model' && (
+                    <>
+                      <p>Fallback: {selectedModelObject?.fallbackKind ?? 'generic'}</p>
+                      <p>GLB URL이 비어 있으면 기본 프리미티브로 표시됩니다.</p>
+                    </>
+                  )}
                   <p>Click to place objects</p>
                 </div>
               </>

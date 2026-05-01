@@ -104,6 +104,8 @@
 
 .editor-left-stack,
 .editor-right-stack,
+.editor-shell-header,
+.editor-shell-footer,
 .editor-panel-bar,
 .editor-minimized-dock,
 .editor-glass-panel {
@@ -112,7 +114,7 @@
 
 .editor-left-stack {
   position: absolute;
-  top: 64px;
+  top: 76px;
   left: 52px;
   display: flex;
   flex-direction: column;
@@ -121,30 +123,61 @@
 
 .editor-right-stack {
   position: absolute;
-  top: 64px;
+  top: 76px;
   right: 18px;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-/* Panel Bar */
-.editor-panel-bar {
+.editor-shell-header {
   position: absolute;
   top: 14px;
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
   background: rgba(24, 27, 32, 0.82);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: var(--editor-border-radius);
-  padding: 5px;
-  display: flex;
-  flex-direction: row;
-  gap: 4px;
+  padding: 5px 8px;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
   border: 1px solid var(--editor-border-color);
   z-index: 100;
+}
+
+.editor-shell-title {
+  color: var(--editor-text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Panel Bar */
+.editor-panel-bar {
+  background: rgba(24, 27, 32, 0.82);
+  border-radius: var(--editor-border-radius);
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+}
+
+.editor-region-label {
+  align-self: flex-start;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(24, 27, 32, 0.78);
+  border: 1px solid var(--editor-border-color);
+  color: var(--editor-text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .editor-panel-toggle {
@@ -172,12 +205,85 @@
 
 /* Minimized Dock */
 .editor-minimized-dock {
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
     display: flex;
     gap: 8px;
+}
+
+.editor-shell-footer {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(24, 27, 32, 0.82);
+  border: 1px solid var(--editor-border-color);
+  color: var(--editor-text-secondary);
+  font-size: 11px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.editor-shell-status,
+.editor-shell-hint {
+  white-space: nowrap;
+}
+
+.editor-field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--editor-spacing-sm);
+}
+
+.editor-field-row__label {
+  color: var(--editor-text-muted, #aaaaaa);
+  font-size: 12px;
+}
+
+.editor-field-row__control {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.editor-field-toggle {
+  min-width: 52px;
+  padding: 5px 8px;
+  background: var(--editor-surface-secondary);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-sm);
+  color: var(--editor-text-secondary, #cccccc);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.editor-field-toggle--on {
+  background: var(--editor-accent-bg);
+  border-color: var(--editor-accent-border);
+  color: var(--editor-text-main, #ffffff);
+}
+
+.editor-field-color {
+  display: flex;
+  align-items: center;
+  gap: var(--editor-spacing-sm);
+  color: var(--editor-text-main, #ffffff);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.editor-field-color input {
+  width: 36px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
 }
 
 .editor-minimized-item {

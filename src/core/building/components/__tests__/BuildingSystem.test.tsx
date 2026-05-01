@@ -156,6 +156,9 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
       showGrid: true,
       gridSize: 100,
       showSnow: false,
+      showFog: false,
+      fogColor: '#cfd8e3',
+      weatherEffect: 'none',
       objects: [],
       ...overrides,
     };

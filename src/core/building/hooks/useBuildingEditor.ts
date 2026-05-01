@@ -187,9 +187,6 @@ export function useBuildingEditor() {
       getSupportHeightAt,
       currentTileMultiplier,
       currentTileHeight,
-      selectedTileObjectType,
-      currentTerrainColor,
-      currentTerrainAccentColor,
       tileGroups,
       meshes,
       addMesh,
@@ -204,8 +201,7 @@ export function useBuildingEditor() {
       ...hoverPosition,
       y: supportY + currentTileHeight * heightStep,
     };
-    const terrainBlockMaterial = findTerrainBlockMaterial(tileGroups.values(), hoverPosition)
-      ?? createTerrainBlockMaterial(selectedTileObjectType, currentTerrainColor, currentTerrainAccentColor);
+    const terrainBlockMaterial = findTerrainBlockMaterial(tileGroups.values(), hoverPosition);
     if (terrainBlockMaterial && !meshes.has(terrainBlockMaterial.id)) {
       addMesh(terrainBlockMaterial);
     }
@@ -229,6 +225,7 @@ export function useBuildingEditor() {
       currentObjectRotation,
       currentObjectPrimaryColor,
       currentObjectSecondaryColor,
+      currentTreeKind,
       currentFlagWidth,
       currentFlagHeight,
       currentFlagStyle,
@@ -268,11 +265,12 @@ export function useBuildingEditor() {
     }
 
     const config =
-      selectedPlacedObjectType === 'sakura'
+      selectedPlacedObjectType === 'tree' || selectedPlacedObjectType === 'sakura'
         ? {
             size: useBuildingStore.getState().currentTileMultiplier * cellSize,
             primaryColor: currentObjectPrimaryColor,
             secondaryColor: currentObjectSecondaryColor,
+            treeKind: selectedPlacedObjectType === 'sakura' ? 'sakura' : currentTreeKind,
           }
         : selectedPlacedObjectType === 'flag'
           ? {

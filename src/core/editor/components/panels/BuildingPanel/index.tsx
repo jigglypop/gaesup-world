@@ -8,11 +8,21 @@ import {
   useAssetStore,
 } from '../../../../assets';
 import { DEFAULT_BUILDING_OBJECT_CATALOG, getDefaultBuildingObject } from '../../../../building/catalog';
+import { createBuildingScopeId } from '../../../../building/id';
 import { useBuildingStore } from '../../../../building/stores/buildingStore';
-import { FLAG_STYLE_META, FlagStyle, TileObjectType, PlacedObjectType, TileShapeType, type MeshConfig } from '../../../../building/types';
+import {
+  BUILDING_FLAG_STYLE_OPTIONS,
+  BUILDING_PLACED_OBJECT_OPTIONS,
+  BUILDING_TILE_PRESETS,
+  BUILDING_TREE_OPTIONS,
+  BUILDING_TILE_OBJECT_OPTIONS,
+  BUILDING_TILE_SHAPE_OPTIONS,
+  BUILDING_WEATHER_EFFECT_OPTIONS,
+  type MeshConfig,
+} from '../../../../building/types';
+import { useNPCStore } from '../../../../npc/stores/npcStore';
+import { FieldColor, FieldRow, FieldToggle } from '../../fields';
 import './styles.css';
-
-const FLAG_STYLES = Object.entries(FLAG_STYLE_META) as [FlagStyle, typeof FLAG_STYLE_META[FlagStyle]][];
 
 const BILLBOARD_COLORS = [
   { value: '#00ff88', label: '초록' },
@@ -25,9 +35,7 @@ const BILLBOARD_COLORS = [
 const isBuildingMaterialAsset = (asset: AssetRecord) =>
   asset.kind === 'material' || asset.kind === 'wall' || asset.kind === 'tile';
 
-export function createPlacementAssetScopeId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
+export const createPlacementAssetScopeId = createBuildingScopeId;
 
 export function createScopedColorMeshConfig(id: string, color: string, base?: MeshConfig): MeshConfig {
   const { mapTextureUrl: _mapTextureUrl, textureUrl: _textureUrl, materialParams, ...baseWithoutTexture } = base ?? {};
@@ -62,6 +70,12 @@ export const BuildingPanel: FC = () => {
   const setTileRotation = useBuildingStore((state) => state.setTileRotation);
   const currentTileMaterialId = useBuildingStore((state) => state.currentTileMaterialId);
   const setCurrentTileMaterialId = useBuildingStore((state) => state.setCurrentTileMaterialId);
+  const currentCustomTileName = useBuildingStore((state) => state.currentCustomTileName);
+  const currentCustomTileColor = useBuildingStore((state) => state.currentCustomTileColor);
+  const currentCustomTileTextureUrl = useBuildingStore((state) => state.currentCustomTileTextureUrl);
+  const setCustomTileDraft = useBuildingStore((state) => state.setCustomTileDraft);
+  const applyTilePreset = useBuildingStore((state) => state.applyTilePreset);
+  const applyCustomTile = useBuildingStore((state) => state.applyCustomTile);
   const currentWallRotation = useBuildingStore((state) => state.currentWallRotation);
   const setWallRotation = useBuildingStore((state) => state.setWallRotation);
   const selectedTileObjectType = useBuildingStore((state) => state.selectedTileObjectType);
@@ -132,10 +146,22 @@ export const BuildingPanel: FC = () => {
   const setBillboardIntensity = useBuildingStore((state) => state.setBillboardIntensity);
   const currentObjectPrimaryColor = useBuildingStore((state) => state.currentObjectPrimaryColor);
   const currentObjectSecondaryColor = useBuildingStore((state) => state.currentObjectSecondaryColor);
+  const currentTreeKind = useBuildingStore((state) => state.currentTreeKind);
   const setObjectPrimaryColor = useBuildingStore((state) => state.setObjectPrimaryColor);
   const setObjectSecondaryColor = useBuildingStore((state) => state.setObjectSecondaryColor);
+  const setTreeKind = useBuildingStore((state) => state.setTreeKind);
   const showSnow = useBuildingStore((state) => state.showSnow);
   const setShowSnow = useBuildingStore((state) => state.setShowSnow);
+  const showFog = useBuildingStore((state) => state.showFog);
+  const setShowFog = useBuildingStore((state) => state.setShowFog);
+  const fogColor = useBuildingStore((state) => state.fogColor);
+  const setFogColor = useBuildingStore((state) => state.setFogColor);
+  const weatherEffect = useBuildingStore((state) => state.weatherEffect);
+  const setWeatherEffect = useBuildingStore((state) => state.setWeatherEffect);
+  const npcTemplates = useNPCStore((state) => state.templates);
+  const selectedNPCTemplateId = useNPCStore((state) => state.selectedTemplateId);
+  const setSelectedNPCTemplate = useNPCStore((state) => state.setSelectedTemplate);
+  const initializeNPCDefaults = useNPCStore((state) => state.initializeDefaults);
   const assetIds = useAssetStore((state) => state.ids);
   const assetRecords = useAssetStore((state) => state.records);
   const buildingAssets = useMemo(
@@ -145,6 +171,7 @@ export const BuildingPanel: FC = () => {
       .filter(isBuildingMaterialAsset),
     [assetIds, assetRecords],
   );
+  const npcTemplatesArray = useMemo(() => Array.from(npcTemplates.values()), [npcTemplates]);
 
   const editModes: { type: typeof editMode; label: string; description: string }[] = [
     { type: 'none', label: '없음', description: '건축 편집을 끕니다' },
@@ -153,30 +180,6 @@ export const BuildingPanel: FC = () => {
     { type: 'block', label: '박스', description: '복셀 박스를 쌓습니다' },
     { type: 'object', label: '오브젝트', description: '타일 위에 장식을 배치합니다' },
     { type: 'npc', label: 'NPC', description: 'NPC를 배치합니다' },
-  ];
-
-  const coverTypes: { type: TileObjectType; label: string }[] = [
-    { type: 'none', label: '없음' },
-    { type: 'water', label: '물' },
-    { type: 'grass', label: '잔디' },
-    { type: 'sand', label: '모래' },
-    { type: 'snowfield', label: '눈밭' },
-  ];
-
-  const placedObjectTypes: { type: PlacedObjectType | 'none'; label: string }[] = [
-    { type: 'none', label: '없음' },
-    { type: 'sakura', label: '벚꽃나무' },
-    { type: 'flag', label: '깃발' },
-    { type: 'fire', label: '불' },
-    { type: 'billboard', label: '간판' },
-    { type: 'model', label: '기본 기물' },
-  ];
-
-  const tileShapes: { type: TileShapeType; label: string }[] = [
-    { type: 'box', label: '박스' },
-    { type: 'stairs', label: '계단' },
-    { type: 'round', label: '원형' },
-    { type: 'ramp', label: '경사' },
   ];
 
   const rotations = [
@@ -198,10 +201,19 @@ export const BuildingPanel: FC = () => {
     ? blocks.find((block) => block.id === selectedBlockId)
     : undefined;
   const currentEditModeLabel = editModes.find((mode) => mode.type === editMode)?.label ?? editMode;
-  const currentCoverLabel = coverTypes.find((type) => type.type === selectedTileObjectType)?.label ?? selectedTileObjectType;
-  const currentPlacedObjectLabel = placedObjectTypes.find((type) => type.type === selectedPlacedObjectType)?.label ?? selectedPlacedObjectType;
-  const currentTileShapeLabel = tileShapes.find((shape) => shape.type === currentTileShape)?.label ?? currentTileShape;
+  const currentCoverLabel = BUILDING_TILE_OBJECT_OPTIONS.find((type) => type.type === selectedTileObjectType)?.labelKo ?? selectedTileObjectType;
+  const currentPlacedObjectLabel = BUILDING_PLACED_OBJECT_OPTIONS.find((type) => type.type === selectedPlacedObjectType)?.labelKo ?? selectedPlacedObjectType;
+  const currentTileShapeLabel = BUILDING_TILE_SHAPE_OPTIONS.find((shape) => shape.type === currentTileShape)?.labelKo ?? currentTileShape;
   const selectedModelObject = getDefaultBuildingObject(selectedModelObjectId) ?? DEFAULT_BUILDING_OBJECT_CATALOG[0];
+  const isWallMode = editMode === 'wall';
+  const isTileMode = editMode === 'tile';
+  const isBlockMode = editMode === 'block';
+  const isObjectMode = editMode === 'object';
+  const isNPCMode = editMode === 'npc';
+
+  React.useEffect(() => {
+    initializeNPCDefaults();
+  }, [initializeNPCDefaults]);
 
   const handleDeleteSelectedWall = () => {
     if (!selectedWallId || !selectedWallGroup) return;
@@ -307,23 +319,27 @@ export const BuildingPanel: FC = () => {
 
   return (
     <div className="building-panel">
-      <div className="building-panel__section">
-        <div className="building-panel__section-title">편집 모드</div>
-        <div className="building-panel__modes">
+      <div className="building-panel__header">
+        <div>
+          <div className="building-panel__eyebrow">Mode</div>
+          <div className="building-panel__title">{currentEditModeLabel} 인스펙터</div>
+        </div>
+        <div className="building-panel__mode-tabs">
           {editModes.map((m) => (
             <button
               key={m.type}
-              className={`building-panel__mode-btn ${editMode === m.type ? 'building-panel__mode-btn--active' : ''}`}
+              className={`building-panel__mode-tab ${editMode === m.type ? 'building-panel__mode-tab--active' : ''}`}
               onClick={() => setEditMode(m.type)}
+              title={m.description}
             >
-              <span className="building-panel__mode-label">{m.label}</span>
-              <span className="building-panel__mode-desc">{m.description}</span>
+              {m.label}
             </button>
           ))}
         </div>
       </div>
 
-      {(editMode === 'wall' || editMode === 'none') && (
+      <div className="building-panel__inspector">
+      {isWallMode && (
         <div className="building-panel__section">
           <div className="building-panel__section-title">벽 회전 / 삭제</div>
           <div className="building-panel__segmented">
@@ -353,13 +369,13 @@ export const BuildingPanel: FC = () => {
         </div>
       )}
 
-      {(editMode === 'wall' || editMode === 'tile' || editMode === 'none') && (
+      {(isWallMode || isTileMode) && (
         <div className="building-panel__section">
           <div className="building-panel__section-title">에셋 재질</div>
           <div className="building-panel__asset-targets">
-            <span>벽: {selectedWallGroup?.name ?? '선택 없음'}</span>
-            <span>타일: {selectedTileId ? `선택 타일 ${selectedTileId}` : '다음 생성 타일'}</span>
-            <span>현재 생성 재질: {currentTileMaterialId ?? selectedTileGroup?.floorMeshId ?? '기본값'}</span>
+            {isWallMode && <span>벽: {selectedWallGroup?.name ?? '선택 없음'}</span>}
+            {isTileMode && <span>타일: {selectedTileId ? `선택 타일 ${selectedTileId}` : '다음 생성 타일'}</span>}
+            {isTileMode && <span>현재 생성 재질: {currentTileMaterialId ?? selectedTileGroup?.floorMeshId ?? '기본값'}</span>}
           </div>
           <div className="building-panel__asset-list">
             {buildingAssets.map((asset) => (
@@ -370,20 +386,24 @@ export const BuildingPanel: FC = () => {
                   <span>{asset.kind}</span>
                 </div>
                 <div className="building-panel__asset-actions">
-                  <button
-                    className="building-panel__asset-action"
-                    disabled={!selectedWallGroup}
-                    onClick={() => applyAssetToWall(asset)}
-                  >
-                    벽
-                  </button>
-                  <button
-                    className="building-panel__asset-action"
-                    disabled={!selectedTileGroup}
-                    onClick={() => applyAssetToTile(asset)}
-                  >
-                    타일
-                  </button>
+                  {isWallMode && (
+                    <button
+                      className="building-panel__asset-action"
+                      disabled={!selectedWallGroup}
+                      onClick={() => applyAssetToWall(asset)}
+                    >
+                      벽
+                    </button>
+                  )}
+                  {isTileMode && (
+                    <button
+                      className="building-panel__asset-action"
+                      disabled={!selectedTileGroup}
+                      onClick={() => applyAssetToTile(asset)}
+                    >
+                      타일
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -394,17 +414,74 @@ export const BuildingPanel: FC = () => {
         </div>
       )}
 
-      {(editMode === 'tile' || editMode === 'none') && (
+      {isTileMode && (
+        <div className="building-panel__section">
+          <div className="building-panel__section-title">타일 프리셋</div>
+          <div className="building-panel__grid">
+            {BUILDING_TILE_PRESETS.map((preset) => {
+              const groupId = `${preset.id}-floor`;
+              return (
+                <button
+                  key={preset.id}
+                  className={`building-panel__grid-btn ${selectedTileGroupId === groupId ? 'building-panel__grid-btn--active' : ''}`}
+                  onClick={() => applyTilePreset(preset.id)}
+                  title={preset.labelEn}
+                >
+                  {preset.labelKo}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {isTileMode && (
+        <div className="building-panel__section">
+          <div className="building-panel__section-title">커스텀 타일 맵</div>
+          <div className="building-panel__info">
+            <label className="building-panel__info-item">
+              <span className="building-panel__info-label">이름</span>
+              <input
+                type="text"
+                value={currentCustomTileName}
+                onChange={(event) => setCustomTileDraft({ name: event.target.value })}
+                className="building-panel__text-input"
+              />
+            </label>
+            <FieldRow label="기본색">
+              <FieldColor
+                value={currentCustomTileColor}
+                onChange={(color) => setCustomTileDraft({ color })}
+              />
+            </FieldRow>
+            <label className="building-panel__info-item">
+              <span className="building-panel__info-label">텍스처 URL</span>
+              <input
+                type="text"
+                value={currentCustomTileTextureUrl}
+                onChange={(event) => setCustomTileDraft({ textureUrl: event.target.value })}
+                placeholder="textures/floor.png"
+                className="building-panel__text-input"
+              />
+            </label>
+            <button className="building-panel__asset-action" onClick={applyCustomTile}>
+              별도 타일 맵 생성/선택
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isTileMode && (
         <div className="building-panel__section">
           <div className="building-panel__section-title">지형 덮개</div>
           <div className="building-panel__grid">
-            {coverTypes.map((t) => (
+            {BUILDING_TILE_OBJECT_OPTIONS.map((t) => (
               <button
                 key={t.type}
                 className={`building-panel__grid-btn ${selectedTileObjectType === t.type ? 'building-panel__grid-btn--active' : ''}`}
                 onClick={() => setSelectedTileObjectType(t.type)}
               >
-                {t.label}
+                {t.labelKo}
               </button>
             ))}
           </div>
@@ -429,11 +506,11 @@ export const BuildingPanel: FC = () => {
         </div>
       )}
 
-      {(editMode === 'object' || editMode === 'none') && (
+      {isObjectMode && (
         <div className="building-panel__section">
           <div className="building-panel__section-title">배치 오브젝트</div>
           <div className="building-panel__grid">
-            {placedObjectTypes.map((t) => (
+            {BUILDING_PLACED_OBJECT_OPTIONS.map((t) => (
               <button
                 key={t.type}
                 className={`building-panel__grid-btn ${selectedPlacedObjectType === t.type ? 'building-panel__grid-btn--active' : ''}`}
@@ -446,14 +523,14 @@ export const BuildingPanel: FC = () => {
                   }
                 }}
               >
-                {t.label}
+                {t.labelKo}
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {editMode === 'object' && selectedPlacedObjectType === 'model' && (
+      {isObjectMode && selectedPlacedObjectType === 'model' && (
         <div className="building-panel__section">
           <div className="building-panel__section-title">기본 기물 GLB</div>
           <div className="building-panel__grid">
@@ -513,8 +590,9 @@ export const BuildingPanel: FC = () => {
         </div>
       )}
 
+      {(isTileMode || isBlockMode) && (
       <div className="building-panel__section">
-        <div className="building-panel__section-title">타일 설정</div>
+        <div className="building-panel__section-title">배치 설정</div>
         <div className="building-panel__info">
           <div className="building-panel__info-item">
             <span className="building-panel__info-label">크기</span>
@@ -562,46 +640,51 @@ export const BuildingPanel: FC = () => {
             </div>
           </div>
         </div>
-        <div className="building-panel__section-subtitle">타일 형태</div>
-        <div className="building-panel__grid">
-          {tileShapes.map((shape) => (
-            <button
-              key={shape.type}
-              className={`building-panel__grid-btn ${currentTileShape === shape.type ? 'building-panel__grid-btn--active' : ''}`}
-              onClick={() => setTileShape(shape.type)}
-            >
-              {shape.label}
-            </button>
-          ))}
-        </div>
-        <div className="building-panel__section-subtitle">타일 회전</div>
-        <div className="building-panel__segmented">
-          {rotations.map((rotation) => (
-            <button
-              key={rotation.value}
-              className={`building-panel__segment-btn ${Math.abs(currentTileRotation - rotation.value) < 0.0001 ? 'building-panel__segment-btn--active' : ''}`}
-              onClick={() => setTileRotation(rotation.value)}
-            >
-              {rotation.label}
-            </button>
-          ))}
-        </div>
-        <div className="building-panel__delete-card">
-          <div>
-            <strong>선택한 타일</strong>
-            <span>{selectedTileId ? `ID: ${selectedTileId}` : '타일 하이라이트를 클릭해 선택하세요'}</span>
-          </div>
-          <button
-            className="building-panel__delete-button"
-            disabled={!selectedTileId || !selectedTileGroup}
-            onClick={handleDeleteSelectedTile}
-          >
-            선택 타일 삭제
-          </button>
-        </div>
+        {isTileMode && (
+          <>
+            <div className="building-panel__section-subtitle">타일 형태</div>
+            <div className="building-panel__grid">
+              {BUILDING_TILE_SHAPE_OPTIONS.map((shape) => (
+                <button
+                  key={shape.type}
+                  className={`building-panel__grid-btn ${currentTileShape === shape.type ? 'building-panel__grid-btn--active' : ''}`}
+                  onClick={() => setTileShape(shape.type)}
+                >
+                  {shape.labelKo}
+                </button>
+              ))}
+            </div>
+            <div className="building-panel__section-subtitle">타일 회전</div>
+            <div className="building-panel__segmented">
+              {rotations.map((rotation) => (
+                <button
+                  key={rotation.value}
+                  className={`building-panel__segment-btn ${Math.abs(currentTileRotation - rotation.value) < 0.0001 ? 'building-panel__segment-btn--active' : ''}`}
+                  onClick={() => setTileRotation(rotation.value)}
+                >
+                  {rotation.label}
+                </button>
+              ))}
+            </div>
+            <div className="building-panel__delete-card">
+              <div>
+                <strong>선택한 타일</strong>
+                <span>{selectedTileId ? `ID: ${selectedTileId}` : '타일 하이라이트를 클릭해 선택하세요'}</span>
+              </div>
+              <button
+                className="building-panel__delete-button"
+                disabled={!selectedTileId || !selectedTileGroup}
+                onClick={handleDeleteSelectedTile}
+              >
+                선택 타일 삭제
+              </button>
+            </div>
+          </>
+        )}
       </div>
+      )}
 
-      {(editMode === 'block' || editMode === 'none') && (
+      {isBlockMode && (
         <div className="building-panel__section">
           <div className="building-panel__section-title">박스 편집</div>
           <div className="building-panel__info">
@@ -630,7 +713,7 @@ export const BuildingPanel: FC = () => {
         </div>
       )}
 
-      {editMode === 'tile' && selectedTileGroupId && (() => {
+      {isTileMode && selectedTileGroupId && (() => {
         const tileGroup = tileGroups.get(selectedTileGroupId);
         const tileMeshId = selectedTile?.materialId ?? currentTileMaterialId ?? tileGroup?.floorMeshId;
         const tileMesh = tileMeshId ? meshes.get(tileMeshId) : undefined;
@@ -654,21 +737,59 @@ export const BuildingPanel: FC = () => {
       })()}
 
       <div className="building-panel__section">
-        <div className="building-panel__section-title">효과</div>
+        <div className="building-panel__section-title">전역 환경</div>
         <div className="building-panel__info">
-          <div className="building-panel__info-item">
-            <span className="building-panel__info-label">눈</span>
-            <button
-              className={`building-panel__toggle ${showSnow ? 'building-panel__toggle--on' : ''}`}
-              onClick={() => setShowSnow(!showSnow)}
-            >
-              {showSnow ? 'ON' : 'OFF'}
-            </button>
+          <FieldRow label="눈">
+            <FieldToggle value={showSnow} onChange={setShowSnow} />
+          </FieldRow>
+          <FieldRow label="안개">
+            <FieldToggle value={showFog} onChange={setShowFog} />
+          </FieldRow>
+          <FieldRow label="안개색">
+            <FieldColor value={fogColor} onChange={setFogColor} />
+          </FieldRow>
+          <div className="building-panel__info-item" style={{ alignItems: 'flex-start' }}>
+            <span className="building-panel__info-label">날씨</span>
+            <div className="building-panel__grid" style={{ flex: 1 }}>
+              {BUILDING_WEATHER_EFFECT_OPTIONS.map((option) => (
+                <button
+                  key={option.type}
+                  className={`building-panel__grid-btn ${weatherEffect === option.type ? 'building-panel__grid-btn--active' : ''}`}
+                  onClick={() => setWeatherEffect(option.type)}
+                >
+                  {option.labelKo}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      {editMode === 'object' && selectedPlacedObjectType !== 'none' && (
+      {isNPCMode && (
+        <div className="building-panel__section">
+          <div className="building-panel__section-title">NPC 템플릿</div>
+          <div className="building-panel__asset-targets">
+            <span>현재 템플릿: {selectedNPCTemplateId ?? '선택 없음'}</span>
+            <span>월드 클릭 위치에 선택 NPC를 배치합니다.</span>
+          </div>
+          <div className="building-panel__grid">
+            {npcTemplatesArray.map((template) => (
+              <button
+                key={template.id}
+                className={`building-panel__grid-btn ${selectedNPCTemplateId === template.id ? 'building-panel__grid-btn--active' : ''}`}
+                onClick={() => setSelectedNPCTemplate(template.id)}
+              >
+                {template.name}
+              </button>
+            ))}
+            {npcTemplatesArray.length === 0 && (
+              <div className="building-panel__empty">사용 가능한 NPC 템플릿이 없습니다.</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isObjectMode && selectedPlacedObjectType !== 'none' && (
         <div className="building-panel__section">
           <div className="building-panel__section-title">오브젝트 회전</div>
           <div className="building-panel__grid">
@@ -685,12 +806,23 @@ export const BuildingPanel: FC = () => {
         </div>
       )}
 
-      {editMode === 'object' && selectedPlacedObjectType === 'sakura' && (
+      {isObjectMode && (selectedPlacedObjectType === 'tree' || selectedPlacedObjectType === 'sakura') && (
         <div className="building-panel__section">
-          <div className="building-panel__section-title">벚꽃나무 색상</div>
+          <div className="building-panel__section-title">나무 프리셋</div>
+          <div className="building-panel__grid">
+            {BUILDING_TREE_OPTIONS.map((option) => (
+              <button
+                key={option.type}
+                className={`building-panel__grid-btn ${currentTreeKind === option.type ? 'building-panel__grid-btn--active' : ''}`}
+                onClick={() => setTreeKind(option.type)}
+              >
+                {option.labelKo}
+              </button>
+            ))}
+          </div>
           <div className="building-panel__info">
             <div className="building-panel__info-item">
-              <span className="building-panel__info-label">꽃잎</span>
+              <span className="building-panel__info-label">잎/꽃 색</span>
               <input
                 type="color"
                 value={currentObjectPrimaryColor}
@@ -700,7 +832,7 @@ export const BuildingPanel: FC = () => {
               <span className="building-panel__info-value" style={{ fontSize: '10px' }}>{currentObjectPrimaryColor}</span>
             </div>
             <div className="building-panel__info-item">
-              <span className="building-panel__info-label">나무껍질</span>
+              <span className="building-panel__info-label">줄기 색</span>
               <input
                 type="color"
                 value={currentObjectSecondaryColor}
@@ -713,7 +845,7 @@ export const BuildingPanel: FC = () => {
         </div>
       )}
 
-      {selectedPlacedObjectType === 'fire' && (
+      {isObjectMode && selectedPlacedObjectType === 'fire' && (
         <div className="building-panel__section">
           <div className="building-panel__section-title">불 설정</div>
           <div className="building-panel__info">
@@ -755,7 +887,7 @@ export const BuildingPanel: FC = () => {
         </div>
       )}
 
-      {selectedPlacedObjectType === 'billboard' && (
+      {isObjectMode && selectedPlacedObjectType === 'billboard' && (
         <div className="building-panel__section">
           <div className="building-panel__section-title">간판 설정</div>
           <div className="building-panel__info">
@@ -926,14 +1058,14 @@ export const BuildingPanel: FC = () => {
         </div>
       )}
 
-      {selectedPlacedObjectType === 'flag' && (
+      {isObjectMode && selectedPlacedObjectType === 'flag' && (
         <div className="building-panel__section">
           <div className="building-panel__section-title">깃발 설정</div>
           <div className="building-panel__info">
             <div className="building-panel__info-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '4px' }}>
               <span className="building-panel__info-label">스타일</span>
               <div className="building-panel__grid">
-                {FLAG_STYLES.map(([key, meta]) => (
+                {BUILDING_FLAG_STYLE_OPTIONS.map(({ style: key, meta }) => (
                   <button
                     key={key}
                     className={`building-panel__grid-btn ${currentFlagStyle === key ? 'building-panel__grid-btn--active' : ''}`}
@@ -1002,8 +1134,9 @@ export const BuildingPanel: FC = () => {
           </div>
         </div>
       )}
+      </div>
 
-      <div className="building-panel__info" style={{ marginTop: 'auto' }}>
+      <div className="building-panel__footer">
         <div className="building-panel__info-item">
           <span className="building-panel__info-label">현재 모드</span>
           <span className="building-panel__info-value">{currentEditModeLabel}</span>
@@ -1024,6 +1157,7 @@ export const BuildingPanel: FC = () => {
           <span className="building-panel__info-label">타일 형태</span>
           <span className="building-panel__info-value">{currentTileShapeLabel}</span>
         </div>
+        <div className="building-panel__hint">좌클릭 배치 · 우클릭 회전 · Q/E 높이</div>
       </div>
     </div>
   );

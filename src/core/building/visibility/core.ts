@@ -181,6 +181,7 @@ export function buildBlockRecord(block: BuildingBlockConfig, cellSize = VISIBILI
 function getObjectRadius(object: PlacedObject): number {
   const size = object.config?.size ?? 1;
   switch (object.type) {
+    case 'tree':
     case 'sakura':
       return Math.max(2.2, size * 0.8);
     case 'flag':

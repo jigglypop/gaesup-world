@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 import {
   useCatalogStore,
@@ -6,7 +6,7 @@ import {
   useQuestStore,
 } from '../../../src';
 
-type Btn = {
+export type HudActionButton = {
   key: string;
   label: string;
   hotkey: string;
@@ -15,35 +15,59 @@ type Btn = {
   active?: boolean;
 };
 
+type HudActionCounts = {
+  activeQuests: number;
+  unreadMail: number;
+  unclaimedMail: number;
+  collected: number;
+};
+
 function dispatchKey(k: string) {
   window.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+}
+
+export function createHudActionButtons({
+  activeQuests,
+  unreadMail,
+  unclaimedMail,
+  collected,
+}: HudActionCounts): HudActionButton[] {
+  return [
+    { key: 'i', label: '인벤', hotkey: 'I' },
+    {
+      key: 'j',
+      label: '퀘스트',
+      hotkey: 'J',
+      ...(activeQuests > 0 ? { badge: activeQuests, badgeColor: '#7aa6ff' } : {}),
+    },
+    {
+      key: 'm',
+      label: '우편',
+      hotkey: 'M',
+      ...(unreadMail > 0 ? { badge: unreadMail, badgeColor: unclaimedMail > 0 ? '#ffd84a' : '#cf9aff' } : {}),
+    },
+    {
+      key: 'k',
+      label: '도감',
+      hotkey: 'K',
+      ...(collected > 0 ? { badge: collected, badgeColor: '#7adf90' } : {}),
+    },
+    { key: 'c', label: '제작', hotkey: 'C' },
+  ];
 }
 
 export function ActionBar() {
   const messages = useMailStore((s) => s.messages);
   const quests = useQuestStore((s) => s.state);
   const catalog = useCatalogStore((s) => s.entries);
-  const [now, setNow] = useState(0);
-
-  useEffect(() => {
-    const t = window.setInterval(() => setNow((n) => n + 1), 1000);
-    return () => window.clearInterval(t);
-  }, []);
 
   const unreadMail = messages.reduce((n, m) => n + (m.read ? 0 : 1), 0);
   const unclaimedMail = messages.reduce((n, m) => n + (m.claimed === false ? 1 : 0), 0);
   const activeQuests = Object.values(quests).filter((p) => p.status === 'active').length;
   const collected = Object.keys(catalog).length;
 
-  const buttons: Btn[] = [
-    { key: 'i', label: '인벤', hotkey: 'I' },
-    { key: 'j', label: '퀘스트', hotkey: 'J', badge: activeQuests || undefined, badgeColor: '#7aa6ff' },
-    { key: 'm', label: '우편',   hotkey: 'M', badge: unreadMail || undefined, badgeColor: unclaimedMail > 0 ? '#ffd84a' : '#cf9aff' },
-    { key: 'k', label: '도감',   hotkey: 'K', badge: collected || undefined, badgeColor: '#7adf90' },
-    { key: 'c', label: '제작',   hotkey: 'C' },
-  ];
+  const buttons = createHudActionButtons({ activeQuests, unreadMail, unclaimedMail, collected });
 
-  void now;
   return (
     <div
       style={{

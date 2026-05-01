@@ -1,18 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-
-import ReactFlow, {
-  Background,
-  BackgroundVariant,
-  Controls,
-  Handle,
-  MarkerType,
-  Position,
-  type Edge,
-  type Node,
-  type NodeProps,
-  useEdgesState,
-  useNodesState,
-} from 'reactflow';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import {
   GameplayEventEngine,
@@ -22,7 +8,6 @@ import {
   type GameplayEventTrigger,
   type GameplayTriggerEvent,
 } from '../../../../gameplay';
-import 'reactflow/dist/style.css';
 import './styles.css';
 
 export type GameplayEventPanelProps = {
@@ -75,70 +60,7 @@ const triggerToEvent = (blueprint: GameplayEventBlueprint): GameplayTriggerEvent
 type TriggerType = GameplayEventTrigger['type'];
 type ConditionType = GameplayEventCondition['type'];
 type ActionType = GameplayEventAction['type'];
-type NodeFieldValue = string | number | boolean | string[] | Record<string, unknown>;
-type EventNodeData = {
-  title: string;
-  fields?: Record<string, NodeFieldValue>;
-  onEdit?: (nodeId: string, field: string, value: NodeFieldValue) => void;
-  onDelete?: (nodeId: string) => void;
-};
-
-const EventEditableNode = ({ data, id }: NodeProps<EventNodeData>) => {
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [tempValue, setTempValue] = useState('');
-
-  const saveField = (field: string) => {
-    data.onEdit?.(id, field, toBooleanValue(tempValue));
-    setEditingField(null);
-  };
-
-  return (
-    <div className="gameplay-event-node">
-      <Handle type="target" position={Position.Top} className="gameplay-event-node__handle" />
-      <div className="gameplay-event-node__header">
-        <span>{data.title}</span>
-        {id !== 'root' && id !== 'trigger' && id !== 'policy' && (
-          <button type="button" className="gameplay-event-node__delete" onClick={() => data.onDelete?.(id)}>
-            Delete
-          </button>
-        )}
-      </div>
-      {data.fields && Object.entries(data.fields).map(([field, value]) => (
-        <div key={field} className="gameplay-event-node__field">
-          {editingField === field ? (
-            <div className="gameplay-event-node__edit">
-              <input
-                value={tempValue}
-                onChange={(event) => setTempValue(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') saveField(field);
-                  if (event.key === 'Escape') setEditingField(null);
-                }}
-                autoFocus
-              />
-              <button type="button" onClick={() => saveField(field)}>Save</button>
-              <button type="button" onClick={() => setEditingField(null)}>Cancel</button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="gameplay-event-node__value"
-              onClick={() => {
-                if (field === 'type') return;
-                setEditingField(field);
-                setTempValue(String(value));
-              }}
-            >
-              <span>{field}</span>
-              <strong>{String(value)}</strong>
-            </button>
-          )}
-        </div>
-      ))}
-      <Handle type="source" position={Position.Bottom} className="gameplay-event-node__handle" />
-    </div>
-  );
-};
+type InspectorValue = string | number | boolean;
 
 const makeDefaultTrigger = (type: TriggerType): GameplayEventTrigger => {
   switch (type) {
@@ -222,108 +144,6 @@ const toBooleanValue = (value: string): string | number | boolean => {
   return Number.isFinite(numberValue) && value.trim() !== '' ? numberValue : value;
 };
 
-const toNodeValue = (value: NodeFieldValue): string | number | boolean =>
-  Array.isArray(value) || (typeof value === 'object' && value !== null) ? JSON.stringify(value) : value;
-
-const EDGE_STYLE = { stroke: '#7a86a8', strokeWidth: 2 };
-const MARKER_STYLE = { type: MarkerType.ArrowClosed, color: '#7a86a8', width: 20, height: 20 };
-
-const nodeTypes = { editable: EventEditableNode };
-
-const generateEventFlow = (
-  blueprint: GameplayEventBlueprint,
-  onEdit: (nodeId: string, field: string, value: NodeFieldValue) => void,
-  onDelete: (nodeId: string) => void,
-): { nodes: Node[]; edges: Edge[] } => {
-  const nodes: Node[] = [
-    {
-      id: 'root',
-      type: 'editable',
-      position: { x: 260, y: 20 },
-      data: {
-        title: blueprint.name,
-        fields: {
-          id: blueprint.id,
-          name: blueprint.name,
-          description: blueprint.description ?? '',
-        },
-        onEdit,
-        onDelete,
-      },
-    },
-    {
-      id: 'trigger',
-      type: 'editable',
-      position: { x: 260, y: 180 },
-      data: {
-        title: `Trigger: ${blueprint.trigger.type}`,
-        fields: { ...blueprint.trigger },
-        onEdit,
-        onDelete,
-      },
-    },
-    {
-      id: 'policy',
-      type: 'editable',
-      position: { x: 560, y: 180 },
-      data: {
-        title: 'Policy',
-        fields: {
-          run: blueprint.policy?.run ?? 'repeat',
-          cooldownMs: blueprint.policy?.cooldownMs ?? 0,
-          requiresServer: blueprint.policy?.requiresServer ?? false,
-        },
-        onEdit,
-        onDelete,
-      },
-    },
-  ];
-  const edges: Edge[] = [
-    { id: 'root-trigger', source: 'root', target: 'trigger', style: EDGE_STYLE, markerEnd: MARKER_STYLE },
-    { id: 'root-policy', source: 'root', target: 'policy', style: EDGE_STYLE, markerEnd: MARKER_STYLE },
-  ];
-
-  (blueprint.conditions ?? []).forEach((condition, index) => {
-    const nodeId = `condition:${index}`;
-    nodes.push({
-      id: nodeId,
-      type: 'editable',
-      position: { x: 40, y: 360 + index * 150 },
-      data: {
-        title: `Condition: ${condition.type}`,
-        fields: { ...condition },
-        onEdit,
-        onDelete,
-      },
-    });
-    edges.push({ id: `trigger-${nodeId}`, source: 'trigger', target: nodeId, style: EDGE_STYLE, markerEnd: MARKER_STYLE });
-  });
-
-  blueprint.actions.forEach((action, index) => {
-    const nodeId = `action:${index}`;
-    nodes.push({
-      id: nodeId,
-      type: 'editable',
-      position: { x: 420, y: 360 + index * 150 },
-      data: {
-        title: `Action: ${action.type}`,
-        fields: { ...action },
-        onEdit,
-        onDelete,
-      },
-    });
-    edges.push({
-      id: `${index === 0 ? 'trigger' : `action:${index - 1}`}-${nodeId}`,
-      source: index === 0 ? 'trigger' : `action:${index - 1}`,
-      target: nodeId,
-      style: EDGE_STYLE,
-      markerEnd: MARKER_STYLE,
-    });
-  });
-
-  return { nodes, edges };
-};
-
 export function GameplayEventPanel({
   blueprints,
   onCreate,
@@ -342,8 +162,6 @@ export function GameplayEventPanel({
     [blueprints, selectedId],
   );
   const [status, setStatus] = useState<PanelStatus>({ kind: 'idle', message: 'Ready' });
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const createBlueprint = () => {
     const next: GameplayEventBlueprint = {
@@ -403,9 +221,9 @@ export function GameplayEventPanel({
     updateSelected({ actions });
   }, [selectedBlueprint, updateSelected]);
 
-  const handleNodeEdit = useCallback((nodeId: string, field: string, rawValue: NodeFieldValue) => {
+  const updateInspectorField = useCallback((nodeId: string, field: string, rawValue: InspectorValue) => {
     if (!selectedBlueprint || field === 'type') return;
-    const value = toNodeValue(rawValue);
+    const value = rawValue;
 
     if (nodeId === 'root') {
       updateSelected({ [field]: value } as Partial<GameplayEventBlueprint>);
@@ -458,7 +276,7 @@ export function GameplayEventPanel({
     }
   }, [selectedBlueprint, updateAction, updateCondition, updateSelected]);
 
-  const handleNodeDelete = useCallback((nodeId: string) => {
+  const deleteInspectorItem = useCallback((nodeId: string) => {
     if (!selectedBlueprint) return;
     if (nodeId.startsWith('condition:')) {
       const index = Number(nodeId.split(':')[1]);
@@ -471,16 +289,24 @@ export function GameplayEventPanel({
     }
   }, [selectedBlueprint, updateSelected]);
 
-  useEffect(() => {
-    if (!selectedBlueprint) {
-      setNodes([]);
-      setEdges([]);
-      return;
-    }
-    const flow = generateEventFlow(selectedBlueprint, handleNodeEdit, handleNodeDelete);
-    setNodes(flow.nodes);
-    setEdges(flow.edges);
-  }, [handleNodeDelete, handleNodeEdit, selectedBlueprint, setEdges, setNodes]);
+  const renderFields = (
+    nodeId: string,
+    fields: Record<string, InspectorValue>,
+  ) => (
+    <div className="gameplay-event-panel__field-grid">
+      {Object.entries(fields).map(([field, value]) => (
+        <label key={`${nodeId}-${field}`} className="gameplay-event-panel__field">
+          <span>{field}</span>
+          <input
+            type={typeof value === 'number' ? 'number' : 'text'}
+            value={String(value)}
+            disabled={field === 'type'}
+            onChange={(event) => updateInspectorField(nodeId, field, toBooleanValue(event.target.value))}
+          />
+        </label>
+      ))}
+    </div>
+  );
 
   return (
     <div className="gameplay-event-panel">
@@ -535,9 +361,9 @@ export function GameplayEventPanel({
         <section className="gameplay-event-panel__section gameplay-event-panel__detail">
           <div className="gameplay-event-panel__editor-head">
             <div>
-              <div className="gameplay-event-panel__title">Blueprint Node Editor</div>
+              <div className="gameplay-event-panel__title">Event Inspector</div>
               <div className="gameplay-event-panel__hint">
-                노드 필드를 클릭해서 값을 수정합니다. 타입 변경은 아래 노드 추가/변경 액션에서 처리합니다.
+                그래프 노드 대신 트리거, 조건, 액션을 섹션별 인스펙터에서 수정합니다.
               </div>
             </div>
             <label className="gameplay-event-panel__type-select">
@@ -552,18 +378,48 @@ export function GameplayEventPanel({
               </select>
             </label>
           </div>
-          <div className="gameplay-event-panel__flow">
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              nodeTypes={nodeTypes}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              fitView
-            >
-              <Background variant={BackgroundVariant.Dots} gap={18} size={1} />
-              <Controls />
-            </ReactFlow>
+          <div className="gameplay-event-panel__inspector">
+            <div className="gameplay-event-panel__inspector-card">
+              <div className="gameplay-event-panel__subhead">Blueprint</div>
+              {renderFields('root', {
+                id: selectedBlueprint.id,
+                name: selectedBlueprint.name,
+                description: selectedBlueprint.description ?? '',
+              })}
+            </div>
+            <div className="gameplay-event-panel__inspector-card">
+              <div className="gameplay-event-panel__subhead">Trigger</div>
+              {renderFields('trigger', selectedBlueprint.trigger as unknown as Record<string, InspectorValue>)}
+            </div>
+            <div className="gameplay-event-panel__inspector-card">
+              <div className="gameplay-event-panel__subhead">Policy</div>
+              {renderFields('policy', {
+                run: selectedBlueprint.policy?.run ?? 'repeat',
+                cooldownMs: selectedBlueprint.policy?.cooldownMs ?? 0,
+                requiresServer: selectedBlueprint.policy?.requiresServer ?? false,
+              })}
+            </div>
+            <div className="gameplay-event-panel__inspector-card">
+              <div className="gameplay-event-panel__subhead">Conditions</div>
+              {(selectedBlueprint.conditions ?? []).map((condition, index) => (
+                <div key={`condition-${index}`} className="gameplay-event-panel__item-editor">
+                  {renderFields(`condition:${index}`, condition as unknown as Record<string, InspectorValue>)}
+                  <button type="button" onClick={() => deleteInspectorItem(`condition:${index}`)}>Remove</button>
+                </div>
+              ))}
+              {(selectedBlueprint.conditions ?? []).length === 0 && (
+                <div className="gameplay-event-panel__hint">조건 없음</div>
+              )}
+            </div>
+            <div className="gameplay-event-panel__inspector-card">
+              <div className="gameplay-event-panel__subhead">Actions</div>
+              {selectedBlueprint.actions.map((action, index) => (
+                <div key={`action-${index}`} className="gameplay-event-panel__item-editor">
+                  {renderFields(`action:${index}`, action as unknown as Record<string, InspectorValue>)}
+                  <button type="button" onClick={() => deleteInspectorItem(`action:${index}`)}>Remove</button>
+                </div>
+              ))}
+            </div>
           </div>
           <div className="gameplay-event-panel__node-toolbar">
             <select
@@ -574,7 +430,7 @@ export function GameplayEventPanel({
               }}
               defaultValue=""
             >
-              <option value="" disabled>Add Condition Node</option>
+              <option value="" disabled>Add Condition</option>
               {(['always', 'hasItem', 'questStatus', 'eventActive', 'flagEquals', 'custom'] as ConditionType[]).map((type) => (
                 <option key={type} value={type}>{type}</option>
               ))}
@@ -587,7 +443,7 @@ export function GameplayEventPanel({
               }}
               defaultValue=""
             >
-              <option value="" disabled>Add Action Node</option>
+              <option value="" disabled>Add Action</option>
               {(['giveItem', 'removeItem', 'startQuest', 'completeQuest', 'showDialog', 'toast', 'setFlag', 'notifyQuestFlag', 'emit', 'custom'] as ActionType[]).map((type) => (
                 <option key={type} value={type}>{type}</option>
               ))}

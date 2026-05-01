@@ -11,7 +11,6 @@ import {
   SakuraBatch,
   SandBatch,
   SceneRoot,
-  Snow,
   SnowfieldBatch,
   WeatherEffect,
 } from '../../../src';
@@ -235,9 +234,6 @@ export function Scenery({ onOpenShop, onOpenCrafting }: SceneryProps) {
 
       <SandBatch entries={SAND_TILES} />
       <SnowfieldBatch entries={SNOWFIELD_TILES} />
-      <group position={[-43, 0, 0]}>
-        <Snow gpu />
-      </group>
 
       {PICKUPS.map((p) => (
         <Pickup key={p.id} id={p.id} itemId={p.itemId} count={p.count} position={p.pos} />

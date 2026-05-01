@@ -109,6 +109,7 @@ const buildDefaultState = (): EditorMockState => ({
   currentObjectRotation: 0,
   currentObjectPrimaryColor: '#ffffff',
   currentObjectSecondaryColor: '#000000',
+  currentTreeKind: 'oak',
   currentFlagWidth: 1,
   currentFlagHeight: 1,
   currentFlagStyle: 'flag',

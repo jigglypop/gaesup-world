@@ -189,15 +189,6 @@
   margin-left: 8px;
 }
 
-.blueprint-panel__graph-container {
-  flex: 1;
-  background: var(--editor-bg-2);
-  border-radius: 6px;
-  margin: 8px;
-  overflow: hidden;
-  position: relative;
-}
-
 .blueprint-panel__footer {
   padding: 8px;
   border-top: 1px solid var(--editor-border-color);
@@ -211,67 +202,6 @@
 
 .blueprint-panel__footer-buttons .blueprint-panel__button {
     flex: 1;
-}
-
-.blueprint-panel__add-node-panel {
-  display: flex; 
-  gap: 4px;
-  flex-wrap: wrap;
-  padding: 8px;
-  background: var(--editor-surface-1);
-  border-radius: 4px;
-  margin-top: 8px;
-}
-
-.add-node-panel__container {
-  width: 100%;
-  margin-bottom: 8px;
-}
-
-.add-node-panel__title {
-  margin-bottom: 4px;
-}
-
-.add-node-panel__category-selector {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 8px;
-}
-
-.add-node-panel__category-button {
-  padding: 4px 8px;
-  background: var(--editor-surface-1);
-  border: 1px solid var(--editor-border-color);
-  border-radius: 4px;
-  color: var(--editor-text-main);
-  font-size: 11px;
-  cursor: pointer;
-  text-transform: capitalize;
-}
-
-.add-node-panel__category-button--active {
-  background-color: var(--editor-surface-hover);
-}
-
-.add-node-panel__buttons {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.add-node-panel__button {
-  padding: 6px 12px;
-  background: var(--editor-surface-1);
-  border: 1px solid var(--editor-border-color);
-  border-radius: 4px;
-  color: var(--editor-text-main);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.add-node-panel__button:hover {
-  background-color: var(--editor-surface-hover);
 }
 
 .blueprint-panel__property-editor-container {

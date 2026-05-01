@@ -28,6 +28,9 @@ import {
   TileConfig,
   TileObjectType,
   TileShapeType,
+  BuildingTreeKind,
+  BUILDING_TILE_PRESETS,
+  BUILDING_TREE_COLOR_PRESETS,
   PlacedObjectType,
   PlacedObject,
   Position3D,
@@ -35,11 +38,38 @@ import {
   TileCategory,
   FlagStyle,
   FLAG_STYLE_META,
+  type BuildingWeatherEffect,
 } from '../types';
 import { hydrateBuildingState, serializeBuildingState } from './persistence';
 import { TILE_CONSTANTS } from '../types/constants';
 
 enableMapSet();
+
+const CUSTOM_TILE_CATEGORY_ID = 'custom-tiles';
+
+function sanitizeBuildingIdPart(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48);
+}
+
+function ensureTileCategory(
+  state: BuildingStore,
+  id: string,
+  name: string,
+  description: string,
+): void {
+  if (!state.tileCategories.has(id)) {
+    state.tileCategories.set(id, { id, name, description, tileGroupIds: [] });
+  }
+}
+
+function ensureTileGroupInCategory(state: BuildingStore, categoryId: string, groupId: string): void {
+  const category = state.tileCategories.get(categoryId);
+  if (!category || category.tileGroupIds.includes(groupId)) return;
+  state.tileCategories.set(categoryId, {
+    ...category,
+    tileGroupIds: [...category.tileGroupIds, groupId],
+  });
+}
 
 interface BuildingStore extends BuildingSystemState {
   initialized: boolean;
@@ -66,6 +96,16 @@ interface BuildingStore extends BuildingSystemState {
   setTileRotation: (rotation: number) => void;
   currentTileMaterialId: string | null;
   setCurrentTileMaterialId: (materialId: string | null) => void;
+  currentCustomTileName: string;
+  currentCustomTileColor: string;
+  currentCustomTileTextureUrl: string;
+  setCustomTileDraft: (draft: Partial<{
+    name: string;
+    color: string;
+    textureUrl: string;
+  }>) => void;
+  applyTilePreset: (presetId: string) => void;
+  applyCustomTile: () => void;
   
   currentWallRotation: number;
   setWallRotation: (rotation: number) => void;
@@ -118,8 +158,10 @@ interface BuildingStore extends BuildingSystemState {
 
   currentObjectPrimaryColor: string;
   currentObjectSecondaryColor: string;
+  currentTreeKind: BuildingTreeKind;
   setObjectPrimaryColor: (color: string) => void;
   setObjectSecondaryColor: (color: string) => void;
+  setTreeKind: (kind: BuildingTreeKind) => void;
 
   currentBillboardText: string;
   currentBillboardImageUrl: string;
@@ -146,6 +188,12 @@ interface BuildingStore extends BuildingSystemState {
 
   showSnow: boolean;
   setShowSnow: (show: boolean) => void;
+  showFog: boolean;
+  setShowFog: (show: boolean) => void;
+  fogColor: string;
+  setFogColor: (color: string) => void;
+  weatherEffect: BuildingWeatherEffect;
+  setWeatherEffect: (effect: BuildingWeatherEffect) => void;
   
   checkTilePosition: (position: Position3D) => boolean;
   checkBlockPosition: (block: Pick<BuildingBlockConfig, 'position' | 'size' | 'cell'>) => boolean;
@@ -228,6 +276,9 @@ export const useBuildingStore = create<BuildingStore>()(
     currentTileShape: 'box',
     currentTileRotation: 0,
     currentTileMaterialId: null,
+    currentCustomTileName: 'Custom Tile',
+    currentCustomTileColor: '#8f8f8f',
+    currentCustomTileTextureUrl: '',
     currentWallRotation: 0,
     currentWallMaterialId: null,
     objects: [],
@@ -253,6 +304,7 @@ export const useBuildingStore = create<BuildingStore>()(
     currentObjectRotation: 0,
     currentObjectPrimaryColor: '#f7bfd2',
     currentObjectSecondaryColor: '#5e3d30',
+    currentTreeKind: 'sakura',
     currentBillboardText: 'HELLO',
     currentBillboardImageUrl: '',
     currentBillboardColor: '#00ff88',
@@ -263,6 +315,9 @@ export const useBuildingStore = create<BuildingStore>()(
     currentBillboardElevation: 1,
     currentBillboardIntensity: 2,
     showSnow: false,
+    showFog: false,
+    fogColor: '#cfd8e3',
+    weatherEffect: 'none',
 
     initializeDefaults: () => set((state) => {
       if (state.initialized) return;
@@ -451,6 +506,33 @@ export const useBuildingStore = create<BuildingStore>()(
         floorMeshId: 'snow-floor',
         tiles: [],
       });
+
+      for (const preset of BUILDING_TILE_PRESETS) {
+        const meshId = `tile-${preset.id}`;
+        const groupId = `${preset.id}-floor`;
+        ensureTileCategory(state, preset.categoryId, preset.categoryName, `${preset.categoryName} tile presets`);
+        ensureTileGroupInCategory(state, preset.categoryId, groupId);
+        if (!state.meshes.has(meshId)) {
+          state.meshes.set(meshId, {
+            id: meshId,
+            color: preset.color,
+            material: preset.material ?? 'STANDARD',
+            roughness: preset.roughness ?? 0.65,
+            metalness: preset.metalness ?? 0.02,
+            ...(preset.opacity !== undefined ? { opacity: preset.opacity } : {}),
+            ...(preset.transparent !== undefined ? { transparent: preset.transparent } : {}),
+            ...(preset.mapTextureUrl ? { mapTextureUrl: preset.mapTextureUrl, textureUrl: preset.mapTextureUrl } : {}),
+          });
+        }
+        if (!state.tileGroups.has(groupId)) {
+          state.tileGroups.set(groupId, {
+            id: groupId,
+            name: preset.labelEn,
+            floorMeshId: meshId,
+            tiles: [],
+          });
+        }
+      }
       
       // 기본 선택 설정
       state.selectedWallCategoryId = 'exterior-walls';
@@ -899,6 +981,72 @@ export const useBuildingStore = create<BuildingStore>()(
       state.currentTileMaterialId = materialId;
     }),
 
+    setCustomTileDraft: (draft) => set((state) => {
+      if (draft.name !== undefined) state.currentCustomTileName = draft.name;
+      if (draft.color !== undefined) state.currentCustomTileColor = draft.color;
+      if (draft.textureUrl !== undefined) state.currentCustomTileTextureUrl = draft.textureUrl;
+    }),
+
+    applyTilePreset: (presetId) => set((state) => {
+      const preset = BUILDING_TILE_PRESETS.find((item) => item.id === presetId);
+      if (!preset) return;
+      const meshId = `tile-${preset.id}`;
+      const groupId = `${preset.id}-floor`;
+      ensureTileCategory(state, preset.categoryId, preset.categoryName, `${preset.categoryName} tile presets`);
+      ensureTileGroupInCategory(state, preset.categoryId, groupId);
+      state.meshes.set(meshId, {
+        id: meshId,
+        color: preset.color,
+        material: preset.material ?? 'STANDARD',
+        roughness: preset.roughness ?? 0.65,
+        metalness: preset.metalness ?? 0.02,
+        ...(preset.opacity !== undefined ? { opacity: preset.opacity } : {}),
+        ...(preset.transparent !== undefined ? { transparent: preset.transparent } : {}),
+        ...(preset.mapTextureUrl ? { mapTextureUrl: preset.mapTextureUrl, textureUrl: preset.mapTextureUrl } : {}),
+      });
+      if (!state.tileGroups.has(groupId)) {
+        state.tileGroups.set(groupId, {
+          id: groupId,
+          name: preset.labelEn,
+          floorMeshId: meshId,
+          tiles: [],
+        });
+      }
+      state.selectedTileCategoryId = preset.categoryId;
+      state.selectedTileGroupId = groupId;
+      state.currentTileMaterialId = null;
+    }),
+
+    applyCustomTile: () => set((state) => {
+      const name = state.currentCustomTileName.trim() || 'Custom Tile';
+      const color = state.currentCustomTileColor || '#8f8f8f';
+      const textureUrl = state.currentCustomTileTextureUrl.trim();
+      const idPart = sanitizeBuildingIdPart(`${name}-${color}-${textureUrl || 'color'}`) || 'custom-tile';
+      const meshId = `custom-tile-${idPart}`;
+      const groupId = `custom-tile-group-${idPart}`;
+      ensureTileCategory(state, CUSTOM_TILE_CATEGORY_ID, 'Custom Tiles', 'User-created tile maps');
+      ensureTileGroupInCategory(state, CUSTOM_TILE_CATEGORY_ID, groupId);
+      state.meshes.set(meshId, {
+        id: meshId,
+        color,
+        material: 'STANDARD',
+        roughness: 0.62,
+        metalness: 0.02,
+        ...(textureUrl ? { mapTextureUrl: textureUrl, textureUrl } : {}),
+      });
+      if (!state.tileGroups.has(groupId)) {
+        state.tileGroups.set(groupId, {
+          id: groupId,
+          name,
+          floorMeshId: meshId,
+          tiles: [],
+        });
+      }
+      state.selectedTileCategoryId = CUSTOM_TILE_CATEGORY_ID;
+      state.selectedTileGroupId = groupId;
+      state.currentTileMaterialId = null;
+    }),
+
     setWallRotation: (rotation) => set((state) => {
       state.currentWallRotation = rotation;
     }),
@@ -1133,6 +1281,12 @@ export const useBuildingStore = create<BuildingStore>()(
     setObjectRotation: (rotation) => set((state) => { state.currentObjectRotation = rotation; }),
     setObjectPrimaryColor: (color) => set((state) => { state.currentObjectPrimaryColor = color; }),
     setObjectSecondaryColor: (color) => set((state) => { state.currentObjectSecondaryColor = color; }),
+    setTreeKind: (kind) => set((state) => {
+      const preset = BUILDING_TREE_COLOR_PRESETS[kind];
+      state.currentTreeKind = kind;
+      state.currentObjectPrimaryColor = preset.primaryColor;
+      state.currentObjectSecondaryColor = preset.secondaryColor;
+    }),
 
     setBillboardText: (text) => set((state) => { state.currentBillboardText = text; }),
     setBillboardImageUrl: (url) => set((state) => { state.currentBillboardImageUrl = url; }),
@@ -1144,6 +1298,15 @@ export const useBuildingStore = create<BuildingStore>()(
     setBillboardElevation: (elevation) => set((state) => { state.currentBillboardElevation = elevation; }),
     setBillboardIntensity: (intensity) => set((state) => { state.currentBillboardIntensity = intensity; }),
 
-    setShowSnow: (show) => set((state) => { state.showSnow = show; }),
+    setShowSnow: (show) => set((state) => {
+      state.showSnow = show;
+      state.weatherEffect = show ? 'snow' : 'none';
+    }),
+    setShowFog: (show) => set((state) => { state.showFog = show; }),
+    setFogColor: (color) => set((state) => { state.fogColor = color; }),
+    setWeatherEffect: (effect) => set((state) => {
+      state.weatherEffect = effect;
+      state.showSnow = effect === 'snow';
+    }),
   }))
 ); 

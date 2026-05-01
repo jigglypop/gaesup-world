@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -52,17 +52,25 @@ export function DynamicFog({
   const hour = useTimeStore((s) => s.time.hour);
   const minute = useTimeStore((s) => s.time.minute);
   const weather = useWeatherStore((s) => s.current);
+  const previousFogRef = useRef<THREE.Fog | null | undefined>(undefined);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (previousFogRef.current === undefined) {
+      previousFogRef.current = scene.fog instanceof THREE.Fog ? scene.fog.clone() : null;
+    }
+
+    if (!enabled) {
+      scene.fog = previousFogRef.current ? previousFogRef.current.clone() : null;
+      return;
+    }
+
     const base = new THREE.Color(color);
     const blend = dayBlend(hour, minute);
 
     const target = base.clone();
-    if (blend.phase === 'night') target.copy(NIGHT_COLOR);
-    else if (blend.phase === 'dawn') target.lerpColors(NIGHT_COLOR, DAWN_COLOR, blend.t);
-    else if (blend.phase === 'dusk') target.lerpColors(NIGHT_COLOR, DUSK_COLOR, blend.t);
-    else target.lerp(base, 0.85);
+    if (blend.phase === 'night') target.lerp(NIGHT_COLOR, 0.25);
+    else if (blend.phase === 'dawn') target.lerp(DAWN_COLOR, 0.18 * (1 - blend.t));
+    else if (blend.phase === 'dusk') target.lerp(DUSK_COLOR, 0.18 * (1 - blend.t));
 
     let nearD = near;
     let farD = far;
@@ -78,15 +86,15 @@ export function DynamicFog({
     if (weather) {
       const i = Math.max(0, Math.min(1, weather.intensity));
       if (weather.kind === 'rain') {
-        target.lerp(RAIN_COLOR, 0.5 + i * 0.3);
+        target.lerp(RAIN_COLOR, 0.12 + i * 0.1);
         nearD *= 0.7 - i * 0.2;
         farD *= 0.65 - i * 0.2;
       } else if (weather.kind === 'storm') {
-        target.lerp(STORM_COLOR, 0.6 + i * 0.3);
+        target.lerp(STORM_COLOR, 0.16 + i * 0.12);
         nearD *= 0.55 - i * 0.2;
         farD *= 0.5 - i * 0.2;
       } else if (weather.kind === 'snow') {
-        target.lerp(SNOW_COLOR, 0.5 + i * 0.25);
+        target.lerp(SNOW_COLOR, 0.12 + i * 0.08);
         nearD *= 0.75;
         farD *= 0.7;
       }
@@ -102,8 +110,11 @@ export function DynamicFog({
     } else {
       scene.fog = new THREE.Fog(target.getHex(), nearD, farD);
     }
-    scene.background = null;
   }, [scene, color, near, far, enabled, hour, minute, weather?.kind, weather?.intensity]);
+
+  useEffect(() => () => {
+    scene.fog = previousFogRef.current ? previousFogRef.current.clone() : null;
+  }, [scene]);
 
   return null;
 }

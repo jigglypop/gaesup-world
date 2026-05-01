@@ -14,6 +14,7 @@ export * from './components/GridHelper';
 export * from './components/BuildingUI';
 export * from './model';
 export * from './catalog';
+export * from './id';
 export * from './plugin';
 export * from './stores/buildingStore';
 export * from './render/store';

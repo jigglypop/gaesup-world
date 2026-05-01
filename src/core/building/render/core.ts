@@ -140,7 +140,7 @@ export function buildBuildingRenderSnapshot(args: {
 
   for (const object of args.objects) {
     const subKind =
-      object.type === 'sakura' ? RENDER_SUBKIND_OBJECT_SAKURA :
+      object.type === 'tree' || object.type === 'sakura' ? RENDER_SUBKIND_OBJECT_SAKURA :
       object.type === 'flag' ? RENDER_SUBKIND_OBJECT_FLAG :
       object.type === 'fire' ? RENDER_SUBKIND_OBJECT_FIRE :
       object.type === 'billboard' ? RENDER_SUBKIND_OBJECT_BILLBOARD :

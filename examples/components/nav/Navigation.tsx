@@ -29,6 +29,9 @@ export const Navigation = () => {
       <NavLink to="/blueprints" className="app-nav-button">
         블루프린트
       </NavLink>
+      <NavLink to="/mini-room" className="app-nav-button">
+        미니룸
+      </NavLink>
       <NavLink to="/network" className="app-nav-button">
         Network
       </NavLink>

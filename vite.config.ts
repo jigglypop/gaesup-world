@@ -25,7 +25,6 @@ const libraryExternals = [
   'react-icons',
   /^react-icons\//,
   'react-router-dom',
-  'reactflow',
   'reflect-metadata',
   'simplex-noise',
   'zustand',

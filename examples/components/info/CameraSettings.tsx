@@ -3,10 +3,16 @@ import { CAMERA_PRESETS } from './constants';
 import { RangeInput } from './RangeInput';
 import { useGaesupStore } from '../../../src';
 
+type CameraPresetKey = keyof typeof CAMERA_PRESETS;
+
 interface CameraSettingsProps {
   mode: { control: string };
   onControlChange: (control: string) => void;
   onClose?: () => void;
+}
+
+function isCameraPresetKey(value: string): value is CameraPresetKey {
+  return value in CAMERA_PRESETS;
 }
 
 export function CameraSettings({ mode, onControlChange, onClose }: CameraSettingsProps) {
@@ -29,13 +35,15 @@ export function CameraSettings({ mode, onControlChange, onClose }: CameraSetting
   };
 
   const resetToPreset = () => {
-    const control = mode.control;
-    const preset = CAMERA_PRESETS[control] || CAMERA_PRESETS['thirdPerson'];
+    const control = isCameraPresetKey(mode.control) ? mode.control : 'thirdPerson';
+    const preset = CAMERA_PRESETS[control];
     setCameraOption(preset);
   };
 
   const getDistanceValue = (key: string) => {
-    return cameraOption[key] ?? cameraOption[key.charAt(0).toUpperCase() + key.slice(1)] ?? 0;
+    const values = cameraOption as Record<string, unknown>;
+    const value = values[key] ?? values[key.charAt(0).toUpperCase() + key.slice(1)];
+    return typeof value === 'number' ? value : 0;
   };
 
   return (

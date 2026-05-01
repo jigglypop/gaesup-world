@@ -201,7 +201,78 @@
   overflow: hidden;
 }
 
-.blueprint-editor__graph-section {
+.blueprint-editor__inspector-section {
   flex: 1;
   position: relative;
-} 
+  display: flex;
+  flex-direction: column;
+  min-width: 320px;
+  background-color: var(--editor-bg-1);
+}
+
+.blueprint-editor__inspector {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--editor-spacing-md);
+}
+
+.blueprint-editor__inspector-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-sm);
+  margin-bottom: var(--editor-spacing-md);
+  padding: var(--editor-spacing-md);
+  background-color: var(--editor-surface-1);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-sm);
+}
+
+.blueprint-editor__inspector-title {
+  color: var(--editor-text-main);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.blueprint-editor__inspector-field {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.45fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--editor-spacing-sm);
+  color: var(--editor-text-muted);
+  font-size: 12px;
+}
+
+.blueprint-editor__inspector-input {
+  min-width: 0;
+  padding: 6px 8px;
+  background-color: var(--editor-bg-2);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-sm);
+  color: var(--editor-text-main);
+  font-size: 12px;
+}
+
+.blueprint-editor__toggle {
+  justify-self: start;
+  min-width: 52px;
+  padding: 5px 8px;
+  background-color: var(--editor-bg-2);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-sm);
+  color: var(--editor-text-muted);
+  cursor: pointer;
+}
+
+.blueprint-editor__toggle--on {
+  background-color: var(--editor-accent-bg);
+  border-color: var(--editor-accent-border);
+  color: var(--editor-text-main);
+}
+
+.blueprint-editor__inspector-list,
+.blueprint-editor__empty {
+  color: var(--editor-text-muted);
+  font-size: 12px;
+}

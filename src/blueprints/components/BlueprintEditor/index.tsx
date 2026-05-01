@@ -1,17 +1,5 @@
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 
-import ReactFlow, {
-  Controls,
-  Background,
-  useNodesState,
-  useEdgesState,
-  addEdge,
-  Connection,
-  BackgroundVariant,
-  ReactFlowProvider,
-} from 'reactflow';
-
-import 'reactflow/dist/style.css';
 import {
   BlueprintType,
   BlueprintCategory,
@@ -21,34 +9,52 @@ import { blueprintRegistry, AnyBlueprint } from '../../';
 import { useSpawnFromBlueprint } from '../../hooks/useSpawnFromBlueprint';
 import type { BlueprintRecord, BlueprintValue } from '../../types';
 import { BlueprintPreview } from '../BlueprintPreview';
-import { CameraNode } from '../editor/CameraNode';
-import { EditableNode } from '../editor/EditableNode';
-import { NodeFieldValue } from '../editor/EditableNode/types';
-import { InputNode } from '../editor/InputNode';
+import type { BlueprintFieldValue } from '../panels/BlueprintPanel/types';
 import {
   convertBlueprintToItem,
-  generateNodesFromBlueprint,
 } from '../panels/BlueprintPanel/utils';
 import './styles.css';
-
-type EditableBlueprintDraft = AnyBlueprint & {
-  physics?: Record<string, NodeFieldValue>;
-  camera?: BlueprintRecord;
-  controls?: Record<string, NodeFieldValue>;
-};
 
 const isRecord = (value: BlueprintValue | undefined): value is BlueprintRecord =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-const getOrCreateRecord = (
-  parent: BlueprintRecord,
-  key: string,
-): BlueprintRecord => {
-  const current = parent[key];
-  if (isRecord(current)) return current;
-  const next: BlueprintRecord = {};
-  parent[key] = next;
-  return next;
+const setNestedProperty = (
+  target: BlueprintRecord,
+  path: string[],
+  value: BlueprintFieldValue,
+): boolean => {
+  if (path.length === 0) return false;
+
+  let current: BlueprintRecord | BlueprintValue[] | BlueprintValue | undefined = target;
+
+  for (let i = 0; i < path.length - 1; i++) {
+    const key = path[i];
+    if (!key) return false;
+
+    if (Array.isArray(current)) {
+      const index = Number(key);
+      if (!Number.isInteger(index) || index < 0 || index >= current.length) return false;
+      current = current[index];
+      continue;
+    }
+
+    if (!isRecord(current)) return false;
+    current = current[key];
+  }
+
+  const lastKey = path[path.length - 1];
+  if (!lastKey) return false;
+
+  if (Array.isArray(current)) {
+    const index = Number(lastKey);
+    if (!Number.isInteger(index) || index < 0 || index >= current.length) return false;
+    current[index] = value;
+    return true;
+  }
+
+  if (!isRecord(current)) return false;
+  current[lastKey] = value;
+  return true;
 };
 
 const blueprintCategories: BlueprintCategory[] = [
@@ -60,13 +66,6 @@ const blueprintCategories: BlueprintCategory[] = [
   { id: 'items', name: 'Items', type: 'item', count: 0 },
 ];
 
-// Define nodeTypes outside component to prevent recreation
-const nodeTypes = {
-  editable: EditableNode,
-  camera: CameraNode,
-  input: InputNode,
-};
-
 export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => {
   const [selectedCategory, setSelectedCategory] = useState<BlueprintType>('character');
   const [selectedBlueprint, setSelectedBlueprint] = useState<string | null>(null);
@@ -74,14 +73,7 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
   const [editingBlueprint, setEditingBlueprint] = useState<AnyBlueprint | null>(null);
   const [showPreview, setShowPreview] = useState(true);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-
   const { spawnAtCursor, isSpawning } = useSpawnFromBlueprint();
-
-  const onConnect = useCallback((params: Connection) => {
-    setEdges((eds) => addEdge(params, eds));
-  }, [setEdges]);
 
   const allBlueprints = useMemo(() => {
     return blueprintRegistry.getAll().map(convertBlueprintToItem);
@@ -103,10 +95,12 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
       }
     });
 
-    return blueprintCategories.map((category) => ({
-      ...category,
-      count: counts[category.type],
-    }));
+    return blueprintCategories
+      .map((category) => ({
+        ...category,
+        count: counts[category.type],
+      }))
+      .filter((category) => category.count > 0);
   }, [allBlueprints]);
 
   const filteredBlueprints = useMemo(() => {
@@ -119,103 +113,14 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
     });
   }, [selectedCategory, searchQuery, allBlueprints]);
 
-  const handleNodeDelete = useCallback((nodeId: string) => {
-    setNodes((nds) => nds.filter(node => node.id !== nodeId));
-    setEdges((eds) => eds.filter(edge => edge.source !== nodeId && edge.target !== nodeId));
-  }, [setNodes, setEdges]);
-
-  const handleNodeEditCallback = useCallback(
-    (nodeId: string, field: string, value: NodeFieldValue) => {
-      setEditingBlueprint(currentBlueprint => {
-        if (!currentBlueprint) return null;
-
-        const newBlueprint = JSON.parse(
-          JSON.stringify(currentBlueprint),
-        ) as EditableBlueprintDraft;
-
-        if (nodeId === 'root') {
-          if (field === 'version' && typeof value === 'string') {
-            newBlueprint.version = value;
-          } else if (field === 'name' && typeof value === 'string') {
-            newBlueprint.name = value;
-          }
-        } else if (
-          nodeId === 'physics' ||
-          nodeId === 'vehicle-physics' ||
-          nodeId === 'airplane-physics'
-        ) {
-          if ('physics' in newBlueprint && newBlueprint.physics) {
-            newBlueprint.physics[field] = value;
-          }
-        } else if (nodeId === 'camera') {
-          if ('camera' in newBlueprint) {
-            newBlueprint.camera ??= {};
-            newBlueprint.camera[field] = value;
-          }
-        } else if (nodeId === 'controls') {
-          if ('controls' in newBlueprint) {
-            newBlueprint.controls ??= {};
-            newBlueprint.controls[field] = value;
-          }
-        } else if (nodeId === 'camera-controller') {
-          if ('camera' in newBlueprint) {
-            newBlueprint.camera ??= {};
-            const camera = newBlueprint.camera;
-            if (field === 'smoothing') {
-              const smoothing = getOrCreateRecord(camera, 'smoothing');
-              if (typeof value === 'number') {
-                smoothing['position'] = value;
-              }
-              if (!('rotation' in smoothing)) {
-                smoothing['rotation'] = 0.3;
-              }
-              if (!('fov' in smoothing)) {
-                smoothing['fov'] = 0.2;
-              }
-            } else if (field === 'collision' && typeof value === 'boolean') {
-              camera['enableCollision'] = value;
-            }
-          }
-        } else if (nodeId === 'camera-zoom') {
-          if ('camera' in newBlueprint) {
-            newBlueprint.camera ??= {};
-            const camera = newBlueprint.camera;
-            if (field === 'enabled' && typeof value === 'boolean') {
-              camera['enableZoom'] = value;
-            } else if (field === 'speed' && typeof value === 'number') {
-              camera['zoomSpeed'] = value;
-            } else if (field === 'min' && typeof value === 'number') {
-              camera['minZoom'] = value;
-            } else if (field === 'max' && typeof value === 'number') {
-              camera['maxZoom'] = value;
-            }
-          }
-        }
-        return newBlueprint;
-      });
-    },
-    [setEditingBlueprint],
-  );
-
-  const handleNodeEdit = useRef(handleNodeEditCallback);
-  useEffect(() => {
-    handleNodeEdit.current = handleNodeEditCallback;
-  }, [handleNodeEditCallback]);
-
-  useEffect(() => {
-    if (editingBlueprint) {
-      const { nodes: newNodes, edges: newEdges } = generateNodesFromBlueprint(
-        editingBlueprint,
-        (...args) => handleNodeEdit.current(...args),
-        handleNodeDelete,
-      );
-      setNodes(newNodes);
-      setEdges(newEdges);
-    } else {
-      setNodes([]);
-      setEdges([]);
-    }
-  }, [editingBlueprint, handleNodeDelete, setNodes, setEdges]);
+  const handleBlueprintFieldChange = useCallback((path: string[], value: BlueprintFieldValue) => {
+    setEditingBlueprint((currentBlueprint) => {
+      if (!currentBlueprint) return null;
+      const nextBlueprint = JSON.parse(JSON.stringify(currentBlueprint)) as BlueprintRecord;
+      if (!setNestedProperty(nextBlueprint, path, value)) return currentBlueprint;
+      return nextBlueprint as AnyBlueprint;
+    });
+  }, []);
 
   const handleBlueprintSelect = useCallback((blueprintId: string | null) => {
     setSelectedBlueprint(blueprintId);
@@ -246,6 +151,74 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
     if (spawnedEntity) {
       onClose();
     }
+  };
+
+  const renderInspectorField = (
+    key: string,
+    value: BlueprintValue,
+    path: string[],
+  ): React.ReactNode => {
+    if (Array.isArray(value)) {
+      return (
+        <div key={path.join('.')} className="blueprint-editor__inspector-group">
+          <div className="blueprint-editor__inspector-title">{key}</div>
+          <div className="blueprint-editor__inspector-list">
+            {value.length === 0 ? '비어 있음' : `${value.length}개 항목`}
+          </div>
+        </div>
+      );
+    }
+
+    if (isRecord(value)) {
+      return (
+        <div key={path.join('.')} className="blueprint-editor__inspector-group">
+          <div className="blueprint-editor__inspector-title">{key}</div>
+          {Object.entries(value).map(([childKey, childValue]) =>
+            renderInspectorField(childKey, childValue, [...path, childKey]),
+          )}
+        </div>
+      );
+    }
+
+    if (typeof value === 'boolean') {
+      return (
+        <label key={path.join('.')} className="blueprint-editor__inspector-field">
+          <span>{key}</span>
+          <button
+            className={`blueprint-editor__toggle ${value ? 'blueprint-editor__toggle--on' : ''}`}
+            onClick={() => handleBlueprintFieldChange(path, !value)}
+          >
+            {value ? 'ON' : 'OFF'}
+          </button>
+        </label>
+      );
+    }
+
+    if (typeof value === 'number') {
+      return (
+        <label key={path.join('.')} className="blueprint-editor__inspector-field">
+          <span>{key}</span>
+          <input
+            type="number"
+            value={value}
+            onChange={(event) => handleBlueprintFieldChange(path, Number(event.target.value))}
+            className="blueprint-editor__inspector-input"
+          />
+        </label>
+      );
+    }
+
+    return (
+      <label key={path.join('.')} className="blueprint-editor__inspector-field">
+        <span>{key}</span>
+        <input
+          type="text"
+          value={typeof value === 'string' ? value : ''}
+          onChange={(event) => handleBlueprintFieldChange(path, event.target.value)}
+          className="blueprint-editor__inspector-input"
+        />
+      </label>
+    );
   };
 
   return (
@@ -323,21 +296,19 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
           )}
         </div>
 
-        <div className="blueprint-editor__graph-section">
-          <ReactFlowProvider>
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              nodeTypes={nodeTypes}
-              fitView
-            >
-              <Background variant={BackgroundVariant.Dots} />
-              <Controls />
-            </ReactFlow>
-          </ReactFlowProvider>
+        <div className="blueprint-editor__inspector-section">
+          <div className="blueprint-editor__preview-header">
+            <h3 className="blueprint-editor__preview-title">Inspector</h3>
+          </div>
+          <div className="blueprint-editor__inspector">
+            {editingBlueprint ? (
+              Object.entries(editingBlueprint as BlueprintRecord).map(([key, value]) =>
+                renderInspectorField(key, value, [key]),
+              )
+            ) : (
+              <div className="blueprint-editor__empty">블루프린트를 선택하세요.</div>
+            )}
+          </div>
         </div>
       </div>
     </div>

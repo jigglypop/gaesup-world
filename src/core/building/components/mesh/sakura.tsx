@@ -6,6 +6,8 @@ import * as THREE from 'three';
 import { createToonMaterial, getDefaultToonMode } from '@core/rendering/toon';
 import { useWeatherStore } from '@core/weather/stores/weatherStore';
 
+import type { BuildingTreeKind } from '../../types';
+
 type SakuraProps = { size?: number; toon?: boolean };
 
 type BranchSpec = {
@@ -274,6 +276,7 @@ function makePointsGeo(pos: Float32Array, col: Float32Array, computeBBox = false
 export type SakuraTreeEntry = {
   position: [number, number, number];
   size: number;
+  treeKind?: BuildingTreeKind;
   blossomColor?: string;
   barkColor?: string;
 };
@@ -291,21 +294,41 @@ const _defaultBlossom = new THREE.Color('#f7bfd2');
 const _defaultBark = new THREE.Color('#5e3d30');
 const _white = new THREE.Color('#ffffff');
 
+const TREE_PRESETS: Record<BuildingTreeKind, {
+  canopy: string;
+  bark: string;
+  crownRadius: number;
+  crownHeight: number;
+  trunkHeight: number;
+  falling: number;
+  ground: number;
+}> = {
+  sakura: { canopy: '#f7bfd2', bark: '#5e3d30', crownRadius: 1.0, crownHeight: 1.0, trunkHeight: 1.0, falling: 1.0, ground: 1.0 },
+  oak: { canopy: '#4f8f3a', bark: '#6b4a2a', crownRadius: 1.08, crownHeight: 0.9, trunkHeight: 1.0, falling: 0.08, ground: 0.35 },
+  pine: { canopy: '#2f6f45', bark: '#5b3b24', crownRadius: 0.82, crownHeight: 1.26, trunkHeight: 1.12, falling: 0.02, ground: 0.12 },
+  maple: { canopy: '#d05a2d', bark: '#654126', crownRadius: 1.02, crownHeight: 0.86, trunkHeight: 0.96, falling: 0.45, ground: 0.8 },
+  birch: { canopy: '#87b95a', bark: '#e8e1cf', crownRadius: 0.92, crownHeight: 0.95, trunkHeight: 1.08, falling: 0.12, ground: 0.35 },
+  willow: { canopy: '#7fae55', bark: '#6a5635', crownRadius: 1.16, crownHeight: 1.18, trunkHeight: 0.92, falling: 0.2, ground: 0.45 },
+  cypress: { canopy: '#315f3a', bark: '#59402d', crownRadius: 0.65, crownHeight: 1.45, trunkHeight: 1.2, falling: 0.02, ground: 0.12 },
+  dead: { canopy: '#8b7a61', bark: '#4b392c', crownRadius: 0.66, crownHeight: 0.72, trunkHeight: 1.04, falling: 0.0, ground: 0.12 },
+};
+
 function computeSpecs(trees: SakuraTreeEntry[]): TreeSpec[] {
   return trees.map(t => {
+    const preset = TREE_PRESETS[t.treeKind ?? 'sakura'];
     const s = THREE.MathUtils.clamp(t.size / 4, 0.95, 1.85);
-    const th = 3.8 * s;
-    const cr = 1.65 * s + Math.min(t.size * 0.08, 0.55);
-    const ch = 2.15 * s + Math.min(t.size * 0.04, 0.35);
+    const th = 3.8 * s * preset.trunkHeight;
+    const cr = (1.65 * s + Math.min(t.size * 0.08, 0.55)) * preset.crownRadius;
+    const ch = (2.15 * s + Math.min(t.size * 0.04, 0.35)) * preset.crownHeight;
     return {
       pos: t.position, scale: s, trunkHeight: th, crownRadius: cr, crownHeight: ch,
       branches: createBranches(s, th), roots: createRoots(s),
       clusters: createClusters(s, th, cr, ch),
       canopyN: Math.max(180, Math.min(420, Math.round(210 + s * 95))),
-      groundN: Math.max(44, Math.min(120, Math.round(54 + s * 26))),
-      fallingN: Math.max(52, Math.min(132, Math.round(62 + s * 30))),
-      blossom: t.blossomColor ? new THREE.Color(t.blossomColor) : _defaultBlossom,
-      bark: t.barkColor ? new THREE.Color(t.barkColor) : _defaultBark,
+      groundN: Math.round(Math.max(44, Math.min(120, Math.round(54 + s * 26))) * preset.ground),
+      fallingN: Math.round(Math.max(52, Math.min(132, Math.round(62 + s * 30))) * preset.falling),
+      blossom: t.blossomColor ? new THREE.Color(t.blossomColor) : new THREE.Color(preset.canopy),
+      bark: t.barkColor ? new THREE.Color(t.barkColor) : new THREE.Color(preset.bark),
     };
   });
 }
