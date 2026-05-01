@@ -1,7 +1,5 @@
 import React from 'react';
-
 import { useNavigate } from 'react-router-dom';
-
 import { BlueprintEditor } from '../../src/blueprints/editor';
 import './styles/BlueprintEditorPage.css';
 

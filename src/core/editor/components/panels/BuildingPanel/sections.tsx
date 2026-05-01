@@ -100,7 +100,7 @@ export function EnvironmentSection({
         </FieldRow>
         <div className="building-panel__info-item" style={{ alignItems: 'flex-start' }}>
           <span className="building-panel__info-label">날씨</span>
-          <div className="building-panel__grid" style={{ flex: 1 }}>
+          <div className="building-panel__grid" style={{ display: "flex" }}>
             {BUILDING_WEATHER_EFFECT_OPTIONS.map((option) => (
               <button
                 key={option.type}
