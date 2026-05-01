@@ -378,7 +378,7 @@ export interface BuildingSystemState {
   selectedTileGroupId?: string;
   selectedWallCategoryId?: string;
   selectedTileCategoryId?: string;
-  editMode: 'none' | 'wall' | 'tile' | 'block' | 'npc' | 'object';
+  editMode: 'none' | 'wall' | 'world' | 'tile' | 'block' | 'npc' | 'object';
   showGrid: boolean;
   gridSize: number;
   snapToGrid: boolean;
