@@ -393,7 +393,8 @@ export const useNPCStore = create<NPCStore>()(
           {
             id: 'oneyee-body',
             type: 'body',
-            url: 'gltf/oneyee.glb',
+            // Fallback to an existing body asset until oneyee model is added.
+            url: 'gltf/ally_body.glb',
             position: [0, 0, 0]
           }
         ],

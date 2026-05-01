@@ -602,6 +602,15 @@ export function NPCAnimationSection({
   updateInstance,
   updateBehavior,
 }: NPCAnimationSectionProps) {
+  const applyAnimation = (animationId: string) => {
+    updateInstance(instance.id, { currentAnimation: animationId });
+    updateBehavior(instance.id, {
+      mode: 'idle',
+      idleAnimation: animationId,
+      arriveAnimation: animationId,
+    });
+  };
+
   return (
     <>
       <div className="building-panel__section-subtitle">애니메이션</div>
@@ -610,7 +619,7 @@ export function NPCAnimationSection({
           <button
             key={animation.id}
             className={`building-panel__grid-btn ${instance.currentAnimation === animation.id ? 'building-panel__grid-btn--active' : ''}`}
-            onClick={() => updateInstance(instance.id, { currentAnimation: animation.id })}
+            onClick={() => applyAnimation(animation.id)}
           >
             {animation.name}
           </button>

@@ -139,8 +139,8 @@ export const WorldPage = ({ showEditor = false, showHud = true, children }: Worl
                   onOpenShop={() => setShopOpen(true)}
                   onOpenCrafting={() => setCraftOpen(true)}
                 />
-                <Clicker />
-                <GroundClicker />
+                {!showEditor && <Clicker />}
+                {!showEditor && <GroundClicker />}
                 <BuildingController />
                 <CharacterSpeechBalloon />
                 <InteractionTracker />

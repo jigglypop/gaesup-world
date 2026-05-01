@@ -44,7 +44,7 @@ export const Editor: FC<EditorProps> = ({
       cameraOption: store.cameraOption,
     };
 
-    store.setMode({ control: 'thirdPerson' });
+    store.setMode({ controller: 'keyboard', control: 'topDown' });
     store.setCameraOption(EDITOR_CAMERA_OPTION);
 
     return () => {
