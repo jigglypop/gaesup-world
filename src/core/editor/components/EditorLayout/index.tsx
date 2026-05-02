@@ -17,7 +17,7 @@ import { EditorLayoutProps, PanelConfig } from './types';
 export const EditorLayout: FC<EditorLayoutProps> = ({
   children,
   panels = [],
-  defaultActivePanels = ['building', 'character', 'camera'],
+  defaultActivePanels = ['tile', 'camera'],
   actions = [],
   hiddenBuiltInPanels = [],
   panelOrder,
@@ -26,7 +26,12 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
 }) => {
   const panelConfigs = useMemo(() => {
     const builtInPanels: PanelConfig[] = [
-      { id: 'building', title: '건축', component: <BuildingPanel />, defaultSide: 'left' },
+      { id: 'world', title: '전역', component: <BuildingPanel forcedEditMode="world" />, defaultSide: 'left' },
+      { id: 'wall', title: '벽', component: <BuildingPanel forcedEditMode="wall" />, defaultSide: 'left' },
+      { id: 'tile', title: '타일', component: <BuildingPanel forcedEditMode="tile" />, defaultSide: 'left' },
+      { id: 'block', title: '박스', component: <BuildingPanel forcedEditMode="block" />, defaultSide: 'left' },
+      { id: 'object', title: '오브젝트', component: <BuildingPanel forcedEditMode="object" />, defaultSide: 'left' },
+      { id: 'npc', title: 'NPC', component: <BuildingPanel forcedEditMode="npc" />, defaultSide: 'left' },
       { id: 'character', title: '캐릭터', component: <CharacterAssetPanel />, defaultSide: 'left' },
       { id: 'vehicle', title: '탈것', component: <VehiclePanel />, defaultSide: 'left' },
       { id: 'animation', title: '애니메이션', component: <AnimationPanel />, defaultSide: 'left' },
@@ -65,11 +70,13 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
 
   const [activePanelId, setActivePanelId] = useState(defaultPanelId);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const modalPreferredPanelIds = useMemo(
+    () => new Set(['npc', 'gameplay-events', 'studio']),
+    [],
+  );
   const selectedPanelId = panelConfigs.some((config) => config.id === activePanelId) ? activePanelId : defaultPanelId;
   const selectedPanel = panelConfigs.find((config) => config.id === selectedPanelId);
-
-  const toolPanels = panelConfigs.filter((config) => config.defaultSide !== 'right');
-  const inspectorPanels = panelConfigs.filter((config) => config.defaultSide === 'right');
 
   useEffect(() => {
     if (selectedPanelId) {
@@ -78,8 +85,12 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
   }, [selectedPanelId]);
 
   const selectPanel = (panelId: string) => {
+    const isSamePanel = panelId === selectedPanelId;
+    const shouldOpen = isSamePanel ? !isPanelOpen : true;
+    const shouldUseModal = shouldOpen && modalPreferredPanelIds.has(panelId);
     setActivePanelId(panelId);
-    setIsPanelOpen((open) => (panelId === selectedPanelId ? !open : true));
+    setIsPanelOpen(shouldOpen);
+    setIsModalOpen(shouldUseModal);
   };
 
   return (
@@ -91,40 +102,18 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
             <div className="editor-shell-status">{isPanelOpen ? selectedPanel?.title ?? '패널 없음' : ''}</div>
           </div>
 
-          <nav className="editor-panel-menu">
-            {toolPanels.length > 0 && (
-              <div className="editor-menu-section">
-                <div className="editor-region-label">도구</div>
-                {toolPanels.map((config) => (
-                  <button
-                    key={config.id}
-                    type="button"
-                    onClick={() => selectPanel(config.id)}
-                    className={`editor-panel-toggle ${selectedPanelId === config.id && isPanelOpen ? 'active' : ''}`}
-                    title={config.title}
-                  >
-                    {config.title}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {inspectorPanels.length > 0 && (
-              <div className="editor-menu-section">
-                <div className="editor-region-label">설정</div>
-                {inspectorPanels.map((config) => (
-                  <button
-                    key={config.id}
-                    type="button"
-                    onClick={() => selectPanel(config.id)}
-                    className={`editor-panel-toggle ${selectedPanelId === config.id && isPanelOpen ? 'active' : ''}`}
-                    title={config.title}
-                  >
-                    {config.title}
-                  </button>
-                ))}
-              </div>
-            )}
+          <nav className="editor-panel-menu editor-panel-menu--flat">
+            {panelConfigs.map((config) => (
+              <button
+                key={config.id}
+                type="button"
+                onClick={() => selectPanel(config.id)}
+                className={`editor-panel-toggle ${selectedPanelId === config.id && isPanelOpen ? 'active' : ''}`}
+                title={config.title}
+              >
+                {config.title}
+              </button>
+            ))}
           </nav>
 
           <div className="editor-sidebar-footer">
@@ -159,6 +148,14 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
               <button
                 type="button"
                 className="editor-sidebar-close"
+                onClick={() => setIsModalOpen(true)}
+                aria-label="패널 전면 열기"
+              >
+                전면
+              </button>
+              <button
+                type="button"
+                className="editor-sidebar-close"
                 onClick={() => setIsPanelOpen(false)}
                 aria-label="패널 접기"
               >
@@ -171,6 +168,46 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
           </section>
         )}
       </aside>
+
+      {isPanelOpen && isModalOpen && selectedPanel && (
+        <section
+          className={`editor-panel-modal ${selectedPanelId === 'npc' ? 'editor-panel-modal--npc' : ''}`}
+          aria-label={`${selectedPanel.title} panel modal`}
+        >
+          <div className={`editor-panel-modal__surface ${selectedPanel.className ?? ''}`}>
+            <header className="editor-panel-modal__header">
+              <div>
+                <div className="editor-region-label">패널</div>
+                <h2>{selectedPanel.title}</h2>
+              </div>
+              <div className="editor-panel-modal__actions">
+                <button
+                  type="button"
+                  className="editor-sidebar-close"
+                  onClick={() => setIsModalOpen(false)}
+                  aria-label="패널 사이드바로"
+                >
+                  사이드바
+                </button>
+                <button
+                  type="button"
+                  className="editor-sidebar-close"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setIsPanelOpen(false);
+                  }}
+                  aria-label="패널 닫기"
+                >
+                  닫기
+                </button>
+              </div>
+            </header>
+            <div className="editor-panel-modal__content" style={selectedPanel.style}>
+              {selectedPanel.component}
+            </div>
+          </div>
+        </section>
+      )}
 
       {children}
     </div>

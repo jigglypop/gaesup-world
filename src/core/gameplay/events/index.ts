@@ -6,6 +6,16 @@ export {
   getGameplayEventRegistry,
 } from './registry';
 export { SEED_GAMEPLAY_EVENTS } from './data/seedEvents';
+export {
+  GAMEPLAY_EVENT_ACTION_TYPES,
+  GAMEPLAY_EVENT_CONDITION_TYPES,
+  GAMEPLAY_EVENT_TRIGGER_TYPES,
+  createGameplayEventActionTemplate,
+  createGameplayEventConditionTemplate,
+  createGameplayEventTriggerTemplate,
+  createManualToastEventBlueprint,
+  createNpcTalkStartsQuestEventBlueprint,
+} from './templates';
 export type {
   GameplayActionHandler,
   GameplayConditionHandler,
@@ -20,3 +30,8 @@ export type {
   GameplayEventTrigger,
   GameplayTriggerEvent,
 } from './types';
+export type {
+  GameplayEventActionType,
+  GameplayEventConditionType,
+  GameplayEventTriggerType,
+} from './templates';

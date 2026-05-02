@@ -72,6 +72,13 @@
   gap: var(--editor-spacing-md);
 }
 
+.gameplay-event-panel__editor-tools {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--editor-spacing-sm);
+  flex-wrap: wrap;
+}
+
 .gameplay-event-panel__hint {
   margin-top: 4px;
   font-size: 11px;
@@ -169,6 +176,14 @@
   background: var(--editor-surface-1);
   border: 1px solid var(--editor-border-color);
   border-radius: var(--editor-radius-md);
+}
+
+.gameplay-event-panel__empty {
+  padding: 10px;
+  border: 1px dashed var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  color: var(--editor-text-muted, #cccccc);
+  font-size: 11px;
 }
 
 .gameplay-event-panel__editor {

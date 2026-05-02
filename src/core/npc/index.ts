@@ -10,7 +10,12 @@ export {
   resolveSchedule,
 } from './core/NPCScheduler';
 export {
+  applyAgentBehaviorBlueprint,
+  applyNPCBehaviorBlueprint,
   compileNPCBrainBlueprint,
+  createAgentBehaviorBlueprintFromNPCBehaviorBlueprint,
+  createNPCBehaviorBlueprintFromAgentBehaviorBlueprint,
+  createNPCBehaviorBlueprintFromInstance,
   getNPCBrainBlueprint,
   registerNPCBrainBlueprint,
   unregisterNPCBrainBlueprint,

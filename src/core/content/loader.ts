@@ -31,6 +31,12 @@ export function validateContentBundle(bundle: ContentBundle): ContentBundleValid
   if (bundle.gameplay?.events && !Array.isArray(bundle.gameplay.events)) {
     errors.push('bundle.gameplay.events must be an array');
   }
+  if (bundle.blueprints?.npcBehavior && !Array.isArray(bundle.blueprints.npcBehavior)) {
+    errors.push('bundle.blueprints.npcBehavior must be an array');
+  }
+  if (bundle.blueprints?.agentBehavior && !Array.isArray(bundle.blueprints.agentBehavior)) {
+    errors.push('bundle.blueprints.agentBehavior must be an array');
+  }
   if (!Array.isArray(bundle.assets?.assets)) {
     errors.push('bundle.assets.assets must be an array');
   } else {

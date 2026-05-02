@@ -1,12 +1,20 @@
 import type {
+  AgentBehaviorBlueprint,
   NPCAction,
+  NPCBehaviorBlueprint,
+  NPCBrainConfig,
   NPCBrainBlueprint,
   NPCBrainBlueprintCondition,
   NPCBrainBlueprintEdge,
   NPCBrainBlueprintNode,
   NPCBrainBlueprintTarget,
+  NPCEvent,
+  NPCInstance,
   NPCObservation,
+  NPCPerceptionConfig,
 } from '../types';
+import { useQuestStore } from '../../quests/stores/questStore';
+import { useFriendshipStore } from '../../relations/stores/friendshipStore';
 
 const MAX_BLUEPRINT_STEPS = 32;
 const blueprints = new Map<string, NPCBrainBlueprint>();
@@ -26,6 +34,120 @@ export function unregisterNPCBrainBlueprint(id: string): void {
   blueprints.delete(id);
 }
 
+const cloneBehaviorConfig = (behavior: NPCBehaviorBlueprint['behavior']) => ({
+  ...behavior,
+  ...(behavior.waypoints ? { waypoints: behavior.waypoints.map((point) => [...point] as [number, number, number]) } : {}),
+});
+
+const cloneBrainConfig = (brain: NPCBrainConfig): NPCBrainConfig => ({
+  ...brain,
+  ...(brain.memory ? { memory: { ...brain.memory } } : {}),
+});
+
+const clonePerceptionConfig = (perception: NPCPerceptionConfig): NPCPerceptionConfig => ({ ...perception });
+
+const cloneNPCEvents = (events: NPCEvent[]): NPCEvent[] =>
+  events.map((event) => ({ ...event, ...(event.payload ? { payload: { ...event.payload } } : {}) }));
+
+export function createNPCBehaviorBlueprintFromInstance(
+  instance: NPCInstance,
+  options: {
+    id?: string;
+    name?: string;
+    description?: string;
+    role?: string;
+    tags?: string[];
+  } = {},
+): NPCBehaviorBlueprint {
+  const behavior = {
+    mode: instance.behavior?.mode ?? 'idle',
+    speed: instance.behavior?.speed ?? 2.2,
+    ...(instance.behavior?.loop !== undefined ? { loop: instance.behavior.loop } : {}),
+    ...(instance.behavior?.waypoints ? { waypoints: instance.behavior.waypoints.map((point) => [...point] as [number, number, number]) } : {}),
+    ...(instance.behavior?.wanderRadius !== undefined ? { wanderRadius: instance.behavior.wanderRadius } : {}),
+    ...(instance.behavior?.waitSeconds !== undefined ? { waitSeconds: instance.behavior.waitSeconds } : {}),
+    ...(instance.behavior?.idleAnimation ? { idleAnimation: instance.behavior.idleAnimation } : {}),
+    ...(instance.behavior?.moveAnimation ? { moveAnimation: instance.behavior.moveAnimation } : {}),
+    ...(instance.behavior?.arriveAnimation ? { arriveAnimation: instance.behavior.arriveAnimation } : {}),
+  };
+
+  return {
+    id: options.id ?? `npc-behavior-${instance.id}`,
+    name: options.name ?? `${instance.name} Behavior`,
+    ...(options.description ? { description: options.description } : {}),
+    ...(options.role ? { role: options.role } : {}),
+    behavior,
+    ...(instance.brain ? { brain: cloneBrainConfig(instance.brain) } : {}),
+    ...(instance.perception ? { perception: clonePerceptionConfig(instance.perception) } : {}),
+    ...(instance.events ? { events: cloneNPCEvents(instance.events) } : {}),
+    ...(options.tags ? { tags: [...options.tags] } : {}),
+  };
+}
+
+export function applyNPCBehaviorBlueprint(
+  instance: NPCInstance,
+  blueprint: NPCBehaviorBlueprint,
+): NPCInstance {
+  return {
+    ...instance,
+    behavior: cloneBehaviorConfig(blueprint.behavior),
+    ...(blueprint.brain ? { brain: cloneBrainConfig(blueprint.brain) } : {}),
+    ...(blueprint.perception ? { perception: clonePerceptionConfig(blueprint.perception) } : {}),
+    ...(blueprint.events ? { events: cloneNPCEvents(blueprint.events) } : {}),
+  };
+}
+
+export function createAgentBehaviorBlueprintFromNPCBehaviorBlueprint(
+  blueprint: NPCBehaviorBlueprint,
+  options: {
+    id?: string;
+    name?: string;
+    ownerType?: AgentBehaviorBlueprint['ownerType'];
+    description?: string;
+    role?: string;
+    tags?: string[];
+  } = {},
+): AgentBehaviorBlueprint {
+  return {
+    id: options.id ?? blueprint.id,
+    name: options.name ?? blueprint.name,
+    ownerType: options.ownerType ?? 'npc',
+    ...(options.description ?? blueprint.description ? { description: options.description ?? blueprint.description } : {}),
+    ...(options.role ?? blueprint.role ? { role: options.role ?? blueprint.role } : {}),
+    behavior: cloneBehaviorConfig(blueprint.behavior),
+    ...(blueprint.brain ? { brain: cloneBrainConfig(blueprint.brain) } : {}),
+    ...(blueprint.perception ? { perception: clonePerceptionConfig(blueprint.perception) } : {}),
+    ...(blueprint.events ? { events: cloneNPCEvents(blueprint.events) } : {}),
+    ...(options.tags ? { tags: [...options.tags] } : blueprint.tags ? { tags: [...blueprint.tags] } : {}),
+  };
+}
+
+export function createNPCBehaviorBlueprintFromAgentBehaviorBlueprint(
+  blueprint: AgentBehaviorBlueprint,
+): NPCBehaviorBlueprint {
+  return {
+    id: blueprint.id,
+    name: blueprint.name,
+    ...(blueprint.description ? { description: blueprint.description } : {}),
+    ...(blueprint.role ? { role: blueprint.role } : {}),
+    behavior: cloneBehaviorConfig(blueprint.behavior),
+    ...(blueprint.brain ? { brain: cloneBrainConfig(blueprint.brain) } : {}),
+    ...(blueprint.perception ? { perception: clonePerceptionConfig(blueprint.perception) } : {}),
+    ...(blueprint.events ? { events: cloneNPCEvents(blueprint.events) } : {}),
+    ...(blueprint.tags ? { tags: [...blueprint.tags] } : {}),
+  };
+}
+
+export function applyAgentBehaviorBlueprint(
+  instance: NPCInstance,
+  blueprint: AgentBehaviorBlueprint,
+): NPCInstance {
+  return applyNPCBehaviorBlueprint(
+    instance,
+    createNPCBehaviorBlueprintFromAgentBehaviorBlueprint(blueprint),
+  );
+}
+
 function resolveCondition(condition: NPCBrainBlueprintCondition, observation: NPCObservation): boolean {
   switch (condition.type) {
     case 'always':
@@ -34,6 +156,12 @@ function resolveCondition(condition: NPCBrainBlueprintCondition, observation: NP
       return observation.navigationState !== 'moving';
     case 'perceivedAny':
       return observation.perceived.length > 0;
+    case 'questStatus':
+      return useQuestStore.getState().statusOf(condition.questId) === condition.status;
+    case 'friendshipAtLeast': {
+      const npcId = condition.npcId ?? observation.instanceId;
+      return useFriendshipStore.getState().scoreOf(npcId) >= condition.score;
+    }
     case 'memoryEquals':
       return observation.memory?.[condition.key] === condition.value;
   }

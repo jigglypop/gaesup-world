@@ -39,38 +39,69 @@ function LeftSidebar({
   showTele,
   setShowTele,
   showEnvironmentControls,
+  compact,
 }: {
   showInfo: boolean;
   setShowInfo: (v: boolean) => void;
   showTele: boolean;
   setShowTele: (v: boolean) => void;
   showEnvironmentControls: boolean;
+  compact: boolean;
 }) {
   const showSnow = useBuildingStore((s) => s.showSnow);
   const setShowSnow = useBuildingStore((s) => s.setShowSnow);
   const showFog = useBuildingStore((s) => s.showFog);
   const setShowFog = useBuildingStore((s) => s.setShowFog);
+  const [showWorldTools, setShowWorldTools] = useState(!compact);
+  const [showQuickTools, setShowQuickTools] = useState(!compact);
 
   return (
     <div className="gp-left">
+      <div className="gp-glass gp-panel" style={{ width: '100%' }}>
+        <div className="gp-panel-title">빠른 도구</div>
+        <button className="gp-btn" onClick={() => setShowQuickTools((open) => !open)}>
+          <span>{showQuickTools ? '도구 접기' : '도구 펼치기'}</span>
+          <span className="gp-key">{showQuickTools ? 'ON' : 'OFF'}</span>
+        </button>
+        {showQuickTools && (
+          <div className="gp-actionrow">
+            <button className={`gp-btn${showInfo ? ' gp-btn--active' : ''}`} onClick={() => setShowInfo(!showInfo)}>
+              <span>정보 패널</span>
+              <span className="gp-key">{showInfo ? 'ON' : 'OFF'}</span>
+            </button>
+            <button className={`gp-btn${showTele ? ' gp-btn--active' : ''}`} onClick={() => setShowTele(!showTele)}>
+              <span>텔레포트</span>
+              <span className="gp-key">{showTele ? 'ON' : 'OFF'}</span>
+            </button>
+          </div>
+        )}
+      </div>
       {showEnvironmentControls && (
         <div className="gp-glass gp-panel" style={{ width: '100%' }}>
           <div className="gp-panel-title">월드 환경</div>
-          <button className={`gp-btn${showSnow ? ' gp-btn--active' : ''}`} onClick={() => setShowSnow(!showSnow)}>
-            <span>월드 눈</span>
-            <span className="gp-key">{showSnow ? 'ON' : 'OFF'}</span>
+          <button className="gp-btn" onClick={() => setShowWorldTools((open) => !open)}>
+            <span>{showWorldTools ? '환경 접기' : '환경 펼치기'}</span>
+            <span className="gp-key">{showWorldTools ? 'ON' : 'OFF'}</span>
           </button>
-          <button className={`gp-btn${showFog ? ' gp-btn--active' : ''}`} onClick={() => setShowFog(!showFog)}>
-            <span>장면 안개</span>
-            <span className="gp-key">{showFog ? 'ON' : 'OFF'}</span>
-          </button>
+          {showWorldTools && (
+            <div className="gp-actionrow">
+              <button className={`gp-btn${showSnow ? ' gp-btn--active' : ''}`} onClick={() => setShowSnow(!showSnow)}>
+                <span>월드 눈</span>
+                <span className="gp-key">{showSnow ? 'ON' : 'OFF'}</span>
+              </button>
+              <button className={`gp-btn${showFog ? ' gp-btn--active' : ''}`} onClick={() => setShowFog(!showFog)}>
+                <span>장면 안개</span>
+                <span className="gp-key">{showFog ? 'ON' : 'OFF'}</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function RightSidebar({ onOpenCrafting }: { onOpenCrafting?: () => void }) {
+function RightSidebar({ onOpenCrafting, compact }: { onOpenCrafting?: () => void; compact: boolean }) {
   const messages = useMailStore((s) => s.messages);
   const quests = useQuestStore((s) => s.state);
   const catalog = useCatalogStore((s) => s.entries);
@@ -118,38 +149,47 @@ function RightSidebar({ onOpenCrafting }: { onOpenCrafting?: () => void }) {
   const equipped = useCharacterStore((s) => s.outfits);
   const equippedCount = Object.values(equipped).filter(Boolean).length;
 
+  const primaryActionKeys = new Set(['i', 'j', 'm', 'k']);
+  const primaryActions = actions.filter((action) => primaryActionKeys.has(action.key));
+  const secondaryActions = actions.filter((action) => !primaryActionKeys.has(action.key));
+  const [showMoreActions, setShowMoreActions] = useState(!compact);
+
   return (
     <div className="gp-right">
-      <div className="gp-glass gp-panel">
-        <div className="gp-panel-title">캐릭터</div>
-        <div className="gp-panel-row">
-          <span style={{ fontWeight: 500 }}>{charName}</span>
-          <span style={{ color: 'var(--gp-text-dim)', fontSize: 12.5 }}>장착 {equippedCount}/5</span>
-        </div>
-      </div>
+      {!compact && (
+        <>
+          <div className="gp-glass gp-panel">
+            <div className="gp-panel-title">캐릭터</div>
+            <div className="gp-panel-row">
+              <span style={{ fontWeight: 500 }}>{charName}</span>
+              <span style={{ color: 'var(--gp-text-dim)', fontSize: 12.5 }}>장착 {equippedCount}/5</span>
+            </div>
+          </div>
+
+          <div className="gp-glass gp-panel">
+            <div className="gp-panel-title">마을</div>
+            <div className="gp-panel-row">
+              <div className="gp-stat">
+                <span className="gp-stat-label">데코 점수</span>
+                <span className="gp-stat-value" style={{ color: 'var(--gp-accent)' }}>{decorationScore}</span>
+              </div>
+              <div className="gp-stat" style={{ alignItems: 'flex-end' }}>
+                <span className="gp-stat-label">주민</span>
+                <span className="gp-stat-value">{occupied}/{totalHouses}</span>
+              </div>
+            </div>
+            <div className="gp-panel-row">
+              <span style={{ color: 'var(--gp-text-dim)', fontSize: 12.5 }}>등록 인원</span>
+              <span style={{ fontWeight: 500 }}>{residentCount}</span>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="gp-glass gp-panel">
-        <div className="gp-panel-title">마을</div>
-        <div className="gp-panel-row">
-          <div className="gp-stat">
-            <span className="gp-stat-label">데코 점수</span>
-            <span className="gp-stat-value" style={{ color: 'var(--gp-accent)' }}>{decorationScore}</span>
-          </div>
-          <div className="gp-stat" style={{ alignItems: 'flex-end' }}>
-            <span className="gp-stat-label">주민</span>
-            <span className="gp-stat-value">{occupied}/{totalHouses}</span>
-          </div>
-        </div>
-        <div className="gp-panel-row">
-          <span style={{ color: 'var(--gp-text-dim)', fontSize: 12.5 }}>등록 인원</span>
-          <span style={{ fontWeight: 500 }}>{residentCount}</span>
-        </div>
-      </div>
-
-      <div className="gp-glass gp-panel">
-        <div className="gp-panel-title">게임 메뉴</div>
+        <div className="gp-panel-title">{compact ? '핵심 메뉴' : '게임 메뉴'}</div>
         <div className="gp-actionrow">
-          {actions.map((a) => (
+          {primaryActions.map((a) => (
             <button key={a.id} className="gp-btn" onClick={a.onClick ?? (() => dispatchKey(a.key))}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <span className="gp-key">{a.key.toUpperCase()}</span>
@@ -163,6 +203,27 @@ function RightSidebar({ onOpenCrafting }: { onOpenCrafting?: () => void }) {
             </button>
           ))}
         </div>
+        <button type="button" className="gp-btn" onClick={() => setShowMoreActions((open) => !open)}>
+          <span>{showMoreActions ? '보조 메뉴 접기' : '보조 메뉴 펼치기'}</span>
+          <span className="gp-key">{showMoreActions ? 'ON' : 'OFF'}</span>
+        </button>
+        {showMoreActions && (
+          <div className="gp-actionrow">
+            {secondaryActions.map((a) => (
+              <button key={a.id} className="gp-btn" onClick={a.onClick ?? (() => dispatchKey(a.key))}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <span className="gp-key">{a.key.toUpperCase()}</span>
+                  <span>{a.label}</span>
+                </span>
+                {a.badge !== undefined && (
+                  <span className={`gp-badge${a.badgeKind === 'warn' ? ' gp-badge--warn' : a.badgeKind === 'good' ? ' gp-badge--good' : ''}`}>
+                    {a.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -189,11 +250,13 @@ function FooterBar() {
 export type HudShellProps = {
   onOpenCrafting?: () => void;
   showEnvironmentControls?: boolean;
+  compact?: boolean;
 };
 
 export function HudShell({
   onOpenCrafting,
   showEnvironmentControls = true,
+  compact = false,
 }: HudShellProps) {
   const [showInfo, setShowInfo] = useState(false);
   const [showTele, setShowTele] = useState(false);
@@ -208,9 +271,10 @@ export function HudShell({
           showTele={showTele}
           setShowTele={setShowTele}
           showEnvironmentControls={showEnvironmentControls}
+          compact={compact}
         />
-        <RightSidebar {...(onOpenCrafting ? { onOpenCrafting } : {})} />
-        <FooterBar />
+        <RightSidebar {...(onOpenCrafting ? { onOpenCrafting } : {})} compact={compact} />
+        {!compact && <FooterBar />}
       </div>
       {showInfo && <Info />}
       {showTele && <Teleport />}

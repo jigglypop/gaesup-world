@@ -1,12 +1,22 @@
 import React, { useCallback, useMemo, useState } from 'react';
 
 import {
+  GAMEPLAY_EVENT_ACTION_TYPES,
+  GAMEPLAY_EVENT_CONDITION_TYPES,
+  GAMEPLAY_EVENT_TRIGGER_TYPES,
   GameplayEventEngine,
   SEED_GAMEPLAY_EVENTS,
+  createGameplayEventActionTemplate,
+  createGameplayEventConditionTemplate,
+  createGameplayEventTriggerTemplate,
+  createManualToastEventBlueprint,
+  createNpcTalkStartsQuestEventBlueprint,
+  type GameplayEventActionType,
   type GameplayEventBlueprint,
+  type GameplayEventConditionType,
+  type GameplayEventTriggerType,
   type GameplayEventAction,
   type GameplayEventCondition,
-  type GameplayEventTrigger,
   type GameplayTriggerEvent,
 } from '../../../../gameplay';
 import type { EditorPanelBaseProps } from '../types';
@@ -23,6 +33,48 @@ export type GameplayEventPanelProps = EditorPanelBaseProps & {
 type PanelStatus = {
   kind: 'idle' | 'success' | 'error';
   message: string;
+};
+
+const TRIGGER_LABEL: Record<GameplayEventTriggerType, string> = {
+  manual: '수동',
+  interaction: '상호작용',
+  enterArea: '영역 진입',
+  itemCollected: '아이템 획득',
+  timeChanged: '시간 변경',
+  calendarEventStarted: '캘린더 이벤트',
+  questChanged: '퀘스트 변경',
+  custom: '커스텀',
+};
+
+const FIELD_LABELS: Record<string, string> = {
+  id: 'ID',
+  name: '이름',
+  description: '설명',
+  type: '타입',
+  key: '키',
+  run: '실행 방식',
+  cooldownMs: '쿨다운(ms)',
+  requiresServer: '서버 필요',
+  targetId: '대상 ID',
+  action: '액션',
+  areaId: '영역 ID',
+  itemId: '아이템 ID',
+  hour: '시간',
+  eventId: '이벤트 ID',
+  questId: '퀘스트 ID',
+  status: '상태',
+  operator: '연산자',
+  value: '값',
+  message: '메시지',
+  toast: '토스트',
+  durationMs: '지속시간(ms)',
+};
+
+const RESERVED_SHORTCUT_KEYS = new Set(['i', 'j', 'm', 'k', 'o', 'c', 'f', 'e', 't']);
+
+const isReservedShortcutKey = (value: string): boolean => {
+  const normalized = value.trim().toLowerCase();
+  return normalized.length === 1 && RESERVED_SHORTCUT_KEYS.has(normalized);
 };
 
 const triggerToEvent = (blueprint: GameplayEventBlueprint): GameplayTriggerEvent => {
@@ -59,85 +111,7 @@ const triggerToEvent = (blueprint: GameplayEventBlueprint): GameplayTriggerEvent
   }
 };
 
-type TriggerType = GameplayEventTrigger['type'];
-type ConditionType = GameplayEventCondition['type'];
-type ActionType = GameplayEventAction['type'];
 type InspectorValue = string | number | boolean;
-
-const makeDefaultTrigger = (type: TriggerType): GameplayEventTrigger => {
-  switch (type) {
-    case 'manual':
-      return { type, key: 'custom.run' };
-    case 'interaction':
-      return { type, targetId: 'npc:tommy', action: 'talk' };
-    case 'enterArea':
-      return { type, areaId: 'meadow' };
-    case 'itemCollected':
-      return { type, itemId: 'apple' };
-    case 'timeChanged':
-      return { type, hour: 9 };
-    case 'calendarEventStarted':
-      return { type, eventId: 'event.cherryblossom' };
-    case 'questChanged':
-      return { type, questId: 'welcome', status: 'active' };
-    case 'custom':
-      return { type, key: 'custom.event' };
-    default: {
-      const exhaustive: never = type;
-      return exhaustive;
-    }
-  }
-};
-
-const makeDefaultCondition = (type: ConditionType): GameplayEventCondition => {
-  switch (type) {
-    case 'always':
-      return { type };
-    case 'hasItem':
-      return { type, itemId: 'apple', count: 1 };
-    case 'questStatus':
-      return { type, questId: 'welcome', status: 'active' };
-    case 'eventActive':
-      return { type, eventId: 'event.cherryblossom' };
-    case 'flagEquals':
-      return { type, key: 'gameplayReady', value: true };
-    case 'custom':
-      return { type, key: 'custom.condition' };
-    default: {
-      const exhaustive: never = type;
-      return exhaustive;
-    }
-  }
-};
-
-const makeDefaultAction = (type: ActionType): GameplayEventAction => {
-  switch (type) {
-    case 'giveItem':
-      return { type, itemId: 'apple', count: 1 };
-    case 'removeItem':
-      return { type, itemId: 'apple', count: 1 };
-    case 'startQuest':
-      return { type, questId: 'welcome' };
-    case 'completeQuest':
-      return { type, questId: 'welcome' };
-    case 'showDialog':
-      return { type, dialogTreeId: 'npc.villager', npcId: 'mei' };
-    case 'toast':
-      return { type, kind: 'success', text: '이벤트 실행' };
-    case 'setFlag':
-      return { type, key: 'customFlag', value: true };
-    case 'notifyQuestFlag':
-      return { type, key: 'customFlag', value: true };
-    case 'emit':
-      return { type, eventName: 'gameplay.custom' };
-    case 'custom':
-      return { type, key: 'custom.action' };
-    default: {
-      const exhaustive: never = type;
-      return exhaustive;
-    }
-  }
-};
 
 const toBooleanValue = (value: string): string | number | boolean => {
   if (value === 'true') return true;
@@ -157,33 +131,41 @@ export function GameplayEventPanel({
   children,
 }: GameplayEventPanelProps) {
   const fallbackEngine = useMemo(() => new GameplayEventEngine({ blueprints }), [blueprints]);
-  const [id, setId] = useState('custom-toast');
-  const [name, setName] = useState('Custom Toast Event');
-  const [triggerKey, setTriggerKey] = useState('custom.run');
-  const [message, setMessage] = useState('커스텀 이벤트 실행');
-  const [selectedId, setSelectedId] = useState<string | null>(blueprints[0]?.id ?? null);
+  const [id, setId] = useState('manual-event');
+  const [name, setName] = useState('수동 이벤트');
+  const [triggerKey, setTriggerKey] = useState('manual.event');
+  const [message, setMessage] = useState('이벤트가 실행되었습니다.');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showInspector, setShowInspector] = useState(false);
   const selectedBlueprint = useMemo(
-    () => blueprints.find((blueprint) => blueprint.id === selectedId) ?? blueprints[0] ?? null,
+    () => blueprints.find((blueprint) => blueprint.id === selectedId) ?? null,
     [blueprints, selectedId],
   );
-  const [status, setStatus] = useState<PanelStatus>({ kind: 'idle', message: 'Ready' });
+  const [status, setStatus] = useState<PanelStatus>({ kind: 'idle', message: '대기 중' });
 
   const createBlueprint = () => {
-    const next: GameplayEventBlueprint = {
-      id: id.trim() || `event-${Date.now()}`,
-      name: name.trim() || 'Untitled Event',
-      trigger: { type: 'manual', key: triggerKey.trim() || 'custom.run' },
-      conditions: [{ type: 'always' }],
-      actions: [
-        { type: 'toast', kind: 'success', text: message.trim() || '이벤트 실행' },
-        { type: 'setFlag', key: id.trim() || 'customEvent', value: true },
-      ],
-      policy: { run: 'repeat' },
-      tags: ['editor'],
-    };
+    if (isReservedShortcutKey(triggerKey)) {
+      setStatus({ kind: 'error', message: `트리거 키 "${triggerKey}" 는 HUD 단축키로 예약되어 있습니다.` });
+      return;
+    }
+    const next = createManualToastEventBlueprint({ id, name, triggerKey, message });
     onCreate?.(next);
     setSelectedId(next.id);
-    setStatus({ kind: 'success', message: `Created ${next.id}` });
+    setShowInspector(true);
+    setStatus({ kind: 'success', message: `이벤트를 생성했습니다: ${next.id}` });
+  };
+
+  const createNpcQuestPreset = () => {
+    const trimmedId = id.trim();
+    const trimmedName = name.trim();
+    const next = createNpcTalkStartsQuestEventBlueprint({
+      ...(trimmedId ? { id: `${trimmedId}-npc-quest` } : {}),
+      ...(trimmedName ? { name: `${trimmedName} NPC 퀘스트` } : {}),
+    });
+    onCreate?.(next);
+    setSelectedId(next.id);
+    setShowInspector(true);
+    setStatus({ kind: 'success', message: `NPC 퀘스트 프리셋을 추가했습니다: ${next.id}` });
   };
 
   const updateSelected = useCallback((patch: Partial<GameplayEventBlueprint>) => {
@@ -191,7 +173,7 @@ export function GameplayEventPanel({
     const next = { ...selectedBlueprint, ...patch };
     onUpdate?.(next);
     setSelectedId(next.id);
-    setStatus({ kind: 'success', message: `Updated ${next.id}` });
+    setStatus({ kind: 'success', message: `이벤트를 수정했습니다: ${next.id}` });
   }, [onUpdate, selectedBlueprint]);
 
   const deleteSelected = () => {
@@ -199,7 +181,8 @@ export function GameplayEventPanel({
     onDelete?.(selectedBlueprint.id);
     const next = blueprints.find((blueprint) => blueprint.id !== selectedBlueprint.id) ?? null;
     setSelectedId(next?.id ?? null);
-    setStatus({ kind: 'success', message: `Deleted ${selectedBlueprint.id}` });
+    setShowInspector(false);
+    setStatus({ kind: 'success', message: `이벤트를 삭제했습니다: ${selectedBlueprint.id}` });
   };
 
   const runBlueprint = async (blueprint: GameplayEventBlueprint) => {
@@ -209,7 +192,7 @@ export function GameplayEventPanel({
     } else {
       await fallbackEngine.dispatch(trigger);
     }
-    setStatus({ kind: 'success', message: `Ran ${blueprint.id}` });
+    setStatus({ kind: 'success', message: `이벤트를 실행했습니다: ${blueprint.id}` });
   };
 
   const updateCondition = useCallback((index: number, condition: GameplayEventCondition) => {
@@ -250,7 +233,14 @@ export function GameplayEventPanel({
 
     if (nodeId === 'trigger') {
       const trigger = selectedBlueprint.trigger;
-      if (trigger.type === 'manual' && field === 'key') updateSelected({ trigger: { type: 'manual', key: String(value) } });
+      if (trigger.type === 'manual' && field === 'key') {
+        const nextKey = String(value);
+        if (isReservedShortcutKey(nextKey)) {
+          setStatus({ kind: 'error', message: `트리거 키 "${nextKey}" 는 HUD 단축키로 예약되어 있습니다.` });
+          return;
+        }
+        updateSelected({ trigger: { type: 'manual', key: nextKey } });
+      }
       if (trigger.type === 'interaction' && (field === 'targetId' || field === 'action')) {
         updateSelected({ trigger: { ...trigger, [field]: String(value) } });
       }
@@ -261,7 +251,14 @@ export function GameplayEventPanel({
       if (trigger.type === 'questChanged' && (field === 'questId' || field === 'status')) {
         updateSelected({ trigger: { ...trigger, [field]: String(value) } });
       }
-      if (trigger.type === 'custom' && field === 'key') updateSelected({ trigger: { type: 'custom', key: String(value) } });
+      if (trigger.type === 'custom' && field === 'key') {
+        const nextKey = String(value);
+        if (isReservedShortcutKey(nextKey)) {
+          setStatus({ kind: 'error', message: `트리거 키 "${nextKey}" 는 HUD 단축키로 예약되어 있습니다.` });
+          return;
+        }
+        updateSelected({ trigger: { type: 'custom', key: nextKey } });
+      }
       return;
     }
 
@@ -301,7 +298,7 @@ export function GameplayEventPanel({
     <div className="gameplay-event-panel__field-grid">
       {Object.entries(fields).map(([field, value]) => (
         <label key={`${nodeId}-${field}`} className="gameplay-event-panel__field">
-          <span>{field}</span>
+          <span>{FIELD_LABELS[field] ?? field}</span>
           <input
             type={typeof value === 'number' ? 'number' : 'text'}
             value={String(value)}
@@ -316,49 +313,62 @@ export function GameplayEventPanel({
   return (
     <div className={`gameplay-event-panel ${className}`} style={style}>
       <section className="gameplay-event-panel__section">
-        <div className="gameplay-event-panel__title">Create Manual Event</div>
+        <div className="gameplay-event-panel__title">빠른 생성</div>
         <label className="gameplay-event-panel__field">
           <span>ID</span>
           <input value={id} onChange={(event) => setId(event.target.value)} />
         </label>
         <label className="gameplay-event-panel__field">
-          <span>Name</span>
+          <span>이름</span>
           <input value={name} onChange={(event) => setName(event.target.value)} />
         </label>
         <label className="gameplay-event-panel__field">
-          <span>Trigger Key</span>
+          <span>트리거 키</span>
           <input value={triggerKey} onChange={(event) => setTriggerKey(event.target.value)} />
         </label>
+        <div className="gameplay-event-panel__hint">단일 문자 키(`i`, `j`, `m`, `k`, `o`, `c`, `f`, `e`, `t`)는 HUD 단축키로 예약됩니다.</div>
         <label className="gameplay-event-panel__field">
-          <span>Toast Message</span>
+          <span>토스트 메시지</span>
           <input value={message} onChange={(event) => setMessage(event.target.value)} />
         </label>
         <button type="button" className="gameplay-event-panel__primary" onClick={createBlueprint}>
-          Create Event Blueprint
+          수동 이벤트 생성
+        </button>
+        <button type="button" onClick={createNpcQuestPreset}>
+          NPC 퀘스트 프리셋 추가
         </button>
       </section>
 
       <section className="gameplay-event-panel__section">
-        <div className="gameplay-event-panel__title">Blueprint Library</div>
+        <div className="gameplay-event-panel__title">이벤트 목록</div>
         <div className="gameplay-event-panel__list">
           {blueprints.map((blueprint) => (
             <article key={blueprint.id} className="gameplay-event-panel__card">
               <div>
                 <div className="gameplay-event-panel__card-title">{blueprint.name}</div>
                 <div className="gameplay-event-panel__card-meta">
-                  {blueprint.id} · {blueprint.trigger.type} · {blueprint.actions.length} action(s)
+                  {blueprint.id} · {TRIGGER_LABEL[blueprint.trigger.type]} · 액션 {blueprint.actions.length}개
                 </div>
               </div>
               <div className="gameplay-event-panel__card-actions">
-                <button type="button" onClick={() => setSelectedId(blueprint.id)}>
-                  Edit
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedId(blueprint.id);
+                    setShowInspector(true);
+                  }}
+                >
+                  편집
                 </button>
                 <button type="button" onClick={() => { void runBlueprint(blueprint); }}>
-                  Run
+                  실행
                 </button>
               </div>
             </article>
           ))}
+          {blueprints.length === 0 && (
+            <div className="gameplay-event-panel__empty">등록된 이벤트가 없습니다. 위에서 새 이벤트를 생성하세요.</div>
+          )}
         </div>
       </section>
 
@@ -366,98 +376,115 @@ export function GameplayEventPanel({
         <section className="gameplay-event-panel__section gameplay-event-panel__detail">
           <div className="gameplay-event-panel__editor-head">
             <div>
-              <div className="gameplay-event-panel__title">Event Inspector</div>
+              <div className="gameplay-event-panel__title">이벤트 인스펙터</div>
               <div className="gameplay-event-panel__hint">
                 그래프 노드 대신 트리거, 조건, 액션을 섹션별 인스펙터에서 수정합니다.
               </div>
             </div>
-            <label className="gameplay-event-panel__type-select">
-              <span>Trigger</span>
-              <select
-                value={selectedBlueprint.trigger.type}
-                onChange={(event) => updateSelected({ trigger: makeDefaultTrigger(event.target.value as TriggerType) })}
-              >
-                {(['manual', 'interaction', 'enterArea', 'itemCollected', 'timeChanged', 'calendarEventStarted', 'questChanged', 'custom'] as TriggerType[]).map((type) => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </label>
+            <div className="gameplay-event-panel__editor-tools">
+              <label className="gameplay-event-panel__type-select">
+                <span>트리거 타입</span>
+                <select
+                  value={selectedBlueprint.trigger.type}
+                  onChange={(event) => updateSelected({ trigger: createGameplayEventTriggerTemplate(event.target.value as GameplayEventTriggerType) })}
+                >
+                  {GAMEPLAY_EVENT_TRIGGER_TYPES.map((type) => (
+                    <option key={type} value={type}>{TRIGGER_LABEL[type]}</option>
+                  ))}
+                </select>
+              </label>
+              <button type="button" className="gameplay-event-panel__primary" onClick={() => setShowInspector((open) => !open)}>
+                {showInspector ? '상세 편집 접기' : '상세 편집 열기'}
+              </button>
+            </div>
           </div>
-          <div className="gameplay-event-panel__inspector">
-            <div className="gameplay-event-panel__inspector-card">
-              <div className="gameplay-event-panel__subhead">Blueprint</div>
-              {renderFields('root', {
-                id: selectedBlueprint.id,
-                name: selectedBlueprint.name,
-                description: selectedBlueprint.description ?? '',
-              })}
-            </div>
-            <div className="gameplay-event-panel__inspector-card">
-              <div className="gameplay-event-panel__subhead">Trigger</div>
-              {renderFields('trigger', selectedBlueprint.trigger as unknown as Record<string, InspectorValue>)}
-            </div>
-            <div className="gameplay-event-panel__inspector-card">
-              <div className="gameplay-event-panel__subhead">Policy</div>
-              {renderFields('policy', {
-                run: selectedBlueprint.policy?.run ?? 'repeat',
-                cooldownMs: selectedBlueprint.policy?.cooldownMs ?? 0,
-                requiresServer: selectedBlueprint.policy?.requiresServer ?? false,
-              })}
-            </div>
-            <div className="gameplay-event-panel__inspector-card">
-              <div className="gameplay-event-panel__subhead">Conditions</div>
-              {(selectedBlueprint.conditions ?? []).map((condition, index) => (
-                <div key={`condition-${index}`} className="gameplay-event-panel__item-editor">
-                  {renderFields(`condition:${index}`, condition as unknown as Record<string, InspectorValue>)}
-                  <button type="button" onClick={() => deleteInspectorItem(`condition:${index}`)}>Remove</button>
+          {showInspector ? (
+            <>
+              <div className="gameplay-event-panel__inspector">
+                <div className="gameplay-event-panel__inspector-card">
+                  <div className="gameplay-event-panel__subhead">기본 정보</div>
+                  {renderFields('root', {
+                    id: selectedBlueprint.id,
+                    name: selectedBlueprint.name,
+                    description: selectedBlueprint.description ?? '',
+                  })}
                 </div>
-              ))}
-              {(selectedBlueprint.conditions ?? []).length === 0 && (
-                <div className="gameplay-event-panel__hint">조건 없음</div>
-              )}
-            </div>
-            <div className="gameplay-event-panel__inspector-card">
-              <div className="gameplay-event-panel__subhead">Actions</div>
-              {selectedBlueprint.actions.map((action, index) => (
-                <div key={`action-${index}`} className="gameplay-event-panel__item-editor">
-                  {renderFields(`action:${index}`, action as unknown as Record<string, InspectorValue>)}
-                  <button type="button" onClick={() => deleteInspectorItem(`action:${index}`)}>Remove</button>
+                <div className="gameplay-event-panel__inspector-card">
+                  <div className="gameplay-event-panel__subhead">트리거</div>
+                  {renderFields('trigger', selectedBlueprint.trigger as unknown as Record<string, InspectorValue>)}
                 </div>
-              ))}
-            </div>
-          </div>
-          <div className="gameplay-event-panel__node-toolbar">
-            <select
-              aria-label="Condition type"
-              onChange={(event) => {
-                updateSelected({ conditions: [...(selectedBlueprint.conditions ?? []), makeDefaultCondition(event.target.value as ConditionType)] });
-                event.currentTarget.value = '';
-              }}
-              defaultValue=""
-            >
-              <option value="" disabled>Add Condition</option>
-              {(['always', 'hasItem', 'questStatus', 'eventActive', 'flagEquals', 'custom'] as ConditionType[]).map((type) => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-            <select
-              aria-label="Action type"
-              onChange={(event) => {
-                updateSelected({ actions: [...selectedBlueprint.actions, makeDefaultAction(event.target.value as ActionType)] });
-                event.currentTarget.value = '';
-              }}
-              defaultValue=""
-            >
-              <option value="" disabled>Add Action</option>
-              {(['giveItem', 'removeItem', 'startQuest', 'completeQuest', 'showDialog', 'toast', 'setFlag', 'notifyQuestFlag', 'emit', 'custom'] as ActionType[]).map((type) => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-          </div>
+                <div className="gameplay-event-panel__inspector-card">
+                  <div className="gameplay-event-panel__subhead">실행 정책</div>
+                  {renderFields('policy', {
+                    run: selectedBlueprint.policy?.run ?? 'repeat',
+                    cooldownMs: selectedBlueprint.policy?.cooldownMs ?? 0,
+                    requiresServer: selectedBlueprint.policy?.requiresServer ?? false,
+                  })}
+                </div>
+                <div className="gameplay-event-panel__inspector-card">
+                  <div className="gameplay-event-panel__subhead">조건</div>
+                  {(selectedBlueprint.conditions ?? []).map((condition, index) => (
+                    <div key={`condition-${index}`} className="gameplay-event-panel__item-editor">
+                      {renderFields(`condition:${index}`, condition as unknown as Record<string, InspectorValue>)}
+                      <button type="button" onClick={() => deleteInspectorItem(`condition:${index}`)}>삭제</button>
+                    </div>
+                  ))}
+                  {(selectedBlueprint.conditions ?? []).length === 0 && (
+                    <div className="gameplay-event-panel__hint">조건 없음</div>
+                  )}
+                </div>
+                <div className="gameplay-event-panel__inspector-card">
+                  <div className="gameplay-event-panel__subhead">액션</div>
+                  {selectedBlueprint.actions.map((action, index) => (
+                    <div key={`action-${index}`} className="gameplay-event-panel__item-editor">
+                      {renderFields(`action:${index}`, action as unknown as Record<string, InspectorValue>)}
+                      <button type="button" onClick={() => deleteInspectorItem(`action:${index}`)}>삭제</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="gameplay-event-panel__node-toolbar">
+                <select
+                  aria-label="Condition type"
+                  onChange={(event) => {
+                    updateSelected({ conditions: [...(selectedBlueprint.conditions ?? []), createGameplayEventConditionTemplate(event.target.value as GameplayEventConditionType)] });
+                    event.currentTarget.value = '';
+                  }}
+                  defaultValue=""
+                >
+                  <option value="" disabled>조건 추가</option>
+                  {GAMEPLAY_EVENT_CONDITION_TYPES.map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+                <select
+                  aria-label="Action type"
+                  onChange={(event) => {
+                    updateSelected({ actions: [...selectedBlueprint.actions, createGameplayEventActionTemplate(event.target.value as GameplayEventActionType)] });
+                    event.currentTarget.value = '';
+                  }}
+                  defaultValue=""
+                >
+                  <option value="" disabled>액션 추가</option>
+                  {GAMEPLAY_EVENT_ACTION_TYPES.map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          ) : (
+            <div className="gameplay-event-panel__hint">상세 편집이 접혀 있습니다. 필요할 때만 열어 수정하세요.</div>
+          )}
           <div className="gameplay-event-panel__actions">
-            <button type="button" onClick={deleteSelected}>Delete Blueprint</button>
-            <button type="button" onClick={() => { void runBlueprint(selectedBlueprint); }}>Run Selected</button>
+            <button type="button" onClick={deleteSelected}>이벤트 삭제</button>
+            <button type="button" onClick={() => { void runBlueprint(selectedBlueprint); }}>선택 이벤트 실행</button>
           </div>
+        </section>
+      )}
+
+      {!selectedBlueprint && (
+        <section className="gameplay-event-panel__section">
+          <div className="gameplay-event-panel__hint">이벤트 목록에서 `편집`을 누르면 상세 설정이 열립니다.</div>
         </section>
       )}
 

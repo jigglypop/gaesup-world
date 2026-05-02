@@ -28,6 +28,12 @@
   color: var(--editor-text-muted, #cccccc);
 }
 
+.studio-panel__hint {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--editor-text-muted, #cccccc);
+}
+
 .studio-panel__field input {
   padding: 8px 10px;
   color: var(--editor-text-main, #ffffff);
@@ -41,6 +47,33 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--editor-spacing-sm);
+}
+
+.studio-panel__ghost {
+  align-self: flex-start;
+  padding: 6px 10px;
+  color: var(--editor-text-muted, #cccccc);
+  background: transparent;
+  border: 1px dashed var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.studio-panel__ghost:hover {
+  color: var(--editor-text-main, #ffffff);
+  border-style: solid;
+  background: var(--editor-surface-hover);
+}
+
+.studio-panel__advanced {
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-sm);
+  padding: var(--editor-spacing-sm);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  background: rgba(0, 0, 0, 0.12);
 }
 
 .studio-panel__actions button,

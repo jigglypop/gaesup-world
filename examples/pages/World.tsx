@@ -61,13 +61,37 @@ export { S3 };
 
 setDefaultToonMode(DEFAULT_TOON_MODE);
 
-export const WorldPage = ({ showEditor = false, showHud = true, children }: WorldPageProps) => {
+export const WorldPage = ({ showEditor = false, showHud = true, compactHud = false, children }: WorldPageProps) => {
   const [shopOpen, setShopOpen] = useState(false);
   const [craftOpen, setCraftOpen] = useState(false);
   const fogEnabled = useBuildingStore((s) => s.showFog);
   const fogColor = useBuildingStore((s) => s.fogColor);
   const weatherEffect = useBuildingStore((s) => s.weatherEffect);
   const [gameplayBlueprints, setGameplayBlueprints] = useState(() => getWorldGameplayBlueprints());
+  const worldMode = showEditor
+    ? { type: 'character' as const, controller: 'clicker' as const, control: 'topDown' as const }
+    : { type: 'character' as const, controller: 'keyboard' as const, control: 'thirdPerson' as const };
+  const worldCameraOption = showEditor
+    ? {
+        type: 'topDown' as const,
+        distance: 34,
+        height: 52,
+        fov: 52,
+        smoothness: 0.14,
+        enableCollision: false,
+        enableZoom: true,
+        minZoom: 0.3,
+        maxZoom: 2.8,
+        zoomSpeed: 0.001,
+      }
+    : {
+        type: 'thirdPerson' as const,
+        distance: 13,
+        height: 10,
+        fov: 75,
+        smoothness: 0.25,
+        enableCollision: false,
+      };
   const editorShell = useMemo(() => createEditorShell({
     panels: [
       {
@@ -102,16 +126,18 @@ export const WorldPage = ({ showEditor = false, showHud = true, children }: Worl
         pluginId: 'gaesup.studio',
       },
     ],
-    defaultActivePanels: ['building', 'camera'],
+    defaultActivePanels: ['tile'],
+    hiddenBuiltInPanels: ['character', 'vehicle', 'animation', 'motion', 'performance'],
+    panelOrder: ['world', 'wall', 'tile', 'block', 'object', 'npc', 'camera', 'gameplay-events', 'studio'],
   }), [gameplayBlueprints]);
 
   return (
     <>
       <GaesupWorld
         urls={{ characterUrl: DEFAULT_CHARACTER_URL, vehicleUrl: VEHICLE_URL, airplaneUrl: AIRPLANE_URL }}
-        mode={{ type: 'character', controller: 'keyboard', control: 'thirdPerson' }}
+        mode={worldMode}
         debug={EXAMPLE_CONFIG.debug}
-        cameraOption={{ type: 'thirdPerson', distance: 13, height: 10, fov: 75, smoothness: 0.25, enableCollision: false }}
+        cameraOption={worldCameraOption}
       >
         <Canvas
           shadows
@@ -133,7 +159,7 @@ export const WorldPage = ({ showEditor = false, showHud = true, children }: Worl
           <Suspense>
             <GaesupWorldContent showGrid={EXAMPLE_CONFIG.showGrid} showAxes={EXAMPLE_CONFIG.showAxes}>
               <Physics debug interpolate>
-                <Player />
+                {!showEditor && <Player />}
                 <Ground />
                 <Scenery
                   onOpenShop={() => setShopOpen(true)}
@@ -142,9 +168,9 @@ export const WorldPage = ({ showEditor = false, showHud = true, children }: Worl
                 {!showEditor && <Clicker />}
                 {!showEditor && <GroundClicker />}
                 <BuildingController />
-                <CharacterSpeechBalloon />
+                {!showEditor && <CharacterSpeechBalloon />}
                 <InteractionTracker />
-                <ToolUseController useKey="f" />
+                {!showEditor && <ToolUseController useKey="f" />}
                 <Footprints />
                 <GrassDriver />
                 <RoomVisibilityDriver />
@@ -160,9 +186,10 @@ export const WorldPage = ({ showEditor = false, showHud = true, children }: Worl
             <HudShell
               onOpenCrafting={() => setCraftOpen(true)}
               showEnvironmentControls={!showEditor}
+              compact={compactHud}
             />
 
-            <InteractionPrompt />
+            <InteractionPrompt enabled={!showEditor} />
             <DialogBox />
             <ToastHost />
 
@@ -177,7 +204,7 @@ export const WorldPage = ({ showEditor = false, showHud = true, children }: Worl
             <MiniMap position="bottom-left" scale={5} showZoom={false} showCompass={false} />
 
             <CharacterCreator toggleKey="o" />
-            <TouchControls />
+            {!showEditor && <TouchControls />}
           </>
         )}
       </GaesupWorld>

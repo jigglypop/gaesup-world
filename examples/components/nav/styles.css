@@ -50,6 +50,17 @@
   flex: 0 0 auto;
 }
 
+.app-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.app-nav-group--secondary {
+  padding-left: 2px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
 .app-nav-mark {
   width: 30px;
   height: 30px;
@@ -93,6 +104,15 @@
   transform: translateY(-1px);
 }
 
+.app-nav-button--subtle {
+  opacity: 0.84;
+}
+
+.app-nav-button--subtle:hover,
+.app-nav-button--subtle.active {
+  opacity: 1;
+}
+
 .app-nav-user {
   background: rgba(255, 255, 255, 0.055);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -109,7 +129,10 @@
 }
 
 .app-editor-navigation-slot {
-  display: contents;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
 }
 
 .app-editor-navigation-slot:empty {
@@ -128,11 +151,21 @@
   }
 
   .app-nav-brand,
+  .app-nav-group,
   .app-nav-button,
   .app-nav-user,
   .app-editor-navigation-slot {
     flex: 0 0 auto;
     margin-right: 0;
+  }
+
+  .app-nav-group {
+    gap: 2px;
+  }
+
+  .app-nav-group--secondary {
+    border-left: none;
+    padding-left: 0;
   }
 
   .app-nav-brand {

@@ -1,5 +1,6 @@
 import type { AssetRecord } from '../assets';
 import type { GameplayEventBlueprint } from '../gameplay';
+import type { AgentBehaviorBlueprint, NPCBehaviorBlueprint } from '../npc';
 import type { SerializedDomainValue } from '../save';
 
 export type ManifestResource = {
@@ -26,6 +27,8 @@ export type AssetManifest = {
 export type BlueprintManifest = {
   version: string;
   blueprints: ManifestResource[];
+  npcBehavior?: NPCBehaviorBlueprint[];
+  agentBehavior?: AgentBehaviorBlueprint[];
 };
 
 export type GameplayManifest = {

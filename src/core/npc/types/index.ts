@@ -1,4 +1,5 @@
 import type { RuntimeValue } from '@core/boilerplate/types';
+import type { QuestId, QuestStatus } from '../../quests/types';
 
 export interface NPCPart {
   id: string;
@@ -100,6 +101,8 @@ export type NPCBrainBlueprintCondition =
   | { type: 'always' }
   | { type: 'navigationIdle' }
   | { type: 'perceivedAny' }
+  | { type: 'questStatus'; questId: QuestId; status: QuestStatus }
+  | { type: 'friendshipAtLeast'; npcId?: string; score: number }
   | { type: 'memoryEquals'; key: string; value: RuntimeValue };
 
 export type NPCBrainBlueprintTarget =
@@ -125,6 +128,33 @@ export interface NPCBrainBlueprint {
   description?: string;
   nodes: NPCBrainBlueprintNode[];
   edges: NPCBrainBlueprintEdge[];
+}
+
+export interface NPCBehaviorBlueprint {
+  id: string;
+  name: string;
+  description?: string;
+  role?: string;
+  behavior: NPCBehaviorConfig;
+  brain?: NPCBrainConfig;
+  perception?: NPCPerceptionConfig;
+  events?: NPCEvent[];
+  tags?: string[];
+}
+
+export type AgentBehaviorOwnerType = 'npc' | 'animal' | 'vendor' | 'service' | 'custom';
+
+export interface AgentBehaviorBlueprint {
+  id: string;
+  name: string;
+  description?: string;
+  ownerType: AgentBehaviorOwnerType;
+  role?: string;
+  behavior: NPCBehaviorConfig;
+  brain?: NPCBrainConfig;
+  perception?: NPCPerceptionConfig;
+  events?: NPCEvent[];
+  tags?: string[];
 }
 
 export interface NPCObservationTarget {

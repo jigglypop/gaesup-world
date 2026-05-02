@@ -6,25 +6,40 @@ import type { ModeState } from '../../../stores/slices/mode/types';
 import { EditorLayout } from '../EditorLayout';
 import '../../styles/theme.css';
 import { EditorProps } from './types';
-import './styles.css'
+import './styles.css';
 
-const EDITOR_CAMERA_OPTION: Partial<CameraOptionType> = {
-  xDistance: 10,
-  yDistance: 22,
-  zDistance: 30,
-  fov: 58,
-  zoom: 1,
-  enableZoom: true,
-  minZoom: 0.35,
-  maxZoom: 2.4,
-  zoomSpeed: 0.001,
-  enableCollision: false,
-  smoothing: {
-    position: 0.12,
-    rotation: 0.12,
-    fov: 0.12,
-  },
+type EditorSessionSnapshot = {
+  mode: ModeState;
+  cameraOption: CameraOptionType;
+  interactionActive: boolean;
 };
+
+const RELEASED_KEYBOARD_STATE = {
+  forward: false,
+  backward: false,
+  leftward: false,
+  rightward: false,
+  shift: false,
+  space: false,
+  keyZ: false,
+  keyR: false,
+  keyF: false,
+  keyE: false,
+  escape: false,
+};
+
+const INACTIVE_MOUSE_STATE = {
+  isActive: false,
+  shouldRun: false,
+  isLookAround: false,
+};
+
+const cloneCameraOption = (cameraOption: CameraOptionType): CameraOptionType => ({
+  ...cameraOption,
+  ...(cameraOption.smoothing ? { smoothing: { ...cameraOption.smoothing } } : {}),
+  ...(cameraOption.bounds ? { bounds: { ...cameraOption.bounds } } : {}),
+  ...(cameraOption.modeSettings ? { modeSettings: { ...cameraOption.modeSettings } } : {}),
+});
 
 export const Editor: FC<EditorProps> = ({ 
   children, 
@@ -32,26 +47,31 @@ export const Editor: FC<EditorProps> = ({
   style = {},
   shell,
 }) => {
-  const previousCameraRef = useRef<{
-    mode: ModeState;
-    cameraOption: CameraOptionType;
-  } | null>(null);
+  const sessionSnapshotRef = useRef<EditorSessionSnapshot | null>(null);
 
   useEffect(() => {
     const store = useGaesupStore.getState();
-    previousCameraRef.current = {
-      mode: store.mode,
-      cameraOption: store.cameraOption,
+    sessionSnapshotRef.current = {
+      mode: { ...store.mode },
+      cameraOption: cloneCameraOption(store.cameraOption),
+      interactionActive: store.interaction.isActive,
     };
 
-    store.setMode({ controller: 'keyboard', control: 'topDown' });
-    store.setCameraOption(EDITOR_CAMERA_OPTION);
+    store.stopAutomation();
+    store.updateKeyboard(RELEASED_KEYBOARD_STATE);
+    store.updateMouse(INACTIVE_MOUSE_STATE);
+    store.setInteractionActive(false);
 
     return () => {
-      const previous = previousCameraRef.current;
-      if (!previous) return;
-      useGaesupStore.getState().setMode(previous.mode);
-      useGaesupStore.getState().setCameraOption(previous.cameraOption);
+      const snapshot = sessionSnapshotRef.current;
+      if (!snapshot) return;
+
+      const currentStore = useGaesupStore.getState();
+      currentStore.setMode(snapshot.mode);
+      currentStore.replaceCameraOption(snapshot.cameraOption);
+      currentStore.setInteractionActive(snapshot.interactionActive);
+      currentStore.updateKeyboard(RELEASED_KEYBOARD_STATE);
+      currentStore.updateMouse(INACTIVE_MOUSE_STATE);
     };
   }, []);
 

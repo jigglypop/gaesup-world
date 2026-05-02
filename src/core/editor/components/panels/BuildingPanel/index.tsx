@@ -13,6 +13,7 @@ import {
   BUILDING_WALL_PRESETS,
   BUILDING_TILE_PRESETS,
   BUILDING_TILE_OBJECT_OPTIONS,
+  type BuildingSystemState,
   type MeshConfig,
 } from '../../../../building/types';
 import { FieldColor, FieldRow } from '../../fields';
@@ -57,6 +58,7 @@ export type BuildingPanelProps = EditorPanelBaseProps & {
   slots?: Partial<Record<BuildingPanelSlot, React.ReactNode>>;
   actions?: BuildingPanelAction[];
   disabledSections?: string[];
+  forcedEditMode?: BuildingSystemState['editMode'];
 };
 
 export const BuildingPanel: FC<BuildingPanelProps> = ({
@@ -66,6 +68,7 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
   slots = {},
   actions = [],
   disabledSections = [],
+  forcedEditMode,
 }) => {
   const disabledSectionSet = useMemo(() => new Set(disabledSections), [disabledSections]);
   const {
@@ -244,23 +247,30 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
   const selectedWall = selectedWallId
     ? selectedWallGroup?.walls.find((wall) => wall.id === selectedWallId)
     : undefined;
-  const currentEditModeLabel = editModes.find((mode) => mode.type === editMode)?.label ?? editMode;
+  const panelEditMode = forcedEditMode ?? editMode;
+  const currentEditModeLabel = editModes.find((mode) => mode.type === panelEditMode)?.label ?? panelEditMode;
   const currentWallKindLabel = BUILDING_WALL_KIND_OPTIONS.find((kind) => kind.type === (selectedWall?.wallKind ?? currentWallKind))?.labelKo ?? currentWallKind;
   const selectedModelObject = getDefaultBuildingObject(selectedModelObjectId) ?? DEFAULT_BUILDING_OBJECT_CATALOG[0];
   const selectedNPCInstance = selectedNPCInstanceId ? npcInstances.get(selectedNPCInstanceId) : undefined;
   const selectedNPCBrainBlueprint = selectedNPCInstance?.brain?.blueprintId
     ? npcBrainBlueprints.get(selectedNPCInstance.brain.blueprintId)
     : undefined;
-  const isWallMode = editMode === 'wall';
-  const isWorld = editMode === 'world';
-  const isTileMode = editMode === 'tile';
-  const isBlockMode = editMode === 'block';
-  const isObjectMode = editMode === 'object';
-  const isNPCMode = editMode === 'npc';
+  const isWallMode = panelEditMode === 'wall';
+  const isWorld = panelEditMode === 'world';
+  const isTileMode = panelEditMode === 'tile';
+  const isBlockMode = panelEditMode === 'block';
+  const isObjectMode = panelEditMode === 'object';
+  const isNPCMode = panelEditMode === 'npc';
 
   React.useEffect(() => {
     initializeNPCDefaults();
   }, [initializeNPCDefaults]);
+
+  React.useEffect(() => {
+    if (!forcedEditMode) return;
+    if (editMode === forcedEditMode) return;
+    setEditMode(forcedEditMode);
+  }, [editMode, forcedEditMode, setEditMode]);
 
   const handleDeleteSelectedWall = () => {
     if (!selectedWallId || !selectedWallGroup) return;
@@ -376,18 +386,20 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
           <div className="building-panel__eyebrow">Mode</div>
           <div className="building-panel__title">{currentEditModeLabel} 인스펙터</div>
         </div>
-        <div className="building-panel__mode-tabs">
-          {editModes.map((m) => (
-            <button
-              key={m.type}
-              className={`building-panel__mode-tab ${editMode === m.type ? 'building-panel__mode-tab--active' : ''}`}
-              onClick={() => setEditMode(m.type)}
-              title={m.description}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
+        {!forcedEditMode && (
+          <div className="building-panel__mode-tabs">
+            {editModes.map((m) => (
+              <button
+                key={m.type}
+                className={`building-panel__mode-tab ${editMode === m.type ? 'building-panel__mode-tab--active' : ''}`}
+                onClick={() => setEditMode(m.type)}
+                title={m.description}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       {slots.header}
 

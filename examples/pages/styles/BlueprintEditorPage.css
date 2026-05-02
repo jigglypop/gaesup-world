@@ -28,39 +28,27 @@ body {
   overflow: hidden;
 }
 
-.blueprint-editor-page__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--editor-border-color);
-  background-color: var(--editor-surface-secondary);
-  flex-shrink: 0;
-}
-
-.blueprint-editor-page__title {
-  margin: 0;
-  color: var(--editor-text-primary);
-  font-size: 16px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
 .blueprint-editor-page__close {
-  background: var(--editor-surface-1);
-  border: 1px solid var(--editor-border-color);
-  color: var(--editor-text-secondary);
-  font-size: 13px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f3f4f8;
+  font-size: 11px;
   font-weight: 600;
-  line-height: 1;
+  line-height: 1.2;
   cursor: pointer;
-  padding: 8px 12px;
-  border-radius: var(--editor-radius-sm);
-  transition: all 0.2s ease;
+  padding: 10px 15px;
+  margin: 5px;
+  border-radius: 9px;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .blueprint-editor-page__close:hover {
-  background-color: var(--editor-surface-hover);
-  color: var(--editor-text-primary);
+  background: rgba(123, 211, 167, 0.16);
+  border-color: rgba(123, 211, 167, 0.34);
+  color: #ffffff;
+  transform: translateY(-1px);
 } 

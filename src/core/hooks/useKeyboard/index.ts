@@ -29,6 +29,7 @@ export const useKeyboard = (
   void cameraOption;
   const isAutomationRunning = useGaesupStore((state) => state.automation?.queue.isRunning);
   const stopAutomation = useGaesupStore((state) => state.stopAutomation);
+  const isInteractionActive = useGaesupStore((state) => state.interaction?.isActive ?? true);
   const isInBuildingEditMode = useBuildingStore((state) => state.isInEditMode());
   const bridgeRef = useRef<InteractionBridge | null>(null);
   
@@ -42,6 +43,8 @@ export const useKeyboard = (
 
   const pushKey = useCallback(
     (key: string, value: boolean): boolean => {
+      if (!isInteractionActive) return false;
+
       try {
         bridgeRef.current?.executeCommand({
           type: 'input',
@@ -59,7 +62,7 @@ export const useKeyboard = (
         return false;
       }
     },
-    [],
+    [isInteractionActive],
   );
 
   const clearAllKeys = useCallback(() => {
@@ -84,17 +87,17 @@ export const useKeyboard = (
   }, []);
 
   useEffect(() => {
-    if (isInBuildingEditMode) {
+    if (!isInteractionActive || isInBuildingEditMode) {
       clearAllKeys();
     }
-  }, [clearAllKeys, isInBuildingEditMode]);
+  }, [clearAllKeys, isInteractionActive, isInBuildingEditMode]);
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent, isDown: boolean) => {
       const mappedKey = keyMapping[event.code];
       if (!mappedKey) return;
 
-      if (isInBuildingEditMode) {
+      if (!isInteractionActive || isInBuildingEditMode) {
         if (isDown) event.preventDefault();
         clearAllKeys();
         return;
@@ -157,6 +160,7 @@ export const useKeyboard = (
     stopAutomation,
     isAutomationRunning,
     clearAllKeys,
+    isInteractionActive,
     isInBuildingEditMode,
   ]);
 

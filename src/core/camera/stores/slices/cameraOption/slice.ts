@@ -41,4 +41,8 @@ export const createCameraOptionSlice: StateCreator<CameraOptionSlice, [], [], Ca
     set((state) => ({
       cameraOption: { ...state.cameraOption, ...update },
     })),
-}); 
+  replaceCameraOption: (next) =>
+    set(() => ({
+      cameraOption: next,
+    })),
+});

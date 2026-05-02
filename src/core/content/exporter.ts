@@ -1,5 +1,6 @@
 import type { AssetRecord } from '../assets';
 import type { GameplayEventBlueprint } from '../gameplay';
+import type { AgentBehaviorBlueprint, NPCBehaviorBlueprint } from '../npc';
 import { WORLD_SNAPSHOT_DOMAINS } from '../platform';
 import type { DomainBinding, SerializedDomainValue } from '../save';
 import type { AssetManifest, ContentBundle, WorldManifest } from './types';
@@ -12,6 +13,8 @@ export type ContentBundleExportOptions = {
   worldName?: string;
   assetVersion?: string;
   gameplayEvents?: GameplayEventBlueprint[];
+  npcBehaviorBlueprints?: NPCBehaviorBlueprint[];
+  agentBehaviorBlueprints?: AgentBehaviorBlueprint[];
 };
 
 export type SaveBindingProvider = {
@@ -59,6 +62,8 @@ export function createContentBundleFromSaveSystem(
     blueprints: {
       version: options.version,
       blueprints: [],
+      npcBehavior: options.npcBehaviorBlueprints ?? [],
+      agentBehavior: options.agentBehaviorBlueprints ?? [],
     },
     gameplay: {
       version: options.version,

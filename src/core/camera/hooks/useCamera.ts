@@ -248,7 +248,7 @@ export function useCamera() {
     InteractionSystem.getInstance().updateMouse({ isLookAround: false });
     syncCameraConfig();
   }, [syncCameraConfig]);
-  
+
   useLayoutEffect(() => {
     syncCameraConfig();
   }, [cameraOption, mode, syncCameraConfig]);

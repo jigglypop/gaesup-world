@@ -5,6 +5,9 @@ import { renderHook, act } from '@testing-library/react';
 import { useKeyboard } from '../index';
 
 const mockExecuteCommand = jest.fn();
+const mockStopAutomation = jest.fn();
+let mockStoreState: Record<string, unknown>;
+
 jest.mock('../../../interactions/bridge/InteractionBridge', () => ({
   InteractionBridge: {
     getGlobal: jest.fn().mockReturnValue({
@@ -15,10 +18,7 @@ jest.mock('../../../interactions/bridge/InteractionBridge', () => ({
 
 jest.mock('@stores/gaesupStore', () => ({
   useGaesupStore: jest.fn((selector: (state: Record<string, unknown>) => unknown) =>
-    selector({
-      automation: { queue: { isRunning: false } },
-      stopAutomation: jest.fn(),
-    }),
+    selector(mockStoreState),
   ),
 }));
 
@@ -30,6 +30,11 @@ const fireKeyEvent = (code: string, type: 'keydown' | 'keyup') => {
 describe('useKeyboard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockStoreState = {
+      automation: { queue: { isRunning: false } },
+      interaction: { isActive: true },
+      stopAutomation: mockStopAutomation,
+    };
   });
 
   it('초기 상태에서 pressedKeys는 비어있어야 합니다', () => {
@@ -151,6 +156,24 @@ describe('useKeyboard', () => {
         returnVal = result.current.pushKey('forward', true);
       });
       expect(returnVal).toBe(true);
+    });
+
+    it('interaction이 비활성화되어 있으면 pushKey를 무시해야 합니다', () => {
+      mockStoreState = {
+        ...mockStoreState,
+        interaction: { isActive: false },
+      };
+      const { result } = renderHook(() => useKeyboard());
+      let returnVal: boolean | undefined;
+
+      act(() => {
+        returnVal = result.current.pushKey('forward', true);
+      });
+
+      expect(returnVal).toBe(false);
+      expect(mockExecuteCommand).not.toHaveBeenCalledWith(
+        expect.objectContaining({ data: { forward: true } }),
+      );
     });
   });
 
