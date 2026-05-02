@@ -6,6 +6,7 @@ type WaterElementProps = Record<string, object | string | number | boolean | big
 // Custom env vars used by this repo (keeps `noPropertyAccessFromIndexSignature` happy).
 interface ImportMetaEnv {
   readonly VITE_SERVER_URL?: string;
+  readonly VITE_RL_POLICY_ENDPOINT?: string;
 }
 
 declare namespace NodeJS {

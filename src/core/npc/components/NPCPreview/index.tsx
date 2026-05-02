@@ -32,39 +32,38 @@ export function NPCPreview() {
   );
   const previewAccessories = useNPCStore((state) => state.previewAccessories);
   
-  if (editMode !== 'npc' || !hoverPosition || !selectedTemplateId) {
+  if (editMode !== 'npc' || !hoverPosition) {
     return null;
   }
-  
-  const template = templates.get(selectedTemplateId);
-  if (!template) {
-    return null;
-  }
-  
+
   const allParts: NPCPart[] = [];
-  
-  allParts.push(...template.baseParts);
-  
-  if (selectedClothingSetId) {
-    const clothingSet = clothingSets.get(selectedClothingSetId);
-    if (clothingSet) {
-      allParts.push(...clothingSet.parts);
-    }
-  }
-  
-  if (previewAccessories.hat) {
-    const hatSet = clothingSets.get(previewAccessories.hat);
-    if (hatSet && hatSet.parts.length > 0) {
-      const part = hatSet.parts[0];
-      if (part) allParts.push(part);
-    }
-  }
-  
-  if (previewAccessories.glasses) {
-    const glassesSet = clothingSets.get(previewAccessories.glasses);
-    if (glassesSet && glassesSet.parts.length > 0) {
-      const part = glassesSet.parts[0];
-      if (part) allParts.push(part);
+  if (selectedTemplateId) {
+    const template = templates.get(selectedTemplateId);
+    if (template) {
+      allParts.push(...template.baseParts);
+
+      if (selectedClothingSetId) {
+        const clothingSet = clothingSets.get(selectedClothingSetId);
+        if (clothingSet) {
+          allParts.push(...clothingSet.parts);
+        }
+      }
+
+      if (previewAccessories.hat) {
+        const hatSet = clothingSets.get(previewAccessories.hat);
+        if (hatSet && hatSet.parts.length > 0) {
+          const part = hatSet.parts[0];
+          if (part) allParts.push(part);
+        }
+      }
+
+      if (previewAccessories.glasses) {
+        const glassesSet = clothingSets.get(previewAccessories.glasses);
+        if (glassesSet && glassesSet.parts.length > 0) {
+          const part = glassesSet.parts[0];
+          if (part) allParts.push(part);
+        }
+      }
     }
   }
   
@@ -74,15 +73,18 @@ export function NPCPreview() {
         <NPCPartPreview key={part.id} part={part} />
       ))}
       
-      <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[1, 32]} />
-        <meshStandardMaterial
+        <meshBasicMaterial
           color="#00ff00"
           transparent
-          opacity={0.3}
-          emissive="#00ff00"
-          emissiveIntensity={0.3}
+          opacity={0.4}
+          depthWrite={false}
         />
+      </mesh>
+      <mesh position={[0, 0.12, 0]}>
+        <sphereGeometry args={[0.08, 16, 16]} />
+        <meshBasicMaterial color="#38bdf8" depthWrite={false} />
       </mesh>
     </group>
   );

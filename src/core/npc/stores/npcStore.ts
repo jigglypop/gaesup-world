@@ -33,7 +33,8 @@ const DEFAULT_NPC_VOLUME: NPCVolumeConfig = {
 };
 
 const DEFAULT_NPC_BRAIN: NPCBrainConfig = {
-  mode: 'scripted',
+  mode: 'reinforcement',
+  policyId: 'openai',
   autoRespond: false,
   prompt: 'Respond as an in-world NPC when a dialogue system is connected.',
 };
@@ -56,12 +57,52 @@ const DEFAULT_NPC_BEHAVIOR: NPCBehaviorConfig = {
   arriveAnimation: 'idle',
 };
 
+const DEFAULT_NPC_ASSET_URLS = {
+  body: '/gltf/ally_body.glb',
+  cloth: '/gltf/ally_cloth.glb',
+  rabbitCloth: '/gltf/ally_cloth_rabbit.glb',
+  hat: '/gltf/ally_hat.glb',
+  glasses: '/gltf/ally_glass.glb',
+} as const;
+
+const NPC_ASSET_URL_REPLACEMENTS = new Map<string, string>([
+  ['gltf/formal.glb', DEFAULT_NPC_ASSET_URLS.cloth],
+  ['gltf/hat_a.glb', DEFAULT_NPC_ASSET_URLS.hat],
+  ['gltf/hat_b.glb', DEFAULT_NPC_ASSET_URLS.hat],
+  ['gltf/hat_c.glb', DEFAULT_NPC_ASSET_URLS.hat],
+  ['gltf/glass_a.glb', DEFAULT_NPC_ASSET_URLS.glasses],
+  ['gltf/super_glass.glb', DEFAULT_NPC_ASSET_URLS.glasses],
+]);
+
+function repairNPCPartAssetUrl(part: NPCPart): NPCPart {
+  const repairedUrl = NPC_ASSET_URL_REPLACEMENTS.get(part.url) ?? part.url;
+  return {
+    ...part,
+    url: repairedUrl.startsWith('gltf/') ? `/${repairedUrl}` : repairedUrl,
+  };
+}
+
 function getIdleAnimation(instance: NPCInstance): string {
   return instance.behavior?.idleAnimation ?? instance.behavior?.arriveAnimation ?? 'idle';
 }
 
 function getMoveAnimation(instance: NPCInstance, speed: number): string {
   return instance.behavior?.moveAnimation ?? (speed >= 3.8 ? 'run' : 'walk');
+}
+
+function attachReinforcementBrainToInstances(state: NPCStore): void {
+  state.instances.forEach((instance, id) => {
+    const current = instance.brain ?? DEFAULT_NPC_BRAIN;
+    if (current.mode === 'reinforcement' && (current.policyId ?? '').length > 0) return;
+    state.instances.set(id, {
+      ...instance,
+      brain: {
+        ...current,
+        mode: 'reinforcement',
+        policyId: current.policyId ?? 'openai',
+      },
+    });
+  });
 }
 
 interface NPCStore extends NPCSystemState {
@@ -137,6 +178,44 @@ interface NPCStore extends NPCSystemState {
   updateNavigationPosition: (instanceId: string, position: [number, number, number]) => void;
 }
 
+function repairDefaultNPCAssetUrls(state: NPCStore): void {
+  const assetUrlByPartId = new Map<string, string>([
+    ['rabbit-cloth', DEFAULT_NPC_ASSET_URLS.rabbitCloth],
+    ['basic-suit-cloth', DEFAULT_NPC_ASSET_URLS.cloth],
+    ['formal-suit-cloth', DEFAULT_NPC_ASSET_URLS.cloth],
+    ['hat-a', DEFAULT_NPC_ASSET_URLS.hat],
+    ['hat-b', DEFAULT_NPC_ASSET_URLS.hat],
+    ['hat-c', DEFAULT_NPC_ASSET_URLS.hat],
+    ['glass-a', DEFAULT_NPC_ASSET_URLS.glasses],
+    ['super-glass', DEFAULT_NPC_ASSET_URLS.glasses],
+    ['ally-body', DEFAULT_NPC_ASSET_URLS.body],
+    ['oneyee-body', DEFAULT_NPC_ASSET_URLS.body],
+  ]);
+
+  state.clothingSets.forEach((set) => {
+    set.parts = set.parts.map((part) => {
+      const repairedPart = repairNPCPartAssetUrl(part);
+      return {
+        ...repairedPart,
+        url: assetUrlByPartId.get(part.id) ?? repairedPart.url,
+      };
+    });
+  });
+  state.templates.forEach((template) => {
+    template.baseParts = template.baseParts.map((part) => {
+      const repairedPart = repairNPCPartAssetUrl(part);
+      return {
+        ...repairedPart,
+        url: assetUrlByPartId.get(part.id) ?? repairedPart.url,
+      };
+    });
+  });
+  state.instances.forEach((instance) => {
+    if (!instance.customParts) return;
+    instance.customParts = instance.customParts.map(repairNPCPartAssetUrl);
+  });
+}
+
 export const useNPCStore = create<NPCStore>()(
   immer((set, get) => ({
     initialized: false,
@@ -151,7 +230,11 @@ export const useNPCStore = create<NPCStore>()(
     previewAccessories: {},
 
     initializeDefaults: () => set((state) => {
-      if (state.initialized) return;
+      if (state.initialized) {
+        repairDefaultNPCAssetUrls(state);
+        attachReinforcementBrainToInstances(state);
+        return;
+      }
       
       // Default animations
       state.animations.set('idle', {
@@ -250,7 +333,7 @@ export const useNPCStore = create<NPCStore>()(
           {
             id: 'rabbit-cloth',
             type: 'top',
-            url: 'gltf/ally_cloth_rabbit.glb',
+            url: DEFAULT_NPC_ASSET_URLS.rabbitCloth,
             position: [0, 0, 0]
           }
         ]
@@ -265,7 +348,7 @@ export const useNPCStore = create<NPCStore>()(
           {
             id: 'basic-suit-cloth',
             type: 'top',
-            url: 'gltf/ally_cloth.glb',
+            url: DEFAULT_NPC_ASSET_URLS.cloth,
             position: [0, 0, 0]
           }
         ]
@@ -280,7 +363,7 @@ export const useNPCStore = create<NPCStore>()(
           {
             id: 'formal-suit-cloth',
             type: 'top',
-            url: 'gltf/formal.glb',
+            url: DEFAULT_NPC_ASSET_URLS.cloth,
             position: [0, 0, 0]
           }
         ]
@@ -295,7 +378,7 @@ export const useNPCStore = create<NPCStore>()(
           {
             id: 'hat-a',
             type: 'hat',
-            url: 'gltf/hat_a.glb',
+            url: DEFAULT_NPC_ASSET_URLS.hat,
             position: [0, 0, 0]
           }
         ]
@@ -309,7 +392,7 @@ export const useNPCStore = create<NPCStore>()(
           {
             id: 'hat-b',
             type: 'hat',
-            url: 'gltf/hat_b.glb',
+            url: DEFAULT_NPC_ASSET_URLS.hat,
             position: [0, 0, 0]
           }
         ]
@@ -323,7 +406,7 @@ export const useNPCStore = create<NPCStore>()(
           {
             id: 'hat-c',
             type: 'hat',
-            url: 'gltf/hat_c.glb',
+            url: DEFAULT_NPC_ASSET_URLS.hat,
             position: [0, 0, 0]
           }
         ]
@@ -338,7 +421,7 @@ export const useNPCStore = create<NPCStore>()(
           {
             id: 'glass-a',
             type: 'glasses',
-            url: 'gltf/glass_a.glb',
+            url: DEFAULT_NPC_ASSET_URLS.glasses,
             position: [0, 0, 0]
           }
         ]
@@ -352,7 +435,7 @@ export const useNPCStore = create<NPCStore>()(
           {
             id: 'super-glass',
             type: 'glasses',
-            url: 'gltf/super_glass.glb',
+            url: DEFAULT_NPC_ASSET_URLS.glasses,
             position: [0, 0, 0]
           }
         ]
@@ -376,7 +459,7 @@ export const useNPCStore = create<NPCStore>()(
           {
             id: 'ally-body',
             type: 'body',
-            url: 'gltf/ally_body.glb',
+            url: DEFAULT_NPC_ASSET_URLS.body,
             position: [0, 0, 0]
           }
         ],
@@ -396,7 +479,7 @@ export const useNPCStore = create<NPCStore>()(
             id: 'oneyee-body',
             type: 'body',
             // Fallback to an existing body asset until oneyee model is added.
-            url: 'gltf/ally_body.glb',
+            url: DEFAULT_NPC_ASSET_URLS.body,
             position: [0, 0, 0]
           }
         ],
@@ -409,6 +492,7 @@ export const useNPCStore = create<NPCStore>()(
       state.selectedTemplateId = 'ally';
       state.selectedClothingCategoryId = 'basic';
       state.selectedClothingSetId = 'rabbit-outfit';
+      attachReinforcementBrainToInstances(state);
       state.initialized = true;
     }),
 

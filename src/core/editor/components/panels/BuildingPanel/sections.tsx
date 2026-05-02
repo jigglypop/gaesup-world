@@ -425,7 +425,7 @@ export function NPCTemplateSection({
   setSelectedTemplate,
 }: NPCTemplateSectionProps) {
   return (
-    <div className="building-panel__section">
+    <div className="building-panel__section building-panel__npc-card">
       <div className="building-panel__section-title">NPC 템플릿</div>
       <div className="building-panel__asset-targets">
         <span>현재 템플릿: {selectedTemplateId ?? '선택 없음'}</span>
@@ -480,7 +480,8 @@ export function NPCMovementSection({
     : '없음';
 
   return (
-    <>
+    <div className="building-panel__npc-card">
+      <div className="building-panel__section-title">이동 설정</div>
       <div className="building-panel__section-subtitle">행동 모드</div>
       <div className="building-panel__segmented">
         {NPC_BEHAVIOR_MODES.map((mode) => (
@@ -549,10 +550,12 @@ export function NPCMovementSection({
           onClick={() => {
             if (!hoverPosition) return;
             const point: [number, number, number] = [hoverPosition.x, hoverPosition.y, hoverPosition.z];
+            const nextWaypoints = [...waypoints, point];
             updateBehavior(instance.id, {
               mode: 'patrol',
-              waypoints: [...waypoints, point],
+              waypoints: nextWaypoints,
             });
+            setNavigation(instance.id, nextWaypoints, speed);
           }}
         >
           호버 위치 추가
@@ -590,7 +593,7 @@ export function NPCMovementSection({
           호버 위치로 1회 이동
         </button>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -617,7 +620,8 @@ export function NPCAnimationSection({
   };
 
   return (
-    <>
+    <div className="building-panel__npc-card">
+      <div className="building-panel__section-title">애니메이션 설정</div>
       <div className="building-panel__section-subtitle">애니메이션</div>
       <div className="building-panel__grid">
         {animations.map((animation) => (
@@ -652,7 +656,7 @@ export function NPCAnimationSection({
           </button>
         ))}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -686,6 +690,16 @@ export type NPCBrainSectionProps = {
   updateBrain: (id: string, updates: Partial<NPCBrainConfig>) => void;
   addBrainBlueprint: (blueprint: NPCBrainBlueprint) => void;
   updateBrainBlueprint: (id: string, updates: NPCBrainBlueprint) => void;
+  onPreviewStateChange?: (state: NPCBrainPreviewState) => void;
+};
+
+export type NPCBrainPreviewState = {
+  mode: 'idle' | 'move' | 'patrol' | 'wander' | 'action';
+  label: string;
+  target?: [number, number, number];
+  waypoints?: [number, number, number][];
+  radius?: number;
+  animationId?: string;
 };
 
 export function NPCBrainSection({
@@ -695,12 +709,12 @@ export function NPCBrainSection({
   updateBrain,
   addBrainBlueprint,
   updateBrainBlueprint,
+  onPreviewStateChange,
 }: NPCBrainSectionProps) {
   const brainEditorRef = React.useRef<HTMLDivElement | null>(null);
   const [selectedNodeId, setSelectedNodeId] = React.useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = React.useState<string | null>(null);
   const [edgeIntegrityMessage, setEdgeIntegrityMessage] = React.useState<string>('');
-  const [showBlueprintWorkbench, setShowBlueprintWorkbench] = React.useState(false);
   const [showReactFlowView, setShowReactFlowView] = React.useState(true);
   const [activeNpcTab, setActiveNpcTab] = React.useState<'nodes' | 'inspector'>('nodes');
   const [isInEditorModal, setIsInEditorModal] = React.useState(false);
@@ -713,14 +727,12 @@ export function NPCBrainSection({
 
   React.useEffect(() => {
     if (!isInEditorModal) return;
-    if (showBlueprintWorkbench) setShowBlueprintWorkbench(false);
     if (!showReactFlowView) setShowReactFlowView(true);
-  }, [isInEditorModal, showBlueprintWorkbench, showReactFlowView]);
+  }, [isInEditorModal, showReactFlowView]);
 
   React.useEffect(() => {
     if (!selectedBlueprint) {
       setSelectedNodeId(null);
-      setShowBlueprintWorkbench(false);
       setShowReactFlowView(true);
       setActiveNpcTab('nodes');
       return;
@@ -749,6 +761,87 @@ export function NPCBrainSection({
     (node): node is Exclude<NPCBrainBlueprintNode, { type: 'start' }> =>
       node.id === selectedNodeId && node.type !== 'start',
   );
+  React.useEffect(() => {
+    const behavior = instance.behavior;
+    let state: NPCBrainPreviewState = {
+      mode: 'idle',
+      label: '대기',
+    };
+
+    if (selectedNode?.type === 'action') {
+      switch (selectedNode.action.type) {
+        case 'moveTo':
+          state = {
+            mode: 'move',
+            label: 'moveTo',
+            target: selectedNode.action.target,
+            ...(selectedNode.action.animationId ? { animationId: selectedNode.action.animationId } : {}),
+          };
+          break;
+        case 'patrol':
+          state = {
+            mode: 'patrol',
+            label: 'patrol',
+            waypoints: selectedNode.action.waypoints,
+            ...(selectedNode.action.animationId ? { animationId: selectedNode.action.animationId } : {}),
+          };
+          break;
+        case 'wander':
+          state = {
+            mode: 'wander',
+            label: 'wander',
+            ...(selectedNode.action.radius ? { radius: selectedNode.action.radius } : {}),
+          };
+          break;
+        case 'moveToTarget':
+          state = selectedNode.action.target.type === 'point'
+            ? {
+                mode: 'move',
+                label: 'moveToTarget(point)',
+                target: selectedNode.action.target.value,
+                ...(selectedNode.action.animationId ? { animationId: selectedNode.action.animationId } : {}),
+              }
+            : {
+                mode: 'action',
+                label: `moveToTarget(${selectedNode.action.target.type})`,
+                ...(selectedNode.action.animationId ? { animationId: selectedNode.action.animationId } : {}),
+              };
+          break;
+        case 'playAnimation':
+          state = {
+            mode: 'action',
+            label: 'playAnimation',
+            animationId: selectedNode.action.animationId,
+          };
+          break;
+        case 'speak':
+          state = {
+            mode: 'action',
+            label: `speak: ${selectedNode.action.text}`,
+          };
+          break;
+        default:
+          state = {
+            mode: 'action',
+            label: selectedNode.action.type,
+          };
+      }
+    } else if (behavior?.mode === 'patrol' && behavior.waypoints && behavior.waypoints.length > 0) {
+      state = {
+        mode: 'patrol',
+        label: 'patrol(behavior)',
+        waypoints: behavior.waypoints,
+      };
+    } else if (behavior?.mode === 'wander') {
+      state = {
+        mode: 'wander',
+        label: 'wander(behavior)',
+        radius: behavior.wanderRadius ?? 4,
+      };
+    }
+
+    onPreviewStateChange?.(state);
+  }, [instance.behavior, onPreviewStateChange, selectedNode]);
   const primaryStartNode = selectedBlueprint?.nodes.find((node) => node.type === 'start') ?? null;
   const blueprintNodeIds = React.useMemo(
     () => new Set((selectedBlueprint?.nodes ?? []).map((node) => node.id)),
@@ -1075,7 +1168,7 @@ export function NPCBrainSection({
   };
 
   return (
-    <>
+    <div className="building-panel__npc-card building-panel__npc-card--brain">
       <div className="building-panel__info-item">
         <span className="building-panel__info-label">AI 두뇌</span>
         <div className="building-panel__segmented">
@@ -1114,42 +1207,15 @@ export function NPCBrainSection({
       </div>
       {selectedBlueprint && (
         <>
-          {showBlueprintWorkbench && (
-            <div
-              style={{
-                position: 'fixed',
-                inset: 0,
-                background: 'rgba(6, 10, 18, 0.62)',
-                zIndex: 188,
-              }}
-              onClick={() => setShowBlueprintWorkbench(false)}
-            />
-          )}
           <div
             ref={brainEditorRef}
             className="building-panel__node-editor"
-            style={showBlueprintWorkbench
-              ? {
-                  position: 'fixed',
-                  top: '72px',
-                  left: '24px',
-                  right: '24px',
-                  bottom: '24px',
-                  zIndex: 189,
-                  margin: 0,
-                  padding: '12px',
-                  overflow: 'auto',
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  borderRadius: '10px',
-                  background: 'rgba(18, 24, 40, 0.98)',
-                }
-              : undefined}
           >
-          <div className="building-panel__asset-targets">
+          <div className="building-panel__asset-targets building-panel__brain-summary">
             <span>{selectedBlueprint.name}</span>
             <span>{selectedBlueprint.nodes.length} nodes · {selectedBlueprint.edges.length} edges</span>
           </div>
-          <div className="building-panel__segmented">
+          <div className="building-panel__segmented building-panel__brain-toolbar">
             <button
               className="building-panel__segment-btn"
               onClick={() => {
@@ -1171,26 +1237,16 @@ export function NPCBrainSection({
             </button>
             <button
               className="building-panel__segment-btn"
-              onClick={() => {
-                if (isInEditorModal) return;
-                setShowBlueprintWorkbench((prev) => !prev);
-              }}
-              disabled={isInEditorModal}
-            >
-              {isInEditorModal ? '모달에서 확장 고정' : showBlueprintWorkbench ? '워크벤치 닫기' : '워크벤치 확장'}
-            </button>
-            <button
-              className="building-panel__segment-btn"
               onClick={() => setShowReactFlowView((prev) => !prev)}
             >
-              {showReactFlowView ? '리액트 노드 숨기기' : '리액트 노드 보기'}
+              {showReactFlowView ? '캔버스 숨기기' : '캔버스 보기'}
             </button>
           </div>
           {showReactFlowView && (
             <div
               className="building-panel__brain-canvas"
               style={{
-                height: isInEditorModal ? '56vh' : showBlueprintWorkbench ? '46vh' : '260px',
+                height: isInEditorModal ? '64vh' : '320px',
                 border: '1px solid rgba(255,255,255,0.14)',
                 borderRadius: '8px',
                 overflow: 'hidden',
@@ -1283,7 +1339,7 @@ export function NPCBrainSection({
             </div>
           )}
           {activeNpcTab === 'inspector' && selectedNode && (
-            <div className="building-panel__info" style={{ marginTop: '8px' }}>
+            <div className="building-panel__info building-panel__brain-inspector" style={{ marginTop: '8px' }}>
               <div className="building-panel__section-subtitle">노드 인스펙터</div>
               <FieldRow label="라벨">
                 <input
@@ -2300,7 +2356,7 @@ export function NPCBrainSection({
           </div>
         </>
       )}
-    </>
+    </div>
   );
 }
 
@@ -2318,7 +2374,9 @@ export function NPCPerceptionSection({
   const sightRadius = instance.perception?.sightRadius ?? 8;
 
   return (
-    <div className="building-panel__info">
+    <div className="building-panel__npc-card">
+      <div className="building-panel__section-title">지각/연동 설정</div>
+      <div className="building-panel__info">
       <FieldRow label="시야 감지">
         <FieldToggle
           value={instance.perception?.enabled ?? true}
@@ -2366,6 +2424,7 @@ export function NPCPerceptionSection({
         <span className="building-panel__info-value">
           감지 {instance.lastObservation?.perceived.length ?? 0} · 결정 {instance.lastDecision?.source ?? '없음'}
         </span>
+      </div>
       </div>
     </div>
   );

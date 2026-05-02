@@ -23,16 +23,11 @@ import {
   createScopedColorMeshConfig,
 } from './helpers';
 import {
-  NPCBrainSection,
   BillboardSettingsSection,
   BlockEditSection,
   EnvironmentSection,
   FireSettingsSection,
   FlagSettingsSection,
-  NPCAnimationSection,
-  NPCMovementSection,
-  NPCPerceptionSection,
-  NPCTemplateSection,
   ObjectRotationSection,
   PanelActionsSection,
   PlacementSection,
@@ -40,7 +35,9 @@ import {
   WallModuleSection,
   type BuildingPanelAction,
 } from './sections';
+import { NPCPanel } from './NPCPanel';
 import { useBuildingPanelState } from './state';
+import type { NPCBehaviorConfig } from '../../../../npc/types';
 import './styles.css';
 
 export { createPlacementAssetScopeId, createScopedColorMeshConfig } from './helpers';
@@ -59,6 +56,8 @@ export type BuildingPanelProps = EditorPanelBaseProps & {
   actions?: BuildingPanelAction[];
   disabledSections?: string[];
   forcedEditMode?: BuildingSystemState['editMode'];
+  npcLayout?: 'default' | 'split' | 'sidebars';
+  hideHeader?: boolean;
 };
 
 export const BuildingPanel: FC<BuildingPanelProps> = ({
@@ -69,6 +68,8 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
   actions = [],
   disabledSections = [],
   forcedEditMode,
+  npcLayout = 'default',
+  hideHeader = false,
 }) => {
   const disabledSectionSet = useMemo(() => new Set(disabledSections), [disabledSections]);
   const {
@@ -381,26 +382,28 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
 
   return (
     <div className={`building-panel ${className}`} style={style}>
-      <div className="building-panel__header">
-        <div>
-          <div className="building-panel__eyebrow">Mode</div>
-          <div className="building-panel__title">{currentEditModeLabel} 인스펙터</div>
-        </div>
-        {!forcedEditMode && (
-          <div className="building-panel__mode-tabs">
-            {editModes.map((m) => (
-              <button
-                key={m.type}
-                className={`building-panel__mode-tab ${editMode === m.type ? 'building-panel__mode-tab--active' : ''}`}
-                onClick={() => setEditMode(m.type)}
-                title={m.description}
-              >
-                {m.label}
-              </button>
-            ))}
+      {!hideHeader && (
+        <div className="building-panel__header">
+          <div>
+            <div className="building-panel__eyebrow">Mode</div>
+            <div className="building-panel__title">{currentEditModeLabel} 인스펙터</div>
           </div>
-        )}
-      </div>
+          {!forcedEditMode && (
+            <div className="building-panel__mode-tabs">
+              {editModes.map((m) => (
+                <button
+                  key={m.type}
+                  className={`building-panel__mode-tab ${editMode === m.type ? 'building-panel__mode-tab--active' : ''}`}
+                  onClick={() => setEditMode(m.type)}
+                  title={m.description}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {slots.header}
 
       <div className="building-panel__inspector">
@@ -730,71 +733,31 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
         ) : null;
       })()}
       {isNPCMode && (
-        <NPCTemplateSection
-          templates={npcTemplatesArray}
-          selectedTemplateId={selectedNPCTemplateId}
-          setSelectedTemplate={setSelectedNPCTemplate}
+        <NPCPanel
+          layout={npcLayout}
+          npcTemplatesArray={npcTemplatesArray}
+          selectedNPCTemplateId={selectedNPCTemplateId}
+          setSelectedNPCTemplate={setSelectedNPCTemplate}
+          npcInstancesArray={npcInstancesArray}
+          selectedNPCInstanceId={selectedNPCInstanceId ?? null}
+          setSelectedNPCInstance={setSelectedNPCInstance}
+          selectedNPCInstance={selectedNPCInstance}
+          npcAnimationsArray={npcAnimationsArray}
+          selectedNPCBrainBlueprint={selectedNPCBrainBlueprint}
+          npcBrainBlueprintsArray={npcBrainBlueprintsArray}
+          hoverPosition={hoverPosition}
+          updateNPCBehavior={(id, updates) => updateNPCBehavior(id, updates as Partial<NPCBehaviorConfig>)}
+          setNPCNavigation={(id, updates) => {
+            if (!updates.waypoints || updates.waypoints.length === 0) return;
+            setNPCNavigation(id, updates.waypoints as [number, number, number][], updates.speed);
+          }}
+          clearNPCNavigation={clearNPCNavigation}
+          updateNPCInstance={updateNPCInstance}
+          updateNPCBrain={updateNPCBrain}
+          addNPCBrainBlueprint={addNPCBrainBlueprint}
+          updateNPCBrainBlueprint={updateNPCBrainBlueprint}
+          updateNPCPerception={updateNPCPerception}
         />
-      )}
-
-      {isNPCMode && (
-        <div className="building-panel__section">
-          <div className="building-panel__section-title">NPC 행동 / 이동 / 애니메이션</div>
-          <div className="building-panel__asset-targets">
-            <span>선택 NPC: {selectedNPCInstance?.name ?? selectedNPCInstanceId ?? '선택 없음'}</span>
-            <span>행동: {selectedNPCInstance?.behavior?.mode ?? 'idle'} · 이동: {selectedNPCInstance?.navigation?.state ?? '없음'}</span>
-            <span>현재 애니메이션: {selectedNPCInstance?.currentAnimation ?? 'idle'}</span>
-          </div>
-
-          <div className="building-panel__grid">
-            {npcInstancesArray.map((instance) => (
-              <button
-                key={instance.id}
-                className={`building-panel__grid-btn ${selectedNPCInstanceId === instance.id ? 'building-panel__grid-btn--active' : ''}`}
-                onClick={() => setSelectedNPCInstance(instance.id)}
-              >
-                {instance.name}
-              </button>
-            ))}
-            {npcInstancesArray.length === 0 && (
-              <div className="building-panel__empty">배치된 NPC가 없습니다.</div>
-            )}
-          </div>
-
-          {selectedNPCInstance && (
-            <>
-              <NPCMovementSection
-                instance={selectedNPCInstance}
-                hoverPosition={hoverPosition}
-                updateBehavior={updateNPCBehavior}
-                setNavigation={setNPCNavigation}
-                clearNavigation={clearNPCNavigation}
-              />
-
-              <NPCAnimationSection
-                instance={selectedNPCInstance}
-                animations={npcAnimationsArray}
-                updateInstance={updateNPCInstance}
-                updateBehavior={updateNPCBehavior}
-              />
-
-              <NPCBrainSection
-                instance={selectedNPCInstance}
-                blueprints={npcBrainBlueprintsArray}
-                selectedBlueprint={selectedNPCBrainBlueprint}
-                updateBrain={updateNPCBrain}
-                addBrainBlueprint={addNPCBrainBlueprint}
-                updateBrainBlueprint={updateNPCBrainBlueprint}
-              />
-
-              <NPCPerceptionSection
-                instance={selectedNPCInstance}
-                updateBrain={updateNPCBrain}
-                updatePerception={updateNPCPerception}
-              />
-            </>
-          )}
-        </div>
       )}
 
       {isObjectMode && selectedPlacedObjectType !== 'none' && !disabledSectionSet.has('objectRotation') && (

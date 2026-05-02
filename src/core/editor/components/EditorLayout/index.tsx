@@ -3,14 +3,19 @@ import React, { FC, useEffect, useMemo, useState } from 'react';
 import '../../styles/theme.css';
 import {
   AnimationPanel,
-  BuildingPanel,
+  BlockPanel,
   CameraPanel,
   CharacterAssetPanel,
   GameplayEventPanel,
   MotionPanel,
+  NPCPanel,
+  ObjectPanel,
   PerformancePanel,
   StudioPanel,
-  VehiclePanel
+  TilePanel,
+  VehiclePanel,
+  WallPanel,
+  WorldPanel,
 } from '../panels';
 import { EditorLayoutProps, PanelConfig } from './types';
 
@@ -18,6 +23,8 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
   children,
   panels = [],
   defaultActivePanels = ['tile', 'camera'],
+  defaultPanelOpen = false,
+  defaultModalOpen = false,
   actions = [],
   hiddenBuiltInPanels = [],
   panelOrder,
@@ -26,12 +33,12 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
 }) => {
   const panelConfigs = useMemo(() => {
     const builtInPanels: PanelConfig[] = [
-      { id: 'world', title: '전역', component: <BuildingPanel forcedEditMode="world" />, defaultSide: 'left' },
-      { id: 'wall', title: '벽', component: <BuildingPanel forcedEditMode="wall" />, defaultSide: 'left' },
-      { id: 'tile', title: '타일', component: <BuildingPanel forcedEditMode="tile" />, defaultSide: 'left' },
-      { id: 'block', title: '박스', component: <BuildingPanel forcedEditMode="block" />, defaultSide: 'left' },
-      { id: 'object', title: '오브젝트', component: <BuildingPanel forcedEditMode="object" />, defaultSide: 'left' },
-      { id: 'npc', title: 'NPC', component: <BuildingPanel forcedEditMode="npc" />, defaultSide: 'left' },
+      { id: 'world', title: '전역', component: <WorldPanel />, defaultSide: 'left' },
+      { id: 'wall', title: '벽', component: <WallPanel />, defaultSide: 'left' },
+      { id: 'tile', title: '타일', component: <TilePanel />, defaultSide: 'left' },
+      { id: 'block', title: '박스', component: <BlockPanel />, defaultSide: 'left' },
+      { id: 'object', title: '오브젝트', component: <ObjectPanel />, defaultSide: 'left' },
+      { id: 'npc', title: 'NPC', component: <NPCPanel />, defaultSide: 'left' },
       { id: 'character', title: '캐릭터', component: <CharacterAssetPanel />, defaultSide: 'left' },
       { id: 'vehicle', title: '탈것', component: <VehiclePanel />, defaultSide: 'left' },
       { id: 'animation', title: '애니메이션', component: <AnimationPanel />, defaultSide: 'left' },
@@ -69,8 +76,8 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
   );
 
   const [activePanelId, setActivePanelId] = useState(defaultPanelId);
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(defaultPanelOpen);
+  const [isModalOpen, setIsModalOpen] = useState(defaultModalOpen);
   const modalPreferredPanelIds = useMemo(
     () => new Set(['npc', 'gameplay-events', 'studio']),
     [],
@@ -138,7 +145,7 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
           </div>
         </div>
 
-        {isPanelOpen && (
+        {isPanelOpen && !isModalOpen && (
           <section className={`editor-sidebar-panel ${selectedPanel?.className ?? ''}`}>
             <div className="editor-sidebar-panel-header">
               <div>
@@ -202,7 +209,10 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
                 </button>
               </div>
             </header>
-            <div className="editor-panel-modal__content" style={selectedPanel.style}>
+            <div
+              className={`editor-panel-modal__content ${selectedPanelId === 'npc' ? 'editor-panel-modal__content--npc' : ''}`}
+              style={selectedPanel.style}
+            >
               {selectedPanel.component}
             </div>
           </div>

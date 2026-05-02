@@ -85,6 +85,8 @@ export const Editor: FC<EditorProps> = ({
       <EditorLayout
         {...(shell?.panels ? { panels: shell.panels } : {})}
         {...(shell?.defaultActivePanels ? { defaultActivePanels: shell.defaultActivePanels } : {})}
+        {...(typeof shell?.defaultPanelOpen === 'boolean' ? { defaultPanelOpen: shell.defaultPanelOpen } : {})}
+        {...(typeof shell?.defaultModalOpen === 'boolean' ? { defaultModalOpen: shell.defaultModalOpen } : {})}
         {...(shell?.actions ? { actions: shell.actions } : {})}
         {...(shell?.hiddenBuiltInPanels ? { hiddenBuiltInPanels: shell.hiddenBuiltInPanels } : {})}
         {...(shell?.panelOrder ? { panelOrder: shell.panelOrder } : {})}

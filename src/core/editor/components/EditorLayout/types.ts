@@ -6,6 +6,8 @@ export interface EditorLayoutProps {
     children?: ReactNode;
     panels?: EditorShellPluginPanel[];
     defaultActivePanels?: string[];
+    defaultPanelOpen?: boolean;
+    defaultModalOpen?: boolean;
     actions?: EditorShellAction[];
     hiddenBuiltInPanels?: string[];
     panelOrder?: string[];

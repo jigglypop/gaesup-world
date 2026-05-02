@@ -16,10 +16,13 @@ const NPC_LOD_STRENGTH = 4;
 export function NPCSystem() {
   const { gl } = useThree();
   const instances = useNPCStore((state) => state.instances);
+  const selectedInstanceId = useNPCStore((state) => state.selectedInstanceId);
   const selectedTemplateId = useNPCStore((state) => state.selectedTemplateId);
   const createInstanceFromTemplate = useNPCStore(
     (state) => state.createInstanceFromTemplate
   );
+  const setNavigation = useNPCStore((state) => state.setNavigation);
+  const updateInstanceBehavior = useNPCStore((state) => state.updateInstanceBehavior);
   const setSelectedInstance = useNPCStore((state) => state.setSelectedInstance);
   const editMode = useBuildingStore(state => state.editMode);
   const hoverPosition = useBuildingStore(state => state.hoverPosition);
@@ -51,9 +54,22 @@ export function NPCSystem() {
   });
 
   useEffect(() => {
-    if (!isNPCMode || !selectedTemplateId || !hoverPosition) return;
-    const handleClick = () => {
-      if (hoverPosition) {
+    if (!isNPCMode || !hoverPosition) return;
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLCanvasElement)) return;
+      if (event.defaultPrevented) return;
+      if (selectedInstanceId && !event.shiftKey) {
+        const moveTarget: [number, number, number] = [
+          hoverPosition.x,
+          hoverPosition.y,
+          hoverPosition.z,
+        ];
+        updateInstanceBehavior(selectedInstanceId, { mode: 'idle' });
+        setNavigation(selectedInstanceId, [moveTarget]);
+        return;
+      }
+      if (selectedTemplateId && hoverPosition) {
         createInstanceFromTemplate(selectedTemplateId, [
           hoverPosition.x,
           hoverPosition.y,
@@ -63,7 +79,16 @@ export function NPCSystem() {
     };
     gl.domElement.addEventListener('click', handleClick);
     return () => gl.domElement.removeEventListener('click', handleClick);
-  }, [isNPCMode, selectedTemplateId, hoverPosition, gl, createInstanceFromTemplate]);
+  }, [
+    isNPCMode,
+    selectedTemplateId,
+    selectedInstanceId,
+    hoverPosition,
+    gl,
+    createInstanceFromTemplate,
+    setNavigation,
+    updateInstanceBehavior,
+  ]);
 
   return (
     <group name="npc-system">

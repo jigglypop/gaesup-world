@@ -279,49 +279,67 @@
   padding: 2px;
 }
 
+.editor-panel-modal--npc {
+  inset: 0;
+  background: rgba(6, 10, 18, 0.78);
+}
+
 .editor-panel-modal--npc .building-panel__node-editor {
-  display: grid;
-  grid-template-columns: minmax(320px, 40%) minmax(520px, 60%);
-  align-items: start;
-  column-gap: 12px;
-  row-gap: 10px;
+  min-height: calc(100vh - 230px);
 }
 
 .editor-panel-modal--npc .editor-panel-modal__surface {
-  width: min(1360px, 100%);
+  width: min(1480px, 100%);
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
 }
 
-.editor-panel-modal--npc .building-panel__node-editor > .building-panel__asset-targets,
-.editor-panel-modal--npc .building-panel__node-editor > .building-panel__segmented {
-  grid-column: 1 / -1;
+.editor-panel-modal__content--npc {
+  overflow: auto;
+  padding: 10px 14px;
 }
 
-.editor-panel-modal--npc .building-panel__node-editor > .building-panel__brain-canvas {
-  grid-column: 2;
-  grid-row: 2 / span 4;
-  height: calc(100vh - 220px) !important;
+.editor-panel-modal--npc .building-panel {
+  height: 100%;
+  padding: 10px;
+}
+
+.editor-panel-modal--npc .building-panel__inspector {
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.editor-panel-modal--npc .building-panel__npc-workspace {
+  grid-template-columns: minmax(360px, 430px) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.editor-panel-modal--npc .building-panel__npc-column--controls {
+  max-height: calc(100vh - 230px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.editor-panel-modal--npc .building-panel__npc-column--brain .building-panel__brain-canvas {
+  height: calc(100vh - 170px) !important;
   min-height: 520px;
   position: sticky;
   top: 0;
 }
 
-.editor-panel-modal--npc .building-panel__node-editor > .building-panel__node-list,
-.editor-panel-modal--npc .building-panel__node-editor > .building-panel__brain-tabs,
-.editor-panel-modal--npc .building-panel__node-editor > .building-panel__info,
-.editor-panel-modal--npc .building-panel__node-editor > .building-panel__empty {
-  grid-column: 1;
+.editor-panel-modal--npc .building-panel__npc-column--brain .building-panel__node-list,
+.editor-panel-modal--npc .building-panel__npc-column--brain .building-panel__info {
+  max-height: calc(100vh - 280px);
+  overflow: auto;
 }
 
 @media (max-width: 1200px) {
-  .editor-panel-modal--npc .building-panel__node-editor {
+  .editor-panel-modal--npc .building-panel__npc-workspace {
     grid-template-columns: 1fr;
   }
 
-  .editor-panel-modal--npc .building-panel__node-editor > .building-panel__brain-canvas,
-  .editor-panel-modal--npc .building-panel__node-editor > .building-panel__node-list,
-  .editor-panel-modal--npc .building-panel__node-editor > .building-panel__info {
-    grid-column: 1;
-    grid-row: auto;
+  .editor-panel-modal--npc .building-panel__npc-column--brain .building-panel__brain-canvas {
     height: 50vh !important;
     min-height: 380px;
     position: static;

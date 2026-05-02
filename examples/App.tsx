@@ -6,6 +6,7 @@ import { GaesupAdmin } from '../src/admin-entry';
 import { Navigation } from './components/nav/Navigation';
 import { EditPage } from './pages/EditPage';
 import { NetworkMultiplayerPage } from './pages/NetworkMultiplayerPage';
+import { NPCEditorPage } from './pages/NPCEditorPage';
 import { WorldPage } from './pages/World';
 
 function AppLayout() {
@@ -17,6 +18,7 @@ function AppLayout() {
         <Route path="/" element={<WorldPage showHud />} />
         <Route path="/world" element={<WorldPage showHud />} />
         <Route path="/edit" element={<EditPage />} />
+        <Route path="/edit/npc" element={<NPCEditorPage />} />
         <Route path="/blueprints" element={<WorldPage showHud />} />
         <Route path="/blueprints/*" element={<WorldPage showHud />} />
         <Route path="/network" element={<NetworkMultiplayerPage />} />

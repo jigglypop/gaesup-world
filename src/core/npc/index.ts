@@ -25,10 +25,16 @@ export {
   resolveNPCBrainDecision,
   registerNPCBrainAdapter,
 } from './core/brain';
+export {
+  configureReinforcementAdapter,
+  getReinforcementAdapterConfig,
+  registerDefaultReinforcementAdapter,
+} from './core/reinforcement';
 export type {
   NPCBrainAdapter,
   NPCBrainAdapterContext,
 } from './core/brain';
+export type { ReinforcementAdapterConfig } from './core/reinforcement';
 export type {
   NPCSchedule,
   NPCScheduleEntry,

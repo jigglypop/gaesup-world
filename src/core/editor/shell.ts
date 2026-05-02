@@ -13,6 +13,8 @@ export type EditorShellValidation = (bundle: ContentBundle) => ContentBundleVali
 export type EditorShellOptions = {
   panels?: EditorShellPluginPanel[];
   defaultActivePanels?: string[];
+  defaultPanelOpen?: boolean;
+  defaultModalOpen?: boolean;
   hiddenBuiltInPanels?: string[];
   panelOrder?: string[];
   panelDefaults?: Record<string, EditorPanelDefaults>;
@@ -23,6 +25,8 @@ export type EditorShellOptions = {
 export type EditorShell = {
   panels: EditorShellPluginPanel[];
   defaultActivePanels?: string[];
+  defaultPanelOpen?: boolean;
+  defaultModalOpen?: boolean;
   hiddenBuiltInPanels?: string[];
   panelOrder?: string[];
   panelDefaults?: Record<string, EditorPanelDefaults>;
@@ -50,6 +54,12 @@ export function createEditorShell(options: EditorShellOptions = {}): EditorShell
   };
   if (options.defaultActivePanels) {
     shell.defaultActivePanels = options.defaultActivePanels;
+  }
+  if (typeof options.defaultPanelOpen === 'boolean') {
+    shell.defaultPanelOpen = options.defaultPanelOpen;
+  }
+  if (typeof options.defaultModalOpen === 'boolean') {
+    shell.defaultModalOpen = options.defaultModalOpen;
   }
   if (options.hiddenBuiltInPanels) {
     shell.hiddenBuiltInPanels = options.hiddenBuiltInPanels;

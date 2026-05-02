@@ -109,14 +109,30 @@ export function useBuildingEditor() {
   }, [raycastGround]);
 
   const updateMousePosition = useCallback((event: MouseEvent) => {
-    const canvas = event.target as HTMLCanvasElement;
-    mouseRef.current.x = (event.clientX / canvas.clientWidth) * 2 - 1;
-    mouseRef.current.y = -(event.clientY / canvas.clientHeight) * 2 + 1;
+    const targetLike = (event.currentTarget as Partial<HTMLCanvasElement> | null)
+      ?? (event.target as Partial<HTMLCanvasElement> | null)
+      ?? null;
+    const rect = typeof targetLike.getBoundingClientRect === 'function'
+      ? targetLike.getBoundingClientRect()
+      : ({
+          left: 0,
+          top: 0,
+          width: targetLike?.clientWidth ?? window.innerWidth,
+          height: targetLike?.clientHeight ?? window.innerHeight,
+        } as Pick<DOMRect, 'left' | 'top' | 'width' | 'height'>);
+    if (rect.width <= 0 || rect.height <= 0) {
+      setHoverPosition(null);
+      return;
+    }
+    const normalizedX = (event.clientX - rect.left) / rect.width;
+    const normalizedY = (event.clientY - rect.top) / rect.height;
+    mouseRef.current.x = normalizedX * 2 - 1;
+    mouseRef.current.y = -normalizedY * 2 + 1;
 
     const mode = useBuildingStore.getState().editMode;
-    if (mode === 'tile' || mode === 'block') {
+    if (mode === 'tile' || mode === 'block' || mode === 'npc') {
       setHoverPosition(raycastStackable());
-    } else if (mode === 'wall' || mode === 'npc' || mode === 'object') {
+    } else if (mode === 'wall' || mode === 'object') {
       setHoverPosition(raycastGround());
     } else {
       setHoverPosition(null);

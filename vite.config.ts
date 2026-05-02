@@ -1,4 +1,5 @@
 import path from 'path';
+import { createReadStream, existsSync } from 'fs';
 
 import react from '@vitejs/plugin-react-swc';
 import { defineConfig } from 'vite';
@@ -30,6 +31,37 @@ const libraryExternals = [
   'zustand',
   /^zustand\//,
 ];
+
+const GLTF_CONTENT_TYPES: Record<string, string> = {
+  '.glb': 'model/gltf-binary',
+  '.gltf': 'model/gltf+json',
+};
+
+function serveDemoGltfAssets() {
+  return {
+    name: 'serve-demo-gltf-assets',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const pathname = req.url?.split('?')[0] ?? '';
+        if (!pathname.startsWith('/gltf/')) {
+          next();
+          return;
+        }
+
+        const relativePath = decodeURIComponent(pathname.replace(/^\/gltf\//, ''));
+        const assetPath = path.resolve(__dirname, 'demo-dist/gltf', relativePath);
+        const assetRoot = path.resolve(__dirname, 'demo-dist/gltf');
+        if (!assetPath.startsWith(assetRoot) || !existsSync(assetPath)) {
+          next();
+          return;
+        }
+
+        res.setHeader('Content-Type', GLTF_CONTENT_TYPES[path.extname(assetPath)] ?? 'application/octet-stream');
+        createReadStream(assetPath).pipe(res);
+      });
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -127,7 +159,8 @@ export default defineConfig(({ mode }) => {
       }),
       tsconfigPaths(),
       svgr(),
-      glsl()
+      glsl(),
+      serveDemoGltfAssets()
     ],
     resolve: {
       alias,

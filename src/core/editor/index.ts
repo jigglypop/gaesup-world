@@ -9,6 +9,7 @@ export {
   PerformancePanel,
   StudioPanel,
   VehiclePanel,
+  BuildingPanel,
 } from './components';
 export * from './hooks';
 export * from './stores';

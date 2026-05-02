@@ -45,6 +45,7 @@ import {
   TouchControls,
   WeatherEffect,
   createEditorShell,
+  type EditorShellOptions,
   useBuildingStore,
   usePerfStore,
 } from '../../src';
@@ -61,7 +62,17 @@ export { S3 };
 
 setDefaultToonMode(DEFAULT_TOON_MODE);
 
-export const WorldPage = ({ showEditor = false, showHud = true, compactHud = false, children }: WorldPageProps) => {
+const DEFAULT_EDITOR_SHELL_OPTIONS: EditorShellOptions = {};
+
+export const WorldPage = ({
+  showEditor = false,
+  showEditorShell = true,
+  showHud = true,
+  compactHud = false,
+  includeEditorAuxPanels = true,
+  editorShellOptions = DEFAULT_EDITOR_SHELL_OPTIONS,
+  children,
+}: WorldPageProps) => {
   const [shopOpen, setShopOpen] = useState(false);
   const [craftOpen, setCraftOpen] = useState(false);
   const fogEnabled = useBuildingStore((s) => s.showFog);
@@ -92,44 +103,51 @@ export const WorldPage = ({ showEditor = false, showHud = true, compactHud = fal
         smoothness: 0.25,
         enableCollision: false,
       };
-  const editorShell = useMemo(() => createEditorShell({
-    panels: [
-      {
-        id: 'gameplay-events',
-        title: '이벤트',
-        component: (
-          <GameplayEventPanel
-            blueprints={gameplayBlueprints}
-            onCreate={(blueprint) => {
-              registerWorldGameplayEventBlueprint(blueprint);
-              setGameplayBlueprints(getWorldGameplayBlueprints());
-            }}
-            onUpdate={(blueprint) => {
-              registerWorldGameplayEventBlueprint(blueprint);
-              setGameplayBlueprints(getWorldGameplayBlueprints());
-            }}
-            onDelete={(id) => {
-              deleteWorldGameplayEventBlueprint(id);
-              setGameplayBlueprints(getWorldGameplayBlueprints());
-            }}
-            onRun={(trigger) => dispatchWorldGameplayEvent(trigger)}
-          />
-        ),
-        defaultSide: 'right',
-        pluginId: 'gaesup.gameplay-events',
-      },
-      {
-        id: 'studio',
-        title: '스튜디오',
-        component: <StudioPanel gameplayEvents={gameplayBlueprints} />,
-        defaultSide: 'right',
-        pluginId: 'gaesup.studio',
-      },
-    ],
-    defaultActivePanels: ['tile'],
-    hiddenBuiltInPanels: ['character', 'vehicle', 'animation', 'motion', 'performance'],
-    panelOrder: ['world', 'wall', 'tile', 'block', 'object', 'npc', 'camera', 'gameplay-events', 'studio'],
-  }), [gameplayBlueprints]);
+  const editorShell = useMemo(() => {
+    const auxiliaryPanels = includeEditorAuxPanels
+      ? [
+          {
+            id: 'gameplay-events',
+            title: '이벤트',
+            component: (
+              <GameplayEventPanel
+                blueprints={gameplayBlueprints}
+                onCreate={(blueprint) => {
+                  registerWorldGameplayEventBlueprint(blueprint);
+                  setGameplayBlueprints(getWorldGameplayBlueprints());
+                }}
+                onUpdate={(blueprint) => {
+                  registerWorldGameplayEventBlueprint(blueprint);
+                  setGameplayBlueprints(getWorldGameplayBlueprints());
+                }}
+                onDelete={(id) => {
+                  deleteWorldGameplayEventBlueprint(id);
+                  setGameplayBlueprints(getWorldGameplayBlueprints());
+                }}
+                onRun={(trigger) => dispatchWorldGameplayEvent(trigger)}
+              />
+            ),
+            defaultSide: 'right' as const,
+            pluginId: 'gaesup.gameplay-events',
+          },
+          {
+            id: 'studio',
+            title: '스튜디오',
+            component: <StudioPanel gameplayEvents={gameplayBlueprints} />,
+            defaultSide: 'right' as const,
+            pluginId: 'gaesup.studio',
+          },
+        ]
+      : [];
+
+    return createEditorShell({
+      ...editorShellOptions,
+      panels: [...auxiliaryPanels, ...(editorShellOptions.panels ?? [])],
+      defaultActivePanels: editorShellOptions.defaultActivePanels ?? ['tile'],
+      hiddenBuiltInPanels: editorShellOptions.hiddenBuiltInPanels ?? ['character', 'vehicle', 'animation', 'motion', 'performance'],
+      panelOrder: editorShellOptions.panelOrder ?? ['world', 'wall', 'tile', 'block', 'object', 'npc', 'camera', 'gameplay-events', 'studio'],
+    });
+  }, [editorShellOptions, gameplayBlueprints, includeEditorAuxPanels]);
 
   return (
     <>
@@ -208,7 +226,7 @@ export const WorldPage = ({ showEditor = false, showHud = true, compactHud = fal
           </>
         )}
       </GaesupWorld>
-      {showEditor && <Editor shell={editorShell} />}
+      {showEditor && showEditorShell && <Editor shell={editorShell} />}
       {children}
     </>
   );

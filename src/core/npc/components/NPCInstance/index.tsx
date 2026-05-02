@@ -22,6 +22,35 @@ type PointerHandlers = {
 };
 type GroupWithHandlers = THREE.Group & { __handlers?: PointerHandlers };
 
+type NPCPartErrorBoundaryProps = NPCPartMeshProps & {
+  children: React.ReactNode;
+};
+
+type NPCPartErrorBoundaryState = {
+  hasError: boolean;
+};
+
+class NPCPartErrorBoundary extends React.Component<NPCPartErrorBoundaryProps, NPCPartErrorBoundaryState> {
+  state: NPCPartErrorBoundaryState = { hasError: false };
+
+  static getDerivedStateFromError(): NPCPartErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidUpdate(prevProps: NPCPartErrorBoundaryProps) {
+    if (this.state.hasError && prevProps.part.url !== this.props.part.url) {
+      this.setState({ hasError: false });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <NPCPartFallbackMesh part={this.props.part} instanceId={this.props.instanceId} />;
+    }
+    return this.props.children;
+  }
+}
+
 function resolveAnimationKey(
   actions: Record<string, THREE.AnimationAction | null>,
   requested: string,
@@ -51,8 +80,15 @@ function NPCPartFallbackMesh({ part }: NPCPartMeshProps) {
   );
 }
 
+function resolveNPCAssetUrl(url: string): string {
+  const trimmed = url.trim();
+  if (trimmed.startsWith('gltf/')) return `/${trimmed}`;
+  return trimmed;
+}
+
 function NPCPartGltfMesh({ part, currentAnimation }: NPCPartMeshProps) {
-  const gltf = useGLTF(part.url);
+  const assetUrl = useMemo(() => resolveNPCAssetUrl(part.url), [part.url]);
+  const gltf = useGLTF(assetUrl);
   const clone = useMemo(() => {
     const c = SkeletonUtils.clone(gltf.scene);
     if (c && getDefaultToonMode()) applyToonToScene(c);
@@ -85,10 +121,13 @@ function NPCPartGltfMesh({ part, currentAnimation }: NPCPartMeshProps) {
 }
 
 function NPCPartMesh({ part, instanceId, currentAnimation }: NPCPartMeshProps) {
-  void instanceId;
   const hasUrl = !!part.url && part.url.trim() !== '';
   if (!hasUrl) return <NPCPartFallbackMesh part={part} instanceId={instanceId} />;
-  return <NPCPartGltfMesh part={part} instanceId={instanceId} currentAnimation={currentAnimation} />;
+  return (
+    <NPCPartErrorBoundary part={part} instanceId={instanceId} currentAnimation={currentAnimation}>
+      <NPCPartGltfMesh part={part} instanceId={instanceId} currentAnimation={currentAnimation} />
+    </NPCPartErrorBoundary>
+  );
 }
 
 const ARRIVAL_THRESHOLD = 0.3;
@@ -370,6 +409,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
           ? {
               onClick: (e: ThreeEvent<MouseEvent>) => {
                 e.stopPropagation();
+                e.nativeEvent.preventDefault();
                 runEvent('onClick');
                 onClick();
               },

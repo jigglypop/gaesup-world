@@ -42,3 +42,12 @@ coverage/*
 
 # Rust / WASM build artifacts
 **/target/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Python cache artifacts
+__pycache__/
+*.py[cod]

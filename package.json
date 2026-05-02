@@ -149,6 +149,7 @@
     "test:memory": "jest --testPathPattern=memory --verbose",
     "test:memory:verbose": "jest --testPathPattern=memory --verbose --runInBand --logHeapUsage",
     "test:memory:ci": "jest --testPathPattern=memory --runInBand --logHeapUsage",
+    "policy:dev": "uv run --project server -- python server/main.py",
     "release": "semantic-release",
     "publish:full": "npm run prepare && npm publish"
   },

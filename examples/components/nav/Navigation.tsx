@@ -11,6 +11,7 @@ export const Navigation = () => {
   const mainLinks = [
     { to: '/', label: '월드' },
     { to: '/edit', label: '에디터' },
+    { to: '/edit/npc', label: 'NPC 에디터' },
   ];
   const extraLinks = [{ to: '/network', label: 'Network' }];
   
