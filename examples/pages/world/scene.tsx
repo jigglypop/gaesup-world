@@ -1,5 +1,6 @@
 import { Environment, Grid } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
+import { useEffect } from 'react';
 
 import {
   BugSpot,
@@ -8,12 +9,15 @@ import {
   HousePlot,
   RoomPortal,
   RoomRoot,
-  SakuraBatch,
-  SandBatch,
   SceneRoot,
-  SnowfieldBatch,
   WeatherEffect,
 } from '../../../src';
+import { SakuraBatch, SandBatch, SnowfieldBatch } from '../../../src/core/building';
+import {
+  applyRegisteredNavigationObstacles,
+  NavigationSystem,
+  registerNavigationObstacles,
+} from '../../../src/core/navigation';
 import { NPCBeacon } from '../../components/npc/NPCBeacon';
 import { Pickup } from '../../components/pickup';
 import { dispatchWorldGameplayEvent } from '../runtime';
@@ -28,6 +32,62 @@ import {
   SNOWFIELD_TILES,
   WORLD_WEATHER_ENABLED,
 } from './data';
+
+function ExampleNavigationObstacles() {
+  useEffect(() => {
+    const npcObstacles = NPCS.map((npc) => ({
+      id: `example-npc-${npc.id}`,
+      x: npc.pos[0],
+      z: npc.pos[2],
+      width: 1.6,
+      depth: 1.6,
+    }));
+    const pickupObstacles = PICKUPS.map((pickup) => ({
+      id: `example-pickup-${pickup.id}`,
+      x: pickup.pos[0],
+      z: pickup.pos[2],
+      width: 0.9,
+      depth: 0.9,
+    }));
+    const cropObstacles = CROP_PLOTS.map((plot) => ({
+      id: `example-crop-${plot.id}`,
+      x: plot.pos[0],
+      z: plot.pos[2],
+      width: 1.25,
+      depth: 1.25,
+    }));
+    const treeObstacles = SAKURA_TREES.map((tree, index) => ({
+      id: `example-tree-${index}`,
+      x: tree.position[0],
+      z: tree.position[2],
+      width: Math.max(1.4, tree.size * 0.7),
+      depth: Math.max(1.4, tree.size * 0.7),
+    }));
+    const houseObstacles = HOUSE_PLOTS.map((house) => ({
+      id: `example-house-${house.id}`,
+      x: house.pos[0],
+      z: house.pos[2],
+      width: 3.8,
+      depth: 3.8,
+    }));
+    const unregister = registerNavigationObstacles('examples.world.scenery', [
+      ...npcObstacles,
+      ...pickupObstacles,
+      ...cropObstacles,
+      ...treeObstacles,
+      ...houseObstacles,
+    ]);
+
+    const navigation = NavigationSystem.getInstance();
+    void navigation.init().then(() => {
+      applyRegisteredNavigationObstacles(navigation);
+    });
+
+    return unregister;
+  }, []);
+
+  return null;
+}
 
 export function Lighting() {
   return (
@@ -181,16 +241,12 @@ function HomeInterior({ returnPosition }: { returnPosition: [number, number, num
   );
 }
 
-type SceneryProps = {
-  onOpenShop: () => void;
-  onOpenCrafting: () => void;
-};
-
-export function Scenery({ onOpenShop, onOpenCrafting }: SceneryProps) {
+export function Scenery() {
   const homePlot = HOUSE_PLOTS[0]?.pos ?? [-8, 0, -4];
 
   return (
     <>
+      <ExampleNavigationObstacles />
       <SakuraBatch trees={SAKURA_TREES} />
 
       {NPCS.map((n) => (
@@ -200,10 +256,7 @@ export function Scenery({ onOpenShop, onOpenCrafting }: SceneryProps) {
           name={n.name}
           position={n.pos}
           dialogTreeId={n.dialogTreeId}
-          {...(n.color !== undefined ? { color: n.color } : {})}
-          {...(n.hatColor !== undefined ? { hatColor: n.hatColor } : {})}
-          {...(n.isShopkeeper ? { onOpenShop } : {})}
-          {...(n.isCraftsman ? { onCustomEffect: (key: string) => { if (key === 'openCrafting') onOpenCrafting(); } } : {})}
+          {...(n.accentColor !== undefined ? { accentColor: n.accentColor } : {})}
           onInteract={(id) => {
             void dispatchWorldGameplayEvent({ type: 'interaction', targetId: `npc:${id}`, action: 'talk' });
           }}

@@ -19,15 +19,11 @@ import {
   CatalogUI,
   CharacterCreator,
   Clicker,
-  CraftingUI,
   DialogBox,
   DynamicFog,
-  Editor,
   Footprints,
   GaesupWorld,
   GaesupWorldContent,
-  GameplayEventPanel,
-  GrassDriver,
   GroundClicker,
   HotbarUI,
   InteractionPrompt,
@@ -38,17 +34,20 @@ import {
   QuestLogUI,
   RoomVisibilityDriver,
   setDefaultToonMode,
-  ShopUI,
-  StudioPanel,
-  ToastHost,
   ToolUseController,
   TouchControls,
   WeatherEffect,
-  createEditorShell,
-  type EditorShellOptions,
   useBuildingStore,
   usePerfStore,
 } from '../../src';
+import {
+  Editor,
+  GameplayEventPanel,
+  StudioPanel,
+  createEditorShell,
+  type EditorShellOptions,
+} from '../../src/editor';
+import { GrassDriver } from '../../src/core/building';
 import { HudShell } from '../components/hud/HudShell';
 import { AIRPLANE_URL, EXAMPLE_CONFIG, S3, VEHICLE_URL } from '../config/constants';
 import '../style.css';
@@ -73,8 +72,6 @@ export const WorldPage = ({
   editorShellOptions = DEFAULT_EDITOR_SHELL_OPTIONS,
   children,
 }: WorldPageProps) => {
-  const [shopOpen, setShopOpen] = useState(false);
-  const [craftOpen, setCraftOpen] = useState(false);
   const fogEnabled = useBuildingStore((s) => s.showFog);
   const fogColor = useBuildingStore((s) => s.fogColor);
   const weatherEffect = useBuildingStore((s) => s.weatherEffect);
@@ -179,10 +176,7 @@ export const WorldPage = ({
               <Physics debug interpolate>
                 {!showEditor && <Player />}
                 <Ground />
-                <Scenery
-                  onOpenShop={() => setShopOpen(true)}
-                  onOpenCrafting={() => setCraftOpen(true)}
-                />
+                <Scenery />
                 {!showEditor && <Clicker />}
                 {!showEditor && <GroundClicker />}
                 <BuildingController />
@@ -201,18 +195,10 @@ export const WorldPage = ({
 
         {showHud && (
           <>
-            <HudShell
-              onOpenCrafting={() => setCraftOpen(true)}
-              showEnvironmentControls={!showEditor}
-              compact={compactHud}
-            />
+            <HudShell showEnvironmentControls={!showEditor} compact={compactHud} />
 
             <InteractionPrompt enabled={!showEditor} />
             <DialogBox />
-            <ToastHost />
-
-            <ShopUI open={shopOpen} onClose={() => setShopOpen(false)} title="토미네 상점" />
-            <CraftingUI open={craftOpen} onClose={() => setCraftOpen(false)} title="류의 작업대" />
             <QuestLogUI toggleKey="j" />
             <MailboxUI toggleKey="m" />
             <CatalogUI toggleKey="k" />

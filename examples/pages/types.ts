@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-import type { EditorShellOptions } from '../../src';
+import type { EditorShellOptions } from '../../src/editor';
  
 export type WorldPageProps = {
   showEditor?: boolean;

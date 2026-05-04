@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
-import type { CameraOptionType, NPCSchedule, SakuraTreeEntry, SandEntry, SnowfieldEntry } from '../../../src';
+import type { CameraOptionType, NPCSchedule } from '../../../src';
+import type { SakuraTreeEntry, SandEntry, SnowfieldEntry } from '../../../src/core/building';
 
 export const RICH_CAMERA_OPTION: CameraOptionType = {
   xDistance: -7,
@@ -62,17 +63,14 @@ export type WorldNpc = {
   id: string;
   name: string;
   pos: [number, number, number];
-  color?: string;
-  hatColor?: string;
+  accentColor?: string;
   dialogTreeId: string;
-  isShopkeeper?: boolean;
-  isCraftsman?: boolean;
 };
 
 export const NPCS: WorldNpc[] = [
-  { id: 'tommy', name: '토미', pos: [0, 0, -8], color: '#f5d199', hatColor: '#a85a5a', dialogTreeId: 'npc.shopkeeper', isShopkeeper: true },
-  { id: 'mei', name: '메이', pos: [6, 0, 0], color: '#ffe4c8', hatColor: '#5a8acf', dialogTreeId: 'npc.villager' },
-  { id: 'ryu', name: '류', pos: [-6, 0, 0], color: '#ffd0b8', hatColor: '#3a8a3a', dialogTreeId: 'npc.craftsman', isCraftsman: true },
+  { id: 'tommy', name: '토미', pos: [0, 0, -8], accentColor: '#ff9f6e', dialogTreeId: 'npc.shopkeeper' },
+  { id: 'mei', name: '메이', pos: [6, 0, 0], accentColor: '#7fc6ff', dialogTreeId: 'npc.villager' },
+  { id: 'ryu', name: '류', pos: [-6, 0, 0], accentColor: '#85d878', dialogTreeId: 'npc.craftsman' },
 ];
 
 export const NPC_SCHEDULES: NPCSchedule[] = [

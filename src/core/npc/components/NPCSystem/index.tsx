@@ -4,7 +4,9 @@ import { useFrame, useThree } from '@react-three/fiber';
 
 import { weightFromDistance } from '@core/utils/sfe';
 
+import { BuildingNavigationObstacleDriver } from '../../../building/components/BuildingNavigationObstacleDriver';
 import { useBuildingStore } from '../../../building/stores/buildingStore';
+import { applyNPCNavigationRoute, NavigationSystem } from '../../../navigation';
 import { useNPCStore } from '../../stores/npcStore';
 import { NPCInstance } from '../NPCInstance';
 import './styles.css';
@@ -27,6 +29,21 @@ export function NPCSystem() {
   const editMode = useBuildingStore(state => state.editMode);
   const hoverPosition = useBuildingStore(state => state.hoverPosition);
   const isNPCMode = editMode === 'npc';
+  const navigationRef = useRef(NavigationSystem.getInstance());
+  const navigationReadyRef = useRef(false);
+  const [navigationReady, setNavigationReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void navigationRef.current.init().then((ready) => {
+      if (!active) return;
+      navigationReadyRef.current = ready;
+      setNavigationReady(ready);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Distance-based LOD: hide NPCs beyond LOD_FAR.
   const [visibleIds, setVisibleIds] = useState<Set<string>>(() => new Set());
@@ -60,12 +77,22 @@ export function NPCSystem() {
       if (!(target instanceof HTMLCanvasElement)) return;
       if (event.defaultPrevented) return;
       if (selectedInstanceId && !event.shiftKey) {
+        const selectedInstance = instances.get(selectedInstanceId);
         const moveTarget: [number, number, number] = [
           hoverPosition.x,
           hoverPosition.y,
           hoverPosition.z,
         ];
         updateInstanceBehavior(selectedInstanceId, { mode: 'idle' });
+        if (selectedInstance && navigationReadyRef.current) {
+          const route = applyNPCNavigationRoute(
+            navigationRef.current,
+            { id: selectedInstance.id, position: selectedInstance.position },
+            moveTarget,
+            setNavigation,
+          );
+          if (route.length > 0) return;
+        }
         setNavigation(selectedInstanceId, [moveTarget]);
         return;
       }
@@ -84,6 +111,7 @@ export function NPCSystem() {
     selectedTemplateId,
     selectedInstanceId,
     hoverPosition,
+    instances,
     gl,
     createInstanceFromTemplate,
     setNavigation,
@@ -92,6 +120,10 @@ export function NPCSystem() {
 
   return (
     <group name="npc-system">
+      <BuildingNavigationObstacleDriver
+        navigation={navigationRef.current}
+        enabled={navigationReady}
+      />
       {Array.from(instances.values()).map((instance) => {
         // In edit mode show all; otherwise respect LOD.
         if (!isNPCMode && !visibleIds.has(instance.id)) return null;

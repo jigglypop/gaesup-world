@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import * as THREE from 'three';
 
 import { PathLine } from './PathLine';
 import { TargetMarker } from './TargetMarker';
+import {
+  getClickNavigationRoute,
+  subscribeClickNavigationRoute,
+} from '../../../navigation/ClickNavigationRoute';
 import { useInteractionSystem } from '../../../motions/hooks/useInteractionSystem';
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
 import { useGaesupStore } from '../../../stores/gaesupStore';
@@ -12,7 +16,12 @@ export function Clicker() {
   const automation = useGaesupStore((state) => state.automation);
   const { position: playerPosition } = usePlayerPosition();
   const { mouse } = useInteractionSystem();
-  
+  const [navigationPoints, setNavigationPoints] = useState(() => [...getClickNavigationRoute()]);
+
+  useEffect(() => subscribeClickNavigationRoute(() => {
+    setNavigationPoints([...getClickNavigationRoute()]);
+  }), []);
+
   // Use 3D target position from InteractionSystem
   const mouseTarget = mouse?.target || new THREE.Vector3();
   const isActive = mouse?.isActive || false;
@@ -35,8 +44,9 @@ export function Clicker() {
     .filter((point): point is THREE.Vector3 => point !== null);
 
   // Start from player position
+  const routedPoints = navigationPoints.length > 0 ? navigationPoints : [mouseTarget];
   const allPoints = shouldShowMarker
-    ? [playerPosition, mouseTarget, ...queuePoints]
+    ? [playerPosition, ...routedPoints, ...queuePoints]
     : queuePoints.length > 0
       ? [playerPosition, ...queuePoints]
       : [];

@@ -112,7 +112,7 @@ export function useBuildingEditor() {
     const targetLike = (event.currentTarget as Partial<HTMLCanvasElement> | null)
       ?? (event.target as Partial<HTMLCanvasElement> | null)
       ?? null;
-    const rect = typeof targetLike.getBoundingClientRect === 'function'
+    const rect = targetLike && typeof targetLike.getBoundingClientRect === 'function'
       ? targetLike.getBoundingClientRect()
       : ({
           left: 0,

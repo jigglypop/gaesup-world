@@ -2,7 +2,7 @@ import React from 'react';
 
 import ReactDOM from 'react-dom/client';
 
-import { configureReinforcementAdapter } from '../src';
+import { configureReinforcementAdapter } from '../src/core/npc';
 import App from './App';
 import './style.css';
 

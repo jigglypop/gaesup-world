@@ -1,4 +1,34 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+
+import type { CameraOptionType, CameraType } from '../../../camera';
+import type { ModeState } from '../../../stores/slices/mode';
+import type { UrlsState } from '../../../stores/slices/urls/types';
+
+export type WorldAssetUrls = Partial<UrlsState> & Partial<{
+  character: string;
+  vehicle: string;
+  airplane: string;
+  terrain: string;
+  skybox: string;
+}>;
+
+export type WorldCameraOption = Pick<CameraOptionType,
+  | 'distance'
+  | 'xDistance'
+  | 'yDistance'
+  | 'zDistance'
+  | 'fov'
+  | 'zoom'
+  | 'enableZoom'
+  | 'minZoom'
+  | 'maxZoom'
+  | 'zoomSpeed'
+  | 'enableCollision'
+> & {
+  type: CameraType;
+  height?: number;
+  smoothness?: number;
+};
 
 export type WorldData = {
   id: string;
@@ -25,39 +55,9 @@ export type WorldData = {
 
 export interface WorldContainerProps {
   children?: ReactNode;
-  urls?: Partial<{
-    // Preferred keys (match store UrlsState)
-    characterUrl?: string;
-    vehicleUrl?: string;
-    airplaneUrl?: string;
-    // Backward-compatible aliases
-    character?: string;
-    vehicle?: string;
-    airplane?: string;
-    terrain?: string;
-    skybox?: string;
-  }>;
-  cameraOption?: {
-    type: 'fixed' | 'chase' | 'firstPerson' | 'thirdPerson' | 'topDown' | 'isometric' | 'sideScroll';
-    distance?: number;
-    height?: number;
-    xDistance?: number;
-    yDistance?: number;
-    zDistance?: number;
-    fov?: number;
-    smoothness?: number;
-    zoom?: number;
-    enableZoom?: boolean;
-    minZoom?: number;
-    maxZoom?: number;
-    zoomSpeed?: number;
-    enableCollision?: boolean;
-  };
-  mode?: {
-    type: 'character' | 'vehicle' | 'airplane';
-    controller?: 'clicker' | 'keyboard' | 'gamepad';
-    control?: 'fixed' | 'chase' | 'firstPerson' | 'thirdPerson' | 'topDown' | 'isometric' | 'sideScroll';
-  };
+  urls?: WorldAssetUrls;
+  cameraOption?: WorldCameraOption;
+  mode?: Partial<ModeState> & Pick<ModeState, 'type'>;
   debug?: boolean;
   showGrid?: boolean;
   showAxes?: boolean;

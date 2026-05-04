@@ -13,9 +13,15 @@ import {
 import { calcNorm } from '@utils/vector';
 
 import { InteractionSystem } from '../../../interactions/core/InteractionSystem';
+import {
+  consumeReachedClickNavigationWaypoint,
+  getClickNavigationRoute,
+  getClickNavigationSettings,
+} from '../../../navigation/ClickNavigationRoute';
 import { ActiveStateType } from '../../core/types';
 import {
   PhysicsCalcProps,
+  PhysicsInputState,
   PhysicsState,
 } from '../../types';
 
@@ -195,6 +201,8 @@ export class DirectionComponent {
     characterConfig: PhysicsConfigType,
     calcProp?: PhysicsCalcProps,
   ): void {
+    this.syncClickNavigationTarget(mouse, calcProp);
+
     const { automation } = calcProp?.worldContext || {};
     if (automation?.settings.trackProgress && automation.queue.actions && automation.queue.actions.length > 0) {
       const Q = automation.queue.actions.shift();
@@ -240,6 +248,45 @@ export class DirectionComponent {
 
       this.applyMouseRotation(activeState, mouse, characterConfig);
     }
+  }
+
+  private syncClickNavigationTarget(
+    mouse: PhysicsState['mouse'],
+    calcProp?: PhysicsCalcProps,
+  ): void {
+    if (getClickNavigationRoute().length === 0) return;
+
+    const currentPosition = this.vectorCache.getTempVector(3);
+    const rb = calcProp?.rigidBodyRef?.current;
+    if (rb) {
+      const translation = rb.translation();
+      currentPosition.set(translation.x, translation.y, translation.z);
+    } else {
+      currentPosition.copy(calcProp?.inputRef.current.mouse.target ?? mouse.target);
+    }
+
+    const nextTarget = consumeReachedClickNavigationWaypoint(currentPosition);
+    const { shouldRun } = getClickNavigationSettings();
+
+    if (!nextTarget) {
+      calcProp?.setMouseInput?.({ isActive: false, shouldRun: false });
+      mouse.isActive = false;
+      mouse.shouldRun = false;
+      return;
+    }
+
+    const nextAngle = Math.atan2(nextTarget.z - currentPosition.z, nextTarget.x - currentPosition.x);
+    calcProp?.setMouseInput?.({
+      target: nextTarget,
+      angle: nextAngle,
+      position: new THREE.Vector2(nextTarget.x, nextTarget.z),
+      isActive: true,
+      shouldRun,
+    } as Partial<PhysicsInputState['mouse']>);
+    mouse.target = nextTarget;
+    mouse.angle = nextAngle;
+    mouse.isActive = true;
+    mouse.shouldRun = shouldRun;
   }
 
   private handleClicker(calcProp: PhysicsCalcProps, currentPos: { x: number; y: number; z: number }): void {

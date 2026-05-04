@@ -52,7 +52,6 @@ export function createHudActionButtons({
       hotkey: 'K',
       ...(collected > 0 ? { badge: collected, badgeColor: '#7adf90' } : {}),
     },
-    { key: 'c', label: '제작', hotkey: 'C' },
   ];
 }
 

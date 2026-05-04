@@ -9,7 +9,6 @@ import {
   useMailStore,
   useQuestStore,
   useTownStore,
-  useWalletStore,
 } from '../../../src';
 import Info from '../info';
 import { Teleport } from '../teleport';
@@ -19,16 +18,9 @@ function dispatchKey(k: string) {
 }
 
 function HeaderBar() {
-  const wallet = useWalletStore((s) => s.bells);
-
   return (
     <div className="gp-header">
       <div style={{ flex: 1 }} />
-
-      <div className="gp-glass gp-pill" style={{ paddingRight: 12, gap: 8 }}>
-        <span style={{ color: 'var(--gp-accent)', fontWeight: 600 }}>{wallet.toLocaleString()}</span>
-        <span style={{ color: 'var(--gp-text-dim)' }}>B</span>
-      </div>
     </div>
   );
 }
@@ -101,7 +93,7 @@ function LeftSidebar({
   );
 }
 
-function RightSidebar({ onOpenCrafting, compact }: { onOpenCrafting?: () => void; compact: boolean }) {
+function RightSidebar({ compact }: { compact: boolean }) {
   const messages = useMailStore((s) => s.messages);
   const quests = useQuestStore((s) => s.state);
   const catalog = useCatalogStore((s) => s.entries);
@@ -140,7 +132,6 @@ function RightSidebar({ onOpenCrafting, compact }: { onOpenCrafting?: () => void
       ...(action.key === 'j' ? { badgeKind: 'cool' as const } : {}),
       ...(action.key === 'm' ? { badgeKind: (unclaimed > 0 ? 'warn' : 'cool') as 'warn' | 'cool' } : {}),
       ...(action.key === 'k' ? { badgeKind: 'good' as const } : {}),
-      ...(action.key === 'c' && onOpenCrafting ? { onClick: onOpenCrafting } : {}),
     })),
     { id: 'chr', key: 'o', label: '캐릭터' },
   ];
@@ -248,13 +239,11 @@ function FooterBar() {
 }
 
 export type HudShellProps = {
-  onOpenCrafting?: () => void;
   showEnvironmentControls?: boolean;
   compact?: boolean;
 };
 
 export function HudShell({
-  onOpenCrafting,
   showEnvironmentControls = true,
   compact = false,
 }: HudShellProps) {
@@ -273,7 +262,7 @@ export function HudShell({
           showEnvironmentControls={showEnvironmentControls}
           compact={compact}
         />
-        <RightSidebar {...(onOpenCrafting ? { onOpenCrafting } : {})} compact={compact} />
+        <RightSidebar compact={compact} />
         {!compact && <FooterBar />}
       </div>
       {showInfo && <Info />}

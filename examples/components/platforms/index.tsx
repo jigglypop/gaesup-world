@@ -1,4 +1,5 @@
 import { RigidBody } from '@react-three/rapier';
+import * as THREE from 'three';
 
 import { PLATFORMS } from './constants';
 import { MinimapPlatform } from '../../../src';
@@ -6,6 +7,13 @@ import { MinimapPlatform } from '../../../src';
 import './styles.css';
 
 export function Platforms() {
+  const setHover = (object: THREE.Object3D, emissive: number): void => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const material = object.material;
+    if (!(material instanceof THREE.MeshStandardMaterial)) return;
+    material.emissive.setHex(emissive);
+  };
+
   return (
     <>
       {PLATFORMS.map((platform, index) => (
@@ -22,8 +30,8 @@ export function Platforms() {
               castShadow
               receiveShadow
               onClick={(e) => e.stopPropagation()}
-              onPointerOver={(e) => e.object.material.emissive.setHex(0x222222)}
-              onPointerOut={(e) => e.object.material.emissive.setHex(0x000000)}
+              onPointerOver={(e) => setHover(e.object, 0x222222)}
+              onPointerOut={(e) => setHover(e.object, 0x000000)}
             >
               <boxGeometry args={platform.size as [number, number, number]} />
               <meshStandardMaterial color={platform.color} />

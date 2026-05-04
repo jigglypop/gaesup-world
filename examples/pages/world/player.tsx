@@ -13,8 +13,8 @@ import {
   useGaesupStore,
   usePlayerPosition,
   useStateSystem,
-  WARRIOR_BLUEPRINT,
 } from '../../../src';
+import { WARRIOR_BLUEPRINT } from '../../../src/blueprints';
 import { CHARACTER_URL } from '../../config/constants';
 
 const DEFAULT_CHARACTER_BLUEPRINT_PARTS = WARRIOR_BLUEPRINT.visuals?.parts ?? [];

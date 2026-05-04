@@ -8,6 +8,7 @@ export interface NavigationConfig {
   worldMinZ: number;
   worldMaxX: number;
   worldMaxZ: number;
+  maxStepHeight: number;
 }
 
 export type Waypoint = [number, number, number];
@@ -18,7 +19,24 @@ const DEFAULT_CONFIG: NavigationConfig = {
   worldMinZ: -200,
   worldMaxX: 200,
   worldMaxZ: 200,
+  maxStepHeight: 1.1,
 };
+
+const PATH_DIRECTIONS: ReadonlyArray<readonly [number, number, number]> = [
+  [1, 0, 10], [-1, 0, 10], [0, 1, 10], [0, -1, 10],
+  [1, 1, 14], [1, -1, 14], [-1, 1, 14], [-1, -1, 14],
+];
+
+function hasNavigationWasm(wasm: GaesupCoreWasmExports | null): wasm is GaesupCoreWasmExports {
+  return Boolean(
+    wasm &&
+    typeof wasm.alloc_u8 === 'function' &&
+    typeof wasm.dealloc_u8 === 'function' &&
+    typeof wasm.alloc_u32 === 'function' &&
+    typeof wasm.dealloc_u32 === 'function' &&
+    typeof wasm.astar_find_path === 'function',
+  );
+}
 
 export class NavigationSystem {
   private static instance: NavigationSystem | null = null;
@@ -28,6 +46,9 @@ export class NavigationSystem {
   private gridHeight: number;
   private grid: Uint8Array;
   private costGrid: Uint8Array;
+  private heightGrid: Float32Array;
+  private hasHeightData = false;
+  private hasBlockedData = false;
   private wasm: GaesupCoreWasmExports | null = null;
   private ready = false;
 
@@ -45,6 +66,7 @@ export class NavigationSystem {
     const total = this.gridWidth * this.gridHeight;
     this.grid = new Uint8Array(total).fill(1);
     this.costGrid = new Uint8Array(total).fill(1);
+    this.heightGrid = new Float32Array(total);
   }
 
   static getInstance(config?: Partial<NavigationConfig>): NavigationSystem {
@@ -57,8 +79,9 @@ export class NavigationSystem {
   async init(): Promise<boolean> {
     if (this.ready) return true;
 
-    this.wasm = await loadCoreWasm();
-    if (this.wasm && typeof this.wasm.astar_find_path === 'function') {
+    const wasm = await loadCoreWasm();
+    if (hasNavigationWasm(wasm)) {
+      this.wasm = wasm;
       const total = this.gridWidth * this.gridHeight;
       this.gridPtr = this.wasm.alloc_u8(total);
       this.outPathPtr = this.wasm.alloc_u32(this.outCapacity * 2);
@@ -72,30 +95,37 @@ export class NavigationSystem {
   }
 
   private syncGridToWasm(): void {
-    if (!this.wasm) return;
-    const view = new Uint8Array(
-      this.wasm.memory.buffer,
-      this.gridPtr,
-      this.gridWidth * this.gridHeight,
-    );
-    view.set(this.grid);
+    this.syncToWasm(this.grid);
   }
 
   private syncCostGridToWasm(): void {
     if (!this.wasm) return;
-    const view = new Uint8Array(
+    this.syncToWasm(this.costGrid);
+  }
+
+  private syncToWasm(source: Uint8Array): void {
+    if (!this.wasm) return;
+    new Uint8Array(
       this.wasm.memory.buffer,
       this.gridPtr,
       this.gridWidth * this.gridHeight,
-    );
-    view.set(this.costGrid);
+    ).set(source);
   }
 
-  private openNodeAt(
-    open: Array<{ f: number; idx: number }>,
-    index: number,
-  ): { f: number; idx: number } | null {
-    return open[index] ?? null;
+  private cellIndex(gx: number, gz: number): number {
+    return gz * this.gridWidth + gx;
+  }
+
+  private isGridCell(gx: number, gz: number): boolean {
+    return gx >= 0 && gx < this.gridWidth && gz >= 0 && gz < this.gridHeight;
+  }
+
+  private setCell(gx: number, gz: number, value: number): void {
+    if (!this.isGridCell(gx, gz)) return;
+    const idx = this.cellIndex(gx, gz);
+    this.grid[idx] = value;
+    this.costGrid[idx] = value;
+    if (value === 0) this.hasBlockedData = true;
   }
 
   worldToGrid(worldX: number, worldZ: number): [number, number] {
@@ -108,11 +138,11 @@ export class NavigationSystem {
     ];
   }
 
-  gridToWorld(gx: number, gz: number, y: number = 0): Waypoint {
+  gridToWorld(gx: number, gz: number, y?: number): Waypoint {
     const { cellSize, worldMinX, worldMinZ } = this.config;
     return [
       worldMinX + (gx + 0.5) * cellSize,
-      y,
+      y ?? this.heightGrid[this.cellIndex(gx, gz)] ?? 0,
       worldMinZ + (gz + 0.5) * cellSize,
     ];
   }
@@ -123,6 +153,15 @@ export class NavigationSystem {
 
   setWalkable(worldX: number, worldZ: number, width: number, depth: number): void {
     this.setRegion(worldX, worldZ, width, depth, 1);
+  }
+
+  reset(value: number = 1): void {
+    const clamped = Math.max(0, Math.min(255, Math.round(value)));
+    this.grid.fill(clamped === 0 ? 0 : 1);
+    this.costGrid.fill(clamped);
+    this.heightGrid.fill(0);
+    this.hasHeightData = false;
+    this.hasBlockedData = clamped === 0;
   }
 
   private setRegion(
@@ -140,21 +179,65 @@ export class NavigationSystem {
 
     for (let gz = startGZ; gz < endGZ; gz++) {
       for (let gx = startGX; gx < endGX; gx++) {
-        if (gx >= 0 && gx < this.gridWidth && gz >= 0 && gz < this.gridHeight) {
-          const idx = gz * this.gridWidth + gx;
-          this.grid[idx] = value;
-          this.costGrid[idx] = value;
-        }
+        this.setCell(gx, gz, value);
       }
     }
   }
 
   setCost(worldX: number, worldZ: number, cost: number): void {
     const [gx, gz] = this.worldToGrid(worldX, worldZ);
-    const idx = gz * this.gridWidth + gx;
+    const idx = this.cellIndex(gx, gz);
     const clamped = Math.max(0, Math.min(255, Math.round(cost)));
     this.costGrid[idx] = clamped;
-    if (clamped === 0) this.grid[idx] = 0;
+    if (clamped === 0) {
+      this.grid[idx] = 0;
+      this.hasBlockedData = true;
+    }
+  }
+
+  setHeight(worldX: number, worldZ: number, height: number): void {
+    const [gx, gz] = this.worldToGrid(worldX, worldZ);
+    this.heightGrid[this.cellIndex(gx, gz)] = height;
+    if (height !== 0) this.hasHeightData = true;
+  }
+
+  setHeightRegion(worldX: number, worldZ: number, width: number, depth: number, height: number): void {
+    this.setHeightSampler(worldX, worldZ, width, depth, () => height);
+  }
+
+  setHeightSampler(
+    worldX: number,
+    worldZ: number,
+    width: number,
+    depth: number,
+    sampler: (worldX: number, worldZ: number) => number,
+  ): void {
+    const { cellSize, worldMinX, worldMinZ } = this.config;
+    const halfW = width / 2;
+    const halfD = depth / 2;
+    const startGX = Math.floor((worldX - halfW - worldMinX) / cellSize);
+    const startGZ = Math.floor((worldZ - halfD - worldMinZ) / cellSize);
+    const endGX = Math.ceil((worldX + halfW - worldMinX) / cellSize);
+    const endGZ = Math.ceil((worldZ + halfD - worldMinZ) / cellSize);
+
+    for (let gz = startGZ; gz < endGZ; gz++) {
+      for (let gx = startGX; gx < endGX; gx++) {
+        if (!this.isGridCell(gx, gz)) continue;
+        const [sampleX, , sampleZ] = this.gridToWorld(gx, gz, 0);
+        const height = sampler(sampleX, sampleZ);
+        this.heightGrid[this.cellIndex(gx, gz)] = height;
+        if (height !== 0) this.hasHeightData = true;
+      }
+    }
+  }
+
+  sampleHeight(worldX: number, worldZ: number): number {
+    const [gx, gz] = this.worldToGrid(worldX, worldZ);
+    return this.heightGrid[this.cellIndex(gx, gz)] ?? 0;
+  }
+
+  hasNavigationConstraints(): boolean {
+    return this.hasBlockedData || this.hasHeightData;
   }
 
   setBlockedFromBox(box: THREE.Box3): void {
@@ -168,7 +251,7 @@ export class NavigationSystem {
   findPath(
     startX: number, startZ: number,
     goalX: number, goalZ: number,
-    y: number = 0,
+    y?: number,
     weighted: boolean = false,
   ): Waypoint[] {
     if (!this.ready) return [];
@@ -176,19 +259,23 @@ export class NavigationSystem {
     const [sx, sz] = this.worldToGrid(startX, startZ);
     const [gx, gz] = this.worldToGrid(goalX, goalZ);
 
-    if (this.wasm) {
+    if (this.wasm && !this.hasHeightData) {
       return this.findPathWasm(sx, sz, gx, gz, y, weighted);
     }
-    return this.findPathJS(sx, sz, gx, gz, y);
+    return this.findPathJS(sx, sz, gx, gz, y, weighted);
   }
 
   private findPathWasm(
     sx: number, sz: number,
     gx: number, gz: number,
-    y: number,
+    y: number | undefined,
     weighted: boolean,
   ): Waypoint[] {
     const wasm = this.wasm!;
+
+    if (weighted && typeof wasm.astar_find_path_weighted !== 'function') {
+      return this.findPathJS(sx, sz, gx, gz, y, true);
+    }
 
     if (weighted) {
       this.syncCostGridToWasm();
@@ -219,15 +306,16 @@ export class NavigationSystem {
   private findPathJS(
     sx: number, sz: number,
     gx: number, gz: number,
-    y: number,
+    y: number | undefined,
+    weighted: boolean,
   ): Waypoint[] {
     const w = this.gridWidth;
     const h = this.gridHeight;
     const grid = this.grid;
     const total = w * h;
 
-    const startIdx = sz * w + sx;
-    const goalIdx = gz * w + gx;
+    const startIdx = this.cellIndex(sx, sz);
+    const goalIdx = this.cellIndex(gx, gz);
 
     if (grid[startIdx] === 0 || grid[goalIdx] === 0) return [];
     if (startIdx === goalIdx) return [this.gridToWorld(gx, gz, y)];
@@ -241,20 +329,15 @@ export class NavigationSystem {
       { f: this.octileH(sx, sz, gx, gz), idx: startIdx },
     ];
 
-    const dirs: ReadonlyArray<readonly [number, number, number]> = [
-      [1, 0, 10], [-1, 0, 10], [0, 1, 10], [0, -1, 10],
-      [1, 1, 14], [1, -1, 14], [-1, 1, 14], [-1, -1, 14],
-    ];
-
     while (open.length > 0) {
       let minPos = 0;
       for (let i = 1; i < open.length; i++) {
-        const candidate = this.openNodeAt(open, i);
-        const currentMin = this.openNodeAt(open, minPos);
+        const candidate = open[i];
+        const currentMin = open[minPos];
         if (candidate && currentMin && candidate.f < currentMin.f) minPos = i;
       }
-      const current = this.openNodeAt(open, minPos);
-      const last = this.openNodeAt(open, open.length - 1);
+      const current = open[minPos];
+      const last = open[open.length - 1];
       if (!current || !last) break;
       open[minPos] = last;
       open.pop();
@@ -269,19 +352,23 @@ export class NavigationSystem {
       const cg = gScore[ci];
       if (cg === undefined) continue;
 
-      for (const [dx, dz, cost] of dirs) {
+      for (const [dx, dz, cost] of PATH_DIRECTIONS) {
         const nx = cx + dx;
         const nz = cz + dz;
         if (nx < 0 || nz < 0 || nx >= w || nz >= h) continue;
 
-        const ni = nz * w + nx;
+        const ni = this.cellIndex(nx, nz);
         if (closed[ni] || grid[ni] === 0) continue;
+        if (!this.canStepBetween(ci, ni)) continue;
 
         if (dx !== 0 && dz !== 0) {
           if (grid[cz * w + nx] === 0 || grid[nz * w + cx] === 0) continue;
+          if (!this.canStepBetween(ci, this.cellIndex(nx, cz))) continue;
+          if (!this.canStepBetween(ci, this.cellIndex(cx, nz))) continue;
         }
 
-        const tentG = cg + cost;
+        const cellCost = weighted ? Math.max(1, this.costGrid[ni] ?? 1) : 1;
+        const tentG = cg + cost * cellCost;
         const nextScore = gScore[ni];
         if (nextScore !== undefined && tentG < nextScore) {
           gScore[ni] = tentG;
@@ -311,6 +398,84 @@ export class NavigationSystem {
     const dx = Math.abs(x - gx);
     const dz = Math.abs(z - gz);
     return Math.max(dx, dz) * 10 + Math.min(dx, dz) * 4;
+  }
+
+  private canStepBetween(fromIdx: number, toIdx: number): boolean {
+    if (!this.hasHeightData) return true;
+    return Math.abs((this.heightGrid[toIdx] ?? 0) - (this.heightGrid[fromIdx] ?? 0)) <= this.config.maxStepHeight;
+  }
+
+  hasLineOfSight(
+    startX: number,
+    startZ: number,
+    goalX: number,
+    goalZ: number,
+  ): boolean {
+    const dx = goalX - startX;
+    const dz = goalZ - startZ;
+    const distance = Math.sqrt(dx * dx + dz * dz);
+    const steps = Math.max(1, Math.ceil(distance / (this.config.cellSize * 0.5)));
+
+    let prevGX = -1;
+    let prevGZ = -1;
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const [gx, gz] = this.worldToGrid(startX + dx * t, startZ + dz * t);
+      if (gx === prevGX && gz === prevGZ) continue;
+      const idx = this.cellIndex(gx, gz);
+      if (
+        prevGX !== -1 &&
+        prevGZ !== -1 &&
+        !this.canStepBetween(this.cellIndex(prevGX, prevGZ), idx)
+      ) {
+        return false;
+      }
+      prevGX = gx;
+      prevGZ = gz;
+      if (this.grid[idx] === 0) return false;
+    }
+
+    return true;
+  }
+
+  smoothPath(
+    waypoints: Waypoint[],
+    start?: Waypoint,
+    goal?: Waypoint,
+  ): Waypoint[] {
+    if (waypoints.length === 0) return [];
+
+    const first = start ?? waypoints[0];
+    const last = goal ?? waypoints[waypoints.length - 1];
+    if (!first || !last) return [];
+
+    const anchors: Waypoint[] = [first];
+    const bodyStart = start ? 1 : 0;
+    const bodyEnd = goal ? waypoints.length - 1 : waypoints.length;
+    for (let i = bodyStart; i < bodyEnd; i++) {
+      const waypoint = waypoints[i];
+      if (waypoint) anchors.push(waypoint);
+    }
+    anchors.push(last);
+
+    const result: Waypoint[] = [];
+    let anchorIndex = 0;
+    result.push(anchors[anchorIndex]!);
+
+    while (anchorIndex < anchors.length - 1) {
+      let nextIndex = anchors.length - 1;
+      const anchor = anchors[anchorIndex]!;
+      while (
+        nextIndex > anchorIndex + 1 &&
+        !this.hasLineOfSight(anchor[0], anchor[2], anchors[nextIndex]![0], anchors[nextIndex]![2])
+      ) {
+        nextIndex -= 1;
+      }
+      result.push(anchors[nextIndex]!);
+      anchorIndex = nextIndex;
+    }
+
+    return result;
   }
 
   simplifyPath(waypoints: Waypoint[]): Waypoint[] {

@@ -23,9 +23,10 @@ export function Pickup({ id, itemId, count = 1, position, label }: PickupProps) 
   }, [add, itemId, count, taken]);
 
   if (taken) return null;
+  const interactableId = id === undefined ? {} : { id };
   return (
     <Interactable
-      id={id}
+      {...interactableId}
       kind="pickup"
       label={label ?? `${def?.name ?? itemId} 줍기`}
       range={2.4}

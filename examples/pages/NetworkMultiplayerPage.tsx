@@ -2,13 +2,13 @@ import React, { useRef } from 'react';
 
 import type { RapierRigidBody } from '@react-three/rapier';
 
-import { 
-  useMultiplayer,
+import {
   ConnectionForm,
-  PlayerInfoOverlay,
   MultiplayerCanvas,
-  defaultMultiplayerConfig
-} from '../../src';
+  PlayerInfoOverlay,
+  defaultMultiplayerConfig,
+  useMultiplayer,
+} from '../../src/network';
 import { CHARACTER_URL, VEHICLE_URL, AIRPLANE_URL } from '../config/constants';
 
 export function NetworkMultiplayerPage() {

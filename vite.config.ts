@@ -1,7 +1,9 @@
 import path from 'path';
 import { createReadStream, existsSync } from 'fs';
+import type { IncomingMessage, ServerResponse } from 'http';
 
 import react from '@vitejs/plugin-react-swc';
+import type { Plugin, ViteDevServer } from 'vite';
 import { defineConfig } from 'vite';
 import glsl from 'vite-plugin-glsl';
 import svgr from 'vite-plugin-svgr';
@@ -37,11 +39,11 @@ const GLTF_CONTENT_TYPES: Record<string, string> = {
   '.gltf': 'model/gltf+json',
 };
 
-function serveDemoGltfAssets() {
+function serveDemoGltfAssets(): Plugin {
   return {
     name: 'serve-demo-gltf-assets',
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
+    configureServer(server: ViteDevServer) {
+      server.middlewares.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
         const pathname = req.url?.split('?')[0] ?? '';
         if (!pathname.startsWith('/gltf/')) {
           next();
@@ -93,6 +95,7 @@ export default defineConfig(({ mode }) => {
                 decorators: true,
               };
             }
+            return undefined;
           },
           tsDecorators: true,
         }),
@@ -113,6 +116,7 @@ export default defineConfig(({ mode }) => {
             'blueprints-editor': path.resolve(__dirname, 'src/blueprints/editor.ts'),
             editor: path.resolve(__dirname, 'src/editor.ts'),
             network: path.resolve(__dirname, 'src/network.ts'),
+            plugins: path.resolve(__dirname, 'src/plugins.ts'),
             postprocessing: path.resolve(__dirname, 'src/postprocessing.ts'),
             runtime: path.resolve(__dirname, 'src/runtime.ts'),
             'server-contracts': path.resolve(__dirname, 'src/server-contracts.ts'),
@@ -154,6 +158,7 @@ export default defineConfig(({ mode }) => {
               decorators: true,
             };
           }
+          return undefined;
         },
         tsDecorators: true,
       }),

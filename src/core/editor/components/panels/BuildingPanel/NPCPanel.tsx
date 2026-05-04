@@ -35,7 +35,7 @@ type NPCPanelProps = {
   npcBrainBlueprintsArray: NPCBrainBlueprint[];
   hoverPosition: { x: number; y: number; z: number } | null;
   updateNPCBehavior: (id: string, updates: Partial<NPCBehaviorConfig | undefined>) => void;
-  setNPCNavigation: (id: string, updates: Partial<NPCNavigationState>) => void;
+  setNPCNavigation: (id: string, waypoints: NPCNavigationState['waypoints'], speed?: number) => void;
   clearNPCNavigation: (id: string) => void;
   updateNPCInstance: (id: string, updates: Partial<NPCInstance>) => void;
   updateNPCBrain: (id: string, updates: Partial<NPCBrainConfig>) => void;

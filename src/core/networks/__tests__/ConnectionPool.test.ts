@@ -27,7 +27,6 @@ describe('ConnectionPool', () => {
       // strength/latency를 인위적으로 변경
       pool.updateConnectionMetrics(conn.id, { strength: 0.1, latency: 999 });
       pool.releaseConnection(conn.id);
-
       // 재사용
       const reused = pool.getConnection('c', 'd');
       expect(reused.id).toBe(conn.id); // 같은 ID 재사용

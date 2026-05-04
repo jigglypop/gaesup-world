@@ -747,10 +747,7 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
           npcBrainBlueprintsArray={npcBrainBlueprintsArray}
           hoverPosition={hoverPosition}
           updateNPCBehavior={(id, updates) => updateNPCBehavior(id, updates as Partial<NPCBehaviorConfig>)}
-          setNPCNavigation={(id, updates) => {
-            if (!updates.waypoints || updates.waypoints.length === 0) return;
-            setNPCNavigation(id, updates.waypoints as [number, number, number][], updates.speed);
-          }}
+          setNPCNavigation={setNPCNavigation}
           clearNPCNavigation={clearNPCNavigation}
           updateNPCInstance={updateNPCInstance}
           updateNPCBrain={updateNPCBrain}

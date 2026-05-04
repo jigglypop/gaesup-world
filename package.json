@@ -84,6 +84,16 @@
         "default": "./dist/network.cjs"
       }
     },
+    "./plugins": {
+      "import": {
+        "types": "./dist/plugins.d.ts",
+        "default": "./dist/plugins.js"
+      },
+      "require": {
+        "types": "./dist/plugins.d.cts",
+        "default": "./dist/plugins.cjs"
+      }
+    },
     "./server-contracts": {
       "import": {
         "types": "./dist/server-contracts.d.ts",

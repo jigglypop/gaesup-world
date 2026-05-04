@@ -1,31 +1,21 @@
 import 'reflect-metadata'
 import './core/initializeBridges';
 
-export * from './blueprints';
-export * from './core/assets';
-export * from './core/content';
-export * from './core/editor';
-export * from './core/gameplay';
-export * from './core/grid';
-export * from './core/networks/adapter';
-export * from './core/ops';
-export * from './core/platform';
-export * from './core/placement';
-export * from './core/plugins';
-export * from './core/runtime';
+export { createGaesupRuntime } from './core/runtime';
+export type {
+  GaesupRuntime,
+  GaesupRuntimeOptions,
+  RuntimeAssetOptions,
+  RuntimeDomainBinding,
+} from './core/runtime';
 export {
   GaesupWorld,
   GaesupController,
-  // Animation
-  
-  AnimationDebugPanel,
   // Camera
   Camera,
-  CameraDebugPanel,
   CameraPresets,
   // Motions
   MotionController,
-  MotionDebugPanel,
   MotionUI,
   Teleport,
   usePlayerPosition,
@@ -40,19 +30,6 @@ export {
   WorldConfigProvider,
   // UI
   SpeechBalloon,
-  // Networks (multiplayer)
-  useMultiplayer,
-  usePlayerNetwork,
-  useNetworkBridge,
-  useNetworkMessage,
-  useNetworkGroup,
-  useNetworkStats,
-  useNPCConnection,
-  defaultMultiplayerConfig,
-  MultiplayerCanvas,
-  RemotePlayer,
-  ConnectionForm,
-  PlayerInfoOverlay,
   // Building
   V3,
   V30,
@@ -68,50 +45,16 @@ export {
   useTeleport,
   useBuildingEditor,
   useBuildingStore,
-  BUILDING_WALL_KIND_OPTIONS,
-  BUILDING_WALL_PRESETS,
-  BUILDING_TILE_PRESETS,
-  BUILDING_TREE_COLOR_PRESETS,
-  BUILDING_TREE_OPTIONS,
-  BUILDING_WEATHER_EFFECT_OPTIONS,
   BuildingController,
   createBuildingPlugin,
   buildingPlugin,
-  Editor,
   FocusableObject,
   GaeSupProps,
   GaesupWorldContent,
   useGaesupStore,
   // NPC
-  NPCInstance,
-  NPCPreview,
-  NPCEventEditor,
   NPCSystem,
   useNPCStore,
-  createNPCObservation,
-  resolveNPCBrainDecision,
-  registerNPCBrainAdapter,
-  configureReinforcementAdapter,
-  getReinforcementAdapterConfig,
-  registerDefaultReinforcementAdapter,
-  compileNPCBrainBlueprint,
-  getNPCBrainBlueprint,
-  registerNPCBrainBlueprint,
-  unregisterNPCBrainBlueprint,
-  // Environment meshes
-  Sakura,
-  SakuraBatch,
-  Sand,
-  SandBatch,
-  Snowfield,
-  SnowfieldBatch,
-  Snow,
-  Grass,
-  GrassDriver,
-  getGrassManager,
-  Water,
-  Billboard,
-  Fire,
   // Toon
   createToonMaterial,
   getToonGradient,
@@ -270,9 +213,6 @@ export {
   useUIConfigStore,
 } from './core';
 export type {
-  SakuraTreeEntry,
-  SandEntry,
-  SnowfieldEntry,
   GameTime,
   Season,
   Weekday,
@@ -358,34 +298,6 @@ export type {
   WeatherSerialized,
   WeatherHUDProps,
   WeatherEffectProps,
-  WeatherEffectKind,
-  BuildingWallKind,
-  BuildingWallPreset,
-  BuildingTilePreset,
-  BuildingWeatherEffect,
-  BuildingTreeKind,
-  NPCAction,
-  NPCBehaviorConfig,
-  NPCBehaviorMode,
-  NPCBrainAdapter,
-  NPCBrainAdapterContext,
-  ReinforcementAdapterConfig,
-  NPCBrainBlueprint,
-  NPCBrainBlueprintCondition,
-  NPCBrainBlueprintEdge,
-  NPCBrainBlueprintNode,
-  NPCBrainBlueprintTarget,
-  NPCBrainConfig,
-  NPCBrainDecision,
-  NPCBrainMode,
-  NPCEvent,
-  NPCEventPayload,
-  NPCInstance as NPCInstanceData,
-  NPCObservation,
-  NPCObservationTarget,
-  NPCPerceptionConfig,
-  NPCVolumeConfig,
-  NPCTemplate,
   EventId,
   EventTrigger,
   EventDef,
@@ -417,4 +329,7 @@ export type {
   AssetQuery,
   AssetPreviewCanvasProps,
   ResolveCharacterPartsInput,
+  WorldAssetUrls,
+  WorldCameraOption,
+  WorldContainerProps,
 } from './core';

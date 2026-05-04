@@ -11,10 +11,7 @@ declare global {
 export function Teleport() {
   const { teleport } = useTeleport();
   window.teleportTo = async (x: number, y: number, z: number) => {
-    const success = await teleport(V3(x, y, z));
-    if (!success) {
-      console.warn(`Failed to teleport to (${x}, ${y}, ${z})`);
-    }
+    teleport(V3(x, y, z));
   };
 
   return (
@@ -22,9 +19,11 @@ export function Teleport() {
       {TELEPORT_POINTS.map((point, index) => (
         <button
           key={index}
-          onClick={() =>
-            window.teleportTo?.(point.position[0], point.position[1], point.position[2])
-          }
+          onClick={() => {
+            const [x, y, z] = point.position;
+            if (x === undefined || y === undefined || z === undefined) return;
+            void window.teleportTo?.(x, y, z);
+          }}
           className="teleport-button"
         >
           {point.name}

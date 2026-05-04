@@ -7,6 +7,7 @@ import type { UrlsState } from '@/core/stores/slices/urls/types';
 import { useGaesupStore } from '@stores/gaesupStore';
 
 import { WorldContainerProps } from './types';
+export type { WorldAssetUrls, WorldCameraOption, WorldContainerProps } from './types';
 
 function WorldContent({ children, showGrid, showAxes }: { 
   children?: ReactNode; 

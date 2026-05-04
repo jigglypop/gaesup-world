@@ -7,34 +7,27 @@ const SHOPKEEPER_TREE: DialogTree = {
   nodes: {
     greet: {
       id: 'greet',
-      speaker: '상점주인 토미',
-      text: '어서오세요! 오늘은 어떤 일로 오셨나요?',
+      speaker: '토미',
+      text: '안녕하세요. 지금 예제 월드는 SDK 기능을 가볍게 보여주는 모드예요.',
       choices: [
-        { text: '상점 둘러보기', next: 'goodbye', effects: [{ type: 'openShop' }] },
         {
-          text: '시식용 사과 받기',
+          text: '아이템 하나 받아보기',
           next: 'gave-apple',
           effects: [{ type: 'giveItem', itemId: 'apple', count: 1 }],
         },
-        { text: '아니 그냥 인사하러', next: 'wave' },
+        { text: '그냥 인사하기', next: 'wave' },
       ],
     },
     'gave-apple': {
       id: 'gave-apple',
-      speaker: '상점주인 토미',
-      text: '맛있게 드세요. 또 오시면 더 좋은 거 보여드릴게요.',
+      speaker: '토미',
+      text: '사과를 하나 넣어둘게요. 인벤토리 예제를 확인해보세요.',
       next: null,
     },
     wave: {
       id: 'wave',
-      speaker: '상점주인 토미',
-      text: '하하, 천천히 둘러보고 가세요.',
-      next: null,
-    },
-    goodbye: {
-      id: 'goodbye',
-      speaker: '상점주인 토미',
-      text: '구경 잘 하셨나요? 좋은 하루!',
+      speaker: '토미',
+      text: '천천히 둘러보고 필요한 시스템만 켜서 보세요.',
       next: null,
     },
   },
@@ -47,45 +40,33 @@ const VILLAGER_TREE: DialogTree = {
     hello: {
       id: 'hello',
       speaker: '메이',
-      text: '오늘 날씨 좋네요. 혹시 부탁 하나 들어주실래요?',
+      text: '오늘은 이동, 상호작용, 퀘스트 흐름을 확인하기 좋아요.',
       choices: [
         {
-          text: '무슨 부탁이에요?',
-          next: 'quest-offer',
-        },
-        { text: '낚시는 어때요?', next: 'tip-fish' },
-        { text: '나중에요', next: 'wave' },
-      ],
-    },
-    'quest-offer': {
-      id: 'quest-offer',
-      speaker: '메이',
-      text: '집을 새로 지으려는데 목재가 부족해요. 5개만 가져다주실 수 있을까요?',
-      choices: [
-        {
-          text: '도와드릴게요',
+          text: '퀘스트 받아보기',
           next: 'quest-accepted',
           effects: [{ type: 'startQuest', questId: 'q.intro.gather-wood' }],
         },
-        { text: '나중에요', next: 'wave' },
+        { text: '팁 듣기', next: 'tip' },
+        { text: '다음에요', next: 'wave' },
       ],
     },
     'quest-accepted': {
       id: 'quest-accepted',
       speaker: '메이',
-      text: '고마워요! 도끼를 들고 [F] 키로 나무를 베면 됩니다. 모이면 다시 와주세요.',
+      text: '좋아요. 나무를 모으는 간단한 퀘스트가 시작됐어요.',
       next: null,
     },
-    'tip-fish': {
-      id: 'tip-fish',
+    tip: {
+      id: 'tip',
       speaker: '메이',
-      text: '바다는 동쪽 모래사장이에요. 낚싯대를 들고 [F] 키로 던지면 됩니다.',
+      text: '기본 예제는 핵심 런타임 흐름만 남겨두고, 경제와 제작 UI는 코어 모듈에서 따로 확인하는 쪽이 깔끔해요.',
       next: null,
     },
     wave: {
       id: 'wave',
       speaker: '메이',
-      text: '천천히 둘러보고 가세요.',
+      text: '필요하면 다시 말을 걸어주세요.',
       next: null,
     },
   },
@@ -97,22 +78,25 @@ const CRAFTSMAN_TREE: DialogTree = {
   nodes: {
     greet: {
       id: 'greet',
-      speaker: '제작가 류',
-      text: '제작이 필요하면 언제든 오세요. 작업대를 보시겠어요?',
+      speaker: '류',
+      text: '저는 제작 UI 대신 대화와 상호작용 예제를 맡고 있어요.',
       choices: [
-        { text: '작업대 열기', next: 'opened', effects: [{ type: 'custom', key: 'openCrafting' }] },
-        { text: '도감을 보고 싶어요', next: 'catalog-tip' },
-        { text: '됐어요', next: 'wave' },
+        { text: '카탈로그 팁 듣기', next: 'catalog-tip' },
+        { text: '다음에요', next: 'wave' },
       ],
     },
-    opened: { id: 'opened', speaker: '제작가 류', text: '천천히 골라보세요.', next: null },
     'catalog-tip': {
       id: 'catalog-tip',
-      speaker: '제작가 류',
-      text: '[K] 키로 도감을 열 수 있어요. 모은 것이 모두 기록됩니다.',
+      speaker: '류',
+      text: '[K] 키로 카탈로그를 열 수 있어요. 예제에서 수집 흐름을 확인할 때 유용합니다.',
       next: null,
     },
-    wave: { id: 'wave', speaker: '제작가 류', text: '필요하면 또 오세요.', next: null },
+    wave: {
+      id: 'wave',
+      speaker: '류',
+      text: '필요한 기능만 작게 연결하는 쪽이 SDK 예제로는 더 좋아요.',
+      next: null,
+    },
   },
 };
 

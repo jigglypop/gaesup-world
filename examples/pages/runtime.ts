@@ -1,6 +1,5 @@
 import {
   createGaesupRuntime,
-  GameplayEventEngine,
   getNPCScheduler,
   getSaveSystem,
   registerSeedCrops,
@@ -18,17 +17,18 @@ import {
   usePlotStore,
   useQuestStore,
   useSceneStore,
-  useShopStore,
   useTimeStore,
   useTownStore,
-  useWalletStore,
   useWeatherStore,
   type GaesupRuntime,
   type RuntimeDomainBinding,
+} from '../../src';
+import {
+  GameplayEventEngine,
   SEED_GAMEPLAY_EVENTS,
   type GameplayEventBlueprint,
   type GameplayTriggerEvent,
-} from '../../src';
+} from '../../src/core/gameplay';
 import { registerSeedDialogs } from '../components/dialog/seedDialogs';
 import { registerSeedI18n } from '../components/i18n/seedI18n';
 import { registerSeedContent } from '../components/seedContent';
@@ -72,8 +72,6 @@ export function createWorldRuntime(): GaesupRuntime {
     saveBindings: [
       createStoreBinding('time', useTimeStore),
       createStoreBinding('inventory', useInventoryStore),
-      createStoreBinding('wallet', useWalletStore),
-      createStoreBinding('shop', useShopStore),
       createStoreBinding('relations', useFriendshipStore),
       createStoreBinding('quests', useQuestStore),
       createStoreBinding('mail', useMailStore),
@@ -146,7 +144,6 @@ function applyStarterState(): void {
 
   const timeState = useTimeStore.getState();
   const today = Math.floor(timeState.totalMinutes / (60 * 24));
-  useShopStore.getState().rollDailyStock(today);
   useEventsStore.getState().refresh(timeState.time);
 
   const town = useTownStore.getState();

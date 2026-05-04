@@ -12,7 +12,6 @@ import {
   useHotbarKeyboard,
   useMailStore,
   useQuestObjectiveTracker,
-  useShopStore,
   useWeatherStore,
   useWeatherTicker,
 } from '../../../src';
@@ -50,7 +49,6 @@ export function WorldSystems() {
 
   useDayChange((time) => {
     const day = Math.floor(time.totalMinutes / (60 * 24));
-    useShopStore.getState().rollDailyStock(day);
     useFriendshipStore.getState().resetDaily();
     useWeatherStore.getState().rollForDay(day, time.season);
     if (day > 0 && useMailStore.getState().messages.length < 3) {

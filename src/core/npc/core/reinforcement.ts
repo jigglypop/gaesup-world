@@ -1,10 +1,10 @@
 import type {
   NPCAction,
-  NPCBrainAdapterContext,
   NPCBrainDecision,
   NPCInstance,
   NPCObservation,
 } from '../types';
+import type { NPCBrainAdapterContext } from './brain';
 import { registerNPCBrainAdapter } from './brain';
 
 type ReinforcementPolicyRequest = {
@@ -133,9 +133,10 @@ async function requestPolicyDecision(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), adapterConfig.timeoutMs);
   try {
+    const provider = instance.brain?.policyId ?? instance.brain?.providerId;
     const payload: ReinforcementPolicyRequest = {
-      ...(instance.brain?.policyId || instance.brain?.providerId
-        ? { provider: instance.brain?.policyId ?? instance.brain?.providerId }
+      ...(provider
+        ? { provider }
         : {}),
       instance: {
         id: instance.id,
@@ -151,8 +152,8 @@ async function requestPolicyDecision(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(instance.brain?.policyId || instance.brain?.providerId
-          ? { 'X-Policy-Provider': instance.brain?.policyId ?? instance.brain?.providerId ?? '' }
+        ...(provider
+          ? { 'X-Policy-Provider': provider }
           : {}),
         ...(adapterConfig.apiKey ? { Authorization: `Bearer ${adapterConfig.apiKey}` } : {}),
         ...(adapterConfig.headers ?? {}),
@@ -182,7 +183,7 @@ function reinforcementAdapter(context: NPCBrainAdapterContext): NPCBrainDecision
 
   if (state.queuedDecision) {
     const decision = state.queuedDecision;
-    state.queuedDecision = undefined;
+    delete state.queuedDecision;
     return decision;
   }
 

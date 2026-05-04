@@ -6,11 +6,8 @@ export type NPCBeaconProps = {
   id: string;
   name: string;
   position: [number, number, number];
-  color?: string;
-  hatColor?: string;
+  accentColor?: string;
   dialogTreeId: string;
-  onOpenShop?: () => void;
-  onCustomEffect?: (key: string, payload?: unknown) => void;
   onInteract?: (id: string) => void;
 };
 
@@ -18,11 +15,8 @@ export function NPCBeacon({
   id,
   name,
   position,
-  color = '#f5d199',
-  hatColor = '#a85a5a',
+  accentColor = '#7fc6ff',
   dialogTreeId,
-  onOpenShop,
-  onCustomEffect,
   onInteract,
 }: NPCBeaconProps) {
   const start = useDialogStore((s) => s.start);
@@ -34,35 +28,33 @@ export function NPCBeacon({
     onInteract?.(id);
     start(liveDialogTreeId, {
       context: { npcId: id },
-      onOpenShop: () => onOpenShop?.(),
-      onCustomEffect: (eff) => onCustomEffect?.(eff.key, eff.payload),
     });
-  }, [start, liveDialogTreeId, id, onOpenShop, onCustomEffect, onInteract]);
+  }, [start, liveDialogTreeId, id, onInteract]);
 
   const livePos: [number, number, number] = useMemo(() => slot?.position ?? position, [slot?.position, position]);
 
   return (
     <Interactable
       id={`npc:${id}`}
-      kind="dialog"
-      label={`${name}와 대화`}
+      kind="npc"
+      label={`${name} 대화`}
       range={2.6}
       activationKey="e"
       position={livePos}
       onActivate={onActivate}
     >
-      <group position={[0, 0.55, 0]}>
-        <mesh castShadow>
-          <cylinderGeometry args={[0.32, 0.34, 1.1, 14]} />
-          <meshToonMaterial color={color} />
+      <group position={[0, 0.05, 0]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.48, 0.025, 8, 32]} />
+          <meshBasicMaterial color={accentColor} transparent opacity={0.85} />
         </mesh>
-        <mesh castShadow position={[0, 0.78, 0]}>
-          <sphereGeometry args={[0.28, 18, 18]} />
-          <meshToonMaterial color={color} />
+        <mesh castShadow position={[0, 0.38, 0]}>
+          <cylinderGeometry args={[0.035, 0.035, 0.58, 10]} />
+          <meshToonMaterial color="#f6e7b8" />
         </mesh>
-        <mesh position={[0, 1.06, 0]}>
-          <coneGeometry args={[0.32, 0.22, 14]} />
-          <meshToonMaterial color={hatColor} />
+        <mesh castShadow position={[0, 0.82, 0]}>
+          <octahedronGeometry args={[0.22, 0]} />
+          <meshToonMaterial color={accentColor} />
         </mesh>
       </group>
     </Interactable>

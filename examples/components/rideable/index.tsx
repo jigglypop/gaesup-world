@@ -37,5 +37,11 @@ export function RideableVehicles() {
 
 export function RideableUIRenderer() {
   const { gameStates } = useStateSystem();
-  return <RideableUI states={gameStates} />;
+  const states = {
+    canRide: gameStates.canRide,
+    isRiding: gameStates.isRiding,
+    ...(gameStates.nearbyRideable ? { nearbyRideable: gameStates.nearbyRideable } : {}),
+    ...(gameStates.currentRideable ? { currentRideable: gameStates.currentRideable } : {}),
+  };
+  return <RideableUI states={states} />;
 }

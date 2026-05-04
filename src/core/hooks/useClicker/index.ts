@@ -6,9 +6,41 @@ import { V3 } from '@utils/vector';
 import { ClickerMoveOptions, ClickerResult } from './types';
 import { InteractionBridge } from '../../interactions/bridge/InteractionBridge';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
+import {
+  clearClickNavigationRoute,
+  isLatestClickNavigationRequest,
+  nextClickNavigationRequest,
+  setClickNavigationRoute,
+} from '../../navigation/ClickNavigationRoute';
+import { NavigationSystem } from '../../navigation/NavigationSystem';
+
+function updateMouseTarget(target: THREE.Vector3, currentPosition: THREE.Vector3, shouldRun: boolean): void {
+  const angle = Math.atan2(
+    target.z - currentPosition.z,
+    target.x - currentPosition.x,
+  );
+  InteractionBridge.getGlobal().executeCommand({
+    type: 'input',
+    action: 'updateMouse',
+    data: {
+      target,
+      angle,
+      position: new THREE.Vector2(target.x, target.z),
+      isActive: true,
+      shouldRun,
+    },
+  });
+}
 
 export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
-  const { minHeight = 0.5, offsetY = 0.5 } = options;
+  const {
+    minHeight = 0.5,
+    offsetY = 0.5,
+    useNavigation = true,
+    simplifyPath = true,
+    waypointThreshold = 1,
+    fallbackToDirectOnFail = true,
+  } = options;
   const { activeState } = useStateSystem();
   const bridge = InteractionBridge.getGlobal();
   const isReady = Boolean(activeState?.position);
@@ -26,22 +58,67 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
     try {
       const currentPosition = activeState.position;
       const targetPoint = V3(event.point.x, event.point.y, event.point.z);
-      const newAngle = Math.atan2(
-        targetPoint.z - currentPosition.z,
-        targetPoint.x - currentPosition.x,
-      );
       const adjustedY = Math.max(targetPoint.y + offsetY, minHeight);
       const finalTarget = V3(targetPoint.x, adjustedY, targetPoint.z);
-      bridge.executeCommand({
-        type: 'input',
-        action: 'updateMouse',
-        data: {
-          target: finalTarget,
-          angle: newAngle,
-          position: new THREE.Vector2(finalTarget.x, finalTarget.z),
-          isActive: true,
-          shouldRun: isRun,
+      const startPosition = currentPosition.clone();
+      const requestId = nextClickNavigationRequest();
+
+      if (!useNavigation) {
+        clearClickNavigationRoute();
+        updateMouseTarget(finalTarget, startPosition, isRun);
+        return true;
+      }
+
+      void NavigationSystem.getInstance().init().then(() => {
+        if (!isLatestClickNavigationRequest(requestId)) return;
+
+        const navigation = NavigationSystem.getInstance();
+        finalTarget.y = Math.max(navigation.sampleHeight(finalTarget.x, finalTarget.z) + offsetY, minHeight);
+        if (navigation.hasLineOfSight(startPosition.x, startPosition.z, finalTarget.x, finalTarget.z)) {
+          setClickNavigationRoute([finalTarget], waypointThreshold, isRun);
+          updateMouseTarget(finalTarget, startPosition, isRun);
+          return;
         }
+
+        const rawPath = navigation.findPath(
+          startPosition.x,
+          startPosition.z,
+          finalTarget.x,
+          finalTarget.z,
+          undefined,
+          true,
+        );
+        if (rawPath.length === 0) {
+          clearClickNavigationRoute();
+          if (
+            fallbackToDirectOnFail &&
+            !navigation.hasNavigationConstraints() &&
+            navigation.isWalkable(finalTarget.x, finalTarget.z)
+          ) {
+            setClickNavigationRoute([finalTarget], waypointThreshold, isRun);
+            updateMouseTarget(finalTarget, startPosition, isRun);
+          }
+          return;
+        }
+
+        const route = simplifyPath
+          ? navigation.smoothPath(
+              rawPath,
+              [startPosition.x, startPosition.y, startPosition.z],
+              [finalTarget.x, finalTarget.y, finalTarget.z],
+            )
+          : rawPath;
+        const waypoints = route
+          .map((point) => new THREE.Vector3(point[0], point[1], point[2]))
+          .filter((point) => point.distanceTo(startPosition) > waypointThreshold);
+        const lastWaypoint = waypoints[waypoints.length - 1];
+        if (!lastWaypoint || lastWaypoint.distanceTo(finalTarget) > waypointThreshold) {
+          waypoints.push(finalTarget);
+        }
+
+        const path = waypoints.length > 0 ? waypoints : [finalTarget];
+        setClickNavigationRoute(path, waypointThreshold, isRun);
+        updateMouseTarget(path[0] ?? finalTarget, startPosition, isRun);
       });
 
       return true;
@@ -54,6 +131,8 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
   const stopClicker = (): void => {
     try {
       if (!isReady) return;
+      nextClickNavigationRequest();
+      clearClickNavigationRoute();
       bridge.executeCommand({
         type: 'input',
         action: 'updateMouse',

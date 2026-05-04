@@ -14,4 +14,8 @@ export interface ClickerResult {
 export interface ClickerMoveOptions {
   minHeight?: number;
   offsetY?: number;
+  useNavigation?: boolean;
+  simplifyPath?: boolean;
+  waypointThreshold?: number;
+  fallbackToDirectOnFail?: boolean;
 }

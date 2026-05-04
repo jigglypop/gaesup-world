@@ -31,19 +31,19 @@ type NPCPartErrorBoundaryState = {
 };
 
 class NPCPartErrorBoundary extends React.Component<NPCPartErrorBoundaryProps, NPCPartErrorBoundaryState> {
-  state: NPCPartErrorBoundaryState = { hasError: false };
+  override state: NPCPartErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(): NPCPartErrorBoundaryState {
     return { hasError: true };
   }
 
-  componentDidUpdate(prevProps: NPCPartErrorBoundaryProps) {
+  override componentDidUpdate(prevProps: NPCPartErrorBoundaryProps) {
     if (this.state.hasError && prevProps.part.url !== this.props.part.url) {
       this.setState({ hasError: false });
     }
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return <NPCPartFallbackMesh part={this.props.part} instanceId={this.props.instanceId} />;
     }
