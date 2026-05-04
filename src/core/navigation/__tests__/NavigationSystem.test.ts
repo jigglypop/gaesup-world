@@ -281,6 +281,18 @@ describe('NavigationSystem', () => {
     expect(navigation.findPath(0.5, 0.5, 5.5, 0.5)).toEqual([]);
   });
 
+  it('checks short forward movement segments against blocked and tall cells', async () => {
+    const navigation = createNavigation();
+    await navigation.init();
+
+    navigation.setBlocked(1.5, 0.5, 1, 1);
+    expect(navigation.canTraverseSegment(0.5, 0.5, 1.5, 0.5)).toBe(false);
+
+    navigation.setWalkable(1.5, 0.5, 1, 1);
+    navigation.setHeight(1.5, 0.5, 2);
+    expect(navigation.canTraverseSegment(0.5, 0.5, 1.5, 0.5)).toBe(false);
+  });
+
   it('allows gradual height changes within the configured step height', async () => {
     const navigation = createNavigation();
     await navigation.init();

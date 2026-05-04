@@ -6,6 +6,7 @@ import { InteractionSystem } from '@/core/interactions/core/InteractionSystem';
 import type { RefObject } from '@core/boilerplate';
 import { PhysicsConfigType } from '@stores/slices';
 
+import { NavigationSystem } from '../../../navigation/NavigationSystem';
 import { PhysicsState } from '../../types';
 import { EntityStateManager } from '../system/EntityStateManager';
 
@@ -16,6 +17,7 @@ export class ImpulseComponent {
   private config: PhysicsConfigType;
   private scratchImpulse = { x: 0, y: 0, z: 0 };
   private scratchLinvel = { x: 0, y: 0, z: 0 };
+  private navigation = NavigationSystem.getInstance();
 
   constructor(config: PhysicsConfigType, stateManager?: EntityStateManager) {
     this.stateManager = stateManager ?? new EntityStateManager();
@@ -72,6 +74,13 @@ export class ImpulseComponent {
       const M = rigidBodyRef.current.mass();
       const targetVelX = -dir.x * speed;
       const targetVelZ = -dir.z * speed;
+      if (!this.canMoveForward(rigidBodyRef.current, targetVelX, targetVelZ)) {
+        this.scratchLinvel.x = 0;
+        this.scratchLinvel.y = rigidBodyRef.current.linvel().y;
+        this.scratchLinvel.z = 0;
+        rigidBodyRef.current.setLinvel(this.scratchLinvel, true);
+        return;
+      }
       const accelX = targetVelX - vel.x;
       const accelZ = targetVelZ - vel.z;
       this.scratchImpulse.x = accelX * M;
@@ -79,6 +88,27 @@ export class ImpulseComponent {
       this.scratchImpulse.z = accelZ * M;
       rigidBodyRef.current.applyImpulse(this.scratchImpulse, true);
     }
+  }
+
+  private canMoveForward(
+    rigidBody: RapierRigidBody,
+    targetVelX: number,
+    targetVelZ: number,
+  ): boolean {
+    if (!this.navigation.hasNavigationConstraints()) return true;
+
+    const horizontalSpeed = Math.sqrt(targetVelX * targetVelX + targetVelZ * targetVelZ);
+    if (horizontalSpeed <= 0.0001 || typeof rigidBody.translation !== 'function') return true;
+
+    const position = rigidBody.translation();
+    const { cellSize } = this.navigation.getGridDimensions();
+    const lookAhead = Math.max(0.45, Math.min(cellSize * 0.75, horizontalSpeed * 0.08));
+    const nextX = position.x + (targetVelX / horizontalSpeed) * lookAhead;
+    const nextZ = position.z + (targetVelZ / horizontalSpeed) * lookAhead;
+
+    return this.navigation.canTraverseSegment(position.x, position.z, nextX, nextZ, {
+      ignoreStart: true,
+    });
   }
 
   private applyVehicleImpulse(

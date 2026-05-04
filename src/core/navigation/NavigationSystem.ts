@@ -411,6 +411,16 @@ export class NavigationSystem {
     goalX: number,
     goalZ: number,
   ): boolean {
+    return this.canTraverseSegment(startX, startZ, goalX, goalZ);
+  }
+
+  canTraverseSegment(
+    startX: number,
+    startZ: number,
+    goalX: number,
+    goalZ: number,
+    options: { ignoreStart?: boolean } = {},
+  ): boolean {
     const dx = goalX - startX;
     const dz = goalZ - startZ;
     const distance = Math.sqrt(dx * dx + dz * dz);
@@ -423,6 +433,7 @@ export class NavigationSystem {
       const [gx, gz] = this.worldToGrid(startX + dx * t, startZ + dz * t);
       if (gx === prevGX && gz === prevGZ) continue;
       const idx = this.cellIndex(gx, gz);
+      if (!(options.ignoreStart && i === 0) && this.grid[idx] === 0) return false;
       if (
         prevGX !== -1 &&
         prevGZ !== -1 &&
@@ -432,7 +443,6 @@ export class NavigationSystem {
       }
       prevGX = gx;
       prevGZ = gz;
-      if (this.grid[idx] === 0) return false;
     }
 
     return true;

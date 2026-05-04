@@ -2,24 +2,30 @@ import * as THREE from 'three';
 
 import { EntityStateManager } from '@core/motions/core/system/EntityStateManager';
 import { ImpulseComponent } from '@core/motions/core/movement/ImpulseComponent';
+import { NavigationSystem } from '@core/navigation';
 import { PhysicsState } from '@core/motions/types';
 import { PhysicsConfigType } from '@stores/slices/physics/types';
 import { InteractionSystem } from '@core/interactions/core/InteractionSystem';
 
 jest.mock('@core/interactions/core/InteractionSystem');
+jest.mock('@core/wasm/loader', () => ({
+  loadCoreWasm: jest.fn(async () => null),
+}));
 
 type RBStub = {
   linvel: () => { x: number; y: number; z: number };
+  translation: () => { x: number; y: number; z: number };
   setLinvel: jest.Mock;
   applyImpulse: jest.Mock;
   mass: () => number;
 };
 
-const buildRigidBodyRef = (): { current: RBStub } => {
+const buildRigidBodyRef = (position = { x: 0, y: 0, z: 0 }): { current: RBStub } => {
   const linvel = { x: 0, y: 0, z: 0 };
   return {
     current: {
       linvel: () => linvel,
+      translation: () => position,
       setLinvel: jest.fn((next: { x: number; y: number; z: number }) => {
         linvel.x = next.x;
         linvel.y = next.y;
@@ -48,6 +54,10 @@ describe('ImpulseComponent와 EntityStateManager 동일 인스턴스 주입', ()
     });
   });
 
+  afterEach(() => {
+    NavigationSystem.getInstance().dispose();
+  });
+
   test('주입한 stateManager가 점프 후 isOnTheGround false로 갱신된다', () => {
     const sharedManager = new EntityStateManager();
     sharedManager.updateGameStates({ isJumping: true, isOnTheGround: true });
@@ -74,5 +84,24 @@ describe('ImpulseComponent와 EntityStateManager 동일 인스턴스 주입', ()
     impulse.applyImpulse(rigidBodyRef as unknown as Parameters<typeof impulse.applyImpulse>[0], physicsState);
 
     expect(externalManager.getGameStates().isOnTheGround).toBe(true);
+  });
+
+  test('navigation grid가 정면을 막으면 캐릭터 impulse를 넣지 않고 수평 속도를 멈춘다', () => {
+    const navigation = NavigationSystem.getInstance();
+    navigation.reset();
+    navigation.setBlocked(0, -1, 2, 2);
+
+    const manager = new EntityStateManager();
+    manager.updateGameStates({ isMoving: true });
+    manager.getActiveState().dir.set(0, 0, 1);
+
+    const impulse = new ImpulseComponent({ walkSpeed: 10 } as PhysicsConfigType, manager);
+    const rigidBodyRef = buildRigidBodyRef({ x: 0, y: 0, z: 0 });
+    const physicsState = buildPhysicsStateFrom(manager);
+
+    impulse.applyImpulse(rigidBodyRef as unknown as Parameters<typeof impulse.applyImpulse>[0], physicsState);
+
+    expect(rigidBodyRef.current.applyImpulse).not.toHaveBeenCalled();
+    expect(rigidBodyRef.current.setLinvel).toHaveBeenCalledWith({ x: 0, y: 0, z: 0 }, true);
   });
 });
