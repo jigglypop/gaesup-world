@@ -18,4 +18,8 @@ export interface ClickerMoveOptions {
   simplifyPath?: boolean;
   waypointThreshold?: number;
   fallbackToDirectOnFail?: boolean;
+  agentRadius?: number;
+  agentWidth?: number;
+  agentDepth?: number;
+  clearance?: number;
 }

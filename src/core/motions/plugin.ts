@@ -1,5 +1,8 @@
-import { createInteractionInputAdapter } from '../interactions/core';
-import type { InputAdapter } from '../interactions/core';
+import {
+  createInteractionInputAdapter,
+  DEFAULT_INTERACTION_INPUT_EXTENSION_ID,
+} from '../interactions/core';
+import type { InputAdapter, InputBackendExtension } from '../interactions/core';
 import type { GaesupPlugin, PluginContext } from '../plugins';
 import { PhysicsBridge } from './bridge/PhysicsBridge';
 
@@ -8,9 +11,7 @@ export interface MotionsPhysicsExtension {
   createBridge: () => PhysicsBridge;
 }
 
-export interface MotionsInputExtension {
-  createAdapter: typeof createInteractionInputAdapter;
-}
+export type MotionsInputExtension = InputBackendExtension;
 
 export interface MotionsRuntimeOptions {
   physicsExtensionId?: string;
@@ -50,9 +51,23 @@ export interface MotionsPluginOptions {
 
 const DEFAULT_PLUGIN_ID = 'gaesup.motions';
 export const DEFAULT_MOTIONS_PHYSICS_EXTENSION_ID = 'physics.bridge';
-export const DEFAULT_MOTIONS_INPUT_EXTENSION_ID = 'interaction.input';
+export const DEFAULT_MOTIONS_INPUT_EXTENSION_ID = DEFAULT_INTERACTION_INPUT_EXTENSION_ID;
 export const DEFAULT_MOTIONS_RUNTIME_SERVICE_ID = 'motions.runtime';
 export const MOTIONS_TELEPORT_EVENT = 'motions:teleport';
+
+declare module '../plugins' {
+  interface SystemExtensionMap {
+    'physics.bridge': MotionsPhysicsExtension;
+  }
+
+  interface InputExtensionMap {
+    'interaction.input': MotionsInputExtension;
+  }
+
+  interface ServiceExtensionMap {
+    'motions.runtime': MotionsRuntimeService;
+  }
+}
 
 export function createMotionsRuntime(
   ctx: PluginContext,

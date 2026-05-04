@@ -12,11 +12,23 @@ import type {
   BridgeSnapshot,
   GamepadState,
   InteractionConfig,
+  InteractionState,
   InteractionPayload,
   TouchState,
 } from './types';
+import {
+  createInteractionInputAdapter,
+  resolveDefaultInteractionSystem,
+  type InputBackend,
+} from '../core/adapter';
 import { AutomationSystem } from '../core/AutomationSystem';
-import { InteractionSystem, KeyboardState, MouseState } from '../core/InteractionSystem';
+import type { InteractionSystem, KeyboardState, MouseState } from '../core/InteractionSystem';
+
+export interface InteractionBridgeOptions {
+  interactionSystem?: InteractionSystem;
+  inputBackend?: InputBackend;
+  automationSystem?: AutomationSystem;
+}
 
 export class InteractionBridge {
   private static globalInstance: InteractionBridge | null = null;
@@ -34,6 +46,7 @@ export class InteractionBridge {
   }
 
   private interactionSystem: InteractionSystem;
+  private inputBackend: InputBackend;
   private automationSystem: AutomationSystem;
   private state: BridgeState;
   private eventSubscribers: Map<string, Array<(event: BridgeEvent) => void>>;
@@ -48,9 +61,10 @@ export class InteractionBridge {
   private interactables: Map<string, { id: string; active?: boolean; onPointerOver?: () => void; onPointerOut?: () => void; onClick?: () => void }>;
   private hoveredInteractableIds: Set<string>;
 
-  constructor() {
-    this.interactionSystem = InteractionSystem.getInstance();
-    this.automationSystem = new AutomationSystem();
+  constructor(options: InteractionBridgeOptions = {}) {
+    this.interactionSystem = options.interactionSystem ?? resolveDefaultInteractionSystem();
+    this.inputBackend = options.inputBackend ?? createInteractionInputAdapter(this.interactionSystem);
+    this.automationSystem = options.automationSystem ?? new AutomationSystem();
     this.state = {
       isActive: true,
       lastCommand: null,
@@ -163,18 +177,18 @@ export class InteractionBridge {
     
     switch (action) {
       case 'updateKeyboard':
-        this.interactionSystem.updateKeyboard(data as Partial<KeyboardState>);
+        this.inputBackend.updateKeyboard(data as Partial<KeyboardState>);
         this.notifyListeners();
         break;
       case 'updateMouse':
-        this.interactionSystem.updateMouse(data as Partial<MouseState>);
+        this.inputBackend.updateMouse(data as Partial<MouseState>);
         this.notifyListeners();
         break;
       case 'updateGamepad':
-        this.interactionSystem.updateGamepad(data as Partial<GamepadState>);
+        this.inputBackend.updateGamepad?.(data as Partial<GamepadState>);
         break;
       case 'updateTouch':
-        this.interactionSystem.updateTouch(data as Partial<TouchState>);
+        this.inputBackend.updateTouch?.(data as Partial<TouchState>);
         break;
       case 'setConfig':
         this.interactionSystem.setConfig(data as Partial<InteractionConfig>);
@@ -240,7 +254,7 @@ export class InteractionBridge {
 
   @LogSnapshot()
   snapshot(): BridgeSnapshot {
-    const state = this.interactionSystem.getState();
+    const state = this.createInteractionSnapshot();
     const config = this.interactionSystem.getConfig();
     const metrics = this.interactionSystem.getMetrics();
     const automationState = this.automationSystem.getState();
@@ -304,9 +318,20 @@ export class InteractionBridge {
 
   @Profile()
   private notifyListeners(): void {
-    const keyboard = this.interactionSystem.getKeyboardRef();
-    const mouse = this.interactionSystem.getMouseRef();
+    const keyboard = this.inputBackend.getKeyboard();
+    const mouse = this.inputBackend.getMouse();
     this.eventListeners.forEach(listener => listener({ keyboard, mouse }));
+  }
+
+  private createInteractionSnapshot(): InteractionState {
+    const state = this.interactionSystem.getState();
+    return {
+      ...state,
+      keyboard: this.inputBackend.getKeyboard(),
+      mouse: this.inputBackend.getMouse(),
+      gamepad: this.inputBackend.getGamepad?.() ?? state.gamepad,
+      touch: this.inputBackend.getTouch?.() ?? state.touch,
+    };
   }
 
   registerInteractable(entity: { id: string; active?: boolean; onPointerOver?: () => void; onPointerOut?: () => void; onClick?: () => void }): void {
@@ -510,10 +535,10 @@ export class InteractionBridge {
   }
 
   getKeyboardState(): KeyboardState {
-    return this.interactionSystem.getKeyboardRef();
+    return this.inputBackend.getKeyboard();
   }
 
   getMouseState(): MouseState {
-    return this.interactionSystem.getMouseRef();
+    return this.inputBackend.getMouse();
   }
 }

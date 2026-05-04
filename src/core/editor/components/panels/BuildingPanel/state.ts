@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 
+import { isBuildingMaterialAsset } from './helpers';
 import type { AssetRecord } from '../../../../assets';
 import { useAssetStore } from '../../../../assets';
 import { useBuildingStore } from '../../../../building/stores/buildingStore';
 import { useNPCStore } from '../../../../npc/stores/npcStore';
-import { isBuildingMaterialAsset } from './helpers';
 
 export function useBuildingPanelState() {
   const editMode = useBuildingStore((state) => state.editMode);

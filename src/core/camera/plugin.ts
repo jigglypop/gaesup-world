@@ -59,9 +59,9 @@ export interface CameraPluginOptions {
 }
 
 const DEFAULT_PLUGIN_ID = 'gaesup.camera';
-const DEFAULT_SYSTEM_EXTENSION_ID = 'camera.system';
-const DEFAULT_SAVE_EXTENSION_ID = 'camera';
-const DEFAULT_STORE_SERVICE_ID = 'camera.store';
+export const DEFAULT_CAMERA_SYSTEM_EXTENSION_ID = 'camera.system';
+export const DEFAULT_CAMERA_SAVE_EXTENSION_ID = 'camera';
+export const DEFAULT_CAMERA_STORE_SERVICE_ID = 'camera.store';
 const VECTOR_OPTION_KEYS = new Set([
   'offset',
   'target',
@@ -69,6 +69,20 @@ const VECTOR_OPTION_KEYS = new Set([
   'focusTarget',
   'fixedPosition',
 ]);
+
+declare module '../plugins' {
+  interface SystemExtensionMap {
+    'camera.system': CameraSystemExtension;
+  }
+
+  interface SaveExtensionMap {
+    camera: CameraSaveExtension;
+  }
+
+  interface ServiceExtensionMap {
+    'camera.store': CameraStoreService;
+  }
+}
 
 function serializeValue(value: unknown): CameraSerializedOptionValue {
   if (value instanceof THREE.Vector3) {
@@ -162,9 +176,9 @@ function hydrateCameraState(data: CameraSerializedState | null | undefined): voi
 
 export function createCameraPlugin(options: CameraPluginOptions = {}): GaesupPlugin {
   const pluginId = options.id ?? DEFAULT_PLUGIN_ID;
-  const systemExtensionId = options.systemExtensionId ?? DEFAULT_SYSTEM_EXTENSION_ID;
-  const saveExtensionId = options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID;
-  const storeServiceId = options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID;
+  const systemExtensionId = options.systemExtensionId ?? DEFAULT_CAMERA_SYSTEM_EXTENSION_ID;
+  const saveExtensionId = options.saveExtensionId ?? DEFAULT_CAMERA_SAVE_EXTENSION_ID;
+  const storeServiceId = options.storeServiceId ?? DEFAULT_CAMERA_STORE_SERVICE_ID;
 
   return {
     id: pluginId,

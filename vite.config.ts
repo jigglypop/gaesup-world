@@ -1,6 +1,6 @@
-import path from 'path';
 import { createReadStream, existsSync } from 'fs';
 import type { IncomingMessage, ServerResponse } from 'http';
+import path from 'path';
 
 import react from '@vitejs/plugin-react-swc';
 import type { Plugin, ViteDevServer } from 'vite';

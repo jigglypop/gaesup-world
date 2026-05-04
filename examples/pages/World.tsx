@@ -1,9 +1,10 @@
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 
 import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 
 import {
+  createWorldRuntime,
   deleteWorldGameplayEventBlueprint,
   dispatchWorldGameplayEvent,
   getWorldGameplayBlueprints,
@@ -33,13 +34,16 @@ import {
   MiniMap,
   QuestLogUI,
   RoomVisibilityDriver,
+  RuntimeSaveDiagnosticsToaster,
   setDefaultToonMode,
   ToolUseController,
   TouchControls,
+  ToastHost,
   WeatherEffect,
   useBuildingStore,
   usePerfStore,
 } from '../../src';
+import { GrassDriver } from '../../src/core/building';
 import {
   Editor,
   GameplayEventPanel,
@@ -47,7 +51,6 @@ import {
   createEditorShell,
   type EditorShellOptions,
 } from '../../src/editor';
-import { GrassDriver } from '../../src/core/building';
 import { HudShell } from '../components/hud/HudShell';
 import { AIRPLANE_URL, EXAMPLE_CONFIG, S3, VEHICLE_URL } from '../config/constants';
 import '../style.css';
@@ -72,6 +75,8 @@ export const WorldPage = ({
   editorShellOptions = DEFAULT_EDITOR_SHELL_OPTIONS,
   children,
 }: WorldPageProps) => {
+  const runtime = useMemo(() => createWorldRuntime(), []);
+  const [runtimeRevision, setRuntimeRevision] = useState(0);
   const fogEnabled = useBuildingStore((s) => s.showFog);
   const fogColor = useBuildingStore((s) => s.fogColor);
   const weatherEffect = useBuildingStore((s) => s.weatherEffect);
@@ -100,6 +105,9 @@ export const WorldPage = ({
         smoothness: 0.25,
         enableCollision: false,
       };
+  const handleRuntimeReady = useCallback(() => {
+    setRuntimeRevision((revision) => revision + 1);
+  }, []);
   const editorShell = useMemo(() => {
     const auxiliaryPanels = includeEditorAuxPanels
       ? [
@@ -151,6 +159,8 @@ export const WorldPage = ({
       <GaesupWorld
         urls={{ characterUrl: DEFAULT_CHARACTER_URL, vehicleUrl: VEHICLE_URL, airplaneUrl: AIRPLANE_URL }}
         mode={worldMode}
+        runtime={runtime}
+        runtimeRevision={runtimeRevision}
         debug={EXAMPLE_CONFIG.debug}
         cameraOption={worldCameraOption}
       >
@@ -191,10 +201,13 @@ export const WorldPage = ({
           </Suspense>
         </Canvas>
 
-        <WorldSystems />
+        <WorldSystems runtime={runtime} onRuntimeReady={handleRuntimeReady} />
 
         {showHud && (
           <>
+            <RuntimeSaveDiagnosticsToaster />
+            <ToastHost position="top-right" />
+
             <HudShell showEnvironmentControls={!showEditor} compact={compactHud} />
 
             <InteractionPrompt enabled={!showEditor} />

@@ -50,3 +50,17 @@ export type AssetSource = {
   listByKind: (kind: AssetKind) => Promise<AssetRecord[]>;
   listBySlot: (slot: AssetSlot) => Promise<AssetRecord[]>;
 };
+
+export type AssetCatalogLoadState = 'seed' | 'loading' | 'loaded' | 'fallback';
+
+export type AssetCatalogLoadOrigin = 'seed' | 'source';
+
+export type AssetCatalogStatus = {
+  state: AssetCatalogLoadState;
+  origin: AssetCatalogLoadOrigin;
+  assetCount: number;
+  loadedAt: number | null;
+  error: string | null;
+  fallbackReason: string | null;
+  query?: AssetQuery;
+};

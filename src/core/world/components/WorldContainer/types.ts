@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import type { CameraOptionType, CameraType } from '../../../camera';
+import type { GaesupRuntime } from '../../../runtime';
 import type { ModeState } from '../../../stores/slices/mode';
 import type { UrlsState } from '../../../stores/slices/urls/types';
 
@@ -55,6 +56,8 @@ export type WorldData = {
 
 export interface WorldContainerProps {
   children?: ReactNode;
+  runtime?: GaesupRuntime;
+  runtimeRevision?: number;
   urls?: WorldAssetUrls;
   cameraOption?: WorldCameraOption;
   mode?: Partial<ModeState> & Pick<ModeState, 'type'>;

@@ -1,5 +1,6 @@
 import React, { FC, useMemo } from 'react';
 
+import { NPCPanel } from './NPCPanel';
 import {
   AssetPreviewCanvas,
   createScopedAssetMeshConfig,
@@ -35,7 +36,6 @@ import {
   WallModuleSection,
   type BuildingPanelAction,
 } from './sections';
-import { NPCPanel } from './NPCPanel';
 import { useBuildingPanelState } from './state';
 import type { NPCBehaviorConfig } from '../../../../npc/types';
 import './styles.css';
@@ -51,12 +51,25 @@ export type BuildingPanelSlot =
 
 export type { BuildingPanelAction } from './sections';
 
+export type BuildingPanelNPCLayout = 'default' | 'split' | 'sidebars';
+
+export type BuildingPanelNPCPanelContext = {
+  editMode: 'npc';
+  layout: BuildingPanelNPCLayout;
+  defaultPanel: React.ReactNode;
+};
+
+export type BuildingPanelNPCPanelRenderer =
+  | React.ReactNode
+  | ((context: BuildingPanelNPCPanelContext) => React.ReactNode);
+
 export type BuildingPanelProps = EditorPanelBaseProps & {
   slots?: Partial<Record<BuildingPanelSlot, React.ReactNode>>;
   actions?: BuildingPanelAction[];
   disabledSections?: string[];
   forcedEditMode?: BuildingSystemState['editMode'];
-  npcLayout?: 'default' | 'split' | 'sidebars';
+  npcLayout?: BuildingPanelNPCLayout;
+  npcPanel?: BuildingPanelNPCPanelRenderer | false;
   hideHeader?: boolean;
 };
 
@@ -69,6 +82,7 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
   disabledSections = [],
   forcedEditMode,
   npcLayout = 'default',
+  npcPanel,
   hideHeader = false,
 }) => {
   const disabledSectionSet = useMemo(() => new Set(disabledSections), [disabledSections]);
@@ -202,6 +216,7 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
     npcBrainBlueprintsArray,
   } = useBuildingPanelState();
 
+  const hasNPCPanel = npcPanel !== false;
   const editModes: { type: typeof editMode; label: string; description: string }[] = [
     { type: 'none', label: '없음', description: '건축 편집을 끕니다' },
     { type: 'world', label: '전역', description: '전역 설정을 배치합니다' },
@@ -209,7 +224,7 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
     { type: 'tile', label: '타일', description: '바닥 타일을 배치합니다' },
     { type: 'block', label: '박스', description: '복셀 박스를 쌓습니다' },
     { type: 'object', label: '오브젝트', description: '타일 위에 장식을 배치합니다' },
-    { type: 'npc', label: 'NPC', description: 'NPC를 배치합니다' },
+    ...(hasNPCPanel ? [{ type: 'npc' as typeof editMode, label: 'NPC', description: 'NPC를 배치합니다' }] : []),
   ];
 
   const rotations = [
@@ -261,11 +276,12 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
   const isTileMode = panelEditMode === 'tile';
   const isBlockMode = panelEditMode === 'block';
   const isObjectMode = panelEditMode === 'object';
-  const isNPCMode = panelEditMode === 'npc';
+  const isNPCMode = panelEditMode === 'npc' && hasNPCPanel;
 
   React.useEffect(() => {
+    if (!hasNPCPanel) return;
     initializeNPCDefaults();
-  }, [initializeNPCDefaults]);
+  }, [hasNPCPanel, initializeNPCDefaults]);
 
   React.useEffect(() => {
     if (!forcedEditMode) return;
@@ -733,28 +749,40 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
         ) : null;
       })()}
       {isNPCMode && (
-        <NPCPanel
-          layout={npcLayout}
-          npcTemplatesArray={npcTemplatesArray}
-          selectedNPCTemplateId={selectedNPCTemplateId}
-          setSelectedNPCTemplate={setSelectedNPCTemplate}
-          npcInstancesArray={npcInstancesArray}
-          selectedNPCInstanceId={selectedNPCInstanceId ?? null}
-          setSelectedNPCInstance={setSelectedNPCInstance}
-          selectedNPCInstance={selectedNPCInstance}
-          npcAnimationsArray={npcAnimationsArray}
-          selectedNPCBrainBlueprint={selectedNPCBrainBlueprint}
-          npcBrainBlueprintsArray={npcBrainBlueprintsArray}
-          hoverPosition={hoverPosition}
-          updateNPCBehavior={(id, updates) => updateNPCBehavior(id, updates as Partial<NPCBehaviorConfig>)}
-          setNPCNavigation={setNPCNavigation}
-          clearNPCNavigation={clearNPCNavigation}
-          updateNPCInstance={updateNPCInstance}
-          updateNPCBrain={updateNPCBrain}
-          addNPCBrainBlueprint={addNPCBrainBlueprint}
-          updateNPCBrainBlueprint={updateNPCBrainBlueprint}
-          updateNPCPerception={updateNPCPerception}
-        />
+        (() => {
+          if (npcPanel !== undefined && typeof npcPanel !== 'function') {
+            return npcPanel;
+          }
+
+          const defaultPanel = (
+            <NPCPanel
+              layout={npcLayout}
+              npcTemplatesArray={npcTemplatesArray}
+              selectedNPCTemplateId={selectedNPCTemplateId}
+              setSelectedNPCTemplate={setSelectedNPCTemplate}
+              npcInstancesArray={npcInstancesArray}
+              selectedNPCInstanceId={selectedNPCInstanceId ?? null}
+              setSelectedNPCInstance={setSelectedNPCInstance}
+              selectedNPCInstance={selectedNPCInstance}
+              npcAnimationsArray={npcAnimationsArray}
+              selectedNPCBrainBlueprint={selectedNPCBrainBlueprint}
+              npcBrainBlueprintsArray={npcBrainBlueprintsArray}
+              hoverPosition={hoverPosition}
+              updateNPCBehavior={(id, updates) => updateNPCBehavior(id, updates as Partial<NPCBehaviorConfig>)}
+              setNPCNavigation={setNPCNavigation}
+              clearNPCNavigation={clearNPCNavigation}
+              updateNPCInstance={updateNPCInstance}
+              updateNPCBrain={updateNPCBrain}
+              addNPCBrainBlueprint={addNPCBrainBlueprint}
+              updateNPCBrainBlueprint={updateNPCBrainBlueprint}
+              updateNPCPerception={updateNPCPerception}
+            />
+          );
+
+          return npcPanel === undefined
+            ? defaultPanel
+            : npcPanel({ editMode: 'npc', layout: npcLayout, defaultPanel });
+        })()
       )}
 
       {isObjectMode && selectedPlacedObjectType !== 'none' && !disabledSectionSet.has('objectRotation') && (

@@ -1,27 +1,37 @@
 import {
+  createAudioPlugin,
+  createBuildingPlugin,
+  createCameraPlugin,
+  createCatalogPlugin,
+  createCharacterPlugin,
+  createCraftingPlugin,
+  createEconomyPlugin,
+  createEventsPlugin,
+  createFarmingPlugin,
   createGaesupRuntime,
+  createI18nPlugin,
+  createInventoryPlugin,
+  createMailPlugin,
+  createMotionsPlugin,
+  createNPCPlugin,
+  createQuestsPlugin,
+  createRelationsPlugin,
+  createScenePlugin,
+  createTimePlugin,
+  createTownPlugin,
+  createWeatherPlugin,
   getNPCScheduler,
   getSaveSystem,
   registerSeedCrops,
   registerSeedEvents,
   registerSeedItems,
-  useAudioStore,
-  useCatalogStore,
-  useCharacterStore,
-  useCraftingStore,
   useEventsStore,
-  useFriendshipStore,
-  useI18nStore,
   useInventoryStore,
   useMailStore,
-  usePlotStore,
-  useQuestStore,
-  useSceneStore,
   useTimeStore,
   useTownStore,
   useWeatherStore,
   type GaesupRuntime,
-  type RuntimeDomainBinding,
 } from '../../src';
 import {
   GameplayEventEngine,
@@ -32,6 +42,7 @@ import {
 import { registerSeedDialogs } from '../components/dialog/seedDialogs';
 import { registerSeedI18n } from '../components/i18n/seedI18n';
 import { registerSeedContent } from '../components/seedContent';
+import { createExampleCozyLifePackagePlugin } from '../plugins/cozy-life-package';
 import { NPC_SCHEDULES } from './world/data';
 
 const DEFAULT_WORLD_TIME_MINUTES = 18 * 60;
@@ -55,36 +66,33 @@ function registerWorldSeeds(): void {
   NPC_SCHEDULES.forEach((schedule) => scheduler.register(schedule));
 }
 
-const createStoreBinding = (
-  key: string,
-  store: { getState: () => { serialize: () => RuntimeDomainBinding['serialize'] extends () => infer T ? T : never; hydrate: (data: never) => void } },
-): RuntimeDomainBinding => ({
-  key,
-  serialize: () => store.getState().serialize(),
-  hydrate: (data) => store.getState().hydrate(data as never),
-});
-
 export function createWorldRuntime(): GaesupRuntime {
   registerWorldSeeds();
 
   return createGaesupRuntime({
     saveSystem: getSaveSystem(),
-    saveBindings: [
-      createStoreBinding('time', useTimeStore),
-      createStoreBinding('inventory', useInventoryStore),
-      createStoreBinding('relations', useFriendshipStore),
-      createStoreBinding('quests', useQuestStore),
-      createStoreBinding('mail', useMailStore),
-      createStoreBinding('catalog', useCatalogStore),
-      createStoreBinding('crafting', useCraftingStore),
-      createStoreBinding('farming', usePlotStore),
-      createStoreBinding('weather', useWeatherStore),
-      createStoreBinding('events', useEventsStore),
-      createStoreBinding('town', useTownStore),
-      createStoreBinding('audio', useAudioStore),
-      createStoreBinding('character', useCharacterStore),
-      createStoreBinding('i18n', useI18nStore),
-      createStoreBinding('scene', useSceneStore),
+    plugins: [
+      createBuildingPlugin(),
+      createCameraPlugin(),
+      createMotionsPlugin(),
+      createNPCPlugin(),
+      createScenePlugin(),
+      createCharacterPlugin(),
+      createTimePlugin(),
+      createWeatherPlugin(),
+      createAudioPlugin(),
+      createInventoryPlugin(),
+      createEconomyPlugin(),
+      createRelationsPlugin(),
+      createQuestsPlugin(),
+      createMailPlugin(),
+      createCatalogPlugin(),
+      createExampleCozyLifePackagePlugin(),
+      createCraftingPlugin(),
+      createFarmingPlugin(),
+      createEventsPlugin(),
+      createTownPlugin(),
+      createI18nPlugin(),
     ],
   });
 }

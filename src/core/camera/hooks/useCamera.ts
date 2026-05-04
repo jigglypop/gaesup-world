@@ -4,7 +4,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { useBuildingStore } from '../../building/stores/buildingStore';
-import { InteractionSystem } from '../../interactions/core/InteractionSystem';
+import { useInputBackend } from '../../interactions/hooks';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { CameraSystemConfig } from '../bridge/types';
@@ -31,6 +31,7 @@ export function useCamera() {
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
   const mode = useGaesupStore((state) => state.mode);
   const isInEditMode = useBuildingStore((state) => state.isInEditMode());
+  const inputBackend = useInputBackend();
 
   // Keep refs for event handlers to avoid re-registering listeners on every option change.
   const cameraOptionRef = useRef(cameraOption);
@@ -245,9 +246,9 @@ export function useCamera() {
   }, [cameraOption?.enableFocus, isInEditMode, setCameraOption]);
 
   useLayoutEffect(() => {
-    InteractionSystem.getInstance().updateMouse({ isLookAround: false });
+    inputBackend.updateMouse({ isLookAround: false });
     syncCameraConfig();
-  }, [syncCameraConfig]);
+  }, [inputBackend, syncCameraConfig]);
 
   useLayoutEffect(() => {
     syncCameraConfig();

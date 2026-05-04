@@ -1,17 +1,28 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useMemo } from 'react';
 
 import { useFrame, RootState } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import { BridgeFactory } from '@core/boilerplate';
 import { createInteractionInputAdapter, type InputAdapter } from '@core/interactions/core';
+import { InMemoryEventBus } from '@core/plugins';
+import {
+  useGaesupRuntime,
+  useGaesupRuntimeRevision,
+} from '@core/runtime';
 import { useGaesupStore } from '@stores/gaesupStore';
 import { StoreState } from '@stores/types';
 
 import { updateInputState } from '../bridge';
 import { PhysicsBridge } from '../bridge/PhysicsBridge';
-import { MOTIONS_TELEPORT_EVENT, type MotionsRuntime, type MotionsTeleportPayload } from '../plugin';
+import {
+  DEFAULT_MOTIONS_RUNTIME_SERVICE_ID,
+  MOTIONS_TELEPORT_EVENT,
+  type MotionsRuntime,
+  type MotionsRuntimeService,
+  type MotionsTeleportPayload,
+} from '../plugin';
 import { createInitialPhysicsState } from './state/physicsStateFactory';
+import { subscribeLegacyTeleportEvents } from './teleportEvents';
 import { getGlobalStateManager } from './useStateSystem';
 import { EntityStateManager } from '../core/system/EntityStateManager';
 import { PhysicsCalculationProps, PhysicsInputState, PhysicsState } from '../types';
@@ -19,20 +30,45 @@ import { PhysicsCalcProps } from '../types';
 
 
 
-let fallbackPhysicsBridge: PhysicsBridge | null = null;
-
-function getGlobalPhysicsBridge(): PhysicsBridge {
-  const bridge = BridgeFactory.getOrCreate('physics') as PhysicsBridge | null;
-  if (bridge) return bridge;
-
-  fallbackPhysicsBridge ??= new PhysicsBridge();
-  return fallbackPhysicsBridge;
+export interface UsePhysicsBridgeOptions extends PhysicsCalculationProps {
+  enabled?: boolean;
+  motionsRuntime?: MotionsRuntime;
+  allowLegacyFallback?: boolean;
 }
 
-export function usePhysicsBridge(
-  props: PhysicsCalculationProps & { enabled?: boolean; motionsRuntime?: MotionsRuntime }
-) {
-  const { enabled = true } = props;
+let fallbackMotionsRuntime: MotionsRuntime | null = null;
+
+function createFallbackMotionsRuntime(): MotionsRuntime {
+  return {
+    physicsBridge: new PhysicsBridge(),
+    inputAdapter: createInteractionInputAdapter(),
+    events: new InMemoryEventBus(),
+    extensionIds: {
+      physics: 'fallback.physics.bridge',
+      input: 'fallback.interaction.input',
+    },
+  };
+}
+
+function getFallbackMotionsRuntime(): MotionsRuntime {
+  fallbackMotionsRuntime ??= createFallbackMotionsRuntime();
+  return fallbackMotionsRuntime;
+}
+
+export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
+  const { enabled = true, allowLegacyFallback = true } = props;
+  const contextRuntime = useGaesupRuntime();
+  const contextRuntimeRevision = useGaesupRuntimeRevision();
+  const contextMotionsRuntime = useMemo(() => {
+    if (props.motionsRuntime || !contextRuntime) return null;
+    const service = contextRuntime.getService<MotionsRuntimeService>(DEFAULT_MOTIONS_RUNTIME_SERVICE_ID);
+    return service?.create() ?? null;
+  }, [contextRuntime, contextRuntimeRevision, props.motionsRuntime]);
+  const fallbackRuntime = useMemo(() => {
+    if (props.motionsRuntime || contextMotionsRuntime || !allowLegacyFallback) return null;
+    return getFallbackMotionsRuntime();
+  }, [allowLegacyFallback, contextMotionsRuntime, props.motionsRuntime]);
+  const motionsRuntime = props.motionsRuntime ?? contextMotionsRuntime ?? fallbackRuntime;
   const physicsStateRef = useRef<PhysicsState | null>(null);
   const mouseTargetRef = useRef(new THREE.Vector3());
   const stateManagerRef = useRef<EntityStateManager | null>(null);
@@ -40,13 +76,13 @@ export function usePhysicsBridge(
   const registeredRef = useRef(false);
   const physicsConfig = useGaesupStore((state) => state.physics);
   const initialPhysicsConfigRef = useRef(physicsConfig);
-  const inputAdapterRef = useRef<InputAdapter | null>(null);
-  if (!inputAdapterRef.current) {
-    inputAdapterRef.current = props.motionsRuntime?.inputAdapter ?? createInteractionInputAdapter();
-  }
-  const inputAdapter = inputAdapterRef.current;
+  const fallbackInputAdapterRef = useRef<InputAdapter | null>(null);
+  fallbackInputAdapterRef.current ??= createInteractionInputAdapter();
+  const inputAdapter = motionsRuntime?.inputAdapter ?? fallbackInputAdapterRef.current;
+  const inputAdapterRef = useRef<InputAdapter>(inputAdapter);
+  inputAdapterRef.current = inputAdapter;
 
-  const isReady = enabled;
+  const isReady = enabled && Boolean(motionsRuntime);
 
   const inputRef = useRef<PhysicsInputState>({
     keyboard: inputAdapter.getKeyboard(),
@@ -54,12 +90,12 @@ export function usePhysicsBridge(
   });
   const calcPropRef = useRef<PhysicsCalcProps | null>(null);
 
-  const setKeyboardInputRef = useRef((input: Partial<PhysicsInputState['keyboard']>) =>
-    inputAdapter.updateKeyboard(input),
-  );
-  const setMouseInputRef = useRef((input: Partial<PhysicsInputState['mouse']>) =>
-    inputAdapter.updateMouse(input),
-  );
+  const setKeyboardInputRef = useRef((input: Partial<PhysicsInputState['keyboard']>) => {
+    inputAdapterRef.current.updateKeyboard(input);
+  });
+  const setMouseInputRef = useRef((input: Partial<PhysicsInputState['mouse']>) => {
+    inputAdapterRef.current.updateMouse(input);
+  });
 
   useEffect(() => {
     if (!registeredRef.current) {
@@ -75,11 +111,22 @@ export function usePhysicsBridge(
         physicsBridgeRef.current?.unregister('global-physics');
         registeredRef.current = false;
       }
+      physicsBridgeRef.current = null;
       physicsStateRef.current = null;
       return undefined;
     }
 
-    const bridge = props.motionsRuntime?.physicsBridge ?? getGlobalPhysicsBridge();
+    const bridge = motionsRuntime?.physicsBridge;
+    if (!bridge) {
+      if (registeredRef.current) {
+        physicsBridgeRef.current?.unregister('global-physics');
+        registeredRef.current = false;
+      }
+      physicsBridgeRef.current = null;
+      physicsStateRef.current = null;
+      return undefined;
+    }
+
     physicsBridgeRef.current = bridge;
     if (!registeredRef.current) {
       physicsBridgeRef.current.register(
@@ -97,7 +144,7 @@ export function usePhysicsBridge(
       }
       physicsStateRef.current = null;
     };
-  }, [enabled, props.motionsRuntime?.physicsBridge]);
+  }, [enabled, motionsRuntime?.physicsBridge]);
 
   // 설정 업데이트
   useEffect(() => {
@@ -124,24 +171,19 @@ export function usePhysicsBridge(
     const handleRuntimeTeleport = (payload: MotionsTeleportPayload) => {
       teleportTo(payload.position);
     };
-    const handleTeleport = (event: CustomEvent) => {
-      const { position } = event.detail;
-      teleportTo(position);
-    };
-    const unsubscribeRuntimeTeleport = props.motionsRuntime?.events.on(
+    const unsubscribeRuntimeTeleport = motionsRuntime?.events.on(
       MOTIONS_TELEPORT_EVENT,
       handleRuntimeTeleport,
     );
-    
-    window.addEventListener('gaesup:teleport', handleTeleport as EventListener);
-    document.addEventListener('teleport-request', handleTeleport as EventListener);
+    const unsubscribeLegacyTeleport = motionsRuntime === fallbackRuntime
+      ? subscribeLegacyTeleportEvents(handleRuntimeTeleport)
+      : undefined;
     
     return () => {
       unsubscribeRuntimeTeleport?.();
-      window.removeEventListener('gaesup:teleport', handleTeleport as EventListener);
-      document.removeEventListener('teleport-request', handleTeleport as EventListener);
+      unsubscribeLegacyTeleport?.();
     };
-  }, [props.motionsRuntime?.events, props.rigidBodyRef]);
+  }, [fallbackRuntime, motionsRuntime, motionsRuntime?.events, props.rigidBodyRef]);
 
   // 물리 계산 실행
   const executePhysics = useCallback((state: RootState, delta: number) => {

@@ -28,6 +28,8 @@ describe('assetStore', () => {
 
     expect(useAssetStore.getState().getAsset('remote-hat')?.url).toBe('hat.glb');
     expect(useAssetStore.getState().error).toBeNull();
+    expect(useAssetStore.getState().catalogStatus.state).toBe('loaded');
+    expect(useAssetStore.getState().catalogStatus.origin).toBe('source');
   });
 
   it('falls back to seed assets when a source fails', async () => {
@@ -40,6 +42,22 @@ describe('assetStore', () => {
 
     expect(useAssetStore.getState().listAssets({ slot: 'top' }).length).toBeGreaterThan(0);
     expect(useAssetStore.getState().error).toBe('offline');
+    expect(useAssetStore.getState().catalogStatus.state).toBe('fallback');
+    expect(useAssetStore.getState().catalogStatus.fallbackReason).toBe('offline');
+  });
+
+  it('distinguishes an empty source fallback from a loaded source catalog', async () => {
+    const source = mockSource([]);
+
+    await useAssetStore.getState().loadAssets(source, { kind: 'weapon' });
+
+    expect(useAssetStore.getState().catalogStatus).toEqual(expect.objectContaining({
+      state: 'fallback',
+      origin: 'seed',
+      fallbackReason: 'empty-source',
+      query: { kind: 'weapon' },
+    }));
+    expect(useAssetStore.getState().error).toBeNull();
   });
 
   it('filters by kind and slot', () => {

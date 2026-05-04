@@ -15,8 +15,8 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import type { NPCBrainBlueprint } from '../../../../npc/types';
 import { getNPCBlueprintNodeTitle } from './helpers';
+import type { NPCBrainBlueprint } from '../../../../npc/types';
 
 type BrainFlowProps = {
   blueprint: NPCBrainBlueprint;

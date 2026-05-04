@@ -4,12 +4,12 @@ import * as THREE from 'three';
 
 import { PathLine } from './PathLine';
 import { TargetMarker } from './TargetMarker';
+import { useInteractionSystem } from '../../../motions/hooks/useInteractionSystem';
+import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
 import {
   getClickNavigationRoute,
   subscribeClickNavigationRoute,
 } from '../../../navigation/ClickNavigationRoute';
-import { useInteractionSystem } from '../../../motions/hooks/useInteractionSystem';
-import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
 import { useGaesupStore } from '../../../stores/gaesupStore';
 
 export function Clicker() {

@@ -145,6 +145,23 @@ describe('NavigationSystem', () => {
     expect(path.some(([x, , z]) => x === 2.5 && z !== 2.5)).toBe(false);
   });
 
+  it('rejects gaps that are too narrow for the agent footprint', async () => {
+    const navigation = createNavigation();
+    await navigation.init();
+
+    navigation.setBlocked(2.5, 0.5, 1, 1);
+    navigation.setBlocked(2.5, 1.5, 1, 1);
+    navigation.setBlocked(2.5, 3.5, 1, 1);
+    navigation.setBlocked(2.5, 4.5, 1, 1);
+    navigation.setBlocked(2.5, 5.5, 1, 1);
+
+    const smallAgent = navigation.findPath(0.5, 2.5, 5.5, 2.5, { agentRadius: 0.49 });
+    const largeAgent = navigation.findPath(0.5, 2.5, 5.5, 2.5, { agentRadius: 0.51 });
+
+    expect(smallAgent).toContainEqual([2.5, 0, 2.5]);
+    expect(largeAgent).toEqual([]);
+  });
+
   it('prevents diagonal corner cutting between blocked cells', async () => {
     const navigation = createNavigation({
       cellSize: 1,
@@ -253,6 +270,16 @@ describe('NavigationSystem', () => {
 
     expect(navigation.hasLineOfSight(0.5, 0.5, 5.5, 0.5)).toBe(false);
     expect(navigation.hasLineOfSight(0.5, 0.5, 0.5, 5.5)).toBe(true);
+  });
+
+  it('checks line of sight with the agent footprint, not just the center point', async () => {
+    const navigation = createNavigation();
+    await navigation.init();
+
+    navigation.setBlocked(2.5, 1.5, 1, 1);
+
+    expect(navigation.hasLineOfSight(0.5, 0.5, 4.5, 0.5)).toBe(true);
+    expect(navigation.hasLineOfSight(0.5, 0.5, 4.5, 0.5, { agentRadius: 0.51 })).toBe(false);
   });
 
   it('smooths a grid route using visible corners while preserving exact endpoints', async () => {

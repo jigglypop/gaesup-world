@@ -10,6 +10,7 @@ import type {
   ManifestResource,
   WorldManifest,
 } from './types';
+import { CONTENT_SCHEMA_VERSION } from './types';
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -21,9 +22,36 @@ const isAssetRecord = (value: unknown): value is AssetRecord => {
     typeof value['kind'] === 'string';
 };
 
+function validateSchemaVersion(errors: string[], path: string, schemaVersion: unknown): void {
+  if (schemaVersion !== CONTENT_SCHEMA_VERSION) {
+    errors.push(`${path}.schemaVersion must be ${CONTENT_SCHEMA_VERSION}`);
+  }
+}
+
+export function validateContentBundleManifest(manifest: ContentBundleManifest): ContentBundleValidation {
+  const errors: string[] = [];
+  validateSchemaVersion(errors, 'manifest', manifest.schemaVersion);
+  if (!manifest.id) errors.push('manifest.id is required');
+  if (!manifest.name) errors.push('manifest.name is required');
+  if (!manifest.version) errors.push('manifest.version is required');
+  if (!manifest.world) errors.push('manifest.world is required');
+  if (!manifest.assets) errors.push('manifest.assets is required');
+  return { ok: errors.length === 0, errors };
+}
+
 export function validateContentBundle(bundle: ContentBundle): ContentBundleValidation {
   const errors: string[] = [];
+  validateSchemaVersion(errors, 'bundle', bundle.schemaVersion);
+  validateSchemaVersion(errors, 'bundle.world', bundle.world?.schemaVersion);
+  validateSchemaVersion(errors, 'bundle.assets', bundle.assets?.schemaVersion);
+  if (bundle.blueprints) {
+    validateSchemaVersion(errors, 'bundle.blueprints', bundle.blueprints.schemaVersion);
+  }
+  if (bundle.gameplay) {
+    validateSchemaVersion(errors, 'bundle.gameplay', bundle.gameplay.schemaVersion);
+  }
   if (!bundle.id) errors.push('bundle.id is required');
+  if (!bundle.name) errors.push('bundle.name is required');
   if (!bundle.version) errors.push('bundle.version is required');
   if (!bundle.world?.id) errors.push('bundle.world.id is required');
   if (!bundle.world?.version) errors.push('bundle.world.version is required');
@@ -72,7 +100,13 @@ export async function loadContentBundleFromManifest(
   fetcher: typeof fetch = fetch,
   baseUrl = '',
 ): Promise<ContentBundle> {
+  const manifestValidation = validateContentBundleManifest(manifest);
+  if (!manifestValidation.ok) {
+    throw new Error(`Invalid content manifest ${manifest.id}: ${manifestValidation.errors.join(', ')}`);
+  }
+
   const bundle: ContentBundle = {
+    schemaVersion: manifest.schemaVersion,
     id: manifest.id,
     name: manifest.name,
     version: manifest.version,

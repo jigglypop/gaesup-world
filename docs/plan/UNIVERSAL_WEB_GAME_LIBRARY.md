@@ -1112,13 +1112,13 @@ interface ExtensionPoints {
 ### Main Gaps
 
 - 저장 경로가 `SaveSystem`과 `SaveLoadManager + window.__gaesupStores`로 나뉘어 있다.
-- `camera` plugin은 현재 system factory, save domain, store service를 등록한다. 남은 과제는 world persistence가 이 binding을 단일 경로로 사용하게 정렬하는 것이다.
-- `motions` plugin은 `physics.bridge`, `interaction.input`을 등록하지만, `usePhysicsBridge`는 여전히 `BridgeFactory.getOrCreate`, fallback singleton, DOM event를 직접 사용한다.
-- `InteractionSystem`은 singleton 중심이라 input backend, replay input, network authority input을 교체하기 어렵다.
+- `camera` plugin은 system factory, save domain, store service를 등록하고, world persistence는 `createWorldDataFromSaveDomains`/`createSaveDataFromSaveSystem`을 통해 `camera` save binding을 단일 경로로 읽는다.
+- `motions` plugin은 `physics.bridge`, `interaction.input`을 등록하고, `usePhysicsBridge`는 runtime `motions.runtime`에서 bridge/input/event bus를 우선 사용한다. non-runtime 경로는 명시적 fallback runtime으로 격리됐고 legacy DOM teleport는 fallback runtime에서만 compatibility path로 구독한다.
+- `InteractionSystem` singleton 접근은 default input backend adapter 내부 resolver로 격리됐고, store/bridge/hook 경로는 `InputBackend` 또는 runtime `ctx.input` extension을 통해 keyboard/mouse/gamepad/touch를 읽고 갱신한다.
 - `ExtensionRegistry<TValue = unknown>` 기본값이 너무 느슨해서 핵심 extension의 value contract가 약하다.
 - `BuildingUI`가 `authStore`, `npcStore`, `buildingStore`를 직접 import해서 building UI, admin policy, NPC 선택 책임이 섞여 있다.
-- `SaveSystem`은 serialize/hydrate 실패를 `onDiagnostic` callback으로 보고한다. 남은 과제는 runtime logger와 사용자-facing diagnostics로 연결하는 것이다.
-- `SaveLoadManager`는 `localStorage`, `document`, `Blob`, `URL`에 직접 의존해서 서버/테스트/비브라우저 환경에서 재사용하기 어렵다.
+- `SaveSystem`은 serialize/hydrate 실패를 `onDiagnostic` callback과 `subscribeDiagnostics`로 보고하고, runtime은 이를 `runtime.saveDiagnostics` service, logger, `runtime:saveDiagnostic` event로 노출한다. 앱 shell은 `RuntimeSaveDiagnosticsToaster`로 diagnostics를 toast UI에 연결할 수 있다.
+- `SaveLoadManager`는 legacy storage/file helper로 남아 있으며, `LegacySaveStorage`와 `SaveFileWriter` 주입으로 테스트/비브라우저 환경에서 브라우저 API 직접 의존을 피할 수 있다.
 - ESLint가 테스트 파일을 ignore하고 있어 테스트 코드 품질과 import boundary 문제가 숨어도 잡기 어렵다.
 
 ## Updated Execution Roadmap
@@ -1193,9 +1193,7 @@ world persistence
 
 ### Phase 2: Camera Save Domain
 
-상태: 기본 구현 완료. `createCameraPlugin`은 `camera.system`, `camera` save binding, `camera.store` service를 등록한다.
-
-남은 목표는 camera save binding을 world persistence의 단일 경로에 연결하는 것이다.
+상태: 기본 구현 완료. `createCameraPlugin`은 `camera.system`, `camera` save binding, `camera.store` service를 등록한다. world persistence는 SaveSystem domain helper를 통해 `camera` binding을 읽고, 실제 camera plugin binding 기반 round-trip을 테스트한다.
 
 작업:
 
@@ -1213,7 +1211,9 @@ world persistence
 
 목표는 motions가 plugin registry에 등록한 bridge/input을 실제 hook이 사용하게 만드는 것이다.
 
-현재 문제:
+상태: `usePhysicsBridge` 기본 통합 완료. hook은 `GaesupRuntime`의 `motions.runtime` service에서 `physics.bridge`, `interaction.input`, `ctx.events`를 생성해 사용하고, runtime이 없는 테스트/non-runtime 환경에서만 `allowLegacyFallback` 기반 fallback runtime을 사용한다.
+
+기존 문제:
 
 ```txt
 usePhysicsBridge
@@ -1236,9 +1236,9 @@ usePhysicsBridge
 작업:
 
 - `GaesupRuntime`에 plugin context 접근 또는 runtime resolver API를 추가한다.
-- `usePhysicsBridge`가 `physics.bridge`와 `interaction.input`을 주입받을 수 있게 한다.
-- DOM teleport event는 compatibility adapter로 분리하고 내부 기본 경로는 `ctx.events`로 바꾼다.
-- bridge fallback 생성은 테스트 또는 non-runtime 환경에서만 명시적으로 사용한다.
+- `usePhysicsBridge`가 `physics.bridge`와 `interaction.input`을 주입받을 수 있게 한다. (완료)
+- DOM teleport event는 compatibility adapter로 분리하고 내부 기본 경로는 `ctx.events`로 바꾼다. (완료)
+- bridge fallback 생성은 테스트 또는 non-runtime 환경에서만 명시적으로 사용한다. (완료)
 
 완료 기준:
 
@@ -1248,14 +1248,16 @@ usePhysicsBridge
 
 ### Phase 4: Interaction Backend Abstraction
 
+상태: 기본 구현 완료. `InputBackend`/`InputBackendExtension`은 keyboard/mouse/gamepad/touch 공통 인터페이스를 제공하고, runtime `ctx.input`은 fake/replay/network backend를 주입할 수 있다. default backend는 `InteractionSystem` singleton을 adapter 내부 resolver 뒤에 숨기며, store와 `InteractionBridge`는 default backend 또는 주입된 backend를 통해 입력을 처리한다.
+
 목표는 interaction/input이 singleton 하나에 고정되지 않도록 만드는 것이다.
 
 작업:
 
-- `InteractionSystem.getInstance()`를 직접 쓰는 경로를 adapter 뒤로 숨긴다.
-- keyboard/mouse/gamepad/replay/network input backend 공통 인터페이스를 정의한다.
-- `ctx.input`에 backend 또는 adapter factory를 등록한다.
-- motions, UI prompt, interaction target query가 같은 input source를 사용하게 한다.
+- `InteractionSystem.getInstance()`를 직접 쓰는 경로를 adapter 뒤로 숨긴다. (완료)
+- keyboard/mouse/gamepad/replay/network input backend 공통 인터페이스를 정의한다. (완료)
+- `ctx.input`에 backend 또는 adapter factory를 등록한다. (완료)
+- motions, UI prompt, interaction target query가 같은 input source를 사용하게 한다. (완료)
 
 완료 기준:
 
@@ -1282,6 +1284,8 @@ usePhysicsBridge
 - registry 충돌 메시지가 plugin id와 extension id를 모두 포함한다.
 
 ### Phase 6: UI Decoupling
+
+상태: 기본 구현 완료. `BuildingUI`는 auth/NPC store 직접 의존을 제거하고 `canEdit`, `npcPanel`, `extensionPanel`로 앱 정책과 도메인 확장을 받는다. `EditorLayout`은 runtime `ctx.components`에 등록된 `editor.panel` 컴포넌트를 패널로 주입할 수 있다.
 
 목표는 core domain UI가 앱 정책과 강하게 결합되지 않게 하는 것이다.
 
@@ -1310,6 +1314,8 @@ BuildingUI
 
 ### Phase 7: Network and Server Authority
 
+상태: 계약 레이어와 서버 호스트 1차 구현 완료. `GameCommand`, `ServerEvent`, `StateDelta`, `SnapshotAck`로 클라이언트 명령과 서버 확정 결과를 분리했고, `NetworkMessageType`에 authority 메시지 타입을 추가했다. `createCommandAuthorityRouter`는 클라이언트 명령을 서버 확정 이벤트/델타로 라우팅하며, `createServerPluginHost`는 `server.commandAuthority` 서비스로 서버 플러그인이 명령 핸들러를 등록할 수 있게 한다. visit snapshot은 `WorldSnapshot`의 `kind/worldId/savedAt` 원칙을 공유하며, runtime bootstrap과 `createServerPluginHost`는 client/server/editor/both 플러그인을 구분한다.
+
 목표는 `NetworkAdapter`를 단순 transport에서 게임 플랫폼 네트워크 계약으로 확장하는 것이다.
 
 작업:
@@ -1327,6 +1333,8 @@ BuildingUI
 - server contract가 클라이언트 구현 세부사항에 의존하지 않는다.
 
 ### Phase 8: Content and Plugin Ecosystem
+
+상태: 기본 구현 완료. `defineGaesupPlugin`을 official plugin template helper로 추가했고, `validateGaesupPlugin`/`assertValidGaesupPlugin`으로 manifest/dependency/runtime/save namespace 검증을 테스트에서 재사용할 수 있게 했다. content bundle/manifest에는 `CONTENT_SCHEMA_VERSION`을 도입해 export/load/validation 경로가 schema version을 확인한다. asset catalog는 `catalogStatus`로 seed/loaded/fallback 상태와 fallback reason을 구분한다. `cozy-life`, `high-graphics`, `shooter-kit` sample plugin 생성기를 제공하며, `examples/plugins/cozy-life-package`는 별도 package 형태의 plugin을 만들고 runtime에 등록하는 예제를 검증한다.
 
 목표는 외부 개발자가 코어를 건드리지 않고 게임 장르, 콘텐츠, 렌더러를 추가할 수 있게 하는 것이다.
 
@@ -1352,7 +1360,7 @@ BuildingUI
 | `window.__gaesupStores` | 멀티 런타임, 테스트, SSR, 서버 검증 어려움 | runtime injection 또는 save domain binding 사용 |
 | singleton/global bridge | plugin 교체 불가, 테스트 격리 어려움 | `ctx.systems`, `ctx.input`, `ctx.events` 사용 |
 | 느슨한 registry 타입 | extension value mismatch를 런타임에서야 발견 | typed registry와 extension ID 상수 도입 |
-| save diagnostics 미연결 | domain 실패는 `onDiagnostic`으로 잡히지만 UI/logger 연결이 약함 | runtime logger와 사용자-facing diagnostics 연결 |
+| save diagnostics UI 정책 | domain 실패는 `runtime.saveDiagnostics` service/logger/event와 `RuntimeSaveDiagnosticsToaster`로 연결됨 | 앱 shell에서 toast/panel 정책 선택 |
 | DOM API 직접 의존 | 서버/worker/non-browser 재사용 불가 | adapter로 분리 |
 | UI와 app policy 결합 | domain UI 재사용 어려움 | props/service/plugin component로 주입 |
 | 테스트 lint 제외 | 테스트 코드 품질 저하 | 테스트 파일 lint 정책 재검토 |
@@ -1367,10 +1375,10 @@ BuildingUI
 
 1. `persistenceSlice`의 `window.__gaesupStores` 제거 계획 수립
 2. `building + camera + npc` runtime save round-trip 테스트 유지
-3. `SaveSystem` diagnostics를 runtime logger와 UI에 연결
-4. world persistence가 camera binding을 사용하게 정렬
-5. `SaveLoadManager`를 legacy/file helper로 축소
-6. `usePhysicsBridge`가 plugin context의 bridge/input을 쓰도록 변경
-7. `InteractionSystem` singleton을 default backend adapter 뒤로 이동
+3. `SaveSystem` diagnostics를 runtime logger와 UI에 연결 (runtime service/logger/event/toast bridge 완료)
+4. world persistence가 camera binding을 사용하게 정렬 (완료)
+5. `SaveLoadManager`를 legacy/file helper로 축소 (완료)
+6. `usePhysicsBridge`가 plugin context의 bridge/input을 쓰도록 변경 (완료)
+7. `InteractionSystem` singleton을 default backend adapter 뒤로 이동 (완료)
 
 이 순서가 끝나면 `gaesup-world`는 단순 기능 묶음이 아니라, 런타임이 plugin을 조립하고, domain state를 저장하며, 입력/물리/상호작용을 교체 가능한 방식으로 연결하는 통합 게임 플랫폼에 가까워진다.

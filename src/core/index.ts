@@ -41,6 +41,8 @@ export {
   collectSaveDomains,
   createPlayerProgress,
   createPlayerProgressFromSaveSystem,
+  DEFAULT_SERVER_COMMAND_AUTHORITY_SERVICE_ID,
+  createServerPluginHost,
   createWorldSnapshot,
   createWorldSnapshotFromSaveSystem,
   pickDomains,
@@ -52,6 +54,9 @@ export type {
   PlayerProgress,
   PlayerProgressDomain,
   PlatformSaveBindingProvider,
+  PlatformServerPluginHost,
+  PlatformServerPluginHostOptions,
+  ServerHostDomainBinding,
   WorldSnapshot as PlatformWorldSnapshot,
   WorldSnapshotDomain,
 } from './platform';
@@ -76,7 +81,25 @@ export {
 } from './rendering/postprocess/cubeLut';
 export type { CubeLutData } from './rendering/postprocess/cubeLut';
 
-export { Editor, EditorLayout, ResizablePanel } from './editor';
+export {
+  EDITOR_PANEL_COMPONENT_KIND,
+  Editor,
+  EditorLayout,
+  ResizablePanel,
+  isEditorPanelComponentExtension,
+  resolveEditorPanelComponentExtensions,
+} from './editor';
+export type {
+  EditorLayoutProps,
+  EditorPanelComponentExtension,
+  EditorPanelDefaults,
+  EditorShellAction,
+  EditorShellPluginPanel,
+  BuildingPanelNPCLayout,
+  BuildingPanelNPCPanelContext,
+  BuildingPanelNPCPanelRenderer,
+  PanelConfig,
+} from './editor';
 export * from './building';
 export * from './npc';
 

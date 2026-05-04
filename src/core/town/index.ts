@@ -7,6 +7,13 @@ export type {
   TownStats,
   TownSerialized,
 } from './types';
+export {
+  createTownPlugin,
+  hydrateTownState,
+  serializeTownState,
+  townPlugin,
+} from './plugin';
+export type { TownPluginOptions } from './plugin';
 export { useTownStore } from './stores/townStore';
 export { useDecorationScore } from './hooks/useDecorationScore';
 export type { DecorationWeights } from './hooks/useDecorationScore';

@@ -5,6 +5,13 @@ export type {
   EventState,
   EventsSerialized,
 } from './types';
+export {
+  createEventsPlugin,
+  eventsPlugin,
+  hydrateEventsState,
+  serializeEventsState,
+} from './plugin';
+export type { EventsPluginOptions } from './plugin';
 export { getEventRegistry, isEventActive } from './registry/EventRegistry';
 export type { EventRegistry } from './registry/EventRegistry';
 export { useEventsStore } from './stores/eventsStore';

@@ -30,13 +30,31 @@ describe('usePhysicsBridge calcProp 재사용', () => {
   test('plugin runtime 으로 주입된 physics bridge 와 input adapter 를 사용할 수 있다', () => {
     const src = read();
     expect(src).toMatch(/motionsRuntime\?:\s*MotionsRuntime/);
+    expect(src).toMatch(/useGaesupRuntime/);
+    expect(src).toMatch(/DEFAULT_MOTIONS_RUNTIME_SERVICE_ID/);
     expect(src).toMatch(/motionsRuntime\?\.inputAdapter/);
     expect(src).toMatch(/motionsRuntime\?\.physicsBridge/);
+  });
+
+  test('BridgeFactory 대신 명시적 fallback runtime 을 사용한다', () => {
+    const src = read();
+    expect(src).not.toMatch(/BridgeFactory/);
+    expect(src).not.toMatch(/getOrCreate\('physics'\)/);
+    expect(src).toMatch(/allowLegacyFallback/);
+    expect(src).toMatch(/createFallbackMotionsRuntime/);
+    expect(src).toMatch(/fallback\.physics\.bridge/);
+    expect(src).toMatch(/fallback\.interaction\.input/);
   });
 
   test('plugin runtime event bus 에서 teleport 요청을 구독할 수 있다', () => {
     const src = read();
     expect(src).toMatch(/MOTIONS_TELEPORT_EVENT/);
     expect(src).toMatch(/motionsRuntime\?\.events\.on/);
+    expect(src).toMatch(/subscribeLegacyTeleportEvents/);
+  });
+
+  test('legacy DOM teleport 구독은 fallback runtime 에만 연결된다', () => {
+    const src = read();
+    expect(src).toMatch(/motionsRuntime\s*===\s*fallbackRuntime[\s\S]*subscribeLegacyTeleportEvents/);
   });
 });

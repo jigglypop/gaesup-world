@@ -30,6 +30,16 @@ export {
   getReinforcementAdapterConfig,
   registerDefaultReinforcementAdapter,
 } from './core/reinforcement';
+export {
+  createNPCPlugin,
+  hydrateNPCState,
+  npcPlugin,
+  serializeNPCState,
+} from './plugin';
+export type {
+  NPCPluginOptions,
+  NPCSerializedState,
+} from './plugin';
 export type {
   NPCBrainAdapter,
   NPCBrainAdapterContext,

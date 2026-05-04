@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 
-import { BuildingPanel } from '../../src/editor';
-import { useBuildingStore } from '../../src';
 import { WorldPage } from './World';
+import { useBuildingStore } from '../../src';
+import { BuildingPanel } from '../../src/editor';
 import './styles/NPCEditorPage.css';
 
 export function NPCEditorPage() {

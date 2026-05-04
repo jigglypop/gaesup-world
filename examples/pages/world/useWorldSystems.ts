@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 
 import {
   useAudioStore,
@@ -14,13 +14,17 @@ import {
   useQuestObjectiveTracker,
   useWeatherStore,
   useWeatherTicker,
+  type GaesupRuntime,
 } from '../../../src';
-import { createWorldRuntime, dispatchWorldGameplayEvent, loadWorldRuntime } from '../runtime';
+import { dispatchWorldGameplayEvent, loadWorldRuntime } from '../runtime';
 import { WORLD_WEATHER_ENABLED } from './data';
 
-export function WorldSystems() {
-  const runtime = useMemo(() => createWorldRuntime(), []);
+export interface WorldSystemsProps {
+  runtime: GaesupRuntime;
+  onRuntimeReady?: () => void;
+}
 
+export function WorldSystems({ runtime, onRuntimeReady }: WorldSystemsProps) {
   useGameClock(false);
   useHotbarKeyboard(true);
   useAutoSave({ intervalMs: 60_000 });
@@ -63,11 +67,17 @@ export function WorldSystems() {
   });
 
   useEffect(() => {
-    void loadWorldRuntime(runtime);
+    let cancelled = false;
+    void loadWorldRuntime(runtime).then(() => {
+      if (!cancelled) {
+        onRuntimeReady?.();
+      }
+    });
     return () => {
+      cancelled = true;
       void runtime.dispose();
     };
-  }, [runtime]);
+  }, [onRuntimeReady, runtime]);
 
   return null;
 }

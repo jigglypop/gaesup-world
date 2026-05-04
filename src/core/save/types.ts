@@ -30,10 +30,12 @@ export type SaveDiagnostic = {
   error: unknown;
 };
 
+export type SaveDiagnosticListener = (diagnostic: SaveDiagnostic) => void;
+
 export type SaveSystemOptions = {
   adapter: SaveAdapter;
   defaultSlot?: string;
   currentVersion?: number;
   migrations?: Record<number, Migration>;
-  onDiagnostic?: (diagnostic: SaveDiagnostic) => void;
+  onDiagnostic?: SaveDiagnosticListener;
 };

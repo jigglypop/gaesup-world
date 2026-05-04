@@ -76,6 +76,24 @@ describe('applyBuildingNavigationObstacles', () => {
     expect(navigation.isWalkable(5.5, 5.5)).toBe(false);
   });
 
+  it('uses placed object footprint size when blocking navigation', async () => {
+    const navigation = NavigationSystem.getInstance(TEST_CONFIG);
+    await navigation.init();
+
+    applyBuildingNavigationObstacles(navigation, {
+      objects: [{
+        id: 'large-tree',
+        type: 'tree',
+        position: { x: 4.5, y: 0, z: 4.5 },
+        config: { size: 3 },
+      }],
+    });
+
+    expect(navigation.isWalkable(4.5, 4.5)).toBe(false);
+    expect(navigation.isWalkable(3.5, 4.5)).toBe(false);
+    expect(navigation.isWalkable(1.5, 4.5)).toBe(true);
+  });
+
   it('can reset previous navigation obstacles before applying a new snapshot', async () => {
     const navigation = NavigationSystem.getInstance(TEST_CONFIG);
     await navigation.init();

@@ -1,8 +1,22 @@
 import { useAssetStore } from '../assets';
-import { createPluginRegistry } from '../plugins';
+import {
+  createPluginLogger,
+  createPluginRegistry,
+  filterPluginsForRuntime,
+} from '../plugins';
+export { shouldSetupPluginForRuntime } from '../plugins';
 import { SaveSystem, getSaveSystem } from '../save';
-import type { DomainBinding, SerializedDomainValue } from '../save';
-import type { GaesupRuntime, GaesupRuntimeOptions, RuntimeDomainBinding } from './types';
+import type { DomainBinding, SaveSystemOptions, SerializedDomainValue } from '../save';
+import {
+  DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID,
+  RUNTIME_SAVE_DIAGNOSTIC_EVENT,
+  createRuntimeSaveDiagnostics,
+} from './saveDiagnostics';
+import type {
+  GaesupRuntime,
+  GaesupRuntimeOptions,
+  RuntimeDomainBinding,
+} from './types';
 
 function isRuntimeDomainBinding(value: unknown): value is RuntimeDomainBinding {
   if (!value || typeof value !== 'object') return false;
@@ -15,13 +29,27 @@ function isRuntimeDomainBinding(value: unknown): value is RuntimeDomainBinding {
 }
 
 export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupRuntime {
-  const plugins = createPluginRegistry();
+  const runtimeLogger = createPluginLogger(options.logger);
+  const plugins = createPluginRegistry(options.logger ? { logger: options.logger } : {});
+  const pluginRuntime = options.pluginRuntime ?? 'client';
   const save = options.saveSystem ?? (
-    options.saveOptions ? new SaveSystem(options.saveOptions) : getSaveSystem()
+    options.saveOptions ? new SaveSystem(createRuntimeSaveOptions(options.saveOptions)) : getSaveSystem()
   );
+  const saveDiagnostics = createRuntimeSaveDiagnostics(options.saveDiagnostics);
+  const unregisterSaveDiagnostics = save.subscribeDiagnostics((diagnostic) => {
+    const record = saveDiagnostics.report(diagnostic);
+    runtimeLogger.warn(record.message, record);
+    plugins.context.events.emit(RUNTIME_SAVE_DIAGNOSTIC_EVENT, record);
+  });
   const unregisterSaveBindings = new Map<string, () => void>();
 
-  for (const plugin of options.plugins ?? []) {
+  plugins.context.services.register(
+    DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID,
+    saveDiagnostics,
+    'gaesup.runtime',
+  );
+
+  for (const plugin of filterPluginsForRuntime(options.plugins ?? [], pluginRuntime)) {
     plugins.register(plugin);
   }
 
@@ -54,8 +82,10 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
   };
 
   return {
+    pluginRuntime,
     plugins,
     save,
+    saveDiagnostics,
     loadAssets,
     getService: (id) => plugins.context.services.get(id),
     requireService: (id) => plugins.context.services.require(id),
@@ -68,10 +98,18 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
     },
     dispose: async () => {
       await plugins.disposeAll();
+      unregisterSaveDiagnostics();
       for (const unregister of unregisterSaveBindings.values()) {
         unregister();
       }
       unregisterSaveBindings.clear();
+      plugins.context.services.remove(DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID);
     },
+  };
+}
+
+function createRuntimeSaveOptions(options: SaveSystemOptions): SaveSystemOptions {
+  return {
+    ...options,
   };
 }

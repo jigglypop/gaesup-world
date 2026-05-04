@@ -1,7 +1,7 @@
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { InteractionBridge } from '../../interactions/bridge/InteractionBridge';
-import { KeyboardState, MouseState } from '../../interactions/core/InteractionSystem';
+import type { KeyboardState, MouseState } from '../../interactions/bridge';
+import { useInputBackend } from '../../interactions/hooks';
 
 export interface UseInteractionSystemResult {
   keyboard: KeyboardState;
@@ -12,51 +12,51 @@ export interface UseInteractionSystemResult {
 }
 
 export function useInteractionSystem(): UseInteractionSystemResult {
-  const bridgeRef = useRef<InteractionBridge | null>(null);
+  const inputBackend = useInputBackend();
   const [state, setState] = useState<{ keyboard: KeyboardState; mouse: MouseState }>(() => {
-    const bridge = InteractionBridge.getGlobal();
     return {
-      keyboard: bridge.getKeyboardState(),
-      mouse: bridge.getMouseState()
+      keyboard: inputBackend.getKeyboard(),
+      mouse: inputBackend.getMouse()
     };
   });
-  
-  if (!bridgeRef.current) {
-    bridgeRef.current = InteractionBridge.getGlobal();
-  }
-  
+
   useEffect(() => {
-    const bridge = bridgeRef.current!;
-    const unsubscribe = bridge.subscribe((newState) => {
-      setState(newState);
+    setState({
+      keyboard: inputBackend.getKeyboard(),
+      mouse: inputBackend.getMouse(),
     });
-    
-    return unsubscribe;
-  }, []);
+
+    return inputBackend.subscribe?.((newState) => {
+      setState({
+        keyboard: newState.keyboard,
+        mouse: newState.mouse,
+      });
+    });
+  }, [inputBackend]);
   
   const updateKeyboard = useCallback((updates: Partial<KeyboardState>) => {
-    bridgeRef.current?.executeCommand({
-      type: 'input',
-      action: 'updateKeyboard',
-      data: updates
-    });
-  }, []);
+    inputBackend.updateKeyboard(updates);
+    if (!inputBackend.subscribe) {
+      setState({
+        keyboard: inputBackend.getKeyboard(),
+        mouse: inputBackend.getMouse(),
+      });
+    }
+  }, [inputBackend]);
   
   const updateMouse = useCallback((updates: Partial<MouseState>) => {
-    bridgeRef.current?.executeCommand({
-      type: 'input',
-      action: 'updateMouse',
-      data: updates
-    });
-  }, []);
+    inputBackend.updateMouse(updates);
+    if (!inputBackend.subscribe) {
+      setState({
+        keyboard: inputBackend.getKeyboard(),
+        mouse: inputBackend.getMouse(),
+      });
+    }
+  }, [inputBackend]);
   
   const dispatchInput = useCallback((updates: Partial<MouseState>) => {
-    bridgeRef.current?.executeCommand({
-      type: 'input',
-      action: 'updateMouse',
-      data: updates
-    });
-  }, []);
+    updateMouse(updates);
+  }, [updateMouse]);
   
   return {
     keyboard: state.keyboard,

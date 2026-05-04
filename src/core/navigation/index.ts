@@ -10,7 +10,12 @@ export type {
   NPCNavigationTarget,
 } from './NPCNavigationAdapter';
 export { NavigationSystem } from './NavigationSystem';
-export type { NavigationConfig, Waypoint } from './NavigationSystem';
+export type {
+  NavigationAgentSize,
+  NavigationConfig,
+  NavigationQueryOptions,
+  Waypoint,
+} from './NavigationSystem';
 export {
   applyRegisteredNavigationObstacles,
   getNavigationObstacles,

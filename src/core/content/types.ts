@@ -3,6 +3,10 @@ import type { GameplayEventBlueprint } from '../gameplay';
 import type { AgentBehaviorBlueprint, NPCBehaviorBlueprint } from '../npc';
 import type { SerializedDomainValue } from '../save';
 
+export const CONTENT_SCHEMA_VERSION = 1;
+
+export type ContentSchemaVersion = typeof CONTENT_SCHEMA_VERSION;
+
 export type ManifestResource = {
   id: string;
   url?: string;
@@ -13,6 +17,7 @@ export type ManifestResource = {
 export type ManifestRef<TResource extends ManifestResource | string = ManifestResource | string> = TResource;
 
 export type WorldManifest = {
+  schemaVersion: ContentSchemaVersion;
   id: string;
   name: string;
   version: string;
@@ -20,11 +25,13 @@ export type WorldManifest = {
 };
 
 export type AssetManifest = {
+  schemaVersion: ContentSchemaVersion;
   version: string;
   assets: AssetRecord[];
 };
 
 export type BlueprintManifest = {
+  schemaVersion: ContentSchemaVersion;
   version: string;
   blueprints: ManifestResource[];
   npcBehavior?: NPCBehaviorBlueprint[];
@@ -32,6 +39,7 @@ export type BlueprintManifest = {
 };
 
 export type GameplayManifest = {
+  schemaVersion: ContentSchemaVersion;
   version: string;
   items?: ManifestResource[];
   quests?: ManifestResource[];
@@ -41,6 +49,7 @@ export type GameplayManifest = {
 };
 
 export type ContentBundle = {
+  schemaVersion: ContentSchemaVersion;
   id: string;
   name: string;
   version: string;
@@ -51,6 +60,7 @@ export type ContentBundle = {
 };
 
 export type ContentBundleManifest = {
+  schemaVersion: ContentSchemaVersion;
   id: string;
   name: string;
   version: string;

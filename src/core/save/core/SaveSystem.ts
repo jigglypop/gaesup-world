@@ -1,6 +1,14 @@
 import { IndexedDBAdapter } from '../adapters/IndexedDBAdapter';
 import { LocalStorageAdapter } from '../adapters/LocalStorageAdapter';
-import type { DomainBinding, Migration, SaveAdapter, SaveBlob, SaveDiagnostic, SaveSystemOptions } from '../types';
+import type {
+  DomainBinding,
+  Migration,
+  SaveAdapter,
+  SaveBlob,
+  SaveDiagnostic,
+  SaveDiagnosticListener,
+  SaveSystemOptions,
+} from '../types';
 
 export class SaveSystem {
   private adapter: SaveAdapter;
@@ -8,14 +16,16 @@ export class SaveSystem {
   private currentVersion: number;
   private migrations: Record<number, Migration>;
   private defaultSlot: string;
-  private onDiagnostic: ((diagnostic: SaveDiagnostic) => void) | undefined;
+  private diagnosticListeners = new Set<SaveDiagnosticListener>();
 
   constructor(opts: SaveSystemOptions) {
     this.adapter = opts.adapter;
     this.currentVersion = opts.currentVersion ?? 1;
     this.migrations = opts.migrations ?? {};
     this.defaultSlot = opts.defaultSlot ?? 'main';
-    this.onDiagnostic = opts.onDiagnostic;
+    if (opts.onDiagnostic) {
+      this.diagnosticListeners.add(opts.onDiagnostic);
+    }
   }
 
   register(binding: DomainBinding): () => void {
@@ -30,6 +40,13 @@ export class SaveSystem {
 
   has(key: string): boolean { return this.bindings.has(key); }
 
+  subscribeDiagnostics(listener: SaveDiagnosticListener): () => void {
+    this.diagnosticListeners.add(listener);
+    return () => {
+      this.diagnosticListeners.delete(listener);
+    };
+  }
+
   /**
    * Returns an iterator over registered domain bindings. Used by helpers
    * such as the visit-room snapshot serializer that need to read the
@@ -37,7 +54,7 @@ export class SaveSystem {
    */
   getBindings(): IterableIterator<DomainBinding> { return this.bindings.values(); }
 
-  async save(slot: string = this.defaultSlot): Promise<void> {
+  createBlob(slot: string = this.defaultSlot): SaveBlob {
     const domains: SaveBlob['domains'] = {};
     for (const [key, b] of this.bindings) {
       try {
@@ -47,17 +64,15 @@ export class SaveSystem {
         this.reportDiagnostic({ phase: 'serialize', key, slot, error });
       }
     }
-    const blob: SaveBlob = {
+
+    return {
       version: this.currentVersion,
       savedAt: Date.now(),
       domains,
     };
-    await this.adapter.write(slot, blob);
   }
 
-  async load(slot: string = this.defaultSlot): Promise<boolean> {
-    const raw = await this.adapter.read(slot);
-    if (!raw) return false;
+  hydrateBlob(raw: SaveBlob, slot: string = this.defaultSlot): boolean {
     let blob = raw;
     while (blob.version < this.currentVersion) {
       const m = this.migrations[blob.version];
@@ -74,11 +89,24 @@ export class SaveSystem {
     return true;
   }
 
+  async save(slot: string = this.defaultSlot): Promise<void> {
+    const blob = this.createBlob(slot);
+    await this.adapter.write(slot, blob);
+  }
+
+  async load(slot: string = this.defaultSlot): Promise<boolean> {
+    const raw = await this.adapter.read(slot);
+    if (!raw) return false;
+    return this.hydrateBlob(raw, slot);
+  }
+
   async list(): Promise<string[]> { return this.adapter.list(); }
   async remove(slot: string = this.defaultSlot): Promise<void> { return this.adapter.remove(slot); }
 
   private reportDiagnostic(diagnostic: SaveDiagnostic): void {
-    this.onDiagnostic?.(diagnostic);
+    for (const listener of this.diagnosticListeners) {
+      listener(diagnostic);
+    }
   }
 }
 

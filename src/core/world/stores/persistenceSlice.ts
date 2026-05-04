@@ -1,6 +1,14 @@
 import { StateCreator } from 'zustand';
 
+import type { SaveBlob, SaveSystem } from '../../save';
 import { SaveLoadManager } from '../persistence/SaveLoadManager';
+import {
+  DEFAULT_WORLD_SAVE_ENVIRONMENT,
+  createSaveDataFromSaveSystem,
+  createWorldDataFromSaveDomains,
+  normalizeSaveMetadata,
+  parseWorldSaveTimestamp,
+} from '../persistence/saveSystem';
 import { CameraSaveData, NPCSaveData, SaveData, SaveLoadOptions, SaveMetadata, WorldSaveData } from '../persistence/types';
 
 export type StoreApi<TState> = {
@@ -32,31 +40,24 @@ export type GaesupStores = {
   cameraStore?: StoreApi<CameraStoreState> & { setState: (state: Partial<CameraStoreState>) => void };
 };
 
-declare global {
-  interface Window {
-    __gaesupStores?: GaesupStores;
-  }
-}
-
 export type PersistenceStoresResolver = () => GaesupStores;
 
 export interface PersistenceSliceOptions {
   getStores?: PersistenceStoresResolver;
   saveLoadManager?: SaveLoadManager;
+  saveSystem?: SaveSystem;
 }
 
-const DEFAULT_ENVIRONMENT: WorldSaveData['environment'] = {
-  lighting: {
-    ambientIntensity: 1,
-    directionalIntensity: 1,
-    directionalPosition: { x: 0, y: 10, z: 0 },
-  },
+const EMPTY_STORES_RESOLVER: PersistenceStoresResolver = () => ({});
+
+type SaveSystemFileData = {
+  kind: 'gaesup.save-system';
+  version: 1;
+  worldId: string;
+  worldName: string;
+  blob: SaveBlob;
+  metadata?: Partial<SaveMetadata>;
 };
-
-function getWindowStores(): GaesupStores {
-  if (typeof window === 'undefined') return {};
-  return window.__gaesupStores ?? {};
-}
 
 function createWorldData(
   stores: GaesupStores,
@@ -88,7 +89,7 @@ function createWorldData(
       meshes: Array.from(buildingState.meshes.values()),
     },
     npcs: npcStore ? Array.from(npcStore.getState().instances.values()) : [],
-    environment: DEFAULT_ENVIRONMENT,
+    environment: DEFAULT_WORLD_SAVE_ENVIRONMENT,
     ...(camera ? { camera } : {}),
   };
 
@@ -161,6 +162,63 @@ function hydrateStores(stores: GaesupStores, world: WorldSaveData): void {
   hydrateCameraStore(stores.cameraStore, world.camera);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function stripJsonExtension(filename: string): string {
+  return filename.replace(/\.json$/i, '');
+}
+
+function isSaveBlob(value: unknown): value is SaveBlob {
+  return (
+    isRecord(value) &&
+    typeof value['version'] === 'number' &&
+    typeof value['savedAt'] === 'number' &&
+    isRecord(value['domains'])
+  );
+}
+
+function isSaveSystemFileData(value: unknown): value is SaveSystemFileData {
+  return (
+    isRecord(value) &&
+    value['kind'] === 'gaesup.save-system' &&
+    typeof value['worldId'] === 'string' &&
+    typeof value['worldName'] === 'string' &&
+    isSaveBlob(value['blob'])
+  );
+}
+
+async function listSaveSystemSaves(saveSystem: SaveSystem): Promise<Array<{ id: string; timestamp: number }>> {
+  const saveIds = await saveSystem.list();
+  return saveIds
+    .map((id) => ({ id, timestamp: parseWorldSaveTimestamp(id) }))
+    .sort((a, b) => b.timestamp - a.timestamp);
+}
+
+function downloadJsonFile(filename: string, data: unknown): void {
+  if (typeof document === 'undefined' || typeof URL === 'undefined' || typeof Blob === 'undefined') {
+    throw new Error('File download is not available in this environment');
+  }
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename.endsWith('.json') ? filename : `${filename}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+async function readSaveSystemFileData(file: File): Promise<SaveSystemFileData | SaveBlob> {
+  const parsed = JSON.parse(await file.text()) as unknown;
+  if (isSaveSystemFileData(parsed)) return parsed;
+  if (isSaveBlob(parsed)) return parsed;
+  throw new Error('Invalid SaveSystem file format');
+}
+
 export interface PersistenceState {
   saveLoadManager: SaveLoadManager;
   currentSaveId: string | null;
@@ -181,7 +239,8 @@ export interface PersistenceState {
 export function createPersistenceSliceWithOptions(
   options: PersistenceSliceOptions = {},
 ): StateCreator<PersistenceState> {
-  const resolveStores = options.getStores ?? getWindowStores;
+  const resolveStores = options.getStores ?? EMPTY_STORES_RESOLVER;
+  const saveSystem = options.saveSystem;
 
   return (set, get) => ({
   saveLoadManager: options.saveLoadManager ?? new SaveLoadManager(),
@@ -195,6 +254,17 @@ export function createPersistenceSliceWithOptions(
     set({ isSaving: true, lastError: null });
     
     try {
+      if (saveSystem) {
+        const timestamp = Date.now();
+        const saveId = `${worldId}_${timestamp}`;
+        await saveSystem.save(saveId);
+        set({
+          currentSaveId: saveId,
+          saves: await listSaveSystemSaves(saveSystem),
+        });
+        return;
+      }
+
       const worldData = createWorldData(resolveStores(), worldId, worldName);
 
       const result = await get().saveLoadManager.save(worldData, metadata, options);
@@ -218,6 +288,16 @@ export function createPersistenceSliceWithOptions(
     set({ isLoading: true, lastError: null });
     
     try {
+      if (saveSystem) {
+        const loaded = await saveSystem.load(saveId);
+        if (!loaded) {
+          throw new Error(`Save data not found: ${saveId}`);
+        }
+
+        set({ currentSaveId: saveId });
+        return createSaveDataFromSaveSystem(saveSystem, saveId);
+      }
+
       const result = await get().saveLoadManager.load(saveId, options);
       
       if (result.success && result.data) {
@@ -240,6 +320,19 @@ export function createPersistenceSliceWithOptions(
     set({ isSaving: true, lastError: null });
     
     try {
+      if (saveSystem) {
+        const fileData: SaveSystemFileData = {
+          kind: 'gaesup.save-system',
+          version: 1,
+          worldId,
+          worldName,
+          blob: saveSystem.createBlob(filename),
+          ...(metadata ? { metadata } : {}),
+        };
+        downloadJsonFile(filename, fileData);
+        return;
+      }
+
       const worldData = createWorldData(resolveStores(), worldId, worldName);
 
       const result = await get().saveLoadManager.saveToFile(worldData, filename, metadata, options);
@@ -259,6 +352,31 @@ export function createPersistenceSliceWithOptions(
     set({ isLoading: true, lastError: null });
     
     try {
+      if (saveSystem) {
+        const fileData = await readSaveSystemFileData(file);
+        const blob = isSaveSystemFileData(fileData) ? fileData.blob : fileData;
+        saveSystem.hydrateBlob(blob, file.name);
+
+        const worldId = isSaveSystemFileData(fileData)
+          ? fileData.worldId
+          : stripJsonExtension(file.name);
+        const worldName = isSaveSystemFileData(fileData)
+          ? fileData.worldName
+          : worldId;
+        const timestamp = blob.savedAt;
+        const loadedSaveData: SaveData = {
+          version: String(blob.version),
+          timestamp,
+          world: createWorldDataFromSaveDomains(blob.domains, worldId, worldName),
+        };
+        const normalizedMetadata = isSaveSystemFileData(fileData)
+          ? normalizeSaveMetadata(fileData.metadata, timestamp)
+          : undefined;
+        return normalizedMetadata
+          ? { ...loadedSaveData, metadata: normalizedMetadata }
+          : loadedSaveData;
+      }
+
       const result = await get().saveLoadManager.loadFromFile(file, options);
       
       if (result.success && result.data) {
@@ -277,11 +395,36 @@ export function createPersistenceSliceWithOptions(
   },
 
   refreshSaveList: () => {
+    if (saveSystem) {
+      void listSaveSystemSaves(saveSystem)
+        .then((saves) => set({ saves }))
+        .catch((error: unknown) => {
+          set({ lastError: error instanceof Error ? error.message : 'Failed to list saves' });
+        });
+      return;
+    }
+
     const saves = get().saveLoadManager.listSaves();
     set({ saves });
   },
 
   deleteSave: (saveId) => {
+    if (saveSystem) {
+      void (async () => {
+        try {
+          await saveSystem.remove(saveId);
+          const saves = await listSaveSystemSaves(saveSystem);
+          set({
+            saves,
+            ...(get().currentSaveId === saveId ? { currentSaveId: null } : {}),
+          });
+        } catch (error) {
+          set({ lastError: error instanceof Error ? error.message : 'Failed to delete save' });
+        }
+      })();
+      return;
+    }
+
     const success = get().saveLoadManager.deleteSave(saveId);
     if (success) {
       get().refreshSaveList();

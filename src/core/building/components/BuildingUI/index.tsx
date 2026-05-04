@@ -2,8 +2,6 @@ import React, { useMemo, useCallback } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 
-import { useAuthStore } from '../../../../admin/store/authStore';
-import { useNPCStore } from '../../../npc/stores/npcStore';
 import { DEFAULT_BUILDING_OBJECT_CATALOG, getDefaultBuildingObject } from '../../catalog';
 import { createBuildingScopeId } from '../../id';
 import { useBuildingStore } from '../../stores/buildingStore';
@@ -21,13 +19,29 @@ import {
 } from '../../types';
 import './styles.css';
 
+export type BuildingUINPCPanelContext = {
+  editMode: 'npc';
+};
+
+export type BuildingUINPCPanelRenderer =
+  | React.ReactNode
+  | ((context: BuildingUINPCPanelContext) => React.ReactNode);
+
 export type BuildingUIProps = {
   onClose?: () => void;
+  canEdit?: boolean;
+  npcPanel?: BuildingUINPCPanelRenderer | false;
+  extensionPanel?: React.ReactNode;
 };
 
 export const createCustomMeshId = createBuildingScopeId;
 
-export function BuildingUI({ onClose }: BuildingUIProps) {
+export function BuildingUI({
+  onClose,
+  canEdit = true,
+  npcPanel = false,
+  extensionPanel,
+}: BuildingUIProps) {
   const { 
     setEditMode, 
     editMode, 
@@ -243,22 +257,7 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     weatherEffect: state.weatherEffect,
     setWeatherEffect: state.setWeatherEffect,
   })));
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const isEditing = isInEditMode();
-  
-  const {
-    templates: npcTemplates,
-    selectedTemplateId: selectedNPCTemplateId,
-    setSelectedTemplate: setSelectedNPCTemplate,
-    initializeDefaults: initializeNPCDefaults,
-    selectedInstanceId: selectedNPCInstanceId,
-  } = useNPCStore(useShallow((state) => ({
-    templates: state.templates,
-    selectedTemplateId: state.selectedTemplateId,
-    setSelectedTemplate: state.setSelectedTemplate,
-    initializeDefaults: state.initializeDefaults,
-    selectedInstanceId: state.selectedInstanceId,
-  })));
   
   const [showCustomSettings, setShowCustomSettings] = React.useState(false);
   const [customName, setCustomName] = React.useState('');
@@ -267,7 +266,7 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
 
   const tileCategoriesArray = useMemo(() => Array.from(tileCategories.values()), [tileCategories]);
   const wallCategoriesArray = useMemo(() => Array.from(wallCategories.values()), [wallCategories]);
-  const npcTemplatesArray = useMemo(() => Array.from(npcTemplates.values()), [npcTemplates]);
+  const hasNPCPanel = npcPanel !== false && npcPanel !== null && npcPanel !== undefined;
   const selectedTileObjectLabel = useMemo(
     () => BUILDING_TILE_OBJECT_OPTIONS.find((option) => option.type === selectedTileObjectType)?.labelEn ?? selectedTileObjectType,
     [selectedTileObjectType],
@@ -331,10 +330,6 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
   const handleToggleCustomSettings = useCallback(() => setShowCustomSettings(prev => !prev), []);
   
   React.useEffect(() => {
-    initializeNPCDefaults();
-  }, [initializeNPCDefaults]);
-  
-  React.useEffect(() => {
     if (editMode === 'wall' && selectedWallGroupId) {
       const wallGroup = selectedWallId ? findWallGroupByWallId(selectedWallId) : wallGroups.get(selectedWallGroupId);
       const selectedWall = selectedWallId
@@ -360,7 +355,7 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
     }
   }, [editMode, selectedWallGroupId, selectedTileGroupId, selectedWallId, findWallGroupByWallId, wallGroups, tileGroups, meshes]);
   
-  if (!isLoggedIn) {
+  if (!canEdit) {
     return null;
   }
   
@@ -402,12 +397,14 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
               >
                 Block Mode
               </button>
-              <button 
-                onClick={() => setEditMode('npc')}
-                className={`building-ui-mode-button ${editMode === 'npc' ? 'active' : ''}`}
-              >
-                NPC Mode
-              </button>
+              {hasNPCPanel && (
+                <button
+                  onClick={() => setEditMode('npc')}
+                  className={`building-ui-mode-button ${editMode === 'npc' ? 'active' : ''}`}
+                >
+                  NPC Mode
+                </button>
+              )}
               <button
                 onClick={() => setEditMode('object')}
                 className={`building-ui-mode-button ${editMode === 'object' ? 'active' : ''}`}
@@ -1487,116 +1484,12 @@ export function BuildingUI({ onClose }: BuildingUIProps) {
               </>
             )}
             
-            {editMode === 'npc' && (
-              <>
-                <div className="building-ui-category-group">
-                  <span className="building-ui-label">캐릭터:</span>
-                  <select 
-                    value={selectedNPCTemplateId || ''} 
-                    onChange={(e) => setSelectedNPCTemplate(e.target.value)}
-                    className="building-ui-select"
-                  >
-                    {npcTemplatesArray.map(template => (
-                      <option key={template.id} value={template.id}>
-                        {template.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="building-ui-category-group">
-                  <span className="building-ui-label">옷:</span>
-                  <div className="building-ui-clothing-buttons">
-                    {['rabbit-outfit', 'basic-suit', 'formal-suit'].map(clothingId => {
-                      const clothing = useNPCStore.getState().clothingSets.get(clothingId);
-                      return clothing ? (
-                        <button
-                          key={clothing.id}
-                          onClick={() => useNPCStore.getState().setSelectedClothingSet(clothing.id)}
-                          className={`building-ui-clothing-button ${useNPCStore.getState().selectedClothingSetId === clothing.id ? 'active' : ''}`}
-                        >
-                          {clothing.name}
-                        </button>
-                      ) : null;
-                    })}
-                    <button
-                      onClick={() => useNPCStore.getState().setSelectedClothingSet('')}
-                      className={`building-ui-clothing-button ${!useNPCStore.getState().selectedClothingSetId ? 'active' : ''}`}
-                    >
-                      없음
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="building-ui-category-group">
-                  <span className="building-ui-label">모자:</span>
-                  <div className="building-ui-clothing-buttons">
-                    {['hat-set-a', 'hat-set-b', 'hat-set-c'].map(hatId => {
-                      const hat = useNPCStore.getState().clothingSets.get(hatId);
-                      return hat ? (
-                        <button
-                          key={hat.id}
-                          onClick={() => {
-                            useNPCStore.getState().setPreviewAccessory('hat', hat.id);
-                            const instanceId = useNPCStore.getState().selectedInstanceId;
-                            const part = hat.parts[0];
-                            if (instanceId && part) {
-                              useNPCStore.getState().updateInstancePart(instanceId, part.id, part);
-                            }
-                          }}
-                          className={`building-ui-clothing-button ${useNPCStore.getState().previewAccessories.hat === hat.id ? 'active' : ''}`}
-                        >
-                          {hat.name}
-                        </button>
-                      ) : null;
-                    })}
-                    <button
-                      onClick={() => useNPCStore.getState().setPreviewAccessory('hat', '')}
-                      className={`building-ui-clothing-button ${!useNPCStore.getState().previewAccessories.hat ? 'active' : ''}`}
-                    >
-                      없음
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="building-ui-category-group">
-                  <span className="building-ui-label">안경:</span>
-                  <div className="building-ui-clothing-buttons">
-                    {['glasses-set-a', 'glasses-set-b'].map(glassesId => {
-                      const glasses = useNPCStore.getState().clothingSets.get(glassesId);
-                      return glasses ? (
-                        <button
-                          key={glasses.id}
-                          onClick={() => useNPCStore.getState().setPreviewAccessory('glasses', glasses.id)}
-                          className={`building-ui-clothing-button ${useNPCStore.getState().previewAccessories.glasses === glasses.id ? 'active' : ''}`}
-                        >
-                          {glasses.name}
-                        </button>
-                      ) : null;
-                    })}
-                    <button
-                      onClick={() => useNPCStore.getState().setPreviewAccessory('glasses', '')}
-                      className={`building-ui-clothing-button ${!useNPCStore.getState().previewAccessories.glasses ? 'active' : ''}`}
-                    >
-                      없음
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="building-ui-category-group">
-                  <span className="building-ui-label">Selected Instance:</span>
-                  <span className="building-ui-info-value">{selectedNPCInstanceId || 'None'}</span>
-                </div>
-                
-                {selectedNPCTemplateId && npcTemplates.get(selectedNPCTemplateId) && (
-                  <div className="building-ui-info">
-                    <p>현재 선택: {npcTemplates.get(selectedNPCTemplateId)?.name}</p>
-                    <p>클릭하여 NPC 배치</p>
-                    <p>배치된 NPC를 클릭하여 선택</p>
-                  </div>
-                )}
-              </>
+            {editMode === 'npc' && hasNPCPanel && (
+              typeof npcPanel === 'function'
+                ? npcPanel({ editMode: 'npc' })
+                : npcPanel
             )}
+            {extensionPanel}
           </div>
         ) : null}
       </div>

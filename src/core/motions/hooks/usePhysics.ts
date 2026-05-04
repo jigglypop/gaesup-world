@@ -6,7 +6,7 @@ import { useGaesupStore } from '@stores/gaesupStore';
 
 import { useStateSystem } from './useStateSystem';
 import type { InteractionCommand, InteractionState } from '../../interactions/bridge';
-import { InteractionSystem } from '../../interactions/core/InteractionSystem';
+import { useInputBackend } from '../../interactions/hooks';
 
 type UsePhysicsResult = {
     worldContext: ReturnType<typeof useGaesupStore.getState>;
@@ -34,14 +34,22 @@ type UsePhysicsResult = {
  */
 export function usePhysics(): UsePhysicsResult {
     const { activeState } = useStateSystem();
-    const interactionSystem = InteractionSystem.getInstance();
-    const interaction = interactionSystem.getState();
+    const inputBackend = useInputBackend();
+    const worldContext = useGaesupStore.getState();
+    const fallbackInteraction = worldContext.interaction;
+    const interaction: InteractionState = {
+        ...fallbackInteraction,
+        keyboard: inputBackend.getKeyboard(),
+        mouse: inputBackend.getMouse(),
+        gamepad: inputBackend.getGamepad?.() ?? fallbackInteraction.gamepad,
+        touch: inputBackend.getTouch?.() ?? fallbackInteraction.touch,
+    };
     const urls = useGaesupStore((state) => state.urls);
     const rigidBodyRef: RefObject<RapierRigidBody | null> = { current: null };
     const isReady = !!(interaction && urls && activeState);
 
     return {
-        worldContext: useGaesupStore.getState(),
+        worldContext,
         activeState,
         input: {
             keyboard: interaction.keyboard,
@@ -51,10 +59,10 @@ export function usePhysics(): UsePhysicsResult {
         interaction,
         urls,
         setKeyboardInput: (input: Partial<typeof interaction.keyboard>) => {
-            interactionSystem.updateKeyboard(input);
+            inputBackend.updateKeyboard(input);
         },
         setMouseInput: (input: Partial<typeof interaction.mouse>) => {
-            interactionSystem.updateMouse(input);
+            inputBackend.updateMouse(input);
         },
         dispatch: (action: InteractionCommand) => {
             void action;

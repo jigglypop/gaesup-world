@@ -20,6 +20,18 @@ export interface BuildingPlacementExtension {
   wallToEntry: typeof wallToPlacementEntry;
 }
 
+export interface BuildingSaveExtension {
+  key: string;
+  serialize: () => BuildingSerializedState;
+  hydrate: (data: Partial<BuildingSerializedState> | null | undefined) => void;
+}
+
+export interface BuildingStoreService {
+  useStore: typeof useBuildingStore;
+  getState: typeof useBuildingStore.getState;
+  setState: typeof useBuildingStore.setState;
+}
+
 export interface BuildingPluginOptions {
   id?: string;
   gridExtensionId?: string;
@@ -29,17 +41,27 @@ export interface BuildingPluginOptions {
 }
 
 const DEFAULT_PLUGIN_ID = 'gaesup.building';
-const DEFAULT_GRID_EXTENSION_ID = 'building.square';
-const DEFAULT_PLACEMENT_EXTENSION_ID = 'building.placement';
-const DEFAULT_SAVE_EXTENSION_ID = 'building';
-const DEFAULT_STORE_SERVICE_ID = 'building.store';
+export const DEFAULT_BUILDING_GRID_EXTENSION_ID = 'building.square';
+export const DEFAULT_BUILDING_PLACEMENT_EXTENSION_ID = 'building.placement';
+export const DEFAULT_BUILDING_SAVE_EXTENSION_ID = 'building';
+export const DEFAULT_BUILDING_STORE_SERVICE_ID = 'building.store';
+
+declare module '../plugins' {
+  interface SaveExtensionMap {
+    building: BuildingSaveExtension;
+  }
+
+  interface ServiceExtensionMap {
+    'building.store': BuildingStoreService;
+  }
+}
 
 export function createBuildingPlugin(options: BuildingPluginOptions = {}): GaesupPlugin {
   const pluginId = options.id ?? DEFAULT_PLUGIN_ID;
-  const gridExtensionId = options.gridExtensionId ?? DEFAULT_GRID_EXTENSION_ID;
-  const placementExtensionId = options.placementExtensionId ?? DEFAULT_PLACEMENT_EXTENSION_ID;
-  const saveExtensionId = options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID;
-  const storeServiceId = options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID;
+  const gridExtensionId = options.gridExtensionId ?? DEFAULT_BUILDING_GRID_EXTENSION_ID;
+  const placementExtensionId = options.placementExtensionId ?? DEFAULT_BUILDING_PLACEMENT_EXTENSION_ID;
+  const saveExtensionId = options.saveExtensionId ?? DEFAULT_BUILDING_SAVE_EXTENSION_ID;
+  const storeServiceId = options.storeServiceId ?? DEFAULT_BUILDING_STORE_SERVICE_ID;
 
   const register = (ctx: PluginContext): void => {
     ctx.grid.register(gridExtensionId, buildingGridAdapter, pluginId);

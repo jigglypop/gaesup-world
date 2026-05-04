@@ -1,10 +1,15 @@
 import { ThreeEvent } from '@react-three/fiber';
 
 import { useClicker } from '../../../hooks/useClicker';
+import type { ClickerMoveOptions } from '../../../hooks/useClicker/types';
 import { useGaesupStore } from '../../../stores/gaesupStore';
 
-export function GroundClicker() {
-  const { onClick } = useClicker();
+export type GroundClickerProps = {
+  clickerOptions?: ClickerMoveOptions;
+};
+
+export function GroundClicker({ clickerOptions }: GroundClickerProps) {
+  const { onClick } = useClicker(clickerOptions);
   
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();

@@ -12,7 +12,10 @@ import {
 } from '@utils/memoization';
 import { calcNorm } from '@utils/vector';
 
-import { InteractionSystem } from '../../../interactions/core/InteractionSystem';
+import {
+  createInteractionInputAdapter,
+  type InputAdapter,
+} from '../../../interactions/core';
 import {
   consumeReachedClickNavigationWaypoint,
   getClickNavigationRoute,
@@ -38,7 +41,7 @@ export class DirectionComponent {
     rightward: false,
   };
   private timers = new Set<NodeJS.Timeout>();
-  private interactionSystem: InteractionSystem;
+  private inputBackend: InputAdapter;
   private config: PhysicsConfigType;
   private tempEuler = new THREE.Euler();
   private tempQuaternion = new THREE.Quaternion();
@@ -48,8 +51,11 @@ export class DirectionComponent {
   private desiredMovement = new THREE.Vector3();
   private readonly upAxis = new THREE.Vector3(0, 1, 0);
 
-  constructor(config: PhysicsConfigType) {
-    this.interactionSystem = InteractionSystem.getInstance();
+  constructor(
+    config: PhysicsConfigType = {} as PhysicsConfigType,
+    inputBackend: InputAdapter = createInteractionInputAdapter(),
+  ) {
+    this.inputBackend = inputBackend;
     this.config = config;
   }
 
@@ -66,10 +72,10 @@ export class DirectionComponent {
         this.updateCharacterDirection(physicsState, controlMode, calcProp);
         break;
       case 'vehicle':
-        this.updateVehicleDirection(physicsState, controlMode);
+        this.updateVehicleDirection(physicsState, controlMode, calcProp);
         break;
       case 'airplane':
-        this.updateAirplaneDirection(physicsState, innerGroupRef, controlMode);
+        this.updateAirplaneDirection(physicsState, innerGroupRef, controlMode, calcProp);
         break;
       default:
         this.updateCharacterDirection(physicsState, controlMode, calcProp);
@@ -83,8 +89,8 @@ export class DirectionComponent {
     calcProp?: PhysicsCalcProps,
   ): void {
     const { activeState } = physicsState;
-    const keyboard = this.interactionSystem.getKeyboardRef();
-    const mouse = this.interactionSystem.getMouseRef();
+    const keyboard = this.getKeyboard(calcProp);
+    const mouse = this.getMouse(calcProp);
     const keyboardChanged =
       this.lastKeyboardState.forward !== keyboard.forward ||
       this.lastKeyboardState.backward !== keyboard.backward ||
@@ -112,11 +118,12 @@ export class DirectionComponent {
   @Profile()
   private updateVehicleDirection(
     physicsState: PhysicsState,
-    controlMode?: string
+    controlMode?: string,
+    calcProp?: PhysicsCalcProps,
   ): void {
     void controlMode;
     const { activeState } = physicsState;
-    const keyboard = this.interactionSystem.getKeyboardRef();
+    const keyboard = this.getKeyboard(calcProp);
     const { forward, backward, leftward, rightward } = keyboard;
     const xAxis = Number(rightward) - Number(leftward);
     const zAxis = Number(forward) - Number(backward);
@@ -135,9 +142,10 @@ export class DirectionComponent {
     physicsState: PhysicsState,
     innerGroupRef?: RefObject<THREE.Group>,
     controlMode?: string,
+    calcProp?: PhysicsCalcProps,
   ): void {
     const { activeState } = physicsState;
-    const keyboard = this.interactionSystem.getKeyboardRef();
+    const keyboard = this.getKeyboard(calcProp);
     const { forward, backward, leftward, rightward, shift, space } = keyboard;
     const {
       angleDelta = { x: 0.02, y: 0.02, z: 0.02 },
@@ -163,6 +171,14 @@ export class DirectionComponent {
     );
     activeState.dir.copy(activeState.direction).normalize();
     this.emitRotationUpdate(activeState, 'airplane');
+  }
+
+  private getKeyboard(calcProp?: PhysicsCalcProps): PhysicsInputState['keyboard'] {
+    return calcProp?.inputRef?.current?.keyboard ?? this.inputBackend.getKeyboard();
+  }
+
+  private getMouse(calcProp?: PhysicsCalcProps): PhysicsInputState['mouse'] {
+    return calcProp?.inputRef?.current?.mouse ?? this.inputBackend.getMouse();
   }
 
   private applyAirplaneRotation(

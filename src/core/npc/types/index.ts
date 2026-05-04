@@ -1,4 +1,5 @@
 import type { RuntimeValue } from '@core/boilerplate/types';
+
 import type { QuestId, QuestStatus } from '../../quests/types';
 
 export interface NPCPart {

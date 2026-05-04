@@ -1,3 +1,4 @@
+import { createMemoryInputBackend } from '../../core';
 import { InteractionBridge, BridgeCommand, BridgeEvent } from '../InteractionBridge';
 
 describe('InteractionBridge 메모리 누수 테스트', () => {
@@ -60,6 +61,27 @@ describe('InteractionBridge 메모리 누수 테스트', () => {
     const snapshot = bridge.snapshot();
     
     expect(snapshot.bridge.commandHistory.length).toBeLessThanOrEqual(1000);
+  });
+
+  it('주입된 input backend 로 input command 를 처리해야 함', () => {
+    bridge.dispose();
+    const inputBackend = createMemoryInputBackend();
+    bridge = new InteractionBridge({ inputBackend });
+    const listener = jest.fn();
+
+    bridge.subscribe(listener);
+    bridge.executeCommand({
+      type: 'input',
+      action: 'updateKeyboard',
+      data: { keyE: true },
+    });
+
+    expect(inputBackend.getKeyboard().keyE).toBe(true);
+    expect(bridge.getKeyboardState().keyE).toBe(true);
+    expect(bridge.snapshot().interaction.state.keyboard.keyE).toBe(true);
+    expect(listener).toHaveBeenCalledWith(expect.objectContaining({
+      keyboard: expect.objectContaining({ keyE: true }),
+    }));
   });
 
   it('이벤트 큐가 무한정 증가하지 않아야 함', (done) => {
@@ -422,4 +444,4 @@ describe('InteractionBridge 성능 테스트', () => {
       expect(searchTime).toBeLessThan(1);
     });
   });
-}); 
+});

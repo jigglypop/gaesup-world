@@ -3,6 +3,7 @@ import { Suspense, useEffect, useLayoutEffect, ReactNode, useMemo } from 'react'
 import { Camera } from '@/core/camera';
 import type { CameraOptionType } from '@/core/camera';
 import { PerformanceCollector } from '@/core/editor/components/panels/PerformanceCollector';
+import { GaesupRuntimeProvider } from '@/core/runtime';
 import type { UrlsState } from '@/core/stores/slices/urls/types';
 import { useGaesupStore } from '@stores/gaesupStore';
 
@@ -121,7 +122,15 @@ export function WorldConfigProvider(props: WorldContainerProps) {
     }
   }, [cameraOptionUpdates, props.cameraOption, props.mode, setCameraOption, setMode]);
 
-  return props.children;
+  if (!props.runtime) {
+    return props.children;
+  }
+
+  return (
+    <GaesupRuntimeProvider runtime={props.runtime} revision={props.runtimeRevision ?? 0}>
+      {props.children}
+    </GaesupRuntimeProvider>
+  );
 }
 
 /**

@@ -3,7 +3,7 @@ import { StateCreator } from 'zustand';
 
 import { InteractionSliceState, InteractionActions } from './types';
 import { InteractionState, AutomationState, InteractionConfig, AutomationConfig, InteractionMetrics, AutomationMetrics, BridgeState } from '../bridge/types';
-import { InteractionSystem } from '../core/InteractionSystem';
+import { getDefaultInteractionInputBackend } from '../core/adapter';
 
 const createDefaultInteractionState = (): InteractionState => ({
   keyboard: {
@@ -127,40 +127,20 @@ let systemListenersBound = false;
 const ensureSystemListeners = (set: (fn: (state: Slice) => Partial<Slice>) => void): void => {
   if (systemListenersBound) return;
   systemListenersBound = true;
-  const system = InteractionSystem.getInstance();
-  system.addEventListener('keyboard', (data) => {
-    const updates = data as Partial<InteractionState['keyboard']>;
+  let receivedInitialSnapshot = false;
+  getDefaultInteractionInputBackend().subscribe?.(({ keyboard, mouse, gamepad, touch }) => {
+    if (!receivedInitialSnapshot) {
+      receivedInitialSnapshot = true;
+      return;
+    }
+
     set((state) => ({
       interaction: {
         ...state.interaction,
-        keyboard: { ...state.interaction.keyboard, ...updates },
-      },
-    }));
-  });
-  system.addEventListener('mouse', (data) => {
-    const updates = data as Partial<InteractionState['mouse']>;
-    set((state) => ({
-      interaction: {
-        ...state.interaction,
-        mouse: { ...state.interaction.mouse, ...updates },
-      },
-    }));
-  });
-  system.addEventListener('gamepad', (data) => {
-    const updates = data as Partial<InteractionState['gamepad']>;
-    set((state) => ({
-      interaction: {
-        ...state.interaction,
-        gamepad: { ...state.interaction.gamepad, ...updates },
-      },
-    }));
-  });
-  system.addEventListener('touch', (data) => {
-    const updates = data as Partial<InteractionState['touch']>;
-    set((state) => ({
-      interaction: {
-        ...state.interaction,
-        touch: { ...state.interaction.touch, ...updates },
+        keyboard,
+        mouse,
+        gamepad: gamepad ?? state.interaction.gamepad,
+        touch: touch ?? state.interaction.touch,
       },
     }));
   });
@@ -182,8 +162,7 @@ export const createInteractionSlice: StateCreator<Slice, [], [], Slice> = (set) 
   },
 
   dispatchInput: (updates) => {
-    const system = InteractionSystem.getInstance();
-    system.dispatchInput(updates);
+    getDefaultInteractionInputBackend().updateMouse(updates);
   },
 
   addAutomationAction: (actionData) => {
@@ -348,19 +327,19 @@ export const createInteractionSlice: StateCreator<Slice, [], [], Slice> = (set) 
     })),
 
   updateMouse: (updates) => {
-    InteractionSystem.getInstance().updateMouse(updates);
+    getDefaultInteractionInputBackend().updateMouse(updates);
   },
 
   updateKeyboard: (updates) => {
-    InteractionSystem.getInstance().updateKeyboard(updates);
+    getDefaultInteractionInputBackend().updateKeyboard(updates);
   },
 
   updateGamepad: (updates) => {
-    InteractionSystem.getInstance().updateGamepad(updates);
+    getDefaultInteractionInputBackend().updateGamepad?.(updates);
   },
 
   updateTouch: (updates) => {
-    InteractionSystem.getInstance().updateTouch(updates);
+    getDefaultInteractionInputBackend().updateTouch?.(updates);
   },
 
   setInteractionActive: (active) =>

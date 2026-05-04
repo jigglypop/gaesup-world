@@ -13,6 +13,39 @@ export interface NavigationConfig {
 
 export type Waypoint = [number, number, number];
 
+export type NavigationAgentSize = {
+  /**
+   * Circular/capsule footprint radius in world units. This is usually the
+   * Rapier capsule radius used by a character controller.
+   */
+  agentRadius?: number;
+  /**
+   * Optional rectangular footprint width in world units. When provided it is
+   * combined with agentRadius and the wider value wins.
+   */
+  agentWidth?: number;
+  /**
+   * Optional rectangular footprint depth in world units. When provided it is
+   * combined with agentRadius and the deeper value wins.
+   */
+  agentDepth?: number;
+  /**
+   * Extra world-unit padding around the agent. Useful for softer avoidance.
+   */
+  clearance?: number;
+};
+
+export type NavigationQueryOptions = NavigationAgentSize & {
+  y?: number;
+  weighted?: boolean;
+};
+
+type ResolvedAgentFootprint = {
+  halfWidth: number;
+  halfDepth: number;
+  hasClearance: boolean;
+};
+
 const DEFAULT_CONFIG: NavigationConfig = {
   cellSize: 2,
   worldMinX: -200,
@@ -26,6 +59,8 @@ const PATH_DIRECTIONS: ReadonlyArray<readonly [number, number, number]> = [
   [1, 0, 10], [-1, 0, 10], [0, 1, 10], [0, -1, 10],
   [1, 1, 14], [1, -1, 14], [-1, 1, 14], [-1, -1, 14],
 ];
+
+const CLEARANCE_EPSILON = 1e-6;
 
 function hasNavigationWasm(wasm: GaesupCoreWasmExports | null): wasm is GaesupCoreWasmExports {
   return Boolean(
@@ -98,11 +133,6 @@ export class NavigationSystem {
     this.syncToWasm(this.grid);
   }
 
-  private syncCostGridToWasm(): void {
-    if (!this.wasm) return;
-    this.syncToWasm(this.costGrid);
-  }
-
   private syncToWasm(source: Uint8Array): void {
     if (!this.wasm) return;
     new Uint8Array(
@@ -145,6 +175,91 @@ export class NavigationSystem {
       y ?? this.heightGrid[this.cellIndex(gx, gz)] ?? 0,
       worldMinZ + (gz + 0.5) * cellSize,
     ];
+  }
+
+  private resolveAgentFootprint(options: NavigationAgentSize = {}): ResolvedAgentFootprint {
+    const clearance = Math.max(0, options.clearance ?? 0);
+    const radius = Math.max(0, options.agentRadius ?? 0) + clearance;
+    const halfWidth = Math.max(radius, Math.max(0, options.agentWidth ?? 0) * 0.5 + clearance);
+    const halfDepth = Math.max(radius, Math.max(0, options.agentDepth ?? 0) * 0.5 + clearance);
+    return {
+      halfWidth,
+      halfDepth,
+      hasClearance: halfWidth > CLEARANCE_EPSILON || halfDepth > CLEARANCE_EPSILON,
+    };
+  }
+
+  private getCellBounds(gx: number, gz: number): { minX: number; maxX: number; minZ: number; maxZ: number } {
+    const { cellSize, worldMinX, worldMinZ } = this.config;
+    const minX = worldMinX + gx * cellSize;
+    const minZ = worldMinZ + gz * cellSize;
+    return {
+      minX,
+      maxX: minX + cellSize,
+      minZ,
+      maxZ: minZ + cellSize,
+    };
+  }
+
+  private footprintOverlapsBlockedCell(gx: number, gz: number, footprint: ResolvedAgentFootprint): boolean {
+    const [centerX, , centerZ] = this.gridToWorld(gx, gz, 0);
+    const agentMinX = centerX - footprint.halfWidth;
+    const agentMaxX = centerX + footprint.halfWidth;
+    const agentMinZ = centerZ - footprint.halfDepth;
+    const agentMaxZ = centerZ + footprint.halfDepth;
+
+    const searchX = Math.ceil(footprint.halfWidth / this.config.cellSize);
+    const searchZ = Math.ceil(footprint.halfDepth / this.config.cellSize);
+
+    for (let oz = gz - searchZ; oz <= gz + searchZ; oz += 1) {
+      for (let ox = gx - searchX; ox <= gx + searchX; ox += 1) {
+        if (!this.isGridCell(ox, oz)) continue;
+        const idx = this.cellIndex(ox, oz);
+        if (this.grid[idx] !== 0) continue;
+
+        const blocked = this.getCellBounds(ox, oz);
+        const overlapsX =
+          agentMaxX > blocked.minX + CLEARANCE_EPSILON &&
+          agentMinX < blocked.maxX - CLEARANCE_EPSILON;
+        const overlapsZ =
+          agentMaxZ > blocked.minZ + CLEARANCE_EPSILON &&
+          agentMinZ < blocked.maxZ - CLEARANCE_EPSILON;
+        if (overlapsX && overlapsZ) return true;
+      }
+    }
+
+    return false;
+  }
+
+  private canOccupyCell(gx: number, gz: number, footprint: ResolvedAgentFootprint): boolean {
+    if (!this.isGridCell(gx, gz)) return false;
+    const idx = this.cellIndex(gx, gz);
+    if (this.grid[idx] === 0) return false;
+    if (!footprint.hasClearance) return true;
+    return !this.footprintOverlapsBlockedCell(gx, gz, footprint);
+  }
+
+  private createTraversalGrid(footprint: ResolvedAgentFootprint): Uint8Array {
+    if (!footprint.hasClearance) return this.grid;
+
+    const traversalGrid = new Uint8Array(this.grid.length);
+    for (let gz = 0; gz < this.gridHeight; gz += 1) {
+      for (let gx = 0; gx < this.gridWidth; gx += 1) {
+        const idx = this.cellIndex(gx, gz);
+        traversalGrid[idx] = this.canOccupyCell(gx, gz, footprint) ? 1 : 0;
+      }
+    }
+    return traversalGrid;
+  }
+
+  private createTraversalCostGrid(traversalGrid: Uint8Array): Uint8Array {
+    if (traversalGrid === this.grid) return this.costGrid;
+
+    const next = new Uint8Array(this.costGrid.length);
+    for (let i = 0; i < next.length; i += 1) {
+      next[i] = traversalGrid[i] === 0 ? 0 : this.costGrid[i] ?? 1;
+    }
+    return next;
   }
 
   setBlocked(worldX: number, worldZ: number, width: number, depth: number): void {
@@ -251,18 +366,30 @@ export class NavigationSystem {
   findPath(
     startX: number, startZ: number,
     goalX: number, goalZ: number,
-    y?: number,
+    y?: number | NavigationQueryOptions,
     weighted: boolean = false,
   ): Waypoint[] {
     if (!this.ready) return [];
 
+    const options: NavigationQueryOptions =
+      typeof y === 'object' && y !== null
+        ? y
+        : {
+            ...(y !== undefined ? { y } : {}),
+            weighted,
+          };
+    const footprint = this.resolveAgentFootprint(options);
+    const pathY = options.y;
+    const useWeighted = options.weighted ?? weighted;
     const [sx, sz] = this.worldToGrid(startX, startZ);
     const [gx, gz] = this.worldToGrid(goalX, goalZ);
+    const traversalGrid = this.createTraversalGrid(footprint);
+    const traversalCostGrid = useWeighted ? this.createTraversalCostGrid(traversalGrid) : this.costGrid;
 
     if (this.wasm && !this.hasHeightData) {
-      return this.findPathWasm(sx, sz, gx, gz, y, weighted);
+      return this.findPathWasm(sx, sz, gx, gz, pathY, useWeighted, traversalGrid, traversalCostGrid);
     }
-    return this.findPathJS(sx, sz, gx, gz, y, weighted);
+    return this.findPathJS(sx, sz, gx, gz, pathY, useWeighted, traversalGrid, traversalCostGrid);
   }
 
   private findPathWasm(
@@ -270,17 +397,19 @@ export class NavigationSystem {
     gx: number, gz: number,
     y: number | undefined,
     weighted: boolean,
+    traversalGrid: Uint8Array,
+    traversalCostGrid: Uint8Array,
   ): Waypoint[] {
     const wasm = this.wasm!;
 
     if (weighted && typeof wasm.astar_find_path_weighted !== 'function') {
-      return this.findPathJS(sx, sz, gx, gz, y, true);
+      return this.findPathJS(sx, sz, gx, gz, y, true, traversalGrid, traversalCostGrid);
     }
 
     if (weighted) {
-      this.syncCostGridToWasm();
+      this.syncToWasm(traversalCostGrid);
     } else {
-      this.syncGridToWasm();
+      this.syncToWasm(traversalGrid);
     }
 
     const fn = weighted ? wasm.astar_find_path_weighted : wasm.astar_find_path;
@@ -308,10 +437,12 @@ export class NavigationSystem {
     gx: number, gz: number,
     y: number | undefined,
     weighted: boolean,
+    traversalGrid: Uint8Array = this.grid,
+    traversalCostGrid: Uint8Array = this.costGrid,
   ): Waypoint[] {
     const w = this.gridWidth;
     const h = this.gridHeight;
-    const grid = this.grid;
+    const grid = traversalGrid;
     const total = w * h;
 
     const startIdx = this.cellIndex(sx, sz);
@@ -367,7 +498,7 @@ export class NavigationSystem {
           if (!this.canStepBetween(ci, this.cellIndex(cx, nz))) continue;
         }
 
-        const cellCost = weighted ? Math.max(1, this.costGrid[ni] ?? 1) : 1;
+        const cellCost = weighted ? Math.max(1, traversalCostGrid[ni] ?? 1) : 1;
         const tentG = cg + cost * cellCost;
         const nextScore = gScore[ni];
         if (nextScore !== undefined && tentG < nextScore) {
@@ -410,8 +541,9 @@ export class NavigationSystem {
     startZ: number,
     goalX: number,
     goalZ: number,
+    options: NavigationAgentSize = {},
   ): boolean {
-    return this.canTraverseSegment(startX, startZ, goalX, goalZ);
+    return this.canTraverseSegment(startX, startZ, goalX, goalZ, options);
   }
 
   canTraverseSegment(
@@ -419,12 +551,13 @@ export class NavigationSystem {
     startZ: number,
     goalX: number,
     goalZ: number,
-    options: { ignoreStart?: boolean } = {},
+    options: NavigationAgentSize & { ignoreStart?: boolean } = {},
   ): boolean {
     const dx = goalX - startX;
     const dz = goalZ - startZ;
     const distance = Math.sqrt(dx * dx + dz * dz);
     const steps = Math.max(1, Math.ceil(distance / (this.config.cellSize * 0.5)));
+    const footprint = this.resolveAgentFootprint(options);
 
     let prevGX = -1;
     let prevGZ = -1;
@@ -433,7 +566,7 @@ export class NavigationSystem {
       const [gx, gz] = this.worldToGrid(startX + dx * t, startZ + dz * t);
       if (gx === prevGX && gz === prevGZ) continue;
       const idx = this.cellIndex(gx, gz);
-      if (!(options.ignoreStart && i === 0) && this.grid[idx] === 0) return false;
+      if (!(options.ignoreStart && i === 0) && !this.canOccupyCell(gx, gz, footprint)) return false;
       if (
         prevGX !== -1 &&
         prevGZ !== -1 &&
@@ -452,6 +585,7 @@ export class NavigationSystem {
     waypoints: Waypoint[],
     start?: Waypoint,
     goal?: Waypoint,
+    options: NavigationAgentSize = {},
   ): Waypoint[] {
     if (waypoints.length === 0) return [];
 
@@ -477,7 +611,7 @@ export class NavigationSystem {
       const anchor = anchors[anchorIndex]!;
       while (
         nextIndex > anchorIndex + 1 &&
-        !this.hasLineOfSight(anchor[0], anchor[2], anchors[nextIndex]![0], anchors[nextIndex]![2])
+        !this.hasLineOfSight(anchor[0], anchor[2], anchors[nextIndex]![0], anchors[nextIndex]![2], options)
       ) {
         nextIndex -= 1;
       }
@@ -514,9 +648,9 @@ export class NavigationSystem {
     return result;
   }
 
-  isWalkable(worldX: number, worldZ: number): boolean {
+  isWalkable(worldX: number, worldZ: number, options: NavigationAgentSize = {}): boolean {
     const [gx, gz] = this.worldToGrid(worldX, worldZ);
-    return this.grid[gz * this.gridWidth + gx] !== 0;
+    return this.canOccupyCell(gx, gz, this.resolveAgentFootprint(options));
   }
 
   getGridDimensions(): { width: number; height: number; cellSize: number } {

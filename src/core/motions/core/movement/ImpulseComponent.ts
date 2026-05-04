@@ -2,26 +2,33 @@
 import { RapierRigidBody } from '@react-three/rapier';
 
 import { Profile } from '@/core/boilerplate/decorators';
-import { InteractionSystem } from '@/core/interactions/core/InteractionSystem';
+import {
+  createInteractionInputAdapter,
+  type InputAdapter,
+} from '@/core/interactions/core';
 import type { RefObject } from '@core/boilerplate';
 import { PhysicsConfigType } from '@stores/slices';
 
 import { NavigationSystem } from '../../../navigation/NavigationSystem';
-import { PhysicsCalcProps, PhysicsState } from '../../types';
+import { PhysicsCalcProps, PhysicsInputState, PhysicsState } from '../../types';
 import { EntityStateManager } from '../system/EntityStateManager';
 
 
 export class ImpulseComponent {
   private stateManager: EntityStateManager;
-  private interactionSystem: InteractionSystem;
+  private inputBackend: InputAdapter;
   private config: PhysicsConfigType;
   private scratchImpulse = { x: 0, y: 0, z: 0 };
   private scratchLinvel = { x: 0, y: 0, z: 0 };
   private navigation = NavigationSystem.getInstance();
 
-  constructor(config: PhysicsConfigType, stateManager?: EntityStateManager) {
+  constructor(
+    config: PhysicsConfigType,
+    stateManager?: EntityStateManager,
+    inputBackend: InputAdapter = createInteractionInputAdapter(),
+  ) {
     this.stateManager = stateManager ?? new EntityStateManager();
-    this.interactionSystem = InteractionSystem.getInstance();
+    this.inputBackend = inputBackend;
     this.config = config;
   }
 
@@ -38,7 +45,7 @@ export class ImpulseComponent {
         this.applyCharacterImpulse(rigidBodyRef, physicsState, calcProp);
         break;
       case 'vehicle':
-        this.applyVehicleImpulse(rigidBodyRef, physicsState);
+        this.applyVehicleImpulse(rigidBodyRef, physicsState, calcProp);
         break;
       case 'airplane':
         this.applyAirplaneImpulse(rigidBodyRef, physicsState);
@@ -108,8 +115,6 @@ export class ImpulseComponent {
     const lookAhead = Math.max(0.45, Math.min(cellSize * 0.75, horizontalSpeed * 0.08));
     const dirX = targetVelX / horizontalSpeed;
     const dirZ = targetVelZ / horizontalSpeed;
-    const sideX = -dirZ;
-    const sideZ = dirX;
     const nextX = position.x + dirX * lookAhead;
     const nextZ = position.z + dirZ * lookAhead;
     const agentRadius = Math.max(
@@ -117,21 +122,19 @@ export class ImpulseComponent {
       calcProp?.colliderSize?.radius ?? this.config.navigationAgentRadius ?? 0.35,
     );
 
-    return [-agentRadius, 0, agentRadius].every((offset) => {
-      const startX = position.x + sideX * offset;
-      const startZ = position.z + sideZ * offset;
-      return this.navigation.canTraverseSegment(startX, startZ, nextX + sideX * offset, nextZ + sideZ * offset, {
-        ignoreStart: true,
-      });
+    return this.navigation.canTraverseSegment(position.x, position.z, nextX, nextZ, {
+      agentRadius,
+      ignoreStart: true,
     });
   }
 
   private applyVehicleImpulse(
     rigidBodyRef: RefObject<RapierRigidBody>,
-    physicsState: PhysicsState
+    physicsState: PhysicsState,
+    calcProp?: PhysicsCalcProps,
   ): void {
     const { activeState } = physicsState;
-    const keyboard = this.interactionSystem.getKeyboardRef();
+    const keyboard = this.getKeyboard(calcProp);
     const { maxSpeed = 10, accelRatio = 2 } = this.config;
     const isBoosting = keyboard.shift && !physicsState.mouse.isLookAround;
     const velocity = rigidBodyRef.current.linvel();
@@ -169,5 +172,9 @@ export class ImpulseComponent {
       this.scratchImpulse.z = activeState.direction.z * M;
       rigidBodyRef.current.applyImpulse(this.scratchImpulse, true);
     }
+  }
+
+  private getKeyboard(calcProp?: PhysicsCalcProps): PhysicsInputState['keyboard'] {
+    return calcProp?.inputRef?.current?.keyboard ?? this.inputBackend.getKeyboard();
   }
 }

@@ -1,4 +1,11 @@
 export * from './types';
+export {
+  characterPlugin,
+  createCharacterPlugin,
+  hydrateCharacterState,
+  serializeCharacterState,
+} from './plugin';
+export type { CharacterPluginOptions } from './plugin';
 export { useCharacterStore } from './stores/characterStore';
 export { CharacterCreator } from './components/CharacterCreator';
 export type { CharacterCreatorProps } from './components/CharacterCreator';

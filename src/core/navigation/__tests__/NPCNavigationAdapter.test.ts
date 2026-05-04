@@ -92,4 +92,31 @@ describe('NPCNavigationAdapter', () => {
     expect(setNavigation).not.toHaveBeenCalled();
     expect(clearNavigation).toHaveBeenCalledWith('npc-1');
   });
+
+  it('uses the NPC footprint when creating routes', async () => {
+    const navigation = NavigationSystem.getInstance(TEST_CONFIG);
+    await navigation.init();
+
+    navigation.setBlocked(2.5, 0.5, 1, 1);
+    navigation.setBlocked(2.5, 1.5, 1, 1);
+    navigation.setBlocked(2.5, 3.5, 1, 1);
+    navigation.setBlocked(2.5, 4.5, 1, 1);
+    navigation.setBlocked(2.5, 5.5, 1, 1);
+
+    const smallRoute = createNPCNavigationRoute(
+      navigation,
+      { id: 'npc-1', position: [0.5, 0, 2.5], agentRadius: 0.49 },
+      [5.5, 0, 2.5],
+      { simplify: false },
+    );
+    const largeRoute = createNPCNavigationRoute(
+      navigation,
+      { id: 'npc-1', position: [0.5, 0, 2.5], agentRadius: 0.51 },
+      [5.5, 0, 2.5],
+      { simplify: false },
+    );
+
+    expect(smallRoute).toContainEqual([2.5, 0, 2.5]);
+    expect(largeRoute).toEqual([]);
+  });
 });

@@ -12,11 +12,34 @@ import {
 const SAVE_VERSION = '1.0.0';
 const STORAGE_KEY_PREFIX = 'gaesup_world_save_';
 
+export interface LegacySaveStorage {
+  readonly length: number;
+  key(index: number): string | null;
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+export type SaveFileWriter = (filename: string, data: SaveData) => void | Promise<void>;
+
+export interface SaveLoadManagerOptions {
+  storage?: LegacySaveStorage;
+  fileWriter?: SaveFileWriter;
+  now?: () => number;
+  version?: string;
+}
+
 export class SaveLoadManager {
   private version: string;
+  private readonly storage: LegacySaveStorage | undefined;
+  private readonly fileWriter: SaveFileWriter | undefined;
+  private readonly now: () => number;
 
-  constructor() {
-    this.version = SAVE_VERSION;
+  constructor(options: SaveLoadManagerOptions = {}) {
+    this.version = options.version ?? SAVE_VERSION;
+    this.storage = options.storage;
+    this.fileWriter = options.fileWriter;
+    this.now = options.now ?? Date.now;
   }
 
   @HandleError()
@@ -28,20 +51,7 @@ export class SaveLoadManager {
     options: SaveLoadOptions = {}
   ): Promise<SaveLoadResult> {
     try {
-      const saveData: SaveData = {
-        version: this.version,
-        timestamp: Date.now(),
-        world: this.filterWorldData(worldData, options),
-        ...(metadata
-          ? {
-              metadata: {
-                ...metadata,
-                createdAt: metadata.createdAt || Date.now(),
-                updatedAt: Date.now(),
-              },
-            }
-          : {}),
-      };
+      const saveData = this.createSaveData(worldData, metadata, options);
 
       if (options.compress) {
         return await this.saveCompressed(saveData);
@@ -62,7 +72,7 @@ export class SaveLoadManager {
   async load(saveId: string, options: SaveLoadOptions = {}): Promise<SaveLoadResult> {
     try {
       const storageKey = `${STORAGE_KEY_PREFIX}${saveId}`;
-      const savedDataStr = localStorage.getItem(storageKey);
+      const savedDataStr = this.getStorage().getItem(storageKey);
 
       if (!savedDataStr) {
         throw new Error(`Save data not found: ${saveId}`);
@@ -104,27 +114,11 @@ export class SaveLoadManager {
     options: SaveLoadOptions = {}
   ): Promise<SaveLoadResult> {
     try {
-      const result = await this.save(worldData, metadata, options);
-      
-      if (!result.success || !result.data) {
-        return result;
-      }
+      const saveData = this.createSaveData(worldData, metadata, options);
 
-      const blob = new Blob(
-        [JSON.stringify(result.data, null, 2)],
-        { type: 'application/json' }
-      );
+      await this.writeFile(filename, saveData);
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename.endsWith('.json') ? filename : `${filename}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      return { success: true, data: result.data };
+      return { success: true, data: saveData };
     } catch (error) {
       return {
         success: false,
@@ -162,13 +156,21 @@ export class SaveLoadManager {
   @MonitorMemory(10)
   listSaves(): Array<{ id: string; timestamp: number; metadata?: SaveMetadata }> {
     const saves: Array<{ id: string; timestamp: number; metadata?: SaveMetadata }> = [];
+    let storage: LegacySaveStorage;
 
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
+    try {
+      storage = this.getStorage();
+    } catch (error) {
+      console.error('Failed to list saves:', error);
+      return saves;
+    }
+
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i);
       if (key && key.startsWith(STORAGE_KEY_PREFIX)) {
         try {
           const saveId = key.substring(STORAGE_KEY_PREFIX.length);
-          const dataStr = localStorage.getItem(key);
+          const dataStr = storage.getItem(key);
           if (dataStr) {
             const data: SaveData = JSON.parse(dataStr);
             saves.push({
@@ -190,7 +192,7 @@ export class SaveLoadManager {
   deleteSave(saveId: string): boolean {
     try {
       const storageKey = `${STORAGE_KEY_PREFIX}${saveId}`;
-      localStorage.removeItem(storageKey);
+      this.getStorage().removeItem(storageKey);
       return true;
     } catch (error) {
       console.error('Failed to delete save:', error);
@@ -232,13 +234,69 @@ export class SaveLoadManager {
     return filtered;
   }
 
+  @Profile()
+  private createSaveData(
+    worldData: WorldSaveData,
+    metadata?: Partial<SaveMetadata>,
+    options: SaveLoadOptions = {},
+  ): SaveData {
+    const timestamp = this.now();
+    return {
+      version: this.version,
+      timestamp,
+      world: this.filterWorldData(worldData, options),
+      ...(metadata
+        ? {
+            metadata: {
+              ...metadata,
+              createdAt: metadata.createdAt || timestamp,
+              updatedAt: timestamp,
+            },
+          }
+        : {}),
+    };
+  }
+
+  private getStorage(): LegacySaveStorage {
+    if (this.storage) return this.storage;
+    if (typeof localStorage === 'undefined') {
+      throw new Error('Legacy save storage is not available in this environment');
+    }
+    return localStorage;
+  }
+
+  private async writeFile(filename: string, data: SaveData): Promise<void> {
+    if (this.fileWriter) {
+      await this.fileWriter(filename, data);
+      return;
+    }
+
+    if (typeof document === 'undefined' || typeof URL === 'undefined' || typeof Blob === 'undefined') {
+      throw new Error('File download is not available in this environment');
+    }
+
+    const blob = new Blob(
+      [JSON.stringify(data, null, 2)],
+      { type: 'application/json' },
+    );
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename.endsWith('.json') ? filename : `${filename}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   @HandleError()
   private async saveUncompressed(saveData: SaveData): Promise<SaveLoadResult> {
     const saveId = `${saveData.world.id}_${saveData.timestamp}`;
     const storageKey = `${STORAGE_KEY_PREFIX}${saveId}`;
 
     try {
-      localStorage.setItem(storageKey, JSON.stringify(saveData));
+      this.getStorage().setItem(storageKey, JSON.stringify(saveData));
       return { success: true, data: saveData };
     } catch (error) {
       if (error instanceof Error && error.name === 'QuotaExceededError') {
@@ -255,7 +313,7 @@ export class SaveLoadManager {
     const storageKey = `${STORAGE_KEY_PREFIX}${saveId}`;
 
     try {
-      localStorage.setItem(storageKey, compressed);
+      this.getStorage().setItem(storageKey, compressed);
       return { success: true, data: saveData };
     } catch (error) {
       if (error instanceof Error && error.name === 'QuotaExceededError') {

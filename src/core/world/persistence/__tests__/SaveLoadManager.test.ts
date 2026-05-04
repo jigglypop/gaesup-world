@@ -1,5 +1,29 @@
-import { SaveLoadManager } from '../SaveLoadManager';
-import type { WorldSaveData } from '../types';
+import { SaveLoadManager, type LegacySaveStorage } from '../SaveLoadManager';
+import type { SaveData, WorldSaveData } from '../types';
+
+class MemoryLegacySaveStorage implements LegacySaveStorage {
+  private readonly records = new Map<string, string>();
+
+  get length(): number {
+    return this.records.size;
+  }
+
+  key(index: number): string | null {
+    return Array.from(this.records.keys())[index] ?? null;
+  }
+
+  getItem(key: string): string | null {
+    return this.records.get(key) ?? null;
+  }
+
+  setItem(key: string, value: string): void {
+    this.records.set(key, value);
+  }
+
+  removeItem(key: string): void {
+    this.records.delete(key);
+  }
+}
 
 function createWorld(blocks: NonNullable<WorldSaveData['buildings']['blocks']>): WorldSaveData {
   return {
@@ -74,5 +98,59 @@ describe('SaveLoadManager building blocks', () => {
       blocks: [],
       meshes: [],
     });
+  });
+
+  test('can use injected legacy storage without touching localStorage', async () => {
+    const storage = new MemoryLegacySaveStorage();
+    const manager = new SaveLoadManager({
+      storage,
+      now: () => 4321,
+    });
+
+    const saved = await manager.save(createWorld([
+      { id: 'block-storage', position: { x: 1, y: 0, z: 1 } },
+    ]));
+    const loaded = await manager.load('world_4321');
+
+    expect(saved.success).toBe(true);
+    expect(loaded.data?.world.buildings.blocks?.[0]?.id).toBe('block-storage');
+    expect(manager.listSaves()).toEqual([{ id: 'world_4321', timestamp: 4321 }]);
+    expect(localStorage.length).toBe(0);
+
+    expect(manager.deleteSave('world_4321')).toBe(true);
+    expect(storage.length).toBe(0);
+  });
+
+  test('writes file exports through an injected file writer without creating a legacy save', async () => {
+    const storage = new MemoryLegacySaveStorage();
+    const writes: Array<{ filename: string; data: SaveData }> = [];
+    const manager = new SaveLoadManager({
+      storage,
+      fileWriter: (filename, data) => {
+        writes.push({ filename, data });
+      },
+      now: () => 5678,
+    });
+
+    const result = await manager.saveToFile(
+      createWorld([{ id: 'block-file', position: { x: 2, y: 0, z: 2 } }]),
+      'world-export',
+    );
+
+    expect(result.success).toBe(true);
+    expect(writes).toEqual([
+      {
+        filename: 'world-export',
+        data: expect.objectContaining({
+          timestamp: 5678,
+          world: expect.objectContaining({
+            buildings: expect.objectContaining({
+              blocks: [expect.objectContaining({ id: 'block-file' })],
+            }),
+          }),
+        }) as SaveData,
+      },
+    ]);
+    expect(storage.length).toBe(0);
   });
 });

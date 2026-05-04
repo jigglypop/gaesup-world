@@ -1,4 +1,5 @@
 import { WORLD_SNAPSHOT_DOMAINS } from '../../platform';
+import type { WorldSnapshot } from '../../platform';
 import type { DomainBinding, SerializedDomainValue } from '../../save/types';
 
 /**
@@ -11,10 +12,10 @@ export const DEFAULT_VISIT_DOMAINS: readonly string[] = WORLD_SNAPSHOT_DOMAINS;
 
 export type VisitDomainKey = (typeof DEFAULT_VISIT_DOMAINS)[number] | (string & {});
 
-export type VisitSnapshot = {
-  version: number;
+export type VisitSnapshot = Omit<WorldSnapshot, 'domains'> & {
   hostId: string;
   hostName?: string;
+  /** Compatibility alias for `savedAt`. */
   capturedAt: number;
   domains: Record<string, SerializedDomainValue>;
 };

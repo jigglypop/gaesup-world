@@ -1,6 +1,8 @@
 import React, { FC, useEffect, useMemo, useState } from 'react';
 
+import type { EditorLayoutProps, PanelConfig } from './types';
 import '../../styles/theme.css';
+import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../../runtime';
 import {
   AnimationPanel,
   BlockPanel,
@@ -17,7 +19,21 @@ import {
   WallPanel,
   WorldPanel,
 } from '../panels';
-import { EditorLayoutProps, PanelConfig } from './types';
+import { resolveEditorPanelComponentExtensions } from './types';
+
+export {
+  EDITOR_PANEL_COMPONENT_KIND,
+  isEditorPanelComponentExtension,
+  resolveEditorPanelComponentExtensions,
+} from './types';
+export type {
+  EditorLayoutProps,
+  EditorPanelComponentExtension,
+  EditorPanelDefaults,
+  EditorShellAction,
+  EditorShellPluginPanel,
+  PanelConfig,
+} from './types';
 
 export const EditorLayout: FC<EditorLayoutProps> = ({
   children,
@@ -31,6 +47,16 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
   panelDefaults = {},
   validateBundle,
 }) => {
+  const runtime = useGaesupRuntime();
+  const runtimeRevision = useGaesupRuntimeRevision();
+  const componentExtensionPanels = useMemo(
+    () => {
+      if (!runtime) return [];
+      return resolveEditorPanelComponentExtensions(runtime.plugins.context.components.list());
+    },
+    [runtime, runtimeRevision],
+  );
+
   const panelConfigs = useMemo(() => {
     const builtInPanels: PanelConfig[] = [
       { id: 'world', title: '전역', component: <WorldPanel />, defaultSide: 'left' },
@@ -55,6 +81,10 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
       const defaults = panelDefaults[panel.id] ?? {};
       panelMap.set(panel.id, { ...panel, ...defaults });
     }
+    for (const panel of componentExtensionPanels) {
+      const defaults = panelDefaults[panel.id] ?? {};
+      panelMap.set(panel.id, { ...panelMap.get(panel.id), ...panel, ...defaults });
+    }
     for (const panel of panels) {
       const defaults = panelDefaults[panel.id] ?? {};
       panelMap.set(panel.id, { ...panelMap.get(panel.id), ...panel, ...defaults });
@@ -68,7 +98,7 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
       panelMap.delete(id);
     }
     return [...orderedPanels, ...panelMap.values()];
-  }, [hiddenBuiltInPanels, panelDefaults, panelOrder, panels, validateBundle]);
+  }, [componentExtensionPanels, hiddenBuiltInPanels, panelDefaults, panelOrder, panels, validateBundle]);
 
   const defaultPanelId = useMemo(
     () => defaultActivePanels.find((panelId) => panelConfigs.some((config) => config.id === panelId)) ?? panelConfigs[0]?.id ?? '',
@@ -222,4 +252,4 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
       {children}
     </div>
   );
-}; 
+};

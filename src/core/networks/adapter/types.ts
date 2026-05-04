@@ -1,3 +1,5 @@
+import type { NetworkAuthorityMessageType } from './contracts';
+
 export type NetworkMessageEnvelope<TPayload = unknown> = {
   version: number;
   type: string;
@@ -42,7 +44,8 @@ export type NetworkMessageType =
   | 'emote.play'
   | 'interaction.trigger'
   | 'world.visitSnapshot'
-  | 'ledger.command';
+  | 'ledger.command'
+  | NetworkAuthorityMessageType;
 
 export type AvatarPositionPayload = {
   position: [number, number, number];

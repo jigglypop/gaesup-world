@@ -1,5 +1,11 @@
 export { createContentBundleFromSaveSystem } from './exporter';
-export { HttpContentBundleSource, loadContentBundleFromManifest, validateContentBundle } from './loader';
+export {
+  HttpContentBundleSource,
+  loadContentBundleFromManifest,
+  validateContentBundle,
+  validateContentBundleManifest,
+} from './loader';
+export { CONTENT_SCHEMA_VERSION } from './types';
 export type {
   ContentBundleExportOptions,
   SaveBindingProvider,
@@ -11,6 +17,7 @@ export type {
   ContentBundleManifest,
   ContentBundleSource,
   ContentBundleValidation,
+  ContentSchemaVersion,
   GameplayManifest,
   ManifestResource,
   WorldManifest,

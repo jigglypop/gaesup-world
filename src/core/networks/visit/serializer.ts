@@ -8,10 +8,14 @@ import type { DomainBinding, SerializedDomainValue } from '../../save/types';
 export type SerializeVisitOptions = {
   hostId: string;
   hostName?: string;
+  /** World snapshot id. Defaults to `hostId` for backward-compatible visit rooms. */
+  worldId?: string;
   /** Domain keys to include. Defaults to `DEFAULT_VISIT_DOMAINS`. */
   domains?: readonly string[];
   /** Snapshot schema version. Defaults to `1`. */
   version?: number;
+  /** Capture time. Defaults to `Date.now()`. */
+  savedAt?: number;
 };
 
 export type ApplyVisitOptions = {
@@ -51,11 +55,15 @@ export function serializeVisit(
     }
   }
 
+  const savedAt = options.savedAt ?? Date.now();
   return {
+    kind: 'world',
+    worldId: options.worldId ?? options.hostId,
     version: options.version ?? 1,
     hostId: options.hostId,
     ...(options.hostName ? { hostName: options.hostName } : {}),
-    capturedAt: Date.now(),
+    savedAt,
+    capturedAt: savedAt,
     domains,
   };
 }

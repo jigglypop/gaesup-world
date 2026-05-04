@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import type { KeyboardState } from '../../../../interactions/bridge';
-import { InteractionSystem } from '../../../../interactions/core/InteractionSystem';
+import { useInputBackend } from '../../../../interactions/hooks';
 
 export type TouchControlsProps = {
   /** Force visibility regardless of pointer detection. */
@@ -52,8 +52,8 @@ function dispatchKey(type: 'keydown' | 'keyup', key: string): void {
 
 /**
  * Mobile / coarse-pointer overlay: virtual joystick on the left, action
- * buttons on the right. The joystick drives `InteractionSystem.updateKeyboard`
- * directly with `forward/backward/leftward/rightward/shift`, action buttons
+ * buttons on the right. The joystick drives the active input backend with
+ * `forward/backward/leftward/rightward/shift`, action buttons
  * dispatch synthetic keyboard events so existing key-bound systems pick them up.
  */
 export function TouchControls({
@@ -64,6 +64,7 @@ export function TouchControls({
   actions = DEFAULT_ACTIONS,
 }: TouchControlsProps = {}) {
   const [visible, setVisible] = useState(false);
+  const inputBackend = useInputBackend();
   const padRef = useRef<HTMLDivElement>(null);
   const knobRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef({
@@ -86,9 +87,6 @@ export function TouchControls({
     const pad = padRef.current;
     const knob = knobRef.current;
     if (!pad || !knob) return;
-
-    const sys = InteractionSystem.getInstance();
-
     const reset = () => {
       const s = stateRef.current;
       const upd: TouchKeyboardUpdate = {};
@@ -98,7 +96,7 @@ export function TouchControls({
       if (s.rightward) upd.rightward = false;
       if (s.run) upd.shift = false;
       s.forward = s.backward = s.leftward = s.rightward = s.run = false;
-      if (Object.keys(upd).length > 0) sys.updateKeyboard(upd);
+      if (Object.keys(upd).length > 0) inputBackend.updateKeyboard(upd);
       knob.style.transform = 'translate(-50%, -50%)';
       stateRef.current.pointerId = -1;
     };
@@ -147,7 +145,7 @@ export function TouchControls({
         if (s.rightward !== r) { upd.rightward = r;   s.rightward = r; }
         if (s.run !== run)     { upd.shift     = run; s.run       = run; }
       }
-      if (Object.keys(upd).length > 0) sys.updateKeyboard(upd);
+      if (Object.keys(upd).length > 0) inputBackend.updateKeyboard(upd);
     };
 
     const onUp = (e: PointerEvent) => {
@@ -168,7 +166,7 @@ export function TouchControls({
       pad.removeEventListener('pointerleave', onUp);
       reset();
     };
-  }, [visible, radius, deadzone, runThreshold]);
+  }, [visible, radius, deadzone, runThreshold, inputBackend]);
 
   if (!visible) return null;
 

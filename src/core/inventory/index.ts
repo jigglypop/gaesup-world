@@ -1,4 +1,11 @@
 export * from './types';
+export {
+  createInventoryPlugin,
+  hydrateInventoryState,
+  inventoryPlugin,
+  serializeInventoryState,
+} from './plugin';
+export type { InventoryPluginOptions } from './plugin';
 export { useInventoryStore } from './stores/inventoryStore';
 export {
   useInventory,

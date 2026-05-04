@@ -1,3 +1,5 @@
+import { useQuestStore } from '../../quests/stores/questStore';
+import { useFriendshipStore } from '../../relations/stores/friendshipStore';
 import type {
   AgentBehaviorBlueprint,
   NPCAction,
@@ -13,8 +15,6 @@ import type {
   NPCObservation,
   NPCPerceptionConfig,
 } from '../types';
-import { useQuestStore } from '../../quests/stores/questStore';
-import { useFriendshipStore } from '../../relations/stores/friendshipStore';
 
 const MAX_BLUEPRINT_STEPS = 32;
 const blueprints = new Map<string, NPCBrainBlueprint>();

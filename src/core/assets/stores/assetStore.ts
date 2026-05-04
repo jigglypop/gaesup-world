@@ -1,13 +1,21 @@
 import { create } from 'zustand';
 
 import { SEED_ASSETS } from '../data/seedAssets';
-import type { AssetKind, AssetQuery, AssetRecord, AssetSlot, AssetSource } from '../types';
+import type {
+  AssetCatalogStatus,
+  AssetKind,
+  AssetQuery,
+  AssetRecord,
+  AssetSlot,
+  AssetSource,
+} from '../types';
 
 type AssetState = {
   records: Record<string, AssetRecord>;
   ids: string[];
   isLoading: boolean;
   error: string | null;
+  catalogStatus: AssetCatalogStatus;
   selectedId: string | null;
   filter: AssetQuery;
 
@@ -39,12 +47,28 @@ const filterAssets = (assets: AssetRecord[], query?: AssetQuery): AssetRecord[] 
 };
 
 const seedRecords = toRecordMap(SEED_ASSETS);
+const seedStatus: AssetCatalogStatus = {
+  state: 'seed',
+  origin: 'seed',
+  assetCount: SEED_ASSETS.length,
+  loadedAt: null,
+  error: null,
+  fallbackReason: null,
+};
+
+function createCatalogStatus(
+  status: Omit<AssetCatalogStatus, 'query'>,
+  query?: AssetQuery,
+): AssetCatalogStatus {
+  return query ? { ...status, query: { ...query } } : status;
+}
 
 export const useAssetStore = create<AssetState>((set, get) => ({
   records: seedRecords,
   ids: SEED_ASSETS.map((asset) => asset.id),
   isLoading: false,
   error: null,
+  catalogStatus: seedStatus,
   selectedId: null,
   filter: {},
 
@@ -66,16 +90,62 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     }),
 
   loadAssets: async (source, query) => {
-    set({ isLoading: true, error: null });
+    set({
+      isLoading: true,
+      error: null,
+      catalogStatus: createCatalogStatus({
+        state: 'loading',
+        origin: 'source',
+        assetCount: get().ids.length,
+        loadedAt: null,
+        error: null,
+        fallbackReason: null,
+      }, query),
+    });
     try {
       const assets = await source.listAssets(query);
-      get().registerAssets(assets.length > 0 ? assets : SEED_ASSETS);
-      set({ isLoading: false });
-    } catch (error) {
+      if (assets.length > 0) {
+        get().registerAssets(assets);
+        set({
+          isLoading: false,
+          catalogStatus: createCatalogStatus({
+            state: 'loaded',
+            origin: 'source',
+            assetCount: assets.length,
+            loadedAt: Date.now(),
+            error: null,
+            fallbackReason: null,
+          }, query),
+        });
+        return;
+      }
+
       get().registerAssets(SEED_ASSETS);
       set({
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to load assets',
+        catalogStatus: createCatalogStatus({
+          state: 'fallback',
+          origin: 'seed',
+          assetCount: SEED_ASSETS.length,
+          loadedAt: Date.now(),
+          error: null,
+          fallbackReason: 'empty-source',
+        }, query),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load assets';
+      get().registerAssets(SEED_ASSETS);
+      set({
+        isLoading: false,
+        error: message,
+        catalogStatus: createCatalogStatus({
+          state: 'fallback',
+          origin: 'seed',
+          assetCount: SEED_ASSETS.length,
+          loadedAt: Date.now(),
+          error: message,
+          fallbackReason: message,
+        }, query),
       });
     }
   },
@@ -95,6 +165,7 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     ids: SEED_ASSETS.map((asset) => asset.id),
     isLoading: false,
     error: null,
+    catalogStatus: seedStatus,
     selectedId: null,
     filter: {},
   }),

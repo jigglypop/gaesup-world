@@ -1,6 +1,7 @@
+import { useEffect } from 'react';
+
 import { Environment, Grid } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
-import { useEffect } from 'react';
 
 import {
   BugSpot,

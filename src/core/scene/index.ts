@@ -1,4 +1,11 @@
 export * from './types';
+export {
+  createScenePlugin,
+  hydrateSceneState,
+  scenePlugin,
+  serializeSceneState,
+} from './plugin';
+export type { ScenePluginOptions } from './plugin';
 export { useSceneStore } from './stores/sceneStore';
 export { useRoomVisibilityStore } from './stores/roomVisibilityStore';
 export { SceneFader } from './components/SceneFader';

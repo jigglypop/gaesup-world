@@ -4,7 +4,8 @@ import * as THREE from 'three';
 import { V3 } from '@utils/vector';
 
 import { ClickerMoveOptions, ClickerResult } from './types';
-import { InteractionBridge } from '../../interactions/bridge/InteractionBridge';
+import type { InputAdapter } from '../../interactions/core';
+import { useInputBackend } from '../../interactions/hooks';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
 import {
   clearClickNavigationRoute,
@@ -14,21 +15,22 @@ import {
 } from '../../navigation/ClickNavigationRoute';
 import { NavigationSystem } from '../../navigation/NavigationSystem';
 
-function updateMouseTarget(target: THREE.Vector3, currentPosition: THREE.Vector3, shouldRun: boolean): void {
+function updateMouseTarget(
+  inputBackend: InputAdapter,
+  target: THREE.Vector3,
+  currentPosition: THREE.Vector3,
+  shouldRun: boolean,
+): void {
   const angle = Math.atan2(
     target.z - currentPosition.z,
     target.x - currentPosition.x,
   );
-  InteractionBridge.getGlobal().executeCommand({
-    type: 'input',
-    action: 'updateMouse',
-    data: {
-      target,
-      angle,
-      position: new THREE.Vector2(target.x, target.z),
-      isActive: true,
-      shouldRun,
-    },
+  inputBackend.updateMouse({
+    target,
+    angle,
+    position: new THREE.Vector2(target.x, target.z),
+    isActive: true,
+    shouldRun,
   });
 }
 
@@ -40,9 +42,13 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
     simplifyPath = true,
     waypointThreshold = 1,
     fallbackToDirectOnFail = true,
+    agentRadius = 0.35,
+    agentWidth,
+    agentDepth,
+    clearance,
   } = options;
   const { activeState } = useStateSystem();
-  const bridge = InteractionBridge.getGlobal();
+  const inputBackend = useInputBackend();
   const isReady = Boolean(activeState?.position);
   const moveClicker = (
     event: ThreeEvent<MouseEvent>,
@@ -65,7 +71,7 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
 
       if (!useNavigation) {
         clearClickNavigationRoute();
-        updateMouseTarget(finalTarget, startPosition, isRun);
+        updateMouseTarget(inputBackend, finalTarget, startPosition, isRun);
         return true;
       }
 
@@ -73,10 +79,16 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
         if (!isLatestClickNavigationRequest(requestId)) return;
 
         const navigation = NavigationSystem.getInstance();
+        const agentSize = {
+          agentRadius,
+          ...(agentWidth !== undefined ? { agentWidth } : {}),
+          ...(agentDepth !== undefined ? { agentDepth } : {}),
+          ...(clearance !== undefined ? { clearance } : {}),
+        };
         finalTarget.y = Math.max(navigation.sampleHeight(finalTarget.x, finalTarget.z) + offsetY, minHeight);
-        if (navigation.hasLineOfSight(startPosition.x, startPosition.z, finalTarget.x, finalTarget.z)) {
+        if (navigation.hasLineOfSight(startPosition.x, startPosition.z, finalTarget.x, finalTarget.z, agentSize)) {
           setClickNavigationRoute([finalTarget], waypointThreshold, isRun);
-          updateMouseTarget(finalTarget, startPosition, isRun);
+          updateMouseTarget(inputBackend, finalTarget, startPosition, isRun);
           return;
         }
 
@@ -85,18 +97,20 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
           startPosition.z,
           finalTarget.x,
           finalTarget.z,
-          undefined,
-          true,
+          {
+            weighted: true,
+            ...agentSize,
+          },
         );
         if (rawPath.length === 0) {
           clearClickNavigationRoute();
           if (
             fallbackToDirectOnFail &&
             !navigation.hasNavigationConstraints() &&
-            navigation.isWalkable(finalTarget.x, finalTarget.z)
+            navigation.isWalkable(finalTarget.x, finalTarget.z, agentSize)
           ) {
             setClickNavigationRoute([finalTarget], waypointThreshold, isRun);
-            updateMouseTarget(finalTarget, startPosition, isRun);
+            updateMouseTarget(inputBackend, finalTarget, startPosition, isRun);
           }
           return;
         }
@@ -106,6 +120,7 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
               rawPath,
               [startPosition.x, startPosition.y, startPosition.z],
               [finalTarget.x, finalTarget.y, finalTarget.z],
+              agentSize,
             )
           : rawPath;
         const waypoints = route
@@ -118,7 +133,7 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
 
         const path = waypoints.length > 0 ? waypoints : [finalTarget];
         setClickNavigationRoute(path, waypointThreshold, isRun);
-        updateMouseTarget(path[0] ?? finalTarget, startPosition, isRun);
+        updateMouseTarget(inputBackend, path[0] ?? finalTarget, startPosition, isRun);
       });
 
       return true;
@@ -133,11 +148,7 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
       if (!isReady) return;
       nextClickNavigationRequest();
       clearClickNavigationRoute();
-      bridge.executeCommand({
-        type: 'input',
-        action: 'updateMouse',
-        data: { isActive: false, shouldRun: false }
-      });
+      inputBackend.updateMouse({ isActive: false, shouldRun: false });
     } catch {
     } 
   };

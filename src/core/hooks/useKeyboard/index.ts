@@ -4,7 +4,8 @@ import { useGaesupStore } from '@stores/gaesupStore';
 
 import { useBuildingStore } from '../../building/stores/buildingStore';
 import type { CameraOptionType } from '../../camera/core/types';
-import { InteractionBridge } from '../../interactions/bridge/InteractionBridge';
+import type { KeyboardState } from '../../interactions/bridge';
+import { useInputBackend } from '../../interactions/hooks';
 
 const KEY_MAPPING: Record<string, string> = {
   KeyW: 'forward',
@@ -31,11 +32,7 @@ export const useKeyboard = (
   const stopAutomation = useGaesupStore((state) => state.stopAutomation);
   const isInteractionActive = useGaesupStore((state) => state.interaction?.isActive ?? true);
   const isInBuildingEditMode = useBuildingStore((state) => state.isInEditMode());
-  const bridgeRef = useRef<InteractionBridge | null>(null);
-  
-  if (!bridgeRef.current) {
-    bridgeRef.current = InteractionBridge.getGlobal();
-  }
+  const inputBackend = useInputBackend();
   
   const pressedKeys = useRef<Set<string>>(new Set());
 
@@ -46,11 +43,7 @@ export const useKeyboard = (
       if (!isInteractionActive) return false;
 
       try {
-        bridgeRef.current?.executeCommand({
-          type: 'input',
-          action: 'updateKeyboard',
-          data: { [key]: value }
-        });
+        inputBackend.updateKeyboard({ [key]: value } as Partial<KeyboardState>);
         if (value) {
           pressedKeys.current.add(key);
         } else {
@@ -62,29 +55,25 @@ export const useKeyboard = (
         return false;
       }
     },
-    [isInteractionActive],
+    [inputBackend, isInteractionActive],
   );
 
   const clearAllKeys = useCallback(() => {
     pressedKeys.current.clear();
-    bridgeRef.current?.executeCommand({
-      type: 'input',
-      action: 'updateKeyboard',
-      data: {
-        forward: false,
-        backward: false,
-        leftward: false,
-        rightward: false,
-        shift: false,
-        space: false,
-        keyZ: false,
-        keyR: false,
-        keyF: false,
-        keyE: false,
-        escape: false
-      }
+    inputBackend.updateKeyboard({
+      forward: false,
+      backward: false,
+      leftward: false,
+      rightward: false,
+      shift: false,
+      space: false,
+      keyZ: false,
+      keyR: false,
+      keyF: false,
+      keyE: false,
+      escape: false
     });
-  }, []);
+  }, [inputBackend]);
 
   useEffect(() => {
     if (!isInteractionActive || isInBuildingEditMode) {
@@ -120,24 +109,12 @@ export const useKeyboard = (
           )
         ) {
           stopAutomation();
-          bridgeRef.current?.executeCommand({
-            type: 'input',
-            action: 'updateMouse',
-            data: { isActive: false, shouldRun: false }
-          });
+          inputBackend.updateMouse({ isActive: false, shouldRun: false });
         }
-        bridgeRef.current?.executeCommand({
-          type: 'input',
-          action: 'updateKeyboard',
-          data: { [mappedKey]: true }
-        });
+        inputBackend.updateKeyboard({ [mappedKey]: true } as Partial<KeyboardState>);
       } else if (!isDown && wasPressed) {
         pressedKeys.current.delete(event.code);
-        bridgeRef.current?.executeCommand({
-          type: 'input',
-          action: 'updateKeyboard',
-          data: { [mappedKey]: false }
-        });
+        inputBackend.updateKeyboard({ [mappedKey]: false } as Partial<KeyboardState>);
       }
     };
 
@@ -162,6 +139,7 @@ export const useKeyboard = (
     clearAllKeys,
     isInteractionActive,
     isInBuildingEditMode,
+    inputBackend,
   ]);
 
   return {

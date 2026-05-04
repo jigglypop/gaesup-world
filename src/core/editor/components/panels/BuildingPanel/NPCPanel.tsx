@@ -1,7 +1,16 @@
 import React from 'react';
+
 import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 
+import {
+  NPCAnimationSection,
+  NPCBrainSection,
+  type NPCBrainPreviewState,
+  NPCMovementSection,
+  NPCPerceptionSection,
+} from './sections';
+import { NPCInstance as NPCPreviewInstance } from '../../../../npc/components/NPCInstance';
 import type {
   NPCAnimation,
   NPCBehaviorConfig,
@@ -12,14 +21,6 @@ import type {
   NPCPerceptionConfig,
   NPCTemplate,
 } from '../../../../npc/types';
-import { NPCInstance as NPCPreviewInstance } from '../../../../npc/components/NPCInstance';
-import {
-  NPCAnimationSection,
-  NPCBrainSection,
-  type NPCBrainPreviewState,
-  NPCMovementSection,
-  NPCPerceptionSection,
-} from './sections';
 
 type NPCPanelProps = {
   layout?: 'default' | 'split' | 'sidebars';

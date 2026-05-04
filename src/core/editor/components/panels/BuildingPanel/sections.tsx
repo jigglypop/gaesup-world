@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { BrainFlow } from './flow';
 import {
   appendNPCBlueprintNode,
   appendNPCConditionNodeWithBranchTemplate,
@@ -12,7 +13,6 @@ import {
   removeNPCBlueprintNode,
   resetNPCBlueprint,
 } from './helpers';
-import { BrainFlow } from './flow';
 import {
   BUILDING_FLAG_STYLE_OPTIONS,
   BUILDING_TILE_SHAPE_OPTIONS,
@@ -1908,7 +1908,8 @@ export function NPCBrainSection({
                           onChange={(event) => updateSelectedNode((node) => {
                             if (node.type !== 'action' || node.action.type !== 'moveToTarget') return node;
                             const nextAnimationId = event.target.value.trim();
-                            const { animationId: _animationId, ...restAction } = node.action;
+                            const restAction = { ...node.action };
+                            delete restAction.animationId;
                             return {
                               ...node,
                               action: {
@@ -1929,7 +1930,8 @@ export function NPCBrainSection({
                         onChange={(event) => updateSelectedNode((node) => {
                           if (node.type !== 'action' || node.action.type !== 'idle') return node;
                           const nextAnimationId = event.target.value.trim();
-                          const { animationId: _animationId, ...restAction } = node.action;
+                          const restAction = { ...node.action };
+                          delete restAction.animationId;
                           return {
                             ...node,
                             action: {

@@ -61,6 +61,39 @@ describe('SaveSystem', () => {
     expect(received).toEqual({ v: 3 });
   });
 
+  test('creates and hydrates save blobs without adapter IO', () => {
+    const diagnostics: SaveDiagnostic[] = [];
+    const sys = new SaveSystem({
+      adapter: new MemoryAdapter(),
+      onDiagnostic: (diagnostic) => diagnostics.push(diagnostic),
+    });
+    let value = 3;
+
+    sys.register({
+      key: 'counter',
+      serialize: () => ({ value }),
+      hydrate: (data) => {
+        if (data && typeof data === 'object' && 'value' in data) {
+          value = Number((data as { value: unknown }).value);
+        }
+      },
+    });
+
+    const blob = sys.createBlob('file-slot');
+    value = 0;
+    const ok = sys.hydrateBlob(blob, 'file-slot');
+
+    expect(ok).toBe(true);
+    expect(value).toBe(3);
+    expect(blob).toEqual(expect.objectContaining({
+      version: 1,
+      domains: {
+        counter: { value: 3 },
+      },
+    }));
+    expect(diagnostics).toEqual([]);
+  });
+
   test('reports serialize failures without blocking other domains', async () => {
     const adapter = new MemoryAdapter();
     const diagnostics: SaveDiagnostic[] = [];
@@ -94,6 +127,30 @@ describe('SaveSystem', () => {
       slot: 'diagnostic-slot',
     });
     expect(diagnostics[0]?.error).toBeInstanceOf(Error);
+  });
+
+  test('allows diagnostics to be subscribed after construction', async () => {
+    const adapter = new MemoryAdapter();
+    const sys = new SaveSystem({ adapter });
+    const diagnostics: SaveDiagnostic[] = [];
+    const unsubscribe = sys.subscribeDiagnostics((diagnostic) => diagnostics.push(diagnostic));
+
+    sys.register({
+      key: 'broken',
+      serialize: () => { throw new Error('first failure'); },
+      hydrate: () => undefined,
+    });
+
+    await sys.save('diagnostic-slot');
+    unsubscribe();
+    await sys.save('diagnostic-slot');
+
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toMatchObject({
+      phase: 'serialize',
+      key: 'broken',
+      slot: 'diagnostic-slot',
+    });
   });
 
   test('reports hydrate failures without blocking other domains', async () => {

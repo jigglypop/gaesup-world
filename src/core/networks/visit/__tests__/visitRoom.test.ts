@@ -25,8 +25,31 @@ describe('visit-room serializer', () => {
     });
 
     expect(snapshot.hostId).toBe('host-1');
+    expect(snapshot.kind).toBe('world');
+    expect(snapshot.worldId).toBe('host-1');
+    expect(snapshot.savedAt).toBe(snapshot.capturedAt);
     expect(snapshot.domains).toHaveProperty('building');
     expect(snapshot.domains).not.toHaveProperty('mail');
+  });
+
+  it('can align visit captures to a world snapshot id and timestamp', () => {
+    const snapshot = serializeVisit(
+      () => [bindingFor('building', () => ({ tiles: [] }), () => {})],
+      {
+        hostId: 'host-1',
+        worldId: 'world-1',
+        savedAt: 123,
+        domains: ['building'],
+      },
+    );
+
+    expect(snapshot).toEqual(expect.objectContaining({
+      kind: 'world',
+      worldId: 'world-1',
+      hostId: 'host-1',
+      savedAt: 123,
+      capturedAt: 123,
+    }));
   });
 
   it('apply restores domain values via hydrate', () => {
@@ -90,8 +113,11 @@ describe('local visit channel', () => {
   it('replays the latest snapshot to new subscribers', () => {
     const channel = createLocalVisitChannel();
     const snapshot = {
+      kind: 'world' as const,
+      worldId: 'host-1',
       version: 1,
       hostId: 'host-1',
+      savedAt: 1,
       capturedAt: 1,
       domains: { building: 'X' },
     };

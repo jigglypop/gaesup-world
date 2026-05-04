@@ -3,6 +3,8 @@ import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import type { KeyboardState } from '../bridge';
+import { useInputBackend } from './useInputBackend';
 import { usePlayerPosition } from '../../motions/hooks/usePlayerPosition';
 import { useInteractablesStore } from '../stores/interactablesStore';
 
@@ -22,8 +24,28 @@ export function useCurrentInteraction(): CurrentInteraction {
 export function useInteractionKey(enabled: boolean = true): void {
   const current = useCurrentInteraction();
   const activate = useInteractablesStore((s) => s.activateCurrent);
+  const inputBackend = useInputBackend();
+  const wasPressedRef = useRef(false);
+
   useEffect(() => {
+    wasPressedRef.current = false;
     if (!enabled || !current) return;
+
+    const activateOnce = (pressed: boolean) => {
+      if (pressed && !wasPressedRef.current) {
+        activate();
+      }
+      wasPressedRef.current = pressed;
+    };
+
+    const backendKey = getBackendInteractionKey(current.key);
+    if (backendKey && inputBackend.subscribe) {
+      activateOnce(Boolean(inputBackend.getKeyboard()[backendKey]));
+      return inputBackend.subscribe(({ keyboard }) => {
+        activateOnce(Boolean(keyboard[backendKey]));
+      });
+    }
+
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
       if (tag === 'input' || tag === 'textarea') return;
@@ -33,7 +55,37 @@ export function useInteractionKey(enabled: boolean = true): void {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [current, enabled, activate]);
+  }, [current, enabled, activate, inputBackend]);
+}
+
+function getBackendInteractionKey(key: string): keyof KeyboardState | null {
+  switch (key.toLowerCase()) {
+    case 'w':
+      return 'forward';
+    case 'a':
+      return 'leftward';
+    case 's':
+      return 'backward';
+    case 'd':
+      return 'rightward';
+    case 'shift':
+      return 'shift';
+    case ' ':
+    case 'space':
+      return 'space';
+    case 'z':
+      return 'keyZ';
+    case 'r':
+      return 'keyR';
+    case 'f':
+      return 'keyF';
+    case 'e':
+      return 'keyE';
+    case 'escape':
+      return 'escape';
+    default:
+      return null;
+  }
 }
 
 export type InteractionTrackerProps = {

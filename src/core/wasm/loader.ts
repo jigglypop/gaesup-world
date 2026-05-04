@@ -147,16 +147,22 @@ export type GaesupCoreWasmExports = {
 
 let wasmPromise: Promise<GaesupCoreWasmExports | null> | null = null;
 
+type GaesupWasmGlobal = typeof globalThis & {
+  __GAESUP_WASM_BASE_URL__?: string;
+};
+
+function normalizeBaseUrl(baseUrl: string): string {
+  return baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+}
+
 function getWasmUrl(): string {
   try {
-    const baseUrl = typeof import.meta.env.BASE_URL === 'string' ? import.meta.env.BASE_URL : null;
+    const baseUrl = (globalThis as GaesupWasmGlobal).__GAESUP_WASM_BASE_URL__;
     if (baseUrl) {
-      const normalized = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-      return new URL(`${normalized}wasm/gaesup_core.wasm`, document.baseURI).toString();
+      return new URL('wasm/gaesup_core.wasm', normalizeBaseUrl(baseUrl)).toString();
     }
     if (typeof document !== 'undefined' && typeof document.baseURI === 'string' && document.baseURI.length > 0) {
-      const u = new URL(document.baseURI);
-      return `${u.origin}/wasm/gaesup_core.wasm`;
+      return new URL('wasm/gaesup_core.wasm', document.baseURI).toString();
     }
   } catch {
     // ignore

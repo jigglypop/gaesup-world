@@ -7,6 +7,8 @@ import {
   InMemoryExtensionRegistry,
   MissingExtensionError,
   MissingPluginDependencyError,
+  PluginManifestValidationError,
+  PluginVersionMismatchError,
 } from '../index';
 import type { GaesupPlugin } from '../index';
 
@@ -58,6 +60,39 @@ describe('PluginRegistry', () => {
     expect(calls).toEqual(['grid', 'building']);
     expect(registry.status('grid')).toBe('ready');
     expect(registry.status('building')).toBe('ready');
+  });
+
+  it('validates dependency version ranges before setup', async () => {
+    const calls: string[] = [];
+    const registry = createPluginRegistry();
+    registry.register(plugin('building', () => { calls.push('building'); }, {
+      dependencies: [{ id: 'grid', version: '^1.0.0' }],
+    }));
+    registry.register(plugin('grid', () => { calls.push('grid'); }, { version: '1.2.0' }));
+
+    await registry.setup('building');
+
+    expect(calls).toEqual(['grid', 'building']);
+    expect(registry.get('building')?.manifest.dependencies).toEqual({ grid: '^1.0.0' });
+  });
+
+  it('rejects dependency version mismatches before plugin setup', async () => {
+    const registry = createPluginRegistry();
+    registry.register(plugin('building', () => undefined, {
+      dependencies: [{ id: 'grid', version: '^1.0.0' }],
+    }));
+    registry.register(plugin('grid', () => undefined, { version: '2.0.0' }));
+
+    await expect(registry.setup('building')).rejects.toThrow(PluginVersionMismatchError);
+    expect(registry.status('building')).toBe('registered');
+  });
+
+  it('validates plugin manifests before setup', async () => {
+    const registry = createPluginRegistry();
+    registry.register(plugin('bad-version', () => undefined, { version: 'latest' }));
+
+    await expect(registry.setup('bad-version')).rejects.toThrow(PluginManifestValidationError);
+    expect(registry.status('bad-version')).toBe('registered');
   });
 
   it('sets up optional dependencies first when they exist', async () => {
@@ -197,6 +232,39 @@ describe('PluginRegistry', () => {
 
     expect(payloads).toEqual(['ok']);
   });
+
+  it('reports configured capability conflicts and missing capabilities', async () => {
+    const warn = jest.fn();
+    const registry = createPluginRegistry({
+      logger: { warn },
+      exclusiveCapabilities: ['renderer'],
+      capabilityConflicts: { server: ['client-only'] },
+      requiredCapabilities: ['save'],
+    });
+    registry.register(plugin('webgl', () => undefined, { capabilities: ['renderer', 'client-only'] }));
+    registry.register(plugin('webgpu', () => undefined, { capabilities: ['renderer'] }));
+    registry.register(plugin('authority', () => undefined, { capabilities: ['server'] }));
+
+    await registry.setupAll();
+
+    expect(registry.getDiagnostics()).toEqual([
+      expect.objectContaining({
+        kind: 'missing-capability',
+        capabilities: ['save'],
+      }),
+      expect.objectContaining({
+        kind: 'capability-conflict',
+        pluginIds: ['webgl', 'webgpu'],
+        capabilities: ['renderer'],
+      }),
+      expect.objectContaining({
+        kind: 'capability-conflict',
+        pluginIds: ['authority', 'webgl'],
+        capabilities: ['server', 'client-only'],
+      }),
+    ]);
+    expect(warn).toHaveBeenCalledTimes(3);
+  });
 });
 
 describe('InMemoryExtensionRegistry', () => {
@@ -231,6 +299,15 @@ describe('InMemoryExtensionRegistry', () => {
     expect(() => registry.register('one', 2)).toThrow(DuplicateExtensionError);
     expect(() => registry.require('missing')).toThrow(MissingExtensionError);
   });
+
+  it('includes registry and plugin ids in duplicate extension errors', () => {
+    const registry = new InMemoryExtensionRegistry<number>('systems');
+    registry.register('clock', 1, 'time');
+
+    expect(() => registry.register('clock', 2, 'other')).toThrow(
+      'systems Extension "clock" is already registered by plugin "time". Plugin "other" cannot register it.',
+    );
+  });
 });
 
 describe('InMemoryEventBus', () => {
@@ -260,4 +337,3 @@ describe('InMemoryEventBus', () => {
     expect(calls).toEqual(['on:a', 'once:a', 'on:b']);
   });
 });
-

@@ -1,6 +1,6 @@
-import type { NavigationSystem, Waypoint } from './NavigationSystem';
+import type { NavigationAgentSize, NavigationSystem, Waypoint } from './NavigationSystem';
 
-export type NavigationAgent = {
+export type NavigationAgent = NavigationAgentSize & {
   id: string;
   position: Waypoint;
 };
@@ -13,7 +13,7 @@ export type NPCNavigationSetter = (
   speed?: number,
 ) => void;
 
-export type NPCNavigationRouteOptions = {
+export type NPCNavigationRouteOptions = NavigationAgentSize & {
   weighted?: boolean;
   simplify?: boolean;
   includeStart?: boolean;
@@ -25,23 +25,40 @@ export type ApplyNPCNavigationOptions = NPCNavigationRouteOptions & {
   clearNavigation?: (instanceId: string) => void;
 };
 
+function resolveAgentSize(agent: NavigationAgent, options: NPCNavigationRouteOptions): NavigationAgentSize {
+  const size: NavigationAgentSize = {};
+  const agentRadius = options.agentRadius ?? agent.agentRadius;
+  const agentWidth = options.agentWidth ?? agent.agentWidth;
+  const agentDepth = options.agentDepth ?? agent.agentDepth;
+  const clearance = options.clearance ?? agent.clearance;
+  if (agentRadius !== undefined) size.agentRadius = agentRadius;
+  if (agentWidth !== undefined) size.agentWidth = agentWidth;
+  if (agentDepth !== undefined) size.agentDepth = agentDepth;
+  if (clearance !== undefined) size.clearance = clearance;
+  return size;
+}
+
 export function createNPCNavigationRoute(
   navigation: NavigationSystem,
   agent: NavigationAgent,
   target: NPCNavigationTarget,
   options: NPCNavigationRouteOptions = {},
 ): Waypoint[] {
+  const agentSize = resolveAgentSize(agent, options);
   const path = navigation.findPath(
     agent.position[0],
     agent.position[2],
     target[0],
     target[2],
-    target[1],
-    options.weighted ?? false,
+    {
+      y: target[1],
+      weighted: options.weighted ?? false,
+      ...agentSize,
+    },
   );
   if (path.length === 0) return [];
 
-  const route = options.simplify === false ? path : navigation.simplifyPath(path);
+  const route = options.simplify === false ? path : navigation.smoothPath(path, undefined, undefined, agentSize);
   return options.includeStart ? route : route.slice(1);
 }
 

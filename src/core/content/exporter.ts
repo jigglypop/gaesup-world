@@ -3,6 +3,7 @@ import type { GameplayEventBlueprint } from '../gameplay';
 import type { AgentBehaviorBlueprint, NPCBehaviorBlueprint } from '../npc';
 import { WORLD_SNAPSHOT_DOMAINS } from '../platform';
 import type { DomainBinding, SerializedDomainValue } from '../save';
+import { CONTENT_SCHEMA_VERSION } from './types';
 import type { AssetManifest, ContentBundle, WorldManifest } from './types';
 
 export type ContentBundleExportOptions = {
@@ -43,29 +44,34 @@ export function createContentBundleFromSaveSystem(
   options: ContentBundleExportOptions,
 ): ContentBundle {
   const world: WorldManifest = {
+    schemaVersion: CONTENT_SCHEMA_VERSION,
     id: options.worldId ?? `${options.id}-world`,
     name: options.worldName ?? options.name,
     version: options.version,
     domains: collectWorldDomains(provider),
   };
   const assetManifest: AssetManifest = {
+    schemaVersion: CONTENT_SCHEMA_VERSION,
     version: options.assetVersion ?? options.version,
     assets,
   };
 
   return {
+    schemaVersion: CONTENT_SCHEMA_VERSION,
     id: options.id,
     name: options.name,
     version: options.version,
     world,
     assets: assetManifest,
     blueprints: {
+      schemaVersion: CONTENT_SCHEMA_VERSION,
       version: options.version,
       blueprints: [],
       npcBehavior: options.npcBehaviorBlueprints ?? [],
       agentBehavior: options.agentBehaviorBlueprints ?? [],
     },
     gameplay: {
+      schemaVersion: CONTENT_SCHEMA_VERSION,
       version: options.version,
       items: [],
       quests: [],
