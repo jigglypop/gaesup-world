@@ -294,7 +294,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   ) {
     const { rigidBodyRef, innerGroupRef } = calcProp;
     this.directionComponent.updateDirection(physicsState, 'normal', calcProp);
-    this.impulseComponent.applyImpulse(rigidBodyRef, physicsState);
+    this.impulseComponent.applyImpulse(rigidBodyRef, physicsState, calcProp);
     this.gravityComponent.applyGravity(rigidBodyRef, physicsState);
     this.updateForces(rigidBodyRef, physicsState.delta ?? 0);
     if (rigidBodyRef?.current) {
@@ -328,7 +328,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   ) {
     const { rigidBodyRef, innerGroupRef } = calcProp;
     this.directionComponent.updateDirection(physicsState, 'normal', calcProp);
-    this.impulseComponent.applyImpulse(rigidBodyRef, physicsState);
+    this.impulseComponent.applyImpulse(rigidBodyRef, physicsState, calcProp);
     this.applyDamping(rigidBodyRef, physicsState);
     this.updateForces(rigidBodyRef, physicsState.delta ?? 0);
 
@@ -357,7 +357,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
       calcProp,
       innerGroupRef
     );
-    this.impulseComponent.applyImpulse(rigidBodyRef, physicsState);
+    this.impulseComponent.applyImpulse(rigidBodyRef, physicsState, calcProp);
     this.gravityComponent.applyGravity(rigidBodyRef, physicsState);
     this.applyDamping(rigidBodyRef, physicsState);
     this.updateForces(rigidBodyRef, physicsState.delta ?? 0);

@@ -7,7 +7,7 @@ import type { RefObject } from '@core/boilerplate';
 import { PhysicsConfigType } from '@stores/slices';
 
 import { NavigationSystem } from '../../../navigation/NavigationSystem';
-import { PhysicsState } from '../../types';
+import { PhysicsCalcProps, PhysicsState } from '../../types';
 import { EntityStateManager } from '../system/EntityStateManager';
 
 
@@ -28,13 +28,14 @@ export class ImpulseComponent {
   @Profile()
   applyImpulse(
     rigidBodyRef: RefObject<RapierRigidBody>,
-    physicsState: PhysicsState
+    physicsState: PhysicsState,
+    calcProp?: PhysicsCalcProps,
   ): void {
     if (!rigidBodyRef.current) return;
     const { modeType } = physicsState;
     switch (modeType) {
       case 'character':
-        this.applyCharacterImpulse(rigidBodyRef, physicsState);
+        this.applyCharacterImpulse(rigidBodyRef, physicsState, calcProp);
         break;
       case 'vehicle':
         this.applyVehicleImpulse(rigidBodyRef, physicsState);
@@ -43,14 +44,15 @@ export class ImpulseComponent {
         this.applyAirplaneImpulse(rigidBodyRef, physicsState);
         break;
       default:
-        this.applyCharacterImpulse(rigidBodyRef, physicsState);
+        this.applyCharacterImpulse(rigidBodyRef, physicsState, calcProp);
     }
   }
 
   @Profile()
   private applyCharacterImpulse(
     rigidBodyRef: RefObject<RapierRigidBody>,
-    physicsState: PhysicsState
+    physicsState: PhysicsState,
+    calcProp?: PhysicsCalcProps,
   ): void {
     const {
       gameStates: { isMoving, isRunning, isOnTheGround, isJumping },
@@ -74,7 +76,7 @@ export class ImpulseComponent {
       const M = rigidBodyRef.current.mass();
       const targetVelX = -dir.x * speed;
       const targetVelZ = -dir.z * speed;
-      if (!this.canMoveForward(rigidBodyRef.current, targetVelX, targetVelZ)) {
+      if (!this.canMoveForward(rigidBodyRef.current, targetVelX, targetVelZ, calcProp)) {
         this.scratchLinvel.x = 0;
         this.scratchLinvel.y = rigidBodyRef.current.linvel().y;
         this.scratchLinvel.z = 0;
@@ -94,6 +96,7 @@ export class ImpulseComponent {
     rigidBody: RapierRigidBody,
     targetVelX: number,
     targetVelZ: number,
+    calcProp?: PhysicsCalcProps,
   ): boolean {
     if (!this.navigation.hasNavigationConstraints()) return true;
 
@@ -103,11 +106,23 @@ export class ImpulseComponent {
     const position = rigidBody.translation();
     const { cellSize } = this.navigation.getGridDimensions();
     const lookAhead = Math.max(0.45, Math.min(cellSize * 0.75, horizontalSpeed * 0.08));
-    const nextX = position.x + (targetVelX / horizontalSpeed) * lookAhead;
-    const nextZ = position.z + (targetVelZ / horizontalSpeed) * lookAhead;
+    const dirX = targetVelX / horizontalSpeed;
+    const dirZ = targetVelZ / horizontalSpeed;
+    const sideX = -dirZ;
+    const sideZ = dirX;
+    const nextX = position.x + dirX * lookAhead;
+    const nextZ = position.z + dirZ * lookAhead;
+    const agentRadius = Math.max(
+      0,
+      calcProp?.colliderSize?.radius ?? this.config.navigationAgentRadius ?? 0.35,
+    );
 
-    return this.navigation.canTraverseSegment(position.x, position.z, nextX, nextZ, {
-      ignoreStart: true,
+    return [-agentRadius, 0, agentRadius].every((offset) => {
+      const startX = position.x + sideX * offset;
+      const startZ = position.z + sideZ * offset;
+      return this.navigation.canTraverseSegment(startX, startZ, nextX + sideX * offset, nextZ + sideZ * offset, {
+        ignoreStart: true,
+      });
     });
   }
 

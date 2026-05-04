@@ -9,9 +9,7 @@ import { useBuildingStore } from '../../stores/buildingStore';
 import {
   buildVisibilityIndex,
   collectCandidateIds,
-  collectOccluderCandidates,
   createVisibilityQueryKey,
-  isOccludedByAny,
   type VisibilityRecord,
   VISIBILITY_MAX_DISTANCE,
   VISIBILITY_UPDATE_INTERVAL,
@@ -23,17 +21,12 @@ function appendVisibleIds(
   candidates: Set<string>,
   byId: Map<string, VisibilityRecord>,
   selfKind: 'tile' | 'wall' | 'block' | 'object',
-  occluders: ReturnType<typeof collectOccluderCandidates>,
   frustum: THREE.Frustum,
   cameraPosition: THREE.Vector3,
   sphere: THREE.Sphere,
   maxDistanceSq: number,
-  occlusionScratch: {
-    targetDir: THREE.Vector3;
-    occDir: THREE.Vector3;
-    cross: THREE.Vector3;
-  },
 ): void {
+  void selfKind;
   for (const id of candidates) {
     const record = byId.get(id);
     if (!record) continue;
@@ -45,7 +38,6 @@ function appendVisibleIds(
     sphere.center.set(record.centerX, record.centerY, record.centerZ);
     sphere.radius = record.radius;
     if (!frustum.intersectsSphere(sphere)) continue;
-    if (isOccludedByAny(record, selfKind, cameraPosition, occluders, occlusionScratch)) continue;
     out.add(id);
   }
 }
@@ -89,9 +81,6 @@ export function BuildingVisibilityDriver() {
       camera: new THREE.Vector3(),
       forward: new THREE.Vector3(),
       sphere: new THREE.Sphere(),
-      targetDir: new THREE.Vector3(),
-      occDir: new THREE.Vector3(),
-      cross: new THREE.Vector3(),
     }),
     [],
   );
@@ -162,13 +151,6 @@ export function BuildingVisibilityDriver() {
           scratch.camera.z,
           VISIBILITY_MAX_DISTANCE,
         );
-    const occluders = collectOccluderCandidates(
-      index,
-      scratch.camera.x,
-      scratch.camera.z,
-      VISIBILITY_MAX_DISTANCE,
-    );
-
     const tileIds = new Set<string>();
     const wallIds = new Set<string>();
     const blockIds = new Set<string>();
@@ -180,48 +162,40 @@ export function BuildingVisibilityDriver() {
       tileCandidates,
       index.tileById,
       'tile',
-      occluders,
       scratch.frustum,
       scratch.camera,
       scratch.sphere,
       maxDistanceSq,
-      scratch,
     );
     appendVisibleIds(
       wallIds,
       wallCandidates,
       index.wallById,
       'wall',
-      occluders,
       scratch.frustum,
       scratch.camera,
       scratch.sphere,
       maxDistanceSq,
-      scratch,
     );
     appendVisibleIds(
       objectIds,
       objectCandidates,
       index.objectById,
       'object',
-      occluders,
       scratch.frustum,
       scratch.camera,
       scratch.sphere,
       maxDistanceSq,
-      scratch,
     );
     appendVisibleIds(
       blockIds,
       blockCandidates,
       index.blockById,
       'block',
-      occluders,
       scratch.frustum,
       scratch.camera,
       scratch.sphere,
       maxDistanceSq,
-      scratch,
     );
 
     const payload = { tileIds, wallIds, blockIds, objectIds };

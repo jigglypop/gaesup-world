@@ -46,6 +46,7 @@ export function Player() {
       key={`controller-${mode.type}`}
       controllerOptions={{ lerp: { cameraTurn: 0.1, cameraPosition: 0.08 } }}
       rigidBodyProps={{}}
+      colliderSize={{ height: 1.8, radius: 0.34 }}
       parts={parts}
       rotation={euler({ x: 0, y: Math.PI, z: 0 })}
     />

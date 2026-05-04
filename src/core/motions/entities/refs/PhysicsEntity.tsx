@@ -71,6 +71,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       ...(props.innerGroupRef ? { innerGroupRef: props.innerGroupRef } : {}),
       ...(props.colliderRef ? { colliderRef: props.colliderRef } : {}),
       ...(props.groundRay ? { groundRay: props.groundRay } : {}),
+      ...(props.colliderSize ? { colliderSize: props.colliderSize } : {}),
     });
 
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);

@@ -197,6 +197,7 @@ export function usePhysicsBridge(
         inputRef,
         setKeyboardInput: setKeyboardInputRef.current,
         setMouseInput: setMouseInputRef.current,
+        ...(props.colliderSize ? { colliderSize: props.colliderSize } : {}),
         ...(props.innerGroupRef ? { innerGroupRef: props.innerGroupRef } : {}),
       };
       calcPropRef.current = calcProp;
@@ -205,6 +206,11 @@ export function usePhysicsBridge(
       calcProp.state = state;
       calcProp.delta = delta;
       calcProp.worldContext = useGaesupStore.getState();
+      if (props.colliderSize) {
+        calcProp.colliderSize = props.colliderSize;
+      } else {
+        delete calcProp.colliderSize;
+      }
       if (props.innerGroupRef) {
         calcProp.innerGroupRef = props.innerGroupRef;
       }

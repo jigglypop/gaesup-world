@@ -63,6 +63,7 @@ export function EntityController({ props, children }: EntityControllerProps) {
       ...(props.rigidBodyProps ? { rigidBodyProps: props.rigidBodyProps } : {}),
       ...(props.controllerOptions ? { controllerOptions: props.controllerOptions } : {}),
       ...(props.groundRay ? { groundRay: props.groundRay } : {}),
+      ...(props.colliderSize ? { colliderSize: props.colliderSize } : {}),
       ...(props.position ? { position: props.position } : {}),
       ...(props.rotation ? { rotation: props.rotation } : {}),
       ...(props.scale ? { scale: props.scale } : {}),

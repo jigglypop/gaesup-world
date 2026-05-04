@@ -17,6 +17,7 @@ export type PhysicsConfigType = {
     normalGravityScale?: number;
     airDamping?: number;
     stopDamping?: number;
+    navigationAgentRadius?: number;
 }
 
 export interface PhysicsSlice {

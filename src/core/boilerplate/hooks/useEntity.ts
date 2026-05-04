@@ -4,6 +4,7 @@ import type { RapierCollider, RapierRigidBody } from '@react-three/rapier';
 import type { Group } from 'three';
 
 import type { GroundRay } from '@core/motions/entities/types';
+import type { PhysicsEntityProps } from '@core/motions/entities/types';
 import { useAnimationSetup } from '@core/motions/hooks/setup/useAnimationSetup';
 import { useMotionSetup } from '@core/motions/hooks/setup/useMotionSetup';
 import { usePhysicsBridge } from '@core/motions/hooks/usePhysicsBridge';
@@ -30,6 +31,7 @@ export interface UseEntityOptions
   innerGroupRef?: RefObject<Group>;
   colliderRef?: RefObject<RapierCollider>;
   groundRay?: GroundRay;
+  colliderSize?: PhysicsEntityProps['colliderSize'];
 }
 
 export function useEntity(options: UseEntityOptions) {
@@ -42,6 +44,7 @@ export function useEntity(options: UseEntityOptions) {
     innerGroupRef,
     colliderRef,
     groundRay,
+    colliderSize,
   } = options;
 
   const entityId = useRef<string>(
@@ -72,6 +75,7 @@ export function useEntity(options: UseEntityOptions) {
     ...(innerGroupRef ? { innerGroupRef } : {}),
     ...(colliderRef ? { colliderRef } : {}),
     ...(groundRay ? { groundRay } : {}),
+    ...(colliderSize ? { colliderSize } : {}),
   };
   usePhysicsBridge(physicsProps);
 

@@ -33,6 +33,7 @@ export interface PhysicsCalcProps {
   setKeyboardInput: (input: Partial<PhysicsInputState['keyboard']>) => void;
   setMouseInput: (input: Partial<PhysicsInputState['mouse']>) => void;
   body?: RapierRigidBody;
+  colliderSize?: PhysicsEntityProps['colliderSize'];
   memo?: {
     direction?: THREE.Vector3;
     directionTarget?: THREE.Vector3;
@@ -41,7 +42,7 @@ export interface PhysicsCalcProps {
 
 export type PhysicsCalculationProps =
   Required<Pick<PhysicsEntityProps, 'rigidBodyRef'>> &
-  Pick<PhysicsEntityProps, 'innerGroupRef' | 'outerGroupRef' | 'colliderRef' | 'groundRay'>;
+  Pick<PhysicsEntityProps, 'innerGroupRef' | 'outerGroupRef' | 'colliderRef' | 'groundRay' | 'colliderSize'>;
 
 export interface PhysicsState {
   activeState: ActiveStateType;

@@ -104,4 +104,33 @@ describe('ImpulseComponent와 EntityStateManager 동일 인스턴스 주입', ()
     expect(rigidBodyRef.current.applyImpulse).not.toHaveBeenCalled();
     expect(rigidBodyRef.current.setLinvel).toHaveBeenCalledWith({ x: 0, y: 0, z: 0 }, true);
   });
+
+  test('collider radius까지 포함해서 옆 장애물에 닿는 이동을 막는다', () => {
+    const navigation = NavigationSystem.getInstance({
+      cellSize: 0.25,
+      worldMinX: -2,
+      worldMinZ: -2,
+      worldMaxX: 2,
+      worldMaxZ: 2,
+      maxStepHeight: 0.75,
+    });
+    navigation.reset();
+    navigation.setBlocked(0.4, -0.5, 0.25, 0.25);
+
+    const manager = new EntityStateManager();
+    manager.updateGameStates({ isMoving: true });
+    manager.getActiveState().dir.set(0, 0, 1);
+
+    const impulse = new ImpulseComponent({ walkSpeed: 10 } as PhysicsConfigType, manager);
+    const rigidBodyRef = buildRigidBodyRef({ x: 0, y: 0, z: 0 });
+    const physicsState = buildPhysicsStateFrom(manager);
+
+    impulse.applyImpulse(
+      rigidBodyRef as unknown as Parameters<typeof impulse.applyImpulse>[0],
+      physicsState,
+      { colliderSize: { height: 1.8, radius: 0.4 } } as Parameters<typeof impulse.applyImpulse>[2],
+    );
+
+    expect(rigidBodyRef.current.applyImpulse).not.toHaveBeenCalled();
+  });
 });
