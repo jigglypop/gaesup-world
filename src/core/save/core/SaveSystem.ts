@@ -29,13 +29,21 @@ export class SaveSystem {
   }
 
   register(binding: DomainBinding): () => void {
+    if (this.bindings.has(binding.key)) {
+      throw new DuplicateSaveDomainBindingError(binding.key);
+    }
+
     const normalizedBinding: DomainBinding = {
       key: binding.key,
       serialize: () => binding.serialize(),
       hydrate: (data) => binding.hydrate(data),
     };
     this.bindings.set(binding.key, normalizedBinding);
-    return () => { this.bindings.delete(binding.key); };
+    return () => {
+      if (this.bindings.get(binding.key) === normalizedBinding) {
+        this.bindings.delete(binding.key);
+      }
+    };
   }
 
   has(key: string): boolean { return this.bindings.has(key); }
@@ -107,6 +115,13 @@ export class SaveSystem {
     for (const listener of this.diagnosticListeners) {
       listener(diagnostic);
     }
+  }
+}
+
+export class DuplicateSaveDomainBindingError extends Error {
+  constructor(key: string) {
+    super(`Save domain "${key}" is already registered.`);
+    this.name = 'DuplicateSaveDomainBindingError';
   }
 }
 

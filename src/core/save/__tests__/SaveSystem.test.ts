@@ -153,6 +153,35 @@ describe('SaveSystem', () => {
     });
   });
 
+  test('rejects duplicate domain bindings and keeps unregister ownership scoped', () => {
+    const sys = new SaveSystem({ adapter: new MemoryAdapter() });
+    const unregister = sys.register({
+      key: 'profile',
+      serialize: () => ({ name: 'first' }),
+      hydrate: () => undefined,
+    });
+
+    expect(() => sys.register({
+      key: 'profile',
+      serialize: () => ({ name: 'second' }),
+      hydrate: () => undefined,
+    })).toThrow('Save domain "profile" is already registered.');
+
+    unregister();
+    expect(sys.has('profile')).toBe(false);
+
+    const unregisterNext = sys.register({
+      key: 'profile',
+      serialize: () => ({ name: 'next' }),
+      hydrate: () => undefined,
+    });
+    unregister();
+
+    expect(sys.has('profile')).toBe(true);
+    unregisterNext();
+    expect(sys.has('profile')).toBe(false);
+  });
+
   test('reports hydrate failures without blocking other domains', async () => {
     const adapter = new MemoryAdapter();
     const diagnostics: SaveDiagnostic[] = [];

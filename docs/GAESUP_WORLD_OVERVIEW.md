@@ -254,7 +254,7 @@ import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
 
 ### 3. 저장/런타임 통합 경로
 
-`SaveSystem` 기반 runtime path와 legacy world persistence path가 함께 남아 있어 장기적으로 단일 경로 정리가 필요합니다.
+새 기능은 `SaveSystem` 기반 runtime path를 우선 사용합니다. `SaveSystem`은 중복 domain key 등록을 막고, serialize/hydrate 실패를 diagnostics로 보고합니다. `SaveLoadManager`는 legacy world save와 파일 import/export helper 역할로 남아 있으며, compressed legacy save도 목록 조회와 로드를 같은 포맷으로 처리합니다.
 
 ## 추천 읽기 순서
 
@@ -269,7 +269,6 @@ import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
 특정 기능을 보려면 다음 문서를 이어서 보면 좋습니다.
 
 - 이동/조작: `docs/domain/MOTIONS.md`
-- 네트워크: `docs/domain/NETWORKS.md`
 - 블루프린트: `docs/domain/BLUEPRINT.md`
 - 카메라: `docs/domain/CAMERA.md`
 

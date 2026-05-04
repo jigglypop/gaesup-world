@@ -121,6 +121,36 @@ describe('SaveLoadManager building blocks', () => {
     expect(storage.length).toBe(0);
   });
 
+  test('compressed saves load correctly and still appear in save lists', async () => {
+    const storage = new MemoryLegacySaveStorage();
+    const manager = new SaveLoadManager({
+      storage,
+      now: () => 8765,
+    });
+
+    const saved = await manager.save(
+      createWorld([{ id: 'block-compressed', position: { x: 3, y: 0, z: 3 } }]),
+      { description: 'Compressed test save' },
+      { compress: true },
+    );
+    const loaded = await manager.load('world_8765');
+
+    expect(saved.success).toBe(true);
+    expect(loaded.success).toBe(true);
+    expect(loaded.data?.world.buildings.blocks?.[0]?.id).toBe('block-compressed');
+    expect(manager.listSaves()).toEqual([
+      {
+        id: 'world_8765',
+        timestamp: 8765,
+        metadata: expect.objectContaining({
+          description: 'Compressed test save',
+          createdAt: 8765,
+          updatedAt: 8765,
+        }),
+      },
+    ]);
+  });
+
   test('writes file exports through an injected file writer without creating a legacy save', async () => {
     const storage = new MemoryLegacySaveStorage();
     const writes: Array<{ filename: string; data: SaveData }> = [];

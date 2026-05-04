@@ -11,6 +11,18 @@ import {
 
 const SAVE_VERSION = '1.0.0';
 const STORAGE_KEY_PREFIX = 'gaesup_world_save_';
+const BASE64_JSON_STORAGE_PREFIX = 'base64-json:';
+const COMPRESSED_SAVE_ENCODING = 'gaesup-world:gzip-json:v1';
+
+type CompressedSaveEnvelope = {
+  encoding: typeof COMPRESSED_SAVE_ENCODING;
+  version: string;
+  timestamp: number;
+  worldId: string;
+  worldName: string;
+  metadata?: SaveMetadata;
+  payload: string;
+};
 
 export interface LegacySaveStorage {
   readonly length: number;
@@ -78,13 +90,7 @@ export class SaveLoadManager {
         throw new Error(`Save data not found: ${saveId}`);
       }
 
-      let saveData: SaveData;
-
-      if (savedDataStr.startsWith('{')) {
-        saveData = JSON.parse(savedDataStr);
-      } else {
-        saveData = await this.decompressData(savedDataStr);
-      }
+      const saveData = await this.parseStoredSaveData(savedDataStr);
 
       if (!this.validateSaveData(saveData)) {
         throw new Error('Invalid save data format');
@@ -172,7 +178,7 @@ export class SaveLoadManager {
           const saveId = key.substring(STORAGE_KEY_PREFIX.length);
           const dataStr = storage.getItem(key);
           if (dataStr) {
-            const data: SaveData = JSON.parse(dataStr);
+            const data = this.parseStoredSaveDataSync(dataStr);
             saves.push({
               id: saveId,
               timestamp: data.timestamp,
@@ -326,18 +332,94 @@ export class SaveLoadManager {
   @Profile()
   private async compressData(data: SaveData): Promise<string> {
     const jsonStr = JSON.stringify(data);
-    const encoder = new TextEncoder();
-    const compressed = encoder.encode(jsonStr);
-    return btoa(String.fromCharCode(...compressed));
+    if (!canUseCompressionStream()) {
+      return `${BASE64_JSON_STORAGE_PREFIX}${bytesToBase64(encodeUtf8(jsonStr))}`;
+    }
+
+    const compressed = await this.gzipBytes(encodeUtf8(jsonStr));
+    const envelope: CompressedSaveEnvelope = {
+      encoding: COMPRESSED_SAVE_ENCODING,
+      version: data.version,
+      timestamp: data.timestamp,
+      worldId: data.world.id,
+      worldName: data.world.name,
+      ...(data.metadata ? { metadata: data.metadata } : {}),
+      payload: bytesToBase64(compressed),
+    };
+    return JSON.stringify(envelope);
   }
 
   @Profile()
   private async decompressData(compressed: string): Promise<SaveData> {
-    const decoded = atob(compressed);
-    const bytes = new Uint8Array(decoded.split('').map(char => char.charCodeAt(0)));
-    const decoder = new TextDecoder();
-    const jsonStr = decoder.decode(bytes);
+    const bytes = base64ToBytes(compressed);
+    const decompressed = await this.gunzipBytes(bytes);
+    const jsonStr = decodeUtf8(decompressed);
     return JSON.parse(jsonStr);
+  }
+
+  private async parseStoredSaveData(value: string): Promise<SaveData> {
+    if (value.startsWith('{')) {
+      const parsed: unknown = JSON.parse(value);
+      if (isCompressedSaveEnvelope(parsed)) {
+        return this.decompressData(parsed.payload);
+      }
+      return parsed as SaveData;
+    }
+    if (value.startsWith(BASE64_JSON_STORAGE_PREFIX)) {
+      return decodeBase64Json(value.slice(BASE64_JSON_STORAGE_PREFIX.length));
+    }
+
+    // Backward compatibility for older saves that stored raw base64 JSON bytes.
+    return decodeBase64Json(value);
+  }
+
+  private parseStoredSaveDataSync(value: string): SaveData {
+    if (value.startsWith('{')) {
+      const parsed: unknown = JSON.parse(value);
+      if (isCompressedSaveEnvelope(parsed)) {
+        return {
+          version: parsed.version,
+          timestamp: parsed.timestamp,
+          world: {
+            id: parsed.worldId,
+            name: parsed.worldName,
+            buildings: { wallGroups: [], tileGroups: [], blocks: [], meshes: [] },
+            npcs: [],
+            environment: {
+              lighting: {
+                ambientIntensity: 1,
+                directionalIntensity: 1,
+                directionalPosition: { x: 0, y: 10, z: 0 },
+              },
+            },
+          },
+          ...(parsed.metadata ? { metadata: parsed.metadata } : {}),
+        };
+      }
+      return parsed as SaveData;
+    }
+    if (value.startsWith(BASE64_JSON_STORAGE_PREFIX)) {
+      return decodeBase64Json(value.slice(BASE64_JSON_STORAGE_PREFIX.length));
+    }
+    return decodeBase64Json(value);
+  }
+
+  private async gzipBytes(bytes: Uint8Array): Promise<Uint8Array> {
+    if (!canUseCompressionStream()) {
+      return bytes;
+    }
+
+    const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+
+  private async gunzipBytes(bytes: Uint8Array): Promise<Uint8Array> {
+    if (!canUseDecompressionStream()) {
+      return bytes;
+    }
+
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
   }
 
   private validateSaveData(data: RuntimeValue): data is SaveData {
@@ -354,4 +436,83 @@ export class SaveLoadManager {
       typeof (data as SaveData).world.name === 'string'
     );
   }
-} 
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(value: string): Uint8Array {
+  const decoded = atob(value);
+  const bytes = new Uint8Array(decoded.length);
+  for (let i = 0; i < decoded.length; i += 1) {
+    bytes[i] = decoded.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function decodeBase64Json(value: string): SaveData {
+  return JSON.parse(decodeUtf8(base64ToBytes(value)));
+}
+
+function encodeUtf8(value: string): Uint8Array {
+  if (typeof TextEncoder !== 'undefined') {
+    return new TextEncoder().encode(value);
+  }
+
+  const escaped = unescape(encodeURIComponent(value));
+  const bytes = new Uint8Array(escaped.length);
+  for (let i = 0; i < escaped.length; i += 1) {
+    bytes[i] = escaped.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function decodeUtf8(bytes: Uint8Array): string {
+  if (typeof TextDecoder !== 'undefined') {
+    return new TextDecoder().decode(bytes);
+  }
+
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return decodeURIComponent(escape(binary));
+}
+
+function canUseCompressionStream(): boolean {
+  return (
+    typeof CompressionStream !== 'undefined' &&
+    typeof Blob !== 'undefined' &&
+    typeof Response !== 'undefined' &&
+    typeof new Blob().stream === 'function'
+  );
+}
+
+function canUseDecompressionStream(): boolean {
+  return (
+    typeof DecompressionStream !== 'undefined' &&
+    typeof Blob !== 'undefined' &&
+    typeof Response !== 'undefined' &&
+    typeof new Blob().stream === 'function'
+  );
+}
+
+function isCompressedSaveEnvelope(value: unknown): value is CompressedSaveEnvelope {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<CompressedSaveEnvelope>;
+  return (
+    candidate.encoding === COMPRESSED_SAVE_ENCODING &&
+    typeof candidate.version === 'string' &&
+    typeof candidate.timestamp === 'number' &&
+    typeof candidate.worldId === 'string' &&
+    typeof candidate.worldName === 'string' &&
+    typeof candidate.payload === 'string'
+  );
+}

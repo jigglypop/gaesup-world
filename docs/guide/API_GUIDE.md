@@ -17,6 +17,18 @@ import { GaesupAdmin, useAuthStore } from 'gaesup-world/admin';
 import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
 ```
 
+현재 관리되는 주요 subpath는 아래와 같습니다.
+
+- `gaesup-world`: 메인 런타임, 월드, 도메인 API
+- `gaesup-world/admin`: 관리자 래퍼 UI
+- `gaesup-world/blueprints`: 블루프린트 런타임 API
+- `gaesup-world/blueprints/editor`: 블루프린트 편집 UI
+- `gaesup-world/runtime`: 런타임 중심 API
+- `gaesup-world/assets`: 에셋 API
+- `gaesup-world/network`: 네트워크 API
+- `gaesup-world/plugins`: 플러그인 API
+- `gaesup-world/style.css`: 기본 스타일
+
 ## 기본 월드
 
 `GaesupWorld`는 월드 설정을 store에 주입하는 루트 컴포넌트입니다. 실제 3D 렌더링은 React Three Fiber의 `Canvas` 안에서 구성합니다.
@@ -97,12 +109,31 @@ import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
 - 카메라: `Camera`, `CameraPresets`, `CameraDebugPanel`
 - 모션: `MotionController`, `MotionUI`, `usePlayerPosition`, `useStateSystem`
 - 건설: `BuildingUI`, `BuildingController`, `useBuildingEditor`, `useBuildingStore`
-- 저장: `SaveSystem`, `getSaveSystem`, `createDefaultSaveSystem`
+- 저장: `SaveSystem`, `getSaveSystem`, `createDefaultSaveSystem`, `DuplicateSaveDomainBindingError`
 - 생활형 도메인: `useInventoryStore`, `InventoryUI`, `HotbarUI`, `useGameTime`, `WeatherEffect`, `QuestLogUI`
+
+## 저장 API 메모
+
+`SaveSystem`은 domain key 기준으로 serialize/hydrate binding을 등록합니다. 같은 key를 두 번 등록하면 `DuplicateSaveDomainBindingError`가 발생합니다. 이 동작은 여러 플러그인이나 런타임이 같은 저장 도메인을 조용히 덮어쓰는 문제를 막기 위한 보호 장치입니다.
+
+```ts
+import { SaveSystem } from 'gaesup-world';
+
+const unregister = saveSystem.register({
+  key: 'wallet',
+  serialize: () => ({ coins: 100 }),
+  hydrate: (data) => {
+    // restore wallet state here
+  },
+});
+
+unregister();
+```
 
 ## 함께 볼 문서
 
 - [README](../../README.md)
 - [Building API](../api/BUILDING_API.md)
-- [Camera API](../api/CAMERA_API.md)
-- [Motions API](../api/MOTIONS_API.md)
+- [Blueprint API](../api/BLUEPRINT_API.md)
+- [Rendering API](../api/RENDERING_API.md)
+- [Performance API](../api/PERFORMANCE_API.md)
