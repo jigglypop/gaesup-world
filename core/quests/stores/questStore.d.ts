@@ -1,0 +1,22 @@
+import type { QuestDef, QuestId, QuestObjective, QuestProgress, QuestSerialized, QuestStatus } from '../types';
+type State = {
+    state: Record<QuestId, QuestProgress>;
+    start: (id: QuestId) => boolean;
+    abandon: (id: QuestId) => void;
+    complete: (id: QuestId) => boolean;
+    notifyTalk: (npcId: string) => void;
+    notifyDeliver: (npcId: string, itemId: string, count?: number) => boolean;
+    notifyVisit: (tag: string) => void;
+    notifyFlag: (key: string, value: string | number | boolean) => void;
+    recheck: (id: QuestId) => void;
+    statusOf: (id: QuestId) => QuestStatus;
+    progressOf: (id: QuestId) => QuestProgress | null;
+    active: () => QuestProgress[];
+    completed: () => QuestProgress[];
+    isObjectiveComplete: (def: QuestDef, p: QuestProgress, obj: QuestObjective) => boolean;
+    isAllObjectivesComplete: (id: QuestId) => boolean;
+    serialize: () => QuestSerialized;
+    hydrate: (data: QuestSerialized | null | undefined) => void;
+};
+export declare const useQuestStore: import("zustand").UseBoundStore<import("zustand").StoreApi<State>>;
+export {};

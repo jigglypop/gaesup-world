@@ -1,0 +1,10 @@
+import { DecoratorTarget, PropertyDescriptorExtended } from './types';
+export declare function Profile(label?: string): (target: DecoratorTarget, propertyKey: string, descriptor: PropertyDescriptorExtended) => PropertyDescriptorExtended;
+export declare function Log(level?: 'log' | 'info' | 'warn' | 'error'): (target: DecoratorTarget, propertyKey: string, descriptor: PropertyDescriptorExtended) => PropertyDescriptorExtended;
+export declare function Delay(milliseconds: number): (target: DecoratorTarget, propertyKey: string, descriptor: PropertyDescriptorExtended) => PropertyDescriptorExtended;
+export declare function RateLimit(maxCalls: number, windowMs: number): (target: DecoratorTarget, propertyKey: string, descriptor: PropertyDescriptorExtended) => PropertyDescriptorExtended;
+export declare function Hook(before?: () => void, after?: () => void): (target: DecoratorTarget, propertyKey: string, descriptor: PropertyDescriptorExtended) => PropertyDescriptorExtended;
+export declare function MemoryProfile(label?: string): (target: DecoratorTarget, propertyKey: string, descriptor: PropertyDescriptorExtended) => PropertyDescriptorExtended;
+export declare function MonitorMemory(threshold?: number): (target: DecoratorTarget, propertyKey: string, descriptor: PropertyDescriptorExtended) => PropertyDescriptorExtended;
+export declare function TrackCalls(): (target: DecoratorTarget, propertyKey: string, descriptor: PropertyDescriptorExtended) => PropertyDescriptorExtended;
+export declare function Timeout(ms: number): (target: DecoratorTarget, propertyKey: string, descriptor: PropertyDescriptorExtended) => PropertyDescriptorExtended;

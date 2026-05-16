@@ -1,0 +1,24 @@
+import type { AudioSerialized, BgmTrack, SfxDef } from '../types';
+type State = {
+    masterMuted: boolean;
+    bgmMuted: boolean;
+    sfxMuted: boolean;
+    masterVolume: number;
+    bgmVolume: number;
+    sfxVolume: number;
+    currentBgmId: string | null;
+    setMaster: (volume: number) => void;
+    setBgm: (volume: number) => void;
+    setSfx: (volume: number) => void;
+    toggleMaster: () => void;
+    toggleBgm: () => void;
+    toggleSfx: () => void;
+    playSfx: (def: SfxDef) => void;
+    playBgm: (track: BgmTrack | null) => void;
+    stopBgm: () => void;
+    apply: () => void;
+    serialize: () => AudioSerialized;
+    hydrate: (data: AudioSerialized | null | undefined) => void;
+};
+export declare const useAudioStore: import("zustand").UseBoundStore<import("zustand").StoreApi<State>>;
+export {};

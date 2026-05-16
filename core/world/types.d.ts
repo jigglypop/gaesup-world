@@ -1,0 +1,1 @@
+export type { WorldObject } from './core/WorldSystem';

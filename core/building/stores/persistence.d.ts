@@ -1,0 +1,23 @@
+import type { TileMeta, WallMeta } from '../model';
+import type { BuildingBlockConfig, BuildingSerializedState, MeshConfig, PlacedObject, TileGroupConfig, WallGroupConfig } from '../types';
+export type BuildingSerializableState = Pick<BuildingHydrationTarget, 'meshes' | 'wallGroups' | 'tileGroups' | 'blocks' | 'objects' | 'showSnow' | 'showFog' | 'fogColor' | 'weatherEffect'>;
+export type BuildingHydrationTarget = {
+    meshes: Map<string, MeshConfig>;
+    wallGroups: Map<string, WallGroupConfig>;
+    tileGroups: Map<string, TileGroupConfig>;
+    blocks: BuildingBlockConfig[];
+    objects: PlacedObject[];
+    tileIndex: Map<number, Set<string>>;
+    tileCells: Map<string, number[]>;
+    tileMeta: Map<string, TileMeta>;
+    wallIndex: Map<number, Set<string>>;
+    wallCells: Map<string, number[]>;
+    wallMeta: Map<string, WallMeta>;
+    initialized: boolean;
+    showSnow: boolean;
+    showFog: boolean;
+    fogColor: string;
+    weatherEffect: BuildingSerializedState['weatherEffect'];
+};
+export declare function serializeBuildingState(state: BuildingSerializableState): BuildingSerializedState;
+export declare function hydrateBuildingState(state: BuildingHydrationTarget, data: Partial<BuildingSerializedState> | null | undefined): void;

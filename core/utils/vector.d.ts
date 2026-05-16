@@ -1,0 +1,18 @@
+import * as THREE from 'three';
+export type n3 = [number, number, number];
+declare function getPooledVector(): THREE.Vector3;
+declare function releaseVector(vector: THREE.Vector3): void;
+export declare function isVectorNonZero(v: THREE.Vector3): boolean;
+export declare function calcNorm(u: THREE.Vector3, v: THREE.Vector3, calcZ: boolean): number;
+export declare const isValidOrZero: (condition: boolean, vector: THREE.Vector3) => THREE.Vector3;
+export declare const isValidOrOne: (condition: boolean, vector: THREE.Vector3) => THREE.Vector3;
+export declare function calcAngleByVector(dir: THREE.Vector3): number;
+export declare const convertN3: (v3: THREE.Vector3 | THREE.Euler | n3) => n3;
+export declare const convertV3: (_n3: THREE.Vector3 | n3) => THREE.Vector3;
+export declare const convertElr: (_n3: THREE.Euler | n3) => THREE.Euler;
+export declare const V3: (x?: number, y?: number, z?: number) => THREE.Vector3;
+export declare const Qt: (x?: number, y?: number, z?: number, w?: number) => THREE.Quaternion;
+export declare const Elr: (x?: number, y?: number, z?: number) => THREE.Euler;
+export declare const V30: () => THREE.Vector3;
+export declare const V31: () => THREE.Vector3;
+export { getPooledVector, releaseVector };

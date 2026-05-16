@@ -1,0 +1,21 @@
+import type { AssetCatalogStatus, AssetKind, AssetQuery, AssetRecord, AssetSlot, AssetSource } from '../types';
+type AssetState = {
+    records: Record<string, AssetRecord>;
+    ids: string[];
+    isLoading: boolean;
+    error: string | null;
+    catalogStatus: AssetCatalogStatus;
+    selectedId: string | null;
+    filter: AssetQuery;
+    setFilter: (filter: AssetQuery) => void;
+    selectAsset: (id: string | null) => void;
+    registerAssets: (assets: AssetRecord[]) => void;
+    loadAssets: (source: AssetSource, query?: AssetQuery) => Promise<void>;
+    getAsset: (id: string) => AssetRecord | undefined;
+    listAssets: (query?: AssetQuery) => AssetRecord[];
+    resetAssets: () => void;
+};
+export declare const useAssetStore: import("zustand").UseBoundStore<import("zustand").StoreApi<AssetState>>;
+export declare const selectAssetsByKind: (kind: AssetKind) => (state: AssetState) => AssetRecord[];
+export declare const selectAssetsBySlot: (slot: AssetSlot) => (state: AssetState) => AssetRecord[];
+export {};

@@ -1,0 +1,30 @@
+import React from 'react';
+import type { NPCAnimation, NPCBehaviorConfig, NPCBrainBlueprint, NPCBrainConfig, NPCInstance, NPCNavigationState, NPCPerceptionConfig, NPCTemplate } from '../../../../npc/types';
+type NPCPanelProps = {
+    layout?: 'default' | 'split' | 'sidebars';
+    npcTemplatesArray: NPCTemplate[];
+    selectedNPCTemplateId: string | null | undefined;
+    setSelectedNPCTemplate: (templateId: string) => void;
+    npcInstancesArray: NPCInstance[];
+    selectedNPCInstanceId: string | null;
+    setSelectedNPCInstance: (instanceId: string) => void;
+    selectedNPCInstance: NPCInstance | undefined;
+    npcAnimationsArray: NPCAnimation[];
+    selectedNPCBrainBlueprint: NPCBrainBlueprint | undefined;
+    npcBrainBlueprintsArray: NPCBrainBlueprint[];
+    hoverPosition: {
+        x: number;
+        y: number;
+        z: number;
+    } | null;
+    updateNPCBehavior: (id: string, updates: Partial<NPCBehaviorConfig | undefined>) => void;
+    setNPCNavigation: (id: string, waypoints: NPCNavigationState['waypoints'], speed?: number) => void;
+    clearNPCNavigation: (id: string) => void;
+    updateNPCInstance: (id: string, updates: Partial<NPCInstance>) => void;
+    updateNPCBrain: (id: string, updates: Partial<NPCBrainConfig>) => void;
+    addNPCBrainBlueprint: (blueprint: NPCBrainBlueprint) => void;
+    updateNPCBrainBlueprint: (id: string, updates: NPCBrainBlueprint) => void;
+    updateNPCPerception: (id: string, updates: Partial<NPCPerceptionConfig>) => void;
+};
+export declare function NPCPanel({ layout, npcTemplatesArray, selectedNPCTemplateId, setSelectedNPCTemplate, npcInstancesArray, selectedNPCInstanceId, setSelectedNPCInstance, selectedNPCInstance, npcAnimationsArray, selectedNPCBrainBlueprint, npcBrainBlueprintsArray, hoverPosition, updateNPCBehavior, setNPCNavigation, clearNPCNavigation, updateNPCInstance, updateNPCBrain, addNPCBrainBlueprint, updateNPCBrainBlueprint, updateNPCPerception, }: NPCPanelProps): React.JSX.Element;
+export {};

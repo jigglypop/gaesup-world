@@ -1,0 +1,20 @@
+import * as THREE from 'three';
+export declare function getToonGradient(steps?: number): THREE.DataTexture;
+export type ToonOptions = {
+    color?: THREE.ColorRepresentation;
+    vertexColors?: boolean;
+    transparent?: boolean;
+    opacity?: number;
+    steps?: number;
+    emissive?: THREE.ColorRepresentation;
+    emissiveIntensity?: number;
+    map?: THREE.Texture | null;
+    alphaMap?: THREE.Texture | null;
+    side?: THREE.Side;
+    depthWrite?: boolean;
+};
+export declare function createToonMaterial(opts?: ToonOptions): THREE.MeshToonMaterial;
+export declare function setDefaultToonMode(enabled: boolean): void;
+export declare function getDefaultToonMode(): boolean;
+export declare function disposeToonGradients(): void;
+export declare function applyToonToScene(root: THREE.Object3D, steps?: number): void;

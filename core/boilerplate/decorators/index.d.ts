@@ -1,0 +1,12 @@
+import 'reflect-metadata';
+import { Constructor } from '../types';
+import { EnableEventLog, DebugLog, PerformanceLog } from './advanced';
+export declare function DomainBridge(domain: string): <T extends Constructor>(target: T) => void;
+export declare function Command(name: string): (target: object, propertyKey: string) => void;
+export { EnableEventLog, DebugLog, PerformanceLog };
+export * from './advanced';
+export * from './bridge';
+export * from './system';
+export * from './monitoring';
+export * from './blueprint';
+export * from './types';

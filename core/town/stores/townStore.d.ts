@@ -1,0 +1,20 @@
+import type { HouseId, HousePlot, Resident, ResidentId, TownSerialized, TownStats } from '../types';
+type State = {
+    houses: Record<HouseId, HousePlot>;
+    residents: Record<ResidentId, Resident>;
+    decorationScore: number;
+    registerHouse: (input: Pick<HousePlot, 'id' | 'position'> & Partial<Omit<HousePlot, 'id' | 'position'>>) => void;
+    unregisterHouse: (id: HouseId) => void;
+    registerResident: (resident: Resident) => void;
+    removeResident: (id: ResidentId) => void;
+    reserveHouse: (houseId: HouseId, residentId: ResidentId, untilDay?: number) => boolean;
+    cancelReservation: (houseId: HouseId) => void;
+    moveIn: (houseId: HouseId, residentId: ResidentId, gameDay: number) => boolean;
+    moveOut: (houseId: HouseId) => boolean;
+    setDecorationScore: (score: number) => void;
+    stats: () => TownStats;
+    serialize: () => TownSerialized;
+    hydrate: (data: TownSerialized | null | undefined) => void;
+};
+export declare const useTownStore: import("zustand").UseBoundStore<import("zustand").StoreApi<State>>;
+export {};

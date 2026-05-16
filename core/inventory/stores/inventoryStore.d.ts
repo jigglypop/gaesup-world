@@ -1,0 +1,22 @@
+import type { ItemId } from '../../items/types';
+import { type InventorySerialized, type Slot } from '../types';
+type InventoryState = {
+    size: number;
+    slots: Slot[];
+    hotbar: number[];
+    equippedHotbar: number;
+    add: (itemId: ItemId, count?: number) => number;
+    remove: (slotIndex: number, count?: number) => boolean;
+    removeById: (itemId: ItemId, count?: number) => number;
+    move: (from: number, to: number) => void;
+    clear: () => void;
+    setEquippedHotbar: (index: number) => void;
+    getEquipped: () => Slot;
+    getHotbarSlot: (hotbarIndex: number) => Slot;
+    countOf: (itemId: ItemId) => number;
+    has: (itemId: ItemId, count?: number) => boolean;
+    serialize: () => InventorySerialized;
+    hydrate: (data: InventorySerialized | null | undefined) => void;
+};
+export declare const useInventoryStore: import("zustand").UseBoundStore<import("zustand").StoreApi<InventoryState>>;
+export {};

@@ -1,0 +1,18 @@
+import type { AssetRecord } from '../../../../assets';
+import { createBuildingScopeId } from '../../../../building/id';
+import type { MeshConfig } from '../../../../building/types';
+import type { NPCBrainBlueprint, NPCBrainBlueprintNode, NPCBehaviorConfig } from '../../../../npc/types';
+export declare const isBuildingMaterialAsset: (asset: AssetRecord) => boolean;
+export declare const createPlacementAssetScopeId: typeof createBuildingScopeId;
+export declare function createScopedColorMeshConfig(id: string, color: string, base?: MeshConfig): MeshConfig;
+export declare function createNPCBlueprintNodeId(type: string): string;
+export declare function createNPCConditionNode(kind: 'navigationIdle' | 'questStatus' | 'friendshipAtLeast'): NPCBrainBlueprintNode;
+export declare function createNPCActionNode(kind: 'wander' | 'speak', behavior: NPCBehaviorConfig | undefined): NPCBrainBlueprintNode;
+export declare function getNPCBlueprintNodeTitle(node: NPCBrainBlueprintNode): string;
+export declare function getNPCBlueprintNodeDescription(node: NPCBrainBlueprintNode): string;
+export declare function appendNPCBlueprintNode(blueprint: NPCBrainBlueprint, node: NPCBrainBlueprintNode): NPCBrainBlueprint;
+export declare function appendNPCConditionNodeWithBranchTemplate(blueprint: NPCBrainBlueprint, conditionNode: NPCBrainBlueprintNode, behavior?: NPCBehaviorConfig): NPCBrainBlueprint;
+export declare function removeNPCBlueprintNode(blueprint: NPCBrainBlueprint, nodeId: string): NPCBrainBlueprint;
+export declare function resetNPCBlueprint(blueprint: NPCBrainBlueprint): NPCBrainBlueprint;
+export declare function cloneNPCBlueprintForInstance(blueprint: NPCBrainBlueprint, instanceId: string): NPCBrainBlueprint;
+export declare function getNPCBlueprintOutgoingLabel(blueprint: NPCBrainBlueprint, nodeId: string): string;

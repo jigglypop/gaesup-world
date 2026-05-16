@@ -1,0 +1,24 @@
+import { type BuildingRenderSnapshot } from './core';
+export declare const DRAW_CLUSTER_TILE = 0;
+export declare const DRAW_CLUSTER_GRASS = 1;
+export declare const DRAW_CLUSTER_WATER = 2;
+export declare const DRAW_CLUSTER_SAND = 3;
+export declare const DRAW_CLUSTER_SNOWFIELD = 4;
+export declare const DRAW_CLUSTER_WALL = 5;
+export declare const DRAW_CLUSTER_SAKURA = 6;
+export declare const DRAW_CLUSTER_FLAG = 7;
+export declare const DRAW_CLUSTER_FIRE = 8;
+export declare const DRAW_CLUSTER_BILLBOARD = 9;
+export declare const DRAW_CLUSTER_BLOCK = 10;
+export declare const DRAW_CLUSTER_MODEL = 11;
+export declare const DRAW_CLUSTER_COUNT = 12;
+export type BuildingGpuCullingResult = {
+    version: number;
+    tileIds: Set<string>;
+    wallIds: Set<string>;
+    blockIds: Set<string>;
+    objectIds: Set<string>;
+    clusterCounts: Uint32Array;
+};
+export declare function getDrawClusterForSnapshotEntry(snapshot: BuildingRenderSnapshot, index: number): number;
+export declare function parseBuildingGpuVisibilityFlags(snapshot: BuildingRenderSnapshot, flags: Uint32Array): BuildingGpuCullingResult;

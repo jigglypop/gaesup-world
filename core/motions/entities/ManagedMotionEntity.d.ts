@@ -1,0 +1,35 @@
+import { RapierRigidBody } from '@react-three/rapier';
+import * as THREE from 'three';
+import { MotionBridge } from '../bridge/MotionBridge';
+import { MotionSnapshot, MotionConfig } from '../bridge/types';
+import { MotionType } from '../core/system/types';
+export declare class ManagedMotionEntity {
+    private readonly id;
+    private readonly bridge;
+    private readonly motionType;
+    private rigidBody;
+    private targetPosition;
+    private isAutomated;
+    private unsubscribe;
+    private latestSnapshot;
+    private tempDirection;
+    constructor(id: string, motionType: MotionType, bridge?: MotionBridge | null);
+    initialize(): void;
+    setRigidBody(rigidBody: RapierRigidBody): void;
+    private execute;
+    move(movement: THREE.Vector3): void;
+    jump(): void;
+    stop(): void;
+    turn(direction: number): void;
+    reset(): void;
+    setConfig(config: MotionConfig): void;
+    enableAutomation(targetPosition: THREE.Vector3): void;
+    disableAutomation(): void;
+    private handleAutomatedMovement;
+    getMotionType(): MotionType;
+    getSnapshot(): MotionSnapshot | null;
+    isGrounded(): boolean;
+    isMoving(): boolean;
+    getSpeed(): number;
+    dispose(): void;
+}

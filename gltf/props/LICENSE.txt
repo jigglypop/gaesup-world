@@ -1,0 +1,70 @@
+Default building prop GLB assets
+
+All listed source pages report Public Domain (CC0) on Poly Pizza.
+License: https://creativecommons.org/publicdomain/zero/1.0/
+
+- door.glb
+  Title: Door
+  Author: Quaternius
+  Source: https://poly.pizza/m/xuFNaNLzfE
+  License: Public Domain (CC0)
+
+- window.glb
+  Title: Window
+  Author: Quaternius
+  Source: https://poly.pizza/m/QkcvcLgHcd
+  License: Public Domain (CC0)
+
+- fence.glb
+  Title: Fence
+  Author: Quaternius
+  Source: https://poly.pizza/m/JfSPlkPhRD
+  License: Public Domain (CC0)
+
+- lamp.glb
+  Title: Lamp
+  Author: Quaternius
+  Source: https://poly.pizza/m/RsWYHKkDhD
+  License: Public Domain (CC0)
+
+- chair.glb
+  Title: Chair
+  Author: Quaternius
+  Source: https://poly.pizza/m/9kIjuRFMFw
+  License: Public Domain (CC0)
+
+- table.glb
+  Title: Table
+  Author: Quaternius
+  Source: https://poly.pizza/m/yYEEJzKxb4
+  License: Public Domain (CC0)
+
+- bed.glb
+  Title: Bed Double
+  Author: Quaternius
+  Source: https://poly.pizza/m/BuRay4fVFr
+  License: Public Domain (CC0)
+
+- storage.glb
+  Title: Shelf Large
+  Author: Quaternius
+  Source: https://poly.pizza/m/3FmjkLClVE
+  License: Public Domain (CC0)
+
+- mailbox.glb
+  Title: Mailbox
+  Author: CreativeTrio
+  Source: https://poly.pizza/m/2olZ0G8iur
+  License: Public Domain (CC0)
+
+- crafting.glb
+  Title: Desk
+  Author: Quaternius
+  Source: https://poly.pizza/m/V86Go2rlnq
+  License: Public Domain (CC0)
+
+- shop-stall.glb
+  Title: Market Stand
+  Author: Quaternius
+  Source: https://poly.pizza/m/hts7l0NZxW
+  License: Public Domain (CC0)

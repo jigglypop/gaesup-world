@@ -1,0 +1,27 @@
+export type GaesupCoreWasmExports = {
+    readonly memory: WebAssembly.Memory;
+    readonly alloc_f32: (len: number) => number;
+    readonly dealloc_f32: (ptr: number, len: number) => void;
+    readonly alloc_u8: (len: number) => number;
+    readonly dealloc_u8: (ptr: number, len: number) => void;
+    readonly alloc_u32: (len: number) => number;
+    readonly dealloc_u32: (ptr: number, len: number) => void;
+    readonly fill_grass_data: (instances: number, width: number, seed: number, offsets_ptr: number, orientations_ptr: number, stretches_ptr: number, half_sin_ptr: number, half_cos_ptr: number) => void;
+    readonly fill_terrain_y: (count: number, xs_ptr: number, zs_ptr: number, seed: number, out_ptr: number) => void;
+    readonly fill_instance_matrices: (count: number, positions_ptr: number, rotations_ptr: number, scales_ptr: number, out_ptr: number) => void;
+    readonly fill_wall_matrices: (count: number, positions_ptr: number, rotations_ptr: number, out_ptr: number) => void;
+    readonly batch_smooth_damp: (count: number, current_ptr: number, target_ptr: number, velocity_ptr: number, smooth_time: number, max_speed: number, dt: number) => void;
+    readonly batch_quat_slerp: (count: number, current_ptr: number, target_ptr: number, alpha: number) => void;
+    readonly batch_sfe_weights: (count: number, positions_ptr: number, camera_x: number, camera_y: number, camera_z: number, near: number, far: number, strength: number, out_ptr: number) => void;
+    readonly spatial_query_nearby: (count: number, positions_ptr: number, query_x: number, query_y: number, query_z: number, radius: number, out_indices_ptr: number, out_capacity: number) => number;
+    readonly spatial_grid_query: (count: number, positions_ptr: number, cell_size: number, query_x: number, query_y: number, query_z: number, radius: number, out_indices_ptr: number, out_capacity: number) => number;
+    readonly update_snow_particles: (count: number, positions_ptr: number, velocities_ptr: number, bounds_ptr: number, wind_x: number, wind_y: number, wind_z: number, gravity: number, damping: number, dt: number) => void;
+    readonly update_fire_particles: (count: number, positions_ptr: number, lifetimes_ptr: number, out_alphas_ptr: number, origin_x: number, origin_y: number, origin_z: number, spread: number, rise_speed: number, turbulence: number, dt: number, seed: number) => void;
+    readonly astar_find_path: (grid_ptr: number, grid_width: number, grid_height: number, start_x: number, start_z: number, goal_x: number, goal_z: number, out_path_ptr: number, out_capacity: number) => number;
+    readonly astar_find_path_weighted: (cost_ptr: number, grid_width: number, grid_height: number, start_x: number, start_z: number, goal_x: number, goal_z: number, out_path_ptr: number, out_capacity: number) => number;
+};
+export declare function loadCoreWasm(): Promise<GaesupCoreWasmExports | null>;
+export declare function writeF32(wasm: GaesupCoreWasmExports, data: Float32Array): number;
+export declare function readF32(wasm: GaesupCoreWasmExports, ptr: number, len: number): Float32Array;
+export declare function writeU8(wasm: GaesupCoreWasmExports, data: Uint8Array): number;
+export declare function readU32(wasm: GaesupCoreWasmExports, ptr: number, len: number): Uint32Array;
