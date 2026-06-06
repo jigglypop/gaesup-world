@@ -15,7 +15,8 @@ import {
   useWeatherStore,
   useWeatherTicker,
   type GaesupRuntime,
-} from '../../../src';
+} from 'gaesup-world';
+
 import { dispatchWorldGameplayEvent, loadWorldRuntime } from '../runtime';
 import { WORLD_WEATHER_ENABLED } from './data';
 

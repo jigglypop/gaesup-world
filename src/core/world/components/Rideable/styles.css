@@ -1,3 +1,69 @@
+.rideable-ui-container {
+  position: fixed;
+  left: 50%;
+  bottom: 136px;
+  z-index: 920;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.rideable-message-box {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 12px;
+  min-width: min(360px, calc(100vw - 32px));
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(16, 20, 28, 0.72);
+  color: #f7f8fb;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(14px);
+}
+
+.rideable-message {
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.rideable-key {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font: 700 13px/1 system-ui, sans-serif;
+}
+
+.rideable-stats {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rideable-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.rideable-stat__label {
+  color: rgba(247, 248, 251, 0.58);
+}
+
+.rideable-stat__value {
+  color: #90f0c0;
+  font-weight: 700;
+}
+
 .rideable-ui {
   position: fixed;
   z-index: 900;

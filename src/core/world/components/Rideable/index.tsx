@@ -8,7 +8,19 @@ import { PassiveAirplane } from '../PassiveObjects/Airplane';
 import { PassiveVehicle } from '../PassiveObjects/Vehicle';
 import './styles.css';
 
-export function RideableUI({ states }: RideableUIProps) {
+export type {
+  GameStates,
+  GameStatesType,
+  NearbyRideable,
+  RideableControls,
+  RideableEvents,
+  RideablePropType,
+  RideableState,
+  RideableUIProps,
+} from './types';
+
+export function RideableUI(props: RideableUIProps) {
+  const { states } = props;
   if (!states) {
     return null;
   }
@@ -17,20 +29,74 @@ export function RideableUI({ states }: RideableUIProps) {
     return null;
   }
 
+  return <RideablePrompt {...props} />;
+}
+
+function cx(...classes: Array<string | undefined | false>): string {
+  return classes.filter(Boolean).join(' ');
+}
+
+function RideablePrompt({
+  states,
+  actionKey = 'F',
+  unstyled = false,
+  className,
+  classNames,
+  styles,
+  labels,
+}: RideableUIProps) {
+  const activeRideable = states.nearbyRideable ?? states.currentRideable;
+  if (!activeRideable) return null;
+
   const rideMessage =
-    states.nearbyRideable?.rideMessage ??
-    `Press F to ride ${
-      states.nearbyRideable?.displayName ??
-      states.nearbyRideable?.name ??
+    labels?.ride?.(activeRideable) ??
+    activeRideable.rideMessage ??
+    `Press ${actionKey} to ride ${
+      activeRideable.displayName ??
+      activeRideable.name ??
       'vehicle'
     }`;
-  const exitMessage = states.nearbyRideable?.exitMessage ?? 'Press F to exit';
+  const exitMessage =
+    labels?.exit?.(activeRideable) ??
+    activeRideable.exitMessage ??
+    `Press ${actionKey} to exit`;
+  const message = states.isRiding ? exitMessage : rideMessage;
+  const rootClass = cx(
+    !unstyled && 'rideable-ui-container',
+    classNames?.root,
+    className,
+  );
+  const boxClass = cx(!unstyled && 'rideable-message-box', classNames?.box);
+  const messageClass = cx(!unstyled && 'rideable-message', classNames?.message);
+  const keyClass = cx(!unstyled && 'rideable-key', classNames?.key);
+  const statsClass = cx(!unstyled && 'rideable-stats', classNames?.stats);
+  const statClass = cx(!unstyled && 'rideable-stat', classNames?.stat);
+  const statLabelClass = cx(!unstyled && 'rideable-stat__label', classNames?.statLabel);
+  const statValueClass = cx(!unstyled && 'rideable-stat__value', classNames?.statValue);
 
   return (
-    <div className="rideable-ui-container">
-      <div className="message-box">
-        {states.canRide && <div>{rideMessage}</div>}
-        {states.isRiding && <div>{exitMessage}</div>}
+    <div className={rootClass || undefined} style={styles?.root}>
+      <div className={boxClass || undefined} style={styles?.box}>
+        <kbd className={keyClass || undefined} style={styles?.key}>{actionKey}</kbd>
+        <div className={messageClass || undefined} style={styles?.message}>{message}</div>
+        <div className={statsClass || undefined} style={styles?.stats}>
+          <div className={statClass || undefined} style={styles?.stat}>
+            <span className={statLabelClass || undefined} style={styles?.statLabel}>
+              {labels?.speed ?? 'Speed'}
+            </span>
+            <span className={statValueClass || undefined} style={styles?.statValue}>
+              {activeRideable.maxSpeed}
+            </span>
+          </div>
+          <div className={statClass || undefined} style={styles?.stat}>
+            <span className={statLabelClass || undefined} style={styles?.statLabel}>
+              {labels?.acceleration ?? 'Accel'}
+            </span>
+            <span className={statValueClass || undefined} style={styles?.statValue}>
+              {activeRideable.acceleration}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -77,7 +143,7 @@ export function Rideable(props: RideablePropType) {
           {...(controllerOptions ? { controllerOptions } : {})}
           userData={userData}
           sensor={true}
-          visible={!rideable[props.objectkey]?.isOccupied}
+          visible={rideable[props.objectkey]?.visible !== false && !rideable[props.objectkey]?.isOccupied}
         />
       )}
       {props.objectType === 'airplane' && (
@@ -86,7 +152,7 @@ export function Rideable(props: RideablePropType) {
           {...(controllerOptions ? { controllerOptions } : {})}
           userData={userData}
           sensor={true}
-          visible={!rideable[props.objectkey]?.isOccupied}
+          visible={rideable[props.objectkey]?.visible !== false && !rideable[props.objectkey]?.isOccupied}
         />
       )}
     </>

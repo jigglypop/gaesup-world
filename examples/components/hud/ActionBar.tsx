@@ -4,7 +4,7 @@ import {
   useCatalogStore,
   useMailStore,
   useQuestStore,
-} from '../../../src';
+} from 'gaesup-world';
 
 export type HudActionButton = {
   key: string;

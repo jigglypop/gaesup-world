@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 
-import { Interactable, useDialogStore, useNpcSchedule } from '../../../src';
+import { Interactable, useDialogStore, useNpcSchedule } from 'gaesup-world';
 
 export type NPCBeaconProps = {
   id: string;

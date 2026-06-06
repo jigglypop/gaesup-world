@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 
-import { Interactable, useInventoryStore, getItemRegistry } from '../../../src';
+import { Interactable, useInventoryStore, getItemRegistry } from 'gaesup-world';
 
 export type PickupProps = {
   id?: string;

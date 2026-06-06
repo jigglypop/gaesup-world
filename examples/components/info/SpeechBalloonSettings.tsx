@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { useUIConfigStore } from '../../../src';
+import { useUIConfigStore } from 'gaesup-world';
 
 export const SpeechBalloonSettings = () => {
   const { config, updateSpeechBalloonConfig } = useUIConfigStore();

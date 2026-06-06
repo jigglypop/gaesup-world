@@ -1,6 +1,6 @@
-import { createCatalogPlugin } from '../../../../src/core/catalog';
-import { assertValidGaesupPlugin } from '../../../../src/core/plugins';
-import { createGaesupRuntime } from '../../../../src/core/runtime';
+import { createCatalogPlugin } from 'gaesup-world';
+import { assertValidGaesupPlugin } from 'gaesup-world/plugins';
+import { createGaesupRuntime } from 'gaesup-world/runtime';
 import packageJson from '../package.json';
 import {
   EXAMPLE_COZY_LIFE_CATALOG_EXTENSION_ID,

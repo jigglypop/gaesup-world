@@ -1,4 +1,4 @@
-import { defineGaesupPlugin, type GaesupPlugin } from '../../../src/plugins';
+import { defineGaesupPlugin, type GaesupPlugin } from 'gaesup-world/plugins';
 
 export const EXAMPLE_COZY_LIFE_PACKAGE_PLUGIN_ID = '@gaesup-example/plugin-cozy-life';
 export const EXAMPLE_COZY_LIFE_CATALOG_EXTENSION_ID = 'example.cozy-life.catalog';

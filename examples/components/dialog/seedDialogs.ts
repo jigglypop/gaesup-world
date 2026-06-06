@@ -1,5 +1,5 @@
-import type { DialogTree } from '../../../src';
-import { getDialogRegistry } from '../../../src';
+import type { DialogTree } from 'gaesup-world';
+import { getDialogRegistry } from 'gaesup-world';
 
 const SHOPKEEPER_TREE: DialogTree = {
   id: 'npc.shopkeeper',

@@ -1,9 +1,6 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
-import { OrbitControls } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
-import * as THREE from 'three';
-import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 import { NPCSystem } from '../../../npc/components/NPCSystem';
 import { useBuildingEditor } from '../../hooks/useBuildingEditor';
@@ -34,7 +31,6 @@ export function BuildingController() {
   } = useBuildingEditor();
   
   const editMode = useBuildingStore((s) => s.editMode);
-  const isEditing = editMode !== 'none';
   const setHoverPosition = useBuildingStore((s) => s.setHoverPosition);
   const setWallRotation = useBuildingStore((s) => s.setWallRotation);
   const setTileRotation = useBuildingStore((s) => s.setTileRotation);
@@ -45,16 +41,6 @@ export function BuildingController() {
 
   const downPosRef = useRef({ x: 0, y: 0 });
   const lastPlaceRef = useRef(0);
-
-  // OrbitControls: 좌클릭 비활성, 우클릭으로 회전
-  const configureOrbit = useCallback((controls: OrbitControlsImpl | null) => {
-    if (!controls) return;
-    controls.mouseButtons = {
-      LEFT: -1 as THREE.MOUSE,
-      MIDDLE: THREE.MOUSE.DOLLY,
-      RIGHT: THREE.MOUSE.ROTATE,
-    };
-  }, []);
 
   useEffect(() => {
     if (!initialized) {
@@ -144,17 +130,6 @@ export function BuildingController() {
       <BuildingIndirectDrawDriver />
       <BuildingIndirectArgsUploadDriver />
       <BuildingVisibilityDriver />
-      {isEditing && (
-        <OrbitControls
-          ref={configureOrbit}
-          enablePan
-          enableZoom
-          enableRotate
-          maxPolarAngle={Math.PI / 2.5}
-          minDistance={5}
-          maxDistance={100}
-        />
-      )}
       <BuildingSystem
         onWallClick={handleWallClick}
         onTileClick={handleTileClick}

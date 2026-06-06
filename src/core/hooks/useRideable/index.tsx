@@ -2,7 +2,6 @@ import { useCallback, useEffect } from 'react';
 
 import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
 
-import { useGaesupGltf } from '@/core/motions/hooks/useGaesupGltf';
 import { useGaesupStore } from '@stores/gaesupStore';
 
 import { rideableType } from './types';
@@ -24,7 +23,6 @@ export function useRideable() {
   const setMode = useGaesupStore((state) => state.setMode);
   const setRideable = useGaesupStore((state) => state.setRideable);
   const setUrls = useGaesupStore((state) => state.setUrls);
-  const { getSizesByUrls } = useGaesupGltf();
 
   const toModeType = useCallback(
     (objectType: rideableType['objectType']) =>
@@ -60,11 +58,9 @@ export function useRideable() {
       const rideableItem = rideable[objectkey];
       if (!rideableItem?.position) return;
 
-      const modeType = rideableItem.objectType;
-      const { vehicleUrl, airplaneUrl, characterUrl } = getSizesByUrls({ ...urls });
-      const size = modeType === 'airplane' ? airplaneUrl : vehicleUrl;
-      const mySize = characterUrl;
-      if (!size || !mySize) return;
+      const landingPosition = activeState.position
+        .clone()
+        .add(rideableItem.landingOffset ?? vec3());
 
       updateGameStates({
         canRide: false,
@@ -74,14 +70,15 @@ export function useRideable() {
 
       setRideable(objectkey, {
         ...rideableItem,
+        isOccupied: false,
+        isRiderOn: false,
         visible: true,
-        position: activeState.position.clone(),
+        position: landingPosition,
       });
+      rideableItem.onExit?.(objectkey);
     },
     [
       rideable,
-      getSizesByUrls,
-      urls,
       updateGameStates,
       setRideable,
       activeState.position,
@@ -93,6 +90,7 @@ export function useRideable() {
       const { objectkey, objectType } = gameStates.nearbyRideable;
       const rideableItem = rideable[objectkey];
       if (!rideableItem) return;
+      if (rideableItem.enableRiding === false || rideableItem.isOccupied) return;
       setUrl(rideableItem);
       setMode({ type: toModeType(objectType) });
       updateGameStates({
@@ -103,8 +101,11 @@ export function useRideable() {
       });
       setRideable(objectkey, {
         ...rideableItem,
+        isOccupied: true,
+        isRiderOn: true,
         visible: false,
       });
+      rideableItem.onRide?.(objectkey);
     }
   }, [
     gameStates.canRide,
@@ -132,9 +133,12 @@ export function useRideable() {
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.code !== 'KeyF') return;
+      if (e.repeat) return;
       if (gameStates.canRide && gameStates.nearbyRideable) {
+        e.preventDefault();
         void enterRideable();
       } else if (gameStates.isRiding) {
+        e.preventDefault();
         void exitRideable();
       }
     };
@@ -150,8 +154,9 @@ export function useRideable() {
 
   const initRideable = useCallback(
     (props: rideableType) => {
+      const existing = useGaesupStore.getState().rideable[props.objectkey];
       setRideable(props.objectkey, {
-        ...rideableDefault,
+        ...(!existing ? rideableDefault : {}),
         ...props,
       });
     },
@@ -177,16 +182,18 @@ export function useRideable() {
         (e.other.rigidBodyObject && !e.other.rigidBodyObject.name) ||
         e.other.rigidBody;
       if (isCharacterCollision && !gameStates.isRiding) {
-        if (!props.objectType) return;
+        if (!props.objectType || props.enableRiding === false || props.isOccupied) return;
         updateGameStates({
           nearbyRideable: {
             id: props.objectkey,
             objectkey: props.objectkey,
             objectType: props.objectType,
+            ...(props.position ? { position: props.position.clone() } : {}),
+            ...(props.rotation ? { rotation: props.rotation.clone() } : {}),
             type: 'rideable',
-            maxSpeed: 0,
-            acceleration: 0,
-            deceleration: 0,
+            maxSpeed: props.maxSpeed ?? (props.objectType === 'airplane' ? 38 : 18),
+            acceleration: props.acceleration ?? (props.objectType === 'airplane' ? 14 : 9),
+            deceleration: props.deceleration ?? 8,
             isOccupied: false,
             controls: {
               forward: false,
@@ -195,7 +202,7 @@ export function useRideable() {
               right: false,
               brake: false,
             },
-            name: props.objectType === 'vehicle' ? '차량' : '비행기',
+            name: props.objectType === 'vehicle' ? 'Vehicle' : props.objectType === 'airplane' ? 'Airplane' : 'Rideable',
             ...(props.rideMessage ? { rideMessage: props.rideMessage } : {}),
             ...(props.exitMessage ? { exitMessage: props.exitMessage } : {}),
             ...(props.displayName ? { displayName: props.displayName } : {}),

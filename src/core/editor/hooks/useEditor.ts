@@ -8,8 +8,8 @@ export const useEditor = () => {
   const store = useEditorStore();
   return {
     ...store,
-    selectObject: (id: string) => store.setSelectedObjectIds([id]),
+    selectObject: store.selectObject,
     selectMultiple: (ids: string[]) => store.setSelectedObjectIds(ids),
-    clearSelection: () => store.setSelectedObjectIds([]),
+    clearSelection: store.clearSelection,
   };
 }; 

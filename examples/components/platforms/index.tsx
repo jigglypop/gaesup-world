@@ -1,8 +1,9 @@
 import { RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
+import { MinimapPlatform } from 'gaesup-world';
+
 import { PLATFORMS } from './constants';
-import { MinimapPlatform } from '../../../src';
 
 import './styles.css';
 

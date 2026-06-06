@@ -42,15 +42,15 @@ export function MotionExample() {
       </RigidBody>
 
       <div style={{ position: 'absolute', top: 10, left: 10 }}>
-        <button onClick={handleJump}>Jump</button>
-        <button onClick={() => handleMove(new THREE.Vector3(1, 0, 0))}>Move Right</button>
-        <button onClick={() => handleMove(new THREE.Vector3(-1, 0, 0))}>Move Left</button>
-        <button onClick={() => motion.stop()}>Stop</button>
-        <button onClick={handleAutomation}>Auto Move to (10, 0, 10)</button>
+        <button onClick={handleJump}>점프</button>
+        <button onClick={() => handleMove(new THREE.Vector3(1, 0, 0))}>오른쪽 이동</button>
+        <button onClick={() => handleMove(new THREE.Vector3(-1, 0, 0))}>왼쪽 이동</button>
+        <button onClick={() => motion.stop()}>정지</button>
+        <button onClick={handleAutomation}>자동 이동 (10, 0, 10)</button>
         <div>
-          <p>Grounded: {motion.isGrounded ? 'Yes' : 'No'}</p>
-          <p>Speed: {motion.speed.toFixed(2)}</p>
-          <p>Position: {motion.position ? `${motion.position.x.toFixed(1)}, ${motion.position.y.toFixed(1)}, ${motion.position.z.toFixed(1)}` : 'N/A'}</p>
+          <p>착지: {motion.isGrounded ? '예' : '아니오'}</p>
+          <p>속도: {motion.speed.toFixed(2)}</p>
+          <p>위치: {motion.position ? `${motion.position.x.toFixed(1)}, ${motion.position.y.toFixed(1)}, ${motion.position.z.toFixed(1)}` : '없음'}</p>
         </div>
       </div>
     </>

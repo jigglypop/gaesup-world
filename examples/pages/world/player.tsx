@@ -5,6 +5,7 @@ import * as THREE from 'three';
 
 import {
   GaesupController,
+  resolveCharacterBaseNodeExclusions,
   resolveCharacterParts,
   SpeechBalloon,
   useAssetStore,
@@ -13,13 +14,15 @@ import {
   useGaesupStore,
   usePlayerPosition,
   useStateSystem,
-} from '../../../src';
-import { WARRIOR_BLUEPRINT } from '../../../src/blueprints';
+} from 'gaesup-world';
+import { WARRIOR_BLUEPRINT } from 'gaesup-world/blueprints';
+
 import { CHARACTER_URL } from '../../config/constants';
 
 const DEFAULT_CHARACTER_BLUEPRINT_PARTS = WARRIOR_BLUEPRINT.visuals?.parts ?? [];
 const DEFAULT_CHARACTER_BODY = DEFAULT_CHARACTER_BLUEPRINT_PARTS.find((part) => part.type === 'body');
 export const DEFAULT_CHARACTER_URL = DEFAULT_CHARACTER_BODY?.url ?? CHARACTER_URL;
+const SPEECH_BALLOON_OFFSET = new THREE.Vector3(0, 5, 0);
 const DEFAULT_CHARACTER_PARTS = DEFAULT_CHARACTER_BLUEPRINT_PARTS
   .filter((part) => part.id !== DEFAULT_CHARACTER_BODY?.id)
   .map((part) => ({ id: part.id, slot: part.type, url: part.url, ...(part.color ? { color: part.color } : {}) }));
@@ -27,6 +30,7 @@ const DEFAULT_CHARACTER_PARTS = DEFAULT_CHARACTER_BLUEPRINT_PARTS
 export function Player() {
   const isInBuildingMode = useBuildingStore((s) => s.isInEditMode());
   const mode = useGaesupStore((s) => s.mode);
+  const appearance = useCharacterStore((s) => s.appearance);
   const outfits = useCharacterStore((s) => s.outfits);
   const assetRecords = useAssetStore((s) => s.records);
   const { gameStates } = useStateSystem();
@@ -38,6 +42,10 @@ export function Player() {
     }),
     [assetRecords, outfits],
   );
+  const excludeBaseNodes = useMemo(
+    () => resolveCharacterBaseNodeExclusions(parts),
+    [parts],
+  );
 
   if (isInBuildingMode || gameStates?.isRiding) return null;
 
@@ -48,6 +56,8 @@ export function Player() {
       rigidBodyProps={{}}
       colliderSize={{ height: 1.8, radius: 0.34 }}
       parts={parts}
+      baseColor={appearance.colors.body}
+      excludeBaseNodes={excludeBaseNodes}
       rotation={euler({ x: 0, y: Math.PI, z: 0 })}
     />
   );
@@ -71,7 +81,7 @@ export function CharacterSpeechBalloon() {
     <SpeechBalloon
       text="안녕"
       position={position}
-      offset={new THREE.Vector3(0, 5, 0)}
+      offset={SPEECH_BALLOON_OFFSET}
       visible
     />
   );

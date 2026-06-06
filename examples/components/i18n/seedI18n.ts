@@ -1,4 +1,4 @@
-import { useI18nStore } from '../../../src';
+import { useI18nStore } from 'gaesup-world';
 
 let registered = false;
 

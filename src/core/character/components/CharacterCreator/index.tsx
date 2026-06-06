@@ -23,17 +23,17 @@ export type CharacterCreatorProps = {
 };
 
 const COLOR_KEYS: { key: keyof AppearanceColors; label: string }[] = [
-  { key: 'body',   label: '피부' },
-  { key: 'hair',   label: '머리' },
-  { key: 'hat',    label: '모자' },
-  { key: 'top',    label: '상의' },
+  { key: 'body', label: '피부' },
+  { key: 'hair', label: '머리' },
+  { key: 'hat', label: '모자' },
+  { key: 'top', label: '상의' },
   { key: 'bottom', label: '하의' },
-  { key: 'shoes',  label: '신발' },
+  { key: 'shoes', label: '신발' },
 ];
 
 const HAIR_OPTIONS: HairStyle[] = ['short', 'long', 'cap', 'bun', 'spiky'];
 const FACE_OPTIONS: FaceStyle[] = ['default', 'smile', 'wink', 'sleepy', 'surprised'];
-const SLOTS: OutfitSlot[] = ['hat', 'top', 'bottom', 'shoes', 'face', 'weapon', 'accessory'];
+const SLOTS: OutfitSlot[] = ['hat', 'top', 'bottom', 'shoes', 'face', 'glasses', 'weapon', 'accessory'];
 
 const matchesSlot = (asset: AssetRecord, slot: OutfitSlot) => {
   if (slot === 'weapon') return asset.kind === 'weapon' || asset.slot === 'weapon';
@@ -129,12 +129,9 @@ export function CharacterCreator({ toggleKey, open, onClose }: CharacterCreatorP
         }}
       >
         <header style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>캐릭터 만들기</h2>
-          <button
-            onClick={resetAppearance}
-            style={glassBtn}
-          >
-            기본값
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>캐릭터 꾸미기</h2>
+          <button onClick={resetAppearance} style={glassBtn}>
+            초기화
           </button>
           <button onClick={close} style={glassBtn}>닫기</button>
         </header>
@@ -186,11 +183,7 @@ export function CharacterCreator({ toggleKey, open, onClose }: CharacterCreatorP
           <label style={labelStyle}>헤어</label>
           <div style={chipRow}>
             {HAIR_OPTIONS.map((h) => (
-              <button
-                key={h}
-                onClick={() => setHair(h)}
-                style={chipStyle(appearance.hair === h)}
-              >
+              <button key={h} onClick={() => setHair(h)} style={chipStyle(appearance.hair === h)}>
                 {HAIR_STYLE_LABEL[h]}
               </button>
             ))}
@@ -201,11 +194,7 @@ export function CharacterCreator({ toggleKey, open, onClose }: CharacterCreatorP
           <label style={labelStyle}>표정</label>
           <div style={chipRow}>
             {FACE_OPTIONS.map((f) => (
-              <button
-                key={f}
-                onClick={() => setFace(f)}
-                style={chipStyle(appearance.face === f)}
-              >
+              <button key={f} onClick={() => setFace(f)} style={chipStyle(appearance.face === f)}>
                 {FACE_STYLE_LABEL[f]}
               </button>
             ))}
@@ -214,7 +203,7 @@ export function CharacterCreator({ toggleKey, open, onClose }: CharacterCreatorP
 
         <section>
           <div style={filterHeader}>
-            <label style={{ ...labelStyle, marginBottom: 0 }}>장착 슬롯</label>
+            <label style={{ ...labelStyle, marginBottom: 0 }}>장비 슬롯</label>
             <input
               value={tagFilter}
               onChange={(e) => setTagFilter(e.target.value)}
@@ -236,7 +225,7 @@ export function CharacterCreator({ toggleKey, open, onClose }: CharacterCreatorP
                 <div style={slotHeader}>
                   <span>{OUTFIT_SLOT_LABEL[slot]}</span>
                   <span style={{ color: outfits[slot] ? '#7adf90' : 'rgba(243,244,248,0.45)' }}>
-                    {outfits[slot] ?? '비어있음'}
+                    {outfits[slot] ?? '비어 있음'}
                   </span>
                   <button onClick={() => equipOutfit(slot, null)} style={glassBtn}>
                     비우기

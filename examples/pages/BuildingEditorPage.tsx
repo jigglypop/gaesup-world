@@ -2,8 +2,9 @@ import React, { useEffect } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
+import { useBuildingStore } from 'gaesup-world';
+
 import { WorldPage } from './World';
-import { useBuildingStore } from '../../src';
 import { BuildingExample } from '../components/building';
 
 export function BuildingEditorPage() {

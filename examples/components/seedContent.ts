@@ -3,7 +3,7 @@ import {
   getRecipeRegistry,
   type QuestDef,
   type RecipeDef,
-} from '../../src';
+} from 'gaesup-world';
 
 export const SEED_QUESTS: QuestDef[] = [
   {

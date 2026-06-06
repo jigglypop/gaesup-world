@@ -62,6 +62,24 @@ describe('PluginRegistry', () => {
     expect(registry.status('building')).toBe('ready');
   });
 
+  it('shares an in-flight setup task instead of treating concurrent setup as a cycle', async () => {
+    const calls: string[] = [];
+    const registry = createPluginRegistry();
+    registry.register(plugin('building', async () => {
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
+      calls.push('building');
+    }));
+
+    await Promise.all([
+      registry.setup('building'),
+      registry.setup('building'),
+      registry.setupAll(),
+    ]);
+
+    expect(calls).toEqual(['building']);
+    expect(registry.status('building')).toBe('ready');
+  });
+
   it('validates dependency version ranges before setup', async () => {
     const calls: string[] = [];
     const registry = createPluginRegistry();

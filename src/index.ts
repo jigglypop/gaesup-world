@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import './core/initializeBridges';
 
 export * from './core/editor';
+export * from './core';
 export {
   GaesupRuntimeProvider,
   createGaesupRuntime,
@@ -24,10 +25,13 @@ export type {
 export {
   NPCInstance,
   compileNPCBrainBlueprint,
+  configureReinforcementAdapter,
   createNPCPlugin,
   createNPCObservation,
+  getReinforcementAdapterConfig,
   hydrateNPCState,
   npcPlugin,
+  registerDefaultReinforcementAdapter,
   registerNPCBrainAdapter,
   registerNPCBrainBlueprint,
   resolveNPCBrainDecision,
@@ -42,6 +46,7 @@ export type {
   NPCObservation,
   NPCPluginOptions,
   NPCSerializedState,
+  ReinforcementAdapterConfig,
 } from './core/npc';
 export {
   GaesupWorld,
@@ -275,6 +280,7 @@ export {
   loadContentBundleFromManifest,
   validateContentBundle,
   validateContentBundleManifest,
+  resolveCharacterBaseNodeExclusions,
   // Effects
   Footprints,
   // i18n

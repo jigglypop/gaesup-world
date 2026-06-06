@@ -4,18 +4,6 @@ import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 
 import {
-  createWorldRuntime,
-  deleteWorldGameplayEventBlueprint,
-  dispatchWorldGameplayEvent,
-  getWorldGameplayBlueprints,
-  registerWorldGameplayEventBlueprint,
-} from './runtime';
-import { WorldPageProps } from './types';
-import { DEFAULT_TOON_MODE } from './world/data';
-import { DEFAULT_CHARACTER_URL, CharacterSpeechBalloon, Player } from './world/player';
-import { Ground, Lighting, Scenery } from './world/scene';
-import { WorldSystems } from './world/useWorldSystems';
-import {
   BuildingController,
   CatalogUI,
   CharacterCreator,
@@ -42,15 +30,29 @@ import {
   WeatherEffect,
   useBuildingStore,
   usePerfStore,
-} from '../../src';
-import { GrassDriver } from '../../src/core/building';
+} from 'gaesup-world';
+import { GrassDriver } from 'gaesup-world/building';
 import {
   Editor,
   GameplayEventPanel,
   StudioPanel,
   createEditorShell,
   type EditorShellOptions,
-} from '../../src/editor';
+} from 'gaesup-world/editor';
+
+import {
+  createWorldRuntime,
+  deleteWorldGameplayEventBlueprint,
+  dispatchWorldGameplayEvent,
+  getWorldGameplayBlueprints,
+  registerWorldGameplayEventBlueprint,
+} from './runtime';
+import { WorldPageProps } from './types';
+import { DEFAULT_TOON_MODE } from './world/data';
+import { WorldFocusModal, type WorldFocusInfo } from './world/focus';
+import { DEFAULT_CHARACTER_URL, CharacterSpeechBalloon, Player } from './world/player';
+import { Ground, Lighting, Scenery } from './world/scene';
+import { WorldSystems } from './world/useWorldSystems';
 import { HudShell } from '../components/hud/HudShell';
 import { AIRPLANE_URL, EXAMPLE_CONFIG, S3, VEHICLE_URL } from '../config/constants';
 import '../style.css';
@@ -81,6 +83,7 @@ export const WorldPage = ({
   const fogColor = useBuildingStore((s) => s.fogColor);
   const weatherEffect = useBuildingStore((s) => s.weatherEffect);
   const [gameplayBlueprints, setGameplayBlueprints] = useState(() => getWorldGameplayBlueprints());
+  const [focusedFeature, setFocusedFeature] = useState<WorldFocusInfo | null>(null);
   const worldMode = showEditor
     ? { type: 'character' as const, controller: 'clicker' as const, control: 'topDown' as const }
     : { type: 'character' as const, controller: 'keyboard' as const, control: 'thirdPerson' as const };
@@ -107,6 +110,12 @@ export const WorldPage = ({
       };
   const handleRuntimeReady = useCallback(() => {
     setRuntimeRevision((revision) => revision + 1);
+  }, []);
+  const handleFeatureFocus = useCallback((focus: WorldFocusInfo) => {
+    setFocusedFeature(focus);
+  }, []);
+  const handleFeatureFocusClose = useCallback(() => {
+    setFocusedFeature(null);
   }, []);
   const editorShell = useMemo(() => {
     const auxiliaryPanels = includeEditorAuxPanels
@@ -186,7 +195,7 @@ export const WorldPage = ({
               <Physics debug interpolate>
                 {!showEditor && <Player />}
                 <Ground />
-                <Scenery />
+                <Scenery onFocus={!showEditor ? handleFeatureFocus : undefined} />
                 {!showEditor && <Clicker />}
                 {!showEditor && <GroundClicker />}
                 <BuildingController />
@@ -209,6 +218,7 @@ export const WorldPage = ({
             <ToastHost position="top-right" />
 
             <HudShell showEnvironmentControls={!showEditor} compact={compactHud} />
+            {!showEditor && <WorldFocusModal focus={focusedFeature} onClose={handleFeatureFocusClose} />}
 
             <InteractionPrompt enabled={!showEditor} />
             <DialogBox />

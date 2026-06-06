@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 
+import { useBuildingStore } from 'gaesup-world';
+import { BuildingPanel } from 'gaesup-world/editor';
+
 import { WorldPage } from './World';
-import { useBuildingStore } from '../../src';
-import { BuildingPanel } from '../../src/editor';
 import './styles/NPCEditorPage.css';
 
 export function NPCEditorPage() {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import * as THREE from 'three';
 
@@ -12,9 +12,11 @@ import {
 } from '../../../navigation/ClickNavigationRoute';
 import { useGaesupStore } from '../../../stores/gaesupStore';
 
+const EMPTY_MOUSE_TARGET = new THREE.Vector3();
+
 export function Clicker() {
   const automation = useGaesupStore((state) => state.automation);
-  const { position: playerPosition } = usePlayerPosition();
+  const { position: playerPosition } = usePlayerPosition({ updateInterval: 50 });
   const { mouse } = useInteractionSystem();
   const [navigationPoints, setNavigationPoints] = useState(() => [...getClickNavigationRoute()]);
 
@@ -23,7 +25,7 @@ export function Clicker() {
   }), []);
 
   // Use 3D target position from InteractionSystem
-  const mouseTarget = mouse?.target || new THREE.Vector3();
+  const mouseTarget = mouse?.target || EMPTY_MOUSE_TARGET;
   const isActive = mouse?.isActive || false;
   const queue = automation?.queue || { actions: [], currentIndex: 0 };
   const actions = queue.actions || [];
@@ -34,14 +36,18 @@ export function Clicker() {
   const hasReachedTarget = distanceToTarget < 1.0;
   const shouldShowMarker = isActive && !hasReachedTarget;
   
-  const queuePoints = actions
-    .map((action) => {
-      if (action.type === 'move' && action.target) {
-        return new THREE.Vector3(action.target.x, action.target.y, action.target.z);
-      }
-      return null;
-    })
-    .filter((point): point is THREE.Vector3 => point !== null);
+  const queuePoints = useMemo(
+    () =>
+      actions
+        .map((action) => {
+          if (action.type === 'move' && action.target) {
+            return new THREE.Vector3(action.target.x, action.target.y, action.target.z);
+          }
+          return null;
+        })
+        .filter((point): point is THREE.Vector3 => point !== null),
+    [actions],
+  );
 
   // Start from player position
   const routedPoints = navigationPoints.length > 0 ? navigationPoints : [mouseTarget];

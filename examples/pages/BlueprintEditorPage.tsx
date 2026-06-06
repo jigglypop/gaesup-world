@@ -3,7 +3,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 
-import { BlueprintEditor } from '../../src/blueprints/editor';
+import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
 import './styles/BlueprintEditorPage.css';
 
 export function BlueprintEditorPage() {

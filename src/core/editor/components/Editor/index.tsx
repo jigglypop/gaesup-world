@@ -46,6 +46,32 @@ export const Editor: FC<EditorProps> = ({
   className = '', 
   style = {},
   shell,
+  sceneDocument,
+  selectedObjectId,
+  selectedObjectIds,
+  hoveredObjectId,
+  onSelectSceneObject,
+  onHoverSceneObject,
+  onUpdateSceneObject,
+  onAddSceneComponent,
+  onRemoveSceneComponent,
+  projectScenes,
+  projectPrefabs,
+  selectedProjectItemId,
+  onSelectProjectItem,
+  playMode,
+  onEnterPlayMode,
+  onExitPlayMode,
+  onPausePlayMode,
+  onResumePlayMode,
+  shortcuts,
+  shortcutsEnabled,
+  commandPaletteItems,
+  commandPaletteEnabled,
+  saveStatus,
+  onSave,
+  onAutosave,
+  onToggleAutosave,
 }) => {
   const sessionSnapshotRef = useRef<EditorSessionSnapshot | null>(null);
 
@@ -92,6 +118,32 @@ export const Editor: FC<EditorProps> = ({
         {...(shell?.panelOrder ? { panelOrder: shell.panelOrder } : {})}
         {...(shell?.panelDefaults ? { panelDefaults: shell.panelDefaults } : {})}
         {...(shell?.validate ? { validateBundle: shell.validate } : {})}
+        {...(sceneDocument ? { sceneDocument } : {})}
+        {...(selectedObjectId ? { selectedObjectId } : {})}
+        {...(selectedObjectIds ? { selectedObjectIds } : {})}
+        {...(hoveredObjectId ? { hoveredObjectId } : {})}
+        {...(onSelectSceneObject ? { onSelectSceneObject } : {})}
+        {...(onHoverSceneObject ? { onHoverSceneObject } : {})}
+        {...(onUpdateSceneObject ? { onUpdateSceneObject } : {})}
+        {...(onAddSceneComponent ? { onAddSceneComponent } : {})}
+        {...(onRemoveSceneComponent ? { onRemoveSceneComponent } : {})}
+        {...(projectScenes ? { projectScenes } : {})}
+        {...(projectPrefabs ? { projectPrefabs } : {})}
+        {...(selectedProjectItemId ? { selectedProjectItemId } : {})}
+        {...(onSelectProjectItem ? { onSelectProjectItem } : {})}
+        {...(playMode ? { playMode } : {})}
+        {...(onEnterPlayMode ? { onEnterPlayMode } : {})}
+        {...(onExitPlayMode ? { onExitPlayMode } : {})}
+        {...(onPausePlayMode ? { onPausePlayMode } : {})}
+        {...(onResumePlayMode ? { onResumePlayMode } : {})}
+        {...(shortcuts ? { shortcuts } : {})}
+        {...(typeof shortcutsEnabled === 'boolean' ? { shortcutsEnabled } : {})}
+        {...(commandPaletteItems ? { commandPaletteItems } : {})}
+        {...(typeof commandPaletteEnabled === 'boolean' ? { commandPaletteEnabled } : {})}
+        {...(saveStatus ? { saveStatus } : {})}
+        {...(onSave ? { onSave } : {})}
+        {...(onAutosave ? { onAutosave } : {})}
+        {...(onToggleAutosave ? { onToggleAutosave } : {})}
       >
         {children}
       </EditorLayout>

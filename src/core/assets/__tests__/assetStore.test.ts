@@ -1,5 +1,11 @@
+import * as fs from 'fs';
+import * as path from 'path';
+
 import type { AssetSource } from '../types';
+import { SEED_ASSETS } from '../data/seedAssets';
 import { useAssetStore } from '../stores/assetStore';
+
+const ROOT = path.resolve(__dirname, '../../../..');
 
 const mockSource = (assets: Awaited<ReturnType<AssetSource['listAssets']>>): AssetSource => ({
   listAssets: jest.fn().mockResolvedValue(assets),
@@ -65,5 +71,19 @@ describe('assetStore', () => {
 
     expect(store.listAssets({ kind: 'weapon' }).every((asset) => asset.kind === 'weapon')).toBe(true);
     expect(store.listAssets({ slot: 'hat' }).every((asset) => asset.slot === 'hat')).toBe(true);
+  });
+
+  it('registers local generated cloth GLB color variants', () => {
+    const variants = ['warrior-cloth-blue', 'warrior-cloth-green', 'warrior-cloth-red'];
+
+    for (const id of variants) {
+      const asset = SEED_ASSETS.find((item) => item.id === id);
+      expect(asset).toEqual(expect.objectContaining({
+        kind: 'characterPart',
+        slot: 'top',
+      }));
+      expect(asset?.url).toMatch(/^gltf\/ally_cloth_(blue|green|red)\.glb$/);
+      expect(fs.existsSync(path.join(ROOT, 'public', asset?.url ?? 'missing'))).toBe(true);
+    }
   });
 });

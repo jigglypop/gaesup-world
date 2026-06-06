@@ -63,8 +63,11 @@ export type {
 export * from './perf';
 export * from './placement';
 export * from './plugins';
+export * from './project-settings';
+export * from './prefab';
 export * from './runtime';
 export * from './scene';
+export * from './scene-object';
 export { DynamicFog } from './rendering/fog/DynamicFog';
 export type { DynamicFogProps } from './rendering/fog/DynamicFog';
 export { DynamicSky } from './rendering/sky';
@@ -83,6 +86,7 @@ export type { CubeLutData } from './rendering/postprocess/cubeLut';
 
 export {
   EDITOR_PANEL_COMPONENT_KIND,
+  CinematicPanel,
   Editor,
   EditorLayout,
   ResizablePanel,
@@ -95,6 +99,7 @@ export type {
   EditorPanelDefaults,
   EditorShellAction,
   EditorShellPluginPanel,
+  CinematicPanelProps,
   BuildingPanelNPCLayout,
   BuildingPanelNPCPanelContext,
   BuildingPanelNPCPanelRenderer,

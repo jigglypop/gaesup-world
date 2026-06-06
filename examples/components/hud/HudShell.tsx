@@ -1,20 +1,27 @@
-import React, { useState } from 'react';
+import React, { lazy, Suspense, useState } from 'react';
 
-import { createHudActionButtons } from './ActionBar';
 import {
+  LOCALE_LABEL,
   SceneFader,
   useBuildingStore,
   useCatalogStore,
-  useCharacterStore,
+  useLocale,
   useMailStore,
   useQuestStore,
-  useTownStore,
-} from '../../../src';
+  type LocaleId,
+} from 'gaesup-world';
+
+import { createHudActionButtons } from './ActionBar';
 import Info from '../info';
 import { Teleport } from '../teleport';
 
+const PerformancePanel = lazy(() =>
+  import('gaesup-world/editor').then((module) => ({ default: module.PerformancePanel })),
+);
+
 function dispatchKey(k: string) {
   window.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+  window.dispatchEvent(new KeyboardEvent('keyup', { key: k, bubbles: true }));
 }
 
 function HeaderBar() {
@@ -97,17 +104,12 @@ function RightSidebar({ compact }: { compact: boolean }) {
   const messages = useMailStore((s) => s.messages);
   const quests = useQuestStore((s) => s.state);
   const catalog = useCatalogStore((s) => s.entries);
-  const houses = useTownStore((s) => s.houses);
-  const residents = useTownStore((s) => s.residents);
-  const decorationScore = useTownStore((s) => s.decorationScore);
+  const { locale, setLocale } = useLocale();
 
   const unreadMail = messages.reduce((n, m) => n + (m.read ? 0 : 1), 0);
   const unclaimed = messages.reduce((n, m) => n + (m.claimed === false ? 1 : 0), 0);
   const activeQuests = Object.values(quests).filter((p) => p.status === 'active').length;
   const collected = Object.keys(catalog).length;
-  const occupied = Object.values(houses).filter((h) => h.state === 'occupied').length;
-  const totalHouses = Object.keys(houses).length;
-  const residentCount = Object.keys(residents).length;
 
   type Action = {
     id: string;
@@ -135,52 +137,21 @@ function RightSidebar({ compact }: { compact: boolean }) {
     })),
     { id: 'chr', key: 'o', label: '캐릭터' },
   ];
-
-  const charName = useCharacterStore((s) => s.appearance.name);
-  const equipped = useCharacterStore((s) => s.outfits);
-  const equippedCount = Object.values(equipped).filter(Boolean).length;
-
-  const primaryActionKeys = new Set(['i', 'j', 'm', 'k']);
-  const primaryActions = actions.filter((action) => primaryActionKeys.has(action.key));
-  const secondaryActions = actions.filter((action) => !primaryActionKeys.has(action.key));
-  const [showMoreActions, setShowMoreActions] = useState(!compact);
+  const localeOptions: LocaleId[] = ['ko', 'en', 'ja'];
 
   return (
     <div className="gp-right">
-      {!compact && (
-        <>
-          <div className="gp-glass gp-panel">
-            <div className="gp-panel-title">캐릭터</div>
-            <div className="gp-panel-row">
-              <span style={{ fontWeight: 500 }}>{charName}</span>
-              <span style={{ color: 'var(--gp-text-dim)', fontSize: 12.5 }}>장착 {equippedCount}/5</span>
-            </div>
-          </div>
-
-          <div className="gp-glass gp-panel">
-            <div className="gp-panel-title">마을</div>
-            <div className="gp-panel-row">
-              <div className="gp-stat">
-                <span className="gp-stat-label">데코 점수</span>
-                <span className="gp-stat-value" style={{ color: 'var(--gp-accent)' }}>{decorationScore}</span>
-              </div>
-              <div className="gp-stat" style={{ alignItems: 'flex-end' }}>
-                <span className="gp-stat-label">주민</span>
-                <span className="gp-stat-value">{occupied}/{totalHouses}</span>
-              </div>
-            </div>
-            <div className="gp-panel-row">
-              <span style={{ color: 'var(--gp-text-dim)', fontSize: 12.5 }}>등록 인원</span>
-              <span style={{ fontWeight: 500 }}>{residentCount}</span>
-            </div>
-          </div>
-        </>
-      )}
+      <div className="gp-glass gp-panel gp-performance-panel">
+        <div className="gp-panel-title">성능</div>
+        <Suspense fallback={<div className="gp-panel-row">성능 패널 준비 중</div>}>
+          <PerformancePanel />
+        </Suspense>
+      </div>
 
       <div className="gp-glass gp-panel">
-        <div className="gp-panel-title">{compact ? '핵심 메뉴' : '게임 메뉴'}</div>
+        <div className="gp-panel-title">{compact ? '기능' : '실행 기능'}</div>
         <div className="gp-actionrow">
-          {primaryActions.map((a) => (
+          {actions.map((a) => (
             <button key={a.id} className="gp-btn" onClick={a.onClick ?? (() => dispatchKey(a.key))}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <span className="gp-key">{a.key.toUpperCase()}</span>
@@ -194,27 +165,22 @@ function RightSidebar({ compact }: { compact: boolean }) {
             </button>
           ))}
         </div>
-        <button type="button" className="gp-btn" onClick={() => setShowMoreActions((open) => !open)}>
-          <span>{showMoreActions ? '보조 메뉴 접기' : '보조 메뉴 펼치기'}</span>
-          <span className="gp-key">{showMoreActions ? 'ON' : 'OFF'}</span>
-        </button>
-        {showMoreActions && (
-          <div className="gp-actionrow">
-            {secondaryActions.map((a) => (
-              <button key={a.id} className="gp-btn" onClick={a.onClick ?? (() => dispatchKey(a.key))}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                  <span className="gp-key">{a.key.toUpperCase()}</span>
-                  <span>{a.label}</span>
-                </span>
-                {a.badge !== undefined && (
-                  <span className={`gp-badge${a.badgeKind === 'warn' ? ' gp-badge--warn' : a.badgeKind === 'good' ? ' gp-badge--good' : ''}`}>
-                    {a.badge}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+      </div>
+
+      <div className="gp-glass gp-panel">
+        <div className="gp-panel-title">언어</div>
+        <div className="gp-locale-row">
+          {localeOptions.map((option) => (
+            <button
+              key={option}
+              type="button"
+              className={`gp-locale-button${locale === option ? ' gp-locale-button--active' : ''}`}
+              onClick={() => setLocale(option)}
+            >
+              {LOCALE_LABEL[option]}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

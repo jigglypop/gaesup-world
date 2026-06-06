@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { createToonMaterial, getDefaultToonMode } from '@core/rendering/toon';
 
 const noise2D = createNoise2D();
+const disableRaycast = () => undefined;
 
 type SnowfieldProps = {
   size?: number;
@@ -66,10 +67,58 @@ export type SnowfieldEntry = {
   accentColor?: string;
 };
 
-function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry, THREE.BufferGeometry, number] {
+function hasCoverAt(entries: SnowfieldEntry[], x: number, z: number, y: number, currentIndex: number): boolean {
+  for (let index = 0; index < entries.length; index++) {
+    if (index === currentIndex) continue;
+    const entry = entries[index];
+    if (!entry || Math.abs(entry.position[1] - y) > 0.01) continue;
+    const half = entry.size * 0.5;
+    if (
+      x >= entry.position[0] - half + 0.001 &&
+      x <= entry.position[0] + half - 0.001 &&
+      z >= entry.position[2] - half + 0.001 &&
+      z <= entry.position[2] + half - 0.001
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function pushSkirtQuad(
+  positions: number[],
+  colors: number[],
+  a: [number, number, number],
+  b: [number, number, number],
+  c: [number, number, number],
+  d: [number, number, number],
+  topColor: THREE.Color,
+  bottomColor: THREE.Color,
+) {
+  const push = (vertex: [number, number, number], color: THREE.Color) => {
+    positions.push(vertex[0], vertex[1], vertex[2]);
+    colors.push(color.r, color.g, color.b);
+  };
+  push(a, topColor);
+  push(b, topColor);
+  push(c, bottomColor);
+  push(a, topColor);
+  push(c, bottomColor);
+  push(d, bottomColor);
+  push(c, bottomColor);
+  push(b, topColor);
+  push(a, topColor);
+  push(d, bottomColor);
+  push(c, bottomColor);
+  push(a, topColor);
+}
+
+function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry, THREE.BufferGeometry, THREE.BufferGeometry, number] {
   let totalVerts = 0, totalIdx = 0, totalSparkles = 0;
   const segList: number[] = [];
   const sparkleList: number[] = [];
+  const skirtPositions: number[] = [];
+  const skirtColors: number[] = [];
 
   for (const e of entries) {
     const segs = Math.max(22, Math.round(e.size * 7));
@@ -96,6 +145,8 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
     const baseColor = new THREE.Color(e.color ?? '#dcecff');
     const accentColor = new THREE.Color(e.accentColor ?? '#ffffff');
     const tmpColor = new THREE.Color();
+    const skirtBottomColor = baseColor.clone().multiplyScalar(0.72);
+    const skirtBottomY = e.position[1] - 0.12;
 
     for (let iz = 0; iz <= segs; iz++) {
       for (let ix = 0; ix <= segs; ix++) {
@@ -124,6 +175,46 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
         indices[iOff++] = a; indices[iOff++] = c; indices[iOff++] = b;
         indices[iOff++] = b; indices[iOff++] = c; indices[iOff++] = d;
       }
+    }
+
+    const pushEdge = (
+      side: 'east' | 'west' | 'north' | 'south',
+      x0: number,
+      z0: number,
+      x1: number,
+      z1: number,
+    ) => {
+      const sampleX = side === 'east' ? s * 0.5 + 0.02 : side === 'west' ? -s * 0.5 - 0.02 : (x0 + x1) * 0.5;
+      const sampleZ = side === 'north' ? -s * 0.5 - 0.02 : side === 'south' ? s * 0.5 + 0.02 : (z0 + z1) * 0.5;
+      if (hasCoverAt(entries, ox + sampleX, oz + sampleZ, e.position[1], ei)) return;
+
+      const topA = e.position[1] + 0.045 + getSnowHeight(x0, z0, s);
+      const topB = e.position[1] + 0.045 + getSnowHeight(x1, z1, s);
+      const tintA = 0.5 + 0.5 * noise2D(x0 * 0.16 - 2.4, z0 * 0.16 + 7.2);
+      const tintB = 0.5 + 0.5 * noise2D(x1 * 0.16 - 2.4, z1 * 0.16 + 7.2);
+      const colorA = baseColor.clone().lerp(accentColor, tintA * 0.55).multiplyScalar(0.9 + tintA * 0.1);
+      const colorB = baseColor.clone().lerp(accentColor, tintB * 0.55).multiplyScalar(0.9 + tintB * 0.1);
+      const topColor = colorA.clone().lerp(colorB, 0.5);
+
+      pushSkirtQuad(
+        skirtPositions,
+        skirtColors,
+        [ox + x0, topA, oz + z0],
+        [ox + x1, topB, oz + z1],
+        [ox + x1, skirtBottomY, oz + z1],
+        [ox + x0, skirtBottomY, oz + z0],
+        topColor,
+        skirtBottomColor,
+      );
+    };
+
+    for (let i = 0; i < segs; i++) {
+      const a = (i / segs - 0.5) * s;
+      const b = ((i + 1) / segs - 0.5) * s;
+      pushEdge('east', s * 0.5, a, s * 0.5, b);
+      pushEdge('west', -s * 0.5, b, -s * 0.5, a);
+      pushEdge('north', b, -s * 0.5, a, -s * 0.5);
+      pushEdge('south', a, s * 0.5, b, s * 0.5);
     }
 
     vOff += (segs + 1) * (segs + 1);
@@ -173,15 +264,23 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
   sparkles.setAttribute('color', new THREE.Float32BufferAttribute(sCol, 3));
   sparkles.computeBoundingSphere();
 
+  const skirt = new THREE.BufferGeometry();
+  if (skirtPositions.length > 0) {
+    skirt.setAttribute('position', new THREE.Float32BufferAttribute(skirtPositions, 3));
+    skirt.setAttribute('color', new THREE.Float32BufferAttribute(skirtColors, 3));
+    skirt.computeVertexNormals();
+    skirt.computeBoundingSphere();
+  }
+
   const avgSize = entries.length > 0
     ? entries.reduce((sum, e) => sum + e.size, 0) / entries.length
     : 4;
 
-  return [surface, sparkles, avgSize];
+  return [surface, sparkles, skirt, avgSize];
 }
 
 export function SnowfieldBatch({ entries, toon }: { entries: SnowfieldEntry[]; toon?: boolean }) {
-  const [surfaceGeo, sparkleGeo, avgSize] = useMemo(
+  const [surfaceGeo, sparkleGeo, skirtGeo, avgSize] = useMemo(
     () => buildMergedSnowfield(entries),
     [entries],
   );
@@ -189,14 +288,25 @@ export function SnowfieldBatch({ entries, toon }: { entries: SnowfieldEntry[]; t
   const useToon = toon ?? getDefaultToonMode();
   const surfaceMat = getSnowSurfaceMaterial(useToon);
 
-  useEffect(() => () => { surfaceGeo.dispose(); sparkleGeo.dispose(); }, [surfaceGeo, sparkleGeo]);
+  useEffect(() => () => { surfaceGeo.dispose(); sparkleGeo.dispose(); skirtGeo.dispose(); }, [surfaceGeo, sparkleGeo, skirtGeo]);
 
   if (entries.length === 0) return null;
 
   return (
     <>
-      <mesh geometry={surfaceGeo} material={surfaceMat} castShadow receiveShadow />
-      <points geometry={sparkleGeo}>
+      <mesh name="snowfield-surface" geometry={surfaceGeo} material={surfaceMat} castShadow receiveShadow />
+      {skirtGeo.getAttribute('position') && (
+        <mesh
+          name="snowfield-skirt"
+          geometry={skirtGeo}
+          material={surfaceMat}
+          castShadow
+          receiveShadow
+          raycast={disableRaycast}
+          userData={{ nonInteractive: true }}
+        />
+      )}
+      <points name="snowfield-sparkles" geometry={sparkleGeo}>
         <pointsMaterial
           size={Math.max(0.03, avgSize * 0.01)}
           vertexColors

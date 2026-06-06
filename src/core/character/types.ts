@@ -1,5 +1,5 @@
-export type OutfitSlot = 'hat' | 'top' | 'bottom' | 'shoes' | 'face' | 'weapon' | 'accessory';
-export type LegacyOutfitSlot = Exclude<OutfitSlot, 'weapon' | 'accessory'>;
+export type OutfitSlot = 'hat' | 'top' | 'bottom' | 'shoes' | 'face' | 'glasses' | 'weapon' | 'accessory';
+export type LegacyOutfitSlot = Exclude<OutfitSlot, 'weapon' | 'accessory' | 'glasses'>;
 
 export type AppearanceColors = {
   body: string;
@@ -52,16 +52,17 @@ export const OUTFIT_SLOT_LABEL: Record<OutfitSlot, string> = {
   bottom: '하의',
   shoes: '신발',
   face: '표정',
+  glasses: '안경',
   weapon: '무기',
   accessory: '액세서리',
 };
 
 export const HAIR_STYLE_LABEL: Record<HairStyle, string> = {
-  short: '단발',
-  long: '긴머리',
-  cap: '모자머리',
-  bun: '쪽머리',
-  spiky: '뻗친머리',
+  short: '짧은 머리',
+  long: '긴 머리',
+  cap: '모자 머리',
+  bun: '묶은 머리',
+  spiky: '뻗친 머리',
 };
 
 export const FACE_STYLE_LABEL: Record<FaceStyle, string> = {

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import { BuildingUI, useBuildingStore } from '../../../src';
+import { BuildingUI, useBuildingStore } from 'gaesup-world';
 
 export type BuildingExampleProps = {
   onClose?: () => void;

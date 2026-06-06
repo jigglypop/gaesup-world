@@ -1,0 +1,117 @@
+.cinematic-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--editor-text-primary, #f5f7fb);
+  font-size: 13px;
+}
+
+.cinematic-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--editor-border, rgba(255, 255, 255, 0.14));
+  border-radius: 6px;
+  background: var(--editor-surface, rgba(20, 24, 32, 0.78));
+}
+
+.cinematic-panel__title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cinematic-panel__hint,
+.cinematic-panel__empty {
+  color: var(--editor-text-secondary, rgba(245, 247, 251, 0.68));
+  line-height: 1.45;
+}
+
+.cinematic-panel__toolbar,
+.cinematic-panel__card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cinematic-panel button,
+.cinematic-panel select {
+  min-height: 30px;
+  border: 1px solid var(--editor-border, rgba(255, 255, 255, 0.18));
+  border-radius: 6px;
+  background: var(--editor-control-bg, rgba(255, 255, 255, 0.08));
+  color: inherit;
+}
+
+.cinematic-panel button {
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+.cinematic-panel select {
+  padding: 0 8px;
+}
+
+.cinematic-panel__primary {
+  background: var(--editor-accent, #3b82f6) !important;
+  border-color: transparent !important;
+}
+
+.cinematic-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cinematic-panel__card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px;
+  border: 1px solid var(--editor-border, rgba(255, 255, 255, 0.12));
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cinematic-panel__card-title {
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.cinematic-panel code {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--editor-text-secondary, rgba(245, 247, 251, 0.72));
+}
+
+.cinematic-panel textarea {
+  width: 100%;
+  min-height: 180px;
+  resize: vertical;
+  border: 1px solid var(--editor-border, rgba(255, 255, 255, 0.14));
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.18);
+  color: inherit;
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.cinematic-panel__status {
+  color: var(--editor-text-secondary, rgba(245, 247, 251, 0.72));
+}
+
+.cinematic-panel__status--success {
+  color: #7ddc83;
+}
+
+.cinematic-panel__status--error {
+  color: #ff8a8a;
+}
+
+@media (max-width: 720px) {
+  .cinematic-panel__card {
+    grid-template-columns: 1fr;
+  }
+}

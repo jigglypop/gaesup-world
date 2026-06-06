@@ -1,9 +1,10 @@
 import { useState } from 'react';
 
+import { useGaesupStore } from 'gaesup-world';
+
 import { CameraSettings } from './CameraSettings';
 import { CAMERA_PRESETS } from './constants';
 import { SpeechBalloonSettings } from './SpeechBalloonSettings';
-import { useGaesupStore } from '../../../src';
 import './styles.css';
 
 type CameraControl = keyof typeof CAMERA_PRESETS;

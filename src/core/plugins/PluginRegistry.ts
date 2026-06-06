@@ -51,6 +51,7 @@ export class CircularPluginDependencyError extends Error {
 
 export class PluginRegistry implements PluginRegistryApi {
   private readonly records = new Map<string, PluginRecord>();
+  private readonly setupTasks = new Map<string, Promise<void>>();
   private readonly setupOrder: string[] = [];
   private readonly options: PluginContextOptions;
   readonly context: PluginContext;
@@ -85,7 +86,7 @@ export class PluginRegistry implements PluginRegistryApi {
   }
 
   async setup(id: string): Promise<void> {
-    await this.setupInternal(id, new Set<string>());
+    await this.setupWithTask(id, new Set<string>());
   }
 
   async dispose(id: string): Promise<void> {
@@ -132,11 +133,32 @@ export class PluginRegistry implements PluginRegistryApi {
     return this.collectCapabilityDiagnostics();
   }
 
+  private async setupWithTask(id: string, visiting: Set<string>): Promise<void> {
+    const record = this.records.get(id);
+    if (!record) return;
+    if (record.status === 'ready') return;
+    if (visiting.has(id)) {
+      throw new CircularPluginDependencyError(id);
+    }
+
+    const existingTask = this.setupTasks.get(id);
+    if (existingTask) {
+      await existingTask;
+      return;
+    }
+
+    const task = this.setupInternal(id, visiting).finally(() => {
+      this.setupTasks.delete(id);
+    });
+    this.setupTasks.set(id, task);
+    await task;
+  }
+
   private async setupInternal(id: string, visiting: Set<string>): Promise<void> {
     const record = this.records.get(id);
     if (!record) return;
     if (record.status === 'ready') return;
-    if (record.status === 'setting-up' || visiting.has(id)) {
+    if (record.status === 'setting-up') {
       throw new CircularPluginDependencyError(id);
     }
 
@@ -149,7 +171,7 @@ export class PluginRegistry implements PluginRegistryApi {
         throw new MissingPluginDependencyError(id, dependency.id, versionRange);
       }
       this.validateDependencyVersion(id, dependency.id, dependencyRecord.manifest.version, versionRange);
-      await this.setupInternal(dependency.id, visiting);
+      await this.setupWithTask(dependency.id, visiting);
     }
 
     for (const dependency of this.toDependencyDeclarations(record.plugin.optionalDependencies)) {
@@ -161,7 +183,7 @@ export class PluginRegistry implements PluginRegistryApi {
           dependencyRecord.manifest.version,
           dependency.version ?? '*',
         );
-        await this.setupInternal(dependency.id, visiting);
+        await this.setupWithTask(dependency.id, visiting);
       }
     }
 

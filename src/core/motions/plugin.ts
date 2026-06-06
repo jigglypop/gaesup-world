@@ -28,6 +28,17 @@ export type MotionsTeleportPayload = {
     y: number;
     z: number;
   };
+  spawnPosition?: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  effect?: {
+    id?: string;
+    kind?: 'instant' | 'drop';
+    dropHeight?: number;
+    durationMs?: number;
+  };
 };
 
 export interface MotionsRuntime {

@@ -532,7 +532,7 @@ export function BuildingUI({
                   onClick={handleToggleCustomSettings}
                   className="building-ui-custom-toggle"
                 >
-                  {showCustomSettings ? 'Hide' : 'Show'} Custom Settings
+                  커스텀 설정 {showCustomSettings ? '숨기기' : '보기'}
                 </button>
                 
                 {showCustomSettings && (
@@ -1321,7 +1321,7 @@ export function BuildingUI({
                   onClick={handleToggleCustomSettings}
                   className="building-ui-custom-toggle"
                 >
-                  {showCustomSettings ? 'Hide' : 'Show'} Custom Settings
+                  커스텀 설정 {showCustomSettings ? '숨기기' : '보기'}
                 </button>
                 
                 {showCustomSettings && (

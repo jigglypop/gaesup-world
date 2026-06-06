@@ -273,6 +273,67 @@ html, body, #root {
 .gp-badge--warn { background: var(--gp-accent); }
 .gp-badge--good { background: var(--gp-good); }
 
+.gp-performance-panel {
+  overflow: hidden;
+}
+
+.gp-performance-panel .perf-panel {
+  max-height: min(44vh, 460px);
+  padding: 0;
+  gap: 8px;
+}
+
+.gp-performance-panel .perf-stat-group {
+  padding: 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+
+.gp-performance-panel .perf-title {
+  font-size: 12px;
+}
+
+.gp-performance-panel .perf-current {
+  font-size: 16px;
+}
+
+.gp-performance-panel .perf-details-grid {
+  gap: 3px 6px;
+}
+
+.gp-performance-panel .perf-details-grid > div {
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.gp-locale-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.gp-locale-button {
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--gp-glass-border);
+  border-radius: var(--gp-radius-sm);
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--gp-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gp-locale-button:hover,
+.gp-locale-button--active {
+  border-color: rgba(255, 216, 74, 0.52);
+  background: rgba(255, 216, 74, 0.16);
+  color: var(--gp-accent);
+}
+
 .gp-divider {
   height: 1px;
   background: var(--gp-glass-border);
@@ -295,6 +356,100 @@ html, body, #root {
   padding: 8px 14px;
   align-self: end;
   gap: 8px;
+}
+
+.world-focus-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+  background: rgba(5, 8, 12, 0.56);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  pointer-events: auto;
+}
+
+.world-focus-modal__panel {
+  width: min(430px, calc(100vw - 32px));
+  max-height: min(76vh, 540px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(18, 20, 28, 0.94);
+  color: var(--gp-text);
+  box-shadow: 0 24px 62px rgba(0, 0, 0, 0.42);
+}
+
+.world-focus-modal__eyebrow {
+  margin-bottom: 8px;
+  color: var(--gp-accent);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.world-focus-modal__panel h2 {
+  margin: 0 0 10px;
+  font-size: 22px;
+  line-height: 1.22;
+  letter-spacing: 0;
+}
+
+.world-focus-modal__panel p {
+  margin: 0;
+  color: var(--gp-text-dim);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.world-focus-modal__details {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+}
+
+.world-focus-modal__details li {
+  position: relative;
+  padding-left: 14px;
+  color: rgba(243, 244, 248, 0.86);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.world-focus-modal__details li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gp-accent);
+}
+
+.world-focus-modal__close {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 18px;
+  border: 1px solid rgba(255, 216, 74, 0.45);
+  border-radius: 8px;
+  background: rgba(255, 216, 74, 0.16);
+  color: var(--gp-accent);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.world-focus-modal__close:hover {
+  background: rgba(255, 216, 74, 0.22);
 }
 
 @media (max-width: 1100px) {

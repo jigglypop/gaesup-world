@@ -3,6 +3,7 @@ export * from './controller';
 export * from './core';
 export * from './entities';
 export * from './hooks';
+export * from './teleportDestinations';
 export * from './types';
 export * from './ui';
 export * from './plugin';

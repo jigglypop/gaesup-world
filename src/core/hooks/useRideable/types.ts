@@ -20,9 +20,14 @@ export type rideableType = {
   vehicleSize?: THREE.Vector3;
   wheelSize?: THREE.Vector3;
   airplaneSize?: THREE.Vector3;
+  maxSpeed?: number;
+  acceleration?: number;
+  deceleration?: number;
   rideMessage?: string;
   exitMessage?: string;
   displayName?: string;
+  onRide?: (objectId: string) => void;
+  onExit?: (objectId: string) => void;
 };
 
 export type RideStateChangeData = {

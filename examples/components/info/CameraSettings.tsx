@@ -1,7 +1,8 @@
+import { useGaesupStore } from 'gaesup-world';
+
 import { CheckboxInput } from './CheckboxInput';
 import { CAMERA_PRESETS } from './constants';
 import { RangeInput } from './RangeInput';
-import { useGaesupStore } from '../../../src';
 
 type CameraPresetKey = keyof typeof CAMERA_PRESETS;
 

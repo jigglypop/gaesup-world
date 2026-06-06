@@ -5,7 +5,6 @@ import {
   createCatalogPlugin,
   createCharacterPlugin,
   createCraftingPlugin,
-  createEconomyPlugin,
   createEventsPlugin,
   createFarmingPlugin,
   createGaesupRuntime,
@@ -32,13 +31,14 @@ import {
   useTownStore,
   useWeatherStore,
   type GaesupRuntime,
-} from '../../src';
+} from 'gaesup-world';
 import {
   GameplayEventEngine,
   SEED_GAMEPLAY_EVENTS,
   type GameplayEventBlueprint,
   type GameplayTriggerEvent,
-} from '../../src/core/gameplay';
+} from 'gaesup-world/gameplay';
+
 import { registerSeedDialogs } from '../components/dialog/seedDialogs';
 import { registerSeedI18n } from '../components/i18n/seedI18n';
 import { registerSeedContent } from '../components/seedContent';
@@ -82,7 +82,6 @@ export function createWorldRuntime(): GaesupRuntime {
       createWeatherPlugin(),
       createAudioPlugin(),
       createInventoryPlugin(),
-      createEconomyPlugin(),
       createRelationsPlugin(),
       createQuestsPlugin(),
       createMailPlugin(),

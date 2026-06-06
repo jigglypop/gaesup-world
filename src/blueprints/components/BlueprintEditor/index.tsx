@@ -58,12 +58,12 @@ const setNestedProperty = (
 };
 
 const blueprintCategories: BlueprintCategory[] = [
-  { id: 'characters', name: 'Characters', type: 'character', count: 0 },
-  { id: 'vehicles', name: 'Vehicles', type: 'vehicle', count: 0 },
-  { id: 'airplanes', name: 'Airplanes', type: 'airplane', count: 0 },
-  { id: 'animations', name: 'Animations', type: 'animation', count: 0 },
-  { id: 'behaviors', name: 'Behaviors', type: 'behavior', count: 0 },
-  { id: 'items', name: 'Items', type: 'item', count: 0 },
+  { id: 'characters', name: '캐릭터', type: 'character', count: 0 },
+  { id: 'vehicles', name: '차량', type: 'vehicle', count: 0 },
+  { id: 'airplanes', name: '비행기', type: 'airplane', count: 0 },
+  { id: 'animations', name: '애니메이션', type: 'animation', count: 0 },
+  { id: 'behaviors', name: '행동', type: 'behavior', count: 0 },
+  { id: 'items', name: '아이템', type: 'item', count: 0 },
 ];
 
 export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => {
@@ -227,7 +227,7 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
         <div className="blueprint-editor__search">
           <input
             type="text"
-            placeholder="Search blueprints..."
+            placeholder="블루프린트 검색"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="blueprint-editor__search-input"
@@ -270,7 +270,7 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
             disabled={!selectedBlueprint || isSpawning}
             className="blueprint-editor__spawn-button"
           >
-            {isSpawning ? 'Spawning...' : 'Spawn Entity'}
+            {isSpawning ? '생성 중...' : '엔티티 생성'}
           </button>
         </div>
       </div>
@@ -278,12 +278,12 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
       <div className="blueprint-editor__main">
         <div className="blueprint-editor__preview-section">
           <div className="blueprint-editor__preview-header">
-            <h3 className="blueprint-editor__preview-title">Preview</h3>
+            <h3 className="blueprint-editor__preview-title">미리보기</h3>
             <button
               onClick={() => setShowPreview(!showPreview)}
               className="blueprint-editor__preview-toggle"
             >
-              {showPreview ? 'Hide' : 'Show'}
+              {showPreview ? '숨기기' : '보기'}
             </button>
           </div>
           {showPreview && (
@@ -298,7 +298,7 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
 
         <div className="blueprint-editor__inspector-section">
           <div className="blueprint-editor__preview-header">
-            <h3 className="blueprint-editor__preview-title">Inspector</h3>
+            <h3 className="blueprint-editor__preview-title">속성</h3>
           </div>
           <div className="blueprint-editor__inspector">
             {editingBlueprint ? (

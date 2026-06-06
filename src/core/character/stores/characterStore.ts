@@ -33,6 +33,7 @@ const EMPTY_OUTFITS: Record<OutfitSlot, string | null> = {
   bottom: null,
   shoes: null,
   face: null,
+  glasses: null,
   weapon: null,
   accessory: null,
 };

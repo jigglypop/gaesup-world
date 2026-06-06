@@ -1,7 +1,8 @@
 import React, { useLayoutEffect } from 'react';
 
+import { useBuildingStore, useGaesupStore } from 'gaesup-world';
+
 import { WorldPage } from './World';
-import { useBuildingStore, useGaesupStore } from '../../src';
 import { CAMERA_PRESETS } from '../components/info/constants';
 
 const SAMPLE_BLOCK_SIZE = 4;

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-import type { CameraOptionType, NPCSchedule } from '../../../src';
-import type { SakuraTreeEntry, SandEntry, SnowfieldEntry } from '../../../src/core/building';
+import type { CameraOptionType, NPCSchedule } from 'gaesup-world';
+import type { SakuraTreeEntry, SandEntry, SnowfieldEntry } from 'gaesup-world/building';
 
 export const RICH_CAMERA_OPTION: CameraOptionType = {
   xDistance: -7,

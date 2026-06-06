@@ -64,6 +64,36 @@
         "default": "./dist/editor.cjs"
       }
     },
+    "./building": {
+      "import": {
+        "types": "./dist/building.d.ts",
+        "default": "./dist/building.js"
+      },
+      "require": {
+        "types": "./dist/building.d.cts",
+        "default": "./dist/building.cjs"
+      }
+    },
+    "./gameplay": {
+      "import": {
+        "types": "./dist/gameplay.d.ts",
+        "default": "./dist/gameplay.js"
+      },
+      "require": {
+        "types": "./dist/gameplay.d.cts",
+        "default": "./dist/gameplay.cjs"
+      }
+    },
+    "./navigation": {
+      "import": {
+        "types": "./dist/navigation.d.ts",
+        "default": "./dist/navigation.js"
+      },
+      "require": {
+        "types": "./dist/navigation.d.cts",
+        "default": "./dist/navigation.cjs"
+      }
+    },
     "./assets": {
       "import": {
         "types": "./dist/assets.d.ts",
@@ -136,6 +166,7 @@
     "dist/**/*.d.ts",
     "dist/**/*.d.cts",
     "dist/wasm/*.wasm",
+    "public/gltf/*.glb",
     "public/gltf/props/**/*",
     "README.md",
     "LICENSE.txt"
@@ -154,6 +185,9 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "test": "jest",
+    "test:package": "npm run build && node scripts/verify-package-consumer.cjs",
+    "test:demo": "vite build && node scripts/verify-demo-surface-chunk.cjs",
+    "test:browser": "playwright install chromium && node scripts/browser-smoke.cjs",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:memory": "jest --testPathPattern=memory --verbose",
@@ -175,6 +209,7 @@
     "@dimforge/rapier3d": "^0.17.3",
     "@dimforge/rapier3d-compat": "^0.17.3",
     "@eslint/js": "^9.30.1",
+    "@playwright/test": "1.54.0",
     "@react-three/drei": "10.4.2",
     "@react-three/fiber": "^9.2.0",
     "@react-three/postprocessing": "^3.0.4",
@@ -192,6 +227,7 @@
     "@types/identity-obj-proxy": "^3.0.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.10",
+    "@types/pngjs": "^6.0.5",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@types/react-test-renderer": "^19.1.0",
@@ -217,6 +253,7 @@
     "leva": "0.10.0",
     "lru-cache": "^11.1.0",
     "path": "^0.12.7",
+    "pngjs": "^7.0.0",
     "prettier": "^3.6.2",
     "publint": "^0.3.12",
     "r3f-perf": "^7.2.3",

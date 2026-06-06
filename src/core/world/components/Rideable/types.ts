@@ -1,3 +1,5 @@
+import { CSSProperties } from 'react';
+
 import { RigidBodyProps } from '@react-three/rapier';
 import * as THREE from 'three';
 
@@ -73,6 +75,35 @@ export type RideableUIProps = {
     isRiding: boolean;
     nearbyRideable?: RideableObject;
     currentRideable?: RideableObject;
+  };
+  actionKey?: string;
+  unstyled?: boolean;
+  className?: string;
+  classNames?: {
+    root?: string;
+    box?: string;
+    message?: string;
+    key?: string;
+    stats?: string;
+    stat?: string;
+    statLabel?: string;
+    statValue?: string;
+  };
+  styles?: {
+    root?: CSSProperties;
+    box?: CSSProperties;
+    message?: CSSProperties;
+    key?: CSSProperties;
+    stats?: CSSProperties;
+    stat?: CSSProperties;
+    statLabel?: CSSProperties;
+    statValue?: CSSProperties;
+  };
+  labels?: {
+    ride?: (rideable: RideableObject) => string;
+    exit?: (rideable: RideableObject) => string;
+    speed?: string;
+    acceleration?: string;
   };
 }
 

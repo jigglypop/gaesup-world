@@ -384,6 +384,23 @@ describe('CameraSystem', () => {
         expect.objectContaining({ from: 'thirdPerson', to: 'chase' }),
       );
     });
+
+    it('updateConfig가 명시적으로 초기화한 lookAt과 offset을 유지하지 않아야 합니다', () => {
+      system.updateConfig({
+        offset: { x: 1, y: 2, z: 3 },
+        lookAt: { x: 4, y: 5, z: 6 },
+      });
+      expect(system.getState().config.offset).toEqual({ x: 1, y: 2, z: 3 });
+      expect(system.getState().config.lookAt).toEqual({ x: 4, y: 5, z: 6 });
+
+      system.updateConfig({
+        offset: undefined,
+        lookAt: undefined,
+      });
+
+      expect(system.getState().config.offset).toBeUndefined();
+      expect(system.getState().config.lookAt).toBeUndefined();
+    });
   });
 
   describe('lifecycle', () => {

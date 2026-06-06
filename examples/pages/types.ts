@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-import type { EditorShellOptions } from '../../src/editor';
+import type { EditorShellOptions } from 'gaesup-world/editor';
  
 export type WorldPageProps = {
   showEditor?: boolean;

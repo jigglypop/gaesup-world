@@ -1,24 +1,27 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 
 import { Environment, Grid } from '@react-three/drei';
+import { type ThreeEvent } from '@react-three/fiber';
 import { RigidBody } from '@react-three/rapier';
 
 import {
   BugSpot,
   CropPlot,
+  getItemRegistry,
   HouseDoor,
   HousePlot,
   RoomPortal,
   RoomRoot,
   SceneRoot,
   WeatherEffect,
-} from '../../../src';
-import { SakuraBatch, SandBatch, SnowfieldBatch } from '../../../src/core/building';
+} from 'gaesup-world';
+import { SakuraBatch, SandBatch, SnowfieldBatch } from 'gaesup-world/building';
 import {
   applyRegisteredNavigationObstacles,
   NavigationSystem,
   registerNavigationObstacles,
-} from '../../../src/core/navigation';
+} from 'gaesup-world/navigation';
+
 import { NPCBeacon } from '../../components/npc/NPCBeacon';
 import { Pickup } from '../../components/pickup';
 import { dispatchWorldGameplayEvent } from '../runtime';
@@ -33,6 +36,35 @@ import {
   SNOWFIELD_TILES,
   WORLD_WEATHER_ENABLED,
 } from './data';
+import type { WorldFocusInfo } from './focus';
+
+export type WorldFocusHandler = (focus: WorldFocusInfo) => void;
+
+type SceneryProps = {
+  onFocus?: WorldFocusHandler | undefined;
+};
+
+function focusTarget(position: [number, number, number], yOffset: number): [number, number, number] {
+  return [position[0], position[1] + yOffset, position[2]];
+}
+
+function InspectableFeature({
+  focus,
+  onFocus,
+  children,
+}: {
+  focus: WorldFocusInfo;
+  onFocus?: WorldFocusHandler | undefined;
+  children: ReactNode;
+}) {
+  const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
+    if (!onFocus) return;
+    event.stopPropagation();
+    onFocus(focus);
+  };
+
+  return <group onPointerDown={handlePointerDown}>{children}</group>;
+}
 
 function ExampleNavigationObstacles() {
   useEffect(() => {
@@ -139,7 +171,13 @@ export function Ground() {
   );
 }
 
-function HomeInterior({ returnPosition }: { returnPosition: [number, number, number] }) {
+function HomeInterior({
+  returnPosition,
+  onFocus,
+}: {
+  returnPosition: [number, number, number];
+  onFocus?: WorldFocusHandler | undefined;
+}) {
   return (
     <>
       <RigidBody type="fixed" colliders="cuboid">
@@ -198,7 +236,20 @@ function HomeInterior({ returnPosition }: { returnPosition: [number, number, num
           <cylinderGeometry args={[0.45, 0.55, 0.9, 18]} />
           <meshStandardMaterial color="#d7c7a2" />
         </mesh>
-        <HouseDoor position={[0, 0.05, 3.6]} sceneId="outdoor" entry={{ position: returnPosition, rotationY: 0 }} color="#ffd24a" radius={1} label="EXIT" />
+        <InspectableFeature
+          onFocus={onFocus}
+          focus={{
+            id: 'door:home-exit',
+            category: '이동',
+            title: '집 밖으로 나가기',
+            description: '실내 씬에서 야외 마을 씬으로 돌아가는 포털입니다.',
+            target: [0, 1.1, 3.6],
+            details: ['방 가시성 시스템과 씬 전환 흐름에 연결', 'E 키 상호작용으로 이동'],
+            focusDistance: 3.8,
+          }}
+        >
+          <HouseDoor position={[0, 0.05, 3.6]} sceneId="outdoor" entry={{ position: returnPosition, rotationY: 0 }} color="#ffd24a" radius={1} label="EXIT" />
+        </InspectableFeature>
       </RoomRoot>
 
       <RoomRoot sceneId="home-interior" roomId="home-living" bounds={{ min: [-3.9, -0.2, -1.4], max: [3.9, 3.2, 1.2] }}>
@@ -242,7 +293,7 @@ function HomeInterior({ returnPosition }: { returnPosition: [number, number, num
   );
 }
 
-export function Scenery() {
+export function Scenery({ onFocus }: SceneryProps = {}) {
   const homePlot = HOUSE_PLOTS[0]?.pos ?? [-8, 0, -4];
 
   return (
@@ -251,37 +302,105 @@ export function Scenery() {
       <SakuraBatch trees={SAKURA_TREES} />
 
       {NPCS.map((n) => (
-        <NPCBeacon
+        <InspectableFeature
           key={n.id}
-          id={n.id}
-          name={n.name}
-          position={n.pos}
-          dialogTreeId={n.dialogTreeId}
-          {...(n.accentColor !== undefined ? { accentColor: n.accentColor } : {})}
-          onInteract={(id) => {
-            void dispatchWorldGameplayEvent({ type: 'interaction', targetId: `npc:${id}`, action: 'talk' });
+          onFocus={onFocus}
+          focus={{
+            id: `npc:${n.id}`,
+            category: 'NPC',
+            title: `${n.name} 대화`,
+            description: `${n.name}와 대화하고 스케줄, 대화 트리, 이벤트 트리거가 연결되는 지점을 확인합니다.`,
+            target: focusTarget(n.pos, 1.15),
+            details: ['E 키로 대화 시작', `대화 트리: ${n.dialogTreeId}`, 'NPC 스케줄과 게임플레이 이벤트에 연결'],
+            focusDistance: 3.6,
           }}
-        />
+        >
+          <NPCBeacon
+            id={n.id}
+            name={n.name}
+            position={n.pos}
+            dialogTreeId={n.dialogTreeId}
+            {...(n.accentColor !== undefined ? { accentColor: n.accentColor } : {})}
+            onInteract={(id) => {
+              void dispatchWorldGameplayEvent({ type: 'interaction', targetId: `npc:${id}`, action: 'talk' });
+            }}
+          />
+        </InspectableFeature>
       ))}
 
       {BUG_SPOTS.map((p, i) => (
-        <BugSpot key={`bug-${i}`} position={p} />
+        <InspectableFeature
+          key={`bug-${i}`}
+          onFocus={onFocus}
+          focus={{
+            id: `bug:${i}`,
+            category: '채집',
+            title: '곤충 채집 포인트',
+            description: '잠자리채 도구, 날씨 보너스, 이벤트 태그에 따라 채집 결과가 달라지는 포인트입니다.',
+            target: focusTarget(p, 1.15),
+            details: ['잠자리채 도구로 채집', '계절 이벤트와 날씨 보너스 반영', '획득 결과는 인벤토리와 도감에 연결'],
+            focusDistance: 4.2,
+          }}
+        >
+          <BugSpot position={p} />
+        </InspectableFeature>
       ))}
 
       {CROP_PLOTS.map((p) => (
-        <CropPlot key={p.id} id={p.id} position={p.pos} />
+        <InspectableFeature
+          key={p.id}
+          onFocus={onFocus}
+          focus={{
+            id: `crop:${p.id}`,
+            category: '농사',
+            title: '작물 밭',
+            description: '삽, 씨앗, 물뿌리개 도구가 순서대로 연결되는 농사 시스템의 필드 타일입니다.',
+            target: focusTarget(p.pos, 0.65),
+            details: ['삽으로 땅 갈기', '씨앗 장착 후 심기', '물뿌리개와 게임 시간에 따라 성장'],
+            focusDistance: 4,
+          }}
+        >
+          <CropPlot id={p.id} position={p.pos} />
+        </InspectableFeature>
       ))}
 
-      {HOUSE_PLOTS.map((h) => (
-        <HousePlot key={h.id} id={h.id} position={h.pos} size={[3.2, 3.2]} />
+      {HOUSE_PLOTS.map((h, index) => (
+        <InspectableFeature
+          key={h.id}
+          onFocus={onFocus}
+          focus={{
+            id: `house:${h.id}`,
+            category: '마을',
+            title: `집터 ${index + 1}`,
+            description: '주민 입주, 예약 상태, 마을 저장 데이터가 연결되는 주거 플롯입니다.',
+            target: focusTarget(h.pos, 1.2),
+            details: ['마을 store에 집터 등록', '주민 입주와 예약 상태 표시', '런타임 저장 및 hydrate 흐름에 포함'],
+            focusDistance: 5,
+          }}
+        >
+          <HousePlot id={h.id} position={h.pos} size={[3.2, 3.2]} />
+        </InspectableFeature>
       ))}
 
       <SceneRoot scene={{ id: 'outdoor', name: 'Town', interior: false }}>
-        <HouseDoor position={[homePlot[0], 0.05, homePlot[2] + 2.4]} sceneId="home-interior" entry={{ position: [0, 0, 2.6], rotationY: 0 }} color="#7fc6ff" radius={1.2} label="HOME" />
+        <InspectableFeature
+          onFocus={onFocus}
+          focus={{
+            id: 'door:home-entry',
+            category: '이동',
+            title: '집 안으로 들어가기',
+            description: '야외 마을에서 실내 홈 씬으로 전환하는 포털입니다.',
+            target: [homePlot[0], 1.15, homePlot[2] + 2.4],
+            details: ['SceneRoot와 HouseDoor 전환 사용', '실내 방 가시성 드라이버와 연결', 'E 키 상호작용으로 이동'],
+            focusDistance: 4,
+          }}
+        >
+          <HouseDoor position={[homePlot[0], 0.05, homePlot[2] + 2.4]} sceneId="home-interior" entry={{ position: [0, 0, 2.6], rotationY: 0 }} color="#7fc6ff" radius={1.2} label="HOME" />
+        </InspectableFeature>
       </SceneRoot>
 
       <SceneRoot scene={{ id: 'home-interior', name: 'Home', interior: true, entry: { position: [0, 0, 0] } }}>
-        <HomeInterior returnPosition={[homePlot[0], 0.05, homePlot[2] + 3.4]} />
+        <HomeInterior returnPosition={[homePlot[0], 0.05, homePlot[2] + 3.4]} onFocus={onFocus} />
       </SceneRoot>
 
       {WORLD_WEATHER_ENABLED && <WeatherEffect area={120} height={22} count={1500} />}
@@ -289,9 +408,26 @@ export function Scenery() {
       <SandBatch entries={SAND_TILES} />
       <SnowfieldBatch entries={SNOWFIELD_TILES} />
 
-      {PICKUPS.map((p) => (
-        <Pickup key={p.id} id={p.id} itemId={p.itemId} count={p.count} position={p.pos} />
-      ))}
+      {PICKUPS.map((p) => {
+        const item = getItemRegistry().get(p.itemId);
+        return (
+          <InspectableFeature
+            key={p.id}
+            onFocus={onFocus}
+            focus={{
+              id: `pickup:${p.id}`,
+              category: '아이템',
+              title: `${item?.name ?? p.itemId} 줍기`,
+              description: '필드 아이템을 인벤토리에 넣고 도감 수집 상태로 이어주는 픽업 오브젝트입니다.',
+              target: focusTarget(p.pos, 0.55),
+              details: [`수량: ${p.count}`, 'E 키로 획득', '인벤토리와 도감 UI에 반영'],
+              focusDistance: 3.8,
+            }}
+          >
+            <Pickup id={p.id} itemId={p.itemId} count={p.count} position={p.pos} />
+          </InspectableFeature>
+        );
+      })}
     </>
   );
 }

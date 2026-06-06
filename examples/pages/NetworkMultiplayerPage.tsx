@@ -8,7 +8,8 @@ import {
   PlayerInfoOverlay,
   defaultMultiplayerConfig,
   useMultiplayer,
-} from '../../src/network';
+} from 'gaesup-world/network';
+
 import { CHARACTER_URL, VEHICLE_URL, AIRPLANE_URL } from '../config/constants';
 
 export function NetworkMultiplayerPage() {

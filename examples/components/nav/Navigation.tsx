@@ -2,7 +2,7 @@ import React from 'react';
 
 import { NavLink, useNavigate } from 'react-router-dom';
 
-import { useAuthStore } from '../../../src/admin-entry';
+import { useAuthStore } from 'gaesup-world/admin';
 import './styles.css';
 
 export const Navigation = () => {
@@ -13,8 +13,11 @@ export const Navigation = () => {
     { to: '/edit', label: '에디터' },
     { to: '/edit/npc', label: 'NPC 에디터' },
   ];
-  const extraLinks = [{ to: '/network', label: 'Network' }];
-  
+  const extraLinks = [
+    { to: '/minimal', label: '미니멀' },
+    { to: '/network', label: '네트워크' },
+  ];
+
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -25,14 +28,14 @@ export const Navigation = () => {
       <NavLink to="/" className="app-nav-brand">
         <span>GAESUP WORLD</span>
       </NavLink>
-      <div className="app-nav-group" aria-label="Primary routes">
+      <div className="app-nav-group" aria-label="주요 경로">
         {mainLinks.map((link) => (
           <NavLink key={link.to} to={link.to} className="app-nav-button">
             {link.label}
           </NavLink>
         ))}
       </div>
-      <div className="app-nav-group app-nav-group--secondary" aria-label="Secondary routes">
+      <div className="app-nav-group app-nav-group--secondary" aria-label="보조 경로">
         {extraLinks.map((link) => (
           <NavLink key={link.to} to={link.to} className="app-nav-button app-nav-button--subtle">
             {link.label}
@@ -43,16 +46,16 @@ export const Navigation = () => {
       {isLoggedIn ? (
         <>
           <NavLink to="/admin" className="app-nav-button">
-            Admin
+            관리자
           </NavLink>
           <span className="app-nav-user">{user?.username}</span>
           <button className="app-nav-button" onClick={handleLogout}>
-            Logout
+            로그아웃
           </button>
         </>
       ) : (
         <NavLink to="/admin" className="app-nav-button">
-          Login
+          로그인
         </NavLink>
       )}
     </nav>

@@ -12,6 +12,7 @@ export type ResolveCharacterPartsInput = {
 
 const isRenderableAsset = (asset: AssetRecord | undefined): asset is AssetRecord & { url: string } => {
   if (!asset?.url) return false;
+  if (asset.metadata?.['placeholder'] === true) return false;
   return asset.kind === 'characterPart' || asset.kind === 'weapon';
 };
 
@@ -48,4 +49,25 @@ export function resolveCharacterParts({
   }
 
   return mergedParts;
+}
+
+const BASE_NODE_EXCLUSIONS_BY_SLOT: Partial<Record<OutfitSlot, string[]>> = {
+  top: ['tee'],
+  face: [],
+  glasses: [],
+  hat: [],
+  weapon: [],
+  accessory: [],
+};
+
+export function resolveCharacterBaseNodeExclusions(parts: Part[]): string[] {
+  const exclusions = new Set<string>();
+
+  for (const part of parts) {
+    if (!part.slot) continue;
+    const names = BASE_NODE_EXCLUSIONS_BY_SLOT[part.slot as OutfitSlot];
+    names?.forEach((name) => exclusions.add(name));
+  }
+
+  return [...exclusions];
 }

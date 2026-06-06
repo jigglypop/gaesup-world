@@ -8,3 +8,17 @@ export * from './debug';
 export * from './components';
 export * from './bridge';
 export * from './plugin';
+export {
+  createCameraCloseUpPreset,
+  requestCameraCloseUp,
+  restoreCameraCloseUp,
+} from './closeUp';
+export type { CameraCloseUpOptions, CameraCloseUpTarget } from './closeUp';
+export {
+  playCameraCinematic,
+} from './cinematic';
+export type {
+  CameraCinematicBeat,
+  CameraCinematicOptions,
+  CameraCinematicPlayback,
+} from './cinematic';

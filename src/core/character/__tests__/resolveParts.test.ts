@@ -1,5 +1,5 @@
 import type { AssetRecord } from '../../assets';
-import { resolveCharacterParts } from '../resolveParts';
+import { resolveCharacterBaseNodeExclusions, resolveCharacterParts } from '../resolveParts';
 import type { OutfitSlot } from '../types';
 
 const emptyOutfits = (): Record<OutfitSlot, string | null> => ({
@@ -8,6 +8,7 @@ const emptyOutfits = (): Record<OutfitSlot, string | null> => ({
   bottom: null,
   shoes: null,
   face: null,
+  glasses: null,
   weapon: null,
   accessory: null,
 });
@@ -76,5 +77,35 @@ describe('resolveCharacterParts', () => {
     });
 
     expect(parts).toEqual([{ url: 'base.glb' }]);
+  });
+
+  it('does not render placeholder equipment assets as full GLB parts', () => {
+    const outfits = emptyOutfits();
+    outfits.weapon = 'starter-weapon-layer';
+    const assets: Record<string, AssetRecord> = {
+      'starter-weapon-layer': {
+        id: 'starter-weapon-layer',
+        name: 'Starter Weapon Layer',
+        kind: 'weapon',
+        slot: 'weapon',
+        url: 'cloth-placeholder.glb',
+        metadata: { placeholder: true },
+      },
+    };
+
+    const parts = resolveCharacterParts({
+      baseParts: [{ url: 'base.glb', slot: 'body' }],
+      outfits,
+      assets,
+    });
+
+    expect(parts).toEqual([{ url: 'base.glb', slot: 'body' }]);
+  });
+
+  it('resolves base model node exclusions for equipped replacement slots', () => {
+    expect(resolveCharacterBaseNodeExclusions([
+      { id: 'body', slot: 'body', url: 'body.glb' },
+      { id: 'cloth', slot: 'top', url: 'cloth.glb' },
+    ])).toEqual(['tee']);
   });
 });

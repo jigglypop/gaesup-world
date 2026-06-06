@@ -1123,6 +1123,38 @@ interface ExtensionPoints {
 
 ## Updated Execution Roadmap
 
+### Planned Gameplay And Presentation Recovery
+
+The next gameplay-facing phase must prioritize restored and visible user features, with every item reachable from `examples/` and covered by the package-consumer checks.
+
+1. Character outfit, expression, and weapon equipment
+   - Add runtime outfit swapping, expression presets, and weapon/tool attachment slots. (done with ActionEquipmentPanel presets, expression cycling, and weapon toggle)
+   - Connect the state to inventory, character assets, save/hydrate, and example UI.
+   - Public API additions must be importable from package entry points and used by examples.
+2. Rideable restore
+   - Restore mount/dismount, prompt, rider offset, camera handoff, and vehicle/airplane control modes.
+   - Main world example must include a usable rideable flow.
+3. Close-up and cinematic zoom restore
+   - Restore a close-up focus camera for character/NPC/object inspection.
+   - Add cancellable cinematic zoom transitions with previous-camera restore.
+4. Teleport restore
+   - Restore click-to-teleport via runtime event bus.
+   - Add named teleport destinations/markers and expose at least two destinations in examples. (done for public helper/component + world example markers; scene-authored zone serialization remains follow-up)
+5. Cinematic system
+   - Add a lightweight timeline runner for camera moves, dialog, animation/expression/equipment changes, teleport, fades, and postprocess. (camera action beats added for look-at, dolly, orbit, shake, fade; gameplay beats added for dialog, expression, equip, teleport, animation, NPC movement, and custom events)
+   - Add a minimal editor panel or world UI trigger so the example can run a short cinematic. (CinematicPanel is exported from editor and wired into the world editor shell)
+
+Example coverage:
+- `/minimal` is a no-world/no-physics/no-editor route that uses only public package runtime, character, equipment, and cinematic APIs.
+- Browser smoke coverage is available through `npm run test:browser`; it ensures Playwright Chromium is installed, launches the Vite example app, checks `/minimal` as an installed-package style route, and verifies that the main world route paints a WebGL canvas.
+
+Completion criteria:
+
+- The feature has a public package export when intended for users.
+- The feature is reachable from `examples/`, not only from tests.
+- `examples/packageSurface.ts` consumes the related public API.
+- `npm run test:package` and `npm run test:demo` pass after the change.
+
 ### Phase 0: Baseline and Repository Hygiene
 
 목표는 플랫폼 작업 전에 현재 상태를 신뢰 가능한 기준선으로 고정하는 것이다.
