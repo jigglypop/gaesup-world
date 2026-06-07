@@ -24,6 +24,8 @@ import {
 @ManageRuntime({ autoStart: false })
 export class CameraSystem extends BaseCameraSystem {
   private controllers: Map<string, ICameraController> = new Map();
+  private activeController?: ICameraController;
+  private activeControllerMode?: string;
   private state: CameraSystemState;
   private cameraStates: Map<string, CameraState> = new Map();
   private currentCameraStateName: string = 'default';
@@ -64,11 +66,20 @@ export class CameraSystem extends BaseCameraSystem {
   
   registerController(controller: ICameraController): void {
     this.controllers.set(controller.name, controller);
+    if (controller.name === this.state.config.mode) {
+      this.activeController = controller;
+      this.activeControllerMode = controller.name;
+      this.state.activeController = controller;
+    }
   }
   
   override updateConfig(config: Partial<CameraSystemConfig>): void {
+    const previousMode = this.state.config.mode;
     super.updateConfig(config);
     this.state.config = this.getConfig();
+    if (config.mode !== undefined && config.mode !== previousMode) {
+      this.resolveActiveController();
+    }
   }
   
   update(deltaTime: number): void {
@@ -77,9 +88,8 @@ export class CameraSystem extends BaseCameraSystem {
 
   calculate(props: CameraCalcProps): void {
     try {
-      const controller = this.controllers.get(this.state.config.mode);
+      const controller = this.resolveActiveController();
       if (!controller) return;
-      this.state.activeController = controller;
       controller.update(props, this.state);
     } catch (error) {
       this.emitError(
@@ -129,5 +139,18 @@ export class CameraSystem extends BaseCameraSystem {
     this.registerController(new IsometricController());
     this.registerController(new SideScrollController());
     this.registerController(new FixedController());
+  }
+
+  private resolveActiveController(): ICameraController | undefined {
+    const mode = this.state.config.mode;
+    if (this.activeController && this.activeControllerMode === mode) {
+      return this.activeController;
+    }
+
+    const controller = this.controllers.get(mode);
+    this.activeController = controller;
+    this.activeControllerMode = mode;
+    this.state.activeController = controller;
+    return controller;
   }
 } 

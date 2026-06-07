@@ -201,10 +201,12 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
   const toonMatRef = useRef<THREE.ShaderMaterial | null>(null);
   const toonMeshRef = useRef<THREE.Mesh | null>(null);
   const fallbackMeshRef = useRef<THREE.Mesh | null>(null);
-  const centerRef = useRef(new THREE.Vector3());
+  const centerRef = useRef(
+    new THREE.Vector3(center?.[0] ?? 0, center?.[1] ?? 0, center?.[2] ?? 0),
+  );
   const lastVisibleRef = useRef<boolean>(true);
-  const highQualityRef = useRef<boolean>(true);
-  const lodCheckAccumRef = useRef<number>(0);
+  const highQualityRef = useRef<boolean>(!lod);
+  const lodCheckAccumRef = useRef<number>(lod ? Number.POSITIVE_INFINITY : 0);
   const timeAccumRef = useRef<number>(0);
   const shallowMaterial = useMemo(
     () =>
@@ -254,16 +256,19 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
 
   const renderTargetSize = useMemo(() => {
     const longest = Math.max(surfaceWidth, surfaceDepth);
-    if (longest <= 8) return 256;
-    if (longest <= 24) return 384;
-    return 512;
+    if (longest <= 8) return 192;
+    if (longest <= 24) return 256;
+    return 384;
   }, [surfaceDepth, surfaceWidth]);
 
   useEffect(() => {
-    if (center) {
-      centerRef.current.set(center[0], center[1], center[2]);
-    }
+    centerRef.current.set(center?.[0] ?? 0, center?.[1] ?? 0, center?.[2] ?? 0);
   }, [center]);
+
+  useEffect(() => {
+    highQualityRef.current = !lod;
+    lodCheckAccumRef.current = lod ? Number.POSITIVE_INFINITY : 0;
+  }, [lod]);
   
   const config = useMemo(
     () => ({
@@ -285,10 +290,12 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
     const base = useToon ? Math.round(longest * 2.5) : Math.round(longest * 1.2);
     return Math.max(useToon ? 14 : 6, Math.min(useToon ? 56 : 32, base));
   }, [useToon, waterWidth, waterDepth]);
-  const geom = useMemo(
-    () => new THREE.PlaneGeometry(waterWidth, waterDepth, segs, segs),
-    [waterDepth, waterWidth, segs],
-  );
+  const geom = useMemo(() => {
+    const geometry = new THREE.PlaneGeometry(waterWidth, waterDepth, segs, segs);
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    return geometry;
+  }, [waterDepth, waterWidth, segs]);
   const fallbackMaterial = useMemo(
     () =>
       new THREE.MeshPhysicalMaterial({
@@ -319,7 +326,7 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
       transparent: true,
       depthWrite: false,
     });
-  }, [useToon, waterNormals]);
+  }, [useToon]);
 
   useEffect(() => {
     return () => {
@@ -444,6 +451,7 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
           geometry={geom}
           rotation-x={-Math.PI / 2}
           position={[waterOffsetX, 0.1, waterOffsetZ]}
+          frustumCulled
         >
           <primitive
             ref={toonMatRef}
@@ -458,6 +466,7 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
             args={[geom, config]}
             rotation-x={-Math.PI / 2}
             position={[waterOffsetX, 0.1, waterOffsetZ]}
+            frustumCulled
           />
           <mesh
             ref={fallbackMeshRef}
@@ -466,6 +475,7 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
             rotation-x={-Math.PI / 2}
             position={[waterOffsetX, 0.095, waterOffsetZ]}
             visible={false}
+            frustumCulled
           />
         </>
       )}

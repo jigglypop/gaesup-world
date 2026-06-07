@@ -46,6 +46,12 @@ type WaterPatch = {
   center: [number, number, number];
   width: number;
   depth: number;
+  shore: {
+    north: boolean;
+    south: boolean;
+    east: boolean;
+    west: boolean;
+  };
 };
 
 type TileBounds = {
@@ -488,7 +494,38 @@ function BoxTileBatchMesh({
   );
 }
 
-function buildWaterPatches(waterTiles: TileLike[]): WaterPatch[] {
+function waterPatchCellKey(x: number, z: number): string {
+  return `${x}:${z}`;
+}
+
+function buildWaterPatchShore(
+  cells: Set<string>,
+  startX: number,
+  startZ: number,
+  widthCells: number,
+  depthCells: number,
+): WaterPatch['shore'] {
+  let north = false;
+  let south = false;
+  let east = false;
+  let west = false;
+
+  for (let x = 0; x < widthCells; x += 1) {
+    const cellX = startX + x;
+    north ||= !cells.has(waterPatchCellKey(cellX, startZ - 1));
+    south ||= !cells.has(waterPatchCellKey(cellX, startZ + depthCells));
+  }
+
+  for (let z = 0; z < depthCells; z += 1) {
+    const cellZ = startZ + z;
+    west ||= !cells.has(waterPatchCellKey(startX - 1, cellZ));
+    east ||= !cells.has(waterPatchCellKey(startX + widthCells, cellZ));
+  }
+
+  return { north, south, east, west };
+}
+
+export function buildWaterPatches(waterTiles: TileLike[]): WaterPatch[] {
   if (waterTiles.length === 0) return [];
 
   const unitSize = TILE_CONSTANTS.GRID_CELL_SIZE / 2;
@@ -511,7 +548,7 @@ function buildWaterPatches(waterTiles: TileLike[]): WaterPatch[] {
 
     for (let z = minZ; z < maxZ; z += 1) {
       for (let x = minX; x < maxX; x += 1) {
-        cells.add(`${x}:${z}`);
+        cells.add(waterPatchCellKey(x, z));
       }
     }
   }
@@ -535,7 +572,7 @@ function buildWaterPatches(waterTiles: TileLike[]): WaterPatch[] {
 
       let widthCells = 1;
 
-      while (remaining.has(`${startX + widthCells}:${startZ}`)) {
+      while (remaining.has(waterPatchCellKey(startX + widthCells, startZ))) {
         widthCells += 1;
       }
 
@@ -544,7 +581,7 @@ function buildWaterPatches(waterTiles: TileLike[]): WaterPatch[] {
       while (canGrow) {
         const nextZ = startZ + depthCells;
         for (let x = 0; x < widthCells; x += 1) {
-          if (!remaining.has(`${startX + x}:${nextZ}`)) {
+          if (!remaining.has(waterPatchCellKey(startX + x, nextZ))) {
             canGrow = false;
             break;
           }
@@ -554,10 +591,11 @@ function buildWaterPatches(waterTiles: TileLike[]): WaterPatch[] {
 
       for (let z = 0; z < depthCells; z += 1) {
         for (let x = 0; x < widthCells; x += 1) {
-          remaining.delete(`${startX + x}:${startZ + z}`);
+          remaining.delete(waterPatchCellKey(startX + x, startZ + z));
         }
       }
 
+      const shore = buildWaterPatchShore(cells, startX, startZ, widthCells, depthCells);
       const width = widthCells * unitSize;
       const depth = depthCells * unitSize;
       const centerX = (startX + widthCells / 2) * unitSize;
@@ -568,6 +606,7 @@ function buildWaterPatches(waterTiles: TileLike[]): WaterPatch[] {
         center: [centerX, centerY, centerZ],
         width,
         depth,
+        shore,
       });
     }
   }
@@ -1121,7 +1160,7 @@ export function TileSystem({
               width={patch.width}
               depth={patch.depth}
               center={patch.center}
-              shore={{ north: false, south: false, east: false, west: false }}
+              shore={patch.shore}
               lod={WATER_LOD}
             />
           </group>
