@@ -7,7 +7,6 @@ import { TILE_CONSTANTS } from '../../types/constants';
 import './styles.css';
 
 export function PreviewTile() {
-  // 무관한 store 변경으로 인한 리렌더를 막기 위해 실제 사용 필드만 selector 로 구독한다.
   const editMode = useBuildingStore((s) => s.editMode);
   const hoverPosition = useBuildingStore((s) => s.hoverPosition);
   const checkTilePosition = useBuildingStore((s) => s.checkTilePosition);
@@ -53,9 +52,6 @@ export function PreviewTile() {
     return null;
   }
 
-  // hoverPosition.y already carries the support height for tile mode; add the
-  // user-driven manual lift so the preview, the occupancy check, and the final
-  // placement all line up.
   const placementY =
     editMode === 'tile' && (currentTileShape === 'box' || currentTileShape === 'round')
       ? hoverPosition.y + currentTileHeight * TILE_CONSTANTS.HEIGHT_STEP
@@ -155,4 +151,4 @@ export function PreviewTile() {
       )}
     </group>
   );
-} 
+}

@@ -14,14 +14,18 @@ describe('EditorLayout runtime component injection', () => {
           name: 'Game UI',
           version: '1.0.0',
           setup(ctx) {
-            ctx.components.register('game.inventory-panel', {
-              kind: EDITOR_PANEL_COMPONENT_KIND,
-              panel: {
-                id: 'inventory',
-                title: 'Inventory',
-                component: <div data-testid="inventory-panel">Inventory tools</div>,
+            ctx.components.register(
+              'game.inventory-panel',
+              {
+                kind: EDITOR_PANEL_COMPONENT_KIND,
+                panel: {
+                  id: 'inventory',
+                  title: 'Inventory',
+                  component: <div data-testid="inventory-panel">Inventory tools</div>,
+                },
               },
-            }, 'game-ui');
+              'game-ui',
+            );
           },
         },
       ],
@@ -31,10 +35,7 @@ describe('EditorLayout runtime component injection', () => {
 
     render(
       <GaesupRuntimeProvider runtime={runtime} revision={1}>
-        <EditorLayout
-          defaultActivePanels={['inventory']}
-          defaultPanelOpen
-        >
+        <EditorLayout defaultActivePanels={['inventory']} defaultPanelOpen>
           <div data-testid="editor-canvas" />
         </EditorLayout>
       </GaesupRuntimeProvider>,
@@ -49,9 +50,7 @@ describe('EditorLayout runtime component injection', () => {
   test('renders built-in hierarchy panel from scene document', () => {
     const sceneDocument = createSceneDocument({
       id: 'scene',
-      objects: [
-        { id: 'root', name: 'Root' },
-      ],
+      objects: [{ id: 'root', name: 'Root' }],
     });
 
     render(
@@ -71,9 +70,7 @@ describe('EditorLayout runtime component injection', () => {
   test('renders built-in inspector panel from selected scene object', () => {
     const sceneDocument = createSceneDocument({
       id: 'scene',
-      objects: [
-        { id: 'root', name: 'Root', layer: 'environment' },
-      ],
+      objects: [{ id: 'root', name: 'Root', layer: 'environment' }],
     });
 
     render(
@@ -130,13 +127,34 @@ describe('EditorLayout runtime component injection', () => {
     expect(onExitPlayMode).toHaveBeenCalled();
   });
 
+  test('사이드바 프리셋 클래스를 적용한다', () => {
+    render(
+      <EditorLayout sidebarPreset="compact">
+        <div data-testid="editor-canvas" />
+      </EditorLayout>,
+    );
+
+    expect(screen.getByLabelText('Editor sidebar').className).toContain(
+      'editor-sidebar--preset-compact',
+    );
+  });
+
+  test('사이드바 커스텀 프리셋을 적용한다', () => {
+    render(
+      <EditorLayout sidebarPreset={{ className: 'custom-sidebar', style: { width: 420 } }}>
+        <div data-testid="editor-canvas" />
+      </EditorLayout>,
+    );
+
+    const sidebar = screen.getByLabelText('Editor sidebar');
+    expect(sidebar.className).toContain('custom-sidebar');
+    expect(sidebar).toHaveStyle({ width: '420px' });
+  });
+
   test('executes editor shortcuts from layout', () => {
     const run = jest.fn();
     render(
-      <EditorLayout
-        shortcuts={[{ id: 'frame', label: 'Frame', key: 'f', run }]}
-        defaultPanelOpen
-      >
+      <EditorLayout shortcuts={[{ id: 'frame', label: 'Frame', key: 'f', run }]} defaultPanelOpen>
         <div data-testid="editor-canvas" />
       </EditorLayout>,
     );

@@ -1,17 +1,30 @@
+import { MENU_PRESETS } from './config';
 import type { CharacterMenuPreset } from './types';
-import { MENU_PRESETS } from './types';
 
 const STORAGE_KEY = 'gaesup:character-menu-presets';
 
+function getLocalStorage(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function saveCustomPreset(preset: CharacterMenuPreset): void {
+  const storage = getLocalStorage();
+  if (!storage) return;
   const stored = loadCustomPresets();
   stored[preset.id] = preset;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+  storage.setItem(STORAGE_KEY, JSON.stringify(stored));
 }
 
 export function loadCustomPresets(): Record<string, CharacterMenuPreset> {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
+    const storage = getLocalStorage();
+    if (!storage) return {};
+    const data = storage.getItem(STORAGE_KEY);
     return data ? JSON.parse(data) : {};
   } catch {
     return {};
@@ -19,9 +32,11 @@ export function loadCustomPresets(): Record<string, CharacterMenuPreset> {
 }
 
 export function deleteCustomPreset(presetId: string): void {
+  const storage = getLocalStorage();
+  if (!storage) return;
   const stored = loadCustomPresets();
   delete stored[presetId];
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+  storage.setItem(STORAGE_KEY, JSON.stringify(stored));
 }
 
 export function getAllPresets(

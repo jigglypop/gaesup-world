@@ -13,9 +13,10 @@ import {
   RoomPortal,
   RoomRoot,
   SceneRoot,
+  useBuildingStore,
   WeatherEffect,
 } from 'gaesup-world';
-import { SakuraBatch, SandBatch, SnowfieldBatch } from 'gaesup-world/building';
+import { SakuraBatch, SandBatch, SnowfieldBatch, Water } from 'gaesup-world/building';
 import {
   applyRegisteredNavigationObstacles,
   NavigationSystem,
@@ -44,7 +45,10 @@ type SceneryProps = {
   onFocus?: WorldFocusHandler | undefined;
 };
 
-function focusTarget(position: [number, number, number], yOffset: number): [number, number, number] {
+function focusTarget(
+  position: [number, number, number],
+  yOffset: number,
+): [number, number, number] {
   return [position[0], position[1] + yOffset, position[2]];
 }
 
@@ -65,6 +69,20 @@ function InspectableFeature({
 
   return <group onPointerDown={handlePointerDown}>{children}</group>;
 }
+
+const WORLD_SURFACE_SIZE = 1000;
+const WORLD_COLLIDER_DEPTH = 2;
+const WORLD_WATER_LOD = {
+  near: 160,
+  far: 900,
+  strength: 3,
+};
+const WORLD_WATER_SHORE = {
+  north: false,
+  south: false,
+  east: false,
+  west: false,
+};
 
 function ExampleNavigationObstacles() {
   useEffect(() => {
@@ -146,25 +164,42 @@ export function Lighting() {
 }
 
 export function Ground() {
+  const worldSurface = useBuildingStore((state) => state.worldSurface);
+  const showWaterSurface = worldSurface === 'water';
   return (
     <>
-      <Grid
-        renderOrder={-1}
-        position={[0, -0.005, 0]}
-        infiniteGrid
-        cellSize={2}
-        cellThickness={1}
-        cellColor="#1d1d1d"
-        sectionSize={5}
-        sectionThickness={0}
-        fadeDistance={400}
-        fadeStrength={3}
-        userData={{ intangible: true }}
-      />
-      <RigidBody type="fixed">
-        <mesh receiveShadow position={[0, -1.01, 0]}>
-          <boxGeometry args={[1000, 2, 1000]} />
-          <meshStandardMaterial color="#3d3d3d" polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
+      {showWaterSurface ? (
+        <Water
+          width={WORLD_SURFACE_SIZE}
+          depth={WORLD_SURFACE_SIZE}
+          center={[0, 0, 0]}
+          shore={WORLD_WATER_SHORE}
+          lod={WORLD_WATER_LOD}
+        />
+      ) : (
+        <Grid
+          renderOrder={-1}
+          position={[0, -0.005, 0]}
+          infiniteGrid
+          cellSize={2}
+          cellThickness={1}
+          cellColor="#1d1d1d"
+          sectionSize={5}
+          sectionThickness={0}
+          fadeDistance={400}
+          fadeStrength={3}
+          userData={{ intangible: true }}
+        />
+      )}
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh receiveShadow position={[0, -1.01, 0]} visible={!showWaterSurface}>
+          <boxGeometry args={[WORLD_SURFACE_SIZE, WORLD_COLLIDER_DEPTH, WORLD_SURFACE_SIZE]} />
+          <meshStandardMaterial
+            color="#3d3d3d"
+            polygonOffset
+            polygonOffsetFactor={1}
+            polygonOffsetUnits={1}
+          />
         </mesh>
       </RigidBody>
     </>
@@ -218,10 +253,28 @@ function HomeInterior({
         </mesh>
       </RigidBody>
 
-      <RoomPortal id="home-foyer-living" sceneId="home-interior" fromRoomId="home-foyer" toRoomId="home-living" position={[0, 1.1, 1.2]} revealDistance={3.1} />
-      <RoomPortal id="home-living-studio" sceneId="home-interior" fromRoomId="home-living" toRoomId="home-studio" position={[0, 1.1, -1.4]} revealDistance={3.1} />
+      <RoomPortal
+        id="home-foyer-living"
+        sceneId="home-interior"
+        fromRoomId="home-foyer"
+        toRoomId="home-living"
+        position={[0, 1.1, 1.2]}
+        revealDistance={3.1}
+      />
+      <RoomPortal
+        id="home-living-studio"
+        sceneId="home-interior"
+        fromRoomId="home-living"
+        toRoomId="home-studio"
+        position={[0, 1.1, -1.4]}
+        revealDistance={3.1}
+      />
 
-      <RoomRoot sceneId="home-interior" roomId="home-foyer" bounds={{ min: [-3.9, -0.2, 1.2], max: [3.9, 3.2, 4.0] }}>
+      <RoomRoot
+        sceneId="home-interior"
+        roomId="home-foyer"
+        bounds={{ min: [-3.9, -0.2, 1.2], max: [3.9, 3.2, 4.0] }}
+      >
         <RigidBody type="fixed" colliders="cuboid">
           <mesh position={[0, 0, 2.6]} receiveShadow>
             <boxGeometry args={[8, 0.2, 2.8]} />
@@ -248,11 +301,22 @@ function HomeInterior({
             focusDistance: 3.8,
           }}
         >
-          <HouseDoor position={[0, 0.05, 3.6]} sceneId="outdoor" entry={{ position: returnPosition, rotationY: 0 }} color="#ffd24a" radius={1} label="EXIT" />
+          <HouseDoor
+            position={[0, 0.05, 3.6]}
+            sceneId="outdoor"
+            entry={{ position: returnPosition, rotationY: 0 }}
+            color="#ffd24a"
+            radius={1}
+            label="EXIT"
+          />
         </InspectableFeature>
       </RoomRoot>
 
-      <RoomRoot sceneId="home-interior" roomId="home-living" bounds={{ min: [-3.9, -0.2, -1.4], max: [3.9, 3.2, 1.2] }}>
+      <RoomRoot
+        sceneId="home-interior"
+        roomId="home-living"
+        bounds={{ min: [-3.9, -0.2, -1.4], max: [3.9, 3.2, 1.2] }}
+      >
         <RigidBody type="fixed" colliders="cuboid">
           <mesh position={[0, 0, -0.1]} receiveShadow>
             <boxGeometry args={[8, 0.2, 2.6]} />
@@ -269,7 +333,11 @@ function HomeInterior({
         </mesh>
       </RoomRoot>
 
-      <RoomRoot sceneId="home-interior" roomId="home-studio" bounds={{ min: [-3.9, -0.2, -4.0], max: [3.9, 3.2, -1.4] }}>
+      <RoomRoot
+        sceneId="home-interior"
+        roomId="home-studio"
+        bounds={{ min: [-3.9, -0.2, -4.0], max: [3.9, 3.2, -1.4] }}
+      >
         <RigidBody type="fixed" colliders="cuboid">
           <mesh position={[0, 0, -2.7]} receiveShadow>
             <boxGeometry args={[8, 0.2, 2.6]} />
@@ -311,7 +379,11 @@ export function Scenery({ onFocus }: SceneryProps = {}) {
             title: `${n.name} 대화`,
             description: `${n.name}와 대화하고 스케줄, 대화 트리, 이벤트 트리거가 연결되는 지점을 확인합니다.`,
             target: focusTarget(n.pos, 1.15),
-            details: ['E 키로 대화 시작', `대화 트리: ${n.dialogTreeId}`, 'NPC 스케줄과 게임플레이 이벤트에 연결'],
+            details: [
+              'E 키로 대화 시작',
+              `대화 트리: ${n.dialogTreeId}`,
+              'NPC 스케줄과 게임플레이 이벤트에 연결',
+            ],
             focusDistance: 3.6,
           }}
         >
@@ -322,7 +394,11 @@ export function Scenery({ onFocus }: SceneryProps = {}) {
             dialogTreeId={n.dialogTreeId}
             {...(n.accentColor !== undefined ? { accentColor: n.accentColor } : {})}
             onInteract={(id) => {
-              void dispatchWorldGameplayEvent({ type: 'interaction', targetId: `npc:${id}`, action: 'talk' });
+              void dispatchWorldGameplayEvent({
+                type: 'interaction',
+                targetId: `npc:${id}`,
+                action: 'talk',
+              });
             }}
           />
         </InspectableFeature>
@@ -336,9 +412,14 @@ export function Scenery({ onFocus }: SceneryProps = {}) {
             id: `bug:${i}`,
             category: '채집',
             title: '곤충 채집 포인트',
-            description: '잠자리채 도구, 날씨 보너스, 이벤트 태그에 따라 채집 결과가 달라지는 포인트입니다.',
+            description:
+              '잠자리채 도구, 날씨 보너스, 이벤트 태그에 따라 채집 결과가 달라지는 포인트입니다.',
             target: focusTarget(p, 1.15),
-            details: ['잠자리채 도구로 채집', '계절 이벤트와 날씨 보너스 반영', '획득 결과는 인벤토리와 도감에 연결'],
+            details: [
+              '잠자리채 도구로 채집',
+              '계절 이벤트와 날씨 보너스 반영',
+              '획득 결과는 인벤토리와 도감에 연결',
+            ],
             focusDistance: 4.2,
           }}
         >
@@ -354,7 +435,8 @@ export function Scenery({ onFocus }: SceneryProps = {}) {
             id: `crop:${p.id}`,
             category: '농사',
             title: '작물 밭',
-            description: '삽, 씨앗, 물뿌리개 도구가 순서대로 연결되는 농사 시스템의 필드 타일입니다.',
+            description:
+              '삽, 씨앗, 물뿌리개 도구가 순서대로 연결되는 농사 시스템의 필드 타일입니다.',
             target: focusTarget(p.pos, 0.65),
             details: ['삽으로 땅 갈기', '씨앗 장착 후 심기', '물뿌리개와 게임 시간에 따라 성장'],
             focusDistance: 4,
@@ -374,7 +456,11 @@ export function Scenery({ onFocus }: SceneryProps = {}) {
             title: `집터 ${index + 1}`,
             description: '주민 입주, 예약 상태, 마을 저장 데이터가 연결되는 주거 플롯입니다.',
             target: focusTarget(h.pos, 1.2),
-            details: ['마을 store에 집터 등록', '주민 입주와 예약 상태 표시', '런타임 저장 및 hydrate 흐름에 포함'],
+            details: [
+              '마을 store에 집터 등록',
+              '주민 입주와 예약 상태 표시',
+              '런타임 저장 및 hydrate 흐름에 포함',
+            ],
             focusDistance: 5,
           }}
         >
@@ -391,15 +477,33 @@ export function Scenery({ onFocus }: SceneryProps = {}) {
             title: '집 안으로 들어가기',
             description: '야외 마을에서 실내 홈 씬으로 전환하는 포털입니다.',
             target: [homePlot[0], 1.15, homePlot[2] + 2.4],
-            details: ['SceneRoot와 HouseDoor 전환 사용', '실내 방 가시성 드라이버와 연결', 'E 키 상호작용으로 이동'],
+            details: [
+              'SceneRoot와 HouseDoor 전환 사용',
+              '실내 방 가시성 드라이버와 연결',
+              'E 키 상호작용으로 이동',
+            ],
             focusDistance: 4,
           }}
         >
-          <HouseDoor position={[homePlot[0], 0.05, homePlot[2] + 2.4]} sceneId="home-interior" entry={{ position: [0, 0, 2.6], rotationY: 0 }} color="#7fc6ff" radius={1.2} label="HOME" />
+          <HouseDoor
+            position={[homePlot[0], 0.05, homePlot[2] + 2.4]}
+            sceneId="home-interior"
+            entry={{ position: [0, 0, 2.6], rotationY: 0 }}
+            color="#7fc6ff"
+            radius={1.2}
+            label="HOME"
+          />
         </InspectableFeature>
       </SceneRoot>
 
-      <SceneRoot scene={{ id: 'home-interior', name: 'Home', interior: true, entry: { position: [0, 0, 0] } }}>
+      <SceneRoot
+        scene={{
+          id: 'home-interior',
+          name: 'Home',
+          interior: true,
+          entry: { position: [0, 0, 0] },
+        }}
+      >
         <HomeInterior returnPosition={[homePlot[0], 0.05, homePlot[2] + 3.4]} onFocus={onFocus} />
       </SceneRoot>
 
@@ -418,7 +522,8 @@ export function Scenery({ onFocus }: SceneryProps = {}) {
               id: `pickup:${p.id}`,
               category: '아이템',
               title: `${item?.name ?? p.itemId} 줍기`,
-              description: '필드 아이템을 인벤토리에 넣고 도감 수집 상태로 이어주는 픽업 오브젝트입니다.',
+              description:
+                '필드 아이템을 인벤토리에 넣고 도감 수집 상태로 이어주는 픽업 오브젝트입니다.',
               target: focusTarget(p.pos, 0.55),
               details: [`수량: ${p.count}`, 'E 키로 획득', '인벤토리와 도감 UI에 반영'],
               focusDistance: 3.8,

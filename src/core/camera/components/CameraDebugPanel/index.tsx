@@ -1,70 +1,71 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 
-import { DebugValue } from '@core/types/common';
-
-import { CameraMetrics, DEFAULT_DEBUG_FIELDS } from './types';
+import {
+  CAMERA_DEBUG_PANEL_DEFAULT_CLASSES,
+  CAMERA_DEBUG_PANEL_DEFAULT_FIELDS,
+  CAMERA_DEBUG_PANEL_DEFAULT_INTERVAL,
+  CAMERA_DEBUG_PANEL_DEFAULT_LABELS,
+  CAMERA_DEBUG_PANEL_DEFAULT_PRECISION,
+  createInitialCameraMetrics,
+} from './defaults';
+import {
+  cx,
+  formatDebugValue,
+  hasMetricChanged,
+  mergeLabels,
+  mergeStyle,
+  readMetricValue,
+  resolveEnabledFields,
+  toVec3,
+} from './helpers';
+import { renderCameraDebugPanelContent } from './sections';
+import type {
+  CameraDebugValue,
+  CameraDebugPanelClassNameSlot,
+  CameraDebugPanelProps,
+  CameraDebugPanelRenderContext,
+  CameraDebugPanelResolvedField,
+  CameraMetrics,
+} from './types';
 import { useStateSystem } from '../../../motions/hooks/useStateSystem';
 import { useGaesupStore } from '../../../stores/gaesupStore';
-
 import './styles.css';
 
-type Vec3Like = { x: number; y: number; z: number };
-type PartialVec3Like = { x?: number; y?: number; z?: number };
-type MetricValue = CameraMetrics[keyof CameraMetrics] | undefined;
-
-function isVec3Like(value: PartialVec3Like | MetricValue): value is Vec3Like {
-  if (typeof value !== 'object' || value === null) return false;
-  const v = value as PartialVec3Like;
-  return (
-    typeof v.x === 'number' &&
-    typeof v.y === 'number' &&
-    typeof v.z === 'number'
-  );
-}
-
-export function CameraDebugPanel() {
-  const initialMetrics: CameraMetrics = {
-    frameCount: 0,
-    averageFrameTime: 0,
-    lastUpdateTime: Date.now(),
-    mode: 'unknown',
-    activeController: 'unknown',
-    distance: null,
-    fov: 0,
-    position: null,
-    targetPosition: null,
-    velocity: null,
-    rotation: null,
-  };
+export function CameraDebugPanel({
+  position,
+  visible = true,
+  updateInterval = CAMERA_DEBUG_PANEL_DEFAULT_INTERVAL,
+  zIndex,
+  compact = false,
+  theme = 'dark',
+  fields = CAMERA_DEBUG_PANEL_DEFAULT_FIELDS,
+  precision = CAMERA_DEBUG_PANEL_DEFAULT_PRECISION,
+  width,
+  height,
+  customFields,
+  className,
+  style,
+  classNames,
+  styles,
+  labels: labelOverrides,
+  renderers,
+  formatValue,
+  children,
+}: CameraDebugPanelProps = {}) {
+  const initialMetrics = useMemo(() => createInitialCameraMetrics(), []);
   const [metrics, setMetrics] = useState<CameraMetrics>(initialMetrics);
   const mode = useGaesupStore((state) => state.mode);
   const cameraOption = useGaesupStore((state) => state.cameraOption);
   const { activeState } = useStateSystem();
   const metricsRef = useRef<CameraMetrics>(initialMetrics);
-  const checkMetricChange = useCallback((
-    newValue: MetricValue, 
-    oldValue: MetricValue
-  ): boolean => {
-    if (newValue === oldValue) return false;
-    
-    // Vector3 비교
-    if (isVec3Like(newValue)) {
-      if (!isVec3Like(oldValue)) return true;
-      return newValue.x !== oldValue.x ||
-             newValue.y !== oldValue.y ||
-             newValue.z !== oldValue.z;
-    }
-    
-    // 기타 객체 비교
-    if (typeof newValue !== 'object' || newValue === null) return true;
-    return JSON.stringify(newValue) !== JSON.stringify(oldValue);
-  }, []);
-
-  const toVec3 = useCallback((value: PartialVec3Like | null | undefined): Vec3Like | null => {
-    if (!isVec3Like(value)) return null;
-    return { x: value.x, y: value.y, z: value.z };
-  }, []);
-
+  const labels = useMemo(() => mergeLabels(labelOverrides), [labelOverrides]);
   const updateMetrics = useCallback(() => {
     const distance =
       cameraOption?.xDistance !== undefined &&
@@ -76,8 +77,11 @@ export function CameraDebugPanel() {
             z: cameraOption.zDistance,
           }
         : null;
+    const lastUpdateTime = Date.now();
     const newMetrics: CameraMetrics = {
       ...metricsRef.current,
+      frameCount: metricsRef.current.frameCount + 1,
+      averageFrameTime: lastUpdateTime - metricsRef.current.lastUpdateTime,
       mode: mode?.control ?? 'unknown',
       activeController: cameraOption?.mode ?? mode?.control ?? 'unknown',
       distance,
@@ -86,54 +90,96 @@ export function CameraDebugPanel() {
       targetPosition: toVec3(cameraOption?.target),
       velocity: toVec3(activeState?.velocity),
       rotation: toVec3(activeState?.euler),
-      lastUpdateTime: Date.now(),
+      lastUpdateTime,
       ...(cameraOption?.zoom !== undefined ? { zoom: cameraOption.zoom } : {}),
     };
-    
-    const hasChanged = Object.keys(newMetrics).some(
-      key => checkMetricChange(
+    const hasChanged = Object.keys(newMetrics).some((key) =>
+      hasMetricChanged(
         newMetrics[key as keyof CameraMetrics],
-        metricsRef.current[key as keyof CameraMetrics]
-      )
+        metricsRef.current[key as keyof CameraMetrics],
+      ),
     );
-    
     if (hasChanged) {
       metricsRef.current = newMetrics;
       setMetrics(newMetrics);
     }
-  }, [mode, cameraOption, activeState, checkMetricChange, toVec3]);
-  
+  }, [activeState, cameraOption, mode]);
   useEffect(() => {
+    if (!visible) return undefined;
     updateMetrics();
-    
-    const intervalId = setInterval(updateMetrics, 100);
-    
+    const intervalId = setInterval(updateMetrics, updateInterval);
     return () => {
       clearInterval(intervalId);
     };
-  }, [updateMetrics]);
-
-  const formatValue = useCallback((value: DebugValue, precision: number = 2) => {
-    if (value === null || value === undefined) return 'N/A';
-    if (typeof value === 'object' && value.x !== undefined) {
-      return `X:${value.x.toFixed(precision)} Y:${value.y.toFixed(precision)} Z:${value.z.toFixed(precision)}`;
-    }
-    if (typeof value === 'number') {
-      return value.toFixed(precision);
-    }
-    return value.toString();
-  }, []);
-
+  }, [updateInterval, updateMetrics, visible]);
+  const resolvedFields = useMemo<CameraDebugPanelResolvedField[]>(() => {
+    return resolveEnabledFields(fields, customFields).map((field) => {
+      const value: CameraDebugValue =
+        'getValue' in field ? field.getValue() : readMetricValue(metrics, field.key);
+      const fieldPrecision = field.precision ?? precision;
+      const formattedValue =
+        formatValue?.(value, field, fieldPrecision) ??
+        formatDebugValue(value, fieldPrecision, labels.unavailable);
+      return {
+        key: field.key,
+        label: field.label,
+        value,
+        formattedValue,
+        ...(field.format ? { format: field.format } : {}),
+      };
+    });
+  }, [customFields, fields, formatValue, labels.unavailable, metrics, precision]);
+  const classNameFor = useCallback(
+    (slot: CameraDebugPanelClassNameSlot, extra?: string) =>
+      cx(
+        CAMERA_DEBUG_PANEL_DEFAULT_CLASSES[slot],
+        classNames?.[slot],
+        slot === 'root' && position && CAMERA_DEBUG_PANEL_DEFAULT_CLASSES.floatingRoot,
+        slot === 'root' && position && `camera-debug-panel--${position}`,
+        slot === 'root' && compact && CAMERA_DEBUG_PANEL_DEFAULT_CLASSES.compactRoot,
+        slot === 'root' && theme && `camera-debug-panel--${theme}`,
+        slot === 'root' && className,
+        extra,
+      ),
+    [className, classNames, compact, position, theme],
+  );
+  const styleFor = useCallback(
+    (slot: CameraDebugPanelClassNameSlot, base?: CSSProperties) => {
+      const nextStyle = mergeStyle(styles, slot, base);
+      if (slot !== 'root') return nextStyle;
+      return { ...nextStyle, width, height, zIndex, ...style };
+    },
+    [height, style, styles, width, zIndex],
+  );
+  const context = useMemo<CameraDebugPanelRenderContext>(
+    () => ({
+      metrics,
+      fields: resolvedFields,
+      labels,
+      visible,
+      compact,
+      theme,
+      position,
+      classNameFor,
+      styleFor,
+    }),
+    [classNameFor, compact, labels, metrics, position, resolvedFields, styleFor, theme, visible],
+  );
+  if (!visible) return null;
+  const content = renderCameraDebugPanelContent(context, renderers, children);
+  if (renderers?.root) return <>{renderers.root(context, content)}</>;
   return (
-    <div className="cd-panel">
-      <div className="cd-grid">
-        {DEFAULT_DEBUG_FIELDS.map((field) => (
-          <div key={field.key} className="cd-item">
-            <span className="cd-label">{field.label}</span>
-            <span className="cd-value">{formatValue(metrics[field.key as keyof CameraMetrics] as DebugValue)}</span>
-          </div>
-        ))}
-      </div>
+    <div className={context.classNameFor('root')} style={context.styleFor('root')}>
+      {content}
     </div>
   );
 }
+export {
+  CAMERA_DEBUG_PANEL_DEFAULT_CLASSES,
+  CAMERA_DEBUG_PANEL_DEFAULT_FIELDS,
+  CAMERA_DEBUG_PANEL_DEFAULT_INTERVAL,
+  CAMERA_DEBUG_PANEL_DEFAULT_LABELS,
+  CAMERA_DEBUG_PANEL_DEFAULT_PRECISION,
+  createInitialCameraMetrics,
+};
+export type * from './types';

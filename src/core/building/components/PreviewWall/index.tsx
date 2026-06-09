@@ -3,8 +3,6 @@ import { TILE_CONSTANTS } from '../../types/constants';
 import './styles.css';
 
 export function PreviewWall() {
-  // 무관한 store 변경(타일/벽 그룹 추가 등)으로 인한 리렌더를 막기 위해
-  // 실제 사용 필드만 selector 로 구독한다.
   const editMode = useBuildingStore((s) => s.editMode);
   const hoverPosition = useBuildingStore((s) => s.hoverPosition);
   const currentWallRotation = useBuildingStore((s) => s.currentWallRotation);
@@ -34,4 +32,4 @@ export function PreviewWall() {
       </mesh>
     </group>
   );
-} 
+}

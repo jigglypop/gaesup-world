@@ -1,0 +1,60 @@
+.action-equipment-panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--editor-spacing-sm);
+  color: var(--editor-text-main);
+}
+.action-equipment-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--editor-spacing-sm);
+}
+.action-equipment-panel-title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--editor-text-main);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.action-equipment-panel-meta {
+  flex: 0 0 auto;
+  color: var(--editor-text-muted);
+  font-size: 12px;
+  line-height: 1.2;
+}
+.action-equipment-panel-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--editor-spacing-xs);
+}
+.action-equipment-panel-button {
+  min-height: 30px;
+  min-width: 0;
+  padding: 0 var(--editor-spacing-md);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  background: var(--editor-surface-1);
+  color: var(--editor-text-main);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+.action-equipment-panel-button:hover {
+  background: var(--editor-surface-hover);
+}
+.action-equipment-panel-button--active {
+  background: var(--editor-surface-active);
+}
+.action-equipment-panel-empty {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  color: var(--editor-text-muted);
+  font-size: 12px;
+}

@@ -1,237 +1,86 @@
-.camera-debug-toggle {
-  position: fixed;
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, rgba(32, 1, 34, 0.2), rgba(111, 0, 0, 0.2));
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  color: white;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(32, 1, 34, 0.5);
-}
-.camera-debug-toggle:hover {
-  background: linear-gradient(135deg, rgba(32, 1, 34, 0.4), rgba(111, 0, 0, 0.4));
-}
-.camera-debug-toggle--top-left {
-  top: 10px;
-  left: 10px;
-}
-.camera-debug-toggle--top-right {
-  top: 10px;
-  right: 10px;
-}
-.camera-debug-toggle--bottom-left {
-  bottom: 10px;
-  left: 10px;
-}
-.camera-debug-toggle--bottom-right {
-  bottom: 10px;
-  right: 10px;
-}
-.camera-debug-toggle--light {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(240, 240, 240, 0.9));
-  color: #333;
-  border-color: rgba(0, 0, 0, 0.1);
-}
-.camera-debug-toggle--glass {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
 .camera-debug-panel {
-  position: fixed;
-  background: linear-gradient(135deg, rgba(32, 1, 34, 0.2), rgba(111, 0, 0, 0.2));
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  color: white;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 10px;
-  z-index: 1001;
-  width: 320px;
-  max-height: 400px;
-  overflow-y: auto;
-  box-shadow: 0 4px 12px rgba(32, 1, 34, 0.5);
+  width: 100%;
+  color: var(--editor-text-main);
 }
-.camera-debug-panel--compact {
-  min-width: 140px;
-  max-width: 160px;
-  font-size: 9px;
+.camera-debug-panel--floating {
+  position: fixed;
+  z-index: 1001;
+  max-width: calc(100vw - var(--editor-spacing-lg) - var(--editor-spacing-lg));
+  max-height: calc(100vh - var(--editor-spacing-lg) - var(--editor-spacing-lg));
+  overflow-y: auto;
+  padding: var(--editor-spacing-md);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  background: var(--editor-bg-1);
+  box-shadow: var(--editor-shadow);
+  backdrop-filter: var(--editor-glass-blur);
 }
 .camera-debug-panel--top-left {
-  top: 10px;
-  left: 10px;
+  top: var(--editor-spacing-lg);
+  left: var(--editor-spacing-lg);
 }
 .camera-debug-panel--top-right {
-  top: 10px;
-  right: 10px;
+  top: var(--editor-spacing-lg);
+  right: var(--editor-spacing-lg);
 }
 .camera-debug-panel--bottom-left {
-  bottom: 10px;
-  left: 10px;
+  bottom: var(--editor-spacing-lg);
+  left: var(--editor-spacing-lg);
 }
 .camera-debug-panel--bottom-right {
-  bottom: 10px;
-  right: 10px;
+  right: var(--editor-spacing-lg);
+  bottom: var(--editor-spacing-lg);
+}
+.camera-debug-panel--compact .camera-debug-panel-grid {
+  gap: var(--editor-spacing-xs);
 }
 .camera-debug-panel--light {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 240, 240, 0.95));
-  color: #333;
-  border-color: rgba(0, 0, 0, 0.1);
+  background: var(--editor-surface-1);
+  color: var(--editor-text-main);
 }
 .camera-debug-panel--glass {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(15px);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--editor-bg-1);
+  backdrop-filter: var(--editor-glass-blur);
 }
-
-.camera-debug-panel__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(4px);
-}
-
-.camera-debug-panel__close,
-.camera-debug-panel__customize {
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  opacity: 0.8;
-  transition: all 0.2s ease;
-}
-
-.camera-debug-panel__close:hover,
-.camera-debug-panel__customize:hover {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.camera-debug-panel__customization {
-  padding: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.2);
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.camera-debug-panel__title {
-  font-weight: 600;
-  font-size: 11px;
-  opacity: 0.9;
-}
-
-.camera-debug-panel__content {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.camera-debug-section {
-  background: rgba(0, 0, 0, 0.2);
-  padding: 6px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-.camera-debug-panel--light .camera-debug-section {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(0, 0, 0, 0.1);
-}
-
-.camera-debug-section__title {
-  font-weight: 600;
-  font-size: 9px;
-  opacity: 0.8;
-  margin-bottom: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.camera-debug-field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.camera-debug-field input[type="checkbox"] {
-  cursor: pointer;
-  accent-color: #007acc;
-}
-
-.camera-debug-field span {
-  cursor: pointer;
-  user-select: none;
-}
-
-.camera-debug-field:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-  padding-left: 4px;
-  padding-right: 4px;
-}
-
-.camera-debug-value {
-  font-family: 'Courier New', monospace;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.9);
-  white-space: pre-line;
-  line-height: 1.2;
-}
-.camera-debug-panel--light .camera-debug-value {
-  color: #0066cc;
-}
-.camera-debug-panel--glass .camera-debug-value {
-  color: #88ddff;
-}
-
-.cd-panel {
-  width: 100%;
-  padding: 4px;
-}
-
-.cd-grid {
+.camera-debug-panel-grid {
   display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 8px;
-  font-family: 'Courier New', Courier, monospace;
+  gap: var(--editor-spacing-xs);
 }
-
-.cd-item {
-  display: contents; /* Allows grid layout to apply to children */
+.camera-debug-panel-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--editor-spacing-sm);
+  align-items: center;
 }
-
-.cd-label {
-  color: #a0a0a0;
+.camera-debug-panel-label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--editor-text-muted);
   font-size: 12px;
-  padding: 4px 8px;
   text-align: right;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.cd-value {
-  color: #e0e0e0;
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
-  padding: 4px 8px;
+.camera-debug-panel-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  border-radius: var(--editor-radius-sm);
+  background: var(--editor-surface-1);
+  color: var(--editor-text-main);
+  font-family: monospace;
   font-size: 12px;
-  white-space: pre-wrap;
-  word-break: break-all;
+  padding: var(--editor-spacing-xs) var(--editor-spacing-sm);
+}
+.camera-debug-panel-empty {
+  padding: var(--editor-spacing-md);
+  color: var(--editor-text-muted);
+  font-size: 12px;
+}
+@media (max-width: 720px) {
+  .camera-debug-panel-item {
+    grid-template-columns: 1fr;
+  }
+  .camera-debug-panel-label {
+    text-align: left;
+  }
 }

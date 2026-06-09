@@ -8,6 +8,8 @@ export {
   edgeKey,
   edgeSideToWallRotation,
   edgeToWallTransform,
+  getBlockSupportHeight,
+  getBuildingSupportHeight,
   getTileSupportHeight,
   hasTileCollision,
   hasWallCollision,

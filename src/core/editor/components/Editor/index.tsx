@@ -117,6 +117,7 @@ export const Editor: FC<EditorProps> = ({
         {...(shell?.hiddenBuiltInPanels ? { hiddenBuiltInPanels: shell.hiddenBuiltInPanels } : {})}
         {...(shell?.panelOrder ? { panelOrder: shell.panelOrder } : {})}
         {...(shell?.panelDefaults ? { panelDefaults: shell.panelDefaults } : {})}
+        {...(shell?.sidebarPreset ? { sidebarPreset: shell.sidebarPreset } : {})}
         {...(shell?.validate ? { validateBundle: shell.validate } : {})}
         {...(sceneDocument ? { sceneDocument } : {})}
         {...(selectedObjectId ? { selectedObjectId } : {})}

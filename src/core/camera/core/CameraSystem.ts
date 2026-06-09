@@ -148,9 +148,14 @@ export class CameraSystem extends BaseCameraSystem {
     }
 
     const controller = this.controllers.get(mode);
-    this.activeController = controller;
     this.activeControllerMode = mode;
-    this.state.activeController = controller;
+    if (controller) {
+      this.activeController = controller;
+      this.state.activeController = controller;
+    } else {
+      delete this.activeController;
+      delete this.state.activeController;
+    }
     return controller;
   }
 } 

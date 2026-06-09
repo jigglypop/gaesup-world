@@ -114,6 +114,8 @@ export function useBuildingPanelState() {
   const setFogColor = useBuildingStore((state) => state.setFogColor);
   const weatherEffect = useBuildingStore((state) => state.weatherEffect);
   const setWeatherEffect = useBuildingStore((state) => state.setWeatherEffect);
+  const worldSurface = useBuildingStore((state) => state.worldSurface);
+  const setWorldSurface = useBuildingStore((state) => state.setWorldSurface);
 
   const npcTemplates = useNPCStore((state) => state.templates);
   const npcInstances = useNPCStore((state) => state.instances);
@@ -255,6 +257,8 @@ export function useBuildingPanelState() {
     setFogColor,
     weatherEffect,
     setWeatherEffect,
+    worldSurface,
+    setWorldSurface,
     npcInstances,
     npcBrainBlueprints,
     selectedNPCTemplateId,

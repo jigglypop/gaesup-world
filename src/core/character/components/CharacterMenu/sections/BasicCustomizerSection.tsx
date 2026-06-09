@@ -1,121 +1,72 @@
-import type { FaceStyle, HairStyle } from '../../../types';
-import { FACE_STYLE_LABEL, HAIR_STYLE_LABEL } from '../../../types';
-import type { CharacterMenuPreset } from '../types';
+import type { CharacterMenuRenderContext } from '../types';
 
 type BasicCustomizerSectionProps = {
-  appearance: { name: string; hair: HairStyle; face: FaceStyle };
-  onNameChange: (name: string) => void;
-  hairOptions: HairStyle[];
-  faceOptions: FaceStyle[];
-  onHairChange: (hair: HairStyle) => void;
-  onFaceChange: (face: FaceStyle) => void;
-  preset: CharacterMenuPreset;
-  compact?: boolean;
+  context: CharacterMenuRenderContext;
 };
 
-export function BasicCustomizerSection({
-  appearance,
-  onNameChange,
-  hairOptions,
-  faceOptions,
-  onHairChange,
-  onFaceChange,
-  preset,
-  compact,
-}: BasicCustomizerSectionProps) {
+export function BasicCustomizerSection({ context }: BasicCustomizerSectionProps) {
   return (
-    <div className="space-y-3">
-      <div
-        className="p-3 rounded-lg border"
-        style={{
-          background: 'rgba(0,0,0,0.2)',
-          borderColor: preset.theme.borderColor,
-        }}
-      >
-        <p className="text-xs font-bold uppercase opacity-60 mb-2">이름</p>
-        <input
-          value={appearance.name}
-          onChange={(e) => onNameChange(e.target.value)}
-          maxLength={16}
-          className="w-full px-3 py-2 rounded-lg border text-sm"
-          placeholder="캐릭터 이름..."
-          style={{
-            background: 'rgba(255,255,255,0.08)',
-            borderColor: preset.theme.borderColor,
-            color: preset.theme.textColor,
-          }}
-        />
-      </div>
-
-      <div
-        className="p-3 rounded-lg border"
-        style={{
-          background: 'rgba(0,0,0,0.2)',
-          borderColor: preset.theme.borderColor,
-        }}
-      >
-        <p className="text-xs font-bold uppercase opacity-60 mb-2">헤어</p>
-        <div className="flex flex-wrap gap-2">
-          {hairOptions.map((h) => (
-            <button
-              key={h}
-              onClick={() => onHairChange(h)}
-              className="px-3 py-1 rounded-full border text-xs font-semibold transition-all"
-              style={{
-                background:
-                  appearance.hair === h
-                    ? preset.theme.accentColor + '30'
-                    : 'rgba(255,255,255,0.08)',
-                borderColor:
-                  appearance.hair === h
-                    ? preset.theme.accentColor
-                    : preset.theme.borderColor,
-                color:
-                  appearance.hair === h
-                    ? preset.theme.accentColor
-                    : preset.theme.textColor,
-              }}
-            >
-              {HAIR_STYLE_LABEL[h]}
-            </button>
-          ))}
+    <section
+      className={context.classNameFor('section')}
+      style={context.styleFor('section', context.getSectionStyle())}
+    >
+      {context.features.nameEditor && (
+        <label className={context.classNameFor('sectionStack')}>
+          <span className={context.classNameFor('sectionTitle')}>{context.labels.name}</span>
+          <input
+            value={context.appearance.name}
+            onChange={(event) => context.actions.setName(event.target.value)}
+            maxLength={16}
+            className={context.classNameFor('input')}
+            style={context.styleFor('input', {
+              borderColor: context.preset.theme.borderColor,
+              color: context.preset.theme.textColor,
+            })}
+          />
+        </label>
+      )}
+      {context.features.hairPicker && (
+        <div className={context.classNameFor('sectionStack')}>
+          <p className={context.classNameFor('sectionTitle')}>{context.labels.hair}</p>
+          <div className={context.classNameFor('optionRow')}>
+            {context.hairOptions.map((option) => {
+              const active = context.appearance.hair === option.value;
+              return (
+                <button
+                  type="button"
+                  key={option.value}
+                  className={context.classNameFor(active ? 'activeChip' : 'chip')}
+                  style={context.styleFor(active ? 'activeChip' : 'chip', context.getButtonStyle(active))}
+                  onClick={() => context.actions.setHair(option.value)}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
-
-      <div
-        className="p-3 rounded-lg border"
-        style={{
-          background: 'rgba(0,0,0,0.2)',
-          borderColor: preset.theme.borderColor,
-        }}
-      >
-        <p className="text-xs font-bold uppercase opacity-60 mb-2">표정</p>
-        <div className="flex flex-wrap gap-2">
-          {faceOptions.map((f) => (
-            <button
-              key={f}
-              onClick={() => onFaceChange(f)}
-              className="px-3 py-1 rounded-full border text-xs font-semibold transition-all"
-              style={{
-                background:
-                  appearance.face === f
-                    ? preset.theme.accentColor + '30'
-                    : 'rgba(255,255,255,0.08)',
-                borderColor:
-                  appearance.face === f
-                    ? preset.theme.accentColor
-                    : preset.theme.borderColor,
-                color:
-                  appearance.face === f
-                    ? preset.theme.accentColor
-                    : preset.theme.textColor,
-              }}
-            >
-              {FACE_STYLE_LABEL[f]}
-            </button>
-          ))}
+      )}
+      {context.features.facePicker && (
+        <div className={context.classNameFor('sectionStack')}>
+          <p className={context.classNameFor('sectionTitle')}>{context.labels.face}</p>
+          <div className={context.classNameFor('optionRow')}>
+            {context.faceOptions.map((option) => {
+              const active = context.appearance.face === option.value;
+              return (
+                <button
+                  type="button"
+                  key={option.value}
+                  className={context.classNameFor(active ? 'activeChip' : 'chip')}
+                  style={context.styleFor(active ? 'activeChip' : 'chip', context.getButtonStyle(active))}
+                  onClick={() => context.actions.setFace(option.value)}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </section>
   );
 }

@@ -9,7 +9,12 @@ import type {
   SceneObjectId,
   SceneTransform,
 } from '../scene-object';
-import type { EditorPanelDefaults, EditorShellAction, EditorShellPluginPanel } from './components/EditorLayout/types';
+import type {
+  EditorPanelDefaults,
+  EditorShellAction,
+  EditorShellPluginPanel,
+  EditorSidebarPresetInput,
+} from './components/EditorLayout/types';
 
 export type EditorShellCommand = {
   id: string;
@@ -36,6 +41,7 @@ export type EditorShellOptions = {
   hiddenBuiltInPanels?: string[];
   panelOrder?: string[];
   panelDefaults?: Record<string, EditorPanelDefaults>;
+  sidebarPreset?: EditorSidebarPresetInput;
   commands?: EditorShellCommand[];
   validate?: EditorShellValidation;
 };
@@ -48,6 +54,7 @@ export type EditorShell = {
   hiddenBuiltInPanels?: string[];
   panelOrder?: string[];
   panelDefaults?: Record<string, EditorPanelDefaults>;
+  sidebarPreset?: EditorSidebarPresetInput;
   actions: EditorShellAction[];
   validate?: EditorShellValidation;
 };
@@ -109,6 +116,9 @@ export function createEditorShell(options: EditorShellOptions = {}): EditorShell
   }
   if (options.panelDefaults) {
     shell.panelDefaults = options.panelDefaults;
+  }
+  if (options.sidebarPreset) {
+    shell.sidebarPreset = options.sidebarPreset;
   }
   if (options.validate) {
     shell.validate = options.validate;

@@ -20,7 +20,16 @@ import { TILE_CONSTANTS } from '../types/constants';
 
 export type BuildingSerializableState = Pick<
   BuildingHydrationTarget,
-  'meshes' | 'wallGroups' | 'tileGroups' | 'blocks' | 'objects' | 'showSnow' | 'showFog' | 'fogColor' | 'weatherEffect'
+  | 'meshes'
+  | 'wallGroups'
+  | 'tileGroups'
+  | 'blocks'
+  | 'objects'
+  | 'showSnow'
+  | 'showFog'
+  | 'fogColor'
+  | 'weatherEffect'
+  | 'worldSurface'
 >;
 
 export type BuildingHydrationTarget = {
@@ -40,6 +49,7 @@ export type BuildingHydrationTarget = {
   showFog: boolean;
   fogColor: string;
   weatherEffect: BuildingSerializedState['weatherEffect'];
+  worldSurface: BuildingSerializedState['worldSurface'];
 };
 
 export function serializeBuildingState(state: BuildingSerializableState): BuildingSerializedState {
@@ -54,6 +64,7 @@ export function serializeBuildingState(state: BuildingSerializableState): Buildi
     showFog: state.showFog,
     fogColor: state.fogColor,
     weatherEffect: state.weatherEffect,
+    worldSurface: state.worldSurface,
   };
 }
 
@@ -96,6 +107,7 @@ export function hydrateBuildingState(
   state.showFog = data.showFog ?? false;
   state.fogColor = data.fogColor ?? '#cfd8e3';
   state.weatherEffect = data.weatherEffect ?? (state.showSnow ? 'snow' : 'none');
+  state.worldSurface = data.worldSurface ?? 'ground';
   state.initialized = true;
 }
 

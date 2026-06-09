@@ -10,7 +10,7 @@
   --editor-text-primary: #f1f1f1;
   --editor-text-secondary: #a1a1a1;
   --editor-glass-bg: rgba(18, 22, 32, 0.36);
-  --editor-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  --editor-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   --editor-border-radius: 6px;
   --editor-surface: rgba(45, 45, 45, 0.95);
   --editor-text: #ffffff;
@@ -64,7 +64,7 @@
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
@@ -109,17 +109,17 @@
 
 .editor-sidebar {
   position: absolute;
-  top: 12px;
-  left: calc(var(--app-sidebar-width, 0px) + 12px);
-  bottom: 12px;
-  width: 148px;
+  top: var(--editor-shell-top, 12px);
+  left: calc(var(--app-sidebar-width, 0px) + var(--editor-shell-left, 12px));
+  bottom: var(--editor-shell-bottom, 12px);
+  width: var(--editor-sidebar-menu-width, 148px);
   display: grid;
-  grid-template-columns: 148px;
+  grid-template-columns: var(--editor-sidebar-menu-width, 148px);
   background: linear-gradient(160deg, rgba(22, 30, 44, 0.4), rgba(14, 18, 28, 0.32));
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--editor-border-color);
-  border-radius: 14px;
+  border-radius: var(--editor-sidebar-radius, 14px);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
   z-index: 100;
   overflow: hidden;
@@ -127,8 +127,58 @@
 }
 
 .editor-sidebar--open {
-  width: min(508px, calc(100vw - var(--app-sidebar-width, 0px) - 24px));
-  grid-template-columns: 148px minmax(0, 360px);
+  width: min(
+    var(--editor-sidebar-open-width, 508px),
+    calc(100vw - var(--app-sidebar-width, 0px) - 24px)
+  );
+  grid-template-columns: var(--editor-sidebar-menu-width, 148px) minmax(
+      0,
+      var(--editor-sidebar-panel-width, 360px)
+    );
+}
+
+.editor-sidebar--preset-compact {
+  --editor-sidebar-menu-width: 118px;
+  --editor-sidebar-panel-width: 320px;
+  --editor-sidebar-open-width: 438px;
+}
+
+.editor-sidebar--preset-wide {
+  --editor-sidebar-menu-width: 168px;
+  --editor-sidebar-panel-width: 420px;
+  --editor-sidebar-open-width: 588px;
+}
+
+.editor-sidebar--preset-floating {
+  --editor-sidebar-menu-width: 136px;
+  --editor-sidebar-panel-width: 360px;
+  --editor-sidebar-open-width: 496px;
+  --editor-sidebar-radius: 18px;
+  bottom: auto;
+  height: min(
+    720px,
+    calc(100vh - var(--editor-shell-top, 12px) - var(--editor-shell-bottom, 12px))
+  );
+}
+
+.editor-sidebar.editor-sidebar--preset-compact,
+.editor-sidebar.editor-sidebar--preset-wide,
+.editor-sidebar.editor-sidebar--preset-floating {
+  width: var(--editor-sidebar-menu-width, 148px);
+  grid-template-columns: var(--editor-sidebar-menu-width, 148px);
+}
+
+.editor-sidebar.editor-sidebar--preset-compact.editor-sidebar--open,
+.editor-sidebar.editor-sidebar--preset-wide.editor-sidebar--open,
+.editor-sidebar.editor-sidebar--preset-floating.editor-sidebar--open {
+  width: min(
+    var(--editor-sidebar-open-width, 508px),
+    calc(100vw - var(--app-sidebar-width, 0px) - 24px)
+  );
+  grid-template-columns: var(--editor-sidebar-menu-width, 148px) minmax(
+      0,
+      var(--editor-sidebar-panel-width, 360px)
+    );
 }
 
 .editor-sidebar-menu {
@@ -656,7 +706,7 @@
 
   .editor-sidebar--open {
     width: auto;
-    grid-template-columns: 148px minmax(0, 1fr);
+    grid-template-columns: var(--editor-sidebar-menu-width, 148px) minmax(0, 1fr);
   }
 }
 
@@ -665,7 +715,7 @@
     left: 8px;
     right: 8px;
     bottom: 8px;
-    top: 8px;
+    top: var(--editor-shell-mobile-top, var(--editor-shell-top, 8px));
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(0, 1fr);
   }
@@ -742,7 +792,7 @@
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   display: flex;
@@ -921,7 +971,7 @@
 }
 
 .editor-resizable.dragging {
-  box-shadow: 
+  box-shadow:
     0 20px 40px rgba(0, 0, 0, 0.5),
     0 8px 32px rgba(0, 0, 0, 0.3);
   transform: rotate(0.5deg);
@@ -961,7 +1011,9 @@
   background-color: transparent;
   border: none;
   color: var(--editor-text-secondary);
-  transition: background-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
   border-bottom: 2px solid transparent;
 }
 
@@ -1059,7 +1111,7 @@ textarea:focus-visible {
 }
 
 .perf-chart {
-  background: rgba(0,0,0,0.2);
+  background: rgba(0, 0, 0, 0.2);
   border-radius: 4px;
   min-height: 40px;
 }
@@ -1283,10 +1335,10 @@ textarea:focus-visible {
 
 .prop-group {
   margin-bottom: var(--editor-spacing-md);
-  background: rgba(0,0,0,0.1);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: var(--editor-border-radius);
   padding: var(--editor-spacing-sm);
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .prop-group-title {
@@ -1314,7 +1366,7 @@ textarea:focus-visible {
   text-align: right;
 }
 
-.prop-value input[type="number"] {
+.prop-value input[type='number'] {
   width: 100%;
   background: var(--editor-surface-secondary);
   border: 1px solid var(--editor-border-color);
@@ -1325,7 +1377,7 @@ textarea:focus-visible {
   -moz-appearance: textfield;
 }
 
-.prop-value input[type="text"],
+.prop-value input[type='text'],
 .inspector-add-component input {
   width: 100%;
   box-sizing: border-box;
@@ -1509,7 +1561,7 @@ textarea:focus-visible {
 
 .asset-item.selected {
   background: var(--editor-primary);
-  border-color: rgba(255,255,255,0.4);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .asset-preview {
@@ -1799,11 +1851,23 @@ textarea:focus-visible {
   z-index: 10;
 }
 .handle-right {
-  top: 0; right: -3px; width: 6px; height: 100%; cursor: col-resize;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
 }
 .handle-bottom {
-  left: 0; bottom: -3px; width: 100%; height: 6px; cursor: row-resize;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 6px;
+  cursor: row-resize;
 }
 .handle-corner {
-  right: -3px; bottom: -3px; width: 12px; height: 12px; cursor: nwse-resize;
+  right: -3px;
+  bottom: -3px;
+  width: 12px;
+  height: 12px;
+  cursor: nwse-resize;
 }

@@ -1,39 +1,51 @@
-# 캐릭터 메뉴 (CharacterMenu)
+# CharacterMenu
 
-캐릭터 커스터마이징 메뉴입니다. 기본 기능만 제공합니다.
+`CharacterMenu` is exported from `gaesup-world` and can be used as a ready-made menu or as a controller-backed custom UI.
 
-## 기능
-
-- ✅ **줌인/줌아웃** - 50% ~ 300% 범위
-- ✅ **클로즈업 모드** - 캐릭터 접근 보기
-- ✅ **색상 선택** - 피부, 머리, 옷 색상 등
-- ✅ **기본 커스터마이징** - 이름, 헤어, 표정
-- ✅ **장비 교체** - hat, top, bottom, shoes, weapon
-
-## 사용법
+## Basic Usage
 
 ```tsx
 import { CharacterMenu } from 'gaesup-world';
 
-// 기본
-<CharacterMenu toggleKey="C" />
-
-// 제어
-const [open, setOpen] = useState(false);
-<CharacterMenu open={open} onClose={() => setOpen(false)} />
+<CharacterMenu toggleKey="C" />;
 ```
 
-## Props
+## Replace UI Parts
 
-```typescript
-type CharacterMenuProps = {
-  toggleKey?: string;  // 메뉴 토글 키 (C, E 등)
-  open?: boolean;      // 메뉴 열기/닫기
-  onClose?: () => void; // 메뉴 닫을 때 콜백
+Every major UI part can be replaced through `renderers`. A `root` renderer can ignore the default children and render a fully custom surface with the same state and actions.
+
+```tsx
+import { CharacterMenu, type CharacterMenuRenderers } from 'gaesup-world';
+
+const renderers: CharacterMenuRenderers = {
+  header: (menu) => (
+    <header>
+      <strong>{menu.appearance.name}</strong>
+      <button onClick={menu.actions.close}>Done</button>
+    </header>
+  ),
+  assetButton: (menu, slot, asset, active) => (
+    <button onClick={() => menu.actions.equipOutfit(slot, asset.id)}>
+      {active ? 'Selected ' : ''}
+      {asset.name}
+    </button>
+  ),
 };
+
+<CharacterMenu toggleKey="C" renderers={renderers} />;
 ```
 
-## 단축키
+## Selective Exposure
 
-- `C` - 메뉴 열기/닫기 (기본값)
-- `E` - 다른 키 설정 가능
+Use `sections`, `hiddenSections`, `slots`, `hiddenSlots`, `features`, label maps, option lists, and asset filters to decide which controls and data are exposed.
+
+```tsx
+<CharacterMenu
+  toggleKey="C"
+  sections={['preview', 'identity', 'outfits']}
+  hiddenSlots={['face', 'glasses']}
+  features={{ colorPicker: false, tagFilter: true, ownedOnly: true }}
+  labelMaps={{ slots: { weapon: 'Tool' } }}
+  isAssetOwned={(asset) => asset.metadata?.ownedByPlayer === true}
+/>;
+```

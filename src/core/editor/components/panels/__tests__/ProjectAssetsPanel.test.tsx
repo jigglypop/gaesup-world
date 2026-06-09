@@ -31,9 +31,15 @@ describe('ProjectAssetsPanel helpers', () => {
   test('filters by tab, query, and kind', () => {
     const items = createProjectAssetItems({ assets, scenes, prefabs });
 
-    expect(filterProjectAssetItems(items, { tab: 'assets', kind: 'object3d' }).map((item) => item.id)).toEqual(['tree']);
-    expect(filterProjectAssetItems(items, { tab: 'materials', query: 'glass' }).map((item) => item.id)).toEqual(['mat-glass']);
-    expect(filterProjectAssetItems(items, { tab: 'prefabs', query: 'props' }).map((item) => item.id)).toEqual(['crate-prefab']);
+    expect(
+      filterProjectAssetItems(items, { tab: 'assets', kind: 'object3d' }).map((item) => item.id),
+    ).toEqual(['tree']);
+    expect(
+      filterProjectAssetItems(items, { tab: 'materials', query: 'glass' }).map((item) => item.id),
+    ).toEqual(['mat-glass']);
+    expect(
+      filterProjectAssetItems(items, { tab: 'prefabs', query: 'props' }).map((item) => item.id),
+    ).toEqual(['crate-prefab']);
   });
 });
 
@@ -51,7 +57,9 @@ describe('ProjectAssetsPanel', () => {
 
     expect(screen.getByText('Scene A')).toBeTruthy();
     fireEvent.click(screen.getByText('Scene A'));
-    expect(onSelectItem).toHaveBeenCalledWith(expect.objectContaining({ id: 'scene-a', group: 'scenes' }));
+    expect(onSelectItem).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'scene-a', group: 'scenes' }),
+    );
 
     fireEvent.click(screen.getByText('prefabs'));
     expect(screen.getByText('Prefab A')).toBeTruthy();
@@ -66,7 +74,33 @@ describe('ProjectAssetsPanel', () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText('Search project assets'), { target: { value: 'missing' } });
+    fireEvent.change(screen.getByLabelText('Search project assets'), {
+      target: { value: 'missing' },
+    });
     expect(screen.getByText('No project items')).toBeTruthy();
+  });
+
+  test('커스텀 renderer와 controlled 필터를 사용할 수 있어야 한다', () => {
+    const onQueryChange = jest.fn();
+    render(
+      <ProjectAssetsPanel
+        assets={[{ id: 'custom-tree', name: 'Custom Tree', kind: 'object3d', tags: ['nature'] }]}
+        activeTab="assets"
+        query="tree"
+        onQueryChange={onQueryChange}
+        renderers={{
+          item: (_, item) => (
+            <article key={item.id} data-testid="custom-project-item">
+              {item.name}
+            </article>
+          ),
+          status: (context) => <div>{context.labels.statusItems(context.items.length)}</div>,
+        }}
+      />,
+    );
+    expect(screen.getByTestId('custom-project-item')).toHaveTextContent('Custom Tree');
+    expect(screen.getByText('1 items')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Search project assets'), { target: { value: 'rock' } });
+    expect(onQueryChange).toHaveBeenCalledWith('rock');
   });
 });

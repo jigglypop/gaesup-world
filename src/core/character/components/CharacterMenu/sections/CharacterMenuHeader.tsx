@@ -1,50 +1,38 @@
-import type { CharacterMenuPreset } from '../types';
+import type { CharacterMenuRenderContext } from '../types';
 
 type CharacterMenuHeaderProps = {
-  onClose: () => void;
-  onReset: () => void;
-  preset: CharacterMenuPreset;
-  compact?: boolean;
+  context: CharacterMenuRenderContext;
 };
 
-export function CharacterMenuHeader({
-  onClose,
-  onReset,
-  preset,
-  compact,
-}: CharacterMenuHeaderProps) {
+export function CharacterMenuHeader({ context }: CharacterMenuHeaderProps) {
   return (
-    <header className="flex items-center justify-between gap-3 mb-4">
-      <h2
-        className={compact ? 'text-sm font-bold' : 'text-lg font-bold'}
-        style={{ color: preset.theme.textColor }}
-      >
-        ✨ 캐릭터 꾸미기
-      </h2>
-      <div className="flex gap-2">
-        <button
-          onClick={onReset}
-          className="px-3 py-1 rounded-lg border text-xs font-semibold transition-colors hover:opacity-80"
-          style={{
-            background: 'rgba(255,255,255,0.08)',
-            borderColor: preset.theme.borderColor,
-            color: preset.theme.textColor,
-          }}
-        >
-          초기화
-        </button>
-        <button
-          onClick={onClose}
-          className="px-3 py-1 rounded-lg border text-xs font-semibold transition-colors hover:opacity-80"
-          style={{
-            background: preset.theme.accentColor + '20',
-            borderColor: preset.theme.accentColor,
-            color: preset.theme.accentColor,
-          }}
-        >
-          닫기
-        </button>
+    <div
+      className={context.classNameFor('header')}
+      style={context.styleFor('header', { borderColor: context.preset.theme.borderColor })}
+    >
+      <h2 className={context.classNameFor('title')}>{context.labels.title}</h2>
+      <div className={context.classNameFor('actions')}>
+        {context.features.resetButton && (
+          <button
+            type="button"
+            className={context.classNameFor('ghostButton')}
+            style={context.styleFor('ghostButton', context.getButtonStyle())}
+            onClick={context.actions.reset}
+          >
+            {context.labels.reset}
+          </button>
+        )}
+        {context.features.closeButton && (
+          <button
+            type="button"
+            className={context.classNameFor('primaryButton')}
+            style={context.styleFor('primaryButton', context.getButtonStyle(true))}
+            onClick={context.actions.close}
+          >
+            {context.labels.close}
+          </button>
+        )}
       </div>
-    </header>
+    </div>
   );
 }

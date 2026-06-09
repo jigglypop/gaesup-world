@@ -15,6 +15,7 @@ import {
   BUILDING_TILE_OBJECT_OPTIONS,
   BUILDING_TILE_SHAPE_OPTIONS,
   BUILDING_WEATHER_EFFECT_OPTIONS,
+  BUILDING_WORLD_SURFACE_OPTIONS,
   type MeshConfig,
 } from '../../types';
 import './styles.css';
@@ -42,11 +43,11 @@ export function BuildingUI({
   npcPanel = false,
   extensionPanel,
 }: BuildingUIProps) {
-  const { 
-    setEditMode, 
-    editMode, 
-    isInEditMode, 
-    currentTileMultiplier, 
+  const {
+    setEditMode,
+    editMode,
+    isInEditMode,
+    currentTileMultiplier,
     setTileMultiplier,
     currentTileHeight,
     setTileHeight,
@@ -149,116 +150,122 @@ export function BuildingUI({
     setFogColor,
     weatherEffect,
     setWeatherEffect,
-  } = useBuildingStore(useShallow((state) => ({
-    setEditMode: state.setEditMode,
-    editMode: state.editMode,
-    isInEditMode: state.isInEditMode,
-    currentTileMultiplier: state.currentTileMultiplier,
-    setTileMultiplier: state.setTileMultiplier,
-    currentTileHeight: state.currentTileHeight,
-    setTileHeight: state.setTileHeight,
-    currentTileShape: state.currentTileShape,
-    setTileShape: state.setTileShape,
-    currentTileRotation: state.currentTileRotation,
-    setTileRotation: state.setTileRotation,
-    currentWallRotation: state.currentWallRotation,
-    setWallRotation: state.setWallRotation,
-    currentWallKind: state.currentWallKind,
-    setWallKind: state.setWallKind,
-    applyWallPreset: state.applyWallPreset,
-    wallCategories: state.wallCategories,
-    tileCategories: state.tileCategories,
-    selectedWallCategoryId: state.selectedWallCategoryId,
-    selectedTileCategoryId: state.selectedTileCategoryId,
-    selectedWallGroupId: state.selectedWallGroupId,
-    selectedTileGroupId: state.selectedTileGroupId,
-    selectedWallId: state.selectedWallId,
-    selectedTileId: state.selectedTileId,
-    setCurrentWallMaterialId: state.setCurrentWallMaterialId,
-    setCurrentTileMaterialId: state.setCurrentTileMaterialId,
-    setSelectedWallCategory: state.setSelectedWallCategory,
-    setSelectedTileCategory: state.setSelectedTileCategory,
-    wallGroups: state.wallGroups,
-    tileGroups: state.tileGroups,
-    meshes: state.meshes,
-    updateMesh: state.updateMesh,
-    addMesh: state.addMesh,
-    updateWall: state.updateWall,
-    moveWallToGroup: state.moveWallToGroup,
-    updateTile: state.updateTile,
-    addWallGroup: state.addWallGroup,
-    addTileGroup: state.addTileGroup,
-    selectedTileObjectType: state.selectedTileObjectType,
-    setSelectedTileObjectType: state.setSelectedTileObjectType,
-    currentCustomTileName: state.currentCustomTileName,
-    currentCustomTileColor: state.currentCustomTileColor,
-    currentCustomTileTextureUrl: state.currentCustomTileTextureUrl,
-    setCustomTileDraft: state.setCustomTileDraft,
-    applyTilePreset: state.applyTilePreset,
-    applyCustomTile: state.applyCustomTile,
-    selectedPlacedObjectType: state.selectedPlacedObjectType,
-    setSelectedPlacedObjectType: state.setSelectedPlacedObjectType,
-    currentObjectRotation: state.currentObjectRotation,
-    setObjectRotation: state.setObjectRotation,
-    selectedModelObjectId: state.selectedModelObjectId,
-    setSelectedModelObjectId: state.setSelectedModelObjectId,
-    currentModelUrl: state.currentModelUrl,
-    setModelUrl: state.setModelUrl,
-    currentModelScale: state.currentModelScale,
-    setModelScale: state.setModelScale,
-    currentModelColor: state.currentModelColor,
-    setModelColor: state.setModelColor,
-    currentObjectPrimaryColor: state.currentObjectPrimaryColor,
-    setObjectPrimaryColor: state.setObjectPrimaryColor,
-    currentObjectSecondaryColor: state.currentObjectSecondaryColor,
-    setObjectSecondaryColor: state.setObjectSecondaryColor,
-    currentTreeKind: state.currentTreeKind,
-    setTreeKind: state.setTreeKind,
-    currentFlagWidth: state.currentFlagWidth,
-    setFlagWidth: state.setFlagWidth,
-    currentFlagHeight: state.currentFlagHeight,
-    setFlagHeight: state.setFlagHeight,
-    currentFlagImageUrl: state.currentFlagImageUrl,
-    setFlagImageUrl: state.setFlagImageUrl,
-    currentFlagStyle: state.currentFlagStyle,
-    setFlagStyle: state.setFlagStyle,
-    currentFireIntensity: state.currentFireIntensity,
-    setFireIntensity: state.setFireIntensity,
-    currentFireWidth: state.currentFireWidth,
-    setFireWidth: state.setFireWidth,
-    currentFireHeight: state.currentFireHeight,
-    setFireHeight: state.setFireHeight,
-    currentFireColor: state.currentFireColor,
-    setFireColor: state.setFireColor,
-    currentBillboardText: state.currentBillboardText,
-    setBillboardText: state.setBillboardText,
-    currentBillboardImageUrl: state.currentBillboardImageUrl,
-    setBillboardImageUrl: state.setBillboardImageUrl,
-    currentBillboardColor: state.currentBillboardColor,
-    setBillboardColor: state.setBillboardColor,
-    currentBillboardWidth: state.currentBillboardWidth,
-    setBillboardWidth: state.setBillboardWidth,
-    currentBillboardHeight: state.currentBillboardHeight,
-    setBillboardHeight: state.setBillboardHeight,
-    currentBillboardScale: state.currentBillboardScale,
-    setBillboardScale: state.setBillboardScale,
-    currentBillboardOffsetY: state.currentBillboardOffsetY,
-    setBillboardOffsetY: state.setBillboardOffsetY,
-    currentBillboardElevation: state.currentBillboardElevation,
-    setBillboardElevation: state.setBillboardElevation,
-    currentBillboardIntensity: state.currentBillboardIntensity,
-    setBillboardIntensity: state.setBillboardIntensity,
-    showSnow: state.showSnow,
-    setShowSnow: state.setShowSnow,
-    showFog: state.showFog,
-    setShowFog: state.setShowFog,
-    fogColor: state.fogColor,
-    setFogColor: state.setFogColor,
-    weatherEffect: state.weatherEffect,
-    setWeatherEffect: state.setWeatherEffect,
-  })));
+    worldSurface,
+    setWorldSurface,
+  } = useBuildingStore(
+    useShallow((state) => ({
+      setEditMode: state.setEditMode,
+      editMode: state.editMode,
+      isInEditMode: state.isInEditMode,
+      currentTileMultiplier: state.currentTileMultiplier,
+      setTileMultiplier: state.setTileMultiplier,
+      currentTileHeight: state.currentTileHeight,
+      setTileHeight: state.setTileHeight,
+      currentTileShape: state.currentTileShape,
+      setTileShape: state.setTileShape,
+      currentTileRotation: state.currentTileRotation,
+      setTileRotation: state.setTileRotation,
+      currentWallRotation: state.currentWallRotation,
+      setWallRotation: state.setWallRotation,
+      currentWallKind: state.currentWallKind,
+      setWallKind: state.setWallKind,
+      applyWallPreset: state.applyWallPreset,
+      wallCategories: state.wallCategories,
+      tileCategories: state.tileCategories,
+      selectedWallCategoryId: state.selectedWallCategoryId,
+      selectedTileCategoryId: state.selectedTileCategoryId,
+      selectedWallGroupId: state.selectedWallGroupId,
+      selectedTileGroupId: state.selectedTileGroupId,
+      selectedWallId: state.selectedWallId,
+      selectedTileId: state.selectedTileId,
+      setCurrentWallMaterialId: state.setCurrentWallMaterialId,
+      setCurrentTileMaterialId: state.setCurrentTileMaterialId,
+      setSelectedWallCategory: state.setSelectedWallCategory,
+      setSelectedTileCategory: state.setSelectedTileCategory,
+      wallGroups: state.wallGroups,
+      tileGroups: state.tileGroups,
+      meshes: state.meshes,
+      updateMesh: state.updateMesh,
+      addMesh: state.addMesh,
+      updateWall: state.updateWall,
+      moveWallToGroup: state.moveWallToGroup,
+      updateTile: state.updateTile,
+      addWallGroup: state.addWallGroup,
+      addTileGroup: state.addTileGroup,
+      selectedTileObjectType: state.selectedTileObjectType,
+      setSelectedTileObjectType: state.setSelectedTileObjectType,
+      currentCustomTileName: state.currentCustomTileName,
+      currentCustomTileColor: state.currentCustomTileColor,
+      currentCustomTileTextureUrl: state.currentCustomTileTextureUrl,
+      setCustomTileDraft: state.setCustomTileDraft,
+      applyTilePreset: state.applyTilePreset,
+      applyCustomTile: state.applyCustomTile,
+      selectedPlacedObjectType: state.selectedPlacedObjectType,
+      setSelectedPlacedObjectType: state.setSelectedPlacedObjectType,
+      currentObjectRotation: state.currentObjectRotation,
+      setObjectRotation: state.setObjectRotation,
+      selectedModelObjectId: state.selectedModelObjectId,
+      setSelectedModelObjectId: state.setSelectedModelObjectId,
+      currentModelUrl: state.currentModelUrl,
+      setModelUrl: state.setModelUrl,
+      currentModelScale: state.currentModelScale,
+      setModelScale: state.setModelScale,
+      currentModelColor: state.currentModelColor,
+      setModelColor: state.setModelColor,
+      currentObjectPrimaryColor: state.currentObjectPrimaryColor,
+      setObjectPrimaryColor: state.setObjectPrimaryColor,
+      currentObjectSecondaryColor: state.currentObjectSecondaryColor,
+      setObjectSecondaryColor: state.setObjectSecondaryColor,
+      currentTreeKind: state.currentTreeKind,
+      setTreeKind: state.setTreeKind,
+      currentFlagWidth: state.currentFlagWidth,
+      setFlagWidth: state.setFlagWidth,
+      currentFlagHeight: state.currentFlagHeight,
+      setFlagHeight: state.setFlagHeight,
+      currentFlagImageUrl: state.currentFlagImageUrl,
+      setFlagImageUrl: state.setFlagImageUrl,
+      currentFlagStyle: state.currentFlagStyle,
+      setFlagStyle: state.setFlagStyle,
+      currentFireIntensity: state.currentFireIntensity,
+      setFireIntensity: state.setFireIntensity,
+      currentFireWidth: state.currentFireWidth,
+      setFireWidth: state.setFireWidth,
+      currentFireHeight: state.currentFireHeight,
+      setFireHeight: state.setFireHeight,
+      currentFireColor: state.currentFireColor,
+      setFireColor: state.setFireColor,
+      currentBillboardText: state.currentBillboardText,
+      setBillboardText: state.setBillboardText,
+      currentBillboardImageUrl: state.currentBillboardImageUrl,
+      setBillboardImageUrl: state.setBillboardImageUrl,
+      currentBillboardColor: state.currentBillboardColor,
+      setBillboardColor: state.setBillboardColor,
+      currentBillboardWidth: state.currentBillboardWidth,
+      setBillboardWidth: state.setBillboardWidth,
+      currentBillboardHeight: state.currentBillboardHeight,
+      setBillboardHeight: state.setBillboardHeight,
+      currentBillboardScale: state.currentBillboardScale,
+      setBillboardScale: state.setBillboardScale,
+      currentBillboardOffsetY: state.currentBillboardOffsetY,
+      setBillboardOffsetY: state.setBillboardOffsetY,
+      currentBillboardElevation: state.currentBillboardElevation,
+      setBillboardElevation: state.setBillboardElevation,
+      currentBillboardIntensity: state.currentBillboardIntensity,
+      setBillboardIntensity: state.setBillboardIntensity,
+      showSnow: state.showSnow,
+      setShowSnow: state.setShowSnow,
+      showFog: state.showFog,
+      setShowFog: state.setShowFog,
+      fogColor: state.fogColor,
+      setFogColor: state.setFogColor,
+      weatherEffect: state.weatherEffect,
+      setWeatherEffect: state.setWeatherEffect,
+      worldSurface: state.worldSurface,
+      setWorldSurface: state.setWorldSurface,
+    })),
+  );
   const isEditing = isInEditMode();
-  
+
   const [showCustomSettings, setShowCustomSettings] = React.useState(false);
   const [customName, setCustomName] = React.useState('');
   const [customColor, setCustomColor] = React.useState('#808080');
@@ -268,11 +275,15 @@ export function BuildingUI({
   const wallCategoriesArray = useMemo(() => Array.from(wallCategories.values()), [wallCategories]);
   const hasNPCPanel = npcPanel !== false && npcPanel !== null && npcPanel !== undefined;
   const selectedTileObjectLabel = useMemo(
-    () => BUILDING_TILE_OBJECT_OPTIONS.find((option) => option.type === selectedTileObjectType)?.labelEn ?? selectedTileObjectType,
+    () =>
+      BUILDING_TILE_OBJECT_OPTIONS.find((option) => option.type === selectedTileObjectType)
+        ?.labelEn ?? selectedTileObjectType,
     [selectedTileObjectType],
   );
   const selectedTileShapeLabel = useMemo(
-    () => BUILDING_TILE_SHAPE_OPTIONS.find((option) => option.type === currentTileShape)?.labelEn ?? currentTileShape,
+    () =>
+      BUILDING_TILE_SHAPE_OPTIONS.find((option) => option.type === currentTileShape)?.labelEn ??
+      currentTileShape,
     [currentTileShape],
   );
   const selectedModelObject = useMemo(
@@ -289,49 +300,59 @@ export function BuildingUI({
     return lookup;
   }, [wallGroups]);
 
-  const upsertCustomMesh = useCallback((sourceMeshId: string | undefined, nextMeshId: string): string => {
-    const base = sourceMeshId ? meshes.get(sourceMeshId) : undefined;
-    const { mapTextureUrl, textureUrl, ...baseWithoutTexture } = base ?? {};
-    void mapTextureUrl;
-    void textureUrl;
-    const nextMesh: MeshConfig = {
-      ...baseWithoutTexture,
-      id: nextMeshId,
-      color: customColor,
-      material: 'STANDARD',
-      ...(customTexture ? { mapTextureUrl: customTexture, textureUrl: customTexture } : {}),
-    };
+  const upsertCustomMesh = useCallback(
+    (sourceMeshId: string | undefined, nextMeshId: string): string => {
+      const base = sourceMeshId ? meshes.get(sourceMeshId) : undefined;
+      const { mapTextureUrl, textureUrl, ...baseWithoutTexture } = base ?? {};
+      void mapTextureUrl;
+      void textureUrl;
+      const nextMesh: MeshConfig = {
+        ...baseWithoutTexture,
+        id: nextMeshId,
+        color: customColor,
+        material: 'STANDARD',
+        ...(customTexture ? { mapTextureUrl: customTexture, textureUrl: customTexture } : {}),
+      };
 
-    if (meshes.has(nextMeshId)) {
-      updateMesh(nextMeshId, nextMesh);
-    } else {
-      addMesh(nextMesh);
-    }
-    return nextMeshId;
-  }, [addMesh, customColor, customTexture, meshes, updateMesh]);
+      if (meshes.has(nextMeshId)) {
+        updateMesh(nextMeshId, nextMesh);
+      } else {
+        addMesh(nextMesh);
+      }
+      return nextMeshId;
+    },
+    [addMesh, customColor, customTexture, meshes, updateMesh],
+  );
 
-  const findWallGroupByWallId = useCallback((wallId: string) => {
-    const groupId = wallGroupByWallId.get(wallId);
-    return groupId ? wallGroups.get(groupId) : undefined;
-  }, [wallGroupByWallId, wallGroups]);
+  const findWallGroupByWallId = useCallback(
+    (wallId: string) => {
+      const groupId = wallGroupByWallId.get(wallId);
+      return groupId ? wallGroups.get(groupId) : undefined;
+    },
+    [wallGroupByWallId, wallGroups],
+  );
   const selectedWallTypeGroupId = selectedWallId
     ? findWallGroupByWallId(selectedWallId)?.id
     : selectedWallGroupId;
-  const selectedWallGroup = selectedWallId ? findWallGroupByWallId(selectedWallId) : wallGroups.get(selectedWallGroupId ?? '');
+  const selectedWallGroup = selectedWallId
+    ? findWallGroupByWallId(selectedWallId)
+    : wallGroups.get(selectedWallGroupId ?? '');
   const selectedWall = selectedWallId
     ? selectedWallGroup?.walls.find((wall) => wall.id === selectedWallId)
     : undefined;
-  
+
   // Callbacks
   const handleEditModeClose = useCallback(() => {
     setEditMode('none');
     onClose?.();
   }, [setEditMode, onClose]);
-  const handleToggleCustomSettings = useCallback(() => setShowCustomSettings(prev => !prev), []);
-  
+  const handleToggleCustomSettings = useCallback(() => setShowCustomSettings((prev) => !prev), []);
+
   React.useEffect(() => {
     if (editMode === 'wall' && selectedWallGroupId) {
-      const wallGroup = selectedWallId ? findWallGroupByWallId(selectedWallId) : wallGroups.get(selectedWallGroupId);
+      const wallGroup = selectedWallId
+        ? findWallGroupByWallId(selectedWallId)
+        : wallGroups.get(selectedWallGroupId);
       const selectedWall = selectedWallId
         ? wallGroup?.walls.find((wall) => wall.id === selectedWallId)
         : undefined;
@@ -353,39 +374,43 @@ export function BuildingUI({
         }
       }
     }
-  }, [editMode, selectedWallGroupId, selectedTileGroupId, selectedWallId, findWallGroupByWallId, wallGroups, tileGroups, meshes]);
-  
+  }, [
+    editMode,
+    selectedWallGroupId,
+    selectedTileGroupId,
+    selectedWallId,
+    findWallGroupByWallId,
+    wallGroups,
+    tileGroups,
+    meshes,
+  ]);
+
   if (!canEdit) {
     return null;
   }
-  
+
   return (
     <>
-      {isEditing && (
-        <div className="building-edit-mode-overlay" />
-      )}
-      
+      {isEditing && <div className="building-edit-mode-overlay" />}
+
       <div className="building-ui-container">
         {isEditing ? (
           <div className="building-ui-panel">
             <div className="building-ui-header">
               <span className="building-ui-title">Building Mode</span>
-              <button 
-                onClick={handleEditModeClose}
-                className="building-ui-close"
-              >
+              <button onClick={handleEditModeClose} className="building-ui-close">
                 ×
               </button>
             </div>
-            
+
             <div className="building-ui-mode-group">
-              <button 
-                onClick={() => setEditMode('wall')} 
+              <button
+                onClick={() => setEditMode('wall')}
                 className={`building-ui-mode-button ${editMode === 'wall' ? 'active' : ''}`}
               >
                 Wall Mode
               </button>
-              <button 
+              <button
                 onClick={() => setEditMode('tile')}
                 className={`building-ui-mode-button ${editMode === 'tile' ? 'active' : ''}`}
               >
@@ -422,11 +447,22 @@ export function BuildingUI({
                 >
                   Snow {showSnow ? 'ON' : 'OFF'}
                 </button>
-                {BUILDING_WEATHER_EFFECT_OPTIONS.filter((option) => option.type !== 'snow').map((option) => (
+                {BUILDING_WEATHER_EFFECT_OPTIONS.filter((option) => option.type !== 'snow').map(
+                  (option) => (
+                    <button
+                      key={option.type}
+                      onClick={() => setWeatherEffect(option.type)}
+                      className={`building-ui-object-button ${weatherEffect === option.type ? 'active' : ''}`}
+                    >
+                      {option.labelEn}
+                    </button>
+                  ),
+                )}
+                {BUILDING_WORLD_SURFACE_OPTIONS.map((option) => (
                   <button
                     key={option.type}
-                    onClick={() => setWeatherEffect(option.type)}
-                    className={`building-ui-object-button ${weatherEffect === option.type ? 'active' : ''}`}
+                    onClick={() => setWorldSurface(option.type)}
+                    className={`building-ui-object-button ${worldSurface === option.type ? 'active' : ''}`}
                   >
                     {option.labelEn}
                   </button>
@@ -448,39 +484,42 @@ export function BuildingUI({
                 </label>
               </div>
             </div>
-            
+
             {editMode === 'tile' && (
               <>
                 <div className="building-ui-category-group">
                   <span className="building-ui-label">Category:</span>
-                  <select 
-                    value={selectedTileCategoryId || ''} 
+                  <select
+                    value={selectedTileCategoryId || ''}
                     onChange={(e) => setSelectedTileCategory(e.target.value)}
                     className="building-ui-select"
                   >
-                    {tileCategoriesArray.map(category => (
+                    {tileCategoriesArray.map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.name}
                       </option>
                     ))}
                   </select>
                 </div>
-                
+
                 <div className="building-ui-category-group">
                   <span className="building-ui-label">Type:</span>
-                  <select 
-                    value={selectedTileGroupId || ''} 
-                    onChange={(e) => useBuildingStore.setState({ selectedTileGroupId: e.target.value })}
+                  <select
+                    value={selectedTileGroupId || ''}
+                    onChange={(e) =>
+                      useBuildingStore.setState({ selectedTileGroupId: e.target.value })
+                    }
                     className="building-ui-select"
                   >
-                    {selectedTileCategoryId && tileCategories.get(selectedTileCategoryId)?.tileGroupIds.map(groupId => {
-                      const group = tileGroups.get(groupId);
-                      return group ? (
-                        <option key={group.id} value={group.id}>
-                          {group.name}
-                        </option>
-                      ) : null;
-                    })}
+                    {selectedTileCategoryId &&
+                      tileCategories.get(selectedTileCategoryId)?.tileGroupIds.map((groupId) => {
+                        const group = tileGroups.get(groupId);
+                        return group ? (
+                          <option key={group.id} value={group.id}>
+                            {group.name}
+                          </option>
+                        ) : null;
+                      })}
                   </select>
                 </div>
 
@@ -520,21 +559,20 @@ export function BuildingUI({
                 <button
                   onClick={() => {
                     if (!selectedWallId || !selectedWallGroup) return;
-                    updateWall(selectedWallGroup.id, selectedWallId, { flipSides: !selectedWall?.flipSides });
+                    updateWall(selectedWallGroup.id, selectedWallId, {
+                      flipSides: !selectedWall?.flipSides,
+                    });
                   }}
                   className="building-ui-apply-button"
                   disabled={!selectedWallId || !selectedWallGroup}
                 >
                   Flip Interior/Exterior
                 </button>
-                
-                <button 
-                  onClick={handleToggleCustomSettings}
-                  className="building-ui-custom-toggle"
-                >
+
+                <button onClick={handleToggleCustomSettings} className="building-ui-custom-toggle">
                   커스텀 설정 {showCustomSettings ? '숨기기' : '보기'}
                 </button>
-                
+
                 {showCustomSettings && (
                   <div className="building-ui-custom-settings">
                     <div className="building-ui-input-group">
@@ -547,7 +585,7 @@ export function BuildingUI({
                         className="building-ui-input"
                       />
                     </div>
-                    
+
                     <div className="building-ui-input-group">
                       <span className="building-ui-label">Color:</span>
                       <div className="building-ui-color-input">
@@ -566,7 +604,7 @@ export function BuildingUI({
                         />
                       </div>
                     </div>
-                    
+
                     <div className="building-ui-input-group">
                       <span className="building-ui-label">Texture URL:</span>
                       <input
@@ -577,15 +615,21 @@ export function BuildingUI({
                         className="building-ui-input"
                       />
                     </div>
-                    
+
                     <button
                       onClick={() => {
                         if (selectedTileGroupId) {
                           const tileGroup = tileGroups.get(selectedTileGroupId);
                           if (tileGroup && tileGroup.floorMeshId) {
                             const meshId = selectedTileId
-                              ? upsertCustomMesh(tileGroup.floorMeshId, `custom-tile-mesh-${selectedTileId}`)
-                              : upsertCustomMesh(tileGroup.floorMeshId, createCustomMeshId('custom-placement-tile-mesh'));
+                              ? upsertCustomMesh(
+                                  tileGroup.floorMeshId,
+                                  `custom-tile-mesh-${selectedTileId}`,
+                                )
+                              : upsertCustomMesh(
+                                  tileGroup.floorMeshId,
+                                  createCustomMeshId('custom-placement-tile-mesh'),
+                                );
                             if (selectedTileId) {
                               updateTile(tileGroup.id, selectedTileId, { materialId: meshId });
                               return;
@@ -598,40 +642,42 @@ export function BuildingUI({
                     >
                       Apply Changes
                     </button>
-                    
+
                     <button
                       onClick={() => {
                         if (customName) {
                           const newId = `custom-tile-${Date.now()}`;
                           const newMeshId = `custom-floor-mesh-${Date.now()}`;
-                          
+
                           // Create new mesh
                           addMesh({
                             id: newMeshId,
                             color: customColor,
                             material: 'STANDARD',
                             ...(customTexture ? { mapTextureUrl: customTexture } : {}),
-                            roughness: 0.6
+                            roughness: 0.6,
                           });
-                          
+
                           // Create new tile group
                           addTileGroup({
                             id: newId,
                             name: customName,
                             floorMeshId: newMeshId,
-                            tiles: []
+                            tiles: [],
                           });
-                          
+
                           // Add to current category
                           if (selectedTileCategoryId) {
                             const category = tileCategories.get(selectedTileCategoryId);
                             if (category) {
-                              useBuildingStore.getState().updateTileCategory(selectedTileCategoryId, {
-                                tileGroupIds: [...category.tileGroupIds, newId]
-                              });
+                              useBuildingStore
+                                .getState()
+                                .updateTileCategory(selectedTileCategoryId, {
+                                  tileGroupIds: [...category.tileGroupIds, newId],
+                                });
                             }
                           }
-                          
+
                           useBuildingStore.setState({ selectedTileGroupId: newId });
                           setCustomName('');
                         }
@@ -642,7 +688,7 @@ export function BuildingUI({
                     </button>
                   </div>
                 )}
-                
+
                 <div className="building-ui-size-group">
                   <span className="building-ui-label">Tile Size:</span>
                   <div className="building-ui-size-buttons">
@@ -778,7 +824,7 @@ export function BuildingUI({
                     Create/Select Separate Tile Map
                   </button>
                 </div>
-                
+
                 <div className="building-ui-object-group">
                   <span className="building-ui-label">Tile Object:</span>
                   <div className="building-ui-object-buttons">
@@ -793,11 +839,14 @@ export function BuildingUI({
                     ))}
                   </div>
                 </div>
-                
+
                 <div className="building-ui-info">
                   <p>Category: {tileCategories.get(selectedTileCategoryId || '')?.name}</p>
                   <p>Type: {tileGroups.get(selectedTileGroupId || '')?.name}</p>
-                  <p>Size: {currentTileMultiplier}x{currentTileMultiplier} ({currentTileMultiplier * 4}m)</p>
+                  <p>
+                    Size: {currentTileMultiplier}x{currentTileMultiplier} (
+                    {currentTileMultiplier * 4}m)
+                  </p>
                   <p>Height: {currentTileHeight}</p>
                   <p>Shape: {selectedTileShapeLabel}</p>
                   <p>Object: {selectedTileObjectLabel}</p>
@@ -840,7 +889,9 @@ export function BuildingUI({
                 </div>
 
                 <div className="building-ui-info">
-                  <p>Size: {currentTileMultiplier}x{currentTileMultiplier}</p>
+                  <p>
+                    Size: {currentTileMultiplier}x{currentTileMultiplier}
+                  </p>
                   <p>Layer offset: {currentTileHeight}</p>
                   <p>Click to place voxel blocks</p>
                   <p>Click highlighted blocks to delete</p>
@@ -1263,7 +1314,12 @@ export function BuildingUI({
                 )}
 
                 <div className="building-ui-info">
-                  <p>Type: {selectedPlacedObjectType === 'model' ? selectedModelObject?.label : selectedPlacedObjectType}</p>
+                  <p>
+                    Type:{' '}
+                    {selectedPlacedObjectType === 'model'
+                      ? selectedModelObject?.label
+                      : selectedPlacedObjectType}
+                  </p>
                   {selectedPlacedObjectType === 'model' && (
                     <>
                       <p>Fallback: {selectedModelObject?.fallbackKind ?? 'generic'}</p>
@@ -1274,28 +1330,28 @@ export function BuildingUI({
                 </div>
               </>
             )}
-            
+
             {editMode === 'wall' && (
               <>
                 <div className="building-ui-category-group">
                   <span className="building-ui-label">Category:</span>
-                  <select 
-                    value={selectedWallCategoryId || ''} 
+                  <select
+                    value={selectedWallCategoryId || ''}
                     onChange={(e) => setSelectedWallCategory(e.target.value)}
                     className="building-ui-select"
                   >
-                    {wallCategoriesArray.map(category => (
+                    {wallCategoriesArray.map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.name}
                       </option>
                     ))}
                   </select>
                 </div>
-                
+
                 <div className="building-ui-category-group">
                   <span className="building-ui-label">Type:</span>
-                  <select 
-                    value={selectedWallTypeGroupId || ''} 
+                  <select
+                    value={selectedWallTypeGroupId || ''}
                     onChange={(e) => {
                       const nextGroupId = e.target.value;
                       if (selectedWallId) {
@@ -1306,24 +1362,22 @@ export function BuildingUI({
                     }}
                     className="building-ui-select"
                   >
-                    {selectedWallCategoryId && wallCategories.get(selectedWallCategoryId)?.wallGroupIds.map(groupId => {
-                      const group = wallGroups.get(groupId);
-                      return group ? (
-                        <option key={group.id} value={group.id}>
-                          {group.name}
-                        </option>
-                      ) : null;
-                    })}
+                    {selectedWallCategoryId &&
+                      wallCategories.get(selectedWallCategoryId)?.wallGroupIds.map((groupId) => {
+                        const group = wallGroups.get(groupId);
+                        return group ? (
+                          <option key={group.id} value={group.id}>
+                            {group.name}
+                          </option>
+                        ) : null;
+                      })}
                   </select>
                 </div>
-                
-                <button 
-                  onClick={handleToggleCustomSettings}
-                  className="building-ui-custom-toggle"
-                >
+
+                <button onClick={handleToggleCustomSettings} className="building-ui-custom-toggle">
                   커스텀 설정 {showCustomSettings ? '숨기기' : '보기'}
                 </button>
-                
+
                 {showCustomSettings && (
                   <div className="building-ui-custom-settings">
                     <div className="building-ui-input-group">
@@ -1336,7 +1390,7 @@ export function BuildingUI({
                         className="building-ui-input"
                       />
                     </div>
-                    
+
                     <div className="building-ui-input-group">
                       <span className="building-ui-label">Color:</span>
                       <div className="building-ui-color-input">
@@ -1355,7 +1409,7 @@ export function BuildingUI({
                         />
                       </div>
                     </div>
-                    
+
                     <div className="building-ui-input-group">
                       <span className="building-ui-label">Texture URL:</span>
                       <input
@@ -1366,11 +1420,13 @@ export function BuildingUI({
                         className="building-ui-input"
                       />
                     </div>
-                    
+
                     <button
                       onClick={() => {
                         if (selectedWallGroupId) {
-                          const wallGroup = selectedWallId ? findWallGroupByWallId(selectedWallId) : wallGroups.get(selectedWallGroupId);
+                          const wallGroup = selectedWallId
+                            ? findWallGroupByWallId(selectedWallId)
+                            : wallGroups.get(selectedWallGroupId);
                           if (!wallGroup) return;
                           const selectedWall = selectedWallId
                             ? wallGroup.walls.find((wall) => wall.id === selectedWallId)
@@ -1393,22 +1449,22 @@ export function BuildingUI({
                     >
                       Apply Changes
                     </button>
-                    
+
                     <button
                       onClick={() => {
                         if (customName) {
                           const newId = `custom-wall-${Date.now()}`;
                           const newMeshId = `custom-mesh-${Date.now()}`;
-                          
+
                           // Create new mesh
                           addMesh({
                             id: newMeshId,
                             color: customColor,
                             material: 'STANDARD',
                             ...(customTexture ? { mapTextureUrl: customTexture } : {}),
-                            roughness: 0.7
+                            roughness: 0.7,
                           });
-                          
+
                           // Create new wall group
                           addWallGroup({
                             id: newId,
@@ -1416,19 +1472,21 @@ export function BuildingUI({
                             frontMeshId: newMeshId,
                             backMeshId: newMeshId,
                             sideMeshId: newMeshId,
-                            walls: []
+                            walls: [],
                           });
-                          
+
                           // Add to current category
                           if (selectedWallCategoryId) {
                             const category = wallCategories.get(selectedWallCategoryId);
                             if (category) {
-                              useBuildingStore.getState().updateWallCategory(selectedWallCategoryId, {
-                                wallGroupIds: [...category.wallGroupIds, newId]
-                              });
+                              useBuildingStore
+                                .getState()
+                                .updateWallCategory(selectedWallCategoryId, {
+                                  wallGroupIds: [...category.wallGroupIds, newId],
+                                });
                             }
                           }
-                          
+
                           useBuildingStore.setState({ selectedWallGroupId: newId });
                           setCustomName('');
                         }
@@ -1439,7 +1497,7 @@ export function BuildingUI({
                     </button>
                   </div>
                 )}
-                
+
                 <div className="building-ui-direction-group">
                   <span className="building-ui-label">Wall Direction:</span>
                   <div className="building-ui-direction-buttons">
@@ -1483,16 +1541,14 @@ export function BuildingUI({
                 </div>
               </>
             )}
-            
-            {editMode === 'npc' && hasNPCPanel && (
-              typeof npcPanel === 'function'
-                ? npcPanel({ editMode: 'npc' })
-                : npcPanel
-            )}
+
+            {editMode === 'npc' &&
+              hasNPCPanel &&
+              (typeof npcPanel === 'function' ? npcPanel({ editMode: 'npc' }) : npcPanel)}
             {extensionPanel}
           </div>
         ) : null}
       </div>
     </>
   );
-} 
+}

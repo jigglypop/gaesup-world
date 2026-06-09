@@ -21,7 +21,7 @@ import { useBuildingVisibilityStore } from '../../visibility/store';
 
 // BuildingStore 모킹
 jest.mock('../../stores/buildingStore', () => ({
-  useBuildingStore: jest.fn()
+  useBuildingStore: jest.fn(),
 }));
 
 // 하위 컴포넌트들 모킹
@@ -33,7 +33,7 @@ jest.mock('../WallSystem', () => ({
         <meshBasicMaterial />
       </mesh>
     </group>
-  )
+  ),
 }));
 
 jest.mock('../TileSystem', () => ({
@@ -44,7 +44,7 @@ jest.mock('../TileSystem', () => ({
         <meshBasicMaterial />
       </mesh>
     </group>
-  )
+  ),
 }));
 
 jest.mock('../BlockSystem', () => ({
@@ -57,25 +57,27 @@ jest.mock('../BlockSystem', () => ({
         </mesh>
       ))}
     </group>
-  )
+  ),
 }));
 
 jest.mock('../GridHelper', () => ({
-  GridHelper: ({ size }: any) => (
-    <gridHelper name="grid-helper" args={[size, 25]} />
-  )
+  GridHelper: ({ size }: any) => <gridHelper name="grid-helper" args={[size, 25]} />,
 }));
 
 jest.mock('../PreviewTile', () => ({
-  PreviewTile: () => <group name="preview-tile" />
+  PreviewTile: () => <group name="preview-tile" />,
 }));
 
 jest.mock('../PreviewWall', () => ({
-  PreviewWall: () => <group name="preview-wall" />
+  PreviewWall: () => <group name="preview-wall" />,
+}));
+
+jest.mock('../PreviewBlock', () => ({
+  PreviewBlock: () => <group name="preview-block" />,
 }));
 
 jest.mock('../../../npc/components/NPCPreview', () => ({
-  NPCPreview: () => <group name="npc-preview" />
+  NPCPreview: () => <group name="npc-preview" />,
 }));
 
 jest.mock('../../../weather', () => ({
@@ -117,35 +119,47 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
 
   const mockMeshes = new Map<string, MeshConfig>([
     ['brick-mesh', { id: 'brick-mesh', color: '#8B4513' }],
-    ['wood-mesh', { id: 'wood-mesh', color: '#654321' }]
+    ['wood-mesh', { id: 'wood-mesh', color: '#654321' }],
   ]);
 
   const mockWallGroups = new Map<string, WallGroupConfig>([
-    ['wall-group-1', {
-      id: 'wall-group-1',
-      name: 'Test Wall Group 1',
-      walls: []
-    }],
-    ['wall-group-2', {
-      id: 'wall-group-2',
-      name: 'Test Wall Group 2',
-      walls: []
-    }]
+    [
+      'wall-group-1',
+      {
+        id: 'wall-group-1',
+        name: 'Test Wall Group 1',
+        walls: [],
+      },
+    ],
+    [
+      'wall-group-2',
+      {
+        id: 'wall-group-2',
+        name: 'Test Wall Group 2',
+        walls: [],
+      },
+    ],
   ]);
 
   const mockTileGroups = new Map<string, TileGroupConfig>([
-    ['tile-group-1', {
-      id: 'tile-group-1',
-      name: 'Test Tile Group 1',
-      floorMeshId: 'wood-mesh',
-      tiles: []
-    }],
-    ['tile-group-2', {
-      id: 'tile-group-2',
-      name: 'Test Tile Group 2',
-      floorMeshId: 'brick-mesh',
-      tiles: []
-    }]
+    [
+      'tile-group-1',
+      {
+        id: 'tile-group-1',
+        name: 'Test Tile Group 1',
+        floorMeshId: 'wood-mesh',
+        tiles: [],
+      },
+    ],
+    [
+      'tile-group-2',
+      {
+        id: 'tile-group-2',
+        name: 'Test Tile Group 2',
+        floorMeshId: 'brick-mesh',
+        tiles: [],
+      },
+    ],
   ]);
 
   // BuildingSystem이 useBuildingStore(s => s.field) 패턴을 사용하므로
@@ -163,12 +177,14 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
       showFog: false,
       fogColor: '#cfd8e3',
       weatherEffect: 'none',
+      worldSurface: 'ground',
       objects: [],
       ...overrides,
     };
     mockUseBuildingStore.mockImplementation(((selector?: (s: unknown) => unknown) =>
-      typeof selector === 'function' ? selector(state) : state
-    ) as unknown as typeof useBuildingStore);
+      typeof selector === 'function'
+        ? selector(state)
+        : state) as unknown as typeof useBuildingStore);
   };
 
   beforeEach(() => {
@@ -229,6 +245,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
 
       expectSceneHasName(renderer, 'preview-tile');
       expectSceneHasName(renderer, 'preview-wall');
+      expectSceneHasName(renderer, 'preview-block');
       expectSceneHasName(renderer, 'npc-preview');
 
       renderer.unmount();
@@ -272,7 +289,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
       const mockOnWallDelete = jest.fn();
 
       const renderer = await ReactThreeTestRenderer.create(
-        <BuildingSystem onWallClick={mockOnWallClick} onWallDelete={mockOnWallDelete} />
+        <BuildingSystem onWallClick={mockOnWallClick} onWallDelete={mockOnWallDelete} />,
       );
 
       expectSceneHasName(renderer, 'wall-system-wall-group-1');
@@ -337,7 +354,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
       const mockOnTileDelete = jest.fn();
 
       const renderer = await ReactThreeTestRenderer.create(
-        <BuildingSystem onTileClick={mockOnTileClick} onTileDelete={mockOnTileDelete} />
+        <BuildingSystem onTileClick={mockOnTileClick} onTileDelete={mockOnTileDelete} />,
       );
 
       expectSceneHasName(renderer, 'tile-system-tile-group-1');
@@ -387,7 +404,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
   describe('다양한 편집 모드', () => {
     const editModes = ['none', 'wall', 'tile', 'block', 'npc'] as const;
 
-    editModes.forEach(mode => {
+    editModes.forEach((mode) => {
       test(`${mode} 편집 모드에서 올바르게 렌더링되어야 함`, async () => {
         mockStore({ editMode: mode });
 
@@ -395,6 +412,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
 
         expectSceneHasName(renderer, 'preview-tile');
         expectSceneHasName(renderer, 'preview-wall');
+        expectSceneHasName(renderer, 'preview-block');
         expectSceneHasName(renderer, 'npc-preview');
         expectSceneHasName(renderer, 'wall-system-wall-group-1');
         expectSceneHasName(renderer, 'tile-system-tile-group-1');
@@ -420,7 +438,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
         onWallClick: jest.fn(),
         onTileClick: jest.fn(),
         onWallDelete: jest.fn(),
-        onTileDelete: jest.fn()
+        onTileDelete: jest.fn(),
       };
 
       const renderer = await ReactThreeTestRenderer.create(<BuildingSystem {...props} />);
@@ -447,14 +465,14 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
     // 따라서 props 변경(콜백 ref 교체)으로 memo 게이트를 통과시켜 새 store 값을 반영시킨다.
     test('wallGroups 변경 시 리렌더링되어야 함', async () => {
       const renderer = await ReactThreeTestRenderer.create(
-        <BuildingSystem onWallClick={jest.fn()} />
+        <BuildingSystem onWallClick={jest.fn()} />,
       );
 
       const newWallGroups = new Map(mockWallGroups);
       newWallGroups.set('wall-group-3', {
         id: 'wall-group-3',
         name: 'New Wall Group',
-        walls: []
+        walls: [],
       });
 
       mockStore({ wallGroups: newWallGroups });
@@ -467,7 +485,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
 
     test('tileGroups 변경 시 리렌더링되어야 함', async () => {
       const renderer = await ReactThreeTestRenderer.create(
-        <BuildingSystem onTileClick={jest.fn()} />
+        <BuildingSystem onTileClick={jest.fn()} />,
       );
 
       const newTileGroups = new Map(mockTileGroups);
@@ -475,7 +493,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
         id: 'tile-group-3',
         name: 'New Tile Group',
         floorMeshId: 'wood-mesh',
-        tiles: []
+        tiles: [],
       });
 
       mockStore({ tileGroups: newTileGroups });
@@ -594,4 +612,4 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
       renderer.unmount();
     });
   });
-}); 
+});

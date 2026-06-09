@@ -424,6 +424,39 @@ export const tileOverlaps = (
   Math.abs(a.x - b.x) < (a.halfSize + b.halfSize - 0.1) &&
   Math.abs(a.z - b.z) < (a.halfSize + b.halfSize - 0.1);
 
+const overlapsRange = (minA: number, maxA: number, minB: number, maxB: number): boolean =>
+  minA < maxB - 0.1 && maxA > minB + 0.1;
+
+export const getBlockSupportHeight = (
+  blocks: Iterable<BuildingBlockConfig>,
+  position: Vec3,
+  multiplier = 1,
+  anchorToCell = false,
+): number => {
+  const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
+  const width = Math.max(1, Math.round(multiplier)) * cellSize;
+  const halfSize = width * 0.5;
+  const candidateMinX = anchorToCell ? position.x - cellSize * 0.5 : position.x - halfSize;
+  const candidateMaxX = anchorToCell ? candidateMinX + width : position.x + halfSize;
+  const candidateMinZ = anchorToCell ? position.z - cellSize * 0.5 : position.z - halfSize;
+  const candidateMaxZ = anchorToCell ? candidateMinZ + width : position.z + halfSize;
+  let support = 0;
+  for (const block of blocks) {
+    const blockWidth = Math.max(1, Math.round(block.size?.x ?? 1)) * cellSize;
+    const blockDepth = Math.max(1, Math.round(block.size?.z ?? 1)) * cellSize;
+    const blockHeight = Math.max(1, Math.round(block.size?.y ?? 1)) * TILE_CONSTANTS.HEIGHT_STEP;
+    const blockMinX = block.position.x - cellSize * 0.5;
+    const blockMaxX = blockMinX + blockWidth;
+    const blockMinZ = block.position.z - cellSize * 0.5;
+    const blockMaxZ = blockMinZ + blockDepth;
+    if (!overlapsRange(candidateMinX, candidateMaxX, blockMinX, blockMaxX)) continue;
+    if (!overlapsRange(candidateMinZ, candidateMaxZ, blockMinZ, blockMaxZ)) continue;
+    const top = block.position.y + blockHeight;
+    if (top > support) support = top;
+  }
+  return support;
+};
+
 export const hasTileCollision = (
   tileIndex: Map<number, Set<string>>,
   tileMeta: Map<string, TileMeta>,
@@ -479,6 +512,18 @@ export const getTileSupportHeight = (
   }
   return support;
 };
+
+export const getBuildingSupportHeight = (
+  tileIndex: Map<number, Set<string>>,
+  tileMeta: Map<string, TileMeta>,
+  blocks: Iterable<BuildingBlockConfig>,
+  position: Vec3,
+  multiplier: number,
+  anchorToCell = false,
+): number => Math.max(
+  getTileSupportHeight(tileIndex, tileMeta, position, multiplier),
+  getBlockSupportHeight(blocks, position, multiplier, anchorToCell),
+);
 
 export const hasWallCollision = (
   wallIndex: Map<number, Set<string>>,

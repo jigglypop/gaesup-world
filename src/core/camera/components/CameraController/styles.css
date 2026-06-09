@@ -1,159 +1,82 @@
-.cc-panel {
+.camera-controller-panel {
   width: 100%;
+  color: var(--editor-text-main);
 }
-
-.cc-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.cc-button {
-  width: 100%;
-  padding: 10px 14px;
-  background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #a0a0a0;
-  border-radius: 4px;
-  text-align: left;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cc-button:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: #fff;
-}
-
-.cc-button.active {
-  background-color: var(--editor-primary);
-  border-color: var(--editor-primary);
-  color: #fff;
-  font-weight: 600;
-}
-
-.camera-controller {
+.camera-controller-panel--floating {
   position: fixed;
-  background: linear-gradient(135deg, rgba(32, 1, 34, 0.2), rgba(111, 0, 0, 0.2));
-  backdrop-filter: blur(4px);
-  border-radius: 6px;
-  padding: 12px;
-  color: white;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 12px;
-  z-index: 1000;
-  min-width: 200px;
-  box-shadow: 0 4px 12px rgba(32, 1, 34, 0.5);
+  max-width: calc(100vw - var(--editor-spacing-lg) - var(--editor-spacing-lg));
+  padding: var(--editor-spacing-md);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  background: var(--editor-bg-1);
+  box-shadow: var(--editor-shadow);
+  backdrop-filter: var(--editor-glass-blur);
 }
-
-.camera-controller--top-left {
-  top: 20px;
-  left: 20px;
+.camera-controller-panel--top-left {
+  top: var(--editor-spacing-lg);
+  left: var(--editor-spacing-lg);
 }
-
-.camera-controller--top-right {
-  top: 20px;
-  right: 20px;
+.camera-controller-panel--top-right {
+  top: var(--editor-spacing-lg);
+  right: var(--editor-spacing-lg);
 }
-
-.camera-controller--bottom-left {
-  bottom: 20px;
-  left: 20px;
+.camera-controller-panel--bottom-left {
+  bottom: var(--editor-spacing-lg);
+  left: var(--editor-spacing-lg);
 }
-
-.camera-controller--bottom-right {
-  bottom: 20px;
-  right: 20px;
+.camera-controller-panel--bottom-right {
+  right: var(--editor-spacing-lg);
+  bottom: var(--editor-spacing-lg);
 }
-
-.camera-controller--compact {
-  min-width: auto;
-  padding: 8px;
+.camera-controller-panel-header {
+  margin-bottom: var(--editor-spacing-sm);
 }
-
-.camera-controller__header {
-  margin-bottom: 8px;
-}
-
-.camera-controller__title {
-  font-weight: 600;
-  color: #4a90e2;
-  font-size: 11px;
+.camera-controller-panel-title {
+  color: var(--editor-text-muted);
+  font-weight: 800;
+  line-height: 1.2;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
-
-.camera-controller__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
-  gap: 6px;
-}
-
-.camera-controller--compact .camera-controller__grid {
-  grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
-  gap: 4px;
-}
-
-.camera-controller__button {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  color: white;
-  cursor: pointer;
+.camera-controller-panel-list {
   display: flex;
   flex-direction: column;
+  gap: var(--editor-spacing-xs);
+}
+.camera-controller-panel-mode {
+  width: 100%;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 8px 4px;
-  transition: all 0.2s ease;
-  min-height: 50px;
-  font-size: 10px;
-  text-align: center;
+  gap: var(--editor-spacing-sm);
+  padding: var(--editor-spacing-sm) var(--editor-spacing-md);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-sm);
+  background: transparent;
+  color: var(--editor-text-muted);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
 }
-
-.camera-controller--compact .camera-controller__button {
-  min-height: 36px;
-  padding: 6px 2px;
+.camera-controller-panel-mode:hover {
+  background: var(--editor-surface-hover);
+  color: var(--editor-text-main);
 }
-
-.camera-controller__button:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-1px);
+.camera-controller-panel-mode--active {
+  border-color: var(--editor-accent-border);
+  background: var(--editor-surface-active);
+  color: var(--editor-text-main);
+  font-weight: 700;
 }
-
-.camera-controller__button--active {
-  background: linear-gradient(135deg, #4a90e2, #357abd);
-  border-color: #4a90e2;
-  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+.camera-controller-panel-mode-icon {
+  flex: 0 0 auto;
+  color: var(--editor-text-muted);
 }
-
-.camera-controller__button--active:hover {
-  background: linear-gradient(135deg, #5ba0f2, #4a90e2);
-}
-
-.camera-controller__icon {
-  font-size: 16px;
-  margin-bottom: 2px;
-  display: block;
-}
-
-.camera-controller--compact .camera-controller__icon {
-  font-size: 14px;
-  margin-bottom: 0;
-}
-
-.camera-controller__label {
-  font-size: 9px;
-  font-weight: 500;
-  line-height: 1;
-  white-space: nowrap;
+.camera-controller-panel-mode-label {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
+  white-space: nowrap;
 }
-
-.camera-controller--compact .camera-controller__label {
-  display: none;
+.camera-controller-panel--compact .camera-controller-panel-mode {
+  justify-content: center;
+  padding: var(--editor-spacing-xs) var(--editor-spacing-sm);
 }

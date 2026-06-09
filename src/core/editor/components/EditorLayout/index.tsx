@@ -1,6 +1,10 @@
 import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { resolveEditorPanelComponentExtensions, type EditorLayoutProps, type PanelConfig } from './types';
+import {
+  resolveEditorPanelComponentExtensions,
+  type EditorLayoutProps,
+  type PanelConfig,
+} from './types';
 import '../../styles/theme.css';
 import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../../runtime';
 import { useEditorAutosave } from '../../hooks/useEditorAutosave';
@@ -63,6 +67,9 @@ export type {
   EditorLayoutProps,
   EditorPanelComponentExtension,
   EditorPanelDefaults,
+  EditorSidebarPreset,
+  EditorSidebarPresetId,
+  EditorSidebarPresetInput,
   EditorShellAction,
   EditorShellPluginPanel,
   PanelConfig,
@@ -78,6 +85,7 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
   hiddenBuiltInPanels = [],
   panelOrder,
   panelDefaults = {},
+  sidebarPreset = 'standard',
   validateBundle,
   sceneDocument,
   selectedObjectId,
@@ -108,22 +116,22 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
 }) => {
   const runtime = useGaesupRuntime();
   const runtimeRevision = useGaesupRuntimeRevision();
-  const componentExtensionPanels = useMemo(
-    () => {
-      if (!runtime) return [];
-      return resolveEditorPanelComponentExtensions(runtime.plugins.context.components.list());
-    },
-    [runtime, runtimeRevision],
-  );
+  const componentExtensionPanels = useMemo(() => {
+    if (!runtime) return [];
+    return resolveEditorPanelComponentExtensions(runtime.plugins.context.components.list());
+  }, [runtime, runtimeRevision]);
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const commandPaletteShortcut = useMemo<EditorShortcutBinding>(() => ({
-    id: 'editor.commandPalette',
-    label: '명령 팔레트',
-    key: 'k',
-    ctrl: true,
-    meta: true,
-    run: () => setCommandPaletteOpen((open) => !open),
-  }), []);
+  const commandPaletteShortcut = useMemo<EditorShortcutBinding>(
+    () => ({
+      id: 'editor.commandPalette',
+      label: '명령 팔레트',
+      key: 'k',
+      ctrl: true,
+      meta: true,
+      run: () => setCommandPaletteOpen((open) => !open),
+    }),
+    [],
+  );
   const saveShortcut = useMemo<EditorShortcutBinding | undefined>(() => {
     if (!onSave) return undefined;
     return {
@@ -144,10 +152,7 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
     ],
     [commandPaletteEnabled, commandPaletteShortcut, saveShortcut, shortcuts],
   );
-  useEditorShortcuts(
-    activeShortcuts,
-    { enabled: shortcutsEnabled },
-  );
+  useEditorShortcuts(activeShortcuts, { enabled: shortcutsEnabled });
   useEditorAutosave({
     ...(saveStatus ? { status: saveStatus } : {}),
     ...(onAutosave ? { onAutosave } : {}),
@@ -200,14 +205,34 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
       { id: 'block', title: 'Block', component: <BlockPanel />, defaultSide: 'left' },
       { id: 'object', title: 'Object', component: <ObjectPanel />, defaultSide: 'left' },
       { id: 'npc', title: 'NPC', component: <NPCPanel />, defaultSide: 'left' },
-      { id: 'character', title: 'Character', component: <CharacterAssetPanel />, defaultSide: 'left' },
+      {
+        id: 'character',
+        title: 'Character',
+        component: <CharacterAssetPanel />,
+        defaultSide: 'left',
+      },
       { id: 'vehicle', title: 'Vehicle', component: <VehiclePanel />, defaultSide: 'left' },
       { id: 'animation', title: 'Animation', component: <AnimationPanel />, defaultSide: 'left' },
       { id: 'camera', title: 'Camera', component: <CameraPanel />, defaultSide: 'right' },
       { id: 'motion', title: 'Motion', component: <MotionPanel />, defaultSide: 'right' },
-      { id: 'performance', title: 'Performance', component: <PerformancePanel />, defaultSide: 'right' },
-      { id: 'gameplay-events', title: 'Gameplay Events', component: <GameplayEventPanel />, defaultSide: 'right' },
-      { id: 'studio', title: 'Studio', component: <StudioPanel {...(validateBundle ? { validateBundle } : {})} />, defaultSide: 'right' },
+      {
+        id: 'performance',
+        title: 'Performance',
+        component: <PerformancePanel />,
+        defaultSide: 'right',
+      },
+      {
+        id: 'gameplay-events',
+        title: 'Gameplay Events',
+        component: <GameplayEventPanel />,
+        defaultSide: 'right',
+      },
+      {
+        id: 'studio',
+        title: 'Studio',
+        component: <StudioPanel {...(validateBundle ? { validateBundle } : {})} />,
+        defaultSide: 'right',
+      },
     ];
     const hidden = new Set(hiddenBuiltInPanels);
     const panelMap = new Map<string, PanelConfig>();
@@ -259,27 +284,32 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
   ]);
 
   const defaultPanelId = useMemo(
-    () => defaultActivePanels.find((panelId) => panelConfigs.some((config) => config.id === panelId)) ?? panelConfigs[0]?.id ?? '',
+    () =>
+      defaultActivePanels.find((panelId) => panelConfigs.some((config) => config.id === panelId)) ??
+      panelConfigs[0]?.id ??
+      '',
     [defaultActivePanels, panelConfigs],
   );
 
   const [activePanelId, setActivePanelId] = useState(defaultPanelId);
   const [isPanelOpen, setIsPanelOpen] = useState(defaultPanelOpen);
   const [isModalOpen, setIsModalOpen] = useState(defaultModalOpen);
-  const modalPreferredPanelIds = useMemo(
-    () => new Set(['npc', 'gameplay-events', 'studio']),
-    [],
-  );
-  const selectedPanelId = panelConfigs.some((config) => config.id === activePanelId) ? activePanelId : defaultPanelId;
+  const modalPreferredPanelIds = useMemo(() => new Set(['npc', 'gameplay-events', 'studio']), []);
+  const selectedPanelId = panelConfigs.some((config) => config.id === activePanelId)
+    ? activePanelId
+    : defaultPanelId;
   const selectedPanel = panelConfigs.find((config) => config.id === selectedPanelId);
-  const selectPanel = useCallback((panelId: string) => {
-    const isSamePanel = panelId === selectedPanelId;
-    const shouldOpen = isSamePanel ? !isPanelOpen : true;
-    const shouldUseModal = shouldOpen && modalPreferredPanelIds.has(panelId);
-    setActivePanelId(panelId);
-    setIsPanelOpen(shouldOpen);
-    setIsModalOpen(shouldUseModal);
-  }, [isPanelOpen, modalPreferredPanelIds, selectedPanelId]);
+  const selectPanel = useCallback(
+    (panelId: string) => {
+      const isSamePanel = panelId === selectedPanelId;
+      const shouldOpen = isSamePanel ? !isPanelOpen : true;
+      const shouldUseModal = shouldOpen && modalPreferredPanelIds.has(panelId);
+      setActivePanelId(panelId);
+      setIsPanelOpen(shouldOpen);
+      setIsModalOpen(shouldUseModal);
+    },
+    [isPanelOpen, modalPreferredPanelIds, selectedPanelId],
+  );
   const paletteItems = useMemo<EditorCommandPaletteItem[]>(() => {
     const panelItems = panelConfigs.map((panel) => ({
       id: `panel.${panel.id}`,
@@ -301,10 +331,13 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
       group: '단축키',
       shortcut: formatEditorShortcut(shortcut),
       ...(shortcut.disabled !== undefined ? { disabled: shortcut.disabled } : {}),
-      run: () => shortcut.run(new KeyboardEvent('keydown', {
-        key: shortcut.key,
-        ...(shortcut.code ? { code: shortcut.code } : {}),
-      })),
+      run: () =>
+        shortcut.run(
+          new KeyboardEvent('keydown', {
+            key: shortcut.key,
+            ...(shortcut.code ? { code: shortcut.code } : {}),
+          }),
+        ),
     }));
     return [...panelItems, ...actionItems, ...shortcutItems, ...commandPaletteItems];
   }, [actions, activeShortcuts, commandPaletteItems, panelConfigs, selectPanel]);
@@ -315,13 +348,25 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
     }
   }, [selectedPanelId]);
 
+  const sidebarPresetClassName =
+    typeof sidebarPreset === 'string'
+      ? `editor-sidebar--preset-${sidebarPreset}`
+      : (sidebarPreset.className ?? '');
+  const sidebarPresetStyle = typeof sidebarPreset === 'string' ? undefined : sidebarPreset.style;
+
   return (
     <div className="editor-root">
-      <aside className={`editor-sidebar ${isPanelOpen ? 'editor-sidebar--open' : 'editor-sidebar--collapsed'}`} aria-label="에디터 사이드바">
+      <aside
+        className={`editor-sidebar ${sidebarPresetClassName} ${isPanelOpen ? 'editor-sidebar--open' : 'editor-sidebar--collapsed'}`}
+        style={sidebarPresetStyle}
+        aria-label="Editor sidebar"
+      >
         <div className="editor-sidebar-menu">
           <div className="editor-sidebar-header">
             <div className="editor-shell-title">에디터</div>
-            <div className="editor-shell-status">{isPanelOpen ? selectedPanel?.title ?? '패널 없음' : ''}</div>
+            <div className="editor-shell-status">
+              {isPanelOpen ? (selectedPanel?.title ?? '패널 없음') : ''}
+            </div>
           </div>
 
           <nav className="editor-panel-menu editor-panel-menu--flat">
@@ -348,25 +393,45 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
             )}
             <div className="editor-play-mode-controls" aria-label="플레이 모드 조작">
               {playMode === 'edit' ? (
-                <button type="button" onClick={() => { void onEnterPlayMode?.(); }}>실행</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void onEnterPlayMode?.();
+                  }}
+                >
+                  실행
+                </button>
               ) : (
-                <button type="button" onClick={() => { void onExitPlayMode?.(); }}>정지</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void onExitPlayMode?.();
+                  }}
+                >
+                  정지
+                </button>
               )}
               {playMode === 'play' && (
-                <button type="button" onClick={onPausePlayMode}>일시정지</button>
+                <button type="button" onClick={onPausePlayMode}>
+                  일시정지
+                </button>
               )}
               {playMode === 'paused' && (
-                <button type="button" onClick={onResumePlayMode}>재개</button>
+                <button type="button" onClick={onResumePlayMode}>
+                  재개
+                </button>
               )}
             </div>
             {actions.length > 0 && (
               <div className="editor-menu-section">
                 <div className="editor-region-label">액션</div>
-                {actions.map(action => (
+                {actions.map((action) => (
                   <button
                     key={action.id}
                     type="button"
-                    onClick={() => { void action.onClick(); }}
+                    onClick={() => {
+                      void action.onClick();
+                    }}
                     className="editor-panel-toggle"
                     disabled={action.disabled}
                     title={action.label}

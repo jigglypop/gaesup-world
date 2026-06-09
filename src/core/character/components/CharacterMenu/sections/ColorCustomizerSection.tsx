@@ -1,51 +1,30 @@
-import type { AppearanceColors } from '../../../types';
-import type { CharacterMenuPreset } from '../types';
+import type { CharacterMenuRenderContext } from '../types';
 
 type ColorCustomizerSectionProps = {
-  appearance: { colors: AppearanceColors };
-  onColorChange: (key: keyof AppearanceColors, color: string) => void;
-  colorKeys: { key: keyof AppearanceColors; label: string }[];
-  preset: CharacterMenuPreset;
+  context: CharacterMenuRenderContext;
 };
 
-export function ColorCustomizerSection({
-  appearance,
-  onColorChange,
-  colorKeys,
-  preset,
-}: ColorCustomizerSectionProps) {
+export function ColorCustomizerSection({ context }: ColorCustomizerSectionProps) {
   return (
-    <div
-      className="p-4 rounded-xl border"
-      style={{
-        background: 'rgba(0,0,0,0.2)',
-        borderColor: preset.theme.borderColor,
-      }}
+    <section
+      className={context.classNameFor('section')}
+      style={context.styleFor('section', context.getSectionStyle())}
     >
-      <p className="text-xs font-bold uppercase opacity-60 mb-3">색상 선택</p>
-      <div className="space-y-2">
-        {colorKeys.map(({ key, label }) => (
-          <div key={key} className="flex items-center justify-between gap-3 p-2 rounded-lg" style={{
-            background: 'rgba(255,255,255,0.04)',
-          }}>
-            <span className="text-sm">{label}</span>
-            <div className="flex gap-2 items-center">
-              <input
-                type="color"
-                value={appearance.colors[key]}
-                onChange={(e) => onColorChange(key, e.target.value)}
-                className="w-10 h-8 rounded cursor-pointer"
-                style={{
-                  border: `2px solid ${preset.theme.accentColor}`,
-                }}
-              />
-              <span className="text-xs font-mono opacity-70 w-20">
-                {appearance.colors[key]}
-              </span>
-            </div>
-          </div>
+      <p className={context.classNameFor('sectionTitle')}>{context.labels.colors}</p>
+      <div className={context.classNameFor('colorGrid')}>
+        {context.colorOptions.map((option) => (
+          <label key={option.value} className={context.classNameFor('colorRow')}>
+            <span className={context.classNameFor('colorLabel')}>{option.label}</span>
+            <input
+              type="color"
+              value={context.appearance.colors[option.value]}
+              onChange={(event) => context.actions.setColor(option.value, event.target.value)}
+              className={context.classNameFor('colorInput')}
+              style={context.styleFor('colorInput', { borderColor: context.preset.theme.accentColor })}
+            />
+          </label>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

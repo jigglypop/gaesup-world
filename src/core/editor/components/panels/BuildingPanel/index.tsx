@@ -194,6 +194,8 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
     setFogColor,
     weatherEffect,
     setWeatherEffect,
+    worldSurface,
+    setWorldSurface,
     npcInstances,
     npcBrainBlueprints,
     selectedNPCTemplateId,
@@ -435,6 +437,8 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
           setFogColor={setFogColor}
           weatherEffect={weatherEffect}
           setWeatherEffect={setWeatherEffect}
+          worldSurface={worldSurface}
+          setWorldSurface={setWorldSurface}
         />
       )}
       {isWallMode && !disabledSectionSet.has('wallPresets') && (

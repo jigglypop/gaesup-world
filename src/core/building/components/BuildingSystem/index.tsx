@@ -32,6 +32,7 @@ import { FlagBatch } from '../mesh/flag';
 import ModelObject from '../mesh/model';
 import { SakuraBatch, type SakuraTreeEntry } from '../mesh/sakura';
 import { Snow } from '../mesh/snow';
+import { PreviewBlock } from '../PreviewBlock';
 import { PreviewTile } from '../PreviewTile';
 import { PreviewWall } from '../PreviewWall';
 import { TileSystem } from '../TileSystem';
@@ -233,6 +234,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
       <group name="building-system">
         {showGrid && <GridHelper size={gridSize} />}
         
+        <PreviewBlock />
         <PreviewTile />
         <PreviewWall />
         <NPCPreview />

@@ -1,12 +1,23 @@
 import { useEffect, useState } from 'react';
 
-import { AnimationMetrics, DebugField } from './types';
+import type { AnimationDebugPanelProps, AnimationMetrics, DebugField } from './types';
 import { DEFAULT_DEBUG_FIELDS } from './types';
 import { useAnimationBridge } from '../../hooks/useAnimationBridge';
 import './styles.css';
 
-export function AnimationDebugPanel() {
+function cx(...values: Array<string | false | null | undefined>): string {
+  return values.filter((value): value is string => Boolean(value)).join(' ');
+}
+
+export function AnimationDebugPanel({
+  position = 'top-right',
+  fields,
+  customFields,
+  precision = 2,
+  compact = false,
+}: AnimationDebugPanelProps = {}) {
   const { bridge, currentType } = useAnimationBridge();
+  const debugFields = [...(fields ?? DEFAULT_DEBUG_FIELDS), ...(customFields ?? [])];
   const [metrics, setMetrics] = useState<AnimationMetrics>({
     frameCount: 0,
     averageFrameTime: 0,
@@ -20,15 +31,15 @@ export function AnimationDebugPanel() {
     blendDuration: 0.3,
     activeActions: 0,
   });
-  
+
   useEffect(() => {
     if (!bridge) return;
     const updateMetrics = () => {
       const snapshot = bridge.snapshot(currentType);
       if (!snapshot) return;
       const bridgeMetrics = bridge.getMetrics(currentType);
-      
-      setMetrics(prevMetrics => ({
+
+      setMetrics((prevMetrics) => ({
         ...prevMetrics,
         currentAnimation: snapshot.currentAnimation,
         animationType: currentType,
@@ -44,7 +55,7 @@ export function AnimationDebugPanel() {
     };
 
     updateMetrics();
-    
+
     const unsubscribe = bridge.subscribe((_, type) => {
       if (type === currentType) {
         updateMetrics();
@@ -57,17 +68,17 @@ export function AnimationDebugPanel() {
   const formatValue = (
     value: AnimationMetrics[keyof AnimationMetrics] | undefined,
     format: string,
-    precision: number = 2,
+    fixedPrecision: number = precision,
   ): string => {
     if (value === null || value === undefined) return 'N/A';
-    
+
     switch (format) {
       case 'array':
         return Array.isArray(value) ? `${value.length} animations` : String(value);
       case 'boolean':
         return value ? 'Yes' : 'No';
       case 'number':
-        return typeof value === 'number' ? value.toFixed(precision) : String(value);
+        return typeof value === 'number' ? value.toFixed(fixedPrecision) : String(value);
       default:
         return String(value);
     }
@@ -81,16 +92,16 @@ export function AnimationDebugPanel() {
   };
 
   return (
-    <div className="ad-panel">
+    <div className={cx('ad-panel', `ad-panel--${position}`, compact && 'ad-panel--compact')}>
       <div className="ad-content">
-        {DEFAULT_DEBUG_FIELDS.filter(field => field.enabled).map((field: DebugField) => (
-          <div key={field.key} className="ad-item">
-            <span className="ad-label">{field.label}</span>
-            <span className="ad-value">
-              {formatValue(getValue(field.key), field.format)}
-            </span>
-          </div>
-        ))}
+        {debugFields
+          .filter((field) => field.enabled)
+          .map((field: DebugField) => (
+            <div key={field.key} className="ad-item">
+              <span className="ad-label">{field.label}</span>
+              <span className="ad-value">{formatValue(getValue(field.key), field.format)}</span>
+            </div>
+          ))}
       </div>
     </div>
   );

@@ -11,6 +11,8 @@ import {
   createBlockFootprint,
   createTileFootprint,
   getTileSupportHeight,
+  getBlockSupportHeight,
+  getBuildingSupportHeight,
   hasTileCollision,
   hasWallCollision,
   indexAabb,
@@ -456,6 +458,23 @@ describe('building placement model helpers', () => {
     }
 
     expect(getTileSupportHeight(index, meta, { x: 0, y: 0, z: 0 }, 1)).toBe(2);
+  });
+
+  it('블록 점유 높이를 새 배치 지지 높이에 반영한다', () => {
+    const blocks = [
+      { id: 'ground-block', position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 2, z: 1 } },
+      { id: 'offset-block', position: { x: 4, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+    ];
+    const tileIndex = new Map<number, Set<string>>();
+    const tileCells = new Map<string, number[]>();
+    const tileMeta = new Map<string, TileMeta>();
+    const tileHalf = tileHalfSize(1);
+    tileMeta.set('tile-support', { x: 0, y: 2, z: 4, halfSize: tileHalf });
+    indexAabb(tileIndex, tileCells, 'tile-support', -tileHalf, tileHalf, 4 - tileHalf, 4 + tileHalf, 4);
+
+    expect(getBlockSupportHeight(blocks, { x: 0, y: 0, z: 0 }, 1)).toBe(2);
+    expect(getBlockSupportHeight(blocks, { x: 0, y: 0, z: 0 }, 2, true)).toBe(2);
+    expect(getBuildingSupportHeight(tileIndex, tileMeta, blocks, { x: 0, y: 0, z: 4 }, 1)).toBe(3);
   });
 
   it('detects wall collisions by position and rotation', () => {

@@ -6,6 +6,7 @@ import { Physics } from '@react-three/rapier';
 import {
   BuildingController,
   CatalogUI,
+  CharacterMenu,
   CharacterCreator,
   Clicker,
   DialogBox,
@@ -30,6 +31,9 @@ import {
   WeatherEffect,
   useBuildingStore,
   usePerfStore,
+  type CharacterMenuRenderers,
+  type WorldCameraOption,
+  type WorldContainerProps,
 } from 'gaesup-world';
 import { GrassDriver } from 'gaesup-world/building';
 import {
@@ -67,6 +71,36 @@ export { S3 };
 setDefaultToonMode(DEFAULT_TOON_MODE);
 
 const DEFAULT_EDITOR_SHELL_OPTIONS: EditorShellOptions = {};
+const EDITOR_WORLD_MODE = {
+  type: 'character',
+  controller: 'clicker',
+  control: 'topDown',
+} satisfies NonNullable<WorldContainerProps['mode']>;
+const DEFAULT_WORLD_MODE = {
+  type: 'character',
+  controller: 'keyboard',
+  control: 'thirdPerson',
+} satisfies NonNullable<WorldContainerProps['mode']>;
+const EDITOR_WORLD_CAMERA_OPTION = {
+  type: 'topDown',
+  distance: 34,
+  height: 52,
+  fov: 52,
+  smoothness: 0.14,
+  enableCollision: false,
+  enableZoom: true,
+  minZoom: 0.3,
+  maxZoom: 2.8,
+  zoomSpeed: 0.001,
+} satisfies WorldCameraOption;
+const DEFAULT_WORLD_CAMERA_OPTION = {
+  type: 'thirdPerson',
+  distance: 13,
+  height: 10,
+  fov: 75,
+  smoothness: 0.25,
+  enableCollision: false,
+} satisfies WorldCameraOption;
 
 export const WorldPage = ({
   showEditor = false,
@@ -84,30 +118,8 @@ export const WorldPage = ({
   const weatherEffect = useBuildingStore((s) => s.weatherEffect);
   const [gameplayBlueprints, setGameplayBlueprints] = useState(() => getWorldGameplayBlueprints());
   const [focusedFeature, setFocusedFeature] = useState<WorldFocusInfo | null>(null);
-  const worldMode = showEditor
-    ? { type: 'character' as const, controller: 'clicker' as const, control: 'topDown' as const }
-    : { type: 'character' as const, controller: 'keyboard' as const, control: 'thirdPerson' as const };
-  const worldCameraOption = showEditor
-    ? {
-        type: 'topDown' as const,
-        distance: 34,
-        height: 52,
-        fov: 52,
-        smoothness: 0.14,
-        enableCollision: false,
-        enableZoom: true,
-        minZoom: 0.3,
-        maxZoom: 2.8,
-        zoomSpeed: 0.001,
-      }
-    : {
-        type: 'thirdPerson' as const,
-        distance: 13,
-        height: 10,
-        fov: 75,
-        smoothness: 0.25,
-        enableCollision: false,
-      };
+  const worldMode = showEditor ? EDITOR_WORLD_MODE : DEFAULT_WORLD_MODE;
+  const worldCameraOption = showEditor ? EDITOR_WORLD_CAMERA_OPTION : DEFAULT_WORLD_CAMERA_OPTION;
   const handleRuntimeReady = useCallback(() => {
     setRuntimeRevision((revision) => revision + 1);
   }, []);
@@ -158,15 +170,78 @@ export const WorldPage = ({
       ...editorShellOptions,
       panels: [...auxiliaryPanels, ...(editorShellOptions.panels ?? [])],
       defaultActivePanels: editorShellOptions.defaultActivePanels ?? ['tile'],
-      hiddenBuiltInPanels: editorShellOptions.hiddenBuiltInPanels ?? ['character', 'vehicle', 'animation', 'motion', 'performance'],
-      panelOrder: editorShellOptions.panelOrder ?? ['world', 'wall', 'tile', 'block', 'object', 'npc', 'camera', 'gameplay-events', 'studio'],
+      sidebarPreset: editorShellOptions.sidebarPreset ?? 'compact',
+      hiddenBuiltInPanels: editorShellOptions.hiddenBuiltInPanels ?? [
+        'character',
+        'vehicle',
+        'animation',
+        'motion',
+        'performance',
+      ],
+      panelOrder: editorShellOptions.panelOrder ?? [
+        'world',
+        'wall',
+        'tile',
+        'block',
+        'object',
+        'npc',
+        'camera',
+        'gameplay-events',
+        'studio',
+      ],
     });
   }, [editorShellOptions, gameplayBlueprints, includeEditorAuxPanels]);
+  const characterMenuRenderers = useMemo<CharacterMenuRenderers>(
+    () => ({
+      header: (menu) => (
+        <div
+          className={menu.classNameFor('header')}
+          style={menu.styleFor('header', { borderColor: menu.preset.theme.borderColor })}
+        >
+          <div>
+            <h2 className={menu.classNameFor('title')}>World Style Kit</h2>
+            <span style={{ color: menu.preset.theme.mutedTextColor }}>{menu.appearance.name}</span>
+          </div>
+          <div className={menu.classNameFor('actions')}>
+            <button
+              type="button"
+              className={menu.classNameFor('ghostButton')}
+              style={menu.styleFor('ghostButton', menu.getButtonStyle())}
+              onClick={menu.actions.reset}
+            >
+              Reset look
+            </button>
+            <button
+              type="button"
+              className={menu.classNameFor('primaryButton')}
+              style={menu.styleFor('primaryButton', menu.getButtonStyle(true))}
+              onClick={menu.actions.close}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      ),
+      emptyAssets: (menu, slot) => (
+        <div
+          className={menu.classNameFor('emptyState')}
+          style={menu.styleFor('emptyState', { borderColor: menu.preset.theme.borderColor })}
+        >
+          {menu.labelMaps.slots[slot]} assets are not registered yet.
+        </div>
+      ),
+    }),
+    [],
+  );
 
   return (
     <>
       <GaesupWorld
-        urls={{ characterUrl: DEFAULT_CHARACTER_URL, vehicleUrl: VEHICLE_URL, airplaneUrl: AIRPLANE_URL }}
+        urls={{
+          characterUrl: DEFAULT_CHARACTER_URL,
+          vehicleUrl: VEHICLE_URL,
+          airplaneUrl: AIRPLANE_URL,
+        }}
         mode={worldMode}
         runtime={runtime}
         runtimeRevision={runtimeRevision}
@@ -191,7 +266,10 @@ export const WorldPage = ({
             />
           )}
           <Suspense>
-            <GaesupWorldContent showGrid={EXAMPLE_CONFIG.showGrid} showAxes={EXAMPLE_CONFIG.showAxes}>
+            <GaesupWorldContent
+              showGrid={EXAMPLE_CONFIG.showGrid}
+              showAxes={EXAMPLE_CONFIG.showAxes}
+            >
               <Physics debug interpolate>
                 {!showEditor && <Player />}
                 <Ground />
@@ -218,7 +296,9 @@ export const WorldPage = ({
             <ToastHost position="top-right" />
 
             <HudShell showEnvironmentControls={!showEditor} compact={compactHud} />
-            {!showEditor && <WorldFocusModal focus={focusedFeature} onClose={handleFeatureFocusClose} />}
+            {!showEditor && (
+              <WorldFocusModal focus={focusedFeature} onClose={handleFeatureFocusClose} />
+            )}
 
             <InteractionPrompt enabled={!showEditor} />
             <DialogBox />
@@ -231,6 +311,24 @@ export const WorldPage = ({
             <MiniMap position="bottom-left" scale={5} showZoom={false} showCompass={false} />
 
             <CharacterCreator toggleKey="o" />
+            <CharacterMenu
+              toggleKey="c"
+              preset="creative"
+              hiddenSlots={['face', 'glasses']}
+              features={{ savePresets: false, tagFilter: true, ownedOnly: true }}
+              classNames={{
+                panel: 'rounded-lg border overflow-hidden shadow-2xl',
+                section: 'rounded-lg border p-3',
+                activeChip: 'rounded-full border px-3 py-1 text-xs font-bold',
+                activeAssetButton:
+                  'aspect-square overflow-hidden rounded-md border text-xs font-bold',
+              }}
+              labels={{
+                title: 'Character Customizer',
+                tagFilter: 'Tag',
+              }}
+              renderers={characterMenuRenderers}
+            />
             {!showEditor && <TouchControls />}
           </>
         )}

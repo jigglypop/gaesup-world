@@ -10,13 +10,52 @@ export { useCharacterStore } from './stores/characterStore';
 export { CharacterCreator } from './components/CharacterCreator';
 export type { CharacterCreatorProps } from './components/CharacterCreator';
 
-export { CharacterMenu } from './components/CharacterMenu';
-export type { CharacterMenuProps } from './components/CharacterMenu';
+export { CharacterMenu, useCharacterMenuController } from './components/CharacterMenu';
+export {
+  CHARACTER_MENU_DEFAULT_FEATURES,
+  CHARACTER_MENU_DEFAULT_SECTIONS,
+  CHARACTER_MENU_DEFAULT_SLOTS,
+  MENU_PRESETS,
+} from './components/CharacterMenu';
+export type {
+  CharacterMenuClassNameSlot,
+  CharacterMenuCloseUpController,
+  CharacterMenuFeatures,
+  CharacterMenuLabelMaps,
+  CharacterMenuLabels,
+  CharacterMenuOption,
+  CharacterMenuPreset,
+  CharacterMenuProps,
+  CharacterMenuRenderContext,
+  CharacterMenuRenderers,
+  CharacterMenuSection,
+  CharacterMenuStyles,
+  CharacterPreviewMode,
+} from './components/CharacterMenu';
 
 export { OutfitAvatar } from './components/OutfitAvatar';
 export type { OutfitAvatarProps } from './components/OutfitAvatar';
-export { ActionEquipmentPanel } from './components/ActionEquipmentPanel';
-export type { ActionEquipmentPanelProps } from './components/ActionEquipmentPanel';
+export {
+  ACTION_EQUIPMENT_PANEL_DEFAULT_CLASSES,
+  ACTION_EQUIPMENT_PANEL_DEFAULT_FACE_LABELS,
+  ACTION_EQUIPMENT_PANEL_DEFAULT_FACE_SEQUENCE,
+  ACTION_EQUIPMENT_PANEL_DEFAULT_FEATURES,
+  ACTION_EQUIPMENT_PANEL_DEFAULT_LABELS,
+  ACTION_EQUIPMENT_PANEL_DEFAULT_SLOT_COUNT,
+  ActionEquipmentPanel,
+} from './components/ActionEquipmentPanel';
+export type {
+  ActionEquipmentPanelActions,
+  ActionEquipmentPanelClassNameSlot,
+  ActionEquipmentPanelClassNames,
+  ActionEquipmentPanelFeatures,
+  ActionEquipmentPanelLabelMaps,
+  ActionEquipmentPanelLabels,
+  ActionEquipmentPanelProps,
+  ActionEquipmentPanelRenderContext,
+  ActionEquipmentPanelRenderers,
+  ActionEquipmentPanelStyles,
+} from './components/ActionEquipmentPanel';
 export {
   DEFAULT_CHARACTER_EQUIPMENT_PRESETS,
   applyCharacterEquipmentPreset,

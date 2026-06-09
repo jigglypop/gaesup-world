@@ -2,6 +2,10 @@ import { useMemo, type CSSProperties } from 'react';
 
 import {
   ActionEquipmentPanel,
+  CameraController,
+  CameraDebugPanel,
+  CameraPresets,
+  CameraSettingsTab,
   DEFAULT_CHARACTER_EQUIPMENT_PRESETS,
   GaesupRuntimeProvider,
   applyCharacterEquipmentPreset,
@@ -11,6 +15,12 @@ import {
   playCameraCinematic,
   toggleCharacterWeapon,
   useCharacterStore,
+  type ActionEquipmentPanelRenderers,
+  type CameraControllerRenderers,
+  type CameraDebugPanelRenderers,
+  type CameraPresetsRenderers,
+  type CameraSettingsRenderers,
+  type CameraSettingsSection,
 } from 'gaesup-world';
 
 export function MinimalExamplePage() {
@@ -20,19 +30,90 @@ export function MinimalExamplePage() {
   );
   const appearance = useCharacterStore((state) => state.appearance);
   const outfits = useCharacterStore((state) => state.outfits);
+  const actionEquipmentRenderers = useMemo<ActionEquipmentPanelRenderers>(
+    () => ({
+      header: (panel) => (
+        <div style={equipmentHeaderStyle}>
+          <strong>{panel.labels.title}</strong>
+          <span>{panel.metaLabel}</span>
+        </div>
+      ),
+    }),
+    [],
+  );
+  const cameraControllerRenderers = useMemo<CameraControllerRenderers>(
+    () => ({
+      modeButton: (controller, mode, active) => (
+        <button
+          key={mode.value}
+          type="button"
+          style={active ? activeCameraButtonStyle : cameraButtonStyle}
+          onClick={() => controller.actions.selectMode(mode.value)}
+        >
+          {mode.label}
+        </button>
+      ),
+    }),
+    [],
+  );
+  const cameraPresetRenderers = useMemo<CameraPresetsRenderers>(
+    () => ({
+      presetButton: (controller, preset, active) => (
+        <button
+          key={preset.id}
+          type="button"
+          style={active ? activeCameraButtonStyle : cameraButtonStyle}
+          onClick={() => controller.actions.applyPreset(preset)}
+        >
+          {preset.name}
+        </button>
+      ),
+    }),
+    [],
+  );
+  const cameraDebugRenderers = useMemo<CameraDebugPanelRenderers>(
+    () => ({
+      field: (_, field) => (
+        <div key={field.key} style={debugFieldStyle}>
+          <span>{field.label}</span>
+          <strong>{field.formattedValue}</strong>
+        </div>
+      ),
+    }),
+    [],
+  );
+  const cameraSettingsRenderers = useMemo<CameraSettingsRenderers>(
+    () => ({
+      mode: (settings) => (
+        <div style={cameraSettingsModeStyle}>
+          Control: {settings.mode.control ?? settings.labels.fallbackMode}
+        </div>
+      ),
+      section: (_, section, children) => (
+        <div key={section.key} style={cameraSettingsSectionStyle}>
+          <strong>{section.title}</strong>
+          {children}
+        </div>
+      ),
+    }),
+    [],
+  );
 
   const runMinimalCinematic = () => {
-    void playCameraCinematic([
-      { kind: 'expression', face: 'surprised', durationMs: 180 },
-      { kind: 'equip', slot: 'weapon', itemId: 'starter-weapon-layer', durationMs: 180 },
-      { kind: 'fade', direction: 'inOut', durationMs: 160 },
-      { kind: 'event', name: 'minimal:complete', payload: { route: '/minimal' }, durationMs: 1 },
-    ], {
-      restoreOnComplete: false,
-      onEvent: () => {
-        useCharacterStore.getState().setFace('smile');
+    void playCameraCinematic(
+      [
+        { kind: 'expression', face: 'surprised', durationMs: 180 },
+        { kind: 'equip', slot: 'weapon', itemId: 'starter-weapon-layer', durationMs: 180 },
+        { kind: 'fade', direction: 'inOut', durationMs: 160 },
+        { kind: 'event', name: 'minimal:complete', payload: { route: '/minimal' }, durationMs: 1 },
+      ],
+      {
+        restoreOnComplete: false,
+        onEvent: () => {
+          useCharacterStore.getState().setFace('smile');
+        },
       },
-    });
+    );
   };
 
   return (
@@ -44,7 +125,41 @@ export function MinimalExamplePage() {
           <p style={copyStyle}>
             공개 패키지 엔트리만 사용합니다. 월드 캔버스, 물리 씬, 에디터 셸 없이 실행됩니다.
           </p>
-          <ActionEquipmentPanel />
+          <ActionEquipmentPanel
+            labels={{ title: '빠른 장비' }}
+            renderers={actionEquipmentRenderers}
+            formatFaceLabel={(_, label) => `표정: ${label}`}
+            formatWeaponLabel={(weaponEquipped) => (weaponEquipped ? '무기 해제' : '무기 장착')}
+          />
+          <section style={toolGroupStyle}>
+            <h2 style={subtitleStyle}>카메라</h2>
+            <CameraController
+              showTitle
+              labels={{ title: '카메라 모드' }}
+              renderers={cameraControllerRenderers}
+            />
+            <CameraSettingsTab
+              sections={minimalCameraSettingsSections}
+              renderers={cameraSettingsRenderers}
+            />
+            <CameraPresets renderers={cameraPresetRenderers} />
+            <CameraDebugPanel
+              fields={[
+                { key: 'mode', label: 'Mode', enabled: true, format: 'text' },
+                { key: 'fov', label: 'FOV', enabled: true, format: 'angle', precision: 0 },
+              ]}
+              customFields={[
+                {
+                  key: 'outfit-count',
+                  label: 'Outfits',
+                  getValue: () => Object.values(outfits).filter(Boolean).length,
+                  format: 'number',
+                  precision: 0,
+                },
+              ]}
+              renderers={cameraDebugRenderers}
+            />
+          </section>
           <div style={buttonRowStyle}>
             <button
               type="button"
@@ -63,9 +178,7 @@ export function MinimalExamplePage() {
         </section>
         <section style={stateStyle}>
           <h2 style={subtitleStyle}>캐릭터 상태</h2>
-          <pre style={preStyle}>
-            {JSON.stringify({ appearance, outfits }, null, 2)}
-          </pre>
+          <pre style={preStyle}>{JSON.stringify({ appearance, outfits }, null, 2)}</pre>
         </section>
       </main>
     </GaesupRuntimeProvider>
@@ -74,10 +187,12 @@ export function MinimalExamplePage() {
 
 const pageStyle = {
   minHeight: '100vh',
+  boxSizing: 'border-box',
   padding: '104px 24px 32px',
   display: 'grid',
-  gridTemplateColumns: 'minmax(0, 520px) minmax(0, 1fr)',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))',
   gap: 16,
+  alignItems: 'start',
   background: '#111827',
   color: '#f8fafc',
   fontFamily: 'system-ui, sans-serif',
@@ -138,6 +253,67 @@ const buttonStyle = {
   cursor: 'pointer',
 } satisfies CSSProperties;
 
+const cameraButtonStyle = {
+  minHeight: 32,
+  padding: '0 10px',
+  border: '1px solid rgba(255,255,255,0.14)',
+  borderRadius: 6,
+  background: 'rgba(255,255,255,0.08)',
+  color: '#f8fafc',
+  cursor: 'pointer',
+  fontSize: 12,
+  fontWeight: 700,
+} satisfies CSSProperties;
+
+const activeCameraButtonStyle = {
+  ...cameraButtonStyle,
+  border: '1px solid rgba(125,220,131,0.45)',
+  background: 'rgba(125,220,131,0.18)',
+} satisfies CSSProperties;
+
+const toolGroupStyle = {
+  display: 'grid',
+  gap: 8,
+} satisfies CSSProperties;
+
+const debugFieldStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 8,
+  padding: 8,
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 6,
+  background: 'rgba(255,255,255,0.05)',
+  color: '#f8fafc',
+  fontSize: 12,
+} satisfies CSSProperties;
+
+const cameraSettingsModeStyle = {
+  color: '#dbeafe',
+  fontSize: 12,
+  fontWeight: 800,
+} satisfies CSSProperties;
+
+const cameraSettingsSectionStyle = {
+  display: 'grid',
+  gap: 6,
+  padding: 8,
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 6,
+  background: 'rgba(255,255,255,0.05)',
+} satisfies CSSProperties;
+
+const equipmentHeaderStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 8,
+  color: '#f8fafc',
+  fontSize: 12,
+  fontWeight: 800,
+} satisfies CSSProperties;
+
 const preStyle = {
   margin: 0,
   minHeight: 220,
@@ -149,3 +325,30 @@ const preStyle = {
   fontSize: 12,
   lineHeight: 1.5,
 } satisfies CSSProperties;
+
+const minimalCameraSettingsSections = [
+  {
+    key: 'minimal-lens',
+    title: 'Lens',
+    fields: [
+      {
+        key: 'minimal-fov',
+        label: 'FOV',
+        kind: 'range',
+        path: 'fov',
+        min: 30,
+        max: 120,
+        step: 5,
+        suffix: 'deg',
+        defaultValue: 75,
+      },
+      {
+        key: 'minimal-focus',
+        label: 'Focus',
+        kind: 'checkbox',
+        path: 'enableFocus',
+        defaultValue: false,
+      },
+    ],
+  },
+] satisfies readonly CameraSettingsSection[];

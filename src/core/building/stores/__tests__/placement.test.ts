@@ -355,6 +355,27 @@ describe('buildingStore placement checks', () => {
     s.removeTile(groupId, `${tileId}-up`);
   });
 
+  test('getSupportHeightAt이 블록 상단을 지지 높이로 반영해야 함', () => {
+    const s = useBuildingStore.getState();
+    const blockId = `support-block-${Date.now()}`;
+    const pos = { x: FAR + 220, y: 0, z: FAR + 220 };
+    s.setEditMode('block');
+    s.setTileMultiplier(1);
+    expect(s.getSupportHeightAt(pos)).toBe(0);
+
+    s.addBlock({
+      id: blockId,
+      position: pos,
+      size: { x: 1, y: 2, z: 1 },
+      materialId: 'stone',
+    });
+
+    expect(s.getSupportHeightAt(pos)).toBe(2);
+
+    s.removeBlock(blockId);
+    s.setEditMode('none');
+  });
+
   test('block placement supports voxel-style add, stack, update, and removal', () => {
     const s = useBuildingStore.getState();
     const blockId = `block-${Date.now()}`;

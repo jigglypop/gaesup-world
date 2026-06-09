@@ -76,8 +76,26 @@ export function WorldEditorSurface({
       ...editorShellOptions,
       panels: [...auxiliaryPanels, ...(editorShellOptions.panels ?? [])],
       defaultActivePanels: editorShellOptions.defaultActivePanels ?? ['tile', 'character'],
-      hiddenBuiltInPanels: editorShellOptions.hiddenBuiltInPanels ?? ['vehicle', 'animation', 'motion', 'performance'],
-      panelOrder: editorShellOptions.panelOrder ?? ['world', 'character', 'wall', 'tile', 'block', 'object', 'npc', 'camera', 'gameplay-events', 'cinematic', 'studio'],
+      sidebarPreset: editorShellOptions.sidebarPreset ?? 'compact',
+      hiddenBuiltInPanels: editorShellOptions.hiddenBuiltInPanels ?? [
+        'vehicle',
+        'animation',
+        'motion',
+        'performance',
+      ],
+      panelOrder: editorShellOptions.panelOrder ?? [
+        'world',
+        'character',
+        'wall',
+        'tile',
+        'block',
+        'object',
+        'npc',
+        'camera',
+        'gameplay-events',
+        'cinematic',
+        'studio',
+      ],
     });
   }, [editorShellOptions, gameplayBlueprints, includeEditorAuxPanels]);
 

@@ -23,6 +23,7 @@ function createTarget(): BuildingHydrationTarget {
     showFog: false,
     fogColor: '#cfd8e3',
     weatherEffect: 'none',
+    worldSurface: 'ground',
   };
 }
 
@@ -50,6 +51,7 @@ describe('building persistence helpers', () => {
       showFog: false,
       fogColor: '#cfd8e3',
       weatherEffect: 'none',
+      worldSurface: 'ground',
     });
   });
 
@@ -99,6 +101,7 @@ describe('building persistence helpers', () => {
       showFog: false,
       fogColor: '#cfd8e3',
       weatherEffect: 'none',
+      worldSurface: 'water',
     };
 
     hydrateBuildingState(target, data);
@@ -108,6 +111,7 @@ describe('building persistence helpers', () => {
     const block = target.blocks[0];
 
     expect(target.initialized).toBe(true);
+    expect(target.worldSurface).toBe('water');
     expect(tile?.cell).toEqual({ x: 2, z: 3, level: 2 });
     expect(tile?.footprint).toEqual([
       { x: 1, z: 2, level: 2 },
