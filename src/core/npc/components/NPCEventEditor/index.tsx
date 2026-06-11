@@ -6,7 +6,9 @@ import type { NPCEvent, NPCEventPayload } from '../../types';
 import './styles.css';
 
 export function NPCEventEditor({ instanceId, onClose }: NPCEventEditorProps) {
-  const { instances, addInstanceEvent, removeInstanceEvent } = useNPCStore();
+  const instances = useNPCStore((state) => state.instances);
+  const addInstanceEvent = useNPCStore((state) => state.addInstanceEvent);
+  const removeInstanceEvent = useNPCStore((state) => state.removeInstanceEvent);
   const instance = instances.get(instanceId);
   const [eventType, setEventType] = useState<NPCEvent['type']>('onClick');
   const [actionType, setActionType] = useState<NPCEvent['action']>('dialogue');

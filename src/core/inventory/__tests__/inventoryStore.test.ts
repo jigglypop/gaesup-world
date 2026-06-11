@@ -1,8 +1,15 @@
-import { registerSeedItems } from '../../items/data/items';
+import { getItemRegistry } from '../../items/registry/ItemRegistry';
+import type { ItemDef } from '../../items/types';
 import { useInventoryStore } from '../stores/inventoryStore';
 
+const TEST_ITEMS: ItemDef[] = [
+  { id: 'apple', name: 'apple', icon: 'apple', category: 'food', stackable: true, maxStack: 99 },
+  { id: 'wood', name: 'wood', icon: 'wood', category: 'material', stackable: true, maxStack: 99 },
+  { id: 'axe', name: 'axe', icon: 'axe', category: 'tool', stackable: false, maxStack: 1 },
+];
+
 beforeAll(() => {
-  registerSeedItems();
+  getItemRegistry().registerAll(TEST_ITEMS);
 });
 
 beforeEach(() => {

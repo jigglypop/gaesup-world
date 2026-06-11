@@ -18,7 +18,7 @@ import { useBuildingVisibilityStore } from '../../visibility/store';
 
 function appendVisibleIds(
   out: Set<string>,
-  candidates: Set<string>,
+  candidates: Iterable<string>,
   byId: Map<string, VisibilityRecord>,
   selfKind: 'tile' | 'wall' | 'block' | 'object',
   frustum: THREE.Frustum,
@@ -120,7 +120,7 @@ export function BuildingVisibilityDriver() {
 
     const useGpuCandidates = gpuCullingActive && gpuCullingVersion === snapshot.version;
     const tileCandidates = useGpuCandidates
-      ? new Set(gpuTileIds)
+      ? gpuTileIds
       : collectCandidateIds(
           index.tileBuckets,
           scratch.camera.x,
@@ -128,7 +128,7 @@ export function BuildingVisibilityDriver() {
           VISIBILITY_MAX_DISTANCE,
         );
     const wallCandidates = useGpuCandidates
-      ? new Set(gpuWallIds)
+      ? gpuWallIds
       : collectCandidateIds(
           index.wallBuckets,
           scratch.camera.x,
@@ -136,7 +136,7 @@ export function BuildingVisibilityDriver() {
           VISIBILITY_MAX_DISTANCE,
         );
     const objectCandidates = useGpuCandidates
-      ? new Set(gpuObjectIds)
+      ? gpuObjectIds
       : collectCandidateIds(
           index.objectBuckets,
           scratch.camera.x,
@@ -144,7 +144,7 @@ export function BuildingVisibilityDriver() {
           VISIBILITY_MAX_DISTANCE,
         );
     const blockCandidates = useGpuCandidates
-      ? new Set(gpuBlockIds)
+      ? gpuBlockIds
       : collectCandidateIds(
           index.blockBuckets,
           scratch.camera.x,
@@ -204,12 +204,7 @@ export function BuildingVisibilityDriver() {
       const oldestKey = cacheRef.current.keys().next().value;
       if (oldestKey) cacheRef.current.delete(oldestKey);
     }
-    setVisible({
-      tileIds: payload.tileIds,
-      wallIds: payload.wallIds,
-      blockIds: payload.blockIds,
-      objectIds: payload.objectIds,
-    });
+    setVisible(payload);
   });
 
   return null;

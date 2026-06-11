@@ -1122,10 +1122,22 @@ export const useBuildingStore = create<BuildingStore>()(
         state.snapToGrid = snap;
       }),
 
-    setHoverPosition: (position) =>
+    setHoverPosition: (position) => {
+      const current = get().hoverPosition;
+      if (current === position) return;
+      if (
+        current &&
+        position &&
+        current.x === position.x &&
+        current.y === position.y &&
+        current.z === position.z
+      ) {
+        return;
+      }
       set((state) => {
         state.hoverPosition = position;
-      }),
+      });
+    },
 
     setTileMultiplier: (multiplier) =>
       set((state) => {

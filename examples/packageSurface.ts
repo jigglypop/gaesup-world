@@ -40,13 +40,14 @@ export function createPackageSurfaceExample() {
   ], {
     restoreOnComplete: false,
   });
+  playback.cancel();
+  restoreCameraCloseUp();
 
   void runtime;
   void closeUpPreset;
   void teleportDestination;
   void playback;
   void requestCameraCloseUp;
-  void restoreCameraCloseUp;
   void toggleCharacterWeapon;
   void applyCharacterEquipmentPreset;
   void DEFAULT_CHARACTER_EQUIPMENT_PRESETS;

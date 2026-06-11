@@ -394,6 +394,12 @@ export const BUILDING_WALL_PRESETS: BuildingWallPreset[] = [
   },
 ];
 
+/** 타일 프리셋을 캔버스로 드래그앤드롭할 때 사용하는 DataTransfer 타입 */
+export const BUILDING_TILE_PRESET_DRAG_TYPE = 'application/x-gaesup-tile-preset';
+
+/** 커스텀 타일 맵 등 타일 그룹을 캔버스로 드래그앤드롭할 때 사용하는 DataTransfer 타입 */
+export const BUILDING_TILE_GROUP_DRAG_TYPE = 'application/x-gaesup-tile-group';
+
 export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'oak-planks',

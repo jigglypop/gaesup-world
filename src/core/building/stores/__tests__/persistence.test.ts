@@ -137,4 +137,79 @@ describe('building persistence helpers', () => {
     expect(target.meshes.has('mesh')).toBe(true);
     expect(target.initialized).toBe(false);
   });
+
+  it('hydrate 후 존재하지 않는 선택 그룹은 첫 그룹으로 대체된다', () => {
+    const target = createTarget();
+    target.selectedTileGroupId = 'oak-floor';
+    target.selectedWallGroupId = 'brick-walls';
+
+    hydrateBuildingState(target, {
+      version: 1,
+      meshes: [],
+      tileGroups: [
+        { id: 'custom-floor', name: 'Custom', floorMeshId: 'mesh', tiles: [] },
+        { id: 'second-floor', name: 'Second', floorMeshId: 'mesh', tiles: [] },
+      ],
+      wallGroups: [{ id: 'custom-walls', name: 'Custom Walls', meshId: 'mesh', walls: [] }],
+      blocks: [],
+      objects: [],
+      showSnow: false,
+      showFog: false,
+      fogColor: '#cfd8e3',
+      weatherEffect: 'none',
+      worldSurface: 'ground',
+    });
+
+    expect(target.selectedTileGroupId).toBe('custom-floor');
+    expect(target.selectedWallGroupId).toBe('custom-walls');
+  });
+
+  it('hydrate 후 선택 그룹이 유효하면 그대로 유지된다', () => {
+    const target = createTarget();
+    target.selectedTileGroupId = 'oak-floor';
+    target.selectedWallGroupId = 'brick-walls';
+
+    hydrateBuildingState(target, {
+      version: 1,
+      meshes: [],
+      tileGroups: [
+        { id: 'other-floor', name: 'Other', floorMeshId: 'mesh', tiles: [] },
+        { id: 'oak-floor', name: 'Oak', floorMeshId: 'mesh', tiles: [] },
+      ],
+      wallGroups: [{ id: 'brick-walls', name: 'Brick', meshId: 'mesh', walls: [] }],
+      blocks: [],
+      objects: [],
+      showSnow: false,
+      showFog: false,
+      fogColor: '#cfd8e3',
+      weatherEffect: 'none',
+      worldSurface: 'ground',
+    });
+
+    expect(target.selectedTileGroupId).toBe('oak-floor');
+    expect(target.selectedWallGroupId).toBe('brick-walls');
+  });
+
+  it('hydrate된 그룹이 하나도 없으면 선택 그룹이 해제된다', () => {
+    const target = createTarget();
+    target.selectedTileGroupId = 'oak-floor';
+    target.selectedWallGroupId = 'brick-walls';
+
+    hydrateBuildingState(target, {
+      version: 1,
+      meshes: [],
+      tileGroups: [],
+      wallGroups: [],
+      blocks: [],
+      objects: [],
+      showSnow: false,
+      showFog: false,
+      fogColor: '#cfd8e3',
+      weatherEffect: 'none',
+      worldSurface: 'ground',
+    });
+
+    expect(target.selectedTileGroupId).toBeUndefined();
+    expect(target.selectedWallGroupId).toBeUndefined();
+  });
 });

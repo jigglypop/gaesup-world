@@ -21,9 +21,6 @@ import {
   createWeatherPlugin,
   getNPCScheduler,
   getSaveSystem,
-  registerSeedCrops,
-  registerSeedEvents,
-  registerSeedItems,
   useEventsStore,
   useInventoryStore,
   useMailStore,
@@ -39,9 +36,6 @@ import {
   type GameplayTriggerEvent,
 } from 'gaesup-world/gameplay';
 
-import { registerSeedDialogs } from '../components/dialog/seedDialogs';
-import { registerSeedI18n } from '../components/i18n/seedI18n';
-import { registerSeedContent } from '../components/seedContent';
 import { createExampleCozyLifePackagePlugin } from '../plugins/cozy-life-package';
 import { NPC_SCHEDULES } from './world/data';
 
@@ -54,13 +48,6 @@ const gameplayBlueprints: GameplayEventBlueprint[] = [...SEED_GAMEPLAY_EVENTS];
 function registerWorldSeeds(): void {
   if (seedsRegistered) return;
   seedsRegistered = true;
-
-  registerSeedItems();
-  registerSeedDialogs();
-  registerSeedContent();
-  registerSeedCrops();
-  registerSeedEvents();
-  registerSeedI18n();
 
   const scheduler = getNPCScheduler();
   NPC_SCHEDULES.forEach((schedule) => scheduler.register(schedule));

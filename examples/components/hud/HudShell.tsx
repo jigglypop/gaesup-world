@@ -9,14 +9,6 @@ const PerformancePanel = lazy(() =>
   import('gaesup-world/editor').then((module) => ({ default: module.PerformancePanel })),
 );
 
-function HeaderBar() {
-  return (
-    <div className="gp-header">
-      <div style={{ flex: 1 }} />
-    </div>
-  );
-}
-
 function LeftSidebar({
   showInfo,
   setShowInfo,
@@ -110,27 +102,7 @@ function RightSidebar() {
   );
 }
 
-function FooterBar() {
-  return (
-    <div className="gp-footer">
-      <div />
-      <div />
-      <div className="gp-glass gp-pill gp-footer-help">
-        <span className="gp-key">F</span>
-        <span>도구</span>
-        <span style={{ opacity: 0.4 }}>·</span>
-        <span className="gp-key">E</span>
-        <span>대화</span>
-        <span style={{ opacity: 0.4 }}>·</span>
-        <span className="gp-key">T</span>
-        <span>말풍선</span>
-        <span style={{ opacity: 0.4 }}>·</span>
-        <span className="gp-key">O</span>
-        <span>캐릭터</span>
-      </div>
-    </div>
-  );
-}
+
 
 export type HudShellProps = {
   showEnvironmentControls?: boolean;
@@ -144,7 +116,6 @@ export function HudShell({ showEnvironmentControls = true, compact = false }: Hu
   return (
     <>
       <div className="gp-shell">
-        <HeaderBar />
         <LeftSidebar
           showInfo={showInfo}
           setShowInfo={setShowInfo}
@@ -154,7 +125,6 @@ export function HudShell({ showEnvironmentControls = true, compact = false }: Hu
           compact={compact}
         />
         <RightSidebar />
-        {!compact && <FooterBar />}
       </div>
       {showInfo && <Info />}
       {showTele && <Teleport />}

@@ -36,6 +36,8 @@ export type BuildingHydrationTarget = {
   meshes: Map<string, MeshConfig>;
   wallGroups: Map<string, WallGroupConfig>;
   tileGroups: Map<string, TileGroupConfig>;
+  selectedWallGroupId?: string;
+  selectedTileGroupId?: string;
   blocks: BuildingBlockConfig[];
   objects: PlacedObject[];
   tileIndex: Map<number, Set<string>>;
@@ -108,7 +110,24 @@ export function hydrateBuildingState(
   state.fogColor = data.fogColor ?? '#cfd8e3';
   state.weatherEffect = data.weatherEffect ?? (state.showSnow ? 'snow' : 'none');
   state.worldSurface = data.worldSurface ?? 'ground';
+  applySelectedGroupId(state, 'selectedTileGroupId', state.tileGroups);
+  applySelectedGroupId(state, 'selectedWallGroupId', state.wallGroups);
   state.initialized = true;
+}
+
+function applySelectedGroupId(
+  state: BuildingHydrationTarget,
+  key: 'selectedTileGroupId' | 'selectedWallGroupId',
+  groups: Map<string, unknown>,
+): void {
+  const current = state[key];
+  if (current && groups.has(current)) return;
+  const first = groups.keys().next();
+  if (first.done) {
+    delete state[key];
+    return;
+  }
+  state[key] = first.value;
 }
 
 function hydrateTileGroups(state: BuildingHydrationTarget, groups: TileGroupConfig[]): void {

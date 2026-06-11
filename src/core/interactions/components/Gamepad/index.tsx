@@ -12,7 +12,7 @@ export const gamepadDefault = {
 export function GamePad(props: gamepadType) {
   const { gamePadStyle, gamePadButtonStyle, label } = props;
   const keyboard = useGaesupStore((state) => state.interaction?.keyboard);
-  const { mode } = useGaesupStore();
+  const mode = useGaesupStore((state) => state.mode);
   useKeyboard();
 
   const GamePadDirections = Object.keys(keyboard || {})

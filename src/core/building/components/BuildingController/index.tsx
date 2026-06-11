@@ -5,6 +5,7 @@ import { useThree } from '@react-three/fiber';
 import { NPCSystem } from '../../../npc/components/NPCSystem';
 import { useBuildingEditor } from '../../hooks/useBuildingEditor';
 import { useBuildingStore } from '../../stores/buildingStore';
+import { BUILDING_TILE_GROUP_DRAG_TYPE, BUILDING_TILE_PRESET_DRAG_TYPE } from '../../types';
 import { BuildingGpuCullingDriver } from '../BuildingGpuCullingDriver';
 import { BuildingGpuMirrorDriver } from '../BuildingGpuMirrorDriver';
 import { BuildingGpuUploadDriver } from '../BuildingGpuUploadDriver';
@@ -110,13 +111,60 @@ export function BuildingController() {
       else if (mode === 'object') placeObject();
     };
 
+    // 패널의 타일 프리셋/커스텀 타일 맵을 캔버스 위로 끌어다 놓으면 해당 위치에 배치한다.
+    const isTileDrag = (e: DragEvent) =>
+      Boolean(
+        e.dataTransfer?.types.includes(BUILDING_TILE_PRESET_DRAG_TYPE) ||
+          e.dataTransfer?.types.includes(BUILDING_TILE_GROUP_DRAG_TYPE),
+      );
+
+    const handleDragOver = (e: DragEvent) => {
+      if (!isTileDrag(e)) return;
+      e.preventDefault();
+      e.dataTransfer!.dropEffect = 'copy';
+      if (useBuildingStore.getState().editMode !== 'tile') {
+        useBuildingStore.getState().setEditMode('tile');
+      }
+      updateMousePosition(e);
+    };
+
+    const handleDrop = (e: DragEvent) => {
+      const presetId = e.dataTransfer?.getData(BUILDING_TILE_PRESET_DRAG_TYPE);
+      const groupId = e.dataTransfer?.getData(BUILDING_TILE_GROUP_DRAG_TYPE);
+      if (!presetId && !groupId) return;
+      e.preventDefault();
+      const store = useBuildingStore.getState();
+      if (store.editMode !== 'tile') store.setEditMode('tile');
+      if (presetId) {
+        store.applyTilePreset(presetId);
+      } else if (groupId && store.tileGroups.has(groupId)) {
+        useBuildingStore.setState((state) => {
+          state.selectedTileGroupId = groupId;
+          state.currentTileMaterialId = null;
+        });
+      }
+      updateMousePosition(e);
+      placeTile();
+    };
+
+    const handleDragLeave = (e: DragEvent) => {
+      if (e.target !== canvas) return;
+      setHoverPosition(null);
+    };
+
     canvas.addEventListener('mousedown', handleMouseDown);
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('mouseup', handleMouseUp);
+    canvas.addEventListener('dragover', handleDragOver);
+    canvas.addEventListener('drop', handleDrop);
+    canvas.addEventListener('dragleave', handleDragLeave);
     return () => {
       canvas.removeEventListener('mousedown', handleMouseDown);
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('mouseup', handleMouseUp);
+      canvas.removeEventListener('dragover', handleDragOver);
+      canvas.removeEventListener('drop', handleDrop);
+      canvas.removeEventListener('dragleave', handleDragLeave);
       setHoverPosition(null);
     };
   }, [gl, updateMousePosition, placeWall, placeTile, placeBlock, placeObject, setHoverPosition]);

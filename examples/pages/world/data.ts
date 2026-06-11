@@ -67,43 +67,9 @@ export type WorldNpc = {
   dialogTreeId: string;
 };
 
-export const NPCS: WorldNpc[] = [
-  { id: 'tommy', name: '토미', pos: [0, 0, -8], accentColor: '#ff9f6e', dialogTreeId: 'npc.shopkeeper' },
-  { id: 'mei', name: '메이', pos: [6, 0, 0], accentColor: '#7fc6ff', dialogTreeId: 'npc.villager' },
-  { id: 'ryu', name: '류', pos: [-6, 0, 0], accentColor: '#85d878', dialogTreeId: 'npc.craftsman' },
-];
+export const NPCS: WorldNpc[] = [];
 
-export const NPC_SCHEDULES: NPCSchedule[] = [
-  {
-    npcId: 'tommy',
-    defaultEntry: { position: [0, 0, -8], activity: 'idle' },
-    entries: [
-      { startHour: 6, endHour: 9, position: [-2, 0, -8], activity: 'idle' },
-      { startHour: 9, endHour: 18, position: [0, 0, -8], activity: 'shop' },
-      { startHour: 18, endHour: 22, position: [4, 0, -6], activity: 'idle' },
-      { startHour: 22, endHour: 6, position: [-1, 0, -10], activity: 'sleep' },
-    ],
-  },
-  {
-    npcId: 'mei',
-    defaultEntry: { position: [6, 0, 0], activity: 'idle' },
-    entries: [
-      { startHour: 7, endHour: 11, position: [6, 0, 0], activity: 'idle' },
-      { startHour: 11, endHour: 16, position: [10, 0, 14], activity: 'work' },
-      { startHour: 16, endHour: 21, position: [6, 0, 0], activity: 'idle' },
-      { startHour: 21, endHour: 7, position: [4, 0, -2], activity: 'sleep' },
-    ],
-  },
-  {
-    npcId: 'ryu',
-    defaultEntry: { position: [-6, 0, 0], activity: 'idle' },
-    entries: [
-      { startHour: 8, endHour: 19, position: [-6, 0, 0], activity: 'work' },
-      { startHour: 19, endHour: 23, position: [-4, 0, 4], activity: 'idle' },
-      { startHour: 23, endHour: 8, position: [-7, 0, -2], activity: 'sleep' },
-    ],
-  },
-];
+export const NPC_SCHEDULES: NPCSchedule[] = [];
 
 export const BUG_SPOTS: Array<[number, number, number]> = [
   [-22, 0, -10],

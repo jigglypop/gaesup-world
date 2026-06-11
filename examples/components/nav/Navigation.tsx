@@ -6,7 +6,9 @@ import { useAuthStore } from 'gaesup-world/admin';
 import './styles.css';
 
 export const Navigation = () => {
-  const { isLoggedIn, user, logout } = useAuthStore();
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
   const mainLinks = [
     { to: '/', label: '월드' },

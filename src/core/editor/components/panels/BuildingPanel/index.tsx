@@ -13,10 +13,13 @@ import {
   BUILDING_WALL_KIND_OPTIONS,
   BUILDING_WALL_PRESETS,
   BUILDING_TILE_PRESETS,
+  BUILDING_TILE_GROUP_DRAG_TYPE,
+  BUILDING_TILE_PRESET_DRAG_TYPE,
   BUILDING_TILE_OBJECT_OPTIONS,
   type BuildingSystemState,
   type MeshConfig,
 } from '../../../../building/types';
+import { useBuildingStore } from '../../../../building/stores/buildingStore';
 import { FieldColor, FieldRow } from '../../fields';
 import type { EditorPanelBaseProps } from '../types';
 import {
@@ -526,6 +529,9 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
       {isTileMode && !disabledSectionSet.has('tilePresets') && (
         <div className="building-panel__section">
           <div className="building-panel__section-title">타일 프리셋</div>
+          <div className="building-panel__section-subtitle">
+            클릭해 선택하거나, 월드 화면으로 끌어다 놓으면 그 자리에 배치됩니다
+          </div>
           <div className="building-panel__grid">
             {BUILDING_TILE_PRESETS.map((preset) => {
               const groupId = `${preset.id}-floor`;
@@ -534,6 +540,12 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
                   key={preset.id}
                   className={`building-panel__grid-btn ${selectedTileGroupId === groupId ? 'building-panel__grid-btn--active' : ''}`}
                   onClick={() => applyTilePreset(preset.id)}
+                  draggable
+                  onDragStart={(event) => {
+                    event.dataTransfer.setData(BUILDING_TILE_PRESET_DRAG_TYPE, preset.id);
+                    event.dataTransfer.effectAllowed = 'copy';
+                    applyTilePreset(preset.id);
+                  }}
                   title={preset.labelEn}
                 >
                   {preset.labelKo}
@@ -576,6 +588,20 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
             <button className="building-panel__asset-action" onClick={applyCustomTile}>
               별도 타일 맵 생성/선택
             </button>
+            <div
+              className="building-panel__drag-chip"
+              draggable
+              onDragStart={(event) => {
+                applyCustomTile();
+                const groupId = useBuildingStore.getState().selectedTileGroupId;
+                if (!groupId) return;
+                event.dataTransfer.setData(BUILDING_TILE_GROUP_DRAG_TYPE, groupId);
+                event.dataTransfer.effectAllowed = 'copy';
+              }}
+              title="월드 화면으로 끌어다 놓으면 그 자리에 이 커스텀 타일이 배치됩니다"
+            >
+              ⠿ 끌어서 월드에 배치
+            </div>
           </div>
         </div>
       )}

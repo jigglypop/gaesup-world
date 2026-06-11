@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git worktree *)",
+      "Bash(cd ../gaesup-world-head-check && npx jest src/core/camera/__tests__/cinematic.test.ts src/core/interactions/components/__tests__/mouseRouting.test.ts src/core/inventory/__tests__/inventoryStore.test.ts 2>&1 | tail -8)",
+      "Read(//c/Users/dongh/OneDrive/Desktop/gaesup-world-head-check/**)",
+      "PowerShell(New-Item -ItemType Junction -Path ..\\\\gaesup-world-head-check\\\\node_modules -Target \\(Resolve-Path .\\\\node_modules\\) | Out-Null; \"junction created\")",
+      "Bash(node ./node_modules/jest/bin/jest.js src/core/camera/__tests__/cinematic.test.ts src/core/interactions/components/__tests__/mouseRouting.test.ts src/core/inventory/__tests__/inventoryStore.test.ts)"
+    ]
+  }
+}

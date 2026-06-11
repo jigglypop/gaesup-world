@@ -3,8 +3,8 @@ import React from 'react';
 import { useUIConfigStore } from 'gaesup-world';
 
 export const SpeechBalloonSettings = () => {
-  const { config, updateSpeechBalloonConfig } = useUIConfigStore();
-  const speechConfig = config.speechBalloon;
+  const speechConfig = useUIConfigStore((state) => state.config.speechBalloon);
+  const updateSpeechBalloonConfig = useUIConfigStore((state) => state.updateSpeechBalloonConfig);
   
   return (
     <div style={{ marginTop: '20px' }}>

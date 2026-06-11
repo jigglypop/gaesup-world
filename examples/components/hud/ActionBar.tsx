@@ -56,14 +56,12 @@ export function createHudActionButtons({
 }
 
 export function ActionBar() {
-  const messages = useMailStore((s) => s.messages);
-  const quests = useQuestStore((s) => s.state);
-  const catalog = useCatalogStore((s) => s.entries);
-
-  const unreadMail = messages.reduce((n, m) => n + (m.read ? 0 : 1), 0);
-  const unclaimedMail = messages.reduce((n, m) => n + (m.claimed === false ? 1 : 0), 0);
-  const activeQuests = Object.values(quests).filter((p) => p.status === 'active').length;
-  const collected = Object.keys(catalog).length;
+  const unreadMail = useMailStore((s) => s.messages.reduce((n, m) => n + (m.read ? 0 : 1), 0));
+  const unclaimedMail = useMailStore((s) => s.messages.reduce((n, m) => n + (m.claimed === false ? 1 : 0), 0));
+  const activeQuests = useQuestStore(
+    (s) => Object.values(s.state).filter((p) => p.status === 'active').length,
+  );
+  const collected = useCatalogStore((s) => Object.keys(s.entries).length);
 
   const buttons = createHudActionButtons({ activeQuests, unreadMail, unclaimedMail, collected });
 

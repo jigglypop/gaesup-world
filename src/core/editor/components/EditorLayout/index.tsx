@@ -441,7 +441,6 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
                 ))}
               </div>
             )}
-            <div className="editor-shell-hint">좌클릭 배치 · 우클릭 회전 · Q/E 높이 조절</div>
           </div>
         </div>
 
