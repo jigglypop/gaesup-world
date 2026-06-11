@@ -282,6 +282,7 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
   const isBlockMode = panelEditMode === 'block';
   const isObjectMode = panelEditMode === 'object';
   const isNPCMode = panelEditMode === 'npc' && hasNPCPanel;
+  const customTileTextureObjectUrlsRef = React.useRef<string[]>([]);
 
   React.useEffect(() => {
     if (!hasNPCPanel) return;
@@ -293,6 +294,13 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
     if (editMode === forcedEditMode) return;
     setEditMode(forcedEditMode);
   }, [editMode, forcedEditMode, setEditMode]);
+  React.useEffect(
+    () => () => {
+      customTileTextureObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      customTileTextureObjectUrlsRef.current = [];
+    },
+    [],
+  );
 
   const handleDeleteSelectedWall = () => {
     if (!selectedWallId || !selectedWallGroup) return;
@@ -367,6 +375,51 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
     );
     setCurrentTileMaterialId(placementMeshId);
   };
+
+  const handleCustomTileTextureFile = React.useCallback(
+    (file: File | null | undefined) => {
+      if (!file || !file.type.startsWith('image/')) return;
+      const textureUrl = URL.createObjectURL(file);
+      customTileTextureObjectUrlsRef.current.push(textureUrl);
+      const nextName = file.name.replace(/\.[^.]+$/, '').trim();
+      const asset: AssetRecord = {
+        id: `custom-tile-texture-${Date.now()}`,
+        name: nextName || 'Custom Tile Texture',
+        kind: 'tile',
+        metadata: { textureUrl },
+      };
+      setCustomTileDraft({
+        textureUrl,
+        ...(nextName ? { name: nextName } : {}),
+      });
+      applyAssetToTile(asset);
+    },
+    [applyAssetToTile, setCustomTileDraft],
+  );
+
+  const handleCustomTileTextureDrop = React.useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      handleCustomTileTextureFile(event.dataTransfer.files.item(0));
+    },
+    [handleCustomTileTextureFile],
+  );
+
+  const handleCustomTileTextureDragOver = React.useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'copy';
+    },
+    [],
+  );
+
+  const handleCustomTileTextureInput = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      handleCustomTileTextureFile(event.target.files?.item(0));
+      event.target.value = '';
+    },
+    [handleCustomTileTextureFile],
+  );
 
   const applyColorToTile = (color: string) => {
     if (!selectedTileGroup) return;
@@ -585,6 +638,20 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
                 className="building-panel__text-input"
               />
             </label>
+            <div
+              className="building-panel__texture-dropzone"
+              onDrop={handleCustomTileTextureDrop}
+              onDragOver={handleCustomTileTextureDragOver}
+            >
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleCustomTileTextureInput}
+                className="building-panel__texture-file-input"
+              />
+              <span className="building-panel__texture-dropzone-title">Image drop</span>
+              <span className="building-panel__texture-dropzone-text">Drop or select a tile texture image</span>
+            </div>
             <button className="building-panel__asset-action" onClick={applyCustomTile}>
               별도 타일 맵 생성/선택
             </button>

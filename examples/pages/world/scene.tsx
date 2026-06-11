@@ -2,7 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 
 import { Environment, Grid } from '@react-three/drei';
 import { type ThreeEvent } from '@react-three/fiber';
-import { RigidBody } from '@react-three/rapier';
+import { CuboidCollider, RigidBody } from '@react-three/rapier';
 
 import {
   BugSpot,
@@ -72,11 +72,6 @@ function InspectableFeature({
 
 const WORLD_SURFACE_SIZE = 1000;
 const WORLD_COLLIDER_DEPTH = 2;
-const WORLD_WATER_LOD = {
-  near: 160,
-  far: 900,
-  strength: 3,
-};
 const WORLD_WATER_SHORE = {
   north: false,
   south: false,
@@ -174,7 +169,7 @@ export function Ground() {
           depth={WORLD_SURFACE_SIZE}
           center={[0, 0, 0]}
           shore={WORLD_WATER_SHORE}
-          lod={WORLD_WATER_LOD}
+          followCamera
         />
       ) : (
         <Grid
@@ -191,7 +186,11 @@ export function Ground() {
           userData={{ intangible: true }}
         />
       )}
-      <RigidBody type="fixed" colliders="cuboid">
+      <RigidBody type="fixed" colliders={false}>
+        <CuboidCollider
+          position={[0, -1.01, 0]}
+          args={[WORLD_SURFACE_SIZE / 2, WORLD_COLLIDER_DEPTH / 2, WORLD_SURFACE_SIZE / 2]}
+        />
         <mesh receiveShadow position={[0, -1.01, 0]} visible={!showWaterSurface}>
           <boxGeometry args={[WORLD_SURFACE_SIZE, WORLD_COLLIDER_DEPTH, WORLD_SURFACE_SIZE]} />
           <meshStandardMaterial

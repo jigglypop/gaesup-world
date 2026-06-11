@@ -499,6 +499,45 @@
   cursor: grabbing;
 }
 
+.building-panel__texture-dropzone {
+  position: relative;
+  display: flex;
+  min-height: 72px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--editor-spacing-xs);
+  overflow: hidden;
+  border: 1px dashed var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  background: var(--editor-surface-1);
+  color: var(--editor-text-muted);
+}
+
+.building-panel__texture-dropzone:hover {
+  background: var(--editor-surface-hover);
+  color: var(--editor-text-main);
+}
+
+.building-panel__texture-file-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.building-panel__texture-dropzone-title {
+  color: var(--editor-text-main);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.building-panel__texture-dropzone-text {
+  color: var(--editor-text-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
 .building-panel__empty {
   padding: 9px;
   border: 1px solid var(--editor-border-color);

@@ -40,4 +40,13 @@ describe('BuildingPanel UI extension points', () => {
     expect(source).toContain("if (!hasNPCPanel) return");
     expect(source).toContain("npcPanel({ editMode: 'npc', layout: npcLayout, defaultPanel })");
   });
+
+  test('커스텀 타일 텍스처를 이미지 드롭과 파일 선택으로 받을 수 있다', () => {
+    const source = fs.readFileSync(BUILDING_PANEL_ENTRY, 'utf8');
+
+    expect(source).toContain('handleCustomTileTextureDrop');
+    expect(source).toContain('URL.createObjectURL(file)');
+    expect(source).toContain('accept="image/*"');
+    expect(source).toContain('className="building-panel__texture-dropzone"');
+  });
 });

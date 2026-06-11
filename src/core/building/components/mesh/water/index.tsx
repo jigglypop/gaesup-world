@@ -25,6 +25,7 @@ type WaterProps = {
     east: boolean;
     west: boolean;
   }>;
+  followCamera?: boolean;
   /**
    * When true, uses a lightweight stylized shader without reflection RT.
    * Defaults to the global toon mode. The normal path keeps the original Water quality.
@@ -195,7 +196,7 @@ function getSharedWaterNormals(size = 128): THREE.DataTexture {
   return texture;
 }
 
-export default function Ocean({ lod, center, size = 16, width, depth, shore, toon }: WaterProps) {
+export default function Ocean({ lod, center, size = 16, width, depth, shore, toon, followCamera = false }: WaterProps) {
   const useToon = toon ?? getDefaultToonMode();
   const waterRef = useRef<(Water & { dispose?: () => void }) | null>(null);
   const toonMatRef = useRef<THREE.ShaderMaterial | null>(null);
@@ -354,6 +355,13 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
 
     const water = waterRef.current as THREE.Object3D | null;
     const fallback = fallbackMeshRef.current;
+    if (followCamera) {
+      const x = state.camera.position.x - centerRef.current.x + waterOffsetX;
+      const z = state.camera.position.z - centerRef.current.z + waterOffsetZ;
+      target.position.set(x, 0.1, z);
+      if (water && water !== target) water.position.set(x, 0.1, z);
+      if (fallback) fallback.position.set(x, 0.095, z);
+    }
 
     if (lod) {
       lodCheckAccumRef.current += Math.max(0, delta);
