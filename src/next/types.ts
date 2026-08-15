@@ -15,6 +15,18 @@ export type RenderPassDescriptor<TContext> = {
   writes?: readonly string[];
   execute: (context: TContext) => void;
 };
+export type RendererBackendKind = 'webgpu';
+export type RendererBackend = {
+  kind: RendererBackendKind;
+  native: unknown;
+  resize: (width: number, height: number) => void;
+  dispose: () => void;
+};
+export type ThreeWebGpuBackendOptions = {
+  canvas: HTMLCanvasElement;
+  width: number;
+  height: number;
+};
 export type GeometrySourceKind = 'mesh' | 'splat' | 'pointcloud' | 'voxel' | 'procedural';
 export type MeshGeometrySource = {
   kind: 'mesh';

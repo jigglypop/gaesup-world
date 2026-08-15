@@ -101,3 +101,11 @@ api-sync 라운드 1에서 제안된 예제 갭 5건을 examples에 적용(라�
 - `pnpm test -- src/next src/__tests__/packageExports.test.ts --runInBand`: 4 suites / 32 tests 통과.
 - `pnpm exec tsc -p tsconfig.build.json --noEmit`: 0 errors.
 - `pnpm exec eslint src/next src/next.ts`: 0건.
+
+## next-core 라운드 2 — N1 착수: 컬링 코어 + WebGPU 백엔드 (2026-08-15, 자율 루프)
+
+1. `src/next/core/culling.ts`: Gribb-Hartmann 프러스텀 평면 추출(`extractFrustumPlanes`, 정규화 포함) + 구 컬링(`cullSpheres`, out 가시성 마스크, 호출당 할당 0). GPU compute 컬링의 CPU 레퍼런스이자 검증 기준.
+2. `src/next/backend/threeWebGpuBackend.ts`: `isWebGpuAvailable` 능력 감지 + `createThreeWebGpuBackend`(three/webgpu 동적 import, 실패 시 null 폴백 — tsl/grass.ts 패턴).
+3. examples 배선은 의도적 보류: examples/App.tsx 등에 사용자 미커밋 변경이 있어 파일 스테이징 시 WIP 혼입 위험. 사용자 복귀 후 또는 별도 확인 후 진행.
+
+검증: `pnpm test -- src/next --runInBand` 4 suites/27 tests 통과, tsc 0 errors, eslint 0건.
