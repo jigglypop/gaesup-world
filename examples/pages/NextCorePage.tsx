@@ -26,6 +26,7 @@ type CullStats = {
   visible: number;
   total: number;
   cullMs: number;
+  fps: number;
 };
 
 function createScatteredWorld(): NextWorld {
@@ -55,7 +56,11 @@ function CulledInstances({ onStats }: { onStats: (stats: CullStats) => void }) {
       indices: new Uint32Array(INSTANCE_COUNT),
       matrices: new Float32Array(INSTANCE_COUNT * MATRIX_STRIDE),
       tempMatrix: new THREE.Matrix4(),
+      previousViewProjection: new Float32Array(16),
       lastStatsAt: { value: 0 },
+      lastVisibleCount: { value: 0 },
+      lastCullMs: { value: 0 },
+      smoothedFps: { value: 0 },
     }),
     [],
   );
@@ -67,31 +72,54 @@ function CulledInstances({ onStats }: { onStats: (stats: CullStats) => void }) {
     };
   }, [geometry, material]);
 
-  useFrame(({ camera, clock }) => {
+  useFrame(({ camera, clock }, delta) => {
     const mesh = meshRef.current;
     if (!mesh) return;
-    const startedAt = performance.now();
+    if (delta > 0) {
+      const instantFps = 1 / delta;
+      buffers.smoothedFps.value =
+        buffers.smoothedFps.value === 0
+          ? instantFps
+          : buffers.smoothedFps.value * 0.9 + instantFps * 0.1;
+    }
     buffers.tempMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-    buffers.viewProjection.set(buffers.tempMatrix.elements);
-    extractFrustumPlanes(buffers.viewProjection, buffers.planes);
-    cullSpheres(
-      buffers.planes,
-      world.transforms.positions,
-      SPHERE_RADIUS,
-      world.entityCount,
-      buffers.visibility,
-    );
-    const visibleCount = compactVisible(buffers.visibility, world.entityCount, buffers.indices);
-    packInstanceMatrices(world.transforms, buffers.indices, visibleCount, buffers.matrices);
-    const instanceArray = mesh.instanceMatrix.array as Float32Array;
-    instanceArray.set(buffers.matrices.subarray(0, visibleCount * MATRIX_STRIDE));
-    mesh.count = visibleCount;
-    mesh.instanceMatrix.needsUpdate = true;
-    const cullMs = performance.now() - startedAt;
+    let cameraMoved = false;
+    for (let slot = 0; slot < 16; slot += 1) {
+      const element = buffers.tempMatrix.elements[slot] ?? 0;
+      if (buffers.previousViewProjection[slot] !== element) {
+        cameraMoved = true;
+        buffers.previousViewProjection[slot] = element;
+      }
+    }
+    if (cameraMoved) {
+      const startedAt = performance.now();
+      buffers.viewProjection.set(buffers.tempMatrix.elements);
+      extractFrustumPlanes(buffers.viewProjection, buffers.planes);
+      cullSpheres(
+        buffers.planes,
+        world.transforms.positions,
+        SPHERE_RADIUS,
+        world.entityCount,
+        buffers.visibility,
+      );
+      const visibleCount = compactVisible(buffers.visibility, world.entityCount, buffers.indices);
+      packInstanceMatrices(world.transforms, buffers.indices, visibleCount, buffers.matrices);
+      const instanceArray = mesh.instanceMatrix.array as Float32Array;
+      instanceArray.set(buffers.matrices.subarray(0, visibleCount * MATRIX_STRIDE));
+      mesh.count = visibleCount;
+      mesh.instanceMatrix.needsUpdate = true;
+      buffers.lastVisibleCount.value = visibleCount;
+      buffers.lastCullMs.value = performance.now() - startedAt;
+    }
     const nowMs = clock.elapsedTime * 1000;
     if (nowMs - buffers.lastStatsAt.value >= STATS_INTERVAL_MS) {
       buffers.lastStatsAt.value = nowMs;
-      onStats({ visible: visibleCount, total: world.entityCount, cullMs });
+      onStats({
+        visible: buffers.lastVisibleCount.value,
+        total: world.entityCount,
+        cullMs: buffers.lastCullMs.value,
+        fps: buffers.smoothedFps.value,
+      });
     }
   });
 
@@ -105,7 +133,12 @@ function CulledInstances({ onStats }: { onStats: (stats: CullStats) => void }) {
 }
 
 export function NextCorePage() {
-  const [stats, setStats] = useState<CullStats>({ visible: 0, total: INSTANCE_COUNT, cullMs: 0 });
+  const [stats, setStats] = useState<CullStats>({
+    visible: 0,
+    total: INSTANCE_COUNT,
+    cullMs: 0,
+    fps: 0,
+  });
   const backendLabel = useMemo(
     () => (isWebGpuAvailable() ? 'WebGPU available' : 'WebGPU unavailable (WebGL fallback)'),
     [],
@@ -115,7 +148,7 @@ export function NextCorePage() {
     <div style={{ position: 'fixed', inset: 0 }}>
       <Canvas camera={{ position: [0, 24, 70], fov: 60 }}>
         <CulledInstances onStats={handleStats} />
-        <OrbitControls />
+        <OrbitControls autoRotate autoRotateSpeed={2} />
       </Canvas>
       <div
         style={{
@@ -137,6 +170,7 @@ export function NextCorePage() {
           visible {stats.visible} / {stats.total}
         </div>
         <div>cull+pack {stats.cullMs.toFixed(2)} ms</div>
+        <div>fps {stats.fps.toFixed(0)}</div>
       </div>
     </div>
   );
