@@ -117,3 +117,11 @@ api-sync 라운드 1에서 제안된 예제 갭 5건을 examples에 적용(라�
 3. 통합 테스트: 컬링-압축-패킹 파이프라인이 가시 엔티티만 행렬화함을 검증.
 
 검증: 5 suites/33 tests 통과, tsc 0, eslint 0.
+
+## next-core 라운드 4 — N1 데모 페이지 (2026-08-15, 자율 루프)
+
+1. `examples/pages/NextCorePage.tsx` 신설: `gaesup-world/next` 공개 subpath import만 사용. 1만 인스턴스를 NextWorld(SoA)에 산포하고 매 프레임 컬링-압축-패킹 CPU 레퍼런스 파이프라인으로 InstancedMesh를 갱신. 오버레이에 visible/total, cull+pack ms, WebGPU 가용성 표시. 프레임 경로 버퍼는 전부 useMemo 사전 할당(프레임당 할당 0), 통계만 250ms 스로틀로 React state 반영.
+2. `examples/App.tsx`에 `/next` 라우트 추가 — 단, 이 파일은 사용자 미커밋 변경과 섞여 있어 **커밋하지 않고 작업 트리에만 적용**. 사용자 확인 후 커밋 필요.
+3. 검증: `pnpm exec tsc --noEmit`(examples 포함) 0 errors, eslint 신규 파일 0건, `vite build` 데모 번들 성공(47s).
+
+N1 잔여: TSL compute 컬링(GPU 경로)과 실브라우저 확인. 데모 페이지가 생겼으므로 dev 서버에서 육안 검증 가능해짐.
