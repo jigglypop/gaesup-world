@@ -137,3 +137,14 @@ N1 잔여: TSL compute 컬링(GPU 경로)과 실브라우저 확인. 데모 페�
 검증: 클릭 프로브 36.2→53.2fps(Clicker-off 상한 52.2 도달), jank>33ms 46→3회, tsc 0, eslint 0.
 
 잔여(별도 과제): 이동 중 systemic 8fps — usePlayerPosition 16ms 간격 소비자들(OutfitAvatar, ToolUseController, InteractionTracker)의 forceUpdate 리렌더. frame-perf-auditor 규칙 5 위반 패턴으로, ref/스냅샷 구독으로 전환 필요.
+
+## perf 라운드 2 — usePlayerPosition 비반응 모드 (2026-08-15)
+
+이동 중 60Hz React 리렌더를 유발하던 usePlayerPosition 소비자 수술.
+
+1. `usePlayerPosition`에 `reactive?: boolean`(기본 true) 옵션 추가 — false면 벡터를 in-place 갱신만 하고 forceUpdate를 호출하지 않음(결과 객체 identity는 원래 stable).
+2. 값을 useFrame/이벤트 핸들러에서만 읽는 3개 소비자를 reactive: false로 전환: OutfitAvatar(16ms→무리렌더), ToolUseController(16ms→무리렌더), InteractionTracker(16ms→무리렌더).
+
+검증: motions/interactions/character 28 suites 240 tests 통과, tsc 0, eslint 0. 클릭 프로브 p50 18.4→17.6ms(WASD 16.7과 근접), WASD 59.7fps 유지.
+
+잔여 의심: 클릭 이동 중 automation/mouse 슬라이스가 프레임마다 identity 변경되어 Clicker 등 구독자를 리렌더시킬 가능성 — 다음 성능 라운드 조사 대상.

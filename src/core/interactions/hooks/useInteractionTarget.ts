@@ -93,7 +93,7 @@ export type InteractionTrackerProps = {
 };
 
 export function InteractionTracker({ throttleMs = 80 }: InteractionTrackerProps = {}): null {
-  const { position } = usePlayerPosition({ updateInterval: 16 });
+  const { position } = usePlayerPosition({ reactive: false });
   const entries = useInteractablesStore((s) => s.entries);
   const setCurrent = useInteractablesStore((s) => s.setCurrent);
   const accumRef = useRef(0);

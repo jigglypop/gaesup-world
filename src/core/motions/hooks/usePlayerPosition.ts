@@ -11,6 +11,7 @@ import { MotionBridge } from '../bridge/MotionBridge';
 export interface UsePlayerPositionOptions {
   updateInterval?: number; // milliseconds, 0 means every frame
   entityId?: string; // Entity ID to track
+  reactive?: boolean; // false: update vectors in place without triggering React re-renders
 }
 
 export interface UsePlayerPositionResult {
@@ -36,7 +37,7 @@ const createDefaultResult = (): UsePlayerPositionResult => ({
 export function usePlayerPosition(
   options: UsePlayerPositionOptions = {},
 ): UsePlayerPositionResult {
-  const { updateInterval = 0, entityId } = options;
+  const { updateInterval = 0, entityId, reactive = true } = options;
 
   // Keep stable references for consumers; update vectors in-place.
   const resultRef = useRef<UsePlayerPositionResult | null>(null);
@@ -85,13 +86,13 @@ export function usePlayerPosition(
       result.speed = snapshot.speed;
       result.height = 2.0;
 
-      forceUpdate((v) => v + 1);
+      if (reactive) forceUpdate((v) => v + 1);
     });
 
     return () => {
       unsubscribe();
     };
-  }, [entityId, updateInterval]);
+  }, [entityId, updateInterval, reactive]);
 
   // Fallback polling path (keeps position updating even when no bridge events are emitted).
   useFrame(() => {
@@ -128,7 +129,7 @@ export function usePlayerPosition(
           result.height = 2.0;
 
           lastUpdateRef.current = now;
-          if (posChanged(result.position)) forceUpdate((v) => v + 1);
+          if (reactive && posChanged(result.position)) forceUpdate((v) => v + 1);
           return;
         }
       }
@@ -152,7 +153,7 @@ export function usePlayerPosition(
       result.height = 2.0;
 
       lastUpdateRef.current = now;
-      if (posChanged(result.position)) forceUpdate((v) => v + 1);
+      if (reactive && posChanged(result.position)) forceUpdate((v) => v + 1);
     }
   });
 
