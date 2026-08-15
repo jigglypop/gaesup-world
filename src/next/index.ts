@@ -16,6 +16,12 @@ export {
 } from './core/culling';
 export { composeTrsMatrix, MATRIX_STRIDE, packInstanceMatrices } from './core/instancing';
 export { createThreeWebGpuBackend, isWebGpuAvailable } from './backend/threeWebGpuBackend';
+export { createGpuCulledInstances } from './backend/gpuCulledInstances';
+export type {
+  GpuCulledInstancesOptions,
+  GpuCulledInstancesResult,
+  PlaneVectorLike,
+} from './backend/gpuCulledInstances';
 export type {
   EntityId,
   NextWorldOptions,

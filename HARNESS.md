@@ -148,3 +148,13 @@ N1 잔여: TSL compute 컬링(GPU 경로)과 실브라우저 확인. 데모 페�
 검증: motions/interactions/character 28 suites 240 tests 통과, tsc 0, eslint 0. 클릭 프로브 p50 18.4→17.6ms(WASD 16.7과 근접), WASD 59.7fps 유지.
 
 잔여 의심: 클릭 이동 중 automation/mouse 슬라이스가 프레임마다 identity 변경되어 Clicker 등 구독자를 리렌더시킬 가능성 — 다음 성능 라운드 조사 대상.
+
+## next-core 라운드 5 — N1 게이트: GPU compute 컬링 10만 인스턴스 (2026-08-15)
+
+1. `src/next/backend/gpuCulledInstances.ts` 신설: three/tsl compute 커널(프러스텀 6평면 unroll, uniformArray 평면 + storage 가시성 버퍼)이 GPU에서 인스턴스별 가시성 계산, MeshNormalNodeMaterial의 positionNode에 가시성 곱(scale-to-zero) — CPU 리드백 없는 GPU-상주 컬링. WebGPU 미가용/실패 시 null 폴백.
+2. 함정 해결: `/* @vite-ignore */` + 변수 specifier는 vite가 재작성하지 않아 브라우저 네이티브 bare import가 실패(조용히 null) — 리터럴 `import('three/webgpu')`로 교체. 라이브러리 빌드에서는 /^three\// external이라 동적 import로 보존됨.
+3. `/next?gpu` 데모: r3f 우회, WebGPURenderer + 자체 애니메이션 루프로 10만 인스턴스. cpu 10k / gpu 100k 전환 링크.
+
+검증(실브라우저, RTX 5060 Ti): 10만 인스턴스 렌더 확인(스크린샷), 컬링 디스패치 0.10ms, 헤드리스 무vsync 루프 290fps(실환경 60 고정 + 헤드룸), 콘솔 에러 0. tsc(examples 포함) 0, eslint 0.
+
+한계 명시: scale-to-zero 방식이라 드로우는 여전히 10만 인스턴스 제출(정점 단계 퇴화) — indirect draw + GPU compaction은 N6 후보.
