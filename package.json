@@ -134,6 +134,16 @@
         "default": "./dist/server-contracts.cjs"
       }
     },
+    "./next": {
+      "import": {
+        "types": "./dist/next.d.ts",
+        "default": "./dist/next.js"
+      },
+      "require": {
+        "types": "./dist/next.d.cts",
+        "default": "./dist/next.cjs"
+      }
+    },
     "./postprocessing": {
       "import": {
         "types": "./dist/postprocessing.d.ts",
@@ -180,6 +190,8 @@
     "build:types": "tsc -p tsconfig.build.json && node scripts/copy-cjs-types.cjs",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --fix",
+    "verify": "pnpm run lint && pnpm run test -- --runInBand && pnpm run build:types && pnpm exec publint",
+    "verify:full": "pnpm run verify && pnpm run test:package && pnpm run test:demo",
     "preview": "vite preview",
     "prepare": "npm run build",
     "predeploy": "npm run build",

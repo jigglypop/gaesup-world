@@ -12,6 +12,7 @@ const pairs = [
   ['dist/gameplay.d.ts', 'dist/gameplay.d.cts'],
   ['dist/navigation.d.ts', 'dist/navigation.d.cts'],
   ['dist/network.d.ts', 'dist/network.d.cts'],
+  ['dist/next.d.ts', 'dist/next.d.cts'],
   ['dist/plugins.d.ts', 'dist/plugins.d.cts'],
   ['dist/postprocessing.d.ts', 'dist/postprocessing.d.cts'],
   ['dist/runtime.d.ts', 'dist/runtime.d.cts'],
@@ -19,7 +20,9 @@ const pairs = [
 ];
 
 for (const [source, target] of pairs) {
-  if (!fs.existsSync(source)) continue;
+  if (!fs.existsSync(source)) {
+    throw new Error(`Missing declaration file: ${source}`);
+  }
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.copyFileSync(source, target);
 }

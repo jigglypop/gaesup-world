@@ -54,7 +54,8 @@ function demoManualChunks(id: string): string | undefined {
   if (normalized.includes('/src/core/networks/')) return 'gaesup-network';
   if (normalized.includes('/src/core/motions/')) return 'gaesup-motions';
   if (normalized.includes('/src/core/camera/')) return 'gaesup-camera';
-  if (normalized.includes('/src/core/plugins/') || normalized.includes('/src/core/runtime/')) return 'gaesup-runtime';
+  if (normalized.includes('/src/core/plugins/') || normalized.includes('/src/core/runtime/'))
+    return 'gaesup-runtime';
   return undefined;
 }
 
@@ -77,7 +78,10 @@ function serveDemoGltfAssets(): Plugin {
           return;
         }
 
-        res.setHeader('Content-Type', GLTF_CONTENT_TYPES[path.extname(assetPath)] ?? 'application/octet-stream');
+        res.setHeader(
+          'Content-Type',
+          GLTF_CONTENT_TYPES[path.extname(assetPath)] ?? 'application/octet-stream',
+        );
         createReadStream(assetPath).pipe(res);
       });
     },
@@ -90,19 +94,39 @@ export default defineConfig(({ mode }) => {
 
   const alias = [
     { find: /^gaesup-world$/, replacement: path.resolve(__dirname, 'src/index.ts') },
+    {
+      find: /^gaesup-world\/style\.css$/,
+      replacement: path.resolve(__dirname, 'src/core/editor/styles/theme.css'),
+    },
     { find: /^gaesup-world\/admin$/, replacement: path.resolve(__dirname, 'src/admin-entry.ts') },
     { find: /^gaesup-world\/assets$/, replacement: path.resolve(__dirname, 'src/assets.ts') },
-    { find: /^gaesup-world\/blueprints$/, replacement: path.resolve(__dirname, 'src/blueprints/index.ts') },
-    { find: /^gaesup-world\/blueprints\/editor$/, replacement: path.resolve(__dirname, 'src/blueprints/editor.ts') },
+    {
+      find: /^gaesup-world\/blueprints$/,
+      replacement: path.resolve(__dirname, 'src/blueprints/index.ts'),
+    },
+    {
+      find: /^gaesup-world\/blueprints\/editor$/,
+      replacement: path.resolve(__dirname, 'src/blueprints/editor.ts'),
+    },
     { find: /^gaesup-world\/building$/, replacement: path.resolve(__dirname, 'src/building.ts') },
     { find: /^gaesup-world\/editor$/, replacement: path.resolve(__dirname, 'src/editor.ts') },
     { find: /^gaesup-world\/gameplay$/, replacement: path.resolve(__dirname, 'src/gameplay.ts') },
-    { find: /^gaesup-world\/navigation$/, replacement: path.resolve(__dirname, 'src/navigation.ts') },
+    {
+      find: /^gaesup-world\/navigation$/,
+      replacement: path.resolve(__dirname, 'src/navigation.ts'),
+    },
     { find: /^gaesup-world\/network$/, replacement: path.resolve(__dirname, 'src/network.ts') },
-    { find: /^gaesup-world\/postprocessing$/, replacement: path.resolve(__dirname, 'src/postprocessing.ts') },
+    { find: /^gaesup-world\/next$/, replacement: path.resolve(__dirname, 'src/next.ts') },
+    {
+      find: /^gaesup-world\/postprocessing$/,
+      replacement: path.resolve(__dirname, 'src/postprocessing.ts'),
+    },
     { find: /^gaesup-world\/plugins$/, replacement: path.resolve(__dirname, 'src/plugins.ts') },
     { find: /^gaesup-world\/runtime$/, replacement: path.resolve(__dirname, 'src/runtime.ts') },
-    { find: /^gaesup-world\/server-contracts$/, replacement: path.resolve(__dirname, 'src/server-contracts.ts') },
+    {
+      find: /^gaesup-world\/server-contracts$/,
+      replacement: path.resolve(__dirname, 'src/server-contracts.ts'),
+    },
     { find: '@', replacement: path.resolve(__dirname, 'src') },
     { find: '@core', replacement: path.resolve(__dirname, 'src/core') },
     { find: '@hooks', replacement: path.resolve(__dirname, 'src/core/hooks') },
@@ -134,7 +158,7 @@ export default defineConfig(({ mode }) => {
         }),
         tsconfigPaths(),
         svgr(),
-        glsl()
+        glsl(),
       ],
       resolve: {
         alias,
@@ -152,6 +176,7 @@ export default defineConfig(({ mode }) => {
             gameplay: path.resolve(__dirname, 'src/gameplay.ts'),
             navigation: path.resolve(__dirname, 'src/navigation.ts'),
             network: path.resolve(__dirname, 'src/network.ts'),
+            next: path.resolve(__dirname, 'src/next.ts'),
             plugins: path.resolve(__dirname, 'src/plugins.ts'),
             postprocessing: path.resolve(__dirname, 'src/postprocessing.ts'),
             runtime: path.resolve(__dirname, 'src/runtime.ts'),
@@ -178,7 +203,9 @@ export default defineConfig(({ mode }) => {
       define: {
         'process.env.NODE_ENV': JSON.stringify('production'),
         // Avoid `process is not defined` in browsers for any dev-only diagnostics.
-        'process.env.VITE_ENABLE_BRIDGE_LOGS': JSON.stringify(process.env.VITE_ENABLE_BRIDGE_LOGS ?? ''),
+        'process.env.VITE_ENABLE_BRIDGE_LOGS': JSON.stringify(
+          process.env.VITE_ENABLE_BRIDGE_LOGS ?? '',
+        ),
       },
     };
   }
@@ -201,7 +228,7 @@ export default defineConfig(({ mode }) => {
       tsconfigPaths(),
       svgr(),
       glsl(),
-      serveDemoGltfAssets()
+      serveDemoGltfAssets(),
     ],
     resolve: {
       alias,
@@ -224,7 +251,9 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.NODE_ENV': JSON.stringify(mode === 'production' ? 'production' : 'development'),
       // Avoid `process is not defined` in browsers for any dev-only diagnostics.
-      'process.env.VITE_ENABLE_BRIDGE_LOGS': JSON.stringify(process.env.VITE_ENABLE_BRIDGE_LOGS ?? ''),
+      'process.env.VITE_ENABLE_BRIDGE_LOGS': JSON.stringify(
+        process.env.VITE_ENABLE_BRIDGE_LOGS ?? '',
+      ),
     },
   };
 });

@@ -44,6 +44,7 @@
       "gaesup-world/gameplay": ["src/gameplay.ts"],
       "gaesup-world/navigation": ["src/navigation.ts"],
       "gaesup-world/network": ["src/network.ts"],
+      "gaesup-world/next": ["src/next.ts"],
       "gaesup-world/postprocessing": ["src/postprocessing.ts"],
       "gaesup-world/plugins": ["src/plugins.ts"],
       "gaesup-world/runtime": ["src/runtime.ts"],
