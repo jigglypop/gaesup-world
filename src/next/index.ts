@@ -8,7 +8,13 @@ export {
 export { TransformStore } from './core/TransformStore';
 export { TaskGraph, TASK_PHASE_ORDER } from './core/TaskGraph';
 export { RenderGraph } from './core/RenderGraph';
-export { cullSpheres, extractFrustumPlanes, FRUSTUM_PLANES_LENGTH } from './core/culling';
+export {
+  compactVisible,
+  cullSpheres,
+  extractFrustumPlanes,
+  FRUSTUM_PLANES_LENGTH,
+} from './core/culling';
+export { composeTrsMatrix, MATRIX_STRIDE, packInstanceMatrices } from './core/instancing';
 export { createThreeWebGpuBackend, isWebGpuAvailable } from './backend/threeWebGpuBackend';
 export type {
   EntityId,

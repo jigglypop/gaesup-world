@@ -109,3 +109,11 @@ api-sync 라운드 1에서 제안된 예제 갭 5건을 examples에 적용(라�
 3. examples 배선은 의도적 보류: examples/App.tsx 등에 사용자 미커밋 변경이 있어 파일 스테이징 시 WIP 혼입 위험. 사용자 복귀 후 또는 별도 확인 후 진행.
 
 검증: `pnpm test -- src/next --runInBand` 4 suites/27 tests 통과, tsc 0 errors, eslint 0건.
+
+## next-core 라운드 3 — N1 계속: 압축 + 인스턴스 패킹 (2026-08-15, 자율 루프)
+
+1. `core/culling.ts`에 `compactVisible` 추가: 가시성 마스크를 가시 인덱스 목록(Uint32Array)으로 압축 — indirect draw 준비물의 CPU 레퍼런스.
+2. `core/instancing.ts` 신설: `composeTrsMatrix`(쿼터니언 TRS를 열우선 4x4로 무할당 합성, three 호환 레이아웃) + `packInstanceMatrices`(가시 인덱스만 인스턴스 버퍼로 패킹).
+3. 통합 테스트: 컬링-압축-패킹 파이프라인이 가시 엔티티만 행렬화함을 검증.
+
+검증: 5 suites/33 tests 통과, tsc 0, eslint 0.

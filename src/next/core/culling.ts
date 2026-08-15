@@ -47,6 +47,21 @@ function writePlane(
   out[offset + 3] = w * scale;
 }
 
+export function compactVisible(
+  visibility: Uint8Array,
+  count: number,
+  outIndices: Uint32Array,
+): number {
+  let visibleCount = 0;
+  for (let index = 0; index < count; index += 1) {
+    if (visibility[index] === 1) {
+      outIndices[visibleCount] = index;
+      visibleCount += 1;
+    }
+  }
+  return visibleCount;
+}
+
 export function cullSpheres(
   planes: Float32Array,
   positions: Float32Array,
