@@ -125,3 +125,15 @@ api-sync 라운드 1에서 제안된 예제 갭 5건을 examples에 적용(라�
 3. 검증: `pnpm exec tsc --noEmit`(examples 포함) 0 errors, eslint 신규 파일 0건, `vite build` 데모 번들 성공(47s).
 
 N1 잔여: TSL compute 컬링(GPU 경로)과 실브라우저 확인. 데모 페이지가 생겼으므로 dev 서버에서 육안 검증 가능해짐.
+
+## perf 라운드 1 — 클릭 이동 60→36fps 하락 수정 (2026-08-15)
+
+증상: 클릭 이동 중 지속적 프레임 하락(사용자 보고 60→20, 프로브 재현 36fps/p50 27ms). 이등분 측정으로 원인 분리: PathLine(drei Line2가 Clicker 리렌더마다 지오메트리 재생성) 약 12fps, Clicker 기타 4fps, 시스템 잔여 8fps.
+
+수정:
+1. `Clicker/PathLine.tsx` 전면 재작성: Line2/LineGeometry/LineMaterial(three-stdlib)을 1회 생성 후 `pointsRef`를 100ms 스로틀 useFrame에서 명령형 갱신. React 재생성/셰이더 재컴파일 경로 제거(최악 프레임 115ms→35ms의 원인이던 재컴파일 스파이크 소멸).
+2. `Clicker/index.tsx`: PathLine에 배열 대신 ref 전달, usePlayerPosition 50ms→150ms.
+
+검증: 클릭 프로브 36.2→53.2fps(Clicker-off 상한 52.2 도달), jank>33ms 46→3회, tsc 0, eslint 0.
+
+잔여(별도 과제): 이동 중 systemic 8fps — usePlayerPosition 16ms 간격 소비자들(OutfitAvatar, ToolUseController, InteractionTracker)의 forceUpdate 리렌더. frame-perf-auditor 규칙 5 위반 패턴으로, ref/스냅샷 구독으로 전환 필요.
