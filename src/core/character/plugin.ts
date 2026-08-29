@@ -1,6 +1,10 @@
 import { createStoreDomainPlugin } from '../plugins';
 import { useCharacterStore } from './stores/characterStore';
-import type { CharacterSerialized } from './types';
+import type {
+  CharacterSerialized,
+  CharacterSerializedV1,
+  CharacterSerializedV2,
+} from './types';
 
 export interface CharacterPluginOptions {
   id?: string;
@@ -16,7 +20,9 @@ export function serializeCharacterState(): CharacterSerialized {
   return useCharacterStore.getState().serialize();
 }
 
-export function hydrateCharacterState(data: CharacterSerialized | null | undefined): void {
+export function hydrateCharacterState(
+  data: CharacterSerialized | CharacterSerializedV2 | CharacterSerializedV1 | null | undefined,
+): void {
   useCharacterStore.getState().hydrate(data);
 }
 

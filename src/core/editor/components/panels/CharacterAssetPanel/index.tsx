@@ -52,7 +52,7 @@ export const CharacterAssetPanel: FC<EditorPanelBaseProps> = ({ className = '', 
           <span className="character-asset-panel__section-title">캐릭터 에셋</span>
           <button
             className="character-asset-panel__ghost-btn"
-            onClick={resetAppearance}
+            onClick={() => resetAppearance()}
             type="button"
           >
             초기화

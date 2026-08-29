@@ -25,7 +25,13 @@ function runWithOutput(command, args, options = {}) {
 }
 
 function npmCommand() {
-  const npmCli = path.join(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
+  const npmCli = path.join(
+    path.dirname(process.execPath),
+    'node_modules',
+    'npm',
+    'bin',
+    'npm-cli.js',
+  );
   if (fs.existsSync(npmCli)) {
     return { command: process.execPath, args: [npmCli] };
   }
@@ -67,7 +73,9 @@ function getExportTargets() {
 function getJsExportSpecifiers() {
   return Object.entries(packageJson.exports)
     .filter(([, entry]) => typeof entry !== 'string')
-    .map(([subpath]) => (subpath === '.' ? packageJson.name : `${packageJson.name}${subpath.slice(1)}`))
+    .map(([subpath]) =>
+      subpath === '.' ? packageJson.name : `${packageJson.name}${subpath.slice(1)}`,
+    )
     .sort();
 }
 
@@ -91,7 +99,7 @@ function assertBuiltExportTargetsExist() {
         'Package export targets are missing from dist/.',
         'Run `npm run build` before verifying package consumption.',
         ...missing.map((target) => `- ${target}`),
-      ].join('\n')
+      ].join('\n'),
     );
   }
 }
@@ -109,7 +117,7 @@ function packPackage() {
   const packedFiles = new Set(packResult.files.map((file) => normalizePackagePath(file.path)));
   const missingPackedTargets = getExportTargets().filter((target) => !packedFiles.has(target));
   const forbiddenFiles = Array.from(packedFiles).filter((file) =>
-    /^(src|examples|demo-dist|server|scripts|docs|\.tmp)\//.test(file)
+    /^(src|examples|demo-dist|server|scripts|docs|\.tmp)\//.test(file),
   );
 
   if (missingPackedTargets.length > 0) {
@@ -117,7 +125,7 @@ function packPackage() {
       [
         'npm pack did not include every package export target.',
         ...missingPackedTargets.map((target) => `- ${target}`),
-      ].join('\n')
+      ].join('\n'),
     );
   }
 
@@ -126,7 +134,7 @@ function packPackage() {
       [
         'npm pack included development-only files.',
         ...forbiddenFiles.map((target) => `- ${target}`),
-      ].join('\n')
+      ].join('\n'),
     );
   }
 
@@ -144,7 +152,21 @@ function writeConsumerProject(tarballPath) {
   const allJsExportSpecifiers = JSON.stringify(getJsExportSpecifiers(), null, 2);
   const namedRuntimeModules = JSON.stringify(
     [
-      ['gaesup-world', ['GaesupWorld', 'ActionEquipmentPanel', 'createGaesupRuntime', 'createBuildingPlugin', 'requestCameraCloseUp', 'playCameraCinematic', 'TeleportOnClick', 'TeleportMarker', 'createTeleportDestination', 'resolveEquippedCharacterAttachments']],
+      [
+        'gaesup-world',
+        [
+          'GaesupWorld',
+          'ActionEquipmentPanel',
+          'createGaesupRuntime',
+          'createBuildingPlugin',
+          'requestCameraCloseUp',
+          'playCameraCinematic',
+          'TeleportOnClick',
+          'TeleportMarker',
+          'createTeleportDestination',
+          'resolveEquippedCharacterAttachments',
+        ],
+      ],
       ['gaesup-world/admin', ['GaesupAdmin']],
       ['gaesup-world/assets', ['useAssetStore']],
       ['gaesup-world/blueprints', ['WARRIOR_BLUEPRINT']],
@@ -160,7 +182,7 @@ function writeConsumerProject(tarballPath) {
       ['gaesup-world/server-contracts', ['createGameCommand', 'createServerPluginHost']],
     ],
     null,
-    2
+    2,
   );
 
   fs.writeFileSync(
@@ -174,8 +196,8 @@ function writeConsumerProject(tarballPath) {
         devDependencies: {},
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 
   fs.writeFileSync(
@@ -195,8 +217,8 @@ function writeConsumerProject(tarballPath) {
         include: ['consumer.tsx'],
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 
   fs.writeFileSync(
@@ -323,6 +345,7 @@ const attachments = resolveEquippedCharacterAttachments({
     bottom: null,
     shoes: null,
     face: null,
+    glasses: null,
     weapon: 'starter-sword',
     accessory: null,
   },
@@ -362,7 +385,7 @@ void WARRIOR_BLUEPRINT;
 void defaultMultiplayerConfig;
 void useMultiplayer;
 void parseCubeLut;
-`
+`,
   );
 
   fs.writeFileSync(
@@ -384,7 +407,7 @@ for (const [specifier, names] of namedModules) {
 }
 
 console.log('ESM runtime import smoke passed.');
-`
+`,
   );
 
   fs.writeFileSync(
@@ -406,12 +429,12 @@ for (const [specifier, names] of namedModules) {
 }
 
 console.log('CJS runtime require smoke passed.');
-`
+`,
   );
 
   fs.writeFileSync(
     path.join(consumerRoot, 'index.html'),
-    `<div id="root"></div><script type="module" src="/browser-app.tsx"></script>`
+    `<div id="root"></div><script type="module" src="/browser-app.tsx"></script>`,
   );
 
   fs.writeFileSync(
@@ -511,6 +534,7 @@ const attachments = resolveEquippedCharacterAttachments({
     bottom: null,
     shoes: null,
     face: null,
+    glasses: null,
     weapon: 'starter-sword',
     accessory: null,
   },
@@ -563,7 +587,7 @@ function BrowserSmoke() {
 }
 
 createRoot(document.getElementById('root')!).render(React.createElement(BrowserSmoke));
-`
+`,
   );
 
   fs.writeFileSync(
@@ -580,7 +604,7 @@ export default defineConfig({
     'process.env.VITE_ENABLE_BRIDGE_LOGS': JSON.stringify(''),
   },
 });
-`
+`,
   );
 }
 
@@ -595,7 +619,7 @@ function assertConsumerPeerDependenciesInstalled() {
       [
         'Consumer project did not install every gaesup-world peer dependency locally.',
         ...missing.map((dependencyName) => `- ${dependencyName}`),
-      ].join('\n')
+      ].join('\n'),
     );
   }
 }
@@ -610,9 +634,13 @@ function main() {
     cwd: consumerRoot,
   });
   assertConsumerPeerDependenciesInstalled();
-  run(process.execPath, [path.join(root, 'node_modules', 'typescript', 'lib', 'tsc.js'), '-p', 'tsconfig.json'], {
-    cwd: consumerRoot,
-  });
+  run(
+    process.execPath,
+    [path.join(root, 'node_modules', 'typescript', 'lib', 'tsc.js'), '-p', 'tsconfig.json'],
+    {
+      cwd: consumerRoot,
+    },
+  );
   run(process.execPath, ['runtime-smoke.mjs'], { cwd: consumerRoot });
   run(process.execPath, ['runtime-smoke.cjs'], { cwd: consumerRoot });
   run(process.execPath, [path.join(root, 'node_modules', 'vite', 'bin', 'vite.js'), 'build'], {

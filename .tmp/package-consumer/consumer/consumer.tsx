@@ -120,6 +120,7 @@ const attachments = resolveEquippedCharacterAttachments({
     bottom: null,
     shoes: null,
     face: null,
+    glasses: null,
     weapon: 'starter-sword',
     accessory: null,
   },

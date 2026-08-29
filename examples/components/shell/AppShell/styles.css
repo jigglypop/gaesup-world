@@ -1,0 +1,14 @@
+.example-app-shell,
+.example-app-shell__content {
+  width: 100%;
+  height: 100%;
+}
+.example-app-shell {
+  position: relative;
+  overflow: hidden;
+  background: var(--gp-glass-bg-strong);
+  color: var(--gp-text);
+}
+.example-app-shell__content {
+  position: relative;
+}

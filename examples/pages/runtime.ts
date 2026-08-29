@@ -21,6 +21,7 @@ import {
   createWeatherPlugin,
   getNPCScheduler,
   getSaveSystem,
+  notify,
   useEventsStore,
   useInventoryStore,
   useMailStore,
@@ -31,19 +32,59 @@ import {
 } from 'gaesup-world';
 import {
   GameplayEventEngine,
+  getGameplayEventRegistry,
   SEED_GAMEPLAY_EVENTS,
+  type GameplayEventAction,
   type GameplayEventBlueprint,
+  type GameplayEventCondition,
   type GameplayTriggerEvent,
 } from 'gaesup-world/gameplay';
+import type { CommandAuthorityResult, PlatformServerPluginHost } from 'gaesup-world/server-contracts';
 
 import { createExampleCozyLifePackagePlugin } from '../plugins/cozy-life-package';
+import { createExampleServerHost, runExampleServerHostPing } from '../plugins/server-host-sample';
 import { NPC_SCHEDULES } from './world/data';
 
 const DEFAULT_WORLD_TIME_MINUTES = 18 * 60;
 
 let seedsRegistered = false;
 let gameplayEngine: GameplayEventEngine | null = null;
-const gameplayBlueprints: GameplayEventBlueprint[] = [...SEED_GAMEPLAY_EVENTS];
+let gameplayCustomHandlersRegistered = false;
+let serverHost: PlatformServerPluginHost | null = null;
+let serverHostReady = false;
+let serverHostDemoResult: CommandAuthorityResult | null = null;
+export const WORLD_CUSTOM_GAMEPLAY_KEY = 'world.demo';
+
+const WORLD_CUSTOM_GAMEPLAY_BLUEPRINT: GameplayEventBlueprint = {
+  id: 'example-custom-gameplay-event',
+  name: '커스텀 이벤트 예시',
+  description: '커스텀 조건/액션 레지스트리 등록 데모',
+  trigger: { type: 'custom', key: WORLD_CUSTOM_GAMEPLAY_KEY },
+  conditions: [{ type: 'custom', key: WORLD_CUSTOM_GAMEPLAY_KEY }],
+  actions: [{ type: 'custom', key: WORLD_CUSTOM_GAMEPLAY_KEY }],
+  policy: { run: 'repeat' },
+};
+
+const gameplayBlueprints: GameplayEventBlueprint[] = [
+  ...SEED_GAMEPLAY_EVENTS,
+  WORLD_CUSTOM_GAMEPLAY_BLUEPRINT,
+];
+
+function registerWorldGameplayCustomHandlers(): void {
+  if (gameplayCustomHandlersRegistered) return;
+  gameplayCustomHandlersRegistered = true;
+  const registry = getGameplayEventRegistry();
+  registry.registerCondition<Extract<GameplayEventCondition, { type: 'custom' }>>(
+    'custom',
+    (condition, context) => condition.key === (context.trigger.key ?? WORLD_CUSTOM_GAMEPLAY_KEY),
+  );
+  registry.registerAction<Extract<GameplayEventAction, { type: 'custom' }>>(
+    'custom',
+    (action) => {
+      notify('info', `커스텀 이벤트 실행: ${action.key}`);
+    },
+  );
+}
 
 function registerWorldSeeds(): void {
   if (seedsRegistered) return;
@@ -85,9 +126,31 @@ export function createWorldRuntime(): GaesupRuntime {
 
 export function getWorldGameplayEngine(): GameplayEventEngine {
   if (!gameplayEngine) {
+    registerWorldGameplayCustomHandlers();
     gameplayEngine = new GameplayEventEngine({ blueprints: gameplayBlueprints });
   }
   return gameplayEngine;
+}
+
+export function getWorldServerHost(): PlatformServerPluginHost {
+  if (!serverHost) {
+    serverHost = createExampleServerHost();
+  }
+  return serverHost;
+}
+
+export async function runWorldServerHostDemo(actorId = 'example-player'): Promise<CommandAuthorityResult> {
+  const host = getWorldServerHost();
+  if (!serverHostReady) {
+    serverHostReady = true;
+    await host.setup();
+  }
+  serverHostDemoResult = await runExampleServerHostPing(host, actorId);
+  return serverHostDemoResult;
+}
+
+export function getWorldServerHostDemoResult(): CommandAuthorityResult | null {
+  return serverHostDemoResult;
 }
 
 export function getWorldGameplayBlueprints(): GameplayEventBlueprint[] {
@@ -120,6 +183,7 @@ export async function loadWorldRuntime(runtime: GaesupRuntime): Promise<boolean>
   const loaded = await runtime.save.load();
   applyStarterState();
   await dispatchWorldGameplayEvent({ type: 'manual', key: 'world.ready' });
+  await runWorldServerHostDemo();
   return loaded;
 }
 

@@ -12,6 +12,16 @@ export function GroundClicker({ clickerOptions }: GroundClickerProps) {
   const { onClick } = useClicker(clickerOptions);
   
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
+    // Modifier clicks are reserved for tools layered behind this plane
+    // (e.g. <TeleportOnClick modifierKey="altKey" />) — let them pass through.
+    if (
+      event.nativeEvent.altKey ||
+      event.nativeEvent.ctrlKey ||
+      event.nativeEvent.metaKey ||
+      event.nativeEvent.shiftKey
+    ) {
+      return;
+    }
     event.stopPropagation();
 
     const { cameraOption, setCameraOption } = useGaesupStore.getState();
@@ -33,7 +43,7 @@ export function GroundClicker({ clickerOptions }: GroundClickerProps) {
       userData={{ intangible: true }}
     >
       <planeGeometry args={[1000, 1000]} />
-      <meshBasicMaterial transparent opacity={0} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
     </mesh>
   );
 } 

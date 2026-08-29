@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useMemo, useState } from 'react';
+import { Suspense, lazy, useCallback, useMemo, useState } from 'react';
 
 import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
@@ -24,6 +24,8 @@ import {
   QuestLogUI,
   RoomVisibilityDriver,
   RuntimeSaveDiagnosticsToaster,
+  TeleportOnClick,
+  restoreCameraCloseUp,
   setDefaultToonMode,
   ToolUseController,
   TouchControls,
@@ -36,28 +38,26 @@ import {
   type WorldContainerProps,
 } from 'gaesup-world';
 import { GrassDriver } from 'gaesup-world/building';
-import {
-  Editor,
-  GameplayEventPanel,
-  StudioPanel,
-  createEditorShell,
-  type EditorShellOptions,
-} from 'gaesup-world/editor';
+import { ColorGrade, ToonOutlines } from 'gaesup-world/postprocessing';
 
-import {
-  createWorldRuntime,
-  deleteWorldGameplayEventBlueprint,
-  dispatchWorldGameplayEvent,
-  getWorldGameplayBlueprints,
-  registerWorldGameplayEventBlueprint,
-} from './runtime';
+import { createWorldRuntime } from './runtime';
 import { WorldPageProps } from './types';
 import { DEFAULT_TOON_MODE } from './world/data';
 import { WorldFocusModal, type WorldFocusInfo } from './world/focus';
-import { DEFAULT_CHARACTER_URL, CharacterSpeechBalloon, Player } from './world/player';
+import {
+  DEFAULT_CHARACTER_URL,
+  CharacterSpeechBalloon,
+  NavigationRouteProbe,
+  Player,
+} from './world/player';
 import { Ground, Lighting, Scenery } from './world/scene';
 import { WorldSystems } from './world/useWorldSystems';
+import { CloseUpControls } from '../components/cinematic/CloseUpControls';
+import { FeatureAccessPanel } from '../components/feature/FeatureAccessPanel';
 import { HudShell } from '../components/hud/HudShell';
+import { PerformanceOverlay } from '../components/performance/PerformanceOverlay';
+import { RideableUIRenderer, RideableVehicles } from '../components/rideable';
+import { TeleportMarkers } from '../components/teleport/markers';
 import { AIRPLANE_URL, EXAMPLE_CONFIG, S3, VEHICLE_URL } from '../config/constants';
 import '../style.css';
 
@@ -70,7 +70,8 @@ export { S3 };
 
 setDefaultToonMode(DEFAULT_TOON_MODE);
 
-const DEFAULT_EDITOR_SHELL_OPTIONS: EditorShellOptions = {};
+const WorldEditorSurface = lazy(() => import('./WorldEditorSurface'));
+const DEFAULT_EDITOR_SHELL_OPTIONS: NonNullable<WorldPageProps['editorShellOptions']> = {};
 const EDITOR_WORLD_MODE = {
   type: 'character',
   controller: 'clicker',
@@ -108,6 +109,7 @@ export const WorldPage = ({
   showHud = true,
   compactHud = false,
   includeEditorAuxPanels = true,
+  showDiagnostics = false,
   editorShellOptions = DEFAULT_EDITOR_SHELL_OPTIONS,
   children,
 }: WorldPageProps) => {
@@ -116,8 +118,8 @@ export const WorldPage = ({
   const fogEnabled = useBuildingStore((s) => s.showFog);
   const fogColor = useBuildingStore((s) => s.fogColor);
   const weatherEffect = useBuildingStore((s) => s.weatherEffect);
-  const [gameplayBlueprints, setGameplayBlueprints] = useState(() => getWorldGameplayBlueprints());
   const [focusedFeature, setFocusedFeature] = useState<WorldFocusInfo | null>(null);
+  const [postprocessingEnabled, setPostprocessingEnabled] = useState(false);
   const worldMode = showEditor ? EDITOR_WORLD_MODE : DEFAULT_WORLD_MODE;
   const worldCameraOption = showEditor ? EDITOR_WORLD_CAMERA_OPTION : DEFAULT_WORLD_CAMERA_OPTION;
   const handleRuntimeReady = useCallback(() => {
@@ -127,70 +129,9 @@ export const WorldPage = ({
     setFocusedFeature(focus);
   }, []);
   const handleFeatureFocusClose = useCallback(() => {
+    restoreCameraCloseUp();
     setFocusedFeature(null);
   }, []);
-  const editorShell = useMemo(() => {
-    const auxiliaryPanels = includeEditorAuxPanels
-      ? [
-          {
-            id: 'gameplay-events',
-            title: '이벤트',
-            component: (
-              <GameplayEventPanel
-                blueprints={gameplayBlueprints}
-                onCreate={(blueprint) => {
-                  registerWorldGameplayEventBlueprint(blueprint);
-                  setGameplayBlueprints(getWorldGameplayBlueprints());
-                }}
-                onUpdate={(blueprint) => {
-                  registerWorldGameplayEventBlueprint(blueprint);
-                  setGameplayBlueprints(getWorldGameplayBlueprints());
-                }}
-                onDelete={(id) => {
-                  deleteWorldGameplayEventBlueprint(id);
-                  setGameplayBlueprints(getWorldGameplayBlueprints());
-                }}
-                onRun={(trigger) => dispatchWorldGameplayEvent(trigger)}
-              />
-            ),
-            defaultSide: 'right' as const,
-            pluginId: 'gaesup.gameplay-events',
-          },
-          {
-            id: 'studio',
-            title: '스튜디오',
-            component: <StudioPanel gameplayEvents={gameplayBlueprints} />,
-            defaultSide: 'right' as const,
-            pluginId: 'gaesup.studio',
-          },
-        ]
-      : [];
-
-    return createEditorShell({
-      ...editorShellOptions,
-      panels: [...auxiliaryPanels, ...(editorShellOptions.panels ?? [])],
-      defaultActivePanels: editorShellOptions.defaultActivePanels ?? ['tile'],
-      sidebarPreset: editorShellOptions.sidebarPreset ?? 'compact',
-      hiddenBuiltInPanels: editorShellOptions.hiddenBuiltInPanels ?? [
-        'character',
-        'vehicle',
-        'animation',
-        'motion',
-        'performance',
-      ],
-      panelOrder: editorShellOptions.panelOrder ?? [
-        'world',
-        'wall',
-        'tile',
-        'block',
-        'object',
-        'npc',
-        'camera',
-        'gameplay-events',
-        'studio',
-      ],
-    });
-  }, [editorShellOptions, gameplayBlueprints, includeEditorAuxPanels]);
   const characterMenuRenderers = useMemo<CharacterMenuRenderers>(
     () => ({
       header: (menu) => (
@@ -265,6 +206,11 @@ export const WorldPage = ({
               followCamera
             />
           )}
+          {postprocessingEnabled && (
+            <ToonOutlines edgeStrength={4} extraEffects={<ColorGrade intensity={0.8} />}>
+              <group />
+            </ToonOutlines>
+          )}
           <Suspense>
             <GaesupWorldContent
               showGrid={EXAMPLE_CONFIG.showGrid}
@@ -273,15 +219,23 @@ export const WorldPage = ({
               <Physics debug interpolate>
                 {!showEditor && <Player />}
                 <Ground />
-                <Scenery onFocus={!showEditor ? handleFeatureFocus : undefined} />
+                {showEditor ? (
+                  <Scenery enableCloseUp={!showEditor} />
+                ) : (
+                  <Scenery enableCloseUp={!showEditor} onFocus={handleFeatureFocus} />
+                )}
+                {!showEditor && <RideableVehicles />}
                 {!showEditor && <Clicker />}
                 {!showEditor && <GroundClicker />}
+                {!showEditor && <TeleportOnClick modifierKey="altKey" />}
                 <BuildingController />
                 {!showEditor && <CharacterSpeechBalloon />}
                 <InteractionTracker />
                 {!showEditor && <ToolUseController useKey="f" />}
                 <Footprints />
                 <GrassDriver />
+                {!showEditor && <TeleportMarkers />}
+                {!showEditor && <NavigationRouteProbe />}
                 <RoomVisibilityDriver />
               </Physics>
             </GaesupWorldContent>
@@ -296,6 +250,8 @@ export const WorldPage = ({
             <ToastHost position="top-right" />
 
             <HudShell showEnvironmentControls={!showEditor} compact={compactHud} />
+            {!showEditor && <FeatureAccessPanel />}
+            {!showEditor && <PerformanceOverlay />}
             {!showEditor && (
               <WorldFocusModal focus={focusedFeature} onClose={handleFeatureFocusClose} />
             )}
@@ -308,6 +264,7 @@ export const WorldPage = ({
             <InventoryUI toggleKey="i" />
 
             <HotbarUI />
+            {!showEditor && <RideableUIRenderer />}
             <MiniMap position="bottom-left" scale={5} showZoom={false} showCompass={false} />
 
             <CharacterCreator toggleKey="o" />
@@ -329,11 +286,29 @@ export const WorldPage = ({
               }}
               renderers={characterMenuRenderers}
             />
+            {showDiagnostics && (
+              <button
+                type="button"
+                className={`world-postprocessing-toggle${postprocessingEnabled ? ' world-postprocessing-toggle--active' : ''}`}
+                onClick={() => setPostprocessingEnabled((enabled) => !enabled)}
+              >
+                {postprocessingEnabled ? '후처리 끄기' : '후처리 켜기'}
+              </button>
+            )}
+            {!showEditor && <CloseUpControls />}
             {!showEditor && <TouchControls />}
           </>
         )}
       </GaesupWorld>
-      {showEditor && showEditorShell && <Editor shell={editorShell} />}
+      {showEditor && (
+        <Suspense fallback={null}>
+          <WorldEditorSurface
+            showEditorShell={showEditorShell}
+            includeEditorAuxPanels={includeEditorAuxPanels}
+            editorShellOptions={editorShellOptions}
+          />
+        </Suspense>
+      )}
       {children}
     </>
   );

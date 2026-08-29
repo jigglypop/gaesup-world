@@ -266,6 +266,7 @@
     "lru-cache": "^11.1.0",
     "path": "^0.12.7",
     "pngjs": "^7.0.0",
+    "postprocessing": "^6.39.4",
     "prettier": "^3.6.2",
     "publint": "^0.3.12",
     "r3f-perf": "^7.2.3",
@@ -296,6 +297,7 @@
     "@react-three/fiber": "^8.17.7 || ^9.0.0",
     "@react-three/postprocessing": "^2.16.0 || ^3.0.0",
     "@react-three/rapier": "^1.4.0 || ^2.0.0",
+    "postprocessing": "^6.38.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
     "react-icons": "^5.0.0",
@@ -317,6 +319,9 @@
       "optional": true
     },
     "@react-three/rapier": {
+      "optional": true
+    },
+    "postprocessing": {
       "optional": true
     },
     "react-icons": {

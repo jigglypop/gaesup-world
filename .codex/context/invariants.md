@@ -1,0 +1,22 @@
+# Architecture Invariants
+
+- `INV-001` Persistent world state does not depend on React.
+- `INV-002` Three.js objects are not canonical world state.
+- `INV-003` Rapier objects are not canonical persistent state.
+- `INV-004` Every persistent entity has a stable ID.
+- `INV-005` Persistent mutation has one canonical write path.
+- `INV-006` Editor and Runtime project the same World Model.
+- `INV-007` Network contracts do not require Three.js.
+- `INV-008` React component lifetime is not persistent entity lifetime.
+- `INV-009` Asset IDs are independent from URLs.
+- `INV-010` Blender semantic metadata becomes explicit runtime data.
+- `INV-011` Every replicated state declares an authority owner.
+- `INV-012` Ephemeral avatar transform is not persistent world history.
+- `INV-013` Coexisting old and new paths name the canonical path.
+- `INV-014` Every public feature is exercised through examples.
+- `INV-015` Large worlds do not require one React component per entity.
+- `INV-016` WebGPU is the target primary rendering backend.
+- `INV-017` WebGL-specific code is isolated behind compatibility boundaries.
+- `INV-018` Existing typed-array, spatial and GPU structures are not replaced without measured evidence.
+- `INV-019` Examples never import library internals.
+- `INV-020` The default examples experience behaves like a product showcase, not a debug gallery.

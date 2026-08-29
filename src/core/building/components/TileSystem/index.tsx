@@ -4,9 +4,9 @@ import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { TileSystemProps } from './types';
-import { GaeSupProps } from '../../../index';
 import { getDefaultToonMode, getToonGradient } from '../../../rendering/toon';
 import { MinimapSystem } from '../../../ui/core';
+import { WorldProps } from '../../../world/components/WorldProps';
 import { MaterialManager } from '../../core/MaterialManager';
 import type { TileShapeType } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
@@ -915,7 +915,7 @@ export function TileSystem({
   }, [rampGeometry, rockGeometry, rockMaterial, sideMaterial]);
 
   return (
-    <GaeSupProps type="ground">
+    <WorldProps type="ground">
       <>
         {colliderData.length > 0 && (
           <RigidBody type="fixed" colliders={false}>
@@ -1042,6 +1042,6 @@ export function TileSystem({
 
         {snowfieldEntries.length > 0 && <SnowfieldBatch entries={snowfieldEntries} />}
       </>
-    </GaeSupProps>
+    </WorldProps>
   );
 } 

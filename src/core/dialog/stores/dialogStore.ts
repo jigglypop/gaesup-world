@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { dialogRuntimeAdapter } from './runtimeAdapter';
 import { useQuestStore } from '../../quests/stores/questStore';
 import { DialogRunner } from '../core/DialogRunner';
 import { getDialogRegistry } from '../registry/DialogRegistry';
@@ -35,6 +36,7 @@ export const useDialogStore = create<DialogState>((set, get) => ({
     if (!tree) return false;
     const runner = new DialogRunner({
       tree,
+      adapter: dialogRuntimeAdapter,
       ...(options?.context ? { context: options.context } : {}),
       ...(options?.onCustomEffect ? { onCustomEffect: options.onCustomEffect } : {}),
       ...(options?.onOpenShop ? { onOpenShop: options.onOpenShop } : {}),

@@ -1,8 +1,8 @@
-import React from 'react';
-
 import { NavLink, useNavigate } from 'react-router-dom';
 
 import { useAuthStore } from 'gaesup-world/admin';
+
+import { DEVELOPER_ROUTES, PRODUCT_ROUTES } from '../../config/exampleRoutes';
 import './styles.css';
 
 export const Navigation = () => {
@@ -10,54 +10,44 @@ export const Navigation = () => {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
-  const mainLinks = [
-    { to: '/', label: '월드' },
-    { to: '/edit', label: '에디터' },
-    { to: '/edit/npc', label: 'NPC 에디터' },
-  ];
-  const extraLinks = [
-    { to: '/minimal', label: '미니멀' },
-    { to: '/network', label: '네트워크' },
-  ];
-
   const handleLogout = () => {
     logout();
     navigate('/');
   };
-
   return (
-    <nav className="app-navigation">
+    <nav className="app-navigation" aria-label="Gaesup World navigation">
       <NavLink to="/" className="app-nav-brand">
-        <span>GAESUP WORLD</span>
+        GAESUP WORLD
       </NavLink>
-      <div className="app-nav-group" aria-label="주요 경로">
-        {mainLinks.map((link) => (
-          <NavLink key={link.to} to={link.to} className="app-nav-button">
-            {link.label}
+      <div className="app-nav-group" aria-label="Product scenarios">
+        {PRODUCT_ROUTES.map((route) => (
+          <NavLink key={route.path} to={route.path} className="app-nav-button">
+            {route.label}
           </NavLink>
         ))}
       </div>
-      <div className="app-nav-group app-nav-group--secondary" aria-label="보조 경로">
-        {extraLinks.map((link) => (
-          <NavLink key={link.to} to={link.to} className="app-nav-button app-nav-button--subtle">
-            {link.label}
-          </NavLink>
-        ))}
-      </div>
+      <details className="app-nav-developer">
+        <summary className="app-nav-button app-nav-button--subtle">Developer</summary>
+        <div className="app-nav-developer__menu">
+          {DEVELOPER_ROUTES.map((route) => (
+            <NavLink key={route.path} to={route.path} className="app-nav-developer__link">
+              <strong>{route.label}</strong>
+              <span>{route.category}</span>
+            </NavLink>
+          ))}
+        </div>
+      </details>
       <div id="app-editor-navigation-slot" className="app-editor-navigation-slot" />
       {isLoggedIn ? (
-        <>
-          <NavLink to="/admin" className="app-nav-button">
-            관리자
-          </NavLink>
+        <div className="app-nav-session">
           <span className="app-nav-user">{user?.username}</span>
-          <button className="app-nav-button" onClick={handleLogout}>
-            로그아웃
+          <button type="button" className="app-nav-button" onClick={handleLogout}>
+            Log out
           </button>
-        </>
+        </div>
       ) : (
-        <NavLink to="/admin" className="app-nav-button">
-          로그인
+        <NavLink to="/admin" className="app-nav-button app-nav-button--subtle">
+          Admin
         </NavLink>
       )}
     </nav>

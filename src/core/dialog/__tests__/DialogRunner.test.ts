@@ -2,7 +2,7 @@ import { registerSeedItems } from '../../items/data/items';
 import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 import { useWalletStore } from '../../economy/stores/walletStore';
 import { DialogRunner } from '../core/DialogRunner';
-import type { DialogTree } from '../types';
+import type { DialogRuntimeAdapter, DialogTree } from '../types';
 
 beforeAll(() => { registerSeedItems(); });
 
@@ -26,9 +26,26 @@ const TREE: DialogTree = {
   },
 };
 
+const TEST_ADAPTER: DialogRuntimeAdapter = {
+  countItem: (itemId) => useInventoryStore.getState().countOf(itemId),
+  addItem: (itemId, count) => useInventoryStore.getState().add(itemId, count),
+  removeItem: (itemId, count) => useInventoryStore.getState().removeById(itemId, count),
+  getItemName: (itemId) => itemId,
+  getBells: () => useWalletStore.getState().bells,
+  addBells: (amount) => useWalletStore.getState().add(amount),
+  spendBells: (amount) => useWalletStore.getState().spend(amount),
+  getFriendshipScore: () => 0,
+  addFriendship: () => undefined,
+  getDay: () => 0,
+  notifyFlag: () => undefined,
+  startQuest: () => undefined,
+  completeQuest: () => undefined,
+  notify: () => undefined,
+};
+
 describe('DialogRunner', () => {
-  test('giveItem effect populates inventory and ends', () => {
-    const r = new DialogRunner({ tree: TREE });
+  test('아이템 지급 효과가 인벤토리를 채우고 대화를 종료한다', () => {
+    const r = new DialogRunner({ tree: TREE, adapter: TEST_ADAPTER });
     expect(r.current?.id).toBe('a');
     r.choose(0);
     expect(useInventoryStore.getState().countOf('apple')).toBe(2);
@@ -37,22 +54,22 @@ describe('DialogRunner', () => {
     expect(r.isFinished()).toBe(true);
   });
 
-  test('giveBells effect updates wallet', () => {
-    const r = new DialogRunner({ tree: TREE });
+  test('벨 지급 효과가 지갑을 갱신한다', () => {
+    const r = new DialogRunner({ tree: TREE, adapter: TEST_ADAPTER });
     r.choose(1);
     expect(useWalletStore.getState().bells).toBe(50);
     expect(r.current?.id).toBe('c');
   });
 
-  test('condition hides choice unless requirement met', () => {
-    const r = new DialogRunner({ tree: TREE });
+  test('조건을 만족하지 않으면 선택지를 숨긴다', () => {
+    const r = new DialogRunner({ tree: TREE, adapter: TEST_ADAPTER });
     expect(r.visibleChoices().length).toBe(2);
     useInventoryStore.getState().add('wood', 1);
-    const r2 = new DialogRunner({ tree: TREE });
+    const r2 = new DialogRunner({ tree: TREE, adapter: TEST_ADAPTER });
     expect(r2.visibleChoices().length).toBe(3);
   });
 
-  test('openShop triggers callback', () => {
+  test('상점 열기 효과가 콜백을 호출한다', () => {
     let opened: string | undefined = 'NOT_SET';
     const TREE2: DialogTree = {
       id: 'shop',
@@ -63,7 +80,7 @@ describe('DialogRunner', () => {
         ] },
       },
     };
-    const r = new DialogRunner({ tree: TREE2, onOpenShop: (id) => { opened = id; } });
+    const r = new DialogRunner({ tree: TREE2, adapter: TEST_ADAPTER, onOpenShop: (id) => { opened = id; } });
     r.choose(0);
     expect(opened).toBe('main');
   });

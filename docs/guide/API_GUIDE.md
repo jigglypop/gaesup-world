@@ -23,10 +23,16 @@ import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
 - `gaesup-world/admin`: 관리자 래퍼 UI
 - `gaesup-world/blueprints`: 블루프린트 런타임 API
 - `gaesup-world/blueprints/editor`: 블루프린트 편집 UI
+- `gaesup-world/building`: 건설 도메인 mesh/render (`GrassDriver`, `SakuraBatch`, `Water` 등). 자세한 내용은 [Building API](../api/BUILDING_API.md) 참고
+- `gaesup-world/editor`: 에디터 셸/패널 (`Editor`, `createEditorShell`, `CinematicPanel`, `StudioPanel`, `GameplayEventPanel` 등)
+- `gaesup-world/navigation`: 내비게이션/장애물 (`NavigationSystem`, `registerNavigationObstacles`, `applyRegisteredNavigationObstacles`)
+- `gaesup-world/gameplay`: 게임플레이 이벤트 엔진 (`GameplayEventEngine`, `SEED_GAMEPLAY_EVENTS`). 자세한 내용은 [Gameplay API](../api/GAMEPLAY_API.md) 참고
 - `gaesup-world/runtime`: 런타임 중심 API
 - `gaesup-world/assets`: 에셋 API
-- `gaesup-world/network`: 네트워크 API
+- `gaesup-world/network`: 네트워크 API (멀티플레이어 UI/훅)
 - `gaesup-world/plugins`: 플러그인 API
+- `gaesup-world/postprocessing`: 후처리 컴포넌트 (`ColorGrade`, `LutOverlay` 등). 자세한 내용은 [Rendering API](../api/RENDERING_API.md) 참고
+- `gaesup-world/server-contracts`: 서버/플랫폼 계약(command authority, snapshot, ops, content bundle). 자세한 내용은 [Server Contracts API](../api/SERVER_CONTRACTS_API.md) 참고
 - `gaesup-world/style.css`: 기본 스타일
 
 ## 기본 월드
@@ -106,6 +112,7 @@ import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
 ## 자주 쓰는 도메인 API
 
 - 월드/컨트롤러: `GaesupWorld`, `GaesupController`, `useGaesupStore`
+- 캐릭터: `useCharacterStore`, `CharacterCreator`, `CharacterMenu`, `OutfitAvatar` (멀티 캐릭터 장비 포함). 자세한 내용은 [Character API](../api/CHARACTER_API.md) 참고
 - 카메라: `Camera`, `CameraPresets`, `CameraDebugPanel`
 - 모션: `MotionController`, `MotionUI`, `usePlayerPosition`, `useStateSystem`
 - 건설: `BuildingUI`, `BuildingController`, `useBuildingEditor`, `useBuildingStore`
@@ -133,7 +140,10 @@ unregister();
 ## 함께 볼 문서
 
 - [README](../../README.md)
+- [Character API](../api/CHARACTER_API.md)
 - [Building API](../api/BUILDING_API.md)
 - [Blueprint API](../api/BLUEPRINT_API.md)
 - [Rendering API](../api/RENDERING_API.md)
 - [Performance API](../api/PERFORMANCE_API.md)
+- [Gameplay API](../api/GAMEPLAY_API.md)
+- [Server Contracts API](../api/SERVER_CONTRACTS_API.md)

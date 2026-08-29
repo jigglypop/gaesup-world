@@ -3,6 +3,7 @@ import React, { useLayoutEffect } from 'react';
 import { useBuildingStore, useGaesupStore } from 'gaesup-world';
 
 import { WorldPage } from './World';
+import { AssetCatalogPanel } from '../components/assets/AssetCatalogPanel';
 import { CAMERA_PRESETS } from '../components/info/constants';
 
 const SAMPLE_BLOCK_SIZE = 4;
@@ -55,5 +56,9 @@ export function ShowcasePage() {
     seedSampleBlocks();
   }, []);
 
-  return <WorldPage showEditor showHud />;
+  return (
+    <WorldPage showDiagnostics showEditor showHud>
+      <AssetCatalogPanel />
+    </WorldPage>
+  );
 }

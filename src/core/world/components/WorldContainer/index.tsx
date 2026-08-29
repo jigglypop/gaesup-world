@@ -2,6 +2,7 @@ import { Suspense, useEffect, useLayoutEffect, ReactNode, useMemo } from 'react'
 
 import { Camera } from '@/core/camera';
 import type { CameraOptionType } from '@/core/camera';
+import { CAMERA_DEFAULTS } from '@/core/camera/core/constants';
 import { PerformanceCollector } from '@/core/editor/components/panels/PerformanceCollector';
 import { GaesupRuntimeProvider } from '@/core/runtime';
 import type { UrlsState } from '@/core/stores/slices/urls/types';
@@ -35,7 +36,7 @@ function WorldContent({ children, showGrid, showAxes }: {
 export function WorldConfigProvider(props: WorldContainerProps) {
   const setMode = useGaesupStore((state) => state.setMode);
   const setUrls = useGaesupStore((state) => state.setUrls);
-  const setCameraOption = useGaesupStore((state) => state.setCameraOption);
+  const replaceCameraOption = useGaesupStore((state) => state.replaceCameraOption);
 
   const urlUpdates = useMemo(() => {
     if (!props.urls) return null;
@@ -93,7 +94,8 @@ export function WorldConfigProvider(props: WorldContainerProps) {
     }
 
     if (option.fov !== undefined) nextOption.fov = option.fov;
-    if (option.zoom !== undefined) nextOption.zoom = option.zoom;
+    nextOption.zoom = option.zoom ?? CAMERA_DEFAULTS.ZOOM;
+    nextOption.focus = CAMERA_DEFAULTS.FOCUS;
     if (option.enableZoom !== undefined) nextOption.enableZoom = option.enableZoom;
     if (option.minZoom !== undefined) nextOption.minZoom = option.minZoom;
     if (option.maxZoom !== undefined) nextOption.maxZoom = option.maxZoom;
@@ -118,9 +120,17 @@ export function WorldConfigProvider(props: WorldContainerProps) {
       setMode({ control: props.cameraOption.type });
     }
     if (cameraOptionUpdates) {
-      setCameraOption(cameraOptionUpdates);
+      const cameraOption = useGaesupStore.getState().cameraOption;
+      const nextOption: CameraOptionType = {
+        ...cameraOption,
+        ...cameraOptionUpdates,
+      };
+      delete nextOption.target;
+      delete nextOption.offset;
+      delete nextOption.focusTarget;
+      replaceCameraOption(nextOption);
     }
-  }, [cameraOptionUpdates, props.cameraOption, props.mode, setCameraOption, setMode]);
+  }, [cameraOptionUpdates, props.cameraOption, props.mode, replaceCameraOption, setMode]);
 
   if (!props.runtime) {
     return props.children;

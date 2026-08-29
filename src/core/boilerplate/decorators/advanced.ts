@@ -1,6 +1,7 @@
 import 'reflect-metadata'
 
 import type { DecoratedValue } from './types'
+import { logger } from '../../utils/logger'
 
 type Constructor<T = object> = new (...args: DecoratedValue[]) => T
 
@@ -40,9 +41,9 @@ export function DebugLog() {
         void target
         const originalMethod = descriptor.value
         descriptor.value = function (this: object, ...args: DecoratedValue[]) {
-            console.log(`[${propertyKey}] called with:`, args)
+            logger.log(`[${propertyKey}] called with:`, args)
             const result = originalMethod.apply(this, args)
-            console.log(`[${propertyKey}] returned:`, result)
+            logger.log(`[${propertyKey}] returned:`, result)
             return result
         }
     }
@@ -59,7 +60,7 @@ export function PerformanceLog() {
             const start = performance.now()
             const result = originalMethod.apply(this, args)
             const duration = performance.now() - start
-            console.log(`[${propertyKey}] took ${duration.toFixed(2)}ms`)
+            logger.log(`[${propertyKey}] took ${duration.toFixed(2)}ms`)
             return result
         }
     }

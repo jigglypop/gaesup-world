@@ -16,12 +16,23 @@ const isRenderableAsset = (asset: AssetRecord | undefined): asset is AssetRecord
   return asset.kind === 'characterPart' || asset.kind === 'weapon';
 };
 
-const assetToPart = (asset: AssetRecord & { url: string }): Part => ({
-  id: asset.id,
-  ...(asset.slot ? { slot: asset.slot } : {}),
-  url: asset.url,
-  ...(asset.colors?.primary ? { color: asset.colors.primary } : {}),
-});
+const readHideBodyRegions = (asset: AssetRecord): string[] | undefined => {
+  const raw = asset.metadata?.['hideBodyRegions'];
+  if (!Array.isArray(raw)) return undefined;
+  const names = raw.filter((entry): entry is string => typeof entry === 'string');
+  return names.length > 0 ? names : undefined;
+};
+
+const assetToPart = (asset: AssetRecord & { url: string }): Part => {
+  const hideNodeNames = readHideBodyRegions(asset);
+  return {
+    id: asset.id,
+    ...(asset.slot ? { slot: asset.slot } : {}),
+    url: asset.url,
+    ...(asset.colors?.primary ? { color: asset.colors.primary } : {}),
+    ...(hideNodeNames ? { hideNodeNames } : {}),
+  };
+};
 
 export function resolveCharacterParts({
   baseParts = [],
@@ -64,6 +75,7 @@ export function resolveCharacterBaseNodeExclusions(parts: Part[]): string[] {
   const exclusions = new Set<string>();
 
   for (const part of parts) {
+    part.hideNodeNames?.forEach((name) => exclusions.add(name));
     if (!part.slot) continue;
     const names = BASE_NODE_EXCLUSIONS_BY_SLOT[part.slot as OutfitSlot];
     names?.forEach((name) => exclusions.add(name));

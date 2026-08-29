@@ -122,6 +122,26 @@ describe('package export map', () => {
     }
   });
 
+  test('CJS declaration copy script fails when a source declaration is missing', () => {
+    const copyScript = fs.readFileSync(COPY_CJS_TYPES, 'utf8');
+
+    expect(copyScript).toContain('throw new Error');
+    expect(copyScript).not.toContain('continue;');
+  });
+
+  test('style CSS export is packaged and has a Vite development alias', () => {
+    const pkg = readPackageJson();
+    const viteConfig = fs.readFileSync(VITE_CONFIG, 'utf8');
+    const styleExport = pkg.exports['./style.css'];
+
+    expect(typeof styleExport).toBe('string');
+    if (typeof styleExport !== 'string') throw new Error('Expected ./style.css to be a string export');
+    expect(styleExport).toBe('./dist/index.css');
+    expect(isIncludedByPackageFiles(styleExport, pkg.files)).toBe(true);
+    expect(viteConfig).toContain('find: /^gaesup-world\\/style\\.css$/');
+    expect(viteConfig).toContain('src/core/editor/styles/theme.css');
+  });
+
   test('all exported package artifacts are included in npm files', () => {
     const pkg = readPackageJson();
     const missingTargets = getExportTargets(pkg).filter(

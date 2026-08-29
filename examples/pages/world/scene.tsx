@@ -13,6 +13,7 @@ import {
   RoomPortal,
   RoomRoot,
   SceneRoot,
+  requestCameraCloseUp,
   useBuildingStore,
   WeatherEffect,
 } from 'gaesup-world';
@@ -43,6 +44,7 @@ export type WorldFocusHandler = (focus: WorldFocusInfo) => void;
 
 type SceneryProps = {
   onFocus?: WorldFocusHandler | undefined;
+  enableCloseUp?: boolean;
 };
 
 function focusTarget(
@@ -55,19 +57,55 @@ function focusTarget(
 function InspectableFeature({
   focus,
   onFocus,
+  enableCloseUp = false,
   children,
 }: {
   focus: WorldFocusInfo;
   onFocus?: WorldFocusHandler | undefined;
+  enableCloseUp?: boolean;
   children: ReactNode;
 }) {
   const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
-    if (!onFocus) return;
+    if (!onFocus && !enableCloseUp) return;
     event.stopPropagation();
-    onFocus(focus);
+    if (enableCloseUp) {
+      requestCameraCloseUp(focus.target, {
+        focusDistance: focus.focusDistance ?? 4.2,
+        focusLerpSpeed: focus.focusLerpSpeed ?? 8,
+        fov: focus.fov ?? 44,
+        enableCollision: false,
+      });
+    }
+    onFocus?.(focus);
   };
 
-  return <group onPointerDown={handlePointerDown}>{children}</group>;
+  return (
+    <InspectableCloseUpTargets enabled={enableCloseUp}>
+      <group onPointerDown={handlePointerDown}>{children}</group>
+    </InspectableCloseUpTargets>
+  );
+}
+
+function InspectableCloseUpTargets({
+  enabled,
+  children,
+}: {
+  enabled: boolean;
+  children: ReactNode;
+}) {
+  const handlePointerEnter = () => {
+    if (!enabled || typeof document === 'undefined') return;
+    document.body.style.cursor = 'zoom-in';
+  };
+  const handlePointerLeave = () => {
+    if (!enabled || typeof document === 'undefined') return;
+    document.body.style.cursor = '';
+  };
+  return (
+    <group onPointerEnter={handlePointerEnter} onPointerLeave={handlePointerLeave}>
+      {children}
+    </group>
+  );
 }
 
 const WORLD_SURFACE_SIZE = 1000;
@@ -208,9 +246,11 @@ export function Ground() {
 function HomeInterior({
   returnPosition,
   onFocus,
+  enableCloseUp = false,
 }: {
   returnPosition: [number, number, number];
   onFocus?: WorldFocusHandler | undefined;
+  enableCloseUp?: boolean;
 }) {
   return (
     <>
@@ -299,6 +339,7 @@ function HomeInterior({
             details: ['방 가시성 시스템과 씬 전환 흐름에 연결', 'E 키 상호작용으로 이동'],
             focusDistance: 3.8,
           }}
+          enableCloseUp={enableCloseUp}
         >
           <HouseDoor
             position={[0, 0.05, 3.6]}
@@ -360,7 +401,7 @@ function HomeInterior({
   );
 }
 
-export function Scenery({ onFocus }: SceneryProps = {}) {
+export function Scenery({ onFocus, enableCloseUp = false }: SceneryProps = {}) {
   const homePlot = HOUSE_PLOTS[0]?.pos ?? [-8, 0, -4];
 
   return (
@@ -385,6 +426,7 @@ export function Scenery({ onFocus }: SceneryProps = {}) {
             ],
             focusDistance: 3.6,
           }}
+          enableCloseUp={enableCloseUp}
         >
           <NPCBeacon
             id={n.id}
@@ -421,6 +463,7 @@ export function Scenery({ onFocus }: SceneryProps = {}) {
             ],
             focusDistance: 4.2,
           }}
+          enableCloseUp={enableCloseUp}
         >
           <BugSpot position={p} />
         </InspectableFeature>
@@ -440,6 +483,7 @@ export function Scenery({ onFocus }: SceneryProps = {}) {
             details: ['삽으로 땅 갈기', '씨앗 장착 후 심기', '물뿌리개와 게임 시간에 따라 성장'],
             focusDistance: 4,
           }}
+          enableCloseUp={enableCloseUp}
         >
           <CropPlot id={p.id} position={p.pos} />
         </InspectableFeature>
@@ -462,6 +506,7 @@ export function Scenery({ onFocus }: SceneryProps = {}) {
             ],
             focusDistance: 5,
           }}
+          enableCloseUp={enableCloseUp}
         >
           <HousePlot id={h.id} position={h.pos} size={[3.2, 3.2]} />
         </InspectableFeature>
@@ -483,6 +528,7 @@ export function Scenery({ onFocus }: SceneryProps = {}) {
             ],
             focusDistance: 4,
           }}
+          enableCloseUp={enableCloseUp}
         >
           <HouseDoor
             position={[homePlot[0], 0.05, homePlot[2] + 2.4]}
@@ -503,7 +549,11 @@ export function Scenery({ onFocus }: SceneryProps = {}) {
           entry: { position: [0, 0, 0] },
         }}
       >
-        <HomeInterior returnPosition={[homePlot[0], 0.05, homePlot[2] + 3.4]} onFocus={onFocus} />
+        <HomeInterior
+          returnPosition={[homePlot[0], 0.05, homePlot[2] + 3.4]}
+          onFocus={onFocus}
+          enableCloseUp={enableCloseUp}
+        />
       </SceneRoot>
 
       {WORLD_WEATHER_ENABLED && <WeatherEffect area={120} height={22} count={1500} />}
@@ -527,6 +577,7 @@ export function Scenery({ onFocus }: SceneryProps = {}) {
               details: [`수량: ${p.count}`, 'E 키로 획득', '인벤토리와 도감 UI에 반영'],
               focusDistance: 3.8,
             }}
+            enableCloseUp={enableCloseUp}
           >
             <Pickup id={p.id} itemId={p.itemId} count={p.count} position={p.pos} />
           </InspectableFeature>

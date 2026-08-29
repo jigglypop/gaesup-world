@@ -9,6 +9,7 @@ const allModules = [
   "gaesup-world/gameplay",
   "gaesup-world/navigation",
   "gaesup-world/network",
+  "gaesup-world/next",
   "gaesup-world/plugins",
   "gaesup-world/postprocessing",
   "gaesup-world/runtime",

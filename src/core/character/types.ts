@@ -26,10 +26,21 @@ export type CharacterSerializedV1 = {
   outfits: Record<LegacyOutfitSlot, string | null>;
 };
 
-export type CharacterSerialized = {
+export type CharacterSerializedV2 = {
   version: 2;
   appearance: Appearance;
   outfits: Record<OutfitSlot, string | null>;
+};
+
+export type CharacterProfile = {
+  appearance: Appearance;
+  outfits: Record<OutfitSlot, string | null>;
+};
+
+export type CharacterSerialized = {
+  version: 3;
+  activeCharacterId: string;
+  characters: Record<string, CharacterProfile>;
 };
 
 export const DEFAULT_APPEARANCE: Appearance = {

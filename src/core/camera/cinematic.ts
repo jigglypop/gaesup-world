@@ -1,5 +1,11 @@
+import * as THREE from 'three';
+
 import { applyCharacterEquipmentPreset } from '../character/actionEquipment';
 import { useCharacterStore } from '../character/stores/characterStore';
+import { useDialogStore } from '../dialog/stores/dialogStore';
+import type { DialogContext, DialogTreeId } from '../dialog/types';
+import { useSceneStore } from '../scene/stores/sceneStore';
+import { useGaesupStore } from '../stores/gaesupStore';
 import { requestCameraCloseUp, restoreCameraCloseUp, type CameraCloseUpOptions, type CameraCloseUpTarget } from './closeUp';
 
 export type CameraCinematicBeat =
@@ -7,9 +13,10 @@ export type CameraCinematicBeat =
   | ({ kind: 'dolly'; target: CameraCloseUpTarget; fromDistance?: number; toDistance?: number; durationMs?: number } & Omit<CameraCloseUpOptions, 'focusDistance'>)
   | ({ kind: 'orbit'; target: CameraCloseUpTarget; radius: number; angleDeg?: number; height?: number; durationMs?: number } & Omit<CameraCloseUpOptions, 'focusDistance'>)
   | { kind: 'shake'; intensity?: number; durationMs?: number }
-  | { kind: 'fade'; direction?: 'in' | 'out' | 'inOut'; durationMs?: number }
+  | { kind: 'fade'; color?: string; direction?: 'in' | 'out' | 'inOut'; durationMs?: number }
   | { kind: 'expression'; face: string; durationMs?: number }
   | { kind: 'equip'; slot?: string; itemId: string; durationMs?: number }
+  | { kind: 'dialog'; treeId: DialogTreeId; context?: DialogContext; durationMs?: number }
   | { kind: 'teleport'; position: CameraCloseUpTarget; durationMs?: number }
   | { kind: 'animation'; name: string; durationMs?: number }
   | { kind: 'npcMove'; npcId: string; position: CameraCloseUpTarget; durationMs?: number }
@@ -33,6 +40,12 @@ const delay = (ms = 0) => new Promise<void>((resolve) => {
   window.setTimeout(resolve, Math.max(0, ms));
 });
 
+function toVector3(target: CameraCloseUpTarget): THREE.Vector3 {
+  if (target instanceof THREE.Vector3) return target.clone();
+  if (Array.isArray(target)) return new THREE.Vector3(target[0], target[1], target[2]);
+  return new THREE.Vector3(target.x, target.y, target.z);
+}
+
 export function playCameraCinematic(
   beats: CameraCinematicBeat[],
   options: CameraCinematicOptions = {},
@@ -51,13 +64,28 @@ export function playCameraCinematic(
         case 'dolly':
           requestCameraCloseUp(beat.target, {
             ...beat,
-            ...((beat.toDistance ?? beat.fromDistance) !== undefined
-              ? { focusDistance: beat.toDistance ?? beat.fromDistance }
+            ...((beat.fromDistance ?? beat.toDistance) !== undefined
+              ? { focusDistance: beat.fromDistance ?? beat.toDistance }
               : {}),
           });
+          if (beat.fromDistance !== undefined && beat.toDistance !== undefined) {
+            await delay(16);
+            if (cancelled) return;
+            requestCameraCloseUp(beat.target, {
+              ...beat,
+              focusDistance: beat.toDistance,
+            });
+            await delay(Math.max(0, (beat.durationMs ?? 0) - 16));
+            continue;
+          }
           break;
         case 'orbit':
-          requestCameraCloseUp(beat.target, { ...beat, focusDistance: beat.radius });
+          {
+            const target = toVector3(beat.target);
+            target.y += beat.height ?? 0;
+            target.z += beat.radius;
+            requestCameraCloseUp(target, { ...beat, focusDistance: beat.radius });
+          }
           break;
         case 'expression':
           useCharacterStore.getState().setFace(beat.face as never);
@@ -69,14 +97,19 @@ export function playCameraCinematic(
             outfits: { [beat.slot ?? 'weapon']: beat.itemId } as never,
           });
           break;
+        case 'dialog':
+          useDialogStore.getState().start(beat.treeId, {
+            ...(beat.context ? { context: beat.context } : {}),
+          });
+          break;
         case 'teleport':
-          options.onTeleport?.(beat.position);
+          options.onTeleport?.(toVector3(beat.position));
           break;
         case 'animation':
           options.onAnimation?.(beat.name);
           break;
         case 'npcMove':
-          options.onNpcMove?.(beat.npcId, beat.position);
+          options.onNpcMove?.(beat.npcId, toVector3(beat.position));
           break;
         case 'event':
           options.onEvent?.(beat.name, beat.payload);
@@ -85,11 +118,33 @@ export function playCameraCinematic(
           restoreCameraCloseUp();
           break;
         case 'fade':
-        case 'shake':
+          useSceneStore.getState().setTransition({
+            active: true,
+            color: beat.color ?? '#000000',
+            progress: beat.direction === 'in' ? 0 : 1,
+          });
           break;
+        case 'shake':
+          {
+            const intensity = beat.intensity ?? 0.08;
+            useGaesupStore.getState().setCameraOption({
+              offset: new THREE.Vector3(intensity, 0, -intensity),
+            });
+          }
+          break;
+        default:
+          {
+            const exhaustive: never = beat;
+            return exhaustive;
+          }
       }
 
       await delay('durationMs' in beat ? beat.durationMs : 0);
+      if (!cancelled && beat.kind === 'shake') {
+        const cameraOption = { ...useGaesupStore.getState().cameraOption };
+        delete cameraOption.offset;
+        useGaesupStore.getState().replaceCameraOption(cameraOption);
+      }
     }
 
     if (!cancelled && options.restoreOnComplete !== false) {
@@ -101,6 +156,7 @@ export function playCameraCinematic(
     finished,
     cancel: () => {
       cancelled = true;
+      restoreCameraCloseUp();
     },
   };
 }

@@ -5,6 +5,7 @@ import { ConnectionPool } from './ConnectionPool';
 import { MessageQueue } from './MessageQueue';
 import { NPCNetworkManager } from './NPCNetworkManager';
 import { PerformanceMetrics, NetworkEvent } from './types';
+import { logger } from '../../utils/logger';
 
 export class NetworkSystem {
   private state: NetworkSystemState;
@@ -129,7 +130,7 @@ export class NetworkSystem {
       try {
         this.npcManager.sendMessage(message);
       } catch (error) {
-        console.error('Error processing message:', error);
+        logger.error('[NetworkSystem Error]: Error processing message', error instanceof Error ? error.message : String(error));
       }
     }
   }
@@ -292,11 +293,11 @@ export class NetworkSystem {
           return true;
 
         default:
-          console.warn('Unknown network command:', command);
+          logger.warn('[NetworkSystem Warning]: Unknown network command', command);
           return false;
       }
     } catch (error) {
-      console.error('Error executing network command:', error);
+      logger.error('[NetworkSystem Error]: Error executing network command', error instanceof Error ? error.message : String(error));
       return false;
     }
   }

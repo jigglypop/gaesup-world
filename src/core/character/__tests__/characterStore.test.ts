@@ -42,7 +42,7 @@ describe('characterStore', () => {
     useCharacterStore.getState().equipOutfit('shoes', 'sneaker');
     useCharacterStore.getState().equipOutfit('weapon', 'starter-sword');
     const blob = useCharacterStore.getState().serialize();
-    expect(blob.version).toBe(2);
+    expect(blob.version).toBe(3);
     useCharacterStore.getState().resetAppearance();
     expect(useCharacterStore.getState().appearance.name).toBe('플레이어');
     useCharacterStore.getState().hydrate(blob);
@@ -78,6 +78,54 @@ describe('characterStore', () => {
     useCharacterStore.getState().equipOutfit('accessory', 'blue-scarf');
 
     expect(useCharacterStore.getState().getEquippedAssetIds()).toEqual(['starter-sword', 'blue-scarf']);
+  });
+
+  test('equipOutfit with characterId keeps per-character outfits independent', () => {
+    useCharacterStore.getState().equipOutfit('weapon', 'starter-sword');
+    useCharacterStore.getState().equipOutfit('weapon', 'npc-axe', 'npc-1');
+    useCharacterStore.getState().equipOutfit('top', 'npc-armor', 'npc-1');
+
+    const state = useCharacterStore.getState();
+    expect(state.outfits.weapon).toBe('starter-sword');
+    expect(state.characters['npc-1']?.outfits.weapon).toBe('npc-axe');
+    expect(state.getEquippedAssetIds('npc-1')).toEqual(['npc-armor', 'npc-axe']);
+    expect(state.getEquippedAssetIds()).toEqual(['starter-sword']);
+  });
+
+  test('setActiveCharacter switches the mirrored appearance/outfits', () => {
+    useCharacterStore.getState().equipOutfit('weapon', 'starter-sword');
+    useCharacterStore.getState().setName('NPC', 'npc-1');
+    useCharacterStore.getState().equipOutfit('weapon', 'npc-axe', 'npc-1');
+
+    useCharacterStore.getState().setActiveCharacter('npc-1');
+    expect(useCharacterStore.getState().outfits.weapon).toBe('npc-axe');
+    expect(useCharacterStore.getState().appearance.name).toBe('NPC');
+
+    useCharacterStore.getState().setActiveCharacter('player');
+    expect(useCharacterStore.getState().outfits.weapon).toBe('starter-sword');
+  });
+
+  test('serialize round-trips multiple characters', () => {
+    useCharacterStore.getState().equipOutfit('weapon', 'starter-sword');
+    useCharacterStore.getState().equipOutfit('weapon', 'npc-axe', 'npc-1');
+    const blob = useCharacterStore.getState().serialize();
+
+    useCharacterStore.getState().resetAppearance();
+    expect(useCharacterStore.getState().characters['npc-1']).toBeUndefined();
+
+    useCharacterStore.getState().hydrate(blob);
+    expect(useCharacterStore.getState().outfits.weapon).toBe('starter-sword');
+    expect(useCharacterStore.getState().characters['npc-1']?.outfits.weapon).toBe('npc-axe');
+  });
+
+  test('removeCharacter drops a profile and resets the active one', () => {
+    useCharacterStore.getState().equipOutfit('weapon', 'npc-axe', 'npc-1');
+    useCharacterStore.getState().removeCharacter('npc-1');
+    expect(useCharacterStore.getState().characters['npc-1']).toBeUndefined();
+
+    useCharacterStore.getState().equipOutfit('weapon', 'starter-sword');
+    useCharacterStore.getState().removeCharacter('player');
+    expect(useCharacterStore.getState().outfits.weapon).toBeNull();
   });
 
   test('hydrate ignores invalid payloads', () => {

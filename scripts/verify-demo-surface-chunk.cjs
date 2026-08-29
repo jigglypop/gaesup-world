@@ -11,15 +11,24 @@ function listAssets() {
 
 const assets = listAssets();
 const surfaceJs = assets.filter((file) => /^packageSurface-.+\.js$/.test(file));
-const surfaceCss = assets.filter((file) => /^packageSurface-.+\.css$/.test(file));
+const cssAssets = assets.filter((file) => file.endsWith('.css'));
 const indexJs = assets.filter((file) => /^index-.+\.js$/.test(file));
 
 if (surfaceJs.length === 0) {
   throw new Error('Expected demo build to emit a lazy packageSurface JS chunk.');
 }
 
-if (surfaceCss.length === 0) {
-  throw new Error('Expected demo build to emit a packageSurface CSS chunk for gaesup-world/style.css.');
+if (cssAssets.length === 0) {
+  throw new Error('Expected demo build to emit CSS for gaesup-world/style.css.');
+}
+
+const hasEditorTheme = cssAssets.some((file) => {
+  const source = fs.readFileSync(path.join(assetsDir, file), 'utf8');
+  return source.includes('--editor-bg-1');
+});
+
+if (!hasEditorTheme) {
+  throw new Error('Expected demo build CSS to include the gaesup-world editor theme.');
 }
 
 for (const file of indexJs) {
