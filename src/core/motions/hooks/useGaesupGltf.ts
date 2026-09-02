@@ -2,23 +2,13 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import { GLTF } from 'three-stdlib';
 
 import { GltfAndSizeOptions, GltfAndSizeResult, GaesupGltfUtils, ResourceUrlsType } from './types';
-import { applyToonToScene, getDefaultToonMode } from '../../rendering/toon';
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { getPooledVector } from '../../utils/vector';
 
-const gltfCache = new Map<string, { gltf: GLTF; refCount: number; size: THREE.Vector3 }>();
 const defaultSize = new THREE.Vector3(1, 1, 1);
 const tempBox3 = new THREE.Box3();
-
-const cleanupGltf = (url: string) => {
-  const cached = gltfCache.get(url);
-  if (cached && --cached.refCount <= 0) {
-    gltfCache.delete(url);
-  }
-};
 
 const calculateSizeFromScene = (scene: THREE.Object3D): THREE.Vector3 => {
   try {
@@ -33,26 +23,12 @@ export const useGltfAndSize = ({ url }: GltfAndSizeOptions): GltfAndSizeResult =
   const setSizes = useGaesupStore((state) => state.setSizes);
   const safeUrl = url ?? 'data:application/json,{}';
   const isValidUrl = Boolean(url?.trim());
-  const gltf = useGLTF(safeUrl) as GLTF;
+  const gltf = useGLTF(safeUrl);
   const isInitialized = useRef(false);
   const calculateSize = useCallback(
     () => (isValidUrl && gltf.scene ? calculateSizeFromScene(gltf.scene) : defaultSize.clone()),
     [gltf.scene, isValidUrl],
   );
-
-  useEffect(() => {
-    if (!url || !isValidUrl) return;
-    const cached = gltfCache.get(url);
-    if (cached) {
-      cached.refCount++;
-    } else {
-      gltfCache.set(url, { gltf, refCount: 1, size: calculateSize() });
-    }
-    if (gltf.scene && getDefaultToonMode()) {
-      applyToonToScene(gltf.scene);
-    }
-    return () => cleanupGltf(url);
-  }, [url, isValidUrl, gltf, calculateSize]);
 
   useEffect(() => {
     if (isInitialized.current || !isValidUrl || !url || !gltf.scene || sizes[url]) return;

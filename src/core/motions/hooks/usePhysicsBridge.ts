@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useMemo } from 'react';
+import { useRef, useEffect, useCallback, useId, useMemo, useState } from 'react';
 
 import { useFrame, RootState } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -31,12 +31,24 @@ import { PhysicsCalcProps } from '../types';
 
 
 export interface UsePhysicsBridgeOptions extends PhysicsCalculationProps {
+  entityId?: string;
   enabled?: boolean;
   motionsRuntime?: MotionsRuntime;
   allowLegacyFallback?: boolean;
 }
 
+type PhysicsRegistration = {
+  bridge: PhysicsBridge;
+  entityId: string;
+};
+
+let nextFallbackPhysicsEntityId = 0;
 let fallbackMotionsRuntime: MotionsRuntime | null = null;
+
+function createFallbackPhysicsEntityId(reactEntityId: string): string {
+  nextFallbackPhysicsEntityId += 1;
+  return `physics-${reactEntityId}-${nextFallbackPhysicsEntityId}`;
+}
 
 function createFallbackMotionsRuntime(): MotionsRuntime {
   return {
@@ -57,6 +69,9 @@ function getFallbackMotionsRuntime(): MotionsRuntime {
 
 export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
   const { enabled = true, allowLegacyFallback = true } = props;
+  const reactEntityId = useId();
+  const [fallbackEntityId] = useState(() => createFallbackPhysicsEntityId(reactEntityId));
+  const entityId = props.entityId ?? fallbackEntityId;
   const contextRuntime = useGaesupRuntime();
   const contextRuntimeRevision = useGaesupRuntimeRevision();
   const contextMotionsRuntime = useMemo(() => {
@@ -73,9 +88,10 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
   const mouseTargetRef = useRef(new THREE.Vector3());
   const stateManagerRef = useRef<EntityStateManager | null>(null);
   const physicsBridgeRef = useRef<PhysicsBridge | null>(null);
-  const registeredRef = useRef(false);
+  const registrationRef = useRef<PhysicsRegistration | null>(null);
   const physicsConfig = useGaesupStore((state) => state.physics);
-  const initialPhysicsConfigRef = useRef(physicsConfig);
+  const latestPhysicsConfigRef = useRef(physicsConfig);
+  latestPhysicsConfigRef.current = physicsConfig;
   const fallbackInputAdapterRef = useRef<InputAdapter | null>(null);
   fallbackInputAdapterRef.current ??= createInteractionInputAdapter();
   const inputAdapter = motionsRuntime?.inputAdapter ?? fallbackInputAdapterRef.current;
@@ -97,64 +113,41 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
     inputAdapterRef.current.updateMouse(input);
   });
 
-  useEffect(() => {
-    if (!registeredRef.current) {
-      initialPhysicsConfigRef.current = physicsConfig;
-    }
-  }, [physicsConfig]);
-
   // 브릿지 초기화
   useEffect(() => {
     stateManagerRef.current = getGlobalStateManager();
-    if (!enabled) {
-      if (registeredRef.current) {
-        physicsBridgeRef.current?.unregister('global-physics');
-        registeredRef.current = false;
-      }
-      physicsBridgeRef.current = null;
-      physicsStateRef.current = null;
-      return undefined;
-    }
-
-    const bridge = motionsRuntime?.physicsBridge;
+    const bridge = enabled ? motionsRuntime?.physicsBridge : undefined;
     if (!bridge) {
-      if (registeredRef.current) {
-        physicsBridgeRef.current?.unregister('global-physics');
-        registeredRef.current = false;
-      }
       physicsBridgeRef.current = null;
       physicsStateRef.current = null;
       return undefined;
     }
 
+    const registration = { bridge, entityId };
     physicsBridgeRef.current = bridge;
-    if (!registeredRef.current) {
-      physicsBridgeRef.current.register(
-        'global-physics',
-        initialPhysicsConfigRef.current,
-        stateManagerRef.current,
-      );
-      registeredRef.current = true;
-    }
-    
+    bridge.register(entityId, latestPhysicsConfigRef.current, stateManagerRef.current);
+    registrationRef.current = registration;
+
     return () => {
-      if (registeredRef.current && physicsBridgeRef.current) {
-        physicsBridgeRef.current.unregister('global-physics');
-        registeredRef.current = false;
+      bridge.unregister(entityId);
+      if (registrationRef.current === registration) {
+        registrationRef.current = null;
+        physicsBridgeRef.current = null;
+        physicsStateRef.current = null;
       }
-      physicsStateRef.current = null;
     };
-  }, [enabled, motionsRuntime?.physicsBridge]);
+  }, [enabled, entityId, motionsRuntime?.physicsBridge]);
 
   // 설정 업데이트
   useEffect(() => {
-    if (enabled && registeredRef.current && physicsBridgeRef.current) {
-      physicsBridgeRef.current.execute('global-physics', { 
-        type: 'updateConfig', 
-        data: physicsConfig 
+    const registration = registrationRef.current;
+    if (enabled && registration) {
+      registration.bridge.execute(registration.entityId, {
+        type: 'updateConfig',
+        data: physicsConfig,
       });
     }
-  }, [enabled, physicsConfig]);
+  }, [enabled, entityId, motionsRuntime?.physicsBridge, physicsConfig]);
 
   // Teleport 이벤트 처리
   useEffect(() => {
@@ -187,8 +180,10 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
 
   // 물리 계산 실행
   const executePhysics = useCallback((state: RootState, delta: number) => {
-    if (!enabled || !physicsBridgeRef.current || !stateManagerRef.current) return;
+    const registration = registrationRef.current;
+    if (!enabled || !registration || !stateManagerRef.current) return;
 
+    const worldContext = useGaesupStore.getState() as StoreState;
     const input = inputRef.current;
     input.keyboard = inputAdapter.getKeyboard();
     input.mouse = inputAdapter.getMouse();
@@ -196,7 +191,6 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
     let physicsState = physicsStateRef.current;
     // 물리 상태 초기화
     if (!physicsState) {
-      const worldContext = useGaesupStore.getState() as StoreState;
       physicsState = createInitialPhysicsState(
         worldContext,
         stateManagerRef.current,
@@ -227,6 +221,9 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
       physicsState.delta = delta;
     }
 
+    physicsState.modeType = worldContext.mode?.type ?? 'character';
+    physicsState.automationOption = worldContext.automation;
+
     // 매 프레임 객체 할당을 피하기 위해 calcProp 을 ref 로 재사용한다.
     let calcProp = calcPropRef.current;
     if (!calcProp) {
@@ -234,7 +231,7 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
         rigidBodyRef: props.rigidBodyRef,
         state,
         delta,
-        worldContext: useGaesupStore.getState(),
+        worldContext,
         dispatch: () => {},
         inputRef,
         setKeyboardInput: setKeyboardInputRef.current,
@@ -247,7 +244,7 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
       calcProp.rigidBodyRef = props.rigidBodyRef;
       calcProp.state = state;
       calcProp.delta = delta;
-      calcProp.worldContext = useGaesupStore.getState();
+      calcProp.worldContext = worldContext;
       if (props.colliderSize) {
         calcProp.colliderSize = props.colliderSize;
       } else {
@@ -259,7 +256,7 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
     }
 
     // 브릿지를 통해 물리 업데이트
-    physicsBridgeRef.current.updateEntity('global-physics', {
+    registration.bridge.updateEntity(registration.entityId, {
       deltaTime: delta,
       calcProp,
       physicsState

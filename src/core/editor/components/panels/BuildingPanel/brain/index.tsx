@@ -1,5 +1,14 @@
 import React from 'react';
 
+import type {
+  NPCBrainBlueprint,
+  NPCBrainBlueprintEdge,
+  NPCBrainBlueprintNode,
+  NPCBrainConfig,
+  NPCBrainMode,
+  NPCInstance as NPCInstanceData,
+} from '../../../../../npc/types';
+import { FieldRow } from '../../../fields';
 import { BrainFlow } from '../flow';
 import {
   appendNPCBlueprintNode,
@@ -13,15 +22,6 @@ import {
   removeNPCBlueprintNode,
   resetNPCBlueprint,
 } from '../helpers';
-import type {
-  NPCBrainBlueprint,
-  NPCBrainBlueprintEdge,
-  NPCBrainBlueprintNode,
-  NPCBrainConfig,
-  NPCBrainMode,
-  NPCInstance as NPCInstanceData,
-} from '../../../../../npc/types';
-import { FieldRow } from '../../../fields';
 const NPC_BRAIN_MODES: NPCBrainMode[] = ['none', 'scripted', 'llm', 'reinforcement'];
 const NPC_QUEST_STATUS_OPTIONS = ['locked', 'available', 'active', 'completed', 'failed'] as const;
 const NPC_CONDITION_TYPES = [

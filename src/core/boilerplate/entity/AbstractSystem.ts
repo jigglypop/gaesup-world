@@ -2,6 +2,10 @@ import { BaseState, BaseMetrics, SystemOptions, SystemUpdateArgs, RuntimeRecord 
 import { BaseSystem, SystemContext } from './BaseSystem';
 import { Profile, HandleError } from '../decorators';
 
+type SystemInitializer<ValueType> =
+    | ValueType
+    | ((overrides?: RuntimeRecord) => ValueType);
+
 export abstract class AbstractSystem<
     StateType extends BaseState = BaseState,
     MetricsType extends BaseMetrics = BaseMetrics,
@@ -18,35 +22,43 @@ export abstract class AbstractSystem<
     protected state: StateType;
     protected metrics: MetricsType;
     protected options: OptionsType;
+    private readonly stateInitializer: SystemInitializer<StateType>;
+    private readonly metricsInitializer: SystemInitializer<MetricsType>;
     private _isDisposed = false;
     private _updateCount = 0;
 
     constructor(
-        defaultState: StateType,
-        defaultMetrics: MetricsType,
+        defaultState: SystemInitializer<StateType>,
+        defaultMetrics: SystemInitializer<MetricsType>,
         options?: OptionsType
     ) {
         this.options = { ...options } as OptionsType;
+        this.stateInitializer = defaultState;
+        this.metricsInitializer = defaultMetrics;
         this.state = this.createInitialState(defaultState, this.options.initialState);
         this.metrics = this.createInitialMetrics(defaultMetrics, this.options.initialMetrics);
     }
     private createInitialState(
-        defaultState: StateType,
+        initializer: SystemInitializer<StateType>,
         initialState?: RuntimeRecord
     ): StateType {
+        const state = typeof initializer === 'function'
+            ? initializer(initialState)
+            : { ...initializer, ...initialState };
         return {
-            ...defaultState,
-            ...initialState,
+            ...state,
             lastUpdate: 0,
         };
     }
     private createInitialMetrics(
-        defaultMetrics: MetricsType,
+        initializer: SystemInitializer<MetricsType>,
         initialMetrics?: RuntimeRecord
     ): MetricsType {
+        const metrics = typeof initializer === 'function'
+            ? initializer(initialMetrics)
+            : { ...initializer, ...initialMetrics };
         return {
-            ...defaultMetrics,
-            ...initialMetrics,
+            ...metrics,
             frameTime: 0,
         };
     }
@@ -120,8 +132,17 @@ export abstract class AbstractSystem<
     
     @HandleError()
     public reset(): void {
-        this.state = this.createInitialState(this.state, this.options.initialState);
-        this.metrics = this.createInitialMetrics(this.metrics, this.options.initialMetrics);
+        const stateSource = typeof this.stateInitializer === 'function'
+            ? this.stateInitializer
+            : this.state;
+        const metricsSource = typeof this.metricsInitializer === 'function'
+            ? this.metricsInitializer
+            : this.metrics;
+        const nextState = this.createInitialState(stateSource, this.options.initialState);
+        const nextMetrics = this.createInitialMetrics(metricsSource, this.options.initialMetrics);
+
+        this.state = nextState;
+        this.metrics = nextMetrics;
         this._updateCount = 0;
         this.onReset();
     }

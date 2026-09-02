@@ -7,8 +7,10 @@ import type { GroundRay } from '@core/motions/entities/types';
 import type { PhysicsEntityProps } from '@core/motions/entities/types';
 import { useAnimationSetup } from '@core/motions/hooks/setup/useAnimationSetup';
 import { useMotionSetup } from '@core/motions/hooks/setup/useMotionSetup';
-import { usePhysicsBridge } from '@core/motions/hooks/usePhysicsBridge';
-import type { PhysicsCalculationProps } from '@core/motions/types';
+import {
+  usePhysicsBridge,
+  type UsePhysicsBridgeOptions,
+} from '@core/motions/hooks/usePhysicsBridge';
 import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
 import { useGaesupStore } from '@stores/gaesupStore';
 
@@ -68,7 +70,8 @@ export function useEntity(options: UseEntityOptions) {
   );
 
   // 3. Physics Logic
-  const physicsProps: PhysicsCalculationProps & { enabled: boolean } = {
+  const physicsProps: UsePhysicsBridgeOptions = {
+    entityId,
     rigidBodyRef,
     enabled: active,
     ...(outerGroupRef ? { outerGroupRef } : {}),
@@ -91,4 +94,4 @@ export function useEntity(options: UseEntityOptions) {
     mode: activeMode,
     ...collisionHandlers,
   };
-} 
+}

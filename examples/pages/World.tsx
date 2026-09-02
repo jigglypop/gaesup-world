@@ -51,6 +51,7 @@ import {
   Player,
 } from './world/player';
 import { Ground, Lighting, Scenery } from './world/scene';
+import { getWorldSceneDocumentSession, WorldSceneDocumentRootMarkers } from './world/sceneDocument';
 import { WorldSystems } from './world/useWorldSystems';
 import { CloseUpControls } from '../components/cinematic/CloseUpControls';
 import { FeatureAccessPanel } from '../components/feature/FeatureAccessPanel';
@@ -113,7 +114,11 @@ export const WorldPage = ({
   editorShellOptions = DEFAULT_EDITOR_SHELL_OPTIONS,
   children,
 }: WorldPageProps) => {
-  const runtime = useMemo(() => createWorldRuntime(), []);
+  const sceneDocumentSession = useMemo(() => getWorldSceneDocumentSession(), []);
+  const runtime = useMemo(
+    () => createWorldRuntime({ sceneDocumentSession }),
+    [sceneDocumentSession],
+  );
   const [runtimeRevision, setRuntimeRevision] = useState(0);
   const fogEnabled = useBuildingStore((s) => s.showFog);
   const fogColor = useBuildingStore((s) => s.fogColor);
@@ -216,6 +221,7 @@ export const WorldPage = ({
               showGrid={EXAMPLE_CONFIG.showGrid}
               showAxes={EXAMPLE_CONFIG.showAxes}
             >
+              <WorldSceneDocumentRootMarkers session={sceneDocumentSession} />
               <Physics debug interpolate>
                 {!showEditor && <Player />}
                 <Ground />
@@ -306,6 +312,7 @@ export const WorldPage = ({
             showEditorShell={showEditorShell}
             includeEditorAuxPanels={includeEditorAuxPanels}
             editorShellOptions={editorShellOptions}
+            sceneDocumentSession={sceneDocumentSession}
           />
         </Suspense>
       )}

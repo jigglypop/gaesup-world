@@ -19,13 +19,20 @@ interface RemotePlayerProps {
   speechText?: string;
 }
 
+type RemotePlayerContentProps = {
+  state: PlayerState;
+  config: MultiplayerConfig | undefined;
+  speechText: string | undefined;
+  modelUrl: string;
+};
+
 type ColorableMaterial = THREE.Material & { color: THREE.Color };
 
 function isColorableMaterial(material: THREE.Material): material is ColorableMaterial {
   return 'color' in material && material.color instanceof THREE.Color;
 }
 
-export const RemotePlayer = React.memo(function RemotePlayer({ state, characterUrl, config, speechText }: RemotePlayerProps) {
+function RemotePlayerContent({ state, config, speechText, modelUrl }: RemotePlayerContentProps) {
   const bodyRef = useRef<RapierRigidBody | null>(null);
   const meshRef = useRef<THREE.Group | null>(null);
   const initialPosition = useRef<[number, number, number] | null>(null);
@@ -62,10 +69,6 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
   const lodAccum = useRef<number>(0);
   const lodInterval = useRef<number>(0);
   
-  // URL 가져오기 - props에서 먼저, 없으면 state에서
-  const modelUrl = characterUrl || state.modelUrl || '';
-  if (!modelUrl) return null;
-
   const normalizeHexColor = (value: string | null | undefined): string | null => {
     if (typeof value !== 'string') return null;
     const v = value.trim();
@@ -453,4 +456,23 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
       ) : null}
     </group>
   );
-}); 
+}
+
+export const RemotePlayer = React.memo(function RemotePlayer({
+  state,
+  characterUrl,
+  config,
+  speechText,
+}: RemotePlayerProps) {
+  const modelUrl = characterUrl || state.modelUrl || '';
+  if (!modelUrl) return null;
+
+  return (
+    <RemotePlayerContent
+      state={state}
+      config={config}
+      speechText={speechText}
+      modelUrl={modelUrl}
+    />
+  );
+});

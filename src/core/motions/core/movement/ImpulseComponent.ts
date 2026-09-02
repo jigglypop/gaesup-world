@@ -7,10 +7,10 @@ import {
   type InputAdapter,
 } from '@/core/interactions/core';
 import type { RefObject } from '@core/boilerplate';
-import { PhysicsConfigType } from '@stores/slices';
 
 import { NavigationSystem } from '../../../navigation/NavigationSystem';
 import { PhysicsCalcProps, PhysicsInputState, PhysicsState } from '../../types';
+import type { PhysicsConfigType } from '../config';
 import { EntityStateManager } from '../system/EntityStateManager';
 
 

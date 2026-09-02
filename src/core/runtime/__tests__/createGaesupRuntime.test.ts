@@ -1,12 +1,5 @@
 import * as THREE from 'three';
 
-import { createGaesupRuntime, shouldSetupPluginForRuntime } from '../createGaesupRuntime';
-import {
-  DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID,
-  RUNTIME_SAVE_DIAGNOSTIC_EVENT,
-  type RuntimeSaveDiagnostic,
-  type RuntimeSaveDiagnosticsService,
-} from '../saveDiagnostics';
 import { createAudioPlugin } from '../../audio/plugin';
 import { useAudioStore } from '../../audio/stores/audioStore';
 import { createBuildingPlugin } from '../../building/plugin';
@@ -33,20 +26,17 @@ import { createMailPlugin } from '../../mail/plugin';
 import { useMailStore } from '../../mail/stores/mailStore';
 import { createMotionsPlugin, type MotionsRuntimeService } from '../../motions';
 import { PhysicsBridge } from '../../motions/bridge/PhysicsBridge';
-import {
-  createNPCPlugin,
-  hydrateNPCState,
-  serializeNPCState,
-} from '../../npc/plugin';
+import { createNPCPlugin, hydrateNPCState, serializeNPCState } from '../../npc/plugin';
 import { useNPCStore } from '../../npc/stores/npcStore';
+import type { GaesupPlugin } from '../../plugins';
 import { createQuestsPlugin } from '../../quests/plugin';
 import { useQuestStore } from '../../quests/stores/questStore';
 import { createRelationsPlugin } from '../../relations/plugin';
 import { useFriendshipStore } from '../../relations/stores/friendshipStore';
 import { SaveSystem } from '../../save';
+import type { SaveAdapter, SaveBlob } from '../../save';
 import { createScenePlugin } from '../../scene/plugin';
 import { useSceneStore } from '../../scene/stores/sceneStore';
-import type { SaveAdapter, SaveBlob } from '../../save';
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { createTimePlugin } from '../../time/plugin';
 import { useTimeStore } from '../../time/stores/timeStore';
@@ -54,7 +44,13 @@ import { createTownPlugin } from '../../town/plugin';
 import { useTownStore } from '../../town/stores/townStore';
 import { createWeatherPlugin } from '../../weather/plugin';
 import { useWeatherStore } from '../../weather/stores/weatherStore';
-import type { GaesupPlugin } from '../../plugins';
+import { createGaesupRuntime, shouldSetupPluginForRuntime } from '../createGaesupRuntime';
+import {
+  DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID,
+  RUNTIME_SAVE_DIAGNOSTIC_EVENT,
+  type RuntimeSaveDiagnostic,
+  type RuntimeSaveDiagnosticsService,
+} from '../saveDiagnostics';
 
 class MemoryAdapter implements SaveAdapter {
   private readonly map = new Map<string, SaveBlob>();
@@ -76,16 +72,23 @@ class MemoryAdapter implements SaveAdapter {
   }
 }
 
-const createSavePlugin = (serialize: () => object, hydrate: (data: unknown) => void): GaesupPlugin => ({
+const createSavePlugin = (
+  serialize: () => object,
+  hydrate: (data: unknown) => void,
+): GaesupPlugin => ({
   id: 'test.save-plugin',
   name: 'Test Save Plugin',
   version: '1.0.0',
   setup(ctx) {
-    ctx.save.register('plugin-domain', {
-      key: 'plugin-domain',
-      serialize,
-      hydrate,
-    }, 'test.save-plugin');
+    ctx.save.register(
+      'plugin-domain',
+      {
+        key: 'plugin-domain',
+        serialize,
+        hydrate,
+      },
+      'test.save-plugin',
+    );
   },
 });
 
@@ -98,6 +101,381 @@ describe('createGaesupRuntime', () => {
       position: new THREE.Vector3(-15, 8, -15),
       target: new THREE.Vector3(0, 0, 0),
     });
+  });
+
+  it('keeps external diagnostics and option save bindings inactive until setup', async () => {
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const subscribeDiagnostics = jest.spyOn(save, 'subscribeDiagnostics');
+    const register = jest.spyOn(save, 'register');
+    const warnings: unknown[] = [];
+    const runtime = createGaesupRuntime({
+      saveSystem: save,
+      saveBindings: [
+        {
+          key: 'option-domain',
+          serialize: () => ({ ok: true }),
+          hydrate: () => undefined,
+        },
+      ],
+      logger: {
+        warn: (_message, diagnostic) => warnings.push(diagnostic),
+      },
+    });
+
+    expect(subscribeDiagnostics).not.toHaveBeenCalled();
+    expect(register).not.toHaveBeenCalled();
+    expect(save.has('option-domain')).toBe(false);
+    expect(runtime.getService(DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID)).toBeUndefined();
+
+    save.register({
+      key: 'external-broken-domain',
+      serialize: () => {
+        throw new Error('external failure');
+      },
+      hydrate: () => undefined,
+    });
+    await save.save('before-setup');
+    expect(warnings).toEqual([]);
+
+    await runtime.setup();
+    expect(subscribeDiagnostics).toHaveBeenCalledTimes(1);
+    expect(save.has('option-domain')).toBe(true);
+    expect(runtime.getService(DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID)).toBe(
+      runtime.saveDiagnostics,
+    );
+
+    await save.save('after-setup');
+    expect(warnings).toHaveLength(1);
+    await runtime.dispose();
+    await save.save('after-dispose');
+    expect(warnings).toHaveLength(1);
+
+    subscribeDiagnostics.mockRestore();
+    register.mockRestore();
+  });
+
+  it('serializes repeated concurrent setup calls and keeps the active generation idempotent', async () => {
+    let setupCount = 0;
+    let disposeCount = 0;
+    const runtime = createGaesupRuntime({
+      saveSystem: new SaveSystem({ adapter: new MemoryAdapter() }),
+      plugins: [
+        {
+          id: 'lifecycle.idempotent',
+          name: 'Lifecycle Idempotent',
+          version: '1.0.0',
+          setup: () => {
+            setupCount++;
+          },
+          dispose: () => {
+            disposeCount++;
+          },
+        },
+      ],
+    });
+
+    await Promise.all([runtime.setup(), runtime.setup(), runtime.setup()]);
+    await runtime.setup();
+    expect(setupCount).toBe(1);
+
+    await Promise.all([runtime.dispose(), runtime.dispose(), runtime.dispose()]);
+    expect(disposeCount).toBe(1);
+  });
+
+  it('orders setup, dispose, and setup without overlapping a deferred generation', async () => {
+    let releaseFirstSetup: (() => void) | undefined;
+    const firstSetupGate = new Promise<void>((resolve) => {
+      releaseFirstSetup = resolve;
+    });
+    const calls: string[] = [];
+    let setupCount = 0;
+    let setupActive = false;
+    const runtime = createGaesupRuntime({
+      saveSystem: new SaveSystem({ adapter: new MemoryAdapter() }),
+      plugins: [
+        {
+          id: 'lifecycle.ordered',
+          name: 'Lifecycle Ordered',
+          version: '1.0.0',
+          setup: async () => {
+            setupCount++;
+            setupActive = true;
+            calls.push(`setup-${setupCount}:start`);
+            if (setupCount === 1) await firstSetupGate;
+            calls.push(`setup-${setupCount}:end`);
+            setupActive = false;
+          },
+          dispose: () => {
+            expect(setupActive).toBe(false);
+            calls.push('dispose');
+          },
+        },
+      ],
+    });
+
+    const firstSetup = runtime.setup();
+    const dispose = runtime.dispose();
+    const secondSetup = runtime.setup();
+    await Promise.resolve();
+    expect(calls).toEqual(['setup-1:start']);
+
+    releaseFirstSetup?.();
+    await Promise.all([firstSetup, dispose, secondSetup]);
+
+    expect(calls).toEqual([
+      'setup-1:start',
+      'setup-1:end',
+      'dispose',
+      'setup-2:start',
+      'setup-2:end',
+    ]);
+    await runtime.dispose();
+  });
+
+  it('treats dispose before setup as a no-op and supports a later fresh generation', async () => {
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const subscribeDiagnostics = jest.spyOn(save, 'subscribeDiagnostics');
+    const setup = jest.fn();
+    const dispose = jest.fn();
+    const runtime = createGaesupRuntime({
+      saveSystem: save,
+      plugins: [
+        {
+          id: 'lifecycle.deferred',
+          name: 'Lifecycle Deferred',
+          version: '1.0.0',
+          setup,
+          dispose,
+        },
+      ],
+    });
+
+    await runtime.dispose();
+    expect(subscribeDiagnostics).not.toHaveBeenCalled();
+    expect(setup).not.toHaveBeenCalled();
+    expect(dispose).not.toHaveBeenCalled();
+
+    await runtime.setup();
+    await runtime.dispose();
+    await runtime.setup();
+    expect(setup).toHaveBeenCalledTimes(2);
+    expect(dispose).toHaveBeenCalledTimes(1);
+    expect(subscribeDiagnostics).toHaveBeenCalledTimes(2);
+    await runtime.dispose();
+    subscribeDiagnostics.mockRestore();
+  });
+
+  it('rolls back a failed setup generation and permits a clean retry', async () => {
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const setupError = new Error('first setup failed');
+    let successfulSetupCount = 0;
+    let successfulDisposeCount = 0;
+    let setupCount = 0;
+    let disposeCount = 0;
+    const runtime = createGaesupRuntime({
+      saveSystem: save,
+      saveBindings: [
+        {
+          key: 'option-domain',
+          serialize: () => ({ ok: true }),
+          hydrate: () => undefined,
+        },
+      ],
+      plugins: [
+        {
+          id: 'lifecycle.retry-successful',
+          name: 'Lifecycle Retry Successful',
+          version: '1.0.0',
+          setup: () => {
+            successfulSetupCount++;
+          },
+          dispose: () => {
+            successfulDisposeCount++;
+          },
+        },
+        {
+          id: 'lifecycle.retry',
+          name: 'Lifecycle Retry',
+          version: '1.0.0',
+          setup: (context) => {
+            setupCount++;
+            context.save.register(
+              'retry-domain',
+              {
+                key: 'retry-domain',
+                serialize: () => ({ ok: true }),
+                hydrate: () => undefined,
+              },
+              'lifecycle.retry',
+            );
+            if (setupCount === 1) throw setupError;
+          },
+          dispose: () => {
+            disposeCount++;
+          },
+        },
+      ],
+    });
+
+    await expect(runtime.setup()).rejects.toBe(setupError);
+    expect(Array.from(save.getBindings())).toEqual([]);
+    expect(runtime.plugins.context.save.has('retry-domain')).toBe(false);
+    expect(runtime.getService(DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID)).toBeUndefined();
+    expect(disposeCount).toBe(1);
+    expect(successfulSetupCount).toBe(1);
+    expect(successfulDisposeCount).toBe(1);
+
+    await runtime.setup();
+    expect(setupCount).toBe(2);
+    expect(successfulSetupCount).toBe(2);
+    expect(
+      Array.from(save.getBindings())
+        .map((binding) => binding.key)
+        .sort(),
+    ).toEqual(['option-domain', 'retry-domain']);
+    await runtime.dispose();
+    expect(successfulDisposeCount).toBe(2);
+  });
+
+  it('does not unregister an external binding when setup registration fails', async () => {
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const externalBinding = {
+      key: 'shared-domain',
+      serialize: () => ({ owner: 'external' }),
+      hydrate: () => undefined,
+    };
+    save.register(externalBinding);
+    const runtime = createGaesupRuntime({
+      saveSystem: save,
+      saveBindings: [
+        {
+          key: 'shared-domain',
+          serialize: () => ({ owner: 'runtime' }),
+          hydrate: () => undefined,
+        },
+      ],
+    });
+
+    await expect(runtime.setup()).rejects.toThrow(
+      'Save domain "shared-domain" is already registered.',
+    );
+
+    expect(save.has('shared-domain')).toBe(true);
+    expect(save.createBlob('ownership-slot').domains['shared-domain']).toEqual({
+      owner: 'external',
+    });
+    expect(runtime.getService(DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID)).toBeUndefined();
+    await runtime.dispose();
+    expect(save.has('shared-domain')).toBe(true);
+  });
+
+  it('preserves the setup error when rollback disposal also fails', async () => {
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const setupError = new Error('setup error');
+    const rollbackError = new Error('rollback error');
+    const runtime = createGaesupRuntime({
+      saveSystem: save,
+      saveBindings: [
+        {
+          key: 'option-domain',
+          serialize: () => ({ ok: true }),
+          hydrate: () => undefined,
+        },
+      ],
+      plugins: [
+        {
+          id: 'lifecycle.rollback-failure',
+          name: 'Lifecycle Rollback Failure',
+          version: '1.0.0',
+          setup: () => {
+            throw setupError;
+          },
+          dispose: () => {
+            throw rollbackError;
+          },
+        },
+      ],
+    });
+
+    await expect(runtime.setup()).rejects.toBe(setupError);
+    expect(Array.from(save.getBindings())).toEqual([]);
+    expect(runtime.getService(DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID)).toBeUndefined();
+    await expect(runtime.dispose()).resolves.toBeUndefined();
+  });
+
+  it('finishes external cleanup and preserves the first error when plugin disposal fails', async () => {
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const originalRegister = save.register.bind(save);
+    const lateCleanupError = new Error('late cleanup failed');
+    const register = jest.spyOn(save, 'register').mockImplementation((binding) => {
+      const unregister = originalRegister(binding);
+      return () => {
+        unregister();
+        if (binding.key === 'option-domain') throw lateCleanupError;
+      };
+    });
+    const warnings: unknown[] = [];
+    const disposeError = new Error('plugin dispose failed');
+    const survivorDispose = jest.fn();
+    const runtime = createGaesupRuntime({
+      saveSystem: save,
+      saveBindings: [
+        {
+          key: 'option-domain',
+          serialize: () => ({ ok: true }),
+          hydrate: () => undefined,
+        },
+      ],
+      plugins: [
+        {
+          id: 'lifecycle.dispose-survivor',
+          name: 'Lifecycle Dispose Survivor',
+          version: '1.0.0',
+          setup: () => undefined,
+          dispose: survivorDispose,
+        },
+        {
+          id: 'lifecycle.dispose-failure',
+          name: 'Lifecycle Dispose Failure',
+          version: '1.0.0',
+          setup: (context) => {
+            context.save.register(
+              'plugin-domain',
+              {
+                key: 'plugin-domain',
+                serialize: () => ({ ok: true }),
+                hydrate: () => undefined,
+              },
+              'lifecycle.dispose-failure',
+            );
+          },
+          dispose: () => {
+            throw disposeError;
+          },
+        },
+      ],
+      logger: {
+        warn: (_message, diagnostic) => warnings.push(diagnostic),
+      },
+    });
+
+    await runtime.setup();
+    await expect(runtime.dispose()).rejects.toBe(disposeError);
+
+    expect(Array.from(save.getBindings())).toEqual([]);
+    expect(runtime.getService(DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID)).toBeUndefined();
+    expect(survivorDispose).toHaveBeenCalledTimes(1);
+    save.register({
+      key: 'after-dispose-failure',
+      serialize: () => {
+        throw new Error('after dispose');
+      },
+      hydrate: () => undefined,
+    });
+    await save.save('after-dispose-failure');
+    expect(warnings).toEqual([]);
+    await expect(runtime.dispose()).resolves.toBeUndefined();
+    register.mockRestore();
   });
 
   it('registers save bindings contributed by plugins during setup', async () => {
@@ -125,7 +503,9 @@ describe('createGaesupRuntime', () => {
     await runtime.save.load('slot');
 
     expect(value).toBe(7);
-    expect(Array.from(runtime.save.getBindings()).map((binding) => binding.key)).toEqual(['plugin-domain']);
+    expect(Array.from(runtime.save.getBindings()).map((binding) => binding.key)).toEqual([
+      'plugin-domain',
+    ]);
   });
 
   it('unregisters option and plugin save bindings on dispose', async () => {
@@ -148,10 +528,11 @@ describe('createGaesupRuntime', () => {
     });
 
     await runtime.setup();
-    expect(Array.from(save.getBindings()).map((binding) => binding.key).sort()).toEqual([
-      'option-domain',
-      'plugin-domain',
-    ]);
+    expect(
+      Array.from(save.getBindings())
+        .map((binding) => binding.key)
+        .sort(),
+    ).toEqual(['option-domain', 'plugin-domain']);
 
     await runtime.dispose();
 
@@ -194,12 +575,14 @@ describe('createGaesupRuntime', () => {
       controller: 'keyboard',
       control: 'isometric',
     });
-    expect(state.cameraOption).toEqual(expect.objectContaining({
-      fov: 48,
-      zoom: 1.4,
-      position: expect.objectContaining({ x: 2, y: 4, z: 6 }),
-      target: expect.objectContaining({ x: 8, y: 10, z: 12 }),
-    }));
+    expect(state.cameraOption).toEqual(
+      expect.objectContaining({
+        fov: 48,
+        zoom: 1.4,
+        position: expect.objectContaining({ x: 2, y: 4, z: 6 }),
+        target: expect.objectContaining({ x: 8, y: 10, z: 12 }),
+      }),
+    );
 
     await runtime.dispose();
   });
@@ -208,11 +591,7 @@ describe('createGaesupRuntime', () => {
     const save = new SaveSystem({ adapter: new MemoryAdapter() });
     const runtime = createGaesupRuntime({
       saveSystem: save,
-      plugins: [
-        createBuildingPlugin(),
-        createCameraPlugin(),
-        createNPCPlugin(),
-      ],
+      plugins: [createBuildingPlugin(), createCameraPlugin(), createNPCPlugin()],
     });
     const originalBuilding = useBuildingStore.getState().serialize();
     const originalNPC = serializeNPCState();
@@ -224,11 +603,13 @@ describe('createGaesupRuntime', () => {
       meshes: [],
       wallGroups: [],
       tileGroups: [],
-      blocks: [{
-        id: 'block-runtime-roundtrip',
-        position: { x: 2, y: 0, z: 4 },
-        cell: { x: 2, z: 4 },
-      }],
+      blocks: [
+        {
+          id: 'block-runtime-roundtrip',
+          position: { x: 2, y: 0, z: 4 },
+          cell: { x: 2, z: 4 },
+        },
+      ],
       objects: [],
       showSnow: false,
       showFog: false,
@@ -242,16 +623,18 @@ describe('createGaesupRuntime', () => {
       position: new THREE.Vector3(3, 5, 7),
       target: new THREE.Vector3(1, 0, 2),
     });
-    hydrateNPCState([{
-      id: 'npc-runtime-roundtrip',
-      templateId: 'ally',
-      name: 'Runtime NPC',
-      position: [1, 0, 1],
-      rotation: [0, 0, 0],
-      scale: [1, 1, 1],
-      brain: { mode: 'scripted' },
-      behavior: { mode: 'idle', speed: 2.2 },
-    }]);
+    hydrateNPCState([
+      {
+        id: 'npc-runtime-roundtrip',
+        templateId: 'ally',
+        name: 'Runtime NPC',
+        position: [1, 0, 1],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+        brain: { mode: 'scripted' },
+        behavior: { mode: 'idle', speed: 2.2 },
+      },
+    ]);
 
     await runtime.save.save('world-slot');
 
@@ -284,16 +667,20 @@ describe('createGaesupRuntime', () => {
         cell: { x: 2, z: 4 },
       }),
     ]);
-    expect(useGaesupStore.getState().cameraOption).toEqual(expect.objectContaining({
-      fov: 55,
-      zoom: 1.25,
-      position: expect.objectContaining({ x: 3, y: 5, z: 7 }),
-      target: expect.objectContaining({ x: 1, y: 0, z: 2 }),
-    }));
-    expect(useNPCStore.getState().instances.get('npc-runtime-roundtrip')).toEqual(expect.objectContaining({
-      name: 'Runtime NPC',
-      brain: { mode: 'scripted' },
-    }));
+    expect(useGaesupStore.getState().cameraOption).toEqual(
+      expect.objectContaining({
+        fov: 55,
+        zoom: 1.25,
+        position: expect.objectContaining({ x: 3, y: 5, z: 7 }),
+        target: expect.objectContaining({ x: 1, y: 0, z: 2 }),
+      }),
+    );
+    expect(useNPCStore.getState().instances.get('npc-runtime-roundtrip')).toEqual(
+      expect.objectContaining({
+        name: 'Runtime NPC',
+        brain: { mode: 'scripted' },
+      }),
+    );
 
     useBuildingStore.getState().hydrate(originalBuilding);
     hydrateNPCState(originalNPC);
@@ -304,11 +691,7 @@ describe('createGaesupRuntime', () => {
     const save = new SaveSystem({ adapter: new MemoryAdapter() });
     const runtime = createGaesupRuntime({
       saveSystem: save,
-      plugins: [
-        createTimePlugin(),
-        createWeatherPlugin(),
-        createAudioPlugin(),
-      ],
+      plugins: [createTimePlugin(), createWeatherPlugin(), createAudioPlugin()],
     });
     const originalTime = useTimeStore.getState().serialize();
     const originalWeather = useWeatherStore.getState().serialize();
@@ -345,22 +728,28 @@ describe('createGaesupRuntime', () => {
 
     await runtime.save.load('world-utility-slot');
 
-    expect(useTimeStore.getState().serialize()).toEqual(expect.objectContaining({
-      totalMinutes: 1450,
-      mode: 'scaled',
-      scale: 2.5,
-    }));
-    expect(useWeatherStore.getState().serialize()).toEqual(expect.objectContaining({
-      current: { day: 3, kind: 'rain', intensity: 0.8 },
-    }));
-    expect(useAudioStore.getState().serialize()).toEqual(expect.objectContaining({
-      masterMuted: true,
-      bgmMuted: false,
-      sfxMuted: true,
-      masterVolume: 0.3,
-      bgmVolume: 0.2,
-      sfxVolume: 0.1,
-    }));
+    expect(useTimeStore.getState().serialize()).toEqual(
+      expect.objectContaining({
+        totalMinutes: 1450,
+        mode: 'scaled',
+        scale: 2.5,
+      }),
+    );
+    expect(useWeatherStore.getState().serialize()).toEqual(
+      expect.objectContaining({
+        current: { day: 3, kind: 'rain', intensity: 0.8 },
+      }),
+    );
+    expect(useAudioStore.getState().serialize()).toEqual(
+      expect.objectContaining({
+        masterMuted: true,
+        bgmMuted: false,
+        sfxMuted: true,
+        masterVolume: 0.3,
+        bgmVolume: 0.2,
+        sfxVolume: 0.1,
+      }),
+    );
 
     useTimeStore.getState().hydrate(originalTime);
     useWeatherStore.getState().hydrate(originalWeather);
@@ -406,7 +795,11 @@ describe('createGaesupRuntime', () => {
     await runtime.setup();
 
     try {
-      expect(Array.from(save.getBindings()).map((binding) => binding.key).sort()).toEqual([
+      expect(
+        Array.from(save.getBindings())
+          .map((binding) => binding.key)
+          .sort(),
+      ).toEqual([
         'catalog',
         'character',
         'crafting',
@@ -423,7 +816,9 @@ describe('createGaesupRuntime', () => {
         'wallet',
       ]);
 
-      useSceneStore.getState().registerScene({ id: 'test-house', name: 'Test House', interior: true });
+      useSceneStore
+        .getState()
+        .registerScene({ id: 'test-house', name: 'Test House', interior: true });
       useSceneStore.getState().hydrate({ version: 1, current: 'test-house' });
       useCharacterStore.getState().setName('Runtime Player');
       useInventoryStore.getState().hydrate({
@@ -432,7 +827,9 @@ describe('createGaesupRuntime', () => {
         hotbar: [0],
         equippedHotbar: 0,
       });
-      useWalletStore.getState().hydrate({ version: 1, bells: 4321, lifetimeEarned: 5000, lifetimeSpent: 679 });
+      useWalletStore
+        .getState()
+        .hydrate({ version: 1, bells: 4321, lifetimeEarned: 5000, lifetimeSpent: 679 });
       useShopStore.getState().hydrate({
         version: 1,
         lastRolledDay: 12,
@@ -463,15 +860,17 @@ describe('createGaesupRuntime', () => {
       });
       useMailStore.getState().hydrate({
         version: 1,
-        messages: [{
-          id: 'mail_a',
-          from: 'tester',
-          subject: 'Saved mail',
-          body: 'hello',
-          sentDay: 3,
-          read: false,
-          claimed: true,
-        }],
+        messages: [
+          {
+            id: 'mail_a',
+            from: 'tester',
+            subject: 'Saved mail',
+            body: 'hello',
+            sentDay: 3,
+            read: false,
+            claimed: true,
+          },
+        ],
       });
       useCatalogStore.getState().hydrate({
         version: 1,
@@ -480,15 +879,17 @@ describe('createGaesupRuntime', () => {
       useCraftingStore.getState().hydrate({ version: 1, unlocked: ['recipe_a'] });
       usePlotStore.getState().hydrate({
         version: 1,
-        plots: [{
-          id: 'plot_a',
-          position: [1, 0, 2],
-          state: 'mature',
-          cropId: 'turnip',
-          stageIndex: 2,
-          plantedAt: 40,
-          lastWateredAt: 80,
-        }],
+        plots: [
+          {
+            id: 'plot_a',
+            position: [1, 0, 2],
+            state: 'mature',
+            cropId: 'turnip',
+            stageIndex: 2,
+            plantedAt: 40,
+            lastWateredAt: 80,
+          },
+        ],
       });
       useEventsStore.getState().hydrate({
         version: 1,
@@ -497,13 +898,15 @@ describe('createGaesupRuntime', () => {
       });
       useTownStore.getState().hydrate({
         version: 1,
-        houses: [{
-          id: 'house_a',
-          position: [0, 0, 0],
-          size: [4, 4],
-          state: 'occupied',
-          residentId: 'resident_a',
-        }],
+        houses: [
+          {
+            id: 'house_a',
+            position: [0, 0, 0],
+            size: [4, 4],
+            state: 'occupied',
+            residentId: 'resident_a',
+          },
+        ],
         residents: [{ id: 'resident_a', name: 'Resident A', movedInDay: 2 }],
       });
       useI18nStore.getState().hydrate({ version: 1, locale: 'en' });
@@ -512,8 +915,12 @@ describe('createGaesupRuntime', () => {
 
       useSceneStore.getState().hydrate({ version: 1, current: 'outdoor' });
       useCharacterStore.getState().resetAppearance();
-      useInventoryStore.getState().hydrate({ version: 1, slots: [], hotbar: [], equippedHotbar: 0 });
-      useWalletStore.getState().hydrate({ version: 1, bells: 0, lifetimeEarned: 0, lifetimeSpent: 0 });
+      useInventoryStore
+        .getState()
+        .hydrate({ version: 1, slots: [], hotbar: [], equippedHotbar: 0 });
+      useWalletStore
+        .getState()
+        .hydrate({ version: 1, bells: 0, lifetimeEarned: 0, lifetimeSpent: 0 });
       useShopStore.getState().hydrate({ version: 1, lastRolledDay: -1, dailyStock: [] });
       useFriendshipStore.getState().hydrate({ version: 1, entries: {} });
       useQuestStore.getState().hydrate({ version: 1, state: {} });
@@ -531,7 +938,9 @@ describe('createGaesupRuntime', () => {
       expect(useCharacterStore.getState().appearance.name).toBe('Runtime Player');
       expect(useInventoryStore.getState().slots[0]).toEqual({ itemId: 'apple', count: 2 });
       expect(useWalletStore.getState().bells).toBe(4321);
-      expect(useShopStore.getState().dailyStock).toEqual([{ itemId: 'apple', price: 90, stock: 3 }]);
+      expect(useShopStore.getState().dailyStock).toEqual([
+        { itemId: 'apple', price: 90, stock: 3 },
+      ]);
       expect(useFriendshipStore.getState().entries['npc_a']?.score).toBe(42);
       expect(useQuestStore.getState().state['quest_a']?.progress).toEqual({ objective_a: 1 });
       expect(useMailStore.getState().messages[0]?.id).toBe('mail_a');
@@ -581,6 +990,7 @@ describe('createGaesupRuntime', () => {
       hydrate: () => undefined,
     });
 
+    await runtime.setup();
     await runtime.save.save('diagnostic-slot');
 
     expect(warnings).toEqual([
@@ -590,6 +1000,7 @@ describe('createGaesupRuntime', () => {
         slot: 'diagnostic-slot',
       }),
     ]);
+    await runtime.dispose();
   });
 
   it('collects and exposes SaveSystem diagnostics from an injected save system', async () => {
@@ -618,6 +1029,7 @@ describe('createGaesupRuntime', () => {
       hydrate: () => undefined,
     });
 
+    await runtime.setup();
     await runtime.save.save('provided-diagnostic-slot');
 
     const service = runtime.requireService<RuntimeSaveDiagnosticsService>(
@@ -659,22 +1071,23 @@ describe('createGaesupRuntime', () => {
     expect(optionalService).toBe(requiredService);
     expect(requiredService.create().physicsBridge).toBeInstanceOf(PhysicsBridge);
     expect(runtime.getService('missing.service')).toBeUndefined();
-    expect(() => runtime.requireService('missing.service')).toThrow('Extension "missing.service" is not registered.');
+    expect(() => runtime.requireService('missing.service')).toThrow(
+      'Extension "missing.service" is not registered.',
+    );
 
     await runtime.dispose();
   });
 
   it('filters plugin setup by runtime target', async () => {
     const calls: string[] = [];
-    const markerPlugin = (
-      id: string,
-      runtime: GaesupPlugin['runtime'],
-    ): GaesupPlugin => ({
+    const markerPlugin = (id: string, runtime: GaesupPlugin['runtime']): GaesupPlugin => ({
       id,
       name: id,
       version: '1.0.0',
       runtime,
-      setup: () => { calls.push(id); },
+      setup: () => {
+        calls.push(id);
+      },
     });
     const runtime = createGaesupRuntime({
       saveSystem: new SaveSystem({ adapter: new MemoryAdapter() }),

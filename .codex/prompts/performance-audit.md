@@ -1,3 +1,3 @@
-# Performance Audit
+# Performance 감사
 
-Use the runtime agent for measurement and the reviewer for an independent read-only audit. Check frame loops, recurring allocation, subscriptions, typed-array reuse, draw calls, resource ownership, visibility, culling and scenario baselines. Separate measured facts from estimates.
+측정은 runtime agent, 독립적인 읽기 전용 감사는 reviewer를 사용한다. frame loop, 반복 할당, subscription, typed-array 재사용, draw call, resource ownership, visibility, culling, 시나리오 기준선을 검사한다. 측정된 사실과 추정을 구분한다.

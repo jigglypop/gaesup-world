@@ -104,15 +104,20 @@ import { loadCoreWasm, type GaesupCoreWasmExports } from 'gaesup-world';
 
 ## WebGPU Renderer
 
-WebGPU/WebGL fallback renderer는 루트 엔트리에서 사용할 수 있습니다.
+WebGPU/WebGL compatibility renderer는 루트 엔트리에서 사용할 수 있습니다. R3F 9의 `HTMLCanvasElement`와 `OffscreenCanvas` factory 입력을 모두 받습니다.
 
 ```tsx
+import { Canvas } from '@react-three/fiber';
 import { createRenderer } from 'gaesup-world';
 
 <Canvas gl={createRenderer}>
   {/* scene */}
 </Canvas>
 ```
+
+capability probe는 module lifetime에 promise 하나만 생성하므로 여러 `<Canvas>` 준비 경로가 동시에 adapter를 반복 요청하지 않습니다. WebGPU를 사용할 수 없거나 module/constructor 준비가 실패한 경우에만 별도 `WebGLRenderer`를 만들며, `WebGPURenderer.init()` reject 뒤에는 두 번째 context를 만들지 않고 원래 오류를 전달합니다.
+
+초기화된 WebGPU renderer의 `dispose()`와 R3F 9 unmount의 `forceContextLoss()`는 같은 native dispose를 최대 한 번 실행합니다. `<Canvas>`를 반복 mount/unmount하는 성능 측정에서도 renderer를 별도로 중복 dispose할 필요가 없습니다.
 
 WebGPU compute, TSL grass/water 유틸은 현재 public package subpath로 보장하지 않습니다.
 

@@ -1,31 +1,10 @@
 import React, { FC, useMemo } from 'react';
 
-import { NPCPanel } from './NPCPanel';
-import {
-  AssetPreviewCanvas,
-  createScopedAssetMeshConfig,
-  createScopedBuildingMeshId,
-  type AssetRecord,
-} from '../../../../assets';
-import { DEFAULT_BUILDING_OBJECT_CATALOG, getDefaultBuildingObject } from '../../../../building/catalog';
-import {
-  BUILDING_PLACED_OBJECT_OPTIONS,
-  BUILDING_WALL_KIND_OPTIONS,
-  BUILDING_WALL_PRESETS,
-  BUILDING_TILE_PRESETS,
-  BUILDING_TILE_GROUP_DRAG_TYPE,
-  BUILDING_TILE_PRESET_DRAG_TYPE,
-  BUILDING_TILE_OBJECT_OPTIONS,
-  type BuildingSystemState,
-  type MeshConfig,
-} from '../../../../building/types';
-import { useBuildingStore } from '../../../../building/stores/buildingStore';
-import { FieldColor, FieldRow } from '../../fields';
-import type { EditorPanelBaseProps } from '../types';
 import {
   createPlacementAssetScopeId,
   createScopedColorMeshConfig,
 } from './helpers';
+import { NPCPanel } from './NPCPanel';
 import {
   BillboardSettingsSection,
   BlockEditSection,
@@ -40,7 +19,28 @@ import {
   type BuildingPanelAction,
 } from './sections';
 import { useBuildingPanelState } from './state';
+import {
+  AssetPreviewCanvas,
+  createScopedAssetMeshConfig,
+  createScopedBuildingMeshId,
+  type AssetRecord,
+} from '../../../../assets';
+import { DEFAULT_BUILDING_OBJECT_CATALOG, getDefaultBuildingObject } from '../../../../building/catalog';
+import { useBuildingStore } from '../../../../building/stores/buildingStore';
+import {
+  BUILDING_PLACED_OBJECT_OPTIONS,
+  BUILDING_WALL_KIND_OPTIONS,
+  BUILDING_WALL_PRESETS,
+  BUILDING_TILE_PRESETS,
+  BUILDING_TILE_GROUP_DRAG_TYPE,
+  BUILDING_TILE_PRESET_DRAG_TYPE,
+  BUILDING_TILE_OBJECT_OPTIONS,
+  type BuildingSystemState,
+  type MeshConfig,
+} from '../../../../building/types';
 import type { NPCBehaviorConfig } from '../../../../npc/types';
+import { FieldColor, FieldRow } from '../../fields';
+import type { EditorPanelBaseProps } from '../types';
 import './styles.css';
 
 export { createPlacementAssetScopeId, createScopedColorMeshConfig } from './helpers';

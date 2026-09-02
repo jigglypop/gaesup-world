@@ -61,7 +61,7 @@
     },
     "emitDecoratorMetadata": false
   },
-  "include": ["src", "examples", "vite.config.ts", "jest.config.cjs", "index.ts", "react-three-fiber.d.ts"],
+  "include": ["src", "examples", "vite.config.ts", "jest.config.js", "jest.memory.config.js", "index.ts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"],
   "ts-node": {
     "esm": true

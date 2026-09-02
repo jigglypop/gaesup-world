@@ -6,3 +6,6 @@ export * from './runtime';
 export * from './query';
 export * from './migration';
 export * from './layers';
+export * from './commands';
+export * from './controller';
+export * from './saveBinding';

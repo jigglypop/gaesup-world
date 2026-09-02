@@ -28,27 +28,20 @@
 앱에서 사용할 때는 `gaesup-world`와 3D 런타임 peer dependency를 함께 설치합니다. React, Three.js, React Three Fiber는 앱 쪽에서 직접 버전을 관리하는 것이 안전합니다.
 
 ```bash
-npm install gaesup-world three react react-dom @react-three/fiber @react-three/drei @react-three/rapier
+npm install gaesup-world three three-stdlib react react-dom @react-three/fiber @react-three/drei @react-three/rapier @react-three/postprocessing
 ```
 
 또는
 
 ```bash
-yarn add gaesup-world three react react-dom @react-three/fiber @react-three/drei @react-three/rapier
+yarn add gaesup-world three three-stdlib react react-dom @react-three/fiber @react-three/drei @react-three/rapier @react-three/postprocessing
 ```
 
 또는
 
 ```bash
-pnpm add gaesup-world three react react-dom @react-three/fiber @react-three/drei @react-three/rapier
+pnpm add gaesup-world three three-stdlib react react-dom @react-three/fiber @react-three/drei @react-three/rapier @react-three/postprocessing
 ```
-
-선택 기능을 쓰는 경우에는 아래 패키지도 앱에 설치해 주세요.
-
-- 후처리: `@react-three/postprocessing`
-- 관리자 라우팅: `react-router-dom`
-- 아이콘 UI: `react-icons`
-- Rapier 직접 연동: `@dimforge/rapier3d`, `@dimforge/rapier3d-compat`
 
 ## 빠른 시작
 
@@ -76,6 +69,10 @@ export default function App() {
   );
 }
 ```
+
+### Scene JSON authoring 경계
+
+`SceneJsonObject`는 `undefined`가 없는 canonical JSON 타입입니다. 표준 scene component 입력은 `SceneJsonAuthoringObject`를 사용하므로 `exactOptionalPropertyTypes` 설정과 관계없이 optional field를 작성할 수 있지만, 입력 객체 자체를 `SceneJsonObject`로 대입하지는 않습니다. `createSceneComponent` 또는 표준 component factory를 통과시키면 입력과 alias되지 않는 canonical owned copy를 받습니다. 반환 데이터의 기존 mutable API는 유지되며, 직접 변경한 데이터는 load/save 전에 다시 검증됩니다. `loadSceneRuntime`도 입력 document/object identity 대신 owned materialization을 사용하고, `serializeSceneDocument`는 validation issue가 하나라도 있으면 `TypeError`를 던집니다.
 
 ## 핵심 개념
 

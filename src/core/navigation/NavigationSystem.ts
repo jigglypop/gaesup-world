@@ -86,6 +86,8 @@ export class NavigationSystem {
   private hasBlockedData = false;
   private wasm: GaesupCoreWasmExports | null = null;
   private ready = false;
+  private initialization: Promise<boolean> | null = null;
+  private lifecycleGeneration = 0;
 
   private gridPtr = 0;
   private outPathPtr = 0;
@@ -111,26 +113,99 @@ export class NavigationSystem {
     return NavigationSystem.instance;
   }
 
-  async init(): Promise<boolean> {
-    if (this.ready) return true;
+  init(): Promise<boolean> {
+    if (this.ready) return Promise.resolve(true);
+    if (this.initialization) return this.initialization;
 
-    const wasm = await loadCoreWasm();
-    if (hasNavigationWasm(wasm)) {
-      this.wasm = wasm;
-      const total = this.gridWidth * this.gridHeight;
-      this.gridPtr = this.wasm.alloc_u8(total);
-      this.outPathPtr = this.wasm.alloc_u32(this.outCapacity * 2);
-      this.syncGridToWasm();
-    } else {
-      this.wasm = null;
-    }
-
-    this.ready = true;
-    return true;
+    const generation = this.lifecycleGeneration;
+    this.initialization = this.initialize(generation);
+    return this.initialization;
   }
 
-  private syncGridToWasm(): void {
-    this.syncToWasm(this.grid);
+  private async initialize(generation: number): Promise<boolean> {
+    let pendingWasm: GaesupCoreWasmExports | null = null;
+    let pendingGridPtr = 0;
+    let pendingOutPathPtr = 0;
+
+    const releasePendingBuffers = (): void => {
+      const wasm = pendingWasm;
+      const gridPtr = pendingGridPtr;
+      const outPathPtr = pendingOutPathPtr;
+      pendingWasm = null;
+      pendingGridPtr = 0;
+      pendingOutPathPtr = 0;
+      if (wasm) this.deallocateBuffers(wasm, gridPtr, outPathPtr);
+    };
+
+    try {
+      const wasm = await loadCoreWasm();
+      if (generation !== this.lifecycleGeneration) return false;
+
+      if (hasNavigationWasm(wasm)) {
+        pendingWasm = wasm;
+        const total = this.gridWidth * this.gridHeight;
+        pendingGridPtr = wasm.alloc_u8(total);
+        if (generation !== this.lifecycleGeneration) {
+          releasePendingBuffers();
+          return false;
+        }
+
+        pendingOutPathPtr = wasm.alloc_u32(this.outCapacity * 2);
+        if (generation !== this.lifecycleGeneration) {
+          releasePendingBuffers();
+          return false;
+        }
+
+        new Uint8Array(wasm.memory.buffer, pendingGridPtr, total).set(this.grid);
+      }
+
+      if (generation !== this.lifecycleGeneration) {
+        releasePendingBuffers();
+        return false;
+      }
+
+      this.wasm = pendingWasm;
+      this.gridPtr = pendingGridPtr;
+      this.outPathPtr = pendingOutPathPtr;
+      pendingWasm = null;
+      pendingGridPtr = 0;
+      pendingOutPathPtr = 0;
+      this.ready = true;
+      return true;
+    } catch (error) {
+      releasePendingBuffers();
+      throw error;
+    } finally {
+      if (generation === this.lifecycleGeneration) {
+        this.initialization = null;
+      }
+    }
+  }
+
+  private deallocateBuffers(
+    wasm: GaesupCoreWasmExports,
+    gridPtr: number,
+    outPathPtr: number,
+  ): void {
+    if (gridPtr) {
+      try {
+        wasm.dealloc_u8(gridPtr, this.gridWidth * this.gridHeight);
+      } finally {
+        if (outPathPtr) wasm.dealloc_u32(outPathPtr, this.outCapacity * 2);
+      }
+      return;
+    }
+    if (outPathPtr) wasm.dealloc_u32(outPathPtr, this.outCapacity * 2);
+  }
+
+  private releaseBuffers(): void {
+    const wasm = this.wasm;
+    const gridPtr = this.gridPtr;
+    const outPathPtr = this.outPathPtr;
+    this.wasm = null;
+    this.gridPtr = 0;
+    this.outPathPtr = 0;
+    if (wasm) this.deallocateBuffers(wasm, gridPtr, outPathPtr);
   }
 
   private syncToWasm(source: Uint8Array): void {
@@ -658,11 +733,10 @@ export class NavigationSystem {
   }
 
   dispose(): void {
-    if (this.wasm) {
-      if (this.gridPtr) this.wasm.dealloc_u8(this.gridPtr, this.gridWidth * this.gridHeight);
-      if (this.outPathPtr) this.wasm.dealloc_u32(this.outPathPtr, this.outCapacity * 2);
-    }
-    NavigationSystem.instance = null;
+    this.lifecycleGeneration += 1;
     this.ready = false;
+    this.initialization = null;
+    if (NavigationSystem.instance === this) NavigationSystem.instance = null;
+    this.releaseBuffers();
   }
 }

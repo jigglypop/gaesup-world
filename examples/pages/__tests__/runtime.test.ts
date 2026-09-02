@@ -28,6 +28,7 @@ describe('examples world runtime', () => {
           'events',
           'town',
           'i18n',
+          'scene-document',
         ]),
       );
       expect(getWorldGameplayBlueprints().length).toBeGreaterThan(0);

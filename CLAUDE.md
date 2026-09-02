@@ -68,6 +68,14 @@ React Three Fiber 기반 웹 3D 월드/캐릭터 컨트롤러 라이브러리. �
 - 저장소가 OneDrive 동기화 폴더 안에 있음 — 대량 파일 I/O가 느릴 수 있고, 사이드 워크트리 `../gaesup-world-head-check`가 존재할 수 있다.
 - git 작업 트리에 미커밋 삭제(demo-dist, .tmp 스크린샷 등)가 남아 있을 수 있음 — 묻지 않고 복원하거나 커밋하지 말 것.
 
+## 에이전트 하네스
+
+**속도가 기본값이다.** 공학 원칙(투 트랙, 코드량 감소, DRY/KISS/YAGNI, 최소 검증 사다리)은 `.codex/context/engineering.md` 하나에 있고 모든 작업에 적용된다.
+
+- **Fast track (기본)**: 버그 수정·도메인 내부 변경·리팩터링은 plan 없이 바로 구현. 검증은 변경 도메인 테스트+타입체크만.
+- **Epoch track**: architecture boundary·public API 계약·source of truth를 바꿀 때만. `/start-epoch`(plan 작성) → 구현 → `/close-epoch`(검증·해당 감사·HARNESS.md 기록). SessionStart 훅이 `.codex/plans/active/`의 plan을 자동 주입하며, 주입된 plan이 작업 기준이다.
+- 감사 서브에이전트는 필요한 것만: `layer-auditor`(3계층·스타일) / `invariant-guard`(INV-001..020) / `frame-perf-auditor`(프레임·메모리) / `api-surface-guard`(공개 API 동기화). Codex 대응물은 `.codex/agents/*.toml`과 `.codex/prompts/*.md`.
+
 ## 심화 문서 (필요할 때만 로드)
 
 - 전체 개요: `docs/GAESUP_WORLD_OVERVIEW.md` · 테스트: `docs/guide/TEST_GUIDE.md` · 도메인: `docs/domain/{MOTIONS,CAMERA,BLUEPRINT}.md` · API: `docs/api/*.md`

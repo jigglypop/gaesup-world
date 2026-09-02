@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 
 import { useAnimations } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
@@ -8,6 +8,11 @@ import { SkeletonUtils } from 'three-stdlib';
 import { useAnimationPlayer } from '@/core/hooks';
 
 import { ModelRenderer } from './PartsGroupRef';
+import {
+  applyToonToScene,
+  getDefaultToonMode,
+  releaseToonFromScene,
+} from '../../../rendering/toon';
 import { useGltfAndSize } from '../../hooks';
 import { riderRefType } from '../types';
 
@@ -20,7 +25,15 @@ export default function RiderRef({
   const { animations, scene } = gltf;
   const { ref: animationRef } = useAnimations(animations);
   const characterClone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
-  const { nodes: characterNodes } = useGraph(characterClone);
+  const [toonRevision, setToonRevision] = useState(0);
+  const graph = useGraph(characterClone);
+  useLayoutEffect(() => {
+    if (!getDefaultToonMode()) return;
+    applyToonToScene(characterClone);
+    setToonRevision((revision) => revision + 1);
+    return () => releaseToonFromScene(characterClone);
+  }, [characterClone]);
+  const characterNodes = useMemo(() => ({ ...graph.nodes }), [graph.nodes, toonRevision]);
   const characterObjectNode = Object.values(characterNodes).find(
     (node) => node.type === 'Object3D',
   );

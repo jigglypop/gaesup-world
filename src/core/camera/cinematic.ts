@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 
+import { requestCameraCloseUp, restoreCameraCloseUp, type CameraCloseUpOptions, type CameraCloseUpTarget } from './closeUp';
 import { applyCharacterEquipmentPreset } from '../character/actionEquipment';
 import { useCharacterStore } from '../character/stores/characterStore';
 import { useDialogStore } from '../dialog/stores/dialogStore';
 import type { DialogContext, DialogTreeId } from '../dialog/types';
 import { useSceneStore } from '../scene/stores/sceneStore';
 import { useGaesupStore } from '../stores/gaesupStore';
-import { requestCameraCloseUp, restoreCameraCloseUp, type CameraCloseUpOptions, type CameraCloseUpTarget } from './closeUp';
 
 export type CameraCinematicBeat =
   | ({ kind: 'closeUp' | 'lookAt'; target: CameraCloseUpTarget; durationMs?: number } & CameraCloseUpOptions)

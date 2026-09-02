@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import {
   useAudioStore,
@@ -14,7 +14,9 @@ import {
   useQuestObjectiveTracker,
   useWeatherStore,
   useWeatherTicker,
+  logger,
   type GaesupRuntime,
+  type SaveSystem,
 } from 'gaesup-world';
 
 import { dispatchWorldGameplayEvent, loadWorldRuntime } from '../runtime';
@@ -25,7 +27,41 @@ export interface WorldSystemsProps {
   onRuntimeReady?: () => void;
 }
 
+const RESOLVED_WORLD_RUNTIME_OPERATION = Promise.resolve();
+const WORLD_RUNTIME_OPERATION_QUEUES = new WeakMap<SaveSystem, Promise<void>>();
+
+function reportWorldRuntimeOperationFailure(operation: 'load' | 'dispose', error: unknown): void {
+  try {
+    logger.error(
+      `[WorldSystems] Runtime ${operation} failed.`,
+      error instanceof Error ? error : String(error),
+    );
+  } catch {
+    // Runtime lifecycle failures stay handled even when the diagnostics boundary fails.
+  }
+}
+
+function enqueueWorldRuntimeOperation(
+  runtime: GaesupRuntime,
+  operation: 'load' | 'dispose',
+  run: () => Promise<void>,
+): Promise<void> {
+  const previous =
+    WORLD_RUNTIME_OPERATION_QUEUES.get(runtime.save) ?? RESOLVED_WORLD_RUNTIME_OPERATION;
+  const recovered = previous.then(run).catch((error: unknown) => {
+    reportWorldRuntimeOperationFailure(operation, error);
+  });
+  WORLD_RUNTIME_OPERATION_QUEUES.set(runtime.save, recovered);
+  void recovered.then(() => {
+    if (WORLD_RUNTIME_OPERATION_QUEUES.get(runtime.save) === recovered) {
+      WORLD_RUNTIME_OPERATION_QUEUES.delete(runtime.save);
+    }
+  });
+  return recovered;
+}
+
 export function WorldSystems({ runtime, onRuntimeReady }: WorldSystemsProps) {
+  const generationRef = useRef(0);
   useGameClock(false);
   useHotbarKeyboard(true);
   useAutoSave({ intervalMs: 60_000 });
@@ -68,15 +104,25 @@ export function WorldSystems({ runtime, onRuntimeReady }: WorldSystemsProps) {
   });
 
   useEffect(() => {
+    const generation = generationRef.current + 1;
+    generationRef.current = generation;
     let cancelled = false;
-    void loadWorldRuntime(runtime).then(() => {
-      if (!cancelled) {
+    void enqueueWorldRuntimeOperation(runtime, 'load', async () => {
+      if (cancelled || generationRef.current !== generation) return;
+      await loadWorldRuntime(runtime);
+      if (!cancelled && generationRef.current === generation) {
         onRuntimeReady?.();
       }
     });
+
     return () => {
       cancelled = true;
-      void runtime.dispose();
+      if (generationRef.current === generation) {
+        generationRef.current = generation + 1;
+      }
+      void enqueueWorldRuntimeOperation(runtime, 'dispose', async () => {
+        await runtime.dispose();
+      });
     };
   }, [onRuntimeReady, runtime]);
 

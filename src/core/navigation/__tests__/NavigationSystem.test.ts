@@ -1,5 +1,5 @@
+import { loadCoreWasm, type GaesupCoreWasmExports } from '../../wasm/loader';
 import { NavigationSystem } from '../NavigationSystem';
-import type { GaesupCoreWasmExports } from '../../wasm/loader';
 
 type MockWasm = GaesupCoreWasmExports & {
   astar_find_path: jest.MockedFunction<GaesupCoreWasmExports['astar_find_path']>;
@@ -12,6 +12,8 @@ jest.mock('../../wasm/loader', () => ({
   loadCoreWasm: jest.fn(async () => mockWasm),
 }));
 
+const mockedLoadCoreWasm = jest.mocked(loadCoreWasm);
+
 const TEST_CONFIG = {
   cellSize: 1,
   worldMinX: 0,
@@ -23,6 +25,17 @@ const TEST_CONFIG = {
 
 function createNavigation(config = TEST_CONFIG): NavigationSystem {
   return NavigationSystem.getInstance(config);
+}
+
+function createDeferred<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+} {
+  let resolve: (value: T) => void = () => undefined;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
 }
 
 function createMockWasm(options: { omitWeighted?: boolean } = {}): MockWasm {
@@ -93,6 +106,7 @@ function createMockWasm(options: { omitWeighted?: boolean } = {}): MockWasm {
 afterEach(() => {
   NavigationSystem.getInstance().dispose();
   mockWasm = null;
+  mockedLoadCoreWasm.mockClear();
 });
 
 describe('NavigationSystem', () => {
@@ -115,6 +129,128 @@ describe('NavigationSystem', () => {
     const path = navigation.findPath(0.5, 0.5, 3.5, 0.5);
     expect(path[0]).toEqual([0.5, 0, 0.5]);
     expect(path[path.length - 1]).toEqual([3.5, 0, 0.5]);
+  });
+
+  it('shares one in-flight initialization and allocates one buffer pair', async () => {
+    mockWasm = createMockWasm();
+    const deferred = createDeferred<GaesupCoreWasmExports | null>();
+    mockedLoadCoreWasm.mockImplementationOnce(() => deferred.promise);
+    const navigation = createNavigation();
+
+    const firstInitialization = navigation.init();
+    const secondInitialization = navigation.init();
+
+    expect(secondInitialization).toBe(firstInitialization);
+    expect(mockedLoadCoreWasm).toHaveBeenCalledTimes(1);
+
+    deferred.resolve(mockWasm);
+
+    await expect(Promise.all([firstInitialization, secondInitialization])).resolves.toEqual([
+      true,
+      true,
+    ]);
+    expect(mockWasm.alloc_u8).toHaveBeenCalledTimes(1);
+    expect(mockWasm.alloc_u32).toHaveBeenCalledTimes(1);
+  });
+
+  it('deallocates each owned buffer once across repeated disposal', async () => {
+    mockWasm = createMockWasm();
+    const navigation = createNavigation();
+
+    await navigation.init();
+    navigation.dispose();
+    navigation.dispose();
+
+    expect(mockWasm.dealloc_u8).toHaveBeenCalledTimes(1);
+    expect(mockWasm.dealloc_u8).toHaveBeenCalledWith(8, 36);
+    expect(mockWasm.dealloc_u32).toHaveBeenCalledTimes(1);
+    expect(mockWasm.dealloc_u32).toHaveBeenCalledWith(44, 1024);
+  });
+
+  it('does not detach a replacement singleton when an old instance is disposed again', async () => {
+    mockWasm = createMockWasm();
+    const navigation = createNavigation();
+
+    await navigation.init();
+    navigation.dispose();
+    const replacement = createNavigation();
+
+    navigation.dispose();
+
+    expect(NavigationSystem.getInstance()).toBe(replacement);
+  });
+
+  it('does not revive or allocate for initialization disposed while loading', async () => {
+    mockWasm = createMockWasm();
+    const deferred = createDeferred<GaesupCoreWasmExports | null>();
+    mockedLoadCoreWasm.mockImplementationOnce(() => deferred.promise);
+    const navigation = createNavigation();
+    const initialization = navigation.init();
+
+    navigation.dispose();
+    deferred.resolve(mockWasm);
+
+    await expect(initialization).resolves.toBe(false);
+    expect(mockWasm.alloc_u8).not.toHaveBeenCalled();
+    expect(mockWasm.alloc_u32).not.toHaveBeenCalled();
+    expect(navigation.findPath(0.5, 0.5, 3.5, 0.5)).toEqual([]);
+    expect(NavigationSystem.getInstance()).not.toBe(navigation);
+  });
+
+  it('lets a replacement singleton initialize from the same pending loader result', async () => {
+    mockWasm = createMockWasm();
+    const deferred = createDeferred<GaesupCoreWasmExports | null>();
+    mockedLoadCoreWasm
+      .mockImplementationOnce(() => deferred.promise)
+      .mockImplementationOnce(() => deferred.promise);
+    const navigation = createNavigation();
+    const staleInitialization = navigation.init();
+
+    navigation.dispose();
+    const replacement = createNavigation();
+    const replacementInitialization = replacement.init();
+    deferred.resolve(mockWasm);
+
+    await expect(staleInitialization).resolves.toBe(false);
+    await expect(replacementInitialization).resolves.toBe(true);
+    expect(mockedLoadCoreWasm).toHaveBeenCalledTimes(2);
+    expect(mockWasm.alloc_u8).toHaveBeenCalledTimes(1);
+    expect(mockWasm.alloc_u32).toHaveBeenCalledTimes(1);
+    expect(NavigationSystem.getInstance()).toBe(replacement);
+    expect(replacement.findPath(0.5, 0.5, 3.5, 0.5)).not.toEqual([]);
+  });
+
+  it('clears a loader failure so initialization can retry', async () => {
+    mockWasm = createMockWasm();
+    const navigation = createNavigation();
+    mockedLoadCoreWasm.mockRejectedValueOnce(new Error('loader failed'));
+
+    await expect(navigation.init()).rejects.toThrow('loader failed');
+    expect(mockWasm.alloc_u8).not.toHaveBeenCalled();
+
+    await expect(navigation.init()).resolves.toBe(true);
+    expect(mockedLoadCoreWasm).toHaveBeenCalledTimes(2);
+    expect(mockWasm.alloc_u8).toHaveBeenCalledTimes(1);
+    expect(mockWasm.alloc_u32).toHaveBeenCalledTimes(1);
+  });
+
+  it('releases a partial allocation and allows initialization to retry', async () => {
+    mockWasm = createMockWasm();
+    const navigation = createNavigation();
+    mockWasm.alloc_u32.mockImplementationOnce(() => {
+      throw new Error('path allocation failed');
+    });
+
+    await expect(navigation.init()).rejects.toThrow('path allocation failed');
+    expect(mockWasm.dealloc_u8).toHaveBeenCalledTimes(1);
+    expect(mockWasm.dealloc_u8).toHaveBeenLastCalledWith(8, 36);
+    expect(mockWasm.dealloc_u32).not.toHaveBeenCalled();
+    expect(navigation.findPath(0.5, 0.5, 3.5, 0.5)).toEqual([]);
+
+    await expect(navigation.init()).resolves.toBe(true);
+    expect(mockedLoadCoreWasm).toHaveBeenCalledTimes(2);
+    expect(mockWasm.alloc_u8).toHaveBeenCalledTimes(2);
+    expect(mockWasm.alloc_u32).toHaveBeenCalledTimes(2);
   });
 
   it('returns no path when the start or goal cell is blocked', async () => {

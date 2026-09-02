@@ -2,6 +2,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const ROOT_ENTRY = path.resolve(__dirname, '../index.ts');
+const CORE_ENTRY = path.resolve(__dirname, '../core/index.ts');
+const SCENE_OBJECT_ENTRY = path.resolve(__dirname, '../core/scene-object/index.ts');
+const SCENE_OBJECT_COMMANDS = path.resolve(__dirname, '../core/scene-object/commands.ts');
+const SCENE_OBJECT_CONTROLLER = path.resolve(__dirname, '../core/scene-object/controller.ts');
+const SCENE_OBJECT_SAVE_BINDING = path.resolve(__dirname, '../core/scene-object/saveBinding.ts');
 
 function readRootEntry(): string {
   return fs.readFileSync(ROOT_ENTRY, 'utf8');
@@ -12,6 +17,31 @@ function expectNamedExport(source: string, name: string): void {
 }
 
 describe('public package API', () => {
+  test('exports the SceneDocument command path through the existing root scene-object barrel', () => {
+    const rootSource = readRootEntry();
+    const coreSource = fs.readFileSync(CORE_ENTRY, 'utf8');
+    const sceneObjectSource = fs.readFileSync(SCENE_OBJECT_ENTRY, 'utf8');
+    const implementationSource = [
+      SCENE_OBJECT_COMMANDS,
+      SCENE_OBJECT_CONTROLLER,
+      SCENE_OBJECT_SAVE_BINDING,
+    ]
+      .map((file) => fs.readFileSync(file, 'utf8'))
+      .join('\n');
+
+    expect(rootSource).toContain("export * from './core'");
+    expect(coreSource).toContain("export * from './scene-object'");
+    expect(sceneObjectSource).toContain("export * from './commands'");
+    expect(sceneObjectSource).toContain("export * from './controller'");
+    expect(sceneObjectSource).toContain("export * from './saveBinding'");
+    [
+      'applySceneDocumentCommand',
+      'createSceneDocumentController',
+      'createSceneDocumentSaveBinding',
+      'SCENE_DOCUMENT_SAVE_KEY',
+    ].forEach((name) => expectNamedExport(implementationSource, name));
+  });
+
   test('exports world config and editor shell APIs from the root entry', () => {
     const source = readRootEntry();
 

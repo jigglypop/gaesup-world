@@ -56,6 +56,10 @@ export type CreateCommandRejectedResultOptions = {
   serverRevision?: number;
 };
 
+type CommandAuthorityRegistration = {
+  handler: CommandAuthorityHandler;
+};
+
 function routeKey(route: CommandAuthorityRoute): string {
   return `${route.domain}:${route.action ?? '*'}`;
 }
@@ -110,7 +114,7 @@ export function createCommandRejectedResult(
 export function createCommandAuthorityRouter(
   options: CommandAuthorityRouterOptions = {},
 ): CommandAuthorityRouter {
-  const handlers = new Map<string, CommandAuthorityHandler>();
+  const registrations = new Map<string, CommandAuthorityRegistration>();
   const now = options.now ?? Date.now;
   const createId = options.createId ?? defaultCreateAuthorityId;
   const context: CommandAuthorityContext = { now, createId };
@@ -118,14 +122,22 @@ export function createCommandAuthorityRouter(
   return {
     register: (route, handler) => {
       const key = routeKey(route);
-      handlers.set(key, handler as CommandAuthorityHandler);
-      return () => { handlers.delete(key); };
+      const registration: CommandAuthorityRegistration = {
+        handler: handler as CommandAuthorityHandler,
+      };
+      registrations.set(key, registration);
+      return () => {
+        if (registrations.get(key) === registration) {
+          registrations.delete(key);
+        }
+      };
     },
     handle: async (command) => {
-      const handler = handlers.get(routeKey({ domain: command.domain, action: command.action }))
-        ?? handlers.get(routeKey({ domain: command.domain, action: '*' }));
+      const registration =
+        registrations.get(routeKey({ domain: command.domain, action: command.action })) ??
+        registrations.get(routeKey({ domain: command.domain, action: '*' }));
 
-      if (!handler) {
+      if (!registration) {
         return createCommandRejectedResult(
           command,
           `No authority handler registered for ${command.domain}:${command.action}.`,
@@ -136,9 +148,12 @@ export function createCommandAuthorityRouter(
         );
       }
 
+      const handler = registration.handler;
       return handler(command, context);
     },
-    has: (route) => handlers.has(routeKey(route)),
-    clear: () => { handlers.clear(); },
+    has: (route) => registrations.has(routeKey(route)),
+    clear: () => {
+      registrations.clear();
+    },
   };
 }

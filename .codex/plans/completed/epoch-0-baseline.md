@@ -1,28 +1,28 @@
 # Epoch 0 Baseline
 
-## Recorded state
+## 기록된 상태
 
-- Library typecheck passed before the examples shell slice.
-- Examples typecheck passed before the examples shell slice.
-- Public API tests passed: 8 tests.
-- Package export tests passed: 9 tests.
-- Full Jest baseline passed: 181 suites passed, 1 skipped; 1679 tests passed, 1 skipped.
-- Existing examples already expose world, minimal, editor, NPC editor, showcase, building, blueprints, network, next and admin routes.
-- Examples have no detected private `src`, `@/` or `@core/` imports.
+- examples shell slice 이전에 라이브러리 타입체크 통과.
+- examples shell slice 이전에 examples 타입체크 통과.
+- public API 테스트 통과: 8개.
+- package export 테스트 통과: 9개.
+- 전체 Jest 기준선 통과: 181 suite 통과, 1 skip; 1679 테스트 통과, 1 skip.
+- 기존 examples는 이미 world, minimal, editor, NPC editor, showcase, building, blueprints, network, next, admin 라우트를 노출한다.
+- examples에서 private `src`, `@/`, `@core/` import는 발견되지 않았다.
 
-## UX baseline
+## UX 기준선
 
-The default `/` route opens the full world immediately. Navigation is a flat horizontally scrolling list. Product scenarios, developer diagnostics and experiments are mixed. A catalog and error boundary exist but do not provide a product Home or scenario-first shell.
+기본 `/` 라우트는 즉시 전체 월드를 연다. 내비게이션은 평평한 가로 스크롤 목록이다. 제품 시나리오, 개발자 진단, 실험이 섞여 있다. catalog과 error boundary는 있으나 제품 Home이나 시나리오 우선 shell을 제공하지 않는다.
 
-## Renderer dependency baseline
+## Renderer 의존성 기준선
 
-- `useThree`: 11 production files
-- direct `state.gl`: 2 production files
-- `ShaderMaterial`: 8 production files
-- `EffectComposer`: 3 production files
-- `WebGLRenderer`: 1 compatibility utility
-- direct renderer method patterns: 6 production/example files
+- `useThree`: production 파일 11개
+- 직접 `state.gl`: production 파일 2개
+- `ShaderMaterial`: production 파일 8개
+- `EffectComposer`: production 파일 3개
+- `WebGLRenderer`: compatibility 유틸리티 1개
+- 직접 renderer 메서드 패턴: production/example 파일 6개
 
-## Baseline caveats
+## 기준선 주의사항
 
-The worktree contains extensive pre-existing user changes and generated demo output changes. The migration must not reset or restore them. Browser screenshots, GPU frame time and bundle measurements are deferred until the shell slice is implemented and demo/package validation completes.
+worktree에 광범위한 기존 사용자 변경과 생성된 demo 출력 변경이 있다. migration은 이를 reset하거나 restore하지 않아야 한다. 브라우저 스크린샷, GPU frame time, bundle 측정은 shell slice 구현과 demo/package 검증 완료 이후로 미룬다.

@@ -74,6 +74,10 @@ export function TileObject({ tile, tiles }: TileObjectProps) {
   if (!tile.objectType || tile.objectType === 'none') return null;
   if (BATCHED_COVERS.has(tile.objectType)) return null;
 
+  return <RenderedTileObject tile={tile} {...(tiles ? { tiles } : {})} />;
+}
+
+function RenderedTileObject({ tile, tiles }: TileObjectProps) {
   const groupRef = useRef<THREE.Group>(null!);
   const visibleRef = useRef(true);
   const lodAccumRef = useRef(0);

@@ -29,6 +29,7 @@ import {
   useTownStore,
   useWeatherStore,
   type GaesupRuntime,
+  type SaveSystem,
 } from 'gaesup-world';
 import {
   GameplayEventEngine,
@@ -39,11 +40,19 @@ import {
   type GameplayEventCondition,
   type GameplayTriggerEvent,
 } from 'gaesup-world/gameplay';
-import type { CommandAuthorityResult, PlatformServerPluginHost } from 'gaesup-world/server-contracts';
+import type {
+  CommandAuthorityResult,
+  PlatformServerPluginHost,
+} from 'gaesup-world/server-contracts';
 
 import { createExampleCozyLifePackagePlugin } from '../plugins/cozy-life-package';
 import { createExampleServerHost, runExampleServerHostPing } from '../plugins/server-host-sample';
 import { NPC_SCHEDULES } from './world/data';
+import {
+  createWorldSceneDocumentPlugin,
+  getWorldSceneDocumentSession,
+  type WorldSceneDocumentSession,
+} from './world/sceneDocument';
 
 const DEFAULT_WORLD_TIME_MINUTES = 18 * 60;
 
@@ -53,7 +62,13 @@ let gameplayCustomHandlersRegistered = false;
 let serverHost: PlatformServerPluginHost | null = null;
 let serverHostReady = false;
 let serverHostDemoResult: CommandAuthorityResult | null = null;
+const WORLD_INITIAL_LOAD_TASKS = new WeakMap<SaveSystem, Promise<boolean>>();
 export const WORLD_CUSTOM_GAMEPLAY_KEY = 'world.demo';
+
+export type CreateWorldRuntimeOptions = {
+  saveSystem?: SaveSystem;
+  sceneDocumentSession?: WorldSceneDocumentSession;
+};
 
 const WORLD_CUSTOM_GAMEPLAY_BLUEPRINT: GameplayEventBlueprint = {
   id: 'example-custom-gameplay-event',
@@ -78,12 +93,9 @@ function registerWorldGameplayCustomHandlers(): void {
     'custom',
     (condition, context) => condition.key === (context.trigger.key ?? WORLD_CUSTOM_GAMEPLAY_KEY),
   );
-  registry.registerAction<Extract<GameplayEventAction, { type: 'custom' }>>(
-    'custom',
-    (action) => {
-      notify('info', `커스텀 이벤트 실행: ${action.key}`);
-    },
-  );
+  registry.registerAction<Extract<GameplayEventAction, { type: 'custom' }>>('custom', (action) => {
+    notify('info', `커스텀 이벤트 실행: ${action.key}`);
+  });
 }
 
 function registerWorldSeeds(): void {
@@ -94,12 +106,14 @@ function registerWorldSeeds(): void {
   NPC_SCHEDULES.forEach((schedule) => scheduler.register(schedule));
 }
 
-export function createWorldRuntime(): GaesupRuntime {
+export function createWorldRuntime(options: CreateWorldRuntimeOptions = {}): GaesupRuntime {
   registerWorldSeeds();
+  const sceneDocumentSession = options.sceneDocumentSession ?? getWorldSceneDocumentSession();
 
   return createGaesupRuntime({
-    saveSystem: getSaveSystem(),
+    saveSystem: options.saveSystem ?? getSaveSystem(),
     plugins: [
+      createWorldSceneDocumentPlugin(sceneDocumentSession),
       createBuildingPlugin(),
       createCameraPlugin(),
       createMotionsPlugin(),
@@ -139,7 +153,9 @@ export function getWorldServerHost(): PlatformServerPluginHost {
   return serverHost;
 }
 
-export async function runWorldServerHostDemo(actorId = 'example-player'): Promise<CommandAuthorityResult> {
+export async function runWorldServerHostDemo(
+  actorId = 'example-player',
+): Promise<CommandAuthorityResult> {
   const host = getWorldServerHost();
   if (!serverHostReady) {
     serverHostReady = true;
@@ -180,11 +196,25 @@ export async function dispatchWorldGameplayEvent(trigger: GameplayTriggerEvent):
 
 export async function loadWorldRuntime(runtime: GaesupRuntime): Promise<boolean> {
   await runtime.setup();
-  const loaded = await runtime.save.load();
+  const loaded = await loadInitialWorldSave(runtime.save);
   applyStarterState();
   await dispatchWorldGameplayEvent({ type: 'manual', key: 'world.ready' });
   await runWorldServerHostDemo();
   return loaded;
+}
+
+function loadInitialWorldSave(saveSystem: SaveSystem): Promise<boolean> {
+  const existing = WORLD_INITIAL_LOAD_TASKS.get(saveSystem);
+  if (existing) return existing;
+
+  const tracked = saveSystem.load().catch((error: unknown) => {
+    if (WORLD_INITIAL_LOAD_TASKS.get(saveSystem) === tracked) {
+      WORLD_INITIAL_LOAD_TASKS.delete(saveSystem);
+    }
+    throw error;
+  });
+  WORLD_INITIAL_LOAD_TASKS.set(saveSystem, tracked);
+  return tracked;
 }
 
 function applyStarterState(): void {
@@ -207,15 +237,22 @@ function applyStarterState(): void {
   const town = useTownStore.getState();
   if (Object.keys(town.residents).length === 0) {
     town.registerResident({ id: 'r-mei', name: '메이', bodyColor: '#ffe4c8', hatColor: '#5a8acf' });
-    town.registerResident({ id: 'r-tommy', name: '토미', bodyColor: '#f5d199', hatColor: '#a85a5a' });
+    town.registerResident({
+      id: 'r-tommy',
+      name: '토미',
+      bodyColor: '#f5d199',
+      hatColor: '#a85a5a',
+    });
     town.registerResident({ id: 'r-ryu', name: '류', bodyColor: '#ffd0b8', hatColor: '#3a8a3a' });
   }
 
   const futureDay = today + 3;
   const houseList = Object.values(town.houses);
   if (houseList[0] && houseList[0].state === 'empty') town.moveIn(houseList[0].id, 'r-mei', today);
-  if (houseList[1] && houseList[1].state === 'empty') town.reserveHouse(houseList[1].id, 'r-tommy', futureDay);
-  if (houseList[2] && houseList[2].state === 'empty') town.reserveHouse(houseList[2].id, 'r-ryu', futureDay + 2);
+  if (houseList[1] && houseList[1].state === 'empty')
+    town.reserveHouse(houseList[1].id, 'r-tommy', futureDay);
+  if (houseList[2] && houseList[2].state === 'empty')
+    town.reserveHouse(houseList[2].id, 'r-ryu', futureDay + 2);
 
   if (useMailStore.getState().messages.length === 0) {
     useMailStore.getState().send({

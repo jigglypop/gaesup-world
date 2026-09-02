@@ -3,33 +3,129 @@ import * as THREE from 'three';
 
 import { AbstractSystem, SystemContext, SystemUpdateArgs, Inject } from '@core/boilerplate';
 import { Profile, HandleError, ManageRuntime } from '@core/boilerplate';
+import type { RuntimeRecord } from '@core/boilerplate';
 import type { GameStatesType } from '@core/world/components/Rideable/types';
 
 import type { ActiveStateType } from '../types';
 import { MotionState, MotionMetrics, MotionSystemOptions } from './types';
 import { MotionService } from '../services/MotionService';
 
-const defaultState: MotionState = {
-  position: new THREE.Vector3(),
-  velocity: new THREE.Vector3(),
-  rotation: new THREE.Euler(),
-  isGrounded: false,
-  isMoving: false,
-  speed: 0,
-  direction: new THREE.Vector3(),
-  lastUpdate: 0,
+type Vector3Seed = {
+  readonly isVector3: true;
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
 };
 
-const defaultMetrics: MotionMetrics = {
-  currentSpeed: 0,
-  averageSpeed: 0,
-  totalDistance: 0,
-  frameTime: 0,
-  physicsTime: 0,
-  lastPosition: new THREE.Vector3(),
-  isAccelerating: false,
-  groundContact: false,
+type EulerSeed = {
+  readonly isEuler: true;
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly order: THREE.EulerOrder;
 };
+
+function isRuntimeObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isVector3Seed(value: unknown): value is Vector3Seed {
+  return (
+    isRuntimeObject(value) &&
+    value['isVector3'] === true &&
+    typeof value['x'] === 'number' &&
+    typeof value['y'] === 'number' &&
+    typeof value['z'] === 'number'
+  );
+}
+
+function isEulerOrder(value: unknown): value is THREE.EulerOrder {
+  return (
+    value === 'XYZ' ||
+    value === 'YZX' ||
+    value === 'ZXY' ||
+    value === 'XZY' ||
+    value === 'YXZ' ||
+    value === 'ZYX'
+  );
+}
+
+function isEulerSeed(value: unknown): value is EulerSeed {
+  return (
+    isRuntimeObject(value) &&
+    value['isEuler'] === true &&
+    typeof value['x'] === 'number' &&
+    typeof value['y'] === 'number' &&
+    typeof value['z'] === 'number' &&
+    isEulerOrder(value['order'])
+  );
+}
+
+function createOwnedVector3(value: unknown): THREE.Vector3 {
+  return isVector3Seed(value)
+    ? new THREE.Vector3(value.x, value.y, value.z)
+    : new THREE.Vector3();
+}
+
+function createOwnedEuler(value: unknown): THREE.Euler {
+  return isEulerSeed(value)
+    ? new THREE.Euler(value.x, value.y, value.z, value.order)
+    : new THREE.Euler();
+}
+
+function readSeedValue<ValueType>(
+  seed: RuntimeRecord | undefined,
+  key: string,
+  defaultValue: ValueType,
+): ValueType {
+  return seed && key in seed ? seed[key] as ValueType : defaultValue;
+}
+
+function createMotionStateInitializer(overrides?: RuntimeRecord) {
+  const seed = overrides ? { ...overrides } : undefined;
+  const position = createOwnedVector3(seed?.['position']);
+  const velocity = createOwnedVector3(seed?.['velocity']);
+  const rotation = createOwnedEuler(seed?.['rotation']);
+  const direction = createOwnedVector3(seed?.['direction']);
+  const isGrounded = readSeedValue(seed, 'isGrounded', false);
+  const isMoving = readSeedValue(seed, 'isMoving', false);
+  const speed = readSeedValue(seed, 'speed', 0);
+
+  return (): MotionState => ({
+    ...seed,
+    position: new THREE.Vector3(position.x, position.y, position.z),
+    velocity: new THREE.Vector3(velocity.x, velocity.y, velocity.z),
+    rotation: new THREE.Euler(rotation.x, rotation.y, rotation.z, rotation.order),
+    isGrounded,
+    isMoving,
+    speed,
+    direction: new THREE.Vector3(direction.x, direction.y, direction.z),
+    lastUpdate: 0,
+  });
+}
+
+function createMotionMetricsInitializer(overrides?: RuntimeRecord) {
+  const seed = overrides ? { ...overrides } : undefined;
+  const lastPosition = createOwnedVector3(seed?.['lastPosition']);
+  const currentSpeed = readSeedValue(seed, 'currentSpeed', 0);
+  const averageSpeed = readSeedValue(seed, 'averageSpeed', 0);
+  const totalDistance = readSeedValue(seed, 'totalDistance', 0);
+  const physicsTime = readSeedValue(seed, 'physicsTime', 0);
+  const isAccelerating = readSeedValue(seed, 'isAccelerating', false);
+  const groundContact = readSeedValue(seed, 'groundContact', false);
+
+  return (): MotionMetrics => ({
+    ...seed,
+    currentSpeed,
+    averageSpeed,
+    totalDistance,
+    frameTime: 0,
+    physicsTime,
+    lastPosition: new THREE.Vector3(lastPosition.x, lastPosition.y, lastPosition.z),
+    isAccelerating,
+    groundContact,
+  });
+}
 
 export interface MotionUpdateArgs extends SystemUpdateArgs {
   rigidBody: RapierRigidBody;
@@ -61,7 +157,11 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
   private tempForce = new THREE.Vector3();
 
   constructor(options: MotionSystemOptions) {
-    super(defaultState, defaultMetrics, options);
+    super(
+      createMotionStateInitializer(options.initialState),
+      createMotionMetricsInitializer(options.initialMetrics),
+      options,
+    );
   }
 
   @Profile()

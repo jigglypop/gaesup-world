@@ -2,10 +2,10 @@ import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import type { RefObject, RuntimeValue } from '@core/boilerplate';
-import { PhysicsConfigType } from '@stores/slices';
 import type { StoreState } from '@stores/types';
 
 import type { PhysicsDispatchAction, PhysicsInputState } from '../types';
+import type { PhysicsConfigType } from './config';
 
 export type characterConfigType = Pick<PhysicsConfigType, 
   'walkSpeed' | 'runSpeed' | 'jumpSpeed' | 'jumpGravityScale' | 'normalGravityScale' | 'airDamping' | 'stopDamping'

@@ -1,5 +1,5 @@
-import { createMemoryInputBackend } from '../../core';
-import { InteractionBridge, BridgeCommand, BridgeEvent } from '../InteractionBridge';
+import { createMemoryInputBackend, InteractionSystem } from '../../core';
+import { InteractionBridge, BridgeEvent } from '../InteractionBridge';
 
 describe('InteractionBridge 메모리 누수 테스트', () => {
   let bridge: InteractionBridge;
@@ -25,7 +25,7 @@ describe('InteractionBridge 메모리 누수 테스트', () => {
   });
 
   it('이벤트 구독자가 제대로 정리되어야 함', () => {
-    const callbacks: Function[] = [];
+    const callbacks: Array<() => void> = [];
     const eventCount = 100;
 
     for (let i = 0; i < eventCount; i++) {
@@ -35,12 +35,6 @@ describe('InteractionBridge 메모리 누수 테스트', () => {
     }
 
     bridge.dispose();
-
-    const event: BridgeEvent = {
-      type: 'input',
-      event: 'testEvent',
-      timestamp: Date.now()
-    };
 
     callbacks.forEach(callback => {
       expect(callback).not.toHaveBeenCalled();
@@ -85,11 +79,7 @@ describe('InteractionBridge 메모리 누수 테스트', () => {
   });
 
   it('이벤트 큐가 무한정 증가하지 않아야 함', (done) => {
-    let eventCount = 0;
-    
-    bridge.subscribe('*', () => {
-      eventCount++;
-    });
+    bridge.subscribe('*', jest.fn());
 
     for (let i = 0; i < 1000; i++) {
       bridge.executeCommand({
@@ -146,20 +136,133 @@ describe('InteractionBridge 메모리 누수 테스트', () => {
     }, 25);
   });
 
-  it('reset 호출 시 모든 상태가 초기화되어야 함', () => {
-    for (let i = 0; i < 100; i++) {
-      bridge.executeCommand({
-        type: 'input',
-        action: 'updateKeyboard',
-        data: { key: `key${i}`, pressed: true }
-      });
-    }
+  it('default system-backed reset이 완료된 defaults를 한 번 알리고 raw identity를 유지해야 함', () => {
+    const system = bridge.getInteractionSystem();
+    const keyboard = bridge.getKeyboardState();
+    const mouse = bridge.getMouseState();
+    const gamepad = system.getState().gamepad;
+    const touch = system.getState().touch;
+    const activeInputs = system.getMetrics().activeInputs;
+    const listener = jest.fn();
+    bridge.subscribe(listener);
+    bridge.executeCommand({
+      type: 'input',
+      action: 'updateKeyboard',
+      data: { forward: true },
+    });
+    bridge.executeCommand({
+      type: 'input',
+      action: 'updateMouse',
+      data: { isActive: true, buttons: { left: true, right: false, middle: false } },
+    });
+    bridge.executeCommand({
+      type: 'input',
+      action: 'updateGamepad',
+      data: { connected: true },
+    });
+    bridge.executeCommand({
+      type: 'input',
+      action: 'updateTouch',
+      data: {
+        touches: [{ id: 1, position: { x: 2, y: 3 }, force: 0.5 }],
+      },
+    });
+    bridge.executeCommand({
+      type: 'input',
+      action: 'setConfig',
+      data: { invertY: true },
+    });
+    Reflect.set(system.getState(), 'lastUpdate', 100);
+    Reflect.set(system.getState(), 'isActive', false);
+    Reflect.set(system.getMetrics(), 'lastUpdate', 200);
+    Reflect.set(system.getMetrics(), 'inputLatency', 3);
+    Reflect.set(system.getMetrics(), 'performanceScore', 4);
+    listener.mockClear();
 
     bridge.reset();
 
     const snapshot = bridge.snapshot();
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith({ keyboard, mouse });
     expect(snapshot.bridge.commandHistory).toHaveLength(0);
     expect(snapshot.bridge.lastCommand).toBeNull();
+    expect(snapshot.interaction.state.keyboard).toBe(keyboard);
+    expect(snapshot.interaction.state.mouse).toBe(mouse);
+    expect(snapshot.interaction.state.gamepad).toBe(gamepad);
+    expect(snapshot.interaction.state.touch).toBe(touch);
+    expect(snapshot.interaction.state.keyboard.forward).toBe(false);
+    expect(snapshot.interaction.state.mouse.isActive).toBe(false);
+    expect(snapshot.interaction.state.gamepad.connected).toBe(false);
+    expect(snapshot.interaction.state.touch.touches).toEqual([]);
+    expect(snapshot.interaction.state.lastUpdate).toBe(0);
+    expect(snapshot.interaction.state.isActive).toBe(true);
+    expect(snapshot.interaction.metrics).toEqual({
+      lastUpdate: 0,
+      inputLatency: 0,
+      frameTime: 0,
+      eventCount: 0,
+      activeInputs: [],
+      performanceScore: 100,
+    });
+    expect(snapshot.interaction.metrics.activeInputs).toBe(activeInputs);
+    expect(snapshot.interaction.config).toEqual({
+      sensitivity: { mouse: 1, gamepad: 1, touch: 1 },
+      deadzone: { gamepad: 0.1, touch: 0.05 },
+      smoothing: { mouse: 0.1, gamepad: 0.2 },
+      invertY: false,
+      enableVibration: true,
+    });
+    expect(system.updateCount).toBe(0);
+  });
+
+  it('explicit system-backed Bridge도 reset defaults를 한 번 projection해야 함', () => {
+    bridge.dispose();
+    const system = new InteractionSystem();
+    bridge = new InteractionBridge({ interactionSystem: system });
+    const keyboard = bridge.getKeyboardState();
+    const mouse = bridge.getMouseState();
+    const listener = jest.fn();
+    bridge.subscribe(listener);
+    system.updateKeyboard({ keyR: true });
+    system.updateMouse({ shouldRun: true });
+
+    bridge.reset();
+
+    const snapshot = bridge.snapshot();
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith({ keyboard, mouse });
+    expect(snapshot.interaction.state.keyboard).toBe(keyboard);
+    expect(snapshot.interaction.state.mouse).toBe(mouse);
+    expect(snapshot.interaction.state.keyboard.keyR).toBe(false);
+    expect(snapshot.interaction.state.mouse.shouldRun).toBe(false);
+    expect(snapshot.interaction.metrics.eventCount).toBe(0);
+  });
+
+  it('injected memory backend raw state는 Bridge reset 대상이 아니어야 함', () => {
+    bridge.dispose();
+    const system = new InteractionSystem();
+    const inputBackend = createMemoryInputBackend();
+    bridge = new InteractionBridge({ interactionSystem: system, inputBackend });
+    const listener = jest.fn();
+    bridge.subscribe(listener);
+    inputBackend.updateKeyboard({ forward: true, keyE: true });
+    inputBackend.updateMouse({ isActive: true, shouldRun: true });
+    system.updateKeyboard({ backward: true });
+    system.setConfig({ invertY: true });
+
+    bridge.reset();
+
+    const snapshot = bridge.snapshot();
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(snapshot.interaction.state.keyboard).toBe(inputBackend.getKeyboard());
+    expect(snapshot.interaction.state.mouse).toBe(inputBackend.getMouse());
+    expect(snapshot.interaction.state.keyboard.forward).toBe(true);
+    expect(snapshot.interaction.state.keyboard.keyE).toBe(true);
+    expect(snapshot.interaction.state.mouse.isActive).toBe(true);
+    expect(snapshot.interaction.state.mouse.shouldRun).toBe(true);
+    expect(system.getKeyboardRef().backward).toBe(false);
+    expect(snapshot.interaction.metrics.eventCount).toBe(0);
+    expect(snapshot.interaction.config.invertY).toBe(false);
   });
 
   it('엔진 리스너 설정 시 메모리 누수가 없어야 함', () => {
@@ -205,7 +308,7 @@ describe('InteractionBridge 메모리 누수 테스트', () => {
 
   it('동시에 많은 이벤트가 발생해도 메모리가 안정적이어야 함', (done) => {
     const eventTypes = ['input', 'automation', 'sync'];
-    const listeners: Function[] = [];
+    const listeners: Array<(event: BridgeEvent) => void> = [];
 
     eventTypes.forEach(type => {
       const listener = jest.fn();

@@ -1,4 +1,4 @@
-import { validateSceneDocument } from './core';
+import { parseSceneDocument } from './serialization';
 import type {
   SceneDocument,
   SceneObject,
@@ -27,18 +27,19 @@ export interface LoadSceneRuntimeResult {
 }
 
 export function loadSceneRuntime(document: SceneDocument): LoadSceneRuntimeResult {
-  const validation = validateSceneDocument(document);
-  if (!validation.valid) {
+  const parsed = parseSceneDocument(document);
+  if (!parsed.ok || !parsed.document) {
     return {
       ok: false,
-      issues: validation.issues,
+      issues: parsed.issues,
     };
   }
+  const ownedDocument = parsed.document;
 
   const objects = new Map<SceneObjectId, SceneObject>();
   const children = new Map<SceneObjectId | typeof ROOT_PARENT, SceneObject[]>();
 
-  for (const object of document.objects) {
+  for (const object of ownedDocument.objects) {
     objects.set(object.id, object);
     const parentKey = object.parentId ?? ROOT_PARENT;
     const list = children.get(parentKey) ?? [];
@@ -47,7 +48,7 @@ export function loadSceneRuntime(document: SceneDocument): LoadSceneRuntimeResul
   }
 
   const runtime: SceneRuntime = {
-    document,
+    document: ownedDocument,
     objects,
     children: childrenWithoutRoot(children),
     roots: children.get(ROOT_PARENT) ?? [],
@@ -79,7 +80,10 @@ function childrenWithoutRoot(
   return next;
 }
 
-export function composeSceneTransforms(parent: SceneTransform, child: SceneTransform): SceneTransform {
+export function composeSceneTransforms(
+  parent: SceneTransform,
+  child: SceneTransform,
+): SceneTransform {
   return {
     position: addVector3(parent.position, child.position),
     rotation: addVector3(parent.rotation, child.rotation),
@@ -98,17 +102,9 @@ function computeWorldTransform(
 }
 
 function addVector3(left: SceneVector3, right: SceneVector3): SceneVector3 {
-  return [
-    left[0] + right[0],
-    left[1] + right[1],
-    left[2] + right[2],
-  ];
+  return [left[0] + right[0], left[1] + right[1], left[2] + right[2]];
 }
 
 function multiplyVector3(left: SceneVector3, right: SceneVector3): SceneVector3 {
-  return [
-    left[0] * right[0],
-    left[1] * right[1],
-    left[2] * right[2],
-  ];
+  return [left[0] * right[0], left[1] * right[1], left[2] * right[2]];
 }

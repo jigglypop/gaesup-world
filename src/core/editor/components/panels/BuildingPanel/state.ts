@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
+
 import { useShallow } from 'zustand/react/shallow';
+
 import { isBuildingMaterialAsset } from './helpers';
 import type { AssetRecord } from '../../../../assets';
 import { useAssetStore } from '../../../../assets';

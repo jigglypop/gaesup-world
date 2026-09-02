@@ -17,6 +17,7 @@ export type RenderPassDescriptor<TContext> = {
 };
 export type RendererBackendKind = 'webgpu';
 export type RendererBackend = {
+  /** Identifies the Three WebGPURenderer facade family, not a proven native WebGPU adapter. */
   kind: RendererBackendKind;
   native: unknown;
   resize: (width: number, height: number) => void;

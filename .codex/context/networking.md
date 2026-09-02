@@ -1,18 +1,18 @@
 # Networking
 
-## State classes
+## 상태 분류
 
-- Durable: house, wall, furniture, ownership, posts and persistent objects.
-- Replicated: door state, shared interactions and temporary shared objects.
-- Ephemeral: avatar transform, head rotation, typing, cursor and presence.
+- Durable: house, wall, furniture, ownership, post와 persistent 객체.
+- Replicated: 문 상태, 공유 interaction, 임시 공유 객체.
+- Ephemeral: avatar transform, 머리 회전, typing, cursor, presence.
 
-Every state declares authority, replication frequency, persistence policy and conflict behavior.
+모든 상태는 authority, replication 주기, persistence 정책, conflict 동작을 선언한다.
 
-## Contract rules
+## 계약 규칙
 
-- Network contracts use engine-neutral primitives such as `{ x, y, z }`.
-- Three.js objects, Rapier handles, React refs and Zustand stores do not cross the contract.
-- Commands express intent; accepted events and snapshots express authority.
-- Delta, interpolation and reconciliation are explicit per state class.
+- network contract는 `{ x, y, z }` 같은 engine-neutral primitive를 사용한다.
+- Three.js 객체, Rapier handle, React ref, Zustand store는 계약을 넘지 않는다.
+- command는 의도를 표현하고, accepted event와 snapshot은 authority를 표현한다.
+- delta, interpolation, reconciliation은 상태 분류별로 명시한다.
 
-Preserve the existing adapter, authority contract, MessageQueue, ConnectionPool, worker and visit implementation. Record direct Three.js dependencies as migration debt before changing them.
+기존 adapter, authority contract, MessageQueue, ConnectionPool, worker, visit 구현을 보존한다. 직접적인 Three.js 의존은 변경하기 전에 migration debt로 기록한다.

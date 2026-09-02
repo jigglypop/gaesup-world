@@ -2,10 +2,6 @@ import { useCallback, useMemo } from 'react';
 
 import { Vector3, Euler } from 'three';
 
-import {
-  useGaesupRuntime,
-  useGaesupRuntimeRevision,
-} from '../../runtime';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
 import {
   DEFAULT_MOTIONS_RUNTIME_SERVICE_ID,
@@ -13,6 +9,10 @@ import {
   type MotionsRuntimeService,
   type MotionsTeleportPayload,
 } from '../../motions/plugin';
+import {
+  useGaesupRuntime,
+  useGaesupRuntimeRevision,
+} from '../../runtime';
 
 export interface TeleportResult {
   teleport: (position: Vector3, rotation?: Euler, options?: TeleportOptions) => void;

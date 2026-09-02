@@ -13,8 +13,6 @@ export function PlayerInfoOverlay({ state, playerName, onDisconnect, onSendChat 
   const { isConnected, connectionStatus, players, roomId, error, ping, localPlayerId, lastUpdate } = state;
   const [chatText, setChatText] = useState('');
 
-  if (!isConnected) return null;
-
   const sendChat = useCallback(() => {
     if (!onSendChat) return;
     const safe = chatText.trim();
@@ -22,6 +20,8 @@ export function PlayerInfoOverlay({ state, playerName, onDisconnect, onSendChat 
     onSendChat(safe);
     setChatText('');
   }, [onSendChat, chatText]);
+
+  if (!isConnected) return null;
 
   return (
     <div style={{
@@ -229,4 +229,4 @@ export function PlayerInfoOverlay({ state, playerName, onDisconnect, onSendChat 
       </button>
     </div>
   );
-} 
+}

@@ -1,13 +1,23 @@
 import type { ContentBundle, ContentBundleValidation } from '../content';
-import { createSceneComponent, createSceneObject } from '../scene-object';
+import {
+  applySceneDocumentCommand,
+  cloneSceneDocument,
+  createSceneComponent,
+  createSceneObject,
+} from '../scene-object';
 import type {
   CreateSceneComponentInput,
   CreateSceneObjectInput,
   SceneComponentId,
   SceneDocument,
+  SceneDocumentCommand,
+  SceneDocumentCommandResult,
+  SceneDocumentController,
   SceneObject,
+  SceneObjectCommandPatch,
   SceneObjectId,
   SceneTransform,
+  SceneVector3,
 } from '../scene-object';
 import type {
   EditorPanelDefaults,
@@ -86,7 +96,10 @@ export interface SceneObjectEditorCommandFactory {
   updateObject: (objectId: SceneObjectId, patch: SceneObjectEditorPatch) => EditorShellCommand;
   deleteObject: (objectId: SceneObjectId) => EditorShellCommand;
   moveObject: (objectId: SceneObjectId, parentId: SceneObjectId | undefined) => EditorShellCommand;
-  addComponent: (objectId: SceneObjectId, component: CreateSceneComponentInput) => EditorShellCommand;
+  addComponent: (
+    objectId: SceneObjectId,
+    component: CreateSceneComponentInput,
+  ) => EditorShellCommand;
   removeComponent: (objectId: SceneObjectId, componentId: SceneComponentId) => EditorShellCommand;
 }
 
@@ -154,16 +167,18 @@ export function createEditorCommandStack(): EditorCommandStack {
       notify();
     },
     undo: async () => {
-      const command = undoStack.pop();
+      const command = undoStack.at(-1);
       if (!command?.undo) return;
       await command.undo();
+      undoStack.pop();
       redoStack.push(command);
       notify();
     },
     redo: async () => {
-      const command = redoStack.pop();
+      const command = redoStack.at(-1);
       if (!command) return;
       await command.run();
+      redoStack.pop();
       undoStack.push(command);
       notify();
     },
@@ -204,27 +219,32 @@ export function createEditorTransaction(
 
 export function createSceneObjectEditorCommands(
   store: SceneDocumentCommandStore,
+): SceneObjectEditorCommandFactory;
+export function createSceneObjectEditorCommands(
+  store: Pick<SceneDocumentController, 'getSnapshot' | 'dispatch'>,
+): SceneObjectEditorCommandFactory;
+export function createSceneObjectEditorCommands(
+  store: SceneDocumentCommandStore | Pick<SceneDocumentController, 'getSnapshot' | 'dispatch'>,
 ): SceneObjectEditorCommandFactory {
-  const replaceDocument = (updater: (document: SceneDocument) => SceneDocument) => {
-    store.setDocument(updater(cloneSceneDocumentForCommand(store.getDocument())));
-  };
+  const target = createSceneDocumentCommandTarget(store);
   const restoreDocument = (snapshot: SceneDocument) => {
-    store.setDocument(cloneSceneDocumentForCommand(snapshot));
+    dispatchSceneDocumentCommand(target, {
+      type: 'scene-document.replace',
+      document: snapshot,
+    });
   };
 
   return {
     createObject(input) {
       const object = createSceneObject(input);
+      const command: SceneDocumentCommand = { type: 'scene-object.create', object };
       let before: SceneDocument | undefined;
       return {
         id: `scene-object.create.${object.id}`,
         label: `Create ${object.name}`,
         run: () => {
-          before = cloneSceneDocumentForCommand(store.getDocument());
-          replaceDocument((document) => ({
-            ...document,
-            objects: [...document.objects, object],
-          }));
+          before = cloneSceneDocument(target.getDocument());
+          dispatchSceneDocumentCommand(target, command);
         },
         undo: () => {
           if (before) restoreDocument(before);
@@ -232,19 +252,22 @@ export function createSceneObjectEditorCommands(
       };
     },
     updateObject(objectId, patch) {
-      return createUpdateObjectCommand(store, replaceDocument, restoreDocument, objectId, patch);
+      return createUpdateObjectCommand(
+        target,
+        restoreDocument,
+        objectId,
+        materializeEditorPatch(patch),
+      );
     },
     deleteObject(objectId) {
+      const command: SceneDocumentCommand = { type: 'scene-object.delete', objectId };
       let before: SceneDocument | undefined;
       return {
         id: `scene-object.delete.${objectId}`,
         label: `Delete ${objectId}`,
         run: () => {
-          before = cloneSceneDocumentForCommand(store.getDocument());
-          replaceDocument((document) => ({
-            ...document,
-            objects: document.objects.filter((object) => object.id !== objectId && object.parentId !== objectId),
-          }));
+          before = cloneSceneDocument(target.getDocument());
+          dispatchSceneDocumentCommand(target, command);
         },
         undo: () => {
           if (before) restoreDocument(before);
@@ -252,24 +275,29 @@ export function createSceneObjectEditorCommands(
       };
     },
     moveObject(objectId, parentId) {
-      return createUpdateObjectCommand(store, replaceDocument, restoreDocument, objectId, { parentId });
+      const canonicalParentId = parentId ? parentId : null;
+      return createUpdateObjectCommand(
+        target,
+        restoreDocument,
+        objectId,
+        { parentId: canonicalParentId },
+        { type: 'scene-object.move', objectId, parentId: canonicalParentId },
+      );
     },
     addComponent(objectId, componentInput) {
       const component = createSceneComponent(componentInput);
+      const command: SceneDocumentCommand = {
+        type: 'scene-object.component.add',
+        objectId,
+        component,
+      };
       let before: SceneDocument | undefined;
       return {
         id: `scene-object.component.add.${objectId}.${component.id}`,
         label: `Add ${component.type}`,
         run: () => {
-          before = cloneSceneDocumentForCommand(store.getDocument());
-          replaceDocument((document) => ({
-            ...document,
-            objects: document.objects.map((object) => (
-              object.id === objectId
-                ? { ...object, components: [...object.components, component] }
-                : object
-            )),
-          }));
+          before = cloneSceneDocument(target.getDocument());
+          dispatchSceneDocumentCommand(target, command);
         },
         undo: () => {
           if (before) restoreDocument(before);
@@ -277,20 +305,18 @@ export function createSceneObjectEditorCommands(
       };
     },
     removeComponent(objectId, componentId) {
+      const command: SceneDocumentCommand = {
+        type: 'scene-object.component.remove',
+        objectId,
+        componentId,
+      };
       let before: SceneDocument | undefined;
       return {
         id: `scene-object.component.remove.${objectId}.${componentId}`,
         label: `Remove ${componentId}`,
         run: () => {
-          before = cloneSceneDocumentForCommand(store.getDocument());
-          replaceDocument((document) => ({
-            ...document,
-            objects: document.objects.map((object) => (
-              object.id === objectId
-                ? { ...object, components: object.components.filter((component) => component.id !== componentId) }
-                : object
-            )),
-          }));
+          before = cloneSceneDocument(target.getDocument());
+          dispatchSceneDocumentCommand(target, command);
         },
         undo: () => {
           if (before) restoreDocument(before);
@@ -300,43 +326,25 @@ export function createSceneObjectEditorCommands(
   };
 }
 
-function applySceneObjectPatch(object: SceneObject, patch: SceneObjectEditorPatch): SceneObject {
-  const next: SceneObject = {
-    ...object,
-    ...(patch.name !== undefined ? { name: patch.name } : {}),
-    ...(patch.tags !== undefined ? { tags: [...patch.tags] } : {}),
-    ...(patch.transform ? { transform: { ...object.transform, ...patch.transform } } : {}),
-  };
-  if ('parentId' in patch) {
-    if (patch.parentId) next.parentId = patch.parentId;
-    else delete next.parentId;
-  }
-  if ('layer' in patch) {
-    if (patch.layer) next.layer = patch.layer;
-    else delete next.layer;
-  }
-  return next;
-}
+type SceneDocumentCommandTarget = {
+  getDocument: () => SceneDocument;
+  dispatch: (command: SceneDocumentCommand) => SceneDocumentCommandResult;
+};
 
 function createUpdateObjectCommand(
-  store: SceneDocumentCommandStore,
-  replaceDocument: (updater: (document: SceneDocument) => SceneDocument) => void,
+  target: SceneDocumentCommandTarget,
   restoreDocument: (snapshot: SceneDocument) => void,
   objectId: SceneObjectId,
-  patch: SceneObjectEditorPatch,
+  patch: SceneObjectCommandPatch,
+  command: SceneDocumentCommand = { type: 'scene-object.update', objectId, patch },
 ): EditorShellCommand {
   let before: SceneDocument | undefined;
   return {
     id: `scene-object.update.${objectId}`,
     label: `Update ${objectId}`,
     run: () => {
-      before = cloneSceneDocumentForCommand(store.getDocument());
-      replaceDocument((document) => ({
-        ...document,
-        objects: document.objects.map((object) => (
-          object.id === objectId ? applySceneObjectPatch(object, patch) : object
-        )),
-      }));
+      before = cloneSceneDocument(target.getDocument());
+      dispatchSceneDocumentCommand(target, command);
     },
     undo: () => {
       if (before) restoreDocument(before);
@@ -344,6 +352,63 @@ function createUpdateObjectCommand(
   };
 }
 
-function cloneSceneDocumentForCommand(document: SceneDocument): SceneDocument {
-  return JSON.parse(JSON.stringify(document)) as SceneDocument;
+function createSceneDocumentCommandTarget(
+  store: SceneDocumentCommandStore | Pick<SceneDocumentController, 'getSnapshot' | 'dispatch'>,
+): SceneDocumentCommandTarget {
+  if ('getSnapshot' in store) {
+    return {
+      getDocument: () => store.getSnapshot(),
+      dispatch: (command) => store.dispatch(command),
+    };
+  }
+
+  return {
+    getDocument: () => store.getDocument(),
+    dispatch: (command) => {
+      const result = applySceneDocumentCommand(store.getDocument(), command);
+      if (result.accepted) store.setDocument(result.document);
+      return result;
+    },
+  };
+}
+
+function dispatchSceneDocumentCommand(
+  target: SceneDocumentCommandTarget,
+  command: SceneDocumentCommand,
+): SceneDocument {
+  const result = target.dispatch(command);
+  if (!result.accepted) {
+    throw new TypeError(
+      result.issues.map((issue) => issue.message).join(' ') || 'Scene command was rejected.',
+    );
+  }
+  return result.document;
+}
+
+function materializeEditorPatch(patch: SceneObjectEditorPatch): SceneObjectCommandPatch {
+  return {
+    ...(patch.name !== undefined ? { name: patch.name } : {}),
+    ...(patch.tags !== undefined ? { tags: [...patch.tags] } : {}),
+    ...(patch.transform !== undefined
+      ? {
+          transform: {
+            ...(patch.transform.position !== undefined
+              ? { position: cloneVector3(patch.transform.position) }
+              : {}),
+            ...(patch.transform.rotation !== undefined
+              ? { rotation: cloneVector3(patch.transform.rotation) }
+              : {}),
+            ...(patch.transform.scale !== undefined
+              ? { scale: cloneVector3(patch.transform.scale) }
+              : {}),
+          },
+        }
+      : {}),
+    ...('parentId' in patch ? { parentId: patch.parentId ? patch.parentId : null } : {}),
+    ...('layer' in patch ? { layer: patch.layer ? patch.layer : null } : {}),
+  };
+}
+
+function cloneVector3(vector: SceneVector3): SceneVector3 {
+  return [vector[0], vector[1], vector[2]];
 }

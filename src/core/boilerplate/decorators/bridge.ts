@@ -3,6 +3,9 @@ import { BridgeRegistry } from '../bridge/BridgeRegistry';
 import type { RuntimeValue } from '../types';
 
 type NamedInstance = { constructor: { name: string } };
+type SnapshotCacheHost = NamedInstance & {
+  getEngine?: (id: string) => DecoratorValue;
+};
 type DecoratorValue =
   | object
   | string
@@ -14,7 +17,56 @@ type DecoratorValue =
   | undefined;
 type DecoratedMethod = (...args: DecoratorValue[]) => DecoratorValue;
 type BridgeIdentifier = string | number | symbol;
-type IdentifiedValue = { id: BridgeIdentifier };
+type PrimitiveDecoratorValue = Exclude<DecoratorValue, object>;
+type SnapshotCacheEntry = {
+  value: DecoratorValue;
+  timestamp: number;
+};
+type InstanceSnapshotCache = {
+  objectEntries: WeakMap<object, SnapshotCacheEntry>;
+  primitiveEntries: Map<PrimitiveDecoratorValue, SnapshotCacheEntry>;
+  nextPrimitivePruneAt: number;
+};
+
+const MIN_PRIMITIVE_CACHE_PRUNE_INTERVAL_MS = 1;
+
+function resolveSnapshotObjectKey(
+  host: SnapshotCacheHost,
+  firstArg: DecoratorValue,
+): object | undefined {
+  if (typeof firstArg === 'object' && firstArg !== null) {
+    return firstArg;
+  }
+
+  if (typeof firstArg !== 'string' || !host.getEngine) {
+    return undefined;
+  }
+
+  const engine = host.getEngine(firstArg);
+  return typeof engine === 'object' && engine !== null ? engine : undefined;
+}
+
+function pruneExpiredPrimitiveEntries(
+  cache: InstanceSnapshotCache,
+  now: number,
+  ttl: number,
+): void {
+  if (now < cache.nextPrimitivePruneAt) return;
+
+  const pruneInterval = Math.max(ttl, MIN_PRIMITIVE_CACHE_PRUNE_INTERVAL_MS);
+  if (cache.primitiveEntries.size === 0) {
+    cache.nextPrimitivePruneAt = now + pruneInterval;
+    return;
+  }
+
+  for (const [key, entry] of cache.primitiveEntries) {
+    if (now - entry.timestamp >= ttl) {
+      cache.primitiveEntries.delete(key);
+    }
+  }
+
+  cache.nextPrimitivePruneAt = now + pruneInterval;
+}
 
 /**
  * 釉뚮┸吏 硫붿꽌?쒖쓽 ?ㅻ깄??泥섎━瑜??먮룞?쇰줈 濡쒓퉭?섎뒗 ?곗퐫?덉씠??
@@ -166,32 +218,62 @@ export function RequireEngineById() {
  * 釉뚮┸吏 ?ㅻ깄?룹쓣 罹먯떛?섎뒗 ?곗퐫?덉씠??
  */
 export function CacheSnapshot(ttl: number = 16) {
-  const cache = new Map<string, { value: DecoratorValue; timestamp: number }>();
-
   return function (
     target: object,
     propertyKey: string,
     descriptor: PropertyDescriptor
   ) {
     void target;
+    void propertyKey;
     const originalMethod = descriptor.value as DecoratedMethod;
+    const instanceCaches = new WeakMap<object, InstanceSnapshotCache>();
 
-    descriptor.value = function (this: NamedInstance, ...args: DecoratorValue[]) {
+    descriptor.value = function (this: SnapshotCacheHost, ...args: DecoratorValue[]) {
       const firstArg = args[0];
-      const argKey =
-        typeof firstArg === 'object' && firstArg !== null && 'id' in firstArg
-          ? String((firstArg as IdentifiedValue).id)
-          : String(firstArg ?? 'default');
-      const cacheKey = `${this.constructor.name}_${propertyKey}_${argKey}`;
       const now = Date.now();
-      const cached = cache.get(cacheKey);
+      let instanceCache = instanceCaches.get(this);
+
+      if (!instanceCache) {
+        instanceCache = {
+          objectEntries: new WeakMap<object, SnapshotCacheEntry>(),
+          primitiveEntries: new Map<PrimitiveDecoratorValue, SnapshotCacheEntry>(),
+          nextPrimitivePruneAt: now,
+        };
+        instanceCaches.set(this, instanceCache);
+      }
+
+      pruneExpiredPrimitiveEntries(instanceCache, now, ttl);
+      const hasEngineLookup = typeof firstArg === 'string' && Boolean(this.getEngine);
+      const objectKey = resolveSnapshotObjectKey(this, firstArg);
+      if (objectKey) {
+        const cached = instanceCache.objectEntries.get(objectKey);
+
+        if (cached && now - cached.timestamp < ttl) {
+          return cached.value;
+        }
+
+        const result = originalMethod.apply(this, args);
+        instanceCache.objectEntries.set(objectKey, { value: result, timestamp: now });
+
+        return result;
+      }
+
+      if (typeof firstArg === 'object' && firstArg !== null) {
+        return originalMethod.apply(this, args);
+      }
+
+      if (hasEngineLookup) {
+        return originalMethod.apply(this, args);
+      }
+
+      const cached = instanceCache.primitiveEntries.get(firstArg);
 
       if (cached && now - cached.timestamp < ttl) {
         return cached.value;
       }
 
       const result = originalMethod.apply(this, args);
-      cache.set(cacheKey, { value: result, timestamp: now });
+      instanceCache.primitiveEntries.set(firstArg, { value: result, timestamp: now });
 
       return result;
     };

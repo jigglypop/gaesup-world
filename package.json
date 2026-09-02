@@ -190,21 +190,22 @@
     "build:types": "tsc -p tsconfig.build.json && node scripts/copy-cjs-types.cjs",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "verify": "pnpm run lint && pnpm run test -- --runInBand && pnpm run build:types && pnpm exec publint",
-    "verify:full": "pnpm run verify && pnpm run test:package && pnpm run test:demo",
+    "verify": "pnpm run lint && pnpm run test -- --runInBand && pnpm run build && pnpm exec publint",
+    "verify:full": "pnpm run verify && pnpm run test:memory:ci && pnpm run test:package:built && pnpm run test:demo",
     "preview": "vite preview",
     "prepare": "npm run build",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "test": "jest",
-    "test:package": "npm run build && node scripts/verify-package-consumer.cjs",
-    "test:demo": "vite build && node scripts/verify-demo-surface-chunk.cjs",
+    "test:package": "npm run build && npm run test:package:built",
+    "test:package:built": "node scripts/verify-package-consumer.cjs",
+    "test:demo": "node scripts/verify-demo-surface-chunk.cjs",
     "test:browser": "playwright install chromium && node scripts/browser-smoke.cjs",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:memory": "jest --testPathPattern=memory --verbose",
-    "test:memory:verbose": "jest --testPathPattern=memory --verbose --runInBand --logHeapUsage",
-    "test:memory:ci": "jest --testPathPattern=memory --runInBand --logHeapUsage",
+    "test:memory": "jest --config jest.memory.config.js --runInBand",
+    "test:memory:verbose": "jest --config jest.memory.config.js --runInBand --verbose --logHeapUsage",
+    "test:memory:ci": "jest --config jest.memory.config.js --runInBand --logHeapUsage",
     "policy:dev": "uv run --project server -- python server/main.py",
     "release": "semantic-release",
     "publish:full": "npm run prepare && npm publish"
@@ -218,9 +219,6 @@
     "zustand": "^5.0.6"
   },
   "devDependencies": {
-    "@dimforge/rapier3d": "^0.17.3",
-    "@dimforge/rapier3d-compat": "^0.17.3",
-    "@eslint/js": "^9.30.1",
     "@playwright/test": "1.54.0",
     "@react-three/drei": "10.4.2",
     "@react-three/fiber": "^9.2.0",
@@ -233,9 +231,9 @@
     "@semantic-release/github": "^11.0.3",
     "@semantic-release/npm": "^12.0.2",
     "@semantic-release/release-notes-generator": "^14.0.3",
+    "@testing-library/dom": "^10.0.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
-    "@testing-library/react-hooks": "^8.0.1",
     "@types/identity-obj-proxy": "^3.0.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.10",
@@ -246,35 +244,22 @@
     "@types/stats.js": "^0.17.4",
     "@types/three": "^0.178.0",
     "@vitejs/plugin-react-swc": "^3.10.2",
-    "copyfiles": "^2.4.1",
-    "css-loader": "^7.1.2",
     "eslint": "^9.30.1",
     "eslint-import-resolver-typescript": "^4.4.4",
-    "eslint-plugin-boundaries": "^5.0.1",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.20",
     "gh-pages": "^6.3.0",
     "globals": "^16.3.0",
     "identity-obj-proxy": "^3.0.0",
-    "import-local": "^3.2.0",
     "jest": "^30.0.4",
     "jest-canvas-mock": "^2.5.2",
     "jest-environment-jsdom": "^30.0.4",
-    "leva": "0.10.0",
-    "lru-cache": "^11.1.0",
-    "path": "^0.12.7",
     "pngjs": "^7.0.0",
-    "postprocessing": "^6.39.4",
     "prettier": "^3.6.2",
     "publint": "^0.3.12",
-    "r3f-perf": "^7.2.3",
-    "rc-dock": "^3.3.2",
     "react": "^19.1.0",
-    "react-device-detect": "^2.2.3",
     "react-dom": "^19.1.0",
-    "react-icons": "^5.5.0",
     "react-router-dom": "^7.6.3",
     "react-test-renderer": "^19.1.0",
     "react-use-refs": "^1.0.1",
@@ -282,7 +267,6 @@
     "semantic-release": "^24.2.6",
     "three-stdlib": "^2.36.0",
     "ts-jest": "^29.4.0",
-    "turbo": "^2.5.4",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.35.1",
     "vite": "^7.0.2",
@@ -291,45 +275,14 @@
     "vite-tsconfig-paths": "^5.1.4"
   },
   "peerDependencies": {
-    "@dimforge/rapier3d": "^0.14.0 || ^0.17.0",
-    "@dimforge/rapier3d-compat": "^0.14.0 || ^0.17.0",
     "@react-three/drei": "^9.112.0 || ^10.0.0",
     "@react-three/fiber": "^8.17.7 || ^9.0.0",
     "@react-three/postprocessing": "^2.16.0 || ^3.0.0",
     "@react-three/rapier": "^1.4.0 || ^2.0.0",
-    "postprocessing": "^6.38.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
-    "react-icons": "^5.0.0",
-    "react-router-dom": "^6.0.0 || ^7.0.0",
     "three": "^0.168.0 || ^0.178.0",
     "three-stdlib": "^2.36.0"
-  },
-  "peerDependenciesMeta": {
-    "@dimforge/rapier3d": {
-      "optional": true
-    },
-    "@dimforge/rapier3d-compat": {
-      "optional": true
-    },
-    "@react-three/drei": {
-      "optional": true
-    },
-    "@react-three/postprocessing": {
-      "optional": true
-    },
-    "@react-three/rapier": {
-      "optional": true
-    },
-    "postprocessing": {
-      "optional": true
-    },
-    "react-icons": {
-      "optional": true
-    },
-    "react-router-dom": {
-      "optional": true
-    }
   },
   "repository": {
     "type": "git",
@@ -339,7 +292,6 @@
     "three.js",
     "@react-three/fiber",
     "@react-three/drei",
-    "leva",
     "@react-three/rapier",
     "rapier"
   ],
@@ -353,7 +305,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "^20.19.0 || >=22.12.0"
   },
   "packageManager": "pnpm@9.15.1+sha512.1acb565e6193efbebda772702950469150cf12bcc764262e7587e71d19dc98a423dff9536e57ea44c49bdf790ff694e83c27be5faa23d67e0c033b583be4bfcf"
 }

@@ -4,9 +4,11 @@ import { OrbitControls } from '@react-three/drei';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { logger } from 'gaesup-world';
 import {
   compactVisible,
   createGpuCulledInstances,
+  createThreeWebGpuBackend,
   cullSpheres,
   entityIndexOf,
   extractFrustumPlanes,
@@ -15,6 +17,8 @@ import {
   MATRIX_STRIDE,
   NextWorld,
   packInstanceMatrices,
+  type GpuCulledInstancesResult,
+  type RendererBackend,
 } from 'gaesup-world/next';
 
 const INSTANCE_COUNT = 10000;
@@ -127,28 +131,73 @@ function CulledInstances({ statsRef }: { statsRef: CullStatsRef }) {
 }
 
 type WebGpuRendererInstance = {
-  init(): Promise<void>;
-  setSize(width: number, height: number, updateStyle?: boolean): void;
   setPixelRatio(ratio: number): void;
-  setAnimationLoop(callback: (() => void) | null): void;
+  setAnimationLoop(callback: (() => void) | null): Promise<void>;
   compute(node: unknown): void;
   render(scene: THREE.Scene, camera: THREE.Camera): void;
-  dispose(): void;
 };
 
-type WebGpuRendererModule = {
-  WebGPURenderer: new (parameters: {
-    canvas: HTMLCanvasElement;
-    antialias: boolean;
-  }) => WebGpuRendererInstance;
-};
+function reportGpuSceneError(message: string, error: unknown): void {
+  try {
+    logger.error(`[NextCorePage] ${message}`, error instanceof Error ? error : String(error));
+  } catch {
+    // Logging must not interrupt the remaining resource cleanup attempts.
+  }
+}
 
 function GpuScene({ statsRef }: { statsRef: CullStatsRef }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    let disposed = false;
-    let cleanup: (() => void) | null = null;
+    let cancelled = false;
+    let culledOwner: GpuCulledInstancesResult | null = null;
+    let backendOwner: RendererBackend | null = null;
+    let geometryOwner: THREE.BoxGeometry | null = null;
+    let loopOwner: WebGpuRendererInstance | null = null;
+
+    const releaseOwned = (): void => {
+      cancelled = true;
+      const loop = loopOwner;
+      const geometry = geometryOwner;
+      const culled = culledOwner;
+      const backend = backendOwner;
+      loopOwner = null;
+      geometryOwner = null;
+      culledOwner = null;
+      backendOwner = null;
+
+      if (loop) {
+        try {
+          void loop.setAnimationLoop(null).catch((error: unknown) => {
+            reportGpuSceneError('GPU animation loop cleanup failed.', error);
+          });
+        } catch (error) {
+          reportGpuSceneError('GPU animation loop cleanup failed.', error);
+        }
+      }
+      if (geometry) {
+        try {
+          geometry.dispose();
+        } catch (error) {
+          reportGpuSceneError('GPU geometry cleanup failed.', error);
+        }
+      }
+      if (culled) {
+        try {
+          culled.dispose();
+        } catch (error) {
+          reportGpuSceneError('GPU culling cleanup failed.', error);
+        }
+      }
+      if (backend) {
+        try {
+          backend.dispose();
+        } catch (error) {
+          reportGpuSceneError('GPU backend cleanup failed.', error);
+        }
+      }
+    };
+
     const setup = async () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -162,25 +211,36 @@ function GpuScene({ statsRef }: { statsRef: CullStatsRef }) {
           (Math.random() * 2 - 1) * GPU_FIELD_RADIUS,
         );
       }
-      const culled = await createGpuCulledInstances({
+      culledOwner = await createGpuCulledInstances({
         count: GPU_INSTANCE_COUNT,
         positions: world.transforms.positions,
         radius: SPHERE_RADIUS,
         createPlaneVector: () => new THREE.Vector4(),
       });
-      if (!culled || disposed) {
-        culled?.dispose();
+      if (!culledOwner || cancelled) {
+        releaseOwned();
         return;
       }
-      const webgpu = (await import('three/webgpu')) as unknown as WebGpuRendererModule;
-      if (disposed) {
-        culled.dispose();
+      const culled = culledOwner;
+      try {
+        backendOwner = await createThreeWebGpuBackend({
+          canvas,
+          width: canvas.clientWidth,
+          height: canvas.clientHeight,
+        });
+      } finally {
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+      }
+      if (!backendOwner || cancelled) {
+        releaseOwned();
         return;
       }
-      const renderer = new webgpu.WebGPURenderer({ canvas, antialias: true });
-      await renderer.init();
+      const backend = backendOwner;
+      const renderer = backend.native as WebGpuRendererInstance;
       renderer.setPixelRatio(window.devicePixelRatio);
-      renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
       const scene = new THREE.Scene();
       scene.background = new THREE.Color('#0b0e1a');
       const camera = new THREE.PerspectiveCamera(
@@ -189,7 +249,12 @@ function GpuScene({ statsRef }: { statsRef: CullStatsRef }) {
         0.1,
         2000,
       );
-      const geometry = new THREE.BoxGeometry(1, 1, 1);
+      geometryOwner = new THREE.BoxGeometry(1, 1, 1);
+      if (cancelled) {
+        releaseOwned();
+        return;
+      }
+      const geometry = geometryOwner;
       const mesh = new THREE.InstancedMesh(
         geometry,
         culled.material as unknown as THREE.Material,
@@ -208,7 +273,9 @@ function GpuScene({ statsRef }: { statsRef: CullStatsRef }) {
       const tempMatrix = new THREE.Matrix4();
       let angle = 0;
       let last = performance.now();
-      renderer.setAnimationLoop(() => {
+      loopOwner = renderer;
+      const loopPromise = renderer.setAnimationLoop(() => {
+        if (cancelled) return;
         const now = performance.now();
         const delta = (now - last) / 1000;
         last = now;
@@ -236,17 +303,19 @@ function GpuScene({ statsRef }: { statsRef: CullStatsRef }) {
         stats.total = GPU_INSTANCE_COUNT;
         renderer.render(scene, camera);
       });
-      cleanup = () => {
-        renderer.setAnimationLoop(null);
-        culled.dispose();
-        geometry.dispose();
-        renderer.dispose();
-      };
+      void loopPromise.catch((error: unknown) => {
+        if (cancelled || loopOwner !== renderer) return;
+        releaseOwned();
+        reportGpuSceneError('GPU animation loop failed to start.', error);
+      });
     };
-    void setup();
+    void setup().catch((error: unknown) => {
+      const shouldReport = !cancelled;
+      releaseOwned();
+      if (shouldReport) reportGpuSceneError('GPU scene setup failed.', error);
+    });
     return () => {
-      disposed = true;
-      if (cleanup) cleanup();
+      releaseOwned();
     };
   }, [statsRef]);
 
@@ -286,14 +355,14 @@ function StatsOverlay({ statsRef, gpuMode }: { statsRef: CullStatsRef; gpuMode: 
         borderRadius: 8,
       }}
     >
-      <div>
-        gaesup-world/next N1 {gpuMode ? 'GPU compute cull' : 'CPU reference'}
-      </div>
+      <div>gaesup-world/next N1 {gpuMode ? 'GPU compute cull' : 'CPU reference'}</div>
       <div>{backendLabel}</div>
       <div>
         visible {stats.visible < 0 ? 'gpu-resident' : stats.visible} / {stats.total}
       </div>
-      <div>cull{gpuMode ? '' : '+pack'} {stats.cullMs.toFixed(2)} ms</div>
+      <div>
+        cull{gpuMode ? '' : '+pack'} {stats.cullMs.toFixed(2)} ms
+      </div>
       <div>fps {stats.fps.toFixed(0)}</div>
       <div style={{ marginTop: 6 }}>
         <a href="/next" style={{ color: gpuMode ? '#8fa3ff' : '#4ade80', marginRight: 10 }}>

@@ -1,22 +1,22 @@
 # Performance
 
-## Regression signals
+## Regression 신호
 
-Track CPU frame time, GPU frame time, FPS, draw calls, triangles, material count, texture and geometry memory estimates, rigid body and collider counts, JS heap, recurring allocation, entity count, network bytes and messages, bundle size and asset size when available.
+가능한 범위에서 CPU frame time, GPU frame time, FPS, draw call, triangle, material 수, texture·geometry 메모리 추정치, rigid body·collider 수, JS heap, 반복 할당, entity 수, network byte·message 수, bundle 크기, asset 크기를 추적한다.
 
-## Scenario tiers
+## 시나리오 등급
 
-- SMALL: one house, one avatar and dozens of objects.
-- MEDIUM: neighborhood, multiple avatars and hundreds to low thousands of visible entities.
-- STRESS: intentionally exceeds expected production density.
+- SMALL: 집 하나, 아바타 하나, 수십 개 객체.
+- MEDIUM: 동네 규모, 복수 아바타, 수백에서 수천 개의 가시 entity.
+- STRESS: 예상 production 밀도를 의도적으로 초과.
 
 ## Guardrails
 
-- No React setState every frame for simulation data.
-- No unnecessary Zustand write every frame.
-- Minimize recurring allocations and reuse scratch objects.
-- Avoid one subscription or one independent useFrame per world object.
-- Avoid one material and draw call per repeated prop.
-- Dispose material, geometry, texture and GPU resources through explicit ownership.
-- Bound shadow casters and define LOD for large environment assets.
-- Performance numbers are regression baselines, not marketing claims.
+- simulation 데이터를 위해 매 frame React setState를 하지 않는다.
+- 매 frame 불필요한 Zustand write를 하지 않는다.
+- 반복 할당을 최소화하고 scratch 객체를 재사용한다.
+- world 객체당 subscription 하나, 독립 useFrame 하나를 만들지 않는다.
+- 반복 prop당 material 하나, draw call 하나를 만들지 않는다.
+- material, geometry, texture, GPU resource는 명시적 ownership으로 dispose한다.
+- shadow caster를 제한하고 큰 환경 asset에는 LOD를 정의한다.
+- 성능 수치는 마케팅 주장이 아니라 regression 기준선이다.

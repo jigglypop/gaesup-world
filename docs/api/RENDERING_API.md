@@ -6,7 +6,7 @@
 
 ### createRenderer
 
-`createRenderer`는 WebGPU가 가능하면 WebGPU renderer를 만들고, 실패하면 WebGL renderer로 fallback합니다.
+`createRenderer`는 R3F 9의 비동기 `gl` factory 계약을 구현합니다. 입력 canvas는 `HTMLCanvasElement`와 `OffscreenCanvas`를 모두 허용합니다.
 
 ```tsx
 import { Canvas } from '@react-three/fiber';
@@ -17,15 +17,23 @@ import { createRenderer } from 'gaesup-world';
 </Canvas>
 ```
 
+WebGPU capability가 없거나 `three/webgpu`를 불러오지 못하거나 renderer 생성자가 없거나 생성에 실패하면 legacy `WebGLRenderer`를 반환합니다. WebGL fallback의 기본값은 `antialias: true`, `powerPreference: 'high-performance'`이며 명시한 값은 그대로 유지합니다.
+
+`WebGPURenderer.init()`은 Three.js 내부의 WebGPU/WebGL2 backend 선택까지 수행합니다. 이 초기화가 reject되면 별도 WebGL renderer를 다시 만들지 않고 원래 오류를 그대로 전달하므로, 호출자는 `<Canvas>` error boundary 또는 factory promise에서 처리해야 합니다.
+
+초기화에 성공한 WebGPU renderer는 직접 `dispose()`하거나 R3F 9가 unmount 때 호출하는 `forceContextLoss()`를 사용해도 native dispose를 한 번만 실행합니다. renderer와 scene의 사용 수명은 이를 받은 `<Canvas>` 또는 consumer가 소유합니다.
+
 ### isWebGPUAvailable
 
-WebGPU 지원 여부를 확인합니다. 결과는 내부적으로 캐시됩니다.
+WebGPU adapter 지원 여부를 확인합니다. 최초 호출이 시작한 promise 하나를 module lifetime 동안 캐시하므로 동시 호출과 이후 호출은 같은 probe 결과를 공유합니다. `navigator.gpu` 부재, adapter 부재, probe reject는 모두 `false`로 resolve됩니다.
 
 ```ts
 import { isWebGPUAvailable } from 'gaesup-world';
 
 const available = await isWebGPUAvailable();
 ```
+
+이 값은 capability probe 결과이며 renderer 초기화 성공을 보장하지는 않습니다.
 
 ## Postprocessing Subpath
 

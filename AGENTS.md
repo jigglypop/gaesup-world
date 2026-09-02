@@ -2,7 +2,7 @@
 
 `gaesup-world`는 React Three Fiber, Three.js, Rapier와 Zustand를 기반으로 하는 3D world library와 이를 소비하는 Vite showcase를 함께 관리한다. 장기 목표는 Blender asset authoring, persistent WorldDocument, WebGPU-first rendering, world creator, multiplayer와 social interaction을 연결하는 data-oriented 3D social world platform이다.
 
-`AGENTS.md`, `.codex/agents/*.toml`, `.agents/skills/**/SKILL.md`의 위치와 필수 형식은 Codex 공식 문서를 따른다. 4개 역할 분리, context 문서, invariant와 epoch workflow는 현재 저장소 분석을 바탕으로 한 **추론한 설계**다.
+`AGENTS.md`, `.codex/agents/*.toml`의 위치와 필수 형식은 Codex 공식 문서를 따른다. 절차형 스킬은 `.claude/skills/**/SKILL.md`에 있으며(add-domain, add-subpath-export, verify, start-epoch, close-epoch) Codex에서도 해당 파일을 문서로 읽어 같은 절차를 따른다. 4개 역할 분리, context 문서, invariant와 epoch workflow는 현재 저장소 분석을 바탕으로 한 **추론한 설계**다.
 
 ## 저장소 규칙
 
@@ -40,6 +40,7 @@
 
 세부 원칙은 다음 문서를 읽는다.
 
+- `.codex/context/engineering.md` (투 트랙, 코드량 감소, DRY/KISS/YAGNI — 모든 작업에 적용)
 - `.codex/context/architecture.md`
 - `.codex/context/invariants.md`
 - `.codex/context/migration.md`
@@ -86,7 +87,7 @@ Bridge는 `buildEngine`, `executeCommand`, `createSnapshot` 책임을 분리한�
 
 ## Codex 작업 흐름
 
-작업 전 `.codex/plans/active/`의 관련 plan을 읽는다. 새 architecture epoch는 active plan을 먼저 작성한다. 완료 조건과 검증을 충족한 뒤에만 plan을 `completed/`로 이동한다.
+plan은 architecture boundary·source of truth를 바꾸는 epoch 작업에만 요구된다. 일상 작업은 `.codex/context/engineering.md`의 fast track을 따라 plan 없이 바로 구현한다. epoch 작업 전에는 `.codex/plans/active/`의 관련 plan을 읽고, 없으면 `.codex/plans/TEMPLATE.md`를 복사해 먼저 작성하며, 완료 조건과 검증을 충족한 뒤에만 `completed/`로 이동한다. 절차는 `.codex/prompts/{start-epoch,close-epoch,verify,handoff}.md`를 따른다.
 
 Agent 선택:
 

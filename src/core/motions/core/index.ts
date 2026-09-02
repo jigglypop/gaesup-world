@@ -1,3 +1,4 @@
+export * from './config';
 export * from './system/PhysicsSystem';
 export * from './system/MotionSystem';
 export * from './system/types';
