@@ -23,16 +23,6 @@ const activeButtonStyle: CSSProperties = {
   background: 'rgba(125,220,131,0.22)',
 };
 
-const panelStyle: CSSProperties = {
-  position: 'fixed',
-  right: 16,
-  bottom: 84,
-  zIndex: 85,
-  display: 'flex',
-  gap: 8,
-  pointerEvents: 'auto',
-};
-
 export function CloseUpControls() {
   const { activeState } = useStateSystem();
 
@@ -104,7 +94,7 @@ export function CloseUpControls() {
   };
 
   return (
-    <div style={panelStyle}>
+    <div className="world-closeup-controls">
       <button style={buttonStyle} type="button" onClick={closeUpPlayer}>
         확대
       </button>

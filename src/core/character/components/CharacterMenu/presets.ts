@@ -17,7 +17,7 @@ const BASE_THEME: CharacterMenuTheme = {
 export const MENU_PRESETS = {
   default: {
     id: 'default',
-    name: 'Default',
+    name: '기본',
     layout: 'modal',
     position: {},
     theme: BASE_THEME,
@@ -28,7 +28,7 @@ export const MENU_PRESETS = {
   },
   compact: {
     id: 'compact',
-    name: 'Compact',
+    name: '간단',
     layout: 'sidebar-right',
     position: {
       top: 16,
@@ -53,7 +53,7 @@ export const MENU_PRESETS = {
   },
   minimal: {
     id: 'minimal',
-    name: 'Minimal',
+    name: '최소',
     layout: 'floating',
     position: {
       right: 16,
@@ -80,7 +80,7 @@ export const MENU_PRESETS = {
   },
   creative: {
     id: 'creative',
-    name: 'Creative',
+    name: '크리에이티브',
     layout: 'modal',
     position: {
       width: 'min(1040px, calc(100vw - 32px))',

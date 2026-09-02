@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { CharacterCreator } from '../index';
@@ -24,7 +25,7 @@ describe('CharacterCreator 커스텀 UI', () => {
     const root = renderer as ReactTestRenderer;
     const customRoot = root.root.findByProps({ 'data-testid': 'creator-root' });
     expect(customRoot.findAllByType('span').map((node) => node.children[0])).toEqual([
-      'Character Creator',
+      '캐릭터 만들기',
       'creative',
     ]);
     act(() => {

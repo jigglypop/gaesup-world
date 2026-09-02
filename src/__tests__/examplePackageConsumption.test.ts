@@ -519,7 +519,7 @@ describe('examples package consumption contract', () => {
 
     expect(worldSource).toContain('CharacterCreator');
     expect(worldSource).toContain('FeatureAccessPanel');
-    expect(worldSource).toContain('<CharacterCreator toggleKey="o" />');
+    expect(worldSource).toMatch(/<CharacterCreator\s+toggleKey="o"/);
     expect(worldSource).toContain('<Player />');
     expect(playerSource).toContain('baseColor={appearance.colors.body}');
     expect(featureAccessSource).toContain('월드 조작');

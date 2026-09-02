@@ -20,6 +20,7 @@ import {
   InteractionTracker,
   InventoryUI,
   MailboxUI,
+  MENU_PRESETS,
   MiniMap,
   QuestLogUI,
   RoomVisibilityDriver,
@@ -33,6 +34,7 @@ import {
   WeatherEffect,
   useBuildingStore,
   usePerfStore,
+  type CharacterMenuPreset,
   type CharacterMenuRenderers,
   type WorldCameraOption,
   type WorldContainerProps,
@@ -61,6 +63,20 @@ import { RideableUIRenderer, RideableVehicles } from '../components/rideable';
 import { TeleportMarkers } from '../components/teleport/markers';
 import { AIRPLANE_URL, EXAMPLE_CONFIG, S3, VEHICLE_URL } from '../config/constants';
 import '../style.css';
+
+const WORLD_CHARACTER_MENU_PRESET: CharacterMenuPreset = {
+  ...MENU_PRESETS.creative,
+  id: 'world',
+  name: '월드',
+  theme: {
+    ...MENU_PRESETS.creative.theme,
+    bgColor: 'rgba(18, 20, 28, 0.9)',
+    borderColor: 'rgba(255, 255, 255, 0.14)',
+    accentColor: '#ffd84a',
+    surfaceColor: 'rgba(255, 255, 255, 0.05)',
+    mutedTextColor: 'rgba(243, 244, 248, 0.76)',
+  },
+};
 
 if (typeof window !== 'undefined') {
   usePerfStore.getState().detect();
@@ -145,7 +161,7 @@ export const WorldPage = ({
           style={menu.styleFor('header', { borderColor: menu.preset.theme.borderColor })}
         >
           <div>
-            <h2 className={menu.classNameFor('title')}>World Style Kit</h2>
+            <h2 className={menu.classNameFor('title')}>캐릭터 꾸미기</h2>
             <span style={{ color: menu.preset.theme.mutedTextColor }}>{menu.appearance.name}</span>
           </div>
           <div className={menu.classNameFor('actions')}>
@@ -155,7 +171,7 @@ export const WorldPage = ({
               style={menu.styleFor('ghostButton', menu.getButtonStyle())}
               onClick={menu.actions.reset}
             >
-              Reset look
+              초기화
             </button>
             <button
               type="button"
@@ -163,7 +179,7 @@ export const WorldPage = ({
               style={menu.styleFor('primaryButton', menu.getButtonStyle(true))}
               onClick={menu.actions.close}
             >
-              Done
+              완료
             </button>
           </div>
         </div>
@@ -173,7 +189,7 @@ export const WorldPage = ({
           className={menu.classNameFor('emptyState')}
           style={menu.styleFor('emptyState', { borderColor: menu.preset.theme.borderColor })}
         >
-          {menu.labelMaps.slots[slot]} assets are not registered yet.
+          {menu.labelMaps.slots[slot]} 에셋이 아직 등록되지 않았습니다.
         </div>
       ),
     }),
@@ -255,8 +271,9 @@ export const WorldPage = ({
             <RuntimeSaveDiagnosticsToaster />
             <ToastHost position="top-right" />
 
-            <HudShell showEnvironmentControls={!showEditor} compact={compactHud} />
-            {!showEditor && <FeatureAccessPanel />}
+            <HudShell showEnvironmentControls={!showEditor} compact={compactHud}>
+              {!showEditor && <FeatureAccessPanel />}
+            </HudShell>
             {!showEditor && <PerformanceOverlay />}
             {!showEditor && (
               <WorldFocusModal focus={focusedFeature} onClose={handleFeatureFocusClose} />
@@ -273,22 +290,20 @@ export const WorldPage = ({
             {!showEditor && <RideableUIRenderer />}
             <MiniMap position="bottom-left" scale={5} showZoom={false} showCompass={false} />
 
-            <CharacterCreator toggleKey="o" />
+            <CharacterCreator
+              toggleKey="o"
+              preset="world"
+              customPresets={{ world: WORLD_CHARACTER_MENU_PRESET }}
+            />
             <CharacterMenu
               toggleKey="c"
-              preset="creative"
+              preset="world"
+              customPresets={{ world: WORLD_CHARACTER_MENU_PRESET }}
               hiddenSlots={['face', 'glasses']}
               features={{ savePresets: false, tagFilter: true, ownedOnly: true }}
-              classNames={{
-                panel: 'rounded-lg border overflow-hidden shadow-2xl',
-                section: 'rounded-lg border p-3',
-                activeChip: 'rounded-full border px-3 py-1 text-xs font-bold',
-                activeAssetButton:
-                  'aspect-square overflow-hidden rounded-md border text-xs font-bold',
-              }}
               labels={{
-                title: 'Character Customizer',
-                tagFilter: 'Tag',
+                title: '캐릭터 꾸미기',
+                tagFilter: '태그',
               }}
               renderers={characterMenuRenderers}
             />

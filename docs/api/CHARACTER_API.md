@@ -161,6 +161,9 @@ import {
 바인딩하므로, 옷 갈아입히기(`equipOutfit`)는 리깅 작업 없이 mesh attach/detach만
 일어납니다.
 
+Blender headless로 같은 armature를 공유하는 파츠 GLB를 생성·검증하는 절차는
+`docs/guide/CHARACTER_PARTS_PIPELINE.md`(`pnpm assets:parts`)를 참고하세요.
+
 ### 착용물 메타데이터 (`WearableMetadata`)
 
 `AssetRecord.metadata`에 다음 필드를 넣어 착용물 계약을 선언할 수 있습니다.

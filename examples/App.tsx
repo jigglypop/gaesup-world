@@ -50,7 +50,7 @@ function AppLayout() {
   }, []);
   return (
     <AppShell>
-      <Suspense fallback={<div className="example-route-loading">Loading scenario...</div>}>
+      <Suspense fallback={<div className="example-route-loading">시나리오 불러오는 중...</div>}>
         <ExampleErrorBoundary>
           <Routes>
             <Route path="/" element={<HomePage />} />

@@ -175,7 +175,7 @@ export function TouchControls({
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 90,
+        zIndex: 'var(--gaesup-z-input, 75)',
         pointerEvents: 'none',
         fontFamily: "'Pretendard', system-ui, sans-serif",
       }}

@@ -27,7 +27,7 @@ export const Navigation = () => {
         ))}
       </div>
       <details className="app-nav-developer">
-        <summary className="app-nav-button app-nav-button--subtle">Developer</summary>
+        <summary className="app-nav-button app-nav-button--subtle">개발자</summary>
         <div className="app-nav-developer__menu">
           {DEVELOPER_ROUTES.map((route) => (
             <NavLink key={route.path} to={route.path} className="app-nav-developer__link">
@@ -42,12 +42,12 @@ export const Navigation = () => {
         <div className="app-nav-session">
           <span className="app-nav-user">{user?.username}</span>
           <button type="button" className="app-nav-button" onClick={handleLogout}>
-            Log out
+            로그아웃
           </button>
         </div>
       ) : (
         <NavLink to="/admin" className="app-nav-button app-nav-button--subtle">
-          Admin
+          관리자
         </NavLink>
       )}
     </nav>

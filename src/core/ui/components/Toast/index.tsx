@@ -41,7 +41,7 @@ export function ToastHost({ position = 'top-right', max = 5 }: ToastHostProps) {
     <div
       style={{
         position: 'fixed',
-        zIndex: 110,
+        zIndex: 'var(--gaesup-z-toast, 140)',
         display: 'flex',
         flexDirection: 'column',
         gap: 8,

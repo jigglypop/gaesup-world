@@ -179,12 +179,8 @@ export function FeatureAccessPanel() {
 }
 
 const panelStyle: CSSProperties = {
-  position: 'fixed',
-  left: 16,
-  top: 84,
-  zIndex: 24,
-  width: 320,
-  maxHeight: 'calc(100vh - 296px)',
+  width: '100%',
+  maxHeight: '38vh',
   overflowY: 'auto',
   display: 'flex',
   flexDirection: 'column',

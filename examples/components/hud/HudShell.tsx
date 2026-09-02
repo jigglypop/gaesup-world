@@ -1,28 +1,24 @@
-import React, { lazy, Suspense, useState } from 'react';
+import React, { useState, type ReactNode } from 'react';
 
 import { SceneFader, useBuildingStore } from 'gaesup-world';
 
 import Info from '../info';
 import { Teleport } from '../teleport';
 
-const PerformancePanel = lazy(() =>
-  import('gaesup-world/editor').then((module) => ({ default: module.PerformancePanel })),
-);
+type HudTool = 'info' | 'teleport' | null;
 
 function LeftSidebar({
-  showInfo,
-  setShowInfo,
-  showTele,
-  setShowTele,
+  activeTool,
+  onToggleTool,
   showEnvironmentControls,
   compact,
+  children,
 }: {
-  showInfo: boolean;
-  setShowInfo: (v: boolean) => void;
-  showTele: boolean;
-  setShowTele: (v: boolean) => void;
+  activeTool: HudTool;
+  onToggleTool: (tool: Exclude<HudTool, null>) => void;
   showEnvironmentControls: boolean;
   compact: boolean;
+  children?: ReactNode;
 }) {
   const showSnow = useBuildingStore((s) => s.showSnow);
   const setShowSnow = useBuildingStore((s) => s.setShowSnow);
@@ -30,6 +26,8 @@ function LeftSidebar({
   const setShowFog = useBuildingStore((s) => s.setShowFog);
   const [showWorldTools, setShowWorldTools] = useState(!compact);
   const [showQuickTools, setShowQuickTools] = useState(!compact);
+  const showInfo = activeTool === 'info';
+  const showTele = activeTool === 'teleport';
 
   return (
     <div className="gp-left">
@@ -43,14 +41,14 @@ function LeftSidebar({
           <div className="gp-actionrow">
             <button
               className={`gp-btn${showInfo ? ' gp-btn--active' : ''}`}
-              onClick={() => setShowInfo(!showInfo)}
+              onClick={() => onToggleTool('info')}
             >
               <span>정보 패널</span>
               <span className="gp-key">{showInfo ? 'ON' : 'OFF'}</span>
             </button>
             <button
               className={`gp-btn${showTele ? ' gp-btn--active' : ''}`}
-              onClick={() => setShowTele(!showTele)}
+              onClick={() => onToggleTool('teleport')}
             >
               <span>텔레포트</span>
               <span className="gp-key">{showTele ? 'ON' : 'OFF'}</span>
@@ -85,49 +83,41 @@ function LeftSidebar({
           )}
         </div>
       )}
+      {children}
     </div>
   );
 }
-
-function RightSidebar() {
-  return (
-    <div className="gp-right">
-      <div className="gp-glass gp-panel gp-performance-panel">
-        <div className="gp-panel-title">성능</div>
-        <Suspense fallback={<div className="gp-panel-row">성능 패널 준비 중</div>}>
-          <PerformancePanel />
-        </Suspense>
-      </div>
-    </div>
-  );
-}
-
-
 
 export type HudShellProps = {
   showEnvironmentControls?: boolean;
   compact?: boolean;
+  children?: ReactNode;
 };
 
-export function HudShell({ showEnvironmentControls = true, compact = false }: HudShellProps) {
-  const [showInfo, setShowInfo] = useState(false);
-  const [showTele, setShowTele] = useState(false);
+export function HudShell({
+  showEnvironmentControls = true,
+  compact = false,
+  children,
+}: HudShellProps) {
+  const [activeTool, setActiveTool] = useState<HudTool>(null);
+  const handleToggleTool = (tool: Exclude<HudTool, null>) => {
+    setActiveTool((current) => (current === tool ? null : tool));
+  };
 
   return (
     <>
       <div className="gp-shell">
         <LeftSidebar
-          showInfo={showInfo}
-          setShowInfo={setShowInfo}
-          showTele={showTele}
-          setShowTele={setShowTele}
+          activeTool={activeTool}
+          onToggleTool={handleToggleTool}
           showEnvironmentControls={showEnvironmentControls}
           compact={compact}
-        />
-        <RightSidebar />
+        >
+          {children}
+        </LeftSidebar>
       </div>
-      {showInfo && <Info />}
-      {showTele && <Teleport />}
+      {activeTool === 'info' && <Info />}
+      {activeTool === 'teleport' && <Teleport />}
       <SceneFader />
     </>
   );

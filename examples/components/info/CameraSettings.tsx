@@ -56,13 +56,13 @@ export function CameraSettings({ mode, onControlChange, onClose }: CameraSetting
         </button>
         {onClose && (
           <button onClick={onClose} className="reset-button">
-            Close
+            닫기
           </button>
         )}
       </div>
       <div className="settings-grid">
         <div className="setting-group">
-          <label>Distance</label>
+          <label>거리</label>
           <RangeInput
             label="X"
             min={-50}
@@ -100,7 +100,7 @@ export function CameraSettings({ mode, onControlChange, onClose }: CameraSetting
             onChange={(value) => updateCameraOption('fov', value)}
           />
           <RangeInput
-            label="Position"
+            label="위치"
             min={0.01}
             max={1}
             step={0.01}
@@ -109,7 +109,7 @@ export function CameraSettings({ mode, onControlChange, onClose }: CameraSetting
             onChange={(value) => updateSmoothingOption('position', value)}
           />
           <RangeInput
-            label="Rotation"
+            label="회전"
             min={0.01}
             max={1}
             step={0.01}
@@ -119,14 +119,14 @@ export function CameraSettings({ mode, onControlChange, onClose }: CameraSetting
           />
         </div>
         <div className="setting-group">
-          <label>Options</label>
+          <label>옵션</label>
           <CheckboxInput
-            label="Enable Collision"
+            label="충돌 감지"
             checked={cameraOption.enableCollision ?? false}
             onChange={(checked) => updateCameraOption('enableCollision', checked)}
           />
           <CheckboxInput
-            label="Focus Mode"
+            label="포커스 모드"
             checked={cameraOption.focus ?? false}
             onChange={(checked) => updateCameraOption('focus', checked)}
           />

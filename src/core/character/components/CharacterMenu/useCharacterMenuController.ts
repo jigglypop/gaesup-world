@@ -83,6 +83,8 @@ function getLayoutStyle(preset: CharacterMenuPreset): CSSProperties {
   if (preset.layout === 'floating') return FLOATING_PANEL_STYLE;
   return MODAL_PANEL_STYLE;
 }
+const activeMenuClosers = new Set<() => void>();
+
 export function useCharacterMenuController({
   toggleKey,
   open,
@@ -219,6 +221,7 @@ export function useCharacterMenuController({
     onOpenChange?.(false);
   }, [controlled, onClose, onOpenChange, previewMode, restoreCloseUp]);
   const openMenu = useCallback(() => {
+    activeMenuClosers.forEach((closeOther) => closeOther());
     if (!controlled) setInternalOpen(true);
     onOpenChange?.(true);
   }, [controlled, onOpenChange]);
@@ -276,6 +279,13 @@ export function useCharacterMenuController({
     selectedSlots,
     tagFilter,
   ]);
+  useEffect(() => {
+    if (!isOpen) return;
+    activeMenuClosers.add(closeMenu);
+    return () => {
+      activeMenuClosers.delete(closeMenu);
+    };
+  }, [closeMenu, isOpen]);
   useEffect(() => {
     if (!toggleKey || controlled) return;
     const handleKeyDown = (event: KeyboardEvent) => {

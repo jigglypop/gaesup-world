@@ -46,7 +46,7 @@ export function DialogBox({ advanceKey = 'e', closeKey = 'Escape' }: DialogBoxPr
         bottom: 110,
         transform: 'translateX(-50%)',
         width: 'min(720px, 92vw)',
-        zIndex: 120,
+        zIndex: 'var(--gaesup-z-panel, 90)',
         background: 'rgba(18,20,28,0.62)',
         color: '#f3f4f8',
         borderRadius: 14,

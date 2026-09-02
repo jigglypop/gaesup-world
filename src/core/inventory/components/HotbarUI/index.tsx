@@ -13,7 +13,7 @@ export function HotbarUI() {
         bottom: 16,
         left: '50%',
         transform: 'translateX(-50%)',
-        zIndex: 95,
+        zIndex: 'var(--gaesup-z-hud, 60)',
         display: 'flex',
         gap: 6,
         padding: 8,

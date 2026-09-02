@@ -2,7 +2,7 @@
   position: fixed;
   top: calc(var(--gp-shell-pad, 16px) + var(--gp-header-height, 62px) + 10px);
   right: calc(var(--gp-right-rail, 304px) + var(--gp-shell-pad, 16px) + var(--gp-content-gap, 16px));
-  z-index: 1000;
+  z-index: var(--gp-z-panel, 90);
   display: grid;
   grid-template-columns: repeat(4, minmax(92px, 1fr));
   gap: 8px;

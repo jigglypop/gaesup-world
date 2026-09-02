@@ -200,6 +200,7 @@
     "test:package": "npm run build && npm run test:package:built",
     "test:package:built": "node scripts/verify-package-consumer.cjs",
     "test:demo": "node scripts/verify-demo-surface-chunk.cjs",
+    "assets:parts": "node scripts/build-character-parts.cjs",
     "test:browser": "playwright install chromium && node scripts/browser-smoke.cjs",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

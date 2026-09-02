@@ -18,7 +18,7 @@ export function InteractionPrompt({ enabled = true }: InteractionPromptProps) {
         bottom: 96,
         left: '50%',
         transform: 'translateX(-50%)',
-        zIndex: 96,
+        zIndex: 'var(--gaesup-z-hud, 60)',
         padding: '8px 14px',
         background: 'rgba(18,20,28,0.55)',
         color: '#f3f4f8',

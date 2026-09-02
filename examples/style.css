@@ -156,9 +156,18 @@ body,
   --gp-right-rail: 304px;
   --gp-content-gap: 16px;
   --gp-z-canvas: 0;
+  --gp-z-hud: 60;
+  --gp-z-input: 75;
   --gp-z-shell: 80;
-  --gp-z-overlay: 100;
+  --gp-z-panel: 90;
+  --gp-z-nav: 120;
+  --gp-z-overlay: 130;
   --gp-z-toast: 140;
+  --gaesup-z-hud: var(--gp-z-hud);
+  --gaesup-z-input: var(--gp-z-input);
+  --gaesup-z-panel: var(--gp-z-panel);
+  --gaesup-z-overlay: var(--gp-z-overlay);
+  --gaesup-z-toast: var(--gp-z-toast);
 }
 
 .gp-font {
@@ -292,6 +301,8 @@ body,
   flex-direction: column;
   gap: 10px;
   align-items: flex-start;
+  max-height: calc(100vh - var(--app-header-height, 64px) - var(--gp-shell-pad) * 2 - 236px);
+  overflow-y: auto;
 }
 .gp-right {
   grid-area: right;
@@ -462,7 +473,7 @@ body,
 .world-focus-modal {
   position: fixed;
   inset: 0;
-  z-index: 240;
+  z-index: var(--gp-z-overlay);
   display: grid;
   place-items: center;
   padding: 20px;
@@ -637,5 +648,27 @@ body,
 
   .gp-panel-row {
     font-size: 13px;
+  }
+}
+
+.world-closeup-controls {
+  position: fixed;
+  right: 16px;
+  bottom: 84px;
+  z-index: var(--gp-z-panel);
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+@media (pointer: coarse) {
+  .gp-left {
+    max-height: calc(100vh - var(--app-header-height, 64px) - var(--gp-shell-pad) * 2 - 386px);
+  }
+  .minimap--bottom-left {
+    bottom: 170px;
+  }
+  .world-closeup-controls {
+    bottom: 150px;
   }
 }

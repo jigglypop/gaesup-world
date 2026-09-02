@@ -3,7 +3,7 @@ import type { AssetRecord } from '../types';
 export const SEED_ASSETS: AssetRecord[] = [
   {
     id: 'warrior-cloth-rabbit',
-    name: 'Rabbit Warrior Cloth',
+    name: '토끼 전사 옷',
     kind: 'characterPart',
     slot: 'top',
     url: 'gltf/ally_cloth_rabbit.glb',
@@ -11,7 +11,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'warrior-cloth-basic',
-    name: 'Basic Warrior Cloth',
+    name: '기본 전사 옷',
     kind: 'characterPart',
     slot: 'top',
     url: 'gltf/ally_cloth.glb',
@@ -19,7 +19,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'warrior-cloth-blue',
-    name: 'Blue Warrior Cloth',
+    name: '파란 전사 옷',
     kind: 'characterPart',
     slot: 'top',
     url: 'gltf/ally_cloth_blue.glb',
@@ -32,7 +32,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'warrior-cloth-green',
-    name: 'Green Warrior Cloth',
+    name: '초록 전사 옷',
     kind: 'characterPart',
     slot: 'top',
     url: 'gltf/ally_cloth_green.glb',
@@ -45,7 +45,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'warrior-cloth-red',
-    name: 'Red Warrior Cloth',
+    name: '빨간 전사 옷',
     kind: 'characterPart',
     slot: 'top',
     url: 'gltf/ally_cloth_red.glb',
@@ -58,7 +58,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'ally-hat',
-    name: 'Ally Hat',
+    name: '앨리 모자',
     kind: 'characterPart',
     slot: 'hat',
     url: 'gltf/ally_hat.glb',
@@ -66,7 +66,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'ally-glasses',
-    name: 'Ally Glasses',
+    name: '앨리 안경',
     kind: 'characterPart',
     slot: 'glasses',
     url: 'gltf/ally_glass.glb',
@@ -74,35 +74,43 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'starter-bottom-layer',
-    name: 'Starter Pants Layer',
+    name: '스타터 바지',
     kind: 'characterPart',
     slot: 'bottom',
-    tags: ['starter', 'bottom', 'placeholder'],
+    url: 'gltf/parts/pants_basic.glb',
+    tags: ['starter', 'bottom', 'generated'],
     colors: { primary: '#3a4a6a' },
     metadata: {
-      placeholder: true,
+      skeleton: 'gaesup-humanoid-v1',
+      deformation: 'skinned',
+      generator: 'scripts/build-character-parts.cjs',
     },
   },
   {
     id: 'starter-shoes-layer',
-    name: 'Starter Shoes Layer',
+    name: '스타터 신발',
     kind: 'characterPart',
     slot: 'shoes',
-    tags: ['starter', 'shoes', 'placeholder'],
+    url: 'gltf/parts/shoes_basic.glb',
+    tags: ['starter', 'shoes', 'generated'],
     colors: { primary: '#3a2a1a' },
     metadata: {
-      placeholder: true,
+      skeleton: 'gaesup-humanoid-v1',
+      deformation: 'skinned',
+      generator: 'scripts/build-character-parts.cjs',
     },
   },
   {
     id: 'starter-weapon-layer',
-    name: 'Starter Weapon Layer',
+    name: '스타터 검',
     kind: 'weapon',
     slot: 'weapon',
-    url: 'gltf/ally_cloth.glb',
-    tags: ['starter', 'weapon', 'placeholder'],
+    url: 'gltf/parts/sword_basic.glb',
+    tags: ['starter', 'weapon', 'generated'],
     metadata: {
-      placeholder: true,
+      skeleton: 'gaesup-humanoid-v1',
+      deformation: 'skinned',
+      generator: 'scripts/build-character-parts.cjs',
       attachment: {
         socket: 'rightHand',
         position: [0.48, -0.55, 0.02],
@@ -113,7 +121,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'starter-accessory-ring',
-    name: 'Starter Ring Layer',
+    name: '스타터 반지',
     kind: 'characterPart',
     slot: 'accessory',
     tags: ['starter', 'accessory', 'placeholder'],
