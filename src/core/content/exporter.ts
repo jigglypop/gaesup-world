@@ -28,11 +28,7 @@ function collectWorldDomains(provider: SaveBindingProvider): Record<string, Seri
 
   for (const binding of provider.getBindings()) {
     if (!allowed.has(binding.key)) continue;
-    try {
-      domains[binding.key] = binding.serialize();
-    } catch {
-      domains[binding.key] = null;
-    }
+    domains[binding.key] = binding.serialize();
   }
 
   return domains;

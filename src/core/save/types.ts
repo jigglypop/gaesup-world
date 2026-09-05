@@ -17,6 +17,8 @@ export type DomainBinding<T = SerializedDomainValue> = {
   key: string;
   serialize: () => T;
   hydrate: (data: T | null | undefined) => void;
+  /** Validate and prepare without mutation; return the deferred application. */
+  prepareHydrate?: (data: T | null | undefined) => () => void;
 };
 
 export type Migration = (blob: SaveBlob) => SaveBlob;

@@ -7,8 +7,8 @@ import { SkeletonUtils } from 'three-stdlib';
 
 import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
 
-import { resolveSharedSkeletonBinding } from '../../../character/skeleton';
 import { ModelRendererProps, PartsGroupRefProps } from './types';
+import { resolveSharedSkeletonBinding } from '../../../character/skeleton';
 
 export function ModelRenderer({ nodes, color, colorNodeNames, skeleton, url, excludeNodeNames }: ModelRendererProps) {
   type NodeData =
@@ -138,13 +138,18 @@ export function ModelRenderer({ nodes, color, colorNodeNames, skeleton, url, exc
   );
 }
 
+function PartAnimationDriver() {
+  useAnimationPlayer(true);
+  return null;
+}
+
 export function PartsGroupRef({ url, isActive, color, skeleton }: PartsGroupRefProps) {
   const { scene } = useGLTF(url) as { scene: THREE.Object3D };
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { nodes } = useGraph(clone);
-  useAnimationPlayer(isActive);
   return (
     <group>
+      {isActive && <PartAnimationDriver />}
       <ModelRenderer
         nodes={nodes}
         url={url}

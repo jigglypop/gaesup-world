@@ -21,7 +21,7 @@ export function EntityController({ props, children }: EntityControllerProps) {
   const refs = useGenericRefs();
 
   // Initialize keyboard event listeners
-  useKeyboard();
+  useKeyboard(true, true, undefined, props.enableKeyboard ?? true);
   const rideableId = gameStates?.currentRideable?.id;
   const offset = useMemo(
     () => (rideableId ? rideable?.[rideableId]?.offset : undefined) ?? vec3(),

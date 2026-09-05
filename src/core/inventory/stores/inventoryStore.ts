@@ -30,6 +30,7 @@ type InventoryState = {
 
   serialize: () => InventorySerialized;
   hydrate: (data: InventorySerialized | null | undefined) => void;
+  prepareHydrate: (data: InventorySerialized | null | undefined) => () => void;
 };
 
 function emptySlots(size: number): Slot[] {
@@ -43,7 +44,7 @@ function defaultHotbar(size: number): number[] {
 function maxStackOf(itemId: ItemId): number {
   const def = getItemRegistry().get(itemId);
   if (!def) return 1;
-  return def.stackable ? Math.max(1, def.maxStack) : 1;
+  return def.stackable && Number.isSafeInteger(def.maxStack) ? Math.max(1, def.maxStack) : 1;
 }
 
 export const useInventoryStore = create<InventoryState>((set, get) => ({
@@ -54,6 +55,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
 
   add: (itemId, count = 1) => {
     if (count <= 0) return 0;
+    if (!Number.isSafeInteger(count) || !itemId.trim()) return count;
     const max = maxStackOf(itemId);
     const slots = get().slots.slice();
     let remaining = count;
@@ -83,9 +85,10 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   },
 
   remove: (slotIndex, count = 1) => {
+    if (!Number.isSafeInteger(count) || count <= 0 || !Number.isSafeInteger(slotIndex)) return false;
     const slots = get().slots.slice();
     const s = slots[slotIndex];
-    if (!s || count <= 0) return false;
+    if (!s) return false;
     if (s.count <= count) {
       slots[slotIndex] = null;
     } else {
@@ -96,7 +99,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   },
 
   removeById: (itemId, count = 1) => {
-    if (count <= 0) return 0;
+    if (!Number.isSafeInteger(count) || count <= 0) return 0;
     const slots = get().slots.slice();
     let remaining = count;
     for (let i = 0; i < slots.length && remaining > 0; i++) {
@@ -112,6 +115,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   },
 
   move: (from, to) => {
+    if (from === to || !Number.isInteger(from) || !Number.isInteger(to)) return;
     const slots = get().slots.slice();
     if (from < 0 || to < 0 || from >= slots.length || to >= slots.length) return;
     const a = slots[from];
@@ -138,8 +142,9 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   clear: () => set({ slots: emptySlots(get().size) }),
 
   setEquippedHotbar: (index) => {
+    if (!Number.isSafeInteger(index)) return;
     const hotbar = get().hotbar;
-    const next = ((index % hotbar.length) + hotbar.length) % hotbar.length;
+    const next = hotbar.length ? ((index % hotbar.length) + hotbar.length) % hotbar.length : 0;
     set({ equippedHotbar: next });
   },
 
@@ -175,18 +180,28 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     };
   },
 
-  hydrate: (data) => {
-    if (!data) return;
-    const size = Array.isArray(data.slots) ? data.slots.length : DEFAULT_INVENTORY_SIZE;
-    const slots: Slot[] = Array.isArray(data.slots)
-      ? data.slots.map((s) => (s && typeof s === 'object' && s.itemId ? { ...s } : null))
-      : emptySlots(size);
-    const hotbar: number[] = Array.isArray(data.hotbar)
-      ? data.hotbar.slice(0, DEFAULT_HOTBAR_SIZE)
-      : defaultHotbar(DEFAULT_HOTBAR_SIZE);
-    const equipped = typeof data.equippedHotbar === 'number'
-      ? Math.max(0, Math.min(hotbar.length - 1, data.equippedHotbar))
-      : 0;
-    set({ size, slots, hotbar, equippedHotbar: equipped });
+  prepareHydrate: (data) => {
+    if (data === null || data === undefined) return () => {};
+    if (typeof data !== 'object' || data.version !== 1 ||
+      !Array.isArray(data.slots) || !Array.isArray(data.hotbar) ||
+      !Number.isInteger(data.equippedHotbar)) throw new TypeError('Invalid inventory snapshot');
+    const size = data.slots.length;
+    const slots: Slot[] = Array.from(data.slots, (slot) => {
+      if (slot === null) return null;
+      if (!slot || typeof slot !== 'object' || typeof slot.itemId !== 'string' || !slot.itemId.trim() ||
+        !Number.isSafeInteger(slot.count) || slot.count <= 0 ||
+        (slot.durability !== undefined && (typeof slot.durability !== 'number' ||
+          !Number.isFinite(slot.durability) || slot.durability < 0))) {
+        throw new TypeError('Invalid inventory slot');
+      }
+      return { ...slot };
+    });
+    const hotbar = Array.from(data.hotbar, (index) => {
+      if (!Number.isInteger(index) || index < 0 || index >= size) throw new TypeError('Invalid inventory hotbar');
+      return index;
+    }).slice(0, DEFAULT_HOTBAR_SIZE);
+    const equippedHotbar = Math.max(0, Math.min(Math.max(0, hotbar.length - 1), data.equippedHotbar));
+    return () => set({ size, slots, hotbar, equippedHotbar });
   },
+  hydrate: (data) => get().prepareHydrate(data)(),
 }));

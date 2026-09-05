@@ -1,146 +1,89 @@
-import React, { useState } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 
-import { MultiplayerConnectionOptions } from '../types';
+import type { MultiplayerConnectionOptions } from '../types';
+import './ConnectionForm.css';
 
-interface ConnectionFormProps {
+type ConnectionFormProps = {
   onConnect: (options: MultiplayerConnectionOptions) => void;
   error?: string | null;
   isConnecting?: boolean;
-}
+};
 
 export function ConnectionForm({ onConnect, error, isConnecting }: ConnectionFormProps) {
+  const formId = useId();
   const [playerName, setPlayerName] = useState('');
   const [roomCode, setRoomCode] = useState('room1');
-  const [playerColor] = useState(() => {
-    // Ensure a valid CSS hex color: always "#RRGGBB".
-    const hex = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+  const [playerColor, setPlayerColor] = useState(() => {
+    const hex = Math.floor(Math.random() * 0xffffff)
+      .toString(16)
+      .padStart(6, '0');
     return `#${hex}`;
   });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!playerName.trim()) return;
-
-    onConnect({
-      roomId: roomCode,
-      playerName: playerName.trim(),
-      playerColor: playerColor
-    });
+  const canConnect = Boolean(playerName.trim() && roomCode.trim() && !isConnecting);
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canConnect) return;
+    onConnect({ roomId: roomCode.trim(), playerName: playerName.trim(), playerColor });
   };
 
   return (
-    <div style={{
-      width: '100vw',
-      height: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: '#1a1a1a'
-    }}>
+    <div className="multiplayer-connection">
       <form
+        className="multiplayer-connection__form"
+        aria-labelledby={`${formId}-title`}
+        aria-busy={Boolean(isConnecting)}
         onSubmit={handleSubmit}
-        style={{
-          background: 'rgba(0, 0, 0, 0.8)',
-          padding: '40px',
-          borderRadius: '10px',
-          color: 'white',
-          minWidth: '300px'
-        }}
       >
-        <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>
-          네트워크 멀티플레이어
-        </h2>
-        
-        <div style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', marginBottom: '5px' }}>
-            플레이어 이름
-          </label>
-          <input
-            type="text"
-            placeholder="이름을 입력하세요"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            disabled={isConnecting}
-            style={{
-              width: '100%',
-              padding: '10px',
-              borderRadius: '5px',
-              border: '1px solid #ccc',
-              background: '#333',
-              color: 'white',
-              fontSize: '14px'
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '5px' }}>
-            방 코드
-          </label>
-          <input
-            type="text"
-            placeholder="방 코드"
-            value={roomCode}
-            onChange={(e) => setRoomCode(e.target.value)}
-            disabled={isConnecting}
-            style={{
-              width: '100%',
-              padding: '10px',
-              borderRadius: '5px',
-              border: '1px solid #ccc',
-              background: '#333',
-              color: 'white',
-              fontSize: '14px'
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '5px' }}>
-            플레이어 색상
-          </label>
-          <div
-            style={{
-              width: '30px',
-              height: '30px',
-              backgroundColor: playerColor,
-              borderRadius: '50%',
-              border: '2px solid #ccc'
-            }}
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={!playerName.trim() || isConnecting}
-          style={{
-            width: '100%',
-            padding: '12px',
-            borderRadius: '5px',
-            border: 'none',
-            background: (!playerName.trim() || isConnecting) ? '#666' : '#4CAF50',
-            color: 'white',
-            fontSize: '16px',
-            cursor: (!playerName.trim() || isConnecting) ? 'not-allowed' : 'pointer',
-            transition: 'background-color 0.2s'
-          }}
-        >
-          {isConnecting ? '연결 중...' : '연결하기'}
+        <h2 id={`${formId}-title`}>함께 플레이하기</h2>
+        <p id={`${formId}-hint`}>친구와 같은 방 코드를 입력하면 함께 만날 수 있습니다.</p>
+        <label htmlFor={`${formId}-name`}>플레이어 이름</label>
+        <input
+          id={`${formId}-name`}
+          name="nickname"
+          autoComplete="nickname"
+          placeholder="이름을 입력하세요"
+          required
+          value={playerName}
+          onChange={(event) => setPlayerName(event.target.value)}
+          disabled={isConnecting}
+        />
+        <label htmlFor={`${formId}-room`}>방 코드</label>
+        <input
+          id={`${formId}-room`}
+          name="room"
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          aria-describedby={`${formId}-hint`}
+          placeholder="방 코드를 입력하세요"
+          required
+          value={roomCode}
+          onChange={(event) => setRoomCode(event.target.value)}
+          disabled={isConnecting}
+        />
+        <label htmlFor={`${formId}-color`}>플레이어 색상</label>
+        <input
+          id={`${formId}-color`}
+          type="color"
+          value={playerColor}
+          onChange={(event) => setPlayerColor(event.target.value)}
+          disabled={isConnecting}
+        />
+        <button type="submit" disabled={!canConnect}>
+          {isConnecting ? '연결 중…' : '방에 입장하기'}
         </button>
-
         {error && (
-          <div style={{
-            color: '#ff6b6b',
-            marginTop: '15px',
-            padding: '10px',
-            background: 'rgba(255, 107, 107, 0.1)',
-            borderRadius: '5px',
-            fontSize: '14px'
-          }}>
-            {error}
+          <div>
+            <p className="multiplayer-connection__error" role="alert">
+              방에 연결할 수 없습니다. 연결 상태와 방 코드를 확인하고 다시 시도해 주세요.
+            </p>
+            <details>
+              <summary>연결 진단</summary>
+              <p>{error}</p>
+            </details>
           </div>
         )}
       </form>
     </div>
   );
-} 
+}

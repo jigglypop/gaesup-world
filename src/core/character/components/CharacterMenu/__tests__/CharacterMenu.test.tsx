@@ -1,10 +1,34 @@
 import React from 'react';
+import { renderHook } from '@testing-library/react';
 
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { useAssetStore } from '../../../../assets';
 import { useCharacterStore } from '../../../stores/characterStore';
 import { CharacterMenu } from '../index';
+import { useCharacterMenuController } from '../useCharacterMenuController';
+
+test('menu reset follows the active character without deleting other profiles', () => {
+  const previous = useCharacterStore.getState();
+  previous.setActiveCharacter('first');
+  previous.equipOutfit('hat', 'first-hat');
+  const { result, unmount } = renderHook(() => useCharacterMenuController({ open: true }));
+  try {
+    act(() => {
+      previous.setActiveCharacter('second');
+      previous.equipOutfit('hat', 'second-hat');
+    });
+    act(() => { result.current.actions.reset(); });
+    const current = useCharacterStore.getState();
+    expect(current.activeCharacterId).toBe('second');
+    expect(current.outfits.hat).toBeNull();
+    expect(current.characters.first?.outfits.hat).toBe('first-hat');
+    expect(current.serialize().characters.first?.outfits.hat).toBe('first-hat');
+  } finally {
+    unmount();
+    useCharacterStore.setState(previous, true);
+  }
+});
 
 describe('CharacterMenu 커스텀 UI', () => {
   beforeEach(() => {

@@ -1,5 +1,3 @@
-import React from 'react';
-
 import {
   BUILDING_TILE_SHAPE_OPTIONS,
   BUILDING_WALL_KIND_OPTIONS,
@@ -81,7 +79,7 @@ export function EnvironmentSection({
           <FieldColor value={fogColor} onChange={setFogColor} />
         </FieldRow>
         <div className="building-panel__info-item">
-          <span className="building-panel__info-label">Surface</span>
+          <span className="building-panel__info-label">표면</span>
           <div className="building-panel__segmented">
             {BUILDING_WORLD_SURFACE_OPTIONS.map((option) => (
               <button
@@ -219,7 +217,7 @@ export function PlacementSection({
             className={`building-panel__toggle ${snapToGrid ? 'building-panel__toggle--on' : ''}`}
             onClick={() => setSnapToGrid(!snapToGrid)}
           >
-            {snapToGrid ? 'ON' : 'OFF'}
+            {snapToGrid ? '켜짐' : '꺼짐'}
           </button>
         </div>
         <div className="building-panel__info-item">
@@ -409,4 +407,3 @@ export function WallModuleSection({
     </div>
   );
 }
-

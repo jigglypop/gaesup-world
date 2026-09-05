@@ -36,6 +36,7 @@ export function createAudioPlugin(options: AudioPluginOptions = {}): GaesupPlugi
         key: saveExtensionId,
         serialize: serializeAudioState,
         hydrate: hydrateAudioState,
+        prepareHydrate: (data: AudioSerialized | null | undefined) => useAudioStore.getState().prepareHydrate(data),
       }, pluginId);
       ctx.services.register(storeServiceId, {
         useStore: useAudioStore,

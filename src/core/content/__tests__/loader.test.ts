@@ -7,6 +7,29 @@ import {
 import type { ContentBundleManifest } from '../types';
 
 describe('content bundle manifests', () => {
+  it('rejects incomplete exports when a world serializer fails', () => {
+    const failure = new Error('building serialization failed');
+    expect(() => createContentBundleFromSaveSystem({
+      getBindings: () => [{
+        key: 'building',
+        serialize: () => { throw failure; },
+        hydrate: () => undefined,
+      }],
+    }, [], { id: 'world', name: 'World', version: '1.0.0' })).toThrow(failure);
+  });
+
+  it('preserves explicit null values and does not serialize private domains', () => {
+    const privateSerializer = jest.fn(() => { throw new Error('private data'); });
+    const bundle = createContentBundleFromSaveSystem({
+      getBindings: () => [
+        { key: 'building', serialize: () => null, hydrate: () => undefined },
+        { key: 'inventory', serialize: privateSerializer, hydrate: () => undefined },
+      ],
+    }, [], { id: 'world', name: 'World', version: '1.0.0' });
+    expect(bundle.world.domains).toEqual({ building: null });
+    expect(privateSerializer).not.toHaveBeenCalled();
+  });
+
   it('exports content bundles with schema versions on every manifest layer', () => {
     const bundle = createContentBundleFromSaveSystem(
       {

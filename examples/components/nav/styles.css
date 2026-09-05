@@ -7,7 +7,8 @@
   flex-direction: row;
   align-items: center;
   gap: 6px;
-  width: auto;
+  box-sizing: border-box;
+  width: max-content;
   max-width: calc(100vw - 24px);
   min-height: 44px;
   padding: 8px;
@@ -42,7 +43,7 @@
   gap: 5px;
   color: #f3f4f8;
   padding: 15px 8px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   text-decoration: none;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
@@ -51,6 +52,7 @@
 
 .app-nav-group {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 4px;
   min-width: 0;
@@ -62,31 +64,16 @@
   display: none;
 }
 
-.app-nav-group--secondary {
-  padding-left: 2px;
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.app-nav-mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  display: grid;
-  place-items: center;
-  background: #7bd3a7;
-  color: #122018;
-  font-size: 16px;
-}
-
 .app-nav-button {
+  box-sizing: border-box;
   appearance: none;
   background: rgba(255, 255, 255, 0.055);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #f3f4f8;
   padding: 10px 15px;
-  margin: 5px;
+  margin: 0;
   font: inherit;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.2;
   text-decoration: none;
@@ -120,6 +107,9 @@
 }
 
 .app-nav-user {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 128px;
   background: rgba(255, 255, 255, 0.055);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #f3f4f8;
@@ -128,7 +118,7 @@
   font-weight: 600;
   border-radius: 9px;
   text-align: center;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -164,8 +154,7 @@
   right: 0;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(2, minmax(190px, 1fr));
-  gap: 6px;
+  gap: 14px;
   width: min(440px, calc(100vw - 32px));
   max-height: calc(100vh - var(--app-header-height) - 32px);
   box-sizing: border-box;
@@ -173,7 +162,7 @@
   padding: 10px;
   border: 1px solid var(--gp-glass-border-hi);
   border-radius: var(--gp-radius);
-  background: var(--gp-glass-bg-strong);
+  background: #171c26;
   box-shadow: var(--gp-glass-shadow);
   backdrop-filter: blur(var(--gp-glass-blur));
 }
@@ -187,6 +176,22 @@
   background: var(--gp-glass-bg);
   color: var(--gp-text);
   text-decoration: none;
+  min-height: 44px;
+  box-sizing: border-box;
+  align-items: center;
+}
+
+.app-nav-developer__section h2 {
+  margin: 0 0 6px;
+  color: var(--gp-text-dim);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.app-nav-developer__links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .app-nav-developer__link:hover,
@@ -195,14 +200,9 @@
   background: rgba(123, 211, 167, 0.16);
 }
 
-.app-nav-developer__link span {
-  color: var(--gp-text-dim);
-  font-size: 10px;
-  text-transform: uppercase;
-}
-
 .app-nav-session {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 4px;
 }
@@ -216,6 +216,7 @@
     width: auto;
     max-width: calc(100vw - 16px);
     padding: 7px;
+    flex-wrap: wrap;
   }
 
   .app-nav-brand,
@@ -229,11 +230,19 @@
 
   .app-nav-group {
     gap: 2px;
+    order: 2;
+    flex: 1 1 100%;
   }
 
-  .app-nav-group--secondary {
-    border-left: none;
-    padding-left: 0;
+  .app-nav-developer {
+    position: static;
+    margin-left: auto;
+  }
+
+  .app-editor-navigation-slot {
+    order: 3;
+    max-width: 100%;
+    overflow-x: auto;
   }
 
   .app-nav-brand {
@@ -241,19 +250,10 @@
     padding: 5px 7px;
   }
 
-  .app-nav-brand span:last-child {
-    display: none;
-  }
-
-  .app-nav-mark {
-    width: 28px;
-    height: 28px;
-  }
-
   .app-nav-button {
-    min-height: 34px;
+    min-height: 40px;
     padding: 8px 10px;
-    font-size: 11px;
+    font-size: 12px;
     white-space: nowrap;
   }
 
@@ -275,23 +275,21 @@
     padding: 4px 6px;
   }
 
-  .app-nav-mark {
-    width: 26px;
-    height: 26px;
-    font-size: 14px;
-  }
-
   .app-nav-button {
-    min-height: 32px;
+    min-height: 40px;
     padding: 7px 9px;
-    font-size: 10.5px;
+    font-size: 12px;
   }
 
   .app-nav-user {
     display: none;
   }
 
-  .app-nav-developer__menu {
+  .app-nav-group .app-nav-button {
+    padding-inline: 7px;
+  }
+
+  .app-nav-developer__links {
     grid-template-columns: 1fr;
   }
 }

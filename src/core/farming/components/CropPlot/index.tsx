@@ -1,14 +1,16 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
 import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
 import { useTimeStore } from '../../../time/stores/timeStore';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
 import { notify } from '../../../ui/components/Toast/toastStore';
 import { getCropRegistry } from '../../registry/CropRegistry';
+import { acquireFarmingClock } from '../../stores/clock';
 import { usePlotStore } from '../../stores/plotStore';
 import type { Plot } from '../../types';
 
@@ -27,30 +29,17 @@ function inRange(plot: Plot, evt: ToolUseEvent, hit: number): boolean {
 
 export function CropPlot({ id, position, size = 1.4, hitRange = 1.6 }: CropPlotProps) {
   const registerPlot = usePlotStore((s) => s.registerPlot);
-  const unregisterPlot = usePlotStore((s) => s.unregisterPlot);
   const plot = usePlotStore((s) => s.plots[id]);
   const till = usePlotStore((s) => s.till);
   const plant = usePlotStore((s) => s.plant);
   const water = usePlotStore((s) => s.water);
   const harvest = usePlotStore((s) => s.harvest);
-  const tick = usePlotStore((s) => s.tick);
 
   useEffect(() => {
     registerPlot({ id, position });
-    return () => unregisterPlot(id);
-  }, [id, position, registerPlot, unregisterPlot]);
+  }, [id, position, registerPlot]);
 
-  useEffect(() => {
-    let last = 0;
-    const off = useTimeStore.subscribe((state) => {
-      if (state.totalMinutes !== last) {
-        last = state.totalMinutes;
-        tick(state.totalMinutes);
-      }
-    });
-    tick(useTimeStore.getState().totalMinutes);
-    return off;
-  }, [tick]);
+  useEffect(acquireFarmingClock, []);
 
   const onShovel = useCallback((evt: ToolUseEvent): boolean | void => {
     const cur = usePlotStore.getState().plots[id];
@@ -101,16 +90,16 @@ export function CropPlot({ id, position, size = 1.4, hitRange = 1.6 }: CropPlotP
   }, [plot]);
 
   const cropRef = useRef<THREE.Mesh>(null);
-  useFrame(({ clock }) => {
+  useFrame((state) => {
     const m = cropRef.current;
     if (!m) return;
-    const t = clock.elapsedTime;
+    const t = getFrameElapsedSeconds(state);
     m.rotation.y = Math.sin(t * 0.4) * 0.05;
     m.position.y = (stage?.scale ?? 0.3) * 0.5 + Math.sin(t * 1.2) * 0.01;
   });
 
   return (
-    <group position={position}>
+    <group position={plot?.position ?? position}>
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]}>
         <planeGeometry args={[size, size]} />
         <meshToonMaterial color={groundColor} />

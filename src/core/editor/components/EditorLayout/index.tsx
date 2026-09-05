@@ -1,4 +1,4 @@
-import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
+import { FC, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import {
   resolveEditorPanelComponentExtensions,
@@ -183,53 +183,53 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
     const builtInPanels: PanelConfig[] = [
       {
         id: 'hierarchy',
-        title: 'Hierarchy',
+        title: '계층',
         component: <HierarchyPanel {...hierarchyProps} />,
         defaultSide: 'left',
       },
       {
         id: 'inspector',
-        title: 'Inspector',
+        title: '속성',
         component: <InspectorPanel {...inspectorProps} />,
         defaultSide: 'right',
       },
       {
         id: 'project-assets',
-        title: 'Project',
+        title: '프로젝트',
         component: <ProjectAssetsPanel {...projectAssetsProps} />,
         defaultSide: 'left',
       },
-      { id: 'world', title: 'World', component: <WorldPanel />, defaultSide: 'left' },
-      { id: 'wall', title: 'Wall', component: <WallPanel />, defaultSide: 'left' },
-      { id: 'tile', title: 'Tile', component: <TilePanel />, defaultSide: 'left' },
-      { id: 'block', title: 'Block', component: <BlockPanel />, defaultSide: 'left' },
-      { id: 'object', title: 'Object', component: <ObjectPanel />, defaultSide: 'left' },
+      { id: 'world', title: '월드', component: <WorldPanel />, defaultSide: 'left' },
+      { id: 'wall', title: '벽', component: <WallPanel />, defaultSide: 'left' },
+      { id: 'tile', title: '바닥', component: <TilePanel />, defaultSide: 'left' },
+      { id: 'block', title: '블록', component: <BlockPanel />, defaultSide: 'left' },
+      { id: 'object', title: '소품', component: <ObjectPanel />, defaultSide: 'left' },
       { id: 'npc', title: 'NPC', component: <NPCPanel />, defaultSide: 'left' },
       {
         id: 'character',
-        title: 'Character',
+        title: '캐릭터',
         component: <CharacterAssetPanel />,
         defaultSide: 'left',
       },
-      { id: 'vehicle', title: 'Vehicle', component: <VehiclePanel />, defaultSide: 'left' },
-      { id: 'animation', title: 'Animation', component: <AnimationPanel />, defaultSide: 'left' },
-      { id: 'camera', title: 'Camera', component: <CameraPanel />, defaultSide: 'right' },
-      { id: 'motion', title: 'Motion', component: <MotionPanel />, defaultSide: 'right' },
+      { id: 'vehicle', title: '차량', component: <VehiclePanel />, defaultSide: 'left' },
+      { id: 'animation', title: '애니메이션', component: <AnimationPanel />, defaultSide: 'left' },
+      { id: 'camera', title: '카메라', component: <CameraPanel />, defaultSide: 'right' },
+      { id: 'motion', title: '이동', component: <MotionPanel />, defaultSide: 'right' },
       {
         id: 'performance',
-        title: 'Performance',
+        title: '성능',
         component: <PerformancePanel />,
         defaultSide: 'right',
       },
       {
         id: 'gameplay-events',
-        title: 'Gameplay Events',
+        title: '게임 이벤트',
         component: <GameplayEventPanel />,
         defaultSide: 'right',
       },
       {
         id: 'studio',
-        title: 'Studio',
+        title: '스튜디오',
         component: <StudioPanel {...(validateBundle ? { validateBundle } : {})} />,
         defaultSide: 'right',
       },
@@ -299,6 +299,19 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
     ? activePanelId
     : defaultPanelId;
   const selectedPanel = panelConfigs.find((config) => config.id === selectedPanelId);
+  const modalRef = useRef<HTMLDialogElement>(null);
+  const selectedPanelButtonRef = useRef<HTMLButtonElement>(null);
+  useLayoutEffect(() => {
+    const dialog = modalRef.current;
+    if (!isPanelOpen || !isModalOpen || !dialog) return;
+    const previousFocus = document.activeElement;
+    dialog.showModal();
+    return () => {
+      dialog.close();
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
+      else selectedPanelButtonRef.current?.focus();
+    };
+  }, [isPanelOpen, isModalOpen, selectedPanelId]);
   const selectPanel = useCallback(
     (panelId: string) => {
       const isSamePanel = panelId === selectedPanelId;
@@ -315,7 +328,6 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
       id: `panel.${panel.id}`,
       label: `${panel.title} 열기`,
       group: '패널',
-      detail: panel.id,
       run: () => selectPanel(panel.id),
     }));
     const actionItems = actions.map((action) => ({
@@ -359,7 +371,7 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
       <aside
         className={`editor-sidebar ${sidebarPresetClassName} ${isPanelOpen ? 'editor-sidebar--open' : 'editor-sidebar--collapsed'}`}
         style={sidebarPresetStyle}
-        aria-label="Editor sidebar"
+        aria-label="편집 도구"
       >
         <div className="editor-sidebar-menu">
           <div className="editor-sidebar-header">
@@ -369,12 +381,14 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
             </div>
           </div>
 
-          <nav className="editor-panel-menu editor-panel-menu--flat">
+          <nav className="editor-panel-menu editor-panel-menu--flat" aria-label="편집 패널 선택">
             {panelConfigs.map((config) => (
               <button
                 key={config.id}
+                ref={selectedPanelId === config.id ? selectedPanelButtonRef : undefined}
                 type="button"
                 onClick={() => selectPanel(config.id)}
+                aria-pressed={selectedPanelId === config.id && isPanelOpen}
                 className={`editor-panel-toggle ${selectedPanelId === config.id && isPanelOpen ? 'active' : ''}`}
                 title={config.title}
               >
@@ -476,9 +490,29 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
       </aside>
 
       {isPanelOpen && isModalOpen && selectedPanel && (
-        <section
+        <dialog
+          ref={modalRef}
           className={`editor-panel-modal ${selectedPanelId === 'npc' ? 'editor-panel-modal--npc' : ''}`}
           aria-label={`${selectedPanel.title} 패널 모달`}
+          onKeyDown={(event) => {
+            event.stopPropagation();
+            if (event.key !== 'Tab' || event.defaultPrevented) return;
+            const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(
+              'button, input, select, textarea, a[href], [tabindex], [contenteditable="true"]',
+            )).filter((element) => element.tabIndex >= 0 && !element.matches(':disabled') && element.getClientRects().length > 0);
+            if (controls.length === 0) return;
+            event.preventDefault();
+            const current = controls.indexOf(document.activeElement as HTMLElement);
+            const next = current < 0
+              ? (event.shiftKey ? controls.length - 1 : 0)
+              : (current + (event.shiftKey ? -1 : 1) + controls.length) % controls.length;
+            controls[next]?.focus();
+          }}
+          onCancel={(event) => {
+            event.preventDefault();
+            setIsModalOpen(false);
+            setIsPanelOpen(false);
+          }}
         >
           <div className={`editor-panel-modal__surface ${selectedPanel.className ?? ''}`}>
             <header className="editor-panel-modal__header">
@@ -515,7 +549,7 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
               {selectedPanel.component}
             </div>
           </div>
-        </section>
+        </dialog>
       )}
 
       <CommandPalette

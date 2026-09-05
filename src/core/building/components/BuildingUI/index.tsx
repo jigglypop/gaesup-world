@@ -277,12 +277,12 @@ export function BuildingUI({
   const selectedTileObjectLabel = useMemo(
     () =>
       BUILDING_TILE_OBJECT_OPTIONS.find((option) => option.type === selectedTileObjectType)
-        ?.labelEn ?? selectedTileObjectType,
+        ?.labelKo ?? selectedTileObjectType,
     [selectedTileObjectType],
   );
   const selectedTileShapeLabel = useMemo(
     () =>
-      BUILDING_TILE_SHAPE_OPTIONS.find((option) => option.type === currentTileShape)?.labelEn ??
+      BUILDING_TILE_SHAPE_OPTIONS.find((option) => option.type === currentTileShape)?.labelKo ??
       currentTileShape,
     [currentTileShape],
   );
@@ -397,7 +397,7 @@ export function BuildingUI({
         {isEditing ? (
           <div className="building-ui-panel">
             <div className="building-ui-header">
-              <span className="building-ui-title">Building Mode</span>
+              <span className="building-ui-title">건축 모드</span>
               <button onClick={handleEditModeClose} className="building-ui-close">
                 ×
               </button>
@@ -408,44 +408,44 @@ export function BuildingUI({
                 onClick={() => setEditMode('wall')}
                 className={`building-ui-mode-button ${editMode === 'wall' ? 'active' : ''}`}
               >
-                Wall Mode
+                벽
               </button>
               <button
                 onClick={() => setEditMode('tile')}
                 className={`building-ui-mode-button ${editMode === 'tile' ? 'active' : ''}`}
               >
-                Tile Mode
+                바닥
               </button>
               <button
                 onClick={() => setEditMode('block')}
                 className={`building-ui-mode-button ${editMode === 'block' ? 'active' : ''}`}
               >
-                Block Mode
+                블록
               </button>
               {hasNPCPanel && (
                 <button
                   onClick={() => setEditMode('npc')}
                   className={`building-ui-mode-button ${editMode === 'npc' ? 'active' : ''}`}
                 >
-                  NPC Mode
+                  NPC
                 </button>
               )}
               <button
                 onClick={() => setEditMode('object')}
                 className={`building-ui-mode-button ${editMode === 'object' ? 'active' : ''}`}
               >
-                Object Mode
+                소품
               </button>
             </div>
 
             <div className="building-ui-object-group">
-              <span className="building-ui-label">World Environment:</span>
+              <span className="building-ui-label">월드 환경:</span>
               <div className="building-ui-object-buttons">
                 <button
                   onClick={() => setShowSnow(!showSnow)}
                   className={`building-ui-object-button ${showSnow ? 'active' : ''}`}
                 >
-                  Snow {showSnow ? 'ON' : 'OFF'}
+                  눈 {showSnow ? '켜짐' : '꺼짐'}
                 </button>
                 {BUILDING_WEATHER_EFFECT_OPTIONS.filter((option) => option.type !== 'snow').map(
                   (option) => (
@@ -454,7 +454,7 @@ export function BuildingUI({
                       onClick={() => setWeatherEffect(option.type)}
                       className={`building-ui-object-button ${weatherEffect === option.type ? 'active' : ''}`}
                     >
-                      {option.labelEn}
+                      {option.labelKo}
                     </button>
                   ),
                 )}
@@ -464,17 +464,17 @@ export function BuildingUI({
                     onClick={() => setWorldSurface(option.type)}
                     className={`building-ui-object-button ${worldSurface === option.type ? 'active' : ''}`}
                   >
-                    {option.labelEn}
+                    {option.labelKo}
                   </button>
                 ))}
                 <button
                   onClick={() => setShowFog(!showFog)}
                   className={`building-ui-object-button ${showFog ? 'active' : ''}`}
                 >
-                  Fog {showFog ? 'ON' : 'OFF'}
+                  안개 {showFog ? '켜짐' : '꺼짐'}
                 </button>
                 <label className="building-ui-object-button">
-                  Fog Color
+                  안개 색상
                   <input
                     type="color"
                     value={fogColor}
@@ -488,7 +488,7 @@ export function BuildingUI({
             {editMode === 'tile' && (
               <>
                 <div className="building-ui-category-group">
-                  <span className="building-ui-label">Category:</span>
+                  <span className="building-ui-label">분류:</span>
                   <select
                     value={selectedTileCategoryId || ''}
                     onChange={(e) => setSelectedTileCategory(e.target.value)}
@@ -503,7 +503,7 @@ export function BuildingUI({
                 </div>
 
                 <div className="building-ui-category-group">
-                  <span className="building-ui-label">Type:</span>
+                  <span className="building-ui-label">유형:</span>
                   <select
                     value={selectedTileGroupId || ''}
                     onChange={(e) =>
@@ -524,7 +524,7 @@ export function BuildingUI({
                 </div>
 
                 <div className="building-ui-object-group">
-                  <span className="building-ui-label">Wall Preset:</span>
+                  <span className="building-ui-label">벽 프리셋:</span>
                   <div className="building-ui-object-buttons">
                     {BUILDING_WALL_PRESETS.map((preset) => {
                       const groupId = `${preset.id}-walls`;
@@ -534,7 +534,7 @@ export function BuildingUI({
                           onClick={() => applyWallPreset(preset.id)}
                           className={`building-ui-object-button ${selectedWallGroupId === groupId ? 'active' : ''}`}
                         >
-                          {preset.labelEn}
+                          {preset.labelKo}
                         </button>
                       );
                     })}
@@ -542,7 +542,7 @@ export function BuildingUI({
                 </div>
 
                 <div className="building-ui-object-group">
-                  <span className="building-ui-label">Wall Module:</span>
+                  <span className="building-ui-label">벽 모듈:</span>
                   <div className="building-ui-object-buttons">
                     {BUILDING_WALL_KIND_OPTIONS.map((kind) => (
                       <button
@@ -550,7 +550,7 @@ export function BuildingUI({
                         onClick={() => setWallKind(kind.type)}
                         className={`building-ui-object-button ${(selectedWall?.wallKind ?? currentWallKind) === kind.type ? 'active' : ''}`}
                       >
-                        {kind.labelEn}
+                        {kind.labelKo}
                       </button>
                     ))}
                   </div>
@@ -566,7 +566,7 @@ export function BuildingUI({
                   className="building-ui-apply-button"
                   disabled={!selectedWallId || !selectedWallGroup}
                 >
-                  Flip Interior/Exterior
+                  안쪽·바깥쪽 뒤집기
                 </button>
 
                 <button onClick={handleToggleCustomSettings} className="building-ui-custom-toggle">
@@ -576,18 +576,18 @@ export function BuildingUI({
                 {showCustomSettings && (
                   <div className="building-ui-custom-settings">
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Name:</span>
+                      <span className="building-ui-label">이름:</span>
                       <input
                         type="text"
                         value={customName}
                         onChange={(e) => setCustomName(e.target.value)}
-                        placeholder="Custom Floor Name"
+                        placeholder="바닥 이름"
                         className="building-ui-input"
                       />
                     </div>
 
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Color:</span>
+                      <span className="building-ui-label">색상:</span>
                       <div className="building-ui-color-input">
                         <input
                           type="color"
@@ -606,7 +606,7 @@ export function BuildingUI({
                     </div>
 
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Texture URL:</span>
+                      <span className="building-ui-label">텍스처 주소:</span>
                       <input
                         type="text"
                         value={customTexture}
@@ -640,7 +640,7 @@ export function BuildingUI({
                       }}
                       className="building-ui-apply-button"
                     >
-                      Apply Changes
+                      변경 적용
                     </button>
 
                     <button
@@ -684,13 +684,13 @@ export function BuildingUI({
                       }}
                       className="building-ui-create-button"
                     >
-                      Create New Type
+                      새 유형 만들기
                     </button>
                   </div>
                 )}
 
                 <div className="building-ui-size-group">
-                  <span className="building-ui-label">Tile Size:</span>
+                  <span className="building-ui-label">바닥 크기:</span>
                   <div className="building-ui-size-buttons">
                     <button
                       onClick={() => setTileMultiplier(1)}
@@ -720,7 +720,7 @@ export function BuildingUI({
                 </div>
 
                 <div className="building-ui-size-group">
-                  <span className="building-ui-label">Tile Height:</span>
+                  <span className="building-ui-label">바닥 높이:</span>
                   <div className="building-ui-size-buttons">
                     {[0, 1, 2, 3, 4].map((height) => (
                       <button
@@ -735,7 +735,7 @@ export function BuildingUI({
                 </div>
 
                 <div className="building-ui-size-group">
-                  <span className="building-ui-label">Tile Shape:</span>
+                  <span className="building-ui-label">바닥 모양:</span>
                   <div className="building-ui-size-buttons">
                     {BUILDING_TILE_SHAPE_OPTIONS.map((shape) => (
                       <button
@@ -743,14 +743,14 @@ export function BuildingUI({
                         onClick={() => setTileShape(shape.type)}
                         className={`building-ui-size-button ${currentTileShape === shape.type ? 'active' : ''}`}
                       >
-                        {shape.labelEn}
+                        {shape.labelKo}
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div className="building-ui-size-group">
-                  <span className="building-ui-label">Tile Rotation:</span>
+                  <span className="building-ui-label">바닥 회전:</span>
                   <div className="building-ui-size-buttons">
                     {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((rotation, index) => (
                       <button
@@ -765,7 +765,7 @@ export function BuildingUI({
                 </div>
 
                 <div className="building-ui-object-group">
-                  <span className="building-ui-label">Tile Preset:</span>
+                  <span className="building-ui-label">바닥 프리셋:</span>
                   <div className="building-ui-object-buttons">
                     {BUILDING_TILE_PRESETS.map((preset) => {
                       const groupId = `${preset.id}-floor`;
@@ -775,7 +775,7 @@ export function BuildingUI({
                           onClick={() => applyTilePreset(preset.id)}
                           className={`building-ui-object-button ${selectedTileGroupId === groupId ? 'active' : ''}`}
                         >
-                          {preset.labelEn}
+                          {preset.labelKo}
                         </button>
                       );
                     })}
@@ -784,7 +784,7 @@ export function BuildingUI({
 
                 <div className="building-ui-custom-settings">
                   <div className="building-ui-input-group">
-                    <span className="building-ui-label">Custom Tile:</span>
+                    <span className="building-ui-label">사용자 지정 바닥:</span>
                     <input
                       type="text"
                       value={currentCustomTileName}
@@ -793,7 +793,7 @@ export function BuildingUI({
                     />
                   </div>
                   <div className="building-ui-input-group">
-                    <span className="building-ui-label">Color:</span>
+                    <span className="building-ui-label">색상:</span>
                     <div className="building-ui-color-input">
                       <input
                         type="color"
@@ -811,7 +811,7 @@ export function BuildingUI({
                     </div>
                   </div>
                   <div className="building-ui-input-group">
-                    <span className="building-ui-label">Texture URL:</span>
+                    <span className="building-ui-label">텍스처 주소:</span>
                     <input
                       type="text"
                       value={currentCustomTileTextureUrl}
@@ -821,12 +821,12 @@ export function BuildingUI({
                     />
                   </div>
                   <button onClick={applyCustomTile} className="building-ui-action-button">
-                    Create/Select Separate Tile Map
+                    별도 바닥 맵 만들기·선택
                   </button>
                 </div>
 
                 <div className="building-ui-object-group">
-                  <span className="building-ui-label">Tile Object:</span>
+                  <span className="building-ui-label">바닥 소품:</span>
                   <div className="building-ui-object-buttons">
                     {BUILDING_TILE_OBJECT_OPTIONS.map((option) => (
                       <button
@@ -834,24 +834,24 @@ export function BuildingUI({
                         onClick={() => setSelectedTileObjectType(option.type)}
                         className={`building-ui-object-button ${selectedTileObjectType === option.type ? 'active' : ''}`}
                       >
-                        {option.labelEn}
+                        {option.labelKo}
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div className="building-ui-info">
-                  <p>Category: {tileCategories.get(selectedTileCategoryId || '')?.name}</p>
-                  <p>Type: {tileGroups.get(selectedTileGroupId || '')?.name}</p>
+                  <p>분류: {tileCategories.get(selectedTileCategoryId || '')?.name}</p>
+                  <p>유형: {tileGroups.get(selectedTileGroupId || '')?.name}</p>
                   <p>
-                    Size: {currentTileMultiplier}x{currentTileMultiplier} (
+                    크기: {currentTileMultiplier}x{currentTileMultiplier} (
                     {currentTileMultiplier * 4}m)
                   </p>
-                  <p>Height: {currentTileHeight}</p>
-                  <p>Shape: {selectedTileShapeLabel}</p>
-                  <p>Object: {selectedTileObjectLabel}</p>
-                  <p>Click to place tiles</p>
-                  <p>Amber = Occupied, Blue = Available</p>
+                  <p>높이: {currentTileHeight}</p>
+                  <p>모양: {selectedTileShapeLabel}</p>
+                  <p>소품: {selectedTileObjectLabel}</p>
+                  <p>클릭하여 바닥을 배치하세요</p>
+                  <p>주황색: 배치 불가 · 파란색: 배치 가능</p>
                 </div>
               </>
             )}
@@ -859,7 +859,7 @@ export function BuildingUI({
             {editMode === 'block' && (
               <>
                 <div className="building-ui-size-group">
-                  <span className="building-ui-label">Block Size:</span>
+                  <span className="building-ui-label">블록 크기:</span>
                   <div className="building-ui-size-buttons">
                     {[1, 2, 3, 4].map((size) => (
                       <button
@@ -874,7 +874,7 @@ export function BuildingUI({
                 </div>
 
                 <div className="building-ui-size-group">
-                  <span className="building-ui-label">Layer Offset:</span>
+                  <span className="building-ui-label">층 오프셋:</span>
                   <div className="building-ui-size-buttons">
                     {[0, 1, 2, 3, 4].map((height) => (
                       <button
@@ -890,11 +890,11 @@ export function BuildingUI({
 
                 <div className="building-ui-info">
                   <p>
-                    Size: {currentTileMultiplier}x{currentTileMultiplier}
+                    크기: {currentTileMultiplier}x{currentTileMultiplier}
                   </p>
-                  <p>Layer offset: {currentTileHeight}</p>
-                  <p>Click to place voxel blocks</p>
-                  <p>Click highlighted blocks to delete</p>
+                  <p>층 오프셋: {currentTileHeight}</p>
+                  <p>클릭하여 복셀 블록을 배치하세요</p>
+                  <p>강조된 블록을 클릭하면 삭제됩니다</p>
                 </div>
               </>
             )}
@@ -902,7 +902,7 @@ export function BuildingUI({
             {editMode === 'object' && (
               <>
                 <div className="building-ui-object-group">
-                  <span className="building-ui-label">Object Type:</span>
+                  <span className="building-ui-label">소품 유형:</span>
                   <div className="building-ui-object-buttons">
                     {BUILDING_BASIC_OBJECT_OPTIONS.map((option) => (
                       <button
@@ -910,7 +910,7 @@ export function BuildingUI({
                         onClick={() => setSelectedPlacedObjectType(option.type)}
                         className={`building-ui-object-button ${selectedPlacedObjectType === option.type ? 'active' : ''}`}
                       >
-                        {option.labelEn}
+                        {option.labelKo}
                       </button>
                     ))}
                     {DEFAULT_BUILDING_OBJECT_CATALOG.map((item) => (
@@ -932,7 +932,7 @@ export function BuildingUI({
                 </div>
 
                 <div className="building-ui-size-group">
-                  <span className="building-ui-label">Object Rotation:</span>
+                  <span className="building-ui-label">소품 회전:</span>
                   <div className="building-ui-size-buttons">
                     {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((rotation, index) => (
                       <button
@@ -949,7 +949,7 @@ export function BuildingUI({
                 {(selectedPlacedObjectType === 'tree' || selectedPlacedObjectType === 'sakura') && (
                   <div className="building-ui-custom-settings">
                     <div className="building-ui-object-group">
-                      <span className="building-ui-label">Tree Type:</span>
+                      <span className="building-ui-label">나무 종류:</span>
                       <div className="building-ui-object-buttons">
                         {BUILDING_TREE_OPTIONS.map((option) => (
                           <button
@@ -957,13 +957,13 @@ export function BuildingUI({
                             onClick={() => setTreeKind(option.type)}
                             className={`building-ui-object-button ${currentTreeKind === option.type ? 'active' : ''}`}
                           >
-                            {option.labelEn}
+                            {option.labelKo}
                           </button>
                         ))}
                       </div>
                     </div>
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Leaf/Flower Color:</span>
+                      <span className="building-ui-label">잎·꽃 색상:</span>
                       <div className="building-ui-color-input">
                         <input
                           type="color"
@@ -981,7 +981,7 @@ export function BuildingUI({
                       </div>
                     </div>
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Bark Color:</span>
+                      <span className="building-ui-label">나무껍질 색상:</span>
                       <div className="building-ui-color-input">
                         <input
                           type="color"
@@ -1004,7 +1004,7 @@ export function BuildingUI({
                 {selectedPlacedObjectType === 'flag' && (
                   <div className="building-ui-custom-settings">
                     <div className="building-ui-object-group">
-                      <span className="building-ui-label">Flag Style:</span>
+                      <span className="building-ui-label">깃발 모양:</span>
                       <div className="building-ui-object-buttons">
                         {BUILDING_FLAG_STYLE_OPTIONS.map(({ style, meta }) => (
                           <button
@@ -1018,7 +1018,7 @@ export function BuildingUI({
                       </div>
                     </div>
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Width:</span>
+                      <span className="building-ui-label">너비:</span>
                       <input
                         type="number"
                         min="0.5"
@@ -1030,7 +1030,7 @@ export function BuildingUI({
                       />
                     </div>
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Height:</span>
+                      <span className="building-ui-label">높이:</span>
                       <input
                         type="number"
                         min="0.5"
@@ -1042,7 +1042,7 @@ export function BuildingUI({
                       />
                     </div>
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Image URL:</span>
+                      <span className="building-ui-label">이미지 주소:</span>
                       <input
                         type="text"
                         value={currentFlagImageUrl}
@@ -1057,7 +1057,7 @@ export function BuildingUI({
                 {selectedPlacedObjectType === 'fire' && (
                   <div className="building-ui-custom-settings">
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Intensity:</span>
+                      <span className="building-ui-label">강도:</span>
                       <input
                         type="number"
                         min="0.5"
@@ -1069,7 +1069,7 @@ export function BuildingUI({
                       />
                     </div>
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Width:</span>
+                      <span className="building-ui-label">너비:</span>
                       <input
                         type="number"
                         min="0.3"
@@ -1081,7 +1081,7 @@ export function BuildingUI({
                       />
                     </div>
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Height:</span>
+                      <span className="building-ui-label">높이:</span>
                       <input
                         type="number"
                         min="0.5"
@@ -1093,7 +1093,7 @@ export function BuildingUI({
                       />
                     </div>
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Color:</span>
+                      <span className="building-ui-label">색상:</span>
                       <div className="building-ui-color-input">
                         <input
                           type="color"
@@ -1116,7 +1116,7 @@ export function BuildingUI({
                 {selectedPlacedObjectType === 'billboard' && (
                   <div className="building-ui-custom-settings">
                     <div className="building-ui-size-group">
-                      <span className="building-ui-label">Billboard Size:</span>
+                      <span className="building-ui-label">안내판 크기:</span>
                       <div className="building-ui-size-buttons">
                         {[0.5, 1, 1.5, 2, 3, 4].map((size) => (
                           <button
@@ -1131,7 +1131,7 @@ export function BuildingUI({
                     </div>
 
                     <div className="building-ui-size-group">
-                      <span className="building-ui-label">Billboard Height:</span>
+                      <span className="building-ui-label">안내판 높이:</span>
                       <div className="building-ui-size-buttons">
                         {[-1, 0, 1, 2, 3, 4, 6].map((height) => (
                           <button
@@ -1146,7 +1146,7 @@ export function BuildingUI({
                     </div>
 
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Text:</span>
+                      <span className="building-ui-label">문구:</span>
                       <input
                         type="text"
                         value={currentBillboardText}
@@ -1156,7 +1156,7 @@ export function BuildingUI({
                     </div>
 
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Image URL:</span>
+                      <span className="building-ui-label">이미지 주소:</span>
                       <input
                         type="text"
                         value={currentBillboardImageUrl}
@@ -1167,7 +1167,7 @@ export function BuildingUI({
                     </div>
 
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Color:</span>
+                      <span className="building-ui-label">색상:</span>
                       <div className="building-ui-color-input">
                         <input
                           type="color"
@@ -1186,7 +1186,7 @@ export function BuildingUI({
                     </div>
 
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Custom Size:</span>
+                      <span className="building-ui-label">사용자 지정 크기:</span>
                       <input
                         type="number"
                         min="0.1"
@@ -1199,7 +1199,7 @@ export function BuildingUI({
                     </div>
 
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Custom Height:</span>
+                      <span className="building-ui-label">사용자 지정 높이:</span>
                       <input
                         type="number"
                         min="-4"
@@ -1212,7 +1212,7 @@ export function BuildingUI({
                     </div>
 
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Panel Width:</span>
+                      <span className="building-ui-label">판 너비:</span>
                       <input
                         type="number"
                         min="0"
@@ -1222,11 +1222,11 @@ export function BuildingUI({
                         onChange={(e) => setBillboardWidth(Number(e.target.value) || 0)}
                         className="building-ui-input"
                       />
-                      <span className="building-ui-help">0 = image ratio auto</span>
+                      <span className="building-ui-help">0: 이미지 비율에 맞춤</span>
                     </div>
 
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Panel Height:</span>
+                      <span className="building-ui-label">판 높이:</span>
                       <input
                         type="number"
                         min="0.3"
@@ -1239,7 +1239,7 @@ export function BuildingUI({
                     </div>
 
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Post Height:</span>
+                      <span className="building-ui-label">기둥 높이:</span>
                       <input
                         type="number"
                         min="0"
@@ -1252,7 +1252,7 @@ export function BuildingUI({
                     </div>
 
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Brightness:</span>
+                      <span className="building-ui-label">밝기:</span>
                       <input
                         type="number"
                         min="0"
@@ -1269,7 +1269,7 @@ export function BuildingUI({
                 {selectedPlacedObjectType === 'model' && (
                   <div className="building-ui-custom-settings">
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">GLB URL:</span>
+                      <span className="building-ui-label">GLB 파일 주소:</span>
                       <input
                         type="text"
                         value={currentModelUrl}
@@ -1280,7 +1280,7 @@ export function BuildingUI({
                     </div>
 
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Scale:</span>
+                      <span className="building-ui-label">배율:</span>
                       <input
                         type="number"
                         min="0.1"
@@ -1293,7 +1293,7 @@ export function BuildingUI({
                     </div>
 
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Color:</span>
+                      <span className="building-ui-label">색상:</span>
                       <div className="building-ui-color-input">
                         <input
                           type="color"
@@ -1315,18 +1315,18 @@ export function BuildingUI({
 
                 <div className="building-ui-info">
                   <p>
-                    Type:{' '}
+                    유형:{' '}
                     {selectedPlacedObjectType === 'model'
                       ? selectedModelObject?.label
                       : selectedPlacedObjectType}
                   </p>
                   {selectedPlacedObjectType === 'model' && (
                     <>
-                      <p>Fallback: {selectedModelObject?.fallbackKind ?? 'generic'}</p>
+                      <p>대체 표시: {selectedModelObject?.fallbackKind ?? 'generic'}</p>
                       <p>GLB URL이 비어 있으면 기본 프리미티브로 표시됩니다.</p>
                     </>
                   )}
-                  <p>Click to place objects</p>
+                  <p>클릭하여 소품을 배치하세요</p>
                 </div>
               </>
             )}
@@ -1334,7 +1334,7 @@ export function BuildingUI({
             {editMode === 'wall' && (
               <>
                 <div className="building-ui-category-group">
-                  <span className="building-ui-label">Category:</span>
+                  <span className="building-ui-label">분류:</span>
                   <select
                     value={selectedWallCategoryId || ''}
                     onChange={(e) => setSelectedWallCategory(e.target.value)}
@@ -1349,7 +1349,7 @@ export function BuildingUI({
                 </div>
 
                 <div className="building-ui-category-group">
-                  <span className="building-ui-label">Type:</span>
+                  <span className="building-ui-label">유형:</span>
                   <select
                     value={selectedWallTypeGroupId || ''}
                     onChange={(e) => {
@@ -1381,18 +1381,18 @@ export function BuildingUI({
                 {showCustomSettings && (
                   <div className="building-ui-custom-settings">
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Name:</span>
+                      <span className="building-ui-label">이름:</span>
                       <input
                         type="text"
                         value={customName}
                         onChange={(e) => setCustomName(e.target.value)}
-                        placeholder="Custom Wall Name"
+                        placeholder="벽 이름"
                         className="building-ui-input"
                       />
                     </div>
 
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Color:</span>
+                      <span className="building-ui-label">색상:</span>
                       <div className="building-ui-color-input">
                         <input
                           type="color"
@@ -1411,7 +1411,7 @@ export function BuildingUI({
                     </div>
 
                     <div className="building-ui-input-group">
-                      <span className="building-ui-label">Texture URL:</span>
+                      <span className="building-ui-label">텍스처 주소:</span>
                       <input
                         type="text"
                         value={customTexture}
@@ -1447,7 +1447,7 @@ export function BuildingUI({
                       }}
                       className="building-ui-apply-button"
                     >
-                      Apply Changes
+                      변경 적용
                     </button>
 
                     <button
@@ -1493,51 +1493,51 @@ export function BuildingUI({
                       }}
                       className="building-ui-create-button"
                     >
-                      Create New Type
+                      새 유형 만들기
                     </button>
                   </div>
                 )}
 
                 <div className="building-ui-direction-group">
-                  <span className="building-ui-label">Wall Direction:</span>
+                  <span className="building-ui-label">벽 방향:</span>
                   <div className="building-ui-direction-buttons">
                     <button
                       onClick={() => setWallRotation(0)}
                       className={`building-ui-direction-button ${currentWallRotation === 0 ? 'active' : ''}`}
-                      title="North"
+                      title="북쪽"
                     >
                       ↑
                     </button>
                     <button
                       onClick={() => setWallRotation(Math.PI / 2)}
                       className={`building-ui-direction-button ${currentWallRotation === Math.PI / 2 ? 'active' : ''}`}
-                      title="East"
+                      title="동쪽"
                     >
                       →
                     </button>
                     <button
                       onClick={() => setWallRotation(Math.PI)}
                       className={`building-ui-direction-button ${currentWallRotation === Math.PI ? 'active' : ''}`}
-                      title="South"
+                      title="남쪽"
                     >
                       ↓
                     </button>
                     <button
                       onClick={() => setWallRotation(Math.PI * 1.5)}
                       className={`building-ui-direction-button ${currentWallRotation === Math.PI * 1.5 ? 'active' : ''}`}
-                      title="West"
+                      title="서쪽"
                     >
                       ←
                     </button>
                   </div>
                 </div>
                 <div className="building-ui-info">
-                  <p>Category: {wallCategories.get(selectedWallCategoryId || '')?.name}</p>
-                  <p>Type: {wallGroups.get(selectedWallGroupId || '')?.name}</p>
-                  <p>Use arrow keys to rotate</p>
-                  <p>Click to place walls</p>
-                  <p>Amber = Occupied, Blue = Available</p>
-                  <p>Click highlighted markers to delete</p>
+                  <p>분류: {wallCategories.get(selectedWallCategoryId || '')?.name}</p>
+                  <p>유형: {wallGroups.get(selectedWallGroupId || '')?.name}</p>
+                  <p>방향키로 회전하세요</p>
+                  <p>클릭하여 벽을 배치하세요</p>
+                  <p>주황색: 배치 불가 · 파란색: 배치 가능</p>
+                  <p>강조된 표시를 클릭하면 삭제됩니다</p>
                 </div>
               </>
             )}

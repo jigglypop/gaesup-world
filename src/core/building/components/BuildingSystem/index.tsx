@@ -111,6 +111,7 @@ function bucketObjects(objects: PlacedObject[] | undefined): ObjectBuckets {
 }
 
 export const BuildingSystem = React.memo(function BuildingSystem({
+  showGrid: gridVisibility,
   onWallClick,
   onTileClick,
   onBlockClick,
@@ -232,7 +233,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
   return (
     <Suspense fallback={null}>
       <group name="building-system">
-        {showGrid && <GridHelper size={gridSize} />}
+        {(gridVisibility ?? showGrid) && <GridHelper size={gridSize} />}
         
         <PreviewBlock />
         <PreviewTile />

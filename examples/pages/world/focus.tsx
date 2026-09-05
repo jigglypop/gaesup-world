@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import {
   requestCameraCloseUp,
@@ -51,12 +51,16 @@ const CLEAR_MOUSE = {
 
 export function WorldFocusModal({ focus, onClose }: WorldFocusModalProps) {
   const inputBackend = useInputBackend();
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!focus) return;
 
     const store = useGaesupStore.getState();
     const wasInteractionActive = store.interaction.isActive;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeRef.current?.focus({ preventScroll: true });
 
     store.setInteractionActive(false);
     inputBackend.updateKeyboard(CLEAR_KEYBOARD);
@@ -70,7 +74,18 @@ export function WorldFocusModal({ focus, onClose }: WorldFocusModalProps) {
     });
 
     const blockKeyboard = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.type === 'keydown') {
+        const content = contentRef.current;
+        if (content && ['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End'].includes(event.key)) {
+          if (event.key === 'Home') content.scrollTop = 0;
+          else if (event.key === 'End') content.scrollTop = content.scrollHeight;
+          else content.scrollTop += (event.key === 'ArrowUp' || event.key === 'PageUp' ? -1 : 1)
+            * content.clientHeight / (event.key.startsWith('Arrow') ? 10 : 1);
+        }
+        if (event.key === 'Tab') closeRef.current?.focus();
+        if (!event.repeat && (event.key === 'Escape'
+          || ((event.key === 'Enter' || event.key === ' ') && event.target === closeRef.current))) onClose();
+      }
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
@@ -86,6 +101,7 @@ export function WorldFocusModal({ focus, onClose }: WorldFocusModalProps) {
       inputBackend.updateMouse(CLEAR_MOUSE);
       useGaesupStore.getState().setInteractionActive(wasInteractionActive);
       restoreCameraCloseUp();
+      if (previousFocus?.isConnected) previousFocus.focus();
     };
   }, [focus, inputBackend, onClose]);
 
@@ -94,6 +110,7 @@ export function WorldFocusModal({ focus, onClose }: WorldFocusModalProps) {
   return (
     <div
       className="world-focus-modal"
+      data-world-overlay
       role="dialog"
       aria-modal="true"
       aria-labelledby="world-focus-modal-title"
@@ -102,6 +119,7 @@ export function WorldFocusModal({ focus, onClose }: WorldFocusModalProps) {
       onWheel={(event) => event.stopPropagation()}
     >
       <section className="world-focus-modal__panel">
+        <div ref={contentRef} className="world-focus-modal__content">
         <div className="world-focus-modal__eyebrow">{focus.category}</div>
         <h2 id="world-focus-modal-title">{focus.title}</h2>
         <p>{focus.description}</p>
@@ -112,7 +130,8 @@ export function WorldFocusModal({ focus, onClose }: WorldFocusModalProps) {
             ))}
           </ul>
         )}
-        <button type="button" className="world-focus-modal__close" onClick={onClose}>
+        </div>
+        <button ref={closeRef} type="button" className="world-focus-modal__close" onClick={onClose}>
           닫기
         </button>
       </section>

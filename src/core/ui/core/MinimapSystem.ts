@@ -7,6 +7,7 @@ import { BaseState, BaseMetrics } from '@/core/boilerplate/types';
 
 import type { MinimapMarker } from '../types';
 
+const TILE_CLIP_PADDING = 1;
 
 interface MinimapSystemState extends BaseState {
   markers: Map<string, MinimapMarker>;
@@ -50,6 +51,11 @@ type TileGroupLike = {
 @ManageRuntime({ autoStart: false })
 export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSystemMetrics> {
   private static instance: MinimapSystem | null = null;
+  private lastScale: number | null = null;
+  private lastSize: number | null = null;
+  private lastBlockRotate = false;
+  private lastTileGroups: MinimapRenderOptions['tileGroups'];
+  private lastSceneObjects: MinimapRenderOptions['sceneObjects'];
   private listeners: Set<(markers: Map<string, MinimapMarker>) => void>;
 
   constructor() {
@@ -126,11 +132,15 @@ export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSys
   }
 
   private notifyListeners(): void {
+    this.state.isDirty = true;
+    if (this.listeners.size === 0) return;
     const markers = this.getMarkers();
     this.listeners.forEach(listener => listener(markers));
   }
 
   setCanvas(canvas: HTMLCanvasElement | null): void {
+    this.lastTileGroups = undefined;
+    this.lastSceneObjects = undefined;
     this.state.canvas = canvas;
     this.state.ctx = canvas ? canvas.getContext('2d') : null;
     this.state.isDirty = true;
@@ -165,10 +175,26 @@ export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSys
   }
 
   render(options: MinimapRenderOptions): void {
+    if (options.size !== this.lastSize) {
+      this.state.isDirty = true;
+      this.state.gradientCache.background = null;
+      this.state.gradientCache.avatar = null;
+    }
+    if (
+      options.scale !== this.lastScale ||
+      Boolean(options.blockRotate) !== this.lastBlockRotate ||
+      options.tileGroups !== this.lastTileGroups ||
+      options.sceneObjects !== this.lastSceneObjects
+    ) this.state.isDirty = true;
     if (!this.state.canvas || !this.state.ctx || !this.state.isDirty) return;
 
     const startTime = performance.now();
     const { size, scale, position, rotation, blockRotate, tileGroups, sceneObjects } = options;
+    this.lastSize = size;
+    this.lastScale = scale;
+    this.lastBlockRotate = Boolean(blockRotate);
+    this.lastTileGroups = tileGroups;
+    this.lastSceneObjects = sceneObjects;
     const ctx = this.state.ctx;
 
     ctx.clearRect(0, 0, size, size);
@@ -190,7 +216,7 @@ export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSys
     ctx.fillRect(0, 0, size, size);
 
     // Rotation
-    const displayRotation = (rotation * 180) / Math.PI;
+    const displayRotation = blockRotate ? 0 : (rotation * 180) / Math.PI;
     ctx.translate(size / 2, size / 2);
     ctx.rotate((-displayRotation * Math.PI) / 180);
     ctx.translate(-size / 2, -size / 2);
@@ -223,7 +249,7 @@ export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSys
     }
 
     // Render minimap markers
-    this.renderMarkers(ctx, size, scale, position, displayRotation, blockRotate);
+    this.renderMarkers(ctx, size, scale, position, displayRotation);
 
     // Render player avatar
     this.renderAvatar(ctx, size);
@@ -242,10 +268,10 @@ export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSys
     ctx.shadowBlur = 3;
 
     const dirs = [
-      { text: 'N', x: size / 2, y: 25, color: '#ff6b6b' },
-      { text: 'S', x: size / 2, y: size - 25, color: '#4ecdc4' },
-      { text: 'E', x: size - 25, y: size / 2, color: '#45b7d1' },
-      { text: 'W', x: 25, y: size / 2, color: '#f9ca24' },
+      { text: '북', x: size / 2, y: 25, color: '#ff6b6b' },
+      { text: '남', x: size / 2, y: size - 25, color: '#4ecdc4' },
+      { text: '동', x: size - 25, y: size / 2, color: '#45b7d1' },
+      { text: '서', x: 25, y: size / 2, color: '#f9ca24' },
     ];
 
     dirs.forEach(({ text, x, y, color }) => {
@@ -262,17 +288,23 @@ export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSys
   }
 
   private renderTiles(ctx: CanvasRenderingContext2D, size: number, scale: number, position: THREE.Vector3, tileGroups: Map<string, TileGroupLike>): void {
-    const tileGroupsArray = Array.from(tileGroups.values());
-    tileGroupsArray.forEach((tileGroup) => {
+    const clipRadiusSquared = (size / 2 + TILE_CLIP_PADDING) ** 2;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.lineWidth = 0.5;
+    for (const tileGroup of tileGroups.values()) {
       if (tileGroup && tileGroup.tiles && Array.isArray(tileGroup.tiles)) {
-        tileGroup.tiles.forEach((tile) => {
-          if (!tile || !tile.position) return;
+        for (const tile of tileGroup.tiles) {
+          if (!tile || !tile.position) continue;
           
           const posX = (tile.position.x - position.x) * scale;
           const posZ = (tile.position.z - position.z) * scale;
           const tileSize = (tile.size || 1) * 4 * scale;
+          const halfSize = Math.abs(tileSize) / 2;
+          const nearestX = Math.max(0, Math.abs(posX) - halfSize);
+          const nearestZ = Math.max(0, Math.abs(posZ) - halfSize);
+          if (nearestX * nearestX + nearestZ * nearestZ > clipRadiusSquared) continue;
           
-          ctx.save();
           const x = size / 2 - posX - tileSize / 2;
           const y = size / 2 - posZ - tileSize / 2;
           
@@ -289,13 +321,11 @@ export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSys
           }
           
           ctx.fillRect(x, y, tileSize, tileSize);
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-          ctx.lineWidth = 0.5;
           ctx.strokeRect(x, y, tileSize, tileSize);
-          ctx.restore();
-        });
+        }
       }
-    });
+    }
+    ctx.restore();
   }
 
   private renderSceneObjects(ctx: CanvasRenderingContext2D, size: number, scale: number, position: THREE.Vector3, sceneObjects: Map<string, { position: THREE.Vector3; size: THREE.Vector3 }>): void {
@@ -317,7 +347,7 @@ export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSys
     });
   }
 
-  private renderMarkers(ctx: CanvasRenderingContext2D, size: number, scale: number, position: THREE.Vector3, displayRotation: number, blockRotate?: boolean): void {
+  private renderMarkers(ctx: CanvasRenderingContext2D, size: number, scale: number, position: THREE.Vector3, displayRotation: number): void {
     if (this.state.markers.size === 0) return;
 
     this.state.markers.forEach((marker) => {
@@ -349,9 +379,7 @@ export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSys
         ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
         ctx.shadowBlur = 2;
         ctx.translate(x + width / 2, y + height / 2);
-        if (!blockRotate) {
-          ctx.rotate((-displayRotation * Math.PI) / 180);
-        }
+        ctx.rotate((displayRotation * Math.PI) / 180);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(text, 0, 0);
@@ -412,8 +440,7 @@ export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSys
   protected override onDispose(): void {
     this.clear();
     this.listeners.clear();
-    this.state.canvas = null;
-    this.state.ctx = null;
-    MinimapSystem.instance = null;
+    this.setCanvas(null);
+    if (MinimapSystem.instance === this) MinimapSystem.instance = null;
   }
 } 

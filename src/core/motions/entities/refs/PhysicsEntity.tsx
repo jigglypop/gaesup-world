@@ -110,7 +110,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
           return (
             <PartsGroupRef
               url={url}
-              isActive={true}
+              isActive={false}
               componentType={props.componentType}
               {...(props.currentAnimation ? { currentAnimation: props.currentAnimation } : {})}
               {...(color ? { color } : {})}

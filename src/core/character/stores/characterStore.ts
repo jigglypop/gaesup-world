@@ -2,6 +2,8 @@ import { create } from 'zustand';
 
 import {
   DEFAULT_APPEARANCE,
+  FACE_STYLE_LABEL,
+  HAIR_STYLE_LABEL,
   type Appearance,
   type AppearanceColors,
   type CharacterProfile,
@@ -36,6 +38,28 @@ const cloneProfile = (profile: CharacterProfile): CharacterProfile => ({
   outfits: { ...profile.outfits },
 });
 
+function prepareProfile(profile: { appearance?: Appearance; outfits?: Partial<CharacterProfile['outfits']> }): CharacterProfile {
+  if (!profile || typeof profile !== 'object' || Array.isArray(profile)
+    || (profile.appearance !== undefined && (!profile.appearance || typeof profile.appearance !== 'object' || Array.isArray(profile.appearance)))
+    || (profile.appearance?.colors !== undefined && (!profile.appearance.colors || typeof profile.appearance.colors !== 'object' || Array.isArray(profile.appearance.colors)))
+    || (profile.outfits !== undefined && (!profile.outfits || typeof profile.outfits !== 'object' || Array.isArray(profile.outfits)))) {
+    throw new TypeError('Invalid character profile');
+  }
+  const prepared: CharacterProfile = {
+    appearance: { ...DEFAULT_APPEARANCE, ...profile.appearance,
+      colors: { ...DEFAULT_APPEARANCE.colors, ...profile.appearance?.colors } },
+    outfits: { ...EMPTY_OUTFITS, ...profile.outfits },
+  };
+  if (typeof prepared.appearance.name !== 'string'
+    || !Object.hasOwn(FACE_STYLE_LABEL, prepared.appearance.face)
+    || !Object.hasOwn(HAIR_STYLE_LABEL, prepared.appearance.hair)
+    || !Object.values(prepared.appearance.colors).every((color) => typeof color === 'string')
+    || !Object.values(prepared.outfits).every((item) => item === null || typeof item === 'string')) {
+    throw new TypeError('Invalid character appearance or outfit');
+  }
+  return prepared;
+}
+
 type CharacterState = {
   /** Character whose profile is mirrored on the top-level appearance/outfits fields. */
   activeCharacterId: string;
@@ -61,6 +85,9 @@ type CharacterState = {
   hydrate: (
     data: CharacterSerialized | CharacterSerializedV2 | CharacterSerializedV1 | null | undefined,
   ) => void;
+  prepareHydrate: (
+    data: CharacterSerialized | CharacterSerializedV2 | CharacterSerializedV1 | null | undefined,
+  ) => () => void;
 };
 
 const applyToProfile = (
@@ -184,44 +211,33 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
       };
     },
 
-    hydrate: (data) => {
-      if (!data) return;
+    prepareHydrate: (data) => {
+      if (data === null || data === undefined) return () => {};
+      if (typeof data !== 'object' || ![1, 2, 3].includes(data.version)) throw new TypeError('Invalid character snapshot');
       if (data.version === 3) {
-        const entries = Object.entries(data.characters ?? {});
-        if (entries.length === 0) return;
-        const characters: Record<string, CharacterProfile> = {};
-        for (const [id, profile] of entries) {
-          characters[id] = {
-            appearance: {
-              ...DEFAULT_APPEARANCE,
-              ...profile.appearance,
-              colors: { ...DEFAULT_APPEARANCE.colors, ...profile.appearance?.colors },
-            },
-            outfits: { ...EMPTY_OUTFITS, ...profile.outfits },
-          };
+        if (!data.characters || typeof data.characters !== 'object' || Array.isArray(data.characters)
+          || typeof data.activeCharacterId !== 'string' || !data.activeCharacterId.trim()) {
+          throw new TypeError('Invalid character collection');
         }
+        const entries = Object.entries(data.characters);
+        if (entries.length === 0) return () => {};
+        const characters = Object.fromEntries(entries.map(([id, profile]) => {
+          if (!id.trim()) throw new TypeError('Invalid character ID');
+          return [id, prepareProfile(profile)];
+        }));
         const activeCharacterId =
-          data.activeCharacterId in characters ? data.activeCharacterId : Object.keys(characters)[0]!;
+          Object.hasOwn(characters, data.activeCharacterId) ? data.activeCharacterId : Object.keys(characters)[0]!;
         const active = characters[activeCharacterId]!;
-        set({
+        return () => set({
           activeCharacterId,
           characters,
           appearance: active.appearance,
           outfits: active.outfits,
         });
-        return;
       }
-      if (data.version !== 1 && data.version !== 2) return;
-      set((s) =>
-        applyToProfile(s, s.activeCharacterId, () => ({
-          appearance: {
-            ...DEFAULT_APPEARANCE,
-            ...data.appearance,
-            colors: { ...DEFAULT_APPEARANCE.colors, ...data.appearance.colors },
-          },
-          outfits: { ...EMPTY_OUTFITS, ...data.outfits },
-        })),
-      );
+      const profile = prepareProfile(data);
+      return () => set((s) => applyToProfile(s, s.activeCharacterId, () => profile));
     },
+    hydrate: (data) => get().prepareHydrate(data)(),
   };
 });

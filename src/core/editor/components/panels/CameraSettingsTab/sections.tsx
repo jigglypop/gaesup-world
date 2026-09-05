@@ -1,4 +1,5 @@
-import React, { type ReactNode } from 'react';
+import { type ReactNode } from 'react';
+
 
 import { toBoolean, toNumber } from './helpers';
 import type {
@@ -7,6 +8,7 @@ import type {
   CameraSettingsResolvedField,
   CameraSettingsResolvedSection,
 } from './types';
+import { CAMERA_CONTROLLER_DEFAULT_MODES } from '../../../../camera/components/CameraController/defaults';
 
 function renderField(
   context: CameraSettingsRenderContext,
@@ -86,9 +88,13 @@ function renderMode(
 ): ReactNode {
   if (!context.showMode) return null;
   if (renderers?.mode) return renderers.mode(context);
+  const mode = context.mode.control;
+  const modeLabel = CAMERA_CONTROLLER_DEFAULT_MODES.find((option) => option.value === mode)?.label
+    ?? mode
+    ?? context.labels.fallbackMode;
   return (
     <div className={context.classNameFor('mode')} style={context.styleFor('mode')}>
-      {context.labels.modePrefix}: {context.mode.control ?? context.labels.fallbackMode}
+      {context.labels.modePrefix}: {modeLabel}
     </div>
   );
 }

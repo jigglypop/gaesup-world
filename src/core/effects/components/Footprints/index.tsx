@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
 
 export type FootprintsProps = {
@@ -90,7 +91,7 @@ export function Footprints({
     const mesh = meshRef.current;
     if (!mesh) return;
 
-    const now = state.clock.elapsedTime;
+    const now = getFrameElapsedSeconds(state);
 
     if (isGrounded && isMoving) {
       const last = lastDropRef.current;

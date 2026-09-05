@@ -1,6 +1,8 @@
-import React, { StrictMode } from 'react';
+import { StrictMode } from 'react';
+import '@testing-library/jest-dom';
 
-import { act, cleanup, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
 import { logger } from 'gaesup-world';
 import {
@@ -93,12 +95,17 @@ jest.mock('three', () => {
   }
 
   class MockPerspectiveCamera {
+    public aspect = 1;
     public readonly matrixWorldInverse = {};
-    public readonly position = { set: () => undefined };
+    public readonly position = {
+      x: 0, y: 0, z: 0,
+      set(x: number, y: number, z: number) { this.x = x; this.y = y; this.z = z; },
+    };
     public readonly projectionMatrix = {};
 
     public lookAt(): void {}
     public updateMatrixWorld(): void {}
+    public updateProjectionMatrix(): void {}
   }
 
   class MockScene {
@@ -256,12 +263,126 @@ async function reject<T>(deferred: Deferred<T>, error: Error): Promise<void> {
   });
 }
 
-function renderGpu(element: React.ReactElement = <NextCorePage />) {
+function renderGpu(strict = false) {
   window.history.replaceState({}, '', '/next?gpu');
-  return render(element);
+  const element = (
+    <MemoryRouter initialEntries={['/next?gpu']}>
+      <NextCorePage />
+    </MemoryRouter>
+  );
+  return render(strict ? <StrictMode>{element}</StrictMode> : element);
 }
 
 describe('NextCorePage GPU scene lifetime', () => {
+  test('pauses and resumes camera rotation without recreating GPU resources', async () => {
+    const culled = createCulledFixture();
+    const backend = createBackendFixture();
+    mockedCreateCulled.mockResolvedValue(culled.resource);
+    mockedCreateBackend.mockResolvedValue(backend.resource);
+    const now = jest.spyOn(performance, 'now');
+    now.mockReturnValue(0);
+    const view = renderGpu();
+    try {
+      await act(async () => { for (let turn = 0; turn < 6; turn++) await Promise.resolve(); });
+      backend.renderer.lastCallback?.();
+      now.mockReturnValue(1000);
+      backend.renderer.lastCallback?.();
+      const camera = backend.renderer.render.mock.calls.at(-1)?.[1] as { position: { x: number; z: number } };
+      const movingX = camera.position.x;
+      expect(movingX).not.toBe(300);
+      expect(backend.renderer.compute).toHaveBeenCalledTimes(2);
+      fireEvent.click(view.getByRole('checkbox', { name: '카메라 자동 회전' }));
+      now.mockReturnValue(2000);
+      backend.renderer.lastCallback?.();
+      expect(camera.position.x).toBe(movingX);
+      expect(backend.renderer.compute).toHaveBeenCalledTimes(2);
+      expect(backend.renderer.render).toHaveBeenCalledTimes(3);
+      fireEvent(window, new Event('resize'));
+      backend.renderer.lastCallback?.();
+      expect(backend.renderer.compute).toHaveBeenCalledTimes(3);
+      backend.renderer.lastCallback?.();
+      expect(backend.renderer.compute).toHaveBeenCalledTimes(3);
+      fireEvent.click(view.getByRole('checkbox', { name: '카메라 자동 회전' }));
+      now.mockReturnValue(3000);
+      backend.renderer.lastCallback?.();
+      expect(camera.position.x).not.toBe(movingX);
+      expect(backend.renderer.compute).toHaveBeenCalledTimes(4);
+      expect(mockedCreateBackend).toHaveBeenCalledTimes(1);
+      expect(mockedCreateCulled).toHaveBeenCalledTimes(1);
+      expect(backend.renderer.setAnimationLoop).toHaveBeenCalledTimes(1);
+      expect(backend.dispose).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+      now.mockRestore();
+    }
+    expect(backend.dispose).toHaveBeenCalledTimes(1);
+    expect(culled.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  test('mode changes immediately discard the previous measurement values', () => {
+    jest.useFakeTimers();
+    const pending = createDeferred<GpuCulledInstancesResult | null>();
+    mockedCreateCulled.mockReturnValue(pending.promise);
+    const view = renderGpu();
+    try {
+      act(() => jest.advanceTimersByTime(250));
+      expect(view.getByText('표시 객체 0 / 100000')).toBeInTheDocument();
+      fireEvent.click(view.getByRole('button', { name: 'CPU · 1만 개' }));
+      expect(view.getByText('표시 객체 0 / 10000')).toBeInTheDocument();
+      fireEvent.click(view.getByRole('button', { name: 'GPU · 10만 개' }));
+      expect(view.getByText('표시 객체 0 / 100000')).toBeInTheDocument();
+      expect(view.getByText('GPU 초기화 중')).toBeInTheDocument();
+    } finally {
+      view.unmount();
+      jest.useRealTimers();
+    }
+  });
+
+  test('updates renderer size and camera aspect after resize and detaches on unmount', async () => {
+    const backend = createBackendFixture();
+    const resize = jest.spyOn(backend.resource, 'resize');
+    mockedCreateCulled.mockResolvedValue(createCulledFixture().resource);
+    mockedCreateBackend.mockResolvedValue(backend.resource);
+    const view = renderGpu();
+    await flushMicrotasks();
+    const canvas = view.container.querySelector('canvas')!;
+    Object.defineProperties(canvas, {
+      clientWidth: { configurable: true, value: 400 },
+      clientHeight: { configurable: true, value: 800 },
+    });
+    act(() => window.dispatchEvent(new Event('resize')));
+    backend.renderer.lastCallback?.();
+    expect(resize).toHaveBeenLastCalledWith(400, 800);
+    expect(backend.renderer.render).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ aspect: 0.5 }),
+    );
+    expect(canvas.style.width).toBe('100%');
+    expect(canvas.style.height).toBe('100%');
+    view.unmount();
+    const calls = resize.mock.calls.length;
+    window.dispatchEvent(new Event('resize'));
+    expect(resize).toHaveBeenCalledTimes(calls);
+  });
+
+  test('releases the active generation when viewport resize fails', async () => {
+    const backend = createBackendFixture();
+    const culled = createCulledFixture();
+    mockedCreateCulled.mockResolvedValue(culled.resource);
+    mockedCreateBackend.mockResolvedValue(backend.resource);
+    const view = renderGpu();
+    await flushMicrotasks();
+    jest.spyOn(backend.resource, 'resize').mockImplementation(() => {
+      throw new Error('resize failed');
+    });
+    act(() => window.dispatchEvent(new Event('resize')));
+    expect(backend.dispose).toHaveBeenCalledTimes(1);
+    expect(culled.dispose).toHaveBeenCalledTimes(1);
+    expect(await view.findByText('GPU 실행 실패 · CPU 모드로 전환하세요')).toBeTruthy();
+    view.unmount();
+    expect(backend.dispose).toHaveBeenCalledTimes(1);
+  });
+
   beforeEach(() => {
     mockedCreateCulled.mockReset();
     mockedCreateBackend.mockReset();
@@ -320,6 +441,41 @@ describe('NextCorePage GPU scene lifetime', () => {
     expect(mockedLoggerError).not.toHaveBeenCalled();
   });
 
+  test('late initialization cleanup cannot stop a newly mounted renderer', async () => {
+    const pending = createDeferred<RendererBackend | null>();
+    const oldCulled = createCulledFixture('culled:old');
+    const currentCulled = createCulledFixture('culled:current');
+    const oldBackend = createBackendFixture({ label: 'backend:old' });
+    const currentBackend = createBackendFixture({ label: 'backend:current' });
+    mockedCreateCulled.mockResolvedValueOnce(oldCulled.resource).mockResolvedValueOnce(currentCulled.resource);
+    mockedCreateBackend.mockReturnValueOnce(pending.promise).mockResolvedValueOnce(currentBackend.resource);
+    const oldView = renderGpu();
+    await flushMicrotasks();
+    expect(mockedCreateBackend).toHaveBeenCalledTimes(1);
+    oldView.unmount();
+    const currentView = renderGpu();
+    try {
+      await flushMicrotasks();
+      expect(currentBackend.renderer.lastCallback).not.toBeNull();
+      const callback = currentBackend.renderer.lastCallback;
+      await settle(pending, oldBackend.resource);
+      expect(oldBackend.dispose).toHaveBeenCalledTimes(1);
+      expect(oldCulled.dispose).toHaveBeenCalledTimes(1);
+      expect(oldBackend.renderer.setAnimationLoop).not.toHaveBeenCalled();
+      expect(currentBackend.dispose).not.toHaveBeenCalled();
+      expect(currentCulled.dispose).not.toHaveBeenCalled();
+      expect(currentBackend.renderer.lastCallback).toBe(callback);
+      callback?.();
+      expect(currentBackend.renderer.render).toHaveBeenCalledTimes(1);
+      expect(oldBackend.renderer.render).not.toHaveBeenCalled();
+      expect(mockedLoggerError).not.toHaveBeenCalled();
+    } finally {
+      currentView.unmount();
+    }
+    expect(currentBackend.dispose).toHaveBeenCalledTimes(1);
+    expect(currentCulled.dispose).toHaveBeenCalledTimes(1);
+  });
+
   test('treats a null backend as a quiet terminal result and releases culling', async () => {
     const culled = createCulledFixture();
     mockedCreateCulled.mockResolvedValue(culled.resource);
@@ -337,6 +493,7 @@ describe('NextCorePage GPU scene lifetime', () => {
     expect(canvas?.style.width).toBe('100%');
     expect(canvas?.style.height).toBe('100%');
     expect(mockedLoggerError).not.toHaveBeenCalled();
+    expect(await view.findByText('GPU 실행 실패 · CPU 모드로 전환하세요')).toBeTruthy();
     view.unmount();
     expect(culled.dispose).toHaveBeenCalledTimes(1);
   });
@@ -438,6 +595,32 @@ describe('NextCorePage GPU scene lifetime', () => {
     expect(culled.dispose).toHaveBeenCalledTimes(1);
     expect(backend.dispose).toHaveBeenCalledTimes(1);
   });
+
+  test.each(['compute', 'render'] as const)(
+    'releases a running generation after %s throws',
+    async (operation) => {
+      const culled = createCulledFixture();
+      const backend = createBackendFixture();
+      mockedCreateCulled.mockResolvedValue(culled.resource);
+      mockedCreateBackend.mockResolvedValue(backend.resource);
+      const view = renderGpu();
+      await flushMicrotasks();
+      threeState.events.length = 0;
+      const frame = backend.renderer.lastCallback;
+      backend.renderer[operation].mockImplementation(() => {
+        throw new Error('frame failed');
+      });
+      expect(() => frame?.()).not.toThrow();
+      expect(threeState.events).toEqual(['loop-stop', 'geometry', 'culled', 'backend']);
+      frame?.();
+      expect(backend.renderer[operation]).toHaveBeenCalledTimes(1);
+      expect(mockedLoggerError).toHaveBeenCalledTimes(1);
+      await view.findByText('GPU 실행 실패 · CPU 모드로 전환하세요');
+      view.unmount();
+      expect(backend.dispose).toHaveBeenCalledTimes(1);
+      expect(culled.dispose).toHaveBeenCalledTimes(1);
+    },
+  );
 
   test('cleans up a running generation in loop, geometry, culling, backend order', async () => {
     const culled = createCulledFixture();
@@ -550,11 +733,7 @@ describe('NextCorePage GPU scene lifetime', () => {
       .mockReturnValueOnce(secondPending.promise);
     mockedCreateBackend.mockResolvedValue(backend.resource);
 
-    const view = renderGpu(
-      <StrictMode>
-        <NextCorePage />
-      </StrictMode>,
-    );
+    const view = renderGpu(true);
     expect(mockedCreateCulled).toHaveBeenCalledTimes(2);
     await settle(firstPending, firstCulled.resource);
     await settle(secondPending, secondCulled.resource);

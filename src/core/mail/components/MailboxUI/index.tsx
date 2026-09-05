@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
+import { canHandleOverlayShortcut } from '../../../ui/overlayKeyboard';
 import {
   OVERLAY_ACCENT_COLOR,
   OVERLAY_BACKDROP_STYLE,
@@ -14,14 +15,12 @@ import {
 } from '../../../ui/overlayStyles';
 import { useMailStore } from '../../stores/mailStore';
 import type { MailMessage } from '../../types';
+import './styles.css';
 
 export type MailboxUIProps = {
   toggleKey?: string;
 };
 
-const PANEL_WIDTH = 720;
-const PANEL_HEIGHT = 460;
-const LIST_WIDTH = 260;
 const UNREAD_COLOR = '#cf9aff';
 const SINGLE_ITEM = 1;
 
@@ -35,8 +34,7 @@ export function MailboxUI({ toggleKey = 'm' }: MailboxUIProps) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
-      if (tag === 'input' || tag === 'textarea') return;
+      if (!canHandleOverlayShortcut(e)) return;
       if (e.key.toLowerCase() === toggleKey.toLowerCase()) setOpen((v) => !v);
       if (e.key === 'Escape') setOpen(false);
     };
@@ -51,38 +49,44 @@ export function MailboxUI({ toggleKey = 'm' }: MailboxUIProps) {
   return (
     <div style={OVERLAY_BACKDROP_STYLE} onClick={() => setOpen(false)}>
       <div
+        className="mailbox-panel"
+        role="region"
+        data-world-overlay="mail"
+        aria-label="우편함"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          ...OVERLAY_PANEL_STYLE,
-          width: PANEL_WIDTH,
-          height: PANEL_HEIGHT,
-          display: 'flex',
-        }}
+        style={OVERLAY_PANEL_STYLE}
       >
         <div
+          className="mailbox-list"
           style={{
-            width: LIST_WIDTH,
-            borderRight: `1px solid ${OVERLAY_BORDER_COLOR}`,
             display: 'flex',
             flexDirection: 'column',
           }}
         >
-          <div style={OVERLAY_HEADER_STYLE}>
+          <div style={{ ...OVERLAY_HEADER_STYLE, flexShrink: 0 }}>
             <strong style={{ fontSize: 15 }}>우편함</strong>
             <span style={{ fontSize: 12, color: OVERLAY_TEXT_DIM_COLOR }}>{sorted.length}</span>
           </div>
-          <div style={{ flex: 1, overflowY: 'auto' }}>
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
             {sorted.length === 0 ? (
               <Empty>우편이 없습니다.</Empty>
             ) : (
               sorted.map((m) => (
-                <div
+                <button
                   key={m.id}
+                  type="button"
+                  aria-pressed={selectedId === m.id}
                   onClick={() => {
                     setSelectedId(m.id);
                     if (!m.read) markRead(m.id);
                   }}
                   style={{
+                    width: '100%',
+                    display: 'block',
+                    textAlign: 'left',
+                    color: 'inherit',
+                    font: 'inherit',
+                    border: 0,
                     padding: '8px 12px',
                     cursor: 'pointer',
                     background: selectedId === m.id ? OVERLAY_SURFACE_ACTIVE_COLOR : 'transparent',
@@ -109,19 +113,19 @@ export function MailboxUI({ toggleKey = 'm' }: MailboxUIProps) {
                   {m.attachments && m.attachments.length > 0 && !m.claimed && (
                     <div style={{ fontSize: 11, color: OVERLAY_ACCENT_COLOR }}>* 첨부물</div>
                   )}
-                </div>
+                </button>
               ))
             )}
           </div>
         </div>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <div style={OVERLAY_HEADER_STYLE}>
-            <span>{selected ? selected.subject : '메시지를 선택하세요'}</span>
-            <button onClick={() => setOpen(false)} style={overlayButtonStyle()}>
+        <div style={{ minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ ...OVERLAY_HEADER_STYLE, flexShrink: 0 }}>
+            <span style={{ minWidth: 0 }}>{selected ? selected.subject : '메시지를 선택하세요'}</span>
+            <button onClick={() => setOpen(false)} style={{ ...overlayButtonStyle(), flexShrink: 0 }}>
               닫기 [{toggleKey.toUpperCase()}]
             </button>
           </div>
-          <div style={{ flex: 1, padding: 12, overflowY: 'auto' }}>
+          <div style={{ flex: 1, minHeight: 0, padding: 12, overflowY: 'auto' }}>
             {selected ? (
               <MailDetail
                 msg={selected}
@@ -132,7 +136,7 @@ export function MailboxUI({ toggleKey = 'm' }: MailboxUIProps) {
                 }}
               />
             ) : (
-              <div style={{ color: OVERLAY_TEXT_DIM_COLOR }}>왼쪽에서 메시지를 선택하세요.</div>
+              <div style={{ color: OVERLAY_TEXT_DIM_COLOR }}>목록에서 읽을 우편을 선택하세요.</div>
             )}
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useEffect } from 'react';
 
 import type { AnimationAction } from 'three';
 
@@ -11,18 +11,14 @@ export function useAnimationSetup(
   modeType: ModeType,
   isActive: boolean
 ) {
-  const animationBridgeRef = useRef<boolean>(false);
   useEffect(() => {
-    if (!actions || !isActive || animationBridgeRef.current) return undefined;
+    if (!actions || !isActive) return undefined;
     const animationBridge = getGlobalAnimationBridge();
-    animationBridge.registerAnimations(modeType as 'character' | 'vehicle' | 'airplane', actions);
-    animationBridgeRef.current = true;
+    const ownedActions = { ...actions };
+    animationBridge.registerAnimations(modeType as 'character' | 'vehicle' | 'airplane', ownedActions);
 
     return () => {
-      if (animationBridgeRef.current) {
-        animationBridge.unregisterAnimations(modeType as 'character' | 'vehicle' | 'airplane');
-        animationBridgeRef.current = false;
-      }
+      animationBridge.unregisterAnimations(modeType as 'character' | 'vehicle' | 'airplane', ownedActions);
     };
   }, [actions, modeType, isActive]);
 }

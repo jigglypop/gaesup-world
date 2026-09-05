@@ -31,6 +31,7 @@ type State = {
 
   serialize: () => TownSerialized;
   hydrate: (data: TownSerialized | null | undefined) => void;
+  prepareHydrate: (data: TownSerialized | null | undefined) => () => void;
 };
 
 function emptyHouse(id: HouseId, position: [number, number, number]): HousePlot {
@@ -128,7 +129,7 @@ export const useTownStore = create<State>((set, get) => ({
     set({
       houses: {
         ...get().houses,
-        [houseId]: emptyHouse(houseId, h.position),
+        [houseId]: { ...emptyHouse(houseId, h.position), size: h.size },
       },
     });
     if (r) notify('info', `${r.name}이(가) 떠났다`);
@@ -150,16 +151,44 @@ export const useTownStore = create<State>((set, get) => ({
 
   serialize: (): TownSerialized => ({
     version: 1,
-    houses: Object.values(get().houses).map((h) => ({ ...h })),
+    houses: Object.values(get().houses).map((h) => ({ ...h, position: [...h.position], size: [...h.size] })),
     residents: Object.values(get().residents).map((r) => ({ ...r })),
   }),
 
-  hydrate: (data) => {
-    if (!data) return;
-    const houses: Record<HouseId, HousePlot> = {};
-    const residents: Record<ResidentId, Resident> = {};
-    if (Array.isArray(data.houses)) for (const h of data.houses) if (h?.id) houses[h.id] = { ...h };
-    if (Array.isArray(data.residents)) for (const r of data.residents) if (r?.id) residents[r.id] = { ...r };
-    set({ houses, residents });
+  prepareHydrate: (data) => {
+    if (data === null || data === undefined) return () => {};
+    if (typeof data !== 'object' || data.version !== 1 || !Array.isArray(data.houses) || !Array.isArray(data.residents)) {
+      throw new TypeError('Invalid town snapshot');
+    }
+    const houseIds = new Set<string>();
+    const houses = Object.fromEntries(data.houses.map((house) => {
+      if (!house || typeof house !== 'object' || typeof house.id !== 'string' || !house.id.trim() || houseIds.has(house.id)
+        || !Array.isArray(house.position) || house.position.length !== 3 || ![...house.position].every(Number.isFinite)
+        || !Array.isArray(house.size) || house.size.length !== 2 || ![...house.size].every((size) => Number.isFinite(size) && size > 0)
+        || !['empty', 'reserved', 'occupied'].includes(house.state)
+        || (house.residentId !== undefined && (typeof house.residentId !== 'string' || !house.residentId.trim()))
+        || (house.reservedFor !== undefined && (typeof house.reservedFor !== 'string' || !house.reservedFor.trim()))
+        || (house.reservedUntilDay !== undefined && (!Number.isSafeInteger(house.reservedUntilDay) || house.reservedUntilDay < 0))) {
+        throw new TypeError('Invalid town house');
+      }
+      houseIds.add(house.id);
+      const prepared: HousePlot = { ...house, position: [...house.position], size: [...house.size] };
+      return [house.id, prepared];
+    }));
+    const residentIds = new Set<string>();
+    const residents = Object.fromEntries(data.residents.map((resident) => {
+      if (!resident || typeof resident !== 'object' || typeof resident.id !== 'string' || !resident.id.trim()
+        || residentIds.has(resident.id) || typeof resident.name !== 'string'
+        || (resident.npcId !== undefined && (typeof resident.npcId !== 'string' || !resident.npcId.trim()))
+        || (resident.movedInDay !== undefined && (!Number.isSafeInteger(resident.movedInDay) || resident.movedInDay < 0))
+        || (resident.hatColor !== undefined && typeof resident.hatColor !== 'string')
+        || (resident.bodyColor !== undefined && typeof resident.bodyColor !== 'string')) {
+        throw new TypeError('Invalid town resident');
+      }
+      residentIds.add(resident.id);
+      return [resident.id, { ...resident }];
+    }));
+    return () => set({ houses, residents });
   },
+  hydrate: (data) => get().prepareHydrate(data)(),
 }));

@@ -1,7 +1,9 @@
 import React from 'react';
+
 import { render, screen, fireEvent } from '@testing-library/react';
-import { AnimationController } from '../index';
+
 import { useAnimationBridge } from '../../../hooks/useAnimationBridge';
+import { AnimationController } from '../index';
 
 // Mock the useAnimationBridge hook
 jest.mock('../../../hooks/useAnimationBridge');
@@ -26,15 +28,15 @@ describe('AnimationController', () => {
     render(<AnimationController />);
     
     // Check if a few key buttons are rendered
-    expect(screen.getByText('Idle')).toBeInTheDocument();
-    expect(screen.getByText('Walk')).toBeInTheDocument();
-    expect(screen.getByText('Run')).toBeInTheDocument();
+    expect(screen.getByText('대기')).toBeInTheDocument();
+    expect(screen.getByText('걷기')).toBeInTheDocument();
+    expect(screen.getByText('달리기')).toBeInTheDocument();
   });
 
   it('should call playAnimation with the correct arguments when a button is clicked', () => {
     render(<AnimationController />);
     
-    const walkButton = screen.getByText('Walk');
+    const walkButton = screen.getByText('걷기');
     fireEvent.click(walkButton);
 
     expect(mockPlayAnimation).toHaveBeenCalledTimes(1);
@@ -51,8 +53,8 @@ describe('AnimationController', () => {
 
     render(<AnimationController />);
 
-    const idleButton = screen.getByText('Idle');
-    const runButton = screen.getByText('Run');
+    const idleButton = screen.getByText('대기');
+    const runButton = screen.getByText('달리기');
 
     expect(idleButton).not.toHaveClass('active');
     expect(runButton).toHaveClass('active');

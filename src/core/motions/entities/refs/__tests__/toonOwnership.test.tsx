@@ -3,9 +3,11 @@ import { StrictMode, type ReactElement, type ReactNode } from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
+import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
 
 import { disposeToonGradients, setDefaultToonMode } from '../../../../rendering/toon';
 import { PhysicsEntity } from '../PhysicsEntity';
+import { PartsGroupRef } from '../PartsGroupRef';
 import RiderRef from '../RiderRef';
 
 type MockGltf = {
@@ -72,6 +74,7 @@ jest.mock('@core/boilerplate/hooks/useEntity', () => ({
 jest.mock('@/core/hooks', () => ({
   useAnimationPlayer: jest.fn(),
 }));
+jest.mock('@hooks/useAnimationPlayer', () => ({ useAnimationPlayer: jest.fn() }));
 
 jest.mock('../../../hooks', () => ({
   useGltfAndSize: ({ url }: { url?: string }) => {
@@ -217,6 +220,32 @@ describe('GLTF clone toon ownership', () => {
 
   test('PhysicsEntity owns committed StrictMode generations across URL switch and unmount', () => {
     verifyLifecycle(physicsEntity);
+  });
+
+  test('attached parts render without independent animation controllers', () => {
+    setDefaultToonMode(false);
+    createSource('/body.glb');
+    const parts = Array.from({ length: 6 }, (_, index) => {
+      const url = `/part-${index}.glb`;
+      createSource(url);
+      return { url };
+    });
+    jest.mocked(useAnimationPlayer).mockClear();
+    let view: ReactTestRenderer | undefined;
+    try {
+      act(() => {
+        view = create(<PhysicsEntity url="/body.glb" isActive isNotColliding componentType="character" parts={parts} />);
+      });
+      expect(view?.root.findAllByType('mesh')).toHaveLength(7);
+      expect(useAnimationPlayer).not.toHaveBeenCalled();
+      act(() => { view?.update(<PartsGroupRef url="/part-0.glb" isActive componentType="character" />); });
+      expect(useAnimationPlayer).toHaveBeenCalledWith(true);
+      jest.mocked(useAnimationPlayer).mockClear();
+      act(() => { view?.update(<PartsGroupRef url="/part-0.glb" isActive={false} componentType="character" />); });
+      expect(useAnimationPlayer).not.toHaveBeenCalled();
+    } finally {
+      act(() => view?.unmount());
+    }
   });
 
   test('RiderRef owns committed StrictMode generations across URL switch and unmount', () => {

@@ -13,6 +13,7 @@
   padding: var(--editor-spacing-md);
   background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
   color: white;
+  font-size: 12px;
 }
 
 .blueprint-preview__name {
@@ -30,8 +31,8 @@
 
 .blueprint-preview__stats {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 4px 12px;
 }
 
 .blueprint-preview__stat {
@@ -50,16 +51,11 @@
 }
 
 .blueprint-preview__controls {
-  position: absolute;
-  top: 10px;
-  right: 10px;
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 4px 12px;
   align-items: center;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 8px;
-  border-radius: 6px;
-  backdrop-filter: blur(10px);
+  margin-top: 8px;
 }
 
 .blueprint-preview__control-btn {
@@ -102,4 +98,52 @@
   margin-top: 4px;
   font-size: 11px;
   color: var(--editor-text-muted);
-} 
+}
+
+.blueprint-preview:has(.blueprint-preview__gamepad) {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+}
+
+.blueprint-preview:has(.blueprint-preview__gamepad) .blueprint-preview__info {
+  position: static;
+}
+
+.blueprint-preview__gamepad .gamepad-container {
+  position: static;
+  z-index: 1;
+  flex-wrap: wrap;
+  padding: 4px;
+  background: rgba(24, 28, 36, 0.9);
+}
+
+.blueprint-preview__gamepad .pad-button {
+  width: 48px;
+  height: 48px;
+  margin: 3px;
+  font-size: 12px;
+  touch-action: none;
+}
+
+.blueprint-preview__gamepad .pad-button::after {
+  display: none;
+}
+
+.blueprint-preview--empty {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--editor-spacing-md);
+  color: var(--editor-text-primary);
+  text-align: center;
+}
+
+.blueprint-preview--empty p {
+  max-width: 32ch;
+  color: var(--editor-text-muted);
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}

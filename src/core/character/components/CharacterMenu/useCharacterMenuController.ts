@@ -187,6 +187,7 @@ export function useCharacterMenuController({
     (slot: CharacterMenuClassNameSlot, base?: CSSProperties) => mergeStyles(slot, preset, styles, base),
     [preset, styles],
   );
+  const activeCharacterId = useCharacterStore((state) => state.activeCharacterId);
   const appearance = useCharacterStore((state) => state.appearance);
   const outfits = useCharacterStore((state) => state.outfits);
   const setName = useCharacterStore((state) => state.setName);
@@ -244,8 +245,8 @@ export function useCharacterMenuController({
     setRotationState((value) => value + delta);
   }, []);
   const reset = useCallback(() => {
-    resetAppearance();
-  }, [resetAppearance]);
+    resetAppearance(activeCharacterId);
+  }, [activeCharacterId, resetAppearance]);
   const assetsBySlot = useMemo(() => {
     const normalizedTag = tagFilter.trim().toLowerCase();
     const next: Partial<Record<OutfitSlot, AssetRecord[]>> = {};

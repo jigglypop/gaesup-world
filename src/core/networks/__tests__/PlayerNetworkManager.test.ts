@@ -54,6 +54,7 @@ beforeAll(() => {
   (globalThis as Record<string, unknown>).WebSocket = class extends MockWebSocket {
     constructor(url: string) {
       super(url);
+      // eslint-disable-next-line @typescript-eslint/no-this-alias -- expose the constructed socket to tests
       lastCreatedWs = this;
     }
   };
@@ -118,6 +119,71 @@ describe('PlayerNetworkManager', () => {
   });
 
   describe('disconnect', () => {
+    test.each([false, true])('clears offline messages when no socket exists (previously connected=%s)', (previouslyConnected) => {
+      jest.useFakeTimers();
+      try {
+        if (previouslyConnected) {
+          manager.connect();
+          jest.runOnlyPendingTimers();
+          manager.disconnect();
+        }
+        manager.sendChat('cancelled');
+        manager.updateLocalPlayer({ position: [1, 2, 3] });
+        manager.disconnect();
+        manager.connect();
+        jest.runOnlyPendingTimers();
+        expect(lastCreatedWs!.sentMessages.map((message) => JSON.parse(message))).toEqual([
+          { type: 'Join', room_id: 'test-room', name: 'tester', color: '#ff0000' },
+        ]);
+        manager.sendChat('new session');
+        manager.updateLocalPlayer({ position: [4, 5, 6] });
+        expect(lastCreatedWs!.sentMessages.slice(1).map((message) => JSON.parse(message))).toEqual([
+          { type: 'Chat', text: 'new session' },
+          { type: 'Update', state: { position: [4, 5, 6] } },
+        ]);
+      } finally {
+        manager.disconnect();
+        jest.useRealTimers();
+      }
+    });
+
+    test.each(['resolve', 'reject'] as const)('ignores pending message %s after reconnect', async (result) => {
+      const onChat = jest.fn();
+      const onError = jest.fn();
+      manager = new PlayerNetworkManager({
+        url: 'ws://localhost:9999',
+        roomId: 'test-room',
+        playerName: 'tester',
+        playerColor: '#ff0000',
+        onChat,
+        onError,
+      });
+      manager.connect();
+      await new Promise(resolve => setTimeout(resolve, 10));
+      let resolveText!: (text: string) => void;
+      let rejectText!: (error: Error) => void;
+      const pendingText = new Promise<string>((resolve, reject) => {
+        resolveText = resolve;
+        rejectText = reject;
+      });
+      lastCreatedWs!.onmessage?.(new MessageEvent('message', {
+        data: { text: () => pendingText },
+      }));
+      manager.disconnect();
+      manager.connect();
+      await new Promise(resolve => setTimeout(resolve, 10));
+      const chat = JSON.stringify({ type: 'Chat', client_id: 'remote', text: 'hello', timestamp: 1 });
+      if (result === 'resolve') resolveText(chat);
+      else rejectText(new Error('old connection'));
+      await pendingText.catch(() => undefined);
+      await Promise.resolve();
+      expect(onChat).not.toHaveBeenCalled();
+      expect(onError).not.toHaveBeenCalled();
+      lastCreatedWs!.simulateMessage(chat);
+      expect(onChat).toHaveBeenCalledTimes(1);
+      expect(onChat).toHaveBeenCalledWith('remote', 'hello', 1);
+    });
+
     test('disconnect 후 핸들러가 null이 되어 늦은 이벤트가 무시된다', async () => {
       let disconnectCount = 0;
       manager = new PlayerNetworkManager({
@@ -217,6 +283,42 @@ describe('PlayerNetworkManager', () => {
   });
 
   describe('handleServerMessage', () => {
+    test.each([
+      { position: null },
+      { position: [1, 2] },
+      { position: [1, '2', 3] },
+      { position: [1, 1e400, 3] },
+      { rotation: [1, 0, 0] },
+      { velocity: 'fast' },
+      { animation: 12 },
+      { modelUrl: {} },
+      { name: null },
+    ])('rejects malformed player state without losing the previous state: %j', async (invalid) => {
+      const onError = jest.fn();
+      const onPlayerJoin = jest.fn();
+      const onPlayerUpdate = jest.fn();
+      const onWelcome = jest.fn();
+      manager.setCallbacks({ onError, onPlayerJoin, onPlayerUpdate, onWelcome });
+      manager.connect();
+      await new Promise(resolve => setTimeout(resolve, 10));
+      const state = { name: 'Neighbor', color: '#fff', position: [1, 2, 3], rotation: [1, 0, 0, 0] };
+      const send = (message: unknown) => lastCreatedWs!.simulateMessage(JSON.stringify(message));
+      send({ type: 'PlayerJoined', client_id: 'neighbor', state });
+      const previous = manager.getPlayers().get('neighbor');
+      send({ type: 'PlayerUpdate', client_id: 'neighbor', state: invalid });
+      send({ type: 'PlayerJoined', client_id: 'invalid', state: { ...state, ...invalid } });
+      send({ type: 'Welcome', client_id: 'local', room_state: { invalid: { ...state, ...invalid } } });
+      expect(manager.getPlayers().get('neighbor')).toBe(previous);
+      expect(manager.getPlayers().has('invalid')).toBe(false);
+      expect(onPlayerJoin).toHaveBeenCalledTimes(1);
+      expect(onPlayerUpdate).not.toHaveBeenCalled();
+      expect(onWelcome).not.toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledTimes(3);
+      send({ type: 'PlayerUpdate', client_id: 'neighbor', state: { position: [4, 5, 6] } });
+      expect(manager.getPlayers().get('neighbor')?.position).toEqual([4, 5, 6]);
+      expect(onPlayerUpdate).toHaveBeenCalledTimes(1);
+    });
+
     test('Welcome 메시지 처리', async () => {
       let welcomeId = '';
       manager = new PlayerNetworkManager({
@@ -299,6 +401,62 @@ describe('PlayerNetworkManager', () => {
   });
 
   describe('reconnect', () => {
+    test('ignores lifecycle events from a replaced closing socket', async () => {
+      const onConnect = jest.fn();
+      const onDisconnect = jest.fn();
+      const onError = jest.fn();
+      manager.setCallbacks({ onConnect, onDisconnect, onError });
+      manager.connect();
+      await new Promise(resolve => setTimeout(resolve, 10));
+      const previous = lastCreatedWs!;
+      previous.readyState = MockWebSocket.CLOSING;
+      manager.connect();
+      await new Promise(resolve => setTimeout(resolve, 10));
+      const current = lastCreatedWs!;
+      current.simulateMessage(JSON.stringify({
+        type: 'PlayerJoined',
+        client_id: 'neighbor',
+        state: { name: 'Neighbor', color: '#fff', position: [0, 0, 0], rotation: [1, 0, 0, 0] },
+      }));
+
+      previous.onopen?.(new Event('open'));
+      previous.simulateError();
+      previous.simulateClose(1000);
+
+      expect(manager.getConnectionStatus()).toBe(true);
+      expect(manager.getPlayers().has('neighbor')).toBe(true);
+      expect(onConnect).toHaveBeenCalledTimes(2);
+      expect(onDisconnect).not.toHaveBeenCalled();
+      expect(onError).not.toHaveBeenCalled();
+      manager.sendChat('still connected');
+      expect(JSON.parse(current.sentMessages.at(-1)!)).toMatchObject({ type: 'Chat', text: 'still connected' });
+    });
+
+    test('socket errors followed by abnormal closure still reconnect', async () => {
+      jest.useFakeTimers();
+      try {
+        manager = new PlayerNetworkManager({
+          url: 'ws://localhost:9999',
+          roomId: 'room',
+          playerName: 'p',
+          playerColor: '#fff',
+          reconnectAttempts: 2,
+          reconnectDelay: 50,
+        });
+        manager.connect();
+        await jest.advanceTimersByTimeAsync(1);
+        const firstWs = lastCreatedWs!;
+        firstWs.simulateError();
+        firstWs.simulateClose(1006, 'network error');
+        await jest.advanceTimersByTimeAsync(51);
+        expect(lastCreatedWs).not.toBe(firstWs);
+        expect(manager.getConnectionStatus()).toBe(true);
+      } finally {
+        manager.disconnect();
+        jest.useRealTimers();
+      }
+    });
+
     test('reconnectAttempts > 0이면 끊김 후 자동 재연결 시도', async () => {
       manager = new PlayerNetworkManager({
         url: 'ws://localhost:9999',
@@ -373,6 +531,7 @@ describe('PlayerNetworkManager', () => {
       await new Promise(r => setTimeout(r, 100));
       // disconnect 시 ws가 바뀌지만, 그 후 재연결은 없어야 함
       // disconnect 자체가 새 ws를 만들지는 않으므로 lastCreatedWs 체크
+      expect(lastCreatedWs).toBe(firstWs);
       expect(manager.getConnectionStatus()).toBe(false);
     });
   });
@@ -441,6 +600,63 @@ describe('PlayerNetworkManager', () => {
   });
 
   describe('ack', () => {
+    test('preserves failed buffered chats and sends each once on reconnect', () => {
+      jest.useFakeTimers();
+      try {
+        manager = new PlayerNetworkManager({
+          url: 'ws://localhost:9999', roomId: 'room', playerName: 'p', playerColor: '#fff',
+          enableAck: true, reliableTimeout: 100, reliableRetryCount: 1,
+        });
+        manager.sendChat('first', { range: 12 });
+        manager.sendChat('second');
+        manager.connect();
+        const first = lastCreatedWs!;
+        const send = first.send.bind(first);
+        jest.spyOn(first, 'send').mockImplementation((raw) => {
+          if (JSON.parse(raw).type === 'Chat') throw new Error('transport failed');
+          send(raw);
+        });
+        jest.advanceTimersByTime(1);
+        expect(first.sentMessages.map(raw => JSON.parse(raw).type)).toEqual(['Join']);
+        first.simulateClose(1006);
+        manager.connect();
+        jest.advanceTimersByTime(1);
+        const current = lastCreatedWs!;
+        const messages = current.sentMessages.map(raw => JSON.parse(raw));
+        expect(messages.map(message => message.type)).toEqual(['Join', 'Chat', 'Chat']);
+        expect(messages[1]).toMatchObject({ text: 'first', range: 12 });
+        expect(messages[2]).toMatchObject({ text: 'second' });
+        for (const message of messages.slice(1)) {
+          current.simulateMessage(JSON.stringify({ type: 'Ack', ackId: message.ackId }));
+        }
+        jest.advanceTimersByTime(300);
+        expect(current.sentMessages).toHaveLength(3);
+      } finally {
+        manager.disconnect();
+        jest.useRealTimers();
+      }
+    });
+
+    test('reports an immediate send failure to the caller and allows retry', () => {
+      jest.useFakeTimers();
+      try {
+        manager = new PlayerNetworkManager({
+          url: 'ws://localhost:9999', roomId: 'room', playerName: 'p', playerColor: '#fff',
+          enableAck: true,
+        });
+        manager.connect();
+        jest.advanceTimersByTime(1);
+        const socket = lastCreatedWs!;
+        jest.spyOn(socket, 'send').mockImplementationOnce(() => { throw new Error('transport failed'); });
+        expect(() => manager.sendChat('hello')).toThrow('transport failed');
+        manager.sendChat('hello');
+        expect(socket.sentMessages.map(raw => JSON.parse(raw).type)).toEqual(['Join', 'Chat']);
+      } finally {
+        manager.disconnect();
+        jest.useRealTimers();
+      }
+    });
+
     test('enableAck=true면 Chat에 ackId가 붙고 Ack 수신 시 재시도하지 않는다', () => {
       jest.useFakeTimers();
       manager = new PlayerNetworkManager({

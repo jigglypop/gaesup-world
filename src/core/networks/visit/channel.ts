@@ -10,6 +10,7 @@ class LocalVisitChannelImpl implements VisitChannel {
   }
 
   leave(hostId: string): void {
+    if (this.latest?.hostId === hostId) this.latest = null;
     this.emit({ type: 'leave', hostId });
   }
 
@@ -61,13 +62,43 @@ type WireSnapshot = { type: typeof SNAPSHOT_TYPE; v: number; snapshot: VisitSnap
 type WireLeave = { type: typeof LEAVE_TYPE; v: number; hostId: string };
 type WireMessage = WireSnapshot | WireLeave;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isIdentifier(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isTimestamp(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+function isVisitSnapshot(value: unknown): value is VisitSnapshot {
+  return isRecord(value)
+    && value['kind'] === 'world'
+    && isIdentifier(value['worldId'])
+    && isIdentifier(value['hostId'])
+    && (value['hostName'] === undefined || typeof value['hostName'] === 'string')
+    && typeof value['version'] === 'number'
+    && Number.isInteger(value['version'])
+    && value['version'] >= 1
+    && isTimestamp(value['savedAt'])
+    && isTimestamp(value['capturedAt'])
+    && isRecord(value['domains']);
+}
+
 function tryParseWire(raw: string): WireMessage | null {
   try {
-    const parsed = JSON.parse(raw) as Partial<WireMessage> | null;
-    if (!parsed || typeof parsed !== 'object') return null;
-    if (parsed.type !== SNAPSHOT_TYPE && parsed.type !== LEAVE_TYPE) return null;
-    if (typeof parsed.v !== 'number' || parsed.v !== WIRE_VERSION) return null;
-    return parsed as WireMessage;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed) || parsed['v'] !== WIRE_VERSION) return null;
+    if (parsed['type'] === SNAPSHOT_TYPE && isVisitSnapshot(parsed['snapshot'])) {
+      return { type: SNAPSHOT_TYPE, v: WIRE_VERSION, snapshot: parsed['snapshot'] };
+    }
+    if (parsed['type'] === LEAVE_TYPE && isIdentifier(parsed['hostId'])) {
+      return { type: LEAVE_TYPE, v: WIRE_VERSION, hostId: parsed['hostId'] };
+    }
+    return null;
   } catch {
     return null;
   }
@@ -100,11 +131,11 @@ export function createWebSocketVisitChannel(transport: WebSocketTransport): Visi
   return {
     publish(snapshot) {
       const wire: WireSnapshot = { type: SNAPSHOT_TYPE, v: WIRE_VERSION, snapshot };
-      try { transport.send(JSON.stringify(wire)); } catch { /* drop */ }
+      transport.send(JSON.stringify(wire));
     },
     leave(hostId) {
       const wire: WireLeave = { type: LEAVE_TYPE, v: WIRE_VERSION, hostId };
-      try { transport.send(JSON.stringify(wire)); } catch { /* drop */ }
+      transport.send(JSON.stringify(wire));
     },
     subscribe(listener) {
       listeners.add(listener);

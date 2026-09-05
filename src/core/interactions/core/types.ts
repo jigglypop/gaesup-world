@@ -18,6 +18,8 @@ export interface MouseState {
   target: THREE.Vector3;
   angle: number;
   isActive: boolean;
+  /** Set when movement reaches its target. moveTo clears this before starting. */
+  hasArrived?: boolean;
   shouldRun: boolean;
   isLookAround?: boolean;
   buttons: {

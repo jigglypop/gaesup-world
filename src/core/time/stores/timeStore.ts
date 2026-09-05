@@ -24,10 +24,12 @@ type TimeState = {
 
   serialize: () => TimeSerialized;
   hydrate: (s: TimeSerialized | null | undefined) => void;
+  prepareHydrate: (data: TimeSerialized | null | undefined) => () => void;
 };
 
 const DEFAULT_SCALE = 1;
 const INITIAL_TOTAL_MINUTES = 8 * 60;
+const REAL_MS_PER_MINUTE = 60_000;
 
 function emit(listeners: Set<TimeListener>, kind: 'newDay' | 'newHour', time: GameTime) {
   listeners.forEach((l) => {
@@ -38,7 +40,7 @@ function emit(listeners: Set<TimeListener>, kind: 'newDay' | 'newHour', time: Ga
 export const useTimeStore = create<TimeState>((set, get) => ({
   mode: 'scaled',
   scale: DEFAULT_SCALE,
-  startEpochMs: typeof performance !== 'undefined' ? performance.now() : 0,
+  startEpochMs: Date.now() - INITIAL_TOTAL_MINUTES * REAL_MS_PER_MINUTE,
   totalMinutes: INITIAL_TOTAL_MINUTES,
   paused: false,
   time: computeGameTime(INITIAL_TOTAL_MINUTES),
@@ -53,7 +55,7 @@ export const useTimeStore = create<TimeState>((set, get) => ({
     } else {
       const now = Date.now();
       const realStart = s.startEpochMs;
-      nextMinutes = (now - realStart) / 1000 / 60;
+      nextMinutes = (now - realStart) / REAL_MS_PER_MINUTE;
     }
     if (nextMinutes === s.totalMinutes) return;
     const newDay = isNewDay(s.totalMinutes, nextMinutes);
@@ -65,11 +67,17 @@ export const useTimeStore = create<TimeState>((set, get) => ({
   },
 
   setScale: (scale: number) => set({ scale: Math.max(0.001, scale) }),
-  setMode: (mode: TimeMode) => set({ mode }),
+  setMode: (mode: TimeMode) => {
+    if (mode === get().mode) return;
+    set({ mode, startEpochMs: Date.now() - get().totalMinutes * REAL_MS_PER_MINUTE });
+  },
   setTotalMinutes: (totalMinutes: number) =>
-    set({ totalMinutes, time: computeGameTime(totalMinutes) }),
+    set({ totalMinutes, time: computeGameTime(totalMinutes), startEpochMs: Date.now() - totalMinutes * REAL_MS_PER_MINUTE }),
   pause: () => set({ paused: true }),
-  resume: () => set({ paused: false }),
+  resume: () => {
+    if (!get().paused) return;
+    set({ paused: false, startEpochMs: Date.now() - get().totalMinutes * REAL_MS_PER_MINUTE });
+  },
 
   addListener: (l: TimeListener) => {
     const s = get();
@@ -89,18 +97,25 @@ export const useTimeStore = create<TimeState>((set, get) => ({
     };
   },
 
-  hydrate: (data) => {
-    if (!data || typeof data !== 'object') return;
-    const totalMinutes = Number.isFinite(data.totalMinutes)
-      ? data.totalMinutes
-      : INITIAL_TOTAL_MINUTES;
-    set({
+  prepareHydrate: (data) => {
+    if (data === null || data === undefined) return () => {};
+    if (typeof data !== 'object' || data.version !== 1 ||
+      ![data.totalMinutes, data.startEpochMs, data.scale].every(
+        (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0,
+      ) || data.scale === 0 || (data.mode !== 'scaled' && data.mode !== 'realtime') ||
+      (data.pausedAt !== null && (typeof data.pausedAt !== 'number' || !Number.isFinite(data.pausedAt) || data.pausedAt < 0))) {
+      throw new TypeError('Invalid time snapshot');
+    }
+    const { totalMinutes, mode, scale, startEpochMs } = data;
+    const time = computeGameTime(totalMinutes);
+    return () => set({
       totalMinutes,
-      time: computeGameTime(totalMinutes),
-      mode: data.mode ?? 'scaled',
-      scale: typeof data.scale === 'number' ? data.scale : DEFAULT_SCALE,
-      startEpochMs: typeof data.startEpochMs === 'number' ? data.startEpochMs : 0,
+      time,
+      mode,
+      scale,
+      startEpochMs,
       paused: false,
     });
   },
+  hydrate: (data) => get().prepareHydrate(data)(),
 }));

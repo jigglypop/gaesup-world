@@ -3,6 +3,7 @@ import React from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 
+import { getNPCBrainLabel } from './helpers';
 import {
   NPCAnimationSection,
   NPCBrainSection,
@@ -168,8 +169,11 @@ export function NPCPanel({
   const summary = (
     <div className="building-panel__asset-targets building-panel__npc-summary building-panel__npc-statusbar">
         <span>선택 NPC: {selectedNPCInstance?.name ?? selectedNPCInstanceId ?? '선택 없음'}</span>
-        <span>행동: {selectedNPCInstance?.behavior?.mode ?? 'idle'} · 이동: {selectedNPCInstance?.navigation?.state ?? '없음'}</span>
-        <span>현재 애니메이션: {selectedNPCInstance?.currentAnimation ?? 'idle'}</span>
+        <span>행동: {selectedNPCInstance ? getNPCBrainLabel(selectedNPCInstance.behavior?.mode ?? 'idle') : '없음'} · 이동: {getNPCBrainLabel(selectedNPCInstance?.navigation?.state ?? '없음')}</span>
+        <span>현재 애니메이션: {selectedNPCInstance
+          ? npcAnimationsArray.find((animation) => animation.id === selectedNPCInstance.currentAnimation)?.name
+            ?? getNPCBrainLabel(selectedNPCInstance.currentAnimation ?? 'idle')
+          : '없음'}</span>
     </div>
   );
   const switcher = (

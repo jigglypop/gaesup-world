@@ -44,6 +44,44 @@ const TEST_ADAPTER: DialogRuntimeAdapter = {
 };
 
 describe('DialogRunner', () => {
+  test.each(['advance', 'choose'] as const)('%s rejects reward callback reentry and keeps the intended destination', (action) => {
+    const tree: DialogTree = { id: 'reentry', startId: 'a', nodes: {
+      a: { id: 'a', text: '', ...(action === 'advance'
+        ? { effects: [{ type: 'giveBells' as const, amount: 50 }], next: 'b' }
+        : { choices: [{ text: 'reward', effects: [{ type: 'giveBells' as const, amount: 50 }], next: 'b' }] }) },
+      b: { id: 'b', text: 'done', next: null },
+    } };
+    const runner = new DialogRunner({ tree, adapter: TEST_ADAPTER });
+    let callbacks = 0;
+    const off = useWalletStore.subscribe(() => {
+      callbacks++;
+      if (callbacks > 1) throw new Error('duplicate payout');
+      runner.advance();
+      runner.choose(0);
+    });
+    try {
+      if (action === 'advance') runner.advance();
+      else runner.choose(0);
+      expect(useWalletStore.getState().bells).toBe(50);
+      expect(callbacks).toBe(1);
+      expect(runner.current?.id).toBe('b');
+      expect(runner.advance()).toBeNull();
+    } finally {
+      off();
+    }
+  });
+
+  test('advance cannot repeatedly execute effects on a node awaiting a choice', () => {
+    const runner = new DialogRunner({ adapter: TEST_ADAPTER, tree: { id: 'choice', startId: 'a', nodes: {
+      a: { id: 'a', text: '', effects: [{ type: 'giveBells', amount: 50 }], choices: [{ text: 'leave', next: null }] },
+    } } });
+    runner.advance();
+    runner.advance();
+    expect(useWalletStore.getState().bells).toBe(0);
+    expect(runner.current?.id).toBe('a');
+    expect(runner.choose(0)).toBeNull();
+  });
+
   test('아이템 지급 효과가 인벤토리를 채우고 대화를 종료한다', () => {
     const r = new DialogRunner({ tree: TREE, adapter: TEST_ADAPTER });
     expect(r.current?.id).toBe('a');

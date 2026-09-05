@@ -1,4 +1,4 @@
-import { Text } from "@react-three/drei";
+import { Text } from '@/core/rendering/legacyDrei';
 
 interface NameTagProps {
   text: string;
@@ -7,11 +7,11 @@ interface NameTagProps {
   background?: string;
 }
 
-export default function NameTag({ 
-  text, 
-  fontSize = 1, 
-  color = "#000000", 
-  background = "#ffffff" 
+export default function NameTag({
+  text,
+  fontSize = 1,
+  color = "#000000",
+  background = "#ffffff"
 }: NameTagProps) {
   return (
     <group>
@@ -29,4 +29,4 @@ export default function NameTag({
       </Text>
     </group>
   );
-} 
+}

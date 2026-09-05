@@ -79,12 +79,13 @@
   font-weight: 700;
 }
 
-.cinematic-panel code {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--editor-text-secondary, rgba(245, 247, 251, 0.72));
+.cinematic-panel summary {
+  cursor: pointer;
+}
+
+.cinematic-panel button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .cinematic-panel textarea {
@@ -95,7 +96,11 @@
   border-radius: 6px;
   background: rgba(0, 0, 0, 0.18);
   color: inherit;
-  font: 12px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+  font:
+    12px/1.45 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
 }
 
 .cinematic-panel__status {

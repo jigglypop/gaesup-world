@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { AnimationPlayerProps } from './types';
 import { useAnimationBridge } from '../../hooks/useAnimationBridge';
@@ -9,9 +9,9 @@ const PlayIcon = () => (
     <path d="M8 5v14l11-7z" />
   </svg>
 );
-const PauseIcon = () => (
+const StopIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+    <path d="M6 6h12v12H6z" />
   </svg>
 );
 const SkipPreviousIcon = () => (
@@ -38,19 +38,19 @@ export function AnimationPlayer({
     useAnimationBridge();
   const [isPlaying, setIsPlaying] = useState(false);
   const [availableAnimations, setAvailableAnimations] = useState<string[]>([]);
-  const [progress, setProgress] = useState(30);
+  const selectedAnimation = availableAnimations.includes(currentAnimation)
+    ? currentAnimation
+    : availableAnimations[0] ?? '';
 
   useEffect(() => {
-    if (!bridge) return;
-
     const updateState = () => {
-      const snapshot = bridge.snapshot(currentType);
-      if (!snapshot) return;
-      setIsPlaying(snapshot.isPlaying);
-      setAvailableAnimations(snapshot.availableAnimations);
+      const snapshot = bridge?.snapshot(currentType);
+      setIsPlaying(snapshot?.isPlaying ?? false);
+      setAvailableAnimations(snapshot?.availableAnimations ?? []);
     };
 
     updateState();
+    if (!bridge) return;
 
     const unsubscribe = bridge.subscribe((_, type) => {
       if (type === currentType) {
@@ -65,18 +65,28 @@ export function AnimationPlayer({
     if (isPlaying) {
       stopAnimation(currentType);
     } else {
-      playAnimation(currentType, currentAnimation);
+      if (selectedAnimation) playAnimation(currentType, selectedAnimation);
     }
+  };
+
+  const handleSkip = (offset: number) => {
+    if (!availableAnimations.length) return;
+    const index = availableAnimations.indexOf(selectedAnimation);
+    const next = availableAnimations[(index + offset + availableAnimations.length) % availableAnimations.length];
+    if (next) playAnimation(currentType, next);
   };
 
   return (
     <div className={cx('ap-panel', `ap-panel--${position}`, compact && 'ap-panel--compact')}>
       <div className="ap-controls">
         <select
+          aria-label="애니메이션 선택"
           className="ap-select"
-          value={currentAnimation}
+          value={selectedAnimation}
+          disabled={!availableAnimations.length}
           onChange={(e) => playAnimation(currentType, e.target.value)}
         >
+          {!availableAnimations.length && <option value="">등록된 애니메이션 없음</option>}
           {availableAnimations.map((anim) => (
             <option key={anim} value={anim}>
               {anim}
@@ -85,36 +95,25 @@ export function AnimationPlayer({
         </select>
         {showControls && (
           <div className="ap-buttons">
-            <button className="ap-btn" aria-label="previous animation">
+            <button type="button" className="ap-btn" aria-label="이전 애니메이션" disabled={availableAnimations.length < 2} onClick={() => handleSkip(-1)}>
               <SkipPreviousIcon />
             </button>
             <button
+              type="button"
               className="ap-btn-primary"
               onClick={handlePlayPause}
-              aria-label={isPlaying ? 'pause' : 'play'}
+              disabled={!selectedAnimation && !isPlaying}
+              aria-label={isPlaying ? '애니메이션 정지' : '애니메이션 재생'}
             >
-              {isPlaying ? <PauseIcon /> : <PlayIcon />}
+              {isPlaying ? <StopIcon /> : <PlayIcon />}
             </button>
-            <button className="ap-btn" aria-label="next animation">
+            <button type="button" className="ap-btn" aria-label="다음 애니메이션" disabled={availableAnimations.length < 2} onClick={() => handleSkip(1)}>
               <SkipNextIcon />
             </button>
           </div>
         )}
       </div>
-      {showControls && (
-        <div className="ap-timeline">
-          <span className="ap-time">0:00</span>
-          <input
-            type="range"
-            className="ap-slider"
-            min="0"
-            max="100"
-            value={progress}
-            onChange={(e) => setProgress(Number(e.target.value))}
-          />
-          <span className="ap-time">1:30</span>
-        </div>
-      )}
+      {!availableAnimations.length && <p role="status">재생할 애니메이션이 아직 등록되지 않았습니다.</p>}
     </div>
   );
 }

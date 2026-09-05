@@ -5,6 +5,8 @@ import { DEFAULT_DEBUG_FIELDS } from './types';
 import { useAnimationBridge } from '../../hooks/useAnimationBridge';
 import './styles.css';
 
+const METRICS_INTERVAL_MS = 250;
+
 function cx(...values: Array<string | false | null | undefined>): string {
   return values.filter((value): value is string => Boolean(value)).join(' ');
 }
@@ -37,7 +39,6 @@ export function AnimationDebugPanel({
     const updateMetrics = () => {
       const snapshot = bridge.snapshot(currentType);
       if (!snapshot) return;
-      const bridgeMetrics = bridge.getMetrics(currentType);
 
       setMetrics((prevMetrics) => ({
         ...prevMetrics,
@@ -48,21 +49,27 @@ export function AnimationDebugPanel({
         weight: snapshot.weight,
         speed: snapshot.speed,
         activeActions: snapshot.metrics.activeAnimations,
-        frameCount: bridgeMetrics?.totalActions || 0,
-        averageFrameTime: bridgeMetrics?.mixerTime || 0,
         lastUpdateTime: Date.now(),
       }));
     };
 
     updateMetrics();
 
+    let dirty = false;
     const unsubscribe = bridge.subscribe((_, type) => {
       if (type === currentType) {
-        updateMetrics();
+        dirty = true;
       }
     });
-
-    return unsubscribe;
+    const timer = window.setInterval(() => {
+      if (!dirty) return;
+      dirty = false;
+      updateMetrics();
+    }, METRICS_INTERVAL_MS);
+    return () => {
+      window.clearInterval(timer);
+      unsubscribe();
+    };
   }, [bridge, currentType]);
 
   const formatValue = (
@@ -70,13 +77,12 @@ export function AnimationDebugPanel({
     format: string,
     fixedPrecision: number = precision,
   ): string => {
-    if (value === null || value === undefined) return 'N/A';
+    if (value === null || value === undefined) return '정보 없음';
+    if (typeof value === 'boolean') return value ? '재생 중' : '정지';
 
     switch (format) {
       case 'array':
-        return Array.isArray(value) ? `${value.length} animations` : String(value);
-      case 'boolean':
-        return value ? 'Yes' : 'No';
+        return Array.isArray(value) ? `${value.length}개` : String(value);
       case 'number':
         return typeof value === 'number' ? value.toFixed(fixedPrecision) : String(value);
       default:
@@ -85,6 +91,10 @@ export function AnimationDebugPanel({
   };
 
   const getValue = (key: string): AnimationMetrics[keyof AnimationMetrics] | undefined => {
+    if (key === 'frameCount' || key === 'averageFrameTime' || key === 'blendDuration') return undefined;
+    if (key === 'animationType') {
+      return metrics.animationType === 'vehicle' ? '차량' : metrics.animationType === 'airplane' ? '비행기' : '캐릭터';
+    }
     if (key in metrics) {
       return metrics[key as keyof AnimationMetrics];
     }

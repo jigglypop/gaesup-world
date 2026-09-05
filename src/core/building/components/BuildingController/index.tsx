@@ -13,12 +13,13 @@ import { BuildingIndirectArgsUploadDriver } from '../BuildingIndirectArgsUploadD
 import { BuildingIndirectDrawDriver } from '../BuildingIndirectDrawDriver';
 import { BuildingRenderStateDriver } from '../BuildingRenderStateDriver';
 import { BuildingSystem } from '../BuildingSystem';
+import type { BuildingSystemProps } from '../BuildingSystem/types';
 import { BuildingVisibilityDriver } from '../BuildingVisibilityDriver';
 
 const DRAG_THRESHOLD_SQ = 9;
 const PLACE_COOLDOWN_MS = 150;
 
-export function BuildingController() {
+export function BuildingController({ showGrid }: Pick<BuildingSystemProps, 'showGrid'> = {}) {
   const { gl } = useThree();
   const {
     updateMousePosition,
@@ -52,6 +53,13 @@ export function BuildingController() {
   useEffect(() => {
     if (editMode !== 'wall' && editMode !== 'tile' && editMode !== 'block' && editMode !== 'object') return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = e.composedPath()[0];
+      if (
+        target instanceof HTMLElement &&
+        (target.closest('input, textarea, select') || target.isContentEditable ||
+          target.closest('[contenteditable]:not([contenteditable="false"])'))
+      ) return;
       const applyRotation = (rotation: number) => {
         if (editMode === 'wall') setWallRotation(rotation);
         else if (editMode === 'tile') setTileRotation(rotation);
@@ -179,6 +187,7 @@ export function BuildingController() {
       <BuildingIndirectArgsUploadDriver />
       <BuildingVisibilityDriver />
       <BuildingSystem
+        showGrid={showGrid}
         onWallClick={handleWallClick}
         onTileClick={handleTileClick}
         onBlockClick={handleBlockClick}

@@ -504,11 +504,12 @@ describe('examples package consumption contract', () => {
     expect(getUnusedPackageExportFailures(packageImports, pkg)).toEqual([]);
   });
 
-  test('package surface smoke is wired into the example app', () => {
+  test('package surface smoke is available from the developer catalog without app startup work', () => {
     const appSource = fs.readFileSync(EXAMPLES_APP, 'utf8');
-
-    expect(appSource).toContain("import('./packageSurface')");
-    expect(appSource).toContain('createPackageSurfaceExample');
+    const catalogSource = fs.readFileSync(path.join(EXAMPLES_ROOT, 'pages/ExampleCatalogPage.tsx'), 'utf8');
+    expect(appSource).not.toContain('packageSurface');
+    expect(catalogSource).toContain("import('../packageSurface')");
+    expect(catalogSource).toContain('createPackageSurfaceExample');
   });
 
   test('world example wires character customization into visible gameplay', () => {
@@ -607,12 +608,12 @@ describe('examples package consumption contract', () => {
     expect(editorSurfaceSource).toContain("'cinematic'");
   });
 
-  test('world example exposes performance metrics outside the editor shell', () => {
+  test('world example exposes performance metrics when diagnostics are enabled', () => {
     const worldSource = fs.readFileSync(WORLD_PAGE, 'utf8');
     const performanceOverlaySource = fs.readFileSync(PERFORMANCE_OVERLAY_EXAMPLE, 'utf8');
 
     expect(worldSource).toContain('PerformanceOverlay');
-    expect(worldSource).toContain('{!showEditor && <PerformanceOverlay />}');
+    expect(worldSource).toContain('{showDiagnostics && <PerformanceOverlay />}');
     expect(performanceOverlaySource).toContain("import('gaesup-world/editor')");
     expect(performanceOverlaySource).toContain('PerformancePanel');
     expect(performanceOverlaySource).toContain("'보기'");

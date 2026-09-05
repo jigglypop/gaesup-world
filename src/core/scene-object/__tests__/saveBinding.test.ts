@@ -16,6 +16,41 @@ const adapter: SaveAdapter = {
 };
 
 describe('createSceneDocumentSaveBinding', () => {
+  test('prepares migrations without changing state and applies only after all domains prepare', () => {
+    const controller = createSceneDocumentController(createSceneDocument({ id: 'current' }));
+    const before = controller.getSnapshot();
+    const migrate = jest.fn((document: Parameters<SceneMigration['migrate']>[0]) => ({ ...document, objects: [] }));
+    const binding = createSceneDocumentSaveBinding(controller, [{ fromVersion: 0, toVersion: 1, migrate }]);
+    const apply = binding.prepareHydrate!({ version: 0, id: 'loaded', objects: [] });
+    expect(controller.getSnapshot()).toBe(before);
+    expect(migrate).toHaveBeenCalledTimes(1);
+    apply();
+    expect(controller.getSnapshot().id).toBe('loaded');
+    expect(migrate).toHaveBeenCalledTimes(1);
+  });
+
+  test('a corrupt scene prevents earlier legacy and prepared domains from being applied', () => {
+    const controller = createSceneDocumentController(createSceneDocument({ id: 'current' }));
+    const saveSystem = new SaveSystem({ adapter });
+    const hydrate = jest.fn();
+    const apply = jest.fn();
+    saveSystem.register({ key: 'legacy', serialize: () => null, hydrate });
+    saveSystem.register({ key: 'prepared', serialize: () => null, hydrate, prepareHydrate: () => apply });
+    saveSystem.register(createSceneDocumentSaveBinding(controller));
+    expect(() => saveSystem.hydrateBlob({ version: 1, savedAt: 1, domains: {
+      'scene-document': { version: 1, id: '', objects: [] },
+    } })).toThrow('Save hydration failed');
+    expect(hydrate).not.toHaveBeenCalled();
+    expect(apply).not.toHaveBeenCalled();
+    expect(controller.getSnapshot().id).toBe('current');
+    saveSystem.hydrateBlob({ version: 1, savedAt: 1, domains: {
+      'scene-document': createSceneDocument({ id: 'loaded' }),
+    } });
+    expect(hydrate).toHaveBeenCalledTimes(1);
+    expect(apply).toHaveBeenCalledTimes(1);
+    expect(controller.getSnapshot().id).toBe('loaded');
+  });
+
   test('uses the isolated scene-document key and serializes a mutable owned clone', () => {
     const controller = createSceneDocumentController(
       createSceneDocument({
@@ -90,7 +125,7 @@ describe('createSceneDocumentSaveBinding', () => {
     const saveSystem = new SaveSystem({ adapter, onDiagnostic: diagnostic });
     saveSystem.register(createSceneDocumentSaveBinding(controller));
 
-    saveSystem.hydrateBlob(
+    expect(() => saveSystem.hydrateBlob(
       {
         version: 1,
         savedAt: 1,
@@ -99,7 +134,7 @@ describe('createSceneDocumentSaveBinding', () => {
         },
       },
       'diagnostic-slot',
-    );
+    )).toThrow('Save hydration failed');
 
     expect(controller.getSnapshot()).toBe(before);
     expect(diagnostic).toHaveBeenCalledTimes(1);

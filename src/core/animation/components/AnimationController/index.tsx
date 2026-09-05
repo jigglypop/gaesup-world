@@ -1,17 +1,15 @@
-import React from 'react';
-
 import type { AnimationControllerProps } from './types';
 import { useAnimationBridge } from '../../hooks/useAnimationBridge';
 import './styles.css';
 
 const ANIMATION_MODES = [
-  { value: 'idle', label: 'Idle' },
-  { value: 'walk', label: 'Walk' },
-  { value: 'run', label: 'Run' },
-  { value: 'jump', label: 'Jump' },
-  { value: 'fall', label: 'Fall' },
-  { value: 'dance', label: 'Dance' },
-  { value: 'wave', label: 'Wave' },
+  { value: 'idle', label: '대기' },
+  { value: 'walk', label: '걷기' },
+  { value: 'run', label: '달리기' },
+  { value: 'jump', label: '점프' },
+  { value: 'fall', label: '낙하' },
+  { value: 'dance', label: '춤' },
+  { value: 'wave', label: '손 흔들기' },
 ];
 
 function cx(...values: Array<string | false | null | undefined>): string {

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 
 import { CameraSettingsTab } from './CameraSettingsTab';
 import type {
@@ -14,10 +14,10 @@ import { CameraDebugPanel } from '../../../camera/components/CameraDebugPanel';
 import { CameraPresets } from '../../../camera/components/CameraPresets';
 
 const CAMERA_PANEL_DEFAULT_LABELS: CameraPanelLabels = {
-  Settings: 'Settings',
-  Controller: 'Controller',
-  Presets: 'Presets',
-  Debug: 'Debug',
+  Settings: '설정',
+  Controller: '조작',
+  Presets: '프리셋',
+  Debug: '진단',
 };
 const CAMERA_PANEL_DEFAULT_TABS: readonly CameraPanelTabConfig[] = [
   { id: 'Settings', label: CAMERA_PANEL_DEFAULT_LABELS.Settings },

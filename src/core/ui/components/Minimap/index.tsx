@@ -5,6 +5,8 @@ import './styles.css';
 const MINIMAP_SIZE_PX = 200;
 
 export function MiniMap({
+  size = MINIMAP_SIZE_PX,
+  updateInterval = 33,
   scale: initialScale = 5,
   minScale = 0.5,
   maxScale = 20,
@@ -22,7 +24,8 @@ export function MiniMap({
 }: MinimapProps) {
   const { canvasRef, scale, upscale, downscale, handleWheel } =
     useMinimap({
-      size: MINIMAP_SIZE_PX,
+      size,
+      updateInterval,
       initialScale,
       minScale,
       maxScale,
@@ -33,19 +36,20 @@ export function MiniMap({
   const positionClass = position ? `minimap--${position}` : '';
 
   return (
-    <div className={`minimap ${positionClass}`} style={minimapStyle}>
+    <div className={`minimap ${positionClass}`} style={{ width: size, height: size, ...minimapStyle }}>
       <canvas
         ref={canvasRef}
         className="minimap__canvas"
-        width={MINIMAP_SIZE_PX}
-        height={MINIMAP_SIZE_PX}
+        aria-label="주변 지도"
+        width={size}
+        height={size}
         onWheel={handleWheel}
       />
       
       {showCompass && (
         <div className="minimap__compass">
           <div style={{ transform: `rotate(${angle}deg)` }}>
-            N
+            북
           </div>
         </div>
       )}
@@ -70,6 +74,8 @@ export function MiniMap({
           <div className="minimap__zoom-controls">
             <button
               className="minimap__control-button"
+              type="button"
+              aria-label="지도 확대"
               onClick={upscale}
               disabled={scale >= maxScale}
               style={plusMinusStyle}
@@ -78,6 +84,8 @@ export function MiniMap({
             </button>
             <button
               className="minimap__control-button"
+              type="button"
+              aria-label="지도 축소"
               onClick={downscale}
               disabled={scale <= minScale}
               style={plusMinusStyle}

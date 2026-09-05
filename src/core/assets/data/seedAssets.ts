@@ -138,7 +138,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'wall-soft-brick',
-    name: 'Soft Brick Wall',
+    name: '부드러운 벽돌 벽',
     kind: 'wall',
     tags: ['building', 'wall', 'brick'],
     colors: {
@@ -151,7 +151,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'tile-warm-wood',
-    name: 'Warm Wood Tile',
+    name: '따뜻한 나무 바닥',
     kind: 'tile',
     tags: ['building', 'tile', 'wood'],
     colors: {
@@ -164,7 +164,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'material-glass-blue',
-    name: 'Blue Glass',
+    name: '파란 유리',
     kind: 'material',
     tags: ['building', 'material', 'glass'],
     colors: {
@@ -179,7 +179,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'prop-door-basic',
-    name: 'Door',
+    name: '문',
     kind: 'object3d',
     url: 'gltf/props/door.glb',
     tags: ['starter', 'building', 'prop', 'door', 'cc0'],
@@ -187,7 +187,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'prop-window-basic',
-    name: 'Window',
+    name: '창문',
     kind: 'object3d',
     url: 'gltf/props/window.glb',
     tags: ['starter', 'building', 'prop', 'window', 'cc0'],
@@ -195,7 +195,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'prop-fence-basic',
-    name: 'Fence',
+    name: '울타리',
     kind: 'object3d',
     url: 'gltf/props/fence.glb',
     tags: ['starter', 'building', 'prop', 'fence', 'cc0'],
@@ -203,7 +203,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'prop-lamp-basic',
-    name: 'Lamp',
+    name: '조명',
     kind: 'object3d',
     url: 'gltf/props/lamp.glb',
     tags: ['starter', 'building', 'prop', 'lamp', 'cc0'],
@@ -211,7 +211,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'prop-chair-basic',
-    name: 'Chair',
+    name: '의자',
     kind: 'object3d',
     url: 'gltf/props/chair.glb',
     tags: ['starter', 'building', 'prop', 'chair', 'cc0'],
@@ -219,7 +219,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'prop-table-basic',
-    name: 'Table',
+    name: '탁자',
     kind: 'object3d',
     url: 'gltf/props/table.glb',
     tags: ['starter', 'building', 'prop', 'table', 'cc0'],
@@ -227,7 +227,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'prop-bed-basic',
-    name: 'Bed',
+    name: '침대',
     kind: 'object3d',
     url: 'gltf/props/bed.glb',
     tags: ['starter', 'building', 'prop', 'bed', 'cc0'],
@@ -235,7 +235,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'prop-storage-basic',
-    name: 'Storage',
+    name: '수납장',
     kind: 'object3d',
     url: 'gltf/props/storage.glb',
     tags: ['starter', 'building', 'prop', 'storage', 'cc0'],
@@ -243,7 +243,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'prop-mailbox-basic',
-    name: 'Mailbox',
+    name: '우편함',
     kind: 'object3d',
     url: 'gltf/props/mailbox.glb',
     tags: ['starter', 'building', 'prop', 'mailbox', 'cc0'],
@@ -251,7 +251,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'prop-crafting-basic',
-    name: 'Crafting Station',
+    name: '작업대',
     kind: 'object3d',
     url: 'gltf/props/crafting.glb',
     tags: ['starter', 'building', 'prop', 'crafting', 'cc0'],
@@ -259,7 +259,7 @@ export const SEED_ASSETS: AssetRecord[] = [
   },
   {
     id: 'prop-shop-stall-basic',
-    name: 'Shop Stall',
+    name: '상점 가판대',
     kind: 'object3d',
     url: 'gltf/props/shop-stall.glb',
     tags: ['starter', 'building', 'prop', 'shop', 'cc0'],

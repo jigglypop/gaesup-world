@@ -4,8 +4,8 @@ export const CAMERA_PRESETS_DEFAULT_SMOOTHING = { position: 0.1, rotation: 0.1, 
 export const CAMERA_PRESETS_DEFAULT_PRESETS: CameraPreset[] = [
   {
     id: 'classic',
-    name: 'Classic',
-    description: 'A traditional third-person view.',
+    name: '기본',
+    description: '일반적인 3인칭 시점입니다.',
     config: {
       mode: 'thirdPerson',
       distance: { x: 0, y: 8, z: 10 },
@@ -15,8 +15,8 @@ export const CAMERA_PRESETS_DEFAULT_PRESETS: CameraPreset[] = [
   },
   {
     id: 'cinematic',
-    name: 'Cinematic',
-    description: 'Smooth, movie-like camera work.',
+    name: '영화처럼',
+    description: '영화처럼 부드럽게 움직이는 시점입니다.',
     config: {
       mode: 'chase',
       distance: { x: 2, y: 7, z: 8 },
@@ -26,8 +26,8 @@ export const CAMERA_PRESETS_DEFAULT_PRESETS: CameraPreset[] = [
   },
   {
     id: 'action',
-    name: 'Action',
-    description: 'Responsive camera for fast gameplay.',
+    name: '액션',
+    description: '빠른 움직임에 민첩하게 반응하는 시점입니다.',
     config: {
       mode: 'thirdPerson',
       distance: { x: 0, y: 6, z: 6 },
@@ -37,8 +37,8 @@ export const CAMERA_PRESETS_DEFAULT_PRESETS: CameraPreset[] = [
   },
   {
     id: 'strategy',
-    name: 'Strategy',
-    description: 'Top-down view for an overview.',
+    name: '전략',
+    description: '위에서 공간 전체를 살펴보는 시점입니다.',
     config: {
       mode: 'topDown',
       distance: { x: 0, y: 20, z: 0 },
@@ -48,8 +48,8 @@ export const CAMERA_PRESETS_DEFAULT_PRESETS: CameraPreset[] = [
   },
   {
     id: 'retro',
-    name: 'Retro',
-    description: 'Classic side-scroller style.',
+    name: '복고풍',
+    description: '옆에서 바라보는 횡스크롤 시점입니다.',
     config: {
       mode: 'sideScroll',
       distance: { x: 15, y: 0, z: 0 },
@@ -59,7 +59,7 @@ export const CAMERA_PRESETS_DEFAULT_PRESETS: CameraPreset[] = [
   },
 ];
 export const CAMERA_PRESETS_DEFAULT_LABELS: CameraPresetsLabels = {
-  empty: 'No camera presets',
+  empty: '카메라 프리셋이 없습니다',
 };
 export const CAMERA_PRESETS_DEFAULT_CLASSES: Record<CameraPresetsClassNameSlot, string> = {
   root: 'camera-presets-panel',

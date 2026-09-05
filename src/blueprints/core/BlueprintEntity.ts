@@ -4,7 +4,7 @@ import { RapierRigidBody } from '@react-three/rapier';
 import { Group } from 'three';
 
 import { ComponentRegistry } from './ComponentRegistry';
-import { BlueprintDefinition, IComponent, ComponentContext } from './types';
+import { BlueprintDefinition, IComponent, ComponentContext, BlueprintMovementInput, BlueprintAnimationClips } from './types';
 
 export class BlueprintEntity {
   private id: string;
@@ -16,7 +16,8 @@ export class BlueprintEntity {
     blueprint: BlueprintDefinition,
     rigidBodyRef: RefObject<RapierRigidBody>,
     innerGroupRef?: RefObject<Group>,
-    outerGroupRef?: RefObject<Group>
+    outerGroupRef?: RefObject<Group>,
+    animationClips?: BlueprintAnimationClips,
   ) {
     this.id = blueprint.id;
     this.blueprint = blueprint;
@@ -26,26 +27,36 @@ export class BlueprintEntity {
       entityId: blueprint.id,
       ...(innerGroupRef ? { innerGroupRef } : {}),
       ...(outerGroupRef ? { outerGroupRef } : {}),
+      ...(animationClips ? { animationClips } : {}),
     };
-    
-    this.createComponents();
+
+    try {
+      this.createComponents();
+    } catch (error) {
+      try {
+        this.dispose();
+      } catch {
+        /* Preserve the initialization failure. */
+      }
+      throw error;
+    }
   }
 
   private createComponents(): void {
     const registry = ComponentRegistry.getInstance();
-    
+
     for (const componentDef of this.blueprint.components) {
       const component = registry.create(componentDef);
       if (component) {
-        component.initialize(this.context);
-        this.components.push(component);
+        this.addComponent(component);
       }
     }
   }
 
-  update(deltaTime: number): void {
+  update(deltaTime: number, movementInput?: BlueprintMovementInput): void {
     this.context.deltaTime = deltaTime;
-    
+    this.context.movementInput = movementInput;
+
     for (const component of this.components) {
       if (component.enabled) {
         component.update(this.context);
@@ -54,34 +65,50 @@ export class BlueprintEntity {
   }
 
   getComponent<T extends IComponent>(type: string): T | undefined {
-    return this.components.find(c => c.type === type) as T;
+    return this.components.find((c) => c.type === type) as T;
   }
 
   getComponents<T extends IComponent>(type: string): T[] {
-    return this.components.filter(c => c.type === type) as T[];
+    return this.components.filter((c) => c.type === type) as T[];
   }
 
   addComponent(component: IComponent): void {
-    component.initialize(this.context);
+    try {
+      component.initialize(this.context);
+    } catch (error) {
+      try {
+        component.dispose();
+      } catch {
+        /* Preserve the initialization failure. */
+      }
+      throw error;
+    }
     this.components.push(component);
   }
 
   removeComponent(type: string): void {
-    const index = this.components.findIndex(c => c.type === type);
+    const index = this.components.findIndex((c) => c.type === type);
     if (index !== -1) {
       const component = this.components[index];
+      this.components.splice(index, 1);
       if (component) {
         component.dispose();
       }
-      this.components.splice(index, 1);
     }
   }
 
   dispose(): void {
-    for (const component of this.components) {
-      component.dispose();
-    }
+    const components = this.components;
     this.components = [];
+    const errors: unknown[] = [];
+    for (const component of components) {
+      try {
+        component.dispose();
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    if (errors.length) throw new AggregateError(errors, 'Blueprint component disposal failed');
   }
 
   getId(): string {
@@ -91,4 +118,4 @@ export class BlueprintEntity {
   getBlueprint(): BlueprintDefinition {
     return this.blueprint;
   }
-} 
+}

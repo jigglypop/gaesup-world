@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import type { WebGPURenderer } from 'three/webgpu';
 
+import { logger } from '../utils/logger';
+
 type WebGPUNavigator = Navigator & {
   gpu?: {
     requestAdapter: () => Promise<object | null>;
@@ -17,6 +19,14 @@ type WebGPURendererWithContextLoss = WebGPURenderer & {
 };
 
 let webgpuAvailability: Promise<boolean> | null = null;
+
+function disposeBackend(backend: WebGPURenderer['backend']): void {
+  try {
+    if ('dispose' in backend && typeof backend.dispose === 'function') backend.dispose();
+  } catch (error) {
+    logger.error('Renderer backend cleanup failed', error instanceof Error ? error : String(error));
+  }
+}
 
 async function detectWebGPUAvailability(): Promise<boolean> {
   try {
@@ -94,7 +104,9 @@ export function isWebGPUAvailable(): Promise<boolean> {
 }
 
 /**
- * Create a WebGPU renderer with automatic WebGL fallback.
+ * Create a WebGPU renderer with WebGL fallback for unavailable capabilities/modules/constructors.
+ * Initialization failures propagate: a partially initialized canvas cannot safely be reused
+ * for another renderer, and Three's dispose() awaits initialization again through setAnimationLoop().
  * Use as the `gl` prop on R3F Canvas:
  *
  *   <Canvas gl={createRenderer}>
@@ -133,6 +145,14 @@ export async function createRenderer(props: RendererProps): Promise<AnyRenderer>
     return createLegacyRenderer(props);
   }
 
-  await renderer.init();
+  const initialBackend = renderer.backend;
+  try {
+    await renderer.init();
+  } catch (error) {
+    disposeBackend(initialBackend);
+    if (renderer.backend !== initialBackend) disposeBackend(renderer.backend);
+    throw error;
+  }
+  if (renderer.backend !== initialBackend) disposeBackend(initialBackend);
   return installDisposalCompatibility(renderer);
 }

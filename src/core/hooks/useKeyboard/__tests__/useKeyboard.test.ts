@@ -3,19 +3,21 @@ import 'reflect-metadata';
 import { renderHook, act } from '@testing-library/react';
 
 import { useKeyboard } from '../index';
+import { createMemoryInputBackend } from '../../../interactions/core/adapter';
+import { useInputBackend } from '../../../interactions/hooks';
 
 const mockUpdateKeyboard = jest.fn();
 const mockUpdateMouse = jest.fn();
 const mockStopAutomation = jest.fn();
 let mockStoreState: Record<string, unknown>;
+const mockInputBackend = {
+  ...createMemoryInputBackend(),
+  updateKeyboard: (...args: unknown[]) => mockUpdateKeyboard(...args),
+  updateMouse: (...args: unknown[]) => mockUpdateMouse(...args),
+};
 
 jest.mock('../../../interactions/hooks', () => ({
-  useInputBackend: jest.fn(() => ({
-    getKeyboard: jest.fn(() => ({})),
-    getMouse: jest.fn(() => ({})),
-    updateKeyboard: (...args: unknown[]) => mockUpdateKeyboard(...args),
-    updateMouse: (...args: unknown[]) => mockUpdateMouse(...args),
-  })),
+  useInputBackend: jest.fn(() => mockInputBackend),
 }));
 
 jest.mock('@stores/gaesupStore', () => ({
@@ -30,8 +32,30 @@ const fireKeyEvent = (code: string, type: 'keydown' | 'keyup') => {
 };
 
 describe('useKeyboard', () => {
+  it('blocks disabled input, releases held keys on disable, and resumes on enable', () => {
+    const { result, rerender } = renderHook(
+      ({ enabled }) => useKeyboard(true, true, undefined, enabled),
+      { initialProps: { enabled: false } },
+    );
+    act(() => fireKeyEvent('KeyW', 'keydown'));
+    expect(result.current.pushKey('forward', true)).toBe(false);
+    expect(mockUpdateKeyboard).not.toHaveBeenCalled();
+    rerender({ enabled: true });
+    act(() => fireKeyEvent('KeyW', 'keydown'));
+    expect(mockUpdateKeyboard).toHaveBeenLastCalledWith({ forward: true });
+    rerender({ enabled: false });
+    expect(mockUpdateKeyboard).toHaveBeenLastCalledWith(expect.objectContaining({ forward: false }));
+    mockUpdateKeyboard.mockClear();
+    act(() => fireKeyEvent('KeyW', 'keydown'));
+    expect(mockUpdateKeyboard).not.toHaveBeenCalled();
+    rerender({ enabled: true });
+    act(() => fireKeyEvent('KeyW', 'keydown'));
+    expect(mockUpdateKeyboard).toHaveBeenLastCalledWith({ forward: true });
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.mocked(useInputBackend).mockReturnValue(mockInputBackend);
     mockStoreState = {
       automation: { queue: { isRunning: false } },
       interaction: { isActive: true },
@@ -45,6 +69,34 @@ describe('useKeyboard', () => {
   });
 
   describe('key mapping', () => {
+    it.each(['input', 'textarea', 'select'])('leaves %s input to the browser', (tagName) => {
+      renderHook(() => useKeyboard());
+      const field = document.createElement(tagName);
+      document.body.append(field);
+      try {
+        const event = new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true, cancelable: true });
+        act(() => { field.dispatchEvent(event); });
+        expect(event.defaultPrevented).toBe(false);
+        expect(mockUpdateKeyboard).not.toHaveBeenCalled();
+      } finally {
+        field.remove();
+      }
+    });
+
+    it('releases held movement when keyboard input moves into a field', () => {
+      renderHook(() => useKeyboard());
+      act(() => fireKeyEvent('KeyW', 'keydown'));
+      mockUpdateKeyboard.mockClear();
+      const field = document.createElement('input');
+      document.body.append(field);
+      try {
+        act(() => { field.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', bubbles: true })); });
+        expect(mockUpdateKeyboard).toHaveBeenCalledWith(expect.objectContaining({ forward: false }));
+      } finally {
+        field.remove();
+      }
+    });
+
     it('KeyW를 누르면 forward가 true로 설정되어야 합니다', () => {
       renderHook(() => useKeyboard());
       act(() => fireKeyEvent('KeyW', 'keydown'));
@@ -197,6 +249,89 @@ describe('useKeyboard', () => {
   });
 
   describe('cleanup', () => {
+    it('releases the previous backend on replacement without transferring held keys', () => {
+      const previous = createMemoryInputBackend();
+      const next = createMemoryInputBackend();
+      jest.mocked(useInputBackend).mockReturnValue(previous);
+      const { result, rerender, unmount } = renderHook(() => useKeyboard());
+      act(() => fireKeyEvent('KeyW', 'keydown'));
+      expect(previous.getKeyboard().forward).toBe(true);
+      jest.mocked(useInputBackend).mockReturnValue(next);
+      rerender();
+      expect(previous.getKeyboard().forward).toBe(false);
+      expect(next.getKeyboard().forward).toBe(false);
+      expect(result.current.isKeyPressed('KeyW')).toBe(false);
+      act(() => fireKeyEvent('KeyW', 'keydown'));
+      expect(next.getKeyboard().forward).toBe(true);
+      unmount();
+      expect(next.getKeyboard().forward).toBe(false);
+    });
+
+    it('releases held input when the browser window loses focus', () => {
+      renderHook(() => useKeyboard());
+      act(() => fireKeyEvent('KeyW', 'keydown'));
+      mockUpdateKeyboard.mockClear();
+      act(() => { window.dispatchEvent(new Event('blur')); });
+      expect(mockUpdateKeyboard).toHaveBeenLastCalledWith(expect.objectContaining({ forward: false }));
+    });
+
+    it('keeps another subscriber held until the last owner unmounts', () => {
+      const first = renderHook(() => useKeyboard());
+      const second = renderHook(() => useKeyboard());
+      act(() => fireKeyEvent('KeyW', 'keydown'));
+      expect(mockUpdateKeyboard).toHaveBeenCalledTimes(1);
+      mockUpdateKeyboard.mockClear();
+      first.unmount();
+      expect(mockUpdateKeyboard).not.toHaveBeenCalled();
+      second.unmount();
+      expect(mockUpdateKeyboard).toHaveBeenLastCalledWith({ forward: false });
+    });
+
+    it('keeps physical input held when a screen button releases the same action', () => {
+      const { result, unmount } = renderHook(() => useKeyboard());
+      act(() => { result.current.pushKey('forward', true); });
+      act(() => fireKeyEvent('KeyW', 'keydown'));
+      mockUpdateKeyboard.mockClear();
+      act(() => { result.current.pushKey('forward', false); });
+      expect(mockUpdateKeyboard).not.toHaveBeenCalled();
+      act(() => fireKeyEvent('KeyW', 'keyup'));
+      expect(mockUpdateKeyboard).toHaveBeenLastCalledWith({ forward: false });
+      unmount();
+    });
+
+    it('preserves held input across automation setting rerenders', () => {
+      const { rerender, unmount } = renderHook(() => useKeyboard());
+      act(() => fireKeyEvent('KeyW', 'keydown'));
+      mockUpdateKeyboard.mockClear();
+      mockStoreState = { ...mockStoreState, automation: { queue: { isRunning: true } } };
+      rerender();
+      expect(mockUpdateKeyboard).not.toHaveBeenCalled();
+      unmount();
+      expect(mockUpdateKeyboard).toHaveBeenLastCalledWith({ forward: false });
+    });
+
+    it('turning off physical listeners releases physical keys while preserving screen input', () => {
+      const { result, rerender, unmount } = renderHook(
+        ({ listen }) => useKeyboard(true, true, undefined, true, listen),
+        { initialProps: { listen: true } },
+      );
+      act(() => {
+        fireKeyEvent('KeyW', 'keydown');
+        fireKeyEvent('KeyD', 'keydown');
+        result.current.pushKey('forward', true);
+      });
+      mockUpdateKeyboard.mockClear();
+      rerender({ listen: false });
+      expect(mockUpdateKeyboard).toHaveBeenCalledTimes(1);
+      expect(mockUpdateKeyboard).toHaveBeenLastCalledWith({ rightward: false });
+      act(() => { result.current.pushKey('forward', false); });
+      expect(mockUpdateKeyboard).toHaveBeenLastCalledWith({ forward: false });
+      mockUpdateKeyboard.mockClear();
+      act(() => fireKeyEvent('KeyW', 'keydown'));
+      expect(mockUpdateKeyboard).not.toHaveBeenCalled();
+      unmount();
+    });
+
     it('unmount 시 이벤트 리스너가 제거되어야 합니다', () => {
       const { unmount } = renderHook(() => useKeyboard());
       unmount();

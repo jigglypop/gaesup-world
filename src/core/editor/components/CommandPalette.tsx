@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { EditorShortcutBinding } from '../shortcuts';
 
@@ -22,7 +22,7 @@ export interface CommandPaletteProps {
 export function CommandPalette({
   open,
   items,
-  placeholder = 'Search commands',
+  placeholder = '명령 검색',
   onClose,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
@@ -32,7 +32,8 @@ export function CommandPalette({
   useEffect(() => {
     if (!open) return;
     setQuery('');
-    window.setTimeout(() => inputRef.current?.focus(), 0);
+    const timer = window.setTimeout(() => inputRef.current?.focus(), 0);
+    return () => window.clearTimeout(timer);
   }, [open]);
 
   if (!open) return null;
@@ -44,7 +45,7 @@ export function CommandPalette({
   };
 
   return (
-    <div className="editor-command-palette" role="dialog" aria-label="Command palette">
+    <div className="editor-command-palette" role="dialog" aria-label="명령 목록">
       <div className="editor-command-palette__surface">
         <input
           ref={inputRef}
@@ -55,11 +56,11 @@ export function CommandPalette({
             if (event.key === 'Enter' && filteredItems[0]) runItem(filteredItems[0]);
           }}
           placeholder={placeholder}
-          aria-label="Search commands"
+          aria-label="명령 검색"
         />
-        <div className="editor-command-palette__list" role="listbox">
+        <div className="editor-command-palette__list">
           {filteredItems.length === 0 ? (
-            <div className="editor-command-palette__empty">No commands</div>
+            <div className="editor-command-palette__empty">검색된 명령이 없습니다</div>
           ) : filteredItems.map((item) => (
             <button
               key={item.id}
@@ -80,7 +81,7 @@ export function CommandPalette({
           ))}
         </div>
       </div>
-      <button type="button" className="editor-command-palette__backdrop" onClick={onClose} aria-label="Close command palette" />
+      <button type="button" className="editor-command-palette__backdrop" onClick={onClose} aria-label="명령 검색 닫기" />
     </div>
   );
 }
@@ -105,7 +106,7 @@ export function shortcutsToCommandPaletteItems(
   return shortcuts.map((shortcut) => ({
     id: shortcut.id,
     label: shortcut.label,
-    group: 'Shortcut',
+    group: '단축키',
     ...(shortcut.disabled !== undefined ? { disabled: shortcut.disabled } : {}),
     run: () => shortcut.run(new KeyboardEvent('keydown', {
       key: shortcut.key,

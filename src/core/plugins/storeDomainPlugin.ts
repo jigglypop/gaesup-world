@@ -37,6 +37,7 @@ export interface StoreDomainPluginConfig<
   capabilities?: string[];
   serialize?: () => TSerialized;
   hydrate?: (data: TSerialized | null | undefined) => void;
+  prepareHydrate?: DomainBinding<TSerialized>['prepareHydrate'];
 }
 
 function createStoreService<TStore extends { getState: () => unknown }>(
@@ -77,6 +78,7 @@ export function createStoreDomainPlugin<
         key: config.saveExtensionId,
         serialize,
         hydrate,
+        ...(config.prepareHydrate ? { prepareHydrate: config.prepareHydrate } : {}),
       };
 
       ctx.save.register(config.saveExtensionId, binding, config.id);

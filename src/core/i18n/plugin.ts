@@ -31,6 +31,7 @@ export function createI18nPlugin(options: I18nPluginOptions = {}) {
     capabilities: ['i18n'],
     serialize: serializeI18nState,
     hydrate: hydrateI18nState,
+    prepareHydrate: (data) => useI18nStore.getState().prepareHydrate(data),
   });
 }
 

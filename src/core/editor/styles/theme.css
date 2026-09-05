@@ -278,6 +278,14 @@
 .editor-panel-modal {
   position: fixed;
   inset: 10px;
+  width: calc(100% - 20px);
+  height: calc(100% - 20px);
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: inherit;
   z-index: 240;
   pointer-events: auto;
   display: flex;
@@ -331,6 +339,8 @@
 
 .editor-panel-modal--npc {
   inset: 0;
+  width: 100%;
+  height: 100%;
   background: rgba(6, 10, 18, 0.78);
 }
 
@@ -1368,6 +1378,7 @@ textarea:focus-visible {
 
 .prop-value input[type='number'] {
   width: 100%;
+  box-sizing: border-box;
   background: var(--editor-surface-secondary);
   border: 1px solid var(--editor-border-color);
   border-radius: 4px;
@@ -1405,12 +1416,13 @@ textarea:focus-visible {
 
 .vector-input {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--editor-spacing-xs);
 }
 
 .vector-input__field {
   display: grid;
+  min-width: 0;
   grid-template-columns: 12px minmax(0, 1fr);
   gap: 2px;
   align-items: center;

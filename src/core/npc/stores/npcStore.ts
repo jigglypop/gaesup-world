@@ -239,48 +239,48 @@ export const useNPCStore = create<NPCStore>()(
       // Default animations
       state.animations.set('idle', {
         id: 'idle',
-        name: 'Idle',
+        name: '대기',
         loop: true,
         speed: 1
       });
       
       state.animations.set('walk', {
         id: 'walk',
-        name: 'Walk',
+        name: '걷기',
         loop: true,
         speed: 1
       });
       
       state.animations.set('greet', {
         id: 'greet',
-        name: 'Greet',
+        name: '인사',
         loop: false,
         speed: 1
       });
       
       state.animations.set('jump', {
         id: 'jump',
-        name: 'Jump',
+        name: '점프',
         loop: false,
         speed: 1
       });
       
       state.animations.set('run', {
         id: 'run',
-        name: 'Run',
+        name: '달리기',
         loop: true,
         speed: 1.5
       });
 
       const wanderBlueprint: NPCBrainBlueprint = {
         id: 'npc-blueprint-wander',
-        name: 'Wander Loop',
-        description: 'Move to a generated wander target when navigation is idle.',
+        name: '주변 돌아다니기',
+        description: '이동을 쉬고 있을 때 주변의 새 목적지로 이동합니다.',
         nodes: [
-          { id: 'start', type: 'start', label: 'Start' },
-          { id: 'idle-check', type: 'condition', label: 'Navigation Idle', condition: { type: 'navigationIdle' } },
-          { id: 'quest-check', type: 'condition', label: 'Quest Active', condition: { type: 'questStatus', questId: 'welcome', status: 'active' } },
-          { id: 'wander', type: 'action', label: 'Wander', action: { type: 'wander', radius: 4, speed: 2.2, waitSeconds: 1.5 } },
+          { id: 'start', type: 'start', label: '시작' },
+          { id: 'idle-check', type: 'condition', label: '이동 대기 중', condition: { type: 'navigationIdle' } },
+          { id: 'quest-check', type: 'condition', label: '진행 중인 퀘스트', condition: { type: 'questStatus', questId: 'welcome', status: 'active' } },
+          { id: 'wander', type: 'action', label: '돌아다니기', action: { type: 'wander', radius: 4, speed: 2.2, waitSeconds: 1.5 } },
         ],
         edges: [
           { id: 'start-idle', source: 'start', target: 'idle-check', branch: 'next' },
@@ -290,13 +290,13 @@ export const useNPCStore = create<NPCStore>()(
       };
       const greetBlueprint: NPCBrainBlueprint = {
         id: 'npc-blueprint-greet-nearest',
-        name: 'Greet Nearest',
-        description: 'Look at and greet the nearest perceived NPC.',
+        name: '가까운 이웃에게 인사',
+        description: '발견한 NPC 중 가장 가까운 대상에게 다가가 인사합니다.',
         nodes: [
-          { id: 'start', type: 'start', label: 'Start' },
-          { id: 'see-any', type: 'condition', label: 'Perceived Any', condition: { type: 'perceivedAny' } },
-          { id: 'look', type: 'action', label: 'Look At Nearest', action: { type: 'moveToTarget', target: { type: 'nearestPerceived' }, speed: 1.2, animationId: 'walk' } },
-          { id: 'speak', type: 'action', label: 'Speak', action: { type: 'speak', text: '안녕?', duration: 2 } },
+          { id: 'start', type: 'start', label: '시작' },
+          { id: 'see-any', type: 'condition', label: '발견한 대상 있음', condition: { type: 'perceivedAny' } },
+          { id: 'look', type: 'action', label: '가까운 대상에게 이동', action: { type: 'moveToTarget', target: { type: 'nearestPerceived' }, speed: 1.2, animationId: 'walk' } },
+          { id: 'speak', type: 'action', label: '말하기', action: { type: 'speak', text: '안녕?', duration: 2 } },
         ],
         edges: [
           { id: 'start-see', source: 'start', target: 'see-any', branch: 'next' },
@@ -313,14 +313,14 @@ export const useNPCStore = create<NPCStore>()(
       state.clothingCategories.set('basic', {
         id: 'basic',
         name: '기본 의상',
-        description: 'Basic clothing sets',
+        description: '기본 의상 모음',
         clothingSetIds: ['rabbit-outfit', 'basic-suit', 'formal-suit']
       });
       
       state.clothingCategories.set('accessories', {
         id: 'accessories',
         name: '액세서리',
-        description: 'Hats and glasses',
+        description: '모자와 안경',
         clothingSetIds: ['hat-set-a', 'hat-set-b', 'hat-set-c', 'glass-set-a', 'glass-set-b']
       });
       
@@ -445,7 +445,7 @@ export const useNPCStore = create<NPCStore>()(
       state.categories.set('humanoid', {
         id: 'humanoid',
         name: '캐릭터',
-        description: 'Human-like characters',
+        description: '사람 형태의 캐릭터',
         templateIds: ['ally', 'oneyee']
       });
       
@@ -453,7 +453,7 @@ export const useNPCStore = create<NPCStore>()(
       state.templates.set('ally', {
         id: 'ally',
         name: '올춘삼',
-        description: 'Ally character',
+        description: '올춘삼 캐릭터',
         category: 'humanoid',
         baseParts: [
           {
@@ -472,7 +472,7 @@ export const useNPCStore = create<NPCStore>()(
       state.templates.set('oneyee', {
         id: 'oneyee',
         name: '원덕배',
-        description: 'Oneyee character',
+        description: '원덕배 캐릭터',
         category: 'humanoid',
         baseParts: [
           {
@@ -970,4 +970,4 @@ export const useNPCStore = create<NPCStore>()(
       state.instances.set(instanceId, { ...instance, position });
     }),
   }))
-); 
+);

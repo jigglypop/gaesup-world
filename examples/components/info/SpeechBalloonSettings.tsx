@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { useUIConfigStore } from 'gaesup-world';
 
 export const SpeechBalloonSettings = () => {
@@ -8,7 +6,7 @@ export const SpeechBalloonSettings = () => {
   
   return (
     <div style={{ marginTop: '20px' }}>
-      <h3>Speech Balloon 설정</h3>
+      <h3>말풍선 설정</h3>
       <div className="info-group">
         <p>키 조작:</p>
         <ul style={{ fontSize: '12px', margin: '5px 0' }}>

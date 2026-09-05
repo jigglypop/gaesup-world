@@ -15,6 +15,7 @@ type State = {
 
   serialize: () => EventsSerialized;
   hydrate: (data: EventsSerialized | null | undefined) => void;
+  prepareHydrate: (data: EventsSerialized | null | undefined) => () => void;
 };
 
 export const useEventsStore = create<State>((set, get) => ({
@@ -41,11 +42,24 @@ export const useEventsStore = create<State>((set, get) => ({
   hasTag: (tag) => get().tags.has(tag),
 
   serialize: () => ({ version: 1, active: [...get().active], startedAt: { ...get().startedAt } }),
-  hydrate: (data) => {
-    if (!data) return;
-    set({
-      active: Array.isArray(data.active) ? [...data.active] : [],
-      startedAt: data.startedAt && typeof data.startedAt === 'object' ? { ...data.startedAt } : {},
+  prepareHydrate: (data) => {
+    if (data === null || data === undefined) return () => {};
+    if (typeof data !== 'object' || data.version !== 1 || !Array.isArray(data.active) ||
+      !data.startedAt || typeof data.startedAt !== 'object' || Array.isArray(data.startedAt)) {
+      throw new TypeError('Invalid events snapshot');
+    }
+    const active = Array.from(data.active, (id) => {
+      if (typeof id !== 'string' || !id.trim()) throw new TypeError('Invalid event ID');
+      return id;
     });
+    const startedAt = Object.fromEntries(Object.entries(data.startedAt).map(([id, time]) => {
+      if (!id.trim() || typeof time !== 'number' || !Number.isFinite(time) || time < 0) {
+        throw new TypeError('Invalid event time');
+      }
+      return [id, time];
+    }));
+    const tags = new Set(active.flatMap((id) => getEventRegistry().get(id)?.tags ?? []));
+    return () => set({ active, startedAt, tags });
   },
+  hydrate: (data) => get().prepareHydrate(data)(),
 }));

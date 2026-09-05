@@ -404,7 +404,7 @@ export class SaveLoadManager {
     return decodeBase64Json(value);
   }
 
-  private async gzipBytes(bytes: Uint8Array): Promise<Uint8Array> {
+  private async gzipBytes(bytes: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
     if (!canUseCompressionStream()) {
       return bytes;
     }
@@ -413,7 +413,7 @@ export class SaveLoadManager {
     return new Uint8Array(await new Response(stream).arrayBuffer());
   }
 
-  private async gunzipBytes(bytes: Uint8Array): Promise<Uint8Array> {
+  private async gunzipBytes(bytes: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
     if (!canUseDecompressionStream()) {
       return bytes;
     }
@@ -447,7 +447,7 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-function base64ToBytes(value: string): Uint8Array {
+function base64ToBytes(value: string): Uint8Array<ArrayBuffer> {
   const decoded = atob(value);
   const bytes = new Uint8Array(decoded.length);
   for (let i = 0; i < decoded.length; i += 1) {
@@ -460,7 +460,7 @@ function decodeBase64Json(value: string): SaveData {
   return JSON.parse(decodeUtf8(base64ToBytes(value)));
 }
 
-function encodeUtf8(value: string): Uint8Array {
+function encodeUtf8(value: string): Uint8Array<ArrayBuffer> {
   if (typeof TextEncoder !== 'undefined') {
     return new TextEncoder().encode(value);
   }

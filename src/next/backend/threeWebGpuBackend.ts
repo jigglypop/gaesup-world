@@ -1,10 +1,19 @@
 import type { RendererBackend, ThreeWebGpuBackendOptions } from '../types';
 
 type WebGpuRendererLike = {
+  backend?: { dispose?: () => void };
   init: () => Promise<void>;
   setSize: (width: number, height: number) => void;
   dispose: () => void;
 };
+
+function disposeBackend(backend: WebGpuRendererLike['backend']): void {
+  try {
+    backend?.dispose?.();
+  } catch {
+    // Partial backends may reject cleanup; preserve the factory's null failure contract.
+  }
+}
 
 type ThreeWebGpuModule = {
   WebGPURenderer?: new (parameters: {
@@ -25,9 +34,8 @@ export function isWebGpuAvailable(): boolean {
 
 /**
  * Creates a Three WebGPURenderer facade. Its `kind` does not prove that Three resolved a native
- * WebGPU adapter because Three may fall back internally. Three r178 also exposes no public-safe
- * cleanup for a partially initialized renderer, so an `init()` rejection is returned as `null`
- * without calling `dispose()`.
+ * WebGPU adapter because Three may fall back internally. Failed initialization releases each
+ * distinct backend directly; renderer.dispose() would await the failed initialization again.
  */
 export async function createThreeWebGpuBackend(
   options: ThreeWebGpuBackendOptions,
@@ -36,8 +44,7 @@ export async function createThreeWebGpuBackend(
 
   let three: ThreeWebGpuModule;
   try {
-    const specifier = 'three/webgpu';
-    three = (await import(/* @vite-ignore */ specifier)) as ThreeWebGpuModule;
+    three = (await import('three/webgpu')) as unknown as ThreeWebGpuModule;
   } catch {
     return null;
   }
@@ -52,11 +59,15 @@ export async function createThreeWebGpuBackend(
     return null;
   }
 
+  const initialBackend = renderer.backend;
   try {
     await renderer.init();
   } catch {
+    disposeBackend(initialBackend);
+    if (renderer.backend !== initialBackend) disposeBackend(renderer.backend);
     return null;
   }
+  if (renderer.backend !== initialBackend) disposeBackend(initialBackend);
 
   const nativeDispose = renderer.dispose;
   let disposed = false;

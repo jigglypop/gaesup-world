@@ -10,15 +10,17 @@ export function Teleport({ text, position, teleportStyle }: TeleportProps) {
   };
 
   return (
-    <div
+    <button
+      type="button"
+      disabled={!canTeleport}
       className={`teleport ${!canTeleport ? 'teleport--disabled' : ''}`}
       onClick={handleTeleport}
       style={teleportStyle}
-      title={canTeleport ? 'Click to teleport' : 'Teleport not available'}
+      title={canTeleport ? '순간이동' : '지금은 순간이동할 수 없습니다.'}
     >
-      {text || 'Teleport'}
+      {text || '순간이동'}
       {!canTeleport && <span className="teleport__cooldown">⏱️</span>}
-    </div>
+    </button>
   );
 }
 

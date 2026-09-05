@@ -19,6 +19,7 @@ interface AnimationSystemStateExt extends BaseState, AnimationSystemState {}
 export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, AnimationSystemMetrics> {
   private callbacks: Set<AnimationSystemCallback>;
   private systemType: string;
+  private animationNames: string[] | null = null;
 
   constructor(type: string = 'default') {
     const defaultState: AnimationSystemStateExt = {
@@ -67,14 +68,26 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
     if (!this.state.animationMixer) return;
     
     const action = this.state.animationMixer.clipAction(clip);
+    this.registerAction(name, action);
+  }
+
+  registerAction(name: string, action: THREE.AnimationAction): void {
+    const previous = this.state.actions.get(name);
+    if (previous && previous !== action) previous.stop();
+    if (!previous) this.animationNames = null;
     this.state.actions.set(name, action);
     this.updateMetrics(0);
     this.notifyCallbacks();
   }
 
-  registerAction(name: string, action: THREE.AnimationAction): void {
-    this.state.actions.set(name, action);
+  unregisterAction(name: string, expected: THREE.AnimationAction): void {
+    if (this.state.actions.get(name) !== expected) return;
+    expected.stop();
+    this.state.actions.delete(name);
+    this.animationNames = null;
+    if (this.state.currentAnimation === name) this.state.currentAnimation = 'idle';
     this.updateMetrics(0);
+    this.state.isPlaying = this.metrics.activeAnimations > 0;
     this.notifyCallbacks();
   }
 
@@ -95,10 +108,7 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
   }
 
   stopAnimation(): void {
-    const currentAction = this.state.actions.get(this.state.currentAnimation);
-    if (currentAction) {
-      currentAction.stop();
-    }
+    this.state.actions.forEach(action => action.stop());
     this.state.isPlaying = false;
     this.state.currentAnimation = 'idle';
     this.updateMetrics(0);
@@ -143,6 +153,7 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
       frameCount: 0
     };
     super.update(context);
+    this.state.isPlaying = this.metrics.activeAnimations > 0;
     
     if (this.callbacks.size > 0) {
       this.notifyCallbacks();
@@ -154,7 +165,8 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
   }
 
   getAnimationList(): string[] {
-    return Array.from(this.state.actions.keys());
+    this.animationNames ??= Array.from(this.state.actions.keys());
+    return this.animationNames;
   }
 
   override getMetrics(): AnimationSystemMetrics {
@@ -178,6 +190,7 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
   }
 
   clearActions(): void {
+    this.animationNames = null;
     this.state.actions.forEach(action => {
       if (action.isRunning()) {
         action.stop();
@@ -191,6 +204,7 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
   }
 
   protected override onDispose(): void {
+    this.animationNames = null;
     if (this.state.animationMixer) {
       this.state.animationMixer.stopAllAction();
       this.state.animationMixer = null;

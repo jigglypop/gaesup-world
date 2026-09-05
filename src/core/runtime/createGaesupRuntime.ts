@@ -47,6 +47,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
       key: binding.key,
       serialize: () => binding.serialize() ?? null,
       hydrate: binding.hydrate,
+      ...(binding.prepareHydrate ? { prepareHydrate: (data: Parameters<RuntimeDomainBinding['hydrate']>[0]) => binding.prepareHydrate!(data) } : {}),
     });
     unregisterSaveBindings.set(binding.key, unregister);
   };

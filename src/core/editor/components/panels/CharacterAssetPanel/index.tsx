@@ -1,4 +1,4 @@
-import React, { FC, useMemo, useState } from 'react';
+import { FC, useMemo, useState } from 'react';
 
 import {
   AssetPreviewCanvas,
@@ -13,7 +13,7 @@ import {
 import type { EditorPanelBaseProps } from '../types';
 import './styles.css';
 
-const SLOTS: OutfitSlot[] = ['hat', 'top', 'bottom', 'shoes', 'face', 'weapon', 'accessory'];
+const SLOTS = Object.keys(OUTFIT_SLOT_LABEL) as OutfitSlot[];
 
 const matchesSlot = (asset: AssetRecord, slot: OutfitSlot) => {
   if (slot === 'weapon') return asset.kind === 'weapon' || asset.slot === 'weapon';
@@ -21,6 +21,7 @@ const matchesSlot = (asset: AssetRecord, slot: OutfitSlot) => {
 };
 
 export const CharacterAssetPanel: FC<EditorPanelBaseProps> = ({ className = '', style, children }) => {
+  const activeCharacterId = useCharacterStore((state) => state.activeCharacterId);
   const outfits = useCharacterStore((state) => state.outfits);
   const equipOutfit = useCharacterStore((state) => state.equipOutfit);
   const resetAppearance = useCharacterStore((state) => state.resetAppearance);
@@ -29,21 +30,23 @@ export const CharacterAssetPanel: FC<EditorPanelBaseProps> = ({ className = '', 
   const isLoading = useAssetStore((state) => state.isLoading);
   const error = useAssetStore((state) => state.error);
   const [selectedSlot, setSelectedSlot] = useState<OutfitSlot>('top');
-  const [tagFilter, setTagFilter] = useState('');
+  const [query, setQuery] = useState('');
   const [ownedOnly, setOwnedOnly] = useState(false);
 
   const slotAssets = useMemo(() => {
-    const normalizedTag = tagFilter.trim().toLowerCase();
+    const normalizedQuery = query.trim().toLowerCase();
     return assetIds
       .map((id) => assetRecords[id])
       .filter((asset): asset is AssetRecord => Boolean(asset))
       .filter((asset) => matchesSlot(asset, selectedSlot))
       .filter((asset) => {
-        if (!normalizedTag) return true;
-        return asset.tags?.some((tag) => tag.toLowerCase().includes(normalizedTag)) ?? false;
+        if (!normalizedQuery) return true;
+        return asset.name.toLowerCase().includes(normalizedQuery)
+          || asset.id.toLowerCase().includes(normalizedQuery)
+          || (asset.tags?.some((tag) => tag.toLowerCase().includes(normalizedQuery)) ?? false);
       })
       .filter((asset) => !ownedOnly || asset.metadata?.['owned'] !== false);
-  }, [assetIds, assetRecords, ownedOnly, selectedSlot, tagFilter]);
+  }, [assetIds, assetRecords, ownedOnly, selectedSlot, query]);
 
   return (
     <div className={`character-asset-panel ${className}`} style={style}>
@@ -52,7 +55,7 @@ export const CharacterAssetPanel: FC<EditorPanelBaseProps> = ({ className = '', 
           <span className="character-asset-panel__section-title">캐릭터 에셋</span>
           <button
             className="character-asset-panel__ghost-btn"
-            onClick={() => resetAppearance()}
+            onClick={() => resetAppearance(activeCharacterId)}
             type="button"
           >
             초기화
@@ -64,11 +67,12 @@ export const CharacterAssetPanel: FC<EditorPanelBaseProps> = ({ className = '', 
             <button
               key={slot}
               type="button"
+              aria-pressed={selectedSlot === slot}
               className={`character-asset-panel__slot-btn ${selectedSlot === slot ? 'character-asset-panel__slot-btn--active' : ''}`}
               onClick={() => setSelectedSlot(slot)}
             >
               <span>{OUTFIT_SLOT_LABEL[slot]}</span>
-              <small>{outfits[slot] ?? '비어있음'}</small>
+              <small>{outfits[slot] ? assetRecords[outfits[slot]]?.name ?? '에셋 정보 없음' : '비어 있음'}</small>
             </button>
           ))}
         </div>
@@ -77,9 +81,11 @@ export const CharacterAssetPanel: FC<EditorPanelBaseProps> = ({ className = '', 
       <section className="character-asset-panel__section">
         <div className="character-asset-panel__filters">
           <input
-            value={tagFilter}
-            onChange={(event) => setTagFilter(event.target.value)}
-            placeholder="태그 검색"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="이름 또는 태그 검색"
+            aria-label="캐릭터 에셋 검색"
             className="character-asset-panel__input"
           />
           <label className="character-asset-panel__check">
@@ -92,12 +98,17 @@ export const CharacterAssetPanel: FC<EditorPanelBaseProps> = ({ className = '', 
           </label>
         </div>
 
-        {error && <p className="character-asset-panel__notice">{error}</p>}
-        {isLoading && <p className="character-asset-panel__notice">에셋 로딩 중</p>}
+        {error && !isLoading && (
+          <p className="character-asset-panel__notice" role="alert">
+            새 에셋 목록을 불러오지 못했습니다. 현재 사용 가능한 에셋을 표시합니다.
+          </p>
+        )}
+        {isLoading && <p className="character-asset-panel__notice" role="status">에셋을 불러오고 있습니다.</p>}
 
         <div className="character-asset-panel__asset-list">
           <button
             type="button"
+            aria-pressed={outfits[selectedSlot] === null}
             className={`character-asset-panel__asset-card ${outfits[selectedSlot] === null ? 'character-asset-panel__asset-card--active' : ''}`}
             onClick={() => equipOutfit(selectedSlot, null)}
           >
@@ -109,6 +120,7 @@ export const CharacterAssetPanel: FC<EditorPanelBaseProps> = ({ className = '', 
             <button
               key={asset.id}
               type="button"
+              aria-pressed={outfits[selectedSlot] === asset.id}
               className={`character-asset-panel__asset-card ${outfits[selectedSlot] === asset.id ? 'character-asset-panel__asset-card--active' : ''}`}
               onClick={() => equipOutfit(selectedSlot, asset.id)}
             >
@@ -117,8 +129,10 @@ export const CharacterAssetPanel: FC<EditorPanelBaseProps> = ({ className = '', 
             </button>
           ))}
 
-          {slotAssets.length === 0 && (
-            <p className="character-asset-panel__notice">선택한 슬롯에 사용할 에셋이 없습니다.</p>
+          {slotAssets.length === 0 && !isLoading && !error && (
+            <p className="character-asset-panel__notice" role="status">
+              {query.trim() || ownedOnly ? '검색 조건에 맞는 에셋이 없습니다.' : '선택한 부위에 사용할 에셋이 없습니다.'}
+            </p>
           )}
         </div>
       </section>

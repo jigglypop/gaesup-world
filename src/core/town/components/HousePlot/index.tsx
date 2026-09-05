@@ -1,6 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
-
-import * as THREE from 'three';
+import { useEffect } from 'react';
 
 import { useTownStore } from '../../stores/townStore';
 
@@ -13,47 +11,47 @@ export type HousePlotProps = {
   occupiedColor?: string;
 };
 
+const DEFAULT_SIZE: [number, number] = [4, 4];
+
 export function HousePlot({
   id,
   position,
-  size = [4, 4],
+  size = DEFAULT_SIZE,
   emptyColor = '#705038',
   reservedColor = '#c8a85a',
   occupiedColor = '#5a8acf',
 }: HousePlotProps) {
   const registerHouse = useTownStore((s) => s.registerHouse);
-  const unregisterHouse = useTownStore((s) => s.unregisterHouse);
   const house = useTownStore((s) => s.houses[id]);
-  const residents = useTownStore((s) => s.residents);
+  const resident = useTownStore((s) => house?.residentId ? s.residents[house.residentId] : undefined);
 
   useEffect(() => {
     registerHouse({ id, position, size });
-    return () => unregisterHouse(id);
-  }, [id, position, size, registerHouse, unregisterHouse]);
+  }, [id, position, size, registerHouse]);
 
-  const color = !house ? emptyColor
-    : house.state === 'occupied' ? occupiedColor
+  if (!house) return null;
+
+  const color = house.state === 'occupied' ? occupiedColor
     : house.state === 'reserved' ? reservedColor
     : emptyColor;
 
-  const resident = house?.residentId ? residents[house.residentId] : null;
-
-  const geom = useMemo(() => new THREE.PlaneGeometry(size[0], size[1]), [size[0], size[1]]);
+  const [width, depth] = house.size;
 
   return (
-    <group position={position}>
-      <mesh geometry={geom} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]}>
+    <group position={house.position}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]}>
+        <planeGeometry args={[width, depth]} />
         <meshToonMaterial color={color} transparent opacity={0.7} />
       </mesh>
 
       {house?.state === 'occupied' && resident && (
         <>
           <mesh position={[0, 0.6, 0]} castShadow>
-            <boxGeometry args={[Math.max(1.4, size[0] * 0.6), 1.2, Math.max(1.4, size[1] * 0.6)]} />
+            <boxGeometry args={[Math.max(1.4, width * 0.6), 1.2, Math.max(1.4, depth * 0.6)]} />
             <meshToonMaterial color={resident.bodyColor ?? '#e8d8b8'} />
           </mesh>
           <mesh position={[0, 1.5, 0]} castShadow>
-            <coneGeometry args={[Math.max(1.0, size[0] * 0.45), 0.7, 4]} />
+            <coneGeometry args={[Math.max(1.0, width * 0.45), 0.7, 4]} />
             <meshToonMaterial color={resident.hatColor ?? '#a85a5a'} />
           </mesh>
         </>

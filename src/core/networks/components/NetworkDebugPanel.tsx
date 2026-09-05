@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 
 import { useNetworkBridge, useNetworkStats } from '../hooks';
-import type { NetworkSnapshot, NetworkMessage, NetworkSystemState, NetworkConnection, NPCNetworkNode } from '../types';
+import type {
+  NetworkSnapshot,
+  NetworkMessage,
+  NetworkSystemState,
+  NetworkConnection,
+  NPCNetworkNode,
+} from '../types';
 
 function collectRecentMessages(
   messageQueues: Map<string, NetworkMessage[]>,
@@ -37,17 +43,17 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
   systemId = 'main',
   className,
   style,
-  onClose
+  onClose,
 }) => {
   const { getSnapshot, getSystemState, isReady } = useNetworkBridge({ systemId });
   const { stats, refreshStats } = useNetworkStats({ systemId, enableRealTime: true });
-  
+
   const [debugState, setDebugState] = useState<NetworkDebugState>({
     snapshot: null,
     system: null,
     messages: [],
     isExpanded: true,
-    activeTab: 'overview'
+    activeTab: 'overview',
   });
 
   // 실시간 데이터 업데이트
@@ -61,11 +67,11 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
 
       const messages = system ? collectRecentMessages(system.messageQueues, 50) : [];
 
-      setDebugState(prev => ({
+      setDebugState((prev) => ({
         ...prev,
         snapshot: snapshot ?? prev.snapshot,
         system: system ?? prev.system,
-        messages
+        messages,
       }));
     }, 500);
 
@@ -73,44 +79,44 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
   }, [isReady, getSnapshot, getSystemState]);
 
   const renderOverview = () => {
-    if (!debugState.snapshot) return <div>No data available</div>;
+    if (!debugState.snapshot) return <div>표시할 데이터가 없습니다</div>;
 
     const { snapshot } = debugState;
     const totalGroups = debugState.system?.groups.size ?? snapshot.activeGroups;
-    
+
     return (
       <div style={{ padding: '10px' }}>
-        <h4>Network Overview</h4>
+        <h4>네트워크 개요</h4>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <div>
-            <strong>Total Nodes:</strong> {snapshot.nodeCount}
+            <strong>전체 노드:</strong> {snapshot.nodeCount}
           </div>
           <div>
-            <strong>Total Connections:</strong> {snapshot.connectionCount}
+            <strong>전체 연결:</strong> {snapshot.connectionCount}
           </div>
           <div>
-            <strong>Total Groups:</strong> {totalGroups}
+            <strong>전체 그룹:</strong> {totalGroups}
           </div>
           <div>
-            <strong>Recent Messages:</strong> {debugState.messages.length}
+            <strong>최근 메시지:</strong> {debugState.messages.length}
           </div>
         </div>
-        
+
         {stats && (
           <div style={{ marginTop: '15px' }}>
-            <h5>Performance Metrics</h5>
+            <h5>성능 지표</h5>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <div>
-                <strong>Messages/sec:</strong> {stats.messagesPerSecond.toFixed(2)}
+                <strong>초당 메시지:</strong> {stats.messagesPerSecond.toFixed(2)}
               </div>
               <div>
-                <strong>Avg Latency:</strong> {stats.averageLatency.toFixed(2)}ms
+                <strong>평균 지연:</strong> {stats.averageLatency.toFixed(2)}ms
               </div>
               <div>
-                <strong>Connection Success:</strong> {stats.connectionSuccessRate.toFixed(1)}%
+                <strong>연결 성공률:</strong> {stats.connectionSuccessRate.toFixed(1)}%
               </div>
               <div>
-                <strong>Update Time:</strong> {stats.updateTime.toFixed(2)}ms
+                <strong>갱신 시간:</strong> {stats.updateTime.toFixed(2)}ms
               </div>
             </div>
           </div>
@@ -121,33 +127,40 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
 
   const renderNodes = () => {
     const system = debugState.system;
-    if (!system) return <div>No data available</div>;
+    if (!system) return <div>표시할 데이터가 없습니다</div>;
 
     const nodes: NPCNetworkNode[] = Array.from(system.nodes.values());
-    
+
     return (
       <div style={{ padding: '10px' }}>
-        <h4>Network Nodes ({nodes.length})</h4>
+        <h4>네트워크 노드 ({nodes.length})</h4>
         <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-          {nodes.map(node => (
-            <div 
-              key={node.id} 
-              style={{ 
-                border: '1px solid #ccc', 
-                margin: '5px 0', 
+          {nodes.map((node) => (
+            <div
+              key={node.id}
+              style={{
+                border: '1px solid #ccc',
+                margin: '5px 0',
                 padding: '8px',
-                borderRadius: '4px'
+                borderRadius: '4px',
               }}
             >
-              <div><strong>ID:</strong> {node.id}</div>
-              <div><strong>Position:</strong> ({node.position.x.toFixed(1)}, {node.position.y.toFixed(1)}, {node.position.z.toFixed(1)})</div>
-              <div><strong>Connections:</strong> {node.connections.size}</div>
               <div>
-                <strong>Groups:</strong>{' '}
+                <strong>ID:</strong> {node.id}
+              </div>
+              <div>
+                <strong>위치:</strong> ({node.position.x.toFixed(1)}, {node.position.y.toFixed(1)},{' '}
+                {node.position.z.toFixed(1)})
+              </div>
+              <div>
+                <strong>연결:</strong> {node.connections.size}
+              </div>
+              <div>
+                <strong>그룹:</strong>{' '}
                 {Array.from(system.groups.values())
                   .filter((group) => group.members.has(node.id))
                   .map((group) => group.id)
-                  .join(', ') || 'None'}
+                  .join(', ') || '없음'}
               </div>
             </div>
           ))}
@@ -158,29 +171,40 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
 
   const renderConnections = () => {
     const system = debugState.system;
-    if (!system) return <div>No data available</div>;
+    if (!system) return <div>표시할 데이터가 없습니다</div>;
 
     const connections: NetworkConnection[] = Array.from(system.connections.values());
-    
+
     return (
       <div style={{ padding: '10px' }}>
-        <h4>Network Connections ({connections.length})</h4>
+        <h4>네트워크 연결 ({connections.length})</h4>
         <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-          {connections.map(connection => (
-            <div 
-              key={connection.id} 
-              style={{ 
-                border: '1px solid #ccc', 
-                margin: '5px 0', 
+          {connections.map((connection) => (
+            <div
+              key={connection.id}
+              style={{
+                border: '1px solid #ccc',
+                margin: '5px 0',
                 padding: '8px',
-                borderRadius: '4px'
+                borderRadius: '4px',
               }}
             >
-              <div><strong>ID:</strong> {connection.id}</div>
-              <div><strong>From:</strong> {connection.nodeA} → <strong>To:</strong> {connection.nodeB}</div>
-              <div><strong>Status:</strong> {connection.status}</div>
-              <div><strong>Latency:</strong> {connection.latency.toFixed(1)}ms</div>
-              <div><strong>Last Activity:</strong> {new Date(connection.lastActivity).toLocaleTimeString()}</div>
+              <div>
+                <strong>ID:</strong> {connection.id}
+              </div>
+              <div>
+                <strong>보낸 곳:</strong> {connection.nodeA} → <strong>받는 곳:</strong>{' '}
+                {connection.nodeB}
+              </div>
+              <div>
+                <strong>상태:</strong> {connection.status}
+              </div>
+              <div>
+                <strong>지연:</strong> {connection.latency.toFixed(1)}ms
+              </div>
+              <div>
+                <strong>최근 활동:</strong> {new Date(connection.lastActivity).toLocaleTimeString()}
+              </div>
             </div>
           ))}
         </div>
@@ -191,68 +215,82 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
   const renderMessages = () => {
     return (
       <div style={{ padding: '10px' }}>
-        <h4>Recent Messages ({debugState.messages.length})</h4>
+        <h4>최근 메시지 ({debugState.messages.length})</h4>
         <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-          {debugState.messages.slice().reverse().map((message, index) => (
-            <div 
-              key={`${message.id}-${index}`} 
-              style={{ 
-                border: '1px solid #ccc', 
-                margin: '5px 0', 
-                padding: '8px',
-                borderRadius: '4px',
-                backgroundColor: message.type === 'system' ? '#f0f8ff' : '#ffffff'
-              }}
-            >
-              <div><strong>ID:</strong> {message.id}</div>
-              <div><strong>Type:</strong> {message.type}</div>
-              <div><strong>From:</strong> {message.from} → <strong>To:</strong> {message.to === 'group' ? `group:${message.groupId ?? 'unknown'}` : message.to}</div>
-              <div><strong>Time:</strong> {new Date(message.timestamp).toLocaleTimeString()}</div>
-              <div><strong>Payload:</strong> {JSON.stringify(message.payload)}</div>
-            </div>
-          ))}
+          {debugState.messages
+            .slice()
+            .reverse()
+            .map((message, index) => (
+              <div
+                key={`${message.id}-${index}`}
+                style={{
+                  border: '1px solid #ccc',
+                  margin: '5px 0',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  backgroundColor: message.type === 'system' ? '#f0f8ff' : '#ffffff',
+                }}
+              >
+                <div>
+                  <strong>ID:</strong> {message.id}
+                </div>
+                <div>
+                  <strong>유형:</strong> {message.type}
+                </div>
+                <div>
+                  <strong>보낸 곳:</strong> {message.from} → <strong>받는 곳:</strong>{' '}
+                  {message.to === 'group' ? `그룹: ${message.groupId ?? '알 수 없음'}` : message.to}
+                </div>
+                <div>
+                  <strong>시간:</strong> {new Date(message.timestamp).toLocaleTimeString()}
+                </div>
+                <div>
+                  <strong>메시지 내용:</strong> {JSON.stringify(message.payload)}
+                </div>
+              </div>
+            ))}
         </div>
       </div>
     );
   };
 
   const renderStats = () => {
-    if (!stats) return <div>Loading stats...</div>;
-    
+    if (!stats) return <div>통계를 불러오는 중…</div>;
+
     return (
       <div style={{ padding: '10px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-          <h4>Network Statistics</h4>
-          <button onClick={refreshStats}>Refresh</button>
+          <h4>네트워크 통계</h4>
+          <button onClick={refreshStats}>새로고침</button>
         </div>
-        
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
           <div>
-            <h5>Basic Stats</h5>
-            <div>Total Nodes: {stats.totalNodes}</div>
-            <div>Total Connections: {stats.totalConnections}</div>
-            <div>Total Messages: {stats.totalMessages}</div>
+            <h5>기본 통계</h5>
+            <div>전체 노드: {stats.totalNodes}</div>
+            <div>전체 연결: {stats.totalConnections}</div>
+            <div>전체 메시지: {stats.totalMessages}</div>
           </div>
-          
+
           <div>
-            <h5>Performance</h5>
-            <div>Messages/sec: {stats.messagesPerSecond.toFixed(2)}</div>
-            <div>Avg Latency: {stats.averageLatency.toFixed(2)}ms</div>
-            <div>Update Time: {stats.updateTime.toFixed(2)}ms</div>
+            <h5>성능</h5>
+            <div>초당 메시지: {stats.messagesPerSecond.toFixed(2)}</div>
+            <div>평균 지연: {stats.averageLatency.toFixed(2)}ms</div>
+            <div>갱신 시간: {stats.updateTime.toFixed(2)}ms</div>
           </div>
-          
+
           <div>
-            <h5>Connection Stats</h5>
-            <div>Active: {stats.activeConnections}</div>
-            <div>Failed: {stats.failedConnections}</div>
-            <div>Success Rate: {stats.connectionSuccessRate.toFixed(1)}%</div>
+            <h5>연결 통계</h5>
+            <div>활성: {stats.activeConnections}</div>
+            <div>실패: {stats.failedConnections}</div>
+            <div>성공률: {stats.connectionSuccessRate.toFixed(1)}%</div>
           </div>
-          
+
           <div>
-            <h5>Group Stats</h5>
-            <div>Total Groups: {stats.totalGroups}</div>
-            <div>Active Groups: {stats.activeGroups}</div>
-            <div>Avg Group Size: {stats.averageGroupSize.toFixed(1)}</div>
+            <h5>그룹 통계</h5>
+            <div>전체 그룹: {stats.totalGroups}</div>
+            <div>활성 그룹: {stats.activeGroups}</div>
+            <div>평균 그룹 크기: {stats.averageGroupSize.toFixed(1)}</div>
           </div>
         </div>
       </div>
@@ -261,12 +299,18 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
 
   const renderTabContent = () => {
     switch (debugState.activeTab) {
-      case 'overview': return renderOverview();
-      case 'nodes': return renderNodes();
-      case 'connections': return renderConnections();
-      case 'messages': return renderMessages();
-      case 'stats': return renderStats();
-      default: return renderOverview();
+      case 'overview':
+        return renderOverview();
+      case 'nodes':
+        return renderNodes();
+      case 'connections':
+        return renderConnections();
+      case 'messages':
+        return renderMessages();
+      case 'stats':
+        return renderStats();
+      default:
+        return renderOverview();
     }
   };
 
@@ -284,11 +328,11 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
           padding: '5px 10px',
           cursor: 'pointer',
           zIndex: 1000,
-          ...style
+          ...style,
         }}
-        onClick={() => setDebugState(prev => ({ ...prev, isExpanded: true }))}
+        onClick={() => setDebugState((prev) => ({ ...prev, isExpanded: true }))}
       >
-        Network Debug
+        네트워크 진단
       </div>
     );
   }
@@ -309,20 +353,22 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
         zIndex: 1000,
         display: 'flex',
         flexDirection: 'column',
-        ...style
+        ...style,
       }}
     >
       {/* Header */}
-      <div style={{ 
-        padding: '10px', 
-        borderBottom: '1px solid #ccc',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <h3 style={{ margin: 0 }}>Network Debug Panel</h3>
+      <div
+        style={{
+          padding: '10px',
+          borderBottom: '1px solid #ccc',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <h3 style={{ margin: 0 }}>네트워크 진단 패널</h3>
         <div>
-          <button onClick={() => setDebugState(prev => ({ ...prev, isExpanded: false }))}>
+          <button onClick={() => setDebugState((prev) => ({ ...prev, isExpanded: false }))}>
             −
           </button>
           {onClose && (
@@ -334,12 +380,14 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
       </div>
 
       {/* Tabs */}
-      <div style={{ 
-        display: 'flex', 
-        borderBottom: '1px solid #ccc',
-        backgroundColor: '#f9f9f9'
-      }}>
-        {(['overview', 'nodes', 'connections', 'messages', 'stats'] as const).map(tab => (
+      <div
+        style={{
+          display: 'flex',
+          borderBottom: '1px solid #ccc',
+          backgroundColor: '#f9f9f9',
+        }}
+      >
+        {(['overview', 'nodes', 'connections', 'messages', 'stats'] as const).map((tab) => (
           <button
             key={tab}
             style={{
@@ -348,32 +396,39 @@ export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
               border: 'none',
               backgroundColor: debugState.activeTab === tab ? 'white' : 'transparent',
               borderBottom: debugState.activeTab === tab ? '2px solid #007acc' : 'none',
-              cursor: 'pointer'
+              cursor: 'pointer',
             }}
-            onClick={() => setDebugState(prev => ({ ...prev, activeTab: tab }))}
+            onClick={() => setDebugState((prev) => ({ ...prev, activeTab: tab }))}
           >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {
+              {
+                overview: '개요',
+                nodes: '노드',
+                connections: '연결',
+                messages: '메시지',
+                stats: '통계',
+              }[tab]
+            }
           </button>
         ))}
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, overflow: 'auto' }}>
-        {renderTabContent()}
-      </div>
+      <div style={{ flex: 1, overflow: 'auto' }}>{renderTabContent()}</div>
 
       {/* Status bar */}
-      <div style={{ 
-        padding: '5px 10px', 
-        borderTop: '1px solid #ccc',
-        backgroundColor: '#f9f9f9',
-        fontSize: '12px',
-        color: '#666'
-      }}>
-        Status: {isReady ? 'Connected' : 'Disconnected'} | 
-        System: {systemId} | 
-        Last Update: {new Date().toLocaleTimeString()}
+      <div
+        style={{
+          padding: '5px 10px',
+          borderTop: '1px solid #ccc',
+          backgroundColor: '#f9f9f9',
+          fontSize: '12px',
+          color: '#666',
+        }}
+      >
+        상태: {isReady ? '연결됨' : '연결 끊김'} | 시스템: {systemId} | 마지막 갱신:{' '}
+        {new Date().toLocaleTimeString()}
       </div>
     </div>
   );
-}; 
+};

@@ -32,4 +32,21 @@ describe('useBuildingGpuCullingStore', () => {
     unsubscribe();
     expect(notifications).toEqual([3]);
   });
+
+  it('updates camera metadata even when visible objects are unchanged', () => {
+    const payload = {
+      version: 1, tileIds: new Set<string>(), wallIds: new Set<string>(),
+      objectIds: new Set<string>(), clusterCounts: new Uint32Array(),
+      camera: { viewProjection: Array.from({ length: 16 }, () => 0), position: [0, 0, 0], coordinateSystem: 2001, reversedDepth: false },
+    };
+    const { setResult } = useBuildingGpuCullingStore.getState();
+    setResult(payload);
+    const first = useBuildingGpuCullingStore.getState();
+    setResult({ ...payload, camera: { ...payload.camera, position: [...payload.camera.position] } });
+    expect(useBuildingGpuCullingStore.getState()).toBe(first);
+    setResult({ ...payload, camera: { ...payload.camera, position: [1, 0, 0] } });
+    expect(useBuildingGpuCullingStore.getState().camera?.position).toEqual([1, 0, 0]);
+    useBuildingGpuCullingStore.getState().reset();
+    expect(useBuildingGpuCullingStore.getState().camera).toBeNull();
+  });
 });

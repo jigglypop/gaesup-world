@@ -113,6 +113,22 @@ body,
   font-weight: 700;
   pointer-events: auto;
 }
+.gp-world-tools-toggle {
+  position: absolute;
+  top: calc(var(--app-header-height) + 12px);
+  left: var(--gp-shell-pad);
+  width: auto;
+  pointer-events: auto;
+}
+.gp-btn.gp-world-tools-toggle {
+  background: var(--gp-glass-bg-strong);
+}
+.gp-btn.gp-world-tools-toggle:hover {
+  background: rgba(18, 20, 28, 0.85);
+}
+.gp-world-tools-toggle + .gp-left {
+  margin-top: 48px;
+}
 .world-postprocessing-toggle--active {
   border-color: var(--gp-good);
   background: rgba(122, 223, 144, 0.28);
@@ -320,6 +336,8 @@ body,
 }
 
 .gp-panel {
+  box-sizing: border-box;
+  min-width: 0;
   padding: 14px 15px;
   display: flex;
   flex-direction: column;
@@ -485,9 +503,13 @@ body,
 }
 
 .world-focus-modal__panel {
-  width: min(430px, calc(100vw - 32px));
+  width: min(430px, 100%);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   max-height: min(76vh, 540px);
-  overflow-y: auto;
+  max-height: min(76dvh, 540px);
+  overflow: hidden;
   box-sizing: border-box;
   padding: 18px;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -495,6 +517,13 @@ body,
   background: rgba(18, 20, 28, 0.94);
   color: var(--gp-text);
   box-shadow: 0 24px 62px rgba(0, 0, 0, 0.42);
+}
+
+.world-focus-modal__content {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  overscroll-behavior: contain;
 }
 
 .world-focus-modal__eyebrow {
@@ -547,6 +576,7 @@ body,
 }
 
 .world-focus-modal__close {
+  flex-shrink: 0;
   width: 100%;
   min-height: 40px;
   margin-top: 18px;
@@ -599,7 +629,11 @@ body,
     padding: 10px;
   }
 
-  .gp-left .gp-panel,
+  .gp-left .gp-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .gp-actionrow {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -659,6 +693,25 @@ body,
   display: flex;
   gap: 8px;
   pointer-events: auto;
+}
+
+.example-app-shell:has([data-world-overlay]) {
+  --gaesup-z-toast: calc(var(--gp-z-overlay) - 1);
+}
+
+.example-app-shell:has(.app-nav-developer[open]) {
+  --gaesup-z-toast: calc(var(--gp-z-nav) - 1);
+}
+
+@media (max-width: 640px) {
+  .example-app-shell:has(.gp-world-tools-toggle[aria-expanded='true']) {
+    --gaesup-toast-top: auto;
+    --gaesup-toast-bottom: 150px;
+  }
+  body:has(.gp-world-tools-toggle[aria-expanded='true']) .minimap--bottom-left {
+    visibility: hidden;
+    pointer-events: none;
+  }
 }
 
 @media (pointer: coarse) {

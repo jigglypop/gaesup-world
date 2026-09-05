@@ -28,9 +28,13 @@ function collectFiles(directory, suffix) {
   const files = [];
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const file = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
+    const metadata = entry.isSymbolicLink() ? fs.statSync(file) : entry;
+    if (entry.isSymbolicLink() && canonicalPath(fs.realpathSync(file)) !== canonicalPath(file)) {
+      throw new Error(`Declaration output must not redirect to another path: ${file}`);
+    }
+    if (metadata.isDirectory()) {
       files.push(...collectFiles(file, suffix));
-    } else if (entry.isFile() && entry.name.endsWith(suffix)) {
+    } else if (metadata.isFile() && entry.name.endsWith(suffix)) {
       files.push(file);
     }
   }

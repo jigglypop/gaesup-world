@@ -1,8 +1,10 @@
 import React, { useRef, useMemo } from 'react';
 
-import { Line, Sphere, Text } from '@react-three/drei';
+import { Sphere } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+
+import { Line, Text } from '@/core/rendering/legacyDrei';
 
 import { useNetworkBridge } from '../hooks';
 import type { NPCNetworkNode, NetworkConnection, NetworkSystemState } from '../types';
@@ -150,7 +152,7 @@ export const NPCNetworkVisualizer: React.FC<NPCNetworkVisualizerProps> = ({
   if (!isReady) {
     return (
       <Text position={[0, 0, 0]} fontSize={1} color="#ff0000" anchorX="center" anchorY="middle">
-        Network not ready
+        네트워크 준비 중
       </Text>
     );
   }
@@ -242,7 +244,7 @@ export const NPCNetworkVisualizer: React.FC<NPCNetworkVisualizerProps> = ({
               anchorX="center"
               anchorY="middle"
             >
-              Group: {groupId}
+              그룹: {groupId}
             </Text>
           </group>
         );
@@ -250,16 +252,16 @@ export const NPCNetworkVisualizer: React.FC<NPCNetworkVisualizerProps> = ({
 
       <group position={[-10, 10, 0]}>
         <Text position={[0, 2, 0]} fontSize={0.5} color="#ffffff" anchorX="left" anchorY="middle">
-          Network Visualization
+          네트워크 시각화
         </Text>
         <Text position={[0, 1, 0]} fontSize={0.3} color="#ffffff" anchorX="left" anchorY="middle">
-          Nodes: {visualState.nodes.length}
+          노드: {visualState.nodes.length}
         </Text>
         <Text position={[0, 0.5, 0]} fontSize={0.3} color="#ffffff" anchorX="left" anchorY="middle">
-          Connections: {visualState.connections.length}
+          연결: {visualState.connections.length}
         </Text>
         <Text position={[0, 0, 0]} fontSize={0.3} color="#ffffff" anchorX="left" anchorY="middle">
-          Groups: {visualState.groups.size}
+          그룹: {visualState.groups.size}
         </Text>
       </group>
     </group>

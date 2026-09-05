@@ -38,7 +38,7 @@ export function MotionDebugPanel(props: MotionDebugPanelProps) {
     value: DebugFieldValue | null | undefined,
     fixedPrecision: number = 2,
   ): string => {
-    if (value === null || value === undefined) return 'N/A';
+    if (value === null || value === undefined) return '정보 없음';
     switch (field.type) {
       case 'vector3':
         if (Array.isArray(value) && value.length === 3) {
@@ -68,7 +68,7 @@ export function MotionDebugPanel(props: MotionDebugPanelProps) {
 
     switch (field.key) {
       case 'motionType':
-        return mode?.type ?? 'character';
+        return mode?.type === 'vehicle' ? '차량' : mode?.type === 'airplane' ? '비행기' : '캐릭터';
       case 'position':
         return activeState?.position
           ? { x: activeState.position.x, y: activeState.position.y, z: activeState.position.z }
@@ -84,9 +84,9 @@ export function MotionDebugPanel(props: MotionDebugPanelProps) {
           ? { x: activeState.direction.x, y: activeState.direction.y, z: activeState.direction.z }
           : { x: 0, y: 0, z: 0 };
       case 'isGrounded':
-        return gameStates?.isOnTheGround ? 'Yes' : 'No';
+        return gameStates?.isOnTheGround ? '예' : '아니요';
       case 'isMoving':
-        return gameStates?.isMoving ? 'Yes' : 'No';
+        return gameStates?.isMoving ? '예' : '아니요';
       case 'acceleration':
         return physics?.accelRatio ?? 0;
       case 'jumpForce':
@@ -96,9 +96,9 @@ export function MotionDebugPanel(props: MotionDebugPanelProps) {
           ? physics?.runSpeed ?? 0
           : physics?.maxSpeed ?? 0;
       case 'totalDistance':
-        return 0;
+        return null;
       case 'gameState':
-        return gameStates?.isRiding ? 'riding' : gameStates?.isOnTheGround ? 'ground' : 'air';
+        return gameStates?.isRiding ? '탑승 중' : gameStates?.isOnTheGround ? '지상' : '공중';
       default:
         return null;
     }

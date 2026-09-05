@@ -1,8 +1,8 @@
-import React, { StrictMode } from 'react';
+import { StrictMode, useState } from 'react';
 
 import { act, cleanup, render } from '@testing-library/react';
 
-import { logger, type GaesupRuntime, type SaveSystem } from 'gaesup-world';
+import { logger, useAutoSave, SaveSystem, type GaesupRuntime } from 'gaesup-world';
 
 import { loadWorldRuntime } from '../runtime';
 import { WorldSystems } from '../world/useWorldSystems';
@@ -68,11 +68,114 @@ async function flushMicrotasks(): Promise<void> {
 const mockedLoadWorldRuntime = loadWorldRuntime as jest.MockedFunction<typeof loadWorldRuntime>;
 
 describe('WorldSystems runtime lifecycle', () => {
+  test('callback changes retain the pending and ready runtime and notify the latest listener', async () => {
+    const load = createDeferred<boolean>();
+    mockedLoadWorldRuntime.mockReturnValue(load.promise);
+    const dispose = jest.fn(async () => undefined);
+    const runtime = createRuntime({} as SaveSystem, dispose);
+    const firstReady = jest.fn();
+    const latestReady = jest.fn();
+    const view = render(<WorldSystems runtime={runtime} onRuntimeReady={firstReady} />);
+    await act(flushMicrotasks);
+    view.rerender(<WorldSystems runtime={runtime} onRuntimeReady={latestReady} />);
+    await act(async () => {
+      load.resolve(true);
+      await flushMicrotasks();
+    });
+    expect(firstReady).not.toHaveBeenCalled();
+    expect(latestReady).toHaveBeenCalledTimes(1);
+    expect(mockedLoadWorldRuntime).toHaveBeenCalledTimes(1);
+    expect(dispose).not.toHaveBeenCalled();
+    expect(useAutoSave).toHaveBeenLastCalledWith(expect.objectContaining({ enabled: true }));
+    view.rerender(<WorldSystems runtime={runtime} onRuntimeReady={() => undefined} />);
+    await act(flushMicrotasks);
+    expect(mockedLoadWorldRuntime).toHaveBeenCalledTimes(1);
+    expect(dispose).not.toHaveBeenCalled();
+    view.unmount();
+    await act(flushMicrotasks);
+    expect(dispose).toHaveBeenCalledTimes(1);
+  });
+
+  test('replacing the runtime still disposes the old generation before loading the new one', async () => {
+    const save = {} as SaveSystem;
+    const operations: string[] = [];
+    const first = createRuntime(save, async () => { operations.push('first:dispose'); });
+    const second = createRuntime(save, async () => { operations.push('second:dispose'); });
+    mockedLoadWorldRuntime.mockImplementation(async (runtime) => {
+      operations.push(runtime === first ? 'first:load' : 'second:load');
+      return true;
+    });
+    const onRuntimeReady = jest.fn();
+    const view = render(<WorldSystems runtime={first} onRuntimeReady={onRuntimeReady} />);
+    await act(flushMicrotasks);
+    view.rerender(<WorldSystems runtime={second} onRuntimeReady={onRuntimeReady} />);
+    await act(flushMicrotasks);
+    expect(operations).toEqual(['first:load', 'first:dispose', 'second:load']);
+    expect(onRuntimeReady).toHaveBeenCalledTimes(2);
+    view.unmount();
+    await act(flushMicrotasks);
+    expect(operations.at(-1)).toBe('second:dispose');
+  });
+
+  test('an inline ready callback that updates its parent does not restart the runtime', async () => {
+    mockedLoadWorldRuntime.mockResolvedValue(true);
+    const dispose = jest.fn(async () => undefined);
+    const runtime = createRuntime({} as SaveSystem, dispose);
+    function Parent() {
+      const [ready, setReady] = useState(false);
+      return <>
+        <output>{ready ? 'ready' : 'loading'}</output>
+        <WorldSystems runtime={runtime} onRuntimeReady={() => setReady(true)} />
+      </>;
+    }
+    const view = render(<Parent />);
+    await act(flushMicrotasks);
+    await act(flushMicrotasks);
+    expect(view.getByText('ready')).toBeDefined();
+    expect(mockedLoadWorldRuntime).toHaveBeenCalledTimes(1);
+    expect(dispose).not.toHaveBeenCalled();
+  });
+
   afterEach(async () => {
     cleanup();
     await flushMicrotasks();
     mockedLoadWorldRuntime.mockReset();
+    jest.mocked(useAutoSave).mockReset();
+    jest.useRealTimers();
     jest.restoreAllMocks();
+  });
+
+  test('keeps actual autosave disabled when a registered domain fails to hydrate', async () => {
+    jest.useFakeTimers();
+    const actual = jest.requireActual('gaesup-world') as typeof import('gaesup-world');
+    jest.mocked(useAutoSave).mockImplementation(actual.useAutoSave);
+    jest.spyOn(logger, 'error').mockImplementation(() => undefined);
+    const original = { version: 1, savedAt: 0, domains: { inventory: { count: 50 } } };
+    const write = jest.fn(async () => undefined);
+    const save = new SaveSystem({ adapter: {
+      read: async () => original,
+      write,
+      list: async () => ['main'],
+      remove: async () => undefined,
+    } });
+    save.register({
+      key: 'inventory',
+      serialize: () => ({ count: 0 }),
+      hydrate: () => { throw new Error('Invalid inventory'); },
+    });
+    mockedLoadWorldRuntime.mockImplementation(() => save.load());
+    const onRuntimeReady = jest.fn();
+    render(<WorldSystems runtime={createRuntime(save)} onRuntimeReady={onRuntimeReady} />);
+    await act(flushMicrotasks);
+    await act(async () => {
+      jest.advanceTimersByTime(120_000);
+      window.dispatchEvent(new Event('beforeunload'));
+      await flushMicrotasks();
+    });
+    expect(onRuntimeReady).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+    expect(await save.list()).toEqual(['main']);
+    expect(original.domains.inventory.count).toBe(50);
   });
 
   test('skips the discarded StrictMode load and runs only the active generation', async () => {
@@ -99,12 +202,14 @@ describe('WorldSystems runtime lifecycle', () => {
     expect(operations).toEqual(['dispose', 'load:start']);
     expect(mockedLoadWorldRuntime).toHaveBeenCalledTimes(1);
     expect(onRuntimeReady).not.toHaveBeenCalled();
+    expect(useAutoSave).toHaveBeenLastCalledWith(expect.objectContaining({ enabled: false }));
 
     await act(async () => {
       activeLoad.resolve(true);
       await flushMicrotasks();
     });
     expect(onRuntimeReady).toHaveBeenCalledTimes(1);
+    expect(useAutoSave).toHaveBeenLastCalledWith(expect.objectContaining({ enabled: true }));
 
     view.unmount();
     await act(flushMicrotasks);
@@ -128,7 +233,11 @@ describe('WorldSystems runtime lifecycle', () => {
 
     const view = render(<WorldSystems runtime={runtime} onRuntimeReady={onRuntimeReady} />);
     await act(flushMicrotasks);
+    const signal = mockedLoadWorldRuntime.mock.calls.at(-1)?.[1];
+    expect(signal).toBeInstanceOf(AbortSignal);
+    expect(signal?.aborted).toBe(false);
     view.unmount();
+    expect(signal?.aborted).toBe(true);
     expect(operations).toEqual(['load:start']);
 
     await act(async () => {

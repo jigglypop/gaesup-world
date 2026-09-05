@@ -12,6 +12,63 @@ function bindingFor<T>(key: string, get: () => T, set: (v: T | null | undefined)
 }
 
 describe('visit-room serializer', () => {
+  it.each([-1, 0, 1.5, 2, 999, NaN, Infinity])('skips unsupported version %s without accessing bindings', (version) => {
+    const provider = jest.fn(() => []);
+    const filter = jest.fn(() => true);
+    const snapshot = serializeVisit(() => [], { hostId: 'host', version });
+    snapshot.domains = { building: { tiles: [] }, custom: 7 };
+
+    expect(applyVisitSnapshot(provider, snapshot, {
+      allowedDomains: ['building', 'custom'], filter,
+    })).toEqual({ applied: [], skipped: ['building', 'custom'] });
+    expect(provider).not.toHaveBeenCalled();
+    expect(filter).not.toHaveBeenCalled();
+  });
+
+  it('propagates capture failures while preserving explicit null domain values', () => {
+    const failure = new Error('World capture failed');
+    const serialize = jest.fn(() => { throw failure; });
+    const provider = () => [bindingFor('building', serialize, () => {})];
+    expect(() => serializeVisit(provider, { hostId: 'host' })).toThrow(failure);
+    expect(serializeVisit(
+      () => [bindingFor('building', () => null, () => {})],
+      { hostId: 'host' },
+    ).domains).toEqual({ building: null });
+    serialize.mockClear();
+    expect(serializeVisit(provider, { hostId: 'host', domains: [] }).domains).toEqual({});
+    expect(serialize).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, []])('protects private domains with allowedDomains=%s', (allowedDomains) => {
+    const hydrateBuilding = jest.fn();
+    const hydrateWallet = jest.fn();
+    const provider = () => [
+      bindingFor('building', () => null, hydrateBuilding),
+      bindingFor('wallet', () => 100, hydrateWallet),
+    ];
+    const snapshot = serializeVisit(() => [
+      bindingFor('building', () => ({ tiles: [1] }), () => {}),
+      bindingFor('wallet', () => 0, () => {}),
+    ], { hostId: 'host-1', domains: ['building', 'wallet'] });
+
+    const result = applyVisitSnapshot(provider, snapshot,
+      allowedDomains === undefined ? {} : { allowedDomains });
+
+    expect(hydrateWallet).not.toHaveBeenCalled();
+    expect(hydrateBuilding).toHaveBeenCalledTimes(allowedDomains === undefined ? 1 : 0);
+    expect(result.skipped).toContain('wallet');
+  });
+
+  it('allows explicitly selected custom domains', () => {
+    const hydrate = jest.fn();
+    const provider = () => [bindingFor('custom', () => 7, hydrate)];
+    const snapshot = serializeVisit(provider, { hostId: 'host-1', domains: ['custom'] });
+
+    expect(applyVisitSnapshot(provider, snapshot, { allowedDomains: ['custom'] }).applied)
+      .toEqual(['custom']);
+    expect(hydrate).toHaveBeenCalledWith(7);
+  });
+
   it('captures only the requested domains', () => {
     const state = { building: { tiles: [1, 2, 3] }, mail: { unread: 4 } };
     const provider = () => [
@@ -110,6 +167,25 @@ describe('visit-room serializer', () => {
 });
 
 describe('local visit channel', () => {
+  it.each(['host-1', 'other-host'])('keeps replay state consistent when %s leaves', (hostId) => {
+    const channel = createLocalVisitChannel();
+    const snapshot = serializeVisit(() => [], { hostId: 'host-1' });
+    channel.publish(snapshot);
+    const duringLeave = jest.fn();
+    channel.subscribe((event) => {
+      if (event.type === 'leave') channel.subscribe(duringLeave);
+    });
+
+    channel.leave(hostId);
+
+    const afterLeave = jest.fn();
+    channel.subscribe(afterLeave);
+    const expected = hostId === 'host-1' ? 0 : 1;
+    expect(afterLeave).toHaveBeenCalledTimes(expected);
+    expect(duringLeave.mock.calls.filter(([event]) => event.type === 'snapshot')).toHaveLength(expected);
+    channel.close();
+  });
+
   it('replays the latest snapshot to new subscribers', () => {
     const channel = createLocalVisitChannel();
     const snapshot = {

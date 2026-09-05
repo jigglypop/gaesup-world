@@ -2,12 +2,12 @@ import { CharacterBlueprint } from '../types';
 
 export const FIRE_MAGE_BLUEPRINT: CharacterBlueprint = {
   id: 'char_mage_fire',
-  name: 'Fire Mage',
+  name: '화염 마법사',
   type: 'character',
   version: '1.0.0',
   tags: ['magic', 'ranged', 'fire'],
-  description: 'A powerful mage specializing in fire magic',
-  
+  description: '강력한 화염 마법을 사용하는 마법사입니다.',
+
   physics: {
     mass: 60,
     height: 1.75,
@@ -17,7 +17,7 @@ export const FIRE_MAGE_BLUEPRINT: CharacterBlueprint = {
     runSpeed: 8,
     airControl: 0.3
   },
-  
+
   animations: {
     idle: 'mage_idle.glb',
     walk: 'mage_walk.glb',
@@ -38,7 +38,7 @@ export const FIRE_MAGE_BLUEPRINT: CharacterBlueprint = {
       teleport: 'teleport.glb'
     }
   },
-  
+
   behaviors: {
     type: 'state-machine',
     data: {
@@ -72,7 +72,7 @@ export const FIRE_MAGE_BLUEPRINT: CharacterBlueprint = {
       }
     }
   },
-  
+
   stats: {
     health: 70,
     stamina: 30,
@@ -81,10 +81,10 @@ export const FIRE_MAGE_BLUEPRINT: CharacterBlueprint = {
     defense: 8,
     speed: 12
   },
-  
+
   visuals: {
     model: 'mage_model.glb',
     textures: ['mage_diffuse.png', 'mage_normal.png', 'mage_emissive.png'],
     scale: 1.0
   }
-}; 
+};

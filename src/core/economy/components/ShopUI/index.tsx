@@ -12,7 +12,20 @@ export type ShopUIProps = {
   title?: string;
 };
 
-export function ShopUI({ open, onClose, title = 'Shop' }: ShopUIProps) {
+const FAILURE_LABELS: Record<string, string> = {
+  'trade in progress': '진행 중인 거래가 끝난 뒤 다시 시도하세요.',
+  'invalid price': '상품 가격을 확인할 수 없습니다.',
+  'invalid count': '수량을 확인하세요.',
+  'not in stock': '판매하지 않는 상품입니다.',
+  'insufficient stock': '재고가 부족합니다.',
+  'insufficient bells': '벨이 부족합니다.',
+  'spend failed': '결제하지 못했습니다.',
+  'inventory full': '가방이 가득 찼습니다.',
+  'not enough items': '보유 수량이 부족합니다.',
+  'remove failed': '가방에서 물건을 꺼내지 못했습니다.',
+};
+
+export function ShopUI({ open, onClose, title = '상점' }: ShopUIProps) {
   const [tab, setTab] = useState<'buy' | 'sell'>('buy');
   const stock = useShopStore((s) => s.dailyStock);
   const buy = useShopStore((s) => s.buy);
@@ -23,28 +36,32 @@ export function ShopUI({ open, onClose, title = 'Shop' }: ShopUIProps) {
 
   if (!open) return null;
 
-  const sellable = (() => {
+  const sellable = tab === 'sell' ? (() => {
     const counts = new Map<string, number>();
     for (const slot of slots) {
       if (!slot) continue;
       counts.set(slot.itemId, (counts.get(slot.itemId) ?? 0) + slot.count);
     }
     return Array.from(counts.entries()).filter(([id]) => sellPriceOf(id) > 0);
-  })();
+  })() : [];
 
   return (
     <div
+      data-world-overlay
       style={{
         position: 'fixed', inset: 0, zIndex: 130,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 16, boxSizing: 'border-box',
         background: 'rgba(0,0,0,0.55)',
       }}
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-label={title}
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: 520, maxHeight: '70vh', overflow: 'hidden',
+          width: 520, maxWidth: '100%', minWidth: 0, maxHeight: 'min(70dvh, calc(100dvh - 32px))', overflow: 'hidden',
           background: '#1a1a1a', color: '#fff',
           borderRadius: 12,
           boxShadow: '0 16px 36px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,216,74,0.35)',
@@ -52,16 +69,16 @@ export function ShopUI({ open, onClose, title = 'Shop' }: ShopUIProps) {
           display: 'flex', flexDirection: 'column',
         }}
       >
-        <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #333' }}>
+        <div style={{ padding: '10px 14px', display: 'flex', flexWrap: 'wrap', gap: 8, flexShrink: 0, alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #333', overflowWrap: 'anywhere' }}>
           <strong style={{ fontSize: 15 }}>{title}</strong>
-          <span style={{ color: '#ffd84a' }}>{bells.toLocaleString()} B</span>
-          <button onClick={onClose} style={btnStyle()}>닫기</button>
+          <span style={{ color: '#ffd84a' }}>{bells.toLocaleString()} 벨</span>
+          <button type="button" onClick={onClose} style={btnStyle()}>닫기</button>
         </div>
-        <div style={{ display: 'flex', borderBottom: '1px solid #333' }}>
+        <div style={{ display: 'flex', flexShrink: 0, borderBottom: '1px solid #333' }}>
           <TabBtn active={tab === 'buy'} onClick={() => setTab('buy')}>구매</TabBtn>
           <TabBtn active={tab === 'sell'} onClick={() => setTab('sell')}>판매</TabBtn>
         </div>
-        <div style={{ overflowY: 'auto', padding: 10 }}>
+        <div style={{ overflowY: 'auto', minHeight: 0, padding: 10 }}>
           {tab === 'buy' && (
             stock.length === 0 ? (
               <div style={{ opacity: 0.7, padding: 12 }}>오늘 상품이 없습니다.</div>
@@ -81,7 +98,7 @@ export function ShopUI({ open, onClose, title = 'Shop' }: ShopUIProps) {
                   onAction={() => {
                     const r = buy(offer.itemId, 1);
                     if (r.ok) notify('success', `${def?.name ?? offer.itemId} 구매`);
-                    else notify('warn', `구매 실패: ${r.reason ?? ''}`);
+                    else notify('warn', `구매 실패: ${FAILURE_LABELS[r.reason ?? ''] ?? '잠시 후 다시 시도하세요.'}`);
                   }}
                 />
               );
@@ -103,8 +120,8 @@ export function ShopUI({ open, onClose, title = 'Shop' }: ShopUIProps) {
                   actionLabel="판매"
                   onAction={() => {
                     const r = sell(id, 1);
-                    if (r.ok) notify('reward', `${def?.name ?? id} 판매 +${price} B`);
-                    else notify('warn', `판매 실패: ${r.reason ?? ''}`);
+                    if (r.ok) notify('reward', `${def?.name ?? id} 판매 +${price} 벨`);
+                    else notify('warn', `판매 실패: ${FAILURE_LABELS[r.reason ?? ''] ?? '잠시 후 다시 시도하세요.'}`);
                   }}
                 />
               );
@@ -119,6 +136,8 @@ export function ShopUI({ open, onClose, title = 'Shop' }: ShopUIProps) {
 function TabBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
+      type="button"
+      aria-pressed={active}
       onClick={onClick}
       style={{
         flex: 1,
@@ -142,18 +161,18 @@ function Row({
 }) {
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 10,
+      display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10,
       padding: '8px 6px', borderBottom: '1px solid #2a2a2a',
     }}>
       <span style={{
-        width: 22, height: 22, borderRadius: 6, background: color ?? '#888',
+        width: 22, height: 22, flexShrink: 0, borderRadius: 6, background: color ?? '#888',
       }} />
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: '1 1 100px', minWidth: 0, overflowWrap: 'anywhere' }}>
         <div>{name}</div>
         {sub && <div style={{ fontSize: 11, opacity: 0.7 }}>{sub}</div>}
       </div>
-      <div style={{ color: '#ffd84a', minWidth: 64, textAlign: 'right' }}>{price.toLocaleString()} B</div>
-      <button onClick={onAction} disabled={disabled} style={btnStyle(disabled)}>{actionLabel}</button>
+      <div style={{ color: '#ffd84a', minWidth: 64, overflowWrap: 'anywhere', textAlign: 'right' }}>{price.toLocaleString()} 벨</div>
+      <button type="button" aria-label={`${name} ${actionLabel}`} onClick={onAction} disabled={disabled} style={btnStyle(disabled)}>{actionLabel}</button>
     </div>
   );
 }

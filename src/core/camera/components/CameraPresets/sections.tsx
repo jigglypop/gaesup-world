@@ -1,4 +1,4 @@
-import React, { Fragment, type ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 
 import { cx } from './helpers';
 import type { CameraPreset, CameraPresetsRenderContext, CameraPresetsRenderers } from './types';

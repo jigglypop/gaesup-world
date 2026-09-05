@@ -3,12 +3,12 @@ import type { GameplayEventBlueprint } from '../types';
 export const SEED_GAMEPLAY_EVENTS: GameplayEventBlueprint[] = [
   {
     id: 'world-ready-visible',
-    name: 'World Ready Visible',
-    description: 'Shows that gameplay event blueprints are running in the main world.',
+    name: '월드 시작 알림',
+    description: '월드가 준비되면 환영 알림을 표시합니다.',
     trigger: { type: 'manual', key: 'world.ready' },
     conditions: [{ type: 'always' }],
     actions: [
-      { type: 'toast', kind: 'success', text: 'Gameplay Event Blueprint 실행됨' },
+      { type: 'toast', kind: 'success', text: '월드에 오신 것을 환영해요!' },
       { type: 'setFlag', key: 'gameplayReady', value: true },
     ],
     policy: { run: 'once' },
@@ -16,8 +16,8 @@ export const SEED_GAMEPLAY_EVENTS: GameplayEventBlueprint[] = [
   },
   {
     id: 'welcome-first-talk',
-    name: 'Welcome First Talk',
-    description: 'Starts the welcome quest the first time the player talks to the guide.',
+    name: '첫 대화와 환영 퀘스트',
+    description: '안내자와 처음 대화하면 환영 퀘스트를 시작합니다.',
     trigger: { type: 'interaction', targetId: 'npc:tommy', action: 'talk' },
     conditions: [{ type: 'questStatus', questId: 'welcome', status: 'available' }],
     actions: [
@@ -29,8 +29,8 @@ export const SEED_GAMEPLAY_EVENTS: GameplayEventBlueprint[] = [
   },
   {
     id: 'meadow-entry-seed-gift',
-    name: 'Meadow Entry Seed Gift',
-    description: 'Gives starter seeds when the player first enters the meadow.',
+    name: '초원 첫 방문 선물',
+    description: '초원에 처음 들어가면 씨앗을 선물합니다.',
     trigger: { type: 'enterArea', areaId: 'meadow' },
     conditions: [{ type: 'always' }],
     actions: [
@@ -42,8 +42,8 @@ export const SEED_GAMEPLAY_EVENTS: GameplayEventBlueprint[] = [
   },
   {
     id: 'festival-quest-flag',
-    name: 'Festival Quest Flag',
-    description: 'Updates quest flag progress when a calendar festival starts.',
+    name: '축제 시작과 퀘스트 진행',
+    description: '달력의 축제가 시작되면 퀘스트 진행 상태를 갱신합니다.',
     trigger: { type: 'calendarEventStarted', eventId: 'spring-flower-fair' },
     actions: [{ type: 'notifyQuestFlag', key: 'festivalStarted', value: true }],
     policy: { run: 'repeat', cooldownMs: 60_000 },

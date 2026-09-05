@@ -4,7 +4,7 @@ const POSITION_STRIDE = 3;
 
 export const FRUSTUM_PLANES_LENGTH = PLANE_COUNT * PLANE_STRIDE;
 
-export function extractFrustumPlanes(viewProjection: Float32Array, out: Float32Array): Float32Array {
+export function extractFrustumPlanes(viewProjection: Float32Array, out: Float32Array, clipDepthZeroToOne = false): Float32Array {
   const m0 = viewProjection[0] ?? 0;
   const m1 = viewProjection[1] ?? 0;
   const m2 = viewProjection[2] ?? 0;
@@ -25,7 +25,8 @@ export function extractFrustumPlanes(viewProjection: Float32Array, out: Float32A
   writePlane(out, 1, m3 - m0, m7 - m4, m11 - m8, m15 - m12);
   writePlane(out, 2, m3 + m1, m7 + m5, m11 + m9, m15 + m13);
   writePlane(out, 3, m3 - m1, m7 - m5, m11 - m9, m15 - m13);
-  writePlane(out, 4, m3 + m2, m7 + m6, m11 + m10, m15 + m14);
+  if (clipDepthZeroToOne) writePlane(out, 4, m2, m6, m10, m14);
+  else writePlane(out, 4, m3 + m2, m7 + m6, m11 + m10, m15 + m14);
   writePlane(out, 5, m3 - m2, m7 - m6, m11 - m10, m15 - m14);
   return out;
 }

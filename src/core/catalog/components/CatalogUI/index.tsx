@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
 import type { ItemCategory } from '../../../items/types';
+import { canHandleOverlayShortcut } from '../../../ui/overlayKeyboard';
 import {
   OVERLAY_BACKDROP_STYLE,
   OVERLAY_BORDER_COLOR,
@@ -32,8 +33,7 @@ export function CatalogUI({ toggleKey = 'k' }: CatalogUIProps) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
-      if (tag === 'input' || tag === 'textarea') return;
+      if (!canHandleOverlayShortcut(e)) return;
       if (e.key.toLowerCase() === toggleKey.toLowerCase()) setOpen((v) => !v);
       if (e.key === 'Escape') setOpen(false);
     };
@@ -41,7 +41,7 @@ export function CatalogUI({ toggleKey = 'k' }: CatalogUIProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, [toggleKey]);
 
-  const allItems = useMemo(() => getItemRegistry().all(), []);
+  const allItems = useMemo(() => open ? getItemRegistry().all() : [], [open]);
   const itemsByCategory = useMemo(() => {
     const map = new Map<ItemCategory, typeof allItems>();
     for (const c of CATALOG_CATEGORIES) map.set(c, []);
@@ -53,28 +53,36 @@ export function CatalogUI({ toggleKey = 'k' }: CatalogUIProps) {
   }, [allItems]);
 
   if (!open) return null;
-  const list = itemsByCategory.get(tab) ?? [];
+  const selectedTab = itemsByCategory.get(tab)?.length
+    ? tab
+    : CATALOG_CATEGORIES.find((category) => itemsByCategory.get(category)?.length) ?? tab;
+  const list = itemsByCategory.get(selectedTab) ?? [];
   const collectedInTab = list.filter((d) => entries[d.id]).length;
 
   return (
     <div style={OVERLAY_BACKDROP_STYLE} onClick={() => setOpen(false)}>
       <div
+        data-world-overlay="catalog"
         onClick={(e) => e.stopPropagation()}
         style={{
           ...OVERLAY_PANEL_STYLE,
           width: PANEL_WIDTH,
           height: PANEL_HEIGHT,
+          maxWidth: 'calc(100vw - 24px)',
+          maxHeight: 'calc(100dvh - 32px)',
+          boxSizing: 'border-box',
+          overflowWrap: 'anywhere',
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        <div style={OVERLAY_HEADER_STYLE}>
+        <div style={{ ...OVERLAY_HEADER_STYLE, flexShrink: 0 }}>
           <strong style={{ fontSize: 15 }}>도감</strong>
           <button onClick={() => setOpen(false)} style={overlayButtonStyle()}>
             닫기 [{toggleKey.toUpperCase()}]
           </button>
         </div>
-        <div style={{ display: 'flex', borderBottom: `1px solid ${OVERLAY_BORDER_COLOR}` }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', flexShrink: 0, borderBottom: `1px solid ${OVERLAY_BORDER_COLOR}` }}>
           {CATALOG_CATEGORIES.map((c) => {
             const items = itemsByCategory.get(c) ?? [];
             if (items.length === 0) return null;
@@ -82,12 +90,13 @@ export function CatalogUI({ toggleKey = 'k' }: CatalogUIProps) {
             return (
               <button
                 key={c}
+                aria-pressed={selectedTab === c}
                 onClick={() => setTab(c)}
                 style={{
-                  flex: 1,
+                  flex: '1 0 90px',
                   padding: '8px 4px',
-                  background: tab === c ? OVERLAY_SURFACE_ACTIVE_COLOR : 'transparent',
-                  color: tab === c ? OVERLAY_GOOD_COLOR : '#ddd',
+                  background: selectedTab === c ? OVERLAY_SURFACE_ACTIVE_COLOR : 'transparent',
+                  color: selectedTab === c ? OVERLAY_GOOD_COLOR : '#ddd',
                   border: 'none',
                   cursor: 'pointer',
                   fontFamily: OVERLAY_FONT_FAMILY,
@@ -100,15 +109,17 @@ export function CatalogUI({ toggleKey = 'k' }: CatalogUIProps) {
           })}
         </div>
         <div style={{ padding: '6px 14px', fontSize: 12, color: OVERLAY_TEXT_DIM_COLOR }}>
-          {labelOf(tab)} · {collectedInTab}/{list.length} 수집
+          {labelOf(selectedTab)} · {collectedInTab}/{list.length} 수집
         </div>
         <div
           style={{
             flex: 1,
+            minHeight: 0,
             overflowY: 'auto',
             padding: 10,
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(140px, 100%), 1fr))',
+            alignContent: 'start',
             gap: 8,
           }}
         >

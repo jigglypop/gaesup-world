@@ -31,6 +31,7 @@ export function createRelationsPlugin(options: RelationsPluginOptions = {}) {
     capabilities: ['relations'],
     serialize: serializeRelationsState,
     hydrate: hydrateRelationsState,
+    prepareHydrate: (data) => useFriendshipStore.getState().prepareHydrate(data),
   });
 }
 

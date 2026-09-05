@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 
 import { useToastStore, type ToastKind } from './toastStore';
 
@@ -26,19 +26,22 @@ export function ToastHost({ position = 'top-right', max = 5 }: ToastHostProps) {
   useEffect(() => {
     if (!toasts.length) return;
     const timers = toasts.map((t) =>
-      window.setTimeout(() => dismiss(t.id), Math.max(500, t.durationMs)),
+      window.setTimeout(() => dismiss(t.id), Math.max(0, t.createdAt + Math.max(500, t.durationMs) - Date.now())),
     );
     return () => { timers.forEach((id) => window.clearTimeout(id)); };
   }, [toasts, dismiss]);
 
   const layout = position === 'top-center'
-    ? { top: 64, left: '50%', transform: 'translateX(-50%)' as const }
-    : { top: 64, right: 12 };
+    ? { top: 'var(--gaesup-toast-top, 64px)', left: '50%', transform: 'translateX(-50%)' as const }
+    : { top: 'var(--gaesup-toast-top, 64px)', right: 12 };
 
   const visible = toasts.slice(-max);
 
   return (
     <div
+      role="log"
+      aria-label="알림"
+      aria-live="polite"
       style={{
         position: 'fixed',
         zIndex: 'var(--gaesup-z-toast, 140)',
@@ -46,6 +49,7 @@ export function ToastHost({ position = 'top-right', max = 5 }: ToastHostProps) {
         flexDirection: 'column',
         gap: 8,
         pointerEvents: 'none',
+        bottom: 'var(--gaesup-toast-bottom, auto)',
         ...layout,
       }}
     >
@@ -55,8 +59,10 @@ export function ToastHost({ position = 'top-right', max = 5 }: ToastHostProps) {
           <div
             key={t.id}
             style={{
-              minWidth: 220,
-              maxWidth: 360,
+              boxSizing: 'border-box',
+              minWidth: 'min(220px, calc(100vw - 24px))',
+              maxWidth: 'min(360px, calc(100vw - 24px))',
+              overflowWrap: 'anywhere',
               padding: '9px 14px',
               borderRadius: 12,
               background: s.bg,
@@ -75,6 +81,7 @@ export function ToastHost({ position = 'top-right', max = 5 }: ToastHostProps) {
             }}
           >
             <span
+              aria-hidden="true"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',

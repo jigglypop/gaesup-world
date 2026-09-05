@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { logger } from '../../../utils/logger';
 import { parseBuildingGpuVisibilityFlags } from '../../render/culling';
 import { useBuildingGpuCullingStore } from '../../render/cullingStore';
 import { useBuildingRenderStateStore } from '../../render/store';
@@ -25,7 +26,8 @@ type GpuBufferLike = {
   unmap?: () => void;
 };
 
-type GpuDeviceLike = ReturnType<typeof getWebGPUDeviceFromRenderer> extends infer T ? Exclude<T, null> : never;
+type GpuDeviceLike =
+  ReturnType<typeof getWebGPUDeviceFromRenderer> extends infer T ? Exclude<T, null> : never;
 type GpuShaderModuleLike = object;
 type GpuBindGroupLayoutLike = object;
 type GpuBindGroupLike = object;
@@ -73,7 +75,6 @@ type ComputeResources = {
   bindGroup: GpuBindGroupLike | null;
   count: number;
   spatialBuffer: GpuBufferLike | null;
-  metaBuffer: GpuBufferLike | null;
 };
 
 function createEmptyResources(): ComputeResources {
@@ -86,13 +87,19 @@ function createEmptyResources(): ComputeResources {
     bindGroup: null,
     count: 0,
     spatialBuffer: null,
-    metaBuffer: null,
   };
 }
 
 function destroyBuffer(buffer: GpuBufferLike | null): void {
   if (!buffer?.destroy) return;
-  buffer.destroy();
+  try {
+    buffer.destroy();
+  } catch (error) {
+    logger.warn(
+      'Building culling buffer cleanup failed',
+      error instanceof Error ? error : String(error),
+    );
+  }
 }
 
 function destroyResources(resources: ComputeResources): void {
@@ -104,20 +111,18 @@ function destroyResources(resources: ComputeResources): void {
 function createComputeResources(
   device: GpuDeviceLike,
   spatialBuffer: GpuBufferLike,
-  metaBuffer: GpuBufferLike,
   count: number,
 ): ComputeResources {
   const gpuDevice = device as GpuComputeDevice;
   const shaderModule = gpuDevice.createShaderModule({
     code: `
 struct Params {
-  viewProj : mat4x4<f32>,
+  planes : array<vec4<f32>, 6>,
   camera : vec4<f32>,
   misc : vec4<f32>,
 }
 
 @group(0) @binding(0) var<storage, read> spatial : array<vec4<f32>>;
-@group(0) @binding(1) var<storage, read> meta : array<vec4<i32>>;
 @group(0) @binding(2) var<storage, read_write> visible : array<u32>;
 @group(0) @binding(3) var<uniform> params : Params;
 
@@ -129,23 +134,14 @@ fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
   }
 
   let s = spatial[i];
-  let world = vec4<f32>(s.x, s.y, s.z, 1.0);
-  let clip = params.viewProj * world;
-  let w = clip.w;
-  if (w <= 0.0) {
-    visible[i] = 0u;
-    return;
+  var inFrustum = true;
+  for (var plane = 0u; plane < 6u; plane += 1u) {
+    let p = params.planes[plane];
+    if (dot(p.xyz, s.xyz) + p.w < -s.w) {
+      inFrustum = false;
+      break;
+    }
   }
-
-  let inflate = s.w / max(abs(w), 0.0001);
-  let ndc = clip.xyz / w;
-  let inFrustum =
-    ndc.x >= (-1.0 - inflate) &&
-    ndc.x <= ( 1.0 + inflate) &&
-    ndc.y >= (-1.0 - inflate) &&
-    ndc.y <= ( 1.0 + inflate) &&
-    ndc.z >= (-inflate) &&
-    ndc.z <= ( 1.0 + inflate);
 
   let dx = s.x - params.camera.x;
   let dy = s.y - params.camera.y;
@@ -164,43 +160,51 @@ fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
   });
 
   const bindGroupLayout = pipeline.getBindGroupLayout(0);
-  const uniformBuffer = device.createBuffer({
-    label: 'building-cull-uniforms',
-    size: 96,
-    usage: GPU_BUFFER_USAGE_UNIFORM | GPU_BUFFER_USAGE_COPY_DST,
-  }) as GpuBufferLike;
-  const visibleBuffer = device.createBuffer({
-    label: 'building-cull-visible',
-    size: Math.max(4, count * 4),
-    usage: GPU_BUFFER_USAGE_STORAGE | GPU_BUFFER_USAGE_COPY_SRC | GPU_BUFFER_USAGE_COPY_DST,
-  }) as GpuBufferLike;
-  const readBuffer = device.createBuffer({
-    label: 'building-cull-readback',
-    size: Math.max(4, count * 4),
-    usage: GPU_BUFFER_USAGE_COPY_DST | GPU_BUFFER_USAGE_MAP_READ,
-  }) as GpuBufferLike;
+  let uniformBuffer: GpuBufferLike | null = null;
+  let visibleBuffer: GpuBufferLike | null = null;
+  let readBuffer: GpuBufferLike | null = null;
+  try {
+    uniformBuffer = device.createBuffer({
+      label: 'building-cull-uniforms',
+      size: 128,
+      usage: GPU_BUFFER_USAGE_UNIFORM | GPU_BUFFER_USAGE_COPY_DST,
+    }) as GpuBufferLike;
+    visibleBuffer = device.createBuffer({
+      label: 'building-cull-visible',
+      size: Math.max(4, count * 4),
+      usage: GPU_BUFFER_USAGE_STORAGE | GPU_BUFFER_USAGE_COPY_SRC | GPU_BUFFER_USAGE_COPY_DST,
+    }) as GpuBufferLike;
+    readBuffer = device.createBuffer({
+      label: 'building-cull-readback',
+      size: Math.max(4, count * 4),
+      usage: GPU_BUFFER_USAGE_COPY_DST | GPU_BUFFER_USAGE_MAP_READ,
+    }) as GpuBufferLike;
 
-  const bindGroup = gpuDevice.createBindGroup({
-    layout: bindGroupLayout,
-    entries: [
-      { binding: 0, resource: { buffer: spatialBuffer } },
-      { binding: 1, resource: { buffer: metaBuffer } },
-      { binding: 2, resource: { buffer: visibleBuffer } },
-      { binding: 3, resource: { buffer: uniformBuffer } },
-    ],
-  });
+    const bindGroup = gpuDevice.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: spatialBuffer } },
+        { binding: 2, resource: { buffer: visibleBuffer } },
+        { binding: 3, resource: { buffer: uniformBuffer } },
+      ],
+    });
 
-  return {
-    pipeline,
-    bindGroupLayout,
-    uniformBuffer,
-    visibleBuffer,
-    readBuffer,
-    bindGroup,
-    count,
-    spatialBuffer,
-    metaBuffer,
-  };
+    return {
+      pipeline,
+      bindGroupLayout,
+      uniformBuffer,
+      visibleBuffer,
+      readBuffer,
+      bindGroup,
+      count,
+      spatialBuffer,
+    };
+  } catch (error) {
+    destroyBuffer(uniformBuffer);
+    destroyBuffer(visibleBuffer);
+    destroyBuffer(readBuffer);
+    throw error;
+  }
 }
 
 export function BuildingGpuCullingDriver() {
@@ -215,27 +219,29 @@ export function BuildingGpuCullingDriver() {
     busy: false,
     lastRunAt: 0,
     readbackFlags: null as Uint32Array | null,
+    failedDevice: null as GpuDeviceLike | null,
   });
 
   const scratch = useMemo(
     () => ({
       viewProj: new THREE.Matrix4(),
-      uniform: new Float32Array(24),
+      frustum: new THREE.Frustum(),
+      camera: new THREE.Vector3(),
+      uniform: new Float32Array(32),
     }),
     [],
   );
-
-  useEffect(() => reset, [reset]);
 
   useEffect(() => {
     const resources = refs.current.resources;
     if (
       resources.count !== snapshot.ids.length ||
-      resources.spatialBuffer !== uploadResources.spatialBuffer ||
-      resources.metaBuffer !== uploadResources.metaBuffer
+      resources.spatialBuffer !== uploadResources.spatialBuffer
     ) {
       destroyResources(resources);
       refs.current.resources = createEmptyResources();
+      refs.current.busy = false;
+      refs.current.lastRunAt = 0;
     }
   }, [snapshot.ids.length, uploadResources]);
 
@@ -243,7 +249,8 @@ export function BuildingGpuCullingDriver() {
     if (snapshot.version === 0 || snapshot.ids.length === 0) return;
     if (uploadResources.backend !== 'webgpu') return;
     const device = getWebGPUDeviceFromRenderer(gl) as GpuDeviceLike | null;
-    if (!device || !uploadResources.spatialBuffer || !uploadResources.metaBuffer) return;
+    if (!device || !uploadResources.spatialBuffer) return;
+    if (refs.current.failedDevice === device) return;
     if (refs.current.busy) return;
 
     const now = performance.now();
@@ -251,47 +258,117 @@ export function BuildingGpuCullingDriver() {
     refs.current.lastRunAt = now;
 
     if (!refs.current.resources.pipeline) {
-      refs.current.resources = createComputeResources(
-        device,
-        uploadResources.spatialBuffer,
-        uploadResources.metaBuffer,
-        snapshot.ids.length,
-      );
+      try {
+        refs.current.resources = createComputeResources(
+          device,
+          uploadResources.spatialBuffer,
+          snapshot.ids.length,
+        );
+      } catch (error) {
+        refs.current.failedDevice = device;
+        reset();
+        logger.warn(
+          'Building GPU culling unavailable; using CPU visibility',
+          error instanceof Error ? error : String(error),
+        );
+        return;
+      }
     }
 
     const resources = refs.current.resources;
     const uniform = scratch.uniform;
-    scratch.viewProj.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
-    uniform.set(scratch.viewProj.elements, 0);
-    uniform[16] = state.camera.position.x;
-    uniform[17] = state.camera.position.y;
-    uniform[18] = state.camera.position.z;
-    uniform[19] = VISIBILITY_MAX_DISTANCE;
-    uniform[20] = snapshot.ids.length;
-    uniform[21] = 0;
-    uniform[22] = 0;
-    uniform[23] = 0;
+    state.camera.updateWorldMatrix(true, false);
+    scratch.viewProj.multiplyMatrices(
+      state.camera.projectionMatrix,
+      state.camera.matrixWorldInverse,
+    );
+    state.camera.getWorldPosition(scratch.camera);
+    const previous = useBuildingGpuCullingStore.getState();
+    const previousCamera = previous.camera;
+    if (previous.active && previous.version === snapshot.version && previousCamera &&
+      previousCamera.coordinateSystem === state.camera.coordinateSystem &&
+      previousCamera.reversedDepth === state.camera.reversedDepth &&
+      previousCamera.position[0] === scratch.camera.x &&
+      previousCamera.position[1] === scratch.camera.y &&
+      previousCamera.position[2] === scratch.camera.z) {
+      let unchanged = true;
+      for (let index = 0; index < scratch.viewProj.elements.length; index++) {
+        if (scratch.viewProj.elements[index] !== previousCamera.viewProjection[index]) {
+          unchanged = false;
+          break;
+        }
+      }
+      if (unchanged) return;
+    }
+    scratch.frustum.setFromProjectionMatrix(
+      scratch.viewProj,
+      state.camera.coordinateSystem,
+      state.camera.reversedDepth,
+    );
+    for (let i = 0; i < scratch.frustum.planes.length; i++) {
+      const plane = scratch.frustum.planes[i]!;
+      plane.normal.toArray(uniform, i * 4);
+      uniform[i * 4 + 3] = plane.constant;
+    }
+    scratch.camera.toArray(uniform, 24);
+    uniform[27] = VISIBILITY_MAX_DISTANCE;
+    uniform[28] = snapshot.ids.length;
 
-    if (!resources.uniformBuffer || !resources.visibleBuffer || !resources.readBuffer || !resources.bindGroup || !resources.pipeline) {
+    if (
+      !resources.uniformBuffer ||
+      !resources.visibleBuffer ||
+      !resources.readBuffer ||
+      !resources.bindGroup ||
+      !resources.pipeline
+    ) {
       return;
     }
 
-    device.queue.writeBuffer(resources.uniformBuffer, 0, uniform);
-
-    const gpuDevice = device as GpuComputeDevice;
-    const encoder = gpuDevice.createCommandEncoder();
-
-    const pass = encoder.beginComputePass();
-    pass.setPipeline(resources.pipeline);
-    pass.setBindGroup(0, resources.bindGroup);
-    pass.dispatchWorkgroups(Math.max(1, Math.ceil(snapshot.ids.length / WORKGROUP_SIZE)));
-    pass.end();
-    encoder.copyBufferToBuffer(resources.visibleBuffer, 0, resources.readBuffer, 0, Math.max(4, snapshot.ids.length * 4));
-    gpuDevice.queue.submit([encoder.finish()]);
+    try {
+      device.queue.writeBuffer(resources.uniformBuffer, 0, uniform);
+      const gpuDevice = device as GpuComputeDevice;
+      const encoder = gpuDevice.createCommandEncoder();
+      const pass = encoder.beginComputePass();
+      pass.setPipeline(resources.pipeline);
+      pass.setBindGroup(0, resources.bindGroup);
+      pass.dispatchWorkgroups(Math.max(1, Math.ceil(snapshot.ids.length / WORKGROUP_SIZE)));
+      pass.end();
+      encoder.copyBufferToBuffer(
+        resources.visibleBuffer,
+        0,
+        resources.readBuffer,
+        0,
+        Math.max(4, snapshot.ids.length * 4),
+      );
+      gpuDevice.queue.submit([encoder.finish()]);
+    } catch (error) {
+      refs.current.failedDevice = device;
+      destroyResources(resources);
+      refs.current.resources = createEmptyResources();
+      reset();
+      logger.warn('Building GPU culling submission failed; using CPU visibility',
+        error instanceof Error ? error : String(error));
+      return;
+    }
 
     refs.current.busy = true;
-    void Promise.resolve(resources.readBuffer?.mapAsync?.(GPU_MAP_MODE_READ))
+    const camera = {
+      viewProjection: scratch.viewProj.toArray(),
+      position: scratch.camera.toArray(),
+      coordinateSystem: state.camera.coordinateSystem,
+      reversedDepth: state.camera.reversedDepth,
+    };
+    void Promise.resolve()
       .then(() => {
+        if (refs.current.resources !== resources) return;
+        return resources.readBuffer?.mapAsync?.(GPU_MAP_MODE_READ);
+      })
+      .then(() => {
+        if (refs.current.resources !== resources) return;
+        if (useBuildingRenderStateStore.getState().snapshot !== snapshot) {
+          resources.readBuffer?.unmap?.();
+          return;
+        }
         const mapped = resources.readBuffer?.getMappedRange?.();
         if (!mapped) return;
         const count = snapshot.ids.length;
@@ -303,13 +380,20 @@ export function BuildingGpuCullingDriver() {
         copy.set(mappedFlags);
         resources.readBuffer?.unmap?.();
         const parsed = parseBuildingGpuVisibilityFlags(snapshot, copy);
-        setResult(parsed);
+        setResult({ ...parsed, camera });
       })
-      .catch(() => {
-        reset();
+      .catch((error: unknown) => {
+        if (refs.current.resources !== resources) return;
+        refs.current.failedDevice = device;
+        destroyResources(resources);
+        refs.current.resources = createEmptyResources();
+        refs.current.busy = false;
+        if (useBuildingRenderStateStore.getState().snapshot === snapshot) reset();
+        logger.warn('Building GPU culling readback failed; using CPU visibility',
+          error instanceof Error ? error : String(error));
       })
       .finally(() => {
-        refs.current.busy = false;
+        if (refs.current.resources === resources) refs.current.busy = false;
       });
   });
 

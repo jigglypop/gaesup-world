@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { fireEvent, render, screen } from '@testing-library/react';
 
 import { createGaesupRuntime, GaesupRuntimeProvider } from '../../../../runtime';
@@ -100,7 +101,7 @@ describe('EditorLayout runtime component injection', () => {
     );
 
     expect(screen.getAllByText('프로젝트').length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByText('scenes'));
+    fireEvent.click(screen.getByRole('button', { name: '장면', exact: true }));
     expect(screen.getByText('Scene A')).toBeTruthy();
   });
 
@@ -134,7 +135,7 @@ describe('EditorLayout runtime component injection', () => {
       </EditorLayout>,
     );
 
-    expect(screen.getByLabelText('Editor sidebar').className).toContain(
+    expect(screen.getByLabelText('편집 도구').className).toContain(
       'editor-sidebar--preset-compact',
     );
   });
@@ -146,7 +147,7 @@ describe('EditorLayout runtime component injection', () => {
       </EditorLayout>,
     );
 
-    const sidebar = screen.getByLabelText('Editor sidebar');
+    const sidebar = screen.getByLabelText('편집 도구');
     expect(sidebar.className).toContain('custom-sidebar');
     expect(sidebar).toHaveStyle({ width: '420px' });
   });
@@ -171,12 +172,12 @@ describe('EditorLayout runtime component injection', () => {
     );
 
     fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
-    expect(screen.getByLabelText('Command palette')).toBeTruthy();
+    expect(screen.getByLabelText('명령 검색')).toBeTruthy();
 
-    fireEvent.change(screen.getByLabelText('Search commands'), { target: { value: 'project' } });
-    fireEvent.keyDown(screen.getByLabelText('Search commands'), { key: 'Enter' });
+    fireEvent.change(screen.getByLabelText('명령 검색'), { target: { value: 'project' } });
+    fireEvent.keyDown(screen.getByLabelText('명령 검색'), { key: 'Enter' });
 
-    expect(screen.queryByLabelText('Command palette')).toBeNull();
+    expect(screen.queryByLabelText('명령 검색')).toBeNull();
     expect(screen.getAllByText('프로젝트').length).toBeGreaterThan(0);
   });
 
@@ -200,11 +201,11 @@ describe('EditorLayout runtime component injection', () => {
       </EditorLayout>,
     );
 
-    expect(screen.getByLabelText('Editor save status')).toBeTruthy();
-    fireEvent.click(screen.getByText('Auto'));
+    expect(screen.getByLabelText('편집 내용 저장 상태')).toBeTruthy();
+    fireEvent.click(screen.getByText('자동'));
     expect(onToggleAutosave).toHaveBeenCalledWith(false);
 
-    fireEvent.click(screen.getByText('Save'));
+    fireEvent.click(screen.getByText('저장'));
     expect(onSave).toHaveBeenCalledTimes(1);
   });
 });

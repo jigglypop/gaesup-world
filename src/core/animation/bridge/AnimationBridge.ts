@@ -4,7 +4,7 @@ import { CoreBridge } from '@/core/boilerplate'
 
 import { AnimationCommand, AnimationSnapshot, AnimationMetrics } from './types'
 import { DomainBridge, EnableMetrics, Command } from '../../boilerplate/decorators'
-import { LogSnapshot, ValidateCommand, RequireEngineById, CacheSnapshot } from '../../boilerplate/decorators'
+import { LogSnapshot, ValidateCommand, RequireEngineById } from '../../boilerplate/decorators'
 import { AnimationSystem } from '../core/AnimationSystem'
 import { AnimationType } from '../core/types'
 
@@ -22,6 +22,7 @@ export class AnimationBridge extends CoreBridge<
   AnimationSnapshot,
   AnimationCommand
 > {
+  private readonly engineSnapshots = new WeakMap<AnimationSystem, AnimationSnapshot>()
   constructor() {
     super()
     const engineTypes: AnimationType[] = ['character', 'vehicle', 'airplane']
@@ -67,10 +68,16 @@ export class AnimationBridge extends CoreBridge<
   }
 
   @RequireEngineById()
-  unregisterAnimations(type: AnimationType): void {
+  unregisterAnimations(type: AnimationType, actions?: Record<string, THREE.AnimationAction | null>): void {
     const engine = this.getEngine(type)
     if (!engine) return
-    engine.clearActions()
+    if (!actions) {
+      engine.clearActions()
+      return
+    }
+    Object.entries(actions).forEach(([name, action]) => {
+      if (action) engine.unregisterAction(sanitizeAnimationName(name) || name, action)
+    })
   }
 
   @Command('play')
@@ -93,23 +100,38 @@ export class AnimationBridge extends CoreBridge<
   }
 
   @LogSnapshot()
-  @CacheSnapshot(16) // 60fps 캐싱
   protected createSnapshot(engine: AnimationSystem): AnimationSnapshot {
     const state = engine.getState()
     const metrics = engine.getMetrics()
-    return {
-      currentAnimation: state.currentAnimation,
-      isPlaying: state.isPlaying,
-      weight: state.currentWeight,
-      speed: 1.0,
-      availableAnimations: engine.getAnimationList(),
-      metrics: {
-        activeAnimations: metrics.activeAnimations,
-        totalActions: metrics.totalActions,
-        mixerTime: metrics.mixerTime,
-        lastUpdate: metrics.lastUpdate,
-      },
+    const speed = state.actions.get(state.currentAnimation)?.timeScale ?? 1
+    let snapshot = this.engineSnapshots.get(engine)
+    if (!snapshot) {
+      snapshot = {
+        currentAnimation: state.currentAnimation,
+        isPlaying: state.isPlaying,
+        weight: state.currentWeight,
+        speed,
+        availableAnimations: engine.getAnimationList(),
+        metrics: {
+          activeAnimations: metrics.activeAnimations,
+          totalActions: metrics.totalActions,
+          mixerTime: metrics.mixerTime,
+          lastUpdate: metrics.lastUpdate,
+        },
+      }
+      this.engineSnapshots.set(engine, snapshot)
+    } else {
+      snapshot.currentAnimation = state.currentAnimation
+      snapshot.isPlaying = state.isPlaying
+      snapshot.weight = state.currentWeight
+      snapshot.speed = speed
+      snapshot.availableAnimations = engine.getAnimationList()
+      snapshot.metrics.activeAnimations = metrics.activeAnimations
+      snapshot.metrics.totalActions = metrics.totalActions
+      snapshot.metrics.mixerTime = metrics.mixerTime
+      snapshot.metrics.lastUpdate = metrics.lastUpdate
     }
+    return snapshot
   }
 
   @RequireEngineById()
@@ -131,7 +153,6 @@ export class AnimationBridge extends CoreBridge<
   }
 
   @LogSnapshot()
-  @CacheSnapshot(16)
   override snapshot(type: AnimationType): AnimationSnapshot | null {
     const result = super.snapshot(type)
     if (!result) {

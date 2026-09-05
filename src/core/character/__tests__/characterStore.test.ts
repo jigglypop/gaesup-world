@@ -1,11 +1,41 @@
 import { useCharacterStore } from '../stores/characterStore';
-import { DEFAULT_APPEARANCE } from '../types';
+import { DEFAULT_APPEARANCE, type CharacterSerialized } from '../types';
 
 beforeEach(() => {
   useCharacterStore.getState().resetAppearance();
 });
 
 describe('characterStore', () => {
+  test.each([
+    { version: 4 }, { version: 3, activeCharacterId: 'player', characters: [] },
+    ...[{ appearance: null }, { appearance: { face: 'unknown' } }, { appearance: { colors: { body: 1 } } },
+      { outfits: { hat: 10 } }].map((profile) => ({ version: 3, activeCharacterId: 'player', characters: { player: profile } })),
+  ])('rejects corrupt profiles before changing the active character: %j', (data) => {
+    const before = useCharacterStore.getState();
+    expect(() => before.hydrate(data as unknown as CharacterSerialized)).toThrow(TypeError);
+    expect(useCharacterStore.getState()).toBe(before);
+  });
+
+  test('prepares owned profiles and preserves the active appearance mirror', () => {
+    const before = useCharacterStore.getState();
+    const profile = before.getProfile();
+    profile.outfits.hat = 'custom-hat';
+    const data: CharacterSerialized = { version: 3, activeCharacterId: 'missing', characters: { custom: profile } };
+    const apply = before.prepareHydrate(data);
+    expect(useCharacterStore.getState()).toBe(before);
+    profile.appearance.colors.body = '#000000';
+    profile.outfits.hat = null;
+    apply();
+    const current = useCharacterStore.getState();
+    expect(current.activeCharacterId).toBe('custom');
+    expect(current.appearance).toBe(current.characters.custom?.appearance);
+    expect(current.outfits).toBe(current.characters.custom?.outfits);
+    expect(current.appearance.colors.body).toBe(DEFAULT_APPEARANCE.colors.body);
+    expect(current.outfits.hat).toBe('custom-hat');
+    current.hydrate({ version: 3, activeCharacterId: 'custom', characters: {} });
+    expect(useCharacterStore.getState()).toBe(current);
+  });
+
   test('default appearance is applied on reset', () => {
     expect(useCharacterStore.getState().appearance.name).toBe(DEFAULT_APPEARANCE.name);
     expect(useCharacterStore.getState().appearance.colors.body).toBe(DEFAULT_APPEARANCE.colors.body);
@@ -128,10 +158,10 @@ describe('characterStore', () => {
     expect(useCharacterStore.getState().outfits.weapon).toBeNull();
   });
 
-  test('hydrate ignores invalid payloads', () => {
+  test('hydrate ignores absent data and rejects unsupported versions without mutation', () => {
     useCharacterStore.getState().setName('루이');
     useCharacterStore.getState().hydrate(null);
-    useCharacterStore.getState().hydrate({ version: 99 } as never);
+    expect(() => useCharacterStore.getState().hydrate({ version: 99 } as never)).toThrow(TypeError);
     expect(useCharacterStore.getState().appearance.name).toBe('루이');
   });
 });

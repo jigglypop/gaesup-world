@@ -481,6 +481,7 @@ type ExpectedMouseState = {
   target: Vector3;
   angle: number;
   isActive: boolean;
+  hasArrived?: boolean;
   shouldRun: boolean;
   isLookAround?: boolean;
   buttons: {
@@ -542,6 +543,12 @@ type TouchStateContract = AssertRawInputExact<
 type MouseLookAroundOptionalContract = AssertRawInputExact<
   {} extends Pick<${qualify('MouseState')}, 'isLookAround'> ? true : false
 >;
+type MouseArrivalOptionalContract = AssertRawInputExact<
+  {} extends Pick<${qualify('MouseState')}, 'hasArrived'> ? true : false
+>;
+type MouseArrivalValueContract = AssertRawInputExact<
+  IsRawInputExact<Required<Pick<${qualify('MouseState')}, 'hasArrived'>>, { hasArrived: boolean }>
+>;
 type MouseLookAroundValueContract = AssertRawInputExact<
   IsRawInputExact<
     Required<Pick<${qualify('MouseState')}, 'isLookAround'>>,
@@ -579,6 +586,7 @@ const minimalMouseState: ${qualify('MouseState')} = {
 const mouseState: ${qualify('MouseState')} = {
   ...minimalMouseState,
   isLookAround: true,
+  hasArrived: true,
 };
 const gamepadState: ${qualify('GamepadState')} = {
   connected: true,
@@ -794,6 +802,7 @@ ${createInteractionAggregateTypeProbe('rootModule.')}`;
         [
           'GaesupWorld',
           'ActionEquipmentPanel',
+          'LegacyGrid',
           'createGaesupRuntime',
           'createBuildingPlugin',
           'applySceneDocumentCommand',
@@ -1061,7 +1070,8 @@ import {
 } from 'gaesup-world';
 import { GaesupAdmin } from 'gaesup-world/admin';
 import { HttpAssetSource } from 'gaesup-world/assets';
-import { WARRIOR_BLUEPRINT } from 'gaesup-world/blueprints';
+import { BlueprintFactory, BlueprintSpawner, WARRIOR_BLUEPRINT, type BlueprintAnimationClips, type BlueprintMovementInput } from 'gaesup-world/blueprints';
+import { AnimationBridge, useBlueprintEntity } from 'gaesup-world';
 import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
 import { GrassDriver } from 'gaesup-world/building';
 import { CinematicPanel, Editor, createEditorShell } from 'gaesup-world/editor';
@@ -1077,6 +1087,30 @@ import { ColorGrade, parseCubeLut } from 'gaesup-world/postprocessing';
 import { defineGaesupPlugin } from 'gaesup-world/plugins';
 import { createDefaultSaveSystem } from 'gaesup-world/runtime';
 import { createGameCommand, createServerPluginHost } from 'gaesup-world/server-contracts';
+
+function BlueprintConsumer(props: {
+  body: import('react').RefObject<import('@react-three/rapier').RapierRigidBody>;
+  model: import('react').RefObject<import('three').Group>;
+  clips: BlueprintAnimationClips;
+}) {
+  const movement: BlueprintMovementInput = { forward: true, isGrounded: true, cameraYaw: 0 };
+  const config = { rigidBodyRef: props.body, innerGroupRef: props.model, animationClips: props.clips };
+  const entity = BlueprintFactory.getInstance().createEntity(WARRIOR_BLUEPRINT, config);
+  entity.update(1 / 60, movement);
+  entity.dispose();
+  useBlueprintEntity({ ...config, blueprint: WARRIOR_BLUEPRINT.id, getMovementInput: () => movement });
+  return <BlueprintSpawner blueprint={WARRIOR_BLUEPRINT} animationClips={props.clips} getMovementInput={() => movement} />;
+}
+void BlueprintConsumer;
+
+function verifyScopedAnimationCleanup(action: import('three').AnimationAction) {
+  const bridge = new AnimationBridge();
+  bridge.registerAnimations('character', { walk: action });
+  bridge.unregisterAnimations('character', { walk: action });
+  bridge.unregisterAnimations('character');
+  bridge.dispose();
+}
+void verifyScopedAnimationCleanup;
 
 const runtime: GaesupRuntime = createGaesupRuntime({
   plugins: [createCameraPlugin(), createBuildingPlugin()],
@@ -1629,14 +1663,14 @@ function main() {
     assertConsumerPeerDependenciesInstalled();
     run(
       process.execPath,
-      [path.join(root, 'node_modules', 'typescript', 'lib', 'tsc.js'), '-p', 'tsconfig.json'],
+      [path.join(root, 'node_modules', '@typescript', 'native', 'bin', 'tsc'), '-p', 'tsconfig.json'],
       {
         cwd: consumerRoot,
       },
     );
     run(
       process.execPath,
-      [path.join(root, 'node_modules', 'typescript', 'lib', 'tsc.js'), '-p', 'tsconfig.cjs.json'],
+      [path.join(root, 'node_modules', '@typescript', 'native', 'bin', 'tsc'), '-p', 'tsconfig.cjs.json'],
       {
         cwd: consumerRoot,
       },
@@ -1644,7 +1678,7 @@ function main() {
     run(
       process.execPath,
       [
-        path.join(root, 'node_modules', 'typescript', 'lib', 'tsc.js'),
+        path.join(root, 'node_modules', '@typescript', 'native', 'bin', 'tsc'),
         '-p',
         'tsconfig.raw-input-exact-false.json',
       ],
@@ -1655,7 +1689,7 @@ function main() {
     run(
       process.execPath,
       [
-        path.join(root, 'node_modules', 'typescript', 'lib', 'tsc.js'),
+        path.join(root, 'node_modules', '@typescript', 'native', 'bin', 'tsc'),
         '-p',
         'tsconfig.compat.json',
       ],

@@ -13,6 +13,7 @@ type State = {
 
   serialize: () => CatalogSerialized;
   hydrate: (data: CatalogSerialized | null | undefined) => void;
+  prepareHydrate: (data: CatalogSerialized | null | undefined) => () => void;
 };
 
 export const useCatalogStore = create<State>((set, get) => ({
@@ -36,19 +37,21 @@ export const useCatalogStore = create<State>((set, get) => ({
     entries: Object.fromEntries(Object.entries(get().entries).map(([k, v]) => [k, { ...v }])),
   }),
 
-  hydrate: (data) => {
-    if (!data || typeof data !== 'object') return;
-    const next: Record<ItemId, CatalogEntry> = {};
-    if (data.entries && typeof data.entries === 'object') {
-      for (const [k, v] of Object.entries(data.entries)) {
-        if (!v || typeof v !== 'object') continue;
-        next[k] = {
-          itemId: k,
-          firstSeenDay: typeof v.firstSeenDay === 'number' ? v.firstSeenDay : 0,
-          totalCollected: typeof v.totalCollected === 'number' ? v.totalCollected : 0,
-        };
-      }
+  prepareHydrate: (data) => {
+    if (data === null || data === undefined) return () => {};
+    if (typeof data !== 'object' || data.version !== 1 || !data.entries ||
+      typeof data.entries !== 'object' || Array.isArray(data.entries)) {
+      throw new TypeError('Invalid catalog snapshot');
     }
-    set({ entries: next });
+    const entries = Object.fromEntries(Object.entries(data.entries).map(([id, entry]) => {
+      if (!id.trim() || !entry || typeof entry !== 'object' || entry.itemId !== id ||
+        !Number.isSafeInteger(entry.firstSeenDay) || entry.firstSeenDay < 0 ||
+        !Number.isSafeInteger(entry.totalCollected) || entry.totalCollected < 0) {
+        throw new TypeError('Invalid catalog entry');
+      }
+      return [id, { itemId: id, firstSeenDay: entry.firstSeenDay, totalCollected: entry.totalCollected }];
+    }));
+    return () => set({ entries });
   },
+  hydrate: (data) => get().prepareHydrate(data)(),
 }));

@@ -7,10 +7,10 @@ import { DIContainer } from '../di';
 import { ManagedEntity } from '../entity/ManagedEntity';
 import {
   IDisposable,
-  MILLISECONDS_IN_SECOND,
   RuntimeValue,
   UseManagedEntityOptions,
 } from '../types';
+import { getFrameTimeMs } from './frameTime';
 import { useBaseFrame } from './useBaseFrame';
 import { useBaseLifecycle } from './useBaseLifecycle';
 
@@ -243,9 +243,6 @@ export function useManagedEntity<
       firstError = firstError ?? (e instanceof Error ? e : String(e));
     }
 
-    entityRef.current = managedEntity;
-    setEntity(managedEntity);
-    
     if (onInit) {
       try {
         onInit(managedEntity);
@@ -254,11 +251,7 @@ export function useManagedEntity<
       }
     }
 
-    if (firstError) {
-      throw firstError;
-    }
-
-    return () => {
+    const dispose = () => {
       let cleanupError: Error | RuntimeValue;
 
       if (onDispose) {
@@ -275,13 +268,27 @@ export function useManagedEntity<
         cleanupError = cleanupError ?? (e instanceof Error ? e : String(e));
       }
 
-      entityRef.current = null;
-      setEntity(null);
+      if (entityRef.current === managedEntity) {
+        entityRef.current = null;
+        setEntity(null);
+      }
 
       if (cleanupError) {
         throw cleanupError;
       }
     };
+
+    if (firstError) {
+      try {
+        dispose();
+      } finally {
+        throw firstError;
+      }
+    }
+
+    entityRef.current = managedEntity;
+    setEntity(managedEntity);
+    return dispose;
   }, [bridge, id, ref, enabled, ...(dependencies || [])]);
 
   useBaseLifecycle(bridge, id, ref.current, {
@@ -438,10 +445,7 @@ export function useBatchManagedEntities<
       if (skipWhenHidden && typeof document !== 'undefined' && document.hidden) return;
       let now = 0;
       if (throttle > 0) {
-        now =
-          typeof state.clock?.elapsedTime === 'number'
-            ? state.clock.elapsedTime * MILLISECONDS_IN_SECOND
-            : performance.now();
+        now = getFrameTimeMs(state);
       }
 
       for (let index = 0; index < orderedIds.length; index += 1) {

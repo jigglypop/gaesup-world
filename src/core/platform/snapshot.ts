@@ -3,6 +3,7 @@ import type { DomainBinding, SerializedDomainValue } from '../save';
 export const WORLD_SNAPSHOT_DOMAINS = [
   'building',
   'scene',
+  'scene-document',
   'character',
   'assets',
   'npc',
@@ -105,13 +106,17 @@ export function createPlayerProgress(
 export function collectSaveDomains(
   provider: PlatformSaveBindingProvider,
 ): Record<string, SerializedDomainValue> {
+  return collectDomains(provider);
+}
+
+function collectDomains(
+  provider: PlatformSaveBindingProvider,
+  allowed?: readonly string[],
+): Record<string, SerializedDomainValue> {
   const domains: Record<string, SerializedDomainValue> = {};
   for (const binding of provider.getBindings()) {
-    try {
-      domains[binding.key] = binding.serialize();
-    } catch {
-      domains[binding.key] = null;
-    }
+    if (allowed && !allowed.includes(binding.key)) continue;
+    domains[binding.key] = binding.serialize();
   }
   return domains;
 }
@@ -121,7 +126,7 @@ export function createWorldSnapshotFromSaveSystem(
   worldId: string,
   options: CreateWorldSnapshotOptions = {},
 ): WorldSnapshot {
-  return createWorldSnapshot(worldId, collectSaveDomains(provider), options);
+  return createWorldSnapshot(worldId, collectDomains(provider, WORLD_SNAPSHOT_DOMAINS), options);
 }
 
 export function createPlayerProgressFromSaveSystem(
@@ -129,5 +134,5 @@ export function createPlayerProgressFromSaveSystem(
   playerId: string,
   options: CreatePlayerProgressOptions = {},
 ): PlayerProgress {
-  return createPlayerProgress(playerId, collectSaveDomains(provider), options);
+  return createPlayerProgress(playerId, collectDomains(provider, PLAYER_PROGRESS_DOMAINS), options);
 }

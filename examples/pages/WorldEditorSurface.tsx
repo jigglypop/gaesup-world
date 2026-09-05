@@ -93,7 +93,7 @@ export function WorldEditorSurface({
       commands: [
         {
           id: 'example.scene-document.create-marker',
-          label: 'Add shared scene marker',
+          label: '월드 표식 추가',
           run: async () => {
             const objectId = sceneDocumentSession.createObjectId();
             const rootCount = sceneDocumentSession
@@ -101,7 +101,7 @@ export function WorldEditorSurface({
               .objects.filter((object) => !object.parentId).length;
             const accepted = await sceneDocumentSession.createObject({
               id: objectId,
-              name: `Creator marker ${rootCount}`,
+              name: `월드 표식 ${rootCount}`,
               tags: ['creator', 'runtime-marker'],
               transform: { position: [8 + rootCount * 2, 1, -6] },
             });
@@ -110,7 +110,7 @@ export function WorldEditorSurface({
         },
         {
           id: 'example.scene-document.delete-selected',
-          label: 'Delete selected scene object',
+          label: '선택한 객체 삭제',
           run: async () => {
             if (!selectedObjectId) return;
             const accepted = await sceneDocumentSession.deleteObject(selectedObjectId);

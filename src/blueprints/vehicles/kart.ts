@@ -2,12 +2,12 @@ import { VehicleBlueprint } from '../types';
 
 export const BASIC_KART_BLUEPRINT: VehicleBlueprint = {
   id: 'vehicle_kart_basic',
-  name: 'Basic Kart',
+  name: '기본 카트',
   type: 'vehicle',
   version: '1.0.0',
   tags: ['land', 'fast', 'small'],
-  description: 'A small and nimble racing kart',
-  
+  description: '작고 민첩한 경주용 카트입니다.',
+
   physics: {
     mass: 150,
     maxSpeed: 30,
@@ -21,17 +21,17 @@ export const BASIC_KART_BLUEPRINT: VehicleBlueprint = {
       maxTravel: 0.2
     }
   },
-  
+
   seats: [
     {
       position: [0, 0.5, 0],
       isDriver: true
     }
   ],
-  
+
   animations: {
     idle: 'kart_idle.glb',
     moving: 'kart_moving.glb',
     wheels: ['wheel_fl.glb', 'wheel_fr.glb', 'wheel_bl.glb', 'wheel_br.glb']
   }
-}; 
+};

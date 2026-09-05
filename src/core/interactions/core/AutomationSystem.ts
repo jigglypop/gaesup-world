@@ -85,8 +85,10 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
   private isDisposing = false;
   private isResetting = false;
   private stoppedDispatchRunIds = new Set<number>();
+  private movementSettler: (() => void) | null = null;
+  private actionRetryCount = 0;
 
-  constructor() {
+  constructor(private readonly waitForMovementCompletion = false) {
     super(createAutomationState, createAutomationMetrics);
     this.config = createDefaultConfig();
   }
@@ -132,6 +134,8 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
     const index = this.state.queue.actions.findIndex((action) => action.id === id);
     if (index === -1) return false;
 
+    if (this.state.queue.isRunning && index === this.state.queue.currentIndex) this.stop();
+    else if (index < this.state.queue.currentIndex) this.state.queue.currentIndex--;
     this.state.queue.actions.splice(index, 1);
     this.updateMetrics(0);
     this.emit('actionRemoved', id);
@@ -140,6 +144,7 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
 
   @HandleError()
   clearQueue(): void {
+    if (this.state.queue.isRunning) this.stop();
     this.state.queue.actions = [];
     this.state.queue.currentIndex = 0;
     this.updateMetrics(0);
@@ -161,6 +166,7 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
 
     this.state.queue.isRunning = true;
     this.state.queue.isPaused = false;
+    this.actionRetryCount = 0;
     const generation = this.beginExecution();
     this.emit('automationStarted');
     if (!this.isExecutionActive(generation)) return;
@@ -246,6 +252,7 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
       if (!completed || !this.isExecutionActive(generation)) return;
 
       this.state.executionStats.totalExecuted++;
+      this.actionRetryCount = 0;
       this.state.queue.currentIndex++;
       this.emit('actionCompleted', action);
       if (!this.isExecutionActive(generation)) return;
@@ -277,6 +284,31 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
     switch (action.type) {
       case 'move':
         if (action.target) {
+          if (this.waitForMovementCompletion) {
+            const movement = new Promise<boolean>((resolve, reject) => {
+              const clearMovement = () => {
+                if (this.executionTimer !== null) clearTimeout(this.executionTimer);
+                this.executionTimer = null;
+                this.movementSettler = null;
+                this.executionDelaySettler = null;
+              };
+              this.movementSettler = () => {
+                clearMovement();
+                resolve(true);
+              };
+              this.executionDelaySettler = () => {
+                clearMovement();
+                resolve(false);
+              };
+              this.executionTimer = setTimeout(() => {
+                clearMovement();
+                reject(new Error('Movement timed out'));
+              }, this.config.timeoutDuration);
+            });
+            this.emit('moveRequested', action.target);
+            if (!(await movement) || !this.isExecutionActive(generation)) return false;
+            break;
+          }
           this.emit('moveRequested', action.target);
           if (!this.isExecutionActive(generation)) return false;
         }
@@ -325,14 +357,13 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
     this.emit('actionError', { action, error });
     if (!this.isExecutionActive(generation)) return;
 
-    const storedRetryCount = action.data?.['retryCount'];
-    const retryCount = typeof storedRetryCount === 'number' ? storedRetryCount : 0;
-    if (retryCount < this.state.queue.maxRetries) {
-      action.data = { ...action.data, retryCount: retryCount + 1 };
+    if (this.actionRetryCount < this.state.queue.maxRetries) {
+      this.actionRetryCount++;
       this.scheduleExecution(generation, this.config.retryDelay);
       return;
     }
 
+    this.actionRetryCount = 0;
     this.state.queue.currentIndex++;
     this.scheduleExecution(generation, this.state.settings.throttle);
   }
@@ -382,6 +413,14 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
     this.executionRunId++;
     this.cancelExecutionDelay();
     return this.executionGeneration;
+  }
+
+  completeMovement(): void {
+    const settle = this.movementSettler;
+    if (!settle) return;
+    this.movementSettler = null;
+    this.executionDelaySettler = null;
+    settle();
   }
 
   private invalidateExecution(): number {
@@ -496,6 +535,7 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
   }
 
   private emit(event: string, data?: AutomationEventPayload): void {
+    if (event !== 'stateChanged') this.emit('stateChanged');
     const callbacks = this.eventCallbacks.get(event);
     if (!callbacks) return;
 
@@ -529,6 +569,12 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
 
   updateSettings(updates: Partial<AutomationState['settings']>): void {
     Object.assign(this.state.settings, updates);
+    this.emit('stateChanged');
+  }
+
+  updateConfig(updates: Partial<AutomationConfig>): void {
+    Object.assign(this.config, updates);
+    this.emit('stateChanged');
   }
 
   private restoreResetDefaults(): void {
@@ -542,6 +588,7 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
     this.stopExecution(true);
     this.clearQueue();
     this.restoreResetDefaults();
+    this.emit('stateChanged');
     super.onReset();
   }
 

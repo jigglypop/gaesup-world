@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
+import { canHandleOverlayShortcut } from '../../../ui/overlayKeyboard';
 import {
   OVERLAY_BACKDROP_STYLE,
   OVERLAY_BORDER_COLOR,
@@ -16,10 +17,9 @@ export type InventoryUIProps = {
   initiallyOpen?: boolean;
 };
 
-const SLOT_SIZE = 64;
 const SLOT_COLUMNS = 5;
 const SLOT_GAP = 6;
-const PANEL_MIN_WIDTH = 460;
+const PANEL_WIDTH = 460;
 
 export function InventoryUI({ toggleKey = 'i', initiallyOpen = false }: InventoryUIProps) {
   const [open, setOpen] = useState(initiallyOpen);
@@ -30,9 +30,9 @@ export function InventoryUI({ toggleKey = 'i', initiallyOpen = false }: Inventor
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
-      if (tag === 'input' || tag === 'textarea') return;
+      if (!canHandleOverlayShortcut(e)) return;
       if (e.key.toLowerCase() === toggleKey.toLowerCase()) setOpen((v) => !v);
+      if (e.key === 'Escape') setOpen(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -42,10 +42,13 @@ export function InventoryUI({ toggleKey = 'i', initiallyOpen = false }: Inventor
   return (
     <div style={OVERLAY_BACKDROP_STYLE} onClick={() => setOpen(false)}>
       <div
+        role="region"
+        data-world-overlay="inventory"
+        aria-label="인벤토리"
         onClick={(e) => e.stopPropagation()}
-        style={{ ...OVERLAY_PANEL_STYLE, minWidth: PANEL_MIN_WIDTH }}
+        style={{ ...OVERLAY_PANEL_STYLE, width: PANEL_WIDTH, maxWidth: 'calc(100vw - 24px)', maxHeight: 'calc(100dvh - 32px)', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}
       >
-        <div style={OVERLAY_HEADER_STYLE}>
+        <div style={{ ...OVERLAY_HEADER_STYLE, flexShrink: 0 }}>
           <strong style={{ fontSize: 15 }}>인벤토리</strong>
           <button onClick={() => setOpen(false)} style={overlayButtonStyle()}>
             닫기 [{toggleKey.toUpperCase()}]
@@ -54,9 +57,11 @@ export function InventoryUI({ toggleKey = 'i', initiallyOpen = false }: Inventor
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: `repeat(${SLOT_COLUMNS}, ${SLOT_SIZE}px)`,
+            gridTemplateColumns: `repeat(${SLOT_COLUMNS}, minmax(0, 1fr))`,
             gap: SLOT_GAP,
             padding: 14,
+            minHeight: 0,
+            overflowY: 'auto',
           }}
         >
           {slots.map((slot, i) => {
@@ -75,8 +80,9 @@ export function InventoryUI({ toggleKey = 'i', initiallyOpen = false }: Inventor
                 }}
                 title={def?.name ?? ''}
                 style={{
-                  width: SLOT_SIZE,
-                  height: SLOT_SIZE,
+                  width: '100%',
+                  aspectRatio: '1',
+                  boxSizing: 'border-box',
                   borderRadius: 8,
                   border: `1px solid ${OVERLAY_BORDER_COLOR}`,
                   background: 'rgba(255, 255, 255, 0.04)',
@@ -116,7 +122,7 @@ export function InventoryUI({ toggleKey = 'i', initiallyOpen = false }: Inventor
             );
           })}
         </div>
-        <div style={{ padding: '0 14px 12px', color: OVERLAY_TEXT_DIM_COLOR, fontSize: 11 }}>
+        <div style={{ padding: '0 14px 12px', color: OVERLAY_TEXT_DIM_COLOR, fontSize: 11, flexShrink: 0 }}>
           {`[${toggleKey.toUpperCase()}] 닫기 / 드래그로 이동`}
         </div>
       </div>

@@ -2,8 +2,10 @@ import * as THREE from 'three';
 import { StateCreator } from 'zustand';
 
 import { InteractionSliceState, InteractionActions } from './types';
+import { InteractionBridge } from '../bridge/InteractionBridge';
 import { InteractionState, AutomationState, InteractionConfig, AutomationConfig, InteractionMetrics, AutomationMetrics, BridgeState } from '../bridge/types';
 import { getDefaultInteractionInputBackend } from '../core/adapter';
+import { getDefaultAutomationSystem, subscribeDefaultAutomation } from '../core/defaultAutomation';
 
 const createDefaultInteractionState = (): InteractionState => ({
   keyboard: {
@@ -148,6 +150,20 @@ const ensureSystemListeners = (set: (fn: (state: Slice) => Partial<Slice>) => vo
 
 export const createInteractionSlice: StateCreator<Slice, [], [], Slice> = (set) => {
   ensureSystemListeners(set as (fn: (state: Slice) => Partial<Slice>) => void);
+  subscribeDefaultAutomation(() => {
+    const system = getDefaultAutomationSystem();
+    const state = system.getState();
+    set((current) => ({
+      automation: {
+        ...state,
+        queue: { ...state.queue, actions: [...state.queue.actions] },
+        settings: { ...state.settings },
+        executionStats: { ...state.executionStats, errors: [...state.executionStats.errors] },
+      },
+      config: { ...current.config, automation: system.getConfig() },
+      metrics: { ...current.metrics, automation: { ...system.getMetrics() } },
+    }));
+  });
   return ({
   interaction: createDefaultInteractionState(),
   automation: createDefaultAutomationState(),
@@ -165,105 +181,14 @@ export const createInteractionSlice: StateCreator<Slice, [], [], Slice> = (set) 
     getDefaultInteractionInputBackend().updateMouse(updates);
   },
 
-  addAutomationAction: (actionData) => {
-    const id = `action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const action = {
-      ...actionData,
-      id,
-      timestamp: Date.now()
-    };
-
-    set((state) => ({
-      automation: {
-        ...state.automation,
-        queue: {
-          ...state.automation.queue,
-          actions: [...state.automation.queue.actions, action]
-        }
-      }
-    }));
-
-    return id;
-  },
-
-  removeAutomationAction: (id) =>
-    set((state) => ({
-      automation: {
-        ...state.automation,
-        queue: {
-          ...state.automation.queue,
-          actions: state.automation.queue.actions.filter(action => action.id !== id)
-        }
-      }
-    })),
-
-  startAutomation: () =>
-    set((state) => ({
-      automation: {
-        ...state.automation,
-        queue: {
-          ...state.automation.queue,
-          isRunning: true,
-          isPaused: false
-        }
-      }
-    })),
-
-  pauseAutomation: () =>
-    set((state) => ({
-      automation: {
-        ...state.automation,
-        queue: {
-          ...state.automation.queue,
-          isPaused: true
-        }
-      }
-    })),
-
-  resumeAutomation: () =>
-    set((state) => ({
-      automation: {
-        ...state.automation,
-        queue: {
-          ...state.automation.queue,
-          isPaused: false
-        }
-      }
-    })),
-
-  stopAutomation: () =>
-    set((state) => ({
-      automation: {
-        ...state.automation,
-        queue: {
-          ...state.automation.queue,
-          isRunning: false,
-          isPaused: false,
-          currentIndex: 0
-        },
-        currentAction: null
-      }
-    })),
-
-  clearAutomationQueue: () =>
-    set((state) => ({
-      automation: {
-        ...state.automation,
-        queue: {
-          ...state.automation.queue,
-          actions: [],
-          currentIndex: 0
-        }
-      }
-    })),
-
-  updateAutomationSettings: (settings) =>
-    set((state) => ({
-      automation: {
-        ...state.automation,
-        settings: { ...state.automation.settings, ...settings }
-      }
-    })),
+  addAutomationAction: (action) => InteractionBridge.getGlobal().getAutomationSystem().addAction(action),
+  removeAutomationAction: (id) => { getDefaultAutomationSystem().removeAction(id); },
+  startAutomation: () => { void InteractionBridge.getGlobal().getAutomationSystem().start(); },
+  pauseAutomation: () => getDefaultAutomationSystem().pause(),
+  resumeAutomation: () => getDefaultAutomationSystem().resume(),
+  stopAutomation: () => getDefaultAutomationSystem().stop(),
+  clearAutomationQueue: () => getDefaultAutomationSystem().clearQueue(),
+  updateAutomationSettings: (settings) => getDefaultAutomationSystem().updateSettings(settings),
 
   updateInteractionConfig: (config) =>
     set((state) => ({
@@ -273,13 +198,7 @@ export const createInteractionSlice: StateCreator<Slice, [], [], Slice> = (set) 
       }
     })),
 
-  updateAutomationConfig: (config) =>
-    set((state) => ({
-      config: {
-        ...state.config,
-        automation: { ...state.config.automation, ...config }
-      }
-    })),
+  updateAutomationConfig: (config) => getDefaultAutomationSystem().updateConfig(config),
 
   updateInteractionMetrics: (metrics) =>
     set((state) => ({
@@ -311,7 +230,8 @@ export const createInteractionSlice: StateCreator<Slice, [], [], Slice> = (set) 
       }
     })),
 
-  resetInteractions: () =>
+  resetInteractions: () => {
+    getDefaultAutomationSystem().reset();
     set(() => ({
       interaction: createDefaultInteractionState(),
       automation: createDefaultAutomationState(),
@@ -324,7 +244,8 @@ export const createInteractionSlice: StateCreator<Slice, [], [], Slice> = (set) 
         interaction: createDefaultInteractionMetrics(),
         automation: createDefaultAutomationMetrics()
       }
-    })),
+    }));
+  },
 
   updateMouse: (updates) => {
     getDefaultInteractionInputBackend().updateMouse(updates);

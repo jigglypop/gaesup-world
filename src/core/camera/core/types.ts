@@ -175,7 +175,8 @@ export interface CameraCalcProps {
   scene: THREE.Scene;
   deltaTime: number;
   activeState: ActiveStateType;
-  clock: THREE.Clock;
+  /** @deprecated Optional legacy renderer clock. Camera calculations use deltaTime. */
+  clock?: THREE.Clock | undefined;
   excludeObjects?: THREE.Object3D[];
 }
 

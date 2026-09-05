@@ -37,6 +37,7 @@ export function createCharacterPlugin(options: CharacterPluginOptions = {}) {
     capabilities: ['character'],
     serialize: serializeCharacterState,
     hydrate: hydrateCharacterState,
+    prepareHydrate: (data) => useCharacterStore.getState().prepareHydrate(data),
   });
 }
 

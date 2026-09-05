@@ -21,13 +21,16 @@ export type CustomField = {
   precision?: number;
 };
 export type CameraMetrics = {
+  /** Panel samples taken, not rendered frames. */
   frameCount: number;
+  /** Milliseconds since the previous panel sample; not a render-time average. */
   averageFrameTime: number;
   lastUpdateTime: number;
   mode: string;
   activeController: string;
   distance: { x: number; y: number; z: number } | null;
   fov: number;
+  /** Active controlled entity position, not camera world position. */
   position: { x: number; y: number; z: number } | null;
   targetPosition: { x: number; y: number; z: number } | null;
   velocity?: { x: number; y: number; z: number } | null;

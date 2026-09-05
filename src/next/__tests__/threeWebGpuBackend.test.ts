@@ -163,7 +163,7 @@ describe('next Three WebGPU backend lifecycle', () => {
 
   test('does not dispose the unsafe partial renderer when init rejects', async () => {
     setNavigatorGpu({});
-    const renderer = createRenderer();
+    const renderer = { ...createRenderer(), backend: { dispose: jest.fn() } };
     renderer.init.mockRejectedValue(new Error('renderer init failed'));
     const WebGPURenderer = jest.fn(() => renderer);
     const { backend } = await loadBackend(() => ({ WebGPURenderer }));
@@ -178,6 +178,42 @@ describe('next Three WebGPU backend lifecycle', () => {
     expect(renderer.init).toHaveBeenCalledTimes(1);
     expect(renderer.setSize).not.toHaveBeenCalled();
     expect(renderer.dispose).not.toHaveBeenCalled();
+    expect(renderer.backend.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  test.each([false, true])('releases distinct failed backends even if original cleanup throws: %s', async (cleanupThrows) => {
+    setNavigatorGpu({});
+    const original = { dispose: jest.fn(() => { if (cleanupThrows) throw new Error('partial cleanup'); }) };
+    const fallback = { dispose: jest.fn() };
+    const renderer = { ...createRenderer(), backend: original };
+    renderer.init.mockImplementation(async () => {
+      renderer.backend = fallback;
+      throw new Error('init failed');
+    });
+    const { backend } = await loadBackend(() => ({ WebGPURenderer: jest.fn(() => renderer) }));
+    await expect(backend.createThreeWebGpuBackend({
+      canvas: document.createElement('canvas'), width: 640, height: 480,
+    })).resolves.toBeNull();
+    expect(original.dispose).toHaveBeenCalledTimes(1);
+    expect(fallback.dispose).toHaveBeenCalledTimes(1);
+    expect(renderer.dispose).not.toHaveBeenCalled();
+  });
+
+  test('only releases the abandoned backend after successful fallback', async () => {
+    setNavigatorGpu({});
+    const original = { dispose: jest.fn() };
+    const fallback = { dispose: jest.fn() };
+    const renderer = { ...createRenderer(), backend: original };
+    renderer.init.mockImplementation(async () => { renderer.backend = fallback; });
+    const { backend } = await loadBackend(() => ({ WebGPURenderer: jest.fn(() => renderer) }));
+    const created = await backend.createThreeWebGpuBackend({
+      canvas: document.createElement('canvas'), width: 640, height: 480,
+    });
+    expect(created).not.toBeNull();
+    expect(original.dispose).toHaveBeenCalledTimes(1);
+    expect(fallback.dispose).not.toHaveBeenCalled();
+    created?.dispose();
+    expect(renderer.dispose).toHaveBeenCalledTimes(1);
   });
 
   test('disposes once and returns null when initial setSize and cleanup throw', async () => {

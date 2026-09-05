@@ -1,6 +1,12 @@
-body {
-  overflow: hidden; /* Prevent scrolling on the body when editor is open */
-}
+.blueprint-playground { display: flex; flex: 1; flex-direction: column; height: 100dvh; min-height: 560px; box-sizing: border-box; padding: calc(var(--app-header-height, 64px) + 12px) 12px 12px; gap: 12px; background: #141b25; color: #eef3f8; overflow-y: auto; }
+.blueprint-playground p { margin: 0; line-height: 1.6; word-break: keep-all; }
+.blueprint-playground__viewport { flex: 1; min-height: 200px; }
+.blueprint-playground__viewport:focus-visible { outline: 2px solid #79d6aa; outline-offset: 2px; }
+.blueprint-playground__controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: ". KeyW ." "KeyA KeyS KeyD" "ShiftLeft Space Space"; gap: 8px; width: 100%; max-width: 32rem; align-self: center; }
+.blueprint-playground__controls button { min-height: 44px; touch-action: none; user-select: none; }
+.blueprint-playground button { border: 1px solid #536578; border-radius: 8px; background: #263747; color: #eef3f8; padding: 10px; cursor: pointer; }
+.blueprint-playground button:active { background: #3c6658; }
+.blueprint-playground > button { align-self: flex-start; min-height: 44px; }
 
 .blueprint-editor-page {
   position: fixed;
@@ -51,4 +57,4 @@ body {
   border-color: rgba(123, 211, 167, 0.34);
   color: #ffffff;
   transform: translateY(-1px);
-} 
+}

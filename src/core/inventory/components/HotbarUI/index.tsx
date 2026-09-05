@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
 import { useHotbar } from '../../hooks/useInventory';
 

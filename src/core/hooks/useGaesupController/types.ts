@@ -9,6 +9,7 @@ export type GaesupControllerProps = Omit<
   'url' | 'isActive' | 'componentType'
 > & {
   clickToMove?: boolean;
+  enableKeyboard?: boolean;
 };
 
 export interface UseGaesupControllerResult {

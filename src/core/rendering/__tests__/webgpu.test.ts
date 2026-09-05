@@ -30,6 +30,7 @@ async function loadRendering(webgpuModuleFactory: WebGPUModuleFactory = () => ({
 
 function createWebGPURenderer(init: () => Promise<unknown> = () => Promise.resolve()) {
   return {
+    backend: { dispose: jest.fn() },
     dispose: jest.fn(),
     init: jest.fn(init),
     render: jest.fn(),
@@ -182,7 +183,7 @@ describe('WebGPU renderer factory', () => {
     expect(webGLRenderer).toHaveBeenCalledTimes(1);
   });
 
-  it('propagates the original init rejection without fallback or partial disposal', async () => {
+  it('propagates init rejection and cleans the backend without retrying renderer disposal', async () => {
     setNavigatorGpu({ requestAdapter: jest.fn().mockResolvedValue({}) });
     const initError = new Error('renderer init failed');
     const renderer = createWebGPURenderer(() => Promise.reject(initError));
@@ -194,6 +195,7 @@ describe('WebGPU renderer factory', () => {
     await expect(result).rejects.toBe(initError);
     expect(webGLRenderer).not.toHaveBeenCalled();
     expect(renderer.dispose).not.toHaveBeenCalled();
+    expect(renderer.backend.dispose).toHaveBeenCalledTimes(1);
     expect(renderer).not.toHaveProperty('forceContextLoss');
   });
 
@@ -231,6 +233,42 @@ describe('WebGPU renderer factory', () => {
 
     expect(nativeDispose).toHaveBeenCalledTimes(1);
     expect(nativeDispose.mock.contexts[0]).toBe(renderer);
+  });
+
+  it('releases both failed backends while preserving the initialization error', async () => {
+    setNavigatorGpu({ requestAdapter: jest.fn().mockResolvedValue({}) });
+    const failure = new Error('initialization failed');
+    const fallback = { dispose: jest.fn() };
+    const renderer = createWebGPURenderer(async () => {
+      renderer.backend = fallback;
+      throw failure;
+    });
+    const initial = renderer.backend;
+    const { rendering } = await loadRendering(() => ({ WebGPURenderer: jest.fn(() => renderer) }));
+    const { logger } = await import('../../utils/logger');
+    const logError = jest.spyOn(logger, 'error').mockImplementation(() => {});
+    const cleanupFailure = new Error('backend cleanup failed');
+    initial.dispose.mockImplementation(() => { throw cleanupFailure; });
+    try {
+      await expect(rendering.createRenderer({ canvas: document.createElement('canvas') })).rejects.toBe(failure);
+      expect(logError).toHaveBeenCalledWith('Renderer backend cleanup failed', cleanupFailure);
+    } finally {
+      logError.mockRestore();
+    }
+    expect(initial.dispose).toHaveBeenCalledTimes(1);
+    expect(fallback.dispose).toHaveBeenCalledTimes(1);
+    expect(renderer.dispose).not.toHaveBeenCalled();
+  });
+
+  it('releases the abandoned backend after successful automatic fallback', async () => {
+    setNavigatorGpu({ requestAdapter: jest.fn().mockResolvedValue({}) });
+    const fallback = { dispose: jest.fn() };
+    const renderer = createWebGPURenderer(async () => { renderer.backend = fallback; });
+    const initial = renderer.backend;
+    const { rendering } = await loadRendering(() => ({ WebGPURenderer: jest.fn(() => renderer) }));
+    await rendering.createRenderer({ canvas: document.createElement('canvas') });
+    expect(initial.dispose).toHaveBeenCalledTimes(1);
+    expect(fallback.dispose).not.toHaveBeenCalled();
   });
 
   it('marks cleanup complete before native disposal throws', async () => {

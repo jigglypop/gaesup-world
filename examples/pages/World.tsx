@@ -10,10 +10,12 @@ import {
   CharacterCreator,
   Clicker,
   DialogBox,
+  CraftingUI,
   DynamicFog,
   Footprints,
   GaesupWorld,
   GaesupWorldContent,
+  GaesupRuntimeProvider,
   GroundClicker,
   HotbarUI,
   InteractionPrompt,
@@ -124,9 +126,12 @@ export const WorldPage = ({
   showEditor = false,
   showEditorShell = true,
   showHud = true,
-  compactHud = false,
+  compactHud = true,
   includeEditorAuxPanels = true,
   showDiagnostics = false,
+  onRuntimeReady,
+  sceneChildren,
+  overlayChildren,
   editorShellOptions = DEFAULT_EDITOR_SHELL_OPTIONS,
   children,
 }: WorldPageProps) => {
@@ -145,7 +150,8 @@ export const WorldPage = ({
   const worldCameraOption = showEditor ? EDITOR_WORLD_CAMERA_OPTION : DEFAULT_WORLD_CAMERA_OPTION;
   const handleRuntimeReady = useCallback(() => {
     setRuntimeRevision((revision) => revision + 1);
-  }, []);
+    onRuntimeReady?.();
+  }, [onRuntimeReady]);
   const handleFeatureFocus = useCallback((focus: WorldFocusInfo) => {
     setFocusedFeature(focus);
   }, []);
@@ -216,31 +222,32 @@ export const WorldPage = ({
           style={{ width: '100vw', height: '100vh', position: 'fixed', top: 0, left: 0, zIndex: 0 }}
           frameloop="always"
         >
-          <Lighting />
-          <DynamicFog enabled={fogEnabled} color={fogColor} />
-          {(weatherEffect === 'rain' || weatherEffect === 'storm' || weatherEffect === 'wind') && (
-            <WeatherEffect
-              kind={weatherEffect}
-              area={110}
-              height={26}
-              count={weatherEffect === 'wind' ? 900 : 1800}
-              followCamera
-            />
-          )}
-          {postprocessingEnabled && (
-            <ToonOutlines edgeStrength={4} extraEffects={<ColorGrade intensity={0.8} />}>
-              <group />
-            </ToonOutlines>
-          )}
-          <Suspense>
+          <Suspense fallback={null}>
+            <Lighting />
+            <DynamicFog enabled={fogEnabled} color={fogColor} />
+            {(weatherEffect === 'rain' || weatherEffect === 'storm' || weatherEffect === 'wind') && (
+              <WeatherEffect
+                kind={weatherEffect}
+                area={110}
+                height={26}
+                count={weatherEffect === 'wind' ? 900 : 1800}
+                followCamera
+              />
+            )}
+            {postprocessingEnabled && (
+              <ToonOutlines edgeStrength={4} extraEffects={<ColorGrade intensity={0.8} />}>
+                <group />
+              </ToonOutlines>
+            )}
             <GaesupWorldContent
               showGrid={EXAMPLE_CONFIG.showGrid}
               showAxes={EXAMPLE_CONFIG.showAxes}
             >
               <WorldSceneDocumentRootMarkers session={sceneDocumentSession} />
-              <Physics debug interpolate>
+              <Physics debug={showDiagnostics} interpolate>
                 {!showEditor && <Player />}
-                <Ground />
+                {sceneChildren}
+                <Ground showGrid={showDiagnostics && !showEditor} />
                 {showEditor ? (
                   <Scenery enableCloseUp={!showEditor} />
                 ) : (
@@ -250,7 +257,7 @@ export const WorldPage = ({
                 {!showEditor && <Clicker />}
                 {!showEditor && <GroundClicker />}
                 {!showEditor && <TeleportOnClick modifierKey="altKey" />}
-                <BuildingController />
+                <BuildingController showGrid={showEditor ? undefined : false} />
                 {!showEditor && <CharacterSpeechBalloon />}
                 <InteractionTracker />
                 {!showEditor && <ToolUseController useKey="f" />}
@@ -265,6 +272,7 @@ export const WorldPage = ({
         </Canvas>
 
         <WorldSystems runtime={runtime} onRuntimeReady={handleRuntimeReady} />
+        {overlayChildren}
 
         {showHud && (
           <>
@@ -273,8 +281,9 @@ export const WorldPage = ({
 
             <HudShell showEnvironmentControls={!showEditor} compact={compactHud}>
               {!showEditor && <FeatureAccessPanel />}
+              {!showEditor && <CloseUpControls />}
             </HudShell>
-            {!showEditor && <PerformanceOverlay />}
+            {showDiagnostics && <PerformanceOverlay />}
             {!showEditor && (
               <WorldFocusModal focus={focusedFeature} onClose={handleFeatureFocusClose} />
             )}
@@ -285,6 +294,7 @@ export const WorldPage = ({
             <MailboxUI toggleKey="m" />
             <CatalogUI toggleKey="k" />
             <InventoryUI toggleKey="i" />
+            <CraftingUI toggleKey="v" />
 
             <HotbarUI />
             {!showEditor && <RideableUIRenderer />}
@@ -316,19 +326,20 @@ export const WorldPage = ({
                 {postprocessingEnabled ? '후처리 끄기' : '후처리 켜기'}
               </button>
             )}
-            {!showEditor && <CloseUpControls />}
             {!showEditor && <TouchControls />}
           </>
         )}
       </GaesupWorld>
       {showEditor && (
         <Suspense fallback={null}>
-          <WorldEditorSurface
-            showEditorShell={showEditorShell}
-            includeEditorAuxPanels={includeEditorAuxPanels}
-            editorShellOptions={editorShellOptions}
-            sceneDocumentSession={sceneDocumentSession}
-          />
+          <GaesupRuntimeProvider runtime={runtime} revision={runtimeRevision}>
+            <WorldEditorSurface
+              showEditorShell={showEditorShell}
+              includeEditorAuxPanels={includeEditorAuxPanels}
+              editorShellOptions={editorShellOptions}
+              sceneDocumentSession={sceneDocumentSession}
+            />
+          </GaesupRuntimeProvider>
         </Suspense>
       )}
       {children}

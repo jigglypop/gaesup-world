@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 
 import type {
   MotionPanelClassNameSlot,
@@ -12,8 +12,8 @@ import { MotionController } from '../../../motions/controller/MotionController';
 import { MotionDebugPanel } from '../../../motions/ui/MotionDebugPanel';
 
 export const MOTION_PANEL_DEFAULT_LABELS: MotionPanelLabels = {
-  Controller: 'Controller',
-  Debug: 'Debug',
+  Controller: '이동 설정',
+  Debug: '상태 진단',
 };
 export const MOTION_PANEL_DEFAULT_TABS: readonly MotionPanelTabConfig[] = [
   { id: 'Controller', label: MOTION_PANEL_DEFAULT_LABELS.Controller },

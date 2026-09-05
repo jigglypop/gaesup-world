@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 
 import { useBuildingStore } from 'gaesup-world';
 import { BuildingPanel } from 'gaesup-world/editor';
@@ -27,7 +27,7 @@ export function NPCEditorPage() {
       includeEditorAuxPanels={false}
     >
       <main className="npc-editor-page__workspace">
-        <section className="npc-editor-page__inspector" aria-label="NPC inspector">
+        <section className="npc-editor-page__inspector" aria-label="NPC 속성 편집">
           <BuildingPanel forcedEditMode="npc" npcLayout="sidebars" hideHeader />
         </section>
       </main>

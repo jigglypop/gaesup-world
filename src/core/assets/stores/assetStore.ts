@@ -47,6 +47,7 @@ const filterAssets = (assets: AssetRecord[], query?: AssetQuery): AssetRecord[] 
 };
 
 const seedRecords = toRecordMap(SEED_ASSETS);
+let latestLoad: symbol | null = null;
 const seedStatus: AssetCatalogStatus = {
   state: 'seed',
   origin: 'seed',
@@ -90,6 +91,8 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     }),
 
   loadAssets: async (source, query) => {
+    const request = Symbol();
+    latestLoad = request;
     set({
       isLoading: true,
       error: null,
@@ -104,6 +107,7 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     });
     try {
       const assets = await source.listAssets(query);
+      if (latestLoad !== request) return;
       if (assets.length > 0) {
         get().registerAssets(assets);
         set({
@@ -133,6 +137,7 @@ export const useAssetStore = create<AssetState>((set, get) => ({
         }, query),
       });
     } catch (error) {
+      if (latestLoad !== request) return;
       const message = error instanceof Error ? error.message : 'Failed to load assets';
       get().registerAssets(SEED_ASSETS);
       set({
@@ -160,15 +165,18 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     );
   },
 
-  resetAssets: () => set({
-    records: seedRecords,
-    ids: SEED_ASSETS.map((asset) => asset.id),
-    isLoading: false,
-    error: null,
-    catalogStatus: seedStatus,
-    selectedId: null,
-    filter: {},
-  }),
+  resetAssets: () => {
+    latestLoad = null;
+    set({
+      records: seedRecords,
+      ids: SEED_ASSETS.map((asset) => asset.id),
+      isLoading: false,
+      error: null,
+      catalogStatus: seedStatus,
+      selectedId: null,
+      filter: {},
+    });
+  },
 }));
 
 export const selectAssetsByKind = (kind: AssetKind) => (state: AssetState) => state.listAssets({ kind });

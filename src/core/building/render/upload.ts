@@ -5,7 +5,7 @@ const GPU_BUFFER_USAGE_COPY_DST = 0x0008;
 const GPU_BUFFER_USAGE_STORAGE = 0x0080;
 
 export type GpuQueueLike = {
-  writeBuffer: (buffer: GpuBufferLike, bufferOffset: number, data: BufferSource) => void;
+  writeBuffer: (buffer: GpuBufferLike, bufferOffset: number, data: ArrayBufferLike | ArrayBufferView) => void;
 };
 
 export type GpuBufferLike = {

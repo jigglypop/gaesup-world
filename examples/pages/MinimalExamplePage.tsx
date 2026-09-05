@@ -6,6 +6,7 @@ import {
   CameraDebugPanel,
   CameraPresets,
   CameraSettingsTab,
+  CAMERA_CONTROLLER_DEFAULT_MODES,
   DEFAULT_CHARACTER_EQUIPMENT_PRESETS,
   GaesupRuntimeProvider,
   applyCharacterEquipmentPreset,
@@ -93,7 +94,9 @@ export function MinimalExamplePage() {
     () => ({
       mode: (settings) => (
         <div style={cameraSettingsModeStyle}>
-          Control: {settings.mode.control ?? settings.labels.fallbackMode}
+          카메라 시점:{' '}
+          {CAMERA_CONTROLLER_DEFAULT_MODES.find((mode) => mode.value === settings.mode.control)
+            ?.label ?? settings.labels.fallbackMode}
         </div>
       ),
       section: (_, section, children) => (
@@ -128,7 +131,7 @@ export function MinimalExamplePage() {
       <main style={pageStyle}>
         <section style={panelStyle}>
           <div style={eyebrowStyle}>설치 패키지 사용 예제</div>
-          <h1 style={titleStyle}>미니멀 개섭 런타임</h1>
+          <h1 style={titleStyle}>미니멀 개숲 런타임</h1>
           <p style={copyStyle}>
             공개 패키지 엔트리만 사용합니다. 월드 캔버스, 물리 씬, 에디터 셸 없이 실행됩니다.
           </p>
@@ -152,13 +155,13 @@ export function MinimalExamplePage() {
             <CameraPresets renderers={cameraPresetRenderers} />
             <CameraDebugPanel
               fields={[
-                { key: 'mode', label: 'Mode', enabled: true, format: 'text' },
-                { key: 'fov', label: 'FOV', enabled: true, format: 'angle', precision: 0 },
+                { key: 'mode', label: '시점', enabled: true, format: 'text' },
+                { key: 'fov', label: '시야각', enabled: true, format: 'angle', precision: 0 },
               ]}
               customFields={[
                 {
                   key: 'outfit-count',
-                  label: 'Outfits',
+                  label: '장착한 의상',
                   getValue: () => Object.values(outfits).filter(Boolean).length,
                   format: 'number',
                   precision: 0,
@@ -230,9 +233,7 @@ export function MinimalExamplePage() {
               NPC 제거
             </button>
           </div>
-          <pre style={preStyle}>
-            {JSON.stringify({ activeCharacterId, characters }, null, 2)}
-          </pre>
+          <pre style={preStyle}>{JSON.stringify({ activeCharacterId, characters }, null, 2)}</pre>
         </section>
       </main>
     </GaesupRuntimeProvider>
@@ -383,22 +384,22 @@ const preStyle = {
 const minimalCameraSettingsSections = [
   {
     key: 'minimal-lens',
-    title: 'Lens',
+    title: '렌즈',
     fields: [
       {
         key: 'minimal-fov',
-        label: 'FOV',
+        label: '시야각',
         kind: 'range',
         path: 'fov',
         min: 30,
         max: 120,
         step: 5,
-        suffix: 'deg',
+        suffix: '도',
         defaultValue: 75,
       },
       {
         key: 'minimal-focus',
-        label: 'Focus',
+        label: '초점',
         kind: 'checkbox',
         path: 'enableFocus',
         defaultValue: false,

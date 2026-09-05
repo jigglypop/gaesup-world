@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { useWalletStore } from '../../stores/walletStore';
 
 export type WalletHUDProps = {

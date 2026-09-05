@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { Vector3 } from 'three';
 
 import { logger } from '@/core/utils/logger';
 
@@ -18,6 +19,27 @@ describe('AutomationSystem execution lifetime', () => {
     jest.restoreAllMocks();
     jest.useRealTimers();
   });
+
+  test.each(['pause', 'stop', 'reset', 'dispose'] as const)(
+    '%s cancels an outstanding movement timeout',
+    async (operation) => {
+      system.dispose();
+      system = new AutomationSystem(true);
+      system.updateConfig({ timeoutDuration: 100 });
+      system.addAction({ type: 'move', target: new Vector3(100, 0, 0) });
+      const failed = jest.fn();
+      const completed = jest.fn();
+      system.addEventListener('actionError', failed);
+      system.addEventListener('actionCompleted', completed);
+      const execution = system.start();
+      system[operation]();
+      await execution;
+      await jest.advanceTimersByTimeAsync(1000);
+      expect(failed).not.toHaveBeenCalled();
+      expect(completed).not.toHaveBeenCalled();
+      expect(jest.getTimerCount()).toBe(0);
+    },
+  );
 
   test('reset creates fresh nested state, metrics, and owned config defaults', () => {
     const previousState = system.getState();
@@ -255,7 +277,7 @@ describe('AutomationSystem execution lifetime', () => {
     await system.start();
     expect(beforeCallback).toHaveBeenCalledTimes(1);
     expect(actionError).toHaveBeenCalledTimes(1);
-    expect(system.getState().queue.actions[0]?.data?.['retryCount']).toBe(1);
+    expect(system.getState().queue.actions[0]?.data).toBeUndefined();
     expect(jest.getTimerCount()).toBe(1);
 
     system.pause();
@@ -265,7 +287,7 @@ describe('AutomationSystem execution lifetime', () => {
     await jest.advanceTimersByTimeAsync(0);
     expect(beforeCallback).toHaveBeenCalledTimes(2);
     expect(actionError).toHaveBeenCalledTimes(2);
-    expect(system.getState().queue.actions[0]?.data?.['retryCount']).toBe(2);
+    expect(system.getState().queue.actions[0]?.data).toBeUndefined();
     expect(jest.getTimerCount()).toBe(1);
     system.stop();
     expect(jest.getTimerCount()).toBe(0);
@@ -288,7 +310,7 @@ describe('AutomationSystem execution lifetime', () => {
     expect(system.getState().executionStats.totalExecuted).toBe(0);
     expect(system.getState().executionStats.averageTime).toBe(0);
     expect(system.getState().queue.currentIndex).toBe(0);
-    expect(system.getState().queue.actions[0]?.data?.['retryCount']).toBe(1);
+    expect(system.getState().queue.actions[0]?.data).toBeUndefined();
     expect(jest.getTimerCount()).toBe(1);
     system.stop();
   });
@@ -314,7 +336,7 @@ describe('AutomationSystem execution lifetime', () => {
     expect(actionError).toHaveBeenCalledTimes(4);
     expect(system.getState().executionStats.errors).toHaveLength(4);
     expect(system.getState().executionStats.totalExecuted).toBe(0);
-    expect(system.getState().queue.actions[0]?.data?.['retryCount']).toBe(3);
+    expect(system.getState().queue.actions[0]?.data).toBeUndefined();
     expect(system.getState().queue.currentIndex).toBe(1);
     expect(jest.getTimerCount()).toBe(1);
     await jest.advanceTimersByTimeAsync(100);
@@ -610,6 +632,47 @@ describe('AutomationSystem execution lifetime', () => {
       'automationCompleted',
     ]);
     expect(jest.getTimerCount()).toBe(0);
+  });
+
+  test.each([false, true])('each loop gets its own retry budget after success=%s', async (succeedsOnRetry) => {
+    let attempts = 0;
+    const beforeCallback = jest.fn(() => {
+      attempts++;
+      if (!succeedsOnRetry || attempts % 2 === 1) throw new Error('retry');
+    });
+    system.updateConfig({ retryDelay: 10 });
+    system.updateSettings({ throttle: 10 });
+    system.getState().queue.maxRetries = 1;
+    system.getState().queue.loop = true;
+    system.addAction({ type: 'key', key: 'loop', beforeCallback });
+
+    await system.start();
+    await jest.advanceTimersByTimeAsync(10);
+    expect(beforeCallback).toHaveBeenCalledTimes(2);
+    expect(system.getState().queue.currentIndex).toBe(1);
+    await jest.advanceTimersByTimeAsync(10);
+    expect(beforeCallback).toHaveBeenCalledTimes(3);
+    expect(system.getState().queue.currentIndex).toBe(0);
+    await jest.advanceTimersByTimeAsync(10);
+    expect(beforeCallback).toHaveBeenCalledTimes(4);
+    expect(system.getState().queue.currentIndex).toBe(1);
+    expect(system.getState().executionStats.totalExecuted).toBe(succeedsOnRetry ? 2 : 0);
+    system.stop();
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  test('retry bookkeeping does not consume or overwrite caller action data', async () => {
+    const data = { retryCount: 99, task: 'payload' };
+    const beforeCallback = jest.fn(() => { throw new Error('retry'); });
+    system.getState().queue.maxRetries = 1;
+    system.addAction({ type: 'custom', data, beforeCallback });
+    await system.start();
+    await jest.advanceTimersByTimeAsync(1000);
+    expect(beforeCallback).toHaveBeenCalledTimes(2);
+    expect(system.getState().queue.currentIndex).toBe(1);
+    expect(system.getState().queue.actions[0]?.data).toBe(data);
+    expect(data).toEqual({ retryCount: 99, task: 'payload' });
+    system.stop();
   });
 
   test('looping schedules one chain without completion events', async () => {

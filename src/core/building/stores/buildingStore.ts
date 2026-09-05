@@ -1,4 +1,4 @@
-import { enableMapSet } from 'immer';
+import { enableMapSet, produce } from 'immer';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
@@ -43,21 +43,12 @@ import {
   type BuildingWeatherEffect,
   type BuildingWorldSurface,
 } from '../types';
-import { hydrateBuildingState, serializeBuildingState } from './persistence';
+import { applyBuildingHydration, hydrateBuildingState, serializeBuildingState } from './persistence';
 import { TILE_CONSTANTS } from '../types/constants';
 
 enableMapSet();
 
 const CUSTOM_TILE_CATEGORY_ID = 'custom-tiles';
-
-function sanitizeBuildingIdPart(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 48);
-}
 
 function ensureTileCategory(
   state: BuildingStore,
@@ -292,6 +283,7 @@ interface BuildingStore extends BuildingSystemState {
   isInEditMode: () => boolean;
   serialize: () => BuildingSerializedState;
   hydrate: (data: Partial<BuildingSerializedState> | null | undefined) => void;
+  prepareHydrate: (data: Partial<BuildingSerializedState> | null | undefined) => () => void;
 }
 
 export const useBuildingStore = create<BuildingStore>()(
@@ -319,7 +311,7 @@ export const useBuildingStore = create<BuildingStore>()(
     currentTileShape: 'box',
     currentTileRotation: 0,
     currentTileMaterialId: null,
-    currentCustomTileName: 'Custom Tile',
+    currentCustomTileName: '사용자 지정 바닥',
     currentCustomTileColor: '#8f8f8f',
     currentCustomTileTextureUrl: '',
     currentWallRotation: 0,
@@ -424,51 +416,51 @@ export const useBuildingStore = create<BuildingStore>()(
         // 기본 벽 카테고리 생성
         state.wallCategories.set('interior-walls', {
           id: 'interior-walls',
-          name: 'Interior Walls',
-          description: 'Walls for interior spaces',
+          name: '실내 벽',
+          description: '실내 공간에 사용하는 벽',
           wallGroupIds: ['plaster-walls', 'painted-walls'],
         });
 
         state.wallCategories.set('exterior-walls', {
           id: 'exterior-walls',
-          name: 'Exterior Walls',
-          description: 'Walls for building exteriors',
+          name: '외벽',
+          description: '건물 외부에 사용하는 벽',
           wallGroupIds: ['brick-walls', 'concrete-walls'],
         });
 
         state.wallCategories.set('special-walls', {
           id: 'special-walls',
-          name: 'Special Walls',
-          description: 'Glass and special material walls',
+          name: '특수 벽',
+          description: '유리와 특수 재질의 벽',
           wallGroupIds: ['glass-walls'],
         });
 
         // 기본 타일 카테고리 생성
         state.tileCategories.set('wood-floors', {
           id: 'wood-floors',
-          name: 'Wood Floors',
-          description: 'Various wood flooring options',
+          name: '나무 바닥',
+          description: '여러 종류의 나무 바닥',
           tileGroupIds: ['oak-floor', 'pine-floor'],
         });
 
         state.tileCategories.set('stone-floors', {
           id: 'stone-floors',
-          name: 'Stone Floors',
-          description: 'Marble and stone flooring',
+          name: '돌 바닥',
+          description: '대리석과 석재 바닥',
           tileGroupIds: ['marble-floor', 'granite-floor'],
         });
 
         state.tileCategories.set('natural-floors', {
           id: 'natural-floors',
-          name: 'Natural Floors',
-          description: 'Sand and snow terrain flooring',
+          name: '자연 바닥',
+          description: '모래와 눈 지형 바닥',
           tileGroupIds: ['sand-floor', 'snow-floor'],
         });
 
         // 기본 그룹 생성
         state.wallGroups.set('brick-walls', {
           id: 'brick-walls',
-          name: 'Brick Walls',
+          name: '벽돌 벽',
           frontMeshId: 'brick-wall',
           backMeshId: 'brick-wall',
           sideMeshId: 'brick-wall',
@@ -477,7 +469,7 @@ export const useBuildingStore = create<BuildingStore>()(
 
         state.wallGroups.set('glass-walls', {
           id: 'glass-walls',
-          name: 'Glass Walls',
+          name: '유리 벽',
           frontMeshId: 'glass-wall',
           backMeshId: 'glass-wall',
           sideMeshId: 'glass-wall',
@@ -486,7 +478,7 @@ export const useBuildingStore = create<BuildingStore>()(
 
         state.wallGroups.set('concrete-walls', {
           id: 'concrete-walls',
-          name: 'Concrete Walls',
+          name: '콘크리트 벽',
           frontMeshId: 'concrete-wall',
           backMeshId: 'concrete-wall',
           sideMeshId: 'concrete-wall',
@@ -495,7 +487,7 @@ export const useBuildingStore = create<BuildingStore>()(
 
         state.wallGroups.set('plaster-walls', {
           id: 'plaster-walls',
-          name: 'Plaster Walls',
+          name: '회벽',
           frontMeshId: 'brick-wall', // 임시로 brick 재질 사용
           backMeshId: 'brick-wall',
           sideMeshId: 'brick-wall',
@@ -504,7 +496,7 @@ export const useBuildingStore = create<BuildingStore>()(
 
         state.wallGroups.set('painted-walls', {
           id: 'painted-walls',
-          name: 'Painted Walls',
+          name: '페인트 벽',
           frontMeshId: 'brick-wall', // 임시로 brick 재질 사용
           backMeshId: 'brick-wall',
           sideMeshId: 'brick-wall',
@@ -520,7 +512,7 @@ export const useBuildingStore = create<BuildingStore>()(
             state,
             preset.categoryId,
             preset.categoryName,
-            `${preset.categoryName} wall presets`,
+            `${preset.categoryName} 벽 프리셋`,
           );
           ensureWallGroupInCategory(state, preset.categoryId, groupId);
           state.meshes.set(exteriorMeshId, {
@@ -547,7 +539,7 @@ export const useBuildingStore = create<BuildingStore>()(
           if (!state.wallGroups.has(groupId)) {
             state.wallGroups.set(groupId, {
               id: groupId,
-              name: preset.labelEn,
+              name: preset.labelKo,
               frontMeshId: exteriorMeshId,
               backMeshId: interiorMeshId,
               sideMeshId,
@@ -559,42 +551,42 @@ export const useBuildingStore = create<BuildingStore>()(
 
         state.tileGroups.set('oak-floor', {
           id: 'oak-floor',
-          name: 'Oak Wood Floor',
+          name: '참나무 바닥',
           floorMeshId: 'wood-floor',
           tiles: [],
         });
 
         state.tileGroups.set('pine-floor', {
           id: 'pine-floor',
-          name: 'Pine Wood Floor',
+          name: '소나무 바닥',
           floorMeshId: 'wood-floor',
           tiles: [],
         });
 
         state.tileGroups.set('marble-floor', {
           id: 'marble-floor',
-          name: 'Marble Floor',
+          name: '대리석 바닥',
           floorMeshId: 'marble-floor',
           tiles: [],
         });
 
         state.tileGroups.set('granite-floor', {
           id: 'granite-floor',
-          name: 'Granite Floor',
+          name: '화강암 바닥',
           floorMeshId: 'marble-floor', // 임시로 marble 재질 사용
           tiles: [],
         });
 
         state.tileGroups.set('sand-floor', {
           id: 'sand-floor',
-          name: 'Sand Floor',
+          name: '모래 바닥',
           floorMeshId: 'sand-floor',
           tiles: [],
         });
 
         state.tileGroups.set('snow-floor', {
           id: 'snow-floor',
-          name: 'Snow Floor',
+          name: '눈 바닥',
           floorMeshId: 'snow-floor',
           tiles: [],
         });
@@ -606,7 +598,7 @@ export const useBuildingStore = create<BuildingStore>()(
             state,
             preset.categoryId,
             preset.categoryName,
-            `${preset.categoryName} tile presets`,
+            `${preset.categoryName} 바닥 프리셋`,
           );
           ensureTileGroupInCategory(state, preset.categoryId, groupId);
           if (!state.meshes.has(meshId)) {
@@ -626,7 +618,7 @@ export const useBuildingStore = create<BuildingStore>()(
           if (!state.tileGroups.has(groupId)) {
             state.tileGroups.set(groupId, {
               id: groupId,
-              name: preset.labelEn,
+              name: preset.labelKo,
               floorMeshId: meshId,
               tiles: [],
             });
@@ -1188,7 +1180,7 @@ export const useBuildingStore = create<BuildingStore>()(
           state,
           preset.categoryId,
           preset.categoryName,
-          `${preset.categoryName} tile presets`,
+          `${preset.categoryName} 바닥 프리셋`,
         );
         ensureTileGroupInCategory(state, preset.categoryId, groupId);
         state.meshes.set(meshId, {
@@ -1206,7 +1198,7 @@ export const useBuildingStore = create<BuildingStore>()(
         if (!state.tileGroups.has(groupId)) {
           state.tileGroups.set(groupId, {
             id: groupId,
-            name: preset.labelEn,
+            name: preset.labelKo,
             floorMeshId: meshId,
             tiles: [],
           });
@@ -1218,18 +1210,17 @@ export const useBuildingStore = create<BuildingStore>()(
 
     applyCustomTile: () =>
       set((state) => {
-        const name = state.currentCustomTileName.trim() || 'Custom Tile';
+        const name = state.currentCustomTileName.trim() || '사용자 지정 바닥';
         const color = state.currentCustomTileColor || '#8f8f8f';
         const textureUrl = state.currentCustomTileTextureUrl.trim();
-        const idPart =
-          sanitizeBuildingIdPart(`${name}-${color}-${textureUrl || 'color'}`) || 'custom-tile';
+        const idPart = encodeURIComponent(JSON.stringify([name, color, textureUrl]));
         const meshId = `custom-tile-${idPart}`;
         const groupId = `custom-tile-group-${idPart}`;
         ensureTileCategory(
           state,
           CUSTOM_TILE_CATEGORY_ID,
-          'Custom Tiles',
-          'User-created tile maps',
+          '사용자 지정 바닥',
+          '직접 만든 바닥 맵',
         );
         ensureTileGroupInCategory(state, CUSTOM_TILE_CATEGORY_ID, groupId);
         state.meshes.set(meshId, {
@@ -1288,7 +1279,7 @@ export const useBuildingStore = create<BuildingStore>()(
           state,
           preset.categoryId,
           preset.categoryName,
-          `${preset.categoryName} wall presets`,
+          `${preset.categoryName} 벽 프리셋`,
         );
         ensureWallGroupInCategory(state, preset.categoryId, groupId);
         state.meshes.set(exteriorMeshId, {
@@ -1315,7 +1306,7 @@ export const useBuildingStore = create<BuildingStore>()(
         if (!state.wallGroups.has(groupId)) {
           state.wallGroups.set(groupId, {
             id: groupId,
-            name: preset.labelEn,
+            name: preset.labelKo,
             frontMeshId: exteriorMeshId,
             backMeshId: interiorMeshId,
             sideMeshId,
@@ -1416,10 +1407,13 @@ export const useBuildingStore = create<BuildingStore>()(
 
     serialize: () => serializeBuildingState(get()),
 
-    hydrate: (data) =>
-      set((state) => {
-        hydrateBuildingState(state, data);
-      }),
+    prepareHydrate: (data) => {
+      if (data === null || data === undefined) return () => {};
+      const prepared = produce(get(), (state) => hydrateBuildingState(state, data));
+      return () => set((state) => applyBuildingHydration(state, prepared));
+    },
+
+    hydrate: (data) => get().prepareHydrate(data)(),
 
     addWallCategory: (category) =>
       set((state) => {

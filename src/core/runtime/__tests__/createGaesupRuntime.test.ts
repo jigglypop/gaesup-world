@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createSceneDocument, createSceneDocumentController, createSceneDocumentSaveBinding } from '../../scene-object';
 
 import { createAudioPlugin } from '../../audio/plugin';
 import { useAudioStore } from '../../audio/stores/audioStore';
@@ -93,6 +94,340 @@ const createSavePlugin = (
 });
 
 describe('createGaesupRuntime', () => {
+  it('rejects malformed scene state before applying mail', async () => {
+    const mail = useMailStore.getState();
+    const scene = useSceneStore.getState();
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const runtime = createGaesupRuntime({ saveSystem: save,
+      plugins: [createMailPlugin(), createScenePlugin()], logger: { warn: () => undefined } });
+    await runtime.setup();
+    try {
+      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
+        mail: { version: 1, messages: [] }, scene: { version: 1, current: 12 },
+      } })).toThrow('Save hydration failed');
+      expect(useMailStore.getState()).toBe(mail);
+      expect(useSceneStore.getState()).toBe(scene);
+    } finally { await runtime.dispose(); }
+  });
+
+  it('rejects corrupt character appearance before replacing saved mail', async () => {
+    const mail = useMailStore.getState();
+    const character = useCharacterStore.getState();
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const runtime = createGaesupRuntime({ saveSystem: save,
+      plugins: [createMailPlugin(), createCharacterPlugin()], logger: { warn: () => undefined } });
+    await runtime.setup();
+    try {
+      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
+        mail: { version: 1, messages: [{ id: 'new', from: '', subject: '', body: '', sentDay: 0 }] },
+        character: { version: 3, activeCharacterId: 'custom', characters: { custom: { appearance: { hair: 'unknown' } } } },
+      } })).toThrow('Save hydration failed');
+      expect(useMailStore.getState()).toBe(mail);
+      expect(useCharacterStore.getState()).toBe(character);
+    } finally { await runtime.dispose(); }
+  });
+
+  it.each([
+    { version: 2 }, { editMode: 'yes' }, { instances: {} },
+    { animations: [{ id: 'same' }, { id: 'same' }] },
+    { instances: [{ id: 'npc', templateId: 'custom', name: '주민', position: [0, NaN, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }] },
+  ])('rejects malformed NPC snapshots before applying wallet: %j', async (npc) => {
+    const wallet = useWalletStore.getState();
+    const before = useNPCStore.getState();
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const runtime = createGaesupRuntime({ saveSystem: save,
+      plugins: [createEconomyPlugin(), createNPCPlugin()], logger: { warn: () => undefined } });
+    await runtime.setup();
+    try {
+      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
+        wallet: { ...wallet.serialize(), bells: wallet.bells + 10 }, npc,
+      } })).toThrow('Save hydration failed');
+      expect(useWalletStore.getState()).toBe(wallet);
+      expect(useNPCStore.getState()).toBe(before);
+    } finally { await runtime.dispose(); }
+  });
+
+  it('prepares owned NPC maps while preserving legacy arrays and omitted collections', async () => {
+    const before = useNPCStore.getState();
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const runtime = createGaesupRuntime({ saveSystem: save, plugins: [createNPCPlugin()] });
+    await runtime.setup();
+    try {
+      const data: Parameters<typeof hydrateNPCState>[0] = [{ id: 'custom', templateId: 'unregistered', name: '주민',
+        position: [1, 2, 3], rotation: [0, 0, 0], scale: [1, 1, 1], metadata: { dialogue: ['안녕하세요'] } }];
+      const binding = [...save.getBindings()].find((entry) => entry.key === 'npc')!;
+      const apply = binding.prepareHydrate!(data);
+      expect(useNPCStore.getState()).toBe(before);
+      data[0]!.position[0] = 99;
+      data[0]!.metadata!.dialogue![0] = '변경';
+      apply();
+      expect(useNPCStore.getState().instances.get('custom')).toMatchObject({
+        position: [1, 2, 3], metadata: { dialogue: ['안녕하세요'] },
+      });
+      expect(useNPCStore.getState().templates).toBe(before.templates);
+      hydrateNPCState({ instances: [] });
+      expect(useNPCStore.getState().instances.size).toBe(0);
+      expect(useNPCStore.getState().templates).toBe(before.templates);
+    } finally {
+      useNPCStore.setState(before);
+      await runtime.dispose();
+    }
+  });
+
+  it.each(['farming', 'town'])('rejects corrupt %s before changing other world domains', async (invalid) => {
+    const farming = usePlotStore.getState();
+    const town = useTownStore.getState();
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const runtime = createGaesupRuntime({ saveSystem: save,
+      plugins: [createFarmingPlugin(), createTownPlugin()], logger: { warn: () => undefined } });
+    await runtime.setup();
+    try {
+      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
+        farming: { version: 1, plots: [{ id: 'p', position: [0, 0, 0], state: 'empty', stageIndex: invalid === 'farming' ? -1 : 0 }] },
+        town: { version: 1, houses: [{ id: 'h', position: [0, 0, 0], size: [4, invalid === 'town' ? 0 : 4], state: 'empty' }], residents: [] },
+      } })).toThrow('Save hydration failed');
+      expect(usePlotStore.getState()).toBe(farming);
+      expect(useTownStore.getState()).toBe(town);
+    } finally { await runtime.dispose(); }
+  });
+
+  it('rejects corrupt quest progress before replacing the mailbox', async () => {
+    const mail = useMailStore.getState();
+    const quests = useQuestStore.getState();
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const runtime = createGaesupRuntime({ saveSystem: save,
+      plugins: [createMailPlugin(), createQuestsPlugin()], logger: { warn: () => undefined } });
+    await runtime.setup();
+    try {
+      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
+        mail: { version: 1, messages: [{ id: 'new', from: '', subject: '', body: '', sentDay: 0 }] },
+        quests: { version: 1, state: { custom: { questId: 'custom', status: 'active', progress: { goal: -1 } } } },
+      } })).toThrow('Save hydration failed');
+      expect(useMailStore.getState()).toBe(mail);
+      expect(useQuestStore.getState()).toBe(quests);
+    } finally { await runtime.dispose(); }
+  });
+
+  it('rejects corrupt mail before applying a valid wallet snapshot', async () => {
+    const wallet = useWalletStore.getState();
+    const mail = useMailStore.getState();
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const runtime = createGaesupRuntime({ saveSystem: save,
+      plugins: [createEconomyPlugin(), createMailPlugin()], logger: { warn: () => undefined } });
+    await runtime.setup();
+    try {
+      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
+        wallet: { ...wallet.serialize(), bells: wallet.bells + 10 },
+        mail: { version: 1, messages: [{ id: 'gift', from: '', subject: '', body: '', sentDay: 0,
+          attachments: [{ itemId: 'apple', count: -1 }] }] },
+      } })).toThrow('Save hydration failed');
+      expect(useWalletStore.getState()).toBe(wallet);
+      expect(useMailStore.getState()).toBe(mail);
+    } finally { await runtime.dispose(); }
+  });
+
+  it.each([NaN, -1, 0.5])('rejects corrupt gift history before applying events: %s', async (count) => {
+    const events = useEventsStore.getState();
+    const relations = useFriendshipStore.getState();
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const runtime = createGaesupRuntime({ saveSystem: save,
+      plugins: [createEventsPlugin(), createRelationsPlugin()], logger: { warn: () => undefined } });
+    await runtime.setup();
+    try {
+      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
+        events: { version: 1, active: ['custom-event'], startedAt: { 'custom-event': 10 } },
+        relations: { version: 1, entries: { npc: { npcId: 'npc', score: 1, todayGained: 1, lastGiftDay: 0, giftHistory: { apple: count } } } },
+      } })).toThrow('Save hydration failed');
+      expect(useEventsStore.getState()).toBe(events);
+      expect(useFriendshipStore.getState()).toBe(relations);
+    } finally { await runtime.dispose(); }
+  });
+
+  it('owns prepared gift histories and clears tags from replaced events', () => {
+    const events = useEventsStore.getState();
+    const relations = useFriendshipStore.getState();
+    try {
+      useEventsStore.setState({ tags: new Set(['old-event-tag']) });
+      const data = { version: 1, entries: { npc: { npcId: 'npc', score: 1, todayGained: 1, lastGiftDay: 0, giftHistory: { apple: 2 } } } };
+      const apply = relations.prepareHydrate(data);
+      data.entries.npc.giftHistory.apple = 99;
+      expect(useFriendshipStore.getState()).toBe(relations);
+      apply();
+      expect(useFriendshipStore.getState().entries['npc']!.giftHistory['apple']).toBe(2);
+      useEventsStore.getState().hydrate({ version: 1, active: [], startedAt: {} });
+      expect(useEventsStore.getState().hasTag('old-event-tag')).toBe(false);
+      const before = useEventsStore.getState();
+      expect(() => before.prepareHydrate({ version: 1, active: ['event'], startedAt: { event: NaN } })).toThrow(TypeError);
+      expect(useEventsStore.getState()).toBe(before);
+    } finally {
+      useEventsStore.setState(events);
+      useFriendshipStore.setState(relations);
+    }
+  });
+
+  it.each(['invalid-locale', 'invalid-volume'])('rejects %s without applying audio settings', async (invalid) => {
+    const originalAudio = useAudioStore.getState();
+    const apply = jest.fn();
+    useAudioStore.setState({ apply });
+    const before = useAudioStore.getState();
+    const language = useI18nStore.getState();
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const runtime = createGaesupRuntime({ saveSystem: save,
+      plugins: [createAudioPlugin(), createI18nPlugin()], logger: { warn: () => undefined } });
+    await runtime.setup();
+    try {
+      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
+        audio: { ...before.serialize(), masterVolume: invalid === 'invalid-volume' ? NaN : 0.1 },
+        i18n: { version: 1, locale: invalid === 'invalid-locale' ? 'unsupported' : 'ko' },
+      } })).toThrow('Save hydration failed');
+      expect(useAudioStore.getState()).toBe(before);
+      expect(useI18nStore.getState()).toBe(language);
+      expect(apply).not.toHaveBeenCalled();
+    } finally {
+      await runtime.dispose();
+      useAudioStore.setState(originalAudio);
+    }
+  });
+
+  it('defers audio engine application and retains translation bundles', () => {
+    const audio = useAudioStore.getState();
+    const language = useI18nStore.getState();
+    const apply = jest.fn();
+    useAudioStore.setState({ apply });
+    try {
+      const data = { ...audio.serialize(), masterVolume: 0.2 };
+      const applyAudio = useAudioStore.getState().prepareHydrate(data);
+      const applyLanguage = language.prepareHydrate({ version: 1, locale: 'ko' });
+      data.masterVolume = 0.9;
+      expect(apply).not.toHaveBeenCalled();
+      applyAudio();
+      applyLanguage();
+      expect(apply).toHaveBeenCalledTimes(1);
+      expect(useAudioStore.getState().masterVolume).toBe(0.2);
+      expect(useI18nStore.getState().bundle).toBe(language.bundle);
+    } finally {
+      useAudioStore.setState(audio);
+      useI18nStore.setState(language);
+    }
+  });
+
+  it.each([NaN, -1, 2])('rejects corrupt weather before changing the clock: %s', async (intensity) => {
+    const time = useTimeStore.getState();
+    const weather = useWeatherStore.getState();
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const runtime = createGaesupRuntime({ saveSystem: save,
+      plugins: [createTimePlugin(), createWeatherPlugin()], logger: { warn: () => undefined } });
+    await runtime.setup();
+    try {
+      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
+        time: { ...time.serialize(), totalMinutes: 2880 },
+        weather: { version: 1, current: { day: 2, kind: 'rain', intensity }, history: [] },
+      } })).toThrow('Save hydration failed');
+      expect(useTimeStore.getState()).toBe(time);
+      expect(useWeatherStore.getState()).toBe(weather);
+    } finally { await runtime.dispose(); }
+  });
+
+  it('prepares time without day events and owns weather history', () => {
+    const time = useTimeStore.getState();
+    const weather = useWeatherStore.getState();
+    const listener = jest.fn();
+    const unsubscribe = time.addListener(listener);
+    try {
+      expect(() => time.prepareHydrate({ ...time.serialize(), scale: 0 })).toThrow(TypeError);
+      const applyTime = time.prepareHydrate({ ...time.serialize(), totalMinutes: 2880 });
+      const entry = { day: 2, kind: 'rain' as const, intensity: 0.5 };
+      const applyWeather = weather.prepareHydrate({ version: 1, current: entry, history: [entry] });
+      entry.intensity = 1;
+      expect(useTimeStore.getState()).toBe(time);
+      expect(useWeatherStore.getState()).toBe(weather);
+      applyTime();
+      applyWeather();
+      expect(useTimeStore.getState().time.hour).toBe(0);
+      expect(useWeatherStore.getState().history[0]!.intensity).toBe(0.5);
+      expect(listener).not.toHaveBeenCalled();
+    } finally {
+      unsubscribe();
+      useTimeStore.setState(time);
+      useWeatherStore.setState(weather);
+    }
+  });
+
+  it.each([
+    { crafting: { version: 2, unlocked: [] } },
+    { crafting: { version: 1, unlocked: [null] } },
+    { catalog: { version: 1, entries: [] } },
+    { catalog: { version: 1, entries: { apple: { itemId: 'apple', firstSeenDay: 0, totalCollected: -1 } } } },
+  ])('rejects corrupt collection records before applying other domains: %j', async (domains) => {
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const hydrate = jest.fn();
+    const crafting = useCraftingStore.getState();
+    const catalog = useCatalogStore.getState();
+    const runtime = createGaesupRuntime({ saveSystem: save,
+      plugins: [createCraftingPlugin(), createCatalogPlugin()],
+      saveBindings: [{ key: 'earlier', serialize: () => null, hydrate }], logger: { warn: () => undefined } });
+    await runtime.setup();
+    try {
+      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains })).toThrow('Save hydration failed');
+      expect(hydrate).not.toHaveBeenCalled();
+      expect(useCraftingStore.getState()).toBe(crafting);
+      expect(useCatalogStore.getState()).toBe(catalog);
+    } finally { await runtime.dispose(); }
+  });
+
+  it('prepares owned collection records while preserving custom IDs', () => {
+    const crafting = useCraftingStore.getState();
+    const catalog = useCatalogStore.getState();
+    try {
+      const recipe = { version: 1, unlocked: ['custom-recipe'] };
+      const collection = { version: 1, entries: { custom: { itemId: 'custom', firstSeenDay: 3, totalCollected: 2 } } };
+      const applyCrafting = crafting.prepareHydrate(recipe);
+      const applyCatalog = catalog.prepareHydrate(collection);
+      recipe.unlocked.push('later');
+      collection.entries.custom.totalCollected = 99;
+      expect(useCraftingStore.getState()).toBe(crafting);
+      expect(useCatalogStore.getState()).toBe(catalog);
+      applyCrafting();
+      applyCatalog();
+      expect([...useCraftingStore.getState().unlocked]).toEqual(['custom-recipe']);
+      expect(useCatalogStore.getState().get('custom')?.totalCollected).toBe(2);
+    } finally {
+      useCraftingStore.setState(crafting);
+      useCatalogStore.setState(catalog);
+    }
+  });
+
+  it('preserves plugin preparation before applying any runtime save domain', async () => {
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const controller = createSceneDocumentController(createSceneDocument({ id: 'current' }));
+    const binding = createSceneDocumentSaveBinding(controller);
+    const hydrate = jest.fn();
+    const runtime = createGaesupRuntime({
+      saveSystem: save,
+      saveBindings: [{ key: 'earlier', serialize: () => null, hydrate }],
+      logger: { warn: () => undefined },
+      plugins: [{
+        id: 'test.prepared-scene', name: 'Prepared scene', version: '1.0.0',
+        setup(context) { context.save.register(binding.key, binding, 'test.prepared-scene'); },
+      }],
+    });
+    await runtime.setup();
+    try {
+      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
+        'scene-document': { version: 1, id: '', objects: [] },
+      } })).toThrow('Save hydration failed');
+      expect(hydrate).not.toHaveBeenCalled();
+      expect(controller.getSnapshot().id).toBe('current');
+      save.hydrateBlob({ version: 1, savedAt: 1, domains: {
+        'scene-document': createSceneDocument({ id: 'loaded' }),
+      } });
+      expect(hydrate).toHaveBeenCalledTimes(1);
+      expect(controller.getSnapshot().id).toBe('loaded');
+    } finally {
+      await runtime.dispose();
+    }
+  });
+
   beforeEach(() => {
     useGaesupStore.getState().resetMode();
     useGaesupStore.getState().setCameraOption({
@@ -134,7 +469,7 @@ describe('createGaesupRuntime', () => {
       },
       hydrate: () => undefined,
     });
-    await save.save('before-setup');
+    await expect(save.save('before-setup')).rejects.toThrow('Save serialization failed');
     expect(warnings).toEqual([]);
 
     await runtime.setup();
@@ -144,10 +479,10 @@ describe('createGaesupRuntime', () => {
       runtime.saveDiagnostics,
     );
 
-    await save.save('after-setup');
+    await expect(save.save('after-setup')).rejects.toThrow('Save serialization failed');
     expect(warnings).toHaveLength(1);
     await runtime.dispose();
-    await save.save('after-dispose');
+    await expect(save.save('after-dispose')).rejects.toThrow('Save serialization failed');
     expect(warnings).toHaveLength(1);
 
     subscribeDiagnostics.mockRestore();
@@ -472,7 +807,7 @@ describe('createGaesupRuntime', () => {
       },
       hydrate: () => undefined,
     });
-    await save.save('after-dispose-failure');
+    await expect(save.save('after-dispose-failure')).rejects.toThrow('Save serialization failed');
     expect(warnings).toEqual([]);
     await expect(runtime.dispose()).resolves.toBeUndefined();
     register.mockRestore();
@@ -991,7 +1326,7 @@ describe('createGaesupRuntime', () => {
     });
 
     await runtime.setup();
-    await runtime.save.save('diagnostic-slot');
+    await expect(runtime.save.save('diagnostic-slot')).rejects.toThrow('Save serialization failed');
 
     expect(warnings).toEqual([
       expect.objectContaining({
@@ -1030,7 +1365,7 @@ describe('createGaesupRuntime', () => {
     });
 
     await runtime.setup();
-    await runtime.save.save('provided-diagnostic-slot');
+    await expect(runtime.save.save('provided-diagnostic-slot')).rejects.toThrow('Save serialization failed');
 
     const service = runtime.requireService<RuntimeSaveDiagnosticsService>(
       DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID,
@@ -1053,7 +1388,7 @@ describe('createGaesupRuntime', () => {
     await runtime.dispose();
     expect(runtime.getService(DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID)).toBeUndefined();
 
-    await runtime.save.save('provided-diagnostic-slot');
+    await expect(runtime.save.save('provided-diagnostic-slot')).rejects.toThrow('Save serialization failed');
     expect(warnings).toHaveLength(1);
   });
 

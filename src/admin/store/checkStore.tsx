@@ -6,7 +6,7 @@ import { userType } from "./types";
 import { checkApi } from "../api/auth";
 
 function Spinner() {
-  return <div>Loading...</div>;
+  return <div role="status">불러오는 중...</div>;
 }
 
 export const useCheck = () => {
@@ -48,7 +48,7 @@ export const useCheck = () => {
 export function RequireLogin({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useCheck();
   const navigate = useNavigate();
-  
+
   if (isUserLoading) return <Spinner />;
   if (!user) {
     navigate("/admin/auth/");
@@ -60,7 +60,7 @@ export function RequireLogin({ children }: { children: React.ReactNode }) {
 export function RequireAdmin({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useCheck();
   const navigate = useNavigate();
-  
+
   if (isUserLoading) return <Spinner />;
   if (!user || !user.roles || !user.roles.includes('admin')) {
     navigate("/admin/auth/");
@@ -72,7 +72,7 @@ export function RequireAdmin({ children }: { children: React.ReactNode }) {
 export function RequireManager({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useCheck();
   const navigate = useNavigate();
-  
+
   if (isUserLoading) return <Spinner />;
   if (!user || !user.roles || (!user.roles.includes('manager') && !user.roles.includes('admin'))) {
     navigate("/admin/auth/");
@@ -84,4 +84,4 @@ export function RequireManager({ children }: { children: React.ReactNode }) {
 export default function Check({ children }: { children: React.ReactNode }) {
   useCheck();
   return <>{children}</>;
-} 
+}

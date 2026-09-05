@@ -134,6 +134,7 @@ export {
   WallSystem,
   BuildingUI,
   GridHelper,
+  LegacyGrid,
   useGaesupController,
   useTeleport,
   useBuildingEditor,

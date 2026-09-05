@@ -42,7 +42,7 @@ jest.mock('@hooks/useGenericRefs', () => ({
 }));
 
 jest.mock('@hooks/useKeyboard', () => ({
-  useKeyboard: () => mockUseKeyboard(),
+  useKeyboard: (...args: unknown[]) => mockUseKeyboard(...args),
 }));
 
 jest.mock('@react-three/rapier', () => ({
@@ -70,6 +70,13 @@ jest.mock('../../hooks/useStateSystem', () => ({
 }));
 
 describe('EntityController', () => {
+  test('passes keyboard eligibility to the input subscription', () => {
+    const view = render(<EntityController props={{ enableKeyboard: false }} />);
+    expect(mockUseKeyboard).toHaveBeenLastCalledWith(true, true, undefined, false);
+    view.rerender(<EntityController props={{}} />);
+    expect(mockUseKeyboard).toHaveBeenLastCalledWith(true, true, undefined, true);
+  });
+
   beforeEach(() => {
     mockBuildingEditMode = false;
     mockGaesupState.urls.characterUrl = '';

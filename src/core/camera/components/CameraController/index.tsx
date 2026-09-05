@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, type CSSProperties } from 'react';
+import { useCallback, useMemo, type CSSProperties } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 

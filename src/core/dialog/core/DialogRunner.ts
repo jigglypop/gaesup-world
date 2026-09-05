@@ -37,6 +37,7 @@ export class DialogRunner {
   readonly tree: DialogTree;
   readonly context: DialogContext;
   private currentId: string | null;
+  private transitioning = false;
   private adapter: DialogRuntimeAdapter;
   private onCustomEffect?: DialogRunnerOptions['onCustomEffect'];
   private onOpenShop?: DialogRunnerOptions['onOpenShop'];
@@ -65,24 +66,31 @@ export class DialogRunner {
 
   advance(): DialogNode | null {
     const node = this.current;
-    if (!node) return null;
-    if (node.effects) for (const e of node.effects) this.applyEffect(e);
-
-    if (node.choices && node.choices.length > 0) return node;
-
-    this.currentId = node.next ?? null;
-    return this.current;
+    if (!node || this.transitioning || this.visibleChoices().length > 0) return node;
+    this.transitioning = true;
+    try {
+      if (node.effects) for (const e of node.effects) this.applyEffect(e);
+      this.currentId = node.next ?? null;
+      return this.current;
+    } finally {
+      this.transitioning = false;
+    }
   }
 
   choose(index: number): DialogNode | null {
     const node = this.current;
-    if (!node?.choices) return node;
+    if (!node?.choices || this.transitioning) return node;
     const visible = this.visibleChoices();
     const choice = visible[index];
     if (!choice) return node;
-    if (choice.effects) for (const e of choice.effects) this.applyEffect(e);
-    this.currentId = choice.next ?? null;
-    return this.current;
+    this.transitioning = true;
+    try {
+      if (choice.effects) for (const e of choice.effects) this.applyEffect(e);
+      this.currentId = choice.next ?? null;
+      return this.current;
+    } finally {
+      this.transitioning = false;
+    }
   }
 
   private checkCondition(cond: DialogCondition): boolean {

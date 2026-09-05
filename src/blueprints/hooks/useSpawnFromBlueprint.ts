@@ -4,7 +4,9 @@ import * as THREE from 'three';
 
 import { BridgeFactory } from '../../core/boilerplate';
 import { useGaesupStore } from '../../core/stores/gaesupStore';
+import { logger } from '../../core/utils/logger';
 import { WorldBridge } from '../../core/world/bridge/WorldBridge';
+import { getBlueprintModelUrl } from '../model';
 import { blueprintRegistry } from '../registry';
 import { AnyBlueprint, BlueprintRecord } from '../types';
 
@@ -28,22 +30,6 @@ export type SpawnedEntity = {
 
 const DEFAULT_WORLD_ID = 'default';
 
-const getMetadataString = (
-  metadata: BlueprintRecord | undefined,
-  key: string,
-): string => {
-  const value = metadata?.[key];
-  return typeof value === 'string' ? value : '';
-};
-
-const getBlueprintModelUrl = (blueprint: AnyBlueprint): string => {
-  if (blueprint.type === 'character') {
-    return blueprint.visuals?.model ?? getMetadataString(blueprint.metadata, 'modelUrl');
-  }
-
-  return getMetadataString(blueprint.metadata, 'modelUrl');
-};
-
 export function useSpawnFromBlueprint() {
   const [isSpawning, setIsSpawning] = useState(false);
   const [lastSpawnedEntity, setLastSpawnedEntity] = useState<SpawnedEntity | null>(null);
@@ -59,7 +45,13 @@ export function useSpawnFromBlueprint() {
     try {
       const blueprint = blueprintRegistry.get(blueprintId);
       if (!blueprint) {
-        console.error(`Blueprint not found: ${blueprintId}`);
+        logger.error(`Blueprint not found: ${blueprintId}`);
+        return null;
+      }
+
+      const worldBridge = BridgeFactory.getOrCreate<WorldBridge>('world');
+      if (!worldBridge?.getEngine(DEFAULT_WORLD_ID)) {
+        logger.error('Cannot spawn blueprint: the target world is not initialized');
         return null;
       }
 
@@ -70,13 +62,6 @@ export function useSpawnFromBlueprint() {
 
       const worldObject = createWorldObject(entityId, blueprint, position, rotation, scale, options.metadata);
       
-      // BridgeFactory를 통해 WorldBridge 인스턴스 가져오기
-      const worldBridge = BridgeFactory.getOrCreate<WorldBridge>('world');
-      if (!worldBridge) {
-        console.error('WorldBridge not found. Make sure it is properly initialized.');
-        return null;
-      }
-
       worldBridge.addObject(DEFAULT_WORLD_ID, worldObject);
       const modelUrl = getBlueprintModelUrl(blueprint);
       
@@ -104,7 +89,7 @@ export function useSpawnFromBlueprint() {
       setLastSpawnedEntity(spawnedEntity);
       return spawnedEntity;
     } catch (error) {
-      console.error('Failed to spawn entity:', error);
+      logger.error('Failed to spawn entity', error instanceof Error ? error : String(error));
       return null;
     } finally {
       setIsSpawning(false);

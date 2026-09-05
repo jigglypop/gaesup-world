@@ -21,6 +21,7 @@ export class ImpulseComponent {
   private scratchImpulse = { x: 0, y: 0, z: 0 };
   private scratchLinvel = { x: 0, y: 0, z: 0 };
   private navigation = NavigationSystem.getInstance();
+  private wasMouseActive = false;
 
   constructor(
     config: PhysicsConfigType,
@@ -75,6 +76,17 @@ export class ImpulseComponent {
       this.stateManager.updateGameStates({
         isOnTheGround: false,
       });
+    }
+    const mouseActive = calcProp?.inputRef?.current.mouse.isActive ?? physicsState.mouse.isActive;
+    const mouseStopped = this.wasMouseActive && !mouseActive;
+    this.wasMouseActive = mouseActive;
+    const keyboard = physicsState.keyboard;
+    if (mouseStopped && !(keyboard.forward || keyboard.backward || keyboard.leftward || keyboard.rightward)) {
+      this.scratchLinvel.x = 0;
+      this.scratchLinvel.y = rigidBodyRef.current.linvel().y;
+      this.scratchLinvel.z = 0;
+      rigidBodyRef.current.setLinvel(this.scratchLinvel, true);
+      return;
     }
     if (isMoving) {
       const speed = isRunning ? runSpeed : walkSpeed;

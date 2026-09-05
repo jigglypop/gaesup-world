@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 
-import { Environment, Grid } from '@react-three/drei';
+import { Environment } from '@react-three/drei';
 import { type ThreeEvent } from '@react-three/fiber';
 import { CuboidCollider, RigidBody } from '@react-three/rapier';
 
@@ -10,6 +10,7 @@ import {
   getItemRegistry,
   HouseDoor,
   HousePlot,
+  LegacyGrid,
   RoomPortal,
   RoomRoot,
   SceneRoot,
@@ -196,7 +197,7 @@ export function Lighting() {
   );
 }
 
-export function Ground() {
+export function Ground({ showGrid = false }: { showGrid?: boolean }) {
   const worldSurface = useBuildingStore((state) => state.worldSurface);
   const showWaterSurface = worldSurface === 'water';
   return (
@@ -209,8 +210,8 @@ export function Ground() {
           shore={WORLD_WATER_SHORE}
           followCamera
         />
-      ) : (
-        <Grid
+      ) : showGrid ? (
+        <LegacyGrid
           renderOrder={-1}
           position={[0, -0.005, 0]}
           infiniteGrid
@@ -223,7 +224,7 @@ export function Ground() {
           fadeStrength={3}
           userData={{ intangible: true }}
         />
-      )}
+      ) : null}
       <RigidBody type="fixed" colliders={false}>
         <CuboidCollider
           position={[0, -1.01, 0]}
@@ -232,7 +233,7 @@ export function Ground() {
         <mesh receiveShadow position={[0, -1.01, 0]} visible={!showWaterSurface}>
           <boxGeometry args={[WORLD_SURFACE_SIZE, WORLD_COLLIDER_DEPTH, WORLD_SURFACE_SIZE]} />
           <meshStandardMaterial
-            color="#3d3d3d"
+            color="#71865b"
             polygonOffset
             polygonOffsetFactor={1}
             polygonOffsetUnits={1}
@@ -334,9 +335,9 @@ function HomeInterior({
             id: 'door:home-exit',
             category: '이동',
             title: '집 밖으로 나가기',
-            description: '실내 씬에서 야외 마을 씬으로 돌아가는 포털입니다.',
+            description: '집을 나와 마을을 둘러보세요.',
             target: [0, 1.1, 3.6],
-            details: ['방 가시성 시스템과 씬 전환 흐름에 연결', 'E 키 상호작용으로 이동'],
+            details: ['설명을 닫고 문 가까이 다가가세요.', 'E 키를 누르면 마을로 나갑니다.'],
             focusDistance: 3.8,
           }}
           enableCloseUp={enableCloseUp}
@@ -347,7 +348,7 @@ function HomeInterior({
             entry={{ position: returnPosition, rotationY: 0 }}
             color="#ffd24a"
             radius={1}
-            label="EXIT"
+            label="나가기"
           />
         </InspectableFeature>
       </RoomRoot>
@@ -415,14 +416,13 @@ export function Scenery({ onFocus, enableCloseUp = false }: SceneryProps = {}) {
           onFocus={onFocus}
           focus={{
             id: `npc:${n.id}`,
-            category: 'NPC',
+            category: '주민',
             title: `${n.name} 대화`,
-            description: `${n.name}와 대화하고 스케줄, 대화 트리, 이벤트 트리거가 연결되는 지점을 확인합니다.`,
+            description: `${n.name}에게 말을 걸어 이야기를 들어보세요.`,
             target: focusTarget(n.pos, 1.15),
             details: [
-              'E 키로 대화 시작',
-              `대화 트리: ${n.dialogTreeId}`,
-              'NPC 스케줄과 게임플레이 이벤트에 연결',
+              '설명을 닫고 주민 가까이 다가가세요.',
+              'E 키를 누르면 대화를 시작합니다.',
             ],
             focusDistance: 3.6,
           }}
@@ -454,12 +454,12 @@ export function Scenery({ onFocus, enableCloseUp = false }: SceneryProps = {}) {
             category: '채집',
             title: '곤충 채집 포인트',
             description:
-              '잠자리채 도구, 날씨 보너스, 이벤트 태그에 따라 채집 결과가 달라지는 포인트입니다.',
+              '잠자리채를 들고 곤충을 잡아보세요. 날씨와 계절 행사에 따라 잡히는 곤충이 달라집니다.',
             target: focusTarget(p, 1.15),
             details: [
               '잠자리채 도구로 채집',
               '계절 이벤트와 날씨 보너스 반영',
-              '획득 결과는 인벤토리와 도감에 연결',
+              '잡은 곤충은 가방과 도감에서 확인하세요.',
             ],
             focusDistance: 4.2,
           }}
@@ -478,9 +478,9 @@ export function Scenery({ onFocus, enableCloseUp = false }: SceneryProps = {}) {
             category: '농사',
             title: '작물 밭',
             description:
-              '삽, 씨앗, 물뿌리개 도구가 순서대로 연결되는 농사 시스템의 필드 타일입니다.',
+              '땅을 갈고 씨앗을 심어 작물을 키워보세요.',
             target: focusTarget(p.pos, 0.65),
-            details: ['삽으로 땅 갈기', '씨앗 장착 후 심기', '물뿌리개와 게임 시간에 따라 성장'],
+            details: ['삽으로 땅을 갈아주세요.', '씨앗을 장착한 뒤 심어주세요.', '물을 주고 자라면 수확하세요.'],
             focusDistance: 4,
           }}
           enableCloseUp={enableCloseUp}
@@ -497,12 +497,10 @@ export function Scenery({ onFocus, enableCloseUp = false }: SceneryProps = {}) {
             id: `house:${h.id}`,
             category: '마을',
             title: `집터 ${index + 1}`,
-            description: '주민 입주, 예약 상태, 마을 저장 데이터가 연결되는 주거 플롯입니다.',
+            description: '주민이 머무를 집터입니다. 누가 살고 있는지 확인해보세요.',
             target: focusTarget(h.pos, 1.2),
             details: [
-              '마을 store에 집터 등록',
-              '주민 입주와 예약 상태 표시',
-              '런타임 저장 및 hydrate 흐름에 포함',
+              '집터의 표시로 입주·예약 상태를 확인할 수 있어요.',
             ],
             focusDistance: 5,
           }}
@@ -512,19 +510,18 @@ export function Scenery({ onFocus, enableCloseUp = false }: SceneryProps = {}) {
         </InspectableFeature>
       ))}
 
-      <SceneRoot scene={{ id: 'outdoor', name: 'Town', interior: false }}>
+      <SceneRoot scene={{ id: 'outdoor', name: '마을', interior: false }}>
         <InspectableFeature
           onFocus={onFocus}
           focus={{
             id: 'door:home-entry',
             category: '이동',
             title: '집 안으로 들어가기',
-            description: '야외 마을에서 실내 홈 씬으로 전환하는 포털입니다.',
+            description: '집 안으로 들어가 방을 둘러보세요.',
             target: [homePlot[0], 1.15, homePlot[2] + 2.4],
             details: [
-              'SceneRoot와 HouseDoor 전환 사용',
-              '실내 방 가시성 드라이버와 연결',
-              'E 키 상호작용으로 이동',
+              '설명을 닫고 문 가까이 다가가세요.',
+              'E 키를 누르면 집 안으로 들어갑니다.',
             ],
             focusDistance: 4,
           }}
@@ -536,7 +533,7 @@ export function Scenery({ onFocus, enableCloseUp = false }: SceneryProps = {}) {
             entry={{ position: [0, 0, 2.6], rotationY: 0 }}
             color="#7fc6ff"
             radius={1.2}
-            label="HOME"
+            label="집"
           />
         </InspectableFeature>
       </SceneRoot>
@@ -544,7 +541,7 @@ export function Scenery({ onFocus, enableCloseUp = false }: SceneryProps = {}) {
       <SceneRoot
         scene={{
           id: 'home-interior',
-          name: 'Home',
+          name: '집',
           interior: true,
           entry: { position: [0, 0, 0] },
         }}
@@ -572,9 +569,9 @@ export function Scenery({ onFocus, enableCloseUp = false }: SceneryProps = {}) {
               category: '아이템',
               title: `${item?.name ?? p.itemId} 줍기`,
               description:
-                '필드 아이템을 인벤토리에 넣고 도감 수집 상태로 이어주는 픽업 오브젝트입니다.',
+                '바닥에 놓인 아이템을 주워 가방에 담으세요.',
               target: focusTarget(p.pos, 0.55),
-              details: [`수량: ${p.count}`, 'E 키로 획득', '인벤토리와 도감 UI에 반영'],
+              details: [`수량: ${p.count}개`, '설명을 닫고 가까이에서 E 키로 주워보세요.', '가방과 도감에서 확인할 수 있어요.'],
               focusDistance: 3.8,
             }}
             enableCloseUp={enableCloseUp}

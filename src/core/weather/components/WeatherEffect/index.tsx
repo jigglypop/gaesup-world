@@ -1,10 +1,12 @@
-import React, { useMemo, useRef } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { useWeatherStore } from '../../stores/weatherStore';
 import type { WeatherKind } from '../../types';
+
+const NodeWeather = lazy(() => import('./NodeWeather'));
 
 export type WeatherEffectKind = Extract<WeatherKind, 'rain' | 'snow' | 'storm'> | 'wind';
 
@@ -23,11 +25,13 @@ export function WeatherEffect({
   kind: forcedKind,
   followCamera = false,
 }: WeatherEffectProps) {
-  const current = useWeatherStore((s) => s.current);
-  const ref = useRef<THREE.Points>(null);
+  const selectedKind = useWeatherStore((s) => forcedKind ?? s.current?.kind);
+  const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
+  const ref = useRef<THREE.Object3D | null>(null);
+  const handleObject = useCallback((object: THREE.Object3D | null) => { ref.current = object; }, []);
 
   const { geometry, material, kind } = useMemo(() => {
-    const effectKind = forcedKind ?? current?.kind;
+    const effectKind = selectedKind;
     if (effectKind !== 'rain' && effectKind !== 'snow' && effectKind !== 'storm' && effectKind !== 'wind') {
       return { geometry: null, material: null, kind: null };
     }
@@ -58,7 +62,12 @@ export function WeatherEffect({
       sizeAttenuation: true,
     });
     return { geometry: geo, material: mat, kind: effectKind };
-  }, [forcedKind, current?.kind, current?.intensity, area, height, count]);
+  }, [selectedKind, area, height, count]);
+
+  useEffect(() => () => {
+    geometry?.dispose();
+    material?.dispose();
+  }, [geometry, material]);
 
   useFrame(({ camera }, delta) => {
     const p = ref.current;
@@ -95,7 +104,10 @@ export function WeatherEffect({
   });
 
   if (!geometry || !material) return null;
-  return <points ref={ref} geometry={geometry} material={material} frustumCulled={false} />;
+  if (useNodes) return <Suspense fallback={null}>
+    <NodeWeather geometry={geometry} material={material} onObject={handleObject} />
+  </Suspense>;
+  return <points ref={handleObject} geometry={geometry} material={material} frustumCulled={false} />;
 }
 
 export default WeatherEffect;

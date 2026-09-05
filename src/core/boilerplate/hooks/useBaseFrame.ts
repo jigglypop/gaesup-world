@@ -4,6 +4,7 @@ import { useFrame, RootState } from '@react-three/fiber';
 
 import { AbstractBridge } from '../bridge/AbstractBridge';
 import { IDisposable, MILLISECONDS_IN_SECOND, UseBaseFrameOptions } from '../types';
+import { getFrameTimeMs } from './frameTime';
 
 export function useBaseFrame<
   EngineType extends IDisposable,
@@ -17,22 +18,18 @@ export function useBaseFrame<
 ) {
   // Allow the first frame to run immediately when throttle > 0.
   const lastUpdateTime = useRef(Number.NEGATIVE_INFINITY);
-  const { 
-    priority = 0, 
-    enabled = true, 
+  const {
+    priority = 0,
+    enabled = true,
     throttle = 0,
-    skipWhenHidden = true 
+    skipWhenHidden = true
   } = options;
   const frameHandler = useCallback((state: RootState, delta: number) => {
     void delta;
     if (!enabled || !bridge) return;
     if (skipWhenHidden && document.hidden) return;
     if (throttle > 0) {
-      // Prefer R3F's clock (test-friendly, deterministic); fall back to performance.now().
-      const now =
-        typeof state?.clock?.elapsedTime === 'number'
-          ? state.clock.elapsedTime * MILLISECONDS_IN_SECOND
-          : performance.now();
+      const now = getFrameTimeMs(state);
       if (now - lastUpdateTime.current < throttle) return;
       lastUpdateTime.current = now;
     }
@@ -76,4 +73,4 @@ export function useThrottledFrame<
 ) {
   const throttle = MILLISECONDS_IN_SECOND / fps;
   useBaseFrame(bridge, id, callback, { ...options, throttle });
-} 
+}

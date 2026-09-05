@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { CharacterMenu, MENU_PRESETS, type CharacterMenuPreset, type CharacterMenuRenderers } from './index';
 
@@ -13,7 +13,7 @@ export function ControlledCharacterMenuExample() {
   return (
     <>
       <button type="button" onClick={() => setOpen(true)}>
-        Open menu
+        메뉴 열기
       </button>
       <CharacterMenu open={open} onClose={() => setOpen(false)} preset="default" />
     </>
@@ -26,13 +26,13 @@ export function RendererCharacterMenuExample() {
         <header>
           <strong>{menu.appearance.name}</strong>
           <button type="button" onClick={menu.actions.close}>
-            Done
+            완료
           </button>
         </header>
       ),
       assetButton: (menu, slot, asset, active) => (
         <button type="button" onClick={() => menu.actions.equipOutfit(slot, asset.id)}>
-          {active ? 'Selected ' : ''}
+          {active ? '선택됨 ' : ''}
           {asset.name}
         </button>
       ),

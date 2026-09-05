@@ -45,6 +45,7 @@ import type {
   PlatformServerPluginHost,
 } from 'gaesup-world/server-contracts';
 
+import { registerSeedContent } from '../components/seedContent';
 import { createExampleCozyLifePackagePlugin } from '../plugins/cozy-life-package';
 import { createExampleServerHost, runExampleServerHostPing } from '../plugins/server-host-sample';
 import { NPC_SCHEDULES } from './world/data';
@@ -107,6 +108,7 @@ function registerWorldSeeds(): void {
 }
 
 export function createWorldRuntime(options: CreateWorldRuntimeOptions = {}): GaesupRuntime {
+  registerSeedContent();
   registerWorldSeeds();
   const sceneDocumentSession = options.sceneDocumentSession ?? getWorldSceneDocumentSession();
 
@@ -194,20 +196,31 @@ export async function dispatchWorldGameplayEvent(trigger: GameplayTriggerEvent):
   await getWorldGameplayEngine().dispatch(trigger);
 }
 
-export async function loadWorldRuntime(runtime: GaesupRuntime): Promise<boolean> {
+export async function loadWorldRuntime(runtime: GaesupRuntime, signal?: AbortSignal): Promise<boolean> {
+  if (signal?.aborted) return false;
   await runtime.setup();
-  const loaded = await loadInitialWorldSave(runtime.save);
-  applyStarterState();
+  if (signal?.aborted) return false;
+  const loaded = await loadInitialWorldSave(runtime.save, signal);
+  if (signal?.aborted) return false;
+  useEventsStore.getState().refresh(useTimeStore.getState().time);
   await dispatchWorldGameplayEvent({ type: 'manual', key: 'world.ready' });
+  if (signal?.aborted) return false;
   await runWorldServerHostDemo();
   return loaded;
 }
 
-function loadInitialWorldSave(saveSystem: SaveSystem): Promise<boolean> {
+function loadInitialWorldSave(saveSystem: SaveSystem, signal?: AbortSignal): Promise<boolean> {
   const existing = WORLD_INITIAL_LOAD_TASKS.get(saveSystem);
   if (existing) return existing;
 
-  const tracked = saveSystem.load().catch((error: unknown) => {
+  const tracked = saveSystem.load(undefined, signal).then((loaded) => {
+    if (signal?.aborted) {
+      if (WORLD_INITIAL_LOAD_TASKS.get(saveSystem) === tracked) WORLD_INITIAL_LOAD_TASKS.delete(saveSystem);
+      return false;
+    }
+    if (!loaded) applyStarterState();
+    return loaded;
+  }).catch((error: unknown) => {
     if (WORLD_INITIAL_LOAD_TASKS.get(saveSystem) === tracked) {
       WORLD_INITIAL_LOAD_TASKS.delete(saveSystem);
     }
@@ -232,7 +245,6 @@ function applyStarterState(): void {
 
   const timeState = useTimeStore.getState();
   const today = Math.floor(timeState.totalMinutes / (60 * 24));
-  useEventsStore.getState().refresh(timeState.time);
 
   const town = useTownStore.getState();
   if (Object.keys(town.residents).length === 0) {
@@ -258,7 +270,7 @@ function applyStarterState(): void {
     useMailStore.getState().send({
       from: '운영팀',
       subject: '환영합니다',
-      body: '도끼 [F], 인벤토리 [I], 퀘스트 [J], 우편 [M], 도감 [K], 제작 [C].\n\n농장에서 [삽]으로 땅을 갈고 [씨앗]을 핫바에 장착해 [삽]을 사용해 심으세요. [물뿌리개]로 매일 물을 주세요.\n\n첫 시작용 자금을 보내드려요.',
+      body: '가방 [I], 퀘스트 [J], 우편 [M], 도감 [K], 제작대 [V], 캐릭터 꾸미기 [C].\n\n월드 도구의 생활 도구에서도 각 패널을 열 수 있어요. 필드에서 목재와 조개껍데기를 모아 제작대에서 사용해보세요.\n\n첫 시작용 자금을 보내드려요.',
       sentDay: today,
       attachments: [{ bells: 500 }],
     });

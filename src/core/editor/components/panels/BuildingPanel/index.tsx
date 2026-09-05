@@ -384,7 +384,7 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
       const nextName = file.name.replace(/\.[^.]+$/, '').trim();
       const asset: AssetRecord = {
         id: `custom-tile-texture-${Date.now()}`,
-        name: nextName || 'Custom Tile Texture',
+        name: nextName || '사용자 지정 타일 텍스처',
         kind: 'tile',
         metadata: { textureUrl },
       };
@@ -459,7 +459,7 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
       {!hideHeader && (
         <div className="building-panel__header">
           <div>
-            <div className="building-panel__eyebrow">Mode</div>
+            <div className="building-panel__eyebrow">모드</div>
             <div className="building-panel__title">{currentEditModeLabel} 인스펙터</div>
           </div>
           {!forcedEditMode && (
@@ -540,7 +540,7 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
           <div className="building-panel__asset-targets">
             {isWallMode && <span>벽: {selectedWallGroup?.name ?? '선택 없음'}</span>}
             {isTileMode && <span>타일: {selectedTileId ? `선택 타일 ${selectedTileId}` : '다음 생성 타일'}</span>}
-            {isTileMode && <span>현재 생성 재질: {currentTileMaterialId ?? selectedTileGroup?.floorMeshId ?? '기본값'}</span>}
+            {isTileMode && <span>현재 생성 재질: {currentTileMaterialId ? '사용자 지정 재질' : selectedTileGroup?.name ?? '기본값'}</span>}
           </div>
           <div className="building-panel__asset-list">
             {buildingAssets.map((asset) => (
@@ -548,7 +548,7 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
                 <AssetPreviewCanvas asset={asset} size={54} />
                 <div className="building-panel__asset-info">
                   <strong>{asset.name}</strong>
-                  <span>{asset.kind}</span>
+                  <span>{asset.kind === 'wall' ? '벽' : asset.kind === 'tile' ? '바닥' : '재질'}</span>
                 </div>
                 <div className="building-panel__asset-actions">
                   {isWallMode && (
@@ -649,8 +649,8 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
                 onChange={handleCustomTileTextureInput}
                 className="building-panel__texture-file-input"
               />
-              <span className="building-panel__texture-dropzone-title">Image drop</span>
-              <span className="building-panel__texture-dropzone-text">Drop or select a tile texture image</span>
+              <span className="building-panel__texture-dropzone-title">이미지 추가</span>
+              <span className="building-panel__texture-dropzone-text">바닥 텍스처 이미지를 끌어 놓거나 선택하세요</span>
             </div>
             <button className="building-panel__asset-action" onClick={applyCustomTile}>
               별도 타일 맵 생성/선택
@@ -753,7 +753,7 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
           </div>
           <div className="building-panel__info">
             <label className="building-panel__info-item">
-              <span className="building-panel__info-label">GLB URL</span>
+              <span className="building-panel__info-label">GLB 파일 주소</span>
               <input
                 type="text"
                 value={currentModelUrl}
@@ -785,7 +785,7 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
               <span className="building-panel__info-value" style={{ fontSize: '10px' }}>{currentModelColor}</span>
             </label>
             <div className="building-panel__info-item">
-              <span className="building-panel__info-label">Fallback</span>
+              <span className="building-panel__info-label">대체 표시</span>
               <span className="building-panel__info-value">{selectedModelObject?.fallbackKind ?? 'generic'}</span>
             </div>
           </div>

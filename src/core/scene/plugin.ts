@@ -31,6 +31,7 @@ export function createScenePlugin(options: ScenePluginOptions = {}) {
     capabilities: ['scene'],
     serialize: serializeSceneState,
     hydrate: hydrateSceneState,
+    prepareHydrate: (data) => useSceneStore.getState().prepareHydrate(data),
   });
 }
 

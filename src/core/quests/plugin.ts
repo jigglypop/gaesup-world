@@ -31,6 +31,7 @@ export function createQuestsPlugin(options: QuestsPluginOptions = {}) {
     capabilities: ['quests'],
     serialize: serializeQuestsState,
     hydrate: hydrateQuestsState,
+    prepareHydrate: (data) => useQuestStore.getState().prepareHydrate(data),
   });
 }
 

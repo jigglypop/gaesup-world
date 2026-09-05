@@ -216,8 +216,8 @@ export const BUILDING_WEATHER_EFFECT_OPTIONS: BuildingOptionMeta<BuildingWeather
 ];
 
 export const BUILDING_WORLD_SURFACE_OPTIONS: BuildingOptionMeta<BuildingWorldSurface>[] = [
-  { type: 'ground', labelEn: 'Ground', labelKo: 'Ground' },
-  { type: 'water', labelEn: 'Ocean', labelKo: 'Ocean' },
+  { type: 'ground', labelEn: 'Ground', labelKo: '지면' },
+  { type: 'water', labelEn: 'Ocean', labelKo: '바다' },
 ];
 
 export const BUILDING_WALL_KIND_OPTIONS: BuildingOptionMeta<BuildingWallKind>[] = [
@@ -243,28 +243,28 @@ export const FLAG_STYLE_META: Record<
   }
 > = {
   flag: {
-    label: 'Flag',
+    label: '깃발',
     defaultWidth: 1.5,
     defaultHeight: 1.0,
     windStrength: 1.0,
     poleType: 'side',
   },
   banner: {
-    label: 'Banner',
+    label: '현수막',
     defaultWidth: 1.2,
     defaultHeight: 3.0,
     windStrength: 0.3,
     poleType: 'top',
   },
   panel: {
-    label: 'Panel',
+    label: '안내판',
     defaultWidth: 2.0,
     defaultHeight: 1.5,
     windStrength: 0.0,
     poleType: 'frame',
   },
   placard: {
-    label: 'Placard',
+    label: '표지판',
     defaultWidth: 4.0,
     defaultHeight: 1.0,
     windStrength: 0.5,
@@ -297,7 +297,7 @@ export const BUILDING_WALL_PRESETS: BuildingWallPreset[] = [
   {
     id: 'brick-house',
     categoryId: 'exterior-walls',
-    categoryName: 'Exterior Walls',
+    categoryName: '외벽',
     labelEn: 'Brick House',
     labelKo: '벽돌집',
     exteriorColor: '#8b4a34',
@@ -309,7 +309,7 @@ export const BUILDING_WALL_PRESETS: BuildingWallPreset[] = [
   {
     id: 'plaster-house',
     categoryId: 'interior-walls',
-    categoryName: 'Interior Walls',
+    categoryName: '실내 벽',
     labelEn: 'Plaster Room',
     labelKo: '석고 내벽',
     exteriorColor: '#d7d0bf',
@@ -321,7 +321,7 @@ export const BUILDING_WALL_PRESETS: BuildingWallPreset[] = [
   {
     id: 'wood-cabin',
     categoryId: 'exterior-walls',
-    categoryName: 'Exterior Walls',
+    categoryName: '외벽',
     labelEn: 'Wood Cabin',
     labelKo: '나무집',
     exteriorColor: '#8a5a36',
@@ -333,7 +333,7 @@ export const BUILDING_WALL_PRESETS: BuildingWallPreset[] = [
   {
     id: 'stone-cottage',
     categoryId: 'exterior-walls',
-    categoryName: 'Exterior Walls',
+    categoryName: '외벽',
     labelEn: 'Stone Cottage',
     labelKo: '돌집',
     exteriorColor: '#79766d',
@@ -345,7 +345,7 @@ export const BUILDING_WALL_PRESETS: BuildingWallPreset[] = [
   {
     id: 'modern-concrete',
     categoryId: 'exterior-walls',
-    categoryName: 'Exterior Walls',
+    categoryName: '외벽',
     labelEn: 'Modern Concrete',
     labelKo: '모던 콘크리트',
     exteriorColor: '#858a8c',
@@ -357,7 +357,7 @@ export const BUILDING_WALL_PRESETS: BuildingWallPreset[] = [
   {
     id: 'shopfront',
     categoryId: 'special-walls',
-    categoryName: 'Special Walls',
+    categoryName: '특수 벽',
     labelEn: 'Shopfront',
     labelKo: '상점 전면',
     exteriorColor: '#4b5563',
@@ -370,7 +370,7 @@ export const BUILDING_WALL_PRESETS: BuildingWallPreset[] = [
   {
     id: 'glass-office',
     categoryId: 'special-walls',
-    categoryName: 'Special Walls',
+    categoryName: '특수 벽',
     labelEn: 'Glass Office',
     labelKo: '유리 오피스',
     exteriorColor: '#8ecae6',
@@ -383,7 +383,7 @@ export const BUILDING_WALL_PRESETS: BuildingWallPreset[] = [
   {
     id: 'garden-fence',
     categoryId: 'special-walls',
-    categoryName: 'Special Walls',
+    categoryName: '특수 벽',
     labelEn: 'Garden Fence',
     labelKo: '정원 울타리',
     exteriorColor: '#7a5a3a',
@@ -404,7 +404,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'oak-planks',
     categoryId: 'wood-floors',
-    categoryName: 'Wood Floors',
+    categoryName: '나무 바닥',
     labelEn: 'Oak Planks',
     labelKo: '오크 판자',
     color: '#8b5a2b',
@@ -413,7 +413,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'pine-planks',
     categoryId: 'wood-floors',
-    categoryName: 'Wood Floors',
+    categoryName: '나무 바닥',
     labelEn: 'Pine Planks',
     labelKo: '소나무 판자',
     color: '#b88952',
@@ -422,7 +422,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'walnut-planks',
     categoryId: 'wood-floors',
-    categoryName: 'Wood Floors',
+    categoryName: '나무 바닥',
     labelEn: 'Walnut Planks',
     labelKo: '월넛 판자',
     color: '#4b2f22',
@@ -431,7 +431,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'bamboo-floor',
     categoryId: 'wood-floors',
-    categoryName: 'Wood Floors',
+    categoryName: '나무 바닥',
     labelEn: 'Bamboo Floor',
     labelKo: '대나무 바닥',
     color: '#c2a15b',
@@ -440,7 +440,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'herringbone-wood',
     categoryId: 'wood-floors',
-    categoryName: 'Wood Floors',
+    categoryName: '나무 바닥',
     labelEn: 'Herringbone',
     labelKo: '헤링본 목재',
     color: '#9a6a3a',
@@ -449,7 +449,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'white-marble',
     categoryId: 'stone-floors',
-    categoryName: 'Stone Floors',
+    categoryName: '돌 바닥',
     labelEn: 'White Marble',
     labelKo: '화이트 대리석',
     color: '#f0f0ec',
@@ -459,7 +459,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'black-marble',
     categoryId: 'stone-floors',
-    categoryName: 'Stone Floors',
+    categoryName: '돌 바닥',
     labelEn: 'Black Marble',
     labelKo: '블랙 대리석',
     color: '#25252a',
@@ -469,7 +469,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'granite',
     categoryId: 'stone-floors',
-    categoryName: 'Stone Floors',
+    categoryName: '돌 바닥',
     labelEn: 'Granite',
     labelKo: '화강암',
     color: '#77746f',
@@ -479,7 +479,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'slate',
     categoryId: 'stone-floors',
-    categoryName: 'Stone Floors',
+    categoryName: '돌 바닥',
     labelEn: 'Slate',
     labelKo: '슬레이트',
     color: '#3f4a4d',
@@ -488,7 +488,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'basalt',
     categoryId: 'stone-floors',
-    categoryName: 'Stone Floors',
+    categoryName: '돌 바닥',
     labelEn: 'Basalt',
     labelKo: '현무암',
     color: '#2c2f31',
@@ -497,7 +497,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'limestone',
     categoryId: 'stone-floors',
-    categoryName: 'Stone Floors',
+    categoryName: '돌 바닥',
     labelEn: 'Limestone',
     labelKo: '석회암',
     color: '#c8bea8',
@@ -506,7 +506,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'cobblestone',
     categoryId: 'masonry-floors',
-    categoryName: 'Masonry Floors',
+    categoryName: '석재·벽돌 포장',
     labelEn: 'Cobblestone',
     labelKo: '자갈석',
     color: '#6f6b60',
@@ -515,7 +515,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'brick-pavers',
     categoryId: 'masonry-floors',
-    categoryName: 'Masonry Floors',
+    categoryName: '석재·벽돌 포장',
     labelEn: 'Brick Pavers',
     labelKo: '벽돌 포장',
     color: '#9a4f37',
@@ -524,7 +524,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'terracotta',
     categoryId: 'masonry-floors',
-    categoryName: 'Masonry Floors',
+    categoryName: '석재·벽돌 포장',
     labelEn: 'Terracotta',
     labelKo: '테라코타',
     color: '#b85f3c',
@@ -533,7 +533,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'concrete',
     categoryId: 'urban-floors',
-    categoryName: 'Urban Floors',
+    categoryName: '도로 바닥',
     labelEn: 'Concrete',
     labelKo: '콘크리트',
     color: '#8b8d8c',
@@ -542,7 +542,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'asphalt',
     categoryId: 'urban-floors',
-    categoryName: 'Urban Floors',
+    categoryName: '도로 바닥',
     labelEn: 'Asphalt',
     labelKo: '아스팔트',
     color: '#242629',
@@ -551,7 +551,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'ceramic-white',
     categoryId: 'decor-floors',
-    categoryName: 'Decor Floors',
+    categoryName: '장식 바닥',
     labelEn: 'White Ceramic',
     labelKo: '화이트 세라믹',
     color: '#f7f7f2',
@@ -560,7 +560,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'checker-tile',
     categoryId: 'decor-floors',
-    categoryName: 'Decor Floors',
+    categoryName: '장식 바닥',
     labelEn: 'Checker Tile',
     labelKo: '체커 타일',
     color: '#d9d9d2',
@@ -569,7 +569,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'mosaic-blue',
     categoryId: 'decor-floors',
-    categoryName: 'Decor Floors',
+    categoryName: '장식 바닥',
     labelEn: 'Blue Mosaic',
     labelKo: '블루 모자이크',
     color: '#3b78a0',
@@ -578,7 +578,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'metal-grate',
     categoryId: 'special-floors',
-    categoryName: 'Special Floors',
+    categoryName: '특수 바닥',
     labelEn: 'Metal Grate',
     labelKo: '금속 그레이팅',
     color: '#5c6268',
@@ -589,7 +589,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'glass-tile',
     categoryId: 'special-floors',
-    categoryName: 'Special Floors',
+    categoryName: '특수 바닥',
     labelEn: 'Glass Tile',
     labelKo: '유리 타일',
     color: '#9ed8ff',
@@ -601,7 +601,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'sandstone',
     categoryId: 'natural-floors',
-    categoryName: 'Natural Floors',
+    categoryName: '자연 바닥',
     labelEn: 'Sandstone',
     labelKo: '사암',
     color: '#c9ab75',
@@ -610,7 +610,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'snow-ice',
     categoryId: 'natural-floors',
-    categoryName: 'Natural Floors',
+    categoryName: '자연 바닥',
     labelEn: 'Snow Ice',
     labelKo: '눈 얼음',
     color: '#eef5ff',
@@ -620,7 +620,7 @@ export const BUILDING_TILE_PRESETS: BuildingTilePreset[] = [
   {
     id: 'moss-stone',
     categoryId: 'natural-floors',
-    categoryName: 'Natural Floors',
+    categoryName: '자연 바닥',
     labelEn: 'Moss Stone',
     labelKo: '이끼 낀 돌',
     color: '#60704a',

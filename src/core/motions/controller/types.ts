@@ -5,7 +5,7 @@ import type { PhysicsEntityProps } from '../entities/types';
 export type EntityControllerOptions = Omit<
   PhysicsEntityProps,
   'url' | 'isActive' | 'componentType'
->;
+> & { enableKeyboard?: boolean };
 
 export interface EntityControllerProps {
   props: EntityControllerOptions;

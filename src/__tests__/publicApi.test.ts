@@ -17,6 +17,14 @@ function expectNamedExport(source: string, name: string): void {
 }
 
 describe('public package API', () => {
+  test('exposes the legacy grid through the shared renderer compatibility boundary', () => {
+    const coreSource = fs.readFileSync(CORE_ENTRY, 'utf8');
+    expect(coreSource).toContain("export { Grid as LegacyGrid } from './rendering/legacyDrei'");
+    const root = jest.requireActual('gaesup-world') as typeof import('gaesup-world');
+    const drei = jest.requireActual('@react-three/drei') as typeof import('@react-three/drei');
+    expect(root.LegacyGrid).toBe(drei.Grid);
+    expect(root.LegacyGrid).toBeDefined();
+  });
   test('exports the SceneDocument command path through the existing root scene-object barrel', () => {
     const rootSource = readRootEntry();
     const coreSource = fs.readFileSync(CORE_ENTRY, 'utf8');

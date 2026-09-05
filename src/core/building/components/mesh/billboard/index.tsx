@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { getToonGradient, getDefaultToonMode } from '@core/rendering/toon';
 import { weightFromDistance } from '@core/utils/sfe';
 
+import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
 import type { PlacedObject } from '../../../types';
 
 export interface BillboardProps {
@@ -130,7 +131,7 @@ function BillboardWithImage({
     const sfe = weightFromDistance(dist, SFE_NEAR, SFE_FAR, SFE_STRENGTH);
     mainMatRef.current.emissiveIntensity = brightness * sfe;
     glowMatRef.current.opacity =
-      (0.14 + brightness * 0.055 + 0.05 * Math.sin(state.clock.elapsedTime * 2)) * sfe;
+      (0.14 + brightness * 0.055 + 0.05 * Math.sin(getFrameElapsedSeconds(state) * 2)) * sfe;
   });
 
   useEffect(
@@ -219,7 +220,7 @@ function BillboardWithText({ text, width, height, scale, color, elevation, inten
     const sfe = weightFromDistance(dist, SFE_NEAR, SFE_FAR, SFE_STRENGTH);
     mainMatRef.current.emissiveIntensity = brightness * sfe;
     glowMatRef.current.opacity =
-      (0.14 + brightness * 0.055 + 0.05 * Math.sin(state.clock.elapsedTime * 2)) * sfe;
+      (0.14 + brightness * 0.055 + 0.05 * Math.sin(getFrameElapsedSeconds(state) * 2)) * sfe;
   });
 
   useEffect(
@@ -368,7 +369,7 @@ function BillboardBatchGroup({
     frameAccumRef.current += Math.max(0, delta);
     if (frameAccumRef.current < 1 / 20) return;
     frameAccumRef.current = 0;
-    const pulse = glowOpacity + 0.05 * Math.sin(state.clock.elapsedTime * 2);
+    const pulse = glowOpacity + 0.05 * Math.sin(getFrameElapsedSeconds(state) * 2);
     if (glowMatRef.current) glowMatRef.current.opacity = pulse;
   });
 

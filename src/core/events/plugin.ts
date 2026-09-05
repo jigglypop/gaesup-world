@@ -31,6 +31,7 @@ export function createEventsPlugin(options: EventsPluginOptions = {}) {
     capabilities: ['events'],
     serialize: serializeEventsState,
     hydrate: hydrateEventsState,
+    prepareHydrate: (data) => useEventsStore.getState().prepareHydrate(data),
   });
 }
 

@@ -81,9 +81,20 @@
 }
 .asset-catalog-panel__detail {
   gap: 10px;
+  flex-wrap: wrap;
 }
 .asset-catalog-panel__detail-info {
   display: grid;
   gap: 3px;
   min-width: 0;
+}
+.asset-catalog-panel__close {
+  margin-left: auto;
+}
+.asset-catalog-panel__empty {
+  margin: 0;
+  padding: 16px 10px;
+  color: var(--gp-text-dim);
+  font-size: 12px;
+  line-height: 1.6;
 }

@@ -1,10 +1,53 @@
 import { useTownStore } from '../stores/townStore';
+import type { TownSerialized } from '../types';
 
 beforeEach(() => {
   useTownStore.setState({ houses: {}, residents: {}, decorationScore: 0 });
 });
 
 describe('townStore', () => {
+  test.each([{ position: [0, Infinity, 0] }, { size: [0, 4] }, { size: [4] },
+    { state: 'unknown' }, { reservedFor: '' }, { reservedUntilDay: -1 }])('rejects malformed houses: %j', (patch) => {
+    const before = useTownStore.getState();
+    const data = { version: 1, houses: [{ id: 'h', position: [0, 0, 0], size: [4, 4], state: 'empty', ...patch }], residents: [] };
+    expect(() => before.hydrate(data as unknown as TownSerialized)).toThrow(TypeError);
+    expect(useTownStore.getState()).toBe(before);
+  });
+
+  test.each([{ name: 1 }, { movedInDay: NaN }, { npcId: '' }, { hatColor: 1 }])('rejects malformed residents: %j', (patch) => {
+    const before = useTownStore.getState();
+    expect(() => before.prepareHydrate({ version: 1, houses: [], residents: [{ id: 'r', name: '주민', ...patch }] } as unknown as TownSerialized)).toThrow(TypeError);
+    expect(useTownStore.getState()).toBe(before);
+  });
+
+  test('owns prepared house dimensions and preserves custom references and decoration state', () => {
+    useTownStore.getState().setDecorationScore(7);
+    const before = useTownStore.getState();
+    const data: TownSerialized = { version: 1, houses: [{ id: 'h', position: [1, 2, 3], size: [4, 5],
+      state: 'reserved', reservedFor: 'custom' }], residents: [{ id: 'r', name: '주민', npcId: 'custom-npc' }] };
+    const apply = before.prepareHydrate(data);
+    expect(useTownStore.getState()).toBe(before);
+    data.houses[0]!.position[0] = 99;
+    data.houses[0]!.size[0] = 99;
+    data.residents[0]!.name = '변경';
+    apply();
+    expect(useTownStore.getState().houses.h).toMatchObject({ position: [1, 2, 3], size: [4, 5], reservedFor: 'custom' });
+    expect(useTownStore.getState().residents.r?.name).toBe('주민');
+    expect(useTownStore.getState().decorationScore).toBe(7);
+    const saved = useTownStore.getState().serialize();
+    saved.houses[0]!.position[1] = 99;
+    saved.houses[0]!.size[1] = 99;
+    expect(useTownStore.getState().houses.h).toMatchObject({ position: [1, 2, 3], size: [4, 5] });
+    expect(() => before.prepareHydrate({ ...data, houses: [data.houses[0]!, data.houses[0]!] })).toThrow(TypeError);
+    expect(() => before.prepareHydrate({ ...data, residents: [data.residents[0]!, data.residents[0]!] })).toThrow(TypeError);
+    const current = useTownStore.getState();
+    current.hydrate(undefined);
+    expect(useTownStore.getState()).toBe(current);
+    current.hydrate({ version: 1, houses: [], residents: [] });
+    expect(useTownStore.getState().houses).toEqual({});
+    expect(useTownStore.getState().residents).toEqual({});
+  });
+
   test('register house defaults to empty', () => {
     useTownStore.getState().registerHouse({ id: 'h1', position: [0, 0, 0] });
     expect(useTownStore.getState().houses.h1?.state).toBe('empty');

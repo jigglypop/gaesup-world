@@ -130,6 +130,12 @@
 }
 
 .blueprint-panel__list-item {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   padding: 10px;
   margin: 4px 0;
   background: var(--editor-surface-1);
@@ -146,6 +152,22 @@
 
 .blueprint-panel__list-item:hover {
   background: var(--editor-surface-hover);
+}
+
+.blueprint-panel__list-item:focus-visible {
+  outline: 2px solid var(--editor-accent-color);
+  outline-offset: 2px;
+}
+
+.blueprint-panel__list-item .list-item__name,
+.blueprint-panel__list-item .list-item__description,
+.blueprint-panel__list-item .list-item__meta > span {
+  display: block;
+}
+
+.blueprint-panel__list-item .list-item__text-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .list-item__content {
@@ -273,4 +295,4 @@
 
 .property-editor__array-item-title {
     margin-bottom: 5px;
-} 
+}

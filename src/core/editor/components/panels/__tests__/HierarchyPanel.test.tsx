@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { fireEvent, render, screen } from '@testing-library/react';
 
 import { createSceneDocument, createMeshRendererComponent } from '../../../../scene-object';
@@ -53,9 +54,9 @@ describe('HierarchyPanel', () => {
 
     expect(screen.getByText('Root')).toBeTruthy();
     expect(screen.getByText('Tree')).toBeTruthy();
-    expect(screen.getByText('1c')).toBeTruthy();
+    expect(screen.getByText('컴포넌트 1개')).toBeTruthy();
 
-    fireEvent.change(screen.getByLabelText('Search scene hierarchy'), { target: { value: 'player' } });
+    fireEvent.change(screen.getByLabelText('장면 객체 검색'), { target: { value: 'player' } });
     expect(screen.getByText('Player')).toBeTruthy();
     expect(screen.queryByText('Tree')).toBeNull();
 

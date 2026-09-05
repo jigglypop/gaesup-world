@@ -6,9 +6,11 @@
 
 ## 현재 상태
 
-패키지는 현재 R3F 9와 Three.js 0.178을 사용한다. `src/next`에는 이미 WebGPU backend가 있고 performance 예제는 CPU와 GPU culling 경로를 모두 실행할 수 있다.
+패키지는 현재 R3F 9.7.0과 Three.js 0.185.1을 사용한다. R3F 10.0.0-alpha.4 / Drei 11.0.0-alpha.6은 임시 프로젝트에서 타입 호환성을 검사 중이며 main package/lockfile에는 아직 반영하지 않았다. `src/next`에는 WebGPU backend가 있고 performance 예제는 CPU와 GPU culling 경로를 모두 실행할 수 있다.
 
 ## 호환성 정책
+
+- `LegacyGrid`는 root public API에서 제공하는 기존 Drei Grid의 별칭이다. 예제 Ground도 내부 rendering/legacyDrei와 같은 경로를 사용한다. 현재는 Drei10 root export이고, alpha 타입 probe에서 이 한 파일만 Drei11 /legacy로 가상 치환한다. WebGPU용 Grid로의 전환이나 native renderer 호환을 의미하지 않는다.
 
 - WebGPU가 목표 primary backend다.
 - WebGL은 명시적 fallback이자 차분 테스트용 backend로 유지한다.

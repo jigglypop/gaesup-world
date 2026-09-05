@@ -6,6 +6,7 @@ import { useBuildingStore } from '../../building/stores/buildingStore';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
 import { MinimapProps, MinimapResult } from '../components/Minimap/types';
 import { MinimapSystem } from '../core';
+import type { MinimapMarker } from '../types';
 
 const DEFAULT_SCALE = 5;
 const MIN_SCALE = 0.5;
@@ -24,40 +25,54 @@ export interface UseMinimapReturnType {
 }
 
 export const useMinimap = (props: MinimapProps): MinimapResult => {
-      const { activeState } = useStateSystem();
+  const { activeState } = useStateSystem();
   const tileGroups = useBuildingStore((state) => state.tileGroups);
   const sceneObjectsRef = useRef<Map<string, { position: Vector3; size: Vector3 }>>(new Map());
-  const minimapSystem = useRef(MinimapSystem.getInstance());
+  const minimapSystem = useRef<MinimapSystem | null>(null);
   
   const {
-    scale: initialScale = DEFAULT_SCALE,
+    size = MINIMAP_SIZE_PX,
+    scale: initialScale = props.initialScale ?? DEFAULT_SCALE,
+    minScale = MIN_SCALE,
+    maxScale = MAX_SCALE,
     blockRotate = false,
     updateInterval = 33,
   } = props;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [scale, setScale] = useState(initialScale);
+  const [scale, setScale] = useState(() => Math.min(maxScale, Math.max(minScale, initialScale)));
   const isReady = !!(activeState.position && props);
 
-  // Initialize MinimapSystem canvas
-    useEffect(() => {
+  useEffect(() => {
     const canvas = canvasRef.current;
-    if (canvas) {
-      minimapSystem.current.setCanvas(canvas);
-    }
+    if (!canvas) return;
+    const shared = MinimapSystem.getInstance();
+    const system = new MinimapSystem();
+    system.setCanvas(canvas);
+    minimapSystem.current = system;
+    const syncMarkers = (markers: Map<string, MinimapMarker>) => {
+      system.clear();
+      for (const marker of markers.values()) {
+        system.addMarker(marker.id, marker.type, marker.text, marker.center, marker.size);
+      }
+    };
+    syncMarkers(shared.getMarkers());
+    const unsubscribe = shared.subscribe(syncMarkers);
     return () => {
-      minimapSystem.current.setCanvas(null);
+      unsubscribe();
+      minimapSystem.current = null;
+      system.dispose();
     };
   }, []);
 
   const upscale = useCallback(() => {
     if (props.blockScale) return;
-    setScale((prev) => Math.min(MAX_SCALE, prev + 0.1));
-  }, [props.blockScale]);
+    setScale((prev) => Math.min(maxScale, prev + 0.1));
+  }, [props.blockScale, maxScale]);
 
   const downscale = useCallback(() => {
     if (props.blockScale) return;
-    setScale((prev) => Math.max(MIN_SCALE, prev - 0.1));
-  }, [props.blockScale]);
+    setScale((prev) => Math.max(minScale, prev - 0.1));
+  }, [props.blockScale, minScale]);
 
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
@@ -85,11 +100,12 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
   }, [props.blockScale, upscale, downscale]);
 
   const updateCanvas = useCallback(() => {
+    if (document.hidden) return;
     const { position, euler } = activeState;
     if (!position || !euler) return;
 
-    minimapSystem.current.render({
-      size: MINIMAP_SIZE_PX,
+    minimapSystem.current?.render({
+      size,
       scale,
       position,
       rotation: euler.y,
@@ -97,23 +113,33 @@ export const useMinimap = (props: MinimapProps): MinimapResult => {
       tileGroups,
       sceneObjects: sceneObjectsRef.current
     });
-  }, [activeState, scale, blockRotate, tileGroups]);
+  }, [activeState, size, scale, blockRotate, tileGroups]);
 
   useEffect(() => {
     if (!isReady) return;
     
-    const interval = setInterval(() => {
+    const tick = () => {
       const { position, euler } = activeState;
       if (position && euler) {
-        minimapSystem.current.checkForUpdates(position, euler.y);
+        minimapSystem.current?.checkForUpdates(position, blockRotate ? 0 : euler.y);
         updateCanvas();
       }
-    }, updateInterval);
+    };
+    let interval = document.hidden ? undefined : setInterval(tick, updateInterval);
+    const handleVisibilityChange = () => {
+      if (interval !== undefined) clearInterval(interval);
+      interval = undefined;
+      if (document.hidden) return;
+      tick();
+      interval = setInterval(tick, updateInterval);
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [updateCanvas, updateInterval, isReady, activeState]);
+  }, [updateCanvas, updateInterval, isReady, activeState, blockRotate]);
 
   useEffect(() => {
     updateCanvas();

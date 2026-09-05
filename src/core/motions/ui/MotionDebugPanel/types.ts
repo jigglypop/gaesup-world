@@ -36,16 +36,16 @@ export interface MotionDebugPanelProps {
 }
 
 export const DEFAULT_DEBUG_FIELDS: DebugField[] = [
-  { key: 'motionType', label: 'Motion Type', type: 'text' },
-  { key: 'position', label: 'Position', type: 'vector3' },
-  { key: 'velocity', label: 'Velocity', type: 'vector3' },
-  { key: 'speed', label: 'Speed', type: 'number' },
-  { key: 'direction', label: 'Direction', type: 'vector3' },
-  { key: 'isGrounded', label: 'Grounded', type: 'text' },
-  { key: 'isMoving', label: 'Moving', type: 'text' },
-  { key: 'acceleration', label: 'Acceleration', type: 'number' },
-  { key: 'jumpForce', label: 'Jump Force', type: 'number' },
-  { key: 'maxSpeed', label: 'Max Speed', type: 'number' },
-  { key: 'totalDistance', label: 'Total Distance', type: 'number' },
-  { key: 'gameState', label: 'Game State', type: 'text' }
+  { key: 'motionType', label: '이동 유형', type: 'text' },
+  { key: 'position', label: '위치', type: 'vector3' },
+  { key: 'velocity', label: '속도 벡터', type: 'vector3' },
+  { key: 'speed', label: '속력', type: 'number' },
+  { key: 'direction', label: '방향', type: 'vector3' },
+  { key: 'isGrounded', label: '지면 접촉', type: 'text' },
+  { key: 'isMoving', label: '이동 중', type: 'text' },
+  { key: 'acceleration', label: '가속도', type: 'number' },
+  { key: 'jumpForce', label: '점프 힘', type: 'number' },
+  { key: 'maxSpeed', label: '최대 속력', type: 'number' },
+  { key: 'totalDistance', label: '총 이동 거리', type: 'number' },
+  { key: 'gameState', label: '이동 상태', type: 'text' }
 ];

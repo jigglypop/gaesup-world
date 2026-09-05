@@ -397,6 +397,19 @@ describe('useManagedEntity', () => {
   });
 
   describe('에러 처리', () => {
+    test.each([false, true])('onInit failure disposes the entity even when cleanup fails: %s', (cleanupFails) => {
+      const onInit = jest.fn(() => { throw new Error('Init failed'); });
+      const onDispose = jest.fn(() => {
+        if (cleanupFails) throw new Error('Cleanup failed');
+      });
+
+      expect(() => renderHook(() =>
+        useManagedEntity(mockBridge, 'test-id', engineRef, { onInit, onDispose }),
+      )).toThrow('Init failed');
+      expect(onDispose).toHaveBeenCalledWith(mockManagedEntity);
+      expect(mockManagedEntity.dispose).toHaveBeenCalledTimes(1);
+    });
+
     test('ManagedEntity 생성자에서 에러가 발생해도 안전해야 함', () => {
       (ManagedEntity as jest.Mock).mockImplementation(() => {
         throw new Error('Constructor error');
@@ -510,4 +523,4 @@ describe('useManagedEntity', () => {
       expect(mockManagedEntity.dispose).toHaveBeenCalled();
     });
   });
-}); 
+});

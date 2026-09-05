@@ -36,6 +36,29 @@ import type { TileMeta, WallMeta } from '../index';
 import { createNoOverlapRule, createPlacementEngine } from '../../../placement';
 
 describe('building placement model helpers', () => {
+  it.each([
+    [1e20, 1e20, 0, 0, 4],
+    [Infinity, Infinity, 0, 0, 4],
+    [NaN, 1, 0, 0, 4],
+    [0, 1, 0, 1, 0],
+    [0, 1, 0, 1, -1],
+    [0, 1, 0, 1, Infinity],
+    [0, 1000, 0, 1000, 1],
+  ])('rejects unsafe spatial work before changing indexes (%j)', (minX, maxX, minZ, maxZ, cellSize) => {
+    const index = new Map([[pair(0, 0), new Set(['existing'])]]);
+    const cells = new Map([['existing', [pair(0, 0)]]]);
+    expect(() => indexAabb(index, cells, 'new', minX, maxX, minZ, maxZ, cellSize)).toThrow(RangeError);
+    expect(() => queryAabbIds(index, minX, maxX, minZ, maxZ, cellSize)).toThrow(RangeError);
+    expect(index).toEqual(new Map([[pair(0, 0), new Set(['existing'])]]));
+    expect(cells).toEqual(new Map([['existing', [pair(0, 0)]]]));
+  });
+
+  it.each([Infinity, NaN, 1e20, 1000])('rejects unbounded footprint size %s', (size) => {
+    const cell = { x: 0, z: 0, level: 0 };
+    expect(() => createTileFootprint(cell, size)).toThrow(RangeError);
+    expect(() => createBlockFootprint(cell, { x: size, y: size, z: size })).toThrow(RangeError);
+  });
+
   it('snaps x/z positions while preserving y and extra fields', () => {
     expect(snapBuildingPosition({ x: 5.9, y: 1.25, z: -6.1, label: 'hover' })).toEqual({
       x: 4,

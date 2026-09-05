@@ -1,6 +1,16 @@
 import type { ThreeElements } from "@react-three/fiber";
 import * as THREE from "three";
 
+export type GrassMaterialInstance = THREE.Material & { uniforms: Record<string, { value: unknown }> };
+export type NodeGrassMaterialProps = {
+  materialRef: React.RefObject<GrassMaterialInstance | null>;
+  texture: THREE.Texture;
+  alphaMap: THREE.Texture;
+  toon: boolean;
+  tipColor: THREE.Color;
+  bottomColor: THREE.Color;
+};
+
 export type GrassMeshProps = ThreeElements["group"] & {
   options?: {
     bW: number;
@@ -50,7 +60,7 @@ declare global {
   namespace JSX {
     interface IntrinsicElements {
       grassMaterial: {
-        ref?: React.RefObject<THREE.ShaderMaterial | null> | undefined;
+        ref?: React.RefObject<GrassMaterialInstance | null> | undefined;
         map?: THREE.Texture | null;
         alphaMap?: THREE.Texture | null;
         toneMapped?: boolean;
@@ -66,7 +76,7 @@ declare global {
     namespace JSX {
       interface IntrinsicElements {
         grassMaterial: {
-          ref?: React.RefObject<THREE.ShaderMaterial | null> | undefined;
+          ref?: React.RefObject<GrassMaterialInstance | null> | undefined;
           map?: THREE.Texture | null;
           alphaMap?: THREE.Texture | null;
           toneMapped?: boolean;

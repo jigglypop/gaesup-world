@@ -28,6 +28,18 @@
   max-width: 640px;
   color: var(--gp-text-dim);
 }
+.example-harness-error__details {
+  max-width: min(640px, calc(100vw - 64px));
+  text-align: left;
+  color: var(--gp-text-dim);
+}
+.example-harness-error__details summary {
+  cursor: pointer;
+}
+.example-harness-error__details pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .example-harness-error__button {
   justify-self: center;
   min-height: 40px;

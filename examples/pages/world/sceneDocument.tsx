@@ -51,11 +51,11 @@ export type WorldSceneDocumentRootMarker = {
 export function createInitialWorldSceneDocument(): SceneDocument {
   return createSceneDocument({
     id: 'example-world-scene',
-    name: 'Example world scene',
+    name: '예제 월드 장면',
     objects: [
       {
         id: 'world-origin-marker',
-        name: 'Shared world marker',
+        name: '월드 기준 표식',
         tags: ['example', 'runtime-marker'],
         transform: { position: [8, 1, -6] },
         components: [
@@ -68,7 +68,7 @@ export function createInitialWorldSceneDocument(): SceneDocument {
       },
       {
         id: 'world-origin-marker-detail',
-        name: 'Nested authoring detail',
+        name: '하위 장면 표식',
         parentId: 'world-origin-marker',
         transform: { position: [2, 0, 0] },
       },
@@ -156,7 +156,7 @@ export function createWorldSceneDocumentPlugin(session: WorldSceneDocumentSessio
   }
   return {
     id: WORLD_SCENE_DOCUMENT_PLUGIN_ID,
-    name: 'Example World Scene Document',
+    name: '예제 월드 장면 문서',
     version: '1.0.0',
     runtime: 'client',
     capabilities: ['world.scene-document'],

@@ -1,4 +1,5 @@
 export type BuildingSystemProps = {
+  showGrid?: boolean | undefined;
   onWallClick?: (wallId: string) => void;
   onTileClick?: (tileId: string) => void;
   onBlockClick?: (blockId: string) => void;

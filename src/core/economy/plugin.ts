@@ -51,11 +51,13 @@ export function createEconomyPlugin(options: EconomyPluginOptions = {}): GaesupP
         key: walletSaveExtensionId,
         serialize: serializeWalletState,
         hydrate: hydrateWalletState,
+        prepareHydrate: (data: WalletSerialized | null | undefined) => useWalletStore.getState().prepareHydrate(data),
       }, pluginId);
       ctx.save.register(shopSaveExtensionId, {
         key: shopSaveExtensionId,
         serialize: serializeShopState,
         hydrate: hydrateShopState,
+        prepareHydrate: (data: ShopSerialized | null | undefined) => useShopStore.getState().prepareHydrate(data),
       }, pluginId);
       ctx.services.register(walletStoreServiceId, {
         useStore: useWalletStore,

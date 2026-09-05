@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useRef } from 'react';
+import { FC, useEffect, useRef } from 'react';
 
 import type { CameraOptionType } from '../../../camera/core/types';
 import { useGaesupStore } from '../../../stores/gaesupStore';

@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { createToonMaterial, getDefaultToonMode } from '@core/rendering/toon';
 import { useWeatherStore } from '@core/weather/stores/weatherStore';
 
+import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
 import type { BuildingTreeKind } from '../../types';
 
 type SakuraProps = { size?: number; toon?: boolean };
@@ -614,7 +615,7 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
         w?.kind === 'cloudy'? 1.1 :
                               0.9;
       const uWind = m.uniforms['uWind'];
-      if (uTime) uTime.value = state.clock.getElapsedTime();
+      if (uTime) uTime.value = getFrameElapsedSeconds(state);
       if (uScale) uScale.value = state.gl.domElement.height * 0.5;
       if (uWind) uWind.value = base + intensity * 0.7;
     }
@@ -749,7 +750,7 @@ export default function Sakura({ size = 4, toon }: SakuraProps) {
   useFrame((state) => {
     const parent = fallingRef.current?.parent;
     if (parent && !parent.visible) return;
-    const elapsed = state.clock.getElapsedTime();
+    const elapsed = getFrameElapsedSeconds(state);
     const m = fallingRef.current?.material as THREE.ShaderMaterial | undefined;
     if (m?.uniforms) {
       const uTime = m.uniforms['uTime'];

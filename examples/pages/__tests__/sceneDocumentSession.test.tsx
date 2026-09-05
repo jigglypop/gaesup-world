@@ -1,8 +1,7 @@
-import React from 'react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 
-import { act, cleanup, render, screen } from '@testing-library/react';
-
-import { SaveSystem, logger, type SaveAdapter, type SaveBlob } from 'gaesup-world';
+import { SaveSystem, createContentBundleFromSaveSystem, logger, type SaveAdapter, type SaveBlob } from 'gaesup-world';
+import { InspectorPanel } from 'gaesup-world/editor';
 
 import { createWorldRuntime, loadWorldRuntime } from '../runtime';
 import {
@@ -54,6 +53,64 @@ function SnapshotProbe({ session }: { session: WorldSceneDocumentSession }) {
 }
 
 describe('world scene document session', () => {
+  test('commits inspector drafts through the real scene command path without repeated mutations', async () => {
+    const session = createWorldSceneDocumentSession();
+    const changed = jest.fn();
+    const unsubscribe = session.subscribe(changed);
+    function InspectorProbe() {
+      const document = useWorldSceneDocumentSnapshot(session);
+      return <InspectorPanel sceneDocument={document} selectedObjectId="world-origin-marker"
+        onUpdateObject={(id, patch) => { void session.updateObject(id, patch); }} />;
+    }
+    try {
+      const view = render(<InspectorProbe />);
+      const position = screen.getByLabelText('위치 X');
+      fireEvent.change(position, { target: { value: '' } });
+      fireEvent.blur(position);
+      expect(changed).not.toHaveBeenCalled();
+      expect(position).toHaveValue(8);
+      for (const [label, value] of [
+        ['위치 X', '-2.75'], ['태그', 'example, forest, '], ['회전 (라디안) Y', '1.57'],
+      ] as const) {
+        const input = screen.getByLabelText(label);
+        await act(async () => {
+          input.focus();
+          fireEvent.change(input, { target: { value } });
+          fireEvent.keyDown(input, { key: 'Enter' });
+        });
+      }
+      expect(changed).toHaveBeenCalledTimes(3);
+      expect(session.getSnapshot().objects[0]).toMatchObject({
+        tags: ['example', 'forest'],
+        transform: { position: [-2.75, 1, -6], rotation: [0, 1.57, 0] },
+      });
+      view.unmount();
+      render(<InspectorProbe />);
+      expect(screen.getByLabelText('위치 X')).toHaveValue(-2.75);
+      expect(screen.getByLabelText('태그')).toHaveValue('example, forest');
+      expect(screen.getByLabelText('회전 (라디안) Y')).toHaveValue(1.57);
+      expect(changed).toHaveBeenCalledTimes(3);
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  test('includes creator edits in exported world bundles', async () => {
+    const session = createWorldSceneDocumentSession();
+    const saveSystem = new SaveSystem({ adapter: new MemorySaveAdapter() });
+    const runtime = createWorldRuntime({ saveSystem, sceneDocumentSession: session });
+    try {
+      await runtime.setup();
+      expect(await session.createObject({ id: 'exported-object', name: '내보낼 오브젝트' })).toBe(true);
+      const bundle = createContentBundleFromSaveSystem(saveSystem, [], {
+        id: 'creator-world', name: '제작 월드', version: '1.0.0',
+      });
+      expect(bundle.world.domains[WORLD_SCENE_DOCUMENT_SAVE_KEY]).toEqual(session.getSnapshot());
+    } finally {
+      await runtime.dispose();
+    }
+  });
+
   afterEach(() => {
     cleanup();
     resetWorldSceneDocumentSession();
@@ -72,7 +129,7 @@ describe('world scene document session', () => {
     const second = resetWorldSceneDocumentSession();
     expect(second).not.toBe(first);
     expect(getWorldSceneDocumentSession()).toBe(second);
-    expect(second.getSnapshot().objects[0]?.name).toBe('Shared world marker');
+    expect(second.getSnapshot().objects[0]?.name).toBe('월드 기준 표식');
   });
 
   test('routes editor operations through one subscribed canonical snapshot', async () => {
@@ -165,7 +222,7 @@ describe('world scene document session', () => {
     expect(initialMarkers[0]?.position).toEqual([8, 1, -6]);
 
     render(<SnapshotProbe session={session} />);
-    expect(screen.getByTestId('scene-snapshot').textContent).toContain('Shared world marker');
+    expect(screen.getByTestId('scene-snapshot').textContent).toContain('월드 기준 표식');
     await act(async () => {
       await session.updateObject('world-origin-marker', { name: 'Live shared marker' });
     });

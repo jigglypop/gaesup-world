@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
   useAudioStore,
@@ -61,10 +61,15 @@ function enqueueWorldRuntimeOperation(
 }
 
 export function WorldSystems({ runtime, onRuntimeReady }: WorldSystemsProps) {
+  const [readyRuntime, setReadyRuntime] = useState<GaesupRuntime | null>(null);
   const generationRef = useRef(0);
+  const onRuntimeReadyRef = useRef(onRuntimeReady);
+  useEffect(() => {
+    onRuntimeReadyRef.current = onRuntimeReady;
+  }, [onRuntimeReady]);
   useGameClock(false);
   useHotbarKeyboard(true);
-  useAutoSave({ intervalMs: 60_000 });
+  useAutoSave({ intervalMs: 60_000, saveSystem: runtime.save, enabled: readyRuntime === runtime });
   useQuestObjectiveTracker(true);
   useCatalogTracker(true);
   useWeatherTicker(WORLD_WEATHER_ENABLED);
@@ -105,18 +110,20 @@ export function WorldSystems({ runtime, onRuntimeReady }: WorldSystemsProps) {
 
   useEffect(() => {
     const generation = generationRef.current + 1;
+    setReadyRuntime(null);
     generationRef.current = generation;
-    let cancelled = false;
+    const controller = new AbortController();
     void enqueueWorldRuntimeOperation(runtime, 'load', async () => {
-      if (cancelled || generationRef.current !== generation) return;
-      await loadWorldRuntime(runtime);
-      if (!cancelled && generationRef.current === generation) {
-        onRuntimeReady?.();
+      if (controller.signal.aborted || generationRef.current !== generation) return;
+      await loadWorldRuntime(runtime, controller.signal);
+      if (!controller.signal.aborted && generationRef.current === generation) {
+        setReadyRuntime(runtime);
+        onRuntimeReadyRef.current?.();
       }
     });
 
     return () => {
-      cancelled = true;
+      controller.abort();
       if (generationRef.current === generation) {
         generationRef.current = generation + 1;
       }
@@ -124,7 +131,7 @@ export function WorldSystems({ runtime, onRuntimeReady }: WorldSystemsProps) {
         await runtime.dispose();
       });
     };
-  }, [onRuntimeReady, runtime]);
+  }, [runtime]);
 
   return null;
 }

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 import { describeObjectiveProgress, describeReward } from './helpers';
 import type { QuestLogUIProps, QuestRowProps, QuestSectionProps } from './types';
+import { canHandleOverlayShortcut } from '../../../ui/overlayKeyboard';
 import {
   OVERLAY_ACCENT_COLOR,
   OVERLAY_BACKDROP_STYLE,
@@ -28,8 +29,7 @@ export function QuestLogUI({ toggleKey = 'j' }: QuestLogUIProps) {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      const tag = (event.target as HTMLElement | null)?.tagName?.toLowerCase();
-      if (tag === 'input' || tag === 'textarea') return;
+      if (!canHandleOverlayShortcut(event)) return;
       if (event.key.toLowerCase() === toggleKey.toLowerCase()) setOpen((value) => !value);
       if (event.key === 'Escape') setOpen(false);
     };
@@ -45,16 +45,20 @@ export function QuestLogUI({ toggleKey = 'j' }: QuestLogUIProps) {
   return (
     <div style={OVERLAY_BACKDROP_STYLE} onClick={() => setOpen(false)}>
       <div
+        data-world-overlay="quests"
         onClick={(event) => event.stopPropagation()}
         style={{
           ...OVERLAY_PANEL_STYLE,
           width: PANEL_WIDTH,
+          maxWidth: 'calc(100vw - 24px)',
+          boxSizing: 'border-box',
+          overflowWrap: 'anywhere',
           maxHeight: '76vh',
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        <div style={OVERLAY_HEADER_STYLE}>
+        <div style={{ ...OVERLAY_HEADER_STYLE, flexShrink: 0 }}>
           <strong style={{ fontSize: 15 }}>퀘스트 로그</strong>
           <button onClick={() => setOpen(false)} style={overlayButtonStyle()}>
             닫기 [{toggleKey.toUpperCase()}]

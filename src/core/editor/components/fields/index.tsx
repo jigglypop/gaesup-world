@@ -25,8 +25,9 @@ export function FieldToggle({ value, onChange }: FieldToggleProps) {
       type="button"
       className={`editor-field-toggle ${value ? 'editor-field-toggle--on' : ''}`}
       onClick={() => onChange(!value)}
+      aria-pressed={value}
     >
-      {value ? 'ON' : 'OFF'}
+      {value ? '켜짐' : '꺼짐'}
     </button>
   );
 }

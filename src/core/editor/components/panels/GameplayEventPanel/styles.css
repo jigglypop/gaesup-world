@@ -65,6 +65,11 @@
   gap: var(--editor-spacing-sm);
 }
 
+.gameplay-event-panel__card-actions {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
 .gameplay-event-panel__editor-head {
   display: flex;
   align-items: flex-start;
@@ -168,7 +173,8 @@
 }
 
 .gameplay-event-panel__card {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   justify-content: space-between;
   gap: var(--editor-spacing-sm);
@@ -201,12 +207,14 @@
 }
 
 .gameplay-event-panel__card-title {
+  overflow-wrap: anywhere;
   font-size: 12px;
   font-weight: 700;
   color: var(--editor-text-main, #ffffff);
 }
 
 .gameplay-event-panel__card-meta {
+  overflow-wrap: anywhere;
   margin-top: 2px;
   font-size: 10px;
   color: var(--editor-text-muted, #cccccc);

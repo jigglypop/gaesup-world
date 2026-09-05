@@ -9,6 +9,9 @@ export type WorldPageProps = {
   compactHud?: boolean;
   includeEditorAuxPanels?: boolean;
   showDiagnostics?: boolean;
+  onRuntimeReady?: () => void;
+  sceneChildren?: ReactNode;
+  overlayChildren?: ReactNode;
   editorShellOptions?: EditorShellOptions;
   children?: ReactNode;
 };
