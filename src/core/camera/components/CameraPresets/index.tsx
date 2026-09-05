@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, type CSSProperties } from 'react';
+import { useCallback, useMemo, type CSSProperties } from 'react';
 
 import {
   CAMERA_PRESETS_DEFAULT_CLASSES,

@@ -1,9 +1,8 @@
-import React from 'react';
-
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 
 import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
+
 import './styles/BlueprintEditorPage.css';
 
 export function BlueprintEditorPage() {
@@ -25,6 +24,7 @@ export function BlueprintEditorPage() {
         </button>,
         actionSlot,
       )}
+      <a className="blueprint-editor-page__close" href="/blueprint-playground" target="_blank" rel="noreferrer">전사 이동 체험 · 새 탭</a>
       <BlueprintEditor onClose={handleClose} />
     </div>
   );

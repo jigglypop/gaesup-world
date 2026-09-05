@@ -1,15 +1,19 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { loadCoreWasm, type GaesupCoreWasmExports } from '@core/wasm/loader';
+
+import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
+import { logger } from '../../../../utils/logger';
 
 const COUNT = 2000;
 const NEAR_COUNT = 800;
 const HALF_RANGE = 20;
 const HEIGHT = 20;
 const LOD_INTERVAL = 3;
+const NodeGpuSnow = lazy(() => import('./NodeGpuSnow'));
 
 type SnowProps = {
   /**
@@ -143,7 +147,7 @@ function GpuSnow({ followCamera = false }: Pick<SnowProps, 'followCamera'>) {
     const uTime = u['uTime'];
     const uOrigin = u['uOrigin'];
     const uScale = u['uScale'];
-    if (uTime) uTime.value = state.clock.elapsedTime;
+    if (uTime) uTime.value = getFrameElapsedSeconds(state);
     if (followCamera && uOrigin) (uOrigin.value as THREE.Vector3).copy(state.camera.position);
     if (uScale) uScale.value = state.gl.domElement.height * 0.5;
   });
@@ -160,6 +164,8 @@ function GpuSnow({ followCamera = false }: Pick<SnowProps, 'followCamera'>) {
 }
 
 export function Snow({ gpu, followCamera = false }: SnowProps = {}) {
+  const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
+  if (gpu && useNodes) return <Suspense fallback={null}><NodeGpuSnow followCamera={followCamera} count={COUNT} halfRange={HALF_RANGE} height={HEIGHT} /></Suspense>;
   if (gpu) {
     return <GpuSnow followCamera={followCamera} />;
   }
@@ -168,16 +174,16 @@ export function Snow({ gpu, followCamera = false }: SnowProps = {}) {
 
 function CpuSnow({ followCamera = false }: Pick<SnowProps, 'followCamera'>) {
   const pointsRef = useRef<THREE.Points>(null!);
-  const posRef = useRef(new Float32Array(COUNT * 3));
-  const velRef = useRef(new Float32Array(COUNT * 3));
+  const positions = useMemo(() => new Float32Array(COUNT * 3), []);
+  const velocities = useMemo(() => new Float32Array(COUNT * 3), []);
   const wasmRef = useRef<GaesupCoreWasmExports | null>(null);
-  const ptrsRef = useRef<{ p: number; v: number; b: number } | null>(null);
+  const ptrsRef = useRef<{ p: number; v: number; b: number; bounds: Float32Array } | null>(null);
   const bounds = useMemo(() => new Float32Array(6), []);
   const frameRef = useRef(0);
 
   useEffect(() => {
-    const pos = posRef.current;
-    const vel = velRef.current;
+    const pos = positions;
+    const vel = velocities;
     for (let i = 0; i < COUNT; i++) {
       pos[i * 3] = (Math.random() - 0.5) * HALF_RANGE * 2;
       pos[i * 3 + 1] = Math.random() * HEIGHT;
@@ -187,9 +193,19 @@ function CpuSnow({ followCamera = false }: Pick<SnowProps, 'followCamera'>) {
       vel[i * 3 + 2] = 0;
     }
 
+    let active = true;
     let posPtr = 0, velPtr = 0, boundsPtr = 0;
-    loadCoreWasm().then((w) => {
+    const release = () => {
+      const w = wasmRef.current;
+      wasmRef.current = null;
+      ptrsRef.current = null;
       if (!w) return;
+      if (posPtr) w.dealloc_f32(posPtr, COUNT * 3);
+      if (velPtr) w.dealloc_f32(velPtr, COUNT * 3);
+      if (boundsPtr) w.dealloc_f32(boundsPtr, 6);
+    };
+    loadCoreWasm().then((w) => {
+      if (!active || !w) return;
       wasmRef.current = w;
       const n = COUNT * 3;
       posPtr = w.alloc_f32(n);
@@ -197,17 +213,19 @@ function CpuSnow({ followCamera = false }: Pick<SnowProps, 'followCamera'>) {
       boundsPtr = w.alloc_f32(6);
       new Float32Array(w.memory.buffer, posPtr, n).set(pos);
       new Float32Array(w.memory.buffer, velPtr, n).set(vel);
-      ptrsRef.current = { p: posPtr, v: velPtr, b: boundsPtr };
+      ptrsRef.current = { p: posPtr, v: velPtr, b: boundsPtr,
+        bounds: new Float32Array(w.memory.buffer, boundsPtr, 6) };
+    }).catch((error: unknown) => {
+      if (!active) return;
+      release();
+      logger.error('Snow WASM initialization failed', error instanceof Error ? error : String(error));
     });
 
     return () => {
-      const w = wasmRef.current;
-      if (!w) return;
-      if (posPtr) w.dealloc_f32(posPtr, COUNT * 3);
-      if (velPtr) w.dealloc_f32(velPtr, COUNT * 3);
-      if (boundsPtr) w.dealloc_f32(boundsPtr, 6);
+      active = false;
+      release();
     };
-  }, []);
+  }, [positions, velocities]);
 
   useFrame((state, delta) => {
     const parent = pointsRef.current?.parent;
@@ -233,25 +251,28 @@ function CpuSnow({ followCamera = false }: Pick<SnowProps, 'followCamera'>) {
     const dt = Math.min(delta, 0.05);
     const wasm = wasmRef.current;
     const ptrs = ptrsRef.current;
-    const pos = posRef.current;
-    const vel = velRef.current;
+    const pos = positions;
+    const vel = velocities;
     const frame = frameRef.current++;
     const isFullUpdate = frame % LOD_INTERVAL === 0;
     const points = pointsRef.current;
     if (!points) return;
 
     if (wasm && ptrs) {
-      new Float32Array(wasm.memory.buffer, ptrs.b, 6).set(bounds);
+      if (ptrs.bounds.buffer !== wasm.memory.buffer) {
+        ptrs.bounds = new Float32Array(wasm.memory.buffer, ptrs.b, 6);
+      }
+      ptrs.bounds.set(bounds);
       wasm.update_snow_particles(
         COUNT, ptrs.p, ptrs.v, ptrs.b,
         0.3, 0.0, 0.0,
         2.0, 0.01, dt,
       );
-      // WASM 메모리를 직접 참조하여 geometry attribute 갱신 (전체 복사 제거)
-      const wasmPos = new Float32Array(wasm.memory.buffer, ptrs.p, COUNT * 3);
       const attr = points.geometry.attributes['position'];
       if (!(attr instanceof THREE.BufferAttribute)) return;
-      attr.array = wasmPos;
+      if (attr.array.buffer !== wasm.memory.buffer || attr.array.byteOffset !== ptrs.p) {
+        attr.array = new Float32Array(wasm.memory.buffer, ptrs.p, COUNT * 3);
+      }
       attr.needsUpdate = true;
     } else {
       const updateEnd = isFullUpdate ? COUNT : NEAR_COUNT;
@@ -313,11 +334,11 @@ function CpuSnow({ followCamera = false }: Pick<SnowProps, 'followCamera'>) {
 
   const geometry = useMemo(() => {
     const g = new THREE.BufferGeometry();
-    const attr = new THREE.Float32BufferAttribute(posRef.current, 3);
+    const attr = new THREE.BufferAttribute(positions, 3);
     attr.setUsage(THREE.DynamicDrawUsage);
     g.setAttribute('position', attr);
     return g;
-  }, []);
+  }, [positions]);
 
   const material = useMemo(
     () =>

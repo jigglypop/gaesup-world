@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import * as THREE from 'three';
 
@@ -13,29 +13,36 @@ import {
 import { useGaesupStore } from '../../../stores/gaesupStore';
 
 const EMPTY_MOUSE_TARGET = new THREE.Vector3();
+const PLAYER_POSITION_UPDATE_INTERVAL_MS = 150;
+const REACH_DISTANCE = 1.0;
 
 export function Clicker() {
   const automation = useGaesupStore((state) => state.automation);
-  const { position: playerPosition } = usePlayerPosition({ updateInterval: 50 });
+  const { position: playerPosition } = usePlayerPosition({
+    updateInterval: PLAYER_POSITION_UPDATE_INTERVAL_MS,
+  });
   const { mouse } = useInteractionSystem();
   const [navigationPoints, setNavigationPoints] = useState(() => [...getClickNavigationRoute()]);
+  const pathPointsRef = useRef<THREE.Vector3[]>([]);
 
-  useEffect(() => subscribeClickNavigationRoute(() => {
-    setNavigationPoints([...getClickNavigationRoute()]);
-  }), []);
+  useEffect(
+    () =>
+      subscribeClickNavigationRoute(() => {
+        setNavigationPoints([...getClickNavigationRoute()]);
+      }),
+    [],
+  );
 
-  // Use 3D target position from InteractionSystem
   const mouseTarget = mouse?.target || EMPTY_MOUSE_TARGET;
   const isActive = mouse?.isActive || false;
   const queue = automation?.queue || { actions: [], currentIndex: 0 };
   const actions = queue.actions || [];
   const currentIndex = queue.currentIndex || 0;
-  
-  // Check if player has reached the target (within 1 unit distance)
+
   const distanceToTarget = playerPosition.distanceTo(mouseTarget);
-  const hasReachedTarget = distanceToTarget < 1.0;
+  const hasReachedTarget = distanceToTarget < REACH_DISTANCE;
   const shouldShowMarker = isActive && !hasReachedTarget;
-  
+
   const queuePoints = useMemo(
     () =>
       actions
@@ -49,9 +56,8 @@ export function Clicker() {
     [actions],
   );
 
-  // Start from player position
   const routedPoints = navigationPoints.length > 0 ? navigationPoints : [mouseTarget];
-  const allPoints = shouldShowMarker
+  pathPointsRef.current = shouldShowMarker
     ? [playerPosition, ...routedPoints, ...queuePoints]
     : queuePoints.length > 0
       ? [playerPosition, ...queuePoints]
@@ -59,25 +65,19 @@ export function Clicker() {
 
   return (
     <group>
-      {/* Show target marker only when active and not reached */}
       {shouldShowMarker && (
         <group position={mouseTarget}>
           <TargetMarker />
         </group>
       )}
 
-      {allPoints.length > 1 && (
-        <PathLine 
-          points={allPoints} 
-          color={currentIndex >= 0 ? "#00ff88" : "#ffaa00"} 
-        />
-      )}
+      <PathLine pointsRef={pathPointsRef} color={currentIndex >= 0 ? '#00ff88' : '#ffaa00'} />
 
       {actions.map((action, index) => {
         if (action.type === 'move' && action.target) {
-          const isActive = index === currentIndex;
+          const isActiveAction = index === currentIndex;
           const isCompleted = index < currentIndex;
-          
+
           return (
             <group
               key={`action-${index}`}
@@ -86,7 +86,7 @@ export function Clicker() {
               <mesh>
                 <sphereGeometry args={[0.1, 8, 8]} />
                 <meshStandardMaterial
-                  color={isCompleted ? "#888" : isActive ? "#ff4444" : "#ffaa00"}
+                  color={isCompleted ? '#888' : isActiveAction ? '#ff4444' : '#ffaa00'}
                   transparent
                   opacity={isCompleted ? 0.3 : 0.8}
                 />

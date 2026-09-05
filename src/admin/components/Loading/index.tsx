@@ -7,11 +7,11 @@ export default function Loading() {
   if (!loading) return null;
 
   return (
-    <div className="loading-overlay">
+    <div className="loading-overlay" role="status">
       <div className="loading-spinner">
         <div className="spinner-ring"></div>
-        <div className="loading-text">Loading...</div>
+        <div className="loading-text">불러오는 중...</div>
       </div>
     </div>
   );
-} 
+}

@@ -1,13 +1,16 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
-import {
-  CapsuleCollider,
-  RapierRigidBody,
-  RigidBody,
-  euler,
-} from '@react-three/rapier';
+import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three/rapier';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
@@ -15,6 +18,11 @@ import { useEntity } from '@core/boilerplate/hooks/useEntity';
 
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
+import {
+  applyToonToScene,
+  getDefaultToonMode,
+  releaseToonFromScene,
+} from '../../../rendering/toon';
 import { useGltfAndSize } from '../../hooks';
 import { PhysicsEntityProps } from '../types';
 
@@ -35,9 +43,11 @@ function resolveAnimationKey(
   if (actions[requested]) return requested;
   const keys = Object.keys(actions);
   const normalized = requested.toLowerCase();
-  return keys.find((key) => key.toLowerCase() === normalized)
-    ?? keys.find((key) => key.toLowerCase().includes(normalized))
-    ?? (keys.length === 1 ? keys[0] : undefined);
+  return (
+    keys.find((key) => key.toLowerCase() === normalized) ??
+    keys.find((key) => key.toLowerCase().includes(normalized)) ??
+    (keys.length === 1 ? keys[0] : undefined)
+  );
 }
 
 export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
@@ -49,12 +59,8 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const { scene, animations } = useGLTF(modelUrl);
     const { actions, ref: animationRef } = useAnimations(animations);
     const activeAnimationRef = useRef<string | undefined>(undefined);
-    
-    const {
-      handleIntersectionEnter,
-      handleIntersectionExit,
-      handleCollisionEnter,
-    } = useEntity({
+
+    const { handleIntersectionEnter, handleIntersectionExit, handleCollisionEnter } = useEntity({
       rigidBodyRef,
       ...(props.name ? { id: props.name } : {}),
       ...(props.userData ? { userData: props.userData } : {}),
@@ -64,7 +70,9 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       ...(props.onReady ? { onReady: props.onReady } : {}),
       ...(props.onFrame ? { onFrame: props.onFrame } : {}),
       ...(props.onAnimate ? { onAnimate: props.onAnimate } : {}),
-      ...(props.onDestroy || props.onDestory ? { onDestroy: props.onDestroy ?? props.onDestory } : {}),
+      ...(props.onDestroy || props.onDestory
+        ? { onDestroy: props.onDestroy ?? props.onDestory }
+        : {}),
       actions,
       isActive: props.isActive,
       ...(props.outerGroupRef ? { outerGroupRef: props.outerGroupRef } : {}),
@@ -75,6 +83,15 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     });
 
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
+    const [toonRevision, setToonRevision] = useState(0);
+    const graph = useGraph(clone);
+    useLayoutEffect(() => {
+      if (!getDefaultToonMode()) return;
+      applyToonToScene(clone);
+      setToonRevision((revision) => revision + 1);
+      return () => releaseToonFromScene(clone);
+    }, [clone]);
+    const nodes = useMemo(() => ({ ...graph.nodes }), [graph.nodes, toonRevision]);
     const skeleton = useMemo(() => {
       let skel: THREE.Skeleton | null = null;
       clone.traverse((child) => {
@@ -93,7 +110,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
           return (
             <PartsGroupRef
               url={url}
-              isActive={true}
+              isActive={false}
               componentType={props.componentType}
               {...(props.currentAnimation ? { currentAnimation: props.currentAnimation } : {})}
               {...(color ? { color } : {})}
@@ -105,7 +122,6 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
         .filter(Boolean);
     }, [props.parts, props.componentType, props.currentAnimation, skeleton]);
 
-    const { nodes } = useGraph(clone);
     const objectNode = Object.values(nodes).find((node) => node.type === 'Object3D');
     const safeRotationY = props.rotation instanceof THREE.Euler ? props.rotation.y : 0;
     const outerGroupProps = props.outerGroupRef ? { ref: props.outerGroupRef } : {};
@@ -180,7 +196,9 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
             isActive={props.isActive}
             componentType={props.componentType}
             {...(objectNode ? { objectNode } : {})}
-            {...(props.modelYawOffset !== undefined ? { modelYawOffset: props.modelYawOffset } : {})}
+            {...(props.modelYawOffset !== undefined
+              ? { modelYawOffset: props.modelYawOffset }
+              : {})}
             {...(props.isRiderOn !== undefined ? { isRiderOn: props.isRiderOn } : {})}
             {...(props.enableRiding !== undefined ? { enableRiding: props.enableRiding } : {})}
             {...(props.ridingUrl ? { ridingUrl: props.ridingUrl } : {})}

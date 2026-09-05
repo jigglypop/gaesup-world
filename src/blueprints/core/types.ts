@@ -1,7 +1,7 @@
 import { RefObject } from 'react';
 
 import { RapierRigidBody } from '@react-three/rapier';
-import type { Group, Vector3 } from 'three';
+import type { AnimationClip, Group, Vector3 } from 'three';
 
 import type { BlueprintRecord, BlueprintValue } from '../types';
 
@@ -26,12 +26,27 @@ export interface BlueprintDefinition {
   metadata?: BlueprintRecord;
 }
 
+export type BlueprintMovementInput = {
+  forward?: boolean;
+  backward?: boolean;
+  leftward?: boolean;
+  rightward?: boolean;
+  run?: boolean;
+  jump?: boolean;
+  isGrounded: boolean;
+  cameraYaw?: number;
+};
+
+export type BlueprintAnimationClips = Readonly<Record<string, AnimationClip>>;
+
 export interface ComponentContext {
   rigidBodyRef: RefObject<RapierRigidBody>;
   innerGroupRef?: RefObject<Group>;
   outerGroupRef?: RefObject<Group>;
   deltaTime: number;
   entityId: string;
+  movementInput?: BlueprintMovementInput | undefined;
+  animationClips?: BlueprintAnimationClips;
 }
 
 export interface IComponent {

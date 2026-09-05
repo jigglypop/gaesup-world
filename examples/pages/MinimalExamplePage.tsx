@@ -6,6 +6,7 @@ import {
   CameraDebugPanel,
   CameraPresets,
   CameraSettingsTab,
+  CAMERA_CONTROLLER_DEFAULT_MODES,
   DEFAULT_CHARACTER_EQUIPMENT_PRESETS,
   GaesupRuntimeProvider,
   applyCharacterEquipmentPreset,
@@ -15,6 +16,7 @@ import {
   playCameraCinematic,
   toggleCharacterWeapon,
   useCharacterStore,
+  DEFAULT_CHARACTER_ID,
   type ActionEquipmentPanelRenderers,
   type CameraControllerRenderers,
   type CameraDebugPanelRenderers,
@@ -30,6 +32,12 @@ export function MinimalExamplePage() {
   );
   const appearance = useCharacterStore((state) => state.appearance);
   const outfits = useCharacterStore((state) => state.outfits);
+  const activeCharacterId = useCharacterStore((state) => state.activeCharacterId);
+  const characters = useCharacterStore((state) => state.characters);
+  const setActiveCharacter = useCharacterStore((state) => state.setActiveCharacter);
+  const equipOutfit = useCharacterStore((state) => state.equipOutfit);
+  const removeCharacter = useCharacterStore((state) => state.removeCharacter);
+  const npcCharacterId = 'npc-1';
   const actionEquipmentRenderers = useMemo<ActionEquipmentPanelRenderers>(
     () => ({
       header: (panel) => (
@@ -86,7 +94,9 @@ export function MinimalExamplePage() {
     () => ({
       mode: (settings) => (
         <div style={cameraSettingsModeStyle}>
-          Control: {settings.mode.control ?? settings.labels.fallbackMode}
+          카메라 시점:{' '}
+          {CAMERA_CONTROLLER_DEFAULT_MODES.find((mode) => mode.value === settings.mode.control)
+            ?.label ?? settings.labels.fallbackMode}
         </div>
       ),
       section: (_, section, children) => (
@@ -121,7 +131,7 @@ export function MinimalExamplePage() {
       <main style={pageStyle}>
         <section style={panelStyle}>
           <div style={eyebrowStyle}>설치 패키지 사용 예제</div>
-          <h1 style={titleStyle}>미니멀 개섭 런타임</h1>
+          <h1 style={titleStyle}>미니멀 개숲 런타임</h1>
           <p style={copyStyle}>
             공개 패키지 엔트리만 사용합니다. 월드 캔버스, 물리 씬, 에디터 셸 없이 실행됩니다.
           </p>
@@ -145,13 +155,13 @@ export function MinimalExamplePage() {
             <CameraPresets renderers={cameraPresetRenderers} />
             <CameraDebugPanel
               fields={[
-                { key: 'mode', label: 'Mode', enabled: true, format: 'text' },
-                { key: 'fov', label: 'FOV', enabled: true, format: 'angle', precision: 0 },
+                { key: 'mode', label: '시점', enabled: true, format: 'text' },
+                { key: 'fov', label: '시야각', enabled: true, format: 'angle', precision: 0 },
               ]}
               customFields={[
                 {
                   key: 'outfit-count',
-                  label: 'Outfits',
+                  label: '장착한 의상',
                   getValue: () => Object.values(outfits).filter(Boolean).length,
                   format: 'number',
                   precision: 0,
@@ -179,6 +189,51 @@ export function MinimalExamplePage() {
         <section style={stateStyle}>
           <h2 style={subtitleStyle}>캐릭터 상태</h2>
           <pre style={preStyle}>{JSON.stringify({ appearance, outfits }, null, 2)}</pre>
+        </section>
+        <section style={panelStyle}>
+          <h2 style={subtitleStyle}>캐릭터별 장비 (멀티 캐릭터)</h2>
+          <p style={copyStyle}>
+            `equipOutfit`/`setName` 등에 `characterId`를 넘기면 활성 캐릭터를 바꾸지 않고 다른
+            캐릭터(예: NPC)의 장비를 독립적으로 관리할 수 있습니다.
+          </p>
+          <div style={buttonRowStyle}>
+            <button
+              type="button"
+              style={activeCharacterId === DEFAULT_CHARACTER_ID ? buttonStyle : cameraButtonStyle}
+              onClick={() => setActiveCharacter(DEFAULT_CHARACTER_ID)}
+            >
+              플레이어 활성화
+            </button>
+            <button
+              type="button"
+              style={activeCharacterId === npcCharacterId ? buttonStyle : cameraButtonStyle}
+              onClick={() => setActiveCharacter(npcCharacterId)}
+            >
+              NPC 활성화
+            </button>
+            <button
+              type="button"
+              style={cameraButtonStyle}
+              onClick={() => equipOutfit('weapon', 'npc-axe', npcCharacterId)}
+            >
+              NPC에 도끼 장착
+            </button>
+            <button
+              type="button"
+              style={cameraButtonStyle}
+              onClick={() => equipOutfit('top', 'npc-armor', npcCharacterId)}
+            >
+              NPC에 갑옷 장착
+            </button>
+            <button
+              type="button"
+              style={cameraButtonStyle}
+              onClick={() => removeCharacter(npcCharacterId)}
+            >
+              NPC 제거
+            </button>
+          </div>
+          <pre style={preStyle}>{JSON.stringify({ activeCharacterId, characters }, null, 2)}</pre>
         </section>
       </main>
     </GaesupRuntimeProvider>
@@ -329,22 +384,22 @@ const preStyle = {
 const minimalCameraSettingsSections = [
   {
     key: 'minimal-lens',
-    title: 'Lens',
+    title: '렌즈',
     fields: [
       {
         key: 'minimal-fov',
-        label: 'FOV',
+        label: '시야각',
         kind: 'range',
         path: 'fov',
         min: 30,
         max: 120,
         step: 5,
-        suffix: 'deg',
+        suffix: '도',
         defaultValue: 75,
       },
       {
         key: 'minimal-focus',
-        label: 'Focus',
+        label: '초점',
         kind: 'checkbox',
         path: 'enableFocus',
         defaultValue: false,

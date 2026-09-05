@@ -15,19 +15,34 @@ import {
   registerWorldGameplayEventBlueprint,
 } from './runtime';
 import type { WorldPageProps } from './types';
+import {
+  useWorldSceneDocumentSnapshot,
+  type WorldSceneDocumentSession,
+} from './world/sceneDocument';
 
 export type WorldEditorSurfaceProps = {
   showEditorShell: boolean;
   includeEditorAuxPanels: boolean;
   editorShellOptions: NonNullable<WorldPageProps['editorShellOptions']>;
+  sceneDocumentSession: WorldSceneDocumentSession;
 };
 
 export function WorldEditorSurface({
   showEditorShell,
   includeEditorAuxPanels,
   editorShellOptions,
+  sceneDocumentSession,
 }: WorldEditorSurfaceProps) {
   const [gameplayBlueprints, setGameplayBlueprints] = useState(() => getWorldGameplayBlueprints());
+  const sceneDocument = useWorldSceneDocumentSnapshot(sceneDocumentSession);
+  const [selectedObjectCandidate, setSelectedObjectCandidate] = useState<string | undefined>(
+    () => sceneDocument.objects[0]?.id,
+  );
+  const selectedObjectId = sceneDocument.objects.some(
+    (object) => object.id === selectedObjectCandidate,
+  )
+    ? selectedObjectCandidate
+    : sceneDocument.objects[0]?.id;
   const editorShell = useMemo(() => {
     const auxiliaryPanels = includeEditorAuxPanels
       ? [
@@ -75,7 +90,41 @@ export function WorldEditorSurface({
     return createEditorShell({
       ...editorShellOptions,
       panels: [...auxiliaryPanels, ...(editorShellOptions.panels ?? [])],
-      defaultActivePanels: editorShellOptions.defaultActivePanels ?? ['tile', 'character'],
+      commands: [
+        {
+          id: 'example.scene-document.create-marker',
+          label: '월드 표식 추가',
+          run: async () => {
+            const objectId = sceneDocumentSession.createObjectId();
+            const rootCount = sceneDocumentSession
+              .getSnapshot()
+              .objects.filter((object) => !object.parentId).length;
+            const accepted = await sceneDocumentSession.createObject({
+              id: objectId,
+              name: `월드 표식 ${rootCount}`,
+              tags: ['creator', 'runtime-marker'],
+              transform: { position: [8 + rootCount * 2, 1, -6] },
+            });
+            if (accepted) setSelectedObjectCandidate(objectId);
+          },
+        },
+        {
+          id: 'example.scene-document.delete-selected',
+          label: '선택한 객체 삭제',
+          run: async () => {
+            if (!selectedObjectId) return;
+            const accepted = await sceneDocumentSession.deleteObject(selectedObjectId);
+            if (accepted) setSelectedObjectCandidate(undefined);
+          },
+        },
+        ...(editorShellOptions.commands ?? []),
+      ],
+      defaultActivePanels: editorShellOptions.defaultActivePanels ?? [
+        'hierarchy',
+        'inspector',
+        'tile',
+        'character',
+      ],
       sidebarPreset: editorShellOptions.sidebarPreset ?? 'compact',
       hiddenBuiltInPanels: editorShellOptions.hiddenBuiltInPanels ?? [
         'vehicle',
@@ -84,6 +133,9 @@ export function WorldEditorSurface({
         'performance',
       ],
       panelOrder: editorShellOptions.panelOrder ?? [
+        'hierarchy',
+        'inspector',
+        'project-assets',
         'world',
         'character',
         'wall',
@@ -97,10 +149,33 @@ export function WorldEditorSurface({
         'studio',
       ],
     });
-  }, [editorShellOptions, gameplayBlueprints, includeEditorAuxPanels]);
+  }, [
+    editorShellOptions,
+    gameplayBlueprints,
+    includeEditorAuxPanels,
+    sceneDocumentSession,
+    selectedObjectId,
+  ]);
 
   if (!showEditorShell) return null;
-  return <Editor shell={editorShell} />;
+  return (
+    <Editor
+      shell={editorShell}
+      sceneDocument={sceneDocument}
+      projectScenes={[sceneDocument]}
+      {...(selectedObjectId ? { selectedObjectId } : {})}
+      onSelectSceneObject={(object) => setSelectedObjectCandidate(object.id)}
+      onUpdateSceneObject={(objectId, patch) => {
+        void sceneDocumentSession.updateObject(objectId, patch);
+      }}
+      onAddSceneComponent={(objectId, component) => {
+        void sceneDocumentSession.addComponent(objectId, component);
+      }}
+      onRemoveSceneComponent={(objectId, componentId) => {
+        void sceneDocumentSession.removeComponent(objectId, componentId);
+      }}
+    />
+  );
 }
 
 export default WorldEditorSurface;

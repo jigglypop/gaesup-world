@@ -1,0 +1,105 @@
+.example-app-shell,
+.example-app-shell__content {
+  width: 100%;
+  height: 100%;
+}
+.example-app-shell {
+  --editor-shell-top: calc(var(--app-header-height) + 12px);
+  --editor-shell-mobile-top: calc(var(--app-header-height) + 12px);
+  --gaesup-toast-top: calc(var(--app-header-height) + 16px);
+  position: relative;
+  overflow: hidden;
+  background: var(--gp-glass-bg-strong);
+  color: var(--gp-text);
+}
+.example-app-shell__content {
+  position: relative;
+}
+
+.example-app-shell .editor-sidebar {
+  background: rgba(18, 22, 32, 0.94);
+  --editor-text-secondary: #c4cad5;
+}
+
+@media (max-width: 768px) {
+  .example-app-shell {
+    --app-header-height: 124px;
+    --gaesup-toast-top: calc(var(--app-header-height) + 60px);
+  }
+}
+
+@media (max-width: 768px), (max-height: 500px) {
+  .example-app-shell .minimap {
+    max-width: 112px;
+    max-height: 112px;
+    bottom: 112px;
+    left: 12px;
+  }
+
+  .example-app-shell .minimap__canvas {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .example-app-shell .editor-root .editor-sidebar.editor-sidebar--open {
+    width: calc(100vw - 16px);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .example-app-shell .editor-sidebar--open .editor-sidebar-menu {
+    overflow-y: auto;
+    gap: 8px;
+    max-height: min(220px, 35dvh);
+  }
+
+  .example-app-shell .editor-sidebar--open .editor-sidebar-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .example-app-shell .editor-sidebar--open .editor-panel-menu {
+    flex: none;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-height: none;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+
+  .example-app-shell .editor-sidebar--open .editor-panel-menu .editor-panel-toggle {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .example-app-shell .editor-sidebar--open .editor-sidebar-footer {
+    flex-direction: row;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .example-app-shell .editor-sidebar--open .editor-sidebar-footer .editor-menu-section,
+  .example-app-shell .editor-sidebar--open .editor-play-mode-controls {
+    display: flex;
+    flex-direction: row;
+    flex: 0 0 auto;
+    white-space: nowrap;
+    align-items: center;
+  }
+
+  .example-app-shell .editor-sidebar--open .editor-sidebar-footer .editor-region-label {
+    display: none;
+  }
+
+  .example-app-shell .editor-sidebar--open .editor-panel-toggle {
+    width: auto;
+    min-height: 36px;
+  }
+}

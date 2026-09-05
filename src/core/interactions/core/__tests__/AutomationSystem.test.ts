@@ -232,7 +232,7 @@ describe('AutomationSystem', () => {
       await system.start();
 
       expect(callback).toHaveBeenCalledTimes(1);
-      jest.advanceTimersByTime(200);
+      await jest.advanceTimersByTimeAsync(200);
       expect(callback).toHaveBeenCalledTimes(2);
     });
 
@@ -242,7 +242,7 @@ describe('AutomationSystem', () => {
       system.addAction({ type: 'key', key: 'a' });
       await system.start();
 
-      jest.advanceTimersByTime(200);
+      await jest.advanceTimersByTimeAsync(200);
       expect(callback).toHaveBeenCalledTimes(1);
     });
   });

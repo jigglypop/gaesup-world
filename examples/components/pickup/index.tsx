@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { Interactable, useInventoryStore, getItemRegistry } from 'gaesup-world';
 

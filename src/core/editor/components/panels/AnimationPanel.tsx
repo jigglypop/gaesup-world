@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 
 import type {
   AnimationPanelClassNameSlot,
@@ -13,9 +13,9 @@ import { AnimationDebugPanel } from '../../../animation/components/AnimationDebu
 import { AnimationPlayer } from '../../../animation/components/AnimationPlayer';
 
 export const ANIMATION_PANEL_DEFAULT_LABELS: AnimationPanelLabels = {
-  Player: 'Player',
-  Controller: 'Controller',
-  Debug: 'Debug',
+  Player: '재생',
+  Controller: '재생 설정',
+  Debug: '상태 진단',
 };
 export const ANIMATION_PANEL_DEFAULT_TABS: readonly AnimationPanelTabConfig[] = [
   { id: 'Player', label: ANIMATION_PANEL_DEFAULT_LABELS.Player },

@@ -201,6 +201,7 @@ export { WorldConfigProvider, WorldContainer } from './world/components/WorldCon
 export { ControllerWrapper as GaesupController } from './interactions/components/ControllerWrapper';
 
 export { createRenderer, isWebGPUAvailable } from './rendering/webgpu';
+export { Grid as LegacyGrid } from './rendering/legacyDrei';
 export {
   createToonMaterial,
   getToonGradient,

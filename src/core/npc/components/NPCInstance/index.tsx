@@ -10,6 +10,7 @@ import { SkeletonUtils } from 'three-stdlib';
 import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
 
 import { NPCPartMeshProps, NPCInstanceProps } from './types';
+import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
 import { applyToonToScene, getDefaultToonMode } from '../../../rendering/toon';
 import { createNPCObservation, resolveNPCBrainDecision } from '../../core/brain';
 import { useNPCStore } from '../../stores/npcStore';
@@ -224,7 +225,8 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   useFrame((state) => {
     const brainMode = instance.brain?.mode ?? 'none';
     if (brainMode === 'none') return;
-    if (state.clock.elapsedTime < nextBehaviorAtRef.current) return;
+    const elapsed = getFrameElapsedSeconds(state);
+    if (elapsed < nextBehaviorAtRef.current) return;
 
     const body = rigidBodyRef.current;
     const bodyPos = body?.translation();
@@ -234,7 +236,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
     const observation = createNPCObservation(
       observedInstance,
       useNPCStore.getState().instances,
-      state.clock.elapsedTime,
+      elapsed,
     );
     setInstanceObservation(instance.id, observation);
 
@@ -244,7 +246,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
       executeInstanceActions(instance.id, decision.actions);
     }
 
-    nextBehaviorAtRef.current = state.clock.elapsedTime + Math.max(0.5, instance.behavior?.waitSeconds ?? 1);
+    nextBehaviorAtRef.current = elapsed + Math.max(0.5, instance.behavior?.waitSeconds ?? 1);
   });
   
   const handlePointerEnter = useCallback((e: ThreeEvent<PointerEvent>) => {

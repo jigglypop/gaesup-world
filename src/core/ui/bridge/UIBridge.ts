@@ -129,4 +129,4 @@ export class UIBridge extends CoreBridge<UISystem, UISnapshot, UICommand> {
   override snapshot(type: string): UISnapshot | null {
     return super.snapshot(type);
   }
-} 
+}

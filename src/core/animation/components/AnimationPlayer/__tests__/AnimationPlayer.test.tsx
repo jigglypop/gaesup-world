@@ -45,6 +45,35 @@ describe('AnimationPlayer', () => {
     cleanup();
   });
 
+  it('cycles registered animations in both directions', () => {
+    render(<AnimationPlayer />);
+    fireEvent.click(screen.getByRole('button', { name: '이전 애니메이션' }));
+    expect(mockPlayAnimation).toHaveBeenLastCalledWith('character', 'run');
+    fireEvent.click(screen.getByRole('button', { name: '다음 애니메이션' }));
+    expect(mockPlayAnimation).toHaveBeenLastCalledWith('character', 'walk');
+  });
+
+  it('shows empty state and does not offer fabricated timing or playback', () => {
+    mockSnapshot.mockReturnValue(null);
+    render(<AnimationPlayer />);
+    expect(screen.getByRole('status')).toHaveTextContent('아직 등록되지 않았습니다');
+    expect(screen.getByRole('combobox')).toBeDisabled();
+    expect(screen.getByRole('button', { name: '애니메이션 재생' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '이전 애니메이션' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '다음 애니메이션' })).toBeDisabled();
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument();
+    expect(screen.queryByText('1:30')).not.toBeInTheDocument();
+  });
+
+  it('uses a registered fallback when the selected animation is unavailable', () => {
+    mockSnapshot.mockReturnValue({ isPlaying: false, availableAnimations: ['dance'] });
+    render(<AnimationPlayer />);
+    expect(screen.getByRole('combobox')).toHaveValue('dance');
+    fireEvent.click(screen.getByRole('button', { name: '애니메이션 재생' }));
+    expect(mockPlayAnimation).toHaveBeenCalledWith('character', 'dance');
+    expect(screen.getByRole('button', { name: '다음 애니메이션' })).toBeDisabled();
+  });
+
   it('should render initial state correctly based on snapshot', () => {
     const { unmount } = render(<AnimationPlayer />);
 
@@ -53,7 +82,7 @@ describe('AnimationPlayer', () => {
     expect(screen.getByText('walk')).toBeInTheDocument();
     
     // Check for the play button, as initial state is isPlaying: false
-    expect(screen.getByRole('button', { name: 'play' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '애니메이션 재생' })).toBeInTheDocument();
     unmount();
   });
 
@@ -70,7 +99,7 @@ describe('AnimationPlayer', () => {
   it('should call playAnimation when play button is clicked while paused', () => {
     const { unmount } = render(<AnimationPlayer />);
     
-    const playButton = screen.getByRole('button', { name: 'play' });
+    const playButton = screen.getByRole('button', { name: '애니메이션 재생' });
     fireEvent.click(playButton);
     
     expect(mockPlayAnimation).toHaveBeenCalledWith('character', 'idle');
@@ -86,7 +115,7 @@ describe('AnimationPlayer', () => {
 
     const { unmount } = render(<AnimationPlayer />);
     
-    const pauseButton = screen.getByRole('button', { name: 'pause' });
+    const pauseButton = screen.getByRole('button', { name: '애니메이션 정지' });
     fireEvent.click(pauseButton);
     
     expect(mockStopAnimation).toHaveBeenCalledWith('character');
@@ -97,7 +126,7 @@ describe('AnimationPlayer', () => {
     const { unmount } = render(<AnimationPlayer />);
     
     // Initial render shows Play icon
-    expect(screen.getByRole('button', { name: 'play' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '애니메이션 재생' })).toBeInTheDocument();
 
     // Find the callback passed to subscribe
     const bridgeCallback = mockSubscribe.mock.calls[0][0];
@@ -114,7 +143,7 @@ describe('AnimationPlayer', () => {
     });
 
     // Now it should show the Pause icon
-    expect(screen.getByRole('button', { name: 'pause' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '애니메이션 정지' })).toBeInTheDocument();
     unmount();
   });
-}); 
+});

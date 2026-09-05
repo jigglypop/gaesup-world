@@ -8,8 +8,9 @@ import { SkeletonUtils } from 'three-stdlib';
 import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
 
 import { ModelRendererProps, PartsGroupRefProps } from './types';
+import { resolveSharedSkeletonBinding } from '../../../character/skeleton';
 
-export function ModelRenderer({ nodes, color, skeleton, url, excludeNodeNames }: ModelRendererProps) {
+export function ModelRenderer({ nodes, color, colorNodeNames, skeleton, url, excludeNodeNames }: ModelRendererProps) {
   type NodeData =
     | {
         type: 'skinnedMesh';
@@ -25,8 +26,9 @@ export function ModelRenderer({ nodes, color, skeleton, url, excludeNodeNames }:
         key: string;
       };
 
-  const { processedNodes, ownedMaterials } = useMemo(() => {
+  const { processedNodes, ownedMaterials, ownedGeometries } = useMemo(() => {
     const owned: THREE.Material[] = [];
+    const ownedGeo: THREE.BufferGeometry[] = [];
     const exclude =
       excludeNodeNames && excludeNodeNames.length > 0
         ? new Set(excludeNodeNames)
@@ -41,10 +43,13 @@ export function ModelRenderer({ nodes, color, skeleton, url, excludeNodeNames }:
       return cloned;
     };
 
-    const resolveMaterial = (mat: THREE.Material | THREE.Material[]) => {
+    const tintable = colorNodeNames && colorNodeNames.length > 0 ? new Set(colorNodeNames) : null;
+
+    const resolveMaterial = (mat: THREE.Material | THREE.Material[], nodeName: string) => {
       // If no per-instance color is requested, do not clone. This keeps memory usage down.
       // We also set `dispose={null}` on rendered meshes to avoid R3F disposing shared GLTF assets.
       if (!color) return mat;
+      if (tintable && !tintable.has(nodeName)) return mat;
       return Array.isArray(mat) ? mat.map((m) => tint(m)) : tint(mat);
     };
 
@@ -53,17 +58,22 @@ export function ModelRenderer({ nodes, color, skeleton, url, excludeNodeNames }:
         if (exclude && exclude.has(name)) return null;
         const node = nodes[name];
         if (node instanceof THREE.SkinnedMesh) {
-          const material = resolveMaterial(node.material);
+          const material = resolveMaterial(node.material, name);
+          // Sharing the character skeleton is only safe when joint indices agree;
+          // remap them when the same bones are ordered differently, and fall back
+          // to the mesh's own skeleton when the rig contract is broken.
+          const binding = resolveSharedSkeletonBinding(node, skeleton, url);
+          if (binding.ownsGeometry) ownedGeo.push(binding.geometry);
 
           return {
             type: 'skinnedMesh' as const,
             material,
-            geometry: node.geometry,
-            skeleton: skeleton || node.skeleton,
+            geometry: binding.geometry,
+            skeleton: binding.skeleton,
             key: `${url}-${name}-${key}`,
           };
         } else if (node instanceof THREE.Mesh) {
-          const material = resolveMaterial(node.material);
+          const material = resolveMaterial(node.material, name);
 
           return {
             type: 'mesh' as const,
@@ -79,16 +89,20 @@ export function ModelRenderer({ nodes, color, skeleton, url, excludeNodeNames }:
     return {
       processedNodes: processed,
       ownedMaterials: owned,
+      ownedGeometries: ownedGeo,
     };
-  }, [nodes, color, skeleton, url, excludeNodeNames]);
+  }, [nodes, color, colorNodeNames, skeleton, url, excludeNodeNames]);
 
   useEffect(() => {
     return () => {
       for (const m of ownedMaterials) {
         m.dispose();
       }
+      for (const g of ownedGeometries) {
+        g.dispose();
+      }
     };
-  }, [ownedMaterials]);
+  }, [ownedMaterials, ownedGeometries]);
 
   return (
     <>
@@ -124,13 +138,18 @@ export function ModelRenderer({ nodes, color, skeleton, url, excludeNodeNames }:
   );
 }
 
+function PartAnimationDriver() {
+  useAnimationPlayer(true);
+  return null;
+}
+
 export function PartsGroupRef({ url, isActive, color, skeleton }: PartsGroupRefProps) {
   const { scene } = useGLTF(url) as { scene: THREE.Object3D };
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { nodes } = useGraph(clone);
-  useAnimationPlayer(isActive);
   return (
     <group>
+      {isActive && <PartAnimationDriver />}
       <ModelRenderer
         nodes={nodes}
         url={url}

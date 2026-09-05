@@ -1,5 +1,3 @@
-import React from 'react';
-
 import type {
   NPCAnimation,
   NPCBehaviorConfig,
@@ -320,20 +318,20 @@ export function NPCPerceptionSection({
           </div>
         </div>
         <div className="building-panel__info-item">
-          <span className="building-panel__info-label">Provider</span>
+          <span className="building-panel__info-label">제공자</span>
           <input
             value={instance.brain?.providerId ?? ''}
             onChange={(event) => updateBrain(instance.id, { providerId: event.target.value })}
-            placeholder="llm provider id"
+            placeholder="언어 모델 제공자 식별자"
             style={{ width: '100%', minWidth: 0 }}
           />
         </div>
         <div className="building-panel__info-item">
-          <span className="building-panel__info-label">Policy</span>
+          <span className="building-panel__info-label">정책</span>
           <input
             value={instance.brain?.policyId ?? ''}
             onChange={(event) => updateBrain(instance.id, { policyId: event.target.value })}
-            placeholder="rl policy id"
+            placeholder="학습 정책 식별자"
             style={{ width: '100%', minWidth: 0 }}
           />
         </div>

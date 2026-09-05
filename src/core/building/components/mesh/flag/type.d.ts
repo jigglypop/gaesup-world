@@ -1,9 +1,17 @@
-import type { ThreeElements } from "@react-three/fiber";
-import * as THREE from "three";
+import type { ThreeElements } from '@react-three/fiber';
+import * as THREE from 'three';
 
-import type { PlacedObject } from "../../types";
+import type { PlacedObject } from '../../../types';
 
-export type FlagMeshProps = ThreeElements["mesh"] & {
+export type FlagMaterialInstance = THREE.Material & { time: number; windStrength: number };
+export type FlagSurfaceMaterialProps = {
+  materialRef: React.RefObject<FlagMaterialInstance>;
+  texture: THREE.Texture;
+  windStrength: number;
+  instanced?: boolean;
+};
+
+export type FlagMeshProps = ThreeElements['mesh'] & {
   geometry: THREE.BufferGeometry;
   pamplet_url?: string | null;
   windStrength?: number;

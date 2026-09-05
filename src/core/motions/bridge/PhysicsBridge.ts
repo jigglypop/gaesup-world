@@ -1,7 +1,7 @@
-import { PhysicsConfigType } from '@/core/stores/slices/physics/types';
 import { CoreBridge, DomainBridge, EnableEventLog } from '@core/boilerplate';
 import { LogSnapshot, ValidateCommand, CacheSnapshot } from '@core/boilerplate';
 
+import type { PhysicsConfigType } from '../core/config';
 import { EntityStateManager } from '../core/system/EntityStateManager';
 import { PhysicsSystem } from '../core/system/PhysicsSystem';
 import { PhysicsUpdateArgs } from '../core/system/PhysicsSystem';
@@ -58,4 +58,4 @@ export class PhysicsBridge extends CoreBridge<PhysicsBridgeEntity, PhysicsSnapsh
     entity.system.updateWithArgs(args);
     this.notifyListeners(id);
   }
-} 
+}

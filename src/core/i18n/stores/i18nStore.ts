@@ -14,6 +14,7 @@ type State = {
 
   serialize: () => I18nSerialized;
   hydrate: (data: I18nSerialized | null | undefined) => void;
+  prepareHydrate: (data: I18nSerialized | null | undefined) => () => void;
 };
 
 const FALLBACK: LocaleId = 'ko';
@@ -70,10 +71,15 @@ export const useI18nStore = create<State>((set, get) => ({
 
   serialize: () => ({ version: 1, locale: get().locale }),
 
-  hydrate: (data) => {
-    if (!data || data.version !== 1) return;
-    set({ locale: data.locale });
+  prepareHydrate: (data) => {
+    if (data === null || data === undefined) return () => {};
+    if (typeof data !== 'object' || data.version !== 1 || !['ko', 'en', 'ja'].includes(data.locale)) {
+      throw new TypeError('Invalid language snapshot');
+    }
+    const { locale } = data;
+    return () => set({ locale });
   },
+  hydrate: (data) => get().prepareHydrate(data)(),
 }));
 
 export function t(key: string, vars?: Record<string, string | number>): string {

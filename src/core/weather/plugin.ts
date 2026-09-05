@@ -36,6 +36,7 @@ export function createWeatherPlugin(options: WeatherPluginOptions = {}): GaesupP
         key: saveExtensionId,
         serialize: serializeWeatherState,
         hydrate: hydrateWeatherState,
+        prepareHydrate: (data: WeatherSerialized | null | undefined) => useWeatherStore.getState().prepareHydrate(data),
       }, pluginId);
       ctx.services.register(storeServiceId, {
         useStore: useWeatherStore,

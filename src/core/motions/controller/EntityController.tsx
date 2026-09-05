@@ -19,21 +19,22 @@ export function EntityController({ props, children }: EntityControllerProps) {
   const urls = useGaesupStore((state) => state.urls);
   const isInBuildingEditMode = useBuildingStore((state) => state.isInEditMode());
   const refs = useGenericRefs();
-  
+
   // Initialize keyboard event listeners
-  useKeyboard();
+  useKeyboard(true, true, undefined, props.enableKeyboard ?? true);
+  const rideableId = gameStates?.currentRideable?.id;
+  const offset = useMemo(
+    () => (rideableId ? rideable?.[rideableId]?.offset : undefined) ?? vec3(),
+    [rideableId, rideable],
+  );
+
   if (isInBuildingEditMode) return null;
   if (!mode || !gameStates || !rideable || !urls) return null;
   // Avoid rendering PhysicsEntity until the required model URL exists.
   if (mode.type === 'character' && !urls.characterUrl) return null;
   if (mode.type === 'vehicle' && !urls.vehicleUrl) return null;
   if (mode.type === 'airplane' && !urls.airplaneUrl) return null;
-  const { canRide, isRiding, currentRideable } = gameStates;
-  const rideableId = currentRideable?.id;
-  const offset = useMemo(
-    () => (rideableId ? rideable[rideableId]?.offset : undefined) ?? vec3(),
-    [rideableId, rideable],
-  );
+  const { canRide, isRiding } = gameStates;
   const getEntityProps = () => {
     const rigidBodyRef = props.rigidBodyRef ?? refs.rigidBodyRef;
     const outerGroupRef = props.outerGroupRef ?? refs.outerGroupRef;
@@ -58,8 +59,12 @@ export function EntityController({ props, children }: EntityControllerProps) {
       ...(props.onReady ? { onReady: props.onReady } : {}),
       ...(props.onDestroy ? { onDestroy: props.onDestroy } : {}),
       ...(props.onDestory ? { onDestory: props.onDestory } : {}),
-      ...(typeof props.baseColor === 'string' && props.baseColor.trim().length > 0 ? { baseColor: props.baseColor } : {}),
-      ...(Array.isArray(props.excludeBaseNodes) && props.excludeBaseNodes.length > 0 ? { excludeBaseNodes: props.excludeBaseNodes } : {}),
+      ...(typeof props.baseColor === 'string' && props.baseColor.trim().length > 0
+        ? { baseColor: props.baseColor }
+        : {}),
+      ...(Array.isArray(props.excludeBaseNodes) && props.excludeBaseNodes.length > 0
+        ? { excludeBaseNodes: props.excludeBaseNodes }
+        : {}),
       ...(props.rigidBodyProps ? { rigidBodyProps: props.rigidBodyProps } : {}),
       ...(props.controllerOptions ? { controllerOptions: props.controllerOptions } : {}),
       ...(props.groundRay ? { groundRay: props.groundRay } : {}),

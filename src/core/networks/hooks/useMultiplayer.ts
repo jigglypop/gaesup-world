@@ -56,7 +56,8 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
   const networkManagerRef = useRef<PlayerNetworkManager | null>(null);
   const positionTrackerRef = useRef<PlayerPositionTracker | null>(null);
   const trackingPlayerRef = useRef<RefObject<RapierRigidBody> | null>(null);
-  const configRef = useRef<MultiplayerConfig>(config);
+  const configOverridesRef = useRef<Partial<MultiplayerConfig>>({});
+  const [trackingUpdateRate, setTrackingUpdateRate] = useState(config.tracking.updateRate);
   const stateRef = useRef<MultiplayerState>(state);
   const modeTypeRef = useRef(modeType);
   const animationStateRef = useRef(animationState);
@@ -76,10 +77,24 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
   const [speechByPlayerId, setSpeechByPlayerId] = useState<Map<string, { text: string; expiresAt: number }>>(
     () => new Map()
   );
-  const speechRef = useRef<Map<string, { text: string; expiresAt: number }>>(new Map());
 
   useEffect(() => {
-    speechRef.current = speechByPlayerId;
+    if (speechByPlayerId.size === 0) return;
+    let nextExpiry = Infinity;
+    for (const speech of speechByPlayerId.values()) {
+      nextExpiry = Math.min(nextExpiry, speech.expiresAt);
+    }
+    const timer = window.setTimeout(() => {
+      const now = Date.now();
+      setSpeechByPlayerId((current) => {
+        const next = new Map(current);
+        for (const [playerId, speech] of next) {
+          if (speech.expiresAt <= now) next.delete(playerId);
+        }
+        return next;
+      });
+    }, Math.max(0, nextExpiry - Date.now()));
+    return () => window.clearTimeout(timer);
   }, [speechByPlayerId]);
 
   // 외부에서 rigidBodyRef를 준 경우 자동 트래킹
@@ -91,20 +106,25 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
 
   // 위치 추적 초기화
   useEffect(() => {
+    // Changed tracking props replace imperative tracking settings, matching the active tracker.
+    delete configOverridesRef.current.tracking;
     const trackingConfig: PlayerTrackingConfig = {
       updateRate: config.tracking.updateRate,
       velocityThreshold: config.tracking.velocityThreshold,
       sendRateLimit: config.tracking.sendRateLimit
     };
     
-    positionTrackerRef.current = new PlayerPositionTracker(trackingConfig);
-  }, [config.tracking]);
+    if (positionTrackerRef.current) positionTrackerRef.current.updateConfig(trackingConfig);
+    else positionTrackerRef.current = new PlayerPositionTracker(trackingConfig);
+    setTrackingUpdateRate(trackingConfig.updateRate);
+  }, [config.tracking.updateRate, config.tracking.velocityThreshold, config.tracking.sendRateLimit]);
 
   // 연결
   const connect = useCallback((connectionOptions: MultiplayerConnectionOptions) => {
     if (networkManagerRef.current) {
       networkManagerRef.current.disconnect();
     }
+    if (rigidBodyRef) trackingPlayerRef.current = rigidBodyRef;
 
     // 연결 정보 저장
     connectionInfoRef.current = {
@@ -119,21 +139,23 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
       roomId: connectionOptions.roomId
     }));
 
+    const effectiveConfig = { ...config, ...configOverridesRef.current };
     const manager = new PlayerNetworkManager({
-      url: config.websocket.url,
+      url: effectiveConfig.websocket.url,
       roomId: connectionOptions.roomId,
       playerName: connectionOptions.playerName,
       playerColor: connectionOptions.playerColor,
-      reconnectAttempts: config.websocket.reconnectAttempts,
-      reconnectDelay: config.websocket.reconnectDelay,
-      pingInterval: config.websocket.pingInterval,
-      sendRateLimit: config.tracking.sendRateLimit,
-      enableAck: config.enableAck,
-      reliableTimeout: config.reliableTimeout,
-      reliableRetryCount: config.reliableRetryCount,
-      logLevel: config.logLevel,
-      logToConsole: config.logToConsole,
+      reconnectAttempts: effectiveConfig.websocket.reconnectAttempts,
+      reconnectDelay: effectiveConfig.websocket.reconnectDelay,
+      pingInterval: effectiveConfig.websocket.pingInterval,
+      sendRateLimit: effectiveConfig.tracking.sendRateLimit,
+      enableAck: effectiveConfig.enableAck,
+      reliableTimeout: effectiveConfig.reliableTimeout,
+      reliableRetryCount: effectiveConfig.reliableRetryCount,
+      logLevel: effectiveConfig.logLevel,
+      logToConsole: effectiveConfig.logToConsole,
       onConnect: () => {
+        positionTrackerRef.current?.reset();
         setState(prev => ({
           ...prev,
           isConnected: true,
@@ -227,7 +249,11 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
     config.websocket.pingInterval,
     config.tracking.sendRateLimit,
     config.logLevel,
-    config.logToConsole
+    config.logToConsole,
+    config.enableAck,
+    config.reliableTimeout,
+    config.reliableRetryCount,
+    rigidBodyRef
   ]);
 
   // 연결 해제
@@ -261,10 +287,11 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
 
   // 설정 업데이트
   const updateConfig = useCallback((newConfig: Partial<MultiplayerConfig>) => {
-    configRef.current = { ...configRef.current, ...newConfig };
+    configOverridesRef.current = { ...configOverridesRef.current, ...newConfig };
     
-    if (newConfig.tracking && positionTrackerRef.current) {
-      positionTrackerRef.current.updateConfig(newConfig.tracking);
+    if (newConfig.tracking) {
+      positionTrackerRef.current?.updateConfig(newConfig.tracking);
+      setTrackingUpdateRate(newConfig.tracking.updateRate);
     }
   }, []);
 
@@ -272,7 +299,7 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
     const manager = networkManagerRef.current;
     if (!manager) return;
 
-    const range = options?.range ?? configRef.current.proximityRange;
+    const range = options?.range ?? configOverridesRef.current.proximityRange ?? config.proximityRange;
     manager.sendChat(text, { range });
 
     const localId = state.localPlayerId;
@@ -286,13 +313,13 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
       next.set(localId, { text: safeText, expiresAt: Date.now() + ttl });
       return next;
     });
-  }, [state.localPlayerId]);
+  }, [state.localPlayerId, config.proximityRange]);
 
   // 위치 추적 및 네트워크 업데이트 (Canvas 밖에서도 동작해야 하므로 useFrame 금지)
   useEffect(() => {
     if (!state.isConnected) return;
 
-    const tickMs = Math.max(15, Math.floor(1000 / Math.max(1, configRef.current.tracking.updateRate)));
+    const tickMs = Math.max(15, Math.floor(1000 / Math.max(1, trackingUpdateRate)));
 
     const id = window.setInterval(() => {
       const currentState = stateRef.current;
@@ -319,23 +346,10 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
         );
       }
 
-      // 말풍선 TTL 정리 (가벼운 GC) -- Map 재사용으로 불필요한 할당 방지
-      if (speechRef.current.size > 0) {
-        const now = Date.now();
-        const keysToDelete: string[] = [];
-        speechRef.current.forEach((v, k) => {
-          if (v.expiresAt <= now) keysToDelete.push(k);
-        });
-        if (keysToDelete.length > 0) {
-          const next = new Map(speechRef.current);
-          for (const k of keysToDelete) next.delete(k);
-          setSpeechByPlayerId(next);
-        }
-      }
     }, tickMs);
 
     return () => window.clearInterval(id);
-  }, [state.isConnected, characterUrl]);
+  }, [state.isConnected, characterUrl, trackingUpdateRate]);
 
   // 정리
   useEffect(() => {

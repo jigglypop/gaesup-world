@@ -1,7 +1,9 @@
-import React, { memo, useEffect, useMemo, useRef } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+
+import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
 
 interface WaveEffectProps {
   active?: boolean;
@@ -70,7 +72,7 @@ export const WaveEffect = memo(({
   }, [active]);
 
   useFrame((state) => {
-    const currentTime = state.clock.elapsedTime;
+    const currentTime = getFrameElapsedSeconds(state);
 
     if (active) {
       // Create a new wave at a fixed cadence.

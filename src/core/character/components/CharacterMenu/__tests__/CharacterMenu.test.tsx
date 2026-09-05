@@ -1,9 +1,34 @@
 import React from 'react';
+import { renderHook } from '@testing-library/react';
+
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { useAssetStore } from '../../../../assets';
 import { useCharacterStore } from '../../../stores/characterStore';
 import { CharacterMenu } from '../index';
+import { useCharacterMenuController } from '../useCharacterMenuController';
+
+test('menu reset follows the active character without deleting other profiles', () => {
+  const previous = useCharacterStore.getState();
+  previous.setActiveCharacter('first');
+  previous.equipOutfit('hat', 'first-hat');
+  const { result, unmount } = renderHook(() => useCharacterMenuController({ open: true }));
+  try {
+    act(() => {
+      previous.setActiveCharacter('second');
+      previous.equipOutfit('hat', 'second-hat');
+    });
+    act(() => { result.current.actions.reset(); });
+    const current = useCharacterStore.getState();
+    expect(current.activeCharacterId).toBe('second');
+    expect(current.outfits.hat).toBeNull();
+    expect(current.characters.first?.outfits.hat).toBe('first-hat');
+    expect(current.serialize().characters.first?.outfits.hat).toBe('first-hat');
+  } finally {
+    unmount();
+    useCharacterStore.setState(previous, true);
+  }
+});
 
 describe('CharacterMenu 커스텀 UI', () => {
   beforeEach(() => {
@@ -86,6 +111,45 @@ describe('CharacterMenu 커스텀 UI', () => {
       handleClick();
     });
     expect(useCharacterStore.getState().outfits.hat).toBe('custom-hat-owned');
+    act(() => {
+      root.unmount();
+    });
+  });
+});
+
+describe('CharacterMenu 동시 열림 방지', () => {
+  beforeEach(() => {
+    useCharacterStore.getState().resetAppearance();
+    useAssetStore.getState().resetAssets();
+  });
+  test('다른 메뉴가 열리면 이미 열린 메뉴는 닫힌다', () => {
+    let renderer: ReactTestRenderer | undefined;
+    act(() => {
+      renderer = create(
+        <>
+          <CharacterMenu toggleKey="o" renderers={{ root: () => <section data-testid="creator" /> }} />
+          <CharacterMenu
+            toggleKey="c"
+            renderers={{ root: () => <section data-testid="customizer" /> }}
+          />
+        </>,
+      );
+    });
+    const root = renderer as ReactTestRenderer;
+    const countOpen = (testId: string) => root.root.findAllByProps({ 'data-testid': testId }).length;
+    const press = (key: string) => {
+      act(() => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key, code: `Key${key.toUpperCase()}` }));
+      });
+    };
+    press('o');
+    expect(countOpen('creator')).toBe(1);
+    expect(countOpen('customizer')).toBe(0);
+    press('c');
+    expect(countOpen('creator')).toBe(0);
+    expect(countOpen('customizer')).toBe(1);
+    press('c');
+    expect(countOpen('customizer')).toBe(0);
     act(() => {
       root.unmount();
     });

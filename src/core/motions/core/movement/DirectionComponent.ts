@@ -1,9 +1,8 @@
 
 import * as THREE from 'three';
 
-import { Profile, HandleError } from '@/core/boilerplate/decorators';
+import { Profile } from '@/core/boilerplate/decorators';
 import type { RefObject } from '@core/boilerplate';
-import { PhysicsConfigType } from '@stores/slices';
 import { ModeType } from '@stores/slices/mode/types';
 import {
   getCachedTrig,
@@ -27,6 +26,7 @@ import {
   PhysicsInputState,
   PhysicsState,
 } from '../../types';
+import type { PhysicsConfigType } from '../config';
 
 
 export class DirectionComponent {
@@ -40,7 +40,6 @@ export class DirectionComponent {
     leftward: false,
     rightward: false,
   };
-  private timers = new Set<NodeJS.Timeout>();
   private inputBackend: InputAdapter;
   private config: PhysicsConfigType;
   private tempEuler = new THREE.Euler();
@@ -219,51 +218,24 @@ export class DirectionComponent {
   ): void {
     this.syncClickNavigationTarget(mouse, calcProp);
 
-    const { automation } = calcProp?.worldContext || {};
-    if (automation?.settings.trackProgress && automation.queue.actions && automation.queue.actions.length > 0) {
-      const Q = automation.queue.actions.shift();
-      if (Q && Q.target) {
-        const currentPosition = this.vectorCache.getTempVector(2);
-        const rb = calcProp?.rigidBodyRef?.current;
-        if (rb) {
-          const t = rb.translation();
-          currentPosition.set(t.x, t.y, t.z);
-        } else {
-          currentPosition.set(0, 0, 0);
-        }
-        const targetPosition = Q.target;
-        const direction = this.vectorCache.getTempVector(1);
-        direction.subVectors(targetPosition, currentPosition).normalize();
-        if (calcProp?.memo) {
-          if (!calcProp.memo.direction) {
-            calcProp.memo.direction = new THREE.Vector3();
-          }
-          if (!calcProp.memo.directionTarget) {
-            calcProp.memo.directionTarget = new THREE.Vector3();
-          }
-          calcProp.memo.direction.copy(direction);
-          calcProp.memo.directionTarget.copy(targetPosition);
-        }
-        
-        if (automation.queue.loop && Q && automation.queue.actions) {
-          automation.queue.actions.push(Q);
-        }
-      }
-    } else {
-      if (calcProp?.rigidBodyRef.current) {
-        const currentPos = calcProp.rigidBodyRef.current.translation();
-        const tempCurrentPos = this.vectorCache.getTempVector(0);
-        tempCurrentPos.set(currentPos.x, currentPos.y, currentPos.z);
-        const norm = calcNorm(tempCurrentPos, mouse.target, false);
-
-        if (norm < 1) {
-          this.handleClicker(calcProp, currentPos);
-          return;
-        }
-      }
-
-      this.applyMouseRotation(activeState, mouse, characterConfig);
+    if (!mouse.isActive) {
+      activeState.dir.set(0, 0, 0);
+      activeState.direction.set(0, 0, 0);
+      return;
     }
+    if (calcProp?.rigidBodyRef.current) {
+      const currentPos = calcProp.rigidBodyRef.current.translation();
+      const tempCurrentPos = this.vectorCache.getTempVector(0);
+      tempCurrentPos.set(currentPos.x, currentPos.y, currentPos.z);
+      if (getClickNavigationRoute().length === 0 && calcNorm(tempCurrentPos, mouse.target, false) < 1) {
+        calcProp.setMouseInput?.({ isActive: false, shouldRun: false, hasArrived: true });
+        activeState.dir.set(0, 0, 0);
+        activeState.direction.set(0, 0, 0);
+        return;
+      }
+      mouse.angle = Math.atan2(mouse.target.z - currentPos.z, mouse.target.x - currentPos.x);
+    }
+    this.applyMouseRotation(activeState, mouse, characterConfig);
   }
 
   private syncClickNavigationTarget(
@@ -285,13 +257,19 @@ export class DirectionComponent {
     const { shouldRun } = getClickNavigationSettings();
 
     if (!nextTarget) {
-      calcProp?.setMouseInput?.({ isActive: false, shouldRun: false });
+      calcProp?.setMouseInput?.({ isActive: false, shouldRun: false, hasArrived: true });
       mouse.isActive = false;
       mouse.shouldRun = false;
       return;
     }
 
     const nextAngle = Math.atan2(nextTarget.z - currentPosition.z, nextTarget.x - currentPosition.x);
+    if (
+      mouse.isActive &&
+      mouse.shouldRun === shouldRun &&
+      mouse.angle === nextAngle &&
+      mouse.target.equals(nextTarget)
+    ) return;
     calcProp?.setMouseInput?.({
       target: nextTarget,
       angle: nextAngle,
@@ -303,34 +281,6 @@ export class DirectionComponent {
     mouse.angle = nextAngle;
     mouse.isActive = true;
     mouse.shouldRun = shouldRun;
-  }
-
-  private handleClicker(calcProp: PhysicsCalcProps, currentPos: { x: number; y: number; z: number }): void {
-    const { automation } = calcProp.worldContext || {};
-    if (automation?.settings.trackProgress && automation.queue.actions && automation.queue.actions.length > 0) {
-      const Q = automation.queue.actions.shift();
-      if (Q && Q.target) {
-        const newAngle = Math.atan2(Q.target.z - currentPos.z, Q.target.x - currentPos.x);
-        calcProp.setMouseInput?.({ target: Q.target, angle: newAngle, isActive: true });
-      } else if (Q && Q.type === 'wait') {
-        const duration = Q.duration || 1000;
-        if (calcProp.state) {
-          calcProp.state.clock.stop();
-          const timer = setTimeout(() => {
-            if (calcProp.state) {
-              calcProp.state.clock.start();
-            }
-            this.timers.delete(timer);
-          }, duration);
-          this.timers.add(timer);
-        }
-      }
-      if (automation.queue.loop && Q && automation.queue.actions) {
-        automation.queue.actions.push(Q);
-      }
-    } else {
-      calcProp.setMouseInput?.({ isActive: false, shouldRun: false });
-    }
   }
 
   private applyMouseRotation(
@@ -407,9 +357,5 @@ export class DirectionComponent {
     this.lastEulerY[entityType] = activeState.euler.y;
   }
 
-  @HandleError()
-  dispose(): void {
-    this.timers.forEach(timer => clearTimeout(timer));
-    this.timers.clear();
-  }
+  dispose(): void {}
 }

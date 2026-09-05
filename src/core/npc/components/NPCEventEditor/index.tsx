@@ -5,11 +5,23 @@ import { useNPCStore } from '../../stores/npcStore';
 import type { NPCEvent, NPCEventPayload } from '../../types';
 import './styles.css';
 
+const EVENT_LABELS: Record<NPCEvent['type'], string> = {
+  onClick: '클릭할 때',
+  onHover: '커서를 올릴 때',
+  onInteract: '상호작용할 때',
+  onProximity: '가까이 다가갈 때',
+};
+const ACTION_LABELS: Record<NPCEvent['action'], string> = {
+  dialogue: '대화 표시',
+  animation: '애니메이션 재생',
+  sound: '소리 재생',
+  custom: '사용자 지정 동작',
+};
+
 export function NPCEventEditor({ instanceId, onClose }: NPCEventEditorProps) {
-  const instances = useNPCStore((state) => state.instances);
+  const instance = useNPCStore((state) => state.instances.get(instanceId));
   const addInstanceEvent = useNPCStore((state) => state.addInstanceEvent);
   const removeInstanceEvent = useNPCStore((state) => state.removeInstanceEvent);
-  const instance = instances.get(instanceId);
   const [eventType, setEventType] = useState<NPCEvent['type']>('onClick');
   const [actionType, setActionType] = useState<NPCEvent['action']>('dialogue');
   const [dialogue, setDialogue] = useState('');
@@ -33,108 +45,117 @@ export function NPCEventEditor({ instanceId, onClose }: NPCEventEditorProps) {
         payload = { type: 'custom', data: { script: '' } };
         break;
     }
-    
+
     const newEvent: NPCEvent = {
       id: `event-${Date.now()}`,
       type: eventType,
       action: actionType,
-      ...(payload ? { payload } : {})
+      ...(payload ? { payload } : {}),
     };
-    
+
     addInstanceEvent(instanceId, newEvent);
     setDialogue('');
     setAnimationId('');
   };
-  
+
   return (
     <div className="npc-event-editor">
       <div className="npc-event-editor-header">
-        <h3>Event Editor: {instance.name}</h3>
-        <button onClick={onClose} className="npc-event-editor-close">×</button>
+        <h3>이벤트 편집: {instance.name}</h3>
+        <button
+          type="button"
+          aria-label="이벤트 편집 닫기"
+          onClick={onClose}
+          className="npc-event-editor-close"
+        >
+          ×
+        </button>
       </div>
-      
+
       <div className="npc-event-editor-content">
         <div className="npc-event-editor-section">
-          <h4>Current Events</h4>
+          <h4>등록된 이벤트</h4>
           {instance.events && instance.events.length > 0 ? (
             <ul className="npc-event-list">
-              {instance.events.map(event => (
+              {instance.events.map((event) => (
                 <li key={event.id} className="npc-event-item">
-                  <span>{event.type} → {event.action}</span>
-                  <button 
+                  <span>
+                    {EVENT_LABELS[event.type]} → {ACTION_LABELS[event.action]}
+                  </span>
+                  <button
                     onClick={() => removeInstanceEvent(instanceId, event.id)}
                     className="npc-event-remove"
                   >
-                    Remove
+                    삭제
                   </button>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="npc-event-empty">No events configured</p>
+            <p className="npc-event-empty">등록된 이벤트가 없습니다</p>
           )}
         </div>
-        
+
         <div className="npc-event-editor-section">
-          <h4>Add New Event</h4>
-          
+          <h4>새 이벤트 추가</h4>
+
           <div className="npc-event-editor-field">
-            <label>Event Type:</label>
-            <select 
-              value={eventType} 
+            <label>발생 조건:</label>
+            <select
+              value={eventType}
               onChange={(e) => setEventType(e.target.value as NPCEvent['type'])}
               className="npc-event-editor-select"
             >
-              <option value="onClick">On Click</option>
-              <option value="onHover">On Hover</option>
-              <option value="onInteract">On Interact</option>
-              <option value="onProximity">On Proximity</option>
+              <option value="onClick">클릭할 때</option>
+              <option value="onHover">커서를 올릴 때</option>
+              <option value="onInteract">상호작용할 때</option>
+              <option value="onProximity">가까이 다가갈 때</option>
             </select>
           </div>
-          
+
           <div className="npc-event-editor-field">
-            <label>Action Type:</label>
-            <select 
-              value={actionType} 
+            <label>실행 동작:</label>
+            <select
+              value={actionType}
               onChange={(e) => setActionType(e.target.value as NPCEvent['action'])}
               className="npc-event-editor-select"
             >
-              <option value="dialogue">Show Dialogue</option>
-              <option value="animation">Play Animation</option>
-              <option value="sound">Play Sound</option>
-              <option value="custom">Custom Action</option>
+              <option value="dialogue">대화 표시</option>
+              <option value="animation">애니메이션 재생</option>
+              <option value="sound">소리 재생</option>
+              <option value="custom">사용자 지정 동작</option>
             </select>
           </div>
-          
+
           {actionType === 'dialogue' && (
             <div className="npc-event-editor-field">
-              <label>Dialogue Text:</label>
+              <label>대화 내용:</label>
               <textarea
                 value={dialogue}
                 onChange={(e) => setDialogue(e.target.value)}
-                placeholder="Enter dialogue text..."
+                placeholder="대화 내용을 입력하세요…"
                 className="npc-event-editor-textarea"
               />
             </div>
           )}
-          
+
           {actionType === 'animation' && (
             <div className="npc-event-editor-field">
-              <label>Animation:</label>
+              <label>애니메이션:</label>
               <select
                 value={animationId}
                 onChange={(e) => setAnimationId(e.target.value)}
                 className="npc-event-editor-select"
               >
-                <option value="">Select animation...</option>
-                <option value="idle">Idle</option>
-                <option value="walk">Walk</option>
-                <option value="talk">Talk</option>
+                <option value="">애니메이션 선택…</option>
+                <option value="idle">대기</option>
+                <option value="walk">걷기</option>
+                <option value="talk">대화</option>
               </select>
             </div>
           )}
-          
-          <button 
+
+          <button
             onClick={handleAddEvent}
             className="npc-event-editor-add-button"
             disabled={
@@ -142,10 +163,10 @@ export function NPCEventEditor({ instanceId, onClose }: NPCEventEditorProps) {
               (actionType === 'animation' && !animationId)
             }
           >
-            Add Event
+            이벤트 추가
           </button>
         </div>
       </div>
     </div>
   );
-} 
+}

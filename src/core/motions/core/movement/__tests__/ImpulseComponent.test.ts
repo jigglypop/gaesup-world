@@ -47,6 +47,38 @@ const buildPhysicsStateFrom = (manager: EntityStateManager): PhysicsState => ({
 });
 
 describe('ImpulseComponent와 EntityStateManager 동일 인스턴스 주입', () => {
+  test('mouse movement stop brakes horizontally once and preserves vertical velocity', () => {
+    const manager = new EntityStateManager();
+    manager.updateGameStates({ isMoving: true });
+    const state = buildPhysicsStateFrom(manager);
+    const body = buildRigidBodyRef();
+    body.current.linvel().y = -3;
+    const impulse = new ImpulseComponent({ walkSpeed: 10 } as PhysicsConfigType, manager);
+    state.mouse.isActive = true;
+    impulse.applyImpulse(body as unknown as Parameters<typeof impulse.applyImpulse>[0], state);
+    state.mouse.isActive = false;
+    impulse.applyImpulse(body as unknown as Parameters<typeof impulse.applyImpulse>[0], state);
+    expect(body.current.setLinvel).toHaveBeenCalledWith({ x: 0, y: -3, z: 0 }, true);
+    body.current.setLinvel.mockClear();
+    state.gameStates.isMoving = false;
+    impulse.applyImpulse(body as unknown as Parameters<typeof impulse.applyImpulse>[0], state);
+    expect(body.current.setLinvel).not.toHaveBeenCalled();
+  });
+
+  test('mouse stop does not brake a continuing keyboard movement', () => {
+    const manager = new EntityStateManager();
+    manager.updateGameStates({ isMoving: true });
+    const state = buildPhysicsStateFrom(manager);
+    const body = buildRigidBodyRef();
+    const impulse = new ImpulseComponent({ walkSpeed: 10 } as PhysicsConfigType, manager);
+    state.mouse.isActive = true;
+    impulse.applyImpulse(body as unknown as Parameters<typeof impulse.applyImpulse>[0], state);
+    state.mouse.isActive = false;
+    state.keyboard.forward = true;
+    impulse.applyImpulse(body as unknown as Parameters<typeof impulse.applyImpulse>[0], state);
+    expect(body.current.setLinvel).not.toHaveBeenCalled();
+  });
+
   beforeEach(() => {
     (InteractionSystem.getInstance as jest.Mock).mockReturnValue({
       getKeyboardRef: () => ({ shift: false, space: false, forward: false, backward: false, leftward: false, rightward: false }),

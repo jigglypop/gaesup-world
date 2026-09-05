@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { getGrassManager } from './manager';
+import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
 
 /**
  * Single shared `useFrame` driver for every grass tile in the scene.
@@ -24,15 +25,16 @@ export function GrassDriver() {
   useFrame((state, delta) => {
     const camera = state.camera;
     if (getGrassManager().size() === 0) return;
+    camera.updateWorldMatrix(true, false);
     scratch.matrix.multiplyMatrices(
       camera.projectionMatrix,
       camera.matrixWorldInverse,
     );
-    scratch.frustum.setFromProjectionMatrix(scratch.matrix);
-    scratch.camPos.copy(camera.position);
+    scratch.frustum.setFromProjectionMatrix(scratch.matrix, camera.coordinateSystem, camera.reversedDepth);
+    camera.getWorldPosition(scratch.camPos);
 
     getGrassManager().tick({
-      elapsedTime: state.clock.elapsedTime,
+      elapsedTime: getFrameElapsedSeconds(state),
       delta,
       cameraPosition: scratch.camPos,
       frustum: scratch.frustum,

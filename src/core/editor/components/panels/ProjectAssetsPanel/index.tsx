@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, type CSSProperties } from 'react';
+import { useCallback, useMemo, useState, type CSSProperties } from 'react';
 
 import {
   PROJECT_ASSETS_PANEL_DEFAULT_CLASSES,
@@ -79,7 +79,7 @@ export function ProjectAssetsPanel({
       filterProjectAssetItems(allItems, {
         tab: currentTab,
         query: currentQuery,
-        kind: currentKind,
+        kind: currentTab === 'assets' ? currentKind : 'all',
       }),
     [allItems, currentKind, currentQuery, currentTab],
   );

@@ -1,6 +1,6 @@
 import { RapierRigidBody } from '@react-three/rapier';
 
-import type { PhysicsConfigType } from '@stores/slices';
+import type { PhysicsConfigType } from '../config';
 
 export abstract class ForceComponent {
   protected abstract config: PhysicsConfigType;
@@ -9,4 +9,4 @@ export abstract class ForceComponent {
     rigidBody: RapierRigidBody,
     delta: number
   ): void;
-} 
+}

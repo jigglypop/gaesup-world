@@ -67,7 +67,11 @@ export type WorldNpc = {
   dialogTreeId: string;
 };
 
-export const NPCS: WorldNpc[] = [];
+export const NPCS: WorldNpc[] = [
+  { id: 'mei', name: '메이', pos: [-8, 0, 8], accentColor: '#8caaff', dialogTreeId: 'npc.villager' },
+  { id: 'tommy', name: '토미', pos: [8, 0, 4], accentColor: '#ffc48a', dialogTreeId: 'npc.shopkeeper' },
+  { id: 'ryu', name: '류', pos: [-8, 0, -4], accentColor: '#8cdb9e', dialogTreeId: 'npc.craftsman' },
+];
 
 export const NPC_SCHEDULES: NPCSchedule[] = [];
 

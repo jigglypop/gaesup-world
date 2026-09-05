@@ -31,6 +31,7 @@ export function createCatalogPlugin(options: CatalogPluginOptions = {}) {
     capabilities: ['catalog'],
     serialize: serializeCatalogState,
     hydrate: hydrateCatalogState,
+    prepareHydrate: (data) => useCatalogStore.getState().prepareHydrate(data),
   });
 }
 

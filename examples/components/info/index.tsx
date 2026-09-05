@@ -20,8 +20,8 @@ const cameraControlLabels: Record<CameraControl, string> = {
   firstPerson: '1인칭',
   thirdPerson: '3인칭',
   chase: '추적',
-  topDown: '탑뷰',
-  sideScroll: '사이드',
+  topDown: '위에서 보기',
+  sideScroll: '옆에서 보기',
 };
 
 function isCameraControl(value: string): value is CameraControl {
@@ -49,6 +49,7 @@ function MenuOptionGroup({
           <button
             key={option.value}
             type="button"
+            aria-pressed={option.isSelected}
             className={`glass-button ${option.isSelected ? 'glass-button--active' : ''}`}
             onClick={() => onSelect(option.value)}
           >
@@ -86,11 +87,27 @@ export default function Info() {
     { value: 'airplane', label: '비행기', isSelected: mode.type === 'airplane' },
   ];
   const controlOptions = [
-    { value: 'firstPerson', label: cameraControlLabels.firstPerson, isSelected: mode.control === 'firstPerson' },
-    { value: 'thirdPerson', label: cameraControlLabels.thirdPerson, isSelected: mode.control === 'thirdPerson' },
+    {
+      value: 'firstPerson',
+      label: cameraControlLabels.firstPerson,
+      isSelected: mode.control === 'firstPerson',
+    },
+    {
+      value: 'thirdPerson',
+      label: cameraControlLabels.thirdPerson,
+      isSelected: mode.control === 'thirdPerson',
+    },
     { value: 'chase', label: cameraControlLabels.chase, isSelected: mode.control === 'chase' },
-    { value: 'topDown', label: cameraControlLabels.topDown, isSelected: mode.control === 'topDown' },
-    { value: 'sideScroll', label: cameraControlLabels.sideScroll, isSelected: mode.control === 'sideScroll' },
+    {
+      value: 'topDown',
+      label: cameraControlLabels.topDown,
+      isSelected: mode.control === 'topDown',
+    },
+    {
+      value: 'sideScroll',
+      label: cameraControlLabels.sideScroll,
+      isSelected: mode.control === 'sideScroll',
+    },
   ];
 
   const sectionButtons: { id: InfoSection; label: string }[] = [
@@ -116,6 +133,7 @@ export default function Info() {
           <button
             key={section.id}
             type="button"
+            aria-pressed={activeSection === section.id}
             className={`glass-button ${activeSection === section.id ? 'glass-button--active' : ''}`}
             onClick={() => setActiveSection(section.id)}
           >
@@ -123,6 +141,17 @@ export default function Info() {
           </button>
         ))}
       </div>
+      {activeSection === 'help' && (
+        <section className="info-group" aria-label="월드 조작 안내">
+          <h3>월드 둘러보기</h3>
+          <p>월드 화면을 선택한 뒤 W·A·S·D로 이동하세요.</p>
+          <p>캐릭터 모드에서는 왼쪽 Shift를 누른 채 이동하면 달리고, Space를 누르면 점프합니다.</p>
+          <p>
+            위에서 플레이 모드와 카메라 시점을 바꿀 수 있습니다. 다른 장소로 바로 가려면 월드 도구의
+            빠른 이동을 열어보세요.
+          </p>
+        </section>
+      )}
       {activeSection === 'camera' && (
         <CameraSettings
           mode={{ control: isCameraControl(mode.control) ? mode.control : 'thirdPerson' }}

@@ -1,4 +1,4 @@
-@import '@core/editor/styles/theme.css';
+@import 'gaesup-world/style.css';
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -89,6 +89,50 @@ body,
   height: 100%;
   overflow: hidden;
 }
+.example-route-loading {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background: var(--gp-glass-bg-strong);
+  color: var(--gp-text);
+}
+.world-postprocessing-toggle {
+  position: fixed;
+  right: var(--gp-shell-pad);
+  bottom: 96px;
+  z-index: 24;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--gp-glass-border-hi);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-glass-bg-strong);
+  color: var(--gp-text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: auto;
+}
+.gp-world-tools-toggle {
+  position: absolute;
+  top: calc(var(--app-header-height) + 12px);
+  left: var(--gp-shell-pad);
+  width: auto;
+  pointer-events: auto;
+}
+.gp-btn.gp-world-tools-toggle {
+  background: var(--gp-glass-bg-strong);
+}
+.gp-btn.gp-world-tools-toggle:hover {
+  background: rgba(18, 20, 28, 0.85);
+}
+.gp-world-tools-toggle + .gp-left {
+  margin-top: 48px;
+}
+.world-postprocessing-toggle--active {
+  border-color: var(--gp-good);
+  background: rgba(122, 223, 144, 0.28);
+}
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -128,9 +172,18 @@ body,
   --gp-right-rail: 304px;
   --gp-content-gap: 16px;
   --gp-z-canvas: 0;
+  --gp-z-hud: 60;
+  --gp-z-input: 75;
   --gp-z-shell: 80;
-  --gp-z-overlay: 100;
+  --gp-z-panel: 90;
+  --gp-z-nav: 120;
+  --gp-z-overlay: 130;
   --gp-z-toast: 140;
+  --gaesup-z-hud: var(--gp-z-hud);
+  --gaesup-z-input: var(--gp-z-input);
+  --gaesup-z-panel: var(--gp-z-panel);
+  --gaesup-z-overlay: var(--gp-z-overlay);
+  --gaesup-z-toast: var(--gp-z-toast);
 }
 
 .gp-font {
@@ -264,6 +317,8 @@ body,
   flex-direction: column;
   gap: 10px;
   align-items: flex-start;
+  max-height: calc(100vh - var(--app-header-height, 64px) - var(--gp-shell-pad) * 2 - 236px);
+  overflow-y: auto;
 }
 .gp-right {
   grid-area: right;
@@ -281,6 +336,8 @@ body,
 }
 
 .gp-panel {
+  box-sizing: border-box;
+  min-width: 0;
   padding: 14px 15px;
   display: flex;
   flex-direction: column;
@@ -434,7 +491,7 @@ body,
 .world-focus-modal {
   position: fixed;
   inset: 0;
-  z-index: 240;
+  z-index: var(--gp-z-overlay);
   display: grid;
   place-items: center;
   padding: 20px;
@@ -446,9 +503,13 @@ body,
 }
 
 .world-focus-modal__panel {
-  width: min(430px, calc(100vw - 32px));
+  width: min(430px, 100%);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   max-height: min(76vh, 540px);
-  overflow-y: auto;
+  max-height: min(76dvh, 540px);
+  overflow: hidden;
   box-sizing: border-box;
   padding: 18px;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -456,6 +517,13 @@ body,
   background: rgba(18, 20, 28, 0.94);
   color: var(--gp-text);
   box-shadow: 0 24px 62px rgba(0, 0, 0, 0.42);
+}
+
+.world-focus-modal__content {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  overscroll-behavior: contain;
 }
 
 .world-focus-modal__eyebrow {
@@ -508,6 +576,7 @@ body,
 }
 
 .world-focus-modal__close {
+  flex-shrink: 0;
   width: 100%;
   min-height: 40px;
   margin-top: 18px;
@@ -560,7 +629,11 @@ body,
     padding: 10px;
   }
 
-  .gp-left .gp-panel,
+  .gp-left .gp-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .gp-actionrow {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -609,5 +682,46 @@ body,
 
   .gp-panel-row {
     font-size: 13px;
+  }
+}
+
+.world-closeup-controls {
+  position: fixed;
+  right: 16px;
+  bottom: 84px;
+  z-index: var(--gp-z-panel);
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.example-app-shell:has([data-world-overlay]) {
+  --gaesup-z-toast: calc(var(--gp-z-overlay) - 1);
+}
+
+.example-app-shell:has(.app-nav-developer[open]) {
+  --gaesup-z-toast: calc(var(--gp-z-nav) - 1);
+}
+
+@media (max-width: 640px) {
+  .example-app-shell:has(.gp-world-tools-toggle[aria-expanded='true']) {
+    --gaesup-toast-top: auto;
+    --gaesup-toast-bottom: 150px;
+  }
+  body:has(.gp-world-tools-toggle[aria-expanded='true']) .minimap--bottom-left {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .gp-left {
+    max-height: calc(100vh - var(--app-header-height, 64px) - var(--gp-shell-pad) * 2 - 386px);
+  }
+  .minimap--bottom-left {
+    bottom: 170px;
+  }
+  .world-closeup-controls {
+    bottom: 150px;
   }
 }

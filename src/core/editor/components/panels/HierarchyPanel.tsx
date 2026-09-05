@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import type { EditorPanelBaseProps } from './types';
 import type { SceneDocument, SceneObject, SceneObjectId } from '../../../scene-object';
@@ -29,8 +29,8 @@ export function HierarchyPanel({
   selectedObjectIds = selectedObjectId ? [selectedObjectId] : [],
   hoveredObjectId,
   defaultExpandedIds = [],
-  searchPlaceholder = 'Search objects',
-  emptyLabel = 'No scene objects',
+  searchPlaceholder = '객체 검색',
+  emptyLabel = '장면에 객체가 없습니다',
   onSelectObject,
   onHoverObject,
   className = '',
@@ -63,12 +63,12 @@ export function HierarchyPanel({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={searchPlaceholder}
-          aria-label="Search scene hierarchy"
+          aria-label="장면 객체 검색"
         />
         <span className="hierarchy-panel__count">{totalObjects}</span>
       </div>
 
-      <div className="hierarchy-panel__tree" role="tree" aria-label="Scene hierarchy">
+      <div className="hierarchy-panel__tree" role="tree" aria-label="장면 계층">
         {rows.length === 0 ? (
           <div className="hierarchy-panel__empty">{emptyLabel}</div>
         ) : rows.map(({ object, depth, hasChildren }) => {
@@ -91,7 +91,7 @@ export function HierarchyPanel({
                 className="hierarchy-toggle"
                 onClick={() => toggleExpanded(object.id)}
                 disabled={!hasChildren || Boolean(query.trim())}
-                aria-label={isExpanded ? 'Collapse object' : 'Expand object'}
+                aria-label={isExpanded ? '하위 객체 접기' : '하위 객체 펼치기'}
               >
                 {hasChildren ? (isExpanded ? '-' : '+') : ''}
               </button>
@@ -103,7 +103,7 @@ export function HierarchyPanel({
                 <span className="hierarchy-name">{object.name || object.id}</span>
                 <span className="hierarchy-meta">
                   {object.layer ? <span>{object.layer}</span> : null}
-                  {object.components.length > 0 ? <span>{object.components.length}c</span> : null}
+                  {object.components.length > 0 ? <span>컴포넌트 {object.components.length}개</span> : null}
                 </span>
               </button>
             </div>

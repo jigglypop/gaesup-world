@@ -59,6 +59,13 @@ describe('CameraSystem', () => {
   });
 
   describe('constructor', () => {
+    it('calculates a finite camera position without a legacy clock', () => {
+      const props = createCalcProps();
+      delete props.clock;
+      system.calculate(props);
+      expect(props.camera.position.toArray().every(Number.isFinite)).toBe(true);
+      expect(props.camera.position.length()).toBeGreaterThan(0);
+    });
     it('기본 컨트롤러가 등록되어야 합니다', () => {
       const props = createCalcProps();
       expect(() => system.calculate(props)).not.toThrow();

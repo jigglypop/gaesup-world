@@ -6,8 +6,8 @@ import * as THREE from 'three';
 import { useAssetStore, type AssetRecord } from '../../../assets';
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
 import { DEFAULT_CHARACTER_ATTACHMENT_SOCKETS } from '../../attachments';
-import { useCharacterStore } from '../../stores/characterStore';
-import type { FaceStyle, HairStyle, OutfitSlot } from '../../types';
+import { EMPTY_OUTFITS, useCharacterStore } from '../../stores/characterStore';
+import { DEFAULT_APPEARANCE, type FaceStyle, type HairStyle, type OutfitSlot } from '../../types';
 
 export type OutfitAvatarProps = {
   /**
@@ -19,6 +19,8 @@ export type OutfitAvatarProps = {
   enabled?: boolean;
   /** Optional opacity to tone the overlay down (e.g. for first person). */
   opacity?: number;
+  /** Render a specific character's profile instead of the active one. */
+  characterId?: string;
 };
 
 type HairShape = {
@@ -75,12 +77,17 @@ export function OutfitAvatar({
   headHeight = 1.55,
   enabled = true,
   opacity = 1,
+  characterId,
 }: OutfitAvatarProps = {}) {
   const groupRef = useRef<THREE.Group>(null);
-  const appearance = useCharacterStore((s) => s.appearance);
-  const outfits = useCharacterStore((s) => s.outfits);
+  const appearance = useCharacterStore((s) =>
+    characterId ? (s.characters[characterId]?.appearance ?? DEFAULT_APPEARANCE) : s.appearance,
+  );
+  const outfits = useCharacterStore((s) =>
+    characterId ? (s.characters[characterId]?.outfits ?? EMPTY_OUTFITS) : s.outfits,
+  );
   const assetRecords = useAssetStore((s) => s.records);
-  const { position, rotation } = usePlayerPosition({ updateInterval: 16 });
+  const { position, rotation } = usePlayerPosition({ reactive: false });
 
   const hairShape = useHairShape(appearance.hair);
 

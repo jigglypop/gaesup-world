@@ -22,19 +22,19 @@ export const ACTION_EQUIPMENT_PANEL_DEFAULT_FEATURES: Required<ActionEquipmentPa
   reset: true,
 };
 export const ACTION_EQUIPMENT_PANEL_DEFAULT_LABELS: ActionEquipmentPanelLabels = {
-  title: 'Action Equipment',
-  face: 'Face',
-  equipWeapon: 'Equip weapon',
-  unequipWeapon: 'Unequip weapon',
-  reset: 'Reset',
-  emptyPresets: 'No presets',
+  title: '동작과 장비',
+  face: '표정',
+  equipWeapon: '무기 장착',
+  unequipWeapon: '무기 해제',
+  reset: '초기화',
+  emptyPresets: '프리셋이 없습니다',
 };
 export const ACTION_EQUIPMENT_PANEL_DEFAULT_FACE_LABELS: Record<FaceStyle, string> = {
-  default: 'Default',
-  smile: 'Smile',
-  wink: 'Wink',
-  surprised: 'Surprised',
-  sleepy: 'Sleepy',
+  default: '기본',
+  smile: '미소',
+  wink: '윙크',
+  surprised: '놀람',
+  sleepy: '졸림',
 };
 export const ACTION_EQUIPMENT_PANEL_DEFAULT_CLASSES: Record<
   ActionEquipmentPanelClassNameSlot,

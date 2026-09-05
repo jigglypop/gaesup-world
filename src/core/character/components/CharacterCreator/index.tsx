@@ -2,8 +2,8 @@ import { CharacterMenu } from '../CharacterMenu';
 import type { CharacterCreatorProps } from './types';
 
 const CHARACTER_CREATOR_LABELS = {
-  title: 'Character Creator',
-  close: 'Done',
+  title: '캐릭터 만들기',
+  close: '완료',
 };
 const CHARACTER_CREATOR_FEATURES = {
   savePresets: false,

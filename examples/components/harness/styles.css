@@ -1,0 +1,53 @@
+.example-harness-error {
+  display: grid;
+  gap: 12px;
+  place-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 32px;
+  background: var(--gp-glass-bg-strong);
+  color: var(--gp-text);
+  text-align: center;
+}
+.example-harness-error__eyebrow {
+  margin: 0;
+  color: var(--gp-accent);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.example-harness-error__title,
+.example-harness-error__message {
+  margin: 0;
+}
+.example-harness-error__title {
+  font-size: 24px;
+}
+.example-harness-error__message {
+  max-width: 640px;
+  color: var(--gp-text-dim);
+}
+.example-harness-error__details {
+  max-width: min(640px, calc(100vw - 64px));
+  text-align: left;
+  color: var(--gp-text-dim);
+}
+.example-harness-error__details summary {
+  cursor: pointer;
+}
+.example-harness-error__details pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.example-harness-error__button {
+  justify-self: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--gp-glass-border-hi);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-glass-bg);
+  color: var(--gp-text);
+  font: inherit;
+  cursor: pointer;
+}

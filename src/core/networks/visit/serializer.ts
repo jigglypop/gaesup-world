@@ -5,6 +5,8 @@ import {
 } from './types';
 import type { DomainBinding, SerializedDomainValue } from '../../save/types';
 
+const VISIT_SNAPSHOT_VERSION = 1;
+
 export type SerializeVisitOptions = {
   hostId: string;
   hostName?: string;
@@ -19,7 +21,7 @@ export type SerializeVisitOptions = {
 };
 
 export type ApplyVisitOptions = {
-  /** Restrict which domains in the snapshot are applied locally. */
+  /** Domains to apply locally. Defaults to `DEFAULT_VISIT_DOMAINS`. */
   allowedDomains?: readonly string[];
   /**
    * Called for each domain right before its hydrate is invoked. Return
@@ -48,18 +50,14 @@ export function serializeVisit(
   for (const key of targets) {
     const binding = bindings.get(key);
     if (!binding) continue;
-    try {
-      domains[key] = binding.serialize();
-    } catch {
-      domains[key] = null;
-    }
+    domains[key] = binding.serialize();
   }
 
   const savedAt = options.savedAt ?? Date.now();
   return {
     kind: 'world',
     worldId: options.worldId ?? options.hostId,
-    version: options.version ?? 1,
+    version: options.version ?? VISIT_SNAPSHOT_VERSION,
     hostId: options.hostId,
     ...(options.hostName ? { hostName: options.hostName } : {}),
     savedAt,
@@ -68,21 +66,23 @@ export function serializeVisit(
   };
 }
 
+/** Unsupported snapshot versions are skipped before accessing local bindings. */
 export function applyVisitSnapshot(
   provider: VisitBindingProvider,
   snapshot: VisitSnapshot,
   options: ApplyVisitOptions = {},
 ): { applied: string[]; skipped: string[] } {
+  if (snapshot.version !== VISIT_SNAPSHOT_VERSION) {
+    return { applied: [], skipped: Object.keys(snapshot.domains ?? {}) };
+  }
   const bindings = collectBindings(provider);
-  const allowed = options.allowedDomains
-    ? new Set(options.allowedDomains)
-    : null;
+  const allowed = new Set(options.allowedDomains ?? DEFAULT_VISIT_DOMAINS);
 
   const applied: string[] = [];
   const skipped: string[] = [];
 
   for (const [key, value] of Object.entries(snapshot.domains ?? {})) {
-    if (allowed && !allowed.has(key)) {
+    if (!allowed.has(key)) {
       skipped.push(key);
       continue;
     }

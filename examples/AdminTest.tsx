@@ -14,9 +14,9 @@ export default function AdminTest() {
           borderRadius: '5px',
           fontSize: '12px'
         }}>
-          Admin Test Page
+          관리자 예제
           <br />
-          Login: admin / password
+          로그인: admin / password
         </div>
       </GaesupAdmin>
     </div>

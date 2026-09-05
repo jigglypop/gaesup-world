@@ -23,6 +23,7 @@ type State = {
 
   serialize: () => RelationsSerialized;
   hydrate: (data: RelationsSerialized | null | undefined) => void;
+  prepareHydrate: (data: RelationsSerialized | null | undefined) => () => void;
 };
 
 function emptyEntry(npcId: string): FriendshipEntry {
@@ -112,21 +113,26 @@ export const useFriendshipStore = create<State>((set, get) => ({
     entries: Object.fromEntries(Object.entries(get().entries).map(([k, v]) => [k, { ...v, giftHistory: { ...v.giftHistory } }])),
   }),
 
-  hydrate: (data) => {
-    if (!data || typeof data !== 'object') return;
-    const entries: Record<string, FriendshipEntry> = {};
-    if (data.entries && typeof data.entries === 'object') {
-      for (const [k, v] of Object.entries(data.entries)) {
-        if (!v || typeof v !== 'object') continue;
-        entries[k] = {
-          npcId: k,
-          score: typeof v.score === 'number' ? v.score : 0,
-          todayGained: typeof v.todayGained === 'number' ? v.todayGained : 0,
-          lastGiftDay: typeof v.lastGiftDay === 'number' ? v.lastGiftDay : -1,
-          giftHistory: v.giftHistory && typeof v.giftHistory === 'object' ? { ...v.giftHistory } : {},
-        };
-      }
+  prepareHydrate: (data) => {
+    if (data === null || data === undefined) return () => {};
+    if (typeof data !== 'object' || data.version !== 1 || !data.entries ||
+      typeof data.entries !== 'object' || Array.isArray(data.entries)) {
+      throw new TypeError('Invalid relations snapshot');
     }
-    set({ entries });
+    const entries = Object.fromEntries(Object.entries(data.entries).map(([id, entry]) => {
+      if (!id.trim() || !entry || typeof entry !== 'object' || entry.npcId !== id ||
+        ![entry.score, entry.todayGained].every((value) => typeof value === 'number' && Number.isFinite(value) && value >= 0) ||
+        entry.todayGained > DAILY_FRIENDSHIP_CAP || !Number.isSafeInteger(entry.lastGiftDay) || entry.lastGiftDay < -1 ||
+        !entry.giftHistory || typeof entry.giftHistory !== 'object' || Array.isArray(entry.giftHistory)) {
+        throw new TypeError('Invalid friendship entry');
+      }
+      const giftHistory = Object.fromEntries(Object.entries(entry.giftHistory).map(([itemId, count]) => {
+        if (!itemId.trim() || !Number.isSafeInteger(count) || count < 0) throw new TypeError('Invalid gift history');
+        return [itemId, count];
+      }));
+      return [id, { npcId: id, score: entry.score, todayGained: entry.todayGained, lastGiftDay: entry.lastGiftDay, giftHistory }];
+    }));
+    return () => set({ entries });
   },
+  hydrate: (data) => get().prepareHydrate(data)(),
 }));

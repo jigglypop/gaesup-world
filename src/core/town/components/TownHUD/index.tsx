@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { useTownStore } from '../../stores/townStore';
 
 export type TownHUDProps = {

@@ -16,6 +16,8 @@
 
 .md-item {
   display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
   justify-content: space-between;
   align-items: center;
   background-color: var(--editor-surface-secondary);
@@ -25,11 +27,14 @@
 }
 
 .md-label {
+  word-break: keep-all;
   color: var(--editor-text-secondary);
   font-size: 12px;
 }
 
 .md-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
   color: var(--editor-text-primary);
   font-size: 12px;
   font-weight: 500;

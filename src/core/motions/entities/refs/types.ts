@@ -16,6 +16,8 @@ export type PartsGroupRefProps = {
 export type ModelRendererProps = {
     nodes: Record<string, THREE.Object3D>;
     color?: string | undefined;
+    /** When set, only nodes with these names are tinted by `color`; others keep their authored materials. */
+    colorNodeNames?: string[] | undefined;
     skeleton?: THREE.Skeleton | null | undefined;
     url: string;
     excludeNodeNames?: string[] | undefined;

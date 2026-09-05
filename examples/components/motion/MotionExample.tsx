@@ -4,14 +4,14 @@ import { Box } from '@react-three/drei';
 import { RigidBody, CapsuleCollider, RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
-import { useMotion } from '@/core/motions';
+import { useMotion } from 'gaesup-world';
 
 export function MotionExample() {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const motion = useMotion('player-1', {
     motionType: 'character',
     rigidBodyRef,
-    position: new THREE.Vector3(0, 5, 0)
+    position: new THREE.Vector3(0, 5, 0),
   });
 
   const handleJump = () => {
@@ -29,12 +29,7 @@ export function MotionExample() {
 
   return (
     <>
-      <RigidBody
-        ref={rigidBodyRef}
-        colliders={false}
-        type="dynamic"
-        position={[0, 5, 0]}
-      >
+      <RigidBody ref={rigidBodyRef} colliders={false} type="dynamic" position={[0, 5, 0]}>
         <CapsuleCollider args={[0.5, 0.5]} position={[0, 1, 0]} />
         <Box args={[1, 2, 1]}>
           <meshStandardMaterial color={motion.isMoving ? 'orange' : 'blue'} />
@@ -50,9 +45,14 @@ export function MotionExample() {
         <div>
           <p>착지: {motion.isGrounded ? '예' : '아니오'}</p>
           <p>속도: {motion.speed.toFixed(2)}</p>
-          <p>위치: {motion.position ? `${motion.position.x.toFixed(1)}, ${motion.position.y.toFixed(1)}, ${motion.position.z.toFixed(1)}` : '없음'}</p>
+          <p>
+            위치:{' '}
+            {motion.position
+              ? `${motion.position.x.toFixed(1)}, ${motion.position.y.toFixed(1)}, ${motion.position.z.toFixed(1)}`
+              : '없음'}
+          </p>
         </div>
       </div>
     </>
   );
-} 
+}

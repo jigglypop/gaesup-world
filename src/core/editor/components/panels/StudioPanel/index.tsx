@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { useAssetStore, type AssetRecord } from '../../../../assets';
 import {
@@ -15,7 +15,9 @@ import {
   type AgentBehaviorBlueprint,
   type NPCBehaviorBlueprint,
 } from '../../../../npc';
+import { useGaesupRuntime } from '../../../../runtime';
 import { getSaveSystem } from '../../../../save';
+import { logger } from '../../../../utils/logger';
 import type { EditorPanelBaseProps } from '../types';
 import './styles.css';
 
@@ -27,7 +29,7 @@ type StudioStatus = {
 };
 
 const DEFAULT_BUNDLE_ID = 'studio-social-world';
-const DEFAULT_BUNDLE_NAME = 'Studio Social World';
+const DEFAULT_BUNDLE_NAME = '스튜디오 소셜 월드';
 const DEFAULT_VERSION = '1.0.0';
 
 export type StudioPanelBundleContext = {
@@ -79,6 +81,8 @@ export function StudioPanel({
   style,
   children,
 }: StudioPanelProps) {
+  const runtime = useGaesupRuntime();
+  const saveSystem = runtime?.save ?? getSaveSystem();
   const assetIds = useAssetStore((state) => state.ids);
   const assetRecords = useAssetStore((state) => state.records);
   const assets = useMemo(
@@ -110,6 +114,23 @@ export function StudioPanel({
   const [status, setStatus] = useState<StudioStatus>({ kind: 'idle', message: '대기 중' });
   const [validation, setValidation] = useState<ContentBundleValidation | null>(null);
   const [showBundleSettings, setShowBundleSettings] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const pending = useRef(false);
+  const runTask = async (label: string, task: () => void | Promise<void>) => {
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
+    setStatus({ kind: 'idle', message: `${label} 중입니다.` });
+    try {
+      await task();
+    } catch (error: unknown) {
+      logger.error('Studio operation failed', error instanceof Error ? error : String(error));
+      setStatus({ kind: 'error', message: `${label}에 실패했습니다. 다시 시도해 주세요.` });
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  };
 
   const buildBundle = useCallback((): ContentBundle => {
     const context: StudioPanelBundleContext = {
@@ -122,7 +143,7 @@ export function StudioPanel({
       agentBehaviorBlueprints,
     };
     if (buildBundleProp) return buildBundleProp(context);
-    return createContentBundleFromSaveSystem(getSaveSystem(), assets, {
+    return createContentBundleFromSaveSystem(saveSystem, assets, {
       id: bundleId,
       name: bundleName,
       version,
@@ -138,35 +159,41 @@ export function StudioPanel({
     bundleName,
     gameplayEvents,
     npcBehaviorBlueprints,
+    saveSystem,
     version,
   ]);
 
   const refreshSlots = useCallback(async () => {
-    const nextSlots = await getSaveSystem().list();
+    const nextSlots = await saveSystem.list();
     setSlots(nextSlots);
     setStatus({ kind: 'success', message: `저장 슬롯 ${nextSlots.length}개를 불러왔습니다.` });
-  }, []);
+  }, [saveSystem]);
 
   const saveWorld = useCallback(async () => {
     if (onSaveWorld) {
       await onSaveWorld(slot);
     } else {
-      await getSaveSystem().save(slot);
+      await saveSystem.save(slot);
     }
     setStatus({ kind: 'success', message: `슬롯 "${slot}" 에 저장했습니다.` });
-    await refreshSlots();
-  }, [onSaveWorld, refreshSlots, slot]);
+    try {
+      setSlots(await saveSystem.list());
+    } catch (error: unknown) {
+      logger.error('Saved world but could not refresh slots', error instanceof Error ? error : String(error));
+      setStatus({ kind: 'error', message: `슬롯 "${slot}"에 저장했지만 목록을 갱신하지 못했습니다.` });
+    }
+  }, [onSaveWorld, saveSystem, slot]);
 
   const loadWorld = useCallback(async () => {
     const loadResult = onLoadWorld
       ? await onLoadWorld(slot)
-      : await getSaveSystem().load(slot);
+      : await saveSystem.load(slot);
     const loaded = loadResult === undefined ? true : Boolean(loadResult);
     setStatus({
       kind: loaded ? 'success' : 'error',
       message: loaded ? `슬롯 "${slot}" 을 불러왔습니다.` : `슬롯 "${slot}" 에 저장 데이터가 없습니다.`,
     });
-  }, [onLoadWorld, slot]);
+  }, [onLoadWorld, saveSystem, slot]);
 
   const validateWorld = useCallback(() => {
     const result = validateBundle(buildBundle());
@@ -177,7 +204,7 @@ export function StudioPanel({
     });
   }, [buildBundle, validateBundle]);
 
-  const exportBundle = useCallback(() => {
+  const exportBundle = useCallback(async () => {
     const bundle = buildBundle();
     const result = validateBundle(bundle);
     setValidation(result);
@@ -186,7 +213,7 @@ export function StudioPanel({
       return;
     }
     if (onExportBundle) {
-      void onExportBundle(bundle);
+      await onExportBundle(bundle);
     } else {
       downloadJson(`${bundle.id}-${bundle.version}.bundle.json`, bundle);
     }
@@ -203,9 +230,9 @@ export function StudioPanel({
           <input value={slot} onChange={(event) => setSlot(event.target.value || 'main')} />
         </label>
         <div className="studio-panel__actions">
-          <button type="button" onClick={() => { void saveWorld(); }}>현재 월드 저장</button>
-          <button type="button" onClick={() => { void loadWorld(); }}>슬롯 불러오기</button>
-          <button type="button" onClick={() => { void refreshSlots(); }}>슬롯 새로고침</button>
+          <button type="button" disabled={busy} onClick={() => { void runTask('월드 저장', saveWorld); }}>현재 월드 저장</button>
+          <button type="button" disabled={busy} onClick={() => { void runTask('월드 불러오기', loadWorld); }}>슬롯 불러오기</button>
+          <button type="button" disabled={busy} onClick={() => { void runTask('슬롯 새로고침', refreshSlots); }}>슬롯 새로고침</button>
         </div>
         {slots.length > 0 && (
           <div className="studio-panel__chips">
@@ -245,17 +272,17 @@ export function StudioPanel({
           </div>
         )}
         <div className="studio-panel__meta">
-          에셋 {assets.length}개 · 이벤트 {gameplayEvents.length}개 · NPC 행동 {npcBehaviorBlueprints.length}개 · 에이전트 행동 {agentBehaviorBlueprints.length}개 · 세이브 도메인 {Array.from(getSaveSystem().getBindings()).length}개
+          에셋 {assets.length}개 · 이벤트 {gameplayEvents.length}개 · NPC 행동 {npcBehaviorBlueprints.length}개 · 에이전트 행동 {agentBehaviorBlueprints.length}개 · 저장 도메인 {Array.from(saveSystem.getBindings()).length}개
         </div>
         <div className="studio-panel__actions">
-          <button type="button" onClick={validateWorld}>번들 검증</button>
-          <button type="button" onClick={exportBundle}>JSON 내보내기</button>
+          <button type="button" disabled={busy} onClick={() => { void runTask('번들 검증', validateWorld); }}>번들 검증</button>
+          <button type="button" disabled={busy} onClick={() => { void runTask('번들 내보내기', exportBundle); }}>JSON 내보내기</button>
         </div>
       </section>
 
       <section className="studio-panel__section">
         <div className="studio-panel__title">상태</div>
-        <div className={`studio-panel__status studio-panel__status--${status.kind}`}>
+        <div role="status" className={`studio-panel__status studio-panel__status--${status.kind}`}>
           {status.message}
         </div>
         {validation && !validation.ok && (

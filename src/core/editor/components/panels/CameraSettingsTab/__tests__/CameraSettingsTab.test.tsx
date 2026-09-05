@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import type { CameraOptionType } from '../../../../../camera/core/types';
@@ -63,7 +64,7 @@ describe('CameraSettingsTab', () => {
   test('기본 섹션과 현재 모드를 렌더링해야 한다', () => {
     render(<CameraSettingsTab sections={testSections} />);
     expect(screen.getByText('Test Camera')).toBeInTheDocument();
-    expect(screen.getByText('Mode: thirdPerson')).toBeInTheDocument();
+    expect(screen.getByText('모드: 3인칭')).toBeInTheDocument();
     expect(screen.getByLabelText('FOV')).toBeInTheDocument();
   });
   test('range 변경 시 store 업데이트를 호출해야 한다', () => {

@@ -19,7 +19,7 @@ export function ToolUseController({
   range = 2.4,
   cooldownMs = 350,
 }: ToolUseControllerProps = {}): null {
-  const { position, rotation } = usePlayerPosition({ updateInterval: 16 });
+  const { position, rotation } = usePlayerPosition({ reactive: false });
   const lastUseRef = useRef(0);
 
   useEffect(() => {

@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { getEventRegistry } from '../../registry/EventRegistry';
 import { useEventsStore } from '../../stores/eventsStore';
 

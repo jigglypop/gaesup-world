@@ -31,6 +31,7 @@ export function createTownPlugin(options: TownPluginOptions = {}) {
     capabilities: ['town'],
     serialize: serializeTownState,
     hydrate: hydrateTownState,
+    prepareHydrate: (data) => useTownStore.getState().prepareHydrate(data),
   });
 }
 

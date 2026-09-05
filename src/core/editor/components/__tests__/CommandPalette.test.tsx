@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { fireEvent, render, screen } from '@testing-library/react';
 
 import {
@@ -25,7 +26,7 @@ describe('CommandPalette helpers', () => {
     ]);
 
     item?.run();
-    expect(item?.group).toBe('Shortcut');
+    expect(item?.group).toBe('단축키');
     expect(run).toHaveBeenCalled();
   });
 });
@@ -44,8 +45,8 @@ describe('CommandPalette', () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText('Search commands'), { target: { value: 'hierarchy' } });
-    fireEvent.keyDown(screen.getByLabelText('Search commands'), { key: 'Enter' });
+    fireEvent.change(screen.getByLabelText('명령 검색'), { target: { value: 'hierarchy' } });
+    fireEvent.keyDown(screen.getByLabelText('명령 검색'), { key: 'Enter' });
 
     expect(run).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();

@@ -8,7 +8,7 @@ interface ToastItem {
 
 interface ToastState {
   toasts: ToastItem[];
-  timers: Map<string, NodeJS.Timeout>;
+  timers: Map<string, ReturnType<typeof setTimeout>>;
   addToast: (toast: Omit<ToastItem, 'id'>) => void;
   addToastAsync: (toast: Omit<ToastItem, 'id'>) => Promise<void>;
   removeToast: (id: string) => void;
@@ -20,13 +20,13 @@ export const useToast = create<ToastState>((set, get) => ({
   addToast: (toast) => {
     const id = Date.now().toString();
     const newToast = { ...toast, id };
-    set(state => ({ toasts: [...state.toasts, newToast] }));
-    
+    set((state) => ({ toasts: [...state.toasts, newToast] }));
+
     const timer = setTimeout(() => {
       get().removeToast(id);
     }, 3000);
-    
-    set(state => {
+
+    set((state) => {
       state.timers.set(id, timer);
       return {};
     });
@@ -44,6 +44,6 @@ export const useToast = create<ToastState>((set, get) => ({
       clearTimeout(timer);
       timers.delete(id);
     }
-    set(state => ({ toasts: state.toasts.filter(toast => toast.id !== id) }));
+    set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) }));
   },
-})); 
+}));

@@ -23,7 +23,7 @@ export type UseVisitRoomOptions = {
    * explicitly accept a visit before stores are mutated.
    */
   autoApply?: boolean;
-  /** Domain keys to allow when applying remote snapshots. */
+  /** Remote domain keys to apply locally. Defaults to `DEFAULT_VISIT_DOMAINS`. */
   allowedDomains?: readonly string[];
 };
 
@@ -32,7 +32,7 @@ export type VisitRoomController = {
   remoteSnapshot: VisitSnapshot | null;
   /** Last snapshot we published locally, useful for diagnostics. */
   lastPublished: VisitSnapshot | null;
-  /** Capture the local world state and broadcast it via the channel. */
+  /** Capture and broadcast local state. Capture or send failures throw without updating lastPublished. */
   publishNow: () => VisitSnapshot;
   /** Apply the most recently received snapshot to local stores. */
   acceptRemote: () => boolean;
@@ -59,8 +59,18 @@ export function useVisitRoom(options: UseVisitRoomOptions): VisitRoomController 
     allowedDomains,
   } = options;
 
-  const [remoteSnapshot, setRemoteSnapshot] = useState<VisitSnapshot | null>(null);
-  const [lastPublished, setLastPublished] = useState<VisitSnapshot | null>(null);
+  const session = useMemo(() => ({ channel, hostId }), [channel, hostId]);
+  const activeSession = useRef<typeof session | null>(null);
+  const [received, setReceived] = useState<{
+    session: typeof session;
+    snapshot: VisitSnapshot;
+  } | null>(null);
+  const [published, setPublished] = useState<{
+    session: typeof session;
+    snapshot: VisitSnapshot;
+  } | null>(null);
+  const remoteSnapshot = received?.session === session ? received.snapshot : null;
+  const lastPublished = published?.session === session ? published.snapshot : null;
 
   const bindingsRef = useRef(bindings);
   bindingsRef.current = bindings;
@@ -70,21 +80,30 @@ export function useVisitRoom(options: UseVisitRoomOptions): VisitRoomController 
   autoApplyRef.current = autoApply;
 
   useEffect(() => {
+    activeSession.current = session;
+    let active = true;
     const unsubscribe = channel.subscribe((event) => {
+      if (!active) return;
       if (event.type === 'snapshot') {
         if (event.snapshot.hostId === hostId) return;
-        setRemoteSnapshot(event.snapshot);
+        setReceived({ session, snapshot: event.snapshot });
         if (autoApplyRef.current) {
           applyVisitSnapshot(bindingsRef.current, event.snapshot, {
             ...(allowedRef.current ? { allowedDomains: allowedRef.current } : {}),
           });
         }
       } else if (event.type === 'leave') {
-        setRemoteSnapshot((prev) => (prev && prev.hostId === event.hostId ? null : prev));
+        setReceived((prev) =>
+          prev?.session === session && prev.snapshot.hostId === event.hostId ? null : prev,
+        );
       }
     });
-    return () => { unsubscribe(); };
-  }, [channel, hostId]);
+    return () => {
+      active = false;
+      activeSession.current = null;
+      unsubscribe();
+    };
+  }, [channel, hostId, session]);
 
   const publishNow = useCallback((): VisitSnapshot => {
     const snapshot = serializeVisit(bindingsRef.current, {
@@ -92,29 +111,36 @@ export function useVisitRoom(options: UseVisitRoomOptions): VisitRoomController 
       ...(hostName ? { hostName } : {}),
     });
     if (hostMode) channel.publish(snapshot);
-    setLastPublished(snapshot);
+    setPublished({ session, snapshot });
     return snapshot;
-  }, [channel, hostId, hostName, hostMode]);
+  }, [channel, hostId, hostName, hostMode, session]);
 
   const acceptRemote = useCallback((): boolean => {
     const snapshot = remoteSnapshot;
-    if (!snapshot) return false;
+    if (!snapshot || activeSession.current !== session) return false;
     const result = applyVisitSnapshot(bindingsRef.current, snapshot, {
       ...(allowedRef.current ? { allowedDomains: allowedRef.current } : {}),
     });
     return result.applied.length > 0;
-  }, [remoteSnapshot]);
+  }, [remoteSnapshot, session]);
 
-  const dismissRemote = useCallback(() => { setRemoteSnapshot(null); }, []);
+  const dismissRemote = useCallback(() => {
+    setReceived((prev) => (prev?.session === session ? null : prev));
+  }, [session]);
 
-  const announceLeave = useCallback(() => { channel.leave(hostId); }, [channel, hostId]);
+  const announceLeave = useCallback(() => {
+    channel.leave(hostId);
+  }, [channel, hostId]);
 
-  return useMemo<VisitRoomController>(() => ({
-    remoteSnapshot,
-    lastPublished,
-    publishNow,
-    acceptRemote,
-    dismissRemote,
-    announceLeave,
-  }), [remoteSnapshot, lastPublished, publishNow, acceptRemote, dismissRemote, announceLeave]);
+  return useMemo<VisitRoomController>(
+    () => ({
+      remoteSnapshot,
+      lastPublished,
+      publishNow,
+      acceptRemote,
+      dismissRemote,
+      announceLeave,
+    }),
+    [remoteSnapshot, lastPublished, publishNow, acceptRemote, dismissRemote, announceLeave],
+  );
 }

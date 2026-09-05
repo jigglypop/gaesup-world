@@ -1,15 +1,22 @@
 import 'reflect-metadata';
+import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
-import { PhysicsSystem } from '../PhysicsSystem';
-import type { PhysicsCalcProps, PhysicsState } from '../../../types';
-import type { PhysicsConfigType } from '@stores/slices/physics/types';
+import type { ForceComponent } from '@core/motions/core/forces/ForceComponent';
+import { GravityComponent } from '@core/motions/core/forces/GravityComponent';
+import { DirectionComponent } from '@core/motions/core/movement/DirectionComponent';
+import { ImpulseComponent } from '@core/motions/core/movement/ImpulseComponent';
 import type { GameStatesType } from '@core/world/components/Rideable/types';
+
+import type { PhysicsCalcProps, PhysicsState } from '../../../types';
+import type { PhysicsConfigType } from '../../config';
 import type { ActiveStateType } from '../../types';
+import { PhysicsSystem } from '../PhysicsSystem';
 
 jest.mock('@core/motions/core/movement/DirectionComponent', () => ({
   DirectionComponent: jest.fn().mockImplementation(() => ({
     updateDirection: jest.fn(),
+    dispose: jest.fn(),
   })),
 }));
 
@@ -30,6 +37,10 @@ jest.mock('@core/motions/controller/AnimationController', () => ({
     update: jest.fn(),
   })),
 }));
+
+const MockedDirectionComponent = jest.mocked(DirectionComponent);
+const MockedImpulseComponent = jest.mocked(ImpulseComponent);
+const MockedGravityComponent = jest.mocked(GravityComponent);
 
 const createMockRigidBody = (overrides: Record<string, unknown> = {}) => ({
   linvel: jest.fn().mockReturnValue({ x: 0, y: 0, z: 0 }),
@@ -121,6 +132,67 @@ describe('PhysicsSystem', () => {
       const metrics = system.getMetrics();
       expect(metrics.forcesApplied).toBe(0);
       expect(metrics.dampingChanges).toBe(0);
+    });
+
+    it('shares one stable owned config with every child component', () => {
+      const angleDelta = new THREE.Vector3(0.1, 0.2, 0.3);
+      const maxAngle = new THREE.Vector3(1, 2, 3);
+      const callerConfig = {
+        ...createDefaultConfig(),
+        angleDelta,
+        maxAngle,
+      };
+      const ownedSystem = new PhysicsSystem(callerConfig);
+
+      try {
+        const directionConfig = MockedDirectionComponent.mock.calls.at(-1)?.[0];
+        const impulseConfig = MockedImpulseComponent.mock.calls.at(-1)?.[0];
+        const gravityConfig = MockedGravityComponent.mock.calls.at(-1)?.[0];
+        expect(directionConfig).toBeDefined();
+        expect(impulseConfig).toBe(directionConfig);
+        expect(gravityConfig).toBe(directionConfig);
+        expect(directionConfig).not.toBe(callerConfig);
+        expect(directionConfig?.angleDelta).toEqual(angleDelta);
+        expect(directionConfig?.angleDelta).not.toBe(angleDelta);
+        expect(directionConfig?.maxAngle).toEqual(maxAngle);
+        expect(directionConfig?.maxAngle).not.toBe(maxAngle);
+
+        callerConfig.walkSpeed = 99;
+        angleDelta.set(9, 9, 9);
+        maxAngle.set(8, 8, 8);
+        expect(directionConfig?.walkSpeed).toBe(4);
+        expect(directionConfig?.angleDelta).toEqual(new THREE.Vector3(0.1, 0.2, 0.3));
+        expect(directionConfig?.maxAngle).toEqual(new THREE.Vector3(1, 2, 3));
+
+        const nextAngleDelta = new THREE.Vector3(0.4, 0.5, 0.6);
+        const nextMaxAngle = new THREE.Vector3(4, 5, 6);
+        ownedSystem.updateConfig({
+          walkSpeed: 14,
+          normalGravityScale: 2.5,
+          navigationAgentRadius: 0.8,
+          angleDelta: nextAngleDelta,
+          maxAngle: nextMaxAngle,
+        });
+
+        expect(MockedDirectionComponent.mock.calls.at(-1)?.[0]).toBe(directionConfig);
+        expect(directionConfig?.walkSpeed).toBe(14);
+        expect(directionConfig?.normalGravityScale).toBe(2.5);
+        expect(directionConfig?.navigationAgentRadius).toBe(0.8);
+        expect(directionConfig?.angleDelta).toEqual(nextAngleDelta);
+        expect(directionConfig?.angleDelta).not.toBe(nextAngleDelta);
+        expect(directionConfig?.maxAngle).toEqual(nextMaxAngle);
+        expect(directionConfig?.maxAngle).not.toBe(nextMaxAngle);
+
+        nextAngleDelta.set(7, 7, 7);
+        nextMaxAngle.set(6, 6, 6);
+        expect(directionConfig?.angleDelta).toEqual(new THREE.Vector3(0.4, 0.5, 0.6));
+        expect(directionConfig?.maxAngle).toEqual(new THREE.Vector3(4, 5, 6));
+
+        ownedSystem.updateConfig({ navigationAgentRadius: undefined });
+        expect(directionConfig).toHaveProperty('navigationAgentRadius', undefined);
+      } finally {
+        ownedSystem.dispose();
+      }
     });
   });
 
@@ -410,7 +482,7 @@ describe('PhysicsSystem', () => {
         linvel: jest.fn().mockReturnValue({ x: 1, y: 0, z: 0 }),
       });
       const force = new THREE.Vector3(2, 0, 0);
-      system.applyForce(force, mockRigidBody as any);
+      system.applyForce(force, mockRigidBody as unknown as RapierRigidBody);
       expect(mockRigidBody.setLinvel).toHaveBeenCalledWith(
         expect.objectContaining({ x: 3, y: 0, z: 0 }),
         true,
@@ -419,14 +491,16 @@ describe('PhysicsSystem', () => {
 
     it('rigidBody가 null이면 에러 없이 처리해야 합니다', () => {
       const force = new THREE.Vector3(1, 0, 0);
-      expect(() => system.applyForce(force, null as any)).not.toThrow();
+      expect(() =>
+        system.applyForce(force, null as unknown as RapierRigidBody),
+      ).not.toThrow();
     });
   });
 
   describe('addForceComponent', () => {
     it('ForceComponent를 추가할 수 있어야 합니다', () => {
       const mockForce = { update: jest.fn() };
-      system.addForceComponent(mockForce as any);
+      system.addForceComponent(mockForce as unknown as ForceComponent);
       const mockRigidBody = createMockRigidBody();
       const calcProp = {
         rigidBodyRef: { current: mockRigidBody },

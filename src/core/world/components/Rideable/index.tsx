@@ -82,7 +82,7 @@ function RideablePrompt({
         <div className={statsClass || undefined} style={styles?.stats}>
           <div className={statClass || undefined} style={styles?.stat}>
             <span className={statLabelClass || undefined} style={styles?.statLabel}>
-              {labels?.speed ?? 'Speed'}
+              {labels?.speed ?? '속도'}
             </span>
             <span className={statValueClass || undefined} style={styles?.statValue}>
               {activeRideable.maxSpeed}
@@ -90,7 +90,7 @@ function RideablePrompt({
           </div>
           <div className={statClass || undefined} style={styles?.stat}>
             <span className={statLabelClass || undefined} style={styles?.statLabel}>
-              {labels?.acceleration ?? 'Accel'}
+              {labels?.acceleration ?? '가속'}
             </span>
             <span className={statValueClass || undefined} style={styles?.statValue}>
               {activeRideable.acceleration}

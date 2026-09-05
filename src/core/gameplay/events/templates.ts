@@ -107,7 +107,7 @@ export const createGameplayEventActionTemplate = (
     case 'showDialog':
       return { type, dialogTreeId: 'dialog.default', npcId: 'npc.default' };
     case 'toast':
-      return { type, kind: 'success', text: 'Event executed' };
+      return { type, kind: 'success', text: '이벤트가 실행되었습니다.' };
     case 'setFlag':
       return { type, key: 'flag.default', value: true };
     case 'notifyQuestFlag':
@@ -139,11 +139,11 @@ export const createManualToastEventBlueprint = ({
 
   return {
     id: safeId,
-    name: name.trim() || 'Manual Event',
+    name: name.trim() || '수동 이벤트',
     trigger: { type: 'manual', key: triggerKey.trim() || 'manual.event' },
     conditions: [{ type: 'always' }],
     actions: [
-      { type: 'toast', kind: 'success', text: message.trim() || 'Event executed' },
+      { type: 'toast', kind: 'success', text: message.trim() || '이벤트가 실행되었습니다.' },
       { type: 'setFlag', key: flagKey, value: true },
     ],
     policy: { run: 'repeat' },

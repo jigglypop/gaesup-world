@@ -19,6 +19,35 @@ beforeEach(() => {
 });
 
 describe('assetStore', () => {
+  it.each(['success', 'failure', 'empty'] as const)('ignores an older %s after a newer catalog has loaded', async (outcome) => {
+    let resolve!: (assets: Awaited<ReturnType<AssetSource['listAssets']>>) => void;
+    let reject!: (error: Error) => void;
+    const pending = new Promise<Awaited<ReturnType<AssetSource['listAssets']>>>((accept, fail) => {
+      resolve = accept;
+      reject = fail;
+    });
+    const older = useAssetStore.getState().loadAssets({ ...mockSource([]), listAssets: () => pending });
+    await useAssetStore.getState().loadAssets(mockSource([{ id: 'shared', name: 'Current', kind: 'weapon' }]));
+    const current = useAssetStore.getState();
+    if (outcome === 'failure') reject(new Error('Old failure'));
+    else resolve(outcome === 'empty' ? [] : [{ id: 'shared', name: 'Outdated', kind: 'weapon' }]);
+    await older;
+    expect(useAssetStore.getState()).toBe(current);
+    expect(current.getAsset('shared')?.name).toBe('Current');
+  });
+
+  it('keeps reset state when an earlier catalog request completes', async () => {
+    let resolve!: (assets: Awaited<ReturnType<AssetSource['listAssets']>>) => void;
+    const pending = new Promise<Awaited<ReturnType<AssetSource['listAssets']>>>((accept) => { resolve = accept; });
+    const loading = useAssetStore.getState().loadAssets({ ...mockSource([]), listAssets: () => pending });
+    useAssetStore.getState().resetAssets();
+    const reset = useAssetStore.getState();
+    resolve([{ id: 'discarded', name: 'Discarded', kind: 'weapon' }]);
+    await loading;
+    expect(useAssetStore.getState()).toBe(reset);
+    expect(reset.getAsset('discarded')).toBeUndefined();
+  });
+
   it('loads assets from a source', async () => {
     const source = mockSource([
       {

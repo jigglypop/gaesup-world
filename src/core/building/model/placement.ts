@@ -23,6 +23,25 @@ export interface BuildingPlacementEngineOptions {
   blocks?: Iterable<BuildingBlockConfig>;
 }
 
+const MAX_CELLS_PER_OPERATION = 65_536;
+
+function validateCellCount(width: number, depth: number, height = 1): void {
+  const count = width * depth * height;
+  if (!Number.isSafeInteger(count) || count < 1 || count > MAX_CELLS_PER_OPERATION) {
+    throw new RangeError('Building operation exceeds the supported cell count');
+  }
+}
+
+function validateCellRange(minX: number, maxX: number, minZ: number, maxZ: number): void {
+  if (
+    !Number.isSafeInteger(minX) || !Number.isSafeInteger(maxX) ||
+    !Number.isSafeInteger(minZ) || !Number.isSafeInteger(maxZ) ||
+    minX > maxX || minZ > maxZ ||
+    !Number.isSafeInteger(pair(Math.max(Math.abs(minX), Math.abs(maxX)), Math.max(Math.abs(minZ), Math.abs(maxZ))))
+  ) throw new RangeError('Invalid building cell range');
+  validateCellCount(maxX - minX + 1, maxZ - minZ + 1);
+}
+
 export const buildingGridAdapter = new SquareGridAdapter({
   id: 'building-square',
   spec: {
@@ -137,6 +156,7 @@ export const createTileFootprint = (
   size = 1,
 ): CellCoord[] => {
   const normalizedSize = Math.max(1, Math.round(size));
+  validateCellCount(normalizedSize, normalizedSize);
   const start = -Math.floor(normalizedSize / 2);
   const coords: CellCoord[] = [];
 
@@ -163,6 +183,7 @@ export const createBlockFootprint = (
   const width = Math.max(1, Math.round(size.x ?? 1));
   const height = Math.max(1, Math.round(size.y ?? 1));
   const depth = Math.max(1, Math.round(size.z ?? 1));
+  validateCellCount(width, depth, height);
   const coords: CellCoord[] = [];
 
   for (let dx = 0; dx < width; dx++) {
@@ -366,10 +387,13 @@ export const indexAabb = (
   maxZ: number,
   cellSize: number,
 ): void => {
+  if (!Number.isFinite(cellSize) || cellSize <= 0) throw new RangeError('Invalid building cell size');
   const minCellX = Math.floor(minX / cellSize);
   const maxCellX = Math.floor(maxX / cellSize);
   const minCellZ = Math.floor(minZ / cellSize);
   const maxCellZ = Math.floor(maxZ / cellSize);
+
+  validateCellRange(minCellX, maxCellX, minCellZ, maxCellZ);
 
   const keys: number[] = [];
   for (let cx = minCellX; cx <= maxCellX; cx++) {
@@ -395,10 +419,12 @@ export const queryAabbIds = (
   maxZ: number,
   cellSize: number,
 ): Set<string> => {
+  if (!Number.isFinite(cellSize) || cellSize <= 0) throw new RangeError('Invalid building cell size');
   const minCellX = Math.floor(minX / cellSize);
   const maxCellX = Math.floor(maxX / cellSize);
   const minCellZ = Math.floor(minZ / cellSize);
   const maxCellZ = Math.floor(maxZ / cellSize);
+  validateCellRange(minCellX, maxCellX, minCellZ, maxCellZ);
   const result = new Set<string>();
 
   for (let cx = minCellX; cx <= maxCellX; cx++) {

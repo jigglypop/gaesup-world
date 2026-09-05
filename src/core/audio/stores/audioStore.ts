@@ -27,6 +27,7 @@ type State = {
 
   serialize: () => AudioSerialized;
   hydrate: (data: AudioSerialized | null | undefined) => void;
+  prepareHydrate: (data: AudioSerialized | null | undefined) => () => void;
 };
 
 export const useAudioStore = create<State>((set, get) => ({
@@ -86,16 +87,18 @@ export const useAudioStore = create<State>((set, get) => ({
     };
   },
 
-  hydrate: (data) => {
-    if (!data) return;
-    set({
-      masterMuted:  !!data.masterMuted,
-      bgmMuted:     !!data.bgmMuted,
-      sfxMuted:     !!data.sfxMuted,
-      masterVolume: typeof data.masterVolume === 'number' ? data.masterVolume : 0.6,
-      bgmVolume:    typeof data.bgmVolume    === 'number' ? data.bgmVolume    : 0.4,
-      sfxVolume:    typeof data.sfxVolume    === 'number' ? data.sfxVolume    : 0.7,
-    });
-    get().apply();
+  prepareHydrate: (data) => {
+    if (data === null || data === undefined) return () => {};
+    if (typeof data !== 'object' || data.version !== 1 ||
+      ![data.masterMuted, data.bgmMuted, data.sfxMuted].every((value) => typeof value === 'boolean') ||
+      ![data.masterVolume, data.bgmVolume, data.sfxVolume].every(
+        (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1,
+      )) throw new TypeError('Invalid audio snapshot');
+    const { masterMuted, bgmMuted, sfxMuted, masterVolume, bgmVolume, sfxVolume } = data;
+    return () => {
+      set({ masterMuted, bgmMuted, sfxMuted, masterVolume, bgmVolume, sfxVolume });
+      get().apply();
+    };
   },
+  hydrate: (data) => get().prepareHydrate(data)(),
 }));

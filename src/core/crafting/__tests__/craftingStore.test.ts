@@ -1,5 +1,6 @@
 import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 import { registerSeedItems } from '../../items/data/items';
+import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import { useWalletStore } from '../../economy/stores/walletStore';
 import { getRecipeRegistry } from '../registry/RecipeRegistry';
 import { useCraftingStore } from '../stores/craftingStore';
@@ -83,5 +84,47 @@ describe('craftingStore', () => {
     useCraftingStore.setState({ unlocked: new Set() });
     useCraftingStore.getState().hydrate(blob);
     expect(useCraftingStore.getState().isUnlocked('r.test.locked')).toBe(true);
+  });
+
+  test('a full inventory preserves ingredients and wallet including accounting totals', () => {
+    useInventoryStore.setState({ slots: [{ itemId: 'wood', count: 10 }] });
+    useWalletStore.getState().add(100);
+    const inventory = useInventoryStore.getState().serialize();
+    const wallet = useWalletStore.getState().serialize();
+    expect(useCraftingStore.getState().canCraft(R_PRICED.id)).toEqual({ ok: false, reason: 'inventory full' });
+    expect(useCraftingStore.getState().craft(R_PRICED.id)).toEqual({ ok: false, reason: 'inventory full' });
+    expect(useInventoryStore.getState().serialize()).toEqual(inventory);
+    expect(useWalletStore.getState().serialize()).toEqual(wallet);
+  });
+
+  test('ingredient consumption can free the only slot for the output', () => {
+    useInventoryStore.setState({ slots: [{ itemId: 'wood', count: 1 }] });
+    useWalletStore.getState().add(100);
+    expect(useCraftingStore.getState().craft(R_PRICED.id)).toEqual({ ok: true });
+    expect(useInventoryStore.getState().slots).toEqual([{ itemId: 'apple', count: 1 }]);
+    expect(useWalletStore.getState().bells).toBe(70);
+  });
+
+  test('repeated ingredient entries are checked together before consumption', () => {
+    const recipe = { ...R_FREE, id: 'r.test.repeated', ingredients: [
+      { itemId: 'wood', count: 2 }, { itemId: 'wood', count: 2 },
+    ] };
+    getRecipeRegistry().register(recipe);
+    useInventoryStore.setState({ slots: [{ itemId: 'wood', count: 3 }, null] });
+    expect(useCraftingStore.getState().craft(recipe.id)).toEqual({ ok: false, reason: 'missing ingredients' });
+    expect(useInventoryStore.getState().countOf('wood')).toBe(3);
+  });
+
+  test('output can fill an existing stack without freeing a slot', () => {
+    getItemRegistry().register({
+      id: 'apple', name: '사과', icon: '', category: 'food', stackable: true, maxStack: 10,
+    });
+    useInventoryStore.setState({ slots: [{ itemId: 'wood', count: 2 }, { itemId: 'apple', count: 9 }] });
+    useWalletStore.getState().add(100);
+    expect(useCraftingStore.getState().craft(R_PRICED.id)).toEqual({ ok: true });
+    expect(useInventoryStore.getState().countOf('apple')).toBe(10);
+    expect(useInventoryStore.getState().countOf('wood')).toBe(1);
+    expect(useCraftingStore.getState().craft(R_PRICED.id)).toEqual({ ok: true });
+    expect(useInventoryStore.getState().countOf('apple')).toBe(11);
   });
 });

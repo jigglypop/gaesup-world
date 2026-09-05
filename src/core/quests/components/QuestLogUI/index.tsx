@@ -1,14 +1,24 @@
 import React, { useEffect, useState } from 'react';
 
-import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
-import { getItemRegistry } from '../../../items/registry/ItemRegistry';
+import { describeObjectiveProgress, describeReward } from './helpers';
+import type { QuestLogUIProps, QuestRowProps, QuestSectionProps } from './types';
+import { canHandleOverlayShortcut } from '../../../ui/overlayKeyboard';
+import {
+  OVERLAY_ACCENT_COLOR,
+  OVERLAY_BACKDROP_STYLE,
+  OVERLAY_CARD_STYLE,
+  OVERLAY_COOL_COLOR,
+  OVERLAY_GOOD_COLOR,
+  OVERLAY_HEADER_STYLE,
+  OVERLAY_PANEL_STYLE,
+  OVERLAY_TEXT_DIM_COLOR,
+  overlayButtonStyle,
+} from '../../../ui/overlayStyles';
 import { getQuestRegistry } from '../../registry/QuestRegistry';
 import { useQuestStore } from '../../stores/questStore';
-import type { QuestObjective, QuestProgress, QuestReward } from '../../types';
 
-export type QuestLogUIProps = {
-  toggleKey?: string;
-};
+const PANEL_WIDTH = 560;
+const SINGLE_STEP = 1;
 
 export function QuestLogUI({ toggleKey = 'j' }: QuestLogUIProps) {
   const [open, setOpen] = useState(false);
@@ -19,8 +29,7 @@ export function QuestLogUI({ toggleKey = 'j' }: QuestLogUIProps) {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      const tag = (event.target as HTMLElement | null)?.tagName?.toLowerCase();
-      if (tag === 'input' || tag === 'textarea') return;
+      if (!canHandleOverlayShortcut(event)) return;
       if (event.key.toLowerCase() === toggleKey.toLowerCase()) setOpen((value) => !value);
       if (event.key === 'Escape') setOpen(false);
     };
@@ -34,51 +43,31 @@ export function QuestLogUI({ toggleKey = 'j' }: QuestLogUIProps) {
   const completed = Object.values(state).filter((progress) => progress.status === 'completed');
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 130,
-        background: 'rgba(0,0,0,0.55)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-      onClick={() => setOpen(false)}
-    >
+    <div style={OVERLAY_BACKDROP_STYLE} onClick={() => setOpen(false)}>
       <div
+        data-world-overlay="quests"
         onClick={(event) => event.stopPropagation()}
         style={{
-          width: 560,
+          ...OVERLAY_PANEL_STYLE,
+          width: PANEL_WIDTH,
+          maxWidth: 'calc(100vw - 24px)',
+          boxSizing: 'border-box',
+          overflowWrap: 'anywhere',
           maxHeight: '76vh',
-          overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
-          background: '#1a1a1a',
-          color: '#fff',
-          borderRadius: 12,
-          boxShadow: '0 16px 36px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(122,166,255,0.35)',
-          fontFamily: "'Pretendard', system-ui, sans-serif",
-          fontSize: 13,
         }}
       >
-        <div
-          style={{
-            padding: '10px 14px',
-            borderBottom: '1px solid #333',
-            display: 'flex',
-            justifyContent: 'space-between',
-          }}
-        >
-          <strong style={{ fontSize: 15 }}>Quest Log</strong>
-          <button onClick={() => setOpen(false)} style={btn()}>
-            Close [{toggleKey.toUpperCase()}]
+        <div style={{ ...OVERLAY_HEADER_STYLE, flexShrink: 0 }}>
+          <strong style={{ fontSize: 15 }}>퀘스트 로그</strong>
+          <button onClick={() => setOpen(false)} style={overlayButtonStyle()}>
+            닫기 [{toggleKey.toUpperCase()}]
           </button>
         </div>
         <div style={{ overflowY: 'auto', padding: 10 }}>
-          <Section title={`Active (${active.length})`}>
+          <Section title={`진행 중 (${active.length})`}>
             {active.length === 0 ? (
-              <Empty>No active quests.</Empty>
+              <Empty>진행 중인 퀘스트가 없습니다.</Empty>
             ) : (
               active.map((progress) => (
                 <QuestRow
@@ -89,7 +78,8 @@ export function QuestLogUI({ toggleKey = 'j' }: QuestLogUIProps) {
                       getQuestRegistry().require(progress.questId),
                       progress,
                       objective,
-                    )}
+                    )
+                  }
                   {...(isAllObjectivesComplete(progress.questId)
                     ? {
                         onComplete: () => {
@@ -102,9 +92,14 @@ export function QuestLogUI({ toggleKey = 'j' }: QuestLogUIProps) {
             )}
           </Section>
           {completed.length > 0 && (
-            <Section title={`Completed (${completed.length})`}>
+            <Section title={`완료 (${completed.length})`}>
               {completed.map((progress) => (
-                <QuestRow key={progress.questId} progress={progress} renderObjective={() => true} muted />
+                <QuestRow
+                  key={progress.questId}
+                  progress={progress}
+                  renderObjective={() => true}
+                  muted
+                />
               ))}
             </Section>
           )}
@@ -114,43 +109,25 @@ export function QuestLogUI({ toggleKey = 'j' }: QuestLogUIProps) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children }: QuestSectionProps) {
   return (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ padding: '6px 6px 4px', color: '#7aa6ff', fontSize: 12 }}>{title}</div>
+      <div style={{ padding: '6px 6px 4px', color: OVERLAY_COOL_COLOR, fontSize: 12 }}>{title}</div>
       {children}
     </div>
   );
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
-  return <div style={{ padding: '8px 10px', opacity: 0.6 }}>{children}</div>;
+  return <div style={{ padding: '8px 10px', color: OVERLAY_TEXT_DIM_COLOR }}>{children}</div>;
 }
 
-function QuestRow({
-  progress,
-  renderObjective,
-  onComplete,
-  muted,
-}: {
-  progress: QuestProgress;
-  renderObjective: (objective: QuestObjective) => boolean;
-  onComplete?: () => void;
-  muted?: boolean;
-}) {
+function QuestRow({ progress, renderObjective, onComplete, muted }: QuestRowProps) {
   const def = getQuestRegistry().get(progress.questId);
   if (!def) return null;
 
   return (
-    <div
-      style={{
-        padding: 10,
-        marginBottom: 6,
-        background: '#222',
-        borderRadius: 8,
-        opacity: muted ? 0.6 : 1,
-      }}
-    >
+    <div style={{ ...OVERLAY_CARD_STYLE, padding: 10, marginBottom: 6, opacity: muted ? 0.6 : 1 }}>
       <div
         style={{
           display: 'flex',
@@ -161,89 +138,32 @@ function QuestRow({
       >
         <strong>{def.name}</strong>
         {onComplete && (
-          <button onClick={onComplete} style={btn(true)}>
-            Report Complete
+          <button onClick={onComplete} style={overlayButtonStyle(true)}>
+            완료 보고
           </button>
         )}
       </div>
-      <div style={{ opacity: 0.75, marginBottom: 6 }}>{def.summary}</div>
+      <div style={{ color: OVERLAY_TEXT_DIM_COLOR, marginBottom: 6 }}>{def.summary}</div>
       <ul style={{ margin: 0, padding: '0 0 0 16px' }}>
         {def.objectives.map((objective) => {
-          const complete = renderObjective(objective);
-          const current = progress.progress[objective.id] ?? 0;
-          const needed =
-            objective.type === 'collect' || objective.type === 'deliver'
-              ? objective.count
-              : 1;
-          const count =
-            objective.type === 'collect'
-              ? Math.min(useInventoryStore.getState().countOf(objective.itemId), needed)
-              : current;
-          const itemName =
-            objective.type === 'collect' || objective.type === 'deliver'
-              ? getItemRegistry().get(objective.itemId)?.name ?? objective.itemId
-              : '';
-
+          const done = renderObjective(objective);
+          const { label, count, needed } = describeObjectiveProgress(objective, progress);
           return (
             <li
               key={objective.id}
-              style={{ color: complete ? '#7adf90' : '#ddd', listStyle: 'square' }}
+              style={{ color: done ? OVERLAY_GOOD_COLOR : '#ddd', listStyle: 'square' }}
             >
-              {objective.description ?? describeObjective(objective, itemName)}{' '}
-              {needed > 1 ? `(${count}/${needed})` : ''}
+              {label} {needed > SINGLE_STEP ? `(${count}/${needed})` : ''}
             </li>
           );
         })}
       </ul>
-      <div style={{ marginTop: 6, fontSize: 11, color: '#ffd84a' }}>
-        Rewards: {def.rewards.map((reward) => describeReward(reward)).join(', ')}
+      <div style={{ marginTop: 6, fontSize: 11, color: OVERLAY_ACCENT_COLOR }}>
+        보상: {def.rewards.map((reward) => describeReward(reward)).join(', ')}
       </div>
     </div>
   );
 }
 
-function describeObjective(objective: QuestObjective, itemName?: string): string {
-  switch (objective.type) {
-    case 'collect':
-      return `Collect ${itemName ?? objective.itemId}`;
-    case 'deliver':
-      return `Deliver ${itemName ?? objective.itemId} to ${objective.npcId}`;
-    case 'talk':
-      return `Talk to ${objective.npcId}`;
-    case 'visit':
-      return `Visit ${objective.tag}`;
-    case 'flag':
-      return 'Meet the required condition';
-    default:
-      return '';
-  }
-}
-
-function describeReward(reward: QuestReward): string {
-  switch (reward.type) {
-    case 'item':
-      return `${reward.itemId} x${reward.count ?? 1}`;
-    case 'bells':
-      return `${reward.amount} B`;
-    case 'friendship':
-      return `Friendship +${reward.amount}`;
-    default:
-      return '';
-  }
-}
-
-function btn(primary?: boolean): React.CSSProperties {
-  return {
-    padding: '4px 10px',
-    background: primary ? '#7aa6ff' : '#444',
-    color: primary ? '#0d1424' : '#fff',
-    border: 'none',
-    borderRadius: 6,
-    cursor: 'pointer',
-    fontFamily: "'Pretendard', system-ui, sans-serif",
-    fontSize: 12,
-    fontWeight: primary ? 700 : 400,
-  };
-}
-
+export type { QuestLogUIProps };
 export default QuestLogUI;

@@ -47,3 +47,13 @@ export type EditorConfig = {
     blueprints?: boolean;
   };
 };
+
+export type ExampleRouteAudience = 'product' | 'developer';
+
+export type ExampleRoute = {
+  path: string;
+  label: string;
+  description: string;
+  category: string;
+  audience: ExampleRouteAudience;
+};

@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 
-import { useFrame } from '@react-three/fiber';
+import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { CapsuleCollider, RigidBody } from '@react-three/rapier';
 
 import { useGenericRefs } from '@hooks/useGenericRefs';
@@ -30,7 +30,7 @@ const PassiveObjectInstance = memo(function PassiveObjectInstance({
     }
   }, [enableInteraction, object.interactable, object.id, onSelect]);
   
-  const handlePointerEnter = useCallback((e: React.PointerEvent) => {
+  const handlePointerEnter = useCallback((e: ThreeEvent<PointerEvent>) => {
     if (enableInteraction && object.interactable) {
       e.stopPropagation();
       document.body.style.cursor = 'pointer';

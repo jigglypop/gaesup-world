@@ -1,8 +1,7 @@
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
-import type { PhysicsConfigType } from '@stores/slices';
-
+import type { PhysicsConfigType } from '../config';
 import { ForceComponent } from './ForceComponent';
 
 export class WindComponent extends ForceComponent {

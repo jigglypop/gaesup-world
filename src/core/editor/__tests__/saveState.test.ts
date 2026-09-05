@@ -42,7 +42,7 @@ describe('editor save state', () => {
   });
 
   test('formats visible save labels', () => {
-    expect(getEditorSaveStatusLabel(createEditorSaveStatus({ state: 'saved', lastSavedAt: 1000 }), 4000)).toBe('Saved 3s ago');
-    expect(getEditorSaveStatusLabel(createEditorSaveStatus({ state: 'dirty', dirty: true, nextAutosaveAt: 9000 }), 4000)).toBe('Unsaved, autosave in 5s');
+    expect(getEditorSaveStatusLabel(createEditorSaveStatus({ state: 'saved', lastSavedAt: 1000 }), 4000)).toBe('3초 전 저장됨');
+    expect(getEditorSaveStatusLabel(createEditorSaveStatus({ state: 'dirty', dirty: true, nextAutosaveAt: 9000 }), 4000)).toBe('저장 대기 · 5초 후 자동 저장');
   });
 });

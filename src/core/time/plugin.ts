@@ -36,6 +36,7 @@ export function createTimePlugin(options: TimePluginOptions = {}): GaesupPlugin 
         key: saveExtensionId,
         serialize: serializeTimeState,
         hydrate: hydrateTimeState,
+        prepareHydrate: (data: TimeSerialized | null | undefined) => useTimeStore.getState().prepareHydrate(data),
       }, pluginId);
       ctx.services.register(storeServiceId, {
         useStore: useTimeStore,

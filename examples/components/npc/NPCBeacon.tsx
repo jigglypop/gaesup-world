@@ -1,6 +1,6 @@
-import React, { useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
-import { Interactable, useDialogStore, useNpcSchedule } from 'gaesup-world';
+import { Interactable, useDialogStore, useNpcSchedule, useQuestStore } from 'gaesup-world';
 
 export type NPCBeaconProps = {
   id: string;
@@ -28,6 +28,11 @@ export function NPCBeacon({
     onInteract?.(id);
     start(liveDialogTreeId, {
       context: { npcId: id },
+      onCustomEffect: (effect) => {
+        if (effect.key === 'deliver-wood' && id === 'mei') {
+          useQuestStore.getState().notifyDeliver(id, 'wood', 5);
+        }
+      },
     });
   }, [start, liveDialogTreeId, id, onInteract]);
 

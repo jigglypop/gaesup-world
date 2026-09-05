@@ -40,6 +40,50 @@ const baseConfig = {
 };
 
 describe('camera plugin', () => {
+  it.each([
+    { position: { x: 0, y: NaN, z: 0 } }, { target: [0, 0, 0] },
+    { rotation: { x: 0, y: 0, z: 0, order: 'invalid' } }, { zoom: 'large' },
+    { enableZoom: 'yes' }, { smoothing: { position: Infinity } },
+  ])('rejects malformed options before applying mode or other domains: %j', async (cameraOption) => {
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const applyOther = jest.fn();
+    const runtime = createGaesupRuntime({ saveSystem: save, plugins: [createCameraPlugin()],
+      saveBindings: [{ key: 'first', serialize: () => null, hydrate: applyOther }], logger: { warn: () => undefined } });
+    await runtime.setup();
+    const before = useGaesupStore.getState();
+    try {
+      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: { first: {},
+        camera: { mode: { type: 'vehicle', controller: 'keyboard', control: 'chase' }, cameraOption },
+      } })).toThrow('Save hydration failed');
+      expect(useGaesupStore.getState()).toBe(before);
+      expect(applyOther).not.toHaveBeenCalled();
+    } finally { await runtime.dispose(); }
+  });
+
+  it('prepares detached vectors and nested options before applying the camera snapshot', async () => {
+    const registry = createPluginRegistry();
+    registry.register(createCameraPlugin());
+    await registry.setup('gaesup.camera');
+    const extension = registry.context.save.require<CameraSaveExtension>('camera');
+    const before = useGaesupStore.getState();
+    const data = { mode: { ...before.mode }, cameraOption: {
+      position: { x: 1, y: 2, z: 3 }, rotation: { x: 0, y: 1, z: 0, order: 'YXZ' as const }, smoothing: { position: 0.3 },
+    } };
+    try {
+      const apply = extension.prepareHydrate!(data);
+      expect(useGaesupStore.getState()).toBe(before);
+      data.cameraOption.position.x = 99;
+      data.cameraOption.smoothing.position = 99;
+      apply();
+      expect(useGaesupStore.getState().cameraOption.position).toEqual(new THREE.Vector3(1, 2, 3));
+      expect(useGaesupStore.getState().cameraOption.rotation).toEqual(new THREE.Euler(0, 1, 0, 'YXZ'));
+      expect(useGaesupStore.getState().cameraOption.smoothing?.position).toBe(0.3);
+    } finally {
+      useGaesupStore.setState(before);
+      await registry.dispose('gaesup.camera');
+    }
+  });
+
   beforeEach(() => {
     useGaesupStore.getState().resetMode();
     useGaesupStore.getState().setCameraOption({

@@ -4,8 +4,145 @@ import { RegisterSystem } from '@/core/boilerplate/decorators';
 import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
 import type { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
 import type { BaseState, BaseMetrics, SystemUpdateArgs } from '@/core/boilerplate/types';
+import { logger } from '@/core/utils/logger';
 
-import { InteractionState, InteractionConfig, InteractionMetrics, KeyboardState, MouseState, GamepadState, TouchState } from '../bridge';
+import type {
+  GamepadState,
+  InteractionConfig,
+  InteractionMetrics,
+  InteractionState,
+  KeyboardState,
+  MouseState,
+  TouchState,
+} from './types';
+
+function createDefaultKeyboardState(): KeyboardState {
+  return {
+    forward: false,
+    backward: false,
+    leftward: false,
+    rightward: false,
+    shift: false,
+    space: false,
+    keyZ: false,
+    keyR: false,
+    keyF: false,
+    keyE: false,
+    escape: false,
+  };
+}
+
+function createDefaultMouseState(): MouseState {
+  return {
+    target: new THREE.Vector3(),
+    angle: 0,
+    isActive: false,
+    shouldRun: false,
+    isLookAround: false,
+    buttons: { left: false, right: false, middle: false },
+    wheel: 0,
+    position: new THREE.Vector2(),
+  };
+}
+
+function createDefaultGamepadState(): GamepadState {
+  return {
+    connected: false,
+    leftStick: new THREE.Vector2(),
+    rightStick: new THREE.Vector2(),
+    triggers: { left: 0, right: 0 },
+    buttons: {},
+    vibration: { weak: 0, strong: 0 },
+  };
+}
+
+function createDefaultTouchState(): TouchState {
+  return {
+    touches: [],
+    gestures: { pinch: 1, rotation: 0, pan: new THREE.Vector2() },
+  };
+}
+
+function createDefaultInteractionState(): InteractionSystemState {
+  return {
+    keyboard: createDefaultKeyboardState(),
+    mouse: createDefaultMouseState(),
+    gamepad: createDefaultGamepadState(),
+    touch: createDefaultTouchState(),
+    lastUpdate: 0,
+    isActive: true,
+  };
+}
+
+function createDefaultInteractionMetrics(): InteractionSystemMetrics {
+  return {
+    inputLatency: 0,
+    frameTime: 0,
+    eventCount: 0,
+    activeInputs: [],
+    performanceScore: 100,
+    lastUpdate: 0,
+  };
+}
+
+function createDefaultInteractionConfig(): InteractionConfig {
+  return {
+    sensitivity: { mouse: 1, gamepad: 1, touch: 1 },
+    deadzone: { gamepad: 0.1, touch: 0.05 },
+    smoothing: { mouse: 0.1, gamepad: 0.2 },
+    invertY: false,
+    enableVibration: true,
+  };
+}
+
+function replaceOwnProperties<ValueType extends object>(
+  target: ValueType,
+  source: ValueType,
+): void {
+  for (const key of Reflect.ownKeys(target)) {
+    if (!Reflect.deleteProperty(target, key)) {
+      throw new Error(`Failed to delete reset property: ${String(key)}`);
+    }
+  }
+  if (!Reflect.setPrototypeOf(target, Object.getPrototypeOf(source))) {
+    throw new Error('Failed to restore reset prototype');
+  }
+  for (const key of Reflect.ownKeys(source)) {
+    const descriptor = Object.getOwnPropertyDescriptor(source, key);
+    if (!descriptor || !Reflect.defineProperty(target, key, descriptor)) {
+      throw new Error(`Failed to define reset property: ${String(key)}`);
+    }
+  }
+}
+
+function resetActiveInputs(activeInputs: string[]): void {
+  if (!Reflect.setPrototypeOf(activeInputs, Array.prototype)) {
+    throw new Error('Failed to restore activeInputs prototype');
+  }
+  for (const key of Reflect.ownKeys(activeInputs)) {
+    if (key === 'length') continue;
+    if (!Reflect.deleteProperty(activeInputs, key)) {
+      throw new Error(`Failed to delete activeInputs property: ${String(key)}`);
+    }
+  }
+  if (!Reflect.defineProperty(activeInputs, 'length', {
+    configurable: false,
+    enumerable: false,
+    value: 0,
+    writable: true,
+  })) {
+    throw new Error('Failed to reset activeInputs length');
+  }
+}
+
+function findNonConfigurableOwnProperty(target: object): PropertyKey | null {
+  for (const key of Reflect.ownKeys(target)) {
+    if (Object.getOwnPropertyDescriptor(target, key)?.configurable === false) {
+      return key;
+    }
+  }
+  return null;
+}
 
 const KEYBOARD_KEYS: Array<keyof KeyboardState> = [
   'forward',
@@ -36,29 +173,11 @@ export class InteractionSystem extends AbstractSystem<InteractionSystemState, In
   private static instance: InteractionSystem | null = null;
   private config: InteractionConfig;
   private eventCallbacks: Map<string, Array<(data: InteractionEventPayload) => void>>;
+  private isResetting = false;
 
-  // public으로 변경
   public constructor() {
-    // ... super() 호출은 동일
-    super(
-      {
-        keyboard: { forward: false, backward: false, leftward: false, rightward: false, shift: false, space: false, keyZ: false, keyR: false, keyF: false, keyE: false, escape: false },
-        mouse: { target: new THREE.Vector3(), angle: 0, isActive: false, shouldRun: false, isLookAround: false, buttons: { left: false, right: false, middle: false }, wheel: 0, position: new THREE.Vector2() },
-        gamepad: { connected: false, leftStick: new THREE.Vector2(), rightStick: new THREE.Vector2(), triggers: { left: 0, right: 0 }, buttons: {}, vibration: { weak: 0, strong: 0 } },
-        touch: { touches: [], gestures: { pinch: 1, rotation: 0, pan: new THREE.Vector2() } },
-        lastUpdate: 0,
-        isActive: true
-      },
-      {
-        inputLatency: 0,
-        frameTime: 0,
-        eventCount: 0,
-        activeInputs: [],
-        performanceScore: 100,
-        lastUpdate: 0
-      }
-    );
-    this.config = this.createDefaultConfig();
+    super(createDefaultInteractionState(), createDefaultInteractionMetrics());
+    this.config = createDefaultInteractionConfig();
     this.eventCallbacks = new Map();
   }
 
@@ -68,25 +187,12 @@ export class InteractionSystem extends AbstractSystem<InteractionSystemState, In
     }
     return InteractionSystem.instance;
   }
-  
-  // ... 나머지 코드는 거의 동일
-
   protected performUpdate(args: SystemUpdateArgs): void {
     void args;
   }
 
   protected createUpdateArgs(context: SystemContext): SystemUpdateArgs {
     return this.createDefaultUpdateArgs(context);
-  }
-
-  private createDefaultConfig(): InteractionConfig {
-    return {
-      sensitivity: { mouse: 1, gamepad: 1, touch: 1 },
-      deadzone: { gamepad: 0.1, touch: 0.05 },
-      smoothing: { mouse: 0.1, gamepad: 0.2 },
-      invertY: false,
-      enableVibration: true
-    };
   }
 
   getKeyboardRef(): KeyboardState {
@@ -121,14 +227,37 @@ export class InteractionSystem extends AbstractSystem<InteractionSystemState, In
     this.emitChange('touch', updates);
   }
 
-  private emitChange(field: 'keyboard' | 'mouse' | 'gamepad' | 'touch', updates: InteractionEventPayload): void {
+  private emitChange(
+    field: 'keyboard' | 'mouse' | 'gamepad' | 'touch',
+    updates: InteractionEventPayload,
+  ): void {
     const callbacks = this.eventCallbacks.get(field);
     if (!callbacks || callbacks.length === 0) return;
     for (const cb of callbacks) {
       try {
         cb(updates);
       } catch (error) {
-        console.error('InteractionSystem change callback error:', error);
+        logger.error(
+          '[InteractionSystem] Change callback failed',
+          error instanceof Error ? error : String(error),
+        );
+      }
+    }
+  }
+
+  private emitReset(): void {
+    const callbacks = this.eventCallbacks.get('reset');
+    if (!callbacks || callbacks.length === 0) return;
+
+    const callbacksAtDispatchStart = callbacks.slice();
+    for (const callback of callbacksAtDispatchStart) {
+      try {
+        callback({});
+      } catch (error) {
+        logger.error(
+          '[InteractionSystem] Reset callback failed',
+          error instanceof Error ? error : String(error),
+        );
       }
     }
   }
@@ -144,9 +273,6 @@ export class InteractionSystem extends AbstractSystem<InteractionSystemState, In
   getConfig(): InteractionConfig {
     return { ...this.config };
   }
-  
-  // getState, getMetrics는 AbstractSystem에 이미 있으므로 제거
-
   addEventListener(event: string, callback: (data: InteractionEventPayload) => void): void {
     if (!this.eventCallbacks.has(event)) {
       this.eventCallbacks.set(event, []);
@@ -189,8 +315,100 @@ export class InteractionSystem extends AbstractSystem<InteractionSystemState, In
     if (touches > 0) out.push(`touch:${touches}`);
   }
 
+  public override reset(): void {
+    if (this.isResetting) return;
+    const canResetRawState = this.canResetRawState();
+    const canResetActiveInputs = this.canResetActiveInputs();
+    if (!canResetRawState || !canResetActiveInputs) return;
+
+    this.isResetting = true;
+    try {
+      super.reset();
+    } finally {
+      this.isResetting = false;
+    }
+  }
+
   protected override onReset(): void {
     super.onReset();
+    const keyboard = this.state.keyboard;
+    const mouse = this.state.mouse;
+    const gamepad = this.state.gamepad;
+    const touch = this.state.touch;
+    const activeInputs = this.metrics.activeInputs;
+    const defaultState = createDefaultInteractionState();
+    const defaultMetrics = createDefaultInteractionMetrics();
+
+    replaceOwnProperties(keyboard, defaultState.keyboard);
+    replaceOwnProperties(mouse, defaultState.mouse);
+    replaceOwnProperties(gamepad, defaultState.gamepad);
+    replaceOwnProperties(touch, defaultState.touch);
+
+    defaultState.keyboard = keyboard;
+    defaultState.mouse = mouse;
+    defaultState.gamepad = gamepad;
+    defaultState.touch = touch;
+    replaceOwnProperties(this.state, defaultState);
+
+    resetActiveInputs(activeInputs);
+    defaultMetrics.activeInputs = activeInputs;
+    replaceOwnProperties(this.metrics, defaultMetrics);
+    this.config = createDefaultInteractionConfig();
+
+    this.emitReset();
+  }
+
+  private canResetRawState(): boolean {
+    const canResetKeyboard = this.canReplaceRawState('keyboard', this.state.keyboard);
+    const canResetMouse = this.canReplaceRawState('mouse', this.state.mouse);
+    const canResetGamepad = this.canReplaceRawState('gamepad', this.state.gamepad);
+    const canResetTouch = this.canReplaceRawState('touch', this.state.touch);
+    return canResetKeyboard && canResetMouse && canResetGamepad && canResetTouch;
+  }
+
+  private canReplaceRawState(field: string, state: object): boolean {
+    let canReplace = true;
+    if (!Object.isExtensible(state)) {
+      logger.error(`[InteractionSystem] Reset skipped: ${field} is not extensible`);
+      canReplace = false;
+    }
+
+    const key = findNonConfigurableOwnProperty(state);
+    if (key !== null) {
+      logger.error(
+        `[InteractionSystem] Reset skipped: ${field} has a non-configurable property`,
+        key,
+      );
+      canReplace = false;
+    }
+    return canReplace;
+  }
+
+  private canResetActiveInputs(): boolean {
+    const activeInputs = this.metrics.activeInputs;
+    let canClear = true;
+    if (!Object.isExtensible(activeInputs)) {
+      logger.error('[InteractionSystem] Reset skipped: activeInputs is not extensible');
+      canClear = false;
+    }
+
+    const lengthDescriptor = Object.getOwnPropertyDescriptor(activeInputs, 'length');
+    if (lengthDescriptor?.writable !== true) {
+      logger.error('[InteractionSystem] Reset skipped: activeInputs length is not writable');
+      canClear = false;
+    }
+
+    for (const key of Reflect.ownKeys(activeInputs)) {
+      if (key === 'length') continue;
+      if (Object.getOwnPropertyDescriptor(activeInputs, key)?.configurable === false) {
+        logger.error(
+          '[InteractionSystem] Reset skipped: activeInputs has a non-configurable property',
+          key,
+        );
+        canClear = false;
+      }
+    }
+    return canClear;
   }
 
   protected override onDispose(): void {
@@ -200,4 +418,4 @@ export class InteractionSystem extends AbstractSystem<InteractionSystemState, In
   }
 }
 
-export type { KeyboardState, MouseState } from '../bridge';
+export type { KeyboardState, MouseState } from './types';

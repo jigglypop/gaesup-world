@@ -185,6 +185,7 @@ export class PlayerNetworkManager {
     this.ws = ws;
 
     ws.onopen = () => {
+      if (this.ws !== ws) return;
       this.info('[PlayerNetworkManager] WebSocket connected');
       this.isConnected = true;
       this.isConnecting = false;
@@ -199,10 +200,10 @@ export class PlayerNetworkManager {
         color: this.playerColor
       }));
 
-      // Flush buffered messages after Join to keep ordering sane.
-      this.flushOfflineQueue();
       // Resend in-flight reliable messages, when present, after reconnect.
       this.resumePendingAcks();
+      // Flush buffered messages after resuming existing ACKs to avoid resending new messages.
+      this.flushOfflineQueue();
       
       if (this.onConnect) {
         this.onConnect();
@@ -213,8 +214,13 @@ export class PlayerNetworkManager {
       // Browser WebSocket can deliver string | Blob | ArrayBuffer.
       // Avoid throwing inside the handler (would silently break updates).
       const handleText = (text: string) => {
+        if (this.ws !== ws || ws.readyState !== WebSocket.OPEN) return;
         try {
-          const message = JSON.parse(text) as ServerMessage;
+          const message: unknown = JSON.parse(text);
+          if (!isServerMessage(message)) {
+            this.onError?.('서버 메시지 형식이 올바르지 않습니다');
+            return;
+          }
           this.handleServerMessage(message);
         } catch {
           this.onError?.('서버 메시지 파싱 실패');
@@ -231,7 +237,11 @@ export class PlayerNetworkManager {
         data
           .text()
           .then((t: string) => handleText(t))
-          .catch(() => this.onError?.('서버 메시지 수신 실패'));
+          .catch(() => {
+            if (this.ws === ws && ws.readyState === WebSocket.OPEN) {
+              this.onError?.('서버 메시지 수신 실패');
+            }
+          });
         return;
       }
 
@@ -246,6 +256,7 @@ export class PlayerNetworkManager {
     };
 
     ws.onerror = (error) => {
+      if (this.ws !== ws) return;
       this.error('[PlayerNetworkManager] WebSocket error', error);
       this.isConnected = false;
       this.isConnecting = false;
@@ -255,8 +266,8 @@ export class PlayerNetworkManager {
     };
 
     ws.onclose = (event) => {
+      if (this.ws !== ws) return;
       this.info('[PlayerNetworkManager] WebSocket closed', { code: event.code, reason: event.reason });
-      const wasConnected = this.isConnected || this.isConnecting;
       this.isConnected = false;
       this.isConnecting = false;
       this.stopPingLoop();
@@ -274,7 +285,7 @@ export class PlayerNetworkManager {
 
       // If the socket was closed (network drop), retry automatically when configured.
       // disconnect() disables shouldReconnect so it won't loop.
-      if (wasConnected) this.tryReconnect();
+      this.tryReconnect();
     };
   }
 
@@ -284,6 +295,8 @@ export class PlayerNetworkManager {
     this.stopPingLoop();
     this.clearUpdateFlushTimer();
     this.clearAllPendingAcks(true);
+    this.pendingUpdate = null;
+    this.pendingChats = [];
 
     if (!this.ws) {
       this.players.clear();
@@ -319,8 +332,6 @@ export class PlayerNetworkManager {
     this.isConnected = false;
     this.isConnecting = false;
     this.localPlayerId = null;
-    this.pendingUpdate = null;
-    this.pendingChats = [];
     this.onDisconnect?.();
   }
 
@@ -608,12 +619,7 @@ export class PlayerNetworkManager {
     const messageType = String(payload.type ?? 'Unknown');
     const raw = JSON.stringify({ ...payload, ackId });
 
-    try {
-      ws.send(raw);
-    } catch {
-      return;
-    }
-
+    ws.send(raw);
     this.trackPendingAck({ ackId, raw, messageType });
   }
 
@@ -764,3 +770,48 @@ type AckMessage = {
 };
 
 type ServerMessage = WelcomeMessage | PlayerJoinedMessage | PlayerLeftMessage | PlayerUpdateMessage | ChatMessage | PongMessage | AckMessage;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isFiniteTuple(value: unknown, length: number): boolean {
+  return Array.isArray(value) && value.length === length
+    && value.every((component: unknown) => typeof component === 'number' && Number.isFinite(component));
+}
+
+function isPlayerState(value: unknown, partial: boolean): boolean {
+  if (!isRecord(value)) return false;
+  for (const key of ['name', 'color', 'animation', 'modelUrl']) {
+    if (key in value && typeof value[key] !== 'string') return false;
+  }
+  if ('position' in value && !isFiniteTuple(value['position'], 3)) return false;
+  if ('rotation' in value && !isFiniteTuple(value['rotation'], 4)) return false;
+  if ('velocity' in value && !isFiniteTuple(value['velocity'], 3)) return false;
+  return partial || ['name', 'color', 'position', 'rotation'].every((key) => key in value);
+}
+
+function isServerMessage(value: unknown): value is ServerMessage {
+  if (!isRecord(value)) return false;
+  if (value['type'] === 'Ack') return typeof value['ackId'] === 'string' && value['ackId'].length > 0;
+  if (value['type'] === 'Pong') {
+    return value['ts'] === undefined || (typeof value['ts'] === 'number' && Number.isFinite(value['ts']));
+  }
+  if (typeof value['client_id'] !== 'string' || !value['client_id'].trim()) return false;
+  switch (value['type']) {
+    case 'Welcome':
+      return value['room_state'] === undefined || (isRecord(value['room_state'])
+        && Object.entries(value['room_state']).every(([id, state]) => id.trim().length > 0 && isPlayerState(state, false)));
+    case 'PlayerJoined':
+      return isPlayerState(value['state'], false);
+    case 'PlayerUpdate':
+      return isPlayerState(value['state'], true);
+    case 'PlayerLeft':
+      return true;
+    case 'Chat':
+      return typeof value['text'] === 'string'
+        && typeof value['timestamp'] === 'number' && Number.isFinite(value['timestamp']);
+    default:
+      return false;
+  }
+}

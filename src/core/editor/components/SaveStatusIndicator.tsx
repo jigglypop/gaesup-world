@@ -13,7 +13,7 @@ export function SaveStatusIndicator({ status, onSave, onToggleAutosave }: SaveSt
   const canSave = Boolean(onSave) && status.state !== 'saving' && status.dirty;
 
   return (
-    <div className={`editor-save-status editor-save-status--${status.state}`} aria-label="Editor save status">
+    <div className={`editor-save-status editor-save-status--${status.state}`} aria-label="편집 내용 저장 상태">
       <div className="editor-save-status__main">
         <span className="editor-save-status__dot" aria-hidden="true" />
         <span className="editor-save-status__label">{label}</span>
@@ -23,15 +23,16 @@ export function SaveStatusIndicator({ status, onSave, onToggleAutosave }: SaveSt
           <button
             type="button"
             className={status.autosaveEnabled ? 'active' : ''}
+            aria-pressed={status.autosaveEnabled}
             onClick={() => onToggleAutosave(!status.autosaveEnabled)}
-            title="Toggle autosave"
+            title="자동 저장 전환"
           >
-            Auto
+            자동
           </button>
         )}
         {onSave && (
           <button type="button" onClick={() => { void onSave(); }} disabled={!canSave}>
-            Save
+            저장
           </button>
         )}
       </div>

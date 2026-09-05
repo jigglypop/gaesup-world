@@ -56,6 +56,7 @@ export function PerformancePanel({ className = '', style, children }: EditorPane
   const performanceData = useGaesupStore(useShallow((state) => state.performance));
   const [fps, setFps] = useState({ current: 0, min: Infinity, max: 0, avg: 0, p1Low: 0, history: Array(HISTORY_LEN).fill(0) });
   const [mem, setMem] = useState({ used: 0, limit: 0, history: Array(HISTORY_LEN).fill(0) });
+  const [memoryAvailable, setMemoryAvailable] = useState(false);
   const [frameTime, setFrameTime] = useState(0);
   const [drawCallHistory, setDrawCallHistory] = useState<number[]>(Array(HISTORY_LEN).fill(0));
   const [frameTimeHistory, setFrameTimeHistory] = useState<number[]>(Array(HISTORY_LEN).fill(0));
@@ -131,7 +132,11 @@ export function PerformancePanel({ className = '', style, children }: EditorPane
           memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number };
         }).memory;
 
-        if (memoryInfo) {
+        const hasMemory = Boolean(memoryInfo && Number.isFinite(memoryInfo.usedJSHeapSize)
+          && memoryInfo.usedJSHeapSize >= 0 && Number.isFinite(memoryInfo.jsHeapSizeLimit)
+          && memoryInfo.jsHeapSizeLimit > 0);
+        setMemoryAvailable(hasMemory);
+        if (memoryInfo && hasMemory) {
           setMem((prev) => {
             const used = Math.round(memoryInfo.usedJSHeapSize / 1048576);
             const limit = Math.round(memoryInfo.jsHeapSizeLimit / 1048576);
@@ -176,16 +181,16 @@ export function PerformancePanel({ className = '', style, children }: EditorPane
       {/* FPS */}
       <div className="perf-stat-group">
         <div className="perf-header">
-          <h4 className="perf-title">Frame Rate</h4>
+          <h4 className="perf-title">브라우저 초당 프레임</h4>
           <span className="perf-current" style={{ color: getFpsColor(fps.current) }}>
             {fps.current.toFixed(0)} FPS
           </span>
         </div>
         <div className="perf-details-grid">
-          <div><span className="perf-label">Avg</span>{fps.avg.toFixed(1)}</div>
-          <div><span className="perf-label">Min</span>{isFinite(fps.min) ? fps.min.toFixed(1) : '...'}</div>
-          <div><span className="perf-label">Max</span>{fps.max.toFixed(1)}</div>
-          <div><span className="perf-label">1% Low</span><span style={{ color: getFpsColor(fps.p1Low) }}>{fps.p1Low.toFixed(1)}</span></div>
+          <div><span className="perf-label">평균</span>{fps.avg.toFixed(1)}</div>
+          <div><span className="perf-label">최소</span>{isFinite(fps.min) ? fps.min.toFixed(1) : '...'}</div>
+          <div><span className="perf-label">최대</span>{fps.max.toFixed(1)}</div>
+          <div><span className="perf-label">하위 1%</span><span style={{ color: getFpsColor(fps.p1Low) }}>{fps.p1Low.toFixed(1)}</span></div>
         </div>
         <Sparkline data={fps.history} color={getFpsColor(fps.current)} max={90} warn={60} />
       </div>
@@ -193,28 +198,28 @@ export function PerformancePanel({ className = '', style, children }: EditorPane
       {/* Frame Time */}
       <div className="perf-stat-group">
         <div className="perf-header">
-          <h4 className="perf-title">Frame Time</h4>
+          <h4 className="perf-title">브라우저 프레임 간격</h4>
           <span className="perf-current" style={{ color: getFrameTimeColor(frameTime) }}>
             {frameTime.toFixed(2)} ms
           </span>
         </div>
-        <BarMeter value={frameTime} max={33.3} color={getFrameTimeColor(frameTime)} label="Budget (16.7ms)" />
+        <BarMeter value={frameTime} max={33.3} color={getFrameTimeColor(frameTime)} label="목표 시간(16.7ms)" />
         <Sparkline data={frameTimeHistory} color={getFrameTimeColor(frameTime)} max={33.3} warn={16.7} />
       </div>
 
       {/* Draw Calls & GPU */}
       <div className="perf-stat-group">
         <div className="perf-header">
-          <h4 className="perf-title">GPU Pipeline</h4>
+          <h4 className="perf-title">GPU 렌더링</h4>
           <span className="perf-current" style={{ color: getDrawCallColor(drawCalls) }}>
-            {drawCalls} calls
+            {drawCalls} 회
           </span>
         </div>
         <div className="perf-details-grid">
-          <div><span className="perf-label">Triangles</span>{triCount >= 1000000 ? (triCount / 1000000).toFixed(2) + 'M' : triCount >= 1000 ? (triCount / 1000).toFixed(1) + 'K' : triCount}</div>
-          <div><span className="perf-label">Draw Calls</span><span style={{ color: getDrawCallColor(drawCalls) }}>{drawCalls}</span></div>
-          <div><span className="perf-label">Tri/Call</span>{drawCalls > 0 ? Math.round(triCount / drawCalls) : 0}</div>
-          <div><span className="perf-label">Points</span>{performanceData.render.points}</div>
+          <div><span className="perf-label">삼각형</span>{triCount >= 1000000 ? (triCount / 1000000).toFixed(2) + 'M' : triCount >= 1000 ? (triCount / 1000).toFixed(1) + 'K' : triCount}</div>
+          <div><span className="perf-label">그리기 호출</span><span style={{ color: getDrawCallColor(drawCalls) }}>{drawCalls}</span></div>
+          <div><span className="perf-label">호출당 삼각형</span>{drawCalls > 0 ? Math.round(triCount / drawCalls) : 0}</div>
+          <div><span className="perf-label">점</span>{performanceData.render.points}</div>
         </div>
         <Sparkline data={drawCallHistory} color={getDrawCallColor(drawCalls)} max={Math.max(200, ...drawCallHistory)} />
       </div>
@@ -222,31 +227,39 @@ export function PerformancePanel({ className = '', style, children }: EditorPane
       {/* Resources */}
       <div className="perf-stat-group">
         <div className="perf-header">
-          <h4 className="perf-title">Resources</h4>
+          <h4 className="perf-title">리소스</h4>
         </div>
         <div className="perf-details-grid">
-          <div><span className="perf-label">Geometries</span>{geoCount}</div>
-          <div><span className="perf-label">Textures</span>{texCount}</div>
-          <div><span className="perf-label">Programs</span>{performanceData.engine.programs}</div>
-          <div><span className="perf-label">Lines</span>{performanceData.render.lines}</div>
+          <div><span className="perf-label">도형</span>{geoCount}</div>
+          <div><span className="perf-label">텍스처</span>{texCount}</div>
+          <div><span className="perf-label">셰이더 프로그램</span>{performanceData.engine.programs}</div>
+          <div><span className="perf-label">선</span>{performanceData.render.lines}</div>
         </div>
-        <BarMeter value={geoCount} max={200} color={geoCount > 150 ? '#f87171' : '#4ade80'} label="Geometry Budget" />
-        <BarMeter value={texCount} max={100} color={texCount > 80 ? '#f87171' : '#4ade80'} label="Texture Budget" />
+        <BarMeter value={geoCount} max={200} color={geoCount > 150 ? '#f87171' : '#4ade80'} label="도형 수 (비교 기준 200개)" />
+        <BarMeter value={texCount} max={100} color={texCount > 80 ? '#f87171' : '#4ade80'} label="텍스처 수 (비교 기준 100개)" />
       </div>
 
       {/* Memory */}
       <div className="perf-stat-group">
         <div className="perf-header">
-          <h4 className="perf-title">Memory</h4>
-          <span className="perf-current" style={{ color: getMemoryColor(mem.used, mem.limit) }}>
-            {mem.used} MB
-          </span>
+          <h4 className="perf-title">자바스크립트 메모리</h4>
+          {memoryAvailable && (
+            <span className="perf-current" style={{ color: getMemoryColor(mem.used, mem.limit) }}>
+              {mem.used} MB
+            </span>
+          )}
         </div>
-        <div className="perf-details-grid">
-          <div><span className="perf-label">Limit</span>{mem.limit} MB</div>
-          <div><span className="perf-label">Usage</span>{mem.limit > 0 ? ((mem.used / mem.limit) * 100).toFixed(0) : 0}%</div>
-        </div>
-        <Sparkline data={mem.history} color={getMemoryColor(mem.used, mem.limit)} max={mem.limit || 1} />
+        {memoryAvailable ? (
+          <>
+            <div className="perf-details-grid">
+              <div><span className="perf-label">한도</span>{mem.limit} MB</div>
+              <div><span className="perf-label">사용률</span>{mem.limit > 0 ? ((mem.used / mem.limit) * 100).toFixed(0) : 0}%</div>
+            </div>
+            <Sparkline data={mem.history} color={getMemoryColor(mem.used, mem.limit)} max={mem.limit || 1} />
+          </>
+        ) : (
+          <p className="perf-label">메모리 측정값이 없습니다. 브라우저 지원 여부에 따라 표시됩니다.</p>
+        )}
       </div>
       {children}
     </div>

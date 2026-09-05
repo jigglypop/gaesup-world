@@ -1,12 +1,28 @@
 import React, { useEffect, useState } from 'react';
 
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
+import { canHandleOverlayShortcut } from '../../../ui/overlayKeyboard';
+import {
+  OVERLAY_ACCENT_COLOR,
+  OVERLAY_BACKDROP_STYLE,
+  OVERLAY_BORDER_COLOR,
+  OVERLAY_CARD_STYLE,
+  OVERLAY_HEADER_STYLE,
+  OVERLAY_PANEL_STYLE,
+  OVERLAY_SURFACE_ACTIVE_COLOR,
+  OVERLAY_TEXT_DIM_COLOR,
+  overlayButtonStyle,
+} from '../../../ui/overlayStyles';
 import { useMailStore } from '../../stores/mailStore';
 import type { MailMessage } from '../../types';
+import './styles.css';
 
 export type MailboxUIProps = {
   toggleKey?: string;
 };
+
+const UNREAD_COLOR = '#cf9aff';
+const SINGLE_ITEM = 1;
 
 export function MailboxUI({ toggleKey = 'm' }: MailboxUIProps) {
   const [open, setOpen] = useState(false);
@@ -18,8 +34,7 @@ export function MailboxUI({ toggleKey = 'm' }: MailboxUIProps) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
-      if (tag === 'input' || tag === 'textarea') return;
+      if (!canHandleOverlayShortcut(e)) return;
       if (e.key.toLowerCase() === toggleKey.toLowerCase()) setOpen((v) => !v);
       if (e.key === 'Escape') setOpen(false);
     };
@@ -29,61 +44,99 @@ export function MailboxUI({ toggleKey = 'm' }: MailboxUIProps) {
 
   if (!open) return null;
   const sorted = messages.slice().sort((a, b) => b.sentDay - a.sentDay);
-  const selected = selectedId ? sorted.find((m) => m.id === selectedId) ?? null : null;
+  const selected = selectedId ? (sorted.find((m) => m.id === selectedId) ?? null) : null;
 
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, zIndex: 130, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      onClick={() => setOpen(false)}
-    >
+    <div style={OVERLAY_BACKDROP_STYLE} onClick={() => setOpen(false)}>
       <div
+        className="mailbox-panel"
+        role="region"
+        data-world-overlay="mail"
+        aria-label="우편함"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: 720, height: 460, display: 'flex',
-          background: '#1a1a1a', color: '#fff', borderRadius: 12,
-          boxShadow: '0 16px 36px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(207,154,255,0.35)',
-          fontFamily: "'Pretendard', system-ui, sans-serif", fontSize: 13, overflow: 'hidden',
-        }}
+        style={OVERLAY_PANEL_STYLE}
       >
-        <div style={{ width: 260, borderRight: '1px solid #333', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '10px 12px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between' }}>
-            <strong>우편함</strong>
-            <span style={{ fontSize: 12, opacity: 0.7 }}>{sorted.length}</span>
+        <div
+          className="mailbox-list"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <div style={{ ...OVERLAY_HEADER_STYLE, flexShrink: 0 }}>
+            <strong style={{ fontSize: 15 }}>우편함</strong>
+            <span style={{ fontSize: 12, color: OVERLAY_TEXT_DIM_COLOR }}>{sorted.length}</span>
           </div>
-          <div style={{ flex: 1, overflowY: 'auto' }}>
-            {sorted.length === 0 ? <Empty>우편이 없습니다.</Empty> : sorted.map((m) => (
-              <div
-                key={m.id}
-                onClick={() => { setSelectedId(m.id); if (!m.read) markRead(m.id); }}
-                style={{
-                  padding: '8px 12px', cursor: 'pointer',
-                  background: selectedId === m.id ? '#262626' : 'transparent',
-                  borderBottom: '1px solid #2a2a2a',
-                  opacity: m.read ? 0.7 : 1,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {!m.read && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#cf9aff' }} />}
-                  <strong style={{ fontSize: 13 }}>{m.subject}</strong>
-                </div>
-                <div style={{ fontSize: 11, opacity: 0.6 }}>{m.from} · day {m.sentDay}</div>
-                {m.attachments && m.attachments.length > 0 && !m.claimed && (
-                  <div style={{ fontSize: 11, color: '#ffd84a' }}>* 첨부물</div>
-                )}
-              </div>
-            ))}
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            {sorted.length === 0 ? (
+              <Empty>우편이 없습니다.</Empty>
+            ) : (
+              sorted.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  aria-pressed={selectedId === m.id}
+                  onClick={() => {
+                    setSelectedId(m.id);
+                    if (!m.read) markRead(m.id);
+                  }}
+                  style={{
+                    width: '100%',
+                    display: 'block',
+                    textAlign: 'left',
+                    color: 'inherit',
+                    font: 'inherit',
+                    border: 0,
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    background: selectedId === m.id ? OVERLAY_SURFACE_ACTIVE_COLOR : 'transparent',
+                    borderBottom: `1px solid ${OVERLAY_BORDER_COLOR}`,
+                    opacity: m.read ? 0.7 : 1,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {!m.read && (
+                      <span
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          background: UNREAD_COLOR,
+                        }}
+                      />
+                    )}
+                    <strong style={{ fontSize: 13 }}>{m.subject}</strong>
+                  </div>
+                  <div style={{ fontSize: 11, color: OVERLAY_TEXT_DIM_COLOR }}>
+                    {m.from} · {m.sentDay}일차
+                  </div>
+                  {m.attachments && m.attachments.length > 0 && !m.claimed && (
+                    <div style={{ fontSize: 11, color: OVERLAY_ACCENT_COLOR }}>* 첨부물</div>
+                  )}
+                </button>
+              ))
+            )}
           </div>
         </div>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '10px 12px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between' }}>
-            <span>{selected ? selected.subject : '메시지를 선택하세요'}</span>
-            <button onClick={() => setOpen(false)} style={btn()}>닫기 [{toggleKey.toUpperCase()}]</button>
+        <div style={{ minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ ...OVERLAY_HEADER_STYLE, flexShrink: 0 }}>
+            <span style={{ minWidth: 0 }}>{selected ? selected.subject : '메시지를 선택하세요'}</span>
+            <button onClick={() => setOpen(false)} style={{ ...overlayButtonStyle(), flexShrink: 0 }}>
+              닫기 [{toggleKey.toUpperCase()}]
+            </button>
           </div>
-          <div style={{ flex: 1, padding: 12, overflowY: 'auto' }}>
+          <div style={{ flex: 1, minHeight: 0, padding: 12, overflowY: 'auto' }}>
             {selected ? (
-              <MailDetail msg={selected} onClaim={() => claim(selected.id)} onDelete={() => { del(selected.id); setSelectedId(null); }} />
+              <MailDetail
+                msg={selected}
+                onClaim={() => claim(selected.id)}
+                onDelete={() => {
+                  del(selected.id);
+                  setSelectedId(null);
+                }}
+              />
             ) : (
-              <div style={{ opacity: 0.6 }}>왼쪽에서 메시지를 선택하세요.</div>
+              <div style={{ color: OVERLAY_TEXT_DIM_COLOR }}>목록에서 읽을 우편을 선택하세요.</div>
             )}
           </div>
         </div>
@@ -92,51 +145,57 @@ export function MailboxUI({ toggleKey = 'm' }: MailboxUIProps) {
   );
 }
 
-function MailDetail({ msg, onClaim, onDelete }: { msg: MailMessage; onClaim: () => void; onDelete: () => void }) {
+function MailDetail({
+  msg,
+  onClaim,
+  onDelete,
+}: {
+  msg: MailMessage;
+  onClaim: () => void;
+  onDelete: () => void;
+}) {
   return (
     <div>
-      <div style={{ marginBottom: 6, opacity: 0.75 }}>From. {msg.from}</div>
+      <div style={{ marginBottom: 6, color: OVERLAY_TEXT_DIM_COLOR }}>보낸 사람: {msg.from}</div>
       <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, marginBottom: 12 }}>{msg.body}</div>
       {msg.attachments && msg.attachments.length > 0 && (
-        <div style={{ padding: 10, background: '#222', borderRadius: 8, marginBottom: 8 }}>
-          <div style={{ marginBottom: 6, color: '#ffd84a', fontSize: 12 }}>첨부물</div>
+        <div style={{ ...OVERLAY_CARD_STYLE, padding: 10, marginBottom: 8 }}>
+          <div style={{ marginBottom: 6, color: OVERLAY_ACCENT_COLOR, fontSize: 12 }}>첨부물</div>
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {msg.attachments.map((a, i) => {
               if ('itemId' in a) {
                 const def = getItemRegistry().get(a.itemId);
-                return <li key={i}>{def?.name ?? a.itemId} x{a.count ?? 1}</li>;
+                return (
+                  <li key={i}>
+                    {def?.name ?? a.itemId} x{a.count ?? SINGLE_ITEM}
+                  </li>
+                );
               }
-              return <li key={i}>{a.bells} B</li>;
+              return <li key={i}>{a.bells} 벨</li>;
             })}
           </ul>
           <div style={{ marginTop: 8, display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
             {!msg.claimed ? (
-              <button onClick={onClaim} style={btn(true)}>받기</button>
+              <button onClick={onClaim} style={overlayButtonStyle(true)}>
+                받기
+              </button>
             ) : (
-              <span style={{ fontSize: 12, opacity: 0.6 }}>수령 완료</span>
+              <span style={{ fontSize: 12, color: OVERLAY_TEXT_DIM_COLOR }}>수령 완료</span>
             )}
           </div>
         </div>
       )}
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <button onClick={onDelete} style={btn()}>삭제</button>
+        <button onClick={onDelete} style={overlayButtonStyle()}>
+          삭제
+        </button>
       </div>
     </div>
   );
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
-  return <div style={{ padding: 14, opacity: 0.6 }}>{children}</div>;
-}
-
-function btn(primary?: boolean): React.CSSProperties {
-  return {
-    padding: '6px 10px',
-    background: primary ? '#cf9aff' : '#444',
-    color: primary ? '#1a0d24' : '#fff',
-    border: 'none', borderRadius: 6, cursor: 'pointer',
-    fontFamily: "'Pretendard', system-ui, sans-serif", fontSize: 12, fontWeight: primary ? 700 : 400,
-  };
+  return <div style={{ padding: 14, color: OVERLAY_TEXT_DIM_COLOR }}>{children}</div>;
 }
 
 export default MailboxUI;

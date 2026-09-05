@@ -1,5 +1,6 @@
-import React, { type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
+import { PROJECT_ASSET_DISPLAY_LABELS } from './defaults';
 import type {
   ProjectAssetItem,
   ProjectAssetsPanelRenderContext,
@@ -15,7 +16,7 @@ function renderItemThumb(
       {item.thumbnailUrl ? (
         <img alt="" src={item.thumbnailUrl} />
       ) : (
-        item.kind.slice(0, 2).toUpperCase()
+        (PROJECT_ASSET_DISPLAY_LABELS[item.kind] ?? item.kind).slice(0, 2)
       )}
     </span>
   );
@@ -28,44 +29,49 @@ function renderItem(
   const active = context.activeId === item.id;
   if (renderers?.item) return renderers.item(context, item, active);
   return (
-    <button
-      className={context.classNameFor(
-        'item',
-        active ? context.classNameFor('activeItem') : undefined,
-      )}
-      key={`${item.group}:${item.id}`}
-      onClick={() => context.actions.selectItem(item)}
-      role="listitem"
-      style={context.styleFor('item')}
-      type="button"
-    >
-      {renderItemThumb(context, item)}
-      <span className={context.classNameFor('itemMain')} style={context.styleFor('itemMain')}>
-        <strong className={context.classNameFor('itemName')} style={context.styleFor('itemName')}>
-          {item.name}
-        </strong>
-        <span
-          className={context.classNameFor('itemSubtitle')}
-          style={context.styleFor('itemSubtitle')}
-        >
-          {item.subtitle ?? item.kind}
-        </span>
-      </span>
-      <span className={context.classNameFor('badges')} style={context.styleFor('badges')}>
-        <span className={context.classNameFor('badge')} style={context.styleFor('badge')}>
-          {item.kind}
-        </span>
-        {item.tags.slice(0, 2).map((tag) => (
+    <div role="listitem" key={`${item.group}:${item.id}`}>
+      <button
+        className={context.classNameFor(
+          'item',
+          active ? context.classNameFor('activeItem') : undefined,
+        )}
+        onClick={() => context.actions.selectItem(item)}
+        aria-pressed={active}
+        style={context.styleFor('item')}
+        type="button"
+      >
+        {renderItemThumb(context, item)}
+        <span className={context.classNameFor('itemMain')} style={context.styleFor('itemMain')}>
+          <strong className={context.classNameFor('itemName')} style={context.styleFor('itemName')}>
+            {item.name}
+          </strong>
           <span
-            className={context.classNameFor('badge')}
-            key={tag}
-            style={context.styleFor('badge')}
+            className={context.classNameFor('itemSubtitle')}
+            style={context.styleFor('itemSubtitle')}
           >
-            {tag}
+            {item.subtitle
+              ? (item.group === 'assets' || item.group === 'materials'
+                ? PROJECT_ASSET_DISPLAY_LABELS[item.subtitle] ?? item.subtitle
+                : item.subtitle)
+              : PROJECT_ASSET_DISPLAY_LABELS[item.kind] ?? item.kind}
           </span>
-        ))}
-      </span>
-    </button>
+        </span>
+        <span className={context.classNameFor('badges')} style={context.styleFor('badges')}>
+          <span className={context.classNameFor('badge')} style={context.styleFor('badge')}>
+            {PROJECT_ASSET_DISPLAY_LABELS[item.kind] ?? item.kind}
+          </span>
+          {item.tags.slice(0, 2).map((tag) => (
+            <span
+              className={context.classNameFor('badge')}
+              key={tag}
+              style={context.styleFor('badge')}
+            >
+              {PROJECT_ASSET_DISPLAY_LABELS[tag] ?? tag}
+            </span>
+          ))}
+        </span>
+      </button>
+    </div>
   );
 }
 export function renderProjectAssetsPanelList(

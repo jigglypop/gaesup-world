@@ -35,7 +35,7 @@ describe('DirectionComponent', () => {
         position: new THREE.Vector2()
       })
     } as unknown as jest.Mocked<InteractionSystem>;
-    
+
     (InteractionSystem.getInstance as jest.Mock).mockReturnValue(mockInteractionSystem);
     directionComponent = new DirectionComponent();
   });
@@ -73,7 +73,7 @@ describe('DirectionComponent', () => {
       keyE: false,
       escape: false
     });
-    
+
     const state = createMockState('character');
     directionComponent.updateDirection(state);
     expect(state.activeState.dir.length()).not.toBe(0);
@@ -90,7 +90,7 @@ describe('DirectionComponent', () => {
       wheel: 0,
       position: new THREE.Vector2()
     });
-    
+
     const state = createMockState('character');
     const props = {
       worldContext: { automation: { settings: {} } },
@@ -115,7 +115,7 @@ describe('DirectionComponent', () => {
       keyE: false,
       escape: false
     });
-    
+
     const state = createMockState('vehicle');
     directionComponent.updateDirection(state);
     expect(state.activeState.direction.length()).not.toBe(0);
@@ -136,14 +136,14 @@ describe('DirectionComponent', () => {
       keyE: false,
       escape: false
     });
-    
+
     const state = createMockState('airplane');
     const innerGroupRef = { current: new THREE.Group() };
     directionComponent.updateDirection(state, 'normal', undefined, innerGroupRef);
     expect(state.activeState.direction.length()).not.toBe(0);
   });
 
-  it('자동화(automation) 큐가 있을 때 마우스 방향을 덮어써야 합니다.', () => {
+  it('자동화 큐를 이동 코드에서 소비하지 않아야 합니다.', () => {
     mockInteractionSystem.getMouseRef.mockReturnValue({
       isActive: true,
       angle: 0,
@@ -153,7 +153,7 @@ describe('DirectionComponent', () => {
       wheel: 0,
       position: new THREE.Vector2()
     });
-    
+
     const state = createMockState('character');
     const target = new THREE.Vector3(10, 0, 10);
     const props = {
@@ -168,8 +168,7 @@ describe('DirectionComponent', () => {
       rigidBodyRef: { current: { translation: () => ({ x: 0, y: 0, z: 0 }) } }
     } as any;
     directionComponent.updateDirection(state, 'normal', props);
-    // target(10,0,10)을 향하는 정규화된 벡터 (약 0.707, 0, 0.707)
-    expect(props.memo.direction.x).toBeCloseTo(0.707, 1);
-    expect(props.memo.direction.z).toBeCloseTo(0.707, 1);
+    expect(props.worldContext.automation.queue.actions).toHaveLength(1);
+    expect(props.memo.direction).toBeUndefined();
   });
-}); 
+});

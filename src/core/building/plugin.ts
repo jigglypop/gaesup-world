@@ -24,6 +24,7 @@ export interface BuildingSaveExtension {
   key: string;
   serialize: () => BuildingSerializedState;
   hydrate: (data: Partial<BuildingSerializedState> | null | undefined) => void;
+  prepareHydrate?: (data: Partial<BuildingSerializedState> | null | undefined) => () => void;
 }
 
 export interface BuildingStoreService {
@@ -81,6 +82,7 @@ export function createBuildingPlugin(options: BuildingPluginOptions = {}): Gaesu
       key: saveExtensionId,
       serialize: () => useBuildingStore.getState().serialize(),
       hydrate: (data: Partial<BuildingSerializedState> | null | undefined) => useBuildingStore.getState().hydrate(data),
+      prepareHydrate: (data: Partial<BuildingSerializedState> | null | undefined) => useBuildingStore.getState().prepareHydrate(data),
     }, pluginId);
     ctx.services.register(storeServiceId, {
       useStore: useBuildingStore,

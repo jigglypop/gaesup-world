@@ -1,8 +1,9 @@
-import React, { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
 import { useEventsStore } from '../../../events/stores/eventsStore';
 import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
@@ -94,12 +95,12 @@ export function BugSpot({
 
   useToolUse('net', onNet);
 
-  useFrame(({ clock }) => {
+  useFrame((state) => {
     const now = performance.now();
     if (!present && now >= respawnAtRef.current) setPresent(true);
     const b = bugRef.current;
     if (!b || !present) return;
-    const t = clock.elapsedTime;
+    const t = getFrameElapsedSeconds(state);
     b.position.x = Math.sin(t * 1.2) * 0.6;
     b.position.z = Math.cos(t * 0.9) * 0.6;
     b.position.y = hoverHeight + Math.sin(t * 2.6) * 0.15;

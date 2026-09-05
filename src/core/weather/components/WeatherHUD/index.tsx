@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { useWeatherStore } from '../../stores/weatherStore';
 import type { WeatherKind } from '../../types';
 

@@ -1,5 +1,6 @@
-import React, { type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
+import { PROJECT_ASSET_DISPLAY_LABELS } from './defaults';
 import { renderProjectAssetsPanelList } from './list';
 import type {
   ProjectAssetPanelTabConfig,
@@ -16,6 +17,7 @@ function renderTab(
   if (renderers?.tab) return renderers.tab(context, tab, active);
   return (
     <button
+      aria-pressed={active}
       className={context.classNameFor(
         'tab',
         active ? context.classNameFor('activeTab') : undefined,
@@ -40,7 +42,7 @@ function renderTabs(
     <div
       aria-label={context.labels.tabsAriaLabel}
       className={context.classNameFor('tabs')}
-      role="tablist"
+      role="group"
       style={context.styleFor('tabs')}
     >
       {children}
@@ -82,7 +84,7 @@ function renderKindFilter(
     >
       {context.kindOptions.map((option) => (
         <option key={option} value={option}>
-          {option}
+          {PROJECT_ASSET_DISPLAY_LABELS[option] ?? option}
         </option>
       ))}
     </select>
@@ -120,7 +122,9 @@ function renderStatus(
         className={context.classNameFor('statusCatalog')}
         style={context.styleFor('statusCatalog')}
       >
-        {context.catalogStatus?.state ?? context.labels.statusFallback}
+        {context.catalogStatus
+          ? PROJECT_ASSET_DISPLAY_LABELS[context.catalogStatus.state] ?? context.labels.statusFallback
+          : context.labels.statusFallback}
       </span>
     </div>
   );

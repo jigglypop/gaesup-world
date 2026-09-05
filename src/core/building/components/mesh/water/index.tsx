@@ -1,13 +1,24 @@
-import { useEffect, useMemo, useRef } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef } from "react";
 
-import { extend, useFrame } from "@react-three/fiber";
+import { extend, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { Water } from "three-stdlib";
 
 import { getDefaultToonMode } from "@core/rendering/toon";
 import { weightFromDistance } from "@core/utils/sfe";
 
-extend({ Water });
+import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
+
+class OwnedWater extends Water {
+  dispose(): void {
+    const mirror: unknown = this.material.uniforms['mirrorSampler']?.value;
+    if (mirror instanceof THREE.Texture) mirror.renderTarget?.dispose();
+    this.material.dispose();
+  }
+}
+
+extend({ Water: OwnedWater });
+const NodeWaterMaterial = lazy(() => import('./NodeWaterMaterial'));
 
 type WaterProps = {
   lod?: {
@@ -198,7 +209,8 @@ function getSharedWaterNormals(size = 128): THREE.DataTexture {
 
 export default function Ocean({ lod, center, size = 16, width, depth, shore, toon, followCamera = false }: WaterProps) {
   const useToon = toon ?? getDefaultToonMode();
-  const waterRef = useRef<(Water & { dispose?: () => void }) | null>(null);
+  const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
+  const waterRef = useRef<Water | null>(null);
   const toonMatRef = useRef<THREE.ShaderMaterial | null>(null);
   const toonMeshRef = useRef<THREE.Mesh | null>(null);
   const fallbackMeshRef = useRef<THREE.Mesh | null>(null);
@@ -253,7 +265,7 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
   );
   
   // Shared procedural normal texture avoids per-tile image decode and upload.
-  const waterNormals = getSharedWaterNormals();
+  const waterNormals = useToon ? null : getSharedWaterNormals();
 
   const renderTargetSize = useMemo(() => {
     const longest = Math.max(surfaceWidth, surfaceDepth);
@@ -275,7 +287,7 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
     () => ({
       textureWidth: renderTargetSize,
       textureHeight: renderTargetSize,
-      waterNormals,
+      ...(waterNormals ? { waterNormals } : {}),
       sunDirection: new THREE.Vector3(0.1, 0.7, 0.2),
       sunColor: 0xffffff,
       waterColor: 0x001e0f,
@@ -314,7 +326,7 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
     [waterNormals],
   );
   const toonMaterial = useMemo(() => {
-    if (!useToon) return null;
+    if (!useToon || useNodes) return null;
     return new THREE.ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
@@ -327,21 +339,11 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
       transparent: true,
       depthWrite: false,
     });
-  }, [useToon]);
+  }, [useToon, useNodes]);
 
-  useEffect(() => {
-    return () => {
-      geom.dispose();
-      const water = waterRef.current;
-      // Water (three-stdlib) may own internal GPU resources; clean up defensively.
-      water?.material?.dispose?.();
-      if (typeof water?.dispose === 'function') {
-        water.dispose();
-      }
-      fallbackMaterial.dispose();
-      toonMaterial?.dispose();
-    };
-  }, [fallbackMaterial, geom, toonMaterial]);
+  useEffect(() => () => geom.dispose(), [geom]);
+  useEffect(() => () => fallbackMaterial.dispose(), [fallbackMaterial]);
+  useEffect(() => () => toonMaterial?.dispose(), [toonMaterial]);
 
   useEffect(() => {
     return () => {
@@ -392,7 +394,7 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
     if (useToon) {
       if (fallback) fallback.visible = false;
       const u = toonMatRef.current?.uniforms?.['uTime'];
-      if (u) u.value = state.clock.elapsedTime;
+      if (u) u.value = getFrameElapsedSeconds(state);
     } else {
       const useHighQualityWater = highQualityRef.current;
       if (water) water.visible = useHighQualityWater;
@@ -454,19 +456,23 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
       )}
 
       {useToon ? (
-        <mesh
-          ref={toonMeshRef}
-          geometry={geom}
-          rotation-x={-Math.PI / 2}
-          position={[waterOffsetX, 0.1, waterOffsetZ]}
-          frustumCulled
-        >
-          <primitive
-            ref={toonMatRef}
-            object={toonMaterial as THREE.ShaderMaterial}
-            attach="material"
-          />
-        </mesh>
+        <Suspense fallback={null}>
+          <mesh
+            ref={toonMeshRef}
+            geometry={geom}
+            rotation-x={-Math.PI / 2}
+            position={[waterOffsetX, 0.1, waterOffsetZ]}
+            frustumCulled
+          >
+            {useNodes ? <NodeWaterMaterial /> : (
+              <primitive
+                ref={toonMatRef}
+                object={toonMaterial as THREE.ShaderMaterial}
+                attach="material"
+              />
+            )}
+          </mesh>
+        </Suspense>
       ) : (
         <>
           <water

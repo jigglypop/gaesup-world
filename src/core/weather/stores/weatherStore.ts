@@ -14,6 +14,7 @@ type State = {
 
   serialize: () => WeatherSerialized;
   hydrate: (data: WeatherSerialized | null | undefined) => void;
+  prepareHydrate: (data: WeatherSerialized | null | undefined) => () => void;
 };
 
 function makeRng(seed: number): () => number {
@@ -32,6 +33,15 @@ function poolBySeason(season?: string): WeatherKind[] {
   if (season === 'winter') return SNOWY_RANGE;
   if (season === 'autumn' || season === 'spring') return RAINY_RANGE;
   return SUNNY_RANGE;
+}
+
+function prepareWeatherEntry(entry: WeatherEntry): WeatherEntry {
+  if (!entry || typeof entry !== 'object' || !Number.isSafeInteger(entry.day) || entry.day < 0 ||
+    !['sunny', 'cloudy', 'rain', 'snow', 'storm'].includes(entry.kind) ||
+    typeof entry.intensity !== 'number' || !Number.isFinite(entry.intensity) || entry.intensity < 0 || entry.intensity > 1) {
+    throw new TypeError('Invalid weather entry');
+  }
+  return { day: entry.day, kind: entry.kind, intensity: entry.intensity };
 }
 
 export const useWeatherStore = create<State>((set, get) => ({
@@ -83,11 +93,14 @@ export const useWeatherStore = create<State>((set, get) => ({
     history: get().history.map((h) => ({ ...h })),
   }),
 
-  hydrate: (data) => {
-    if (!data) return;
-    set({
-      current: data.current ? { ...data.current } : null,
-      history: Array.isArray(data.history) ? data.history.map((h) => ({ ...h })) : [],
-    });
+  prepareHydrate: (data) => {
+    if (data === null || data === undefined) return () => {};
+    if (typeof data !== 'object' || data.version !== 1 || !Array.isArray(data.history)) {
+      throw new TypeError('Invalid weather snapshot');
+    }
+    const current = data.current === null ? null : prepareWeatherEntry(data.current);
+    const history = Array.from(data.history, prepareWeatherEntry);
+    return () => set({ current, history });
   },
+  hydrate: (data) => get().prepareHydrate(data)(),
 }));

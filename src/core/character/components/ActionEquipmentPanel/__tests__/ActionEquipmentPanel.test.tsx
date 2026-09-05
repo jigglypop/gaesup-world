@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { DEFAULT_CHARACTER_EQUIPMENT_PRESETS } from '../../../actionEquipment';
@@ -63,14 +64,14 @@ describe('ActionEquipmentPanel 커스텀 UI', () => {
     });
     const root = renderer as ReactTestRenderer;
     const faceButton = root.root.findByProps({ 'data-testid': 'face-button' });
-    expect(faceButton.children).toEqual(['Face: Default']);
+    expect(faceButton.children).toEqual(['표정: 기본']);
     act(() => {
       const handleClick = faceButton.props.onClick as () => void;
       handleClick();
     });
     expect(useCharacterStore.getState().appearance.face).toBe('wink');
     expect(root.root.findByProps({ 'data-testid': 'face-button' }).children).toEqual([
-      'Face: Custom Wink',
+      '표정: Custom Wink',
     ]);
     act(() => {
       const handleClick = root.root.findByProps({ 'data-testid': 'preset-button' }).props

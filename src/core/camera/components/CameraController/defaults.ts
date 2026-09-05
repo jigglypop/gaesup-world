@@ -7,16 +7,16 @@ import type {
 import type { CameraType } from '../../core/types';
 
 export const CAMERA_CONTROLLER_DEFAULT_MODES: CameraModeConfig[] = [
-  { value: 'thirdPerson', label: 'Third Person' },
-  { value: 'firstPerson', label: 'First Person' },
-  { value: 'chase', label: 'Chase' },
-  { value: 'topDown', label: 'Top Down' },
-  { value: 'isometric', label: 'Isometric' },
-  { value: 'sideScroll', label: 'Side-Scroller' },
-  { value: 'fixed', label: 'Fixed' },
+  { value: 'thirdPerson', label: '3인칭' },
+  { value: 'firstPerson', label: '1인칭' },
+  { value: 'chase', label: '추적' },
+  { value: 'topDown', label: '위에서 보기' },
+  { value: 'isometric', label: '등각 시점' },
+  { value: 'sideScroll', label: '횡스크롤' },
+  { value: 'fixed', label: '고정' },
 ];
 export const CAMERA_CONTROLLER_DEFAULT_LABELS: CameraControllerLabels = {
-  title: 'Camera Mode',
+  title: '카메라 모드',
 };
 export const CAMERA_CONTROLLER_MODE_OPTIONS: Record<CameraType, CameraControllerModeOption> = {
   thirdPerson: {

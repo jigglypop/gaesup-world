@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { useAudioStore } from '../../stores/audioStore';
 
 export type AudioControlsProps = {
@@ -24,6 +22,7 @@ export function AudioControls({ position = 'bottom-right', offset }: AudioContro
   const btn = (label: string, muted: boolean, onClick: () => void) => (
     <button
       onClick={onClick}
+      aria-pressed={!muted}
       style={{
         padding: '4px 8px',
         background: muted ? 'rgba(80,30,30,0.85)' : 'rgba(20,20,28,0.85)',
@@ -34,7 +33,7 @@ export function AudioControls({ position = 'bottom-right', offset }: AudioContro
         borderRadius: 6,
         cursor: 'pointer',
       }}
-    >{label}{muted ? ' OFF' : ''}</button>
+    >{label}{muted ? ' 꺼짐' : ''}</button>
   );
 
   return (

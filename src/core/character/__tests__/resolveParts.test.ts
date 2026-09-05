@@ -108,4 +108,34 @@ describe('resolveCharacterParts', () => {
       { id: 'cloth', slot: 'top', url: 'cloth.glb' },
     ])).toEqual(['tee']);
   });
+
+  it('carries asset hideBodyRegions metadata into parts and exclusions', () => {
+    const outfits = emptyOutfits();
+    outfits.top = 'hoodie';
+    const assets: Record<string, AssetRecord> = {
+      hoodie: {
+        id: 'hoodie',
+        name: 'Hoodie',
+        kind: 'characterPart',
+        slot: 'top',
+        url: 'hoodie.glb',
+        metadata: { hideBodyRegions: ['torso_upper', 'arm_upper_left', 42] },
+      },
+    };
+
+    const parts = resolveCharacterParts({ baseParts: [], outfits, assets });
+    expect(parts).toEqual([
+      {
+        id: 'hoodie',
+        slot: 'top',
+        url: 'hoodie.glb',
+        hideNodeNames: ['torso_upper', 'arm_upper_left'],
+      },
+    ]);
+    expect(resolveCharacterBaseNodeExclusions(parts)).toEqual([
+      'torso_upper',
+      'arm_upper_left',
+      'tee',
+    ]);
+  });
 });

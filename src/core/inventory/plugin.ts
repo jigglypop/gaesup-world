@@ -31,6 +31,7 @@ export function createInventoryPlugin(options: InventoryPluginOptions = {}) {
     capabilities: ['inventory'],
     serialize: serializeInventoryState,
     hydrate: hydrateInventoryState,
+    prepareHydrate: (data) => useInventoryStore.getState().prepareHydrate(data),
   });
 }
 

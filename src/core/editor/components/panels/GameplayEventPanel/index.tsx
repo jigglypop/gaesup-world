@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import {
   GAMEPLAY_EVENT_ACTION_TYPES,
@@ -19,6 +19,7 @@ import {
   type GameplayEventCondition,
   type GameplayTriggerEvent,
 } from '../../../../gameplay';
+import { logger } from '../../../../utils/logger';
 import type { EditorPanelBaseProps } from '../types';
 import './styles.css';
 
@@ -46,7 +47,19 @@ const TRIGGER_LABEL: Record<GameplayEventTriggerType, string> = {
   custom: '커스텀',
 };
 
+const TOAST_KIND_LABELS: Record<NonNullable<Extract<GameplayEventAction, { type: 'toast' }>['kind']>, string> = {
+  info: '안내', success: '성공', warn: '주의', error: '오류', reward: '보상', mail: '우편',
+};
+const QUEST_STATUS_LABELS: Record<Extract<GameplayEventCondition, { type: 'questStatus' }>['status'], string> = {
+  locked: '잠김', available: '시작 가능', active: '진행 중', completed: '완료', failed: '실패',
+};
 const FIELD_LABELS: Record<string, string> = {
+  count: '수량',
+  dialogTreeId: '대화 ID',
+  npcId: 'NPC ID',
+  kind: '알림 종류',
+  text: '내용',
+  eventName: '이벤트 이름',
   id: 'ID',
   name: '이름',
   description: '설명',
@@ -69,6 +82,18 @@ const FIELD_LABELS: Record<string, string> = {
   toast: '토스트',
   durationMs: '지속시간(ms)',
 };
+
+const CONDITION_LABEL: Record<GameplayEventConditionType, string> = {
+  always: '항상', hasItem: '아이템 보유', questStatus: '퀘스트 상태',
+  eventActive: '이벤트 진행 중', flagEquals: '상태 값 일치', custom: '사용자 정의',
+};
+const ACTION_LABEL: Record<GameplayEventActionType, string> = {
+  giveItem: '아이템 지급', removeItem: '아이템 회수', startQuest: '퀘스트 시작',
+  completeQuest: '퀘스트 완료', showDialog: '대화 표시', toast: '알림 표시',
+  setFlag: '상태 값 설정', notifyQuestFlag: '퀘스트에 상태 알림',
+  emit: '이벤트 발생', custom: '사용자 정의',
+};
+const TYPE_LABELS: Record<string, string> = { ...TRIGGER_LABEL, ...CONDITION_LABEL, ...ACTION_LABEL };
 
 const RESERVED_SHORTCUT_KEYS = new Set(['i', 'j', 'm', 'k', 'o', 'c', 'f', 'e', 't']);
 
@@ -130,7 +155,7 @@ export function GameplayEventPanel({
   style,
   children,
 }: GameplayEventPanelProps) {
-  const fallbackEngine = useMemo(() => new GameplayEventEngine({ blueprints }), [blueprints]);
+  const [fallbackEngine] = useState(() => new GameplayEventEngine());
   const [id, setId] = useState('manual-event');
   const [name, setName] = useState('수동 이벤트');
   const [triggerKey, setTriggerKey] = useState('manual.event');
@@ -142,6 +167,8 @@ export function GameplayEventPanel({
     [blueprints, selectedId],
   );
   const [status, setStatus] = useState<PanelStatus>({ kind: 'idle', message: '대기 중' });
+  const [running, setRunning] = useState(false);
+  const pendingRun = useRef(false);
 
   const createBlueprint = () => {
     if (isReservedShortcutKey(triggerKey)) {
@@ -186,13 +213,36 @@ export function GameplayEventPanel({
   };
 
   const runBlueprint = async (blueprint: GameplayEventBlueprint) => {
-    const trigger = triggerToEvent(blueprint);
-    if (onRun) {
-      await onRun(trigger);
-    } else {
-      await fallbackEngine.dispatch(trigger);
+    if (pendingRun.current) return;
+    pendingRun.current = true;
+    setRunning(true);
+    setStatus({ kind: 'idle', message: `이벤트 실행 중: ${blueprint.name}` });
+    try {
+      const trigger = triggerToEvent(blueprint);
+      if (onRun) {
+        await onRun(trigger);
+      } else {
+        fallbackEngine.setBlueprints(blueprints);
+        const results = await fallbackEngine.dispatch(trigger);
+        const result = results.find(item => item.blueprintId === blueprint.id);
+        if (!result || result.skipped || result.actionCount === 0) {
+          const reason = result?.skipped === 'already-executed' ? '이미 실행한 일회성 이벤트입니다.'
+            : result?.skipped === 'cooldown' ? '다시 실행하려면 대기 시간이 필요합니다.'
+              : result?.skipped === 'requires-server' ? '서버에서 실행해야 하는 이벤트입니다.'
+                : result?.skipped?.startsWith('condition:') ? '실행 조건을 충족하지 못했습니다.'
+                  : '실행된 동작이 없습니다. 이벤트 활성화와 동작 설정을 확인하세요.';
+          setStatus({ kind: 'idle', message: reason });
+          return;
+        }
+      }
+      setStatus({ kind: 'success', message: `이벤트를 실행했습니다: ${blueprint.name}` });
+    } catch (error: unknown) {
+      logger.error('Gameplay event execution failed', error instanceof Error ? error : String(error));
+      setStatus({ kind: 'error', message: `이벤트 실행에 실패했습니다: ${blueprint.name}` });
+    } finally {
+      pendingRun.current = false;
+      setRunning(false);
     }
-    setStatus({ kind: 'success', message: `이벤트를 실행했습니다: ${blueprint.id}` });
   };
 
   const updateCondition = useCallback((index: number, condition: GameplayEventCondition) => {
@@ -299,12 +349,32 @@ export function GameplayEventPanel({
       {Object.entries(fields).map(([field, value]) => (
         <label key={`${nodeId}-${field}`} className="gameplay-event-panel__field">
           <span>{FIELD_LABELS[field] ?? field}</span>
-          <input
+          {nodeId === 'policy' && field === 'run' ? (
+            <select value={String(value)} onChange={event => updateInspectorField(nodeId, field, event.target.value)}>
+              <option value="once">한 번만 실행</option>
+              <option value="repeat">반복 실행</option>
+            </select>
+          ) : nodeId === 'policy' && field === 'requiresServer' ? (
+            <select value={String(value)} onChange={event => updateInspectorField(nodeId, field, event.target.value === 'true')}>
+              <option value="false">필요 없음</option>
+              <option value="true">서버에서만 실행</option>
+            </select>
+          ) : (field === 'kind' && fields['type'] === 'toast') ||
+            (field === 'status' && (fields['type'] === 'questStatus' || fields['type'] === 'questChanged')) ? (
+            <select value={String(value)} onChange={event => updateInspectorField(nodeId, field, event.target.value)}>
+              {Object.entries(field === 'kind' ? TOAST_KIND_LABELS : QUEST_STATUS_LABELS).map(([option, label]) => (
+                <option key={option} value={option}>{label}</option>
+              ))}
+            </select>
+          ) : <input
             type={typeof value === 'number' ? 'number' : 'text'}
-            value={String(value)}
+            value={field === 'type' ? TYPE_LABELS[String(value)] ?? String(value) : String(value)}
             disabled={field === 'type'}
-            onChange={(event) => updateInspectorField(nodeId, field, toBooleanValue(event.target.value))}
-          />
+            onChange={(event) => updateInspectorField(nodeId, field,
+              field === 'value' || typeof value === 'number'
+                ? toBooleanValue(event.target.value)
+                : event.target.value)}
+          />}
         </label>
       ))}
     </div>
@@ -334,7 +404,7 @@ export function GameplayEventPanel({
         <button type="button" className="gameplay-event-panel__primary" onClick={createBlueprint}>
           수동 이벤트 생성
         </button>
-        <button type="button" onClick={createNpcQuestPreset}>
+        <button type="button" className="gameplay-event-panel__primary" onClick={createNpcQuestPreset}>
           NPC 퀘스트 프리셋 추가
         </button>
       </section>
@@ -360,7 +430,7 @@ export function GameplayEventPanel({
                 >
                   편집
                 </button>
-                <button type="button" onClick={() => { void runBlueprint(blueprint); }}>
+                <button type="button" disabled={running} onClick={() => { void runBlueprint(blueprint); }}>
                   실행
                 </button>
               </div>
@@ -445,7 +515,7 @@ export function GameplayEventPanel({
               </div>
               <div className="gameplay-event-panel__node-toolbar">
                 <select
-                  aria-label="Condition type"
+                  aria-label="조건 유형"
                   onChange={(event) => {
                     updateSelected({ conditions: [...(selectedBlueprint.conditions ?? []), createGameplayEventConditionTemplate(event.target.value as GameplayEventConditionType)] });
                     event.currentTarget.value = '';
@@ -454,11 +524,11 @@ export function GameplayEventPanel({
                 >
                   <option value="" disabled>조건 추가</option>
                   {GAMEPLAY_EVENT_CONDITION_TYPES.map((type) => (
-                    <option key={type} value={type}>{type}</option>
+                    <option key={type} value={type}>{CONDITION_LABEL[type]}</option>
                   ))}
                 </select>
                 <select
-                  aria-label="Action type"
+                  aria-label="동작 유형"
                   onChange={(event) => {
                     updateSelected({ actions: [...selectedBlueprint.actions, createGameplayEventActionTemplate(event.target.value as GameplayEventActionType)] });
                     event.currentTarget.value = '';
@@ -467,7 +537,7 @@ export function GameplayEventPanel({
                 >
                   <option value="" disabled>액션 추가</option>
                   {GAMEPLAY_EVENT_ACTION_TYPES.map((type) => (
-                    <option key={type} value={type}>{type}</option>
+                    <option key={type} value={type}>{ACTION_LABEL[type]}</option>
                   ))}
                 </select>
               </div>
@@ -477,7 +547,7 @@ export function GameplayEventPanel({
           )}
           <div className="gameplay-event-panel__actions">
             <button type="button" onClick={deleteSelected}>이벤트 삭제</button>
-            <button type="button" onClick={() => { void runBlueprint(selectedBlueprint); }}>선택 이벤트 실행</button>
+            <button type="button" disabled={running} onClick={() => { void runBlueprint(selectedBlueprint); }}>선택 이벤트 실행</button>
           </div>
         </section>
       )}
@@ -489,7 +559,7 @@ export function GameplayEventPanel({
       )}
 
       <section className="gameplay-event-panel__section">
-        <div className={`gameplay-event-panel__status gameplay-event-panel__status--${status.kind}`}>
+        <div role="status" className={`gameplay-event-panel__status gameplay-event-panel__status--${status.kind}`}>
           {status.message}
         </div>
       </section>

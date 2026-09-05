@@ -24,7 +24,7 @@ const isEditableTarget = (target: EventTarget | null): boolean => {
   return tagName === 'input' || tagName === 'textarea' || tagName === 'select' || target.isContentEditable;
 };
 
-export function useCamera() {
+export function useCamera(enableMouse = true) {
   const { gl } = useThree();
   const { activeState } = useStateSystem();
   const cameraOption = useGaesupStore((state) => state.cameraOption);
@@ -131,7 +131,7 @@ export function useCamera() {
 
     event.preventDefault();
 
-    const zoomSpeed = opt.zoomSpeed || 0.001;
+    const zoomSpeed = opt.zoomSpeed ?? 0.001;
     const minZoom = opt.minZoom || 0.45;
     const maxZoom = opt.maxZoom || 2.4;
     const currentZoom = opt.zoom || 1;
@@ -145,16 +145,23 @@ export function useCamera() {
   
   useEffect(() => {
     const canvas = gl.domElement;
-    if (cameraOption?.enableZoom) {
+    if (enableMouse && cameraOption?.enableZoom) {
       canvas.addEventListener('wheel', handleWheel, { passive: false });
       return () => {
         canvas.removeEventListener('wheel', handleWheel);
       };
     }
     return undefined;
-  }, [gl, handleWheel, cameraOption?.enableZoom]);
+  }, [gl, handleWheel, cameraOption?.enableZoom, enableMouse]);
 
   useEffect(() => {
+    if (!enableMouse) {
+      orbitModifierKeysRef.current.clear();
+      orbitPointerActiveRef.current = false;
+      targetOrbitYawRef.current = orbitYawRef.current;
+      targetOrbitPitchRef.current = orbitPitchRef.current;
+      return;
+    }
     const canvas = gl.domElement;
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -224,7 +231,7 @@ export function useCamera() {
       canvas.removeEventListener('mousedown', handleMouseDown);
       canvas.removeEventListener('contextmenu', preventContextMenu);
     };
-  }, [gl, updateConfig]);
+  }, [gl, updateConfig, enableMouse]);
   
   
   // ESC 키로 포커스 해제
@@ -281,6 +288,7 @@ export function useCamera() {
       });
     }
     
+    const legacyClock = 'clock' in state && state.clock instanceof THREE.Clock ? state.clock : undefined;
     // Reuse the calc props object to avoid per-frame allocations.
     if (!calcPropsRef.current) {
       calcPropsRef.current = {
@@ -288,7 +296,7 @@ export function useCamera() {
         scene: state.scene,
         deltaTime: delta,
         activeState,
-        clock: state.clock,
+        clock: legacyClock,
         excludeObjects: excludeObjectsRef.current,
       };
     } else {
@@ -297,7 +305,7 @@ export function useCamera() {
       calcProps.scene = state.scene;
       calcProps.deltaTime = delta;
       calcProps.activeState = activeState;
-      calcProps.clock = state.clock;
+      calcProps.clock = legacyClock;
     }
     system.calculate(calcPropsRef.current);
   });

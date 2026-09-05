@@ -1,5 +1,3 @@
-import React from 'react';
-
 import {
   BUILDING_FLAG_STYLE_OPTIONS,
   BUILDING_TREE_OPTIONS,

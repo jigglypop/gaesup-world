@@ -7,6 +7,7 @@ import type {
   NPCBrainBlueprint,
   NPCCategory,
   NPCInstance,
+  NPCSystemState,
   NPCTemplate,
 } from './types';
 
@@ -55,40 +56,47 @@ export function serializeNPCState(): NPCSerializedState {
   };
 }
 
+function prepareCollection<T extends { id: string }>(entries: T[]): Map<string, T> {
+  if (!Array.isArray(entries)) throw new TypeError('Invalid NPC collection');
+  const result = new Map<string, T>();
+  for (const entry of entries) {
+    if (!entry || typeof entry !== 'object' || typeof entry.id !== 'string' || !entry.id.trim() || result.has(entry.id)) {
+      throw new TypeError('Invalid NPC collection ID');
+    }
+    result.set(entry.id, cloneNPCValue(entry));
+  }
+  return result;
+}
+
+function prepareNPCState(data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined): () => void {
+  if (data === null || data === undefined) return () => {};
+  const snapshot = Array.isArray(data) ? { instances: data } : data;
+  if (typeof snapshot !== 'object' || (snapshot.version !== undefined && snapshot.version !== 1)
+    || (snapshot.editMode !== undefined && typeof snapshot.editMode !== 'boolean')) {
+    throw new TypeError('Invalid NPC snapshot');
+  }
+  const prepared: Partial<NPCSystemState> = {
+    ...(snapshot.templates === undefined ? {} : { templates: prepareCollection(snapshot.templates) }),
+    ...(snapshot.categories === undefined ? {} : { categories: prepareCollection(snapshot.categories) }),
+    ...(snapshot.clothingSets === undefined ? {} : { clothingSets: prepareCollection(snapshot.clothingSets) }),
+    ...(snapshot.clothingCategories === undefined ? {} : { clothingCategories: prepareCollection(snapshot.clothingCategories) }),
+    ...(snapshot.animations === undefined ? {} : { animations: prepareCollection(snapshot.animations) }),
+    ...(snapshot.brainBlueprints === undefined ? {} : { brainBlueprints: prepareCollection(snapshot.brainBlueprints) }),
+    ...(snapshot.instances === undefined ? {} : { instances: prepareCollection(snapshot.instances) }),
+    ...(snapshot.editMode === undefined ? {} : { editMode: snapshot.editMode }),
+  };
+  for (const instance of prepared.instances?.values() ?? []) {
+    if (typeof instance.templateId !== 'string' || !instance.templateId.trim() || typeof instance.name !== 'string'
+      || ![instance.position, instance.rotation, instance.scale].every((vector) =>
+        Array.isArray(vector) && vector.length === 3 && [...vector].every(Number.isFinite))) {
+      throw new TypeError('Invalid NPC instance transform');
+    }
+  }
+  return () => useNPCStore.setState(prepared);
+}
+
 export function hydrateNPCState(data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined): void {
-  if (!data) return;
-
-  const instances = Array.isArray(data) ? data : data.instances;
-
-  useNPCStore.setState((state) => {
-    if (!Array.isArray(data)) {
-      if (data.templates) {
-        state.templates = new Map(data.templates.map((template) => [template.id, cloneNPCValue(template)]));
-      }
-      if (data.categories) {
-        state.categories = new Map(data.categories.map((category) => [category.id, cloneNPCValue(category)]));
-      }
-      if (data.clothingSets) {
-        state.clothingSets = new Map(data.clothingSets.map((set) => [set.id, cloneNPCValue(set)]));
-      }
-      if (data.clothingCategories) {
-        state.clothingCategories = new Map(data.clothingCategories.map((category) => [category.id, cloneNPCValue(category)]));
-      }
-      if (data.animations) {
-        state.animations = new Map(data.animations.map((animation) => [animation.id, cloneNPCValue(animation)]));
-      }
-      if (data.brainBlueprints) {
-        state.brainBlueprints = new Map(data.brainBlueprints.map((blueprint) => [blueprint.id, cloneNPCValue(blueprint)]));
-      }
-      if (typeof data.editMode === 'boolean') {
-        state.editMode = data.editMode;
-      }
-    }
-
-    if (instances) {
-      state.instances = new Map(instances.map((instance) => [instance.id, cloneNPCValue(instance)]));
-    }
-  });
+  prepareNPCState(data)();
 }
 
 export function createNPCPlugin(options: NPCPluginOptions = {}): GaesupPlugin {
@@ -107,6 +115,7 @@ export function createNPCPlugin(options: NPCPluginOptions = {}): GaesupPlugin {
         key: saveExtensionId,
         serialize: serializeNPCState,
         hydrate: hydrateNPCState,
+        prepareHydrate: prepareNPCState,
       }, pluginId);
       ctx.services.register(storeServiceId, {
         useStore: useNPCStore,

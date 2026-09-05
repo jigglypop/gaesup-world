@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 
+import { logger } from '@/core/utils/logger';
+
 import { InteractionSystem } from './InteractionSystem';
-import type { GamepadState, KeyboardState, MouseState, TouchState } from '../bridge';
+import type { GamepadState, KeyboardState, MouseState, TouchState } from './types';
 
 export const DEFAULT_INTERACTION_INPUT_EXTENSION_ID = 'interaction.input';
 
@@ -13,6 +15,20 @@ export interface InputBackendSnapshot {
 }
 
 export type InputStateListener = (state: InputBackendSnapshot) => void;
+
+function notifyInputStateListener(
+  listener: InputStateListener,
+  state: InputBackendSnapshot,
+): void {
+  try {
+    listener(state);
+  } catch (error) {
+    logger.error(
+      '[InteractionInputBackend] Subscriber failed',
+      error instanceof Error ? error : String(error),
+    );
+  }
+}
 
 export interface InputBackend {
   getKeyboard(): KeyboardState;
@@ -201,17 +217,19 @@ export function createInteractionSystemInputBackend(
     updateGamepad: (input) => system.updateGamepad(input),
     updateTouch: (input) => system.updateTouch(input),
     subscribe: (listener) => {
-      const emit = () => listener(snapshot());
+      const emit = () => notifyInputStateListener(listener, snapshot());
       system.addEventListener('keyboard', emit);
       system.addEventListener('mouse', emit);
       system.addEventListener('gamepad', emit);
       system.addEventListener('touch', emit);
+      system.addEventListener('reset', emit);
       emit();
       return () => {
         system.removeEventListener('keyboard', emit);
         system.removeEventListener('mouse', emit);
         system.removeEventListener('gamepad', emit);
         system.removeEventListener('touch', emit);
+        system.removeEventListener('reset', emit);
       };
     },
   };
@@ -221,7 +239,9 @@ class DefaultInteractionInputBackend implements InputBackend {
   private system: InteractionSystem | null = null;
   private backend: InputBackend | null = null;
   private unsubscribeFromBackend: (() => void) | null = null;
-  private readonly listeners = new Set<InputStateListener>();
+  private readonly listeners = new Map<InputStateListener, number>();
+  private listenerGeneration = 0;
+  private isBindingBackend = false;
 
   invalidate(): void {
     this.unsubscribeFromBackend?.();
@@ -263,19 +283,19 @@ class DefaultInteractionInputBackend implements InputBackend {
   }
 
   subscribe(listener: InputStateListener): () => void {
-    this.listeners.add(listener);
-    const emittedInitialState = this.ensureSubscription();
-    if (!emittedInitialState) {
-      listener(this.snapshot());
+    const registeredGeneration = this.listeners.get(listener);
+    if (registeredGeneration !== undefined) {
+      return this.createListenerCleanup(listener, registeredGeneration);
     }
 
-    return () => {
-      this.listeners.delete(listener);
-      if (this.listeners.size === 0) {
-        this.unsubscribeFromBackend?.();
-        this.unsubscribeFromBackend = null;
-      }
-    };
+    const generation = ++this.listenerGeneration;
+    this.listeners.set(listener, generation);
+    const emittedInitialState = this.ensureSubscription();
+    if (!emittedInitialState) {
+      notifyInputStateListener(listener, this.snapshot());
+    }
+
+    return this.createListenerCleanup(listener, generation);
   }
 
   private resolveBackend(): InputBackend {
@@ -303,12 +323,53 @@ class DefaultInteractionInputBackend implements InputBackend {
   }
 
   private bindBackend(backend: InputBackend): boolean {
-    if (this.unsubscribeFromBackend || !backend.subscribe) return false;
+    if (this.unsubscribeFromBackend || this.isBindingBackend || !backend.subscribe) {
+      return false;
+    }
 
-    this.unsubscribeFromBackend = backend.subscribe((state) => {
-      this.listeners.forEach((listener) => listener(state));
+    this.isBindingBackend = true;
+    try {
+      const unsubscribe = backend.subscribe((state) => {
+        this.notifyListeners(state);
+      });
+      if (this.listeners.size === 0) {
+        unsubscribe();
+      } else {
+        this.unsubscribeFromBackend = unsubscribe;
+      }
+      return true;
+    } catch (error) {
+      logger.error(
+        '[InteractionInputBackend] Failed to bind backend subscriber',
+        error instanceof Error ? error : String(error),
+      );
+      return false;
+    } finally {
+      this.isBindingBackend = false;
+    }
+  }
+
+  private notifyListeners(state: InputBackendSnapshot): void {
+    const dispatchGeneration = this.listenerGeneration;
+    this.listeners.forEach((generation, listener) => {
+      if (generation > dispatchGeneration) return;
+      if (this.listeners.get(listener) !== generation) return;
+      notifyInputStateListener(listener, state);
     });
-    return true;
+  }
+
+  private createListenerCleanup(
+    listener: InputStateListener,
+    generation: number,
+  ): () => void {
+    return () => {
+      if (this.listeners.get(listener) !== generation) return;
+      this.listeners.delete(listener);
+      if (this.listeners.size === 0) {
+        this.unsubscribeFromBackend?.();
+        this.unsubscribeFromBackend = null;
+      }
+    };
   }
 
   private snapshot(): InputBackendSnapshot {

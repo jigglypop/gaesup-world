@@ -1,11 +1,13 @@
 import React, { FC, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
-import { shaderMaterial } from '@react-three/drei';
 import { extend, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { shaderMaterial } from '@/core/rendering/legacyDrei';
+
 import fragmentShader from './frag.glsl';
 import vertexShader from './vert.glsl';
+import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
 
 const FireMaterial = shaderMaterial(
   { time: 0, intensity: 1.5, seed: 0, lean: 0, flare: 1, tint: new THREE.Color(1, 1, 1) },
@@ -170,7 +172,7 @@ const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color
   }, [width, height]);
 
   useFrame((state) => {
-    const t = state.clock.elapsedTime;
+    const t = getFrameElapsedSeconds(state);
 
     for (let i = 0; i < billboardLayers.length; i++) {
       const m = materialRefs[i]?.current;
@@ -723,7 +725,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
   }, [fires, N]);
 
   useFrame((state) => {
-    const t = state.clock.elapsedTime;
+    const t = getFrameElapsedSeconds(state);
     bbMat.uniforms['uTime']!.value = t;
     bEmberMat.uniforms['uTime']!.value = t;
     glowMat.opacity = 0.16 + Math.sin(t * 2.5) * 0.06;

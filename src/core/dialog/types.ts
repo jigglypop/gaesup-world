@@ -48,3 +48,22 @@ export type DialogContext = {
   npcId?: string;
   flags?: Record<string, string | number | boolean>;
 };
+
+export type DialogNotificationKind = 'warn' | 'reward';
+
+export type DialogRuntimeAdapter = {
+  countItem: (itemId: ItemId) => number;
+  addItem: (itemId: ItemId, count: number) => number;
+  removeItem: (itemId: ItemId, count: number) => void;
+  getItemName: (itemId: ItemId) => string | undefined;
+  getBells: () => number;
+  addBells: (amount: number) => void;
+  spendBells: (amount: number) => void;
+  getFriendshipScore: (npcId: string) => number;
+  addFriendship: (npcId: string, amount: number, day: number) => void;
+  getDay: () => number;
+  notifyFlag: (key: string, value: string | number | boolean) => void;
+  startQuest: (questId: string) => void;
+  completeQuest: (questId: string) => void;
+  notify: (kind: DialogNotificationKind, message: string) => void;
+};

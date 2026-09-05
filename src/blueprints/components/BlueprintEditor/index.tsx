@@ -1,11 +1,15 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 
+import { logger } from '@/core/utils/logger';
+
+import { BLUEPRINT_FIELD_LABELS, BLUEPRINT_TAG_LABELS, BLUEPRINT_TYPE_LABELS } from './defaults';
 import {
   BlueprintType,
   BlueprintCategory,
   BlueprintEditorProps,
 } from './types';
 import { blueprintRegistry, AnyBlueprint } from '../../';
+import { CAMERA_CONTROLLER_DEFAULT_MODES } from '../../../core/camera/components/CameraController/defaults';
 import { useSpawnFromBlueprint } from '../../hooks/useSpawnFromBlueprint';
 import type { BlueprintRecord, BlueprintValue } from '../../types';
 import { BlueprintPreview } from '../BlueprintPreview';
@@ -34,12 +38,20 @@ const setNestedProperty = (
     if (Array.isArray(current)) {
       const index = Number(key);
       if (!Number.isInteger(index) || index < 0 || index >= current.length) return false;
-      current = current[index];
+      const child: BlueprintValue | undefined = current[index];
+      const copy: BlueprintRecord | BlueprintValue[] | undefined = Array.isArray(child) ? [...child] : isRecord(child) ? { ...child } : undefined;
+      if (!copy) return false;
+      current[index] = copy;
+      current = copy;
       continue;
     }
 
     if (!isRecord(current)) return false;
-    current = current[key];
+    const child: BlueprintValue | undefined = current[key];
+    const copy: BlueprintRecord | BlueprintValue[] | undefined = Array.isArray(child) ? [...child] : isRecord(child) ? { ...child } : undefined;
+    if (!copy) return false;
+    current[key] = copy;
+    current = copy;
   }
 
   const lastKey = path[path.length - 1];
@@ -72,12 +84,14 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
   const [searchQuery, setSearchQuery] = useState('');
   const [editingBlueprint, setEditingBlueprint] = useState<AnyBlueprint | null>(null);
   const [showPreview, setShowPreview] = useState(true);
+  const [hasChanges, setHasChanges] = useState(false);
 
   const { spawnAtCursor, isSpawning } = useSpawnFromBlueprint();
+  const [spawnFailed, setSpawnFailed] = useState(false);
 
-  const allBlueprints = useMemo(() => {
+  const [allBlueprints, setAllBlueprints] = useState(() => {
     return blueprintRegistry.getAll().map(convertBlueprintToItem);
-  }, []);
+  });
 
   const categoriesWithCounts = useMemo(() => {
     const counts: Record<BlueprintType, number> = {
@@ -104,25 +118,29 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
   }, [allBlueprints]);
 
   const filteredBlueprints = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
     return allBlueprints.filter(blueprint => {
       const matchesCategory = blueprint.type === selectedCategory;
-      const matchesSearch = searchQuery === '' ||
-        blueprint.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        blueprint.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesSearch = query === '' ||
+        blueprint.name.toLowerCase().includes(query) ||
+        blueprint.tags.some(tag => tag.toLowerCase().includes(query) || BLUEPRINT_TAG_LABELS.get(tag)?.includes(query));
       return matchesCategory && matchesSearch;
     });
   }, [selectedCategory, searchQuery, allBlueprints]);
 
   const handleBlueprintFieldChange = useCallback((path: string[], value: BlueprintFieldValue) => {
+    setHasChanges(true);
     setEditingBlueprint((currentBlueprint) => {
       if (!currentBlueprint) return null;
-      const nextBlueprint = JSON.parse(JSON.stringify(currentBlueprint)) as BlueprintRecord;
+      const nextBlueprint = { ...currentBlueprint } as BlueprintRecord;
       if (!setNestedProperty(nextBlueprint, path, value)) return currentBlueprint;
       return nextBlueprint as AnyBlueprint;
     });
   }, []);
 
   const handleBlueprintSelect = useCallback((blueprintId: string | null) => {
+    setSpawnFailed(false);
+    setHasChanges(false);
     setSelectedBlueprint(blueprintId);
     if (blueprintId) {
       const blueprint = blueprintRegistry.get(blueprintId);
@@ -135,21 +153,33 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
   }, []);
 
   useEffect(() => {
+    if (hasChanges) return;
     const isSelectedInList = filteredBlueprints.some(b => b.id === selectedBlueprint);
     if (filteredBlueprints[0]?.id && filteredBlueprints.length > 0 && !isSelectedInList) {
       handleBlueprintSelect(filteredBlueprints[0].id);
     } else if (filteredBlueprints.length === 0) {
       handleBlueprintSelect(null);
     }
-  }, [filteredBlueprints, selectedBlueprint, handleBlueprintSelect]);
+  }, [filteredBlueprints, selectedBlueprint, handleBlueprintSelect, hasChanges]);
+
+  const handleApplyChanges = () => {
+    if (!editingBlueprint) return;
+    blueprintRegistry.register(editingBlueprint);
+    setAllBlueprints(blueprintRegistry.getAll().map(convertBlueprintToItem));
+    setHasChanges(false);
+  };
 
   const handleSpawnEntity = async () => {
-    if (!selectedBlueprint) return;
-
-    const spawnedEntity = await spawnAtCursor(selectedBlueprint);
-
-    if (spawnedEntity) {
-      onClose();
+    if (!editingBlueprint) return;
+    setSpawnFailed(false);
+    try {
+      handleApplyChanges();
+      const spawnedEntity = await spawnAtCursor(editingBlueprint.id);
+      if (spawnedEntity) onClose();
+      else setSpawnFailed(true);
+    } catch (error) {
+      logger.error('Blueprint spawn failed', error instanceof Error ? error : String(error));
+      setSpawnFailed(true);
     }
   };
 
@@ -158,21 +188,24 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
     value: BlueprintValue,
     path: string[],
   ): React.ReactNode => {
+    const label = BLUEPRINT_FIELD_LABELS[key] ?? key;
     if (Array.isArray(value)) {
       return (
-        <div key={path.join('.')} className="blueprint-editor__inspector-group">
-          <div className="blueprint-editor__inspector-title">{key}</div>
-          <div className="blueprint-editor__inspector-list">
-            {value.length === 0 ? '비어 있음' : `${value.length}개 항목`}
-          </div>
-        </div>
+        <details key={path.join('.')} className="blueprint-editor__inspector-group">
+          <summary className="blueprint-editor__inspector-title">
+            {label} · {value.length === 0 ? '비어 있음' : `${value.length}개 항목`}
+          </summary>
+          {value.map((item, index) =>
+            renderInspectorField(`항목 ${index + 1}`, item, [...path, String(index)]),
+          )}
+        </details>
       );
     }
 
     if (isRecord(value)) {
       return (
         <div key={path.join('.')} className="blueprint-editor__inspector-group">
-          <div className="blueprint-editor__inspector-title">{key}</div>
+          <div className="blueprint-editor__inspector-title">{label}</div>
           {Object.entries(value).map(([childKey, childValue]) =>
             renderInspectorField(childKey, childValue, [...path, childKey]),
           )}
@@ -183,12 +216,13 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
     if (typeof value === 'boolean') {
       return (
         <label key={path.join('.')} className="blueprint-editor__inspector-field">
-          <span>{key}</span>
+          <span>{label}</span>
           <button
             className={`blueprint-editor__toggle ${value ? 'blueprint-editor__toggle--on' : ''}`}
             onClick={() => handleBlueprintFieldChange(path, !value)}
+            aria-pressed={value}
           >
-            {value ? 'ON' : 'OFF'}
+            {value ? '켜짐' : '꺼짐'}
           </button>
         </label>
       );
@@ -197,7 +231,7 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
     if (typeof value === 'number') {
       return (
         <label key={path.join('.')} className="blueprint-editor__inspector-field">
-          <span>{key}</span>
+          <span>{label}</span>
           <input
             type="number"
             value={value}
@@ -208,12 +242,35 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
       );
     }
 
+    if (path.length === 2 && path[0] === 'camera' && key === 'mode' && typeof value === 'string') {
+      return (
+        <label key={path.join('.')} className="blueprint-editor__inspector-field">
+          <span>카메라 모드</span>
+          <select
+            value={value}
+            onChange={(event) => handleBlueprintFieldChange(path, event.target.value)}
+            className="blueprint-editor__inspector-input"
+          >
+            {!CAMERA_CONTROLLER_DEFAULT_MODES.some((option) => option.value === value) && (
+              <option value={value}>사용자 지정 ({value})</option>
+            )}
+            {CAMERA_CONTROLLER_DEFAULT_MODES.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </label>
+      );
+    }
+
     return (
       <label key={path.join('.')} className="blueprint-editor__inspector-field">
-        <span>{key}</span>
+        <span>{label}</span>
         <input
           type="text"
-          value={typeof value === 'string' ? value : ''}
+          value={typeof value === 'string'
+            ? path.length === 1 && key === 'type' ? BLUEPRINT_TYPE_LABELS.get(value) ?? value : value
+            : ''}
+          readOnly={path.length === 1 && (key === 'id' || key === 'type')}
           onChange={(event) => handleBlueprintFieldChange(path, event.target.value)}
           className="blueprint-editor__inspector-input"
         />
@@ -228,6 +285,8 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
           <input
             type="text"
             placeholder="블루프린트 검색"
+            aria-label="블루프린트 검색"
+            disabled={hasChanges}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="blueprint-editor__search-input"
@@ -238,6 +297,8 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
           {categoriesWithCounts.map((category) => (
             <button
               key={category.id}
+              aria-pressed={selectedCategory === category.type}
+              disabled={hasChanges}
               onClick={() => setSelectedCategory(category.type)}
               className={`blueprint-editor__category ${selectedCategory === category.type ? 'active' : ''}`}
             >
@@ -249,22 +310,55 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ onClose }) => 
 
         <div className="blueprint-editor__list">
           {filteredBlueprints.map((blueprint) => (
-            <div
+            <button
               key={blueprint.id}
+              type="button"
+              aria-pressed={selectedBlueprint === blueprint.id}
+              disabled={hasChanges}
               onClick={() => handleBlueprintSelect(blueprint.id)}
               className={`blueprint-editor__item ${selectedBlueprint === blueprint.id ? 'active' : ''}`}
             >
               <div className="blueprint-editor__item-name">{blueprint.name}</div>
               <div className="blueprint-editor__item-tags">
                 {blueprint.tags.map((tag) => (
-                  <span key={tag} className="blueprint-editor__tag">{tag}</span>
+                  <span key={tag} className="blueprint-editor__tag">{BLUEPRINT_TAG_LABELS.get(tag) ?? tag}</span>
                 ))}
               </div>
-            </div>
+            </button>
           ))}
+          {filteredBlueprints.length === 0 && (
+            <p className="blueprint-editor__empty">조건에 맞는 블루프린트가 없습니다.</p>
+          )}
         </div>
 
         <div className="blueprint-editor__actions">
+          {spawnFailed && (
+            <p role="alert" className="blueprint-editor__spawn-error">
+              생성하지 못했습니다. 월드가 준비되어 있는지 확인한 뒤 다시 시도해 주세요.
+            </p>
+          )}
+          <button
+            onClick={handleApplyChanges}
+            disabled={!hasChanges || !editingBlueprint || isSpawning}
+            className="blueprint-editor__spawn-button"
+          >
+            변경 적용
+          </button>
+          {hasChanges && (
+            <button
+              type="button"
+              onClick={() => handleBlueprintSelect(selectedBlueprint)}
+              disabled={isSpawning}
+              className="blueprint-editor__cancel-button"
+            >
+              변경 취소
+            </button>
+          )}
+          <p className="blueprint-editor__empty">
+            {hasChanges
+              ? '다른 항목으로 이동하려면 변경 사항을 적용하거나 취소해 주세요.'
+              : '변경 사항은 현재 세션에 적용됩니다. 생성 시에도 함께 적용합니다.'}
+          </p>
           <button
             onClick={handleSpawnEntity}
             disabled={!selectedBlueprint || isSpawning}

@@ -1,11 +1,12 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 
-import { Text, useGLTF, useAnimations } from '@react-three/drei';
+import { useGLTF, useAnimations } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { CapsuleCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
+import { Text } from '@/core/rendering/legacyDrei';
 import { weightFromDistance } from '@core/utils/sfe';
 
 import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
@@ -19,53 +20,77 @@ interface RemotePlayerProps {
   speechText?: string;
 }
 
+type RemotePlayerContentProps = {
+  state: PlayerState;
+  config: MultiplayerConfig | undefined;
+  speechText: string | undefined;
+  modelUrl: string;
+};
+
 type ColorableMaterial = THREE.Material & { color: THREE.Color };
 
 function isColorableMaterial(material: THREE.Material): material is ColorableMaterial {
   return 'color' in material && material.color instanceof THREE.Color;
 }
 
-export const RemotePlayer = React.memo(function RemotePlayer({ state, characterUrl, config, speechText }: RemotePlayerProps) {
+function RemotePlayerContent({ state, config, speechText, modelUrl }: RemotePlayerContentProps) {
   const bodyRef = useRef<RapierRigidBody | null>(null);
   const meshRef = useRef<THREE.Group | null>(null);
+  const animationRootRef = useRef<THREE.Group | null>(null);
   const initialPosition = useRef<[number, number, number] | null>(null);
   if (!initialPosition.current) {
     initialPosition.current = [state.position[0], state.position[1], state.position[2]];
   }
   
-  // 목표 위치와 회전
-  const targetPosition = useRef(new THREE.Vector3());
-  const targetRotation = useRef(new THREE.Quaternion());
-  const currentVelocity = useRef(new THREE.Vector3());
+  const [{
+    targetPosition,
+    targetRotation,
+    currentVelocity,
+    tmpPos,
+    tmpRot,
+    predictedPos,
+    smoothPos,
+    smoothVel,
+    smoothRot,
+    sdChange,
+    sdTemp,
+    sdOrigTo,
+    sdAdjustedTarget,
+    sdV1,
+    sdV2,
+    speechPos,
+    nextTranslation,
+    nextRotation,
+  }] = useState(() => ({
+    targetPosition: new THREE.Vector3(),
+    targetRotation: new THREE.Quaternion(),
+    currentVelocity: new THREE.Vector3(),
+    tmpPos: new THREE.Vector3(),
+    tmpRot: new THREE.Quaternion(),
+    predictedPos: new THREE.Vector3(),
+    smoothPos: new THREE.Vector3(),
+    smoothVel: new THREE.Vector3(),
+    smoothRot: new THREE.Quaternion(),
+    sdChange: new THREE.Vector3(),
+    sdTemp: new THREE.Vector3(),
+    sdOrigTo: new THREE.Vector3(),
+    sdAdjustedTarget: new THREE.Vector3(),
+    sdV1: new THREE.Vector3(),
+    sdV2: new THREE.Vector3(),
+    speechPos: new THREE.Vector3(),
+    nextTranslation: { x: 0, y: 0, z: 0 },
+    nextRotation: { x: 0, y: 0, z: 0, w: 1 },
+  }));
+
   const lastNetUpdateAt = useRef<number>(performance.now());
-  const tmpPos = useRef(new THREE.Vector3());
-  const tmpRot = useRef(new THREE.Quaternion());
-  const predictedPos = useRef(new THREE.Vector3());
 
   // Critically-damped smoothing state (stable across FPS).
-  const smoothPos = useRef(new THREE.Vector3());
-  const smoothVel = useRef(new THREE.Vector3());
-  const smoothRot = useRef(new THREE.Quaternion());
   const smoothInit = useRef(false);
-  const sdChange = useRef(new THREE.Vector3());
-  const sdTemp = useRef(new THREE.Vector3());
-  const sdOrigTo = useRef(new THREE.Vector3());
-  const sdAdjustedTarget = useRef(new THREE.Vector3());
-  const sdV1 = useRef(new THREE.Vector3());
-  const sdV2 = useRef(new THREE.Vector3());
-
-  // Reused objects to avoid per-frame allocations.
-  const nextTranslation = useRef({ x: 0, y: 0, z: 0 });
-  const nextRotation = useRef({ x: 0, y: 0, z: 0, w: 1 });
 
   // LOD/throttle state (SFE-style suppression w = exp(-sigma(distance))).
   const lodAccum = useRef<number>(0);
   const lodInterval = useRef<number>(0);
   
-  // URL 가져오기 - props에서 먼저, 없으면 state에서
-  const modelUrl = characterUrl || state.modelUrl || '';
-  if (!modelUrl) return null;
-
   const normalizeHexColor = (value: string | null | undefined): string | null => {
     if (typeof value !== 'string') return null;
     const v = value.trim();
@@ -87,58 +112,68 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
   // 모델 로드
   const { scene, animations } = useGLTF(modelUrl);
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
-  const { actions, ref: animationRef } = useAnimations(animations, meshRef);
-  const tintedMaterialsRef = useRef<THREE.Material[]>([]);
+  useEffect(() => () => {
+    clone.traverse((object) => {
+      if (object instanceof THREE.SkinnedMesh) object.skeleton.dispose();
+    });
+  }, [clone]);
+  const { actions } = useAnimations(animations, animationRootRef);
   const currentAnimRef = useRef<string | null>(null);
   const currentActionRef = useRef<THREE.AnimationAction | null>(null);
   const lastAnimSwitchAt = useRef<number>(performance.now());
-  const speechPos = useRef(new THREE.Vector3());
+  useEffect(() => {
+    currentAnimRef.current = null;
+    currentActionRef.current = null;
+  }, [actions]);
 
   // Apply per-player tint (material cloning) once per model/color.
   useEffect(() => {
-    // Dispose previously created materials, when present.
-    for (const m of tintedMaterialsRef.current) {
-      try {
-        m.dispose();
-      } catch {
-        // ignore
-      }
-    }
-    tintedMaterialsRef.current = [];
-
     if (!playerColor) return;
+    const originals = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
+    const tinted = new Map<THREE.Material, THREE.Material>();
+    const cleanup = () => {
+      for (const [mesh, material] of originals) mesh.material = material;
+      originals.clear();
+      for (const material of tinted.values()) {
+        try {
+          material.dispose();
+        } catch {
+          // Continue releasing the remaining owned materials.
+        }
+      }
+      tinted.clear();
+    };
 
     const tintMaterial = (mat: THREE.Material): THREE.Material => {
       if (!isColorableMaterial(mat)) return mat;
-
-      const cloned = mat.clone();
-      if (!isColorableMaterial(cloned)) return mat;
+      const existing = tinted.get(mat);
+      if (existing) return existing;
+      const cloned: THREE.Material = mat.clone();
+      tinted.set(mat, cloned);
+      if (!isColorableMaterial(cloned)) {
+        cloned.dispose();
+        tinted.delete(mat);
+        return mat;
+      }
       cloned.color.set(playerColor);
-      tintedMaterialsRef.current.push(cloned);
       return cloned;
     };
 
-    clone.traverse((obj) => {
-      if (!(obj instanceof THREE.Mesh || obj instanceof THREE.SkinnedMesh)) return;
-      if (!obj.material) return;
-
-      if (Array.isArray(obj.material)) {
-        obj.material = obj.material.map((m) => tintMaterial(m));
-      } else {
-        obj.material = tintMaterial(obj.material);
-      }
-    });
-
-    return () => {
-      for (const m of tintedMaterialsRef.current) {
-        try {
-          m.dispose();
-        } catch {
-          // ignore
+    try {
+      clone.traverse((obj) => {
+        if (!(obj instanceof THREE.Mesh) || !obj.material) return;
+        originals.set(obj, obj.material);
+        if (Array.isArray(obj.material)) {
+          obj.material = obj.material.map(tintMaterial);
+        } else {
+          obj.material = tintMaterial(obj.material);
         }
-      }
-      tintedMaterialsRef.current = [];
-    };
+      });
+    } catch (error) {
+      cleanup();
+      throw error;
+    }
+    return cleanup;
   }, [clone, playerColor]);
 
   const pickAction = (desired: string): THREE.AnimationAction | null => {
@@ -180,32 +215,32 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
     const x = omega * dt;
     const exp = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
 
-    sdOrigTo.current.copy(target);
-    sdChange.current.copy(current).sub(target);
+    sdOrigTo.copy(target);
+    sdChange.copy(current).sub(target);
 
     // Clamp maximum change (prevents extreme overshoot after long stalls).
     const maxChange = maxSpeed * st;
-    const changeLen = sdChange.current.length();
+    const changeLen = sdChange.length();
     if (changeLen > maxChange && changeLen > 0) {
-      sdChange.current.multiplyScalar(maxChange / changeLen);
+      sdChange.multiplyScalar(maxChange / changeLen);
     }
 
-    sdAdjustedTarget.current.copy(current).sub(sdChange.current);
+    sdAdjustedTarget.copy(current).sub(sdChange);
 
     // Integrate velocity.
     // temp = (currentVelocity + omega * change) * dt
-    sdTemp.current.copy(currentVelocity).addScaledVector(sdChange.current, omega).multiplyScalar(dt);
+    sdTemp.copy(currentVelocity).addScaledVector(sdChange, omega).multiplyScalar(dt);
     // currentVelocity = (currentVelocity - omega * temp) * exp
-    currentVelocity.addScaledVector(sdTemp.current, -omega).multiplyScalar(exp);
+    currentVelocity.addScaledVector(sdTemp, -omega).multiplyScalar(exp);
 
     // out = adjustedTarget + (change + temp) * exp
-    out.copy(sdChange.current).add(sdTemp.current).multiplyScalar(exp).add(sdAdjustedTarget.current);
+    out.copy(sdChange).add(sdTemp).multiplyScalar(exp).add(sdAdjustedTarget);
 
     // Prevent overshooting the target.
-    sdV1.current.copy(sdOrigTo.current).sub(current);
-    sdV2.current.copy(out).sub(sdOrigTo.current);
-    if (sdV1.current.dot(sdV2.current) > 0) {
-      out.copy(sdOrigTo.current);
+    sdV1.copy(sdOrigTo).sub(current);
+    sdV2.copy(out).sub(sdOrigTo);
+    if (sdV1.dot(sdV2) > 0) {
+      out.copy(sdOrigTo);
       currentVelocity.set(0, 0, 0);
     }
   };
@@ -221,7 +256,7 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
 
     const speed = state.velocity
       ? Math.hypot(state.velocity[0], state.velocity[1], state.velocity[2])
-      : currentVelocity.current.length();
+      : currentVelocity.length();
 
     const requested = state.animation?.trim();
     const fallback =
@@ -232,82 +267,73 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
     const nextName = (requested && requested.length > 0 ? requested : fallback) || 'idle';
     if (currentAnimRef.current === nextName) return;
 
-    const now = performance.now();
-    if (now - lastAnimSwitchAt.current < minSwitchMs) return;
-
     const next = pickAction(nextName);
     if (!next) return;
 
-    const prev = currentActionRef.current;
-    // Smooth transition between actions without resetting all tracks.
-    next.enabled = true;
-    next.setEffectiveTimeScale(1);
-    next.setEffectiveWeight(1);
-    next.reset().play();
-    if (prev && prev !== next) {
-      next.crossFadeFrom(prev, 0.18, true);
-    } else {
-      next.fadeIn(0.18);
-    }
-
-    currentAnimRef.current = nextName;
-    currentActionRef.current = next;
-    lastAnimSwitchAt.current = now;
-
-    return () => {
-      // Keep it simple: do not stop() everything on unmount;
-      // drei/GLTF cleanup will dispose actions with the scene.
+    const play = () => {
+      const prev = currentActionRef.current;
+      next.enabled = true;
+      next.setEffectiveTimeScale(1);
+      next.setEffectiveWeight(1);
+      next.reset().play();
+      if (prev && prev !== next) {
+        next.crossFadeFrom(prev, 0.18, true);
+      } else {
+        next.fadeIn(0.18);
+      }
+      currentAnimRef.current = nextName;
+      currentActionRef.current = next;
+      lastAnimSwitchAt.current = performance.now();
     };
+    const delay = currentActionRef.current
+      ? minSwitchMs - (performance.now() - lastAnimSwitchAt.current)
+      : 0;
+    if (delay <= 0) {
+      play();
+      return;
+    }
+    const timer = setTimeout(play, delay);
+    return () => clearTimeout(timer);
   }, [actions, state.animation, state.velocity, config?.tracking?.velocityThreshold]);
 
   // 상태 업데이트 시 목표값 설정
   useEffect(() => {
     lastNetUpdateAt.current = performance.now();
-    targetPosition.current.set(
+    targetPosition.set(
       state.position[0],
       state.position[1], 
       state.position[2]
     );
-    speechPos.current.set(state.position[0], state.position[1], state.position[2]);
+    speechPos.set(state.position[0], state.position[1], state.position[2]);
+    const [w, x, y, z] = state.rotation;
+    targetRotation.set(x, y, z, w);
 
     // First network state: snap smoothing state to avoid "slide from origin".
     if (!smoothInit.current && bodyRef.current) {
-      const p = targetPosition.current;
+      const p = targetPosition;
       smoothInit.current = true;
-      smoothPos.current.copy(p);
-      smoothVel.current.set(0, 0, 0);
-      smoothRot.current.copy(targetRotation.current);
+      smoothPos.copy(p);
+      smoothVel.set(0, 0, 0);
+      smoothRot.copy(targetRotation);
 
       const body = bodyRef.current;
-      const t = nextTranslation.current;
+      const t = nextTranslation;
       t.x = p.x;
       t.y = p.y;
       t.z = p.z;
       body.setNextKinematicTranslation(t);
 
-      const q = nextRotation.current;
-      q.x = targetRotation.current.x;
-      q.y = targetRotation.current.y;
-      q.z = targetRotation.current.z;
-      q.w = targetRotation.current.w;
+      const q = nextRotation;
+      q.x = targetRotation.x;
+      q.y = targetRotation.y;
+      q.z = targetRotation.z;
+      q.w = targetRotation.w;
       body.setNextKinematicRotation(q);
     }
     
-    // Prefer (w, x, y, z). Some older senders may send identity as (x, y, z, w) = (0,0,0,1).
-    const r = state.rotation;
-    const looksLikeXyzwIdentity =
-      Math.abs(r[0]) < 1e-6 && Math.abs(r[1]) < 1e-6 && Math.abs(r[2]) < 1e-6 && Math.abs(r[3] - 1) < 1e-6;
-    const wxyz = looksLikeXyzwIdentity ? ([1, 0, 0, 0] as const) : r;
-    targetRotation.current.set(
-      wxyz[1],
-      wxyz[2],
-      wxyz[3],
-      wxyz[0]
-    );
-    
     // 속도 업데이트
     if (state.velocity) {
-      currentVelocity.current.set(
+      currentVelocity.set(
         state.velocity[0],
         state.velocity[1],
         state.velocity[2]
@@ -322,16 +348,13 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
     // Distance-based throttling: far objects update less frequently.
     // Use the last chosen interval for early returns to avoid doing distance math every frame.
     const currentInterval = lodInterval.current;
-    if (currentInterval > 0) {
-      lodAccum.current += Math.max(0, delta);
-      if (lodAccum.current < currentInterval) return;
-      lodAccum.current = 0;
-    } else {
-      lodAccum.current = 0;
-    }
+    lodAccum.current += Math.max(0, delta);
+    if (lodAccum.current < currentInterval) return;
+    const elapsed = lodAccum.current;
+    lodAccum.current = 0;
 
     // Update the interval at the same cadence as the simulation update.
-    const approx = smoothInit.current ? smoothPos.current : targetPosition.current;
+    const approx = smoothInit.current ? smoothPos : targetPosition;
     const cameraDist = frame.camera.position.distanceTo(approx);
     const w = smoothInit.current ? weightFromDistance(cameraDist, 25, 140, 4) : 1;
     lodInterval.current =
@@ -346,7 +369,7 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
     // Short prediction to hide network jitter (up to 120ms).
     const sinceNet = (performance.now() - lastNetUpdateAt.current) / 1000;
     const predictT = Math.max(0, Math.min(0.12, sinceNet));
-    predictedPos.current.copy(targetPosition.current).addScaledVector(currentVelocity.current, predictT);
+    predictedPos.copy(targetPosition).addScaledVector(currentVelocity, predictT);
 
     // Initialize smoothing state from current body transform.
     if (!smoothInit.current) {
@@ -355,9 +378,9 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
       const pos = bodyRef.current.translation();
       const rot = bodyRef.current.rotation();
       smoothInit.current = true;
-      smoothPos.current.set(pos.x, pos.y, pos.z);
-      smoothVel.current.set(0, 0, 0);
-      smoothRot.current.set(rot.x, rot.y, rot.z, rot.w);
+      smoothPos.set(pos.x, pos.y, pos.z);
+      smoothVel.set(0, 0, 0);
+      smoothRot.set(rot.x, rot.y, rot.z, rot.w);
     }
 
     // Smooth time mapping: higher interpolationSpeed => shorter time constant.
@@ -366,48 +389,48 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
     const maxSpeed = 120; // world units/sec; effectively "no clamp" but avoids blow-ups on stalls.
 
     // Snap if far behind (teleports / missed packets / long frame stall).
-    const dist = smoothPos.current.distanceTo(predictedPos.current);
-    if (dist > 10 || delta > 0.25) {
-      smoothPos.current.copy(predictedPos.current);
-      smoothVel.current.set(0, 0, 0);
-      smoothRot.current.copy(targetRotation.current);
+    const dist = smoothPos.distanceTo(predictedPos);
+    if (dist > 10 || elapsed > 0.25) {
+      smoothPos.copy(predictedPos);
+      smoothVel.set(0, 0, 0);
+      smoothRot.copy(targetRotation);
     } else {
       smoothDampVec3(
-        smoothPos.current,
-        predictedPos.current,
-        smoothVel.current,
+        smoothPos,
+        predictedPos,
+        smoothVel,
         smoothTime,
         maxSpeed,
-        delta,
-        tmpPos.current,
+        elapsed,
+        tmpPos,
       );
-      smoothPos.current.copy(tmpPos.current);
+      smoothPos.copy(tmpPos);
 
       // Rotation uses exponential smoothing (stable across FPS).
       const rotTime = Math.max(0.025, smoothTime * 0.7);
-      const rotAlpha = 1 - Math.exp(-Math.max(0, delta) / rotTime);
-      tmpRot.current.copy(smoothRot.current).slerp(targetRotation.current, rotAlpha);
-      smoothRot.current.copy(tmpRot.current);
+      const rotAlpha = 1 - Math.exp(-elapsed / rotTime);
+      tmpRot.copy(smoothRot).slerp(targetRotation, rotAlpha);
+      smoothRot.copy(tmpRot);
     }
 
     // Keep speech position tracking the smoothed body position (no rerender needed).
-    speechPos.current.copy(smoothPos.current);
+    speechPos.copy(smoothPos);
 
     // RigidBody 업데이트
     // Rapier kinematic bodies should be driven via "next kinematic" setters.
     const body = bodyRef.current;
 
-    const t = nextTranslation.current;
-    t.x = smoothPos.current.x;
-    t.y = smoothPos.current.y;
-    t.z = smoothPos.current.z;
+    const t = nextTranslation;
+    t.x = smoothPos.x;
+    t.y = smoothPos.y;
+    t.z = smoothPos.z;
     body.setNextKinematicTranslation(t);
 
-    const q = nextRotation.current;
-    q.x = smoothRot.current.x;
-    q.y = smoothRot.current.y;
-    q.z = smoothRot.current.z;
-    q.w = smoothRot.current.w;
+    const q = nextRotation;
+    q.x = smoothRot.x;
+    q.y = smoothRot.y;
+    q.z = smoothRot.z;
+    q.w = smoothRot.w;
     body.setNextKinematicRotation(q);
     
     // Animation switching is handled in the effect above (with hysteresis).
@@ -425,7 +448,7 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
       >
         <CapsuleCollider args={[0.5, 0.5]} position={[0, 1.5, 0]} />
         <group ref={meshRef}>
-          <group ref={animationRef} scale={[characterScale, characterScale, characterScale]}>
+          <group ref={animationRootRef} scale={[characterScale, characterScale, characterScale]}>
             <primitive object={clone} />
           </group>
         </group>
@@ -448,9 +471,28 @@ export const RemotePlayer = React.memo(function RemotePlayer({ state, characterU
       {speechText ? (
         <SpeechBalloon
           text={speechText}
-          position={speechPos.current}
+          position={speechPos}
         />
       ) : null}
     </group>
   );
-}); 
+}
+
+export const RemotePlayer = React.memo(function RemotePlayer({
+  state,
+  characterUrl,
+  config,
+  speechText,
+}: RemotePlayerProps) {
+  const modelUrl = characterUrl || state.modelUrl || '';
+  if (!modelUrl) return null;
+
+  return (
+    <RemotePlayerContent
+      state={state}
+      config={config}
+      speechText={speechText}
+      modelUrl={modelUrl}
+    />
+  );
+});

@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import type { ThreeEvent } from '@react-three/fiber';
 import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
@@ -255,7 +256,7 @@ function WallBatchMesh({
     }
   }, [batch.walls, wallCount, dummy, height, capacity]);
 
-  const handleClick = (event: { stopPropagation: () => void; instanceId?: number }) => {
+  const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
     const wall = event.instanceId !== undefined ? batch.walls[event.instanceId] : undefined;
     if (wall) onWallClick?.(wall.id);
@@ -272,10 +273,10 @@ function WallBatchMesh({
   );
 }
 
-export function WallSystem({ 
-  wallGroup, 
+export function WallSystem({
+  wallGroup,
   wallGroups,
-  meshes, 
+  meshes,
   isEditMode = false,
   selectedWallId = null,
   onWallClick,
@@ -340,7 +341,7 @@ export function WallSystem({
           ))}
         </RigidBody>
       )}
-      
+
       {isEditMode && wallGroup.walls.map((wall) => {
         const selected = wall.id === selectedWallId;
         return (
@@ -362,7 +363,7 @@ export function WallSystem({
           </group>
         );
       })}
-      
+
       {batches.map((batch) => (
         <WallBatchMesh
           key={`${wallGroup.id}-${batch.key}`}
@@ -388,4 +389,4 @@ export function WallSystem({
       ))}
     </>
   );
-} 
+}

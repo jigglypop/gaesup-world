@@ -22,32 +22,38 @@ import {
   type InputBackend,
 } from '../core/adapter';
 import { AutomationSystem } from '../core/AutomationSystem';
+import { getDefaultAutomationSystem } from '../core/defaultAutomation';
 import type { InteractionSystem, KeyboardState, MouseState } from '../core/InteractionSystem';
 
 export interface InteractionBridgeOptions {
+  /** Borrowed systems remain owned by their provider. */
   interactionSystem?: InteractionSystem;
   inputBackend?: InputBackend;
+  /** The caller disposes supplied automation engines. */
   automationSystem?: AutomationSystem;
 }
 
 export class InteractionBridge {
   private static globalInstance: InteractionBridge | null = null;
+  private static movementOwners = new WeakMap<MouseState, (nextSystem: AutomationSystem) => void>();
 
   static getGlobal(): InteractionBridge {
     if (!InteractionBridge.globalInstance) {
-      InteractionBridge.globalInstance = new InteractionBridge();
+      InteractionBridge.globalInstance = new InteractionBridge({ automationSystem: getDefaultAutomationSystem() });
     }
     return InteractionBridge.globalInstance;
   }
 
   static disposeGlobal(): void {
     InteractionBridge.globalInstance?.dispose();
+    InteractionBridge.globalInstance?.automationSystem.dispose();
     InteractionBridge.globalInstance = null;
   }
 
   private interactionSystem: InteractionSystem;
   private inputBackend: InputBackend;
   private automationSystem: AutomationSystem;
+  private readonly ownsAutomationSystem: boolean;
   private state: BridgeState;
   private eventSubscribers: Map<string, Array<(event: BridgeEvent) => void>>;
   private eventQueue: BridgeEvent[];
@@ -65,6 +71,7 @@ export class InteractionBridge {
     this.interactionSystem = options.interactionSystem ?? resolveDefaultInteractionSystem();
     this.inputBackend = options.inputBackend ?? createInteractionInputAdapter(this.interactionSystem);
     this.automationSystem = options.automationSystem ?? new AutomationSystem();
+    this.ownsAutomationSystem = options.automationSystem === undefined;
     this.state = {
       isActive: true,
       lastCommand: null,
@@ -84,8 +91,30 @@ export class InteractionBridge {
   }
 
   private setupEngineListeners(): void {
+    let automationMovementActive = false;
+    let ownedMouse: MouseState | null = null;
+    const automationTarget = new THREE.Vector3();
+    const releaseMovement = () => {
+      if (ownedMouse && InteractionBridge.movementOwners.get(ownedMouse) === cancelMovement) {
+        InteractionBridge.movementOwners.delete(ownedMouse);
+      }
+      ownedMouse = null;
+      automationMovementActive = false;
+    };
+    const cancelMovement = (nextSystem: AutomationSystem) => {
+      releaseMovement();
+      if (nextSystem !== this.automationSystem) this.automationSystem.stop();
+    };
     const moveListener = (data: InteractionPayload) => {
       if (!(data instanceof THREE.Vector3)) return;
+      const mouse = this.inputBackend.getMouse();
+      const previousOwner = InteractionBridge.movementOwners.get(mouse);
+      InteractionBridge.movementOwners.set(mouse, cancelMovement);
+      if (previousOwner !== cancelMovement) previousOwner?.(this.automationSystem);
+      if (InteractionBridge.movementOwners.get(mouse) !== cancelMovement) return;
+      ownedMouse = mouse;
+      automationMovementActive = true;
+      automationTarget.copy(data);
       const target = data;
       this.executeCommand({
         type: 'input',
@@ -117,11 +146,34 @@ export class InteractionBridge {
     this.automationSystem.addEventListener('moveRequested', moveListener);
     this.automationSystem.addEventListener('clickRequested', clickListener);
     this.automationSystem.addEventListener('keyRequested', keyListener);
+    const stopMovement = () => {
+      if (!automationMovementActive) return;
+      releaseMovement();
+      this.inputBackend.updateMouse({ isActive: false, shouldRun: false });
+    };
+    this.automationSystem.addEventListener('automationPaused', stopMovement);
+    this.automationSystem.addEventListener('automationStopped', stopMovement);
+    this.automationSystem.addEventListener('actionError', stopMovement);
+    const unsubscribeInput = this.inputBackend.subscribe?.(({ mouse }) => {
+      if (automationMovementActive && (!mouse.isActive || !mouse.target.equals(automationTarget))) {
+        releaseMovement();
+        if (!mouse.isActive && mouse.hasArrived && mouse.target.equals(automationTarget)) {
+          this.automationSystem.completeMovement();
+        } else {
+          this.automationSystem.stop();
+        }
+      }
+    });
     
     this.engineListenerCleanups.push(
       () => this.automationSystem.removeEventListener('moveRequested', moveListener),
       () => this.automationSystem.removeEventListener('clickRequested', clickListener),
-      () => this.automationSystem.removeEventListener('keyRequested', keyListener)
+      () => this.automationSystem.removeEventListener('keyRequested', keyListener),
+      () => this.automationSystem.removeEventListener('automationPaused', stopMovement),
+      () => this.automationSystem.removeEventListener('automationStopped', stopMovement),
+      () => this.automationSystem.removeEventListener('actionError', stopMovement),
+      () => unsubscribeInput?.(),
+      stopMovement,
     );
   }
 
@@ -194,6 +246,9 @@ export class InteractionBridge {
         this.interactionSystem.setConfig(data as Partial<InteractionConfig>);
         break;
       case 'moveTo':
+        if (data && typeof data === 'object' && 'target' in data && data.target instanceof THREE.Vector3) {
+          this.inputBackend.updateMouse({ target: data.target, isActive: true, hasArrived: false });
+        }
         this.emitEvent({
           type: 'input',
           event: 'moveToRequested',
@@ -520,8 +575,7 @@ export class InteractionBridge {
     this.engineListenerCleanups.forEach(cleanup => cleanup());
     this.engineListenerCleanups = [];
     
-    this.interactionSystem.dispose();
-    this.automationSystem.dispose();
+    if (this.ownsAutomationSystem) this.automationSystem.dispose();
     this.eventSubscribers.clear();
     this.eventQueue = [];
     this.state.commandHistory = [];

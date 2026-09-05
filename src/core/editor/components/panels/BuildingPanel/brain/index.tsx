@@ -1,5 +1,14 @@
 import React from 'react';
 
+import type {
+  NPCBrainBlueprint,
+  NPCBrainBlueprintEdge,
+  NPCBrainBlueprintNode,
+  NPCBrainConfig,
+  NPCBrainMode,
+  NPCInstance as NPCInstanceData,
+} from '../../../../../npc/types';
+import { FieldRow } from '../../../fields';
 import { BrainFlow } from '../flow';
 import {
   appendNPCBlueprintNode,
@@ -10,18 +19,10 @@ import {
   getNPCBlueprintNodeDescription,
   getNPCBlueprintNodeTitle,
   getNPCBlueprintOutgoingLabel,
+  getNPCBrainLabel,
   removeNPCBlueprintNode,
   resetNPCBlueprint,
 } from '../helpers';
-import type {
-  NPCBrainBlueprint,
-  NPCBrainBlueprintEdge,
-  NPCBrainBlueprintNode,
-  NPCBrainConfig,
-  NPCBrainMode,
-  NPCInstance as NPCInstanceData,
-} from '../../../../../npc/types';
-import { FieldRow } from '../../../fields';
 const NPC_BRAIN_MODES: NPCBrainMode[] = ['none', 'scripted', 'llm', 'reinforcement'];
 const NPC_QUEST_STATUS_OPTIONS = ['locked', 'available', 'active', 'completed', 'failed'] as const;
 const NPC_CONDITION_TYPES = [
@@ -135,7 +136,7 @@ export function NPCBrainSection({
         case 'moveTo':
           state = {
             mode: 'move',
-            label: 'moveTo',
+            label: '지점 이동',
             target: selectedNode.action.target,
             ...(selectedNode.action.animationId
               ? { animationId: selectedNode.action.animationId }
@@ -145,7 +146,7 @@ export function NPCBrainSection({
         case 'patrol':
           state = {
             mode: 'patrol',
-            label: 'patrol',
+            label: '순찰',
             waypoints: selectedNode.action.waypoints,
             ...(selectedNode.action.animationId
               ? { animationId: selectedNode.action.animationId }
@@ -155,7 +156,7 @@ export function NPCBrainSection({
         case 'wander':
           state = {
             mode: 'wander',
-            label: 'wander',
+            label: '배회',
             ...(selectedNode.action.radius ? { radius: selectedNode.action.radius } : {}),
           };
           break;
@@ -164,7 +165,7 @@ export function NPCBrainSection({
             selectedNode.action.target.type === 'point'
               ? {
                   mode: 'move',
-                  label: 'moveToTarget(point)',
+                  label: '지점 이동',
                   target: selectedNode.action.target.value,
                   ...(selectedNode.action.animationId
                     ? { animationId: selectedNode.action.animationId }
@@ -172,7 +173,7 @@ export function NPCBrainSection({
                 }
               : {
                   mode: 'action',
-                  label: `moveToTarget(${selectedNode.action.target.type})`,
+                  label: `${getNPCBrainLabel(selectedNode.action.target.type)} 이동`,
                   ...(selectedNode.action.animationId
                     ? { animationId: selectedNode.action.animationId }
                     : {}),
@@ -181,32 +182,32 @@ export function NPCBrainSection({
         case 'playAnimation':
           state = {
             mode: 'action',
-            label: 'playAnimation',
+            label: '애니메이션 재생',
             animationId: selectedNode.action.animationId,
           };
           break;
         case 'speak':
           state = {
             mode: 'action',
-            label: `speak: ${selectedNode.action.text}`,
+            label: `말하기: ${selectedNode.action.text}`,
           };
           break;
         default:
           state = {
             mode: 'action',
-            label: selectedNode.action.type,
+            label: getNPCBrainLabel(selectedNode.action.type),
           };
       }
     } else if (behavior?.mode === 'patrol' && behavior.waypoints && behavior.waypoints.length > 0) {
       state = {
         mode: 'patrol',
-        label: 'patrol(behavior)',
+        label: '기본 행동: 순찰',
         waypoints: behavior.waypoints,
       };
     } else if (behavior?.mode === 'wander') {
       state = {
         mode: 'wander',
-        label: 'wander(behavior)',
+        label: '기본 행동: 배회',
         radius: behavior.wanderRadius ?? 4,
       };
     }
@@ -267,9 +268,9 @@ export function NPCBrainSection({
       const outgoing = selectedBlueprint.edges.filter((edge) => edge.source === node.id);
       const branches = outgoing.map((edge) => edge.branch ?? 'next');
       const nextIssues: string[] = [];
-      if (!branches.includes('true')) nextIssues.push('true branch 누락');
-      if (!branches.includes('false')) nextIssues.push('false branch 누락');
-      if (branches.includes('next')) nextIssues.push('condition에는 next 대신 true/false를 권장');
+      if (!branches.includes('true')) nextIssues.push('참 분기 누락');
+      if (!branches.includes('false')) nextIssues.push('거짓 분기 누락');
+      if (branches.includes('next')) nextIssues.push('조건에는 다음 대신 참·거짓 분기를 권장합니다');
       if (nextIssues.length > 0) {
         issues.set(node.id, nextIssues);
       }
@@ -307,7 +308,7 @@ export function NPCBrainSection({
         (edge) => blueprintNodeIds.has(edge.source) && blueprintNodeIds.has(edge.target),
       ),
     });
-    setEdgeIntegrityMessage(`유효하지 않은 edge ${danglingEdges.length}개를 자동 정리했습니다.`);
+    setEdgeIntegrityMessage(`유효하지 않은 연결 ${danglingEdges.length}개를 자동 정리했습니다.`);
   }, [blueprintNodeIds, danglingEdges, selectedBlueprint, updateBrainBlueprint]);
 
   const getEdgeIntegrityError = (
@@ -323,7 +324,7 @@ export function NPCBrainSection({
       (edge) => edge.id !== ignoreEdgeId && edge.source === source && edge.target === target,
     );
     if (hasDuplicate) {
-      return '동일 source/target edge가 이미 있습니다.';
+      return '같은 시작 노드와 대상 노드 사이에 이미 연결이 있습니다.';
     }
     return null;
   };
@@ -368,7 +369,7 @@ export function NPCBrainSection({
       ...selectedBlueprint,
       edges: [...selectedBlueprint.edges, nextEdge],
     });
-    setEdgeIntegrityMessage(`orphan 노드 ${targetNodeId}를 start에 연결했습니다.`);
+    setEdgeIntegrityMessage(`도달 불가 노드 ${targetNodeId}를 시작점에 연결했습니다.`);
   };
   const recoverAllOrphans = () => {
     if (!selectedBlueprint || !primaryStartNode || orphanNodeIds.size === 0) return;
@@ -391,14 +392,14 @@ export function NPCBrainSection({
       recoveredCount += 1;
     }
     if (recoveredCount === 0) {
-      setEdgeIntegrityMessage('복구 가능한 orphan 노드가 없습니다.');
+      setEdgeIntegrityMessage('복구 가능한 도달 불가 노드가 없습니다.');
       return;
     }
     updateBrainBlueprint(selectedBlueprint.id, {
       ...selectedBlueprint,
       edges: nextEdges,
     });
-    setEdgeIntegrityMessage(`orphan 노드 ${recoveredCount}개를 start에 연결했습니다.`);
+    setEdgeIntegrityMessage(`도달 불가 노드 ${recoveredCount}개를 시작점에 연결했습니다.`);
   };
   const addOutgoingEdge = () => {
     if (!selectedBlueprint || !selectedNodeId) return;
@@ -452,7 +453,7 @@ export function NPCBrainSection({
         !nextEdges.some((edge) => edge.source === conditionNodeId && edge.target === node.id),
     );
     if (!targetCandidate) {
-      setEdgeIntegrityMessage(`branch ${branch}를 추가할 타겟 노드를 찾을 수 없습니다.`);
+      setEdgeIntegrityMessage(`${getNPCBrainLabel(branch)} 분기를 추가할 대상 노드를 찾을 수 없습니다.`);
       return;
     }
     const integrityError = getEdgeIntegrityError(
@@ -476,13 +477,15 @@ export function NPCBrainSection({
       edges: [...nextEdges, newEdge],
     });
     setSelectedEdgeId(newEdge.id);
-    setEdgeIntegrityMessage(`condition ${conditionNodeId}에 ${branch} branch를 추가했습니다.`);
+    setEdgeIntegrityMessage(`조건 ${conditionNodeId}에 ${getNPCBrainLabel(branch)} 분기를 추가했습니다.`);
   };
   const fixConditionBranches = (conditionNodeId: string) => {
     if (!selectedBlueprint) return;
-    const issues = conditionBranchIssues.get(conditionNodeId) ?? [];
-    const needsTrue = issues.some((issue) => issue.startsWith('true branch'));
-    const needsFalse = issues.some((issue) => issue.startsWith('false branch'));
+    const branches = selectedBlueprint.edges
+      .filter((edge) => edge.source === conditionNodeId)
+      .map((edge) => edge.branch ?? 'next');
+    const needsTrue = !branches.includes('true');
+    const needsFalse = !branches.includes('false');
     if (!needsTrue && !needsFalse) return;
     const nextEdges = [...selectedBlueprint.edges];
     const missingBranches = [
@@ -552,7 +555,7 @@ export function NPCBrainSection({
               className={`building-panel__segment-btn ${instance.brain?.mode === mode ? 'building-panel__segment-btn--active' : ''}`}
               onClick={() => updateBrain(instance.id, { mode })}
             >
-              {mode}
+              {getNPCBrainLabel(mode)}
             </button>
           ))}
         </div>
@@ -587,7 +590,7 @@ export function NPCBrainSection({
             <div className="building-panel__asset-targets building-panel__brain-summary">
               <span>{selectedBlueprint.name}</span>
               <span>
-                {selectedBlueprint.nodes.length} nodes · {selectedBlueprint.edges.length} edges
+                {selectedBlueprint.nodes.length} 노드 · {selectedBlueprint.edges.length} 연결
               </span>
             </div>
             <div className="building-panel__segmented building-panel__brain-toolbar">
@@ -637,6 +640,14 @@ export function NPCBrainSection({
                   selectedEdgeId={selectedEdgeId}
                   onSelectNode={setSelectedNodeId}
                   onSelectEdge={setSelectedEdgeId}
+                  onDelete={(nodeIds, edgeIds) => {
+                    const next = nodeIds.reduce(removeNPCBlueprintNode, selectedBlueprint);
+                    const removedEdges = new Set(edgeIds);
+                    updateBrainBlueprint(selectedBlueprint.id, {
+                      ...next,
+                      edges: next.edges.filter((edge) => !removedEdges.has(edge.id)),
+                    });
+                  }}
                 />
               </div>
             )}
@@ -704,7 +715,7 @@ export function NPCBrainSection({
                         className="building-panel__node-card-edge"
                         style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}
                       >
-                        <span>도달 불가(orphan) 노드</span>
+                        <span>도달 불가 노드</span>
                         <button
                           className="building-panel__node-card-action"
                           onClick={(event) => {
@@ -713,7 +724,7 @@ export function NPCBrainSection({
                           }}
                           disabled={!primaryStartNode}
                         >
-                          start 연결
+                          시작점에 연결
                         </button>
                       </div>
                     )}
@@ -741,7 +752,7 @@ export function NPCBrainSection({
                     style={{ width: '100%' }}
                   />
                 </FieldRow>
-                <FieldRow label="Outgoing Edge">
+                <FieldRow label="나가는 연결">
                   <select
                     value={selectedEdge?.id ?? ''}
                     onChange={(event) => setSelectedEdgeId(event.target.value || null)}
@@ -788,7 +799,7 @@ export function NPCBrainSection({
                 {(danglingEdges.length > 0 || orphanNodeIds.size > 0) && (
                   <FieldRow label="그래프 상태">
                     <span>
-                      dangling edge {danglingEdges.length} · orphan node {orphanNodeIds.size}
+                      끊어진 연결 {danglingEdges.length} · 고립된 노드 {orphanNodeIds.size}
                     </span>
                   </FieldRow>
                 )}
@@ -799,7 +810,7 @@ export function NPCBrainSection({
                       onClick={recoverAllOrphans}
                       disabled={!primaryStartNode}
                     >
-                      orphan 전체 복구
+                      도달 불가 노드 전체 복구
                     </button>
                     <button
                       className="building-panel__segment-btn"
@@ -822,7 +833,7 @@ export function NPCBrainSection({
                 )}
                 {selectedEdge && (
                   <>
-                    <FieldRow label="Source">
+                    <FieldRow label="시작 노드">
                       <select
                         value={selectedEdge.source}
                         onChange={(event) =>
@@ -840,7 +851,7 @@ export function NPCBrainSection({
                         ))}
                       </select>
                     </FieldRow>
-                    <FieldRow label="Branch">
+                    <FieldRow label="분기">
                       <select
                         value={selectedEdge.branch ?? 'next'}
                         onChange={(event) =>
@@ -851,12 +862,12 @@ export function NPCBrainSection({
                         }
                         style={{ width: '100%' }}
                       >
-                        <option value="next">next</option>
-                        <option value="true">true</option>
-                        <option value="false">false</option>
+                        <option value="next">다음</option>
+                        <option value="true">참</option>
+                        <option value="false">거짓</option>
                       </select>
                     </FieldRow>
-                    <FieldRow label="Target">
+                    <FieldRow label="대상">
                       <select
                         value={selectedEdge.target}
                         onChange={(event) =>
@@ -884,7 +895,7 @@ export function NPCBrainSection({
                 {selectedNode.type === 'condition' &&
                   conditionBranchIssues.has(selectedNode.id) && (
                     <>
-                      <FieldRow label="Branch 검증">
+                      <FieldRow label="분기 검증">
                         <span>{conditionBranchIssues.get(selectedNode.id)?.join(' · ')}</span>
                       </FieldRow>
                       <div className="building-panel__segmented">
@@ -895,7 +906,7 @@ export function NPCBrainSection({
                             (edge) => (edge.branch ?? 'next') === 'true',
                           )}
                         >
-                          true 분기 추가
+                          참 분기 추가
                         </button>
                         <button
                           className="building-panel__segment-btn"
@@ -904,7 +915,7 @@ export function NPCBrainSection({
                             (edge) => (edge.branch ?? 'next') === 'false',
                           )}
                         >
-                          false 분기 추가
+                          거짓 분기 추가
                         </button>
                         <button
                           className="building-panel__segment-btn"
@@ -963,14 +974,14 @@ export function NPCBrainSection({
                       >
                         {NPC_CONDITION_TYPES.map((type) => (
                           <option key={type} value={type}>
-                            {type}
+                            {getNPCBrainLabel(type)}
                           </option>
                         ))}
                       </select>
                     </FieldRow>
                     {selectedNode.condition.type === 'questStatus' && (
                       <>
-                        <FieldRow label="Quest ID">
+                        <FieldRow label="퀘스트 식별자">
                           <input
                             value={selectedNode.condition.questId}
                             onChange={(event) =>
@@ -989,7 +1000,7 @@ export function NPCBrainSection({
                             style={{ width: '100%' }}
                           />
                         </FieldRow>
-                        <FieldRow label="Status">
+                        <FieldRow label="상태">
                           <select
                             value={selectedNode.condition.status}
                             onChange={(event) =>
@@ -1012,7 +1023,7 @@ export function NPCBrainSection({
                           >
                             {NPC_QUEST_STATUS_OPTIONS.map((status) => (
                               <option key={status} value={status}>
-                                {status}
+                                {getNPCBrainLabel(status)}
                               </option>
                             ))}
                           </select>
@@ -1021,7 +1032,7 @@ export function NPCBrainSection({
                     )}
                     {selectedNode.condition.type === 'friendshipAtLeast' && (
                       <>
-                        <FieldRow label="NPC ID(optional)">
+                        <FieldRow label="NPC 식별자(선택)">
                           <input
                             value={selectedNode.condition.npcId ?? ''}
                             onChange={(event) =>
@@ -1044,7 +1055,7 @@ export function NPCBrainSection({
                             style={{ width: '100%' }}
                           />
                         </FieldRow>
-                        <FieldRow label="Score">
+                        <FieldRow label="점수">
                           <input
                             type="number"
                             value={selectedNode.condition.score}
@@ -1163,7 +1174,7 @@ export function NPCBrainSection({
                       >
                         {NPC_ACTION_TYPES.map((type) => (
                           <option key={type} value={type}>
-                            {type}
+                            {getNPCBrainLabel(type)}
                           </option>
                         ))}
                       </select>
@@ -1289,7 +1300,7 @@ export function NPCBrainSection({
                     )}
                     {selectedNode.action.type === 'playAnimation' && (
                       <>
-                        <FieldRow label="Animation ID">
+                        <FieldRow label="애니메이션 식별자">
                           <input
                             value={selectedNode.action.animationId}
                             onChange={(event) =>
@@ -1305,7 +1316,7 @@ export function NPCBrainSection({
                             style={{ width: '100%' }}
                           />
                         </FieldRow>
-                        <FieldRow label="Loop">
+                        <FieldRow label="반복">
                           <input
                             type="checkbox"
                             checked={selectedNode.action.loop ?? false}
@@ -1345,7 +1356,7 @@ export function NPCBrainSection({
                     )}
                     {selectedNode.action.type === 'moveToTarget' && (
                       <>
-                        <FieldRow label="Target">
+                        <FieldRow label="대상">
                           <select
                             value={selectedNode.action.target.type}
                             onChange={(event) =>
@@ -1372,14 +1383,14 @@ export function NPCBrainSection({
                               })
                             }
                           >
-                            <option value="self">self</option>
-                            <option value="nearestPerceived">nearestPerceived</option>
-                            <option value="point">point</option>
+                            <option value="self">자기 자신</option>
+                            <option value="nearestPerceived">가장 가까운 감지 대상</option>
+                            <option value="point">지정 위치</option>
                           </select>
                         </FieldRow>
                         {selectedNode.action.target.type === 'point' && (
                           <>
-                            <FieldRow label="Point X">
+                            <FieldRow label="위치 X">
                               <input
                                 type="number"
                                 value={selectedNode.action.target.value[0]}
@@ -1410,7 +1421,7 @@ export function NPCBrainSection({
                                 style={{ width: '100%' }}
                               />
                             </FieldRow>
-                            <FieldRow label="Point Y">
+                            <FieldRow label="위치 Y">
                               <input
                                 type="number"
                                 value={selectedNode.action.target.value[1]}
@@ -1441,7 +1452,7 @@ export function NPCBrainSection({
                                 style={{ width: '100%' }}
                               />
                             </FieldRow>
-                            <FieldRow label="Point Z">
+                            <FieldRow label="위치 Z">
                               <input
                                 type="number"
                                 value={selectedNode.action.target.value[2]}
@@ -1497,7 +1508,7 @@ export function NPCBrainSection({
                             style={{ width: '100%' }}
                           />
                         </FieldRow>
-                        <FieldRow label="Animation ID">
+                        <FieldRow label="애니메이션 식별자">
                           <input
                             value={selectedNode.action.animationId ?? ''}
                             onChange={(event) =>
@@ -1522,7 +1533,7 @@ export function NPCBrainSection({
                       </>
                     )}
                     {selectedNode.action.type === 'idle' && (
-                      <FieldRow label="Animation ID">
+                      <FieldRow label="애니메이션 식별자">
                         <input
                           value={selectedNode.action.animationId ?? ''}
                           onChange={(event) =>
@@ -1546,7 +1557,7 @@ export function NPCBrainSection({
                       </FieldRow>
                     )}
                     {selectedNode.action.type === 'interact' && (
-                      <FieldRow label="Target ID">
+                      <FieldRow label="대상 식별자">
                         <input
                           value={selectedNode.action.targetId}
                           onChange={(event) =>
@@ -1565,7 +1576,7 @@ export function NPCBrainSection({
                     )}
                     {selectedNode.action.type === 'remember' && (
                       <>
-                        <FieldRow label="Memory Key">
+                        <FieldRow label="기억 키">
                           <input
                             value={selectedNode.action.key}
                             onChange={(event) =>
@@ -1581,7 +1592,7 @@ export function NPCBrainSection({
                             style={{ width: '100%' }}
                           />
                         </FieldRow>
-                        <FieldRow label="Memory Value">
+                        <FieldRow label="기억 값">
                           <input
                             value={String(selectedNode.action.value)}
                             onChange={(event) =>
@@ -1601,7 +1612,7 @@ export function NPCBrainSection({
                     )}
                     {selectedNode.action.type === 'moveTo' && (
                       <>
-                        <FieldRow label="Target X">
+                        <FieldRow label="대상 X">
                           <input
                             type="number"
                             value={selectedNode.action.target[0]}
@@ -1625,7 +1636,7 @@ export function NPCBrainSection({
                             style={{ width: '100%' }}
                           />
                         </FieldRow>
-                        <FieldRow label="Target Y">
+                        <FieldRow label="대상 Y">
                           <input
                             type="number"
                             value={selectedNode.action.target[1]}
@@ -1649,7 +1660,7 @@ export function NPCBrainSection({
                             style={{ width: '100%' }}
                           />
                         </FieldRow>
-                        <FieldRow label="Target Z">
+                        <FieldRow label="대상 Z">
                           <input
                             type="number"
                             value={selectedNode.action.target[2]}
@@ -1700,7 +1711,7 @@ export function NPCBrainSection({
                     )}
                     {selectedNode.action.type === 'lookAt' && (
                       <>
-                        <FieldRow label="Target X">
+                        <FieldRow label="대상 X">
                           <input
                             type="number"
                             value={selectedNode.action.target[0]}
@@ -1724,7 +1735,7 @@ export function NPCBrainSection({
                             style={{ width: '100%' }}
                           />
                         </FieldRow>
-                        <FieldRow label="Target Y">
+                        <FieldRow label="대상 Y">
                           <input
                             type="number"
                             value={selectedNode.action.target[1]}
@@ -1748,7 +1759,7 @@ export function NPCBrainSection({
                             style={{ width: '100%' }}
                           />
                         </FieldRow>
-                        <FieldRow label="Target Z">
+                        <FieldRow label="대상 Z">
                           <input
                             type="number"
                             value={selectedNode.action.target[2]}
@@ -2009,7 +2020,7 @@ export function NPCBrainSection({
                             style={{ width: '100%' }}
                           />
                         </FieldRow>
-                        <FieldRow label="Loop">
+                        <FieldRow label="반복">
                           <input
                             type="checkbox"
                             checked={selectedNode.action.loop ?? true}
@@ -2129,4 +2140,3 @@ export function NPCBrainSection({
     </div>
   );
 }
-

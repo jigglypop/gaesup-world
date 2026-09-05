@@ -70,38 +70,195 @@ export function disposeToonGradients(): void {
   _gradientCache.clear();
 }
 
-const _toonSwappedRoots = new WeakSet<THREE.Object3D>();
+type ToonMaterialValue = THREE.Material | null | undefined;
+
+type ToonMaterialShape = ToonMaterialValue | ToonMaterialValue[];
+
+type ToonCompatibleMesh = Omit<THREE.Mesh, 'material'> & {
+  material: ToonMaterialShape;
+};
+
+type ToonMaterialSlot = {
+  mesh: THREE.Mesh;
+  source: ToonMaterialShape;
+  projected: ToonMaterialShape;
+};
+
+type ToonOwnershipRecord = {
+  replacements: Map<THREE.Material, THREE.MeshToonMaterial>;
+  slots: ToonMaterialSlot[];
+};
+
+const _toonOwnership = new WeakMap<THREE.Object3D, ToonOwnershipRecord>();
+
+function getMeshMaterial(mesh: THREE.Mesh): ToonMaterialShape {
+  return (mesh as unknown as ToonCompatibleMesh).material;
+}
+
+function setMeshMaterial(mesh: THREE.Mesh, material: ToonMaterialShape): void {
+  (mesh as unknown as ToonCompatibleMesh).material = material;
+}
+
+function isToonMaterial(material: THREE.Material): material is THREE.MeshToonMaterial {
+  return (material as THREE.MeshToonMaterial).isMeshToonMaterial === true;
+}
+
+function createSceneToonMaterial(
+  source: THREE.Material,
+  gradient: THREE.DataTexture,
+): THREE.MeshToonMaterial {
+  const standard = source as THREE.MeshStandardMaterial;
+  return new THREE.MeshToonMaterial({
+    color: standard.color?.clone() ?? new THREE.Color('#ffffff'),
+    map: standard.map ?? null,
+    normalMap: standard.normalMap ?? null,
+    alphaMap: standard.alphaMap ?? null,
+    transparent: source.transparent,
+    opacity: source.opacity,
+    side: source.side,
+    emissive: standard.emissive?.clone() ?? new THREE.Color(0x000000),
+    emissiveMap: standard.emissiveMap ?? null,
+    emissiveIntensity: standard.emissiveIntensity ?? 1,
+    gradientMap: gradient,
+  });
+}
+
+function disposeGeneratedMaterials(materials: Iterable<THREE.MeshToonMaterial>): void {
+  let hasError = false;
+  let firstError: unknown;
+  for (const material of materials) {
+    try {
+      material.dispose();
+    } catch (error) {
+      if (!hasError) {
+        hasError = true;
+        firstError = error;
+      }
+    }
+  }
+  if (hasError) throw firstError;
+}
 
 export function applyToonToScene(root: THREE.Object3D, steps: number = 4): void {
-  if (!root || _toonSwappedRoots.has(root)) return;
-  _toonSwappedRoots.add(root);
-  const gradient = getToonGradient(steps);
-  root.traverse((obj) => {
-    const mesh = obj as THREE.Mesh;
-    if (!mesh.isMesh) return;
-    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    const next = mats.map((src) => {
-      if (!src) return src;
-      const m = src as THREE.MeshToonMaterial;
-      if (m.isMeshToonMaterial) return src;
-      const std = src as THREE.MeshStandardMaterial;
-      const toon = new THREE.MeshToonMaterial({
-        color: (std.color && std.color.clone()) || new THREE.Color('#ffffff'),
-        map: std.map ?? null,
-        normalMap: std.normalMap ?? null,
-        alphaMap: std.alphaMap ?? null,
-        transparent: src.transparent,
-        opacity: src.opacity,
-        side: src.side,
-        emissive: (std.emissive && std.emissive.clone()) || new THREE.Color(0x000000),
-        emissiveMap: std.emissiveMap ?? null,
-        emissiveIntensity: std.emissiveIntensity ?? 1,
-        gradientMap: gradient,
-      } as THREE.MeshToonMaterialParameters);
-      return toon;
+  if (!root || _toonOwnership.has(root)) return;
+
+  const replacements = new Map<THREE.Material, THREE.MeshToonMaterial>();
+  const slots: ToonMaterialSlot[] = [];
+  let gradient: THREE.DataTexture | undefined;
+  const project = (source: ToonMaterialValue): ToonMaterialValue => {
+    if (!source) return source;
+    if (isToonMaterial(source)) return source;
+    const existing = replacements.get(source);
+    if (existing) return existing;
+    gradient ??= getToonGradient(steps);
+    const generated = createSceneToonMaterial(source, gradient);
+    replacements.set(source, generated);
+    return generated;
+  };
+
+  try {
+    root.traverse((object) => {
+      const mesh = object as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const source = getMeshMaterial(mesh);
+      if (Array.isArray(source)) {
+        const projected = source.map(project);
+        if (projected.some((material, index) => material !== source[index])) {
+          slots.push({ mesh, source, projected });
+        }
+        return;
+      }
+      const projected = project(source);
+      if (projected !== source) slots.push({ mesh, source, projected });
     });
-    mesh.material = Array.isArray(mesh.material)
-      ? (next as THREE.Material[])
-      : (next[0] as THREE.Material);
-  });
+  } catch (error) {
+    try {
+      disposeGeneratedMaterials(replacements.values());
+    } catch {
+      // Preserve the application error while still attempting every generated material cleanup.
+    }
+    throw error;
+  }
+
+  _toonOwnership.set(root, { replacements, slots });
+  const attempted: ToonMaterialSlot[] = [];
+  try {
+    for (const slot of slots) {
+      attempted.push(slot);
+      setMeshMaterial(slot.mesh, slot.projected);
+    }
+  } catch (error) {
+    _toonOwnership.delete(root);
+    for (let index = attempted.length - 1; index >= 0; index--) {
+      const slot = attempted[index];
+      if (!slot) continue;
+      try {
+        setMeshMaterial(slot.mesh, slot.source);
+      } catch {
+        // Preserve the assignment error while continuing rollback and generated material cleanup.
+      }
+    }
+    try {
+      disposeGeneratedMaterials(replacements.values());
+    } catch {
+      // Preserve the assignment error while still attempting every generated material cleanup.
+    }
+    throw error;
+  }
+}
+
+export function releaseToonFromScene(root: THREE.Object3D): void {
+  const ownership = _toonOwnership.get(root);
+  if (!ownership) return;
+  _toonOwnership.delete(root);
+
+  let hasError = false;
+  let firstError: unknown;
+  const captureError = (error: unknown): void => {
+    if (hasError) return;
+    hasError = true;
+    firstError = error;
+  };
+  const sourcesByGenerated = new Map<THREE.Material, THREE.Material>();
+  for (const [source, generated] of ownership.replacements) {
+    sourcesByGenerated.set(generated, source);
+  }
+  for (const slot of ownership.slots) {
+    try {
+      const current = getMeshMaterial(slot.mesh);
+      if (Array.isArray(current)) {
+        const projected = slot.projected;
+        const canRestoreOriginal =
+          Array.isArray(projected) &&
+          current.length === projected.length &&
+          current.every((material, index) => material === projected[index]);
+        if (canRestoreOriginal) {
+          setMeshMaterial(slot.mesh, slot.source);
+          continue;
+        }
+        let changed = false;
+        const restored = current.map((material) => {
+          if (!material) return material;
+          const source = sourcesByGenerated.get(material);
+          if (!source) return material;
+          changed = true;
+          return source;
+        });
+        if (changed) setMeshMaterial(slot.mesh, restored);
+        continue;
+      }
+      if (!current) continue;
+      const source = sourcesByGenerated.get(current);
+      if (source) setMeshMaterial(slot.mesh, source);
+    } catch (error) {
+      captureError(error);
+    }
+  }
+
+  try {
+    disposeGeneratedMaterials(ownership.replacements.values());
+  } catch (error) {
+    captureError(error);
+  }
+  if (hasError) throw firstError;
 }

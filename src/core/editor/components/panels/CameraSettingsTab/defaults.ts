@@ -30,10 +30,10 @@ const CAMERA_SETTINGS_BOUND_MIN = -10;
 const CAMERA_SETTINGS_BOUND_MAX = 100;
 const CAMERA_SETTINGS_DISTANCE_STEP = 1;
 export const CAMERA_SETTINGS_DEFAULT_LABELS: CameraSettingsLabels = {
-  modePrefix: 'Mode',
-  fallbackMode: 'thirdPerson',
-  enabled: 'On',
-  disabled: 'Off',
+  modePrefix: '모드',
+  fallbackMode: '3인칭',
+  enabled: '켜짐',
+  disabled: '꺼짐',
 };
 export const CAMERA_SETTINGS_DEFAULT_CLASSES: Record<CameraSettingsClassNameSlot, string> = {
   root: 'camera-settings-tab',
@@ -50,7 +50,7 @@ export const CAMERA_SETTINGS_DEFAULT_CLASSES: Record<CameraSettingsClassNameSlot
 export const CAMERA_SETTINGS_DEFAULT_SECTIONS: readonly CameraSettingsSection[] = [
   {
     key: 'distance',
-    title: 'Distance',
+    title: '거리',
     fields: [
       {
         key: 'xDistance',
@@ -86,22 +86,22 @@ export const CAMERA_SETTINGS_DEFAULT_SECTIONS: readonly CameraSettingsSection[] 
   },
   {
     key: 'fov',
-    title: 'FOV / Smoothing',
+    title: '시야각·부드러움',
     fields: [
       {
         key: 'fov',
-        label: 'FOV',
+        label: '시야각',
         kind: 'range',
         path: 'fov',
         min: CAMERA_SETTINGS_FOV_MIN,
         max: CAMERA_SETTINGS_FOV_MAX,
         step: CAMERA_SETTINGS_FOV_STEP,
-        suffix: 'deg',
+        suffix: '도',
         defaultValue: 75,
       },
       {
         key: 'smoothingPosition',
-        label: 'Pos',
+        label: '위치',
         kind: 'range',
         path: 'smoothing.position',
         min: CAMERA_SETTINGS_SMOOTHING_MIN,
@@ -111,7 +111,7 @@ export const CAMERA_SETTINGS_DEFAULT_SECTIONS: readonly CameraSettingsSection[] 
       },
       {
         key: 'smoothingRotation',
-        label: 'Rot',
+        label: '회전',
         kind: 'range',
         path: 'smoothing.rotation',
         min: CAMERA_SETTINGS_SMOOTHING_MIN,
@@ -121,7 +121,7 @@ export const CAMERA_SETTINGS_DEFAULT_SECTIONS: readonly CameraSettingsSection[] 
       },
       {
         key: 'smoothingFov',
-        label: 'FOV Sm',
+        label: '시야각 보간',
         kind: 'range',
         path: 'smoothing.fov',
         min: CAMERA_SETTINGS_SMOOTHING_MIN,
@@ -133,18 +133,18 @@ export const CAMERA_SETTINGS_DEFAULT_SECTIONS: readonly CameraSettingsSection[] 
   },
   {
     key: 'zoom',
-    title: 'Zoom',
+    title: '확대',
     fields: [
       {
         key: 'enableZoom',
-        label: 'Enable Zoom',
+        label: '확대 허용',
         kind: 'checkbox',
         path: 'enableZoom',
         defaultValue: false,
       },
       {
         key: 'zoomSpeed',
-        label: 'Speed',
+        label: '속도',
         kind: 'range',
         path: 'zoomSpeed',
         min: CAMERA_SETTINGS_ZOOM_SPEED_MIN,
@@ -154,7 +154,7 @@ export const CAMERA_SETTINGS_DEFAULT_SECTIONS: readonly CameraSettingsSection[] 
       },
       {
         key: 'minZoom',
-        label: 'Min',
+        label: '최소',
         kind: 'range',
         path: 'minZoom',
         min: CAMERA_SETTINGS_ZOOM_MIN,
@@ -164,7 +164,7 @@ export const CAMERA_SETTINGS_DEFAULT_SECTIONS: readonly CameraSettingsSection[] 
       },
       {
         key: 'maxZoom',
-        label: 'Max',
+        label: '최대',
         kind: 'range',
         path: 'maxZoom',
         min: CAMERA_SETTINGS_MAX_ZOOM_MIN,
@@ -176,25 +176,25 @@ export const CAMERA_SETTINGS_DEFAULT_SECTIONS: readonly CameraSettingsSection[] 
   },
   {
     key: 'options',
-    title: 'Options',
+    title: '옵션',
     fields: [
       {
         key: 'enableCollision',
-        label: 'Collision',
+        label: '충돌',
         kind: 'checkbox',
         path: 'enableCollision',
         defaultValue: false,
       },
       {
         key: 'enableFocus',
-        label: 'Focus Mode',
+        label: '초점 모드',
         kind: 'checkbox',
         path: 'enableFocus',
         defaultValue: false,
       },
       {
         key: 'focusDistance',
-        label: 'Focus Dist',
+        label: '초점 거리',
         kind: 'range',
         path: 'focusDistance',
         min: CAMERA_SETTINGS_FOCUS_MIN,
@@ -204,7 +204,7 @@ export const CAMERA_SETTINGS_DEFAULT_SECTIONS: readonly CameraSettingsSection[] 
       },
       {
         key: 'maxDistance',
-        label: 'Max Dist',
+        label: '최대 거리',
         kind: 'range',
         path: 'maxDistance',
         min: CAMERA_SETTINGS_MAX_DISTANCE_MIN,
@@ -216,11 +216,11 @@ export const CAMERA_SETTINGS_DEFAULT_SECTIONS: readonly CameraSettingsSection[] 
   },
   {
     key: 'bounds',
-    title: 'Bounds',
+    title: '이동 범위',
     fields: [
       {
         key: 'boundsMinY',
-        label: 'Min Y',
+        label: '최소 높이',
         kind: 'range',
         path: 'bounds.minY',
         min: CAMERA_SETTINGS_BOUND_MIN,
@@ -230,7 +230,7 @@ export const CAMERA_SETTINGS_DEFAULT_SECTIONS: readonly CameraSettingsSection[] 
       },
       {
         key: 'boundsMaxY',
-        label: 'Max Y',
+        label: '최대 높이',
         kind: 'range',
         path: 'bounds.maxY',
         min: CAMERA_SETTINGS_MAX_DISTANCE_MIN,

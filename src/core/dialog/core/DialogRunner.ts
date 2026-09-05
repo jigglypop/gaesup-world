@@ -1,30 +1,44 @@
-import { useWalletStore } from '../../economy/stores/walletStore';
-import { useInventoryStore } from '../../inventory/stores/inventoryStore';
-import { getItemRegistry } from '../../items/registry/ItemRegistry';
-import { useQuestStore } from '../../quests/stores/questStore';
-import { useFriendshipStore } from '../../relations/stores/friendshipStore';
-import { useTimeStore } from '../../time/stores/timeStore';
-import { notify } from '../../ui/components/Toast/toastStore';
 import type {
   DialogChoice,
   DialogCondition,
   DialogContext,
   DialogEffect,
   DialogNode,
+  DialogRuntimeAdapter,
   DialogTree,
 } from '../types';
 
 export type DialogRunnerOptions = {
   tree: DialogTree;
   context?: DialogContext;
+  adapter?: DialogRuntimeAdapter;
   onCustomEffect?: (effect: Extract<DialogEffect, { type: 'custom' }>) => void;
   onOpenShop?: (shopId?: string) => void;
+};
+
+const EMPTY_DIALOG_ADAPTER: DialogRuntimeAdapter = {
+  countItem: () => 0,
+  addItem: () => 0,
+  removeItem: () => undefined,
+  getItemName: () => undefined,
+  getBells: () => 0,
+  addBells: () => undefined,
+  spendBells: () => undefined,
+  getFriendshipScore: () => 0,
+  addFriendship: () => undefined,
+  getDay: () => 0,
+  notifyFlag: () => undefined,
+  startQuest: () => undefined,
+  completeQuest: () => undefined,
+  notify: () => undefined,
 };
 
 export class DialogRunner {
   readonly tree: DialogTree;
   readonly context: DialogContext;
   private currentId: string | null;
+  private transitioning = false;
+  private adapter: DialogRuntimeAdapter;
   private onCustomEffect?: DialogRunnerOptions['onCustomEffect'];
   private onOpenShop?: DialogRunnerOptions['onOpenShop'];
 
@@ -32,6 +46,7 @@ export class DialogRunner {
     this.tree = opts.tree;
     this.context = opts.context ?? {};
     this.currentId = opts.tree.startId;
+    this.adapter = opts.adapter ?? EMPTY_DIALOG_ADAPTER;
     this.onCustomEffect = opts.onCustomEffect;
     this.onOpenShop = opts.onOpenShop;
   }
@@ -51,76 +66,83 @@ export class DialogRunner {
 
   advance(): DialogNode | null {
     const node = this.current;
-    if (!node) return null;
-    if (node.effects) for (const e of node.effects) this.applyEffect(e);
-
-    if (node.choices && node.choices.length > 0) return node;
-
-    this.currentId = node.next ?? null;
-    return this.current;
+    if (!node || this.transitioning || this.visibleChoices().length > 0) return node;
+    this.transitioning = true;
+    try {
+      if (node.effects) for (const e of node.effects) this.applyEffect(e);
+      this.currentId = node.next ?? null;
+      return this.current;
+    } finally {
+      this.transitioning = false;
+    }
   }
 
   choose(index: number): DialogNode | null {
     const node = this.current;
-    if (!node?.choices) return node;
+    if (!node?.choices || this.transitioning) return node;
     const visible = this.visibleChoices();
     const choice = visible[index];
     if (!choice) return node;
-    if (choice.effects) for (const e of choice.effects) this.applyEffect(e);
-    this.currentId = choice.next ?? null;
-    return this.current;
+    this.transitioning = true;
+    try {
+      if (choice.effects) for (const e of choice.effects) this.applyEffect(e);
+      this.currentId = choice.next ?? null;
+      return this.current;
+    } finally {
+      this.transitioning = false;
+    }
   }
 
   private checkCondition(cond: DialogCondition): boolean {
     switch (cond.type) {
       case 'hasItem':
-        return useInventoryStore.getState().countOf(cond.itemId) >= (cond.count ?? 1);
+        return this.adapter.countItem(cond.itemId) >= (cond.count ?? 1);
       case 'hasBells':
-        return useWalletStore.getState().bells >= cond.amount;
+        return this.adapter.getBells() >= cond.amount;
       case 'flagEquals':
         return this.context.flags?.[cond.key] === cond.value;
       case 'friendshipAtLeast':
-        return useFriendshipStore.getState().scoreOf(cond.npcId) >= cond.amount;
+        return this.adapter.getFriendshipScore(cond.npcId) >= cond.amount;
       default:
-        return true;
+        cond satisfies never;
+        return false;
     }
   }
 
   private applyEffect(effect: DialogEffect): void {
     switch (effect.type) {
       case 'giveItem': {
-        const def = getItemRegistry().get(effect.itemId);
-        const remaining = useInventoryStore.getState().add(effect.itemId, effect.count ?? 1);
-        if (remaining > 0) notify('warn', '인벤토리가 가득 찼습니다');
-        else notify('reward', `${def?.name ?? effect.itemId} +${effect.count ?? 1}`);
+        const count = effect.count ?? 1;
+        const remaining = this.adapter.addItem(effect.itemId, count);
+        if (remaining > 0) this.adapter.notify('warn', '인벤토리가 가득 찼습니다');
+        else this.adapter.notify('reward', `${this.adapter.getItemName(effect.itemId) ?? effect.itemId} +${count}`);
         return;
       }
       case 'takeItem': {
-        useInventoryStore.getState().removeById(effect.itemId, effect.count ?? 1);
+        this.adapter.removeItem(effect.itemId, effect.count ?? 1);
         return;
       }
       case 'giveBells':
-        useWalletStore.getState().add(effect.amount);
-        notify('reward', `+${effect.amount} B`);
+        this.adapter.addBells(effect.amount);
+        this.adapter.notify('reward', `+${effect.amount} B`);
         return;
       case 'takeBells':
-        useWalletStore.getState().spend(effect.amount);
+        this.adapter.spendBells(effect.amount);
         return;
       case 'setFlag':
         if (!this.context.flags) this.context.flags = {};
         this.context.flags[effect.key] = effect.value;
-        useQuestStore.getState().notifyFlag(effect.key, effect.value);
+        this.adapter.notifyFlag(effect.key, effect.value);
         return;
       case 'addFriendship': {
-        const day = Math.floor(useTimeStore.getState().totalMinutes / (60 * 24));
-        useFriendshipStore.getState().add(effect.npcId, effect.amount, day);
+        this.adapter.addFriendship(effect.npcId, effect.amount, this.adapter.getDay());
         return;
       }
       case 'startQuest':
-        useQuestStore.getState().start(effect.questId);
+        this.adapter.startQuest(effect.questId);
         return;
       case 'completeQuest':
-        useQuestStore.getState().complete(effect.questId);
+        this.adapter.completeQuest(effect.questId);
         return;
       case 'openShop':
         this.onOpenShop?.(effect.shopId);
@@ -129,6 +151,7 @@ export class DialogRunner {
         this.onCustomEffect?.(effect);
         return;
       default:
+        effect satisfies never;
         return;
     }
   }

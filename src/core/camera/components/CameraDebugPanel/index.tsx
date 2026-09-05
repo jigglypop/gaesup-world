@@ -1,4 +1,4 @@
-import React, {
+import {
   useCallback,
   useEffect,
   useMemo,
@@ -36,6 +36,7 @@ import type {
 } from './types';
 import { useStateSystem } from '../../../motions/hooks/useStateSystem';
 import { useGaesupStore } from '../../../stores/gaesupStore';
+import { CAMERA_CONTROLLER_DEFAULT_MODES } from '../CameraController/defaults';
 import './styles.css';
 
 export function CameraDebugPanel({
@@ -117,9 +118,14 @@ export function CameraDebugPanel({
       const value: CameraDebugValue =
         'getValue' in field ? field.getValue() : readMetricValue(metrics, field.key);
       const fieldPrecision = field.precision ?? precision;
+      const displayValue =
+        !('getValue' in field) && (field.key === 'mode' || field.key === 'activeController')
+          ? CAMERA_CONTROLLER_DEFAULT_MODES.find((modeOption) => modeOption.value === value)?.label ??
+            (value === 'unknown' ? labels.unavailable : value)
+          : value;
       const formattedValue =
         formatValue?.(value, field, fieldPrecision) ??
-        formatDebugValue(value, fieldPrecision, labels.unavailable);
+        formatDebugValue(displayValue, fieldPrecision, labels.unavailable);
       return {
         key: field.key,
         label: field.label,

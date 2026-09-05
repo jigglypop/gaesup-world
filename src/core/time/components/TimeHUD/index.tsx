@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { useGameTime } from '../../hooks/useGameTime';
 
 const SEASON_COLOR: Record<string, string> = {

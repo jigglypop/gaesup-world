@@ -6,6 +6,7 @@ import { convertBlueprintToItem } from './utils';
 import { blueprintRegistry, AnyBlueprint, CharacterBlueprint, VehicleBlueprint, AirplaneBlueprint } from '../../../';
 import { useSpawnFromBlueprint } from '../../../hooks/useSpawnFromBlueprint';
 import type { BlueprintRecord, BlueprintValue } from '../../../types';
+import { BLUEPRINT_FIELD_LABELS, BLUEPRINT_TAG_LABELS, BLUEPRINT_TYPE_LABELS } from '../../BlueprintEditor/defaults';
 
 const isRecord = (value: BlueprintValue | AnyBlueprint | undefined): value is BlueprintRecord =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -55,12 +56,12 @@ const setNestedProperty = (
 
 
 const blueprintCategories: BlueprintCategory[] = [
-  { id: 'characters', name: 'Characters', type: 'character', count: 0 },
-  { id: 'vehicles', name: 'Vehicles', type: 'vehicle', count: 0 },
-  { id: 'airplanes', name: 'Airplanes', type: 'airplane', count: 0 },
-  { id: 'animations', name: 'Animations', type: 'animation', count: 0 },
-  { id: 'behaviors', name: 'Behaviors', type: 'behavior', count: 0 },
-  { id: 'items', name: 'Items', type: 'item', count: 0 },
+  { id: 'characters', name: '캐릭터', type: 'character', count: 0 },
+  { id: 'vehicles', name: '차량', type: 'vehicle', count: 0 },
+  { id: 'airplanes', name: '비행기', type: 'airplane', count: 0 },
+  { id: 'animations', name: '애니메이션', type: 'animation', count: 0 },
+  { id: 'behaviors', name: '행동', type: 'behavior', count: 0 },
+  { id: 'items', name: '아이템', type: 'item', count: 0 },
 ];
 
 export type BlueprintPanelProps = {
@@ -79,9 +80,9 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
   
   const { spawnAtCursor, isSpawning } = useSpawnFromBlueprint();
 
-  const allBlueprints = useMemo(() => {
+  const [allBlueprints, setAllBlueprints] = useState(() => {
     return blueprintRegistry.getAll().map(convertBlueprintToItem);
-  }, []);
+  });
 
   const categoriesWithCounts = useMemo(() => {
     const counts: Record<BlueprintType, number> = {
@@ -106,11 +107,12 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
   }, [allBlueprints]);
 
   const filteredBlueprints = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
     return allBlueprints.filter(blueprint => {
       const matchesCategory = blueprint.type === selectedCategory;
-      const matchesSearch = searchQuery === '' || 
-        blueprint.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        blueprint.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesSearch = query === '' ||
+        blueprint.name.toLowerCase().includes(query) ||
+        blueprint.tags.some(tag => tag.toLowerCase().includes(query) || BLUEPRINT_TAG_LABELS.get(tag)?.includes(query));
       return matchesCategory && matchesSearch;
     });
   }, [selectedCategory, searchQuery, allBlueprints]);
@@ -130,6 +132,7 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
   const handleSaveBlueprint = () => {
     if (editingBlueprint) {
       blueprintRegistry.register(editingBlueprint);
+      setAllBlueprints(blueprintRegistry.getAll().map(convertBlueprintToItem));
       setIsEditing(false);
       setIsCreatingNew(false);
       handleBlueprintSelect(editingBlueprint.id);
@@ -138,6 +141,12 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
 
   const handleCancelEdit = () => {
     setIsEditing(false);
+    setIsCreatingNew(false);
+    if (isCreatingNew) {
+      setSelectedBlueprint(null);
+      setEditingBlueprint(null);
+      return;
+    }
     if (selectedBlueprint) {
       const blueprint = blueprintRegistry.get(selectedBlueprint);
       if (blueprint) {
@@ -147,14 +156,15 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
   };
 
   const handleCreateNew = () => {
+    if (!['character', 'vehicle', 'airplane'].includes(selectedCategory)) return;
     let newBlueprint: AnyBlueprint;
     
     const baseProps = {
       id: `custom_${selectedCategory}_${Date.now()}`,
-      name: `New ${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}`,
+      name: `새 ${blueprintCategories.find((category) => category.type === selectedCategory)?.name}`,
       version: '1.0.0',
       tags: ['custom'],
-      description: 'Custom blueprint',
+      description: '사용자 지정 블루프린트',
     };
     
     switch (selectedCategory) {
@@ -252,6 +262,7 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
     const elements: React.ReactElement[] = [];
     
     Object.entries(obj).forEach(([key, value]) => {
+      const label = BLUEPRINT_FIELD_LABELS[key] ?? key;
       const currentPath = [...path, key];
       const pathKey = currentPath.join('.');
       
@@ -259,13 +270,16 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
         elements.push(
           <div key={pathKey} className="property-editor__field">
             <label className="property-editor__label editor-text-small">
-              {key}:
+              {label}:
             </label>
             <input
               type="text"
-              value={value as string}
+              value={path.length === 0 && key === 'type'
+                ? BLUEPRINT_TYPE_LABELS.get(value as string) ?? value as string
+                : value as string}
               disabled
-              className="property-editor__input property-editor__input--disabled"
+              aria-label={label}
+                className="property-editor__input property-editor__input--disabled"
             />
           </div>
         );
@@ -273,7 +287,7 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
         elements.push(
           <div key={pathKey} className="property-editor__group">
             <div className="property-editor__group-title editor-text">
-              {key.charAt(0).toUpperCase() + key.slice(1)}:
+              {label}:
             </div>
             <div className="property-editor__group-content">
               {renderPropertyEditor(value, currentPath)}
@@ -285,12 +299,12 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
           elements.push(
             <div key={pathKey} className="property-editor__group">
               <div className="property-editor__group-title editor-text">
-                {key.charAt(0).toUpperCase() + key.slice(1)}:
+                {label}:
               </div>
               <div className="property-editor__group-content">
                 {value.map((item, index) => (
                   <div key={`${pathKey}.${index}`} className="property-editor__array-item">
-                    <div className="property-editor__array-item-title editor-text-small">Item {index + 1}</div>
+                    <div className="property-editor__array-item-title editor-text-small">항목 {index + 1}</div>
                     {renderPropertyEditor(item, [...currentPath, index.toString()])}
                   </div>
                 ))}
@@ -301,12 +315,13 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
           elements.push(
             <div key={pathKey} className="property-editor__field">
               <label className="property-editor__label editor-text-small">
-                {key}:
+                {label}:
               </label>
               <input
                 type="text"
                 value={value.join(', ')}
                 onChange={(e) => handlePropertyChange(currentPath, e.target.value.split(',').map(s => s.trim()))}
+                aria-label={label}
                 className="property-editor__input"
               />
             </div>
@@ -322,7 +337,7 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
                 onChange={(e) => handlePropertyChange(currentPath, e.target.checked)}
                 className="property-editor__checkbox"
               />
-              {key}
+              {label}
             </label>
           </div>
         );
@@ -330,13 +345,14 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
         elements.push(
           <div key={pathKey} className="property-editor__field">
             <label className="property-editor__label editor-text-small">
-              {key}:
+              {label}:
             </label>
             <input
               type={typeof value === 'number' ? 'number' : 'text'}
               value={value as string | number}
               onChange={(e) => handlePropertyChange(currentPath, typeof value === 'number' ? Number(e.target.value) : e.target.value)}
-              className="property-editor__input"
+              aria-label={label}
+                className="property-editor__input"
             />
           </div>
         );
@@ -355,22 +371,24 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
 
   return (
     <div className={`blueprint-panel ${className}`} style={style}>
-      <h3 className="editor-title">Blueprint Library</h3>
+      <h3 className="editor-title">블루프린트 라이브러리</h3>
       
       <div className="blueprint-panel__toolbar">
         <div className="blueprint-panel__search-container">
         <input
           type="text"
-          placeholder="Search blueprints..."
+          placeholder="블루프린트 검색"
+          aria-label="블루프린트 검색"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="blueprint-panel__search-input"
         />
           <button
             onClick={handleCreateNew}
+            disabled={isEditing || !['character', 'vehicle', 'airplane'].includes(selectedCategory)}
             className="blueprint-panel__button blueprint-panel__button--primary"
           >
-            + New Blueprint
+            + 새 블루프린트
           </button>
         </div>
       </div>
@@ -379,6 +397,8 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
         {categoriesWithCounts.map((category) => (
           <button
             key={category.id}
+            aria-pressed={selectedCategory === category.type}
+            disabled={isEditing}
             onClick={() => setSelectedCategory(category.type)}
             className={`blueprint-panel__category-button ${selectedCategory === category.type ? 'blueprint-panel__category-button--active' : ''}`}
           >
@@ -393,40 +413,42 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
         <div className="blueprint-panel__list editor-scrollbar">
           {filteredBlueprints.length === 0 ? (
             <div className="blueprint-panel__empty-message editor-text-small">
-              No blueprints found
+              조건에 맞는 블루프린트가 없습니다.
             </div>
           ) : (
             filteredBlueprints.map((blueprint) => (
-              <div
+              <button
+                type="button"
                 key={blueprint.id}
+                aria-pressed={selectedBlueprint === blueprint.id}
                 onClick={() => handleBlueprintSelect(blueprint.id)}
                 className={`blueprint-panel__list-item ${selectedBlueprint === blueprint.id ? 'blueprint-panel__list-item--selected' : ''}`}
               >
-                <div className="list-item__content">
-                  <div className="list-item__text-content">
-                    <div className="list-item__name editor-text">
+                <span className="list-item__content">
+                  <span className="list-item__text-content">
+                    <span className="list-item__name editor-text">
                       {blueprint.name}
-                    </div>
-                    <div className="list-item__description editor-text-small">
+                    </span>
+                    <span className="list-item__description editor-text-small">
                       {blueprint.description}
-                    </div>
-                    <div className="list-item__tags">
+                    </span>
+                    <span className="list-item__tags">
                       {blueprint.tags.map((tag) => (
                         <span
                           key={tag}
                           className="list-item__tag editor-text-small"
                         >
-                          {tag}
+                          {BLUEPRINT_TAG_LABELS.get(tag) ?? tag}
                         </span>
                       ))}
-                    </div>
-                  </div>
-                  <div className="list-item__meta editor-text-small">
-                    <div>v{blueprint.version}</div>
-                    <div>{blueprint.lastModified}</div>
-                  </div>
-                </div>
-              </div>
+                    </span>
+                  </span>
+                  <span className="list-item__meta editor-text-small">
+                    <span>v{blueprint.version}</span>
+                    <span>{blueprint.lastModified}</span>
+                  </span>
+                </span>
+              </button>
             ))
           )}
         </div>
@@ -438,14 +460,14 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
               onClick={handleEditBlueprint}
               className="blueprint-panel__button blueprint-panel__button--secondary"
             >
-              Edit Blueprint
+              블루프린트 편집
             </button>
             <button
               onClick={handleSpawnEntity}
               disabled={isSpawning}
               className="blueprint-panel__button blueprint-panel__button--primary"
             >
-              {isSpawning ? 'Spawning...' : 'Spawn Entity'}
+              {isSpawning ? '생성 중...' : '엔티티 생성'}
             </button>
           </div>
             </div>
@@ -457,7 +479,7 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
               {editingBlueprint && (
                 <div>
                   <h4 className="blueprint-panel__property-editor-title editor-text">
-                    {isCreatingNew ? 'Create New Blueprint' : `Edit: ${editingBlueprint.name}`}
+                    {isCreatingNew ? '새 블루프린트 만들기' : `편집: ${editingBlueprint.name}`}
                   </h4>
                   {renderPropertyEditor(editingBlueprint as BlueprintRecord)}
                 </div>
@@ -470,13 +492,13 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
               onClick={handleSaveBlueprint}
               className="blueprint-panel__button blueprint-panel__button--primary"
             >
-              {isCreatingNew ? 'Create' : 'Save'}
+              {isCreatingNew ? '만들기' : '적용'}
             </button>
             <button
               onClick={handleCancelEdit}
               className="blueprint-panel__button blueprint-panel__button--danger"
             >
-              Cancel
+              취소
             </button>
           </div>
         </div>

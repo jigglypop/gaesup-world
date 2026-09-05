@@ -48,7 +48,7 @@ export function markEditorDirty(status: EditorSaveStatus, now = Date.now()): Edi
     state: 'dirty',
     dirty: true,
     lastChangedAt: now,
-    message: 'Unsaved changes',
+    message: '저장하지 않은 변경 사항',
     ...(nextAutosaveAt !== undefined ? { nextAutosaveAt } : {}),
   };
 }
@@ -60,7 +60,7 @@ export function markEditorSaving(status: EditorSaveStatus): EditorSaveStatus {
     ...rest,
     state: 'saving',
     dirty: true,
-    message: 'Saving',
+    message: '저장 중',
   };
 }
 
@@ -73,7 +73,7 @@ export function markEditorSaved(status: EditorSaveStatus, now = Date.now()): Edi
     state: 'saved',
     dirty: false,
     lastSavedAt: now,
-    message: 'Saved',
+    message: '저장 완료',
   };
 }
 
@@ -82,7 +82,7 @@ export function markEditorSaveError(status: EditorSaveStatus, error: string): Ed
     ...status,
     state: 'error',
     dirty: true,
-    message: 'Save failed',
+    message: '저장 실패',
     error,
   };
 }
@@ -103,22 +103,22 @@ export function shouldRunEditorAutosave(status: EditorSaveStatus, now = Date.now
 }
 
 export function getEditorSaveStatusLabel(status: EditorSaveStatus, now = Date.now()): string {
-  if (status.state === 'saving') return 'Saving';
-  if (status.state === 'error') return status.error ? `Error: ${status.error}` : 'Save failed';
+  if (status.state === 'saving') return '저장 중';
+  if (status.state === 'error') return status.error ? `저장 실패: ${status.error}` : '저장 실패';
   if (!status.dirty) {
-    if (status.lastSavedAt) return `Saved ${formatRelativeSeconds(now - status.lastSavedAt)} ago`;
-    return status.state === 'saved' ? 'Saved' : 'Clean';
+    if (status.lastSavedAt) return `${formatRelativeSeconds(now - status.lastSavedAt)} 전 저장됨`;
+    return status.state === 'saved' ? '저장 완료' : '변경 사항 없음';
   }
   if (status.autosaveEnabled && status.nextAutosaveAt) {
     const remainingMs = Math.max(0, status.nextAutosaveAt - now);
-    return `Unsaved, autosave in ${formatRelativeSeconds(remainingMs)}`;
+    return `저장 대기 · ${formatRelativeSeconds(remainingMs)} 후 자동 저장`;
   }
-  return 'Unsaved changes';
+  return '저장하지 않은 변경 사항';
 }
 
 function formatRelativeSeconds(ms: number): string {
   const seconds = Math.max(0, Math.ceil(ms / 1000));
-  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 60) return `${seconds}초`;
   const minutes = Math.ceil(seconds / 60);
-  return `${minutes}m`;
+  return `${minutes}분`;
 }

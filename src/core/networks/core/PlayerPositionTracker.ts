@@ -24,6 +24,7 @@ export class PlayerPositionTracker {
   private lastAnimation = 'idle';
   private velocity = new THREE.Vector3();
   private lastUpdateTime = 0;
+  private hasSentSnapshot = false;
   private config: PlayerTrackingConfig;
   private tempPos = new THREE.Vector3();
   private tempRot = new THREE.Quaternion();
@@ -108,8 +109,14 @@ export class PlayerPositionTracker {
     const hasPositionChanged = !this.lastPosition.equals(this.tempPos);
     const hasRotationChanged = !this.lastRotation.equals(this.tempSendRot);
     const hasAnimationChanged = this.lastAnimation !== currentAnimation;
+    const hasVelocityChanged = this.scratchUpdate.velocity[0] !== this.velocity.x
+      || this.scratchUpdate.velocity[1] !== this.velocity.y
+      || this.scratchUpdate.velocity[2] !== this.velocity.z;
+    const hasIdentityChanged = this.scratchUpdate.name !== playerName
+      || this.scratchUpdate.color !== playerColor
+      || this.scratchUpdate.modelUrl !== modelUrl;
 
-    if (!hasPositionChanged && !hasRotationChanged && !hasAnimationChanged) {
+    if (this.hasSentSnapshot && !hasPositionChanged && !hasRotationChanged && !hasAnimationChanged && !hasVelocityChanged && !hasIdentityChanged) {
       return null;
     }
 
@@ -134,6 +141,7 @@ export class PlayerPositionTracker {
     this.lastRotation.copy(this.tempSendRot);
     this.lastAnimation = currentAnimation;
     this.lastUpdateTime = now;
+    this.hasSentSnapshot = true;
 
     return updateData;
   }
@@ -148,6 +156,7 @@ export class PlayerPositionTracker {
     this.lastAnimation = 'idle';
     this.velocity.set(0, 0, 0);
     this.lastUpdateTime = 0;
+    this.hasSentSnapshot = false;
     this.baseYaw = null;
   }
 } 

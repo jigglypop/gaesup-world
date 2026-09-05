@@ -4,6 +4,7 @@ import {
   type BuildingHydrationTarget,
 } from '../persistence';
 import type { BuildingSerializedState } from '../../types';
+import { useBuildingStore } from '../buildingStore';
 
 function createTarget(): BuildingHydrationTarget {
   return {
@@ -28,6 +29,94 @@ function createTarget(): BuildingHydrationTarget {
 }
 
 describe('building persistence helpers', () => {
+  it.each([NaN, Infinity, -Infinity, null, '1'])('rejects invalid coordinates before cloning: %s', (coordinate) => {
+    for (const field of ['x', 'y', 'z']) {
+      const position = { x: 0, y: 0, z: 0, [field]: coordinate };
+      for (const data of [
+        { tileGroups: [{ id: 'tiles', tiles: [{ id: 'tile', position }] }] },
+        { wallGroups: [{ id: 'walls', walls: [{ id: 'wall', position, rotation: { x: 0, y: 0, z: 0 } }] }] },
+        { blocks: [{ id: 'block', position }] },
+        { objects: [{ id: 'object', type: 'fire', position }] },
+      ]) {
+        const previous = useBuildingStore.getState();
+        expect(() => previous.prepareHydrate(data as unknown as BuildingSerializedState)).toThrow(RangeError);
+        expect(useBuildingStore.getState()).toBe(previous);
+      }
+    }
+  });
+
+  it.each([0, -1, NaN, Infinity, null])('rejects invalid tile and block dimensions: %s', (size) => {
+    const position = { x: 0, y: 0, z: 0 };
+    for (const data of [
+      { tileGroups: [{ id: 'tiles', tiles: [{ id: 'tile', position, size }] }] },
+      { blocks: [{ id: 'block', position, size: { y: size } }] },
+    ]) {
+      const previous = useBuildingStore.getState();
+      expect(() => previous.prepareHydrate(data as unknown as BuildingSerializedState)).toThrow(RangeError);
+      expect(useBuildingStore.getState()).toBe(previous);
+    }
+  });
+
+  it('prepares an owned building snapshot without changing the live store', () => {
+    const previous = useBuildingStore.getState();
+    const listener = jest.fn();
+    const unsubscribe = useBuildingStore.subscribe(listener);
+    try {
+      const data: Partial<BuildingSerializedState> = { objects: [{ id: 'fire', type: 'fire', position: { x: 1, y: 0, z: 0 } }] };
+      const apply = previous.prepareHydrate(data);
+      expect(useBuildingStore.getState()).toBe(previous);
+      expect(listener).not.toHaveBeenCalled();
+      expect(Object.isFrozen(data.objects![0]!.position)).toBe(false);
+      data.objects![0]!.position.x = 99;
+      useBuildingStore.setState({ editMode: 'wall' });
+      apply();
+      expect(useBuildingStore.getState().objects[0]!.position.x).toBe(1);
+      expect(useBuildingStore.getState().editMode).toBe('wall');
+    } finally {
+      unsubscribe();
+      useBuildingStore.setState(previous, true);
+    }
+  });
+
+  it.each([{ x: 1e20, size: 1 }, { x: 0, size: 1000 }])('preserves the store when spatial work is rejected: %j', ({ x, size }) => {
+    const previous = useBuildingStore.getState();
+    try {
+      useBuildingStore.setState({ meshes: new Map([['existing', { id: 'existing', color: '#fff', material: 'STANDARD' }]]) });
+      const before = useBuildingStore.getState();
+      expect(() => before.hydrate({ tileGroups: [{
+        id: 'tiles', name: 'Tiles', floorMeshId: 'existing',
+        tiles: [{ id: 'tile', tileGroupId: 'tiles', position: { x, y: 0, z: 0 }, size }],
+      }] })).toThrow(RangeError);
+      expect(useBuildingStore.getState()).toBe(before);
+      expect(useBuildingStore.getState().meshes.has('existing')).toBe(true);
+    } finally {
+      useBuildingStore.setState(previous, true);
+    }
+  });
+
+  it.each([
+    {}, { version: 1 }, { unexpected: true }, [], 'invalid', false,
+    { version: 2, meshes: [] }, { meshes: {} }, { blocks: null },
+    { meshes: [], objects: 'invalid' }, { meshes: [], showFog: 'false' },
+    { meshes: [], weatherEffect: 'unknown' }, { meshes: [], worldSurface: 'unknown' },
+  ])('rejects malformed envelopes before changing existing buildings: %j', (invalid) => {
+    const target = createTarget();
+    target.meshes.set('existing', { id: 'existing', color: '#fff', material: 'STANDARD' });
+    const before = serializeBuildingState(target);
+    expect(() => hydrateBuildingState(target, invalid as unknown as BuildingSerializedState)).toThrow();
+    expect(serializeBuildingState(target)).toEqual(before);
+    expect(target.initialized).toBe(false);
+  });
+
+  it('accepts explicit empty collections and legacy partial snapshots', () => {
+    const target = createTarget();
+    target.meshes.set('existing', { id: 'existing', color: '#fff', material: 'STANDARD' });
+    hydrateBuildingState(target, { meshes: [] });
+    expect(target.meshes.size).toBe(0);
+    hydrateBuildingState(target, { worldSurface: 'water' });
+    expect(target.worldSurface).toBe('water');
+  });
+
   it('serializes maps and arrays without exposing mutable block and object references', () => {
     const target = createTarget();
     target.meshes.set('mesh', { id: 'mesh', color: '#fff', material: 'STANDARD' });

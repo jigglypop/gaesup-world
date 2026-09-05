@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { euler } from '@react-three/rapier';
 import * as THREE from 'three';
@@ -16,6 +16,11 @@ import {
   useStateSystem,
 } from 'gaesup-world';
 import { WARRIOR_BLUEPRINT } from 'gaesup-world/blueprints';
+import {
+  applyNPCNavigationRoute,
+  NavigationSystem,
+  type Waypoint,
+} from 'gaesup-world/navigation';
 
 import { CHARACTER_URL } from '../../config/constants';
 
@@ -60,6 +65,64 @@ export function Player() {
       excludeBaseNodes={excludeBaseNodes}
       rotation={euler({ x: 0, y: Math.PI, z: 0 })}
     />
+  );
+}
+
+const NAVIGATION_PROBE_TARGET: Waypoint = [14, 0, -14];
+const NAVIGATION_PROBE_MARKER_HEIGHT = 0.3;
+
+export function NavigationRouteProbe() {
+  const [route, setRoute] = useState<Waypoint[]>([]);
+  const { position } = usePlayerPosition({ updateInterval: 200 });
+  const positionRef = useRef(position);
+  const routeRef = useRef<Waypoint[]>([]);
+  positionRef.current = position;
+
+  useEffect(() => {
+    const clearRoute = () => {
+      routeRef.current = [];
+      setRoute([]);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'n' && e.key !== 'N') return;
+      if (routeRef.current.length > 0) {
+        clearRoute();
+        return;
+      }
+      const navigation = NavigationSystem.getInstance();
+      const current = positionRef.current;
+      applyNPCNavigationRoute(
+        navigation,
+        {
+          id: 'example-player-route-probe',
+          position: [current.x, current.y, current.z],
+        },
+        NAVIGATION_PROBE_TARGET,
+        (_instanceId, waypoints) => {
+          routeRef.current = waypoints;
+          setRoute(waypoints);
+        },
+        { includeStart: true, clearOnFail: true, clearNavigation: clearRoute },
+      );
+    };
+    window.addEventListener('keypress', onKey);
+    return () => window.removeEventListener('keypress', onKey);
+  }, []);
+
+  if (route.length === 0) return null;
+
+  return (
+    <group>
+      {route.map((waypoint, index) => (
+        <mesh
+          key={`route-probe-${index}`}
+          position={[waypoint[0], waypoint[1] + NAVIGATION_PROBE_MARKER_HEIGHT, waypoint[2]]}
+        >
+          <sphereGeometry args={[0.18, 12, 12]} />
+          <meshStandardMaterial color="#7bd3a7" emissive="#2a6a4a" />
+        </mesh>
+      ))}
+    </group>
   );
 }
 

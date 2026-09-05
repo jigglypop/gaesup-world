@@ -2,12 +2,12 @@ import { CharacterBlueprint } from '../types';
 
 export const WARRIOR_BLUEPRINT: CharacterBlueprint = {
   id: 'char_warrior_basic',
-  name: 'Basic Warrior',
+  name: '기본 전사',
   type: 'character',
   version: '1.0.0',
   tags: ['melee', 'tank', 'starter'],
-  description: 'A basic warrior character with sword and shield',
-  
+  description: '검과 방패를 사용하는 기본 전사입니다.',
+
   physics: {
     mass: 80,
     height: 1.8,
@@ -17,15 +17,15 @@ export const WARRIOR_BLUEPRINT: CharacterBlueprint = {
     runSpeed: 10,
     airControl: 0.2
   },
-  
+
   animations: {
-    idle: 'warrior_idle.glb',
-    walk: 'warrior_walk.glb',
-    run: 'warrior_run.glb',
+    idle: 'idle',
+    walk: 'walk',
+    run: 'run',
     jump: {
-      start: 'warrior_jump_start.glb',
-      loop: 'warrior_jump_loop.glb',
-      land: 'warrior_jump_land.glb'
+      start: 'jump',
+      loop: 'jumpIdle',
+      land: 'land'
     },
     combat: {
       attack_light: ['attack_1.glb', 'attack_2.glb', 'attack_3.glb'],
@@ -34,7 +34,7 @@ export const WARRIOR_BLUEPRINT: CharacterBlueprint = {
       parry: 'parry.glb'
     }
   },
-  
+
   behaviors: {
     type: 'state-machine',
     data: {
@@ -60,7 +60,7 @@ export const WARRIOR_BLUEPRINT: CharacterBlueprint = {
       }
     }
   },
-  
+
   stats: {
     health: 100,
     stamina: 50,
@@ -68,7 +68,7 @@ export const WARRIOR_BLUEPRINT: CharacterBlueprint = {
     defense: 12,
     speed: 10
   },
-  
+
   visuals: {
     parts: [
       {
@@ -84,7 +84,7 @@ export const WARRIOR_BLUEPRINT: CharacterBlueprint = {
     ],
     scale: 1.0
   },
-  
+
   camera: {
     mode: 'thirdPerson',
     distance: { x: 15, y: 8, z: 15 },
@@ -96,11 +96,11 @@ export const WARRIOR_BLUEPRINT: CharacterBlueprint = {
     minZoom: 0.5,
     maxZoom: 2.0
   },
-  
+
   controls: {
     enableKeyboard: true,
     enableMouse: true,
     enableGamepad: false,
     clickToMove: true
   }
-}; 
+};

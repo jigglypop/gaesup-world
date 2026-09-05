@@ -1,11 +1,16 @@
-import React, { useLayoutEffect } from 'react';
+import { useLayoutEffect } from 'react';
 
 import { useBuildingStore, useGaesupStore } from 'gaesup-world';
 
+import type { WorldPageProps } from './types';
 import { WorldPage } from './World';
+import { AssetCatalogPanel } from '../components/assets/AssetCatalogPanel';
 import { CAMERA_PRESETS } from '../components/info/constants';
 
 const SAMPLE_BLOCK_SIZE = 4;
+const SHOWCASE_EDITOR_OPTIONS: NonNullable<WorldPageProps['editorShellOptions']> = {
+  hiddenBuiltInPanels: ['vehicle'],
+};
 const SAMPLE_BLOCKS = [
   {
     id: 'showcase-block-a',
@@ -55,5 +60,9 @@ export function ShowcasePage() {
     seedSampleBlocks();
   }, []);
 
-  return <WorldPage showEditor showHud />;
+  return (
+    <WorldPage showDiagnostics showEditor showHud editorShellOptions={SHOWCASE_EDITOR_OPTIONS}>
+      <AssetCatalogPanel />
+    </WorldPage>
+  );
 }

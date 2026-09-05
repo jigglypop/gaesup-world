@@ -20,7 +20,7 @@ describe('AnimationBridge', () => {
       stopAnimation: jest.fn(),
       getState: jest
         .fn()
-        .mockReturnValue({ currentAnimation: 'idle', isPlaying: false, currentWeight: 1 }),
+        .mockReturnValue({ currentAnimation: 'idle', isPlaying: false, currentWeight: 1, actions: new Map() }),
       getMetrics: jest.fn().mockReturnValue({ activeAnimations: 0, totalActions: 0 }),
       getAnimationList: jest.fn().mockReturnValue([]),
       subscribe: jest.fn().mockReturnValue(jest.fn()),
@@ -82,4 +82,4 @@ describe('AnimationBridge', () => {
     bridge.dispose();
     expect(mockEngineInstance.dispose).toHaveBeenCalledTimes(3);
   });
-}); 
+});

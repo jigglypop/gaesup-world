@@ -20,6 +20,8 @@ export type Part = {
   slot?: string;
   url: string;
   color?: string;
+  /** Base-model node names to hide while this part is equipped (from asset `hideBodyRegions`). */
+  hideNodeNames?: string[];
 };
 
 export type ModelRendererProps = {

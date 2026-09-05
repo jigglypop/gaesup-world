@@ -6,6 +6,11 @@ require("@testing-library/jest-dom");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 require("reflect-metadata");
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { TextEncoder, TextDecoder } = require("node:util");
+globalThis.TextEncoder ??= TextEncoder;
+globalThis.TextDecoder ??= TextDecoder;
+
 // React 18+ requires this flag to suppress "act environment" warnings.
 // Some @react-three/fiber effects schedule updates on mount.
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;

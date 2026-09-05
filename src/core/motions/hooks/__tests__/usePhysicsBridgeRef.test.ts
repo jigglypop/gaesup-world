@@ -57,4 +57,8 @@ describe('usePhysicsBridge calcProp 재사용', () => {
     const src = read();
     expect(src).toMatch(/motionsRuntime\s*===\s*fallbackRuntime[\s\S]*subscribeLegacyTeleportEvents/);
   });
+
+  test('모든 physics bridge 경로에서 전역 고정 ID를 제거한다', () => {
+    expect(read()).not.toContain('global-physics');
+  });
 });

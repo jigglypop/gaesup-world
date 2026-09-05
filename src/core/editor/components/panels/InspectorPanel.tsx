@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import type { EditorPanelBaseProps } from './types';
 import type {
@@ -33,7 +33,7 @@ export function InspectorPanel({
   sceneDocument,
   selectedObjectId,
   selectedObject,
-  emptyLabel = 'Select a scene object',
+  emptyLabel = '장면에서 객체를 선택하세요',
   onUpdateObject,
   onAddComponent,
   onRemoveComponent,
@@ -77,41 +77,55 @@ export function InspectorPanel({
       </div>
 
       <section className="prop-group">
-        <h4 className="prop-group-title">Object</h4>
+        <h4 className="prop-group-title">객체</h4>
         <TextProperty
-          label="Name"
+          label="이름"
           value={object.name}
           onChange={(name) => onUpdateObject?.(object.id, { name })}
         />
         <TextProperty
-          label="Layer"
+          label="레이어"
           value={object.layer ?? ''}
           onChange={(layer) => onUpdateObject?.(object.id, { layer: layer || undefined })}
         />
-        <TextProperty
-          label="Tags"
-          value={object.tags.join(', ')}
-          onChange={(value) => onUpdateObject?.(object.id, {
-            tags: value.split(',').map((tag) => tag.trim()).filter(Boolean),
-          })}
-        />
-        <ReadOnlyProperty label="Parent" value={object.parentId ?? 'Root'} />
+        <label className="prop-item">
+          <span className="prop-label">태그</span>
+          <span className="prop-value">
+            <input
+              key={JSON.stringify([object.id, object.tags])}
+              type="text"
+              defaultValue={object.tags.join(', ')}
+              placeholder="쉼표로 구분해서 입력"
+              onBlur={(event) => {
+                const tags = event.target.value.split(',').map((tag) => tag.trim()).filter(Boolean);
+                event.target.value = tags.join(', ');
+                if (tags.length !== object.tags.length || tags.some((tag, index) => tag !== object.tags[index])) {
+                  onUpdateObject?.(object.id, { tags });
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.nativeEvent.isComposing) event.currentTarget.blur();
+              }}
+            />
+          </span>
+        </label>
+        <ReadOnlyProperty label="상위 객체" value={object.parentId ?? '최상위'} />
       </section>
 
-      <section className="prop-group">
-        <h4 className="prop-group-title">Transform</h4>
+      <section key={object.id} className="prop-group">
+        <h4 className="prop-group-title">위치·회전·크기</h4>
         <VectorProperty
-          label="Position"
+          label="위치"
           value={object.transform.position}
           onChange={(index, value) => updateTransformVector('position', index, value)}
         />
         <VectorProperty
-          label="Rotation"
+          label="회전 (라디안)"
           value={object.transform.rotation}
           onChange={(index, value) => updateTransformVector('rotation', index, value)}
         />
         <VectorProperty
-          label="Scale"
+          label="배율"
           value={object.transform.scale}
           onChange={(index, value) => updateTransformVector('scale', index, value)}
         />
@@ -119,12 +133,12 @@ export function InspectorPanel({
 
       <section className="prop-group">
         <div className="inspector-section-header">
-          <h4 className="prop-group-title">Components</h4>
+          <h4 className="prop-group-title">구성 요소</h4>
           <span className="object-tag">{object.components.length}</span>
         </div>
         <div className="inspector-component-list">
           {object.components.length === 0 ? (
-            <div className="inspector-component-empty">No components</div>
+            <div className="inspector-component-empty">구성 요소가 없습니다</div>
           ) : object.components.map((component) => (
             <ComponentRow
               key={component.id}
@@ -138,11 +152,11 @@ export function InspectorPanel({
             type="text"
             value={newComponentType}
             onChange={(event) => setNewComponentType(event.target.value)}
-            placeholder="component.type"
-            aria-label="New component type"
+            placeholder="구성 요소 유형 (예: game.health)"
+            aria-label="새 구성 요소 유형"
           />
           <button type="button" onClick={addComponent} disabled={!newComponentType.trim()}>
-            Add
+            추가
           </button>
         </div>
       </section>
@@ -197,10 +211,22 @@ function VectorProperty({
           <label key={`${label}-${VECTOR_LABELS[index]}`} className="vector-input__field">
             <span>{VECTOR_LABELS[index]}</span>
             <input
+              key={entry}
               type="number"
+              step="any"
               aria-label={`${label} ${VECTOR_LABELS[index]}`}
-              value={entry}
-              onChange={(event) => onChange(index, Number(event.target.value))}
+              defaultValue={entry}
+              onBlur={(event) => {
+                const next = event.currentTarget.valueAsNumber;
+                if (!Number.isFinite(next)) {
+                  event.currentTarget.value = String(entry);
+                  return;
+                }
+                if (next !== entry) onChange(index, next);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.nativeEvent.isComposing) event.currentTarget.blur();
+              }}
             />
           </label>
         ))}
@@ -223,7 +249,7 @@ function ComponentRow({
           <strong>{component.type}</strong>
           <span>{component.id}</span>
         </div>
-        <button type="button" onClick={onRemove}>Remove</button>
+        <button type="button" onClick={onRemove}>삭제</button>
       </header>
       <pre>{JSON.stringify(component.data, null, 2)}</pre>
     </article>

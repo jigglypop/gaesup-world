@@ -128,8 +128,8 @@ export function FeatureAccessPanel() {
         <span style={hintStyle}>바닥을 클릭하면 이동합니다</span>
       </header>
 
-      <section style={sectionStyle}>
-        <div style={sectionTitleStyle}>캐릭터</div>
+      <details style={sectionStyle}>
+        <summary style={sectionTitleStyle}>캐릭터 꾸미기</summary>
         <div style={gridStyle}>
           <button type="button" style={buttonStyle} onClick={() => dispatchToggleKey('o')}>꾸미기</button>
           <button type="button" style={buttonStyle} onClick={() => setFace(face === 'wink' ? 'smile' : 'wink')}>표정</button>
@@ -151,40 +151,36 @@ export function FeatureAccessPanel() {
           <button type="button" style={buttonStyle} onClick={() => equipOutfit('accessory', 'starter-accessory-ring')}>반지</button>
           <button type="button" style={buttonStyle} onClick={clearOutfit}>장비 비우기</button>
         </div>
-      </section>
+      </details>
 
-      <section style={sectionStyle}>
-        <div style={sectionTitleStyle}>탈것</div>
+      <details style={sectionStyle}>
+        <summary style={sectionTitleStyle}>생활 도구</summary>
         <div style={gridStyle}>
-          <button type="button" style={buttonStyle} onClick={() => goToDestination('vehicle-pad')}>차량 위치</button>
+          <button type="button" style={buttonStyle} onClick={() => dispatchToggleKey('i')}>가방 열기 [I]</button>
+          <button type="button" style={buttonStyle} onClick={() => dispatchToggleKey('v')}>제작대 열기 [V]</button>
+          <button type="button" style={buttonStyle} onClick={() => dispatchToggleKey('j')}>퀘스트 보기 [J]</button>
+          <button type="button" style={buttonStyle} onClick={() => dispatchToggleKey('m')}>우편함 열기 [M]</button>
+          <button type="button" style={buttonStyle} onClick={() => dispatchToggleKey('k')}>도감 보기 [K]</button>
+        </div>
+      </details>
+
+      <details style={sectionStyle}>
+        <summary style={sectionTitleStyle}>탈것 타기</summary>
+        <div style={gridStyle}>
           <button type="button" style={buttonStyle} onClick={() => mountRideable(VEHICLE_KEY, 'vehicle', '차량')}>차량 탑승</button>
-          <button type="button" style={buttonStyle} onClick={() => goToDestination('airplane-pad')}>비행기 위치</button>
           <button type="button" style={buttonStyle} onClick={() => mountRideable(AIRPLANE_KEY, 'airplane', '비행기')}>비행기 탑승</button>
           <button type="button" style={buttonStyle} onClick={exitRide}>내리기</button>
         </div>
-      </section>
+      </details>
 
-      <section style={sectionStyle}>
-        <div style={sectionTitleStyle}>이동</div>
-        <div style={gridStyle}>
-          {TELEPORT_POINTS.map((point) => (
-            <button key={point.id} type="button" style={buttonStyle} onClick={() => goToDestination(point.id)}>
-              {point.name}
-            </button>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }
 
 const panelStyle: CSSProperties = {
-  position: 'fixed',
-  left: 16,
-  top: 84,
-  zIndex: 24,
-  width: 320,
-  maxHeight: 'calc(100vh - 296px)',
+  boxSizing: 'border-box',
+  width: '100%',
+  maxHeight: '38vh',
   overflowY: 'auto',
   display: 'flex',
   flexDirection: 'column',
@@ -200,6 +196,7 @@ const panelStyle: CSSProperties = {
 
 const headerStyle: CSSProperties = {
   display: 'flex',
+  flexWrap: 'wrap',
   alignItems: 'baseline',
   justifyContent: 'space-between',
   gap: 12,
@@ -208,20 +205,18 @@ const headerStyle: CSSProperties = {
 const hintStyle: CSSProperties = {
   color: 'rgba(255,255,255,0.62)',
   fontSize: 11,
-  whiteSpace: 'nowrap',
 };
 
 const sectionStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 6,
+  borderTop: '1px solid rgba(255,255,255,0.16)',
 };
 
 const sectionTitleStyle: CSSProperties = {
-  color: 'rgba(255,255,255,0.7)',
-  fontSize: 11,
+  color: 'rgba(255,255,255,0.85)',
+  fontSize: 12,
   fontWeight: 800,
-  textTransform: 'uppercase',
+  padding: '12px 0',
+  cursor: 'pointer',
 };
 
 const gridStyle: CSSProperties = {

@@ -1,3 +1,5 @@
+export type CameraProps = { enableMouse?: boolean };
+
 export type {
   CameraDebugPanelClassNameSlot,
   CameraDebugPanelClassNames,

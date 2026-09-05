@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+
 
 import { useWalletStore } from '../../../economy/stores/walletStore';
 import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
+import { notify } from '../../../ui/components/Toast/toastStore';
+import { canHandleOverlayShortcut } from '../../../ui/overlayKeyboard';
 import { getRecipeRegistry } from '../../registry/RecipeRegistry';
 import { useCraftingStore } from '../../stores/craftingStore';
 
@@ -13,35 +16,49 @@ export type CraftingUIProps = {
   onClose?: () => void;
 };
 
+const CRAFT_FAILURE_MESSAGES: Record<string, string> = {
+  'unknown recipe': '레시피를 찾을 수 없어요.',
+  locked: '아직 배우지 않은 레시피예요.',
+  'missing ingredients': '재료가 부족해요.',
+  'insufficient bells': '돈이 부족해요.',
+  'inventory full': '결과물을 받을 가방 공간이 부족해요.',
+  'remove failed': '재료 수량이 바뀌었어요. 가방을 확인해 주세요.',
+  'spend failed': '제작 비용을 지불하지 못했어요. 보유 금액을 확인해 주세요.',
+};
+
 export function CraftingUI({ toggleKey = 'c', title = '제작대', open: openProp, onClose }: CraftingUIProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const controlled = openProp !== undefined;
   const open = controlled ? openProp : internalOpen;
 
-  const close = () => {
+  const close = useCallback(() => {
     if (controlled) onClose?.();
     else setInternalOpen(false);
-  };
-  const toggle = () => {
+  }, [controlled, onClose]);
+  const toggle = useCallback(() => {
     if (controlled) { if (open) onClose?.(); }
     else setInternalOpen((v) => !v);
-  };
-  const isUnlocked = useCraftingStore((s) => s.isUnlocked);
+  }, [controlled, open, onClose]);
+  const unlockedRecipes = useCraftingStore((s) => s.unlocked);
   const canCraft = useCraftingStore((s) => s.canCraft);
   const craft = useCraftingStore((s) => s.craft);
   const slots = useInventoryStore((s) => s.slots);
   const bells = useWalletStore((s) => s.bells);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
-      if (tag === 'input' || tag === 'textarea') return;
-      if (e.key.toLowerCase() === toggleKey.toLowerCase()) toggle();
-      if (e.key === 'Escape') close();
+    const handleKey = (e: KeyboardEvent) => {
+      if (!canHandleOverlayShortcut(e)) return;
+      if (e.key === 'Escape' && open) {
+        e.preventDefault();
+        close();
+      } else if (e.key.toLowerCase() === toggleKey.toLowerCase() && (!controlled || open)) {
+        e.preventDefault();
+        toggle();
+      }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [toggleKey, controlled, open]);
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [toggleKey, controlled, open, close, toggle]);
 
   if (!open) return null;
   const recipes = getRecipeRegistry().all();
@@ -57,23 +74,26 @@ export function CraftingUI({ toggleKey = 'c', title = '제작대', open: openPro
       onClick={close}
     >
       <div
+        data-world-overlay="crafting"
+        role="dialog"
+        aria-label={title}
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: 600, maxHeight: '76vh', overflow: 'hidden', display: 'flex', flexDirection: 'column',
+          width: 600, maxWidth: 'calc(100vw - 24px)', boxSizing: 'border-box', overflowWrap: 'anywhere', maxHeight: '76dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column',
           background: '#1a1a1a', color: '#fff', borderRadius: 12,
           boxShadow: '0 16px 36px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,200,120,0.35)',
           fontFamily: "'Pretendard', system-ui, sans-serif", fontSize: 13,
         }}
       >
-        <div style={{ padding: '10px 14px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ padding: '10px 14px', borderBottom: '1px solid #333', display: 'flex', flexWrap: 'wrap', gap: 8, flexShrink: 0, justifyContent: 'space-between' }}>
           <strong style={{ fontSize: 15 }}>{title}</strong>
-          <span style={{ color: '#ffd84a' }}>{bells.toLocaleString()} B</span>
-          <button onClick={close} style={btn()}>닫기 [{toggleKey.toUpperCase()}]</button>
+          <span style={{ color: '#ffd84a' }}>{bells.toLocaleString()} 벨</span>
+          <button type="button" onClick={close} style={btn(true)}>닫기 [{toggleKey.toUpperCase()}]</button>
         </div>
-        <div style={{ overflowY: 'auto', padding: 10 }}>
+        <div style={{ overflowY: 'auto', minHeight: 0, padding: 10 }}>
           {recipes.length === 0 && <Empty>레시피가 없습니다.</Empty>}
           {recipes.map((r) => {
-            const unlocked = isUnlocked(r.id);
+            const unlocked = r.unlockedByDefault || unlockedRecipes.has(r.id);
             const check = canCraft(r.id);
             const outDef = getItemRegistry().get(r.output.itemId);
             return (
@@ -89,7 +109,11 @@ export function CraftingUI({ toggleKey = 'c', title = '제작대', open: openPro
                     {r.output.count > 1 && <span style={{ opacity: 0.7 }}>x{r.output.count}</span>}
                   </div>
                   <button
-                    onClick={() => craft(r.id)}
+                    type="button"
+                    onClick={() => {
+                      const result = craft(r.id);
+                      if (!result.ok) notify('warn', CRAFT_FAILURE_MESSAGES[result.reason ?? ''] ?? '지금은 제작할 수 없어요.');
+                    }}
                     disabled={!check.ok}
                     style={btn(check.ok)}
                   >제작</button>
@@ -106,7 +130,12 @@ export function CraftingUI({ toggleKey = 'c', title = '제작대', open: openPro
                         </span>
                       );
                     })}
-                    {r.requireBells ? <span style={{ color: '#ffd84a' }}>· {r.requireBells} B</span> : null}
+                    {r.requireBells ? <span style={{ color: '#ffd84a' }}>· {r.requireBells} 벨</span> : null}
+                  </div>
+                )}
+                {!check.ok && (
+                  <div style={{ marginTop: 6, color: '#ffb3a7', fontSize: 12 }}>
+                    {CRAFT_FAILURE_MESSAGES[check.reason ?? ''] ?? '지금은 제작할 수 없어요.'}
                   </div>
                 )}
               </div>

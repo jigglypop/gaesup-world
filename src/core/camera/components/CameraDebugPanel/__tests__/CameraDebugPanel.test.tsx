@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { cleanup, render, screen } from '@testing-library/react';
 
 import { useStateSystem } from '../../../../motions/hooks/useStateSystem';
@@ -75,11 +76,12 @@ describe('CameraDebugPanel', () => {
   });
   test('기본 라벨들이 렌더링되어야 함', () => {
     render(<CameraDebugPanel />);
-    expect(screen.getByText('Mode')).toBeInTheDocument();
-    expect(screen.getByText('Position')).toBeInTheDocument();
-    expect(screen.getByText('Distance')).toBeInTheDocument();
-    expect(screen.getByText('FOV')).toBeInTheDocument();
-    expect(screen.getByText('Controller')).toBeInTheDocument();
+    expect(screen.getByText('모드')).toBeInTheDocument();
+    expect(screen.getByText('조작 대상 위치')).toBeInTheDocument();
+    expect(screen.getByText('거리 설정')).toBeInTheDocument();
+    expect(screen.getByText('시야각 설정')).toBeInTheDocument();
+    expect(screen.getByText('컨트롤러')).toBeInTheDocument();
+    expect(screen.getByText('추적')).toBeInTheDocument();
   });
   test('store selector를 사용해야 함', () => {
     render(<CameraDebugPanel />);
@@ -88,7 +90,7 @@ describe('CameraDebugPanel', () => {
   });
   test('visible이 false면 패널을 렌더링하지 않는다', () => {
     render(<CameraDebugPanel visible={false} />);
-    expect(screen.queryByText('Mode')).not.toBeInTheDocument();
+    expect(screen.queryByText('모드')).not.toBeInTheDocument();
   });
   test('필드와 renderer를 커스텀하고 custom field를 표시한다', () => {
     render(
@@ -110,5 +112,14 @@ describe('CameraDebugPanel', () => {
     expect(screen.getByText('Lens')).toBeInTheDocument();
     expect(screen.getByText('Custom')).toBeInTheDocument();
     expect(screen.getAllByTestId('debug-field')).toHaveLength(2);
+  });
+  test('custom formatters retain raw mode identifiers', () => {
+    const formatter = jest.fn((value) => String(value));
+    render(<CameraDebugPanel
+      fields={[{ key: 'mode', label: '모드', enabled: true }]}
+      formatValue={formatter}
+    />);
+    expect(screen.getByText('chase')).toBeInTheDocument();
+    expect(formatter).toHaveBeenCalledWith('chase', expect.objectContaining({ key: 'mode' }), 2);
   });
 });

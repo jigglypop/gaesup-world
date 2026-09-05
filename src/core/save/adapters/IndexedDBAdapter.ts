@@ -24,48 +24,43 @@ function openDb(): Promise<IDBDatabase> {
 
 function withStore<T>(
   mode: IDBTransactionMode,
-  fn: (store: IDBObjectStore) => IDBRequest<T> | Promise<T>,
+  fn: (store: IDBObjectStore) => IDBRequest<T>,
 ): Promise<T> {
-  return openDb().then((db) =>
-    new Promise<T>((resolve, reject) => {
-      const tx = db.transaction(STORE, mode);
-      const store = tx.objectStore(STORE);
-      const result = fn(store);
-      if (result instanceof Promise) {
-        result.then(resolve, reject);
-        return;
-      }
-      result.onsuccess = () => resolve(result.result as T);
-      result.onerror = () => reject(result.error);
-    }),
+  return openDb().then(
+    (db) =>
+      new Promise<T>((resolve, reject) => {
+        try {
+          const tx = db.transaction(STORE, mode);
+          tx.onabort = () => {
+            db.close();
+            reject(tx.error ?? new Error('Save transaction aborted'));
+          };
+          const request = fn(tx.objectStore(STORE));
+          tx.oncomplete = () => {
+            db.close();
+            resolve(request.result);
+          };
+        } catch (error) {
+          db.close();
+          reject(error);
+        }
+      }),
   );
 }
 
 export class IndexedDBAdapter implements SaveAdapter {
   async read(slot: string): Promise<SaveBlob | null> {
-    try {
-      const v = await withStore<SaveBlob | undefined>('readonly', (s) => s.get(slot));
-      return v ?? null;
-    } catch {
-      return null;
-    }
+    const v = await withStore<SaveBlob | undefined>('readonly', (s) => s.get(slot));
+    return v ?? null;
   }
   async write(slot: string, blob: SaveBlob): Promise<void> {
     await withStore<IDBValidKey>('readwrite', (s) => s.put(blob, slot));
   }
   async list(): Promise<string[]> {
-    try {
-      const v = await withStore<IDBValidKey[]>('readonly', (s) => s.getAllKeys());
-      return v.map(String);
-    } catch {
-      return [];
-    }
+    const v = await withStore<IDBValidKey[]>('readonly', (s) => s.getAllKeys());
+    return v.map(String);
   }
   async remove(slot: string): Promise<void> {
-    try {
-      await withStore<undefined>('readwrite', (s) => s.delete(slot));
-    } catch {
-      void 0;
-    }
+    await withStore<undefined>('readwrite', (s) => s.delete(slot));
   }
 }

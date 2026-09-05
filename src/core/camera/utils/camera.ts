@@ -33,7 +33,9 @@ let cachedCollisionVersion = -1;
 function collectCollisionMeshes(scene: THREE.Scene): THREE.Mesh[] {
   const meshes: THREE.Mesh[] = [];
   scene.traverse((object) => {
-    if (object instanceof THREE.Mesh && !object.userData['intangible'] && object.geometry?.boundingSphere) {
+    if (object instanceof THREE.Mesh
+      && !('isLineSegments2' in object && object.isLineSegments2)
+      && !object.userData['intangible'] && object.geometry?.boundingSphere) {
       meshes.push(object);
     }
   });
@@ -57,12 +59,11 @@ function getCollisionMeshes(scene: THREE.Scene): THREE.Mesh[] {
 }
 
 function isObjectExcluded(object: THREE.Object3D, excludedObjects?: THREE.Object3D[]): boolean {
-  if (!excludedObjects || excludedObjects.length === 0) return false;
-
   let current: THREE.Object3D | null = object;
   while (current) {
-    for (let i = 0, len = excludedObjects.length; i < len; i++) {
-      if (current === excludedObjects[i]) return true;
+    if (current.userData['intangible']) return true;
+    for (let i = 0, len = excludedObjects?.length ?? 0; i < len; i++) {
+      if (current === excludedObjects?.[i]) return true;
     }
     current = current.parent;
   }

@@ -1,16 +1,18 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 
-import { Environment, Grid } from '@react-three/drei';
+import { Environment } from '@react-three/drei';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Physics, euler, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
+import { Grid } from '@/core/rendering/legacyDrei';
+
 import { RemotePlayer } from './RemotePlayer';
-import { 
-  GaesupController, 
-  GaesupWorld, 
-  GaesupWorldContent, 
-  Clicker, 
+import {
+  GaesupController,
+  GaesupWorld,
+  GaesupWorldContent,
+  Clicker,
   GroundClicker
 } from '../../../index';
 import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
@@ -68,19 +70,19 @@ function LocalPositionTracker({
   return null;
 }
 
-export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({ 
-  players, 
-  characterUrl, 
-  vehicleUrl, 
-  airplaneUrl, 
-  playerRef, 
+export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
+  players,
+  characterUrl,
+  vehicleUrl,
+  airplaneUrl,
+  playerRef,
   config,
   localPlayerColor,
   proximityRange,
   speechByPlayerId,
   localSpeechText,
 }: MultiplayerCanvasProps) {
-  
+
   // CHARACTER_URL을 window에 설정
   useEffect(() => {
     window.CHARACTER_URL = characterUrl;
@@ -129,7 +131,7 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
         style={{ width: '100vw', height: '100vh' }}
       >
         <Environment background preset="sunset" backgroundBlurriness={1} />
-        
+
         <directionalLight
           castShadow
           shadow-normalBias={0.06}
@@ -143,7 +145,7 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
           shadow-camera-bottom={-90}
           shadow-camera-left={-90}
         />
-        
+
         <Suspense fallback={null}>
           <GaesupWorldContent>
             <Physics>
@@ -169,7 +171,7 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
                   position={localSpeechPos}
                 />
               ) : null}
-              
+
               {/* 원격 플레이어들 */}
               {Array.from(visiblePlayers.entries()).map(([playerId, state]) => (
                 <RemotePlayer
@@ -184,7 +186,7 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
                   })()}
                 />
               ))}
-              
+
               {/* 그리드 */}
               <Grid
                 renderOrder={-1}
@@ -197,7 +199,7 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
                 sectionThickness={0}
                 fadeDistance={1000}
               />
-              
+
               {/* 바닥 */}
               <RigidBody type="fixed">
                 <mesh receiveShadow position={[0, -1, 0]}>
@@ -205,7 +207,7 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
                   <meshStandardMaterial color="#3d3d3d" />
                 </mesh>
               </RigidBody>
-              
+
               <Clicker />
               <GroundClicker />
             </Physics>
@@ -214,4 +216,4 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
       </Canvas>
     </GaesupWorld>
   );
-}); 
+});

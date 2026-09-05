@@ -27,8 +27,8 @@ export function PerformanceOverlay() {
 const wrapStyle: CSSProperties = {
   position: 'fixed',
   right: 16,
-  top: 124,
-  zIndex: 86,
+  top: 'calc(var(--app-header-height, 64px) + var(--gp-shell-pad, 16px))',
+  zIndex: 'var(--gp-z-panel, 90)',
   width: 320,
   maxWidth: 'calc(100vw - 32px)',
   display: 'flex',

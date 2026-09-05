@@ -6,7 +6,7 @@ export {
   serializeCharacterState,
 } from './plugin';
 export type { CharacterPluginOptions } from './plugin';
-export { useCharacterStore } from './stores/characterStore';
+export { DEFAULT_CHARACTER_ID, EMPTY_OUTFITS, useCharacterStore } from './stores/characterStore';
 export { CharacterCreator } from './components/CharacterCreator';
 export type { CharacterCreatorProps } from './components/CharacterCreator';
 
@@ -75,3 +75,20 @@ export type {
 } from './attachments';
 export { resolveCharacterBaseNodeExclusions, resolveCharacterParts } from './resolveParts';
 export type { ResolveCharacterPartsInput } from './resolveParts';
+export {
+  BODY_REGIONS,
+  GAESUP_SKELETON_ID,
+  compareSkeletons,
+  getBindPoseHash,
+  getSkeletonBoneNames,
+  remapSkinnedGeometryJoints,
+  resolveSharedSkeletonBinding,
+} from './skeleton';
+export type {
+  BodyRegion,
+  SharedSkeletonBinding,
+  SkeletonCompatibility,
+  SkeletonCompatibilityReport,
+  WearableDeformation,
+  WearableMetadata,
+} from './skeleton';

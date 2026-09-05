@@ -1,10 +1,10 @@
-import { FC, memo, useEffect, useMemo, useRef, useState } from "react";
+import { FC, lazy, memo, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
-import { shaderMaterial } from "@react-three/drei";
-import { extend } from "@react-three/fiber";
+import { extend, useThree } from "@react-three/fiber";
 import { createNoise2D } from "simplex-noise";
 import * as THREE from "three";
 
+import { shaderMaterial } from '@/core/rendering/legacyDrei';
 import { usePerfStore } from "@core/perf/stores/perfStore";
 import { createToonMaterial, getDefaultToonMode } from "@core/rendering/toon";
 import { loadCoreWasm, type GaesupCoreWasmExports } from "@core/wasm/loader";
@@ -16,7 +16,7 @@ import {
 } from "./assets";
 import fragmentShader from "./frag.glsl";
 import { getGrassManager, setGrassManagerWasm, type GrassTileRenderState } from "./manager";
-import { GrassMeshProps } from "./type";
+import { GrassMaterialInstance, GrassMeshProps } from "./type";
 import vertexShader from "./vert.glsl";
 
 let _grassGroundToon: THREE.MeshToonMaterial | null = null;
@@ -116,6 +116,7 @@ const GrassMaterial = shaderMaterial(
 );
 
 extend({ GrassMaterial });
+const NodeGrassMaterial = lazy(() => import('./NodeGrassMaterial'));
 
 function getYPosition(x: number, z: number): number {
   return 0.05 * noise2D(x / 50, z / 50) + 0.05 * noise2D(x / 100, z / 100);
@@ -128,6 +129,11 @@ type GrassAttributeData = {
   halfRootAngleCos: Float32Array;
   halfRootAngleSin: Float32Array;
 };
+
+function disposeBladeTextures(texture: THREE.Texture, alphaMap: THREE.Texture): void {
+  if (texture !== getFallbackBladeDiffuse()) texture.dispose();
+  if (alphaMap !== getFallbackBladeAlpha()) alphaMap.dispose();
+}
 
 function useGrassBladeTextures(textureSources: ReturnType<typeof resolveGrassTextureSources>) {
   const [textures, setTextures] = useState(() => ({
@@ -152,7 +158,10 @@ function useGrassBladeTextures(textureSources: ReturnType<typeof resolveGrassTex
         THREE.NoColorSpace,
       ),
     ]).then(([texture, alphaMap]) => {
-      if (cancelled) return;
+      if (cancelled) {
+        disposeBladeTextures(texture, alphaMap);
+        return;
+      }
       setTextures({ texture, alphaMap });
     });
 
@@ -160,6 +169,8 @@ function useGrassBladeTextures(textureSources: ReturnType<typeof resolveGrassTex
       cancelled = true;
     };
   }, [textureSources.bladeAlphaUrl, textureSources.bladeDiffuseUrl]);
+
+  useEffect(() => () => disposeBladeTextures(textures.texture, textures.alphaMap), [textures]);
 
   return textures;
 }
@@ -275,7 +286,7 @@ function jitterAndVary(data: GrassAttributeData, instances: number, width: numbe
   }
 }
 
-const Grass: FC<GrassMeshProps> = memo(
+const GrassContent: FC<GrassMeshProps> = memo(
   ({
     options = { bW: 0.14, bH: 0.65, joints: 5 },
     width = 4,
@@ -294,6 +305,7 @@ const Grass: FC<GrassMeshProps> = memo(
     ...props
   }) => {
     const { bW, bH, joints } = options;
+    const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
     // Auto-clamp instance budget to the active perf tier. Low-end devices get
     // a quarter of the blades; high-end keep the user-supplied cap. This is
     // why "many tiles" no longer melts down on integrated GPUs.
@@ -322,7 +334,7 @@ const Grass: FC<GrassMeshProps> = memo(
     const groupRef = useRef<THREE.Group>(null);
     const meshRef = useRef<THREE.Mesh>(null);
     const lastInstanceCount = useRef(resolvedInstances);
-    const materialRef = useRef<THREE.ShaderMaterial | null>(null);
+    const materialRef = useRef<GrassMaterialInstance | null>(null);
     const geometryRef = useRef<THREE.InstancedBufferGeometry | null>(null);
 
     const textureSources = useMemo(
@@ -365,7 +377,7 @@ const Grass: FC<GrassMeshProps> = memo(
       // Ground tessellation must scale with width so the noise-driven elevation
       // stays smooth on big tiles instead of degenerating into flat quads.
       const groundSegs = Math.max(8, Math.min(128, Math.round(width * 1.5)));
-      const gg = new THREE.PlaneGeometry(width, width, groundSegs, groundSegs);
+      const gg = new THREE.PlaneGeometry(width, width, groundSegs, groundSegs).rotateX(-Math.PI / 2);
       const positions = gg.getAttribute("position") as THREE.BufferAttribute;
       const colors = new Float32Array(positions.count * 3);
       const tmp = new THREE.Color();
@@ -415,8 +427,8 @@ const Grass: FC<GrassMeshProps> = memo(
       if (!m?.uniforms) return;
       if (m.uniforms['uToon']) m.uniforms['uToon'].value = useToon ? 1 : 0;
       if (m.uniforms['uToonSteps']) m.uniforms['uToonSteps'].value = 4;
-      if (m.uniforms['tipColor']) m.uniforms['tipColor'].value.copy(tipBladeColor);
-      if (m.uniforms['bottomColor']) m.uniforms['bottomColor'].value.copy(bottomBladeColor);
+      if (m.uniforms['tipColor']) (m.uniforms['tipColor'].value as THREE.Color).copy(tipBladeColor);
+      if (m.uniforms['bottomColor']) (m.uniforms['bottomColor'].value as THREE.Color).copy(bottomBladeColor);
     }, [bottomBladeColor, tipBladeColor, useToon]);
 
     // Register with the central GrassManager. The manager runs one
@@ -497,18 +509,18 @@ const Grass: FC<GrassMeshProps> = memo(
             <instancedBufferAttribute attach="attributes-halfRootAngleSin" args={[attributeData.halfRootAngleSin, 1]} />
             <instancedBufferAttribute attach="attributes-halfRootAngleCos" args={[attributeData.halfRootAngleCos, 1]} />
           </instancedBufferGeometry>
-          <grassMaterial
+          {useNodes ? <NodeGrassMaterial materialRef={materialRef} texture={texture} alphaMap={alphaMap}
+            toon={useToon} tipColor={tipBladeColor} bottomColor={bottomBladeColor} /> : <grassMaterial
             ref={materialRef}
             map={texture ?? null}
             alphaMap={alphaMap ?? null}
             toneMapped={false}
             side={THREE.DoubleSide}
             transparent
-          />
+          />}
         </mesh>
         <mesh
           position={[0, 0, 0]}
-          rotation={[-Math.PI / 2, 0, 0]}
           material={groundMat}
           receiveShadow
         >
@@ -519,6 +531,9 @@ const Grass: FC<GrassMeshProps> = memo(
   }
 );
 
+GrassContent.displayName = "GrassContent";
+
+const Grass: FC<GrassMeshProps> = (props) => <Suspense fallback={null}><GrassContent {...props} /></Suspense>;
 Grass.displayName = "Grass";
 
 export default Grass;

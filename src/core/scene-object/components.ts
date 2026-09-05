@@ -1,5 +1,10 @@
 import { createSceneComponent } from './core';
-import type { SceneComponent, SceneJsonObject, SceneVector3 } from './types';
+import type {
+  SceneComponent,
+  SceneJsonAuthoringObject,
+  SceneJsonObject,
+  SceneVector3,
+} from './types';
 
 export const SCENE_COMPONENT_TYPES = {
   meshRenderer: 'gaesup.meshRenderer',
@@ -14,7 +19,7 @@ export const SCENE_COMPONENT_TYPES = {
 export type StandardSceneComponentType =
   (typeof SCENE_COMPONENT_TYPES)[keyof typeof SCENE_COMPONENT_TYPES];
 
-export interface MeshRendererComponentData extends SceneJsonObject {
+export interface MeshRendererComponentData extends SceneJsonAuthoringObject {
   assetId?: string;
   url?: string;
   materialId?: string;
@@ -22,7 +27,7 @@ export interface MeshRendererComponentData extends SceneJsonObject {
   receiveShadow?: boolean;
 }
 
-export interface ColliderComponentData extends SceneJsonObject {
+export interface ColliderComponentData extends SceneJsonAuthoringObject {
   shape: 'box' | 'sphere' | 'capsule' | 'mesh';
   size?: SceneVector3;
   radius?: number;
@@ -30,32 +35,32 @@ export interface ColliderComponentData extends SceneJsonObject {
   trigger?: boolean;
 }
 
-export interface RigidBodyComponentData extends SceneJsonObject {
+export interface RigidBodyComponentData extends SceneJsonAuthoringObject {
   type: 'fixed' | 'dynamic' | 'kinematic';
   mass?: number;
   gravityScale?: number;
   lockRotations?: boolean;
 }
 
-export interface ScriptComponentData extends SceneJsonObject {
+export interface ScriptComponentData extends SceneJsonAuthoringObject {
   scriptId: string;
   props?: SceneJsonObject;
 }
 
-export interface InteractableComponentData extends SceneJsonObject {
+export interface InteractableComponentData extends SceneJsonAuthoringObject {
   kind: string;
   prompt?: string;
   radius?: number;
   command?: string;
 }
 
-export interface BuildingPieceComponentData extends SceneJsonObject {
+export interface BuildingPieceComponentData extends SceneJsonAuthoringObject {
   kind: 'tile' | 'wall' | 'block' | 'object';
   catalogId?: string;
   footprintId?: string;
 }
 
-export interface NpcComponentData extends SceneJsonObject {
+export interface NpcComponentData extends SceneJsonAuthoringObject {
   npcId: string;
   scheduleId?: string;
   dialogTreeId?: string;
@@ -85,10 +90,7 @@ export type BuildingPieceComponent = SceneComponent<
   typeof SCENE_COMPONENT_TYPES.buildingPiece,
   BuildingPieceComponentData
 >;
-export type NpcComponent = SceneComponent<
-  typeof SCENE_COMPONENT_TYPES.npc,
-  NpcComponentData
->;
+export type NpcComponent = SceneComponent<typeof SCENE_COMPONENT_TYPES.npc, NpcComponentData>;
 
 export type StandardSceneComponent =
   | MeshRendererComponent
@@ -99,7 +101,9 @@ export type StandardSceneComponent =
   | BuildingPieceComponent
   | NpcComponent;
 
-export function createMeshRendererComponent(data: MeshRendererComponentData = {}): MeshRendererComponent {
+export function createMeshRendererComponent(
+  data: MeshRendererComponentData = {},
+): MeshRendererComponent {
   return createSceneComponent({
     type: SCENE_COMPONENT_TYPES.meshRenderer,
     data,
@@ -127,14 +131,18 @@ export function createScriptComponent(data: ScriptComponentData): ScriptComponen
   });
 }
 
-export function createInteractableComponent(data: InteractableComponentData): InteractableComponent {
+export function createInteractableComponent(
+  data: InteractableComponentData,
+): InteractableComponent {
   return createSceneComponent({
     type: SCENE_COMPONENT_TYPES.interactable,
     data,
   });
 }
 
-export function createBuildingPieceComponent(data: BuildingPieceComponentData): BuildingPieceComponent {
+export function createBuildingPieceComponent(
+  data: BuildingPieceComponentData,
+): BuildingPieceComponent {
   return createSceneComponent({
     type: SCENE_COMPONENT_TYPES.buildingPiece,
     data,
@@ -147,4 +155,3 @@ export function createNpcComponent(data: NpcComponentData): NpcComponent {
     data,
   });
 }
-

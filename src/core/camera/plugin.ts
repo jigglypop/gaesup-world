@@ -42,6 +42,7 @@ export interface CameraSaveExtension {
   key: string;
   serialize: () => CameraSerializedState;
   hydrate: (data: CameraSerializedState | null | undefined) => void;
+  prepareHydrate?: (data: CameraSerializedState | null | undefined) => () => void;
 }
 
 export interface CameraStoreService {
@@ -120,15 +121,15 @@ function isSerializedVector3(value: unknown): value is SerializedVector3 {
   if (!value || typeof value !== 'object') return false;
   const candidate = value as Partial<SerializedVector3>;
   return (
-    typeof candidate.x === 'number' &&
-    typeof candidate.y === 'number' &&
-    typeof candidate.z === 'number'
+    Number.isFinite(candidate.x) &&
+    Number.isFinite(candidate.y) &&
+    Number.isFinite(candidate.z)
   );
 }
 
 function isSerializedEuler(value: unknown): value is SerializedEuler {
   if (!isSerializedVector3(value)) return false;
-  return typeof (value as Partial<SerializedEuler>).order === 'string';
+  return ['XYZ', 'YZX', 'ZXY', 'XZY', 'YXZ', 'ZYX'].includes((value as Partial<SerializedEuler>).order ?? '');
 }
 
 function deserializeCameraOption(
@@ -137,6 +138,9 @@ function deserializeCameraOption(
   const next: Partial<CameraOptionType> = {};
 
   for (const [key, value] of Object.entries(option)) {
+    if (value === undefined) continue;
+    if (VECTOR_OPTION_KEYS.has(key) && !isSerializedVector3(value)) throw new TypeError('Invalid camera vector');
+    if (key === 'rotation' && !isSerializedEuler(value)) throw new TypeError('Invalid camera rotation');
     if (VECTOR_OPTION_KEYS.has(key) && isSerializedVector3(value)) {
       Object.assign(next, { [key]: new THREE.Vector3(value.x, value.y, value.z) });
       continue;
@@ -147,7 +151,7 @@ function deserializeCameraOption(
       continue;
     }
 
-    Object.assign(next, { [key]: value });
+    Object.assign(next, { [key]: serializeValue(value) });
   }
 
   return next;
@@ -161,17 +165,52 @@ function getCameraSerializedState(): CameraSerializedState {
   };
 }
 
+function validateNumericOptions(value: CameraSerializedOptionValue): void {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new TypeError('Invalid camera numeric options');
+  for (const entry of Object.values(value)) {
+    if (entry === undefined) continue;
+    if (entry && typeof entry === 'object') validateNumericOptions(entry);
+    else if (typeof entry !== 'number' || !Number.isFinite(entry)) throw new TypeError('Invalid camera numeric option');
+  }
+}
+
+function prepareCameraState(data: CameraSerializedState | null | undefined): () => void {
+  if (data === null || data === undefined) return () => {};
+  if (typeof data !== 'object' || Array.isArray(data)
+    || (data.mode !== undefined && (!data.mode || typeof data.mode !== 'object' || Array.isArray(data.mode)))
+    || (data.cameraOption !== undefined && (!data.cameraOption || typeof data.cameraOption !== 'object' || Array.isArray(data.cameraOption)))) {
+    throw new TypeError('Invalid camera snapshot');
+  }
+  const mode = data.mode ? { ...data.mode } : undefined;
+  if (mode && ((mode.type !== undefined && !['character', 'vehicle', 'airplane'].includes(mode.type))
+    || (mode.controller !== undefined && !['keyboard', 'clicker', 'gamepad'].includes(mode.controller))
+    || (mode.control !== undefined && !['thirdPerson', 'firstPerson', 'topDown', 'sideScroll', 'isometric', 'fixed', 'chase'].includes(mode.control)))) {
+    throw new TypeError('Invalid camera mode');
+  }
+  const raw = data.cameraOption;
+  if (raw) {
+    for (const key of ['maxDistance', 'distance', 'xDistance', 'yDistance', 'zDistance', 'zoom', 'zoomSpeed', 'minZoom', 'maxZoom',
+      'focusDuration', 'focusDistance', 'focusLerpSpeed', 'collisionMargin', 'fov', 'minFov', 'maxFov', 'isoAngle']) {
+      if (raw[key] !== undefined && (typeof raw[key] !== 'number' || !Number.isFinite(raw[key]))) throw new TypeError('Invalid camera number');
+    }
+    for (const key of ['enableZoom', 'focus', 'enableFocus', 'enableCollision']) {
+      if (raw[key] !== undefined && typeof raw[key] !== 'boolean') throw new TypeError('Invalid camera boolean');
+    }
+    for (const key of ['smoothing', 'bounds', 'modeSettings']) {
+      if (raw[key] !== undefined) validateNumericOptions(raw[key]);
+    }
+    if (raw['mode'] !== undefined && typeof raw['mode'] !== 'string') throw new TypeError('Invalid camera option mode');
+  }
+  const option = raw ? deserializeCameraOption(raw) : undefined;
+  return () => {
+    const state = useGaesupStore.getState();
+    if (mode) state.setMode(mode);
+    if (option) state.setCameraOption(option);
+  };
+}
+
 function hydrateCameraState(data: CameraSerializedState | null | undefined): void {
-  if (!data || typeof data !== 'object') return;
-
-  const state = useGaesupStore.getState();
-  if (data.mode && typeof data.mode === 'object') {
-    state.setMode(data.mode);
-  }
-
-  if (data.cameraOption && typeof data.cameraOption === 'object') {
-    state.setCameraOption(deserializeCameraOption(data.cameraOption));
-  }
+  prepareCameraState(data)();
 }
 
 export function createCameraPlugin(options: CameraPluginOptions = {}): GaesupPlugin {
@@ -195,6 +234,7 @@ export function createCameraPlugin(options: CameraPluginOptions = {}): GaesupPlu
         key: saveExtensionId,
         serialize: getCameraSerializedState,
         hydrate: hydrateCameraState,
+        prepareHydrate: prepareCameraState,
       }, pluginId);
       ctx.services.register(storeServiceId, {
         useStore: useGaesupStore,

@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useSyncExternalStore } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 
 import { GameStatesType } from '../../world/components/Rideable/types';
 import { EntityStateManager } from '../core/system/EntityStateManager';
@@ -15,6 +15,8 @@ export interface UseStateSystemResult {
 
 let globalStateManager: EntityStateManager | null = null;
 const listeners = new Set<() => void>();
+let revision = 0;
+const getRevision = () => revision;
 
 export function getGlobalStateManager(): EntityStateManager {
     if (!globalStateManager) {
@@ -23,7 +25,6 @@ export function getGlobalStateManager(): EntityStateManager {
     return globalStateManager;
 }
 
-// Subscribe 함수
 const subscribe = (callback: () => void) => {
     listeners.add(callback);
     return () => {
@@ -31,63 +32,41 @@ const subscribe = (callback: () => void) => {
     };
 };
 
-// Notify 함수
 const notifyListeners = () => {
+    revision += 1;
     listeners.forEach(listener => listener());
 };
 
 export function useStateSystem(): UseStateSystemResult {
-    const stateManagerRef = useRef<EntityStateManager | null>(null);
-    
-    if (!stateManagerRef.current) {
-        stateManagerRef.current = getGlobalStateManager();
-    }
-
-    // useSyncExternalStore를 사용하여 외부 상태 구독
-    const activeState = useSyncExternalStore(
-        subscribe,
-        () => stateManagerRef.current!.getActiveState(),
-        () => stateManagerRef.current!.getActiveState()
-    );
-
-    const gameStates = useSyncExternalStore(
-        subscribe,
-        () => stateManagerRef.current!.getGameStates(),
-        () => stateManagerRef.current!.getGameStates()
-    );
+    const stateManager = getGlobalStateManager();
+    useSyncExternalStore(subscribe, getRevision, getRevision);
 
     const updateActiveState = useCallback((updates: Partial<ActiveStateType>) => {
-        stateManagerRef.current?.updateActiveState(updates);
+        stateManager.updateActiveState(updates);
         notifyListeners();
-    }, []);
+    }, [stateManager]);
 
     const updateGameStates = useCallback((updates: Partial<GameStatesType>) => {
-        stateManagerRef.current?.updateGameStates(updates);
+        stateManager.updateGameStates(updates);
         notifyListeners();
-    }, []);
+    }, [stateManager]);
 
     const resetActiveState = useCallback(() => {
-        stateManagerRef.current?.resetActiveState();
+        stateManager.resetActiveState();
         notifyListeners();
-    }, []);
+    }, [stateManager]);
 
     const resetGameStates = useCallback(() => {
-        stateManagerRef.current?.resetGameStates();
+        stateManager.resetGameStates();
         notifyListeners();
-    }, []);
-
-    useEffect(() => {
-        return () => {
-            stateManagerRef.current = null;
-        };
-    }, []);
+    }, [stateManager]);
 
     return {
-        activeState,
-        gameStates,
+        activeState: stateManager.getActiveState(),
+        gameStates: stateManager.getGameStates(),
         updateActiveState,
         updateGameStates,
         resetActiveState,
         resetGameStates,
     };
-} 
+}

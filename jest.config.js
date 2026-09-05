@@ -2,6 +2,22 @@ export default {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   moduleNameMapper: {
+    '^gaesup-world$': '<rootDir>/src/index.ts',
+    '^gaesup-world/admin$': '<rootDir>/src/admin-entry.ts',
+    '^gaesup-world/assets$': '<rootDir>/src/assets.ts',
+    '^gaesup-world/blueprints$': '<rootDir>/src/blueprints/index.ts',
+    '^gaesup-world/blueprints/editor$': '<rootDir>/src/blueprints/editor.ts',
+    '^gaesup-world/building$': '<rootDir>/src/building.ts',
+    '^gaesup-world/editor$': '<rootDir>/src/editor.ts',
+    '^gaesup-world/gameplay$': '<rootDir>/src/gameplay.ts',
+    '^gaesup-world/navigation$': '<rootDir>/src/navigation.ts',
+    '^gaesup-world/network$': '<rootDir>/src/network.ts',
+    '^gaesup-world/next$': '<rootDir>/src/next.ts',
+    '^gaesup-world/postprocessing$': '<rootDir>/src/postprocessing.ts',
+    '^gaesup-world/plugins$': '<rootDir>/src/plugins.ts',
+    '^gaesup-world/runtime$': '<rootDir>/src/runtime.ts',
+    '^gaesup-world/server-contracts$': '<rootDir>/src/server-contracts.ts',
+    '^@react-three/postprocessing$': '<rootDir>/test/mocks/reactThreePostprocessing.tsx',
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@core/(.*)$': '<rootDir>/src/core/$1',
     '^@hooks/(.*)$': '<rootDir>/src/core/hooks/$1',
@@ -12,17 +28,21 @@ export default {
     '^@types/(.*)$': '<rootDir>/src/core/types/$1',
     '^@motions/(.*)$': '<rootDir>/src/core/motions/$1',
     '^@debug/(.*)$': '<rootDir>/src/core/debug/$1',
+    '\\.(glsl|vert|frag|wasm|glb)$': '<rootDir>/test/mocks/assetModule.ts',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', {
-      tsconfig: {
-        jsx: 'react-jsx',
+    '^.+\\.(ts|tsx)$': [
+      'ts-jest',
+      {
+        tsconfig: {
+          jsx: 'react-jsx',
+        },
       },
-    }],
+    ],
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(three|@react-three|three-stdlib|@react-spring|@use-gesture|react-use-refs|zustand|leva|@react-icons|react-device-detect|mitt)/)',
+    'node_modules/(?!(three|@react-three|three-stdlib|@react-spring|@use-gesture|react-use-refs|zustand|mitt)/)',
   ],
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   collectCoverageFrom: [
@@ -33,4 +53,4 @@ export default {
   ],
   setupFiles: ['jest-canvas-mock'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-}; 
+};

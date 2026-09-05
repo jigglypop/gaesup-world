@@ -1,7 +1,7 @@
 import { useGaesupStore } from 'gaesup-world';
 
 import { CheckboxInput } from './CheckboxInput';
-import { CAMERA_PRESETS } from './constants';
+import { CAMERA_DESCRIPTIONS, CAMERA_PRESETS } from './constants';
 import { RangeInput } from './RangeInput';
 
 type CameraPresetKey = keyof typeof CAMERA_PRESETS;
@@ -50,19 +50,22 @@ export function CameraSettings({ mode, onControlChange, onClose }: CameraSetting
   return (
     <div className="camera-settings">
       <div className="settings-header">
-        <h3>Camera Settings - {mode.control}</h3>
+        <h3>
+          카메라 설정 ·{' '}
+          {isCameraPresetKey(mode.control) ? CAMERA_DESCRIPTIONS[mode.control] : '사용자 설정'}
+        </h3>
         <button onClick={resetToPreset} className="reset-button">
-          Reset to Preset
+          기본값으로 되돌리기
         </button>
         {onClose && (
           <button onClick={onClose} className="reset-button">
-            Close
+            닫기
           </button>
         )}
       </div>
       <div className="settings-grid">
         <div className="setting-group">
-          <label>Distance</label>
+          <label>거리</label>
           <RangeInput
             label="X"
             min={-50}
@@ -89,9 +92,9 @@ export function CameraSettings({ mode, onControlChange, onClose }: CameraSetting
           />
         </div>
         <div className="setting-group">
-          <label>FOV & Smoothing</label>
+          <label>시야각과 움직임 보정</label>
           <RangeInput
-            label="FOV"
+            label="시야각"
             min={30}
             max={120}
             step={5}
@@ -100,7 +103,7 @@ export function CameraSettings({ mode, onControlChange, onClose }: CameraSetting
             onChange={(value) => updateCameraOption('fov', value)}
           />
           <RangeInput
-            label="Position"
+            label="위치"
             min={0.01}
             max={1}
             step={0.01}
@@ -109,7 +112,7 @@ export function CameraSettings({ mode, onControlChange, onClose }: CameraSetting
             onChange={(value) => updateSmoothingOption('position', value)}
           />
           <RangeInput
-            label="Rotation"
+            label="회전"
             min={0.01}
             max={1}
             step={0.01}
@@ -119,21 +122,21 @@ export function CameraSettings({ mode, onControlChange, onClose }: CameraSetting
           />
         </div>
         <div className="setting-group">
-          <label>Options</label>
+          <label>옵션</label>
           <CheckboxInput
-            label="Enable Collision"
+            label="충돌 감지"
             checked={cameraOption.enableCollision ?? false}
             onChange={(checked) => updateCameraOption('enableCollision', checked)}
           />
           <CheckboxInput
-            label="Focus Mode"
+            label="포커스 모드"
             checked={cameraOption.focus ?? false}
             onChange={(checked) => updateCameraOption('focus', checked)}
           />
         </div>
       </div>
       <div className="quick-presets">
-        <h4>Quick Presets:</h4>
+        <h4>시점 선택</h4>
         <div className="preset-buttons">
           {Object.keys(CAMERA_PRESETS).map((presetName) => (
             <button
@@ -141,11 +144,11 @@ export function CameraSettings({ mode, onControlChange, onClose }: CameraSetting
               className="preset-button"
               onClick={() => onControlChange(presetName)}
             >
-              {presetName}
+              {isCameraPresetKey(presetName) ? CAMERA_DESCRIPTIONS[presetName] : presetName}
             </button>
           ))}
         </div>
       </div>
     </div>
   );
-} 
+}

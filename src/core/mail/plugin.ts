@@ -31,6 +31,7 @@ export function createMailPlugin(options: MailPluginOptions = {}) {
     capabilities: ['mail'],
     serialize: serializeMailState,
     hydrate: hydrateMailState,
+    prepareHydrate: (data) => useMailStore.getState().prepareHydrate(data),
   });
 }
 

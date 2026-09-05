@@ -1,5 +1,6 @@
 import { BlueprintDefinition, ComponentDefinition } from '../core/types';
 import { AnyBlueprint, CharacterBlueprint, VehicleBlueprint, AirplaneBlueprint } from '../types';
+import { getBlueprintPhysics } from './physics';
 
 export class BlueprintConverter {
   convert(blueprint: AnyBlueprint): BlueprintDefinition {
@@ -82,13 +83,7 @@ export class BlueprintConverter {
     return {
       ...base,
       components,
-      physics: {
-        mass: blueprint.physics.mass,
-        friction: 0.5,
-        restitution: 0,
-        linearDamping: 4,
-        angularDamping: 10
-      }
+      physics: getBlueprintPhysics(blueprint)
     };
   }
 
@@ -144,13 +139,7 @@ export class BlueprintConverter {
     return {
       ...base,
       components,
-      physics: {
-        mass: blueprint.physics.mass,
-        friction: 0.8,
-        restitution: 0.2,
-        linearDamping: 0.5,
-        angularDamping: 1
-      }
+      physics: getBlueprintPhysics(blueprint)
     };
   }
 
@@ -205,13 +194,7 @@ export class BlueprintConverter {
     return {
       ...base,
       components,
-      physics: {
-        mass: blueprint.physics.mass,
-        friction: 0.1,
-        restitution: 0.1,
-        linearDamping: 0.2,
-        angularDamping: 0.5
-      }
+      physics: getBlueprintPhysics(blueprint)
     };
   }
 

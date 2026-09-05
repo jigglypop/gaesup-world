@@ -77,11 +77,74 @@ function cloneBuildingValue<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+function validateVector(value: unknown): void {
+  if (!value || typeof value !== 'object' ||
+    !('x' in value) || !Number.isFinite(value.x) ||
+    !('y' in value) || !Number.isFinite(value.y) ||
+    !('z' in value) || !Number.isFinite(value.z)) {
+    throw new RangeError('Invalid building transform');
+  }
+}
+
+function validateSize(value: unknown): void {
+  if (value !== undefined && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0)) {
+    throw new RangeError('Invalid building size');
+  }
+}
+
 export function hydrateBuildingState(
   state: BuildingHydrationTarget,
   data: Partial<BuildingSerializedState> | null | undefined,
 ): void {
-  if (!data) return;
+  if (data === null || data === undefined) return;
+  if (typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('Invalid building snapshot');
+  }
+  if (data.version !== undefined && data.version !== 1) {
+    throw new Error('Unsupported building snapshot version');
+  }
+  const collections = ['meshes', 'wallGroups', 'tileGroups', 'blocks', 'objects'] as const;
+  const settings = ['showSnow', 'showFog', 'fogColor', 'weatherEffect', 'worldSurface'] as const;
+  if (![...collections, ...settings].some((key) => Object.prototype.hasOwnProperty.call(data, key))) {
+    throw new Error('Empty building snapshot');
+  }
+  for (const key of collections) {
+    if (Object.prototype.hasOwnProperty.call(data, key) && !Array.isArray(data[key])) {
+      throw new Error(`Invalid building snapshot collection: ${key}`);
+    }
+  }
+  if (
+    (data.showSnow !== undefined && typeof data.showSnow !== 'boolean') ||
+    (data.showFog !== undefined && typeof data.showFog !== 'boolean') ||
+    (data.fogColor !== undefined && typeof data.fogColor !== 'string') ||
+    (data.weatherEffect !== undefined && !['none', 'snow', 'rain', 'storm', 'wind'].includes(data.weatherEffect)) ||
+    (data.worldSurface !== undefined && !['ground', 'water'].includes(data.worldSurface))
+  ) throw new Error('Invalid building snapshot settings');
+
+  for (const group of data.tileGroups ?? []) {
+    for (const tile of group.tiles) {
+      validateVector(tile.position);
+      validateSize(tile.size);
+    }
+  }
+  for (const group of data.wallGroups ?? []) {
+    for (const wall of group.walls) {
+      validateVector(wall.position);
+      validateVector(wall.rotation);
+    }
+  }
+  for (const block of data.blocks ?? []) {
+    validateVector(block.position);
+    if (block.size !== undefined) {
+      if (block.size === null || typeof block.size !== 'object') throw new RangeError('Invalid building size');
+      validateSize(block.size.x);
+      validateSize(block.size.y);
+      validateSize(block.size.z);
+    }
+  }
+  for (const object of data.objects ?? []) validateVector(object.position);
+
+  data = cloneBuildingValue(data);
 
   state.meshes.clear();
   state.wallGroups.clear();
@@ -113,6 +176,19 @@ export function hydrateBuildingState(
   applySelectedGroupId(state, 'selectedTileGroupId', state.tileGroups);
   applySelectedGroupId(state, 'selectedWallGroupId', state.wallGroups);
   state.initialized = true;
+}
+
+export function applyBuildingHydration(state: BuildingHydrationTarget, prepared: BuildingHydrationTarget): void {
+  Object.assign(state, {
+    meshes: prepared.meshes, wallGroups: prepared.wallGroups, tileGroups: prepared.tileGroups,
+    blocks: prepared.blocks, objects: prepared.objects,
+    tileIndex: prepared.tileIndex, tileCells: prepared.tileCells, tileMeta: prepared.tileMeta,
+    wallIndex: prepared.wallIndex, wallCells: prepared.wallCells, wallMeta: prepared.wallMeta,
+    initialized: prepared.initialized, showSnow: prepared.showSnow, showFog: prepared.showFog,
+    fogColor: prepared.fogColor, weatherEffect: prepared.weatherEffect, worldSurface: prepared.worldSurface,
+  });
+  applySelectedGroupId(state, 'selectedTileGroupId', state.tileGroups);
+  applySelectedGroupId(state, 'selectedWallGroupId', state.wallGroups);
 }
 
 function applySelectedGroupId(

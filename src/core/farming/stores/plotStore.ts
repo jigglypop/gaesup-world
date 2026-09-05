@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { useInventoryStore } from '../../inventory/stores/inventoryStore';
+import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import { notify } from '../../ui/components/Toast/toastStore';
 import { getCropRegistry } from '../registry/CropRegistry';
 import type { CropId, FarmingSerialized, Plot, PlotState } from '../types';
@@ -22,6 +23,7 @@ type State = {
 
   serialize: () => FarmingSerialized;
   hydrate: (data: FarmingSerialized | null | undefined) => void;
+  prepareHydrate: (data: FarmingSerialized | null | undefined) => () => void;
 };
 
 function emptyPlot(id: string, position: [number, number, number]): Plot {
@@ -110,11 +112,20 @@ export const usePlotStore = create<State>((set, get) => ({
     if (!cur || cur.state !== 'mature' || !cur.cropId) return false;
     const def = getCropRegistry().get(cur.cropId);
     if (!def) return false;
-    const left = useInventoryStore.getState().add(def.yieldItemId, def.yieldCount);
-    if (left > 0) {
-      notify('warn', '인벤토리가 가득 찼습니다');
+    const inventory = useInventoryStore.getState();
+    const item = getItemRegistry().get(def.yieldItemId);
+    const maxStack = item?.stackable ? Math.max(1, item.maxStack) : 1;
+    let capacity = 0;
+    for (const slot of inventory.slots) {
+      if (slot === null) capacity += maxStack;
+      else if (maxStack > 1 && slot.itemId === def.yieldItemId) capacity += Math.max(0, maxStack - slot.count);
+      if (capacity >= def.yieldCount) break;
+    }
+    if (capacity < def.yieldCount) {
+      notify('warn', '수확물을 담을 가방 공간이 부족해요. 공간을 비운 뒤 다시 수확해 주세요.');
       return false;
     }
+    inventory.add(def.yieldItemId, def.yieldCount);
     notify('reward', `${def.name} +${def.yieldCount}`);
     set({
       plots: {
@@ -130,8 +141,7 @@ export const usePlotStore = create<State>((set, get) => ({
 
   tick: (currentMinutes) => {
     const cur = get().plots;
-    const next: Record<string, Plot> = {};
-    let changed = false;
+    let next = cur;
     for (const [id, plot] of Object.entries(cur)) {
       let p = plot;
       if (p.state === 'planted' || p.state === 'mature') {
@@ -140,21 +150,22 @@ export const usePlotStore = create<State>((set, get) => ({
           const last = p.lastWateredAt ?? p.plantedAt;
           if (currentMinutes - last >= def.driedOutMinutes) {
             p = { ...p, state: 'dried' };
-            changed = true;
           } else {
             const idx = effectiveStageIndex(p, currentMinutes);
             const matureIdx = def.stages.length - 1;
             const newState: PlotState = idx >= matureIdx ? 'mature' : 'planted';
             if (idx !== p.stageIndex || newState !== p.state) {
               p = { ...p, stageIndex: idx, state: newState };
-              changed = true;
             }
           }
         }
       }
-      next[id] = p;
+      if (p !== plot) {
+        if (next === cur) next = { ...cur };
+        next[id] = p;
+      }
     }
-    if (changed) set({ plots: next });
+    if (next !== cur) set({ plots: next });
   },
 
   near: (x, z, radius) => {
@@ -170,12 +181,29 @@ export const usePlotStore = create<State>((set, get) => ({
     return best;
   },
 
-  serialize: () => ({ version: 1, plots: Object.values(get().plots).map((p) => ({ ...p })) }),
+  serialize: () => ({ version: 1, plots: Object.values(get().plots).map((p) => ({ ...p, position: [...p.position] })) }),
 
-  hydrate: (data) => {
-    if (!data || !Array.isArray(data.plots)) return;
-    const next: Record<string, Plot> = {};
-    for (const p of data.plots) if (p?.id) next[p.id] = { ...p };
-    set({ plots: next });
+  prepareHydrate: (data) => {
+    if (data === null || data === undefined) return () => {};
+    if (typeof data !== 'object' || data.version !== 1 || !Array.isArray(data.plots)) {
+      throw new TypeError('Invalid farming snapshot');
+    }
+    const ids = new Set<string>();
+    const plots = Object.fromEntries(data.plots.map((plot) => {
+      if (!plot || typeof plot !== 'object' || typeof plot.id !== 'string' || !plot.id.trim() || ids.has(plot.id)
+        || !Array.isArray(plot.position) || plot.position.length !== 3 || ![...plot.position].every(Number.isFinite)
+        || !['empty', 'tilled', 'planted', 'mature', 'dried'].includes(plot.state)
+        || !Number.isSafeInteger(plot.stageIndex) || plot.stageIndex < 0
+        || (plot.cropId !== undefined && (typeof plot.cropId !== 'string' || !plot.cropId.trim()))
+        || (plot.plantedAt !== undefined && (!Number.isFinite(plot.plantedAt) || plot.plantedAt < 0))
+        || (plot.lastWateredAt !== undefined && (!Number.isFinite(plot.lastWateredAt) || plot.lastWateredAt < 0))) {
+        throw new TypeError('Invalid farming plot');
+      }
+      ids.add(plot.id);
+      const prepared: Plot = { ...plot, position: [...plot.position] };
+      return [plot.id, prepared];
+    }));
+    return () => set({ plots });
   },
+  hydrate: (data) => get().prepareHydrate(data)(),
 }));

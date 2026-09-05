@@ -83,6 +83,8 @@ function getLayoutStyle(preset: CharacterMenuPreset): CSSProperties {
   if (preset.layout === 'floating') return FLOATING_PANEL_STYLE;
   return MODAL_PANEL_STYLE;
 }
+const activeMenuClosers = new Set<() => void>();
+
 export function useCharacterMenuController({
   toggleKey,
   open,
@@ -185,6 +187,7 @@ export function useCharacterMenuController({
     (slot: CharacterMenuClassNameSlot, base?: CSSProperties) => mergeStyles(slot, preset, styles, base),
     [preset, styles],
   );
+  const activeCharacterId = useCharacterStore((state) => state.activeCharacterId);
   const appearance = useCharacterStore((state) => state.appearance);
   const outfits = useCharacterStore((state) => state.outfits);
   const setName = useCharacterStore((state) => state.setName);
@@ -219,6 +222,7 @@ export function useCharacterMenuController({
     onOpenChange?.(false);
   }, [controlled, onClose, onOpenChange, previewMode, restoreCloseUp]);
   const openMenu = useCallback(() => {
+    activeMenuClosers.forEach((closeOther) => closeOther());
     if (!controlled) setInternalOpen(true);
     onOpenChange?.(true);
   }, [controlled, onOpenChange]);
@@ -241,8 +245,8 @@ export function useCharacterMenuController({
     setRotationState((value) => value + delta);
   }, []);
   const reset = useCallback(() => {
-    resetAppearance();
-  }, [resetAppearance]);
+    resetAppearance(activeCharacterId);
+  }, [activeCharacterId, resetAppearance]);
   const assetsBySlot = useMemo(() => {
     const normalizedTag = tagFilter.trim().toLowerCase();
     const next: Partial<Record<OutfitSlot, AssetRecord[]>> = {};
@@ -276,6 +280,13 @@ export function useCharacterMenuController({
     selectedSlots,
     tagFilter,
   ]);
+  useEffect(() => {
+    if (!isOpen) return;
+    activeMenuClosers.add(closeMenu);
+    return () => {
+      activeMenuClosers.delete(closeMenu);
+    };
+  }, [closeMenu, isOpen]);
   useEffect(() => {
     if (!toggleKey || controlled) return;
     const handleKeyDown = (event: KeyboardEvent) => {

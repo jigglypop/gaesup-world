@@ -31,6 +31,7 @@ export function createCraftingPlugin(options: CraftingPluginOptions = {}) {
     capabilities: ['crafting'],
     serialize: serializeCraftingState,
     hydrate: hydrateCraftingState,
+    prepareHydrate: (data) => useCraftingStore.getState().prepareHydrate(data),
   });
 }
 

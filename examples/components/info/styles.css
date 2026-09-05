@@ -1,15 +1,17 @@
 
 .info-style {
+  box-sizing: border-box;
+  --world-panel-top: calc(var(--app-header-height, 64px) + 60px);
   position: fixed;
-  top: calc(var(--gp-shell-pad, 16px) + var(--gp-header-height, 62px) + 10px);
+  top: var(--world-panel-top);
   right: calc(var(--gp-right-rail, 304px) + var(--gp-shell-pad, 16px) + var(--gp-content-gap, 16px));
   display: flex;
   flex-direction: column;
   gap: 10px;
   width: min(520px, calc(100vw - var(--gp-right-rail, 304px) - var(--gp-left-rail, 248px) - 64px));
-  max-height: calc(100vh - var(--gp-header-height, 62px) - 48px);
+  max-height: calc(100dvh - var(--world-panel-top) - 16px - env(safe-area-inset-bottom, 0px));
   padding: 14px;
-  z-index: 90;
+  z-index: var(--gp-z-panel, 90);
   pointer-events: auto;
   font-family: 'Pretendard', system-ui, sans-serif;
   overflow: auto;
@@ -158,7 +160,7 @@
   font-weight: 400;
   letter-spacing: 0.1px;
   line-height: 1.6;
-  z-index: 999;
+  z-index: calc(var(--gp-z-panel, 90) + 1);
   text-align: center;
   max-width: min(560px, calc(100vw - 40px));
   backdrop-filter: blur(10px);
@@ -179,7 +181,7 @@
   font-size: 15px;
   letter-spacing: 0.05px;
   line-height: 1.55;
-  z-index: 999;
+  z-index: calc(var(--gp-z-panel, 90) + 1);
   overflow: auto;
 }
 .settings-header {
@@ -277,8 +279,6 @@
   }
 
   .info-style {
-    top: 64px;
-    max-height: calc(100vh - 154px - env(safe-area-inset-bottom, 0px));
     overflow: auto;
     width: auto;
   }

@@ -203,6 +203,18 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
   });
 
   describe('렌더링', () => {
+    test('a view can hide the grid and restore the stored preference', async () => {
+      mockStore({ showGrid: true });
+      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem showGrid={false} />);
+      try {
+        expect(renderer.scene.findAllByProps({ name: 'grid-helper' })).toHaveLength(0);
+        await renderer.update(<BuildingSystem />);
+        expectSceneHasName(renderer, 'grid-helper');
+      } finally {
+        await renderer.unmount();
+      }
+    });
+
     test('기본 구조가 올바르게 렌더링되어야 함', async () => {
       let renderer: any;
       try {

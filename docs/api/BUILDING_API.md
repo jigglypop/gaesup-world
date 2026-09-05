@@ -184,6 +184,32 @@ save binding은 `useBuildingStore.getState().serialize()`와 `hydrate()`를 사�
 - `BuildingIndirectDrawDriver`: indirect draw 경로
 - `parseBuildingGpuVisibilityFlags`: visibility flag buffer를 render visibility 결과로 변환
 
+## Navigation (obstacle 연동)
+
+`gaesup-world/navigation` subpath는 building 배치와 연동되는 내비게이션 API를 공개합니다(`src/core/navigation/index.ts`).
+
+```ts
+import {
+  NavigationSystem,
+  registerNavigationObstacles,
+  applyRegisteredNavigationObstacles,
+  getNavigationObstacles,
+} from 'gaesup-world/navigation';
+import type { NavigationAgentSize, NavigationConfig, NavigationQueryOptions, Waypoint, NavigationObstacle } from 'gaesup-world/navigation';
+```
+
+`examples/pages/world/scene.tsx`의 실사용 예:
+
+```ts
+import { NavigationSystem, registerNavigationObstacles, applyRegisteredNavigationObstacles } from 'gaesup-world/navigation';
+```
+
+- `registerNavigationObstacles(obstacles: NavigationObstacle[])`: building 배치 결과(벽/블록 등)를 내비게이션 장애물로 등록
+- `applyRegisteredNavigationObstacles(...)`: 등록된 장애물을 실제 navmesh/에이전트 쿼리에 반영
+- `getNavigationObstacles()`: 현재 등록된 장애물 목록 조회
+- `NavigationSystem`: 씬에 배치하는 내비게이션 컴포넌트(에이전트 이동 쿼리 등을 구동)
+- NPC 전용 라우팅 어댑터: `applyNPCNavigationRoute`, `createNPCNavigationRoute` (`NPCNavigationRouteOptions`, `NavigationAgent`, `NPCNavigationTarget` 타입 포함)
+
 ## 주의할 점
 
 - 예전 문서의 `useBuildingSystem`, `BuildingTool`, `BuildingMaterial`, undo/redo 중심 API는 현재 공개 API 기준이 아닙니다.

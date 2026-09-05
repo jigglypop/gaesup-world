@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 
 import {
+  PROJECT_ASSET_DISPLAY_LABELS,
   PROJECT_ASSETS_PANEL_DEFAULT_CLASSES,
   PROJECT_ASSETS_PANEL_DEFAULT_LABELS,
 } from './defaults';
@@ -69,7 +70,7 @@ export function createProjectAssetItems(input: {
       name: scene.name ?? scene.id,
       kind: 'scene',
       group: 'scenes',
-      subtitle: `${scene.objects.length} objects`,
+      subtitle: `오브젝트 ${scene.objects.length}개`,
       tags: [],
       source: scene,
     }),
@@ -99,6 +100,10 @@ export function filterProjectAssetItems(
   },
 ): ProjectAssetItem[] {
   const query = filter.query?.trim().toLowerCase();
+  const matchesLabel = (value: string): boolean => Boolean(query && (
+    value.toLowerCase().includes(query) ||
+    PROJECT_ASSET_DISPLAY_LABELS[value]?.toLowerCase().includes(query)
+  ));
   return items.filter((item) => {
     if (filter.tab && item.group !== filter.tab) return false;
     if (filter.kind && filter.kind !== 'all' && item.kind !== filter.kind) return false;
@@ -106,8 +111,11 @@ export function filterProjectAssetItems(
     return (
       item.id.toLowerCase().includes(query) ||
       item.name.toLowerCase().includes(query) ||
-      item.kind.toLowerCase().includes(query) ||
-      item.tags.some((tag) => tag.toLowerCase().includes(query))
+      matchesLabel(item.kind) ||
+      (item.subtitle && (item.group === 'assets' || item.group === 'materials'
+        ? matchesLabel(item.subtitle)
+        : item.subtitle.toLowerCase().includes(query))) ||
+      item.tags.some(matchesLabel)
     );
   });
 }
