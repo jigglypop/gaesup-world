@@ -1,0 +1,134 @@
+import type { ExampleRoute } from './types';
+
+export const EXAMPLE_ROUTES: ExampleRoute[] = [
+  {
+    path: '/blueprint-playground',
+    label: '전사 이동 체험',
+    description: '블루프린트 캐릭터의 이동, 달리기와 점프를 직접 확인합니다.',
+    category: '개발자',
+    audience: 'developer',
+  },
+  {
+    path: '/world',
+    label: '월드',
+    description: '집과 마을을 둘러보고, 캐릭터를 움직이며 다양한 활동을 즐겨보세요.',
+    category: '체험',
+    audience: 'product',
+  },
+  {
+    path: '/creator',
+    label: '크리에이터',
+    description: '직접 플레이할 월드에 물건을 배치하고 공간을 꾸며보세요.',
+    category: '제작',
+    audience: 'product',
+  },
+  {
+    path: '/multiplayer',
+    label: '멀티플레이',
+    description: '방에 접속해 다른 플레이어와 만나고 함께 이동해보세요.',
+    category: '연결',
+    audience: 'product',
+  },
+  {
+    path: '/assets',
+    label: '에셋',
+    description: '캐릭터와 소품을 찾아보고 월드에 사용할 에셋을 확인하세요.',
+    category: '저작',
+    audience: 'product',
+  },
+  {
+    path: '/performance',
+    label: '성능',
+    description: '장면 규모와 렌더링 방식을 바꾸며 성능을 비교하세요.',
+    category: '측정',
+    audience: 'product',
+  },
+  {
+    path: '/examples',
+    label: '예제 카탈로그',
+    description: '전체 예제와 개발 도구를 한곳에서 찾아보세요.',
+    category: '개발자',
+    audience: 'developer',
+  },
+  {
+    path: '/minimal',
+    label: '최소 통합',
+    description: '최소한의 설정으로 실행하는 월드 예제입니다.',
+    category: '개발자',
+    audience: 'developer',
+  },
+  {
+    path: '/edit',
+    label: '레거시 에디터',
+    description: '기존 주소에서 월드 제작 화면으로 연결합니다.',
+    category: '호환',
+    audience: 'developer',
+  },
+  {
+    path: '/edit/npc',
+    label: 'NPC 에디터',
+    description: '월드에서 NPC의 설정과 행동을 편집합니다.',
+    category: '개발자',
+    audience: 'developer',
+  },
+  {
+    path: '/showcase',
+    label: '진단 쇼케이스',
+    description: '편집 도구와 진단 패널을 함께 확인합니다.',
+    category: '진단',
+    audience: 'developer',
+  },
+  {
+    path: '/automation',
+    label: '이동 자동화',
+    description: '이동과 대기를 순서대로 실행하고 일시정지·재개를 확인합니다.',
+    category: '진단',
+    audience: 'developer',
+  },
+  {
+    path: '/building',
+    label: '건축 에디터',
+    description: '건물을 배치하고 벽과 바닥을 편집합니다.',
+    category: '개발자',
+    audience: 'developer',
+  },
+  {
+    path: '/blueprints',
+    label: '블루프린트 에디터',
+    description: '블루프린트와 게임 콘텐츠를 편집합니다.',
+    category: '개발자',
+    audience: 'developer',
+  },
+  {
+    path: '/network',
+    label: '레거시 네트워크',
+    description: '기존 주소에서 멀티플레이 화면으로 연결합니다.',
+    category: '호환',
+    audience: 'developer',
+  },
+  {
+    path: '/next',
+    label: '넥스트 코어',
+    description: 'CPU와 WebGPU 처리 경로를 실험합니다.',
+    category: '실험',
+    audience: 'developer',
+  },
+  {
+    path: '/admin',
+    label: '관리자 셸',
+    description: '관리자 도구에서 월드를 편집합니다.',
+    category: '개발자',
+    audience: 'developer',
+  },
+  {
+    path: '/admin-test',
+    label: '관리자 패키지 테스트',
+    description: '독립적인 관리자 화면을 확인합니다.',
+    category: '진단',
+    audience: 'developer',
+  },
+];
+
+export const PRODUCT_ROUTES = EXAMPLE_ROUTES.filter((route) => route.audience === 'product');
+export const DEVELOPER_ROUTES = EXAMPLE_ROUTES.filter((route) => route.audience === 'developer');
+export const ROUTE_ALIASES = ['/', '/index.html', '*'] as const;

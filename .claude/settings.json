@@ -1,0 +1,55 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm test:*)",
+      "Bash(pnpm run test:*)",
+      "Bash(pnpm exec tsc:*)",
+      "Bash(pnpm exec eslint:*)",
+      "Bash(pnpm exec jest:*)",
+      "Bash(pnpm exec publint:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm build:types:*)",
+      "Bash(corepack pnpm test:*)",
+      "Bash(node scripts/verify-package-consumer.cjs)",
+      "Bash(node scripts/verify-demo-surface-chunk.cjs)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)"
+    ],
+    "deny": [
+      "Read(demo-dist/**)",
+      "Read(dist/**)",
+      "Read(node_modules/**)",
+      "Read(public/gltf/**)",
+      "Edit(demo-dist/**)",
+      "Edit(dist/**)",
+      "Edit(node_modules/**)",
+      "Edit(public/gltf/**)",
+      "Write(demo-dist/**)",
+      "Write(dist/**)",
+      "Write(node_modules/**)",
+      "Write(public/gltf/**)"
+    ],
+    "ask": [
+      "Bash(pnpm publish:*)",
+      "Bash(npm publish:*)",
+      "Bash(pnpm release:*)",
+      "Bash(git push:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e 'const fs=require(\"fs\"),p=\".codex/plans/active\";try{const fl=fs.readdirSync(p).filter(f=>f.endsWith(\".md\"));if(fl.length){console.log(\"[active epoch plan] .codex/plans/active:\");for(const f of fl)console.log(\"--- \"+f+\" ---\\n\"+fs.readFileSync(p+\"/\"+f,\"utf8\"))}}catch(e){}'",
+            "timeout": 15,
+            "statusMessage": "active epoch plan 로드"
+          }
+        ]
+      }
+    ]
+  }
+}

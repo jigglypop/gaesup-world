@@ -1,74 +1,299 @@
 {
   "name": "gaesup-world",
-  "version": "0.9.51",
+  "version": "1.0.2",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "homepage": "https://jigglypop.github.io/gaesup-world/",
+  "description": "Web 3D Character Controller and World Platform Library",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./admin": {
+      "import": {
+        "types": "./dist/admin-entry.d.ts",
+        "default": "./dist/admin.js"
+      },
+      "require": {
+        "types": "./dist/admin-entry.d.cts",
+        "default": "./dist/admin.cjs"
+      }
+    },
+    "./blueprints": {
+      "import": {
+        "types": "./dist/blueprints/index.d.ts",
+        "default": "./dist/blueprints.js"
+      },
+      "require": {
+        "types": "./dist/blueprints/index.d.cts",
+        "default": "./dist/blueprints.cjs"
+      }
+    },
+    "./blueprints/editor": {
+      "import": {
+        "types": "./dist/blueprints/editor.d.ts",
+        "default": "./dist/blueprints-editor.js"
+      },
+      "require": {
+        "types": "./dist/blueprints/editor.d.cts",
+        "default": "./dist/blueprints-editor.cjs"
+      }
+    },
+    "./runtime": {
+      "import": {
+        "types": "./dist/runtime.d.ts",
+        "default": "./dist/runtime.js"
+      },
+      "require": {
+        "types": "./dist/runtime.d.cts",
+        "default": "./dist/runtime.cjs"
+      }
+    },
+    "./editor": {
+      "import": {
+        "types": "./dist/editor.d.ts",
+        "default": "./dist/editor.js"
+      },
+      "require": {
+        "types": "./dist/editor.d.cts",
+        "default": "./dist/editor.cjs"
+      }
+    },
+    "./building": {
+      "import": {
+        "types": "./dist/building.d.ts",
+        "default": "./dist/building.js"
+      },
+      "require": {
+        "types": "./dist/building.d.cts",
+        "default": "./dist/building.cjs"
+      }
+    },
+    "./gameplay": {
+      "import": {
+        "types": "./dist/gameplay.d.ts",
+        "default": "./dist/gameplay.js"
+      },
+      "require": {
+        "types": "./dist/gameplay.d.cts",
+        "default": "./dist/gameplay.cjs"
+      }
+    },
+    "./navigation": {
+      "import": {
+        "types": "./dist/navigation.d.ts",
+        "default": "./dist/navigation.js"
+      },
+      "require": {
+        "types": "./dist/navigation.d.cts",
+        "default": "./dist/navigation.cjs"
+      }
+    },
+    "./assets": {
+      "import": {
+        "types": "./dist/assets.d.ts",
+        "default": "./dist/assets.js"
+      },
+      "require": {
+        "types": "./dist/assets.d.cts",
+        "default": "./dist/assets.cjs"
+      }
+    },
+    "./network": {
+      "import": {
+        "types": "./dist/network.d.ts",
+        "default": "./dist/network.js"
+      },
+      "require": {
+        "types": "./dist/network.d.cts",
+        "default": "./dist/network.cjs"
+      }
+    },
+    "./plugins": {
+      "import": {
+        "types": "./dist/plugins.d.ts",
+        "default": "./dist/plugins.js"
+      },
+      "require": {
+        "types": "./dist/plugins.d.cts",
+        "default": "./dist/plugins.cjs"
+      }
+    },
+    "./server-contracts": {
+      "import": {
+        "types": "./dist/server-contracts.d.ts",
+        "default": "./dist/server-contracts.js"
+      },
+      "require": {
+        "types": "./dist/server-contracts.d.cts",
+        "default": "./dist/server-contracts.cjs"
+      }
+    },
+    "./next": {
+      "import": {
+        "types": "./dist/next.d.ts",
+        "default": "./dist/next.js"
+      },
+      "require": {
+        "types": "./dist/next.d.cts",
+        "default": "./dist/next.cjs"
+      }
+    },
+    "./postprocessing": {
+      "import": {
+        "types": "./dist/postprocessing.d.ts",
+        "default": "./dist/postprocessing.js"
+      },
+      "require": {
+        "types": "./dist/postprocessing.d.cts",
+        "default": "./dist/postprocessing.cjs"
+      }
+    },
+    "./style.css": "./dist/index.css"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": [
+    "**/*.css",
+    "**/*.glsl",
+    "reflect-metadata"
+  ],
+  "files": [
+    "dist/index.js",
+    "dist/index.cjs",
+    "dist/index.d.ts",
+    "dist/*.js",
+    "dist/*.cjs",
+    "dist/*.d.ts",
+    "dist/*.d.cts",
+    "dist/*.css",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.cts",
+    "dist/wasm/*.wasm",
+    "public/gltf/*.glb",
+    "public/gltf/props/**/*",
+    "README.md",
+    "LICENSE.txt"
+  ],
   "scripts": {
-    "dev": "vite",
-    "preinstall": "npx only-allow pnpm",
+    "dev": "vite --force",
     "clean": "rimraf dist/",
-    "copy-files": "copyfiles -u 1 src/**/*.html src/**/*.css dist/",
-    "build": "vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:types",
+    "build:esm": "vite build --mode esm",
+    "build:cjs": "vite build --mode cjs",
+    "build:types": "tsc -p tsconfig.build.json && node scripts/copy-cjs-types.cjs",
+    "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "verify": "pnpm run lint && pnpm run test -- --runInBand && pnpm run build && pnpm exec publint",
+    "verify:full": "pnpm run verify && pnpm run test:memory:ci && pnpm run test:package:built && pnpm run test:demo",
     "preview": "vite preview",
-    "prepare": "rm -rf dist && mkdir dist && tsc -p tsconfig.build.json && pnpm copy-files",
-    "predeploy": "vite build",
-    "deploy": "gh-pages -d dist"
+    "prepare": "npm run build",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist",
+    "test": "jest",
+    "test:package": "npm run build && npm run test:package:built",
+    "test:package:built": "node scripts/verify-package-consumer.cjs",
+    "test:demo": "node scripts/verify-demo-surface-chunk.cjs",
+    "assets:parts": "node scripts/build-character-parts.cjs",
+    "test:browser": "playwright install chromium && node scripts/browser-smoke.cjs",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:memory": "jest --config jest.memory.config.js --runInBand",
+    "test:memory:verbose": "jest --config jest.memory.config.js --runInBand --verbose --logHeapUsage",
+    "test:memory:ci": "jest --config jest.memory.config.js --runInBand --logHeapUsage",
+    "policy:dev": "uv run --project server -- python server/main.py",
+    "release": "semantic-release",
+    "publish:full": "npm run prepare && npm publish"
   },
   "dependencies": {
-    "@dimforge/rapier3d": "^0.14.0",
-    "@dimforge/rapier3d-compat": "^0.14.0",
-    "@react-icons/all-files": "^4.1.0",
-    "@react-three/drei": "9.111.2",
-    "@react-three/fiber": "8.17.5",
-    "@react-three/postprocessing": "^2.16.2",
-    "@react-three/rapier": "^1.4.0",
-    "@types/lodash": "^4.17.7",
-    "@types/three": "^0.167.1",
-    "gh-pages": "^6.1.1",
-    "jotai": "^2.9.3",
-    "leva": "0.9.35",
-    "lodash": "^4.17.21",
-    "lru-cache": "^11.0.0",
-    "node-fetch": "3.3.2",
-    "react": "^18.3.1",
-    "react-device-detect": "^2.2.3",
-    "react-dom": "^18.3.1",
-    "react-icons": "^5.3.0",
-    "react-use-refs": "^1.0.1",
-    "three": "^0.167.1",
-    "three-stdlib": "^2.32.2"
+    "@xyflow/react": "^12.10.2",
+    "immer": "^10.1.1",
+    "mitt": "^3.0.1",
+    "reflect-metadata": "^0.2.2",
+    "simplex-noise": "^4.0.3",
+    "zustand": "^5.0.6"
   },
   "devDependencies": {
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "@vanilla-extract/css": "^1.15.4",
-    "@vanilla-extract/dynamic": "^2.1.2",
-    "@vanilla-extract/recipes": "^0.5.5",
-    "@vanilla-extract/sprinkles": "^1.6.3",
-    "@vanilla-extract/vite-plugin": "^4.0.14",
-    "@vitejs/plugin-react-swc": "^3.7.0",
-    "copyfiles": "^2.4.1",
-    "css-loader": "^7.1.2",
-    "path": "^0.12.7",
-    "prettier": "^3.3.3",
+    "@playwright/test": "1.54.0",
+    "@react-three/drei": "10.7.8",
+    "@react-three/fiber": "^9.7.0",
+    "@react-three/postprocessing": "^3.1.1",
+    "@react-three/rapier": "^2.2.0",
+    "@react-three/test-renderer": "^9.1.1",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.3",
+    "@semantic-release/npm": "^12.0.2",
+    "@semantic-release/release-notes-generator": "^14.0.3",
+    "@testing-library/dom": "^10.0.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@types/identity-obj-proxy": "^3.0.2",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.10",
+    "@types/pngjs": "^6.0.5",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@types/react-test-renderer": "^19.1.0",
+    "@types/stats.js": "^0.17.4",
+    "@types/three": "^0.185.4",
+    "@typescript/native": "npm:typescript@7.0.2",
+    "@vitejs/plugin-react-swc": "^4.3.3",
+    "eslint": "^9.30.1",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "gh-pages": "^6.3.0",
+    "globals": "^16.3.0",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^30.0.4",
+    "jest-canvas-mock": "^2.5.2",
+    "jest-environment-jsdom": "^30.0.4",
+    "pngjs": "^7.0.0",
+    "prettier": "^3.6.2",
+    "publint": "^0.3.12",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.6.3",
+    "react-test-renderer": "^19.2.8",
+    "react-use-refs": "^1.0.1",
     "rimraf": "^6.0.1",
-    "typescript": "^5.5.4",
-    "vite": "^5.4.1",
-    "vite-plugin-svgr": "^4.2.0"
+    "semantic-release": "^24.2.6",
+    "three": "0.185.1",
+    "three-stdlib": "^2.36.1",
+    "ts-jest": "^29.4.12",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript-eslint": "^8.69.0",
+    "vite": "^8.2.2",
+    "vite-plugin-glsl": "^1.6.1",
+    "vite-plugin-svgr": "^5.2.0"
   },
-  "description": "Web 3D Character Controller and World Platform Library",
+  "peerDependencies": {
+    "@react-three/drei": "^9.112.0 || ^10.0.0",
+    "@react-three/fiber": "^8.17.7 || ^9.0.0",
+    "@react-three/postprocessing": "^2.16.0 || ^3.0.0",
+    "@react-three/rapier": "^1.4.0 || ^2.0.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0",
+    "three": "^0.168.0 || ^0.178.0 || ^0.185.0",
+    "three-stdlib": "^2.36.0"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jigglypop/gaesup-world.git"
+    "url": "git+https://github.com/jigglypop/gaesup-world.git"
   },
   "keywords": [
     "three.js",
     "@react-three/fiber",
     "@react-three/drei",
-    "leva",
     "@react-three/rapier",
     "rapier"
   ],
@@ -76,5 +301,13 @@
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/jigglypop/gaesup-world.git/issues"
-  }
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "packageManager": "pnpm@9.15.1+sha512.1acb565e6193efbebda772702950469150cf12bcc764262e7587e71d19dc98a423dff9536e57ea44c49bdf790ff694e83c27be5faa23d67e0c033b583be4bfcf"
 }

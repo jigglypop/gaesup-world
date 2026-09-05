@@ -1,0 +1,86 @@
+.camera-presets-panel {
+  width: 100%;
+  color: var(--editor-text-main);
+}
+.camera-presets-panel--floating {
+  position: fixed;
+  max-width: calc(100vw - var(--editor-spacing-lg) - var(--editor-spacing-lg));
+  max-height: calc(100vh - var(--editor-spacing-lg) - var(--editor-spacing-lg));
+  overflow-y: auto;
+  padding: var(--editor-spacing-md);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  background: var(--editor-bg-1);
+  box-shadow: var(--editor-shadow);
+  backdrop-filter: var(--editor-glass-blur);
+}
+.camera-presets-panel--top-left {
+  top: var(--editor-spacing-lg);
+  left: var(--editor-spacing-lg);
+}
+.camera-presets-panel--top-right {
+  top: var(--editor-spacing-lg);
+  right: var(--editor-spacing-lg);
+}
+.camera-presets-panel--bottom-left {
+  bottom: var(--editor-spacing-lg);
+  left: var(--editor-spacing-lg);
+}
+.camera-presets-panel--bottom-right {
+  right: var(--editor-spacing-lg);
+  bottom: var(--editor-spacing-lg);
+}
+.camera-presets-panel-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-sm);
+}
+.camera-presets-panel-preset {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--editor-spacing-md);
+  padding: var(--editor-spacing-md);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  background: var(--editor-surface-1);
+  color: var(--editor-text-main);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.camera-presets-panel-preset:hover {
+  background: var(--editor-surface-hover);
+}
+.camera-presets-panel-preset--active {
+  border-color: var(--editor-accent-border);
+  background: var(--editor-surface-active);
+}
+.camera-presets-panel-icon {
+  flex: 0 0 auto;
+  color: var(--editor-text-muted);
+}
+.camera-presets-panel-content {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--editor-spacing-xs);
+}
+.camera-presets-panel-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--editor-text-main);
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.camera-presets-panel-description {
+  color: var(--editor-text-muted);
+  line-height: 1.4;
+}
+.camera-presets-panel-empty {
+  padding: var(--editor-spacing-md);
+  color: var(--editor-text-muted);
+}

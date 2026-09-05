@@ -1,0 +1,86 @@
+.camera-debug-panel {
+  width: 100%;
+  color: var(--editor-text-main);
+}
+.camera-debug-panel--floating {
+  position: fixed;
+  z-index: 1001;
+  max-width: calc(100vw - var(--editor-spacing-lg) - var(--editor-spacing-lg));
+  max-height: calc(100vh - var(--editor-spacing-lg) - var(--editor-spacing-lg));
+  overflow-y: auto;
+  padding: var(--editor-spacing-md);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  background: var(--editor-bg-1);
+  box-shadow: var(--editor-shadow);
+  backdrop-filter: var(--editor-glass-blur);
+}
+.camera-debug-panel--top-left {
+  top: var(--editor-spacing-lg);
+  left: var(--editor-spacing-lg);
+}
+.camera-debug-panel--top-right {
+  top: var(--editor-spacing-lg);
+  right: var(--editor-spacing-lg);
+}
+.camera-debug-panel--bottom-left {
+  bottom: var(--editor-spacing-lg);
+  left: var(--editor-spacing-lg);
+}
+.camera-debug-panel--bottom-right {
+  right: var(--editor-spacing-lg);
+  bottom: var(--editor-spacing-lg);
+}
+.camera-debug-panel--compact .camera-debug-panel-grid {
+  gap: var(--editor-spacing-xs);
+}
+.camera-debug-panel--light {
+  background: var(--editor-surface-1);
+  color: var(--editor-text-main);
+}
+.camera-debug-panel--glass {
+  background: var(--editor-bg-1);
+  backdrop-filter: var(--editor-glass-blur);
+}
+.camera-debug-panel-grid {
+  display: grid;
+  gap: var(--editor-spacing-xs);
+}
+.camera-debug-panel-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--editor-spacing-sm);
+  align-items: center;
+}
+.camera-debug-panel-label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--editor-text-muted);
+  font-size: 12px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.camera-debug-panel-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  border-radius: var(--editor-radius-sm);
+  background: var(--editor-surface-1);
+  color: var(--editor-text-main);
+  font-family: monospace;
+  font-size: 12px;
+  padding: var(--editor-spacing-xs) var(--editor-spacing-sm);
+}
+.camera-debug-panel-empty {
+  padding: var(--editor-spacing-md);
+  color: var(--editor-text-muted);
+  font-size: 12px;
+}
+@media (max-width: 720px) {
+  .camera-debug-panel-item {
+    grid-template-columns: 1fr;
+  }
+  .camera-debug-panel-label {
+    text-align: left;
+  }
+}

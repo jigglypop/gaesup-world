@@ -1,35 +1,66 @@
 # Gaesup World
 
-[![Version](https://img.shields.io/npm/v/../../../src?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/../../../src)
-[![Downloads](https://img.shields.io/npm/dt/../../../src.svg?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/../../../src)
+[![Version](https://img.shields.io/npm/v/gaesup-world?style=flat-square&logo=npm&logoColor=white&labelColor=000000&color=blue)](https://www.npmjs.com/package/gaesup-world)
+[![Downloads](https://img.shields.io/npm/dt/gaesup-world.svg?style=flat-square&logo=npm&logoColor=white&labelColor=000000&color=blue)](https://www.npmjs.com/package/gaesup-world)
 
-### Web 3D Character Controller and World Platform Library
+![Gaesup World 메인 이미지](https://signightbackend.s3.ap-northeast-2.amazonaws.com/images/gemini/image/1776774136799_88c802b2359c.jpg)
 
-### ![ezgif-7-177168be04](https://github.com/jigglypop/../../../src/assets/52653682/3ac16291-c851-4b0c-9c19-7026a18a00bb)
+`Gaesup World`는 `React Three Fiber`, `Three.js`, `Rapier`, `Zustand` 기반으로 만든 웹 3D 월드/게임 라이브러리입니다. 캐릭터 이동, 카메라, 상호작용, 건설, 애니메이션, 네트워크, 인벤토리, 퀘스트, 날씨, 타운 시스템처럼 월드 게임에 필요한 기능을 도메인 단위로 제공합니다.
 
-## introduction
+이 저장소는 두 가지 역할을 함께 가집니다.
 
-- Gaesup World is a library that uses `@react/three-fiber`,` @react/three-drei`, and `react-three-rapier` to provide control tools for characters, airplanes, cars, and more in a web 3D environment.
+- `src/`: 실제 배포되는 라이브러리 코드
+- `examples/`: 라이브러리를 사용하는 데모 앱
 
-- This controller is designed to easily manage character movement, animation, and interaction. It allows for easy manipulation of characters or vehicles in a virtual world, and is also equipped with utilities like minimaps and joysticks.
+## 현재 상태
 
-## How to start
+- 패키지명: `gaesup-world`
+- 문서 기준 import 엔트리: `gaesup-world`
+- 라이브러리 ESM 빌드: 확인 완료
+- 데모 Vite 빌드: 확인 완료
+- Jest 테스트: 통과
+- TypeScript declaration build: 통과
+
+즉, 런타임, 번들, 타입 선언 빌드 기준으로는 사용 가능한 상태입니다.
+
+## 설치
+
+앱에서 사용할 때는 `gaesup-world`와 3D 런타임 peer dependency를 함께 설치합니다. React, Three.js, React Three Fiber는 앱 쪽에서 직접 버전을 관리하는 것이 안전합니다.
+
+```bash
+npm install gaesup-world three three-stdlib react react-dom @react-three/fiber @react-three/drei @react-three/rapier @react-three/postprocessing
+```
+
+또는
+
+```bash
+yarn add gaesup-world three three-stdlib react react-dom @react-three/fiber @react-three/drei @react-three/rapier @react-three/postprocessing
+```
+
+또는
+
+```bash
+pnpm add gaesup-world three three-stdlib react react-dom @react-three/fiber @react-three/drei @react-three/rapier @react-three/postprocessing
+```
+
+## 빠른 시작
+
+가장 기본적인 사용 예시는 아래와 같습니다.
 
 ```tsx
-import ...
+import { Canvas } from '@react-three/fiber';
+import { Physics } from '@react-three/rapier';
+import { GaesupController, GaesupWorld } from 'gaesup-world';
+
+const CHARACTER_URL = 'https://your-cdn.example.com/character.glb';
 
 export default function App() {
-  const CHARACTER_URL = S3 + "/gaesupyee.glb";
   return (
     <GaesupWorld
-      url={{
-        characterUrl: CHARACTER_URL,
-      }}
-      mode={{
-        ...
-      }}
+      urls={{ characterUrl: CHARACTER_URL }}
+      mode={{ type: 'character', controller: 'keyboard', control: 'thirdPerson' }}
     >
-      <Canvas>
+      <Canvas shadows camera={{ position: [0, 6, 10], fov: 50 }}>
         <Physics>
           <GaesupController />
         </Physics>
@@ -37,584 +68,276 @@ export default function App() {
     </GaesupWorld>
   );
 }
-
 ```
 
-### Features
+### Scene JSON authoring 경계
 
-- 3D character control based on React Three Fiber.
-- Simple API for controlling character movement and animation.
-- Extensible structure for various customizations.
-- Lightweight library for fast loading and performance optimization.
+`SceneJsonObject`는 `undefined`가 없는 canonical JSON 타입입니다. 표준 scene component 입력은 `SceneJsonAuthoringObject`를 사용하므로 `exactOptionalPropertyTypes` 설정과 관계없이 optional field를 작성할 수 있지만, 입력 객체 자체를 `SceneJsonObject`로 대입하지는 않습니다. `createSceneComponent` 또는 표준 component factory를 통과시키면 입력과 alias되지 않는 canonical owned copy를 받습니다. 반환 데이터의 기존 mutable API는 유지되며, 직접 변경한 데이터는 load/save 전에 다시 검증됩니다. `loadSceneRuntime`도 입력 document/object identity 대신 owned materialization을 사용하고, `serializeSceneDocument`는 validation issue가 하나라도 있으면 `TypeError`를 던집니다.
 
-## Installation
+## 핵심 개념
 
-```bash
-npm install @react-three/fiber @react-three/drei three @types/three @react-three/rapier ../../../src
+### 런타임과 플러그인
+
+`createGaesupRuntime`은 카메라, 모션, 저장, NPC, 경제, 날씨 같은 도메인 플러그인을 한곳에 묶는 런타임 팩토리입니다. 앱이 필요한 도메인만 골라 붙일 수 있고, 각 플러그인은 서비스, 시스템, 저장 도메인, UI 확장을 등록합니다.
+
+```ts
+import {
+  createGaesupRuntime,
+  createBuildingPlugin,
+  createCameraPlugin,
+  createInventoryPlugin,
+} from 'gaesup-world';
+
+const runtime = createGaesupRuntime({
+  plugins: [
+    createCameraPlugin(),
+    createBuildingPlugin(),
+    createInventoryPlugin(),
+  ],
+});
+
+await runtime.setup();
 ```
 
-Or
+### 월드 설정
 
-```bash
-yarn add @react-three/fiber @react-three/drei three @types/three @react-three/rapier ../../../src
+`GaesupWorld`는 월드 관련 설정을 store에 주입하는 루트 컴포넌트입니다.
+
+- `urls`: 캐릭터/차량/비행기 모델 URL
+- `mode`: 플레이어 타입, 입력 방식, 카메라 제어 방식
+- `cameraOption`: 카메라 세부 옵션
+
+내부적으로는 `WorldContainer` 또는 `WorldConfigProvider` 역할을 감싼 공개 API입니다.
+
+### 플레이어 제어
+
+`GaesupController`는 캐릭터/엔티티 조작을 담당하는 기본 컨트롤러입니다.
+
+- 키보드 이동
+- 클릭 이동
+- 상호작용 시스템 연결
+- 이동/상태 브리지 연결
+
+### 도메인 기반 구조
+
+주요 기능은 도메인 단위로 분리되어 있습니다.
+
+- `animation`
+- `camera`
+- `motions`
+- `interactions`
+- `world`
+- `building`
+- `networks`
+- `time`
+- `save`
+- `inventory`
+- `items`
+- `quests`
+- `weather`
+- `town`
+- `audio`
+- `npc`
+- `blueprints`
+- `admin`
+
+### 저장 시스템
+
+새 기능은 `SaveSystem` 중심으로 저장 도메인을 등록하는 흐름을 권장합니다. 같은 key를 중복 등록하면 에러가 나도록 보호되어 있어, 여러 런타임이나 플러그인이 같은 저장 슬롯을 조용히 덮어쓰는 일을 피할 수 있습니다.
+
+```ts
+import { SaveSystem } from 'gaesup-world';
+
+const unregister = saveSystem.register({
+  key: 'inventory',
+  serialize: () => ({ items: [] }),
+  hydrate: (data) => {
+    // restore your store here
+  },
+});
+
+unregister();
 ```
 
-## 4) How to Contribute
+`SaveLoadManager`는 legacy world save와 파일 import/export helper로 남아 있습니다. `compress: true` 저장은 gzip 지원 브라우저에서는 gzip payload를 사용하고, 저장 목록에서도 timestamp와 metadata를 읽을 수 있습니다.
 
-If you would like to contribute to this project, please follow these steps:
+## 자주 쓰는 공개 API
 
-1. Fork the project.
-2. go to dev branch ( git checkout dev ).
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4. Push to the branch (git push origin dev).
-5. Create a Pull Request.
-
-## 5) License
-
-This project is distributed under the MIT License.
-
-- ## 1. [PlayerType](##PlayerType)
-
-  - [Character](#Character)
-
-  - [Vehicle](#Vehicle)
-
-  - [Airplane](#Airplane)
-
-* ## 2. [Animation](Animation)
-
-* ## 3. [Rideable](Rideable)
-
-* ## 4. [Passive](Passive)
-
-* ## 5. [Tools](#Tools)
-
-  - [joystick](#1joystick)
-
-  * [keyBoardTooltip](#keyBoardTooltip)
-
-  * [minimap](#MiniMap)
-
-  * [gameboy](##GameBoy)
-
-  - [GamePad](#GamePad)
-
-  - [ZoomButton](#ZoomButton)
-
-  - [JumpPortal](#JumpPortal)
-
-# PlayerType
-
----
-
-## Character
-
-This is the character control in Gaesup World.
-
-- Possible Camera Types
-
-| Name   | Info                                                                                          |
-| ------ | --------------------------------------------------------------------------------------------- |
-| Normal | Positioned parallel to the Z-axis from the character's location and not affected by rotation. |
-| Orbit  | Moves with the character and rotates according to the character's direction.                  |
-
-- Controller Tools
-
-| Name     | Condition                   | Info                                                                    |
-| -------- | --------------------------- | ----------------------------------------------------------------------- |
-| Keyboard | desktop                     | A standard keyboard tool. You can see where on the keyboard is clicked. |
-| joystick | mobile (not normal control) | A joystick implementation tool. It works on mobile devices.             |
-| Gameboy  | mobile                      | A Gameboy implementation tool. It works on mobile devices.              |
-
-## Vehicle
-
-- This is the vehicle control in Gaesup World. Characters can board the vehicle.
-
-* Possible Camera Types (only orbit type available)
-
-| Name  | Control       | Info                                                                         |
-| ----- | ------------- | ---------------------------------------------------------------------------- |
-| Orbit | Orbit Control | Moves with the character and rotates according to the character's direction. |
-
-- Controller Tools
-
-| Name     | Condition | Info                                                                    |
-| -------- | --------- | ----------------------------------------------------------------------- |
-| Keyboard | desktop   | A standard keyboard tool. You can see where on the keyboard is clicked. |
-| joystick | mobile    | A joystick implementation tool. It works on mobile devices.             |
-| Gameboy  | mobile    | A Gameboy implementation tool. It works on mobile devices.              |
-
-## Airplane
-
-the airplane control in Gaesup World. Characters can board the airplane.
-
-- Possible Camera Types (only orbit type available)
-
-| Name  | Control       | Info                                                                         |
-| ----- | ------------- | ---------------------------------------------------------------------------- |
-| Orbit | Orbit Control | Moves with the character and rotates according to the character's direction. |
-
-- Controller Tools
-
-| Name     | Condition | Info                                                                    |
-| -------- | --------- | ----------------------------------------------------------------------- |
-| Keyboard | desktop   | A standard keyboard tool. You can see where on the keyboard is clicked. |
-| joystick | mobile    | A joystick implementation tool. It works on mobile devices.             |
-| Gameboy  | mobile    | A Gameboy implementation tool. It works on mobile devices.              |
-
-# Animation
-
-- Animation refers to the method of controlling animations for characters and other elements in the Gaesup World.
-
-# Rideable
-
-- Rideable objects are objects that can be ridden. They detect collisions and allow the character to board when contact is made. Currently, two types of objects, 'vehicle' and 'airplane', can be ridden.
-
-example)
-
-<img src="https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/images/rideable.gif" alt="Rideable" style="zoom:150%;" />
-
-### (1) Example
+대표적으로 아래 항목들을 루트 엔트리에서 바로 import 할 수 있습니다.
 
 ```tsx
-export default function App() {
-  // Define URLs
-  const CHARACTER_URL = S3 + "/gaesup.glb";
-  const AIRPLANE_URL = S3 + "/air.glb";
-  const VEHICLE_URL = S3 + "/kart.glb";
-  const WHEEL_URL = S3 + "/wheel.glb";
+import {
+  GaesupWorld,
+  GaesupController,
+  WorldContainer,
+  WorldConfigProvider,
+  BuildingUI,
+  InventoryUI,
+  QuestLogUI,
+  DialogBox,
+  WeatherEffect,
+  useInventoryStore,
+  useQuestStore,
+  useWeatherStore,
+  useGameTime,
+  getItemRegistry,
+  getNPCScheduler,
+} from 'gaesup-world';
+```
 
+블루프린트 런타임 관련 API도 루트 엔트리에서 바로 사용할 수 있습니다.
+
+```tsx
+import {
+  BlueprintSpawner,
+  blueprintRegistry,
+  BlueprintFactory,
+} from 'gaesup-world';
+```
+
+관리자 UI와 블루프린트 편집 UI는 별도 subpath를 사용합니다.
+
+```tsx
+import { GaesupAdmin, useAuthStore } from 'gaesup-world/admin';
+import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
+```
+
+## Admin 사용법
+
+관리자 UI는 `gaesup-world/admin` 엔트리에서 import 합니다.
+
+```tsx
+import { GaesupAdmin } from 'gaesup-world/admin';
+```
+
+기본적으로 `GaesupAdmin`은 로그인 게이트가 켜져 있습니다. 즉, `requireLogin` 기본값은 `true`입니다.
+
+```tsx
+import { GaesupAdmin } from 'gaesup-world/admin';
+
+export default function AdminPage() {
   return (
-    <GaesupWorld
-    // ...props defined here
-    >
-      <Canvas
-      // ...props defined here
-      >
-        <Physics>
-          <GaesupController />
-
-          {/* Import Rideable component inside and pass the arguments as shown below */}
-          <Rideable
-            objectkey="1"
-            objectType="vehicle"
-            isRiderOn={true}
-            url={VEHICLE_URL}
-            wheelUrl={WHEEL_URL}
-            offset={V3(0, 0.5, 0)}
-            position={V3(-10, 5, 10)}
-          />
-          <Rideable
-            objectkey="2"
-            objectType="vehicle"
-            isRiderOn={false}
-            url={VEHICLE_URL}
-            wheelUrl={WHEEL_URL}
-            position={V3(-20, 5, 10)}
-          />
-          <Rideable
-            objectkey="3"
-            objectType="airplane"
-            isRiderOn={true}
-            url={AIRPLANE_URL}
-            offset={V3(0, 0.5, 0)}
-            position={V3(10, 5, 10)}
-          />
-          <Rideable
-            objectkey="4"
-            objectType="airplane"
-            isRiderOn={false}
-            url={AIRPLANE_URL}
-            position={V3(20, 5, 10)}
-          />
-        </Physics>
-      </Canvas>
-    </GaesupWorld>
+    <GaesupAdmin>
+      <div>Protected Admin Area</div>
+    </GaesupAdmin>
   );
 }
 ```
 
-### 2) Precautions
-
-- The `objectkey` must be unique.
-
-### 3) Props
-
-| Prop Name      | Type                    | Required | Description                                     | Default Value  |
-| -------------- | ----------------------- | -------- | ----------------------------------------------- | -------------- |
-| `objectkey`    | string                  | Required | Unique identifier for the rideable object       | None           |
-| `objectType`   | "vehicle" or "airplane" | Optional | Type of the rideable object                     | `undefined`    |
-| `isRiderOn`    | boolean                 | Optional | Whether a rider is on the rideable object       | `false`        |
-| `url`          | string                  | Optional | 3D model URL for the rideable object            | `null`         |
-| `wheelUrl`     | string                  | Optional | Wheel model URL for "vehicle" type rideables    | `null`         |
-| `position`     | THREE.Vector3           | Optional | Initial position of the rideable object         | `(0, 0, 0)`    |
-| `rotation`     | THREE.Euler             | Optional | Initial rotation angle of the rideable object   | `(0, 0, 0)`    |
-| `offset`       | THREE.Vector3           | Optional | Initial position offset for the rideable object | `(0, 0, 0)`    |
-| `visible`      | boolean                 | Optional | Visibility of the rideable object               | `true`         |
-| `vehicleSize`  | THREE.Vector3           | Optional | Size of the "vehicle" type rideable object      | Rapier default |
-| `wheelSize`    | THREE.Vector3           | Optional | Size of the wheel for "vehicle" type rideables  | Rapier default |
-| `airplaneSize` | THREE.Vector3           | Optional | Size of the "airplane" type rideable object     | Rapier default |
-
-### 4) Features
-
-1. **Support for Various Rideable Objects:** The Rideable component can render a variety of rideable objects, including "vehicle" and "airplane" types. It can render the 3D models of each object and allow interactions with them.
-2. **Customizable Properties:** You can easily configure the initial state, size, model URLs, visibility, and more of rideable objects using component properties.
-3. **Interaction with Riders:** The Rideable component supports interactions required for a rider to board and move with rideable objects.
-
-### 5) Advantages
-
-- **Modularity and Reusability:** The Rideable component is modular and can be easily integrated with other components, increasing code reusability and facilitating maintenance.
-
-- **Rapid Development:** By using the `useRideable` hook, which manages the physics engine and rideable object management, developers can quickly implement and render rideable objects, reducing development time.
-
-- **Real-time Interaction:** Leveraging the Rapier physics engine allows for real-time handling of rideable object movements and collision checks, providing a high level of interaction in games or simulations.
-
-- **Flexible Customization:** You can customize the appearance and behavior of each rideable object using properties, making it suitable for various game or simulation environments.
-
-# Passive
-
----
-
-under construct
-
-# GaeSupProps
-
----
-
-The `GaeSupProps` component is a React component used in a 3D environment. It is designed to represent various types of props or objects within the scene. This component can be used to create props with different types, text labels, and positions for visualization in a 3D space.
-
-### (1) props
-
-The `GaeSupProps` component accepts the following props:
-
-- `type` (optional): A string specifying the type of the prop. It can be either `"normal"` or `"ground"`. Defaults to `"normal"` if not provided.
-- `text` (optional): A string representing the text label associated with the prop. This label can provide additional information about the prop. If not provided, no label will be displayed.
-- `position` (optional): An array of three numbers `[x, y, z]` specifying the initial position of the prop in the 3D space. If not provided, the prop will be positioned at the origin `[0, 0, 0]`.
-- `children` (required): This prop should contain the 3D content that makes up the visual representation of the prop. It can include any 3D objects or components you want to render within the prop.
-
-### (2) example
-
-- To use the `GaeSupProps` component, you need to import it and include it in your React component tree. Here's an example of how to use it:
+로그인 보호 없이 감싸고 싶다면 명시적으로 꺼야 합니다.
 
 ```tsx
-import { GaeSupProps } from "./GaeSupProps";
-
-function MyScene() {
-  return (
-    <GaeSupProps type="normal" text="My Prop" position={[3, 1, -2]}>
-      {/* 3D content goes here */}
-    </GaeSupProps>
-  );
-}
+<GaesupAdmin requireLogin={false}>
+  <div>Public Admin Preview</div>
+</GaesupAdmin>
 ```
 
-- In this example, we've created a `GaeSupProps` component with a `"normal"` type, a text label of `"My Prop"`, and a specific position in 3D space.
+## 개발 환경 실행
 
-### (3) Behavior
+이 저장소 자체를 로컬에서 실행할 때는 `pnpm` 기준으로 작업하는 것이 가장 자연스럽습니다. Node 패키지 매니저가 섞이면 lockfile과 prepare 단계가 헷갈릴 수 있으니, 처음부터 `corepack pnpm ...` 형태로 맞추는 것을 권장합니다.
 
-- The `GaeSupProps` component also calculates the size and center of the 3D content it contains. It then updates a `minimap` object with this information, which can be useful for tracking the props within the scene.
-
-- Additionally, the component uses the `useEffect` hook to dispatch updates to the context, ensuring that changes to the `minimap` object are reflected in the sce
-
-# Tools
-
-- Various tools that assist with character control in GaesupWorld
-
-## GameBoy
-
-- The GameBoy component is a controller interface that emulates GameBoy-like directional buttons. It is primarily intended for mobile usage.
-
-### (1) props
-
-| Prop Name            | Type            | Required | Description                          | Default Value |
-| -------------------- | --------------- | -------- | ------------------------------------ | ------------- |
-| `gamePadStyle`       | object (styles) | Optional | Style for the GamePad container      | `undefined`   |
-| `gamePadButtonStyle` | object (styles) | Optional | Style for individual GamePad buttons | `undefined`   |
-| `label`              | string          | Optional | Custom label for the buttons         | `undefined`   |
-
-### (2) example
-
-```tsx
-import { GameBoy } from "./GameBoy";
-import { GaesupWorldContext } from "../../world/context";
-
-const App = () => {
-  return (
-    <GaesupWorld>
-      {/* ... */}
-      <GameBoy
-        gameboyStyle={gameboyStyle}
-        gameboyButtonStyle={gameboyButtonStyle}
-      />
-      {/* ... */}
-    </GaesupWorld>
-  );
-};
+```bash
+corepack pnpm install
+corepack pnpm dev
 ```
 
-### (3) Key Features:
+주요 명령:
 
-- **Direction Buttons:** Implements buttons for directional input (forward, backward, left, right) based on the `GameBoyDirections` array.
-- **Context-aware Rendering:** Renders the component based on the `mode.controller` value from the `GaesupWorldContext`.
-- **Custom Styling:** Provides `gameboyStyle` and `gameboyButtonStyle` properties for styling customization.
-
-### (4) How to Use
-
-To use the `GameBoy` component:
-
-1. Place the `GameBoy` component within your component tree.
-2. Customize the appearance by defining styles in the `gameboyStyle` and `gameboyButtonStyle` properties.
-3. The component renders buttons based on the `GameBoyDirections` array.
-
-## GamePad
-
-- The GamePad component provides a customizable controller interface that supports various controller modes, such as joysticks and GameBoys, making it versatile for different input scenarios.
-
-### (1) props
-
-| Prop Name            | Type            | Required | Description                          | Default Value |
-| -------------------- | --------------- | -------- | ------------------------------------ | ------------- |
-| `gamePadStyle`       | object (styles) | Optional | Style for the GamePad container      | `undefined`   |
-| `gamePadButtonStyle` | object (styles) | Optional | Style for individual GamePad buttons | `undefined`   |
-| `label`              | string          | Optional | Custom label for the buttons         | `undefined`   |
-
-### (2) example
-
-```tsx
-import { GamePad } from "./GamePad";
-import { GaesupWorldContext } from "../../world/context";
-
-const App = () => {
-  return (
-    <GaesupWorld>
-      {/* ... */}
-      <GamePad
-        gamePadStyle={gamePadStyle}
-        gamePadButtonStyle={gamePadButtonStyle}
-      />
-      {/* ... */}
-    </GaesupWorld>
-  );
-};
+```bash
+corepack pnpm dev
+corepack pnpm build
+corepack pnpm lint
+corepack pnpm test -- --runInBand
+corepack pnpm exec publint
 ```
 
-### (3) Key Features
+참고:
 
-- **Dynamic Button Rendering:** Dynamically generates buttons based on the `control` object in the `GaesupWorldContext`.
-- **Universal Usage:** Compatible with various controller modes like joysticks and GameBoys.
-- **Custom Styling:** Allows customization of the GamePad's appearance using the `gamePadStyle` and `gamePadButtonStyle` properties.
+- `npm pack --dry-run`은 `prepare`를 실행하므로 `dist/`가 재생성됩니다.
+- 배포 전에는 `corepack pnpm build`, `corepack pnpm lint`, `corepack pnpm test -- --runInBand`, `corepack pnpm exec publint`를 함께 확인하는 것이 좋습니다.
 
-### (4) How to Use
+## 데모 앱
 
-1. Include the `GamePad` component within your component tree.
-2. Customize the appearance using the `gamePadStyle` and `gamePadButtonStyle` properties.
-3. The component dynamically renders buttons based on the `control` mode.
+`examples/`에는 라이브러리를 실제로 사용하는 데모 라우트가 들어 있습니다.
 
-## joystick
+- `/`: 쇼케이스 데모
+- `/world`: 기본 월드/건설 에디터 데모
+- `/edit`: 편집 데모
+- `/blueprints`: 블루프린트 에디터
+- `/network`: 멀티플레이어 데모
+- `/admin`: 관리자 래핑 데모
 
----
+최근 정리로 인해 `examples`는 가능하면 내부 소스 경로 대신 루트 public API를 사용하도록 맞춰져 있습니다.
 
-- The joystick component provides a virtual joystick interface, primarily intended for mobile environments. This component allows you to simulate joystick-like input on mobile devices. Additionally, you can prevent position jitter, which can occur on mobile devices, by using the `scrollBlock` option in the `GaesupWorld` component.
+## 패키지 엔트리
 
-### (1) props
+현재 공개 export는 아래 subpath를 기준으로 관리합니다.
 
-| Prop Name           | Type            | Required | Description                 | Default Value |
-| ------------------- | --------------- | -------- | --------------------------- | ------------- |
-| `joystickStyle`     | object (styles) | Optional | Style for the joystick      | `undefined`   |
-| `joystickBallStyle` | object (styles) | Optional | Style for the joystick ball | `undefined`   |
+- `gaesup-world`: 메인 런타임, 월드, 도메인 API
+- `gaesup-world/admin`: 관리자 래퍼 UI
+- `gaesup-world/blueprints`: 블루프린트 런타임 API
+- `gaesup-world/blueprints/editor`: 블루프린트 편집 UI
+- `gaesup-world/runtime`: 런타임 중심 API
+- `gaesup-world/editor`: 에디터 API
+- `gaesup-world/assets`: 에셋 API
+- `gaesup-world/network`: 네트워크 API
+- `gaesup-world/plugins`: 플러그인 API
+- `gaesup-world/server-contracts`: 서버/클라이언트 command contract
+- `gaesup-world/postprocessing`: 렌더링 후처리 API
+- `gaesup-world/style.css`: 라이브러리 기본 스타일
 
-### (2) example
+`package.json`의 export map은 ESM/CJS와 `.d.ts`/`.d.cts` 타입 선언을 함께 제공합니다.
 
-```jsx
-const MyComponent = () => {
-  const joystickStyle = {
-    /* joystickStyle */
-  };
-  const joystickBallStyle = {
-    /* joystickBallStyle */
-  };
+## 검증 상태
 
-  return (
-    <GaesupWorld>
-      {/* ... */}
-      <joystick
-        joystickStyle={joystickStyle}
-        joystickBallStyle={joystickBallStyle}
-      />
-      {/* ... */}
-    </GaesupWorld>
-  );
-};
-```
+최근 확인 기준:
 
-### (3) Key Features:
+- `npm run build:types`: 성공
+- `npm run lint`: 성공
+- `npm test -- --runInBand`: 성공
+- `npm run build`: 성공
+- `npx publint`: 성공
 
-- **joystick Interface:** Provides a joystick-like user input interface, suitable for mobile devices.
-- **Customization:** You can customize the style of the joystick component by adjusting the styles of the joystick and the joystick ball using the `joystickBallStyle` and `joystickStyle` properties.
-- **Responsive and Interactive:** It supports various input devices and responds to both mouse and mobile touch events for controlling movement.
+## 문서 안내
 
-## 4) JumpPortal
+프로젝트 개요:
 
-- The `JumpPortal` component represents a clickable portal that allows users to teleport to a specified location within a 3D world. This component can be used to create interactive teleportation points in your application.
+- [프로젝트 개요](./docs/GAESUP_WORLD_OVERVIEW.md)
 
-### (1) props
+도메인 문서:
 
-| Prop Name         | Type          | Required | Description                                                 | Default Value |
-| ----------------- | ------------- | -------- | ----------------------------------------------------------- | ------------- |
-| `text`            | string        | Optional | The text to display on the portal.                          | `undefined`   |
-| `position`        | THREE.Vector3 | Required | The target position to teleport to using a `THREE.Vector3`. | None          |
-| `jumpPortalStyle` | CSSProperties | Optional | CSS styles for customizing the appearance of the portal.    | `undefined`   |
+- [블루프린트](./docs/domain/BLUEPRINT.md)
+- [카메라](./docs/domain/CAMERA.md)
+- [모션](./docs/domain/MOTIONS.md)
 
-### (2) example
+가이드 문서:
 
-- To use the `JumpPortal` component, you can import it and include it in your React application as follows:
+- [API 가이드](./docs/guide/API_GUIDE.md)
+- [성능 가이드](./docs/guide/PERFORMANCE_GUIDE.md)
+- [테스트 가이드](./docs/guide/TEST_GUIDE.md)
 
-```tsx
-import { JumpPortal } from "./JumpPortal";
-import * as THREE from "three";
+API 문서:
 
-const App = () => {
-  return (
-    <GaesupWorld>
-      {/* ... */}
-      <JumpPortal
-        text="Teleport"
-        position={new THREE.Vector3(10, 0, 5)}
-        jumpPortalStyle={{ backgroundColor: "blue", color: "white" }}
-      />
-      {/* ... */}
-    </GaesupWorld>
-  );
-};
-```
+- [블루프린트 API](./docs/api/BLUEPRINT_API.md)
+- [빌딩 API](./docs/api/BUILDING_API.md)
+- [렌더링 API](./docs/api/RENDERING_API.md)
+- [성능 API](./docs/api/PERFORMANCE_API.md)
+- [WASM API](./docs/api/WASM_API.md)
 
-## KeyBoardToolTip
+설정 문서:
 
----
+- [블루프린트 설정](./docs/config/BLUEPRINT_CONFIG.md)
+- [빌딩 설정](./docs/config/BUILDING_CONFIG.md)
+- [카메라 설정](./docs/config/CAMERA_CONFIG.md)
+- [물리 설정](./docs/config/PHYSICS_CONFIG.md)
 
-- The KeyBoardToolTip component is designed to visually represent a keyboard controller interface, providing a visual representation of each key and its associated action.
+계획 문서:
 
-### Key Features
+- [Universal Web Game Library 계획](./docs/plan/UNIVERSAL_WEB_GAME_LIBRARY.md)
+- [테스트 가이드](./docs/guide/TEST_GUIDE.md)
 
-- **Visualizing Keyboard Keys:** Visualizes all keyboard keys in an array format.
-- **State Animation:** Reflects the currently active keys and their associated actions by displaying them differently to provide user feedback.
-- **Custom Styling:** Provides various styling properties for customizing key caps' appearance.
+## 패키지 정보
 
-### How to Use
-
-1. Include the `KeyBoardToolTip` component within the `GaesupWorld` component.
-2. Define the `control` mode as "keyboard" in the `mode` property.
-3. The component visualizes each keyboard key based on the `KeyBoardAll` constant and applies different styles for currently active keys.
-4. (Optional) Customize the styles using the `keyBoardToolTipInnerStyle`, `selectedKeyCapStyle`, `notSelectedkeyCapStyle`, and `keyCapStyle` properties.
-
-### Example:
-
-```tsx
-import { KeyBoardToolTip } from "./KeyBoardToolTip";
-import { GaesupWorldContext } from "../../world/context";
-
-const App = () => {
-  return (
-    <GaesupWorld>
-      {/* ... */}
-      <KeyBoardToolTip
-        keyBoardToolTipInnerStyle={keyBoardToolTipInnerStyle}
-        selectedKeyCapStyle={selectedKeyCapStyle}
-        notSelectedkeyCapStyle={notSelectedkeyCapStyle}
-        keyCapStyle={keyCapStyle}
-      />
-      {/* ... */}
-    </GaesupWorld>
-  );
-};
-```
-
-## MiniMap
-
----
-
-- The MiniMap component is used to display a small map of the user's location and the surrounding environment within a 3D world.
-
-### (1) props
-
-| Prop Name        | Type            | Required | Description                                   | Default Value |
-| ---------------- | --------------- | -------- | --------------------------------------------- | ------------- |
-| `innerStyle`     | object (styles) | Optional | Style for the inner MiniMap container         | `undefined`   |
-| `textStyle`      | object (styles) | Optional | Style for text within the MiniMap             | `undefined`   |
-| `objectStyle`    | object (styles) | Optional | Style for objects within the MiniMap          | `undefined`   |
-| `avatarStyle`    | object (styles) | Optional | Style for avatars within the MiniMap          | `undefined`   |
-| `scaleStyle`     | object (styles) | Optional | Style for the scale control of the MiniMap    | `undefined`   |
-| `directionStyle` | object (styles) | Optional | Style for direction indicators in the MiniMap | `undefined`   |
-| `plusMinusStyle` | object (styles) | Optional | Style for plus/minus controls in the MiniMap  | `undefined`   |
-
-### 2) example
-
-```tsx
-import { MiniMap } from "./MiniMap";
-
-const App = () => {
-  return (
-    <GaesupWorld>
-      {/* ... */}
-      <MiniMap
-        minimapStyle={minimapStyle}
-        innerStyle={innerStyle}
-        // Pass other style properties as needed
-      />
-      {/* ... */}
-    </GaesupWorld>
-  );
-};
-```
-
-### 3) Key Features
-
-- **Dynamic Scaling:** Allows users to dynamically adjust the size of the map.
-- **Direction Indicators:** Visualizes directions such as East, West, South, and North.
-- **Custom Styling:** Allows customization of the MiniMap and its internal elements.
-- **Mouse Wheel Support:** Supports adjusting the map's scale using the mouse wheel.
-
-### 4) How to Use
-
-1. Include the `MiniMap` component within your component tree.
-2. Customize the appearance using the `minimapStyle`, `innerStyle`, `textStyle`, `objectStyle`, `avatarStyle`, `scaleStyle`, `directionStyle`, and `plusMinusStyle` properties as needed.
-3. The component updates the MiniMap based on the user's current position and direction.
-
-## ZoomButton
-
----
-
-- The ZoomButton component is used to move the camera to a specific location and control the camera's zoom, primarily used for zooming to a target.
-
-### (1) props
-
-| Prop Name         | Type            | Required | Description                                                | Default Value |
-| ----------------- | --------------- | -------- | ---------------------------------------------------------- | ------------- |
-| `position`        | THREE.Vector3   | Required | Target position for the camera to move to                  | None          |
-| `children`        | React.ReactNode | Optional | React nodes to render within the button                    | `undefined`   |
-| `target`          | THREE.Vector3   | Optional | Target position for the camera to look at                  | `undefined`   |
-| `keepBlocking`    | boolean         | Optional | Determines whether to keep blocking while camera is moving | `undefined`   |
-| `zoomButtonStyle` | object (styles) | Optional | Style for the ZoomButton component                         | `undefined`   |
-
-### (2) example
-
-```tsx
-import { ZoomButton } from "./ZoomButton";
-import * as THREE from "three";
-
-const App = () => {
-  return (
-    <GaesupWorld>
-      {/* ... */}
-      <ZoomButton position={new THREE.Vector3(0, 0, 5)}>{childern}</ZoomButton>
-      {/* ... */}
-    </GaesupWorld>
-  );
-};
-```
-
-### (3) How to Use
-
-1. Place the `ZoomButton` component in your component tree at the desired location.
-2. Define the `position` prop to specify the location the camera should move to.
-3. When the button is clicked, the camera will move to the specified position.
+- npm: https://www.npmjs.com/package/gaesup-world
+- 저장소: https://github.com/jigglypop/gaesup-world.git
+- 라이선스: MIT

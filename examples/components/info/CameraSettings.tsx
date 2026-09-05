@@ -1,0 +1,154 @@
+import { useGaesupStore } from 'gaesup-world';
+
+import { CheckboxInput } from './CheckboxInput';
+import { CAMERA_DESCRIPTIONS, CAMERA_PRESETS } from './constants';
+import { RangeInput } from './RangeInput';
+
+type CameraPresetKey = keyof typeof CAMERA_PRESETS;
+
+interface CameraSettingsProps {
+  mode: { control: string };
+  onControlChange: (control: string) => void;
+  onClose?: () => void;
+}
+
+function isCameraPresetKey(value: string): value is CameraPresetKey {
+  return value in CAMERA_PRESETS;
+}
+
+export function CameraSettings({ mode, onControlChange, onClose }: CameraSettingsProps) {
+  const cameraOption = useGaesupStore((state) => state.cameraOption);
+  const setCameraOption = useGaesupStore((state) => state.setCameraOption);
+
+  const updateCameraOption = (key: string, value: number | boolean) => {
+    setCameraOption({
+      [key]: value,
+    });
+  };
+
+  const updateSmoothingOption = (key: string, value: number) => {
+    setCameraOption({
+      smoothing: {
+        ...cameraOption.smoothing,
+        [key]: value,
+      },
+    });
+  };
+
+  const resetToPreset = () => {
+    const control = isCameraPresetKey(mode.control) ? mode.control : 'thirdPerson';
+    const preset = CAMERA_PRESETS[control];
+    setCameraOption(preset);
+  };
+
+  const getDistanceValue = (key: string) => {
+    const values = cameraOption as Record<string, unknown>;
+    const value = values[key] ?? values[key.charAt(0).toUpperCase() + key.slice(1)];
+    return typeof value === 'number' ? value : 0;
+  };
+
+  return (
+    <div className="camera-settings">
+      <div className="settings-header">
+        <h3>
+          카메라 설정 ·{' '}
+          {isCameraPresetKey(mode.control) ? CAMERA_DESCRIPTIONS[mode.control] : '사용자 설정'}
+        </h3>
+        <button onClick={resetToPreset} className="reset-button">
+          기본값으로 되돌리기
+        </button>
+        {onClose && (
+          <button onClick={onClose} className="reset-button">
+            닫기
+          </button>
+        )}
+      </div>
+      <div className="settings-grid">
+        <div className="setting-group">
+          <label>거리</label>
+          <RangeInput
+            label="X"
+            min={-50}
+            max={50}
+            step={1}
+            value={getDistanceValue('xDistance')}
+            onChange={(value) => updateCameraOption('xDistance', value)}
+          />
+          <RangeInput
+            label="Y"
+            min={0}
+            max={50}
+            step={1}
+            value={getDistanceValue('yDistance')}
+            onChange={(value) => updateCameraOption('yDistance', value)}
+          />
+          <RangeInput
+            label="Z"
+            min={-50}
+            max={50}
+            step={1}
+            value={getDistanceValue('zDistance')}
+            onChange={(value) => updateCameraOption('zDistance', value)}
+          />
+        </div>
+        <div className="setting-group">
+          <label>시야각과 움직임 보정</label>
+          <RangeInput
+            label="시야각"
+            min={30}
+            max={120}
+            step={5}
+            value={cameraOption.fov ?? 75}
+            suffix="°"
+            onChange={(value) => updateCameraOption('fov', value)}
+          />
+          <RangeInput
+            label="위치"
+            min={0.01}
+            max={1}
+            step={0.01}
+            value={cameraOption.smoothing?.position ?? 0.1}
+            formatter={(val) => val.toFixed(2)}
+            onChange={(value) => updateSmoothingOption('position', value)}
+          />
+          <RangeInput
+            label="회전"
+            min={0.01}
+            max={1}
+            step={0.01}
+            value={cameraOption.smoothing?.rotation ?? 0.1}
+            formatter={(val) => val.toFixed(2)}
+            onChange={(value) => updateSmoothingOption('rotation', value)}
+          />
+        </div>
+        <div className="setting-group">
+          <label>옵션</label>
+          <CheckboxInput
+            label="충돌 감지"
+            checked={cameraOption.enableCollision ?? false}
+            onChange={(checked) => updateCameraOption('enableCollision', checked)}
+          />
+          <CheckboxInput
+            label="포커스 모드"
+            checked={cameraOption.focus ?? false}
+            onChange={(checked) => updateCameraOption('focus', checked)}
+          />
+        </div>
+      </div>
+      <div className="quick-presets">
+        <h4>시점 선택</h4>
+        <div className="preset-buttons">
+          {Object.keys(CAMERA_PRESETS).map((presetName) => (
+            <button
+              key={presetName}
+              className="preset-button"
+              onClick={() => onControlChange(presetName)}
+            >
+              {isCameraPresetKey(presetName) ? CAMERA_DESCRIPTIONS[presetName] : presetName}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,61 @@
+.gamepad-container {
+  display: grid;
+  align-items: center;
+  justify-content: center;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pad-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  width: 5rem;
+  height: 5rem;
+  cursor: pointer;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  font-weight: 500;
+  transition: all 0.3s ease-in;
+  box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  position: relative;
+  font-size: 1rem;
+  margin: 0.5rem;
+  border-radius: 50%;
+  border: none;
+}
+
+.pad-button::after {
+  content: "";
+  position: absolute;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: -1;
+}
+
+.pad-button:hover {
+  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.5);
+  transform: scale(1.05);
+}
+
+.is-clicked {
+  background: radial-gradient(circle at center, rgba(245, 177, 97, 1) 0.4%, rgba(236, 54, 110, 1) 100.2%);
+  box-shadow: 0 0 1rem rgba(245, 177, 97, 1);
+  color: black;
+  transition: all 0.3s ease-in;
+  border-radius: 50%;
+  transform: scale(0.95);
+}

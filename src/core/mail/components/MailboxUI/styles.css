@@ -1,0 +1,28 @@
+.mailbox-panel {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  width: 720px;
+  max-width: calc(100vw - 24px);
+  height: 460px;
+  max-height: calc(100dvh - 32px);
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+
+.mailbox-list {
+  min-width: 0;
+  min-height: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+@media (max-width: 600px) {
+  .mailbox-panel {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 35%) minmax(0, 1fr);
+  }
+
+  .mailbox-list {
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+}

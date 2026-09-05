@@ -1,0 +1,192 @@
+
+import { RapierRigidBody } from '@react-three/rapier';
+
+import { Profile } from '@/core/boilerplate/decorators';
+import {
+  createInteractionInputAdapter,
+  type InputAdapter,
+} from '@/core/interactions/core';
+import type { RefObject } from '@core/boilerplate';
+
+import { NavigationSystem } from '../../../navigation/NavigationSystem';
+import { PhysicsCalcProps, PhysicsInputState, PhysicsState } from '../../types';
+import type { PhysicsConfigType } from '../config';
+import { EntityStateManager } from '../system/EntityStateManager';
+
+
+export class ImpulseComponent {
+  private stateManager: EntityStateManager;
+  private inputBackend: InputAdapter;
+  private config: PhysicsConfigType;
+  private scratchImpulse = { x: 0, y: 0, z: 0 };
+  private scratchLinvel = { x: 0, y: 0, z: 0 };
+  private navigation = NavigationSystem.getInstance();
+  private wasMouseActive = false;
+
+  constructor(
+    config: PhysicsConfigType,
+    stateManager?: EntityStateManager,
+    inputBackend: InputAdapter = createInteractionInputAdapter(),
+  ) {
+    this.stateManager = stateManager ?? new EntityStateManager();
+    this.inputBackend = inputBackend;
+    this.config = config;
+  }
+
+  @Profile()
+  applyImpulse(
+    rigidBodyRef: RefObject<RapierRigidBody>,
+    physicsState: PhysicsState,
+    calcProp?: PhysicsCalcProps,
+  ): void {
+    if (!rigidBodyRef.current) return;
+    const { modeType } = physicsState;
+    switch (modeType) {
+      case 'character':
+        this.applyCharacterImpulse(rigidBodyRef, physicsState, calcProp);
+        break;
+      case 'vehicle':
+        this.applyVehicleImpulse(rigidBodyRef, physicsState, calcProp);
+        break;
+      case 'airplane':
+        this.applyAirplaneImpulse(rigidBodyRef, physicsState);
+        break;
+      default:
+        this.applyCharacterImpulse(rigidBodyRef, physicsState, calcProp);
+    }
+  }
+
+  @Profile()
+  private applyCharacterImpulse(
+    rigidBodyRef: RefObject<RapierRigidBody>,
+    physicsState: PhysicsState,
+    calcProp?: PhysicsCalcProps,
+  ): void {
+    const {
+      gameStates: { isMoving, isRunning, isOnTheGround, isJumping },
+      activeState,
+    } = physicsState;
+    const { walkSpeed = 10, runSpeed = 20, jumpSpeed = 15 } = this.config;
+    if (isJumping && isOnTheGround) {
+      const currentVel = rigidBodyRef.current.linvel();
+      this.scratchLinvel.x = currentVel.x;
+      this.scratchLinvel.y = jumpSpeed;
+      this.scratchLinvel.z = currentVel.z;
+      rigidBodyRef.current.setLinvel(this.scratchLinvel, true);
+      this.stateManager.updateGameStates({
+        isOnTheGround: false,
+      });
+    }
+    const mouseActive = calcProp?.inputRef?.current.mouse.isActive ?? physicsState.mouse.isActive;
+    const mouseStopped = this.wasMouseActive && !mouseActive;
+    this.wasMouseActive = mouseActive;
+    const keyboard = physicsState.keyboard;
+    if (mouseStopped && !(keyboard.forward || keyboard.backward || keyboard.leftward || keyboard.rightward)) {
+      this.scratchLinvel.x = 0;
+      this.scratchLinvel.y = rigidBodyRef.current.linvel().y;
+      this.scratchLinvel.z = 0;
+      rigidBodyRef.current.setLinvel(this.scratchLinvel, true);
+      return;
+    }
+    if (isMoving) {
+      const speed = isRunning ? runSpeed : walkSpeed;
+      const dir = activeState.dir;
+      const vel = activeState.velocity;
+      const M = rigidBodyRef.current.mass();
+      const targetVelX = -dir.x * speed;
+      const targetVelZ = -dir.z * speed;
+      if (!this.canMoveForward(rigidBodyRef.current, targetVelX, targetVelZ, calcProp)) {
+        this.scratchLinvel.x = 0;
+        this.scratchLinvel.y = rigidBodyRef.current.linvel().y;
+        this.scratchLinvel.z = 0;
+        rigidBodyRef.current.setLinvel(this.scratchLinvel, true);
+        return;
+      }
+      const accelX = targetVelX - vel.x;
+      const accelZ = targetVelZ - vel.z;
+      this.scratchImpulse.x = accelX * M;
+      this.scratchImpulse.y = 0;
+      this.scratchImpulse.z = accelZ * M;
+      rigidBodyRef.current.applyImpulse(this.scratchImpulse, true);
+    }
+  }
+
+  private canMoveForward(
+    rigidBody: RapierRigidBody,
+    targetVelX: number,
+    targetVelZ: number,
+    calcProp?: PhysicsCalcProps,
+  ): boolean {
+    if (!this.navigation.hasNavigationConstraints()) return true;
+
+    const horizontalSpeed = Math.sqrt(targetVelX * targetVelX + targetVelZ * targetVelZ);
+    if (horizontalSpeed <= 0.0001 || typeof rigidBody.translation !== 'function') return true;
+
+    const position = rigidBody.translation();
+    const { cellSize } = this.navigation.getGridDimensions();
+    const lookAhead = Math.max(0.45, Math.min(cellSize * 0.75, horizontalSpeed * 0.08));
+    const dirX = targetVelX / horizontalSpeed;
+    const dirZ = targetVelZ / horizontalSpeed;
+    const nextX = position.x + dirX * lookAhead;
+    const nextZ = position.z + dirZ * lookAhead;
+    const agentRadius = Math.max(
+      0,
+      calcProp?.colliderSize?.radius ?? this.config.navigationAgentRadius ?? 0.35,
+    );
+
+    return this.navigation.canTraverseSegment(position.x, position.z, nextX, nextZ, {
+      agentRadius,
+      ignoreStart: true,
+    });
+  }
+
+  private applyVehicleImpulse(
+    rigidBodyRef: RefObject<RapierRigidBody>,
+    physicsState: PhysicsState,
+    calcProp?: PhysicsCalcProps,
+  ): void {
+    const { activeState } = physicsState;
+    const keyboard = this.getKeyboard(calcProp);
+    const { maxSpeed = 10, accelRatio = 2 } = this.config;
+    const isBoosting = keyboard.shift && !physicsState.mouse.isLookAround;
+    const velocity = rigidBodyRef.current.linvel();
+    // Avoid sqrt: compare squared speed to squared maxSpeed.
+    const safeMaxSpeed = Math.max(0, maxSpeed);
+    const speedSq = velocity.x * velocity.x + velocity.z * velocity.z;
+    if (speedSq < safeMaxSpeed * safeMaxSpeed) {
+      const M = rigidBodyRef.current.mass();
+      const speed = isBoosting ? accelRatio : 1;
+      this.scratchImpulse.x = activeState.dir.x * M * speed;
+      this.scratchImpulse.y = 0;
+      this.scratchImpulse.z = activeState.dir.z * M * speed;
+      rigidBodyRef.current.applyImpulse(this.scratchImpulse, true);
+    }
+  }
+
+  private applyAirplaneImpulse(
+    rigidBodyRef: RefObject<RapierRigidBody>,
+    physicsState: PhysicsState
+  ): void {
+    const { activeState } = physicsState;
+    const { maxSpeed = 20 } = this.config;
+    
+    const velocity = rigidBodyRef.current.linvel();
+    // Avoid sqrt: compare squared speed to squared maxSpeed.
+    const safeMaxSpeed = Math.max(0, maxSpeed);
+    const speedSq =
+      velocity.x * velocity.x +
+      velocity.y * velocity.y +
+      velocity.z * velocity.z;
+    if (speedSq < safeMaxSpeed * safeMaxSpeed) {
+      const M = rigidBodyRef.current.mass();
+      this.scratchImpulse.x = activeState.direction.x * M;
+      this.scratchImpulse.y = activeState.direction.y * M;
+      this.scratchImpulse.z = activeState.direction.z * M;
+      rigidBodyRef.current.applyImpulse(this.scratchImpulse, true);
+    }
+  }
+
+  private getKeyboard(calcProp?: PhysicsCalcProps): PhysicsInputState['keyboard'] {
+    return calcProp?.inputRef?.current?.keyboard ?? this.inputBackend.getKeyboard();
+  }
+}

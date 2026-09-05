@@ -1,0 +1,231 @@
+.npc-editor-route .app-navigation {
+  display: flex;
+}
+
+.npc-editor-page__workspace {
+  position: fixed;
+  top: 76px;
+  left: 10px;
+  right: 10px;
+  z-index: 20;
+  height: min(720px, calc(100vh - 96px));
+  min-height: 0;
+  pointer-events: none;
+}
+
+.npc-editor-page__inspector {
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  color: #f8fafc;
+  pointer-events: none;
+}
+
+.npc-editor-page__inspector .building-panel {
+  height: 100%;
+  padding: 0;
+  pointer-events: none;
+}
+
+.npc-editor-page__inspector .building-panel__inspector {
+  overflow: visible;
+  pointer-events: none;
+}
+
+.npc-editor-page__inspector .building-panel__npc-workspace,
+.npc-editor-page__inspector .building-panel__npc-workspace--modal {
+  grid-template-columns: minmax(320px, 0.8fr) minmax(420px, 1.2fr);
+}
+
+.npc-editor-page__inspector .building-panel__npc-shell--split {
+  display: grid;
+  grid-template-columns:
+    minmax(280px, 0.72fr)
+    minmax(520px, 1.25fr)
+    minmax(460px, 1fr);
+  gap: 14px;
+  height: 100%;
+  min-height: 0;
+}
+
+.npc-editor-page__inspector .building-panel__npc-shell--sidebars {
+  position: relative;
+  display: block;
+  height: 100%;
+  min-height: 0;
+  pointer-events: none;
+}
+
+.npc-editor-page__inspector .building-panel__npc-side {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(13, 16, 24, 0.72);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  overflow: auto;
+  pointer-events: auto;
+}
+
+.npc-editor-page__inspector * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.42) transparent;
+}
+
+.npc-editor-page__inspector *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.npc-editor-page__inspector *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.npc-editor-page__inspector *::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.42);
+  background-clip: padding-box;
+}
+
+.npc-editor-page__inspector *::-webkit-scrollbar-thumb:hover {
+  background: rgba(203, 213, 225, 0.58);
+  background-clip: padding-box;
+}
+
+.npc-editor-page__inspector .building-panel__npc-side--left {
+  left: 0;
+  width: 230px;
+}
+
+.npc-editor-page__inspector .building-panel__npc-side--right {
+  right: 0;
+  width: min(620px, calc(100vw - 300px));
+}
+
+.npc-editor-page__inspector .building-panel__npc-side--left .building-panel__npc-board {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.npc-editor-page__inspector .building-panel__npc-side--left .building-panel__npc-pane {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: clip;
+}
+
+.npc-editor-page__inspector .building-panel__npc-side--right .building-panel__npc-pane--brain {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: clip;
+}
+
+.npc-editor-page__inspector .building-panel__npc-board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 14px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.npc-editor-page__inspector .building-panel__npc-pane {
+  display: flex;
+  min-width: 0;
+  min-height: auto;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(8, 13, 24, 0.42);
+  overflow: clip;
+}
+
+.npc-editor-page__inspector .building-panel__npc-pane--movement {
+  grid-column: 1 / -1;
+}
+
+.npc-editor-page__inspector .building-panel__npc-head {
+  grid-template-columns: 1fr;
+}
+
+.npc-editor-page__inspector .building-panel__npc-chip-list {
+  grid-template-columns: 1fr;
+}
+
+.npc-editor-page__inspector .building-panel__npc-statusbar {
+  grid-template-columns: 1fr;
+}
+
+.npc-editor-page__inspector .building-panel__npc-pane--animation .building-panel__grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.npc-editor-page__inspector .building-panel__npc-avatar-canvas {
+  max-width: none;
+  height: 180px;
+}
+
+.npc-editor-page__inspector .building-panel__brain-canvas {
+  height: 360px !important;
+}
+
+.npc-editor-page__inspector .building-panel__brain-inspector {
+  max-height: none;
+  overflow: visible;
+}
+
+@media (max-width: 980px) {
+  .npc-editor-page__workspace {
+    top: 72px;
+    left: 10px;
+    right: 10px;
+    height: calc(100vh - 92px);
+  }
+
+  .npc-editor-page__inspector .building-panel__npc-shell--split {
+    grid-template-columns: 1fr;
+  }
+
+  .npc-editor-page__inspector .building-panel__npc-board {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+
+  .npc-editor-page__inspector .building-panel__npc-shell--sidebars {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: auto;
+    pointer-events: auto;
+  }
+
+  .npc-editor-page__inspector .building-panel__npc-side {
+    position: static;
+    width: auto;
+    overflow: visible;
+  }
+
+  .npc-editor-page__inspector .building-panel__npc-pane--movement {
+    grid-column: auto;
+  }
+}

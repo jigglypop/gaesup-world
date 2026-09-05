@@ -1,0 +1,138 @@
+import type { DomainBinding, SerializedDomainValue } from '../save';
+
+export const WORLD_SNAPSHOT_DOMAINS = [
+  'building',
+  'scene',
+  'scene-document',
+  'character',
+  'assets',
+  'npc',
+  'camera',
+  'time',
+  'weather',
+  'audio',
+] as const;
+
+export const PLAYER_PROGRESS_DOMAINS = [
+  'inventory',
+  'wallet',
+  'shop',
+  'relations',
+  'quests',
+  'mail',
+  'catalog',
+  'crafting',
+  'farming',
+  'events',
+  'town',
+  'i18n',
+] as const;
+
+export type WorldSnapshotDomain = typeof WORLD_SNAPSHOT_DOMAINS[number];
+export type PlayerProgressDomain = typeof PLAYER_PROGRESS_DOMAINS[number];
+
+export type DomainSnapshot<TDomain extends string = string> = {
+  version: number;
+  savedAt: number;
+  domains: Partial<Record<TDomain, SerializedDomainValue>>;
+};
+
+export type WorldSnapshot = DomainSnapshot<WorldSnapshotDomain> & {
+  kind: 'world';
+  worldId: string;
+};
+
+export type PlayerProgress = DomainSnapshot<PlayerProgressDomain> & {
+  kind: 'player';
+  playerId: string;
+  worldId?: string;
+};
+
+export type CreateWorldSnapshotOptions = {
+  version?: number;
+  savedAt?: number;
+};
+
+export type CreatePlayerProgressOptions = CreateWorldSnapshotOptions & {
+  worldId?: string;
+};
+
+export type PlatformSaveBindingProvider = {
+  getBindings: () => Iterable<DomainBinding>;
+};
+
+export function pickDomains<TDomain extends string>(
+  domains: Record<string, SerializedDomainValue>,
+  allowed: readonly TDomain[],
+): Partial<Record<TDomain, SerializedDomainValue>> {
+  const next: Partial<Record<TDomain, SerializedDomainValue>> = {};
+  for (const key of allowed) {
+    if (key in domains) {
+      next[key] = domains[key];
+    }
+  }
+  return next;
+}
+
+export function createWorldSnapshot(
+  worldId: string,
+  domains: Record<string, SerializedDomainValue>,
+  options: CreateWorldSnapshotOptions = {},
+): WorldSnapshot {
+  return {
+    kind: 'world',
+    worldId,
+    version: options.version ?? 1,
+    savedAt: options.savedAt ?? Date.now(),
+    domains: pickDomains(domains, WORLD_SNAPSHOT_DOMAINS),
+  };
+}
+
+export function createPlayerProgress(
+  playerId: string,
+  domains: Record<string, SerializedDomainValue>,
+  options: CreatePlayerProgressOptions = {},
+): PlayerProgress {
+  return {
+    kind: 'player',
+    playerId,
+    ...(options.worldId ? { worldId: options.worldId } : {}),
+    version: options.version ?? 1,
+    savedAt: options.savedAt ?? Date.now(),
+    domains: pickDomains(domains, PLAYER_PROGRESS_DOMAINS),
+  };
+}
+
+export function collectSaveDomains(
+  provider: PlatformSaveBindingProvider,
+): Record<string, SerializedDomainValue> {
+  return collectDomains(provider);
+}
+
+function collectDomains(
+  provider: PlatformSaveBindingProvider,
+  allowed?: readonly string[],
+): Record<string, SerializedDomainValue> {
+  const domains: Record<string, SerializedDomainValue> = {};
+  for (const binding of provider.getBindings()) {
+    if (allowed && !allowed.includes(binding.key)) continue;
+    domains[binding.key] = binding.serialize();
+  }
+  return domains;
+}
+
+export function createWorldSnapshotFromSaveSystem(
+  provider: PlatformSaveBindingProvider,
+  worldId: string,
+  options: CreateWorldSnapshotOptions = {},
+): WorldSnapshot {
+  return createWorldSnapshot(worldId, collectDomains(provider, WORLD_SNAPSHOT_DOMAINS), options);
+}
+
+export function createPlayerProgressFromSaveSystem(
+  provider: PlatformSaveBindingProvider,
+  playerId: string,
+  options: CreatePlayerProgressOptions = {},
+): PlayerProgress {
+  return createPlayerProgress(playerId, collectDomains(provider, PLAYER_PROGRESS_DOMAINS), options);
+}

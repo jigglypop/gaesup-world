@@ -1,0 +1,31 @@
+.example-assets-page {
+  box-sizing: border-box;
+  height: 100%;
+  overflow: auto;
+  padding: calc(var(--app-header-height) + 32px) 32px 48px;
+  background: var(--gp-glass-bg-strong);
+  color: var(--gp-text);
+}
+.example-assets-page__header {
+  width: min(960px, 100%);
+  margin: 0 auto 24px;
+}
+.example-assets-page__header h1,
+.example-assets-page__header p {
+  margin: 0;
+}
+.example-assets-page__header h1 {
+  margin-top: 8px;
+  font-size: clamp(32px, 5vw, 56px);
+}
+.example-assets-page__header p:last-child {
+  margin-top: 12px;
+  color: var(--gp-text-dim);
+}
+.example-assets-page__eyebrow {
+  color: var(--gp-accent);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}

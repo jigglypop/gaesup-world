@@ -1,0 +1,18 @@
+export type CameraProps = { enableMouse?: boolean };
+
+export type {
+  CameraDebugPanelClassNameSlot,
+  CameraDebugPanelClassNames,
+  CameraDebugPanelLabels,
+  CameraDebugPanelPosition,
+  CameraDebugPanelProps,
+  CameraDebugPanelRenderContext,
+  CameraDebugPanelRenderers,
+  CameraDebugPanelResolvedField,
+  CameraDebugPanelStyles,
+  CameraDebugPanelTheme,
+  CameraMetrics,
+  CustomField,
+  DebugField,
+  DebugFieldFormat,
+} from './CameraDebugPanel';

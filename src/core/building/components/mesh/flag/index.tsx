@@ -1,0 +1,410 @@
+import React, { FC, lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+
+import { useTexture } from '@react-three/drei';
+import { extend, useFrame, useThree } from "@react-three/fiber";
+import * as THREE from "three";
+
+import { shaderMaterial } from '@/core/rendering/legacyDrei';
+import { weightFromDistance } from "@core/utils/sfe";
+
+
+import fragmentShader from "./frag.glsl";
+import { FlagBatchProps, FlagMeshProps, FlagMaterialInstance, FlagSurfaceMaterialProps } from "./type";
+import vertexShader from "./vert.glsl";
+import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
+import { FLAG_STYLE_META, FlagStyle } from "../../../types";
+
+const FlagMaterial = shaderMaterial(
+  {
+    map: null as THREE.Texture | null,
+    time: 0,
+    windStrength: 1.0,
+    transmission: 0.05,
+    envMapIntensity: 1,
+  },
+  vertexShader,
+  fragmentShader,
+);
+
+extend({ FlagMaterial });
+
+const NodeFlagMaterial = lazy(() => import('./NodeFlagMaterial'));
+
+function FlagSurfaceMaterial(props: FlagSurfaceMaterialProps) {
+  const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
+  if (useNodes) return <NodeFlagMaterial {...props} />;
+  return <flagMaterial ref={props.materialRef} map={props.texture} transmission={0.05}
+    windStrength={props.windStrength} envMapIntensity={1} side={THREE.DoubleSide} transparent />;
+}
+
+let _fallbackTex: THREE.Texture | null = null;
+function getFallbackTexture(): THREE.Texture {
+  if (_fallbackTex) return _fallbackTex;
+  const c = document.createElement("canvas");
+  c.width = 4;
+  c.height = 4;
+  const ctx = c.getContext("2d")!;
+  ctx.fillStyle = "#cc2222";
+  ctx.fillRect(0, 0, 4, 4);
+  _fallbackTex = new THREE.CanvasTexture(c);
+  _fallbackTex.needsUpdate = true;
+  return _fallbackTex;
+}
+
+// ---------------------------------------------------------------------------
+// Single flag (standalone, non-batched)
+// ---------------------------------------------------------------------------
+
+function FlagWithTexture({
+  geometry, textureUrl, lod, center, windStrength = 1.0, ...meshProps
+}: Omit<FlagMeshProps, "pamplet_url"> & { textureUrl: string }) {
+  const materialRef = useRef<FlagMaterialInstance>(null!);
+  const meshRef = useRef<THREE.Mesh | null>(null);
+  const centerRef = useRef(new THREE.Vector3());
+  const lastVisibleRef = useRef(true);
+  const lodAccumRef = useRef(0);
+  const texture = useTexture(textureUrl);
+
+  useEffect(() => {
+    if (center) centerRef.current.set(center[0], center[1], center[2]);
+  }, [center]);
+
+  useFrame((state, delta) => {
+    if (lod) {
+      const near = lod.near ?? 30;
+      const far = lod.far ?? 180;
+      const str = lod.strength ?? 4;
+      lodAccumRef.current += Math.max(0, delta);
+      if (lodAccumRef.current >= (lastVisibleRef.current ? 0.2 : 0.5)) {
+        lodAccumRef.current = 0;
+        if (!center && meshRef.current) meshRef.current.getWorldPosition(centerRef.current);
+        const w = weightFromDistance(state.camera.position.distanceTo(centerRef.current), near, far, str);
+        const vis = w > 0;
+        if (vis !== lastVisibleRef.current) {
+          lastVisibleRef.current = vis;
+          if (meshRef.current) meshRef.current.visible = vis;
+        }
+      }
+      if (!lastVisibleRef.current) return;
+    }
+    const u = materialRef.current;
+    if (!u) return;
+    u.time = getFrameElapsedSeconds(state) * 5;
+    u.windStrength = windStrength;
+  });
+
+  return (
+    <mesh ref={meshRef} geometry={geometry} {...meshProps}>
+      <FlagSurfaceMaterial materialRef={materialRef} texture={texture} windStrength={windStrength} />
+    </mesh>
+  );
+}
+
+function FlagWithFallback({
+  geometry, windStrength = 1.0, ...meshProps
+}: Omit<FlagMeshProps, "pamplet_url">) {
+  const materialRef = useRef<FlagMaterialInstance>(null!);
+  const fallbackTex = useMemo(() => getFallbackTexture(), []);
+
+  useFrame((state) => {
+    const u = materialRef.current;
+    if (!u) return;
+    u.time = getFrameElapsedSeconds(state) * 5;
+    u.windStrength = windStrength;
+  });
+
+  return (
+    <mesh geometry={geometry} {...meshProps}>
+      <FlagSurfaceMaterial materialRef={materialRef} texture={fallbackTex} windStrength={windStrength} />
+    </mesh>
+  );
+}
+
+export const FlagMesh: FC<FlagMeshProps> = ({ pamplet_url, ...rest }) => {
+  return <Suspense fallback={null}>{pamplet_url
+    ? <FlagWithTexture textureUrl={pamplet_url} {...rest} />
+    : <FlagWithFallback {...rest} />}</Suspense>;
+};
+
+// ---------------------------------------------------------------------------
+// Batched rendering - InstancedMesh for poles + cloths
+// ---------------------------------------------------------------------------
+
+const _poleMat = new THREE.MeshStandardMaterial({ color: "#8B4513" });
+const _frameMat = new THREE.MeshStandardMaterial({ color: "#444444", metalness: 0.6, roughness: 0.3 });
+const _dummy = new THREE.Object3D();
+
+type FlagEntry = {
+  x: number; y: number; z: number;
+  flagWidth: number;
+  flagHeight: number;
+  style: FlagStyle;
+  textureUrl: string;
+};
+
+// --- Pole instancing per style ---
+
+function buildPoleMatrices(entries: FlagEntry[]): THREE.Matrix4[] {
+  const matrices: THREE.Matrix4[] = [];
+  for (const e of entries) {
+    const meta = FLAG_STYLE_META[e.style];
+    switch (meta.poleType) {
+      case "side": {
+        const h = e.flagHeight + 2.5;
+        _dummy.position.set(e.x, e.y + h / 2, e.z);
+        _dummy.scale.set(1, h, 1);
+        _dummy.updateMatrix();
+        matrices.push(_dummy.matrix.clone());
+        break;
+      }
+      case "top": {
+        const h = e.flagHeight + 1.5;
+        _dummy.position.set(e.x, e.y + h + 0.025, e.z);
+        _dummy.rotation.set(0, 0, Math.PI / 2);
+        _dummy.scale.set(1, e.flagWidth, 1);
+        _dummy.updateMatrix();
+        matrices.push(_dummy.matrix.clone());
+        _dummy.rotation.set(0, 0, 0);
+        break;
+      }
+      case "frame": {
+        const h = e.flagHeight + 0.5;
+        // left
+        _dummy.position.set(e.x - e.flagWidth / 2, e.y + h / 2, e.z);
+        _dummy.scale.set(1, h, 1);
+        _dummy.updateMatrix();
+        matrices.push(_dummy.matrix.clone());
+        // right
+        _dummy.position.set(e.x + e.flagWidth / 2, e.y + h / 2, e.z);
+        _dummy.updateMatrix();
+        matrices.push(_dummy.matrix.clone());
+        // top bar
+        _dummy.position.set(e.x, e.y + h, e.z);
+        _dummy.rotation.set(0, 0, Math.PI / 2);
+        _dummy.scale.set(1, e.flagWidth + 0.05, 1);
+        _dummy.updateMatrix();
+        matrices.push(_dummy.matrix.clone());
+        _dummy.rotation.set(0, 0, 0);
+        // bottom bar
+        _dummy.position.set(e.x, e.y + 0.025, e.z);
+        _dummy.rotation.set(0, 0, Math.PI / 2);
+        _dummy.scale.set(1, e.flagWidth + 0.05, 1);
+        _dummy.updateMatrix();
+        matrices.push(_dummy.matrix.clone());
+        _dummy.rotation.set(0, 0, 0);
+        break;
+      }
+      case "both": {
+        const h = e.flagHeight + 2.5;
+        // left pole
+        _dummy.position.set(e.x - e.flagWidth / 2, e.y + h / 2, e.z);
+        _dummy.scale.set(1, h, 1);
+        _dummy.updateMatrix();
+        matrices.push(_dummy.matrix.clone());
+        // right pole
+        _dummy.position.set(e.x + e.flagWidth / 2, e.y + h / 2, e.z);
+        _dummy.updateMatrix();
+        matrices.push(_dummy.matrix.clone());
+        break;
+      }
+    }
+  }
+  return matrices;
+}
+
+function PoleBatch({ entries }: { entries: FlagEntry[] }) {
+  const ref = useRef<THREE.InstancedMesh>(null!);
+  const geometry = useMemo(() => new THREE.BoxGeometry(0.05, 1, 0.05), []);
+
+  const matrices = useMemo(() => buildPoleMatrices(entries), [entries]);
+  const count = matrices.length;
+  const capacity = useMemo(() => Math.max(1, count), [count]);
+
+  const isFrame = entries.some((e) => e.style === "panel");
+  const mat = isFrame ? _frameMat : _poleMat;
+
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    mesh.count = count;
+    for (let i = 0; i < count; i++) {
+      const matrix = matrices[i];
+      if (!matrix) continue;
+      mesh.setMatrixAt(i, matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingSphere();
+  }, [matrices, count]);
+
+  useEffect(() => () => { geometry.dispose(); }, [geometry]);
+
+  if (count === 0) return null;
+  return <instancedMesh ref={ref} args={[geometry, mat, capacity]} frustumCulled />;
+}
+
+// --- Cloth instancing per texture group ---
+
+type ClothBatchInnerProps = {
+  entries: FlagEntry[];
+  windStrength: number;
+  texture: THREE.Texture;
+};
+
+function ClothBatchInner({ entries, windStrength, texture }: ClothBatchInnerProps) {
+  const ref = useRef<THREE.InstancedMesh>(null!);
+  const materialRef = useRef<FlagMaterialInstance>(null!);
+  const frameAccumRef = useRef(0);
+  const count = entries.length;
+  const capacity = useMemo(() => Math.max(1, count), [count]);
+
+  const wGeo = entries[0]?.flagWidth ?? 1.5;
+  const hGeo = entries[0]?.flagHeight ?? 1.0;
+  const segsX = windStrength > 0.6 ? 12 : windStrength > 0 ? 8 : 1;
+  const segsY = windStrength > 0.6 ? 6 : windStrength > 0 ? 4 : 1;
+  const geometry = useMemo(
+    () => {
+      const result = new THREE.PlaneGeometry(wGeo, hGeo, segsX, segsY);
+      result.setAttribute('flagMotion', new THREE.InstancedBufferAttribute(new Float32Array(capacity * 2), 2));
+      return result;
+    },
+    [wGeo, hGeo, segsX, segsY, capacity],
+  );
+
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    mesh.count = count;
+    for (let i = 0; i < count; i++) {
+      const e = entries[i];
+      if (!e) continue;
+      const meta = FLAG_STYLE_META[e.style];
+      let cx = e.x;
+      let cy = e.y;
+      switch (meta.poleType) {
+        case "side":
+          cx = e.x + e.flagWidth / 2;
+          cy = e.y + e.flagHeight + 2.5 - e.flagHeight / 2;
+          break;
+        case "top":
+          cy = e.y + e.flagHeight + 1.5 - e.flagHeight / 2;
+          break;
+        case "frame":
+          cy = e.y + (e.flagHeight + 0.5) / 2 + 0.025;
+          break;
+        case "both":
+          cy = e.y + e.flagHeight + 2.5 - e.flagHeight / 2;
+          break;
+      }
+      _dummy.position.set(cx, cy, e.z);
+      _dummy.scale.set(e.flagWidth / wGeo, e.flagHeight / hGeo, 1);
+      _dummy.updateMatrix();
+      mesh.setMatrixAt(i, _dummy.matrix);
+      geometry.getAttribute('flagMotion').setXY(i, cx * 0.3 + e.z * 0.5, e.flagHeight / hGeo);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    geometry.getAttribute('flagMotion').needsUpdate = true;
+    mesh.computeBoundingSphere();
+  }, [entries, count, wGeo, hGeo, geometry]);
+
+  useFrame((state, delta) => {
+    frameAccumRef.current += Math.max(0, delta);
+    if (frameAccumRef.current < 1 / 30) return;
+    frameAccumRef.current = 0;
+    const u = materialRef.current;
+    if (!u) return;
+    u.time = getFrameElapsedSeconds(state) * 5;
+    u.windStrength = windStrength;
+  });
+
+  useEffect(() => () => { geometry.dispose(); }, [geometry]);
+
+  if (count === 0) return null;
+  return (
+    <instancedMesh ref={ref} args={[geometry, undefined!, capacity]} frustumCulled>
+      <FlagSurfaceMaterial materialRef={materialRef} texture={texture} windStrength={windStrength} instanced />
+    </instancedMesh>
+  );
+}
+
+function ClothBatchTextured({
+  entries, textureUrl, windStrength,
+}: {
+  entries: FlagEntry[];
+  textureUrl: string;
+  windStrength: number;
+}) {
+  const texture = useTexture(textureUrl);
+  return <ClothBatchInner entries={entries} windStrength={windStrength} texture={texture} />;
+}
+
+function ClothBatchFallback({
+  entries, windStrength,
+}: {
+  entries: FlagEntry[];
+  windStrength: number;
+}) {
+  const texture = useMemo(() => getFallbackTexture(), []);
+  return <ClothBatchInner entries={entries} windStrength={windStrength} texture={texture} />;
+}
+
+function ClothBatchGroup({
+  entries, textureUrl, windStrength,
+}: {
+  entries: FlagEntry[];
+  textureUrl: string;
+  windStrength: number;
+}) {
+  if (textureUrl) {
+    return <Suspense fallback={null}><ClothBatchTextured entries={entries} textureUrl={textureUrl} windStrength={windStrength} /></Suspense>;
+  }
+  return <Suspense fallback={null}><ClothBatchFallback entries={entries} windStrength={windStrength} /></Suspense>;
+}
+
+// --- Main batch component ---
+
+export const FlagBatch = React.memo(function FlagBatch({ flags }: FlagBatchProps) {
+  const entries: FlagEntry[] = useMemo(() =>
+    flags.map((f) => ({
+      x: f.position.x,
+      y: f.position.y,
+      z: f.position.z,
+      flagWidth: f.config?.flagWidth ?? 1.5,
+      flagHeight: f.config?.flagHeight ?? 1.0,
+      style: (f.config?.flagStyle ?? "flag") as FlagStyle,
+      textureUrl: f.config?.flagTexture ?? "",
+    })),
+    [flags],
+  );
+
+  const groups = useMemo(() => {
+    const map = new Map<string, FlagEntry[]>();
+    for (const e of entries) {
+      const key = `${e.textureUrl}|${e.style}`;
+      let arr = map.get(key);
+      if (!arr) { arr = []; map.set(key, arr); }
+      arr.push(e);
+    }
+    return Array.from(map.entries());
+  }, [entries]);
+
+  return (
+    <>
+      <PoleBatch entries={entries} />
+      {groups.map(([key, grp]) => {
+        const first = grp[0];
+        if (!first) return null;
+        const style = first.style;
+        const ws = FLAG_STYLE_META[style].windStrength;
+        const tex = first.textureUrl;
+        return (
+          <ClothBatchGroup
+            key={key}
+            entries={grp}
+            textureUrl={tex}
+            windStrength={ws}
+          />
+        );
+      })}
+    </>
+  );
+});

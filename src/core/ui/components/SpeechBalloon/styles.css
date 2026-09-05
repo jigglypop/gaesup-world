@@ -1,0 +1,19 @@
+.speech-balloon {
+  position: relative;
+  pointer-events: none;
+}
+
+.speech-balloon--interactive {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.speech-balloon__sprite {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.speech-balloon__content {
+  position: absolute;
+  display: none;
+} 

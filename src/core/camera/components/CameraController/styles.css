@@ -1,0 +1,82 @@
+.camera-controller-panel {
+  width: 100%;
+  color: var(--editor-text-main);
+}
+.camera-controller-panel--floating {
+  position: fixed;
+  max-width: calc(100vw - var(--editor-spacing-lg) - var(--editor-spacing-lg));
+  padding: var(--editor-spacing-md);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  background: var(--editor-bg-1);
+  box-shadow: var(--editor-shadow);
+  backdrop-filter: var(--editor-glass-blur);
+}
+.camera-controller-panel--top-left {
+  top: var(--editor-spacing-lg);
+  left: var(--editor-spacing-lg);
+}
+.camera-controller-panel--top-right {
+  top: var(--editor-spacing-lg);
+  right: var(--editor-spacing-lg);
+}
+.camera-controller-panel--bottom-left {
+  bottom: var(--editor-spacing-lg);
+  left: var(--editor-spacing-lg);
+}
+.camera-controller-panel--bottom-right {
+  right: var(--editor-spacing-lg);
+  bottom: var(--editor-spacing-lg);
+}
+.camera-controller-panel-header {
+  margin-bottom: var(--editor-spacing-sm);
+}
+.camera-controller-panel-title {
+  color: var(--editor-text-muted);
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.camera-controller-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-xs);
+}
+.camera-controller-panel-mode {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--editor-spacing-sm);
+  padding: var(--editor-spacing-sm) var(--editor-spacing-md);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-sm);
+  background: transparent;
+  color: var(--editor-text-muted);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.camera-controller-panel-mode:hover {
+  background: var(--editor-surface-hover);
+  color: var(--editor-text-main);
+}
+.camera-controller-panel-mode--active {
+  border-color: var(--editor-accent-border);
+  background: var(--editor-surface-active);
+  color: var(--editor-text-main);
+  font-weight: 700;
+}
+.camera-controller-panel-mode-icon {
+  flex: 0 0 auto;
+  color: var(--editor-text-muted);
+}
+.camera-controller-panel-mode-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.camera-controller-panel--compact .camera-controller-panel-mode {
+  justify-content: center;
+  padding: var(--editor-spacing-xs) var(--editor-spacing-sm);
+}

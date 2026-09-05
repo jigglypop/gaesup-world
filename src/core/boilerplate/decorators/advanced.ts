@@ -1,0 +1,94 @@
+import 'reflect-metadata'
+
+import type { DecoratedValue } from './types'
+import { logger } from '../../utils/logger'
+
+type Constructor<T = object> = new (...args: DecoratedValue[]) => T
+
+const isProduction = process.env.NODE_ENV === 'production'
+
+const identityMethodDecorator = (target: object, propertyKey: string, descriptor: PropertyDescriptor) => {
+    void target
+    void propertyKey
+    return descriptor
+}
+
+export function Validate() {
+    return function (target: object, propertyKey: string, descriptor: PropertyDescriptor) {
+        const originalMethod = descriptor.value
+        const isAsync =
+            typeof originalMethod === 'function' &&
+            originalMethod.constructor?.name === 'AsyncFunction'
+        descriptor.value = function (this: object, ...args: DecoratedValue[]) {
+            const commandName = Reflect.getMetadata('commandName', target, propertyKey)
+            if (commandName && args[1] && typeof args[1] === 'object') {
+                const command = args[1] as Record<string, DecoratedValue>
+                if (!command["type"]) {
+                    const err = new Error(`Command validation failed: missing 'type' field`)
+                    return isAsync ? Promise.reject(err) : (() => { throw err })()
+                }
+            }
+            return originalMethod.apply(this, args)
+        }
+    }
+}
+
+export function DebugLog() {
+    if (isProduction) {
+        return identityMethodDecorator
+    }
+    return function (target: object, propertyKey: string, descriptor: PropertyDescriptor) {
+        void target
+        const originalMethod = descriptor.value
+        descriptor.value = function (this: object, ...args: DecoratedValue[]) {
+            logger.log(`[${propertyKey}] called with:`, args)
+            const result = originalMethod.apply(this, args)
+            logger.log(`[${propertyKey}] returned:`, result)
+            return result
+        }
+    }
+}
+
+export function PerformanceLog() {
+    if (isProduction) {
+        return identityMethodDecorator
+    }
+    return function (target: object, propertyKey: string, descriptor: PropertyDescriptor) {
+        void target
+        const originalMethod = descriptor.value
+        descriptor.value = function (this: object, ...args: DecoratedValue[]) {
+            const start = performance.now()
+            const result = originalMethod.apply(this, args)
+            const duration = performance.now() - start
+            logger.log(`[${propertyKey}] took ${duration.toFixed(2)}ms`)
+            return result
+        }
+    }
+}
+
+export function EnableEventLog() {
+    return function (...args: Array<object | string>) {
+        // Class decorator: @EnableEventLog() class X {}
+        if (args.length === 1) {
+            const target = args[0] as Constructor
+            Reflect.defineMetadata('enableEventLog', true, target.prototype)
+            return
+        }
+
+        // Method decorator: @EnableEventLog() method() {}
+        const [target, propertyKey] = args as [object, string]
+        Reflect.defineMetadata('enableEventLog', true, target, propertyKey)
+    }
+}
+
+export function Singleton<T extends Constructor>(target: T) {
+    let instance: T | null = null
+    return new Proxy(target, {
+        construct(t, args) {
+            if (!instance) {
+                instance = new t(...args) as T
+            }
+            return instance
+        }
+    }) as T
+} 

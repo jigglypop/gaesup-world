@@ -1,0 +1,45 @@
+{
+  "id": "character-001",
+  "name": "Basic Character",
+  "type": "character",
+  "components": [
+    {
+      "type": "GravityForce",
+      "enabled": true,
+      "properties": {
+        "gravity": -9.81,
+        "maxFallSpeed": 50
+      }
+    },
+    {
+      "type": "CharacterMovement",
+      "enabled": true,
+      "properties": {
+        "walkSpeed": 5,
+        "runSpeed": 10,
+        "jumpHeight": 2,
+        "airControl": 0.3
+      }
+    },
+    {
+      "type": "MouseDirection",
+      "enabled": true,
+      "properties": {
+        "sensitivity": 0.002,
+        "smoothing": 0.1
+      }
+    }
+  ],
+  "physics": {
+    "mass": 1,
+    "friction": 0.5,
+    "restitution": 0,
+    "linearDamping": 4,
+    "angularDamping": 10
+  },
+  "metadata": {
+    "author": "System",
+    "version": "1.0.0",
+    "tags": ["player", "controllable"]
+  }
+} 

@@ -1,0 +1,118 @@
+import * as fs from 'fs';
+import * as path from 'path';
+
+import type { AssetSource } from '../types';
+import { SEED_ASSETS } from '../data/seedAssets';
+import { useAssetStore } from '../stores/assetStore';
+
+const ROOT = path.resolve(__dirname, '../../../..');
+
+const mockSource = (assets: Awaited<ReturnType<AssetSource['listAssets']>>): AssetSource => ({
+  listAssets: jest.fn().mockResolvedValue(assets),
+  getAsset: jest.fn().mockResolvedValue(undefined),
+  listByKind: jest.fn().mockResolvedValue([]),
+  listBySlot: jest.fn().mockResolvedValue([]),
+});
+
+beforeEach(() => {
+  useAssetStore.getState().resetAssets();
+});
+
+describe('assetStore', () => {
+  it.each(['success', 'failure', 'empty'] as const)('ignores an older %s after a newer catalog has loaded', async (outcome) => {
+    let resolve!: (assets: Awaited<ReturnType<AssetSource['listAssets']>>) => void;
+    let reject!: (error: Error) => void;
+    const pending = new Promise<Awaited<ReturnType<AssetSource['listAssets']>>>((accept, fail) => {
+      resolve = accept;
+      reject = fail;
+    });
+    const older = useAssetStore.getState().loadAssets({ ...mockSource([]), listAssets: () => pending });
+    await useAssetStore.getState().loadAssets(mockSource([{ id: 'shared', name: 'Current', kind: 'weapon' }]));
+    const current = useAssetStore.getState();
+    if (outcome === 'failure') reject(new Error('Old failure'));
+    else resolve(outcome === 'empty' ? [] : [{ id: 'shared', name: 'Outdated', kind: 'weapon' }]);
+    await older;
+    expect(useAssetStore.getState()).toBe(current);
+    expect(current.getAsset('shared')?.name).toBe('Current');
+  });
+
+  it('keeps reset state when an earlier catalog request completes', async () => {
+    let resolve!: (assets: Awaited<ReturnType<AssetSource['listAssets']>>) => void;
+    const pending = new Promise<Awaited<ReturnType<AssetSource['listAssets']>>>((accept) => { resolve = accept; });
+    const loading = useAssetStore.getState().loadAssets({ ...mockSource([]), listAssets: () => pending });
+    useAssetStore.getState().resetAssets();
+    const reset = useAssetStore.getState();
+    resolve([{ id: 'discarded', name: 'Discarded', kind: 'weapon' }]);
+    await loading;
+    expect(useAssetStore.getState()).toBe(reset);
+    expect(reset.getAsset('discarded')).toBeUndefined();
+  });
+
+  it('loads assets from a source', async () => {
+    const source = mockSource([
+      {
+        id: 'remote-hat',
+        name: 'Remote Hat',
+        kind: 'characterPart',
+        slot: 'hat',
+        url: 'hat.glb',
+      },
+    ]);
+
+    await useAssetStore.getState().loadAssets(source);
+
+    expect(useAssetStore.getState().getAsset('remote-hat')?.url).toBe('hat.glb');
+    expect(useAssetStore.getState().error).toBeNull();
+    expect(useAssetStore.getState().catalogStatus.state).toBe('loaded');
+    expect(useAssetStore.getState().catalogStatus.origin).toBe('source');
+  });
+
+  it('falls back to seed assets when a source fails', async () => {
+    const source = {
+      ...mockSource([]),
+      listAssets: jest.fn().mockRejectedValue(new Error('offline')),
+    };
+
+    await useAssetStore.getState().loadAssets(source);
+
+    expect(useAssetStore.getState().listAssets({ slot: 'top' }).length).toBeGreaterThan(0);
+    expect(useAssetStore.getState().error).toBe('offline');
+    expect(useAssetStore.getState().catalogStatus.state).toBe('fallback');
+    expect(useAssetStore.getState().catalogStatus.fallbackReason).toBe('offline');
+  });
+
+  it('distinguishes an empty source fallback from a loaded source catalog', async () => {
+    const source = mockSource([]);
+
+    await useAssetStore.getState().loadAssets(source, { kind: 'weapon' });
+
+    expect(useAssetStore.getState().catalogStatus).toEqual(expect.objectContaining({
+      state: 'fallback',
+      origin: 'seed',
+      fallbackReason: 'empty-source',
+      query: { kind: 'weapon' },
+    }));
+    expect(useAssetStore.getState().error).toBeNull();
+  });
+
+  it('filters by kind and slot', () => {
+    const store = useAssetStore.getState();
+
+    expect(store.listAssets({ kind: 'weapon' }).every((asset) => asset.kind === 'weapon')).toBe(true);
+    expect(store.listAssets({ slot: 'hat' }).every((asset) => asset.slot === 'hat')).toBe(true);
+  });
+
+  it('registers local generated cloth GLB color variants', () => {
+    const variants = ['warrior-cloth-blue', 'warrior-cloth-green', 'warrior-cloth-red'];
+
+    for (const id of variants) {
+      const asset = SEED_ASSETS.find((item) => item.id === id);
+      expect(asset).toEqual(expect.objectContaining({
+        kind: 'characterPart',
+        slot: 'top',
+      }));
+      expect(asset?.url).toMatch(/^gltf\/ally_cloth_(blue|green|red)\.glb$/);
+      expect(fs.existsSync(path.join(ROOT, 'public', asset?.url ?? 'missing'))).toBe(true);
+    }
+  });
+});

@@ -1,0 +1,182 @@
+import * as THREE from 'three';
+
+import { RegisterSystem, Profile, HandleError } from '@core/boilerplate/decorators';
+import { BaseSystem, SystemContext } from '@core/boilerplate/entity/BaseSystem';
+import type { RuntimeRecord } from '@core/boilerplate/types';
+
+import { SpatialGrid } from './SpatialGrid';
+
+export interface WorldObject {
+  id: string;
+  position: THREE.Vector3;
+  rotation: THREE.Euler;
+  scale: THREE.Vector3;
+  type: string;
+  metadata?: RuntimeRecord;
+  boundingBox?: THREE.Box3;
+  isActive?: boolean;
+  canInteract?: boolean;
+}
+
+export interface RideableObject extends WorldObject {
+  type: 'rideable';
+  maxSpeed: number;
+  acceleration: number;
+  isOccupied: boolean;
+  occupant?: string;
+  controls: {
+    forward: boolean;
+    backward: boolean;
+    left: boolean;
+    right: boolean;
+  };
+}
+
+export interface InteractionEvent {
+  type: 'collision' | 'proximity' | 'custom';
+  object1Id: string;
+  object2Id?: string;
+  timestamp: number;
+  data?: RuntimeRecord;
+}
+
+
+
+@RegisterSystem('world')
+export class WorldSystem implements BaseSystem {
+  private objects: Map<string, WorldObject> = new Map();
+  private interactionEvents: InteractionEvent[] = [];
+  private spatial: SpatialGrid = new SpatialGrid({ cellSize: 10 });
+  private raycaster: THREE.Raycaster = new THREE.Raycaster();
+  private tempVector: THREE.Vector3 = new THREE.Vector3();
+  private nearbyIds: string[] = [];
+  private nearbyIds2: string[] = [];
+
+  @HandleError()
+  async init(): Promise<void> {
+    // Reserved for future async world initialization.
+  }
+
+  @Profile()
+  @HandleError()
+  update(context: SystemContext): void {
+    void context;
+    // 월드 업데이트 로직
+    // 예: checkCollisions 등 주기적인 검사가 필요할 때 여기에 로직 추가
+  }
+
+  @HandleError()
+  dispose(): void {
+    this.cleanup();
+  }
+
+  addObject(object: WorldObject): void {
+    this.objects.set(object.id, object);
+    this.spatial.add(object.id, object.position);
+  }
+
+  removeObject(id: string): boolean {
+    const object = this.objects.get(id);
+    if (object) {
+      this.spatial.remove(id);
+    }
+    return this.objects.delete(id);
+  }
+
+  getObject(id: string): WorldObject | undefined {
+    return this.objects.get(id);
+  }
+
+  getAllObjects(): WorldObject[] {
+    return Array.from(this.objects.values());
+  }
+
+  getObjectsByType(type: WorldObject['type']): WorldObject[] {
+    return this.getAllObjects().filter(obj => obj.type === type);
+  }
+
+  updateObject(id: string, updates: Partial<WorldObject>): boolean {
+    const object = this.objects.get(id);
+    if (!object) return false;
+
+    Object.assign(object, updates);
+    if (updates.position) {
+      this.spatial.update(id, updates.position);
+    }
+    return true;
+  }
+
+  getObjectsInRadius(center: THREE.Vector3, radius: number): WorldObject[] {
+    const ids = this.spatial.getNearby(center, radius, this.nearbyIds);
+    const result: WorldObject[] = [];
+    for (const id of ids) {
+      const obj = this.objects.get(id);
+      if (obj) result.push(obj);
+    }
+    return result;
+  }
+
+  checkCollisions(objectId: string): WorldObject[] {
+    const object = this.objects.get(objectId);
+    if (!object || !object.boundingBox) return [];
+
+    const radius = object.boundingBox.max.distanceTo(object.boundingBox.min);
+    const ids = this.spatial.getNearby(object.position, radius, this.nearbyIds2);
+    const result: WorldObject[] = [];
+    for (const id of ids) {
+      if (id === objectId) continue;
+      const other = this.objects.get(id);
+      if (!other || !other.boundingBox) continue;
+      if (object.boundingBox.intersectsBox(other.boundingBox)) result.push(other);
+    }
+    return result;
+  }
+
+  processInteraction(event: InteractionEvent): void {
+    this.interactionEvents.push(event);
+    
+    if (this.interactionEvents.length > 1000) {
+      this.interactionEvents = this.interactionEvents.slice(-500);
+    }
+  }
+
+  getRecentEvents(timeWindow: number = 1000): InteractionEvent[] {
+    const now = Date.now();
+    return this.interactionEvents.filter(event => 
+      now - event.timestamp <= timeWindow
+    );
+  }
+
+  raycast(origin: THREE.Vector3, direction: THREE.Vector3, maxDistance: number = 100): {
+    object: WorldObject;
+    distance: number;
+    point: THREE.Vector3;
+  } | null {
+    this.raycaster.set(origin, direction);
+    this.raycaster.near = 0;
+    this.raycaster.far = maxDistance;
+    
+    const ids = this.spatial.getNearby(origin, maxDistance, this.nearbyIds);
+    for (const id of ids) {
+      const object = this.objects.get(id);
+      if (object && object.boundingBox) {
+        const intersect = this.raycaster.ray.intersectBox(object.boundingBox, this.tempVector);
+        if (intersect) {
+          return {
+            object,
+            distance: origin.distanceTo(intersect),
+            point: intersect.clone()
+          };
+        }
+      }
+    }
+    
+    return null;
+  }
+
+  cleanup(): void {
+    this.objects.clear();
+    this.interactionEvents.length = 0;
+    this.spatial.clear();
+  }
+}

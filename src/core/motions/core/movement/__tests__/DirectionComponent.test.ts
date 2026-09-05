@@ -1,0 +1,174 @@
+import { DirectionComponent } from '@core/motions/core/movement/DirectionComponent';
+import * as THREE from 'three';
+import { PhysicsState } from '@core/motions/types';
+import { InteractionSystem } from '@core/interactions/core/InteractionSystem';
+
+jest.mock('@core/interactions/core/InteractionSystem');
+
+describe('DirectionComponent', () => {
+  let directionComponent: DirectionComponent;
+  let mockInteractionSystem: jest.Mocked<InteractionSystem>;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockInteractionSystem = {
+      getKeyboardRef: jest.fn().mockReturnValue({
+        forward: false,
+        backward: false,
+        leftward: false,
+        rightward: false,
+        shift: false,
+        space: false,
+        keyZ: false,
+        keyR: false,
+        keyF: false,
+        keyE: false,
+        escape: false
+      }),
+      getMouseRef: jest.fn().mockReturnValue({
+        target: new THREE.Vector3(),
+        angle: 0,
+        isActive: false,
+        shouldRun: false,
+        buttons: { left: false, right: false, middle: false },
+        wheel: 0,
+        position: new THREE.Vector2()
+      })
+    } as unknown as jest.Mocked<InteractionSystem>;
+
+    (InteractionSystem.getInstance as jest.Mock).mockReturnValue(mockInteractionSystem);
+    directionComponent = new DirectionComponent();
+  });
+
+  const createMockState = (
+    modeType: 'character' | 'vehicle' | 'airplane',
+    keyboard: Partial<PhysicsState['keyboard']> = {},
+    mouse: Partial<PhysicsState['mouse']> = {}
+  ): PhysicsState => ({
+    modeType,
+    keyboard,
+    mouse,
+    activeState: {
+      dir: new THREE.Vector3(),
+      direction: new THREE.Vector3(),
+      euler: new THREE.Euler(),
+      velocity: new THREE.Vector3()
+    },
+    characterConfig: {},
+    vehicleConfig: {},
+    airplaneConfig: {}
+  } as PhysicsState);
+
+  it('캐릭터 모드 + 키보드 입력 시 activeState.dir과 euler.y가 변경되어야 합니다.', () => {
+    mockInteractionSystem.getKeyboardRef.mockReturnValue({
+      forward: true,
+      leftward: true,
+      backward: false,
+      rightward: false,
+      shift: false,
+      space: false,
+      keyZ: false,
+      keyR: false,
+      keyF: false,
+      keyE: false,
+      escape: false
+    });
+
+    const state = createMockState('character');
+    directionComponent.updateDirection(state);
+    expect(state.activeState.dir.length()).not.toBe(0);
+    expect(state.activeState.euler.y).not.toBe(0);
+  });
+
+  it('캐릭터 모드 + 마우스 입력 시 activeState.dir과 euler.y가 변경되어야 합니다.', () => {
+    mockInteractionSystem.getMouseRef.mockReturnValue({
+      isActive: true,
+      angle: Math.PI / 4,
+      target: new THREE.Vector3(10, 0, 10),
+      shouldRun: false,
+      buttons: { left: false, right: false, middle: false },
+      wheel: 0,
+      position: new THREE.Vector2()
+    });
+
+    const state = createMockState('character');
+    const props = {
+      worldContext: { automation: { settings: {} } },
+      rigidBodyRef: { current: { translation: () => ({ x: 0, y: 0, z: 0 }) } }
+    } as any;
+    directionComponent.updateDirection(state, 'normal', props);
+    expect(state.activeState.dir.length()).not.toBe(0);
+    expect(state.activeState.euler.y).not.toBe(0);
+  });
+
+  it('차량 모드 + 키보드 입력 시 activeState.direction과 euler.y가 변경되어야 합니다.', () => {
+    mockInteractionSystem.getKeyboardRef.mockReturnValue({
+      forward: true,
+      rightward: true,
+      backward: false,
+      leftward: false,
+      shift: false,
+      space: false,
+      keyZ: false,
+      keyR: false,
+      keyF: false,
+      keyE: false,
+      escape: false
+    });
+
+    const state = createMockState('vehicle');
+    directionComponent.updateDirection(state);
+    expect(state.activeState.direction.length()).not.toBe(0);
+    expect(state.activeState.euler.y).not.toBe(0);
+  });
+
+  it('비행기 모드 + 키보드 입력 시 activeState.direction과 euler가 변경되어야 합니다.', () => {
+    mockInteractionSystem.getKeyboardRef.mockReturnValue({
+      forward: true,
+      leftward: true,
+      backward: false,
+      rightward: false,
+      shift: false,
+      space: false,
+      keyZ: false,
+      keyR: false,
+      keyF: false,
+      keyE: false,
+      escape: false
+    });
+
+    const state = createMockState('airplane');
+    const innerGroupRef = { current: new THREE.Group() };
+    directionComponent.updateDirection(state, 'normal', undefined, innerGroupRef);
+    expect(state.activeState.direction.length()).not.toBe(0);
+  });
+
+  it('자동화 큐를 이동 코드에서 소비하지 않아야 합니다.', () => {
+    mockInteractionSystem.getMouseRef.mockReturnValue({
+      isActive: true,
+      angle: 0,
+      target: new THREE.Vector3(),
+      shouldRun: false,
+      buttons: { left: false, right: false, middle: false },
+      wheel: 0,
+      position: new THREE.Vector2()
+    });
+
+    const state = createMockState('character');
+    const target = new THREE.Vector3(10, 0, 10);
+    const props = {
+      worldContext: {
+        automation: {
+          settings: { trackProgress: true },
+          queue: { actions: [{ type: 'move', target }] }
+        }
+      },
+      body: { translation: () => ({ x: 0, y: 0, z: 0 }) },
+      memo: {},
+      rigidBodyRef: { current: { translation: () => ({ x: 0, y: 0, z: 0 }) } }
+    } as any;
+    directionComponent.updateDirection(state, 'normal', props);
+    expect(props.worldContext.automation.queue.actions).toHaveLength(1);
+    expect(props.memo.direction).toBeUndefined();
+  });
+});

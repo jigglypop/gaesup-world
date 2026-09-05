@@ -1,0 +1,41 @@
+import { ExampleConfig, DevMode, EditorConfig } from './types';
+
+export const S3 = 'https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf';
+export const CHARACTER_URL = 'gltf/ally_body.glb';
+export const AIRPLANE_URL = 'gltf/ally.glb';
+export const VEHICLE_URL = 'gltf/ally_body.glb';
+
+export const EXAMPLE_CONFIG: ExampleConfig = {
+  editor: {
+    enabled: true,
+    defaultLayout: 'full',
+    panels: {
+      hierarchy: true,
+      inspector: true,
+      assetBrowser: true
+    }
+  },
+  debug: false,
+  showGrid: false,
+  showAxes: false,
+}; 
+
+export const DEFAULT_DEV_MODE: DevMode = {
+  enable: true,
+  showStats: false,
+  showDebugInfo: false,
+  showGrid: true,
+  showAxes: true,
+  showColliders: false,
+};
+
+export const DEFAULT_EDITOR_CONFIG: EditorConfig = {
+  enable: true,
+  panels: {
+    blueprints: true,
+    animation: true,
+    camera: true,
+    motion: true,
+    vehicle: true,
+  },
+};

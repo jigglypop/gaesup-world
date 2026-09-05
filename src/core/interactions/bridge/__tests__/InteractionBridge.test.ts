@@ -1,0 +1,550 @@
+import { createMemoryInputBackend, InteractionSystem } from '../../core';
+import { InteractionBridge, BridgeEvent } from '../InteractionBridge';
+
+describe('InteractionBridge 메모리 누수 테스트', () => {
+  let bridge: InteractionBridge;
+
+  beforeEach(() => {
+    bridge = new InteractionBridge();
+  });
+
+  afterEach(() => {
+    if (bridge) {
+      bridge.dispose();
+    }
+  });
+
+  it('dispose 호출 시 scheduled sync가 정리되어야 함', () => {
+    const clearTimeoutSpy = jest.spyOn(globalThis, 'clearTimeout');
+    bridge.subscribe('*', jest.fn()); // schedule sync timer
+    
+    bridge.dispose();
+    
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+    clearTimeoutSpy.mockRestore();
+  });
+
+  it('이벤트 구독자가 제대로 정리되어야 함', () => {
+    const callbacks: Array<() => void> = [];
+    const eventCount = 100;
+
+    for (let i = 0; i < eventCount; i++) {
+      const callback = jest.fn();
+      callbacks.push(callback);
+      bridge.subscribe('testEvent', callback);
+    }
+
+    bridge.dispose();
+
+    callbacks.forEach(callback => {
+      expect(callback).not.toHaveBeenCalled();
+    });
+  });
+
+  it('명령 기록이 무한정 증가하지 않아야 함', () => {
+    const commandCount = 10000;
+    
+    for (let i = 0; i < commandCount; i++) {
+      bridge.executeCommand({
+        type: 'input',
+        action: 'updateKeyboard',
+        data: { key: 'a', pressed: i % 2 === 0 }
+      });
+    }
+
+    const snapshot = bridge.snapshot();
+    
+    expect(snapshot.bridge.commandHistory.length).toBeLessThanOrEqual(1000);
+  });
+
+  it('주입된 input backend 로 input command 를 처리해야 함', () => {
+    bridge.dispose();
+    const inputBackend = createMemoryInputBackend();
+    bridge = new InteractionBridge({ inputBackend });
+    const listener = jest.fn();
+
+    bridge.subscribe(listener);
+    bridge.executeCommand({
+      type: 'input',
+      action: 'updateKeyboard',
+      data: { keyE: true },
+    });
+
+    expect(inputBackend.getKeyboard().keyE).toBe(true);
+    expect(bridge.getKeyboardState().keyE).toBe(true);
+    expect(bridge.snapshot().interaction.state.keyboard.keyE).toBe(true);
+    expect(listener).toHaveBeenCalledWith(expect.objectContaining({
+      keyboard: expect.objectContaining({ keyE: true }),
+    }));
+  });
+
+  it('이벤트 큐가 무한정 증가하지 않아야 함', (done) => {
+    bridge.subscribe('*', jest.fn());
+
+    for (let i = 0; i < 1000; i++) {
+      bridge.executeCommand({
+        type: 'input',
+        action: 'updateMouse',
+        data: { x: i, y: i }
+      });
+    }
+
+    setTimeout(() => {
+      const initialMemory = process.memoryUsage().heapUsed;
+      
+      for (let i = 0; i < 10000; i++) {
+        bridge.executeCommand({
+          type: 'input',
+          action: 'updateMouse',
+          data: { x: i, y: i }
+        });
+      }
+
+      const finalMemory = process.memoryUsage().heapUsed;
+      const memoryGrowth = finalMemory - initialMemory;
+      
+      expect(memoryGrowth).toBeLessThan(20 * 1024 * 1024);
+      done();
+    }, 100);
+  });
+
+  it('구독 해제가 제대로 작동해야 함', (done) => {
+    const callback1 = jest.fn();
+    const callback2 = jest.fn();
+
+    bridge.subscribe('input', callback1);
+    bridge.subscribe('input', callback2);
+
+    bridge.executeCommand({
+      type: 'input',
+      action: 'updateKeyboard',
+      data: { key: 'a', pressed: true }
+    });
+
+    bridge.unsubscribe('input', callback1);
+
+    bridge.executeCommand({
+      type: 'input',
+      action: 'updateKeyboard',
+      data: { key: 'b', pressed: true }
+    });
+
+    setTimeout(() => {
+      expect(callback1).toHaveBeenCalledTimes(0);
+      expect(callback2).toHaveBeenCalled();
+      done();
+    }, 25);
+  });
+
+  it('default system-backed reset이 완료된 defaults를 한 번 알리고 raw identity를 유지해야 함', () => {
+    const system = bridge.getInteractionSystem();
+    const keyboard = bridge.getKeyboardState();
+    const mouse = bridge.getMouseState();
+    const gamepad = system.getState().gamepad;
+    const touch = system.getState().touch;
+    const activeInputs = system.getMetrics().activeInputs;
+    const listener = jest.fn();
+    bridge.subscribe(listener);
+    bridge.executeCommand({
+      type: 'input',
+      action: 'updateKeyboard',
+      data: { forward: true },
+    });
+    bridge.executeCommand({
+      type: 'input',
+      action: 'updateMouse',
+      data: { isActive: true, buttons: { left: true, right: false, middle: false } },
+    });
+    bridge.executeCommand({
+      type: 'input',
+      action: 'updateGamepad',
+      data: { connected: true },
+    });
+    bridge.executeCommand({
+      type: 'input',
+      action: 'updateTouch',
+      data: {
+        touches: [{ id: 1, position: { x: 2, y: 3 }, force: 0.5 }],
+      },
+    });
+    bridge.executeCommand({
+      type: 'input',
+      action: 'setConfig',
+      data: { invertY: true },
+    });
+    Reflect.set(system.getState(), 'lastUpdate', 100);
+    Reflect.set(system.getState(), 'isActive', false);
+    Reflect.set(system.getMetrics(), 'lastUpdate', 200);
+    Reflect.set(system.getMetrics(), 'inputLatency', 3);
+    Reflect.set(system.getMetrics(), 'performanceScore', 4);
+    listener.mockClear();
+
+    bridge.reset();
+
+    const snapshot = bridge.snapshot();
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith({ keyboard, mouse });
+    expect(snapshot.bridge.commandHistory).toHaveLength(0);
+    expect(snapshot.bridge.lastCommand).toBeNull();
+    expect(snapshot.interaction.state.keyboard).toBe(keyboard);
+    expect(snapshot.interaction.state.mouse).toBe(mouse);
+    expect(snapshot.interaction.state.gamepad).toBe(gamepad);
+    expect(snapshot.interaction.state.touch).toBe(touch);
+    expect(snapshot.interaction.state.keyboard.forward).toBe(false);
+    expect(snapshot.interaction.state.mouse.isActive).toBe(false);
+    expect(snapshot.interaction.state.gamepad.connected).toBe(false);
+    expect(snapshot.interaction.state.touch.touches).toEqual([]);
+    expect(snapshot.interaction.state.lastUpdate).toBe(0);
+    expect(snapshot.interaction.state.isActive).toBe(true);
+    expect(snapshot.interaction.metrics).toEqual({
+      lastUpdate: 0,
+      inputLatency: 0,
+      frameTime: 0,
+      eventCount: 0,
+      activeInputs: [],
+      performanceScore: 100,
+    });
+    expect(snapshot.interaction.metrics.activeInputs).toBe(activeInputs);
+    expect(snapshot.interaction.config).toEqual({
+      sensitivity: { mouse: 1, gamepad: 1, touch: 1 },
+      deadzone: { gamepad: 0.1, touch: 0.05 },
+      smoothing: { mouse: 0.1, gamepad: 0.2 },
+      invertY: false,
+      enableVibration: true,
+    });
+    expect(system.updateCount).toBe(0);
+  });
+
+  it('explicit system-backed Bridge도 reset defaults를 한 번 projection해야 함', () => {
+    bridge.dispose();
+    const system = new InteractionSystem();
+    bridge = new InteractionBridge({ interactionSystem: system });
+    const keyboard = bridge.getKeyboardState();
+    const mouse = bridge.getMouseState();
+    const listener = jest.fn();
+    bridge.subscribe(listener);
+    system.updateKeyboard({ keyR: true });
+    system.updateMouse({ shouldRun: true });
+
+    bridge.reset();
+
+    const snapshot = bridge.snapshot();
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith({ keyboard, mouse });
+    expect(snapshot.interaction.state.keyboard).toBe(keyboard);
+    expect(snapshot.interaction.state.mouse).toBe(mouse);
+    expect(snapshot.interaction.state.keyboard.keyR).toBe(false);
+    expect(snapshot.interaction.state.mouse.shouldRun).toBe(false);
+    expect(snapshot.interaction.metrics.eventCount).toBe(0);
+  });
+
+  it('injected memory backend raw state는 Bridge reset 대상이 아니어야 함', () => {
+    bridge.dispose();
+    const system = new InteractionSystem();
+    const inputBackend = createMemoryInputBackend();
+    bridge = new InteractionBridge({ interactionSystem: system, inputBackend });
+    const listener = jest.fn();
+    bridge.subscribe(listener);
+    inputBackend.updateKeyboard({ forward: true, keyE: true });
+    inputBackend.updateMouse({ isActive: true, shouldRun: true });
+    system.updateKeyboard({ backward: true });
+    system.setConfig({ invertY: true });
+
+    bridge.reset();
+
+    const snapshot = bridge.snapshot();
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(snapshot.interaction.state.keyboard).toBe(inputBackend.getKeyboard());
+    expect(snapshot.interaction.state.mouse).toBe(inputBackend.getMouse());
+    expect(snapshot.interaction.state.keyboard.forward).toBe(true);
+    expect(snapshot.interaction.state.keyboard.keyE).toBe(true);
+    expect(snapshot.interaction.state.mouse.isActive).toBe(true);
+    expect(snapshot.interaction.state.mouse.shouldRun).toBe(true);
+    expect(system.getKeyboardRef().backward).toBe(false);
+    expect(snapshot.interaction.metrics.eventCount).toBe(0);
+    expect(snapshot.interaction.config.invertY).toBe(false);
+  });
+
+  it('엔진 리스너 설정 시 메모리 누수가 없어야 함', () => {
+    const bridges: InteractionBridge[] = [];
+    
+    for (let i = 0; i < 10; i++) {
+      const testBridge = new InteractionBridge();
+      bridges.push(testBridge);
+    }
+
+    const initialMemory = process.memoryUsage().heapUsed;
+
+    bridges.forEach(b => b.dispose());
+
+    const finalMemory = process.memoryUsage().heapUsed;
+    
+    expect(finalMemory).toBeLessThanOrEqual(initialMemory + 1024 * 1024);
+  });
+
+  it('자동화 엔진 명령이 메모리를 누수시키지 않아야 함', () => {
+    const actionCount = 1000;
+
+    for (let i = 0; i < actionCount; i++) {
+      bridge.executeCommand({
+        type: 'automation',
+        action: 'addAction',
+        data: {
+          id: `action-${i}`,
+          type: 'click',
+          target: { x: i, y: i, z: 0 }
+        }
+      });
+    }
+
+    bridge.executeCommand({
+      type: 'automation',
+      action: 'clearQueue'
+    });
+
+    const snapshot = bridge.snapshot();
+    expect(snapshot.automation.state).toBeDefined();
+  });
+
+  it('동시에 많은 이벤트가 발생해도 메모리가 안정적이어야 함', (done) => {
+    const eventTypes = ['input', 'automation', 'sync'];
+    const listeners: Array<(event: BridgeEvent) => void> = [];
+
+    eventTypes.forEach(type => {
+      const listener = jest.fn();
+      listeners.push(listener);
+      bridge.subscribe(type, listener);
+    });
+
+    const initialMemory = process.memoryUsage().heapUsed;
+
+    const interval = setInterval(() => {
+      bridge.executeCommand({
+        type: 'input',
+        action: 'updateKeyboard',
+        data: { key: 'test', pressed: Math.random() > 0.5 }
+      });
+    }, 1);
+
+    setTimeout(() => {
+      clearInterval(interval);
+      
+      const finalMemory = process.memoryUsage().heapUsed;
+      const memoryGrowth = finalMemory - initialMemory;
+      
+      expect(memoryGrowth).toBeLessThan(10 * 1024 * 1024);
+      
+      eventTypes.forEach((type, index) => {
+        bridge.unsubscribe(type, listeners[index]);
+      });
+      
+      bridge.dispose();
+      done();
+    }, 500);
+  });
+});
+
+describe('InteractionBridge 성능 테스트', () => {
+  let bridge: InteractionBridge;
+
+  beforeEach(() => {
+    bridge = new InteractionBridge();
+  });
+
+  afterEach(() => {
+    bridge.cleanup();
+  });
+
+  describe('메모리 관리', () => {
+    it('cleanup 호출 시 모든 이벤트 리스너가 제거되어야 함', () => {
+      const mockEntity = {
+        id: 'test-entity',
+        onPointerOver: jest.fn(),
+        onPointerOut: jest.fn(),
+        onClick: jest.fn(),
+      };
+
+      bridge.registerInteractable(mockEntity);
+      
+      // 엔티티가 등록되었는지 확인
+      expect(bridge.getInteractable('test-entity')).toBe(mockEntity);
+
+      // cleanup 호출
+      bridge.cleanup();
+
+      // 모든 엔티티가 제거되었는지 확인
+      expect(bridge.getInteractable('test-entity')).toBeUndefined();
+    });
+
+    it('중복 등록을 방지해야 함', () => {
+      const entity1 = {
+        id: 'duplicate-test',
+        onPointerOver: jest.fn(),
+      };
+
+      const entity2 = {
+        id: 'duplicate-test',
+        onPointerOut: jest.fn(),
+      };
+
+      bridge.registerInteractable(entity1);
+      bridge.registerInteractable(entity2);
+
+      // 마지막에 등록된 엔티티만 유지되어야 함
+      const registered = bridge.getInteractable('duplicate-test');
+      expect(registered).toBe(entity2);
+      expect(registered.onPointerOut).toBeDefined();
+    });
+
+    it('언등록이 올바르게 작동해야 함', () => {
+      const entity = {
+        id: 'unregister-test',
+        onClick: jest.fn(),
+      };
+
+      bridge.registerInteractable(entity);
+      expect(bridge.getInteractable('unregister-test')).toBe(entity);
+
+      bridge.unregisterInteractable('unregister-test');
+      expect(bridge.getInteractable('unregister-test')).toBeUndefined();
+    });
+  });
+
+  describe('이벤트 처리 성능', () => {
+    it('raycast 결과를 효율적으로 처리해야 함', () => {
+      const entities = Array.from({ length: 100 }, (_, i) => ({
+        id: `entity-${i}`,
+        onPointerOver: jest.fn(),
+        onPointerOut: jest.fn(),
+        onClick: jest.fn(),
+      }));
+
+      // 모든 엔티티 등록
+      entities.forEach(entity => bridge.registerInteractable(entity));
+
+      // raycast 결과 시뮬레이션
+      const hitObjects = [
+        { object: { userData: { id: 'entity-10' } } },
+        { object: { userData: { id: 'entity-20' } } },
+        { object: { userData: { id: 'entity-30' } } },
+      ];
+
+      bridge.updateHoveredObjects(hitObjects);
+
+      // 올바른 엔티티들의 onPointerOver만 호출되었는지 확인
+      expect(entities[10].onPointerOver).toHaveBeenCalled();
+      expect(entities[20].onPointerOver).toHaveBeenCalled();
+      expect(entities[30].onPointerOver).toHaveBeenCalled();
+
+      // 나머지는 호출되지 않았는지 확인
+      expect(entities[0].onPointerOver).not.toHaveBeenCalled();
+      expect(entities[50].onPointerOver).not.toHaveBeenCalled();
+    });
+
+    it('hover 상태 변경을 추적해야 함', () => {
+      const entity1 = {
+        id: 'hover-1',
+        onPointerOver: jest.fn(),
+        onPointerOut: jest.fn(),
+      };
+
+      const entity2 = {
+        id: 'hover-2',
+        onPointerOver: jest.fn(),
+        onPointerOut: jest.fn(),
+      };
+
+      bridge.registerInteractable(entity1);
+      bridge.registerInteractable(entity2);
+
+      // 첫 번째 업데이트: entity1에 호버
+      bridge.updateHoveredObjects([
+        { object: { userData: { id: 'hover-1' } } }
+      ]);
+
+      expect(entity1.onPointerOver).toHaveBeenCalledTimes(1);
+      expect(entity1.onPointerOut).not.toHaveBeenCalled();
+
+      // 두 번째 업데이트: entity2로 호버 이동
+      bridge.updateHoveredObjects([
+        { object: { userData: { id: 'hover-2' } } }
+      ]);
+
+      expect(entity1.onPointerOut).toHaveBeenCalledTimes(1);
+      expect(entity2.onPointerOver).toHaveBeenCalledTimes(1);
+
+      // 세 번째 업데이트: 호버 해제
+      bridge.updateHoveredObjects([]);
+
+      expect(entity2.onPointerOut).toHaveBeenCalledTimes(1);
+    });
+
+    it('클릭 이벤트를 올바르게 처리해야 함', () => {
+      const entity = {
+        id: 'click-test',
+        onClick: jest.fn(),
+      };
+
+      bridge.registerInteractable(entity);
+
+      // 클릭 이벤트 처리
+      bridge.handleClick({ object: { userData: { id: 'click-test' } } });
+
+      expect(entity.onClick).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('최적화 검증', () => {
+    it('비활성 엔티티는 이벤트를 받지 않아야 함', () => {
+      const activeEntity = {
+        id: 'active',
+        active: true,
+        onClick: jest.fn(),
+      };
+
+      const inactiveEntity = {
+        id: 'inactive',
+        active: false,
+        onClick: jest.fn(),
+      };
+
+      bridge.registerInteractable(activeEntity);
+      bridge.registerInteractable(inactiveEntity);
+
+      // 두 엔티티 모두 클릭
+      bridge.handleClick({ object: { userData: { id: 'active' } } });
+      bridge.handleClick({ object: { userData: { id: 'inactive' } } });
+
+      // active 엔티티만 이벤트를 받아야 함
+      expect(activeEntity.onClick).toHaveBeenCalled();
+      expect(inactiveEntity.onClick).not.toHaveBeenCalled();
+    });
+
+    it('대량의 엔티티도 효율적으로 관리해야 함', () => {
+      const startTime = performance.now();
+
+      // 1000개의 엔티티 등록
+      for (let i = 0; i < 1000; i++) {
+        bridge.registerInteractable({
+          id: `perf-entity-${i}`,
+          onPointerOver: () => {},
+          onPointerOut: () => {},
+        });
+      }
+
+      const registrationTime = performance.now() - startTime;
+
+      // 등록 시간이 합리적이어야 함 (100ms 이하)
+      expect(registrationTime).toBeLessThan(100);
+
+      // 검색 성능 테스트
+      const searchStart = performance.now();
+      const entity = bridge.getInteractable('perf-entity-500');
+      const searchTime = performance.now() - searchStart;
+
+      expect(entity).toBeDefined();
+      // 검색 시간이 빨라야 함 (1ms 이하)
+      expect(searchTime).toBeLessThan(1);
+    });
+  });
+});

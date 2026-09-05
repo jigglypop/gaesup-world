@@ -1,0 +1,31 @@
+.automation-example {
+  position: fixed;
+  right: 16px;
+  top: 88px;
+  z-index: 100;
+  width: min(340px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 18px;
+  border: 1px solid #ffffff26;
+  border-radius: 16px;
+  background: #171c29f2;
+  color: #f3f4f8;
+}
+.automation-example h1 { margin: 0 0 10px; font-size: 18px; }
+.automation-example p { font-size: 13px; line-height: 1.6; }
+.automation-example output { display: block; color: #93d4bd; }
+.automation-example__position { font-variant-numeric: tabular-nums; }
+.automation-example__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.automation-example button {
+  border: 1px solid #ffffff26;
+  border-radius: 8px;
+  background: #303849;
+  color: inherit;
+  padding: 9px 12px;
+  cursor: pointer;
+}
+.automation-example button:disabled { opacity: 0.45; cursor: default; }
+.automation-example button:focus-visible { outline: 2px solid #93d4bd; outline-offset: 2px; }
+@media (max-width: 600px) {
+  .automation-example { top: 120px; right: 8px; width: calc(100vw - 16px); }
+}

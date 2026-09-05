@@ -1,0 +1,71 @@
+.camera-settings-tab {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-sm);
+  height: 100%;
+  padding: var(--editor-spacing-sm);
+  overflow: auto;
+  color: var(--editor-text-main);
+}
+.camera-settings-tab-mode {
+  color: var(--editor-text-faint);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.camera-settings-tab-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--editor-spacing-xs);
+  padding: var(--editor-spacing-sm);
+  border: 1px solid var(--editor-border-color);
+  border-radius: var(--editor-radius-md);
+  background: var(--editor-bg-1);
+}
+.camera-settings-tab-section-title {
+  margin: 0;
+  color: var(--editor-text-faint);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+.camera-settings-tab-field {
+  display: grid;
+  grid-template-columns: minmax(48px, 0.7fr) minmax(0, 1.6fr) minmax(42px, auto);
+  gap: var(--editor-spacing-sm);
+  align-items: center;
+  min-height: 26px;
+  color: var(--editor-text-main);
+  font-size: 11px;
+}
+.camera-settings-tab-field-label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--editor-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.camera-settings-tab-field-control {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.camera-settings-tab-range {
+  width: 100%;
+  min-width: 0;
+  accent-color: var(--editor-accent-color);
+}
+.camera-settings-tab-checkbox {
+  accent-color: var(--editor-accent-color);
+}
+.camera-settings-tab-field-value {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--editor-text-main);
+  font-family: monospace;
+  font-size: 11px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

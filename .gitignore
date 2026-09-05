@@ -10,6 +10,10 @@ lerna-debug.log*
 node_modules
 *.local
 
+# Test coverage
+coverage/
+.tmp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -29,3 +33,22 @@ node_modules
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+dist
+dist/*
+.cursor/*
+coverage
+coverage/*
+.cursor
+
+# Rust / WASM build artifacts
+**/target/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Python cache artifacts
+__pycache__/
+*.py[cod]

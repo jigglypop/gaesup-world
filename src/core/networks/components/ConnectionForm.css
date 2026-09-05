@@ -1,0 +1,72 @@
+.multiplayer-connection {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  height: 100dvh;
+  overflow: auto;
+  padding: calc(var(--app-header-height, 56px) + 24px) 20px 24px;
+  background: #101722;
+  color: #eef2f8;
+}
+
+.multiplayer-connection__form {
+  box-sizing: border-box;
+  display: grid;
+  gap: 12px;
+  width: min(100%, 400px);
+  padding: clamp(20px, 5vw, 32px);
+  border: 1px solid #354153;
+  border-radius: 16px;
+  background: #1b2533;
+}
+
+.multiplayer-connection__form h2,
+.multiplayer-connection__form p {
+  margin: 0;
+}
+
+.multiplayer-connection__form p {
+  color: #c4cad5;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.multiplayer-connection__form input,
+.multiplayer-connection__form button {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #66758b;
+  border-radius: 8px;
+  background: #101722;
+  color: inherit;
+  font: inherit;
+}
+
+.multiplayer-connection__form input[type='color'] {
+  padding: 4px;
+  cursor: pointer;
+}
+
+.multiplayer-connection__form button {
+  margin-top: 8px;
+  border-color: transparent;
+  background: #356c4b;
+  cursor: pointer;
+}
+
+.multiplayer-connection__form :disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.multiplayer-connection__form :focus-visible {
+  outline: 2px solid #9dc5ff;
+  outline-offset: 3px;
+}
+
+.multiplayer-connection__form .multiplayer-connection__error {
+  color: #ffb8b8;
+}

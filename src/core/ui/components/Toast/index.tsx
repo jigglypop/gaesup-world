@@ -1,0 +1,108 @@
+import { useEffect } from 'react';
+
+import { useToastStore, type ToastKind } from './toastStore';
+
+export { notify, useToastStore } from './toastStore';
+export type { Toast, ToastKind } from './toastStore';
+
+const KIND_STYLE: Record<ToastKind, { bg: string; ring: string; icon: string }> = {
+  info:    { bg: 'rgba(20,30,50,0.55)',  ring: '#7aa6ff', icon: 'i' },
+  success: { bg: 'rgba(20,40,30,0.55)',  ring: '#7adf90', icon: '+' },
+  warn:    { bg: 'rgba(50,40,20,0.55)',  ring: '#ffd84a', icon: '!' },
+  error:   { bg: 'rgba(50,20,20,0.55)',  ring: '#ff7a7a', icon: 'x' },
+  reward:  { bg: 'rgba(40,30,10,0.55)',  ring: '#ffc24a', icon: '*' },
+  mail:    { bg: 'rgba(30,20,40,0.55)',  ring: '#cf9aff', icon: 'M' },
+};
+
+export type ToastHostProps = {
+  position?: 'top-right' | 'top-center';
+  max?: number;
+};
+
+export function ToastHost({ position = 'top-right', max = 5 }: ToastHostProps) {
+  const toasts = useToastStore((s) => s.toasts);
+  const dismiss = useToastStore((s) => s.dismiss);
+
+  useEffect(() => {
+    if (!toasts.length) return;
+    const timers = toasts.map((t) =>
+      window.setTimeout(() => dismiss(t.id), Math.max(0, t.createdAt + Math.max(500, t.durationMs) - Date.now())),
+    );
+    return () => { timers.forEach((id) => window.clearTimeout(id)); };
+  }, [toasts, dismiss]);
+
+  const layout = position === 'top-center'
+    ? { top: 'var(--gaesup-toast-top, 64px)', left: '50%', transform: 'translateX(-50%)' as const }
+    : { top: 'var(--gaesup-toast-top, 64px)', right: 12 };
+
+  const visible = toasts.slice(-max);
+
+  return (
+    <div
+      role="log"
+      aria-label="알림"
+      aria-live="polite"
+      style={{
+        position: 'fixed',
+        zIndex: 'var(--gaesup-z-toast, 140)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        pointerEvents: 'none',
+        bottom: 'var(--gaesup-toast-bottom, auto)',
+        ...layout,
+      }}
+    >
+      {visible.map((t) => {
+        const s = KIND_STYLE[t.kind];
+        return (
+          <div
+            key={t.id}
+            style={{
+              boxSizing: 'border-box',
+              minWidth: 'min(220px, calc(100vw - 24px))',
+              maxWidth: 'min(360px, calc(100vw - 24px))',
+              overflowWrap: 'anywhere',
+              padding: '9px 14px',
+              borderRadius: 12,
+              background: s.bg,
+              color: '#f3f4f8',
+              fontFamily: "'Pretendard', system-ui, sans-serif",
+              fontSize: 13,
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              border: `1px solid ${s.ring}55`,
+              boxShadow: `0 8px 22px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.05)`,
+              backdropFilter: 'blur(18px) saturate(140%)',
+              WebkitBackdropFilter: 'blur(18px) saturate(140%)',
+              animation: 'gaesup-toast-in 220ms ease-out both',
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 22, height: 22,
+                borderRadius: 6,
+                background: s.ring,
+                color: '#1a1a1a',
+                fontWeight: 700,
+              }}
+            >{t.icon ?? s.icon}</span>
+            <span>{t.text}</span>
+          </div>
+        );
+      })}
+      <style>{`@keyframes gaesup-toast-in {
+        0% { opacity: 0; transform: translateY(-6px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }`}</style>
+    </div>
+  );
+}
+
+export default ToastHost;
