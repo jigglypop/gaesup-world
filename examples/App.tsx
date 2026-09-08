@@ -12,6 +12,7 @@ const AssetsPage = lazy(() =>
 );
 
 const AdminPage = lazy(() => import('./pages/AdminPage'));
+const AssetReviewPage = lazy(() => import('./pages/AssetReviewPage'));
 const AdminTest = lazy(() => import('./AdminTest'));
 const WorldPage = lazy(() =>
   import('./pages/World').then((module) => ({ default: module.WorldPage })),
@@ -61,6 +62,7 @@ function AppLayout() {
             <Route path="/creator" element={<EditPage />} />
             <Route path="/multiplayer" element={<NetworkMultiplayerPage />} />
             <Route path="/assets" element={<AssetsPage />} />
+            <Route path="/asset-review" element={<AssetReviewPage />} />
             <Route path="/performance" element={<NextCorePage />} />
             <Route path="/examples" element={<ExampleCatalogPage />} />
             <Route path="/minimal" element={<MinimalExamplePage />} />

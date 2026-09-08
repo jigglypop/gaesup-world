@@ -2,6 +2,13 @@ import type { ExampleRoute } from './types';
 
 export const EXAMPLE_ROUTES: ExampleRoute[] = [
   {
+    path: '/asset-review',
+    label: '제품 에셋 검수',
+    description: '납품 GLB의 형태와 재질을 검수하고 아트 결정 기록을 내보냅니다.',
+    category: '개발자',
+    audience: 'developer',
+  },
+  {
     path: '/blueprint-playground',
     label: '전사 이동 체험',
     description: '블루프린트 캐릭터의 이동, 달리기와 점프를 직접 확인합니다.',
@@ -31,8 +38,8 @@ export const EXAMPLE_ROUTES: ExampleRoute[] = [
   },
   {
     path: '/assets',
-    label: '에셋',
-    description: '캐릭터와 소품을 찾아보고 월드에 사용할 에셋을 확인하세요.',
+    label: '에셋 제작',
+    description: '이미지 콘셉트부터 모델 제작, 리깅, 품질 검수와 공개까지 이어지는 작업실입니다.',
     category: '저작',
     audience: 'product',
   },

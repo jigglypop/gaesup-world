@@ -182,6 +182,9 @@
     "LICENSE.txt"
   ],
   "scripts": {
+    "assets:production": "node scripts/assets/cli.mjs",
+    "assets:studio": "node scripts/assets/server.mjs",
+    "test:asset-tools": "node --test scripts/assets/*.test.mjs",
     "dev": "vite --force",
     "clean": "rimraf dist/",
     "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:types",
@@ -221,6 +224,9 @@
     "zustand": "^5.0.6"
   },
   "devDependencies": {
+    "@gltf-transform/core": "^4.5.0",
+    "@gltf-transform/extensions": "^4.5.0",
+    "@gltf-transform/functions": "^4.5.0",
     "@playwright/test": "1.54.0",
     "@react-three/drei": "10.7.8",
     "@react-three/fiber": "^9.7.0",
@@ -254,10 +260,12 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "gh-pages": "^6.3.0",
     "globals": "^16.3.0",
+    "gltf-validator": "2.0.0-dev.3.10",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^30.0.4",
     "jest-canvas-mock": "^2.5.2",
     "jest-environment-jsdom": "^30.0.4",
+    "meshoptimizer": "^1.2.0",
     "pngjs": "^7.0.0",
     "prettier": "^3.6.2",
     "publint": "^0.3.12",
@@ -268,6 +276,7 @@
     "react-use-refs": "^1.0.1",
     "rimraf": "^6.0.1",
     "semantic-release": "^24.2.6",
+    "sharp": "^0.35.4",
     "three": "0.185.1",
     "three-stdlib": "^2.36.1",
     "ts-jest": "^29.4.12",

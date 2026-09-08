@@ -1,0 +1,30 @@
+.asset-review {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+}
+.asset-review label {
+  display: block;
+  margin: 12px 0;
+}
+.asset-review-controls {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+.asset-review-canvas {
+  height: 480px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #eee9df;
+  color: #30302d;
+}
+.asset-review textarea {
+  display: block;
+  width: 100%;
+  min-height: 80px;
+}
+.asset-review button {
+  margin: 12px 12px 0 0;
+  padding: 10px 16px;
+}

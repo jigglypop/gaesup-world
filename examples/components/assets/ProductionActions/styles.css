@@ -1,0 +1,45 @@
+.production-actions {
+  border: 1px solid #dfcecc;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 24px;
+  font-size: 12px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.production-actions label {
+  display: block;
+  margin: 12px 0;
+}
+.production-actions button {
+  border: 1px solid #b9949c;
+  border-radius: 6px;
+  padding: 9px 12px;
+  margin: 4px 8px 4px 0;
+  background: #fff;
+  color: #71444e;
+  cursor: pointer;
+}
+.production-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.production-actions input:not([type='checkbox']),
+.production-actions select {
+  margin-left: 8px;
+  max-width: 100%;
+  color: #393330;
+  background: #fff;
+  border: 1px solid #dfcecc;
+  border-radius: 4px;
+  padding: 6px;
+}
+.production-actions li {
+  padding: 12px 0;
+  border-top: 1px solid #e5dcd7;
+}
+.production-actions li strong,
+.production-actions li span,
+.production-actions li small {
+  display: block;
+}
