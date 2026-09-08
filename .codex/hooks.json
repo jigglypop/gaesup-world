@@ -1,0 +1,42 @@
+{
+  "description": "Repository model routing and Astra usage guards.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "fallback='{\"continue\":false,\"stopReason\":\"Astra guard bootstrap failed closed.\",\"systemMessage\":\"Astra guard bootstrap failed closed.\"}'; repo_dir=\"$PWD\"; while [ ! -f \"$repo_dir/.codex/hooks/astra-guard-launcher.mjs\" ]; do parent_dir=\"$(dirname \"$repo_dir\")\"; if [ \"$parent_dir\" = \"$repo_dir\" ]; then printf '%s' \"$fallback\"; exit 0; fi; repo_dir=\"$parent_dir\"; done; node \"$repo_dir/.codex/hooks/astra-guard-launcher.mjs\"; status=$?; if [ \"$status\" -ne 0 ]; then printf '%s' \"$fallback\"; exit 0; fi",
+            "commandWindows": "$fallback = '{\"continue\":false,\"stopReason\":\"Astra guard bootstrap failed closed.\",\"systemMessage\":\"Astra guard bootstrap failed closed.\"}'; $ErrorActionPreference = 'Stop'; try { $repoDir = (Get-Location).Path; while ($true) { $launcher = Join-Path $repoDir '.codex/hooks/astra-guard-launcher.mjs'; if (Test-Path -LiteralPath $launcher) { & node $launcher; if ($LASTEXITCODE -ne 0) { Write-Output $fallback; exit 0 }; break }; $parentDir = Split-Path -Parent $repoDir; if ([string]::IsNullOrEmpty($parentDir) -or $parentDir -eq $repoDir) { throw 'repository handler not found' }; $repoDir = $parentDir } } catch { Write-Output $fallback; exit 0 }",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "fallback='{\"decision\":\"block\",\"reason\":\"Astra guard bootstrap failed closed.\"}'; repo_dir=\"$PWD\"; while [ ! -f \"$repo_dir/.codex/hooks/astra-guard-launcher.mjs\" ]; do parent_dir=\"$(dirname \"$repo_dir\")\"; if [ \"$parent_dir\" = \"$repo_dir\" ]; then printf '%s' \"$fallback\"; exit 0; fi; repo_dir=\"$parent_dir\"; done; node \"$repo_dir/.codex/hooks/astra-guard-launcher.mjs\"; status=$?; if [ \"$status\" -ne 0 ]; then printf '%s' \"$fallback\"; exit 0; fi",
+            "commandWindows": "$fallback = '{\"decision\":\"block\",\"reason\":\"Astra guard bootstrap failed closed.\"}'; $ErrorActionPreference = 'Stop'; try { $repoDir = (Get-Location).Path; while ($true) { $launcher = Join-Path $repoDir '.codex/hooks/astra-guard-launcher.mjs'; if (Test-Path -LiteralPath $launcher) { & node $launcher; if ($LASTEXITCODE -ne 0) { Write-Output $fallback; exit 0 }; break }; $parentDir = Split-Path -Parent $repoDir; if ([string]::IsNullOrEmpty($parentDir) -or $parentDir -eq $repoDir) { throw 'repository handler not found' }; $repoDir = $parentDir } } catch { Write-Output $fallback; exit 0 }",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "repo_dir=\"$PWD\"; while [ ! -f \"$repo_dir/.codex/hooks/astra-guard-launcher.mjs\" ]; do parent_dir=\"$(dirname \"$repo_dir\")\"; if [ \"$parent_dir\" = \"$repo_dir\" ]; then echo \"Astra guard bootstrap failed: repository handler not found\" >&2; exit 2; fi; repo_dir=\"$parent_dir\"; done; node \"$repo_dir/.codex/hooks/astra-guard-launcher.mjs\"; status=$?; if [ \"$status\" -ne 0 ]; then exit 2; fi",
+            "commandWindows": "$ErrorActionPreference = 'Stop'; try { $repoDir = (Get-Location).Path; while ($true) { $launcher = Join-Path $repoDir '.codex/hooks/astra-guard-launcher.mjs'; if (Test-Path -LiteralPath $launcher) { & node $launcher; if ($LASTEXITCODE -ne 0) { exit 2 }; break }; $parentDir = Split-Path -Parent $repoDir; if ([string]::IsNullOrEmpty($parentDir) -or $parentDir -eq $repoDir) { throw 'repository handler not found' }; $repoDir = $parentDir } } catch { [Console]::Error.WriteLine('Astra guard bootstrap failed: ' + $_.Exception.Message); exit 2 }",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

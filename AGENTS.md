@@ -38,7 +38,7 @@
 - React component lifetime과 persistent entity lifetime을 결합하지 않는다.
 - migration 중 old/new path가 공존하면 canonical path를 문서와 코드에서 명시한다.
 
-세부 원칙은 다음 문서를 읽는다.
+`.codex/context/engineering.md`는 모든 작업에 적용한다. 나머지 context는 현재 작업과 직접 관련된 문서만 읽는다. `.codex/context/`나 `.codex/plans/active/` 전체를 일괄 로드하지 않고 `rg`로 관련 파일을 찾은 뒤 active plan은 최대 하나만 읽는다.
 
 - `.codex/context/engineering.md` (투 트랙, 코드량 감소, DRY/KISS/YAGNI — 모든 작업에 적용)
 - `.codex/context/architecture.md`
@@ -91,12 +91,17 @@ plan은 architecture boundary·source of truth를 바꾸는 epoch 작업에만 �
 
 Agent 선택:
 
+- 파일·심볼 탐색: `explorer`
+- 작은 도메인 내부 구현: `worker`
 - architecture, WorldDocument, public API, examples 구조: `architect`
 - rendering, physics, simulation, WebGPU, performance: `runtime`
 - Blender, assets, network, save, social: `platform`
 - 완료된 slice 검토: `reviewer`
+- 공개 API, frame 성능, invariant, layer 감사: 해당 `*_guard` 또는 `*_auditor`
 
-하나의 migration slice에서 구현 agent는 최대 두 개만 사용한다.
+하나의 migration slice에서 구현 agent는 최대 두 개만 사용한다. subagent task는 필요한 근거를 자체 포함하고 `fork_turns="all"`을 사용하지 않는다. `.codex/hooks/astra-guard.mjs`의 model·effort·fork 정책을 spawn 인자로 우회하지 않는다.
+
+Astra는 평시 모델이 아니다. 먼저 `architect`가 판단하고, 최소 3개 architecture domain에 걸친 source-of-truth 결정이 근거 확인 뒤에도 풀리지 않을 때만 읽기 전용 `astra_architect`를 한 번 사용한다. 이 역할은 `fork_turns="none"`과 `[astra:architecture]` evidence packet이 필수이며 탐색·구현·수정·테스트·검색·리뷰·재위임에는 사용할 수 없다. 상세 packet과 강제 경계는 필요할 때만 `.codex/HARNESS.md`를 읽는다.
 
 ## 검증
 

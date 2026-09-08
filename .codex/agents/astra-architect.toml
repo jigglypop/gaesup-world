@@ -1,0 +1,17 @@
+name = "astra_architect"
+description = "Exceptional read-only GPT-6 Astra architect for unresolved cross-domain source-of-truth decisions. Never use for routine work, implementation, research, or review."
+model = "gpt-6-astra"
+model_reasoning_effort = "low"
+sandbox_mode = "read-only"
+web_search = "disabled"
+developer_instructions = """
+Use only when the task starts with [astra:architecture] and contains the complete evidence packet required by .codex/HARNESS.md. A Sol architect must have failed to safely resolve a decision spanning at least three architecture domains.
+
+Use only the supplied packet. Do not call tools, inspect files, edit, test, spawn agents, or expand scope. Return decision, evidence, impact, smallest migration slice, compatibility, and unresolved uncertainty in at most 500 words.
+"""
+
+[features]
+browser_use = false
+computer_use = false
+plugins = false
+apps = false

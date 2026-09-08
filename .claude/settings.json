@@ -44,9 +44,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e 'const fs=require(\"fs\"),p=\".codex/plans/active\";try{const fl=fs.readdirSync(p).filter(f=>f.endsWith(\".md\"));if(fl.length){console.log(\"[active epoch plan] .codex/plans/active:\");for(const f of fl)console.log(\"--- \"+f+\" ---\\n\"+fs.readFileSync(p+\"/\"+f,\"utf8\"))}}catch(e){}'",
+            "command": "node -e 'const fs=require(\"fs\"),p=\".codex/plans/active\";try{const fl=fs.readdirSync(p).filter(f=>f.endsWith(\".md\"));if(fl.length)process.stdout.write(\"[active plan index] \"+fl.join(\", \")+\"\\nRead only the one plan relevant to the current task.\\n\")}catch{}'",
             "timeout": 15,
-            "statusMessage": "active epoch plan 로드"
+            "statusMessage": "active epoch plan index 로드"
           }
         ]
       }
