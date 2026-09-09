@@ -37,6 +37,8 @@
 - 기존 typed-array, spatial, visibility, culling과 GPU upload 구현은 측정 근거 없이 객체 중심 구조로 교체하지 않는다.
 - React component lifetime과 persistent entity lifetime을 결합하지 않는다.
 - migration 중 old/new path가 공존하면 canonical path를 문서와 코드에서 명시한다.
+- `gaesup-world`는 특정 미니홈피/SNS 제품의 business domain을 소유하지 않는다. 제품 기능은 application/backend가 소유하고 library에는 재사용 가능한 spatial primitive와 engine-neutral contract만 둔다.
+- pet 기능은 AI brain과 runtime body를 분리한다. memory, personality, emotion reasoning, LLM/planner는 core에 넣지 않고 bounded intent execution만 runtime 책임으로 둔다.
 
 세부 원칙은 다음 문서를 읽는다.
 
@@ -50,6 +52,9 @@
 - `.codex/context/networking.md`
 - `.codex/context/examples.md`
 - `.codex/context/performance.md`
+- `.codex/context/product-boundary.md` (공용 library와 제품 frontend/backend/AI 경계)
+- `.codex/context/spatial-runtime.md` (placement/avatar/pet/portal/presence/spatial resource capability)
+- `.codex/context/harness-gates.md` (discovery/architecture/public API/persistence/performance/completion gate)
 
 ## 계층과 구현
 
@@ -87,13 +92,13 @@ Bridge는 `buildEngine`, `executeCommand`, `createSnapshot` 책임을 분리한�
 
 ## Codex 작업 흐름
 
-plan은 architecture boundary·source of truth를 바꾸는 epoch 작업에만 요구된다. 일상 작업은 `.codex/context/engineering.md`의 fast track을 따라 plan 없이 바로 구현한다. epoch 작업 전에는 `.codex/plans/active/`의 관련 plan을 읽고, 없으면 `.codex/plans/TEMPLATE.md`를 복사해 먼저 작성하며, 완료 조건과 검증을 충족한 뒤에만 `completed/`로 이동한다. 절차는 `.codex/prompts/{start-epoch,close-epoch,verify,handoff}.md`를 따른다.
+plan은 architecture boundary·source of truth를 바꾸는 epoch 작업에만 요구된다. 일상 작업은 `.codex/context/engineering.md`의 fast track을 따라 plan 없이 바로 구현한다. epoch 작업 전에는 `.codex/plans/active/`의 관련 plan을 읽고, 없으면 `.codex/plans/TEMPLATE.md`를 복사해 먼저 작성하며, 완료 조건과 검증을 충족한 뒤에만 `completed/`로 이동한다. 절차는 `.codex/prompts/{start-epoch,close-epoch,verify,handoff}.md`를 따른다. 공용 spatial capability 추가/변경은 `.codex/prompts/spatial-runtime-feature.md`를 추가로 따른다.
 
 Agent 선택:
 
 - architecture, WorldDocument, public API, examples 구조: `architect`
 - rendering, physics, simulation, WebGPU, performance: `runtime`
-- Blender, assets, network, save, social: `platform`
+- Blender, assets, network, save, external integration contracts: `platform`
 - 완료된 slice 검토: `reviewer`
 
 하나의 migration slice에서 구현 agent는 최대 두 개만 사용한다.
