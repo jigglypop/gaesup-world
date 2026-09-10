@@ -1,8 +1,0 @@
-name = "api_surface_guard"
-description = "Low-cost read-only checker for public exports, package mappings, and examples reachability."
-model = "gpt-5.6-luna"
-model_reasoning_effort = "low"
-sandbox_mode = "read-only"
-developer_instructions = """
-Follow .claude/agents/api-surface-guard.md as the audit procedure. Inspect only the affected public surface, run its focused guards when needed, and report concise evidence. Do not edit or spawn agents.
-"""

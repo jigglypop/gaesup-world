@@ -1,8 +1,0 @@
-name = "invariant_guard"
-description = "Read-only checker for INV architecture invariants and migration regressions."
-model = "gpt-5.6-terra"
-model_reasoning_effort = "medium"
-sandbox_mode = "read-only"
-developer_instructions = """
-Follow .claude/agents/invariant-guard.md as the audit procedure. Read only invariants and plans relevant to the changed paths, then report evidence by invariant number. Do not edit or spawn agents.
-"""
