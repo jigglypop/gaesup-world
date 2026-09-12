@@ -12,15 +12,15 @@ const STAGES = [
     title: '이미지 · 콘셉트',
     subtitle: '캐릭터의 첫인상',
     status: '레퍼런스 정리',
-    heading: '작은 토끼에서 시작하는, 나만의 캐릭터.',
+    heading: '나만의 SD 캐릭터, 같은 바디에서 다양한 모습으로.',
     description:
-      '크림과 연분홍, 둥근 볼과 큰 눈. 기본형을 정하고 모자·의상·가방을 따로 설계합니다.',
-    input: '토끼 SD 레퍼런스 · 색감 · 정면과 측면',
+      '큰 눈과 둥근 얼굴, 2~3등신 비율의 SD 캐릭터. 정면·측면의 기본 바디를 정하고 헤어·얼굴·모자·옷·신발을 독립 파츠로 설계합니다.',
+    input: 'SD 레퍼런스 · 체형과 색감 · 정면과 측면',
     output: '기본형 이미지 · 파츠별 제작 브리프',
     checks: [
-      '약 2등신의 둥근 실루엣',
+      '2~3등신의 일관된 체형과 실루엣',
       '모자 없이도 읽히는 얼굴과 헤어',
-      '토끼 모자·가방·착장은 교체 파츠',
+      '모자·상의·하의·신발은 교체 파츠',
     ],
     note: '로컬 제작 서버를 연결하면 Meshy 텍스트 이미지 생성을 요청할 수 있습니다. 레퍼런스 편집이 아닌 텍스트 기반 생성이며 결과는 별도 승인이 필요합니다.',
   },
@@ -30,11 +30,11 @@ const STAGES = [
     subtitle: '이미지를 입체적인 형태로',
     status: '로컬 도구',
     heading: '예쁜 이미지에서, 쓸 수 있는 3D로.',
-    description: '캐릭터와 집은 Blender에서 제작하고, 가구·나무 후보는 승인된 이미지로 생성합니다.',
+    description: '승인된 이미지로 SD 바디·의상·집·나무·타일 메시 후보를 생성하고 Blender에서 형태와 구조를 정리합니다.',
     input: '승인된 레퍼런스 이미지',
     output: '원본 모델 · 정리된 메시 · 제작 출처',
     checks: [
-      '캐릭터·리그는 Blender 제작',
+      '캐릭터 후보는 공통 리그로 정규화 후 사용',
       'Meshy 후보는 종류별 최대 2개',
       '원본 보관과 납품 파일 분리',
     ],
@@ -54,7 +54,7 @@ const STAGES = [
       '손·발·머리 소켓과 착장 호환',
       '의자 높이·충돌체·카메라 기준 일치',
     ],
-    note: '새 토끼 캐릭터 메시와 리그는 아직 제작 전입니다. 기존 리그를 새 리그 완료로 표시하지 않습니다.',
+    note: '생성된 메시가 자동으로 공통 리그에 맞지는 않습니다. 낱벌 의상은 바인드 포즈와 동작 중 관통을 검수한 뒤 연결합니다.',
   },
   {
     id: 'quality',
@@ -92,7 +92,7 @@ const STAGES = [
 
 export function AssetsPage() {
   const [params, setParams] = useSearchParams();
-  const [name, setName] = useState('토끼 SD 기본형');
+  const [name, setName] = useState('SD 캐릭터 기본형');
   const [direction, setDirection] = useState<string>(STAGES[0].description);
   const [reference, setReference] = useState<File>();
   const [preview, setPreview] = useState('');
@@ -122,7 +122,7 @@ export function AssetsPage() {
     );
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = 'bunny-character-brief.json';
+    anchor.download = 'sd-character-brief.json';
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
@@ -243,7 +243,7 @@ export function AssetsPage() {
           <div className="asset-studio__actions">
             {stage.id === 'concept' && (
               <button disabled={!name.trim() || !direction.trim()} onClick={handleBriefDownload}>
-                토끼 캐릭터 브리프 저장 ↓
+                캐릭터 브리프 저장 ↓
               </button>
             )}
             {stage.id === 'quality' && <Link to="/asset-review">GLB 검수 화면 열기 ↗</Link>}

@@ -24,7 +24,7 @@ export const EXAMPLE_ROUTES: ExampleRoute[] = [
   },
   {
     path: '/creator',
-    label: '크리에이터',
+    label: '편집기',
     description: '직접 플레이할 월드에 물건을 배치하고 공간을 꾸며보세요.',
     category: '제작',
     audience: 'product',

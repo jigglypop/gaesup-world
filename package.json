@@ -178,11 +178,14 @@
     "dist/wasm/*.wasm",
     "public/gltf/*.glb",
     "public/gltf/props/**/*",
+    "public/gltf/kaykit/**/*",
     "README.md",
     "LICENSE.txt"
   ],
   "scripts": {
     "assets:production": "node scripts/assets/cli.mjs",
+    "assets:references": "node scripts/assets/import-kaykit.mjs",
+    "test:world:browser": "node scripts/probe-social-world.cjs",
     "assets:studio": "node scripts/assets/server.mjs",
     "test:asset-tools": "node --test scripts/assets/*.test.mjs",
     "dev": "vite --force",

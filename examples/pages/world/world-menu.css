@@ -1,0 +1,25 @@
+.social-world-ui { position: fixed; inset: calc(var(--app-header-height, 80px) + 12px) 24px 24px; z-index: 40; pointer-events: none; color: #263e32; font-family: inherit; }
+.social-world-card { width: 280px; box-sizing: border-box; padding: 20px; border: 1px solid #ffffffb3; border-radius: 20px; background: #fafcf4f2; box-shadow: 0 8px 28px #17231b1a; pointer-events: auto; }
+.social-world-eyebrow { color: #527346; font-size: 10px; font-weight: 700; letter-spacing: .18em; }
+.social-world-card h1 { margin: 10px 0 8px; font-size: 22px; letter-spacing: -.04em; }
+.social-world-card p { margin: 0; color: #596d5f; font-size: 12px; line-height: 1.7; }
+.social-world-actions { display: flex; gap: 8px; margin-top: 18px; }
+.social-world-ui button { border: 1px solid #d7e1d1; border-radius: 10px; background: #ffffff; color: inherit; min-height: 40px; padding: 10px 13px; font: inherit; font-size: 12px; cursor: pointer; }
+.social-world-ui button:hover, .social-world-ui button[aria-pressed=true], .social-world-ui button[aria-expanded=true] { background: #dbe6bb; color: #273528; border-color: #dbe6bb; }
+.social-world-ui button:disabled { opacity: .45; cursor: wait; }
+.social-world-ui button:focus-visible, .social-world-ui input:focus-visible { outline: 2px solid #dbe6bb; outline-offset: 3px; }
+.social-world-ui kbd { opacity: .6; margin-left: 10px; }
+.social-world-wardrobe { margin-top: 12px; max-height: calc(100dvh - var(--app-header-height, 80px) - 250px); overflow: auto; overscroll-behavior: contain; }
+.social-world-wardrobe header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.social-world-wardrobe h2 { font-size: 18px; margin: 0; }
+.social-world-wardrobe header button { padding: 2px 9px; font-size: 22px; }
+.social-world-wardrobe label { display: grid; gap: 7px; color: #596d5f; font-size: 12px; }
+.social-world-wardrobe input { box-sizing: border-box; width: 100%; background: #fff; border: 1px solid #d7e1d1; border-radius: 8px; padding: 10px; color: #263e32; }
+.social-world-wardrobe h3 { font-size: 12px; margin: 20px 0 9px; }
+.social-world-options { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.social-world-wardrobe .social-world-note { margin-top: 18px; font-size: 11px; }
+.social-world-wardrobe small { display: block; margin-top: 12px; color: #596d5f; font-size: 10px; }
+.social-world-wardrobe a { color: inherit; }
+.social-world-controls { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); padding: 11px 18px; margin: 0; border-radius: 30px; white-space: nowrap; color: #f6f1e4; background: #202e29df; font-size: 11px; }
+.social-world-controls span { margin-left: 16px; color: #b8c7b7; }
+@media (max-width: 700px) { .social-world-ui { inset: calc(var(--app-header-height, 124px) + 8px) 12px 100px; } .social-world-card { width: min(280px, 100%); padding: 16px; } .social-world-card h1 { font-size: 18px; } .social-world-controls { display: none; } .social-world-wardrobe { max-height: calc(100dvh - var(--app-header-height, 124px) - 290px); } }

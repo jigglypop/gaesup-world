@@ -1,0 +1,971 @@
+{
+  "version": 1,
+  "status": "reference-unapproved",
+  "author": "Kay Lousberg",
+  "license": "CC0-1.0",
+  "packs": {
+    "adventurers": {
+      "repo": "KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0",
+      "revision": "672074b73ba276876a19e8816ecdc5241817ab47",
+      "directory": "addons/kaykit_character_pack_adventures",
+      "license": "LICENSE.txt"
+    },
+    "medieval": {
+      "repo": "KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0",
+      "revision": "84fa4e91af6a88989be7c99e0891cede11f2ca38",
+      "directory": "addons/kaykit_medieval_hexagon_pack/Assets",
+      "license": "../../../LICENSE.txt"
+    }
+  },
+  "conventions": {
+    "units": "meters",
+    "up": "+Y",
+    "forward": "+Z",
+    "rigId": "kaykit-adventurers-1",
+    "rightHand": "handslot_r"
+  },
+  "assets": [
+    {
+      "id": "rogue",
+      "url": "gltf/kaykit/rogue.glb",
+      "source": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Rogue.glb",
+      "sourceSha256": "e825437cd4d2ee9c1960b517a74a69101e33eb409ae7fa8cedc7134a998fbb7d",
+      "sha256": "f65768965eab72076b66aec277171582e32c4fd8f4347dd44bb5c2ee90935d19",
+      "bytes": 2374512,
+      "bounds": {
+        "min": [
+          -0.9712533354759216,
+          -0.000026527046429691836,
+          -0.4963023364543915
+        ],
+        "max": [
+          0.9712533354759216,
+          2.186978340148926,
+          0.5192026495933533
+        ]
+      },
+      "animations": [
+        "wave",
+        "idle",
+        "interact",
+        "fall",
+        "land",
+        "jump",
+        "run",
+        "walk"
+      ],
+      "originalAnimations": [
+        "1H_Melee_Attack_Chop",
+        "1H_Melee_Attack_Slice_Diagonal",
+        "1H_Melee_Attack_Slice_Horizontal",
+        "1H_Melee_Attack_Stab",
+        "1H_Ranged_Aiming",
+        "1H_Ranged_Reload",
+        "1H_Ranged_Shoot",
+        "1H_Ranged_Shooting",
+        "2H_Melee_Attack_Chop",
+        "2H_Melee_Attack_Slice",
+        "2H_Melee_Attack_Spin",
+        "2H_Melee_Attack_Spinning",
+        "2H_Melee_Attack_Stab",
+        "2H_Melee_Idle",
+        "2H_Ranged_Aiming",
+        "2H_Ranged_Reload",
+        "2H_Ranged_Shoot",
+        "2H_Ranged_Shooting",
+        "Block",
+        "Block_Attack",
+        "Block_Hit",
+        "Blocking",
+        "Cheer",
+        "Death_A",
+        "Death_A_Pose",
+        "Death_B",
+        "Death_B_Pose",
+        "Dodge_Backward",
+        "Dodge_Forward",
+        "Dodge_Left",
+        "Dodge_Right",
+        "Dualwield_Melee_Attack_Chop",
+        "Dualwield_Melee_Attack_Slice",
+        "Dualwield_Melee_Attack_Stab",
+        "Hit_A",
+        "Hit_B",
+        "Idle",
+        "Interact",
+        "Jump_Full_Long",
+        "Jump_Full_Short",
+        "Jump_Idle",
+        "Jump_Land",
+        "Jump_Start",
+        "Lie_Down",
+        "Lie_Idle",
+        "Lie_Pose",
+        "Lie_StandUp",
+        "PickUp",
+        "Running_A",
+        "Running_B",
+        "Running_Strafe_Left",
+        "Running_Strafe_Right",
+        "Sit_Chair_Down",
+        "Sit_Chair_Idle",
+        "Sit_Chair_Pose",
+        "Sit_Chair_StandUp",
+        "Sit_Floor_Down",
+        "Sit_Floor_Idle",
+        "Sit_Floor_Pose",
+        "Sit_Floor_StandUp",
+        "Spellcast_Long",
+        "Spellcast_Raise",
+        "Spellcast_Shoot",
+        "Spellcasting",
+        "T-Pose",
+        "Throw",
+        "Unarmed_Idle",
+        "Unarmed_Melee_Attack_Kick",
+        "Unarmed_Melee_Attack_Punch_A",
+        "Unarmed_Melee_Attack_Punch_B",
+        "Unarmed_Pose",
+        "Use_Item",
+        "Walking_A",
+        "Walking_B",
+        "Walking_Backwards",
+        "Walking_C"
+      ],
+      "meshes": [
+        "Rogue_Cape",
+        "Rogue_ArmLeft",
+        "Rogue_ArmRight",
+        "Rogue_Body",
+        "Rogue_Head",
+        "Rogue_LegLeft",
+        "Rogue_LegRight"
+      ],
+      "joints": [
+        "root",
+        "hips",
+        "spine",
+        "chest",
+        "upperarm_l",
+        "lowerarm_l",
+        "wrist_l",
+        "hand_l",
+        "handslot_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "wrist_r",
+        "hand_r",
+        "handslot_r",
+        "head",
+        "upperleg_l",
+        "lowerleg_l",
+        "foot_l",
+        "toes_l",
+        "upperleg_r",
+        "lowerleg_r",
+        "foot_r",
+        "toes_r",
+        "kneeIK_l",
+        "control-toe-roll_l",
+        "control-heel-roll_l",
+        "control-foot-roll_l",
+        "heelIK_l",
+        "IK-foot_l",
+        "IK-toe_l",
+        "kneeIK_r",
+        "control-toe-roll_r",
+        "control-heel-roll_r",
+        "control-foot-roll_r",
+        "heelIK_r",
+        "IK-foot_r",
+        "IK-toe_r",
+        "elbowIK_l",
+        "handIK_l",
+        "elbowIK_r",
+        "handIK_r"
+      ],
+      "bindPoseHash": "1c70730bd76b59433e0f80939e1370ccbb3befb911964de4c62196e394cecdb2",
+      "validation": {
+        "errors": 0,
+        "warnings": 6
+      }
+    },
+    {
+      "id": "rogue-hooded",
+      "url": "gltf/kaykit/rogue-hooded.glb",
+      "source": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Rogue_Hooded.glb",
+      "sourceSha256": "93e6e25213009952276d9cf34f5d96a243767334c66f280db0433ddfabb91545",
+      "sha256": "fea0051ecd4662bb10d7299915a8ccd2ba203d74704e32f2191b70e448cf5ed9",
+      "bytes": 2356088,
+      "bounds": {
+        "min": [
+          -0.9712533354759216,
+          -0.000026527046429691836,
+          -0.5674518942832947
+        ],
+        "max": [
+          0.9712533354759216,
+          2.2512404918670654,
+          0.5891403555870056
+        ]
+      },
+      "animations": [
+        "wave",
+        "idle",
+        "interact",
+        "fall",
+        "land",
+        "jump",
+        "run",
+        "walk"
+      ],
+      "originalAnimations": [
+        "1H_Melee_Attack_Chop",
+        "1H_Melee_Attack_Slice_Diagonal",
+        "1H_Melee_Attack_Slice_Horizontal",
+        "1H_Melee_Attack_Stab",
+        "1H_Ranged_Aiming",
+        "1H_Ranged_Reload",
+        "1H_Ranged_Shoot",
+        "1H_Ranged_Shooting",
+        "2H_Melee_Attack_Chop",
+        "2H_Melee_Attack_Slice",
+        "2H_Melee_Attack_Spin",
+        "2H_Melee_Attack_Spinning",
+        "2H_Melee_Attack_Stab",
+        "2H_Melee_Idle",
+        "2H_Ranged_Aiming",
+        "2H_Ranged_Reload",
+        "2H_Ranged_Shoot",
+        "2H_Ranged_Shooting",
+        "Block",
+        "Block_Attack",
+        "Block_Hit",
+        "Blocking",
+        "Cheer",
+        "Death_A",
+        "Death_A_Pose",
+        "Death_B",
+        "Death_B_Pose",
+        "Dodge_Backward",
+        "Dodge_Forward",
+        "Dodge_Left",
+        "Dodge_Right",
+        "Dualwield_Melee_Attack_Chop",
+        "Dualwield_Melee_Attack_Slice",
+        "Dualwield_Melee_Attack_Stab",
+        "Hit_A",
+        "Hit_B",
+        "Idle",
+        "Interact",
+        "Jump_Full_Long",
+        "Jump_Full_Short",
+        "Jump_Idle",
+        "Jump_Land",
+        "Jump_Start",
+        "Lie_Down",
+        "Lie_Idle",
+        "Lie_Pose",
+        "Lie_StandUp",
+        "PickUp",
+        "Running_A",
+        "Running_B",
+        "Running_Strafe_Left",
+        "Running_Strafe_Right",
+        "Sit_Chair_Down",
+        "Sit_Chair_Idle",
+        "Sit_Chair_Pose",
+        "Sit_Chair_StandUp",
+        "Sit_Floor_Down",
+        "Sit_Floor_Idle",
+        "Sit_Floor_Pose",
+        "Sit_Floor_StandUp",
+        "Spellcast_Long",
+        "Spellcast_Raise",
+        "Spellcast_Shoot",
+        "Spellcasting",
+        "T-Pose",
+        "Throw",
+        "Unarmed_Idle",
+        "Unarmed_Melee_Attack_Kick",
+        "Unarmed_Melee_Attack_Punch_A",
+        "Unarmed_Melee_Attack_Punch_B",
+        "Unarmed_Pose",
+        "Use_Item",
+        "Walking_A",
+        "Walking_B",
+        "Walking_Backwards",
+        "Walking_C"
+      ],
+      "meshes": [
+        "Rogue_Cape",
+        "Rogue_ArmLeft",
+        "Rogue_ArmRight",
+        "Rogue_Body",
+        "Rogue_Head_Hooded",
+        "Rogue_LegLeft",
+        "Rogue_LegRight"
+      ],
+      "joints": [
+        "root",
+        "hips",
+        "spine",
+        "chest",
+        "upperarm_l",
+        "lowerarm_l",
+        "wrist_l",
+        "hand_l",
+        "handslot_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "wrist_r",
+        "hand_r",
+        "handslot_r",
+        "head",
+        "upperleg_l",
+        "lowerleg_l",
+        "foot_l",
+        "toes_l",
+        "upperleg_r",
+        "lowerleg_r",
+        "foot_r",
+        "toes_r",
+        "kneeIK_l",
+        "control-toe-roll_l",
+        "control-heel-roll_l",
+        "control-foot-roll_l",
+        "heelIK_l",
+        "IK-foot_l",
+        "IK-toe_l",
+        "kneeIK_r",
+        "control-toe-roll_r",
+        "control-heel-roll_r",
+        "control-foot-roll_r",
+        "heelIK_r",
+        "IK-foot_r",
+        "IK-toe_r",
+        "elbowIK_l",
+        "handIK_l",
+        "elbowIK_r",
+        "handIK_r"
+      ],
+      "bindPoseHash": "1c70730bd76b59433e0f80939e1370ccbb3befb911964de4c62196e394cecdb2",
+      "validation": {
+        "errors": 0,
+        "warnings": 6
+      }
+    },
+    {
+      "id": "mage",
+      "url": "gltf/kaykit/mage.glb",
+      "source": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Mage.glb",
+      "sourceSha256": "cf898585da33fab50c724d31605fb931eb2912e6d2280092141e98ca81ad507d",
+      "sha256": "8f28533c86aa5f9d170896d11241ffb8698aec96755ff9e0baf606d13c11ac7c",
+      "bytes": 2380648,
+      "bounds": {
+        "min": [
+          -1.0464541912078857,
+          -0.000026527046429691836,
+          -1.017150084337665
+        ],
+        "max": [
+          1.0464543104171753,
+          2.7156481449907246,
+          1.0224609646751999
+        ]
+      },
+      "animations": [
+        "wave",
+        "idle",
+        "interact",
+        "fall",
+        "land",
+        "jump",
+        "run",
+        "walk"
+      ],
+      "originalAnimations": [
+        "1H_Melee_Attack_Chop",
+        "1H_Melee_Attack_Slice_Diagonal",
+        "1H_Melee_Attack_Slice_Horizontal",
+        "1H_Melee_Attack_Stab",
+        "1H_Ranged_Aiming",
+        "1H_Ranged_Reload",
+        "1H_Ranged_Shoot",
+        "1H_Ranged_Shooting",
+        "2H_Melee_Attack_Chop",
+        "2H_Melee_Attack_Slice",
+        "2H_Melee_Attack_Spin",
+        "2H_Melee_Attack_Spinning",
+        "2H_Melee_Attack_Stab",
+        "2H_Melee_Idle",
+        "2H_Ranged_Aiming",
+        "2H_Ranged_Reload",
+        "2H_Ranged_Shoot",
+        "2H_Ranged_Shooting",
+        "Block",
+        "Block_Attack",
+        "Block_Hit",
+        "Blocking",
+        "Cheer",
+        "Death_A",
+        "Death_A_Pose",
+        "Death_B",
+        "Death_B_Pose",
+        "Dodge_Backward",
+        "Dodge_Forward",
+        "Dodge_Left",
+        "Dodge_Right",
+        "Dualwield_Melee_Attack_Chop",
+        "Dualwield_Melee_Attack_Slice",
+        "Dualwield_Melee_Attack_Stab",
+        "Hit_A",
+        "Hit_B",
+        "Idle",
+        "Interact",
+        "Jump_Full_Long",
+        "Jump_Full_Short",
+        "Jump_Idle",
+        "Jump_Land",
+        "Jump_Start",
+        "Lie_Down",
+        "Lie_Idle",
+        "Lie_Pose",
+        "Lie_StandUp",
+        "PickUp",
+        "Running_A",
+        "Running_B",
+        "Running_Strafe_Left",
+        "Running_Strafe_Right",
+        "Sit_Chair_Down",
+        "Sit_Chair_Idle",
+        "Sit_Chair_Pose",
+        "Sit_Chair_StandUp",
+        "Sit_Floor_Down",
+        "Sit_Floor_Idle",
+        "Sit_Floor_Pose",
+        "Sit_Floor_StandUp",
+        "Spellcast_Long",
+        "Spellcast_Raise",
+        "Spellcast_Shoot",
+        "Spellcasting",
+        "T-Pose",
+        "Throw",
+        "Unarmed_Idle",
+        "Unarmed_Melee_Attack_Kick",
+        "Unarmed_Melee_Attack_Punch_A",
+        "Unarmed_Melee_Attack_Punch_B",
+        "Unarmed_Pose",
+        "Use_Item",
+        "Walking_A",
+        "Walking_B",
+        "Walking_Backwards",
+        "Walking_C"
+      ],
+      "meshes": [
+        "Mage_Hat",
+        "Mage_Cape",
+        "Mage_ArmLeft",
+        "Mage_ArmRight",
+        "Mage_Body",
+        "Mage_Head",
+        "Mage_LegLeft",
+        "Mage_LegRight"
+      ],
+      "joints": [
+        "root",
+        "hips",
+        "spine",
+        "chest",
+        "upperarm_l",
+        "lowerarm_l",
+        "wrist_l",
+        "hand_l",
+        "handslot_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "wrist_r",
+        "hand_r",
+        "handslot_r",
+        "head",
+        "upperleg_l",
+        "lowerleg_l",
+        "foot_l",
+        "toes_l",
+        "upperleg_r",
+        "lowerleg_r",
+        "foot_r",
+        "toes_r",
+        "kneeIK_l",
+        "control-toe-roll_l",
+        "control-heel-roll_l",
+        "control-foot-roll_l",
+        "heelIK_l",
+        "IK-foot_l",
+        "IK-toe_l",
+        "kneeIK_r",
+        "control-toe-roll_r",
+        "control-heel-roll_r",
+        "control-foot-roll_r",
+        "heelIK_r",
+        "IK-foot_r",
+        "IK-toe_r",
+        "elbowIK_l",
+        "handIK_l",
+        "elbowIK_r",
+        "handIK_r"
+      ],
+      "bindPoseHash": "d6bfc691f2efefa5d76d8012fb3559ca44c116e1df6d5a194a1ad1e1cccc469a",
+      "validation": {
+        "errors": 0,
+        "warnings": 6
+      }
+    },
+    {
+      "id": "knight",
+      "url": "gltf/kaykit/knight.glb",
+      "source": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Knight.glb",
+      "sourceSha256": "60428e3abc09ba83e595d256e3af8c5c976b46cdae599f0802fc82b4a3445168",
+      "sha256": "b5a29eb635d5fea3ea4f344cfc5c50696e0f4bce7749e7374fd1e683b079e06f",
+      "bytes": 2402088,
+      "bounds": {
+        "min": [
+          -0.9712533354759216,
+          -0.000026527046429691836,
+          -0.5421846998356443
+        ],
+        "max": [
+          0.9712533354759216,
+          2.4665521719403785,
+          0.7114352094508547
+        ]
+      },
+      "animations": [
+        "wave",
+        "idle",
+        "interact",
+        "fall",
+        "land",
+        "jump",
+        "run",
+        "walk"
+      ],
+      "originalAnimations": [
+        "1H_Melee_Attack_Chop",
+        "1H_Melee_Attack_Slice_Diagonal",
+        "1H_Melee_Attack_Slice_Horizontal",
+        "1H_Melee_Attack_Stab",
+        "1H_Ranged_Aiming",
+        "1H_Ranged_Reload",
+        "1H_Ranged_Shoot",
+        "1H_Ranged_Shooting",
+        "2H_Melee_Attack_Chop",
+        "2H_Melee_Attack_Slice",
+        "2H_Melee_Attack_Spin",
+        "2H_Melee_Attack_Spinning",
+        "2H_Melee_Attack_Stab",
+        "2H_Melee_Idle",
+        "2H_Ranged_Aiming",
+        "2H_Ranged_Reload",
+        "2H_Ranged_Shoot",
+        "2H_Ranged_Shooting",
+        "Block",
+        "Block_Attack",
+        "Block_Hit",
+        "Blocking",
+        "Cheer",
+        "Death_A",
+        "Death_A_Pose",
+        "Death_B",
+        "Death_B_Pose",
+        "Dodge_Backward",
+        "Dodge_Forward",
+        "Dodge_Left",
+        "Dodge_Right",
+        "Dualwield_Melee_Attack_Chop",
+        "Dualwield_Melee_Attack_Slice",
+        "Dualwield_Melee_Attack_Stab",
+        "Hit_A",
+        "Hit_B",
+        "Idle",
+        "Interact",
+        "Jump_Full_Long",
+        "Jump_Full_Short",
+        "Jump_Idle",
+        "Jump_Land",
+        "Jump_Start",
+        "Lie_Down",
+        "Lie_Idle",
+        "Lie_Pose",
+        "Lie_StandUp",
+        "PickUp",
+        "Running_A",
+        "Running_B",
+        "Running_Strafe_Left",
+        "Running_Strafe_Right",
+        "Sit_Chair_Down",
+        "Sit_Chair_Idle",
+        "Sit_Chair_Pose",
+        "Sit_Chair_StandUp",
+        "Sit_Floor_Down",
+        "Sit_Floor_Idle",
+        "Sit_Floor_Pose",
+        "Sit_Floor_StandUp",
+        "Spellcast_Long",
+        "Spellcast_Raise",
+        "Spellcast_Shoot",
+        "Spellcasting",
+        "T-Pose",
+        "Throw",
+        "Unarmed_Idle",
+        "Unarmed_Melee_Attack_Kick",
+        "Unarmed_Melee_Attack_Punch_A",
+        "Unarmed_Melee_Attack_Punch_B",
+        "Unarmed_Pose",
+        "Use_Item",
+        "Walking_A",
+        "Walking_B",
+        "Walking_Backwards",
+        "Walking_C"
+      ],
+      "meshes": [
+        "Knight_Helmet",
+        "Knight_Cape",
+        "Knight_ArmLeft",
+        "Knight_ArmRight",
+        "Knight_Body",
+        "Knight_Head",
+        "Knight_LegLeft",
+        "Knight_LegRight"
+      ],
+      "joints": [
+        "root",
+        "hips",
+        "spine",
+        "chest",
+        "upperarm_l",
+        "lowerarm_l",
+        "wrist_l",
+        "hand_l",
+        "handslot_l",
+        "upperarm_r",
+        "lowerarm_r",
+        "wrist_r",
+        "hand_r",
+        "handslot_r",
+        "head",
+        "upperleg_l",
+        "lowerleg_l",
+        "foot_l",
+        "toes_l",
+        "upperleg_r",
+        "lowerleg_r",
+        "foot_r",
+        "toes_r",
+        "kneeIK_l",
+        "control-toe-roll_l",
+        "control-heel-roll_l",
+        "control-foot-roll_l",
+        "heelIK_l",
+        "IK-foot_l",
+        "IK-toe_l",
+        "kneeIK_r",
+        "control-toe-roll_r",
+        "control-heel-roll_r",
+        "control-foot-roll_r",
+        "heelIK_r",
+        "IK-foot_r",
+        "IK-toe_r",
+        "elbowIK_l",
+        "handIK_l",
+        "elbowIK_r",
+        "handIK_r"
+      ],
+      "bindPoseHash": "d6bfc691f2efefa5d76d8012fb3559ca44c116e1df6d5a194a1ad1e1cccc469a",
+      "validation": {
+        "errors": 0,
+        "warnings": 6
+      }
+    },
+    {
+      "id": "sword",
+      "url": "gltf/kaykit/sword.glb",
+      "source": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Assets/gltf/sword_1handed.gltf",
+      "sourceSha256": "f88345d0c89d52710ddb00555964fe7a6f4024874d7ee902ee4c742c048a1958",
+      "sha256": "7a543bd6073013f0f1e0755cf04b0c35377d9eca133410b748cdde0e479af54b",
+      "bytes": 28816,
+      "bounds": {
+        "min": [
+          -0.251718670129776,
+          -0.36576569080352783,
+          -0.06531673669815063
+        ],
+        "max": [
+          0.2517259120941162,
+          1.4094958305358887,
+          0.06531671434640884
+        ]
+      },
+      "animations": [],
+      "originalAnimations": [],
+      "meshes": [
+        "sword_1handed"
+      ],
+      "joints": [],
+      "bindPoseHash": null,
+      "validation": {
+        "errors": 0,
+        "warnings": 0
+      }
+    },
+    {
+      "id": "axe",
+      "url": "gltf/kaykit/axe.glb",
+      "source": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Assets/gltf/axe_1handed.gltf",
+      "sourceSha256": "dbe0ba59abcae66a464809ee281179b10f85e41ef0d69786d39627472ca7e5dd",
+      "sha256": "1ac3dbfcbf2ae9a5740b27b9a54a6b284c1fc81d2a129229b039253efd96a7a7",
+      "bytes": 29004,
+      "bounds": {
+        "min": [
+          -0.5888571739196777,
+          -0.27304908633232117,
+          -0.09248033910989761
+        ],
+        "max": [
+          0.12546317279338837,
+          0.9713736176490784,
+          0.09248148649930954
+        ]
+      },
+      "animations": [],
+      "originalAnimations": [],
+      "meshes": [
+        "axe_1handed"
+      ],
+      "joints": [],
+      "bindPoseHash": null,
+      "validation": {
+        "errors": 0,
+        "warnings": 0
+      }
+    },
+    {
+      "id": "staff",
+      "url": "gltf/kaykit/staff.glb",
+      "source": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Assets/gltf/staff.gltf",
+      "sourceSha256": "eb2e277510325a242974ee842453882de2d55b09ec94a43148aff1dd4237c67a",
+      "sha256": "0742a2050f972495f596ced550af291833740d7c33332019744e1bbc5bdac84d",
+      "bytes": 36260,
+      "bounds": {
+        "min": [
+          -0.24536745250225067,
+          -0.9004455804824829,
+          -0.14617255330085754
+        ],
+        "max": [
+          0.330841988325119,
+          1.2542541027069092,
+          0.14617252349853516
+        ]
+      },
+      "animations": [],
+      "originalAnimations": [],
+      "meshes": [
+        "staff"
+      ],
+      "joints": [],
+      "bindPoseHash": null,
+      "validation": {
+        "errors": 0,
+        "warnings": 0
+      }
+    },
+    {
+      "id": "tree-oak",
+      "url": "gltf/kaykit/tree-oak.glb",
+      "source": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/84fa4e91af6a88989be7c99e0891cede11f2ca38/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/tree_single_A.gltf",
+      "sourceSha256": "ac913af6eaed6f15d26a2b75a877aa8dd10de90f26298f3f953abad86a4b4606",
+      "sha256": "b418299def748f9f82ed6a8b57557c3732d363062e53d0618b448ee4e6d49300",
+      "bytes": 20496,
+      "bounds": {
+        "min": [
+          -0.28753381967544556,
+          -0.10260728746652603,
+          -0.30171626806259155
+        ],
+        "max": [
+          0.28644031286239624,
+          1.0938414335250854,
+          0.2452930510044098
+        ]
+      },
+      "animations": [],
+      "originalAnimations": [],
+      "meshes": [
+        "tree_single_A"
+      ],
+      "joints": [],
+      "bindPoseHash": null,
+      "validation": {
+        "errors": 0,
+        "warnings": 0
+      }
+    },
+    {
+      "id": "tree-pine",
+      "url": "gltf/kaykit/tree-pine.glb",
+      "source": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/84fa4e91af6a88989be7c99e0891cede11f2ca38/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/tree_single_B.gltf",
+      "sourceSha256": "1c038591301947c485937e9fdbab182c813ef32df48c02fad3daeb2f1f0421e0",
+      "sha256": "d14f5e6b5eb3ccea567d60cebb77a9ab8f0b23c25ac2557b7c018c2c776e0d8a",
+      "bytes": 24520,
+      "bounds": {
+        "min": [
+          -0.34244003891944885,
+          -0.09999983757734299,
+          -0.3600638508796692
+        ],
+        "max": [
+          0.34244194626808167,
+          1.1126774549484253,
+          0.360063761472702
+        ]
+      },
+      "animations": [],
+      "originalAnimations": [],
+      "meshes": [
+        "tree_single_B"
+      ],
+      "joints": [],
+      "bindPoseHash": null,
+      "validation": {
+        "errors": 0,
+        "warnings": 0
+      }
+    },
+    {
+      "id": "tile-grass",
+      "url": "gltf/kaykit/tile-grass.glb",
+      "source": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/84fa4e91af6a88989be7c99e0891cede11f2ca38/addons/kaykit_medieval_hexagon_pack/Assets/gltf/tiles/base/hex_grass.gltf",
+      "sourceSha256": "9197814431b5becf69b22bb7a20e340d63155c4aeddfb3a678c3f041ca585e41",
+      "sha256": "8acb965e71c1fe78f14b51474878599a57552efa6126f6e2f3ed85c6d83d4ff7",
+      "bytes": 19528,
+      "bounds": {
+        "min": [
+          -1,
+          -1,
+          -1.1547000408172607
+        ],
+        "max": [
+          1,
+          0,
+          1.1547000408172607
+        ]
+      },
+      "animations": [],
+      "originalAnimations": [],
+      "meshes": [
+        "hex_grass"
+      ],
+      "joints": [],
+      "bindPoseHash": null,
+      "validation": {
+        "errors": 0,
+        "warnings": 0
+      }
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/LICENSE.txt",
+      "sha256": "ae322141814056dda0deea7540d74c41d87aee1da319977cd1bd84ee5a923629"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/84fa4e91af6a88989be7c99e0891cede11f2ca38/LICENSE.txt",
+      "sha256": "881e50d3629fba90629bedc65e9e6f47cfab3609598c296dcb7f70ea83174360"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Rogue.glb",
+      "sha256": "e825437cd4d2ee9c1960b517a74a69101e33eb409ae7fa8cedc7134a998fbb7d"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Rogue_Hooded.glb",
+      "sha256": "93e6e25213009952276d9cf34f5d96a243767334c66f280db0433ddfabb91545"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Mage.glb",
+      "sha256": "cf898585da33fab50c724d31605fb931eb2912e6d2280092141e98ca81ad507d"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Characters/gltf/Knight.glb",
+      "sha256": "60428e3abc09ba83e595d256e3af8c5c976b46cdae599f0802fc82b4a3445168"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Assets/gltf/sword_1handed.gltf",
+      "sha256": "f88345d0c89d52710ddb00555964fe7a6f4024874d7ee902ee4c742c048a1958"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Assets/gltf/sword_1handed.bin",
+      "sha256": "780ebfd002cd181fd5b1626f5a6ae8dda0ff2df58c3ff1fd6e7584f53a969d8a"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Assets/gltf/knight_texture.png",
+      "sha256": "5d250ccc5da020e6126bfa3839f83bd9a465a951ed223e4d13c08b1925e154d4"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Assets/gltf/axe_1handed.gltf",
+      "sha256": "dbe0ba59abcae66a464809ee281179b10f85e41ef0d69786d39627472ca7e5dd"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Assets/gltf/axe_1handed.bin",
+      "sha256": "0e3e5f009e0706506971fe5b1eae0fa30b0b28c70fd67c4b7943d975a821f4af"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Assets/gltf/barbarian_texture.png",
+      "sha256": "7329b2ff9709e8d54c886d5ef49c08bd42b12be3bbb2facb1488a6b48b1e8a80"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Assets/gltf/staff.gltf",
+      "sha256": "eb2e277510325a242974ee842453882de2d55b09ec94a43148aff1dd4237c67a"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Assets/gltf/staff.bin",
+      "sha256": "acf921e547edd8e05e24e0b2edec74fec7c987ccad1ee73549a0726a8059ebce"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/672074b73ba276876a19e8816ecdc5241817ab47/addons/kaykit_character_pack_adventures/Assets/gltf/mage_texture.png",
+      "sha256": "ea49f094b960402635fe51db9f1864960c97271b17f2e3554e5aca1b2bbba144"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/84fa4e91af6a88989be7c99e0891cede11f2ca38/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/tree_single_A.gltf",
+      "sha256": "ac913af6eaed6f15d26a2b75a877aa8dd10de90f26298f3f953abad86a4b4606"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/84fa4e91af6a88989be7c99e0891cede11f2ca38/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/tree_single_A.bin",
+      "sha256": "437deac68f35338bb309b01e4d346dd4be37557d7a2f033d04765f63e1b88825"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/84fa4e91af6a88989be7c99e0891cede11f2ca38/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/hexagons_medieval.png",
+      "sha256": "5301a06866ba3be68dcc14cc429bd6d0f69004b72884283715d7e233f2e9782e"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/84fa4e91af6a88989be7c99e0891cede11f2ca38/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/tree_single_B.gltf",
+      "sha256": "1c038591301947c485937e9fdbab182c813ef32df48c02fad3daeb2f1f0421e0"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/84fa4e91af6a88989be7c99e0891cede11f2ca38/addons/kaykit_medieval_hexagon_pack/Assets/gltf/decoration/nature/tree_single_B.bin",
+      "sha256": "c6a7423ce62f61216f7d8c77e1bd1d8665cbbee59718e59e0e42485f9acfca36"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/84fa4e91af6a88989be7c99e0891cede11f2ca38/addons/kaykit_medieval_hexagon_pack/Assets/gltf/tiles/base/hex_grass.gltf",
+      "sha256": "9197814431b5becf69b22bb7a20e340d63155c4aeddfb3a678c3f041ca585e41"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/84fa4e91af6a88989be7c99e0891cede11f2ca38/addons/kaykit_medieval_hexagon_pack/Assets/gltf/tiles/base/hex_grass.bin",
+      "sha256": "a0a3b96bc755cb0a7b0520e7e5fbc94a4e26663d818450d6c4328d86d386745e"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Medieval-Hexagon-Pack-1.0/84fa4e91af6a88989be7c99e0891cede11f2ca38/addons/kaykit_medieval_hexagon_pack/Assets/gltf/tiles/base/hexagons_medieval.png",
+      "sha256": "5301a06866ba3be68dcc14cc429bd6d0f69004b72884283715d7e233f2e9782e"
+    }
+  ]
+}

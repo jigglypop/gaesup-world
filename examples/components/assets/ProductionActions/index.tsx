@@ -34,7 +34,7 @@ export function ProductionActions({
   const [paid, setPaid] = useState(false);
   const [approved, setApproved] = useState(false);
   const [reviewer, setReviewer] = useState('');
-  const [category, setCategory] = useState('sofa');
+  const [category, setCategory] = useState('character');
   useEffect(() => {
     setApproved(false);
     setPaid(false);
@@ -117,6 +117,15 @@ export function ProductionActions({
                 제작 종류
                 <select value={category} onChange={(event) => setCategory(event.target.value)}>
                   {[
+                    ['character', 'SD 캐릭터 · 기본 바디'],
+                    ['hair', '헤어'],
+                    ['hat', '모자'],
+                    ['top', '상의'],
+                    ['bottom', '하의'],
+                    ['shoes', '신발'],
+                    ['face', '얼굴 파츠'],
+                    ['house', '집 · 건축 모듈'],
+                    ['tile', '지형 타일'],
                     ['chair', '의자'],
                     ['table', '테이블'],
                     ['sofa', '소파'],
@@ -130,8 +139,9 @@ export function ProductionActions({
                 </select>
               </label>
               <p>
-                선택 이미지: {reference?.name ?? '없음'} · 종류별 최대 2개. 캐릭터 제작은 Blender
-                경로입니다.
+                선택 이미지: {reference?.name ?? '없음'} · 종류별 최대 2개.
+                생성 결과는 메시 후보입니다. 캐릭터와 의상은 Blender에서 공통 리그·바인드 포즈와
+                피팅을 검증해야 착용할 수 있습니다.
               </p>
               <label>
                 레퍼런스 승인자

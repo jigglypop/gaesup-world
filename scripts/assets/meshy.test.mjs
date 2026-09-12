@@ -6,6 +6,30 @@ import path from 'node:path';
 import test from 'node:test';
 import { generateCandidate, resumeCandidate } from './meshy.mjs';
 
+test('character and wearable candidates retain independent resumable identities', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'gaesup-parts-test-'));
+  try {
+    const image = Buffer.from('reference fixture');
+    const reference = path.join(directory, 'reference.png');
+    await writeFile(reference, image);
+    for (const category of ['character', 'face', 'hat', 'hair', 'top', 'bottom', 'shoes', 'house', 'tile']) {
+      const file = await generateCandidate({
+        directory, reference, category, apiKey: 'test-secret',
+        approval: { sha256: createHash('sha256').update(image).digest('hex'), decision: 'approved', reviewer: 'artist' },
+        fetcher: async () => Response.json({ result: `task-${category}` }),
+      });
+      const job = JSON.parse(await readFile(file, 'utf8'));
+      assert.equal(job.category, category);
+      assert.equal(job.taskId, `task-${category}`);
+      assert.equal(job.state, 'pending');
+      assert.equal(path.dirname(file), path.join(directory, category));
+    }
+    await assert.rejects(generateCandidate({ directory, category: '../character' }), /Unsupported/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test('two persistent slots, no POST replay on ambiguous outcomes, and GET-only resume', async () => {
   const directory = await mkdtemp(path.join(tmpdir(), 'gaesup-meshy-test-'));
   try {

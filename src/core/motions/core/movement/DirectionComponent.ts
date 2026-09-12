@@ -307,8 +307,8 @@ export class DirectionComponent {
     const desiredMovement = this.resolveKeyboardMovementDirection(keyboard, calcProp);
     if (!desiredMovement) return;
 
-    // Character visuals are model-offset by PI and impulse applies `-dir`,
-    // so store the inverse of the desired world-space movement.
+    // Impulse applies -dir; visual yaw points the model's canonical +Z along
+    // movement. Asset-facing corrections belong only to modelYawOffset.
     activeState.dir.copy(desiredMovement).multiplyScalar(-1);
     activeState.euler.y = Math.atan2(desiredMovement.x, desiredMovement.z);
     activeState.direction.copy(activeState.dir);

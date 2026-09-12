@@ -15,6 +15,7 @@ import { CameraCalcProps } from '../core/types';
 const ORBIT_SPEED = 0.0015;
 const ORBIT_SMOOTHING = 10;
 const ORBIT_EPSILON = 0.0001;
+const ORBIT_DRAG_THRESHOLD = 4;
 const MIN_ORBIT_PITCH = -0.65;
 const MAX_ORBIT_PITCH = 0.85;
 
@@ -35,17 +36,13 @@ export function useCamera(enableMouse = true) {
 
   // Keep refs for event handlers to avoid re-registering listeners on every option change.
   const cameraOptionRef = useRef(cameraOption);
-  useEffect(() => {
+  useLayoutEffect(() => {
     cameraOptionRef.current = cameraOption;
   }, [cameraOption]);
   const modeRef = useRef(mode);
-  useEffect(() => {
+  useLayoutEffect(() => {
     modeRef.current = mode;
   }, [mode]);
-  const isInEditModeRef = useRef(isInEditMode);
-  useEffect(() => {
-    isInEditModeRef.current = isInEditMode;
-  }, [isInEditMode]);
   const excludeObjectsRef = useRef<THREE.Object3D[]>([]);
   const calcPropsRef = useRef<CameraCalcProps | null>(null);
   const orbitModifierKeysRef = useRef<Set<string>>(new Set());
@@ -132,11 +129,11 @@ export function useCamera(enableMouse = true) {
     event.preventDefault();
 
     const zoomSpeed = opt.zoomSpeed ?? 0.001;
-    const minZoom = opt.minZoom || 0.45;
-    const maxZoom = opt.maxZoom || 2.4;
-    const currentZoom = opt.zoom || 1;
+    const minZoom = opt.minZoom ?? 0.45;
+    const maxZoom = opt.maxZoom ?? 2.4;
+    const currentZoom = opt.zoom ?? 1;
 
-    // 스크롤 방향 반대로 수정 (양수로 변경)
+    // Zoom is a distance multiplier: scrolling down moves away from the subject.
     const delta = event.deltaY * zoomSpeed;
     const newZoom = Math.min(Math.max(currentZoom + delta, minZoom), maxZoom);
 
@@ -145,14 +142,15 @@ export function useCamera(enableMouse = true) {
   
   useEffect(() => {
     const canvas = gl.domElement;
-    if (enableMouse && cameraOption?.enableZoom) {
+
+    if (enableMouse) {
       canvas.addEventListener('wheel', handleWheel, { passive: false });
       return () => {
         canvas.removeEventListener('wheel', handleWheel);
       };
     }
     return undefined;
-  }, [gl, handleWheel, cameraOption?.enableZoom, enableMouse]);
+  }, [gl, handleWheel, enableMouse]);
 
   useEffect(() => {
     if (!enableMouse) {
@@ -163,6 +161,13 @@ export function useCamera(enableMouse = true) {
       return;
     }
     const canvas = gl.domElement;
+
+    let orbitButtonMask = 0;
+    let pointerStartX = 0;
+    let pointerStartY = 0;
+    let pointerLastX = 0;
+    let pointerLastY = 0;
+    let dragging = false;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isEditableTarget(event.target)) return;
@@ -178,26 +183,49 @@ export function useCamera(enableMouse = true) {
     };
 
     const handleMouseDown = (event: MouseEvent) => {
-      if (!isInEditModeRef.current || isEditableTarget(event.target)) return;
+      if (isEditableTarget(event.target)) return;
+      // Primary clicks belong to world interaction and editor selection.
       if (event.button !== 1 && event.button !== 2) return;
 
       event.preventDefault();
       orbitPointerActiveRef.current = true;
+      orbitButtonMask = event.button === 1 ? 4 : 2;
+      pointerStartX = pointerLastX = event.clientX;
+      pointerStartY = pointerLastY = event.clientY;
+      dragging = false;
     };
 
     const handleMouseUp = (event: MouseEvent) => {
       if (event.button !== 1 && event.button !== 2) return;
       orbitPointerActiveRef.current = false;
+      dragging = false;
     };
 
     const handleMouseMove = (event: MouseEvent) => {
+      if (orbitPointerActiveRef.current && !(event.buttons & orbitButtonMask)) {
+        orbitPointerActiveRef.current = false;
+        dragging = false;
+      }
       const isOrbitActive = orbitModifierKeysRef.current.size > 0 || orbitPointerActiveRef.current;
       if (!isOrbitActive || isEditableTarget(event.target)) return;
-      if (event.movementX === 0 && event.movementY === 0) return;
+      if (!orbitPointerActiveRef.current && event.target !== canvas) return;
+      let deltaX = event.movementX;
+      let deltaY = event.movementY;
+      if (orbitPointerActiveRef.current) {
+        deltaX = event.clientX - pointerLastX;
+        deltaY = event.clientY - pointerLastY;
+        pointerLastX = event.clientX;
+        pointerLastY = event.clientY;
+        if (!dragging) {
+          dragging = Math.hypot(event.clientX - pointerStartX, event.clientY - pointerStartY) > ORBIT_DRAG_THRESHOLD;
+          return;
+        }
+      }
+      if (deltaX === 0 && deltaY === 0) return;
 
-      targetOrbitYawRef.current -= event.movementX * ORBIT_SPEED;
+      targetOrbitYawRef.current -= deltaX * ORBIT_SPEED;
       targetOrbitPitchRef.current = THREE.MathUtils.clamp(
-        targetOrbitPitchRef.current + event.movementY * ORBIT_SPEED,
+        targetOrbitPitchRef.current + deltaY * ORBIT_SPEED,
         MIN_ORBIT_PITCH,
         MAX_ORBIT_PITCH,
       );
@@ -209,7 +237,6 @@ export function useCamera(enableMouse = true) {
     };
 
     const preventContextMenu = (event: MouseEvent) => {
-      if (!isInEditModeRef.current) return;
       event.preventDefault();
     };
 

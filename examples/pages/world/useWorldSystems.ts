@@ -3,24 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import {
   useAudioStore,
   useAutoSave,
-  useCatalogTracker,
-  useDayChange,
-  useDecorationScore,
-  useEventsTicker,
-  useFriendshipStore,
-  useGameClock,
-  useHotbarKeyboard,
-  useMailStore,
-  useQuestObjectiveTracker,
-  useWeatherStore,
-  useWeatherTicker,
   logger,
   type GaesupRuntime,
   type SaveSystem,
 } from 'gaesup-world';
 
-import { dispatchWorldGameplayEvent, loadWorldRuntime } from '../runtime';
-import { WORLD_WEATHER_ENABLED } from './data';
+import { loadWorldRuntime } from '../runtime';
 
 export interface WorldSystemsProps {
   runtime: GaesupRuntime;
@@ -67,20 +55,7 @@ export function WorldSystems({ runtime, onRuntimeReady }: WorldSystemsProps) {
   useEffect(() => {
     onRuntimeReadyRef.current = onRuntimeReady;
   }, [onRuntimeReady]);
-  useGameClock(false);
-  useHotbarKeyboard(true);
   useAutoSave({ intervalMs: 60_000, saveSystem: runtime.save, enabled: readyRuntime === runtime });
-  useQuestObjectiveTracker(true);
-  useCatalogTracker(true);
-  useWeatherTicker(WORLD_WEATHER_ENABLED);
-  useEventsTicker(true, {
-    onStarted: (ids) => {
-      for (const id of ids) {
-        void dispatchWorldGameplayEvent({ type: 'calendarEventStarted', eventId: id });
-      }
-    },
-  });
-  useDecorationScore(true);
 
   useEffect(() => {
     useAudioStore.setState({
@@ -92,21 +67,6 @@ export function WorldSystems({ runtime, onRuntimeReady }: WorldSystemsProps) {
     useAudioStore.getState().stopBgm();
     useAudioStore.getState().apply();
   }, []);
-
-  useDayChange((time) => {
-    const day = Math.floor(time.totalMinutes / (60 * 24));
-    useFriendshipStore.getState().resetDaily();
-    useWeatherStore.getState().rollForDay(day, time.season);
-    if (day > 0 && useMailStore.getState().messages.length < 3) {
-      useMailStore.getState().send({
-        from: '메이',
-        subject: `${time.month}월 ${time.day}일의 편지`,
-        body: '오늘도 평화로운 하루예요. 한번 들러주세요!\n\n- 메이 드림',
-        sentDay: day,
-        attachments: [{ bells: 100 }],
-      });
-    }
-  });
 
   useEffect(() => {
     const generation = generationRef.current + 1;

@@ -1,6 +1,14 @@
 import type { AssetRecord } from '../assets';
 import type { OutfitSlot } from './types';
 
+/** Bone-local transform authored for a rigid GLB (weapon, tool, hat or bag). */
+export type CharacterBoneAttachment = {
+  bone: string;
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: [number, number, number];
+};
+
 export type CharacterAttachmentSocket =
   | 'head'
   | 'face'
@@ -62,6 +70,28 @@ function isAttachmentSocket(value: unknown): value is CharacterAttachmentSocket 
     value === 'rightHand' ||
     value === 'back'
   );
+}
+
+/** Require an explicit rig bone; overlay offsets are not bone-local sockets. */
+export function readCharacterBoneAttachment(asset: AssetRecord): CharacterBoneAttachment | undefined {
+  if (asset.metadata?.['deformation'] !== 'rigid') return undefined;
+  const raw = asset.metadata['attachment'];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const attachment = raw as Record<string, unknown>;
+  const bone = attachment['bone'];
+  if (typeof bone !== 'string' || !bone.trim()) return undefined;
+  for (const key of ['position', 'rotation', 'scale']) {
+    if (attachment[key] !== undefined && !isNumberTuple(attachment[key])) return undefined;
+  }
+  const position = attachment['position'];
+  const rotation = attachment['rotation'];
+  const scale = attachment['scale'];
+  return {
+    bone,
+    position: isNumberTuple(position) ? [...position] : [0, 0, 0],
+    ...(isNumberTuple(rotation) ? { rotation: [...rotation] } : {}),
+    ...(isNumberTuple(scale) ? { scale: [...scale] } : {}),
+  };
 }
 
 function readAssetAttachment(asset: AssetRecord): Partial<CharacterAttachmentTransform> {

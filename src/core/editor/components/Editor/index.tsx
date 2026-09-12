@@ -1,4 +1,4 @@
-import { FC, useEffect, useRef } from 'react';
+import { FC, useLayoutEffect, useRef } from 'react';
 
 import type { CameraOptionType } from '../../../camera/core/types';
 import { useGaesupStore } from '../../../stores/gaesupStore';
@@ -75,7 +75,9 @@ export const Editor: FC<EditorProps> = ({
 }) => {
   const sessionSnapshotRef = useRef<EditorSessionSnapshot | null>(null);
 
-  useEffect(() => {
+  // Release the outgoing editor before the incoming world applies its layout
+  // configuration. A passive cleanup can overwrite that new route's camera.
+  useLayoutEffect(() => {
     const store = useGaesupStore.getState();
     sessionSnapshotRef.current = {
       mode: { ...store.mode },

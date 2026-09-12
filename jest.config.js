@@ -32,6 +32,7 @@ export default {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   transform: {
+    '^.+\\.m?js$': ['ts-jest', { tsconfig: { allowJs: true, checkJs: false, module: 'CommonJS' }, diagnostics: false }],
     '^.+\\.(ts|tsx)$': [
       'ts-jest',
       {
@@ -42,7 +43,7 @@ export default {
     ],
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(three|@react-three|three-stdlib|@react-spring|@use-gesture|react-use-refs|zustand|mitt)/)',
+    'node_modules/(?!(\\.pnpm|three|@react-three|three-stdlib|@react-spring|@use-gesture|react-use-refs|zustand|mitt)/)',
   ],
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   collectCoverageFrom: [

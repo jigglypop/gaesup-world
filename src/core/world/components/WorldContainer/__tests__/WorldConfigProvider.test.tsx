@@ -6,6 +6,22 @@ import { useGaesupStore } from '../../../../stores/gaesupStore';
 import { WorldConfigProvider } from '..';
 
 describe('WorldConfigProvider', () => {
+  it('reapplies the route camera after asynchronous save hydration', () => {
+    const mode = { type: 'character', controller: 'keyboard', control: 'thirdPerson' } as const;
+    const preset = { type: 'thirdPerson', distance: 9, height: 7, fov: 52 } as const;
+    const { rerender } = render(
+      <WorldConfigProvider mode={mode} cameraOption={preset} runtimeRevision={0} />,
+    );
+    useGaesupStore.getState().setMode({ control: 'topDown' });
+    useGaesupStore.getState().setCameraOption({
+      yDistance: 52, zoom: 2, focus: true, target: new THREE.Vector3(20, 0, 20),
+    });
+    rerender(<WorldConfigProvider mode={mode} cameraOption={preset} runtimeRevision={1} />);
+    expect(useGaesupStore.getState().mode.control).toBe('thirdPerson');
+    expect(useGaesupStore.getState().cameraOption).toMatchObject({ yDistance: 7, zoom: 1, focus: false });
+    expect(useGaesupStore.getState().cameraOption.target).toBeUndefined();
+  });
+
   it('replaces stale camera fields when camera presets change', () => {
     useGaesupStore.getState().setCameraOption({
       focus: true,

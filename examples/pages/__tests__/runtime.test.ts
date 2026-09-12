@@ -1,18 +1,18 @@
 import { SaveSystem, useTimeStore, useInventoryStore, useCraftingStore, useQuestStore, usePlotStore, getCropRegistry, SEED_CROPS, getItemRegistry, getRecipeRegistry, getQuestRegistry, type SaveBlob } from 'gaesup-world';
 import { PICKUPS } from '../world/data';
-import { SEED_RECIPES, SEED_QUESTS, WORLD_ITEMS } from '../../components/seedContent';
+import { registerSeedContent, SEED_RECIPES, SEED_QUESTS, WORLD_ITEMS } from '../../components/seedContent';
 
 import { createWorldRuntime, getWorldGameplayBlueprints, getWorldGameplayEngine, loadWorldRuntime } from '../runtime';
 
 describe('examples world runtime', () => {
-  test('world content registers crops and supports planting, growth and harvest', () => {
+  test('explicit legacy fixture supports planting, growth and harvest', () => {
     const registry = getCropRegistry();
     const previousCrops = registry.all();
     const inventory = useInventoryStore.getState().serialize();
     const farming = usePlotStore.getState().serialize();
     registry.clear();
     try {
-      createWorldRuntime();
+      registerSeedContent();
       for (const crop of SEED_CROPS) {
         expect(registry.get(crop.id)).toBeDefined();
         expect(getItemRegistry().require(crop.seedItemId).toolKind).toBe('seed');
@@ -43,7 +43,7 @@ describe('examples world runtime', () => {
   });
 
   test('the introductory wood quest remains ready to complete after delivery and reload', () => {
-    createWorldRuntime();
+    registerSeedContent();
     const inventory = useInventoryStore.getState().serialize();
     const quests = useQuestStore.getState().serialize();
     try {
@@ -63,7 +63,7 @@ describe('examples world runtime', () => {
     }
   });
   test('the basic chair recipe consumes wood and awards the named furniture', () => {
-    createWorldRuntime();
+    registerSeedContent();
     const initial = useInventoryStore.getState().serialize();
     try {
       useInventoryStore.getState().clear();
@@ -78,7 +78,7 @@ describe('examples world runtime', () => {
     }
   });
   test('registers definitions for starter inventory, pickups, recipes and quest items', () => {
-    createWorldRuntime();
+    registerSeedContent();
     const requiredIds = new Set([
       'axe', 'shovel', 'water-can', 'seed-turnip',
       ...PICKUPS.map((pickup) => pickup.itemId),
@@ -90,7 +90,7 @@ describe('examples world runtime', () => {
     for (const recipe of SEED_RECIPES) expect(getRecipeRegistry().get(recipe.id)).toBeDefined();
     for (const quest of SEED_QUESTS) expect(getQuestRegistry().get(quest.id)).toBeDefined();
     const existing = getItemRegistry().require('axe');
-    createWorldRuntime();
+    registerSeedContent();
     expect(getItemRegistry().require('axe')).toBe(existing);
   });
   test.each([true, false])('cancels pending hydration and starter state, then retries on reentry (saved: %s)', async (saved) => {
@@ -182,19 +182,13 @@ describe('examples world runtime', () => {
           'time',
           'weather',
           'audio',
-          'inventory',
-          'relations',
-          'quests',
-          'mail',
-          'catalog',
-          'crafting',
-          'farming',
-          'events',
-          'town',
           'i18n',
           'scene-document',
         ]),
       );
+      for (const removed of ['inventory', 'relations', 'quests', 'mail', 'catalog', 'crafting', 'farming', 'events', 'town']) {
+        expect(blob.domains).not.toHaveProperty(removed);
+      }
       expect(getWorldGameplayBlueprints().length).toBeGreaterThan(0);
     } finally {
       await runtime.dispose();

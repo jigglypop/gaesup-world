@@ -1,0 +1,22 @@
+{
+  "status": "reference-unapproved",
+  "source": "https://polyhaven.com/a/aerial_grass_rock",
+  "author": "Rob Tuytel",
+  "license": "CC0-1.0",
+  "licenseUrl": "https://polyhaven.com/license",
+  "widthMeters": 15,
+  "files": [
+    {
+      "path": "color.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/aerial_grass_rock/aerial_grass_rock_diff_1k.jpg",
+      "sha256": "57b8041bfe0d0f01430e4dbaad45e7ddddf0a9fc97317f90dbc51f7b0d9e1b5d",
+      "bytes": 666655
+    },
+    {
+      "path": "normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/aerial_grass_rock/aerial_grass_rock_nor_gl_1k.jpg",
+      "sha256": "1aa3e23bff453f152e089b9f83aa36b4901651e019f7e2ca01d5331a9bbbda78",
+      "bytes": 904956
+    }
+  ]
+}

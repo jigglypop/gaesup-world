@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 
+import { logger } from '../utils/logger';
+
 /**
  * Canonical humanoid skeleton contract.
  *
@@ -76,6 +78,8 @@ export type SkeletonCompatibilityReport = {
   compatibility: SkeletonCompatibility;
   /** Bones the wearable references that the target skeleton does not have. */
   missingBones: string[];
+  /** Same name but different rest transforms cannot share inverse bind matrices. */
+  bindPoseMismatches?: string[];
 };
 
 export function getSkeletonBoneNames(skeleton: THREE.Skeleton): string[] {
@@ -110,24 +114,30 @@ export function compareSkeletons(
 ): SkeletonCompatibilityReport {
   const sourceNames = getSkeletonBoneNames(source);
   const targetNames = getSkeletonBoneNames(target);
-
-  if (
-    sourceNames.length === targetNames.length &&
-    sourceNames.every((name, index) => name === targetNames[index])
-  ) {
-    return { compatibility: 'identical', missingBones: [] };
-  }
-
   const targetSet = new Set(targetNames);
   const hasDuplicates =
     targetSet.size !== targetNames.length || new Set(sourceNames).size !== sourceNames.length;
   const missingBones = sourceNames.filter((name) => !targetSet.has(name));
-
-  if (!hasDuplicates && missingBones.length === 0) {
-    return { compatibility: 'remappable', missingBones: [] };
+  if (hasDuplicates || missingBones.length > 0 || sourceNames.length === 0 ||
+    sourceNames.some((name) => !name.trim()) || targetNames.some((name) => !name.trim())) {
+    return { compatibility: 'incompatible', missingBones };
   }
-
-  return { compatibility: 'incompatible', missingBones };
+  const targetIndex = new Map(targetNames.map((name, index) => [name, index]));
+  const bindPoseMismatches = sourceNames.filter((name, index) => {
+    const sourceInverse = source.boneInverses[index];
+    const targetInverse = target.boneInverses[targetIndex.get(name)!];
+    if (!sourceInverse || !targetInverse) return true;
+    return sourceInverse.elements.some((value, element) => {
+      const other = targetInverse.elements[element]!;
+      return !Number.isFinite(value) || !Number.isFinite(other) || Math.abs(value - other) > 1e-4;
+    });
+  });
+  if (bindPoseMismatches.length > 0) {
+    return { compatibility: 'incompatible', missingBones, bindPoseMismatches };
+  }
+  const identical = sourceNames.length === targetNames.length &&
+    sourceNames.every((name, index) => name === targetNames[index]);
+  return { compatibility: identical ? 'identical' : 'remappable', missingBones };
 }
 
 /**
@@ -140,21 +150,36 @@ export function remapSkinnedGeometryJoints(
   source: THREE.Skeleton,
   target: THREE.Skeleton,
 ): THREE.BufferGeometry {
+  if (compareSkeletons(source, target).compatibility === 'incompatible') {
+    throw new Error('Cannot remap geometry between incompatible skeletons.');
+  }
+  if (target.bones.length > 65536) throw new Error('Target skeleton exceeds the supported joint index range.');
   const targetIndexByName = new Map<string, number>();
   target.bones.forEach((bone, index) => targetIndexByName.set(bone.name, index));
 
-  const indexMap = source.bones.map((bone) => targetIndexByName.get(bone.name) ?? 0);
-
-  const remapped = geometry.clone();
-  const skinIndex = remapped.getAttribute('skinIndex');
+  const indexMap = source.bones.map((bone) => targetIndexByName.get(bone.name)!);
+  const skinIndex = geometry.getAttribute('skinIndex');
   if (skinIndex) {
     for (let i = 0; i < skinIndex.count; i += 1) {
       for (let c = 0; c < skinIndex.itemSize; c += 1) {
         const original = skinIndex.getComponent(i, c);
-        skinIndex.setComponent(i, c, indexMap[original] ?? 0);
+        if (!Number.isInteger(original) || indexMap[original] === undefined) {
+          throw new Error(`Invalid skin joint index ${original}; re-export the wearable.`);
+        }
       }
     }
-    skinIndex.needsUpdate = true;
+  }
+  const remapped = geometry.clone();
+  // A small source rig may use Uint8 indices but map into a target with >255
+  // joints. Widen the output instead of silently wrapping indices.
+  if (skinIndex) {
+    const indices = new Uint16Array(skinIndex.count * skinIndex.itemSize);
+    for (let i = 0; i < skinIndex.count; i += 1) {
+      for (let c = 0; c < skinIndex.itemSize; c += 1) {
+        indices[i * skinIndex.itemSize + c] = indexMap[skinIndex.getComponent(i, c)]!;
+      }
+    }
+    remapped.setAttribute('skinIndex', new THREE.BufferAttribute(indices, skinIndex.itemSize));
   }
   return remapped;
 }
@@ -208,9 +233,11 @@ export function resolveSharedSkeletonBinding(
   const key = `${label ?? ''}:${mesh.name}`;
   if (!warnedIncompatible.has(key)) {
     warnedIncompatible.add(key);
-    console.warn(
+    logger.warn(
       `[gaesup] wearable "${mesh.name}" skeleton is incompatible with the character skeleton ` +
-        `(missing bones: ${report.missingBones.join(', ') || 'duplicate bone names'}). ` +
+        `(missing bones: ${report.missingBones.join(', ') || 'none'}; ` +
+        `rest-pose mismatches: ${report.bindPoseMismatches?.join(', ') || 'none'}; ` +
+        `bone names must be unique and nonempty). ` +
         `It will render frozen in bind pose; re-export the asset against ${GAESUP_SKELETON_ID}.`,
     );
   }

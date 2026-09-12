@@ -1,0 +1,12 @@
+# 프로젝트 루트는 Astra, 실행 하위 에이전트는 Sol을 기본으로 사용한다.
+model = "gpt-6-astra"
+model_reasoning_effort = "low"
+model_verbosity = "low"
+tool_output_token_limit = 2000
+
+[agents]
+enabled = true
+default_subagent_model = "gpt-5.6-sol"
+default_subagent_reasoning_effort = "low"
+max_concurrent_threads_per_session = 2
+max_depth = 1

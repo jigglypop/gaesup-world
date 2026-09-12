@@ -17,12 +17,12 @@ try {
   await expect(page.getByText('실행 파일 감지됨', { exact: false })).toBeVisible();
   await expect(page.getByRole('button', { name: '이미지 생성 요청', exact: true })).toBeDisabled();
   await page.getByLabel('캐릭터 이름', { exact: true }).fill('');
-  await expect(page.getByRole('button', { name: '토끼 캐릭터 브리프 저장 ↓' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '캐릭터 브리프 저장 ↓' })).toBeDisabled();
   await page.getByLabel('캐릭터 이름', { exact: true }).fill('검증용 토끼');
   const downloadPromise = page.waitForEvent('download');
-  await page.getByRole('button', { name: '토끼 캐릭터 브리프 저장 ↓' }).click();
+  await page.getByRole('button', { name: '캐릭터 브리프 저장 ↓' }).click();
   const download = await downloadPromise;
-  assert.equal(download.suggestedFilename(), 'bunny-character-brief.json');
+  assert.equal(download.suggestedFilename(), 'sd-character-brief.json');
   const chunks = [];
   for await (const chunk of await download.createReadStream()) chunks.push(chunk);
   assert.equal(JSON.parse(Buffer.concat(chunks).toString('utf8')).name, '검증용 토끼');

@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { euler } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import {
   GaesupController,
-  resolveCharacterBaseNodeExclusions,
   resolveCharacterParts,
   SpeechBalloon,
   useAssetStore,
@@ -15,7 +13,6 @@ import {
   usePlayerPosition,
   useStateSystem,
 } from 'gaesup-world';
-import { WARRIOR_BLUEPRINT } from 'gaesup-world/blueprints';
 import {
   applyNPCNavigationRoute,
   NavigationSystem,
@@ -23,33 +20,29 @@ import {
 } from 'gaesup-world/navigation';
 
 import { CHARACTER_URL } from '../../config/constants';
+import { resolveWorldAvatar, WORLD_EQUIPMENT } from './assets';
 
-const DEFAULT_CHARACTER_BLUEPRINT_PARTS = WARRIOR_BLUEPRINT.visuals?.parts ?? [];
-const DEFAULT_CHARACTER_BODY = DEFAULT_CHARACTER_BLUEPRINT_PARTS.find((part) => part.type === 'body');
-export const DEFAULT_CHARACTER_URL = DEFAULT_CHARACTER_BODY?.url ?? CHARACTER_URL;
-const SPEECH_BALLOON_OFFSET = new THREE.Vector3(0, 5, 0);
-const DEFAULT_CHARACTER_PARTS = DEFAULT_CHARACTER_BLUEPRINT_PARTS
-  .filter((part) => part.id !== DEFAULT_CHARACTER_BODY?.id)
-  .map((part) => ({ id: part.id, slot: part.type, url: part.url, ...(part.color ? { color: part.color } : {}) }));
+export const DEFAULT_CHARACTER_URL = CHARACTER_URL;
+const SPEECH_BALLOON_OFFSET = new THREE.Vector3(0, 2.8, 0);
+const EQUIPMENT_IDS = new Set(WORLD_EQUIPMENT.map((asset) => asset.id));
+
+export function useWorldCharacterUrl() {
+  const outfitId = useCharacterStore((state) => state.outfits.top);
+  return resolveWorldAvatar(outfitId).url;
+}
 
 export function Player() {
   const isInBuildingMode = useBuildingStore((s) => s.isInEditMode());
   const mode = useGaesupStore((s) => s.mode);
-  const appearance = useCharacterStore((s) => s.appearance);
   const outfits = useCharacterStore((s) => s.outfits);
   const assetRecords = useAssetStore((s) => s.records);
   const { gameStates } = useStateSystem();
   const parts = useMemo(
     () => resolveCharacterParts({
-      baseParts: DEFAULT_CHARACTER_PARTS,
       outfits,
-      assets: assetRecords,
+      assets: Object.fromEntries(Object.entries(assetRecords).filter(([id]) => EQUIPMENT_IDS.has(id))),
     }),
     [assetRecords, outfits],
-  );
-  const excludeBaseNodes = useMemo(
-    () => resolveCharacterBaseNodeExclusions(parts),
-    [parts],
   );
 
   if (isInBuildingMode || gameStates?.isRiding) return null;
@@ -59,11 +52,10 @@ export function Player() {
       key={`controller-${mode.type}`}
       controllerOptions={{ lerp: { cameraTurn: 0.1, cameraPosition: 0.08 } }}
       rigidBodyProps={{}}
-      colliderSize={{ height: 1.8, radius: 0.34 }}
+      colliderSize={{ height: 2.1, radius: 0.34 }}
       parts={parts}
-      baseColor={appearance.colors.body}
-      excludeBaseNodes={excludeBaseNodes}
-      rotation={euler({ x: 0, y: Math.PI, z: 0 })}
+      modelHierarchy
+      modelYawOffset={0}
     />
   );
 }

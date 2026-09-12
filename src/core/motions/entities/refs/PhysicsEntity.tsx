@@ -83,6 +83,16 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     });
 
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
+    useLayoutEffect(() => {
+      if (!props.modelHierarchy) return;
+      clone.traverse((node) => {
+        if (node instanceof THREE.Mesh) {
+          node.castShadow = true;
+          node.receiveShadow = true;
+          if (node instanceof THREE.SkinnedMesh) node.frustumCulled = false;
+        }
+      });
+    }, [clone, props.modelHierarchy]);
     const [toonRevision, setToonRevision] = useState(0);
     const graph = useGraph(clone);
     useLayoutEffect(() => {
@@ -105,7 +115,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const partsComponents = useMemo(() => {
       if (!props.parts || props.parts.length === 0) return null;
       return props.parts
-        .map(({ url, color }, index) => {
+        .map(({ id, slot, url, color, attachment }, index) => {
           if (!url) return null;
           return (
             <PartsGroupRef
@@ -114,7 +124,8 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
               componentType={props.componentType}
               {...(props.currentAnimation ? { currentAnimation: props.currentAnimation } : {})}
               {...(color ? { color } : {})}
-              key={`${props.componentType}-${url}-${color || 'default'}-${index}`}
+              {...(attachment ? { attachment } : {})}
+              key={`${props.componentType}-${slot ?? id ?? index}-${url}`}
               {...(skeleton ? { skeleton } : {})}
             />
           );
@@ -122,7 +133,9 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
         .filter(Boolean);
     }, [props.parts, props.componentType, props.currentAnimation, skeleton]);
 
-    const objectNode = Object.values(nodes).find((node) => node.type === 'Object3D');
+    // Imported rigs may root at Group/Bone rather than Object3D. Keep the full
+    // hierarchy mounted so every joint and animation track has a live target.
+    const objectNode = clone;
     const safeRotationY = props.rotation instanceof THREE.Euler ? props.rotation.y : 0;
     const outerGroupProps = props.outerGroupRef ? { ref: props.outerGroupRef } : {};
     const innerGroupProps = props.innerGroupRef ? { ref: props.innerGroupRef } : {};
@@ -195,6 +208,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
             {...innerGroupProps}
             isActive={props.isActive}
             componentType={props.componentType}
+            {...(props.modelHierarchy !== undefined ? { modelHierarchy: props.modelHierarchy } : {})}
             {...(objectNode ? { objectNode } : {})}
             {...(props.modelYawOffset !== undefined
               ? { modelYawOffset: props.modelYawOffset }

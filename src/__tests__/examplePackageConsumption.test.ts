@@ -518,11 +518,12 @@ describe('examples package consumption contract', () => {
     const featureAccessSource = fs.readFileSync(FEATURE_ACCESS_EXAMPLE, 'utf8');
     const packageSource = fs.readFileSync(PACKAGE_JSON, 'utf8');
 
-    expect(worldSource).toContain('CharacterCreator');
-    expect(worldSource).toContain('FeatureAccessPanel');
-    expect(worldSource).toMatch(/<CharacterCreator\s+toggleKey="o"/);
+    expect(worldSource).toContain('WorldMenu');
+    expect(worldSource).not.toContain('FeatureAccessPanel');
+    expect(worldSource).not.toContain('CharacterCreator');
     expect(worldSource).toContain('<Player />');
-    expect(playerSource).toContain('baseColor={appearance.colors.body}');
+    expect(playerSource).toContain('modelHierarchy');
+    expect(playerSource).toContain('WORLD_EQUIPMENT');
     expect(featureAccessSource).toContain('월드 조작');
     expect(featureAccessSource).toContain('꾸미기');
     expect(featureAccessSource).toContain('toggleCharacterWeapon');
@@ -552,15 +553,15 @@ describe('examples package consumption contract', () => {
     expect(minimalSource).not.toContain('@react-three/rapier');
   });
 
-  test('world example wires rideables into visible gameplay through public APIs', () => {
+  test('rideable APIs remain standalone without cluttering WORLD', () => {
     const worldSource = fs.readFileSync(WORLD_PAGE, 'utf8');
     const rideableSource = fs.readFileSync(RIDEABLE_EXAMPLE, 'utf8');
     const featureAccessSource = fs.readFileSync(FEATURE_ACCESS_EXAMPLE, 'utf8');
 
-    expect(worldSource).toContain('RideableVehicles');
-    expect(worldSource).toContain('RideableUIRenderer');
-    expect(worldSource).toContain('<RideableVehicles />');
-    expect(worldSource).toContain('{!showEditor && <RideableUIRenderer />}');
+    expect(worldSource).not.toContain('RideableVehicles');
+    expect(worldSource).not.toContain('RideableUIRenderer');
+    expect(worldSource).not.toContain('<RideableVehicles />');
+    expect(worldSource).not.toContain('{!showEditor && <RideableUIRenderer />}');
     expect(featureAccessSource).toContain('차량 탑승');
     expect(featureAccessSource).toContain('비행기 탑승');
     expect(featureAccessSource).toContain('내리기');
@@ -569,15 +570,15 @@ describe('examples package consumption contract', () => {
     expect(rideableSource).toContain('RideableUI');
   });
 
-  test('world example wires close-up camera controls through public APIs', () => {
+  test('cinematic controls remain standalone without automatic WORLD close-ups', () => {
     const worldSource = fs.readFileSync(WORLD_PAGE, 'utf8');
     const closeUpSource = fs.readFileSync(CLOSE_UP_EXAMPLE, 'utf8');
     const sceneSource = fs.readFileSync(WORLD_SCENE, 'utf8');
 
-    expect(worldSource).toContain('CloseUpControls');
-    expect(worldSource).toContain('{!showEditor && <CloseUpControls />}');
-    expect(worldSource).toContain('restoreCameraCloseUp');
-    expect(worldSource).toContain('<Scenery enableCloseUp={!showEditor} />');
+    expect(worldSource).not.toContain('CloseUpControls');
+    expect(worldSource).not.toContain('{!showEditor && <CloseUpControls />}');
+    expect(worldSource).not.toContain('restoreCameraCloseUp');
+    expect(worldSource).not.toContain('<Scenery enableCloseUp={!showEditor} />');
     expect(closeUpSource).toContain("from 'gaesup-world'");
     expect(closeUpSource).toContain('playCameraCinematic');
     expect(closeUpSource).toContain("kind: 'dolly'");
@@ -591,9 +592,10 @@ describe('examples package consumption contract', () => {
     expect(closeUpSource).toContain("kind: 'event'");
     expect(closeUpSource).toContain('requestCameraCloseUp');
     expect(closeUpSource).toContain('restoreCameraCloseUp');
-    expect(sceneSource).toContain('requestCameraCloseUp');
-    expect(sceneSource).toContain('InspectableCloseUpTargets');
-    expect(sceneSource).toContain("document.body.style.cursor = 'zoom-in'");
+    expect(sceneSource).not.toContain('requestCameraCloseUp');
+    expect(sceneSource).not.toContain('InspectableCloseUpTargets');
+    expect(sceneSource).toContain('TreeBatch');
+    expect(sceneSource).not.toContain('Pickup');
   });
 
   test('world editor shell wires cinematic panel through public APIs', () => {
@@ -619,20 +621,20 @@ describe('examples package consumption contract', () => {
     expect(performanceOverlaySource).toContain("'보기'");
   });
 
-  test('world example wires click-to-teleport through public APIs', () => {
+  test('WORLD does not mount developer click-to-teleport', () => {
     const worldSource = fs.readFileSync(WORLD_PAGE, 'utf8');
 
-    expect(worldSource).toContain('TeleportOnClick');
-    expect(worldSource).toContain('{!showEditor && <TeleportOnClick modifierKey="altKey" />}');
+    expect(worldSource).not.toContain('TeleportOnClick');
+    expect(worldSource).not.toContain('{!showEditor && <TeleportOnClick modifierKey="altKey" />}');
   });
 
-  test('world example wires named teleport markers through public APIs', () => {
+  test('teleport markers stay standalone rather than in WORLD', () => {
     const worldSource = fs.readFileSync(WORLD_PAGE, 'utf8');
     const constantsSource = fs.readFileSync(TELEPORT_CONSTANTS_EXAMPLE, 'utf8');
     const markersSource = fs.readFileSync(TELEPORT_MARKERS_EXAMPLE, 'utf8');
 
-    expect(worldSource).toContain('TeleportMarkers');
-    expect(worldSource).toContain('{!showEditor && <TeleportMarkers />}');
+    expect(worldSource).not.toContain('TeleportMarkers');
+    expect(worldSource).not.toContain('{!showEditor && <TeleportMarkers />}');
     expect(constantsSource).toContain("from 'gaesup-world'");
     expect(constantsSource).toContain('createTeleportDestination');
     expect(markersSource).toContain("from 'gaesup-world'");

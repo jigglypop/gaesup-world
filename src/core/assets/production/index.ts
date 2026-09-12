@@ -160,6 +160,38 @@ function inspectAssetManifest(manifest: AssetManifest): string[] {
       new Set(manifest.rig.joints).size !== manifest.rig.joints.length)
   )
     errors.push('invalid-rig');
+  const character = manifest.character;
+  if (character) {
+    const detailedFace = ['eyes', 'eyebrows', 'mouth'].includes(character.slot);
+    if (character.schemaVersion !== 1 || manifest.kind !== 'characterPart' ||
+      !['base', 'part'].includes(character.role) || !['skinned', 'rigid'].includes(character.deformation) ||
+      !character.bodyProfile.trim() || !character.meshes.length ||
+      character.meshes.some((name) => !name.trim()) || new Set(character.meshes).size !== character.meshes.length ||
+      manifest.slot !== (detailedFace ? 'face' : character.slot)) errors.push('invalid-character-part');
+    if (!manifest.rig) errors.push('character-rig-required');
+    if (character.role === 'base' && (character.slot !== 'body' || character.deformation !== 'skinned')) errors.push('base-body-slot-required');
+    if (character.slot === 'bottom' ? !['pants', 'skirt'].includes(character.variant ?? '') : character.variant !== undefined) errors.push('invalid-bottom-variant');
+    if (character.deformation === 'rigid' && !manifest.sockets.some((socket) => socket.name === character.attachmentSocket && socket.bone)) errors.push('character-socket-required');
+    const channels = new Set<string>();
+    const materialOwners = new Set<string>();
+    for (const channel of character.colorChannels) {
+      if (!channel.id.trim() || channels.has(channel.id) || !channel.materials.length) errors.push('invalid-color-channel');
+      channels.add(channel.id);
+      for (const name of channel.materials) {
+        if (materialOwners.has(name) || !manifest.materials.some((material) => material.name === name)) errors.push('invalid-color-material');
+        materialOwners.add(name);
+      }
+    }
+    if (character.slot === 'eyes' && (!channels.has('iris') || channels.has('skin'))) errors.push('independent-eye-material-required');
+    const controls = new Set<string>();
+    for (const control of character.morphControls) {
+      if (!control.id.trim() || !control.target.trim() || controls.has(control.id) ||
+        ![control.min, control.max, control.default].every(Number.isFinite) ||
+        control.min >= control.max || control.default < control.min || control.default > control.max) errors.push('invalid-morph-control');
+      controls.add(control.id);
+    }
+    if (character.hideBodyRegions.some((region) => !region.trim())) errors.push('invalid-body-region');
+  }
   return errors;
 }
 
@@ -245,6 +277,7 @@ export function assetManifestToRecord(manifest: AssetManifest, baseUrl: string):
     url: `${baseUrl.replace(/\/$/, '')}/${manifest.id}/${manifest.version}/${lod.path}`,
     metadata: {
       productionVersion: manifest.version,
+      ...(manifest.character ? { character: JSON.parse(JSON.stringify(manifest.character)) as object } : {}),
       ...(manifest.rig
         ? { skeleton: manifest.rig.id, bindPoseHash: manifest.rig.bindPoseHash }
         : {}),

@@ -11,6 +11,7 @@ export type PartsGroupRefProps = {
     currentAnimation?: string | undefined;
     color?: string | undefined;
     skeleton?: THREE.Skeleton | null | undefined;
+    attachment?: Part['attachment'];
 }
 
 export type ModelRendererProps = {
@@ -37,6 +38,7 @@ export type InnerGroupRefType = {
     offset?: THREE.Vector3;
     parts?: Part[];
     baseColor?: string;
+    modelHierarchy?: boolean;
     excludeBaseNodes?: string[];
     isRiderOn?: boolean;
     enableRiding?: boolean;

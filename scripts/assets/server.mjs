@@ -10,19 +10,21 @@ import { promisify } from 'node:util';
 import sharp from 'sharp';
 
 import { createImage, resumeImage } from './meshy-images.mjs';
-import { generateCandidate, resumeCandidate, writeJson } from './meshy.mjs';
+import { CANDIDATE_CATEGORIES, generateCandidate, resumeCandidate, writeJson } from './meshy.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const DEFAULT_WORK = path.join(ROOT, '.asset-work');
-const CATEGORIES = ['chair', 'table', 'sofa', 'planter', 'tree'];
+const CATEGORIES = CANDIDATE_CATEGORIES;
 const BLENDER =
   process.env.GAESUP_BLENDER ?? 'C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe';
 const execute = promisify(execFile);
 const readJson = async (file) => JSON.parse(await readFile(file, 'utf8'));
 
 function candidateFile(id, work) {
-  if (!/^(chair|table|sofa|planter|tree)\/[12]$/.test(id)) throw new Error('Invalid candidate ID');
-  const [category, slot] = id.split('/');
+  if (typeof id !== 'string') throw new Error('Invalid candidate ID');
+  const [category, slot, extra] = id.split('/');
+  if (!CATEGORIES.includes(category) || !['1', '2'].includes(slot) || extra !== undefined)
+    throw new Error('Invalid candidate ID');
   return path.join(work, 'candidates', category, `candidate-${slot}.json`);
 }
 

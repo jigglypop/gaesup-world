@@ -1,0 +1,176 @@
+{
+  "version": 1,
+  "status": "reference-unapproved",
+  "author": "Quaternius",
+  "license": "CC0-1.0",
+  "source": "https://quaternius.itch.io/stylized-nature-megakit",
+  "archive": "Stylized Nature MegaKit[Standard].zip",
+  "archiveSha256": "298f6732b872e4cf7b30e6e7abf9641c7f6dc6b326df37ac089533ed7e3d58c9",
+  "url": "gltf/nature/nature-library.glb",
+  "sha256": "223da5f4a08d37efdc4403dbccf2c709bb9dd8274d32dd0cdac16bc7a71c0c47",
+  "bytes": 5495380,
+  "units": "meters",
+  "up": "+Y",
+  "pivot": "ground-center",
+  "assets": [
+    {
+      "id": "oak-a",
+      "sourceFile": "CommonTree_1.gltf",
+      "sourceSha256": "b51cdea6545edb51d102dd6c27caafe62aa75e3c328ac8f9039f4e7bfd690bfa",
+      "bounds": {
+        "min": [
+          -2.1944587230682373,
+          0,
+          -2.2245190143585205
+        ],
+        "max": [
+          2.116964101791382,
+          7.264785200357437,
+          2.3531949520111084
+        ]
+      }
+    },
+    {
+      "id": "oak-b",
+      "sourceFile": "CommonTree_3.gltf",
+      "sourceSha256": "17c6537aa8042bb7255fbb501bf7aeb2b6db87c16766f794f9c37be3ce70c976",
+      "bounds": {
+        "min": [
+          -1.9864652156829834,
+          0,
+          -2.0609655380249023
+        ],
+        "max": [
+          2.076380968093872,
+          9.425189882516861,
+          2.1801114082336426
+        ]
+      }
+    },
+    {
+      "id": "pine",
+      "sourceFile": "Pine_1.gltf",
+      "sourceSha256": "adc85a72e6f46f71317ca5f7630876bfb207f687427bc9e37cd97ec4af5f2cbc",
+      "bounds": {
+        "min": [
+          -2.448819160461426,
+          0,
+          -2.4769327640533447
+        ],
+        "max": [
+          2.4958789348602295,
+          7.316917672753334,
+          2.0614705085754395
+        ]
+      }
+    },
+    {
+      "id": "grass",
+      "sourceFile": "Grass_Common_Short.gltf",
+      "sourceSha256": "6957b50622c9e26e7296c1b47ea8653bc0d957e0a547de444e2ed96f0075a21a",
+      "bounds": {
+        "min": [
+          -0.3556424081325531,
+          0,
+          -0.47937828302383423
+        ],
+        "max": [
+          0.2832280695438385,
+          1.3341034408658743,
+          0.25788721442222595
+        ]
+      }
+    },
+    {
+      "id": "bush",
+      "sourceFile": "Bush_Common.gltf",
+      "sourceSha256": "77811fca92610cb254713d3d49d5029ab6cf13050c3afb61aa942786a7b2ca90",
+      "bounds": {
+        "min": [
+          -0.9234761595726013,
+          0,
+          -0.9743891954421997
+        ],
+        "max": [
+          0.9913685917854309,
+          1.5817856639623642,
+          0.9907516837120056
+        ]
+      }
+    },
+    {
+      "id": "fern",
+      "sourceFile": "Fern_1.gltf",
+      "sourceSha256": "d41915cffe9dbbde1ae88be381eb9c60f7caa2274511436cc78fe4de627468ab",
+      "bounds": {
+        "min": [
+          -1.381242275238037,
+          0,
+          -1.278536081314087
+        ],
+        "max": [
+          1.4456915855407715,
+          0.8402432501316071,
+          1.373783826828003
+        ]
+      }
+    },
+    {
+      "id": "flowers",
+      "sourceFile": "Flower_3_Group.gltf",
+      "sourceSha256": "4df1612371982c543f930d6b213967372e0d459622d7eff7fc2ed1ddbfaa3b6c",
+      "bounds": {
+        "min": [
+          -0.6136013269424438,
+          0,
+          -0.8017617464065552
+        ],
+        "max": [
+          0.8748752474784851,
+          2.0548351034522057,
+          0.789365291595459
+        ]
+      }
+    }
+  ],
+  "validation": {
+    "numErrors": 0,
+    "numWarnings": 3,
+    "numInfos": 1,
+    "numHints": 0,
+    "messages": [
+      {
+        "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+        "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+        "severity": 1,
+        "pointer": "/meshes/0/primitives/0/material"
+      },
+      {
+        "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+        "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+        "severity": 1,
+        "pointer": "/meshes/1/primitives/0/material"
+      },
+      {
+        "code": "MESH_PRIMITIVE_GENERATED_TANGENT_SPACE",
+        "message": "Material requires a tangent space but the mesh primitive does not provide it. Runtime-generated tangent space may be non-portable across implementations.",
+        "severity": 1,
+        "pointer": "/meshes/2/primitives/0/material"
+      },
+      {
+        "code": "IMAGE_NPOT_DIMENSIONS",
+        "message": "Image has non-power-of-two dimensions: 1008x981.",
+        "severity": 2,
+        "pointer": "/images/5"
+      }
+    ],
+    "truncated": false
+  },
+  "adaptations": [
+    "Source wind-mask COLOR_0 removed from PBR export; original archived",
+    "Grass uses a green tint and upward normals",
+    "Bush uses the authored green CommonTree leaf atlas",
+    "Textures resized to maximum 1024px",
+    "Shared textures deduplicated"
+  ]
+}

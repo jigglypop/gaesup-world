@@ -27,20 +27,21 @@ export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THRE
         {props.objectNode && props.animationRef && (
           <primitive
             object={props.objectNode}
-            visible={false}
+            visible={props.modelHierarchy === true}
+            dispose={null}
             receiveShadow
             castShadow
             ref={props.animationRef}
           />
         )}
-        <ModelRenderer
+        {!props.modelHierarchy && <ModelRenderer
           nodes={props.nodes}
           skeleton={props.skeleton}
           url={props.url || ''}
           {...(baseColor ? { color: baseColor } : {})}
           {...(colorNodeNames ? { colorNodeNames } : {})}
           {...(props.excludeBaseNodes && props.excludeBaseNodes.length > 0 ? { excludeNodeNames: props.excludeBaseNodes } : {})}
-        />
+        />}
       </group>
     </group>
   );

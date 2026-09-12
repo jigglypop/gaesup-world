@@ -3,7 +3,10 @@ import { mkdir, open, readFile, rename } from 'node:fs/promises';
 import path from 'node:path';
 
 const ENDPOINT = 'https://api.meshy.ai/openapi/v1/image-to-3d';
-const CATEGORIES = new Set(['chair', 'table', 'sofa', 'planter', 'tree']);
+export const CANDIDATE_CATEGORIES = Object.freeze([
+  'chair', 'table', 'sofa', 'planter', 'tree',
+  'character', 'hair', 'hat', 'top', 'bottom', 'shoes', 'face', 'house', 'tile',
+]);
 
 export async function writeJson(file, value) {
   const temporary = `${file}.${randomUUID()}.tmp`;
@@ -24,7 +27,7 @@ export async function generateCandidate({
   apiKey,
   fetcher = fetch,
 }) {
-  if (!CATEGORIES.has(category)) throw new Error('Unsupported candidate category');
+  if (!CANDIDATE_CATEGORIES.includes(category)) throw new Error('Unsupported candidate category');
   if (!apiKey) throw new Error('MESHY_API_KEY is required');
   const image = await readFile(reference);
   const hash = createHash('sha256').update(image).digest('hex');

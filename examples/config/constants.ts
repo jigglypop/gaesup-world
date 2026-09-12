@@ -1,7 +1,7 @@
 import { ExampleConfig, DevMode, EditorConfig } from './types';
 
 export const S3 = 'https://jiggloghttps.s3.ap-northeast-2.amazonaws.com/gltf';
-export const CHARACTER_URL = 'gltf/ally_body.glb';
+export const CHARACTER_URL = 'gltf/kaykit/rogue.glb';
 export const AIRPLANE_URL = 'gltf/ally.glb';
 export const VEHICLE_URL = 'gltf/ally_body.glb';
 

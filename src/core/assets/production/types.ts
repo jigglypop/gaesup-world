@@ -18,6 +18,21 @@ export type AssetArtifact = {
   bytes: number;
 };
 
+/** Generation/authoring contract. Legacy outfit saves still use AssetSlot. */
+export type CharacterPartSpecification = {
+  schemaVersion: 1;
+  role: 'base' | 'part';
+  slot: AssetSlot | 'eyes' | 'eyebrows' | 'mouth';
+  bodyProfile: string;
+  deformation: 'skinned' | 'rigid';
+  variant?: 'pants' | 'skirt';
+  attachmentSocket?: string;
+  meshes: string[];
+  hideBodyRegions: string[];
+  colorChannels: { id: string; materials: string[] }[];
+  morphControls: { id: string; target: string; min: number; max: number; default: number }[];
+};
+
 export type AssetManifest = {
   schemaVersion: 1;
   id: string;
@@ -39,6 +54,7 @@ export type AssetManifest = {
   colliders: { type: 'box'; center: [number, number, number]; size: [number, number, number] }[];
   sockets: { name: string; bone?: string; position: [number, number, number] }[];
   rig?: { id: string; bindPoseHash: string; joints: string[]; clips: Record<string, string> };
+  character?: CharacterPartSpecification;
 };
 
 export type AssetEvidence = {

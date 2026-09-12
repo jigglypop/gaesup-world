@@ -130,7 +130,7 @@ export function WorldConfigProvider(props: WorldContainerProps) {
       delete nextOption.focusTarget;
       replaceCameraOption(nextOption);
     }
-  }, [cameraOptionUpdates, props.cameraOption, props.mode, replaceCameraOption, setMode]);
+  }, [cameraOptionUpdates, props.cameraOption, props.mode, props.runtimeRevision, replaceCameraOption, setMode]);
 
   if (!props.runtime) {
     return props.children;

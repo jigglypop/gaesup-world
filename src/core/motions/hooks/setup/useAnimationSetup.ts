@@ -16,6 +16,9 @@ export function useAnimationSetup(
     const animationBridge = getGlobalAnimationBridge();
     const ownedActions = { ...actions };
     animationBridge.registerAnimations(modeType as 'character' | 'vehicle' | 'airplane', ownedActions);
+    // A freshly loaded or swapped rig has no running action even when the
+    // controller's logical state already says "idle".
+    if (ownedActions['idle']) animationBridge.execute(modeType, { type: 'play', animation: 'idle' });
 
     return () => {
       animationBridge.unregisterAnimations(modeType as 'character' | 'vehicle' | 'airplane', ownedActions);

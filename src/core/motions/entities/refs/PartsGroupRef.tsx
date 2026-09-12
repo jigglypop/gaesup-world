@@ -8,6 +8,7 @@ import { SkeletonUtils } from 'three-stdlib';
 import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
 
 import { ModelRendererProps, PartsGroupRefProps } from './types';
+import { RigidPartRef } from './RigidPartRef';
 import { resolveSharedSkeletonBinding } from '../../../character/skeleton';
 
 export function ModelRenderer({ nodes, color, colorNodeNames, skeleton, url, excludeNodeNames }: ModelRendererProps) {
@@ -143,7 +144,13 @@ function PartAnimationDriver() {
   return null;
 }
 
-export function PartsGroupRef({ url, isActive, color, skeleton }: PartsGroupRefProps) {
+export function PartsGroupRef(props: PartsGroupRefProps) {
+  return props.attachment
+    ? <RigidPartRef {...props} attachment={props.attachment} />
+    : <SkinnedPartRef {...props} />;
+}
+
+function SkinnedPartRef({ url, isActive, color, skeleton }: PartsGroupRefProps) {
   const { scene } = useGLTF(url) as { scene: THREE.Object3D };
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { nodes } = useGraph(clone);

@@ -4,12 +4,14 @@ import {
   getItemRegistry,
   getCropRegistry,
   SEED_CROPS,
+  useAssetStore,
   type ItemDef,
   type QuestDef,
   type RecipeDef,
 } from 'gaesup-world';
 
 import { registerSeedDialogs } from './dialog/seedDialogs';
+import { WORLD_REFERENCE_ASSETS } from '../pages/world/assets';
 
 const STACKABLE_ITEM = { icon: '', stackable: true, maxStack: 99 };
 const TOOL_ITEM = { icon: '', stackable: false, maxStack: 1, category: 'tool' as const };
@@ -85,6 +87,9 @@ export const SEED_RECIPES: RecipeDef[] = [
 ];
 
 export function registerSeedContent(): void {
+  if (!useAssetStore.getState().records['kaykit-rogue']) {
+    useAssetStore.getState().registerAssets(WORLD_REFERENCE_ASSETS);
+  }
   registerSeedDialogs();
   getItemRegistry().registerAll(WORLD_ITEMS);
   getCropRegistry().registerAll(SEED_CROPS);

@@ -2,39 +2,27 @@ import {
   createAudioPlugin,
   createBuildingPlugin,
   createCameraPlugin,
-  createCatalogPlugin,
   createCharacterPlugin,
-  createCraftingPlugin,
-  createEventsPlugin,
-  createFarmingPlugin,
   createGaesupRuntime,
   createI18nPlugin,
-  createInventoryPlugin,
-  createMailPlugin,
   createMotionsPlugin,
   createNPCPlugin,
-  createQuestsPlugin,
-  createRelationsPlugin,
   createScenePlugin,
   createTimePlugin,
-  createTownPlugin,
   createWeatherPlugin,
-  getNPCScheduler,
-  getSaveSystem,
+  IndexedDBAdapter,
+  LocalStorageAdapter,
+  SaveSystem,
   notify,
-  useEventsStore,
-  useInventoryStore,
-  useMailStore,
+  useAssetStore,
+  useBuildingStore,
   useTimeStore,
-  useTownStore,
   useWeatherStore,
   type GaesupRuntime,
-  type SaveSystem,
 } from 'gaesup-world';
 import {
   GameplayEventEngine,
   getGameplayEventRegistry,
-  SEED_GAMEPLAY_EVENTS,
   type GameplayEventAction,
   type GameplayEventBlueprint,
   type GameplayEventCondition,
@@ -45,10 +33,8 @@ import type {
   PlatformServerPluginHost,
 } from 'gaesup-world/server-contracts';
 
-import { registerSeedContent } from '../components/seedContent';
-import { createExampleCozyLifePackagePlugin } from '../plugins/cozy-life-package';
 import { createExampleServerHost, runExampleServerHostPing } from '../plugins/server-host-sample';
-import { NPC_SCHEDULES } from './world/data';
+import { WORLD_REFERENCE_ASSETS } from './world/assets';
 import {
   createWorldSceneDocumentPlugin,
   getWorldSceneDocumentSession,
@@ -57,7 +43,7 @@ import {
 
 const DEFAULT_WORLD_TIME_MINUTES = 18 * 60;
 
-let seedsRegistered = false;
+let worldSaveSystem: SaveSystem | null = null;
 let gameplayEngine: GameplayEventEngine | null = null;
 let gameplayCustomHandlersRegistered = false;
 let serverHost: PlatformServerPluginHost | null = null;
@@ -82,7 +68,6 @@ const WORLD_CUSTOM_GAMEPLAY_BLUEPRINT: GameplayEventBlueprint = {
 };
 
 const gameplayBlueprints: GameplayEventBlueprint[] = [
-  ...SEED_GAMEPLAY_EVENTS,
   WORLD_CUSTOM_GAMEPLAY_BLUEPRINT,
 ];
 
@@ -99,21 +84,30 @@ function registerWorldGameplayCustomHandlers(): void {
   });
 }
 
-function registerWorldSeeds(): void {
-  if (seedsRegistered) return;
-  seedsRegistered = true;
-
-  const scheduler = getNPCScheduler();
-  NPC_SCHEDULES.forEach((schedule) => scheduler.register(schedule));
+function getWorldSaveSystem(): SaveSystem {
+  if (worldSaveSystem) return worldSaveSystem;
+  const adapter = typeof indexedDB === 'undefined' ? new LocalStorageAdapter() : new IndexedDBAdapter();
+  worldSaveSystem = new SaveSystem({
+    defaultSlot: 'social-world-v1',
+    adapter: {
+      // Carry over the old room/character once, without overwriting its economy save.
+      read: async (slot) => (await adapter.read(slot)) ?? (slot === 'social-world-v1' ? adapter.read('main') : null),
+      write: (slot, blob) => adapter.write(slot, blob),
+      list: () => adapter.list(),
+      remove: (slot) => adapter.remove(slot),
+    },
+  });
+  return worldSaveSystem;
 }
 
 export function createWorldRuntime(options: CreateWorldRuntimeOptions = {}): GaesupRuntime {
-  registerSeedContent();
-  registerWorldSeeds();
+  for (const asset of WORLD_REFERENCE_ASSETS) {
+    if (!useAssetStore.getState().records[asset.id]) useAssetStore.getState().registerAssets([asset]);
+  }
   const sceneDocumentSession = options.sceneDocumentSession ?? getWorldSceneDocumentSession();
 
   return createGaesupRuntime({
-    saveSystem: options.saveSystem ?? getSaveSystem(),
+    saveSystem: options.saveSystem ?? getWorldSaveSystem(),
     plugins: [
       createWorldSceneDocumentPlugin(sceneDocumentSession),
       createBuildingPlugin(),
@@ -125,16 +119,6 @@ export function createWorldRuntime(options: CreateWorldRuntimeOptions = {}): Gae
       createTimePlugin(),
       createWeatherPlugin(),
       createAudioPlugin(),
-      createInventoryPlugin(),
-      createRelationsPlugin(),
-      createQuestsPlugin(),
-      createMailPlugin(),
-      createCatalogPlugin(),
-      createExampleCozyLifePackagePlugin(),
-      createCraftingPlugin(),
-      createFarmingPlugin(),
-      createEventsPlugin(),
-      createTownPlugin(),
       createI18nPlugin(),
     ],
   });
@@ -202,10 +186,6 @@ export async function loadWorldRuntime(runtime: GaesupRuntime, signal?: AbortSig
   if (signal?.aborted) return false;
   const loaded = await loadInitialWorldSave(runtime.save, signal);
   if (signal?.aborted) return false;
-  useEventsStore.getState().refresh(useTimeStore.getState().time);
-  await dispatchWorldGameplayEvent({ type: 'manual', key: 'world.ready' });
-  if (signal?.aborted) return false;
-  await runWorldServerHostDemo();
   return loaded;
 }
 
@@ -231,48 +211,33 @@ function loadInitialWorldSave(saveSystem: SaveSystem, signal?: AbortSignal): Pro
 }
 
 function applyStarterState(): void {
+  initializeWorldGarden();
   useTimeStore.getState().setTotalMinutes(DEFAULT_WORLD_TIME_MINUTES);
   useWeatherStore.setState((state) => ({
     ...state,
     current: null,
   }));
 
-  const inv = useInventoryStore.getState();
-  if (!inv.has('axe')) inv.add('axe', 1);
-  if (!inv.has('shovel')) inv.add('shovel', 1);
-  if (!inv.has('water-can')) inv.add('water-can', 1);
-  if (!inv.has('seed-turnip')) inv.add('seed-turnip', 5);
+}
 
-  const timeState = useTimeStore.getState();
-  const today = Math.floor(timeState.totalMinutes / (60 * 24));
-
-  const town = useTownStore.getState();
-  if (Object.keys(town.residents).length === 0) {
-    town.registerResident({ id: 'r-mei', name: '메이', bodyColor: '#ffe4c8', hatColor: '#5a8acf' });
-    town.registerResident({
-      id: 'r-tommy',
-      name: '토미',
-      bodyColor: '#f5d199',
-      hatColor: '#a85a5a',
-    });
-    town.registerResident({ id: 'r-ryu', name: '류', bodyColor: '#ffd0b8', hatColor: '#3a8a3a' });
+function initializeWorldGarden(): void {
+  const building = useBuildingStore.getState();
+  building.initializeDefaults();
+  const initialized = useBuildingStore.getState();
+  // Fresh worlds only. Saved layouts are loaded before this branch and never reset.
+  const tiles = [...initialized.tileGroups.values()].flatMap((group) => group.tiles);
+  if (tiles.some((tile) => !tile.id.startsWith('demo-')) || initialized.objects.some((object) => !object.id.startsWith('demo-'))) return;
+  for (const group of initialized.tileGroups.values()) {
+    for (const tile of group.tiles) initialized.removeTile(group.id, tile.id);
   }
-
-  const futureDay = today + 3;
-  const houseList = Object.values(town.houses);
-  if (houseList[0] && houseList[0].state === 'empty') town.moveIn(houseList[0].id, 'r-mei', today);
-  if (houseList[1] && houseList[1].state === 'empty')
-    town.reserveHouse(houseList[1].id, 'r-tommy', futureDay);
-  if (houseList[2] && houseList[2].state === 'empty')
-    town.reserveHouse(houseList[2].id, 'r-ryu', futureDay + 2);
-
-  if (useMailStore.getState().messages.length === 0) {
-    useMailStore.getState().send({
-      from: '운영팀',
-      subject: '환영합니다',
-      body: '가방 [I], 퀘스트 [J], 우편 [M], 도감 [K], 제작대 [V], 캐릭터 꾸미기 [C].\n\n월드 도구의 생활 도구에서도 각 패널을 열 수 있어요. 필드에서 목재와 조개껍데기를 모아 제작대에서 사용해보세요.\n\n첫 시작용 자금을 보내드려요.',
-      sentDay: today,
-      attachments: [{ bells: 500 }],
-    });
+  for (const object of initialized.objects) initialized.removeObject(object.id);
+  for (let x = -2; x <= 2; x++) {
+    for (let z = -2; z <= 2; z++) {
+      if (Math.abs(x) === 2 && Math.abs(z) === 2) continue;
+      initialized.addTile('sand-floor', {
+        id: `garden-${x + 2}-${z + 2}`, tileGroupId: 'sand-floor',
+        position: { x: x * 2, y: 0, z: z * 2 }, size: 1, shape: 'box',
+      });
+    }
   }
 }

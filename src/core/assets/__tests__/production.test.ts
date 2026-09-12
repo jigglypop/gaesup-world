@@ -70,6 +70,33 @@ const qualityFor = (manifest: AssetManifest): AssetQualityReport => {
   };
 };
 
+test('granular character contract separates bottoms and eye materials from body identity', () => {
+  const manifest = fixture();
+  manifest.kind = 'characterPart';
+  manifest.slot = 'bottom';
+  manifest.rig = { id: 'social-body-v1', bindPoseHash: 'a'.repeat(64), joints: ['root', 'head'], clips: {} };
+  manifest.character = {
+    schemaVersion: 1, role: 'part', slot: 'bottom', variant: 'skirt', bodyProfile: 'social-body-v1',
+    deformation: 'skinned', meshes: ['skirt'], hideBodyRegions: ['pelvis'], colorChannels: [], morphControls: [],
+  };
+  expect(validateAssetManifest(manifest)).toEqual([]);
+  delete manifest.character.variant;
+  expect(validateAssetManifest(manifest)).toContain('invalid-bottom-variant');
+  manifest.slot = 'face';
+  manifest.character.slot = 'eyes';
+  manifest.character.meshes = ['eyes'];
+  manifest.character.hideBodyRegions = [];
+  expect(validateAssetManifest(manifest)).toContain('independent-eye-material-required');
+  manifest.materials = [{ name: 'iris', alphaMode: 'OPAQUE', texturePaths: [] }];
+  manifest.character.colorChannels = [{ id: 'iris', materials: ['iris'] }];
+  manifest.character.morphControls = [{ id: 'eye-spacing', target: 'EyeSpacing', min: -1, max: 1, default: 0 }];
+  expect(validateAssetManifest(manifest)).toEqual([]);
+  manifest.character.morphControls[0]!.default = 2;
+  expect(validateAssetManifest(manifest)).toContain('invalid-morph-control');
+  manifest.character.role = 'base';
+  expect(validateAssetManifest(manifest)).toContain('base-body-slot-required');
+});
+
 test('publication requires four independent, current evidence gates', () => {
   const manifest = fixture();
   const quality = qualityFor(manifest);

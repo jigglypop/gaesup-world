@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 
 import { useBuildingStore } from 'gaesup-world';
 
@@ -6,16 +6,12 @@ import { WorldPage } from './World';
 
 export function EditPage() {
   const setEditMode = useBuildingStore((s) => s.setEditMode);
-  const setWorldSurface = useBuildingStore((s) => s.setWorldSurface);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     setEditMode('tile');
-    setWorldSurface('water');
     return () => {
       setEditMode('none');
-      setWorldSurface('ground');
     };
-  }, [setEditMode, setWorldSurface]);
+  }, [setEditMode]);
 
   return <WorldPage showEditor showHud={false} />;
 }
