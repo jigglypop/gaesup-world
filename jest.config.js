@@ -5,6 +5,7 @@ export default {
     '^gaesup-world$': '<rootDir>/src/index.ts',
     '^gaesup-world/admin$': '<rootDir>/src/admin-entry.ts',
     '^gaesup-world/assets$': '<rootDir>/src/assets.ts',
+    '^gaesup-world/avatar$': '<rootDir>/src/avatar.ts',
     '^gaesup-world/blueprints$': '<rootDir>/src/blueprints/index.ts',
     '^gaesup-world/blueprints/editor$': '<rootDir>/src/blueprints/editor.ts',
     '^gaesup-world/building$': '<rootDir>/src/building.ts',

@@ -34,26 +34,6 @@ const GLTF_CONTENT_TYPES: Record<string, string> = {
   '.gltf': 'model/gltf+json',
 };
 
-function demoManualChunks(id: string): string | undefined {
-  if (id.includes('node_modules')) {
-    if (id.includes('@dimforge') || id.includes('@react-three/rapier')) return 'vendor-physics';
-    if (id.includes('@react-three')) return 'vendor-r3f';
-    if (id.includes('three')) return 'vendor-three';
-    if (id.includes('react') || id.includes('scheduler')) return 'vendor-react';
-    return 'vendor';
-  }
-
-  const normalized = id.replace(/\\/g, '/');
-  if (normalized.includes('/src/core/building/')) return 'gaesup-building';
-  if (normalized.includes('/src/core/editor/')) return 'gaesup-editor';
-  if (normalized.includes('/src/core/networks/')) return 'gaesup-network';
-  if (normalized.includes('/src/core/motions/')) return 'gaesup-motions';
-  if (normalized.includes('/src/core/camera/')) return 'gaesup-camera';
-  if (normalized.includes('/src/core/plugins/') || normalized.includes('/src/core/runtime/'))
-    return 'gaesup-runtime';
-  return undefined;
-}
-
 function serveDemoGltfAssets(): Plugin {
   return {
     name: 'serve-demo-gltf-assets',
@@ -88,6 +68,7 @@ export default defineConfig(({ mode }) => {
   const isLibraryBuild = mode === 'esm' || mode === 'cjs';
 
   const alias = [
+    { find: /^gaesup-world\/avatar$/, replacement: path.resolve(import.meta.dirname, 'src/avatar.ts') },
     { find: /^gaesup-world$/, replacement: path.resolve(import.meta.dirname, 'src/index.ts') },
     {
       find: /^gaesup-world\/style\.css$/,
@@ -188,6 +169,7 @@ export default defineConfig(({ mode }) => {
       build: {
         lib: {
           entry: {
+            avatar: path.resolve(import.meta.dirname, 'src/avatar.ts'),
             index: path.resolve(import.meta.dirname, 'src/index.ts'),
             admin: path.resolve(import.meta.dirname, 'src/admin-entry.ts'),
             assets: path.resolve(import.meta.dirname, 'src/assets.ts'),
@@ -256,6 +238,9 @@ export default defineConfig(({ mode }) => {
       alias,
       dedupe: ['react', 'react-dom'],
     },
+    optimizeDeps: {
+      entries: ['index.html', 'examples/engine/packageSurface.ts'],
+    },
     server: {
       host: '127.0.0.1',
       port: 5174,
@@ -267,9 +252,6 @@ export default defineConfig(({ mode }) => {
       rolldownOptions: {
         output: {
           strictExecutionOrder: true,
-          codeSplitting: {
-            groups: [{ name: demoManualChunks, includeDependenciesRecursively: false }],
-          },
         },
       },
     },

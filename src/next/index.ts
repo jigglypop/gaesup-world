@@ -10,6 +10,7 @@ export { TaskGraph, TASK_PHASE_ORDER } from './core/TaskGraph';
 export { RenderGraph } from './core/RenderGraph';
 export {
   compactVisible,
+  cullAndCompactSpheres,
   cullSpheres,
   extractFrustumPlanes,
   FRUSTUM_PLANES_LENGTH,
@@ -17,6 +18,8 @@ export {
 export { composeTrsMatrix, MATRIX_STRIDE, packInstanceMatrices } from './core/instancing';
 export { createThreeWebGpuBackend, isWebGpuAvailable } from './backend/threeWebGpuBackend';
 export { createGpuCulledInstances } from './backend/gpuCulledInstances';
+export { createGpuDrivenInstances } from './backend/gpuDrivenInstances';
+export type { GpuDrivenInstances, GpuDrivenInstancesOptions } from './backend/gpuDrivenInstances';
 export type {
   GpuCulledInstancesOptions,
   GpuCulledInstancesResult,

@@ -4,6 +4,10 @@
   "type": "module",
   "description": "Web 3D Character Controller and World Platform Library",
   "exports": {
+    "./avatar": {
+      "import": { "types": "./dist/avatar.d.ts", "default": "./dist/avatar.js" },
+      "require": { "types": "./dist/avatar.d.cts", "default": "./dist/avatar.cjs" }
+    },
     ".": {
       "import": {
         "types": "./dist/index.d.ts",
@@ -177,18 +181,22 @@
     "dist/**/*.d.cts",
     "dist/wasm/*.wasm",
     "public/gltf/*.glb",
+    "public/gltf/avatars/**/*",
     "public/gltf/props/**/*",
     "public/gltf/kaykit/**/*",
     "README.md",
     "LICENSE.txt"
   ],
   "scripts": {
+    "avatar:fixtures": "node scripts/build-avatar-fixtures.mjs",
+    "test:avatar:browser": "node scripts/probe-avatar.cjs",
     "assets:production": "node scripts/assets/cli.mjs",
     "assets:references": "node scripts/assets/import-kaykit.mjs",
     "test:world:browser": "node scripts/probe-social-world.cjs",
     "assets:studio": "node scripts/assets/server.mjs",
     "test:asset-tools": "node --test scripts/assets/*.test.mjs",
-    "dev": "vite --force",
+    "dev": "vite",
+    "test:minihome:browser": "node scripts/probe-minihome.cjs",
     "clean": "rimraf dist/",
     "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:types",
     "build:esm": "vite build --mode esm",

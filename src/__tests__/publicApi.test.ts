@@ -17,6 +17,11 @@ function expectNamedExport(source: string, name: string): void {
 }
 
 describe('public package API', () => {
+  test('exports compacted CPU and native GPU instancing through the next subpath', () => {
+    const next = jest.requireActual('gaesup-world/next') as typeof import('gaesup-world/next');
+    expect(typeof next.cullAndCompactSpheres).toBe('function');
+    expect(typeof next.createGpuDrivenInstances).toBe('function');
+  });
   test('exposes the legacy grid through the shared renderer compatibility boundary', () => {
     const coreSource = fs.readFileSync(CORE_ENTRY, 'utf8');
     expect(coreSource).toContain("export { Grid as LegacyGrid } from './rendering/legacyDrei'");

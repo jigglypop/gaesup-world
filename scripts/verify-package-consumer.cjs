@@ -762,6 +762,9 @@ function writeConsumerProject(tarballPath) {
   const consumerDependencies = {
     'gaesup-world': `file:${relativeTarball}`,
     ...getConsumerPeerDependencies(),
+    // Reproduce the installed React pair; an unconstrained latest minor may exceed R3F peers.
+    react: require('react/package.json').version,
+    'react-dom': require('react-dom/package.json').version,
   };
   const allJsExportSpecifiers = JSON.stringify(getJsExportSpecifiers(), null, 2);
   const cjsTypeImports = getJsExportSpecifiers()
@@ -830,8 +833,9 @@ ${createInteractionAggregateTypeProbe('rootModule.')}`;
       ['gaesup-world/editor', ['Editor', 'CinematicPanel', 'createEditorShell']],
       ['gaesup-world/gameplay', ['GameplayEventEngine', 'SEED_GAMEPLAY_EVENTS']],
       ['gaesup-world/navigation', ['NavigationSystem']],
+      ['gaesup-world/avatar', ['Avatar', 'AvatarRuntime', 'createAvatarStore']],
       ['gaesup-world/network', ['ConnectionForm', 'defaultMultiplayerConfig']],
-      ['gaesup-world/next', ['NextWorld', 'createThreeWebGpuBackend', 'isWebGpuAvailable']],
+      ['gaesup-world/next', ['NextWorld', 'createThreeWebGpuBackend', 'isWebGpuAvailable', 'createGpuDrivenInstances', 'cullAndCompactSpheres']],
       ['gaesup-world/plugins', ['defineGaesupPlugin']],
       ['gaesup-world/postprocessing', ['ColorGrade', 'parseCubeLut']],
       ['gaesup-world/runtime', ['createGaesupRuntime', 'createDefaultSaveSystem']],
@@ -1084,6 +1088,9 @@ import {
   useMultiplayer,
 } from 'gaesup-world/network';
 import { ColorGrade, parseCubeLut } from 'gaesup-world/postprocessing';
+import { Avatar, AvatarRuntime, createAvatarStore } from 'gaesup-world/avatar';
+const modularAvatar = <Avatar body="body-sd-neutral-v1" equipment={{ top: 'top-001' }} />;
+void modularAvatar; void AvatarRuntime; void createAvatarStore;
 import { defineGaesupPlugin } from 'gaesup-world/plugins';
 import { createDefaultSaveSystem } from 'gaesup-world/runtime';
 import { createGameCommand, createServerPluginHost } from 'gaesup-world/server-contracts';
@@ -1372,7 +1379,7 @@ for (const name of [
   }
 }
 
-for (const name of ['createThreeWebGpuBackend', 'isWebGpuAvailable']) {
+for (const name of ['createThreeWebGpuBackend', 'isWebGpuAvailable', 'createGpuDrivenInstances', 'cullAndCompactSpheres']) {
   if (typeof nextModule[name] !== 'function') {
     throw new Error('gaesup-world/next runtime export ' + name + ' is not a function');
   }
@@ -1448,7 +1455,7 @@ for (const name of [
   }
 }
 
-for (const name of ['createThreeWebGpuBackend', 'isWebGpuAvailable']) {
+for (const name of ['createThreeWebGpuBackend', 'isWebGpuAvailable', 'createGpuDrivenInstances', 'cullAndCompactSpheres']) {
   if (typeof nextModule[name] !== 'function') {
     throw new Error('gaesup-world/next runtime export ' + name + ' is not a function');
   }

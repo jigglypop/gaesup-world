@@ -55,7 +55,7 @@ export function assetApprovalSubject(manifest: AssetManifest): string {
 function inspectAssetManifest(manifest: AssetManifest): string[] {
   const errors: string[] = [];
   const finiteVector = (values: number[]) => values.length === 3 && values.every(Number.isFinite);
-  if (!['characterPart', 'weapon', 'material', 'tile', 'wall', 'object3d'].includes(manifest.kind))
+  if (!['characterPart', 'weapon', 'material', 'tile', 'wall', 'object3d', 'avatar-body', 'avatar-part', 'avatar-animation'].includes(manifest.kind))
     errors.push('invalid-kind');
   if (
     manifest.slot &&

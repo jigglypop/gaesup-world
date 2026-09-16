@@ -1,4 +1,5 @@
 export * from './api';
+export * from './GLTFAssetCache';
 export * from './building';
 export * from './types';
 export { SEED_ASSETS } from './data/seedAssets';
