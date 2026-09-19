@@ -1,4 +1,6 @@
-import { create } from 'zustand';
+import { create, useStore } from 'zustand';
+
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
 
 type BuildingVisibilityState = {
   initialized: boolean;
@@ -24,9 +26,10 @@ function sameSet(a: Set<string>, b: Set<string>): boolean {
   return true;
 }
 
-const EMPTY = new Set<string>();
 
-export const useBuildingVisibilityStore = create<BuildingVisibilityState>((set) => ({
+export function createBuildingVisibilityStore() {
+  const EMPTY = new Set<string>();
+  return create<BuildingVisibilityState>((set) => ({
   initialized: false,
   visibleTileGroupIds: EMPTY,
   visibleWallGroupIds: EMPTY,
@@ -65,3 +68,18 @@ export const useBuildingVisibilityStore = create<BuildingVisibilityState>((set) 
       visibleObjectIds: EMPTY,
     }),
 }));
+
+}
+
+export type BuildingVisibilityStore = ReturnType<typeof createBuildingVisibilityStore>;
+const legacyStore = createBuildingVisibilityStore();
+export function useBuildingVisibilityStoreApi(): BuildingVisibilityStore {
+  return useGaesupRuntime()?.buildingVisibilityStore ?? useBuildingVisibilityStore;
+}
+function useScopedStore(): BuildingVisibilityState;
+function useScopedStore<T>(selector: (state: BuildingVisibilityState) => T): T;
+function useScopedStore(selector: (state: BuildingVisibilityState) => unknown = state => state) {
+  return useStore(useBuildingVisibilityStoreApi(), selector);
+}
+/** React uses the nearest runtime; static methods retain the legacy default. */
+export const useBuildingVisibilityStore = Object.assign(useScopedStore, legacyStore);

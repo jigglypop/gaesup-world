@@ -3,9 +3,8 @@ import { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import { BridgeFactory } from '@core/boilerplate';
-
 import { useStateSystem } from './useStateSystem';
+import { useWorldMotionBridge } from './useWorldMotionBridge';
 import { MotionBridge } from '../bridge/MotionBridge';
 
 export interface UsePlayerPositionOptions {
@@ -38,6 +37,7 @@ export function usePlayerPosition(
   options: UsePlayerPositionOptions = {},
 ): UsePlayerPositionResult {
   const { updateInterval = 0, entityId, reactive = true } = options;
+  const worldMotionBridge = useWorldMotionBridge();
 
   // Keep stable references for consumers; update vectors in-place.
   const resultRef = useRef<UsePlayerPositionResult | null>(null);
@@ -63,7 +63,7 @@ export function usePlayerPosition(
 
   useEffect(() => {
     inferredEntityIdRef.current = undefined;
-    bridgeRef.current = BridgeFactory.getOrCreate('motion') as MotionBridge | null;
+    bridgeRef.current = worldMotionBridge;
     const bridge = bridgeRef.current;
     if (!bridge) return undefined;
 
@@ -92,7 +92,7 @@ export function usePlayerPosition(
     return () => {
       unsubscribe();
     };
-  }, [entityId, updateInterval, reactive]);
+  }, [entityId, updateInterval, reactive, worldMotionBridge]);
 
   // Fallback polling path (keeps position updating even when no bridge events are emitted).
   useFrame(() => {

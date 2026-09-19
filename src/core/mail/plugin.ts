@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useMailStore } from './stores/mailStore';
+import { useMailStore, type MailStore } from './stores/mailStore';
 import type { MailSerialized } from './types';
 
 export interface MailPluginOptions {
@@ -12,12 +12,12 @@ const DEFAULT_PLUGIN_ID = 'gaesup.mail';
 const DEFAULT_SAVE_EXTENSION_ID = 'mail';
 const DEFAULT_STORE_SERVICE_ID = 'mail.store';
 
-export function serializeMailState(): MailSerialized {
-  return useMailStore.getState().serialize();
+export function serializeMailState(store: MailStore = useMailStore): MailSerialized {
+  return store.getState().serialize();
 }
 
-export function hydrateMailState(data: MailSerialized | null | undefined): void {
-  useMailStore.getState().hydrate(data);
+export function hydrateMailState(data: MailSerialized | null | undefined, store: MailStore = useMailStore): void {
+  store.getState().hydrate(data);
 }
 
 export function createMailPlugin(options: MailPluginOptions = {}) {
@@ -27,11 +27,12 @@ export function createMailPlugin(options: MailPluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useMailStore,
+    resolveStore: context => context.services.get<MailStore>('gaesup.runtime.mail-store') ?? useMailStore,
     readyEvent: 'mail:ready',
     capabilities: ['mail'],
     serialize: serializeMailState,
     hydrate: hydrateMailState,
-    prepareHydrate: (data) => useMailStore.getState().prepareHydrate(data),
+    prepareHydrate: (data, store) => store.getState().prepareHydrate(data),
   });
 }
 

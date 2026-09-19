@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 
+import { useWorldInputScope } from '../../../input/useWorldInputScope';
+import { WorldInputSurface } from '../../../input/WorldInputSurface';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
 import { canHandleOverlayShortcut } from '../../../ui/overlayKeyboard';
 import {
@@ -22,6 +24,7 @@ const SLOT_GAP = 6;
 const PANEL_WIDTH = 460;
 
 export function InventoryUI({ toggleKey = 'i', initiallyOpen = false }: InventoryUIProps) {
+  const inputScope = useWorldInputScope();
   const [open, setOpen] = useState(initiallyOpen);
   const slots = useInventoryStore((s) => s.slots);
   const move = useInventoryStore((s) => s.move);
@@ -34,13 +37,13 @@ export function InventoryUI({ toggleKey = 'i', initiallyOpen = false }: Inventor
       if (e.key.toLowerCase() === toggleKey.toLowerCase()) setOpen((v) => !v);
       if (e.key === 'Escape') setOpen(false);
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [toggleKey]);
+    const offKey = inputScope.listen('keydown', onKey);
+    return () => offKey();
+  }, [inputScope, toggleKey]);
 
   if (!open) return null;
   return (
-    <div style={OVERLAY_BACKDROP_STYLE} onClick={() => setOpen(false)}>
+    <WorldInputSurface style={OVERLAY_BACKDROP_STYLE} onClick={() => setOpen(false)}>
       <div
         role="region"
         data-world-overlay="inventory"
@@ -126,7 +129,7 @@ export function InventoryUI({ toggleKey = 'i', initiallyOpen = false }: Inventor
           {`[${toggleKey.toUpperCase()}] 닫기 / 드래그로 이동`}
         </div>
       </div>
-    </div>
+    </WorldInputSurface>
   );
 }
 

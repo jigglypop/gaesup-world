@@ -236,6 +236,24 @@ describe('PluginRegistry', () => {
     expect(registry.context.components.has('hud')).toBe(false);
   });
 
+  it('attempts every disposal in reverse order and cleans extensions after failures', async () => {
+    const registry = createPluginRegistry();
+    const calls: string[] = [];
+    const failure = new Error('failed cleanup');
+    for (const id of ['first', 'broken', 'last']) registry.register(plugin(id, ctx => {
+      ctx.services.register(`${id}.service`, {}, id);
+    }, { dispose: () => { calls.push(id); if (id === 'broken') throw failure; } }));
+    await registry.setupAll();
+    await expect(registry.disposeAll()).rejects.toBe(failure);
+    expect(calls).toEqual(['last', 'broken', 'first']);
+    expect(registry.context.services.list()).toEqual([]);
+    expect(registry.status('broken')).toBe('failed');
+    expect(registry.get('broken')?.error).toBe(failure);
+    expect(registry.status('first')).toBe('disposed');
+    await registry.disposeAll();
+    expect(calls).toHaveLength(3);
+  });
+
   it('shares one event bus across plugins', async () => {
     const payloads: string[] = [];
     const registry = createPluginRegistry();

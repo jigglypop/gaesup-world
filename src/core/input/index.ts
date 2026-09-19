@@ -1,2 +1,12 @@
 export { TouchControls } from './touch/components/TouchControls';
 export type { TouchControlsProps, TouchActionButton } from './touch/components/TouchControls';
+export { WorldInputSurface } from './WorldInputSurface';
+export { WorldInputScope, createWorldInputScope, getDefaultWorldInputScope, isEditableInputEvent } from './WorldInputScope';
+export { useWorldInputScope } from './useWorldInputScope';
+export { WorldInputActions } from './WorldInputActions';
+export type { InputActionBinding, InputActionContext } from './WorldInputActions';
+export { useWorldInputActions } from './useWorldInputActions';
+export { BrowserGamepadHub, getBrowserGamepadHub } from './BrowserGamepadHub';
+export type { BrowserGamepad, GamepadSource, GamepadSnapshotListener } from './BrowserGamepadHub';
+export { WorldGamepadInput, STANDARD_GAMEPAD_BUTTONS, applyGamepadDeadzone } from './WorldGamepadInput';
+export type { WorldGamepadOptions, GamepadButtonName } from './WorldGamepadInput';

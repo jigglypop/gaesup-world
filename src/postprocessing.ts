@@ -11,4 +11,6 @@ export {
 export type { CubeLutData } from './core/rendering/postprocess/cubeLut';
 export { ToonOutlines, Outlined } from './core/rendering/outline';
 export type { ToonOutlinesProps, OutlinedProps } from './core/rendering/outline';
+export { WorldPostProcessing } from './core/rendering/postprocess/WorldPostProcessing';
+export type { WorldPostProcessingProps } from './core/rendering/postprocess/WorldPostProcessing';
 

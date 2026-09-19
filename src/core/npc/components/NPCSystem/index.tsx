@@ -6,7 +6,8 @@ import { weightFromDistance } from '@core/utils/sfe';
 
 import { BuildingNavigationObstacleDriver } from '../../../building/components/BuildingNavigationObstacleDriver';
 import { useBuildingStore } from '../../../building/stores/buildingStore';
-import { applyNPCNavigationRoute, NavigationSystem } from '../../../navigation';
+import { applyNPCNavigationRoute, useNavigationSystem } from '../../../navigation';
+import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../../runtime/runtimeContext';
 import { useNPCStore } from '../../stores/npcStore';
 import { NPCInstance } from '../NPCInstance';
 import './styles.css';
@@ -29,13 +30,18 @@ export function NPCSystem() {
   const editMode = useBuildingStore(state => state.editMode);
   const hoverPosition = useBuildingStore(state => state.hoverPosition);
   const isNPCMode = editMode === 'npc';
-  const navigationRef = useRef(NavigationSystem.getInstance());
+  const navigation = useNavigationSystem();
+  const runtime = useGaesupRuntime();
+  const runtimeRevision = useGaesupRuntimeRevision();
   const navigationReadyRef = useRef(false);
   const [navigationReady, setNavigationReady] = useState(false);
 
   useEffect(() => {
     let active = true;
-    void navigationRef.current.init().then((ready) => {
+    navigationReadyRef.current = false;
+    setNavigationReady(false);
+    if (runtime && !runtime.isActive()) return;
+    void navigation.init().then((ready) => {
       if (!active) return;
       navigationReadyRef.current = ready;
       setNavigationReady(ready);
@@ -43,7 +49,7 @@ export function NPCSystem() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [navigation, runtime, runtimeRevision]);
 
   // Distance-based LOD: hide NPCs beyond LOD_FAR.
   const [visibleIds, setVisibleIds] = useState<Set<string>>(() => new Set());
@@ -86,7 +92,7 @@ export function NPCSystem() {
         updateInstanceBehavior(selectedInstanceId, { mode: 'idle' });
         if (selectedInstance && navigationReadyRef.current) {
           const route = applyNPCNavigationRoute(
-            navigationRef.current,
+            navigation,
             { id: selectedInstance.id, position: selectedInstance.position },
             moveTarget,
             setNavigation,
@@ -121,7 +127,7 @@ export function NPCSystem() {
   return (
     <group name="npc-system">
       <BuildingNavigationObstacleDriver
-        navigation={navigationRef.current}
+        navigation={navigation}
         enabled={navigationReady}
       />
       {Array.from(instances.values()).map((instance) => {

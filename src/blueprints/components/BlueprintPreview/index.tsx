@@ -7,6 +7,7 @@ import * as THREE from 'three';
 
 import { Grid } from '@/core/rendering/legacyDrei';
 
+
 import { BlueprintPreviewProps } from './types';
 import './styles.css';
 import { 
@@ -18,6 +19,7 @@ import {
 } from '../../../core';
 import { CAMERA_CONTROLLER_DEFAULT_MODES } from '../../../core/camera/components/CameraController/defaults';
 import { GamePad } from '../../../core/interactions/components/Gamepad';
+import { useGaesupStoreApi } from '../../../core/stores/gaesupStore';
 import { getBlueprintModelUrl } from '../../model';
 import { AnyBlueprint, CharacterBlueprint } from '../../types';
 
@@ -53,6 +55,7 @@ export function BlueprintPreview({ blueprint }: BlueprintPreviewProps) {
 }
 
 function CharacterBlueprintPreview({ blueprint, modelUrl }: { blueprint: CharacterBlueprint; modelUrl: string }) {
+  const storeApi = useGaesupStoreApi();
   const previewRef = useRef<HTMLDivElement>(null);
   const setUrls = useGaesupStore((state) => state.setUrls);
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
@@ -69,7 +72,7 @@ function CharacterBlueprintPreview({ blueprint, modelUrl }: { blueprint: Charact
   const cameraSettings = blueprint.camera;
 
   useEffect(() => {
-    const { physics, setPhysics } = useGaesupStore.getState();
+    const { physics, setPhysics } = storeApi.getState();
     const jumpSpeed = blueprint.physics.mass > 0 ? blueprint.physics.jumpForce / blueprint.physics.mass : 0;
     const applied = {
       walkSpeed: blueprint.physics.moveSpeed,
@@ -77,16 +80,16 @@ function CharacterBlueprintPreview({ blueprint, modelUrl }: { blueprint: Charact
       jumpSpeed: Number.isFinite(jumpSpeed) ? Math.max(0, jumpSpeed) : 0,
     };
     setPhysics(applied);
-    const appliedPhysics = useGaesupStore.getState().physics;
+    const appliedPhysics = storeApi.getState().physics;
     return () => {
-      useGaesupStore.setState((current) => ({
+      storeApi.setState((current) => ({
         physics: restorePreviewFields(physics, appliedPhysics, current.physics),
       }));
     };
-  }, [blueprint.physics.moveSpeed, blueprint.physics.runSpeed, blueprint.physics.jumpForce, blueprint.physics.mass]);
+  }, [blueprint.physics.moveSpeed, blueprint.physics.runSpeed, blueprint.physics.jumpForce, blueprint.physics.mass, storeApi]);
 
   useEffect(() => {
-    const { mode: previousMode, cameraOption: previousCamera } = useGaesupStore.getState();
+    const { mode: previousMode, cameraOption: previousCamera } = storeApi.getState();
     const cameraConfig = cameraSettings ?? {};
     // Set preview mode
     setMode({
@@ -114,23 +117,23 @@ function CharacterBlueprintPreview({ blueprint, modelUrl }: { blueprint: Charact
       distance: 10,
       bounds: { minY: 2, maxY: 50 },
     });
-    const { mode: appliedMode, cameraOption: appliedCamera } = useGaesupStore.getState();
+    const { mode: appliedMode, cameraOption: appliedCamera } = storeApi.getState();
     return () => {
-      const current = useGaesupStore.getState();
+      const current = storeApi.getState();
       current.setMode(restorePreviewFields(previousMode, appliedMode, current.mode));
       current.replaceCameraOption(restorePreviewFields(previousCamera, appliedCamera, current.cameraOption));
     };
-  }, [setMode, setCameraOption, cameraDistance, cameraSettings, enableGamepad]);
+  }, [setMode, setCameraOption, cameraDistance, cameraSettings, enableGamepad, storeApi]);
 
   useEffect(() => {
-    const previousUrl = useGaesupStore.getState().urls.characterUrl ?? '';
+    const previousUrl = storeApi.getState().urls.characterUrl ?? '';
     setUrls({ characterUrl: modelUrl });
     return () => {
-      if (useGaesupStore.getState().urls.characterUrl === modelUrl) {
+      if (storeApi.getState().urls.characterUrl === modelUrl) {
         setUrls({ characterUrl: previousUrl });
       }
     };
-  }, [modelUrl, setUrls]);
+  }, [modelUrl, setUrls, storeApi]);
 
   useEffect(() => {
     const preview = previewRef.current;

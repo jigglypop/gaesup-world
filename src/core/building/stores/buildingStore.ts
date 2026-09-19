@@ -1,7 +1,8 @@
 import { enableMapSet, produce } from 'immer';
-import { create } from 'zustand';
+import { create, useStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import {
   blockToPlacementEntry,
   createBuildingPlacementEngine,
@@ -286,7 +287,9 @@ interface BuildingStore extends BuildingSystemState {
   prepareHydrate: (data: Partial<BuildingSerializedState> | null | undefined) => () => void;
 }
 
-export const useBuildingStore = create<BuildingStore>()(
+export function createBuildingStore() {
+
+  return create<BuildingStore>()(
   immer((set, get) => ({
     initialized: false,
     tileIndex: new Map(),
@@ -1684,3 +1687,18 @@ export const useBuildingStore = create<BuildingStore>()(
       }),
   })),
 );
+
+}
+
+export type BuildingStoreApi = ReturnType<typeof createBuildingStore>;
+const legacyStore = createBuildingStore();
+export function useBuildingStoreApi(): BuildingStoreApi {
+  return useGaesupRuntime()?.buildingStore ?? useBuildingStore;
+}
+function useScopedStore(): BuildingStore;
+function useScopedStore<T>(selector: (state: BuildingStore) => T): T;
+function useScopedStore(selector: (state: BuildingStore) => unknown = state => state) {
+  return useStore(useBuildingStoreApi(), selector);
+}
+/** React uses the nearest runtime; static methods retain the legacy default. */
+export const useBuildingStore = Object.assign(useScopedStore, legacyStore);

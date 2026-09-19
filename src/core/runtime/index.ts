@@ -27,3 +27,7 @@ export type {
   RuntimeDomainBinding,
   RuntimePluginTarget,
 } from './types';
+export { FixedStepClock, SIMULATION_PHASES } from '../simulation/FixedStepClock';
+export type { ClockSystem, FixedTick, SimulationPhase } from '../simulation/FixedStepClock';
+export { AnimationClockLoop } from '../simulation/AnimationClockLoop';
+export type { AnimationFrameSource } from '../simulation/AnimationClockLoop';

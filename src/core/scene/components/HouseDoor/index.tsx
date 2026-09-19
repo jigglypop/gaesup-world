@@ -79,10 +79,10 @@ export function HouseDoor({
       position: [position[0], position[1], position[2]] as [number, number, number],
     };
 
-    await goTo(sceneId, { entry, saveReturn });
-
-    const target = new THREE.Vector3(entry.position[0], entry.position[1], entry.position[2]);
-    teleport(target);
+    await goTo(sceneId, {
+      entry, saveReturn,
+      onEntered: () => teleport(new THREE.Vector3(...entry.position)),
+    });
   }
 
   return (

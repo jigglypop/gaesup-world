@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useCharacterStore } from './stores/characterStore';
+import { useCharacterStore, type CharacterStore } from './stores/characterStore';
 import type {
   CharacterSerialized,
   CharacterSerializedV1,
@@ -16,14 +16,15 @@ const DEFAULT_PLUGIN_ID = 'gaesup.character';
 const DEFAULT_SAVE_EXTENSION_ID = 'character';
 const DEFAULT_STORE_SERVICE_ID = 'character.store';
 
-export function serializeCharacterState(): CharacterSerialized {
-  return useCharacterStore.getState().serialize();
+export function serializeCharacterState(store: CharacterStore = useCharacterStore): CharacterSerialized {
+  return store.getState().serialize();
 }
 
 export function hydrateCharacterState(
   data: CharacterSerialized | CharacterSerializedV2 | CharacterSerializedV1 | null | undefined,
+  store: CharacterStore = useCharacterStore,
 ): void {
-  useCharacterStore.getState().hydrate(data);
+  store.getState().hydrate(data);
 }
 
 export function createCharacterPlugin(options: CharacterPluginOptions = {}) {
@@ -33,11 +34,12 @@ export function createCharacterPlugin(options: CharacterPluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useCharacterStore,
+    resolveStore: context => context.services.get<CharacterStore>('gaesup.runtime.character-store') ?? useCharacterStore,
     readyEvent: 'character:ready',
     capabilities: ['character'],
     serialize: serializeCharacterState,
     hydrate: hydrateCharacterState,
-    prepareHydrate: (data) => useCharacterStore.getState().prepareHydrate(data),
+    prepareHydrate: (data, store) => store.getState().prepareHydrate(data),
   });
 }
 

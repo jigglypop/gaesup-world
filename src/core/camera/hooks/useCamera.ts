@@ -4,8 +4,11 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { useBuildingStore } from '../../building/stores/buildingStore';
+import { useWorldInputActions } from '../../input/useWorldInputActions';
+import { useWorldInputScope } from '../../input/useWorldInputScope';
 import { useInputBackend } from '../../interactions/hooks';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { CameraSystemConfig } from '../bridge/types';
 import { useCameraBridge } from '../bridge/useCameraBridge';
@@ -26,7 +29,12 @@ const isEditableTarget = (target: EventTarget | null): boolean => {
 };
 
 export function useCamera(enableMouse = true) {
-  const { gl } = useThree();
+  const inputScope = useWorldInputScope();
+  const inputActions = useWorldInputActions();
+  const { gl, camera, scene, pointer } = useThree();
+  const runtime = useGaesupRuntime();
+  useEffect(() => runtime?.worldViews?.register({ camera, scene, surface: gl.domElement, ...(pointer ? { pointer } : {}) }), [runtime, camera, scene, pointer, gl]);
+  useEffect(() => inputScope.registerSurface(gl.domElement, { focusable: true }), [gl, inputScope]);
   const { activeState } = useStateSystem();
   const cameraOption = useGaesupStore((state) => state.cameraOption);
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
@@ -123,6 +131,7 @@ export function useCamera(enableMouse = true) {
   }, [updateConfig]);
   
   const handleWheel = useCallback((event: WheelEvent) => {
+    if (!inputScope.isEnabled()) return;
     const opt = cameraOptionRef.current;
     if (!opt?.enableZoom) return;
 
@@ -138,7 +147,7 @@ export function useCamera(enableMouse = true) {
     const newZoom = Math.min(Math.max(currentZoom + delta, minZoom), maxZoom);
 
     setCameraOption({ zoom: newZoom });
-  }, [setCameraOption]);
+  }, [setCameraOption, inputScope]);
   
   useEffect(() => {
     const canvas = gl.domElement;
@@ -183,6 +192,7 @@ export function useCamera(enableMouse = true) {
     };
 
     const handleMouseDown = (event: MouseEvent) => {
+      if (!inputScope.isEnabled()) return;
       if (isEditableTarget(event.target)) return;
       // Primary clicks belong to world interaction and editor selection.
       if (event.button !== 1 && event.button !== 2) return;
@@ -202,6 +212,7 @@ export function useCamera(enableMouse = true) {
     };
 
     const handleMouseMove = (event: MouseEvent) => {
+      if (!inputScope.isEnabled()) return;
       if (orbitPointerActiveRef.current && !(event.buttons & orbitButtonMask)) {
         orbitPointerActiveRef.current = false;
         dragging = false;
@@ -234,50 +245,43 @@ export function useCamera(enableMouse = true) {
     const clearOrbitKeyState = () => {
       orbitModifierKeysRef.current.clear();
       orbitPointerActiveRef.current = false;
+      orbitButtonMask = 0;
+      dragging = false;
     };
 
     const preventContextMenu = (event: MouseEvent) => {
       event.preventDefault();
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    const offKeyDown = inputScope.listen('keydown', handleKeyDown);
+    const offKeyUp = inputScope.listen('keyup', handleKeyUp);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('blur', clearOrbitKeyState);
-    document.addEventListener('visibilitychange', clearOrbitKeyState);
+    const offInputBlur = inputScope.onBlur(clearOrbitKeyState);
     canvas.addEventListener('mousedown', handleMouseDown);
     canvas.addEventListener('contextmenu', preventContextMenu);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+      offKeyDown();
+      offKeyUp();
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('blur', clearOrbitKeyState);
-      document.removeEventListener('visibilitychange', clearOrbitKeyState);
+      offInputBlur();
       canvas.removeEventListener('mousedown', handleMouseDown);
       canvas.removeEventListener('contextmenu', preventContextMenu);
     };
-  }, [gl, updateConfig, enableMouse]);
+  }, [inputScope, gl, updateConfig, enableMouse]);
   
   
   // ESC 키로 포커스 해제
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const opt = cameraOptionRef.current;
-      if (event.key === 'Escape' && opt?.focus) {
-        setCameraOption({ focus: false });
-      }
-    };
-    
     if (cameraOption?.enableFocus && !isInEditMode) {
-      window.addEventListener('keydown', handleKeyDown);
-      return () => {
-        window.removeEventListener('keydown', handleKeyDown);
-      };
+      return inputActions.register('camera.exit-focus', { key: 'escape', execute: () => {
+        if (!cameraOptionRef.current?.focus) return false;
+        runtime?.cinematics?.cancel(); setCameraOption({ focus: false }); return true;
+      } });
     }
     return undefined;
-  }, [cameraOption?.enableFocus, isInEditMode, setCameraOption]);
+  }, [inputActions, runtime, cameraOption?.enableFocus, isInEditMode, setCameraOption]);
 
   useLayoutEffect(() => {
     inputBackend.updateMouse({ isLookAround: false });
@@ -290,6 +294,13 @@ export function useCamera(enableMouse = true) {
   
   useFrame((state, delta) => {
     if (!system) return;
+
+    const gamepad = inputBackend.getGamepad?.();
+    if (modeRef.current?.controller === 'gamepad' && !isInEditMode && !cameraOptionRef.current?.focus && inputScope.isFocused() && gamepad?.connected) {
+      const step = Math.min(0.1, Math.max(0, delta)) * (runtime?.gamepad?.lookSpeed ?? 2.5);
+      targetOrbitYawRef.current -= gamepad.rightStick.x * step;
+      targetOrbitPitchRef.current = THREE.MathUtils.clamp(targetOrbitPitchRef.current + gamepad.rightStick.y * step, MIN_ORBIT_PITCH, MAX_ORBIT_PITCH);
+    }
 
     const nextOrbitYaw = THREE.MathUtils.damp(
       orbitYawRef.current,
@@ -309,10 +320,7 @@ export function useCamera(enableMouse = true) {
     ) {
       orbitYawRef.current = nextOrbitYaw;
       orbitPitchRef.current = nextOrbitPitch;
-      updateConfig({
-        orbitYaw: nextOrbitYaw,
-        orbitPitch: nextOrbitPitch,
-      });
+      system.updateOrbit(nextOrbitYaw, nextOrbitPitch);
     }
     
     const legacyClock = 'clock' in state && state.clock instanceof THREE.Clock ? state.clock : undefined;

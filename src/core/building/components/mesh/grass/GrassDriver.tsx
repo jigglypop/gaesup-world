@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import { getGrassManager } from './manager';
+import { useGrassManager } from './useGrassManager';
 import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
 
 /**
@@ -16,6 +16,7 @@ import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime'
  * a single one regardless of how many grass tiles are placed.
  */
 export function GrassDriver() {
+  const manager = useGrassManager();
   const scratch = useMemo(() => ({
     frustum: new THREE.Frustum(),
     matrix: new THREE.Matrix4(),
@@ -24,7 +25,7 @@ export function GrassDriver() {
 
   useFrame((state, delta) => {
     const camera = state.camera;
-    if (getGrassManager().size() === 0) return;
+    if (!manager.isEnabled() || manager.size() === 0) return;
     camera.updateWorldMatrix(true, false);
     scratch.matrix.multiplyMatrices(
       camera.projectionMatrix,
@@ -33,7 +34,7 @@ export function GrassDriver() {
     scratch.frustum.setFromProjectionMatrix(scratch.matrix, camera.coordinateSystem, camera.reversedDepth);
     camera.getWorldPosition(scratch.camPos);
 
-    getGrassManager().tick({
+    manager.tick({
       elapsedTime: getFrameElapsedSeconds(state),
       delta,
       cameraPosition: scratch.camPos,

@@ -11,6 +11,7 @@ export type GameplayEventEngineOptions = {
   blueprints?: GameplayEventBlueprint[];
   registry?: GameplayEventRegistry;
   state?: GameplayEventRuntimeState;
+  now?: () => number;
 };
 
 const DEFAULT_STATE: GameplayEventRuntimeState = {
@@ -49,11 +50,16 @@ const triggerMatches = (blueprintTrigger: GameplayEventTrigger, event: GameplayT
 export class GameplayEventEngine {
   private blueprints: GameplayEventBlueprint[];
   private readonly registry: GameplayEventRegistry;
+  private readonly now: () => number;
+  private active = true;
+  private generation = new AbortController();
+  private readonly pending = new Map<string, symbol>();
   readonly state: GameplayEventRuntimeState;
 
   constructor(options: GameplayEventEngineOptions = {}) {
-    this.blueprints = options.blueprints ?? [];
+    this.blueprints = [...(options.blueprints ?? [])];
     this.registry = options.registry ?? getGameplayEventRegistry();
+    this.now = options.now ?? (() => Date.now());
     this.state = options.state ?? {
       executedAt: { ...DEFAULT_STATE.executedAt },
       flags: { ...DEFAULT_STATE.flags },
@@ -68,11 +74,22 @@ export class GameplayEventEngine {
     return [...this.blueprints];
   }
 
+  suspend(): void {
+    this.active = false;
+    this.generation.abort();
+    this.generation = new AbortController();
+    this.pending.clear();
+  }
+
+  resume(): void { this.active = true; }
+
   async dispatch(trigger: GameplayTriggerEvent): Promise<GameplayEventExecution[]> {
     const results: GameplayEventExecution[] = [];
+    const signal = this.generation.signal;
     for (const blueprint of this.blueprints) {
+      if (!this.active || signal.aborted) break;
       if (blueprint.enabled === false || !triggerMatches(blueprint.trigger, trigger)) continue;
-      results.push(await this.executeBlueprint(blueprint, trigger));
+      results.push(await this.executeBlueprint(blueprint, trigger, signal));
     }
     return results;
   }
@@ -80,8 +97,9 @@ export class GameplayEventEngine {
   private async executeBlueprint(
     blueprint: GameplayEventBlueprint,
     trigger: GameplayTriggerEvent,
+    signal: AbortSignal,
   ): Promise<GameplayEventExecution> {
-    const now = Date.now();
+    const now = this.now();
     const lastExecutedAt = this.state.executedAt[blueprint.id];
     const policy = blueprint.policy ?? {};
     if (policy.run === 'once' && lastExecutedAt !== undefined) {
@@ -94,22 +112,37 @@ export class GameplayEventEngine {
       return { blueprintId: blueprint.id, actionCount: 0, skipped: 'requires-server' };
     }
 
-    const context = { blueprint, trigger, state: this.state, now };
-    for (const condition of blueprint.conditions ?? []) {
-      const handler = this.registry.getCondition(condition.type);
-      if (!handler || !(await handler(condition, context))) {
-        return { blueprintId: blueprint.id, actionCount: 0, skipped: `condition:${condition.type}` };
-      }
+    const guarded = policy.run === 'once' || policy.cooldownMs !== undefined;
+    if (guarded && this.pending.has(blueprint.id)) {
+      return { blueprintId: blueprint.id, actionCount: 0, skipped: 'in-flight' };
     }
-
+    const token = Symbol(blueprint.id);
+    if (guarded) this.pending.set(blueprint.id, token);
     let actionCount = 0;
-    for (const action of blueprint.actions) {
-      const handler = this.registry.getAction(action.type);
-      if (!handler) continue;
-      await handler(action, context);
-      actionCount += 1;
+    const cancelled = (): GameplayEventExecution => ({ blueprintId: blueprint.id, actionCount, skipped: 'cancelled' });
+    try {
+      const context = { blueprint, trigger, state: this.state, now, signal };
+      for (const condition of blueprint.conditions ?? []) {
+        const handler = this.registry.getCondition(condition.type);
+        const pass = handler ? await handler(condition, context) : false;
+        if (signal.aborted) return cancelled();
+        if (!pass) {
+          return { blueprintId: blueprint.id, actionCount: 0, skipped: `condition:${condition.type}` };
+        }
+      }
+
+      for (const action of blueprint.actions) {
+        if (signal.aborted) return cancelled();
+        const handler = this.registry.getAction(action.type);
+        if (!handler) continue;
+        await handler(action, context);
+        actionCount += 1;
+      }
+      if (signal.aborted) return cancelled();
+      this.state.executedAt[blueprint.id] = now;
+      return { blueprintId: blueprint.id, actionCount };
+    } finally {
+      if (this.pending.get(blueprint.id) === token) this.pending.delete(blueprint.id);
     }
-    this.state.executedAt[blueprint.id] = now;
-    return { blueprintId: blueprint.id, actionCount };
   }
 }

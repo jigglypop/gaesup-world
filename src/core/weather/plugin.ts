@@ -1,5 +1,5 @@
 import type { GaesupPlugin, PluginContext } from '../plugins';
-import { useWeatherStore } from './stores/weatherStore';
+import { useWeatherStore, type WeatherStore } from './stores/weatherStore';
 import type { WeatherSerialized } from './types';
 
 export interface WeatherPluginOptions {
@@ -12,12 +12,12 @@ const DEFAULT_PLUGIN_ID = 'gaesup.weather';
 const DEFAULT_SAVE_EXTENSION_ID = 'weather';
 const DEFAULT_STORE_SERVICE_ID = 'weather.store';
 
-export function serializeWeatherState(): WeatherSerialized {
-  return useWeatherStore.getState().serialize();
+export function serializeWeatherState(store: WeatherStore = useWeatherStore): WeatherSerialized {
+  return store.getState().serialize();
 }
 
-export function hydrateWeatherState(data: WeatherSerialized | null | undefined): void {
-  useWeatherStore.getState().hydrate(data);
+export function hydrateWeatherState(data: WeatherSerialized | null | undefined, store: WeatherStore = useWeatherStore): void {
+  store.getState().hydrate(data);
 }
 
 export function createWeatherPlugin(options: WeatherPluginOptions = {}): GaesupPlugin {
@@ -32,16 +32,17 @@ export function createWeatherPlugin(options: WeatherPluginOptions = {}): GaesupP
     runtime: 'client',
     capabilities: ['weather'],
     setup(ctx: PluginContext) {
+      const weather = ctx.services.get<WeatherStore>('gaesup.runtime.weather-store') ?? useWeatherStore;
       ctx.save.register(saveExtensionId, {
         key: saveExtensionId,
-        serialize: serializeWeatherState,
-        hydrate: hydrateWeatherState,
-        prepareHydrate: (data: WeatherSerialized | null | undefined) => useWeatherStore.getState().prepareHydrate(data),
+        serialize: () => serializeWeatherState(weather),
+        hydrate: (data: WeatherSerialized | null | undefined) => hydrateWeatherState(data, weather),
+        prepareHydrate: (data: WeatherSerialized | null | undefined) => weather.getState().prepareHydrate(data),
       }, pluginId);
       ctx.services.register(storeServiceId, {
-        useStore: useWeatherStore,
-        getState: useWeatherStore.getState,
-        setState: useWeatherStore.setState,
+        useStore: weather,
+        getState: weather.getState,
+        setState: weather.setState,
       }, pluginId);
       ctx.events.emit('weather:ready', {
         pluginId,

@@ -2,7 +2,10 @@ import { lazy, Suspense } from 'react';
 
 import { createRoot } from 'react-dom/client';
 
-const Page = location.pathname.slice(import.meta.env.BASE_URL.length).startsWith('engine')
+const route = location.pathname.slice(import.meta.env.BASE_URL.length);
+const Page = route.startsWith('performance')
+  ? lazy(() => import('./performance/PerformanceLab'))
+  : route.startsWith('engine')
   ? lazy(() => import('./engine/EngineShowcase'))
   : lazy(() => import('./minihome/Minihome'));
 

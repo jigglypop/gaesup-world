@@ -19,6 +19,8 @@ import type {
 } from './types';
 
 const MISSING_PROPERTY = Symbol('missing-scene-command-property');
+// Only snapshots returned by this module are trusted; callers cannot brand mutable input.
+const validatedSnapshots = new WeakSet<SceneDocument>();
 
 type SceneCommandMutation = {
   candidate: unknown;
@@ -38,24 +40,28 @@ export function applySceneDocumentCommand(
   document: SceneDocument,
   command: SceneDocumentCommand,
 ): SceneDocumentCommandResult {
-  try {
-    assertCanonicalSceneDocument(document, 'Current scene document');
-  } catch (error) {
-    return createRejectedResult(document, [
-      {
-        code: 'invalid-document-shape',
-        message: error instanceof Error ? error.message : 'Current scene document is invalid.',
-      },
-    ]);
-  }
-  const parsedCurrent = parseSceneDocument(document);
-  if (!parsedCurrent.ok || !parsedCurrent.document) {
-    return createRejectedResult(document, parsedCurrent.issues);
+  let current = document;
+  if (!validatedSnapshots.has(document)) {
+    try {
+      assertCanonicalSceneDocument(document, 'Current scene document');
+    } catch (error) {
+      return createRejectedResult(document, [
+        {
+          code: 'invalid-document-shape',
+          message: error instanceof Error ? error.message : 'Current scene document is invalid.',
+        },
+      ]);
+    }
+    const parsedCurrent = parseSceneDocument(document);
+    if (!parsedCurrent.ok || !parsedCurrent.document) {
+      return createRejectedResult(document, parsedCurrent.issues);
+    }
+    current = parsedCurrent.document;
   }
 
   let mutation: SceneCommandMutation;
   try {
-    mutation = createMutation(parsedCurrent.document, command);
+    mutation = createMutation(current, command);
   } catch (error) {
     const issue =
       error instanceof SceneCommandIssueError
@@ -72,10 +78,12 @@ export function applySceneDocumentCommand(
     return createRejectedResult(document, parsedCandidate.issues);
   }
 
-  return createAcceptedResult(
+  const result = createAcceptedResult(
     parsedCandidate.document,
     mutation.createEvent(parsedCandidate.document),
   );
+  validatedSnapshots.add(result.document);
+  return result;
 }
 
 function createMutation(

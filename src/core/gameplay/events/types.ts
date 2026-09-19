@@ -82,6 +82,8 @@ export type GameplayEventContext = {
   trigger: GameplayTriggerEvent;
   state: GameplayEventRuntimeState;
   now: number;
+  /** Custom async handlers should stop their own work when the owning engine is suspended. */
+  signal?: AbortSignal;
 };
 
 export type GameplayConditionHandler<TCondition extends GameplayEventCondition = GameplayEventCondition> = (

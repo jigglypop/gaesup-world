@@ -5,6 +5,7 @@ import { useGaesupStore } from '@stores/gaesupStore';
 import { createKeyboardOwnership } from './ownership';
 import { useBuildingStore } from '../../building/stores/buildingStore';
 import type { CameraOptionType } from '../../camera/core/types';
+import { useWorldInputScope } from '../../input/useWorldInputScope';
 import type { KeyboardState } from '../../interactions/bridge';
 import { useInputBackend } from '../../interactions/hooks';
 import { logger } from '../../utils/logger';
@@ -30,6 +31,7 @@ export const useKeyboard = (
   enabled = true,
   listenToKeyboard = true,
 ) => {
+  const inputScope = useWorldInputScope();
   void enableDiagonal;
   void cameraOption;
   const isAutomationRunning = useGaesupStore((state) => state.automation?.queue.isRunning);
@@ -39,20 +41,21 @@ export const useKeyboard = (
   const inputBackend = useInputBackend();
   const ownership = useMemo(() => createKeyboardOwnership(inputBackend), [inputBackend]);
   
-  const pressedKeys = useRef<Set<string>>(new Set());
+  const pressedKeys = useRef<Map<string, string>>(new Map());
 
   const keyMapping = useMemo(() => ({ ...KEY_MAPPING }), []);
 
   const pushKey = useCallback(
     (key: string, value: boolean): boolean => {
-      if (!enabled || !isInteractionActive) return false;
+      if (!enabled || !isInteractionActive || !inputScope.isEnabled()) return false;
 
       try {
-        ownership.set(key, key, value);
+        const source = `api:${key}`;
+        ownership.set(source, key, value);
         if (value) {
-          pressedKeys.current.add(key);
+          pressedKeys.current.set(source, key);
         } else {
-          pressedKeys.current.delete(key);
+          pressedKeys.current.delete(source);
         }
         return true;
       } catch (error) {
@@ -60,7 +63,7 @@ export const useKeyboard = (
         return false;
       }
     },
-    [enabled, ownership, isInteractionActive],
+    [enabled, ownership, isInteractionActive, inputScope],
   );
 
   const clearAllKeys = useCallback(() => {
@@ -89,9 +92,10 @@ export const useKeyboard = (
 
   useEffect(() => {
     if (listenToKeyboard) return;
-    for (const code of Object.keys(KEY_MAPPING)) {
-      if (!pressedKeys.current.delete(code)) continue;
-      ownership.set(code, KEY_MAPPING[code]!, false);
+    for (const [source, code] of pressedKeys.current) {
+      if (!KEY_MAPPING[code]) continue;
+      pressedKeys.current.delete(source);
+      ownership.set(source, KEY_MAPPING[code]!, false);
     }
   }, [listenToKeyboard, ownership]);
 
@@ -101,6 +105,10 @@ export const useKeyboard = (
       return;
     }
     const handleKey = (event: KeyboardEvent, isDown: boolean) => {
+      if (isDown && (event.ctrlKey || event.altKey || event.metaKey)) {
+        if (pressedKeys.current.size > 0) clearAllKeys();
+        return;
+      }
       const target = event.target;
       if (target instanceof HTMLElement && (
         target.matches('input, textarea, select') || target.isContentEditable
@@ -117,10 +125,11 @@ export const useKeyboard = (
         return;
       }
 
-      const wasPressed = pressedKeys.current.has(event.code);
+      const source = inputScope.eventSource(event);
+      const wasPressed = pressedKeys.current.has(source);
 
       if (isDown && !wasPressed) {
-        pressedKeys.current.add(event.code);
+        pressedKeys.current.set(source, event.code);
         if (event.code === 'Space') event.preventDefault();
 
         if (
@@ -136,29 +145,21 @@ export const useKeyboard = (
           stopAutomation();
           inputBackend.updateMouse({ isActive: false, shouldRun: false });
         }
-        ownership.set(event.code, mappedKey, true);
+        ownership.set(source, mappedKey, true);
       } else if (!isDown && wasPressed) {
-        pressedKeys.current.delete(event.code);
-        ownership.set(event.code, mappedKey, false);
+        pressedKeys.current.delete(source);
+        ownership.set(source, mappedKey, false);
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => handleKey(e, true);
     const handleKeyUp = (e: KeyboardEvent) => handleKey(e, false);
-    const handleVisibilityChange = () => document.hidden && clearAllKeys();
-
-    if (listenToKeyboard) {
-      window.addEventListener('keydown', handleKeyDown);
-      window.addEventListener('keyup', handleKeyUp);
-    }
-    window.addEventListener('blur', clearAllKeys);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    const offDown = listenToKeyboard ? inputScope.listen('keydown', handleKeyDown) : undefined;
+    const offUp = listenToKeyboard ? inputScope.listen('keyup', handleKeyUp) : undefined;
+    const offBlur = inputScope.onBlur(() => { if (pressedKeys.current.size > 0) clearAllKeys(); });
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-      window.removeEventListener('blur', clearAllKeys);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      offDown?.(); offUp?.(); offBlur();
     };
   }, [
     enabled,
@@ -172,12 +173,13 @@ export const useKeyboard = (
     isInteractionActive,
     isInBuildingEditMode,
     inputBackend,
+    inputScope,
   ]);
 
   return {
-    pressedKeys: Array.from(pressedKeys.current),
+    pressedKeys: [...new Set(pressedKeys.current.values())],
     pushKey,
-    isKeyPressed: (key: string) => pressedKeys.current.has(key),
+    isKeyPressed: (key: string) => Array.from(pressedKeys.current.values()).includes(key),
     clearAllKeys,
   };
 };

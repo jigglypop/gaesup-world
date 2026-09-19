@@ -54,3 +54,6 @@ coverage/*
 # Python cache artifacts
 __pycache__/
 *.py[cod]
+
+# Local performance runs (approved baseline summaries remain versioned).
+.artifacts/performance/

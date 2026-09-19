@@ -346,8 +346,8 @@ describe('persistenceSlice', () => {
       saveSystem,
       plugins: [createCameraPlugin()],
     });
-    const originalMode = useGaesupStore.getState().mode;
-    const originalCameraOption = useGaesupStore.getState().cameraOption;
+    const originalMode = runtime.store.getState().mode;
+    const originalCameraOption = runtime.store.getState().cameraOption;
     const now = jest.spyOn(Date, 'now').mockReturnValue(987);
     const store = create<PersistenceState>()(
       createPersistenceSliceWithOptions({ saveSystem }),
@@ -355,8 +355,8 @@ describe('persistenceSlice', () => {
 
     try {
       await runtime.setup();
-      useGaesupStore.getState().setMode({ type: 'character', control: 'thirdPerson' });
-      useGaesupStore.getState().setCameraOption({
+      runtime.store.getState().setMode({ type: 'character', control: 'thirdPerson' });
+      runtime.store.getState().setCameraOption({
         zoom: 1.75,
         position: new THREE.Vector3(4, 5, 6),
         target: new THREE.Vector3(1, 2, 3),
@@ -364,8 +364,8 @@ describe('persistenceSlice', () => {
 
       await store.getState().saveWorld('camera-world', 'Camera World');
 
-      useGaesupStore.getState().setMode({ type: 'vehicle', control: 'isometric' });
-      useGaesupStore.getState().setCameraOption({
+      runtime.store.getState().setMode({ type: 'vehicle', control: 'isometric' });
+      runtime.store.getState().setCameraOption({
         zoom: 3,
         position: new THREE.Vector3(9, 9, 9),
         target: new THREE.Vector3(0, 0, 0),
@@ -382,14 +382,14 @@ describe('persistenceSlice', () => {
           target: { x: 1, y: 2, z: 3 },
         }),
       }));
-      expect(useGaesupStore.getState().cameraOption).toEqual(expect.objectContaining({
+      expect(runtime.store.getState().cameraOption).toEqual(expect.objectContaining({
         zoom: 1.75,
         position: expect.objectContaining({ x: 4, y: 5, z: 6 }),
         target: expect.objectContaining({ x: 1, y: 2, z: 3 }),
       }));
     } finally {
-      useGaesupStore.getState().setMode(originalMode);
-      useGaesupStore.getState().setCameraOption(originalCameraOption);
+      runtime.store.getState().setMode(originalMode);
+      runtime.store.getState().setCameraOption(originalCameraOption);
       await runtime.dispose();
       now.mockRestore();
     }

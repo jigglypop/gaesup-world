@@ -1,5 +1,6 @@
 import type { GaesupPlugin, PluginContext } from '../plugins';
-import { useTimeStore } from './stores/timeStore';
+import { RUNTIME_TIME_STORE_SERVICE_ID } from './core/timeClock';
+import { useTimeStore, type TimeStore } from './stores/timeStore';
 import type { TimeSerialized } from './types';
 
 export interface TimePluginOptions {
@@ -32,16 +33,17 @@ export function createTimePlugin(options: TimePluginOptions = {}): GaesupPlugin 
     runtime: 'client',
     capabilities: ['time'],
     setup(ctx: PluginContext) {
+      const store = ctx.services.get<TimeStore>(RUNTIME_TIME_STORE_SERVICE_ID) ?? useTimeStore;
       ctx.save.register(saveExtensionId, {
         key: saveExtensionId,
-        serialize: serializeTimeState,
-        hydrate: hydrateTimeState,
-        prepareHydrate: (data: TimeSerialized | null | undefined) => useTimeStore.getState().prepareHydrate(data),
+        serialize: () => store.getState().serialize(),
+        hydrate: (data: TimeSerialized | null | undefined) => store.getState().hydrate(data),
+        prepareHydrate: (data: TimeSerialized | null | undefined) => store.getState().prepareHydrate(data),
       }, pluginId);
       ctx.services.register(storeServiceId, {
-        useStore: useTimeStore,
-        getState: useTimeStore.getState,
-        setState: useTimeStore.setState,
+        useStore: store,
+        getState: store.getState,
+        setState: store.setState,
       }, pluginId);
       ctx.events.emit('time:ready', {
         pluginId,

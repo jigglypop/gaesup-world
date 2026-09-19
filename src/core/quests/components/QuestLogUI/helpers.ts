@@ -1,4 +1,4 @@
-import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
+import { useInventoryStore, type InventoryStore } from '../../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
 import { getObjectiveCount } from '../../core/objectiveProgress';
 import { getQuestRegistry } from '../../registry/QuestRegistry';
@@ -39,11 +39,12 @@ export function describeReward(reward: QuestReward): string {
 export function describeObjectiveProgress(
   objective: QuestObjective,
   progress: QuestProgress,
+  inventory: InventoryStore = useInventoryStore,
 ): { label: string; count: number; needed: number } {
   const hasCount = objective.type === 'collect' || objective.type === 'deliver';
   const needed = hasCount ? objective.count : SINGLE_STEP;
   const count = getObjectiveCount(getQuestRegistry().get(progress.questId), progress, objective,
-    objective.type === 'collect' ? useInventoryStore.getState().countOf(objective.itemId) : 0);
+    objective.type === 'collect' ? inventory.getState().countOf(objective.itemId) : 0);
   const itemName = hasCount
     ? (getItemRegistry().get(objective.itemId)?.name ?? objective.itemId)
     : undefined;

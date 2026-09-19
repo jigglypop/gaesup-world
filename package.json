@@ -195,6 +195,11 @@
     "LICENSE.txt"
   ],
   "scripts": {
+    "test:performance:browser": "node scripts/performance/probe.mjs",
+    "benchmark:runtime": "node scripts/benchmark-runtime.cjs",
+    "benchmark:scene": "node scripts/benchmark-scene-commands.cjs",
+    "test:unified-world:browser": "node scripts/probe-unified-world.cjs",
+    "test:rendering:browser": "node scripts/probe-rendering-performance.cjs",
     "avatar:fixtures": "node scripts/build-avatar-fixtures.mjs",
     "test:avatar:browser": "node scripts/probe-avatar.cjs",
     "assets:production": "node scripts/assets/cli.mjs",

@@ -1,7 +1,10 @@
-import React, { Suspense, useMemo } from 'react';
+import React, { Suspense, useMemo, useRef } from 'react';
+
+import type { Group } from 'three';
 
 import { BuildingSystemProps } from './types';
 import { NPCPreview } from '../../../npc/components/NPCPreview';
+import { GpuBatchBridge } from '../../../rendering/GpuBatchBridge';
 import { WeatherEffect } from '../../../weather';
 import { useBuildingGpuCullingStore } from '../../render/cullingStore';
 import {
@@ -29,6 +32,7 @@ import { GridHelper } from '../GridHelper';
 import { BillboardBatch } from '../mesh/billboard';
 import { FireBatch, type FireBatchEntry } from '../mesh/fire';
 import { FlagBatch } from '../mesh/flag';
+import { GrassDriver } from '../mesh/grass/GrassDriver';
 import ModelObject from '../mesh/model';
 import { SakuraBatch, type SakuraTreeEntry } from '../mesh/sakura';
 import { Snow } from '../mesh/snow';
@@ -111,6 +115,7 @@ function bucketObjects(objects: PlacedObject[] | undefined): ObjectBuckets {
 }
 
 export const BuildingSystem = React.memo(function BuildingSystem({
+  gpuResident = false,
   showGrid: gridVisibility,
   onWallClick,
   onTileClick,
@@ -119,6 +124,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
   onTileDelete,
   onBlockDelete,
 }: BuildingSystemProps) {
+  const renderRoot = useRef<Group>(null);
   // Field-level selectors so unrelated store updates (e.g. hoverPosition)
   // don't trigger a rerender of the entire scene tree.
   const meshes = useBuildingStore((s) => s.meshes);
@@ -137,13 +143,13 @@ export const BuildingSystem = React.memo(function BuildingSystem({
   const drawMirror = useBuildingRenderStateStore((s) => s.drawMirror);
   const gpuCullingActive = useBuildingGpuCullingStore((s) => s.active);
   const gpuCullingVersion = useBuildingGpuCullingStore((s) => s.version);
-  const visibilityReady = useBuildingVisibilityStore((s) => s.initialized);
+  const visibilityReady = useBuildingVisibilityStore((s) => !gpuResident && s.initialized);
   const visibleWallGroupIds = useBuildingVisibilityStore((s) => s.visibleWallGroupIds);
   const visibleTileGroupIds = useBuildingVisibilityStore((s) => s.visibleTileGroupIds);
   const visibleBlockIds = useBuildingVisibilityStore((s) => s.visibleBlockIds);
   const visibleObjectIds = useBuildingVisibilityStore((s) => s.visibleObjectIds);
 
-  const drawReady = gpuCullingActive && drawMirror.version > 0 && drawMirror.version === gpuCullingVersion;
+  const drawReady = !gpuResident && gpuCullingActive && drawMirror.version > 0 && drawMirror.version === gpuCullingVersion;
   const wallBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_WALL) : Number.MAX_SAFE_INTEGER;
   const tileBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_TILE) : Number.MAX_SAFE_INTEGER;
   const grassBudget = drawReady ? getIndirectInstanceCount(drawMirror, DRAW_CLUSTER_GRASS) : Number.MAX_SAFE_INTEGER;
@@ -232,7 +238,9 @@ export const BuildingSystem = React.memo(function BuildingSystem({
 
   return (
     <Suspense fallback={null}>
-      <group name="building-system">
+      <group name="building-system" ref={renderRoot}>
+        <GrassDriver />
+        {gpuResident && <GpuBatchBridge root={renderRoot} />}
         {(gridVisibility ?? showGrid) && <GridHelper size={gridSize} />}
         
         <PreviewBlock />

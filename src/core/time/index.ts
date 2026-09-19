@@ -1,6 +1,8 @@
 export * from './types';
 export { computeGameTime, realMsToGameMinutes, isNewDay, isNewHour, TIME_CONSTANTS } from './core/Clock';
-export { useTimeStore } from './stores/timeStore';
+export { useTimeStore, createTimeStore, TimeStoreProvider, useTimeStoreApi } from './stores/timeStore';
+export type { TimeStore, TimeState } from './stores/timeStore';
+export { getTimeClock, RUNTIME_TIME_STORE_SERVICE_ID } from './core/timeClock';
 export {
   createTimePlugin,
   hydrateTimeState,

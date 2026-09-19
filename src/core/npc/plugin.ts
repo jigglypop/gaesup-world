@@ -1,5 +1,5 @@
 import type { GaesupPlugin, PluginContext } from '../plugins';
-import { useNPCStore } from './stores/npcStore';
+import { useNPCStore, type NPCStoreApi } from './stores/npcStore';
 import type {
   ClothingCategory,
   ClothingSet,
@@ -40,8 +40,8 @@ function cloneNPCValue<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-export function serializeNPCState(): NPCSerializedState {
-  const state = useNPCStore.getState();
+export function serializeNPCState(store: NPCStoreApi = useNPCStore): NPCSerializedState {
+  const state = store.getState();
 
   return {
     version: 1,
@@ -68,7 +68,7 @@ function prepareCollection<T extends { id: string }>(entries: T[]): Map<string, 
   return result;
 }
 
-function prepareNPCState(data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined): () => void {
+function prepareNPCState(data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined, store: NPCStoreApi = useNPCStore): () => void {
   if (data === null || data === undefined) return () => {};
   const snapshot = Array.isArray(data) ? { instances: data } : data;
   if (typeof snapshot !== 'object' || (snapshot.version !== undefined && snapshot.version !== 1)
@@ -92,11 +92,11 @@ function prepareNPCState(data: Partial<NPCSerializedState> | NPCInstance[] | nul
       throw new TypeError('Invalid NPC instance transform');
     }
   }
-  return () => useNPCStore.setState(prepared);
+  return () => store.setState(prepared);
 }
 
-export function hydrateNPCState(data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined): void {
-  prepareNPCState(data)();
+export function hydrateNPCState(data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined, store: NPCStoreApi = useNPCStore): void {
+  prepareNPCState(data, store)();
 }
 
 export function createNPCPlugin(options: NPCPluginOptions = {}): GaesupPlugin {
@@ -111,16 +111,17 @@ export function createNPCPlugin(options: NPCPluginOptions = {}): GaesupPlugin {
     runtime: 'client',
     capabilities: ['npc'],
     setup(ctx: PluginContext) {
+      const store = ctx.services.get<NPCStoreApi>('gaesup.runtime.npc-store') ?? useNPCStore;
       ctx.save.register(saveExtensionId, {
         key: saveExtensionId,
-        serialize: serializeNPCState,
-        hydrate: hydrateNPCState,
-        prepareHydrate: prepareNPCState,
+        serialize: () => serializeNPCState(store),
+        hydrate: (data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined) => hydrateNPCState(data, store),
+        prepareHydrate: (data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined) => prepareNPCState(data, store),
       }, pluginId);
       ctx.services.register(storeServiceId, {
-        useStore: useNPCStore,
-        getState: useNPCStore.getState,
-        setState: useNPCStore.setState,
+        useStore: store,
+        getState: store.getState,
+        setState: store.setState,
       }, pluginId);
       ctx.events.emit('npc:ready', {
         pluginId,

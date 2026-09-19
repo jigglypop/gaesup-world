@@ -58,6 +58,31 @@ describe('CameraSystem', () => {
     system.destroy();
   });
 
+  it('updates orbit without config cloning, preserves snapshots and emits both config changes', () => {
+    const snapshot = system.getConfig();
+    const configChanged = jest.fn();
+    system.emitter.on('configChange', configChanged);
+    const getConfig = jest.spyOn(system, 'getConfig');
+    system.updateOrbit(0.7, 0.25);
+    expect(getConfig).not.toHaveBeenCalled();
+    expect(snapshot.orbitYaw).toBeUndefined();
+    expect(system.getConfig()).toMatchObject({ orbitYaw: 0.7, orbitPitch: 0.25 });
+    expect(configChanged.mock.calls).toEqual([
+      [{ key: 'orbitYaw', value: 0.7 }],
+      [{ key: 'orbitPitch', value: 0.25 }],
+    ]);
+    const legacy = new CameraSystem(createDefaultSystemConfig());
+    try {
+      legacy.updateConfig({ orbitYaw: 0.7, orbitPitch: 0.25 });
+      const actual = createCalcProps();
+      const expected = createCalcProps();
+      system.calculate(actual);
+      legacy.calculate(expected);
+      expect(actual.camera.position.toArray()).toEqual(expected.camera.position.toArray());
+      expect(actual.camera.quaternion.toArray()).toEqual(expected.camera.quaternion.toArray());
+    } finally { legacy.destroy(); }
+  });
+
   describe('constructor', () => {
     it('calculates a finite camera position without a legacy clock', () => {
       const props = createCalcProps();

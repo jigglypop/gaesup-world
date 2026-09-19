@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 
 import { useWalletStore } from '../../../economy/stores/walletStore';
+import { useWorldInputScope } from '../../../input/useWorldInputScope';
+import { WorldInputSurface } from '../../../input/WorldInputSurface';
 import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
 import { notify } from '../../../ui/components/Toast/toastStore';
@@ -27,6 +29,7 @@ const CRAFT_FAILURE_MESSAGES: Record<string, string> = {
 };
 
 export function CraftingUI({ toggleKey = 'c', title = '제작대', open: openProp, onClose }: CraftingUIProps) {
+  const inputScope = useWorldInputScope();
   const [internalOpen, setInternalOpen] = useState(false);
   const controlled = openProp !== undefined;
   const open = controlled ? openProp : internalOpen;
@@ -56,9 +59,9 @@ export function CraftingUI({ toggleKey = 'c', title = '제작대', open: openPro
         toggle();
       }
     };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [toggleKey, controlled, open, close, toggle]);
+    const offKey = inputScope.listen('keydown', handleKey);
+    return () => offKey();
+  }, [inputScope, toggleKey, controlled, open, close, toggle]);
 
   if (!open) return null;
   const recipes = getRecipeRegistry().all();
@@ -69,7 +72,7 @@ export function CraftingUI({ toggleKey = 'c', title = '제작대', open: openPro
   })();
 
   return (
-    <div
+    <WorldInputSurface
       style={{ position: 'fixed', inset: 0, zIndex: 130, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onClick={close}
     >
@@ -143,7 +146,7 @@ export function CraftingUI({ toggleKey = 'c', title = '제작대', open: openPro
           })}
         </div>
       </div>
-    </div>
+    </WorldInputSurface>
   );
 }
 

@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createScopedStoreHook } from '../../stores/scopedStore';
 import type { GameTime } from '../../time/types';
 import { getEventRegistry } from '../registry/EventRegistry';
 import type { EventId, EventsSerialized } from '../types';
@@ -18,7 +20,8 @@ type State = {
   prepareHydrate: (data: EventsSerialized | null | undefined) => () => void;
 };
 
-export const useEventsStore = create<State>((set, get) => ({
+export function createEventsStore() {
+  return create<State>((set, get) => ({
   active: [],
   startedAt: {},
   tags: new Set<string>(),
@@ -63,3 +66,9 @@ export const useEventsStore = create<State>((set, get) => ({
   },
   hydrate: (data) => get().prepareHydrate(data)(),
 }));
+}
+
+export type EventsStore = ReturnType<typeof createEventsStore>;
+export const { useStore: useEventsStore, useStoreApi: useEventsStoreApi } = createScopedStoreHook(
+  createEventsStore(), () => useGaesupRuntime()?.eventsStore,
+);

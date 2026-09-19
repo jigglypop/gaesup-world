@@ -9,7 +9,6 @@ import { createCameraPlugin } from '../../camera';
 import { createCatalogPlugin } from '../../catalog/plugin';
 import { useCatalogStore } from '../../catalog/stores/catalogStore';
 import { createCharacterPlugin } from '../../character/plugin';
-import { useCharacterStore } from '../../character/stores/characterStore';
 import { createCraftingPlugin } from '../../crafting/plugin';
 import { useCraftingStore } from '../../crafting/stores/craftingStore';
 import { createEconomyPlugin } from '../../economy/plugin';
@@ -37,7 +36,6 @@ import { useFriendshipStore } from '../../relations/stores/friendshipStore';
 import { SaveSystem } from '../../save';
 import type { SaveAdapter, SaveBlob } from '../../save';
 import { createScenePlugin } from '../../scene/plugin';
-import { useSceneStore } from '../../scene/stores/sceneStore';
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { createTimePlugin } from '../../time/plugin';
 import { useTimeStore } from '../../time/stores/timeStore';
@@ -95,35 +93,35 @@ const createSavePlugin = (
 
 describe('createGaesupRuntime', () => {
   it('rejects malformed scene state before applying mail', async () => {
-    const mail = useMailStore.getState();
-    const scene = useSceneStore.getState();
     const save = new SaveSystem({ adapter: new MemoryAdapter() });
     const runtime = createGaesupRuntime({ saveSystem: save,
       plugins: [createMailPlugin(), createScenePlugin()], logger: { warn: () => undefined } });
     await runtime.setup();
+    const mail = runtime.mailStore.getState();
+    const scene = runtime.sceneStore.getState();
     try {
       expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
         mail: { version: 1, messages: [] }, scene: { version: 1, current: 12 },
       } })).toThrow('Save hydration failed');
-      expect(useMailStore.getState()).toBe(mail);
-      expect(useSceneStore.getState()).toBe(scene);
+      expect(runtime.mailStore.getState()).toBe(mail);
+      expect(runtime.sceneStore.getState()).toBe(scene);
     } finally { await runtime.dispose(); }
   });
 
   it('rejects corrupt character appearance before replacing saved mail', async () => {
-    const mail = useMailStore.getState();
-    const character = useCharacterStore.getState();
     const save = new SaveSystem({ adapter: new MemoryAdapter() });
     const runtime = createGaesupRuntime({ saveSystem: save,
       plugins: [createMailPlugin(), createCharacterPlugin()], logger: { warn: () => undefined } });
     await runtime.setup();
+    const mail = runtime.mailStore.getState();
+    const character = runtime.characterStore.getState();
     try {
       expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
         mail: { version: 1, messages: [{ id: 'new', from: '', subject: '', body: '', sentDay: 0 }] },
         character: { version: 3, activeCharacterId: 'custom', characters: { custom: { appearance: { hair: 'unknown' } } } },
       } })).toThrow('Save hydration failed');
-      expect(useMailStore.getState()).toBe(mail);
-      expect(useCharacterStore.getState()).toBe(character);
+      expect(runtime.mailStore.getState()).toBe(mail);
+      expect(runtime.characterStore.getState()).toBe(character);
     } finally { await runtime.dispose(); }
   });
 
@@ -148,28 +146,28 @@ describe('createGaesupRuntime', () => {
   });
 
   it('prepares owned NPC maps while preserving legacy arrays and omitted collections', async () => {
-    const before = useNPCStore.getState();
     const save = new SaveSystem({ adapter: new MemoryAdapter() });
     const runtime = createGaesupRuntime({ saveSystem: save, plugins: [createNPCPlugin()] });
+    const before = runtime.npcStore.getState();
     await runtime.setup();
     try {
       const data: Parameters<typeof hydrateNPCState>[0] = [{ id: 'custom', templateId: 'unregistered', name: '주민',
         position: [1, 2, 3], rotation: [0, 0, 0], scale: [1, 1, 1], metadata: { dialogue: ['안녕하세요'] } }];
       const binding = [...save.getBindings()].find((entry) => entry.key === 'npc')!;
       const apply = binding.prepareHydrate!(data);
-      expect(useNPCStore.getState()).toBe(before);
+      expect(runtime.npcStore.getState()).toBe(before);
       data[0]!.position[0] = 99;
       data[0]!.metadata!.dialogue![0] = '변경';
       apply();
-      expect(useNPCStore.getState().instances.get('custom')).toMatchObject({
+      expect(runtime.npcStore.getState().instances.get('custom')).toMatchObject({
         position: [1, 2, 3], metadata: { dialogue: ['안녕하세요'] },
       });
-      expect(useNPCStore.getState().templates).toBe(before.templates);
-      hydrateNPCState({ instances: [] });
-      expect(useNPCStore.getState().instances.size).toBe(0);
-      expect(useNPCStore.getState().templates).toBe(before.templates);
+      expect(runtime.npcStore.getState().templates).toBe(before.templates);
+      hydrateNPCState({ instances: [] }, runtime.npcStore);
+      expect(runtime.npcStore.getState().instances.size).toBe(0);
+      expect(runtime.npcStore.getState().templates).toBe(before.templates);
     } finally {
-      useNPCStore.setState(before);
+      runtime.npcStore.setState(before);
       await runtime.dispose();
     }
   });
@@ -266,26 +264,24 @@ describe('createGaesupRuntime', () => {
   });
 
   it.each(['invalid-locale', 'invalid-volume'])('rejects %s without applying audio settings', async (invalid) => {
-    const originalAudio = useAudioStore.getState();
-    const apply = jest.fn();
-    useAudioStore.setState({ apply });
-    const before = useAudioStore.getState();
     const language = useI18nStore.getState();
     const save = new SaveSystem({ adapter: new MemoryAdapter() });
     const runtime = createGaesupRuntime({ saveSystem: save,
       plugins: [createAudioPlugin(), createI18nPlugin()], logger: { warn: () => undefined } });
     await runtime.setup();
+    const apply = jest.fn();
+    runtime.audioStore.setState({ apply });
+    const before = runtime.audioStore.getState();
     try {
       expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
         audio: { ...before.serialize(), masterVolume: invalid === 'invalid-volume' ? NaN : 0.1 },
         i18n: { version: 1, locale: invalid === 'invalid-locale' ? 'unsupported' : 'ko' },
       } })).toThrow('Save hydration failed');
-      expect(useAudioStore.getState()).toBe(before);
+      expect(runtime.audioStore.getState()).toBe(before);
       expect(useI18nStore.getState()).toBe(language);
       expect(apply).not.toHaveBeenCalled();
     } finally {
       await runtime.dispose();
-      useAudioStore.setState(originalAudio);
     }
   });
 
@@ -884,8 +880,8 @@ describe('createGaesupRuntime', () => {
 
     await runtime.setup();
 
-    useGaesupStore.getState().setMode({ type: 'vehicle', control: 'isometric' });
-    useGaesupStore.getState().setCameraOption({
+    runtime.store.getState().setMode({ type: 'vehicle', control: 'isometric' });
+    runtime.store.getState().setCameraOption({
       fov: 48,
       zoom: 1.4,
       position: new THREE.Vector3(2, 4, 6),
@@ -894,8 +890,8 @@ describe('createGaesupRuntime', () => {
 
     await runtime.save.save('camera-slot');
 
-    useGaesupStore.getState().setMode({ type: 'character', control: 'firstPerson' });
-    useGaesupStore.getState().setCameraOption({
+    runtime.store.getState().setMode({ type: 'character', control: 'firstPerson' });
+    runtime.store.getState().setCameraOption({
       fov: 90,
       zoom: 2,
       position: new THREE.Vector3(20, 40, 60),
@@ -904,7 +900,7 @@ describe('createGaesupRuntime', () => {
 
     await runtime.save.load('camera-slot');
 
-    const state = useGaesupStore.getState();
+    const state = runtime.store.getState();
     expect(state.mode).toEqual({
       type: 'vehicle',
       controller: 'keyboard',
@@ -928,12 +924,13 @@ describe('createGaesupRuntime', () => {
       saveSystem: save,
       plugins: [createBuildingPlugin(), createCameraPlugin(), createNPCPlugin()],
     });
-    const originalBuilding = useBuildingStore.getState().serialize();
-    const originalNPC = serializeNPCState();
+    const hydrateNPC = (data: Parameters<typeof hydrateNPCState>[0]) => hydrateNPCState(data, runtime.npcStore);
+    const originalBuilding = runtime.buildingStore.getState().serialize();
+    const originalNPC = serializeNPCState(runtime.npcStore);
 
     await runtime.setup();
 
-    useBuildingStore.getState().hydrate({
+    runtime.buildingStore.getState().hydrate({
       version: 1,
       meshes: [],
       wallGroups: [],
@@ -951,14 +948,14 @@ describe('createGaesupRuntime', () => {
       fogColor: '#cfd8e3',
       weatherEffect: 'none',
     });
-    useGaesupStore.getState().setMode({ type: 'character', control: 'thirdPerson' });
-    useGaesupStore.getState().setCameraOption({
+    runtime.store.getState().setMode({ type: 'character', control: 'thirdPerson' });
+    runtime.store.getState().setCameraOption({
       fov: 55,
       zoom: 1.25,
       position: new THREE.Vector3(3, 5, 7),
       target: new THREE.Vector3(1, 0, 2),
     });
-    hydrateNPCState([
+    hydrateNPC([
       {
         id: 'npc-runtime-roundtrip',
         templateId: 'ally',
@@ -973,7 +970,7 @@ describe('createGaesupRuntime', () => {
 
     await runtime.save.save('world-slot');
 
-    useBuildingStore.getState().hydrate({
+    runtime.buildingStore.getState().hydrate({
       version: 1,
       meshes: [],
       wallGroups: [],
@@ -985,24 +982,24 @@ describe('createGaesupRuntime', () => {
       fogColor: '#cfd8e3',
       weatherEffect: 'none',
     });
-    useGaesupStore.getState().setMode({ type: 'vehicle', control: 'isometric' });
-    useGaesupStore.getState().setCameraOption({
+    runtime.store.getState().setMode({ type: 'vehicle', control: 'isometric' });
+    runtime.store.getState().setCameraOption({
       fov: 90,
       zoom: 2,
       position: new THREE.Vector3(20, 40, 60),
       target: new THREE.Vector3(80, 100, 120),
     });
-    hydrateNPCState([]);
+    hydrateNPC([]);
 
     await runtime.save.load('world-slot');
 
-    expect(useBuildingStore.getState().blocks).toEqual([
+    expect(runtime.buildingStore.getState().blocks).toEqual([
       expect.objectContaining({
         id: 'block-runtime-roundtrip',
         cell: { x: 2, z: 4 },
       }),
     ]);
-    expect(useGaesupStore.getState().cameraOption).toEqual(
+    expect(runtime.store.getState().cameraOption).toEqual(
       expect.objectContaining({
         fov: 55,
         zoom: 1.25,
@@ -1010,15 +1007,15 @@ describe('createGaesupRuntime', () => {
         target: expect.objectContaining({ x: 1, y: 0, z: 2 }),
       }),
     );
-    expect(useNPCStore.getState().instances.get('npc-runtime-roundtrip')).toEqual(
+    expect(runtime.npcStore.getState().instances.get('npc-runtime-roundtrip')).toEqual(
       expect.objectContaining({
         name: 'Runtime NPC',
         brain: { mode: 'scripted' },
       }),
     );
 
-    useBuildingStore.getState().hydrate(originalBuilding);
-    hydrateNPCState(originalNPC);
+    runtime.buildingStore.getState().hydrate(originalBuilding);
+    hydrateNPC(originalNPC);
     await runtime.dispose();
   });
 
@@ -1029,16 +1026,16 @@ describe('createGaesupRuntime', () => {
       plugins: [createTimePlugin(), createWeatherPlugin(), createAudioPlugin()],
     });
     const originalTime = useTimeStore.getState().serialize();
-    const originalWeather = useWeatherStore.getState().serialize();
-    const originalAudio = useAudioStore.getState().serialize();
+    const originalWeather = runtime.weatherStore.getState().serialize();
+    const originalAudio = runtime.audioStore.getState().serialize();
 
     await runtime.setup();
 
-    useTimeStore.getState().setMode('scaled');
-    useTimeStore.getState().setScale(2.5);
-    useTimeStore.getState().setTotalMinutes(1450);
-    useWeatherStore.getState().setWeather('rain', 0.8, 3);
-    useAudioStore.setState({
+    runtime.timeStore.getState().setMode('scaled');
+    runtime.timeStore.getState().setScale(2.5);
+    runtime.timeStore.getState().setTotalMinutes(1450);
+    runtime.weatherStore.getState().setWeather('rain', 0.8, 3);
+    runtime.audioStore.setState({
       masterMuted: true,
       bgmMuted: false,
       sfxMuted: true,
@@ -1049,10 +1046,10 @@ describe('createGaesupRuntime', () => {
 
     await runtime.save.save('world-utility-slot');
 
-    useTimeStore.getState().setScale(1);
-    useTimeStore.getState().setTotalMinutes(480);
-    useWeatherStore.getState().setWeather('sunny', 0.4, 9);
-    useAudioStore.setState({
+    runtime.timeStore.getState().setScale(1);
+    runtime.timeStore.getState().setTotalMinutes(480);
+    runtime.weatherStore.getState().setWeather('sunny', 0.4, 9);
+    runtime.audioStore.setState({
       masterMuted: false,
       bgmMuted: true,
       sfxMuted: false,
@@ -1063,19 +1060,19 @@ describe('createGaesupRuntime', () => {
 
     await runtime.save.load('world-utility-slot');
 
-    expect(useTimeStore.getState().serialize()).toEqual(
+    expect(runtime.timeStore.getState().serialize()).toEqual(
       expect.objectContaining({
         totalMinutes: 1450,
         mode: 'scaled',
         scale: 2.5,
       }),
     );
-    expect(useWeatherStore.getState().serialize()).toEqual(
+    expect(runtime.weatherStore.getState().serialize()).toEqual(
       expect.objectContaining({
         current: { day: 3, kind: 'rain', intensity: 0.8 },
       }),
     );
-    expect(useAudioStore.getState().serialize()).toEqual(
+    expect(runtime.audioStore.getState().serialize()).toEqual(
       expect.objectContaining({
         masterMuted: true,
         bgmMuted: false,
@@ -1086,9 +1083,9 @@ describe('createGaesupRuntime', () => {
       }),
     );
 
-    useTimeStore.getState().hydrate(originalTime);
-    useWeatherStore.getState().hydrate(originalWeather);
-    useAudioStore.getState().hydrate(originalAudio);
+    expect(useTimeStore.getState().serialize()).toEqual(originalTime);
+    runtime.weatherStore.getState().hydrate(originalWeather);
+    runtime.audioStore.getState().hydrate(originalAudio);
     await runtime.dispose();
   });
 
@@ -1112,20 +1109,20 @@ describe('createGaesupRuntime', () => {
         createI18nPlugin(),
       ],
     });
-    const originalInventory = useInventoryStore.getState().serialize();
-    const originalWallet = useWalletStore.getState().serialize();
-    const originalShop = useShopStore.getState().serialize();
-    const originalRelations = useFriendshipStore.getState().serialize();
-    const originalQuests = useQuestStore.getState().serialize();
-    const originalMail = useMailStore.getState().serialize();
-    const originalCatalog = useCatalogStore.getState().serialize();
-    const originalCrafting = useCraftingStore.getState().serialize();
-    const originalFarming = usePlotStore.getState().serialize();
-    const originalEvents = useEventsStore.getState().serialize();
-    const originalTown = useTownStore.getState().serialize();
+    const originalInventory = runtime.inventoryStore.getState().serialize();
+    const originalWallet = runtime.walletStore.getState().serialize();
+    const originalShop = runtime.shopStore.getState().serialize();
+    const originalRelations = runtime.friendshipStore.getState().serialize();
+    const originalQuests = runtime.questStore.getState().serialize();
+    const originalMail = runtime.mailStore.getState().serialize();
+    const originalCatalog = runtime.catalogStore.getState().serialize();
+    const originalCrafting = runtime.craftingStore.getState().serialize();
+    const originalFarming = runtime.plotStore.getState().serialize();
+    const originalEvents = runtime.eventsStore.getState().serialize();
+    const originalTown = runtime.townStore.getState().serialize();
     const originalI18n = useI18nStore.getState().serialize();
-    const originalScene = useSceneStore.getState().serialize();
-    const originalCharacter = useCharacterStore.getState().serialize();
+    const originalScene = runtime.sceneStore.getState().serialize();
+    const originalCharacter = runtime.characterStore.getState().serialize();
 
     await runtime.setup();
 
@@ -1151,26 +1148,26 @@ describe('createGaesupRuntime', () => {
         'wallet',
       ]);
 
-      useSceneStore
+      runtime.sceneStore
         .getState()
         .registerScene({ id: 'test-house', name: 'Test House', interior: true });
-      useSceneStore.getState().hydrate({ version: 1, current: 'test-house' });
-      useCharacterStore.getState().setName('Runtime Player');
-      useInventoryStore.getState().hydrate({
+      runtime.sceneStore.getState().hydrate({ version: 1, current: 'test-house' });
+      runtime.characterStore.getState().setName('Runtime Player');
+      runtime.inventoryStore.getState().hydrate({
         version: 1,
         slots: [{ itemId: 'apple', count: 2 }, null],
         hotbar: [0],
         equippedHotbar: 0,
       });
-      useWalletStore
+      runtime.walletStore
         .getState()
         .hydrate({ version: 1, bells: 4321, lifetimeEarned: 5000, lifetimeSpent: 679 });
-      useShopStore.getState().hydrate({
+      runtime.shopStore.getState().hydrate({
         version: 1,
         lastRolledDay: 12,
         dailyStock: [{ itemId: 'apple', price: 90, stock: 3 }],
       });
-      useFriendshipStore.getState().hydrate({
+      runtime.friendshipStore.getState().hydrate({
         version: 1,
         entries: {
           npc_a: {
@@ -1182,7 +1179,7 @@ describe('createGaesupRuntime', () => {
           },
         },
       });
-      useQuestStore.getState().hydrate({
+      runtime.questStore.getState().hydrate({
         version: 1,
         state: {
           quest_a: {
@@ -1193,7 +1190,7 @@ describe('createGaesupRuntime', () => {
           },
         },
       });
-      useMailStore.getState().hydrate({
+      runtime.mailStore.getState().hydrate({
         version: 1,
         messages: [
           {
@@ -1207,12 +1204,12 @@ describe('createGaesupRuntime', () => {
           },
         ],
       });
-      useCatalogStore.getState().hydrate({
+      runtime.catalogStore.getState().hydrate({
         version: 1,
         entries: { apple: { itemId: 'apple', firstSeenDay: 2, totalCollected: 9 } },
       });
-      useCraftingStore.getState().hydrate({ version: 1, unlocked: ['recipe_a'] });
-      usePlotStore.getState().hydrate({
+      runtime.craftingStore.getState().hydrate({ version: 1, unlocked: ['recipe_a'] });
+      runtime.plotStore.getState().hydrate({
         version: 1,
         plots: [
           {
@@ -1226,12 +1223,12 @@ describe('createGaesupRuntime', () => {
           },
         ],
       });
-      useEventsStore.getState().hydrate({
+      runtime.eventsStore.getState().hydrate({
         version: 1,
         active: ['event_a'],
         startedAt: { event_a: 1440 },
       });
-      useTownStore.getState().hydrate({
+      runtime.townStore.getState().hydrate({
         version: 1,
         houses: [
           {
@@ -1248,58 +1245,58 @@ describe('createGaesupRuntime', () => {
 
       await runtime.save.save('progress-slot');
 
-      useSceneStore.getState().hydrate({ version: 1, current: 'outdoor' });
-      useCharacterStore.getState().resetAppearance();
-      useInventoryStore
+      runtime.sceneStore.getState().hydrate({ version: 1, current: 'outdoor' });
+      runtime.characterStore.getState().resetAppearance();
+      runtime.inventoryStore
         .getState()
         .hydrate({ version: 1, slots: [], hotbar: [], equippedHotbar: 0 });
-      useWalletStore
+      runtime.walletStore
         .getState()
         .hydrate({ version: 1, bells: 0, lifetimeEarned: 0, lifetimeSpent: 0 });
-      useShopStore.getState().hydrate({ version: 1, lastRolledDay: -1, dailyStock: [] });
-      useFriendshipStore.getState().hydrate({ version: 1, entries: {} });
-      useQuestStore.getState().hydrate({ version: 1, state: {} });
-      useMailStore.getState().hydrate({ version: 1, messages: [] });
-      useCatalogStore.getState().hydrate({ version: 1, entries: {} });
-      useCraftingStore.getState().hydrate({ version: 1, unlocked: [] });
-      usePlotStore.getState().hydrate({ version: 1, plots: [] });
-      useEventsStore.getState().hydrate({ version: 1, active: [], startedAt: {} });
-      useTownStore.getState().hydrate({ version: 1, houses: [], residents: [] });
+      runtime.shopStore.getState().hydrate({ version: 1, lastRolledDay: -1, dailyStock: [] });
+      runtime.friendshipStore.getState().hydrate({ version: 1, entries: {} });
+      runtime.questStore.getState().hydrate({ version: 1, state: {} });
+      runtime.mailStore.getState().hydrate({ version: 1, messages: [] });
+      runtime.catalogStore.getState().hydrate({ version: 1, entries: {} });
+      runtime.craftingStore.getState().hydrate({ version: 1, unlocked: [] });
+      runtime.plotStore.getState().hydrate({ version: 1, plots: [] });
+      runtime.eventsStore.getState().hydrate({ version: 1, active: [], startedAt: {} });
+      runtime.townStore.getState().hydrate({ version: 1, houses: [], residents: [] });
       useI18nStore.getState().hydrate({ version: 1, locale: 'ko' });
 
       await runtime.save.load('progress-slot');
 
-      expect(useSceneStore.getState().current).toBe('test-house');
-      expect(useCharacterStore.getState().appearance.name).toBe('Runtime Player');
-      expect(useInventoryStore.getState().slots[0]).toEqual({ itemId: 'apple', count: 2 });
-      expect(useWalletStore.getState().bells).toBe(4321);
-      expect(useShopStore.getState().dailyStock).toEqual([
+      expect(runtime.sceneStore.getState().current).toBe('test-house');
+      expect(runtime.characterStore.getState().appearance.name).toBe('Runtime Player');
+      expect(runtime.inventoryStore.getState().slots[0]).toEqual({ itemId: 'apple', count: 2 });
+      expect(runtime.walletStore.getState().bells).toBe(4321);
+      expect(runtime.shopStore.getState().dailyStock).toEqual([
         { itemId: 'apple', price: 90, stock: 3 },
       ]);
-      expect(useFriendshipStore.getState().entries['npc_a']?.score).toBe(42);
-      expect(useQuestStore.getState().state['quest_a']?.progress).toEqual({ objective_a: 1 });
-      expect(useMailStore.getState().messages[0]?.id).toBe('mail_a');
-      expect(useCatalogStore.getState().entries['apple']?.totalCollected).toBe(9);
-      expect(useCraftingStore.getState().unlocked.has('recipe_a')).toBe(true);
-      expect(usePlotStore.getState().plots['plot_a']?.state).toBe('mature');
-      expect(useEventsStore.getState().active).toEqual(['event_a']);
-      expect(useTownStore.getState().residents['resident_a']?.name).toBe('Resident A');
+      expect(runtime.friendshipStore.getState().entries['npc_a']?.score).toBe(42);
+      expect(runtime.questStore.getState().state['quest_a']?.progress).toEqual({ objective_a: 1 });
+      expect(runtime.mailStore.getState().messages[0]?.id).toBe('mail_a');
+      expect(runtime.catalogStore.getState().entries['apple']?.totalCollected).toBe(9);
+      expect(runtime.craftingStore.getState().unlocked.has('recipe_a')).toBe(true);
+      expect(runtime.plotStore.getState().plots['plot_a']?.state).toBe('mature');
+      expect(runtime.eventsStore.getState().active).toEqual(['event_a']);
+      expect(runtime.townStore.getState().residents['resident_a']?.name).toBe('Resident A');
       expect(useI18nStore.getState().locale).toBe('en');
     } finally {
-      useInventoryStore.getState().hydrate(originalInventory);
-      useWalletStore.getState().hydrate(originalWallet);
-      useShopStore.getState().hydrate(originalShop);
-      useFriendshipStore.getState().hydrate(originalRelations);
-      useQuestStore.getState().hydrate(originalQuests);
-      useMailStore.getState().hydrate(originalMail);
-      useCatalogStore.getState().hydrate(originalCatalog);
-      useCraftingStore.getState().hydrate(originalCrafting);
-      usePlotStore.getState().hydrate(originalFarming);
-      useEventsStore.getState().hydrate(originalEvents);
-      useTownStore.getState().hydrate(originalTown);
+      runtime.inventoryStore.getState().hydrate(originalInventory);
+      runtime.walletStore.getState().hydrate(originalWallet);
+      runtime.shopStore.getState().hydrate(originalShop);
+      runtime.friendshipStore.getState().hydrate(originalRelations);
+      runtime.questStore.getState().hydrate(originalQuests);
+      runtime.mailStore.getState().hydrate(originalMail);
+      runtime.catalogStore.getState().hydrate(originalCatalog);
+      runtime.craftingStore.getState().hydrate(originalCrafting);
+      runtime.plotStore.getState().hydrate(originalFarming);
+      runtime.eventsStore.getState().hydrate(originalEvents);
+      runtime.townStore.getState().hydrate(originalTown);
       useI18nStore.getState().hydrate(originalI18n);
-      useSceneStore.getState().hydrate(originalScene);
-      useCharacterStore.getState().hydrate(originalCharacter);
+      runtime.sceneStore.getState().hydrate(originalScene);
+      runtime.characterStore.getState().hydrate(originalCharacter);
       await runtime.dispose();
     }
   });

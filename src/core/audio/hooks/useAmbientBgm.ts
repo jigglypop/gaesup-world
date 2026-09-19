@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 
-import { useTimeStore } from '../../time/stores/timeStore';
-import { useWeatherStore } from '../../weather/stores/weatherStore';
-import { useAudioStore } from '../stores/audioStore';
+import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../runtime/runtimeContext';
+import { useTimeStoreApi, type TimeStore } from '../../time/stores/timeStore';
+import { useWeatherStoreApi, type WeatherStore } from '../../weather/stores/weatherStore';
+import { useAudioStoreApi, type AudioStore } from '../stores/audioStore';
 import type { BgmTrack } from '../types';
 
 const SCALE_MAJOR = [0, 2, 4, 5, 7, 9, 11];
@@ -39,23 +40,57 @@ function trackForContext(hour: number, weather: string | undefined): BgmTrack {
   };
 }
 
-export function useAmbientBgm(enabled: boolean = true): void {
-  useEffect(() => {
-    if (!enabled) return;
+type Lease = { owners: number; dispose: () => void };
+const leases = new WeakMap<AudioStore, WeakMap<TimeStore, WeakMap<WeatherStore, Lease>>>();
+
+function acquireAmbientBgm(audioStore: AudioStore, timeStore: TimeStore, weatherStore: WeatherStore): () => void {
+  let clocks = leases.get(audioStore);
+  if (!clocks) { clocks = new WeakMap(); leases.set(audioStore, clocks); }
+  let weather = clocks.get(timeStore);
+  if (!weather) { weather = new WeakMap(); clocks.set(timeStore, weather); }
+  let lease = weather.get(weatherStore);
+  if (!lease) {
+    let ownedRevision: number | undefined;
     const apply = () => {
-      const t = useTimeStore.getState();
-      const w = useWeatherStore.getState().current;
+      const t = timeStore.getState();
+      const w = weatherStore.getState().current;
       const track = trackForContext(t.time.hour, w?.kind);
-      const cur = useAudioStore.getState().currentBgmId;
-      if (cur !== track.id) useAudioStore.getState().playBgm(track);
+      if (audioStore.getState().currentBgmId !== track.id) {
+        ownedRevision = audioStore.getState().bgmRevision + 1;
+        audioStore.getState().playBgm(track);
+      }
     };
-    const offTime = useTimeStore.subscribe((s, p) => {
+    const offTime = timeStore.subscribe((s, p) => {
       if (s.time.hour !== p.time.hour) apply();
     });
-    const offWeather = useWeatherStore.subscribe((s, p) => {
+    const offWeather = weatherStore.subscribe((s, p) => {
       if (s.current?.kind !== p.current?.kind) apply();
     });
     apply();
-    return () => { offTime(); offWeather(); useAudioStore.getState().stopBgm(); };
-  }, [enabled]);
+    lease = { owners: 0, dispose: () => {
+      offTime(); offWeather();
+      // A manual replacement, including one with the same track ID, has a new owner.
+      if (audioStore.getState().bgmRevision === ownedRevision) audioStore.getState().stopBgm();
+    } };
+    weather.set(weatherStore, lease);
+  }
+  const owned = lease; owned.owners++;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    if (--owned.owners === 0) { weather!.delete(weatherStore); owned.dispose(); }
+  };
+}
+
+export function useAmbientBgm(enabled: boolean = true): void {
+  const runtime = useGaesupRuntime();
+  const revision = useGaesupRuntimeRevision();
+  const audioStore = useAudioStoreApi();
+  const weatherStore = useWeatherStoreApi();
+  const timeStore = useTimeStoreApi();
+  useEffect(() => {
+    if (!enabled || (runtime && !runtime.isActive())) return;
+    return acquireAmbientBgm(audioStore, timeStore, weatherStore);
+  }, [enabled, timeStore, weatherStore, audioStore, runtime, revision]);
 }

@@ -4,13 +4,13 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
-import { useEventsStore } from '../../../events/stores/eventsStore';
-import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
+import { useEventsStoreApi } from '../../../events/stores/eventsStore';
+import { useInventoryStoreApi } from '../../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
 import { notify } from '../../../ui/components/Toast/toastStore';
-import { useWeatherStore } from '../../../weather/stores/weatherStore';
+import { useWeatherStoreApi } from '../../../weather/stores/weatherStore';
 
 export type CatchEntry = { itemId: string; weight: number };
 
@@ -60,6 +60,9 @@ export function BugSpot({
   bugColor = '#ffd0e0',
   hoverHeight = 1.2,
 }: BugSpotProps) {
+  const eventsStore = useEventsStoreApi();
+  const inventoryStore = useInventoryStoreApi();
+  const weatherStore = useWeatherStoreApi();
   const lastUseRef = useRef(-Infinity);
   const bugRef = useRef<THREE.Mesh>(null);
   const [present, setPresent] = useState(true);
@@ -74,24 +77,24 @@ export function BugSpot({
     if (now - lastUseRef.current < cooldownMs) return true;
     lastUseRef.current = now;
 
-    const bonus = useWeatherStore.getState().bugBonus();
+    const bonus = weatherStore.getState().bugBonus();
     if (Math.random() > Math.min(0.95, Math.max(0.05, successChance + bonus))) {
       notify('warn', '날아갔다…');
       setPresent(false);
       respawnAtRef.current = now + 8000;
       return true;
     }
-    const seasonalPool = filterByTags(pool, 'bug:', useEventsStore.getState().tags);
+    const seasonalPool = filterByTags(pool, 'bug:', eventsStore.getState().tags);
     const itemId = pickWeighted(seasonalPool);
     if (!itemId) return true;
     const def = getItemRegistry().get(itemId);
-    const left = useInventoryStore.getState().add(itemId, 1);
+    const left = inventoryStore.getState().add(itemId, 1);
     if (left > 0) notify('warn', '인벤토리가 가득 찼습니다');
     else notify('reward', `${def?.name ?? itemId} 잡았다!`);
     setPresent(false);
     respawnAtRef.current = now + 12000;
     return true;
-  }, [position, radius, cooldownMs, pool, successChance, present]);
+  }, [position, radius, cooldownMs, pool, successChance, present, inventoryStore, weatherStore, eventsStore]);
 
   useToolUse('net', onNet);
 

@@ -75,6 +75,7 @@ export function WeatherEffect({
     if (followCamera) {
       p.position.set(camera.position.x, camera.position.y - height * 0.35, camera.position.z);
     }
+    if (useNodes) return;
     const pos = geometry.getAttribute('position') as THREE.BufferAttribute;
     const speeds = geometry.getAttribute('aSpeed') as THREE.BufferAttribute;
     const arr = pos.array as Float32Array;
@@ -103,9 +104,9 @@ export function WeatherEffect({
     pos.needsUpdate = true;
   });
 
-  if (!geometry || !material) return null;
+  if (!geometry || !material || !kind) return null;
   if (useNodes) return <Suspense fallback={null}>
-    <NodeWeather geometry={geometry} material={material} onObject={handleObject} />
+    <NodeWeather geometry={geometry} material={material} onObject={handleObject} kind={kind} area={area} height={height} />
   </Suspense>;
   return <points ref={handleObject} geometry={geometry} material={material} frustumCulled={false} />;
 }

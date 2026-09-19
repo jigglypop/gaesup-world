@@ -11,4 +11,6 @@ export {
   serializeRelationsState,
 } from './plugin';
 export type { RelationsPluginOptions } from './plugin';
-export { useFriendshipStore } from './stores/friendshipStore';
+export { useFriendshipStore, useFriendshipStoreApi, createFriendshipStore } from './stores/friendshipStore';
+
+export type { FriendshipStore } from './stores/friendshipStore';

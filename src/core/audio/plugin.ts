@@ -1,5 +1,5 @@
 import type { GaesupPlugin, PluginContext } from '../plugins';
-import { useAudioStore } from './stores/audioStore';
+import { useAudioStore, type AudioStore } from './stores/audioStore';
 import type { AudioSerialized } from './types';
 
 export interface AudioPluginOptions {
@@ -12,12 +12,12 @@ const DEFAULT_PLUGIN_ID = 'gaesup.audio';
 const DEFAULT_SAVE_EXTENSION_ID = 'audio';
 const DEFAULT_STORE_SERVICE_ID = 'audio.store';
 
-export function serializeAudioState(): AudioSerialized {
-  return useAudioStore.getState().serialize();
+export function serializeAudioState(store: AudioStore = useAudioStore): AudioSerialized {
+  return store.getState().serialize();
 }
 
-export function hydrateAudioState(data: AudioSerialized | null | undefined): void {
-  useAudioStore.getState().hydrate(data);
+export function hydrateAudioState(data: AudioSerialized | null | undefined, store: AudioStore = useAudioStore): void {
+  store.getState().hydrate(data);
 }
 
 export function createAudioPlugin(options: AudioPluginOptions = {}): GaesupPlugin {
@@ -32,16 +32,17 @@ export function createAudioPlugin(options: AudioPluginOptions = {}): GaesupPlugi
     runtime: 'client',
     capabilities: ['audio'],
     setup(ctx: PluginContext) {
+      const store = ctx.services.get<AudioStore>('gaesup.runtime.audio-store') ?? useAudioStore;
       ctx.save.register(saveExtensionId, {
         key: saveExtensionId,
-        serialize: serializeAudioState,
-        hydrate: hydrateAudioState,
-        prepareHydrate: (data: AudioSerialized | null | undefined) => useAudioStore.getState().prepareHydrate(data),
+        serialize: () => serializeAudioState(store),
+        hydrate: (data: AudioSerialized | null | undefined) => hydrateAudioState(data, store),
+        prepareHydrate: (data: AudioSerialized | null | undefined) => store.getState().prepareHydrate(data),
       }, pluginId);
       ctx.services.register(storeServiceId, {
-        useStore: useAudioStore,
-        getState: useAudioStore.getState,
-        setState: useAudioStore.setState,
+        useStore: store,
+        getState: store.getState,
+        setState: store.setState,
       }, pluginId);
       ctx.events.emit('audio:ready', {
         pluginId,

@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react';
 
+import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../../runtime/runtimeContext';
 import { buildBuildingRenderSnapshot } from '../../render/core';
 import { useBuildingRenderStateStore } from '../../render/store';
 import { useBuildingStore } from '../../stores/buildingStore';
 
 export function BuildingRenderStateDriver() {
+  const runtime = useGaesupRuntime();
+  const runtimeRevision = useGaesupRuntimeRevision();
   const wallGroups = useBuildingStore((s) => s.wallGroups);
   const tileGroups = useBuildingStore((s) => s.tileGroups);
   const blocks = useBuildingStore((s) => s.blocks);
@@ -26,8 +29,9 @@ export function BuildingRenderStateDriver() {
   );
 
   useEffect(() => {
+    if (runtime && !runtime.isActive()) return;
     setSnapshot(snapshot);
-  }, [snapshot, setSnapshot]);
+  }, [snapshot, setSnapshot, runtime, runtimeRevision]);
 
   useEffect(() => reset, [reset]);
 

@@ -8,6 +8,8 @@ import { defineConfig } from 'vite';
 import glsl from 'vite-plugin-glsl';
 import svgr from 'vite-plugin-svgr';
 
+import { performanceIdentityPlugin } from './scripts/performance/vite-plugin.mjs';
+
 const libraryExternals = [
   'react',
   'react-dom',
@@ -232,6 +234,7 @@ export default defineConfig(({ mode }) => {
       svgr(),
       glsl(),
       serveDemoGltfAssets(),
+      performanceIdentityPlugin(),
     ],
     resolve: {
       tsconfigPaths: true,

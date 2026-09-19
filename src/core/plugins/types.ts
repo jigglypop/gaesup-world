@@ -78,6 +78,8 @@ export interface ExtensionRegistry<TValue = unknown, TMap extends object = Recor
   removeByPlugin(pluginId: string): number;
   list(): Array<RegistryEntry<TValue>>;
   clear(): void;
+  /** Reports committed mutations; null denotes a bulk change. */
+  subscribe?(listener: (id: string | null) => void): () => void;
 }
 
 export interface PluginExtensionRegistries {

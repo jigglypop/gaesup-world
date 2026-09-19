@@ -12,8 +12,9 @@ import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
 import { NPCPartMeshProps, NPCInstanceProps } from './types';
 import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
 import { applyToonToScene, getDefaultToonMode } from '../../../rendering/toon';
+import { useGaesupRuntime } from '../../../runtime/runtimeContext';
 import { createNPCObservation, resolveNPCBrainDecision } from '../../core/brain';
-import { useNPCStore } from '../../stores/npcStore';
+import { useNPCStore, useNPCStoreApi } from '../../stores/npcStore';
 import { NPCPart } from '../../types';
 import './styles.css';
 
@@ -139,6 +140,8 @@ const DEFAULT_NPC_VOLUME = {
 } as const;
 
 export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps) {
+  const runtime = useGaesupRuntime();
+  const npcStore = useNPCStoreApi();
   const groupRef = useRef<GroupWithHandlers>(null);
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const waypointIndexRef = useRef(0);
@@ -182,6 +185,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
 
   // Navigation movement loop.
   useFrame((_, delta) => {
+    if (runtime && !runtime.isActive()) return;
     if (!isNavigating || !instance.navigation) return;
     const body = rigidBodyRef.current;
     if (!body) return;
@@ -223,6 +227,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   });
 
   useFrame((state) => {
+    if (runtime && !runtime.isActive()) return;
     const brainMode = instance.brain?.mode ?? 'none';
     if (brainMode === 'none') return;
     const elapsed = getFrameElapsedSeconds(state);
@@ -235,12 +240,12 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
       : instance;
     const observation = createNPCObservation(
       observedInstance,
-      useNPCStore.getState().instances,
+      npcStore.getState().instances,
       elapsed,
     );
     setInstanceObservation(instance.id, observation);
 
-    const decision = resolveNPCBrainDecision(observedInstance, observation);
+    const decision = resolveNPCBrainDecision(observedInstance, observation, runtime ? npcStore.getState().brainBlueprints : undefined, runtime ?? undefined, runtime?.npcBrainAdapters);
     if (decision && decision.actions.length > 0) {
       setInstanceDecision(instance.id, decision);
       executeInstanceActions(instance.id, decision.actions);

@@ -4,11 +4,20 @@ import type {
   GameplayEventAction,
   GameplayEventCondition,
 } from './types';
-import { useDialogStore } from '../../dialog';
-import { useEventsStore } from '../../events';
-import { useInventoryStore } from '../../inventory';
-import { useQuestStore } from '../../quests';
-import { notify } from '../../ui';
+import { useDialogStore, type DialogStore } from '../../dialog/stores/dialogStore';
+import { useEventsStore, type EventsStore } from '../../events/stores/eventsStore';
+import { useInventoryStore, type InventoryStore } from '../../inventory/stores/inventoryStore';
+import { useQuestStore, type QuestStore } from '../../quests/stores/questStore';
+import { notify } from '../../ui/components/Toast/toastStore';
+
+export type GameplayEventDependencies = {
+  dialogStore: DialogStore;
+  eventsStore: EventsStore;
+  inventoryStore: InventoryStore;
+  questStore: QuestStore;
+  emit?: (eventName: string, payload?: Record<string, unknown>) => void;
+};
+const legacyDependencies: GameplayEventDependencies = { dialogStore: useDialogStore, eventsStore: useEventsStore, inventoryStore: useInventoryStore, questStore: useQuestStore };
 
 export class GameplayEventRegistry {
   private readonly conditions = new Map<string, GameplayConditionHandler>();
@@ -37,18 +46,18 @@ export class GameplayEventRegistry {
   }
 }
 
-export function createDefaultGameplayEventRegistry(): GameplayEventRegistry {
+export function createDefaultGameplayEventRegistry(dependencies: GameplayEventDependencies = legacyDependencies): GameplayEventRegistry {
   const registry = new GameplayEventRegistry();
 
   registry.registerCondition('always', () => true);
   registry.registerCondition<Extract<GameplayEventCondition, { type: 'hasItem' }>>('hasItem', (condition) =>
-    useInventoryStore.getState().has(condition.itemId, condition.count ?? 1),
+    dependencies.inventoryStore.getState().has(condition.itemId, condition.count ?? 1),
   );
   registry.registerCondition<Extract<GameplayEventCondition, { type: 'questStatus' }>>('questStatus', (condition) =>
-    useQuestStore.getState().statusOf(condition.questId) === condition.status,
+    dependencies.questStore.getState().statusOf(condition.questId) === condition.status,
   );
   registry.registerCondition<Extract<GameplayEventCondition, { type: 'eventActive' }>>('eventActive', (condition) =>
-    useEventsStore.getState().isActive(condition.eventId),
+    dependencies.eventsStore.getState().isActive(condition.eventId),
   );
   registry.registerCondition<Extract<GameplayEventCondition, { type: 'flagEquals' }>>('flagEquals', (condition, context) =>
     context.state.flags[condition.key] === condition.value,
@@ -56,19 +65,19 @@ export function createDefaultGameplayEventRegistry(): GameplayEventRegistry {
   registry.registerCondition('custom', () => false);
 
   registry.registerAction<Extract<GameplayEventAction, { type: 'giveItem' }>>('giveItem', (action) => {
-    useInventoryStore.getState().add(action.itemId, action.count ?? 1);
+    dependencies.inventoryStore.getState().add(action.itemId, action.count ?? 1);
   });
   registry.registerAction<Extract<GameplayEventAction, { type: 'removeItem' }>>('removeItem', (action) => {
-    useInventoryStore.getState().removeById(action.itemId, action.count ?? 1);
+    dependencies.inventoryStore.getState().removeById(action.itemId, action.count ?? 1);
   });
   registry.registerAction<Extract<GameplayEventAction, { type: 'startQuest' }>>('startQuest', (action) => {
-    useQuestStore.getState().start(action.questId);
+    dependencies.questStore.getState().start(action.questId);
   });
   registry.registerAction<Extract<GameplayEventAction, { type: 'completeQuest' }>>('completeQuest', (action) => {
-    useQuestStore.getState().complete(action.questId);
+    dependencies.questStore.getState().complete(action.questId);
   });
   registry.registerAction<Extract<GameplayEventAction, { type: 'showDialog' }>>('showDialog', (action) => {
-    useDialogStore.getState().start(
+    dependencies.dialogStore.getState().start(
       action.dialogTreeId,
       action.npcId ? { context: { npcId: action.npcId } } : undefined,
     );
@@ -80,9 +89,9 @@ export function createDefaultGameplayEventRegistry(): GameplayEventRegistry {
     context.state.flags[action.key] = action.value;
   });
   registry.registerAction<Extract<GameplayEventAction, { type: 'notifyQuestFlag' }>>('notifyQuestFlag', (action) => {
-    useQuestStore.getState().notifyFlag(action.key, action.value);
+    dependencies.questStore.getState().notifyFlag(action.key, action.value);
   });
-  registry.registerAction('emit', () => undefined);
+  registry.registerAction<Extract<GameplayEventAction, { type: 'emit' }>>('emit', action => dependencies.emit?.(action.eventName, action.payload));
   registry.registerAction('custom', () => undefined);
 
   return registry;

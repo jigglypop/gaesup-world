@@ -12,6 +12,7 @@ describe('DirectionComponent', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockInteractionSystem = {
+      getState: jest.fn().mockReturnValue({ gamepad: { connected: false, leftStick: new THREE.Vector2() } }),
       getKeyboardRef: jest.fn().mockReturnValue({
         forward: false,
         backward: false,

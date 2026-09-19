@@ -96,21 +96,25 @@ export class PluginRegistry implements PluginRegistryApi {
     record.status = 'disposing';
     try {
       await record.plugin.dispose?.(this.context);
-      this.removePluginExtensions(id);
       record.status = 'disposed';
-      this.removeFromSetupOrder(id);
     } catch (error) {
       record.status = 'failed';
       record.error = error;
       throw error;
+    } finally {
+      this.removePluginExtensions(id);
+      this.removeFromSetupOrder(id);
     }
   }
 
   async disposeAll(): Promise<void> {
     const ids = Array.from(this.setupOrder).reverse();
+    const errors: unknown[] = [];
     for (const id of ids) {
-      await this.dispose(id);
+      try { await this.dispose(id); } catch (error) { errors.push(error); }
     }
+    if (errors.length === 1) throw errors[0];
+    if (errors.length > 1) throw new AggregateError(errors, 'Plugin disposal failed');
   }
 
   has(id: string): boolean {

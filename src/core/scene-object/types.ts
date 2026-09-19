@@ -88,7 +88,8 @@ export type SceneValidationIssueCode =
   | 'self-parent'
   | 'parent-cycle'
   | 'invalid-transform'
-  | 'unsupported-scene-version';
+  | 'unsupported-scene-version'
+  | 'revision-conflict';
 
 export interface SceneValidationIssue {
   code: SceneValidationIssueCode;
@@ -236,10 +237,12 @@ export type SceneDocumentCommandResult =
 export type SceneDocumentControllerListener = (
   snapshot: SceneDocument,
   event: SceneDocumentEvent,
+  context: { readonly revision: number },
 ) => void;
 
 export type SceneDocumentController = {
   getSnapshot: () => SceneDocument;
+  getRevision: () => number;
   subscribe: (listener: SceneDocumentControllerListener) => () => void;
-  dispatch: (command: SceneDocumentCommand) => SceneDocumentCommandResult;
+  dispatch: (command: SceneDocumentCommand, options?: { expectedRevision?: number }) => SceneDocumentCommandResult;
 };

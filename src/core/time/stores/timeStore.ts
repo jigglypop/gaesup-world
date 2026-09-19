@@ -1,16 +1,20 @@
-import { create } from 'zustand';
+import { createContext, useContext } from 'react';
+
+import { create, useStore } from 'zustand';
 
 import { computeGameTime, isNewDay, isNewHour, realMsToGameMinutes } from '../core/Clock';
 import type { GameTime, TimeMode, TimeSerialized } from '../types';
 
 type TimeListener = (event: { kind: 'newDay' | 'newHour'; time: GameTime }) => void;
 
-type TimeState = {
+export type TimeState = {
   mode: TimeMode;
   scale: number;
   startEpochMs: number;
   totalMinutes: number;
   paused: boolean;
+  /** Changes only when restoring a snapshot, so observers can distinguish restoration from gameplay. */
+  hydrationRevision: number;
   time: GameTime;
   listeners: Set<TimeListener>;
 
@@ -37,9 +41,10 @@ function emit(listeners: Set<TimeListener>, kind: 'newDay' | 'newHour', time: Ga
   });
 }
 
-export const useTimeStore = create<TimeState>((set, get) => ({
+export function createTimeStore() { return create<TimeState>((set, get) => ({
   mode: 'scaled',
   scale: DEFAULT_SCALE,
+  hydrationRevision: 0,
   startEpochMs: Date.now() - INITIAL_TOTAL_MINUTES * REAL_MS_PER_MINUTE,
   totalMinutes: INITIAL_TOTAL_MINUTES,
   paused: false,
@@ -107,15 +112,32 @@ export const useTimeStore = create<TimeState>((set, get) => ({
       throw new TypeError('Invalid time snapshot');
     }
     const { totalMinutes, mode, scale, startEpochMs } = data;
+    const paused = data.pausedAt !== null;
     const time = computeGameTime(totalMinutes);
-    return () => set({
+    return () => set(state => ({
       totalMinutes,
       time,
       mode,
       scale,
       startEpochMs,
-      paused: false,
-    });
+      paused,
+      hydrationRevision: state.hydrationRevision + 1,
+    }));
   },
   hydrate: (data) => get().prepareHydrate(data)(),
-}));
+})); }
+
+export type TimeStore = ReturnType<typeof createTimeStore>;
+const legacyTimeStore = createTimeStore();
+const TimeStoreContext = createContext<TimeStore | null>(null);
+export const TimeStoreProvider = TimeStoreContext.Provider;
+export function useTimeStoreApi(): TimeStore { return useContext(TimeStoreContext) ?? useTimeStore; }
+
+function useScopedTimeStore(): TimeState;
+function useScopedTimeStore<T>(selector: (state: TimeState) => T): T;
+function useScopedTimeStore(selector: (state: TimeState) => unknown = state => state) {
+  return useStore(useTimeStoreApi(), selector);
+}
+
+/** Hook reads the nearest world; imperative static methods retain the legacy default store. */
+export const useTimeStore = Object.assign(useScopedTimeStore, legacyTimeStore);

@@ -2,6 +2,36 @@ import { createSceneDocument, createSceneDocumentController, createSceneObject }
 import { logger } from '../../utils/logger';
 
 describe('createSceneDocumentController', () => {
+  test('rejects stale revisions without mutating state or publishing events', () => {
+    const controller = createSceneDocumentController(createSceneDocument({ id: 'scene' }));
+    const listener = jest.fn();
+    controller.subscribe(listener);
+    const command = { type: 'scene-object.create', object: createSceneObject({ id: 'a', name: 'A' }) } as const;
+    expect(controller.getRevision()).toBe(0);
+    expect(controller.dispatch(command, { expectedRevision: 0 }).accepted).toBe(true);
+    const snapshot = controller.getSnapshot();
+    const rejected = controller.dispatch({ type: 'scene-object.delete', objectId: 'a' }, { expectedRevision: 0 });
+    expect(rejected.accepted).toBe(false);
+    if (!rejected.accepted) expect(rejected.issues[0]?.code).toBe('revision-conflict');
+    expect(controller.getSnapshot()).toBe(snapshot);
+    expect(controller.getRevision()).toBe(1);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(controller.dispatch(command, { expectedRevision: 1 }).accepted).toBe(false);
+    expect(controller.getRevision()).toBe(1);
+  });
+
+  test('preserves each event revision during reentrant publication and document replacement', () => {
+    const controller = createSceneDocumentController(createSceneDocument({ id: 'scene' }));
+    const observed: Array<[string, number]> = [];
+    controller.subscribe((_snapshot, _event, context) => {
+      if (context.revision === 1) controller.dispatch({ type: 'scene-document.replace', document: createSceneDocument({ id: 'remote' }) }, { expectedRevision: 1 });
+    });
+    controller.subscribe((snapshot, _event, context) => observed.push([snapshot.id, context.revision]));
+    controller.dispatch({ type: 'scene-object.create', object: createSceneObject({ id: 'a', name: 'A' }) });
+    expect(observed).toEqual([['scene', 1], ['remote', 2]]);
+    expect(controller.getRevision()).toBe(2);
+  });
+
   test('owns a stable deep-frozen snapshot independently from the initial input', () => {
     const initialDocument = createSceneDocument({
       id: 'scene',

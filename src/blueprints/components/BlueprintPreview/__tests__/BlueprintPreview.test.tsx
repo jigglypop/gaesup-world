@@ -32,6 +32,8 @@ jest.mock('../../../../core', () => ({
   useKeyboard: jest.fn(),
   GaesupController: () => null, Camera: () => null, Clicker: () => null, GroundClicker: () => null,
 }));
+const mockStoreApi = { getState: () => mockStore, setState: (update: (state: typeof mockStore) => Partial<typeof mockStore>) => Object.assign(mockStore, update(mockStore)) };
+jest.mock('../../../../core/stores/gaesupStore', () => ({ useGaesupStoreApi: () => mockStoreApi }));
 jest.mock('@react-three/fiber', () => ({ Canvas: jest.fn(() => <div data-testid="preview-canvas" />) }));
 jest.mock('@react-three/drei', () => ({ Environment: () => null }));
 jest.mock('@react-three/rapier', () => ({ Physics: () => null, RigidBody: () => null, euler: () => [0, 0, 0] }));

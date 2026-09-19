@@ -44,6 +44,8 @@ export interface InteractionEvent {
 
 @RegisterSystem('world')
 export class WorldSystem implements BaseSystem {
+  private revision = 0;
+  getRevision(): number { return this.revision; }
   private objects: Map<string, WorldObject> = new Map();
   private interactionEvents: InteractionEvent[] = [];
   private spatial: SpatialGrid = new SpatialGrid({ cellSize: 10 });
@@ -73,6 +75,7 @@ export class WorldSystem implements BaseSystem {
   addObject(object: WorldObject): void {
     this.objects.set(object.id, object);
     this.spatial.add(object.id, object.position);
+    this.revision++;
   }
 
   removeObject(id: string): boolean {
@@ -80,7 +83,9 @@ export class WorldSystem implements BaseSystem {
     if (object) {
       this.spatial.remove(id);
     }
-    return this.objects.delete(id);
+    const removed = this.objects.delete(id);
+    if (removed) this.revision++;
+    return removed;
   }
 
   getObject(id: string): WorldObject | undefined {
@@ -98,11 +103,13 @@ export class WorldSystem implements BaseSystem {
   updateObject(id: string, updates: Partial<WorldObject>): boolean {
     const object = this.objects.get(id);
     if (!object) return false;
+    if (updates.id !== undefined && updates.id !== id) throw new TypeError('World object identity cannot change during update');
 
-    Object.assign(object, updates);
+    this.objects.set(id, { ...object, ...updates, id });
     if (updates.position) {
       this.spatial.update(id, updates.position);
     }
+    this.revision++;
     return true;
   }
 
@@ -134,6 +141,7 @@ export class WorldSystem implements BaseSystem {
 
   processInteraction(event: InteractionEvent): void {
     this.interactionEvents.push(event);
+    this.revision++;
     
     if (this.interactionEvents.length > 1000) {
       this.interactionEvents = this.interactionEvents.slice(-500);
@@ -146,6 +154,8 @@ export class WorldSystem implements BaseSystem {
       now - event.timestamp <= timeWindow
     );
   }
+
+  clearEvents(): void { this.interactionEvents.length = 0; this.revision++; }
 
   raycast(origin: THREE.Vector3, direction: THREE.Vector3, maxDistance: number = 100): {
     object: WorldObject;
@@ -178,5 +188,6 @@ export class WorldSystem implements BaseSystem {
     this.objects.clear();
     this.interactionEvents.length = 0;
     this.spatial.clear();
+    this.revision++;
   }
 }

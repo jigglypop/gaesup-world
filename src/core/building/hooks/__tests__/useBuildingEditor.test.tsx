@@ -61,7 +61,7 @@ jest.mock('@react-three/fiber', () => ({
 jest.mock('../../stores/buildingStore', () => {
   const useBuildingStore = jest.fn();
   (useBuildingStore as any).getState = jest.fn();
-  return { useBuildingStore };
+  return { useBuildingStore, useBuildingStoreApi: () => useBuildingStore };
 });
 
 // 테스트용 래퍼 컴포넌트

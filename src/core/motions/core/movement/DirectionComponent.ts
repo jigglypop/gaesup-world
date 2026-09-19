@@ -11,15 +11,12 @@ import {
 } from '@utils/memoization';
 import { calcNorm } from '@utils/vector';
 
+import { resolveMovementAxes } from '../../../input/movementAxes';
 import {
   createInteractionInputAdapter,
   type InputAdapter,
 } from '../../../interactions/core';
-import {
-  consumeReachedClickNavigationWaypoint,
-  getClickNavigationRoute,
-  getClickNavigationSettings,
-} from '../../../navigation/ClickNavigationRoute';
+import { defaultClickNavigationRoute, type ClickNavigationRoute } from '../../../navigation/ClickNavigationRoute';
 import { ActiveStateType } from '../../core/types';
 import {
   PhysicsCalcProps,
@@ -34,12 +31,6 @@ export class DirectionComponent {
   private vectorCache = this.memoManager.getVectorCache('direction');
   private lastEulerY = { character: 0, vehicle: 0, airplane: 0 };
   private lastDirectionLength = 0;
-  private lastKeyboardState = {
-    forward: false,
-    backward: false,
-    leftward: false,
-    rightward: false,
-  };
   private inputBackend: InputAdapter;
   private config: PhysicsConfigType;
   private tempEuler = new THREE.Euler();
@@ -48,11 +39,13 @@ export class DirectionComponent {
   private cameraForward = new THREE.Vector3();
   private cameraRight = new THREE.Vector3();
   private desiredMovement = new THREE.Vector3();
+  private movementAxes = new THREE.Vector2();
   private readonly upAxis = new THREE.Vector3(0, 1, 0);
 
   constructor(
     config: PhysicsConfigType = {} as PhysicsConfigType,
     inputBackend: InputAdapter = createInteractionInputAdapter(),
+    private readonly clickNavigation: ClickNavigationRoute = defaultClickNavigationRoute,
   ) {
     this.inputBackend = inputBackend;
     this.config = config;
@@ -90,25 +83,10 @@ export class DirectionComponent {
     const { activeState } = physicsState;
     const keyboard = this.getKeyboard(calcProp);
     const mouse = this.getMouse(calcProp);
-    const keyboardChanged =
-      this.lastKeyboardState.forward !== keyboard.forward ||
-      this.lastKeyboardState.backward !== keyboard.backward ||
-      this.lastKeyboardState.leftward !== keyboard.leftward ||
-      this.lastKeyboardState.rightward !== keyboard.rightward;
-    const hasKeyboardInput =
-      keyboard.forward || keyboard.backward || keyboard.leftward || keyboard.rightward;
     if (mouse.isActive) {
       this.handleMouseDirection(activeState, mouse, this.config, calcProp);
-    } else if (hasKeyboardInput) {
+    } else {
       this.handleKeyboardDirection(activeState, keyboard, this.config, controlMode, calcProp);
-    }
-    if (keyboardChanged || hasKeyboardInput) {
-      this.lastKeyboardState = {
-        forward: keyboard.forward,
-        backward: keyboard.backward,
-        leftward: keyboard.leftward,
-        rightward: keyboard.rightward,
-      };
     }
 
     this.emitRotationUpdate(activeState, 'character');
@@ -123,9 +101,9 @@ export class DirectionComponent {
     void controlMode;
     const { activeState } = physicsState;
     const keyboard = this.getKeyboard(calcProp);
-    const { forward, backward, leftward, rightward } = keyboard;
-    const xAxis = Number(rightward) - Number(leftward);
-    const zAxis = Number(forward) - Number(backward);
+    const axes = this.getAxes(keyboard, calcProp, false);
+    const xAxis = axes.x;
+    const zAxis = axes.y;
 
     activeState.euler.y -= xAxis * (Math.PI / 64);
 
@@ -145,7 +123,7 @@ export class DirectionComponent {
   ): void {
     const { activeState } = physicsState;
     const keyboard = this.getKeyboard(calcProp);
-    const { forward, backward, leftward, rightward, shift, space } = keyboard;
+    const { shift, space } = keyboard;
     const {
       angleDelta = { x: 0.02, y: 0.02, z: 0.02 },
       maxAngle = { x: Math.PI / 6, y: Math.PI, z: Math.PI / 6 },
@@ -155,8 +133,9 @@ export class DirectionComponent {
     let boost = 1;
     if (shift) boost *= accelRatio;
     if (space) boost *= 1.5;
-    const upDown = Number(backward) - Number(forward);
-    const leftRight = Number(leftward) - Number(rightward);
+    const axes = this.getAxes(keyboard, calcProp, false);
+    const upDown = -axes.y;
+    const leftRight = -axes.x;
     if (controlMode === 'chase') {
       activeState.euler.y += leftRight * angleDelta.y * 0.5;
     } else {
@@ -178,6 +157,11 @@ export class DirectionComponent {
 
   private getMouse(calcProp?: PhysicsCalcProps): PhysicsInputState['mouse'] {
     return calcProp?.inputRef?.current?.mouse ?? this.inputBackend.getMouse();
+  }
+
+  private getAxes(keyboard: PhysicsState['keyboard'], calcProp?: PhysicsCalcProps, normalize = true): THREE.Vector2 {
+    const gamepad = calcProp?.inputRef ? calcProp.inputRef.current.gamepad : this.inputBackend.getGamepad?.();
+    return resolveMovementAxes(keyboard, gamepad, this.movementAxes, normalize);
   }
 
   private applyAirplaneRotation(
@@ -227,7 +211,7 @@ export class DirectionComponent {
       const currentPos = calcProp.rigidBodyRef.current.translation();
       const tempCurrentPos = this.vectorCache.getTempVector(0);
       tempCurrentPos.set(currentPos.x, currentPos.y, currentPos.z);
-      if (getClickNavigationRoute().length === 0 && calcNorm(tempCurrentPos, mouse.target, false) < 1) {
+      if (this.clickNavigation.getClickNavigationRoute().length === 0 && calcNorm(tempCurrentPos, mouse.target, false) < 1) {
         calcProp.setMouseInput?.({ isActive: false, shouldRun: false, hasArrived: true });
         activeState.dir.set(0, 0, 0);
         activeState.direction.set(0, 0, 0);
@@ -242,7 +226,7 @@ export class DirectionComponent {
     mouse: PhysicsState['mouse'],
     calcProp?: PhysicsCalcProps,
   ): void {
-    if (getClickNavigationRoute().length === 0) return;
+    if (this.clickNavigation.getClickNavigationRoute().length === 0) return;
 
     const currentPosition = this.vectorCache.getTempVector(3);
     const rb = calcProp?.rigidBodyRef?.current;
@@ -253,8 +237,8 @@ export class DirectionComponent {
       currentPosition.copy(calcProp?.inputRef.current.mouse.target ?? mouse.target);
     }
 
-    const nextTarget = consumeReachedClickNavigationWaypoint(currentPosition);
-    const { shouldRun } = getClickNavigationSettings();
+    const nextTarget = this.clickNavigation.consumeReachedClickNavigationWaypoint(currentPosition);
+    const { shouldRun } = this.clickNavigation.getClickNavigationSettings();
 
     if (!nextTarget) {
       calcProp?.setMouseInput?.({ isActive: false, shouldRun: false, hasArrived: true });
@@ -305,7 +289,7 @@ export class DirectionComponent {
     void characterConfig;
     void controlMode;
     const desiredMovement = this.resolveKeyboardMovementDirection(keyboard, calcProp);
-    if (!desiredMovement) return;
+    if (!desiredMovement) { activeState.dir.set(0, 0, 0); activeState.direction.set(0, 0, 0); return; }
 
     // Impulse applies -dir; visual yaw points the model's canonical +Z along
     // movement. Asset-facing corrections belong only to modelYawOffset.
@@ -318,8 +302,9 @@ export class DirectionComponent {
     keyboard: PhysicsState['keyboard'],
     calcProp?: PhysicsCalcProps,
   ): THREE.Vector3 | null {
-    const forwardAxis = Number(keyboard.forward) - Number(keyboard.backward);
-    const rightAxis = Number(keyboard.rightward) - Number(keyboard.leftward);
+    const axes = this.getAxes(keyboard, calcProp);
+    const forwardAxis = axes.y;
+    const rightAxis = axes.x;
     if (forwardAxis === 0 && rightAxis === 0) {
       return null;
     }
@@ -341,7 +326,7 @@ export class DirectionComponent {
       desiredMovement.set(rightAxis, 0, -forwardAxis);
     }
 
-    return desiredMovement.normalize();
+    return desiredMovement;
   }
 
   private emitRotationUpdate(

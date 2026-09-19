@@ -15,8 +15,9 @@ import {
   resolveGrassTextureSources,
 } from "./assets";
 import fragmentShader from "./frag.glsl";
-import { getGrassManager, setGrassManagerWasm, type GrassTileRenderState } from "./manager";
+import { setGrassManagerWasm, type GrassTileRenderState } from "./manager";
 import { GrassMaterialInstance, GrassMeshProps } from "./type";
+import { useGrassManager } from "./useGrassManager";
 import vertexShader from "./vert.glsl";
 
 let _grassGroundToon: THREE.MeshToonMaterial | null = null;
@@ -306,6 +307,7 @@ const GrassContent: FC<GrassMeshProps> = memo(
   }) => {
     const { bW, bH, joints } = options;
     const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
+    const manager = useGrassManager();
     // Auto-clamp instance budget to the active perf tier. Low-end devices get
     // a quarter of the blades; high-end keep the user-supplied cap. This is
     // why "many tiles" no longer melts down on integrated GPUs.
@@ -351,11 +353,13 @@ const GrassContent: FC<GrassMeshProps> = memo(
     // (LOD weight batching) can also benefit.
     const [wasmModule, setWasmModule] = useState<GaesupCoreWasmExports | null>(null);
     useEffect(() => {
+      let active = true;
       loadCoreWasm().then((w) => {
-        if (!w) return;
+        if (!w || !active) return;
         setWasmModule(w);
         setGrassManagerWasm(w);
       });
+      return () => { active = false; };
     }, []);
 
     const attributeData = useMemo(
@@ -433,9 +437,8 @@ const GrassContent: FC<GrassMeshProps> = memo(
 
     // Register with the central GrassManager. The manager runs one
     // shared `useFrame` (via <GrassDriver />) and updates per-tile
-    // uniforms + instanceCount in batch. When the driver is not mounted
-    // the local frame loop below covers a single tile so legacy uses
-    // keep working.
+    // uniforms + instanceCount in batch. BuildingSystem mounts the driver;
+    // standalone grass scenes must mount GrassDriver alongside their tiles.
     useEffect(() => {
       const grp = groupRef.current;
       const initialCenter = new THREE.Vector3();
@@ -462,11 +465,12 @@ const GrassContent: FC<GrassMeshProps> = memo(
         if (u['trampleCenter']) {
           const v = u['trampleCenter'].value as THREE.Vector3;
           v.copy(s.trampleCenter);
+          mesh.worldToLocal(v);
         }
         if (u['trampleStrength']) u['trampleStrength'].value = s.trampleStrength;
       };
 
-      const handle = getGrassManager().register({
+      const handle = manager.register({
         width,
         height: bH * 1.4,
         center: initialCenter,
@@ -475,8 +479,8 @@ const GrassContent: FC<GrassMeshProps> = memo(
         apply,
       });
 
-      return () => { getGrassManager().unregister(handle.id); };
-    }, [width, bH, resolvedInstances, center?.[0], center?.[1], center?.[2], lod?.near, lod?.far, lod?.strength]);
+      return () => { manager.unregister(handle.id); };
+    }, [manager, width, bH, resolvedInstances, center?.[0], center?.[1], center?.[2], lod?.near, lod?.far, lod?.strength]);
 
     // Pre-compute a bounding sphere that contains every blade in the tile.
     // InstancedBufferGeometry can't compute one automatically because the
@@ -486,7 +490,7 @@ const GrassContent: FC<GrassMeshProps> = memo(
     useEffect(() => {
       const geo = geometryRef.current;
       if (!geo) return;
-      const radius = Math.hypot(width, bH * 1.4) * 0.6;
+      const radius = Math.hypot(width, width, bH * 1.4) * 0.5;
       geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, bH * 0.5, 0), radius);
       geo.boundingBox = new THREE.Box3(
         new THREE.Vector3(-width * 0.5, 0, -width * 0.5),
@@ -499,6 +503,7 @@ const GrassContent: FC<GrassMeshProps> = memo(
         <mesh ref={meshRef} frustumCulled>
           <instancedBufferGeometry
             ref={geometryRef}
+            instanceCount={resolvedInstances}
             index={baseGeom.index}
             attributes-position={baseGeom.getAttribute("position")}
             attributes-uv={baseGeom.getAttribute("uv")}

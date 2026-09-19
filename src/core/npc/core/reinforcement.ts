@@ -1,29 +1,6 @@
-import type {
-  NPCAction,
-  NPCBrainDecision,
-  NPCInstance,
-  NPCObservation,
-} from '../types';
-import type { NPCBrainAdapterContext } from './brain';
-import { registerNPCBrainAdapter } from './brain';
-
-type ReinforcementPolicyRequest = {
-  provider?: string;
-  instance: {
-    id: string;
-    templateId: string;
-    name: string;
-    brainMode: string;
-    behaviorMode: string;
-  };
-  observation: NPCObservation;
-};
-
-type ReinforcementPolicyResponse = {
-  actions?: NPCAction[];
-  reason?: string;
-  ttlMs?: number;
-};
+import type { NPCBrainDecision, NPCInstance, NPCObservation } from '../types';
+import { registerNPCBrainAdapter, type NPCBrainAdapter, type NPCBrainAdapterContext, type NPCBrainAdapterRegistry } from './brain';
+import { isNPCPolicyResponse } from './validatePolicy';
 
 export type ReinforcementAdapterConfig = {
   endpoint: string;
@@ -34,192 +11,165 @@ export type ReinforcementAdapterConfig = {
   fallbackToScriptedBehavior: boolean;
 };
 
-type AdapterRuntimeState = {
-  inFlight: boolean;
-  lastRequestAtMs: number;
-  queuedDecision?: NPCBrainDecision;
+export type ReinforcementAdapterOptions = {
+  config?: Partial<ReinforcementAdapterConfig>;
+  fetch?: typeof globalThis.fetch;
+  /** Monotonic wall time for I/O throttling and response age, independent of simulation pause/rewind. */
+  now?: () => number;
+  isCurrent?: (context: NPCBrainAdapterContext) => boolean;
+  active?: boolean;
 };
 
 const DEFAULT_CONFIG: ReinforcementAdapterConfig = {
-  endpoint: 'http://localhost:8091/policy/step',
-  timeoutMs: 3000,
-  minRequestIntervalMs: 700,
-  headers: {},
-  fallbackToScriptedBehavior: true,
+  endpoint: 'http://localhost:8091/policy/step', timeoutMs: 3000, minRequestIntervalMs: 700,
+  headers: {}, fallbackToScriptedBehavior: true,
+};
+type RequestState = {
+  brain: NPCInstance['brain'];
+  templateId: string;
+  lastRequestAtMs: number;
+  controller?: AbortController;
+  timer?: ReturnType<typeof setTimeout>;
+  queued?: { decision: NPCBrainDecision; expiresAt: number };
 };
 
-const runtimeState = new Map<string, AdapterRuntimeState>();
-let adapterConfig: ReinforcementAdapterConfig = { ...DEFAULT_CONFIG };
-let registered = false;
-
-function nowFromObservation(observation: NPCObservation): number {
-  return Math.round(observation.timestamp * 1000);
-}
-
-function createWanderTarget(observation: NPCObservation, radius: number): [number, number, number] {
-  const seed = observation.timestamp * 1.7 + observation.instanceId.length * 13.37;
-  const angle = (Math.sin(seed) * 0.5 + 0.5) * Math.PI * 2;
-  const distance = radius * (0.35 + (Math.cos(seed * 0.73) * 0.5 + 0.5) * 0.65);
-  return [
-    observation.position[0] + Math.cos(angle) * distance,
-    observation.position[1],
-    observation.position[2] + Math.sin(angle) * distance,
-  ];
-}
-
-function createFallbackDecision(instance: NPCInstance, observation: NPCObservation): NPCBrainDecision | undefined {
-  if (!adapterConfig.fallbackToScriptedBehavior) return undefined;
+function fallback(instance: NPCInstance, observation: NPCObservation): NPCBrainDecision | undefined {
   const behavior = instance.behavior;
   if (!behavior || behavior.mode === 'idle' || observation.navigationState === 'moving') return undefined;
-
-  if (behavior.mode === 'patrol' && behavior.waypoints && behavior.waypoints.length > 0) {
-    return {
-      source: 'reinforcement',
-      reason: 'fallback patrol',
-      actions: [{
-        type: 'patrol',
-        waypoints: behavior.waypoints,
-        speed: behavior.speed,
-        ...(behavior.loop !== undefined ? { loop: behavior.loop } : {}),
-        ...(behavior.moveAnimation ? { animationId: behavior.moveAnimation } : {}),
-      }],
-    };
+  if (behavior.mode === 'patrol' && behavior.waypoints?.length) {
+    return { source: 'reinforcement', reason: 'fallback patrol', actions: [{
+      type: 'patrol', waypoints: behavior.waypoints, speed: behavior.speed, loop: behavior.loop ?? true,
+      ...(behavior.moveAnimation ? { animationId: behavior.moveAnimation } : {}),
+    }] };
   }
-
   if (behavior.mode === 'wander') {
-    const radius = Math.max(0.5, behavior.wanderRadius ?? 4);
-    return {
-      source: 'reinforcement',
-      reason: 'fallback wander',
-      actions: [{
-        type: 'moveTo',
-        target: createWanderTarget(observation, radius),
-        speed: behavior.speed,
-        ...(behavior.moveAnimation ? { animationId: behavior.moveAnimation } : {}),
-      }],
-    };
+    const seed = observation.timestamp * 1.7 + observation.instanceId.length * 13.37;
+    const angle = (Math.sin(seed) * 0.5 + 0.5) * Math.PI * 2;
+    const distance = Math.max(0.5, behavior.wanderRadius ?? 4) * (0.35 + (Math.cos(seed * 0.73) * 0.5 + 0.5) * 0.65);
+    return { source: 'reinforcement', reason: 'fallback wander', actions: [{
+      type: 'moveTo', target: [observation.position[0] + Math.cos(angle) * distance, observation.position[1], observation.position[2] + Math.sin(angle) * distance], speed: behavior.speed,
+      ...(behavior.moveAnimation ? { animationId: behavior.moveAnimation } : {}),
+    }] };
   }
-
   return undefined;
 }
 
-function normalizeActions(actions: unknown): NPCAction[] {
-  if (!Array.isArray(actions)) return [];
-  return actions.filter((entry): entry is NPCAction =>
-    Boolean(entry) && typeof entry === 'object' && typeof (entry as { type?: unknown }).type === 'string');
-}
-
-function queueDecisionFromResponse(
-  instanceId: string,
-  observation: NPCObservation,
-  response: ReinforcementPolicyResponse,
-): void {
-  const actions = normalizeActions(response.actions);
-  if (actions.length === 0) return;
-  const state = runtimeState.get(instanceId);
-  if (!state) return;
-  state.queuedDecision = {
-    source: 'reinforcement',
-    reason: response.reason ?? `policy@${observation.timestamp.toFixed(2)}`,
-    actions,
+export function createReinforcementAdapter(options: ReinforcementAdapterOptions = {}) {
+  const states = new Map<string, RequestState>();
+  const now = options.now ?? (() => performance.now());
+  let config: ReinforcementAdapterConfig = { ...DEFAULT_CONFIG, headers: {} };
+  let active = options.active ?? true;
+  let requests = 0; let discardedResponses = 0; let invalidResponses = 0; let timedOutRequests = 0;
+  const getConfig = () => ({ ...config, headers: { ...config.headers } });
+  const cancel = (state: RequestState) => {
+    const controller = state.controller;
+    delete state.controller;
+    if (state.timer !== undefined) clearTimeout(state.timer);
+    delete state.timer; delete state.queued;
+    controller?.abort();
   };
-}
-
-async function requestPolicyDecision(
-  context: NPCBrainAdapterContext,
-  state: AdapterRuntimeState,
-): Promise<void> {
-  const { instance, observation } = context;
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), adapterConfig.timeoutMs);
-  try {
-    const provider = instance.brain?.policyId ?? instance.brain?.providerId;
-    const payload: ReinforcementPolicyRequest = {
-      ...(provider
-        ? { provider }
-        : {}),
-      instance: {
-        id: instance.id,
-        templateId: instance.templateId,
-        name: instance.name,
-        brainMode: instance.brain?.mode ?? 'none',
-        behaviorMode: instance.behavior?.mode ?? 'idle',
-      },
-      observation,
-    };
-
-    const response = await fetch(adapterConfig.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(provider
-          ? { 'X-Policy-Provider': provider }
-          : {}),
-        ...(adapterConfig.apiKey ? { Authorization: `Bearer ${adapterConfig.apiKey}` } : {}),
-        ...(adapterConfig.headers ?? {}),
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-    if (!response.ok) return;
-    const body = await response.json() as ReinforcementPolicyResponse;
-    queueDecisionFromResponse(instance.id, observation, body);
-  } catch {
-    // Silent fail; fallback behavior handles continuity.
-  } finally {
-    clearTimeout(timeout);
-    state.inFlight = false;
-  }
-}
-
-function reinforcementAdapter(context: NPCBrainAdapterContext): NPCBrainDecision | undefined {
-  const { instance, observation } = context;
-  const nowMs = nowFromObservation(observation);
-  const state = runtimeState.get(instance.id) ?? {
-    inFlight: false,
-    lastRequestAtMs: -Number.MAX_SAFE_INTEGER,
+  const release = (instanceId?: string) => {
+    if (instanceId !== undefined) {
+      const state = states.get(instanceId); states.delete(instanceId);
+      if (state) cancel(state);
+    } else {
+      const previous = [...states.values()]; states.clear(); previous.forEach(cancel);
+    }
   };
-  runtimeState.set(instance.id, state);
+  const configure = (updates: Partial<ReinforcementAdapterConfig>) => {
+    const candidate = { ...config, ...updates, headers: { ...config.headers, ...updates.headers } };
+    if (!candidate.endpoint.trim() || !Number.isFinite(candidate.timeoutMs) || candidate.timeoutMs <= 0
+      || !Number.isFinite(candidate.minRequestIntervalMs) || candidate.minRequestIntervalMs < 0) {
+      throw new TypeError('Invalid NPC policy endpoint or request timing');
+    }
+    release(); config = candidate;
+    return getConfig();
+  };
+  if (options.config) configure(options.config);
+  const current = (context: NPCBrainAdapterContext) => options.isCurrent?.(context) ?? true;
 
-  if (state.queuedDecision) {
-    const decision = state.queuedDecision;
-    delete state.queuedDecision;
-    return decision;
+  async function request(context: NPCBrainAdapterContext, state: RequestState) {
+    const controller = new AbortController(); state.controller = controller;
+    const requestConfig = getConfig(); const startedAt = now();
+    const valid = () => active && states.get(context.instance.id) === state && state.controller === controller && !controller.signal.aborted && current(context);
+    state.timer = setTimeout(() => {
+      if (state.controller !== controller) return;
+      timedOutRequests++; cancel(state);
+    }, requestConfig.timeoutMs);
+    requests++;
+    try {
+      const { instance, observation } = context;
+      const provider = instance.brain?.policyId ?? instance.brain?.providerId;
+      const response = await (options.fetch ?? globalThis.fetch)(requestConfig.endpoint, {
+        method: 'POST', signal: controller.signal,
+        headers: { 'Content-Type': 'application/json', ...(provider ? { 'X-Policy-Provider': provider } : {}), ...(requestConfig.apiKey ? { Authorization: `Bearer ${requestConfig.apiKey}` } : {}), ...requestConfig.headers },
+        body: JSON.stringify({ ...(provider ? { provider } : {}), instance: { id: instance.id, templateId: instance.templateId, name: instance.name, brainMode: instance.brain?.mode ?? 'none', behaviorMode: instance.behavior?.mode ?? 'idle' }, observation }),
+      });
+      if (!valid()) { discardedResponses++; return; }
+      if (!response.ok) return;
+      const body: unknown = await response.json();
+      if (!valid()) { discardedResponses++; return; }
+      if (!isNPCPolicyResponse(body)) { invalidResponses++; return; }
+      // TTL is observation age, measured from dispatch; omitted TTL uses the request deadline.
+      const expiresAt = startedAt + Math.min(body.ttlMs ?? requestConfig.timeoutMs, requestConfig.timeoutMs);
+      if (now() >= expiresAt) { discardedResponses++; return; }
+      if (body.actions?.length) state.queued = { expiresAt, decision: { source: 'reinforcement', reason: body.reason ?? `policy@${observation.timestamp.toFixed(2)}`, actions: body.actions } };
+    } catch {
+      // Transport failures retain the configured local fallback and request backoff.
+    } finally {
+      if (state.controller === controller) {
+        if (state.timer !== undefined) clearTimeout(state.timer);
+        delete state.timer; delete state.controller;
+      }
+    }
   }
 
-  if (!state.inFlight && (nowMs - state.lastRequestAtMs) >= adapterConfig.minRequestIntervalMs) {
-    state.inFlight = true;
-    state.lastRequestAtMs = nowMs;
-    void requestPolicyDecision(context, state);
-  }
-
-  return createFallbackDecision(instance, observation);
-}
-
-export function configureReinforcementAdapter(
-  config: Partial<ReinforcementAdapterConfig>,
-): ReinforcementAdapterConfig {
-  adapterConfig = {
-    ...adapterConfig,
-    ...config,
-    headers: {
-      ...(adapterConfig.headers ?? {}),
-      ...(config.headers ?? {}),
+  const adapter: NPCBrainAdapter = context => {
+    if (!active || !current(context)) return undefined;
+    const { instance, observation } = context;
+    let state = states.get(instance.id);
+    if (state && (state.brain !== instance.brain || state.templateId !== instance.templateId)) { release(instance.id); state = undefined; }
+    if (!state) {
+      state = { brain: instance.brain, templateId: instance.templateId, lastRequestAtMs: -Infinity };
+      states.set(instance.id, state);
+    }
+    const time = now();
+    if (state.queued) {
+      const queued = state.queued; delete state.queued;
+      if (time < queued.expiresAt) return queued.decision;
+      discardedResponses++;
+    }
+    if (!state.controller && time - state.lastRequestAtMs >= config.minRequestIntervalMs) {
+      state.lastRequestAtMs = time; void request(context, state);
+    }
+    return config.fallbackToScriptedBehavior ? fallback(instance, observation) : undefined;
+  };
+  return {
+    adapter, configure, getConfig, release,
+    suspend() { active = false; release(); },
+    resume() { active = true; },
+    dispose() { active = false; release(); },
+    getStats() {
+      let pending = 0; let queued = 0;
+      for (const state of states.values()) { pending += Number(Boolean(state.controller)); queued += Number(Boolean(state.queued)); }
+      return { active, instances: states.size, pending, queued, requests, discardedResponses, invalidResponses, timedOutRequests };
     },
   };
-  return adapterConfig;
+}
+export type ReinforcementAdapter = ReturnType<typeof createReinforcementAdapter>;
+
+export function attachReinforcementAdapter(registry: NPCBrainAdapterRegistry, client: ReinforcementAdapter): () => void {
+  const releases = ['default', 'openai', 'huggingface'].map(id => registry.register('reinforcement', id, client.adapter));
+  return () => releases.forEach(release => release());
 }
 
-export function getReinforcementAdapterConfig(): ReinforcementAdapterConfig {
-  return { ...adapterConfig, headers: { ...(adapterConfig.headers ?? {}) } };
-}
-
+const legacyClient = createReinforcementAdapter();
+let registered = false;
+export const configureReinforcementAdapter = legacyClient.configure;
+export const getReinforcementAdapterConfig = legacyClient.getConfig;
 export function registerDefaultReinforcementAdapter(): void {
   if (registered) return;
-  registerNPCBrainAdapter('reinforcement', 'default', reinforcementAdapter);
-  registerNPCBrainAdapter('reinforcement', 'openai', reinforcementAdapter);
-  registerNPCBrainAdapter('reinforcement', 'huggingface', reinforcementAdapter);
+  for (const id of ['default', 'openai', 'huggingface']) registerNPCBrainAdapter('reinforcement', id, legacyClient.adapter);
   registered = true;
 }
-
 registerDefaultReinforcementAdapter();

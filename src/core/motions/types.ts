@@ -14,7 +14,7 @@ import { GameStatesType } from '../world/components/Rideable/types';
 
 
 
-export type PhysicsInputState = Pick<InteractionState, 'keyboard' | 'mouse'>;
+export type PhysicsInputState = Pick<InteractionState, 'keyboard' | 'mouse'> & { gamepad?: InteractionState['gamepad'] | undefined };
 export type PhysicsDispatchPayload = object | string | number | boolean | null | undefined;
 export type PhysicsDispatchAction = {
   type: string;
@@ -45,6 +45,7 @@ export type PhysicsCalculationProps =
   Pick<PhysicsEntityProps, 'innerGroupRef' | 'outerGroupRef' | 'colliderRef' | 'groundRay' | 'colliderSize'>;
 
 export interface PhysicsState {
+  gamepad?: InteractionState['gamepad'] | undefined;
   activeState: ActiveStateType;
   gameStates: GameStatesType;
   keyboard: {

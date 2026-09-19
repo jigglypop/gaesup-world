@@ -16,6 +16,7 @@ type SceneDocumentListenerRegistration = {
 type SceneDocumentNotification = {
   snapshot: SceneDocument;
   event: SceneDocumentEvent;
+  revision: number;
 };
 
 export function createSceneDocumentController(
@@ -27,6 +28,7 @@ export function createSceneDocumentController(
   }
 
   let snapshot = deepFreezeOwned(parsed.document);
+  let revision = 0;
   const listeners = new Map<SceneDocumentControllerListener, SceneDocumentListenerRegistration>();
   const notificationQueue: SceneDocumentNotification[] = [];
   let isNotifying = false;
@@ -43,7 +45,7 @@ export function createSceneDocumentController(
         const registrations = [...listeners.values()];
         for (const registration of registrations) {
           try {
-            registration.listener(current.snapshot, current.event);
+            registration.listener(current.snapshot, current.event, { revision: current.revision });
           } catch (error) {
             reportListenerFailure(error);
           }
@@ -57,6 +59,7 @@ export function createSceneDocumentController(
 
   return {
     getSnapshot: () => snapshot,
+    getRevision: () => revision,
     subscribe: (listener) => {
       const registration = { listener };
       listeners.set(listener, registration);
@@ -66,12 +69,16 @@ export function createSceneDocumentController(
         }
       };
     },
-    dispatch: (command) => {
+    dispatch: (command, options) => {
+      if (options?.expectedRevision !== undefined && options.expectedRevision !== revision) {
+        return { accepted: false, document: snapshot, issues: [{ code: 'revision-conflict', message: `Expected revision ${options.expectedRevision}, current revision is ${revision}.` }] };
+      }
       const result = applySceneDocumentCommand(snapshot, command);
       if (!result.accepted) return result;
 
       snapshot = result.document;
-      notify({ snapshot: result.document, event: result.event });
+      revision++;
+      notify({ snapshot: result.document, event: result.event, revision });
       return result;
     },
   };

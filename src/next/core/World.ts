@@ -30,7 +30,10 @@ export class NextWorld {
   private aliveCount = 0;
 
   constructor(options: NextWorldOptions = {}) {
-    this.capacity = Math.min(options.capacity ?? DEFAULT_CAPACITY, MAX_ENTITY_CAPACITY);
+    this.capacity = options.capacity ?? DEFAULT_CAPACITY;
+    if (!Number.isInteger(this.capacity) || this.capacity < 1 || this.capacity > MAX_ENTITY_CAPACITY) {
+      throw new RangeError(`[NextWorld Error]: capacity must be an integer between 1 and ${MAX_ENTITY_CAPACITY}`);
+    }
     this.aliveFlags = new Uint8Array(this.capacity);
     this.generations = new Uint16Array(this.capacity);
     this.transforms = new TransformStore(this.capacity);
@@ -68,13 +71,18 @@ export class NextWorld {
     }
     const index = entityIndexOf(id);
     this.aliveFlags[index] = 0;
-    this.generations[index] = ((this.generations[index] ?? 0) + 1) & ENTITY_GENERATION_MASK;
-    this.freeIndices.push(index);
+    // Retire exhausted slots instead of wrapping and reviving an old public ID.
+    const generation = this.generations[index] ?? 0;
+    if (generation < ENTITY_GENERATION_MASK) {
+      this.generations[index] = generation + 1;
+      this.freeIndices.push(index);
+    }
     this.aliveCount -= 1;
     return true;
   }
 
   isAlive(id: EntityId): boolean {
+    if (!Number.isInteger(id) || id < 0 || id > 0x7fffffff) return false;
     const index = entityIndexOf(id);
     if (index >= this.capacity) {
       return false;

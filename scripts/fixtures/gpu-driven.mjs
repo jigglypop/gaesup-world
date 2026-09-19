@@ -17,6 +17,9 @@ import {
 async function run() {
   const renderer = new WebGPURenderer({ canvas: document.querySelector('#gpu') });
   await renderer.init();
+  let computeCalls = 0;
+  const compute = renderer.compute.bind(renderer);
+  renderer.compute = (...args) => { computeCalls += 1; return compute(...args); };
   if (!renderer.backend.isWebGPUBackend) throw new Error('Native WebGPU required for this probe.');
   renderer.setSize(640, 480);
   const scene = new Scene();
@@ -45,6 +48,9 @@ async function run() {
       extractFrustumPlanes(new Float32Array(projection.elements), planes, true);
       const expected = cullAndCompactSpheres(planes, positions, 0.87, 5, indices);
       group.update(planes);
+      const callsAfterUpdate = computeCalls;
+      group.update(new Float32Array(planes));
+      if (computeCalls !== callsAfterUpdate) throw new Error('Unchanged frustum dispatched compute again.');
       renderer.render(scene, camera);
       const visible = await group.readVisibleCount();
       if (visible !== expected) throw new Error(`GPU/CPU mismatch: ${visible} !== ${expected}`);
@@ -118,7 +124,7 @@ async function run() {
   nonIndexed.dispose();
   geometry.dispose();
   renderer.dispose();
-  return { native: true, results, zeroCount, drawRanges };
+  return { native: true, results, zeroCount, drawRanges, computeCalls, repeatedFrustumSkipped: true };
 }
 window.probe = run()
   .then((result) => ({ result }))

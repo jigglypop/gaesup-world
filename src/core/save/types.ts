@@ -16,6 +16,7 @@ export type SaveAdapter = {
 export type DomainBinding<T = SerializedDomainValue> = {
   key: string;
   serialize: () => T;
+  /** Must restore serialize() output, including after a failed apply. Own only this domain's state. */
   hydrate: (data: T | null | undefined) => void;
   /** Validate and prepare without mutation; return the deferred application. */
   prepareHydrate?: (data: T | null | undefined) => () => void;
@@ -27,6 +28,8 @@ export type SaveDiagnosticPhase = 'serialize' | 'hydrate';
 
 export type SaveDiagnostic = {
   phase: SaveDiagnosticPhase;
+  /** Set when restoring an earlier snapshot itself failed. */
+  operation?: 'rollback';
   key: string;
   slot: string;
   error: unknown;

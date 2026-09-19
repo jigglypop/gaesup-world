@@ -26,7 +26,7 @@ import {
   type AssetRecord,
 } from '../../../../assets';
 import { DEFAULT_BUILDING_OBJECT_CATALOG, getDefaultBuildingObject } from '../../../../building/catalog';
-import { useBuildingStore } from '../../../../building/stores/buildingStore';
+import { useBuildingStoreApi } from '../../../../building/stores/buildingStore';
 import {
   BUILDING_PLACED_OBJECT_OPTIONS,
   BUILDING_WALL_KIND_OPTIONS,
@@ -88,6 +88,7 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
   npcPanel,
   hideHeader = false,
 }) => {
+  const buildingStore = useBuildingStoreApi();
   const disabledSectionSet = useMemo(() => new Set(disabledSections), [disabledSections]);
   const {
     editMode,
@@ -660,7 +661,7 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
               draggable
               onDragStart={(event) => {
                 applyCustomTile();
-                const groupId = useBuildingStore.getState().selectedTileGroupId;
+                const groupId = buildingStore.getState().selectedTileGroupId;
                 if (!groupId) return;
                 event.dataTransfer.setData(BUILDING_TILE_GROUP_DRAG_TYPE, groupId);
                 event.dataTransfer.effectAllowed = 'copy';

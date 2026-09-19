@@ -1,63 +1,32 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
-import * as THREE from 'three';
-
-import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
+import { useWorldInputActions } from '../../../input/useWorldInputActions';
+import { useInventoryStoreApi } from '../../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
-import { getToolEvents } from '../../core/ToolEvents';
-import type { ToolKind } from '../../types';
+import { useToolEvents } from '../../hooks/useToolUse';
 
-export type ToolUseControllerProps = {
-  useKey?: string;
-  range?: number;
-  cooldownMs?: number;
-};
+export type ToolUseControllerProps = { useKey?: string; range?: number; cooldownMs?: number };
 
-export function ToolUseController({
-  useKey = 'f',
-  range = 2.4,
-  cooldownMs = 350,
-}: ToolUseControllerProps = {}): null {
+export function ToolUseController({ useKey = 'f', range = 2.4, cooldownMs = 350 }: ToolUseControllerProps = {}): null {
+  const actions = useWorldInputActions();
+  const inventoryStore = useInventoryStoreApi();
+  const toolEvents = useToolEvents();
   const { position, rotation } = usePlayerPosition({ reactive: false });
-  const lastUseRef = useRef(0);
 
-  useEffect(() => {
-    // `e.code` is layout/IME-independent ("KeyF" stays "KeyF" even in Korean IME),
-    // while `e.key` returns the resolved character ("ㄹ" with the Korean IME on),
-    // which made the tool key silently fail when the user was typing Korean.
-    const wantedCode = `Key${useKey.toUpperCase()}`;
-    const wantedKey = useKey.toLowerCase();
-    const onKey = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
-      if (tag === 'input' || tag === 'textarea') return;
-      if (e.code !== wantedCode && e.key.toLowerCase() !== wantedKey) return;
-
-      const now = performance.now();
-      if (now - lastUseRef.current < cooldownMs) return;
-
-      const equipped = useInventoryStore.getState().getEquipped();
-      if (!equipped) return;
-      const def = getItemRegistry().get(equipped.itemId);
-      if (!def?.toolKind) return;
-      const kind = def.toolKind as ToolKind;
-
+  useEffect(() => actions.register('tool.use', {
+    key: useKey,
+    cooldownMs,
+    execute: ({ timestamp }) => {
+      const equipped = inventoryStore.getState().getEquipped();
+      if (!equipped) return false;
+      const kind = getItemRegistry().get(equipped.itemId)?.toolKind;
+      if (!kind) return false;
       const yaw = rotation?.y ?? 0;
-      const dir = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw)).normalize();
-
-      lastUseRef.current = now;
-      getToolEvents().emit({
-        kind,
-        origin: [position.x, position.y, position.z],
-        direction: [dir.x, dir.y, dir.z],
-        range,
-        timestamp: now,
-      });
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [useKey, cooldownMs, range, position, rotation]);
-
+      toolEvents.emit({ kind, origin: [position.x, position.y, position.z], direction: [Math.sin(yaw), 0, Math.cos(yaw)], range, timestamp });
+      return true;
+    },
+  }), [actions, useKey, cooldownMs, range, position, rotation, inventoryStore, toolEvents]);
   return null;
 }
 

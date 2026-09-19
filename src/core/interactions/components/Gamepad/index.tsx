@@ -4,6 +4,7 @@ import { useGaesupStore } from '@stores/gaesupStore';
 import GamePadButton from './GamePadButton';
 import './styles.css';
 import { gamepadType } from './types';
+import { WorldInputSurface } from '../../../input/WorldInputSurface';
 
 export const gamepadDefault = {
   on: true,
@@ -23,7 +24,7 @@ export function GamePad(props: gamepadType) {
   if (mode?.controller !== 'gamepad') return null;
 
   return (
-    <div
+    <WorldInputSurface
       className="gamepad-container"
       style={{
         ...gamePadStyle,
@@ -39,7 +40,7 @@ export function GamePad(props: gamepadType) {
           gamePadButtonStyle={gamePadButtonStyle}
         />
       ))}
-    </div>
+    </WorldInputSurface>
   );
 }
 

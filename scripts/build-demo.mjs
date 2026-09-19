@@ -8,8 +8,10 @@ const base = process.env.GAESUP_BASE_URL ?? '/gaesup-world/';
 execFileSync(process.execPath, [path.join(root, 'node_modules/vite/bin/vite.js'), 'build', `--base=${base}`], { cwd: root, stdio: 'inherit' });
 const output = path.join(root, 'demo-dist');
 copyFileSync(path.join(output, 'index.html'), path.join(output, '404.html'));
-mkdirSync(path.join(output, 'engine'), { recursive: true });
-copyFileSync(path.join(output, 'index.html'), path.join(output, 'engine', 'index.html'));
+for (const route of ['engine', 'performance']) {
+  mkdirSync(path.join(output, route), { recursive: true });
+  copyFileSync(path.join(output, 'index.html'), path.join(output, route, 'index.html'));
+}
 writeFileSync(path.join(output, '.nojekyll'), '');
 const { version } = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();

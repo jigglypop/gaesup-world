@@ -6,6 +6,8 @@ export {
   serializeMailState,
 } from './plugin';
 export type { MailPluginOptions } from './plugin';
-export { useMailStore } from './stores/mailStore';
+export { useMailStore, useMailStoreApi, createMailStore } from './stores/mailStore';
 export { MailboxUI } from './components/MailboxUI';
 export type { MailboxUIProps } from './components/MailboxUI';
+
+export type { MailStore } from './stores/mailStore';

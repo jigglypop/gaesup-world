@@ -9,7 +9,7 @@ import {
   useGaesupRuntime,
   useGaesupRuntimeRevision,
 } from '@core/runtime';
-import { useGaesupStore } from '@stores/gaesupStore';
+import { useGaesupStore, useGaesupStoreApi } from '@stores/gaesupStore';
 import { StoreState } from '@stores/types';
 
 import { updateInputState } from '../bridge';
@@ -68,21 +68,24 @@ function getFallbackMotionsRuntime(): MotionsRuntime {
 }
 
 export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
-  const { enabled = true, allowLegacyFallback = true } = props;
+  const storeApi = useGaesupStoreApi();
+  const { enabled: requestedEnabled = true, allowLegacyFallback = true } = props;
   const reactEntityId = useId();
   const [fallbackEntityId] = useState(() => createFallbackPhysicsEntityId(reactEntityId));
   const entityId = props.entityId ?? fallbackEntityId;
   const contextRuntime = useGaesupRuntime();
+  const enabled = requestedEnabled && (!contextRuntime || contextRuntime.isActive());
   const contextRuntimeRevision = useGaesupRuntimeRevision();
   const contextMotionsRuntime = useMemo(() => {
-    if (props.motionsRuntime || !contextRuntime) return null;
+    if (props.motionsRuntime || !contextRuntime || !contextRuntime.isActive()) return null;
     const service = contextRuntime.getService<MotionsRuntimeService>(DEFAULT_MOTIONS_RUNTIME_SERVICE_ID);
     return service?.create() ?? null;
   }, [contextRuntime, contextRuntimeRevision, props.motionsRuntime]);
   const fallbackRuntime = useMemo(() => {
     if (props.motionsRuntime || contextMotionsRuntime || !allowLegacyFallback) return null;
+    if (contextRuntime) return contextRuntime.isActive() ? contextRuntime.motions : null;
     return getFallbackMotionsRuntime();
-  }, [allowLegacyFallback, contextMotionsRuntime, props.motionsRuntime]);
+  }, [allowLegacyFallback, contextMotionsRuntime, props.motionsRuntime, contextRuntime, contextRuntimeRevision]);
   const motionsRuntime = props.motionsRuntime ?? contextMotionsRuntime ?? fallbackRuntime;
   const physicsStateRef = useRef<PhysicsState | null>(null);
   const mouseTargetRef = useRef(new THREE.Vector3());
@@ -103,6 +106,7 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
   const inputRef = useRef<PhysicsInputState>({
     keyboard: inputAdapter.getKeyboard(),
     mouse: inputAdapter.getMouse(),
+    gamepad: inputAdapter.getGamepad?.(),
   });
   const calcPropRef = useRef<PhysicsCalcProps | null>(null);
 
@@ -115,7 +119,7 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
 
   // 브릿지 초기화
   useEffect(() => {
-    stateManagerRef.current = getGlobalStateManager();
+    stateManagerRef.current = contextRuntime?.stateManager ?? getGlobalStateManager();
     const bridge = enabled ? motionsRuntime?.physicsBridge : undefined;
     if (!bridge) {
       physicsBridgeRef.current = null;
@@ -125,7 +129,10 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
 
     const registration = { bridge, entityId };
     physicsBridgeRef.current = bridge;
-    bridge.register(entityId, latestPhysicsConfigRef.current, stateManagerRef.current);
+    bridge.register(entityId, latestPhysicsConfigRef.current, stateManagerRef.current, {
+      inputAdapter,
+      ...(contextRuntime ? { navigation: contextRuntime.navigation, clickNavigation: contextRuntime.clickNavigation } : {}),
+    });
     registrationRef.current = registration;
 
     return () => {
@@ -136,7 +143,7 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
         physicsStateRef.current = null;
       }
     };
-  }, [enabled, entityId, motionsRuntime?.physicsBridge]);
+  }, [enabled, entityId, motionsRuntime?.physicsBridge, contextRuntime, inputAdapter]);
 
   // 설정 업데이트
   useEffect(() => {
@@ -168,7 +175,7 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
       MOTIONS_TELEPORT_EVENT,
       handleRuntimeTeleport,
     );
-    const unsubscribeLegacyTeleport = motionsRuntime === fallbackRuntime
+    const unsubscribeLegacyTeleport = !contextRuntime && motionsRuntime === fallbackRuntime
       ? subscribeLegacyTeleportEvents(handleRuntimeTeleport)
       : undefined;
     
@@ -176,17 +183,18 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
       unsubscribeRuntimeTeleport?.();
       unsubscribeLegacyTeleport?.();
     };
-  }, [fallbackRuntime, motionsRuntime, motionsRuntime?.events, props.rigidBodyRef]);
+  }, [fallbackRuntime, motionsRuntime, motionsRuntime?.events, props.rigidBodyRef, contextRuntime]);
 
   // 물리 계산 실행
   const executePhysics = useCallback((state: RootState, delta: number) => {
     const registration = registrationRef.current;
     if (!enabled || !registration || !stateManagerRef.current) return;
 
-    const worldContext = useGaesupStore.getState() as StoreState;
+    const worldContext = storeApi.getState() as StoreState;
     const input = inputRef.current;
     input.keyboard = inputAdapter.getKeyboard();
     input.mouse = inputAdapter.getMouse();
+    input.gamepad = inputAdapter.getGamepad?.();
 
     let physicsState = physicsStateRef.current;
     // 물리 상태 초기화
@@ -261,7 +269,7 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
       calcProp,
       physicsState
     });
-  }, [enabled, inputAdapter, props]);
+  }, [enabled, inputAdapter, props, storeApi]);
 
   // 프레임 루프
   useFrame((state, delta) => {

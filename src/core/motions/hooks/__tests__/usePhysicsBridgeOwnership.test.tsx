@@ -14,6 +14,10 @@ import type { MotionsRuntime } from '../../plugin';
 import type { PhysicsCalcProps, PhysicsState } from '../../types';
 import { usePhysicsBridge, type UsePhysicsBridgeOptions } from '../usePhysicsBridge';
 import { getGlobalStateManager } from '../useStateSystem';
+import { createGaesupRuntime } from '../../../runtime/createGaesupRuntime';
+import { GaesupRuntimeProvider } from '../../../runtime/context';
+import { createMotionsPlugin } from '../../plugin';
+import type { ReactNode } from 'react';
 
 type FrameCallback = (state: RootState, delta: number) => void;
 
@@ -68,6 +72,31 @@ function createOptions(
 }
 
 describe('usePhysicsBridge entity ownership', () => {
+  test('keeps the same entity ID in two worlds independent across disposal and mounted restart', async () => {
+    const a = createGaesupRuntime({ plugins: [createMotionsPlugin()] });
+    const b = createGaesupRuntime();
+    const propsA = { rigidBodyRef: createRigidBodyRef(), entityId: 'player' };
+    const propsB = { rigidBodyRef: createRigidBodyRef(), entityId: 'player' };
+    const first = renderHook(() => usePhysicsBridge(propsA), { wrapper: ({ children }: { children: ReactNode }) => <GaesupRuntimeProvider runtime={a}>{children}</GaesupRuntimeProvider> });
+    const second = renderHook(() => usePhysicsBridge(propsB), { wrapper: ({ children }: { children: ReactNode }) => <GaesupRuntimeProvider runtime={b}>{children}</GaesupRuntimeProvider> });
+    try {
+      expect(first.result.current.isReady).toBe(false);
+      await act(async () => { await a.setup(); await b.setup(); });
+      const oldBridge = a.motions.physicsBridge;
+      const aEngine = oldBridge.getEngine('player'); const bEngine = b.motions.physicsBridge.getEngine('player');
+      expect(aEngine).toBeDefined(); expect(bEngine).toBeDefined(); expect(aEngine).not.toBe(bEngine);
+      expect(first.result.current.isReady).toBe(true);
+      await act(async () => { await a.dispose(); });
+      expect(first.result.current.isReady).toBe(false);
+      expect(oldBridge.getEngine('player')).toBeUndefined();
+      expect(b.motions.physicsBridge.getEngine('player')).toBe(bEngine);
+      await act(async () => { await a.setup(); });
+      expect(first.result.current.isReady).toBe(true);
+      expect(a.motions.physicsBridge).not.toBe(oldBridge);
+      expect(a.motions.physicsBridge.getEngine('player')).toBeDefined();
+      expect(b.motions.physicsBridge.getEngine('player')).toBe(bEngine);
+    } finally { first.unmount(); second.unmount(); await a.dispose(); await b.dispose(); }
+  });
   beforeEach(() => {
     useGaesupStore.setState({ physics: clonePhysicsConfig(ORIGINAL_PHYSICS_CONFIG) });
     jest.clearAllMocks();
@@ -263,6 +292,7 @@ describe('usePhysicsBridge entity ownership', () => {
       'latest-config-entity',
       config0,
       expect.anything(),
+      { inputAdapter: firstRuntime.inputAdapter },
     );
     expect(firstExecute).toHaveBeenLastCalledWith('latest-config-entity', {
       type: 'updateConfig',
@@ -290,6 +320,7 @@ describe('usePhysicsBridge entity ownership', () => {
       'latest-config-entity',
       config1,
       expect.anything(),
+      { inputAdapter: secondRuntime.inputAdapter },
     );
     expect(secondExecute).toHaveBeenLastCalledWith('latest-config-entity', {
       type: 'updateConfig',
@@ -312,6 +343,7 @@ describe('usePhysicsBridge entity ownership', () => {
       'latest-config-entity',
       config2,
       expect.anything(),
+      { inputAdapter: secondRuntime.inputAdapter },
     );
     expect(secondExecute).toHaveBeenLastCalledWith('latest-config-entity', {
       type: 'updateConfig',

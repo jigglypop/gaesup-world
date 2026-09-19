@@ -7,6 +7,7 @@ import { HandleError, ManageRuntime, Profile } from '@core/boilerplate';
 import { AnimationController } from '@core/motions/controller/AnimationController';
 import { GameStatesType } from '@core/world/components/Rideable/types';
 
+import type { ClickNavigationRoute } from '../../../navigation/ClickNavigationRoute';
 import type { PhysicsCalcProps, PhysicsState } from '../../types';
 import type { PhysicsConfigType } from '../config';
 import { GravityComponent } from '../forces';
@@ -14,6 +15,10 @@ import { ForceComponent } from '../forces/ForceComponent';
 import { DirectionComponent, ImpulseComponent } from '../movement';
 import { EntityStateManager } from './EntityStateManager';
 import { PhysicsSystemState, PhysicsSystemMetrics, PhysicsSystemOptions } from './types';
+import type { InputAdapter } from '../../../interactions/core/adapter';
+import type { NavigationSystem } from '../../../navigation/NavigationSystem';
+
+export type PhysicsWorldServices = { inputAdapter?: InputAdapter; navigation?: NavigationSystem; clickNavigation?: ClickNavigationRoute };
 
 const defaultState: PhysicsSystemState = {
   isJumping: false,
@@ -94,11 +99,12 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     config: PhysicsConfigType,
     options: PhysicsSystemOptions = {},
     stateManager?: EntityStateManager,
+    services: PhysicsWorldServices = {},
   ) {
     super(defaultState, defaultMetrics, options);
     this.config = createOwnedPhysicsConfig(config);
-    this.directionComponent = new DirectionComponent(this.config);
-    this.impulseComponent = new ImpulseComponent(this.config, stateManager);
+    this.directionComponent = new DirectionComponent(this.config, services.inputAdapter, services.clickNavigation);
+    this.impulseComponent = new ImpulseComponent(this.config, stateManager, services.inputAdapter, services.navigation);
     this.gravityComponent = new GravityComponent(this.config);
   }
 
@@ -321,7 +327,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     const keyboard = physicsState.keyboard;
     const mouse = physicsState.mouse;
     const { shift, space, forward, backward, leftward, rightward } = keyboard;
-    const isKeyboardMoving = forward || backward || leftward || rightward;
+    const isKeyboardMoving = forward || backward || leftward || rightward || !!(physicsState.gamepad?.connected && physicsState.gamepad.leftStick.lengthSq() > 0);
     const isMoving = isKeyboardMoving || mouse.isActive;
     const isRunning =
       (isKeyboardMoving && shift && !mouse.isLookAround) ||

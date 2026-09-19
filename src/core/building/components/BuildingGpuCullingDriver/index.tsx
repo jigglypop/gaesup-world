@@ -5,8 +5,8 @@ import * as THREE from 'three';
 
 import { logger } from '../../../utils/logger';
 import { parseBuildingGpuVisibilityFlags } from '../../render/culling';
-import { useBuildingGpuCullingStore } from '../../render/cullingStore';
-import { useBuildingRenderStateStore } from '../../render/store';
+import { useBuildingGpuCullingStore, useBuildingGpuCullingStoreApi } from '../../render/cullingStore';
+import { useBuildingRenderStateStore, useBuildingRenderStateStoreApi } from '../../render/store';
 import { getWebGPUDeviceFromRenderer } from '../../render/upload';
 import { VISIBILITY_MAX_DISTANCE } from '../../visibility/core';
 
@@ -208,6 +208,8 @@ fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
 }
 
 export function BuildingGpuCullingDriver() {
+  const cullingStore = useBuildingGpuCullingStoreApi();
+  const renderStore = useBuildingRenderStateStoreApi();
   const gl = useThree((s) => s.gl);
   const snapshot = useBuildingRenderStateStore((s) => s.snapshot);
   const uploadResources = useBuildingRenderStateStore((s) => s.uploadResources);
@@ -283,7 +285,7 @@ export function BuildingGpuCullingDriver() {
       state.camera.matrixWorldInverse,
     );
     state.camera.getWorldPosition(scratch.camera);
-    const previous = useBuildingGpuCullingStore.getState();
+    const previous = cullingStore.getState();
     const previousCamera = previous.camera;
     if (previous.active && previous.version === snapshot.version && previousCamera &&
       previousCamera.coordinateSystem === state.camera.coordinateSystem &&
@@ -365,7 +367,7 @@ export function BuildingGpuCullingDriver() {
       })
       .then(() => {
         if (refs.current.resources !== resources) return;
-        if (useBuildingRenderStateStore.getState().snapshot !== snapshot) {
+        if (renderStore.getState().snapshot !== snapshot) {
           resources.readBuffer?.unmap?.();
           return;
         }
@@ -388,7 +390,7 @@ export function BuildingGpuCullingDriver() {
         destroyResources(resources);
         refs.current.resources = createEmptyResources();
         refs.current.busy = false;
-        if (useBuildingRenderStateStore.getState().snapshot === snapshot) reset();
+        if (renderStore.getState().snapshot === snapshot) reset();
         logger.warn('Building GPU culling readback failed; using CPU visibility',
           error instanceof Error ? error : String(error));
       })

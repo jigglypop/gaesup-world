@@ -6,10 +6,7 @@ import { PathLine } from './PathLine';
 import { TargetMarker } from './TargetMarker';
 import { useInteractionSystem } from '../../../motions/hooks/useInteractionSystem';
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
-import {
-  getClickNavigationRoute,
-  subscribeClickNavigationRoute,
-} from '../../../navigation/ClickNavigationRoute';
+import { useClickNavigationRoute } from '../../../navigation/hooks/useNavigation';
 import { useGaesupStore } from '../../../stores/gaesupStore';
 
 const EMPTY_MOUSE_TARGET = new THREE.Vector3();
@@ -17,6 +14,7 @@ const PLAYER_POSITION_UPDATE_INTERVAL_MS = 150;
 const REACH_DISTANCE = 1.0;
 
 export function Clicker() {
+  const { getClickNavigationRoute, subscribeClickNavigationRoute } = useClickNavigationRoute();
   const automation = useGaesupStore((state) => state.automation);
   const { position: playerPosition } = usePlayerPosition({
     updateInterval: PLAYER_POSITION_UPDATE_INTERVAL_MS,
@@ -25,13 +23,11 @@ export function Clicker() {
   const [navigationPoints, setNavigationPoints] = useState(() => [...getClickNavigationRoute()]);
   const pathPointsRef = useRef<THREE.Vector3[]>([]);
 
-  useEffect(
-    () =>
-      subscribeClickNavigationRoute(() => {
-        setNavigationPoints([...getClickNavigationRoute()]);
-      }),
-    [],
-  );
+  useEffect(() => {
+    const refresh = () => setNavigationPoints([...getClickNavigationRoute()]);
+    refresh();
+    return subscribeClickNavigationRoute(refresh);
+  }, [getClickNavigationRoute, subscribeClickNavigationRoute]);
 
   const mouseTarget = mouse?.target || EMPTY_MOUSE_TARGET;
   const isActive = mouse?.isActive || false;

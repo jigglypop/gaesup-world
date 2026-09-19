@@ -4,7 +4,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { createToonMaterial, getDefaultToonMode } from '@core/rendering/toon';
-import { useWeatherStore } from '@core/weather/stores/weatherStore';
+import { useWeatherStoreApi } from '@core/weather/stores/weatherStore';
 
 import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
 import type { BuildingTreeKind } from '../../types';
@@ -413,6 +413,7 @@ void main() {
 `;
 
 export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: boolean }) {
+  const weatherStore = useWeatherStoreApi();
   const barkRef = useRef<THREE.InstancedMesh>(null!);
   const darkRef = useRef<THREE.InstancedMesh>(null!);
   const topRef = useRef<THREE.InstancedMesh>(null!);
@@ -606,7 +607,7 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
     if (m?.uniforms) {
       const uTime = m.uniforms['uTime'];
       const uScale = m.uniforms['uScale'];
-      const w = useWeatherStore.getState().current;
+      const w = weatherStore.getState().current;
       const intensity = w?.intensity ?? 0;
       const base =
         w?.kind === 'storm' ? 2.4 :

@@ -2,9 +2,10 @@ import { useCallback, useEffect } from 'react';
 
 import { CollisionEnterPayload, CollisionExitPayload, euler, vec3 } from '@react-three/rapier';
 
-import { useGaesupStore } from '@stores/gaesupStore';
+import { useGaesupStore, useGaesupStoreApi } from '@stores/gaesupStore';
 
 import { rideableType } from './types';
+import { useWorldInputScope } from '../../input/useWorldInputScope';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
 
 export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'url' | 'wheelUrl'> =
@@ -17,6 +18,8 @@ export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'u
   };
 
 export function useRideable() {
+  const inputScope = useWorldInputScope();
+  const storeApi = useGaesupStoreApi();
   const { gameStates, updateGameStates, activeState } = useStateSystem();
   const rideable = useGaesupStore((state) => state.rideable);
   const urls = useGaesupStore((state) => state.urls);
@@ -132,6 +135,7 @@ export function useRideable() {
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.code !== 'KeyF') return;
       if (e.repeat) return;
       if (gameStates.canRide && gameStates.nearbyRideable) {
@@ -142,9 +146,10 @@ export function useRideable() {
         void exitRideable();
       }
     };
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
+    const offKeyPress = inputScope.listen('keydown', handleKeyPress);
+    return () => offKeyPress();
   }, [
+    inputScope,
     gameStates.canRide,
     gameStates.nearbyRideable,
     gameStates.isRiding,
@@ -154,20 +159,20 @@ export function useRideable() {
 
   const initRideable = useCallback(
     (props: rideableType) => {
-      const existing = useGaesupStore.getState().rideable[props.objectkey];
+      const existing = storeApi.getState().rideable[props.objectkey];
       setRideable(props.objectkey, {
         ...(!existing ? rideableDefault : {}),
         ...props,
       });
     },
-    [setRideable],
+    [setRideable, storeApi],
   );
 
   const updateRideable = useCallback(
     (props: rideableType) => {
       setRideable(props.objectkey, props);
     },
-    [setRideable],
+    [setRideable, storeApi],
   );
 
   const getRideable = (objectkey: string): rideableType | undefined => {

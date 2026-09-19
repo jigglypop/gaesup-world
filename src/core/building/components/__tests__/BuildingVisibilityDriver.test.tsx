@@ -12,7 +12,7 @@ import { getGrassManager } from '../mesh/grass/manager';
 
 jest.mock('@react-three/fiber', () => ({ useFrame: jest.fn() }));
 jest.mock('../mesh/grass/manager', () => ({
-  getGrassManager: () => ({ size: () => 1, tick: mockGrassTick }),
+  getGrassManager: () => ({ size: () => 1, isEnabled: () => true, tick: mockGrassTick }),
 }));
 const mockGrassTick = jest.fn();
 

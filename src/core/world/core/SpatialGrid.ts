@@ -91,13 +91,14 @@ export class SpatialGrid {
   getNearby(position: THREE.Vector3, radius: number, out?: string[]): string[] {
     const result = out ?? [];
     if (out) out.length = 0;
-    const cellRadius = Math.ceil(radius / this.cellSize);
-    const centerX = Math.floor(position.x / this.cellSize);
-    const centerZ = Math.floor(position.z / this.cellSize);
+    const minX = Math.floor((position.x - radius) / this.cellSize);
+    const maxX = Math.floor((position.x + radius) / this.cellSize);
+    const minZ = Math.floor((position.z - radius) / this.cellSize);
+    const maxZ = Math.floor((position.z + radius) / this.cellSize);
     const radiusSq = radius * radius;
 
-    for (let x = centerX - cellRadius; x <= centerX + cellRadius; x++) {
-      for (let z = centerZ - cellRadius; z <= centerZ + cellRadius; z++) {
+    for (let x = minX; x <= maxX; x++) {
+      for (let z = minZ; z <= maxZ; z++) {
         const key = SpatialGrid.pair(x, z);
         const cell = this.cells.get(key);
         if (cell) {
@@ -126,4 +127,4 @@ export class SpatialGrid {
   get size(): number {
     return this.objectPositions.size;
   }
-} 
+}

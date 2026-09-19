@@ -81,6 +81,14 @@ export class CameraSystem extends BaseCameraSystem {
       this.resolveActiveController();
     }
   }
+
+  /** Frame-local orbit input; keep the owned configuration and controller view in sync. */
+  updateOrbit(orbitYaw: number, orbitPitch: number): void {
+    this.config.orbitYaw = this.state.config.orbitYaw = orbitYaw;
+    this.config.orbitPitch = this.state.config.orbitPitch = orbitPitch;
+    this.emitter.emit('configChange', { key: 'orbitYaw', value: orbitYaw });
+    this.emitter.emit('configChange', { key: 'orbitPitch', value: orbitPitch });
+  }
   
   update(deltaTime: number): void {
     this.trackFrameMetrics(deltaTime);

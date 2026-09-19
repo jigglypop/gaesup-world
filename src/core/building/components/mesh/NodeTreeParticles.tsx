@@ -6,7 +6,7 @@ import { attribute, cos, exp, float, fract, pow, sin, uniform, uv, vec3 } from '
 import { InstancedBufferAttribute, PointsNodeMaterial, Sprite } from 'three/webgpu';
 
 import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
-import { useWeatherStore } from '../../../weather/stores/weatherStore';
+import { useWeatherStoreApi } from '../../../weather/stores/weatherStore';
 
 type TreeParticleProps = {
   geometry: BufferGeometry;
@@ -16,6 +16,7 @@ type TreeParticleProps = {
 };
 
 export default function NodeTreeParticles({ geometry, size, opacity, falling = false }: TreeParticleProps) {
+  const weatherStore = useWeatherStoreApi();
   const owned = useMemo(() => {
     const time = uniform(0);
     const wind = uniform(1);
@@ -70,7 +71,7 @@ export default function NodeTreeParticles({ geometry, size, opacity, falling = f
   useFrame((state) => {
     if (!falling || (owned.sprite.parent && !owned.sprite.parent.visible)) return;
     owned.time.value = getFrameElapsedSeconds(state);
-    const weather = useWeatherStore.getState().current;
+    const weather = weatherStore.getState().current;
     const base = weather?.kind === 'storm' ? 2.4 : weather?.kind === 'rain' ? 1.6
       : weather?.kind === 'snow' ? 1.2 : weather?.kind === 'cloudy' ? 1.1 : 0.9;
     owned.wind.value = base + (weather?.intensity ?? 0) * 0.7;

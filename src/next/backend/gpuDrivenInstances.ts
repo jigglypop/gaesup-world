@@ -113,6 +113,8 @@ export async function createGpuDrivenInstances(options: GpuDrivenInstancesOption
   const mesh = new Mesh(geometry, material);
   mesh.frustumCulled = false;
   const kernels = [reset, cull];
+  const previousPlanes = new Float32Array(24);
+  let hasPreviousPlanes = false;
   let disposed = false;
   return {
     mesh,
@@ -121,10 +123,20 @@ export async function createGpuDrivenInstances(options: GpuDrivenInstancesOption
     update(planes: Float32Array): void {
       if (disposed) return;
       if (planes.length !== 24) throw new RangeError('Expected six normalized frustum planes.');
+      // Translations/radius are immutable; an unchanged frustum has the same compacted draw.
+      if (hasPreviousPlanes) {
+        let changed = false;
+        for (let i = 0; i < 24; i += 1) {
+          if (planes[i] !== previousPlanes[i]) { changed = true; break; }
+        }
+        if (!changed) return;
+      }
       for (let i = 0; i < 6; i += 1) {
         planeVectors[i]?.fromArray(planes, i * 4);
       }
       renderer.compute(kernels);
+      previousPlanes.set(planes);
+      hasPreviousPlanes = true;
     },
     /** Optional asynchronous telemetry; never needed for the render loop. */
     async readVisibleCount(): Promise<number> {

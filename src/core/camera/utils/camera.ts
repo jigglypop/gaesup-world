@@ -29,23 +29,33 @@ const fallbackToVec3 = new THREE.Vector3();
 let cachedCollisionMeshes: THREE.Mesh[] = [];
 let cachedCollisionScene: THREE.Scene | null = null;
 let cachedCollisionVersion = -1;
+const uncachedCollisionMeshes: THREE.Mesh[] = [];
+const noCollisionExclusions: THREE.Object3D[] = [];
 
-function collectCollisionMeshes(scene: THREE.Scene): THREE.Mesh[] {
-  const meshes: THREE.Mesh[] = [];
-  scene.traverse((object) => {
+function collectCollisionMeshes(
+  scene: THREE.Scene,
+  meshes: THREE.Mesh[] = [],
+  excludedObjects?: THREE.Object3D[],
+): THREE.Mesh[] {
+  meshes.length = 0;
+  const visit = (object: THREE.Object3D): void => {
+    // Exclusion is inherited: entire avatar/helper subtrees can be skipped.
+    if (excludedObjects && (object.userData['intangible'] || excludedObjects.includes(object))) return;
     if (object instanceof THREE.Mesh
       && !('isLineSegments2' in object && object.isLineSegments2)
       && !object.userData['intangible'] && object.geometry?.boundingSphere) {
       meshes.push(object);
     }
-  });
+    for (const child of object.children) visit(child);
+  };
+  visit(scene);
   return meshes;
 }
 
-function getCollisionMeshes(scene: THREE.Scene): THREE.Mesh[] {
+function getCollisionMeshes(scene: THREE.Scene, excludedObjects?: THREE.Object3D[]): THREE.Mesh[] {
   const version = (scene as SceneWithFrameId)._frameId;
   if (version === undefined) {
-    return collectCollisionMeshes(scene);
+    return collectCollisionMeshes(scene, uncachedCollisionMeshes, excludedObjects ?? noCollisionExclusions);
   }
 
   // Rebuild every 60 frames (~1s at 60fps) or when scene reference changes.
@@ -72,6 +82,7 @@ function isObjectExcluded(object: THREE.Object3D, excludedObjects?: THREE.Object
 }
 
 export function invalidateCollisionCache(): void {
+  cachedCollisionScene = null;
   cachedCollisionVersion = -1;
 }
 
@@ -163,7 +174,7 @@ export const cameraUtils = {
     collisionRaycaster.far = distance;
 
     const obstacles: Obstacle[] = [];
-    const meshes = getCollisionMeshes(scene);
+    const meshes = getCollisionMeshes(scene, excludedObjects);
 
     for (let i = 0, len = meshes.length; i < len; i++) {
       const mesh = meshes[i];

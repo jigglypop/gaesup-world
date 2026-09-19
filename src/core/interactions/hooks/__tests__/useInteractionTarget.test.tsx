@@ -28,7 +28,7 @@ describe('useInteractionKey', () => {
     });
     await runtime.setup();
 
-    useInteractablesStore.getState().register({
+    runtime.interactablesStore.getState().register({
       id: 'target-1',
       kind: 'misc',
       label: 'Target',
@@ -37,7 +37,7 @@ describe('useInteractionKey', () => {
       key: 'e',
       onActivate,
     });
-    useInteractablesStore.getState().setCurrent({
+    runtime.interactablesStore.getState().setCurrent({
       id: 'target-1',
       label: 'Target',
       key: 'e',

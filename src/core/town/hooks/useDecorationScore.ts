@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
-import { useBuildingStore } from '../../building/stores/buildingStore';
-import { useTownStore } from '../stores/townStore';
+import { useBuildingStoreApi } from '../../building/stores/buildingStore';
+import { useTownStoreApi } from '../stores/townStore';
 
 export type DecorationWeights = {
   tile?: number;
@@ -18,11 +18,13 @@ const DEFAULT_WEIGHTS: Required<DecorationWeights> = {
 };
 
 export function useDecorationScore(enabled: boolean = true, weights: DecorationWeights = {}): void {
+  const townStore = useTownStoreApi();
+  const buildingStore = useBuildingStoreApi();
   useEffect(() => {
     if (!enabled) return;
     const w = { ...DEFAULT_WEIGHTS, ...weights };
 
-    const compute = (s: ReturnType<typeof useBuildingStore.getState>) => {
+    const compute = (s: ReturnType<typeof buildingStore.getState>) => {
       let tiles = 0;
       let walls = 0;
       const placed = s.objects.length;
@@ -36,11 +38,11 @@ export function useDecorationScore(enabled: boolean = true, weights: DecorationW
       }
 
       const score = w.base + tiles * w.tile + walls * w.wall + placed * w.placedObject;
-      useTownStore.getState().setDecorationScore(score);
+      townStore.getState().setDecorationScore(score);
     };
 
-    compute(useBuildingStore.getState());
-    const off = useBuildingStore.subscribe((s) => compute(s));
+    compute(buildingStore.getState());
+    const off = buildingStore.subscribe((s) => compute(s));
     return off;
-  }, [enabled, weights.tile, weights.wall, weights.placedObject, weights.base]);
+  }, [buildingStore, enabled, weights.tile, weights.wall, weights.placedObject, weights.base, townStore]);
 }

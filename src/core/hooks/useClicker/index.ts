@@ -7,13 +7,7 @@ import { ClickerMoveOptions, ClickerResult } from './types';
 import type { InputAdapter } from '../../interactions/core';
 import { useInputBackend } from '../../interactions/hooks';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
-import {
-  clearClickNavigationRoute,
-  isLatestClickNavigationRequest,
-  nextClickNavigationRequest,
-  setClickNavigationRoute,
-} from '../../navigation/ClickNavigationRoute';
-import { NavigationSystem } from '../../navigation/NavigationSystem';
+import { useNavigationSystem, useClickNavigationRoute } from '../../navigation/hooks/useNavigation';
 
 function updateMouseTarget(
   inputBackend: InputAdapter,
@@ -35,6 +29,8 @@ function updateMouseTarget(
 }
 
 export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
+  const navigation = useNavigationSystem();
+  const { clearClickNavigationRoute, isLatestClickNavigationRequest, nextClickNavigationRequest, setClickNavigationRoute } = useClickNavigationRoute();
   const {
     minHeight = 0.5,
     offsetY = 0.5,
@@ -75,10 +71,10 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
         return true;
       }
 
-      void NavigationSystem.getInstance().init().then(() => {
+      void navigation.init().then(() => {
         if (!isLatestClickNavigationRequest(requestId)) return;
 
-        const navigation = NavigationSystem.getInstance();
+
         const agentSize = {
           agentRadius,
           ...(agentWidth !== undefined ? { agentWidth } : {}),

@@ -475,6 +475,7 @@ function BoxTileBatchMesh({
     <instancedMesh
       ref={ref}
       args={[geometry, batch.material, Math.max(1, batch.tiles.length)]}
+      name={`building-batch:tile:${batch.materialId}`}
       castShadow
       receiveShadow
       frustumCulled

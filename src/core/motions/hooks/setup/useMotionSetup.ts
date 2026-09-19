@@ -2,11 +2,10 @@ import { useRef, useEffect, RefObject } from 'react';
 
 import { RapierRigidBody } from '@react-three/rapier';
 
-import { BridgeFactory } from '@core/boilerplate';
 import { ModeType } from '@stores/slices';
 
-import { MotionBridge } from '../../bridge/MotionBridge';
 import { MotionCommand } from '../../bridge/types';
+import { useWorldMotionBridge } from '../useWorldMotionBridge';
 
 export function useMotionSetup(
   entityId: string,
@@ -15,17 +14,12 @@ export function useMotionSetup(
   isActive: boolean
 ) {
   const registeredRef = useRef<boolean>(false);
-  const motionBridgeRef = useRef<MotionBridge | null>(null);
-  
-  // Bridge 인스턴스 한번만 가져오기
-  if (!motionBridgeRef.current) {
-    motionBridgeRef.current = BridgeFactory.getOrCreate('motion') as MotionBridge | null;
-  }
+  const bridge = useWorldMotionBridge();
   
   useEffect(() => {
-    if (!rigidBodyRef.current || registeredRef.current || !motionBridgeRef.current) return undefined;
+    if (!rigidBodyRef.current || registeredRef.current || !bridge) return undefined;
 
-    motionBridgeRef.current.register(
+    bridge.register(
       entityId,
       modeType === 'vehicle' || modeType === 'airplane'
         ? modeType
@@ -34,20 +28,20 @@ export function useMotionSetup(
     );
     registeredRef.current = true;
     return () => {
-      motionBridgeRef.current?.unregister(entityId);
+      bridge.unregister(entityId);
       registeredRef.current = false;
     };
-  }, [rigidBodyRef, modeType, entityId]);
+  }, [rigidBodyRef, modeType, entityId, bridge]);
   
   const executeMotionCommand = (command: MotionCommand) => {
-    if (registeredRef.current && isActive && motionBridgeRef.current) {
-      motionBridgeRef.current.execute(entityId, command);
+    if (registeredRef.current && isActive && bridge) {
+      bridge.execute(entityId, command);
     }
   };
   
   const getMotionSnapshot = () => {
-    if (registeredRef.current && isActive && motionBridgeRef.current) {
-      return motionBridgeRef.current.snapshot(entityId);
+    if (registeredRef.current && isActive && bridge) {
+      return bridge.snapshot(entityId);
     }
     return null;
   };

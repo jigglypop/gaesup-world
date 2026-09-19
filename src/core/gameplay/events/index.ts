@@ -1,5 +1,6 @@
 export { GameplayEventEngine } from './engine';
 export type { GameplayEventEngineOptions } from './engine';
+export type { GameplayEventDependencies } from './registry';
 export {
   GameplayEventRegistry,
   createDefaultGameplayEventRegistry,

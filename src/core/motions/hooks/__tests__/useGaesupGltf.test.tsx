@@ -1,8 +1,10 @@
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
+import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
 import { setDefaultToonMode } from '../../../rendering/toon';
-import { useGltfAndSize } from '../useGaesupGltf';
+import { gltfAssetCache } from '../../../assets/GLTFAssetCache';
+import { useGaesupGltf, useGltfAndSize } from '../useGaesupGltf';
 
 type MockGltf = {
   animations: THREE.AnimationClip[];
@@ -18,6 +20,7 @@ const mockGltfs = new Map<string, MockGltf>();
 
 jest.mock('@react-three/drei', () => ({
   useGLTF: jest.fn((url: string) => {
+    if (url.startsWith('data:')) return { animations: [], scene: new THREE.Group() };
     const gltf = mockGltfs.get(url);
     if (!gltf) throw new Error(`Missing mock GLTF: ${url}`);
     return gltf;
@@ -25,12 +28,17 @@ jest.mock('@react-three/drei', () => ({
 }));
 
 jest.mock('../../../stores/gaesupStore', () => ({
-  useGaesupStore: (selector: (state: typeof mockStore) => unknown) => selector(mockStore),
+  useGaesupStoreApi: () => ({ getState: () => mockStore }),
+  useGaesupStore: Object.assign((selector: (state: typeof mockStore) => unknown) => selector(mockStore), { getState: () => mockStore }),
 }));
+
+jest.mock('../../../assets/GLTFAssetCache', () => ({ gltfAssetCache: { acquire: jest.fn() } }));
 
 describe('useGltfAndSize source ownership', () => {
   beforeEach(() => {
     mockSetSizes.mockClear();
+    mockSetSizes.mockImplementation((update: (sizes: typeof mockStore.sizes) => typeof mockStore.sizes) => { mockStore.sizes = update(mockStore.sizes); });
+    jest.mocked(gltfAssetCache.acquire).mockReset();
     mockStore.sizes = {};
     mockGltfs.clear();
     setDefaultToonMode(true);
@@ -38,6 +46,46 @@ describe('useGltfAndSize source ownership', () => {
 
   afterEach(() => {
     setDefaultToonMode(false);
+  });
+
+  test('measures both URLs when an existing hook switches assets', () => {
+    const scene = (x: number) => new THREE.Group().add(new THREE.Mesh(new THREE.BoxGeometry(x, 2, 3)));
+    mockGltfs.set('/a.glb', { scene: scene(1), animations: [] });
+    mockGltfs.set('/b.glb', { scene: scene(4), animations: [] });
+    const { result, rerender } = renderHook(({ url }) => useGltfAndSize({ url }), { initialProps: { url: '/a.glb' } });
+    expect(mockStore.sizes['/a.glb']?.toArray()).toEqual([1, 2, 3]);
+    rerender({ url: '/b.glb' });
+    expect(mockStore.sizes['/b.glb']?.toArray()).toEqual([4, 2, 3]);
+    expect(result.current.getSize()?.toArray()).toEqual([4, 2, 3]);
+  });
+
+  test.each([undefined, '', '   '])('uses a valid empty GLTF for missing URL %s', url => {
+    const { result } = renderHook(() => useGltfAndSize(url === undefined ? {} : { url }));
+    const requested = jest.mocked(useGLTF).mock.calls.at(-1)![0] as string;
+    expect(JSON.parse(decodeURIComponent(requested.split(',')[1]!)).asset.version).toBe('2.0');
+    expect(result.current.size.toArray()).toEqual([1, 1, 1]);
+    expect(mockSetSizes).not.toHaveBeenCalled();
+  });
+
+  test('preloads actual dimensions once per URL, publishes before resolving and releases the asset lease', async () => {
+    const scene = new THREE.Group().add(new THREE.Mesh(new THREE.BoxGeometry(7, 8, 9)));
+    const release = jest.fn();
+    jest.mocked(gltfAssetCache.acquire).mockResolvedValue({ gltf: { scene } as unknown as Awaited<ReturnType<typeof gltfAssetCache.acquire>>['gltf'], release });
+    const { result } = renderHook(() => useGaesupGltf());
+    const utils = result.current;
+    await act(() => utils.preloadSizes(['/preload.glb', '/preload.glb', '']));
+    expect(utils.getSizesByUrls({ model: '/preload.glb' })['model']?.toArray()).toEqual([7, 8, 9]);
+    expect(gltfAssetCache.acquire).toHaveBeenCalledTimes(1);
+    expect(release).toHaveBeenCalledTimes(1);
+    await act(() => utils.preloadSizes(['/preload.glb']));
+    expect(gltfAssetCache.acquire).toHaveBeenCalledTimes(1);
+  });
+
+  test('propagates preload failure without inventing a cached size', async () => {
+    jest.mocked(gltfAssetCache.acquire).mockRejectedValue(new Error('load failed'));
+    const { result } = renderHook(() => useGaesupGltf());
+    await expect(result.current.preloadSizes(['/bad.glb'])).rejects.toThrow('load failed');
+    expect(mockStore.sizes['/bad.glb']).toBeUndefined();
   });
 
   test('returns the Drei GLTF identities without projecting toon onto the source scene', () => {

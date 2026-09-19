@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
-import { getAudioEngine } from '../core/AudioEngine';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createScopedStoreHook } from '../../stores/scopedStore';
+import { createAudioEngine, getAudioEngine, type AudioEngine } from '../core/AudioEngine';
 import type { AudioSerialized, BgmTrack, SfxDef } from '../types';
 
 type State = {
@@ -11,6 +13,8 @@ type State = {
   bgmVolume: number;
   sfxVolume: number;
   currentBgmId: string | null;
+  /** Transient ownership token; not part of saved settings. */
+  bgmRevision: number;
 
   setMaster: (volume: number) => void;
   setBgm: (volume: number) => void;
@@ -30,7 +34,8 @@ type State = {
   prepareHydrate: (data: AudioSerialized | null | undefined) => () => void;
 };
 
-export const useAudioStore = create<State>((set, get) => ({
+export function createAudioStore(engine: AudioEngine = createAudioEngine()) {
+return create<State>((set, get) => ({
   masterMuted: false,
   bgmMuted: false,
   sfxMuted: false,
@@ -38,6 +43,7 @@ export const useAudioStore = create<State>((set, get) => ({
   bgmVolume: 0.4,
   sfxVolume: 0.7,
   currentBgmId: null,
+  bgmRevision: 0,
 
   setMaster: (v) => { set({ masterVolume: Math.max(0, Math.min(1, v)) }); get().apply(); },
   setBgm: (v) => { set({ bgmVolume: Math.max(0, Math.min(1, v)) }); get().apply(); },
@@ -50,25 +56,26 @@ export const useAudioStore = create<State>((set, get) => ({
   playSfx: (def) => {
     const s = get();
     if (s.masterMuted || s.sfxMuted) return;
-    getAudioEngine().resume();
-    getAudioEngine().playSfx(def);
+    get().apply();
+    engine.resume();
+    engine.playSfx(def);
   },
 
   playBgm: (track) => {
-    getAudioEngine().resume();
-    getAudioEngine().playBgm(track);
-    set({ currentBgmId: track?.id ?? null });
     get().apply();
+    if (track) engine.resume();
+    engine.playBgm(track);
+    set(s => ({ currentBgmId: engine.getCurrentBgmId(), bgmRevision: s.bgmRevision + 1 }));
   },
 
   stopBgm: () => {
-    getAudioEngine().stopBgm();
-    set({ currentBgmId: null });
+    engine.stopBgm();
+    set(s => ({ currentBgmId: null, bgmRevision: s.bgmRevision + 1 }));
   },
 
   apply: () => {
     const s = get();
-    const eng = getAudioEngine();
+    const eng = engine;
     eng.setMasterVolume(s.masterMuted ? 0 : s.masterVolume);
     eng.setBgmVolume(s.bgmMuted ? 0 : s.bgmVolume);
     eng.setSfxVolume(s.sfxMuted ? 0 : s.sfxVolume);
@@ -102,3 +109,9 @@ export const useAudioStore = create<State>((set, get) => ({
   },
   hydrate: (data) => get().prepareHydrate(data)(),
 }));
+}
+
+export type AudioStore = ReturnType<typeof createAudioStore>;
+export const { useStore: useAudioStore, useStoreApi: useAudioStoreApi } = createScopedStoreHook(
+  createAudioStore(getAudioEngine()), () => useGaesupRuntime()?.audioStore,
+);
