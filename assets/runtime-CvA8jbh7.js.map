@@ -1,0 +1,1 @@
+{"version":3,"file":"runtime-CvA8jbh7.js","names":[],"sources":["../../src/runtime.ts"],"sourcesContent":["import 'reflect-metadata';\r\nimport './core/initializeBridges';\r\n\r\nexport * from './core/runtime';\r\nexport * from './core/world';\r\nexport * from './core/save';\r\n"],"mappings":""}

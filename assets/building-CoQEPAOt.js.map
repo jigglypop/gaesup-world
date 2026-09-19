@@ -1,0 +1,1 @@
+{"version":3,"file":"building-CoQEPAOt.js","names":[],"sources":["../../src/building.ts"],"sourcesContent":["export * from './core/building';\r\n\r\n"],"mappings":""}

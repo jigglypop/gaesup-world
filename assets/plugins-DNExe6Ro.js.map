@@ -1,0 +1,1 @@
+{"version":3,"file":"plugins-DNExe6Ro.js","names":[],"sources":["../../src/plugins.ts"],"sourcesContent":["export * from './core/plugins';\r\n"],"mappings":""}

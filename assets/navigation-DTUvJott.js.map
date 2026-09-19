@@ -1,0 +1,1 @@
+{"version":3,"file":"navigation-DTUvJott.js","names":[],"sources":["../../src/navigation.ts"],"sourcesContent":["export * from './core/navigation';\r\n\r\n"],"mappings":""}

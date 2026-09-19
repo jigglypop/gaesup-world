@@ -1,0 +1,2 @@
+import{n as e,t}from"./NavigationSystem-BGlSD3dr.js";import{a as n,i as r,n as i,o as a,r as o,t as s}from"./NavigationObstacleRegistry-Dbs1YhMx.js";import{n as c}from"./rolldown-runtime-8BhlS34s.js";function l(){return(l=c((()=>{e(),o()})))()}l();export{t as NavigationSystem,n as applyNPCNavigationRoute,s as applyRegisteredNavigationObstacles,a as createNPCNavigationRoute,i as getNavigationObstacles,r as registerNavigationObstacles};
+//# sourceMappingURL=navigation-DTUvJott.js.map

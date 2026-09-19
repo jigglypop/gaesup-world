@@ -1,0 +1,1 @@
+{"version":3,"file":"editor-vTMYfy05.js","names":[],"sources":["../../src/editor.ts"],"sourcesContent":["import 'reflect-metadata';\r\nimport './core/initializeBridges';\r\n\r\nexport * from './core/editor';\r\nexport * from './core/building';\r\nexport * from './core/content';\r\n"],"mappings":""}

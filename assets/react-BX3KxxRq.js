@@ -1,0 +1,2 @@
+import{t as e}from"./react-B5Ws8Y4Y.js";import{n as t,t as n}from"./vanilla-C7NW_hke.js";import{i as r,n as i}from"./rolldown-runtime-8BhlS34s.js";function a(e,t=s){let n=o.useSyncExternalStore(e.subscribe,()=>t(e.getState()),()=>t(e.getInitialState()));return o.useDebugValue(n),n}var o,s,c,l;function u(){return(u=i((()=>{o=r(e(),1),t(),s=e=>e,c=e=>{let t=n(e),r=e=>a(t,e);return Object.assign(r,t),r},l=e=>e?c(e):c})))()}export{u as n,l as t};
+//# sourceMappingURL=react-BX3KxxRq.js.map

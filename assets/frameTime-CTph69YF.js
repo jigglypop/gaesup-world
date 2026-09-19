@@ -1,0 +1,2 @@
+import{n as e}from"./rolldown-runtime-8BhlS34s.js";var t;function n(){return(n=e((()=>{t=1e3})))()}function r(e){return`elapsed`in e&&typeof e.elapsed==`number`?e.elapsed:`clock`in e&&typeof e.clock==`object`&&e.clock!==null&&`elapsedTime`in e.clock&&typeof e.clock.elapsedTime==`number`?e.clock.elapsedTime:performance.now()/t}function i(){return(i=e((()=>{n()})))()}export{i as n,r as t};
+//# sourceMappingURL=frameTime-CTph69YF.js.map

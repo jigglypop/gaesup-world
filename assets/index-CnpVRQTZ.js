@@ -1,0 +1,1 @@
+import{t as e}from"./gaesup-world-DFZTn_G-.js";e();
