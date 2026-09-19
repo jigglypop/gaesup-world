@@ -245,7 +245,11 @@ function packPackage() {
     '--pack-destination',
     tmpRoot,
   ]);
-  const packResult = JSON.parse(output)[0];
+  const packOutput = JSON.parse(output);
+  const packResult = Array.isArray(packOutput) ? packOutput[0] : packOutput[packageJson.name];
+  if (!packResult?.filename || !Array.isArray(packResult.files)) {
+    throw new Error(`npm pack returned no file manifest for ${packageJson.name}.`);
+  }
   const tarballPath = path.join(tmpRoot, packResult.filename);
   const packedFiles = new Set(packResult.files.map((file) => normalizePackagePath(file.path)));
   const missingPackedTargets = getExportTargets().filter((target) => !packedFiles.has(target));

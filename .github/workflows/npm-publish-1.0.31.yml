@@ -56,6 +56,7 @@ jobs:
           name: npm-release-1.0.31-${{ github.run_attempt }}
           path: .tmp/npm-release/
           retention-days: 7
+          include-hidden-files: true
           if-no-files-found: error
       - name: Publish gaesup-world 1.0.31
         env:
@@ -65,12 +66,15 @@ jobs:
           npm publish .tmp/npm-release/gaesup-world-1.0.31.tgz --ignore-scripts
       - name: Verify the published archive
         run: |
-          npm view gaesup-world@1.0.31 version dist.integrity --json > .tmp/npm-release/registry.json
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
-          const local = JSON.parse(fs.readFileSync('.tmp/npm-release/receipt.json', 'utf8'))[0];
-          const remote = JSON.parse(fs.readFileSync('.tmp/npm-release/registry.json', 'utf8'));
-          if (remote.version !== '1.0.31' || remote['dist.integrity'] !== local.integrity) {
+          const packed = JSON.parse(fs.readFileSync('.tmp/npm-release/receipt.json', 'utf8'));
+          const local = Array.isArray(packed) ? packed[0] : packed['gaesup-world'];
+          const response = await fetch('https://registry.npmjs.org/gaesup-world/1.0.31');
+          if (!response.ok) throw new Error(`Registry verification returned HTTP ${response.status}.`);
+          const remote = await response.json();
+          fs.writeFileSync('.tmp/npm-release/registry.json', JSON.stringify(remote));
+          if (remote.version !== '1.0.31' || remote.dist.integrity !== local.integrity) {
             throw new Error('Published package integrity mismatch.');
           }
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `Published gaesup-world@1.0.31\n\nIntegrity: ${local.integrity}\n`);
