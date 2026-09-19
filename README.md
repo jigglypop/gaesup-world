@@ -6,7 +6,7 @@ Build a playable 3D room in your browser. Use scene data in React and exchange l
 
 This repository contains a TypeScript world library and a Cyworld-inspired mini-home: a 3D room, walking avatar, furniture, profile, diary and guestbook. It saves in your browser. Shared links contain a snapshot; they are not a multiplayer service.
 
-The working release is `2.0.0-next.0`. A local version number does not mean it has been published. Check npm before installing a preview.
+This release is `1.0.31`. Check the npm registry for publication status.
 
 ## Run the mini-home
 
@@ -28,10 +28,10 @@ Open http://127.0.0.1:5174/. The separate rendering showcase is at `/engine`. No
 A matching React 19 peer set:
 
 ```sh
-npm install gaesup-world@next react@19 react-dom@19 three@0.185 three-stdlib @react-three/fiber@9 @react-three/drei@10 @react-three/rapier@2 @react-three/postprocessing@3
+npm install gaesup-world react@19 react-dom@19 three@0.185 three-stdlib @react-three/fiber@9 @react-three/drei@10 @react-three/rapier@2 @react-three/postprocessing@3
 ```
 
-Run this after the `next` tag has been published. Until then, use the repository example above. React 18/Fiber 8 are also declared peers, but that combination needs separate consumer validation.
+React 18/Fiber 8 are also declared peers, but that combination needs separate consumer validation.
 
 ```ts
 import { createSceneDocument, createSceneDocumentController } from 'gaesup-world';
@@ -66,7 +66,7 @@ The browser probe expects the dev server on 5174 and local Chrome; WebGPU and We
 
 `npm run deploy` builds `demo-dist` and publishes it to GitHub Pages. Override `GAESUP_BASE_URL` for another base path. `version.json` records version, commit, dirty state and build time. Pages deep links use `404.html`; an unknown route may render while retaining HTTP 404.
 
-For npm, validate, run `npm login` locally, pack the reviewed build and publish a prerelease with `--tag next`. Do not promote `latest` before consumer checks.
+For npm, validate, authenticate with `npm login`, pack the reviewed build and run `npm publish <tarball>` without a custom tag.
 
 ## Current limits
 
@@ -75,4 +75,4 @@ For npm, validate, run `npm login` locally, pack the reviewed build and publish 
 - World matrices preserve shear. `getWorldTransform` throws for shear or singular bases; use `getWorldMatrix` when TRS cannot represent the result.
 - Unity compilation and real Editor round-trip require a Unity installation. TypeScript tests alone do not prove them.
 
-[Implementation plan](docs/2026-09-19-web-studio-plan.en.md) · [Release notes](docs/release-2.0.0-next.0.md)
+[Implementation plan](docs/2026-09-19-web-studio-plan.en.md) · [Release notes](docs/release-1.0.31.md)

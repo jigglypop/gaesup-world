@@ -1,6 +1,6 @@
 {
   "name": "gaesup-world",
-  "version": "2.0.0-next.0",
+  "version": "1.0.31",
   "type": "module",
   "description": "Web 3D Character Controller and World Platform Library",
   "exports": {
@@ -189,7 +189,7 @@
     "README.ko.md",
     "docs/minihome*.md",
     "docs/unity*.md",
-    "docs/release-2.0.0-next.0.md",
+    "docs/release-1.0.31.md",
     "docs/2026-09-19-web-studio-plan*.md",
     "integrations/unity/**/*",
     "LICENSE.txt"

@@ -1,6 +1,6 @@
 # Web Studio plan — 2026-09-19
 
-[한국어 / detailed baseline audit](2026-09-19-web-studio-plan.md) · [Current implementation notes](release-2.0.0-next.0.md)
+[한국어 / detailed baseline audit](2026-09-19-web-studio-plan.md) · [Current implementation notes](release-1.0.31.md)
 
 This is the plan from the initial audit of commit `c892520a`, before the subsequent implementation. Findings below describe that baseline; consult release notes and test logs for changes made afterward. Durations are planning estimates for one or two core developers, not completed work.
 

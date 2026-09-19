@@ -251,7 +251,7 @@ function packPackage() {
   const missingPackedTargets = getExportTargets().filter((target) => !packedFiles.has(target));
   const forbiddenFiles = Array.from(packedFiles).filter((file) =>
     /^(src|examples|demo-dist|server|scripts|\.tmp)\//.test(file)
-    || (file.startsWith('docs/') && !/^docs\/(?:minihome(?:\.en)?|unity(?:\.en)?|release-2\.0\.0-next\.0|2026-09-19-web-studio-plan(?:\.en)?)\.md$/.test(file)),
+    || (file.startsWith('docs/') && !/^docs\/(?:minihome(?:\.en)?|unity(?:\.en)?|release-1\.0\.31|2026-09-19-web-studio-plan(?:\.en)?)\.md$/.test(file)),
   );
 
   if (missingPackedTargets.length > 0) {

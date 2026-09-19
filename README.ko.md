@@ -6,7 +6,7 @@
 
 TypeScript 월드 라이브러리와 싸이월드에서 영감을 받은 미니홈피 예제를 제공합니다. 3D 방, 걸어 다니는 아바타, 가구 편집, 프로필, 다이어리, 방명록이 있습니다. 현재 브라우저에 저장하며 공유 링크는 방의 사본을 전달합니다. 실시간 멀티플레이 서비스는 아닙니다.
 
-작업 버전은 `2.0.0-next.0`입니다. 로컬 버전 변경이 npm 배포 완료를 뜻하지는 않습니다. 프리뷰 설치 전에 npm 공개 상태를 확인하세요.
+이번 버전은 `1.0.31`입니다. 게시 여부는 npm registry에서 확인하세요.
 
 ## 실행하기
 
@@ -28,10 +28,10 @@ http://127.0.0.1:5174/ 를 여세요. `/engine`은 별도 렌더링 쇼케이스
 React 19 앱에서 서로 맞는 의존성 조합:
 
 ```sh
-npm install gaesup-world@next react@19 react-dom@19 three@0.185 three-stdlib @react-three/fiber@9 @react-three/drei@10 @react-three/rapier@2 @react-three/postprocessing@3
+npm install gaesup-world react@19 react-dom@19 three@0.185 three-stdlib @react-three/fiber@9 @react-three/drei@10 @react-three/rapier@2 @react-three/postprocessing@3
 ```
 
-`next` 태그가 배포된 뒤 실행하세요. 그전에는 위의 저장소 예제를 사용합니다. React 18/Fiber 8도 peer 범위에 포함되지만 별도 소비 검증이 필요합니다.
+React 18/Fiber 8도 peer 범위에 포함되지만 별도 소비 검증이 필요합니다.
 
 ```ts
 import { createSceneDocument, createSceneDocumentController } from 'gaesup-world';
@@ -66,7 +66,7 @@ corepack pnpm run build:demo
 
 `npm run deploy`는 `demo-dist`를 빌드해 GitHub Pages에 배포합니다. 다른 경로에서는 `GAESUP_BASE_URL`을 지정하세요. `version.json`은 버전·커밋·미커밋 변경 여부·시각을 기록합니다. Pages의 깊은 경로는 `404.html`로 열리지만 HTTP 404일 수 있습니다.
 
-npm은 검증 후 로컬 `npm login`으로 인증하고 검토한 tarball을 `--tag next`로 배포합니다. 소비 검증 전에는 `latest`를 승격하지 않습니다.
+npm은 검증과 `npm login` 인증 후, 검토한 tarball을 별도 태그 없이 `npm publish <tarball>`로 배포합니다.
 
 ## 현재 제한
 
@@ -75,4 +75,4 @@ npm은 검증 후 로컬 `npm login`으로 인증하고 검토한 tarball을 `--
 - shear는 world matrix에 보존합니다. TRS로 표현 불가능하면 `getWorldTransform`이 오류를 내므로 `getWorldMatrix`를 사용하세요.
 - Unity Editor 컴파일과 실제 왕복은 Unity 설치 환경에서 따로 검증해야 합니다.
 
-[실행계획](docs/2026-09-19-web-studio-plan.md) · [릴리스 노트](docs/release-2.0.0-next.0.md)
+[실행계획](docs/2026-09-19-web-studio-plan.md) · [릴리스 노트](docs/release-1.0.31.md)

@@ -1,6 +1,6 @@
 # gaesup-world 코드 평가 및 Web Studio 실행계획
 
-[English](2026-09-19-web-studio-plan.en.md) · [이후 구현 기록](release-2.0.0-next.0.md)
+[English](2026-09-19-web-studio-plan.en.md) · [이후 구현 기록](release-1.0.31.md)
 
 이 문서는 구현 전 최초 평가 기록입니다. 이후 수정과 검증 결과는 구현 기록을 확인하세요.
 
