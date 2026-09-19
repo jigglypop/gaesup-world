@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import ts from 'typescript';
+
 import {
   WebGPURenderer, WGSLNodeBuilder, GLSLNodeBuilder, Mesh, InstancedMesh, InstancedBufferAttribute,
   PlaneGeometry, InstancedBufferGeometry, Scene, PerspectiveCamera, OrthographicCamera, Texture, Sprite, PointsMaterial,
 } from 'three/webgpu';
+import ts from 'typescript';
 
 async function loadMaterial(name) {
   const source = await readFile(new URL(`../src/core/rendering/tsl/${name}.ts`, import.meta.url), 'utf8');

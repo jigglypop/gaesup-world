@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
 import { NodeIO, getBounds } from '@gltf-transform/core';
 import { dedup, prune, resample } from '@gltf-transform/functions';
 import validator from 'gltf-validator';

@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+
 const { chromium, expect } = require('@playwright/test');
 
 const baseUrl = process.env.GAESUP_PROBE_URL ?? 'http://127.0.0.1:5188';

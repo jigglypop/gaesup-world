@@ -4,26 +4,15 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-import { Document, NodeIO } from '@gltf-transform/core';
-
 import { buildDelivery, validateDeliveryGlb } from './build.mjs';
 import { contract } from './contract.mjs';
 import { publishAsset } from './publish.mjs';
+import { createTestGlb } from './test-fixtures.mjs';
 
 test('delivery builds three authored LODs, validates decoded Meshopt, and remains unpublished', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'gaesup-delivery-'));
   try {
-    const document = new Document();
-    const buffer = document.createBuffer();
-    const position = document
-      .createAccessor()
-      .setType('VEC3')
-      .setBuffer(buffer)
-      .setArray(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 1]));
-    const primitive = document.createPrimitive().setAttribute('POSITION', position);
-    const mesh = document.createMesh().addPrimitive(primitive);
-    document.createScene().addChild(document.createNode().setMesh(mesh));
-    const bytes = await new NodeIO().writeBinary(document);
+    const bytes = await createTestGlb();
     for (const level of [0, 1, 2]) await writeFile(path.join(directory, `lod${level}.glb`), bytes);
     const manifest = await buildDelivery(directory, {
       id: 'test-chair',

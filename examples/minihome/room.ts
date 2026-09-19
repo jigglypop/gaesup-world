@@ -226,10 +226,14 @@ export async function mountMiniroom(
   const marker = part(scene, '#fff4c9', [0.57, 0.012, 0.57], [0, 0.09, 0], 'cylinder');
   marker.visible = false;
   let view: RoomView = { editing: false, selected: null, theme: 'peach', zoom: 1 };
+  let needsRender = true;
+  let renderedFrames = 0;
   function project() {
+    needsRender = true;
     const document = controller.getSnapshot();
+    const ids = new Set(document.objects.map((object) => object.id));
     for (const [id, group] of groups)
-      if (!document.objects.some((object) => object.id === id)) {
+      if (!ids.has(id)) {
         group.removeFromParent();
         groups.delete(id);
       }
@@ -237,9 +241,15 @@ export async function mountMiniroom(
       const kind = furnitureKind(object);
       if (!kind) continue;
       let group = groups.get(object.id);
+      if (group && group.userData['kind'] !== kind) {
+        group.removeFromParent();
+        groups.delete(object.id);
+        group = undefined;
+      }
       if (!group) {
         group = furniture(kind);
         group.userData['objectId'] = object.id;
+        group.userData['kind'] = kind;
         groups.set(object.id, group);
         scene.add(group);
       }
@@ -308,6 +318,7 @@ export async function mountMiniroom(
       );
       marker.position.set(group.position.x, 0.095, group.position.z);
       moved = true;
+      needsRender = true;
     },
     { signal },
   );
@@ -328,6 +339,7 @@ export async function mountMiniroom(
   canvas.addEventListener('pointerup', finish, { signal });
   canvas.addEventListener('pointercancel', finish, { signal });
   const resize = new ResizeObserver(() => {
+    needsRender = true;
     const width = Math.max(1, canvas.clientWidth);
     const height = Math.max(1, canvas.clientHeight);
     renderer.setSize(width, height, false);
@@ -366,14 +378,30 @@ export async function mountMiniroom(
         if (foot) foot.position.z = Math.sin(time * 0.012 + i * Math.PI) * 0.1 + 0.04;
       }
     }
-    controls.update(delta);
-    renderer.render(scene, camera);
+    const cameraChanged = controls.update(delta);
+    if (needsRender || cameraChanged || (!view.editing && distance > 0.02)) {
+      renderer.render(scene, camera);
+      canvas.dataset['renderedFrames'] = String(++renderedFrames);
+      needsRender = false;
+    }
   });
   onReady(
     (renderer.backend as { isWebGPUBackend?: boolean }).isWebGPUBackend ? 'WebGPU' : 'WebGL2',
   );
   return {
     dispose,
+    async exportGlb(): Promise<ArrayBuffer> {
+      const { GLTFExporter } = await import('three/addons/exporters/GLTFExporter.js');
+      if (disposed) throw new Error('방이 닫혔습니다. 다시 열고 내보내기해 주세요.');
+      project();
+      const markerVisible = marker.visible;
+      marker.visible = false;
+      try {
+        const result = await new GLTFExporter().parseAsync(scene, { binary: true });
+        if (!(result instanceof ArrayBuffer)) throw new Error('GLB 내보내기에 실패했습니다.');
+        return result;
+      } finally { marker.visible = markerVisible; needsRender = true; }
+    },
     update(next: RoomView) {
       if (next.zoom !== view.zoom) {
         camera.zoom = next.zoom;
@@ -392,6 +420,7 @@ export async function mountMiniroom(
       project();
     },
     resetCamera() {
+      needsRender = true;
       camera.position.set(12, 11, 15);
       controls.target.set(0, 1, 0);
       controls.update();

@@ -17,6 +17,13 @@ function expectNamedExport(source: string, name: string): void {
 }
 
 describe('public package API', () => {
+  test('exposes Unity scene interchange and exact hierarchical matrices', () => {
+    const api = jest.requireActual('gaesup-world') as typeof import('gaesup-world');
+    const source = api.createSceneDocument({ id: 'unity-api', objects: [{ id: 'object' }] });
+    const restored = api.importUnityScene(api.exportUnityScene(source));
+    expect(restored).toEqual(source);
+    expect(api.loadSceneRuntime(restored).runtime?.getWorldMatrix('object')).toHaveLength(16);
+  });
   test('exports compacted CPU and native GPU instancing through the next subpath', () => {
     const next = jest.requireActual('gaesup-world/next') as typeof import('gaesup-world/next');
     expect(typeof next.cullAndCompactSpheres).toBe('function');

@@ -1,6 +1,6 @@
 import { createSceneDocumentController } from 'gaesup-world';
 
-import { createMinihome, makeFurniture, MAX_FURNITURE, parseMinihome } from '../model';
+import { BACKUP_KEY, createMinihome, loadMinihome, makeFurniture, MAX_FURNITURE, parseMinihome, saveMinihome, STORAGE_KEY } from '../model';
 
 test('canonical furniture edits survive serialization without renderer objects', () => {
   const home = createMinihome();
@@ -17,6 +17,31 @@ test('canonical furniture edits survive serialization without renderer objects',
     [2, 0, 1],
   );
   expect(home.room.objects).toHaveLength(6);
+});
+
+test('backup recovery preserves corrupt primary and saving rejects concurrent tab changes', () => {
+  localStorage.clear();
+  const first = JSON.stringify(createMinihome());
+  saveMinihome(first, null);
+  const second = JSON.stringify({ ...createMinihome(), theme: 'sage' });
+  saveMinihome(second, first);
+  expect(localStorage.getItem(BACKUP_KEY)).toBe(first);
+  expect(() => saveMinihome(first, first)).toThrow('다른 탭');
+  localStorage.setItem(STORAGE_KEY, '{broken');
+  const restored = loadMinihome();
+  expect(restored.data).toEqual(JSON.parse(first));
+  expect(restored.autoSave).toBe(false);
+  expect(localStorage.getItem(STORAGE_KEY)).toBe('{broken');
+  localStorage.clear();
+});
+
+test('rejects invalid dates and excessive authors and drops unknown profile fields', () => {
+  const home = createMinihome();
+  home.diary = [{ id: 'note', author: 'A', text: 'hello', date: 'invalid' }];
+  expect(parseMinihome(JSON.stringify(home))).toBeNull();
+  home.diary[0]!.date = new Date().toISOString();
+  home.diary[0]!.author = 'a'.repeat(201);
+  expect(parseMinihome(JSON.stringify(home))).toBeNull();
 });
 
 test('rejects corrupted, unknown-version, oversized and out-of-room saved data', () => {

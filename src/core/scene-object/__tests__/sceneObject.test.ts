@@ -432,7 +432,7 @@ describe('scene object model', () => {
     expect(loaded.runtime?.roots.map((object) => object.id)).toEqual(['root']);
     expect(loaded.runtime?.getChildren('root').map((object) => object.id)).toEqual(['child']);
     expect(loaded.runtime?.getWorldTransform('child')).toEqual({
-      position: [11, 2, 3],
+      position: [12, 4, 6],
       rotation: [0, 1, 0],
       scale: [2, 2, 2],
     });

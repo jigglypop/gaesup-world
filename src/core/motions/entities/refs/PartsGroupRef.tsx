@@ -7,8 +7,8 @@ import { SkeletonUtils } from 'three-stdlib';
 
 import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
 
-import { ModelRendererProps, PartsGroupRefProps } from './types';
 import { RigidPartRef } from './RigidPartRef';
+import { ModelRendererProps, PartsGroupRefProps } from './types';
 import { resolveSharedSkeletonBinding } from '../../../character/skeleton';
 
 export function ModelRenderer({ nodes, color, colorNodeNames, skeleton, url, excludeNodeNames }: ModelRendererProps) {

@@ -45,6 +45,7 @@ export default tseslint.config(
           ignore: [
             // react-three-fiber props
             'args',
+            'matrixAutoUpdate',
             'attach',
             'blending',
             'castShadow',

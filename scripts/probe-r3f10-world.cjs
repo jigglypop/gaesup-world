@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+
 const { chromium, expect } = require('@playwright/test');
 
 if (!process.argv[2]) throw Error('Usage: node scripts/probe-r3f10-world.cjs <built-demo-directory>');

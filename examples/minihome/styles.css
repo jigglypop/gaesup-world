@@ -1101,3 +1101,14 @@ body {
     min-height: 420px;
   }
 }
+.home-tools { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 0; }
+.home-tools button, .share-preview button { border: 1px solid #cbbbaf; border-radius: 6px; background: #fffaf4; padding: 8px 10px; color: #69534b; cursor: pointer; }
+.home-tools button:disabled { opacity: .45; cursor: default; }
+.share-link { display: grid; gap: 6px; font-size: 12px; overflow-wrap: anywhere; }
+.share-link input { width: 100%; min-width: 0; box-sizing: border-box; padding: 8px; border: 1px solid #cbbbaf; border-radius: 6px; }
+.share-preview { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; background: #f8eedb; border-radius: 8px; }
+.export-room { position: absolute; right: 12px; bottom: 44px; border: 1px solid #cbbbaf; border-radius: 8px; background: #fffaf4e8; padding: 8px; color: #69534b; font-size: 11px; }
+.room-export-error { position: absolute; top: 48px; right: 12px; max-width: 80%; background: #fff3e9; padding: 8px; font-size: 12px; }
+.page-save { flex-wrap: wrap; gap: 8px; }
+.page-save > span { font-size: 12px; line-height: 1.5; }
+.page-save > button { font-size: 12px; min-height: 36px; }

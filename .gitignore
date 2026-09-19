@@ -37,6 +37,7 @@ coverage/
 
 dist
 dist/*
+demo-dist/
 .cursor/*
 coverage
 coverage/*

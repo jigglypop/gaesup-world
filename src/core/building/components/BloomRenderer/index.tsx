@@ -1,9 +1,13 @@
-import React, { useLayoutEffect, useMemo, useRef } from 'react';
+import React, { lazy, Suspense, useLayoutEffect, useMemo, useRef } from 'react';
 
 import type { ThreeEvent } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { isWebGPURenderer } from '../../../rendering/tsl/grass';
 import { BloomConfig } from '../../types';
+
+const NodeBloomGlow = lazy(() => import('./NodeBloomGlow'));
 
 let _bloomTex: THREE.Texture | null = null;
 function getBloomTexture(): THREE.Texture {
@@ -96,6 +100,7 @@ type BloomBatchGroupEntry = {
 };
 
 function BloomBatchGroup({ entries, color }: { entries: BloomBatchGroupEntry[]; color: string }) {
+  const nodes = useThree((state) => isWebGPURenderer(state.gl));
   const glowRef = useRef<THREE.InstancedMesh | null>(null);
   const coreRef = useRef<THREE.InstancedMesh | null>(null);
   const count = entries.length;
@@ -132,8 +137,8 @@ function BloomBatchGroup({ entries, color }: { entries: BloomBatchGroupEntry[]; 
   useLayoutEffect(() => {
     const glow = glowRef.current;
     const core = coreRef.current;
-    if (!glow || !core) return;
-    glow.count = count;
+    if (!core || (!nodes && !glow)) return;
+    if (glow) glow.count = count;
     core.count = count;
     for (let i = 0; i < count; i += 1) {
       const entry = entries[i];
@@ -143,18 +148,18 @@ function BloomBatchGroup({ entries, color }: { entries: BloomBatchGroupEntry[]; 
       dummy.rotation.set(0, 0, 0);
       dummy.scale.set(glowScale, glowScale, 1);
       dummy.updateMatrix();
-      glow.setMatrixAt(i, dummy.matrix);
+      glow?.setMatrixAt(i, dummy.matrix);
 
       const coreScale = 0.14 + entry.intensity * 0.025;
       dummy.scale.set(coreScale, coreScale, coreScale);
       dummy.updateMatrix();
       core.setMatrixAt(i, dummy.matrix);
     }
-    glow.instanceMatrix.needsUpdate = true;
+    if (glow) glow.instanceMatrix.needsUpdate = true;
     core.instanceMatrix.needsUpdate = true;
-    glow.computeBoundingSphere();
+    glow?.computeBoundingSphere();
     core.computeBoundingSphere();
-  }, [count, dummy, entries]);
+  }, [count, dummy, entries, nodes]);
 
   useLayoutEffect(() => () => {
     glowGeo.dispose();
@@ -166,7 +171,8 @@ function BloomBatchGroup({ entries, color }: { entries: BloomBatchGroupEntry[]; 
   if (count === 0) return null;
   return (
     <>
-      <instancedMesh ref={glowRef} args={[glowGeo, glowMat, capacity]} frustumCulled />
+      {nodes ? <Suspense fallback={null}><NodeBloomGlow entries={entries} color={color} /></Suspense>
+        : <instancedMesh ref={glowRef} args={[glowGeo, glowMat, capacity]} frustumCulled />}
       <instancedMesh ref={coreRef} args={[coreGeo, coreMat, capacity]} frustumCulled />
     </>
   );

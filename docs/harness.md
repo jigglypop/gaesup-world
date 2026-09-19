@@ -1,11 +1,21 @@
-# Astra/Sol 하네스 운영 참고
+# 저장소 검증 / Repository validation
 
-`AGENTS.md`는 에이전트가 상시 읽는 실행 규칙이고, 이 문서는 적용 범위와 측정 방법을 설명하는 운영 참고다. 새 세션부터 프로젝트의 `.codex/config.toml`이 적용되며 UI나 CLI에서 명시한 override가 우선한다. 현재 세션에는 소급 적용되지 않는다.
+`AGENTS.md`가 작업 규칙이고 `.codex/config.toml`이 프로젝트 설정입니다. 삭제된 과거 hook을 다시 설치하지 않고 현재 구성을 검사합니다.
 
-설정은 루트 Astra와 기본 하위 Sol, 동시 실행 2개를 지정한다. `max_depth=1`은 런타임에서도 하위 에이전트의 재위임을 막는다. 도구 호출에서는 `fork_turns: "none"`과 모델·추론 강도를 명시해야 하며, 설정만으로 개별 호출 인자를 강제할 수는 없다. 운영 규칙은 동시 최대 2명, 하위 재위임 금지, 같은 범위는 기존 에이전트 재사용을 요구한다. 동일 실패는 근거 있는 재시도 1회 뒤 Astra 판단으로 전환한다.
+`AGENTS.md` defines the working rules; `.codex/config.toml` holds project settings. Validation checks the current configuration rather than reinstalling removed historical hooks.
 
-검증 명령은 `powershell -NoProfile -File scripts/check-harness.ps1`이다. 2026-09-12에 strict `config/read`로 프로젝트 설정 로드를 확인했고, 현 세션에서 명시적 Sol·low·none fork 작업도 성공했다. 비용 A/B 비교는 아직 측정하지 않았다.
+| 명령 / Command | 검사 / Check |
+|---|---|
+| `corepack pnpm run test:harness` | 설정, strict TypeScript flag, 검증 진입 파일 / configuration, strict flags, validation entries |
+| `corepack pnpm run test:asset-tools` | Node test runner로 asset 도구 검사 / asset tools through Node's test runner |
+| `corepack pnpm exec jest --runInBand` | library와 example tests / library and example tests |
+| `corepack pnpm run verify:full` | lint, tests, build, package, memory, demo |
+| `corepack pnpm run test:minihome:browser` | 실행 중인 5174 서버의 실제 Chrome / actual Chrome against the server on port 5174 |
 
-문자 수 감소는 토큰 또는 비용 절감률이 아니다. 결과는 `docs/harness-metrics.csv`에 기록한다. 동일한 시작 상태와 같은 모델·추론·도구 조건으로 하네스 효과를 먼저 비교하고, 모델 분배 변경 효과는 별도로 표시한다. 대표적인 소규모 수정, 버그 수정, 복수 파일 과제를 실행한다. 세션 로그의 누적 `token_count`는 스레드별 마지막 총계만 쓰고 이벤트별 누적값을 합하지 않는다. 부모 집계가 자식을 포함하면 자식을 다시 더하지 않는다. 출력 토큰 정의에 추론이 포함되면 추론 토큰을 또 더하지 않고, cached 입력은 입력 토큰의 부분집합으로 취급하되 계정 로그 정의를 우선한다. `wall_seconds`는 과제 전체 시작부터 완료까지이며 병렬 스레드 시간을 더하지 않는다. 완료 품질과 재작업 횟수는 과제 단위로 기록한다. 누락은 미측정으로 표시하고 실패 과제는 절감 성공으로 계산하지 않는다.
+Jest 뒤에 이중 `--`를 넣지 마세요. 테스트 경로로 해석될 수 있습니다. asset의 `node:test` 파일은 Jest 수집에서 제외하지만 `verify`에서 별도로 실행합니다.
 
-근거: [Subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents), [Latest model](https://developers.openai.com/api/docs/guides/latest-model)
+Do not insert an extra `--` before Jest options: it may become a test-path pattern. Asset `node:test` files are excluded from Jest collection and executed separately by `verify`.
+
+기존 캐릭터 호환 자산은 같은 저장소의 이전 체크아웃에서 복구했습니다. manual-v1은 `corepack pnpm run avatar:fixtures`로 생성하는 원본 procedural test geometry이며 최종 아트 승인과 다릅니다.
+
+Legacy compatibility assets were recovered from the same repository's previous checkout. manual-v1 is original procedural test geometry generated with `corepack pnpm run avatar:fixtures`, not final art approval.

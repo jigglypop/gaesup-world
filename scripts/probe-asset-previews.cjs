@@ -1,5 +1,6 @@
-const { chromium, expect } = require('@playwright/test');
 const path = require('node:path');
+
+const { chromium, expect } = require('@playwright/test');
 
 (async () => {
   const browser = await chromium.launch({ headless: true });

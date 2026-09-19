@@ -1,8 +1,10 @@
-import { lazy, Suspense, useMemo, useState, useSyncExternalStore } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
-import { createSceneDocumentController } from 'gaesup-world';
+import { exportUnityScene } from 'gaesup-world';
 
-import { furnitureKind, loadMinihome, makeFurniture, MAX_FURNITURE, STORAGE_KEY } from './model';
+import { furnitureKind, loadMinihome, makeFurniture, MAX_FURNITURE, parseMinihome, saveMinihome } from './model';
+import { adoptSharedMinihome, createMinihomeSession } from './session';
+import { createShareLink, downloadJson, readShareLink } from './sharing';
 import { FURNITURE } from './types';
 import type { FurnitureKind, HomeNote, HomeTab } from './types';
 import './styles.css';
@@ -37,13 +39,14 @@ function MiniAvatar() {
 
 export default function Minihome() {
   const [initial] = useState(loadMinihome);
-  const [data, setData] = useState(initial.data);
-  const [controller] = useState(() => createSceneDocumentController(initial.data.room));
-  const subscribe = useMemo(
-    () => (notify: () => void) => controller.subscribe(() => notify()),
-    [controller],
-  );
-  const document = useSyncExternalStore(subscribe, controller.getSnapshot, controller.getSnapshot);
+  const [shared] = useState(() => readShareLink(location.hash));
+  const [session, setSession] = useState(() => createMinihomeSession(shared ?? initial.data));
+  const { data, canUndo, canRedo } = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
+  const { controller, update: setData } = session;
+  const document = data.room;
+  const [preview, setPreview] = useState(!!shared);
+  const [autoSave, setAutoSave] = useState(initial.autoSave && !shared);
+  const storageBase = useRef(initial.raw);
   const [tab, setTab] = useState<HomeTab>('home');
   const [editing, setEditing] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
@@ -53,22 +56,53 @@ export default function Minihome() {
   const [author, setAuthor] = useState('');
   const [message, setMessage] = useState('');
   const [savedState, setSavedState] = useState(() => JSON.stringify(initial.data));
+  const [saveError, setSaveError] = useState('');
+  const [shareLink, setShareLink] = useState('');
+  const fileInput = useRef<HTMLInputElement>(null);
   const view = useMemo(
     () => ({ editing, selected, zoom, theme: data.theme }),
     [editing, selected, zoom, data.theme],
   );
   const object = document.objects.find((entry) => entry.id === selected);
-  const snapshot = { ...data, room: document };
-  const dirty = JSON.stringify(snapshot) !== savedState;
-  function save() {
+  const raw = useMemo(() => JSON.stringify(data), [data]);
+  const dirty = raw !== savedState;
+  const save = useCallback(() => {
+    if (preview) return;
     try {
-      const raw = JSON.stringify(snapshot);
-      localStorage.setItem(STORAGE_KEY, raw);
+      saveMinihome(raw, storageBase.current);
+      storageBase.current = raw;
       setSavedState(raw);
+      setSaveError('');
+      setAutoSave(true);
       setStatus('미니홈피를 이 브라우저에 저장했어요.');
-    } catch {
-      setStatus('저장하지 못했어요. 브라우저 저장 공간과 권한을 확인해주세요.');
+    } catch (error) {
+      setAutoSave(false);
+      setSaveError(`저장하지 못했어요. ${error instanceof Error ? error.message : '브라우저 저장 공간과 권한을 확인해주세요.'}`);
     }
+  }, [raw, preview]);
+  useEffect(() => {
+    if (!dirty || !autoSave || preview) return;
+    const timer = setTimeout(save, 1200);
+    return () => clearTimeout(timer);
+  }, [dirty, autoSave, preview, save]);
+  useEffect(() => {
+    if (!dirty || preview) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty, preview]);
+  useEffect(() => {
+    if (selected && !document.objects.some((item) => item.id === selected)) setSelected(null);
+  }, [document, selected]);
+  async function importFile(file: File) {
+    try {
+      if (file.size > 512_000) throw new Error('백업 파일은 512 KB 이하여야 합니다.');
+      const imported = parseMinihome(await file.text());
+      if (!imported) throw new Error('지원하는 미니홈피 백업 파일이 아닙니다.');
+      setData(imported);
+      setSelected(null);
+      setStatus('백업을 가져왔어요. 실행 취소로 이전 상태로 돌아갈 수 있어요.');
+    } catch (error) { setStatus(error instanceof Error ? error.message : '파일을 읽지 못했습니다.'); }
   }
   function addFurniture(kind: FurnitureKind) {
     if (document.objects.length >= MAX_FURNITURE) {
@@ -115,11 +149,11 @@ export default function Minihome() {
   return (
     <div className="minihome">
       <header className="home-header">
-        <a href="/" className="home-brand">
+        <a href={import.meta.env.BASE_URL} className="home-brand">
           <span>m</span>mini<span className="brand-dot">.</span>home<small>by gaesup world</small>
         </a>
         <div className="header-note">마음을 담은 작은 공간, 우리만의 미니홈피</div>
-        <a href="/engine" className="engine-link">
+        <a href={`${import.meta.env.BASE_URL}engine`} className="engine-link">
           개발자 · 엔진 실험실 ↗
         </a>
       </header>
@@ -474,7 +508,7 @@ export default function Minihome() {
                       className="note-form"
                       onSubmit={(event) => {
                         event.preventDefault();
-                        post();
+                        if (!preview) post();
                       }}
                     >
                       {tab === 'guestbook' && (
@@ -483,6 +517,7 @@ export default function Minihome() {
                           placeholder="이름 또는 닉네임"
                           maxLength={20}
                           value={author}
+                          disabled={preview}
                           onChange={(event) => setAuthor(event.target.value)}
                         />
                       )}
@@ -494,13 +529,14 @@ export default function Minihome() {
                             : '반가워! 네 방 참 포근하다 :)'
                         }
                         value={message}
+                        disabled={preview}
                         onChange={(event) => setMessage(event.target.value)}
                         maxLength={1000}
                         required
                       />
                       <div>
-                        <small>{message.length} / 1,000</small>
-                        <button className="decorate-button" type="submit">
+                        <small>{preview ? '내 방으로 가져온 뒤 기록할 수 있어요.' : `${message.length} / 1,000`}</small>
+                        <button className="decorate-button" type="submit" disabled={preview}>
                           {tab === 'diary' ? '기록 남기기' : '인사 남기기'}
                         </button>
                       </div>
@@ -528,14 +564,43 @@ export default function Minihome() {
                     </div>
                   </section>
                 )}
+                {preview && <div className="share-preview" role="status">
+                  공유된 방의 사본입니다. 내 저장 데이터는 그대로 유지됩니다.
+                  <button onClick={() => {
+                    setSession(adoptSharedMinihome(initial.data, data));
+                    setSelected(null);
+                    setPreview(false);
+                    setAutoSave(false);
+                    history.replaceState(null, '', location.pathname);
+                    setStatus('기존 다이어리와 방명록은 유지됩니다. 가져온 방을 확인한 뒤 저장해 주세요.');
+                  }}>내 방으로 가져오기</button>
+                  <a href={import.meta.env.BASE_URL}>내 방으로 돌아가기</a>
+                </div>}
+                <div className="home-tools" aria-label="백업과 편집 기록">
+                  <button onClick={session.undo} disabled={!canUndo}>실행 취소</button>
+                  <button onClick={session.redo} disabled={!canRedo}>다시 실행</button>
+                  <button onClick={() => downloadJson(data, 'mini-home.json')}>파일 백업</button>
+                  <button onClick={() => downloadJson(exportUnityScene(data.room), 'unity-scene.json')}>Unity 장면 JSON</button>
+                  <button onClick={() => fileInput.current?.click()}>백업 가져오기</button>
+                  <input ref={fileInput} type="file" accept=".json,application/json" hidden aria-label="미니홈피 백업 파일" onChange={(event) => {
+                    const file = event.target.files?.[0]; event.target.value = ''; if (file) void importFile(file);
+                  }} />
+                  <button onClick={() => {
+                    try { setShareLink(createShareLink(data, location.href)); setStatus('프로필과 방만 공유합니다. 다이어리와 방명록은 포함하지 않습니다.'); }
+                    catch (error) { setStatus(error instanceof Error ? error.message : '공유 링크를 만들지 못했습니다.'); }
+                  }}>방 공유</button>
+                </div>
+                {shareLink && <label className="share-link">프로필과 방 공유 링크 · 복사해서 보내세요
+                  <input aria-label="방 공유 링크" readOnly value={shareLink} onFocus={(event) => event.target.select()} />
+                </label>}
                 <div className="page-save">
                   <span role="status">
-                    {status ||
+                    {saveError || (dirty ? '아직 저장하지 않은 변경이 있어요. ' : '') || status ||
                       (dirty
                         ? '아직 저장하지 않은 변경이 있어요.'
                         : '이 공간은 현재 브라우저에 보관됩니다.')}
                   </span>
-                  <button onClick={save}>미니홈피 저장 {dirty && <i />}</button>
+                  <button onClick={save} disabled={preview}>미니홈피 저장 {dirty && <i />}</button>
                 </div>
               </div>
             </section>
@@ -566,10 +631,9 @@ export default function Minihome() {
       <footer className="home-footer">
         <span>나의 취향이 모여, 나의 세계가 되는 곳.</span>
         <small>
-          LOCAL PREVIEW · 프로필·방·글은 이 브라우저에 저장됩니다. 온라인 방문·공유는 아직 연결되지
-          않았습니다.
+          프로필·방·글은 이 브라우저에 저장됩니다. 공유 링크는 프로필과 방의 사본을 담으며, 실시간 방문과 계정 동기화는 지원하지 않습니다.
         </small>
-        <a href="/engine">GAESUP WORLD ↗</a>
+        <a href={`${import.meta.env.BASE_URL}engine`}>GAESUP WORLD ↗</a>
       </footer>
     </div>
   );

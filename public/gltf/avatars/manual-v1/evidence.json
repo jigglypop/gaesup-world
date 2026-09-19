@@ -1,0 +1,246 @@
+{
+  "generator": "scripts/build-avatar-fixtures.mjs",
+  "license": "MIT",
+  "source": "Original procedural test fixtures authored for this repository",
+  "visualApproval": "pending",
+  "assets": [
+    {
+      "file": "body-sd-neutral-v1.glb",
+      "bytes": 317084,
+      "sha256": "4c4d5bfd4a90712d187d4b322cce71cb3e796c1af16f3542caf03e1fb1ee2a66",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "body-sd-neutral-v1-lod1.glb",
+      "bytes": 147992,
+      "sha256": "36cef8bfd79ee9206da91e437c045fa3a925055d78205a5d2470a053ed29eb9e",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "hair-001.glb",
+      "bytes": 32028,
+      "sha256": "2bdd4466985b5a113fe76e1e5bdfb57430bbb1623d60f0030323b4723c742f32",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "hair-001-lod1.glb",
+      "bytes": 15352,
+      "sha256": "5bbe299fc633e837683a7e897ff21bf258f53b2b1a813f53a06b7d645712988c",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "hair-002.glb",
+      "bytes": 32020,
+      "sha256": "28e44e2da29c1adad86ad8b3c0967778a1ba55d9127df210c2a91a74d363a450",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "hair-002-lod1.glb",
+      "bytes": 15348,
+      "sha256": "ad0e61aa95f0b589ee1dc9582e5dd449f4008c641d4adec1141a6295aa0f9bf4",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "hair-003.glb",
+      "bytes": 32028,
+      "sha256": "078a4f0089adefd12ca1fe19b20e43f22deec8f07918632389ce273c36841cfe",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "hair-003-lod1.glb",
+      "bytes": 15352,
+      "sha256": "52a0f3ab1d96b721c121efa4a8c924abac43e0b1ee83c5f1c658e57f774c1cad",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "top-001.glb",
+      "bytes": 73540,
+      "sha256": "7cce730ee54152e4cafcabec5e3f66689eb1c680ffc27312afdd621c167dfdf2",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "top-001-lod1.glb",
+      "bytes": 29440,
+      "sha256": "c7fd7da1091ff4da1c0e4ddc073abc5a3457b90480cbc2dee4abfd9fa18e2e54",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "top-002.glb",
+      "bytes": 108444,
+      "sha256": "fc23eba673c5c68bda3b5d97a5dd9df42d8a4df5a566c4863f290af7689738cb",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "top-002-lod1.glb",
+      "bytes": 42296,
+      "sha256": "7be6910fc9212ac4f0c73f03d5c7895034b55a2bf41ce893f90972262dee277c",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "top-003.glb",
+      "bytes": 73540,
+      "sha256": "6036abbb53f690f40be669a75030a4c3405f6d20b1cf862fe728caef9caf4cfe",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "top-003-lod1.glb",
+      "bytes": 29440,
+      "sha256": "e5abf8ee99396523f85ee8cf84d1628f22069198f1cae4fae1bb6f06ad329657",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "bottom-001.glb",
+      "bytes": 61916,
+      "sha256": "7c932c43291cf3108fb116a6ae22aa39946a8cdf815c2b47a16795492d68fa94",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "bottom-001-lod1.glb",
+      "bytes": 25176,
+      "sha256": "9f7c5b33a9de87920e689f65989f288c3e0c83b5871553e90cb89c14a862920e",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "bottom-002.glb",
+      "bytes": 61912,
+      "sha256": "9590474ec468e55e2c798ff91ed556709e34a36e25605016ecc48369a952d00f",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "bottom-002-lod1.glb",
+      "bytes": 25172,
+      "sha256": "c9b319b652c6f8aadb4d200849383927170ece7f52131435fa0f4b9f1dc6713f",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "bottom-003.glb",
+      "bytes": 61912,
+      "sha256": "ad2bce28a660f5dce2b6383fedb4d19192c92ea109bfc1c9630a9c72f7fda1f5",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "bottom-003-lod1.glb",
+      "bytes": 25172,
+      "sha256": "c6c273a9edccb4fc36ddfa13f8ac85139be66e2aa83e1b90517183daf1a8442b",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "shoes-001.glb",
+      "bytes": 27020,
+      "sha256": "be23e518369887e3e925fc4709da883d1314fc41e0c35a7bb8a1451507ab3fcc",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "shoes-001-lod1.glb",
+      "bytes": 12316,
+      "sha256": "043459d75f2298bc3c10297189c37d85e469a8005d4b0ce064555ad5f32d983c",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "shoes-002.glb",
+      "bytes": 27024,
+      "sha256": "ec2f54d01844c113eb74e3a2cde69231bc05ccd81a50dd4b9c529ca4d235d061",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "shoes-002-lod1.glb",
+      "bytes": 12316,
+      "sha256": "32d84e4e18c60ec01175ac476698d498c3e118c0b4e42013cfe81375e229325d",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "hat-001.glb",
+      "bytes": 14324,
+      "sha256": "5ff70b890be7bf16f97bbe4dabcbf57f421e17922f686215ccb1f6ba59dbce1c",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "hat-001-lod1.glb",
+      "bytes": 8340,
+      "sha256": "4145aaab3c794b40f821e96e128b7c5cfc3b7ebb0bee332243334ff2abe6a147",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "hat-002.glb",
+      "bytes": 17496,
+      "sha256": "1bb4f1f600aa34dfb5ab1a2459c7ed6852bc4de17279c70b66f37c2477872ee4",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "hat-002-lod1.glb",
+      "bytes": 8892,
+      "sha256": "debddebf938905f0f082b7c366f29b54aeb55d5c46d9090e82a649b30e902ee3",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "bag-001.glb",
+      "bytes": 10628,
+      "sha256": "fbeee14e1193b4ced25a8e9c4c402d18007b7b6bef06fb5c80caad456ef13142",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "bag-001-lod1.glb",
+      "bytes": 6332,
+      "sha256": "060427e50d37a179060e88e89cbf4a4b236a27c31bfd0a737a28bbe775fffa98",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "hand-001.glb",
+      "bytes": 12656,
+      "sha256": "ae7a2e42b3b26ba41833ec49d0f9eba0a3a959ba494f99923a9b19d5e718681c",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "hand-001-lod1.glb",
+      "bytes": 8356,
+      "sha256": "04add3a60c25483db894fcaf77b60e4ef10ba59fc77e1dc69abad07f2c9694fc",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "onepiece-001.glb",
+      "bytes": 80136,
+      "sha256": "f0eb85b16d32b7ba45ebf5d4eea96b0ead9a00a1aa595e0b6f38dacce2cdeec3",
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "onepiece-001-lod1.glb",
+      "bytes": 32904,
+      "sha256": "89d7eadc51f988031c83bf199f9ef4fe4b49cfb8a2d9270aa491e088a0062ddd",
+      "errors": 0,
+      "warnings": 0
+    }
+  ]
+}

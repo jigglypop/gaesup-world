@@ -63,15 +63,18 @@ function validNotes(value: unknown): value is HomeNote[] {
       (note: unknown) =>
         isRecord(note) &&
         typeof note['id'] === 'string' &&
+        note['id'].length > 0 && note['id'].length <= 100 &&
         typeof note['author'] === 'string' &&
+        note['author'].length <= 200 &&
         typeof note['text'] === 'string' &&
         note['text'].length <= 1000 &&
-        typeof note['date'] === 'string',
+        typeof note['date'] === 'string' && Number.isFinite(Date.parse(note['date'])),
     )
   );
 }
 export function parseMinihome(raw: string): MinihomeData | null {
   try {
+    if (raw.length > 512_000) return null;
     const data: unknown = JSON.parse(raw);
     if (!isRecord(data) || data['version'] !== 1 || !isRecord(data['profile'])) return null;
     const profile = data['profile'];
@@ -100,27 +103,46 @@ export function parseMinihome(raw: string): MinihomeData | null {
       )
     )
       return null;
-    return { ...(data as unknown as MinihomeData), room: room.document };
+    return {
+      version: 1,
+      profile: { name: profile['name'] as string, title: profile['title'] as string,
+        bio: profile['bio'] as string, mood: profile['mood'] as string },
+      theme: data['theme'] as MinihomeData['theme'], room: room.document,
+      diary: (data['diary'] as HomeNote[]).map(({ id, author, text, date }) => ({ id, author, text, date })),
+      guestbook: (data['guestbook'] as HomeNote[]).map(({ id, author, text, date }) => ({ id, author, text, date })),
+    };
   } catch {
     return null;
   }
 }
 
-export function loadMinihome(): { data: MinihomeData; warning: string } {
+export const BACKUP_KEY = `${STORAGE_KEY}.backup`;
+
+export function loadMinihome(): { data: MinihomeData; warning: string; raw: string | null; autoSave: boolean } {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { data: createMinihome(), warning: '' };
+    if (!raw) return { data: createMinihome(), warning: '', raw, autoSave: true };
     const data = parseMinihome(raw);
-    if (data) return { data, warning: '' };
+    if (data) return { data, warning: '', raw, autoSave: true };
+    const backup = localStorage.getItem(BACKUP_KEY);
+    const recovered = backup ? parseMinihome(backup) : null;
     return {
-      data: createMinihome(),
+      data: recovered ?? createMinihome(), raw, autoSave: false,
       warning:
-        '저장된 데이터를 읽지 못했습니다. 원본은 보존했으며, 저장 버튼을 누르면 현재 방으로 교체됩니다.',
+        recovered ? '이전 백업을 복구했습니다. 확인 후 저장해 주세요.' : '저장된 데이터를 읽지 못했습니다. 원본은 보존했으며, 저장 버튼을 누르면 현재 방으로 교체됩니다.',
     };
   } catch {
     return {
-      data: createMinihome(),
+      data: createMinihome(), raw: null, autoSave: false,
       warning: '브라우저 저장소에 접근할 수 없습니다. 지금 꾸미기는 가능하지만 저장이 제한됩니다.',
     };
   }
+}
+
+export function saveMinihome(raw: string, expected: string | null): void {
+  if (!parseMinihome(raw)) throw new Error('저장할 데이터가 올바르지 않습니다.');
+  const current = localStorage.getItem(STORAGE_KEY);
+  if (current !== expected) throw new Error('다른 탭에서 저장한 변경이 있습니다. 백업을 내려받고 새로고침해 주세요.');
+  if (current && parseMinihome(current)) localStorage.setItem(BACKUP_KEY, current);
+  localStorage.setItem(STORAGE_KEY, raw);
 }

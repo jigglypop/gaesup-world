@@ -5,8 +5,8 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import type { PartsGroupRefProps } from './types';
-import { findAttachmentBone, updateBoneAttachmentMatrix } from '../../../character/boneAttachment';
 import type { CharacterBoneAttachment } from '../../../character/attachments';
+import { findAttachmentBone, updateBoneAttachmentMatrix } from '../../../character/boneAttachment';
 import { logger } from '../../../utils/logger';
 
 type RigidPartRefProps = PartsGroupRefProps & { attachment: CharacterBoneAttachment };

@@ -131,10 +131,10 @@ or declare the parent task complete.
 
 ```bash
 corepack pnpm exec eslint <changed-files>
-corepack pnpm test -- <test-path> --runInBand
+corepack pnpm exec jest <test-path> --runInBand
 corepack pnpm exec tsc -p tsconfig.build.json --noEmit
-corepack pnpm test -- src/__tests__/publicApi.test.ts --runInBand
-corepack pnpm test -- src/__tests__/packageExports.test.ts --runInBand
+corepack pnpm exec jest src/__tests__/publicApi.test.ts --runInBand
+corepack pnpm exec jest src/__tests__/packageExports.test.ts --runInBand
 corepack pnpm run build:types
 corepack pnpm run test:package:built
 corepack pnpm run test:demo
@@ -145,5 +145,8 @@ corepack pnpm run verify:full
 실행하지 않은 검증을 성공으로 보고하지 않는다. 기존 실패와 이번 변경의 regression을 구분한다. 브라우저나 3D 시각 결과가 성공 기준이면 unit test 통과와 실제 시각 성공을 별도로 판단한다.
 
 ## 최종 보고
+
+- 새 사용자 문서와 변경된 사용 흐름은 한국어와 영어로 함께 제공한다. 설치, 실행, 저장, 내보내기와 지원하지 않는 범위를 쉬운 문장으로 설명하고 양쪽 문서를 서로 연결한다.
+- 중복 상태와 병렬 write path를 추가하지 않는다. DRY/KISS 개선은 실제 중복과 복잡도를 줄이는 범위에서 수행하고, 아직 필요하지 않은 범용 추상화는 만들지 않는다.
 
 결과를 먼저 짧게 말한다. 변경 파일, 중요한 설계 판단, 실행한 검증과 결과, 남은 제한이나 실패만 보고한다. 작은 작업에 장황한 회고나 과도한 Markdown을 붙이지 않는다.

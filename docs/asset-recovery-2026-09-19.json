@@ -1,0 +1,110 @@
+{
+  "sourceRepository": "jigglypop/gaesup-world",
+  "sourceCommit": "6839fbbaaa66557d60dfb5c5ce53e33d5c2a993e",
+  "purpose": {
+    "ko": "기존 library 기본값이 참조하는 자산 복구. 신규 아트 승인 또는 별도 라이선스 부여가 아님.",
+    "en": "Restore assets referenced by existing library defaults; no new art approval or license grant."
+  },
+  "files": [
+    {
+      "path": "public/gltf/ally.glb",
+      "sha256": "75c39c2e75b206e8049810fbbac7fe3e3392f42260a522813d9201ddcbd445e3"
+    },
+    {
+      "path": "public/gltf/ally_body.glb",
+      "sha256": "8ffba7b51223b70b86c224f5851f5016209151f648ba160c7acc8cec4a72a249"
+    },
+    {
+      "path": "public/gltf/ally_cloth.glb",
+      "sha256": "56c06a13129d4d84a5fe11b55eea8a70591a7f2233cb2813781e5daa618b20a0"
+    },
+    {
+      "path": "public/gltf/ally_cloth_blue.glb",
+      "sha256": "e5c3b654b0b0006c8336baab0df4a502b16c244a8e5fb437ce3069c0ee29dc95"
+    },
+    {
+      "path": "public/gltf/ally_cloth_green.glb",
+      "sha256": "1862e9f61808a2cd8c5511c8f00c2f297c2d73f7f0d7445da87cc2a65e90635d"
+    },
+    {
+      "path": "public/gltf/ally_cloth_rabbit.glb",
+      "sha256": "c176f34195ddfcd1d8c2428537d880a3e1662ec3145ae6ef0e2c1c58eaca68a3"
+    },
+    {
+      "path": "public/gltf/ally_cloth_red.glb",
+      "sha256": "d6a2290cf3c704e3f40ec0ac5774e7c8f786fbff65813b4b2947d1e23d21b908"
+    },
+    {
+      "path": "public/gltf/ally_glass.glb",
+      "sha256": "92ea341ba4beb66cec0938c6e26e2c8d490e438385883cd860da1350967985f9"
+    },
+    {
+      "path": "public/gltf/ally_hat.glb",
+      "sha256": "d2c6e84797f729d675e24ffdf231ebc5f2f630d9c7e6b1354161132c7fc22d72"
+    },
+    {
+      "path": "public/gltf/parts/manifest.json",
+      "sha256": "d8770813771dfbccec0cff0908cbf0f73612cb2a0ad3f89bc17291e3c9114ce9"
+    },
+    {
+      "path": "public/gltf/parts/pants_basic.glb",
+      "sha256": "77705634ed2dcf68f87004788c04cc2f572fa74a9e94de63ddf5429623bc5f83"
+    },
+    {
+      "path": "public/gltf/parts/shoes_basic.glb",
+      "sha256": "a72f2e32560ce2214e07ed6aeb794f326d9a76b4a57e768a9652e165a822c050"
+    },
+    {
+      "path": "public/gltf/parts/sword_basic.glb",
+      "sha256": "0e8fc2dfdbd6ef346ec78a9a8454418d90e25bca21ac8d354cbfe799815e77fc"
+    },
+    {
+      "path": "public/gltf/props/bed.glb",
+      "sha256": "e2bbb906e6f97f181017e10f1ca33f39beda517e0fca1d0a07d36835e6f86581"
+    },
+    {
+      "path": "public/gltf/props/chair.glb",
+      "sha256": "9c78e4ba5b7e16247038641a6d2c0b3f6fc031dbd6a48f04598132011f16762d"
+    },
+    {
+      "path": "public/gltf/props/crafting.glb",
+      "sha256": "3878f6d93d946d77f3e1be55919627a81435696252137ae33c22391c0411f3ce"
+    },
+    {
+      "path": "public/gltf/props/door.glb",
+      "sha256": "f35dbb855a735a3c2c9deca61b08d744c12888a60bff028c4c13ae1775987ffd"
+    },
+    {
+      "path": "public/gltf/props/fence.glb",
+      "sha256": "5ca7f29343614054f7cc0d86bffe6d5b297b3ab930fa7bb5ac99f73c7d077cb8"
+    },
+    {
+      "path": "public/gltf/props/lamp.glb",
+      "sha256": "f08dad2fe7711ebb650c4a2427980b25be5abb2652f9f12903988311762651a8"
+    },
+    {
+      "path": "public/gltf/props/LICENSE.txt",
+      "sha256": "1658d8691d0859c6c0cf058da840d620c1932c0488efaaac28916a0fba5e5b89"
+    },
+    {
+      "path": "public/gltf/props/mailbox.glb",
+      "sha256": "cd8819e46fec234f1d0c68d3af92a4ec5ec4e607b06f91f6f9681e5eaf03a531"
+    },
+    {
+      "path": "public/gltf/props/shop-stall.glb",
+      "sha256": "8f3aadd10a1392e5dcc9890d8c331b53cadbb9afc0ebab935256b2905a3e0487"
+    },
+    {
+      "path": "public/gltf/props/storage.glb",
+      "sha256": "9bf0585a55c907a2449d0d068abb801ee250ae625618f2b0da563432c2ad5145"
+    },
+    {
+      "path": "public/gltf/props/table.glb",
+      "sha256": "230ac925ef408b64f3b215eb64c9999e2cd81a82c6d114b2cd50ea6d6d5e0cbe"
+    },
+    {
+      "path": "public/gltf/props/window.glb",
+      "sha256": "e487854eb7d239491cddcc1cc7cb11731b987a3b44043994eaf0c2dffb789973"
+    }
+  ]
+}

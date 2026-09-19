@@ -8,6 +8,7 @@ import test from 'node:test';
 
 import { createImage } from './meshy-images.mjs';
 import { createStudioServer } from './server.mjs';
+import { createTestGlb } from './test-fixtures.mjs';
 
 test('image submission persists uncertain results and never repeats the same request ID', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'gaesup-image-'));
@@ -81,7 +82,7 @@ test(
     const work = await mkdtemp(path.join(os.tmpdir(), 'gaesup-blender-'));
     const folder = path.join(work, 'candidates', 'table');
     await mkdir(folder, { recursive: true });
-    const bytes = await readFile('public/gltf/props/table.glb');
+    const bytes = await createTestGlb();
     const sha256 = createHash('sha256').update(bytes).digest('hex');
     const artifact = `${sha256}.glb`;
     await writeFile(path.join(folder, artifact), bytes);

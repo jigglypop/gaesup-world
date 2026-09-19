@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
-import { createServer } from 'vite';
+
 import { WebGPURenderer } from 'three/webgpu';
+import { createServer } from 'vite';
 
 const canvasFailure = new Error('Injected fallback context failure');
 const nextBackend = process.argv.includes('--next');

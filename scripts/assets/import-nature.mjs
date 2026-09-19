@@ -2,10 +2,11 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
 import { Document, NodeIO, getBounds } from '@gltf-transform/core';
 import { dedup, prune, mergeDocuments, unpartition } from '@gltf-transform/functions';
-import sharp from 'sharp';
 import validator from 'gltf-validator';
+import sharp from 'sharp';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const source = path.join(root, '.asset-work/quaternius/nature-standard');

@@ -24,7 +24,7 @@ export default function EngineShowcase() {
   return (
     <div className="showcase">
       <header className="topbar">
-        <a className="brand" href="/">
+        <a className="brand" href={import.meta.env.BASE_URL}>
           g<span>↟</span>
           <b>
             gaesup<span>world</span>
@@ -35,7 +35,7 @@ export default function EngineShowcase() {
             Explore
           </a>
           <button onClick={() => setDeveloper(!developer)}>Engine lab</button>
-          <span>v1.0.2</span>
+          <span>Engine preview</span>
         </nav>
         <span className="live">
           <i /> LIVE PLAYGROUND

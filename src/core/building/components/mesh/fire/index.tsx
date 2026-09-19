@@ -1,6 +1,6 @@
-import React, { FC, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import React, { FC, lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
-import { extend, useFrame } from '@react-three/fiber';
+import { extend, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { shaderMaterial } from '@/core/rendering/legacyDrei';
@@ -8,6 +8,10 @@ import { shaderMaterial } from '@/core/rendering/legacyDrei';
 import fragmentShader from './frag.glsl';
 import vertexShader from './vert.glsl';
 import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
+import { isWebGPURenderer } from '../../../../rendering/tsl/grass';
+
+const NodeFireEffects = lazy(() => import('./NodeFireEffects'));
+const NodeFireBatchEffects = lazy(() => import('./NodeFireEffects').then((module) => ({ default: module.NodeFireBatchEffects })));
 
 const FireMaterial = shaderMaterial(
   { time: 0, intensity: 1.5, seed: 0, lean: 0, flare: 1, tint: new THREE.Color(1, 1, 1) },
@@ -125,6 +129,7 @@ interface FireProps {
 }
 
 const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color = '#ffffff' }) => {
+  const nodes = useThree((state) => isWebGPURenderer(state.gl));
   const tintColor = useMemo(() => new THREE.Color(color), [color]);
 
   const geo = getSharedGeo();
@@ -245,7 +250,8 @@ const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color
         scale={baseScale}
       />
 
-      {billboardLayers.map((l, i) => (
+      {nodes && <Suspense fallback={null}><NodeFireEffects intensity={intensity} width={width} height={height} color={color} /></Suspense>}
+      {!nodes && billboardLayers.map((l, i) => (
         (() => {
           const geometry = billboardGeos[i];
           const materialRef = materialRefs[i];
@@ -264,7 +270,7 @@ const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color
         })()
       ))}
 
-      <points geometry={emberGeo} material={mat.ember} />
+      {!nodes && <points geometry={emberGeo} material={mat.ember} />}
     </group>
   );
 };
@@ -525,6 +531,7 @@ export function createFireBatchSignature(fires: FireBatchEntry[]): string {
 }
 
 export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireBatchEntry[] }) {
+  const nodes = useThree((state) => isWebGPURenderer(state.gl));
   const billboardRef = useRef<THREE.InstancedMesh>(null!);
   const logRef = useRef<THREE.InstancedMesh>(null!);
   const charRef = useRef<THREE.InstancedMesh>(null!);
@@ -740,7 +747,8 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
 
   return (
     <>
-      {billboardGeo && (
+      {nodes && <Suspense fallback={null}><NodeFireBatchEffects fires={stableFires} /></Suspense>}
+      {!nodes && billboardGeo && (
         <instancedMesh
           ref={billboardRef}
           args={[billboardGeo, bbMat, billboardCount]}
@@ -750,7 +758,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
       <instancedMesh ref={logRef} args={[geo.log, mat.log, logCount]} />
       <instancedMesh ref={charRef} args={[geo.charcoal, mat.charcoal, N]} />
       <instancedMesh ref={glowRef} args={[geo.glow, glowMat, N]} />
-      {emberGeo && (
+      {!nodes && emberGeo && (
         <points ref={emberRef} geometry={emberGeo} material={bEmberMat} frustumCulled={false} />
       )}
     </>

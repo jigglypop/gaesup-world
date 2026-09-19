@@ -14,6 +14,7 @@ import {
 import * as THREE from 'three';
 
 import type { CollisionUserData } from '@core/boilerplate/hooks/useCollisionHandler';
+
 import type { CharacterBoneAttachment } from '../../character/attachments';
 
 export type Part = {

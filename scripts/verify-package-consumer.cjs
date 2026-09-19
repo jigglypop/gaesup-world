@@ -250,7 +250,8 @@ function packPackage() {
   const packedFiles = new Set(packResult.files.map((file) => normalizePackagePath(file.path)));
   const missingPackedTargets = getExportTargets().filter((target) => !packedFiles.has(target));
   const forbiddenFiles = Array.from(packedFiles).filter((file) =>
-    /^(src|examples|demo-dist|server|scripts|docs|\.tmp)\//.test(file),
+    /^(src|examples|demo-dist|server|scripts|\.tmp)\//.test(file)
+    || (file.startsWith('docs/') && !/^docs\/(?:minihome(?:\.en)?|unity(?:\.en)?|release-2\.0\.0-next\.0|2026-09-19-web-studio-plan(?:\.en)?)\.md$/.test(file)),
   );
 
   if (missingPackedTargets.length > 0) {
@@ -752,6 +753,15 @@ if (sceneBinding.key !== 'scene-document') {
 const serializedScene = sceneBinding.serialize();
 if (serializedScene === sceneSnapshot || Object.isFrozen(serializedScene)) {
   throw new Error('Scene document save binding did not return a mutable owned clone.');
+}
+const unityScene = ${moduleName}.exportUnityScene(sceneSnapshot);
+const unityRoundtrip = ${moduleName}.importUnityScene(JSON.stringify(unityScene));
+if (unityRoundtrip.objects[0]?.id !== sceneSnapshot.objects[0]?.id) {
+  throw new Error('Unity scene interchange did not preserve the object ID.');
+}
+const worldMatrix = ${moduleName}.loadSceneRuntime(unityRoundtrip).runtime?.getWorldMatrix(unityRoundtrip.objects[0].id);
+if (worldMatrix?.length !== 16 || worldMatrix[15] !== 1) {
+  throw new Error('Exact world matrix export failed.');
 }`;
 }
 

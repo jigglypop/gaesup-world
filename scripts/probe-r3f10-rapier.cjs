@@ -2,9 +2,9 @@
 // --installed-rapier uses the fixture's real dependency graph; otherwise resolution is redirected in this process.
 // The renderer is a stub: this does not validate GPU rendering or the declared peer support range.
 
-const path = require('path'),
-  Module = require('module'),
-  assert = require('assert/strict');
+const assert = require('node:assert/strict');
+const Module = require('node:module');
+const path = require('node:path');
 if (!process.argv[2])
   throw new Error('Usage: node scripts/probe-r3f10-rapier.cjs <isolated-fixture-directory>');
 const fixtureRequire = Module.createRequire(

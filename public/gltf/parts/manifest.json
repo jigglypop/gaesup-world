@@ -1,0 +1,191 @@
+{
+  "version": 1,
+  "skeleton": "gaesup-humanoid-v1",
+  "generator": {
+    "script": "scripts/blender/gaesup_parts.py",
+    "blender": "5.1.1"
+  },
+  "body": {
+    "armature": "walk.001",
+    "bones": [
+      "spine",
+      "spine.004",
+      "face",
+      "nose",
+      "brow.B.L",
+      "lid.T.L",
+      "lid.B.L.003",
+      "brow.B.R",
+      "lid.T.R",
+      "lid.B.R.003",
+      "forehead.L",
+      "forehead.L.001",
+      "forehead.L.002",
+      "temple.L",
+      "forehead.L.004",
+      "forehead.L.006",
+      "forehead.L.007",
+      "temple.L.001",
+      "temple.L.002",
+      "temple.L.003",
+      "temple.L.004",
+      "temple.L.005",
+      "forehead.R",
+      "forehead.R.001",
+      "forehead.R.002",
+      "temple.R",
+      "temple.R.001",
+      "temple.R.002",
+      "temple.R.003",
+      "temple.R.004",
+      "temple.R.005",
+      "cheek.T.R",
+      "cheek.T.R.002",
+      "cheek.T.R.001",
+      "shoulder.L",
+      "upper_arm.L",
+      "shoulder.R",
+      "upper_arm.R",
+      "breast.L",
+      "breast.R",
+      "thigh.L",
+      "thigh.R",
+      "thigh.R.001",
+      "thigh.R.002",
+      "thigh.L.001",
+      "thigh.L.002"
+    ],
+    "handRight": "upper_arm.R",
+    "footLine": -2.516292915344238,
+    "metersToUnit": 3.2918464436250576,
+    "bounds": {
+      "min": [
+        -1.6146,
+        -2.908,
+        -2.439
+      ],
+      "max": [
+        1.6456,
+        2.6881,
+        1.483
+      ]
+    },
+    "regions": {
+      "legs": [
+        "thigh.L",
+        "thigh.R",
+        "thigh.R.001",
+        "thigh.R.002",
+        "thigh.L.001",
+        "thigh.L.002"
+      ],
+      "hips": []
+    },
+    "bindPoseHash": "a305b278",
+    "jointCount": 46
+  },
+  "parts": [
+    {
+      "id": "pants_basic",
+      "slot": "bottom",
+      "kind": "characterPart",
+      "file": "pants_basic.glb",
+      "url": "gltf/parts/pants_basic.glb",
+      "deformation": "skinned",
+      "skeleton": "gaesup-humanoid-v1",
+      "colors": {
+        "primary": "#3a4a6a"
+      },
+      "bones": [
+        "spine",
+        "thigh.L",
+        "thigh.R",
+        "thigh.R.002",
+        "thigh.L.002"
+      ],
+      "vertexCount": 124,
+      "bounds": {
+        "min": [
+          -1.6472,
+          -2.5149,
+          -1.3985
+        ],
+        "max": [
+          1.6782,
+          -1.2098,
+          1.0506
+        ]
+      },
+      "compatibility": "identical",
+      "jointCount": 46,
+      "fileSize": 23976,
+      "bindPoseHash": "a305b278"
+    },
+    {
+      "id": "shoes_basic",
+      "slot": "shoes",
+      "kind": "characterPart",
+      "file": "shoes_basic.glb",
+      "url": "gltf/parts/shoes_basic.glb",
+      "deformation": "skinned",
+      "skeleton": "gaesup-humanoid-v1",
+      "colors": {
+        "primary": "#3a2a1a"
+      },
+      "bones": [
+        "thigh.L",
+        "thigh.R"
+      ],
+      "vertexCount": 34,
+      "bounds": {
+        "min": [
+          -1.5644,
+          -2.9516,
+          -0.3386
+        ],
+        "max": [
+          1.5954,
+          -2.6567,
+          0.0451
+        ]
+      },
+      "compatibility": "identical",
+      "jointCount": 46,
+      "fileSize": 18424,
+      "bindPoseHash": "a305b278"
+    },
+    {
+      "id": "sword_basic",
+      "slot": "weapon",
+      "kind": "weapon",
+      "file": "sword_basic.glb",
+      "url": "gltf/parts/sword_basic.glb",
+      "deformation": "skinned",
+      "skeleton": "gaesup-humanoid-v1",
+      "colors": {
+        "steel": "#b8bcc4",
+        "leather": "#3a2a1a"
+      },
+      "bones": [
+        "upper_arm.R"
+      ],
+      "vertexCount": 52,
+      "bounds": {
+        "min": [
+          -5.1465,
+          -0.0036,
+          -0.2478
+        ],
+        "max": [
+          -1.743,
+          0.7316,
+          0.0413
+        ]
+      },
+      "compatibility": "identical",
+      "jointCount": 46,
+      "fileSize": 25740,
+      "bindPoseHash": "a305b278"
+    }
+  ]
+}

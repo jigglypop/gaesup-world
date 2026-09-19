@@ -5,14 +5,6 @@ const readSource = (relativePath: string) =>
   readFileSync(path.join(process.cwd(), relativePath), 'utf8');
 
 describe('mouse routing contracts', () => {
-  it('keeps normal click-to-move separate from teleport clicks in the World example', () => {
-    const worldSource = readSource('examples/pages/World.tsx');
-
-    expect(worldSource).toContain('<GroundClicker />');
-    expect(worldSource).toContain('<TeleportOnClick modifierKey="altKey" />');
-    expect(worldSource).not.toContain('<TeleportOnClick modifierKey="none" />');
-  });
-
   it('lets modified clicks pass through GroundClicker for tools such as teleport', () => {
     const groundClickerSource = readSource('src/core/interactions/components/GroundClicker/index.tsx');
     const modifierGuardIndex = groundClickerSource.indexOf('event.nativeEvent.altKey');

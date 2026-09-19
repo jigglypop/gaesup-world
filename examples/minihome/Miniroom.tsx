@@ -20,6 +20,19 @@ export default function Miniroom({
   latestView.current = view;
   const [backend, setBackend] = useState('');
   const [error, setError] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
+  async function exportRoom() {
+    if (!engine.current || exporting) return;
+    setExporting(true); setExportError('');
+    try {
+      const binary = await engine.current.exportGlb();
+      const url = URL.createObjectURL(new Blob([binary], { type: 'model/gltf-binary' }));
+      const link = document.createElement('a'); link.href = url; link.download = 'mini-room.glb'; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (failure) { setExportError(failure instanceof Error ? failure.message : '내보내기에 실패했습니다.'); }
+    finally { setExporting(false); }
+  }
   useEffect(() => {
     if (!canvas.current) return;
     const abort = new AbortController();
@@ -57,6 +70,10 @@ export default function Miniroom({
       <div className="room-badge">
         <span /> MY LITTLE ROOM
       </div>
+      <button className="export-room" disabled={!backend || exporting} onClick={() => void exportRoom()}>
+        {exporting ? '내보내는 중…' : '3D 방 내보내기 (.glb)'}
+      </button>
+      {exportError && <div className="room-export-error" role="alert">{exportError}</div>}
       <button
         className="reset-camera"
         onClick={() => engine.current?.resetCamera()}
