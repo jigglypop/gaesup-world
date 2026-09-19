@@ -2,7 +2,7 @@
 
 브라우저에서 플레이 가능한 3D 방을 만들고, React에서 사용하고, Unity와 배치를 주고받는 라이브러리입니다.
 
-[English](README.md) · [미니홈피 사용법](docs/minihome.md) · [Unity 연결](docs/unity.md)
+[미니홈피 바로 사용하기](https://jigglypop.github.io/gaesup-world/) · [English](README.md) · [미니홈피 사용법](docs/minihome.md) · [Unity 연결](docs/unity.md)
 
 TypeScript 월드 라이브러리와 싸이월드에서 영감을 받은 미니홈피 예제를 제공합니다. 3D 방, 걸어 다니는 아바타, 가구 편집, 프로필, 다이어리, 방명록이 있습니다. 현재 브라우저에 저장하며 공유 링크는 방의 사본을 전달합니다. 실시간 멀티플레이 서비스는 아닙니다.
 

@@ -2,7 +2,7 @@
 
 Build a playable 3D room in your browser. Use scene data in React and exchange layouts with Unity.
 
-[한국어](README.ko.md) · [Mini-home guide](docs/minihome.en.md) · [Unity bridge](docs/unity.en.md)
+[Live mini-home](https://jigglypop.github.io/gaesup-world/) · [한국어](README.ko.md) · [Mini-home guide](docs/minihome.en.md) · [Unity bridge](docs/unity.en.md)
 
 This repository contains a TypeScript world library and a Cyworld-inspired mini-home: a 3D room, walking avatar, furniture, profile, diary and guestbook. It saves in your browser. Shared links contain a snapshot; they are not a multiplayer service.
 
