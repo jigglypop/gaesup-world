@@ -129,6 +129,22 @@ try {
     await page.screenshot({ path: path.join(output, `${scenario}-comparison.png`), fullPage: true });
   }
   Object.assign(liveMetrics, { 'world-restore-observers': 'restore-observer-work', 'world-restore-races': 'restore-mid-apply-abort-mismatches', 'world-paused-time-restore': 'restore-paused-clock-lost' });
+  for (const [scenario, metric, baseline, candidate] of [['world-save-hooks', 'save-hook-global-writes', '3', '0'], ['save-hook-sharing', 'save-hook-burst-writes', '12', '2']]) {
+    await page.getByLabel('재현 시나리오', { exact: true }).selectOption(scenario);
+    const row = page.getByRole('row').filter({ hasText: metric });
+    assert.equal(await row.locator('td').nth(4).textContent(), candidate);
+    assert.equal(await row.locator('td').nth(6).textContent(), baseline);
+    await page.screenshot({ path: path.join(output, `${scenario}-comparison.png`), fullPage: true });
+  }
+  Object.assign(liveMetrics, { 'world-save-hooks': 'save-hook-global-writes', 'save-hook-sharing': 'save-hook-initial-data-loss' });
+  for (const [scenario, metric, baseline, candidate] of [['minihome-lifecycle', 'miniroom-idle-callbacks', '30', '0'], ['minihome-rendering', 'draw-calls', '623', '75']]) {
+    await page.getByLabel('재현 시나리오', { exact: true }).selectOption(scenario);
+    const row = page.getByRole('row').filter({ hasText: metric });
+    assert.equal(await row.locator('td').nth(4).textContent(), candidate);
+    assert.equal(await row.locator('td').nth(6).textContent(), baseline);
+    await page.screenshot({ path: path.join(output, `${scenario}-comparison.png`), fullPage: true });
+  }
+  Object.assign(liveMetrics, { 'minihome-api': 'miniroom-api-failures', 'minihome-lifecycle': 'miniroom-idle-callbacks' });
   for (const [scenarioId, metric] of Object.entries(liveMetrics)) {
     await page.getByLabel('재현 시나리오', { exact: true }).selectOption(scenarioId);
     const before = await page.evaluate(() => window.performanceLab.runs().length);

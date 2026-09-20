@@ -33,7 +33,10 @@ function Trace({ metric }: { metric: Metric | undefined }) {
 }
 
 export default function PerformanceLab() {
-  const [scenarioId, setScenarioId] = useState('metrics');
+  const [scenarioId, setScenarioId] = useState(() => {
+    const requested = new URLSearchParams(location.search).get('scenario');
+    return scenarios.some(scenario => scenario.id === requested) ? requested! : 'metrics';
+  });
   const [config, setConfig] = useState<LabConfig>(DEFAULT_CONFIG);
   const [role, setRole] = useState<LabRun['role']>('baseline');
   const [runs, setRuns] = useState<LabRun[]>([]);

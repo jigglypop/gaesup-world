@@ -15,6 +15,8 @@ const externalUrl = option('--url', null);
 const url = externalUrl ?? 'http://127.0.0.1:5192/performance';
 const benchmark = args.includes('--benchmark');
 const backend = option('--backend', 'webgpu');
+const count = Number(option('--count', '1000'));
+if (!Number.isInteger(count) || count < 1 || count > 100000) throw new Error('--count must be an integer from 1 to 100000');
 const repeat = Number(option('--repeat', '1'));
 const output = path.join(root, '.artifacts/performance', new Date().toISOString().replace(/[:.]/g, '-'));
 mkdirSync(output, { recursive: true });
@@ -49,9 +51,9 @@ try {
   const selected = option('--scenario', '') ? option('--scenario', '').split(',') : available;
   for (const scenarioId of selected) {
     for (let i = 0; i < repeat; i++) {
-      const running = page.evaluate(async ({ scenarioId, role, benchmark, backend }) => window.performanceLab.run({
-        scenarioId, role, config: { backend, warmupMs: benchmark ? 10000 : 250, durationMs: benchmark ? 30000 : 1500 },
-      }), { scenarioId, role, benchmark, backend });
+      const running = page.evaluate(async ({ scenarioId, role, benchmark, backend, count }) => window.performanceLab.run({
+        scenarioId, role, config: { backend, count, warmupMs: benchmark ? 10000 : 250, durationMs: benchmark ? 30000 : 1500 },
+      }), { scenarioId, role, benchmark, backend, count });
       const run = scenarioId === 'world-keyboard-focus' ? (await Promise.all([running, exerciseWorldKeyboard(page, async step => {
         if (step === 'focus-b') await page.screenshot({ path: path.join(output, `keyboard-active-${i}.png`), fullPage: true });
       })]))[0] : await running;

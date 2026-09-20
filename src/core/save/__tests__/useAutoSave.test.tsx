@@ -117,8 +117,10 @@ test.each(['switch', 'unmount'] as const)(
 
 test('disabled autosave does not save on timers or unload until enabled', async () => {
   jest.useFakeTimers();
-  const save = jest.fn(async () => undefined);
-  const saveSystem = { save } as unknown as SaveSystem;
+  const saveSystem = new SaveSystem({ adapter: {
+    read: async () => null, write: async () => undefined, list: async () => [], remove: async () => undefined,
+  } });
+  const save = jest.spyOn(saveSystem, 'save');
   const { rerender, unmount } = renderHook(
     ({ enabled }) => {
       useAutoSave({ enabled, saveSystem, intervalMs: 1000 });

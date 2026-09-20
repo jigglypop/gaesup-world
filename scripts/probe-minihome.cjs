@@ -4,11 +4,12 @@ const path = require('node:path');
 
 const { chromium } = require('@playwright/test');
 const { PNG } = require('pngjs');
-const { OrthographicCamera, Vector3 } = require('three');
 
 async function main() {
   const url = process.env.GAESUP_PROBE_URL ?? 'http://127.0.0.1:5174';
-  const output = path.resolve(__dirname, '../.tmp/minihome');
+  const output = path.resolve(process.env.GAESUP_PROBE_OUTPUT ?? path.join(__dirname, '../.tmp/minihome'));
+  const deviceScaleFactor = Number(process.env.GAESUP_PROBE_DPR ?? '1');
+  assert.ok(Number.isFinite(deviceScaleFactor) && deviceScaleFactor >= 1 && deviceScaleFactor <= 3);
   fs.mkdirSync(output, { recursive: true });
   const browser = await chromium.launch({
     channel: 'chrome',
@@ -16,7 +17,7 @@ async function main() {
     args: ['--enable-unsafe-webgpu', '--enable-gpu'],
   });
   try {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 1040 } });
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1040 }, deviceScaleFactor });
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
     page.on('console', (message) => {
@@ -32,15 +33,54 @@ async function main() {
     await ready();
     await page.waitForTimeout(1800);
     const idleBefore = Number(await page.locator('canvas').getAttribute('data-rendered-frames'));
+    const callbacksBefore = await page.evaluate(() => window.miniroom.diagnostics().loopCallbacks);
     await page.waitForTimeout(700);
     const idleAfter = Number(await page.locator('canvas').getAttribute('data-rendered-frames'));
     assert.ok(idleAfter - idleBefore <= 2, `Idle room rendered ${idleAfter - idleBefore} unnecessary frames.`);
+    const idleCallbacks = await page.evaluate(() => window.miniroom.diagnostics().loopCallbacks) - callbacksBefore;
+    assert.equal(idleCallbacks, 0, 'Idle room scheduled frame callbacks');
     await page.screenshot({ path: path.join(output, 'home-desktop.png'), fullPage: true });
     const bitmap = PNG.sync.read(await page.locator('canvas').screenshot());
     const colors = new Set();
     for (let i = 0; i < bitmap.data.length; i += 32)
       colors.add(`${bitmap.data[i]},${bitmap.data[i + 1]},${bitmap.data[i + 2]}`);
     assert.ok(colors.size > 150, `Expected a rendered 3D room, found ${colors.size} colors.`);
+    const walkBounds = await page.locator('canvas').boundingBox();
+    const walkPoint = await page.evaluate(() => window.miniroom.projectPoint([-2.5, 0, 2.75]));
+    await page.mouse.click(walkBounds.x + walkPoint.x, walkBounds.y + walkPoint.y);
+    await page.waitForFunction(() => { const p = window.miniroom.diagnostics().avatarPosition; return Math.hypot(p[0] + 2.5, p[2] - 2.75) < 0.05; }, { timeout: 10000 });
+    await page.getByRole('button', { name: '화면 확대', exact: true }).click();
+    await page.waitForFunction(() => !!document.fullscreenElement);
+    await page.getByRole('button', { name: '화면 축소', exact: true }).click();
+    await page.waitForFunction(() => !document.fullscreenElement);
+    for (const quality of ['economy', 'high', 'balanced']) {
+      await page.getByLabel('미니룸 화질', { exact: true }).selectOption(quality);
+      await page.waitForFunction(value => window.miniroom.diagnostics().quality === value, quality);
+    }
+    await page.getByLabel('미니룸 조명', { exact: true }).selectOption('evening');
+    await page.waitForFunction(() => window.miniroom.diagnostics().lighting === 'evening');
+    await page.screenshot({ path: path.join(output, 'room-evening.png'), fullPage: true });
+    await page.getByLabel('미니룸 조명', { exact: true }).selectOption('day');
+    for (const camera of ['front', 'top', 'isometric']) {
+      const before = await page.evaluate(() => window.miniroom.diagnostics().renderedFrames);
+      await page.getByLabel('미니룸 카메라', { exact: true }).selectOption(camera);
+      await page.waitForFunction(value => window.miniroom.diagnostics().renderedFrames > value, before);
+    }
+    const photoDownload = page.waitForEvent('download');
+    await page.getByRole('button', { name: '사진 저장', exact: true }).click();
+    const photoPath = path.join(output, 'mini-room.png'); await (await photoDownload).saveAs(photoPath);
+    const photo = PNG.sync.read(fs.readFileSync(photoPath)); assert.ok(photo.width > 100 && photo.height > 100);
+    const photoColors = new Set(); for (let i = 0; i < photo.data.length; i += 32) photoColors.add(photo.data.subarray(i, i + 3).toString('hex'));
+    assert.ok(photoColors.size > 150, 'Photo export is blank');
+    const beforeApi = await page.evaluate(() => localStorage.getItem('gaesup.minihome.v1'));
+    await page.getByRole('button', { name: 'API·성능', exact: true }).click();
+    await page.getByRole('button', { name: 'API 기능 검사 실행', exact: true }).click();
+    await page.getByText(/기능 11\/11 통과/).waitFor({ timeout: 60000 });
+    const apiChecks = await page.locator('.room-api-checks li').count();
+    assert.equal(await page.locator('.room-api-checks li[data-status=failed]').count(), 0);
+    assert.equal(await page.evaluate(() => localStorage.getItem('gaesup.minihome.v1')), beforeApi);
+    await page.screenshot({ path: path.join(output, 'room-api-checks.png'), fullPage: true });
+    await page.getByRole('button', { name: 'API·성능', exact: true }).click();
     await page.getByRole('button', { name: '프로필 수정' }).click();
     await page.getByLabel('프로필 이름').fill('도토리');
     await page.getByLabel('홈피 제목').fill('도토리의 작은 방');
@@ -56,18 +96,9 @@ async function main() {
     const plant = beforeDrag.room.objects.find((object) => object.id === addedId);
     await page.locator('canvas').scrollIntoViewIfNeeded();
     const bounds = await page.locator('canvas').boundingBox();
-    const aspect = bounds.width / bounds.height;
-    const camera = new OrthographicCamera(-6.6 * aspect, 6.6 * aspect, 6.6, -6.6, 0.1, 100);
-    camera.position.set(12, 11, 15);
-    camera.lookAt(0, 1, 0);
-    camera.updateMatrixWorld();
-    const point = new Vector3(
-      plant.transform.position[0],
-      0.7,
-      plant.transform.position[2],
-    ).project(camera);
-    const x = bounds.x + ((point.x + 1) * bounds.width) / 2;
-    const y = bounds.y + ((1 - point.y) * bounds.height) / 2;
+    const point = await page.evaluate(position => window.miniroom.projectPoint(position), [plant.transform.position[0], 0.7, plant.transform.position[2]]);
+    const x = bounds.x + point.x;
+    const y = bounds.y + point.y;
     await page.mouse.move(x, y);
     await page.mouse.down();
     assert.equal(await page.getByLabel('선택한 가구').inputValue(), addedId);
@@ -87,6 +118,14 @@ async function main() {
       Math.PI / 2,
     );
     await page.screenshot({ path: path.join(output, 'room-editing.png'), fullPage: true });
+    const movedPlant = saved.room.objects.find(object => object.id === addedId);
+    const cancelBounds = await page.locator('canvas').boundingBox();
+    const cancelPoint = await page.evaluate(position => window.miniroom.projectPoint(position), [movedPlant.transform.position[0], 0.7, movedPlant.transform.position[2]]);
+    await page.mouse.move(cancelBounds.x + cancelPoint.x, cancelBounds.y + cancelPoint.y); await page.mouse.down();
+    await page.mouse.move(cancelBounds.x + cancelPoint.x + 40, cancelBounds.y + cancelPoint.y + 10, { steps: 5 });
+    await page.keyboard.press('Escape'); await page.mouse.up();
+    await page.getByRole('button', { name: '미니홈피 저장' }).click();
+    assert.deepEqual(await state(), saved, 'Escape committed the drag preview');
     await page.reload();
     await ready();
     await page.getByRole('heading', { name: /도토리의 작은 방/ }).waitFor();
@@ -216,8 +255,24 @@ async function main() {
     fallback.on('pageerror', (error) => fallbackErrors.push(error.message));
     await fallback.goto(url);
     await fallback.locator('[data-renderer="WebGL2"]').waitFor({ timeout: 60000 });
+    await fallback.evaluate(() => document.querySelector('canvas').getContext('webgl2').getExtension('WEBGL_lose_context').loseContext());
+    await fallback.getByRole('button', { name: '다시 열기', exact: true }).waitFor();
+    await fallback.getByRole('button', { name: '다시 열기', exact: true }).click();
+    await fallback.locator('[data-renderer="WebGL2"]').waitFor({ timeout: 60000 });
+    await fallback.waitForFunction(() => window.miniroom?.diagnostics().renderedFrames > 0 && !document.querySelector('.room-loading'));
     assert.deepEqual(fallbackErrors, []);
     const result = {
+      deviceScaleFactor,
+      contextRecovery: true,
+      apiChecks,
+      idleCallbacksIn700ms: idleCallbacks,
+      cameraPresets: true,
+      navigationMovement: true,
+      fullScreen: true,
+      cancelDrag: true,
+      qualityProfiles: true,
+      dayEvening: true,
+      photoExportColors: photoColors.size,
       native: true,
       idleDrawsIn700ms: idleAfter - idleBefore,
       colors: colors.size,

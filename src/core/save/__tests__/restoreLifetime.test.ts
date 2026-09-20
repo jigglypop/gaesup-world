@@ -64,6 +64,27 @@ test('a queued write does not block loads of another slot or obsolete-read failu
   adapter.read = async () => { throw new Error('current I/O'); }; await expect(sys.load()).rejects.toThrow('current I/O');
 });
 
+test('loading status follows only the current read across cancellation, replacement, failure and hydration', async () => {
+  const { adapter } = memory(); let finishOld!: (value: SaveBlob | null) => void; let finishNew!: (value: SaveBlob | null) => void;
+  adapter.read = () => new Promise(resolve => { finishOld = resolve; });
+  const sys = new SaveSystem({ adapter }); const first = sys.load(); expect(sys.isLoading()).toBe(true);
+  sys.cancelPendingLoads(); expect(sys.isLoading()).toBe(false);
+  adapter.read = () => new Promise(resolve => { finishNew = resolve; }); const next = sys.load(); expect(sys.isLoading()).toBe(true);
+  finishOld(null); await first; expect(sys.isLoading()).toBe(true);
+  finishNew(null); await next; expect(sys.isLoading()).toBe(false);
+  adapter.read = async () => { throw new Error('read'); }; await expect(sys.load()).rejects.toThrow('read'); expect(sys.isLoading()).toBe(false);
+  sys.register({ key: 'counter', serialize: () => 0, hydrate: () => { expect(sys.isRestoring()).toBe(true); expect(sys.isLoading()).toBe(false); } });
+  adapter.read = async () => blob({ counter: 4 }); await sys.load(); expect(sys.isRestoring()).toBe(false); expect(sys.isLoading()).toBe(false);
+});
+
+test('loading status includes waiting on storage writes and stops immediately when its signal aborts', async () => {
+  const { adapter } = memory(); let finish!: () => void; adapter.write = () => new Promise(resolve => { finish = resolve; });
+  const read = jest.spyOn(adapter, 'read'); const sys = new SaveSystem({ adapter }); const saving = sys.save(); await Promise.resolve();
+  const controller = new AbortController(); const loading = sys.load(undefined, controller.signal);
+  expect(sys.isLoading()).toBe(true); expect(read).not.toHaveBeenCalled(); controller.abort(); expect(sys.isLoading()).toBe(false);
+  finish(); await saving; await expect(loading).resolves.toBe(false); expect(read).not.toHaveBeenCalled();
+});
+
 test('hydration/migration works on a detached input snapshot and always releases its guard after failure', () => {
   const raw = blob({ counter: { nested: 2 } }); const sys = new SaveSystem({ adapter: memory().adapter, currentVersion: 2, migrations: { 1: input => { (input.domains['counter'] as { nested: number }).nested = 3; return { ...input, version: 2 }; } } });
   sys.register({ key: 'counter', serialize: () => ({ nested: 1 }), hydrate: () => {}, prepareHydrate: data => { expect(sys.isRestoring()).toBe(true); expect(data).toEqual({ nested: 3 }); return () => {}; } });

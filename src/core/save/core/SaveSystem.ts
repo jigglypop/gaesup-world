@@ -22,6 +22,7 @@ export class SaveSystem {
   private processing = false;
   private restoring = false;
   private restoreGeneration = 0;
+  private loading: { generation: number; signal: AbortSignal | undefined } | undefined;
   private pendingMutations = new Map<string, Promise<void>>();
 
   constructor(opts: SaveSystemOptions) {
@@ -58,6 +59,8 @@ export class SaveSystem {
   }
 
   has(key: string): boolean { return this.bindings.has(key); }
+
+  getDefaultSlot(): string { return this.defaultSlot; }
 
   subscribeDiagnostics(listener: SaveDiagnosticListener): () => void {
     this.diagnosticListeners.add(listener);
@@ -105,6 +108,11 @@ export class SaveSystem {
   cancelPendingLoads(): void { this.restoreGeneration++; }
   /** True through preparation, application and rollback; observers should not interpret these writes as play. */
   isRestoring(): boolean { return this.restoring; }
+  /** True while the current, non-aborted load is waiting for storage. */
+  isLoading(): boolean {
+    return this.loading !== undefined
+      && this.loading.generation === this.restoreGeneration && !this.loading.signal?.aborted;
+  }
 
   private restoreBlob(raw: SaveBlob, slot: string, signal?: AbortSignal): boolean {
     return this.process(() => {
@@ -188,15 +196,21 @@ export class SaveSystem {
     if (signal?.aborted) return false;
     if (this.processing) throw new Error('Save operation already in progress');
     const generation = ++this.restoreGeneration;
-    // Observe writes/removals queued before this load for the same slot.
-    const mutation = this.pendingMutations.get(slot);
-    if (mutation) await mutation;
-    if (signal?.aborted || generation !== this.restoreGeneration) return false;
-    let raw: SaveBlob | null;
-    try { raw = await this.adapter.read(slot); }
-    catch (error) { if (signal?.aborted || generation !== this.restoreGeneration) return false; throw error; }
-    if (!raw || signal?.aborted || generation !== this.restoreGeneration) return false;
-    return this.restoreBlob(raw, slot, signal);
+    const loading = { generation, signal };
+    this.loading = loading;
+    try {
+      // Observe writes/removals queued before this load for the same slot.
+      const mutation = this.pendingMutations.get(slot);
+      if (mutation) await mutation;
+      if (signal?.aborted || generation !== this.restoreGeneration) return false;
+      let raw: SaveBlob | null;
+      try { raw = await this.adapter.read(slot); }
+      catch (error) { if (signal?.aborted || generation !== this.restoreGeneration) return false; throw error; }
+      if (!raw || signal?.aborted || generation !== this.restoreGeneration) return false;
+      return this.restoreBlob(raw, slot, signal);
+    } finally {
+      if (this.loading === loading) this.loading = undefined;
+    }
   }
 
   async list(): Promise<string[]> { return this.adapter.list(); }

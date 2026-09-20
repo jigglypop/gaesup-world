@@ -370,7 +370,7 @@ body {
   transform: rotate(-5deg);
 }
 .miniroom-view {
-  height: 370px;
+  height: 460px;
   position: relative;
   border: 1px solid #e2ded3;
   border-radius: 8px;
@@ -1112,3 +1112,38 @@ body {
 .page-save { flex-wrap: wrap; gap: 8px; }
 .page-save > span { font-size: 12px; line-height: 1.5; }
 .page-save > button { font-size: 12px; min-height: 36px; }
+
+.miniroom-shell { min-width: 0; }
+.miniroom-view canvas:focus-visible { outline: 3px solid #587e75; outline-offset: -3px; }
+.room-view-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; padding: 12px 0; }
+.room-view-controls label { display: grid; gap: 4px; color: #5e6c63; font-size: 11px; }
+.room-view-controls select, .room-view-controls button, .room-diagnostics button { min-height: 36px; border: 1px solid #d4d9ce; background: #fffdf7; color: #52675f; border-radius: 6px; padding: 7px 10px; font: inherit; font-size: 12px; }
+.room-view-controls button { cursor: pointer; }
+.room-view-controls button:disabled { opacity: .5; cursor: wait; }
+.room-view-controls button[aria-expanded=true] { background: #e1eae3; border-color: #87a798; }
+.room-notice { margin: 0; padding: 8px 0; font-size: 12px; color: #8c5b42; }
+.room-diagnostics { border: 1px solid #c4d2c8; background: #f3f7ef; color: #344b40; border-radius: 8px; padding: 16px; font-size: 12px; }
+.room-diagnostic-heading { display: flex; justify-content: space-between; gap: 10px; }
+.room-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
+.room-metrics dt { color: #5e7265; font-size: 11px; }
+.room-metrics dd { font-variant-numeric: tabular-nums; font-size: 17px; margin: 5px 0 0; }
+.room-diagnostics p { line-height: 1.7; overflow-wrap: anywhere; }
+.room-diagnostic-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.room-diagnostic-actions a { color: #356b61; text-underline-offset: 3px; }
+.room-api-checks { list-style: none; margin: 0; padding: 0; }
+.room-api-checks li { border-top: 1px solid #d4dfd3; padding: 10px 0; }
+.room-api-checks summary { cursor: pointer; }
+.room-api-checks summary span { display: inline-block; color: #287348; margin-right: 5px; }
+.room-api-checks li[data-status=failed] summary span { color: #a02b20; }
+.room-api-checks p { margin: 8px 0 0; }
+.miniroom-shell:fullscreen { display: flex; flex-direction: column; background: #faf6ee; padding: 16px; overflow: auto; }
+.miniroom-shell:fullscreen .miniroom-view { flex: 1; min-height: 240px; }
+.miniroom-shell:fullscreen .room-diagnostics { flex-shrink: 0; }
+@media (max-width: 600px) {
+  .miniroom-view { height: 340px; }
+  .room-view-controls { gap: 6px; }
+  .room-view-controls button, .room-view-controls select { min-height: 40px; padding: 8px; }
+  .room-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .room-caption { left: 8px; right: 8px; bottom: 10px; font-size: 9px; line-height: 1.7; }
+  .room-caption span { display: block; margin-left: 0; font-size: 8px; }
+}
