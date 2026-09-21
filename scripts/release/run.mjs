@@ -13,8 +13,7 @@ if (!git('tag', '--list', 'v*')) {
   git('merge-base', '--is-ancestor', baseline.commit, sourceCommit);
   const response = await fetch(`https://registry.npmjs.org/${previous.name}/${baseline.version}`);
   if (!response.ok || (await response.json()).version !== baseline.version) throw new Error('Historical npm version is unavailable.');
-  git('tag', `v${baseline.version}`, baseline.commit);
-  git('push', 'origin', `refs/tags/v${baseline.version}`);
+  throw new Error(`Historical release tag v${baseline.version} is missing. A repository maintainer must create it at ${baseline.commit} before the first automated release. The workflow token cannot introduce historical workflow files through a tag.`);
 }
 const result = await semanticRelease();
 let release = result ? { version: result.nextRelease.version, tag: result.nextRelease.gitTag } : null;

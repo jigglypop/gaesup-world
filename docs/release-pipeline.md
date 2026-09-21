@@ -1,6 +1,6 @@
 # npm·예제 자동배포
 
-구현 상태: 로컬 파이프라인 구성·검증 중. GitHub 실행·npm 신규 발행·라이브 배포 성공을 아직 확인하지 않았다.
+구현 상태: GitHub의 전체 verify job은 통과했다. 첫 release job은 역사적 tag 생성 권한에서 실패해 초기 tag를 별도로 설정한다. npm 신규 발행·라이브 배포 성공은 아직 확인 중이다.
 
 `.github/workflows/release.yml`은 PR에서 `verify:full`·타입 검사·소스 목록을 실행한다. main의 Conventional Commit 변경은 semantic-release로 버전을 결정한다. prepare hook이 package.json에 `gaesupRelease` source/version을 넣고, 발행 이후 registry의 이 값과 tarball SHA-512를 확인한다. gitHead가 제공되면 release tag commit과도 대조한다. 그 tarball의 ESM/CJS·선언·Vite 소비자 검사를 실행하고, 검증된 소비자의 패키지 경로를 Vite alias에 주입해 배포 예제를 빌드한다.
 
@@ -12,11 +12,11 @@
 - GitHub Pages의 빌드 원본은 GitHub Actions로 설정한다. `github-pages` environment와 main 배포 정책을 확인한다.
 - main에서 semantic-release의 버전 커밋·tag push가 가능해야 한다. 브랜치 보호가 있으면 해당 정책에 맞춰 설정한다.
 - Node 24, npm 11.11.1, semantic-release 25.0.9, npm plugin 13.1.5를 사용한다. 기존 npm plugin 12.0.2는 현재 설치 코드에서 token을 요구하므로 갱신했다.
-- 이 workflow에는 장기 npm token을 넣지 않는다. GitHub plugin의 이슈·PR 자동 댓글은 비활성화한다.
+- OIDC 인증을 우선 사용한다. token 인증이 필요한 기존 환경은 GitHub secret `NPM_TOKEN` 또는 기존 패키지 전용 secret `NPM_GAESUP_WORLD_1_0_31_TOKEN`을 사용한다. 값은 release step에만 전달하며 저장소에 기록하지 않는다. GitHub plugin의 이슈·PR 자동 댓글은 비활성화한다.
 
 ## 재실행
 
-현재 원격에 release tag가 없고 npm 1.0.31에는 gitHead가 없다. 최초 자동화 실행은 저장소의 명시적 `Release gaesup-world 1.0.31` 커밋 `8e1ca1497cd01438ee0b1f72505a53ff6ae1e45f`를 분석 기준 tag로 등록한다. package version·조상 관계·registry version 존재를 확인한다. 이 역사적 분석 기준은 구버전 tarball의 소스 provenance를 증명하는 것이 아니다. 이후 릴리스부터 source metadata와 tag를 검증한다.
+최초 실행 전 저장소 관리자가 명시적 `Release gaesup-world 1.0.31` 커밋 `8e1ca1497cd01438ee0b1f72505a53ff6ae1e45f`에 분석 기준 `v1.0.31` tag를 등록한다. 이 커밋에는 과거 workflow 파일이 있어 제한된 `GITHUB_TOKEN`으로 tag를 push하면 거절된다. 기준 tag가 없으면 파이프라인은 package version·조상 관계·registry version을 확인한 뒤 필요한 초기 설정을 안내하고 멈춘다. 이 역사적 분석 기준은 구버전 tarball의 소스 provenance를 증명하는 것이 아니다. 이후 릴리스부터 source metadata와 tag를 검증한다.
 
 Pages 실패는 실패한 deploy job을 다시 실행해 같은 artifact로 복구한다. 전체 workflow를 재실행할 때 `scripts/release/run.mjs`는 같은 소스의 정확한 tag 또는 바로 뒤 버전 커밋의 tag를 확인하고 기존 발행을 재사용한다. 소스와 다른 최신 버전을 임의로 배포하지 않는다. registry가 아직 보이지 않으면 제한된 재시도를 수행한다.
 

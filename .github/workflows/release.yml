@@ -61,6 +61,7 @@ jobs:
         run: node scripts/release/run.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN || secrets.NPM_GAESUP_WORLD_1_0_31_TOKEN }}
       - if: steps.publish.outputs.released == 'true'
         run: node scripts/release/registry.mjs
       - if: steps.publish.outputs.released == 'true'
