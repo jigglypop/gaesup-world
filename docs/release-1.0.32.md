@@ -14,11 +14,20 @@ Runtime performance PRD의 중간 릴리스다. 현재 구현과 검증을 통�
 
 ## 호환성과 검증
 
-기존 Rapier `Physics`를 직접 사용하는 화면은 기존 프레임 경로를 유지한다. 새 고정 clock 경로는 `WorldPhysics`를 통해 사용한다. 공개 ESM/CJS 진입점과 React 18/19, R3F 8/9 소비자 검증을 유지한다.
+기존 Rapier `Physics`를 직접 사용하는 화면은 기존 프레임 경로를 유지한다. 새 고정 clock 경로는 `WorldPhysics`를 통해 사용한다. 공개 ESM/CJS 진입점과 새 설치 소비자를 검사했다. React 18/19와 R3F 8/9는 선언된 지원 범위이며, 이번 소비자 검사는 저장소의 React 19/R3F 9 조합을 사용했다. React 18/R3F 8 조합의 별도 검증은 남아 있다.
 
 배포 준비 시 전체 Jest 349 suites / 2,975 tests, 별도 메모리 88 tests, lint, 패키지 빌드, publint, 새 설치 소비자 및 showcase 빌드 검증을 통과했다. NPC 화면 밖 이동·재마운트와 실제 Rapier clock 동등성은 WebGL 및 네이티브 WebGPU에서 확인했다. 전체 부하의 성능 개선율과 모바일 실기기 인수는 진행 중이다.
 
 `examples/`의 미니홈피 편집·마을·카메라·진단 개선은 저장소 예제에 포함된다. npm 패키지는 빌드된 라이브러리와 공개 자산을 제공하며, 예제 웹사이트의 배포 상태는 별도로 확인해야 한다.
+
+## 게시 확인 — 2026-09-22 KST
+
+- [npm 1.0.32](https://www.npmjs.com/package/gaesup-world/v/1.0.32): `latest=1.0.32`, 공개 tarball SHA-512와 소스 metadata 검증, 다운로드한 tarball의 새 ESM/CJS·타입·Vite 소비자 검사 통과.
+- [릴리스 workflow](https://github.com/jigglypop/gaesup-world/actions/runs/35617220263): verify·release·deploy 모두 성공. 배포 소스는 `a0c8a3b5a7d7aa32117409c6807e4d0a044a17c0`, 릴리스 tag commit은 `57055c179150f1576c81f5f2ddf7796bdcaff9c4`다.
+- [미니홈피](https://jigglypop.github.io/gaesup-world/): `version.json`의 버전·소스·tag·integrity가 npm과 일치한다. `/`, `/engine/`, `/performance/` 응답과 software WebGL2 브라우저의 아바타·조명 저장 후 새로고침 복원을 통과했다. 이 검사는 모바일/native GPU 성능 인수를 대신하지 않는다.
+- 초기 지연은 npm의 게시 자동 검사(`Validating`)였으며, 공개 전환에 약 10분이 걸렸다. 후속 registry 대기 시간을 약 15분으로 늘렸다. Pages의 기존 `gh-pages` 배포 원본을 GitHub Actions로 전환하고 `main`을 기존 허용 목록에 추가했다.
+
+로컬 증거는 `.artifacts/release/ci-1.0.32/`와 `.tmp/release-1.0.32-published-consumer.log`에 보존한다.
 
 ## English
 

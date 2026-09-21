@@ -12,7 +12,7 @@
 
 | 단계 | 현재 상태 | 남은 완료 조건 |
 | --- | --- | --- |
-| S0 계측·lab | 실제 시나리오 72개, 저장 실행 203개. WebGPU/WebGL 카운터 정규화·미지원 구분·실제 MessageQueue 고장 주입 검사. NPC 100/1,000개 감지 CPU 정식 A/B 각 5회 추가 | 후속 시나리오·장치·부하 확대, 동일 조건의 정식 A/B 측정 |
+| S0 계측·lab | 실제 시나리오 72개, 저장 실행 213개. WebGPU/WebGL 카운터 정규화·미지원 구분·실제 MessageQueue 고장 주입 검사. NPC 100/500/1,000개 감지 CPU 정식 A/B 각 5회 추가 | 후속 시나리오·장치·부하 확대, 동일 조건의 정식 A/B 측정 |
 | S1 정확성 | R01 selector, R02 준비된 snapshot·rollback, R06 GPU 재질, R07 오디오 종료, R08 엔티티 세대, R10 GLTF 교체/크기, R11 재질 ID, R24b 플러그인 해제 수정. 실제 IndexedDB 복원 중 도감 초과 수집도 수정 | 각 항목의 일반 월드 통합·수명 반복·지원 조합. 다른 observer의 복원 부작용·복원 중 명령 재진입. R24a 저장 지연은 S5 |
 | S2 월드 소유권 R25 | 시간·저장 namespace·GaesupStore·플레이어·입력·자동화·내비·브리지, 건물/NPC·렌더/컬링/GPU 버퍼·장애물 등록 분리. 생활 도메인·캐릭터·장면·방·오디오·도구 버스·게임플레이 engine/registry 분리. DOM/커스텀 입력·상호작용 대상·입력 action·grass·WorldBridge·객체 store·블루프린트·카메라·NPC 정책·시네마틱/미리 보기의 종료/재시작 연결. 브라우저 게임패드 공유 폴링·아날로그 물리/시점 입력, 관찰자 구독 공유·복원 구분·지연 읽기 세대·부분 적용 취소/rollback 구현. 자동 저장/초기 로드의 월드 선택·슬롯별 공유·중복 쓰기 병합 구현 | 비동기 명령의 취소·저장 경계 검증 완료. 임의 외부 효과와 실제 USB/Bluetooth 장치 확인. 객체 영속화·core/next 엔티티 계약은 R27, 권위 명령 계약은 R30 |
 | S2 clock R26 | 순수 FixedStepClock·공유 RAF·실행 단계/순서·catch-up 예산·일시 정지/재개. NetworkBridge·WorldPhysics·NPC 이동/판단 연결. 30/60/144Hz의 Rapier·NPC 동등성, 화면 밖 진행·이동 중 저장·Node 수동 tick 확인 | 게임패드 폴링·전체 입력 기록/재생, 실제 전체 시뮬레이션 동등성과 부하 성능 |
@@ -324,9 +324,11 @@ R25/R26의 네트워크는 runtime이 지연 생성한 전용 `networkBridge`를
 - `npc-perception` v2: 같은 source `29c2aacc…`, seed·1,000 NPC·환경에서 기존 선형 계산과 공간 인덱스를 5쌍 교차 실행했다. 매 실행 warmup 10초+측정 30초이며 인덱스 refresh 비용을 포함한다. 10회 모두 결과 동등성 검사 통과, 브라우저 오류 0.
 - 감지 배치 CPU p95의 5회 중앙값은 **21.6→10.3ms, 52.3% 감소**다. baseline p95 범위 20.1–26.8ms, candidate 9.9–12.5ms. 표본은 각각 6,858/11,546개다. 이 값은 전체 NPC 관측 1배치의 CPU 시간이며 GPU 시간이나 전체 장면 FPS가 아니다.
 - 100 NPC에서도 같은 방식으로 5쌍 교차 실행했다. CPU p95 중앙값은 baseline/candidate 모두 **0.3ms**이며, 측정 해상도 내에서 중앙값 회귀가 없었다. source `12a353d3…`, 표본 29,273/29,509개, 10회 모두 결과 동등성 통과다. 1,000개 실행과 source가 다르므로 서로 직접 비교하지 않는다.
-- 원시 측정: 1,000개는 `.artifacts/performance/2026-09-21T15-11-25-383Z/`, 100개는 `.artifacts/performance/2026-09-21T15-23-33-669Z/`. 기능 실행 2개와 정식 CPU 실행 20개는 [NPC 증거 번들](../examples/performance/baselines/2026-09-22-s3-npc.json)에 보존했다. 앞선 짧은 v1 진단은 정식 비교에서 제외한다.
+- 500 NPC의 5쌍 교차 실행에서도 CPU p95 중앙값은 **5.6→4.5ms, 19.6% 감소**였다. source `4c12afdf…`, baseline 범위 5.2–6.1ms, candidate 4.0–4.7ms, 표본 16,845/18,483개다. 10회 모두 결과 동등성 통과이며 각 부하의 개선율은 해당 source 내 baseline/candidate만 비교했다.
+- 원시 측정: 1,000개는 `.artifacts/performance/2026-09-21T15-11-25-383Z/`, 100개는 `.artifacts/performance/2026-09-21T15-23-33-669Z/`, 500개는 `.artifacts/performance/2026-09-21T15-42-29-822Z/`. 기능 실행 2개와 정식 CPU 실행 30개는 [NPC 증거 번들](../examples/performance/baselines/2026-09-22-s3-npc.json)에 보존했다. 앞선 짧은 v1 진단은 정식 비교에서 제외한다.
+- 번들 213개를 불러온 lab UI에서 5회 요약·JSON 내보내기/불러오기·IndexedDB 재시작 검사를 통과했다. 증거: `.artifacts/performance/lab-ui-2026-09-21T17-40-20-456Z/`. 1.0.32 게시 및 실제 사이트 검증은 [릴리스 기록](release-1.0.32.md)에 구분해 남겼다.
 
-R09/R26은 `working`이다. 500 NPC 부하, 전체 장면의 다른 비용·프레임 예산, 50회 수명 반복, 물리 모바일 장치, 게임패드 폴링·모든 입력의 tick 기록/재생은 남아 있다. npm 중간 릴리스 진행 상태는 코어 성능 인수와 별도로 확인한다.
+R09/R26은 `working`이다. 전체 장면의 다른 비용·프레임 예산, 50회 수명 반복, 물리 모바일 장치, 게임패드 폴링·모든 입력의 tick 기록/재생은 남아 있다. npm 중간 릴리스 진행 상태는 코어 성능 인수와 별도로 확인한다.
 
 ## 1. 목표와 범위
 
