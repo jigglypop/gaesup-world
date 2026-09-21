@@ -1,8 +1,8 @@
 import {
   Fn, attribute, clamp, cos, cross, dot, float, floor, fract, length, max, mix,
-  normalize, positionGeometry, sin, smoothstep, sRGBTransferEOTF, texture, uniform, uv, varying, vec2, vec3, vec4,
+  normalize, positionGeometry, sin, smoothstep, sRGBTransferEOTF, texture, transformNormalToView, uniform, uv, varying, vec2, vec3, vec4,
 } from 'three/tsl';
-import { Color, DoubleSide, MeshBasicNodeMaterial, Vector3, type Node, type Texture } from 'three/webgpu';
+import { Color, DoubleSide, MeshStandardNodeMaterial, Vector3, type Node, type Texture } from 'three/webgpu';
 
 const permute = Fn(([x]: [Node<'vec3'>]) => {
   const value = x.mul(34).add(1).mul(x).toVar();
@@ -28,17 +28,18 @@ const simplex = Fn(([v]: [Node<'vec2'>]) => {
 
 const rotate = Fn(([v, q]: [Node<'vec3'>, Node<'vec4'>]) => v.add(cross(q.xyz, cross(q.xyz, v).add(v.mul(q.w))).mul(2)));
 
-export class GrassNodeMaterial extends MeshBasicNodeMaterial {
+export class GrassNodeMaterial extends MeshStandardNodeMaterial {
   readonly uniforms = {
     bladeHeight: uniform(1), time: uniform(0), windScale: uniform(1),
     trampleCenter: uniform(new Vector3(0, -9999, 0)), trampleRadius: uniform(1.4), trampleStrength: uniform(0.85),
-    tipColor: uniform(new Color('#8fbc5a').convertSRGBToLinear()),
-    bottomColor: uniform(new Color('#355b2d').convertSRGBToLinear()),
+    tipColor: uniform(new Color('#8fbc5a')),
+    bottomColor: uniform(new Color('#355b2d')),
     uToon: uniform(0), uToonSteps: uniform(4),
   };
 
   constructor(map: Texture, alphaMap: Texture) {
-    super({ side: DoubleSide, transparent: true, toneMapped: false, fog: false });
+    super({ side: DoubleSide, transparent: false, roughness: 1, metalness: 0, fog: false });
+    this.normalNode = transformNormalToView(vec3(0, 1, 0));
     const u = this.uniforms;
     const offset = attribute<'vec3'>('offset', 'vec3');
     const orientation = attribute<'vec4'>('orientation', 'vec4');

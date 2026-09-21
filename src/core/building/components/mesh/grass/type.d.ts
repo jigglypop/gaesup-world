@@ -13,11 +13,16 @@ export type NodeGrassMaterialProps = {
 
 export type GrassMeshProps = ThreeElements["group"] & {
   options?: {
-    bW: number;
-    bH: number;
-    joints: number;
+    bW?: number;
+    bH?: number;
+    joints?: number;
   };
   width?: number;
+  /** Optional local XZ tile centers. Blades are distributed only inside these cells in one draw. */
+  cells?: ReadonlyArray<readonly [number, number, number?]>;
+  cellSize?: number;
+  /** Disable the continuous ground plane when a tile terrain already supplies the ground. */
+  ground?: boolean;
   instances?: number;
   /**
    * Blades per square meter. When set, overrides `instances` so density stays
@@ -66,6 +71,7 @@ declare global {
         toneMapped?: boolean;
         side?: THREE.Side;
         transparent?: boolean;
+        lights?: boolean;
         tipColor?: THREE.Color;
         bottomColor?: THREE.Color;
       };
@@ -82,6 +88,7 @@ declare global {
           toneMapped?: boolean;
           side?: THREE.Side;
           transparent?: boolean;
+        lights?: boolean;
           tipColor?: THREE.Color;
           bottomColor?: THREE.Color;
         };

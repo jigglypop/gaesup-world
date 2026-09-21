@@ -14,7 +14,9 @@ import {
   DEFAULT_BLADE_DIFFUSE_URL,
   resolveGrassTextureSources,
 } from "./assets";
+import { placeGrassOnCells } from './cells';
 import fragmentShader from "./frag.glsl";
+import { GrassDepthMaterial } from './GrassDepthMaterial';
 import { setGrassManagerWasm, type GrassTileRenderState } from "./manager";
 import { GrassMaterialInstance, GrassMeshProps } from "./type";
 import { useGrassManager } from "./useGrassManager";
@@ -99,6 +101,7 @@ const GROUND_DIRT = new THREE.Color('#5b4628');
 
 const GrassMaterial = shaderMaterial(
   {
+    ...Object.fromEntries(Object.entries(THREE.UniformsLib.lights).map(([key, uniform]) => [key, uniform.value])),
     bladeHeight: 1,
     map: null as THREE.Texture | null,
     alphaMap: null as THREE.Texture | null,
@@ -107,8 +110,8 @@ const GrassMaterial = shaderMaterial(
     trampleCenter: new THREE.Vector3(0, -9999, 0),
     trampleRadius: 1.4,
     trampleStrength: 0.85,
-    tipColor: new THREE.Color("#8fbc5a").convertSRGBToLinear(),
-    bottomColor: new THREE.Color("#355b2d").convertSRGBToLinear(),
+    tipColor: new THREE.Color("#8fbc5a"),
+    bottomColor: new THREE.Color("#355b2d"),
     uToon: 0,
     uToonSteps: 4,
   },
@@ -291,6 +294,9 @@ const GrassContent: FC<GrassMeshProps> = memo(
   ({
     options = { bW: 0.14, bH: 0.65, joints: 5 },
     width = 4,
+    cells,
+    cellSize = 1,
+    ground = true,
     instances,
     density,
     maxInstances = 18000,
@@ -305,7 +311,7 @@ const GrassContent: FC<GrassMeshProps> = memo(
     bladeAlphaUrl,
     ...props
   }) => {
-    const { bW, bH, joints } = options;
+    const { bW = 0.14, bH = 0.65, joints = 5 } = options;
     const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
     const manager = useGrassManager();
     // Auto-clamp instance budget to the active perf tier. Low-end devices get
@@ -313,24 +319,26 @@ const GrassContent: FC<GrassMeshProps> = memo(
     // why "many tiles" no longer melts down on integrated GPUs.
     const instanceScale = usePerfStore((s) => s.profile.instanceScale);
     const resolvedInstances = useMemo(() => {
+      if (cells?.length === 0) return 0;
       const cap = Math.max(64, Math.min(maxInstances, Math.round(maxInstances * instanceScale)));
       if (typeof instances === 'number' && instances > 0) {
         return Math.max(1, Math.min(cap, Math.floor(instances * instanceScale)));
       }
       const d = typeof density === 'number' && density > 0 ? density : 90;
-      const area = Math.max(1, width * width);
+      const area = Math.max(1, cells ? cells.length * cellSize * cellSize : width * width);
       return Math.max(64, Math.min(cap, Math.round(d * area * instanceScale)));
-    }, [instances, density, width, maxInstances, instanceScale]);
+    }, [instances, density, width, maxInstances, instanceScale, cells, cellSize]);
+    const maxCellHeight = useMemo(() => cells?.reduce((max, cell) => Math.max(max, Math.abs(cell[2] ?? 0)), 0) ?? 0, [cells]);
     const useToon = toon ?? getDefaultToonMode();
     const groundMat = getGroundMaterial(useToon);
     const baseGroundColor = useMemo(() => new THREE.Color(groundColor ?? GROUND_LIGHT), [groundColor]);
     const accentGroundColor = useMemo(() => new THREE.Color(groundAccentColor ?? GROUND_ACCENT), [groundAccentColor]);
     const tipBladeColor = useMemo(
-      () => new THREE.Color(bladeTipColor ?? '#8fbc5a').convertSRGBToLinear(),
+      () => new THREE.Color(bladeTipColor ?? '#8fbc5a'),
       [bladeTipColor],
     );
     const bottomBladeColor = useMemo(
-      () => new THREE.Color(bladeBottomColor ?? '#355b2d').convertSRGBToLinear(),
+      () => new THREE.Color(bladeBottomColor ?? '#355b2d'),
       [bladeBottomColor],
     );
     const groupRef = useRef<THREE.Group>(null);
@@ -371,9 +379,10 @@ const GrassContent: FC<GrassMeshProps> = memo(
         // narrower jitter; normalise both with a strong jitter pass so big tiles
         // never show the underlying lattice pattern.
         jitterAndVary(data, resolvedInstances, width);
+        if (cells) placeGrassOnCells(data.offsets, cells, cellSize);
         return data;
       },
-      [resolvedInstances, width, wasmModule],
+      [resolvedInstances, width, wasmModule, cells, cellSize],
     );
 
     const [baseGeom, groundGeo] = useMemo(() => {
@@ -456,10 +465,14 @@ const GrassContent: FC<GrassMeshProps> = memo(
         if (!mesh || !geo || !u) return;
 
         if (mesh.visible !== s.visible) mesh.visible = s.visible;
-        if (geo.instanceCount !== s.instanceCount) {
-          geo.instanceCount = s.instanceCount;
-          lastInstanceCount.current = s.instanceCount;
+        // A previous manager registration can run before passive cleanup after
+        // React replaces a smaller geometry. Never draw beyond its buffers.
+        const instanceCount = Math.min(s.instanceCount, geo.getAttribute('offset')?.count ?? 0);
+        if (geo.instanceCount !== instanceCount) {
+          geo.instanceCount = instanceCount;
+          lastInstanceCount.current = instanceCount;
         }
+        if (u['bladeHeight']) u['bladeHeight'].value = bH;
         if (u['time']) u['time'].value = s.time;
         if (u['windScale']) u['windScale'].value = s.windScale;
         if (u['trampleCenter']) {
@@ -472,7 +485,7 @@ const GrassContent: FC<GrassMeshProps> = memo(
 
       const handle = manager.register({
         width,
-        height: bH * 1.4,
+        height: bH * 2.2 + maxCellHeight * 2,
         center: initialCenter,
         maxInstances: resolvedInstances,
         ...(lod ? { lod } : {}),
@@ -480,7 +493,7 @@ const GrassContent: FC<GrassMeshProps> = memo(
       });
 
       return () => { manager.unregister(handle.id); };
-    }, [manager, width, bH, resolvedInstances, center?.[0], center?.[1], center?.[2], lod?.near, lod?.far, lod?.strength]);
+    }, [manager, width, bH, maxCellHeight, resolvedInstances, center?.[0], center?.[1], center?.[2], lod?.near, lod?.far, lod?.strength]);
 
     // Pre-compute a bounding sphere that contains every blade in the tile.
     // InstancedBufferGeometry can't compute one automatically because the
@@ -490,23 +503,25 @@ const GrassContent: FC<GrassMeshProps> = memo(
     useEffect(() => {
       const geo = geometryRef.current;
       if (!geo) return;
-      const radius = Math.hypot(width, width, bH * 1.4) * 0.5;
-      geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, bH * 0.5, 0), radius);
+      const radius = Math.hypot(width, width, bH * 2.2 + maxCellHeight * 2) * 0.5;
+      geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, maxCellHeight * 0.5 + bH, 0), radius);
       geo.boundingBox = new THREE.Box3(
-        new THREE.Vector3(-width * 0.5, 0, -width * 0.5),
-        new THREE.Vector3(width * 0.5, bH * 1.6, width * 0.5),
+        new THREE.Vector3(-width * 0.5 - bH, -maxCellHeight - bH, -width * 0.5 - bH),
+        new THREE.Vector3(width * 0.5 + bH, maxCellHeight + bH * 2.2, width * 0.5 + bH),
       );
-    }, [width, bH]);
+    }, [width, bH, maxCellHeight, resolvedInstances]);
 
     return (
       <group ref={groupRef} {...props}>
-        <mesh ref={meshRef} frustumCulled>
+        <mesh ref={meshRef} frustumCulled castShadow receiveShadow>
           <instancedBufferGeometry
+            key={resolvedInstances}
             ref={geometryRef}
             instanceCount={resolvedInstances}
             index={baseGeom.index}
             attributes-position={baseGeom.getAttribute("position")}
             attributes-uv={baseGeom.getAttribute("uv")}
+            attributes-normal={baseGeom.getAttribute("normal")}
           >
             <instancedBufferAttribute attach="attributes-offset" args={[attributeData.offsets, 3]} />
             <instancedBufferAttribute attach="attributes-orientation" args={[attributeData.orientations, 4]} />
@@ -521,16 +536,18 @@ const GrassContent: FC<GrassMeshProps> = memo(
             alphaMap={alphaMap ?? null}
             toneMapped={false}
             side={THREE.DoubleSide}
-            transparent
+            transparent={false}
+            lights
           />}
+          {!useNodes && <GrassDepthMaterial source={materialRef} />}
         </mesh>
-        <mesh
+        {ground && <mesh
           position={[0, 0, 0]}
           material={groundMat}
           receiveShadow
         >
           <primitive object={groundGeo} attach="geometry" />
-        </mesh>
+        </mesh>}
       </group>
     );
   }

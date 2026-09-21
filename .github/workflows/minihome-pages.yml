@@ -1,0 +1,51 @@
+name: Deploy minihome source snapshot
+
+on:
+  push:
+    branches: ['deploy/minihome-*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: minihome-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --global corepack
+      - run: corepack pnpm install --frozen-lockfile --ignore-scripts
+      - run: corepack pnpm exec tsc --noEmit
+      - run: corepack pnpm exec jest examples/minihome --runInBand
+      - run: corepack pnpm run test:minihome:service
+      - run: corepack pnpm run build:demo
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: demo-dist
+      - id: pages
+        uses: actions/deploy-pages@v4
+      - run: corepack pnpm exec playwright install --with-deps chromium
+      - run: node scripts/probe-minihome-release.mjs "$SITE_URL" "$GITHUB_SHA"
+        env:
+          SITE_URL: ${{ steps.pages.outputs.page_url }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minihome-live-evidence
+          path: .artifacts/minihome-release
+          include-hidden-files: true

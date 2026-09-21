@@ -5,6 +5,7 @@ export type WeatherMotionOptions = {
   kind: 'rain' | 'snow' | 'storm' | 'wind';
   area: number;
   height: number;
+  wind?: number;
 };
 
 export class WeatherNodeMaterial extends PointsNodeMaterial {
@@ -20,6 +21,7 @@ export class WeatherNodeMaterial extends PointsNodeMaterial {
       opacity: source.opacity,
       transparent: true,
       depthWrite: false,
+      map: source.map,
       sizeAttenuation: true,
     });
     const initial = attribute<'vec3'>('weatherPosition', 'vec3');
@@ -50,7 +52,7 @@ export class WeatherNodeMaterial extends PointsNodeMaterial {
       const respawnZ = fract(sin(seed.add(cycle.mul(47.77))).mul(22578.1459)).sub(0.5).mul(area);
       const x = cycle.equal(0).select(initial.x, respawnX);
       const z = cycle.equal(0).select(initial.z, respawnZ);
-      this.positionNode = vec3(motion.kind === 'snow' ? x.add(sin(time.mul(0.5).add(seed)).mul(0.6)) : x, y, z);
+      this.positionNode = vec3(motion.kind === 'snow' ? mod(x.add(time.mul(motion.wind ?? 0)).add(area * 0.5), area).sub(area * 0.5).add(sin(time.mul(0.5).add(seed)).mul(0.6)) : x, y, z);
     }
   }
 }

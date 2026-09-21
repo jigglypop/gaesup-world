@@ -55,7 +55,11 @@ export function createMinihomeSession(initial: MinihomeData) {
       const next = typeof input === 'function' ? input(data) : input;
       const parsed = parseMinihome(JSON.stringify(next));
       if (!parsed) throw new TypeError('Invalid mini-home data.');
-      commit(next.room === data.room ? { ...parsed, room: data.room } : apply(parsed));
+      // Preserve unchanged domain references after validation. A camera/weather
+      // setting must not rebuild terrain geometry, grass buffers and navigation.
+      const stable = { ...parsed, terrain: next.terrain === data.terrain ? data.terrain : parsed.terrain,
+        roomSettings: next.roomSettings === data.roomSettings ? data.roomSettings : parsed.roomSettings };
+      commit(next.room === data.room ? { ...stable, room: data.room } : apply(stable));
     },
     undo() {
       const previous = past.pop();

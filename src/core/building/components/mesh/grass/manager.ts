@@ -85,6 +85,8 @@ class GrassManager {
   private hasTrample = false;
 
   private lastElapsedTime: number | undefined;
+  private lastCameraPosition = new THREE.Vector3();
+  private lastFrustum = new THREE.Frustum();
   private wasmBuffers: { module: GaesupCoreWasmExports; input: number; output: number; capacity: number } | undefined;
 
   suspend(): void {
@@ -158,8 +160,11 @@ class GrassManager {
     cameraPosition: THREE.Vector3;
     frustum: THREE.Frustum;
   }): void {
-    if (!this.enabled || this.tiles.size === 0 || this.lastElapsedTime === args.elapsedTime) return;
+    if (!this.enabled || this.tiles.size === 0) return;
+    if (this.lastElapsedTime === args.elapsedTime && this.lastCameraPosition.equals(args.cameraPosition)
+      && this.lastFrustum.planes.every((plane, index) => plane.equals(args.frustum.planes[index]!))) return;
     this.lastElapsedTime = args.elapsedTime;
+    this.lastCameraPosition.copy(args.cameraPosition); this.lastFrustum.copy(args.frustum);
 
     this.refreshTrample(args.delta);
 
