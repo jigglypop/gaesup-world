@@ -41,7 +41,6 @@ export function createRoomAssets(scene: Scene) {
   }
   const room = new Group(); room.name = '타운 구조물';
   scene.add(room);
-  part(room, '#667f68', [24.2, 0.5, 24.2], [0, -0.31, 0]);
   // Low walls leave the editable terrain visible from every camera preset.
   const back = part(room, '#e5d8bf', [8, 1.6, 0.18], [-7, 0.8, -10]);
   const left = part(room, '#e5d8bf', [0.18, 1.6, 6], [-11, 0.8, -7]);

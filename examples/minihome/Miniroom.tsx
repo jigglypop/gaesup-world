@@ -18,10 +18,10 @@ function download(blob: Blob, filename: string) {
   link.href = url; link.download = filename; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export default function Miniroom({ controller, view, onSelect, settings, onSettingsChange, onPaint, onPlace, onZoom, peers }: { controller: SceneDocumentController; view: RoomView; onSelect: (id: string | null) => void; settings: RoomSettings; onSettingsChange: (patch: Partial<RoomSettings>) => void; onPaint: (indices: number[], kind: TileKind) => void; onPlace: (kind: FurnitureKind, x: number, z: number) => void; onZoom: (zoom: number) => void; peers: RoomPeer[] }) {
+export default function Miniroom({ controller, view, onSelect, settings, onSettingsChange, onPaint, onSculpt, onPlace, onZoom, peers }: { controller: SceneDocumentController; view: RoomView; onSelect: (id: string | null) => void; settings: RoomSettings; onSettingsChange: (patch: Partial<RoomSettings>) => void; onPaint: (indices: number[], kind: TileKind) => void; onSculpt: (indices: number[], shape: import('./terrain').TerrainShape) => void; onPlace: (kind: FurnitureKind, x: number, z: number) => void; onZoom: (zoom: number) => void; peers: RoomPeer[] }) {
   const canvas = useRef<HTMLCanvasElement>(null); const shell = useRef<HTMLDivElement>(null);
   const latestView = useRef(view); latestView.current = view;
-  const callbacks = useRef({ onPaint, onPlace, onZoom }); callbacks.current = { onPaint, onPlace, onZoom };
+  const callbacks = useRef({ onPaint, onSculpt, onPlace, onZoom }); callbacks.current = { onPaint, onSculpt, onPlace, onZoom };
   const [engine, setEngine] = useState<MiniroomEngine | null>(null);
   const [backend, setBackend] = useState(''); const [error, setError] = useState('');
   const [stage, setStage] = useState('렌더러 초기화'); const [generation, setGeneration] = useState(0);
@@ -43,6 +43,7 @@ export default function Miniroom({ controller, view, onSelect, settings, onSetti
       onNotice: value => { if (!abort.signal.aborted) setNotice(value); },
       onError: failure => { if (!abort.signal.aborted) setError(failure.message); },
       onPaint: (indices, kind) => callbacks.current.onPaint(indices, kind),
+      onSculpt: (indices, shape) => callbacks.current.onSculpt(indices, shape),
       onPlace: (kind, x, z) => callbacks.current.onPlace(kind, x, z),
       onCameraZoom: value => callbacks.current.onZoom(value),
     }).then(instance => {
@@ -91,6 +92,12 @@ export default function Miniroom({ controller, view, onSelect, settings, onSetti
       <div className="room-caption" id="miniroom-controls">{view.editing ? view.editor?.tool === 'tile' ? '드래그해서 타일 칠하기 · Esc 취소' : view.editor?.tool === 'furniture' ? '빈 타일을 클릭해 가구 배치' : '가구 드래그 · 방향키 이동 · Esc 취소' : '바닥 클릭·WASD·방향키 이동'}<span>오른쪽 드래그 회전 · 휠 확대</span></div>
       {!view.editing && <nav className="town-zones" aria-label="타운 장소">{([['광장', 0, 2], ['라운지', -6, -4], ['작업실', 6, -4], ['눈 정원', -7, 4], ['해변', 6, 6]] as const).map(([label, x, z]) => <button key={label} onClick={() => engine?.goTo(x, z)}>{label}</button>)}</nav>}
     </div>
+    <div className="room-orbit" aria-label="카메라 회전">
+      <button aria-label="카메라 왼쪽 회전" disabled={!engine || !settings.rotate} onClick={() => engine?.moveCamera('rotateLeft')}>↶</button>
+      <button aria-label="카메라 오른쪽 회전" disabled={!engine || !settings.rotate} onClick={() => engine?.moveCamera('rotateRight')}>↷</button>
+      <button aria-label="내 위치 보기" disabled={!engine} onClick={() => engine?.moveCamera('focus')}>◎</button>
+    </div>
+    <details className="room-settings"><summary>환경·카메라</summary>
     <div className="room-view-controls" aria-label="미니룸 보기 설정">
       <label>시점<select aria-label="미니룸 카메라" value={camera} onChange={event => setCamera(event.target.value as RoomCamera)}><option value="isometric">입체</option><option value="front">정면</option><option value="top">위에서</option><option value="back">뒤에서</option><option value="left">왼쪽</option><option value="right">오른쪽</option><option value="follow">아바타 따라가기</option></select></label>
       <label>조명<select aria-label="미니룸 조명" value={lighting} onChange={event => setLighting(event.target.value as RoomLighting)}><option value="day">낮</option><option value="evening">저녁</option></select></label>
@@ -100,10 +107,13 @@ export default function Miniroom({ controller, view, onSelect, settings, onSetti
       <button disabled={!engine || exporting} onClick={() => void exportRoom('glb')}>{exporting ? '내보내는 중…' : '3D 방 내보내기 (.glb)'}</button>
       <button onClick={() => void expand()}>{fullScreen ? '화면 축소' : '화면 확대'}</button>
       <button aria-expanded={diagnostics} onClick={() => setDiagnostics(value => !value)}>드로우콜·성능</button>
+      <label>날씨<select aria-label="날씨" value={settings.weather} onChange={event => onSettingsChange({ weather: event.target.value as RoomSettings['weather'] })}><option value="clear">맑음</option><option value="snow">눈</option><option value="blizzard">눈보라</option></select></label>
+      <label className="editor-checkbox"><input type="checkbox" aria-label="바람과 물결" checked={settings.natureMotion} onChange={event => onSettingsChange({ natureMotion: event.target.checked })} />바람과 물결</label>
     </div>
     {notice && <p className="room-notice" role="status">{notice}</p>}
     <RoomCameraControls engine={engine} settings={settings} onChange={onSettingsChange} zoom={view.zoom} onZoom={onZoom} />
     <RoomAudio settings={settings} onChange={onSettingsChange} />
+    </details>
     {avatarLoading && <p className="room-notice" role="status">아바타 불러오는 중…</p>}
     {avatarError && <p className="room-notice" role="alert">{avatarError} <button onClick={() => setAvatarAttempt(value => value + 1)}>아바타 다시 불러오기</button></p>}
     {diagnostics && <RoomDiagnostics engine={engine} />}

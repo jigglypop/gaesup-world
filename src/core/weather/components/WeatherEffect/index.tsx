@@ -3,8 +3,10 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { getSnowParticleTexture } from './particleTexture';
 import { useWeatherStore } from '../../stores/weatherStore';
 import type { WeatherKind } from '../../types';
+
 
 const NodeWeather = lazy(() => import('./NodeWeather'));
 
@@ -16,6 +18,8 @@ export type WeatherEffectProps = {
   count?: number;
   kind?: WeatherEffectKind;
   followCamera?: boolean;
+  /** Horizontal snow drift in world units per second. */
+  wind?: number;
 };
 
 export function WeatherEffect({
@@ -24,6 +28,7 @@ export function WeatherEffect({
   count = 1200,
   kind: forcedKind,
   followCamera = false,
+  wind = 0,
 }: WeatherEffectProps) {
   const selectedKind = useWeatherStore((s) => forcedKind ?? s.current?.kind);
   const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
@@ -59,6 +64,7 @@ export function WeatherEffect({
       transparent: true,
       opacity: isSnow ? 0.85 : isWind ? 0.35 : isStorm ? 0.7 : 0.6,
       depthWrite: false,
+      map: isSnow ? getSnowParticleTexture() : null,
       sizeAttenuation: true,
     });
     return { geometry: geo, material: mat, kind: effectKind };
@@ -89,7 +95,8 @@ export function WeatherEffect({
         arr[i + 1]! -= sp[i / 3]! * delta * dropFactor;
       }
       if (kind === 'snow') {
-        arr[i + 0]! += Math.sin((arr[i + 1]! + i) * 0.5) * delta * 0.3;
+        arr[i + 0]! += (wind + Math.sin((arr[i + 1]! + i) * 0.5) * 0.3) * delta;
+        arr[i + 0] = THREE.MathUtils.euclideanModulo(arr[i + 0]! + area * 0.5, area) - area * 0.5;
       }
       if (kind === 'wind' && arr[i + 0]! > area * 0.5) {
         arr[i + 0]! = -area * 0.5;
@@ -106,7 +113,7 @@ export function WeatherEffect({
 
   if (!geometry || !material || !kind) return null;
   if (useNodes) return <Suspense fallback={null}>
-    <NodeWeather geometry={geometry} material={material} onObject={handleObject} kind={kind} area={area} height={height} />
+    <NodeWeather geometry={geometry} material={material} onObject={handleObject} kind={kind} area={area} height={height} wind={wind} />
   </Suspense>;
   return <points ref={handleObject} geometry={geometry} material={material} frustumCulled={false} />;
 }

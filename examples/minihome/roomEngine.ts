@@ -13,13 +13,14 @@ import { createRoomAssets } from './roomAssets';
 import { createRoomAvatar } from './roomAvatar';
 import { RoomBatches } from './roomBatches';
 import { createRoomBloom } from './roomBloom';
+import { createRoomEnvironment } from './roomEnvironment';
 import { createRoomPath } from './roomPath';
 import { createRoomPeers } from './roomPeers';
 import { createRoomProfiler } from './roomProfiler';
 import { createRoomTerrain } from './roomTerrain';
 import { DEFAULT_ROOM_SETTINGS, type RoomCamera, type RoomDiagnostics, type RoomFrame, type RoomLighting, type RoomOptions, type RoomQuality, type RoomSettings } from './roomTypes';
 import type { RoomPeer } from './roomVisitors';
-import { createTerrain, DEFAULT_EDITOR, TILES, WORLD_HALF, brushIndices, paintTiles, tileAt, tileIndex, tilePosition, type RoomEditor, type RoomTerrain } from './terrain';
+import { createTerrain, DEFAULT_EDITOR, TILES, brushIndices, applyTerrainBrush, terrainHeight, tileAt, tileIndex, tilePosition, type RoomEditor, type RoomTerrain } from './terrain';
 import type { RoomTheme } from './types';
 
 export type RoomView = { editing: boolean; selected: string | null; theme: RoomTheme; zoom: number; terrain?: RoomTerrain; editor?: RoomEditor };
@@ -43,7 +44,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     const adapter = gpuInfo ? [gpuInfo.vendor, gpuInfo.architecture].filter(Boolean).join(' / ') : null;
     const backendName = backend?.isWebGPUBackend ? 'WebGPU' : 'WebGL2';
     options.onProgress?.('장면·가구 구성');
-    const scene = new Scene(); scene.background = new Color('#ece7df');
+    const scene = new Scene(); scene.background = new Color('#9fcfdf');
     let camera: OrthographicCamera | PerspectiveCamera = new OrthographicCamera(-16, 16, 16, -16, 0.1, 160); camera.position.set(...CAMERA.isometric);
     const bloom = await createRoomBloom(renderer, scene, camera);
     if (signal.aborted) { bloom.dispose(); cleanup(); return null; }
@@ -54,7 +55,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     controls.touches.ONE = TOUCH.ROTATE; controls.touches.TWO = TOUCH.DOLLY_PAN; controls.update();
     let sun = new DirectionalLight('#ffe5c3', 2.8); sun.position.set(8, 22, 12); sun.castShadow = true;
     const retiredShadows: Array<DirectionalLight['shadow']> = [];
-    sun.shadow.normalBias = 0.025; sun.shadow.bias = -0.00015; sun.shadow.autoUpdate = false;
+    sun.shadow.normalBias = 0.025; sun.shadow.bias = -0.00015; sun.shadow.autoUpdate = false; sun.shadow.bias = -0.00025; sun.shadow.normalBias = 0.025;
     Object.assign(sun.shadow.camera, { left: -19, right: 19, top: 19, bottom: -19, near: 0.5, far: 65 }); sun.shadow.camera.updateProjectionMatrix();
     const fill = new HemisphereLight('#d7e8f0', '#a48a71', 2.1); scene.add(sun, fill);
     const assets = createRoomAssets(scene); const { room, back, left, rug, avatar, feet } = assets;
@@ -63,7 +64,8 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     const visitors = createRoomPeers(scene);
     const groups = new Map<string, Group>(); const batches = new RoomBatches(); scene.add(batches.root);
     const target = avatar.position.clone();
-    const navigation = new NavigationSystem({ cellSize: 0.25, worldMinX: -WORLD_HALF, worldMinZ: -WORLD_HALF, worldMaxX: WORLD_HALF, worldMaxZ: WORLD_HALF });
+    const createNavigation = (size: number) => new NavigationSystem({ cellSize: 0.25, maxStepHeight: 0.18, worldMinX: -size / 2, worldMinZ: -size / 2, worldMaxX: size / 2, worldMaxZ: size / 2 });
+    let navigation = createNavigation(terrain.size);
     let route: Waypoint[] = []; let routeIndex = 0;
     const marker = assets.part(scene, '#e7c16e', [0.67, 0.007, 0.67], [0, 0.09, 0], 'cylinder'); marker.castShadow = false; marker.visible = false;
     let view: RoomView = { editing: false, selected: null, theme: 'peach', zoom: 1 };
@@ -71,29 +73,47 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     let settings: RoomSettings = { ...DEFAULT_ROOM_SETTINGS }; let cameraPreset: RoomCamera = 'isometric';
     let movement: RoomDiagnostics['movement'] = { state: 'idle', destination: null, waypoints: 0 };
     let disposed = false; let visible = true; let last = 0; let renderedFrames = 0; let loopCallbacks = 0;
+    let shadowElapsed = 0;
     let batchesDirty = true; let needsRender = true; let failure: Error | null = null;
     let latestFrame: RoomFrame | null = null; let projected: ReturnType<typeof controller.getSnapshot> | undefined;
     const frameWaiters = new Set<{ resolve: (frame: RoomFrame) => void; reject: (error: Error) => void }>();
     let wake = () => {};
     function invalidate(shadow = false) { if (disposed) return; needsRender = true; if (shadow) sun.shadow.needsUpdate = true; wake(); }
+    const rendererCleanup = cleanup;
+    cleanup = () => { controls.dispose(); bloom.dispose(); terrainRenderer.dispose(); pathMarker.dispose(); visitors.dispose(); profiler.dispose(); navigation.dispose(); batches.dispose(); assets.dispose(); sun.shadow.dispose(); rendererCleanup(); };
+    const environment = await createRoomEnvironment(renderer, scene, camera, () => invalidate(true));
+    const sceneCleanup = cleanup; cleanup = () => { environment.dispose(); sceneCleanup(); };
+    if (signal.aborted) { cleanup(); return null; }
+    environment.update(terrain, quality, settings.weather);
     const avatarRuntime = createRoomAvatar(avatar, signal, () => invalidate(true));
     function markerUpdate() {
       const selected = view.selected ? groups.get(view.selected) : undefined;
       marker.visible = view.editing && !!selected?.visible;
-      if (selected) marker.position.set(selected.position.x, 0.095, selected.position.z);
+      if (selected) marker.position.set(selected.position.x, selected.position.y + 0.095, selected.position.z);
     }
     function rebuildNavigation() {
       navigation.reset();
+      if (terrain.heights || terrain.stairs) navigation.setHeightSampler(0, 0, terrain.size, terrain.size, (x, z) => terrainHeight(terrain, x, z));
+      avatar.position.y = terrainHeight(terrain, avatar.position.x, avatar.position.z);
+      for (const wall of room.children) {
+        if (wall.userData['baseY'] === undefined) wall.userData['baseY'] = wall.position.y;
+        wall.position.y = Number(wall.userData['baseY']) + terrainHeight(terrain, wall.position.x, wall.position.z);
+      }
       for (const group of groups.values()) if (group.visible && group.userData['kind'] !== 'cushion') navigation.setBlockedFromBox(new Box3().setFromObject(group));
       for (const wall of [back, left]) navigation.setBlockedFromBox(new Box3().setFromObject(wall));
       terrain.tiles.forEach((kind, index) => {
         if (TILES[kind].walkable) return;
-        const [x, , z] = tilePosition(index); navigation.setBlockedFromBox(new Box3(new Vector3(x - 0.49, -1, z - 0.49), new Vector3(x + 0.49, 1, z + 0.49)));
+        const [x, , z] = tilePosition(index, terrain.size); navigation.setBlockedFromBox(new Box3(new Vector3(x - 0.49, -1, z - 0.49), new Vector3(x + 0.49, 1, z + 0.49)));
       });
       route = []; target.copy(avatar.position); movement = { state: 'idle', destination: null, waypoints: 0 }; pathMarker.hide();
       if (!navigation.isWalkable(avatar.position.x, avatar.position.z, { agentRadius: 0.3 })) {
-        const index = terrain.tiles.map((kind, cell) => ({ kind, cell, distance: new Vector3(...tilePosition(cell)).distanceToSquared(avatar.position) })).filter(cell => { const [x, , z] = tilePosition(cell.cell); return TILES[cell.kind].walkable && navigation.isWalkable(x, z, { agentRadius: 0.3 }); }).sort((a, b) => a.distance - b.distance)[0]?.cell;
-        if (index !== undefined) { avatar.position.fromArray(tilePosition(index)); target.copy(avatar.position); }
+        let closest = -1; let distance = Infinity;
+        terrain.tiles.forEach((kind, index) => {
+          if (!TILES[kind].walkable) return;
+          const [x, , z] = tilePosition(index, terrain.size); const squared = (x - avatar.position.x) ** 2 + (z - avatar.position.z) ** 2;
+          if (squared < distance && navigation.isWalkable(x, z, { agentRadius: 0.3 })) { distance = squared; closest = index; }
+        });
+        if (closest >= 0) { avatar.position.fromArray(tilePosition(closest, terrain.size)); avatar.position.y = terrainHeight(terrain, avatar.position.x, avatar.position.z); target.copy(avatar.position); }
       }
     }
     function project() {
@@ -127,30 +147,36 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
       const editor = view.editor ?? DEFAULT_EDITOR;
       const steps = Math.max(1, Math.ceil(Math.hypot(x - stroke.lastX, z - stroke.lastZ) * 2));
       for (let step = 1; step <= steps; step++) {
-        const index = tileIndex(stroke.lastX + (x - stroke.lastX) * step / steps, stroke.lastZ + (z - stroke.lastZ) * step / steps);
-        for (const cell of brushIndices(index, editor.brush)) stroke.cells.add(cell);
+        const index = tileIndex(stroke.lastX + (x - stroke.lastX) * step / steps, stroke.lastZ + (z - stroke.lastZ) * step / steps, terrain.size);
+        for (const cell of brushIndices(index, editor.brush, terrain.size)) stroke.cells.add(cell);
       }
-      stroke.lastX = x; stroke.lastZ = z; terrainRenderer.update(paintTiles(terrain, [...stroke.cells], editor.tile)); invalidate(true);
+      stroke.lastX = x; stroke.lastZ = z; terrainRenderer.update(applyTerrainBrush(terrain, [...stroke.cells], editor)); invalidate(true);
     }
     function endStroke(commit: boolean) {
       if (!stroke) return;
       const current = stroke; stroke = null; controls.enabled = true;
       terrainRenderer.update(terrain);
-      if (commit && current.cells.size) options.onPaint?.([...current.cells], (view.editor ?? DEFAULT_EDITOR).tile);
+      if (commit && current.cells.size) {
+        const editor = view.editor ?? DEFAULT_EDITOR;
+        if (editor.tool === 'tile') options.onPaint?.([...current.cells], editor.tile);
+        else options.onSculpt?.([...current.cells], { height: editor.height, stair: editor.tool === 'stairs' ? editor.stair : null });
+      }
       if (canvas.hasPointerCapture(current.pointer)) canvas.releasePointerCapture(current.pointer);
       invalidate(true);
     }
     function point(event: PointerEvent) {
       const bounds = canvas.getBoundingClientRect();
       pointer.set((event.clientX - bounds.left) / bounds.width * 2 - 1, -(event.clientY - bounds.top) / bounds.height * 2 + 1);
-      ray.setFromCamera(pointer, camera); return ray.ray.intersectPlane(ground, hit);
+      ray.setFromCamera(pointer, camera);
+      const surface = ray.intersectObject(terrainRenderer.root, true)[0];
+      return surface ? hit.copy(surface.point) : ray.ray.intersectPlane(ground, hit);
     }
-    const clamp = (value: number) => Math.round(Math.max(-WORLD_HALF + 0.75, Math.min(WORLD_HALF - 0.75, value)) * 100) / 100;
+    const clamp = (value: number) => Math.round(Math.max(-terrain.size / 2 + 0.75, Math.min(terrain.size / 2 - 0.75, value)) * 100) / 100;
     function moveTo(x: number, z: number) {
-      const goal: Waypoint = [clamp(x), 0, clamp(z)]; const start: Waypoint = [avatar.position.x, 0, avatar.position.z];
+      const goal: Waypoint = [clamp(x), terrainHeight(terrain, clamp(x), clamp(z)), clamp(z)]; const start: Waypoint = [avatar.position.x, avatar.position.y, avatar.position.z];
       const surface = tileAt(terrain, x, z);
       if (!surface || !TILES[surface].walkable) { blocked(goal); return; }
-      const path = navigation.findPath(start[0], start[2], goal[0], goal[2], { y: 0, agentRadius: 0.3 });
+      const path = navigation.findPath(start[0], start[2], goal[0], goal[2], { agentRadius: 0.3 });
       route = navigation.smoothPath(path, start, goal, { agentRadius: 0.3 }); routeIndex = 1;
       const next = route[routeIndex];
       if (!next) { blocked(goal); return; }
@@ -174,7 +200,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
       canvas.focus({ preventScroll: true }); press = { x: event.clientX, y: event.clientY, pointer: event.pointerId };
       if (!view.editing) return;
       const editor = view.editor ?? DEFAULT_EDITOR;
-      if (editor.tool === 'tile') {
+      if (editor.tool === 'tile' || editor.tool === 'height' || editor.tool === 'stairs') {
         stroke = { pointer: event.pointerId, cells: new Set(), lastX: hit.x, lastZ: hit.z }; controls.enabled = false;
         canvas.setPointerCapture(event.pointerId); paintPreview(hit.x, hit.z); return;
       }
@@ -191,7 +217,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     canvas.addEventListener('pointermove', event => {
       if (point(event) && view.editing) {
         const editor = view.editor ?? DEFAULT_EDITOR;
-        terrainRenderer.cursor(tileIndex(hit.x, hit.z), editor.tool === 'tile' ? editor.brush : 1, editor.tool === 'tile' ? TILES[editor.tile].color : '#90e2f3'); invalidate();
+        terrainRenderer.cursor(tileIndex(hit.x, hit.z, terrain.size), editor.tool === 'tile' || editor.tool === 'height' || editor.tool === 'stairs' ? editor.brush : 1, editor.tool === 'tile' ? TILES[editor.tile].color : '#90e2f3'); invalidate();
         if (stroke?.pointer === event.pointerId) { paintPreview(hit.x, hit.z); return; }
       }
       if (!dragging || event.pointerId !== dragging.pointer || !point(event)) return;
@@ -199,6 +225,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
       const snap = (view.editor ?? DEFAULT_EDITOR).snap;
       group.position.x = snap ? Math.round(clamp(hit.x + dragging.offset.x) * 2) / 2 : clamp(hit.x + dragging.offset.x);
       group.position.z = snap ? Math.round(clamp(hit.z + dragging.offset.z) * 2) / 2 : clamp(hit.z + dragging.offset.z);
+      group.position.y = terrainHeight(terrain, group.position.x, group.position.z);
       dragging.moved = true; batchesDirty = true; markerUpdate(); invalidate(true);
     }, { signal });
     canvas.addEventListener('pointerup', event => {
@@ -206,9 +233,9 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
       if (stroke?.pointer === event.pointerId) endStroke(true);
       else if (dragging?.pointer === event.pointerId) finish(true);
       else if (view.editing && (view.editor ?? DEFAULT_EDITOR).tool === 'furniture' && press?.pointer === event.pointerId && Math.hypot(event.clientX - press.x, event.clientY - press.y) < 6 && point(event)) {
-        const index = tileIndex(hit.x, hit.z); if (index >= 0) {
+        const index = tileIndex(hit.x, hit.z, terrain.size); if (index >= 0) {
           if (tileAt(terrain, hit.x, hit.z) === 'water') options.onNotice?.('가구는 육지 타일에 놓아 주세요.');
-          else { const [x, , z] = (view.editor ?? DEFAULT_EDITOR).snap ? tilePosition(index) : [clamp(hit.x), 0, clamp(hit.z)]; options.onPlace?.((view.editor ?? DEFAULT_EDITOR).furniture, x!, z!); }
+          else { const [x, , z] = (view.editor ?? DEFAULT_EDITOR).snap ? tilePosition(index, terrain.size) : [clamp(hit.x), 0, clamp(hit.z)]; options.onPlace?.((view.editor ?? DEFAULT_EDITOR).furniture, x!, z!); }
         }
       }
       else if (!view.editing && press?.pointer === event.pointerId && Math.hypot(event.clientX - press.x, event.clientY - press.y) < 6 && point(event)) moveTo(hit.x, hit.z);
@@ -231,7 +258,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
       if (disposed) return;
       const width = Math.max(1, canvas.clientWidth); const height = Math.max(1, canvas.clientHeight); const aspect = width / height;
       renderer.setPixelRatio(Math.min(options.dpr ?? devicePixelRatio, QUALITY[quality].dpr)); renderer.setSize(width, height, false);
-      const half = Math.max(12.5, 16 / aspect);
+      const half = Math.max(terrain.size * 0.52, terrain.size * 0.67 / aspect);
       if (camera instanceof OrthographicCamera) Object.assign(camera, { left: -half * aspect, right: half * aspect, top: half, bottom: -half }); else camera.aspect = aspect;
       camera.updateProjectionMatrix(); bloom.resize(width, height, renderer.getPixelRatio()); invalidate();
     }
@@ -242,13 +269,14 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     controls.addEventListener('end', controlsEnded);
     const loop = createDemandLoop(time => {
       loopCallbacks++; const delta = last ? Math.min((time - last) / 1000, 0.05) : 0; last = time;
-      let moving = !view.editing && avatar.position.distanceToSquared(target) > 0.0004;
+      let moving = !view.editing && ((avatar.position.x - target.x) ** 2 + (avatar.position.z - target.z) ** 2) > 0.0004;
       if (moving) {
         avatar.rotation.y = Math.atan2(target.x - avatar.position.x, target.z - avatar.position.z);
         avatar.position.lerp(target, Math.min(1, settings.moveSpeed * delta / avatar.position.distanceTo(target)));
+        avatar.position.y = terrainHeight(terrain, avatar.position.x, avatar.position.z);
         for (let i = 0; i < feet.length; i++) feet[i]!.position.z = Math.sin(time * 0.012 + i * Math.PI) * 0.1 + 0.04;
-        if (avatar.position.distanceToSquared(target) <= 0.0004) {
-          avatar.position.copy(target); const next = route[++routeIndex];
+        if (((avatar.position.x - target.x) ** 2 + (avatar.position.z - target.z) ** 2) <= 0.0004) {
+          avatar.position.copy(target); avatar.position.y = terrainHeight(terrain, avatar.position.x, avatar.position.z); const next = route[++routeIndex];
           if (next) target.fromArray(next); else { for (const foot of feet) foot.position.z = 0.04; moving = false; movement.state = 'arrived'; }
         }
         sun.shadow.needsUpdate = true; needsRender = true;
@@ -261,7 +289,10 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
       const visitorsMoving = visitors.tick(delta); if (visitorsMoving) { sun.shadow.needsUpdate = true; needsRender = true; }
       const cameraChanged = controls.update(delta);
       avatarRuntime.update(moving, delta);
-      if (needsRender || cameraChanged || moving || markerActive || frameWaiters.size) {
+      const natureMoving = settings.natureMotion;
+      environment.tick(delta, natureMoving, camera);
+      if (natureMoving) { shadowElapsed += delta; if (shadowElapsed >= 1 / 15) { sun.shadow.needsUpdate = true; shadowElapsed = 0; } }
+      if (needsRender || cameraChanged || moving || markerActive || natureMoving || frameWaiters.size) {
         try {
           if (batchesDirty) { batches.update(groups); batchesDirty = false; }
           renderer.info.reset(); profiler.begin(scene); const started = performance.now();
@@ -274,7 +305,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
           failure = error instanceof Error ? error : new Error(String(error)); for (const waiter of frameWaiters) waiter.reject(failure); frameWaiters.clear(); loop.dispose(); options.onError?.(failure); return false;
         }
       }
-      return cameraChanged || moving || markerActive || visitorsMoving;
+      return cameraChanged || moving || markerActive || visitorsMoving || natureMoving;
     });
     const lost = () => {
       if (disposed) return;
@@ -293,7 +324,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
       if (disposed) return; disposed = true; loop.dispose(); lifetime.abort(); ownerSignal.removeEventListener('abort', abort);
       for (const waiter of frameWaiters) waiter.reject(new DOMException('Room closed', 'AbortError')); frameWaiters.clear();
       unsubscribe(); observer.disconnect(); intersection?.disconnect(); controls.removeEventListener('change', controlsChanged); controls.removeEventListener('end', controlsEnded); controls.dispose();
-      profiler.dispose(); bloom.dispose(); terrainRenderer.dispose(); pathMarker.dispose(); visitors.dispose(); avatarRuntime.dispose(); navigation.dispose(); batches.dispose(); assets.dispose(); sun.shadow.dispose();
+      environment.dispose(); profiler.dispose(); bloom.dispose(); terrainRenderer.dispose(); pathMarker.dispose(); visitors.dispose(); avatarRuntime.dispose(); navigation.dispose(); batches.dispose(); assets.dispose(); sun.shadow.dispose();
       for (const shadow of retiredShadows) shadow.dispose(); retiredShadows.length = 0;
       renderer.dispose(); groups.clear();
     }
@@ -309,6 +340,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     }
     function setQuality(next: RoomQuality) {
       if (disposed || !QUALITY[next]) return; quality = next;
+      environment.update(terrain, quality, settings.weather);
       if (sun.shadow.mapSize.x !== QUALITY[next].shadow) {
         // New shadow identity avoids common-renderer attachment caches retaining destroyed depth views.
         const previous = sun; sun = previous.clone(); sun.shadow.mapSize.setScalar(QUALITY[next].shadow);
@@ -327,7 +359,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
           controls.object = camera; bloom.camera(camera); resize();
         }
         settings = next; controls.enablePan = next.pan; controls.enableRotate = next.rotate; controls.enableDamping = next.damping;
-        bloom.update(next); invalidate();
+        environment.update(terrain, quality, next.weather); bloom.update(next); invalidate();
       },
       setDiagnostics(enabled: boolean) { profiler.enable(enabled); invalidate(true); },
       setPeers(peers: RoomPeer[]) { if (visitors.update(peers)) invalidate(true); },
@@ -350,10 +382,10 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
       setLighting(next: RoomLighting) {
         if (disposed) return; lighting = next; sun.color.set(next === 'day' ? '#ffe5c3' : '#ffbf86'); sun.intensity = next === 'day' ? 2.8 : 1.4;
         fill.color.set(next === 'day' ? '#d7e8f0' : '#9eafdf'); fill.intensity = next === 'day' ? 2.1 : 0.95;
-        scene.background = new Color(next === 'day' ? '#ece7df' : '#d1cbd6'); invalidate(true);
+        scene.background = new Color(next === 'day' ? '#9fcfdf' : '#6d839f'); invalidate(true);
       },
       diagnostics(): RoomDiagnostics {
-        return { backend: backendName, adapter, renderedFrames, loopCallbacks, pendingFrame: loop.pending, objectCount: groups.size, visibleObjects: [...groups.values()].filter(group => group.visible).length, quality, lighting, dpr: renderer.getPixelRatio(), width: canvas.clientWidth, height: canvas.clientHeight, frame: latestFrame, avatarPosition: [avatar.position.x, avatar.position.y, avatar.position.z], avatar: avatarRuntime.diagnostics(), camera: { preset: cameraPreset, projection: settings.projection, position: camera.position.toArray(), target: controls.target.toArray(), zoom: camera.zoom }, movement: { ...movement }, bloom: { enabled: settings.bloom, strength: settings.bloomStrength, objects: [...groups.values()].filter(group => group.userData['glow'] > 0).length }, terrain: terrainRenderer.diagnostics(), visitors: visitors.count() };
+        return { backend: backendName, adapter, renderedFrames, loopCallbacks, pendingFrame: loop.pending, objectCount: groups.size, visibleObjects: [...groups.values()].filter(group => group.visible).length, quality, lighting, dpr: renderer.getPixelRatio(), width: canvas.clientWidth, height: canvas.clientHeight, frame: latestFrame, avatarPosition: [avatar.position.x, avatar.position.y, avatar.position.z], avatar: avatarRuntime.diagnostics(), camera: { preset: cameraPreset, projection: settings.projection, position: camera.position.toArray(), target: controls.target.toArray(), zoom: camera.zoom }, movement: { ...movement }, bloom: { enabled: settings.bloom, strength: settings.bloomStrength, objects: [...groups.values()].filter(group => group.userData['glow'] > 0).length }, terrain: terrainRenderer.diagnostics(), environment: environment.diagnostics(), visitors: visitors.count() };
       },
       projectPoint(position: [number, number, number]) { const point = new Vector3(...position).project(camera); return { x: (point.x + 1) * canvas.clientWidth / 2, y: (1 - point.y) * canvas.clientHeight / 2 }; },
       async capture(): Promise<Blob> { await frame(); return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('이미지를 만들 수 없습니다.')), 'image/png')); },
@@ -373,7 +405,16 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
       update(next: RoomView) {
         if (disposed) return;
         if (next.editing !== view.editing || next.editor?.tool !== view.editor?.tool) { finish(false); endStroke(false); target.copy(avatar.position); pathMarker.hide(); options.onNotice?.(''); for (const foot of feet) foot.position.z = 0.04; }
-        if (next.terrain && next.terrain !== terrain && next.terrain.tiles.join() !== terrain.tiles.join()) { terrain = next.terrain; terrainRenderer.update(terrain); rebuildNavigation(); invalidate(true); }
+        if (next.terrain && next.terrain !== terrain) {
+          const resized = next.terrain.size !== terrain.size; endStroke(false); terrain = next.terrain;
+          if (resized) {
+            navigation.dispose(); navigation = createNavigation(terrain.size);
+            void navigation.init(); resize();
+            const extent = terrain.size / 2 + 7;
+            Object.assign(sun.shadow.camera, { left: -extent, right: extent, top: extent, bottom: -extent }); sun.shadow.camera.updateProjectionMatrix();
+          }
+          terrainRenderer.update(terrain); environment.update(terrain, quality, settings.weather); rebuildNavigation(); invalidate(true);
+        }
         if (next.zoom !== view.zoom) { camera.zoom = next.zoom; camera.updateProjectionMatrix(); }
         view = next; terrainRenderer.setGrid(next.editing && (next.editor ?? DEFAULT_EDITOR).grid);
         if (!next.editing) terrainRenderer.cursor(-1, 1);

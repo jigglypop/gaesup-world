@@ -6,18 +6,18 @@ import { InstancedBufferAttribute, Sprite } from 'three/webgpu';
 import type { NodeWeatherProps } from './types';
 import { WeatherNodeMaterial } from '../../../rendering/tsl/weather';
 
-export default function NodeWeather({ geometry, material, onObject, kind, area, height }: NodeWeatherProps) {
+export default function NodeWeather({ geometry, material, onObject, kind, area, height, wind = 0 }: NodeWeatherProps) {
   const sprite = useMemo(() => {
     const positions = geometry.getAttribute('position');
     const speeds = geometry.getAttribute('aSpeed');
-    const object = new Sprite(new WeatherNodeMaterial(material, { kind, area, height }));
+    const object = new Sprite(new WeatherNodeMaterial(material, { kind, area, height, wind }));
     object.geometry = object.geometry.clone();
     object.geometry.setAttribute('weatherPosition', new InstancedBufferAttribute(positions.array, 3));
     object.geometry.setAttribute('weatherSpeed', new InstancedBufferAttribute(speeds.array, 1));
     object.count = positions.count;
     object.frustumCulled = false;
     return object;
-  }, [geometry, material, kind, area, height]);
+  }, [geometry, material, kind, area, height, wind]);
   useEffect(() => () => {
     sprite.geometry.dispose();
     sprite.material.dispose();

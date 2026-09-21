@@ -12,8 +12,8 @@ export function createRoomPath(scene: Scene) {
   let until = 0;
   return {
     show(destination: Vector3, path: Waypoint[], blocked: boolean) {
-      root.position.set(destination.x, 0, destination.z); root.visible = true; material.color.set(blocked ? '#ed6e70' : '#fff5a0');
-      line.geometry.setFromPoints(path.map(point => new Vector3(point[0], 0.065, point[2]))); line.visible = path.length > 1 && !blocked;
+      root.position.copy(destination); root.visible = true; material.color.set(blocked ? '#ed6e70' : '#fff5a0');
+      line.geometry.setFromPoints(path.map(point => new Vector3(point[0], point[1] + 0.065, point[2]))); line.visible = path.length > 1 && !blocked;
       until = performance.now() + (blocked ? 1600 : 900);
     },
     update(time: number, moving: boolean) {
