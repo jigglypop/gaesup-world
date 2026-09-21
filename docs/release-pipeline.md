@@ -18,9 +18,9 @@
 
 최초 실행 전 저장소 관리자가 명시적 `Release gaesup-world 1.0.31` 커밋 `8e1ca1497cd01438ee0b1f72505a53ff6ae1e45f`에 분석 기준 `v1.0.31` tag를 등록한다. 이 커밋에는 과거 workflow 파일이 있어 제한된 `GITHUB_TOKEN`으로 tag를 push하면 거절된다. 기준 tag가 없으면 파이프라인은 package version·조상 관계·registry version을 확인한 뒤 필요한 초기 설정을 안내하고 멈춘다. 이 역사적 분석 기준은 구버전 tarball의 소스 provenance를 증명하는 것이 아니다. 이후 릴리스부터 source metadata와 tag를 검증한다.
 
-Pages 실패는 실패한 deploy job을 다시 실행해 같은 artifact로 복구한다. 전체 workflow를 재실행할 때 `scripts/release/run.mjs`는 같은 소스의 정확한 tag 또는 바로 뒤 버전 커밋의 tag를 확인하고 기존 발행을 재사용한다. 소스와 다른 최신 버전을 임의로 배포하지 않는다. registry가 아직 보이지 않으면 제한된 재시도를 수행한다.
+Pages 실패는 실패한 deploy job을 다시 실행해 같은 artifact로 복구한다. 전체 workflow를 재실행할 때 `scripts/release/run.mjs`는 같은 소스의 정확한 tag 또는 바로 뒤 버전 커밋의 tag를 확인하고 기존 발행을 재사용한다. 소스와 다른 최신 버전을 임의로 배포하지 않는다. npm이 업로드를 접수한 뒤 패키지를 처리하는 동안에는 registry를 10초 간격으로 최대 90회(약 15분) 확인한다. 확인이 끝나기 전에는 소비자 설치와 Pages 배포를 진행하지 않는다. 시간 초과 시 같은 버전을 다시 게시하지 않고 공개 조회 상태를 확인한 뒤 실패한 job을 재실행한다.
 
-npm 미발행인데 tag만 생긴 실패는 registry 단계에서 중단한다. 해당 tag의 패키지·인증 상태를 조사해 복구해야 하며 성공으로 간주하지 않는다. immutable npm version을 다시 덮어쓰지 않는다.
+npm 미발행인데 tag만 생긴 실패는 registry 단계에서 중단한다. 해당 tag의 패키지·인증 상태를 조사해 복구해야 하며 성공으로 간주하지 않는다. immutable npm version을 다시 덮어쓰지 않는다. npm의 버전 목록에 `Validating`이 보이면 인증 재시도가 아니라 게시 시점 자동 검사 대기 상태다. 공식 안내는 보통 약 5분, 부하·내용·크기에 따라 15분 이상 걸릴 수 있다고 설명하며 완료 시간을 보장하지 않는다([2026-07-28 npm 안내](https://github.blog/changelog/2026-07-28-npm-publish-time-malware-scanning-and-dual-use-metadata/)).
 
 ## 로컬 검증
 

@@ -4,12 +4,15 @@ import { readFileSync, writeFileSync } from 'node:fs';
 const filename = '.artifacts/release/manifest.json';
 const manifest = JSON.parse(readFileSync(filename, 'utf8'));
 let metadata;
-for (let attempt = 0; attempt < 8; attempt++) {
-  const response = await fetch(`https://registry.npmjs.org/${manifest.name}/${manifest.version}`, { signal: AbortSignal.timeout(15000) });
+// npm can acknowledge publication before its processing queue exposes the version.
+// Keep deployment gated on the registry instead of retrying an immutable publish.
+const attempts = 90;
+for (let attempt = 0; attempt < attempts; attempt++) {
+  const response = await fetch(`https://registry.npmjs.org/${manifest.name}/${manifest.version}`, { headers: { 'cache-control': 'no-cache' }, signal: AbortSignal.timeout(15000) });
   if (response.ok) { metadata = await response.json(); break; }
   if (response.status !== 404 && response.status !== 429 && response.status < 500) throw new Error(`Registry returned ${response.status}`);
-  console.log(`Waiting for registry ${manifest.version}, attempt ${attempt + 1}/8 (${response.status})`);
-  if (attempt < 7) await new Promise(resolve => setTimeout(resolve, 5000));
+  console.log(`Waiting for registry ${manifest.version}, attempt ${attempt + 1}/${attempts} (${response.status})`);
+  if (attempt < attempts - 1) await new Promise(resolve => setTimeout(resolve, 10000));
 }
 if (!metadata || metadata.version !== manifest.version) throw new Error('Published version is not available. Publication and deployment are separate states.');
 if (metadata.gaesupRelease?.sourceCommit !== manifest.sourceCommit || metadata.gaesupRelease?.version !== manifest.version) throw new Error('Registry package source metadata differs from the release.');
