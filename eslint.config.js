@@ -102,6 +102,8 @@ export default tseslint.config(
             'windStrength',
             'attributes-position',
             'attributes-uv',
+            'attributes-normal',
+            'lights',
           ],
         },
       ],

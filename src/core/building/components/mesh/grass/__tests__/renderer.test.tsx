@@ -12,7 +12,7 @@ jest.mock('../../../../../rendering/tsl/grassMaterial', () => {
   const { Color, MeshBasicMaterial, Vector3 } = jest.requireActual<typeof import('three')>('three');
   return { GrassNodeMaterial: jest.fn(() => Object.assign(new MeshBasicMaterial({ name: 'grass-node-test' }), {
     uniforms: {
-      time: { value: 0 }, windScale: { value: 1 }, trampleCenter: { value: new Vector3() },
+      bladeHeight: { value: 1 }, time: { value: 0 }, windScale: { value: 1 }, trampleCenter: { value: new Vector3() },
       trampleStrength: { value: 0.85 }, uToon: { value: 0 }, uToonSteps: { value: 4 },
       tipColor: { value: new Color() }, bottomColor: { value: new Color() },
     },
@@ -39,7 +39,7 @@ test.each([false, true])('grass preserves the shared manager update path (nodes:
     return null;
   }
   const renderer = await ReactThreeTestRenderer.create(<RendererMode nodes={nodes}>
-    <Grass instances={64} toon bladeTipColor="#aabbcc" position={[20, 0, 0]} />
+    <Grass instances={64} options={{ bH: 0.32 }} toon bladeTipColor="#aabbcc" position={[20, 0, 0]} />
     <InspectBeforePassiveEffects />
   </RendererMode>);
   const mesh = renderer.scene.find((node) => node.instance instanceof THREE.Mesh
@@ -56,7 +56,7 @@ test.each([false, true])('grass preserves the shared manager update path (nodes:
     expect(initialCounts.every(count => Number.isFinite(count) && count > 0)).toBe(true);
   }
   expect(material.uniforms.uToon?.value).toBe(1);
-  expect(material.uniforms.tipColor?.value).toEqual(new THREE.Color('#aabbcc').convertSRGBToLinear());
+  expect(material.uniforms.tipColor?.value).toEqual(new THREE.Color('#aabbcc'));
   const ground = renderer.scene.find((node) => node.instance instanceof THREE.Mesh
     && node.instance.geometry instanceof THREE.PlaneGeometry).instance as THREE.Mesh<THREE.PlaneGeometry>;
   ground.updateWorldMatrix(true, false);
@@ -73,9 +73,19 @@ test.each([false, true])('grass preserves the shared manager update path (nodes:
   expect(mesh.visible).toBe(false);
   expect(mesh.geometry.instanceCount).toBe(7);
   expect(material.uniforms.time?.value).toBe(4);
+  expect(material.uniforms.bladeHeight?.value).toBe(0.32);
   expect(material.uniforms.windScale?.value).toBe(0.6);
   expect(material.uniforms.trampleCenter?.value).toEqual(new THREE.Vector3(-19, 0, 2));
   expect(material.uniforms.trampleCenter?.value).not.toBe(center);
+  await renderer.update(<RendererMode nodes={nodes}>
+    <Grass instances={4} options={{ bH: 0.32 }} toon bladeTipColor="#aabbcc" position={[20, 0, 0]} />
+  </RendererMode>);
+  // A queued callback from the previous registration must respect new capacity.
+  apply({ visible: true, instanceCount: 64, time: 5, windScale: 0.6, trampleCenter: center, trampleStrength: 0.4 });
+  const capacity = mesh.geometry.getAttribute('offset').count;
+  expect(capacity).toBeGreaterThan(0);
+  expect(capacity).toBeLessThanOrEqual(4);
+  expect(mesh.geometry.instanceCount).toBe(capacity);
   const dispose = jest.spyOn(material, 'dispose');
   await renderer.unmount();
   expect(manager.size()).toBe(initialSize);

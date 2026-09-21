@@ -2,7 +2,7 @@ import { createSceneDocument, createSceneObject, parseSceneDocument } from 'gaes
 import type { SceneObject } from 'gaesup-world';
 
 import { DEFAULT_ROOM_SETTINGS, type RoomSettings } from './roomTypes';
-import { createTerrain, isTerrain, WORLD_HALF } from './terrain';
+import { createTerrain, isTerrain, terraceTerrain, terrainHeight } from './terrain';
 import { FURNITURE } from './types';
 import type { FurnitureKind, HomeNote, MinihomeData } from './types';
 
@@ -28,6 +28,7 @@ export function makeFurniture(kind: FurnitureKind, x = 0, z = 1, id: string = cr
 }
 
 export function createMinihome(): MinihomeData {
+  const terrain = terraceTerrain(createTerrain());
   return {
     version: 1,
     profile: {
@@ -38,7 +39,7 @@ export function createMinihome(): MinihomeData {
     },
     theme: 'peach',
     roomSettings: { ...DEFAULT_ROOM_SETTINGS },
-    terrain: createTerrain(),
+    terrain,
     room: createSceneDocument({
       id: 'my-miniroom',
       name: '개숲 타운',
@@ -65,7 +66,10 @@ export function createMinihome(): MinihomeData {
         makeFurniture('tree', 5, 9, 'tree-5'),
         makeFurniture('bench', -7, 6, 'bench-snow'),
         makeFurniture('cushion', 7, 5, 'beach-seat'),
-      ],
+      ].map(object => {
+        const [x, , z] = object.transform.position;
+        return { ...object, transform: { ...object.transform, position: [x, terrainHeight(terrain, x, z), z] as [number, number, number] } };
+      }),
     }),
     diary: [],
     guestbook: [],
@@ -109,7 +113,7 @@ export function parseMinihome(raw: string): MinihomeData | null {
     if (typeof volume !== 'number' || !Number.isFinite(volume) || volume < 0 || volume > 1) return null;
     const resolved = { ...DEFAULT_ROOM_SETTINGS, ...settings, volume };
     if (!['orthographic', 'perspective'].includes(String(resolved.projection))) return null;
-    for (const key of ['pan', 'rotate', 'damping', 'bloom'] as const) if (typeof resolved[key] !== 'boolean') return null;
+    for (const key of ['pan', 'rotate', 'damping', 'bloom', 'natureMotion'] as const) if (typeof resolved[key] !== 'boolean') return null;
     for (const [key, min, max] of [['moveSpeed', 1, 8], ['bloomStrength', 0, 2], ['bloomRadius', 0, 1], ['bloomThreshold', 0, 3]] as const) {
       if (typeof resolved[key] !== 'number' || !Number.isFinite(resolved[key]) || resolved[key] < min || resolved[key] > max) return null;
     }
@@ -133,9 +137,9 @@ export function parseMinihome(raw: string): MinihomeData | null {
         (object) =>
           !furnitureKind(object) ||
           object.parentId !== undefined ||
-          Math.abs(object.transform.position[0]) > WORLD_HALF - 0.25 ||
-          Math.abs(object.transform.position[2]) > WORLD_HALF - 0.25 ||
-          object.transform.position[1] !== 0 ||
+          Math.abs(object.transform.position[0]) > terrain.size / 2 - 0.25 ||
+          Math.abs(object.transform.position[2]) > terrain.size / 2 - 0.25 ||
+          (object.transform.position[1] < 0 || object.transform.position[1] > 4.5) ||
           object.transform.scale.some((scale) => scale !== 1),
       )
     )
@@ -151,7 +155,7 @@ export function parseMinihome(raw: string): MinihomeData | null {
       profile: { name: profile['name'] as string, title: profile['title'] as string,
         bio: profile['bio'] as string, mood: profile['mood'] as string },
       theme: data['theme'] as MinihomeData['theme'], room: room.document,
-      terrain: { size: terrain.size, tiles: [...terrain.tiles] },
+      terrain: { size: terrain.size, tiles: [...terrain.tiles], ...(terrain.heights ? { heights: [...terrain.heights] } : {}), ...(terrain.stairs ? { stairs: [...terrain.stairs] } : {}) },
       roomSettings: Object.fromEntries(Object.keys(DEFAULT_ROOM_SETTINGS).map(key => [key, resolved[key as keyof typeof resolved]])) as RoomSettings,
       diary: (data['diary'] as HomeNote[]).map(({ id, author, text, date }) => ({ id, author, text, date })),
       guestbook: (data['guestbook'] as HomeNote[]).map(({ id, author, text, date }) => ({ id, author, text, date })),

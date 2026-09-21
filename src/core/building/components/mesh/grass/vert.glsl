@@ -1,4 +1,8 @@
 precision highp float;
+#ifndef GRASS_DEPTH
+#include <common>
+#include <shadowmap_pars_vertex>
+#endif
 attribute vec3 offset;
 attribute vec4 orientation;
 attribute float halfRootAngleSin;
@@ -89,4 +93,9 @@ void main() {
   vShade = clamp(0.82 + noise * 0.08 + orientation.w * 0.06, 0.72, 1.1);
   vUv = uv;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(offset + vPosition, 1.0);
+#ifndef GRASS_DEPTH
+  vec4 worldPosition = modelMatrix * vec4(offset + vPosition, 1.0);
+  vec3 transformedNormal = normalMatrix * vec3(0.0, 1.0, 0.0);
+  #include <shadowmap_vertex>
+#endif
 }
