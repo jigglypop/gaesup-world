@@ -12,6 +12,7 @@ export class SpatialGrid {
 
   constructor(options: SpatialGridOptions = {}) {
     this.cellSize = options.cellSize ?? 10;
+    if (!Number.isFinite(this.cellSize) || this.cellSize <= 0) throw new RangeError('Spatial grid cell size must be positive and finite');
   }
 
   private static zigZag(n: number): number {
@@ -91,11 +92,23 @@ export class SpatialGrid {
   getNearby(position: THREE.Vector3, radius: number, out?: string[]): string[] {
     const result = out ?? [];
     if (out) out.length = 0;
+    if (Number.isNaN(radius) || radius < 0 || !Number.isFinite(position.x)
+      || !Number.isFinite(position.y) || !Number.isFinite(position.z)) return result;
     const minX = Math.floor((position.x - radius) / this.cellSize);
     const maxX = Math.floor((position.x + radius) / this.cellSize);
     const minZ = Math.floor((position.z - radius) / this.cellSize);
     const maxZ = Math.floor((position.z + radius) / this.cellSize);
     const radiusSq = radius * radius;
+
+    // Bound empty-cell traversal and avoid imprecise numeric keys at extreme coordinates.
+    if ((maxX - minX + 1) * (maxZ - minZ + 1) > Math.min(4096, Math.max(16, this.size * 4))
+      || Math.abs(minX) > 2 ** 24 || Math.abs(maxX) > 2 ** 24
+      || Math.abs(minZ) > 2 ** 24 || Math.abs(maxZ) > 2 ** 24) {
+      for (const [id, objectPos] of this.objectPositions) {
+        if (Math.hypot(position.x - objectPos.x, position.y - objectPos.y, position.z - objectPos.z) <= radius) result.push(id);
+      }
+      return result;
+    }
 
     for (let x = minX; x <= maxX; x++) {
       for (let z = minZ; z <= maxZ; z++) {

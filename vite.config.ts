@@ -1,4 +1,4 @@
-import { createReadStream, existsSync } from 'fs';
+import { createReadStream, existsSync, readFileSync } from 'fs';
 import type { IncomingMessage, ServerResponse } from 'http';
 import path from 'path';
 
@@ -8,6 +8,7 @@ import { defineConfig } from 'vite';
 import glsl from 'vite-plugin-glsl';
 import svgr from 'vite-plugin-svgr';
 
+import { minihomeRoomPlugin } from './scripts/minihome-room-service.mjs';
 import { performanceIdentityPlugin } from './scripts/performance/vite-plugin.mjs';
 
 const libraryExternals = [
@@ -69,7 +70,7 @@ function serveDemoGltfAssets(): Plugin {
 export default defineConfig(({ mode }) => {
   const isLibraryBuild = mode === 'esm' || mode === 'cjs';
 
-  const alias = [
+  let alias = [
     { find: /^gaesup-world\/avatar$/, replacement: path.resolve(import.meta.dirname, 'src/avatar.ts') },
     { find: /^gaesup-world$/, replacement: path.resolve(import.meta.dirname, 'src/index.ts') },
     {
@@ -144,6 +145,15 @@ export default defineConfig(({ mode }) => {
     { find: '@motions', replacement: path.resolve(import.meta.dirname, 'src/core/motions') },
     { find: '@debug', replacement: path.resolve(import.meta.dirname, 'src/core/debug') },
   ];
+  if (!isLibraryBuild && process.env['GAESUP_PACKAGE_ROOT']) {
+    const packageRoot = path.resolve(process.env['GAESUP_PACKAGE_ROOT']);
+    const published = JSON.parse(readFileSync(path.join(packageRoot, 'package.json'), 'utf8'));
+    const publishedAliases = Object.entries(published.exports as Record<string, string | { import: { default: string } }>).map(([subpath, value]) => ({
+      find: new RegExp(`^${(subpath === '.' ? 'gaesup-world' : `gaesup-world/${subpath.slice(2)}`).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`),
+      replacement: path.resolve(packageRoot, typeof value === 'string' ? value : value.import.default),
+    }));
+    alias = [...publishedAliases, ...alias.filter(entry => !(entry.find instanceof RegExp && entry.find.source.startsWith('^gaesup-world')))];
+  }
   if (isLibraryBuild) {
     return {
       plugins: [
@@ -235,11 +245,14 @@ export default defineConfig(({ mode }) => {
       glsl(),
       serveDemoGltfAssets(),
       performanceIdentityPlugin(),
+      minihomeRoomPlugin(),
     ],
     resolve: {
       tsconfigPaths: true,
       alias,
-      dedupe: ['react', 'react-dom'],
+      // Published-consumer builds must share one Three module graph with the example.
+      // Duplicate node/lighting registries can render an unlit WebGPU scene without errors.
+      dedupe: ['react', 'react-dom', 'three'],
     },
     optimizeDeps: {
       entries: ['index.html', 'examples/engine/packageSurface.ts'],

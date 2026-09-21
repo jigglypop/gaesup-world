@@ -6,7 +6,7 @@ Build a playable 3D room in your browser. Use scene data in React and exchange l
 
 This repository contains a TypeScript world library and a Cyworld-inspired mini-home: a 3D room, walking avatar, furniture, profile, diary and guestbook. It saves in your browser. Shared links contain a snapshot; they are not a multiplayer service.
 
-This release is `1.0.31`. Check the npm registry for publication status.
+This release is `1.0.32`. Check the npm registry for publication status.
 
 ## Run the mini-home
 
@@ -75,4 +75,4 @@ For npm, validate, authenticate with `npm login`, pack the reviewed build and ru
 - World matrices preserve shear. `getWorldTransform` throws for shear or singular bases; use `getWorldMatrix` when TRS cannot represent the result.
 - Unity compilation and real Editor round-trip require a Unity installation. TypeScript tests alone do not prove them.
 
-[Implementation plan](docs/2026-09-19-web-studio-plan.en.md) · [Release notes](docs/release-1.0.31.md)
+[Implementation plan](docs/2026-09-19-web-studio-plan.en.md) · [Release notes](docs/release-1.0.32.md)

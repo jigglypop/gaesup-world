@@ -663,7 +663,7 @@ describe('createGaesupRuntime', () => {
       Array.from(save.getBindings())
         .map((binding) => binding.key)
         .sort(),
-    ).toEqual(['option-domain', 'retry-domain']);
+    ).toEqual(['gameplay-events', 'option-domain', 'retry-domain']);
     await runtime.dispose();
     expect(successfulDisposeCount).toBe(2);
   });
@@ -836,6 +836,7 @@ describe('createGaesupRuntime', () => {
     expect(value).toBe(7);
     expect(Array.from(runtime.save.getBindings()).map((binding) => binding.key)).toEqual([
       'plugin-domain',
+      'gameplay-events',
     ]);
   });
 
@@ -863,7 +864,7 @@ describe('createGaesupRuntime', () => {
       Array.from(save.getBindings())
         .map((binding) => binding.key)
         .sort(),
-    ).toEqual(['option-domain', 'plugin-domain']);
+    ).toEqual(['gameplay-events', 'option-domain', 'plugin-domain']);
 
     await runtime.dispose();
 
@@ -1137,6 +1138,7 @@ describe('createGaesupRuntime', () => {
         'crafting',
         'events',
         'farming',
+        'gameplay-events',
         'i18n',
         'inventory',
         'mail',

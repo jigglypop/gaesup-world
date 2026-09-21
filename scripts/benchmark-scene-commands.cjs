@@ -22,13 +22,17 @@ const implementations = [true, false].map(before => ({
   ...load('src/core/scene-object/core.ts', before),
   ...load('src/core/scene-object/commands.ts', before),
 }));
+async function main() {
+const { sourceIdentity } = await import('./performance/source-identity.mjs');
 const scenarios = [];
-for (const count of [100, 1000, 5000]) {
+for (const count of [100, 1000, 5000, 10000]) {
+const repetitions = [];
+for (let repetition = 0; repetition < 5; repetition++) {
   const states = implementations.map(api => api.createSceneDocument({ id: 'benchmark', objects: Array.from({ length: count }, (_, i) => ({ id: `object-${i}`, name: 'Original' })) }));
   const samples = [[], []];
   for (let i = 0; i < 70; i++) {
-    const command = { type: 'scene-object.update', objectId: `object-${i % count}`, patch: { name: `Edited ${i}` } };
-    for (const index of i % 2 ? [1, 0] : [0, 1]) {
+    const command = { type: 'scene-object.update', objectId: `object-${i % count}`, patch: { name: `Edited ${i}`, transform: { position: [i, 0, 2] } } };
+    for (const index of (i + repetition) % 2 ? [1, 0] : [0, 1]) {
       const started = performance.now();
       const result = implementations[index].applySceneDocumentCommand(states[index], command);
       const elapsed = performance.now() - started;
@@ -38,10 +42,17 @@ for (const count of [100, 1000, 5000]) {
     }
   }
   assert.deepEqual(states[0], states[1], 'identical accepted document');
-  const metrics = samples.map(values => { values.sort((a, b) => a - b); return { medianMs: values[25], p95Ms: values[47] }; });
-  scenarios.push({ objects: count, samples: 50, baseline: metrics[0], candidate: metrics[1], speedup: metrics[0].medianMs / metrics[1].medianMs });
+  const metrics = samples.map(values => { const sorted = [...values].sort((a, b) => a - b); return { medianMs: sorted[24], p95Ms: sorted[47], samplesMs: values }; });
+  repetitions.push({ baseline: metrics[0], candidate: metrics[1], speedup: metrics[0].medianMs / metrics[1].medianMs });
 }
-const report = { baseline, node: process.version, cpu: os.cpus()[0].model, scope: 'Alternating matched CPU scene-command updates, 20 warmup / 50 samples; immutable results checked for equality.', scenarios };
-fs.mkdirSync(path.join(root, '.tmp'), { recursive: true });
-fs.writeFileSync(path.join(root, '.tmp/scene-command-benchmark.json'), JSON.stringify(report, null, 2));
-console.log(JSON.stringify(report, null, 2));
+  const medians = key => repetitions.map(run => run[key].medianMs).sort((a, b) => a - b);
+  scenarios.push({ objects: count, samplesPerRun: 50, baselineMedianMs: medians('baseline')[2], candidateMedianMs: medians('candidate')[2], repetitions });
+}
+const report = { baseline, candidateSource: sourceIdentity(root), node: process.version, cpu: os.cpus()[0].model,
+  scope: 'Five repeats of alternating matched CPU scene-command name/transform updates, 20 warmup / 50 samples per repeat; immutable results checked for equality. Not a GPU/FPS measurement.', scenarios };
+const output = path.join(root, '.artifacts/performance', new Date().toISOString().replace(/[:.]/g, '-'));
+fs.mkdirSync(output, { recursive: true });
+fs.writeFileSync(path.join(output, 'scene-command-benchmark.json'), JSON.stringify(report, null, 2));
+console.log(JSON.stringify({ output, baseline, candidateSourceHash: report.candidateSource.contentHash, scenarios: scenarios.map(({ repetitions, ...row }) => ({ ...row, repeats: repetitions.length, speedup: row.baselineMedianMs / row.candidateMedianMs })) }, null, 2));
+}
+main().catch(error => { console.error(error); process.exitCode = 1; });

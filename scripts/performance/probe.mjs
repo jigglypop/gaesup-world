@@ -14,6 +14,7 @@ const role = option('--role', 'candidate');
 const externalUrl = option('--url', null);
 const url = externalUrl ?? 'http://127.0.0.1:5192/performance';
 const benchmark = args.includes('--benchmark');
+const paired = args.includes('--paired');
 const backend = option('--backend', 'webgpu');
 const count = Number(option('--count', '1000'));
 if (!Number.isInteger(count) || count < 1 || count > 100000) throw new Error('--count must be an integer from 1 to 100000');
@@ -51,25 +52,27 @@ try {
   const selected = option('--scenario', '') ? option('--scenario', '').split(',') : available;
   for (const scenarioId of selected) {
     for (let i = 0; i < repeat; i++) {
+      for (const currentRole of paired ? (i % 2 ? ['candidate', 'baseline'] : ['baseline', 'candidate']) : [role]) {
       const running = page.evaluate(async ({ scenarioId, role, benchmark, backend, count }) => window.performanceLab.run({
         scenarioId, role, config: { backend, count, warmupMs: benchmark ? 10000 : 250, durationMs: benchmark ? 30000 : 1500 },
-      }), { scenarioId, role, benchmark, backend, count });
+      }), { scenarioId, role: currentRole, benchmark, backend, count });
       const run = scenarioId === 'world-keyboard-focus' ? (await Promise.all([running, exerciseWorldKeyboard(page, async step => {
         if (step === 'focus-b') await page.screenshot({ path: path.join(output, `keyboard-active-${i}.png`), fullPage: true });
       })]))[0] : await running;
       writeFileSync(path.join(output, `${run.runId}.json`), JSON.stringify(run, null, 2));
-      await page.screenshot({ path: path.join(output, `${scenarioId}-${i}.png`), fullPage: true });
+      await page.screenshot({ path: path.join(output, `${scenarioId}-${paired ? `${currentRole}-` : ''}${i}.png`), fullPage: true });
       const result = {
-        scenarioId, runId: run.runId, status: run.status, kind: run.kind,
+        scenarioId, runId: run.runId, status: run.status, kind: run.kind, role: run.role,
         source: run.source.contentHash, backend: run.environment.backend, adapter: run.environment.adapter,
         failed: run.assertions.filter((assertion) => !assertion.pass), errors: run.errors,
         metrics: Object.fromEntries(Object.entries(run.metrics).map(([name, metric]) => [name, { p50: metric.p50, p95: metric.p95, samples: metric.samples.length }])),
       };
       summary.push(result);
       console.log(JSON.stringify(result));
+      }
     }
   }
-  if (pageErrors.length || summary.some((run) => run.errors.length || run.status === 'aborted' || (role !== 'baseline' && run.status !== 'passed'))) process.exitCode = 1;
+  if (pageErrors.length || summary.some((run) => run.errors.length || run.status === 'aborted' || (run.role !== 'baseline' && run.status !== 'passed'))) process.exitCode = 1;
 } catch (error) {
   console.error(error);
   process.exitCode = 1;

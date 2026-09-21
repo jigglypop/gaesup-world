@@ -1,6 +1,9 @@
 import type { FixedStepClock } from './FixedStepClock';
 
 export type AnimationFrameSource = { request: (callback: FrameRequestCallback) => number; cancel: (id: number) => void };
+const browserFrames: AnimationFrameSource = {
+  request: callback => requestAnimationFrame(callback), cancel: id => cancelAnimationFrame(id),
+};
 
 /** Reference-counted presentation driver: one RAF callback regardless of the number of consumers. */
 export class AnimationClockLoop {
@@ -11,9 +14,7 @@ export class AnimationClockLoop {
   private leaseGeneration = 0;
   private suspended = false;
 
-  constructor(readonly clock: FixedStepClock, private readonly frames: AnimationFrameSource = {
-    request: callback => requestAnimationFrame(callback), cancel: id => cancelAnimationFrame(id),
-  }) {}
+  constructor(readonly clock: FixedStepClock, private readonly frames: AnimationFrameSource = browserFrames) {}
 
   get consumerCount(): number { return this.references; }
   get ownerCount(): number { return this.handle === null ? 0 : 1; }
@@ -58,6 +59,8 @@ export class AnimationClockLoop {
   }
 
   private schedule(): void {
+    // A headless runtime retains system/consumer ownership and advances explicitly, without browser timers.
+    if (this.frames === browserFrames && (typeof requestAnimationFrame !== 'function' || typeof cancelAnimationFrame !== 'function')) return;
     const generation = this.generation;
     this.handle = this.frames.request(timestamp => {
       if (generation === this.generation) this.frame(timestamp, generation);

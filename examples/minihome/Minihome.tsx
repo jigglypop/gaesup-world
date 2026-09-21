@@ -2,9 +2,13 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useS
 
 import { exportUnityScene } from 'gaesup-world';
 
-import { furnitureKind, loadMinihome, makeFurniture, MAX_FURNITURE, parseMinihome, saveMinihome } from './model';
+import { loadMinihome, makeFurniture, MAX_FURNITURE, parseMinihome, saveMinihome } from './model';
+import { RoomEditorPanel } from './RoomEditorPanel';
+import { RoomSocial } from './RoomSocial';
+import { useRoomVisitors } from './roomVisitors';
 import { adoptSharedMinihome, createMinihomeSession } from './session';
 import { createShareLink, downloadJson, readShareLink } from './sharing';
+import { DEFAULT_EDITOR, paintTiles, type RoomEditor } from './terrain';
 import { FURNITURE } from './types';
 import type { FurnitureKind, HomeNote, HomeTab } from './types';
 import './styles.css';
@@ -43,12 +47,15 @@ export default function Minihome() {
   const [session, setSession] = useState(() => createMinihomeSession(shared ?? initial.data));
   const { data, canUndo, canRedo } = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const { controller, update: setData } = session;
+  const visitors = useRoomVisitors(data, setData);
+  const remotePeers = useMemo(() => visitors.connection.peers.filter(peer => peer.id !== visitors.connection.id), [visitors.connection.peers, visitors.connection.id]);
   const document = data.room;
   const [preview, setPreview] = useState(!!shared);
   const [autoSave, setAutoSave] = useState(initial.autoSave && !shared);
   const storageBase = useRef(initial.raw);
   const [tab, setTab] = useState<HomeTab>('home');
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(() => new URLSearchParams(location.search).get('edit') === '1');
+  const [editor, setEditor] = useState<RoomEditor>({ ...DEFAULT_EDITOR });
   const [selected, setSelected] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -60,14 +67,14 @@ export default function Minihome() {
   const [shareLink, setShareLink] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
   const view = useMemo(
-    () => ({ editing, selected, zoom, theme: data.theme }),
-    [editing, selected, zoom, data.theme],
+    () => ({ editing, selected, zoom, theme: data.theme, terrain: data.terrain, editor }),
+    [editing, selected, zoom, data.theme, data.terrain, editor],
   );
   const object = document.objects.find((entry) => entry.id === selected);
   const raw = useMemo(() => JSON.stringify(data), [data]);
   const dirty = raw !== savedState;
   const save = useCallback(() => {
-    if (preview) return;
+    if (preview || visitors.visiting) return;
     try {
       saveMinihome(raw, storageBase.current);
       storageBase.current = raw;
@@ -79,18 +86,19 @@ export default function Minihome() {
       setAutoSave(false);
       setSaveError(`저장하지 못했어요. ${error instanceof Error ? error.message : '브라우저 저장 공간과 권한을 확인해주세요.'}`);
     }
-  }, [raw, preview]);
+  }, [raw, preview, visitors.visiting]);
   useEffect(() => {
-    if (!dirty || !autoSave || preview) return;
+    if (!dirty || !autoSave || preview || visitors.visiting) return;
     const timer = setTimeout(save, 1200);
     return () => clearTimeout(timer);
-  }, [dirty, autoSave, preview, save]);
+  }, [dirty, autoSave, preview, save, visitors.visiting]);
   useEffect(() => {
-    if (!dirty || preview) return;
+    if (!dirty || preview || visitors.visiting) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [dirty, preview]);
+  }, [dirty, preview, visitors.visiting]);
+  useEffect(() => { if (visitors.isGuest) { setEditing(false); setSelected(null); } }, [visitors.isGuest]);
   useEffect(() => {
     if (selected && !document.objects.some((item) => item.id === selected)) setSelected(null);
   }, [document, selected]);
@@ -104,34 +112,38 @@ export default function Minihome() {
       setStatus('백업을 가져왔어요. 실행 취소로 이전 상태로 돌아갈 수 있어요.');
     } catch (error) { setStatus(error instanceof Error ? error.message : '파일을 읽지 못했습니다.'); }
   }
-  function addFurniture(kind: FurnitureKind) {
+  function addFurniture(kind: FurnitureKind, x: number, z: number) {
     if (document.objects.length >= MAX_FURNITURE) {
-      setStatus('가구는 최대 40개까지 놓을 수 있어요.');
+      setStatus(`가구는 최대 ${MAX_FURNITURE}개까지 놓을 수 있습니다.`);
       return;
     }
-    const item = makeFurniture(kind, ((document.objects.length % 4) - 1.5) * 0.5, 2.4);
+    const item = makeFurniture(kind, x, z);
     const result = controller.dispatch({ type: 'scene-object.create', object: item });
     if (result.accepted) {
       setSelected(item.id);
       setStatus(`${FURNITURE[kind].name}을 놓았어요. 저장하면 다음에도 그대로 만날 수 있어요.`);
     }
   }
-  function move(dx: number, dz: number) {
-    if (!object) return;
-    controller.dispatch({
-      type: 'scene-object.update',
-      objectId: object.id,
-      patch: {
-        transform: {
-          position: [
-            Math.max(-3.25, Math.min(3.25, object.transform.position[0] + dx)),
-            0,
-            Math.max(-3.25, Math.min(3.25, object.transform.position[2] + dz)),
-          ],
-        },
-      },
-    });
+  function duplicateFurniture() {
+    if (!object || document.objects.length >= MAX_FURNITURE) return;
+    const id = crypto.randomUUID();
+    const item = { ...object, id, name: `${object.name} 복제`, transform: { ...object.transform, position: [Math.min(11.25, object.transform.position[0] + 0.5), 0, Math.min(11.25, object.transform.position[2] + 0.5)] as [number, number, number] }, components: object.components.map(component => ({ ...component, id: `${id}-${component.type}` })) };
+    const result = controller.dispatch({ type: 'scene-object.create', object: item }); if (result.accepted) setSelected(id);
   }
+  function toggleEditing() {
+    if (visitors.isGuest) return;
+    const next = !editing; setEditing(next); setSelected(null);
+    const url = new URL(location.href); if (next) url.searchParams.set('edit', '1'); else url.searchParams.delete('edit');
+    history.replaceState(null, '', url);
+  }
+  useEffect(() => {
+    if (!editing) return;
+    const key = (event: KeyboardEvent) => {
+      if ((event.target as HTMLElement)?.closest('input, textarea, select')) return;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); if (event.shiftKey) session.redo(); else session.undo(); }
+    };
+    window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key);
+  }, [editing, session]);
   function post() {
     const text = message.trim();
     if (!text) return;
@@ -147,12 +159,13 @@ export default function Minihome() {
     setStatus('글을 남겼어요. 미니홈피 저장을 누르면 이 브라우저에 보관됩니다.');
   }
   return (
-    <div className="minihome">
+    <div className={`minihome town-home${editing ? ' town-editing' : ''}${profileOpen ? ' profile-open' : ''}`}>
       <header className="home-header">
         <a href={import.meta.env.BASE_URL} className="home-brand">
           <span>m</span>mini<span className="brand-dot">.</span>home<small>by gaesup world</small>
         </a>
         <div className="header-note">마음을 담은 작은 공간, 우리만의 미니홈피</div>
+        <button className="profile-toggle" aria-expanded={profileOpen} onClick={() => setProfileOpen(value => !value)}>프로필</button>
         <a href={`${import.meta.env.BASE_URL}engine`} className="engine-link">
           개발자 · 엔진 실험실 ↗
         </a>
@@ -301,21 +314,25 @@ export default function Minihome() {
                     </span>
                     <h2>
                       {tab === 'home'
-                        ? '햇살이 머무는 나의 방'
+                        ? '나의 3D 타운'
                         : tab === 'diary'
                           ? '평범해서 더 소중한 하루'
                           : '다녀간 마음을 남겨주세요'}
                     </h2>
                   </div>
-                  <span className="handwritten">make yourself at home ♡</span>
+                  {tab === 'home' && <button className="town-edit-button" disabled={visitors.isGuest} onClick={toggleEditing}>{visitors.isGuest ? '방문 중 · 주인만 편집' : editing ? '편집 완료 · 둘러보기' : '공간 편집'}</button>}
                 </div>
-                {tab === 'home' && (
-                  <Suspense
-                    fallback={<div className="room-placeholder">미니룸을 준비하고 있어요…</div>}
-                  >
-                    <Miniroom controller={controller} view={view} onSelect={setSelected} />
+                {tab === 'home' && <div className="town-workspace">
+                  {editing && <RoomEditorPanel editor={editor} onChange={setEditor} objects={document.objects} selected={selected} onSelect={setSelected} controller={controller} undo={session.undo} redo={session.redo} canUndo={canUndo} canRedo={canRedo} onDuplicate={duplicateFurniture} theme={data.theme} onTheme={theme => setData(previous => ({ ...previous, theme }))} />}
+                  <Suspense fallback={<div className="room-placeholder">3D 타운 준비 중…</div>}>
+                    <Miniroom controller={controller} view={view} onSelect={setSelected} settings={data.roomSettings}
+                      peers={remotePeers}
+                      onPaint={(indices, kind) => setData(previous => ({ ...previous, terrain: paintTiles(previous.terrain, indices, kind) }))}
+                      onPlace={addFurniture} onZoom={setZoom}
+                      onSettingsChange={patch => setData(previous => ({ ...previous, roomSettings: { ...previous.roomSettings, ...patch } }))} />
                   </Suspense>
-                )}
+                </div>}
+                {tab === 'home' && <RoomSocial connection={visitors.connection} name={data.profile.name} onJoin={visitors.join} onLeave={visitors.leave} onChat={visitors.chat} />}
                 {tab === 'home' ? (
                   <>
                     <div className="room-actions">
@@ -326,142 +343,27 @@ export default function Minihome() {
                         <button
                           className="zoom-button"
                           aria-label="미니룸 축소"
-                          onClick={() => setZoom(Math.max(0.65, zoom - 0.15))}
+                          onClick={() => setZoom(Math.max(0.5, zoom - 0.25))}
                         >
                           −
                         </button>
                         <button
                           className="zoom-button"
                           aria-label="미니룸 확대"
-                          onClick={() => setZoom(Math.min(1.65, zoom + 0.15))}
+                          onClick={() => setZoom(Math.min(4, zoom + 0.25))}
                         >
                           ＋
                         </button>
                         <button
                           className={editing ? 'decorate-button active' : 'decorate-button'}
-                          onClick={() => {
-                            setEditing(!editing);
-                            setSelected(null);
-                          }}
+                          disabled={visitors.isGuest}
+                          onClick={toggleEditing}
                         >
                           ✎ {editing ? '꾸미기 완료' : '미니룸 꾸미기'}
                         </button>
                       </div>
                     </div>
-                    {editing ? (
-                      <section className="decorator" aria-label="미니룸 꾸미기">
-                        <div className="decoration-top">
-                          <b>오늘의 취향을 더해봐요</b>
-                          <div className="room-themes">
-                            {(['peach', 'sage', 'lavender'] as const).map((theme) => (
-                              <button
-                                key={theme}
-                                className={`theme-dot ${theme}`}
-                                aria-label={`${theme === 'peach' ? '살구' : theme === 'sage' ? '세이지' : '라벤더'} 테마`}
-                                aria-pressed={data.theme === theme}
-                                onClick={() => setData({ ...data, theme })}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        <div className="furniture-tray">
-                          {(Object.keys(FURNITURE) as FurnitureKind[]).map((kind) => (
-                            <button
-                              key={kind}
-                              onClick={() => addFurniture(kind)}
-                              aria-label={`${FURNITURE[kind].name} 추가`}
-                            >
-                              <span>{FURNITURE[kind].icon}</span>
-                              {FURNITURE[kind].name}
-                              <small>＋</small>
-                            </button>
-                          ))}
-                        </div>
-                        <div className="object-controls">
-                          <label>
-                            선택한 가구
-                            <select
-                              aria-label="선택한 가구"
-                              value={selected ?? ''}
-                              onChange={(event) => setSelected(event.target.value || null)}
-                            >
-                              <option value="">가구를 선택하세요</option>
-                              {document.objects.map((entry, index) => (
-                                <option value={entry.id} key={entry.id}>
-                                  {FURNITURE[furnitureKind(entry) ?? 'table'].name} {index + 1}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <div>
-                            <button
-                              disabled={!object}
-                              aria-label="가구 왼쪽 이동"
-                              onClick={() => move(-0.25, 0)}
-                            >
-                              ←
-                            </button>
-                            <button
-                              disabled={!object}
-                              aria-label="가구 뒤로 이동"
-                              onClick={() => move(0, -0.25)}
-                            >
-                              ↑
-                            </button>
-                            <button
-                              disabled={!object}
-                              aria-label="가구 앞으로 이동"
-                              onClick={() => move(0, 0.25)}
-                            >
-                              ↓
-                            </button>
-                            <button
-                              disabled={!object}
-                              aria-label="가구 오른쪽 이동"
-                              onClick={() => move(0.25, 0)}
-                            >
-                              →
-                            </button>
-                            <button
-                              disabled={!object}
-                              aria-label="가구 회전"
-                              onClick={() => {
-                                if (object)
-                                  controller.dispatch({
-                                    type: 'scene-object.update',
-                                    objectId: object.id,
-                                    patch: {
-                                      transform: {
-                                        rotation: [
-                                          0,
-                                          object.transform.rotation[1] + Math.PI / 2,
-                                          0,
-                                        ],
-                                      },
-                                    },
-                                  });
-                              }}
-                            >
-                              ↻
-                            </button>
-                            <button
-                              disabled={!object}
-                              aria-label="가구 삭제"
-                              onClick={() => {
-                                if (object)
-                                  controller.dispatch({
-                                    type: 'scene-object.delete',
-                                    objectId: object.id,
-                                  });
-                                setSelected(null);
-                              }}
-                            >
-                              삭제
-                            </button>
-                          </div>
-                        </div>
-                      </section>
-                    ) : (
+                    {!editing && (
                       <div className="home-updates">
                         <section>
                           <h3>
@@ -577,11 +479,11 @@ export default function Minihome() {
                   <a href={import.meta.env.BASE_URL}>내 방으로 돌아가기</a>
                 </div>}
                 <div className="home-tools" aria-label="백업과 편집 기록">
-                  <button onClick={session.undo} disabled={!canUndo}>실행 취소</button>
-                  <button onClick={session.redo} disabled={!canRedo}>다시 실행</button>
+                  <button onClick={session.undo} disabled={!canUndo || visitors.isGuest}>실행 취소</button>
+                  <button onClick={session.redo} disabled={!canRedo || visitors.isGuest}>다시 실행</button>
                   <button onClick={() => downloadJson(data, 'mini-home.json')}>파일 백업</button>
                   <button onClick={() => downloadJson(exportUnityScene(data.room), 'unity-scene.json')}>Unity 장면 JSON</button>
-                  <button onClick={() => fileInput.current?.click()}>백업 가져오기</button>
+                  <button disabled={visitors.isGuest} onClick={() => fileInput.current?.click()}>백업 가져오기</button>
                   <input ref={fileInput} type="file" accept=".json,application/json" hidden aria-label="미니홈피 백업 파일" onChange={(event) => {
                     const file = event.target.files?.[0]; event.target.value = ''; if (file) void importFile(file);
                   }} />
@@ -595,12 +497,12 @@ export default function Minihome() {
                 </label>}
                 <div className="page-save">
                   <span role="status">
-                    {saveError || (dirty ? '아직 저장하지 않은 변경이 있어요. ' : '') || status ||
+                    {visitors.visiting ? '방문 중입니다. 내 공간은 나가면 복원됩니다.' : saveError || (dirty ? '아직 저장하지 않은 변경이 있어요. ' : '') || status ||
                       (dirty
                         ? '아직 저장하지 않은 변경이 있어요.'
                         : '이 공간은 현재 브라우저에 보관됩니다.')}
                   </span>
-                  <button onClick={save} disabled={preview}>미니홈피 저장 {dirty && <i />}</button>
+                  <button onClick={save} disabled={preview || visitors.visiting}>미니홈피 저장 {dirty && !visitors.visiting && <i />}</button>
                 </div>
               </div>
             </section>

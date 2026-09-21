@@ -27,14 +27,20 @@ export class GameplayEventRegistry {
     type: TCondition['type'],
     handler: GameplayConditionHandler<TCondition>,
   ): void {
-    this.conditions.set(type, handler as GameplayConditionHandler);
+    this.conditions.set(type, (condition, context) => {
+      if (context.isCurrent ? !context.isCurrent() : context.signal?.aborted) return false;
+      return handler(condition as TCondition, context);
+    });
   }
 
   registerAction<TAction extends GameplayEventAction>(
     type: TAction['type'],
     handler: GameplayActionHandler<TAction>,
   ): void {
-    this.actions.set(type, handler as GameplayActionHandler);
+    this.actions.set(type, (action, context) => {
+      if (context.isCurrent ? !context.isCurrent() : context.signal?.aborted) return;
+      return handler(action as TAction, context);
+    });
   }
 
   getCondition(type: string): GameplayConditionHandler | undefined {
@@ -86,7 +92,8 @@ export function createDefaultGameplayEventRegistry(dependencies: GameplayEventDe
     notify(action.kind ?? 'info', action.text);
   });
   registry.registerAction<Extract<GameplayEventAction, { type: 'setFlag' }>>('setFlag', (action, context) => {
-    context.state.flags[action.key] = action.value;
+    if (context.setFlag) context.setFlag(action.key, action.value);
+    else context.state.flags[action.key] = action.value;
   });
   registry.registerAction<Extract<GameplayEventAction, { type: 'notifyQuestFlag' }>>('notifyQuestFlag', (action) => {
     dependencies.questStore.getState().notifyFlag(action.key, action.value);

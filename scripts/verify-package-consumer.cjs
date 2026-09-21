@@ -10,6 +10,8 @@ const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'gaesup-world-package-cons
 const consumerRoot = path.join(tmpRoot, 'consumer');
 const packageJsonPath = path.join(root, 'package.json');
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+let consumerVerified = false;
+let packedIntegrity;
 
 function run(command, args, options = {}) {
   childProcess.execFileSync(command, args, {
@@ -66,6 +68,41 @@ function formatDiagnostic(diagnostic) {
 
   const position = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
   return `${normalizePackagePath(path.relative(consumerRoot, diagnostic.file.fileName))}:${position.line + 1}:${position.character + 1} - ${message}`;
+}
+
+function createSpatialRuntimeProbe(kind) {
+  const load = specifier => kind === 'esm' ? `await import('${specifier}')` : `require('${specifier}')`;
+  return `{
+  const { WorldSystem } = ${load('gaesup-world/runtime')};
+  const { Vector3, Euler, Box3, Scene, Mesh, BoxGeometry, MeshBasicMaterial, PerspectiveCamera, Clock } = ${load('three')};
+  const world = new WorldSystem();
+  const box = (id, z, size = 1) => ({ id, position: new Vector3(0, 0, z), rotation: new Euler(), scale: new Vector3(1, 1, 1), type: 'static', boundingBox: new Box3().setFromCenterAndSize(new Vector3(0, 0, z), new Vector3(size, size, size)) });
+  world.addObject(box('far', 8)); world.addObject(box('near', 3));
+  const hit = world.raycast(new Vector3(), new Vector3(0, 0, 9), 10);
+  if (hit?.object.id !== 'near' || hit.distance !== 2.5 || world.raycast(new Vector3(), new Vector3(0, 0, 1), 2)) throw new Error('Installed WorldSystem nearest/range contract failed');
+  world.cleanup(); world.addObject(box('small', 0)); world.addObject(box('large', 50, 100));
+  if (world.checkCollisions('small')[0]?.id !== 'large') throw new Error('Installed WorldSystem large bounds contract failed');
+  world.dispose();
+  const scene = new Scene(); const mesh = new Mesh(new BoxGeometry(1, 2, 1), new MeshBasicMaterial());
+  mesh.position.set(0.8, 0, 5); scene.add(mesh);
+  try {
+    const from = new Vector3(); const to = new Vector3(0, 0, 10);
+    const first = rootModule.cameraUtils.improvedCollisionCheck(from, to, scene, 0.5);
+    if (first.safe || Math.abs(first.position.z - 4.1) > 1e-6) throw new Error('Installed camera radius contract failed');
+    mesh.position.z = 7;
+    rootModule.cameraUtils.improvedCollisionCheck(from, to, scene, 0.5);
+    if (Math.abs(first.position.z - 4.1) > 1e-6) throw new Error('Installed camera result ownership failed');
+  } finally { scene.clear(); mesh.geometry.dispose(); mesh.material.dispose(); }
+  const wall = new Mesh(new BoxGeometry(1, 4, 3), new MeshBasicMaterial()); wall.position.set(0, 0, 8); scene.add(wall);
+  const manager = new rootModule.EntityStateManager();
+  try {
+    const camera = new PerspectiveCamera(); camera.position.set(4, 0, 8);
+    const controller = new rootModule.ThirdPersonController();
+    controller.update({ camera, scene, activeState: manager.getActiveState(), deltaTime: 1 / 60, clock: new Clock() },
+      { lastUpdate: 0, config: { mode: 'thirdPerson', distance: { x: 4, y: 0, z: -8 }, zoom: 1, enableCollision: true, collisionMargin: 0.25, smoothing: { position: 0.5, rotation: 0.5 } } });
+    if (new Box3().setFromObject(wall).distanceToPoint(camera.position) < 0.25 - 1e-6) throw new Error('Installed camera interpolation clips through wall');
+  } finally { manager.dispose(); scene.clear(); wall.geometry.dispose(); wall.material.dispose(); }
+}`;
 }
 
 function assertStrictPackageDeclarations(configFileName) {
@@ -240,6 +277,7 @@ function assertRendererDeclarationsAreR3FVersionNeutral() {
 function packPackage() {
   const output = runNpmWithOutput([
     'pack',
+    ...(process.env.GAESUP_PACKAGE_ARCHIVE ? [path.resolve(process.env.GAESUP_PACKAGE_ARCHIVE)] : []),
     '--json',
     '--ignore-scripts',
     '--pack-destination',
@@ -251,11 +289,15 @@ function packPackage() {
     throw new Error(`npm pack returned no file manifest for ${packageJson.name}.`);
   }
   const tarballPath = path.join(tmpRoot, packResult.filename);
+  packedIntegrity = `sha512-${crypto.createHash('sha512').update(fs.readFileSync(tarballPath)).digest('base64')}`;
+  if (process.env.GAESUP_EXPECTED_INTEGRITY && packedIntegrity !== process.env.GAESUP_EXPECTED_INTEGRITY) {
+    throw new Error('Consumer tarball differs from the verified registry artifact.');
+  }
   const packedFiles = new Set(packResult.files.map((file) => normalizePackagePath(file.path)));
   const missingPackedTargets = getExportTargets().filter((target) => !packedFiles.has(target));
   const forbiddenFiles = Array.from(packedFiles).filter((file) =>
     /^(src|examples|demo-dist|server|scripts|\.tmp)\//.test(file)
-    || (file.startsWith('docs/') && !/^docs\/(?:minihome(?:\.en)?|unity(?:\.en)?|release-1\.0\.31|2026-09-19-web-studio-plan(?:\.en)?)\.md$/.test(file)),
+    || (file.startsWith('docs/') && !/^docs\/(?:minihome(?:\.en)?|unity(?:\.en)?|release-1\.0\.32|world-physics-clock|physics-grounding|2026-09-19-web-studio-plan(?:\.en)?)\.md$/.test(file)),
   );
 
   if (missingPackedTargets.length > 0) {
@@ -1367,6 +1409,7 @@ if (
 }
 
 ${createSceneDocumentRuntimeProbe('rootModule', 'esm-package')}
+${createSpatialRuntimeProbe('esm')}
 
 for (const specifier of allModules) {
   await import(specifier);
@@ -1443,6 +1486,7 @@ if (
 }
 
 ${createSceneDocumentRuntimeProbe('rootModule', 'cjs-package')}
+${createSpatialRuntimeProbe('cjs')}
 
 for (const specifier of allModules) {
   require(specifier);
@@ -1637,6 +1681,60 @@ createRoot(document.getElementById('root')!).render(React.createElement(BrowserS
 `,
   );
 
+  fs.writeFileSync(path.join(consumerRoot, 'grounding-smoke.cjs'), `
+const { createRequire } = require('node:module');
+const R = createRequire(require.resolve('@react-three/rapier'))('@dimforge/rapier3d-compat');
+async function main() {
+  await R.init();
+  for (const kind of ['esm', 'cjs']) {
+    const api = kind === 'esm' ? await import('gaesup-world') : require('gaesup-world');
+    const runtime = api.createGaesupRuntime(); await runtime.setup();
+    try {
+      const network = runtime.networkBridge; network.ensureMainEngine();
+      const system = network.getEngine('main').system;
+      runtime.clockLoop.clock.stepTicks(60);
+      if (system.updateRevision !== 30) throw new Error(kind + ': owned network clock cadence failed');
+      runtime.npcStore.getState().addInstance({ id: 'headless-npc', templateId: 'lab', name: 'NPC', position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] });
+      runtime.npcStore.getState().setNavigation('headless-npc', [[20, 0, 0]], 3);
+      runtime.clockLoop.clock.stepTicks(60);
+      if (Math.abs(runtime.npcSimulation.getPose('headless-npc').position[0] - 3) > 0.00001 || runtime.clockLoop.ownerCount !== 0) throw new Error(kind + ': headless NPC fixed stepping failed');
+      const npcSaved = api.serializeNPCState(runtime.npcStore);
+      if (Math.abs(npcSaved.instances[0].position[0] - 3) > 0.00001) throw new Error(kind + ': live NPC pose was not serialized');
+      runtime.npcStore.getState().removeInstance('headless-npc');
+      runtime.gameplayEvents.setBlueprints([{ id: 'package-once', name: '', trigger: { type: 'manual', key: 'once' }, policy: { run: 'once' }, actions: [{ type: 'setFlag', key: 'saved', value: true }] }]);
+      await runtime.gameplayEvents.dispatch({ type: 'manual', key: 'once' });
+      const saved = runtime.save.createBlob(); runtime.gameplayEvents.state.flags.saved = false;
+      runtime.save.hydrateBlob(saved);
+      if (runtime.gameplayEvents.state.flags.saved !== true || (await runtime.gameplayEvents.dispatch({ type: 'manual', key: 'once' }))[0].skipped !== 'already-executed') throw new Error(kind + ': gameplay history restore failed');
+      for (const terrain of ['box', 'mesh']) {
+        const world = new R.World({ x: 0, y: -9.81, z: 0 }); world.timestep = 1 / 60;
+        const manager = new api.EntityStateManager();
+        const system = new api.PhysicsSystem({ ...runtime.store.getState().physics, normalGravityScale: 1, jumpGravityScale: 1, jumpSpeed: 5 }, {}, manager, { inputAdapter: runtime.inputAdapter });
+        try {
+          world.createCollider(terrain === 'box' ? R.ColliderDesc.cuboid(4, 0.25, 4).setTranslation(0, 9.75, 0)
+            : R.ColliderDesc.trimesh(new Float32Array([-4,10,-4,-4,10,4,4,10,-4,4,10,4]), new Uint32Array([0,1,2,2,1,3])));
+          const body = world.createRigidBody(R.RigidBodyDesc.dynamic().setTranslation(0, 11, 0).lockRotations());
+          world.createCollider(R.ColliderDesc.capsule(0.25, 0.25), body);
+          const state = { activeState: manager.getActiveState(), gameStates: manager.getGameStates(), keyboard: { ...runtime.inputAdapter.getKeyboard() },
+            mouse: { ...runtime.inputAdapter.getMouse() }, automationOption: runtime.store.getState().automation, modeType: 'character', delta: 1 / 60 };
+          const props = { rigidBodyRef: { current: body }, physicsWorld: world, worldContext: runtime.store.getState(),
+            delta: 1 / 60, dispatch() {}, inputRef: { current: state }, setKeyboardInput() {}, setMouseInput() {} };
+          for (let i = 0; i < 180; i++) { world.step(); system.calculate(props, state); }
+          if (!state.gameStates.isOnTheGround || !state.activeState.isGround) throw new Error(kind + ': elevated ' + terrain + ' grounding failed');
+          state.keyboard.space = true; system.calculate(props, state);
+          if (body.linvel().y < 4 || state.gameStates.isOnTheGround || state.activeState.isGround) throw new Error(kind + ': jump takeoff failed');
+          body.setTranslation({ x: 100, y: 10.5, z: 0 }, true); body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+          system.calculate(props, state);
+          if (state.gameStates.isOnTheGround) throw new Error(kind + ': stale teleport support');
+        } finally { system.dispose(); manager.dispose(); world.free(); }
+      }
+    } finally { await runtime.dispose(); }
+  }
+  console.log('Installed ESM/CJS physics grounding passed.');
+}
+main().catch(error => { console.error(error); process.exitCode = 1; });
+`);
+
   fs.writeFileSync(
     path.join(consumerRoot, 'vite.config.mjs'),
     `export default {
@@ -1723,13 +1821,20 @@ function main() {
     assertStrictPackageDeclarations('tsconfig.compat.json');
     run(process.execPath, ['runtime-smoke.mjs'], { cwd: consumerRoot });
     run(process.execPath, ['runtime-smoke.cjs'], { cwd: consumerRoot });
+    run(process.execPath, ['grounding-smoke.cjs'], { cwd: consumerRoot });
     run(process.execPath, [path.join(root, 'node_modules', 'vite', 'bin', 'vite.js'), 'build'], {
       cwd: consumerRoot,
     });
 
     console.log('Package consumer verification passed.');
+    consumerVerified = true;
+    if (process.env.GAESUP_CONSUMER_RECEIPT) {
+      const receipt = path.resolve(process.env.GAESUP_CONSUMER_RECEIPT);
+      fs.mkdirSync(path.dirname(receipt), { recursive: true });
+      fs.writeFileSync(receipt, JSON.stringify({ path: consumerRoot, package: packageJson.name, integrity: packedIntegrity, verifiedAt: new Date().toISOString() }, null, 2));
+    }
   } finally {
-    cleanupTmpRoot();
+    if (!consumerVerified || !process.env.GAESUP_CONSUMER_RECEIPT) cleanupTmpRoot();
   }
 }
 

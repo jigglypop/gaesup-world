@@ -37,6 +37,13 @@ export type SaveDiagnostic = {
 
 export type SaveDiagnosticListener = (diagnostic: SaveDiagnostic) => void;
 
+/** Enter only after all domains validate, before any apply. Release after apply/rollback.
+ * Both phases are synchronous. A failed guard prevents application; releases always run.
+ * Transient effects cancelled on entry are not replayed by rollback.
+ * A release failure is reported/thrown without undoing the settled domain result.
+ */
+export type SaveRestoreGuard = () => (() => void) | void;
+
 export type SaveSystemOptions = {
   adapter: SaveAdapter;
   defaultSlot?: string;

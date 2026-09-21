@@ -40,8 +40,10 @@ import { RUNTIME_OWNED_MOTIONS_SERVICE_ID, type MotionsRuntime } from '../motion
 import { createClickNavigationRoute } from '../navigation/ClickNavigationRoute';
 import { createNavigationObstacleRegistry } from '../navigation/NavigationObstacleRegistry';
 import { NavigationSystem } from '../navigation/NavigationSystem';
+import { NetworkBridge } from '../networks/bridge/NetworkBridge';
 import { createNPCBrainAdapterRegistry } from '../npc/core/brain';
 import { createNPCScheduler } from '../npc/core/NPCScheduler';
+import { NPCSimulation } from '../npc/core/NPCSimulation';
 import { attachReinforcementAdapter, createReinforcementAdapter } from '../npc/core/reinforcement';
 import { createNPCStore } from '../npc/stores/npcStore';
 import { createPluginLogger, createPluginRegistry, filterPluginsForRuntime } from '../plugins';
@@ -82,7 +84,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
   const shopStore = createShopStore(inventoryStore, walletStore);
   const questStore = createQuestStore({ inventory: inventoryStore, wallet: walletStore, friendship: friendshipStore, time: timeStore });
   const dialogStore = createDialogStore(questStore, createDialogRuntimeAdapter({ inventory: inventoryStore, wallet: walletStore, friendship: friendshipStore, time: timeStore, quests: questStore }));
-  const audioEngine = createAudioEngine();
+  const audioEngine = createAudioEngine({ canPlay: () => !save.isRestoring() });
   const audioStore = createAudioStore(audioEngine);
   audioEngine.suspendPlayback();
   const characterStore = createCharacterStore();
@@ -144,6 +146,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
   grassManager.suspend();
   const clockLoop = getTimeClock(timeStore);
   clockLoop.suspend();
+  const npcSimulation = new NPCSimulation(npcStore, clockLoop, { conditions: { questStore, friendshipStore }, adapters: npcBrainAdapters, scoped: true });
   const runtimeLogger = createPluginLogger(options.logger);
   const plugins = createPluginRegistry(options.logger ? { logger: options.logger } : {});
   const pluginRuntime = options.pluginRuntime ?? 'client';
@@ -156,6 +159,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
   const optionSaveBindings = [...(options.saveBindings ?? [])];
   const unregisterSaveBindings = new Map<string, () => void>();
   let unregisterSaveDiagnostics: (() => void) | undefined;
+  let unregisterRestoreGuard: (() => void) | undefined;
   let ownsSaveDiagnosticsService = false;
   let ownsTimeService = false;
   let ownsWorldStoreService = false;
@@ -168,6 +172,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
   let motions: MotionsRuntime | undefined;
   let motionBridge: MotionBridge | undefined;
   let animationBridge: AnimationBridge | undefined;
+  let networkBridge: NetworkBridge | undefined;
   let inputExtension: InputBackendExtension | undefined;
   let unsubscribeInputExtensions: (() => void) | undefined;
   const refreshInputBackend = () => {
@@ -237,12 +242,14 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
 
   const deactivateGeneration = async (disposeSetupFailures: boolean): Promise<CleanupResult> => {
     save.cancelPendingLoads();
+    const releaseRestoreGuard = unregisterRestoreGuard;
+    unregisterRestoreGuard = undefined;
     stopGamepad();
     cinematics.suspend();
     inputActions.suspend(); interactablesStore.getState().suspend();
     unsubscribeInputExtensions?.(); unsubscribeInputExtensions = undefined;
     inputAdapter.suspend(); inputExtension = undefined;
-    npcBrainAdapters.suspend(); npcReinforcement.suspend();
+    npcSimulation.suspend(); npcBrainAdapters.suspend(); npcReinforcement.suspend();
     worldViews.suspend();
     grassManager.suspend();
     clockLoop.suspend(); toolEvents.suspend(); gameplayEvents.suspend(); inputScope.suspend();
@@ -262,6 +269,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
         captureError(error);
       }
     };
+    if (releaseRestoreGuard) await attempt(releaseRestoreGuard);
     await attempt(() => audioEngine.dispose());
     await attempt(() => worldObjectStore.getState().deactivateWorldBridge());
     clickNavigation.nextClickNavigationRequest();
@@ -294,6 +302,8 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
     if (oldMotionBridge) await attempt(() => oldMotionBridge.dispose());
     const oldAnimationBridge = animationBridge; animationBridge = undefined;
     if (oldAnimationBridge) await attempt(() => oldAnimationBridge.dispose());
+    const oldNetworkBridge = networkBridge; networkBridge = undefined;
+    if (oldNetworkBridge) await attempt(() => oldNetworkBridge.dispose());
 
     const unregisterDiagnostics = unregisterSaveDiagnostics;
     unregisterSaveDiagnostics = undefined;
@@ -370,6 +380,22 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
       }
       await plugins.setupAll();
       registerPluginSaveBindings();
+      const gameplaySaveKey = 'gameplay-events';
+      unregisterSaveBindings.set(gameplaySaveKey, save.register({
+        key: gameplaySaveKey, serialize: () => gameplayEvents.serialize(),
+        hydrate: data => gameplayEvents.hydrate(data), prepareHydrate: data => gameplayEvents.prepareHydrate(data),
+      }));
+      unregisterRestoreGuard = save.registerRestoreGuard(() => {
+        const revision = lifecycleRevision;
+        const active = lifecycleState === 'active';
+        const resume = () => {
+          if (!active || lifecycleState !== 'active' || lifecycleRevision !== revision) return;
+          cinematics.resume(); sceneStore.getState().resumeTransitions(); gameplayEvents.resume(); npcSimulation.resume();
+        };
+        try { npcSimulation.suspend(); cinematics.suspend(); sceneStore.getState().suspendTransitions(); audioEngine.cancelSfx(); gameplayEvents.suspend(); }
+        catch (error) { resume(); throw error; }
+        return resume;
+      });
       refreshInputBackend();
       unsubscribeInputExtensions = plugins.context.input.subscribe?.(id => {
         if (id === null || id === inputExtensionId) refreshInputBackend();
@@ -380,6 +406,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
       grassManager.resume();
       worldViews.resume();
       npcBrainAdapters.resume(); npcReinforcement.resume();
+      npcSimulation.resume();
       interactablesStore.getState().resume(); inputActions.resume(); cinematics.resume();
       unsubscribeGamepadState = store.subscribe(() => gamepad.refresh());
       unsubscribeGamepadEditor = buildingStore.subscribe(() => gamepad.refresh());
@@ -399,7 +426,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
     inputActions.suspend(); interactablesStore.getState().suspend();
     unsubscribeInputExtensions?.(); unsubscribeInputExtensions = undefined;
     inputAdapter.suspend();
-    npcBrainAdapters.suspend(); npcReinforcement.suspend();
+    npcSimulation.suspend(); npcBrainAdapters.suspend(); npcReinforcement.suspend();
     worldViews.suspend(); worldBridge.suspend();
     grassManager.suspend();
     clockLoop.suspend(); toolEvents.suspend(); gameplayEvents.suspend(); inputScope.suspend();
@@ -429,10 +456,11 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
     audioEngine, audioStore, characterStore, sceneStore, roomVisibilityStore,
     catalogStore, craftingStore, mailStore, townStore, eventsStore,
     toolEvents, gameplayEventRegistry, gameplayEvents,
-    buildingStore, npcStore, npcScheduler, npcBrainAdapters, npcReinforcement, buildingRenderStore, buildingCullingStore, buildingVisibilityStore, navigationObstacles,
+    buildingStore, npcStore, npcScheduler, npcSimulation, npcBrainAdapters, npcReinforcement, buildingRenderStore, buildingCullingStore, buildingVisibilityStore, navigationObstacles,
     get motions() { return getMotions(); },
     get motionBridge() { return motionBridge ??= new MotionBridge(); },
     get animationBridge() { return animationBridge ??= new AnimationBridge(); },
+    get networkBridge() { return networkBridge ??= NetworkBridge.forClock(clockLoop.clock); },
     isActive: () => lifecycleState === 'active',
     getLifecycleRevision: () => lifecycleRevision,
     subscribeLifecycle: listener => { lifecycleListeners.add(listener); return () => { lifecycleListeners.delete(listener); }; },

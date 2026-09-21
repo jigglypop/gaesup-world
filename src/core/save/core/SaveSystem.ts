@@ -9,6 +9,7 @@ import type {
   SaveBlob,
   SaveDiagnostic,
   SaveDiagnosticListener,
+  SaveRestoreGuard,
   SaveSystemOptions,
 } from '../types';
 
@@ -19,6 +20,7 @@ export class SaveSystem {
   private migrations: Record<number, Migration>;
   private defaultSlot: string;
   private diagnosticListeners = new Set<SaveDiagnosticListener>();
+  private restoreGuards = new Set<SaveRestoreGuard>();
   private processing = false;
   private restoring = false;
   private restoreGeneration = 0;
@@ -61,6 +63,19 @@ export class SaveSystem {
   has(key: string): boolean { return this.bindings.has(key); }
 
   getDefaultSlot(): string { return this.defaultSlot; }
+
+  /** Own an effect boundary through validated application and rollback, never storage I/O. */
+  registerRestoreGuard(guard: SaveRestoreGuard): () => void {
+    if (this.processing) throw new Error('Save operation already in progress');
+    // Each registration owns its cleanup even when callers share the same function.
+    const owned = () => guard();
+    this.restoreGuards.add(owned);
+    return () => {
+      if (!this.restoreGuards.has(owned)) return;
+      // Owners may unmount during hydration. Already entered guards still release once.
+      this.restoreGuards.delete(owned);
+    };
+  }
 
   subscribeDiagnostics(listener: SaveDiagnosticListener): () => void {
     this.diagnosticListeners.add(listener);
@@ -117,13 +132,26 @@ export class SaveSystem {
   private restoreBlob(raw: SaveBlob, slot: string, signal?: AbortSignal): boolean {
     return this.process(() => {
       const generation = ++this.restoreGeneration;
+      const releases: Array<() => void> = [];
+      const errors: unknown[] = [];
+      let result = false;
       this.restoring = true;
-      try { return this.applyBlob(raw, slot, () => !signal?.aborted && generation === this.restoreGeneration); }
-      finally { this.restoring = false; }
+      try { result = this.applyBlob(raw, slot, () => !signal?.aborted && generation === this.restoreGeneration, releases); }
+      catch (error) { errors.push(error); }
+      finally {
+        this.restoring = false;
+        for (const release of releases.reverse()) {
+          try { release(); }
+          catch (error) { errors.push(error); this.reportDiagnostic({ phase: 'hydrate', key: '$restore-effects', slot, error }); }
+        }
+      }
+      if (errors.length === 1) throw errors[0];
+      if (errors.length > 1) throw new AggregateError(errors, 'Save restoration or effect cleanup failed');
+      return result;
     });
   }
 
-  private applyBlob(raw: SaveBlob, slot: string, current: () => boolean): boolean {
+  private applyBlob(raw: SaveBlob, slot: string, current: () => boolean, releases: Array<() => void>): boolean {
     let blob = cloneDomain(raw);
     validateSaveEnvelope(blob);
     if (!Number.isInteger(blob.version) || blob.version < 1 || blob.version > this.currentVersion) {
@@ -156,6 +184,16 @@ export class SaveSystem {
       }
     }
     if (errors.length > 0) throw new AggregateError(errors, 'Save hydration failed');
+    if (!current()) return false;
+    for (const guard of this.restoreGuards) {
+      if (!current()) return false;
+      try {
+        const release = guard();
+        if (release !== undefined && typeof release !== 'function') throw new TypeError('Restore guards must return a synchronous release function or undefined');
+        if (release) releases.push(release);
+      }
+      catch (error) { this.reportDiagnostic({ phase: 'hydrate', key: '$restore-effects', slot, error }); throw error; }
+    }
     let applied = -1;
     for (let index = 0; index < applications.length; index++) {
       const { key, apply } = applications[index]!;

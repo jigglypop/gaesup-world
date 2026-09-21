@@ -10,11 +10,12 @@ import {
 
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
-import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three/rapier';
+import { CapsuleCollider, RapierRigidBody, RigidBody, euler, useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import { useEntity } from '@core/boilerplate/hooks/useEntity';
+import { useWorldPhysicsInterpolation } from '@core/simulation/physicsContext';
 
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
@@ -52,7 +53,9 @@ function resolveAnimationKey(
 
 export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
   (props, forwardedRef) => {
+    const { world: physicsWorld } = useRapier();
     const rigidBodyRef = useRef<RapierRigidBody>(null!);
+    const interpolatedVisual = useWorldPhysicsInterpolation(rigidBodyRef);
     useImperativeHandle(forwardedRef, () => rigidBodyRef.current);
     const { size } = useGltfAndSize({ url: props.url || '' });
     const modelUrl = props.url?.trim() ? props.url : EMPTY_GLTF_DATA_URI;
@@ -61,6 +64,8 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const activeAnimationRef = useRef<string | undefined>(undefined);
 
     const { handleIntersectionEnter, handleIntersectionExit, handleCollisionEnter } = useEntity({
+      physicsWorld,
+      ...(props.groundContactFilter ? { groundContactFilter: props.groundContactFilter } : {}),
       rigidBodyRef,
       ...(props.name ? { id: props.name } : {}),
       ...(props.userData ? { userData: props.userData } : {}),
@@ -202,6 +207,8 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
               position={[0, collider.y, 0]}
             />
           )}
+          {props.colliderChildren}
+          <group ref={interpolatedVisual}>
           <InnerGroupRef
             animationRef={animationRef}
             nodes={nodes}
@@ -224,6 +231,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
             {props.children}
             {partsComponents}
           </InnerGroupRef>
+          </group>
         </RigidBody>
       </group>
     );

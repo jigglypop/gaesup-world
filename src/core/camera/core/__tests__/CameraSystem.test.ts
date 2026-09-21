@@ -189,17 +189,17 @@ describe('CameraSystem', () => {
       fastSystem.destroy();
     });
 
-    it('enableCollision이 켜져 있으면 장애물 앞에서 카메라 목표 거리를 줄여야 합니다', () => {
+    it('enableCollision이 켜져 있으면 이동 중 실제 카메라를 장애물 앞에 유지해야 합니다', () => {
       const blockedProps = createCalcProps();
       const clearProps = createCalcProps();
       addBlockingMesh(blockedProps.scene);
       addBlockingMesh(clearProps.scene);
 
       system.updateConfig({ enableCollision: true, collisionMargin: 0.5 });
-      system.calculate(blockedProps);
+      for (let i = 0; i < 30; i++) system.calculate(blockedProps);
 
       system.updateConfig({ enableCollision: false });
-      system.calculate(clearProps);
+      for (let i = 0; i < 30; i++) system.calculate(clearProps);
 
       expect(blockedProps.camera.position.length()).toBeLessThan(clearProps.camera.position.length());
     });

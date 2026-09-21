@@ -12,14 +12,15 @@
 
 | 단계 | 현재 상태 | 남은 완료 조건 |
 | --- | --- | --- |
-| S0 계측·lab | 실제 시나리오 53개, 저장 실행 123개. WebGPU/WebGL 카운터 정규화·미지원 구분·실제 MessageQueue 고장 주입 검사. 정식 WebGPU baseline 5회, 각 10초 예열·30초 측정, 총 9,000프레임 | 후속 시나리오·장치·부하 확대, 동일 조건의 정식 A/B 측정 |
+| S0 계측·lab | 실제 시나리오 70개, 저장 실행 181개. WebGPU/WebGL 카운터 정규화·미지원 구분·실제 MessageQueue 고장 주입 검사. 기존 정식 WebGPU baseline 5회·9,000프레임, 미니룸 정식 A/B 각각 3회·합계 10,786프레임 추가 | 후속 시나리오·장치·부하 확대, 동일 조건의 정식 A/B 측정 |
 | S1 정확성 | R01 selector, R02 준비된 snapshot·rollback, R06 GPU 재질, R07 오디오 종료, R08 엔티티 세대, R10 GLTF 교체/크기, R11 재질 ID, R24b 플러그인 해제 수정. 실제 IndexedDB 복원 중 도감 초과 수집도 수정 | 각 항목의 일반 월드 통합·수명 반복·지원 조합. 다른 observer의 복원 부작용·복원 중 명령 재진입. R24a 저장 지연은 S5 |
-| S2 월드 소유권 R25 | 시간·저장 namespace·GaesupStore·플레이어·입력·자동화·내비·브리지, 건물/NPC·렌더/컬링/GPU 버퍼·장애물 등록 분리. 생활 도메인·캐릭터·장면·방·오디오·도구 버스·게임플레이 engine/registry 분리. DOM/커스텀 입력·상호작용 대상·입력 action·grass·WorldBridge·객체 store·블루프린트·카메라·NPC 정책·시네마틱/미리 보기의 종료/재시작 연결. 브라우저 게임패드 공유 폴링·아날로그 물리/시점 입력, 관찰자 구독 공유·복원 구분·지연 읽기 세대·부분 적용 취소/rollback 구현. 자동 저장/초기 로드의 월드 선택·슬롯별 공유·중복 쓰기 병합 구현 | 비동기 효과/사용자 명령의 복원 경합, 실제 USB/Bluetooth 장치 확인. 객체 영속화·core/next 엔티티 계약은 R27, 권위 명령 계약은 R30 |
-| S2 clock R26 | 순수 FixedStepClock·공유 RAF·실행 단계/순서·catch-up 예산·일시 정지/재개. 30/60/144Hz와 소비자 1·2개에서 60 tick/초, 50회 재시작 불일치·잔여 RAF 0 | NetworkBridge·물리·NPC의 기존 루프 연결, 실제 전체 시뮬레이션 동등성 |
+| S2 월드 소유권 R25 | 시간·저장 namespace·GaesupStore·플레이어·입력·자동화·내비·브리지, 건물/NPC·렌더/컬링/GPU 버퍼·장애물 등록 분리. 생활 도메인·캐릭터·장면·방·오디오·도구 버스·게임플레이 engine/registry 분리. DOM/커스텀 입력·상호작용 대상·입력 action·grass·WorldBridge·객체 store·블루프린트·카메라·NPC 정책·시네마틱/미리 보기의 종료/재시작 연결. 브라우저 게임패드 공유 폴링·아날로그 물리/시점 입력, 관찰자 구독 공유·복원 구분·지연 읽기 세대·부분 적용 취소/rollback 구현. 자동 저장/초기 로드의 월드 선택·슬롯별 공유·중복 쓰기 병합 구현 | 비동기 명령의 취소·저장 경계 검증 완료. 임의 외부 효과와 실제 USB/Bluetooth 장치 확인. 객체 영속화·core/next 엔티티 계약은 R27, 권위 명령 계약은 R30 |
+| S2 clock R26 | 순수 FixedStepClock·공유 RAF·실행 단계/순서·catch-up 예산·일시 정지/재개. NetworkBridge와 공개 WorldPhysics 연결. 30/60/144Hz에서 실제 Rapier·공개 entity의 180 tick 위치 및 표시 보간 오차 0 | NPC·게임패드 등 나머지 갱신 경로 연결, 실제 전체 시뮬레이션 동등성과 부하 성능 |
 | S2 공통 계약 | R27 엔티티 계약, R29 headless/초기화 경계, R30 command/tick 계약 미완료 | 아래 후속 순서에 따라 구현·재현 |
 | S3–S8 | 계획 유지, 통합 완료 아님 | 물리/카메라/NPC → GPU 통합 → 규모/편집/에셋 → 화질 → 전체 통합 → 네트워크/운영 권한 |
+| 미니홈피 제품 경로 | 3D·조작·인스턴싱·대기 중단·API 검사·반복 측정 구현. 아래 M1–M6에 범위와 증거 기록 | 외부 에셋·실제 아바타·모바일 실기기·코어 GPU 통합·멀티플레이 |
 
-UI의 구현 9/31·시나리오 연결 14/31·전후 기능 비교 10/31은 서로 다른 지표다. 전체 조건 검증은 0/31이다. S1의 일부 수정이나 S2의 개별 시나리오 통과를 전체 완료로 계산하지 않는다.
+UI의 구현 9/31·시나리오 연결 16/31·전후 기능 비교 13/31은 서로 다른 지표다. 전체 조건 검증은 0/31이다. S1의 일부 수정이나 S2의 개별 시나리오 통과를 전체 완료로 계산하지 않는다.
 
 현재 재현 수치는 다음과 같다.
 
@@ -186,12 +187,131 @@ NPC adapter 개선:
 - `lab-ui-2026-09-19T20-16-45-668Z/`에서 87개 원본 실행·새 비교 수치·실시간 기능 18개·JSON round-trip·IndexedDB 재접속·페이지 오류 0을 확인했다. 두 canvas와 생성 좌표·전후 수치 화면을 캡처 검토했다. 새 원본 8개는 `2026-09-20-s2-world-bridge.json`이며 공개 API 전환 전의 기능 검사와 이전 단계 원본도 보존돼 있다.
 - 별도 `test:harness`는 현재 사용자 `AGENTS.md`에 없는 과거 문구 `canonical write path`를 요구해 실패한 상태다. 사용자 지침을 변경하거나 이 실패를 통과로 계산하지 않았다.
 
+S2 복원 중 효과 수명 — 2026-09-21:
+
+- [SaveSystem](../src/core/save/core/SaveSystem.ts)에 `registerRestoreGuard()`를 추가했다. 모든 domain 준비/검증 이후, 첫 적용 이전에 들어가고 적용·롤백이 끝난 뒤 역순 해제한다. storage 읽기 동안 효과를 정지하지 않으며 잘못된 snapshot은 기존 시네마틱을 취소하지 않는다. guard 진입 실패는 적용을 차단하고 이미 들어간 guard를 해제한다. 해제 오류도 나머지 정리를 막지 않고 진단/오류로 노출한다. 해제 단계 오류가 이미 확정된 데이터를 다시 rollback하지는 않는다.
+- runtime이 시네마틱·장면 전환을 일시 중단하고 이전 SFX/지연 decode를 취소한다. 복원 중 시네마틱과 장면 이동 재진입, AudioStore/AudioEngine의 새 재생을 차단한다. 적용 또는 rollback 이후 현재 활성 세대만 재개한다. 취소한 이전 효과는 재실행하지 않는다. guard는 월드별로 등록·해제하며 반복 setup/dispose 10회에서 잔여 소유자 0이다.
+- `useAmbientBgm`의 공유 구독은 적용 중 시간·날씨 알림을 건너뛰고 최종 상태를 한 번 반영한다. 복원 중 unmount된 소유자는 나중 해제 콜백으로 다시 재생하지 않는다. 수동 BGM과 다른 월드의 소리는 유지한다. 변경은 runtime 소유 경로에 적용되며 임의 외부 콜백이나 직접 store 쓰기를 모두 트랜잭션으로 만드는 것은 아니다.
+
+| 재현 | 변경 전 → 후 | 확인 범위 |
+| --- | --- | --- |
+| `world-restore-effects` | 늦은 시네마틱 효과 1→0, 취소 누락 1→0, 재진입 장면 오류 1→0, 중간 BGM 재생 2→0, rollback 효과 오류 3→0 | 두 실제 Provider·IndexedDB·공유 BGM 훅·잘못된 snapshot·새 효과 재개·다른 월드 보존 |
+| `world-restore-audio-decode` | 이전 소리/abort 누락/다른 상태 훼손/재개 누락 각각 0 | 실제 AudioContext와 WAV 디코드를 지연시킨 뒤 복원. 수동 BGM·다른 월드 SFX 보존. 변경 전 baseline 없음 |
+
+원시 baseline은 `.artifacts/performance/2026-09-20T23-28-07-045Z/da2850c2-6ddb-4a21-bf22-3a815576507c.json`, source `e1c4c830…`이다. 수정 후 8개 관련 재현은 `2026-09-20T23-35-28-038Z/`, source `51cdd82a…`에서 통과했다. 새 candidate `381c4b86…`·`92087026…`와 baseline을 [복원 효과 번들](../examples/performance/baselines/2026-09-21-s2-restore-effects.json)에 보존했다. 이들은 기능 계수이며 CPU/GPU 성능 개선율로 계산하지 않는다.
+
+최종 전체 Jest 338개 suite·2,899개 검사 통과, 기존 suite/test 1개 skip. 새 검사 14개는 guard 순서·실패/취소·동일 함수 중복 등록·중간 해제·지연 storage 읽기·BGM/SFX·다른 월드·10회 재시작을 포함한다. 타입·ESLint·ESM/CJS/타입 빌드·publint·별도 package consumer·demo build/초기 chunk 검사 통과(`.artifacts/performance/restore-effects-*.log`). 전체 harness 문구 불일치는 이전 상태와 같으며 `verify:full` 통과로 표시하지 않는다.
+
+최종 production source `ef0fada6…`에서 새 2개와 회귀 8개 시나리오 모두 통과했다(`.artifacts/performance/2026-09-20T23-39-48-459Z/`). lab UI는 저장 실행 137개·실시간 시나리오 40개·새 전후 계수·JSON/IndexedDB 왕복·페이지 오류 0을 확인했다(`lab-ui-2026-09-20T23-39-48-441Z/`). 미니홈피 DPR 2·실제 WebGPU/WebGL fallback·장치 복구·이동/편집·PNG/GLB·저장/공유·모바일 흐름도 다시 통과했다(`.artifacts/minihome/2026-09-21-restore-effects/`).
+
 S2 후속 순서:
 
-1. **월드 데이터 소유권**: 다음은 시네마틱/장면/오디오 등 비동기 효과의 복원 경합이다. 사용자 공통 설정·읽기 전용 정의와 월드 상태를 구분한다. 날씨·달력·퀘스트·농사·도감 관찰자의 복원 구분, 이전 월드/바인딩의 지연 적용, 자동 저장/초기 로드 훅의 월드 선택·공유 수명은 수정했다. 실제 USB/Bluetooth 장치 확인은 별도로 남긴다.
-2. **실행 주체 통합**: NetworkSystem timer·NetworkBridge 알림·물리·NPC 업데이트를 월드 clock 단계에 연결한다. 표시만 보간하고 중복 소비자가 계산을 늘리지 않게 한다.
+1. **월드 데이터 소유권**: 비동기 gameplay action의 취소, 유지된 실행 context의 쓰기 차단, 복원 중 명령 재진입, 플래그·일회성 이력 저장을 연결했다. 임의 외부 효과는 await 뒤 `commitGameplayEffect(context, effect)` 또는 취소 신호 확인을 사용하는 계약이다. 외부 서비스의 이미 완료된 효과까지 rollback하는 계약과 실제 USB/Bluetooth 장치 확인은 남긴다.
+2. **실행 주체 통합**: NetworkSystem은 `postSimulation`, NetworkBridge 알림은 `publish`에 연결했다. 다음은 물리·NPC의 기존 프레임 루프 통합이다. 표시만 보간하고 중복 소비자가 계산을 늘리지 않게 한다.
 3. **공통 계약**: core/next 엔티티·transform revision, command sequence·권위 tick·snapshot revision을 정의하고 동일 입력 재생으로 검증한다. 자동 event trigger·flag/실행 이력 저장·부분 효과의 원자성도 R30에서 다룬다.
 4. **초기화·패키지 경계**: 내부 루트 import 순환과 import 시 전역 초기화를 제거하고 명시적 world 생성·headless smoke·초기 로드 bytes를 검증한다. R25/R26은 전체 조건이 끝날 때까지 일부 구현으로 표시한다.
+
+### 미니홈피 3D·공개 API·성능 검증 — 2026-09-21
+
+추가 제품 범위는 실제 `examples/minihome`의 렌더링·조작·저장/공유 흐름과 공개 API 검증이다. 미니홈피의 제품 개선을 기존 31개 코어 요구사항 전체 완료로 계산하지 않는다. 별도 결과 보고서 대신 이 PRD와 `/performance`의 원시 실행을 갱신한다.
+
+| 순서 | 작업·현재 상태 | 재현·완료 조건 |
+| --- | --- | --- |
+| M1 정확성·수명 | 구현: 공개 SceneRuntime의 계층/world transform·scale·enabled 반영, 가구 인스턴싱, 변경 시 렌더링, 화면 비활성/종료 시 중단. 드래그는 미리 보기 후 한 번만 명령으로 확정하며 취소·revision 충돌을 처리 | `minihome-lifecycle`, 배치/RAF 단위 검사, 실제 편집·실행 취소·종료 검사 |
+| M2 3D·조작 품질 | 구현: 모서리 형상·재질·ACES 조명, 낮/저녁, 그림자·DPR 3단계, 카메라 3종·모바일 제스처·키보드, 장애물 회피 이동, PNG·GLB·전체 화면·복구 | 실제 WebGPU/WebGL2, DPR 2, 데스크톱/모바일, 장치 손실 후 새 canvas 복구 |
+| M3 공개 API 활용·검사 | 구현: 렌더러·SceneRuntime·NavigationSystem을 제품 경로에 연결. 별도 fixture에서 11개 계약, 라이브러리 56개·예제 7개 명명된 호출 경로 검사 | 미니룸의 `API·성능` → `API 기능 검사 실행`, `/performance`의 `minihome-api`. 현재 방·브라우저 저장을 바꾸지 않고 실제 반환값/상태 검사 |
+| M4 부하·반복 측정 | 구현: 실제 미니룸 엔진의 1~1,000개 가구, 크기·DPR·backend·예열/측정 시간 설정, 원시 표본·전후 비교·JSON 보존 | `minihome-rendering`. 정식 측정은 같은 기기·브라우저·설정에서 각각 3회, 회당 10초 예열·30초 측정 |
+| M5 다음 제품 통합 | 대기: 외부 GLB/텍스처의 공통 로더·캐시/해제, 실제 아바타 애니메이션·편집 도구 확대, 코어 GPU 경로와 계약 통합 | S3/S4/S5와 연결. 자산 교체/반복 방문의 메모리 안정화, picking·카메라·저장 round-trip, 실제 모바일 GPU 비교 |
+| M6 네트워크 준비·통합 | S2 계약/S8 순서 유지: document 명령·안정 ID·revision·snapshot을 권위 서버·다중 사용자 입력·재접속과 연결 | 실제 두 클라이언트, 권한·중복/stale 명령·복원·공유 충돌·대역폭 검증 후 승인 |
+
+실제 제품의 [roomEngine.ts](../examples/minihome/roomEngine.ts), [roomBatches.ts](../examples/minihome/roomBatches.ts), [demandLoop.ts](../examples/minihome/demandLoop.ts)를 사용한다. 부하 검사에 별도 모사 렌더러를 두지 않는다. 내비게이션은 공개 `NavigationSystem`의 장애물 grid·경로 탐색을 사용하고 월드 종료 시 해제한다. GLB는 공유 GPU 배치 버퍼 대신 논리 장면의 일반 mesh를 내보낸다.
+
+품질 변경 중 WebGPU가 이미 폐기된 `ShadowDepthTexture`를 제출하는 오류를 실제로 재현했다. 그림자 크기를 제자리에서 바꾸는 대신 light/shadow 소유 객체를 교체하고 다음 제출 후 이전 자원을 해제했다. 이후 3개 품질 전환·DPR 2·내보내기에서 GPU validation 오류가 없어졌다. Three.js의 [attachment view 캐시 관련 이슈](https://github.com/mrdoob/three.js/issues/34301)와 유사한 증상이며, 이슈의 모든 원인이 본 프로젝트와 동일하다고 단정하지 않는다.
+
+API 검사는 [apiChecks.ts](../examples/minihome/apiChecks.ts)에서 장면 생성/직렬화/명령·revision 충돌·계층/쿼리·SaveSystem·Unity 왕복·독립 runtime/plugin·고정 tick·경로 탐색·편집 이력·공유 개인정보를 확인한다. 56개는 중복을 제거한 공개 함수/메서드 경로 수이며, 패키지 전체 API 통과율이나 네트워크 통합 완료율이 아니다. `API·성능` 화면에서 검사별 실제 사용 API와 실패 원인을 펼쳐 볼 수 있다.
+
+정식 미니룸 A/B: 가구 40개, 960×540, DPR 1, WebGPU NVIDIA/Blackwell, Chrome 153. 환경·설정·의존성·호스트 식별값 일치. 개선 전 5,386프레임, 개선 후 5,400프레임이다.
+
+| 지표 | 개선 전 | 개선 후 | 해석 |
+| --- | --- | --- | --- |
+| draw call / 프레임 | 623 | 75 | 88.0% 감소. 프레임 reset 이후 모든 pass 합계 |
+| CPU render 제출 p95, 3회 중앙값 | 4.5ms (4.0~5.1) | 1.2ms (1.0~1.2) | 73.3% 감소. GPU 실행 시간은 별도이며 현재 미수집 |
+| 프레임 간격 p95, 3회 중앙값 | 23.4ms (18.8~26.3) | 17.0ms (17.0~17.1) | p50은 양쪽 약 16.7ms. 60Hz 제한에서 FPS 배수 개선으로 환산하지 않음 |
+| 대기 중 RAF callback / 표시 30프레임 | 30 | 0 | draw는 양쪽 0. 렌더뿐 아니라 대기 루프도 중단 |
+| disabled 가구 표시 불일치 | 1 | 0 | 실제 SceneDocument 명령 이후 투영 검사 |
+| API 계약 검사 | 기존 없음 | 11/11 통과 | 라이브러리 56개·예제 7개 호출 경로 |
+
+동일한 입력 장면·가구 수의 제품 경로 전체 비교다. 올바른 scale 반영, 형상/조명 변경, 인스턴싱, 정적 그림자 재사용이 함께 적용되었으므로 한 가지 최적화만의 기여도나 동일 픽셀 화질 비교라고 해석하지 않는다. 전체 renderer triangles는 54,281→46,245이며, renderer가 집계한 할당 bytes는 약 14.73→14.91MB다. 이 값은 총 VRAM이 아니다. 저사양/모바일 실기기 및 GPU timestamp 검증은 후속 범위다.
+
+원시 증거는 `.artifacts/performance/2026-09-20T16-05-44-315Z`(이전 기능/진단), `2026-09-20T16-06-06-023Z`(이전 정식 3회), `2026-09-20T16-41-25-387Z`(이후 기능/진단), `2026-09-20T23-14-11-346Z`(이후 정식 3회)에 보존한다. 디렉터리 시각은 UTC다. 이전 source hash `e7fcd357…`, 이후 `fbdb2500…`이며, 11개 실행·2개 전체 source manifest를 [미니홈피 번들](../examples/performance/baselines/2026-09-21-minihome.json)에 보존한다.
+
+추가 짧은 진단에서 WebGPU 가구 6/200/1,000개 모두 draw 75·오류 0, WebGL 가구 40개 draw 74·대기 callback 0을 확인했다. 각각 250ms 예열·1.5초 측정이므로 정식 성능 회귀 판정에 합치지 않는다. 원시 기록은 `.artifacts/performance/2026-09-20T23-16-39-586Z`, `23-16-45-325Z`, `23-16-50-992Z`, `23-16-56-978Z`에 있다.
+
+재현 명령:
+
+```sh
+node scripts/performance/probe.mjs --url http://127.0.0.1:5191/performance --scenario minihome-api,minihome-lifecycle,minihome-rendering --count 40 --role candidate
+node scripts/performance/probe.mjs --url http://127.0.0.1:5191/performance --scenario minihome-rendering --count 40 --role candidate --benchmark --repeat 3
+node scripts/probe-minihome.cjs
+```
+
+브라우저 제품 검사는 `GAESUP_PROBE_URL`, `GAESUP_PROBE_OUTPUT`, `GAESUP_PROBE_DPR` 환경 변수로 URL·증거 경로·DPR을 지정한다. 회귀 검증은 TypeScript·ESLint, Jest 336개 suite/2,885개 검사 통과(기존 1개 skip), demo build/초기 chunk 검사와 실제 브라우저 흐름을 구분한다. 기존 harness의 `AGENTS.md` 문구 요구 불일치 때문에 전체 `verify:full` 통과를 주장하지 않는다.
+
+최종 번들을 포함한 production demo에서도 다음을 확인했다.
+
+- 미니홈피 전체 브라우저 흐름 통과: WebGPU·DPR 2, WebGL2 fallback/장치 손실 후 재시도, 카메라·이동·품질/조명·PNG·GLB·전체 화면·드래그 취소, 저장/복원·undo/redo·Unity·공유·개인 기록 보존·quota/손상 파일·모바일 overflow 없음. GLB validator 오류 0, 브라우저/GPU 오류 0. `.artifacts/minihome/2026-09-21-production-integrated/`에 화면과 결과 보존.
+- `/performance` UI에서 저장 실행 134개, 미니룸 전후 draw 623→75·대기 callback 30→0, 실시간 시나리오 38개 통과, JSON 내보내기/새 context 불러오기/IndexedDB 재로드 일치. 증거: `.artifacts/performance/lab-ui-2026-09-20T23-19-39-947Z/`.
+- 최종 source `4fa283c8…`로 미니홈피 3개 시나리오 재실행 통과. `.artifacts/performance/2026-09-20T23-20-42-171Z/`. 정식 측정 source와의 차이는 측정 번들 JSON·해당 import뿐이며 렌더링 코드가 동일하다. 이 짧은 재검사를 정식 측정 반복 수에 합치지 않는다.
+- 최종 demo build, TypeScript, ESLint, demo 초기 chunk 검증 통과. 초기 정적 JavaScript는 6개 chunk·196,511 bytes이며 3D 엔진은 지연 로드된다. 테스트/검증 로그는 `.artifacts/performance/minihome-*-integrated.log`에 보존.
+
+### 공간 검색·카메라 충돌 — 2026-09-21 후속
+
+R04는 중심점 검색과 world-space AABB 인덱스를 분리했다. 최근접 광선·최대 거리·큰 경계 상자·갱신/삭제와 극단 반경의 유한 작업량을 검사한다. R05는 장면의 렌더 여부와 무관하게 신규 메시를 조회하고, 이전 반환 위치를 보존하며, 구와 삼각형의 연속 충돌로 반경을 적용한다. 명시적으로 제외한 아바타 subtree는 유지한다. instance/batch/skinning/morph를 실제 Three 객체로 검증한다.
+
+`spatial-query`와 `camera-obstacles`의 기존 오류는 native WebGPU 반복 실행에서 해소했다. 추가 `spatial-scale`과 `camera-radius`는 CPU 질의 정확성·규모 비용을 기록한다. 1만 객체의 선형 기준 대조와 1만 메시 카메라 질의는 [실행 기록](prd-execution-2026-09.md)에 raw 경로·source hash·측정 한계를 남겼다. 전체 컨트롤러 경로, 복잡 장면·실기기·peer 조합과 정식 성능 예산은 남아 있어 R04/R05를 `working`으로 유지한다.
+
+구 충돌의 면·모서리·꼭짓점 분해는 [Fauerby의 원문](https://peroxide.dk/papers/collision/collision.pdf)을 참고했으며, 구현의 정확성은 독립적인 거리 최소화 기준과 실제 메시 회귀 검사로 대조한다.
+
+### 비동기 명령 복원·네트워크 clock — 2026-09-21 재개
+
+R02/R25의 기존 진행 중 코드를 검증하고 회귀 검사를 보강했다. 복원은 게임 명령 세대를 취소하고 아직 끝나지 않은 사용자 Promise와 관계없이 dispatch 호출을 종료한다. 이전 context의 플래그/실행 이력 쓰기와 뒤따르는 action을 차단하고, 플래그·일회성 이력을 저장·복원한다. 검증되지 않은 snapshot은 실행 중인 명령을 취소하지 않으며, 적용 실패 시 기존 상태를 rollback한 뒤 새 명령을 받을 수 있다. 동기 action 사이의 불필요한 microtask도 제거했다.
+
+- `world-gameplay-restore`: 미종료 호출 1→0, 늦은 보상 1→0, 늦은 플래그 2→0, 복원 중 재진입 보상 1→0, 저장 상태 불일치 2→0, 일회성 정책 불일치 1→0. 다른 월드의 실행은 유지한다.
+- `gameplay-command-order`: 동기 action 중간 상태를 노출하는 microtask 1→0.
+- 실제 명령 1,000개×8 action의 10초 예열·30초 측정 3회: baseline 중앙값 0.8/0.7/0.7ms, candidate 0.7/0.8/0.7ms. 각 중앙값의 중앙값이 약 0.7ms로 같으므로 속도 개선을 주장하지 않는다. 기준 5쌍의 정식 성능 인수도 아니다. 원시 기록은 [gameplay 번들](../examples/performance/baselines/2026-09-21-s2-gameplay-commands.json)에 보존한다.
+
+R25/R26의 네트워크는 runtime이 지연 생성한 전용 `networkBridge`를 소유한다. NetworkSystem의 단독 타이머를 월드 고정 clock 등록으로 대체하고, 공유 소비자는 하나의 갱신/알림 등록과 RAF를 사용한다. 계산 뒤에만 알림을 발행하며, 변경하지 않은 updateFrequency 재적용이 갱신을 계속 미루지 않게 했다. 오래된 시간 기반 snapshot 캐시를 제거하고 현재 tick의 객체·연결 수를 반영한다. 기본 설정은 60 tick 중 30회 갱신하며, 설정 빈도가 clock 빈도를 넘으면 tick당 1회로 제한한다.
+
+- `world-network-clock`: 두 월드의 같은 systemId 공유 1→0, 기존 clock 미연결 0회→초당 30회 갱신/알림. 30/60/144Hz와 소비자 1/2개 조합을 검사한다. 종료 후 엔진 잔존 1→0, 이전 bridge 재사용 1→0.
+- `world-network-consumers`: 실제 Provider·공개 훅을 두 월드에 연결해 월드별 RAF 1개, 초당 갱신/알림 30회, 개별 종료·재시작, 최종 RAF 잔여 0을 브라우저에서 확인했다. React 재시작 수명은 별도 단위 검사에서 10회 반복했다.
+- 비교 원본과 source manifest는 [network clock 번들](../examples/performance/baselines/2026-09-21-s2-network-clock.json)에 보존한다. 최종 dev 실행은 `.artifacts/performance/2026-09-21T13-37-51-663Z/`의 6개 시나리오 모두 통과, page errors 0이다.
+
+검증 범위:
+
+- 개발 화면과 production build 화면에서 각각 실시간 시나리오 44개, 전후 수치 표시, JSON 내보내기/불러오기, 새 브라우저의 IndexedDB 복원, page errors 0을 확인했다. 캡처: `.artifacts/performance/lab-ui-2026-09-21T13-48-45-142Z/`, `.artifacts/performance/lab-ui-2026-09-21T13-51-07-712Z/`.
+- 일반 Jest 345 suite/2,957 tests, 메모리 5 suite/88 tests 통과. 이전부터 제외된 suite/test 1개는 유지한다. 새 회귀는 지연 Promise 취소·실패, 보존 context, 잘못된 저장 데이터, rollback, 실제 네트워크 훅, Provider 교체, 반복 종료/재시작과 재등록된 엔진을 포함한다.
+- ESM/CJS/타입 build·publint·fresh tarball consumer 통과. 설치한 ESM/CJS 패키지에서도 60 tick→네트워크 30회와 플래그·일회성 이력 복원을 검사한다. 패키지 파일 목록은 소비자 문서를 명시해 작업 기록이 npm tarball에 들어가지 않게 했다.
+- Node 기반 방 서버 검사는 `test:minihome:service`로 전체 verify에 포함하고 Jest 수집과 분리했다. 미니홈피 수명 검사에 남아 있던 가구 6개 고정 가정을 없앴다. 타일·가구 12종·Bloom으로 부하 구성이 바뀐 미니홈피 시나리오는 v2로 올려 이전 장면의 성능 비교와 구분한다.
+- `test:demo`의 초기 정적 JavaScript는 6개 chunk·196,542 bytes이며 3D 엔진 지연 로드를 확인했다.
+- 전체 `verify:full`은 `.tmp/prd-resume-all-final.log`에서 통과했다. 이후 같은 설정 재적용의 불필요한 알림을 차단하고 실제 훅 15개 집중 검사·타입·lint·재빌드·publint·설치 소비자를 다시 통과했다(`.tmp/prd-network-clock-config.log`, `.tmp/prd-resume-last-consumer.log`). 최종 production source `940b0e38…`의 관련 8개 시나리오도 모두 통과했다(`.artifacts/performance/2026-09-21T13-56-25-038Z/`).
+
+네트워크 갱신 주기·소유권을 검증한 단계다. 아래 물리 후속을 포함해도 NPC의 전체 clock 통합, 네트워크 내부 wall-clock timestamp의 재생 계약, core/next 엔티티 계약, 권위 명령·부분 외부 효과의 원자성은 남아 있다. 따라서 R25/R26과 S2는 `working`으로 유지한다.
+
+### 2026-09-21 후속: 실제 물리 고정 tick과 표시 보간
+
+[WorldPhysics](world-physics-clock.md)를 추가해 공개 `PhysicsEntity`의 조작·접지 계산을 `simulation`, Rapier의 공개 수동 step을 `physics` 단계에 연결했다. 여러 물리 장면도 runtime의 공유 clock lease를 사용한다. multiplayer 화면·blueprint preview·NPC 편집 preview에 적용했다. 원본 Rapier Physics를 직접 사용하는 소비자의 기존 경로는 유지한다.
+
+물리 자세와 표시 자세를 분리했다. `PhysicsEntity`와 `useWorldPhysicsInterpolation`이 연결된 시각 group은 이전/현재 물리 tick을 보간하며 collider와 Rapier 위치는 변경하지 않는다. 부모의 이동·회전·스케일, teleport, 제거된 Rapier body의 지연 cleanup을 검사한다. 일시정지·종료·재시작·다른 월드 종료와 다중 물리 소비자도 회귀 검사에 포함한다.
+
+- 새 `world-physics-clock`: 30/60/144Hz 각각 실제 Rapier 180 step, 전체 tick 위치 기록 차이 0, 화면 보간 오차 0. 이동·점프·착지·종료 후 step 차단·최종 등록 해제도 통과했다.
+- WebGL 실행: `.artifacts/performance/2026-09-21T14-24-45-391Z/`. 새 시나리오와 기존 접지·게임패드 물리·NPC 프레임 소유권 4개가 모두 통과했다.
+- 네이티브 WebGPU 실행: `.artifacts/performance/2026-09-21T14-26-03-778Z/`. 실제 NVIDIA 어댑터에서 같은 위치·보간 오차 0을 확인했다.
+- 새 시나리오의 원시 실행 2개와 source manifest 2개는 [물리 clock 번들](../examples/performance/baselines/2026-09-21-s2-physics-clock.json)에 보존한다. 기존 시나리오 회귀 3개는 위 원시 artifact에 유지한다. 단위 `world`를 lab 저장·복원·표시에 추가했다.
+- 초기 브라우저 검사에서 거리 단위의 parser 누락과 R3F의 지연 unmount를 확인해 수정했다. 실패 기록도 `.artifacts/performance/2026-09-21T14-20-09-933Z/`, `2026-09-21T14-21-15-636Z/`에 남겼다.
+- 전체 `verify:full` 통과: 일반 Jest 347 suite/2,965 tests, 메모리 5 suite/88 tests, lint·build·publint·설치 ESM/CJS 소비자·demo 검사를 포함한다(`.tmp/prd-physics-verify-full.log`). 기존 제외 suite/test 1개는 유지한다. 초기 정적 JavaScript는 6 chunk·196,619 bytes다.
+- 개발/production UI 각각 45개 실시간 시나리오·전후 표시·JSON·IndexedDB 복원 통과, page errors 0. 기록: `.artifacts/performance/lab-ui-2026-09-21T14-30-52-610Z/`, `lab-ui-2026-09-21T14-32-00-149Z/`. 최종 번들은 181개 실행을 포함한다. 호환 baseline이 없는 별도 backend 회귀 실행을 기존 비교 번들에 섞으면 미측정으로 표시됨을 확인했고, 새 physics 시나리오 2개만 해당 번들에 포함했다.
+
+고정 tick의 기능 동등성 증거이며 FPS 개선이나 전체 R26 인수는 아니다. NPC의 이동·판단은 아직 시각 컴포넌트 수명과 렌더 프레임에서 분리해야 한다. 게임패드 폴링, 모든 입력의 tick 기록/재생, 전체 장면 부하 성능도 남아 있다.
 
 ## 1. 목표와 범위
 
@@ -217,7 +337,7 @@ S2 후속 순서:
 | 일반 월드 GPU 배치 | 구현 존재. 재질 동기화·다중 카메라·버전 의존 문제 확인 | R06, R13, R17, R27 |
 | TRAA/GTAO | 구현 존재. 합성 순서·변형 motion vector·history 수명 개선 필요 | R15, R16 |
 | `/engine` example | CPU/GPU/all 모드와 frameMs, cullMs, drawCalls 등 표시 존재 | 측정 의미 검증, p50/p95, 저장된 전후 비교, 감사 시나리오 확장 |
-| 브라우저 검증 | `/performance` 시나리오 46개, 원본 실행 109개. dev·배포 examples와 probe가 같은 시나리오를 사용 | 일반 월드/editor 통합, 지원 조합·수명 반복 확대 |
+| 브라우저 검증 | `/performance` 시나리오 69개, 원본 실행 179개. dev·배포 examples와 probe가 같은 시나리오를 사용 | 일반 월드/editor 통합, 지원 조합·수명 반복 확대 |
 | 성능 개선 완료 판정 | 감사 지적 31개 중 본 PRD의 examples·수치 기준을 충족한 항목 0개 | 기능 구현률과 혼동하지 않는다. 기존 구현을 없던 것으로 계산하는 수치가 아니다. |
 | 공식 성능 baseline | 네이티브 WebGPU에서 10초 예열·30초 측정 5회, 총 9,000프레임 기록 | 다양한 부하와 변경 후 5쌍 A/B 필요. 제공되지 않는 GPU 시간·메모리는 미측정 유지 |
 
@@ -290,7 +410,7 @@ S7은 R12·R30의 후속 운영 구현까지 완료했다는 뜻이 아니다. �
 | --- | --- | --- | --- | --- | --- |
 | R01 | 안정적인 selector: [시간](../src/core/time/hooks/useGameTime.ts), [인벤토리](../src/core/inventory/hooks/useInventory.ts) | 재현 | S1 | state-hooks | 상태 미변경 안정화 후 render 증가 0, snapshot 경고 0 |
 | R02 | 원자적 저장 복원: [SaveSystem](../src/core/save/core/SaveSystem.ts) | 재현 | S1 | save-transaction | 중간 도메인 실패 시 모든 도메인 이전 상태 유지, 부분 적용 0 |
-| R03 | 실제 접지 정보: [PhysicsSystem](../src/core/motions/core/system/PhysicsSystem.ts) | 로직 재현 | S3 | locomotion | 정상·고지대 발판 landing 후 접지, 공중 오접지 0, 점프·경사 통과 |
+| R03 | 실제 접지 정보: [PhysicsSystem](../src/core/motions/core/system/PhysicsSystem.ts), [연결 계약](physics-grounding.md) | 실제 Rapier·공개 entity 경로 일부 검증, working | S3 | locomotion / entity-grounding | 정상·고지대 발판 landing 후 접지, 공중 오접지 0, 점프·경사 통과 |
 | R04 | 최근접 ray·큰 AABB: [WorldSystem](../src/core/world/core/WorldSystem.ts) | 재현 | S3 | spatial-query | 최근접 오선택 0, 범위 밖 hit 0, 큰 AABB 충돌 누락 0 |
 | R05 | 카메라 bounds·결과 소유권·반경: [camera](../src/core/camera/utils/camera.ts) | 재현 | S3 | camera-obstacles | 신규 장애물 누락 0, 이전 반환값 변조 0, 반경 침투 0 |
 | R06 | GPU 재질 동기화: [GpuBatchBridge](../src/core/rendering/GpuBatchBridge.tsx) | 네이티브 WebGPU 재현 | S1/S4 | gpu-material | 색·roughness·opacity 변경 후 원본/표시 불일치 0, 불필요한 pipeline 재생성 계측 |

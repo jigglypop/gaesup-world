@@ -25,7 +25,7 @@ export const DEFAULT_CONFIG: LabConfig = {
 };
 
 export type Assertion = { id: string; expected: string | number | boolean; actual: string | number | boolean; pass: boolean };
-export type Metric = { unit: 'ms' | 'count' | 'bytes' | 'world/s'; scope: string; samples: number[]; p50: number | null; p95: number | null; p99: number | null };
+export type Metric = { unit: 'ms' | 'count' | 'bytes' | 'world' | 'world/s'; scope: string; samples: number[]; p50: number | null; p95: number | null; p99: number | null };
 export type RunEnvironment = {
   userAgent: string;
   hardwareConcurrency: number;
@@ -134,7 +134,7 @@ export function parseRun(value: unknown): LabRun {
   if (!record(value['metrics'])) throw new Error('잘못된 metrics');
   const metrics: Record<string, Metric> = {};
   for (const [name, metric] of Object.entries(value['metrics'])) {
-    if (!record(metric) || !['ms', 'count', 'bytes', 'world/s'].includes(String(metric['unit'])) || typeof metric['scope'] !== 'string' || !Array.isArray(metric['samples']) || metric['samples'].length > 100000 || !metric['samples'].every(finite)) throw new Error(`잘못된 metric: ${name}`);
+    if (!record(metric) || !['ms', 'count', 'bytes', 'world', 'world/s'].includes(String(metric['unit'])) || typeof metric['scope'] !== 'string' || !Array.isArray(metric['samples']) || metric['samples'].length > 100000 || !metric['samples'].every(finite)) throw new Error(`잘못된 metric: ${name}`);
     metrics[name] = summarize(metric['samples'], metric['unit'] as Metric['unit'], metric['scope']);
   }
   const result = { ...value, metrics, environment: { ...env, browserFlags: env['browserFlags'] ?? null } } as LabRun;

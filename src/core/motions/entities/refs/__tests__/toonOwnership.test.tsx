@@ -57,6 +57,7 @@ jest.mock('@react-three/fiber', () => ({
 jest.mock('@react-three/rapier', () => {
   const three = jest.requireActual<typeof import('three')>('three');
   return {
+    useRapier: () => ({ world: {} }),
     CapsuleCollider: () => null,
     RigidBody: ({ children }: { children?: ReactNode }) => children ?? null,
     euler: () => new three.Euler(),

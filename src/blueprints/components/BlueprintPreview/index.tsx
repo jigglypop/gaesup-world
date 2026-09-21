@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 
 import { Environment } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { Physics, RigidBody, euler } from "@react-three/rapier";
+import { RigidBody, euler } from "@react-three/rapier";
 import * as THREE from 'three';
 
 import { Grid } from '@/core/rendering/legacyDrei';
@@ -20,6 +20,7 @@ import {
 import { CAMERA_CONTROLLER_DEFAULT_MODES } from '../../../core/camera/components/CameraController/defaults';
 import { GamePad } from '../../../core/interactions/components/Gamepad';
 import { useGaesupStoreApi } from '../../../core/stores/gaesupStore';
+import { WorldPhysics } from '../../../core/world/components/WorldPhysics';
 import { getBlueprintModelUrl } from '../../model';
 import { AnyBlueprint, CharacterBlueprint } from '../../types';
 
@@ -181,7 +182,7 @@ function CharacterBlueprintPreview({ blueprint, modelUrl }: { blueprint: Charact
           shadow-camera-left={-90}
         />
         
-        <Physics debug={false} gravity={[0, -9.81, 0]}>
+        <WorldPhysics debug={false} gravity={[0, -9.81, 0]}>
           {blueprint && mode?.type === 'character' && (
             <GaesupController
               enableKeyboard={enableKeyboard}
@@ -233,7 +234,7 @@ function CharacterBlueprintPreview({ blueprint, modelUrl }: { blueprint: Charact
             followCamera={false}
             userData={{ intangible: true }}
           />
-        </Physics>
+        </WorldPhysics>
       </Canvas>
       {enableGamepad && <div className="blueprint-preview__gamepad" role="group" aria-label="화면 조작 버튼"><GamePad /></div>}
       

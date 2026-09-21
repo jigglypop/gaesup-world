@@ -58,3 +58,4 @@ __pycache__/
 # Local performance runs (approved baseline summaries remain versioned).
 .artifacts/performance/
 .artifacts/minihome/
+.artifacts/release/

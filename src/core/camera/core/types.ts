@@ -188,12 +188,15 @@ export interface ICameraController {
 
 export interface Obstacle {
   object: THREE.Mesh;
+  /** World-space distance from the query origin to the surface contact point. */
   distance: number;
+  /** Caller-owned contact point, unchanged by subsequent queries. */
   point: THREE.Vector3;
 }
 
 export interface CollisionCheckResult {
   safe: boolean;
+  /** Caller-owned camera center; includes the requested collision radius. */
   position: THREE.Vector3;
   obstacles: Obstacle[];
 }

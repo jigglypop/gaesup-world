@@ -1,5 +1,6 @@
 export { GameplayEventEngine } from './engine';
 export type { GameplayEventEngineOptions } from './engine';
+export { commitGameplayEffect } from './execution';
 export type { GameplayEventDependencies } from './registry';
 export {
   GameplayEventRegistry,
@@ -28,6 +29,7 @@ export type {
   GameplayEventId,
   GameplayEventPolicy,
   GameplayEventRuntimeState,
+  GameplayEventSerialized,
   GameplayEventTrigger,
   GameplayTriggerEvent,
 } from './types';

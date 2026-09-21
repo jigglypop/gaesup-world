@@ -1,4 +1,4 @@
-import { getAudioEngine } from '../core/AudioEngine';
+import { createAudioEngine, getAudioEngine } from '../core/AudioEngine';
 
 const parameter = () => ({ value: 1, setValueAtTime: jest.fn(), linearRampToValueAtTime: jest.fn(), exponentialRampToValueAtTime: jest.fn() });
 const gain = () => ({ gain: parameter(), connect: jest.fn(), disconnect: jest.fn() });
@@ -91,5 +91,26 @@ describe('AudioEngine source and request ownership', () => {
     expect(nodes).toHaveLength(0);
     expect(engine.ensure()).toBe(true);
     expect(window.AudioContext).toHaveBeenCalledTimes(2);
+  });
+
+  it('cancels active and decoding gameplay sounds while preserving the current music', async () => {
+    engine.playBgm({ id: 'music', intervalMs: 10000 });
+    engine.playSfx({ id: 'active' });
+    let finish!: (buffer: object) => void;
+    context.decodeAudioData.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    engine.playSfx({ id: 'pending', url: '/effect.wav' }); await settle();
+    engine.cancelSfx(); finish({}); await settle();
+    expect(nodes).toHaveLength(2); expect(nodes[0]!.disconnect).not.toHaveBeenCalled();
+    expect(nodes[1]!.disconnect).toHaveBeenCalledTimes(1); expect(engine.getCurrentBgmId()).toBe('music');
+  });
+
+  it('a world playback guard rejects SFX and BGM replacement without destroying current music', async () => {
+    let allowed = true; const guarded = createAudioEngine({ canPlay: () => allowed });
+    try {
+      guarded.playBgm({ id: 'manual', intervalMs: 10000 }); allowed = false;
+      guarded.playBgm({ id: 'reentrant' }); guarded.playSfx({ id: 'reentrant' });
+      expect(nodes).toHaveLength(1); expect(guarded.getCurrentBgmId()).toBe('manual');
+      allowed = true; guarded.playSfx({ id: 'fresh' }); expect(nodes).toHaveLength(2);
+    } finally { await guarded.dispose(); }
   });
 });

@@ -1,11 +1,13 @@
 import { createSceneDocument, createSceneObject, parseSceneDocument } from 'gaesup-world';
 import type { SceneObject } from 'gaesup-world';
 
+import { DEFAULT_ROOM_SETTINGS, type RoomSettings } from './roomTypes';
+import { createTerrain, isTerrain, WORLD_HALF } from './terrain';
 import { FURNITURE } from './types';
 import type { FurnitureKind, HomeNote, MinihomeData } from './types';
 
 export const STORAGE_KEY = 'gaesup.minihome.v1';
-export const MAX_FURNITURE = 40;
+export const MAX_FURNITURE = 160;
 
 export function furnitureKind(object: SceneObject): FurnitureKind | null {
   const kind = object.components.find((component) => component.type === 'miniroom.furniture')?.data[
@@ -21,7 +23,7 @@ export function makeFurniture(kind: FurnitureKind, x = 0, z = 1, id: string = cr
     id,
     name: FURNITURE[kind].name,
     transform: { position: [x, 0, z] },
-    components: [{ id: `${id}-appearance`, type: 'miniroom.furniture', data: { kind } }],
+    components: [{ id: `${id}-appearance`, type: 'miniroom.furniture', data: { kind, bloom: kind === 'lamp' || kind === 'neon' || kind === 'arcade', emissiveIntensity: 3 } }],
   });
 }
 
@@ -35,16 +37,34 @@ export function createMinihome(): MinihomeData {
       mood: '소소한 행복',
     },
     theme: 'peach',
+    roomSettings: { ...DEFAULT_ROOM_SETTINGS },
+    terrain: createTerrain(),
     room: createSceneDocument({
       id: 'my-miniroom',
-      name: '햇살이 머무는 방',
+      name: '개숲 타운',
       objects: [
-        makeFurniture('sofa', -1.8, -1.7, 'sofa-1'),
-        makeFurniture('table', -1.1, 0.1, 'table-1'),
-        makeFurniture('plant', 3.1, -2.7, 'plant-1'),
-        makeFurniture('shelf', 1.7, -3.1, 'shelf-1'),
-        makeFurniture('lamp', -3.1, -2.6, 'lamp-1'),
-        makeFurniture('cushion', 1.5, 1.7, 'cushion-1'),
+        makeFurniture('sofa', -7, -7, 'sofa-1'),
+        makeFurniture('table', -7, -5.4, 'table-1'),
+        makeFurniture('plant', -9.5, -6, 'plant-1'),
+        makeFurniture('shelf', -9, -9, 'shelf-1'),
+        makeFurniture('lamp', -4.5, -8, 'lamp-1'),
+        makeFurniture('cushion', -5, -5, 'cushion-1'),
+        makeFurniture('desk', 5.5, -6, 'desk-1'),
+        makeFurniture('desk', 8, -6, 'desk-2'),
+        makeFurniture('arcade', 7, -9, 'arcade-1'),
+        makeFurniture('plant', 4, -9, 'plant-2'),
+        makeFurniture('neon', 1, -3, 'neon-1'),
+        makeFurniture('fountain', -2, -2, 'fountain-1'),
+        makeFurniture('bench', 2, 2, 'bench-1'),
+        makeFurniture('bench', -3, 2, 'bench-2'),
+        makeFurniture('lamp', 3, -2, 'lamp-2'),
+        makeFurniture('tree', -10, 7, 'tree-1'),
+        makeFurniture('tree', -7, 10, 'tree-2'),
+        makeFurniture('tree', -9, 3, 'tree-3'),
+        makeFurniture('tree', 10, -10, 'tree-4'),
+        makeFurniture('tree', 5, 9, 'tree-5'),
+        makeFurniture('bench', -7, 6, 'bench-snow'),
+        makeFurniture('cushion', 7, 5, 'beach-seat'),
       ],
     }),
     diary: [],
@@ -78,6 +98,23 @@ export function parseMinihome(raw: string): MinihomeData | null {
     const data: unknown = JSON.parse(raw);
     if (!isRecord(data) || data['version'] !== 1 || !isRecord(data['profile'])) return null;
     const profile = data['profile'];
+    // Version 1 saves and shared links created before room settings remain readable.
+    const settings = data['roomSettings'] === undefined ? DEFAULT_ROOM_SETTINGS : data['roomSettings'];
+    if (!isRecord(settings) || !['economy', 'balanced', 'high'].includes(String(settings['quality'])) ||
+      !['day', 'evening'].includes(String(settings['lighting'])) ||
+      !['isometric', 'front', 'top', 'back', 'left', 'right', 'follow'].includes(String(settings['camera'])) ||
+      settings['avatar'] !== undefined && !['classic', 'coral', 'blue', 'mint'].includes(String(settings['avatar']))) return null;
+    if (settings['sound'] !== undefined && !['calm', 'bright'].includes(String(settings['sound']))) return null;
+    const volume = settings['volume'] === undefined ? DEFAULT_ROOM_SETTINGS.volume : settings['volume'];
+    if (typeof volume !== 'number' || !Number.isFinite(volume) || volume < 0 || volume > 1) return null;
+    const resolved = { ...DEFAULT_ROOM_SETTINGS, ...settings, volume };
+    if (!['orthographic', 'perspective'].includes(String(resolved.projection))) return null;
+    for (const key of ['pan', 'rotate', 'damping', 'bloom'] as const) if (typeof resolved[key] !== 'boolean') return null;
+    for (const [key, min, max] of [['moveSpeed', 1, 8], ['bloomStrength', 0, 2], ['bloomRadius', 0, 1], ['bloomThreshold', 0, 3]] as const) {
+      if (typeof resolved[key] !== 'number' || !Number.isFinite(resolved[key]) || resolved[key] < min || resolved[key] > max) return null;
+    }
+    const terrain = data['terrain'] === undefined ? createTerrain() : data['terrain'];
+    if (!isTerrain(terrain)) return null;
     for (const field of ['name', 'title', 'bio', 'mood']) {
       if (typeof profile[field] !== 'string' || profile[field].length > 200) return null;
     }
@@ -96,18 +133,26 @@ export function parseMinihome(raw: string): MinihomeData | null {
         (object) =>
           !furnitureKind(object) ||
           object.parentId !== undefined ||
-          Math.abs(object.transform.position[0]) > 3.5 ||
-          Math.abs(object.transform.position[2]) > 3.5 ||
+          Math.abs(object.transform.position[0]) > WORLD_HALF - 0.25 ||
+          Math.abs(object.transform.position[2]) > WORLD_HALF - 0.25 ||
           object.transform.position[1] !== 0 ||
           object.transform.scale.some((scale) => scale !== 1),
       )
     )
       return null;
+    for (const object of room.document.objects) {
+      const appearance = object.components.find(component => component.type === 'miniroom.furniture')!.data;
+      if (appearance['bloom'] !== undefined && typeof appearance['bloom'] !== 'boolean') return null;
+      const intensity = appearance['emissiveIntensity'];
+      if (intensity !== undefined && (typeof intensity !== 'number' || !Number.isFinite(intensity) || intensity < 0 || intensity > 8)) return null;
+    }
     return {
       version: 1,
       profile: { name: profile['name'] as string, title: profile['title'] as string,
         bio: profile['bio'] as string, mood: profile['mood'] as string },
       theme: data['theme'] as MinihomeData['theme'], room: room.document,
+      terrain: { size: terrain.size, tiles: [...terrain.tiles] },
+      roomSettings: Object.fromEntries(Object.keys(DEFAULT_ROOM_SETTINGS).map(key => [key, resolved[key as keyof typeof resolved]])) as RoomSettings,
       diary: (data['diary'] as HomeNote[]).map(({ id, author, text, date }) => ({ id, author, text, date })),
       guestbook: (data['guestbook'] as HomeNote[]).map(({ id, author, text, date }) => ({ id, author, text, date })),
     };

@@ -31,6 +31,15 @@ async function main() {
     const state = () => page.evaluate(() => JSON.parse(localStorage.getItem('gaesup.minihome.v1')));
     await page.goto(url);
     await ready();
+    const baseFurniture = await page.evaluate(() => window.miniroom.diagnostics().objectCount);
+    async function addPlant() {
+      await page.getByRole('button', { name: '화분 배치', exact: true }).click();
+      await page.locator('canvas').scrollIntoViewIfNeeded();
+      const bounds = await page.locator('canvas').boundingBox();
+      const point = await page.evaluate(() => window.miniroom.projectPoint([0.5, 0, 4.5]));
+      await page.mouse.click(bounds.x + point.x, bounds.y + point.y);
+      await page.getByRole('button', { name: '선택', exact: true }).click();
+    }
     await page.waitForTimeout(1800);
     const idleBefore = Number(await page.locator('canvas').getAttribute('data-rendered-frames'));
     const callbacksBefore = await page.evaluate(() => window.miniroom.diagnostics().loopCallbacks);
@@ -46,9 +55,9 @@ async function main() {
       colors.add(`${bitmap.data[i]},${bitmap.data[i + 1]},${bitmap.data[i + 2]}`);
     assert.ok(colors.size > 150, `Expected a rendered 3D room, found ${colors.size} colors.`);
     const walkBounds = await page.locator('canvas').boundingBox();
-    const walkPoint = await page.evaluate(() => window.miniroom.projectPoint([-2.5, 0, 2.75]));
+    const walkPoint = await page.evaluate(() => window.miniroom.projectPoint([-2.5, 0, 4.75]));
     await page.mouse.click(walkBounds.x + walkPoint.x, walkBounds.y + walkPoint.y);
-    await page.waitForFunction(() => { const p = window.miniroom.diagnostics().avatarPosition; return Math.hypot(p[0] + 2.5, p[2] - 2.75) < 0.05; }, { timeout: 10000 });
+    await page.waitForFunction(() => { const p = window.miniroom.diagnostics().avatarPosition; return Math.hypot(p[0] + 2.5, p[2] - 4.75) < 0.05; }, null, { timeout: 10000 });
     await page.getByRole('button', { name: '화면 확대', exact: true }).click();
     await page.waitForFunction(() => !!document.fullscreenElement);
     await page.getByRole('button', { name: '화면 축소', exact: true }).click();
@@ -73,20 +82,20 @@ async function main() {
     const photoColors = new Set(); for (let i = 0; i < photo.data.length; i += 32) photoColors.add(photo.data.subarray(i, i + 3).toString('hex'));
     assert.ok(photoColors.size > 150, 'Photo export is blank');
     const beforeApi = await page.evaluate(() => localStorage.getItem('gaesup.minihome.v1'));
-    await page.getByRole('button', { name: 'API·성능', exact: true }).click();
+    await page.getByRole('button', { name: '드로우콜·성능', exact: true }).click();
     await page.getByRole('button', { name: 'API 기능 검사 실행', exact: true }).click();
     await page.getByText(/기능 11\/11 통과/).waitFor({ timeout: 60000 });
     const apiChecks = await page.locator('.room-api-checks li').count();
     assert.equal(await page.locator('.room-api-checks li[data-status=failed]').count(), 0);
     assert.equal(await page.evaluate(() => localStorage.getItem('gaesup.minihome.v1')), beforeApi);
     await page.screenshot({ path: path.join(output, 'room-api-checks.png'), fullPage: true });
-    await page.getByRole('button', { name: 'API·성능', exact: true }).click();
+    await page.getByRole('button', { name: '드로우콜·성능', exact: true }).click();
     await page.getByRole('button', { name: '프로필 수정' }).click();
     await page.getByLabel('프로필 이름').fill('도토리');
     await page.getByLabel('홈피 제목').fill('도토리의 작은 방');
     await page.getByRole('button', { name: '수정 완료', exact: true }).click();
     await page.getByRole('button', { name: '미니룸 꾸미기' }).click();
-    await page.getByRole('button', { name: '화분 추가', exact: true }).click();
+    await addPlant();
     const addedId = await page.getByLabel('선택한 가구').inputValue();
     await page.getByRole('button', { name: '가구 왼쪽 이동' }).click();
     await page.getByRole('button', { name: '가구 회전' }).click();
@@ -110,7 +119,7 @@ async function main() {
       saved.room.objects.find((object) => object.id === addedId).transform.position,
       plant.transform.position,
     );
-    assert.equal(saved.room.objects.length, 7);
+    assert.equal(saved.room.objects.length, baseFurniture + 1);
     assert.equal(saved.theme, 'sage');
     assert.equal(saved.profile.name, '도토리');
     assert.equal(
@@ -126,19 +135,20 @@ async function main() {
     await page.keyboard.press('Escape'); await page.mouse.up();
     await page.getByRole('button', { name: '미니홈피 저장' }).click();
     assert.deepEqual(await state(), saved, 'Escape committed the drag preview');
+    await page.getByRole('button', { name: '편집 완료 · 둘러보기', exact: true }).click();
     await page.reload();
     await ready();
     await page.getByRole('heading', { name: /도토리의 작은 방/ }).waitFor();
     assert.deepEqual(await state(), saved);
     // Mixed document history, export/import and public snapshot sharing.
     await page.getByRole('button', { name: '미니룸 꾸미기' }).click();
-    await page.getByRole('button', { name: '화분 추가', exact: true }).click();
+    await addPlant();
     await page.getByRole('button', { name: '실행 취소', exact: true }).click();
     await page.getByRole('button', { name: '미니홈피 저장' }).click();
-    assert.equal((await state()).room.objects.length, 7);
+    assert.equal((await state()).room.objects.length, baseFurniture + 1);
     await page.getByRole('button', { name: '다시 실행', exact: true }).click();
     await page.getByRole('button', { name: '미니홈피 저장' }).click();
-    assert.equal((await state()).room.objects.length, 8);
+    assert.equal((await state()).room.objects.length, baseFurniture + 2);
     await page.getByRole('button', { name: '실행 취소', exact: true }).click();
     await page.getByRole('button', { name: '미니홈피 저장' }).click();
     const backupDownload = page.waitForEvent('download');
@@ -164,7 +174,7 @@ async function main() {
     assert.equal(await visitor.evaluate(() => localStorage.getItem('gaesup.minihome.v1')), null);
     await visitor.getByRole('button', { name: '내 방으로 가져오기', exact: true }).click();
     await visitor.getByRole('button', { name: '미니홈피 저장' }).click();
-    assert.equal(await visitor.evaluate(() => JSON.parse(localStorage.getItem('gaesup.minihome.v1')).room.objects.length), 7);
+    assert.equal(await visitor.evaluate(() => JSON.parse(localStorage.getItem('gaesup.minihome.v1')).room.objects.length), baseFurniture + 1);
     await visitor.close();
     await page.getByRole('button', { name: '꾸미기 완료' }).click();
     await page
@@ -225,7 +235,7 @@ async function main() {
     await page.getByLabel('선택한 가구').selectOption(addedId);
     await page.getByRole('button', { name: '가구 삭제' }).click();
     await page.getByRole('button', { name: '미니홈피 저장' }).click();
-    assert.equal((await state()).room.objects.length, 6);
+    assert.equal((await state()).room.objects.length, baseFurniture);
     await page.getByRole('button', { name: '꾸미기 완료' }).click();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: path.join(output, 'home-mobile.png'), fullPage: true });

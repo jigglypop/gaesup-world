@@ -41,7 +41,6 @@ export async function mountScene(ctx: ScenarioContext, objects: Object3D[], batc
     useEffect(() => {
       const autoReset = state.gl.info.autoReset;
       state.gl.info.autoReset = false;
-      state.camera.lookAt(0, 0, 0);
       rootState = state;
       const backend = state.gl as unknown as {
         backend?: { isWebGPUBackend?: boolean; device?: { adapterInfo?: { vendor?: string; architecture?: string; device?: string; description?: string; isFallbackAdapter?: boolean } } };
@@ -110,6 +109,7 @@ export async function mountScene(ctx: ScenarioContext, objects: Object3D[], batc
     </>;
   }
   root.render(<Canvas
+    onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
     gl={ctx.config.backend === 'webgpu' ? (props) => {
       const options = { ...props, trackTimestamp: true };
       return createRenderer(options);

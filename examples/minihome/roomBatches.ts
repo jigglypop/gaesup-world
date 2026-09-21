@@ -29,6 +29,7 @@ export class RoomBatches {
       for (const parts of buckets.values()) {
         const first = parts[0]!;
         const mesh = new InstancedMesh(first.mesh.geometry, first.mesh.material, parts.length);
+        mesh.name = `가구 배치 · ${first.owner.name} · ${(first.mesh.material as MeshStandardMaterial).name}`;
         mesh.castShadow = true; mesh.receiveShadow = true;
         mesh.userData['owners'] = parts.map(part => String(part.owner.userData['objectId']));
         this.root.add(mesh); this.batches.push({ mesh, parts });

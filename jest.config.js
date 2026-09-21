@@ -46,7 +46,7 @@ export default {
   transformIgnorePatterns: [
     'node_modules/(?!(\\.pnpm|three|@react-three|three-stdlib|@react-spring|@use-gesture|react-use-refs|zustand|mitt)/)',
   ],
-  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/scripts/assets/'],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/scripts/assets/', '/scripts/minihome-room-service.test.mjs$'],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',

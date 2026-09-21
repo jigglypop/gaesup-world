@@ -1,6 +1,6 @@
 export type { SfxId, SfxDef, BgmId, BgmTrack, AudioSerialized } from './types';
 export { createAudioEngine, getAudioEngine } from './core/AudioEngine';
-export type { AudioEngine } from './core/AudioEngine';
+export type { AudioEngine, AudioEngineOptions } from './core/AudioEngine';
 export { createAudioStore, useAudioStore, useAudioStoreApi } from './stores/audioStore';
 export type { AudioStore } from './stores/audioStore';
 export {

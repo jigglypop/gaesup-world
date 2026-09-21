@@ -4,6 +4,7 @@ export * from './Rideable';
 export * from './WorldContainer';
 export { WorldContainer as World } from './WorldContainer';
 export * from './WorldProps';
+export * from './WorldPhysics';
 export { TreeObject } from './Tree';
 export type { TreeObjectProps } from './Tree';
 export { FishSpot } from './FishSpot';

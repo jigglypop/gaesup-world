@@ -166,6 +166,7 @@ interface NPCStore extends NPCSystemState {
   updateInstancePerception: (instanceId: string, perception: Partial<NPCPerceptionConfig>) => void;
   updateInstanceBehavior: (instanceId: string, behavior: Partial<NPCBehaviorConfig>) => void;
   setInstanceObservation: (instanceId: string, observation: NPCObservation) => void;
+  setInstanceObservations: (observations: ReadonlyArray<readonly [string, NPCObservation]>) => void;
   setInstanceDecision: (instanceId: string, decision: NPCBrainDecision) => void;
   executeInstanceAction: (instanceId: string, action: NPCAction) => void;
   executeInstanceActions: (instanceId: string, actions: NPCAction[]) => void;
@@ -784,13 +785,12 @@ function buildNPCStore(legacyBlueprintRegistry = false, invalidateBrainRequests:
       state.instances.set(instanceId, nextInstance);
     }),
 
-    setInstanceObservation: (instanceId, observation) => set((state) => {
-      const instance = state.instances.get(instanceId);
-      if (!instance) return;
-      state.instances.set(instanceId, {
-        ...instance,
-        lastObservation: observation,
-      });
+    setInstanceObservation: (instanceId, observation) => get().setInstanceObservations([[instanceId, observation]]),
+    setInstanceObservations: (observations) => set((state) => {
+      for (const [instanceId, observation] of observations) {
+        const instance = state.instances.get(instanceId);
+        if (instance) state.instances.set(instanceId, { ...instance, lastObservation: observation });
+      }
     }),
 
     setInstanceDecision: (instanceId, decision) => set((state) => {

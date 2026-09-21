@@ -54,6 +54,7 @@ return create<State>((set, get) => ({
   toggleSfx:    () => { set({ sfxMuted:    !get().sfxMuted    }); get().apply(); },
 
   playSfx: (def) => {
+    if (!engine.canPlay()) return;
     const s = get();
     if (s.masterMuted || s.sfxMuted) return;
     get().apply();
@@ -62,6 +63,7 @@ return create<State>((set, get) => ({
   },
 
   playBgm: (track) => {
+    if (!engine.canPlay()) return;
     get().apply();
     if (track) engine.resume();
     engine.playBgm(track);

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../runtime/runtimeContext';
+import type { SaveSystem } from '../../save/core/SaveSystem';
 import { useTimeStoreApi, type TimeStore } from '../../time/stores/timeStore';
 import { useWeatherStoreApi, type WeatherStore } from '../../weather/stores/weatherStore';
 import { useAudioStoreApi, type AudioStore } from '../stores/audioStore';
@@ -43,7 +44,7 @@ function trackForContext(hour: number, weather: string | undefined): BgmTrack {
 type Lease = { owners: number; dispose: () => void };
 const leases = new WeakMap<AudioStore, WeakMap<TimeStore, WeakMap<WeatherStore, Lease>>>();
 
-function acquireAmbientBgm(audioStore: AudioStore, timeStore: TimeStore, weatherStore: WeatherStore): () => void {
+function acquireAmbientBgm(audioStore: AudioStore, timeStore: TimeStore, weatherStore: WeatherStore, save?: SaveSystem): () => void {
   let clocks = leases.get(audioStore);
   if (!clocks) { clocks = new WeakMap(); leases.set(audioStore, clocks); }
   let weather = clocks.get(timeStore);
@@ -51,7 +52,9 @@ function acquireAmbientBgm(audioStore: AudioStore, timeStore: TimeStore, weather
   let lease = weather.get(weatherStore);
   if (!lease) {
     let ownedRevision: number | undefined;
+    let alive = true;
     const apply = () => {
+      if (!alive || save?.isRestoring()) return;
       const t = timeStore.getState();
       const w = weatherStore.getState().current;
       const track = trackForContext(t.time.hour, w?.kind);
@@ -66,9 +69,11 @@ function acquireAmbientBgm(audioStore: AudioStore, timeStore: TimeStore, weather
     const offWeather = weatherStore.subscribe((s, p) => {
       if (s.current?.kind !== p.current?.kind) apply();
     });
+    const offRestore = save?.registerRestoreGuard(() => apply);
     apply();
     lease = { owners: 0, dispose: () => {
-      offTime(); offWeather();
+      alive = false;
+      offTime(); offWeather(); offRestore?.();
       // A manual replacement, including one with the same track ID, has a new owner.
       if (audioStore.getState().bgmRevision === ownedRevision) audioStore.getState().stopBgm();
     } };
@@ -91,6 +96,6 @@ export function useAmbientBgm(enabled: boolean = true): void {
   const timeStore = useTimeStoreApi();
   useEffect(() => {
     if (!enabled || (runtime && !runtime.isActive())) return;
-    return acquireAmbientBgm(audioStore, timeStore, weatherStore);
+    return acquireAmbientBgm(audioStore, timeStore, weatherStore, runtime?.save);
   }, [enabled, timeStore, weatherStore, audioStore, runtime, revision]);
 }

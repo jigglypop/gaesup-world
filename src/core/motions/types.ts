@@ -1,7 +1,7 @@
 import { RefObject } from 'react';
 
 import { RootState } from '@react-three/fiber';
-import { RapierRigidBody } from '@react-three/rapier';
+import { RapierRigidBody, type RapierContext } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import type { AutomationState, InteractionState } from '@core/interactions/bridge/types';
@@ -24,6 +24,9 @@ export type PhysicsDispatchAction = {
 
 export interface PhysicsCalcProps {
   rigidBodyRef: RefObject<RapierRigidBody>;
+  /** Owning Rapier world, required for contact-based ground support. */
+  physicsWorld?: RapierContext['world'];
+  groundContactFilter?: PhysicsEntityProps['groundContactFilter'];
   innerGroupRef?: RefObject<THREE.Group>;
   state: RootState;
   delta: number;
@@ -42,7 +45,7 @@ export interface PhysicsCalcProps {
 
 export type PhysicsCalculationProps =
   Required<Pick<PhysicsEntityProps, 'rigidBodyRef'>> &
-  Pick<PhysicsEntityProps, 'innerGroupRef' | 'outerGroupRef' | 'colliderRef' | 'groundRay' | 'colliderSize'>;
+  Pick<PhysicsEntityProps, 'innerGroupRef' | 'outerGroupRef' | 'colliderRef' | 'groundRay' | 'colliderSize' | 'groundContactFilter'>;
 
 export interface PhysicsState {
   gamepad?: InteractionState['gamepad'] | undefined;

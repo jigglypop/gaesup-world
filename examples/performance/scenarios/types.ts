@@ -1,10 +1,11 @@
-import type { Assertion, LabConfig, Metric, RunEnvironment } from '../model';
+import type { Assertion, LabConfig, LabRun, Metric, RunEnvironment } from '../model';
 
 export class UnsupportedScenario extends Error {}
 
 export type ScenarioContext = {
   host: HTMLElement;
   config: LabConfig;
+  role?: LabRun['role'];
   signal: AbortSignal;
   assert: (id: string, expected: Assertion['expected'], actual: Assertion['actual']) => void;
   sample: (name: string, value: number, unit: Metric['unit'], scope: string) => void;

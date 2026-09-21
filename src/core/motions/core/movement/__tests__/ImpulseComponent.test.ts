@@ -93,6 +93,7 @@ describe('ImpulseComponent와 EntityStateManager 동일 인스턴스 주입', ()
   test('주입한 stateManager가 점프 후 isOnTheGround false로 갱신된다', () => {
     const sharedManager = new EntityStateManager();
     sharedManager.updateGameStates({ isJumping: true, isOnTheGround: true });
+    sharedManager.getActiveState().isGround = true;
 
     const config: PhysicsConfigType = { jumpSpeed: 15 } as PhysicsConfigType;
     const impulse = new ImpulseComponent(config, sharedManager);
@@ -102,11 +103,13 @@ describe('ImpulseComponent와 EntityStateManager 동일 인스턴스 주입', ()
     impulse.applyImpulse(rigidBodyRef as unknown as Parameters<typeof impulse.applyImpulse>[0], physicsState);
 
     expect(sharedManager.getGameStates().isOnTheGround).toBe(false);
+    expect(sharedManager.getActiveState().isGround).toBe(false);
   });
 
   test('stateManager 미주입 시 자체 인스턴스를 만들어 외부 상태에 영향을 주지 않는다 (하위 호환)', () => {
     const externalManager = new EntityStateManager();
     externalManager.updateGameStates({ isJumping: true, isOnTheGround: true });
+    externalManager.getActiveState().isGround = true;
 
     const config: PhysicsConfigType = { jumpSpeed: 15 } as PhysicsConfigType;
     const impulse = new ImpulseComponent(config);
@@ -116,6 +119,7 @@ describe('ImpulseComponent와 EntityStateManager 동일 인스턴스 주입', ()
     impulse.applyImpulse(rigidBodyRef as unknown as Parameters<typeof impulse.applyImpulse>[0], physicsState);
 
     expect(externalManager.getGameStates().isOnTheGround).toBe(true);
+    expect(externalManager.getActiveState().isGround).toBe(true);
   });
 
   test('navigation grid가 정면을 막으면 캐릭터 impulse를 넣지 않고 수평 속도를 멈춘다', () => {

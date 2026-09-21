@@ -36,6 +36,19 @@ test('mixed profile, furniture and theme changes undo and redo through one sessi
   session.dispose();
 });
 
+test('room settings participate in history and shared-home adoption', () => {
+  const home = createMinihome();
+  const shared = createMinihome();
+  shared.roomSettings = { ...shared.roomSettings, quality: 'economy', lighting: 'evening', camera: 'front', avatar: 'blue' };
+  const session = adoptSharedMinihome(home, shared);
+  expect(session.getSnapshot().data.roomSettings).toEqual(shared.roomSettings);
+  session.undo();
+  expect(session.getSnapshot().data.roomSettings).toEqual(home.roomSettings);
+  session.redo();
+  expect(session.getSnapshot().data.roomSettings).toEqual(shared.roomSettings);
+  session.dispose();
+});
+
 test('import replaces the room without replacing its controller; invalid data leaves state intact', () => {
   const session = createMinihomeSession(createMinihome());
   const controller = session.controller;
@@ -47,5 +60,5 @@ test('import replaces the room without replacing its controller; invalid data le
   expect(() => session.update({ ...imported, version: 2 } as unknown as typeof imported)).toThrow();
   expect(session.getSnapshot()).toBe(before);
   session.undo();
-  expect(controller.getSnapshot().objects).toHaveLength(6);
+  expect(controller.getSnapshot()).toEqual(createMinihome().room);
 });

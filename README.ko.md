@@ -6,7 +6,7 @@
 
 TypeScript 월드 라이브러리와 싸이월드에서 영감을 받은 미니홈피 예제를 제공합니다. 3D 방, 걸어 다니는 아바타, 가구 편집, 프로필, 다이어리, 방명록이 있습니다. 현재 브라우저에 저장하며 공유 링크는 방의 사본을 전달합니다. 실시간 멀티플레이 서비스는 아닙니다.
 
-이번 버전은 `1.0.31`입니다. 게시 여부는 npm registry에서 확인하세요.
+이번 버전은 `1.0.32`입니다. 게시 여부는 npm registry에서 확인하세요.
 
 ## 실행하기
 
@@ -75,4 +75,4 @@ npm은 검증과 `npm login` 인증 후, 검토한 tarball을 별도 태그 없�
 - shear는 world matrix에 보존합니다. TRS로 표현 불가능하면 `getWorldTransform`이 오류를 내므로 `getWorldMatrix`를 사용하세요.
 - Unity Editor 컴파일과 실제 왕복은 Unity 설치 환경에서 따로 검증해야 합니다.
 
-[실행계획](docs/2026-09-19-web-studio-plan.md) · [릴리스 노트](docs/release-1.0.31.md)
+[실행계획](docs/2026-09-19-web-studio-plan.md) · [릴리스 노트](docs/release-1.0.32.md)

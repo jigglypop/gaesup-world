@@ -1,6 +1,21 @@
 import { AnimationClockLoop } from '../AnimationClockLoop';
 import { FixedStepClock } from '../FixedStepClock';
 
+test('headless consumers retain fixed systems without requiring a browser or installing timers', () => {
+  const request = globalThis.requestAnimationFrame; const cancel = globalThis.cancelAnimationFrame;
+  Reflect.set(globalThis, 'requestAnimationFrame', undefined); Reflect.set(globalThis, 'cancelAnimationFrame', undefined);
+  try {
+    const clock = new FixedStepClock(); const loop = new AnimationClockLoop(clock); const update = jest.fn();
+    clock.addSystem({ id: 'headless', phase: 'simulation', update });
+    const release = loop.acquire(); expect(loop.consumerCount).toBe(1); expect(loop.ownerCount).toBe(0);
+    clock.stepTicks(60); expect(update).toHaveBeenCalledTimes(60);
+    loop.suspend(); loop.resume(); expect(loop.ownerCount).toBe(0);
+    release(); expect(loop.consumerCount).toBe(0);
+  } finally {
+    Reflect.set(globalThis, 'requestAnimationFrame', request); Reflect.set(globalThis, 'cancelAnimationFrame', cancel);
+  }
+});
+
 function fixture() {
   let nextId = 0;
   const pending = new Map<number, FrameRequestCallback>();

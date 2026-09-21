@@ -2,6 +2,8 @@ import { act, render } from '@testing-library/react';
 
 import { useAmbientBgm } from '../../audio/hooks/useAmbientBgm';
 import { createAudioPlugin } from '../../audio/plugin';
+import { createTimePlugin } from '../../time/plugin';
+import { createWeatherPlugin } from '../../weather/plugin';
 import { GaesupRuntimeProvider } from '../context';
 import { createGaesupRuntime } from '../createGaesupRuntime';
 
@@ -81,5 +83,39 @@ test.each([false, true])('ambient cleanup preserves a manual same-ID replacement
     const id = runtime.audioStore.getState().currentBgmId!;
     if (!reentrant) runtime.audioStore.getState().playBgm({ id });
     view.unmount(); expect(runtime.audioEngine.getCurrentBgmId()).toBe(id);
+  } finally { off(); view.unmount(); await runtime.dispose(); }
+});
+
+test('restore suppresses intermediate audio, cancels gameplay sounds, and reconciles one shared BGM lease', async () => {
+  const runtime = createGaesupRuntime({ plugins: [createTimePlugin(), createWeatherPlugin(), createAudioPlugin()] }); await runtime.setup();
+  runtime.timeStore.getState().setTotalMinutes(0); runtime.weatherStore.setState({ current: { day: 1, kind: 'sunny', intensity: 1 } });
+  const snapshot = runtime.save.createBlob();
+  runtime.timeStore.getState().setTotalMinutes(720); runtime.weatherStore.setState({ current: { day: 1, kind: 'rain', intensity: 1 } });
+  function Consumer() { useAmbientBgm(); return null; }
+  const view = render(<GaesupRuntimeProvider runtime={runtime}><Consumer /><Consumer /></GaesupRuntimeProvider>);
+  try {
+    runtime.audioStore.getState().playSfx({ id: 'old-effect' });
+    const context = contexts[0]!; const oldSfx = context.createOscillator.mock.results[1]!.value;
+    const play = jest.spyOn(runtime.audioEngine, 'playBgm'); const before = context.createOscillator.mock.calls.length;
+    const off = runtime.timeStore.subscribe(() => {
+      if (runtime.save.isRestoring()) { runtime.audioStore.getState().playBgm({ id: 'reentrant' }); runtime.audioStore.getState().playSfx({ id: 'reentrant' }); }
+    });
+    act(() => { runtime.save.hydrateBlob(snapshot); }); off();
+    expect(play).toHaveBeenCalledTimes(1); expect(context.createOscillator).toHaveBeenCalledTimes(before + 1);
+    expect(runtime.audioEngine.getCurrentBgmId()).toBe('bgm.night.sunny'); expect(oldSfx.disconnect).toHaveBeenCalledTimes(1);
+    view.unmount(); expect(runtime.audioEngine.getCurrentBgmId()).toBeNull();
+    act(() => { runtime.save.hydrateBlob(snapshot); }); expect(runtime.audioEngine.getCurrentBgmId()).toBeNull();
+  } finally { view.unmount(); await runtime.dispose(); }
+});
+
+test('an ambient owner removed during hydration cannot replay audio from a queued restore release', async () => {
+  const runtime = createGaesupRuntime({ plugins: [createTimePlugin()] }); await runtime.setup();
+  function Consumer() { useAmbientBgm(); return null; }
+  const view = render(<GaesupRuntimeProvider runtime={runtime}><Consumer /></GaesupRuntimeProvider>);
+  const off = runtime.timeStore.subscribe(() => { if (runtime.save.isRestoring()) view.unmount(); });
+  try {
+    const snapshot = runtime.save.createBlob(); snapshot.domains['time'] = { ...runtime.timeStore.getState().serialize(), totalMinutes: 720 };
+    act(() => { expect(runtime.save.hydrateBlob(snapshot)).toBe(true); });
+    expect(runtime.audioEngine.getCurrentBgmId()).toBeNull();
   } finally { off(); view.unmount(); await runtime.dispose(); }
 });

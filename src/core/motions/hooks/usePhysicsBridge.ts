@@ -12,6 +12,7 @@ import {
 import { useGaesupStore, useGaesupStoreApi } from '@stores/gaesupStore';
 import { StoreState } from '@stores/types';
 
+import { useWorldPhysicsStep } from '../../simulation/physicsContext';
 import { updateInputState } from '../bridge';
 import { PhysicsBridge } from '../bridge/PhysicsBridge';
 import {
@@ -31,6 +32,7 @@ import { PhysicsCalcProps } from '../types';
 
 
 export interface UsePhysicsBridgeOptions extends PhysicsCalculationProps {
+  physicsWorld?: PhysicsCalcProps['physicsWorld'];
   entityId?: string;
   enabled?: boolean;
   motionsRuntime?: MotionsRuntime;
@@ -188,7 +190,7 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
   // 물리 계산 실행
   const executePhysics = useCallback((state: RootState, delta: number) => {
     const registration = registrationRef.current;
-    if (!enabled || !registration || !stateManagerRef.current) return;
+    if (!enabled || !registration || !stateManagerRef.current || !props.rigidBodyRef.current) return;
 
     const worldContext = storeApi.getState() as StoreState;
     const input = inputRef.current;
@@ -237,6 +239,8 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
     if (!calcProp) {
       calcProp = {
         rigidBodyRef: props.rigidBodyRef,
+        ...(props.physicsWorld ? { physicsWorld: props.physicsWorld } : {}),
+        ...(props.groundContactFilter ? { groundContactFilter: props.groundContactFilter } : {}),
         state,
         delta,
         worldContext,
@@ -250,6 +254,10 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
       calcPropRef.current = calcProp;
     } else {
       calcProp.rigidBodyRef = props.rigidBodyRef;
+      if (props.physicsWorld) calcProp.physicsWorld = props.physicsWorld;
+      else delete calcProp.physicsWorld;
+      if (props.groundContactFilter) calcProp.groundContactFilter = props.groundContactFilter;
+      else delete calcProp.groundContactFilter;
       calcProp.state = state;
       calcProp.delta = delta;
       calcProp.worldContext = worldContext;
@@ -271,9 +279,11 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
     });
   }, [enabled, inputAdapter, props, storeApi]);
 
-  // 프레임 루프
+  const fixedPhysics = useWorldPhysicsStep(executePhysics, isReady);
+
+  // Plain Rapier Physics remains supported for consumers that own their simulation loop.
   useFrame((state, delta) => {
-    if (!isReady) return;
+    if (!isReady || fixedPhysics) return;
     executePhysics(state, delta);
   });
 

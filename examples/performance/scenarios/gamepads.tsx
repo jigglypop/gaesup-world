@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 
-import { Physics, RigidBody, type RapierRigidBody } from '@react-three/rapier';
+import { Physics, RigidBody, useRapier, type RapierRigidBody } from '@react-three/rapier';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import * as THREE from 'three';
@@ -66,7 +66,8 @@ async function motion(ctx: ScenarioContext) {
   const hardware = controlledGamepad(ctx); const runtime = createGaesupRuntime(); let scene: Awaited<ReturnType<typeof mountScene>> | undefined;
   let body: RapierRigidBody | null = null; let readYaw = () => 0;
   function Actor() {
-    const ref = useRef<RapierRigidBody>(null!); usePhysicsBridge({ entityId: 'gamepad-player', rigidBodyRef: ref }); const { system } = useCamera(); readYaw = () => system?.getState().config.orbitYaw ?? 0;
+    const { world } = useRapier();
+    const ref = useRef<RapierRigidBody>(null!); usePhysicsBridge({ entityId: 'gamepad-player', rigidBodyRef: ref, physicsWorld: world }); const { system } = useCamera(); readYaw = () => system?.getState().config.orbitYaw ?? 0;
     return <RigidBody ref={value => { ref.current = value!; body = value; }} colliders="cuboid" enabledRotations={[false, false, false]} gravityScale={0} position={[0, 1, 0]}>
       <mesh><boxGeometry /><meshStandardMaterial color="#4fc7bd" /></mesh>
     </RigidBody>;

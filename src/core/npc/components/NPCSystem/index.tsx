@@ -8,6 +8,7 @@ import { BuildingNavigationObstacleDriver } from '../../../building/components/B
 import { useBuildingStore } from '../../../building/stores/buildingStore';
 import { applyNPCNavigationRoute, useNavigationSystem } from '../../../navigation';
 import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../../runtime/runtimeContext';
+import { useNPCSimulation } from '../../hooks/useNPCSimulation';
 import { useNPCStore } from '../../stores/npcStore';
 import { NPCInstance } from '../NPCInstance';
 import './styles.css';
@@ -17,6 +18,7 @@ const NPC_LOD_FAR = 120;
 const NPC_LOD_STRENGTH = 4;
 
 export function NPCSystem() {
+  const simulation = useNPCSimulation();
   const { gl } = useThree();
   const instances = useNPCStore((state) => state.instances);
   const selectedInstanceId = useNPCStore((state) => state.selectedInstanceId);
@@ -63,7 +65,7 @@ export function NPCSystem() {
     const cam = state.camera.position;
     const next = new Set<string>();
     instances.forEach((inst) => {
-      const [x, y, z] = inst.position;
+      const [x, y, z] = simulation.getPose(inst.id)?.position ?? inst.position;
       const dx = x - cam.x, dy = y - cam.y, dz = z - cam.z;
       const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
       const w = weightFromDistance(dist, NPC_LOD_NEAR, NPC_LOD_FAR, NPC_LOD_STRENGTH);
@@ -93,7 +95,7 @@ export function NPCSystem() {
         if (selectedInstance && navigationReadyRef.current) {
           const route = applyNPCNavigationRoute(
             navigation,
-            { id: selectedInstance.id, position: selectedInstance.position },
+            { id: selectedInstance.id, position: simulation.getPose(selectedInstance.id)?.position ?? selectedInstance.position },
             moveTarget,
             setNavigation,
           );

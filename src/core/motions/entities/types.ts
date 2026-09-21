@@ -68,6 +68,8 @@ export type PhysicsEntityProps = {
   componentType: string;
   rigidbodyType ? : RigidBodyTypeString;
   groundRay ? : GroundRay;
+  /** Additional support policy for detection-only or one-way physics contacts. */
+  groundContactFilter?: (actor: RapierCollider, support: RapierCollider) => boolean;
   rigidBodyProps ? : RigidBodyProps;
   parts ? : Part[];
   /**
@@ -89,6 +91,8 @@ export type PhysicsEntityProps = {
   outerGroupRef ? : RefObject < THREE.Group > ;
   innerGroupRef ? : RefObject < THREE.Group > ;
   children ? : ReactNode;
+  /** Physical attachments stay outside the interpolated visual hierarchy. */
+  colliderChildren?: ReactNode;
   userData ? : CollisionUserData;
   sensor ? : boolean;
   onIntersectionEnter ? : (payload: CollisionPayload) => void;

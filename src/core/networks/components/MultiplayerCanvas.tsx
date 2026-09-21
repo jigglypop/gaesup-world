@@ -2,7 +2,7 @@ import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Environment } from '@react-three/drei';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Physics, euler, RigidBody, type RapierRigidBody } from '@react-three/rapier';
+import { euler, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { Grid } from '@/core/rendering/legacyDrei';
@@ -16,6 +16,7 @@ import {
   GroundClicker
 } from '../../../index';
 import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
+import { WorldPhysics } from '../../world/components/WorldPhysics';
 import { PlayerState, MultiplayerConfig } from '../types';
 
 declare global {
@@ -148,7 +149,7 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
 
         <Suspense fallback={null}>
           <GaesupWorldContent>
-            <Physics>
+            <WorldPhysics>
               <LocalPositionTracker
                 playerRef={playerRef}
                 onChange={handleLocalPositionChange}
@@ -210,7 +211,7 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
 
               <Clicker />
               <GroundClicker />
-            </Physics>
+            </WorldPhysics>
           </GaesupWorldContent>
         </Suspense>
       </Canvas>

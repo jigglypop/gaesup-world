@@ -1,4 +1,5 @@
 import type { GaesupPlugin, PluginContext } from '../plugins';
+import { findNPCSimulation } from './core/NPCSimulation';
 import { useNPCStore, type NPCStoreApi } from './stores/npcStore';
 import type {
   ClothingCategory,
@@ -46,7 +47,7 @@ export function serializeNPCState(store: NPCStoreApi = useNPCStore): NPCSerializ
   return {
     version: 1,
     templates: Array.from(state.templates.values(), cloneNPCValue),
-    instances: Array.from(state.instances.values(), cloneNPCValue),
+    instances: Array.from((findNPCSimulation(store)?.snapshotInstances() ?? state.instances).values(), cloneNPCValue),
     categories: Array.from(state.categories.values(), cloneNPCValue),
     clothingSets: Array.from(state.clothingSets.values(), cloneNPCValue),
     clothingCategories: Array.from(state.clothingCategories.values(), cloneNPCValue),

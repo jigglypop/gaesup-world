@@ -49,10 +49,13 @@ async function lifetime(ctx: ScenarioContext) {
     ctx.sample('miniroom-idle-draws', idle.renderedFrames - before.renderedFrames, 'count', '30-display-frames-idle');
     ctx.assert('miniroom-idle-draws', 0, idle.renderedFrames - before.renderedFrames);
     const snapshot = view.controller.getSnapshot();
-    const result = view.controller.dispatch({ type: 'scene-document.replace', document: { ...snapshot, objects: snapshot.objects.map(object => object.id === 'sofa-1' ? { ...object, components: object.components.map(component => ({ ...component, enabled: false })) } : object) } });
+    const target = snapshot.objects.find(object => object.components.some(component => component.type === 'miniroom.furniture' && component.enabled !== false));
+    if (!target) throw new Error('Miniroom visibility scenario requires a visible furniture object');
+    const result = view.controller.dispatch({ type: 'scene-document.replace', document: { ...snapshot, objects: snapshot.objects.map(object => object.id === target.id ? { ...object, components: object.components.map(component => ({ ...component, enabled: false })) } : object) } });
     ctx.assert('miniroom-command-accepted', true, result.accepted); await view.engine.frame();
-    ctx.sample('miniroom-hidden-object-mismatches', Number(view.engine.diagnostics().visibleObjects !== 5), 'count', 'actual-render-projection');
-    ctx.assert('miniroom-hidden-object-mismatches', 0, Number(view.engine.diagnostics().visibleObjects !== 5));
+    const mismatch = Number(view.engine.diagnostics().visibleObjects !== before.visibleObjects - 1);
+    ctx.sample('miniroom-hidden-object-mismatches', mismatch, 'count', 'actual-render-projection');
+    ctx.assert('miniroom-hidden-object-mismatches', 0, mismatch);
     view.dispose(); const end = view.engine.diagnostics();
     for (let i = 0; i < 5; i++) await nextFrame(ctx.signal);
     ctx.assert('miniroom-disposed-callbacks', 0, view.engine.diagnostics().loopCallbacks - end.loopCallbacks);
@@ -94,6 +97,6 @@ export const minihomeScenarios: Scenario[] = [
     ctx.sample('miniroom-library-api-paths', new Set(results.filter(result => result.scope === 'library').flatMap(result => result.apis)).size, 'count', 'public-library-entry-points-and-methods');
     for (const result of results) if (result.status === 'failed') throw new Error(`${result.title}: ${result.detail}`);
   } },
-  { id: 'minihome-lifecycle', title: '미니룸 대기·표시·종료', description: '실제 미니홈피의 3D 엔진에서 대기 프레임 루프, 컴포넌트 enabled 반영, 종료 후 작업을 검사합니다.', version: 1, requirementIds: ['R25', 'R26'], run: lifetime },
-  { id: 'minihome-rendering', title: '미니룸 가구 부하·렌더링', description: '실제 미니룸에서 1~1,000개 가구, 고정 배치·DPR·크기로 강제 연속 프레임의 제출 시간과 draw call을 측정합니다. 정식 비교는 10초 예열·30초 측정입니다.', version: 1, requirementIds: ['R05', 'R13'], timed: true, run: rendering },
+  { id: 'minihome-lifecycle', title: '미니룸 대기·표시·종료', description: '3D 타운의 실제 미니홈피 엔진에서 대기 프레임 루프, 컴포넌트 enabled 반영, 종료 후 작업을 검사합니다.', version: 2, requirementIds: ['R25', 'R26'], run: lifetime },
+  { id: 'minihome-rendering', title: '미니룸 가구 부하·렌더링', description: '타일·가구 12종·Bloom을 포함한 미니룸에서 1~1,000개 가구, 고정 배치·DPR·크기로 제출 시간과 draw call을 측정합니다. 정식 비교는 10초 예열·30초 측정입니다.', version: 2, requirementIds: ['R05', 'R13'], timed: true, run: rendering },
 ];

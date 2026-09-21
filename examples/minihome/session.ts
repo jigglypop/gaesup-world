@@ -7,7 +7,7 @@ const HISTORY_LIMIT = 50;
 
 export function adoptSharedMinihome(local: MinihomeData, shared: MinihomeData) {
   const session = createMinihomeSession(local);
-  session.update({ ...local, profile: shared.profile, theme: shared.theme, room: shared.room });
+  session.update({ ...local, profile: shared.profile, theme: shared.theme, room: shared.room, terrain: shared.terrain, roomSettings: shared.roomSettings });
   return session;
 }
 

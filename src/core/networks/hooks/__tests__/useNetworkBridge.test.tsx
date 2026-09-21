@@ -1,11 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useNetworkBridge } from '../useNetworkBridge';
 
-// useFrame 모킹
-jest.mock('@react-three/fiber', () => ({
-  useFrame: jest.fn()
-}));
-
 // BridgeFactory 모킹
 jest.mock('@core/boilerplate', () => ({
   BridgeFactory: {
@@ -24,21 +19,19 @@ const mockBridge = {
   snapshot: jest.fn(),
   getNetworkStats: jest.fn(),
   getSystemState: jest.fn(),
-  updateSystem: jest.fn()
+  updateSystem: jest.fn(),
+  acquireUpdates: jest.fn(() => jest.fn())
 };
 
 describe('useNetworkBridge', () => {
-  let mockUseFrame: jest.Mock;
   let mockBridgeFactory: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
     
     // 모킹된 모듈들 가져오기
-    const fiber = require('@react-three/fiber');
     const boilerplate = require('@core/boilerplate');
     
-    mockUseFrame = fiber.useFrame as jest.Mock;
     mockBridgeFactory = boilerplate.BridgeFactory;
     
     mockBridgeFactory.getOrCreate.mockImplementation((domain: string) => {
@@ -46,9 +39,6 @@ describe('useNetworkBridge', () => {
     });
     mockBridgeFactory.get.mockReturnValue(mockBridge);
     mockBridgeFactory.create.mockReturnValue(mockBridge);
-    mockUseFrame.mockImplementation(() => {
-      // 테스트에서는 콜백을 저장만 하고 호출하지 않음
-    });
     
     mockBridge.snapshot.mockReturnValue({
       nodes: new Map(),
@@ -198,11 +188,6 @@ describe('useNetworkBridge', () => {
     });
 
     test('자동 업데이트 테스트', async () => {
-      let frameCallback: any = null;
-      mockUseFrame.mockImplementation((callback) => {
-        frameCallback = callback;
-      });
-      
       const { result } = renderHook(() => 
         useNetworkBridge({ enableAutoUpdate: true })
       );
@@ -212,8 +197,7 @@ describe('useNetworkBridge', () => {
         expect(result.current.isReady).toBe(true);
       });
       
-      // useFrame 콜백이 등록되었는지 확인
-      expect(mockUseFrame).toHaveBeenCalled();
+      expect(mockBridge.acquireUpdates).toHaveBeenCalledWith('main', expect.anything());
     });
   });
 
@@ -244,4 +228,4 @@ describe('useNetworkBridge', () => {
       }).not.toThrow();
     });
   });
-}); 
+});

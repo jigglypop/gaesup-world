@@ -8,7 +8,8 @@ export function createShareLink(data: MinihomeData, url: string): string {
   const publicHome: MinihomeData = { ...data, diary: [], guestbook: [] };
   const bytes = new TextEncoder().encode(JSON.stringify(publicHome));
   const encoded = btoa(Array.from(bytes, (byte) => String.fromCharCode(byte)).join(''));
-  const result = `${url.split('#')[0]}${SHARE_PREFIX}${encoded}`;
+  const address = new URL(url); address.hash = ''; address.searchParams.delete('edit'); address.searchParams.delete('visit');
+  const result = `${address.href}${SHARE_PREFIX}${encoded}`;
   if (result.length > MAX_LINK_LENGTH) throw new Error('공유 링크가 너무 깁니다. 파일 백업을 사용해 주세요.');
   return result;
 }

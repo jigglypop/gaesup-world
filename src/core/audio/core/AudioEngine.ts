@@ -1,6 +1,9 @@
 import type { BgmTrack, SfxDef } from '../types';
 
+export type AudioEngineOptions = { canPlay?: () => boolean };
+
 class AudioEngine {
+  constructor(private readonly options: AudioEngineOptions = {}) {}
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private bgmGain: GainNode | null = null;
@@ -16,7 +19,7 @@ class AudioEngine {
   private volumes = { master: 1, bgm: 1, sfx: 1 };
 
   ensure(): boolean {
-    if (!this.playbackEnabled) return false;
+    if (!this.canPlay()) return false;
     if (this.ctx) return true;
     if (typeof window === 'undefined' || typeof window.AudioContext === 'undefined') return false;
     try {
@@ -49,6 +52,19 @@ class AudioEngine {
 
   resumePlayback(): void {
     this.playbackEnabled = true;
+  }
+
+  canPlay(): boolean { return this.playbackEnabled && (this.options.canPlay?.() ?? true); }
+
+  getDiagnostics() {
+    return { contextState: this.ctx?.state ?? 'uninitialized', bgm: this.currentBgm?.id ?? null,
+      activeSources: this.sources.size, pendingRequests: this.requests.size, decodedBuffers: this.bufferCache.size };
+  }
+
+  /** Invalidate gameplay sounds, including decodes already in flight, preserving BGM. */
+  cancelSfx(): void {
+    for (const [controller, bgm] of this.requests) if (!bgm) controller.abort();
+    for (const [source, state] of this.sources) if (!state.bgm) this.stopSource(source);
   }
 
   setMasterVolume(v: number): void {
@@ -89,6 +105,7 @@ class AudioEngine {
   }
 
   playBgm(track: BgmTrack | null): void {
+    if (!this.canPlay()) return;
     this.stopBgm();
     if (!track) return;
     if (!this.ensure() || !this.ctx || !this.bgmGain) return;
@@ -208,8 +225,8 @@ class AudioEngine {
 }
 
 let _instance: AudioEngine | null = null;
-export function createAudioEngine(): AudioEngine {
-  return new AudioEngine();
+export function createAudioEngine(options: AudioEngineOptions = {}): AudioEngine {
+  return new AudioEngine(options);
 }
 export function getAudioEngine(): AudioEngine {
   if (!_instance) _instance = new AudioEngine();

@@ -1,11 +1,10 @@
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
+import { cameraMeshMayIntersect, sweepSphereMesh } from './sphereSweep';
 import { ActiveStateType } from '../../motions/core/types';
 import { CAMERA_CONSTANTS } from '../core/constants';
 import { CameraOptionType, CameraBounds, CollisionCheckResult, Obstacle } from '../core/types';
-
-type SceneWithFrameId = THREE.Scene & { _frameId?: number };
 
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
@@ -16,7 +15,7 @@ const collisionDirection = new THREE.Vector3();
 const collisionRaycaster = new THREE.Raycaster();
 const collisionIntersections: THREE.Intersection[] = [];
 const collisionSafePosition = new THREE.Vector3();
-const collisionResultPosition = new THREE.Vector3();
+const collisionContact = new THREE.Vector3();
 
 // Scratch objects for activeStateUtils fallbacks (avoid per-frame allocations).
 const fallbackPosition = new THREE.Vector3();
@@ -25,10 +24,7 @@ const fallbackVelocity = new THREE.Vector3();
 const fallbackOffset = new THREE.Vector3();
 const fallbackToVec3 = new THREE.Vector3();
 
-// Cached collidable mesh list to avoid scene.traverse every frame.
-let cachedCollisionMeshes: THREE.Mesh[] = [];
-let cachedCollisionScene: THREE.Scene | null = null;
-let cachedCollisionVersion = -1;
+// Reuse storage, but observe hierarchy changes on every query (including before rendering).
 const uncachedCollisionMeshes: THREE.Mesh[] = [];
 const noCollisionExclusions: THREE.Object3D[] = [];
 
@@ -41,49 +37,25 @@ function collectCollisionMeshes(
   const visit = (object: THREE.Object3D): void => {
     // Exclusion is inherited: entire avatar/helper subtrees can be skipped.
     if (excludedObjects && (object.userData['intangible'] || excludedObjects.includes(object))) return;
+    object.updateWorldMatrix(false, false);
     if (object instanceof THREE.Mesh
       && !('isLineSegments2' in object && object.isLineSegments2)
-      && !object.userData['intangible'] && object.geometry?.boundingSphere) {
+      && !object.userData['intangible'] && object.geometry) {
       meshes.push(object);
     }
     for (const child of object.children) visit(child);
   };
+  scene.updateWorldMatrix(true, false);
   visit(scene);
   return meshes;
 }
 
 function getCollisionMeshes(scene: THREE.Scene, excludedObjects?: THREE.Object3D[]): THREE.Mesh[] {
-  const version = (scene as SceneWithFrameId)._frameId;
-  if (version === undefined) {
-    return collectCollisionMeshes(scene, uncachedCollisionMeshes, excludedObjects ?? noCollisionExclusions);
-  }
-
-  // Rebuild every 60 frames (~1s at 60fps) or when scene reference changes.
-  if (scene === cachedCollisionScene && version - cachedCollisionVersion < 60) {
-    return cachedCollisionMeshes;
-  }
-  cachedCollisionScene = scene;
-  cachedCollisionVersion = version;
-  cachedCollisionMeshes = collectCollisionMeshes(scene);
-  return cachedCollisionMeshes;
-}
-
-function isObjectExcluded(object: THREE.Object3D, excludedObjects?: THREE.Object3D[]): boolean {
-  let current: THREE.Object3D | null = object;
-  while (current) {
-    if (current.userData['intangible']) return true;
-    for (let i = 0, len = excludedObjects?.length ?? 0; i < len; i++) {
-      if (current === excludedObjects?.[i]) return true;
-    }
-    current = current.parent;
-  }
-
-  return false;
+  return collectCollisionMeshes(scene, uncachedCollisionMeshes, excludedObjects ?? noCollisionExclusions);
 }
 
 export function invalidateCollisionCache(): void {
-  cachedCollisionScene = null;
-  cachedCollisionVersion = -1;
+  uncachedCollisionMeshes.length = 0;
 }
 
 export { CAMERA_CONSTANTS };
@@ -165,48 +137,54 @@ export const cameraUtils = {
   ): CollisionCheckResult => {
     collisionDirection.subVectors(to, from);
     const distance = collisionDirection.length();
-    if (distance <= 0) {
-      return { safe: true, position: to, obstacles: [] };
-    }
-    collisionDirection.multiplyScalar(1 / distance);
+    if (!Number.isFinite(distance) || !Number.isFinite(radius) || radius < 0) throw new RangeError('Camera sweep requires finite endpoints and a nonnegative radius');
+    if (distance > 0) collisionDirection.multiplyScalar(1 / distance);
+    else collisionDirection.set(0, 0, 1);
     collisionRaycaster.set(from, collisionDirection);
     collisionRaycaster.near = 0;
     collisionRaycaster.far = distance;
 
     const obstacles: Obstacle[] = [];
-    const meshes = getCollisionMeshes(scene, excludedObjects);
+    let safeDistance = distance;
 
-    for (let i = 0, len = meshes.length; i < len; i++) {
-      const mesh = meshes[i];
-      if (!mesh) continue;
-      if (isObjectExcluded(mesh, excludedObjects)) continue;
-      collisionIntersections.length = 0;
-      collisionRaycaster.intersectObject(mesh, false, collisionIntersections);
-      const hit = collisionIntersections[0];
-      if (hit) {
-        obstacles.push({
-          object: mesh,
-          distance: hit.distance,
-          point: hit.point,
-        });
+    try {
+      const meshes = getCollisionMeshes(scene, excludedObjects);
+      for (let i = 0, len = meshes.length; i < len; i++) {
+        const mesh = meshes[i];
+        if (!mesh) continue;
+        if (!cameraMeshMayIntersect(mesh, collisionRaycaster.ray, radius, distance)) continue;
+        if (mesh instanceof THREE.SkinnedMesh) {
+          // SkinnedMesh updates its attached bind inverse in this override.
+          mesh.updateMatrixWorld(true);
+          for (const bone of mesh.skeleton.bones) bone.updateWorldMatrix(true, false);
+        }
+        collisionIntersections.length = 0;
+        collisionRaycaster.intersectObject(mesh, false, collisionIntersections);
+        const hit = collisionIntersections[0];
+        const sweptDistance = radius > 0
+          ? sweepSphereMesh(mesh, collisionRaycaster.ray, radius, distance, collisionContact) : Infinity;
+        if (Number.isFinite(sweptDistance)) {
+          safeDistance = Math.min(safeDistance, sweptDistance);
+          obstacles.push({ object: mesh, distance: from.distanceTo(collisionContact), point: collisionContact.clone() });
+        } else if (hit) {
+          safeDistance = Math.min(safeDistance, Math.max(0, hit.distance - radius));
+          obstacles.push({ object: mesh, distance: hit.distance, point: hit.point.clone() });
+        }
       }
+    } finally {
+      uncachedCollisionMeshes.length = 0;
+      collisionIntersections.length = 0;
     }
 
     if (obstacles.length === 0) {
-      return { safe: true, position: to, obstacles: [] };
+      return { safe: true, position: to.clone(), obstacles: [] };
     }
-
-    const nearestObstacle = obstacles.reduce((nearest, current) =>
-      current.distance < nearest.distance ? current : nearest,
-    );
 
     collisionSafePosition
       .copy(from)
-      .addScaledVector(collisionDirection, Math.max(0, nearestObstacle.distance - radius));
+      .addScaledVector(collisionDirection, safeDistance);
 
-    // Copy into a dedicated result scratch to avoid returning a shared vector.
-    collisionResultPosition.copy(collisionSafePosition);
-    return { safe: false, position: collisionResultPosition, obstacles };
+    return { safe: false, position: collisionSafePosition.clone(), obstacles };
   },
 
   distanceSquared: (a: THREE.Vector3, b: THREE.Vector3): number => {

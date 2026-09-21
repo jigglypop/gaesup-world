@@ -34,6 +34,8 @@ export interface UseEntityOptions
   colliderRef?: RefObject<RapierCollider>;
   groundRay?: GroundRay;
   colliderSize?: PhysicsEntityProps['colliderSize'];
+  physicsWorld?: UsePhysicsBridgeOptions['physicsWorld'];
+  groundContactFilter?: UsePhysicsBridgeOptions['groundContactFilter'];
 }
 
 export function useEntity(options: UseEntityOptions) {
@@ -74,6 +76,8 @@ export function useEntity(options: UseEntityOptions) {
     entityId,
     rigidBodyRef,
     enabled: active,
+    ...(options.physicsWorld ? { physicsWorld: options.physicsWorld } : {}),
+    ...(options.groundContactFilter ? { groundContactFilter: options.groundContactFilter } : {}),
     ...(outerGroupRef ? { outerGroupRef } : {}),
     ...(innerGroupRef ? { innerGroupRef } : {}),
     ...(colliderRef ? { colliderRef } : {}),

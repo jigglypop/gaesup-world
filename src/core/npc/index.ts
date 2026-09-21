@@ -4,6 +4,9 @@ export * from './stores/npcStore';
 export * from './components/NPCSystem';
 export { NPCInstance } from './components/NPCInstance';
 export { NPCPreview } from './components/NPCPreview';
+export { NPCSimulation } from './core/NPCSimulation';
+export type { NPCBodyPort, NPCSimulationStore } from './types/simulation';
+export { NPCPerceptionIndex } from './core/NPCPerceptionIndex';
 export { NPCEventEditor } from './components/NPCEventEditor';
 export {
   getNPCScheduler,

@@ -25,3 +25,14 @@ it('matches a brute-force sphere query across signed cell boundaries and reuses 
     }
   }
 });
+
+it('bounds huge and infinite radius work and handles extreme coordinates without an unbounded cell loop', () => {
+  const grid = new SpatialGrid();
+  grid.add('origin', new Vector3()); grid.add('remote', new Vector3(1e100, 0, 1e100));
+  expect(grid.getNearby(new Vector3(), Infinity).sort()).toEqual(['origin', 'remote']);
+  expect(grid.getNearby(new Vector3(), 1e20)).toEqual(['origin']);
+  expect(grid.getNearby(new Vector3(1e100, 0, 1e100), 1)).toEqual(['remote']);
+  expect(grid.getNearby(new Vector3(), -1)).toEqual([]);
+  expect(grid.getNearby(new Vector3(), NaN)).toEqual([]);
+  expect(() => new SpatialGrid({ cellSize: 0 })).toThrow(RangeError);
+});

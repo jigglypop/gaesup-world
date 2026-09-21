@@ -11,11 +11,13 @@ export function createRoomAssets(scene: Scene) {
   const cone = new ConeGeometry(1, 1, 24);
   const geometries = [box, sphere, cylinder, cone];
   const materials = new Map<string, MeshStandardMaterial>();
-  function material(color: string) {
-    let value = materials.get(color);
+  function material(color: string, glow = 0) {
+    const key = `${color}:${glow}`;
+    let value = materials.get(key);
     if (!value) {
-      value = new MeshStandardMaterial({ color, roughness: 0.82 });
-      materials.set(color, value);
+      value = new MeshStandardMaterial({ color, roughness: 0.82, emissive: glow > 0 ? color : '#000000', emissiveIntensity: glow });
+      value.name = `${color}${glow ? ` · 발광 ${glow}` : ''}`;
+      materials.set(key, value);
     }
     return value;
   }
@@ -37,33 +39,21 @@ export function createRoomAssets(scene: Scene) {
     parent.add(mesh);
     return mesh;
   }
-  const room = new Group();
+  const room = new Group(); room.name = '타운 구조물';
   scene.add(room);
-  part(room, '#d4ab85', [8.35, 0.32, 8.35], [0, -0.18, 0]);
-  for (let i = 0; i < 16; i += 1) {
-    part(room, i % 3 === 0 ? '#ead5b7' : '#e5cba8', [0.492, 0.04, 8], [-3.75 + i * 0.5, 0.01, 0]);
-  }
-  const back = part(room, '#ead3c6', [8.3, 3.5, 0.18], [0, 1.6, -4.08]);
-  const left = part(room, '#ead3c6', [0.18, 3.5, 8.3], [-4.08, 1.6, 0]);
-  part(room, '#ffefe0', [8.2, 0.13, 0.2], [0, 0.1, -3.95]);
-  part(room, '#ffefe0', [0.2, 0.13, 8.2], [-3.95, 0.1, 0]);
-  part(room, '#f7edda', [0.19, 2.05, 2.3], [-3.94, 2, -1.5]);
-  part(room, '#a9d6d8', [0.2, 1.72, 1.94], [-3.81, 2, -1.5]);
-  part(room, '#fcf4df', [0.23, 0.08, 1.94], [-3.7, 2, -1.5]);
-  part(room, '#fcf4df', [0.23, 1.72, 0.08], [-3.7, 2, -1.5]);
-  part(room, '#fff2de', [0.4, 0.12, 2.8], [-3.68, 1.05, -1.5]);
-  const rug = part(room, '#e2a88e', [2.5, 0.04, 2.0], [0, 0.07, 0.9], 'cylinder');
-  rug.rotation.y = 0.2;
-  part(room, '#faf1dc', [1.1, 1.15, 0.1], [-0.1, 2.35, -3.92]);
-  part(room, '#adc0a6', [0.9, 0.94, 0.12], [-0.1, 2.35, -3.85]);
-  part(room, '#f5d88e', [0.22, 0.22, 0.04], [0.1, 2.55, -3.76], 'sphere');
-  part(room, '#f0f4e4', [0.55, 0.13, 0.04], [-0.18, 2.2, -3.76]);
-  const clock = part(room, '#fff6df', [0.4, 0.06, 0.4], [2.95, 2.7, -3.86], 'cylinder');
-  clock.rotation.x = Math.PI / 2;
-  part(room, '#876b5d', [0.03, 0.25, 0.04], [2.95, 2.8, -3.77]);
-  part(room, '#876b5d', [0.18, 0.03, 0.04], [3.025, 2.7, -3.77]);
-  function furniture(kind: FurnitureKind) {
-    const group = new Group();
+  part(room, '#667f68', [24.2, 0.5, 24.2], [0, -0.31, 0]);
+  // Low walls leave the editable terrain visible from every camera preset.
+  const back = part(room, '#e5d8bf', [8, 1.6, 0.18], [-7, 0.8, -10]);
+  const left = part(room, '#e5d8bf', [0.18, 1.6, 6], [-11, 0.8, -7]);
+  const rug = part(room, '#c4a68d', [7, 0.14, 0.18], [6.5, 0.1, -10]);
+  for (const x of [-9, -5, 4, 9]) part(room, '#c0a37b', [0.12, 0.8, 0.12], [x, 0.4, -10.1]);
+  function furniture(kind: FurnitureKind, glow = 0) {
+    const group = new Group(); group.name = kind;
+    const lit = (color: string, scale: [number, number, number], position: [number, number, number], shape: 'box' | 'sphere' | 'cylinder' | 'cone' = 'box') => {
+      const mesh = part(group, color, scale, position, shape);
+      if (glow > 0) mesh.material = material(color, glow);
+      return mesh;
+    };
     switch (kind) {
       case 'sofa':
         part(group, '#c88672', [2.6, 0.42, 1.1], [0, 0.42, 0]);
@@ -114,16 +104,60 @@ export function createRoomAssets(scene: Scene) {
       case 'lamp':
         part(group, '#b49a79', [0.33, 0.1, 0.33], [0, 0.07, 0], 'cylinder');
         part(group, '#a68c6d', [0.035, 1.85, 0.035], [0, 0.95, 0], 'cylinder');
-        part(group, '#f9e7ba', [0.53, 0.75, 0.53], [0, 1.95, 0], 'cone');
+        lit('#fff0bd', [0.53, 0.75, 0.53], [0, 1.95, 0], 'cone');
         break;
       case 'cushion':
         part(group, '#9bb8a2', [0.6, 0.18, 0.6], [0, 0.2, 0], 'sphere');
         break;
+      case 'tree':
+        part(group, '#936e4c', [0.2, 1.1, 0.2], [0, 0.55, 0], 'cylinder');
+        part(group, '#548a64', [0.9, 1.45, 0.9], [0, 1.65, 0], 'cone');
+        part(group, '#78a17a', [0.66, 1.3, 0.66], [0, 2.35, 0], 'cone');
+        break;
+      case 'bench':
+        part(group, '#b28059', [2.2, 0.15, 0.8], [0, 0.55, 0]);
+        part(group, '#cfa77d', [2.2, 0.65, 0.12], [0, 0.95, -0.35]);
+        for (const x of [-0.8, 0.8]) part(group, '#526a62', [0.13, 0.5, 0.7], [x, 0.25, 0]);
+        break;
+      case 'desk':
+        part(group, '#ebd6b0', [1.8, 0.12, 1], [0, 0.95, 0]);
+        for (const x of [-0.7, 0.7]) part(group, '#66767a', [0.1, 0.9, 0.85], [x, 0.45, 0]);
+        part(group, '#314b58', [0.9, 0.62, 0.09], [0, 1.38, -0.3]);
+        lit('#79d7d3', [0.79, 0.49, 0.02], [0, 1.38, -0.245]);
+        part(group, '#677f85', [0.72, 0.04, 0.22], [0, 1.05, 0.12]);
+        part(group, '#839b9a', [0.6, 0.12, 0.6], [0, 0.53, 0.96]);
+        part(group, '#526a62', [0.15, 0.5, 0.15], [0, 0.25, 0.96], 'cylinder');
+        break;
+      case 'neon':
+        part(group, '#526a62', [0.7, 0.12, 0.7], [0, 0.06, 0]);
+        part(group, '#526a62', [0.08, 1.4, 0.08], [0, 0.7, 0]);
+        lit('#ff8ecb', [0.13, 1.15, 0.13], [-0.5, 1.8, 0]);
+        lit('#ff8ecb', [0.13, 1.15, 0.13], [0.5, 1.8, 0]);
+        lit('#ff8ecb', [1.13, 0.13, 0.13], [0, 2.31, 0]);
+        lit('#86eff7', [0.23, 0.23, 0.23], [0, 1.85, 0], 'sphere');
+        break;
+      case 'fountain':
+        part(group, '#b6c5bc', [1.1, 0.35, 1.1], [0, 0.2, 0], 'cylinder');
+        lit('#6bc5d5', [0.96, 0.03, 0.96], [0, 0.39, 0], 'cylinder');
+        part(group, '#dae0cf', [0.2, 0.9, 0.2], [0, 0.75, 0], 'cylinder');
+        lit('#b2e8eb', [0.42, 0.12, 0.42], [0, 1.23, 0], 'sphere');
+        break;
+      case 'arcade':
+        part(group, '#536984', [0.9, 1.8, 0.8], [0, 0.9, 0]);
+        lit('#7de7cf', [0.68, 0.55, 0.04], [0, 1.25, 0.42]);
+        lit('#ffa3c2', [0.8, 0.22, 0.05], [0, 1.7, 0.42]);
+        part(group, '#34495b', [0.82, 0.1, 0.4], [0, 0.84, 0.5]);
+        part(group, '#e4a865', [0.05, 0.15, 0.05], [-0.2, 0.96, 0.52], 'cylinder');
+        break;
+    }
+    // Ordinary furniture can also be authored as a Bloom object.
+    if (glow > 0 && !['lamp', 'neon', 'desk', 'fountain', 'arcade'].includes(kind)) {
+      group.traverse(object => { if (object instanceof Mesh && object.material instanceof MeshStandardMaterial) object.material = material(`#${object.material.color.getHexString()}`, glow); });
     }
     return group;
   }
   const avatar = new Group();
-  avatar.position.set(1.8, 0, 1.5);
+  avatar.name = '내 아바타'; avatar.position.set(0, 0, 2);
   scene.add(avatar);
   part(avatar, '#6b493d', [0.34, 0.38, 0.32], [0, 1.27, 0], 'sphere');
   part(avatar, '#f1c7a5', [0.27, 0.3, 0.26], [0, 1.24, 0.13], 'sphere');
@@ -141,7 +175,7 @@ export function createRoomAssets(scene: Scene) {
     feet.push(part(avatar, '#76534a', [0.15, 0.12, 0.23], [x, 0.1, 0.04]));
   }
   material('#a9d6d8').emissive = new Color('#8cc6dc').multiplyScalar(0.16);
-  material('#f9e7ba').emissive = new Color('#ffdc9b').multiplyScalar(0.2);
+
   return { room, back, left, rug, avatar, feet, furniture, part, dispose: () => {
     for (const geometry of geometries) geometry.dispose();
     for (const value of materials.values()) value.dispose();

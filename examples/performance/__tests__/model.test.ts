@@ -13,10 +13,10 @@ function run(): LabRun {
   };
 }
 
-it('round trips physical world speed with its unit and recomputes numeric aggregates', () => {
-  const saved = run(); saved.metrics['speed'] = summarize([5, 10], 'world/s', 'rapier-linear-velocity');
+it.each(['world/s', 'world'] as const)('round trips %s with its unit and recomputes numeric aggregates', unit => {
+  const saved = run(); saved.metrics['speed'] = summarize([5, 10], unit, 'rapier-physical-measurement');
   const restored = parseRun(JSON.parse(JSON.stringify(saved)));
-  expect(restored.metrics['speed']).toMatchObject({ unit: 'world/s', samples: [5, 10], p50: 5 });
+  expect(restored.metrics['speed']).toMatchObject({ unit, samples: [5, 10], p50: 5 });
 });
 
 it('round trips raw samples and recomputes untrusted aggregates', () => {

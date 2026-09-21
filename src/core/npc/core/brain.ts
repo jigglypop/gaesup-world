@@ -79,6 +79,7 @@ export function createNPCObservation(
   instance: NPCInstance,
   instances: Map<string, NPCInstance>,
   timestamp: number,
+  candidates: Iterable<NPCInstance> = instances.values(),
 ): NPCObservation {
   const perception = instance.perception;
   const sightRadius = perception?.enabled ? perception.sightRadius : 0;
@@ -86,7 +87,7 @@ export function createNPCObservation(
   const perceived: NPCObservationTarget[] = [];
 
   if (sightRadius > 0) {
-    for (const target of instances.values()) {
+    for (const target of candidates) {
       if (target.id === instance.id) continue;
       const distanceSquared = getDistanceSquared(instance.position, target.position);
       if (distanceSquared > sightRadiusSquared) continue;

@@ -31,7 +31,7 @@ export async function runScenario(
   document.addEventListener('visibilitychange', hidden);
   try {
     await scenario.run({
-      host, config, signal, progress,
+      host, config, signal, progress, role,
       assert: (id, expected, actual) => run.assertions.push({ id, expected, actual, pass: expected === actual }),
       sample: (name, value, unit, scope) => {
         let entry = samples.get(name);

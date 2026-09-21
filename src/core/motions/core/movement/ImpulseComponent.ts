@@ -73,6 +73,7 @@ export class ImpulseComponent {
       this.scratchLinvel.y = jumpSpeed;
       this.scratchLinvel.z = currentVel.z;
       rigidBodyRef.current.setLinvel(this.scratchLinvel, true);
+      this.stateManager.getActiveState().isGround = false;
       this.stateManager.updateGameStates({
         isOnTheGround: false,
       });

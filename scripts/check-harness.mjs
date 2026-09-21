@@ -10,8 +10,16 @@ const config = read('.codex/config.toml');
 assert.match(config, /^model = "gpt-6-astra"$/m);
 assert.match(config, /^default_subagent_model = "gpt-5.6-sol"$/m);
 assert.match(config, /^max_depth = 1$/m);
-assert.match(instructions, /canonical write path/);
-assert.match(instructions, /verify:full/);
+assert.match(instructions, /gpt-6-astra/);
+assert.match(instructions, /gpt-5\.6-sol/);
+// Check executable gates, not prose removed from the current AGENTS.md.
+const scripts = JSON.parse(read('package.json')).scripts;
+for (const gate of ['test:harness', 'lint', 'test:asset-tools', 'build']) {
+  assert.ok(scripts.verify.includes(gate), `verify must invoke ${gate}`);
+}
+for (const gate of ['verify', 'test:memory:ci', 'test:package:built', 'test:demo']) {
+  assert.ok(scripts['verify:full'].includes(gate), `verify:full must invoke ${gate}`);
+}
 const tsconfig = JSON.parse(read('tsconfig.json'));
 for (const flag of ['strict', 'noUncheckedIndexedAccess', 'exactOptionalPropertyTypes']) {
   assert.equal(tsconfig.compilerOptions[flag], true, `Required TypeScript contract: ${flag}`);

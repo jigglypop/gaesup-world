@@ -62,11 +62,11 @@ export async function runMinihomeApiChecks(signal?: AbortSignal): Promise<ApiChe
   await check('scene-save', '저장 binding·snapshot 복원', ['SaveSystem', 'createSceneDocumentSaveBinding', 'SaveSystem.register', 'SaveSystem.createBlob', 'SaveSystem.hydrateBlob', 'SaveSystem.save', 'SaveSystem.load'], async () => {
     const values = new Map<string, import('gaesup-world').SaveBlob>();
     const save = new api.SaveSystem({ adapter: { read: async slot => values.get(slot) ?? null, write: async (slot, value) => { values.set(slot, value); }, list: async () => [...values.keys()], remove: async slot => { values.delete(slot); } } });
-    const controller = api.createSceneDocumentController(createMinihome().room); const off = save.register(api.createSceneDocumentSaveBinding(controller));
+    const initial = createMinihome().room; const controller = api.createSceneDocumentController(initial); const off = save.register(api.createSceneDocumentSaveBinding(controller));
     try {
       const snapshot = save.createBlob(); await save.save('fixture'); controller.dispatch({ type: 'scene-object.delete', objectId: 'sofa-1' });
-      assert(await save.load('fixture'), '저장 읽기 실패'); assert(controller.getSnapshot().objects.length === 6, '저장 복원 불일치');
-      controller.dispatch({ type: 'scene-object.delete', objectId: 'table-1' }); assert(save.hydrateBlob(snapshot), 'snapshot 적용 실패'); assert(controller.getSnapshot().objects.length === 6, 'snapshot 복원 불일치');
+      assert(await save.load('fixture'), '저장 읽기 실패'); assert(JSON.stringify(controller.getSnapshot()) === JSON.stringify(initial), '저장 복원 불일치');
+      controller.dispatch({ type: 'scene-object.delete', objectId: 'table-1' }); assert(save.hydrateBlob(snapshot), 'snapshot 적용 실패'); assert(JSON.stringify(controller.getSnapshot()) === JSON.stringify(initial), 'snapshot 복원 불일치');
     } finally { off(); }
   });
   await check('unity-exchange', 'Unity 장면 왕복', ['exportUnityScene', 'importUnityScene'], () => {
@@ -104,17 +104,17 @@ export async function runMinihomeApiChecks(signal?: AbortSignal): Promise<ApiChe
     } finally { navigation.dispose(); }
   });
   await check('home-history', '미니홈피 변경·undo/redo', ['createMinihomeSession', 'MinihomeSession.update', 'MinihomeSession.undo', 'MinihomeSession.redo', 'parseMinihome'], () => {
-    const session = createMinihomeSession(createMinihome());
+    const initial = createMinihome(); const session = createMinihomeSession(initial);
     try {
       session.update(data => ({ ...data, theme: 'sage' })); session.controller.dispatch({ type: 'scene-object.create', object: makeFurniture('lamp', 0, 0, 'added') });
-      session.undo(); assert(session.getSnapshot().data.room.objects.length === 6, '객체 undo 실패'); session.undo(); assert(session.getSnapshot().data.theme === 'peach', '테마 undo 실패');
-      session.redo(); session.redo(); assert(session.getSnapshot().data.room.objects.length === 7 && !!parseMinihome(JSON.stringify(session.getSnapshot().data)), 'redo 문서 불일치');
+      session.undo(); assert(JSON.stringify(session.getSnapshot().data.room) === JSON.stringify(initial.room), '객체 undo 실패'); session.undo(); assert(session.getSnapshot().data.theme === 'peach', '테마 undo 실패');
+      session.redo(); session.redo(); assert(session.getSnapshot().data.room.objects.length === initial.room.objects.length + 1 && !!parseMinihome(JSON.stringify(session.getSnapshot().data)), 'redo 문서 불일치');
     } finally { session.dispose(); }
   }, 'example');
   await check('home-sharing', '공유 링크·개인 기록 분리', ['createShareLink', 'readShareLink'], () => {
     const home = createMinihome(); home.diary = [{ id: 'private', author: 'me', text: 'private', date: new Date(0).toISOString() }];
     const link = createShareLink(home, 'https://example.test/'); const shared = readShareLink(new URL(link).hash);
-    assert(shared?.room.objects.length === 6 && shared.diary.length === 0 && home.diary.length === 1, '공유 또는 개인 기록 계약 불일치');
+    assert(shared && JSON.stringify(shared.room) === JSON.stringify(home.room) && JSON.stringify(shared.terrain) === JSON.stringify(home.terrain) && shared.diary.length === 0 && home.diary.length === 1, '공유 또는 개인 기록 계약 불일치');
   }, 'example');
   return results;
 }

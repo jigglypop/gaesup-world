@@ -32,8 +32,10 @@ import type { MotionsRuntime } from '../motions/plugin';
 import type { ClickNavigationRoute } from '../navigation/ClickNavigationRoute';
 import type { NavigationObstacleRegistry } from '../navigation/NavigationObstacleRegistry';
 import type { NavigationSystem, NavigationConfig } from '../navigation/NavigationSystem';
+import type { NetworkBridge } from '../networks/bridge/NetworkBridge';
 import type { NPCBrainAdapterRegistry } from '../npc/core/brain';
 import type { SchedulerRegistry } from '../npc/core/NPCScheduler';
+import type { NPCSimulation } from '../npc/core/NPCSimulation';
 import type { ReinforcementAdapter } from '../npc/core/reinforcement';
 import type { NPCStoreApi } from '../npc/stores/npcStore';
 import type { GaesupPlugin, PluginLogger, PluginRegistry, PluginRuntimeTarget } from '../plugins';
@@ -104,6 +106,7 @@ export type GaesupRuntime = {
   buildingStore: BuildingStoreApi;
   npcStore: NPCStoreApi;
   npcScheduler: SchedulerRegistry;
+  npcSimulation: NPCSimulation;
   npcBrainAdapters: NPCBrainAdapterRegistry;
   npcReinforcement: ReinforcementAdapter;
   buildingRenderStore: BuildingRenderStore;
@@ -126,6 +129,7 @@ export type GaesupRuntime = {
   readonly motions: MotionsRuntime;
   readonly motionBridge: MotionBridge;
   readonly animationBridge: AnimationBridge;
+  readonly networkBridge: NetworkBridge;
   isActive: () => boolean;
   getLifecycleRevision: () => number;
   subscribeLifecycle: (listener: () => void) => () => void;

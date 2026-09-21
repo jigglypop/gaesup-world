@@ -16,7 +16,18 @@ test('canonical furniture edits survive serialization without renderer objects',
   expect(parsed?.room.objects.find((object) => object.id === added.id)?.transform.position).toEqual(
     [2, 0, 1],
   );
-  expect(home.room.objects).toHaveLength(6);
+  expect(home.room.objects.some(object => object.id === added.id)).toBe(false);
+});
+
+test('migrates old room settings and preserves only supported values in backups', () => {
+  const home = createMinihome();
+  const legacy = { ...home, roomSettings: undefined };
+  expect(parseMinihome(JSON.stringify(legacy))?.roomSettings).toEqual(home.roomSettings);
+  home.roomSettings = { ...home.roomSettings, quality: 'economy', lighting: 'evening', camera: 'front', avatar: 'blue' };
+  expect(parseMinihome(JSON.stringify(home))?.roomSettings).toEqual(home.roomSettings);
+  for (const roomSettings of [null, {}, { ...home.roomSettings, quality: 'ultra' }, { ...home.roomSettings, camera: 'free' }]) {
+    expect(parseMinihome(JSON.stringify({ ...home, roomSettings }))).toBeNull();
+  }
 });
 
 test('backup recovery preserves corrupt primary and saving rejects concurrent tab changes', () => {

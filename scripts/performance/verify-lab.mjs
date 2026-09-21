@@ -31,6 +31,18 @@ try {
   assert.equal(await clockRow.locator('td').nth(6).textContent(), '2,000');
   assert.equal(await clockRow.locator('td').nth(7).textContent(), '-1,000');
   await page.screenshot({ path: path.join(output, 'clock-comparison.png'), fullPage: true });
+  await page.getByRole('button', { name: /^R03 / }).click();
+  const groundingRow = page.getByRole('row').filter({ hasText: 'grounding-mismatches' });
+  assert.equal(await groundingRow.locator('td').nth(4).textContent(), '0');
+  assert.equal(await groundingRow.locator('td').nth(6).textContent(), '7');
+  assert.equal(await groundingRow.locator('td').nth(7).textContent(), '-7');
+  await page.screenshot({ path: path.join(output, 'grounding-comparison.png'), fullPage: true });
+  await page.getByLabel('재현 시나리오', { exact: true }).selectOption('entity-grounding');
+  assert.equal(await page.getByRole('row').filter({ hasText: 'entity-grounding-mismatches' }).locator('td').nth(4).textContent(), '0');
+  await page.getByLabel('재현 시나리오', { exact: true }).selectOption('camera-smoothing');
+  for (const metric of ['camera-interpolated-overlaps', 'camera-interpolated-view-blocks']) {
+    assert.equal(await page.getByRole('row').filter({ hasText: metric }).locator('td').nth(4).textContent(), '0');
+  }
   await page.getByLabel('재현 시나리오', { exact: true }).selectOption('world-configuration');
   const configurationRow = page.getByRole('row').filter({ hasText: 'configuration-mismatches' });
   assert.equal(await configurationRow.locator('td').nth(4).textContent(), '0');
@@ -145,6 +157,28 @@ try {
     await page.screenshot({ path: path.join(output, `${scenario}-comparison.png`), fullPage: true });
   }
   Object.assign(liveMetrics, { 'minihome-api': 'miniroom-api-failures', 'minihome-lifecycle': 'miniroom-idle-callbacks' });
+  await page.getByLabel('재현 시나리오', { exact: true }).selectOption('world-restore-effects');
+  for (const [metric, baseline] of [['restore-late-cinematic-effects', '1'], ['restore-reentrant-scene-mismatches', '1'], ['restore-intermediate-audio-plays', '2'], ['restore-rollback-effects', '3']]) {
+    const row = page.getByRole('row').filter({ hasText: metric });
+    assert.equal(await row.locator('td').nth(4).textContent(), '0');
+    assert.equal(await row.locator('td').nth(6).textContent(), baseline);
+  }
+  await page.screenshot({ path: path.join(output, 'restore-effects-comparison.png'), fullPage: true });
+  Object.assign(liveMetrics, { 'world-restore-effects': 'restore-late-cinematic-effects', 'world-restore-audio-decode': 'restore-late-native-audio-sources' });
+  for (const [scenario, metric, baseline, candidate] of [
+    ['world-gameplay-restore', 'gameplay-restore-late-flags', '2', '0'],
+    ['gameplay-command-order', 'gameplay-sync-intermediate-microtasks', '1', '0'],
+    ['world-network-clock', 'network-shared-world-engines', '1', '0'],
+    ['world-network-clock', 'network-publications/144Hz/2', '0', '30'],
+  ]) {
+    await page.getByLabel('재현 시나리오', { exact: true }).selectOption(scenario);
+    const row = page.getByRole('row').filter({ hasText: metric });
+    assert.equal(await row.locator('td').nth(4).textContent(), candidate);
+    assert.equal(await row.locator('td').nth(6).textContent(), baseline);
+    await page.screenshot({ path: path.join(output, `${scenario}-comparison.png`), fullPage: true });
+  }
+  Object.assign(liveMetrics, { 'world-gameplay-restore': 'gameplay-restore-late-flags', 'gameplay-command-order': 'gameplay-sync-intermediate-microtasks', 'world-network-clock': 'network-shared-world-engines', 'world-network-consumers': 'network-hook-raf-after-unmount/144Hz' });
+  Object.assign(liveMetrics, { 'world-physics-clock': 'physics-display-rate-error-144' });
   for (const [scenarioId, metric] of Object.entries(liveMetrics)) {
     await page.getByLabel('재현 시나리오', { exact: true }).selectOption(scenarioId);
     const before = await page.evaluate(() => window.performanceLab.runs().length);
@@ -154,7 +188,8 @@ try {
     });
     await page.waitForFunction(count => window.performanceLab.runs().length > count, before);
     const live = await page.evaluate(id => window.performanceLab.runs().find(run => run.scenarioId === id), scenarioId);
-    assert.equal(live.status, 'passed');
+    writeFileSync(path.join(output, `${scenarioId}-${live.runId}.json`), JSON.stringify(live, null, 2));
+    assert.equal(live.status, 'passed', JSON.stringify({ scenarioId, failed: live.assertions.filter(item => !item.pass), errors: live.errors }));
     assert.equal(live.metrics[metric].p95, 0);
     if (scenarioId === 'grass-rendering' || scenarioId === 'world-view-picking' || scenarioId === 'npc-frame-ownership' || scenarioId === 'interaction-world-tracking' || scenarioId === 'gamepad-motion-scene') await page.screenshot({ path: path.join(output, `${scenarioId}.png`), fullPage: true });
   }

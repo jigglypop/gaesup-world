@@ -1142,8 +1142,119 @@ body {
 @media (max-width: 600px) {
   .miniroom-view { height: 340px; }
   .room-view-controls { gap: 6px; }
-  .room-view-controls button, .room-view-controls select { min-height: 40px; padding: 8px; }
+  .room-view-controls button, .room-view-controls select { min-height: 44px; padding: 8px; }
   .room-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .room-caption { left: 8px; right: 8px; bottom: 10px; font-size: 9px; line-height: 1.7; }
   .room-caption span { display: block; margin-left: 0; font-size: 8px; }
 }
+/* Spatial town and dedicated editing workspace. */
+.town-home { padding: 0 24px 24px; background: #eef1ed; color: #334f49; }
+.town-home .home-header { max-width: 1600px; height: 72px; margin: auto; }
+.town-home .home-intro, .town-home .binder-ring, .town-home .little-note, .town-home .header-note, .town-home .home-footer { display: none; }
+.town-home .home-book { max-width: 1600px; margin: 0 auto; padding: 0; background: transparent; border: 0; box-shadow: none; }
+.town-home .book-stitch { border: 0; padding: 0; }
+.town-home .book-pages { display: grid; grid-template-columns: 190px minmax(0,1fr); gap: 20px; padding: 0; background: transparent; border: 0; border-radius: 0; }
+.town-home .profile-page { padding: 18px 0; border: 0; min-width: 0; width: auto; }
+.town-home .profile-paper { padding: 16px; border-radius: 16px; box-shadow: none; }
+.town-home .content-page { min-width: 0; padding: 0; }
+.town-home .homepage-title { margin: 0; padding: 5px 0 14px; }
+.town-home .homepage-title h1 { font-size: 19px; }
+.town-home .page-paper { padding: 16px; border-radius: 18px; background: #f9fbf8; min-height: auto; }
+.town-home .page-heading { padding: 0 0 12px; margin: 0; }
+.town-home .section-kicker { display: none; }
+.town-home .page-heading h2 { font-size: 16px; }
+.town-home .home-tabs { position: static; grid-column: 1 / -1; display: flex; gap: 8px; flex-direction: row; width: auto; }
+.town-home .home-tabs button { min-width: 95px; border-radius: 8px; writing-mode: horizontal-tb; }
+.town-editing .profile-page, .town-editing .homepage-title, .town-editing .home-updates { display: none; }
+.town-editing .book-pages { grid-template-columns: minmax(0,1fr); }
+.town-workspace { min-width: 0; }
+.town-editing .town-workspace { display: grid; grid-template-columns: 258px minmax(0,1fr); gap: 16px; align-items: start; }
+.town-home .miniroom-view { height: min(66vh,760px); min-height: 420px; aspect-ratio: auto; border-radius: 13px; border: 1px solid #ccd8d0; background: #e4ebe5; }
+.town-home .miniroom-view canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.town-home .room-caption { bottom: 14px; left: 16px; right: auto; padding: 9px 13px; border: 1px solid #dce4d9; border-radius: 8px; background: #fbfdf8eb; color: #52665d; font-size: 11px; }
+.town-zones { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; padding: 5px; border-radius: 9px; background: #fafdf4ee; box-shadow: 0 3px 12px #23422d12; white-space: nowrap; }
+.town-home .town-zones button { padding: 7px 12px; border-radius: 5px; font-size: 11px; }
+.town-home .town-zones button:hover { background: #dce9dd; }
+.town-home .town-edit-button, .town-home .decorate-button { padding: 10px 15px; border-radius: 8px; background: #326957; color: #fff; font-weight: 600; }
+.town-home .room-actions { margin-top: 12px; }
+.town-home .room-actions p { display: none; }
+.town-home .room-actions > div { width: 100%; justify-content: flex-end; }
+.town-editor { border: 1px solid #d6dfd5; background: #f0f4ed; padding: 14px; border-radius: 12px; max-height: 1050px; overflow: auto; }
+.editor-heading { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-bottom: 12px; }
+.editor-heading strong { font-size: 14px; }
+.editor-heading span { color: #6f8078; font-size: 10px; }
+.town-editor fieldset, .camera-options fieldset { min-width: 0; margin: 13px 0 0; padding: 12px 0; border: 0; border-top: 1px solid #d6dfd5; }
+.town-editor legend, .camera-options legend { padding-right: 8px; font-weight: 600; font-size: 12px; }
+.town-editor label, .camera-options label { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 7px; margin: 10px 0; font-size: 11px; }
+.town-editor input:not([type=checkbox]), .town-editor select, .camera-options select { width: 100%; min-width: 0; min-height: 34px; border: 1px solid #cbd8ca; border-radius: 6px; background: #fffefb; padding: 5px 8px; }
+.town-editor input[type=range], .camera-options input[type=range] { width: 100%; padding: 0; accent-color: #467963; }
+.town-editor p, .camera-options p { font-size: 10px; line-height: 1.7; color: #71847b; margin: 9px 0 0; }
+.editor-history, .editor-tools, .editor-object-actions { display: flex; gap: 5px; }
+.town-home .editor-history button, .town-home .editor-tools button, .town-home .editor-object-actions button { flex: 1; padding: 8px 3px; font-size: 10px; border: 1px solid #d1ddcd; border-radius: 6px; background: #fffef9; }
+.editor-tools { margin-top: 10px; }
+.town-home button[aria-pressed=true] { background: #d2e5d5; border-color: #56806a; color: #214d39; }
+.tile-palette, .editor-furniture { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
+.town-home .tile-palette button, .town-home .editor-furniture button { display: grid; justify-items: center; gap: 6px; padding: 9px 2px; border: 1px solid #d4dece; border-radius: 8px; background: #fffef9; font-size: 10px; }
+.tile-palette button span { width: 32px; height: 23px; border-radius: 4px; box-shadow: 0 4px 0 #27403430; margin-bottom: 3px; }
+.editor-furniture button span { font-size: 22px; color: #618870; }
+.editor-coordinates { display: flex; gap: 8px; }
+.editor-coordinates label { flex: 1; }
+.editor-toggles, .camera-toggles { display: flex; gap: 10px; flex-wrap: wrap; }
+.town-editor .editor-checkbox, .camera-options .editor-checkbox { justify-content: start; }
+.camera-options { border: 1px solid #dbe3d8; border-radius: 10px; padding: 12px 14px; margin: 4px 0 12px; background: #f1f5ee; }
+.camera-options summary { cursor: pointer; font-size: 12px; font-weight: 600; }
+.camera-options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.camera-buttons { display: flex; flex-wrap: wrap; gap: 5px; }
+.town-home .camera-buttons button { border: 1px solid #d2ddce; border-radius: 5px; background: #fffef9; padding: 6px 9px; font-size: 10px; }
+.town-home .room-metrics { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.draw-table-scroll { max-height: 320px; overflow: auto; border: 1px solid #d5dfd0; border-radius: 6px; margin: 12px 0; }
+.draw-table { border-collapse: collapse; width: 100%; font-size: 11px; text-align: left; }
+.draw-table th, .draw-table td { padding: 7px 10px; border-bottom: 1px solid #e0e6db; white-space: nowrap; }
+.draw-table th { background: #e7eee1; position: sticky; top: 0; }
+.draw-table caption { padding: 10px; font-size: 10px; text-align: left; }
+.draw-table td:first-child { max-width: 230px; white-space: normal; }
+@media (max-width: 1050px) {
+ .town-home .book-pages { grid-template-columns: minmax(0,1fr); }
+ .town-home .profile-page { display: none; }
+ .town-editing .town-workspace { grid-template-columns: 222px minmax(0,1fr); }
+ .town-home .miniroom-view { min-height: 440px; }
+ .town-home .room-badge { top: 58px; }
+}
+@media (max-width: 680px) {
+ .town-home { padding: 0 8px 14px; }
+ .town-home .home-header { height: 58px; padding: 0 8px; }
+ .town-home .home-brand small, .town-home .engine-link { display: none; }
+ .town-home .page-paper { padding: 9px; }
+ .town-home .miniroom-view { height: 55vh; min-height: 340px; }
+ .town-editing .town-workspace { display: flex; flex-direction: column; gap: 12px; }
+ .town-editor, .miniroom-shell { width: 100%; }
+ .town-editor { max-height: 230px; overflow: auto; overscroll-behavior: contain; }
+ .tile-palette, .editor-furniture { grid-template-columns: repeat(6,minmax(0,1fr)); }
+ .camera-options-grid { grid-template-columns: 1fr; gap: 0; }
+ .town-home .room-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+ .town-home .town-zones { top: 10px; gap: 0; padding: 3px; }
+ .town-home .town-zones button { font-size: 10px; padding: 6px 9px; }
+ .town-home .room-caption { left: 8px; bottom: 8px; font-size: 10px; padding: 6px 8px; }
+ .town-home .room-caption span { display: none; }
+}
+.room-social { border: 1px solid #d4dfd1; border-radius: 10px; background: #f0f5ed; padding: 14px; margin: 14px 0; }
+.social-heading, .social-session { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+.social-heading strong { font-size: 13px; }
+.social-heading span, .social-session { font-size: 11px; color: #667d71; }
+.room-join { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.room-join label { display: grid; gap: 5px; font-size: 11px; flex: 1; min-width: 100px; }
+.room-social input { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid #c9d7c5; background: #fffffb; border-radius: 6px; }
+.town-home .room-social button { border: 1px solid #94b299; border-radius: 6px; padding: 9px 13px; background: #e0ecda; white-space: nowrap; }
+.room-join p { margin: 0; flex-basis: 100%; color: #768a7e; font-size: 11px; }
+.social-session { margin-top: 12px; }
+.visitor-list { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+.visitor-list span { padding: 6px 10px; background: #fffef6; border-radius: 20px; font-size: 11px; }
+.visitor-list i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.proximity-chat { background: #fbfdf9; padding: 8px 12px; border-radius: 8px; max-height: 160px; overflow: auto; min-height: 48px; }
+.proximity-chat p { font-size: 12px; margin: 5px 0; overflow-wrap: anywhere; }
+.proximity-chat b { color: #39715a; margin-right: 5px; }
+.chat-compose { display: flex; gap: 8px; margin-top: 10px; }
+.town-home .profile-toggle { margin-left: auto; padding: 8px 12px; border: 1px solid #a9bbab; border-radius: 7px; }
+.editor-object-actions + .editor-object-actions { margin-top: 7px; }
+.town-editing.profile-open .profile-page { display: block; position: fixed; top: 72px; left: 28px; width: 270px; max-height: calc(100vh - 90px); overflow: auto; z-index: 50; padding: 0; background: #f6f8ef; box-shadow: 0 10px 30px #29493233; border-radius: 12px; }
+@media (max-width: 1050px) { .town-home.profile-open .profile-page { display: block; position: fixed; top: 64px; left: 16px; width: min(290px,calc(100vw - 32px)); max-height: calc(100vh - 80px); overflow: auto; z-index: 50; padding: 0; background: #f6f8ef; box-shadow: 0 10px 30px #29493233; border-radius: 12px; } }
