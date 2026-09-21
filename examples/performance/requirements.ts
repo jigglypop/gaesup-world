@@ -47,6 +47,7 @@ const rows = [
 ] as const;
 
 const evidence: Record<string, NonNullable<Requirement['evidence']>> = {
+  R09: { baselineRunId: 'ddb75317-2037-4791-8d0a-9d570fe82c7c', candidateRunId: '8572c5f9-e6d6-4d28-b1ec-6ee475c72a5b', note: 'NPC 이동·판단을 runtime 고정 clock으로 옮겼습니다. 실제 NPCSystem·Rapier의 WebGL/WebGPU 검사에서 화면 밖 이동·현재 위치 LOD·이동 중 저장·재마운트·종료를 통과했습니다. 1,000 NPC 감지 배치를 warmup 10초+측정 30초로 각각 5회 교차 실행해 CPU p95 중앙값이 21.6→10.3ms(52.3% 감소)였습니다. 인덱스 유지 비용과 기존 선형 방식의 결과 동등성을 포함합니다. 100 NPC도 각 5회 측정해 p95 중앙값이 양쪽 0.3ms로 같았습니다. 500 부하, 전체 장면 FPS, 50회 수명 검사와 모바일 실기기 인수는 남아 있습니다.' },
   R03: { baselineRunId: 'b5d2c50a-ccf7-49f6-93ff-4afb26018749', candidateRunId: '894f4dc9-beb2-42d9-9ebe-4b1e196f6da6', note: '실제 Rapier 접촉으로 고지대·경사·이동 발판·점프·공중·순간이동 오판 7→0입니다. 공개 PhysicsEntity→hook→bridge의 착지·점프·재입력·사용자 접촉 정책도 native WebGPU 3회 통과했습니다. Node에서는 삼각형 지형·회전 발판·큰 바닥 이동·센서·그룹·월드 격리와 Rapier 0.12/0.19를 검사합니다. 실제 avatar/계단/카메라 전체 여정·peer matrix·실기기 프레임 예산은 남아 있습니다.' },
   R04: { baselineRunId: 'fd1c630a-3511-4b03-8e12-04d0dc0b1832', candidateRunId: 'ebfd9e1c-ccd0-4e97-9635-42b0efb4a1e2', note: '경계 상자 인덱스로 큰 객체 충돌 누락 1→0, 최근접·거리 제한·정규화·갱신·삭제를 검사합니다. spatial-scale은 1만 객체에서 선형 검색과 120회 결과 일치, 32회 묶음 평균 시간을 기록합니다. 극단 반경·좌표는 전수 검색으로 반복량을 제한합니다. 밀집/장거리 광선·실기기 프레임 예산 검증은 남아 있습니다.' },
   R05: { baselineRunId: '80e8c092-b9fc-4b10-a3ee-89b06809f3da', candidateRunId: 'c9751cac-eb68-4eba-a343-4d5d82404e15', note: '렌더 전 장애물·같은 프레임 추가/삭제·결과 소유권을 수정했습니다. 구와 삼각형의 연속 충돌로 반경을 검사하고 instance/batch/skinning/morph를 검증합니다. camera-radius는 1만 메시 질의와 옆면 접촉을 검사합니다. 전체 카메라 경로·복잡 메시 비용·지원 Three 조합 검증은 남아 있습니다.' },
@@ -64,7 +65,7 @@ const evidence: Record<string, NonNullable<Requirement['evidence']>> = {
 
 export const requirements: Requirement[] = rows.map(([id, title, stage, scenarioId]) => ({
   id, title, stage, scenarioId,
-  implementation: ['R03', 'R04', 'R05', 'R20', 'R24', 'R25', 'R26'].includes(id) ? 'working' : evidence[id] || id === 'R14' || id === 'R31' ? 'implemented' : 'pending',
+  implementation: ['R03', 'R04', 'R05', 'R09', 'R20', 'R24', 'R25', 'R26'].includes(id) ? 'working' : evidence[id] || id === 'R14' || id === 'R31' ? 'implemented' : 'pending',
   acceptedRunIds: [],
   ...(evidence[id] ? { evidence: evidence[id] } : {}),
 }));

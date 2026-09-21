@@ -16,6 +16,7 @@ export async function loadBaselines(): Promise<LabRun[]> {
     import('./2026-09-21-s2-gameplay-commands.json'),
     import('./2026-09-21-s2-network-clock.json'),
     import('./2026-09-21-s2-physics-clock.json'),
+    import('./2026-09-22-s3-npc.json'),
   ]);
   return bundles.flatMap(({ default: bundle }) => {
     const sources: Record<string, unknown> = bundle.sources;
