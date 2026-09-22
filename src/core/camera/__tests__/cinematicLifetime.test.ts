@@ -1,8 +1,8 @@
 import { Vector3 } from 'three';
 
 import { createGaesupRuntime } from '../../runtime/createGaesupRuntime';
-import { createGaesupStore } from '../../stores/gaesupStore';
 import { createSceneStore } from '../../scene/stores/sceneStore';
+import { createGaesupStore } from '../../stores/gaesupStore';
 import { createCameraCinematicPlayer, playCameraCinematic, type CameraCinematicBeat, type CameraCinematicPlayback } from '../cinematic';
 
 function fixture() {

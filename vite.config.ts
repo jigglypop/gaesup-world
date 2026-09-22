@@ -25,7 +25,6 @@ const libraryExternals = [
   'immer',
   /^immer\//,
   'mitt',
-  'react-router-dom',
   'reflect-metadata',
   'simplex-noise',
   'zustand',
@@ -143,7 +142,6 @@ export default defineConfig(({ mode }) => {
     { find: '@constants', replacement: path.resolve(import.meta.dirname, 'src/core/constants') },
     { find: '@utils', replacement: path.resolve(import.meta.dirname, 'src/core/utils') },
     { find: '@motions', replacement: path.resolve(import.meta.dirname, 'src/core/motions') },
-    { find: '@debug', replacement: path.resolve(import.meta.dirname, 'src/core/debug') },
   ];
   if (!isLibraryBuild && process.env['GAESUP_PACKAGE_ROOT']) {
     const packageRoot = path.resolve(process.env['GAESUP_PACKAGE_ROOT']);
@@ -213,7 +211,7 @@ export default defineConfig(({ mode }) => {
             },
           },
         },
-        outDir: mode === 'esm' ? 'dist' : 'dist',
+        outDir: 'dist',
         emptyOutDir: false,
       },
       define: {

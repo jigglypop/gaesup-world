@@ -28,25 +28,37 @@ const fallbackToVec3 = new THREE.Vector3();
 const uncachedCollisionMeshes: THREE.Mesh[] = [];
 const noCollisionExclusions: THREE.Object3D[] = [];
 
+const traversalStack: THREE.Object3D[] = [];
+
+type CollisionCandidate = THREE.Object3D & { isMesh?: boolean; isLineSegments2?: boolean; geometry?: unknown };
+
 function collectCollisionMeshes(
   scene: THREE.Scene,
   meshes: THREE.Mesh[] = [],
   excludedObjects?: THREE.Object3D[],
 ): THREE.Mesh[] {
   meshes.length = 0;
-  const visit = (object: THREE.Object3D): void => {
-    // Exclusion is inherited: entire avatar/helper subtrees can be skipped.
-    if (excludedObjects && (object.userData['intangible'] || excludedObjects.includes(object))) return;
-    object.updateWorldMatrix(false, false);
-    if (object instanceof THREE.Mesh
-      && !('isLineSegments2' in object && object.isLineSegments2)
-      && !object.userData['intangible'] && object.geometry) {
-      meshes.push(object);
-    }
-    for (const child of object.children) visit(child);
-  };
+  const excluded = excludedObjects && excludedObjects.length > 0 ? excludedObjects : null;
+  const stack = traversalStack;
+  stack.length = 0;
   scene.updateWorldMatrix(true, false);
-  visit(scene);
+  stack.push(scene);
+  // Iterative pre-order walk: parents refresh their world matrix before children, same order as recursion.
+  while (stack.length > 0) {
+    const object = stack.pop() as CollisionCandidate;
+    // Exclusion is inherited: entire avatar/helper subtrees can be skipped.
+    if (excludedObjects && (object.userData['intangible'] || (excluded !== null && excluded.includes(object)))) continue;
+    object.updateWorldMatrix(false, false);
+    if (object.isMesh === true && object.isLineSegments2 !== true
+      && !object.userData['intangible'] && object.geometry) {
+      meshes.push(object as THREE.Mesh);
+    }
+    const children = object.children;
+    for (let i = children.length - 1; i >= 0; i--) {
+      const child = children[i];
+      if (child) stack.push(child);
+    }
+  }
   return meshes;
 }
 

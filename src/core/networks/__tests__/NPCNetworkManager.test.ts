@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+
 import { NPCNetworkManager } from '../core/NPCNetworkManager';
 import type { NetworkMessage } from '../types';
 
@@ -89,8 +90,8 @@ describe('NPCNetworkManager', () => {
       const msgs = manager.getMessages('bob');
       expect(msgs.length).toBe(10);
       // 가장 오래된 5개(0~4)가 evict되고, 5~14가 남아야 함
-      expect(msgs[0].id).toBe('msg_5');
-      expect(msgs[9].id).toBe('msg_14');
+      expect(msgs[0]?.id).toBe('msg_5');
+      expect(msgs[9]?.id).toBe('msg_14');
     });
 
     test('broadcast도 큐 크기 제한을 지킨다', () => {

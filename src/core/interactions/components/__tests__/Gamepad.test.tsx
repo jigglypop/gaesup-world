@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { GamePad } from '../Gamepad';
 
 const mockPushKey = jest.fn(() => true);
-const mockUseKeyboard = jest.fn(() => ({ pushKey: mockPushKey }));
+const mockUseKeyboard = jest.fn<{ pushKey: typeof mockPushKey }, unknown[]>(() => ({ pushKey: mockPushKey }));
 let mockMode = 'gamepad';
 jest.mock('@hooks/useKeyboard', () => ({ useKeyboard: (...args: unknown[]) => mockUseKeyboard(...args) }));
 jest.mock('@stores/gaesupStore', () => ({

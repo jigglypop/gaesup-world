@@ -1,4 +1,5 @@
 import { act } from 'react';
+
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 
 import { createPluginRegistry } from '../../plugins';
@@ -34,9 +35,9 @@ test('many plot views and runtimes share one clock while plots survive view remo
   try {
     expect(subscribe).toHaveBeenCalledTimes(1);
     expect(tick).toHaveBeenCalledTimes(1);
-    const growing = usePlotStore.getState().plots.growing;
+    const growing = usePlotStore.getState().plots['growing'];
     await view.update(<CropPlot id="growing" position={[0, 0, 0]} />);
-    expect(usePlotStore.getState().plots.growing).toBe(growing);
+    expect(usePlotStore.getState().plots['growing']).toBe(growing);
     expect(Object.keys(usePlotStore.getState().plots)).toHaveLength(21);
     tick.mockClear();
     await act(async () => { useTimeStore.setState({ totalMinutes: 1 }); });
@@ -46,7 +47,7 @@ test('many plot views and runtimes share one clock while plots survive view remo
     tick.mockClear();
     useTimeStore.setState({ totalMinutes: 2 });
     expect(tick).toHaveBeenCalledTimes(1);
-    expect(usePlotStore.getState().plots.growing?.state).toBe('mature');
+    expect(usePlotStore.getState().plots['growing']?.state).toBe('mature');
     const snapshot = usePlotStore.getState().serialize();
     expect(snapshot.plots).toHaveLength(21);
     await second.dispose(plugin.id);
@@ -54,7 +55,7 @@ test('many plot views and runtimes share one clock while plots survive view remo
     useTimeStore.setState({ totalMinutes: 3 });
     expect(tick).not.toHaveBeenCalled();
     usePlotStore.getState().unregisterPlot('growing');
-    expect(usePlotStore.getState().plots.growing).toBeUndefined();
+    expect(usePlotStore.getState().plots['growing']).toBeUndefined();
   } finally {
     await view.unmount();
     await first.dispose(plugin.id);
@@ -75,11 +76,11 @@ test('standalone views preserve their plot across remounts and release the clock
   const subscribe = jest.spyOn(useTimeStore, 'subscribe');
   const view = await ReactThreeTestRenderer.create(<CropPlot id="standalone" position={[2, 0, 2]} />);
   await act(async () => { usePlotStore.getState().till('standalone'); });
-  const tilled = usePlotStore.getState().plots.standalone;
+  const tilled = usePlotStore.getState().plots['standalone'];
   await view.unmount();
-  expect(usePlotStore.getState().plots.standalone).toBe(tilled);
+  expect(usePlotStore.getState().plots['standalone']).toBe(tilled);
   const remounted = await ReactThreeTestRenderer.create(<CropPlot id="standalone" position={[2, 0, 2]} />);
-  expect(usePlotStore.getState().plots.standalone).toBe(tilled);
+  expect(usePlotStore.getState().plots['standalone']).toBe(tilled);
   expect(subscribe).toHaveBeenCalledTimes(2);
   await remounted.unmount();
   subscribe.mockRestore();

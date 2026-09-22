@@ -53,11 +53,9 @@ test('delivery builds three authored LODs, validates decoded Meshopt, and remain
       art: evidence,
       browser: ['android', 'iphone', 'integrated-gpu'].map((device) => {
         const profile = device === 'integrated-gpu' ? 'desktop' : 'mobile';
-        const {
-          id: _id,
-          policyVersion: _policy,
-          ...metrics
-        } = contract.ASSET_BUDGET_PROFILES[profile];
+        const metrics = { ...contract.ASSET_BUDGET_PROFILES[profile] };
+        delete metrics.id;
+        delete metrics.policyVersion;
         return {
           ...evidence,
           device,

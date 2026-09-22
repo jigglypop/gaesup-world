@@ -17,6 +17,17 @@ const batchRange = { vertexStart: 0, vertexCount: 0, reservedVertexCount: 0, ind
 /** Reject static meshes before matrix inversion, raycast and triangle traversal. */
 export function cameraMeshMayIntersect(mesh: Mesh, ray: Ray, radius: number, maxDistance: number): boolean {
   if (mesh.raycast !== Mesh.prototype.raycast || mesh.morphTargetInfluences?.length) return true;
+  if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere();
+  const sphere = mesh.geometry.boundingSphere;
+  if (sphere && sphere.radius >= 0) {
+    // One matrix-vector product rejects most far meshes before transforming eight box corners.
+    center.copy(sphere.center).applyMatrix4(mesh.matrixWorld);
+    const reach = sphere.radius * mesh.matrixWorld.getMaxScaleOnAxis() + radius;
+    const along = Math.min(Math.max(offset.subVectors(center, ray.origin).dot(ray.direction), 0), maxDistance);
+    if (closest.copy(ray.direction).multiplyScalar(along).add(ray.origin).distanceToSquared(center) > reach * reach) {
+      return false;
+    }
+  }
   if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
   if (!mesh.geometry.boundingBox) return true;
   box.copy(mesh.geometry.boundingBox).applyMatrix4(mesh.matrixWorld).expandByScalar(radius);

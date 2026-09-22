@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+
 import { useThree } from '@react-three/fiber';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 import { BufferAttribute, Points, Sprite } from 'three';

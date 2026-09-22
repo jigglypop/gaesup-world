@@ -1,7 +1,7 @@
-import React from 'react';
-import ReactThreeTestRenderer from '@react-three/test-renderer';
-import { SpeechBalloon } from '../index';
+import ReactThreeTestRenderer, { type ReactThreeTest } from '@react-three/test-renderer';
 import * as THREE from 'three';
+
+import { SpeechBalloon } from '../index';
 
 // cleanup 함수 추가
 afterEach(() => {
@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 describe('SpeechBalloon 성능 테스트', () => {
-  const graphHasType = (nodes: any[], type: string): boolean => {
+  const graphHasType = (nodes: ReactThreeTest.SceneGraph, type: string): boolean => {
     const queue = [...nodes];
     while (queue.length > 0) {
       const n = queue.shift();
@@ -32,7 +32,7 @@ describe('SpeechBalloon 성능 테스트', () => {
     await renderer.update(<SpeechBalloon {...props} />);
 
     const graph = renderer.toGraph();
-    expect(graphHasType(graph as any[], 'Sprite')).toBe(true);
+    expect(graphHasType(graph ?? [], 'Sprite')).toBe(true);
 
     renderer.unmount();
   });

@@ -1,13 +1,13 @@
 import 'reflect-metadata';
 import * as THREE from 'three';
 
+import type { ActiveStateType } from '../../../motions/core/types';
+import type { CameraCalcProps, CameraSystemConfig, CameraSystemState } from '../../core/types';
 import { BaseController } from '../BaseController';
 import { FirstPersonController } from '../FirstPersonController';
 import { SideScrollController } from '../SideScrollController';
 import { ThirdPersonController } from '../ThirdPersonController';
 import { TopDownController } from '../TopDownController';
-import type { CameraCalcProps, CameraSystemConfig, CameraSystemState } from '../../core/types';
-import type { ActiveStateType } from '../../../motions/core/types';
 
 class TestController extends BaseController {
   name = 'test';
@@ -187,7 +187,7 @@ describe('BaseController', () => {
     wall.position.set(0, 0, 8); props.scene.add(wall); props.scene.updateMatrixWorld(true);
     const controller = new ThirdPersonController();
     const config = createConfig({ distance: { x: 4, y: 0, z: -8 }, enableCollision: true, collisionMargin: 0.25,
-      smoothing: { position: 0.5, rotation: 0.5 }, focus, focusTarget: { x: 0, y: 0, z: 0 },
+      smoothing: { position: 0.5, rotation: 0.5, fov: 0.1 }, focus, focusTarget: { x: 0, y: 0, z: 0 },
       focusDistance: Math.sqrt(80), focusLerpSpeed: -Math.log(0.5) * 60 });
     try {
       controller.update(props, createState(config));

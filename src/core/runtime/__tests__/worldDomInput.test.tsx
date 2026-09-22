@@ -1,10 +1,10 @@
 import { act, fireEvent, render } from '@testing-library/react';
 
-import { useKeyboard } from '../../hooks/useKeyboard';
-import { InventoryUI } from '../../inventory/components/InventoryUI';
-import { WorldInputSurface } from '../../input/WorldInputSurface';
-import { TouchControls } from '../../input/touch/components/TouchControls';
 import { useEditorShortcuts } from '../../editor/hooks/useEditorShortcuts';
+import { useKeyboard } from '../../hooks/useKeyboard';
+import { TouchControls } from '../../input/touch/components/TouchControls';
+import { WorldInputSurface } from '../../input/WorldInputSurface';
+import { InventoryUI } from '../../inventory/components/InventoryUI';
 import { GaesupRuntimeProvider } from '../context';
 import { createGaesupRuntime } from '../createGaesupRuntime';
 

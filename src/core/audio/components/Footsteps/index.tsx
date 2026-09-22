@@ -68,7 +68,8 @@ export function Footsteps({
 }: FootstepsProps = {}) {
   const audioStore = useAudioStoreApi();
   const buildingStore = useBuildingStoreApi();
-  const { position, isGrounded, isMoving, speed } = usePlayerPosition({ updateInterval: 32 });
+  const player = usePlayerPosition({ updateInterval: 32, reactive: false });
+  const { position } = player;
   const lastPosRef = useRef({ x: position.x, z: position.z });
   const accumRef = useRef(0);
   const lastPlayRef = useRef(0);
@@ -87,7 +88,7 @@ export function Footsteps({
     lastPosRef.current.x = position.x;
     lastPosRef.current.z = position.z;
 
-    if (!isGrounded || !isMoving) {
+    if (!player.isGrounded || !player.isMoving) {
       // Reset stride accumulator while airborne so the player doesn't get a
       // burst of steps the instant they land.
       accumRef.current = 0;
@@ -106,7 +107,7 @@ export function Footsteps({
 
     const surface = resolveSurface ? resolveSurface(position.x, position.z) : defaultResolveSurface(position.x, position.z, buildingStore);
     const profile = SURFACE_PROFILES[surface];
-    const speedScale = Math.min(1.4, 0.7 + speed * 0.06);
+    const speedScale = Math.min(1.4, 0.7 + player.speed * 0.06);
 
     audioStore.getState().playSfx({
       id: `footstep-${surface}`,

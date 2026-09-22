@@ -5,7 +5,31 @@ import {
   assetPublicationBlockers,
   validateAssetManifest,
 } from 'gaesup-world/assets';
-import type { AssetEvidence, AssetManifest, AssetQualityReport } from 'gaesup-world/assets';
+import type {
+  AssetBrowserEvidence,
+  AssetBudgetProfile,
+  AssetEvidence,
+  AssetManifest,
+  AssetQualityReport,
+} from 'gaesup-world/assets';
+
+const budgetMetrics = ({
+  fps,
+  triangles,
+  mainDrawCalls,
+  totalDrawCalls,
+  textureBytes,
+  renderPixels,
+  initialTransferBytes,
+}: AssetBudgetProfile): AssetBrowserEvidence['metrics'] => ({
+  fps,
+  triangles,
+  mainDrawCalls,
+  totalDrawCalls,
+  textureBytes,
+  renderPixels,
+  initialTransferBytes,
+});
 
 const fixture = (): AssetManifest => ({
   schemaVersion: 1,
@@ -49,7 +73,7 @@ const qualityFor = (manifest: AssetManifest): AssetQualityReport => {
     art: evidence,
     browser: (['android', 'iphone', 'integrated-gpu'] as const).map((device) => {
       const profile = device === 'integrated-gpu' ? 'desktop' : 'mobile';
-      const { id: _id, policyVersion: _version, ...metrics } = ASSET_BUDGET_PROFILES[profile];
+      const metrics = budgetMetrics(ASSET_BUDGET_PROFILES[profile]);
       return {
         ...evidence,
         device,

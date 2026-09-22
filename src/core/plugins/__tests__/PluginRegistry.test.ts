@@ -10,7 +10,7 @@ import {
   PluginManifestValidationError,
   PluginVersionMismatchError,
 } from '../index';
-import type { GaesupPlugin } from '../index';
+import type { ExtensionRegistry, GaesupPlugin } from '../index';
 
 const plugin = (
   id: string,
@@ -305,7 +305,7 @@ describe('PluginRegistry', () => {
 
 describe('InMemoryExtensionRegistry', () => {
   it('stores, requires, removes, and clears extensions', () => {
-    const registry = new InMemoryExtensionRegistry<number>();
+    const registry: ExtensionRegistry<number> = new InMemoryExtensionRegistry<number>();
     registry.register('one', 1);
     registry.register('two', 2, 'math');
     registry.register('three', 3, 'math');
@@ -329,7 +329,7 @@ describe('InMemoryExtensionRegistry', () => {
   });
 
   it('rejects duplicates and missing required extensions', () => {
-    const registry = new InMemoryExtensionRegistry<number>();
+    const registry: ExtensionRegistry<number> = new InMemoryExtensionRegistry<number>();
     registry.register('one', 1);
 
     expect(() => registry.register('one', 2)).toThrow(DuplicateExtensionError);

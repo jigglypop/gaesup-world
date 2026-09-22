@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
-import { DirectionComponent } from '../DirectionComponent';
 import { createMemoryInputBackend } from '../../../../interactions/core/adapter';
 import type { PhysicsCalcProps, PhysicsInputState, PhysicsState } from '../../../types';
+import { DirectionComponent } from '../DirectionComponent';
 
 function fixture() {
   const backend = createMemoryInputBackend(); const camera = new THREE.PerspectiveCamera(); camera.lookAt(1, 0, 0); camera.updateMatrixWorld();

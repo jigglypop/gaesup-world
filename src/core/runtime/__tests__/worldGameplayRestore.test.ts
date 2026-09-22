@@ -1,7 +1,7 @@
-import { createGaesupRuntime } from '../createGaesupRuntime';
-import { createInventoryPlugin } from '../../inventory/plugin';
 import { commitGameplayEffect } from '../../gameplay/events/execution';
 import type { GameplayEventBlueprint } from '../../gameplay/events/types';
+import { createInventoryPlugin } from '../../inventory/plugin';
+import { createGaesupRuntime } from '../createGaesupRuntime';
 
 jest.mock('../../wasm/loader', () => ({ loadCoreWasm: jest.fn(async () => null) }));
 const blueprint = (id: string, actions: GameplayEventBlueprint['actions']): GameplayEventBlueprint => ({

@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 
-import type { BrowserGamepad, GamepadSnapshotListener, GamepadSource } from '../BrowserGamepadHub';
-import { WorldGamepadInput, applyGamepadDeadzone, type WorldGamepadOptions } from '../WorldGamepadInput';
-import { createWorldInputScope } from '../WorldInputScope';
 import { createKeyboardOwnership } from '../../hooks/useKeyboard/ownership';
 import { createMemoryInputBackend } from '../../interactions/core/adapter';
 import { logger } from '../../utils/logger';
+import type { BrowserGamepad, GamepadSnapshotListener, GamepadSource } from '../BrowserGamepadHub';
+import { WorldGamepadInput, applyGamepadDeadzone, type WorldGamepadOptions } from '../WorldGamepadInput';
+import { createWorldInputScope } from '../WorldInputScope';
 
 function pad(index = 0, mapping: GamepadMappingType = 'standard') {
   return { id: `pad-${index}`, index, connected: true, mapping, axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 })), timestamp: 0 };
@@ -86,9 +86,9 @@ test('unsupported layouts remain neutral; eligibility removes the source and sta
 });
 
 test('synchronous publication may suspend the subscription; returned cleanup still runs exactly once', () => {
-  const f = fixture(); f.input.suspend(); const p = pad(); const offSource = jest.fn(); let input: WorldGamepadInput;
+  const f = fixture(); f.input.suspend(); const p = pad(); const offSource = jest.fn();
   const source: GamepadSource = { subscribe: listener => { listener([p]); return offSource; } };
-  input = new WorldGamepadInput(f.backend, f.scope, () => true, {}, source);
+  const input = new WorldGamepadInput(f.backend, f.scope, () => true, {}, source);
   const off = f.backend.subscribe!(() => { if (f.backend.getGamepad!().connected) input.suspend(); });
   try { input.resume(); expect(offSource).toHaveBeenCalledTimes(1); expect(input.getStats().active).toBe(false); expect(f.backend.getGamepad!().connected).toBe(false); }
   finally { off(); input.suspend(); f.dispose(); }

@@ -51,7 +51,7 @@ export function HouseDoor({
   const goTo = useSceneStore((s) => s.goTo);
   const current = useSceneStore((s) => s.current);
   const { teleport } = useTeleport();
-  const { position: playerPos } = usePlayerPosition({ updateInterval: 50 });
+  const { position: playerPos } = usePlayerPosition({ updateInterval: 50, reactive: false });
   const lastTriggerRef = useRef<number>(0);
 
   const padGeometry = useMemo(() => new THREE.CylinderGeometry(radius, radius, 0.08, 28), [radius]);

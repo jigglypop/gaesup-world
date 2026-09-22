@@ -28,7 +28,7 @@ jobs:
           node-version: '24'
       - run: npm install --global corepack
       - run: corepack pnpm install --frozen-lockfile --ignore-scripts
-      - run: corepack pnpm exec tsc --noEmit
+      - run: corepack pnpm run typecheck
       - run: corepack pnpm exec jest examples/minihome --runInBand
       - run: corepack pnpm run test:minihome:service
       - run: corepack pnpm run build:demo

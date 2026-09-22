@@ -57,7 +57,7 @@ test('AI uses live positions at a fixed cadence even when its memory changes', a
   const observations: NPCObservation[] = [];
   runtime.npcBrainAdapters.register('scripted', 'test', ({ observation }) => {
     observations.push(observation);
-    return { actions: [{ type: 'remember', key: 'last', value: observation.timestamp }], reason: 'test' };
+    return { source: 'scripted', actions: [{ type: 'remember', key: 'last', value: observation.timestamp }], reason: 'test' };
   });
   try {
     runtime.npcStore.getState().addInstance({ ...npc(), brain: { mode: 'scripted', policyId: 'test' }, behavior: { mode: 'idle', speed: 3, waitSeconds: 0.5 } });

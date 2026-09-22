@@ -1,8 +1,9 @@
 import { act, renderHook } from '@testing-library/react';
 import { Vector3 } from 'three';
-import { createGaesupRuntime } from '../createGaesupRuntime';
-import { GaesupRuntimeProvider } from '../context';
+
 import { useNetworkBridge } from '../../networks/hooks/useNetworkBridge';
+import { GaesupRuntimeProvider } from '../context';
+import { createGaesupRuntime } from '../createGaesupRuntime';
 
 jest.mock('../../wasm/loader', () => ({ loadCoreWasm: jest.fn(async () => null) }));
 beforeEach(() => jest.useFakeTimers());

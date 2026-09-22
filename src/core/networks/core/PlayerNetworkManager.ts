@@ -17,6 +17,11 @@ export interface PlayerNetworkManagerOptions {
   reliableRetryCount?: number;
   logLevel?: PlayerNetworkLogLevel;
   logToConsole?: boolean;
+  /**
+   * Remote peers choose their own `modelUrl`, which every client then fetches.
+   * By default only http(s) and relative URLs are accepted; supply an allowlist to restrict origins.
+   */
+  acceptModelUrl?: (url: string) => boolean;
   onConnect?: () => void;
   onDisconnect?: () => void;
   onWelcome?: (localPlayerId: string, roomState?: Record<string, PlayerState>) => void;
@@ -52,6 +57,7 @@ export class PlayerNetworkManager {
   private isConnecting: boolean = false;
   private logLevel: PlayerNetworkLogLevel;
   private logToConsole: boolean;
+  private acceptModelUrl: ((url: string) => boolean) | undefined;
   private reconnectAttemptsMax: number;
   private reconnectDelayMs: number;
   private reconnectAttemptsUsed: number = 0;
@@ -106,6 +112,7 @@ export class PlayerNetworkManager {
     this.reliableRetryCount = Math.max(0, Math.floor(options.reliableRetryCount ?? 0));
     this.logLevel = options.logLevel ?? 'none';
     this.logToConsole = options.logToConsole ?? false;
+    this.acceptModelUrl = options.acceptModelUrl;
     if (options.onConnect) this.onConnect = options.onConnect;
     if (options.onDisconnect) this.onDisconnect = options.onDisconnect;
     if (options.onWelcome) this.onWelcome = options.onWelcome;
@@ -414,12 +421,19 @@ export class PlayerNetworkManager {
         }
         break;
       }
-      case 'Welcome':
+      case 'Welcome': {
         this.localPlayerId = message.client_id;
-        this.onWelcome?.(this.localPlayerId, message.room_state);
-        
+        let roomState: Record<string, PlayerState> | undefined;
         if (message.room_state) {
+          roomState = {};
           for (const [id, state] of Object.entries(message.room_state)) {
+            roomState[id] = this.completePlayerState(state);
+          }
+        }
+        this.onWelcome?.(this.localPlayerId, roomState);
+
+        if (roomState) {
+          for (const [id, state] of Object.entries(roomState)) {
             if (id !== this.localPlayerId) {
               this.players.set(id, state);
               if (this.onPlayerJoin) {
@@ -429,13 +443,15 @@ export class PlayerNetworkManager {
           }
         }
         break;
+      }
 
       case 'PlayerJoined':
         this.debug('[PlayerNetworkManager] PlayerJoined', message.client_id);
         if (message.client_id !== this.localPlayerId) {
-          this.players.set(message.client_id, message.state);
+          const state = this.completePlayerState(message.state);
+          this.players.set(message.client_id, state);
           if (this.onPlayerJoin) {
-            this.onPlayerJoin(message.client_id, message.state);
+            this.onPlayerJoin(message.client_id, state);
           }
         }
         break;
@@ -451,24 +467,18 @@ export class PlayerNetworkManager {
       case 'PlayerUpdate':
         this.debug('[PlayerNetworkManager] PlayerUpdate', message.client_id);
         {
+          const update = this.copyPlayerState(message.state);
           const existingPlayer = this.players.get(message.client_id);
           if (existingPlayer) {
             // Avoid mutating shared references; create a new state object.
-            const next: PlayerState = { ...existingPlayer, ...message.state };
+            const next: PlayerState = { ...existingPlayer, ...update };
             this.players.set(message.client_id, next);
             this.onPlayerUpdate?.(message.client_id, next);
             break;
           }
 
           // Be robust to out-of-order delivery: accept updates even if we missed Welcome/Joined.
-          const state = message.state as Partial<PlayerState> | undefined;
-          const created: PlayerState = {
-            name: state?.name ?? 'Player',
-            color: state?.color ?? '#ffffff',
-            position: state?.position ?? [0, 0, 0],
-            rotation: state?.rotation ?? [1, 0, 0, 0],
-            ...(state ?? {}),
-          };
+          const created = this.completePlayerState(update);
           this.players.set(message.client_id, created);
           // Treat as join+update so UI renders immediately.
           this.onPlayerJoin?.(message.client_id, created);
@@ -477,13 +487,39 @@ export class PlayerNetworkManager {
         break;
 
       case 'Chat':
-        this.onChat?.(message.client_id, message.text, message.timestamp);
+        this.onChat?.(message.client_id, message.text.slice(0, MAX_CHAT_LENGTH), message.timestamp);
         break;
 
       default:
         // Ignore unknown message types for forward compatibility.
         break;
     }
+  }
+
+  /** Copies only known, bounded fields so peers cannot inject extra keys or oversized values. */
+  private copyPlayerState(state: Partial<PlayerState>): Partial<PlayerState> {
+    const out: Partial<PlayerState> = {};
+    if (typeof state.name === 'string') out.name = state.name.slice(0, MAX_NAME_LENGTH);
+    if (typeof state.color === 'string') out.color = state.color.slice(0, MAX_LABEL_LENGTH);
+    if (typeof state.animation === 'string') out.animation = state.animation.slice(0, MAX_LABEL_LENGTH);
+    if (typeof state.modelUrl === 'string' && isSafeModelUrl(state.modelUrl)
+      && (this.acceptModelUrl?.(state.modelUrl) ?? true)) {
+      out.modelUrl = state.modelUrl;
+    }
+    if (state.position) out.position = [state.position[0], state.position[1], state.position[2]];
+    if (state.rotation) out.rotation = [state.rotation[0], state.rotation[1], state.rotation[2], state.rotation[3]];
+    if (state.velocity) out.velocity = [state.velocity[0], state.velocity[1], state.velocity[2]];
+    return out;
+  }
+
+  private completePlayerState(state: Partial<PlayerState>): PlayerState {
+    return {
+      name: 'Player',
+      color: '#ffffff',
+      position: [0, 0, 0],
+      rotation: [1, 0, 0, 0],
+      ...this.copyPlayerState(state),
+    };
   }
 
   setCallbacks(callbacks: {
@@ -778,6 +814,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isFiniteTuple(value: unknown, length: number): boolean {
   return Array.isArray(value) && value.length === length
     && value.every((component: unknown) => typeof component === 'number' && Number.isFinite(component));
+}
+
+const MAX_NAME_LENGTH = 64;
+const MAX_LABEL_LENGTH = 64;
+const MAX_MODEL_URL_LENGTH = 2048;
+const MAX_CHAT_LENGTH = 200;
+
+function isSafeModelUrl(url: string): boolean {
+  if (!url || url.length > MAX_MODEL_URL_LENGTH) return false;
+  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(url)?.[1]?.toLowerCase();
+  return scheme === undefined || scheme === 'http' || scheme === 'https';
 }
 
 function isPlayerState(value: unknown, partial: boolean): boolean {

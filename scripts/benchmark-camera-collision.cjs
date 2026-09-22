@@ -49,7 +49,33 @@ try {
     }
     results.push({ excludedMeshes: excludedCount, queriesPerSample: 20, samples: 100, mediansMs: samples.map(values => values.sort((a, b) => a - b)[50]) });
   }
-  const report = { baseline, node: process.version, scope: 'CPU collision query, one real blocker plus excluded mesh subtree', results };
+  for (const sceneMeshes of [1000, 10000]) {
+    const scene = new THREE.Scene();
+    for (let i = 0; i < sceneMeshes; i++) {
+      const holder = new THREE.Group();
+      holder.position.set((i % 100) * 3 + 20, 0, Math.floor(i / 100) * 3);
+      holder.add(new THREE.Mesh(geometry, material));
+      scene.add(holder);
+    }
+    const obstacle = new THREE.Mesh(geometry, material);
+    obstacle.position.z = 5;
+    scene.add(obstacle);
+    scene.updateMatrixWorld(true);
+    const run = checks.map(check => () => check(from, to, scene, 0.5));
+    const before = run[0]();
+    const after = run[1]();
+    assert.equal(after.safe, before.safe);
+    assert.deepEqual(after.position.toArray(), before.position.toArray());
+    for (let i = 0; i < 20; i++) { run[0](); run[1](); }
+    const samples = [[], []];
+    for (let i = 0; i < 40; i++) for (const index of i % 2 ? [0, 1] : [1, 0]) {
+      const start = performance.now();
+      for (let j = 0; j < 5; j++) run[index]();
+      samples[index].push((performance.now() - start) / 5);
+    }
+    results.push({ offRayMeshes: sceneMeshes, queriesPerSample: 5, samples: 40, mediansMs: samples.map(values => values.sort((a, b) => a - b)[20]) });
+  }
+  const report = { baseline, node: process.version, scope: 'CPU collision query: excluded subtree and off-ray scene meshes; mediansMs = [baseline, working tree]', results };
   fs.mkdirSync(path.join(root, '.tmp'), { recursive: true });
   fs.writeFileSync(path.join(root, '.tmp/camera-collision-benchmark.json'), JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));

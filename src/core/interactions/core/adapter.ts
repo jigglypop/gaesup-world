@@ -52,14 +52,14 @@ export type InteractionSystemResolver = () => InteractionSystem;
 
 export interface MemoryInputBackendInitialState {
   keyboard?: Partial<KeyboardState>;
-  mouse?: Partial<MouseState> & {
+  mouse?: Omit<Partial<MouseState>, 'buttons'> & {
     buttons?: Partial<MouseState['buttons']>;
   };
-  gamepad?: Partial<GamepadState> & {
+  gamepad?: Omit<Partial<GamepadState>, 'triggers' | 'vibration'> & {
     triggers?: Partial<GamepadState['triggers']>;
     vibration?: Partial<GamepadState['vibration']>;
   };
-  touch?: Partial<TouchState> & {
+  touch?: Omit<Partial<TouchState>, 'gestures'> & {
     gestures?: Partial<TouchState['gestures']>;
   };
 }

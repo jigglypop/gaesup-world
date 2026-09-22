@@ -16,7 +16,7 @@ test('mounts only visible previews, releases owned textures on exit, and restore
   const previousObserver = Object.getOwnPropertyDescriptor(globalThis, 'IntersectionObserver');
   const disconnect = jest.fn();
   const observe = jest.fn();
-  let notify = (_visible: boolean): void => {};
+  let notify: (visible: boolean) => void = () => {};
   const observer = jest.fn((callback: IntersectionObserverCallback) => {
     const instance = { observe, disconnect };
     notify = (visible) => callback(
@@ -44,7 +44,7 @@ test('mounts only visible previews, releases owned textures on exit, and restore
     expect(observe).toHaveBeenCalledWith(container);
     expect(view!.root.findAllByType('primitive')).toHaveLength(0);
     act(() => { notify(true); });
-    const first = view!.root.findByType('primitive').props.object as THREE.Group;
+    const first = view!.root.findByType('primitive').props['object'] as THREE.Group;
     const skeleton = (first.children[0] as THREE.SkinnedMesh).skeleton;
     skeleton.computeBoneTexture();
     const disposeTexture = jest.spyOn(skeleton.boneTexture!, 'dispose');
@@ -53,7 +53,7 @@ test('mounts only visible previews, releases owned textures on exit, and restore
     expect(disposeTexture).toHaveBeenCalledTimes(1);
     expect(sourceDispose).not.toHaveBeenCalled();
     act(() => { notify(true); });
-    expect(view!.root.findByType('primitive').props.object).not.toBe(first);
+    expect(view!.root.findByType('primitive').props['object']).not.toBe(first);
     act(() => { view!.unmount(); });
     view = undefined;
     expect(disconnect).toHaveBeenCalledTimes(1);
@@ -80,7 +80,7 @@ test('contains a failed model and recovers when a different model is selected', 
     expect(view!.root.findByType('button').children).toEqual(['다른 에셋 선택']);
     act(() => { view!.update(<><button>다른 에셋 선택</button><AssetPreviewCanvas asset={{ id: 'model', name: '소품', kind: 'object3d', url: '/working.glb' }} /></>); });
     expect(view!.root.findAllByProps({ role: 'img' })).toHaveLength(0);
-    expect(view!.root.findByType('primitive').props.object).toBeInstanceOf(THREE.Group);
+    expect(view!.root.findByType('primitive').props['object']).toBeInstanceOf(THREE.Group);
   } finally {
     if (view) act(() => { view!.unmount(); });
     report.mockRestore();
@@ -93,13 +93,13 @@ test('falls back from a failed thumbnail to the model and tries a new thumbnail'
   const asset = { id: 'model', name: '소품', kind: 'object3d' as const, url: '/working.glb', thumbnailUrl: '/broken.png' };
   try {
     act(() => { view = create(<AssetPreviewCanvas asset={asset} />); });
-    expect(view!.root.findByType('img').props.src).toBe('/broken.png');
+    expect(view!.root.findByType('img').props['src']).toBe('/broken.png');
     expect(view!.root.findAllByType('primitive')).toHaveLength(0);
-    act(() => { view!.root.findByType('img').props.onError(); });
+    act(() => { view!.root.findByType('img').props['onError'](); });
     expect(view!.root.findAllByType('img')).toHaveLength(0);
-    expect(view!.root.findByType('primitive').props.object).toBeInstanceOf(THREE.Group);
+    expect(view!.root.findByType('primitive').props['object']).toBeInstanceOf(THREE.Group);
     act(() => { view!.update(<AssetPreviewCanvas asset={{ ...asset, thumbnailUrl: '/new.png' }} />); });
-    expect(view!.root.findByType('img').props.src).toBe('/new.png');
+    expect(view!.root.findByType('img').props['src']).toBe('/new.png');
     expect(view!.root.findAllByType('primitive')).toHaveLength(0);
   } finally {
     if (view) act(() => { view!.unmount(); });
@@ -122,7 +122,7 @@ test('isolates skinned preview bones and disposes only owned skeleton textures',
   let view: ReactTestRenderer | undefined;
   try {
     act(() => { view = create(<AssetPreviewCanvas asset={{ id: 'character', name: '캐릭터', kind: 'characterPart', url: '/character.glb' }} />); });
-    const clone = view!.root.findByType('primitive').props.object as THREE.Group;
+    const clone = view!.root.findByType('primitive').props['object'] as THREE.Group;
     const previewMesh = clone.children[0] as THREE.SkinnedMesh;
     expect(previewMesh.skeleton).not.toBe(mesh.skeleton);
     expect(previewMesh.skeleton.bones[0]).toBe(previewMesh.children[0]);

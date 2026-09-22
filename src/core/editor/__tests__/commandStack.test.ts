@@ -38,8 +38,8 @@ describe('editor command stack', () => {
       id: 'batch',
       label: 'Batch',
       commands: [
-        { id: 'a', label: 'A', run: () => events.push('run-a'), undo: () => events.push('undo-a') },
-        { id: 'b', label: 'B', run: () => events.push('run-b'), undo: () => events.push('undo-b') },
+        { id: 'a', label: 'A', run: () => { events.push('run-a'); }, undo: () => { events.push('undo-a'); } },
+        { id: 'b', label: 'B', run: () => { events.push('run-b'); }, undo: () => { events.push('undo-b'); } },
       ],
     });
 

@@ -9,7 +9,7 @@ import { getGrassManager } from '../manager';
 import type { GrassMaterialInstance } from '../type';
 
 jest.mock('../../../../../rendering/tsl/grassMaterial', () => {
-  const { Color, MeshBasicMaterial, Vector3 } = jest.requireActual<typeof import('three')>('three');
+  const { Color, MeshBasicMaterial, Vector3 } = jest.requireActual<typeof THREE>('three');
   return { GrassNodeMaterial: jest.fn(() => Object.assign(new MeshBasicMaterial({ name: 'grass-node-test' }), {
     uniforms: {
       bladeHeight: { value: 1 }, time: { value: 0 }, windScale: { value: 1 }, trampleCenter: { value: new Vector3() },
@@ -55,8 +55,8 @@ test.each([false, true])('grass preserves the shared manager update path (nodes:
     expect(initialCounts.length).toBeGreaterThan(0);
     expect(initialCounts.every(count => Number.isFinite(count) && count > 0)).toBe(true);
   }
-  expect(material.uniforms.uToon?.value).toBe(1);
-  expect(material.uniforms.tipColor?.value).toEqual(new THREE.Color('#aabbcc'));
+  expect(material.uniforms['uToon']?.value).toBe(1);
+  expect(material.uniforms['tipColor']?.value).toEqual(new THREE.Color('#aabbcc'));
   const ground = renderer.scene.find((node) => node.instance instanceof THREE.Mesh
     && node.instance.geometry instanceof THREE.PlaneGeometry).instance as THREE.Mesh<THREE.PlaneGeometry>;
   ground.updateWorldMatrix(true, false);
@@ -72,11 +72,11 @@ test.each([false, true])('grass preserves the shared manager update path (nodes:
   apply({ visible: false, instanceCount: 7, time: 4, windScale: 0.6, trampleCenter: center, trampleStrength: 0.4 });
   expect(mesh.visible).toBe(false);
   expect(mesh.geometry.instanceCount).toBe(7);
-  expect(material.uniforms.time?.value).toBe(4);
-  expect(material.uniforms.bladeHeight?.value).toBe(0.32);
-  expect(material.uniforms.windScale?.value).toBe(0.6);
-  expect(material.uniforms.trampleCenter?.value).toEqual(new THREE.Vector3(-19, 0, 2));
-  expect(material.uniforms.trampleCenter?.value).not.toBe(center);
+  expect(material.uniforms['time']?.value).toBe(4);
+  expect(material.uniforms['bladeHeight']?.value).toBe(0.32);
+  expect(material.uniforms['windScale']?.value).toBe(0.6);
+  expect(material.uniforms['trampleCenter']?.value).toEqual(new THREE.Vector3(-19, 0, 2));
+  expect(material.uniforms['trampleCenter']?.value).not.toBe(center);
   await renderer.update(<RendererMode nodes={nodes}>
     <Grass instances={4} options={{ bH: 0.32 }} toon bladeTipColor="#aabbcc" position={[20, 0, 0]} />
   </RendererMode>);
@@ -98,7 +98,7 @@ test.each([false, true])('grass releases replaced and late textures (nodes: %s)'
   const pending: Array<() => void> = [];
   const disposals: jest.SpyInstance[] = [];
   const loader = jest.spyOn(THREE.TextureLoader.prototype, 'load').mockImplementation((_url, onLoad) => {
-    const texture = new THREE.Texture();
+    const texture = new THREE.Texture<HTMLImageElement>();
     disposals.push(jest.spyOn(texture, 'dispose'));
     pending.push(() => onLoad?.(texture));
     return texture;

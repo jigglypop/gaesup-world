@@ -1,9 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 
+import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 import { DialogBox } from '../components/DialogBox';
 import { getDialogRegistry } from '../registry/DialogRegistry';
 import { useDialogStore } from '../stores/dialogStore';
-import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 
 afterEach(() => { useDialogStore.getState().close(); });
 

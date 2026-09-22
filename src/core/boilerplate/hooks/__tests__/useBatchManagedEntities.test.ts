@@ -1,4 +1,4 @@
-import { createRef, type RefObject } from 'react';
+import type { RefObject } from 'react';
 
 import { act, renderHook } from '@testing-library/react';
 
@@ -102,9 +102,7 @@ type BatchEntry = {
 };
 
 function createEngineRef(): RefObject<MockEngine> {
-  const ref = createRef<MockEngine>();
-  ref.current = new MockEngine();
-  return ref;
+  return { current: new MockEngine() };
 }
 
 function getCreatedEntity(id: string): MockManagedEntity {
@@ -389,7 +387,7 @@ describe('useBatchManagedEntities', () => {
     const bridge = new MockBridge();
     const aRef = createEngineRef();
     const bRef = createEngineRef();
-    const registrationCleanups = [jest.fn(), jest.fn()];
+    const registrationCleanups = [jest.fn(), jest.fn()] as const;
     const onDispose = jest.fn();
     const onRegister = jest
       .fn<() => void, [MockEngine]>()
@@ -431,7 +429,7 @@ describe('useBatchManagedEntities', () => {
     const bridge = new MockBridge();
     const aRef = createEngineRef();
     const bRef = createEngineRef();
-    const registrationCleanups = [jest.fn(), jest.fn()];
+    const registrationCleanups = [jest.fn(), jest.fn()] as const;
     const onRegister = jest
       .fn<() => void, [MockEngine]>()
       .mockReturnValueOnce(registrationCleanups[0])

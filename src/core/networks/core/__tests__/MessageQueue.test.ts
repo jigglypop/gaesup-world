@@ -241,7 +241,7 @@ describe('MessageQueue', () => {
 
       const batch = nonBatchQueue.dequeueBatch();
       expect(batch).toHaveLength(1);
-      expect(batch[0].id).toBe('msg1');
+      expect(batch[0]?.id).toBe('msg1');
     });
 
     test('우선순위별 배치 처리', () => {

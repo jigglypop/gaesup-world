@@ -37,8 +37,10 @@ test('creates and owns a finite TSL grid surface for the WebGPU facade', async (
   expect(mesh.frustumCulled).toBe(false);
   expect((mesh.material as THREE.Material & { positionNode?: unknown }).positionNode).toBeNull();
 
+  const material = mesh.material;
+  if (Array.isArray(material)) throw new Error('the WebGPU grid should own a single material');
   const disposeGeometry = jest.spyOn(mesh.geometry, 'dispose');
-  const disposeMaterial = jest.spyOn(mesh.material, 'dispose');
+  const disposeMaterial = jest.spyOn(material, 'dispose');
   await view.unmount();
   expect(disposeGeometry).toHaveBeenCalledTimes(1);
   expect(disposeMaterial).toHaveBeenCalledTimes(1);

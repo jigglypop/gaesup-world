@@ -21,11 +21,15 @@ export abstract class AbstractBridge<
   use(middleware: BridgeMiddleware<EngineType, SnapshotType, CommandType>): void {
     this.middlewares.push(middleware);
   }
+  protected hasEventObservers(type: BridgeEventType): boolean {
+    return this.middlewares.length > 0 || (this.eventHandlers.get(type)?.size ?? 0) > 0;
+  }
   protected emit(event: BridgeEvent<EngineType, SnapshotType, CommandType>): void {
     const handlers = this.eventHandlers.get(event.type);
     if (handlers) {
       handlers.forEach(handler => handler(event));
     }
+    if (this.middlewares.length === 0) return;
     let index = 0;
     const next = () => {
       if (index < this.middlewares.length) {
@@ -93,7 +97,8 @@ export abstract class AbstractBridge<
     const engine = this.getEngine(id);
     if (!engine) return null;
     const snapshot = this.createSnapshot(engine, id);
-    if (snapshot) {
+    // Snapshots are read every physics tick; skip building an event nobody observes.
+    if (snapshot && this.hasEventObservers('snapshot')) {
       this.emit({ type: 'snapshot', id, timestamp: Date.now(), data: { snapshot } });
     }
     return snapshot;

@@ -37,7 +37,7 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 // Canvas polyfill for Three.js in jsdom
-if (!global.HTMLCanvasElement.prototype.getContext) {
+if (typeof global.HTMLCanvasElement !== "undefined" && !global.HTMLCanvasElement.prototype.getContext) {
   global.HTMLCanvasElement.prototype.getContext = () => ({
     fillRect: () => {},
     clearRect: () => {},

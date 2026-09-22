@@ -1,9 +1,9 @@
+import { useWalletStore } from '../../economy/stores/walletStore';
 import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 import { registerSeedItems } from '../../items/data/items';
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
-import { useWalletStore } from '../../economy/stores/walletStore';
-import { getQuestRegistry } from '../registry/QuestRegistry';
 import { describeObjectiveProgress } from '../components/QuestLogUI/helpers';
+import { getQuestRegistry } from '../registry/QuestRegistry';
 import { useQuestStore } from '../stores/questStore';
 import type { QuestDef, QuestObjective, QuestSerialized } from '../types';
 
@@ -91,10 +91,10 @@ describe('questStore', () => {
     } } };
     const apply = before.prepareHydrate(data);
     expect(useQuestStore.getState()).toBe(before);
-    data.state.custom!.progress.unknown = 99;
-    data.state.custom!.status = 'failed';
+    data.state['custom']!.progress['unknown'] = 99;
+    data.state['custom']!.status = 'failed';
     apply();
-    expect(useQuestStore.getState().state.custom).toEqual({ questId: 'custom', status: 'active', progress: { unknown: 3 }, startedAt: 0 });
+    expect(useQuestStore.getState().state['custom']).toEqual({ questId: 'custom', status: 'active', progress: { unknown: 3 }, startedAt: 0 });
     const current = useQuestStore.getState();
     current.hydrate(undefined);
     expect(useQuestStore.getState()).toBe(current);
@@ -211,11 +211,11 @@ describe('questStore', () => {
     expect(useQuestStore.getState().notifyDeliver('npc1', 'apple', 3)).toBe(true);
     expect(useInventoryStore.getState().countOf('apple')).toBe(5);
     expect(useQuestStore.getState().progressOf(first.id)?.progress).toEqual({ a: 2, b: 1 });
-    expect(useQuestStore.getState().progressOf(Q_DELIVER.id)?.progress.o1).toBe(0);
+    expect(useQuestStore.getState().progressOf(Q_DELIVER.id)?.progress['o1']).toBe(0);
     expect(useQuestStore.getState().notifyDeliver('npc1', 'apple', 2)).toBe(true);
     expect(useInventoryStore.getState().countOf('apple')).toBe(3);
     expect(useQuestStore.getState().progressOf(first.id)?.progress).toEqual({ a: 2, b: 2 });
-    expect(useQuestStore.getState().progressOf(Q_DELIVER.id)?.progress.o1).toBe(1);
+    expect(useQuestStore.getState().progressOf(Q_DELIVER.id)?.progress['o1']).toBe(1);
   });
 
   test.each([0, -1, 0.5, NaN, Infinity])('rejects invalid delivery count %s without mutation', (count) => {

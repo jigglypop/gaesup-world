@@ -1,7 +1,8 @@
-import { DirectionComponent } from '@core/motions/core/movement/DirectionComponent';
 import * as THREE from 'three';
-import { PhysicsState } from '@core/motions/types';
+
 import { InteractionSystem } from '@core/interactions/core/InteractionSystem';
+import { DirectionComponent } from '@core/motions/core/movement/DirectionComponent';
+import type { PhysicsCalcProps, PhysicsState } from '@core/motions/types';
 
 jest.mock('@core/interactions/core/InteractionSystem');
 
@@ -41,24 +42,50 @@ describe('DirectionComponent', () => {
     directionComponent = new DirectionComponent();
   });
 
-  const createMockState = (
-    modeType: 'character' | 'vehicle' | 'airplane',
-    keyboard: Partial<PhysicsState['keyboard']> = {},
-    mouse: Partial<PhysicsState['mouse']> = {}
-  ): PhysicsState => ({
+  const createMockState = (modeType: 'character' | 'vehicle' | 'airplane'): PhysicsState => ({
     modeType,
-    keyboard,
-    mouse,
+    keyboard: {
+      forward: false,
+      backward: false,
+      leftward: false,
+      rightward: false,
+      shift: false,
+      space: false,
+      keyZ: false,
+      keyR: false,
+      keyF: false,
+      keyE: false,
+      escape: false
+    },
+    mouse: {
+      target: new THREE.Vector3(),
+      angle: 0,
+      isActive: false,
+      shouldRun: false
+    },
     activeState: {
       dir: new THREE.Vector3(),
       direction: new THREE.Vector3(),
       euler: new THREE.Euler(),
-      velocity: new THREE.Vector3()
+      velocity: new THREE.Vector3(),
+      position: new THREE.Vector3(),
+      quaternion: new THREE.Quaternion(),
+      angular: new THREE.Vector3(),
+      isGround: false
     },
-    characterConfig: {},
-    vehicleConfig: {},
-    airplaneConfig: {}
-  } as PhysicsState);
+    gameStates: {
+      canRide: false,
+      isRiding: false,
+      isJumping: false,
+      isFalling: false,
+      isMoving: false,
+      isRunning: false,
+      isNotMoving: true,
+      isNotRunning: true,
+      isOnTheGround: true
+    },
+    automationOption: {} as PhysicsState['automationOption']
+  });
 
   it('캐릭터 모드 + 키보드 입력 시 activeState.dir과 euler.y가 변경되어야 합니다.', () => {
     mockInteractionSystem.getKeyboardRef.mockReturnValue({
@@ -96,7 +123,7 @@ describe('DirectionComponent', () => {
     const props = {
       worldContext: { automation: { settings: {} } },
       rigidBodyRef: { current: { translation: () => ({ x: 0, y: 0, z: 0 }) } }
-    } as any;
+    } as unknown as PhysicsCalcProps;
     directionComponent.updateDirection(state, 'normal', props);
     expect(state.activeState.dir.length()).not.toBe(0);
     expect(state.activeState.euler.y).not.toBe(0);
@@ -157,19 +184,21 @@ describe('DirectionComponent', () => {
 
     const state = createMockState('character');
     const target = new THREE.Vector3(10, 0, 10);
+    const queuedActions = [{ type: 'move', target }];
+    const memo: NonNullable<PhysicsCalcProps['memo']> = {};
     const props = {
       worldContext: {
         automation: {
           settings: { trackProgress: true },
-          queue: { actions: [{ type: 'move', target }] }
+          queue: { actions: queuedActions }
         }
       },
       body: { translation: () => ({ x: 0, y: 0, z: 0 }) },
-      memo: {},
+      memo,
       rigidBodyRef: { current: { translation: () => ({ x: 0, y: 0, z: 0 }) } }
-    } as any;
+    } as unknown as PhysicsCalcProps;
     directionComponent.updateDirection(state, 'normal', props);
-    expect(props.worldContext.automation.queue.actions).toHaveLength(1);
-    expect(props.memo.direction).toBeUndefined();
+    expect(queuedActions).toHaveLength(1);
+    expect(memo.direction).toBeUndefined();
   });
 });

@@ -1,5 +1,5 @@
-import { BrowserGamepadHub, type BrowserGamepad } from '../BrowserGamepadHub';
 import { logger } from '../../utils/logger';
+import { BrowserGamepadHub, type BrowserGamepad } from '../BrowserGamepadHub';
 
 function fixture() {
   const target = new EventTarget(); const document = Object.assign(new EventTarget(), { hidden: false, hasFocus: () => true });

@@ -1,5 +1,5 @@
-import { createSceneStore, useSceneStore } from '../sceneStore';
 import { DEFAULT_SCENE_ID, type SceneSerialized } from '../../types';
+import { createSceneStore, useSceneStore } from '../sceneStore';
 
 beforeEach(() => {
   jest.useFakeTimers();

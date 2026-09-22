@@ -129,7 +129,12 @@ function createCalcProp(
     inputRef: {
       current: {
         keyboard: physicsState.keyboard,
-        mouse: physicsState.mouse,
+        mouse: {
+          ...physicsState.mouse,
+          buttons: { left: false, right: false, middle: false },
+          wheel: 0,
+          position: new THREE.Vector2(),
+        },
       },
     },
     setKeyboardInput: jest.fn(),

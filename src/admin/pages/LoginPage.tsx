@@ -3,25 +3,26 @@ import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import './LoginPage.css';
 
-const LoginPage: React.FC = () => {
+export type LoginPageProps = {
+  notice?: string;
+};
+
+const LoginPage: React.FC<LoginPageProps> = ({ notice }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const login = useAuthStore((state) => state.login);
   const loading = useAuthStore((state) => state.loading);
+  const error = useAuthStore((state) => state.error);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    const success = await login(username, password);
-    if (!success) {
-      setError('사용자 이름 또는 비밀번호를 확인하세요.');
-    }
+    await login(username, password);
   };
 
   return (
     <div className="login-container">
       <h1>관리자 로그인</h1>
+      {notice && <p className="login-error" role="status">{notice}</p>}
       <form onSubmit={handleLogin} className="login-form">
         <label htmlFor="admin-username">사용자 이름</label>
         <input

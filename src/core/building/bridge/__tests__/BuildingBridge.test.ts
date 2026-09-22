@@ -1,5 +1,5 @@
+import { Position3D, Rotation3D } from '../../types';
 import { BuildingBridge } from '../BuildingBridge';
-import { Position3D, Rotation3D, WallConfig, TileConfig, MeshConfig } from '../../types';
 
 // 타입 정의 (내부 타입들)
 type LegacyPosition = [number, number, number];
@@ -281,7 +281,7 @@ describe('BuildingBridge 테스트', () => {
     test('GLASS가 아닌 재질은 STANDARD로 변환되어야 함', () => {
       const legacyMesh1: LegacyMesh = { material: 'METAL' };
       const legacyMesh2: LegacyMesh = { material: 'WOOD' };
-      const legacyMesh3: LegacyMesh = { material: undefined };
+      const legacyMesh3: LegacyMesh = {};
 
       const result1 = BuildingBridge.convertLegacyMesh(legacyMesh1);
       const result2 = BuildingBridge.convertLegacyMesh(legacyMesh2);
@@ -341,43 +341,38 @@ describe('BuildingBridge 테스트', () => {
 
   describe('에러 처리', () => {
     test('잘못된 레거시 위치 데이터에 대해 예외가 처리되어야 함', () => {
-      const invalidPosition = null as any;
-
       // @HandleError 데코레이터가 있어서 예외가 throw되지 않아야 함
       expect(() => {
-        BuildingBridge.convertLegacyPosition(invalidPosition);
+        // @ts-expect-error -- 런타임 레거시 데이터의 null 입력 처리 검증
+        BuildingBridge.convertLegacyPosition(null);
       }).not.toThrow();
     });
 
     test('잘못된 레거시 회전 데이터에 대해 예외가 처리되어야 함', () => {
-      const invalidRotation = undefined as any;
-
       expect(() => {
-        BuildingBridge.convertLegacyRotation(invalidRotation);
+        // @ts-expect-error -- 런타임 레거시 데이터의 undefined 입력 처리 검증
+        BuildingBridge.convertLegacyRotation(undefined);
       }).not.toThrow();
     });
 
     test('잘못된 레거시 벽 데이터에 대해 예외가 처리되어야 함', () => {
-      const invalidWall = null as any;
-
       expect(() => {
-        BuildingBridge.convertLegacyWall(invalidWall);
+        // @ts-expect-error -- 런타임 레거시 데이터의 null 입력 처리 검증
+        BuildingBridge.convertLegacyWall(null);
       }).not.toThrow();
     });
 
     test('잘못된 레거시 타일 데이터에 대해 예외가 처리되어야 함', () => {
-      const invalidTile = undefined as any;
-
       expect(() => {
-        BuildingBridge.convertLegacyTile(invalidTile);
+        // @ts-expect-error -- 런타임 레거시 데이터의 undefined 입력 처리 검증
+        BuildingBridge.convertLegacyTile(undefined);
       }).not.toThrow();
     });
 
     test('잘못된 레거시 메시 데이터에 대해 예외가 처리되어야 함', () => {
-      const invalidMesh = null as any;
-
       expect(() => {
-        BuildingBridge.convertLegacyMesh(invalidMesh);
+        // @ts-expect-error -- 런타임 레거시 데이터의 null 입력 처리 검증
+        BuildingBridge.convertLegacyMesh(null);
       }).not.toThrow();
     });
   });
@@ -442,13 +437,20 @@ describe('BuildingBridge 테스트', () => {
       // HandleError 데코레이터는 예외를 잡아서 처리하므로
       // 잘못된 데이터가 들어와도 예외가 발생하지 않아야 함
       expect(() => {
-        BuildingBridge.convertLegacyPosition(null as any);
-        BuildingBridge.convertLegacyRotation(undefined as any);
-        BuildingBridge.convertToLegacyPosition(null as any);
-        BuildingBridge.convertToLegacyRotation(undefined as any);
-        BuildingBridge.convertLegacyWall(null as any);
-        BuildingBridge.convertLegacyTile(undefined as any);
-        BuildingBridge.convertLegacyMesh(null as any);
+        // @ts-expect-error -- 잘못된 런타임 입력 처리 검증
+        BuildingBridge.convertLegacyPosition(null);
+        // @ts-expect-error -- 잘못된 런타임 입력 처리 검증
+        BuildingBridge.convertLegacyRotation(undefined);
+        // @ts-expect-error -- 잘못된 런타임 입력 처리 검증
+        BuildingBridge.convertToLegacyPosition(null);
+        // @ts-expect-error -- 잘못된 런타임 입력 처리 검증
+        BuildingBridge.convertToLegacyRotation(undefined);
+        // @ts-expect-error -- 잘못된 런타임 입력 처리 검증
+        BuildingBridge.convertLegacyWall(null);
+        // @ts-expect-error -- 잘못된 런타임 입력 처리 검증
+        BuildingBridge.convertLegacyTile(undefined);
+        // @ts-expect-error -- 잘못된 런타임 입력 처리 검증
+        BuildingBridge.convertLegacyMesh(null);
       }).not.toThrow();
     });
   });

@@ -1,10 +1,9 @@
 import * as THREE from 'three';
-import { createSceneDocument, createSceneDocumentController, createSceneDocumentSaveBinding } from '../../scene-object';
+
 
 import { createAudioPlugin } from '../../audio/plugin';
 import { useAudioStore } from '../../audio/stores/audioStore';
 import { createBuildingPlugin } from '../../building/plugin';
-import { useBuildingStore } from '../../building/stores/buildingStore';
 import { createCameraPlugin } from '../../camera';
 import { createCatalogPlugin } from '../../catalog/plugin';
 import { useCatalogStore } from '../../catalog/stores/catalogStore';
@@ -12,7 +11,6 @@ import { createCharacterPlugin } from '../../character/plugin';
 import { createCraftingPlugin } from '../../crafting/plugin';
 import { useCraftingStore } from '../../crafting/stores/craftingStore';
 import { createEconomyPlugin } from '../../economy/plugin';
-import { useShopStore } from '../../economy/stores/shopStore';
 import { useWalletStore } from '../../economy/stores/walletStore';
 import { createEventsPlugin } from '../../events/plugin';
 import { useEventsStore } from '../../events/stores/eventsStore';
@@ -21,7 +19,6 @@ import { usePlotStore } from '../../farming/stores/plotStore';
 import { createI18nPlugin } from '../../i18n/plugin';
 import { useI18nStore } from '../../i18n/stores/i18nStore';
 import { createInventoryPlugin } from '../../inventory/plugin';
-import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 import { createMailPlugin } from '../../mail/plugin';
 import { useMailStore } from '../../mail/stores/mailStore';
 import { createMotionsPlugin, type MotionsRuntimeService } from '../../motions';
@@ -36,6 +33,7 @@ import { useFriendshipStore } from '../../relations/stores/friendshipStore';
 import { SaveSystem } from '../../save';
 import type { SaveAdapter, SaveBlob } from '../../save';
 import { createScenePlugin } from '../../scene/plugin';
+import { createSceneDocument, createSceneDocumentController, createSceneDocumentSaveBinding } from '../../scene-object';
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { createTimePlugin } from '../../time/plugin';
 import { useTimeStore } from '../../time/stores/timeStore';
@@ -940,7 +938,7 @@ describe('createGaesupRuntime', () => {
         {
           id: 'block-runtime-roundtrip',
           position: { x: 2, y: 0, z: 4 },
-          cell: { x: 2, z: 4 },
+          cell: { x: 2, z: 4, level: 0 },
         },
       ],
       objects: [],
@@ -997,7 +995,7 @@ describe('createGaesupRuntime', () => {
     expect(runtime.buildingStore.getState().blocks).toEqual([
       expect.objectContaining({
         id: 'block-runtime-roundtrip',
-        cell: { x: 2, z: 4 },
+        cell: { x: 2, z: 4, level: 0 },
       }),
     ]);
     expect(runtime.store.getState().cameraOption).toEqual(
@@ -1414,7 +1412,7 @@ describe('createGaesupRuntime', () => {
 
   it('filters plugin setup by runtime target', async () => {
     const calls: string[] = [];
-    const markerPlugin = (id: string, runtime: GaesupPlugin['runtime']): GaesupPlugin => ({
+    const markerPlugin = (id: string, runtime: NonNullable<GaesupPlugin['runtime']>): GaesupPlugin => ({
       id,
       name: id,
       version: '1.0.0',

@@ -88,7 +88,7 @@ test('zero-length motion still reports overlap and misses leave the destination 
 });
 
 test('runtime avatar subtree exclusion preserves other nearby solid geometry', () => {
-  const scene = new Scene(); const group = new Group(); group.userData.intangible = true;
+  const scene = new Scene(); const group = new Group(); group.userData['intangible'] = true;
   const geometry = new BoxGeometry(2, 3, 2); const material = new MeshBasicMaterial();
   const avatar = new Mesh(geometry, material); group.add(avatar); scene.add(group);
   expect(cameraUtils.improvedCollisionCheck(from, to, scene, 0.5).safe).toBe(true);
@@ -112,7 +112,7 @@ test('batched geometry uses active visible instances, their transforms and geome
 });
 
 test('skinned vertices observe changed bone transforms without a render', () => {
-  const geometry = new BoxGeometry(1, 2, 1); const count = geometry.attributes.position!.count;
+  const geometry = new BoxGeometry(1, 2, 1); const count = geometry.getAttribute('position').count;
   geometry.setAttribute('skinIndex', new Uint16BufferAttribute(new Uint16Array(count * 4), 4));
   const weights = new Float32Array(count * 4); for (let i = 0; i < count; i++) weights[i * 4] = 1;
   geometry.setAttribute('skinWeight', new Float32BufferAttribute(weights, 4));
@@ -129,7 +129,7 @@ test('skinned vertices observe changed bone transforms without a render', () => 
 
 test('per-instance morph targets use deformed positions outside the original geometry bounds', () => {
   const geometry = new BoxGeometry(1, 2, 1);
-  const morph = geometry.attributes.position!.clone();
+  const morph = geometry.getAttribute('position').clone();
   for (let i = 0; i < morph.count; i++) morph.setXYZ(i, morph.getX(i) + 0.8, morph.getY(i), morph.getZ(i) + 5);
   geometry.morphAttributes.position = [morph];
   const material = new MeshBasicMaterial(); const mesh = new InstancedMesh(geometry, material, 1);

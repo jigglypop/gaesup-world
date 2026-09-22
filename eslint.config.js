@@ -15,10 +15,7 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/coverage/**',
       '**/.tmp/**',
-      '.artifacts/performance/**',
-      '**/__tests__/**',
-      '**/*.test.*',
-      '**/*.spec.*',
+      '.artifacts/**',
     ],
   },
   ...tseslint.configs.recommended,
@@ -169,6 +166,18 @@ export default tseslint.config(
     files: ['scripts/**/*.cjs'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
+    files: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}', 'test/**/*.{ts,tsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+      },
+    },
+    rules: {
+      // Tests drive core modules through React/R3F harnesses.
+      'no-restricted-imports': 'off',
     },
   },
 );

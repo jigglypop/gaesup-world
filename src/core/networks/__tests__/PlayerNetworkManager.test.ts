@@ -1,4 +1,5 @@
 import { PlayerNetworkManager } from '../core/PlayerNetworkManager';
+import type { PlayerState } from '../types';
 
 // WebSocket mock
 class MockWebSocket {
@@ -6,6 +7,7 @@ class MockWebSocket {
   static OPEN = 1;
   static CLOSING = 2;
   static CLOSED = 3;
+  static lastCreated: MockWebSocket | null = null;
 
   readyState = MockWebSocket.CONNECTING;
   onopen: ((ev: Event) => void) | null = null;
@@ -15,6 +17,7 @@ class MockWebSocket {
   sentMessages: string[] = [];
 
   constructor(public url: string) {
+    MockWebSocket.lastCreated = this;
     // 비동기로 open 시뮬레이션
     setTimeout(() => {
       this.readyState = MockWebSocket.OPEN;
@@ -24,6 +27,12 @@ class MockWebSocket {
 
   send(data: string) {
     this.sentMessages.push(data);
+  }
+
+  parseSentMessage(index: number) {
+    const raw = this.sentMessages.at(index);
+    if (raw === undefined) throw new Error(`Expected a sent message at index ${index}`);
+    return JSON.parse(raw);
   }
 
   close(code?: number, reason?: string) {
@@ -47,35 +56,21 @@ class MockWebSocket {
 }
 
 // 글로벌 WebSocket을 mock으로 교체
-let lastCreatedWs: MockWebSocket | null = null;
 const originalWebSocket = globalThis.WebSocket;
 
 beforeAll(() => {
-  (globalThis as Record<string, unknown>).WebSocket = class extends MockWebSocket {
-    constructor(url: string) {
-      super(url);
-      // eslint-disable-next-line @typescript-eslint/no-this-alias -- expose the constructed socket to tests
-      lastCreatedWs = this;
-    }
-  };
-  // static 상수 복사
-  Object.assign((globalThis as Record<string, unknown>).WebSocket, {
-    CONNECTING: 0,
-    OPEN: 1,
-    CLOSING: 2,
-    CLOSED: 3,
-  });
+  globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
 });
 
 afterAll(() => {
-  (globalThis as Record<string, unknown>).WebSocket = originalWebSocket;
+  globalThis.WebSocket = originalWebSocket;
 });
 
 describe('PlayerNetworkManager', () => {
   let manager: PlayerNetworkManager;
 
   beforeEach(() => {
-    lastCreatedWs = null;
+    MockWebSocket.lastCreated = null;
     manager = new PlayerNetworkManager({
       url: 'ws://localhost:9999',
       roomId: 'test-room',
@@ -95,26 +90,26 @@ describe('PlayerNetworkManager', () => {
       // onopen이 setTimeout(0)으로 비동기이므로 기다림
       await new Promise(r => setTimeout(r, 10));
 
-      expect(lastCreatedWs).not.toBeNull();
-      expect(lastCreatedWs!.sentMessages.length).toBe(1);
-      const joinMsg = JSON.parse(lastCreatedWs!.sentMessages[0]);
+      expect(MockWebSocket.lastCreated).not.toBeNull();
+      expect(MockWebSocket.lastCreated!.sentMessages.length).toBe(1);
+      const joinMsg = MockWebSocket.lastCreated!.parseSentMessage(0);
       expect(joinMsg.type).toBe('Join');
       expect(joinMsg.room_id).toBe('test-room');
     });
 
     test('이미 연결 중이면 중복 connect를 무시한다', async () => {
       manager.connect();
-      const first = lastCreatedWs;
+      const first = MockWebSocket.lastCreated;
       manager.connect(); // 두 번째 호출
-      expect(lastCreatedWs).toBe(first); // 새 WebSocket이 생성되지 않음
+      expect(MockWebSocket.lastCreated).toBe(first); // 새 WebSocket이 생성되지 않음
     });
 
     test('OPEN 상태에서 connect 무시', async () => {
       manager.connect();
       await new Promise(r => setTimeout(r, 10));
-      const first = lastCreatedWs;
+      const first = MockWebSocket.lastCreated;
       manager.connect();
-      expect(lastCreatedWs).toBe(first);
+      expect(MockWebSocket.lastCreated).toBe(first);
     });
   });
 
@@ -132,12 +127,12 @@ describe('PlayerNetworkManager', () => {
         manager.disconnect();
         manager.connect();
         jest.runOnlyPendingTimers();
-        expect(lastCreatedWs!.sentMessages.map((message) => JSON.parse(message))).toEqual([
+        expect(MockWebSocket.lastCreated!.sentMessages.map((message) => JSON.parse(message))).toEqual([
           { type: 'Join', room_id: 'test-room', name: 'tester', color: '#ff0000' },
         ]);
         manager.sendChat('new session');
         manager.updateLocalPlayer({ position: [4, 5, 6] });
-        expect(lastCreatedWs!.sentMessages.slice(1).map((message) => JSON.parse(message))).toEqual([
+        expect(MockWebSocket.lastCreated!.sentMessages.slice(1).map((message) => JSON.parse(message))).toEqual([
           { type: 'Chat', text: 'new session' },
           { type: 'Update', state: { position: [4, 5, 6] } },
         ]);
@@ -166,7 +161,7 @@ describe('PlayerNetworkManager', () => {
         resolveText = resolve;
         rejectText = reject;
       });
-      lastCreatedWs!.onmessage?.(new MessageEvent('message', {
+      MockWebSocket.lastCreated!.onmessage?.(new MessageEvent('message', {
         data: { text: () => pendingText },
       }));
       manager.disconnect();
@@ -179,7 +174,7 @@ describe('PlayerNetworkManager', () => {
       await Promise.resolve();
       expect(onChat).not.toHaveBeenCalled();
       expect(onError).not.toHaveBeenCalled();
-      lastCreatedWs!.simulateMessage(chat);
+      MockWebSocket.lastCreated!.simulateMessage(chat);
       expect(onChat).toHaveBeenCalledTimes(1);
       expect(onChat).toHaveBeenCalledWith('remote', 'hello', 1);
     });
@@ -196,7 +191,7 @@ describe('PlayerNetworkManager', () => {
 
       manager.connect();
       await new Promise(r => setTimeout(r, 10));
-      const ws = lastCreatedWs!;
+      const ws = MockWebSocket.lastCreated!;
 
       manager.disconnect();
       expect(disconnectCount).toBe(1);
@@ -222,8 +217,8 @@ describe('PlayerNetworkManager', () => {
 
       manager.updateLocalPlayer({ position: [1, 2, 3] });
       // Join + Update = 2개
-      expect(lastCreatedWs!.sentMessages.length).toBe(2);
-      const updateMsg = JSON.parse(lastCreatedWs!.sentMessages[1]);
+      expect(MockWebSocket.lastCreated!.sentMessages.length).toBe(2);
+      const updateMsg = MockWebSocket.lastCreated!.parseSentMessage(1);
       expect(updateMsg.type).toBe('Update');
       expect(updateMsg.state.position).toEqual([1, 2, 3]);
     });
@@ -241,7 +236,7 @@ describe('PlayerNetworkManager', () => {
       manager.connect();
       jest.advanceTimersByTime(5); // open
 
-      const ws = lastCreatedWs!;
+      const ws = MockWebSocket.lastCreated!;
       // Join 1개
       expect(ws.sentMessages.length).toBe(1);
 
@@ -254,7 +249,7 @@ describe('PlayerNetworkManager', () => {
       expect(ws.sentMessages.filter((m) => JSON.parse(m).type === 'Update').length).toBe(2);
 
       // 마지막 값이 반영(coalesce) 되었는지 확인
-      const lastUpdate = JSON.parse(ws.sentMessages[ws.sentMessages.length - 1]);
+      const lastUpdate = ws.parseSentMessage(-1);
       expect(lastUpdate.state.position).toEqual([2, 0, 0]);
 
       jest.useRealTimers();
@@ -268,7 +263,7 @@ describe('PlayerNetworkManager', () => {
 
       manager.sendChat('');
       manager.sendChat('   ');
-      expect(lastCreatedWs!.sentMessages.length).toBe(1); // Join만
+      expect(MockWebSocket.lastCreated!.sentMessages.length).toBe(1); // Join만
     });
 
     test('200자 초과는 잘린다', async () => {
@@ -277,7 +272,7 @@ describe('PlayerNetworkManager', () => {
 
       const longText = 'A'.repeat(300);
       manager.sendChat(longText);
-      const chatMsg = JSON.parse(lastCreatedWs!.sentMessages[1]);
+      const chatMsg = MockWebSocket.lastCreated!.parseSentMessage(1);
       expect(chatMsg.text.length).toBe(200);
     });
   });
@@ -302,7 +297,7 @@ describe('PlayerNetworkManager', () => {
       manager.connect();
       await new Promise(resolve => setTimeout(resolve, 10));
       const state = { name: 'Neighbor', color: '#fff', position: [1, 2, 3], rotation: [1, 0, 0, 0] };
-      const send = (message: unknown) => lastCreatedWs!.simulateMessage(JSON.stringify(message));
+      const send = (message: unknown) => MockWebSocket.lastCreated!.simulateMessage(JSON.stringify(message));
       send({ type: 'PlayerJoined', client_id: 'neighbor', state });
       const previous = manager.getPlayers().get('neighbor');
       send({ type: 'PlayerUpdate', client_id: 'neighbor', state: invalid });
@@ -332,7 +327,7 @@ describe('PlayerNetworkManager', () => {
       manager.connect();
       await new Promise(r => setTimeout(r, 10));
 
-      lastCreatedWs!.simulateMessage(JSON.stringify({
+      MockWebSocket.lastCreated!.simulateMessage(JSON.stringify({
         type: 'Welcome',
         client_id: 'my-id-123',
         room_state: {},
@@ -342,7 +337,7 @@ describe('PlayerNetworkManager', () => {
     });
 
     test('PlayerUpdate는 불변 객체로 갱신한다', async () => {
-      const updates: Array<{ id: string; state: Record<string, unknown> }> = [];
+      const updates: Array<{ id: string; state: PlayerState }> = [];
       manager = new PlayerNetworkManager({
         url: 'ws://localhost:9999',
         roomId: 'room',
@@ -356,26 +351,27 @@ describe('PlayerNetworkManager', () => {
       await new Promise(r => setTimeout(r, 10));
 
       // 먼저 PlayerJoined로 등록
-      lastCreatedWs!.simulateMessage(JSON.stringify({
+      MockWebSocket.lastCreated!.simulateMessage(JSON.stringify({
         type: 'PlayerJoined',
         client_id: 'p2',
         state: { name: 'Bob', color: '#00f', position: [0, 0, 0], rotation: [1, 0, 0, 0] },
       }));
 
-      const joinedState = updates[0].state;
+      const joinedState = updates[0]?.state;
+      expect(joinedState).toBeDefined();
 
       // PlayerUpdate
-      lastCreatedWs!.simulateMessage(JSON.stringify({
+      MockWebSocket.lastCreated!.simulateMessage(JSON.stringify({
         type: 'PlayerUpdate',
         client_id: 'p2',
         state: { position: [5, 5, 5] },
       }));
 
-      const updatedState = updates[1].state;
+      const updatedState = updates[1]?.state;
       // 새 객체여야 함 (Object.assign 변이가 아닌 spread)
       expect(updatedState).not.toBe(joinedState);
-      expect(updatedState.position).toEqual([5, 5, 5]);
-      expect(updatedState.name).toBe('Bob');
+      expect(updatedState?.position).toEqual([5, 5, 5]);
+      expect(updatedState?.name).toBe('Bob');
     });
 
     test('PlayerLeft 처리', async () => {
@@ -391,7 +387,7 @@ describe('PlayerNetworkManager', () => {
       manager.connect();
       await new Promise(r => setTimeout(r, 10));
 
-      lastCreatedWs!.simulateMessage(JSON.stringify({
+      MockWebSocket.lastCreated!.simulateMessage(JSON.stringify({
         type: 'PlayerLeft',
         client_id: 'p2',
       }));
@@ -408,11 +404,11 @@ describe('PlayerNetworkManager', () => {
       manager.setCallbacks({ onConnect, onDisconnect, onError });
       manager.connect();
       await new Promise(resolve => setTimeout(resolve, 10));
-      const previous = lastCreatedWs!;
+      const previous = MockWebSocket.lastCreated!;
       previous.readyState = MockWebSocket.CLOSING;
       manager.connect();
       await new Promise(resolve => setTimeout(resolve, 10));
-      const current = lastCreatedWs!;
+      const current = MockWebSocket.lastCreated!;
       current.simulateMessage(JSON.stringify({
         type: 'PlayerJoined',
         client_id: 'neighbor',
@@ -445,11 +441,11 @@ describe('PlayerNetworkManager', () => {
         });
         manager.connect();
         await jest.advanceTimersByTimeAsync(1);
-        const firstWs = lastCreatedWs!;
+        const firstWs = MockWebSocket.lastCreated!;
         firstWs.simulateError();
         firstWs.simulateClose(1006, 'network error');
         await jest.advanceTimersByTimeAsync(51);
-        expect(lastCreatedWs).not.toBe(firstWs);
+        expect(MockWebSocket.lastCreated).not.toBe(firstWs);
         expect(manager.getConnectionStatus()).toBe(true);
       } finally {
         manager.disconnect();
@@ -470,7 +466,7 @@ describe('PlayerNetworkManager', () => {
       manager.connect();
       await new Promise(r => setTimeout(r, 10));
 
-      const firstWs = lastCreatedWs!;
+      const firstWs = MockWebSocket.lastCreated!;
       // 연결 끊김 시뮬레이션
       firstWs.simulateClose(1006, 'abnormal');
 
@@ -478,19 +474,19 @@ describe('PlayerNetworkManager', () => {
       await new Promise(r => setTimeout(r, 80));
 
       // 새 WebSocket이 생성되어야 함
-      expect(lastCreatedWs).not.toBe(firstWs);
+      expect(MockWebSocket.lastCreated).not.toBe(firstWs);
     });
 
     test('reconnectAttempts가 0이면 재연결하지 않는다', async () => {
       manager.connect();
       await new Promise(r => setTimeout(r, 10));
 
-      const firstWs = lastCreatedWs!;
+      const firstWs = MockWebSocket.lastCreated!;
       firstWs.simulateClose(1006, 'abnormal');
 
       await new Promise(r => setTimeout(r, 100));
       // 새 WebSocket이 생성되지 않아야 함
-      expect(lastCreatedWs).toBe(firstWs);
+      expect(MockWebSocket.lastCreated).toBe(firstWs);
     });
 
     test('정상 종료(1000)면 재연결하지 않는다', async () => {
@@ -506,11 +502,11 @@ describe('PlayerNetworkManager', () => {
       manager.connect();
       await new Promise(r => setTimeout(r, 10));
 
-      const firstWs = lastCreatedWs!;
+      const firstWs = MockWebSocket.lastCreated!;
       firstWs.simulateClose(1000, 'normal');
       await new Promise(r => setTimeout(r, 50));
 
-      expect(lastCreatedWs).toBe(firstWs);
+      expect(MockWebSocket.lastCreated).toBe(firstWs);
     });
 
     test('disconnect() 호출 후에는 재연결하지 않는다', async () => {
@@ -525,13 +521,13 @@ describe('PlayerNetworkManager', () => {
 
       manager.connect();
       await new Promise(r => setTimeout(r, 10));
-      const firstWs = lastCreatedWs!;
+      const firstWs = MockWebSocket.lastCreated!;
 
       manager.disconnect();
       await new Promise(r => setTimeout(r, 100));
       // disconnect 시 ws가 바뀌지만, 그 후 재연결은 없어야 함
-      // disconnect 자체가 새 ws를 만들지는 않으므로 lastCreatedWs 체크
-      expect(lastCreatedWs).toBe(firstWs);
+      // disconnect 자체가 새 ws를 만들지는 않으므로 MockWebSocket.lastCreated 체크
+      expect(MockWebSocket.lastCreated).toBe(firstWs);
       expect(manager.getConnectionStatus()).toBe(false);
     });
   });
@@ -558,11 +554,11 @@ describe('PlayerNetworkManager', () => {
       manager.connect();
       await new Promise(r => setTimeout(r, 10));
 
-      const ws = lastCreatedWs!;
+      const ws = MockWebSocket.lastCreated!;
       expect(ws.sentMessages.length).toBe(2); // Join + Chat(flush)
-      const joinMsg = JSON.parse(ws.sentMessages[0]);
+      const joinMsg = ws.parseSentMessage(0);
       expect(joinMsg.type).toBe('Join');
-      const chatMsg = JSON.parse(ws.sentMessages[1]);
+      const chatMsg = ws.parseSentMessage(1);
       expect(chatMsg.type).toBe('Chat');
       expect(chatMsg.text).toBe('hello');
       expect(chatMsg.range).toBe(12);
@@ -585,7 +581,7 @@ describe('PlayerNetworkManager', () => {
       manager.connect();
       jest.advanceTimersByTime(20); // open + ping interval
 
-      const ws = lastCreatedWs!;
+      const ws = MockWebSocket.lastCreated!;
       // sentMessages: Join + Ping (+ maybe another Ping)
       const pingRaw = ws.sentMessages.find((m) => JSON.parse(m).type === 'Ping');
       expect(pingRaw).toBeTruthy();
@@ -610,7 +606,7 @@ describe('PlayerNetworkManager', () => {
         manager.sendChat('first', { range: 12 });
         manager.sendChat('second');
         manager.connect();
-        const first = lastCreatedWs!;
+        const first = MockWebSocket.lastCreated!;
         const send = first.send.bind(first);
         jest.spyOn(first, 'send').mockImplementation((raw) => {
           if (JSON.parse(raw).type === 'Chat') throw new Error('transport failed');
@@ -621,7 +617,7 @@ describe('PlayerNetworkManager', () => {
         first.simulateClose(1006);
         manager.connect();
         jest.advanceTimersByTime(1);
-        const current = lastCreatedWs!;
+        const current = MockWebSocket.lastCreated!;
         const messages = current.sentMessages.map(raw => JSON.parse(raw));
         expect(messages.map(message => message.type)).toEqual(['Join', 'Chat', 'Chat']);
         expect(messages[1]).toMatchObject({ text: 'first', range: 12 });
@@ -646,7 +642,7 @@ describe('PlayerNetworkManager', () => {
         });
         manager.connect();
         jest.advanceTimersByTime(1);
-        const socket = lastCreatedWs!;
+        const socket = MockWebSocket.lastCreated!;
         jest.spyOn(socket, 'send').mockImplementationOnce(() => { throw new Error('transport failed'); });
         expect(() => manager.sendChat('hello')).toThrow('transport failed');
         manager.sendChat('hello');
@@ -672,7 +668,7 @@ describe('PlayerNetworkManager', () => {
       manager.connect();
       jest.advanceTimersByTime(5); // open
 
-      const ws = lastCreatedWs!;
+      const ws = MockWebSocket.lastCreated!;
       manager.sendChat('hello');
 
       const chatRaw = ws.sentMessages.find((m) => JSON.parse(m).type === 'Chat');
@@ -707,7 +703,7 @@ describe('PlayerNetworkManager', () => {
 
       manager.connect();
       jest.advanceTimersByTime(5); // open
-      const ws = lastCreatedWs!;
+      const ws = MockWebSocket.lastCreated!;
 
       manager.sendChat('hello');
       const firstChatRaw = ws.sentMessages.find((m) => JSON.parse(m).type === 'Chat')!;
@@ -722,8 +718,8 @@ describe('PlayerNetworkManager', () => {
       expect(chats.every((c) => c.ackId === ackId)).toBe(true);
 
       expect(failed.length).toBe(1);
-      expect(failed[0].ackId).toBe(ackId);
-      expect(failed[0].messageType).toBe('Chat');
+      expect(failed[0]?.ackId).toBe(ackId);
+      expect(failed[0]?.messageType).toBe('Chat');
 
       jest.useRealTimers();
     });

@@ -1,7 +1,7 @@
-import { createGaesupRuntime } from '../createGaesupRuntime';
 import { createNPCObservation, resolveNPCBrainDecision } from '../../npc/core/brain';
 import { hydrateNPCState } from '../../npc/plugin';
 import type { NPCInstance } from '../../npc/types';
+import { createGaesupRuntime } from '../createGaesupRuntime';
 
 const npc = (): NPCInstance => ({ id: 'same', templateId: 'lab', name: 'NPC', position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], brain: { mode: 'reinforcement' } });
 const flush = async () => { for (let i = 0; i < 8; i++) await Promise.resolve(); };

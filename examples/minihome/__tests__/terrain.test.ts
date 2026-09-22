@@ -1,7 +1,7 @@
-import { createMinihome, parseMinihome } from '../model';
-import { createMinihomeSession } from '../session';
 import { NavigationSystem } from 'gaesup-world/navigation';
 
+import { createMinihome, parseMinihome } from '../model';
+import { createMinihomeSession } from '../session';
 import { brushIndices, createTerrain, expandTerrain, isTerrain, MAX_WORLD_SIZE, paintTiles, sculptTerrain, terrainHeight, terraceTerrain, tileAt, tileIndex, tilePosition, WORLD_SIZE } from '../terrain';
 
 test('terrain coordinates are bounded, brushes clip at edges and all six materials are available', () => {

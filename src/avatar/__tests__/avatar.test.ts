@@ -3,18 +3,18 @@ import path from 'node:path';
 
 import { Mesh, SkinnedMesh, Vector3 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
 import { AnimationSystem } from '../../core/animation/core/AnimationSystem';
 import { HttpAssetSource } from '../../core/assets/api';
-import { useAssetStore } from '../../core/assets/stores/assetStore';
-
 import { GLTFAssetCache } from '../../core/assets/GLTFAssetCache';
+import { useAssetStore } from '../../core/assets/stores/assetStore';
 import type { AssetRecord } from '../../core/assets/types';
-import { SaveSystem } from '../../core/save/core/SaveSystem';
 import { LocalStorageAdapter } from '../../core/save/adapters/LocalStorageAdapter';
+import { SaveSystem } from '../../core/save/core/SaveSystem';
 import { avatarManifestFromRecord, parseAvatarManifest, parseAvatarState } from '../core/manifest';
+import type { AvatarState } from '../core/types';
 import { AvatarRuntime } from '../runtime/AvatarRuntime';
 import { createAvatarSaveBinding, createAvatarStore } from '../store';
-import type { AvatarState } from '../core/types';
 
 const root = path.resolve(__dirname, '../../..');
 const records = JSON.parse(

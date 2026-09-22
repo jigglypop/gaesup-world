@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { cleanup, render, screen } from '@testing-library/react';
 
 import { useStateSystem } from '../../../../motions/hooks/useStateSystem';

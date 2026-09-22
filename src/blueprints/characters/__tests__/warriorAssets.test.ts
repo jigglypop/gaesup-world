@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { WARRIOR_BLUEPRINT } from '../warrior';
 
 test('default locomotion clips exist in the shipped warrior body GLB', () => {
-  const body = WARRIOR_BLUEPRINT.visuals.parts.find(part => part.type === 'body');
+  const body = WARRIOR_BLUEPRINT.visuals?.parts?.find(part => part.type === 'body');
   expect(body).toBeDefined();
   const bytes = readFileSync(resolve(process.cwd(), 'public', body!.url));
   expect(bytes.readUInt32LE(0)).toBe(0x46546c67);

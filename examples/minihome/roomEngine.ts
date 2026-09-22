@@ -14,6 +14,7 @@ import { createRoomAvatar } from './roomAvatar';
 import { RoomBatches } from './roomBatches';
 import { createRoomBloom } from './roomBloom';
 import { createRoomEnvironment } from './roomEnvironment';
+import { createRoomFestival } from './roomFestival';
 import { createRoomPath } from './roomPath';
 import { createRoomPeers } from './roomPeers';
 import { createRoomProfiler } from './roomProfiler';
@@ -62,6 +63,8 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     const terrainRenderer = createRoomTerrain(scene); let terrain = createTerrain(); terrainRenderer.update(terrain);
     const pathMarker = createRoomPath(scene); const profiler = createRoomProfiler(renderer.info, () => camera);
     const visitors = createRoomPeers(scene);
+    const festival = createRoomFestival(scene, (x, z) => terrainHeight(terrain, x, z));
+    let knownFurniture: Set<string> | null = null;
     const groups = new Map<string, Group>(); const batches = new RoomBatches(); scene.add(batches.root);
     const target = avatar.position.clone();
     const createNavigation = (size: number) => new NavigationSystem({ cellSize: 0.25, maxStepHeight: 0.18, worldMinX: -size / 2, worldMinZ: -size / 2, worldMaxX: size / 2, worldMaxZ: size / 2 });
@@ -80,7 +83,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     let wake = () => {};
     function invalidate(shadow = false) { if (disposed) return; needsRender = true; if (shadow) sun.shadow.needsUpdate = true; wake(); }
     const rendererCleanup = cleanup;
-    cleanup = () => { controls.dispose(); bloom.dispose(); terrainRenderer.dispose(); pathMarker.dispose(); visitors.dispose(); profiler.dispose(); navigation.dispose(); batches.dispose(); assets.dispose(); sun.shadow.dispose(); rendererCleanup(); };
+    cleanup = () => { controls.dispose(); bloom.dispose(); terrainRenderer.dispose(); pathMarker.dispose(); visitors.dispose(); festival.dispose(); profiler.dispose(); navigation.dispose(); batches.dispose(); assets.dispose(); sun.shadow.dispose(); rendererCleanup(); };
     const environment = await createRoomEnvironment(renderer, scene, camera, () => invalidate(true));
     const sceneCleanup = cleanup; cleanup = () => { environment.dispose(); sceneCleanup(); };
     if (signal.aborted) { cleanup(); return null; }
@@ -133,6 +136,11 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
           if (worldMatrix) { matrix.fromArray(worldMatrix); matrix.decompose(group.position, group.quaternion, group.scale); }
           group.visible = object.components.find(component => component.type === 'miniroom.furniture')?.enabled !== false;
         }
+        // Newly placed furniture gets one confetti burst; the first projection and bulk imports stay quiet.
+        const added = knownFurniture ? [...ids].filter(id => !knownFurniture!.has(id)) : [];
+        const placed = added.length === 1 ? groups.get(added[0]!) : undefined;
+        if (placed?.visible) festival.burst(placed.position.x, placed.position.y, placed.position.z);
+        knownFurniture = ids;
         projected = document; batchesDirty = true; invalidate(true);
         rebuildNavigation();
       }
@@ -291,8 +299,9 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
       avatarRuntime.update(moving, delta);
       const natureMoving = settings.natureMotion;
       environment.tick(delta, natureMoving, camera);
+      const festiveBurst = festival.tick(delta, natureMoving);
       if (natureMoving) { shadowElapsed += delta; if (shadowElapsed >= 1 / 15) { sun.shadow.needsUpdate = true; shadowElapsed = 0; } }
-      if (needsRender || cameraChanged || moving || markerActive || natureMoving || frameWaiters.size) {
+      if (needsRender || cameraChanged || moving || markerActive || natureMoving || festiveBurst || frameWaiters.size) {
         try {
           if (batchesDirty) { batches.update(groups); batchesDirty = false; }
           renderer.info.reset(); profiler.begin(scene); const started = performance.now();
@@ -305,7 +314,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
           failure = error instanceof Error ? error : new Error(String(error)); for (const waiter of frameWaiters) waiter.reject(failure); frameWaiters.clear(); loop.dispose(); options.onError?.(failure); return false;
         }
       }
-      return cameraChanged || moving || markerActive || visitorsMoving || natureMoving;
+      return cameraChanged || moving || markerActive || visitorsMoving || natureMoving || festiveBurst;
     });
     const lost = () => {
       if (disposed) return;
@@ -324,7 +333,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
       if (disposed) return; disposed = true; loop.dispose(); lifetime.abort(); ownerSignal.removeEventListener('abort', abort);
       for (const waiter of frameWaiters) waiter.reject(new DOMException('Room closed', 'AbortError')); frameWaiters.clear();
       unsubscribe(); observer.disconnect(); intersection?.disconnect(); controls.removeEventListener('change', controlsChanged); controls.removeEventListener('end', controlsEnded); controls.dispose();
-      environment.dispose(); profiler.dispose(); bloom.dispose(); terrainRenderer.dispose(); pathMarker.dispose(); visitors.dispose(); avatarRuntime.dispose(); navigation.dispose(); batches.dispose(); assets.dispose(); sun.shadow.dispose();
+      environment.dispose(); profiler.dispose(); bloom.dispose(); terrainRenderer.dispose(); pathMarker.dispose(); visitors.dispose(); festival.dispose(); avatarRuntime.dispose(); navigation.dispose(); batches.dispose(); assets.dispose(); sun.shadow.dispose();
       for (const shadow of retiredShadows) shadow.dispose(); retiredShadows.length = 0;
       renderer.dispose(); groups.clear();
     }
@@ -340,7 +349,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     }
     function setQuality(next: RoomQuality) {
       if (disposed || !QUALITY[next]) return; quality = next;
-      environment.update(terrain, quality, settings.weather);
+      environment.update(terrain, quality, settings.weather); festival.layout(terrain.size, quality);
       if (sun.shadow.mapSize.x !== QUALITY[next].shadow) {
         // New shadow identity avoids common-renderer attachment caches retaining destroyed depth views.
         const previous = sun; sun = previous.clone(); sun.shadow.mapSize.setScalar(QUALITY[next].shadow);
@@ -359,7 +368,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
           controls.object = camera; bloom.camera(camera); resize();
         }
         settings = next; controls.enablePan = next.pan; controls.enableRotate = next.rotate; controls.enableDamping = next.damping;
-        environment.update(terrain, quality, next.weather); bloom.update(next); invalidate();
+        environment.update(terrain, quality, next.weather); bloom.update(next); festival.setEnabled(next.festive); invalidate();
       },
       setDiagnostics(enabled: boolean) { profiler.enable(enabled); invalidate(true); },
       setPeers(peers: RoomPeer[]) { if (visitors.update(peers)) invalidate(true); },
@@ -382,10 +391,11 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
       setLighting(next: RoomLighting) {
         if (disposed) return; lighting = next; sun.color.set(next === 'day' ? '#ffe5c3' : '#ffbf86'); sun.intensity = next === 'day' ? 2.8 : 1.4;
         fill.color.set(next === 'day' ? '#d7e8f0' : '#9eafdf'); fill.intensity = next === 'day' ? 2.1 : 0.95;
-        scene.background = new Color(next === 'day' ? '#9fcfdf' : '#6d839f'); invalidate(true);
+        scene.background = new Color(next === 'day' ? '#9fcfdf' : '#26304f'); festival.setLighting(next);
+        environment.update(terrain, quality, settings.weather, next); invalidate(true);
       },
       diagnostics(): RoomDiagnostics {
-        return { backend: backendName, adapter, renderedFrames, loopCallbacks, pendingFrame: loop.pending, objectCount: groups.size, visibleObjects: [...groups.values()].filter(group => group.visible).length, quality, lighting, dpr: renderer.getPixelRatio(), width: canvas.clientWidth, height: canvas.clientHeight, frame: latestFrame, avatarPosition: [avatar.position.x, avatar.position.y, avatar.position.z], avatar: avatarRuntime.diagnostics(), camera: { preset: cameraPreset, projection: settings.projection, position: camera.position.toArray(), target: controls.target.toArray(), zoom: camera.zoom }, movement: { ...movement }, bloom: { enabled: settings.bloom, strength: settings.bloomStrength, objects: [...groups.values()].filter(group => group.userData['glow'] > 0).length }, terrain: terrainRenderer.diagnostics(), environment: environment.diagnostics(), visitors: visitors.count() };
+        return { backend: backendName, adapter, renderedFrames, loopCallbacks, pendingFrame: loop.pending, objectCount: groups.size, visibleObjects: [...groups.values()].filter(group => group.visible).length, quality, lighting, dpr: renderer.getPixelRatio(), width: canvas.clientWidth, height: canvas.clientHeight, frame: latestFrame, avatarPosition: [avatar.position.x, avatar.position.y, avatar.position.z], avatar: avatarRuntime.diagnostics(), camera: { preset: cameraPreset, projection: settings.projection, position: camera.position.toArray(), target: controls.target.toArray(), zoom: camera.zoom }, movement: { ...movement }, bloom: { enabled: settings.bloom, strength: settings.bloomStrength, objects: [...groups.values()].filter(group => group.userData['glow'] > 0).length }, terrain: terrainRenderer.diagnostics(), environment: environment.diagnostics(), visitors: visitors.count(), festive: festival.diagnostics() };
       },
       projectPoint(position: [number, number, number]) { const point = new Vector3(...position).project(camera); return { x: (point.x + 1) * canvas.clientWidth / 2, y: (1 - point.y) * canvas.clientHeight / 2 }; },
       async capture(): Promise<Blob> { await frame(); return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('이미지를 만들 수 없습니다.')), 'image/png')); },
@@ -413,7 +423,9 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
             const extent = terrain.size / 2 + 7;
             Object.assign(sun.shadow.camera, { left: -extent, right: extent, top: extent, bottom: -extent }); sun.shadow.camera.updateProjectionMatrix();
           }
-          terrainRenderer.update(terrain); environment.update(terrain, quality, settings.weather); rebuildNavigation(); invalidate(true);
+          terrainRenderer.update(terrain); environment.update(terrain, quality, settings.weather);
+          if (!festival.layout(terrain.size, quality)) festival.refreshGround();
+          rebuildNavigation(); invalidate(true);
         }
         if (next.zoom !== view.zoom) { camera.zoom = next.zoom; camera.updateProjectionMatrix(); }
         view = next; terrainRenderer.setGrid(next.editing && (next.editor ?? DEFAULT_EDITOR).grid);

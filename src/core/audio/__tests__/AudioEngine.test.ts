@@ -80,7 +80,9 @@ describe('AudioEngine source and request ownership', () => {
 
   it('aborts pending SFX fetches on disposal and can create a new context afterwards', async () => {
     let finish!: (response: { ok: boolean; arrayBuffer: () => Promise<ArrayBuffer> }) => void;
-    const fetchMock = jest.fn((_url: string, _options: RequestInit) => new Promise(resolve => { finish = resolve; }));
+    const fetchMock = jest.fn<Promise<unknown>, [url: string, options: RequestInit]>(
+      () => new Promise(resolve => { finish = resolve; }),
+    );
     globalThis.fetch = fetchMock as unknown as typeof fetch;
     engine.playSfx({ id: 'pending', url: '/pending.wav' });
     const signal = fetchMock.mock.calls[0]![1].signal!;

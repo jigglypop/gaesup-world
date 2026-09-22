@@ -2,10 +2,10 @@ import type { ReactNode } from 'react';
 
 import { act, render } from '@testing-library/react';
 
-import { createGaesupRuntime } from '../../../../runtime/createGaesupRuntime';
-import { GaesupRuntimeProvider } from '../../../../runtime/context';
-import { useWorldPhysicsStep } from '../../../../simulation/physicsContext';
 import { WorldPhysics } from '..';
+import { GaesupRuntimeProvider } from '../../../../runtime/context';
+import { createGaesupRuntime } from '../../../../runtime/createGaesupRuntime';
+import { useWorldPhysicsStep } from '../../../../simulation/physicsContext';
 
 const mockStep = jest.fn();
 const mockGet = () => ({});
@@ -62,7 +62,7 @@ test('multiple physics scenes share one world driver, and disposing another worl
   const updateA = jest.fn(); const updateB = jest.fn();
   function Controls({ update }: { update: () => void }) { useWorldPhysicsStep(update); return null; }
   const view = render(<>
-    <GaesupRuntimeProvider runtime={a}><WorldPhysics><Controls update={updateA} /></WorldPhysics><WorldPhysics /></GaesupRuntimeProvider>
+    <GaesupRuntimeProvider runtime={a}><WorldPhysics><Controls update={updateA} /></WorldPhysics><WorldPhysics>{null}</WorldPhysics></GaesupRuntimeProvider>
     <GaesupRuntimeProvider runtime={b}><WorldPhysics><Controls update={updateB} /></WorldPhysics></GaesupRuntimeProvider>
   </>);
   try {

@@ -1,3 +1,4 @@
+import type { BuildingBlockConfig, PlacedObject, TileGroupConfig, WallGroupConfig } from '../../types';
 import {
   buildBuildingRenderSnapshot,
   buildVisibilityIndexFromRenderSnapshot,
@@ -6,7 +7,6 @@ import {
   RENDER_KIND_TILE,
   RENDER_KIND_WALL,
 } from '../core';
-import type { BuildingBlockConfig, PlacedObject, TileGroupConfig, WallGroupConfig } from '../../types';
 
 describe('building render snapshot core', () => {
   it('builds a SoA render snapshot from building groups and objects', () => {

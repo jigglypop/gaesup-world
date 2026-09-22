@@ -48,7 +48,7 @@ test('invalid snapshot leaves pending work intact and prepared snapshots own the
   expect(context.signal?.aborted).toBe(false); release(); await pending;
   const data = { version: 1, executedAt: { saved: 20 }, flags: { saved: true } };
   const apply = engine.prepareHydrate(data); data.executedAt.saved = 99; data.flags.saved = false; apply();
-  const snapshot = engine.serialize(); snapshot.executedAt.saved = 100; snapshot.flags.saved = false;
+  const snapshot = engine.serialize(); snapshot.executedAt['saved'] = 100; snapshot.flags['saved'] = false;
   expect(engine.serialize()).toEqual({ version: 1, executedAt: { saved: 20 }, flags: { saved: true } });
   engine.hydrate(undefined); expect(engine.serialize()).toEqual({ version: 1, executedAt: {}, flags: {} });
 });

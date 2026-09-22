@@ -1,7 +1,9 @@
 import { StrictMode, useLayoutEffect } from 'react';
+
 import { render } from '@testing-library/react';
-import { useGaesupStore } from '../../../../stores/gaesupStore';
+
 import { Editor } from '..';
+import { useGaesupStore } from '../../../../stores/gaesupStore';
 
 jest.mock('../../EditorLayout', () => ({ EditorLayout: () => null }));
 

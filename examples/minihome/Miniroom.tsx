@@ -109,6 +109,7 @@ export default function Miniroom({ controller, view, onSelect, settings, onSetti
       <button aria-expanded={diagnostics} onClick={() => setDiagnostics(value => !value)}>드로우콜·성능</button>
       <label>날씨<select aria-label="날씨" value={settings.weather} onChange={event => onSettingsChange({ weather: event.target.value as RoomSettings['weather'] })}><option value="clear">맑음</option><option value="snow">눈</option><option value="blizzard">눈보라</option></select></label>
       <label className="editor-checkbox"><input type="checkbox" aria-label="바람과 물결" checked={settings.natureMotion} onChange={event => onSettingsChange({ natureMotion: event.target.checked })} />바람과 물결</label>
+      <label className="editor-checkbox"><input type="checkbox" aria-label="축제 효과" checked={settings.festive} onChange={event => onSettingsChange({ festive: event.target.checked })} />축제 효과</label>
     </div>
     {notice && <p className="room-notice" role="status">{notice}</p>}
     <RoomCameraControls engine={engine} settings={settings} onChange={onSettingsChange} zoom={view.zoom} onZoom={onZoom} />

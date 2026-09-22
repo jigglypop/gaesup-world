@@ -1,4 +1,3 @@
-import { entityIndexOf, NextWorld } from '../core/World';
 import {
   compactVisible,
   cullSpheres,
@@ -6,6 +5,7 @@ import {
   FRUSTUM_PLANES_LENGTH,
 } from '../core/culling';
 import { composeTrsMatrix, MATRIX_STRIDE, packInstanceMatrices } from '../core/instancing';
+import { entityIndexOf, NextWorld } from '../core/World';
 
 const IDENTITY_VP = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 const HALF_SQRT2 = Math.SQRT1_2;

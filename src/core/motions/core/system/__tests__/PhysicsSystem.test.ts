@@ -11,8 +11,8 @@ import type { GameStatesType } from '@core/world/components/Rideable/types';
 import type { PhysicsCalcProps, PhysicsState } from '../../../types';
 import type { PhysicsConfigType } from '../../config';
 import type { ActiveStateType } from '../../types';
-import { PhysicsSystem } from '../PhysicsSystem';
 import { GroundContactProbe } from '../GroundContactProbe';
+import { PhysicsSystem } from '../PhysicsSystem';
 
 jest.mock('../GroundContactProbe', () => ({
   GroundContactProbe: jest.fn().mockImplementation(() => ({ read: jest.fn(() => false) })),

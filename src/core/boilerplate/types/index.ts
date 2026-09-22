@@ -94,8 +94,8 @@ export const DEFAULT_CACHE_TIMEOUT_MS = 16;
 export const DEFAULT_COMMAND_QUEUE_SIZE = 100;
 export const MILLISECONDS_IN_SECOND = 1000;
 
-export type Constructor<T = object> = new (...args: RuntimeValue[]) => T;
-export type AbstractConstructor<T = object> = abstract new (...args: RuntimeValue[]) => T;
+export type Constructor<T = object> = new (...args: never[]) => T;
+export type AbstractConstructor<T = object> = abstract new (...args: never[]) => T;
 export type ServiceTarget<T = object> = Constructor<T> | AbstractConstructor<T>;
 export type Factory<T> = () => T;
 export type Token<T> = ServiceTarget<T> | string | symbol;

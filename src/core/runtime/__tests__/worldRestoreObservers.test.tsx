@@ -1,17 +1,17 @@
 import { act, render, renderHook } from '@testing-library/react';
 
-import { GaesupRuntimeProvider } from '../context';
-import { createGaesupRuntime } from '../createGaesupRuntime';
+import { useEventsTicker } from '../../events/hooks/useEventsTicker';
 import { createEventsPlugin } from '../../events/plugin';
 import { getEventRegistry } from '../../events/registry/EventRegistry';
-import { useEventsTicker } from '../../events/hooks/useEventsTicker';
 import { createFarmingPlugin } from '../../farming/plugin';
 import { createInventoryPlugin } from '../../inventory/plugin';
-import { createQuestsPlugin } from '../../quests/plugin';
 import { useQuestObjectiveTracker } from '../../quests/hooks/useQuestObjectiveTracker';
+import { createQuestsPlugin } from '../../quests/plugin';
 import { createTimePlugin } from '../../time/plugin';
-import { createWeatherPlugin } from '../../weather/plugin';
 import { useWeatherTicker } from '../../weather/hooks/useWeatherTicker';
+import { createWeatherPlugin } from '../../weather/plugin';
+import { GaesupRuntimeProvider } from '../context';
+import { createGaesupRuntime } from '../createGaesupRuntime';
 
 test('duplicate calendar consumers share work, use the latest callbacks and retain the remaining owner on unmount', async () => {
   const runtime = createGaesupRuntime(); runtime.timeStore.getState().setTotalMinutes(0); await runtime.setup();

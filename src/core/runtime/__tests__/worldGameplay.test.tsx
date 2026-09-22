@@ -1,7 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
 
-import { GaesupRuntimeProvider } from '../context';
-import { createGaesupRuntime } from '../createGaesupRuntime';
 import { getDialogRegistry } from '../../dialog/registry/DialogRegistry';
 import { useDialogStore } from '../../dialog/stores/dialogStore';
 import type { DialogTree } from '../../dialog/types';
@@ -12,6 +10,8 @@ import { createNPCObservation } from '../../npc/core/brain';
 import type { NPCBrainBlueprint, NPCInstance } from '../../npc/types';
 import { getQuestRegistry } from '../../quests/registry/QuestRegistry';
 import { useWeatherStore } from '../../weather/stores/weatherStore';
+import { GaesupRuntimeProvider } from '../context';
+import { createGaesupRuntime } from '../createGaesupRuntime';
 
 jest.mock('../../wasm/loader', () => ({ loadCoreWasm: jest.fn(async () => null) }));
 
@@ -121,8 +121,8 @@ test('dialog conditions and effects use owned inventory, rewards, time, and ques
   try {
     a.dialogStore.getState().start(id, { context: { npcId: 'same-npc' } });
     b.dialogStore.getState().start(id);
-    expect(a.questStore.getState().state[id]?.progress.talk).toBe(1);
-    expect(b.questStore.getState().state[id]?.progress.talk ?? 0).toBe(0);
+    expect(a.questStore.getState().state[id]?.progress['talk']).toBe(1);
+    expect(b.questStore.getState().state[id]?.progress['talk'] ?? 0).toBe(0);
     b.dialogStore.getState().choose(0);
     expect(b.dialogStore.getState().node?.id).toBe('start');
     a.dialogStore.getState().choose(0);

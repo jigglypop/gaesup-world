@@ -17,7 +17,7 @@ test('mail entries are selectable buttons and deletion returns to the list guida
   expect(entry).toHaveAttribute('aria-pressed', 'true');
   expect(within(panel).getByText('오늘도 좋은 하루 보내세요.')).toBeInTheDocument();
   expect(useMailStore.getState().messages[0]?.read).toBe(true);
-  fireEvent.click(within(panel).getByRole('button', { name: '삭제', exact: true }));
+  fireEvent.click(within(panel).getByRole('button', { name: '삭제' }));
   expect(within(panel).getByText('우편이 없습니다.')).toBeInTheDocument();
   expect(within(panel).getByText('목록에서 읽을 우편을 선택하세요.')).toBeInTheDocument();
   fireEvent.keyDown(window, { key: 'Escape' });

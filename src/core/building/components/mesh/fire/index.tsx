@@ -543,9 +543,10 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
   const logCount = N * 2;
   const geo = getSharedGeo();
   const mat = getSharedMat();
-  const bbMat = getBatchBillboardMat();
+  // WebGPU draws flames through NodeFireBatchEffects; the GLSL billboard/ember path stays unbuilt.
+  const bbMat = nodes ? null : getBatchBillboardMat();
   const glowMat = getBatchGlowMat();
-  const bEmberMat = getBatchEmberMat();
+  const bEmberMat = nodes ? null : getBatchEmberMat();
   const fireSignature = useMemo(() => createFireBatchSignature(fires), [fires]);
   const stableFiresRef = useRef({ signature: fireSignature, fires });
   if (stableFiresRef.current.signature !== fireSignature) {
@@ -554,7 +555,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
   const stableFires = stableFiresRef.current.fires;
 
   const billboardGeo = useMemo(() => {
-    if (N === 0) return null;
+    if (N === 0 || nodes) return null;
     const g = new THREE.PlaneGeometry(1, 1);
     const seeds = new Float32Array(billboardCount);
     const leans = new Float32Array(billboardCount);
@@ -595,10 +596,10 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
     g.setAttribute('aHeight', new THREE.InstancedBufferAttribute(heights, 1));
     g.setAttribute('aTint', new THREE.InstancedBufferAttribute(tints, 3));
     return g;
-  }, [fireSignature, stableFires, N, billboardCount]);
+  }, [fireSignature, stableFires, N, billboardCount, nodes]);
 
   const emberGeo = useMemo(() => {
-    if (N === 0) return null;
+    if (N === 0 || nodes) return null;
     const EMBER_PER_FIRE = 18;
     const total = N * EMBER_PER_FIRE;
     const pos = new Float32Array(total * 3);
@@ -632,7 +633,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
     g.setAttribute('aFirePos', new THREE.BufferAttribute(firePos, 3));
     g.computeBoundingSphere();
     return g;
-  }, [fireSignature, stableFires, N]);
+  }, [fireSignature, stableFires, N, nodes]);
 
   useLayoutEffect(() => {
     if (N === 0) return;
@@ -733,8 +734,8 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
 
   useFrame((state) => {
     const t = getFrameElapsedSeconds(state);
-    bbMat.uniforms['uTime']!.value = t;
-    bEmberMat.uniforms['uTime']!.value = t;
+    if (bbMat) bbMat.uniforms['uTime']!.value = t;
+    if (bEmberMat) bEmberMat.uniforms['uTime']!.value = t;
     glowMat.opacity = 0.16 + Math.sin(t * 2.5) * 0.06;
   });
 
@@ -748,7 +749,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
   return (
     <>
       {nodes && <Suspense fallback={null}><NodeFireBatchEffects fires={stableFires} /></Suspense>}
-      {!nodes && billboardGeo && (
+      {billboardGeo && bbMat && (
         <instancedMesh
           ref={billboardRef}
           args={[billboardGeo, bbMat, billboardCount]}
@@ -758,7 +759,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
       <instancedMesh ref={logRef} args={[geo.log, mat.log, logCount]} />
       <instancedMesh ref={charRef} args={[geo.charcoal, mat.charcoal, N]} />
       <instancedMesh ref={glowRef} args={[geo.glow, glowMat, N]} />
-      {!nodes && emberGeo && (
+      {emberGeo && bEmberMat && (
         <points ref={emberRef} geometry={emberGeo} material={bEmberMat} frustumCulled={false} />
       )}
     </>

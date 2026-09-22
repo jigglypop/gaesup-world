@@ -1,9 +1,8 @@
-import React from 'react';
 import { render } from '@testing-library/react';
 import * as THREE from 'three';
 
-import { useGaesupStore } from '../../../../stores/gaesupStore';
 import { WorldConfigProvider } from '..';
+import { useGaesupStore } from '../../../../stores/gaesupStore';
 
 describe('WorldConfigProvider', () => {
   it('reapplies the route camera after asynchronous save hydration', () => {

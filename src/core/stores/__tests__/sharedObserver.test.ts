@@ -1,5 +1,5 @@
-import { createSharedObserver } from '../sharedObserver';
 import { logger } from '../../utils/logger';
+import { createSharedObserver } from '../sharedObserver';
 
 test('one source/target pair has one subscription with independent leases and live activity gates', () => {
   let emit!: (value: number) => void; let active!: () => boolean; const stop = jest.fn(); const connect = jest.fn((_a: object, _b: object, controls: { emit: typeof emit; active: typeof active }) => { emit = controls.emit; active = controls.active; return stop; });

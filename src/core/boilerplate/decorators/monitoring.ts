@@ -43,6 +43,7 @@ export function Profile(label?: string) {
     const originalMethod = descriptor.value;
 
     descriptor.value = function (...args: DecoratedValue[]) {
+      if (logger.isEnabled('log') === false) return originalMethod!.apply(this, args);
       const start = performance.now();
       let result: DecoratedValue;
       try {

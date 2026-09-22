@@ -13,6 +13,7 @@ const mockLights: Array<{ shadow: { radius: number; shadowNode?: unknown } }> = 
 const mockCsmInstances: Array<{
   camera: typeof mockCamera | null;
   dispose: jest.Mock;
+  fade: boolean;
   updateFrustums: jest.Mock;
 }> = [];
 const mockCsmConstructor = jest.fn().mockImplementation(() => {
@@ -102,7 +103,7 @@ describe('CascadedSun', () => {
     expect(previousNode.dispose).toHaveBeenCalledTimes(1);
     expect(mockLights).toHaveLength(2);
     expect(mockLights[1]!.shadow.shadowNode).toBe(mockCsmInstances[1]);
-    expect(view.root.findByType('directionalLight').props.castShadow).toBe(true);
+    expect(view.root.findByType('directionalLight').props['castShadow']).toBe(true);
     act(() => view.unmount());
   });
 

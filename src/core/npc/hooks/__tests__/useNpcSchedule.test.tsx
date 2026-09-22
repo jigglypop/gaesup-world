@@ -1,9 +1,10 @@
-import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
-import { useNpcSchedule } from '../useNpcSchedule';
-import { getNPCScheduler } from '../../core/NPCScheduler';
+import { act, renderHook } from '@testing-library/react';
+
 import { createTimeStore, TimeStoreProvider, useTimeStore } from '../../../time/stores/timeStore';
+import { getNPCScheduler } from '../../core/NPCScheduler';
+import { useNpcSchedule } from '../useNpcSchedule';
 
 test('uses the world clock and refreshes a different weekday at the same hour', () => {
   const store = createTimeStore(); store.getState().setTotalMinutes(480);

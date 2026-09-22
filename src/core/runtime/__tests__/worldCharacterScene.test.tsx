@@ -1,9 +1,9 @@
 import { act, fireEvent, render } from '@testing-library/react';
 
+import { playCameraCinematic } from '../../camera/cinematic';
 import { ActionEquipmentPanel } from '../../character/components/ActionEquipmentPanel';
 import { createCharacterPlugin } from '../../character/plugin';
 import { useCharacterStore, useCharacterStoreApi } from '../../character/stores/characterStore';
-import { playCameraCinematic } from '../../camera/cinematic';
 import { createScenePlugin } from '../../scene/plugin';
 import { useRoomVisibilityStoreApi } from '../../scene/stores/roomVisibilityStore';
 import { useSceneStoreApi } from '../../scene/stores/sceneStore';

@@ -2,9 +2,9 @@ import 'reflect-metadata';
 
 import { renderHook, act } from '@testing-library/react';
 
-import { useKeyboard } from '../index';
 import { createMemoryInputBackend } from '../../../interactions/core/adapter';
 import { useInputBackend } from '../../../interactions/hooks';
+import { useKeyboard } from '../index';
 
 const mockUpdateKeyboard = jest.fn();
 const mockUpdateMouse = jest.fn();

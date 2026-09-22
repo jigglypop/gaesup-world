@@ -1,3 +1,6 @@
+import { useQuestStore } from '../../../quests/stores/questStore';
+import { useFriendshipStore } from '../../../relations/stores/friendshipStore';
+import type { NPCInstance } from '../../types';
 import {
   applyAgentBehaviorBlueprint,
   applyNPCBehaviorBlueprint,
@@ -6,9 +9,6 @@ import {
   createNPCBehaviorBlueprintFromAgentBehaviorBlueprint,
   createNPCBehaviorBlueprintFromInstance,
 } from '../blueprint';
-import type { NPCInstance } from '../../types';
-import { useFriendshipStore } from '../../../relations/stores/friendshipStore';
-import { useQuestStore } from '../../../quests/stores/questStore';
 
 const createInstance = (id: string): NPCInstance => ({
   id,

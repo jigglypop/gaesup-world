@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 import { BlueprintEditor } from '..';
-import { BlueprintPreview } from '../../BlueprintPreview';
 import { useSpawnFromBlueprint } from '../../../hooks/useSpawnFromBlueprint';
 import { blueprintRegistry } from '../../../registry';
+import { BlueprintPreview } from '../../BlueprintPreview';
 
 jest.mock('../../BlueprintPreview', () => ({ BlueprintPreview: jest.fn(() => null) }));
 jest.mock('../../../hooks/useSpawnFromBlueprint', () => ({ useSpawnFromBlueprint: jest.fn() }));
@@ -17,7 +17,7 @@ test('copies edited branches without mutating drafts or cloning the camera for u
     isSpawning: false, lastSpawnedEntity: null,
   });
   render(<BlueprintEditor onClose={jest.fn()} />);
-  const name = await screen.findByRole('textbox', { name: '이름', exact: true });
+  const name = await screen.findByRole('textbox', { name: '이름' });
   const original = jest.mocked(BlueprintPreview).mock.lastCall?.[0].blueprint;
   fireEvent.change(name, { target: { value: '새 이름' } });
   const renamed = jest.mocked(BlueprintPreview).mock.lastCall?.[0].blueprint;
@@ -26,7 +26,7 @@ test('copies edited branches without mutating drafts or cloning the camera for u
   if (original?.type !== 'character' || renamed?.type !== 'character') throw new Error('Expected character preview');
   expect(renamed.camera).toBe(original.camera);
   expect(renamed.physics).toBe(original.physics);
-  fireEvent.change(screen.getByRole('spinbutton', { name: '이동 속도', exact: true }), { target: { value: '7' } });
+  fireEvent.change(screen.getByRole('spinbutton', { name: '이동 속도' }), { target: { value: '7' } });
   const moved = jest.mocked(BlueprintPreview).mock.lastCall?.[0].blueprint;
   if (moved?.type !== 'character') throw new Error('Expected character preview');
   expect(moved.camera).toBe(original.camera);
@@ -66,11 +66,11 @@ test('applies edits to the registry and refreshes the selectable name', async ()
     isSpawning: false, lastSpawnedEntity: null,
   });
   render(<BlueprintEditor onClose={jest.fn()} />);
-  const name = await screen.findByRole('textbox', { name: '이름', exact: true });
+  const name = await screen.findByRole('textbox', { name: '이름' });
   expect(screen.getByDisplayValue('char_warrior_basic')).toHaveAttribute('readonly');
-  expect(screen.getAllByRole('textbox', { name: '유형', exact: true })[0]).toHaveAttribute('readonly');
-  expect(screen.getAllByRole('textbox', { name: '유형', exact: true })[0]).toHaveValue('캐릭터');
-  expect(screen.getByRole('textbox', { name: '강한 공격', exact: true })).toHaveValue('attack_heavy.glb');
+  expect(screen.getAllByRole('textbox', { name: '유형' })[0]).toHaveAttribute('readonly');
+  expect(screen.getAllByRole('textbox', { name: '유형' })[0]).toHaveValue('캐릭터');
+  expect(screen.getByRole('textbox', { name: '강한 공격' })).toHaveValue('attack_heavy.glb');
   fireEvent.change(name, { target: { value: '테스트 전사' } });
   expect(blueprintRegistry.get('char_warrior_basic')?.name).not.toBe('테스트 전사');
   fireEvent.click(screen.getByRole('button', { name: '변경 적용' }));
@@ -87,7 +87,7 @@ test('applies edits to the registry and refreshes the selectable name', async ()
   fireEvent.click(screen.getByRole('button', { name: '테스트 전사 근접 방어형 기본' }));
   expect(blueprintRegistry.get('char_warrior_basic')?.tags).toEqual(['melee', 'tank', 'starter']);
   expect(blueprintRegistry.get('char_warrior_basic')?.type).toBe('character');
-  expect(screen.getByRole('textbox', { name: '이름', exact: true })).toHaveValue('테스트 전사');
+  expect(screen.getByRole('textbox', { name: '이름' })).toHaveValue('테스트 전사');
 });
 
 test('spawns with the edited blueprint already applied', async () => {
@@ -142,28 +142,28 @@ test('edits string and object array entries without changing siblings or the reg
   const attacks = screen.getByText('가벼운 공격 · 3개 항목');
   fireEvent.click(attacks);
   const attackGroup = within(attacks.closest('details')!);
-  fireEvent.change(attackGroup.getByRole('textbox', { name: '항목 2', exact: true }), {
+  fireEvent.change(attackGroup.getByRole('textbox', { name: '항목 2' }), {
     target: { value: 'updated_attack.glb' },
   });
   const parts = screen.getByText('구성 요소 · 2개 항목');
   fireEvent.click(parts);
   const partGroup = within(parts.closest('details')!);
-  const urls = partGroup.getAllByRole('textbox', { name: '파일 경로', exact: true });
+  const urls = partGroup.getAllByRole('textbox', { name: '파일 경로' });
   fireEvent.change(urls[1]!, { target: { value: 'updated_cloth.glb' } });
   const before = blueprintRegistry.get('char_warrior_basic');
   if (before?.type !== 'character') throw new Error('Expected character fixture');
-  expect(before.animations.combat?.attack_light).toEqual(['attack_1.glb', 'attack_2.glb', 'attack_3.glb']);
+  expect(before.animations.combat?.['attack_light']).toEqual(['attack_1.glb', 'attack_2.glb', 'attack_3.glb']);
   fireEvent.click(screen.getByRole('button', { name: '변경 적용' }));
   const after = blueprintRegistry.get('char_warrior_basic');
   if (after?.type !== 'character') throw new Error('Expected updated character');
-  expect(after.animations.combat?.attack_light).toEqual(['attack_1.glb', 'updated_attack.glb', 'attack_3.glb']);
+  expect(after.animations.combat?.['attack_light']).toEqual(['attack_1.glb', 'updated_attack.glb', 'attack_3.glb']);
   expect(after.visuals?.parts?.[0]).toEqual(before.visuals?.parts?.[0]);
   expect(after.visuals?.parts?.[1]?.url).toBe('updated_cloth.glb');
   fireEvent.click(screen.getByRole('button', { name: /^차량/ }));
   fireEvent.click(screen.getByText('좌석 · 1개 항목'));
   const position = screen.getByText('위치 · 3개 항목');
   fireEvent.click(position);
-  fireEvent.change(within(position.closest('details')!).getByRole('spinbutton', { name: '항목 2', exact: true }), {
+  fireEvent.change(within(position.closest('details')!).getByRole('spinbutton', { name: '항목 2' }), {
     target: { value: '1.25' },
   });
   fireEvent.click(screen.getByRole('button', { name: '변경 적용' }));
@@ -178,7 +178,7 @@ test('protects pending edits during selection and restores the original when can
     isSpawning: false, lastSpawnedEntity: null,
   });
   render(<BlueprintEditor onClose={jest.fn()} />);
-  const name = screen.getByRole('textbox', { name: '이름', exact: true });
+  const name = screen.getByRole('textbox', { name: '이름' });
   const search = screen.getByRole('textbox', { name: '블루프린트 검색' });
   const mage = screen.getByRole('button', { name: '화염 마법사 마법 원거리 화염' });
   const vehicles = screen.getByRole('button', { name: /^차량/ });
@@ -189,12 +189,12 @@ test('protects pending edits during selection and restores the original when can
   fireEvent.click(mage);
   expect(name).toHaveValue('미적용 이름');
   expect(blueprintRegistry.get('char_warrior_basic')?.name).toBe('기본 전사');
-  fireEvent.click(screen.getByRole('button', { name: '변경 취소', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: '변경 취소' }));
   expect(name).toHaveValue('기본 전사');
   expect(search).toBeEnabled();
   expect(mage).toBeEnabled();
   expect(vehicles).toBeEnabled();
-  expect(screen.getByRole('button', { name: '변경 적용', exact: true })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '변경 적용' })).toBeDisabled();
   fireEvent.click(mage);
   expect(name).toHaveValue('화염 마법사');
 });

@@ -1,8 +1,8 @@
 import 'reflect-metadata';
-import { DIContainer } from '../container';
-import { Service } from '../Service';
-import { Inject } from '../Inject';
 import { Autowired } from '../Autowired';
+import { DIContainer } from '../container';
+import { Inject } from '../Inject';
+import { Service } from '../Service';
 
 // 테스트용 클래스들
 class TestService {
@@ -52,7 +52,7 @@ class PropertyInjectionService {
   public testService!: TestService;
   
   @Inject('custom-token')
-  public customService!: any;
+  public customService!: CustomTokenService;
 }
 
 const CustomServiceToken = Symbol('CustomService');
@@ -117,7 +117,7 @@ describe('DIContainer', () => {
       const factory = () => new CustomTokenService();
       
       container.register(CustomServiceToken, factory);
-      const instance = container.resolve(CustomServiceToken);
+      const instance = container.resolve<CustomTokenService>(CustomServiceToken);
       
       expect(instance).toBeInstanceOf(CustomTokenService);
       expect(instance.getCustomData()).toBe('custom service data');
@@ -268,7 +268,7 @@ describe('DIContainer', () => {
   describe('에러 처리', () => {
     test('생성자 파라미터 해결 실패 시 적절한 에러 메시지를 제공해야 함', () => {
       class FailingService {
-        constructor(public nonExistentDep: any) {}
+        constructor(public nonExistentDep: unknown) {}
       }
       
       // 메타데이터 설정
@@ -341,7 +341,7 @@ describe('DIContainer', () => {
 
     test('@Inject 데코레이터가 design:paramtypes를 오버라이드해야 함', () => {
       class ServiceWithCustomToken {
-        constructor(@Inject(CustomServiceToken) public customService: any) {}
+        constructor(@Inject(CustomServiceToken) public customService: unknown) {}
       }
       
       // 메타데이터 설정
@@ -396,16 +396,11 @@ describe('DIContainer', () => {
   describe('메모리 관리', () => {
     test('clear 후 참조가 정리되어야 함', () => {
       const instance = container.resolve(TestService);
-      const weakRef = new WeakRef(instance);
+      expect(container['singletons'].get(TestService)).toBe(instance);
       
       container.clear();
       
-      // 강제 가비지 컬렉션 (테스트 환경에서만)
-      if (global.gc) {
-        global.gc();
-      }
-      
-      // WeakRef는 즉시 해제되지 않을 수 있으므로 clear 동작만 확인
+      // GC 시점은 비결정적이므로 컨테이너가 참조를 놓았는지만 확인
       expect(container['singletons'].size).toBe(0);
       expect(container['factories'].size).toBe(0);
     });

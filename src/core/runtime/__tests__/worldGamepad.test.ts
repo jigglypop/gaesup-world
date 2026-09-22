@@ -1,7 +1,7 @@
-import { createGaesupRuntime } from '../createGaesupRuntime';
 import { getBrowserGamepadHub, type BrowserGamepad, type GamepadSnapshotListener } from '../../input/BrowserGamepadHub';
 import { createMemoryInputBackend, type InputBackend } from '../../interactions/core/adapter';
 import { createMotionsPlugin } from '../../motions/plugin';
+import { createGaesupRuntime } from '../createGaesupRuntime';
 
 test('runtime owns gamepad subscriptions across modes, editor gating and fifty setup/dispose cycles', async () => {
   const listeners = new Set<GamepadSnapshotListener>(); const hub = getBrowserGamepadHub();
@@ -19,7 +19,8 @@ test('runtime owns gamepad subscriptions across modes, editor gating and fifty s
 });
 
 test('hardware input reaches keyboard-only plugins; hot replacement releases held state and re-arms after neutral', async () => {
-  const p = { id: 'pad', index: 0, connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 })), timestamp: 0 } satisfies BrowserGamepad;
+  const button = (): { pressed: boolean; touched: boolean; value: number } => ({ pressed: false, touched: false, value: 0 });
+  const p = { id: 'pad', index: 0, connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, button), timestamp: 0 } satisfies BrowserGamepad;
   const listeners = new Set<GamepadSnapshotListener>(); const emit = () => { for (const listener of [...listeners]) listener([p]); };
   const subscribe = jest.spyOn(getBrowserGamepadHub(), 'subscribe').mockImplementation(listener => { listeners.add(listener); listener([p]); return () => { listeners.delete(listener); }; });
   const runtime = createGaesupRuntime(); const surface = document.createElement('div'); document.body.append(surface); const off = runtime.inputScope.registerSurface(surface, { focusable: true });

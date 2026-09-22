@@ -308,7 +308,7 @@ describe('interaction input adapter', () => {
       keyboard: { forward: true },
       mouse: {
         target: new THREE.Vector3(1, 0, 2),
-        buttons: { left: true },
+        buttons: { left: true, right: false, middle: false },
       },
     });
     const listener = jest.fn();
@@ -323,7 +323,7 @@ describe('interaction input adapter', () => {
     expect(backend.getMouse().target).toEqual(new THREE.Vector3(1, 0, 2));
     expect(backend.getMouse().buttons.left).toBe(true);
     expect(backend.getGamepad?.().connected).toBe(true);
-    expect(backend.getGamepad?.().buttons.jump).toBe(true);
+    expect(backend.getGamepad?.().buttons['jump']).toBe(true);
     expect(backend.getTouch?.().touches[0]?.position).toEqual(new THREE.Vector2(4, 5));
     expect(listener).toHaveBeenCalledTimes(3);
   });

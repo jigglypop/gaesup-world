@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
@@ -10,7 +8,7 @@ import type { PlayerState } from '../../types';
 import { RemotePlayer } from '../RemotePlayer';
 
 jest.mock('three', () => {
-  const actual = jest.requireActual('three') as typeof import('three');
+  const actual = jest.requireActual<typeof THREE>('three');
   return {
     ...actual,
     Vector3: jest.fn((x?: number, y?: number, z?: number) => new actual.Vector3(x, y, z)),
@@ -346,12 +344,12 @@ describe('RemotePlayer', () => {
       renderer = create(<RemotePlayer playerId="remote-1" state={PLAYER_STATE} characterUrl="/avatars/remote.glb" />);
     });
     const groups = renderer.root.findAllByType('group');
-    const modelRoot = groups.find((group) => group.props.scale !== undefined);
+    const modelRoot = groups.find((group) => group.props['scale'] !== undefined);
     const movementGroup = modelRoot?.parent;
     const animationRef = jest.mocked(useAnimations).mock.calls.at(-1)?.[1];
     expect(modelRoot).toBeDefined();
-    expect(modelRoot?.props.ref).toBe(animationRef);
-    expect(movementGroup?.props.ref).not.toBe(animationRef);
+    expect(modelRoot?.props['ref']).toBe(animationRef);
+    expect(movementGroup?.props['ref']).not.toBe(animationRef);
     act(() => renderer.unmount());
   });
 

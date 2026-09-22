@@ -160,13 +160,15 @@ describe('MATERIAL_PRESETS 테스트', () => {
   describe('상수값 불변성', () => {
     test('TILE_CONSTANTS 객체가 불변이어야 함', () => {
       expect(() => {
-        (TILE_CONSTANTS as any).GRID_CELL_SIZE = 10;
+        // @ts-expect-error -- readonly 상수에 대한 런타임 쓰기 차단 검증
+        TILE_CONSTANTS.GRID_CELL_SIZE = 10;
       }).toThrow();
     });
 
     test('MATERIAL_PRESETS 객체가 불변이어야 함', () => {
       expect(() => {
-        (MATERIAL_PRESETS as any).FLOOR = {};
+        // @ts-expect-error -- readonly 상수에 대한 런타임 쓰기 차단 검증
+        MATERIAL_PRESETS.FLOOR = {};
       }).toThrow();
     });
   });

@@ -1,8 +1,7 @@
-import { act, render, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
-import { createGaesupRuntime } from '../createGaesupRuntime';
-import { GaesupRuntimeProvider } from '../context';
+import { act, render, renderHook } from '@testing-library/react';
+
 import { BuildingNavigationObstacleDriver } from '../../building/components/BuildingNavigationObstacleDriver';
 import { BuildingRenderStateDriver } from '../../building/components/BuildingRenderStateDriver';
 import { usePlacementPresets } from '../../building/stores/presets';
@@ -10,6 +9,8 @@ import { getNPCBrainBlueprint } from '../../npc/core/blueprint';
 import { createNPCObservation, resolveNPCBrainDecision } from '../../npc/core/brain';
 import { useNpcSchedule } from '../../npc/hooks/useNpcSchedule';
 import type { NPCBrainBlueprint, NPCInstance } from '../../npc/types';
+import { GaesupRuntimeProvider } from '../context';
+import { createGaesupRuntime } from '../createGaesupRuntime';
 
 jest.mock('../../wasm/loader', () => ({ loadCoreWasm: jest.fn(async () => null) }));
 

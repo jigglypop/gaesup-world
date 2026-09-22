@@ -113,7 +113,7 @@ export function parseMinihome(raw: string): MinihomeData | null {
     if (typeof volume !== 'number' || !Number.isFinite(volume) || volume < 0 || volume > 1) return null;
     const resolved = { ...DEFAULT_ROOM_SETTINGS, ...settings, volume };
     if (!['orthographic', 'perspective'].includes(String(resolved.projection))) return null;
-    for (const key of ['pan', 'rotate', 'damping', 'bloom', 'natureMotion'] as const) if (typeof resolved[key] !== 'boolean') return null;
+    for (const key of ['pan', 'rotate', 'damping', 'bloom', 'natureMotion', 'festive'] as const) if (typeof resolved[key] !== 'boolean') return null;
     for (const [key, min, max] of [['moveSpeed', 1, 8], ['bloomStrength', 0, 2], ['bloomRadius', 0, 1], ['bloomThreshold', 0, 3]] as const) {
       if (typeof resolved[key] !== 'number' || !Number.isFinite(resolved[key]) || resolved[key] < min || resolved[key] > max) return null;
     }

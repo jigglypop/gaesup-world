@@ -147,7 +147,7 @@ describe('scene object model', () => {
       }
     }
     const cyclicValue: Record<string, unknown> = {};
-    cyclicValue.self = cyclicValue;
+    cyclicValue['self'] = cyclicValue;
 
     expect(() => createMeshRendererComponent({ invalid: undefined })).toThrow(TypeError);
     expect(() => createMeshRendererComponent({ [symbolKey]: 'value' })).toThrow(TypeError);
@@ -179,11 +179,11 @@ describe('scene object model', () => {
     const component = createMeshRendererComponent({ left: shared, right: shared });
 
     expect(isCanonicalSceneJsonObject(component.data)).toBe(true);
-    expect(component.data.left).not.toBe(shared);
-    expect(component.data.left).toBe(component.data.right);
+    expect(component.data['left']).not.toBe(shared);
+    expect(component.data['left']).toBe(component.data['right']);
     expect(Object.isFrozen(component.data)).toBe(false);
     shared.count = 2;
-    expect(component.data.left).toEqual({ count: 1 });
+    expect(component.data['left']).toEqual({ count: 1 });
     component.data.assetId = 'owned-copy';
     expect(component.data.assetId).toBe('owned-copy');
   });
@@ -523,7 +523,7 @@ describe('scene object model', () => {
         toVersion: 1,
         description: 'Promote legacy root object shape',
         migrate(document) {
-          const legacyObjects = Array.isArray(document.nodes) ? document.nodes : [];
+          const legacyObjects = Array.isArray(document['nodes']) ? document['nodes'] : [];
           return {
             id: typeof document.id === 'string' ? document.id : 'legacy-scene',
             objects: legacyObjects.map((node) =>

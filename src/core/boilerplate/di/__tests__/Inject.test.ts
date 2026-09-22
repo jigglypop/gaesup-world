@@ -9,7 +9,7 @@ describe('@Inject 데코레이터', () => {
   describe('생성자 파라미터 주입', () => {
     test('생성자 파라미터에 토큰을 설정해야 함', () => {
       class TestService {
-        constructor(@Inject('test-token') private dependency: any) {}
+        constructor(@Inject('test-token') readonly dependency: unknown) {}
       }
       
       const paramTypes = Reflect.getMetadata('di:paramtypes', TestService);
@@ -20,9 +20,9 @@ describe('@Inject 데코레이터', () => {
     test('여러 파라미터에 각각 다른 토큰을 설정할 수 있어야 함', () => {
       class MultiDependencyService {
         constructor(
-          @Inject('token-1') private dep1: any,
-          @Inject('token-2') private dep2: any,
-          @Inject('token-3') private dep3: any
+          @Inject('token-1') readonly dep1: unknown,
+          @Inject('token-2') readonly dep2: unknown,
+          @Inject('token-3') readonly dep3: unknown
         ) {}
       }
       
@@ -35,8 +35,8 @@ describe('@Inject 데코레이터', () => {
     test('일부 파라미터만 @Inject를 사용할 수 있어야 함', () => {
       class PartialInjectService {
         constructor(
-          private normalDep: any, // @Inject 없음
-          @Inject('injected-token') private injectedDep: any
+          readonly normalDep: unknown, // @Inject 없음
+          @Inject('injected-token') readonly injectedDep: unknown
         ) {}
       }
       
@@ -49,7 +49,7 @@ describe('@Inject 데코레이터', () => {
       const SymbolToken = Symbol('test-service');
       
       class SymbolInjectService {
-        constructor(@Inject(SymbolToken) private service: any) {}
+        constructor(@Inject(SymbolToken) readonly service: unknown) {}
       }
       
       const paramTypes = Reflect.getMetadata('di:paramtypes', SymbolInjectService);
@@ -60,7 +60,7 @@ describe('@Inject 데코레이터', () => {
       class InterfaceToken {}
       
       class ClassInjectService {
-        constructor(@Inject(InterfaceToken) private service: any) {}
+        constructor(@Inject(InterfaceToken) readonly service: unknown) {}
       }
       
       const paramTypes = Reflect.getMetadata('di:paramtypes', ClassInjectService);
@@ -72,7 +72,7 @@ describe('@Inject 데코레이터', () => {
     test('프로퍼티에 토큰을 설정해야 함', () => {
       class PropertyInjectService {
         @Inject('property-token')
-        public injectedProperty: any;
+        public injectedProperty: unknown;
       }
       
       const properties = Reflect.getMetadata('di:properties', PropertyInjectService);
@@ -83,13 +83,13 @@ describe('@Inject 데코레이터', () => {
     test('여러 프로퍼티에 각각 다른 토큰을 설정할 수 있어야 함', () => {
       class MultiPropertyService {
         @Inject('token-a')
-        public propA: any;
+        public propA: unknown;
         
         @Inject('token-b')
-        public propB: any;
+        public propB: unknown;
         
         @Inject('token-c')
-        private propC: any;
+        protected propC: unknown;
       }
       
       const properties = Reflect.getMetadata('di:properties', MultiPropertyService);
@@ -103,7 +103,7 @@ describe('@Inject 데코레이터', () => {
       
       class SymbolPropertyService {
         @Inject(PropertyToken)
-        public service: any;
+        public service: unknown;
       }
       
       const properties = Reflect.getMetadata('di:properties', SymbolPropertyService);
@@ -115,7 +115,7 @@ describe('@Inject 데코레이터', () => {
       
       class ClassPropertyService {
         @Inject(ServiceInterface)
-        public service: any;
+        public service: unknown;
       }
       
       const properties = Reflect.getMetadata('di:properties', ClassPropertyService);
@@ -126,7 +126,7 @@ describe('@Inject 데코레이터', () => {
   describe('메타데이터 관리', () => {
     test('기존 메타데이터를 보존하면서 새로운 토큰을 추가해야 함', () => {
       class IncrementalService {
-        constructor(@Inject('first') private first: any) {}
+        constructor(@Inject('first') readonly first: unknown) {}
       }
       
       // 두 번째 파라미터 추가 시뮬레이션
@@ -142,7 +142,7 @@ describe('@Inject 데코레이터', () => {
     test('프로퍼티 메타데이터도 누적적으로 관리되어야 함', () => {
       class CumulativeService {
         @Inject('prop1')
-        public prop1: any;
+        public prop1: unknown;
       }
       
       // 수동으로 두 번째 프로퍼티 추가
@@ -159,13 +159,13 @@ describe('@Inject 데코레이터', () => {
   describe('상속과 메타데이터', () => {
     test('상속된 클래스는 독립적인 메타데이터를 가져야 함', () => {
       class BaseService {
-        constructor(@Inject('base-token') protected baseDep: any) {}
+        constructor(@Inject('base-token') protected baseDep: unknown) {}
       }
       
       class DerivedService extends BaseService {
         constructor(
-          @Inject('base-token') baseDep: any,
-          @Inject('derived-token') private derivedDep: any
+          @Inject('base-token') baseDep: unknown,
+          @Inject('derived-token') readonly derivedDep: unknown
         ) {
           super(baseDep);
         }
@@ -182,12 +182,12 @@ describe('@Inject 데코레이터', () => {
     test('상속된 클래스의 프로퍼티도 독립적이어야 함', () => {
       class BaseService {
         @Inject('base-prop')
-        protected baseProp: any;
+        protected baseProp: unknown;
       }
       
       class DerivedService extends BaseService {
         @Inject('derived-prop')
-        public derivedProp: any;
+        public derivedProp: unknown;
       }
       
       const baseProps = Reflect.getMetadata('di:properties', BaseService);
@@ -203,9 +203,9 @@ describe('@Inject 데코레이터', () => {
     test('생성자와 프로퍼티 주입을 함께 사용할 수 있어야 함', () => {
       class MixedInjectService {
         @Inject('property-service')
-        public propertyService: any;
+        public propertyService: unknown;
         
-        constructor(@Inject('constructor-service') private constructorService: any) {}
+        constructor(@Inject('constructor-service') readonly constructorService: unknown) {}
       }
       
       const paramTypes = Reflect.getMetadata('di:paramtypes', MixedInjectService);
@@ -220,9 +220,9 @@ describe('@Inject 데코레이터', () => {
       
       class SharedTokenService {
         @Inject(SharedToken)
-        public sharedProp: any;
+        public sharedProp: unknown;
         
-        constructor(@Inject(SharedToken) private sharedParam: any) {}
+        constructor(@Inject(SharedToken) readonly sharedParam: unknown) {}
       }
       
       const paramTypes = Reflect.getMetadata('di:paramtypes', SharedTokenService);
@@ -237,24 +237,32 @@ describe('@Inject 데코레이터', () => {
     test('잘못된 사용법에도 에러를 발생시키지 않아야 함', () => {
       expect(() => {
         class ErrorTestService {
+          // @ts-expect-error: method targets are misuse, but applying the decorator must not throw
           @Inject('test-token')
           public method() {} // 메서드에 적용 (정상적이지 않지만 에러 없어야 함)
         }
+        return ErrorTestService;
       }).not.toThrow();
     });
 
     test('undefined나 null 토큰도 처리할 수 있어야 함', () => {
       expect(() => {
         class NullTokenService {
-          constructor(@Inject(null as any) private dep: any) {}
+          constructor(
+            // @ts-expect-error: null tokens from untyped callers must not throw
+            @Inject(null) readonly dep: unknown
+          ) {}
         }
+        return NullTokenService;
       }).not.toThrow();
       
       expect(() => {
         class UndefinedTokenService {
-          @Inject(undefined as any)
-          public prop: any;
+          // @ts-expect-error: undefined tokens from untyped callers must not throw
+          @Inject(undefined)
+          public prop: unknown;
         }
+        return UndefinedTokenService;
       }).not.toThrow();
     });
   });
@@ -267,11 +275,12 @@ describe('@Inject 데코레이터', () => {
       expect(() => {
         class TypeSafeService {
           constructor(
-            @Inject(symbolToken) private symbolDep: any,
-            @Inject(stringToken) private stringDep: any,
-            @Inject(Object) private classDep: any
+            @Inject(symbolToken) readonly symbolDep: unknown,
+            @Inject(stringToken) readonly stringDep: unknown,
+            @Inject(Object) readonly classDep: unknown
           ) {}
         }
+        return TypeSafeService;
       }).not.toThrow();
     });
 
@@ -279,8 +288,9 @@ describe('@Inject 데코레이터', () => {
       const complexToken = { type: 'complex', id: 123 };
       
       class ComplexTokenService {
-        @Inject(complexToken as any)
-        public complex: any;
+        // @ts-expect-error: non-token objects are outside the Token type but must be stored verbatim
+        @Inject(complexToken)
+        public complex: unknown;
       }
       
       const properties = Reflect.getMetadata('di:properties', ComplexTokenService);
@@ -295,10 +305,10 @@ describe('@Inject 데코레이터', () => {
       }
       
       class ServiceWithLogger {
-        constructor(@Inject(ILogger) private logger: ILogger) {}
+        constructor(@Inject(ILogger) readonly logger: ILogger) {}
         
         @Inject(ILogger)
-        public alternativeLogger: ILogger;
+        public alternativeLogger!: ILogger;
       }
       
       const paramTypes = Reflect.getMetadata('di:paramtypes', ServiceWithLogger);
@@ -314,12 +324,12 @@ describe('@Inject 데코레이터', () => {
       
       class ApplicationService {
         constructor(
-          @Inject(ConfigToken) private config: any,
-          @Inject(DatabaseToken) private db: any
+          @Inject(ConfigToken) readonly config: unknown,
+          @Inject(DatabaseToken) readonly db: unknown
         ) {}
         
         @Inject('cache-service')
-        public cache: any;
+        public cache: unknown;
       }
       
       const paramTypes = Reflect.getMetadata('di:paramtypes', ApplicationService);

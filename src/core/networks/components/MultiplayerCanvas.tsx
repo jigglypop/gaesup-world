@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef } from 'react';
 
 import { Environment } from '@react-three/drei';
 import { Canvas, useFrame } from '@react-three/fiber';
@@ -7,7 +7,7 @@ import * as THREE from 'three';
 
 import { Grid } from '@/core/rendering/legacyDrei';
 
-import { RemotePlayer } from './RemotePlayer';
+import { RemotePlayers } from './RemotePlayers';
 import {
   GaesupController,
   GaesupWorld,
@@ -89,33 +89,14 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
     window.CHARACTER_URL = characterUrl;
   }, [characterUrl]);
 
-  const [localPosition, setLocalPosition] = useState<[number, number, number]>([0, 0, 0]);
   const localSpeechPos = useMemo(() => new THREE.Vector3(), []);
 
   const handleLocalPositionChange = useMemo(
     () => (x: number, y: number, z: number) => {
       localSpeechPos.set(x, y, z);
-      setLocalPosition([x, y, z]);
     },
     [localSpeechPos],
   );
-
-  const visiblePlayers = useMemo(() => {
-    const range = proximityRange;
-    if (!range || range <= 0) return players;
-    const [lx, ly, lz] = localPosition;
-    const next = new Map<string, PlayerState>();
-    players.forEach((state, id) => {
-      const [x, y, z] = state.position;
-      const dx = x - lx;
-      const dy = y - ly;
-      const dz = z - lz;
-      if (dx * dx + dy * dy + dz * dz <= range * range) {
-        next.set(id, state);
-      }
-    });
-    return next;
-  }, [players, proximityRange, localPosition]);
 
   return (
     <GaesupWorld
@@ -174,19 +155,15 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
               ) : null}
 
               {/* 원격 플레이어들 */}
-              {Array.from(visiblePlayers.entries()).map(([playerId, state]) => (
-                <RemotePlayer
-                  key={playerId}
-                  playerId={playerId}
-                  state={state}
-                  characterUrl={characterUrl}
-                  config={config}
-                  {...(() => {
-                    const speechText = speechByPlayerId?.get(playerId);
-                    return speechText ? { speechText } : {};
-                  })()}
-                />
-              ))}
+              <RemotePlayers
+                players={players}
+                characterUrl={characterUrl}
+                config={config}
+                playerRef={playerRef}
+                {...(proximityRange !== undefined ? { proximityRange } : {})}
+                {...(speechByPlayerId ? { speechByPlayerId } : {})}
+              />
+
 
               {/* 그리드 */}
               <Grid

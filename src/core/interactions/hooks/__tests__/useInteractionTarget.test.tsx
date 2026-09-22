@@ -1,12 +1,13 @@
-import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
+
+import { act, renderHook } from '@testing-library/react';
 import * as THREE from 'three';
 
+import { createMotionsPlugin } from '../../../motions/plugin';
+import { createGaesupRuntime, GaesupRuntimeProvider } from '../../../runtime';
 import { createMemoryInputBackend } from '../../core';
 import { useInteractablesStore } from '../../stores/interactablesStore';
 import { useInteractionKey } from '../useInteractionTarget';
-import { createMotionsPlugin } from '../../../motions/plugin';
-import { createGaesupRuntime, GaesupRuntimeProvider } from '../../../runtime';
 
 describe('useInteractionKey', () => {
   beforeEach(() => {

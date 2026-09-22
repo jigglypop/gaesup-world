@@ -1,9 +1,9 @@
 import { act, render, screen } from '@testing-library/react';
 
-import { GaesupRuntimeProvider, useGaesupRuntime, useGaesupRuntimeRevision } from '../context';
-import { createGaesupRuntime } from '../createGaesupRuntime';
 import { useGameClock, useTimeOfDay } from '../../time/hooks/useGameTime';
 import { useTimeStore, useTimeStoreApi } from '../../time/stores/timeStore';
+import { GaesupRuntimeProvider, useGaesupRuntime, useGaesupRuntimeRevision } from '../context';
+import { createGaesupRuntime } from '../createGaesupRuntime';
 
 describe('runtime time scope', () => {
   it('inherits omitted providers, supports explicit legacy scope and rebinds on world replacement', () => {

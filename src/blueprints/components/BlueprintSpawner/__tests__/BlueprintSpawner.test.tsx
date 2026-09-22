@@ -1,16 +1,17 @@
 import { StrictMode, type RefObject } from 'react';
-import { act, render, type RenderResult } from '@testing-library/react';
+
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, type RapierRigidBody } from '@react-three/rapier';
+import { act, render, type RenderResult } from '@testing-library/react';
 
 import { BlueprintSpawner } from '..';
+import { WARRIOR_BLUEPRINT } from '../../../characters/warrior';
 import { BlueprintEntity } from '../../../core/BlueprintEntity';
 import type { ComponentContext } from '../../../core/types';
 import { BlueprintFactory } from '../../../factory/BlueprintFactory';
 import { blueprintRegistry } from '../../../registry';
-import { WARRIOR_BLUEPRINT } from '../../../characters/warrior';
-import { BASIC_KART_BLUEPRINT } from '../../../vehicles/kart';
 import type { AirplaneBlueprint } from '../../../types';
+import { BASIC_KART_BLUEPRINT } from '../../../vehicles/kart';
 
 jest.mock('@react-three/fiber', () => ({ useFrame: jest.fn() }));
 jest.mock('@react-three/rapier', () => ({ RigidBody: jest.fn(() => null) }));

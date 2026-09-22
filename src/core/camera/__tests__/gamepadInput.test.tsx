@@ -1,8 +1,8 @@
 import { renderHook } from '@testing-library/react';
 import * as THREE from 'three';
 
-import { useCamera } from '../hooks/useCamera';
 import { createMemoryInputBackend } from '../../interactions/core/adapter';
+import { useCamera } from '../hooks/useCamera';
 
 const mockCanvas = document.createElement('canvas'); const mockCamera = new THREE.PerspectiveCamera(); const mockScene = new THREE.Scene();
 const mockBackend = createMemoryInputBackend(); let mockFocused = true; let mockEditing = false;

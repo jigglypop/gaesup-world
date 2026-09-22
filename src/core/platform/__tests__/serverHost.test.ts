@@ -1,24 +1,24 @@
 import {
-  DEFAULT_SERVER_COMMAND_AUTHORITY_SERVICE_ID,
-  createServerPluginHost,
-} from '../serverHost';
-import { SaveSystem } from '../../save';
-import type { SaveAdapter, SaveBlob } from '../../save';
-import type { GaesupPlugin } from '../../plugins';
-import {
   createCommandAcceptedResult,
   createGameCommand,
   createServerEvent,
   createStateDelta,
   type CommandAuthorityRouter,
 } from '../../networks/adapter';
+import type { GaesupPlugin, PluginRuntime, SaveExtensionMap } from '../../plugins';
+import { SaveSystem } from '../../save';
+import type { SaveAdapter } from '../../save';
+import {
+  DEFAULT_SERVER_COMMAND_AUTHORITY_SERVICE_ID,
+  createServerPluginHost,
+} from '../serverHost';
 
 class MemoryAdapter implements SaveAdapter {
-  async read(_slot: string) {
+  async read() {
     return null;
   }
 
-  async write(_slot: string, _blob: SaveBlob) {
+  async write() {
     return undefined;
   }
 
@@ -26,14 +26,14 @@ class MemoryAdapter implements SaveAdapter {
     return [];
   }
 
-  async remove(_slot: string) {
+  async remove() {
     return undefined;
   }
 }
 
 const markerPlugin = (
   id: string,
-  runtime: GaesupPlugin['runtime'],
+  runtime: PluginRuntime,
   calls: string[],
 ): GaesupPlugin => ({
   id,
@@ -69,6 +69,12 @@ describe('createServerPluginHost', () => {
 
   test('registers plugin save bindings and creates platform snapshots', async () => {
     const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    // 서버 호스트는 저장 바인딩을 불투명하게 다루므로 building 페이로드는 단순화한 스텁을 쓴다
+    const buildingBinding = {
+      key: 'building',
+      serialize: () => ({ blocks: 2 }),
+      hydrate: () => undefined,
+    } as unknown as SaveExtensionMap['building'];
     const host = createServerPluginHost({
       saveSystem: save,
       plugins: [{
@@ -77,11 +83,7 @@ describe('createServerPluginHost', () => {
         version: '1.0.0',
         runtime: 'server',
         setup(ctx) {
-          ctx.save.register('building', {
-            key: 'building',
-            serialize: () => ({ blocks: 2 }),
-            hydrate: () => undefined,
-          }, 'server.snapshot');
+          ctx.save.register('building', buildingBinding, 'server.snapshot');
           ctx.save.register('inventory', {
             key: 'inventory',
             serialize: () => ({ apples: 3 }),

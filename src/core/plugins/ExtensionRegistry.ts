@@ -69,11 +69,13 @@ export class InMemoryExtensionRegistry<
   }
 
   get<TId extends KnownExtensionId<TMap>>(id: TId): TMap[TId] | undefined;
+  get<TResolved extends TValue = TValue>(id: string): TResolved | undefined;
   get<TResolved extends TValue = TValue>(id: string): TResolved | undefined {
     return this.entries.get(id)?.value as TResolved | undefined;
   }
 
   require<TId extends KnownExtensionId<TMap>>(id: TId): TMap[TId];
+  require<TResolved extends TValue = TValue>(id: string): TResolved;
   require<TResolved extends TValue = TValue>(id: string): TResolved {
     const value = this.entries.get(id)?.value as TResolved | undefined;
     if (value === undefined) {

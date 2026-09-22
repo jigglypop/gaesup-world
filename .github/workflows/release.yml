@@ -26,7 +26,6 @@ jobs:
           package-manager-cache: false
       - run: npm install --global corepack
       - run: corepack pnpm install --frozen-lockfile
-      - run: corepack pnpm exec tsc --noEmit
       - run: corepack pnpm run verify:full
       - run: corepack pnpm run audit:core
       - uses: actions/upload-artifact@v4

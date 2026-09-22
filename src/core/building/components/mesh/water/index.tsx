@@ -12,10 +12,12 @@ import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime'
 
 
 class OwnedWater extends Water {
-  dispose(): void {
+  override dispose(): void {
     const mirror: unknown = this.material.uniforms['mirrorSampler']?.value;
     if (mirror instanceof THREE.Texture) mirror.renderTarget?.dispose();
     this.material.dispose();
+    // Object3D.dispose (three r186+) notifies renderers; older supported releases lack it.
+    super.dispose?.();
   }
 }
 
@@ -46,6 +48,8 @@ type WaterProps = {
    * Defaults to the global toon mode. The normal path keeps the original Water quality.
    */
   toon?: boolean;
+  /** Multiplier for the unlit toon surface (1 = authored colors), e.g. to dim water at night. */
+  brightness?: number;
 };
 
 // Vertex displacement uses world-space frequencies (cycles per meter) so wave
@@ -79,6 +83,7 @@ uniform vec3 uDeep;
 uniform vec3 uFoam;
 uniform sampler2D uNormals;
 uniform float uTime;
+uniform float uBrightness;
 varying vec2 vUv;
 varying vec3 vWorldPos;
 varying float vWave;
@@ -94,12 +99,12 @@ void main() {
   vec3 col = mix(uDeep, uShallow, tint);
   col = mix(col, vec3(0.48, 0.72, 0.78), fresnel * 0.6);
   col += uFoam * highlight * 0.38;
-  gl_FragColor = vec4(col, 1.0);
+  gl_FragColor = vec4(col * uBrightness, 1.0);
   #include <colorspace_fragment>
 }
 `;
 
-export default function Ocean({ lod, center, size = 16, width, depth, shore, toon, normalMap, followCamera = false }: WaterProps) {
+export default function Ocean({ lod, center, size = 16, width, depth, shore, toon, normalMap, followCamera = false, brightness = 1 }: WaterProps) {
   const useToon = toon ?? getDefaultToonMode();
   const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
   const waterRef = useRef<Water | null>(null);
@@ -226,12 +231,17 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
         uShallow: { value: new THREE.Color('#48b9b4') },
         uDeep: { value: new THREE.Color('#176180') },
         uFoam: { value: new THREE.Color('#ffffff') },
+        uBrightness: { value: 1 },
       },
       vertexShader: TOON_WATER_VERT,
       fragmentShader: TOON_WATER_FRAG,
       toneMapped: false,
     });
   }, [useToon, useNodes, waterNormals]);
+  useEffect(() => {
+    const uniform = toonMaterial?.uniforms['uBrightness'];
+    if (uniform) uniform.value = brightness;
+  }, [toonMaterial, brightness]);
 
   useEffect(() => () => geom.dispose(), [geom]);
   useEffect(() => () => fallbackMaterial.dispose(), [fallbackMaterial]);
@@ -356,7 +366,7 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
             position={[waterOffsetX, 0.1, waterOffsetZ]}
             frustumCulled
           >
-            {useNodes ? <NodeWaterMaterial normalMap={waterNormals} /> : (
+            {useNodes ? <NodeWaterMaterial normalMap={waterNormals} brightness={brightness} /> : (
               <primitive
                 ref={toonMatRef}
                 object={toonMaterial as THREE.ShaderMaterial}

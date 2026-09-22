@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 
-import { EntityStateManager } from '@core/motions/core/system/EntityStateManager';
-import { ImpulseComponent } from '@core/motions/core/movement/ImpulseComponent';
-import { NavigationSystem } from '@core/navigation';
-import { PhysicsState } from '@core/motions/types';
-import { PhysicsConfigType } from '@stores/slices/physics/types';
 import { InteractionSystem } from '@core/interactions/core/InteractionSystem';
+import { ImpulseComponent } from '@core/motions/core/movement/ImpulseComponent';
+import { EntityStateManager } from '@core/motions/core/system/EntityStateManager';
+import { PhysicsState } from '@core/motions/types';
+import { NavigationSystem } from '@core/navigation';
+import { PhysicsConfigType } from '@stores/slices/physics/types';
 
 jest.mock('@core/interactions/core/InteractionSystem');
 jest.mock('@core/wasm/loader', () => ({
@@ -43,6 +43,7 @@ const buildPhysicsStateFrom = (manager: EntityStateManager): PhysicsState => ({
   gameStates: manager.getGameStates(),
   keyboard: { space: false, shift: false, forward: false, backward: false, leftward: false, rightward: false, keyZ: false, keyR: false, keyF: false, keyE: false, escape: false } as PhysicsState['keyboard'],
   mouse: { isLookAround: false, isActive: false, shouldRun: false, target: new THREE.Vector3(), angle: 0, buttons: { left: false, right: false, middle: false }, wheel: 0, position: new THREE.Vector2() } as PhysicsState['mouse'],
+  automationOption: {} as PhysicsState['automationOption'],
   delta: 0.016,
 });
 

@@ -17,7 +17,7 @@ export function RoomVisibilityDriver() {
   const portalList = useMemo(() => Array.from(portals.values()), [portals]);
   const setVisibleRooms = useRoomVisibilityStore((s) => s.setVisibleRooms);
   const reset = useRoomVisibilityStore((s) => s.reset);
-  const { position } = usePlayerPosition({ updateInterval: 50 });
+  const { position } = usePlayerPosition({ updateInterval: 50, reactive: false });
   const accumRef = useRef(0);
 
   useEffect(() => reset, [reset]);

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { PathLine } from './PathLine';
@@ -18,10 +19,25 @@ export function Clicker() {
   const automation = useGaesupStore((state) => state.automation);
   const { position: playerPosition } = usePlayerPosition({
     updateInterval: PLAYER_POSITION_UPDATE_INTERVAL_MS,
+    reactive: false,
   });
   const { mouse } = useInteractionSystem();
   const [navigationPoints, setNavigationPoints] = useState(() => [...getClickNavigationRoute()]);
   const pathPointsRef = useRef<THREE.Vector3[]>([]);
+  const mouseTarget = mouse?.target || EMPTY_MOUSE_TARGET;
+  const mouseTargetRef = useRef(mouseTarget);
+  mouseTargetRef.current = mouseTarget;
+  const [hasReachedTarget, setHasReachedTarget] = useState(
+    () => playerPosition.distanceTo(mouseTarget) < REACH_DISTANCE,
+  );
+  const reachedRef = useRef(hasReachedTarget);
+
+  useFrame(() => {
+    const reached = playerPosition.distanceTo(mouseTargetRef.current) < REACH_DISTANCE;
+    if (reached === reachedRef.current) return;
+    reachedRef.current = reached;
+    setHasReachedTarget(reached);
+  });
 
   useEffect(() => {
     const refresh = () => setNavigationPoints([...getClickNavigationRoute()]);
@@ -29,14 +45,11 @@ export function Clicker() {
     return subscribeClickNavigationRoute(refresh);
   }, [getClickNavigationRoute, subscribeClickNavigationRoute]);
 
-  const mouseTarget = mouse?.target || EMPTY_MOUSE_TARGET;
   const isActive = mouse?.isActive || false;
   const queue = automation?.queue || { actions: [], currentIndex: 0 };
   const actions = queue.actions || [];
   const currentIndex = queue.currentIndex || 0;
 
-  const distanceToTarget = playerPosition.distanceTo(mouseTarget);
-  const hasReachedTarget = distanceToTarget < REACH_DISTANCE;
   const shouldShowMarker = isActive && !hasReachedTarget;
 
   const queuePoints = useMemo(

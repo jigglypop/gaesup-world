@@ -1,6 +1,6 @@
 import { GameplayEventEngine } from '../engine';
 import { GameplayEventRegistry } from '../registry';
-import type { GameplayEventBlueprint } from '../types';
+import type { GameplayEventAction, GameplayEventBlueprint } from '../types';
 
 describe('GameplayEventEngine', () => {
   it('blocks overlapping once executions and keeps a new generation lock when an old condition settles', async () => {
@@ -56,7 +56,7 @@ describe('GameplayEventEngine', () => {
     const registry = new GameplayEventRegistry();
     const calls: string[] = [];
     registry.registerCondition('always', () => true);
-    registry.registerAction('setFlag', (action, context) => {
+    registry.registerAction<Extract<GameplayEventAction, { type: 'setFlag' }>>('setFlag', (action, context) => {
       context.state.flags[action.key] = action.value;
       calls.push(action.key);
     });
@@ -74,7 +74,7 @@ describe('GameplayEventEngine', () => {
     const result = await engine.dispatch({ type: 'enterArea', areaId: 'meadow' });
 
     expect(result).toEqual([{ blueprintId: 'enter-meadow', actionCount: 1 }]);
-    expect(engine.state.flags.visitedMeadow).toBe(true);
+    expect(engine.state.flags['visitedMeadow']).toBe(true);
     expect(calls).toEqual(['visitedMeadow']);
   });
 

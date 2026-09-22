@@ -1,11 +1,11 @@
 import 'reflect-metadata';
 import * as THREE from 'three';
 
-import { CameraSystem } from '../CameraSystem';
-import { BaseCameraSystem } from '../../bridge/BaseCameraSystem';
-import type { CameraCalcProps, CameraState } from '../types';
-import type { CameraSystemConfig } from '../../bridge/types';
 import type { ActiveStateType } from '../../../motions/core/types';
+import { BaseCameraSystem } from '../../bridge/BaseCameraSystem';
+import type { CameraSystemConfig } from '../../bridge/types';
+import { CameraSystem } from '../CameraSystem';
+import type { CameraCalcProps, CameraState } from '../types';
 
 const createDefaultSystemConfig = (): CameraSystemConfig => ({
   mode: 'thirdPerson',
@@ -396,11 +396,10 @@ describe('CameraSystem', () => {
     });
 
     it('BaseCameraSystem.updateConfig으로 modeChange 이벤트를 발생시킬 수 있어야 합니다', () => {
-      const baseSys = system as any;
       const callback = jest.fn();
       system.emitter.on('modeChange', callback);
       // BaseCameraSystem의 updateConfig를 직접 호출
-      BaseCameraSystem.prototype.updateConfig.call(baseSys, { mode: 'firstPerson' });
+      BaseCameraSystem.prototype.updateConfig.call(system, { mode: 'firstPerson' });
       expect(callback).toHaveBeenCalledWith(
         expect.objectContaining({ from: 'thirdPerson', to: 'firstPerson' }),
       );

@@ -294,17 +294,14 @@ describe('MotionSystem', () => {
         initialMetricsSeed.isAccelerating = false;
         initialMetricsSeed.groundContact = false;
 
-        seededSystem.update({
-          deltaTime: 0.016,
-          totalTime: 0.016,
-          frameCount: 1,
-          rigidBody: createMockRigidBody(
-            { x: 20, y: 30, z: 40 },
-            { x: 10, y: 0, z: 0 },
-          ) as unknown as RapierRigidBody,
-          activeState: createMockActiveState(),
-          gameStates: createMockGameStates(),
-        });
+        seededSystem.update(
+          createMotionUpdateContext(
+            createMockRigidBody(
+              { x: 20, y: 30, z: 40 },
+              { x: 10, y: 0, z: 0 },
+            ) as unknown as RapierRigidBody,
+          ),
+        );
         seededSystem.getState().direction.set(1, 0, 0);
         seededSystem.setGrounded(false, createMockActiveState(), createMockGameStates());
 

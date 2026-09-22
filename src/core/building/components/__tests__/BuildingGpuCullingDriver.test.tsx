@@ -1,19 +1,22 @@
-import { act, render } from '@testing-library/react';
 import { useFrame, useThree } from '@react-three/fiber';
+import { act, render } from '@testing-library/react';
 import * as THREE from 'three';
 
-import { useBuildingRenderStateStore } from '../../render/store';
 import { useBuildingGpuCullingStore } from '../../render/cullingStore';
+import { useBuildingRenderStateStore } from '../../render/store';
 import { BuildingGpuCullingDriver } from '../BuildingGpuCullingDriver';
 
 jest.mock('@react-three/fiber', () => ({ useFrame: jest.fn(), useThree: jest.fn() }));
 
+type BufferOptions = { label?: string };
+type BindGroupOptions = { entries: Array<{ binding: number; resource: { buffer: object } }> };
+
 function createDevice(writes: Float32Array[] = []) {
   return {
-    createBuffer: jest.fn((_options: { label?: string }) => ({ destroy: jest.fn() })),
+    createBuffer: jest.fn<{ destroy: jest.Mock }, [BufferOptions]>(() => ({ destroy: jest.fn() })),
     createShaderModule: jest.fn(() => ({})),
     createComputePipeline: () => ({ getBindGroupLayout: () => ({}) }),
-    createBindGroup: jest.fn((_options: { entries: Array<{ binding: number; resource: { buffer: object } }> }) => ({})),
+    createBindGroup: jest.fn<object, [BindGroupOptions]>(() => ({})),
     createCommandEncoder: () => ({
       beginComputePass: () => ({ setPipeline() {}, setBindGroup() {}, dispatchWorkgroups() {}, end() {} }),
       copyBufferToBuffer() {}, finish: () => ({}),

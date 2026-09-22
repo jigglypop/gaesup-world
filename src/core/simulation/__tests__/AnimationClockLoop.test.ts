@@ -28,7 +28,12 @@ function fixture() {
     const callbacks = [...pending.values()]; pending.clear();
     callbacks.forEach(callback => callback(timestamp));
   };
-  return { clock, loop, frame, pending };
+  const firstPending = () => {
+    const callback = [...pending.values()][0];
+    if (!callback) throw new Error('Expected a pending animation frame');
+    return callback;
+  };
+  return { clock, loop, frame, pending, firstPending };
 }
 
 describe('AnimationClockLoop', () => {
@@ -43,9 +48,9 @@ describe('AnimationClockLoop', () => {
   });
 
   it('suspends without losing mounted leases and does not simulate the suspended gap', () => {
-    const { clock, loop, frame, pending } = fixture();
+    const { clock, loop, frame, pending, firstPending } = fixture();
     const a = loop.acquire(); frame(0); frame(1000 / 60);
-    const stale = [...pending.values()][0];
+    const stale = firstPending();
     loop.suspend(); const b = loop.acquire(); a();
     expect(pending.size).toBe(0); expect(loop.consumerCount).toBe(1);
     loop.resume(); loop.resume(); stale(5000);
@@ -56,10 +61,10 @@ describe('AnimationClockLoop', () => {
   });
 
   it('ignores stale callbacks and releases after stop/reacquire inside an update', () => {
-    const { clock, loop, frame, pending } = fixture();
+    const { clock, loop, frame, pending, firstPending } = fixture();
     const releaseOld = loop.acquire(); let releaseNew: (() => void) | undefined;
     clock.addSystem({ id: 'restart', phase: 'simulation', update: () => { loop.stop(); releaseNew = loop.acquire(); } });
-    frame(0); const stale = [...pending.values()][0]; frame(1000 / 60);
+    frame(0); const stale = firstPending(); frame(1000 / 60);
     expect(pending.size).toBe(1); expect(loop.consumerCount).toBe(1);
     releaseOld(); stale(100);
     expect(pending.size).toBe(1); expect(clock.tick).toBe(1);

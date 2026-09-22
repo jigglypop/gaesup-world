@@ -1,8 +1,13 @@
 import React from 'react';
+
+import { useThree } from '@react-three/fiber';
 import { renderHook, act } from '@testing-library/react';
-import * as THREE from 'three';
-import { createTerrainBlockMaterial, findTerrainBlockMaterial, useBuildingEditor } from '../useBuildingEditor';
+
 import { useBuildingStore } from '../../stores/buildingStore';
+import type { TileGroupConfig } from '../../types';
+import { createTerrainBlockMaterial, findTerrainBlockMaterial, useBuildingEditor } from '../useBuildingEditor';
+
+type MutableVector3 = { x: number; y: number; z: number };
 
 // THREE.js 모킹: 훅이 모듈 로드 시 즉시 Vector2/Vector3/Plane 인스턴스를 만든다.
 // 따라서 .set 등 호출되는 메서드를 갖춘 stub 을 반환해야 한다.
@@ -44,7 +49,7 @@ jest.mock('@react-three/fiber', () => ({
       setFromCamera: jest.fn(),
       ray: {
         // Match THREE.Ray.intersectPlane(plane, target): mutate target and return it.
-        intersectPlane: jest.fn((_plane: any, target: any) => {
+        intersectPlane: jest.fn((_plane: unknown, target: MutableVector3 | null) => {
           if (target) {
             target.x = 10;
             target.y = 0;
@@ -59,8 +64,7 @@ jest.mock('@react-three/fiber', () => ({
 
 // BuildingStore 모킹
 jest.mock('../../stores/buildingStore', () => {
-  const useBuildingStore = jest.fn();
-  (useBuildingStore as any).getState = jest.fn();
+  const useBuildingStore = Object.assign(jest.fn(), { getState: jest.fn() });
   return { useBuildingStore, useBuildingStoreApi: () => useBuildingStore };
 });
 
@@ -139,7 +143,7 @@ describe('useBuildingEditor 훅 테스트', () => {
 
   beforeEach(() => {
     mockStore = useBuildingStore as unknown as jest.Mock & { getState: jest.Mock };
-    mockUseThree = require('@react-three/fiber').useThree;
+    mockUseThree = useThree as unknown as jest.Mock;
 
     currentState = buildDefaultState();
     setStoreState();
@@ -501,7 +505,7 @@ describe('useBuildingEditor 훅 테스트', () => {
     });
 
     test('박스 위치 아래 모래나 눈 타일 색상을 블록 재질로 샘플링해야 함', () => {
-      const tileGroups = new Map([
+      const tileGroups = new Map<string, TileGroupConfig>([
         ['sand-floor', {
           id: 'sand-floor',
           name: 'Sand',

@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
-import { WorldInputBackend } from '../WorldInputBackend';
 import { createMemoryInputBackend, type InputBackend, type InputStateListener } from '../../interactions/core/adapter';
 import { logger } from '../../utils/logger';
+import { WorldInputBackend } from '../WorldInputBackend';
 
 test('one source subscription supplies multiple consumers and all four input channels', () => {
   const source = createMemoryInputBackend(); const subscribe = jest.spyOn(source, 'subscribe');

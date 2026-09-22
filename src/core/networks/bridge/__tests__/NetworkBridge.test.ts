@@ -1,11 +1,13 @@
-import { NetworkBridge } from '../NetworkBridge';
-import { NetworkCommand, NetworkConfig } from '../../types';
 import * as THREE from 'three';
+
+import { NetworkSystem } from '../../core/NetworkSystem';
+import { NetworkCommand, NetworkConfig } from '../../types';
+import { NetworkBridge } from '../NetworkBridge';
 
 // NetworkSystem 모킹
 jest.mock('../../core/NetworkSystem', () => {
   return {
-    NetworkSystem: jest.fn().mockImplementation((config?: NetworkConfig) => ({
+    NetworkSystem: jest.fn().mockImplementation(() => ({
       updateConfig: jest.fn(),
       start: jest.fn(),
       executeCommand: jest.fn(),
@@ -228,7 +230,7 @@ describe('NetworkBridge', () => {
       const state = bridge.getSystemState('main');
       
       expect(state).toBeDefined();
-      expect(typeof state.isRunning).toBe('boolean');
+      expect(typeof state?.isRunning).toBe('boolean');
     });
 
     test('존재하지 않는 시스템 조회', () => {
@@ -245,32 +247,33 @@ describe('NetworkBridge', () => {
       const invalidCommand = {
         type: 'invalidCommand',
         data: {}
-      } as any;
+      };
 
       // 에러 없이 무시되어야 함
       expect(() => {
+        // @ts-expect-error -- unknown command types from untyped callers must be ignored at runtime
         bridge.execute('main', invalidCommand);
       }).not.toThrow();
     });
 
     test('엔진 생성 실패 처리', () => {
       // NetworkSystem 생성자에서 에러 발생하도록 모킹
-      const NetworkSystemMock = require('../../core/NetworkSystem').NetworkSystem;
-      NetworkSystemMock.mockImplementationOnce(() => {
+      jest.mocked(NetworkSystem).mockImplementationOnce(() => {
         throw new Error('System creation failed');
       });
 
       // 에러 로그가 출력되고 null이 반환되어야 함
-      console.error = jest.fn();
+      const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
       
       bridge.register('error-test');
       const entity = bridge.getEngine('error-test');
       
-      expect(console.error).toHaveBeenCalledWith(
+      expect(consoleError).toHaveBeenCalledWith(
         '[NetworkBridge] Failed to build engine:',
         expect.any(Error)
       );
       expect(entity).toBeUndefined();
+      consoleError.mockRestore();
     });
   });
 

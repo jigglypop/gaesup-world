@@ -1,9 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import type { AssetSource } from '../types';
 import { SEED_ASSETS } from '../data/seedAssets';
 import { useAssetStore } from '../stores/assetStore';
+import type { AssetSource } from '../types';
 
 const ROOT = path.resolve(__dirname, '../../../..');
 

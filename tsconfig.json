@@ -54,12 +54,10 @@
       "@core/*": ["./src/core/*"],
       "@hooks/*": ["./src/core/hooks/*"],
       "@stores/*": ["./src/core/stores/*"],
-      "@components/*": ["./src/core/components/*"],
       "@constants/*": ["./src/core/constants/*"],
       "@utils/*": ["./src/core/utils/*"],
       "@types/*": ["./src/core/types/*"],
-      "@motions/*": ["./src/core/motions/*"],
-      "@debug/*": ["./src/core/debug/*"]
+      "@motions/*": ["./src/core/motions/*"]
     },
     "emitDecoratorMetadata": false
   },

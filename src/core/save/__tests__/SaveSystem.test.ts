@@ -30,9 +30,9 @@ describe('SaveSystem', () => {
     expect(write).toHaveBeenCalledTimes(1);
     release();
     await Promise.all([first, second]);
-    expect((await adapter.read('main'))?.domains.world).toBe(2);
+    expect((await adapter.read('main'))?.domains['world']).toBe(2);
     await sys.save();
-    expect((await adapter.read('main'))?.domains.world).toBe(3);
+    expect((await adapter.read('main'))?.domains['world']).toBe(3);
   });
 
   test.each(['save', 'remove'] as const)('orders a pending %s before the next mutation of the same slot', async (operation) => {

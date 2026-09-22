@@ -23,11 +23,11 @@ test('buying and selling use named controls and Korean currency without submitti
   try {
     expect(screen.getByRole('dialog', { name: '상점' })).toBeInTheDocument();
     expect(screen.getByText('100 벨')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '구매', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '구매' })).toHaveAttribute('aria-pressed', 'true');
     fireEvent.click(screen.getByRole('button', { name: '사과 구매' }));
     expect(screen.getByText('90 벨')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '사과 구매' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: '판매', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: '판매' }));
     fireEvent.click(screen.getByRole('button', { name: '사과 판매' }));
     expect(screen.getByText('95 벨')).toBeInTheDocument();
     expect(screen.getByText('판매할 아이템이 없습니다.')).toBeInTheDocument();

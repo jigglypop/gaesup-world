@@ -103,7 +103,8 @@ export class DIContainer {
       }
     })
 
-    const instance = new ClassConstructor(...params)
+    // Parameter types come from reflection metadata and are only known at runtime.
+    const instance = new (ClassConstructor as new (...args: unknown[]) => T)(...params)
     this.autowireProperties(instance as object)
     return instance
   }

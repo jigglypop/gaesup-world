@@ -9,6 +9,8 @@ import { getSharedWaterNormals } from '../../building/components/mesh/water/norm
 /** Bounded surface cost: two filtered normal samples, no reflection render target. */
 export function createToonWaterMaterial(normalMap: Texture = getSharedWaterNormals()) {
   const time = uniform(0);
+  /** Unlit surface multiplier so day/night scenes can dim the water without relighting it. */
+  const brightness = uniform(1);
   const p = positionGeometry;
   const wave = sin(p.x.mul(0.55).add(time.mul(0.85))).mul(0.085)
     .add(sin(p.y.mul(0.78).sub(time.mul(1.05)).add(p.x.mul(0.33))).mul(0.055))
@@ -27,7 +29,7 @@ export function createToonWaterMaterial(normalMap: Texture = getSharedWaterNorma
     const highlight = pow(max(dot(n, normalize(view.add(normalize(vec3(-0.5, 0.9, -0.3))))), 0), 96);
     const tint = clamp(waveHeight.mul(1.1).add(n.x.mul(0.28)).add(0.42), 0, 1);
     const base = mix(uniform(new Color('#176180')), uniform(new Color('#48b9b4')), tint);
-    return mix(base, vec3(0.48, 0.72, 0.78), fresnel.mul(0.6)).add(highlight.mul(0.38));
+    return mix(base, vec3(0.48, 0.72, 0.78), fresnel.mul(0.6)).add(highlight.mul(0.38)).mul(brightness);
   })();
-  return { material, time };
+  return { material, time, brightness };
 }

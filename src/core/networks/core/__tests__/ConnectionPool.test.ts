@@ -210,8 +210,8 @@ describe('ConnectionPool', () => {
       }
 
       // 처음 3개 연결 해제 (풀로 반환됨)
-      for (let i = 0; i < 3; i++) {
-        connectionPool.releaseConnection(connections[i].id);
+      for (const connection of connections.slice(0, 3)) {
+        connectionPool.releaseConnection(connection.id);
       }
 
       const beforeClear = connectionPool.getPoolStats();
@@ -240,7 +240,7 @@ describe('ConnectionPool', () => {
 
       // 연결 생성
       const conn1 = connectionPool.getConnection('node1', 'node2');
-      const conn2 = connectionPool.getConnection('node3', 'node4');
+      connectionPool.getConnection('node3', 'node4');
 
       stats = connectionPool.getPoolStats();
       expect(stats.active).toBe(2);
@@ -268,8 +268,8 @@ describe('ConnectionPool', () => {
       }
 
       // 마지막 2개 연결 해제 (풀로 반환)
-      for (let i = 3; i < 5; i++) {
-        pool.releaseConnection(connections[i].id);
+      for (const connection of connections.slice(3, 5)) {
+        pool.releaseConnection(connection.id);
       }
 
       const stats = pool.getPoolStats();

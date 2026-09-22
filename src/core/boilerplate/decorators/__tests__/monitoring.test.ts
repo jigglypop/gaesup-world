@@ -1,6 +1,6 @@
 import 'reflect-metadata';
-import { Profile, Log, MemoryProfile, RateLimit, Hook } from '../monitoring';
 import { logger } from '../../../utils/logger';
+import { Profile, Log, MemoryProfile, RateLimit, Hook } from '../monitoring';
 
 // Mock dependencies
 jest.mock('../../../utils/logger');
@@ -471,8 +471,11 @@ describe('Monitoring Decorators', () => {
       expect(afterHook).toHaveBeenCalledTimes(1);
 
       // Verify order of execution
-      const callOrder = [beforeHook, afterHook].map(fn => fn.mock.invocationCallOrder[0]);
-      expect(callOrder[0]).toBeLessThan(callOrder[1]);
+      const [beforeOrder] = beforeHook.mock.invocationCallOrder;
+      const [afterOrder] = afterHook.mock.invocationCallOrder;
+      expect(beforeOrder).toBeDefined();
+      expect(afterOrder).toBeDefined();
+      expect(beforeOrder!).toBeLessThan(afterOrder!);
     });
 
     test('should execute only before hook if after is not provided', () => {

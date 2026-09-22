@@ -205,7 +205,7 @@ export function useManagedEntity<
 >(
   bridge: AbstractBridge<EngineType, SnapshotType, CommandType> | null,
   id: string,
-  ref: RefObject<EngineType>,
+  ref: RefObject<EngineType | null>,
   options: UseManagedEntityOptions<EngineType, SnapshotType, CommandType> = {}
 ): ManagedEntity<EngineType, SnapshotType, CommandType> | null {
   const [entity, setEntity] = useState<ManagedEntity<EngineType, SnapshotType, CommandType> | null>(null);
@@ -314,7 +314,7 @@ export function useBatchManagedEntities<
   CommandType
 >(
   bridge: AbstractBridge<EngineType, SnapshotType, CommandType> | null,
-  entries: Array<{ id: string; ref: RefObject<EngineType> }>,
+  entries: Array<{ id: string; ref: RefObject<EngineType | null> }>,
   options: UseManagedEntityOptions<EngineType, SnapshotType, CommandType> = {}
 ): Array<ManagedEntity<EngineType, SnapshotType, CommandType> | null> {
   const recordsRef = useRef(

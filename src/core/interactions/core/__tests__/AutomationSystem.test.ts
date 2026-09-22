@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { Vector3 } from 'three';
 
 import { AutomationSystem } from '../AutomationSystem';
 
@@ -42,14 +43,14 @@ describe('AutomationSystem', () => {
 
   describe('addAction', () => {
     it('액션을 큐에 추가하고 ID를 반환해야 합니다', () => {
-      const id = system.addAction({ type: 'move', target: { x: 10, y: 0, z: 10 } });
+      const id = system.addAction({ type: 'move', target: new Vector3(10, 0, 10) });
       expect(typeof id).toBe('string');
       expect(id).toMatch(/^action_/);
       expect(system.getState().queue.actions).toHaveLength(1);
     });
 
     it('추가된 액션에 id와 timestamp가 설정되어야 합니다', () => {
-      system.addAction({ type: 'click', target: { x: 0, y: 0, z: 0 } });
+      system.addAction({ type: 'click', target: new Vector3(0, 0, 0) });
       const action = system.getState().queue.actions[0];
       expect(action).toBeDefined();
       expect(action!.id).toBeDefined();
@@ -57,21 +58,21 @@ describe('AutomationSystem', () => {
     });
 
     it('여러 액션을 순서대로 추가할 수 있어야 합니다', () => {
-      system.addAction({ type: 'move', target: { x: 1, y: 0, z: 0 } });
+      system.addAction({ type: 'move', target: new Vector3(1, 0, 0) });
       system.addAction({ type: 'wait', duration: 500 });
-      system.addAction({ type: 'click', target: { x: 2, y: 0, z: 0 } });
+      system.addAction({ type: 'click', target: new Vector3(2, 0, 0) });
       expect(system.getState().queue.actions).toHaveLength(3);
     });
 
     it('actionAdded 이벤트가 발생해야 합니다', () => {
       const callback = jest.fn();
       system.addEventListener('actionAdded', callback);
-      system.addAction({ type: 'move', target: { x: 0, y: 0, z: 0 } });
+      system.addAction({ type: 'move', target: new Vector3(0, 0, 0) });
       expect(callback).toHaveBeenCalledTimes(1);
     });
 
     it('메트릭의 queueLength가 업데이트되어야 합니다', () => {
-      system.addAction({ type: 'move', target: { x: 0, y: 0, z: 0 } });
+      system.addAction({ type: 'move', target: new Vector3(0, 0, 0) });
       system.addAction({ type: 'wait', duration: 100 });
       expect(system.getMetrics().queueLength).toBe(2);
     });
@@ -79,7 +80,7 @@ describe('AutomationSystem', () => {
 
   describe('removeAction', () => {
     it('ID로 액션을 제거하고 true를 반환해야 합니다', () => {
-      const id = system.addAction({ type: 'move', target: { x: 0, y: 0, z: 0 } });
+      const id = system.addAction({ type: 'move', target: new Vector3(0, 0, 0) });
       const result = system.removeAction(id);
       expect(result).toBe(true);
       expect(system.getState().queue.actions).toHaveLength(0);
@@ -93,7 +94,7 @@ describe('AutomationSystem', () => {
     it('actionRemoved 이벤트가 발생해야 합니다', () => {
       const callback = jest.fn();
       system.addEventListener('actionRemoved', callback);
-      const id = system.addAction({ type: 'move', target: { x: 0, y: 0, z: 0 } });
+      const id = system.addAction({ type: 'move', target: new Vector3(0, 0, 0) });
       system.removeAction(id);
       expect(callback).toHaveBeenCalledWith(id);
     });
@@ -101,7 +102,7 @@ describe('AutomationSystem', () => {
 
   describe('clearQueue', () => {
     it('큐를 비우고 인덱스를 초기화해야 합니다', () => {
-      system.addAction({ type: 'move', target: { x: 0, y: 0, z: 0 } });
+      system.addAction({ type: 'move', target: new Vector3(0, 0, 0) });
       system.addAction({ type: 'wait', duration: 100 });
       system.clearQueue();
       expect(system.getState().queue.actions).toHaveLength(0);
@@ -170,7 +171,7 @@ describe('AutomationSystem', () => {
     it('move 액션이 moveRequested 이벤트를 발생시켜야 합니다', async () => {
       const callback = jest.fn();
       system.addEventListener('moveRequested', callback);
-      const target = { x: 10, y: 0, z: 10 };
+      const target = new Vector3(10, 0, 10);
       system.addAction({ type: 'move', target });
       await system.start();
       expect(callback).toHaveBeenCalledWith(target);
@@ -179,7 +180,7 @@ describe('AutomationSystem', () => {
     it('click 액션이 clickRequested 이벤트를 발생시켜야 합니다', async () => {
       const callback = jest.fn();
       system.addEventListener('clickRequested', callback);
-      const target = { x: 5, y: 0, z: 5 };
+      const target = new Vector3(5, 0, 5);
       system.addAction({ type: 'click', target });
       await system.start();
       expect(callback).toHaveBeenCalledWith(target);

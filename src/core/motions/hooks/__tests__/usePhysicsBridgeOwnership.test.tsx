@@ -1,4 +1,4 @@
-import { createRef, type RefObject } from 'react';
+import type { ReactNode, RefObject } from 'react';
 
 import type { RootState } from '@react-three/fiber';
 import type { RapierRigidBody } from '@react-three/rapier';
@@ -8,16 +8,15 @@ import { createInteractionInputAdapter } from '@core/interactions/core';
 import { InMemoryEventBus } from '@core/plugins';
 import { useGaesupStore } from '@stores/gaesupStore';
 
+import { GaesupRuntimeProvider } from '../../../runtime/context';
+import { createGaesupRuntime } from '../../../runtime/createGaesupRuntime';
 import { PhysicsBridge } from '../../bridge/PhysicsBridge';
 import type { PhysicsConfigType } from '../../core/config';
 import type { MotionsRuntime } from '../../plugin';
+import { createMotionsPlugin } from '../../plugin';
 import type { PhysicsCalcProps, PhysicsState } from '../../types';
 import { usePhysicsBridge, type UsePhysicsBridgeOptions } from '../usePhysicsBridge';
 import { getGlobalStateManager } from '../useStateSystem';
-import { createGaesupRuntime } from '../../../runtime/createGaesupRuntime';
-import { GaesupRuntimeProvider } from '../../../runtime/context';
-import { createMotionsPlugin } from '../../plugin';
-import type { ReactNode } from 'react';
 
 type FrameCallback = (state: RootState, delta: number) => void;
 
@@ -50,14 +49,14 @@ function createRuntime(physicsBridge = new PhysicsBridge()): MotionsRuntime {
 }
 
 function createRigidBodyRef(): RefObject<RapierRigidBody> {
-  const ref = createRef<RapierRigidBody>();
-  ref.current = {
-    lockRotations: jest.fn(),
-    setTranslation: jest.fn(),
-    setLinvel: jest.fn(),
-    setAngvel: jest.fn(),
-  } as unknown as RapierRigidBody;
-  return ref;
+  return {
+    current: {
+      lockRotations: jest.fn(),
+      setTranslation: jest.fn(),
+      setLinvel: jest.fn(),
+      setAngvel: jest.fn(),
+    } as unknown as RapierRigidBody,
+  };
 }
 
 function createOptions(

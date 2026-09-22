@@ -1,7 +1,8 @@
+import { renderHook } from '@testing-library/react';
+
 import { AbstractBridge } from '../bridge/AbstractBridge';
 import { ManagedEntity } from '../entity/ManagedEntity';
 import { useBaseLifecycle } from '../hooks/useBaseLifecycle';
-import { renderHook } from '@testing-library/react';
 import { IDisposable } from '../types';
 
 type Engine = { value: number } & IDisposable;

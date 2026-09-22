@@ -27,8 +27,8 @@ describe('project settings', () => {
       enabled: true,
       bloom: true,
     });
-    expect(settings.input.bindings.interact).toEqual([{ device: 'keyboard', code: 'KeyF' }]);
-    expect(settings.input.bindings.moveForward).toEqual(DEFAULT_PROJECT_SETTINGS.input.bindings.moveForward);
+    expect(settings.input.bindings['interact']).toEqual([{ device: 'keyboard', code: 'KeyF' }]);
+    expect(settings.input.bindings['moveForward']).toEqual(DEFAULT_PROJECT_SETTINGS.input.bindings['moveForward']);
     expect(settings.build.sourceMaps).toBe(true);
   });
 

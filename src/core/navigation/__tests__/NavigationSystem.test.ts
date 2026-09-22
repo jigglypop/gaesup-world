@@ -1,9 +1,13 @@
 import { loadCoreWasm, type GaesupCoreWasmExports } from '../../wasm/loader';
-import { NavigationSystem } from '../NavigationSystem';
+import { NavigationSystem, type NavigationConfig } from '../NavigationSystem';
+
+type AStarFindPath = GaesupCoreWasmExports['astar_find_path'];
+type AStarFindPathWeighted = GaesupCoreWasmExports['astar_find_path_weighted'];
 
 type MockWasm = GaesupCoreWasmExports & {
-  astar_find_path: jest.MockedFunction<GaesupCoreWasmExports['astar_find_path']>;
-  astar_find_path_weighted: jest.MockedFunction<GaesupCoreWasmExports['astar_find_path_weighted']>;
+  alloc_u32: jest.MockedFunction<GaesupCoreWasmExports['alloc_u32']>;
+  astar_find_path: jest.MockedFunction<AStarFindPath>;
+  astar_find_path_weighted: jest.MockedFunction<AStarFindPathWeighted>;
 };
 
 let mockWasm: MockWasm | null = null;
@@ -23,7 +27,7 @@ const TEST_CONFIG = {
   maxStepHeight: 0.75,
 };
 
-function createNavigation(config = TEST_CONFIG): NavigationSystem {
+function createNavigation(config: Partial<NavigationConfig> = TEST_CONFIG): NavigationSystem {
   return NavigationSystem.getInstance(config);
 }
 
@@ -74,7 +78,7 @@ function createMockWasm(options: { omitWeighted?: boolean } = {}): MockWasm {
     spatial_grid_query: jest.fn(),
     update_snow_particles: jest.fn(),
     update_fire_particles: jest.fn(),
-    astar_find_path: jest.fn((
+    astar_find_path: jest.fn<number, Parameters<AStarFindPath>>((
       _gridPtr,
       _gridWidth,
       _gridHeight,
@@ -84,7 +88,7 @@ function createMockWasm(options: { omitWeighted?: boolean } = {}): MockWasm {
       goalZ,
       outPathPtr,
     ) => writePath(outPathPtr, [[startX, startZ], [goalX, goalZ]])),
-    astar_find_path_weighted: jest.fn((
+    astar_find_path_weighted: jest.fn<number, Parameters<AStarFindPathWeighted>>((
       _costPtr,
       _gridWidth,
       _gridHeight,
@@ -353,7 +357,9 @@ describe('NavigationSystem', () => {
     navigation.setCost(1.5, 0.5, 50);
 
     const path = navigation.findPath(0.5, 0.5, 4.5, 0.5, 0, true);
-    const [costPtr, gridWidth, gridHeight] = mockWasm.astar_find_path_weighted.mock.calls[0] ?? [];
+    const weightedCall = mockWasm.astar_find_path_weighted.mock.calls[0];
+    if (!weightedCall) throw new Error('weighted WASM pathfinding was not called');
+    const [costPtr, gridWidth, gridHeight] = weightedCall;
 
     expect(costPtr).toEqual(expect.any(Number));
     expect(gridWidth).toBe(6);

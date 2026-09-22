@@ -1,15 +1,30 @@
+import { useFrame, type RootState } from '@react-three/fiber';
 import { renderHook } from '@testing-library/react';
-import { useBaseFrame, useConditionalFrame } from '../useBaseFrame';
+
 import { AbstractBridge } from '../../bridge/AbstractBridge';
-import { IDisposable, UseBaseFrameOptions } from '../../types';
+import { IDisposable, RuntimeValue, UseBaseFrameOptions } from '../../types';
+import { useBaseFrame, useConditionalFrame } from '../useBaseFrame';
 
 // useFrame mock
 jest.mock('@react-three/fiber', () => ({
   useFrame: jest.fn()
 }));
 
-import { useFrame } from '@react-three/fiber';
-const mockUseFrame = useFrame as unknown as jest.Mock;
+const mockUseFrame = jest.mocked(useFrame);
+type FrameCallback = Parameters<typeof useFrame>[0];
+
+function getFrameHandler(callIndex = 0): FrameCallback {
+  const call = mockUseFrame.mock.calls[callIndex];
+  if (!call) {
+    throw new Error(`useFrame was not called ${callIndex + 1} time(s)`);
+  }
+  return call[0];
+}
+
+// 프레임 핸들러는 clock.elapsedTime만 읽는다
+function frameState(elapsedTime: number): RootState {
+  return { clock: { elapsedTime } } as unknown as RootState;
+}
 
 // Mock 클래스들
 class MockEngine implements IDisposable {
@@ -20,10 +35,23 @@ class MockEngine implements IDisposable {
   }
 }
 
-class MockBridge extends AbstractBridge<MockEngine, any, any> {
-  register = jest.fn();
-  unregister = jest.fn();
-  notifyListeners = jest.fn();
+type MockSnapshot = { disposed: boolean };
+type MockCommand = { type: 'noop' };
+
+class MockBridge extends AbstractBridge<MockEngine, MockSnapshot, MockCommand> {
+  override register = jest.fn<void, [id: string, ...args: RuntimeValue[]]>();
+  override unregister = jest.fn<void, [id: string]>();
+  override notifyListeners = jest.fn<void, [id: string]>();
+
+  protected buildEngine(): MockEngine {
+    return new MockEngine();
+  }
+
+  protected executeCommand(): void {}
+
+  protected createSnapshot(engine: MockEngine): MockSnapshot {
+    return { disposed: engine.disposed };
+  }
 }
 
 // document.hidden mock
@@ -41,7 +69,7 @@ Object.defineProperty(performance, 'now', {
 
 describe('useBaseFrame', () => {
   let mockBridge: MockBridge;
-  let mockCallback: jest.Mock;
+  let mockCallback: jest.Mock<void, []>;
 
   beforeEach(() => {
     mockBridge = new MockBridge();
@@ -73,8 +101,8 @@ describe('useBaseFrame', () => {
       expect(mockUseFrame).toHaveBeenCalled();
       
       // 프레임 핸들러를 실행해보면 아무것도 호출되지 않아야 함
-      const frameHandler = mockUseFrame.mock.calls[0][0];
-      frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
+      const frameHandler = getFrameHandler();
+      frameHandler(frameState(1), 0.016);
       
       expect(mockBridge.notifyListeners).not.toHaveBeenCalled();
       expect(mockCallback).not.toHaveBeenCalled();
@@ -83,8 +111,8 @@ describe('useBaseFrame', () => {
     test('프레임 핸들러가 브리지 리스너를 호출해야 함', () => {
       renderHook(() => useBaseFrame(mockBridge, 'test-id', mockCallback));
       
-      const frameHandler = mockUseFrame.mock.calls[0][0];
-      frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
+      const frameHandler = getFrameHandler();
+      frameHandler(frameState(1), 0.016);
       
       expect(mockBridge.notifyListeners).toHaveBeenCalledWith('test-id');
     });
@@ -92,8 +120,8 @@ describe('useBaseFrame', () => {
     test('콜백이 있으면 호출되어야 함', () => {
       renderHook(() => useBaseFrame(mockBridge, 'test-id', mockCallback));
       
-      const frameHandler = mockUseFrame.mock.calls[0][0];
-      frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
+      const frameHandler = getFrameHandler();
+      frameHandler(frameState(1), 0.016);
       
       expect(mockCallback).toHaveBeenCalled();
     });
@@ -101,8 +129,8 @@ describe('useBaseFrame', () => {
     test('콜백이 없어도 브리지 리스너는 호출되어야 함', () => {
       renderHook(() => useBaseFrame(mockBridge, 'test-id'));
       
-      const frameHandler = mockUseFrame.mock.calls[0][0];
-      frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
+      const frameHandler = getFrameHandler();
+      frameHandler(frameState(1), 0.016);
       
       expect(mockBridge.notifyListeners).toHaveBeenCalledWith('test-id');
     });
@@ -122,8 +150,8 @@ describe('useBaseFrame', () => {
       
       renderHook(() => useBaseFrame(mockBridge, 'test-id', mockCallback, options));
       
-      const frameHandler = mockUseFrame.mock.calls[0][0];
-      frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
+      const frameHandler = getFrameHandler();
+      frameHandler(frameState(1), 0.016);
       
       expect(mockBridge.notifyListeners).not.toHaveBeenCalled();
       expect(mockCallback).not.toHaveBeenCalled();
@@ -135,8 +163,8 @@ describe('useBaseFrame', () => {
       
       renderHook(() => useBaseFrame(mockBridge, 'test-id', mockCallback, options));
       
-      const frameHandler = mockUseFrame.mock.calls[0][0];
-      frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
+      const frameHandler = getFrameHandler();
+      frameHandler(frameState(1), 0.016);
       
       expect(mockBridge.notifyListeners).not.toHaveBeenCalled();
       expect(mockCallback).not.toHaveBeenCalled();
@@ -148,8 +176,8 @@ describe('useBaseFrame', () => {
       
       renderHook(() => useBaseFrame(mockBridge, 'test-id', mockCallback, options));
       
-      const frameHandler = mockUseFrame.mock.calls[0][0];
-      frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
+      const frameHandler = getFrameHandler();
+      frameHandler(frameState(1), 0.016);
       
       expect(mockBridge.notifyListeners).toHaveBeenCalledWith('test-id');
       expect(mockCallback).toHaveBeenCalled();
@@ -162,18 +190,18 @@ describe('useBaseFrame', () => {
       
       renderHook(() => useBaseFrame(mockBridge, 'test-id', mockCallback, options));
       
-      const frameHandler = mockUseFrame.mock.calls[0][0];
+      const frameHandler = getFrameHandler();
       
       // 첫 번째 호출 (시간: 16ms)
-      frameHandler({ clock: { elapsedTime: 0.016 } }, 0.016);
+      frameHandler(frameState(0.016), 0.016);
       expect(mockCallback).toHaveBeenCalledTimes(1);
       
       // 두 번째 호출 (시간: 32ms, 간격: 16ms < 100ms)
-      frameHandler({ clock: { elapsedTime: 0.032 } }, 0.016);
+      frameHandler(frameState(0.032), 0.016);
       expect(mockCallback).toHaveBeenCalledTimes(1); // 호출되지 않음
       
       // 시간을 충분히 진행시킴 (시간: 116ms 이상)
-      frameHandler({ clock: { elapsedTime: 0.116 } }, 0.016);
+      frameHandler(frameState(0.116), 0.016);
       expect(mockCallback).toHaveBeenCalledTimes(2); // 다시 호출됨
     });
 
@@ -182,11 +210,11 @@ describe('useBaseFrame', () => {
       
       renderHook(() => useBaseFrame(mockBridge, 'test-id', mockCallback, options));
       
-      const frameHandler = mockUseFrame.mock.calls[0][0];
+      const frameHandler = getFrameHandler();
       
-      frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
-      frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
-      frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
+      frameHandler(frameState(1), 0.016);
+      frameHandler(frameState(1), 0.016);
+      frameHandler(frameState(1), 0.016);
       
       expect(mockCallback).toHaveBeenCalledTimes(3);
     });
@@ -201,11 +229,11 @@ describe('useBaseFrame', () => {
         { initialProps: mockBridge }
       );
       
-      const initialHandler = mockUseFrame.mock.calls[0][0];
+      const initialHandler = getFrameHandler(0);
       
       rerender(mockBridge2);
       
-      const newHandler = mockUseFrame.mock.calls[1][0];
+      const newHandler = getFrameHandler(1);
       expect(newHandler).not.toBe(initialHandler);
     });
 
@@ -217,11 +245,11 @@ describe('useBaseFrame', () => {
         { initialProps: mockCallback }
       );
       
-      const initialHandler = mockUseFrame.mock.calls[0][0];
+      const initialHandler = getFrameHandler(0);
       
       rerender(callback2);
       
-      const newHandler = mockUseFrame.mock.calls[1][0];
+      const newHandler = getFrameHandler(1);
       expect(newHandler).not.toBe(initialHandler);
     });
 
@@ -230,11 +258,11 @@ describe('useBaseFrame', () => {
       
       const { rerender } = renderHook(() => useBaseFrame(mockBridge, 'test-id', mockCallback, options));
 
-      const initialHandler = mockUseFrame.mock.calls[0][0];
+      const initialHandler = getFrameHandler(0);
 
       rerender();
 
-      const rerenderHandler = mockUseFrame.mock.calls[1][0];
+      const rerenderHandler = getFrameHandler(1);
       expect(rerenderHandler).toBe(initialHandler);
     });
   });
@@ -247,10 +275,10 @@ describe('useBaseFrame', () => {
       
       renderHook(() => useBaseFrame(mockBridge, 'test-id', errorCallback));
       
-      const frameHandler = mockUseFrame.mock.calls[0][0];
+      const frameHandler = getFrameHandler();
       
       expect(() => {
-        frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
+        frameHandler(frameState(1), 0.016);
       }).toThrow('Callback error');
       
       expect(mockBridge.notifyListeners).toHaveBeenCalledWith('test-id');
@@ -263,10 +291,10 @@ describe('useBaseFrame', () => {
       
       renderHook(() => useBaseFrame(mockBridge, 'test-id', mockCallback));
       
-      const frameHandler = mockUseFrame.mock.calls[0][0];
+      const frameHandler = getFrameHandler();
       
       expect(() => {
-        frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
+        frameHandler(frameState(1), 0.016);
       }).toThrow('Bridge error');
       
       // mockCallback이 호출되었는지는 에러 발생 시점에 따라 달라질 수 있음
@@ -277,11 +305,11 @@ describe('useBaseFrame', () => {
     test('프레임 핸들러가 효율적으로 실행되어야 함', () => {
       renderHook(() => useBaseFrame(mockBridge, 'test-id', mockCallback));
       
-      const frameHandler = mockUseFrame.mock.calls[0][0];
+      const frameHandler = getFrameHandler();
       const startTime = performance.now();
       
       for (let i = 0; i < 1000; i++) {
-        frameHandler({ clock: { elapsedTime: i } }, 0.016);
+        frameHandler(frameState(i), 0.016);
       }
       
       const endTime = performance.now();
@@ -293,12 +321,12 @@ describe('useBaseFrame', () => {
       
       renderHook(() => useBaseFrame(mockBridge, 'test-id', mockCallback, options));
       
-      const frameHandler = mockUseFrame.mock.calls[0][0];
+      const frameHandler = getFrameHandler();
       
       // 1000번 호출하지만 throttle로 인해 실제로는 훨씬 적게 실행됨
       for (let i = 0; i < 1000; i++) {
         // elapsedTime is seconds in R3F's clock.
-        frameHandler({ clock: { elapsedTime: i * 0.016 } }, 0.016);
+        frameHandler(frameState(i * 0.016), 0.016);
       }
       
       // With a 16ms "frame" and 100ms throttle, we expect ~140-160 calls.
@@ -309,8 +337,8 @@ describe('useBaseFrame', () => {
 
 describe('useConditionalFrame', () => {
   let mockBridge: MockBridge;
-  let mockCallback: jest.Mock;
-  let mockCondition: jest.Mock;
+  let mockCallback: jest.Mock<void, []>;
+  let mockCondition: jest.Mock<boolean, []>;
 
   beforeEach(() => {
     mockBridge = new MockBridge();
@@ -324,8 +352,8 @@ describe('useConditionalFrame', () => {
     
     renderHook(() => useConditionalFrame(mockBridge, 'test-id', mockCondition, mockCallback));
     
-    const frameHandler = mockUseFrame.mock.calls[0][0];
-    frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
+    const frameHandler = getFrameHandler();
+    frameHandler(frameState(1), 0.016);
     
     expect(mockCondition).toHaveBeenCalled();
     expect(mockCallback).toHaveBeenCalled();
@@ -336,8 +364,8 @@ describe('useConditionalFrame', () => {
     
     renderHook(() => useConditionalFrame(mockBridge, 'test-id', mockCondition, mockCallback));
     
-    const frameHandler = mockUseFrame.mock.calls[0][0];
-    frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
+    const frameHandler = getFrameHandler();
+    frameHandler(frameState(1), 0.016);
     
     expect(mockCondition).toHaveBeenCalled();
     expect(mockCallback).not.toHaveBeenCalled();
@@ -350,10 +378,10 @@ describe('useConditionalFrame', () => {
     
     renderHook(() => useConditionalFrame(mockBridge, 'test-id', mockCondition, mockCallback));
     
-    const frameHandler = mockUseFrame.mock.calls[0][0];
+    const frameHandler = getFrameHandler();
     
     expect(() => {
-      frameHandler({ clock: { elapsedTime: 1 } }, 0.016);
+      frameHandler(frameState(1), 0.016);
     }).toThrow('Condition error');
     
     expect(mockCallback).not.toHaveBeenCalled();

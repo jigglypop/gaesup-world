@@ -1,66 +1,70 @@
 import APIBuilder from "./builder";
+import { readViteServerUrl } from "./env";
+import { adminToken } from "./token";
 import { loginFormType, registerFormType, userType } from "../store/types";
 
 declare global {
   var __GAESUP_SERVER_URL__: string | undefined;
 }
 
-const cache = {
-  get(key: string) {
-    try {
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  },
-  set(key: string, value: string | null | undefined) {
-    try {
-      if (value == null) return;
-      localStorage.setItem(key, value);
-    } catch {
-      // ignore
-    }
-  },
-};
+const DEFAULT_SERVER_URL = "http://localhost:3001";
 
 // Allow runtime override without rebuilding the library/app.
 // Example: `window.__GAESUP_SERVER_URL__ = 'https://api.example.com'`
-const SERVER_URL =
-  globalThis.__GAESUP_SERVER_URL__?.trim() ||
-  import.meta.env.VITE_SERVER_URL?.trim() ||
-  "http://localhost:3001";
+function serverUrl(): string {
+  return globalThis.__GAESUP_SERVER_URL__?.trim() || readViteServerUrl() || DEFAULT_SERVER_URL;
+}
 
-export const tokenAsync = async () => {
-  const token = cache.get("token");
+export function isUserType(value: unknown): value is userType {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as Record<string, unknown>;
+  return typeof candidate["id"] === "string"
+    && typeof candidate["username"] === "string"
+    && Array.isArray(candidate["roles"])
+    && candidate["roles"].every((role) => typeof role === "string");
+}
+
+function requireUser(value: unknown): userType {
+  if (!isUserType(value)) throw new TypeError("Admin API returned an invalid user payload");
+  return { id: value.id, username: value.username, roles: [...value.roles] };
+}
+
+function requireIssuedToken(headers: Record<string, string>): string {
+  const token = headers["token"]?.trim();
+  if (!token) throw new TypeError("Admin API did not issue a session token");
   return token;
-};
+}
 
-export const checkApi = async () => {
+export type AdminSession = { user: userType; token: string };
+
+export const tokenAsync = async () => adminToken.get();
+
+export const checkApi = async (): Promise<userType> => {
   const api = APIBuilder.get(`/auth/check`)
-    .baseURL(SERVER_URL)
+    .baseURL(serverUrl())
     .setAuth()
     .build();
-  const result = await api.call<userType>();
-  const { data } = result;
-  return data;
+  const result = await api.call<unknown>();
+  return requireUser(result.data);
 };
 
-export const loginApi = async (loginForm: loginFormType) => {
+/** Returns the issued session; the caller decides whether it is still current before storing it. */
+export const loginApi = async (loginForm: loginFormType): Promise<AdminSession> => {
   const api = APIBuilder.post(`/auth/login`, loginForm)
-    .baseURL(SERVER_URL)
+    .baseURL(serverUrl())
     .build();
-  const result = await api.call<userType>();
-  const { data } = result;
-  cache.set("token", result.headers['token']);
-  return data;
+  const result = await api.call<unknown>();
+  return { user: requireUser(result.data), token: requireIssuedToken(result.headers) };
 };
 
-export const registerApi = async (registerForm: registerFormType) => {
+export const registerApi = async (registerForm: registerFormType): Promise<AdminSession> => {
   const api = APIBuilder.post(`/auth/register`, registerForm)
-    .baseURL(SERVER_URL)
+    .baseURL(serverUrl())
     .build();
-  const result = await api.call<userType>();
-  const { data } = result;
-  cache.set("token", result.headers['token']);
-  return data;
-}; 
+  const result = await api.call<unknown>();
+  return { user: requireUser(result.data), token: requireIssuedToken(result.headers) };
+};
+
+export const logoutSession = (): void => {
+  adminToken.clear();
+};

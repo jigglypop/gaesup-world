@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { fireEvent, render, screen } from '@testing-library/react';
 
 import { createGaesupRuntime, GaesupRuntimeProvider } from '../../../../runtime';
@@ -101,7 +99,7 @@ describe('EditorLayout runtime component injection', () => {
     );
 
     expect(screen.getAllByText('프로젝트').length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole('button', { name: '장면', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: '장면' }));
     expect(screen.getByText('Scene A')).toBeTruthy();
   });
 

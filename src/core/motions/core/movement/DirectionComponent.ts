@@ -25,6 +25,16 @@ import {
 } from '../../types';
 import type { PhysicsConfigType } from '../config';
 
+/** Steering constants are tuned per 60 Hz tick; other rates scale them by elapsed time. */
+const REFERENCE_TICK_SECONDS = 1 / 60;
+/** Bounds a single long stall so it cannot spin the vehicle by several ticks' worth at once. */
+const MAX_TICK_SCALE = 4;
+const AIRPLANE_TILT_BLEND_PER_TICK = 0.2;
+
+export function steeringTickScale(delta: number | undefined): number {
+  if (delta === undefined || !Number.isFinite(delta)) return 1;
+  return Math.min(Math.max(delta / REFERENCE_TICK_SECONDS, 0), MAX_TICK_SCALE);
+}
 
 export class DirectionComponent {
   private memoManager = MemoizationManager.getInstance();
@@ -104,8 +114,9 @@ export class DirectionComponent {
     const axes = this.getAxes(keyboard, calcProp, false);
     const xAxis = axes.x;
     const zAxis = axes.y;
+    const scale = steeringTickScale(calcProp?.delta ?? physicsState.delta);
 
-    activeState.euler.y -= xAxis * (Math.PI / 64);
+    activeState.euler.y -= xAxis * (Math.PI / 64) * scale;
 
     const { sin: sinY, cos: cosY } = getCachedTrig(activeState.euler.y);
     activeState.direction.set(sinY * zAxis, 0, cosY * zAxis);
@@ -136,12 +147,13 @@ export class DirectionComponent {
     const axes = this.getAxes(keyboard, calcProp, false);
     const upDown = -axes.y;
     const leftRight = -axes.x;
+    const scale = steeringTickScale(calcProp?.delta ?? physicsState.delta);
     if (controlMode === 'chase') {
-      activeState.euler.y += leftRight * angleDelta.y * 0.5;
+      activeState.euler.y += leftRight * angleDelta.y * 0.5 * scale;
     } else {
-      activeState.euler.y += leftRight * angleDelta.y;
+      activeState.euler.y += leftRight * angleDelta.y * scale;
     }
-    this.applyAirplaneRotation(innerGroupRef.current, upDown, leftRight, maxAngle, activeState);
+    this.applyAirplaneRotation(innerGroupRef.current, upDown, leftRight, maxAngle, activeState, scale);
     activeState.direction.set(
       Math.sin(activeState.euler.y) * boost,
       -upDown * boost,
@@ -170,6 +182,7 @@ export class DirectionComponent {
     leftRight: number,
     maxAngle: { x: number; y: number; z: number },
     activeState: ActiveStateType,
+    tickScale = 1,
   ): void {
     const X = maxAngle.x * upDown;
     const Z = -maxAngle.z * leftRight;
@@ -190,7 +203,7 @@ export class DirectionComponent {
     this.tempEuler.set(targetX, 0, targetZ);
     this.tempQuaternion.setFromEuler(innerGroup.rotation);
     this.targetQuaternion.setFromEuler(this.tempEuler);
-    this.tempQuaternion.slerp(this.targetQuaternion, 0.2);
+    this.tempQuaternion.slerp(this.targetQuaternion, 1 - Math.pow(1 - AIRPLANE_TILT_BLEND_PER_TICK, tickScale));
     innerGroup.setRotationFromQuaternion(this.tempQuaternion);
   }
 

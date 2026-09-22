@@ -1,8 +1,9 @@
 import 'reflect-metadata';
 import * as THREE from 'three';
 
-import { MotionService } from '../MotionService';
 import type { GameStatesType } from '@core/world/components/Rideable/types';
+
+import { MotionService } from '../MotionService';
 
 describe('MotionService', () => {
   let service: MotionService;

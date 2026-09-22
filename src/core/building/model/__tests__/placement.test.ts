@@ -1,3 +1,4 @@
+import { createNoOverlapRule, createPlacementEngine } from '../../../placement';
 import {
   buildingCellToWorld,
   blockToPlacementEntry,
@@ -33,7 +34,6 @@ import {
   normalizeQuarterTurnRotation,
 } from '../index';
 import type { TileMeta, WallMeta } from '../index';
-import { createNoOverlapRule, createPlacementEngine } from '../../../placement';
 
 describe('building placement model helpers', () => {
   it.each([
@@ -256,7 +256,7 @@ describe('building placement model helpers', () => {
         subject: entry.subject,
         coord: entry.coord,
         footprint: entry.footprint,
-        rotation: entry.rotation,
+        ...(entry.rotation === undefined ? {} : { rotation: entry.rotation }),
       });
     }
 

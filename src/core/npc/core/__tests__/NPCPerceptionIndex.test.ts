@@ -1,6 +1,6 @@
+import type { NPCInstance } from '../../types';
 import { createNPCObservation } from '../brain';
 import { NPCPerceptionIndex } from '../NPCPerceptionIndex';
-import type { NPCInstance } from '../../types';
 
 const npc = (id: string, position: [number, number, number]): NPCInstance => ({ id, templateId: 'lab', name: id, position, rotation: [0, 0, 0], scale: [1, 1, 1] });
 

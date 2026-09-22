@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+
 import { SpatialGrid, SpatialGridOptions } from '../SpatialGrid';
 
 describe('SpatialGrid', () => {
@@ -204,7 +205,7 @@ describe('SpatialGrid', () => {
       spatialGrid.remove('temp');
       
       // Cell should be cleaned up (internal implementation detail)
-      const cellsMap = (spatialGrid as any).cells;
+      const cellsMap = spatialGrid['cells'];
       const zigZag = (n: number) => (n >= 0 ? n * 2 : (-n * 2) - 1);
       const pair = (a: number, b: number) => {
         const A = zigZag(a);

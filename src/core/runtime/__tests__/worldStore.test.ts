@@ -1,11 +1,11 @@
 import { Vector3 } from 'three';
 
-import { createGaesupRuntime } from '../createGaesupRuntime';
-import { createGaesupStore, useGaesupStore } from '../../stores/gaesupStore';
+import { requestCameraCloseUp } from '../../camera/closeUp';
 import { createCameraPlugin } from '../../camera/plugin';
 import { SaveSystem } from '../../save/core/SaveSystem';
 import type { SaveBlob } from '../../save/types';
-import { requestCameraCloseUp } from '../../camera/closeUp';
+import { createGaesupStore, useGaesupStore } from '../../stores/gaesupStore';
+import { createGaesupRuntime } from '../createGaesupRuntime';
 
 test('world stores do not share mutable camera defaults or world maps', () => {
   const a = createGaesupStore(); const b = createGaesupStore();

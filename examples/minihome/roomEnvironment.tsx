@@ -4,7 +4,7 @@ import { Group, Scene, Mesh, Points, PlaneGeometry, MeshStandardMaterial, Instan
 import { WeatherEffect, type createRenderer } from 'gaesup-world';
 import { Grass, GrassDriver, GrassManagerProvider, Water, createGrassManager } from 'gaesup-world/building';
 
-import type { RoomQuality, RoomSettings } from './roomTypes';
+import type { RoomLighting, RoomQuality, RoomSettings } from './roomTypes';
 import { tilePosition, type RoomTerrain } from './terrain';
 
 type Camera = RootState['camera'];
@@ -34,7 +34,7 @@ export async function createRoomEnvironment(renderer: Awaited<ReturnType<typeof 
   const root = createRoot(key);
   let state: RootState | undefined;
   let disposed = false; let elapsed = 0; let cells: Array<readonly [number, number, number?]> = [];
-  let terrainSize = 24; let weather: RoomSettings['weather'] = 'clear';
+  let terrainSize = 24; let weather: RoomSettings['weather'] = 'clear'; let lighting: RoomLighting = 'day';
   let previousTerrain: RoomTerrain | undefined; let previousQuality: RoomQuality | undefined;
   const waterNormals = new TextureLoader().load(`${import.meta.env.BASE_URL}resources/waternormals.jpeg`, () => { if (!disposed) invalidate(); });
   waterNormals.wrapS = waterNormals.wrapT = RepeatWrapping;
@@ -43,9 +43,9 @@ export async function createRoomEnvironment(renderer: Awaited<ReturnType<typeof 
     onCreated: value => { state = value; value.set({ invalidate: () => { if (!disposed) invalidate(); } }); invalidate(); },
   });
   return {
-    update(terrain: RoomTerrain, quality: RoomQuality, nextWeather: RoomSettings['weather']) {
-      if (disposed || (previousTerrain === terrain && previousQuality === quality && weather === nextWeather)) return;
-      previousTerrain = terrain; previousQuality = quality; weather = nextWeather; terrainSize = terrain.size;
+    update(terrain: RoomTerrain, quality: RoomQuality, nextWeather: RoomSettings['weather'], nextLighting: RoomLighting = lighting) {
+      if (disposed || (previousTerrain === terrain && previousQuality === quality && weather === nextWeather && lighting === nextLighting)) return;
+      previousTerrain = terrain; previousQuality = quality; weather = nextWeather; lighting = nextLighting; terrainSize = terrain.size;
       cells = [];
       const chunkSize = terrain.size <= 32 ? terrain.size : 16;
       const chunks = new Map<string, { x: number; z: number; cells: Array<readonly [number, number, number?]> }>();
@@ -62,7 +62,7 @@ export async function createRoomEnvironment(renderer: Awaited<ReturnType<typeof 
       root.render(<GrassManagerProvider value={manager}>
         <ManualRender /><GrassDriver />
         <group position={[0, -0.42, 0]}>
-          <Water width={terrain.size + 64} depth={terrain.size + 64} normalMap={waterNormals} toon shore={{ north: false, south: false, east: false, west: false }} />
+          <Water width={terrain.size + 64} depth={terrain.size + 64} normalMap={waterNormals} toon brightness={lighting === 'evening' ? 0.42 : 1} shore={{ north: false, south: false, east: false, west: false }} />
         </group>
         {[...chunks].map(([id, chunk]) => <Grass key={id} width={chunkSize} cells={chunk.cells} ground={false} position={[chunk.x, 0.015, chunk.z]}
           density={density} maxInstances={Math.ceil(density * chunk.cells.length)} lod={{ near: 48, far: 160, strength: 3 }}

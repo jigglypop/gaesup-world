@@ -4,6 +4,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+
 import { generateCandidate, resumeCandidate } from './meshy.mjs';
 
 test('character and wearable candidates retain independent resumable identities', async () => {

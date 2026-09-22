@@ -1,11 +1,11 @@
 import { act, render } from '@testing-library/react';
 
-import { createGaesupRuntime } from '../createGaesupRuntime';
-import { GaesupRuntimeProvider } from '../context';
 import { useKeyboard } from '../../hooks/useKeyboard';
 import { createMemoryInputBackend, type InputBackend, type InputStateListener } from '../../interactions/core/adapter';
 import { useInputBackend } from '../../interactions/hooks/useInputBackend';
 import { createMotionsPlugin, type MotionsRuntimeService } from '../../motions/plugin';
+import { GaesupRuntimeProvider } from '../context';
+import { createGaesupRuntime } from '../createGaesupRuntime';
 
 test('mounted custom inputs, store commands and all motion consumers share one world port', async () => {
   const factory = jest.fn(() => createMemoryInputBackend()); const release = jest.fn();

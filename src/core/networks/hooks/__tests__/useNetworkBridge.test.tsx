@@ -1,4 +1,9 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
+import * as THREE from 'three';
+
+import { BridgeFactory } from '@core/boilerplate';
+
+import type { NetworkCommand } from '../../types';
 import { useNetworkBridge } from '../useNetworkBridge';
 
 // BridgeFactory 모킹
@@ -20,19 +25,15 @@ const mockBridge = {
   getNetworkStats: jest.fn(),
   getSystemState: jest.fn(),
   updateSystem: jest.fn(),
-  acquireUpdates: jest.fn(() => jest.fn())
+  acquireUpdates: jest.fn(() => jest.fn()),
+  dispose: jest.fn()
 };
 
-describe('useNetworkBridge', () => {
-  let mockBridgeFactory: any;
+const mockBridgeFactory = jest.mocked(BridgeFactory);
 
+describe('useNetworkBridge', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
-    // 모킹된 모듈들 가져오기
-    const boilerplate = require('@core/boilerplate');
-    
-    mockBridgeFactory = boilerplate.BridgeFactory;
     
     mockBridgeFactory.getOrCreate.mockImplementation((domain: string) => {
       return mockBridgeFactory.get(domain) ?? mockBridgeFactory.create(domain);
@@ -132,13 +133,10 @@ describe('useNetworkBridge', () => {
         expect(result.current.isReady).toBe(true);
       });
       
-      const command = {
-        type: 'registerNPC' as const,
-        data: {
-          npcId: 'npc-1',
-          position: { x: 0, y: 0, z: 0 },
-          metadata: {}
-        }
+      const command: NetworkCommand = {
+        type: 'registerNPC',
+        npcId: 'npc-1',
+        position: new THREE.Vector3(0, 0, 0)
       };
 
       act(() => {
@@ -154,13 +152,10 @@ describe('useNetworkBridge', () => {
       
       const { result } = renderHook(() => useNetworkBridge());
       
-      const command = {
-        type: 'registerNPC' as const,
-        data: {
-          npcId: 'npc-1',
-          position: { x: 0, y: 0, z: 0 },
-          metadata: {}
-        }
+      const command: NetworkCommand = {
+        type: 'registerNPC',
+        npcId: 'npc-1',
+        position: new THREE.Vector3(0, 0, 0)
       };
 
       act(() => {
@@ -220,7 +215,7 @@ describe('useNetworkBridge', () => {
       
       // 에러 없이 호출되어야 함
       expect(() => {
-        result.current.executeCommand({ type: 'start', data: {} });
+        result.current.executeCommand({ type: 'startMonitoring', npcId: 'npc-1' });
         result.current.getSnapshot();
         result.current.getNetworkStats();
         result.current.getSystemState();

@@ -1,9 +1,9 @@
-import { act, renderHook } from '@testing-library/react';
 import { useGLTF } from '@react-three/drei';
+import { act, renderHook } from '@testing-library/react';
 import * as THREE from 'three';
 
-import { setDefaultToonMode } from '../../../rendering/toon';
 import { gltfAssetCache } from '../../../assets/GLTFAssetCache';
+import { setDefaultToonMode } from '../../../rendering/toon';
 import { useGaesupGltf, useGltfAndSize } from '../useGaesupGltf';
 
 type MockGltf = {

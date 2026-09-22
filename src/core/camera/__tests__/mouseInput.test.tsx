@@ -1,10 +1,10 @@
 import { fireEvent, renderHook } from '@testing-library/react';
 
-import { useCamera } from '../hooks/useCamera';
 import { createWorldInputScope } from '../../input/WorldInputScope';
 import { GaesupRuntimeContext } from '../../runtime/runtimeContext';
 import type { GaesupRuntime } from '../../runtime/types';
 import { WorldViews } from '../../world/core/WorldViews';
+import { useCamera } from '../hooks/useCamera';
 
 const mockCanvas = document.createElement('canvas');
 const mockCamera = {}; const mockScene = {};

@@ -1,8 +1,9 @@
-import { AnimationCommand, AnimationMetrics } from '../../core/types';
 import * as THREE from 'three';
-import { AnimationBridge } from '../AnimationBridge';
+
 import { AnimationSystem } from '../../core/AnimationSystem';
 import { AnimationSystem as AnimationSystemType } from '../../core/AnimationSystem';
+import { AnimationBridge } from '../AnimationBridge';
+import type { AnimationCommand, AnimationMetrics } from '../types';
 
 jest.mock('../../core/AnimationSystem');
 
@@ -52,7 +53,7 @@ describe('AnimationBridge', () => {
   it('should return a snapshot from an engine', () => {
     const snapshot = bridge.snapshot('character');
     expect(mockEngineInstance.getState).toHaveBeenCalled();
-    expect(snapshot.currentAnimation).toBe('idle');
+    expect(snapshot?.currentAnimation).toBe('idle');
   });
 
   it('should subscribe and notify listeners', () => {
@@ -60,7 +61,8 @@ describe('AnimationBridge', () => {
     bridge.subscribe(listener);
 
     // Get the callback passed to the engine's subscribe method
-    const engineCallback = mockEngineInstance.subscribe.mock.calls[0][0];
+    const engineCallback = mockEngineInstance.subscribe.mock.calls[0]?.[0];
+    if (!engineCallback) throw new Error('Expected the bridge to subscribe to the engine');
 
     const mockMetrics: AnimationMetrics = {
       activeAnimations: 1,

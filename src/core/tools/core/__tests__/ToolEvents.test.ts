@@ -1,5 +1,5 @@
-import { createToolEvents } from '../ToolEvents';
 import type { ToolUseEvent } from '../../types';
+import { createToolEvents } from '../ToolEvents';
 
 const event: ToolUseEvent = { kind: 'shovel', origin: [0, 0, 0], direction: [0, 0, 1], range: 2, timestamp: 0 };
 

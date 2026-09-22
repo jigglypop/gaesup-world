@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+
 import { NetworkMessage } from '../../types';
 import { NPCNetworkManager } from '../NPCNetworkManager';
 
@@ -360,7 +361,7 @@ describe('NPCNetworkManager', () => {
       manager.addEventListener('nodeConnected', (event) => {
         expect(event.type).toBe('nodeConnected');
         expect(event.nodeId).toBe('node_npc1');
-        expect(event.data.npcId).toBe('npc1');
+        expect(event.data).toMatchObject({ npcId: 'npc1' });
         done();
       });
 
@@ -386,7 +387,7 @@ describe('NPCNetworkManager', () => {
       manager.addEventListener('groupJoined', (event) => {
         expect(event.type).toBe('groupJoined');
         expect(event.nodeId).toBe('node_npc1');
-        expect(event.data.groupId).toBe(group.id);
+        expect(event.data).toMatchObject({ groupId: group.id });
         done();
       });
 

@@ -1,13 +1,14 @@
 import { StrictMode, type RefObject } from 'react';
-import { renderHook } from '@testing-library/react';
-import type { RapierRigidBody } from '@react-three/rapier';
 
-import { useBlueprintEntity } from '../useBlueprintEntity';
+import type { RapierRigidBody } from '@react-three/rapier';
+import { renderHook } from '@testing-library/react';
+
 import { WARRIOR_BLUEPRINT } from '../../../../blueprints/characters/warrior';
-import { CharacterMovementComponent } from '../../../../blueprints/core/components/CharacterMovementComponent';
 import { BlueprintEntity } from '../../../../blueprints/core/BlueprintEntity';
+import { CharacterMovementComponent } from '../../../../blueprints/core/components/CharacterMovementComponent';
 import type { BlueprintDefinition } from '../../../../blueprints/core/types';
 import { logger } from '../../../utils/logger';
+import { useBlueprintEntity } from '../useBlueprintEntity';
 
 jest.mock('@react-three/fiber', () => ({ useFrame: jest.fn() }));
 

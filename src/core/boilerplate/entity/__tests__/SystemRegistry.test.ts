@@ -1,5 +1,5 @@
-import { SystemRegistry } from '../SystemRegistry';
 import { BaseSystem } from '../BaseSystem';
+import { SystemRegistry } from '../SystemRegistry';
 
 describe('SystemRegistry', () => {
   beforeEach(() => {
@@ -219,11 +219,13 @@ describe('SystemRegistry', () => {
 
     test('null이나 undefined 시스템 등록 시 오류를 처리해야 함', () => {
       expect(() => {
-        SystemRegistry.register('null', null as any);
+        // @ts-expect-error: runtime guard for untyped callers passing null
+        SystemRegistry.register('null', null);
       }).not.toThrow(); // 현재 구현에서는 null 체크가 없음
       
       expect(() => {
-        SystemRegistry.register('undefined', undefined as any);
+        // @ts-expect-error: runtime guard for untyped callers passing undefined
+        SystemRegistry.register('undefined', undefined);
       }).not.toThrow(); // 현재 구현에서는 undefined 체크가 없음
     });
   });
@@ -288,7 +290,7 @@ describe('SystemRegistry', () => {
     });
 
     test('등록과 조회를 동시에 수행해도 안전해야 함', async () => {
-      const promises = Array.from({ length: 100 }, (_, i) =>
+      const promises = Array.from({ length: 100 }, () =>
         Promise.resolve().then(() => Promise.all([
           SystemRegistry.register(`reg_${Math.random()}`, createTestSystem()),
           SystemRegistry.get(`get_${Math.random()}`)

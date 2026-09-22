@@ -10,8 +10,8 @@ import {
 } from '../upload';
 
 type MockBuffer = GpuBufferLike & {
-  label?: string;
-  size?: number;
+  label: string | undefined;
+  size: number;
   destroyed: boolean;
 };
 

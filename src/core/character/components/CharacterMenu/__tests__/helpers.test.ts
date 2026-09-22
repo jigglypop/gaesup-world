@@ -1,3 +1,4 @@
+import type { AssetRecord } from '../../../../assets';
 import {
   CHARACTER_MENU_DEFAULT_CLASSES,
   CHARACTER_MENU_DEFAULT_FEATURES,
@@ -16,7 +17,6 @@ import {
   resolveSections,
   resolveSlots,
 } from '../helpers';
-import type { AssetRecord } from '../../../../assets';
 
 describe('CharacterMenu helper', () => {
   test('클래스 이름을 빈 값 없이 합친다', () => {

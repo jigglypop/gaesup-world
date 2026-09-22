@@ -1,8 +1,8 @@
-import { createPluginRegistry } from '../PluginRegistry';
-import { createStoreDomainPlugin } from '../storeDomainPlugin';
 import { createInventoryStore, type InventoryStore } from '../../inventory/stores/inventoryStore';
 import type { InventorySerialized } from '../../inventory/types';
 import type { DomainBinding } from '../../save';
+import { createPluginRegistry } from '../PluginRegistry';
+import { createStoreDomainPlugin } from '../storeDomainPlugin';
 
 test('a shared plugin resolves each owner for custom serialization, hydration, and prepared commit', async () => {
   const fallback = createInventoryStore();

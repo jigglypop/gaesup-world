@@ -26,8 +26,10 @@ export interface CameraSystemConfig {
   orbitPitch?: number;
   minDistance?: number;
   maxDistance?: number;
-  offset?: { x: number; y: number; z: number };
-  lookAt?: { x: number; y: number; z: number };
+  /** `undefined` clears a previously configured offset. */
+  offset?: { x: number; y: number; z: number } | undefined;
+  /** `undefined` clears a previously configured look-at target. */
+  lookAt?: { x: number; y: number; z: number } | undefined;
   damping?: number;
   enableDamping?: boolean;
 }

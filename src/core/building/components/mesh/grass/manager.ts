@@ -67,7 +67,7 @@ const legacySources: GrassManagerSources = {
   },
 };
 
-class GrassManager {
+export class GrassManager {
   constructor(private readonly sources: GrassManagerSources = legacySources) {}
   private nextId = 1;
   private tiles = new Map<number, GrassTileHandle>();

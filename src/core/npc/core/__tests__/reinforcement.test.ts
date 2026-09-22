@@ -1,7 +1,7 @@
+import type { NPCInstance } from '../../types';
 import { createNPCBrainAdapterRegistry, createNPCObservation, registerNPCBrainAdapter, resolveNPCBrainDecision } from '../brain';
 import { createReinforcementAdapter } from '../reinforcement';
 import { isNPCPolicyResponse } from '../validatePolicy';
-import type { NPCInstance } from '../../types';
 
 const instance: NPCInstance = { id: 'same', templateId: 'lab', name: 'NPC', position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], brain: { mode: 'reinforcement' } };
 const context = { instance, observation: createNPCObservation(instance, new Map(), 10) };

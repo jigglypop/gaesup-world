@@ -1,13 +1,13 @@
 import { act, render } from '@testing-library/react';
 
-import { GaesupRuntimeProvider } from '../context';
-import { createGaesupRuntime } from '../createGaesupRuntime';
 import { useCatalogTracker } from '../../catalog/hooks/useCatalogTracker';
 import { createCatalogPlugin } from '../../catalog/plugin';
 import { getRecipeRegistry } from '../../crafting/registry/RecipeRegistry';
 import { createInventoryPlugin } from '../../inventory/plugin';
-import { useDecorationScore } from '../../town/hooks/useDecorationScore';
 import { useToolUse } from '../../tools/hooks/useToolUse';
+import { useDecorationScore } from '../../town/hooks/useDecorationScore';
+import { GaesupRuntimeProvider } from '../context';
+import { createGaesupRuntime } from '../createGaesupRuntime';
 
 jest.mock('../../wasm/loader', () => ({ loadCoreWasm: jest.fn(async () => null) }));
 
@@ -30,7 +30,7 @@ test('two catalog consumers share one scan and neither hydration nor rollback co
     runtime.inventoryStore.getState().clear(); runtime.save.hydrateBlob(saved);
     expect(runtime.catalogStore.getState().get('tracked')?.totalCollected).toBe(3);
     runtime.inventoryStore.getState().clear();
-    runtime.save.register({ key: 'fail', serialize: () => ({ fail: false }), hydrate: value => { if (value?.fail) throw new Error('reject snapshot'); } });
+    runtime.save.register({ key: 'fail', serialize: () => ({ fail: false }), hydrate: value => { if (typeof value === 'object' && value !== null && 'fail' in value && value.fail) throw new Error('reject snapshot'); } });
     expect(() => runtime.save.hydrateBlob({ ...saved, domains: { ...saved.domains, fail: { fail: true } } })).toThrow('Save hydration failed');
     expect(runtime.inventoryStore.getState().countOf('tracked')).toBe(0);
     expect(runtime.catalogStore.getState().get('tracked')?.totalCollected).toBe(3);

@@ -1,4 +1,5 @@
 import { InMemoryExtensionRegistry } from '../ExtensionRegistry';
+import type { ExtensionRegistry } from '../types';
 
 test('registry observers see committed changes, bulk removals and independent subscription leases', () => {
   const registry = new InMemoryExtensionRegistry();
@@ -11,7 +12,8 @@ test('registry observers see committed changes, bulk removals and independent su
 
 test('a throwing observer cannot prevent later notifications or mutate registration outcome', () => {
   const error = jest.spyOn(console, 'error').mockImplementation(() => {}); const registry = new InMemoryExtensionRegistry(); const later = jest.fn();
+  const lookup: ExtensionRegistry = registry;
   registry.subscribe(() => { throw new Error('observer'); }); registry.subscribe(later);
-  try { expect(() => registry.register('a', 1)).not.toThrow(); expect(registry.get('a')).toBe(1); expect(later).toHaveBeenCalledWith('a'); }
+  try { expect(() => registry.register('a', 1)).not.toThrow(); expect(lookup.get('a')).toBe(1); expect(later).toHaveBeenCalledWith('a'); }
   finally { error.mockRestore(); }
 });
