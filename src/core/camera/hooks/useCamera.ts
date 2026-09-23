@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useCallback, useRef, useLayoutEffect } from 'react';
 
-import { useFrame, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { useBuildingStore } from '../../building/stores/buildingStore';
 import { useInputBackend } from '../../interactions/hooks';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
+import { useEngineFrame } from '../../runtime/frame';
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { CameraSystemConfig } from '../bridge/types';
 import { useCameraBridge } from '../bridge/useCameraBridge';
@@ -25,7 +26,7 @@ const isEditableTarget = (target: EventTarget | null): boolean => {
 };
 
 export function useCamera(enableMouse = true) {
-  const { gl } = useThree();
+  const { gl, get: getThreeState } = useThree();
   const { activeState } = useStateSystem();
   const cameraOption = useGaesupStore((state) => state.cameraOption);
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
@@ -107,8 +108,6 @@ export function useCamera(enableMouse = true) {
       zoom: opt?.zoom ?? 1,
       enableCollision: opt?.enableCollision ?? true,
       ...(opt?.collisionMargin !== undefined ? { collisionMargin: opt.collisionMargin } : {}),
-      orbitYaw: orbitYawRef.current,
-      orbitPitch: orbitPitchRef.current,
       ...(opt?.maxDistance !== undefined ? { maxDistance: opt.maxDistance } : {}),
       ...(opt?.offset
         ? { offset: { x: opt.offset.x, y: opt.offset.y, z: opt.offset.z } }
@@ -261,8 +260,9 @@ export function useCamera(enableMouse = true) {
     syncCameraConfig();
   }, [cameraOption, mode, syncCameraConfig]);
   
-  useFrame((state, delta) => {
+  useEngineFrame('camera', (delta) => {
     if (!system) return;
+    const state = getThreeState();
 
     const nextOrbitYaw = THREE.MathUtils.damp(
       orbitYawRef.current,
@@ -282,10 +282,7 @@ export function useCamera(enableMouse = true) {
     ) {
       orbitYawRef.current = nextOrbitYaw;
       orbitPitchRef.current = nextOrbitPitch;
-      updateConfig({
-        orbitYaw: nextOrbitYaw,
-        orbitPitch: nextOrbitPitch,
-      });
+      system.setOrbit(nextOrbitYaw, nextOrbitPitch);
     }
     
     const legacyClock = 'clock' in state && state.clock instanceof THREE.Clock ? state.clock : undefined;
@@ -308,7 +305,7 @@ export function useCamera(enableMouse = true) {
       calcProps.clock = legacyClock;
     }
     system.calculate(calcPropsRef.current);
-  });
+  }, { label: 'camera:follow' });
   
   return {
     system,

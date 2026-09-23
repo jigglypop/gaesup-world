@@ -1,9 +1,9 @@
 import { memo, useEffect, useMemo, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
+import { MILLISECONDS_IN_SECOND } from '../../../boilerplate/types';
+import { useEngineFrame } from '../../../runtime/frame';
 
 interface WaveEffectProps {
   active?: boolean;
@@ -71,8 +71,8 @@ export const WaveEffect = memo(({
     }
   }, [active]);
 
-  useFrame((state) => {
-    const currentTime = getFrameElapsedSeconds(state);
+  useEngineFrame('lateUpdate', (_, elapsedMs) => {
+    const currentTime = elapsedMs / MILLISECONDS_IN_SECOND;
 
     if (active) {
       // Create a new wave at a fixed cadence.
@@ -111,7 +111,7 @@ export const WaveEffect = memo(({
       mat.opacity = opacity * 0.6;
       mat.emissiveIntensity = intensity * opacity;
     }
-  });
+  }, { label: 'interactions:wave-effect' });
 
   return (
     <group>

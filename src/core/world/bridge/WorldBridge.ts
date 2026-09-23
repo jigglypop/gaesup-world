@@ -1,16 +1,26 @@
 import * as THREE from 'three';
 
 import { CoreBridge, DomainBridge, EnableEventLog } from '@core/boilerplate';
-import { ValidateCommand, LogSnapshot, CacheSnapshot } from '@core/boilerplate/decorators';
+import { ValidateCommand } from '@core/boilerplate/decorators';
 
 import { WorldCommand, WorldSnapshot, WorldBridgeState } from './types';
 import { WorldSystem, WorldObject, InteractionEvent } from '../core/WorldSystem';
 
+type WorldSnapshotQueries = Required<Pick<WorldSnapshot, 'objectsInRadius' | 'objectsByType' | 'raycast'>>;
 
-interface WorldSystemEntity {
+type WorldSystemEntity = {
   system: WorldSystem;
   state: WorldBridgeState;
+  queries: WorldSnapshotQueries;
   dispose: () => void;
+};
+
+function createSnapshotQueries(system: WorldSystem): WorldSnapshotQueries {
+  return {
+    objectsInRadius: (center, radius) => system.getObjectsInRadius(center, radius),
+    objectsByType: (type) => system.getObjectsByType(type),
+    raycast: (origin, direction) => system.raycast(origin, direction)?.object ?? null,
+  };
 }
 
 @DomainBridge('world')
@@ -31,6 +41,7 @@ export class WorldBridge extends CoreBridge<WorldSystemEntity, WorldSnapshot, Wo
     return {
       system,
       state,
+      queries: createSnapshotQueries(system),
       dispose: () => system.dispose()
     };
   }
@@ -98,27 +109,19 @@ export class WorldBridge extends CoreBridge<WorldSystemEntity, WorldSnapshot, Wo
     }
   }
 
-  @LogSnapshot()
-  @CacheSnapshot(16) // 60fps 캐싱
   protected createSnapshot(entity: WorldSystemEntity, id: string): WorldSnapshot {
     void id;
-    const { system, state } = entity;
-    
+    const { system, state, queries } = entity;
+
     return {
       objects: system.getAllObjects(),
       ...(state.selectedObjectId !== undefined ? { selectedObjectId: state.selectedObjectId } : {}),
       interactionMode: state.interactionMode,
       showDebugInfo: state.showDebugInfo,
       events: system.getRecentEvents(),
-      // 추가 조회 기능들을 함수로 제공
-      objectsInRadius: (center: THREE.Vector3, radius: number) => 
-        system.getObjectsInRadius(center, radius),
-      objectsByType: (type: WorldObject['type']) => 
-        system.getObjectsByType(type),
-      raycast: (origin: THREE.Vector3, direction: THREE.Vector3) => {
-        const result = system.raycast(origin, direction);
-        return result?.object || null;
-      }
+      objectsInRadius: queries.objectsInRadius,
+      objectsByType: queries.objectsByType,
+      raycast: queries.raycast,
     };
   }
 

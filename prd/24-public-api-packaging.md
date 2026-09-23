@@ -97,3 +97,13 @@
 
 1. 2.0 릴리스 시점과 1.x 유지 기간.
 2. `./runtime`, `./plugins`를 루트로 합칠지.
+
+## 구현 현황 (2026-09-23, 3차)
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 24-a | 완료 | `src/__tests__/exportSnapshot.test.ts`: `package.json` exports의 JS 엔트리 15개 전부를 jest 별칭으로 로드해 `Object.keys` 정렬 목록을 스냅샷(`__snapshots__/exportSnapshot.test.ts.snap`)으로 고정. 엔트리 목록과 `package.json` exports 일치도 검사. 현재 루트 약 950개, 전체 1,538개. 변경 시 `jest -u`로 의도적 갱신 |
+| 24-c | 완료 | PRD-22 22-b의 가드 테스트와 `pnpm check:entries` |
+| 나머지 | 미착수 | 24-b, 24-e는 사용자 확인 필요 |
+
+스냅샷은 빌드 산출물(`dist`)이 아닌 소스 엔트리 기준이다. 빌드 후 표면은 `test:package:built`가 검증한다.

@@ -305,4 +305,72 @@ describe('command authority router', () => {
     unregisterCurrent();
     expect(router.has(route)).toBe(false);
   });
+
+  describe('hardening', () => {
+    const buy = (commandId: string, extra: { actorId?: string; expectedRevision?: number } = {}) =>
+      createGameCommand({
+        commandId,
+        domain: 'economy',
+        action: 'buy',
+        actorId: extra.actorId ?? 'player-1',
+        submittedAt: 1,
+        payload: { itemId: 'apple' },
+        ...(extra.expectedRevision !== undefined ? { expectedRevision: extra.expectedRevision } : {}),
+      });
+
+    test('replays a repeated commandId from cache without running the handler again', async () => {
+      const handler = jest.fn((incoming) => createCommandAcceptedResult(incoming));
+      const router = createCommandAuthorityRouter({ now: () => 10 });
+      router.register({ domain: 'economy', action: 'buy' }, handler);
+      const first = await router.handle(buy('cmd-replay'));
+      const second = await router.handle(buy('cmd-replay'));
+      expect(second).toBe(first);
+      expect(handler).toHaveBeenCalledTimes(1);
+      await router.handle(buy('cmd-replay', { actorId: 'player-2' }));
+      expect(handler).toHaveBeenCalledTimes(2);
+    });
+
+    test('runs the handler again after the replay window expires', async () => {
+      let time = 0;
+      const handler = jest.fn((incoming) => createCommandAcceptedResult(incoming));
+      const router = createCommandAuthorityRouter({ now: () => time, replayWindowMs: 100 });
+      router.register({ domain: 'economy', action: 'buy' }, handler);
+      await router.handle(buy('cmd-window'));
+      time = 150;
+      await router.handle(buy('cmd-window'));
+      expect(handler).toHaveBeenCalledTimes(2);
+    });
+
+    test('rejects actors that are not bound to the session', async () => {
+      const handler = jest.fn((incoming) => createCommandAcceptedResult(incoming));
+      const router = createCommandAuthorityRouter({ verifyActor: (incoming) => incoming.actorId === 'player-1' });
+      router.register({ domain: 'economy', action: 'buy' }, handler);
+      const result = await router.handle(buy('cmd-forged', { actorId: 'player-9' }));
+      expect(result.accepted).toBe(false);
+      expect(result.reason).toContain('player-9');
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    test('rejects stale expected revisions with the current server revision', async () => {
+      const handler = jest.fn((incoming) => createCommandAcceptedResult(incoming));
+      const router = createCommandAuthorityRouter({ getRevision: () => 7 });
+      router.register({ domain: 'economy', action: 'buy' }, handler);
+      const stale = await router.handle(buy('cmd-stale', { expectedRevision: 6 }));
+      expect(stale.accepted).toBe(false);
+      expect(stale.serverRevision).toBe(7);
+      expect((await router.handle(buy('cmd-fresh', { expectedRevision: 7 }))).accepted).toBe(true);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    test('turns handler exceptions into rejected results', async () => {
+      const router = createCommandAuthorityRouter();
+      router.register({ domain: 'economy', action: 'buy' }, () => {
+        throw new Error('ledger offline');
+      });
+      const result = await router.handle(buy('cmd-throw'));
+      expect(result.accepted).toBe(false);
+      expect(result.reason).toContain('ledger offline');
+      expect(result.events[0]?.type).toBe('command.rejected');
+    });
+  });
 });

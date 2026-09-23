@@ -75,4 +75,16 @@
 
 아키텍처 경계 기준선은 사라진 위반 2건을 반영해 16에서 14로 줄였다(PhysicsSystem → AnimationController, DirectionComponent → stores/mode/types).
 
+## 구현 현황 (2026-09-23, 3차)
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 26-a | 완료 | 루트 `quality-baseline.json` |
+| 26-d | 부분 | `scripts/check-quality-ratchet.cjs`(`pnpm check:quality`): 테스트 제외 `src`에서 `interface` 선언, `console.*`(logger 제외), `any`, raw `useFrame`(프레임 호스트 제외), 200줄 초과 tsx, 500줄 초과 ts를 센다. 증가하면 실패, 감소하면 `--update`로 기준선 갱신을 요구한다. CI 연결은 열린 질문 1 결정 후 |
+| 26-e | 부분 | input 테스트 실행 확인(통과) |
+
+`scripts/browser-smoke.cjs`는 UI 한국어화와 `/` 랜딩 페이지 도입 뒤 갱신되지 않아 실패하고 있었다. 버튼·제목 문구와 월드 경로(`/world`)를 현재 UI에 맞춰 통과시켰다(26-f 전 단계).
+
+기준선 값 (2026-09-23): interface 492, console 26, any 0, raw `useFrame` 55, 200줄 초과 tsx 46, 500줄 초과 ts 14. 00 문서의 정적 측정(console 약 10, 크기 초과 58)과 다른 것은 셈 규칙 차이다. 이후 비교는 이 스크립트 값을 기준으로 한다.
+
 검증: 타입체크(src, examples)와 변경 파일 린트 통과. 새 테스트는 메모리 제약으로 실행하지 않았다.

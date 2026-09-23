@@ -66,4 +66,8 @@ export class PhysicsBridge extends CoreBridge<PhysicsBridgeEntity, PhysicsSnapsh
     entity.system.updateWithArgs(args);
     this.notifyListeners(id);
   }
+
+  resolveEntity(id: string, args: PhysicsUpdateArgs): void {
+    this.getEngine(id)?.system.resolve(args.calcProp, args.physicsState);
+  }
 }

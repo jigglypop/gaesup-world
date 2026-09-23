@@ -53,16 +53,26 @@ export function applySceneDocumentCommand(
   if (!parsedCurrent.ok || !parsedCurrent.document) {
     return createRejectedResult(document, parsedCurrent.issues);
   }
+  const result = applyToCanonicalDocument(parsedCurrent.document, command);
+  return result.accepted
+    ? result
+    : Object.freeze({ accepted: false, document, issues: result.issues });
+}
+
+function applyToCanonicalDocument(
+  document: SceneDocument,
+  command: SceneDocumentCommand,
+): SceneDocumentCommandResult {
   if (isRecordCommand(command, 'scene-object.component.update')) {
-    return applySceneComponentUpdate(parsedCurrent.document, command);
+    return applySceneComponentUpdate(document, command);
   }
   if (isRecordCommand(command, 'scene-document.batch')) {
-    return applySceneDocumentBatch(parsedCurrent.document, command, applySceneDocumentCommand);
+    return applySceneDocumentBatch(document, command, applyToCanonicalDocument);
   }
 
   let mutation: SceneCommandMutation;
   try {
-    mutation = createMutation(parsedCurrent.document, command);
+    mutation = createMutation(document, command);
   } catch (error) {
     const issue =
       error instanceof SceneCommandIssueError

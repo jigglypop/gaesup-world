@@ -4,6 +4,7 @@ import { Camera } from '@/core/camera';
 import type { CameraOptionType } from '@/core/camera';
 import { CAMERA_DEFAULTS } from '@/core/camera/core/constants';
 import { PerformanceCollector } from '@/core/editor/components/panels/PerformanceCollector';
+import { ShadowDepthMaterials } from '@/core/rendering/shadow/ShadowDepthMaterials';
 import { GaesupRuntimeProvider } from '@/core/runtime';
 import { FrameSchedulerHost } from '@/core/runtime/frame/react/FrameSchedulerHost';
 import type { UrlsState } from '@/core/stores/slices/urls/types';
@@ -155,14 +156,17 @@ export function GaesupWorldContent({ children, showGrid, showAxes }: {
   showAxes?: boolean; 
 }) {
   return (
-    <Suspense fallback={null}>
-      <FrameSchedulerHost />
-      <Camera/>
-      <PerformanceCollector />
-      <WorldContent showGrid={showGrid ?? false} showAxes={showAxes ?? false}>
-        {children}
-      </WorldContent>
-    </Suspense>
+    <>
+      <FrameSchedulerHost metrics={process.env.NODE_ENV !== 'production'} />
+      <Suspense fallback={null}>
+        <Camera/>
+        <PerformanceCollector />
+        <ShadowDepthMaterials />
+        <WorldContent showGrid={showGrid ?? false} showAxes={showAxes ?? false}>
+          {children}
+        </WorldContent>
+      </Suspense>
+    </>
   );
 }
 

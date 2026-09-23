@@ -1,8 +1,9 @@
 import { useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import { Sprite } from 'three';
 import * as THREE from 'three';
+
+import { useEngineFrame } from '../../runtime/frame';
 
 export interface UseSpeechBalloonPositionProps {
   playerPosition: THREE.Vector3;
@@ -20,7 +21,7 @@ export function useSpeechBalloonPosition({
   const isInitializedRef = useRef(false);
 
   // Delta 기반 부드러운 움직임 - 미세진동 완전 제거
-  useFrame((_, delta) => {
+  useEngineFrame('effects', (delta) => {
     if (!spriteRef.current) return;
     
     const targetPosition = nextTargetRef.current;
@@ -59,7 +60,7 @@ export function useSpeechBalloonPosition({
     
     // 스프라이트 위치 업데이트
     spriteRef.current.position.copy(currentPos);
-  });
+  }, { label: 'ui:speech-balloon-position' });
 
   return spriteRef;
 } 

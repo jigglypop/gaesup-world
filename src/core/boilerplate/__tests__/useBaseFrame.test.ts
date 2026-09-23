@@ -1,17 +1,8 @@
-import type { RootState } from '@react-three/fiber';
 import { act, renderHook } from '@testing-library/react';
 
+import { frameScheduler } from '../../runtime/frame';
 import type { AbstractBridge } from '../bridge/AbstractBridge';
 import { useBaseFrame } from '../hooks/useBaseFrame';
-
-// @react-three/fiber의 useFrame을 모킹합니다.
-const frameCallbacks: Array<(state: RootState, delta: number) => void> = [];
-jest.mock('@react-three/fiber', () => ({
-  ...jest.requireActual<typeof import('@react-three/fiber')>('@react-three/fiber'),
-  useFrame: (callback: (state: RootState, delta: number) => void) => {
-    frameCallbacks.push(callback);
-  },
-}));
 
 type MockEngine = {
   dispose: () => void;
@@ -34,25 +25,28 @@ const mockId = 'test-id';
 // 프레임을 시뮬레이션하는 함수
 const simulateFrame = () => {
   act(() => {
-    frameCallbacks.forEach((callback) => callback({} as RootState, 0));
+    frameScheduler.tick(0, 0);
   });
 };
 
 describe('useBaseFrame', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    frameCallbacks.length = 0; // 각 테스트 전에 콜백 배열 초기화
+  });
+
+  afterEach(() => {
+    frameScheduler.clear();
   });
 
   it('매 프레임마다 bridge.notifyListeners를 호출해야 합니다', () => {
     renderHook(() => useBaseFrame(mockBridge, mockId));
-    
+
     expect(bridgeSpies.notifyListeners).not.toHaveBeenCalled();
 
     simulateFrame();
     expect(bridgeSpies.notifyListeners).toHaveBeenCalledTimes(1);
     expect(bridgeSpies.notifyListeners).toHaveBeenCalledWith(mockId);
-    
+
     simulateFrame();
     expect(bridgeSpies.notifyListeners).toHaveBeenCalledTimes(2);
   });

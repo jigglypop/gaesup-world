@@ -42,6 +42,9 @@ export type CommandAuthorityRouter = {
 export type CommandAuthorityRouterOptions = {
   now?: () => number;
   createId?: (prefix: string, command: GameCommand) => string;
+  verifyActor?: (command: GameCommand) => boolean;
+  getRevision?: (command: GameCommand) => number | undefined;
+  replayWindowMs?: number;
 };
 
 export type CreateCommandAcceptedResultOptions = {
@@ -59,6 +62,13 @@ export type CreateCommandRejectedResultOptions = {
 type CommandAuthorityRegistration = {
   handler: CommandAuthorityHandler;
 };
+
+type ReplayEntry = {
+  result: Promise<CommandAuthorityResult>;
+  expiresAt: number;
+};
+
+const DEFAULT_REPLAY_WINDOW_MS = 60_000;
 
 function routeKey(route: CommandAuthorityRoute): string {
   return `${route.domain}:${route.action ?? '*'}`;
@@ -115,9 +125,48 @@ export function createCommandAuthorityRouter(
   options: CommandAuthorityRouterOptions = {},
 ): CommandAuthorityRouter {
   const registrations = new Map<string, CommandAuthorityRegistration>();
+  const replays = new Map<string, ReplayEntry>();
   const now = options.now ?? Date.now;
   const createId = options.createId ?? defaultCreateAuthorityId;
+  const replayWindowMs = options.replayWindowMs ?? DEFAULT_REPLAY_WINDOW_MS;
   const context: CommandAuthorityContext = { now, createId };
+
+  const reject = (command: GameCommand, reason: string, serverRevision?: number): CommandAuthorityResult =>
+    createCommandRejectedResult(command, reason, {
+      eventId: createId('rejected', command),
+      occurredAt: now(),
+      ...(serverRevision !== undefined ? { serverRevision } : {}),
+    });
+
+  const pruneReplays = (time: number): void => {
+    for (const [key, entry] of replays) {
+      if (entry.expiresAt > time) return;
+      replays.delete(key);
+    }
+  };
+
+  const execute = async (command: GameCommand): Promise<CommandAuthorityResult> => {
+    const registration =
+      registrations.get(routeKey({ domain: command.domain, action: command.action })) ??
+      registrations.get(routeKey({ domain: command.domain, action: '*' }));
+
+    if (!registration) {
+      return reject(command, `No authority handler registered for ${command.domain}:${command.action}.`);
+    }
+    if (command.expectedRevision !== undefined && options.getRevision) {
+      const revision = options.getRevision(command);
+      if (revision !== undefined && revision !== command.expectedRevision) {
+        return reject(command, `Revision conflict: expected ${command.expectedRevision}, current ${revision}.`, revision);
+      }
+    }
+
+    const handler = registration.handler;
+    try {
+      return await handler(command, context);
+    } catch (error) {
+      return reject(command, `Authority handler failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
 
   return {
     register: (route, handler) => {
@@ -133,27 +182,23 @@ export function createCommandAuthorityRouter(
       };
     },
     handle: async (command) => {
-      const registration =
-        registrations.get(routeKey({ domain: command.domain, action: command.action })) ??
-        registrations.get(routeKey({ domain: command.domain, action: '*' }));
-
-      if (!registration) {
-        return createCommandRejectedResult(
-          command,
-          `No authority handler registered for ${command.domain}:${command.action}.`,
-          {
-            eventId: createId('rejected', command),
-            occurredAt: now(),
-          },
-        );
+      if (options.verifyActor && !options.verifyActor(command)) {
+        return reject(command, `Actor "${command.actorId}" is not bound to this session.`);
       }
-
-      const handler = registration.handler;
-      return handler(command, context);
+      if (replayWindowMs <= 0) return execute(command);
+      const time = now();
+      pruneReplays(time);
+      const key = `${command.actorId}:${command.commandId}`;
+      const replay = replays.get(key);
+      if (replay) return replay.result;
+      const result = execute(command);
+      replays.set(key, { result, expiresAt: time + replayWindowMs });
+      return result;
     },
     has: (route) => registrations.has(routeKey(route)),
     clear: () => {
       registrations.clear();
+      replays.clear();
     },
   };
 }

@@ -48,6 +48,7 @@ import { useWeatherStore } from '../../weather/stores/weatherStore';
 import { createGaesupRuntime, shouldSetupPluginForRuntime } from '../createGaesupRuntime';
 import {
   DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID,
+  RUNTIME_SAVE_BINDING_REJECTED_EVENT,
   RUNTIME_SAVE_DIAGNOSTIC_EVENT,
   type RuntimeSaveDiagnostic,
   type RuntimeSaveDiagnosticsService,
@@ -873,6 +874,37 @@ describe('createGaesupRuntime', () => {
 
     expect(Array.from(save.getBindings())).toEqual([]);
     expect(runtime.plugins.context.save.has('plugin-domain')).toBe(false);
+  });
+
+  it('connects and releases save bindings of plugins used after setup', async () => {
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const runtime = createGaesupRuntime({ saveSystem: save });
+    await runtime.setup();
+
+    await runtime.plugins.use(createSavePlugin(() => ({ ok: true }), () => undefined));
+    expect(Array.from(save.getBindings()).map((binding) => binding.key)).toEqual(['plugin-domain']);
+
+    await runtime.plugins.dispose('test.save-plugin');
+    expect(Array.from(save.getBindings())).toEqual([]);
+    await runtime.dispose();
+  });
+
+  it('rejects a conflicting late plugin save binding with a runtime event', async () => {
+    const save = new SaveSystem({ adapter: new MemoryAdapter() });
+    const runtime = createGaesupRuntime({
+      saveSystem: save,
+      saveBindings: [{ key: 'plugin-domain', serialize: () => ({ owner: 'option' }), hydrate: () => undefined }],
+    });
+    await runtime.setup();
+    const rejected = jest.fn();
+    runtime.plugins.context.events.on(RUNTIME_SAVE_BINDING_REJECTED_EVENT, rejected);
+
+    await runtime.plugins.use(createSavePlugin(() => ({ owner: 'plugin' }), () => undefined));
+
+    expect(runtime.plugins.status('test.save-plugin')).toBe('ready');
+    expect(rejected).toHaveBeenCalledWith(expect.objectContaining({ key: 'plugin-domain', pluginId: 'test.save-plugin' }));
+    expect(Array.from(save.getBindings()).map((binding) => binding.serialize())).toEqual([{ owner: 'option' }]);
+    await runtime.dispose();
   });
 
   it('round-trips camera state contributed by the camera plugin', async () => {

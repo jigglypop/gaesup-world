@@ -1,8 +1,8 @@
 import { Suspense, useMemo, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { useSharedFrame, type SharedFrameChannel } from '@core/runtime/frame';
 import { weightFromDistance } from '@core/utils/sfe';
 
 import { TileObjectProps } from './types';
@@ -77,6 +77,8 @@ export function TileObject({ tile, tiles }: TileObjectProps) {
   return <RenderedTileObject tile={tile} {...(tiles ? { tiles } : {})} />;
 }
 
+const TILE_LOD_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:tile-object-lod' };
+
 function RenderedTileObject({ tile, tiles }: TileObjectProps) {
   const groupRef = useRef<THREE.Group>(null!);
   const visibleRef = useRef(true);
@@ -89,13 +91,13 @@ function RenderedTileObject({ tile, tiles }: TileObjectProps) {
     [tile, tiles],
   );
 
-  useFrame((state, delta) => {
+  useSharedFrame(TILE_LOD_FRAME, (delta, _, three) => {
     lodAccumRef.current += delta;
     const interval = visibleRef.current ? 0.3 : 0.8;
     if (lodAccumRef.current < interval) return;
     lodAccumRef.current = 0;
 
-    const cam = state.camera.position;
+    const cam = three.camera.position;
     const p = tile.position;
     const dx = cam.x - p.x, dy = cam.y - p.y, dz = cam.z - p.z;
     const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { useFrame, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 
+import { useEngineFrame } from '@core/runtime/frame';
 import { weightFromDistance } from '@core/utils/sfe';
 
 import { BuildingNavigationObstacleDriver } from '../../../building/components/BuildingNavigationObstacleDriver';
@@ -16,7 +17,7 @@ const NPC_LOD_FAR = 120;
 const NPC_LOD_STRENGTH = 4;
 
 export function NPCSystem() {
-  const { gl } = useThree();
+  const { gl, get: getThreeState } = useThree();
   const instances = useNPCStore((state) => state.instances);
   const selectedInstanceId = useNPCStore((state) => state.selectedInstanceId);
   const selectedTemplateId = useNPCStore((state) => state.selectedTemplateId);
@@ -49,12 +50,12 @@ export function NPCSystem() {
   const [visibleIds, setVisibleIds] = useState<Set<string>>(() => new Set());
   const lodAccum = useRef(0);
 
-  useFrame((state, delta) => {
+  useEngineFrame('effects', (delta) => {
     lodAccum.current += delta;
     if (lodAccum.current < 0.5) return; // Check every 0.5s.
     lodAccum.current = 0;
 
-    const cam = state.camera.position;
+    const cam = getThreeState().camera.position;
     const next = new Set<string>();
     instances.forEach((inst) => {
       const [x, y, z] = inst.position;
@@ -68,7 +69,7 @@ export function NPCSystem() {
     if (next.size !== visibleIds.size || [...next].some(id => !visibleIds.has(id))) {
       setVisibleIds(next);
     }
-  });
+  }, { label: 'npc:lod' });
 
   useEffect(() => {
     if (!isNPCMode || !hoverPosition) return;

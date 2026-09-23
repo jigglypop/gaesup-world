@@ -121,3 +121,32 @@ export type PrefabOverride =
 | 18-a ~ 18-e, 18-i | 미착수 | 에디터 UI 연결과 분할 |
 
 검증: 타입체크(src, examples)와 변경 파일 린트 통과. 새 테스트는 메모리 제약으로 실행하지 않았다.
+
+## 구현 현황 (2026-09-23, 3차)
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 추가 | 완료 | 에디터 커맨드 `updateComponent(objectId, componentId, data)`(`scene-object.component.update`, undo/redo). Inspector 스크립트 prop 편집과 스크립트 추가 메뉴 연결(PRD-12 12-g) |
+| NFR-2 | 개선 | 커맨드 실행 전 스냅샷을 컨트롤러 경로에서는 불변 스냅샷 참조로 보관한다(accepted 문서는 deep-freeze). 매 커맨드의 문서 전체 복제를 없앴다. 레거시 `getDocument`/`setDocument` 스토어 경로만 복제를 유지한다. 6개 커맨드의 중복 run/undo 구현을 헬퍼 하나로 합쳤고 커맨드 ID와 라벨은 그대로다 |
+
+검증: editor 테스트 통과(commandStack에 컴포넌트 갱신, undo, redo 케이스 추가).
+
+## 구현 현황 (2026-09-23, 4차)
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 18-g | 부분(문서·커맨드) | `prefab/instances.ts`: 문서 안 인스턴스 수집(`getPrefabInstanceObjects`: `idPrefix:` 오브젝트와 그 자손), 인스턴스 단위 교체(원래 위치와 루트의 외부 부모 연결 유지), `revertPrefabInstanceOverride`, `revertPrefabInstance`(수정·추가·삭제를 원본으로, 루트 transform만 유지), `propagatePrefabToDocument`(같은 prefab의 모든 인스턴스에 전파, 인스턴스별 override 유지). 에디터 커맨드 `revertPrefabOverride`, `revertPrefabInstance`, `propagatePrefab`(undo는 실행 직전 스냅샷 복원). 스냅샷 헬퍼가 실행 시점 문서로 명령을 만드는 함수도 받는다. 자손 수집 반복문은 `collectPrefabSubtreeIds` 하나로 합쳤다 |
+| 버그 | 수정 | 기존 `applyPrefabOverrides`/`propagatePrefabChanges`는 인스턴스를 부모 없이 다시 만들어 `parentId`로 배치한 인스턴스 루트의 부모 연결이 사라졌다. 문서 단위 교체에서 외부 부모를 보존한다(테스트) |
+| 남은 것 | 미착수 | Inspector prefab 섹션(override 목록, 되돌리기, 적용), 예제의 prefab 라이브러리(선택으로 prefab 만들기, 배치) |
+
+검증: prefab 12 tests, editor·API·예제 48 suites / 268 tests 통과, `tsc`(src, examples) 0, 변경 파일 eslint 0. 공개 export 6개 추가(스냅샷 갱신, 삭제 없음).
+
+## 구현 현황 (2026-09-23, 5차)
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 18-f, 18-g | 완료 | Inspector `PrefabInstanceView`: 인스턴스 루트면 원본 prefab 이름, override 목록(루트 배치 위치 제외)과 항목별 "되돌리기", "모두 되돌리기", "프리팹에 적용". 일반 객체면 "프리팹으로 만들기", 원본이 없으면 안내. `Editor`/`EditorLayout`의 `scenePrefab`(`InspectorPrefabActions`) prop 하나로 연결. 에디터 커맨드 `instantiatePrefab`, `convertToPrefabInstance`와 문서 연산 `addPrefabInstance`, `replaceWithPrefabInstance`(서브트리를 같은 위치·부모의 인스턴스로 교체) 추가 |
+| 예제 | 완료 | `/creator`: 세션의 prefab 라이브러리(`examples/pages/world/scenePrefabs.ts`). 선택 객체로 prefab 만들기, 프로젝트 패널 prefab 선택으로 배치, 되돌리기, 적용(같은 prefab의 모든 인스턴스로 전파). 라이브러리 변경은 커맨드 run/undo에 묶여 undo가 prefab 목록도 되돌린다. 브라우저에서 만들기 → 이름 수정(override 1) → 되돌리기(override 0) 확인 |
+| 18-h | 순수 함수만 | 중첩 prefab, variant의 에디터 UI는 없음 |
+
+검증: prefab 13, editor·API·예제 49 suites / 272 tests 통과, `tsc`(src, examples) 0, 변경 파일 eslint 0, 브라우저 페이지 오류 0. 공개 export 추가: `addPrefabInstance`, `replaceWithPrefabInstance`, 타입 `InspectorPrefabActions`(editor), 삭제 없음.

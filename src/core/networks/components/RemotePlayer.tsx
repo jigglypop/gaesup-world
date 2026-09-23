@@ -1,12 +1,13 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
 
 import { useGLTF, useAnimations } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import { CapsuleCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import { Text } from '@/core/rendering/legacyDrei';
+import { useEngineFrame } from '@core/runtime/frame';
 import { weightFromDistance } from '@core/utils/sfe';
 
 import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
@@ -36,6 +37,7 @@ function isColorableMaterial(material: THREE.Material): material is ColorableMat
 }
 
 function RemotePlayerContent({ state, config, speechText, modelUrl }: RemotePlayerContentProps) {
+  const getThreeState = useThree((threeState) => threeState.get);
   const bodyRef = useRef<RapierRigidBody | null>(null);
   const meshRef = useRef<THREE.Group | null>(null);
   const animationRootRef = useRef<THREE.Group | null>(null);
@@ -344,7 +346,7 @@ function RemotePlayerContent({ state, config, speechText, modelUrl }: RemotePlay
   }, [state.position, state.rotation, state.velocity]);
 
   // 부드러운 보간
-  useFrame((frame, delta) => {
+  useEngineFrame('prePhysics', (delta) => {
     if (!bodyRef.current || !meshRef.current) return;
 
     // Distance-based throttling: far objects update less frequently.
@@ -357,7 +359,7 @@ function RemotePlayerContent({ state, config, speechText, modelUrl }: RemotePlay
 
     // Update the interval at the same cadence as the simulation update.
     const approx = smoothInit.current ? smoothPos : targetPosition;
-    const cameraDist = frame.camera.position.distanceTo(approx);
+    const cameraDist = getThreeState().camera.position.distanceTo(approx);
     const w = smoothInit.current ? weightFromDistance(cameraDist, 25, 140, 4) : 1;
     lodInterval.current =
       w >= 0.7
@@ -436,7 +438,7 @@ function RemotePlayerContent({ state, config, speechText, modelUrl }: RemotePlay
     body.setNextKinematicRotation(q);
     
     // Animation switching is handled in the effect above (with hysteresis).
-  });
+  }, { label: 'network:remote-player' });
 
   return (
     <group>

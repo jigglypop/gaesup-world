@@ -132,5 +132,5 @@ src/core/animation/
 | FR-7 스크립트 API `ctx.animator` | 스크립트 컴포넌트(PRD-12)가 아직 없다. 연결 지점은 `AnimationBridge.getAnimator(type)`과 `setAnimatorParameter`/`setAnimatorTrigger`다 |
 | `AnimationController`(motions) 클래스 삭제 | 공개 export(`MotionAnimationController`)라서 `@deprecated` 표시만 했다. 삭제는 2.0에서 사용자 확인 후 진행한다 |
 | SceneObject `gaesup.animator`의 런타임 연결 | SceneObject를 런타임 엔티티로 투영하는 경로(PRD-10, 12)가 아직 없어 Inspector 표시까지만 했다 |
-| 프레임 단계 통합 | 구동기는 R3F `useFrame` 우선순위 -1(mixer 갱신 전)로 동작한다. PRD-11의 `animation` 단계로 옮겨야 한다 |
+| 프레임 단계 통합 | 3차에서 완료. `useCharacterAnimator`가 `animation` 단계(우선순위 -1 호스트 틱, mixer 갱신 전)로 이동. `CHARACTER_ANIMATOR_FRAME_PRIORITY`는 공개 상수라 `FRAME_SCHEDULER_PRIORITY`와 같은 값으로 유지 |
 | 브라우저 시각 검증 | 요청에 따라 데모를 띄우지 않았다. idle → walk → run → jump → land, ride 진입·이탈 녹화 비교가 남았다 |

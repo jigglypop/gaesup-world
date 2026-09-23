@@ -1,11 +1,11 @@
 import React from 'react';
 
 import { useAnimations, useGLTF } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
+import { frameScheduler } from '../../../runtime/frame';
 import type { PlayerState } from '../../types';
 import { RemotePlayer } from '../RemotePlayer';
 
@@ -27,9 +27,21 @@ jest.mock('@react-three/drei', () => ({
   })),
 }));
 
+type MockThreeState = { camera: { position: { distanceTo: () => number } } };
+
+const mockThreeState: MockThreeState = { camera: { position: { distanceTo: () => 0 } } };
+
 jest.mock('@react-three/fiber', () => ({
-  useFrame: jest.fn(),
+  useThree: (selector: (state: { get: () => MockThreeState }) => unknown) => selector({ get: () => mockThreeState }),
 }));
+
+function setCameraDistance(distance: number): void {
+  mockThreeState.camera = { position: { distanceTo: () => distance } };
+}
+
+function runFrame(delta: number): void {
+  frameScheduler.tick(delta, 0);
+}
 
 jest.mock('@react-three/rapier', () => ({
   CapsuleCollider: 'CapsuleCollider',
@@ -59,6 +71,11 @@ describe('RemotePlayer', () => {
   beforeEach(() => {
     mockedUseGLTF.mockClear();
     jest.mocked(useAnimations).mockClear();
+    setCameraDistance(0);
+  });
+
+  afterEach(() => {
+    frameScheduler.clear();
   });
 
   test('plays initial idle immediately and completes or cancels delayed transitions', () => {
@@ -134,7 +151,6 @@ describe('RemotePlayer', () => {
       setNextKinematicTranslation: jest.fn(),
       setNextKinematicRotation: (value: THREE.Quaternion) => rotation.copy(value),
     };
-    const frameState = { camera: { position: { distanceTo: () => 0 } } } as unknown as Parameters<Parameters<typeof useFrame>[0]>[0];
     let renderer: ReactTestRenderer | undefined;
     try {
       act(() => {
@@ -144,7 +160,8 @@ describe('RemotePlayer', () => {
       });
       expect(rotation.toArray()).toEqual([0, 0, 1, 0]);
       act(() => { renderer?.update(<RemotePlayer playerId="rotation" state={{ ...PLAYER_STATE, rotation: [0, 1, 0, 0] }} characterUrl="/rotation.glb" />); });
-      jest.mocked(useFrame).mock.calls.at(-1)?.[0](frameState, 0.3);
+      expect(frameScheduler.count('prePhysics')).toBe(1);
+      runFrame(0.3);
       expect(rotation.toArray()).toEqual([1, 0, 0, 0]);
     } finally {
       act(() => renderer?.unmount());
@@ -268,7 +285,6 @@ describe('RemotePlayer', () => {
       setNextKinematicTranslation: jest.fn(),
       setNextKinematicRotation: jest.fn(),
     };
-    const frameState = { camera: { position: { distanceTo: () => 0 } } } as unknown as Parameters<Parameters<typeof useFrame>[0]>[0];
     let renderer: ReactTestRenderer | undefined;
     try {
       act(() => {
@@ -284,9 +300,8 @@ describe('RemotePlayer', () => {
         act(() => {
           renderer?.update(<RemotePlayer playerId="remote-1" state={{ ...PLAYER_STATE, position: [1 + tick / 10, 2, 3] }} characterUrl="/avatars/remote.glb" />);
         });
-        const frame = jest.mocked(useFrame).mock.calls.at(-1)?.[0];
-        expect(frame).toBeDefined();
-        frame?.(frameState, 1 / 60);
+        expect(frameScheduler.count('prePhysics')).toBe(1);
+        runFrame(1 / 60);
       }
       expect(body.setNextKinematicTranslation).toHaveBeenCalledTimes(41);
       const translation = body.setNextKinematicTranslation.mock.calls.at(-1)?.[0] as { x: number };
@@ -307,7 +322,7 @@ describe('RemotePlayer', () => {
         setNextKinematicTranslation: jest.fn((value: THREE.Vector3) => position.copy(value)),
         setNextKinematicRotation: jest.fn((value: THREE.Quaternion) => rotation.copy(value)),
       };
-      const frameState = { camera: { position: { distanceTo: () => distance } } } as unknown as Parameters<Parameters<typeof useFrame>[0]>[0];
+      setCameraDistance(distance);
       let renderer: ReactTestRenderer | undefined;
       try {
         act(() => {
@@ -315,15 +330,14 @@ describe('RemotePlayer', () => {
             createNodeMock: element => element.type === 'RigidBody' ? body : new THREE.Group(),
           });
         });
-        jest.mocked(useFrame).mock.calls.at(-1)?.[0](frameState, 0);
+        runFrame(0);
         act(() => {
           renderer?.update(<RemotePlayer playerId="lod" state={{ ...PLAYER_STATE, position: [5, 2, 3], rotation: [Math.SQRT1_2, 0, Math.SQRT1_2, 0] }} characterUrl="/lod.glb" />);
         });
         body.setNextKinematicTranslation.mockClear();
-        const frame = jest.mocked(useFrame).mock.calls.at(-1)![0];
-        for (let tick = 0; tick < fps / 2; tick++) frame(frameState, 1 / fps);
+        for (let tick = 0; tick < fps / 2; tick++) runFrame(1 / fps);
         const result = { x: position.x, rotation: rotation.clone(), writes: body.setNextKinematicTranslation.mock.calls.length };
-        frame(frameState, 0.3);
+        runFrame(0.3);
         expect(position.x).toBe(5);
         expect(rotation.y).toBeCloseTo(Math.SQRT1_2);
         return result;

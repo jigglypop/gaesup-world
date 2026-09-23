@@ -96,3 +96,9 @@ src/core/input/
 | 17-b, 17-c, 17-e, 17-f | 미착수 | `InteractionSystem` 전환, 컨텍스트 스택, 리바인딩 UI |
 
 검증: 타입체크(src, examples)와 변경 파일 린트 통과. 새 테스트는 메모리 제약으로 실행하지 않았다.
+
+### 3차 (2026-09-23)
+
+| 항목 | 상태 | 내용 |
+|---|---|---|
+| NFR-2 `Clicker` | 완료 | `useInteractionSystem`(입력마다 React 상태 갱신)과 `automation` 전체 구독을 마우스 `target`/`isActive`, 큐 `actions`(shallow)/`currentIndex` 선택자로 바꿨다. 플레이어 위치는 `reactive: false`로 제자리 갱신하고, 도착 판정과 마커 표시·경로 선택은 `lateUpdate` 프레임에서 할당 없이 처리한다. 키보드 입력과 이동 중 재렌더 0회(회귀 테스트), 브라우저 `/world` 클릭 이동에서 마커가 이동 중 표시, 도착 시 숨김 |

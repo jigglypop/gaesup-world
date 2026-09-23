@@ -109,3 +109,11 @@
 | 나머지 | 미착수 | |
 
 검증: 타입체크(src, examples)와 변경 파일 린트 통과. 새 테스트는 메모리 제약으로 실행하지 않았다.
+
+### 3차 (2026-09-23)
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 22-c | 완료 | `CommandAuthorityRouterOptions`에 `verifyActor`(세션-actor 바인딩 검증 훅, 실패 시 핸들러 호출 없이 거부), `getRevision`(`expectedRevision`과 다르면 현재 `serverRevision`을 담아 거부), `replayWindowMs`(기본 60초, `actorId:commandId` 멱등 캐시. 동시·반복 요청은 같은 결과 Promise를 공유해 핸들러를 다시 실행하지 않음, 0이면 끔). 핸들러 예외는 전파하지 않고 `command.rejected` 이벤트가 담긴 거부 결과로 바꾼다. `clear()`는 캐시도 비운다 |
+
+networks/adapter, platform 4 suites / 28 tests 통과. `check:entries` 0 유지.

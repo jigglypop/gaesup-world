@@ -196,6 +196,24 @@ describe('CameraSystem', () => {
       expect(props.camera.position.y).toBeGreaterThan(0);
     });
 
+    it('setOrbit은 설정을 복제하거나 configChange를 내지 않고 궤도만 반영해야 합니다', () => {
+      const props = createCalcProps();
+      const orbitProps = createCalcProps();
+      system.updateConfig({ enableCollision: false });
+      const configBefore = system.getConfig();
+      const configChange = jest.fn();
+      system.emitter.on('configChange', configChange);
+
+      system.calculate(props);
+      system.setOrbit(0.8, 0.3);
+      system.calculate(orbitProps);
+
+      expect(configChange).not.toHaveBeenCalled();
+      expect(system.getConfig()).toEqual(configBefore);
+      expect(system.getRuntimeState()).toEqual({ orbitYaw: 0.8, orbitPitch: 0.3 });
+      expect(orbitProps.camera.position.distanceTo(props.camera.position)).toBeGreaterThan(0.01);
+    });
+
     it('focus 진입 시 현재 카메라 위치보다 기본 컨트롤러 방향을 우선해야 합니다', () => {
       const props = createCalcProps();
       props.camera.position.copy(createMockActiveState().position);

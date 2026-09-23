@@ -1,6 +1,5 @@
 import { useRef, useEffect, useState, RefObject } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import { RapierRigidBody } from '@react-three/rapier';
 import { Group } from 'three';
 
@@ -8,6 +7,7 @@ import { BlueprintEntity, BlueprintDefinition, registerDefaultComponents, ICompo
 import type { BlueprintAnimationClips, BlueprintMovementInput } from '../../../blueprints/core/types';
 import { BlueprintFactory } from '../../../blueprints/factory/BlueprintFactory';
 import { blueprintRegistry } from '../../../blueprints/registry';
+import { useEngineFrame } from '../../runtime/frame';
 import { logger } from '../../utils/logger';
 
 export interface UseBlueprintEntityProps {
@@ -63,12 +63,11 @@ export function useBlueprintEntity({
     };
   }, [blueprint, rigidBodyRef, innerGroupRef, outerGroupRef, animationClips, enabled]);
 
-  useFrame((state, delta) => {
-    void state;
+  useEngineFrame('prePhysics', (delta) => {
     if (enabled && entityRef.current) {
       entityRef.current.update(delta, getMovementInput?.());
     }
-  });
+  }, { active: enabled, label: 'motions:blueprint-entity' });
 
   return {
     entity,

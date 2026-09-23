@@ -4,6 +4,7 @@ import ReactThreeTestRenderer from '@react-three/test-renderer';
 import * as THREE from 'three';
 
 import { SnowNodeMaterial } from '../../../rendering/tsl/snow';
+import { FrameSchedulerHost } from '../../../runtime/frame';
 import { Snow } from '../mesh/snow';
 
 jest.mock('three/webgpu', () => jest.requireActual('three'));
@@ -15,7 +16,7 @@ jest.mock('../../../rendering/tsl/snow', () => {
 function RendererMode({ nodes, children }: { nodes: boolean; children: ReactNode }) {
   const renderer = useThree((state) => state.gl);
   Object.assign(renderer, { isWebGPURenderer: nodes });
-  return children;
+  return <><FrameSchedulerHost />{children}</>;
 }
 
 beforeEach(() => jest.mocked(SnowNodeMaterial).mockClear());

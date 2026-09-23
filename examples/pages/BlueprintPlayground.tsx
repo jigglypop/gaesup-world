@@ -6,7 +6,7 @@ import { CapsuleCollider, Physics, RigidBody, useRapier, type RapierRigidBody } 
 import { Box3, Group, Skeleton, SkinnedMesh, Vector3 } from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
-import { useBlueprintEntity } from 'gaesup-world';
+import { FrameSchedulerHost, PHYSICS_STEP_PRIORITY, useBlueprintEntity } from 'gaesup-world';
 import { BlueprintConverter, type BlueprintMovementInput, WARRIOR_BLUEPRINT } from 'gaesup-world/blueprints';
 import './styles/BlueprintEditorPage.css';
 
@@ -100,8 +100,9 @@ export function BlueprintPlayground() {
         <Canvas camera={{ position: [0, 12, 18], fov: 50 }} onCreated={({ camera }) => camera.lookAt(0, 0, 0)}>
           <ambientLight intensity={1.5} />
           <directionalLight position={[5, 10, 5]} intensity={2} />
+          <FrameSchedulerHost />
           <Suspense fallback={null}>
-            <Physics>
+            <Physics updatePriority={PHYSICS_STEP_PRIORITY}>
               <PlaygroundCharacter key={attempt} keys={keys} touches={touches} />
               <RigidBody type="fixed" position={[0, -0.5, 0]}>
                 <mesh><boxGeometry args={[30, 1, 30]} /><meshStandardMaterial color="#293b48" /></mesh>

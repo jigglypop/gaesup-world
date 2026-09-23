@@ -102,3 +102,13 @@ test('honors a sub-meter threshold at intermediate and final waypoints', () => {
   });
   fixture.component.dispose();
 });
+
+test('reaches ground waypoints from a capsule center above the ground', () => {
+  const fixture = createFixture();
+  setClickNavigationRoute([new THREE.Vector3(10, 0, 0)], 1, false);
+  fixture.position.set(9.6, 1.2, 0);
+  fixture.tick();
+  expect(getClickNavigationRoute()).toHaveLength(0);
+  expect(fixture.mouse.isActive).toBe(false);
+  fixture.component.dispose();
+});

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
+import { useEngineFrame } from '../../../runtime/frame';
 import { useTimeStore } from '../../../time/stores/timeStore';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
@@ -77,7 +77,7 @@ export function TreeObject({
     return off;
   }, [fallen, hp]);
 
-  useFrame((_, delta) => {
+  useEngineFrame('lateUpdate', (delta) => {
     const g = groupRef.current;
     if (!g) return;
     const since = (performance.now() - hitAtRef.current) / 1000;
@@ -88,7 +88,7 @@ export function TreeObject({
     } else if (Math.abs(g.rotation.z) > 0.0001) {
       g.rotation.z *= Math.max(0, 1 - delta * 12);
     }
-  });
+  }, { label: 'world:tree-sway' });
 
   const shake = remaining < hp;
   const trunkHeight = 1.6 * scale;

@@ -1,8 +1,8 @@
 import { useMemo, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { useEngineFrame } from '../../runtime/frame';
 import { useTimeStore } from '../../time/stores/timeStore';
 import type { Season } from '../../time/types';
 import { useWeatherStore } from '../../weather/stores/weatherStore';
@@ -120,7 +120,7 @@ export function DynamicSky({
   const targetSun = useMemo(() => new THREE.Color(), []);
   const targetAmbient = useMemo(() => new THREE.Color(), []);
 
-  useFrame(() => {
+  useEngineFrame('lateUpdate', () => {
     const sun = sunRef.current;
     const ambient = ambientRef.current;
     if (!sun || !ambient) return;
@@ -157,7 +157,7 @@ export function DynamicSky({
     sun.position.set(x, y, z);
     sun.target.position.set(0, 0, 0);
     sun.target.updateMatrixWorld();
-  });
+  }, { label: 'rendering:dynamic-sky' });
 
   return (
     <>

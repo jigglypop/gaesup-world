@@ -154,4 +154,41 @@ src/core/motions/core/physics/
 
 Layer 1 간접 React 의존은 `import type` 전환과 엔진 배럴로 14건에서 3건으로 줄었다(`pnpm check:layer1`).
 
+### 3차 (2026-09-23)
+
+전체 테스트 실행에서 14-a 구현이 기존 계약 2개를 깨뜨린 것을 확인하고 수정했다.
+
+- `usePhysicsBridge`가 접지 보고를 위해 `BridgeFactory.getOrCreate('motion')`을 다시 import해 "BridgeFactory 대신 명시적 runtime" 계약(`usePhysicsBridgeRef.test.ts`)을 어겼다. 접지 접촉을 Layer 1 테이블 `motions/core/system/groundContacts.ts`(`reportGroundContact`, `readGroundContact`, `clearGroundContact`)로 옮겼다. `usePhysicsBridge`는 매 물리 갱신 후 보고하고 등록 해제 시 지운다. `MotionBridge`는 테이블 값을 우선하고 없으면 수직 속도로 추정한다. `MotionEntity.grounded` 필드는 삭제했다.
+- `reset` 명령 후 스냅샷의 `isGrounded`가 속도 추정으로 true가 되어 "reset 후 초기 상태" 계약(`MotionBridge.test.ts`)을 어겼다. reset은 접지를 false로 보고하고, 다음 물리 보고가 덮어쓴다.
+- `BridgeRegistry` 테스트가 `console.warn`을 감시해 logger 전환(13-a) 후 실패했다. 감시 대상을 `logger.warn`으로 바꿨다.
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 14-j | 부분 | R-15 해소: 클릭 경로점 도달을 3D 거리에서 XZ 수평 거리로 바꿨다. 캡슐 중심(지면 위 약 1.2)과 지면 경로점의 높이 차만으로 임계값 1을 넘어 경로점을 소비하지 못하던 상황을 테스트로 재현(수정 전 실패, 수정 후 통과). 제곱 거리 비교라 sqrt도 없다. R-12 스폰 `+5` 정책은 열린 질문 1(의도 여부) 대기 |
+| 11-c 연계 | 완료 | `usePhysicsBridge`의 프레임 작업이 `postPhysics` 단계로 이동(PRD-11) |
+
 검증: 타입체크(src, examples)와 변경 파일 린트 통과. 새 테스트는 메모리 제약으로 실행하지 않았다.
+
+### 4차 (2026-09-23)
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 14-e | 부분 | 물리 프레임을 두 단계로 나눴다. `prePhysics`(`motions:drive`): 입력 샘플링, 이동·점프 의도, 방향, 임펄스, 감쇠, 힘을 적용해 같은 프레임의 rapier step이 소비한다. `postPhysics`(`motions:resolve`): step 이후 강체에서 접지·낙하·위치·속도를 판정하고(`PhysicsSystem.resolve`) 접지 테이블에 보고한다. 이전에는 전부 `postPhysics`에서 돌아 입력이 다음 프레임 step에서야 반영됐다(입력 지연 1프레임 감소). `PhysicsUpdateArgs.stage`(`'full' \| 'drive'`, 기본 `full`)와 `PhysicsBridge.resolveEntity`를 추가했고 `calculate`(단일 단계)는 기존 순서 그대로 남겼다. 접지의 원본은 `resolve` 하나이며 MotionBridge 스냅샷도 같은 테이블을 읽는다. 프레임마다 두 번 읽던 `linvel()` 1회와 죽은 `checkAllStates`를 제거했다. 남은 것: MotionSystem의 테스트 전용 갱신 메서드 정리(테스트 수 변경이라 컨펌 필요) |
+
+검증: motions 23 suites / 151 tests 통과(단계 순서, drive/resolve 분리 테스트 추가). 타입체크(src, examples)와 변경 파일 린트 통과. 브라우저 `/world`: W 입력으로 (0, 0) → (8.47, 8.47) 이동, 점프 y 1.33 → 5.73 → 1.33 착지, 페이지 오류 0.
+
+### 5차 (2026-09-23)
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 14-f | 부분 | Layer 1 `motions/core/physics/`: Rapier 타입 없는 `PhysicsQueryAdapter`(`castGroundRay`)와 `GroundProbe`. Rapier 구현 `createRapierQueryAdapter`(레이 1개 재사용, 센서와 자기 강체 제외)는 `motions/bridge/rapierQueries.ts`에 두어 Layer 1 → `@react-three/rapier` 간선 기준선(9개)을 늘리지 않는다. `PhysicsEntity`가 `useRapier()`와 자기 강체 ref로 만들어 `useEntity` → `usePhysicsBridge` → `PhysicsCalcProps.physicsQueries`로 전달한다. `castShape`, 임펄스·속도 쓰기, 이벤트 드레인은 아직 강체 직접 호출 |
+| 14-g | 부분 | FR-4: character 모드 접지를 발 아래 레이(원점 +0.1, 기본 길이 0.2, `groundRay.length`가 있으면 그 값)와 경사 한계 50도(법선 y ≥ cos 50°)로 판정한다. 점프 상승 중(`isJumping`이고 수직 속도 > 0.02)은 접지가 아니다. 어댑터가 없거나 vehicle/airplane 모드는 기존 휴리스틱을 쓴다. 기존 휴리스틱은 "y ≤ 0.75 또는 마지막 접지 높이 근처"라서 높이 3.33의 지면에서 시작한 캐릭터가 한 번도 접지되지 않아 점프가 불가능했다(브라우저 `/world`에서 재현, 탐침 적용 후 3.33 → 7.87 → 3.33 점프·착지). shapecast와 계단 테스트는 남음 |
+
+검증: motions·boilerplate·아키텍처 경계 48 suites / 555 tests(탐침 높이 무관 접지, 경사·상승 거부, `groundRay.length`, Rapier 어댑터 인자 테스트 추가), 타입체크(src, examples) 0, 변경 파일 린트 0, `check:layer1` 3 유지. Rapier 레이 결과 객체는 Rapier가 호출마다 만든다(우리 쪽 할당 0).
+
+### 6차 (2026-09-23)
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 14-h | 완료 | FR-7: `createSceneCollisionGroups(registry, physics)`가 충돌 용도이고 인덱스 0~15인 레이어마다 Rapier 상호작용 그룹(상위 16비트 소속, 하위 16비트 필터)을 만든다. 필터는 `canSceneLayersCollide`(대칭)와 같다. 테스트는 기본 레이어 25개 조합 전부에서 비트 판정과 매트릭스가 일치하는지 확인한다 |
+| 14-i | 부분 | FR-8: `SceneObjectBody`가 장면 오브젝트의 `gaesup.collider`(box, sphere, capsule, mesh, trigger)와 `gaesup.rigidBody`(fixed, dynamic, kinematic, mass, gravityScale, lockRotations)로 Rapier 강체를 만들고, 교차·충돌 시작/끝을 `(kind, objectId, otherId)`로 전달한다. 상대 ID는 강체 `userData.sceneObjectId`, 없으면 강체 이름. 캐릭터 강체와 NPC는 아직 `sceneObjectId`를 싣지 않는다 |

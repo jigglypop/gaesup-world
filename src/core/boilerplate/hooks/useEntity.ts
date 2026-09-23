@@ -4,6 +4,7 @@ import type { RapierCollider, RapierRigidBody } from '@react-three/rapier';
 import type { Group } from 'three';
 
 import type { AnimatorControllerDefinition } from '@core/animation/core/animator/types';
+import type { PhysicsQueryAdapter } from '@core/motions/core/physics/types';
 import type { GroundRay } from '@core/motions/entities/types';
 import type { PhysicsEntityProps } from '@core/motions/entities/types';
 import { useAnimationSetup } from '@core/motions/hooks/setup/useAnimationSetup';
@@ -36,6 +37,7 @@ export interface UseEntityOptions
   groundRay?: GroundRay;
   colliderSize?: PhysicsEntityProps['colliderSize'];
   animatorController?: AnimatorControllerDefinition;
+  physicsQueries?: PhysicsQueryAdapter;
 }
 
 export function useEntity(options: UseEntityOptions) {
@@ -50,6 +52,7 @@ export function useEntity(options: UseEntityOptions) {
     groundRay,
     colliderSize,
     animatorController,
+    physicsQueries,
   } = options;
 
   const entityId = useRef<string>(
@@ -82,6 +85,7 @@ export function useEntity(options: UseEntityOptions) {
     ...(colliderRef ? { colliderRef } : {}),
     ...(groundRay ? { groundRay } : {}),
     ...(colliderSize ? { colliderSize } : {}),
+    ...(physicsQueries ? { physicsQueries } : {}),
   };
   usePhysicsBridge(physicsProps);
 

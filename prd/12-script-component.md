@@ -176,4 +176,27 @@ src/core/scripting/                 (신규 도메인)
 
 서브패스는 신설하지 않고 루트(`core/index.ts`)로 내보냈다. 일반적인 이름 충돌을 피하려고 prop 헬퍼 이름은 `scriptProp`이다.
 
+### 3차 (2026-09-23)
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 12-e | 부분 | `useScriptRuntime`/`ScriptRuntimeHost`에 `playMode?: ScriptPlayModeSource`(`getState().mode`, `subscribe`) 옵션. scripting이 editor를 import하지 않도록 구조적 타입이며 `EditorPlayModeController`가 그대로 맞는다. `edit`은 인스턴스 파괴(런타임 transform 버퍼 폐기), `play`는 실행, `paused`는 인스턴스를 유지하고 프레임 등록만 해제한다. 옵션이 없으면 기존처럼 항상 실행. 남은 것: 에디터 Play 버튼(`editorSlice.playMode`)과 예제에 `ScriptRuntimeHost` 마운트 |
+
+scripting 2 suites / 7 tests 통과.
+
 검증: 타입체크(src, examples)와 변경 파일 린트 통과. 새 테스트는 메모리 제약으로 실행하지 않았다.
+
+### 4차 (2026-09-23)
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 12-e | 완료 | `useScriptObjectTransform(runtime, objectId, ref, source)`: 런타임 transform 버퍼를 `lateUpdate` 공유 채널 하나로 Object3D에 투영하고, 핸들이 사라지면(edit 복귀) 문서 transform으로 한 번 복원한다. 예제 `/creator`는 `EditorPlayModeController`(복원은 `scene-document.replace`)를 세션에 두고 마커에 회전체 스크립트를 붙인다. Play 시 회전, Stop 시 원위치 |
+| 12-g | 완료 | Inspector에서 스크립트 prop 편집(`ScriptPropField`: number, boolean, enum, color, string. 나머지 종류는 읽기 전용)과 스크립트 추가 메뉴(`ScriptPicker`, 등록된 스크립트 목록). 편집은 기존 override를 유지한 채 `props`를 교체한 컴포넌트 데이터로 `onUpdateComponent`를 호출한다. `Editor`/`EditorLayout`의 `onUpdateSceneComponent`, 에디터 커맨드 `updateComponent`(undo 가능), 예제 세션까지 연결 |
+
+검증: editor, scene-object, scripting, examples 43 suites / 252 tests 통과. 타입체크(src, examples)와 변경 파일 린트 통과.
+
+### 5차 (2026-09-23)
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 12-f | 완료 | `SceneObjectBody`(PRD-14 14-i)의 물리 이벤트를 `ScriptRuntime.dispatchPhysicsEvent`로 연결했다. `ScriptRuntime.on(name, listener)` 외부 구독을 공개하고, `stop()`이 외부 구독을 지우지 않게 했다(스크립트 구독은 인스턴스 파괴 시 해제). 예제 `/world`의 장면 문서에 트리거 존(레이어 `interactable`, box 트리거, `triggerZone` 스크립트)을 두고 진입·이탈 이벤트로 색을 바꾼다. 브라우저에서 캐릭터가 (1.02, 1.02)에서 진입해 노란색, (0.50, 0.50)에서 이탈해 파란색으로 돌아오는 것을 확인했다. 스크립트 이벤트 종류 타입은 `SceneObjectPhysicsEventKind` 별칭이다 |

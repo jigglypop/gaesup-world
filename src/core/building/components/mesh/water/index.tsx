@@ -1,13 +1,13 @@
 import { lazy, Suspense, useEffect, useMemo, useRef } from "react";
 
-import { extend, useFrame, useThree } from "@react-three/fiber";
+import { extend, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { Water } from "three-stdlib";
 
 import { getDefaultToonMode } from "@core/rendering/toon";
 import { weightFromDistance } from "@core/utils/sfe";
 
-import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
+import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
 
 class OwnedWater extends Water {
   dispose(): void {
@@ -18,6 +18,7 @@ class OwnedWater extends Water {
 }
 
 extend({ Water: OwnedWater });
+const WATER_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:water' };
 const NodeWaterMaterial = lazy(() => import('./NodeWaterMaterial'));
 
 type WaterProps = {
@@ -351,15 +352,15 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
     };
   }, [shallowMaterial]);
 
-  useFrame((state, delta) => {
+  useSharedFrame(WATER_FRAME, (delta, elapsedSeconds, three) => {
     const target = useToon ? (toonMeshRef.current as THREE.Object3D | null) : (waterRef.current as THREE.Object3D | null);
     if (!target) return;
 
     const water = waterRef.current as THREE.Object3D | null;
     const fallback = fallbackMeshRef.current;
     if (followCamera) {
-      const x = state.camera.position.x - centerRef.current.x + waterOffsetX;
-      const z = state.camera.position.z - centerRef.current.z + waterOffsetZ;
+      const x = three.camera.position.x - centerRef.current.x + waterOffsetX;
+      const z = three.camera.position.z - centerRef.current.z + waterOffsetZ;
       target.position.set(x, 0.1, z);
       if (water && water !== target) water.position.set(x, 0.1, z);
       if (fallback) fallback.position.set(x, 0.095, z);
@@ -374,7 +375,7 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
         const near = lod.near ?? 30;
         const far = lod.far ?? 180;
         const strength = lod.strength ?? 4;
-        const dist = state.camera.position.distanceTo(centerRef.current);
+        const dist = three.camera.position.distanceTo(centerRef.current);
         const w = weightFromDistance(dist, near, far, strength);
         const visible = w > 0;
         highQualityRef.current = !useToon && dist <= near;
@@ -394,7 +395,7 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
     if (useToon) {
       if (fallback) fallback.visible = false;
       const u = toonMatRef.current?.uniforms?.['uTime'];
-      if (u) u.value = getFrameElapsedSeconds(state);
+      if (u) u.value = elapsedSeconds;
     } else {
       const useHighQualityWater = highQualityRef.current;
       if (water) water.visible = useHighQualityWater;

@@ -6,6 +6,7 @@ import { Physics, RigidBody, euler } from "@react-three/rapier";
 import * as THREE from 'three';
 
 import { Grid } from '@/core/rendering/legacyDrei';
+import { FrameSchedulerHost, PHYSICS_STEP_PRIORITY } from '@/core/runtime/frame';
 
 import { BlueprintPreviewProps } from './types';
 import './styles.css';
@@ -162,6 +163,7 @@ function CharacterBlueprintPreview({ blueprint, modelUrl }: { blueprint: Charact
         camera={{ position: [0, 10, 20], fov: 50 }}
         style={{ width: '100%', height: '100%' }}
       >
+        <FrameSchedulerHost />
         <Camera enableMouse={enableMouse} />
         <Environment preset="sunset" />
         <ambientLight intensity={0.5} />
@@ -178,7 +180,7 @@ function CharacterBlueprintPreview({ blueprint, modelUrl }: { blueprint: Charact
           shadow-camera-left={-90}
         />
         
-        <Physics debug={false} gravity={[0, -9.81, 0]}>
+        <Physics debug={false} gravity={[0, -9.81, 0]} updatePriority={PHYSICS_STEP_PRIORITY}>
           {blueprint && mode?.type === 'character' && (
             <GaesupController
               enableKeyboard={enableKeyboard}

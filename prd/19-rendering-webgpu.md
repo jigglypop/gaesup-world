@@ -109,3 +109,9 @@ createRenderer(settings) : WebGPURenderer | WebGLRenderer
 
 1. three peer 범위 하한(현재 `^0.168 || ^0.178 || ^0.185`)을 올릴 것인가.
 2. `@react-three/postprocessing` 지원을 2.0에서 유지할지.
+
+## 구현 현황 (2026-09-23)
+
+- 프레임 비용 결함: WebGL 깃발 `shaderMaterial`의 알파 계수 유니폼 이름이 `transmission`이라 재질 속성 `transmission = 0.05`로 노출됐다. three.js 렌더 목록은 `transmission > 0` 재질을 투과 객체로 분류해 매 프레임 불투명 객체 전체를 오프스크린 타깃에 한 번 더 그리고(`renderTransmissionPass`), 두 패스의 톤 매핑이 달라 모든 재질이 프레임마다 두 번 프로그램을 다시 고른다(`getProgram` → `getParameters`). 유니폼을 셰이더 상수 `CLOTH_OPACITY`(0.95, 노드 재질과 같은 값)로 바꿨다. 회귀 테스트: WebGL 깃발 재질이 `transmission`을 노출하지 않는다.
+- 측정(`/world`, RTX 5060 Ti D3D11 headless, 60fps, 8.3초 CPU 프로파일, W 이동 4초 포함): `getParameters` 625ms → 92ms, `getProgram` 344ms → 17ms, `setProgram` 124ms → 65ms, 투과 재질 1개 → 0개. 화면상 깃발 알파는 동일하다.
+- 남은 항목: 그림자 패스의 공용 깊이 재질이 인스턴스/일반 메시 사이에서 프로그램을 바꾸는 비용(`WebGLShadowMap` 경유 `getProgram` 약 95ms/8.3초). 유리 재질(`MaterialManager` glass, `transmission` 0.98)은 실제 투과가 필요하므로 배치될 때만 투과 패스 비용이 든다.

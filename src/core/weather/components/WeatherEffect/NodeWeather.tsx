@@ -1,10 +1,10 @@
 import { useEffect, useMemo } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import { InstancedBufferAttribute, Sprite } from 'three/webgpu';
 
 import type { NodeWeatherProps } from './types';
 import { WeatherNodeMaterial } from '../../../rendering/tsl/weather';
+import { useEngineFrame } from '../../../runtime/frame';
 
 export default function NodeWeather({ geometry, material, onObject }: NodeWeatherProps) {
   const sprite = useMemo(() => {
@@ -20,6 +20,6 @@ export default function NodeWeather({ geometry, material, onObject }: NodeWeathe
     sprite.geometry.dispose();
     sprite.material.dispose();
   }, [sprite]);
-  useFrame(() => { sprite.geometry.getAttribute('weatherPosition').needsUpdate = true; });
+  useEngineFrame('effects', () => { sprite.geometry.getAttribute('weatherPosition').needsUpdate = true; }, { label: 'weather:node-sprite' });
   return <primitive object={sprite} ref={onObject} />;
 }

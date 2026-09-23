@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
+import { FRAME_SCHEDULER_PRIORITY, useEngineFrame } from '@core/runtime/frame';
 
 import type { UseCharacterAnimatorOptions } from './types';
 import { getGlobalStateManager } from './useStateSystem';
@@ -13,7 +13,7 @@ import type { AnimatorRuntime } from '../../animation/core/animator/AnimatorRunt
 import type { AnimatorLease } from '../../animation/core/types';
 import { getGlobalAnimationBridge } from '../../animation/hooks/useAnimationBridge';
 
-export const CHARACTER_ANIMATOR_FRAME_PRIORITY = -1;
+export const CHARACTER_ANIMATOR_FRAME_PRIORITY = FRAME_SCHEDULER_PRIORITY;
 const DEFAULT_LOCOMOTION_RESPONSE = 12;
 
 function setFloatIfDeclared(animator: AnimatorRuntime, name: string, value: number): void {
@@ -44,7 +44,7 @@ export function useCharacterAnimator({
     };
   }, [enabled, type, controller]);
 
-  useFrame((_, delta) => {
+  useEngineFrame('animation', (delta) => {
     const lease = leaseRef.current;
     if (!lease) return;
     const bridge = getGlobalAnimationBridge();
@@ -67,5 +67,5 @@ export function useCharacterAnimator({
     setBoolIfDeclared(animator, CHARACTER_ANIMATOR_PARAMETERS.falling, gameStates.isFalling);
     setBoolIfDeclared(animator, CHARACTER_ANIMATOR_PARAMETERS.grounded, gameStates.isOnTheGround);
     bridge.tickAnimator(type, delta, lease);
-  }, CHARACTER_ANIMATOR_FRAME_PRIORITY);
+  }, { active: enabled, label: 'motions:character-animator' });
 }

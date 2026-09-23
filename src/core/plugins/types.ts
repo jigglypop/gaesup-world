@@ -141,6 +141,13 @@ export interface PluginRecord {
   error?: unknown;
 }
 
+export type PluginLifecycleEvent = {
+  type: 'setup' | 'dispose';
+  pluginId: string;
+};
+
+export type PluginLifecycleListener = (event: PluginLifecycleEvent) => void;
+
 export interface PluginRegistryApi {
   has(id: string): boolean;
   get(id: string): PluginRecord | undefined;

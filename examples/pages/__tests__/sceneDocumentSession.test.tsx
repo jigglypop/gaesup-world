@@ -301,4 +301,15 @@ describe('world scene document session', () => {
 
     await runtime.dispose();
   });
+  test('Play 종료 시 Play 중 바뀐 장면 문서를 진입 전으로 되돌린다', async () => {
+    const session = createWorldSceneDocumentSession();
+    const before = session.getSnapshot();
+    await session.playMode.enter();
+    expect(session.playMode.getState().mode).toBe('play');
+    expect(await session.updateObject('world-origin-marker', { name: 'Changed during play' })).toBe(true);
+    expect(session.getSnapshot()).not.toEqual(before);
+    await session.playMode.exit();
+    expect(session.playMode.getState().mode).toBe('edit');
+    expect(session.getSnapshot()).toEqual(before);
+  });
 });

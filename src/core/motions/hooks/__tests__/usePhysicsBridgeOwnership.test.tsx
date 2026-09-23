@@ -6,18 +6,22 @@ import { act, renderHook } from '@testing-library/react';
 
 import { createInteractionInputAdapter } from '@core/interactions/core';
 import { InMemoryEventBus } from '@core/plugins';
+import { frameScheduler } from '@core/runtime/frame';
 import { useGaesupStore } from '@stores/gaesupStore';
 
 import { PhysicsBridge } from '../../bridge/PhysicsBridge';
 import type { PhysicsConfigType } from '../../core/config';
+import { readGroundContact } from '../../core/system/groundContacts';
 import type { MotionsRuntime } from '../../plugin';
 import type { PhysicsCalcProps, PhysicsState } from '../../types';
 import { usePhysicsBridge, type UsePhysicsBridgeOptions } from '../usePhysicsBridge';
 import { getGlobalStateManager } from '../useStateSystem';
 
-type FrameCallback = (state: RootState, delta: number) => void;
+const mockFrameState = {} as RootState;
 
-const mockUseFrame = jest.fn<void, [FrameCallback]>();
+function tickFrame(delta: number): void {
+  frameScheduler.tick(delta, performance.now());
+}
 
 function clonePhysicsConfig(config: PhysicsConfigType): PhysicsConfigType {
   return {
@@ -30,7 +34,8 @@ function clonePhysicsConfig(config: PhysicsConfigType): PhysicsConfigType {
 const ORIGINAL_PHYSICS_CONFIG = clonePhysicsConfig(useGaesupStore.getState().physics);
 
 jest.mock('@react-three/fiber', () => ({
-  useFrame: (callback: FrameCallback) => mockUseFrame(callback),
+  useThree: (selector: (state: { get: () => RootState }) => unknown) =>
+    selector({ get: () => mockFrameState }),
 }));
 
 function createRuntime(physicsBridge = new PhysicsBridge()): MotionsRuntime {
@@ -170,8 +175,7 @@ describe('usePhysicsBridge entity ownership', () => {
     expect(firstExecute).toHaveBeenCalledTimes(firstExecuteCount);
     expect(secondExecute).toHaveBeenCalledWith('moving-entity', expect.any(Object));
 
-    const frameCallback = mockUseFrame.mock.calls.at(-1)?.[0];
-    act(() => frameCallback?.({} as RootState, 0.016));
+    act(() => tickFrame(0.016));
     expect(firstUpdate).not.toHaveBeenCalled();
     expect(secondUpdate).toHaveBeenCalledWith(
       'moving-entity',
@@ -187,6 +191,36 @@ describe('usePhysicsBridge entity ownership', () => {
     unmount();
     expect(firstRuntime.physicsBridge.getEngine('moving-entity')).toBeUndefined();
     expect(secondRuntime.physicsBridge.getEngine('moving-entity')).toBeUndefined();
+  });
+
+  test('입력과 임펄스는 물리 step 전에, 접지 판독은 step 후에 실행한다', () => {
+    const runtime = createRuntime();
+    const calls: string[] = [];
+    jest
+      .spyOn(runtime.physicsBridge, 'updateEntity')
+      .mockImplementation((_id, args) => {
+        calls.push(`drive:${args.stage ?? 'full'}`);
+      });
+    jest
+      .spyOn(runtime.physicsBridge, 'resolveEntity')
+      .mockImplementation((_id, args) => {
+        calls.push('resolve');
+        args.physicsState.gameStates.isOnTheGround = true;
+      });
+    const { unmount } = renderHook(() =>
+      usePhysicsBridge(createOptions(runtime, { entityId: 'staged-entity' })),
+    );
+
+    act(() => frameScheduler.tickBeforePhysics(0.016, performance.now()));
+    expect(calls).toEqual(['drive:drive']);
+    expect(readGroundContact('staged-entity')).toBeUndefined();
+
+    act(() => frameScheduler.tickAfterPhysics(0.016, performance.now()));
+    expect(calls).toEqual(['drive:drive', 'resolve']);
+    expect(readGroundContact('staged-entity')).toBe(true);
+
+    unmount();
+    expect(readGroundContact('staged-entity')).toBeUndefined();
   });
 
   test('uses the registered entity ID for config commands and frame updates', () => {
@@ -206,9 +240,8 @@ describe('usePhysicsBridge entity ownership', () => {
       data: expect.any(Object),
     });
 
-    const frameCallback = mockUseFrame.mock.calls.at(-1)?.[0];
-    expect(frameCallback).toBeDefined();
-    act(() => frameCallback?.({} as RootState, 0.016));
+    expect(frameScheduler.count('postPhysics')).toBe(1);
+    act(() => tickFrame(0.016));
 
     expect(updateEntity).toHaveBeenCalledWith(
       'frame-entity',
@@ -366,8 +399,6 @@ describe('usePhysicsBridge entity ownership', () => {
         entityId: 'live-projection-entity',
       }),
     );
-    const frameCallback = mockUseFrame.mock.calls.at(-1)?.[0];
-    const frameState = {} as RootState;
 
     const executeProjection = (
       mode: PhysicsState['modeType'],
@@ -381,7 +412,7 @@ describe('usePhysicsBridge entity ownership', () => {
       });
       const expectedWorldContext = useGaesupStore.getState();
       getState.mockClear();
-      act(() => frameCallback?.(frameState, 0.016));
+      act(() => tickFrame(0.016));
 
       expect(getState).toHaveBeenCalledTimes(1);
       const update = updateEntity.mock.calls.at(-1)?.[1];
@@ -395,7 +426,7 @@ describe('usePhysicsBridge entity ownership', () => {
     };
 
     try {
-      expect(frameCallback).toBeDefined();
+      expect(frameScheduler.count('postPhysics')).toBe(1);
       const firstEngine = runtime.physicsBridge.getEngine('live-projection-entity');
       const character = executeProjection('character', characterAutomation);
       const retainedState = character.physicsState;
@@ -417,8 +448,7 @@ describe('usePhysicsBridge entity ownership', () => {
         expect(runtime.physicsBridge.getEngine('live-projection-entity')).toBe(firstEngine);
       }
       expect(register).toHaveBeenCalledTimes(1);
-      expect(mockUseFrame).toHaveBeenCalledTimes(1);
-      expect(mockUseFrame.mock.calls.at(-1)?.[0]).toBe(frameCallback);
+      expect(frameScheduler.count('postPhysics')).toBe(1);
       expect(lockRotations).toHaveBeenCalledTimes(1);
       expect(lockRotations).toHaveBeenCalledWith(false, true);
       expect(setTranslation).toHaveBeenCalledTimes(1);

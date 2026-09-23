@@ -6,6 +6,7 @@ import {
   ICameraController,
   CameraSystemState,
   CameraCalcProps,
+  CameraRuntimeState,
   CameraState,
   CameraTransition,
 } from './types';
@@ -27,22 +28,34 @@ export class CameraSystem extends BaseCameraSystem {
   private activeController?: ICameraController;
   private activeControllerMode?: string;
   private state: CameraSystemState;
+  private readonly runtime: CameraRuntimeState;
   private cameraStates: Map<string, CameraState> = new Map();
   private currentCameraStateName: string = 'default';
   private cameraTransitions: CameraTransition[] = [];
-  
+
   constructor(config: CameraSystemConfig) {
     super(config);
+    this.runtime = { orbitYaw: config.orbitYaw ?? 0, orbitPitch: config.orbitPitch ?? 0 };
     this.state = this.createInitialState(config);
     this.registerControllers();
     this.initializeCameraStates();
   }
-  
+
   private createInitialState(config: CameraSystemConfig): CameraSystemState {
     return {
       config: cloneCameraSystemConfig(config),
+      runtime: this.runtime,
       lastUpdate: Date.now(),
     };
+  }
+
+  setOrbit(yaw: number, pitch: number): void {
+    this.runtime.orbitYaw = yaw;
+    this.runtime.orbitPitch = pitch;
+  }
+
+  getRuntimeState(): Readonly<CameraRuntimeState> {
+    return this.runtime;
   }
   
   private initializeCameraStates(): void {
@@ -77,6 +90,8 @@ export class CameraSystem extends BaseCameraSystem {
     const previousMode = this.state.config.mode;
     super.updateConfig(config);
     this.state.config = this.getConfig();
+    if (config.orbitYaw !== undefined) this.runtime.orbitYaw = config.orbitYaw;
+    if (config.orbitPitch !== undefined) this.runtime.orbitPitch = config.orbitPitch;
     if (config.mode !== undefined && config.mode !== previousMode) {
       this.resolveActiveController();
     }

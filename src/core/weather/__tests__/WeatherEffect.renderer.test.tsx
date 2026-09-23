@@ -4,6 +4,7 @@ import ReactThreeTestRenderer from '@react-three/test-renderer';
 import { BufferAttribute, Points, Sprite } from 'three';
 
 import { WeatherNodeMaterial } from '../../rendering/tsl/weather';
+import { FrameSchedulerHost } from '../../runtime/frame';
 import { WeatherEffect } from '../components/WeatherEffect';
 
 jest.mock('three/webgpu', () => jest.requireActual('three'));
@@ -29,7 +30,7 @@ test('legacy weather keeps Points and does not construct node materials', async 
 });
 
 test('node weather renders and updates all particles through one owned sprite', async () => {
-  const view = await ReactThreeTestRenderer.create(<RendererMode nodes><WeatherEffect kind="rain" count={8} followCamera /></RendererMode>);
+  const view = await ReactThreeTestRenderer.create(<RendererMode nodes><FrameSchedulerHost /><WeatherEffect kind="rain" count={8} followCamera /></RendererMode>);
   try {
     const sprite = view.scene.findByType('Sprite').instance as Sprite;
     const positions = sprite.geometry.getAttribute('weatherPosition') as BufferAttribute;
@@ -44,7 +45,7 @@ test('node weather renders and updates all particles through one owned sprite', 
     expect(positions.getY(0)).toBeLessThan(5);
     expect(positions.version).toBeGreaterThan(0);
     expect(sprite.position.toArray()).not.toEqual([0, 0, 0]);
-    await view.update(<RendererMode nodes><WeatherEffect kind="rain" count={8} /></RendererMode>);
+    await view.update(<RendererMode nodes><FrameSchedulerHost /><WeatherEffect kind="rain" count={8} /></RendererMode>);
     expect(sprite.geometry).toBe(geometry);
     expect(positions.array).toBe(storage);
     expect(WeatherNodeMaterial).toHaveBeenCalledTimes(1);

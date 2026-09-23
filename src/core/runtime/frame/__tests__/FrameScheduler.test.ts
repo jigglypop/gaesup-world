@@ -89,3 +89,26 @@ describe('createFrameDriver', () => {
     expect(scheduler.count('effects')).toBe(0);
   });
 });
+
+describe('FrameScheduler recovery', () => {
+  test('시계가 뒤로 가면 throttle 대기 없이 다시 실행한다', () => {
+    const scheduler = new FrameScheduler();
+    const throttled = jest.fn();
+    scheduler.add('effects', throttled, { throttleMs: 100 });
+    scheduler.tick(0.016, 5000);
+    scheduler.tick(0.016, 20);
+    scheduler.tick(0.016, 60);
+    expect(throttled).toHaveBeenCalledTimes(2);
+  });
+
+  test('clear 뒤에도 드라이버가 다시 등록된다', () => {
+    const scheduler = new FrameScheduler();
+    const update = jest.fn();
+    const driver = createFrameDriver<number>('effects', update, {}, scheduler);
+    driver.add(1);
+    scheduler.clear();
+    driver.add(2);
+    scheduler.tick(0.016, 0);
+    expect(update).toHaveBeenCalledTimes(2);
+  });
+});

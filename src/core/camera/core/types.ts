@@ -134,8 +134,14 @@ export interface CameraTransition {
   conditions?: CameraTransitionCondition[];
 }
 
+export type CameraRuntimeState = {
+  orbitYaw: number;
+  orbitPitch: number;
+};
+
 export interface CameraSystemState {
   config: CameraSystemConfig;
+  runtime?: CameraRuntimeState;
   activeController?: ICameraController;
   lastUpdate: number; // 추가
 }

@@ -1,7 +1,6 @@
-import { RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { RefObject, useEffect, useRef, useState } from 'react';
 
-import { useFrame, type RootState } from '@react-three/fiber';
-
+import { useEngineFrame } from '../../runtime/frame';
 import { AbstractBridge } from '../bridge/AbstractBridge';
 import { DIContainer } from '../di';
 import { ManagedEntity } from '../entity/ManagedEntity';
@@ -10,7 +9,6 @@ import {
   RuntimeValue,
   UseManagedEntityOptions,
 } from '../types';
-import { getFrameTimeMs } from './frameTime';
 import { useBaseFrame } from './useBaseFrame';
 import { useBaseLifecycle } from './useBaseLifecycle';
 
@@ -439,31 +437,26 @@ export function useBatchManagedEntities<
     [],
   );
 
-  const handleFrame = useCallback(
-    (state: RootState) => {
+  useEngineFrame(
+    'snapshot',
+    (_delta, elapsedMs) => {
       if (!bridge || !enabled) return;
       if (skipWhenHidden && typeof document !== 'undefined' && document.hidden) return;
-      let now = 0;
-      if (throttle > 0) {
-        now = getFrameTimeMs(state);
-      }
-
       for (let index = 0; index < orderedIds.length; index += 1) {
         const id = orderedIds[index];
         if (id === undefined) continue;
         const record = recordsRef.current.get(id);
         if (!record) continue;
         if (throttle > 0) {
-          if (now - record.lastUpdateTime < throttle) continue;
-          record.lastUpdateTime = now;
+          if (elapsedMs - record.lastUpdateTime < throttle) continue;
+          record.lastUpdateTime = elapsedMs;
         }
         bridge.notifyListeners(id);
         frameCallback?.();
       }
     },
-    [bridge, enabled, frameCallback, orderedIds, skipWhenHidden, throttle],
+    { order: priority, label: 'bridge:batch-managed-entities', active: enabled && bridge !== null },
   );
-  useFrame(handleFrame, priority);
 
   return entries.map(({ id }) => recordsRef.current.get(id)?.entity ?? null);
 }

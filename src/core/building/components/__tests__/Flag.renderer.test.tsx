@@ -5,6 +5,7 @@ import ReactThreeTestRenderer from '@react-three/test-renderer';
 import * as THREE from 'three';
 
 import { FlagNodeMaterial } from '../../../rendering/tsl/flag';
+import { FrameSchedulerHost } from '../../../runtime/frame';
 import type { PlacedObject } from '../../types';
 import { FlagBatch, FlagMesh } from '../mesh/flag';
 
@@ -14,11 +15,11 @@ jest.mock('../../../rendering/tsl/flag', () => {
     time: 0, windStrength: 1,
   })) };
 });
-jest.mock('../../../boilerplate/hooks/frameTime', () => ({ getFrameElapsedSeconds: () => 2 }));
+jest.mock('../../../boilerplate/hooks/frameTime', () => ({ getFrameElapsedSeconds: () => 2, getFrameTimeMs: () => 2_000 }));
 
 function RendererMode({ nodes, children }: { nodes: boolean; children: ReactNode }) {
   Object.assign(useThree((state) => state.gl), { isWebGPURenderer: nodes });
-  return children;
+  return <><FrameSchedulerHost />{children}</>;
 }
 
 test.each([false, true])('standalone flag chooses its renderer material and animates (nodes: %s)', async (nodes) => {
@@ -35,6 +36,17 @@ test.each([false, true])('standalone flag chooses its renderer material and anim
   const dispose = jest.spyOn(material, 'dispose');
   await renderer.unmount();
   expect(dispose).toHaveBeenCalled();
+  geometry.dispose();
+});
+
+test('WebGL 깃발 재질은 transmission 값을 노출하지 않아 투과 패스를 유발하지 않는다', async () => {
+  const geometry = new THREE.PlaneGeometry(2, 1);
+  const renderer = await ReactThreeTestRenderer.create(<RendererMode nodes={false}>
+    <FlagMesh geometry={geometry} />
+  </RendererMode>);
+  const mesh = renderer.scene.find((node) => node.instance instanceof THREE.Mesh).instance as THREE.Mesh;
+  expect(Reflect.get(mesh.material as THREE.Material, 'transmission') ?? 0).toBe(0);
+  await renderer.unmount();
   geometry.dispose();
 });
 

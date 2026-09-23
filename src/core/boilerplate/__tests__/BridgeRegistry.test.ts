@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { logger } from '../../utils/logger';
 import { BridgeRegistry } from '../bridge/BridgeRegistry';
 import { ServiceTarget } from '../types';
 
@@ -135,7 +136,7 @@ describe('BridgeRegistry', () => {
   describe('브릿지 덮어쓰기', () => {
     test('같은 도메인에 다른 브릿지를 등록하면 덮어써야 함', () => {
       const domain = 'overwrite-test';
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const warnSpy = jest.spyOn(logger, 'warn').mockImplementation();
       
       // 첫 번째 등록
       BridgeRegistry.register(domain, MockBridgeA);
@@ -146,28 +147,28 @@ describe('BridgeRegistry', () => {
       expect(BridgeRegistry.get(domain)).toBe(MockBridgeB);
       
       // 경고 메시지가 출력되어야 함
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('already registered')
       );
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('Overwriting')
       );
       
-      consoleSpy.mockRestore();
+      warnSpy.mockRestore();
     });
 
     test('동일한 브릿지를 다시 등록해도 경고가 발생해야 함', () => {
       const domain = 'same-bridge-test';
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const warnSpy = jest.spyOn(logger, 'warn').mockImplementation();
       
       BridgeRegistry.register(domain, MockBridgeA);
       BridgeRegistry.register(domain, MockBridgeA);
       
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('already registered')
       );
       
-      consoleSpy.mockRestore();
+      warnSpy.mockRestore();
     });
   });
 
@@ -250,7 +251,7 @@ describe('BridgeRegistry', () => {
 
     test('반복적인 덮어쓰기가 메모리 누수를 일으키지 않아야 함', () => {
       const domain = 'memory-test';
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const warnSpy = jest.spyOn(logger, 'warn').mockImplementation();
       
       // 여러 번 덮어쓰기
       for (let i = 0; i < 100; i++) {
@@ -260,7 +261,7 @@ describe('BridgeRegistry', () => {
       // 마지막 등록된 브릿지가 조회되어야 함
       expect(BridgeRegistry.get(domain)).toBe(MockBridgeB);
       
-      consoleSpy.mockRestore();
+      warnSpy.mockRestore();
     });
   });
 

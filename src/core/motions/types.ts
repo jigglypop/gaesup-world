@@ -6,8 +6,9 @@ import * as THREE from 'three';
 
 import type { AutomationState, InteractionState } from '@core/interactions/bridge/types';
 
+import type { PhysicsQueryAdapter } from './core/physics/types';
 import type { ActiveStateType } from './core/types';
-import type { PhysicsEntityProps } from './entities';
+import type { GroundRay, PhysicsEntityProps } from './entities';
 import type { ModeType, StoreState } from '../stores/types';
 import type { GameStatesType } from '../world/components/Rideable/types';
 
@@ -34,6 +35,8 @@ export interface PhysicsCalcProps {
   setMouseInput: (input: Partial<PhysicsInputState['mouse']>) => void;
   body?: RapierRigidBody;
   colliderSize?: PhysicsEntityProps['colliderSize'];
+  physicsQueries?: PhysicsQueryAdapter;
+  groundRay?: GroundRay;
   memo?: {
     direction?: THREE.Vector3;
     directionTarget?: THREE.Vector3;

@@ -1,10 +1,10 @@
 import React, { useRef, useMemo } from 'react';
 
 import { Sphere } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { Line, Text } from '@/core/rendering/legacyDrei';
+import { useEngineFrame } from '@core/runtime/frame';
 
 import { useNetworkBridge } from '../hooks';
 import type { NPCNetworkNode, NetworkConnection, NetworkSystemState } from '../types';
@@ -66,7 +66,7 @@ export const NPCNetworkVisualizer: React.FC<NPCNetworkVisualizerProps> = ({
     groups: new Map(),
   });
 
-  useFrame(() => {
+  useEngineFrame('snapshot', () => {
     const now = Date.now();
     if (!isReady || now - lastUpdateRef.current < updateInterval) return;
 
@@ -85,7 +85,7 @@ export const NPCNetworkVisualizer: React.FC<NPCNetworkVisualizerProps> = ({
     });
 
     lastUpdateRef.current = now;
-  });
+  }, { label: 'network:npc-visualizer', active: isReady });
 
   // groupId -> color (안정적 매핑)
   const groupColors = useMemo(() => {

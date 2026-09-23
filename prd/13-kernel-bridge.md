@@ -113,3 +113,15 @@ export function initializeBridges(registry = BridgeRegistry): void { ... }
 | 13-d ~ 13-g | 미착수 | 공개 API 삭제가 포함되어 사용자 확인 필요 |
 
 검증: 타입체크(src, examples)와 변경 파일 린트 통과. 새 테스트는 메모리 제약으로 실행하지 않았다.
+
+### 3차 (2026-09-23)
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 13-c | 완료 | `WorldBridge`의 `@CacheSnapshot(16)`, `@LogSnapshot()` 제거. 시간 기반 캐시가 16ms 안의 두 번째 명령 알림에 이전 스냅샷을 보내 zustand world 슬라이스가 두 번째 변경을 놓치는 결함을 재현하고 고쳤다(`world/bridge/__tests__/WorldBridge.test.ts`). 조회 함수(`objectsInRadius`, `objectsByType`, `raycast`)는 엔티티 생성 시 한 번 만들어 모든 스냅샷이 공유한다. `objects`, `events` 배열은 구독자가 참조 변경으로 갱신을 감지하므로 명령마다 새로 만든다. world 스냅샷은 명령 실행 시에만 만들어지고 프레임마다 만들어지지 않는다 |
+
+world, blueprints 17 suites / 119 tests 통과.
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 13-d | 부분 | `initializeBridges.ts`가 부수효과 import 대신 `CORE_BRIDGES`(Motion, Physics, World, Animation) 클래스를 이름으로 참조하고, 루트·`./editor`·`./runtime` 엔트리가 `initializeBridges()`를 호출한다. `package.json sideEffects`가 브리지 경로를 포함하지 않아 소비자 번들러가 bare import(`import './core/initializeBridges'`)를 제거할 수 있던 위험(P-07)을 없앤다. 이미 데코레이터가 등록했으면 다시 등록하지 않는다. `DomainBridge` 단일화와 `RegisterBridge` 삭제는 공개 API 삭제라 사용자 확인 대기. Network, UI 브리지는 선택 킷이라 루트 목록에 넣지 않았다 |

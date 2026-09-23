@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 
 import {
   CinematicPanel,
@@ -19,6 +19,7 @@ import {
   useWorldSceneDocumentSnapshot,
   type WorldSceneDocumentSession,
 } from './world/sceneDocument';
+import { useWorldScenePrefabActions } from './world/scenePrefabs';
 
 export type WorldEditorSurfaceProps = {
   showEditorShell: boolean;
@@ -35,6 +36,8 @@ export function WorldEditorSurface({
 }: WorldEditorSurfaceProps) {
   const [gameplayBlueprints, setGameplayBlueprints] = useState(() => getWorldGameplayBlueprints());
   const sceneDocument = useWorldSceneDocumentSnapshot(sceneDocumentSession);
+  const { playMode } = sceneDocumentSession;
+  const playState = useSyncExternalStore(playMode.subscribe, playMode.getState, playMode.getState);
   const [selectedObjectCandidate, setSelectedObjectCandidate] = useState<string | undefined>(
     () => sceneDocument.objects[0]?.id,
   );
@@ -43,6 +46,7 @@ export function WorldEditorSurface({
   )
     ? selectedObjectCandidate
     : sceneDocument.objects[0]?.id;
+  const prefabActions = useWorldScenePrefabActions(sceneDocumentSession.prefabs, setSelectedObjectCandidate);
   const editorShell = useMemo(() => {
     const auxiliaryPanels = includeEditorAuxPanels
       ? [
@@ -163,6 +167,11 @@ export function WorldEditorSurface({
       shell={editorShell}
       sceneDocument={sceneDocument}
       projectScenes={[sceneDocument]}
+      projectPrefabs={[...prefabActions.prefabs]}
+      onSelectProjectItem={(item) => {
+        if (item.kind === 'prefab') void sceneDocumentSession.prefabs.place(item.id);
+      }}
+      scenePrefab={prefabActions}
       {...(selectedObjectId ? { selectedObjectId } : {})}
       onSelectSceneObject={(object) => setSelectedObjectCandidate(object.id)}
       onUpdateSceneObject={(objectId, patch) => {
@@ -171,9 +180,19 @@ export function WorldEditorSurface({
       onAddSceneComponent={(objectId, component) => {
         void sceneDocumentSession.addComponent(objectId, component);
       }}
+      onUpdateSceneComponent={(objectId, componentId, data) => {
+        void sceneDocumentSession.updateComponent(objectId, componentId, data);
+      }}
       onRemoveSceneComponent={(objectId, componentId) => {
         void sceneDocumentSession.removeComponent(objectId, componentId);
       }}
+      playMode={playState.mode}
+      onEnterPlayMode={async () => {
+        await playMode.enter();
+      }}
+      onExitPlayMode={playMode.exit}
+      onPausePlayMode={playMode.pause}
+      onResumePlayMode={playMode.resume}
     />
   );
 }

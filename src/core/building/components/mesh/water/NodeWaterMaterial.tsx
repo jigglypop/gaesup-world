@@ -1,13 +1,13 @@
 import { useEffect, useMemo } from 'react';
 
-import { useFrame } from '@react-three/fiber';
-
-import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
 import { createToonWaterMaterial } from '../../../../rendering/tsl/toonWater';
+import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
+
+const NODE_WATER_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:water-node' };
 
 export default function NodeWaterMaterial() {
   const { material, time } = useMemo(createToonWaterMaterial, []);
-  useFrame((state) => { time.value = getFrameElapsedSeconds(state); });
+  useSharedFrame(NODE_WATER_FRAME, (_, elapsedSeconds) => { time.value = elapsedSeconds; });
   useEffect(() => () => material.dispose(), [material]);
   return <primitive object={material} attach="material" />;
 }

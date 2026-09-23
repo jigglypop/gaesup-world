@@ -6,6 +6,8 @@ import type {
   PluginContext,
   PluginContextOptions,
   PluginDiagnostic,
+  PluginLifecycleEvent,
+  PluginLifecycleListener,
   PluginManifest,
   PluginRecord,
   PluginRegistryApi,
@@ -53,6 +55,7 @@ export class PluginRegistry implements PluginRegistryApi {
   private readonly records = new Map<string, PluginRecord>();
   private readonly setupTasks = new Map<string, Promise<void>>();
   private readonly setupOrder: string[] = [];
+  private readonly lifecycleListeners = new Set<PluginLifecycleListener>();
   private readonly options: PluginContextOptions;
   readonly context: PluginContext;
 
@@ -99,6 +102,7 @@ export class PluginRegistry implements PluginRegistryApi {
       this.removePluginExtensions(id);
       record.status = 'disposed';
       this.removeFromSetupOrder(id);
+      this.notifyLifecycle('dispose', id);
     } catch (error) {
       record.status = 'failed';
       record.error = error;
@@ -111,6 +115,13 @@ export class PluginRegistry implements PluginRegistryApi {
     for (const id of ids) {
       await this.dispose(id);
     }
+  }
+
+  onLifecycle(listener: PluginLifecycleListener): () => void {
+    this.lifecycleListeners.add(listener);
+    return () => {
+      this.lifecycleListeners.delete(listener);
+    };
   }
 
   has(id: string): boolean {
@@ -194,6 +205,7 @@ export class PluginRegistry implements PluginRegistryApi {
       if (!this.setupOrder.includes(id)) {
         this.setupOrder.push(id);
       }
+      this.notifyLifecycle('setup', id);
     } catch (error) {
       record.status = 'failed';
       record.error = error;
@@ -359,6 +371,10 @@ export class PluginRegistry implements PluginRegistryApi {
     if (index !== -1) {
       this.setupOrder.splice(index, 1);
     }
+  }
+
+  private notifyLifecycle(type: PluginLifecycleEvent['type'], pluginId: string): void {
+    for (const listener of this.lifecycleListeners) listener({ type, pluginId });
   }
 
   private removePluginExtensions(pluginId: string): void {

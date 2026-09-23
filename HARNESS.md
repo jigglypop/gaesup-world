@@ -1815,3 +1815,57 @@ Experimental `gaesup-world/next`의 Three WebGPURenderer facade를 실패 phase�
 - WebGPURenderer에서 lazy NodeWeather와 WeatherNodeMaterial을 사용한다. 기존 CPU 위치 배열·이동 수식·카메라 따라가기를 유지하고 단일 인스턴스 Sprite에 동일 배열을 연결한다. WebGL Points 경로와 공개 props는 유지한다. 소유 geometry/material만 해제한다.
 - weather 11 tests, WGSL/GLSL 생성 16조건, build/root 타입·production ESLint·기존 memory 88 tests·demo build 통과. 초기 정적 graph는 7 chunks / 519148 JS bytes다. R3F 테스트의 node material/renderer는 대체됐으며 실제 GPU 검증을 의미하지 않는다.
 - 실제 브라우저 입자 크기·색·안개 비교, native GPU/FPS와 메인 월드 전환은 미완료다. source of truth는 기존 weather store와 WeatherEffect의 비영속 입자 배열이다. 전체 Jest는 이번에 실행하지 않았다.
+
+## PRD 3차: 미실행 테스트 검증과 단계 0·1 Fast slice (2026-09-23)
+
+- `node_modules`가 다른 브랜치 lockfile 기준이라 `pnpm install --frozen-lockfile` 후 측정했다. 2차 커밋(945bd938)의 새 테스트 23개 파일 155건 중 2건, 기존 스위트 4건이 실패했다. `extendedCommands` 거부 시 원본 참조 미반환, `BridgeRegistry` 테스트의 console 감시, `MotionBridge` reset 후 접지 true, `usePhysicsBridge`의 `BridgeFactory` 재도입을 고쳤다(PRD-10, 13, 14 3차 기록). 접지 접촉은 Layer 1 `motions/core/system/groundContacts.ts`가 소유한다.
+- PRD-15 15-a/15-b: `CameraCollisionIndex`(씬 그래프 이벤트 무효화, `CAMERA_COLLIDER_LAYER` 한정과 전체 폴백, 결과 재사용, 인라인 바운딩 구 선검사)로 메시 5,000개 충돌 판정이 1.89ms에서 0.10ms. 궤도 입력은 `CameraSystem.setOrbit`으로 런타임 상태만 바꾸고 `updateConfig`를 부르지 않는다.
+- PRD-13 13-c: `WorldBridge`의 16ms 시간 캐시가 연속 명령의 두 번째 알림에 이전 스냅샷을 보내는 결함을 재현하고 제거했다. 조회 함수는 엔티티당 한 번 생성.
+- PRD-24 24-a: 15개 JS 엔트리 런타임 export 스냅샷(1,538개). PRD-26 26-a/26-d: `quality-baseline.json`과 `pnpm check:quality` ratchet(증가 실패, 감소 시 `--update` 요구). CI 연결은 미결정.
+- 검증: 전체 jest 309 suites / 2,754 tests 통과(1 skipped), memory 88, `eslint src examples` 0, `tsc`(build, examples 포함) 0, `check:layer1` 3건 유지, `check:entries` 0, `test:package:built` 통과, `test:demo` 통과(초기 7 청크 519,688 bytes). 브라우저 검증과 native GPU/FPS는 미실행.
+
+## PRD 3차-2: 프레임 파이프라인 전환과 저장·스크립트 연결 (2026-09-23)
+
+- PRD-11 11-c~11-h: 호스트가 R3F 우선순위 -100(`input`~`prePhysics`)과 -1(`postPhysics`~`snapshot`) 두 번 틱하고, 앱은 rapier `updatePriority={PHYSICS_STEP_PRIORITY}`(-50)로 step을 그 사이에 둔다. 캔버스(R3F store)마다 전용 스케줄러, 전역 스케줄러는 primary 호스트만 틱(두 캔버스 이중 실행 방지). `useSharedFrame`으로 이펙트 13채널(인스턴스 N개 → 스케줄러 항목 1개). raw `useFrame` 55 → 0(호스트 제외), `src/**` 린트 금지 규칙. 11-f 기계적 전환 34개 파일은 파일이 겹치지 않는 하위 에이전트 2개가 병렬 수행하고 루트가 통합·검증했다.
+- PRD-21 21-d: `PluginRegistry.onLifecycle`로 setup 뒤 `plugins.use()`/`dispose()`한 플러그인의 save 바인딩을 연결·해제, 키 충돌은 `RUNTIME_SAVE_BINDING_REJECTED_EVENT`. PRD-13 13-d(부분): 엔트리가 `initializeBridges()`를 호출해 bare import 제거 위험 해소. PRD-12 12-e(부분): 스크립트 런타임의 Play 모드 소스(edit 파괴, paused 정지).
+- 공개 export 추가 7개(스냅샷 갱신, 삭제 없음). 품질 기준선: interface 491, raw `useFrame` 0.
+- 검증: 전체 jest 313 suites / 2,763 tests 통과(1 skipped), 이후 추가 테스트(perf 단계 시간 2건) 통과, memory 88, `eslint src examples` 0, `tsc` 0, `check:layer1` 3, `check:entries` 0, `test:demo` 통과(초기 7 청크 519,751 bytes). 브라우저에서 물리·카메라 순서와 체감 동작 비교는 미실행이다.
+- frame-perf-auditor 감사(읽기 전용 하위 에이전트) 지적 12건 중 확정 결함을 반영했다: 호스트를 `Suspense` 밖으로, 스케줄러별 틱 소유 토큰(이중 틱 방지), 전역·캔버스 단계별 교차 실행, 시계 역행 시 throttle 재설정, 공유 채널 문자열 키와 빈 그룹 삭제, 공유 채널 호스트 누락 경고, `clear()` 세대 비교 재등록, layout effect 등록, 항목당 호출 3→2, `TileObject` LOD 공유 채널, `NPCPanel` step 우선순위, 프레임당 할당 2건. 반영 후 전체 jest 314 suites / 2,776 tests 통과, memory 88, lint 0, tsc 0. `BuildingGpuCullingDriver` 디스패치 할당은 기존 결함으로 PRD-19로 넘겼다.
+
+## PRD 3차-3: 스크립트 Play 연결, Inspector 편집, 물리 단계 분리 (2026-09-23)
+
+- PRD-12 12-e: `useScriptObjectTransform`이 런타임 transform 버퍼를 `lateUpdate` 공유 채널로 투영하고 edit 복귀 시 문서 transform으로 복원한다. 예제 `/creator`의 세션이 `EditorPlayModeController`를 소유하고 Play 회전, Stop 원위치를 브라우저에서 확인했다.
+- PRD-12 12-g: Inspector 스크립트 prop 편집(`ScriptPropField`)과 스크립트 추가 메뉴(`ScriptPicker`), `onUpdateSceneComponent` 배선, 에디터 커맨드 `updateComponent`(undo/redo). 커맨드 6종의 중복 run/undo를 헬퍼 하나로 합치고 컨트롤러 경로는 불변 스냅샷 참조를 보관해 커맨드마다 문서 전체 복제를 없앴다(PRD-18 NFR-2).
+- PRD-14 14-e(부분): `usePhysicsBridge`를 `prePhysics` drive(입력, 임펄스)와 `postPhysics` resolve(접지, 위치)로 나눠 입력이 같은 프레임 step에 반영된다. `PhysicsUpdateArgs.stage`, `PhysicsBridge.resolveEntity` 추가, 단일 단계 `calculate`는 기존 순서 유지. 브라우저 `/world`에서 이동 (0, 0) → (8.47, 8.47), 점프 y 1.33 → 5.73 → 1.33을 three devtools 훅으로 계측했다.
+- 공개 export 추가 1개(`useScriptObjectTransform`, 스냅샷 갱신, 삭제 없음). 품질 기준선 변화 없음.
+- 검증: 전체 jest 315 suites / 2,783 tests 통과(1 skipped), memory 88, `eslint src examples` 0, `tsc`(build, examples 포함) 0, `check:layer1` 3, `check:entries` 0, `check:quality` 통과.
+
+## PRD 3차-4: 투과 패스 오분류 제거 (2026-09-23)
+
+- 실제 GPU(D3D11) headless 프로파일로 `/world`의 프레임 비용 1위가 three.js 프로그램 재선택(`getParameters`, `getProgram`)임을 찾았다. 원인은 WebGL 깃발 셰이더의 `transmission` 유니폼이 재질 속성으로 노출돼 매 프레임 투과 패스가 돌던 것이다. 셰이더 상수로 바꿔 `getParameters` 625ms → 92ms, `getProgram` 344ms → 17ms(8.3초 기준). 기록은 PRD-19 구현 현황.
+- 검증: building 도메인 jest 40 suites / 354 tests 통과(1 skipped), `tsc`(build) 0, 변경 파일 eslint 0. 브라우저 `/world` 투과 재질 0개, 페이지 오류 0건.
+- PRD-17 NFR-2: `Clicker`가 키 입력마다, 이동 중 150ms마다 재렌더하던 구독을 선택자와 프레임 판정으로 바꿨다(재렌더 0회 회귀 테스트). interactions, hooks, navigation jest 17 suites / 217 tests 통과, `tsc` 0, 변경 파일 eslint 0, 브라우저 클릭 이동과 마커 표시·숨김 확인.
+- PRD-14 14-f/14-g(부분): Rapier 레이 접지 탐침(`PhysicsQueryAdapter`, `GroundProbe`, 경사 한계 50도). 기존 휴리스틱(y ≤ 0.75)은 높은 지면에서 시작하면 점프가 불가능했고 브라우저에서 같은 스크립트로 전후를 비교했다(전: 점프 없음, 후: 3.33 → 7.87 → 3.33). 어댑터가 없으면 기존 휴리스틱을 쓴다.
+- 전체 jest에서 `architectureBoundaries`의 Layer 1 Rapier 간선 기준선 초과(3건)를 확인하고 Rapier 구현을 `motions/bridge`로 옮겨 기준선을 유지했다. 이후 motions·boilerplate·경계 48 suites / 555 tests 통과, 전체 jest는 그 외 316 suites 통과(수정 전 실행 기준 2,790 tests 중 1 실패가 이 건), `tsc`(src, examples) 0, 브라우저 점프 최고 7.88 후 3.33 착지.
+
+## PRD 3차-5: 장면 오브젝트 물리와 스크립트 트리거 (2026-09-23)
+
+- PRD-14 14-h: 레이어 충돌 매트릭스 → Rapier 상호작용 그룹(`createSceneCollisionGroups`). 14-i(부분): `SceneObjectBody`가 collider/rigidBody 컴포넌트로 강체를 만들고 물리 이벤트를 오브젝트 ID로 전달한다. PRD-12 12-f: 예제 트리거 존이 캐릭터 진입·이탈에 반응하는 것을 브라우저에서 확인했다. `ScriptRuntime.on` 추가, `stop()`의 외부 구독 삭제 제거.
+- 예제 초기 장면 문서에 루트 오브젝트 1개(트리거 존)를 추가했다. 표식 투영(`projectWorldSceneDocumentRootMarkers`)은 콜라이더가 없는 루트만, 물리 바디 투영은 콜라이더가 있는 루트만 다루므로 기존 표식 테스트 기대값은 그대로다. `WorldSceneDocumentRootMarkers`를 `<Physics>` 안으로 옮겼다.
+- 공개 export 추가 3개(`SceneObjectBody`, `SCENE_OBJECT_BODY_ID_KEY`, `createSceneCollisionGroups`), 삭제 없음, 스냅샷 갱신.
+- 검증: 전체 jest 319 suites / 2,795 tests 통과(1 skipped), `tsc`(src, examples) 0, 변경 파일 eslint 0, `check:layer1` 3, 브라우저 `/world` 트리거 존 진입·이탈, `/creator` 로드 오류 0.
+
+## PRD 3차-6: prefab 인스턴스 문서 연산과 에디터 커맨드 (2026-09-23)
+
+- PRD-18 18-g(부분): 문서 단위 prefab 인스턴스 되돌리기(override 하나, 전체)와 전파, undo 가능한 에디터 커맨드 3개. 인스턴스 루트의 외부 부모 연결이 재생성 때 사라지던 결함을 보존 로직으로 막았다. UI와 예제 연결은 다음 반복.
+- 검증: prefab·editor·API·예제 테스트 통과, `tsc` 0, eslint 0, `check:layer1` 3, `check:quality` 통과. 공개 export 6개 추가, 삭제 없음.
+
+## PRD 3차-7: 에디터 prefab override UI와 예제 (2026-09-23)
+
+- PRD-18 18-f/18-g: Inspector prefab 섹션(override 목록, 되돌리기, 모두 되돌리기, 적용, 프리팹으로 만들기)과 예제 prefab 라이브러리(만들기, 배치, 적용 전파, undo 시 라이브러리 복원). 로드맵 단계 3 완료 조건 중 "prefab override apply/revert 동작"을 `/creator`에서 확인했다.
+- 검증: 전체 jest 321 suites / 2,803 tests 통과(1 skipped), `tsc`(src, examples) 0, 변경 파일 eslint 0, `check:layer1` 3, `check:quality` 통과, 브라우저 `/creator` prefab 만들기·override·되돌리기 확인, 페이지 오류 0.
+
+## PRD 3차-8: 카메라 추종 흔들림 측정과 경계값 테스트 (2026-09-23)
+
+- PRD-15 15-c: 카메라·캐릭터 간격 흔들림을 60fps와 프레임 제한 해제(약 730fps)에서 측정했다. rapier 보간 위치 추종 실험은 개선이 없어 채택하지 않았다(수치는 PRD-15). 15-e(부분): 카메라 유틸 경계값 테스트 4건, `clampPosition` 경계 0 무시 결함 수정. 카메라 `bounds` 옵션이 적용되지 않는 문제는 동작 변경이라 결정 대기로 기록했다.
+- 검증: camera 15 suites / 94 tests 통과, `tsc` 0, 변경 파일 eslint 0.

@@ -1,8 +1,7 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 
-import { useFrame } from '@react-three/fiber';
-
 import { BridgeFactory } from '@core/boilerplate';
+import { useEngineFrame } from '@core/runtime/frame';
 
 import { NetworkBridge } from '../bridge/NetworkBridge';
 import { NetworkCommand, NetworkSnapshot, NetworkConfig } from '../types';
@@ -72,11 +71,15 @@ export function useNetworkBridge(options: UseNetworkBridgeOptions = {}): UseNetw
   }, [systemId, config]);
 
   // 자동 업데이트 (매 프레임)
-  useFrame((_, deltaTime) => {
-    if (enableAutoUpdate && bridgeRef.current && isReady) {
-      bridgeRef.current.updateSystem(systemId, deltaTime);
-    }
-  });
+  useEngineFrame(
+    'snapshot',
+    (deltaTime) => {
+      if (enableAutoUpdate && bridgeRef.current && isReady) {
+        bridgeRef.current.updateSystem(systemId, deltaTime);
+      }
+    },
+    { label: 'network:bridge-update', active: enableAutoUpdate && isReady },
+  );
 
   const executeCommand = useCallback((command: NetworkCommand) => {
     if (bridgeRef.current && isReady) {

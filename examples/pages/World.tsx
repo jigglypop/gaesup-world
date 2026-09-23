@@ -24,6 +24,7 @@ import {
   MailboxUI,
   MENU_PRESETS,
   MiniMap,
+  PHYSICS_STEP_PRIORITY,
   QuestLogUI,
   RoomVisibilityDriver,
   RuntimeSaveDiagnosticsToaster,
@@ -243,8 +244,8 @@ export const WorldPage = ({
               showGrid={EXAMPLE_CONFIG.showGrid}
               showAxes={EXAMPLE_CONFIG.showAxes}
             >
-              <WorldSceneDocumentRootMarkers session={sceneDocumentSession} />
-              <Physics debug={showDiagnostics} interpolate>
+              <Physics debug={showDiagnostics} interpolate updatePriority={PHYSICS_STEP_PRIORITY}>
+                <WorldSceneDocumentRootMarkers session={sceneDocumentSession} editing={showEditor} />
                 {!showEditor && <Player />}
                 {sceneChildren}
                 <Ground showGrid={showDiagnostics && !showEditor} />

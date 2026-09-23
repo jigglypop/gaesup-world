@@ -1,13 +1,13 @@
 import React, { FC, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
-import { extend, useFrame } from '@react-three/fiber';
+import { extend } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { shaderMaterial } from '@/core/rendering/legacyDrei';
 
 import fragmentShader from './frag.glsl';
 import vertexShader from './vert.glsl';
-import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
+import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
 
 const FireMaterial = shaderMaterial(
   { time: 0, intensity: 1.5, seed: 0, lean: 0, flare: 1, tint: new THREE.Color(1, 1, 1) },
@@ -16,6 +16,9 @@ const FireMaterial = shaderMaterial(
 );
 
 extend({ FireMaterial });
+
+const FIRE_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:fire' };
+const FIRE_BATCH_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:fire-batch' };
 
 type FireUniforms = {
   time: number;
@@ -171,9 +174,7 @@ const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color
     return g;
   }, [width, height]);
 
-  useFrame((state) => {
-    const t = getFrameElapsedSeconds(state);
-
+  useSharedFrame(FIRE_FRAME, (_, t) => {
     for (let i = 0; i < billboardLayers.length; i++) {
       const m = materialRefs[i]?.current;
       if (!m) continue;
@@ -724,8 +725,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   }, [fires, N]);
 
-  useFrame((state) => {
-    const t = getFrameElapsedSeconds(state);
+  useSharedFrame(FIRE_BATCH_FRAME, (_, t) => {
     bbMat.uniforms['uTime']!.value = t;
     bEmberMat.uniforms['uTime']!.value = t;
     glowMat.opacity = 0.16 + Math.sin(t * 2.5) * 0.06;

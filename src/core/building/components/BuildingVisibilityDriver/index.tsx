@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { useEngineFrame } from '../../../runtime/frame';
 import { useBuildingGpuCullingStore } from '../../render/cullingStore';
 import { useBuildingRenderStateStore } from '../../render/store';
 import { useBuildingStore } from '../../stores/buildingStore';
@@ -40,6 +41,7 @@ function appendVisibleIds(
 }
 
 export function BuildingVisibilityDriver() {
+  const getThreeState = useThree((state) => state.get);
   const snapshot = useBuildingRenderStateStore((s) => s.snapshot);
   const wallGroups = useBuildingStore((s) => s.wallGroups);
   const tileGroups = useBuildingStore((s) => s.tileGroups);
@@ -84,14 +86,15 @@ export function BuildingVisibilityDriver() {
 
   useEffect(() => reset, [reset]);
 
-  useFrame((state, delta) => {
+  useEngineFrame('effects', (delta) => {
     if (snapshot.ids.length === 0) return;
     accumRef.current += Math.max(0, delta);
     if (accumRef.current < VISIBILITY_UPDATE_INTERVAL) return;
     accumRef.current = 0;
 
-    state.camera.updateWorldMatrix(true, false);
-    scratch.matrix.multiplyMatrices(state.camera.projectionMatrix, state.camera.matrixWorldInverse);
+    const { camera } = getThreeState();
+    camera.updateWorldMatrix(true, false);
+    scratch.matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     if (!scratch.matrix.equals(scratch.previousMatrix)) {
       cacheRef.current = null;
       scratch.previousMatrix.copy(scratch.matrix);
@@ -101,12 +104,12 @@ export function BuildingVisibilityDriver() {
       setVisible(cached);
       return;
     }
-    scratch.frustum.setFromProjectionMatrix(scratch.matrix, state.camera.coordinateSystem, state.camera.reversedDepth);
-    state.camera.getWorldPosition(scratch.camera);
+    scratch.frustum.setFromProjectionMatrix(scratch.matrix, camera.coordinateSystem, camera.reversedDepth);
+    camera.getWorldPosition(scratch.camera);
 
     const useGpuCandidates = gpuCullingActive && gpuCullingVersion === snapshot.version &&
-      gpuCamera !== null && gpuCamera.coordinateSystem === state.camera.coordinateSystem &&
-      gpuCamera.reversedDepth === state.camera.reversedDepth &&
+      gpuCamera !== null && gpuCamera.coordinateSystem === camera.coordinateSystem &&
+      gpuCamera.reversedDepth === camera.reversedDepth &&
       scratch.matrix.elements.every((value, i) => value === gpuCamera.viewProjection[i]) &&
       scratch.camera.x === gpuCamera.position[0] &&
       scratch.camera.y === gpuCamera.position[1] &&
@@ -188,7 +191,7 @@ export function BuildingVisibilityDriver() {
     const payload = { tileIds, wallIds, blockIds, objectIds };
     cacheRef.current = payload;
     setVisible(payload);
-  });
+  }, { label: 'building:visibility', active: snapshot.ids.length > 0 });
 
   return null;
 }

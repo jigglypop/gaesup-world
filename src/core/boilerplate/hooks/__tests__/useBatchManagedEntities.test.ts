@@ -2,6 +2,7 @@ import { createRef, type RefObject } from 'react';
 
 import { act, renderHook } from '@testing-library/react';
 
+import { frameScheduler } from '../../../runtime/frame';
 import { AbstractBridge } from '../../bridge/AbstractBridge';
 import type { ManagedEntity } from '../../entity/ManagedEntity';
 import type { IDisposable, RuntimeValue } from '../../types';
@@ -15,14 +16,6 @@ type MockCommand = {
   type: 'noop';
 };
 
-type MockFrameState = {
-  clock: {
-    elapsedTime: number;
-  };
-};
-
-type MockFrameHandler = (state: MockFrameState, delta: number) => void;
-
 type MockManagedEntity = {
   id: string;
   engine: MockEngine;
@@ -31,7 +24,6 @@ type MockManagedEntity = {
   getId: () => string;
 };
 
-const mockUseFrame = jest.fn();
 const mockInjectProperties = jest.fn();
 const mockCreatedEntities: MockManagedEntity[] = [];
 const mockManagedEntityConstructor = jest.fn((id: string, engine: MockEngine) => {
@@ -45,10 +37,6 @@ const mockManagedEntityConstructor = jest.fn((id: string, engine: MockEngine) =>
   mockCreatedEntities.push(entity);
   return entity;
 });
-
-jest.mock('@react-three/fiber', () => ({
-  useFrame: (callback: unknown, priority?: number) => mockUseFrame(callback, priority),
-}));
 
 jest.mock('../../di', () => ({
   DIContainer: {
@@ -107,6 +95,10 @@ function createEngineRef(): RefObject<MockEngine> {
   return ref;
 }
 
+function tickFrame(elapsedMs: number): void {
+  act(() => frameScheduler.tick(0.016, elapsedMs));
+}
+
 function getCreatedEntity(id: string): MockManagedEntity {
   const entity = mockCreatedEntities.find((candidate) => candidate.id === id);
   if (!entity) throw new Error(`Expected managed entity ${id} to exist`);
@@ -117,6 +109,10 @@ describe('useBatchManagedEntities', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockCreatedEntities.length = 0;
+  });
+
+  afterEach(() => {
+    frameScheduler.clear();
   });
 
   test('owns entities by ID across add, remove, and reorder with one frame hook', () => {
@@ -154,7 +150,6 @@ describe('useBatchManagedEntities', () => {
     const bEntity = getCreatedEntity('b');
     expect(aEntity.initialize).toHaveBeenCalledTimes(1);
     expect(bEntity.initialize).toHaveBeenCalledTimes(1);
-    mockUseFrame.mockClear();
     rerender({
       entries: [
         { id: 'b', ref: bRef },
@@ -169,11 +164,9 @@ describe('useBatchManagedEntities', () => {
     expect(mockManagedEntityConstructor).toHaveBeenCalledTimes(2);
     expect(aEntity.dispose).not.toHaveBeenCalled();
     expect(bEntity.dispose).not.toHaveBeenCalled();
-    expect(mockUseFrame).toHaveBeenCalledTimes(1);
+    expect(frameScheduler.count('snapshot')).toBe(1);
 
-    const frameHandler = mockUseFrame.mock.calls[0]?.[0] as MockFrameHandler | undefined;
-    expect(frameHandler).toBeDefined();
-    act(() => frameHandler?.({ clock: { elapsedTime: 1 } }, 0.016));
+    tickFrame(1_000);
     expect(bridge.notifyListeners.mock.calls.map(([id]) => id)).toEqual(['b', 'a']);
     expect(frameCallback).toHaveBeenCalledTimes(2);
 
@@ -338,10 +331,7 @@ describe('useBatchManagedEntities', () => {
     expect(mockCreatedEntities[0]?.engine).toBe(firstRef.current);
     expect(result.current[0]).toBe(result.current[1]);
 
-    const frameHandler = mockUseFrame.mock.calls[mockUseFrame.mock.calls.length - 1]?.[0] as
-      | MockFrameHandler
-      | undefined;
-    act(() => frameHandler?.({ clock: { elapsedTime: 1 } }, 0.016));
+    tickFrame(1_000);
     expect(bridge.notifyListeners).toHaveBeenCalledTimes(1);
     expect(frameCallback).toHaveBeenCalledTimes(1);
 
@@ -360,11 +350,7 @@ describe('useBatchManagedEntities', () => {
         useBatchManagedEntities(bridge, entries, { throttle: 1_000 }),
       { initialProps: { entries: [{ id: 'a', ref: aRef }] } },
     );
-    let frameHandler = mockUseFrame.mock.calls[mockUseFrame.mock.calls.length - 1]?.[0] as
-      | MockFrameHandler
-      | undefined;
-
-    act(() => frameHandler?.({ clock: { elapsedTime: 1 } }, 0.016));
+    tickFrame(1_000);
     expect(bridge.notifyListeners.mock.calls.map(([id]) => id)).toEqual(['a']);
 
     rerender({
@@ -373,15 +359,12 @@ describe('useBatchManagedEntities', () => {
         { id: 'b', ref: bRef },
       ],
     });
-    frameHandler = mockUseFrame.mock.calls[mockUseFrame.mock.calls.length - 1]?.[0] as
-      | MockFrameHandler
-      | undefined;
     bridge.notifyListeners.mockClear();
 
-    act(() => frameHandler?.({ clock: { elapsedTime: 1.5 } }, 0.016));
+    tickFrame(1_500);
     expect(bridge.notifyListeners.mock.calls.map(([id]) => id)).toEqual(['b']);
 
-    act(() => frameHandler?.({ clock: { elapsedTime: 2.1 } }, 0.016));
+    tickFrame(2_100);
     expect(bridge.notifyListeners.mock.calls.map(([id]) => id)).toEqual(['b', 'a']);
   });
 

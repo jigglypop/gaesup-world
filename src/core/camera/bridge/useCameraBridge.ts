@@ -1,9 +1,9 @@
 import { useRef, useEffect, useCallback } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 
 import { BaseCameraSystem } from './BaseCameraSystem';
 import type { CameraSystemConfig, CameraSystemEvents, CameraSystemState, CameraSystemEmitter, ICameraSystemMonitor } from './types';
+import { useEngineFrame } from '../../runtime/frame';
 
 export function useCameraBridge<T extends BaseCameraSystem>(
   SystemClass: new (config: CameraSystemConfig) => T,
@@ -22,9 +22,9 @@ export function useCameraBridge<T extends BaseCameraSystem>(
     systemRef.current = new SystemClass(initialConfig);
   }
   const system = systemRef.current;
-  useFrame((_, delta) => {
+  useEngineFrame('camera', (delta) => {
     system?.update(delta);
-  });
+  }, { order: -1, label: 'camera:system' });
 
   useEffect(() => {
     if (!eventHandlers || !system) return;

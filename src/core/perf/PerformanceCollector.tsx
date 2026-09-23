@@ -1,7 +1,8 @@
 import { useRef } from 'react';
 
-import { useFrame, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 
+import { FRAME_PHASES, useCanvasFrameScheduler, useEngineFrame, type FramePhase } from '../runtime/frame';
 import { useGaesupStore } from '../stores/gaesupStore';
 
 /**
@@ -11,9 +12,11 @@ import { useGaesupStore } from '../stores/gaesupStore';
 export function PerformanceCollector() {
   const gl = useThree((s) => s.gl);
   const setPerformance = useGaesupStore((s) => s.setPerformance);
+  const setFramePhases = useGaesupStore((s) => s.setFramePhases);
+  const scheduler = useCanvasFrameScheduler();
   const frameCounter = useRef(0);
 
-  useFrame(() => {
+  useEngineFrame('snapshot', () => {
     frameCounter.current++;
     if (frameCounter.current < 30) return;
     frameCounter.current = 0;
@@ -33,7 +36,15 @@ export function PerformanceCollector() {
         programs: Array.isArray(programs) ? programs.length : 0,
       },
     });
-  });
+    if (!scheduler.isMetricsEnabled()) return;
+    const timings = {} as Record<FramePhase, number>;
+    for (const phase of FRAME_PHASES) {
+      const metrics = scheduler.getMetrics(phase);
+      timings[phase] = metrics.calls > 0 ? metrics.totalMs / metrics.calls : 0;
+    }
+    scheduler.resetMetrics();
+    setFramePhases(timings);
+  }, { label: 'perf:renderer-stats' });
 
   return null;
 }

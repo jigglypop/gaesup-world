@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 
 import { frameScheduler } from '../FrameScheduler';
 import type { FrameCallback, FrameDriver, FramePhase } from '../types';
+import { useCanvasFrameScheduler, useFrameRegistrationEffect } from './canvasScheduler';
+import { warnIfHostMissing } from './hostWarnings';
 import type { UseEngineFrameOptions } from './types';
 
 export function useEngineFrame(
@@ -13,16 +15,29 @@ export function useEngineFrame(
   callbackRef.current = callback;
   const enabledRef = useRef(options.enabled);
   enabledRef.current = options.enabled;
-  const { scheduler = frameScheduler, active = true, order, throttleMs, label } = options;
+  const canvasScheduler = useCanvasFrameScheduler();
+  const { scheduler = canvasScheduler, active = true, order, throttleMs, label } = options;
 
-  useEffect(() => {
+  useFrameRegistrationEffect(() => {
     if (!active) return undefined;
-    return scheduler.add(phase, (delta, elapsedMs) => callbackRef.current(delta, elapsedMs), {
-      enabled: () => enabledRef.current?.() ?? true,
-      ...(order !== undefined ? { order } : {}),
-      ...(throttleMs !== undefined ? { throttleMs } : {}),
-      ...(label !== undefined ? { label } : {}),
-    });
+    const unsubscribe = scheduler.add(
+      phase,
+      (delta, elapsedMs) => {
+        const enabled = enabledRef.current;
+        if (enabled && !enabled()) return;
+        callbackRef.current(delta, elapsedMs);
+      },
+      {
+        ...(order !== undefined ? { order } : {}),
+        ...(throttleMs !== undefined ? { throttleMs } : {}),
+        ...(label !== undefined ? { label } : {}),
+      },
+    );
+    const cancelHostCheck = scheduler === frameScheduler ? undefined : warnIfHostMissing(scheduler, label ?? phase);
+    return () => {
+      cancelHostCheck?.();
+      unsubscribe();
+    };
   }, [active, label, order, phase, scheduler, throttleMs]);
 }
 

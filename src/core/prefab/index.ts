@@ -3,3 +3,4 @@ export * from './core';
 export * from './serialization';
 export * from './instantiate';
 export * from './overrides';
+export * from './instances';

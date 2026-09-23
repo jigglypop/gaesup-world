@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
-
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
+import { AFTER_MOTION_FRAME_ORDER, useEngineFrame } from '../../../runtime/frame';
 import { computeVisibleRoomIds, findContainingRoomId, ROOM_VISIBILITY_UPDATE_INTERVAL } from '../../room/core';
 import { useRoomVisibilityStore } from '../../stores/roomVisibilityStore';
 import { useSceneStore } from '../../stores/sceneStore';
@@ -18,7 +17,7 @@ export function RoomVisibilityDriver() {
 
   useEffect(() => reset, [reset]);
 
-  useFrame((_, delta) => {
+  useEngineFrame('postPhysics', (delta) => {
     accumRef.current += Math.max(0, delta);
     if (accumRef.current < ROOM_VISIBILITY_UPDATE_INTERVAL) return;
     accumRef.current = 0;
@@ -33,7 +32,7 @@ export function RoomVisibilityDriver() {
       position,
     });
     setVisibleRooms(currentScene, currentRoomId, visibleRoomIds);
-  });
+  }, { order: AFTER_MOTION_FRAME_ORDER, label: 'scene:room-visibility' });
 
   return null;
 }

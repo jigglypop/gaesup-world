@@ -2,6 +2,7 @@ import type { SaveDiagnostic } from '../save';
 
 export const DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID = 'runtime.saveDiagnostics';
 export const RUNTIME_SAVE_DIAGNOSTIC_EVENT = 'runtime:saveDiagnostic';
+export const RUNTIME_SAVE_BINDING_REJECTED_EVENT = 'runtime:saveBindingRejected';
 
 export interface RuntimeSaveDiagnostic extends SaveDiagnostic {
   id: number;

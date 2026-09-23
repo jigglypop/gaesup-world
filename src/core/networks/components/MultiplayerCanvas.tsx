@@ -1,11 +1,12 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Environment } from '@react-three/drei';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import { Physics, euler, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { Grid } from '@/core/rendering/legacyDrei';
+import { PHYSICS_STEP_PRIORITY, useEngineFrame } from '@core/runtime/frame';
 
 import { RemotePlayer } from './RemotePlayer';
 import {
@@ -50,7 +51,7 @@ function LocalPositionTracker({
   const lastRef = useRef({ x: 0, y: 0, z: 0 });
   const frameRef = useRef(0);
 
-  useFrame(() => {
+  useEngineFrame('postPhysics', () => {
     frameRef.current++;
     if (frameRef.current % POSITION_SAMPLE_INTERVAL_FRAMES !== 0) return;
     const body = playerRef.current;
@@ -65,7 +66,7 @@ function LocalPositionTracker({
     last.y = p.y;
     last.z = p.z;
     onChange(p.x, p.y, p.z);
-  });
+  }, { label: 'network:local-position' });
 
   return null;
 }
@@ -148,7 +149,7 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
 
         <Suspense fallback={null}>
           <GaesupWorldContent>
-            <Physics>
+            <Physics updatePriority={PHYSICS_STEP_PRIORITY}>
               <LocalPositionTracker
                 playerRef={playerRef}
                 onChange={handleLocalPositionChange}

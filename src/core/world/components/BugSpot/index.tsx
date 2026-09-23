@@ -1,12 +1,12 @@
 import { useCallback, useRef, useState } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
+import { MILLISECONDS_IN_SECOND } from '../../../boilerplate/types';
 import { useEventsStore } from '../../../events/stores/eventsStore';
 import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
+import { useEngineFrame } from '../../../runtime/frame';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
 import { notify } from '../../../ui/components/Toast/toastStore';
@@ -95,17 +95,17 @@ export function BugSpot({
 
   useToolUse('net', onNet);
 
-  useFrame((state) => {
+  useEngineFrame('lateUpdate', (_, elapsedMs) => {
     const now = performance.now();
     if (!present && now >= respawnAtRef.current) setPresent(true);
     const b = bugRef.current;
     if (!b || !present) return;
-    const t = getFrameElapsedSeconds(state);
+    const t = elapsedMs / MILLISECONDS_IN_SECOND;
     b.position.x = Math.sin(t * 1.2) * 0.6;
     b.position.z = Math.cos(t * 0.9) * 0.6;
     b.position.y = hoverHeight + Math.sin(t * 2.6) * 0.15;
     b.rotation.y = t * 1.4;
-  });
+  }, { label: 'world:bug-spot' });
 
   if (!present) return <group position={position} />;
   return (

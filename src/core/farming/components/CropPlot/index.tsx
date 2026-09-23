@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
+import { MILLISECONDS_IN_SECOND } from '../../../boilerplate/types';
 import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
+import { useEngineFrame } from '../../../runtime/frame';
 import { useTimeStore } from '../../../time/stores/timeStore';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
@@ -90,13 +90,13 @@ export function CropPlot({ id, position, size = 1.4, hitRange = 1.6 }: CropPlotP
   }, [plot]);
 
   const cropRef = useRef<THREE.Mesh>(null);
-  useFrame((state) => {
+  useEngineFrame('lateUpdate', (_, elapsedMs) => {
     const m = cropRef.current;
     if (!m) return;
-    const t = getFrameElapsedSeconds(state);
+    const t = elapsedMs / MILLISECONDS_IN_SECOND;
     m.rotation.y = Math.sin(t * 0.4) * 0.05;
     m.position.y = (stage?.scale ?? 0.3) * 0.5 + Math.sin(t * 1.2) * 0.01;
-  });
+  }, { label: 'farming:crop-sway' });
 
   return (
     <group position={plot?.position ?? position}>

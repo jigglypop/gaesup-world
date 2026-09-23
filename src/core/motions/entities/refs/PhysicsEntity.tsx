@@ -10,11 +10,12 @@ import {
 
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
-import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three/rapier';
+import { CapsuleCollider, RapierRigidBody, RigidBody, euler, useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import { useEntity } from '@core/boilerplate/hooks/useEntity';
+import { createRapierQueryAdapter } from '@core/motions/bridge/rapierQueries';
 
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
@@ -60,6 +61,11 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const { actions, ref: animationRef } = useAnimations(animations);
     const activeAnimationRef = useRef<string | undefined>(undefined);
 
+    const { rapier, world } = useRapier();
+    const physicsQueries = useMemo(
+      () => createRapierQueryAdapter({ rapier, world }, rigidBodyRef),
+      [rapier, rigidBodyRef, world],
+    );
     const { handleIntersectionEnter, handleIntersectionExit, handleCollisionEnter } = useEntity({
       rigidBodyRef,
       ...(props.name ? { id: props.name } : {}),
@@ -81,6 +87,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       ...(props.colliderRef ? { colliderRef: props.colliderRef } : {}),
       ...(props.groundRay ? { groundRay: props.groundRay } : {}),
       ...(props.colliderSize ? { colliderSize: props.colliderSize } : {}),
+      physicsQueries,
     });
 
     const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);

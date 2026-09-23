@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { useTeleport } from '../../../hooks/useTeleport';
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
+import { AFTER_MOTION_FRAME_ORDER, useEngineFrame } from '../../../runtime/frame';
 import { useSceneStore } from '../../stores/sceneStore';
 import type { SceneEntry, SceneId } from '../../types';
 
@@ -58,7 +58,7 @@ export function HouseDoor({
 
   useEffect(() => () => padGeometry.dispose(), [padGeometry]);
 
-  useFrame(() => {
+  useEngineFrame('postPhysics', () => {
     const now = performance.now();
     if (now - lastTriggerRef.current < cooldownMs) return;
 
@@ -71,7 +71,7 @@ export function HouseDoor({
 
     if (current === sceneId) return;
     void enterScene();
-  });
+  }, { order: AFTER_MOTION_FRAME_ORDER, label: 'scene:house-door' });
 
   async function enterScene() {
     // Save where the player came from so the exit door knows where to drop them.

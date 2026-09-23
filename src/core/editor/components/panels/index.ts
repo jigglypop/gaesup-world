@@ -29,6 +29,7 @@ export { HierarchyPanel, buildHierarchyRows } from './HierarchyPanel';
 export type { HierarchyPanelProps } from './HierarchyPanel';
 export { InspectorPanel } from './InspectorPanel';
 export type { InspectorPanelProps, SceneObjectPatch } from './InspectorPanel';
+export type { InspectorPrefabActions } from './PrefabInstanceView/types';
 export {
   PROJECT_ASSETS_PANEL_DEFAULT_CLASSES,
   PROJECT_ASSETS_PANEL_DEFAULT_KIND_OPTIONS,

@@ -1,13 +1,13 @@
 import React, { FC, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
 import { useTexture } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { getToonGradient, getDefaultToonMode } from '@core/rendering/toon';
 import { weightFromDistance } from '@core/utils/sfe';
 
-import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
+import { MILLISECONDS_IN_SECOND } from '../../../../boilerplate/types';
+import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
 import type { PlacedObject } from '../../../types';
 
 export interface BillboardProps {
@@ -68,6 +68,29 @@ const _billboardDummy = new THREE.Object3D();
 const DEFAULT_BILLBOARD_HEIGHT = 1.5;
 const MIN_BILLBOARD_WIDTH = 1.0;
 const MAX_BILLBOARD_WIDTH = 4.0;
+const BATCH_PULSE_HZ = 20;
+const BILLBOARD_GLOW_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:billboard-glow' };
+const BILLBOARD_BATCH_FRAME: SharedFrameChannel = {
+  phase: 'effects',
+  label: 'building:billboard-batch',
+  throttleMs: MILLISECONDS_IN_SECOND / BATCH_PULSE_HZ,
+};
+
+function useBillboardGlow(
+  mainRef: React.RefObject<THREE.Mesh>,
+  mainMatRef: React.RefObject<THREE.MeshStandardMaterial | THREE.MeshToonMaterial>,
+  glowMatRef: React.RefObject<THREE.MeshBasicMaterial>,
+  brightness: number,
+) {
+  const worldPos = useMemo(() => new THREE.Vector3(), []);
+  useSharedFrame(BILLBOARD_GLOW_FRAME, (_, elapsedSeconds, three) => {
+    mainRef.current.getWorldPosition(worldPos);
+    const dist = three.camera.position.distanceTo(worldPos);
+    const sfe = weightFromDistance(dist, SFE_NEAR, SFE_FAR, SFE_STRENGTH);
+    mainMatRef.current.emissiveIntensity = brightness * sfe;
+    glowMatRef.current.opacity = (0.14 + brightness * 0.055 + 0.05 * Math.sin(elapsedSeconds * 2)) * sfe;
+  });
+}
 
 function getTextureAspect(texture: THREE.Texture | null | undefined): number | null {
   const image = texture?.image as { width?: number; height?: number } | undefined;
@@ -100,7 +123,6 @@ function BillboardWithImage({
   const mainRef = useRef<THREE.Mesh>(null!);
   const mainMatRef = useRef<THREE.MeshStandardMaterial | THREE.MeshToonMaterial>(null!);
   const glowMatRef = useRef<THREE.MeshBasicMaterial>(null!);
-  const worldPos = useMemo(() => new THREE.Vector3(), []);
 
   const useToon = toon ?? getDefaultToonMode();
   const gradient = useToon ? getToonGradient(3) : null;
@@ -125,14 +147,7 @@ function BillboardWithImage({
     [w, h],
   );
 
-  useFrame((state) => {
-    mainRef.current.getWorldPosition(worldPos);
-    const dist = state.camera.position.distanceTo(worldPos);
-    const sfe = weightFromDistance(dist, SFE_NEAR, SFE_FAR, SFE_STRENGTH);
-    mainMatRef.current.emissiveIntensity = brightness * sfe;
-    glowMatRef.current.opacity =
-      (0.14 + brightness * 0.055 + 0.05 * Math.sin(getFrameElapsedSeconds(state) * 2)) * sfe;
-  });
+  useBillboardGlow(mainRef, mainMatRef, glowMatRef, brightness);
 
   useEffect(
     () => () => {
@@ -189,7 +204,6 @@ function BillboardWithText({ text, width, height, scale, color, elevation, inten
   const mainRef = useRef<THREE.Mesh>(null!);
   const mainMatRef = useRef<THREE.MeshStandardMaterial | THREE.MeshToonMaterial>(null!);
   const glowMatRef = useRef<THREE.MeshBasicMaterial>(null!);
-  const worldPos = useMemo(() => new THREE.Vector3(), []);
 
   const useToon = toon ?? getDefaultToonMode();
   const gradient = useToon ? getToonGradient(3) : null;
@@ -214,14 +228,7 @@ function BillboardWithText({ text, width, height, scale, color, elevation, inten
     [w, h],
   );
 
-  useFrame((state) => {
-    mainRef.current.getWorldPosition(worldPos);
-    const dist = state.camera.position.distanceTo(worldPos);
-    const sfe = weightFromDistance(dist, SFE_NEAR, SFE_FAR, SFE_STRENGTH);
-    mainMatRef.current.emissiveIntensity = brightness * sfe;
-    glowMatRef.current.opacity =
-      (0.14 + brightness * 0.055 + 0.05 * Math.sin(getFrameElapsedSeconds(state) * 2)) * sfe;
-  });
+  useBillboardGlow(mainRef, mainMatRef, glowMatRef, brightness);
 
   useEffect(
     () => () => {
@@ -314,7 +321,6 @@ function BillboardBatchGroup({
   const glowRef = useRef<THREE.InstancedMesh | null>(null);
   const mainMatRef = useRef<THREE.MeshBasicMaterial | null>(null);
   const glowMatRef = useRef<THREE.MeshBasicMaterial | null>(null);
-  const frameAccumRef = useRef(0);
   const count = entries.length;
   const capacity = Math.max(1, count);
   const emissiveColor = useMemo(() => new THREE.Color(color), [color]);
@@ -365,12 +371,8 @@ function BillboardBatchGroup({
     glow.computeBoundingSphere();
   }, [count, entries, height]);
 
-  useFrame((state, delta) => {
-    frameAccumRef.current += Math.max(0, delta);
-    if (frameAccumRef.current < 1 / 20) return;
-    frameAccumRef.current = 0;
-    const pulse = glowOpacity + 0.05 * Math.sin(getFrameElapsedSeconds(state) * 2);
-    if (glowMatRef.current) glowMatRef.current.opacity = pulse;
+  useSharedFrame(BILLBOARD_BATCH_FRAME, (_, elapsedSeconds) => {
+    if (glowMatRef.current) glowMatRef.current.opacity = glowOpacity + 0.05 * Math.sin(elapsedSeconds * 2);
   });
 
   useEffect(() => () => {

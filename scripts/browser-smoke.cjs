@@ -1,51 +1,7 @@
-const { spawn } = require('node:child_process');
-const net = require('node:net');
-const path = require('node:path');
-
 const { chromium } = require('@playwright/test');
 const { PNG } = require('pngjs');
 
-const root = path.resolve(__dirname, '..');
-const viteBin = path.join(root, 'node_modules', 'vite', 'bin', 'vite.js');
-const host = '127.0.0.1';
-
-function findPort() {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer();
-    server.on('error', reject);
-    server.listen(0, host, () => {
-      const address = server.address();
-      server.close(() => {
-        if (!address || typeof address === 'string') {
-          reject(new Error('Unable to reserve a browser smoke test port.'));
-          return;
-        }
-        resolve(address.port);
-      });
-    });
-  });
-}
-
-function wait(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
-async function waitForServer(url, processLogs) {
-  const startedAt = Date.now();
-  while (Date.now() - startedAt < 30_000) {
-    try {
-      const response = await fetch(url);
-      if (response.ok) return;
-    } catch {
-      // Vite is still booting.
-    }
-    await wait(250);
-  }
-
-  throw new Error(`Timed out waiting for Vite dev server at ${url}.\n${processLogs.join('')}`);
-}
+const { startDevServer } = require('./lib/devServer.cjs');
 
 async function expectWorldCanvasPaint(page) {
   await page.waitForFunction(() => {
@@ -165,43 +121,31 @@ async function expectWorldCanvasPaint(page) {
 }
 
 async function main() {
-  const port = await findPort();
-  const baseUrl = `http://${host}:${port}`;
-  const processLogs = [];
-  const server = spawn(process.execPath, [viteBin, '--host', host, '--port', String(port), '--strictPort'], {
-    cwd: root,
-    env: { ...process.env, BROWSER: 'none' },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-
-  server.stdout.on('data', (chunk) => processLogs.push(chunk.toString()));
-  server.stderr.on('data', (chunk) => processLogs.push(chunk.toString()));
-
+  const { url: baseUrl, stop } = await startDevServer();
   let browser;
   try {
-    await waitForServer(baseUrl, processLogs);
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
 
     await page.goto(`${baseUrl}/minimal`, { waitUntil: 'domcontentloaded' });
-    await page.getByRole('heading', { name: 'Minimal Gaesup Runtime' }).waitFor({ timeout: 15_000 });
-    await page.getByRole('button', { name: 'Apply Preset' }).waitFor({ timeout: 5_000 });
-    await page.getByRole('button', { name: 'Toggle Weapon' }).waitFor({ timeout: 5_000 });
-    await page.getByRole('button', { name: 'Run Action' }).waitFor({ timeout: 5_000 });
+    await page.getByRole('heading', { name: '미니멀 개숲 런타임' }).waitFor({ timeout: 15_000 });
+    await page.getByRole('button', { name: '프리셋 적용' }).waitFor({ timeout: 5_000 });
+    await page.getByRole('button', { name: '무기 토글' }).waitFor({ timeout: 5_000 });
+    await page.getByRole('button', { name: '액션 실행' }).waitFor({ timeout: 5_000 });
 
-    await page.goto(`${baseUrl}/`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${baseUrl}/world`, { waitUntil: 'domcontentloaded' });
     await expectWorldCanvasPaint(page);
 
     if (pageErrors.length > 0) {
       throw new Error(`Browser smoke captured page errors:\n${pageErrors.join('\n')}`);
     }
 
-    console.log('Browser smoke passed for /minimal and /.');
+    console.log('Browser smoke passed for /minimal and /world.');
   } finally {
     if (browser) await browser.close();
-    server.kill();
+    stop();
   }
 }
 

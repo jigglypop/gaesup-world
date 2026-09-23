@@ -2,7 +2,6 @@ import React, { useRef, useEffect, useMemo, useCallback } from 'react';
 
 import { useAnimations, useGLTF } from '@react-three/drei';
 import type { ThreeEvent } from '@react-three/fiber';
-import { useFrame } from '@react-three/fiber';
 import { CapsuleCollider, RigidBody, RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
@@ -10,8 +9,9 @@ import { SkeletonUtils } from 'three-stdlib';
 import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
 
 import { NPCPartMeshProps, NPCInstanceProps } from './types';
-import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
+import { MILLISECONDS_IN_SECOND } from '../../../boilerplate/types';
 import { applyToonToScene, getDefaultToonMode } from '../../../rendering/toon';
+import { useEngineFrame } from '../../../runtime/frame';
 import { createNPCObservation, resolveNPCBrainDecision } from '../../core/brain';
 import { useNPCStore } from '../../stores/npcStore';
 import { NPCPart } from '../../types';
@@ -142,6 +142,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   const groupRef = useRef<GroupWithHandlers>(null);
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const waypointIndexRef = useRef(0);
+  const nextTranslationRef = useRef({ x: 0, y: 0, z: 0 });
   const template = useNPCStore(
     useCallback(
       (state) => state.templates.get(instance.templateId),
@@ -181,7 +182,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   }, [instance.navigation?.waypoints]);
 
   // Navigation movement loop.
-  useFrame((_, delta) => {
+  useEngineFrame('prePhysics', (delta) => {
     if (!isNavigating || !instance.navigation) return;
     const body = rigidBodyRef.current;
     if (!body) return;
@@ -213,19 +214,23 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
     const nx = pos.x + (dx / dist) * step;
     const nz = pos.z + (dz / dist) * step;
 
-    body.setNextKinematicTranslation({ x: nx, y: pos.y, z: nz });
+    const nextTranslation = nextTranslationRef.current;
+    nextTranslation.x = nx;
+    nextTranslation.y = pos.y;
+    nextTranslation.z = nz;
+    body.setNextKinematicTranslation(nextTranslation);
 
     // Face movement direction.
     if (groupRef.current && dist > 0.01) {
       const angle = Math.atan2(dx, dz);
       groupRef.current.rotation.y = angle;
     }
-  });
+  }, { active: isNavigating, label: 'npc:movement' });
 
-  useFrame((state) => {
-    const brainMode = instance.brain?.mode ?? 'none';
+  const brainMode = instance.brain?.mode ?? 'none';
+  useEngineFrame('postPhysics', (_, elapsedMs) => {
     if (brainMode === 'none') return;
-    const elapsed = getFrameElapsedSeconds(state);
+    const elapsed = elapsedMs / MILLISECONDS_IN_SECOND;
     if (elapsed < nextBehaviorAtRef.current) return;
 
     const body = rigidBodyRef.current;
@@ -247,7 +252,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
     }
 
     nextBehaviorAtRef.current = elapsed + Math.max(0.5, instance.behavior?.waitSeconds ?? 1);
-  });
+  }, { active: brainMode !== 'none', label: 'npc:brain' });
   
   const handlePointerEnter = useCallback((e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();

@@ -73,3 +73,31 @@
 ## 8. 열린 질문
 
 1. 충돌 레이캐스트를 BVH로 할지 Rapier 쿼리로 할지. Rapier 쿼리는 물리 콜라이더가 있는 대상만 잡는다.
+
+## 구현 현황 (2026-09-23, 3차)
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 15-a | 완료 | `camera/core/CameraCollisionIndex.ts`: 씬별 대상 목록을 소유하고 `childadded`/`childremoved` 이벤트로만 dirty 표시, 다음 질의에서 재구성. `CAMERA_COLLIDER_LAYER`(30)가 켜진 메시가 있으면 그것만, 없으면 전체 메시(1.x 호환). `invalidateCameraColliders()`로 레이어 변경 등 이벤트 없는 변경을 반영. 결과 객체·obstacles 배열·Obstacle 풀 재사용. 일반 메시는 행렬 원소 인라인 바운딩 구 선검사로 조상 순회와 레이캐스트를 건너뜀 |
+| 15-b | 완료 | `CameraRuntimeState { orbitYaw, orbitPitch }`를 `CameraSystem`이 소유. `useCamera`는 매 프레임 `system.setOrbit()`만 호출하고 `updateConfig`(설정 복제, 키별 emit)를 부르지 않음. 컨트롤러는 runtime → config 순으로 궤도를 읽음 |
+| 15-c ~ 15-e | 미착수 | 15-c는 PRD-11 `camera` 단계 이전 이후 |
+
+측정 (NFR-1, jest jsdom, 박스 메시 5,000개, 각 메시가 그룹 1단계 아래, 길이 7.3 레이):
+
+| 구현 | 호출당 |
+|---|---|
+| 이전 (`_frameId` 미설정으로 매 호출 `scene.traverse`) | 1.89ms |
+| 인덱스 + `THREE.Sphere` 선검사 | 0.82ms |
+| 인덱스 + 인라인 선검사 (채택) | 0.10ms |
+
+인라인 선검사에서 구조 분해 할당과 가변 인자 `Math.max`를 쓰면 1.1ms로 느려졌다. 프레임 경로 수학은 지역 변수와 비교문으로 쓴다.
+
+검증: camera 14 suites / 90 tests 통과, `tsc -p tsconfig.build.json` 0, 변경 파일 린트 0.
+
+## 구현 현황 (2026-09-23, 4차)
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 15-c | 완료(측정, 코드 변경 없음) | 카메라는 PRD-11 이후 `camera` 단계(물리 step과 rapier 보간 적용 뒤)에서 돈다. 완료 기준인 캐릭터·카메라 간격 흔들림을 `/world` 걷기 3초로 측정했다(RTX 5060 Ti, headless). 60fps: 프레임간 간격 변화 평균 0.0037, p95 0.0169. 프레임 제한 해제(약 730fps, 물리 60Hz와 불일치): 평균 0.0013, p95 0.0030, 최대 0.0125. 카메라 목표를 rapier 보간 위치로 바꾼 실험은 평균 0.0010, p95 0.0031, 최대 0.0432로 개선이 없어 채택하지 않았다. 카메라 위치 스무딩이 60Hz 물리 계단을 흡수한다 |
+| 15-e | 부분 | `camera/utils/__tests__/camera.test.ts`: 스무딩 값 경계(누락, NaN, 0 이하, 1 이상), 프레임률 독립 보간(1프레임 비율 = 스무딩 값, 1×2프레임 = 2×1프레임), 높이 경계 0, 길이 0 충돌 검사. 결함 수정: `clampPosition`이 `minY || -Infinity`로 경계 0을 무시했다(`??`로 수정, 현재 내부 호출처는 없음) |
+| 열린 질문 | 결정 대기 | 카메라 옵션 `bounds`(기본 minY 2, maxY 50)는 스토어·플러그인에 있지만 어떤 컨트롤러도 적용하지 않는다. 적용하면 1인칭(눈높이 2 미만)과 높은 탑다운 카메라 동작이 바뀌므로 기본값 조정 여부와 함께 결정이 필요하다 |

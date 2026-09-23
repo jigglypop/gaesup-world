@@ -9,10 +9,12 @@ import { GameStatesType } from '@core/world/components/Rideable/types';
 import type { PhysicsCalcProps, PhysicsState } from '../../types';
 import type { PhysicsConfigType } from '../config';
 import { GravityComponent } from '../forces';
-import { ForceComponent } from '../forces/ForceComponent';
-import { DirectionComponent, ImpulseComponent } from '../movement';
 import { EntityStateManager } from './EntityStateManager';
 import { PhysicsSystemState, PhysicsSystemMetrics, PhysicsSystemOptions } from './types';
+import { ForceComponent } from '../forces/ForceComponent';
+import { DirectionComponent, ImpulseComponent } from '../movement';
+import { GroundProbe } from '../physics/GroundProbe';
+import type { PhysicsVector } from '../physics/types';
 
 const defaultState: PhysicsSystemState = {
   isJumping: false,
@@ -34,6 +36,7 @@ const GROUNDED_STABLE_FRAMES = 3;
 const WALK_GROUNDED_VERTICAL_SPEED = 1.2;
 const WALK_GROUNDED_Y_DELTA = 0.35;
 const FALLING_VERTICAL_SPEED = -0.25;
+const RISING_VERTICAL_SPEED = 0.02;
 
 function createOwnedPhysicsConfig(config: PhysicsConfigType): PhysicsConfigType {
   const ownedConfig = { ...config };
@@ -54,9 +57,12 @@ function createOwnedPhysicsConfig(config: PhysicsConfigType): PhysicsConfigType 
   return ownedConfig;
 }
 
+export type PhysicsUpdateStage = 'full' | 'drive';
+
 export interface PhysicsUpdateArgs extends SystemUpdateArgs {
   calcProp: PhysicsCalcProps;
   physicsState: PhysicsState;
+  stage?: PhysicsUpdateStage;
 }
 
 function isPhysicsUpdateArgs(context: SystemContext | PhysicsUpdateArgs): context is PhysicsUpdateArgs {
@@ -85,6 +91,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   private tempEuler = new THREE.Euler();
   private tempVector = new THREE.Vector3();
   private jumpScratch = new THREE.Vector3();
+  private readonly groundProbe = new GroundProbe();
   private readonly config: PhysicsConfigType;
 
   constructor(
@@ -106,6 +113,10 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
 
   @Profile()
   protected performUpdate(args: PhysicsUpdateArgs): void {
+    if (args.stage === 'drive') {
+      this.drive(args.calcProp, args.physicsState);
+      return;
+    }
     this.calculate(args.calcProp, args.physicsState);
   }
 
@@ -132,27 +143,38 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   @Profile()
   calculate(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
     if (!physicsState || !calcProp.rigidBodyRef.current) return;
+    const didTransition = this.normalizeModeTransition(calcProp, physicsState);
+    this.checkGround(calcProp, physicsState);
+    this.applyDrive(calcProp, physicsState, didTransition);
+  }
 
+  @HandleError()
+  drive(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
+    if (!physicsState || !calcProp.rigidBodyRef.current) return;
+    const didTransition = this.normalizeModeTransition(calcProp, physicsState);
+    this.applyDrive(calcProp, physicsState, didTransition);
+  }
+
+  @HandleError()
+  resolve(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
+    if (!physicsState || !calcProp.rigidBodyRef.current) return;
+    this.checkGround(calcProp, physicsState);
+  }
+
+  private applyDrive(
+    calcProp: PhysicsCalcProps,
+    physicsState: PhysicsState,
+    didTransition: boolean,
+  ): void {
     const modeType = physicsState.modeType ?? 'character';
-    const didTransition = this.normalizeModeTransition(calcProp, physicsState, modeType);
-    const isFocused = calcProp.worldContext?.cameraOption?.focus === true;
-    if (isFocused) {
+    if (calcProp.worldContext?.cameraOption?.focus === true) {
       this.freezeInput(physicsState);
-      this.checkGround(calcProp, physicsState);
       if (didTransition) {
         this.applyModeRigidBodySettings(calcProp, physicsState, modeType);
       }
       return;
     }
-
-    const currentVelocity = calcProp.rigidBodyRef.current.linvel();
-    const activeStateRef = physicsState.activeState;
-    activeStateRef.velocity.set(
-      currentVelocity.x,
-      currentVelocity.y,
-      currentVelocity.z
-    );
-    this.checkAllStates(calcProp, physicsState);
+    this.checkMoving(physicsState);
     switch (modeType) {
       case 'character':
         this.calculateCharacter(calcProp, physicsState);
@@ -166,11 +188,8 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     }
   }
 
-  private normalizeModeTransition(
-    calcProp: PhysicsCalcProps,
-    physicsState: PhysicsState,
-    modeType: PhysicsState['modeType'],
-  ): boolean {
+  private normalizeModeTransition(calcProp: PhysicsCalcProps, physicsState: PhysicsState): boolean {
+    const modeType = physicsState.modeType ?? 'character';
     const previousMode = this.previousMode;
     this.previousMode = modeType;
     if (previousMode === null || previousMode === modeType) return false;
@@ -245,12 +264,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   }
 
   @Profile()
-  private checkAllStates(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
-    this.checkGround(calcProp, physicsState);
-    this.checkMoving(physicsState);
-  }
-
-  @Profile()
   private checkGround(prop: PhysicsCalcProps, physicsState: PhysicsState): void {
     const { rigidBodyRef } = prop;
     const gameStatesRef = physicsState.gameStates;
@@ -260,12 +273,35 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
       gameStatesRef.isFalling = true;
       return;
     }
-    const velocity = rigidBodyRef.current.linvel();
-    const position = rigidBodyRef.current.translation();
+    const rigidBody = rigidBodyRef.current;
+    const velocity = rigidBody.linvel();
+    const position = rigidBody.translation();
+    const isOnTheGround =
+      prop.physicsQueries && (physicsState.modeType ?? 'character') === 'character'
+        ? !(gameStatesRef.isJumping && velocity.y > RISING_VERTICAL_SPEED) &&
+          this.groundProbe.isGrounded(prop.physicsQueries, position, prop.groundRay?.length)
+        : this.estimateGround(physicsState, position, velocity);
+    const isFalling = !isOnTheGround && velocity.y < FALLING_VERTICAL_SPEED;
 
+    if (isOnTheGround) {
+      this.lastGroundedY = position.y;
+      this.resetJumpState(physicsState);
+    }
+    gameStatesRef.isOnTheGround = isOnTheGround;
+    gameStatesRef.isFalling = isFalling;
+    this.copyVector3(activeStateRef.position, position);
+    this.copyVector3(activeStateRef.velocity, velocity);
+  }
+
+  private estimateGround(
+    physicsState: PhysicsState,
+    position: Readonly<PhysicsVector>,
+    velocity: Readonly<PhysicsVector>,
+  ): boolean {
+    const gameStatesRef = physicsState.gameStates;
     const verticalSpeed = Math.abs(velocity.y);
     const positionDeltaY = Math.abs(position.y - this.lastPositionY);
-    const isRising = velocity.y > 0.02;
+    const isRising = velocity.y > RISING_VERTICAL_SPEED;
     const isNearWorldGround = position.y <= WORLD_GROUND_Y_THRESHOLD;
     const isNearKnownGround =
       this.lastGroundedY !== null &&
@@ -291,20 +327,11 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     this.lastPositionY = position.y;
 
     const isNearGround = canReuseStableGround && !isRising && verticalSpeed < GROUNDED_VERTICAL_SPEED;
-    const isOnTheGround =
+    return (
       isNearGround ||
       isWalkingGroundJitter ||
-      this.groundStableCount >= GROUNDED_STABLE_FRAMES;
-    const isFalling = !isOnTheGround && velocity.y < FALLING_VERTICAL_SPEED;
-
-    if (isOnTheGround) {
-      this.lastGroundedY = position.y;
-      this.resetJumpState(physicsState);
-    }
-    gameStatesRef.isOnTheGround = isOnTheGround;
-    gameStatesRef.isFalling = isFalling;
-    this.copyVector3(activeStateRef.position, position);
-    this.copyVector3(activeStateRef.velocity, velocity);
+      this.groundStableCount >= GROUNDED_STABLE_FRAMES
+    );
   }
 
   @Profile()

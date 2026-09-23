@@ -1,5 +1,17 @@
 import type { ContentBundle, ContentBundleValidation } from '../content';
 import {
+  addPrefabInstance,
+  findPrefabInstanceLink,
+  propagatePrefabToDocument,
+  replaceWithPrefabInstance,
+  revertPrefabInstance,
+  revertPrefabInstanceOverride,
+  type InstantiatePrefabOptions,
+  type PrefabDocument,
+  type PrefabInstanceLink,
+  type PrefabOverride,
+} from '../prefab';
+import {
   applySceneDocumentCommand,
   cloneSceneDocument,
   createSceneComponent,
@@ -13,6 +25,7 @@ import type {
   SceneDocumentCommand,
   SceneDocumentCommandResult,
   SceneDocumentController,
+  SceneJsonObject,
   SceneObject,
   SceneObjectCommandPatch,
   SceneObjectId,
@@ -100,7 +113,25 @@ export interface SceneObjectEditorCommandFactory {
     objectId: SceneObjectId,
     component: CreateSceneComponentInput,
   ) => EditorShellCommand;
+  updateComponent: (
+    objectId: SceneObjectId,
+    componentId: SceneComponentId,
+    data: SceneJsonObject,
+  ) => EditorShellCommand;
   removeComponent: (objectId: SceneObjectId, componentId: SceneComponentId) => EditorShellCommand;
+  revertPrefabOverride: (
+    rootObjectId: SceneObjectId,
+    prefab: PrefabDocument,
+    override: PrefabOverride,
+  ) => EditorShellCommand;
+  revertPrefabInstance: (rootObjectId: SceneObjectId, prefab: PrefabDocument) => EditorShellCommand;
+  propagatePrefab: (previous: PrefabDocument, next: PrefabDocument) => EditorShellCommand;
+  instantiatePrefab: (prefab: PrefabDocument, options: InstantiatePrefabOptions) => EditorShellCommand;
+  convertToPrefabInstance: (
+    objectId: SceneObjectId,
+    prefab: PrefabDocument,
+    idPrefix: string,
+  ) => EditorShellCommand;
 }
 
 export function createEditorShell(options: EditorShellOptions = {}): EditorShell {
@@ -227,143 +258,137 @@ export function createSceneObjectEditorCommands(
   store: SceneDocumentCommandStore | Pick<SceneDocumentController, 'getSnapshot' | 'dispatch'>,
 ): SceneObjectEditorCommandFactory {
   const target = createSceneDocumentCommandTarget(store);
-  const restoreDocument = (snapshot: SceneDocument) => {
-    dispatchSceneDocumentCommand(target, {
-      type: 'scene-document.replace',
-      document: snapshot,
-    });
+  const snapshotCommand = (
+    id: string,
+    label: string,
+    command: SceneDocumentCommand | ((document: SceneDocument) => SceneDocumentCommand),
+  ): EditorShellCommand => {
+    let before: SceneDocument | undefined;
+    return {
+      id,
+      label,
+      run: () => {
+        const document = target.capture();
+        before = document;
+        dispatchSceneDocumentCommand(target, typeof command === 'function' ? command(document) : command);
+      },
+      undo: () => {
+        if (!before) return;
+        dispatchSceneDocumentCommand(target, { type: 'scene-document.replace', document: before });
+      },
+    };
   };
+  const replaceDocument = (
+    id: string,
+    label: string,
+    transform: (document: SceneDocument) => SceneDocument,
+  ): EditorShellCommand =>
+    snapshotCommand(id, label, (document) => ({ type: 'scene-document.replace', document: transform(document) }));
 
   return {
     createObject(input) {
       const object = createSceneObject(input);
-      const command: SceneDocumentCommand = { type: 'scene-object.create', object };
-      let before: SceneDocument | undefined;
-      return {
-        id: `scene-object.create.${object.id}`,
-        label: `Create ${object.name}`,
-        run: () => {
-          before = cloneSceneDocument(target.getDocument());
-          dispatchSceneDocumentCommand(target, command);
-        },
-        undo: () => {
-          if (before) restoreDocument(before);
-        },
-      };
+      return snapshotCommand(`scene-object.create.${object.id}`, `Create ${object.name}`, {
+        type: 'scene-object.create',
+        object,
+      });
     },
     updateObject(objectId, patch) {
-      return createUpdateObjectCommand(
-        target,
-        restoreDocument,
+      return snapshotCommand(`scene-object.update.${objectId}`, `Update ${objectId}`, {
+        type: 'scene-object.update',
         objectId,
-        materializeEditorPatch(patch),
-      );
+        patch: materializeEditorPatch(patch),
+      });
     },
     deleteObject(objectId) {
-      const command: SceneDocumentCommand = { type: 'scene-object.delete', objectId };
-      let before: SceneDocument | undefined;
-      return {
-        id: `scene-object.delete.${objectId}`,
-        label: `Delete ${objectId}`,
-        run: () => {
-          before = cloneSceneDocument(target.getDocument());
-          dispatchSceneDocumentCommand(target, command);
-        },
-        undo: () => {
-          if (before) restoreDocument(before);
-        },
-      };
+      return snapshotCommand(`scene-object.delete.${objectId}`, `Delete ${objectId}`, {
+        type: 'scene-object.delete',
+        objectId,
+      });
     },
     moveObject(objectId, parentId) {
-      const canonicalParentId = parentId ? parentId : null;
-      return createUpdateObjectCommand(
-        target,
-        restoreDocument,
+      return snapshotCommand(`scene-object.update.${objectId}`, `Update ${objectId}`, {
+        type: 'scene-object.move',
         objectId,
-        { parentId: canonicalParentId },
-        { type: 'scene-object.move', objectId, parentId: canonicalParentId },
-      );
+        parentId: parentId ? parentId : null,
+      });
     },
     addComponent(objectId, componentInput) {
       const component = createSceneComponent(componentInput);
-      const command: SceneDocumentCommand = {
-        type: 'scene-object.component.add',
-        objectId,
-        component,
-      };
-      let before: SceneDocument | undefined;
-      return {
-        id: `scene-object.component.add.${objectId}.${component.id}`,
-        label: `Add ${component.type}`,
-        run: () => {
-          before = cloneSceneDocument(target.getDocument());
-          dispatchSceneDocumentCommand(target, command);
-        },
-        undo: () => {
-          if (before) restoreDocument(before);
-        },
-      };
+      return snapshotCommand(
+        `scene-object.component.add.${objectId}.${component.id}`,
+        `Add ${component.type}`,
+        { type: 'scene-object.component.add', objectId, component },
+      );
+    },
+    updateComponent(objectId, componentId, data) {
+      return snapshotCommand(
+        `scene-object.component.update.${objectId}.${componentId}`,
+        `Update ${componentId}`,
+        { type: 'scene-object.component.update', objectId, componentId, data },
+      );
     },
     removeComponent(objectId, componentId) {
-      const command: SceneDocumentCommand = {
-        type: 'scene-object.component.remove',
-        objectId,
-        componentId,
-      };
-      let before: SceneDocument | undefined;
-      return {
-        id: `scene-object.component.remove.${objectId}.${componentId}`,
-        label: `Remove ${componentId}`,
-        run: () => {
-          before = cloneSceneDocument(target.getDocument());
-          dispatchSceneDocumentCommand(target, command);
-        },
-        undo: () => {
-          if (before) restoreDocument(before);
-        },
-      };
+      return snapshotCommand(
+        `scene-object.component.remove.${objectId}.${componentId}`,
+        `Remove ${componentId}`,
+        { type: 'scene-object.component.remove', objectId, componentId },
+      );
+    },
+    revertPrefabOverride(rootObjectId, prefab, override) {
+      return replaceDocument(`prefab.revert.${rootObjectId}`, `Revert ${override.kind}`, (document) =>
+        revertPrefabInstanceOverride(document, prefab, requirePrefabLink(document, rootObjectId), override),
+      );
+    },
+    revertPrefabInstance(rootObjectId, prefab) {
+      return replaceDocument(`prefab.revert-all.${rootObjectId}`, `Revert ${prefab.name}`, (document) =>
+        revertPrefabInstance(document, prefab, requirePrefabLink(document, rootObjectId)),
+      );
+    },
+    propagatePrefab(previous, next) {
+      return replaceDocument(`prefab.propagate.${next.id}`, `Apply ${next.name}`, (document) =>
+        propagatePrefabToDocument(document, previous, next),
+      );
+    },
+    instantiatePrefab(prefab, options) {
+      return replaceDocument(`prefab.instantiate.${prefab.id}`, `Place ${prefab.name}`, (document) =>
+        addPrefabInstance(document, prefab, options),
+      );
+    },
+    convertToPrefabInstance(objectId, prefab, idPrefix) {
+      return replaceDocument(`prefab.link.${objectId}`, `Link ${prefab.name}`, (document) => {
+        if (!document.objects.some((object) => object.id === objectId)) {
+          throw new TypeError(`[EditorShell Error]: 객체가 없습니다 ${objectId}`);
+        }
+        return replaceWithPrefabInstance(document, objectId, prefab, idPrefix);
+      });
     },
   };
+}
+
+function requirePrefabLink(document: SceneDocument, rootObjectId: SceneObjectId): PrefabInstanceLink {
+  const link = findPrefabInstanceLink(document, rootObjectId);
+  if (!link) throw new TypeError(`[EditorShell Error]: prefab 인스턴스 루트가 아닙니다 ${rootObjectId}`);
+  return link;
 }
 
 type SceneDocumentCommandTarget = {
-  getDocument: () => SceneDocument;
+  capture: () => SceneDocument;
   dispatch: (command: SceneDocumentCommand) => SceneDocumentCommandResult;
 };
-
-function createUpdateObjectCommand(
-  target: SceneDocumentCommandTarget,
-  restoreDocument: (snapshot: SceneDocument) => void,
-  objectId: SceneObjectId,
-  patch: SceneObjectCommandPatch,
-  command: SceneDocumentCommand = { type: 'scene-object.update', objectId, patch },
-): EditorShellCommand {
-  let before: SceneDocument | undefined;
-  return {
-    id: `scene-object.update.${objectId}`,
-    label: `Update ${objectId}`,
-    run: () => {
-      before = cloneSceneDocument(target.getDocument());
-      dispatchSceneDocumentCommand(target, command);
-    },
-    undo: () => {
-      if (before) restoreDocument(before);
-    },
-  };
-}
 
 function createSceneDocumentCommandTarget(
   store: SceneDocumentCommandStore | Pick<SceneDocumentController, 'getSnapshot' | 'dispatch'>,
 ): SceneDocumentCommandTarget {
   if ('getSnapshot' in store) {
     return {
-      getDocument: () => store.getSnapshot(),
+      capture: () => store.getSnapshot(),
       dispatch: (command) => store.dispatch(command),
     };
   }
 
   return {
-    getDocument: () => store.getDocument(),
+    capture: () => cloneSceneDocument(store.getDocument()),
     dispatch: (command) => {
       const result = applySceneDocumentCommand(store.getDocument(), command);
       if (result.accepted) store.setDocument(result.document);

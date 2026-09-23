@@ -1,7 +1,8 @@
 import { StrictMode, type RefObject } from 'react';
 import { act, render, type RenderResult } from '@testing-library/react';
-import { useFrame } from '@react-three/fiber';
 import { RigidBody, type RapierRigidBody } from '@react-three/rapier';
+
+import { frameScheduler } from '@/core/runtime/frame';
 
 import { BlueprintSpawner } from '..';
 import { BlueprintEntity } from '../../../core/BlueprintEntity';
@@ -12,7 +13,6 @@ import { WARRIOR_BLUEPRINT } from '../../../characters/warrior';
 import { BASIC_KART_BLUEPRINT } from '../../../vehicles/kart';
 import type { AirplaneBlueprint } from '../../../types';
 
-jest.mock('@react-three/fiber', () => ({ useFrame: jest.fn() }));
 jest.mock('@react-three/rapier', () => ({ RigidBody: jest.fn(() => null) }));
 
 function createEntity(id: string) {
@@ -38,11 +38,9 @@ function deferredEntity() {
   return { promise, resolve };
 }
 
-beforeEach(() => {
-  jest.mocked(useFrame).mockClear();
-});
 afterEach(() => {
   jest.restoreAllMocks();
+  frameScheduler.clear();
 });
 
 test('ID and direct spawns use blueprint mass and release character rotation locks for vehicles', async () => {
@@ -91,16 +89,17 @@ test('updates the live entity and detaches it before unmount cleanup', async () 
   const onSpawn = jest.fn();
   const onDestroy = jest.fn();
   const movementInput = { forward: true, isGrounded: true };
+  const add = jest.spyOn(frameScheduler, 'add');
   let view!: RenderResult;
   await act(async () => {
     view = render(<BlueprintSpawner blueprintId="live" onSpawn={onSpawn} onDestroy={onDestroy} getMovementInput={() => movementInput} />);
   });
   try {
     expect(onSpawn).toHaveBeenCalledWith(entity);
-    const frame = jest.mocked(useFrame).mock.calls.at(-1)?.[0];
+    const frame = add.mock.calls.at(-1)?.[1];
     expect(frame).toBeDefined();
-    const state = {} as Parameters<NonNullable<typeof frame>>[0];
-    frame?.(state, 0.25);
+    expect(frameScheduler.count('prePhysics')).toBe(1);
+    frameScheduler.tick(0.25, 0);
     expect(component.update).toHaveBeenCalledTimes(1);
     expect(component.update.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({ deltaTime: 0.25, movementInput }),
@@ -115,7 +114,8 @@ test('updates the live entity and detaches it before unmount cleanup', async () 
     act(() => {
       view.unmount();
     });
-    frame?.(state, 0.25);
+    expect(frameScheduler.count('prePhysics')).toBe(0);
+    frame?.(0.25, 0);
     expect(component.update).toHaveBeenCalledTimes(1);
     expect(component.dispose).toHaveBeenCalledTimes(1);
     expect(onDestroy).not.toHaveBeenCalled();

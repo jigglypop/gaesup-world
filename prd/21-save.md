@@ -80,3 +80,11 @@
 | 나머지 | 미착수 | |
 
 검증: 타입체크(src, examples)와 변경 파일 린트 통과. 새 테스트는 메모리 제약으로 실행하지 않았다.
+
+### 3차 (2026-09-23)
+
+| Slice | 상태 | 내용 |
+|---|---|---|
+| 21-d | 완료 | `PluginRegistry.onLifecycle(listener)`: setup 완료와 dispose 완료를 `{ type, pluginId }`로 알린다. 런타임은 setup 뒤 이것을 구독해 `plugins.use()`로 늦게 올라온 플러그인의 save 바인딩을 SaveSystem에 연결하고, dispose된 플러그인의 바인딩을 해제한다. 옵션 바인딩이나 외부 등록과 키가 겹치면 플러그인 setup을 실패시키지 않고 `RUNTIME_SAVE_BINDING_REJECTED_EVENT`(`{ key, pluginId, error }`)와 logger 경고를 한 번 낸다. 런타임 dispose 때 구독을 해제한다 |
+
+runtime, plugins, save 10 suites / 141 tests 통과.

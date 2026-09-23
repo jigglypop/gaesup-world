@@ -1,3 +1,7 @@
+import type { FramePhase } from '../../../runtime/frame/types';
+
+export type FramePhaseTimings = Readonly<Record<FramePhase, number>>;
+
 export type RenderState = {
   calls: number;
   triangles: number;
@@ -20,4 +24,6 @@ export interface PerformanceState {
     render: RenderState;
     engine: EngineState;
   }) => void;
+  framePhases: FramePhaseTimings | null;
+  setFramePhases: (timings: FramePhaseTimings) => void;
 } 

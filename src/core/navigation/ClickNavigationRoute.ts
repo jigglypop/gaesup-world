@@ -60,7 +60,9 @@ export function getClickNavigationSettings(): Readonly<{ threshold: number; shou
 export function consumeReachedClickNavigationWaypoint(currentPosition: THREE.Vector3): THREE.Vector3 | null {
   const next = routeState.waypoints[0];
   if (!next) return null;
-  if (currentPosition.distanceTo(next) > routeState.threshold) return next;
+  const dx = currentPosition.x - next.x;
+  const dz = currentPosition.z - next.z;
+  if (dx * dx + dz * dz > routeState.threshold * routeState.threshold) return next;
 
   routeState.waypoints.shift();
   notify();

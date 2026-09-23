@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
-
 import { useBuildingStore } from '../../../building/stores/buildingStore';
 import { TILE_CONSTANTS } from '../../../building/types/constants';
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
+import { useEngineFrame } from '../../../runtime/frame';
 import { useAudioStore } from '../../stores/audioStore';
 import type { SfxDef } from '../../types';
 
@@ -76,9 +75,7 @@ export function Footsteps({
     lastPosRef.current.z = position.z;
   }, []);
 
-  useFrame(() => {
-    if (!enabled) return;
-
+  useEngineFrame('lateUpdate', () => {
     const now = performance.now();
     const dxRaw = position.x - lastPosRef.current.x;
     const dzRaw = position.z - lastPosRef.current.z;
@@ -113,7 +110,7 @@ export function Footsteps({
       duration: profile.duration ?? 0.08,
       volume: (profile.volume ?? 0.2) * volume * speedScale,
     });
-  });
+  }, { label: 'audio:footsteps', active: enabled });
 
   return null;
 }

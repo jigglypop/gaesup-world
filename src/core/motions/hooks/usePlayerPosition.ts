@@ -1,12 +1,25 @@
 import { useRef, useState, useEffect } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { BridgeFactory } from '@core/boilerplate';
+import { AFTER_MOTION_FRAME_ORDER, useEngineFrame } from '@core/runtime/frame';
 
 import { useStateSystem } from './useStateSystem';
 import { MotionBridge } from '../bridge/MotionBridge';
+
+const POSITION_CHANGE_EPSILON_SQ = 0.000001;
+
+function consumePositionChange(last: { x: number; y: number; z: number }, next: THREE.Vector3): boolean {
+  const dx = next.x - last.x;
+  const dy = next.y - last.y;
+  const dz = next.z - last.z;
+  if (dx * dx + dy * dy + dz * dz <= POSITION_CHANGE_EPSILON_SQ) return false;
+  last.x = next.x;
+  last.y = next.y;
+  last.z = next.z;
+  return true;
+}
 
 export interface UsePlayerPositionOptions {
   updateInterval?: number; // milliseconds, 0 means every frame
@@ -90,23 +103,12 @@ export function usePlayerPosition(
   }, [entityId, updateInterval, reactive]);
 
   // Fallback polling path (keeps position updating even when no bridge events are emitted).
-  useFrame(() => {
+  useEngineFrame('postPhysics', () => {
     const now = performance.now();
     if (updateInterval > 0 && now - lastUpdateRef.current < updateInterval) return;
 
     const result = resultRef.current!;
     const bridge = bridgeRef.current;
-
-    // Only trigger React re-render when position actually changed (threshold: 0.001).
-    const posChanged = (p: THREE.Vector3) => {
-      const s = lastPositionSnapshot.current;
-      const dx = p.x - s.x, dy = p.y - s.y, dz = p.z - s.z;
-      if (dx * dx + dy * dy + dz * dz > 0.000001) {
-        s.x = p.x; s.y = p.y; s.z = p.z;
-        return true;
-      }
-      return false;
-    };
 
     if (bridge) {
       const targetEntityId = getTargetEntityId(bridge);
@@ -124,7 +126,7 @@ export function usePlayerPosition(
           result.height = 2.0;
 
           lastUpdateRef.current = now;
-          if (reactive && posChanged(result.position)) forceUpdate((v) => v + 1);
+          if (reactive && consumePositionChange(lastPositionSnapshot.current, result.position)) forceUpdate((v) => v + 1);
           return;
         }
       }
@@ -148,9 +150,9 @@ export function usePlayerPosition(
       result.height = 2.0;
 
       lastUpdateRef.current = now;
-      if (reactive && posChanged(result.position)) forceUpdate((v) => v + 1);
+      if (reactive && consumePositionChange(lastPositionSnapshot.current, result.position)) forceUpdate((v) => v + 1);
     }
-  });
+  }, { order: AFTER_MOTION_FRAME_ORDER, label: 'motions:player-position' });
 
   return resultRef.current;
 }

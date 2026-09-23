@@ -4,6 +4,7 @@ export {
 } from './createGaesupRuntime';
 export {
   DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID,
+  RUNTIME_SAVE_BINDING_REJECTED_EVENT,
   RUNTIME_SAVE_DIAGNOSTIC_EVENT,
   createRuntimeSaveDiagnostics,
   formatRuntimeSaveDiagnostic,

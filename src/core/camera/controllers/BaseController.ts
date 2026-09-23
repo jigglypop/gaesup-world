@@ -59,9 +59,17 @@ export abstract class BaseController implements ICameraController {
     return activeStateUtils.getPosition(props.activeState);
   }
 
+  protected getOrbitYaw(state: CameraSystemState): number {
+    return state.runtime?.orbitYaw ?? state.config.orbitYaw ?? 0;
+  }
+
+  protected getOrbitPitch(state: CameraSystemState): number {
+    return state.runtime?.orbitPitch ?? state.config.orbitPitch ?? 0;
+  }
+
   protected applyOrbitOffset(offset: THREE.Vector3, state: CameraSystemState): THREE.Vector3 {
-    const orbitYaw = state.config.orbitYaw ?? 0;
-    const orbitPitch = state.config.orbitPitch ?? 0;
+    const orbitYaw = this.getOrbitYaw(state);
+    const orbitPitch = this.getOrbitPitch(state);
     if (orbitYaw === 0 && orbitPitch === 0) {
       return offset;
     }

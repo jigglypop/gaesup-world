@@ -1,10 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
+import { frameScheduler } from '@core/runtime/frame';
 import { useNetworkBridge } from '../useNetworkBridge';
-
-// useFrame 모킹
-jest.mock('@react-three/fiber', () => ({
-  useFrame: jest.fn()
-}));
 
 // BridgeFactory 모킹
 jest.mock('@core/boilerplate', () => ({
@@ -28,17 +24,18 @@ const mockBridge = {
 };
 
 describe('useNetworkBridge', () => {
-  let mockUseFrame: jest.Mock;
   let mockBridgeFactory: any;
+
+  afterEach(() => {
+    frameScheduler.clear();
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // 모킹된 모듈들 가져오기
-    const fiber = require('@react-three/fiber');
     const boilerplate = require('@core/boilerplate');
     
-    mockUseFrame = fiber.useFrame as jest.Mock;
     mockBridgeFactory = boilerplate.BridgeFactory;
     
     mockBridgeFactory.getOrCreate.mockImplementation((domain: string) => {
@@ -46,9 +43,6 @@ describe('useNetworkBridge', () => {
     });
     mockBridgeFactory.get.mockReturnValue(mockBridge);
     mockBridgeFactory.create.mockReturnValue(mockBridge);
-    mockUseFrame.mockImplementation(() => {
-      // 테스트에서는 콜백을 저장만 하고 호출하지 않음
-    });
     
     mockBridge.snapshot.mockReturnValue({
       nodes: new Map(),
@@ -198,12 +192,7 @@ describe('useNetworkBridge', () => {
     });
 
     test('자동 업데이트 테스트', async () => {
-      let frameCallback: any = null;
-      mockUseFrame.mockImplementation((callback) => {
-        frameCallback = callback;
-      });
-      
-      const { result } = renderHook(() => 
+      const { result, unmount } = renderHook(() => 
         useNetworkBridge({ enableAutoUpdate: true })
       );
       
@@ -212,8 +201,12 @@ describe('useNetworkBridge', () => {
         expect(result.current.isReady).toBe(true);
       });
       
-      // useFrame 콜백이 등록되었는지 확인
-      expect(mockUseFrame).toHaveBeenCalled();
+      // 프레임 콜백이 snapshot 단계에 등록되었는지 확인
+      expect(frameScheduler.count('snapshot')).toBe(1);
+      frameScheduler.tick(0.016, 16);
+      expect(mockBridge.updateSystem).toHaveBeenCalledWith('main', 0.016);
+      unmount();
+      expect(frameScheduler.count('snapshot')).toBe(0);
     });
   });
 

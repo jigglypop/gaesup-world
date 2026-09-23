@@ -1,28 +1,34 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import * as THREE from 'three';
+import { useShallow } from 'zustand/react/shallow';
 
 import { PathLine } from './PathLine';
 import { TargetMarker } from './TargetMarker';
-import { useInteractionSystem } from '../../../motions/hooks/useInteractionSystem';
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
 import {
   getClickNavigationRoute,
   subscribeClickNavigationRoute,
 } from '../../../navigation/ClickNavigationRoute';
+import { useEngineFrame } from '../../../runtime/frame';
 import { useGaesupStore } from '../../../stores/gaesupStore';
+import type { AutomationAction } from '../../core/types';
 
-const EMPTY_MOUSE_TARGET = new THREE.Vector3();
+const EMPTY_ACTIONS: AutomationAction[] = [];
 const PLAYER_POSITION_UPDATE_INTERVAL_MS = 150;
 const REACH_DISTANCE = 1.0;
 
 export function Clicker() {
-  const automation = useGaesupStore((state) => state.automation);
+  const actions = useGaesupStore(useShallow((state) => state.automation?.queue.actions ?? EMPTY_ACTIONS));
+  const currentIndex = useGaesupStore((state) => state.automation?.queue.currentIndex ?? 0);
+  const mouseTarget = useGaesupStore((state) => state.interaction.mouse.target);
+  const isActive = useGaesupStore((state) => state.interaction.mouse.isActive);
   const { position: playerPosition } = usePlayerPosition({
     updateInterval: PLAYER_POSITION_UPDATE_INTERVAL_MS,
+    reactive: false,
   });
-  const { mouse } = useInteractionSystem();
   const [navigationPoints, setNavigationPoints] = useState(() => [...getClickNavigationRoute()]);
+  const markerRef = useRef<THREE.Group>(null);
   const pathPointsRef = useRef<THREE.Vector3[]>([]);
 
   useEffect(
@@ -32,16 +38,6 @@ export function Clicker() {
       }),
     [],
   );
-
-  const mouseTarget = mouse?.target || EMPTY_MOUSE_TARGET;
-  const isActive = mouse?.isActive || false;
-  const queue = automation?.queue || { actions: [], currentIndex: 0 };
-  const actions = queue.actions || [];
-  const currentIndex = queue.currentIndex || 0;
-
-  const distanceToTarget = playerPosition.distanceTo(mouseTarget);
-  const hasReachedTarget = distanceToTarget < REACH_DISTANCE;
-  const shouldShowMarker = isActive && !hasReachedTarget;
 
   const queuePoints = useMemo(
     () =>
@@ -56,20 +52,31 @@ export function Clicker() {
     [actions],
   );
 
-  const routedPoints = navigationPoints.length > 0 ? navigationPoints : [mouseTarget];
-  pathPointsRef.current = shouldShowMarker
-    ? [playerPosition, ...routedPoints, ...queuePoints]
-    : queuePoints.length > 0
-      ? [playerPosition, ...queuePoints]
-      : [];
+  const markerPath = useMemo(
+    () => [playerPosition, ...(navigationPoints.length > 0 ? navigationPoints : [mouseTarget]), ...queuePoints],
+    [playerPosition, navigationPoints, mouseTarget, queuePoints],
+  );
+  const queuePath = useMemo(
+    () => (queuePoints.length > 0 ? [playerPosition, ...queuePoints] : []),
+    [playerPosition, queuePoints],
+  );
+
+  useEngineFrame(
+    'lateUpdate',
+    () => {
+      const showMarker = isActive && playerPosition.distanceTo(mouseTarget) >= REACH_DISTANCE;
+      const marker = markerRef.current;
+      if (marker) marker.visible = showMarker;
+      pathPointsRef.current = showMarker ? markerPath : queuePath;
+    },
+    { label: 'interactions:clicker' },
+  );
 
   return (
     <group>
-      {shouldShowMarker && (
-        <group position={mouseTarget}>
-          <TargetMarker />
-        </group>
-      )}
+      <group ref={markerRef} position={mouseTarget} visible={false}>
+        <TargetMarker />
+      </group>
 
       <PathLine pointsRef={pathPointsRef} color={currentIndex >= 0 ? '#00ff88' : '#ffaa00'} />
 

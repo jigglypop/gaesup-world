@@ -1,11 +1,11 @@
 import { useCallback, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { useEventsStore } from '../../../events/stores/eventsStore';
 import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
+import { useEngineFrame } from '../../../runtime/frame';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
 import { notify } from '../../../ui/components/Toast/toastStore';
@@ -89,7 +89,7 @@ export function FishSpot({
 
   useToolUse('rod', onRod);
 
-  useFrame(() => {
+  useEngineFrame('lateUpdate', () => {
     const m = rippleRef.current;
     if (!m) return;
     const since = (performance.now() - flashRef.current) / 1000;
@@ -101,7 +101,7 @@ export function FishSpot({
     } else {
       m.scale.setScalar(0);
     }
-  });
+  }, { active: showRipple, label: 'world:fish-spot-ripple' });
 
   return (
     <group position={position}>

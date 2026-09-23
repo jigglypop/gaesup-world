@@ -55,6 +55,8 @@ export const Editor: FC<EditorProps> = ({
   onUpdateSceneObject,
   onAddSceneComponent,
   onRemoveSceneComponent,
+  onUpdateSceneComponent,
+  scenePrefab,
   projectScenes,
   projectPrefabs,
   selectedProjectItemId,
@@ -128,6 +130,8 @@ export const Editor: FC<EditorProps> = ({
         {...(onUpdateSceneObject ? { onUpdateSceneObject } : {})}
         {...(onAddSceneComponent ? { onAddSceneComponent } : {})}
         {...(onRemoveSceneComponent ? { onRemoveSceneComponent } : {})}
+        {...(onUpdateSceneComponent ? { onUpdateSceneComponent } : {})}
+        {...(scenePrefab ? { scenePrefab } : {})}
         {...(projectScenes ? { projectScenes } : {})}
         {...(projectPrefabs ? { projectPrefabs } : {})}
         {...(selectedProjectItemId ? { selectedProjectItemId } : {})}

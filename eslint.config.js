@@ -137,6 +137,24 @@ export default tseslint.config(
     },
   },
   {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/core/runtime/frame/react/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@react-three/fiber',
+              importNames: ['useFrame'],
+              message: 'Use useEngineFrame or useSharedFrame from runtime/frame instead of raw useFrame.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['src/core/**/core/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [

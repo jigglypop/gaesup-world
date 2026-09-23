@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
+import { MILLISECONDS_IN_SECOND } from '../../../boilerplate/types';
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
+import { useEngineFrame } from '../../../runtime/frame';
 
 export type FootprintsProps = {
   /** Maximum number of footprints kept on screen at once. */
@@ -87,11 +87,11 @@ export function Footprints({
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const colorTmp = useMemo(() => new THREE.Color(), []);
 
-  useFrame((state) => {
+  useEngineFrame('lateUpdate', (_delta, elapsedMs) => {
     const mesh = meshRef.current;
     if (!mesh) return;
 
-    const now = getFrameElapsedSeconds(state);
+    const now = elapsedMs / MILLISECONDS_IN_SECOND;
 
     if (isGrounded && isMoving) {
       const last = lastDropRef.current;
@@ -132,7 +132,7 @@ export function Footprints({
     mesh.count = active;
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  });
+  }, { label: 'effects:footprints' });
 
   return (
     <instancedMesh

@@ -23,6 +23,8 @@ function compareEntries(a: FrameEntry, b: FrameEntry): number {
   return a.order - b.order || a.sequence - b.sequence;
 }
 
+export const POST_PHYSICS_PHASE_INDEX = FRAME_PHASES.indexOf('postPhysics');
+
 export class FrameScheduler {
   private readonly phases = new Map<FramePhase, FrameEntry[]>();
   private readonly metrics = new Map<FramePhase, FramePhaseMetrics>();
@@ -30,6 +32,8 @@ export class FrameScheduler {
   private ticking = false;
   private needsCompaction = false;
   private metricsEnabled = false;
+  private readonly hosts: object[] = [];
+  private generation = 0;
 
   constructor() {
     FRAME_PHASES.forEach((phase) => {
@@ -71,19 +75,30 @@ export class FrameScheduler {
   }
 
   tick(delta: number, elapsedMs: number): void {
+    for (let p = 0; p < FRAME_PHASES.length; p++) this.tickPhase(p, delta, elapsedMs);
+  }
+
+  tickBeforePhysics(delta: number, elapsedMs: number): void {
+    for (let p = 0; p < POST_PHYSICS_PHASE_INDEX; p++) this.tickPhase(p, delta, elapsedMs);
+  }
+
+  tickAfterPhysics(delta: number, elapsedMs: number): void {
+    for (let p = POST_PHYSICS_PHASE_INDEX; p < FRAME_PHASES.length; p++) this.tickPhase(p, delta, elapsedMs);
+  }
+
+  tickPhase(phaseIndex: number, delta: number, elapsedMs: number): void {
+    const phase = FRAME_PHASES[phaseIndex];
+    if (!phase) return;
+    const entries = this.phases.get(phase)!;
+    if (entries.length === 0) return;
     this.ticking = true;
     try {
-      for (let p = 0; p < FRAME_PHASES.length; p++) {
-        const phase = FRAME_PHASES[p]!;
-        const entries = this.phases.get(phase)!;
-        if (entries.length === 0) continue;
-        const startedAt = this.metricsEnabled ? performance.now() : 0;
-        const count = entries.length;
-        for (let i = 0; i < count; i++) {
-          this.runEntry(entries[i]!, delta, elapsedMs);
-        }
-        if (this.metricsEnabled) this.recordMetrics(phase, performance.now() - startedAt);
+      const startedAt = this.metricsEnabled ? performance.now() : 0;
+      const count = entries.length;
+      for (let i = 0; i < count; i++) {
+        this.runEntry(entries[i]!, delta, elapsedMs);
       }
+      if (this.metricsEnabled) this.recordMetrics(phase, performance.now() - startedAt);
     } finally {
       this.ticking = false;
     }
@@ -100,7 +115,7 @@ export class FrameScheduler {
     if (!entry.active || entry.failed) return;
     if (entry.enabled && !entry.enabled()) return;
     if (entry.throttleMs > 0) {
-      if (elapsedMs - entry.lastRunMs < entry.throttleMs) return;
+      if (elapsedMs >= entry.lastRunMs && elapsedMs - entry.lastRunMs < entry.throttleMs) return;
       entry.lastRunMs = elapsedMs;
     }
     try {
@@ -130,8 +145,36 @@ export class FrameScheduler {
     metrics.lastMs = elapsed;
   }
 
+  attachHost(token: object): () => void {
+    this.hosts.push(token);
+    return () => {
+      const index = this.hosts.indexOf(token);
+      if (index >= 0) this.hosts.splice(index, 1);
+    };
+  }
+
+  hasHost(): boolean {
+    return this.hosts.length > 0;
+  }
+
+  hostCount(): number {
+    return this.hosts.length;
+  }
+
+  isTickOwner(token: object): boolean {
+    return this.hosts[0] === token;
+  }
+
+  getGeneration(): number {
+    return this.generation;
+  }
+
   setMetricsEnabled(enabled: boolean): void {
     this.metricsEnabled = enabled;
+  }
+
+  isMetricsEnabled(): boolean {
+    return this.metricsEnabled;
   }
 
   getMetrics(phase: FramePhase): Readonly<FramePhaseMetrics> {
@@ -158,6 +201,7 @@ export class FrameScheduler {
   }
 
   clear(): void {
+    this.generation++;
     this.phases.forEach((entries) => {
       entries.forEach((entry) => {
         entry.active = false;

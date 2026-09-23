@@ -96,6 +96,8 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
   onUpdateSceneObject,
   onAddSceneComponent,
   onRemoveSceneComponent,
+  onUpdateSceneComponent,
+  scenePrefab,
   projectScenes,
   projectPrefabs,
   selectedProjectItemId,
@@ -173,6 +175,8 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
       ...(onUpdateSceneObject ? { onUpdateObject: onUpdateSceneObject } : {}),
       ...(onAddSceneComponent ? { onAddComponent: onAddSceneComponent } : {}),
       ...(onRemoveSceneComponent ? { onRemoveComponent: onRemoveSceneComponent } : {}),
+      ...(onUpdateSceneComponent ? { onUpdateComponent: onUpdateSceneComponent } : {}),
+      ...(scenePrefab ? { prefab: scenePrefab } : {}),
     };
     const projectAssetsProps = {
       ...(projectScenes ? { scenes: projectScenes } : {}),
@@ -269,7 +273,9 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
     onHoverSceneObject,
     onRemoveSceneComponent,
     onSelectSceneObject,
+    onUpdateSceneComponent,
     onUpdateSceneObject,
+    scenePrefab,
     panelDefaults,
     panelOrder,
     panels,

@@ -1,34 +1,55 @@
-import { useMemo, useSyncExternalStore } from 'react';
+import { useMemo, useRef, useSyncExternalStore } from 'react';
+
+import type { Mesh } from 'three';
 
 import {
+  BUILTIN_SCRIPT_IDS,
   createSceneDocument,
   createSceneDocumentController,
   createSceneDocumentSaveBinding,
+  hasSceneObjectComponent,
   loadSceneRuntime,
   logger,
+  registerBuiltinScripts,
+  SCENE_COMPONENT_TYPES,
   SCENE_DOCUMENT_SAVE_KEY,
+  useScriptObjectTransform,
+  useScriptRuntime,
   type CreateSceneComponentInput,
   type CreateSceneObjectInput,
   type GaesupPlugin,
   type SceneComponentId,
   type SceneDocument,
   type SceneDocumentController,
+  type SceneJsonObject,
   type SceneObjectId,
+  type ScriptRuntime,
 } from 'gaesup-world';
 import {
   createEditorCommandStack,
+  createEditorPlayModeController,
   createSceneObjectEditorCommands,
+  type EditorPlayModeController,
   type EditorShellCommand,
   type SceneObjectEditorPatch,
 } from 'gaesup-world/editor';
 
+import { WorldSceneDocumentBodies } from './sceneBodies';
+import { createWorldScenePrefabLibrary, type WorldScenePrefabLibrary } from './scenePrefabs';
+
 const WORLD_SCENE_DOCUMENT_PLUGIN_ID = 'example.world.scene-document';
 const CREATOR_MARKER_ID_PREFIX = 'creator-marker';
+const MARKER_ROTATION_DEGREES_PER_SECOND = 30;
+const TRIGGER_ZONE_POSITION: [number, number, number] = [1.6, 3, 1.6];
+const TRIGGER_ZONE_SIZE: [number, number, number] = [1.2, 2, 1.2];
+
+registerBuiltinScripts();
 
 export const WORLD_SCENE_DOCUMENT_SAVE_KEY = SCENE_DOCUMENT_SAVE_KEY;
 
 export type WorldSceneDocumentSession = {
   controller: SceneDocumentController;
+  playMode: EditorPlayModeController<SceneDocument>;
   getSnapshot: () => SceneDocument;
   subscribe: (listener: () => void) => () => void;
   createObjectId: () => SceneObjectId;
@@ -37,7 +58,13 @@ export type WorldSceneDocumentSession = {
   deleteObject: (objectId: SceneObjectId) => Promise<boolean>;
   moveObject: (objectId: SceneObjectId, parentId: SceneObjectId | undefined) => Promise<boolean>;
   addComponent: (objectId: SceneObjectId, component: CreateSceneComponentInput) => Promise<boolean>;
+  updateComponent: (
+    objectId: SceneObjectId,
+    componentId: SceneComponentId,
+    data: SceneJsonObject,
+  ) => Promise<boolean>;
   removeComponent: (objectId: SceneObjectId, componentId: SceneComponentId) => Promise<boolean>;
+  prefabs: WorldScenePrefabLibrary;
 };
 
 export type WorldSceneDocumentRootMarker = {
@@ -64,6 +91,11 @@ export function createInitialWorldSceneDocument(): SceneDocument {
             type: 'example.runtime-marker',
             data: { color: '#63e6be' },
           },
+          {
+            id: 'world-origin-marker-rotator',
+            type: SCENE_COMPONENT_TYPES.script,
+            data: { scriptId: BUILTIN_SCRIPT_IDS.rotator, props: { degreesPerSecond: MARKER_ROTATION_DEGREES_PER_SECOND } },
+          },
         ],
       },
       {
@@ -71,6 +103,25 @@ export function createInitialWorldSceneDocument(): SceneDocument {
         name: '하위 장면 표식',
         parentId: 'world-origin-marker',
         transform: { position: [2, 0, 0] },
+      },
+      {
+        id: 'world-trigger-zone',
+        name: '트리거 존',
+        layer: 'interactable',
+        tags: ['example', 'trigger-zone'],
+        transform: { position: TRIGGER_ZONE_POSITION },
+        components: [
+          {
+            id: 'world-trigger-zone-collider',
+            type: SCENE_COMPONENT_TYPES.collider,
+            data: { shape: 'box', size: TRIGGER_ZONE_SIZE, trigger: true },
+          },
+          {
+            id: 'world-trigger-zone-script',
+            type: SCENE_COMPONENT_TYPES.script,
+            data: { scriptId: BUILTIN_SCRIPT_IDS.triggerZone },
+          },
+        ],
       },
     ],
   });
@@ -82,6 +133,12 @@ export function createWorldSceneDocumentSession(
   const controller = createSceneDocumentController(initialDocument);
   const commandStack = createEditorCommandStack();
   const commands = createSceneObjectEditorCommands(controller);
+  const playMode = createEditorPlayModeController<SceneDocument>({
+    createSnapshot: () => controller.getSnapshot(),
+    restoreSnapshot: (document) => {
+      controller.dispatch({ type: 'scene-document.replace', document });
+    },
+  });
   let objectSequence = 1;
 
   const execute = async (
@@ -109,6 +166,7 @@ export function createWorldSceneDocumentSession(
 
   return {
     controller,
+    playMode,
     getSnapshot: () => controller.getSnapshot(),
     subscribe: (listener) => controller.subscribe(() => listener()),
     createObjectId: () => {
@@ -128,8 +186,13 @@ export function createWorldSceneDocumentSession(
       execute('Move scene object', () => commands.moveObject(objectId, parentId)),
     addComponent: (objectId, component) =>
       execute('Add scene component', () => commands.addComponent(objectId, component)),
+    updateComponent: (objectId, componentId, data) =>
+      execute('Update scene component', () =>
+        commands.updateComponent(objectId, componentId, data),
+      ),
     removeComponent: (objectId, componentId) =>
       execute('Remove scene component', () => commands.removeComponent(objectId, componentId)),
+    prefabs: createWorldScenePrefabLibrary({ controller, commands, execute }),
   };
 }
 
@@ -174,7 +237,7 @@ export function projectWorldSceneDocumentRootMarkers(
   document: SceneDocument,
 ): WorldSceneDocumentRootMarker[] {
   const roots = loadSceneRuntime(document).runtime?.roots ?? [];
-  return roots.map((object) => ({
+  return roots.filter((object) => !hasSceneObjectComponent(object, SCENE_COMPONENT_TYPES.collider)).map((object) => ({
     id: object.id,
     name: object.name,
     position: [...object.transform.position],
@@ -183,26 +246,50 @@ export function projectWorldSceneDocumentRootMarkers(
   }));
 }
 
-export function WorldSceneDocumentRootMarkers({ session }: { session: WorldSceneDocumentSession }) {
+function WorldSceneDocumentRootMarker({ marker, runtime }: { marker: WorldSceneDocumentRootMarker; runtime: ScriptRuntime }) {
+  const meshRef = useRef<Mesh>(null);
+  const source = useMemo(
+    () => ({ position: marker.position, rotation: marker.rotation, scale: marker.scale }),
+    [marker.position, marker.rotation, marker.scale],
+  );
+  useScriptObjectTransform(runtime, marker.id, meshRef, source);
+
+  return (
+    <mesh
+      ref={meshRef}
+      name={`scene-document-marker:${marker.id}`}
+      position={marker.position}
+      rotation={marker.rotation}
+      scale={marker.scale}
+      userData={{ sceneDocumentObjectId: marker.id }}
+      castShadow
+    >
+      <boxGeometry args={[1.4, 1.4, 1.4]} />
+      <meshStandardMaterial color="#63e6be" emissive="#153f38" roughness={0.45} />
+    </mesh>
+  );
+}
+
+export function WorldSceneDocumentRootMarkers({
+  session,
+  editing = false,
+}: {
+  session: WorldSceneDocumentSession;
+  editing?: boolean;
+}) {
   const document = useWorldSceneDocumentSnapshot(session);
   const markers = useMemo(() => projectWorldSceneDocumentRootMarkers(document), [document]);
+  const runtime = useScriptRuntime({
+    controller: session.controller,
+    ...(editing ? { playMode: session.playMode } : {}),
+  });
 
   return (
     <group name="scene-document-root-markers">
       {markers.map((marker) => (
-        <mesh
-          key={marker.id}
-          name={`scene-document-marker:${marker.id}`}
-          position={marker.position}
-          rotation={marker.rotation}
-          scale={marker.scale}
-          userData={{ sceneDocumentObjectId: marker.id }}
-          castShadow
-        >
-          <boxGeometry args={[1.4, 1.4, 1.4]} />
-          <meshStandardMaterial color="#63e6be" emissive="#153f38" roughness={0.45} />
-        </mesh>
+        <WorldSceneDocumentRootMarker key={marker.id} marker={marker} runtime={runtime} />
       ))}
+      <WorldSceneDocumentBodies document={document} runtime={runtime} />
     </group>
   );
 }

@@ -1,10 +1,8 @@
 import { useRef, useCallback } from 'react';
 
-import { useFrame, RootState } from '@react-three/fiber';
-
+import { useEngineFrame } from '../../runtime/frame';
 import { AbstractBridge } from '../bridge/AbstractBridge';
 import { IDisposable, MILLISECONDS_IN_SECOND, UseBaseFrameOptions } from '../types';
-import { getFrameTimeMs } from './frameTime';
 
 export function useBaseFrame<
   EngineType extends IDisposable,
@@ -24,23 +22,26 @@ export function useBaseFrame<
     throttle = 0,
     skipWhenHidden = true
   } = options;
-  const frameHandler = useCallback((state: RootState, delta: number) => {
-    void delta;
+  const frameHandler = useCallback((_delta: number, elapsedMs: number) => {
     if (!enabled || !bridge) return;
     if (skipWhenHidden && document.hidden) return;
     if (throttle > 0) {
-      const now = getFrameTimeMs(state);
-      if (now - lastUpdateTime.current < throttle) return;
-      lastUpdateTime.current = now;
+      if (elapsedMs - lastUpdateTime.current < throttle) return;
+      lastUpdateTime.current = elapsedMs;
     }
     bridge.notifyListeners(id);
     if (callback) {
       callback();
     }
   }, [bridge, id, callback, enabled, throttle, skipWhenHidden]);
-  useFrame(frameHandler, priority);
+  useEngineFrame('snapshot', frameHandler, {
+    order: priority,
+    label: `bridge:${id}`,
+    active: enabled && bridge !== null,
+  });
 }
 
+/** @deprecated Use useEngineFrame options instead. */
 export function useConditionalFrame<
   EngineType extends IDisposable,
   SnapshotType,
@@ -60,6 +61,7 @@ export function useConditionalFrame<
   useBaseFrame(bridge, id, wrappedCallback, options);
 }
 
+/** @deprecated Use useEngineFrame options instead. */
 export function useThrottledFrame<
   EngineType extends IDisposable,
   SnapshotType,

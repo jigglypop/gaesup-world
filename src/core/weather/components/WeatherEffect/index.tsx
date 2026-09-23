@@ -1,8 +1,9 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 
-import { useFrame, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { useEngineFrame } from '../../../runtime/frame';
 import { useWeatherStore } from '../../stores/weatherStore';
 import type { WeatherKind } from '../../types';
 
@@ -27,6 +28,7 @@ export function WeatherEffect({
 }: WeatherEffectProps) {
   const selectedKind = useWeatherStore((s) => forcedKind ?? s.current?.kind);
   const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
+  const getThreeState = useThree((state) => state.get);
   const ref = useRef<THREE.Object3D | null>(null);
   const handleObject = useCallback((object: THREE.Object3D | null) => { ref.current = object; }, []);
 
@@ -69,10 +71,11 @@ export function WeatherEffect({
     material?.dispose();
   }, [geometry, material]);
 
-  useFrame(({ camera }, delta) => {
+  useEngineFrame('effects', (delta) => {
     const p = ref.current;
     if (!p || !geometry || !kind) return;
     if (followCamera) {
+      const { camera } = getThreeState();
       p.position.set(camera.position.x, camera.position.y - height * 0.35, camera.position.z);
     }
     const pos = geometry.getAttribute('position') as THREE.BufferAttribute;
@@ -101,7 +104,7 @@ export function WeatherEffect({
       }
     }
     pos.needsUpdate = true;
-  });
+  }, { label: 'weather:particles', active: geometry !== null && kind !== null });
 
   if (!geometry || !material) return null;
   if (useNodes) return <Suspense fallback={null}>

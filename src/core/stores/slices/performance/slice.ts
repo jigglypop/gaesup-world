@@ -1,6 +1,6 @@
 import { StateCreator } from 'zustand';
 
-import { PerformanceState, RenderState, EngineState } from './types';
+import { EngineState, FramePhaseTimings, PerformanceState, RenderState } from './types';
 
 function sameRenderState(a: RenderState, b: RenderState): boolean {
   return a.calls === b.calls &&
@@ -46,4 +46,6 @@ export const createPerformanceSlice: StateCreator<
       }
       return { performance };
     }),
+  framePhases: null,
+  setFramePhases: (framePhases: FramePhaseTimings) => set({ framePhases }),
 }); 

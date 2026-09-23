@@ -212,3 +212,8 @@ export type SceneDocumentBatchCommand = {
 배치는 하위 명령마다 문서 전체를 다시 파싱하므로 NFR-2(200개 16ms)는 아직 측정하지 않았고 만족하지 못할 가능성이 있다.
 
 검증: 타입체크(src, examples)와 변경 파일 린트 통과. 새 테스트는 메모리 제약으로 실행하지 않았다.
+
+### 3차 (2026-09-23)
+
+- 새 테스트 실행 결과 거부 시 원본 문서 참조를 돌려주지 않는 결함 2건을 발견해 수정했다. `applySceneDocumentCommand`가 현재 문서를 한 번만 검증·파싱하고 내부 `applyToCanonicalDocument`로 위임한다. 배치의 하위 명령은 현재 문서 재검증을 건너뛴다(후보 문서 파싱은 유지). 거부 결과는 항상 호출자가 넘긴 문서를 가리킨다.
+- scene-object, prefab, editor, scripting 34 suites / 192 tests 통과.

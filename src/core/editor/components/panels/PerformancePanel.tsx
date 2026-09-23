@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 
+import { FramePhaseSection } from './FramePhaseSection';
 import type { EditorPanelBaseProps } from './types';
 import { useGaesupStore } from '../../../stores/gaesupStore';
 
@@ -206,6 +207,8 @@ export function PerformancePanel({ className = '', style, children }: EditorPane
         <BarMeter value={frameTime} max={33.3} color={getFrameTimeColor(frameTime)} label="목표 시간(16.7ms)" />
         <Sparkline data={frameTimeHistory} color={getFrameTimeColor(frameTime)} max={33.3} warn={16.7} />
       </div>
+
+      <FramePhaseSection />
 
       {/* Draw Calls & GPU */}
       <div className="perf-stat-group">

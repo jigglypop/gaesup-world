@@ -340,4 +340,29 @@ describe('PhysicsBridge mode transitions', () => {
       bridge.dispose();
     }
   });
+
+  it('drive 단계는 접지를 판정하지 않고 resolve 단계가 강체 상태로 접지와 위치를 갱신한다', () => {
+    const bridge = new PhysicsBridge();
+    const physicsState = createPhysicsState('character');
+    physicsState.keyboard.forward = true;
+    physicsState.gameStates.isOnTheGround = false;
+    physicsState.activeState.position.set(0, 0, 0);
+    const { rigidBody } = createRigidBodyHarness();
+    const calcProp = createCalcProp(rigidBody, new THREE.Group(), physicsState);
+    const args = { deltaTime: 0.016, calcProp, physicsState, stage: 'drive' as const };
+
+    try {
+      bridge.register(ENTITY_ID, CONFIG);
+      bridge.updateEntity(ENTITY_ID, args);
+      expect(physicsState.gameStates.isMoving).toBe(true);
+      expect(physicsState.gameStates.isOnTheGround).toBe(false);
+      expect(physicsState.activeState.position.toArray()).toEqual([0, 0, 0]);
+
+      bridge.resolveEntity(ENTITY_ID, args);
+      expect(physicsState.gameStates.isOnTheGround).toBe(true);
+      expect(physicsState.activeState.position.toArray()).toEqual([7, 0.5, -2]);
+    } finally {
+      bridge.dispose();
+    }
+  });
 });

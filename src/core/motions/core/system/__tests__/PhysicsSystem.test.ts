@@ -10,6 +10,7 @@ import type { GameStatesType } from '@core/world/components/Rideable/types';
 
 import type { PhysicsCalcProps, PhysicsState } from '../../../types';
 import type { PhysicsConfigType } from '../../config';
+import type { GroundRayHit, PhysicsVector } from '../../physics/types';
 import type { ActiveStateType } from '../../types';
 import { PhysicsSystem } from '../PhysicsSystem';
 
@@ -319,6 +320,74 @@ describe('PhysicsSystem', () => {
         system.calculate(calcProp, physicsState);
         expect(physicsState.gameStates.isOnTheGround).toBe(true);
       }
+    });
+
+    const createProbeCalcProp = (
+      rigidBody: ReturnType<typeof createMockRigidBody>,
+      normalY: number | null,
+      groundRay?: { length: number },
+    ) => {
+      const castGroundRay = jest.fn(
+        (_origin: PhysicsVector, _maxDistance: number, out: GroundRayHit) => {
+          if (normalY === null) return false;
+          out.normalY = normalY;
+          return true;
+        },
+      );
+      const calcProp = {
+        rigidBodyRef: { current: rigidBody },
+        physicsQueries: { castGroundRay },
+        ...(groundRay ? { groundRay } : {}),
+      } as unknown as PhysicsCalcProps;
+      return { calcProp, castGroundRay };
+    };
+
+    it('접지 탐침이 있으면 높이와 무관하게 발 아래 충돌면으로 접지를 판정한다', () => {
+      const roofBody = createMockRigidBody({
+        translation: jest.fn().mockReturnValue({ x: 2, y: 10, z: -3 }),
+      });
+      const roof = createProbeCalcProp(roofBody, 1);
+      const physicsState = createPhysicsState();
+      physicsState.gameStates.isOnTheGround = false;
+      system.resolve(roof.calcProp, physicsState);
+      expect(physicsState.gameStates.isOnTheGround).toBe(true);
+      expect(roof.castGroundRay).toHaveBeenCalledWith(
+        { x: 2, y: expect.closeTo(10.1), z: -3 },
+        expect.closeTo(0.3),
+        expect.any(Object),
+      );
+      const gap = createProbeCalcProp(createMockRigidBody(), null);
+      system.resolve(gap.calcProp, physicsState);
+      expect(physicsState.gameStates.isOnTheGround).toBe(false);
+    });
+
+    it('경사 한계를 넘는 면과 점프 상승 중에는 접지로 보지 않는다', () => {
+      const physicsState = createPhysicsState();
+      const steep = createProbeCalcProp(
+        createMockRigidBody({ linvel: jest.fn().mockReturnValue({ x: 0, y: -1, z: 0 }) }),
+        Math.cos(THREE.MathUtils.degToRad(60)),
+      );
+      system.resolve(steep.calcProp, physicsState);
+      expect(physicsState.gameStates.isOnTheGround).toBe(false);
+      expect(physicsState.gameStates.isFalling).toBe(true);
+      physicsState.gameStates.isJumping = true;
+      const rising = createProbeCalcProp(
+        createMockRigidBody({ linvel: jest.fn().mockReturnValue({ x: 0, y: 3, z: 0 }) }),
+        1,
+      );
+      system.resolve(rising.calcProp, physicsState);
+      expect(physicsState.gameStates.isOnTheGround).toBe(false);
+      expect(rising.castGroundRay).not.toHaveBeenCalled();
+    });
+
+    it('groundRay.length가 접지 탐침 거리를 정한다', () => {
+      const probe = createProbeCalcProp(createMockRigidBody(), 1, { length: 1 });
+      system.resolve(probe.calcProp, createPhysicsState());
+      expect(probe.castGroundRay).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.closeTo(1.1),
+        expect.any(Object),
+      );
     });
   });
 

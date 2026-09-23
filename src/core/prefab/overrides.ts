@@ -1,3 +1,4 @@
+import { collectPrefabSubtreeIds } from './core';
 import { instantiatePrefabObjects } from './instantiate';
 import type {
   ComputePrefabOverridesOptions,
@@ -210,17 +211,7 @@ function applyOverridesToObjects(
         if (!result.some((object) => object.id === override.object.id)) result = [...result, cloneJson(override.object)];
         break;
       case 'removedObject': {
-        const removed = new Set([mapId(override.objectId)]);
-        let changed = true;
-        while (changed) {
-          changed = false;
-          for (const object of result) {
-            if (object.parentId !== undefined && removed.has(object.parentId) && !removed.has(object.id)) {
-              removed.add(object.id);
-              changed = true;
-            }
-          }
-        }
+        const removed = collectPrefabSubtreeIds(result, [mapId(override.objectId)]);
         result = result.filter((object) => !removed.has(object.id));
         break;
       }

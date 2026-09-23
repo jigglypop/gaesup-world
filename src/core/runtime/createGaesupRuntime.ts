@@ -1,10 +1,11 @@
 import { useAssetStore } from '../assets';
 import { createPluginLogger, createPluginRegistry, filterPluginsForRuntime } from '../plugins';
 export { shouldSetupPluginForRuntime } from '../plugins';
-import { SaveSystem, getSaveSystem } from '../save';
+import { DuplicateSaveDomainBindingError, SaveSystem, getSaveSystem } from '../save';
 import type { DomainBinding, SaveSystemOptions, SerializedDomainValue } from '../save';
 import {
   DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID,
+  RUNTIME_SAVE_BINDING_REJECTED_EVENT,
   RUNTIME_SAVE_DIAGNOSTIC_EVENT,
   createRuntimeSaveDiagnostics,
 } from './saveDiagnostics';
@@ -32,6 +33,9 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
   const saveDiagnostics = createRuntimeSaveDiagnostics(options.saveDiagnostics);
   const optionSaveBindings = [...(options.saveBindings ?? [])];
   const unregisterSaveBindings = new Map<string, () => void>();
+  const pluginBindingKeys = new Set<string>();
+  const rejectedPluginBindings = new WeakSet<RuntimeDomainBinding>();
+  let unsubscribePluginLifecycle: (() => void) | undefined;
   let unregisterSaveDiagnostics: (() => void) | undefined;
   let ownsSaveDiagnosticsService = false;
   let lifecycleState: 'inactive' | 'setting-up' | 'active' | 'disposing' = 'inactive';
@@ -56,7 +60,33 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
     for (const entry of plugins.context.save.list()) {
       if (isRuntimeDomainBinding(entry.value)) {
         registerSaveBinding(entry.value);
+        pluginBindingKeys.add(entry.value.key);
       }
+    }
+  };
+
+  const syncPluginSaveBindings = (): void => {
+    const current = new Set<string>();
+    for (const entry of plugins.context.save.list()) {
+      if (!isRuntimeDomainBinding(entry.value)) continue;
+      current.add(entry.value.key);
+      if (pluginBindingKeys.has(entry.value.key) || rejectedPluginBindings.has(entry.value)) continue;
+      try {
+        if (unregisterSaveBindings.has(entry.value.key)) throw new DuplicateSaveDomainBindingError(entry.value.key);
+        registerSaveBinding(entry.value);
+        pluginBindingKeys.add(entry.value.key);
+      } catch (error) {
+        rejectedPluginBindings.add(entry.value);
+        const rejection = { key: entry.value.key, pluginId: entry.pluginId, error };
+        runtimeLogger.warn(`Save binding "${entry.value.key}" was rejected after runtime setup.`, rejection);
+        plugins.context.events.emit(RUNTIME_SAVE_BINDING_REJECTED_EVENT, rejection);
+      }
+    }
+    for (const key of pluginBindingKeys) {
+      if (current.has(key)) continue;
+      pluginBindingKeys.delete(key);
+      unregisterSaveBindings.get(key)?.();
+      unregisterSaveBindings.delete(key);
     }
   };
 
@@ -111,6 +141,10 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
       }
     }
 
+    unsubscribePluginLifecycle?.();
+    unsubscribePluginLifecycle = undefined;
+    pluginBindingKeys.clear();
+
     const unregisterDiagnostics = unregisterSaveDiagnostics;
     unregisterSaveDiagnostics = undefined;
     if (unregisterDiagnostics) await attempt(unregisterDiagnostics);
@@ -144,6 +178,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
       }
       await plugins.setupAll();
       registerPluginSaveBindings();
+      unsubscribePluginLifecycle = plugins.onLifecycle(syncPluginSaveBindings);
       lifecycleState = 'active';
     } catch (error) {
       await deactivateGeneration(true);

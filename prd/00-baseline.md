@@ -101,8 +101,18 @@
 | 전체 테스트 | 297 suites 통과, 1 skipped / 2,693 tests 통과, 1 skipped, 약 97초 | 2026-09-23 | 348f9b35 + PRD-16 구현 |
 | 메모리 테스트 | 5 suites / 88 tests 통과 | 2026-09-23 | 348f9b35 + PRD-16 구현 |
 | 패키지 소비, 데모 빌드, 브라우저 | 미측정 | - | - |
+| 패키지 소비 (`build` 후 `test:package:built`) | 통과, 약 52초 | 2026-09-23 | 945bd938 + 3차 |
+| 데모 빌드 (`test:demo`) | 통과. 초기 정적 import 7 청크, 519,688 JS 바이트. `vendor-physics` 2,259.59 kB(gzip 850.78 kB) | 2026-09-23 | 945bd938 + 3차 |
+| 브라우저 (`test:browser`) | 통과(`/minimal`, `/world`). 스크립트가 영어 문구와 캔버스 없는 `/` 랜딩을 기다려 실패하던 것을 현재 UI(한국어 문구, `/world`)에 맞춤. 별도 탐침으로 `/world` W·D 이동과 카메라 추종, `/creator`, `/blueprint-playground`에서 페이지 오류 0 확인(경고는 three·rapier 기존 deprecation 3건) | 2026-09-23 | 945bd938 + 3차 |
+| 전체 테스트 (2차 구현 커밋) | 304 suites 통과, 3 실패 / 2,729 tests 통과, 4 실패, 병렬 약 42초 | 2026-09-23 | 945bd938 |
+| 전체 테스트 (3차 수정 후) | 309 suites 통과, 1 skipped / 2,754 tests 통과, 1 skipped, 병렬 약 39초 | 2026-09-23 | 945bd938 + 3차 |
+| 메모리 테스트 (3차) | 5 suites / 88 tests 통과 | 2026-09-23 | 945bd938 + 3차 |
+| 린트 (`eslint src examples`, 3차) | 에러 0, 경고 0 | 2026-09-23 | 945bd938 + 3차 |
+| 품질 ratchet (`pnpm check:quality`) | interface 492, console 26, any 0, raw `useFrame` 55, 200줄 초과 tsx 46, 500줄 초과 ts 14 | 2026-09-23 | 945bd938 + 3차 |
 
 참고: 작업 전 원본 커밋 상태의 전체 테스트는 실행이 중간에 멈춰 수치를 얻지 못했다. 위 전체 테스트 수치는 PRD-16 구현이 들어간 작업 트리 기준이다.
+
+3차 참고: 2차 커밋의 새 테스트는 메모리 제약으로 실행되지 않은 상태였다. 설치된 `node_modules`가 다른 브랜치 lockfile 기준이라 `pnpm install --frozen-lockfile` 후 측정했다. 실패 4건(`BridgeRegistry` 2, `MotionBridge` reset 1, `usePhysicsBridge` 계약 1)과 새 테스트 실패 2건(`extendedCommands`)은 PRD-10, 14 문서의 3차 기록대로 수정했다.
 
 ## 9. 작업
 

@@ -432,7 +432,7 @@ const GrassContent: FC<GrassMeshProps> = memo(
     }, [bottomBladeColor, tipBladeColor, useToon]);
 
     // Register with the central GrassManager. The manager runs one
-    // shared `useFrame` (via <GrassDriver />) and updates per-tile
+    // shared engine frame (via <GrassDriver />) and updates per-tile
     // uniforms + instanceCount in batch. When the driver is not mounted
     // the local frame loop below covers a single tile so legacy uses
     // keep working.

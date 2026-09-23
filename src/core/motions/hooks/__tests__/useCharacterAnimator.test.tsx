@@ -1,18 +1,13 @@
 import { StrictMode } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import { renderHook } from '@testing-library/react';
 import * as THREE from 'three';
 
+import { frameScheduler } from '@core/runtime/frame';
+
 import { getGlobalAnimationBridge } from '../../../animation/hooks/useAnimationBridge';
-import { CHARACTER_ANIMATOR_FRAME_PRIORITY, useCharacterAnimator } from '../useCharacterAnimator';
+import { useCharacterAnimator } from '../useCharacterAnimator';
 import { getGlobalStateManager } from '../useStateSystem';
-
-jest.mock('@react-three/fiber', () => ({ useFrame: jest.fn() }));
-
-type FrameCallback = (state: object, delta: number) => void;
-
-const mockUseFrame = jest.mocked(useFrame);
 
 function registerCharacterClips(names: string[]) {
   const root = new THREE.Object3D();
@@ -26,17 +21,13 @@ function registerCharacterClips(names: string[]) {
 }
 
 function runFrames(frames: number, delta: number) {
-  const callbacks = mockUseFrame.mock.calls.map((call) => call[0] as FrameCallback);
-  for (let i = 0; i < frames; i++) {
-    callbacks.forEach((callback) => callback({}, delta));
-  }
+  for (let i = 0; i < frames; i++) frameScheduler.tick(delta, i * delta * 1000);
 }
 
 describe('useCharacterAnimator', () => {
   const bridge = getGlobalAnimationBridge();
 
   beforeEach(() => {
-    mockUseFrame.mockClear();
     getGlobalStateManager().resetGameStates();
     bridge.unregisterAnimations('character');
   });
@@ -52,7 +43,7 @@ describe('useCharacterAnimator', () => {
       initialProps: { enabled: true },
     });
     expect(bridge.getAnimator('character')?.controllerId).toBe('gaesup.character');
-    expect(mockUseFrame).toHaveBeenCalledWith(expect.any(Function), CHARACTER_ANIMATOR_FRAME_PRIORITY);
+    expect(frameScheduler.count('animation')).toBe(1);
     view.rerender({ enabled: false });
     expect(bridge.getAnimator('character')).toBeNull();
     view.unmount();

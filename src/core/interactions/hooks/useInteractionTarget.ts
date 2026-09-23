@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import type { KeyboardState } from '../bridge';
 import { useInputBackend } from './useInputBackend';
 import { usePlayerPosition } from '../../motions/hooks/usePlayerPosition';
+import { AFTER_MOTION_FRAME_ORDER, useEngineFrame } from '../../runtime/frame';
 import { useInteractablesStore } from '../stores/interactablesStore';
 
 const _tmpVec = new THREE.Vector3();
@@ -98,7 +98,7 @@ export function InteractionTracker({ throttleMs = 80 }: InteractionTrackerProps 
   const setCurrent = useInteractablesStore((s) => s.setCurrent);
   const accumRef = useRef(0);
 
-  useFrame((_, delta) => {
+  useEngineFrame('postPhysics', (delta) => {
     accumRef.current += delta * 1000;
     if (accumRef.current < throttleMs) return;
     accumRef.current = 0;
@@ -130,7 +130,7 @@ export function InteractionTracker({ throttleMs = 80 }: InteractionTrackerProps 
       key: bestKey,
       distance: Math.sqrt(bestDist2),
     });
-  });
+  }, { order: AFTER_MOTION_FRAME_ORDER, label: 'interactions:tracker' });
 
   return null;
 }
