@@ -1,0 +1,3 @@
+export const FRAME_PRE_PHYSICS_PRIORITY = -100;
+export const PHYSICS_STEP_PRIORITY = -50;
+export const FRAME_SCHEDULER_PRIORITY = -1;

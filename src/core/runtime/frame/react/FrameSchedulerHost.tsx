@@ -7,11 +7,10 @@ import { frameScheduler, POST_PHYSICS_PHASE_INDEX, type FrameScheduler } from '.
 import { FRAME_PHASES } from '../types';
 import { useCanvasFrameScheduler } from './canvasScheduler';
 import { warnIfDuplicateHost } from './hostWarnings';
+import { FRAME_PRE_PHYSICS_PRIORITY, FRAME_SCHEDULER_PRIORITY } from './priorities';
 import type { FrameSchedulerHostProps } from './types';
 
-export const FRAME_PRE_PHYSICS_PRIORITY = -100;
-export const PHYSICS_STEP_PRIORITY = -50;
-export const FRAME_SCHEDULER_PRIORITY = -1;
+export { FRAME_PRE_PHYSICS_PRIORITY, FRAME_SCHEDULER_PRIORITY, PHYSICS_STEP_PRIORITY } from './priorities';
 
 function tickOwnedPhases(
   token: object,

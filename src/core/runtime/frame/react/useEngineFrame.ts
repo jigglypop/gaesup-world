@@ -2,8 +2,7 @@ import { useEffect, useRef } from 'react';
 
 import { frameScheduler } from '../FrameScheduler';
 import type { FrameCallback, FrameDriver, FramePhase } from '../types';
-import { useCanvasFrameScheduler, useFrameRegistrationEffect } from './canvasScheduler';
-import { warnIfHostMissing } from './hostWarnings';
+import { retainImplicitFrameHost, useCanvasFrameScheduler, useCanvasStore, useFrameRegistrationEffect } from './canvasScheduler';
 import type { UseEngineFrameOptions } from './types';
 
 export function useEngineFrame(
@@ -16,6 +15,7 @@ export function useEngineFrame(
   const enabledRef = useRef(options.enabled);
   enabledRef.current = options.enabled;
   const canvasScheduler = useCanvasFrameScheduler();
+  const canvasStore = useCanvasStore();
   const { scheduler = canvasScheduler, active = true, order, throttleMs, label } = options;
 
   useFrameRegistrationEffect(() => {
@@ -33,12 +33,12 @@ export function useEngineFrame(
         ...(label !== undefined ? { label } : {}),
       },
     );
-    const cancelHostCheck = scheduler === frameScheduler ? undefined : warnIfHostMissing(scheduler, label ?? phase);
+    const releaseHost = scheduler === canvasScheduler ? retainImplicitFrameHost(scheduler, canvasStore) : undefined;
     return () => {
-      cancelHostCheck?.();
+      releaseHost?.();
       unsubscribe();
     };
-  }, [active, label, order, phase, scheduler, throttleMs]);
+  }, [active, canvasScheduler, canvasStore, label, order, phase, scheduler, throttleMs]);
 }
 
 export function useFrameDriverItem<T>(driver: FrameDriver<T>, item: T | null): void {
